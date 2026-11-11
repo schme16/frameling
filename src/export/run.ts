@@ -57,7 +57,7 @@ export async function runExport(ctx: RunContext): Promise<RunResult> {
   if (plan.problem) throw new Error(plan.problem);
   const info = formatInfo(settings.format);
   const bg = backgroundFor(doc, settings.transparent, settings.format === 'webm' ? !!ctx.videoAlpha : info.alpha);
-  const crisp = doc.layers.length > 0 && doc.layers.every((l) => l.kind === 'pixel');
+  const crisp = doc.layers.length > 0 && doc.layers.every((l) => l.kind !== 'vector');
   const target = { width: plan.width, height: plan.height, scale: settings.scale, background: bg, crisp };
   const canvas = makeCanvas(plan.width, plan.height);
   const frameAt = (i: number) => drawFrame(canvas, doc, plan.range.start + i, target);
@@ -176,7 +176,7 @@ async function runSheet(ctx: RunContext, plan: Plan, rgbaAt: (i: number) => RawI
     frames.push({ width: img.width, height: img.height, pixels: new Uint8ClampedArray(img.pixels) });
   }
   step(plan.count, 'Packing the sheet');
-  const crisp = doc.layers.length > 0 && doc.layers.every((l) => l.kind === 'pixel');
+  const crisp = doc.layers.length > 0 && doc.layers.every((l) => l.kind !== 'vector');
   const out = buildSheetFiles({
     doc,
     sheet: settings.sheet,
