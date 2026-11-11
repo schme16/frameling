@@ -7,6 +7,8 @@ import { strokeOutline } from '../core/render';
 import { store } from '../core/store';
 import { decompose, invert, symbolContent, transformMatrix } from '../core/symbols';
 import type { Pt, Rect } from './view';
+import { hitText, textBounds } from '../text/draw';
+import { emitterBox } from '../particles/model';
 
 export type { Pt, Rect } from './view';
 
@@ -229,6 +231,8 @@ function rings(s: FillShape | PathShape): { pts: Pt[]; closed: boolean }[] {
 export function shapeBounds(s: Shape): Rect {
   // Not cached: the symbol behind an instance can change while the instance stays the same object.
   if (s.type === 'instance') return instanceBounds(s);
+  if (s.type === 'text') return textBounds(s);
+  if (s.type === 'particles') return emitterBox(s);
   let b = boundsCache.get(s);
   if (b) return b;
   if (s.type === 'stroke') {
@@ -307,6 +311,8 @@ export function pointInRings(ringList: ArrayLike<ArrayLike<number> | Pt>[], x: n
 export function hitShape(s: Shape, x: number, y: number, tol: number): boolean {
   if (!rectContainsPoint(inflateRect(shapeBounds(s), tol), x, y)) return false;
   if (s.type === 'instance') return hitInstance(s, x, y, tol);
+  if (s.type === 'text') return hitText(s, x, y, tol);
+  if (s.type === 'particles') return true;
   if (s.type === 'stroke') {
     const o = strokeOutline(s);
     if (o.length > 2 && pointInRings([o], x, y)) return true;
@@ -343,6 +349,7 @@ function mapPaths(m: Matrix, paths: SubPath[]): SubPath[] {
 /** A new shape moved about by the matrix (same id). Widths and brush sizes scale with it. */
 export function transformShape<S extends Shape>(s: S, m: Matrix): S {
   if (s.type === 'instance') return transformInstance(s, m) as S;
+  if (s.type === 'text' || s.type === 'particles') return { ...s, transform: decompose(multiply(m, transformMatrix(s.transform, { x: 0, y: 0 })), { x: 0, y: 0 }) } as S;
   const k = matrixScale(m);
   if (s.type === 'stroke') {
     const st = s as StrokeShape;

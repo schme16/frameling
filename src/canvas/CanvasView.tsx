@@ -4,6 +4,7 @@ import './canvas.css';
 import { CanvasEngine } from './engine';
 import { EditBar, onCanvasDoubleClick, onCanvasDragLeave, onCanvasDragOver, onCanvasDrop } from '../symbols/EditBar';
 import { TileEditBanner } from '../tiles/TileEditBanner';
+import { onTextDoubleClick, TextEditor } from '../text/TextEditor';
 
 export function CanvasView() {
   const rootRef = useRef<HTMLDivElement>(null);
@@ -29,10 +30,11 @@ export function CanvasView() {
   }, []);
 
   return (
-    <div className="cv-root" ref={rootRef} tabIndex={-1} aria-label="Drawing canvas" role="application" onDoubleClick={onCanvasDoubleClick} onDragOver={onCanvasDragOver} onDragLeave={onCanvasDragLeave} onDrop={onCanvasDrop}>
+    <div className="cv-root" ref={rootRef} tabIndex={-1} aria-label="Drawing canvas" role="application" onDoubleClick={(e) => void (onTextDoubleClick(e) || onCanvasDoubleClick(e))} onDragOver={onCanvasDragOver} onDragLeave={onCanvasDragLeave} onDrop={onCanvasDrop}>
       <div className="cv-stage" ref={stageRef} />
       <canvas className="cv-layer" ref={mainRef} />
       <canvas className="cv-layer cv-overlay" ref={overlayRef} />
+      <TextEditor />
       <EditBar />
       <TileEditBanner />
       {hint && (

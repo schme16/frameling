@@ -9,6 +9,8 @@ import { getStroke } from 'perfect-freehand';
 import type { Color, Doc, Drawing, FillShape, Layer, PathShape, PixelDrawing, Shape, StrokeShape, SubPath } from './format';
 import { isPosed, poseAt, type PosedInstance, type PosedLayer } from './symbols';
 import { drawTilemap } from './tilemap';
+import { drawText } from '../text/draw';
+import { drawParticles } from '../particles/draw';
 import { compositePlan, EffectCache } from '../effects/composite';
 import { buildPlan } from '../effects/plan';
 import { needsCompositor } from '../effects/model';
@@ -119,6 +121,8 @@ export function drawShape(g: Ctx2D, s: Shape): void {
     if (isPosed(s)) drawInstance(g, s);
     return;
   }
+  if (s.type === 'text') return drawText(g, s);
+  if (s.type === 'particles') return drawParticles(g, s, drawInstance);
   g.globalAlpha = s.opacity;
   if (s.type === 'stroke') {
     g.fillStyle = s.color;

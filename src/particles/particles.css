@@ -1,0 +1,208 @@
+/* Particles and Text panels. Theme tokens only. */
+.pt-panel,
+.tx-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.pt-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pt-head strong {
+  flex: 1;
+  font-weight: 800;
+}
+.pt-shuffle {
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.pt-shuffle:hover {
+  background: var(--hover-bg);
+}
+.pt-section {
+  border-top: 1px solid var(--line-soft);
+  padding-top: 8px;
+}
+.pt-section > summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0 6px;
+}
+.pt-section > summary::-webkit-details-marker {
+  display: none;
+}
+.pt-section > summary::before {
+  content: '';
+  width: 0;
+  height: 0;
+  border-left: 5px solid currentColor;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  transition: transform 0.15s;
+  opacity: 0.6;
+}
+.pt-section[open] > summary::before {
+  transform: rotate(90deg);
+}
+.pt-section-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.pt-sliders {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pt-presets {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 6px;
+}
+.pt-preset {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 6px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: center;
+}
+.pt-preset:hover {
+  background: var(--hover-bg);
+}
+.pt-preset[data-on='true'] {
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+  border-color: transparent;
+}
+.pt-presets-compact {
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+}
+.pt-presets-compact .pt-preset {
+  flex-direction: row;
+  justify-content: flex-start;
+  padding: 5px 8px;
+  font-size: var(--fs-small);
+}
+.pt-colors {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.pt-color {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--fs-small);
+  font-weight: 700;
+  color: var(--muted);
+}
+.pt-color input {
+  width: 30px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  background: var(--bg);
+  cursor: pointer;
+}
+.pt-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--fs-small);
+  font-weight: 700;
+  color: var(--muted);
+}
+.pt-row > :last-child {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Text */
+.tx-content {
+  width: 100%;
+  min-height: 64px;
+  resize: vertical;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+}
+.tx-anim {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-small);
+}
+.tx-anim-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.tx-anim-head strong {
+  flex: 1;
+}
+.tx-icon-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: var(--radius-small);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+.tx-icon-btn:hover {
+  background: var(--hover-bg);
+}
+.tx-add {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* Typing straight onto the canvas. The canvas draws the text; this box only holds the caret and the selection. */
+.tx-editor {
+  position: absolute;
+  z-index: 5;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  outline: 1px dashed var(--accent);
+  outline-offset: 4px;
+  background: transparent;
+  color: transparent;
+  caret-color: var(--accent);
+  resize: none;
+  overflow: hidden;
+  white-space: pre;
+  transform-origin: 0 0;
+}
+.tx-editor::selection {
+  background: color-mix(in srgb, var(--accent) 35%, transparent);
+  color: transparent;
+}

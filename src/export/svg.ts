@@ -4,6 +4,7 @@ import type { Doc, Layer, PathShape, PixelDrawing, Shape, StrokeShape, SubPath }
 import { isPosed, poseAt, type PosedInstance } from '../core/symbols';
 import { strokeOutline } from '../core/render';
 import { flattenTilemap } from '../tiles/model';
+import { particlesToSvg, textToSvg } from './svg-extra';
 
 export interface SvgOptions {
   /** Output size as a multiple of the document size (the drawing itself always keeps its own units). */
@@ -77,6 +78,8 @@ export function subPathsToPathData(paths: SubPath[]): string {
 
 function shapeToSvg(s: Shape): string {
   if (s.type === 'instance') return isPosed(s) ? instanceToSvg(s) : '';
+  if (s.type === 'text') return textToSvg(s);
+  if (s.type === 'particles') return particlesToSvg(s);
   if (s.type === 'stroke') {
     const d = strokeToPathData(s);
     return d ? `<path d="${d}"${paint('fill', s.color, s.opacity)}/>` : '';

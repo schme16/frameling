@@ -12,4 +12,6 @@ import '../platform/help';
 import '../export';
 import '../tiles';
 import '../effects';
+import '../particles';
+import '../text';
 import '../quests';
