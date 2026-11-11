@@ -7,6 +7,8 @@ import { usePrefs, reducedMotion } from './prefs';
 import { runCommand } from './palette';
 import { TIPS, tipText } from './tips';
 import { docDpi, formatSize } from '../core/units';
+import { drawingAt } from '../core/doc';
+import { shapesBounds } from '../canvas/geometry';
 
 export function StatusBar() {
   const zoom = useStore((s) => s.ui.zoom);
@@ -20,6 +22,16 @@ export function StatusBar() {
   const pixel = useStore((s) => {
     const l = findLayer(s.doc, s.ui.activeLayerId) ?? s.doc.layers[s.doc.layers.length - 1];
     return l?.kind === 'pixel' ? l.pixelSize : 0;
+  });
+  // The selected shapes' size, as text (a string, so the bar only redraws when it changes).
+  const selSize = useStore((s) => {
+    if (!s.ui.selection.length) return '';
+    const l = findLayer(s.doc, s.ui.activeLayerId);
+    const d = l && drawingAt(s.doc, l, s.ui.frame);
+    if (!d || d.kind !== 'vector') return '';
+    const ids = new Set(s.ui.selection);
+    const b = shapesBounds(d.shapes.filter((x) => ids.has(x.id)));
+    return b ? formatSize(b.w, b.h, units, docDpi(s.doc)) : '';
   });
   const showTips = usePrefs((p) => p.showTips);
   const [tip, setTip] = useState(() => Math.floor(Math.random() * TIPS.length));
@@ -54,6 +66,12 @@ export function StatusBar() {
         {units === 'px' ? `${w} x ${h}` : formatSize(w, h, units, dpi)}
         {pixel ? ` (${Math.ceil(w / pixel)} x ${Math.ceil(h / pixel)} pixels)` : ''}
       </span>
+      {selSize && (
+        <span className="ui-status-item" data-tip="Selection size" data-tip-desc="How big the selected shapes are, outlines included.">
+          <Icon name="select" size={14} />
+          {selSize}
+        </span>
+      )}
       <span className="ui-status-item" data-tip="Frames per second">
         <Icon name="film" size={14} />
         {fps} fps

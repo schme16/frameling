@@ -4,6 +4,8 @@ import './canvas.css';
 import { CanvasEngine } from './engine';
 import { EditBar, onCanvasDoubleClick, onCanvasDragLeave, onCanvasDragOver, onCanvasDrop } from '../symbols/EditBar';
 import { TileEditBanner } from '../tiles/TileEditBanner';
+import { Rulers } from './Rulers';
+import { useViewSettings } from './viewSettings';
 
 export function CanvasView() {
   const rootRef = useRef<HTMLDivElement>(null);
@@ -11,6 +13,7 @@ export function CanvasView() {
   const mainRef = useRef<HTMLCanvasElement>(null);
   const overlayRef = useRef<HTMLCanvasElement>(null);
   const [hint, setHint] = useState<{ text: string; id: number } | null>(null);
+  const rulers = useViewSettings((v) => v.rulers);
 
   useEffect(() => {
     const engine = new CanvasEngine({ root: rootRef.current!, stage: stageRef.current!, main: mainRef.current!, overlay: overlayRef.current! });
@@ -29,12 +32,13 @@ export function CanvasView() {
   }, []);
 
   return (
-    <div className="cv-root" ref={rootRef} tabIndex={-1} aria-label="Drawing canvas" role="application" onDoubleClick={onCanvasDoubleClick} onDragOver={onCanvasDragOver} onDragLeave={onCanvasDragLeave} onDrop={onCanvasDrop}>
+    <div className={`cv-root${rulers ? ' has-rulers' : ''}`} ref={rootRef} tabIndex={-1} aria-label="Drawing canvas" role="application" onDoubleClick={onCanvasDoubleClick} onDragOver={onCanvasDragOver} onDragLeave={onCanvasDragLeave} onDrop={onCanvasDrop}>
       <div className="cv-stage" ref={stageRef} />
       <canvas className="cv-layer" ref={mainRef} />
       <canvas className="cv-layer cv-overlay" ref={overlayRef} />
       <EditBar />
       <TileEditBanner />
+      {rulers && <Rulers root={rootRef} />}
       {hint && (
         <div className="cv-hint" key={hint.id} role="status" aria-live="polite">
           {hint.text}

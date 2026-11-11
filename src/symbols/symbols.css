@@ -297,3 +297,8 @@
   padding: 12px;
   color: var(--text);
 }
+.sy-size {
+  margin: 6px 0 0;
+  font-size: var(--fs-small);
+  color: var(--muted);
+}

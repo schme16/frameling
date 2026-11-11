@@ -1,0 +1,4 @@
+How the rulers look along the top and left of the canvas (View > Rulers, Ctrl+R). Shown mid-way through dragging a guide out of the top ruler, dark theme on top, light below.
+A (built, default): solid strips in the panel colour with a hairline edge, so the rulers read as part of the app frame; the page's own stretch is lightly shaded on each ruler.
+B: see-through "glass" strips (canvas colour at 55% with a blur), so the canvas seems to run right to the window edge.
+B can be tried in the app with ?debug and __framelingRulerLook('glass') (src/canvas/Rulers.tsx, setRulerLook).

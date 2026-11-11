@@ -5,7 +5,7 @@ import { store, useStore } from '../core/store';
 import { cameraViewOn, parallaxFactor } from '../core/camera';
 import { ActionButton, Tip, Toggle } from '../canvas/controls';
 import { setViewSettings, useViewSettings } from '../canvas/viewSettings';
-import { Num, Section, TweenSection } from '../symbols/PropertiesPanel';
+import { LengthNum, Num, Section, TweenSection } from '../symbols/PropertiesPanel';
 import { addCamera, resetView, setDepth, setView, stageCamera, toggleThroughCamera } from './ops';
 import './camera.css';
 
@@ -73,8 +73,8 @@ export function CameraPanel() {
           <>
             {!onKey && <Tip>Changing it here makes a new camera key on this frame. It glides there if the camera has in-betweens.</Tip>}
             <div className="sy-grid">
-              <Num label="X" value={view.x} onChange={(v) => set('x', { x: v }, 'Move the camera')} title="Middle of the camera's view, across" />
-              <Num label="Y" value={view.y} onChange={(v) => set('y', { y: v }, 'Move the camera')} title="Middle of the camera's view, down" />
+              <LengthNum label="X" px={view.x} onPx={(v) => set('x', { x: v }, 'Move the camera')} title="Middle of the camera's view, across" />
+              <LengthNum label="Y" px={view.y} onPx={(v) => set('y', { y: v }, 'Move the camera')} title="Middle of the camera's view, down" />
               <Num label="Zoom" suffix="%" value={view.zoom * 100} step={5} onChange={(v) => set('zoom', { zoom: v / 100 }, 'Zoom the camera')} title="200% shows half as much, twice as big" />
               <Num label="Turn" suffix="°" value={view.rotation} onChange={(v) => set('rot', { rotation: v }, 'Turn the camera')} title="Tilts the camera (rotation), in degrees" />
             </div>

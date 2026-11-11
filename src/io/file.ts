@@ -255,7 +255,18 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
   if (tileset) doc.tileset = tileset;
   const audio = unpackAudio(raw.audio, entries, warnings);
   if (audio) doc.audio = audio;
+  const guides = readGuides(raw.guides);
+  if (guides) doc.guides = guides;
   return doc;
+}
+
+/** Guides, keeping only well-formed ones. */
+function readGuides(raw: unknown): Doc['guides'] {
+  if (!Array.isArray(raw)) return undefined;
+  const out = raw
+    .filter((g: any) => isObj(g) && (g.axis === 'x' || g.axis === 'y') && typeof g.at === 'number' && Number.isFinite(g.at))
+    .map((g: any) => ({ id: typeof g.id === 'string' && g.id ? g.id : 'g' + Math.random().toString(36).slice(2, 10), axis: g.axis as 'x' | 'y', at: g.at as number }));
+  return out.length ? out : undefined;
 }
 
 /** Symbols, if the file has any. One that can't be read is dropped (its instances then show nothing). */

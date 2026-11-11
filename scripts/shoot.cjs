@@ -11,7 +11,8 @@
 //   {"key": "g", "mods": ["control"]}   press a key (Electron keyCode names)
 //   {"wait": 300}                       wait in ms
 //   {"shot": "name"}                    save an extra screenshot mid-way
-// Run `npm run build` first.
+//   {"down": [x, y]} / {"move": [x, y]} / {"up": [x, y]}   press, move (held if pressed) and release, for shots mid-drag
+// SHOT_LOG=1 also prints console errors as they happen (handy when a step hangs). Run `npm run build` first.
 const { app, BrowserWindow, ipcMain } = require('electron');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -58,6 +59,13 @@ async function runSteps(win, steps) {
       if (s.key.length === 1) send({ type: 'char', keyCode: s.key, modifiers });
       send({ type: 'keyUp', keyCode: s.key, modifiers });
       await sleep(80);
+    } else if (s.down || s.move || s.up) {
+      const [x, y] = s.down || s.move || s.up;
+      const type = s.down ? 'mouseDown' : s.up ? 'mouseUp' : 'mouseMove';
+      send({ type, x, y, button: 'left', clickCount: 1, modifiers: s.move && runSteps.held ? ['leftButtonDown'] : [] });
+      if (s.down) runSteps.held = true;
+      if (s.up) runSteps.held = false;
+      await sleep(40);
     } else if (s.shot) {
       fs.writeFileSync(path.join(outDir, `${s.shot}.png`), (await wc.capturePage()).toPNG());
     }
@@ -98,7 +106,7 @@ app.whenReady().then(async () => {
     const logs = [];
     win.webContents.on('console-message', (e) => {
       const m = e.message ?? e;
-      if (e.level === 'error' || e.level === 3) logs.push(String(m));
+      if (e.level === 'error' || e.level === 3) { logs.push(String(m)); if (process.env.SHOT_LOG) console.log('LOG', String(m)); }
     });
     await win.loadFile(path.join(__dirname, '../dist/renderer/index.html'), { query: { debug: '1' } });
     await win.webContents.executeJavaScript(`
