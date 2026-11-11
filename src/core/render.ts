@@ -160,6 +160,23 @@ export function drawDrawing(g: Ctx2D, d: Drawing, pixelSize = 1): void {
   }
 }
 
+// One buffer for faded layers, reused for every call (an export draws thousands of frames, and a playing canvas
+// draws a faded layer per frame). Layers are drawn one after another, never nested, so a single buffer is enough.
+let fadeBuffer: OffscreenCanvas | null = null;
+/** How many buffers were allocated, for tests. */
+export const fadeStats = { allocated: 0 };
+
+function fadeScratch(w: number, h: number): { c: OffscreenCanvas; g: OffscreenCanvasRenderingContext2D } {
+  if (!fadeBuffer || fadeBuffer.width !== w || fadeBuffer.height !== h) {
+    fadeBuffer = new OffscreenCanvas(w, h);
+    fadeStats.allocated++;
+  }
+  const g = fadeBuffer.getContext('2d')!;
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.clearRect(0, 0, w, h);
+  return { c: fadeBuffer, g };
+}
+
 /** Draws a layer's drawing at a frame, with the layer's opacity. */
 export function drawLayerAt(g: Ctx2D, doc: Doc, layer: Layer, frame: number): void {
   const d = drawingAt(doc, layer, frame);
@@ -172,8 +189,7 @@ export function drawLayerAt(g: Ctx2D, doc: Doc, layer: Layer, frame: number): vo
   // is drawn into a buffer the size of the target canvas with the same transform, then composited 1:1, so a zoomed
   // or scaled render stays sharp.
   const target = g.canvas as { width: number; height: number };
-  const c = new OffscreenCanvas(Math.max(1, target.width), Math.max(1, target.height));
-  const lg = c.getContext('2d')!;
+  const { c, g: lg } = fadeScratch(Math.max(1, target.width), Math.max(1, target.height));
   lg.setTransform(g.getTransform());
   lg.imageSmoothingEnabled = g.imageSmoothingEnabled;
   drawDrawing(lg, d, layer.kind === 'pixel' ? layer.pixelSize : 1);

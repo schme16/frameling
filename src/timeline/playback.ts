@@ -46,6 +46,30 @@ export function playRange(doc: Doc, clipId: string | null = tl().clipId): { star
   return { start, end: Math.max(start, Math.min(last, clip.end)), clipLoops: clip.loop };
 }
 
+/** The next `count` frames playback will show after `from`, in order, following the loop (or stopping at the end). */
+export function upcomingFrames(doc: Doc, from: number, count: number, loop: boolean, clipId: string | null = tl().clipId): number[] {
+  const r = playRange(doc, clipId);
+  const len = r.end - r.start + 1;
+  const out: number[] = [];
+  if (from < r.start || from > r.end) return out;
+  for (let k = 1; k <= Math.min(count, len - 1 + (loop ? 1 : 0)); k++) {
+    const i = from - r.start + k;
+    if (i >= len && !(loop && r.clipLoops)) break;
+    out.push(r.start + (i % len));
+  }
+  return out;
+}
+
+/** Frames next to `frame` (nearest first, alternating forward and back), for pre-drawing while paused. */
+export function neighbourFrames(frame: number, length: number, reach: number): number[] {
+  const out: number[] = [];
+  for (let k = 1; k <= reach; k++) {
+    if (frame + k < length) out.push(frame + k);
+    if (frame - k >= 0) out.push(frame - k);
+  }
+  return out;
+}
+
 interface Run {
   handle: unknown;
   /** Clock time the current stretch started, and where in the range it started (0 = first frame of the range). */

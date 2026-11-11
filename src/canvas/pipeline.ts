@@ -10,7 +10,7 @@
  */
 import type { Doc, Drawing, Layer } from '../core/format';
 import { drawingAt } from '../core/doc';
-import { drawDrawing } from '../core/render';
+import { drawDrawing, drawShape, pixelCanvas } from '../core/render';
 import type { OnionSettings } from '../core/store';
 import type { Live } from './controller';
 import type { Rect } from './view';
@@ -38,7 +38,7 @@ function makeCanvas(w: number, h: number): Canvas2 {
 const ctxOf = (c: Canvas2) => c.getContext('2d') as CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 
 // Total bitmap memory we'll hold (in pixels, 4 bytes each), across all layers and frames.
-const BUDGET_PIXELS = 40_000_000;
+export const BUDGET_PIXELS = 40_000_000;
 
 interface Entry {
   drawing: Drawing;
@@ -57,11 +57,43 @@ export class BitmapCache {
   private tick = 0;
   /** How many bitmaps were rasterised (for tests and tuning). */
   builds = 0;
+  /** How many of those only drew the shapes added to an earlier bitmap. */
+  appends = 0;
+  /** How many lookups found a ready bitmap. */
+  hits = 0;
+  /** Bitmaps thrown out to stay inside the budget. */
+  evictions = 0;
 
   find(d: Drawing, pixelSize: number, w: number, h: number): Entry | undefined {
     const e = this.map.get(d)?.find((x) => x.pixelSize === pixelSize && x.w === w && x.h === h);
-    if (e) e.used = ++this.tick;
+    if (e) {
+      this.bump(e);
+      this.hits++;
+    }
     return e;
+  }
+
+  /** Is there a ready bitmap (without counting a hit or making it the freshest)? */
+  has(d: Drawing, pixelSize: number, w: number, h: number): boolean {
+    return !!this.map.get(d)?.some((x) => x.pixelSize === pixelSize && x.w === w && x.h === h);
+  }
+
+  /** Makes a bitmap the freshest, so it's the last to go when memory runs out. */
+  touch(d: Drawing, pixelSize: number, w: number, h: number): void {
+    const e = this.map.get(d)?.find((x) => x.pixelSize === pixelSize && x.w === w && x.h === h);
+    if (e) this.bump(e);
+  }
+
+  /** Moves a bitmap to the fresh end of the eviction order (a Set iterates in insertion order). */
+  private bump(e: Entry): void {
+    e.used = ++this.tick;
+    this.all.delete(e);
+    this.all.add(e);
+  }
+
+  /** Bitmaps held, and the pixels they take. */
+  get size(): { entries: number; pixels: number } {
+    return { entries: this.all.size, pixels: this.total };
   }
 
   /** Any bitmap of this drawing, whatever its scale (the freshest). */
@@ -71,11 +103,23 @@ export class BitmapCache {
     return list.reduce((a, b) => (b.used > a.used ? b : a));
   }
 
-  build(doc: Doc, d: Drawing, pixelSize: number, w: number, h: number): Entry {
+  /**
+   * Rasterises a drawing into a new bitmap. With `from` (the bitmap of an earlier version of this drawing whose
+   * shapes are a prefix of this one's) only the shapes added since are drawn on top of a copy, which is the same
+   * sequence of paint operations the full draw would do, minus the repeats. That's what a new brush stroke is.
+   */
+  build(doc: Doc, d: Drawing, pixelSize: number, w: number, h: number, from?: Entry): Entry {
     const canvas = makeCanvas(w, h);
     const g = ctxOf(canvas);
-    g.setTransform(w / doc.width, 0, 0, h / doc.height, 0, 0);
-    drawDrawing(g, d, pixelSize);
+    if (from && from.drawing.kind === 'vector' && d.kind === 'vector') {
+      g.drawImage(from.canvas, 0, 0);
+      g.setTransform(w / doc.width, 0, 0, h / doc.height, 0, 0);
+      for (let i = from.drawing.shapes.length; i < d.shapes.length; i++) drawShape(g, d.shapes[i]);
+      this.appends++;
+    } else {
+      g.setTransform(w / doc.width, 0, 0, h / doc.height, 0, 0);
+      drawDrawing(g, d, pixelSize);
+    }
     this.builds++;
     let list = this.map.get(d);
     if (!list) this.map.set(d, (list = []));
@@ -103,10 +147,13 @@ export class BitmapCache {
 
   private trim(keep: Entry): void {
     if (this.total <= BUDGET_PIXELS) return;
-    const byAge = [...this.all].sort((a, b) => a.used - b.used);
-    for (const e of byAge) {
+    // Oldest first. Removing while iterating a Set is fine.
+    for (const e of this.all) {
       if (this.total <= BUDGET_PIXELS) break;
-      if (e !== keep) this.remove(e);
+      if (e !== keep) {
+        this.remove(e);
+        this.evictions++;
+      }
     }
   }
 
@@ -135,6 +182,54 @@ export class FramePainter {
   private onionCache: OnionEntry[] = [];
   private scratch: Canvas2 | null = null;
   private scratch2: Canvas2 | null = null;
+  /** The vector drawing each layer last painted from the cache, to spot a stroke being added. */
+  private lastVector = new Map<string, Drawing>();
+
+  /** Whole-stage bitmaps only make sense while they're no bigger than the screen. */
+  private isCacheable(rect: Rect, width: number, height: number): boolean {
+    return rect.w * rect.h <= Math.max(2_000_000, width * height * 1.25);
+  }
+
+  /** How many frames ahead of the playhead fit in about half the bitmap budget (at most 48). */
+  warmDepth(doc: Doc, rect: Rect): number {
+    const layers = doc.layers.filter((l) => l.visible && l.kind === 'vector').length;
+    if (!layers) return 0;
+    return Math.max(0, Math.min(48, Math.floor((BUDGET_PIXELS * 0.5) / (layers * rect.w * rect.h))));
+  }
+
+  /**
+   * Rasterises the bitmaps these frames will need, nearest first, so playback only has to blit them. Stops at the
+   * deadline (performance.now() time) and returns true when every frame was ready. Never draws on screen.
+   */
+  warm(doc: Doc, frames: number[], rect: Rect, width: number, height: number, deadline: number): boolean {
+    if (!this.isCacheable(rect, width, height)) return true;
+    let done = true;
+    outer: for (const f of frames) {
+      for (const layer of doc.layers) {
+        if (!layer.visible) continue;
+        const d = drawingAt(doc, layer, f);
+        if (!d) continue;
+        if (d.kind === 'pixel') {
+          pixelCanvas(d);
+          continue;
+        }
+        if (this.cache.has(d, 1, rect.w, rect.h)) continue;
+        if (performance.now() >= deadline) {
+          done = false;
+          break outer;
+        }
+        this.cache.build(doc, d, 1, rect.w, rect.h);
+      }
+    }
+    // Furthest first, so the frames about to play are the freshest and the last to be evicted.
+    for (let i = frames.length - 1; i >= 0; i--) {
+      for (const layer of doc.layers) {
+        const d = layer.visible ? drawingAt(doc, layer, frames[i]) : undefined;
+        if (d?.kind === 'vector') this.cache.touch(d, 1, rect.w, rect.h);
+      }
+    }
+    return done;
+  }
 
   /** Draws the stage content (onion skin and layers). Returns false if it used stale bitmaps and wants another go. */
   paint(g: CanvasRenderingContext2D, p: FrameParams): boolean {
@@ -147,7 +242,7 @@ export class FramePainter {
     g.clip();
 
     // Whole-stage bitmaps only make sense while they're no bigger than the screen.
-    const cacheable = rect.w * rect.h <= Math.max(2_000_000, p.width * p.height * 1.25);
+    const cacheable = this.isCacheable(rect, p.width, p.height);
     let settled = true;
 
     if (p.onion.enabled && !p.playing) this.paintOnion(g, p, cacheable);
@@ -182,10 +277,11 @@ export class FramePainter {
           }
         }
         if (!e) {
-          e = this.cache.build(doc, drawing, pixelSize, rect.w, rect.h);
+          e = this.cache.build(doc, drawing, pixelSize, rect.w, rect.h, this.growthSource(layer.id, drawing, pixelSize, rect.w, rect.h));
           // The old scales of this drawing are dead weight once a crisp one exists.
           this.cache.dropOtherScales(drawing, rect.w, rect.h);
         }
+        this.lastVector.set(layer.id, drawing);
         g.globalAlpha = layer.opacity;
         g.drawImage(e.canvas, rect.x, rect.y);
         g.globalAlpha = 1;
@@ -195,6 +291,19 @@ export class FramePainter {
     }
     g.restore();
     return settled;
+  }
+
+  /**
+   * The bitmap this layer showed last, if the new drawing is that one plus more shapes on top (the same shape
+   * objects in the same order, which immer's structural sharing keeps for everything untouched).
+   */
+  private growthSource(layerId: string, d: Drawing, pixelSize: number, w: number, h: number): Entry | undefined {
+    const prev = this.lastVector.get(layerId);
+    if (!prev || prev === d || prev.kind !== 'vector' || d.kind !== 'vector') return undefined;
+    const n = prev.shapes.length;
+    if (!n || d.shapes.length <= n) return undefined;
+    for (let i = 0; i < n; i++) if (prev.shapes[i] !== d.shapes[i]) return undefined;
+    return this.cache.find(prev, pixelSize, w, h);
   }
 
   private paintDirect(g: CanvasRenderingContext2D, p: FrameParams, drawing: Drawing, layer: Layer, pixelSize: number): void {
@@ -240,7 +349,7 @@ export class FramePainter {
       const f = frame + off;
       const items: OnionItem[] = [];
       for (const layer of doc.layers) {
-        if (!layer.visible) continue;
+        if (!layer.visible || layer.onion === false) continue;
         const d = drawingAt(doc, layer, f);
         // A layer that's the same drawing here as on the current frame (a held background) isn't a ghost of anything.
         if (!d || d === drawingAt(doc, layer, frame)) continue;
@@ -266,8 +375,20 @@ export class FramePainter {
     }
   }
 
-  private drawOnionItems(g: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, items: OnionItem[], color: string, tint: boolean, w: number, h: number): void {
-    for (const it of items) drawDrawing(g, it.drawing, it.pixelSize);
+  /**
+   * With `doc` (the stage-sized bitmap path) a vector drawing is blitted from its cached layer bitmap, the same one
+   * the frame uses when it's the current one, instead of rasterising every stroke again. Without it, drawn directly.
+   */
+  private drawOnionItems(g: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, items: OnionItem[], color: string, tint: boolean, w: number, h: number, doc?: Doc): void {
+    for (const it of items) {
+      if (doc && it.drawing.kind === 'vector') {
+        const e = this.cache.find(it.drawing, it.pixelSize, w, h) ?? this.cache.build(doc, it.drawing, it.pixelSize, w, h);
+        g.save();
+        g.setTransform(1, 0, 0, 1, 0, 0);
+        g.drawImage(e.canvas, 0, 0);
+        g.restore();
+      } else drawDrawing(g, it.drawing, it.pixelSize);
+    }
     if (tint) {
       g.save();
       g.setTransform(1, 0, 0, 1, 0, 0);
@@ -291,7 +412,7 @@ export class FramePainter {
     const canvas = makeCanvas(w, h);
     const g = ctxOf(canvas);
     g.setTransform(w / doc.width, 0, 0, h / doc.height, 0, 0);
-    this.drawOnionItems(g, items, color, tint, w, h);
+    this.drawOnionItems(g, items, color, tint, w, h, doc);
     this.onionCache.push({ items, color, tint, w, h, canvas });
     if (this.onionCache.length > 8) this.onionCache.shift();
     return canvas;
@@ -301,5 +422,6 @@ export class FramePainter {
     this.cache.clear();
     this.onionCache = [];
     this.scratch = this.scratch2 = null;
+    this.lastVector.clear();
   }
 }

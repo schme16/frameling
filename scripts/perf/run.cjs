@@ -1,0 +1,514 @@
+// Hidden-Electron performance harness for Frameling. Real input events, real GPU canvas, numbers out as JSON.
+//
+//   npx electron scripts/perf/run.cjs --out scripts/perf/results/before.json [--only draw,playback] [--label before]
+//
+// Needs a build first (`npm run build`), or point PERF_RENDERER at another renderer build directory. See README.md.
+const { app, BrowserWindow, ipcMain } = require('electron');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
+
+const args = process.argv.slice(2);
+const opt = (name, fallback) => {
+  const i = args.indexOf('--' + name);
+  return i >= 0 && args[i + 1] && !args[i + 1].startsWith('--') ? args[i + 1] : fallback;
+};
+const outFile = opt('out', null);
+const label = opt('label', path.basename(outFile || 'run', '.json'));
+const only = opt('only', '') ? opt('only', '').split(',') : null;
+const rendererDir = process.env.PERF_RENDERER || path.join(__dirname, '../../dist/renderer');
+const WIN_W = 1400;
+const WIN_H = 900;
+
+app.commandLine.appendSwitch('enable-precise-memory-info');
+app.commandLine.appendSwitch('js-flags', '--expose-gc');
+app.commandLine.appendSwitch('disable-renderer-backgrounding');
+app.commandLine.appendSwitch('disable-background-timer-throttling');
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+function stats(xs) {
+  if (!xs.length) return { n: 0 };
+  const s = [...xs].sort((a, b) => a - b);
+  const q = (p) => s[Math.min(s.length - 1, Math.floor(p * s.length))];
+  const mean = s.reduce((a, b) => a + b, 0) / s.length;
+  const r = (v) => Math.round(v * 100) / 100;
+  return { n: s.length, mean: r(mean), p50: r(q(0.5)), p95: r(q(0.95)), p99: r(q(0.99)), max: r(s[s.length - 1]) };
+}
+
+// Runs inside the page: builds big documents, records rAF timestamps, and reads the ?perf collector.
+const PRELUDE = `
+window.__h = (() => {
+  const prng = (seed) => () => {
+    seed |= 0; seed = (seed + 0x6d2b79f5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  let idn = 0;
+  const id = (p) => p + '-' + ++idn;
+  const BRUSH = { size: 8, thinning: 0.6, smoothing: 0.5, streamline: 0.5, taperStart: 0, taperEnd: 0, capStart: true, capEnd: true };
+  const COLORS = ['#1d1b26', '#ff6f91', '#5ab8ff', '#4fd1a5', '#ffc94a', '#9b7bff'];
+  function stroke(r, w, h, n) {
+    let x = r() * w, y = r() * h, a = r() * 6.28;
+    const points = [];
+    for (let i = 0; i < n; i++) {
+      points.push({ x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10, p: 0.25 + 0.6 * r() });
+      a += (r() - 0.5) * 0.9;
+      const step = 5 + r() * 9;
+      x = Math.min(w - 2, Math.max(2, x + Math.cos(a) * step));
+      y = Math.min(h - 2, Math.max(2, y + Math.sin(a) * step));
+    }
+    return { id: id('sh'), type: 'stroke', points, brush: BRUSH, color: COLORS[Math.floor(r() * COLORS.length)], opacity: 1 };
+  }
+  // layers x frames, each frame a different drawing of strokesPer strokes (or one cel when frames is 1).
+  function mkDoc({ width = 1280, height = 720, fps = 24, frames = 1, layers = 1, strokesPer = 50, pts = 12, seed = 7, opacity = 1 }) {
+    const r = prng(seed);
+    const doc = { format: 'frameling', version: 1, id: id('doc'), name: 'perf', width, height, fps, length: frames, background: '#ffffff', layers: [], drawings: {}, clips: [], markers: [], swatches: [] };
+    for (let l = 0; l < layers; l++) {
+      const layer = { id: id('l'), name: 'L' + l, kind: 'vector', visible: true, locked: false, opacity, cels: [] };
+      for (let f = 0; f < frames; f++) {
+        const d = { id: id('dr'), kind: 'vector', shapes: [] };
+        for (let s = 0; s < strokesPer; s++) d.shapes.push(stroke(r, width, height, pts));
+        doc.drawings[d.id] = d;
+        layer.cels.push({ id: id('c'), start: f, length: 1, drawingId: d.id });
+      }
+      doc.layers.push(layer);
+    }
+    return doc;
+  }
+  let raf = null;
+  function startRaf() {
+    const ts = [];
+    const loop = (t) => { ts.push(t); raf.id = requestAnimationFrame(loop); };
+    raf = { ts, id: requestAnimationFrame(loop) };
+  }
+  function stopRaf() {
+    cancelAnimationFrame(raf.id);
+    const out = raf.ts; raf = null; return out;
+  }
+  let longs = [];
+  try {
+    new PerformanceObserver((l) => { for (const e of l.getEntries()) longs.push({ t: e.startTime, d: e.duration }); }).observe({ entryTypes: ['longtask'] });
+  } catch {}
+  const takeLongs = () => { const o = longs; longs = []; return o; };
+  const raf2 = () => new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res)));
+  const heap = async () => { gc(); await new Promise((r) => setTimeout(r, 50)); gc(); return performance.memory.usedJSHeapSize; };
+  return { mkDoc, startRaf, stopRaf, takeLongs, raf2, heap };
+})();
+true;
+`;
+
+async function main() {
+  ipcMain.handle('app:launchFile', () => null);
+  ipcMain.handle('recent:list', () => []);
+  ipcMain.handle('autosave:read', () => null);
+  await app.whenReady();
+  // A window that is truly hidden gets one rAF a second with this app (nothing is presented), which makes every
+  // number meaningless. So the window is mapped but parked off-screen and unfocusable: nothing appears, nothing
+  // takes focus, and frames are produced at the display's rate. PERF_HIDDEN=1 forces a truly hidden one.
+  const hidden = process.env.PERF_HIDDEN === '1';
+  const onScreen = process.env.PERF_SHOW === '1';
+  const win = new BrowserWindow({
+    width: WIN_W,
+    height: WIN_H,
+    x: onScreen ? undefined : -4000,
+    y: onScreen ? undefined : 0,
+    show: false,
+    focusable: onScreen,
+    skipTaskbar: !onScreen,
+    paintWhenInitiallyHidden: true,
+    webPreferences: {
+      preload: path.join(__dirname, '../../dist/preload/preload.cjs'),
+      contextIsolation: true,
+      sandbox: true,
+      additionalArguments: ['--frameling-version=perf'],
+      backgroundThrottling: false,
+    },
+  });
+  const wc = win.webContents;
+  const errors = [];
+  wc.on('console-message', (e) => {
+    if (e.level === 'error' || e.level === 3) errors.push(String(e.message ?? e));
+  });
+  const js = (code) => wc.executeJavaScript(code);
+  const send = (e) => wc.sendInputEvent(e);
+
+  // Emulate a slower machine (CPU only; the GPU is what it is): PERF_CPU_SLOWDOWN=4 means four times slower JS.
+  const slowdown = Number(process.env.PERF_CPU_SLOWDOWN || 1);
+  const dbg = (m) => process.env.PERF_DEBUG && console.error('[perf] ' + m);
+  async function load() {
+    dbg('load');
+    await win.loadFile(path.join(rendererDir, 'index.html'), { query: { debug: '1', perf: '1' } });
+    if (!hidden) (onScreen ? win.show() : win.showInactive());
+    if (slowdown > 1) {
+      // Needs a page to talk to, so it's applied after each load.
+      if (!wc.debugger.isAttached()) wc.debugger.attach('1.3');
+      await wc.debugger.sendCommand('Emulation.setCPUThrottlingRate', { rate: slowdown });
+    }
+    dbg('loaded');
+    await sleep(900);
+    await js(PRELUDE);
+    dbg('prelude');
+    // The welcome screen (if any) is in the way: a fresh blank document and a plain canvas.
+    await js(`(() => { const f = window.__frameling; f.store().load(window.__h.mkDoc({ strokesPer: 0, frames: 1 })); f.store().setUi({ tool: 'brush' }); })()`);
+    await sleep(300);
+    // The welcome sheet covers the canvas: close it, then make sure the canvas really is what's under the pointer.
+    for (let i = 0; i < 3; i++) {
+      send({ type: 'keyDown', keyCode: 'Escape' });
+      send({ type: 'keyUp', keyCode: 'Escape' });
+      await sleep(150);
+    }
+    const covered = await js(`(() => { const r = document.querySelector('.cv-root').getBoundingClientRect(); const el = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return el && el.closest('.cv-root') ? '' : (el && el.className) || 'nothing'; })()`);
+    if (covered) throw new Error('something covers the canvas: ' + covered);
+  }
+
+  /** Puts a document in, fits it, and waits for the first paint. */
+  async function setDoc(spec) {
+    await js(`(() => { const f = window.__frameling; f.store().load(window.__h.mkDoc(${JSON.stringify(spec)})); f.store().setUi({ tool: 'brush', playing: false, frame: 0 }); window.__framelingPerf.reset(); })()`);
+    await js('window.__h.raf2()');
+    await sleep(200);
+  }
+
+  const canvasBox = () => js(`(() => { const r = document.querySelector('.cv-root').getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; })()`);
+
+  // A long wiggly stroke fully inside the canvas; the points are in window coordinates.
+  function wiggle(box, n, margin = 40) {
+    const pts = [];
+    const cx = box.x + box.w / 2;
+    const cy = box.y + box.h / 2;
+    const rx = box.w / 2 - margin;
+    const ry = box.h / 2 - margin;
+    for (let i = 0; i < n; i++) {
+      const t = i / n;
+      const a = t * Math.PI * 2 * 5;
+      const k = 0.35 + 0.65 * t;
+      pts.push([Math.round(cx + Math.cos(a) * rx * k), Math.round(cy + Math.sin(a * 1.07) * ry * k)]);
+    }
+    return pts;
+  }
+
+  async function strokeThrough(pts, { perTick = 4, tickMs = 16 } = {}) {
+    send({ type: 'mouseMove', x: pts[0][0], y: pts[0][1] });
+    send({ type: 'mouseDown', x: pts[0][0], y: pts[0][1], button: 'left', clickCount: 1 });
+    await sleep(tickMs);
+    for (let i = 1; i < pts.length; i += perTick) {
+      for (let k = i; k < Math.min(pts.length, i + perTick); k++) send({ type: 'mouseMove', x: pts[k][0], y: pts[k][1], modifiers: ['leftButtonDown'] });
+      await sleep(tickMs);
+    }
+    const l = pts[pts.length - 1];
+    send({ type: 'mouseUp', x: l[0], y: l[1], button: 'left', clickCount: 1 });
+  }
+
+  const readBag = () =>
+    js(`(() => { const b = window.__framelingPerf; return { latency: b.latency, overlayMs: b.overlayMs, mainMs: b.mainMs, painted: b.painted, builds: b.painter ? b.painter.cache.builds : null }; })()`);
+  const deltas = (ts) => ts.slice(1).map((t, i) => t - ts[i]);
+
+  const results = {};
+
+  // ------------------------------------------------------------------ drawing
+  async function drawLong() {
+    const out = {};
+    for (const [name, spec] of [
+      ['empty', { strokesPer: 0 }],
+      ['strokes300', { strokesPer: 300, pts: 30 }],
+      ['strokes3000', { strokesPer: 3000, pts: 30 }],
+    ]) {
+      await setDoc({ frames: 1, layers: 1, ...spec });
+      const box = await canvasBox();
+      const pts = wiggle(box, 2000);
+      await js('window.__h.takeLongs(); window.__framelingPerf.reset(); window.__h.startRaf()');
+      await strokeThrough(pts);
+      await sleep(200);
+      const raf = await js('window.__h.stopRaf()');
+      const longs = await js('window.__h.takeLongs()');
+      const bag = await readBag();
+      const q = Math.floor(bag.latency.length / 4);
+      // The moment of lifting the pen: the document changes and the main canvas repaints (the hitch after a stroke).
+      out[name] = {
+        rafDelta: stats(deltas(raf)),
+        latencyAll: stats(bag.latency),
+        latencyFirstQuarter: stats(bag.latency.slice(0, q)),
+        latencyLastQuarter: stats(bag.latency.slice(-q)),
+        overlayDrawMs: stats(bag.overlayMs),
+        overlayDrawMsLastQuarter: stats(bag.overlayMs.slice(-Math.floor(bag.overlayMs.length / 4))),
+        mainDrawMs: stats(bag.mainMs),
+        mainDrawMsMax: bag.mainMs.length ? Math.max(...bag.mainMs) : 0,
+        longTasks: longs.length,
+        longTaskMaxMs: longs.length ? Math.round(Math.max(...longs.map((l) => l.d))) : 0,
+        bitmapBuilds: bag.builds,
+      };
+    }
+    // One short stroke at a steady one-event-per-frame pace on the busy document: plain brush latency.
+    await setDoc({ frames: 1, layers: 1, strokesPer: 300, pts: 30 });
+    const box = await canvasBox();
+    await js('window.__framelingPerf.reset()');
+    await strokeThrough(wiggle(box, 240), { perTick: 1 });
+    await sleep(200);
+    const bag = await readBag();
+    out.steadyLatencyStrokes300 = stats(bag.latency);
+    return out;
+  }
+
+  // ------------------------------------------------------------------ playback
+  async function playback() {
+    const out = {};
+    await setDoc({ frames: 600, layers: 5, strokesPer: 50, pts: 10, fps: 24 });
+    for (const onion of [false, true]) {
+      await js(`window.__frameling.store().setUi({ frame: 0, playing: false, onion: { ...window.__frameling.store().get().ui.onion, enabled: ${onion} } })`);
+      await js('window.__h.raf2()');
+      await sleep(300);
+      await js('window.__h.takeLongs(); window.__framelingPerf.reset(); window.__h.startRaf()');
+      const t0 = Date.now();
+      await js(`window.__frameling.run('timeline.play')`);
+      // 8 seconds of playback is 192 frames at 24 fps.
+      await sleep(8000);
+      await js(`window.__frameling.run('timeline.play')`);
+      const raf = await js('window.__h.stopRaf()');
+      const longs = await js('window.__h.takeLongs()');
+      const bag = await readBag();
+      const elapsed = (Date.now() - t0) / 1000;
+      const painted = bag.painted;
+      const dt = deltas(painted.map((p) => p.t));
+      const skipped = painted.slice(1).reduce((n, p, i) => n + Math.max(0, p.frame - painted[i].frame - 1), 0);
+      const ideal = 1000 / 24;
+      out[onion ? 'onionOn' : 'onionOff'] = {
+        secondsPlayed: Math.round(elapsed * 10) / 10,
+        framesPainted: painted.length,
+        framesSkipped: skipped,
+        paintIntervalMs: stats(dt),
+        latePaints: dt.filter((d) => d > ideal * 1.5).length,
+        paintMs: stats(bag.mainMs),
+        rafDelta: stats(deltas(raf)),
+        longTasks: longs.length,
+        longTaskMaxMs: longs.length ? Math.round(Math.max(...longs.map((l) => l.d))) : 0,
+        bitmapBuilds: bag.builds,
+      };
+      await js(`window.__frameling.store().setUi({ playing: false })`);
+    }
+    // Second lap over frames already seen once: what a warm cache buys.
+    await js(`window.__frameling.store().setUi({ frame: 0, playing: false })`);
+    await js('window.__h.raf2()');
+    await js('window.__framelingPerf.reset(); window.__h.startRaf()');
+    await js(`window.__frameling.run('timeline.play')`);
+    await sleep(4000);
+    await js(`window.__frameling.run('timeline.play')`);
+    await js('window.__h.stopRaf()');
+    {
+      const bag = await readBag();
+      const dt = deltas(bag.painted.map((p) => p.t));
+      out.replayFirstSeconds = { framesPainted: bag.painted.length, paintIntervalMs: stats(dt), latePaints: dt.filter((d) => d > 1000 / 24 * 1.5).length, paintMs: stats(bag.mainMs) };
+    }
+    // Scrubbing with onion skin on: each step shows the frame plus its ghosts.
+    await js(`window.__frameling.store().setUi({ frame: 300, playing: false, onion: { ...window.__frameling.store().get().ui.onion, enabled: true } })`);
+    await js('window.__h.raf2()');
+    await js('window.__framelingPerf.reset(); window.__h.startRaf()');
+    for (let f = 301; f < 361; f++) {
+      await js(`window.__frameling.store().setUi({ frame: ${f} })`);
+      await sleep(33);
+    }
+    await js('window.__h.stopRaf()');
+    {
+      const bag = await readBag();
+      out.scrubWithOnion60 = { paintMs: stats(bag.mainMs), bitmapBuilds: bag.builds };
+    }
+    // Stepping through frames the way a person does (a key press every ~150 ms, onion skin off), so a paused
+    // canvas has idle time between steps. What the paint on each step costs.
+    await js(`window.__frameling.store().setUi({ frame: 400, playing: false, onion: { ...window.__frameling.store().get().ui.onion, enabled: false } })`);
+    await js('window.__h.raf2()');
+    await sleep(400);
+    await js('window.__framelingPerf.reset()');
+    for (let f = 401; f < 461; f++) {
+      await js(`window.__frameling.store().setUi({ frame: ${f} })`);
+      await sleep(150);
+    }
+    {
+      const bag = await readBag();
+      out.stepPaused60 = { paintMs: stats(bag.mainMs), bitmapBuilds: bag.builds };
+    }
+    // What one playhead move costs everything that listens to the store (React panels, menus), without any drawing.
+    out.storeFrameUpdateMs = stats(
+      await js(`(async () => {
+        const s = window.__frameling.store(); const xs = [];
+        for (let i = 0; i < 120; i++) {
+          const t = performance.now();
+          s.setUi({ frame: 100 + (i % 50) });
+          await Promise.resolve();
+          xs.push(performance.now() - t);
+          await new Promise((r) => requestAnimationFrame(r));
+        }
+        return xs;
+      })()`),
+    );
+    await js(`window.__frameling.store().setUi({ onion: { ...window.__frameling.store().get().ui.onion, enabled: false } })`);
+    return out;
+  }
+
+  // ------------------------------------------------------------------ templates
+  async function templates() {
+    const out = {};
+    const ids = await js(`window.__framelingPerf.templates.map((t) => t.id)`);
+    for (const id of ids) {
+      const runs = [];
+      for (let k = 0; k < 3; k++) {
+        const r = await js(`(async () => {
+          const f = window.__frameling; const b = window.__framelingPerf;
+          f.store().load(window.__h.mkDoc({ strokesPer: 0 }));
+          await window.__h.raf2();
+          b.reset();
+          const t = b.templates.find((x) => x.id === ${JSON.stringify(id)});
+          const t0 = performance.now();
+          const doc = t.make();
+          const t1 = performance.now();
+          f.store().load(doc);
+          // First main paint after the load, then the next presented frame.
+          await new Promise((res) => { const poll = () => (b.painted.length ? res() : requestAnimationFrame(poll)); poll(); });
+          const t2 = b.painted[0].t;
+          await window.__h.raf2();
+          return { make: t1 - t0, firstPaintAfterLoad: t2 - t1, presented: performance.now() - t1 };
+        })()`);
+        runs.push(r);
+        await sleep(100);
+      }
+      const med = (key) => stats(runs.map((r) => r[key])).p50;
+      out[id] = { makeMs: med('make'), firstPaintMs: med('firstPaintAfterLoad'), presentedMs: med('presented'), coldFirstPaintMs: Math.round(runs[0].firstPaintAfterLoad * 100) / 100 };
+    }
+    return out;
+  }
+
+  // ------------------------------------------------------------------ zoom and pan
+  async function zoomPan() {
+    const out = {};
+    for (const [name, spec] of [
+      ['strokes300', { frames: 1, layers: 1, strokesPer: 300, pts: 30 }],
+      ['layers5x50', { frames: 1, layers: 5, strokesPer: 50, pts: 12 }],
+    ]) {
+      await setDoc(spec);
+      const box = await canvasBox();
+      const cx = Math.round(box.x + box.w / 2);
+      const cy = Math.round(box.y + box.h / 2);
+      // Zoom: ctrl+wheel in then out, 90 ticks each, about 16 ms apart.
+      await js('window.__framelingPerf.reset(); window.__h.takeLongs(); window.__h.startRaf()');
+      for (const dir of [-1, 1]) {
+        for (let i = 0; i < 90; i++) {
+          send({ type: 'mouseWheel', x: cx, y: cy, deltaX: 0, deltaY: dir * 100, wheelTicksY: dir, modifiers: ['control'], canScroll: true });
+          await sleep(16);
+        }
+      }
+      await sleep(400);
+      let raf = await js('window.__h.stopRaf()');
+      let bag = await readBag();
+      const zoomLongs = await js('window.__h.takeLongs()');
+      out[name + '_zoom'] = { rafDelta: stats(deltas(raf)), mainDrawMs: stats(bag.mainMs), overlayDrawMs: stats(bag.overlayMs), longTasks: zoomLongs.length, bitmapBuilds: bag.builds };
+      // Pan: a middle-button drag in a big circle.
+      await js('window.__framelingPerf.reset(); window.__h.takeLongs(); window.__h.startRaf()');
+      send({ type: 'mouseMove', x: cx, y: cy });
+      send({ type: 'mouseDown', x: cx, y: cy, button: 'middle', clickCount: 1 });
+      for (let i = 0; i < 240; i++) {
+        const a = (i / 240) * Math.PI * 4;
+        send({ type: 'mouseMove', x: Math.round(cx + Math.cos(a) * 160), y: Math.round(cy + Math.sin(a) * 120), modifiers: ['middleButtonDown'] });
+        await sleep(8);
+      }
+      send({ type: 'mouseUp', x: cx, y: cy, button: 'middle', clickCount: 1 });
+      await sleep(300);
+      raf = await js('window.__h.stopRaf()');
+      bag = await readBag();
+      const panLongs = await js('window.__h.takeLongs()');
+      out[name + '_pan'] = { rafDelta: stats(deltas(raf)), mainDrawMs: stats(bag.mainMs), longTasks: panLongs.length, bitmapBuilds: bag.builds };
+      // Pan again at 400%: the stage is bigger than the screen, so nothing can be cached and every frame is drawn live.
+      await js(`window.__frameling.store().setUi({ zoom: 4, panX: -900, panY: -500 })`);
+      await js('window.__h.raf2()');
+      await js('window.__framelingPerf.reset(); window.__h.takeLongs(); window.__h.startRaf()');
+      send({ type: 'mouseMove', x: cx, y: cy });
+      send({ type: 'mouseDown', x: cx, y: cy, button: 'middle', clickCount: 1 });
+      for (let i = 0; i < 240; i++) {
+        const a = (i / 240) * Math.PI * 4;
+        send({ type: 'mouseMove', x: Math.round(cx + Math.cos(a) * 160), y: Math.round(cy + Math.sin(a) * 120), modifiers: ['middleButtonDown'] });
+        await sleep(8);
+      }
+      send({ type: 'mouseUp', x: cx, y: cy, button: 'middle', clickCount: 1 });
+      await sleep(300);
+      raf = await js('window.__h.stopRaf()');
+      bag = await readBag();
+      const zoomedLongs = await js('window.__h.takeLongs()');
+      out[name + '_pan400'] = { rafDelta: stats(deltas(raf)), mainDrawMs: stats(bag.mainMs), longTasks: zoomedLongs.length, bitmapBuilds: bag.builds };
+    }
+    return out;
+  }
+
+  // ------------------------------------------------------------------ memory
+  async function memory() {
+    await setDoc({ frames: 1, layers: 1, strokesPer: 0 });
+    const box = await canvasBox();
+    const heap0 = await js('window.__h.heap()');
+    const r = (a, b) => a + Math.random() * (b - a);
+    for (let i = 0; i < 200; i++) {
+      const cx = box.x + r(120, box.w - 120);
+      const cy = box.y + r(120, box.h - 120);
+      const pts = [];
+      for (let k = 0; k < 24; k++) pts.push([Math.round(cx + Math.cos(k / 4 + i) * (30 + k * 3)), Math.round(cy + Math.sin(k / 4 + i) * (30 + k * 2))]);
+      await strokeThrough(pts, { perTick: 3, tickMs: 6 });
+      await sleep(10);
+    }
+    await sleep(300);
+    const heap200 = await js('window.__h.heap()');
+    const strokes = await js(`window.__frameling.store().get().doc.drawings[Object.keys(window.__frameling.store().get().doc.drawings)[0]].shapes.length`);
+    for (let i = 0; i < 100; i++) {
+      await js('window.__frameling.store().undo()');
+      if (i % 10 === 0) await js('window.__h.raf2()');
+    }
+    await js('window.__h.raf2()');
+    const heapUndo = await js('window.__h.heap()');
+    const mb = (b) => Math.round((b / 1048576) * 10) / 10;
+    const strokesLeft = await js(`(() => { const d = window.__frameling.store().get().doc; const k = Object.keys(d.drawings)[0]; return k ? d.drawings[k].shapes.length : 0; })()`);
+    const cacheSize = await js(`(() => { const c = window.__framelingPerf.painter.cache; return c.size ? { entries: c.size.entries, megapixels: Math.round(c.size.pixels / 1e5) / 10 } : null; })()`);
+    return { bitmapCache: cacheSize, strokesDrawn: strokes, strokesAfterUndo: strokesLeft, heapMBStart: mb(heap0), heapMBAfter200Strokes: mb(heap200), heapMBAfter100Undos: mb(heapUndo), growthMB: mb(heapUndo - heap0) };
+  }
+
+  const tests = { draw: drawLong, playback, templates, zoompan: zoomPan, memory };
+  await load();
+  const gpu = await app.getGPUInfo('basic').catch(() => null);
+  const feat = app.getGPUFeatureStatus();
+  results.env = {
+    label,
+    cpuSlowdown: slowdown,
+    electron: process.versions.electron,
+    chrome: process.versions.chrome,
+    cpu: os.cpus()[0]?.model,
+    window: [WIN_W, WIN_H],
+    gpu2dCanvas: feat.canvas_oop_rasterization ?? feat['2d_canvas'],
+    gpuFeatures: { canvas: feat['2d_canvas'], oop: feat.canvas_oop_rasterization, gpu_compositing: feat.gpu_compositing },
+    gpuDevice: gpu?.gpuDevice?.[0] ? { vendorId: gpu.gpuDevice[0].vendorId, deviceString: gpu.gpuDevice[0].deviceString } : null,
+    dpr: await js('window.devicePixelRatio'),
+    idleRafMs: await js(`new Promise((res) => { const ts = []; const l = (t) => { ts.push(t); if (ts.length < 40) requestAnimationFrame(l); else res((ts[39] - ts[0]) / 39); }; requestAnimationFrame(l); })`),
+    renderer: rendererDir,
+    when: new Date().toISOString(),
+  };
+  for (const [name, fn] of Object.entries(tests)) {
+    if (only && !only.includes(name)) continue;
+    process.stdout.write(`${name}... `);
+    const t = Date.now();
+    try {
+      await load();
+      results[name] = await fn();
+      console.log(`${((Date.now() - t) / 1000).toFixed(1)}s`);
+    } catch (e) {
+      results[name] = { error: String(e && e.stack ? e.stack : e) };
+      console.log('FAILED ' + e);
+    }
+  }
+  results.consoleErrors = errors.slice(0, 20);
+  const json = JSON.stringify(results, null, 2);
+  if (outFile) {
+    fs.mkdirSync(path.dirname(path.resolve(outFile)), { recursive: true });
+    fs.writeFileSync(outFile, json);
+    console.log('wrote ' + outFile);
+  } else console.log(json);
+  win.destroy();
+  app.quit();
+}
+
+main().catch((e) => {
+  console.error(e);
+  app.exit(1);
+});

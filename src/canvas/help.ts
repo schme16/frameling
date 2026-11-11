@@ -8,13 +8,14 @@ registerHelpTopics([
     summary: 'Zoom in to work on details, zoom out to see everything, and slide the page around.',
     keywords: ['zoom', 'pan', 'scroll', 'move', 'fit', 'lost', 'center', 'centre', 'pinch'],
     body: `**Zoom**
-- Hold **Ctrl** (**Cmd** on a Mac) and scroll, or pinch on a trackpad. It zooms towards your pointer, so what you're looking at stays put.
+- Scroll the mouse wheel. It zooms towards your pointer, so what you're looking at stays put. (If you'd rather the wheel slid the page up and down, change **Mouse wheel** in Preferences > Behaviour. Then **Ctrl** (**Cmd** on a Mac) plus the wheel zooms.)
+- Pinch on a trackpad. This always zooms.
 - **Ctrl+=** zooms in and **Ctrl+-** zooms out.
 - **Ctrl+0** fits the whole page in the window. **Ctrl+1** shows it at actual size (100%).
 
 **Move the page**
-- Hold **Space** and drag. This works with any tool.
-- Or use the middle mouse button, the **Hand** tool (H), or just scroll (two fingers on a trackpad).
+- Hold **Space** and drag. This works with any tool. A quick tap of Space, without dragging, plays or pauses your animation (Frameling asks the first time, and you can change it in Preferences > Behaviour).
+- Or use the middle mouse button, the **Hand** tool (H), hold **Shift** and scroll to slide sideways, or scroll with two fingers on a trackpad.
 
 **Lost your page?** Press **Ctrl+0** and it comes straight back.
 

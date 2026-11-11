@@ -3,12 +3,18 @@
  * into tool gestures and view changes, and redraws only when something changed. React mounts it (CanvasView.tsx) but
  * stays out of the hot path: nothing here goes through React state while you draw.
  */
-import { getTool, type Tool, type ToolContext, type ToolPointer } from '../core/registry';
+import { currentChoice, withChoice } from '../core/choices';
+import { getCommand, getTool, type Tool, type ToolContext, type ToolPointer } from '../core/registry';
 import { store, type State } from '../core/store';
 import { activeLayer } from '../tools/edit';
+import './choices';
+import type { SpaceTapMode, WheelMode } from './choices';
 import * as ctl from './controller';
+import { SpaceTap, wheelIntent } from './input';
+import { perf } from './perf';
+import { neighbourFrames, upcomingFrames } from '../timeline/playback';
 import { FramePainter } from './pipeline';
-import { cssVar } from './theme';
+import { cssVar, subscribeTheme } from './theme';
 import { getViewSettings, subscribeViewSettings } from './viewSettings';
 import { screenToDoc, stageDeviceRect, wheelZoomFactor, zoomAbout, type Pt } from './view';
 
@@ -22,6 +28,11 @@ export interface EngineElements {
 type Gesture =
   | { kind: 'pan'; pointerId: number; startX: number; startY: number; panX: number; panY: number }
   | { kind: 'tool'; pointerId: number; tool: Tool; restoreTool: string | null };
+
+/** Spare time per tick that playback may spend rasterising upcoming frames, in ms. */
+export const WARM_SLICE_MS = 5;
+/** A tick whose own paint took longer than this does no look-ahead work. */
+const WARM_SKIP_AFTER_MS = 8;
 
 /** The pixel grid appears once an art pixel is at least this many screen pixels wide (600% on 1:1 pixel art). */
 export const GRID_MIN_CELL = 6;
@@ -48,12 +59,14 @@ export class CanvasEngine {
   private dirtyOverlay = true;
   private gesture: Gesture | null = null;
   private spaceDown = false;
+  private spaceTap = new SpaceTap();
   private altDown = false;
   private inside = false;
   private cursorOverride: string | null = null;
   private lastPtr: ToolPointer | null = null;
   private selfSwitch = false;
   private zoomingUntil = 0;
+  private idleHandle = 0;
   private settleTimer = 0;
   private prev: State;
   private docId: string;
@@ -69,6 +82,7 @@ export class CanvasEngine {
     this.mg = els.main.getContext('2d')!;
     this.og = els.overlay.getContext('2d', { desynchronized: true } as CanvasRenderingContext2DSettings)!;
     this.prev = store().get();
+    if (perf) perf.painter = this.painter;
     this.docId = this.prev.doc.id;
     const self = this;
     this.ctx = {
@@ -111,6 +125,7 @@ export class CanvasEngine {
     this.listen(window, 'keyup', this.onKeyUp as EventListener, { capture: true });
     this.listen(window, 'blur', () => {
       this.spaceDown = false;
+      this.spaceTap.reset();
       this.altDown = false;
       this.updateCursor();
     });
@@ -120,6 +135,8 @@ export class CanvasEngine {
     this.cleanups.push(() => ro.disconnect());
     this.cleanups.push(store().subscribe(this.onStore));
     this.cleanups.push(subscribeViewSettings(() => this.invalidate(false, true)));
+    // Grid and handle colours come from theme tokens, so a theme or look change repaints both canvases.
+    this.cleanups.push(subscribeTheme(() => this.invalidate(true, true)));
     this.resize();
     ctl.fit();
     return () => this.destroy();
@@ -132,6 +149,7 @@ export class CanvasEngine {
     ctl.setLive(null);
     cancelAnimationFrame(this.raf);
     clearTimeout(this.settleTimer);
+    if (this.idleHandle) (window.cancelIdleCallback ? window.cancelIdleCallback(this.idleHandle) : clearTimeout(this.idleHandle));
     this.painter.clear();
   }
 
@@ -171,9 +189,77 @@ export class CanvasEngine {
 
   private frame = (): void => {
     this.raf = 0;
-    if (this.dirtyMain) this.drawMain();
-    if (this.dirtyOverlay) this.drawOverlay();
+    let mainMs = 0;
+    if (this.dirtyMain) {
+      const t0 = performance.now();
+      this.drawMain();
+      const t1 = performance.now();
+      mainMs = t1 - t0;
+      if (perf) {
+        perf.mainMs.push(mainMs);
+        perf.painted.push({ t: t1, frame: store().get().ui.frame });
+      }
+    }
+    const ui = store().get().ui;
+    if (ui.playing) this.warmAhead(mainMs);
+    else if (this.dirtyMain === false && mainMs) this.scheduleIdleWarm();
+    if (this.dirtyOverlay) {
+      const t0 = perf ? performance.now() : 0;
+      this.drawOverlay();
+      if (perf) {
+        const t1 = performance.now();
+        perf.overlayMs.push(t1 - t0);
+        for (const ts of perf.pending) perf.latency.push(t1 - ts);
+        perf.pending.length = 0;
+      }
+    }
   };
+
+  /**
+   * While playing, rasterise the frames coming up in the spare time of each tick (a frame is on screen for several
+   * ticks), so by the time the playhead gets there it's only a blit. Gives up the tick quickly when painting this
+   * frame already used a lot of it.
+   */
+  private warmAhead(mainMs: number): void {
+    if (mainMs > WARM_SKIP_AFTER_MS) return this.keepWarming();
+    const start = performance.now();
+    const { doc, ui } = store().get();
+    const { dpr } = ctl.getViewport();
+    const rect = stageDeviceRect({ zoom: ui.zoom, panX: ui.panX, panY: ui.panY }, doc.width, doc.height, dpr);
+    const depth = this.painter.warmDepth(doc, rect);
+    if (!depth) return;
+    const frames = upcomingFrames(doc, ui.frame, depth, ui.loopPlayback);
+    if (!frames.length) return;
+    const done = this.painter.warm(doc, frames, rect, this.els.main.width, this.els.main.height, start + WARM_SLICE_MS);
+    if (!done) this.keepWarming();
+  }
+
+  /**
+   * After you land on a frame (stepping, scrubbing, a click on the timeline), rasterise the frames either side of it
+   * while the machine is idle, so the next step is a blit. Never competes with drawing: it runs in idle callbacks.
+   */
+  private scheduleIdleWarm(): void {
+    if (this.gesture || this.idleHandle || performance.now() < this.zoomingUntil) return;
+    const ric = (window as unknown as { requestIdleCallback?: (cb: (d: { timeRemaining(): number }) => void, o?: { timeout: number }) => number }).requestIdleCallback;
+    const run = (d?: { timeRemaining(): number }) => {
+      this.idleHandle = 0;
+      const { doc, ui } = store().get();
+      if (ui.playing || this.gesture || performance.now() < this.zoomingUntil) return;
+      const { dpr } = ctl.getViewport();
+      const rect = stageDeviceRect({ zoom: ui.zoom, panX: ui.panX, panY: ui.panY }, doc.width, doc.height, dpr);
+      const frames = neighbourFrames(ui.frame, doc.length, Math.min(2, this.painter.warmDepth(doc, rect)));
+      if (!frames.length) return;
+      const budget = d ? Math.max(1, d.timeRemaining() - 2) : WARM_SLICE_MS;
+      const done = this.painter.warm(doc, frames, rect, this.els.main.width, this.els.main.height, performance.now() + budget);
+      if (!done) this.scheduleIdleWarm();
+    };
+    if (ric) this.idleHandle = ric.call(window, run, { timeout: 1000 });
+    else this.idleHandle = window.setTimeout(run, 60);
+  }
+
+  private keepWarming(): void {
+    if (!this.raf) this.raf = requestAnimationFrame(this.frame);
+  }
 
   private onStore = (): void => {
     const s = store().get();
@@ -343,6 +429,7 @@ export class CanvasEngine {
 
   private onPointerDown = (e: PointerEvent): void => {
     if (this.gesture) return;
+    this.spaceTap.spoil();
     this.refreshBounds();
     const active = document.activeElement as HTMLElement | null;
     if (active && isTyping(active)) active.blur();
@@ -409,6 +496,7 @@ export class CanvasEngine {
       );
       return;
     }
+    if (perf) perf.pending.push(e.timeStamp);
     const list = typeof e.getCoalescedEvents === 'function' ? e.getCoalescedEvents() : [];
     const events = list.length ? list : [e];
     let ptr = this.lastPtr!;
@@ -473,15 +561,9 @@ export class CanvasEngine {
     const sx = e.clientX - this.bounds.left;
     const sy = e.clientY - this.bounds.top;
     const v = { zoom: store().get().ui.zoom, panX: store().get().ui.panX, panY: store().get().ui.panY };
-    if (e.ctrlKey || e.metaKey) {
-      ctl.setView(zoomAbout(v, v.zoom * wheelZoomFactor(e.deltaY, e.deltaMode), sx, sy));
-      return;
-    }
-    const scale = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 400 : 1;
-    let dx = e.deltaX * scale;
-    let dy = e.deltaY * scale;
-    if (e.shiftKey && dx === 0) [dx, dy] = [dy, 0];
-    ctl.setView({ zoom: v.zoom, panX: v.panX - dx, panY: v.panY - dy });
+    const intent = wheelIntent(e, currentChoice<WheelMode>('canvas.wheel'));
+    if (intent.kind === 'zoom') ctl.setView(zoomAbout(v, v.zoom * wheelZoomFactor(intent.factorDelta, e.deltaMode), sx, sy));
+    else ctl.setView({ zoom: v.zoom, panX: v.panX - intent.dx, panY: v.panY - intent.dy });
   };
 
   private onKeyDown = (e: KeyboardEvent): void => {
@@ -499,10 +581,12 @@ export class CanvasEngine {
       e.stopPropagation();
       if (!this.spaceDown) {
         this.spaceDown = true;
+        this.spaceTap.press(performance.now());
         this.updateCursor();
       }
       return;
     }
+    if (this.spaceDown && !['Shift', 'Alt', 'Control', 'Meta'].includes(e.key)) this.spaceTap.spoil();
     this.modifiersChanged(e);
   };
 
@@ -513,10 +597,18 @@ export class CanvasEngine {
       e.preventDefault();
       e.stopPropagation();
       this.updateCursor();
+      if (this.spaceTap.release(performance.now()) && !this.gesture) this.onSpaceTap();
       return;
     }
     this.modifiersChanged(e);
   };
+
+  /** A quick tap of Space: plays or pauses, if that's what the person wants (asked the first time). */
+  private onSpaceTap(): void {
+    withChoice<SpaceTapMode>('canvas.spaceTap', (v) => {
+      if (v === 'play') void getCommand('timeline.play')?.run();
+    });
+  }
 
   /** Pressing Shift or Alt mid-drag changes the result (constrain, from centre) without the pointer moving. */
   private modifiersChanged(e: KeyboardEvent): void {

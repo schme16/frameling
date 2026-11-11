@@ -3,6 +3,7 @@ import { registerPanel } from '../core/registry';
 import { ColorsPanel } from './panels/ColorsPanel';
 import { ToolOptionsPanel } from './panels/ToolOptionsPanel';
 import './canvas.css';
+import './choices';
 import './commands';
 import './help';
 
