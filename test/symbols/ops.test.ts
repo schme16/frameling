@@ -90,6 +90,22 @@ describe('making in-betweens', () => {
     expect(ui.selection).toEqual([shapesAt(11)[0].id]);
   });
 
+  it('holds a lone one-frame drawing for a second first, so there is room to move', () => {
+    store().update('one frame', (d) => {
+      d.layers[0].cels[0].length = 1;
+      d.length = 4;
+      d.fps = 12;
+    });
+    makeTween();
+    const { doc, ui } = store().get();
+    expect(doc.layers[0].cels.map((c) => [c.start, c.length])).toEqual([
+      [0, 11],
+      [11, 1],
+    ]);
+    expect(doc.length).toBe(12);
+    expect(ui.frame).toBe(11);
+  });
+
   it('splits at the playhead when it is partway through a hold', () => {
     store().setUi({ frame: 6 });
     makeTween();
@@ -119,11 +135,6 @@ describe('making in-betweens', () => {
     expect(store().get().doc.layers[0].cels[0].tween?.path?.points).toHaveLength(2);
     removeTween();
     expect(store().get().doc.layers[0].cels[0].tween).toBeUndefined();
-  });
-
-  it('refuses kindly when there is no room', () => {
-    store().update('short', (d) => void (d.layers[0].cels[0].length = 1));
-    expect(makeTween()).toMatch(/Hold this drawing/);
   });
 
   it('saves the scene while a symbol is open', () => {

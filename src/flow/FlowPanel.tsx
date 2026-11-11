@@ -46,10 +46,10 @@ export function FlowPanel() {
   const svg = useRef<SVGSVGElement>(null);
   const drag = useRef<{ id: Id; dx: number; dy: number; key: string; moved: boolean } | null>(null);
 
-  if (doc.editing?.length) return <div className="cv-options" data-help="clip-flow"><Tip>The clip flow belongs to the main scene. Go back out of the symbol to see it.</Tip></div>;
+  if (doc.editing?.length) return <div className="cv-panel cv-options" data-help="clip-flow"><Tip>The clip flow belongs to the main scene. Go back out of the symbol to see it.</Tip></div>;
   if (!doc.clips.length) {
     return (
-      <div className="cv-options fl-panel" data-help="clip-flow">
+      <div className="cv-panel cv-options fl-panel" data-help="clip-flow">
         <Tip>Clip flow decides which clip plays first and what follows what: idle until jump, jump then land, land back to idle. Make some clips first: drag across the clip row at the top of the timeline.</Tip>
       </div>
     );
@@ -75,7 +75,7 @@ export function FlowPanel() {
   const triggersNow = trying ? flow.transitions.filter((t) => t.from === trying && t.when === 'trigger') : [];
 
   return (
-    <div className="cv-options fl-panel" data-help="clip-flow">
+    <div className="cv-panel cv-options fl-panel" data-help="clip-flow">
       <div className="fl-bar">
         {trying ? (
           <>

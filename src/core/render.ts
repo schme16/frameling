@@ -255,9 +255,11 @@ function drawPosedLayer(g: Ctx2D, l: PosedLayer, at?: DrawContext): void {
 
 // ---------------------------------------------------------------- bent (mesh) drawing
 
-// A drawing's art at rest as a picture, per drawing and scale, for bending through a mesh.
+// A drawing's art at rest as a picture, per drawing, scale and mesh, for bending through a mesh. The picture is cut
+// to the mesh's rest points, so moving or adding a mesh point needs a new one.
 interface MeshTexture {
   k: number;
+  src: number[];
   x: number;
   y: number;
   canvas: OffscreenCanvas | HTMLCanvasElement;
@@ -267,11 +269,11 @@ const meshTextures = new WeakMap<Drawing, MeshTexture[]>();
 export const meshStats = { textures: 0 };
 
 function meshTexture(d: Drawing, pixelSize: number, src: number[], scale: number): MeshTexture {
-  if (d.kind === 'pixel') return { k: 1 / pixelSize, x: 0, y: 0, canvas: pixelCanvas(d) };
+  if (d.kind === 'pixel') return { k: 1 / pixelSize, src, x: 0, y: 0, canvas: pixelCanvas(d) };
   // Scales snap to powers of two so zooming doesn't redraw the picture every step.
   const k = Math.pow(2, Math.max(-2, Math.min(3, Math.ceil(Math.log2(Math.max(0.01, scale))))));
   const list = meshTextures.get(d) ?? [];
-  const hit = list.find((t) => t.k === k);
+  const hit = list.find((t) => t.k === k && t.src === src);
   if (hit) return hit;
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
   for (let i = 0; i < src.length; i += 2) {
@@ -287,7 +289,7 @@ function meshTexture(d: Drawing, pixelSize: number, src: number[], scale: number
   const tg = canvas.getContext('2d') as Ctx2D;
   tg.setTransform(k, 0, 0, k, (pad - x0 * k), (pad - y0 * k));
   drawDrawing(tg, d, pixelSize);
-  const t = { k, x: x0 - pad / k, y: y0 - pad / k, canvas };
+  const t = { k, src, x: x0 - pad / k, y: y0 - pad / k, canvas };
   list.push(t);
   if (list.length > 3) list.shift();
   meshTextures.set(d, list);

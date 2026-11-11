@@ -41,7 +41,7 @@ export function CameraPanel() {
   const whilePlaying = useViewSettings((v) => v.cameraWhilePlaying);
   if (doc.editing?.length) {
     return (
-      <div className="cv-options cam-panel" data-help="camera">
+      <div className="cv-panel cv-options cam-panel" data-help="camera">
         <Tip>The camera belongs to the main scene. Go back out of the symbol to change it.</Tip>
       </div>
     );
@@ -49,7 +49,7 @@ export function CameraPanel() {
   const cam = stageCamera(doc);
   if (!cam) {
     return (
-      <div className="cv-options cam-panel" data-help="camera">
+      <div className="cv-panel cv-options cam-panel" data-help="camera">
         <Tip>A camera frames your scene: pan across a wide background, zoom in for a close-up, or tilt for drama. Exports and playback show what it sees.</Tip>
         <div className="cv-row cv-wrap">
           <ActionButton onClick={() => addCamera()} title="Adds a camera layer on top of the others">
@@ -64,7 +64,7 @@ export function CameraPanel() {
   const onKey = !!cel && cel.start === frame;
   const set = (key: string, patch: Parameters<typeof setView>[0], label: string) => setView(patch, label, `cam-${key}-${frame}`);
   return (
-    <div className="cv-options cam-panel" data-help="camera">
+    <div className="cv-panel cv-options cam-panel" data-help="camera">
       <Toggle label="Look through the camera" checked={through} onChange={(v) => toggleThroughCamera(v)} hint="See just what the camera sees (Shift+C). You can still draw." />
       <Toggle label="Look through it while playing" checked={whilePlaying} onChange={(v) => setViewSettings({ cameraWhilePlaying: v })} />
       {!cam.visible && <Tip>The camera layer is hidden, so the camera is off: exports show the whole stage.</Tip>}

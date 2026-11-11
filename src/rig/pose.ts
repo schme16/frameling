@@ -116,9 +116,12 @@ function deformedPoints(mesh: NonNullable<Layer['bind']>['mesh'] & object, st: R
 
 const isIdentity = (m: Mat) => Math.abs(m[0] - 1) < 1e-9 && Math.abs(m[1]) < 1e-9 && Math.abs(m[2]) < 1e-9 && Math.abs(m[3] - 1) < 1e-9 && Math.abs(m[4]) < 1e-6 && Math.abs(m[5]) < 1e-6;
 
-// Wrapped drawings, per drawing and rig state, so the same pose gives the same object (the canvas's bitmap cache
-// keys on it) and a layer at rest gives back its own drawing untouched.
-const wrapCache = new WeakMap<Drawing, WeakMap<RigState, Drawing>>();
+// Wrapped drawings, per attachment, drawing, rig state and pixel size, so the same pose gives the same object (the
+// canvas's bitmap cache keys on it) and a layer at rest gives back its own drawing untouched. The attachment object
+// is part of the key because re-attaching, switching to bending or painting weights changes the picture while the
+// drawing and the rig state stay the same (undo hands back the old object, and with it the old picture).
+type Bind = NonNullable<Layer['bind']>;
+const wrapCache = new WeakMap<Bind, WeakMap<Drawing, WeakMap<RigState, Map<number, Drawing>>>>();
 
 /** The mesh a posed layer is drawn through: rest points, posed points and triangles. Runtime only. */
 export interface PosedMesh {
@@ -136,11 +139,15 @@ export function boundDrawing(doc: Doc, layer: Layer, frame: number, d: Drawing):
   if (!r || d.kind === 'tilemap') return d;
   const bind = layer.bind!;
   const st = rigStateAt(doc, r, frame);
-  let byState = wrapCache.get(d);
-  if (!byState) wrapCache.set(d, (byState = new WeakMap()));
-  const hit = byState.get(st);
-  if (hit) return hit;
   const pixelSize = layer.kind === 'pixel' ? layer.pixelSize : 1;
+  let byDrawing = wrapCache.get(bind);
+  if (!byDrawing) wrapCache.set(bind, (byDrawing = new WeakMap()));
+  let byState = byDrawing.get(d);
+  if (!byState) byDrawing.set(d, (byState = new WeakMap()));
+  let bySize = byState.get(st);
+  if (!bySize) byState.set(st, (bySize = new Map()));
+  const hit = bySize.get(pixelSize);
+  if (hit) return hit;
   let out: Drawing = d;
   if (bind.mesh && bind.mesh.points.length) {
     const dst = deformedPoints(bind.mesh, st);
@@ -149,7 +156,7 @@ export function boundDrawing(doc: Doc, layer: Layer, frame: number, d: Drawing):
     const m = st.get(bind.bone)?.skin;
     if (m && !isIdentity(m)) out = wrap(d, m, pixelSize);
   }
-  byState.set(st, out);
+  bySize.set(pixelSize, out);
   return out;
 }
 

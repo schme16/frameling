@@ -158,6 +158,26 @@ export function duplicateKey(doc: Doc, layerId: Id, frame: number): Id | null {
   return c.id;
 }
 
+/**
+ * On an empty frame, brings the last drawing before it forward: a copy lands on `frame`, holding until the next key
+ * (or for one frame). This is what people expect from Copy after clicking ahead on the timeline. Returns the new
+ * cel's id, or null when the frame isn't empty or there is nothing earlier to copy.
+ */
+export function copyEarlierKey(doc: Doc, layerId: Id, frame: number): Id | null {
+  const layer = findLayer(doc, layerId);
+  if (!layer || frame < 0 || celAt(layer, frame)) return null;
+  const before = [...layer.cels].reverse().find((c) => end(c) <= frame);
+  if (!before) return null;
+  const copy = cloneDrawing(doc.drawings[before.drawingId]);
+  doc.drawings[copy.id] = copy;
+  const next = nextKeyStart(layer, frame);
+  const c: Cel = { id: uid('c'), start: frame, length: next === undefined ? 1 : next - frame, drawingId: copy.id };
+  layer.cels.push(c);
+  layer.cels.sort((a, b) => a.start - b.start);
+  ensureFits(doc, layer);
+  return c.id;
+}
+
 /** Wipes the drawing at `frame` (the key stays, with the same hold, but the drawing is empty). */
 export function clearKey(doc: Doc, layerId: Id, frame: number): boolean {
   const layer = findLayer(doc, layerId);

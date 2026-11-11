@@ -406,6 +406,17 @@
   position: relative;
   border-bottom: 1px solid var(--line-soft);
 }
+/* What an empty markers or clips lane is for, so it doesn't read as a blank gap. */
+.tl-lane-empty {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  white-space: nowrap;
+  font-size: 11px;
+  color: var(--faint);
+  pointer-events: none;
+  user-select: none;
+}
 .tl-marker {
   position: absolute;
   top: 2px;
