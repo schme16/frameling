@@ -38,8 +38,8 @@ const BALL = [
   { r: 116, rise: 26, outer: '#ff6f3d', mid: '#ffb347', core: 0.5 },
   { r: 118, rise: 40, outer: '#d9483b', mid: '#ff8a3d', core: 0.38 },
   { r: 112, rise: 56, outer: '#7a5a5a', mid: '#c4553b', core: 0.26 },
-  { r: 100, rise: 72, outer: '#6a6470', mid: '#8a7070', core: 0.14 },
-  { r: 84, rise: 88, outer: '#7c7884', mid: '#7c7884', core: 0 },
+  { r: 100, rise: 72, outer: '#4e4856', mid: '#7a6262', core: 0.14 },
+  { r: 84, rise: 88, outer: '#5c5765', mid: '#5c5765', core: 0 },
 ];
 
 function glow(color: string, size: number, strength: number): LayerEffect {
@@ -52,7 +52,7 @@ function glow(color: string, size: number, strength: number): LayerEffect {
  */
 export function makeExplosion(): Doc {
   const doc = emptyOf(newDoc({ name: 'Explosion and smoke', width: SIZE, height: SIZE, fps: 24, length: LENGTH, background: null }));
-  swatchesFrom(doc, [['Flash', '#fff3b0'], ['Fire', '#ffc94a'], ['Flame', '#ff6f3d'], ['Ember', '#d9483b'], ['Smoke', '#7c7884']]);
+  swatchesFrom(doc, [['Flash', '#fff3b0'], ['Fire', '#ffc94a'], ['Flame', '#ff6f3d'], ['Ember', '#d9483b'], ['Smoke', '#5c5765']]);
 
   // Smoke rises from where the fireball was, after the bang.
   const smoke = addVectorLayer(doc, 'Smoke');
@@ -67,9 +67,10 @@ export function makeExplosion(): Doc {
     speed: 70,
     sizeStart: 70,
     sizeEnd: 170,
-    colorStart: '#6a6470',
-    colorEnd: '#c9c6d0',
-    opacityStart: 0.9,
+    // Dark at first and lighter as it thins, so it reads over light and dark backgrounds and the see-through checks.
+    colorStart: '#3e3946',
+    colorEnd: '#9d98a6',
+    opacityStart: 1,
   };
   delete puff.prewarm;
   hold(smoke, vectorDrawing(doc, [puff as never]).id, 6, LENGTH - 6);
