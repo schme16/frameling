@@ -51,7 +51,8 @@ app.whenReady().then(async () => {
     });
     await win.loadURL(pathToFileURL(path.join(outDir, 'index.html')).href);
     const ev = (js) => win.webContents.executeJavaScript(js);
-    const names = await ev('check.names()');
+    const only = process.env.ONLY?.split(',');
+    const names = (await ev('check.names()')).filter((n) => !only || only.includes(n));
     const report = [];
     for (const name of names) {
       const info = await ev(`check.load(${JSON.stringify(name)})`);
@@ -78,6 +79,12 @@ app.whenReady().then(async () => {
         const svg = await ev(`check.svgCompare(${f}, ${JSON.stringify(rgba)})`);
         const bad = lot.mean > MAX_MEAN || lot.off > MAX_OFF || svg.mean > MAX_MEAN || svg.off > MAX_OFF;
         failed ||= bad;
+        if (bad) {
+          // Keep the pictures of a frame that's off, to look at.
+          fs.writeFileSync(path.join(outDir, `${name}-svg-${f}.png`), sized.toPNG());
+          const pics = await ev(`check.lottiePictures(${f})`);
+          for (const [k, url] of Object.entries(pics)) fs.writeFileSync(path.join(outDir, `${name}-${k}-${f}.png`), Buffer.from(url.split(',')[1], 'base64'));
+        }
         report.push({ doc: name, frame: f, lottieMean: +lot.mean.toFixed(2), lottieOff: +lot.off.toFixed(2), svgMean: +svg.mean.toFixed(2), svgOff: +svg.off.toFixed(2), bad });
       }
       report.push({ doc: name, lottieBytes: info.lottieBytes, svgBytes: info.svgBytes });

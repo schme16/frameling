@@ -189,15 +189,36 @@ const arr = (v: unknown) => (Array.isArray(v) ? v : [v]);
 // A fresh one each time: lottie-web writes into the data it's given, so shared objects break it.
 const noTr = () => ({ ty: 'tr', p: stat([0, 0]), a: stat([0, 0]), s: stat([100, 100]), r: stat(0), o: stat(100), sk: stat(0), sa: stat(0) });
 
+/** A path with `n` points: the last point repeated, its curve moved onto the copy, so the outline is unchanged. */
+export function padPath(p: Json, n: number): Json {
+  if (p.v.length >= n || !p.v.length) return p;
+  const v = p.v.slice();
+  const ii = p.i.slice();
+  const oo = p.o.slice();
+  const last = v.length - 1;
+  const out = oo[last];
+  oo[last] = [0, 0];
+  while (v.length < n) {
+    v.push(v[last]);
+    ii.push([0, 0]);
+    oo.push([0, 0]);
+  }
+  oo[v.length - 1] = out;
+  return { c: p.c, v, i: ii, o: oo };
+}
+
 /** A group for one shape over a run of frames. */
 function shapeGroup(looks: ShapeLook[], times: number[], name: string): Json {
   const it: Json[] = [];
   const nPaths = looks[0].paths.length;
   const pathsMatch = looks.every((l) => l.paths.length === nPaths);
   for (let k = 0; k < nPaths; k++) {
-    // Blend between frames only when every frame has the same number of points.
+    // Blend between frames only when every frame has the same number of points. Players also need every key of a
+    // path to have the same number of points, so shorter ones get extra points that change nothing.
     const vals = looks.map((l) => (pathsMatch ? l.paths[k] : l.paths[k] ?? { c: true, v: [], i: [], o: [] }));
     const blend = vals.every((v) => v.v.length === vals[0].v.length);
+    const most = Math.max(...vals.map((v) => v.v.length));
+    if (!blend) for (let j = 0; j < vals.length; j++) vals[j] = padPath(vals[j], most);
     it.push({ ty: 'sh', nm: `Path ${k + 1}`, ks: track(vals, times, blend, (v) => v) });
   }
   // Fill and line are kept on every frame where any frame has them (see-through where missing), so the structure

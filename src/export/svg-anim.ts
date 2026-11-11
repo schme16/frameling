@@ -88,8 +88,9 @@ class Writer {
     frames.forEach((f, i) => {
       const props = (sameM ? '' : `transform:${matStr(mats[i])};`) + (sameO ? '' : `opacity:${op(opacities[i])};`);
       keys.push(`${pct(f, this.count)}{${props}}`);
-      // Hold the last value to the end of the timeline (it's hidden there anyway).
-      if (i === frames.length - 1 && f + 1 < this.count) keys.push(`100%{${props}}`);
+      // Hold the last value to the end of the timeline. Without a 100% key the browser blends towards no transform
+      // at all during the last frame.
+      if (i === frames.length - 1) keys.push(`100%{${props}}`);
       if (i === 0 && f > 0) keys.unshift(`0%{${props}}`);
     });
     this.styles.push(`@keyframes ${name}{${keys.join('')}}`, `.${name}{${this.anim(name, 'linear')}}`);

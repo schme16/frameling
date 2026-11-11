@@ -11,6 +11,8 @@ import { docToLottie } from '../../src/export/lottie';
 import { animatedSvg } from '../../src/export/svg-anim';
 import { makeBouncingLogo } from '../../src/templates/bouncing-logo';
 import { makeBouncingBall } from '../../src/templates/bouncing-ball';
+import { makeMorph } from '../../src/templates/morph';
+import { makeCameraPan } from '../../src/templates/camera-pan';
 import { addPixelLayer, addVectorLayer, ellipsePath, fill, hold, pathShape, rectPath, vectorDrawing } from '../../src/templates/build';
 
 function shapeTweenDoc(): Doc {
@@ -89,6 +91,8 @@ const DOCS: Record<string, () => Doc> = {
   'frame-by-frame': makeBouncingBall,
   pixel: pixelDoc,
   'tween-extras': tweenExtrasDoc,
+  'morph-template': makeMorph,
+  'camera-pan-template': makeCameraPan,
 };
 
 let doc: Doc;
