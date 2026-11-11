@@ -3,6 +3,7 @@
 // Bundled by esbuild into one script (see vector-check.cjs).
 import { makePuppet } from '../../src/templates/puppet';
 import lottie from 'lottie-web/build/player/lottie_canvas';
+import lottieSvg from 'lottie-web/build/player/lottie_svg';
 import type { Doc, InstanceShape, LayerEffect } from '../../src/core/format';
 import { newTextShape, newAnimator } from '../../src/text/model';
 import { newParticles } from '../../src/particles/model';
@@ -241,8 +242,10 @@ const DOCS: Record<string, () => Doc> = {
 
 let doc: Doc;
 let anim: ReturnType<typeof lottie.loadAnimation> | null = null;
+let animSvg: ReturnType<typeof lottieSvg.loadAnimation> | null = null;
 const holder = document.getElementById('lottie')!;
 const svgHolder = document.getElementById('svg')!;
+const lsvgHolder = document.getElementById('lsvg')!;
 
 function pixelsOf(c: HTMLCanvasElement): Uint8ClampedArray {
   return c.getContext('2d', { willReadFrequently: true })!.getImageData(0, 0, c.width, c.height).data;
@@ -288,6 +291,13 @@ const api = {
     await new Promise<void>((r) => (anim!.isLoaded ? r() : anim!.addEventListener('DOMLoaded', () => r())));
     // Images (pixel layers) load on their own time.
     await new Promise((r) => setTimeout(r, 300));
+    animSvg?.destroy();
+    lsvgHolder.innerHTML = '';
+    lsvgHolder.style.width = doc.width + 'px';
+    lsvgHolder.style.height = doc.height + 'px';
+    animSvg = lottieSvg.loadAnimation({ container: lsvgHolder, renderer: 'svg', loop: false, autoplay: false, animationData: docToLottie(doc), rendererSettings: { preserveAspectRatio: 'none' } as never });
+    await new Promise<void>((r) => (animSvg!.isLoaded ? r() : animSvg!.addEventListener('DOMLoaded', () => r())));
+    await new Promise((r) => setTimeout(r, 300));
     svgHolder.innerHTML = animatedSvg(doc);
     return { length: doc.length, width: doc.width, height: doc.height, lottieBytes: JSON.stringify(data).length, svgBytes: svgHolder.innerHTML.length };
   },
@@ -311,7 +321,23 @@ const api = {
     f.getContext('2d')!.putImageData(new ImageData(new Uint8ClampedArray(frameling(frame)), doc.width, doc.height), 0, 0);
     return { lottie: c.toDataURL(), frameling: f.toDataURL() };
   },
+  /** Lottie's SVG renderer (it plays effects, which the canvas renderer ignores), shown in place of the SVG. */
+  lsvgSeek(frame: number) {
+    svgHolder.style.visibility = 'hidden';
+    lsvgHolder.style.visibility = 'visible';
+    animSvg!.goToAndStop(frame, true);
+    const r = lsvgHolder.getBoundingClientRect();
+    return { x: r.x, y: r.y, w: r.width, h: r.height };
+  },
   svgSeek(frame: number) {
+    svgHolder.style.visibility = 'visible';
+    lsvgHolder.style.visibility = 'hidden';
+    // SMIL (animated effect settings) is moved too.
+    const root = svgHolder.querySelector('svg') as SVGSVGElement | null;
+    if (root?.pauseAnimations) {
+      root.pauseAnimations();
+      root.setCurrentTime(frame / doc.fps + 0.0005);
+    }
     // Half a millisecond past the frame's start, so step-end switches have happened.
     for (const a of document.getAnimations()) {
       a.pause();
