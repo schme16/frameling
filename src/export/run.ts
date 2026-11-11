@@ -39,6 +39,8 @@ export interface RunContext {
   /** Whether the chosen video codec can keep a see-through background. */
   videoAlpha?: boolean;
   appVersion?: string;
+  /** Turns an MP4's Opus sound into AAC (ffmpeg on the desktop), or gives null. */
+  toAac?: (bytes: Uint8Array) => Promise<Uint8Array | null>;
 }
 
 export type RunResult =
@@ -178,7 +180,13 @@ export async function runExport(ctx: RunContext): Promise<RunResult> {
       }
       const buf = (output.target as BufferTarget).buffer;
       if (!buf) throw new Error('The video came out empty. Please try again.');
-      return { kind: 'file', name: `${plan.name}.${mp4 ? 'mp4' : 'webm'}`, bytes: new Uint8Array(buf), ...(sound.note ? { note: sound.note } : {}) };
+      let bytes: Uint8Array = new Uint8Array(buf);
+      // Opus in an MP4 is silent in QuickTime, Safari and on iPhones, so it becomes AAC where ffmpeg can do it.
+      if (mp4 && 'codec' in sound && sound.codec === 'opus' && ctx.toAac) {
+        step(plan.count, 'Making the sound play everywhere');
+        bytes = (await ctx.toAac(bytes).catch(() => null)) ?? bytes;
+      }
+      return { kind: 'file', name: `${plan.name}.${mp4 ? 'mp4' : 'webm'}`, bytes, ...(sound.note ? { note: sound.note } : {}) };
     }
     case 'sheet':
       return runSheet(ctx, plan, rgbaAt, step);

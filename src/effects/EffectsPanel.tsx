@@ -4,7 +4,7 @@ import { useState, useSyncExternalStore } from 'react';
 import { findLayer } from '../core/doc';
 import type { BlendMode, EffectKind, Layer, LayerEffect, LayerFolder } from '../core/format';
 import { useStore } from '../core/store';
-import { ActionButton, Choice, Field, Slider, Toggle } from '../canvas/controls';
+import { ActionButton, Choice, Field, Slider, Tip, Toggle } from '../canvas/controls';
 import { Icon } from '../ui/icons';
 import { ContextMenu, Floating } from '../timeline/Menu';
 import { setLayerOpacity } from '../timeline/ops';

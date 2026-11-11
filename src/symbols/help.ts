@@ -3,8 +3,9 @@ import { registerHelpTopics } from '../core/registry';
 registerHelpTopics([
   {
     id: 'symbols',
+    order: 1,
     title: 'Symbols: drawings you can reuse',
-    section: 'Animating',
+    section: 'Symbols and motion',
     media: 'symbols.png',
     summary: 'Make a drawing once, then place it as many times as you like. Change it once and every copy changes.',
     keywords: ['symbol', 'library', 'reuse', 'instance', 'component', 'movie clip', 'graphic', 'convert to symbol', 'F8'],
@@ -25,7 +26,7 @@ Symbols can go inside other symbols, as deep as you like (just never inside them
   {
     id: 'symbols-editing',
     title: 'Drawing inside a symbol',
-    section: 'Animating',
+    section: 'Symbols and motion',
     media: 'symbols-editing.png',
     summary: 'Double-click a symbol to open it and draw inside. The rest of the scene stays in view, faded.',
     keywords: ['edit symbol', 'edit in place', 'enter symbol', 'breadcrumb', 'back to scene', 'F9', 'double-click'],
@@ -40,7 +41,7 @@ Undo works as usual. Going into and out of a symbol are steps too, so undoing fa
   {
     id: 'symbol-properties',
     title: 'Symbol and motion panel',
-    section: 'Animating',
+    section: 'Symbols and motion',
     media: 'symbol-properties.png',
     summary: "Change a symbol copy's place, size, turn, fade, colour wash and how it plays its own animation, plus the in-betweens on this key.",
     keywords: ['properties', 'inspector', 'transform', 'scale', 'rotate', 'skew', 'opacity', 'alpha', 'tint', 'swap symbol', 'loop', 'play once', 'single frame', 'first frame'],
@@ -63,14 +64,15 @@ Below that are the [in-betweens](help:tweens) for the key under the playhead.`,
   },
   {
     id: 'tweens',
+    order: 2,
     title: 'In-betweens (tweens)',
-    section: 'Animating',
+    section: 'Symbols and motion',
     media: 'tweens.mp4',
     summary: 'Pose a symbol on two keys and Frameling draws the frames in between: moving, growing, turning and fading.',
     keywords: ['tween', 'classic tween', 'motion tween', 'inbetween', 'interpolation', 'keyframe', 'Ctrl+Shift+T', 'move', 'glide'],
     body: `Drawing every frame by hand is lovely for squash and stretch, but when something just needs to **glide, grow, turn or fade**, let Frameling draw the frames in between. Animators call these *in-betweens*, or *tweens*.
 
-1. Draw something and hold it for a few frames (drag the end of its cel in the timeline).
+1. Draw something. (A drawing that only lasts one frame gets held for about a second, so there is room to move. Drag the end of its cel in the timeline to change how long.)
 2. Press **Ctrl+Shift+T** (or right-click the cel and choose **Make in-betweens**).
 3. Frameling makes an end key and moves the playhead there. **Move, resize or turn** the drawing there.
 4. Press play.
@@ -81,12 +83,18 @@ In the timeline, in-betweens show as a purple band with an arrow from one key to
 
 What moves: position, size, turn, slant, see-through and colour wash. Choose how it speeds up and slows down with [easing](help:easing), or send it along a curve with a [path](help:motion-paths). **Extra spins** adds whole turns on the way.
 
-While you're between two keys, the canvas shows the in-between. Changes you make go to the key where it started. To change where it ends, go to the end key.`,
+While you're between two keys, the canvas and the selection box show the in-between. If you **drag, resize or turn** it there, Frameling asks the first time what you'd like:
+
+- **Make a key here**: this frame becomes a key with your change, and the glide goes through it.
+- **Change the key before**: the same move goes to the key where the glide starts.
+
+Change your answer any time in **Preferences > Behaviour**. The numbers in the Properties panel always belong to the key where the glide starts (it says so while you're between keys).`,
   },
   {
     id: 'easing',
+    order: 3,
     title: 'Easing: how in-betweens speed up and slow down',
-    section: 'Animating',
+    section: 'Symbols and motion',
     media: 'easing.png',
     summary: 'Gentle start, gentle stop, bouncy, springy, overshoot... or draw your own curve.',
     keywords: ['ease', 'easing', 'ease in', 'ease out', 'bounce', 'elastic', 'back', 'overshoot', 'curve', 'bezier', 'timing', 'spacing'],
@@ -112,7 +120,7 @@ On the canvas, the dots along the motion trail show one in-between each. Bunched
   {
     id: 'motion-paths',
     title: 'Paths to follow (motion paths)',
-    section: 'Animating',
+    section: 'Symbols and motion',
     media: 'motion-paths.png',
     summary: 'Make in-betweens travel along a line you draw, and turn to face along it if you like.',
     keywords: ['motion path', 'guide', 'guide layer', 'follow path', 'orient to path', 'curve', 'trajectory'],
@@ -133,7 +141,7 @@ Already drew the line with the brush or pencil? Select it and choose **Follow th
   {
     id: 'shape-tweens',
     title: 'Morph between shapes (shape tweens)',
-    section: 'Animating',
+    section: 'Symbols and motion',
     media: 'shape-tweens.mp4',
     summary: "Draw one shape on a key and a different one on the next, and Frameling melts the first into the second: outlines, colours and line widths.",
     keywords: ['shape tween', 'morph', 'blend', 'metamorphosis', 'transform shape', 'Ctrl+Shift+M', 'inbetween'],
@@ -146,6 +154,8 @@ Already drew the line with the brush or pencil? Select it and choose **Follow th
 
 What melts: outlines and holes, fill colours (and see-through), line colours and widths, and brush strokes. Shapes pair up in the order you drew them. A shape with no partner shrinks away (or grows in from nothing), so a different number of pieces still works.
 
+Text and particles come along too. A piece of text moves, turns, resizes and changes colour into the text on the next key, and a particle emitter slides to its new spot and changes its speed, direction, size and colours while it keeps playing (the particles don't restart). Text pairs with text and emitters with emitters, in order, and one with no partner fades out or in. Different words or a different font crossfade, and an emitter keeps the first key's count, lifetime and sprite. The panel says so when that happens.
+
 Shapes stay plain shapes. Symbols on the same key glide like ordinary [in-betweens](help:tweens). Easing, extra spins and paths work as usual.
 
 **Move or Morph:** the **How it changes** switch in the panel flips any in-betweens between the two. The first time you make in-betweens on a plain drawing, Frameling asks which you'd like (change it later in **Preferences > Behaviour**).
@@ -155,7 +165,7 @@ If the morph twists, crumples or turns inside out, add [shape hints](help:shape-
   {
     id: 'shape-hints',
     title: 'Shape hints: fixing a twisty morph',
-    section: 'Animating',
+    section: 'Symbols and motion',
     media: 'shape-hints.png',
     summary: 'Pin a point of the first drawing to a point of the last one with lettered markers, so a morph goes the way you mean.',
     keywords: ['shape hint', 'hints', 'morph', 'shape tween', 'twist', 'match points', 'correspondence'],

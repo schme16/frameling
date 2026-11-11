@@ -8,7 +8,7 @@ registerHelpTopics([
     media: 'clip-flow.png',
     summary: 'Say which clip plays first and what follows what, like idle until jump, then land, then idle again. Games and Interactives play it for you.',
     keywords: ['state machine', 'state graph', 'states', 'transitions', 'animation tree', 'animator', 'clips', 'trigger', 'idle', 'jump', 'Godot', 'Interactives'],
-    body: `A character usually has a few [clips](help:timeline-clips-markers): **idle**, **run**, **jump**, **land**. The **clip flow** says how they connect, so a game or Interactives knows what to play next. Game makers call this a *state machine*.
+    body: `A character usually has a few [clips](help:timeline-clips): **idle**, **run**, **jump**, **land**. The **clip flow** says how they connect, so a game or Interactives knows what to play next. Game makers call this a *state machine*.
 
 Open **View > Clip flow**. Every clip is a box.
 - **Drag a box's dot** onto another box to draw an arrow: "after this, that".

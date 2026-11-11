@@ -44,7 +44,7 @@ export function LayeredNotes({ format, doc }: { format: FormatId; doc: Doc }) {
           {n.link}
         </button>
       </p>
-      {pictures > 0 && <p className="ex-note">{pictures === 1 ? 'One layer has' : `${pictures} layers have`} pixels, effects, clipping or a mask, so {pictures === 1 ? 'it comes' : 'they come'} in as {pictures === 1 ? 'a picture' : 'pictures'} rather than shapes.</p>}
+      {pictures > 0 && <p className="ex-note">{pictures === 1 ? 'One layer has' : `${pictures} layers have`} pixels, effects, clipping, a mask or bending on bones, so {pictures === 1 ? 'it comes' : 'they come'} in as {pictures === 1 ? 'a picture' : 'pictures'} rather than shapes.</p>}
     </fieldset>
   );
 }

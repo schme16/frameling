@@ -66,7 +66,8 @@ function layoutFrom(panels: PanelDef[], place: (p: PanelDef) => DockZone, order:
 export function builtinWorkspaces(panels: PanelDef[] = allPanels()): Workspace[] {
   const draw = layoutFrom(panels, (p) => p.zone);
   draw.zones.right.size = 300;
-  draw.zones.bottom.size = 210;
+  // Tall enough for the timeline buttons and two layer rows at the default window size.
+  draw.zones.bottom.size = 260;
 
   // Animate: the timeline gets room, layers lead the right side.
   const animate = layoutFrom(panels, (p) => p.zone, (a, b) => (isLayers(b) ? 1 : 0) - (isLayers(a) ? 1 : 0));
@@ -81,7 +82,7 @@ export function builtinWorkspaces(panels: PanelDef[] = allPanels()): Workspace[]
     pixel.zones.left.tabs = ['palette', ...pixel.zones.left.tabs.filter((t) => t !== 'palette')];
     pixel.zones.left.active = 'palette';
   }
-  pixel.zones.bottom.size = 190;
+  pixel.zones.bottom.size = 260;
 
   return [
     { id: 'draw', name: 'Draw', builtin: true, layout: draw },

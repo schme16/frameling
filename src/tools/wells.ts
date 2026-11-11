@@ -150,6 +150,7 @@ registerCommands([
 
 registerHelp({
   id: 'fill-and-stroke',
+  order: 4,
   title: 'Fill and stroke colours',
   section: 'Drawing',
   media: 'fill-and-stroke-boxes.png',
@@ -157,7 +158,7 @@ registerHelp({
   keywords: ['fill', 'stroke', 'outline', 'colour', 'color', 'none', 'swap', 'default'],
   body: `The Colours panel has two boxes. The **fill** box (the solid square) colours the inside of shapes and is what the **paint bucket** pours. The **stroke** box (the square with a hole) colours **lines**: the brush, the pencil, pixel lines and the outline of shapes.
 
-Click a box to bring it to the front. The picker, the swatches and the eyedropper change whichever box is in front.
+Click a box to bring it to the front. The picker, the swatches and the eyedropper change whichever box is in front. Picking a tool brings its box forward for you: the paint bucket brings the fill, and the brush, pencil and line bring the stroke, so the colour you click next is the one you paint with.
 
 ## Shapes
 

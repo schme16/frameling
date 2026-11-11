@@ -73,6 +73,8 @@ export interface HelpTopic {
   keywords?: string[];
   /** Optional picture or video shown at the top (path under public/help/). */
   media?: string;
+  /** Place in its section's list, lower first (missing = 50, then by title). Lets a section open with its overview. */
+  order?: number;
 }
 
 const topics = new Map<string, HelpTopic>();

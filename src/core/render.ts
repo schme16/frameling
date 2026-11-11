@@ -7,14 +7,17 @@
  */
 import { getStroke } from 'perfect-freehand';
 import type { CameraView, Color, Doc, Drawing, FillShape, Layer, PathShape, PixelDrawing, Shape, StrokeShape, SubPath } from './format';
-import { isPosed, poseAt, type PosedInstance, type PosedLayer } from './symbols';
+import { isPosed, poseAt, type PosedInstance, type PosedLayer, type PosedLook } from './symbols';
+import { DEFAULT_TILE_SIZE } from './doc';
+import { drawText, textBounds } from '../text/draw';
+import { posedParticles } from '../particles/draw';
 import { drawTilemap } from './tilemap';
-import { drawText } from '../text/draw';
 import { drawParticles } from '../particles/draw';
 import { cameraViewAt, layerCameraMatrix } from './camera';
 import { compositePlan, EffectCache } from '../effects/composite';
 import { buildPlan } from '../effects/plan';
-import { needsCompositor } from '../effects/model';
+import { activeEffects, needsCompositor } from '../effects/model';
+import { ctx2, makeCanvas, type Canvas2 } from '../effects/apply';
 
 export type Ctx2D = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 
@@ -118,10 +121,10 @@ export function shapePath(s: FillShape | PathShape): Path2D {
   return p;
 }
 
-export function drawShape(g: Ctx2D, s: Shape): void {
+export function drawShape(g: Ctx2D, s: Shape, at?: DrawContext): void {
   if (s.type === 'instance') {
     // Only posed instances can be drawn (poseAt gives them their symbol's drawings for the frame).
-    if (isPosed(s)) drawInstance(g, s);
+    if (isPosed(s)) drawInstance(g, s, at);
     return;
   }
   if (s.type === 'text') return drawText(g, s);
@@ -173,7 +176,7 @@ export interface DrawContext {
 /** Draws one drawing (no layer opacity). Pixel drawings need the layer's pixel size, tilemaps the document too. */
 export function drawDrawing(g: Ctx2D, d: Drawing, pixelSize = 1, at?: DrawContext): void {
   if (d.kind === 'vector') {
-    for (const s of d.shapes) drawShape(g, s);
+    for (const s of d.shapes) drawShape(g, s, at);
   } else if (d.kind === 'tilemap') {
     if (at) drawTilemap(g, at.doc, d, pixelSize, at.frame, pixelCanvas);
   } else if (d.kind === 'pixel') {
@@ -242,17 +245,21 @@ function withGroupBuffer(g: Ctx2D, alpha: number, tint: { color: Color; amount: 
   g.restore();
 }
 
-function drawPosedLayer(g: Ctx2D, l: PosedLayer): void {
-  const draw = (t: Ctx2D) => (l.mesh ? drawMeshed(t, l.drawing, l.pixelSize, l.mesh) : drawDrawing(t, l.drawing, l.pixelSize));
+function drawPosedLayer(g: Ctx2D, l: PosedLayer, at?: DrawContext): void {
+  // Inside a symbol, tilemaps animate on the symbol's own frame.
+  const inner = at && l.frame !== undefined ? { doc: at.doc, frame: l.frame } : at;
+  const draw = (t: Ctx2D) => (l.mesh ? drawMeshed(t, l.drawing, l.pixelSize, l.mesh) : drawDrawing(t, l.drawing, l.pixelSize, inner));
   if (l.opacity >= 1) draw(g);
   else if (l.opacity > 0) withGroupBuffer(g, l.opacity, undefined, draw);
 }
 
 // ---------------------------------------------------------------- bent (mesh) drawing
 
-// A drawing's art at rest as a picture, per drawing and scale, for bending through a mesh.
+// A drawing's art at rest as a picture, per drawing, scale and mesh, for bending through a mesh. The picture is cut
+// to the mesh's rest points, so moving or adding a mesh point needs a new one.
 interface MeshTexture {
   k: number;
+  src: number[];
   x: number;
   y: number;
   canvas: OffscreenCanvas | HTMLCanvasElement;
@@ -262,11 +269,11 @@ const meshTextures = new WeakMap<Drawing, MeshTexture[]>();
 export const meshStats = { textures: 0 };
 
 function meshTexture(d: Drawing, pixelSize: number, src: number[], scale: number): MeshTexture {
-  if (d.kind === 'pixel') return { k: 1 / pixelSize, x: 0, y: 0, canvas: pixelCanvas(d) };
+  if (d.kind === 'pixel') return { k: 1 / pixelSize, src, x: 0, y: 0, canvas: pixelCanvas(d) };
   // Scales snap to powers of two so zooming doesn't redraw the picture every step.
   const k = Math.pow(2, Math.max(-2, Math.min(3, Math.ceil(Math.log2(Math.max(0.01, scale))))));
   const list = meshTextures.get(d) ?? [];
-  const hit = list.find((t) => t.k === k);
+  const hit = list.find((t) => t.k === k && t.src === src);
   if (hit) return hit;
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
   for (let i = 0; i < src.length; i += 2) {
@@ -282,7 +289,7 @@ function meshTexture(d: Drawing, pixelSize: number, src: number[], scale: number
   const tg = canvas.getContext('2d') as Ctx2D;
   tg.setTransform(k, 0, 0, k, (pad - x0 * k), (pad - y0 * k));
   drawDrawing(tg, d, pixelSize);
-  const t = { k, x: x0 - pad / k, y: y0 - pad / k, canvas };
+  const t = { k, src, x: x0 - pad / k, y: y0 - pad / k, canvas };
   list.push(t);
   if (list.length > 3) list.shift();
   meshTextures.set(d, list);
@@ -351,17 +358,196 @@ function affineOf(s: number[], t: number[]): number[] | null {
 }
 
 /** Draws a posed symbol instance: its symbol's layers under its matrix, faded and tinted as a whole. */
-export function drawInstance(g: Ctx2D, s: PosedInstance): void {
+export function drawInstance(g: Ctx2D, s: PosedInstance, at?: DrawContext): void {
   if (s.opacity <= 0 || !s.posed.layers.length) return;
   const m = s.posed.matrix;
+  const look = s.posed.look;
+  const pic = look ? lookPicture(g, m, look, at) : undefined;
+  if (look && !pic) return;
   const draw = (t: Ctx2D) => {
     t.save();
     t.transform(m[0], m[1], m[2], m[3], m[4], m[5]);
-    for (const l of s.posed.layers) drawPosedLayer(t, l);
+    if (pic) {
+      t.transform(1 / pic.k, 0, 0, 1 / pic.k, pic.x, pic.y);
+      t.drawImage(pic.canvas, 0, 0);
+    } else for (const l of s.posed.layers) drawPosedLayer(t, l, at);
     t.restore();
   };
   if (s.opacity >= 1 && !(s.tint && s.tint.amount > 0)) draw(g);
   else withGroupBuffer(g, s.opacity, s.tint, draw);
+}
+
+// ---------------------------------------------------------------- symbols with blend modes and effects inside
+
+type Box = { x0: number; y0: number; x1: number; y1: number };
+const EMPTY: Box = { x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity };
+const boxCache = new WeakMap<Drawing, { ps: number; box: Box }>();
+
+function grow(b: Box, x: number, y: number, r = 0): void {
+  if (x - r < b.x0) b.x0 = x - r;
+  if (y - r < b.y0) b.y0 = y - r;
+  if (x + r > b.x1) b.x1 = x + r;
+  if (y + r > b.y1) b.y1 = y + r;
+}
+
+/** The box a posed drawing covers, in its own space (a little generous: curve handles count). */
+export function drawingBox(d: Drawing, pixelSize = 1, doc?: Doc): Box {
+  const hit = boxCache.get(d);
+  if (hit && hit.ps === pixelSize) return hit.box;
+  const b = { ...EMPTY };
+  if (d.kind === 'pixel') {
+    grow(b, 0, 0);
+    grow(b, d.width * pixelSize, d.height * pixelSize);
+  } else if (d.kind === 'tilemap') {
+    grow(b, 0, 0);
+    grow(b, d.columns * (doc?.tileset?.tileWidth ?? DEFAULT_TILE_SIZE) * pixelSize, d.rows * (doc?.tileset?.tileHeight ?? DEFAULT_TILE_SIZE) * pixelSize);
+  } else if (d.kind === 'vector')
+    for (const s of d.shapes) {
+      if (s.type === 'stroke') for (const [x, y] of strokeOutline(s)) grow(b, x, y);
+      else if (s.type === 'fill' || s.type === 'path') {
+        const r = s.type === 'path' && s.stroke ? s.stroke.width : 0;
+        for (const sp of s.paths)
+          for (const p of sp.points) {
+            grow(b, p.x, p.y, r);
+            if (p.c1) grow(b, p.c1.x, p.c1.y, r);
+            if (p.c2) grow(b, p.c2.x, p.c2.y, r);
+          }
+      } else if (s.type === 'text') {
+        const t = textBounds(s);
+        grow(b, t.x, t.y);
+        grow(b, t.x + t.w, t.y + t.h);
+      } else if (s.type === 'particles') {
+        for (const p of posedParticles(s)) grow(b, p.x, p.y, p.size * 2);
+      } else if (isPosed(s)) {
+        const ib = instanceBox(s, doc);
+        if (ib.x1 < ib.x0) continue;
+        const m = s.posed.matrix;
+        for (const [x, y] of [[ib.x0, ib.y0], [ib.x1, ib.y0], [ib.x0, ib.y1], [ib.x1, ib.y1]]) grow(b, m[0] * x + m[2] * y + m[4], m[1] * x + m[3] * y + m[5]);
+      }
+    }
+  boxCache.set(d, { ps: pixelSize, box: b });
+  return b;
+}
+
+/** What a posed instance's layers cover in symbol space, its effects' reach included. */
+function instanceBox(s: PosedInstance, doc?: Doc): Box {
+  const b = { ...EMPTY };
+  for (const l of s.posed.layers) {
+    if (l.mesh) for (let i = 0; i < l.mesh.dst.length; i += 2) grow(b, l.mesh.dst[i], l.mesh.dst[i + 1], 2);
+    else {
+      const d = drawingBox(l.drawing, l.pixelSize, doc);
+      if (d.x1 >= d.x0) grow2(b, d);
+    }
+  }
+  const pad = s.posed.look ? lookReach(s.posed.look) : 0;
+  return b.x1 < b.x0 ? b : { x0: b.x0 - pad, y0: b.y0 - pad, x1: b.x1 + pad, y1: b.y1 + pad };
+}
+
+function grow2(b: Box, d: Box): Box {
+  b.x0 = Math.min(b.x0, d.x0);
+  b.y0 = Math.min(b.y0, d.y0);
+  b.x1 = Math.max(b.x1, d.x1);
+  b.y1 = Math.max(b.y1, d.y1);
+  return b;
+}
+
+/** How far past the drawing an effect can paint, in document pixels. */
+export function effectReach(kind: string, v: Record<string, number | string>): number {
+  const n = (k: string) => Math.abs(Number(v[k]) || 0);
+  if (kind === 'blur') return n('radius') * 3;
+  if (kind === 'glow') return n('size') * 1.5;
+  if (kind === 'shadow') return Math.max(n('x'), n('y')) + n('softness') * 1.5;
+  if (kind === 'outline') return n('width') + 1;
+  if (kind === 'pixelate') return n('size');
+  return 0;
+}
+
+function reachOf(effects: Layer['effects'], frame: number): number {
+  let r = 0;
+  for (const e of activeEffects(effects, frame)) r += effectReach(e.kind, e.v);
+  return r;
+}
+
+/** The furthest any effect inside the symbol paints past its drawing (a layer's, plus its folder's). */
+function lookReach(look: PosedLook): number {
+  let layer = 0;
+  let folder = 0;
+  for (const l of look.layers) {
+    layer = Math.max(layer, reachOf(l.effects, look.frame));
+    const f = l.folder ? look.folders?.[l.folder] : undefined;
+    if (f) folder = Math.max(folder, reachOf(f.effects, look.frame));
+  }
+  return layer + folder + 1;
+}
+
+// Finished pictures of symbols with looks inside, by symbol (its layers array), frame, scale and the drawings shown,
+// so a copy gliding or turning across the stage reuses one picture per symbol frame.
+const lookCache = new EffectCache(32_000_000);
+const tokens = new WeakMap<object, number>();
+let nextToken = 1;
+const token = (o: object | undefined) => {
+  if (!o) return 0;
+  let t = tokens.get(o);
+  if (!t) tokens.set(o, (t = nextToken++));
+  return t;
+};
+/** Pictures built and reused, for tests and the perf harness. */
+export const lookStats = { built: 0, reused: 0 };
+
+/** The largest side of a symbol picture, in canvas pixels. */
+const LOOK_MAX = 4096;
+
+/**
+ * A symbol with blend modes, effects, clipping, masks or folders inside, composited in its own space as a picture
+ * (`k` canvas pixels per symbol unit, top-left at x, y). Effects work in symbol units, so they grow and turn with
+ * each copy, as they do in the SVG and Lottie exports.
+ */
+function lookPicture(g: Ctx2D, m: readonly number[], look: PosedLook, at?: DrawContext): { canvas: Canvas2; k: number; x: number; y: number } | undefined {
+  // (Test fakes hand back an empty transform: taken as none.)
+  const raw = g.getTransform();
+  const T = typeof raw.a === 'number' ? raw : { a: 1, b: 0, c: 0, d: 1 };
+  const a = T.a * m[0] + T.c * m[1];
+  const b = T.b * m[0] + T.d * m[1];
+  const c = T.a * m[2] + T.c * m[3];
+  const d = T.b * m[2] + T.d * m[3];
+  const det = Math.abs(a * d - b * c);
+  if (!(det > 1e-12)) return undefined;
+  const box = instanceBox({ posed: { matrix: [1, 0, 0, 1, 0, 0], layers: [...look.drawings.values()], look } } as PosedInstance, at?.doc);
+  if (box.x1 <= box.x0 || box.y1 <= box.y0) return undefined;
+  // Scales snap up to quarter steps, so a copy growing in a tween rebuilds now and then, not every frame.
+  let k = Math.pow(2, Math.ceil(Math.log2(Math.sqrt(det)) * 4) / 4);
+  k = Math.max(1 / 64, Math.min(k, 16, LOOK_MAX / (box.x1 - box.x0), LOOK_MAX / (box.y1 - box.y0)));
+  const x = Math.floor(box.x0 * k) / k;
+  const y = Math.floor(box.y0 * k) / k;
+  const W = Math.max(1, Math.ceil((box.x1 - x) * k));
+  const H = Math.max(1, Math.ceil((box.y1 - y) * k));
+  let sig = `${look.frame}|${k}|${x},${y},${W}x${H}|${token(look.folders)}|${g.imageSmoothingEnabled ? 1 : 0}`;
+  for (const [id, pl] of look.drawings) sig += `|${id}:${token(pl.drawing)}:${token(pl.mesh)}`;
+  const hit = lookCache.get(look.layers, sig);
+  if (hit) {
+    lookStats.reused++;
+    return { canvas: hit, k, x, y };
+  }
+  const canvas = makeCanvas(W, H);
+  const cg = ctx2(canvas) as Ctx2D;
+  cg.setTransform(k, 0, 0, k, -x * k, -y * k);
+  cg.imageSmoothingEnabled = g.imageSmoothingEnabled;
+  const lookDoc = { ...(at?.doc ?? {}), layers: look.layers, folders: look.folders } as Doc;
+  // Faded copies inside get buffers of their own depth, so the stage-sized ones aren't swapped back and forth.
+  groupDepth++;
+  try {
+    compositePlan(cg, lookDoc, look.frame, buildPlan(lookDoc, (l) => l.visible && !l.reference), {
+      paint: (lg, l) => {
+        const pl = look.drawings.get(l.id);
+        if (pl) drawPosedLayer(lg, pl.opacity >= 1 ? pl : { ...pl, opacity: 1 }, at);
+      },
+    });
+  } finally {
+    groupDepth--;
+  }
+  lookStats.built++;
+  lookCache.set(look.layers, sig, canvas);
+  return { canvas, k, x, y };
 }
 
 /** Draws a layer's drawing at a frame, with the layer's opacity. */

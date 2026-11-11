@@ -72,10 +72,17 @@ export function newBlankKey(layerId?: Id, frame?: number, copy = false): Outcome
   return edit(copy ? 'New drawing (copy of this one)' : 'New blank drawing', t.layerId, (d) => core.newBlankKey(d, t.layerId, t.frame, copy));
 }
 
-/** Copies the drawing to the next frame and moves the playhead onto the copy. */
+/** Copies the drawing to the next frame and moves the playhead onto the copy. On an empty frame, copies the last drawing to it. */
 export function duplicateKey(layerId?: Id, frame?: number): Outcome {
   const t = target(layerId, frame);
   if (!t) return no('no-layer');
+  // On an empty frame, copy the last drawing to here instead, and stay put.
+  const layer = findLayer(store().get().doc, t.layerId);
+  if (layer && !celAt(layer, t.frame) && layer.cels.some((c) => c.start < t.frame)) {
+    const here = edit('Copy the last drawing to this frame', t.layerId, (d) => core.copyEarlierKey(d, t.layerId, t.frame));
+    if (here.ok) store().setUi({ activeLayerId: t.layerId });
+    return here;
+  }
   const r = edit('Copy drawing to next frame', t.layerId, (d) => core.duplicateKey(d, t.layerId, t.frame));
   if (r.ok) store().setUi({ frame: t.frame + 1, activeLayerId: t.layerId });
   return r;

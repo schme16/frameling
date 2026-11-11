@@ -33,6 +33,10 @@ const api: FramelingApi = {
     remove: (kind, id) => call('library:remove', kind, id),
     showFolder: (kind) => call('library:showFolder', kind),
   },
+  media: {
+    aacAvailable: () => call('media:aacAvailable'),
+    toAac: (bytes) => call('media:toAac', bytes),
+  },
   recent: {
     list: () => call('recent:list'),
     add: (path) => call('recent:add', path),

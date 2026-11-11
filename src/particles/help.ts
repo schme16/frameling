@@ -8,7 +8,7 @@ registerHelpTopics([
     media: 'particles.mp4',
     summary: 'Lots of little things moving by themselves: a sparkle burst, smoke, rain, snow, confetti or dust. Pick one in the Particles panel and it plays straight away.',
     keywords: ['particles', 'particle system', 'emitter', 'fx', 'sparkle', 'smoke', 'rain', 'snow', 'confetti', 'dust', 'fire', 'magic', 'burst', 'seed'],
-    body: `Particles are lots of small things that move by themselves: sparks flying out of a magic wand, smoke from a chimney, rain, snow, confetti. You set how they behave once and Frameling moves every one of them for you.
+    body: `Particles are lots of small things that move by themselves: sparks from a magic wand, smoke, rain, snow, confetti. You set how they behave once and Frameling moves every one.
 
 ## Add some
 
@@ -16,11 +16,11 @@ registerHelpTopics([
 2. Click a ready-made one: **Sparkle burst**, **Smoke**, **Rain**, **Snow**, **Confetti** or **Dust**.
 3. Press play. That's it.
 
-The first time, Frameling asks whether new particles get **a layer of their own** (the easiest: give them a glow or a blend mode, or hide them) or go on the layer you picked. It remembers your answer; change it in Preferences > Behaviour.
+The first time, Frameling asks whether new particles get **a layer of their own** (easiest to glow or hide) or go on the layer you picked.
 
 ## Move and resize them
 
-Particles are a shape like any other. Drag the box with the **Select** tool to move where they come from, stretch it to make a rain line wider, or turn it to aim a spray. The box shows where they start, the particles can fly anywhere.
+With the **Select** tool, drag the box to move where they come from, stretch it to widen the rain, or turn it to aim a spray.
 
 ## Change how they behave
 
@@ -39,11 +39,11 @@ Select the particles, then change them in the panel. Every setting is in plain w
 | **Spin** | Angular velocity | Turns each one as it flies. |
 | **Variety** | Variance | How different each one is from the next. |
 
-Each particle can be a dot, a soft puff, a square, a star, a twinkle, a streak, a paper bit, a snowflake, or **any symbol you made** (draw a leaf, make it a symbol, and have it fall like autumn). An animated symbol plays on every particle.
+Each particle can be a dot, puff, star, streak, snowflake and more, or **any symbol you made** (draw a leaf and have it fall like autumn).
 
 ## Always the same
 
-Particles look random but aren't: they all come from one number, the **seed**. Scrub back and forth, export a video, export a sprite sheet: you get exactly the same particles every time. Press **Shuffle** for a new spread with the same settings.
+Particles look random but come from one number, the **seed**, so scrubbing and every export show exactly the same ones. Press **Shuffle** for a new spread.
 
 They start when their key starts on the timeline and keep going for as long as the drawing is held. Use **Stop after** to stop making new ones, and **Already going when it starts** so rain is falling from the very first frame.
 

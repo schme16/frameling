@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Doc, Id } from '../core/format';
 import { getCommand } from '../core/registry';
-import { useStore } from '../core/store';
+import { store, useStore } from '../core/store';
 import { newInstance, poseInstance, symbolContent, symbolUsage } from '../core/symbols';
 import { drawInstance } from '../core/render';
 import { symbolBounds } from '../canvas/geometry';
@@ -34,7 +34,7 @@ export function SymbolThumb({ doc, id, size = 44, frame = 0, className = 'sy-thu
     const k = Math.min((size - pad * 2) / b.w, (size - pad * 2) / b.h);
     g.setTransform(k * dpr, 0, 0, k * dpr, (size / 2 - (b.x + b.w / 2) * k) * dpr, (size / 2 - (b.y + b.h / 2) * k) * dpr);
     const inst = { ...newInstance(id, c.def.origin), play: 'single' as const };
-    drawInstance(g, poseInstance(doc, inst, frame));
+    drawInstance(g, poseInstance(doc, inst, frame), { doc, frame });
   });
   return <canvas ref={ref} className={className} style={{ width: size, height: size }} aria-hidden="true" />;
 }
@@ -46,9 +46,17 @@ export function LibraryPanel() {
   const symbols = Object.values(doc.symbols ?? {}).sort((a, b) => a.name.localeCompare(b.name));
   const unused = symbols.filter((s) => !usage.get(s.id) && !doc.editing?.some((f) => f.symbolId === s.id)).length;
   const make = () => void getCommand('symbols.make')?.run();
+  const nested = useStore(() => store().nestedTag());
+
+  if (nested)
+    return (
+      <div className="cv-options sy-library" data-help="symbols">
+        <Tip>You're painting a tile right now. Press Done above the canvas to get back to your symbols.</Tip>
+      </div>
+    );
 
   return (
-    <div className="cv-options sy-library" data-help="symbols">
+    <div className="cv-panel cv-options sy-library" data-help="symbols">
       {!symbols.length ? (
         <>
           <Tip>

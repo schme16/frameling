@@ -7,11 +7,12 @@ describe('blank starters on the welcome sheet', () => {
 
   it('only the blank templates count as blank', () => {
     const blank = TEMPLATES.filter((t) => isBlankDoc(byId[t.id])).map((t) => t.id);
-    expect(blank).toEqual(['blank-vector', 'blank-pixel']);
+    expect(blank).toEqual(['blank-vector', 'blank-pixel', 'blank-level']);
   });
 
   it('labels sizes like the size cards do', () => {
     expect(sizeLabel(byId['blank-vector'])).toBe('1280 x 720');
     expect(sizeLabel(byId['blank-pixel'])).toBe('32 x 32 pixels');
+    expect(sizeLabel(byId['blank-level'])).toBe('20 x 12 tiles');
   });
 });

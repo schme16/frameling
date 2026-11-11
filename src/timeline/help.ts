@@ -4,6 +4,7 @@ import { registerHelpTopics } from '../core/registry';
 registerHelpTopics([
   {
     id: 'timeline',
+    order: 1,
     title: 'The timeline',
     section: 'Animating',
     media: 'timeline-scrub.mp4',
@@ -37,6 +38,7 @@ Learn more: [Frames, keys and holds](help:timeline-frames), [Layers](help:timeli
   },
   {
     id: 'timeline-frames',
+    order: 2,
     title: 'Frames, keys and holds',
     section: 'Animating',
     media: 'timeline-holds.mp4',
@@ -57,12 +59,12 @@ A **key** (keyframe) is a frame where you drew something new. A **hold** is how 
 
 Press **Alt+1** to **Alt+4** to hold the current drawing for that many frames. The drawings after it move along to make room.
 
-Example: you have three drawings of a bouncing ball, each one frame long. Click the first and press **Alt+2**. It's now held for two frames, and the other two slide along. Do the same to the others and your ball bounces on twos.
+Example: click the first of three one-frame drawings and press **Alt+2**. It's held for two frames and the others slide along. Do the same to the rest and it plays on twos.
 
 ## Making and changing keys
 
 - **New blank drawing (N):** starts an empty drawing here. If you're in the middle of a hold, the hold is cut in two, and the new drawing starts at your frame.
-- **Copy this drawing to the next frame (D):** a copy to nudge into the next pose. If the next frame is still part of a hold it just becomes its own drawing. If another drawing is already there, the later ones shift along to make room.
+- **Copy this drawing to the next frame (D):** a copy to nudge into the next pose. If another drawing is already next, the later ones shift along. On an empty frame it copies the last drawing to that frame, so you can carry on.
 - **Clear this drawing:** wipes it clean but keeps the frame and its hold.
 - **Make these frames empty:** takes the drawing away completely.
 
@@ -80,6 +82,7 @@ If a layer is locked its frames can't be changed. Click the padlock to unlock it
   },
   {
     id: 'timeline-onion',
+    order: 4,
     title: 'Onion skin',
     section: 'Animating',
     media: 'onion-skin.mp4',
@@ -103,11 +106,12 @@ On the ruler, the frames being ghosted are softly shaded in the same colours.
   },
   {
     id: 'timeline-layers',
+    order: 5,
     title: 'Layers: vector and pixel',
     section: 'Animating',
     media: 'timeline-layers.png',
     summary: 'Layers are sheets of see-through paper. A vector layer is for smooth drawing, a pixel layer is for pixel art.',
-    keywords: ['layer', 'vector', 'pixel', 'lock', 'hide', 'opacity', 'order', 'duplicate layer'],
+    keywords: ['layer', 'vector', 'pixel', 'lock', 'hide', 'opacity', 'order', 'duplicate layer', 'new layer', 'add layer'],
     body: `Layers are like sheets of tracing paper stacked on top of each other. Put the background on a low layer and your character on a higher one, and you can change one without touching the other.
 
 ## Two kinds
@@ -132,6 +136,7 @@ Shortcuts: **Ctrl+Shift+N** adds a vector layer.`,
   },
   {
     id: 'timeline-playing',
+    order: 3,
     title: 'Playing your animation',
     section: 'Animating',
     media: 'timeline-playing.mp4',
@@ -212,10 +217,11 @@ Markers come out in exports as events.`,
   },
   {
     id: 'reference-layers',
+    media: 'reference-layers.png',
     title: 'Reference layers',
     section: 'Animating',
     summary: 'A layer you see while drawing that every export leaves out, like a ground line or a rough sketch.',
-    keywords: ['reference', 'guide', 'guide layer', 'not exported', 'sketch', 'ground', 'helper layer', 'hide from export'],
+    keywords: ['reference', 'guide', 'guide layer', 'not exported', 'sketch', 'ground', 'helper layer', 'hide from export', 'background sketch', 'trace', 'tracing', 'sketch layer'],
     body: `Some layers are only there to help you draw: the ground a character stands on, a rough sketch, a grid of where the feet go. Make it a **reference layer** and you still see it on the canvas, but videos, pictures, SVGs and sprite sheets all leave it out.
 
 ## Make one

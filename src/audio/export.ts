@@ -3,13 +3,18 @@
  * computer can encode (AAC then Opus for MP4, Opus for WebM) and feed the mix to the muxer a frame's worth at a time,
  * so the sound and the picture stay in step while the file is written.
  */
-import { AudioBufferSource, getFirstEncodableAudioCodec, Mp4OutputFormat, QUALITY_HIGH, WebMOutputFormat, type AudioCodec, type Output } from 'mediabunny';
+import { AudioBufferSource, canEncodeAudio, getFirstEncodableAudioCodec, Mp4OutputFormat, QUALITY_HIGH, WebMOutputFormat, type AudioCodec, type Output } from 'mediabunny';
 import type { Doc } from '../core/format';
 import { audibleClips } from './clips';
 import { renderMix } from './mix';
 
 /** Said when there is sound but this computer has no way to put it in the file. */
 export const NO_SOUND_NOTE = "This computer can't make the sound for video files, so the video has no sound.";
+
+/** Whether this computer can put AAC sound in an MP4 by itself (Electron usually can't, so MP4 sound is Opus). */
+export async function canMakeAac(): Promise<boolean> {
+  return canEncodeAudio('aac', { numberOfChannels: 2, sampleRate: 48000 }).catch(() => false);
+}
 
 export interface SoundTrack {
   /** Adds the sound for frame `i` (call once per frame, in order, after the picture). */
@@ -34,7 +39,7 @@ export function frameSlice(i: number, count: number, fps: number, rate: number, 
  * Adds an audio track to `output` (before it starts) when the document has sound to hear. Returns the track, and a
  * note for the person when there was sound but it could not be added.
  */
-export async function prepareSound(doc: Doc, mp4: boolean, start: number, count: number, output: Output): Promise<{ track: SoundTrack | null; note?: string }> {
+export async function prepareSound(doc: Doc, mp4: boolean, start: number, count: number, output: Output): Promise<{ track: SoundTrack | null; note?: string; codec?: AudioCodec }> {
   if (!audibleClips(doc.audio).length) return { track: null };
   const mix = await renderMix(doc, start, count);
   if (!mix) return { track: null, note: NO_SOUND_NOTE };
@@ -49,6 +54,7 @@ export async function prepareSound(doc: Doc, mp4: boolean, start: number, count:
   output.addAudioTrack(source);
   const channels = Array.from({ length: mix.numberOfChannels }, (_, c) => mix.getChannelData(c));
   return {
+    codec,
     track: {
       async feed(i) {
         const [a, b] = frameSlice(i, count, doc.fps, mix.sampleRate, mix.length);

@@ -41,7 +41,7 @@ instances carry `posed: { matrix, layers }`, recursively. Poses are memoised per
 layers) then per cel and a key of the tween progress and each instance's inner frame, so a held symbol frame or a
 replayed tween frame is the same object and blits from the bitmap cache. `drawShape` draws posed instances with a
 per-depth buffer for group opacity and tint. The canvas, onion skin, thumbnails, GIF, video, sheets and SVG all draw
-through this, so they can't disagree. SVG writes instances as `<g transform="matrix(...)">` (tint is left out there).
+through this, so they can't disagree. SVG writes instances as `<g transform="matrix(...)">`, tint as a small filter.
 
 ## Phase 3 follow-ups (built)
 
@@ -55,6 +55,14 @@ through this, so they can't disagree. SVG writes instances as `<g transform="mat
   pair by nearest middle, spares shrink to (or grow from) their middle. Strokes morph point by point after even
   resampling; a stroke meeting a fill morphs as its outline. Fills, line colours and widths, opacity blend; a missing
   fill fades via alpha. Instances in a morph use the classic `tweenInstance`.
+  Text and particles come along: text pairs with text and emitters with emitters, each in drawing order (apart from
+  outlines and symbol copies). Transform, size, colour and opacity blend with the same maths as symbol copies
+  (`tweenTransform`, so extra spins and motion paths apply). An unpaired text or emitter fades out (or in) without
+  shrinking. Text with different words or font crossfades as two shapes; weight, line height and letter spacing blend;
+  italic, alignment and animators switch halfway. Emitters blend position, spread, direction, speed, gravity, wind,
+  drag, wobble, size, colours and opacity, but keep the start key's count, life, seed, sprite and emitter shape so
+  particles don't pop, and their clock keeps running from the start key. `morphNotes` gives the panel's plain-words
+  notes on what can't blend.
 - **Camera** (`core/camera.ts`): `LayerKind 'camera'` with `CameraDrawing { view: {x, y, zoom, rotation} }` keys, so
   the timeline, holds, key copies and `Tween` (easing, spin, path) work unchanged. The first visible camera layer on
   the stage is in charge (never one in a symbol). `cameraMatrix(doc, view, factor)` is stage to output space;
@@ -81,6 +89,5 @@ through this, so they can't disagree. SVG writes instances as `<g transform="mat
   Moving it there changes the start key.
 - Instances in a merge-mode layer never merge (they're treated like groups), and the paint bucket ignores them as
   walls.
-- Moving SVG and Lottie leave out tint (colour wash) on symbol copies.
 - Looking through the camera, onion skins are hidden, and tool sizes on screen don't follow the camera's zoom.
 - Off-stage drawing shows on the faded pasteboard only while a camera exists, and isn't cached (drawn directly).

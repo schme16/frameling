@@ -3,18 +3,19 @@ import { registerHelpTopics } from '../core/registry';
 registerHelpTopics([
   {
     id: 'effects',
+    order: 1,
     title: 'Effects: glow, shadow, blur and more',
     section: 'Effects',
     media: 'effects.mp4',
     summary: 'Give a layer a glow, a shadow, a soft blur, an outline, new colours or big pixels. Open the Effects panel and pick one.',
     keywords: ['effect', 'fx', 'glow', 'shadow', 'drop shadow', 'blur', 'outline', 'stroke', 'pixelate', 'mosaic', 'hue', 'saturation', 'brightness', 'contrast', 'colour adjust', 'animate effect'],
-    body: `Effects change how a whole layer looks, without touching your drawing. Take them off again any time and the drawing is just as it was.
+    body: `Effects change how a whole layer looks, without touching your drawing. Take them off any time.
 
 ## Add one
 
 1. Pick the layer in the timeline.
 2. Open the **Effects** panel (View > Effects, or the Effects menu).
-3. Click an effect. It shows on the canvas straight away. Move the sliders until it looks right.
+3. Click an effect, then move the sliders until it looks right.
 
 | Effect | Also called | What it does |
 |---|---|---|
@@ -25,32 +26,32 @@ registerHelpTopics([
 | **Outline** | Stroke | A solid line all the way round. Great for stickers and game sprites. |
 | **Pixelate** | Mosaic | Big squares, like a censored photo or a retro game. |
 
-Sizes are in stage pixels, so a 4 px blur looks the same at any zoom and in every export.
+Sizes are in stage pixels, so a blur looks the same at any zoom.
 
 ## More than one
 
-Effects run from the top of the list to the bottom. An outline then a glow puts the glow round the outline; a glow then an outline outlines the glow. Use **⋯ > Move up** or **Move down** to change the order.
+Effects run from the top of the list down: an outline then a glow puts the glow round the outline. Use **⋯ > Move up** or **Move down** to change the order.
 
-- The **eye** turns an effect off for a moment.
-- **⋯ > Reset** puts its settings back, **Remove** takes it away.
-- **Reset all** at the bottom takes every effect off and sets the blend back to Normal.
+- The **eye** turns an effect off for a moment. **⋯ > Remove** takes it away.
+- **Reset all** takes every effect off and sets the blend back to Normal.
 
 ## Animate an effect
 
-Press the **key** button on an effect. Now moving a slider sets a **key** on the frame you are on. Go to another frame and move it again: in between, the setting changes smoothly from one key to the next. A glow can pulse, a blur can pull focus, a colour can fade.
+Press the **key** button on an effect. Now moving a slider sets a **key** on this frame. Set another on a later frame and the setting changes smoothly in between: a glow can pulse, a blur can pull focus.
 
 - A filled diamond means there is a key on this frame. **Remove key** takes it away.
-- Press the key button again to stop animating. The settings on the current frame stay.
+- Press the key button again to stop animating.
 - Colours don't animate; they keep one colour for the whole animation.
 
 ## Folders
 
-When a layer is in a [folder](help:layer-folders), the panel has **Layer** and **Folder** at the top. Pick **Folder** to put the effect on everything in the folder together, for example one shadow under a whole character.
+For a layer in a [folder](help:layer-folders), pick **Folder** at the top of the panel to put the effect on the whole folder, like one shadow under a whole character.
 
 ## Good to know
 
-- Every export (video, GIF, PNG, sprite sheets) shows effects exactly like the canvas. SVG files keep [blend modes](help:blend-modes) but not effects yet.
-- Effects are worked out once per drawing and remembered, so playback stays smooth.`,
+- Every export (video, GIF, PNG, sprite sheets) shows effects exactly like the canvas. SVG and Lottie keep most of them too: the Export window says what each format keeps.
+- Effects are remembered per drawing, so playback stays smooth.
+- Inside a [symbol](help:symbols), effects, blend modes, masks and clipping work just like on the stage, and every copy of the symbol shows them. For one look on the whole symbol (one shadow under all of it), put the effect on the layer it sits on.`,
   },
   {
     id: 'blend-modes',

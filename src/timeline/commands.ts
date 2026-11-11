@@ -86,7 +86,7 @@ registerCommands([
     category: 'Timeline',
     keys: ['Shift+O'],
     description: 'Show faint ghosts of the frames before and after, to help you draw the next pose.',
-    help: 'timeline.toggleOnion',
+    help: 'timeline-onion',
     keywords: ['onion skin', 'ghost', 'see through', 'tracing'],
     checked: (s) => s.ui.onion.enabled,
     run: () => store().setUi((ui) => ({ onion: { ...ui.onion, enabled: !ui.onion.enabled } })),
@@ -108,7 +108,7 @@ registerCommands([
     keys: ['D'],
     // With shapes selected, Ctrl+D belongs to the canvas, and plain D stays out of its way too.
     enabled: (s) => s.ui.selection.length === 0,
-    description: 'Make a copy of this drawing on the next frame, ready for you to change a little.',
+    description: 'Make a copy of this drawing on the next frame, ready for you to change a little. On an empty frame, copies the last drawing to this frame.',
     help: 'timeline-frames',
     keywords: ['copy', 'clone', 'duplicate frame'],
     run: () => void say(ops.duplicateKey()),

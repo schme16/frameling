@@ -188,7 +188,7 @@ export function ParticlesPanel() {
   const picked = d?.kind === 'vector' ? d.shapes.filter((s): s is ParticlesShape => s.type === 'particles' && sel.includes(s.id)) : [];
   const look = panelLook();
   return (
-    <div className="cv-options pt-panel" data-help="particles" data-look={look}>
+    <div className="cv-panel cv-options pt-panel" data-help="particles" data-look={look}>
       {picked.length === 1 ? (
         <EmitterEditor s={picked[0]} look={look} />
       ) : (

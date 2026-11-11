@@ -10,8 +10,11 @@
  * - Different numbers of holes or pieces: a spare piece shrinks away to its middle (or grows from it).
  * - Brush strokes morph with strokes (point by point). A stroke meeting a filled shape morphs as its outline.
  * - Colours, see-through, line widths and symbol copies blend too.
+ * - Text pairs with text and particle emitters with emitters (in order): position, turn, size, colour and see-through
+ *   blend. A spare one fades out (or in). Things that can't blend (the words, how many particles) are listed by
+ *   `morphNotes` so the panel can say so.
  */
-import type { Color, FillShape, InstanceShape, PathPoint, PathShape, Shape, ShapeHint, StrokePoint, StrokeShape, SubPath, VectorDrawing } from './format';
+import type { Color, FillShape, InstanceShape, ParticlesShape, PathPoint, PathShape, Shape, ShapeHint, StrokePoint, StrokeShape, SubPath, TextShape, Transform2D, VectorDrawing } from './format';
 import { strokeOutline } from './render';
 
 type P = { x: number; y: number };
@@ -44,8 +47,9 @@ type Plan =
   | { kind: 'area'; id: string; rings: RingPair[]; a: Style; b: Style }
   | { kind: 'stroke'; id: string; from: StrokeShape; to: StrokeShape; pa: StrokePoint[]; pb: StrokePoint[] }
   | { kind: 'instance'; a: InstanceShape; b: InstanceShape | undefined }
-  // Text and particles don't morph: they stay as they are on the start key.
-  | { kind: 'keep'; shape: Shape };
+  // Text and emitters: a on the start key, b on the end key. A missing one is a spare that fades in or out.
+  | { kind: 'text'; a: TextShape | undefined; b: TextShape | undefined }
+  | { kind: 'particles'; a: ParticlesShape | undefined; b: ParticlesShape | undefined };
 
 /** Shapes made of outlines, the ones a shape tween can morph. */
 const morphable = (s: Shape): boolean => s.type !== 'instance' && s.type !== 'text' && s.type !== 'particles';
@@ -492,9 +496,9 @@ function planPair(a: Shape, b: Shape, hints: ShapeHint[]): Plan {
     const n = Math.max(2, a.points.length, b.points.length);
     return { kind: 'stroke', id: a.id, from: a, to: b, pa: resampleStroke(a.points, n), pb: resampleStroke(b.points, n) };
   }
-  if (a.type === 'text' || a.type === 'particles' || b.type === 'text' || b.type === 'particles') return { kind: 'keep', shape: a };
-  const fa = a.type === 'stroke' ? strokeAsFill(a) : a;
-  const fb = b.type === 'stroke' ? strokeAsFill(b) : b;
+  // Only outline shapes get here (text, emitters and symbol copies are planned on their own).
+  const fa = a.type === 'stroke' ? strokeAsFill(a) : (a as FillShape | PathShape);
+  const fb = b.type === 'stroke' ? strokeAsFill(b) : (b as FillShape | PathShape);
   return { kind: 'area', id: a.id, rings: matchOutlines(fa.paths, fb.paths, hints), a: styleOf(fa), b: styleOf(fb) };
 }
 
@@ -508,6 +512,10 @@ function planDrawings(from: VectorDrawing, to: VectorDrawing, hints: ShapeHint[]
   const bi = B.filter((s) => s.type === 'instance') as InstanceShape[];
   const ao = A.filter(morphable) as (StrokeShape | FillShape | PathShape)[];
   const bo = B.filter(morphable) as (StrokeShape | FillShape | PathShape)[];
+  const bt = B.filter((s) => s.type === 'text') as TextShape[];
+  const bp = B.filter((s) => s.type === 'particles') as ParticlesShape[];
+  let ti = 0;
+  let pj = 0;
   const hintOwner = new Map<string, number>();
   for (const h of hints) {
     let best = -1;
@@ -537,11 +545,15 @@ function planDrawings(from: VectorDrawing, to: VectorDrawing, hints: ShapeHint[]
   let ii = 0;
   for (const s of A) {
     if (s.type === 'instance') ordered.push(instPlans[ii++]);
-    else if (s.type === 'text' || s.type === 'particles') ordered.push({ kind: 'keep', shape: s });
+    else if (s.type === 'text') ordered.push({ kind: 'text', a: s, b: bt[ti++] });
+    else if (s.type === 'particles') ordered.push({ kind: 'particles', a: s, b: bp[pj++] });
     else ordered.push(plans[pi++]);
   }
   while (pi < plans.length) ordered.push(plans[pi++]);
   for (let i = ai.length; i < bi.length; i++) ordered.push({ kind: 'instance', a: vanished(bi[i]) as InstanceShape, b: bi[i] });
+  // Text and emitters only on the end key fade in.
+  for (; ti < bt.length; ti++) ordered.push({ kind: 'text', a: undefined, b: bt[ti] });
+  for (; pj < bp.length; pj++) ordered.push({ kind: 'particles', a: undefined, b: bp[pj] });
   return ordered;
 }
 
@@ -565,19 +577,106 @@ function plansFor(from: VectorDrawing, to: VectorDrawing, hints: ShapeHint[]): P
 /** How a symbol copy blends; supplied by the caller (classic tween maths lives with symbols). */
 export type InstanceBlend = (a: InstanceShape, b: InstanceShape | undefined, t: number) => InstanceShape;
 
+/** How a position and turn blend (the same maths as symbol copies, with extra spins and motion paths). */
+export type TransformBlend = (a: Transform2D, b: Transform2D, t: number) => Transform2D;
+
+const plainBlend: TransformBlend = (a, b, t) => ({
+  x: lerp(a.x, b.x, t),
+  y: lerp(a.y, b.y, t),
+  scaleX: lerp(a.scaleX, b.scaleX, t),
+  scaleY: lerp(a.scaleY, b.scaleY, t),
+  rotation: lerp(a.rotation, b.rotation, t),
+  skew: lerp(a.skew, b.skew, t),
+});
+
+const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
+
+/** The words and look of a text shape that can't be blended: when these differ the two crossfade instead. */
+const sameWords = (a: TextShape, b: TextShape) => a.text === b.text && a.font === b.font;
+
+function blendText(a: TextShape, b: TextShape, t: number, tf: TransformBlend): TextShape {
+  const late = t >= 0.5;
+  const out: TextShape = {
+    ...a,
+    size: Math.max(1, lerp(a.size, b.size, t)),
+    weight: Math.round(lerp(a.weight, b.weight, t) / 100) * 100,
+    italic: late ? b.italic : a.italic,
+    align: late ? b.align : a.align,
+    lineHeight: lerp(a.lineHeight ?? 1.2, b.lineHeight ?? 1.2, t),
+    letterSpacing: lerp(a.letterSpacing ?? 0, b.letterSpacing ?? 0, t),
+    color: mixColors(a.color, b.color, t) ?? (late ? b.color : a.color),
+    opacity: clamp01(lerp(a.opacity, b.opacity, t)),
+    transform: tf(a.transform, b.transform, t),
+  };
+  if (late) {
+    if (b.animators) out.animators = b.animators;
+    else delete out.animators;
+  }
+  if (!a.lineHeight && !b.lineHeight) delete out.lineHeight;
+  if (!a.letterSpacing && !b.letterSpacing) delete out.letterSpacing;
+  return out;
+}
+
+/** Emitter settings that blend smoothly. The rest (how many, how long they live, the seed, the sprite) stay as the start key's. */
+const EMITTER_NUMBERS = ['width', 'height', 'speed', 'direction', 'spread', 'gravity', 'wind', 'drag', 'sizeStart', 'sizeEnd', 'opacityStart', 'opacityEnd', 'spin'] as const;
+const EMITTER_HELD = ['emitter', 'rate', 'burst', 'emitFor', 'prewarm', 'life', 'variance', 'sprite', 'symbolId', 'seed', 'max', 'colorBy'] as const;
+
+function blendParticles(a: ParticlesShape, b: ParticlesShape, t: number, tf: TransformBlend): ParticlesShape {
+  const out: ParticlesShape = { ...a, opacity: clamp01(lerp(a.opacity, b.opacity, t)), transform: tf(a.transform, b.transform, t) };
+  for (const k of EMITTER_NUMBERS) out[k] = lerp(a[k], b[k], t);
+  if (a.wobble !== undefined || b.wobble !== undefined) out.wobble = lerp(a.wobble ?? 0, b.wobble ?? 0, t);
+  out.colorStart = mixColors(a.colorStart, b.colorStart, t) ?? a.colorStart;
+  out.colorEnd = mixColors(a.colorEnd, b.colorEnd, t) ?? a.colorEnd;
+  return out;
+}
+
+/** Plain-words notes on what a morph between two drawings can't do with text and particles (empty when nothing is lost). */
+export function morphNotes(from: VectorDrawing, to: VectorDrawing): string[] {
+  const notes: string[] = [];
+  const ta = from.shapes.filter((s) => s.type === 'text') as TextShape[];
+  const tb = to.shapes.filter((s) => s.type === 'text') as TextShape[];
+  const pa = from.shapes.filter((s) => s.type === 'particles') as ParticlesShape[];
+  const pb = to.shapes.filter((s) => s.type === 'particles') as ParticlesShape[];
+  const n = Math.min(ta.length, tb.length);
+  if (ta.length !== tb.length) notes.push('Text with no partner on the other key fades out or in.');
+  if (ta.slice(0, n).some((s, i) => !sameWords(s, tb[i]))) notes.push('Text with different words or a different font crossfades instead of morphing its letters.');
+  if (ta.slice(0, n).some((s, i) => JSON.stringify(s.animators ?? []) !== JSON.stringify(tb[i].animators ?? []))) notes.push('Text animators switch to the last key\'s halfway through.');
+  const m = Math.min(pa.length, pb.length);
+  if (pa.length !== pb.length) notes.push('A particle emitter with no partner on the other key fades out or in.');
+  if (pa.slice(0, m).some((s, i) => EMITTER_HELD.some((k) => s[k] !== pb[i][k]))) notes.push('Particles keep the first key\'s count, lifetime, seed and sprite. Position, direction, speed, size and colour still blend.');
+  return notes;
+}
+
 /**
  * The drawing `t` of the way from `from` to `to` (t is already eased; overshoot easings can take it past 0..1).
- * Instances are blended by `blend`.
+ * Instances are blended by `blend`, text and particle positions by `tf`.
  */
-export function morphShapes(from: VectorDrawing, to: VectorDrawing, t: number, hints: ShapeHint[] = [], blend: InstanceBlend): Shape[] {
+export function morphShapes(from: VectorDrawing, to: VectorDrawing, t: number, hints: ShapeHint[] = [], blend: InstanceBlend, tf: TransformBlend = plainBlend): Shape[] {
   const out: Shape[] = [];
   for (const p of plansFor(from, to, hints)) {
-    if (p.kind === 'instance') {
-      out.push(blend(p.a, p.b, t));
+    if (p.kind === 'text' || p.kind === 'particles') {
+      const a = p.a as TextShape | ParticlesShape | undefined;
+      const b = p.b as TextShape | ParticlesShape | undefined;
+      if (a && !b) out.push({ ...a, opacity: clamp01(lerp(a.opacity, 0, t)) });
+      else if (!a && b) out.push({ ...b, opacity: clamp01(lerp(0, b.opacity, t)) });
+      else if (a && b && p.kind === 'text') {
+        const ca = a as TextShape;
+        const cb = b as TextShape;
+        if (sameWords(ca, cb)) out.push(blendText(ca, cb, t, tf));
+        else {
+          // Different words: both ride the blended move, one fading out as the other fades in.
+          const at = blendText(ca, ca, t, tf);
+          const bt = blendText(cb, cb, t, tf);
+          at.transform = bt.transform = tf(ca.transform, cb.transform, t);
+          at.opacity = clamp01(lerp(ca.opacity, 0, t));
+          bt.opacity = clamp01(lerp(0, cb.opacity, t));
+          out.push(at, { ...bt, id: `${cb.id}~in` });
+        }
+      } else if (a && b) out.push(blendParticles(a as ParticlesShape, b as ParticlesShape, t, tf));
       continue;
     }
-    if (p.kind === 'keep') {
-      out.push(p.shape);
+    if (p.kind === 'instance') {
+      out.push(blend(p.a, p.b, t));
       continue;
     }
     if (p.kind === 'stroke') {

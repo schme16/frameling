@@ -29,6 +29,7 @@ import { shapesBounds, symbolBounds } from '../canvas/geometry';
 import { cloneDrawing } from '../timeline/edit-core';
 import { activeLayer, editActiveDrawing, EDIT_HINTS } from '../tools/edit';
 import { toast } from '../ui/toast';
+import { leaveTileEdit } from '../tiles/tileEdit';
 
 registerChoice<'symbol' | 'morph'>({
   id: 'tween.plainDrawing',
@@ -130,6 +131,8 @@ export function editInstance(id?: Id): Result {
 
 /** Opens a symbol by itself (from the Library). */
 export function editSymbol(id: Id): Result {
+  // A tile open on the canvas goes back first, so the symbol opens in the document rather than in the tile.
+  leaveTileEdit();
   if (!store().get().doc.symbols?.[id]) return say("That symbol is missing, so there's nothing to edit.");
   return open(id, { matrix: [1, 0, 0, 1, 0, 0] }, 0);
 }
@@ -153,6 +156,7 @@ function open(symbolId: Id, at: { instanceId?: Id; matrix: [number, number, numb
 
 /** Goes back out one level (or `levels`, or all the way with Infinity). */
 export function leaveSymbol(levels = 1): Result {
+  leaveTileEdit();
   const doc = store().get().doc;
   if (!doc.editing?.length) return undefined;
   for (let i = 0; i < levels; i++) {
@@ -295,13 +299,18 @@ export function makeTween(layerId?: Id, frame?: number, kind: 'classic' | 'shape
   const d0 = doc.drawings[cel.drawingId];
   if (!camera && (d0?.kind !== 'vector' || !d0.shapes.length)) return say('Draw something first: in-betweens move a drawing from one key to the next.');
   const hasNext = !!nextKey(layer, cel) || layer.cels.some((c) => c.start >= cel.start + cel.length);
-  if (!hasNext && f === cel.start && cel.length < 2) return say('Hold this drawing for a few frames first (drag its end in the timeline), so there is room to move.');
+  // A lone one-frame drawing has no room to move: hold it for about a second first, so the tween just works.
+  const room = !hasNext && f === cel.start && cel.length < 2 ? Math.max(2, Math.min(doc.fps, 48)) : 0;
 
   let endFrame = -1;
   let wrapped = false;
   store().update('Make in-betweens', (dd) => {
     const l = dd.layers.find((x) => x.id === layer.id)!;
     const a = l.cels.find((c) => c.id === cel.id)!;
+    if (room) {
+      a.length = room;
+      dd.length = Math.max(dd.length, a.start + room);
+    }
     const before = Object.keys(dd.symbols ?? {}).length;
     // A morph changes the shapes themselves, so they stay plain shapes.
     if (kind === 'classic') wrapIfPlain(dd, a.drawingId, 'Moving part');

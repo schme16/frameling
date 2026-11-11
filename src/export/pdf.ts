@@ -11,6 +11,7 @@ import { cameraViewAt, layerCameraMatrix } from '../core/camera';
 import type { BlendMode, CameraView, Color, Doc, Drawing, Layer, ParticlesShape, PixelDrawing, Shape, SubPath } from '../core/format';
 import { strokeOutline } from '../core/render';
 import { isPosed, poseAt, type PosedInstance } from '../core/symbols';
+import { flattenTilemap } from '../tiles/model';
 import type { RawImage } from '../io/png';
 import { posedParticles } from '../particles/draw';
 import type { Particle } from '../particles/model';
@@ -57,11 +58,45 @@ export function pdfString(s: string): string {
   return `<${hex}>`;
 }
 
-function parseColor(c: Color): { r: number; g: number; b: number; a: number } {
+function rawColor(c: Color): { r: number; g: number; b: number; a: number } {
   const h = c.replace('#', '');
   const full = h.length === 3 || h.length === 4 ? [...h].map((x) => x + x).join('') : h;
   const v = (i: number) => parseInt(full.slice(i, i + 2), 16) / 255;
   return { r: v(0) || 0, g: v(2) || 0, b: v(4) || 0, a: full.length >= 8 ? v(6) : 1 };
+}
+
+// Colour washes of the symbol copies being drawn, innermost first. The canvas paints a wash over the copy (source-atop
+// at the wash's strength), which for each shape is its colour mixed towards the wash's, so PDF recolours the shapes.
+let washes: { r: number; g: number; b: number; t: number }[] = [];
+
+/** A colour with the washes in force mixed in. */
+export function washColor(c: { r: number; g: number; b: number; a: number }, list = washes): { r: number; g: number; b: number; a: number } {
+  let { r, g, b } = c;
+  for (const w of list) {
+    r = r * (1 - w.t) + w.r * w.t;
+    g = g * (1 - w.t) + w.g * w.t;
+    b = b * (1 - w.t) + w.b * w.t;
+  }
+  return { r, g, b, a: c.a };
+}
+
+function parseColor(c: Color): { r: number; g: number; b: number; a: number } {
+  const p = rawColor(c);
+  return washes.length ? washColor(p) : p;
+}
+
+/** Pixels with the washes in force mixed in (a copy; the original is left alone). */
+function washPixels(img: RawImage): RawImage {
+  if (!washes.length) return img;
+  const px = new Uint8ClampedArray(img.pixels);
+  for (let i = 0; i < px.length; i += 4) {
+    if (!px[i + 3]) continue;
+    const c = washColor({ r: px[i] / 255, g: px[i + 1] / 255, b: px[i + 2] / 255, a: 1 });
+    px[i] = Math.round(c.r * 255);
+    px[i + 1] = Math.round(c.g * 255);
+    px[i + 2] = Math.round(c.b * 255);
+  }
+  return { width: img.width, height: img.height, pixels: px };
 }
 
 interface Obj {
@@ -145,8 +180,8 @@ export class PdfWriter {
   }
 
   /** A transparency group drawn as one (for opacity and blend on a whole layer or folder). Returns its name. */
-  group(content: string, bbox: [number, number, number, number]): string {
-    const id = this.stream(`/Type /XObject /Subtype /Form /BBox [${bbox.map(num).join(' ')}] /Group << /S /Transparency /CS /DeviceRGB >> /Resources ${this.resId} 0 R`, enc.encode(content));
+  group(content: string, bbox: [number, number, number, number], isolated = false): string {
+    const id = this.stream(`/Type /XObject /Subtype /Form /BBox [${bbox.map(num).join(' ')}] /Group << /S /Transparency /CS /DeviceRGB${isolated ? ' /I true' : ''} >> /Resources ${this.resId} 0 R`, enc.encode(content));
     const name = `Fm${this.xobjects.length + 1}`;
     this.xobjects.push(`/${name} ${id} 0 R`);
     return name;
@@ -360,7 +395,7 @@ function drawShape(cx: Content, ctx: PdfFrameContext, s: Shape): void {
 }
 
 function drawPixels(cx: Content, ctx: PdfFrameContext, d: PixelDrawing, pixelSize: number): void {
-  const name = ctx.writer.image({ width: d.width, height: d.height, pixels: d.pixels }, false);
+  const name = ctx.writer.image(washPixels({ width: d.width, height: d.height, pixels: d.pixels }), false);
   // Images fill the unit square; the page is flipped, so flip the picture back.
   cx.push(`q ${num(d.width * pixelSize)} 0 0 ${num(-d.height * pixelSize)} 0 ${num(d.height * pixelSize)} cm /${name} Do Q`);
 }
@@ -383,11 +418,41 @@ function grouped(cx: Content, ctx: PdfFrameContext, opacity: number, blend: Blen
 function drawInstance(cx: Content, ctx: PdfFrameContext, s: PosedInstance): void {
   if (s.opacity <= 0 || !s.posed.layers.length) return;
   const m = s.posed.matrix;
-  grouped(cx, ctx, s.opacity, undefined, (c) => {
-    c.push(`q ${m.map(num).join(' ')} cm`);
-    for (const l of s.posed.layers) grouped(c, ctx, l.opacity, undefined, (cc) => drawDrawing(cc, ctx, l.drawing, l.pixelSize));
-    c.push('Q');
-  });
+  const look = s.posed.look;
+  // Blend modes inside the symbol stay blend modes, in a group of the symbol's own (other looks make the layer a
+  // picture, see layered.ts).
+  const layers = look ? look.layers.filter((l) => look.drawings.has(l.id) && !l.mask).map((l) => ({ pl: look.drawings.get(l.id)!, blend: l.blend })) : s.posed.layers.map((pl) => ({ pl, blend: undefined }));
+  const outer = washes;
+  if (s.tint && s.tint.amount > 0) {
+    const w = rawColor(s.tint.color);
+    washes = [{ r: w.r, g: w.g, b: w.b, t: Math.min(1, s.tint.amount) * w.a }, ...washes];
+  }
+  try {
+    grouped(cx, ctx, s.opacity, undefined, (c) => {
+      c.push(`q ${m.map(num).join(' ')} cm`);
+      const draw = (c2: Content) => {
+        for (const { pl: l, blend } of layers)
+          grouped(c2, ctx, l.opacity, blend, (cc) =>
+            // A tilemap inside a symbol goes in as its pixels, on the symbol's own frame.
+            l.drawing.kind === 'tilemap' ? drawPixels(cc, ctx, flattenTilemap(ctx.doc, l.drawing, l.frame ?? ctx.frame), l.pixelSize) : drawDrawing(cc, ctx, l.drawing, l.pixelSize),
+          );
+      };
+      // Blends mix with the symbol's own layers only, as on the canvas.
+      if (look && layers.some((x) => x.blend && x.blend !== 'normal')) isolated(c, ctx, draw);
+      else draw(c);
+      c.push('Q');
+    });
+  } finally {
+    washes = outer;
+  }
+}
+
+/** Draws `inner` as its own transparency group, so blend modes inside it only mix with each other. */
+function isolated(cx: Content, ctx: PdfFrameContext, inner: (c: Content) => void): void {
+  const c = new Content(ctx.writer);
+  inner(c);
+  const name = ctx.writer.group(c.toString(), [-1e5, -1e5, 1e5, 1e5], true);
+  cx.push(`q /${name} Do Q`);
 }
 
 function particleShape(cx: Content, s: ParticlesShape, p: Particle): void {

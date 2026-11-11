@@ -9,7 +9,8 @@ import { detectCapabilities, type Capabilities } from './capabilities';
 import { describeError, exportDocument, loadLastSettings, loadSheetExtras, saveSheetExtras } from './exporter';
 import { setChoice, useChoice, getChoiceDef, withChoice } from '../core/choices';
 import './choices';
-import { artScale, defaultSettings, hasPixelLayers, planExport, scaleAllowed, scaleChoices } from './plan';
+import { artScale, defaultSettings, drawnFrames, hasPixelLayers, planExport, scaleAllowed, scaleChoices } from './plan';
+import { setDocLength } from '../timeline/ops';
 import { EnginePicker } from './EnginePicker';
 import { openHelp } from '../ui/overlays';
 import { godotTexturePath } from './sheet';
@@ -18,8 +19,10 @@ import type { Progress } from './run';
 import { GIF_MAX_FPS } from './gif';
 import { proresSupport, type ProresSupport } from './prores';
 import { LayeredNotes } from './LayeredNotes';
+import { CarryNotes } from './CarryNotes';
 import { DEFAULT_SHEET, engineInfo, FORMATS, formatInfo, normalizeSheet, type EngineId, type ExportSettings, type FormatId } from './types';
 import './export.css';
+import { leaveTileEdit } from '../tiles/tileEdit';
 import { docDpi, formatSize } from '../core/units';
 import { usePrefs } from '../ui/prefs';
 
@@ -145,6 +148,8 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
   const printed = units === 'px' ? '' : `, ${formatSize(plan.width, plan.height, units, outDpi)} at ${outDpi} DPI`;
   const summary = `${frames} frame${frames === 1 ? '' : 's'}, ${plan.width} × ${plan.height} px${printed}`;
   const noClips = doc.clips.length === 0;
+  // Only for the top level: inside a symbol the length is the symbol's.
+  const drawn = open === doc ? drawnFrames(doc) : null;
 
   if (running) {
     const pct = progress.total ? Math.round((progress.done / progress.total) * 100) : 0;
@@ -295,6 +300,14 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
                   This frame
                 </button>
               </div>
+              {s.range === 'all' && drawn !== null && (
+                <p className="ex-note">
+                  Nothing is drawn after frame {drawn}, so frames {drawn + 1} to {doc.length} would come out empty.{' '}
+                  <button type="button" className="ex-link" onClick={() => setDocLength(drawn)}>
+                    Make the animation {drawn} frame{drawn === 1 ? '' : 's'} long
+                  </button>
+                </p>
+              )}
               {s.range === 'clip' && !noClips && (
                 <select aria-label="Clip" value={s.clipId ?? ''} onChange={(e) => set({ clipId: e.target.value })}>
                   {doc.clips.map((c) => (
@@ -310,12 +323,7 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
           )}
 
           {s.format === 'lottie' ? (
-            <p className="ex-note">
-              Shapes stay shapes, so it plays sharp at any size. Symbols, in-betweens, the camera and clips (as markers) come along.{' '}
-              <button type="button" className="ex-link" onClick={() => openHelp('export-lottie')}>
-                What carries over
-              </button>
-            </p>
+            <p className="ex-note">No size to pick: shapes stay shapes, so a Lottie player draws it sharp at whatever size it's shown.</p>
           ) : (
           <fieldset>
             <legend>Size</legend>
@@ -343,6 +351,7 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
           </fieldset>
 
           <LayeredNotes format={s.format} doc={doc} />
+          <CarryNotes format={s.format} doc={doc} />
           {s.format === 'webm' && (
             <fieldset>
               <legend>Video codec</legend>
@@ -491,6 +500,8 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
 }
 
 export function openExportDialog(format?: FormatId): void {
+  // Exports are of the whole animation, so a tile open on the canvas goes back first.
+  leaveTileEdit();
   const initial = startingSettings();
   if (format && format !== initial.format) {
     const { doc } = store().get();
@@ -506,6 +517,7 @@ export function openExportDialog(format?: FormatId): void {
 
 /** Runs the last export again with the same settings, showing progress. Opens the dialog instead when there is no last one. */
 export function exportAgain(): void {
+  leaveTileEdit();
   const last = loadLastSettings();
   if (!last) return openExportDialog();
   mountModal((close) => <ExportDialog close={close} initial={startingSettings()} autoStart />);

@@ -20,6 +20,8 @@ interface Entry {
   headWords: string[];
   bodyWords: string[];
   titleLower: string;
+  /** The topic's keywords, on its opening entry only. */
+  keywords: string[];
 }
 
 let index: Entry[] | null = null;
@@ -35,7 +37,7 @@ function build(topics: HelpTopic[]): Entry[] {
       const heading = i > 0 && m ? m[1] : undefined;
       const text = plain(m && i > 0 ? part.slice(m[0].length) : part);
       const head = `${t.title} ${heading ?? ''} ${i === 0 ? `${t.summary} ${(t.keywords ?? []).join(' ')}` : ''}`;
-      out.push({ topic: t, anchor: heading ? slug(heading) : undefined, heading, text, headWords: wordsOf(head), bodyWords: wordsOf(text), titleLower: t.title.toLowerCase() });
+      out.push({ topic: t, anchor: heading ? slug(heading) : undefined, heading, text, headWords: wordsOf(head), bodyWords: wordsOf(text), titleLower: t.title.toLowerCase().replace(/^the /, ''), keywords: i === 0 ? (t.keywords ?? []).map((k) => k.toLowerCase()) : [] });
     });
   }
   return out;
@@ -71,6 +73,8 @@ export function searchHelp(query: string, limit = 12, topics: HelpTopic[] = allH
     if (!all) continue;
     score /= words.length;
     if (words.length === 1 && e.titleLower.startsWith(words[0])) score += 20;
+    // Typed exactly what a keyword says ("save", "lost my work"): that's the topic people mean.
+    else if (e.keywords.includes(query.trim().toLowerCase())) score += 15;
     if (!e.anchor) score += 3;
     hits.push({ topic: e.topic, anchor: e.anchor, heading: e.heading, snippet: snippet(e.text, words[0]), score });
   }
@@ -92,8 +96,8 @@ function snippet(text: string, word: string): string {
   return (start ? '…' : '') + text.slice(start, start + 150) + (start + 150 < text.length ? '…' : '');
 }
 
-/** Contents order: the sections people meet first come first, anything else after, alphabetically. */
-export const SECTION_ORDER = ['Getting started', 'Basics', 'Drawing', 'Animating', 'Rigging', 'Effects', 'Pixel art', 'Exporting', 'Workspace', 'Settings'];
+/** Contents order: the way a beginner meets things, from the first drawing to sharing it. Anything else after, alphabetically. */
+export const SECTION_ORDER = ['Getting started', 'Basics', 'Drawing', 'Animating', 'Pixel art', 'Symbols and motion', 'Rigging', 'Effects', 'Sound', 'Files', 'Exporting', 'Workspace', 'Settings', 'Plugins'];
 
 export function sections(topics: HelpTopic[] = allHelp()): { name: string; topics: HelpTopic[] }[] {
   const map = new Map<string, HelpTopic[]>();
@@ -108,5 +112,5 @@ export function sections(topics: HelpTopic[] = allHelp()): { name: string; topic
   };
   return [...map.entries()]
     .sort((a, b) => rank(a[0]) - rank(b[0]) || a[0].localeCompare(b[0]))
-    .map(([name, list]) => ({ name, topics: list.sort((a, b) => a.title.localeCompare(b.title)) }));
+    .map(([name, list]) => ({ name, topics: list.sort((a, b) => (a.order ?? 50) - (b.order ?? 50) || a.title.localeCompare(b.title)) }));
 }
