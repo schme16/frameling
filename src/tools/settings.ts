@@ -20,6 +20,12 @@ export interface ToolSettings {
   cornerRadius: number;
   /** Eyedropper: pick from the active layer only. */
   pickActiveLayerOnly: boolean;
+  /** Polygon: how many sides. Star: how many points, and how deep the dips are (inner size, 10 to 95 percent). */
+  polygonSides: number;
+  starPoints: number;
+  starInner: number;
+  /** Pencil on vector layers: false draws the hand-drawn outline, true a clean even line you can edit by its points. */
+  pencilClean: boolean;
 }
 
 export const DEFAULT_TOOL_SETTINGS: ToolSettings = {
@@ -32,6 +38,10 @@ export const DEFAULT_TOOL_SETTINGS: ToolSettings = {
   shapeStroke: 4,
   cornerRadius: 0,
   pickActiveLayerOnly: false,
+  polygonSides: 6,
+  starPoints: 5,
+  starInner: 45,
+  pencilClean: false,
 };
 
 const KEY = 'frameling.toolSettings';

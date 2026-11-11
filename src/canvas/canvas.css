@@ -735,3 +735,8 @@
   border-radius: var(--radius-small);
   background: repeating-conic-gradient(color-mix(in srgb, var(--text) 8%, transparent) 0 25%, transparent 0 50%) 0 0 / 12px 12px;
 }
+.cv-options-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}

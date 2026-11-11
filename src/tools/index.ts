@@ -1,11 +1,16 @@
 // Registers the tools area's commands, panels, tools and help topics.
 import './help';
+import './drawing-help';
 import './wells';
 import './select';
 import './brush';
 import './pencil';
 import './eraser';
 import './shapes';
+import './pen';
+import './points';
+import './polystar';
+import './gradient-tool';
 import './eyedropper';
 import './view-tools';
 import './edit-commands';
