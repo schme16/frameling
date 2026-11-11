@@ -13,7 +13,7 @@
 //   outDir               where outputs and the report go (default: a fresh folder under the system temp dir)
 //   --only=gif,mp4       only these formats (mp4 webm gif apng png pngseq svg sheet interactives psd pdf ai prores
 //                        godot-bones)
-//   --templates=a,b      only these templates (bouncing-ball hero-sprites blank-vector blank-pixel bouncing-logo stress)
+//   --templates=a,b      only these templates (bouncing-ball hero-sprites blank-vector blank-pixel bouncing-logo stress kitchen-sink)
 //   --skip=files         skip a part: files (save/open/autosave/close), godot
 //   --show               leave the window visible (needs a real display)
 //   GODOT_BIN=/path/to/godot-4-editor    also loads the sprite sheet files in Godot
@@ -33,7 +33,7 @@ const argv = process.argv.slice(2).filter((a) => !a.endsWith('export.cjs'));
 const flag = (n) => argv.find((a) => a.startsWith(`--${n}=`))?.split('=')[1]?.split(',');
 const outDir = path.resolve(argv.find((a) => !a.startsWith('--')) ?? fs.mkdtempSync(path.join(os.tmpdir(), 'frameling-e2e-')));
 const ONLY = flag('only');
-const TEMPLATES = flag('templates') ?? ['bouncing-ball', 'hero-sprites', 'blank-vector', 'blank-pixel', 'bouncing-logo', 'stress'];
+const TEMPLATES = flag('templates') ?? ['bouncing-ball', 'hero-sprites', 'blank-vector', 'blank-pixel', 'bouncing-logo', 'stress', 'kitchen-sink'];
 const SKIP = flag('skip') ?? [];
 const GODOT = process.env.GODOT_BIN;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -114,7 +114,8 @@ const ev = (js) => win.webContents.executeJavaScript(js, true);
 const X = (call) => ev(`window.__framelingExport.${call}`);
 const IO = (call) => ev(`window.__framelingIo.${call}`);
 
-const loadTpl = (tpl) => X(tpl === 'stress' ? 'loadStress()' : `load(${JSON.stringify(tpl)})`);
+// stress and kitchen-sink are fixtures, not templates people see (src/export/debug.ts, src/export/kitchenSink.ts).
+const loadTpl = (tpl) => X(tpl === 'stress' ? 'loadStress()' : tpl === 'kitchen-sink' ? 'loadKitchenSink()' : `load(${JSON.stringify(tpl)})`);
 
 function setAutomationDir(d) {
   fs.mkdirSync(d, { recursive: true });
@@ -258,6 +259,12 @@ async function vVideo(file, s, exp, caseCtx) {
   const [n, d] = String(st.avg_frame_rate).split('/').map(Number);
   check(near(n / d, exp.fps, 0.6), `frame rate ${st.avg_frame_rate}, wanted ${exp.fps}`);
   check(sh('ffmpeg', ['-v', 'error', '-i', file, '-f', 'null', '-']).err.trim() === '', 'ffmpeg reports decode errors');
+  if (caseCtx.sound && exp.count > 1) {
+    const a = sh('ffprobe', ['-v', 'error', '-select_streams', 'a:0', '-show_entries', 'stream=codec_name', '-of', 'csv=p=0', file]).out.trim();
+    if (check(a, 'the document has sound but the video has none')) note(`sound: ${a}`);
+    // ffmpeg is here (it's checking this file), so the app should have used it to make MP4 sound AAC.
+    if (!webm) check(a === 'aac', `MP4 sound is ${a}, wanted aac (QuickTime and Safari play Opus in MP4 silent)`);
+  }
 
   // Alpha: ask ffprobe for the tag, then decode with the VP9 decoder that understands it.
   const wantAlpha = webm && caseCtx.transparent && caseCtx.alphaExpected;
@@ -463,7 +470,8 @@ async function vSvg(file, s, exp, caseCtx) {
     const e = ref && rmse(png, ref);
     if (e !== null && e !== undefined) {
       note(`render vs png rmse=${e.toFixed(4)}`);
-      check(e < TOL.svg, `SVG renders differently from the PNG export (rmse ${e.toFixed(4)})`);
+      if (caseCtx.svgApprox) note('effects and masks are left out of SVG, so it is not compared closely');
+      else check(e < TOL.svg, `SVG renders differently from the PNG export (rmse ${e.toFixed(4)})`);
     }
     if (caseCtx.transparent) check(hasAlpha(png) === true, 'transparent SVG renders with no transparent pixels');
   }
@@ -479,7 +487,7 @@ async function vSheet(files, dir, s, exp, caseCtx) {
   const generic = engine === 'json' || ((engine === 'godot' || engine === 'css') && s.sheet.json);
   const want = { godot: ['.tres'], unity: ['.json', '.cs'], phaser: ['.json', '-anims.json'], pixi: ['.json'], css: ['.css', '.html'], json: ['.json'], none: [] }[engine];
   for (const ext of want) check(names.some((n) => n.endsWith(ext)), `${engine}: no ${ext} file`);
-  const json = generic ? names.find((n) => n.endsWith('.json')) : null;
+  const json = generic ? names.find((n) => n.endsWith('.json') && !n.endsWith('-flow.json')) : null;
   check(generic ? !!json : engine !== 'none' || !names.some((n) => n.endsWith('.json')), 'json file presence does not match the setting');
   check(engine === 'godot' ? names.some((n) => n.endsWith('.tres')) : !names.some((n) => n.endsWith('.tres')), '.tres presence does not match the setting');
   check(engine === 'godot' && s.sheet.godotScene ? names.some((n) => n.endsWith('.tscn')) : !names.some((n) => n.endsWith('.tscn')), '.tscn presence does not match the setting');
@@ -624,7 +632,13 @@ async function runCase(tpl, fmt, label, edit, opts = {}) {
     const exp = await expectationFor(settings);
     // The dialog's own capability probe decides what a video can do here.
     const caps = await X(`caps(${exp.width}, ${exp.height})`);
-    const caseCtx = { transparent: settings.transparent && (fmt === 'webm' ? !!caps.webm.alpha : fmt !== 'mp4'), alphaExpected: !!caps.webm.alpha };
+    const caseCtx = {
+      transparent: settings.transparent && (fmt === 'webm' ? !!caps.webm.alpha : fmt !== 'mp4'),
+      alphaExpected: !!caps.webm.alpha,
+      sound: await ev('!!window.__framelingExport.doc().audio?.some((c) => !c.muted)'),
+      // SVG leaves out effects, masks and clipping (see export help), so it only roughly matches a document using them.
+      svgApprox: tpl === 'kitchen-sink',
+    };
     if (fmt === 'webm' && settings.transparent && !caps.webm.alpha) note('this computer cannot do see-through WebM, so the background is kept');
     r.settings = settings;
     const res = await X(`run(${JSON.stringify(settings)}, ${opts.cancelAfter ?? 'undefined'})`);
@@ -855,7 +869,9 @@ async function vPdf(file, s, exp, caseCtx) {
     const e = refWhite && rmse(base + '.png', refWhite);
     if (e !== null && e !== undefined) {
       note(`page ${k + 1} vs png rmse=${e.toFixed(4)}`);
-      check(e < TOL.svg, `page ${k + 1} looks different from the PNG export (rmse ${e.toFixed(4)})`);
+      // The kitchen sink's symbol has a colour wash, which PDF leaves out (see the PDF help), so it is allowed a little more.
+      const tol = caseCtx.svgApprox ? 0.1 : TOL.svg;
+      check(e < tol, `page ${k + 1} looks different from the PNG export (rmse ${e.toFixed(4)})`);
     }
   }
   if (need('gs')) {

@@ -105,6 +105,13 @@ export interface FramelingApi {
     /** Lets Frameling write back to an Interactives package it opened, in later sessions too. */
     linkPlayable?(path: string): Promise<void>;
   };
+  /** Video helpers that need programs on the computer (missing in a browser). */
+  media?: {
+    /** Whether ffmpeg is there to turn a video's sound into AAC. */
+    aacAvailable(): Promise<boolean>;
+    /** An MP4 with its sound turned into AAC (the picture untouched), or null when it couldn't be done. */
+    toAac(bytes: Uint8Array): Promise<Uint8Array | null>;
+  };
   library?: LibraryApi;
   recent: {
     list(): Promise<RecentFile[]>;

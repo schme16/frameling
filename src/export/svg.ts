@@ -85,8 +85,8 @@ export function subPathsToPathData(paths: SubPath[]): string {
   return d;
 }
 
-export function shapeToSvg(s: Shape): string {
-  if (s.type === 'instance') return isPosed(s) ? instanceToSvg(s) : '';
+export function shapeToSvg(s: Shape, doc?: Doc): string {
+  if (s.type === 'instance') return isPosed(s) ? instanceToSvg(s, doc) : '';
   if (s.type === 'text') return textToSvg(s);
   if (s.type === 'particles') return particlesToSvg(s);
   if (s.type === 'stroke') {
@@ -101,7 +101,7 @@ export function shapeToSvg(s: Shape): string {
 }
 
 // A posed instance becomes a group with its matrix; its layers nest inside. Its tint is a small filter (svg-look.ts).
-export function instanceToSvg(s: PosedInstance): string {
+export function instanceToSvg(s: PosedInstance, doc?: Doc): string {
   const inner: string[] = [];
   for (const l of s.posed.layers) {
     if (l.mesh) {
@@ -110,7 +110,15 @@ export function instanceToSvg(s: PosedInstance): string {
       if (img) inner.push(l.opacity < 1 ? `<g opacity="${op(l.opacity)}">${img}</g>` : img);
       continue;
     }
-    const parts = l.drawing.kind === 'pixel' ? pixelRects(l.drawing, l.pixelSize) : l.drawing.kind === 'vector' ? l.drawing.shapes.map(shapeToSvg).filter(Boolean) : [];
+    const dr = l.drawing;
+    const parts =
+      dr.kind === 'pixel'
+        ? pixelRects(dr, l.pixelSize)
+        : dr.kind === 'vector'
+          ? dr.shapes.map((x) => shapeToSvg(x, doc)).filter(Boolean)
+          : dr.kind === 'tilemap' && doc && l.frame !== undefined
+            ? pixelRects(flattenTilemap(doc, dr, l.frame), l.pixelSize)
+            : [];
     if (!parts.length) continue;
     inner.push(l.opacity < 1 ? `<g opacity="${op(l.opacity)}">${parts.join('')}</g>` : parts.join(''));
   }
@@ -205,7 +213,7 @@ export function pixelRects(d: PixelDrawing, size: number): string[] {
 export function drawingToSvg(doc: Doc, layer: Layer, d: Drawing, frame: number): string[] {
   if (d.kind === 'pixel') return pixelRects(d, layer.kind === 'pixel' ? layer.pixelSize : 1);
   if (d.kind === 'tilemap') return pixelRects(flattenTilemap(doc, d, frame), layer.kind === 'tilemap' ? layer.pixelSize : 1);
-  if (d.kind === 'vector') return d.shapes.map(shapeToSvg).filter(Boolean);
+  if (d.kind === 'vector') return d.shapes.map((x) => shapeToSvg(x, doc)).filter(Boolean);
   return [];
 }
 

@@ -9,6 +9,7 @@
 import { current, type Draft } from 'immer';
 import type { Doc, Drawing, Layer, PixelDrawing, TilemapDrawing, VectorDrawing } from '../core/format';
 import { celAt, findLayer, newDrawingFor, uid } from '../core/doc';
+import { isInBetween, shownDrawing } from '../core/symbols';
 import { store } from '../core/store';
 import { registerChoice, withChoice } from '../core/choices';
 
@@ -26,6 +27,22 @@ registerChoice<HeldFrameChoice>({
   default: 'new-key',
   category: 'Drawing',
   help: 'timeline-frames',
+});
+
+export type TweenFrameChoice = 'new-key' | 'edit-key';
+
+registerChoice<TweenFrameChoice>({
+  id: 'draw.tweenFrame',
+  title: 'Changing an in-between',
+  question:
+    "This frame is an in-between: Frameling works it out from the keys on either side. When you move or change something here, what should happen?",
+  options: [
+    { value: 'new-key', label: 'Make a key here', detail: 'This frame becomes a key with your change, and the glide goes through it. The keys on either side stay as they were.' },
+    { value: 'edit-key', label: 'Change the key before', detail: 'Your change goes to the key the in-betweens start from, so the whole glide changes.' },
+  ],
+  default: 'new-key',
+  category: 'Drawing',
+  help: 'tweens',
 });
 
 export type EditResult = 'ok' | 'no-layer' | 'locked' | 'hidden' | 'wrong-kind' | 'bones';
@@ -65,7 +82,7 @@ export function activeDrawing(): Drawing | undefined {
 export function editActiveDrawing<K extends 'vector' | 'pixel' | 'tilemap'>(
   label: string,
   kind: K,
-  recipe: (drawing: Draft<K extends 'vector' ? VectorDrawing : K extends 'pixel' ? PixelDrawing : TilemapDrawing>, doc: Draft<Doc>) => void,
+  recipe: (drawing: Draft<K extends 'vector' ? VectorDrawing : K extends 'pixel' ? PixelDrawing : TilemapDrawing>, doc: Draft<Doc>, split: boolean) => void,
   opts: { coalesce?: string } = {},
 ): EditResult {
   const { layer, problem } = activeLayer();
@@ -74,6 +91,9 @@ export function editActiveDrawing<K extends 'vector' | 'pixel' | 'tilemap'>(
   if (layer.kind === 'vector' && layer.rig) return 'bones';
   const frame = store().get().ui.frame;
   const held = celAt(layer, frame);
+  // On an in-between the new key starts from what shows there, not from the key before.
+  const tweened = isInBetween(store().get().doc, layer, frame);
+  const shown = tweened ? shownDrawing(store().get().doc, layer, frame) : undefined;
   const apply = (split: boolean) =>
     store().update(
       label,
@@ -83,12 +103,14 @@ export function editActiveDrawing<K extends 'vector' | 'pixel' | 'tilemap'>(
         if (cel && split && cel.start < frame) {
           // Make a new key here: the held cel ends just before this frame, and a copy of its drawing takes over.
           const src = doc.drawings[cel.drawingId];
-          const copy = structuredClone(current(src)) as Draft<Drawing>;
+          const copy = (shown ? structuredClone(shown) : structuredClone(current(src))) as Draft<Drawing>;
           copy.id = uid(src.kind === 'pixel' ? 'p' : src.kind === 'tilemap' ? 't' : 'v');
           doc.drawings[copy.id] = copy;
           const end = cel.start + cel.length;
           cel.length = frame - cel.start;
-          l.cels.push({ id: uid('c'), start: frame, length: end - frame, drawingId: copy.id });
+          // The glide carries on from the new key to the next one.
+          const tween = tweened && cel.tween ? { ...(cel.tween.kind ? { kind: cel.tween.kind } : {}), ease: current(cel).tween!.ease } : undefined;
+          l.cels.push({ id: uid('c'), start: frame, length: end - frame, drawingId: copy.id, ...(tween ? { tween } : {}) });
           l.cels.sort((a, b) => a.start - b.start);
           cel = l.cels.find((c) => c.start === frame)!;
         }
@@ -103,12 +125,16 @@ export function editActiveDrawing<K extends 'vector' | 'pixel' | 'tilemap'>(
           if (frame + length > doc.length) doc.length = frame + length;
           cel = l.cels.find((c) => c.start === frame)!;
         }
-        recipe(doc.drawings[cel.drawingId] as never, doc);
+        recipe(doc.drawings[cel.drawingId] as never, doc, split && !!held && held.start < frame);
       },
       opts,
     );
   if (!held || held.start === frame) {
     apply(false);
+    return 'ok';
+  }
+  if (tweened) {
+    withChoice<TweenFrameChoice>('draw.tweenFrame', (v) => apply(v === 'new-key'));
     return 'ok';
   }
   // Drawing on a held frame. Asked the first time, then remembered (Preferences > Behaviour).

@@ -441,6 +441,8 @@ export interface PosedLayer {
   pixelSize: number;
   /** Bent through a bone mesh (attached layers only). */
   mesh?: PosedMesh;
+  /** The symbol's own frame it was posed at (tilemaps inside need it for animated tiles). Missing = the outer frame. */
+  frame?: number;
 }
 
 /** An instance ready to draw: its matrix and the drawings its symbol shows at the frame in question. Runtime only. */
@@ -593,9 +595,11 @@ export function poseInstance(doc: Doc, s: InstanceShape, inner: number, depth = 
   if (!c || inner < 0) return { ...s, posed: { matrix: [...IDENTITY_MAT], layers: [] } };
   const layers: PosedLayer[] = [];
   for (const l of c.layers) {
-    if (!l.visible) continue;
+    // Masks, reference layers and hidden folders never show. Other looks (blend, effects, clipping, masks) are left
+    // out inside symbols for now; the layer the instance sits on can have them.
+    if (!l.visible || l.mask || l.reference || (l.folder && doc.folders?.[l.folder]?.visible === false)) continue;
     const dr = poseAt(doc, l, inner, depth + 1);
-    if (dr) layers.push({ drawing: dr, opacity: l.opacity, pixelSize: 'pixelSize' in l ? l.pixelSize : 1 });
+    if (dr) layers.push({ drawing: dr, opacity: l.opacity, pixelSize: 'pixelSize' in l ? l.pixelSize : 1, frame: inner });
   }
   return { ...s, posed: { matrix: transformMatrix(s.transform, c.def.origin), layers } };
 }
@@ -615,6 +619,47 @@ export function instanceAt(doc: Doc, layer: Layer, frame: number, id: Id): Insta
   return tweenInstance(from[i], pairs[i], cel.tween!, tp.t);
 }
 
+// In-between drawings by start drawing, end drawing and tween, then by progress, so the same frame gives the same
+// object (tools compare drawings by identity).
+const shownCache = new WeakMap<Drawing, WeakMap<Drawing, WeakMap<Tween, Map<string, VectorDrawing>>>>();
+
+/**
+ * The drawing on a layer as it shows at `frame`: on an in-between frame of a tween, the key's drawing with its
+ * instances where they are right now (plain instances, not posed). Otherwise the key's own drawing.
+ */
+export function shownDrawing(doc: Doc, layer: Layer, frame: number): Drawing | undefined {
+  const cel = celAt(layer, frame);
+  const d = cel ? doc.drawings[cel.drawingId] : undefined;
+  if (!cel || !d || d.kind !== 'vector' || frame <= cel.start || !hasInstances(d)) return d;
+  const tp = tweenProgress(layer, cel, frame);
+  const to = tp ? doc.drawings[tp.next.drawingId] : undefined;
+  if (!tp || !to || to.kind !== 'vector') return d;
+  let a = shownCache.get(d);
+  if (!a) shownCache.set(d, (a = new WeakMap()));
+  let b = a.get(to);
+  if (!b) a.set(to, (b = new WeakMap()));
+  let c = b.get(cel.tween!);
+  if (!c) b.set(cel.tween!, (c = new Map()));
+  const key = tp.t.toFixed(6);
+  const hit = c.get(key);
+  if (hit) return hit;
+  const from = d.shapes.filter(isInstance);
+  const pairs = pairInstances(from, to.shapes.filter(isInstance));
+  let n = 0;
+  const out: VectorDrawing = { ...d, shapes: d.shapes.map((s) => (isInstance(s) ? tweenInstance(s, pairs[n++], cel.tween!, tp.t) : s)) };
+  c.set(key, out);
+  if (c.size > 200) c.delete(c.keys().next().value!);
+  return out;
+}
+
+/** True when `frame` is an in-between of a tween on the layer (not the key itself). */
+export function isInBetween(doc: Doc, layer: Layer, frame: number): boolean {
+  const cel = celAt(layer, frame);
+  if (!cel || frame <= cel.start || !cel.tween) return false;
+  const d = doc.drawings[cel.drawingId];
+  return !!tweenProgress(layer, cel, frame) && hasInstances(d);
+}
+
 /** A drawing being changed right now (a stroke in progress), with its instances posed like the stored one's. */
 export function poseLive(doc: Doc, layer: Layer, frame: number, live: Drawing): Drawing {
   const d = poseLiveCel(doc, layer, frame, live);
@@ -627,7 +672,21 @@ function poseLiveCel(doc: Doc, layer: Layer, frame: number, live: Drawing): Draw
   const byId = new Map<Id, Shape>();
   if (posed?.kind === 'vector') for (const s of posed.shapes) if (isPosed(s) || s.type === 'text' || s.type === 'particles') byId.set(s.id, s);
   const local = frame - (celAt(layer, frame)?.start ?? frame);
-  return { ...live, shapes: live.shapes.map((s) => (isInstance(s) ? (byId.get(s.id) ?? poseInstance(doc, s, 0)) : s.type === 'text' || s.type === 'particles' ? poseMovingShape(doc, s, local) : s)) };
+  return {
+    ...live,
+    shapes: live.shapes.map((s) => {
+      if (s.type === 'text' || s.type === 'particles') return poseMovingShape(doc, s, local);
+      if (!isInstance(s)) return s;
+      const p = byId.get(s.id) as PosedInstance | undefined;
+      if (!p || !isPosed(p)) return poseInstance(doc, s, 0);
+      if (p.symbolId !== s.symbolId) return poseInstance(doc, s, 0);
+      const same = p.transform === s.transform && p.opacity === s.opacity && p.tint === s.tint;
+      if (same) return p;
+      // Being moved, turned or faded right now (a drag on the canvas): the stored pose's drawings, the live place.
+      const c = symbolContent(doc, s.symbolId);
+      return { ...s, posed: { matrix: c ? transformMatrix(s.transform, c.def.origin) : p.posed.matrix, layers: p.posed.layers } };
+    }),
+  };
 }
 
 /** The document and playhead of the main stage, even while a symbol is open (for exports and thumbnails). */

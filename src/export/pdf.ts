@@ -11,6 +11,7 @@ import { cameraViewAt, layerCameraMatrix } from '../core/camera';
 import type { BlendMode, CameraView, Color, Doc, Drawing, Layer, ParticlesShape, PixelDrawing, Shape, SubPath } from '../core/format';
 import { strokeOutline } from '../core/render';
 import { isPosed, poseAt, type PosedInstance } from '../core/symbols';
+import { flattenTilemap } from '../tiles/model';
 import type { RawImage } from '../io/png';
 import { posedParticles } from '../particles/draw';
 import type { Particle } from '../particles/model';
@@ -385,7 +386,11 @@ function drawInstance(cx: Content, ctx: PdfFrameContext, s: PosedInstance): void
   const m = s.posed.matrix;
   grouped(cx, ctx, s.opacity, undefined, (c) => {
     c.push(`q ${m.map(num).join(' ')} cm`);
-    for (const l of s.posed.layers) grouped(c, ctx, l.opacity, undefined, (cc) => drawDrawing(cc, ctx, l.drawing, l.pixelSize));
+    for (const l of s.posed.layers)
+      grouped(c, ctx, l.opacity, undefined, (cc) =>
+        // A tilemap inside a symbol goes in as its pixels, on the symbol's own frame.
+        l.drawing.kind === 'tilemap' ? drawPixels(cc, ctx, flattenTilemap(ctx.doc, l.drawing, l.frame ?? ctx.frame), l.pixelSize) : drawDrawing(cc, ctx, l.drawing, l.pixelSize),
+      );
     c.push('Q');
   });
 }

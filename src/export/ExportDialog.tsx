@@ -21,6 +21,7 @@ import { LayeredNotes } from './LayeredNotes';
 import { CarryNotes } from './CarryNotes';
 import { DEFAULT_SHEET, engineInfo, FORMATS, formatInfo, normalizeSheet, type EngineId, type ExportSettings, type FormatId } from './types';
 import './export.css';
+import { leaveTileEdit } from '../tiles/tileEdit';
 import { docDpi, formatSize } from '../core/units';
 import { usePrefs } from '../ui/prefs';
 
@@ -488,6 +489,8 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
 }
 
 export function openExportDialog(format?: FormatId): void {
+  // Exports are of the whole animation, so a tile open on the canvas goes back first.
+  leaveTileEdit();
   const initial = startingSettings();
   if (format && format !== initial.format) {
     const { doc } = store().get();
@@ -503,6 +506,7 @@ export function openExportDialog(format?: FormatId): void {
 
 /** Runs the last export again with the same settings, showing progress. Opens the dialog instead when there is no last one. */
 export function exportAgain(): void {
+  leaveTileEdit();
   const last = loadLastSettings();
   if (!last) return openExportDialog();
   mountModal((close) => <ExportDialog close={close} initial={startingSettings()} autoStart />);

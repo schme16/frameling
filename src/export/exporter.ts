@@ -10,6 +10,11 @@ import { detectCapabilities } from './capabilities';
 import { filtersFor, planExport } from './plan';
 import { isCancelled, runExport, type Progress } from './run';
 import { SheetProblem } from './engines';
+import { audibleClips } from '../audio/clips';
+import { canMakeAac } from '../audio/export';
+import { choose } from '../core/choices';
+import type { Mp4SoundChoice } from './choices';
+import './choices';
 import { runProres } from './prores';
 import { DEFAULT_SHEET, formatInfo, normalizeSheet, type ExportSettings, type SheetSettings } from './types';
 
@@ -88,6 +93,11 @@ export async function exportDocument(settings: ExportSettings, signal: AbortSign
   const st = store().get();
   // While a symbol is open, export the scene as it is saved.
   const { doc, frame } = sceneOf(st.doc, st.ui.frame);
+  const picked = settings;
+  // MP4 with sound, on a computer that can only make Opus sound and has no ffmpeg to fix it: ask (once) what to do.
+  if (settings.format === 'mp4' && audibleClips(doc.audio).length && !(await canMakeAac()) && !(await api.media?.aacAvailable().catch(() => false))) {
+    if ((await choose<Mp4SoundChoice>('export.mp4Sound')) === 'webm') settings = { ...settings, format: 'webm' };
+  }
   const plan = planExport(doc, settings, frame);
   if (plan.problem) throw new ExportProblem(plan.problem);
   const info = formatInfo(settings.format);
@@ -124,7 +134,7 @@ export async function exportDocument(settings: ExportSettings, signal: AbortSign
 
   let result;
   try {
-    result = await runExport({ doc, settings, currentFrame: frame, signal, onProgress, videoCodec, videoAlpha, appVersion: api.versions.app });
+    result = await runExport({ doc, settings, currentFrame: frame, signal, onProgress, videoCodec, videoAlpha, appVersion: api.versions.app, toAac: api.media?.toAac });
   } catch (e) {
     if (isCancelled(e)) return 'cancelled';
     throw e;
@@ -141,7 +151,7 @@ export async function exportDocument(settings: ExportSettings, signal: AbortSign
     if ('error' in w) throw new ExportProblem(w.error);
     shown = w.paths.find((p) => baseName(p) === result.main) ?? w.paths[0];
   }
-  saveLastSettings(settings);
+  saveLastSettings(picked);
   const note = result.kind === 'file' ? result.note : undefined;
   notify(`Exported ${baseName(shown)}.${note ? ` ${note}` : ''}`, note ? 'warn' : 'success', can('showInFolder') ? { label: 'Show in folder', run: () => void api.files.showInFolder(shown) } : undefined, 9000, 'cheer');
   return 'done';

@@ -4,7 +4,7 @@ import { useState, useSyncExternalStore } from 'react';
 import { findLayer } from '../core/doc';
 import type { BlendMode, EffectKind, Layer, LayerEffect, LayerFolder } from '../core/format';
 import { useStore } from '../core/store';
-import { ActionButton, Choice, Field, Slider, Toggle } from '../canvas/controls';
+import { ActionButton, Choice, Field, Slider, Tip, Toggle } from '../canvas/controls';
 import { Icon } from '../ui/icons';
 import { ContextMenu, Floating } from '../timeline/Menu';
 import { setLayerOpacity } from '../timeline/ops';
@@ -38,12 +38,18 @@ export function EffectsPanel() {
   const layer = useStore((s) => findLayer(s.doc, s.ui.activeLayerId) ?? s.doc.layers[s.doc.layers.length - 1]);
   const folder = useStore((s) => (layer?.folder ? s.doc.folders?.[layer.folder] : undefined));
   const [onFolder, setOnFolder] = useState(false);
+  const inSymbol = useStore((s) => !!s.doc.editing?.length);
   if (!layer) return <div className="cv-panel-empty">Add a layer to give it effects.</div>;
   const useFolder = onFolder && !!folder;
   const target: Target = useFolder ? { folder: folder!.id } : { layer: layer.id };
   const look: Layer | LayerFolder = useFolder ? folder! : layer;
   return (
     <div className="cv-panel fx-panel" aria-label="Effects">
+      {inSymbol && (
+        <Tip>
+          You're inside a symbol. Effects, blend modes and masks here show while you draw inside it, but not where the symbol is placed. For a look on the whole symbol, put it on the layer the symbol sits on.
+        </Tip>
+      )}
       {folder ? (
         <Choice
           label="Change"

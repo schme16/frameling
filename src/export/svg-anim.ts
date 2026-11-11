@@ -109,7 +109,7 @@ const cls = (...names: string[]) => {
 function instanceContent(s: PosedInstance): string {
   const parts: string[] = [];
   for (const l of s.posed.layers) {
-    const inner = l.drawing.kind === 'vector' ? l.drawing.shapes.map(shapeToSvg).filter(Boolean) : [];
+    const inner = l.drawing.kind === 'vector' ? l.drawing.shapes.map((x) => shapeToSvg(x)).filter(Boolean) : [];
     if (!inner.length && l.drawing.kind !== 'vector') {
       // Pixel art inside a symbol: written through the still-SVG instance writer.
       const whole = shapeToSvg({ ...s, opacity: 1, posed: { matrix: [1, 0, 0, 1, 0, 0], layers: [l] } } as PosedInstance);

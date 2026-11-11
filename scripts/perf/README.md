@@ -14,7 +14,7 @@ Options:
 | | |
 |---|---|
 | `--out file.json` | where to write the results (printed to the console when left out) |
-| `--only draw,playback` | run some tests only: `draw`, `playback`, `templates`, `zoompan`, `memory` |
+| `--only draw,playback` | run some tests only: `draw`, `playback`, `rigfx`, `templates`, `zoompan`, `memory` |
 | `--label name` | a name stored in the results |
 | `PERF_RENDERER=dir` | use a renderer build from another folder, so you can measure without touching `dist/` (`npx vite build --outDir /somewhere/renderer`) |
 | `PERF_CPU_SLOWDOWN=4` | emulate a CPU four times slower (Chromium's CPU throttling). The GPU is unchanged. |
@@ -39,6 +39,7 @@ The page is opened with `?debug&perf`. `?perf` switches on `src/canvas/perf.ts`,
 |---|---|---|
 | `draw` | A 2,000 point stroke at about 250 Hz, on an empty document and on one with 300 strokes. Then a 240 point stroke at one event per frame. | `latency*`: pointer event timestamp to the end of the overlay draw that shows it. `overlayDrawMs`: the JS time of that draw. `rafDelta`: frame to frame. `mainDrawMsMax`: the repaint when the pen lifts. |
 | `playback` | 600 frames, 5 layers of 50 strokes each (150,000 strokes), 24 fps for 8 s, onion skin off and on. Then a second lap, and 60 scrubbed frames with onion skin on. | `paintIntervalMs` (should sit on 41.7), `latePaints` (more than 1.5 frames late), `framesSkipped`, `paintMs`, long tasks, `bitmapBuilds`. |
+| `rigfx` | The kitchen sink (`src/export/kitchenSink.ts`) stretched to 300 frames at 24 fps: ten layers, effects on several, a folder with a mask and a clipped layer, tiles, a tweening symbol with tiles inside, an arm bending a mesh layer, sound. Played 8 s twice. | `paintIntervalMs`, `latePaints`, `framesSkipped`, `paintMs`, long tasks |
 | `templates` | Every starter template: `make()`, then `store.load`, to the first canvas paint. Median of three. | `makeMs`, `firstPaintMs`, `presentedMs` |
 | `zoompan` | 180 ctrl+wheel ticks in and out, then a middle-button pan circle, on a 300 stroke document and a 5 layer one. | `rafDelta`, `mainDrawMs`, `bitmapBuilds` |
 | `memory` | 200 strokes drawn, 100 undone. JS heap after a forced GC at the start, after the strokes and after the undos. | `growthMB` |
