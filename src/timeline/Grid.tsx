@@ -20,6 +20,8 @@ import { clearInOut, setIn, setInOut, setOut } from './range';
 import { nextKey } from '../core/symbols';
 import { ease } from '../core/ease';
 import { makeTween, removeTween } from '../symbols/ops';
+import { MOTIONS } from '../core/motions';
+import { makeMotion } from '../symbols/motion-ops';
 import '../symbols/symbols.css';
 import { MAX_CW, MIN_CW, setTl, tl, useTl } from './state';
 import { SoundMain, SoundSide } from '../audio/SoundRows';
@@ -693,6 +695,8 @@ export function celMenu(layer: Layer, frame: number): MenuItem[] {
     cel?.tween
       ? { label: 'Remove in-betweens', onClick: () => void removeTween(layer.id, frame) }
       : { label: 'Make in-betweens (tween)', hint: keyHint('tween.make'), disabled: none || layer.kind !== 'vector', onClick: () => void makeTween(layer.id, frame) },
+    { heading: 'One-click motions' },
+    ...MOTIONS.map((m): MenuItem => ({ label: `Make it ${m.label.toLowerCase()}`, disabled: none || layer.kind !== 'vector' || !!cel?.tween, onClick: () => makeMotion(m.id, layer.id, frame) })),
     { separator: true },
     hold(1),
     hold(2),

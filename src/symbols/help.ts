@@ -140,6 +140,36 @@ Pick one in the **Symbol and motion** panel, or from the command palette ("Easin
 On the canvas, the dots along the motion trail show one in-between each. Bunched-up dots are slow, spread-out dots are fast.`,
   },
   {
+    id: 'one-click-motions',
+    order: 4,
+    title: 'One-click motions: bounce, wobble, float',
+    section: 'Symbols and motion',
+    media: 'one-click-motions.mp4',
+    summary: 'Make something bounce, wobble, float, pop in, shake or fade in with one click. You get ordinary keys you can change.',
+    keywords: ['motion preset', 'animate preset', 'preset', 'bounce', 'wobble', 'float', 'pop in', 'shake', 'fade in', 'one click', 'quick animation', 'effect'],
+    body: `Want something to move without setting up every key? Pick a motion and Frameling does the keys for you.
+
+**How**
+1. Go to the frame where the motion should start.
+2. Select what should move with the Select tool (V). Nothing selected moves the whole drawing on this frame.
+3. Pick **Animate > One-click motions**, or right-click the frame in the timeline, or press **Ctrl+K** and type "make it".
+
+**The motions**
+- **Bounce**: crouches, hops up and lands with a squash, like a ball.
+- **Wobble**: rocks side to side and settles, like jelly.
+- **Float**: drifts gently up and back down. It loops smoothly.
+- **Pop in**: springs up from small and clear, going a little too far before it settles (overshoot).
+- **Shake**: shudders side to side, quick and getting smaller. Good for "no!" or a hit.
+- **Fade in**: starts clear and fades up.
+
+**What it makes**
+Plain [keys with in-betweens](help:tweens), each with its own [easing](help:easing). Nothing is hidden: drag the keys to change the timing, move the drawing on any key to change a pose, or change an easing in the Symbol and motion panel. Every motion ends just as it started, so it loops, and you can add another one straight after it.
+
+Shapes that aren't a [symbol](help:symbols) yet are made into one first, so they can move as one piece. **Ctrl+Z** undoes the whole motion in one go.
+
+**Not enough room?** If the motion runs into the next drawing on the layer, Frameling asks the first time whether to make it quicker to fit or move the later drawings along, then remembers (Preferences > Behaviour).`,
+  },
+  {
     id: 'motion-paths',
     title: 'Paths to follow (motion paths)',
     section: 'Symbols and motion',
