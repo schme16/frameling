@@ -1,5 +1,5 @@
 // Builds Quill's sprite sheets, metadata, previews and the app icon from quill-frames.mjs.
-//   node brand/quill/build.mjs           everything
+//   node brand/quill/build.mjs           everything (B goes to public/mascot, A to brand/quill/a)
 //   node brand/quill/build.mjs --quick   sheets, json and contact sheets only (no gif/mp4)
 // Needs ffmpeg on the PATH for the gifs and the mp4. PNGs are written with zlib, nothing else.
 import fs from 'node:fs';
@@ -17,10 +17,11 @@ const ROOT = path.resolve(HERE, '../..');
 const QUICK = process.argv.includes('--quick');
 const DARK = '#17151f', LIGHT = '#f3eee6';
 
+//B (48px) won the A/B and is what the app ships. A (32px) still builds, into brand/quill/a, for reference.
 const VARIANTS = [
-	{name: 'a', label: 'A 32PX', def: A, anims: ANIMS, sheet: path.join(ROOT, 'public/mascot'), prev: HERE},
+	{name: 'a', label: 'A 32PX', def: A, anims: ANIMS, sheet: path.join(HERE, 'a'), prev: path.join(HERE, 'a')},
+	{name: 'b', label: 'B 48PX', def: frames.B, anims: frames.ANIMS_B || ANIMS, sheet: path.join(ROOT, 'public/mascot'), prev: path.join(HERE, 'b')},
 ];
-if (frames.B) VARIANTS.push({name: 'b', label: 'B 48PX', def: frames.B, anims: frames.ANIMS_B || ANIMS, sheet: path.join(HERE, 'b'), prev: path.join(HERE, 'b')});
 
 /* ---------------------------------------------------------------- composing ------ */
 
@@ -243,6 +244,8 @@ function buildIcons() {
 		const g = size === 16 || size === 48 ? small : big;
 		writePNG(path.join(sets, `${size}x${size}.png`), scaled(g, size / g.length));
 	}
+	//the in-app logo (top bar), drawn at 1x and scaled up crisply by the page
+	writePNG(path.join(ROOT, 'public', 'mascot', 'logo.png'), scaled(big, 1));
 	//svg twin of the 32px art: one rect per horizontal run of a colour
 	let rects = '';
 	big.forEach((row, y) => {

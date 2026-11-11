@@ -330,19 +330,7 @@ export function Icon({ name, size = 18, className, title }: { name: string; size
   );
 }
 
-/** The little logo: a smiling frame with sparkly eyes. It only uses theme colours. */
-export function Logo({ size = 24 }: { size?: number }) {
-  return (
-    <svg className="ui-logo" width={size} height={size} viewBox="0 0 32 32" aria-hidden="true" focusable="false">
-      <rect x="2.5" y="2.5" width="27" height="27" rx="9" className="ui-logo-body" />
-      <rect x="2.5" y="2.5" width="27" height="27" rx="9" className="ui-logo-rim" />
-      <g className="ui-logo-eyes">
-        <ellipse cx="11.5" cy="14" rx="2.1" ry="2.8" />
-        <ellipse cx="20.5" cy="14" rx="2.1" ry="2.8" />
-      </g>
-      <path d="M12.2 20.2c1.1 1.6 6.5 1.6 7.6 0" className="ui-logo-smile" />
-      <circle cx="8.3" cy="19" r="1.8" className="ui-logo-cheek" />
-      <circle cx="23.7" cy="19" r="1.8" className="ui-logo-cheek" />
-    </svg>
-  );
+/** The little logo: Quill's app icon, pixel art drawn at 32x32 (brand/quill/quill-icons.mjs). Keep `size` a multiple of 32. */
+export function Logo({ size = 32 }: { size?: number }) {
+  return <img className="ui-logo" src="mascot/logo.png" width={size} height={size} alt="" aria-hidden="true" draggable={false} style={{ imageRendering: 'pixelated' }} />;
 }

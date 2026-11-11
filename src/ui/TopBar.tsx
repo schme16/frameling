@@ -78,7 +78,7 @@ export function TopBar() {
   return (
     <header className="ui-topbar">
       <div className="ui-brand" aria-label="Frameling">
-        <Logo size={26} />
+        <Logo size={32} />
         <span className="ui-brand-name">Frameling</span>
       </div>
       <MenuBar />

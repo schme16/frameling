@@ -119,7 +119,7 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
     return (
       <Modal title={`Exporting ${info.title}`} onClose={() => abort.current?.abort()} canClose={false} className="ex-running">
         <div className="ex-body ex-progress">
-          <Quill anim="think" size={64} className="ex-quill" />
+          <Quill anim="think" size={96} className="ex-quill" />
           <div className="ex-bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label="Export progress">
             <div style={{ width: `${pct}%` }} />
           </div>

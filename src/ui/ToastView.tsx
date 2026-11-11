@@ -16,7 +16,7 @@ function ToastCard({ t }: { t: ToastItem }) {
   }, [paused, t.duration, t.id]);
   return (
     <div className={`ui-toast ui-toast-${t.kind}`} role={t.kind === 'error' ? 'alert' : 'status'} onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)} onFocus={() => setPaused(true)} onBlur={() => setPaused(false)}>
-      {quill ? <Quill anim={t.quill!} then="idle" size={32} className="ui-toast-quill" /> : <Icon name={KIND_ICON[t.kind]} size={16} />}
+      {quill ? <Quill anim={t.quill!} then="idle" size={48} className="ui-toast-quill" /> : <Icon name={KIND_ICON[t.kind]} size={16} />}
       <span className="ui-toast-text">{t.message}</span>
       {t.action && (
         <button

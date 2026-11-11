@@ -64,7 +64,7 @@ export function QuestBar() {
           <Icon name="close" size={14} />
         </button>
       </header>
-      <QuillSays anim={script} size={64} className="qb-quill">
+      <QuillSays anim={script} size={96} className="qb-quill">
         <p className="qb-say" aria-live="polite">
           {step.say}
         </p>

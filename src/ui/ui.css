@@ -226,31 +226,11 @@ kbd {
   letter-spacing: 0.01em;
 }
 .ui-brand:hover .ui-logo {
-  transform: rotate(-8deg) scale(1.08);
+  transform: translateY(-2px);
 }
 .ui-logo {
+  display: block;
   transition: transform 0.3s var(--ui-pop);
-}
-.ui-logo-body {
-  fill: var(--sunny);
-}
-.ui-logo-rim {
-  fill: none;
-  stroke: var(--sunny-deep);
-  stroke-width: 1.5;
-}
-.ui-logo-eyes {
-  fill: #1d1b26;
-}
-.ui-logo-smile {
-  fill: none;
-  stroke: #1d1b26;
-  stroke-width: 1.8;
-  stroke-linecap: round;
-}
-.ui-logo-cheek {
-  fill: var(--rose);
-  opacity: 0.55;
 }
 
 .ui-menubar {
