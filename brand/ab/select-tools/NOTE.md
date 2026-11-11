@@ -1,0 +1,1 @@
+A (built): one Select tool [V] per layer kind; Box / Lasso / Magic wand are a "Pick with" choice in its options, and the toolbar icon changes to an arrow, lasso or wand to match. L and W jump straight to lasso and wand. B: three toolbar buttons (Select box, Lasso, Magic wand, wand on pixel layers only), no "Pick with" row. B was mocked in the page for the picture, not built.

@@ -58,3 +58,8 @@ export function useSelectSettings<T>(selector: (s: SelectSettings) => T): T {
     () => selector(state),
   );
 }
+
+export function onSelectSettings(fn: () => void): () => void {
+  listeners.add(fn);
+  return () => void listeners.delete(fn);
+}
