@@ -12,6 +12,8 @@ import { reportEdit } from '../tools/util';
 import { fontFamilyCss, lineHeightOf, newTextShape } from './model';
 import { textLayout, textMatrix } from './draw';
 import { textDefaults, updateTexts } from './ops';
+import { canvasCamera } from '../camera/ops';
+import { applyMat, invert, mul } from '../core/symbols';
 
 interface Session {
   /** The text being changed, once it exists in the drawing. */
@@ -109,7 +111,10 @@ export function onTextDoubleClick(e: MouseEvent<HTMLElement>): boolean {
   const { ui } = store().get();
   if (ui.tool !== 'select' && ui.tool !== 'text') return false;
   const r = e.currentTarget.getBoundingClientRect();
-  const p = screenToDoc({ zoom: ui.zoom, panX: ui.panX, panY: ui.panY }, e.clientX - r.left, e.clientY - r.top);
+  const sp = screenToDoc({ zoom: ui.zoom, panX: ui.panX, panY: ui.panY }, e.clientX - r.left, e.clientY - r.top);
+  // Looking through the camera, the screen shows camera space; text lives in stage space.
+  const cam = canvasCamera()?.matrix;
+  const p = cam ? applyMat(invert(cam), sp.x, sp.y) : sp;
   const k = currentKey();
   const hit = k ? topShapeAt(k.drawing.shapes, p.x, p.y, 4 / ui.zoom) : undefined;
   if (hit?.type !== 'text' || k?.layer.locked) return false;
@@ -146,7 +151,8 @@ export function TextEditor() {
 
   if (!s || !shape) return null;
   const layout = textLayout(shape.text ? shape : { ...shape, text: 'M' });
-  const m = textMatrix(shape);
+  const cam = canvasCamera()?.matrix;
+  const m = cam ? mul(cam, textMatrix(shape)) : textMatrix(shape);
   const lh = lineHeightOf(shape);
   const extra = shape.size * 1.5;
   const left = shape.align === 'center' ? layout.box.x - extra / 2 : shape.align === 'right' ? layout.box.x - extra : layout.box.x;
