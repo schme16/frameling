@@ -3,6 +3,5 @@ import './commands';
 import './help';
 import './help-layered';
 import './commands-layered';
-import './debug';
 
-export { exportAgain, openExportDialog } from './ExportDialog';
+export { exportAgain, openExportDialog } from './open';

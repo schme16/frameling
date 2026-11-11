@@ -491,7 +491,130 @@ async function main() {
     return { bitmapCache: cacheSize, strokesDrawn: strokes, strokesAfterUndo: strokesLeft, heapMBStart: mb(heap0), heapMBAfter200Strokes: mb(heap200), heapMBAfter100Undos: mb(heapUndo), growthMB: mb(heapUndo - heap0) };
   }
 
-  const tests = { draw: drawLong, playback, rigfx, templates, zoompan: zoomPan, memory };
+  // ------------------------------------------------------------------ soak (memory over repeated use)
+  // A heap snapshot summed by constructor: { name: { count, size } }.
+  // Snapshots of big documents are far past the longest string V8 allows, so the chunks go to a file and the nodes and
+  // strings are read from it piecewise.
+  async function heapSummary() {
+    await js('window.__h.heap()');
+    const d = wc.debugger;
+    if (!d.isAttached()) d.attach('1.3');
+    const file = path.join(os.tmpdir(), `frameling-heap-${process.pid}.heapsnapshot`);
+    const fd = fs.openSync(file, 'w');
+    const onMsg = (_e, method, params) => {
+      if (method === 'HeapProfiler.addHeapSnapshotChunk') fs.writeSync(fd, params.chunk);
+    };
+    d.on('message', onMsg);
+    await d.sendCommand('HeapProfiler.enable');
+    await d.sendCommand('HeapProfiler.collectGarbage');
+    await d.sendCommand('HeapProfiler.takeHeapSnapshot', { reportProgress: false });
+    d.removeListener('message', onMsg);
+    fs.closeSync(fd);
+    const buf = fs.readFileSync(file);
+    fs.rmSync(file, { force: true });
+    const metaEnd = buf.indexOf('"nodes":[');
+    const meta = JSON.parse(buf.subarray(buf.indexOf('{"node_fields"'), buf.indexOf(',"node_count"')).toString());
+    const f = meta.node_fields;
+    const types = meta.node_types[0];
+    const nodesEnd = buf.indexOf(']', metaEnd);
+    const sStart = buf.lastIndexOf('"strings":[');
+    const strings = JSON.parse(buf.subarray(sStart + 10, buf.lastIndexOf(']') + 1).toString());
+    const [iType, iName, iSize] = ['type', 'name', 'self_size'].map((k) => f.indexOf(k));
+    const out = {};
+    let total = 0;
+    // The nodes are a flat list of numbers, too many to hold at once, so they're summed one node at a time.
+    const node = new Array(f.length).fill(0);
+    let k = 0;
+    const take = () => {
+      const type = types[node[iType]];
+      const size = node[iSize];
+      total += size;
+      const name = type === 'object' || type === 'native' || type === 'closure' ? strings[node[iName]] : '(' + type + ')';
+      const o = (out[name] ??= { count: 0, size: 0 });
+      o.count++;
+      o.size += size;
+    };
+    let n = 0;
+    let inNum = false;
+    for (let i = metaEnd + 9; i <= nodesEnd; i++) {
+      const c = buf[i];
+      if (c >= 48 && c <= 57) {
+        n = n * 10 + (c - 48);
+        inNum = true;
+      } else if (inNum) {
+        node[k++] = n;
+        if (k === f.length) {
+          take();
+          k = 0;
+        }
+        n = 0;
+        inNum = false;
+      }
+    }
+    return { total, byName: out };
+  }
+
+  function heapDiff(a, b, n = 12) {
+    const rows = [];
+    for (const [k, v] of Object.entries(b.byName)) {
+      const o = a.byName[k] ?? { count: 0, size: 0 };
+      if (v.size - o.size > 0 || v.count - o.count > 0) rows.push({ name: k.slice(0, 60), dCount: v.count - o.count, dKB: Math.round((v.size - o.size) / 1024) });
+    }
+    return { totalKB: Math.round((b.total - a.total) / 1024), top: rows.sort((x, y) => y.dKB - x.dKB).slice(0, n) };
+  }
+
+  // Opens a document, then does the same round several times: scrub every frame, play 5 s, export a GIF of the
+  // whole thing. After each round, the JS heap after a full GC. Bounded means the later rounds stop adding to it.
+  // Heap snapshots after the second and last rounds are compared by constructor, to show what keeps growing.
+  async function soak() {
+    const out = {};
+    const rounds = Number(process.env.PERF_SOAK_ROUNDS || 4);
+    const docs = {
+      kitchenSink600: `window.__framelingExport.loadKitchenSinkPerf(600)`,
+      strokes600: `window.__frameling.store().load(window.__h.mkDoc({ frames: 600, layers: 5, strokesPer: 40, pts: 10, fps: 24 }))`,
+    };
+    for (const [name, open] of Object.entries(docs)) {
+      await js(open);
+      await js(`window.__frameling.store().setUi({ tool: 'brush', playing: false, frame: 0 })`);
+      await js('window.__h.raf2()');
+      await sleep(500);
+      const length = await js('window.__frameling.store().get().doc.length');
+      const heaps = [await js('window.__h.heap()')];
+      const caches = [];
+      let snapA = null;
+      let snapB = null;
+      const exports = [];
+      for (let r = 0; r < rounds; r++) {
+        for (let f = 0; f < length; f += 1) {
+          await js(`window.__frameling.store().setUi({ frame: ${f} })`);
+          if (f % 4 === 0) await js('new Promise((r) => requestAnimationFrame(r))');
+        }
+        await js(`window.__frameling.store().setUi({ frame: 0 })`);
+        await js(`window.__frameling.run('timeline.play')`);
+        await sleep(5000);
+        await js(`window.__frameling.run('timeline.play')`);
+        const ex = await js(`(async () => { const s = { ...window.__framelingExport.defaults(), format: 'gif', range: 'all', scale: 0.25 }; try { return await window.__framelingExport.encode(s); } catch (e) { return { error: String(e) }; } })()`);
+        exports.push(ex.error ? 'error: ' + ex.error : ex.ms);
+        await sleep(300);
+        heaps.push(await js('window.__h.heap()'));
+        caches.push(await js(`(() => { const c = window.__framelingPerf.painter && window.__framelingPerf.painter.cache; return c && c.size ? { entries: c.size.entries, megapixels: Math.round(c.size.pixels / 1e5) / 10 } : null; })()`));
+        if (r === 1) snapA = await heapSummary();
+        if (r === rounds - 1) snapB = await heapSummary();
+      }
+      const mb = (b) => Math.round((b / 1048576) * 10) / 10;
+      out[name] = {
+        frames: length,
+        heapMB: heaps.map(mb),
+        growthAfterRound2MB: mb(heaps[heaps.length - 1] - heaps[2]),
+        bitmapCache: caches,
+        exportMs: exports,
+        snapshotDiffRound2ToLast: snapA && snapB ? heapDiff(snapA, snapB) : null,
+      };
+    }
+    return out;
+  }
+
+  const tests = { draw: drawLong, playback, rigfx, templates, zoompan: zoomPan, memory, soak };
   await load();
   const gpu = await app.getGPUInfo('basic').catch(() => null);
   const feat = app.getGPUFeatureStatus();
@@ -511,7 +634,7 @@ async function main() {
     when: new Date().toISOString(),
   };
   for (const [name, fn] of Object.entries(tests)) {
-    if (only && !only.includes(name)) continue;
+    if (only ? !only.includes(name) : name === 'soak') continue; // soak is long, so only when asked for
     process.stdout.write(`${name}... `);
     const t = Date.now();
     try {

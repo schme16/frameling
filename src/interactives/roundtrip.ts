@@ -8,7 +8,6 @@ import { clearAutosaveCopy, loadBytes, registerOpener, registerSaveHook } from '
 import { FileProblem, saveFile } from '../io/file';
 import { notify } from '../io/notify';
 import { defaultSettings } from '../export/plan';
-import { runExport } from '../export/run';
 import { getLink, readPlayable, setLink, type PlayableLink } from './link';
 
 export const PLAYABLE_FILTERS = [{ name: 'Interactives animations', extensions: ['flplay'] }];
@@ -85,6 +84,7 @@ export async function updatePlayable(link: PlayableLink): Promise<boolean> {
   const { doc, frame } = sceneOf(st.doc, st.ui.frame);
   try {
     const settings = { ...defaultSettings(doc), format: 'interactives' as const, range: 'all' as const, clipId: null, scale: link.scale, transparent: link.transparent, includeSource: true };
+    const { runExport } = await import('../export/run');
     const r = await runExport({ doc, settings, currentFrame: frame, signal: new AbortController().signal, onProgress: () => undefined, appVersion: api.versions.app });
     if (r.kind !== 'file') throw new Error('unexpected');
     const w = await api.files.write(link.path, r.bytes);

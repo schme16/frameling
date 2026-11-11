@@ -6,7 +6,6 @@ import { showPanel } from '../ui/dock';
 import { findTile, mirrorFlags, rotateFlags } from './model';
 import * as ops from './ops';
 import { getTileUi, setTileUi } from './state';
-import { openExportTilesetDialog } from './ExportTilesetDialog';
 
 const hasTiles = () => (store().rootDoc().tileset?.tiles.length ?? 0) > 0;
 const hasBrush = () => !!findTile(store().rootDoc().tileset, getTileUi().brush);
@@ -176,7 +175,8 @@ export const TILE_COMMANDS: Command[] = [
     keywords: ['godot', 'tileset', 'tilemap', 'tiled', 'tres', 'tscn', 'atlas', 'level'],
     global: true,
     enabled: hasTiles,
-    run: () => openExportTilesetDialog(),
+    // The dialog loads on first use.
+    run: () => void import('./ExportTilesetDialog').then((m) => m.openExportTilesetDialog()),
   },
 ];
 

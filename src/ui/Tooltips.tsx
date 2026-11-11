@@ -7,7 +7,7 @@
 // `title` is moved to `data-tip` the first time it's pointed at, so the browser's own grey tooltip never shows.
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { getCommand, getHelp } from '../core/registry';
-import { effectiveKeys } from './keys';
+import { effectiveKeys, platformKeysText } from './keys';
 import { openHelp } from './overlays';
 import { Keys } from './ShortcutChip';
 
@@ -30,7 +30,8 @@ export function tipFor(el: Element): TipContent | null {
   const keysAttr = el.getAttribute('data-tip-keys');
   const keys = keysAttr ? keysAttr.split(',').map((s) => s.trim()).filter(Boolean) : cmd ? effectiveKeys(cmd) : [];
   const help = el.getAttribute('data-help') || cmd?.help || undefined;
-  return { title, desc: el.getAttribute('data-tip-desc') || cmd?.description || undefined, keys, help: help && getHelp(help) ? help : undefined };
+  const desc = el.getAttribute('data-tip-desc') || cmd?.description || undefined;
+  return { title: platformKeysText(title), desc: desc && platformKeysText(desc), keys, help: help && getHelp(help) ? help : undefined };
 }
 
 interface Shown {

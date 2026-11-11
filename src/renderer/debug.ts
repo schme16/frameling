@@ -1,5 +1,11 @@
 // With ?debug in the page address (the screenshot script and local checks use it), expose the store so a test can
-// read and drive state. Never on in normal use.
+// read and drive state. Never on in normal use. main.tsx only loads this (and the areas' own debug hooks below) when
+// ?debug is there, so none of it is in the normal start-up download.
+import '../export/debug';
+import '../io/debug';
+import '../effects/debug';
+import '../templates/debug';
+import '../plugins/debug';
 import { store } from '../core/store';
 import { findTemplate } from '../templates';
 import * as tiles from '../tiles/debug';

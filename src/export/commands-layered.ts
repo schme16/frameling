@@ -1,6 +1,6 @@
 // Straight to the Export dialog with PSD, PDF, Illustrator or ProRes picked.
 import { registerCommands } from '../core/registry';
-import { openExportDialog } from './ExportDialog';
+import { openExportDialog } from './open';
 
 registerCommands([
   {

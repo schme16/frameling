@@ -1,10 +1,10 @@
 // Bone commands: palette, the Rig menu and keys.
+import { lazyPanel } from '../core/lazy';
 import { getCommand, registerCommand, registerCommands, registerPanel } from '../core/registry';
 import { store, type State } from '../core/store';
 import { findLayer } from '../core/doc';
 import { toast } from '../ui/toast';
 import { requestOverlay } from '../canvas/controller';
-import { RigPanel } from './RigPanel';
 import { attachLayer, autoAttach, bendLayer, currentRig, ensureRig, mirrorCurrentPose, resetPose, savePose, setPin, swapCurrentSides } from './ops';
 import { deleteSelectedBone } from './tools';
 import { rigUi, setRigUi } from './state';
@@ -12,7 +12,7 @@ import { artCoverage } from './coverage';
 import { isRigLayer } from './pose';
 import { normaliseActive, paintTarget, smoothActive } from './weightsTool';
 
-registerPanel({ id: 'rig', title: 'Rig', icon: 'rig', component: RigPanel, zone: 'right', order: 38, help: 'rig' });
+registerPanel({ id: 'rig', title: 'Rig', icon: 'rig', component: lazyPanel(() => import('./RigPanel').then((m) => m.RigPanel)), zone: 'right', order: 38, help: 'rig' });
 
 const hasBones = (s: State) => !!currentRig(s.doc, s.ui.activeLayerId)?.rig.bones.length;
 const say = (r: string | undefined, ok?: string) => {

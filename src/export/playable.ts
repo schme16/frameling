@@ -10,7 +10,8 @@ import { buildCells, composeSheet, layoutPacked, type Cell } from './sheet';
 
 export const PLAYABLE_EXTENSION = 'flplay';
 export const PLAYABLE_MIME = 'application/vnd.frameling.playable+zip';
-export const PLAYABLE_FORMAT = 'frameling-playable';
+import { PLAYABLE_FORMAT } from './types';
+export { PLAYABLE_FORMAT };
 export const PLAYABLE_VERSION = 1;
 
 export interface PlayableCell {

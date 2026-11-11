@@ -80,7 +80,7 @@ function PaletteDialog() {
             } else if (e.key === 'Enter') {
               e.preventDefault();
               choose(hits[at]);
-            } else if (e.key === 'Home' && e.ctrlKey) setAt(0);
+            } else if (e.key === 'Home' && (e.ctrlKey || e.metaKey)) setAt(0);
           }}
         />
         <span className="ui-palette-esc">Esc</span>

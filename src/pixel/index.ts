@@ -1,17 +1,16 @@
 // Registers the pixel art area: the Shade and Dither tools, the Palette panel, the pixel commands and their help.
 // Loaded after the other tools (from src/tools/index.ts) so it can add the mirror lines and options to them.
+import { lazyPanel } from '../core/lazy';
 import { getTool, registerCommand, registerPanel } from '../core/registry';
 import './commands';
 import './help';
 import { drawMirrorLines } from './tools';
 import './tools';
-import { PalettePanel } from './PalettePanel';
-import { openRotateDialog } from './RotateDialog';
 import { activePixelLayer } from './tools';
 import { withMirror } from './ToolOptions';
 import { exportPalette, importPalette, paletteFromDrawing } from './palette-files';
 
-registerPanel({ id: 'palette', title: 'Palette', icon: 'palette', component: PalettePanel, zone: 'right', order: 25, help: 'palette' });
+registerPanel({ id: 'palette', title: 'Palette', icon: 'palette', component: lazyPanel(() => import('./PalettePanel').then((m) => m.PalettePanel)), zone: 'right', order: 25, help: 'palette' });
 
 registerCommand({
   id: 'pixel.rotate',
@@ -21,7 +20,8 @@ registerCommand({
   help: 'pixel-flip-rotate',
   keywords: ['rotate', 'turn', 'angle', 'rotsprite', 'tilt'],
   enabled: () => !!activePixelLayer(),
-  run: openRotateDialog,
+  // The dialog loads on first use.
+  run: () => void import('./RotateDialog').then((m) => m.openRotateDialog()),
 });
 registerCommand({
   id: 'palette.import',

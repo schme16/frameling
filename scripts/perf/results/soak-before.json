@@ -1,0 +1,228 @@
+{
+  "env": {
+    "label": "soak-before",
+    "cpuSlowdown": 1,
+    "electron": "45.3.0",
+    "chrome": "156.0.8078.96",
+    "cpu": "AMD Ryzen 9 7900X 12-Core Processor",
+    "window": [
+      1400,
+      900
+    ],
+    "gpu2dCanvas": "enabled",
+    "gpuFeatures": {
+      "canvas": "enabled",
+      "gpu_compositing": "enabled"
+    },
+    "gpuDevice": {
+      "vendorId": 4098
+    },
+    "dpr": 1,
+    "idleRafMs": 6.061538461538458,
+    "renderer": "/mnt/109313D2109313D2/projects/frameling-wt/startup/dist/renderer",
+    "when": "2026-11-11T13:31:08.055Z"
+  },
+  "soak": {
+    "kitchenSink600": {
+      "frames": 600,
+      "heapMB": [
+        8.3,
+        10.5,
+        10.7,
+        10.8,
+        10.9
+      ],
+      "growthAfterRound2MB": 0.2,
+      "bitmapCache": [
+        {
+          "entries": 212,
+          "megapixels": 39.9
+        },
+        {
+          "entries": 212,
+          "megapixels": 39.9
+        },
+        {
+          "entries": 212,
+          "megapixels": 39.9
+        },
+        {
+          "entries": 212,
+          "megapixels": 39.9
+        }
+      ],
+      "exportMs": [
+        3168,
+        3965,
+        3112,
+        3696
+      ],
+      "snapshotDiffRound2ToLast": {
+        "totalKB": 277,
+        "top": [
+          {
+            "name": "(code)",
+            "dCount": 427,
+            "dKB": 234
+          },
+          {
+            "name": "Object",
+            "dCount": 733,
+            "dKB": 17
+          },
+          {
+            "name": "system / WeakArrayList",
+            "dCount": 54,
+            "dKB": 14
+          },
+          {
+            "name": "(array)",
+            "dCount": 40,
+            "dKB": 9
+          },
+          {
+            "name": "(number)",
+            "dCount": 554,
+            "dKB": 6
+          },
+          {
+            "name": "LayoutShift",
+            "dCount": 20,
+            "dKB": 3
+          },
+          {
+            "name": "DOMRectReadOnly",
+            "dCount": 44,
+            "dKB": 2
+          },
+          {
+            "name": "(object shape)",
+            "dCount": 14,
+            "dKB": 1
+          },
+          {
+            "name": "system / ProtectedFixedArray",
+            "dCount": 39,
+            "dKB": 1
+          },
+          {
+            "name": "",
+            "dCount": 24,
+            "dKB": 1
+          },
+          {
+            "name": "native_bind",
+            "dCount": 22,
+            "dKB": 1
+          },
+          {
+            "name": "LayoutShiftAttribution",
+            "dCount": 22,
+            "dKB": 1
+          }
+        ]
+      }
+    },
+    "strokes600": {
+      "frames": 600,
+      "heapMB": [
+        97.9,
+        408.5,
+        408.7,
+        408.5,
+        408.6
+      ],
+      "growthAfterRound2MB": -0.2,
+      "bitmapCache": [
+        {
+          "entries": 165,
+          "megapixels": 39.9
+        },
+        {
+          "entries": 165,
+          "megapixels": 39.9
+        },
+        {
+          "entries": 165,
+          "megapixels": 39.9
+        },
+        {
+          "entries": 165,
+          "megapixels": 39.9
+        }
+      ],
+      "exportMs": [
+        4799,
+        3917,
+        3776,
+        3814
+      ],
+      "snapshotDiffRound2ToLast": {
+        "totalKB": 372,
+        "top": [
+          {
+            "name": "(code)",
+            "dCount": 488,
+            "dKB": 227
+          },
+          {
+            "name": "(array)",
+            "dCount": 0,
+            "dKB": 51
+          },
+          {
+            "name": "blink::HeapHashTableBacking<blink::HashTable<cppgc::internal",
+            "dCount": 0,
+            "dKB": 24
+          },
+          {
+            "name": "Object",
+            "dCount": 744,
+            "dKB": 17
+          },
+          {
+            "name": "blink::HeapVectorBacking<std::pair<cppgc::internal::BasicMem",
+            "dCount": 0,
+            "dKB": 14
+          },
+          {
+            "name": "system / WeakArrayList",
+            "dCount": 0,
+            "dKB": 8
+          },
+          {
+            "name": "blink::HeapHashTableBacking<blink::HashTable<cppgc::internal",
+            "dCount": 0,
+            "dKB": 8
+          },
+          {
+            "name": "(number)",
+            "dCount": 630,
+            "dKB": 7
+          },
+          {
+            "name": "blink::HeapHashTableBacking<blink::HashTable<cppgc::internal",
+            "dCount": 0,
+            "dKB": 7
+          },
+          {
+            "name": "blink::HeapHashTableBacking<blink::HashTable<cppgc::internal",
+            "dCount": 0,
+            "dKB": 7
+          },
+          {
+            "name": "Array",
+            "dCount": 137,
+            "dKB": 2
+          },
+          {
+            "name": "DOMRectReadOnly",
+            "dCount": 36,
+            "dKB": 2
+          }
+        ]
+      }
+    }
+  },
+  "consoleErrors": []
+}

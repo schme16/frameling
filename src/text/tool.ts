@@ -4,7 +4,7 @@ import { store } from '../core/store';
 import { topShapeAt } from '../canvas/geometry';
 import { currentKey } from '../symbols/ops';
 import { canEdit } from '../tools/util';
-import { TextOptions } from './TextPanel';
+import { lazyPanel } from '../core/lazy';
 import { editingText, editText, startNewText, stopEditingText } from './TextEditor';
 
 export const textTool: Tool = {
@@ -16,7 +16,7 @@ export const textTool: Tool = {
   order: 65,
   help: 'text',
   cursor: 'text',
-  options: TextOptions,
+  options: lazyPanel(() => import('./TextPanel').then((m) => m.TextOptions)),
   down(e, ctx) {
     if (editingText()) {
       stopEditingText();

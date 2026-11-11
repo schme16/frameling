@@ -4,6 +4,7 @@ import { app } from 'electron';
 import fs from 'node:fs';
 import path from 'node:path';
 import type { AutosaveInfo, AutosaveMeta, KeptAutosave, RecentFile } from '../preload/api';
+import { pathKey } from './paths';
 
 const MAX_RECENT = 12;
 
@@ -54,7 +55,7 @@ export function listRecent(): RecentFile[] {
 
 export function addRecent(file: string): void {
   const p = loadPrefs();
-  const recent = [{ path: file, name: path.basename(file, path.extname(file)), openedAt: Date.now() }, ...p.recent.filter((r) => r.path !== file)].slice(0, MAX_RECENT);
+  const recent = [{ path: file, name: path.basename(file, path.extname(file)), openedAt: Date.now() }, ...p.recent.filter((r) => pathKey(r.path) !== pathKey(file))].slice(0, MAX_RECENT);
   savePrefs({ ...p, recent });
   try {
     app.addRecentDocument(file);
@@ -65,7 +66,7 @@ export function addRecent(file: string): void {
 
 export function removeRecent(file: string): void {
   const p = loadPrefs();
-  savePrefs({ ...p, recent: p.recent.filter((r) => r.path !== file) });
+  savePrefs({ ...p, recent: p.recent.filter((r) => pathKey(r.path) !== pathKey(file)) });
 }
 
 export function clearRecent(): void {

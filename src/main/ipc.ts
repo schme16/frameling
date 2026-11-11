@@ -8,6 +8,7 @@ import { ffmpegPath, mp4SoundToAac } from './media';
 import { registerVideoIpc } from './video';
 import { addLinked, canOpenOther, cleanFilters, isLibraryKind, isLinked, libraryId, listLibrary, pickFolder, readLibrary, readSmallFolder, removeLibrary, showLibraryFolder, writeLibrary } from './library';
 import { addRecent, clearAutosave, clearRecent, keepAutosave, lastDir, listKept, listRecent, readAutosave, readKept, rememberDir, removeKept, removeRecent, writeAutosave, writeFileAtomic } from './store';
+import { pathKey, safeFileName } from './paths';
 
 const FILTERS: FileFilter[] = [{ name: 'Frameling drawings', extensions: ['frameling'] }];
 const MAX_OPEN_BYTES = 1024 * 1024 * 1024;
@@ -24,7 +25,7 @@ export interface IpcHooks {
 // Paths people picked in dialogs this session (or opened). Writes anywhere else are refused.
 const granted = new Set<string>();
 const grantedFolders = new Set<string>();
-const key = (p: string) => path.resolve(p);
+const key = (p: string) => pathKey(p);
 
 export function grantFile(p: string): void {
   granted.add(key(p));
@@ -52,11 +53,7 @@ function readFile(p: string): { path: string; bytes: Uint8Array } | { error: str
   }
 }
 
-/** Keeps a file name safe to write inside a folder: no folders, no characters Windows refuses. */
-export function safeFileName(name: string): string {
-  const base = path.basename(name.replace(/\\/g, '/')).replace(/[<>:"|?*\u0000-\u001f]/g, '_').trim();
-  return base && base !== '.' && base !== '..' ? base : 'file';
-}
+export { safeFileName };
 
 // TEST AUTOMATION. Only when FRAMELING_AUTOMATION_DIR is set (scripts/e2e/*.cjs does that, nothing else ever does):
 // the save dialogs are skipped and answer with a file inside that folder, named from the suggested name, so a script

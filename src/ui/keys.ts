@@ -260,3 +260,33 @@ export function resetBindings(id?: string): void {
   delete keymap[id];
   setPrefs({ keymap });
 }
+
+// ---------------------------------------------------------------- shortcuts written in text
+
+const MOD_WORD: Record<string, string> = { Ctrl: 'Cmd', Alt: 'Option', Shift: 'Shift' };
+
+/**
+ * Help and tips are written with PC keys ("Press **Ctrl+S**", "Alt+drag", "hold Ctrl"). On a Mac this rewrites them
+ * the way a Mac shows them: key shortcuts as ⌘⇧S like the key chips, mouse ones as "Cmd+click" and "Option+drag", and
+ * drops the "(**Cmd+S** on a Mac)" asides, which would only repeat it. Anywhere else the text is left alone.
+ */
+export function platformKeysText(text: string, mac = isMacPlatform()): string {
+  if (!mac || !/Ctrl|Alt|Cmd/.test(text)) return text;
+  return (
+    text
+      // "(**Cmd+S** on a Mac)" and "(**Cmd+O**)" asides.
+      .replace(/\s*\((\*\*)?Cmd\+[^)*]*(\*\*)?( on a Mac)?\)/g, '')
+      // Modifier+mouse: Ctrl+click, Alt+drag, Shift+wheel.
+      .replace(/\b((?:(?:Ctrl|Alt|Shift)\+)+)(click(?:s|ing)?|drag(?:s|ging)?|scroll(?:s|ing)?|wheel)\b/g, (_m, mods: string, word: string) =>
+        mods.split('+').filter(Boolean).map((m) => MOD_WORD[m] ?? m).join('+') + '+' + word,
+      )
+      // Key shortcuts with Ctrl or Alt in them: Ctrl+Shift+T -> ⌘⇧T. A trailing + is the plus key.
+      .replace(/\b((?:(?:Ctrl|Alt|Shift)\+)*(?:Ctrl|Alt)(?:\+(?:Ctrl|Alt|Shift))*)\+([A-Za-z0-9]\b|F\d{1,2}\b|Enter\b|Esc\b|Escape\b|Space\b|Tab\b|Delete\b|Backspace\b|Home\b|End\b|[,.=\-+[\]/;'`<>])/g, (_m, mods: string, key: string) => {
+        const parts = mods.split('+');
+        const combo = [parts.includes('Ctrl') ? 'Mod' : '', parts.includes('Alt') ? 'Alt' : '', parts.includes('Shift') ? 'Shift' : '', key === 'Esc' ? 'Escape' : key].filter(Boolean).join('+');
+        return comboLabel(combo, true);
+      })
+      // "hold Ctrl", "press **Alt**": the key on its own.
+      .replace(/\b(hold|Hold|holding|Holding|press|Press|pressing)(\s+\**)(Ctrl|Alt)\b/g, (_m, verb: string, gap: string, k: string) => verb + gap + MOD_WORD[k])
+  );
+}
