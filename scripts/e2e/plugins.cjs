@@ -93,7 +93,7 @@ app.whenReady().then(async () => {
     await js(`window.__framelingPlugins.install(${JSON.stringify(example(name))}); true`);
     await sleep(300);
     // Frameling asks first: say yes.
-    await js(`document.querySelector('.ui-ask .ui-btn-primary')?.click(); true`);
+    await js(`document.querySelector('.plugin-approve .ui-btn-primary')?.click(); true`);
     await sleep(1200);
   };
   await install('flip-every-other-frame');

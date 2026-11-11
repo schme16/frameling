@@ -15,6 +15,8 @@ import { setPrefs, usePrefs } from './prefs';
 import { cleanDpi, formatSize, pxTo, roundIn, toPx, type Unit } from '../core/units';
 import { getQuest, startQuest } from './quests';
 import { toast } from './toast';
+import { MoreTemplates, SourceCards } from '../templates/YoursSection';
+import { templateSources } from '../templates/user';
 
 export function WelcomeSheet() {
   const mode = overlays.use((o) => o.sheet);
@@ -339,9 +341,13 @@ function Examples({ onPick, scrollTo }: { onPick: (doc: Doc, name: string) => vo
   const examples = starters.filter((s) => !s.blank);
   const blanks = starters.filter((s) => s.blank);
   const pick = (t: TemplateLike) => onPick(t.make(), t.name.toLowerCase());
+  const thumb = (t: TemplateLike) => <Thumb template={t} />;
+  // The tabs look is kept for the A/B board only (brand/ab/templates-yours); stacked sections won.
+  if ((window as { __templatesLayout?: string }).__templatesLayout === 'tabs') return <TabbedExamples examples={examples} pick={pick} onPick={onPick} thumb={thumb} />;
   return (
     <div className="ui-examples" ref={box} data-help="examples">
       <h3>Start from an example</h3>
+      <h4 className="tpl-section-title">Built-in</h4>
       <div className="ui-example-list">
         {examples.map(({ template: t }) => (
           <button key={t.id} type="button" className="ui-example" onClick={() => pick(t)}>
@@ -372,6 +378,41 @@ function Examples({ onPick, scrollTo }: { onPick: (doc: Doc, name: string) => vo
                   {fps ? `, ${fps} fps` : ''}
                 </span>
               </span>
+            </button>
+          ))}
+        </div>
+      )}
+      <MoreTemplates onPick={onPick} thumb={thumb} />
+    </div>
+  );
+}
+
+/** The other look from the A/B board: Built-in and Yours as tabs. */
+function TabbedExamples({ examples, pick, onPick, thumb }: { examples: Starter[]; pick: (t: TemplateLike) => void; onPick: (doc: Doc, name: string) => void; thumb: (t: TemplateLike) => React.ReactNode }) {
+  const sources = templateSources();
+  const [tab, setTab] = useState((window as { __templatesTab?: string }).__templatesTab ?? 'builtin');
+  const source = sources.find((s) => s.id === tab);
+  return (
+    <div className="ui-examples" data-help="examples">
+      <h3>Start from an example</h3>
+      <div className="ui-segmented tpl-tabs" role="tablist">
+        {[{ id: 'builtin', title: 'Built-in' }, ...sources].map((s) => (
+          <button key={s.id} type="button" role="tab" aria-selected={tab === s.id} className={`ui-seg${tab === s.id ? ' is-chosen' : ''}`} onClick={() => setTab(s.id)}>
+            {s.title}
+          </button>
+        ))}
+      </div>
+      {source ? (
+        <SourceCards source={source} onPick={onPick} thumb={thumb} />
+      ) : (
+        <div className="ui-example-list">
+          {examples.map(({ template: t }) => (
+            <button key={t.id} type="button" className="ui-example" onClick={() => pick(t)}>
+              <span className="ui-example-art">{thumb(t)}</span>
+              <span className="ui-example-head">
+                <strong>{t.name}</strong>
+              </span>
+              <span className="ui-preset-blurb">{t.blurb}</span>
             </button>
           ))}
         </div>

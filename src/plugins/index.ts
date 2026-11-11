@@ -4,9 +4,11 @@ import './help';
 import './PluginPanel';
 import './debug';
 import './plugins.css';
-import { loadPlugins, setExporterOpener, plugins } from './manager';
+import { loadPlugins, plugins, setApprover, setExporterOpener } from './manager';
+import { approveWithDialog } from './ApproveDialog';
 import { openPluginExport } from './PluginExportDialog';
 
+setApprover(approveWithDialog);
 setExporterOpener((pluginId, def) => openPluginExport({ pluginId, pluginName: plugins.get().find((p) => p.manifest.id === pluginId)?.manifest.name ?? 'plugin', def }));
 
 // Start the plugins that are on once the app is up (a tick later, so the dock and menus are ready for them).

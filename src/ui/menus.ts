@@ -19,7 +19,7 @@ export const MENUS: MenuDef[] = [
   {
     label: 'File',
     categories: ['File', 'Export'],
-    items: ['file.new', 'file.open', 'file.openRecent', 'file.recover', '-', 'file.save', 'file.saveAs', '-', 'file.export', 'file.exportInteractives', 'file.exportAgain'],
+    items: ['file.new', 'file.open', 'file.openRecent', 'file.openPlayable', 'file.recover', '-', 'file.save', 'file.saveAs', 'file.saveAsTemplate', 'file.importTemplate', '-', 'file.export', 'file.exportInteractives', 'file.exportAgain', 'file.toggleUpdatePlayable'],
   },
   {
     label: 'Edit',

@@ -217,8 +217,20 @@ export async function loadPlugins(): Promise<void> {
   for (const p of list) if (p.enabled) await start(p);
 }
 
+type Approver = (m: PluginManifest, verb: 'Install' | 'Turn on' | 'Update') => Promise<{ permissions: Permission[]; network: string[] } | null>;
+let approver: Approver | null = null;
+
+/** The app's own "Install this plugin?" dialog (ApproveDialog.tsx). Without one, a plain question stands in. */
+export function setApprover(fn: Approver | null): void {
+  approver = fn;
+}
+
+function approve(m: PluginManifest, verb: 'Install' | 'Turn on' | 'Update') {
+  return approver ? approver(m, verb) : plainApprove(m, verb);
+}
+
 /** The "Install this plugin?" question, with what it asks for. Resolves what they allowed, or null. */
-async function approve(m: PluginManifest, verb: 'Install' | 'Turn on' | 'Update'): Promise<{ permissions: Permission[]; network: string[] } | null> {
+async function plainApprove(m: PluginManifest, verb: 'Install' | 'Turn on' | 'Update'): Promise<{ permissions: Permission[]; network: string[] } | null> {
   const lines = m.permissions.map((p) => `- ${PERMISSIONS[p].label}${p === 'network' ? ` (${m.network.join(', ')})` : ''}`);
   const detail = [m.description, m.author ? `By ${m.author}.` : '', lines.length ? `It asks to:\n${lines.join('\n')}` : 'It asks for nothing beyond adding commands.', 'Plugins run in a sandbox, away from your files.']
     .filter(Boolean)

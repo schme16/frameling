@@ -58,6 +58,7 @@ The plugin never touches your disk itself. Pressing **Cancel** stops it straight
     section: 'Plugins',
     summary: 'A plugin can add a panel of buttons, sliders and text. It docks like any other panel.',
     keywords: ['plugin', 'panel', 'dock'],
+    media: 'plugin-panel.png',
     body: `Some plugins add a **panel**. It docks on the right at first, and you can drag it anywhere, like any other panel. Show or hide it from the **View** menu.
 
 Frameling draws plugin panels itself, from a simple description the plugin sends: text, buttons, check boxes, sliders, number and text boxes, lists and colours. A plugin can't put web pages or anything else on screen.`,

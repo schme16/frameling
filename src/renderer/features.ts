@@ -14,3 +14,5 @@ import '../tiles';
 import '../effects';
 import '../quests';
 import '../plugins';
+import '../templates/app';
+import '../interactives';
