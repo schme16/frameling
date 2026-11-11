@@ -24,6 +24,8 @@ export interface Doc {
   height: number;
   /** Frames per second. */
   fps: number;
+  /** Dots per inch, for showing sizes in mm, cm, in or pt (missing = 96, one document pixel per CSS pixel). */
+  dpi?: number;
   /** Total length in frames (at least 1). Playback and export run from 0 to length - 1 unless a clip says otherwise. */
   length: number;
   /** Stage colour, or null for transparent. */

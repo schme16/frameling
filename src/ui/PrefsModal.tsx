@@ -14,6 +14,7 @@ import { setPrefs, usePrefs, type LookPref, type ThemePref } from './prefs';
 import { toast } from './toast';
 import { BehaviourPage } from './ChoiceDialog';
 import { ThemesPage } from './themes/ThemesPage';
+import { UNITS, type Unit } from '../core/units';
 
 // The Themes page is local to this file for now (overlays.ts decides which pages can be opened from outside).
 type Page = PrefsPage;
@@ -60,7 +61,7 @@ function Prefs({ page, commandId }: { page: PrefsPage; commandId?: string }) {
 
 // ---------------------------------------------------------------- pieces
 
-function Row({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
+export function Row({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
   return (
     <div className="ui-pref-row">
       <div className="ui-pref-text">
@@ -72,7 +73,7 @@ function Row({ label, hint, children }: { label: string; hint?: string; children
   );
 }
 
-function Segmented<T extends string>({ value, options, onChange, label }: { value: T; options: { id: T; label: string; icon?: string }[]; onChange: (v: T) => void; label: string }) {
+export function Segmented<T extends string>({ value, options, onChange, label }: { value: T; options: { id: T; label: string; icon?: string }[]; onChange: (v: T) => void; label: string }) {
   return (
     <div className="ui-segmented" role="radiogroup" aria-label={label}>
       {options.map((o) => (
@@ -128,6 +129,9 @@ function GeneralPage({ onThemes }: { onThemes: () => void }) {
             { id: 'crisp', label: 'Crisp', icon: 'grid' },
           ]}
         />
+      </Row>
+      <Row label="Units" hint="How sizes are shown. Pixels suit screens and games; mm, cm, inches and points suit print.">
+        <Segmented<Unit> label="Units" value={p.units} onChange={(units) => setPrefs({ units })} options={UNITS.map((u) => ({ id: u.id, label: u.id }))} />
       </Row>
       <Row label="Sounds" hint="Little sound effects. They aren't here yet, but your choice is remembered.">
         <Switch label="Sounds" on={p.sounds} onChange={(sounds) => setPrefs({ sounds })} />
