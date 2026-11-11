@@ -113,3 +113,13 @@ describe('kitchen sink document', () => {
     expect(plain(rootDoc(s.get().doc))).toEqual(after);
   });
 });
+
+describe('room for sound rows', () => {
+  it('grows the timeline only when the sounds and two layers would not fit', async () => {
+    const { timelineRoomFor } = await import('../../src/audio/SoundRows');
+    // Header and scrollbar 82, one sound 36, two layers 72: 190 needed.
+    expect(timelineRoomFor(1, 10, 80, 230)).toBe(340);
+    expect(timelineRoomFor(1, 10, 190, 230)).toBeNull();
+    expect(timelineRoomFor(2, 1, 150, 230)).toBe(230 + (82 + 72 + 36 - 150));
+  });
+});
