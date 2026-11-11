@@ -90,7 +90,7 @@ export const EFFECTS: EffectInfo[] = [
     label: 'Glow',
     term: 'Outer glow',
     description: 'A soft light around the drawing. Good for magic, lamps and neon.',
-    icon: 'fx-glow',
+    icon: 'fx-halo',
     params: [
       { key: 'color', label: 'Colour', type: 'color', default: '#ffd76a' },
       { key: 'size', label: 'Size', type: 'number', default: 12, min: 0, max: 80, step: 0.5, unit: 'px' },
