@@ -33,6 +33,8 @@ export interface SheetSettings {
   jsonStyle?: 'array' | 'hash';
   /** Unity: include the small importer script (only needed once per project). */
   unityScript?: boolean;
+  /** Godot, for a document with bones: baked frames on a sheet (missing), or the skeleton itself, editable in Godot. */
+  godotRig?: 'frames' | 'bones';
 }
 
 export type EngineId = 'godot' | 'unity' | 'phaser' | 'pixi' | 'css' | 'json' | 'none';
@@ -75,6 +77,7 @@ export function normalizeSheet(s: SheetSettings): Required<SheetSettings> {
     separateFiles: s.separateFiles === true,
     jsonStyle: s.jsonStyle === 'hash' ? 'hash' : 'array',
     unityScript: s.unityScript !== false,
+    godotRig: s.godotRig === 'bones' ? 'bones' : 'frames',
   };
 }
 

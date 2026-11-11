@@ -8,7 +8,7 @@ import { store } from '../core/store';
 import { rememberedChoice, withChoice } from '../core/choices';
 import { cssVar } from '../canvas/theme';
 import { requestOverlay } from '../canvas/controller';
-import { aimBone, applyPins, capturePins, descendants, ikChain, moveBone, rigState, solveIK, type PinHold, type Pt, type RigState } from './math';
+import { aimBone, applyPins, capturePins, descendants, ikChain, moveBone, rigState, solveIK, stretchBone, type PinHold, type Pt, type RigState } from './math';
 import { rigPoseAt, type RigLayer } from './pose';
 import { addBone, currentRig, deleteBone, ensureRig, moveJoint, needsNewPoseKey, setPin, setPose } from './ops';
 import { rigUi, setRigUi, type BoneLook } from './state';
@@ -259,6 +259,8 @@ interface PoseDrag {
   pose0: Pose;
   holds: Map<Id, PinHold>;
   chain: Id[];
+  /** Shift-drag on a tip: squash or stretch the bone instead of bending the chain. */
+  stretch?: boolean;
 }
 let poseDrag: PoseDrag | null = null;
 
@@ -269,7 +271,10 @@ export function dragPose(rig: RigLayer, d: PoseDrag, p: Pt): Pose {
   if (!b) return d.pose0;
   let pose: Pose;
   let skip: Set<Id>;
-  if (d.part === 'base' && !b.parent) {
+  if (d.stretch) {
+    pose = stretchBone(r, d.pose0, d.id, p);
+    skip = descendants(r, d.id);
+  } else if (d.part === 'base' && !b.parent) {
     // The root's joint moves the whole skeleton; pinned feet stay planted.
     pose = moveBone(r, d.pose0, d.id, p.x - d.start.x, p.y - d.start.y);
     skip = new Set([d.id]);
@@ -315,7 +320,8 @@ export const poseTool: Tool = {
       return;
     }
     const begin = () => {
-      poseDrag = { rigId: rig.id, id: hit.id, part: hit.part, start: { x: e.x, y: e.y }, pose0, holds: capturePins(rig.rig, pose0), chain: hit.part === 'tip' ? ikChain(rig.rig, hit.id) : [hit.id] };
+      const stretch = e.shift && hit.part !== 'base';
+      poseDrag = { rigId: rig.id, id: hit.id, part: hit.part, start: { x: e.x, y: e.y }, pose0, holds: capturePins(rig.rig, pose0), chain: hit.part === 'tip' && !stretch ? ikChain(rig.rig, hit.id) : [hit.id], stretch };
     };
     // The first time a pose lands on a frame without one, ask whether in-betweens glide or jump.
     if (needsNewPoseKey(rig, store().get().ui.frame) && rememberedChoice('rig.newPose') === undefined) {

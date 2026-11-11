@@ -35,9 +35,9 @@ export function saveLastSettings(s: ExportSettings): void {
 const EXTRAS_KEY = 'frameling.export.sheetExtras';
 
 /** The sprite sheet choices that stay put between exports: the engine, the "also save" ticks and how the sheet is laid out. */
-export type SheetExtras = Pick<SheetSettings, 'json' | 'godot' | 'godotScene'> & Partial<Pick<SheetSettings, 'engine' | 'layout' | 'content' | 'separateFiles' | 'jsonStyle' | 'unityScript'>>;
+export type SheetExtras = Pick<SheetSettings, 'json' | 'godot' | 'godotScene'> & Partial<Pick<SheetSettings, 'engine' | 'layout' | 'content' | 'separateFiles' | 'jsonStyle' | 'unityScript' | 'godotRig'>>;
 
-const EXTRA_KEYS = ['engine', 'layout', 'content', 'separateFiles', 'jsonStyle', 'unityScript'] as const;
+const EXTRA_KEYS = ['engine', 'layout', 'content', 'separateFiles', 'jsonStyle', 'unityScript', 'godotRig'] as const;
 
 /** The sprite sheet's remembered choices as last left (JSON on and Godot off to begin with). */
 export function loadSheetExtras(): SheetExtras | null {

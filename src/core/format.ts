@@ -553,7 +553,12 @@ export interface BonePose {
   r: number;
   x?: number;
   y?: number;
+  /** Squash and stretch: the bone's length times this, with what hangs from it (missing = 1). Kept within BONE_STRETCH. */
+  s?: number;
 }
+
+/** How far a bone can squash or stretch, so it never flips inside out. */
+export const BONE_STRETCH = { min: 0.25, max: 3 } as const;
 
 export type Pose = Record<Id, BonePose>;
 

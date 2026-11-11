@@ -15,7 +15,8 @@ import { NO_SOUND_NOTE, prepareSound } from '../audio/export';
 import { frameToSvg } from './svg';
 import { animatedSvg } from './svg-anim';
 import { lottieJson } from './lottie';
-import { formatInfo, type ExportSettings } from './types';
+import { formatInfo, normalizeSheet, type ExportSettings } from './types';
+import { godotBonesFiles } from './godot-bones-run';
 import { BT709_LIMITED, rgbaToI420 } from './yuv';
 
 export interface Progress {
@@ -208,6 +209,21 @@ export async function runExport(ctx: RunContext): Promise<RunResult> {
 async function runSheet(ctx: RunContext, plan: Plan, rgbaAt: (i: number) => RawImage, step: (done: number, label: string) => void): Promise<RunResult> {
   const { doc, settings, signal } = ctx;
   const sheet = settings.sheet;
+  const norm = normalizeSheet(sheet);
+  if (norm.engine === 'godot' && norm.godotRig === 'bones' && norm.content !== 'separate') {
+    const out = await godotBonesFiles({
+      doc,
+      range: plan.range,
+      whole: settings.range === 'all',
+      clipId: settings.clipId,
+      scale: settings.scale,
+      godotPath: sheet.godotPath,
+      pixelArt: doc.layers.length > 0 && doc.layers.every((l) => l.kind !== 'vector' || !!l.rig),
+      signal,
+      onStep: (done, total, label) => ctx.onProgress({ done, total, label }),
+    });
+    return { kind: 'files', folderName: out.main.replace(/\.tscn$/, ''), files: out.files, main: out.main };
+  }
   const frames: RawImage[] = [];
   for (let i = 0; i < plan.count; i++) {
     await breathe(signal, i);
