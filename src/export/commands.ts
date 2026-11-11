@@ -14,6 +14,16 @@ registerCommands([
     run: () => openExportDialog(),
   },
   {
+    id: 'file.exportInteractives',
+    label: 'Export for Interactives...',
+    category: 'File',
+    description: 'Make one file to drop onto an Interactives page, with your clips and markers in it.',
+    help: 'export-interactives',
+    keywords: ['interactives', 'flplay', 'package', 'playable', 'web', 'course', 'layer'],
+    global: true,
+    run: () => openExportDialog('interactives'),
+  },
+  {
     id: 'file.exportAgain',
     label: 'Export again',
     category: 'File',

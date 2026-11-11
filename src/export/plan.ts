@@ -130,7 +130,7 @@ export function planExport(doc: Doc, s: ExportSettings, currentFrame: number): P
 
 export function filtersFor(format: FormatId): { name: string; extensions: string[] }[] {
   const info = formatInfo(format);
-  const names: Record<FormatId, string> = { mp4: 'MP4 video', webm: 'WebM video', gif: 'Animated GIF', apng: 'Animated PNG', png: 'PNG picture', pngseq: 'Zip file', svg: 'SVG drawing', sheet: 'PNG picture' };
+  const names: Record<FormatId, string> = { mp4: 'MP4 video', webm: 'WebM video', gif: 'Animated GIF', apng: 'Animated PNG', png: 'PNG picture', pngseq: 'Zip file', svg: 'SVG drawing', sheet: 'PNG picture', interactives: 'Interactives package' };
   return [{ name: names[format], extensions: [info.ext] }];
 }
 

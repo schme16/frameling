@@ -9,6 +9,8 @@ import { backgroundFor, drawFrame, makeCanvas, readPixels } from './draw';
 import { buildPalette, GifWriter, sampleFrames } from './gif';
 import { frameNumber, MAX_SHEET_SIDE, planExport, type Plan } from './plan';
 import { buildSheetFiles } from './engines';
+import { playablePackage } from './playable';
+import { saveFile } from '../io/file';
 import { frameToSvg } from './svg';
 import { formatInfo, type ExportSettings } from './types';
 import { BT709_LIMITED, rgbaToI420 } from './yuv';
@@ -161,6 +163,28 @@ export async function runExport(ctx: RunContext): Promise<RunResult> {
     }
     case 'sheet':
       return runSheet(ctx, plan, rgbaAt, step);
+    case 'interactives': {
+      const frames: RawImage[] = [];
+      for (let i = 0; i < plan.count; i++) {
+        await breathe(signal, i);
+        step(i, `Drawing frame ${i + 1} of ${plan.count}`);
+        const img = rgbaAt(i);
+        frames.push({ width: img.width, height: img.height, pixels: new Uint8ClampedArray(img.pixels) });
+      }
+      step(plan.count, 'Packing for Interactives');
+      const { bytes } = playablePackage({
+        doc,
+        frames,
+        range: plan.range,
+        scale: settings.scale,
+        pixelArt: crisp,
+        background: bg === 'none' ? null : bg === 'doc' ? doc.background : '#ffffff',
+        maxSide: MAX_SHEET_SIDE,
+        appVersion: ctx.appVersion,
+        source: settings.includeSource === false ? null : saveFile(doc, ctx.appVersion ?? ''),
+      });
+      return { kind: 'file', name: `${plan.name}.flplay`, bytes };
+    }
   }
 }
 
