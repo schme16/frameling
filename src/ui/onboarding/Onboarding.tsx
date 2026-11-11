@@ -108,8 +108,6 @@ function Flow() {
   const pickedTheme = (mode: 'dark' | 'light') => themes.find((t) => t.id === (mode === 'dark' ? p.darkTheme : p.lightTheme));
   const loved = [pickedTheme('dark'), pickedTheme('light')].find((t) => isStrawberry(t));
   const lovesIt = !!loved;
-  // Layout B is only for the A/B picture: a smaller card with a smaller Quill.
-  const layoutB = document.documentElement.dataset.obLayout === 'b';
 
   const say = sayFor(s, { strawberryName: loved?.name ?? strawberry.light?.name ?? strawberry.dark?.name ?? 'Strawberry', lovesIt, quillOn: p.showQuill, name: s.name, plan });
   const anim: Script =
@@ -120,7 +118,7 @@ function Flow() {
   const last = s.step === 'done';
 
   return (
-    <Modal title={`Welcome to Frameling: ${TITLES[s.step]}`} size="lg" hideHeader className={`ob ${layoutB ? 'ob-b' : 'ob-a'}`} onClose={() => end('skipped')} initialFocus=".ob-next, .ob-go">
+    <Modal title={`Welcome to Frameling: ${TITLES[s.step]}`} size="lg" hideHeader className="ob ob-a" onClose={() => end('skipped')} initialFocus=".ob-next, .ob-go">
       <div className="ob-body" onPointerDown={poke} onKeyDown={poke}>
         <aside className={`ob-quill${quill ? '' : ' is-alone'}`}>
           <div className="ob-bubbles" aria-live="polite" key={`${s.step}-${dozing}`}>
@@ -132,7 +130,7 @@ function Flow() {
           </div>
           {quill && (
             <div className="ob-quill-stand">
-              <Quill anim={anim} size={layoutB ? 96 : 192} />
+              <Quill anim={anim} size={192} />
               {lovesIt && s.step === 'themes' && <Berry />}
             </div>
           )}
