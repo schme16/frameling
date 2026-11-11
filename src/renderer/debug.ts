@@ -4,10 +4,13 @@ import { store } from '../core/store';
 import { findTemplate } from '../templates';
 import * as tiles from '../tiles/debug';
 import { allCommands, getCommand } from '../core/registry';
-import { celebrate } from '../quests/feedback';
-import { getQuest, startQuest } from '../quests/registry';
+import { celebrate, praise } from '../quests/feedback';
+import { allQuests, getQuest, questProgress, startQuest } from '../quests/registry';
 import { getPrefs, setPrefs } from '../ui/prefs';
 import { quillSheet, setQuillSheet, tick as quillTick } from '../ui/mascot/runtime';
+import { setShowQuill } from '../ui/mascot/goodbye';
+import { closeSheet, openHelp, openPrefs } from '../ui/overlays';
+import { toast } from '../ui/toast';
 
 if (new URLSearchParams(location.search).has('debug')) {
   (window as unknown as { __frameling: unknown }).__frameling = {
@@ -26,11 +29,17 @@ if (new URLSearchParams(location.search).has('debug')) {
     // Swap in another Quill sheet (a placeholder, or art being tried out) without a rebuild.
     quests: {
       start: startQuest,
-      celebrate: (id: string) => {
+      // The dialogue shots also want the card for a quest with no badge, or no finish line of its own.
+      celebrate: (id: string, o: { noBadge?: boolean; noFinish?: boolean } = {}) => {
         const q = getQuest(id);
-        if (q) celebrate(q, q.badge ?? null, false, 60_000);
+        if (q) celebrate(o.noFinish ? { ...q, finish: undefined } : q, o.noBadge ? null : (q.badge ?? null), false, 60_000);
       },
+      praise,
+      progress: questProgress,
+      all: () => allQuests().map((q) => q.id),
     },
-    quill: { sheet: () => quillSheet.get(), setSheet: setQuillSheet, tick: quillTick },
+    quill: { sheet: () => quillSheet.get(), setSheet: setQuillSheet, tick: quillTick, setShown: setShowQuill },
+    toast,
+    overlays: { openHelp, openPrefs, closeSheet },
   };
 }

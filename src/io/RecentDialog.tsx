@@ -1,3 +1,4 @@
+import { line } from '../ui/mascot/lines';
 import { useEffect, useState } from 'react';
 import { Icon } from '../ui/icons';
 import { QuillEmpty } from '../ui/mascot';
@@ -27,7 +28,7 @@ function RecentDialog({ close }: { close: () => void }) {
     <Modal title="Open recent" onClose={close}>
       <div className="io-body">
         {files === null ? null : files.length === 0 ? (
-          <QuillEmpty anim="draw" className="io-empty">Nothing here yet. Drawings you open or save will show up here.</QuillEmpty>
+          <QuillEmpty anim="draw" className="io-empty">{line('empty.recent')}</QuillEmpty>
         ) : (
           <ul className="io-recent">
             {files.map((f) => (

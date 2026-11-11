@@ -1,3 +1,4 @@
+import { line } from './mascot/lines';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { getCommand } from '../core/registry';
 import { renderFrameToCanvas } from '../core/render';
@@ -44,7 +45,7 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
     if (!(await askAboutUnsavedChanges())) return;
     store().load(doc);
     closeSheet();
-    toast(`A fresh ${label} is ready. Have fun!`, { kind: 'success' });
+    toast(line('welcome.ready', { kind: label }), { kind: 'success' });
   };
 
   const num = (key: 'width' | 'height' | 'fps' | 'pixelSize') => (e: React.ChangeEvent<HTMLInputElement>) => setSpec((s) => ({ ...s, [key]: e.target.value === '' ? 0 : Number(e.target.value) }));
@@ -55,8 +56,8 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
       <div className="ui-welcome-head">
         {quill ? <Quill anim={[{ anim: 'wave', hold: 2480 }, { anim: 'idle' }]} size={96} className="ui-welcome-quill" /> : <Logo size={64} />}
         <div>
-          <h2>{mode === 'welcome' ? 'Hello! What shall we make?' : 'Start something new'}</h2>
-          <p>Pick a card. You can always change your mind later.</p>
+          <h2>{line(mode === 'welcome' ? 'welcome.hello' : 'welcome.new')}</h2>
+          <p>{line('welcome.lead')}</p>
         </div>
         <button type="button" className="ui-icon-btn ui-welcome-x" aria-label="Close" onClick={closeSheet}>
           <Icon name="close" />

@@ -1,3 +1,4 @@
+import { line } from './mascot/lines';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { allCommands, type Command } from '../core/registry';
 import { applyWorkspace, currentWorkspace, deleteWorkspace, dock, listWorkspaces, renameWorkspace, resetLayout, saveWorkspace } from './dock';
@@ -329,7 +330,7 @@ function KeyboardPage({ focusId }: { focusId?: string }) {
         ))}
         {!cats.length && (
           <QuillEmpty anim={[{ anim: 'think', hold: 2400 }, { anim: 'idle' }]} size={96} className="ui-help-empty">
-            No commands match that.
+            {line('empty.shortcuts')}
           </QuillEmpty>
         )}
       </div>

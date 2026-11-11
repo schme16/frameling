@@ -93,6 +93,31 @@ Two scripts in `brand/mascot/` still compose poses from those old part grids (`c
 writes `brand/ab/sad-quill/contact-6x.png`), and `redraw-arms.mjs` swaps every old arm for the chunky ones built in
 `arms.mjs`, in place. Hand edits made in Frameling are left alone by both.
 
+### Editing Quill's words
+
+Everything Quill says is in one file, `src/ui/mascot/lines.json`: the first-run hello, his reactions, the Strawberry
+gushing, nodding off, goodbye and welcome back, the quest cheers and badge card, the welcome sheet, About, empty
+states and his toasts. Each entry has the `text`, a `where` (when and where it shows) and the `vars` it uses. Words
+in `{curly}` brackets are filled in by the app, so keep them. A list is several bubbles shown together, or a set the
+app picks from (silly names, quest cheers). Quest step instructions are tutorial content and stay in
+`src/quests/library.ts`; help topics and plain app messages (errors, saving) aren't in it either.
+
+The easy way to edit them is the review page, `brand/dialogue/index.html` (open it straight from disk). Each line
+has its screenshot in place and a box to change it; your edits are kept in that browser until you reset them.
+
+1. Edit the lines on the page, then press **Download my changes** (or **Copy my changes** and paste into a file).
+2. `npm run dialogue:apply ~/Downloads/quill-lines-2026-11-11.json` merges them into `lines.json` and prints what
+   changed. It refuses the whole file, and writes nothing, if a line lost or gained a `{placeholder}` or names a line
+   that doesn't exist. Add `--check` to see the changes without writing them.
+3. `npm run dialogue:page` refreshes the page's text; `npm run dialogue:shots` rebuilds the app and retakes every
+   screenshot too (about two minutes; it drives an off-screen window, see `scripts/dialogue/shots.cjs`). A shot
+   that only shows the nearest moment says so under the line.
+
+Code reads the lines through `line(id, vars)`, `lines(id, vars)` (for lists) and `lineParts(id, vars)` (to fill a
+placeholder with bold text) in `src/ui/mascot/lines.ts`; the ids are typed, so a typo fails `npm run typecheck`. A new
+line goes in `lines.json` with its `where`, and in the moments list in `shots.cjs`. `test/ui/quill-lines.test.ts`
+checks every line is used, every id used exists, and the placeholders match.
+
 ## The Interactives package (.flplay)
 
 **File > Export for Interactives** (or the **Interactives** card in the Export window) writes one `.flplay` file: the

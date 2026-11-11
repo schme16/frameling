@@ -1,0 +1,171 @@
+{
+  "onboarding.doze.asleep": {
+    "file": "shots/onboarding.doze.asleep.png",
+    "note": "Left alone for 20 seconds."
+  },
+  "onboarding.doze.woke": {
+    "file": "shots/onboarding.doze.woke.png"
+  },
+  "onboarding.skipped": {
+    "file": "shots/onboarding.skipped.png"
+  },
+  "goodbye.short": {
+    "file": "shots/goodbye.short.png"
+  },
+  "quests.panel.intro": {
+    "file": "shots/quests.panel.intro.png"
+  },
+  "quests.praise": {
+    "file": "shots/quests.praise.png",
+    "note": "The little cheer over the quest bar. It takes turns through the list."
+  },
+  "quests.badge": {
+    "file": "shots/quests.badge.png"
+  },
+  "quests.finished": {
+    "file": "shots/quests.finished.png",
+    "note": "Every quest has a badge and its own finish line today, so this one is staged."
+  },
+  "quests.finishedQuest": {
+    "file": "shots/quests.finishedQuest.png",
+    "note": "Every quest has a badge and its own finish line today, so this one is staged."
+  },
+  "quests.panel.allDone": {
+    "file": "shots/quests.panel.allDone.png"
+  },
+  "welcome.hello": {
+    "file": "shots/welcome.hello.png"
+  },
+  "welcome.lead": {
+    "file": "shots/welcome.lead.png"
+  },
+  "welcome.ready": {
+    "file": "shots/welcome.ready.png"
+  },
+  "welcome.new": {
+    "file": "shots/welcome.new.png"
+  },
+  "about.quill": {
+    "file": "shots/about.quill.png"
+  },
+  "empty.help": {
+    "file": "shots/empty.help.png"
+  },
+  "empty.shortcuts": {
+    "file": "shots/empty.shortcuts.png"
+  },
+  "empty.recent": {
+    "file": "shots/empty.recent.png"
+  },
+  "empty.recover": {
+    "file": "shots/empty.recover.png"
+  },
+  "onboarding.hello": {
+    "file": "shots/onboarding.hello.png"
+  },
+  "onboarding.make.none": {
+    "file": "shots/onboarding.make.none.png"
+  },
+  "onboarding.make.lead": {
+    "file": "shots/onboarding.make.lead.png"
+  },
+  "onboarding.make.cartoons": {
+    "file": "shots/onboarding.make.cartoons.png"
+  },
+  "onboarding.make.sprites": {
+    "file": "shots/onboarding.make.sprites.png"
+  },
+  "onboarding.make.tiles": {
+    "file": "shots/onboarding.make.tiles.png"
+  },
+  "onboarding.make.motion": {
+    "file": "shots/onboarding.make.motion.png"
+  },
+  "onboarding.make.interactives": {
+    "file": "shots/onboarding.make.interactives.png"
+  },
+  "onboarding.make.play": {
+    "file": "shots/onboarding.make.play.png"
+  },
+  "onboarding.make.lots": {
+    "file": "shots/onboarding.make.lots.png",
+    "note": "Five still picked after un-picking Just playing."
+  },
+  "onboarding.make.some": {
+    "file": "shots/onboarding.make.some.png",
+    "note": "Three still picked after un-picking two."
+  },
+  "onboarding.themes.hint": {
+    "file": "shots/onboarding.themes.hint.png"
+  },
+  "onboarding.themes.favourite": {
+    "file": "shots/onboarding.themes.favourite.png"
+  },
+  "onboarding.themes.loved": {
+    "file": "shots/onboarding.themes.loved.png"
+  },
+  "onboarding.prefs.on": {
+    "file": "shots/onboarding.prefs.on.png"
+  },
+  "onboarding.prefs.showQuill": {
+    "file": "shots/onboarding.prefs.showQuill.png"
+  },
+  "goodbye.long": {
+    "file": "shots/goodbye.long.png"
+  },
+  "onboarding.prefs.off": {
+    "file": "shots/onboarding.prefs.off.png",
+    "note": "Quill is hidden here, so his words stand on their own."
+  },
+  "welcomeBack": {
+    "file": "shots/welcomeBack.png",
+    "note": "The first-run hello version. The Preferences one is a toast with the same words.",
+    "also": "shots/welcomeBack-toast.png"
+  },
+  "onboarding.name": {
+    "file": "shots/onboarding.name.png",
+    "note": "Silly names show in the name box (Roll picks a new one)."
+  },
+  "sillyNames.pattern": {
+    "file": "shots/sillyNames.pattern.png",
+    "note": "Silly names show in the name box (Roll picks a new one)."
+  },
+  "sillyNames.adjectives": {
+    "file": "shots/sillyNames.adjectives.png",
+    "note": "Silly names show in the name box (Roll picks a new one)."
+  },
+  "sillyNames.nouns": {
+    "file": "shots/sillyNames.nouns.png",
+    "note": "Silly names show in the name box (Roll picks a new one)."
+  },
+  "sillyNames.fallback": {
+    "file": "shots/sillyNames.fallback.png",
+    "note": "Silly names show in the name box (Roll picks a new one)."
+  },
+  "onboarding.done": {
+    "file": "shots/onboarding.done.png"
+  },
+  "onboarding.done.lead": {
+    "file": "shots/onboarding.done.lead.png"
+  },
+  "onboarding.done.quest": {
+    "file": "shots/onboarding.done.quest.png"
+  },
+  "onboarding.done.example": {
+    "file": "shots/onboarding.done.example.png"
+  },
+  "onboarding.done.blank": {
+    "file": "shots/onboarding.done.blank.png"
+  },
+  "onboarding.done.noName": {
+    "file": "shots/onboarding.done.noName.png",
+    "note": "With the name box left empty."
+  },
+  "onboarding.done.leadNoName": {
+    "file": "shots/onboarding.done.leadNoName.png",
+    "note": "With the name box left empty."
+  },
+  "onboarding.ready": {
+    "file": "shots/onboarding.ready.png"
+  }
+}
