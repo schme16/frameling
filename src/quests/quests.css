@@ -1,0 +1,484 @@
+/*
+ * Quests: the guide bar, the ring, the badge card and the panel. Colours come from theme.css tokens only.
+ * The bar, ring and card live outside .ui-app (on the body), so they carry their own font and button styles.
+ */
+
+.qr {
+  font-family: var(--font);
+  font-size: var(--fs);
+  color: var(--text);
+}
+.qr button {
+  font: inherit;
+  cursor: pointer;
+}
+
+/* ---------------------------------------------------------------- the ring */
+
+.qs-ring {
+  position: fixed;
+  z-index: 1000;
+  pointer-events: none;
+  border-radius: 12px;
+  border: 2px solid var(--sunny);
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--sunny) 30%, transparent),
+    0 0 22px color-mix(in srgb, var(--sunny) 55%, transparent);
+  animation: qs-pulse 1.8s var(--ease) infinite;
+  transition:
+    left 0.18s var(--ease),
+    top 0.18s var(--ease),
+    width 0.18s var(--ease),
+    height 0.18s var(--ease);
+}
+/* Something as big as the canvas gets a quieter ring, drawn just inside its edge. */
+.qs-ring.qs-big {
+  border-width: 2px;
+  box-shadow: inset 0 0 0 3px color-mix(in srgb, var(--sunny) 22%, transparent);
+  border-color: color-mix(in srgb, var(--sunny) 70%, transparent);
+  animation: none;
+}
+@keyframes qs-pulse {
+  50% {
+    box-shadow:
+      0 0 0 6px color-mix(in srgb, var(--sunny) 16%, transparent),
+      0 0 30px color-mix(in srgb, var(--sunny) 35%, transparent);
+  }
+}
+
+/* ---------------------------------------------------------------- the bar */
+
+.qb {
+  position: fixed;
+  z-index: 1001;
+  bottom: 42px;
+  width: min(420px, calc(100vw - 24px));
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px 10px;
+  border-radius: var(--radius);
+  background: var(--panel);
+  border: 1px solid color-mix(in srgb, var(--sunny) 45%, var(--line));
+  box-shadow: var(--shadow);
+  animation: qb-rise 0.3s var(--ease-bounce);
+}
+.qb-left {
+  left: 12px;
+}
+.qb-right {
+  right: 12px;
+}
+@keyframes qb-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+.qb-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.qb-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+}
+.qb-title {
+  font-weight: 700;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.qb-count {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: var(--fs-small);
+  white-space: nowrap;
+}
+.qb-x {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted);
+}
+.qb-x:hover {
+  background: var(--hover-bg);
+  color: var(--text);
+}
+.qb-say {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.4;
+  font-weight: 600;
+}
+.qb-why,
+.qb-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--fs-small);
+  line-height: 1.45;
+}
+.qb-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: var(--radius-small);
+  background: color-mix(in srgb, var(--sunny) 14%, var(--panel-2));
+  color: var(--text);
+  animation: qb-fade 0.3s var(--ease);
+}
+.qb-hint .ui-icon {
+  flex: none;
+  margin-top: 1px;
+  color: var(--sunny-deep);
+}
+@keyframes qb-fade {
+  from {
+    opacity: 0;
+  }
+}
+.qb-foot {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+.qb-grow {
+  flex: 1;
+}
+.qb-dots {
+  display: inline-flex;
+  gap: 5px;
+}
+.qb-dots i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--line);
+  transition:
+    background 0.2s var(--ease),
+    transform 0.25s var(--ease-bounce);
+}
+.qb-dots i.is-done {
+  background: var(--sunny);
+}
+.qb-dots i.is-now {
+  background: transparent;
+  box-shadow: inset 0 0 0 2px var(--sunny);
+  transform: scale(1.2);
+}
+.qb-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 26px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  background: var(--raised);
+  color: var(--text);
+  font-weight: 600;
+  font-size: var(--fs-small);
+  white-space: nowrap;
+}
+.qb-btn:hover {
+  background: var(--hover-bg);
+  border-color: var(--faint);
+}
+.qb-quiet {
+  background: transparent;
+  border-color: transparent;
+  color: var(--muted);
+}
+.qb-go {
+  background: var(--chosen-bg);
+  border-color: var(--chosen-bg);
+  color: var(--chosen-fg);
+}
+.qb-go:hover {
+  background: color-mix(in srgb, var(--chosen-bg) 88%, white);
+  border-color: transparent;
+}
+.qb button:focus-visible,
+.qc button:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.qb-praise {
+  position: absolute;
+  right: 12px;
+  top: -14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--ok);
+  color: #17151f;
+  font-size: var(--fs-small);
+  font-weight: 700;
+  box-shadow: var(--shadow-small);
+  animation: qb-praise 1.8s var(--ease) both;
+}
+@keyframes qb-praise {
+  0% {
+    opacity: 0;
+    transform: translateY(6px) scale(0.9);
+  }
+  14%,
+  75% {
+    opacity: 1;
+    transform: none;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+/* ---------------------------------------------------------------- the badge card */
+
+.qm {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  border-radius: 50%;
+  background: var(--medal);
+  color: #1d1b26;
+  box-shadow:
+    inset 0 -3px 0 rgb(0 0 0 / 14%),
+    0 0 0 3px color-mix(in srgb, var(--medal) 30%, transparent);
+}
+.qm-empty {
+  background: transparent;
+  color: var(--faint);
+  box-shadow: inset 0 0 0 2px var(--line);
+}
+
+.qc {
+  position: fixed;
+  z-index: 1002;
+  left: 50%;
+  top: 72px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: min(440px, calc(100vw - 24px));
+  padding: 14px 16px;
+  border-radius: var(--radius);
+  background: var(--panel);
+  border: 1px solid color-mix(in srgb, var(--sunny) 55%, var(--line));
+  box-shadow: var(--shadow);
+  animation: qc-in 0.4s var(--ease-bounce) both;
+}
+@keyframes qc-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -12px) scale(0.96);
+  }
+}
+.qc-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+  align-items: flex-start;
+}
+.qc-text strong {
+  font-size: 15px;
+}
+.qc-text span {
+  color: var(--muted);
+  line-height: 1.45;
+}
+.qc-text .qb-btn {
+  margin-top: 4px;
+}
+.qc .qb-x {
+  align-self: flex-start;
+}
+.qc-confetti {
+  position: absolute;
+  left: 44px;
+  top: 40px;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+.qc-confetti i {
+  position: absolute;
+  width: 8px;
+  height: 12px;
+  border-radius: 2px;
+  opacity: 0;
+  animation: qc-fly 1.6s cubic-bezier(0.15, 0.7, 0.3, 1) both;
+}
+.qc-confetti i.is-round {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+@keyframes qc-fly {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0) scale(0.4);
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--dx), calc(var(--dy) + 70px)) rotate(var(--rot)) scale(1);
+  }
+}
+
+/* ---------------------------------------------------------------- the panel */
+
+.qp {
+  padding: 10px 12px 14px;
+  gap: 8px;
+}
+.qp-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+.qp-count {
+  color: var(--muted);
+  font-size: var(--fs-small);
+}
+.qp-lead {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--fs-small);
+  line-height: 1.45;
+}
+.qp-quill .quill-bubble {
+  padding: 6px 10px;
+}
+.qb-quill {
+  margin-left: -4px;
+}
+.qb-quill .quill-bubble {
+  padding: 6px 10px;
+}
+.qc-quill {
+  margin: -6px -6px -6px -4px;
+}
+.qp-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 4px;
+}
+.qp-group-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 6px 2px 0;
+  color: var(--muted);
+  font-size: var(--fs-small);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.qp-group-count {
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+.qp-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.qp-card {
+  display: flex;
+  gap: 10px;
+  padding: 10px;
+  border-radius: var(--radius);
+  background: var(--panel-2);
+  border: 1px solid var(--line-soft);
+}
+.qp-card.is-locked {
+  border-style: dashed;
+}
+/* Locked cards look quieter through their icon and border; fading the words too made them hard to read. */
+.qp-card.is-locked > :not(.qp-body) {
+  opacity: 0.6;
+}
+.qp-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.qp-body p {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--fs-small);
+  line-height: 1.4;
+}
+.qp-body small {
+  color: var(--faint);
+  font-size: 11.5px;
+}
+.qp-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+.qp-reset {
+  align-self: flex-start;
+  margin-top: 6px;
+}
+
+/* ---------------------------------------------------------------- calm */
+
+@media (prefers-reduced-motion: reduce) {
+  .qs-ring,
+  .qb,
+  .qb-hint,
+  .qb-praise,
+  .qc,
+  .qb-dots i {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .qc-confetti {
+    display: none;
+  }
+}
+:root[data-motion='reduce'] .qs-ring,
+:root[data-motion='reduce'] .qb,
+:root[data-motion='reduce'] .qb-hint,
+:root[data-motion='reduce'] .qb-praise,
+:root[data-motion='reduce'] .qc,
+:root[data-motion='reduce'] .qb-dots i {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
+:root[data-motion='reduce'] .qc-confetti {
+  display: none;
+}

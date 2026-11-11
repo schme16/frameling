@@ -1,0 +1,13 @@
+# Text files keep LF line endings on every computer, so a Windows checkout (Git's autocrlf) doesn't turn them into
+# CRLF and break tests that read source files, or scripts with a #! line.
+* text=auto eol=lf
+*.png binary
+*.webp binary
+*.mp4 binary
+*.woff2 binary
+*.ico binary
+*.icns binary
+*.zip binary
+*.frameling binary
+*.flplay binary
+*.gif binary

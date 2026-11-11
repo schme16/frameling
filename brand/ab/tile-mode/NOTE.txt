@@ -1,0 +1,1 @@
+A: tile mode copies drawn at full strength with a dashed frame round the real tile (default, built). B: the eight copies faded to 45%.

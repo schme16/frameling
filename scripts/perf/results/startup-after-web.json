@@ -1,0 +1,148 @@
+{
+  "label": "web",
+  "mode": "web",
+  "cpu": "AMD Ryzen 9 7900X 12-Core Processor",
+  "firstLaunchMs": 295,
+  "medianFromLaunchMs": 275,
+  "medianPageMs": 153,
+  "cpuSlowdown": 4,
+  "medianThrottledPageMs": 138,
+  "initialJs": {
+    "files": [
+      "assets/index-CZchHBx9.js"
+    ],
+    "kB": 1233,
+    "gzipKB": 414
+  },
+  "offline": {
+    "pageMs": 145,
+    "lazy": {
+      "errors": [],
+      "loaded": [
+        "ExportDialog-BReJ2v3J.js",
+        "PrefsModal-DAILrIpw.js",
+        "HelpBrowser-DilktHX_.js",
+        "LibraryPanel-Bk2OVvgx.js",
+        "PropertiesPanel-Cro0mfNx.js",
+        "RigPanel-DofnPYMb.js",
+        "CameraPanel-irF6ymO5.js",
+        "PalettePanel-Ds2RWO-6.js",
+        "FlowPanel-X6Egns7H.js",
+        "LipSyncPanel-DY60yopW.js",
+        "TilesetPanel-BF7omLce.js",
+        "ParticlesPanel-GsHwxbi7.js",
+        "fields-CmJXvgfF.js",
+        "TextPanel-BZPtq8Wq.js",
+        "QuestsPanel-D7RAqM_y.js"
+      ]
+    }
+  },
+  "lazyCheck": null,
+  "runs": [
+    {
+      "timeOrigin": 1794404256721.8,
+      "interactive": 175.20000000298023,
+      "domContentLoaded": 78.89999999850988,
+      "fcp": null,
+      "jsFiles": [
+        "index-CZchHBx9.js",
+        "Onboarding-Cmi0JowR.js",
+        "PrefsModal-DAILrIpw.js"
+      ],
+      "jsBytes": 1313276,
+      "fromSpawnMs": 295,
+      "pageMs": 175,
+      "throttledPageMs": 248
+    },
+    {
+      "timeOrigin": 1794404260405.1,
+      "interactive": 175.30000000447035,
+      "domContentLoaded": 51.100000001490116,
+      "fcp": null,
+      "jsFiles": [
+        "index-CZchHBx9.js",
+        "Onboarding-Cmi0JowR.js",
+        "PrefsModal-DAILrIpw.js"
+      ],
+      "jsBytes": 1313276,
+      "fromSpawnMs": 296,
+      "pageMs": 175,
+      "throttledPageMs": 139
+    },
+    {
+      "timeOrigin": 1794404260982.4,
+      "interactive": 143.39999999850988,
+      "domContentLoaded": 47.79999999701977,
+      "fcp": null,
+      "jsFiles": [
+        "index-CZchHBx9.js",
+        "Onboarding-Cmi0JowR.js",
+        "PrefsModal-DAILrIpw.js"
+      ],
+      "jsBytes": 1313276,
+      "fromSpawnMs": 268,
+      "pageMs": 143,
+      "throttledPageMs": 138
+    },
+    {
+      "timeOrigin": 1794404261519.9,
+      "interactive": 148.10000000149012,
+      "domContentLoaded": 50.100000001490116,
+      "fcp": null,
+      "jsFiles": [
+        "index-CZchHBx9.js",
+        "Onboarding-Cmi0JowR.js",
+        "PrefsModal-DAILrIpw.js"
+      ],
+      "jsBytes": 1313276,
+      "fromSpawnMs": 269,
+      "pageMs": 148,
+      "throttledPageMs": 136
+    },
+    {
+      "timeOrigin": 1794404262063,
+      "interactive": 141.19999999552965,
+      "domContentLoaded": 55.79999999701977,
+      "fcp": null,
+      "jsFiles": [
+        "index-CZchHBx9.js",
+        "Onboarding-Cmi0JowR.js",
+        "PrefsModal-DAILrIpw.js"
+      ],
+      "jsBytes": 1313276,
+      "fromSpawnMs": 265,
+      "pageMs": 141,
+      "throttledPageMs": 134
+    },
+    {
+      "timeOrigin": 1794404262596.8,
+      "interactive": 154.10000000149012,
+      "domContentLoaded": 53.100000001490116,
+      "fcp": null,
+      "jsFiles": [
+        "index-CZchHBx9.js",
+        "Onboarding-Cmi0JowR.js",
+        "PrefsModal-DAILrIpw.js"
+      ],
+      "jsBytes": 1313276,
+      "fromSpawnMs": 276,
+      "pageMs": 154,
+      "throttledPageMs": 146
+    },
+    {
+      "timeOrigin": 1794404263156.8,
+      "interactive": 152.60000000149012,
+      "domContentLoaded": 53.30000000447035,
+      "fcp": null,
+      "jsFiles": [
+        "index-CZchHBx9.js",
+        "Onboarding-Cmi0JowR.js",
+        "PrefsModal-DAILrIpw.js"
+      ],
+      "jsBytes": 1313276,
+      "fromSpawnMs": 275,
+      "pageMs": 153,
+      "throttledPageMs": 138
+    }
+  ]
+}

@@ -1,0 +1,187 @@
+/* Lip sync panel and dialog. Every class starts with ls-. Tokens only. */
+
+.ls-root {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  font-size: var(--fs-small);
+  color: var(--text);
+}
+.ls-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: space-between;
+}
+.ls-layer {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 700;
+}
+.ls-head select,
+.ls-field select {
+  font: inherit;
+  color: var(--text);
+  background: var(--raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  padding: 4px 6px;
+}
+.ls-auto {
+  padding: 4px 12px;
+}
+.ls-strip {
+  display: grid;
+  grid-template-columns: repeat(11, minmax(0, 1fr));
+  gap: 2px;
+}
+.ls-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  min-width: 0;
+  height: 40px;
+  padding: 0;
+  font: inherit;
+  color: var(--text);
+  background: color-mix(in srgb, hsl(var(--hue, 0) 70% 60%) 28%, var(--panel-2));
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-small);
+  cursor: pointer;
+}
+.ls-cell i {
+  font-style: normal;
+  font-size: 9px;
+  color: var(--muted);
+}
+.ls-cell b {
+  font-size: 11px;
+  line-height: 1.2;
+}
+.ls-cell.is-none {
+  background: var(--panel-2);
+}
+.ls-cell:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+.ls-cell.is-now {
+  outline: 2px solid var(--playhead);
+  outline-offset: 0;
+}
+.ls-now {
+  margin: 0;
+}
+.ls-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.ls-mouth {
+  font: inherit;
+  font-weight: 700;
+  padding: 6px 12px;
+  color: var(--text);
+  background: color-mix(in srgb, hsl(var(--hue, 0) 70% 60%) 30%, var(--raised));
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+}
+.ls-mouth.has-pic {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 6px 3px;
+  min-width: 54px;
+  border-radius: var(--radius-small);
+  font-size: 10px;
+  line-height: 1.1;
+}
+.ls-mouth.has-pic span {
+  max-width: 60px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ls-pic {
+  display: block;
+  background: color-mix(in srgb, #ffffff 82%, transparent);
+  border-radius: 4px;
+}
+.ls-mouth:hover {
+  filter: brightness(1.08);
+}
+.ls-mouth.is-on {
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+  border-color: transparent;
+}
+.ls-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+}
+.ls-note {
+  margin: 0;
+  color: var(--muted);
+}
+.ls-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  color: var(--muted);
+}
+.ls-empty p {
+  margin: 0;
+}
+.ls-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.ls-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 320px;
+}
+.ls-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-weight: 700;
+}
+.ls-names {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 12px;
+  max-height: 260px;
+  overflow: auto;
+}
+.ls-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ls-name span {
+  width: 18px;
+  text-align: right;
+  color: var(--muted);
+}
+.ls-name input {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  color: var(--text);
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  padding: 4px 6px;
+}

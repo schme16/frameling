@@ -1,0 +1,3 @@
+New built-in templates (wip/content). contact.png: the gallery picture of each of the seven new templates.
+frames.png: eight frames of each, top to bottom (walk, run, explosion, stickers, icons, title card, spinner).
+Not an A/B: nothing to pick, just for the board.

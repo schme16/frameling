@@ -1,0 +1,183 @@
+// Preferences: small, saved in localStorage, applied to <html> so the theme tokens do the rest.
+import { createStore, readJson, writeJson } from './mini';
+import { DEFAULT_DARK, DEFAULT_LIGHT, surroundFor, type Theme } from './themes/builtIn';
+import { sanitizeCustomThemes, themeForMode, writeTheme } from './themes/model';
+import { DEFAULT_UNIT, isUnit, type Unit } from '../core/units';
+
+export type ThemePref = 'system' | 'dark' | 'light';
+export type LookPref = 'cosy' | 'crisp';
+
+export interface Prefs {
+  /** The mode: follow the computer (system), or always dark, or always light. (Called `theme` since before themes existed.) */
+  theme: ThemePref;
+  /** Which theme to use in dark mode (and for System when the computer is dark). A built-in id or a custom one. */
+  darkTheme: string;
+  /** Which theme to use in light mode (and for System when the computer is light). */
+  lightTheme: string;
+  /** Themes people made by copying and customising. */
+  customThemes: Theme[];
+  look: LookPref;
+  /** Stub for now: the sound effects arrive with the first quests. */
+  sounds: boolean;
+  reduceMotion: boolean;
+  /** Show the welcome sheet when the app starts. */
+  showWelcome: boolean;
+  /** Show the friendly tips in the status bar. */
+  showTips: boolean;
+  /** Show Quill, the hedgehog guide. Off hides him everywhere; his speech bubbles still show their words. */
+  showQuill: boolean;
+  /** Tile mode: fade the copies round the tile you're drawing (off shows them at full strength). */
+  fadeTileCopies: boolean;
+  /** How sizes are shown: pixels, or mm, cm, inches or points at the document's DPI. */
+  units: Unit;
+  /** The first-run hello from Quill has been seen (or skipped). */
+  onboarded: boolean;
+  /** Command id -> its shortcuts. An empty list means "no shortcut". Missing means "use the default". */
+  keymap: Record<string, string[]>;
+}
+
+export const PREFS_KEY = 'frameling.prefs.v1';
+
+export const DEFAULT_PREFS: Prefs = {
+  theme: 'system',
+  darkTheme: DEFAULT_DARK,
+  lightTheme: DEFAULT_LIGHT,
+  customThemes: [],
+  look: 'cosy',
+  sounds: false,
+  reduceMotion: false,
+  showWelcome: true,
+  showTips: true,
+  showQuill: true,
+  fadeTileCopies: false,
+  units: DEFAULT_UNIT,
+  onboarded: false,
+  keymap: {},
+};
+
+/**
+ * Turns whatever was saved (older versions, hand-edited, damaged) into good preferences. Before themes existed only
+ * `theme` was saved (system, dark or light), and it still means the same thing, so nothing else needs converting:
+ * the theme picks just start at the defaults.
+ */
+export function migratePrefs(raw: unknown): Prefs {
+  const r = (raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {}) as Record<string, unknown>;
+  const bool = (v: unknown, d: boolean) => (typeof v === 'boolean' ? v : d);
+  const customThemes = sanitizeCustomThemes(r.customThemes);
+  const keymap: Record<string, string[]> = {};
+  if (r.keymap && typeof r.keymap === 'object' && !Array.isArray(r.keymap)) {
+    for (const [k, v] of Object.entries(r.keymap)) if (Array.isArray(v)) keymap[k] = v.filter((x): x is string => typeof x === 'string');
+  }
+  const pick = (mode: 'dark' | 'light', id: unknown) => themeForMode(mode, typeof id === 'string' ? id : '', customThemes).id;
+  return {
+    theme: r.theme === 'dark' || r.theme === 'light' || r.theme === 'system' ? r.theme : DEFAULT_PREFS.theme,
+    darkTheme: pick('dark', r.darkTheme),
+    lightTheme: pick('light', r.lightTheme),
+    customThemes,
+    look: r.look === 'crisp' || r.look === 'cosy' ? r.look : DEFAULT_PREFS.look,
+    sounds: bool(r.sounds, DEFAULT_PREFS.sounds),
+    reduceMotion: bool(r.reduceMotion, DEFAULT_PREFS.reduceMotion),
+    showWelcome: bool(r.showWelcome, DEFAULT_PREFS.showWelcome),
+    showTips: bool(r.showTips, DEFAULT_PREFS.showTips),
+    showQuill: bool(r.showQuill, DEFAULT_PREFS.showQuill),
+    fadeTileCopies: bool(r.fadeTileCopies, DEFAULT_PREFS.fadeTileCopies),
+    units: isUnit(r.units) ? r.units : DEFAULT_PREFS.units,
+    onboarded: bool(r.onboarded, DEFAULT_PREFS.onboarded),
+    keymap,
+  };
+}
+
+const prefsStore = createStore<Prefs>(migratePrefs(readJson(PREFS_KEY, {})));
+
+export const getPrefs = (): Prefs => prefsStore.get();
+export const usePrefs = <S,>(selector: (p: Prefs) => S): S => prefsStore.use(selector);
+export const subscribePrefs = prefsStore.subscribe;
+
+export function setPrefs(patch: Partial<Prefs>): void {
+  prefsStore.set((p) => ({ ...p, ...patch }));
+  writeJson(PREFS_KEY, prefsStore.get());
+  applyPrefs();
+}
+
+/** The theme being shown right now: the one being edited (a peek), else the pick for the current mode. */
+export function activeTheme(): Theme {
+  if (preview) return preview;
+  const p = prefsStore.get();
+  const mode = effectiveTheme();
+  return themeForMode(mode, mode === 'dark' ? p.darkTheme : p.lightTheme, p.customThemes);
+}
+
+// While the theme editor is open, the theme being edited shows on the whole app even if it isn't the one picked.
+let preview: Theme | null = null;
+
+/** Shows a theme on the whole app without picking it. Pass null to go back to the real pick. */
+export function setThemePreview(theme: Theme | null): void {
+  preview = theme;
+  applyPrefs();
+}
+
+let watchingSystem = false;
+
+/** Follow the computer going dark or light while the mode is System. */
+function watchSystem(): void {
+  if (watchingSystem) return;
+  try {
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+      if (prefsStore.get().theme === 'system') applyPrefs();
+    });
+    watchingSystem = true;
+  } catch {
+    // No matchMedia (tests): nothing to follow.
+  }
+}
+
+/** Writes the theme colours, look and motion preferences onto <html>. Safe to call any time. */
+export function applyPrefs(): void {
+  if (typeof document === 'undefined') return;
+  watchSystem();
+  const p = prefsStore.get();
+  const root = document.documentElement;
+  const theme = activeTheme();
+  writeTheme(root, theme);
+  // data-theme only says dark or light, for the few stylesheet rules that care. With System it's left off so the
+  // computer's own setting decides them, which always agrees with the theme chosen above.
+  if (p.theme === 'system' && !preview) delete root.dataset.theme;
+  else root.dataset.theme = theme.mode;
+  // A pattern around the page for the themes that have one (camo, strawberry seeds). Pure CSS, see canvas.css.
+  const surround = surroundFor(theme);
+  if (surround) root.dataset.surround = surround;
+  else delete root.dataset.surround;
+  // Written every time (even when unchanged) so things that cache token values, like the canvas, hear about it.
+  root.dataset.look = p.look;
+  if (p.reduceMotion) root.dataset.motion = 'reduce';
+  else delete root.dataset.motion;
+}
+
+/** The theme that's actually showing right now (resolves "system"). */
+export function effectiveTheme(): 'dark' | 'light' {
+  const p = prefsStore.get().theme;
+  if (p !== 'system') return p;
+  try {
+    return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  } catch {
+    return 'dark';
+  }
+}
+
+/** True when animation should be minimal: the preference, or the system setting. */
+export function reducedMotion(): boolean {
+  if (prefsStore.get().reduceMotion) return true;
+  try {
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  } catch {
+    return false;
+  }
+}
+
+/** For tests. */
+export function resetPrefs(): void {
+  preview = null;
+  prefsStore.set({ ...DEFAULT_PREFS, customThemes: [], keymap: {} });
+  writeJson(PREFS_KEY, prefsStore.get());
+  applyPrefs();
+}

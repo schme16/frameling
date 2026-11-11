@@ -1,0 +1,18 @@
+.cam-depths {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.cam-depth {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 120px;
+  align-items: center;
+  gap: 8px;
+}
+.cam-depth-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--text);
+}

@@ -1,0 +1,252 @@
+/* Plugins: Preferences > Plugins, plugin panels and the plugin export dialog. Theme tokens only. */
+
+.plugin-page-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 16px;
+}
+.plugin-empty {
+  margin: 12px 0;
+}
+.plugin-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.plugin-item {
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel-2);
+}
+.plugin-item.is-on {
+  border-color: var(--line);
+  background: var(--raised);
+}
+.plugin-item-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.plugin-item-desc,
+.plugin-item-by {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: var(--fs-small);
+}
+.plugin-item-by {
+  color: var(--faint);
+}
+.plugin-perms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.plugin-perm {
+  padding: 2px 9px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-pill);
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 700;
+}
+.plugin-perm.is-network {
+  border-color: var(--peach);
+}
+.plugin-perm.is-denied {
+  color: var(--faint);
+  text-decoration: line-through;
+}
+.plugin-item-problem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 0 0;
+  color: var(--danger);
+  font-size: var(--fs-small);
+}
+
+/* A plugin's own panel, drawn from its description. */
+.plugin-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: var(--ui-pad, 10px);
+}
+.plugin-ui-column {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.plugin-ui-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.plugin-ui-text {
+  margin: 0;
+  color: var(--text);
+  font-size: var(--fs-small);
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+.plugin-ui-text.is-title {
+  font-size: var(--fs, 14px);
+  font-weight: 800;
+}
+.plugin-ui-text.is-muted {
+  color: var(--muted);
+}
+.plugin-ui-divider {
+  width: 100%;
+  margin: 2px 0;
+  border: 0;
+  border-top: 1px solid var(--line-soft);
+}
+.plugin-ui-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: var(--fs-small);
+}
+.plugin-ui-field > span {
+  display: flex;
+  justify-content: space-between;
+  color: var(--muted);
+  font-weight: 700;
+}
+.plugin-ui-field output {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.plugin-ui-field input[type='text'],
+.plugin-ui-field input[type='number'],
+.plugin-ui-field select {
+  min-height: var(--ui-control-h, 30px);
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+}
+
+/* The plugin export dialog. */
+.plugin-export-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 4px 18px 12px;
+}
+.plugin-export-from {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--fs-small);
+}
+.plugin-export-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: var(--fs-small);
+}
+.plugin-export-progress progress {
+  width: 100%;
+}
+.plugin-export-error {
+  margin: 0;
+  color: var(--danger);
+  font-size: var(--fs-small);
+}
+
+/* "Install this plugin?" */
+.plugin-approve-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 18px 12px;
+}
+.plugin-approve-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.plugin-approve-head .plugin-item-by {
+  margin-top: 2px;
+}
+.plugin-approve-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius);
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+}
+.plugin-approve-body .plugin-item-desc {
+  margin: 0;
+}
+.plugin-approve-label {
+  margin: 4px 0 0;
+  font-size: var(--fs-small);
+  font-weight: 800;
+}
+.plugin-approve-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--fs-small);
+}
+.plugin-approve-list li {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+.plugin-approve-list li > svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--ok);
+}
+.plugin-approve-net {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px;
+  border: 1px solid var(--peach);
+  border-radius: var(--radius);
+  font-size: var(--fs-small);
+}
+.plugin-approve-net > span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.plugin-approve-net .ui-switch {
+  flex: none;
+}
+
+.plugin-approve .ui-choice-foot,
+.plugin-export .ui-choice-foot {
+  margin-top: 4px;
+  padding: 0 18px 16px;
+}
+.plugin-approve-safe {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  color: var(--faint);
+  font-size: var(--fs-small);
+}

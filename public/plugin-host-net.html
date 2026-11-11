@@ -1,0 +1,38 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <!-- The plugin sandbox for a plugin someone allowed to use the internet (see plugin-host.html for the rest). The
+         policy here allows https only; before the plugin starts, a second policy narrows that to the sites its manifest
+         lists (policies only ever add up to less, never more). -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' blob:; worker-src blob:; connect-src https:; base-uri 'none'; form-action 'none'" />
+    <title>Plugin</title>
+  </head>
+  <body>
+    <script>
+      (function () {
+        var started = false;
+        window.addEventListener('message', function (e) {
+          if (started || e.source !== window.parent) return;
+          var d = e.data;
+          if (!d || d.t !== 'start' || !e.ports || !e.ports[0] || typeof d.prelude !== 'string') return;
+          started = true;
+          var sites = (Array.isArray(d.network) ? d.network : []).filter(function (o) {
+            return typeof o === 'string' && /^https:\/\/[A-Za-z0-9.-]+(:[0-9]+)?$/.test(o);
+          });
+          var m = document.createElement('meta');
+          m.httpEquiv = 'Content-Security-Policy';
+          m.content = 'connect-src ' + (sites.length ? sites.join(' ') : "'none'");
+          document.head.appendChild(m);
+          var url = URL.createObjectURL(new Blob([d.prelude], { type: 'text/javascript' }));
+          var w = new Worker(url);
+          setTimeout(function () {
+            URL.revokeObjectURL(url);
+          }, 10000);
+          w.postMessage({ t: 'boot', code: String(d.code), plugin: d.plugin, network: sites.length > 0 }, [e.ports[0]]);
+        });
+        window.parent.postMessage({ t: 'frameling-plugin-host-ready' }, '*');
+      })();
+    </script>
+  </body>
+</html>

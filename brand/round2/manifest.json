@@ -1,0 +1,92 @@
+{
+ "c1": {
+  "meta": {
+   "name": "Inch",
+   "idea": "An inchworm mid-inch, every segment a film frame showing the worm a little further along its own arch.",
+   "poses": [
+    "squash",
+    "stretch",
+    "hero"
+   ]
+  },
+  "files": [
+   "c1.svg",
+   "c1-poses.svg",
+   "c1-silhouette.svg",
+   "c1-pixel.svg",
+   "c1-icon.svg"
+  ]
+ },
+ "c2": {
+  "meta": {
+   "name": "Onion",
+   "idea": "The caterpillar is its own onion skin: one solid head, and a body made of its fainter earlier frames on a timeline.",
+   "poses": [
+    "crouch",
+    "stretch",
+    "hero"
+   ]
+  },
+  "files": [
+   "c2.svg",
+   "c2-poses.svg",
+   "c2-silhouette.svg",
+   "c2-pixel.svg",
+   "c2-icon.svg"
+  ]
+ },
+ "c3": {
+  "meta": {
+   "name": "Stub",
+   "idea": "Chunky, scruffy and smudged, with a worn-down coloured pencil for a tail that is still drawing its own trail.",
+   "poses": [
+    "squash",
+    "stretch",
+    "hero"
+   ]
+  },
+  "files": [
+   "c3.svg",
+   "c3-poses.svg",
+   "c3-silhouette.svg",
+   "c3-pixel.svg",
+   "c3-icon.svg"
+  ]
+ },
+ "c4": {
+  "meta": {
+   "name": "Rez",
+   "idea": "Born as big pixels and finer with every segment until the head is clean vector: sketch to finished art in one creature.",
+   "poses": [
+    "crouch",
+    "stretch",
+    "hero"
+   ]
+  },
+  "files": [
+   "c4.svg",
+   "c4-poses.svg",
+   "c4-silhouette.svg",
+   "c4-pixel.svg",
+   "c4-icon.svg"
+  ]
+ },
+ "c5": {
+  "meta": {
+   "name": "Hold",
+   "idea": "A timeline that crawls: segments held for 1, 2, 1, 3 frames, keyframe diamonds on the joints, ruler ticks for legs, a playhead for a head.",
+   "poses": [
+    "squash",
+    "stretch",
+    "hero"
+   ]
+  },
+  "files": [
+   "c5.svg",
+   "c5-poses.svg",
+   "c5-silhouette.svg",
+   "c5-pixel.svg",
+   "c5-icon.svg"
+  ]
+ }
+}

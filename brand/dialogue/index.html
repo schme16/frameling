@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quill's lines</title>
+<style>
+:root {
+  --bg: #f6f3ee; --card: #ffffff; --ink: #2a2433; --muted: #6c6478; --line: #e3ddd5; --gold: #f5c84c; --gold-ink: #2a2433;
+  --changed: #fff4cf; --bad: #c4314b; --shot-bg: #1d1a24; --focus: #7b5cd6;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #17151c; --card: #221f29; --ink: #ece8f2; --muted: #a59eb3; --line: #34303d; --changed: #3a3220; --bad: #ff7a8f; --shot-bg: #110f15; --focus: #a990ff;
+  }
+}
+:root[data-theme="dark"] { --bg: #17151c; --card: #221f29; --ink: #ece8f2; --muted: #a59eb3; --line: #34303d; --changed: #3a3220; --bad: #ff7a8f; --shot-bg: #110f15; --focus: #a990ff; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+header { position: sticky; top: 0; z-index: 2; background: var(--bg); border-bottom: 1px solid var(--line); padding: 14px 16px; }
+.bar { max-width: 1200px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+h1 { font-size: 20px; margin: 0 12px 0 0; }
+.count { color: var(--muted); font-size: 14px; }
+.grow { flex: 1; }
+input[type=search] { min-width: 0; width: 220px; max-width: 100%; padding: 7px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--ink); font: inherit; }
+button { font: inherit; padding: 7px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--ink); cursor: pointer; }
+button.primary { background: var(--gold); color: var(--gold-ink); border-color: var(--gold); font-weight: 600; }
+button:disabled { opacity: .5; cursor: default; }
+button:focus-visible, textarea:focus-visible, input:focus-visible, a:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.intro { max-width: 1200px; margin: 16px auto 0; padding: 0 16px; color: var(--muted); font-size: 14px; }
+.intro code { background: var(--card); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; }
+main { max-width: 1200px; margin: 0 auto; padding: 16px; display: grid; gap: 16px; }
+.line { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+.line.is-changed { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold); }
+.line.is-hidden { display: none; }
+.meta .id { font: 600 13px ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--muted); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.tag { font: 600 11px system-ui, sans-serif; text-transform: uppercase; letter-spacing: .04em; background: var(--gold); color: var(--gold-ink); border-radius: 99px; padding: 1px 8px; }
+.where { margin: 6px 0 10px; }
+.note { color: var(--muted); font-size: 13px; margin: -4px 0 10px; }
+.vars { color: var(--muted); font-size: 13px; margin-bottom: 6px; }
+.vars b { font-family: ui-monospace, Menlo, monospace; color: var(--ink); }
+textarea { width: 100%; min-height: 64px; resize: vertical; padding: 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font: inherit; }
+.is-changed textarea { background: var(--changed); }
+.hint { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.warn { color: var(--bad); font-size: 13px; margin-top: 6px; }
+.row { display: flex; gap: 8px; margin-top: 8px; }
+.row button { padding: 4px 10px; font-size: 13px; }
+.shot { background: var(--shot-bg); border-radius: 8px; display: flex; flex-direction: column; gap: 8px; align-items: center; justify-content: center; overflow: hidden; min-height: 120px; }
+.shot a { display: block; width: 100%; }
+.shot img { display: block; width: 100%; height: auto; max-height: 420px; object-fit: contain; }
+.shot .none { color: #a59eb3; font-size: 13px; padding: 20px; }
+.toast { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 8px 16px; border-radius: 8px; opacity: 0; transition: opacity .2s; pointer-events: none; }
+.toast.is-on { opacity: 1; }
+@media (max-width: 760px) { .line { grid-template-columns: minmax(0, 1fr); } }
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <h1>Quill's lines</h1>
+    <span class="count" id="count"></span>
+    <span class="grow"></span>
+    <input type="search" id="filter" placeholder="Find a line" aria-label="Find a line">
+    <label class="count"><input type="checkbox" id="onlyChanged"> Only changed</label>
+    <button type="button" id="copyAll">Copy all</button>
+    <button type="button" id="copyChanged">Copy my changes</button>
+    <button type="button" class="primary" id="download">Download my changes</button>
+  </div>
+</header>
+<p class="intro">Edit any line, then <b>Download my changes</b> and run <code>npm run dialogue:apply &lt;file&gt;</code> in the Frameling folder.
+Words in <b>{curly}</b> brackets are filled in by the app, so keep them. Where a line is a list, put one item per line in the box (each is a bubble, or one of a set the app picks from).
+Your edits stay in this browser until you reset them. Click a picture to see it full size.</p>
+<main id="list"></main>
+<div class="toast" id="toast" role="status"></div>
+<script>
+const LINES = [{"id":"onboarding.hello","text":["Hi, I'm Quill!","Welcome to Frameling!","Here you draw things, then make them move, either Frame-by-frame, or let Tweens do the hard work.","Smooth vector art or chunky pixel art, toons, game sprites, stickers, explainers, or even backgrounds for your phone:","If it wiggles, we can help you make it.","It's easy and it's fun, I promise!"],"where":"First-run hello, step 1 (Hello from Quill). Four bubbles beside Quill, one after another.","vars":[],"shot":"shots/onboarding.hello.png","also":null,"note":""},{"id":"onboarding.make.cartoons","text":"Cartoons! Can't wait to see it uploaded to newgrounds!","where":"First-run hello, 'What would you like to make?': you just picked Sketches and cartoons.","vars":[],"shot":"shots/onboarding.make.cartoons.png","also":null,"note":""},{"id":"onboarding.make.sprites","text":"Pixel heroes! Chunky and charming (just like me!)","where":"First-run hello, 'What would you like to make?': you just picked Game sprites and pixel art.","vars":[],"shot":"shots/onboarding.make.sprites.png","also":null,"note":""},{"id":"onboarding.make.tiles","text":"Levels! I'll pack some snacks!","where":"First-run hello, 'What would you like to make?': you just picked Tiles and levels.","vars":[],"shot":"shots/onboarding.make.tiles.png","also":null,"note":""},{"id":"onboarding.make.motion","text":"Smooth moves! Can't wait to see your next infographic!","where":"First-run hello, 'What would you like to make?': you just picked Explainers and motion graphics.","vars":[],"shot":"shots/onboarding.make.motion.png","also":null,"note":""},{"id":"onboarding.make.interactives","text":"Interactive art, what will they think of next!","where":"First-run hello, 'What would you like to make?': you just picked Things for Interactives.","vars":[],"shot":"shots/onboarding.make.interactives.png","also":null,"note":""},{"id":"onboarding.make.play","text":"A great way to get the creative juices flowing! Just watch out for that blank canvas!","where":"First-run hello, 'What would you like to make?': you just picked Just playing.","vars":[],"shot":"shots/onboarding.make.play.png","also":null,"note":""},{"id":"onboarding.make.none","text":"Pick as many as you like, or none at all. No wrong answers here! (Probably)","where":"First-run hello, 'What would you like to make?': nothing picked yet.","vars":[],"shot":"shots/onboarding.make.none.png","also":null,"note":""},{"id":"onboarding.make.some","text":"Great picks!","where":"First-run hello, 'What would you like to make?': after un-picking a card, with one to three still picked.","vars":[],"shot":"shots/onboarding.make.some.png","also":null,"note":"Three still picked after un-picking two."},{"id":"onboarding.make.lots","text":"Big plans, I love it.","where":"First-run hello, 'What would you like to make?': after un-picking a card, with four or more still picked.","vars":[],"shot":"shots/onboarding.make.lots.png","also":null,"note":"Five still picked after un-picking Just playing."},{"id":"onboarding.make.lead","text":"Pick as many as you like and afterwards Quill will set things up to suit.","where":"First-run hello, 'What would you like to make?': the line above the cards (not a bubble).","vars":[],"shot":"shots/onboarding.make.lead.png","also":null,"note":""},{"id":"onboarding.themes.loved","text":["You picked {theme}! My favourite!","Best. Day. Ever.","Ahhhh Just look at those little seeds. I could hug this whole screen!"],"where":"First-run hello, 'Pick your colours': you picked his favourite (Strawberry). Two bubbles, and a little strawberry pops up beside him.","vars":["theme"],"shot":"shots/onboarding.themes.loved.png","also":null,"note":""},{"id":"onboarding.themes.hint","text":["My favourite is {theme}.","Pink, super comfy on the eyes,  *sigh* I could look at it all day!","But it's your studio. Pick whatever makes you happy, I won't mind. (Much.)"],"where":"First-run hello, 'Pick your colours': before you've picked his favourite. Two bubbles.","vars":["theme"],"shot":"shots/onboarding.themes.hint.png","also":null,"note":""},{"id":"onboarding.themes.favourite","text":"Quill's favourite","where":"First-run hello, 'Pick your colours': the little heart label under the Strawberry theme cards.","vars":[],"shot":"shots/onboarding.themes.favourite.png","also":null,"note":""},{"id":"onboarding.prefs.on","text":"Just a few handy bits and bobs. You can change any of them later in Preferences.","where":"First-run hello, 'A few handy settings', with Show Quill on.","vars":[],"shot":"shots/onboarding.prefs.on.png","also":null,"note":""},{"id":"onboarding.prefs.off","text":"I'll stay hidden, but my words will still pop up here. (...sorry)","where":"First-run hello, 'A few handy settings', after his goodbye when Show Quill is off.","vars":[],"shot":"shots/onboarding.prefs.off.png","also":null,"note":"Quill is hidden here, so his words stand on their own."},{"id":"onboarding.prefs.showQuill","text":"Off hides me everywhere. My words still show though.","where":"First-run hello, 'A few handy settings': the hint beside the Show Quill switch.","vars":[],"shot":"shots/onboarding.prefs.showQuill.png","also":null,"note":""},{"id":"onboarding.name","text":["Every masterpiece needs a name.","Something poignant... or roll the dice for some silly ones!"],"where":"First-run hello, 'Name your first animation'. Two bubbles.","vars":[],"shot":"shots/onboarding.name.png","also":null,"note":"Silly names show in the name box (Roll picks a new one)."},{"id":"onboarding.done","text":["Hooray! {name} is going to be brilliant.","Pick how you'd like to start.","I'll be in Help if you need me!"],"where":"First-run hello, last step ('All set!'). Two bubbles. {name} is the animation's name, or the 'no name' words below.","vars":["name"],"shot":"shots/onboarding.done.png","also":null,"note":""},{"id":"onboarding.done.noName","text":"Your animation","where":"Stands in for {name} at the start of the 'All set!' bubble when the name box was left empty.","vars":[],"shot":"shots/onboarding.done.noName.png","also":null,"note":"With the name box left empty."},{"id":"onboarding.done.lead","text":"Quill will set up the {workspace} workspace for you shortly. Now, how shall we start {name}?","where":"First-run hello, 'All set!': the line above the three ways to start. {workspace} and {name} show in bold.","vars":["workspace","name"],"shot":"shots/onboarding.done.lead.png","also":null,"note":""},{"id":"onboarding.done.leadNoName","text":"your animation","where":"Stands in for {name} in the 'All set!' line above the cards when the name box was left empty.","vars":[],"shot":"shots/onboarding.done.leadNoName.png","also":null,"note":"With the name box left empty."},{"id":"onboarding.done.quest","text":"{quest}, step by step with me.","where":"First-run hello, 'All set!': under 'Show me how' ({quest} is the suggested quest).","vars":["quest"],"shot":"shots/onboarding.done.quest.png","also":null,"note":""},{"id":"onboarding.done.example","text":"{example}, ready to be poked at!","where":"First-run hello, 'All set!': under 'Open an example' ({example} is the suggested example).","vars":["example"],"shot":"shots/onboarding.done.example.png","also":null,"note":""},{"id":"onboarding.done.blank","text":"Straight in. You know what you're doing.","where":"First-run hello, 'All set!': under 'Just a blank page'.","vars":[],"shot":"shots/onboarding.done.blank.png","also":null,"note":""},{"id":"onboarding.doze.asleep","text":"Zzz...","where":"First-run hello: any step left untouched for 20 seconds. Quill nods off.","vars":[],"shot":"shots/onboarding.doze.asleep.png","also":null,"note":"Left alone for 20 seconds."},{"id":"onboarding.doze.woke","text":"Oh! Sorry, I nodded off. \nBut please take all the time you need!","where":"First-run hello: the first click or key after he nodded off. Shown above that step's own bubbles.","vars":[],"shot":"shots/onboarding.doze.woke.png","also":null,"note":""},{"id":"onboarding.skipped","text":"No problem! Say hi again any time from Help > Meet Quill again.","where":"A toast after 'Skip for now' in the first-run hello.","vars":[],"shot":"shots/onboarding.skipped.png","also":null,"note":""},{"id":"onboarding.ready","text":"{name} is ready. Have fun!","where":"A toast after finishing the first-run hello with an example or a blank page.","vars":["name"],"shot":"shots/onboarding.ready.png","also":null,"note":""},{"id":"sillyNames.pattern","text":"The {adjective} {noun}","where":"First-run hello, 'Name your first animation': how a silly name is put together (and what Roll makes).","vars":["adjective","noun"],"shot":"shots/sillyNames.pattern.png","also":null,"note":"Silly names show in the name box (Roll picks a new one)."},{"id":"sillyNames.adjectives","text":["Wobbly","Sleepy","Brave","Bouncy","Sneaky","Fluffy","Tiny","Dizzy","Grumpy","Sparkly","Jolly","Squishy","Zippy","Curious","Fancy"],"where":"Silly names: the first word is picked at random from these. One word each.","vars":[],"shot":"shots/sillyNames.adjectives.png","also":null,"note":"Silly names show in the name box (Roll picks a new one)."},{"id":"sillyNames.nouns","text":["Pancake","Teacup","Dragon","Turnip","Comet","Noodle","Penguin","Muffin","Robot","Jellybean","Cactus","Snail","Pickle","Cloud","Biscuit"],"where":"Silly names: the second word is picked at random from these. One word each.","vars":[],"shot":"shots/sillyNames.nouns.png","also":null,"note":"Silly names show in the name box (Roll picks a new one)."},{"id":"sillyNames.fallback","text":["The Dancing Spoon","The Humming Kettle"],"where":"Silly names: used only if Roll keeps landing on the same name (very rare). Two different names.","vars":[],"shot":"shots/sillyNames.fallback.png","also":null,"note":"Silly names show in the name box (Roll picks a new one)."},{"id":"goodbye.long","text":["Oh... okay. I understand!","I'll be just over here. If you ever need me, say hi from Help > Meet Quill again, or switch me back on in Preferences."],"where":"Switching Show Quill off in the first-run hello. Two bubbles while he's sad, then waves goodbye.","vars":[],"shot":"shots/goodbye.long.png","also":null,"note":""},{"id":"goodbye.short","text":"Oh... okay, I understand. If you ever need me, I'm in Help > Meet Quill again.","where":"A toast when Show Quill is switched off in Preferences. He's sad for a moment, waves, then goes.","vars":[],"shot":"shots/goodbye.short.png","also":null,"note":""},{"id":"welcomeBack","text":"Yay! I knew you'd miss me. (I missed you too.)","where":"Switching Show Quill back on (a toast from Preferences, or a bubble in the first-run hello). He cheers.","vars":[],"shot":"shots/welcomeBack.png","also":"shots/welcomeBack-toast.png","note":"The first-run hello version. The Preferences one is a toast with the same words."},{"id":"quests.panel.intro","text":"Short lessons that teach by doing. Pick one and  we'll go through it together!","where":"The Quests panel, top, when no quest is going.","vars":[],"shot":"shots/quests.panel.intro.png","also":null,"note":""},{"id":"quests.panel.allDone","text":"All quests complete! Gosh you're amazing!\nJust remember you can always do a quest again to refresh your memory (or even just for fun).","where":"The Quests panel, top, once every quest is done. He cheers.","vars":[],"shot":"shots/quests.panel.allDone.png","also":null,"note":""},{"id":"quests.praise","text":["Nice!","Lovely.","There it is.","Yes!","Nicely done.","Look at that.","Smooth.","Perfect.","Awesome work!","\u003c3","Slay","Let them cook!","You rizzedmaxxed that skibidi (is that what the kids say?)"],"where":"The quest bar: a little cheer that pops up for a moment when a step is done. Takes turns through these.","vars":[],"shot":"shots/quests.praise.png","also":null,"note":"The little cheer over the quest bar. It takes turns through the list."},{"id":"quests.badge","text":"You earned {badge}","where":"The badge card at the end of a quest (with confetti): the heading. {badge} is the badge's name.","vars":["badge"],"shot":"shots/quests.badge.png","also":null,"note":""},{"id":"quests.finished","text":"Quest Complete","where":"The end-of-quest card heading, for a quest with no badge.","vars":[],"shot":"shots/quests.finished.png","also":null,"note":"Every quest has a badge and its own finish line today, so this one is staged."},{"id":"quests.finishedQuest","text":"You completed: {quest}.","where":"The end-of-quest card, under the heading, for a quest that has no finish line of its own.","vars":["quest"],"shot":"shots/quests.finishedQuest.png","also":null,"note":"Every quest has a badge and its own finish line today, so this one is staged."},{"id":"welcome.hello","text":"Hiya! What are we cooking up today?","where":"The Welcome sheet (Help > Welcome, or on start), beside Quill waving.","vars":[],"shot":"shots/welcome.hello.png","also":null,"note":""},{"id":"welcome.new","text":"Ready for a fresh start!","where":"File > New: the same sheet's heading, beside Quill waving.","vars":[],"shot":"shots/welcome.new.png","also":null,"note":""},{"id":"welcome.lead","text":"Pick any card. You can always change your mind later.","where":"Welcome and File > New sheets, under the heading.","vars":[],"shot":"shots/welcome.lead.png","also":null,"note":""},{"id":"welcome.ready","text":"A fresh {kind} is ready. Have fun!","where":"A toast after picking a card on the Welcome or File > New sheet. {kind} is the card's name in lower case.","vars":["kind"],"shot":"shots/welcome.ready.png","also":null,"note":""},{"id":"about.quill","text":"This is Quill. His quills are coloured pencils, and he loves to help.","where":"Help > About Frameling, under the blurb, with Quill waving.","vars":[],"shot":"shots/about.quill.png","also":null,"note":""},{"id":"empty.help","text":"Uh oh, I couldn't find that","where":"Help window: a search with no results. Quill thinks.","vars":[],"shot":"shots/empty.help.png","also":null,"note":""},{"id":"empty.shortcuts","text":"Nothing here by that name....","where":"Preferences > Keyboard: a search with no results. Quill thinks.","vars":[],"shot":"shots/empty.shortcuts.png","also":null,"note":""},{"id":"empty.recent","text":"Nothing here yet. Drawings you open or save will show up here.","where":"File > Open Recent with nothing in it. Quill doodles.","vars":[],"shot":"shots/empty.recent.png","also":null,"note":""},{"id":"empty.recover","text":"Nothing to recover. \nbut just so you know, work you leave unsaved will show up here for a whole WEEK (just in-case).","where":"File > Recover with nothing in it.","vars":[],"shot":"shots/empty.recover.png","also":null,"note":""}];
+const KEY = 'quill-lines-draft';
+let draft = {};
+try { draft = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch { draft = {}; }
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(draft)); } catch {} };
+const asText = (t) => (Array.isArray(t) ? t.join('\n') : t);
+const fromBox = (e, v) => (Array.isArray(e.text) ? v.split('\n').map((s) => s.trim()).filter(Boolean) : v.trim());
+const vars = (t) => [...new Set((Array.isArray(t) ? t : [t]).flatMap((s) => [...s.matchAll(/\{(\w+)\}/g)].map((m) => m[1])))].sort();
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+const list = document.getElementById('list');
+
+for (const e of LINES) {
+  const el = document.createElement('section');
+  el.className = 'line';
+  el.dataset.id = e.id;
+  const isList = Array.isArray(e.text);
+  el.innerHTML = `
+    <div class="meta">
+      <div class="id">${esc(e.id)}${isList ? '<span class="tag">list</span>' : ''}</div>
+      <p class="where">${esc(e.where)}</p>
+      ${e.note ? `<p class="note">Picture: ${esc(e.note)}</p>` : ''}
+      ${e.vars.length ? `<div class="vars">Keep: ${e.vars.map((v) => `<b>{${esc(v)}}</b>`).join(' ')}</div>` : ''}
+      <textarea aria-label="Text for ${esc(e.id)}" rows="${Math.min(14, Math.max(3, (isList ? e.text : [e.text]).reduce((n, t) => n + Math.ceil(t.length / 60), 0) + 1))}"></textarea>
+      ${isList ? '<div class="hint">One per line.</div>' : ''}
+      <div class="warn" hidden></div>
+      <div class="row"><button type="button" class="reset" hidden>Put back the original</button></div>
+    </div>
+    <div class="shot">${e.shot ? `<a href="${esc(e.shot)}" target="_blank" rel="noopener"><img src="${esc(e.shot)}" alt="Where ${esc(e.id)} shows" loading="lazy"></a>` : '<span class="none">No picture yet</span>'}${e.also ? `<a href="${esc(e.also)}" target="_blank" rel="noopener"><img src="${esc(e.also)}" alt="Also ${esc(e.id)}" loading="lazy"></a>` : ''}</div>`;
+  const box = el.querySelector('textarea');
+  const warn = el.querySelector('.warn');
+  const reset = el.querySelector('.reset');
+  box.value = e.id in draft ? asText(draft[e.id]) : asText(e.text);
+  const update = () => {
+    const v = fromBox(e, box.value);
+    const changed = JSON.stringify(v) !== JSON.stringify(e.text);
+    if (changed) draft[e.id] = v; else delete draft[e.id];
+    el.classList.toggle('is-changed', changed);
+    reset.hidden = !changed;
+    const got = vars(v), want = [...e.vars].sort();
+    const bad = JSON.stringify(got) !== JSON.stringify(want);
+    const empty = Array.isArray(v) ? !v.length : !v;
+    warn.hidden = !(bad || empty);
+    warn.textContent = empty ? "This one can't be empty." : bad ? `Needs exactly: ${want.length ? want.map((x) => '{' + x + '}').join(' ') : 'no {curly} words'}. Has: ${got.length ? got.map((x) => '{' + x + '}').join(' ') : 'none'}.` : '';
+    save();
+    tally();
+  };
+  box.addEventListener('input', update);
+  reset.addEventListener('click', () => { box.value = asText(e.text); update(); });
+  list.appendChild(el);
+  update();
+}
+
+function tally() {
+  const n = Object.keys(draft).length;
+  document.getElementById('count').textContent = `${LINES.length} lines, ${n} changed`;
+  document.getElementById('download').disabled = !n;
+  document.getElementById('copyChanged').disabled = !n;
+  applyFilter();
+}
+
+function applyFilter() {
+  const q = document.getElementById('filter').value.trim().toLowerCase();
+  const only = document.getElementById('onlyChanged').checked;
+  for (const el of list.children) {
+    const e = LINES.find((x) => x.id === el.dataset.id);
+    const hay = (e.id + ' ' + e.where + ' ' + asText(e.text) + ' ' + el.querySelector('textarea').value).toLowerCase();
+    el.classList.toggle('is-hidden', (q && !hay.includes(q)) || (only && !(e.id in draft)));
+  }
+}
+document.getElementById('filter').addEventListener('input', applyFilter);
+document.getElementById('onlyChanged').addEventListener('change', applyFilter);
+
+function say(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('is-on');
+  clearTimeout(say.t);
+  say.t = setTimeout(() => t.classList.remove('is-on'), 2200);
+}
+async function copy(text, what) {
+  try { await navigator.clipboard.writeText(text); say(what + ' copied'); }
+  catch {
+    const a = document.createElement('textarea'); a.value = text; document.body.appendChild(a); a.select();
+    try { document.execCommand('copy'); say(what + ' copied'); } catch { say("Couldn't copy here"); }
+    a.remove();
+  }
+}
+const changes = () => JSON.stringify(draft, null, 2) + '\n';
+document.getElementById('copyChanged').addEventListener('click', () => copy(changes(), 'Changes'));
+document.getElementById('copyAll').addEventListener('click', () => {
+  const all = {};
+  for (const e of LINES) all[e.id] = e.id in draft ? draft[e.id] : e.text;
+  copy(JSON.stringify(all, null, 2) + '\n', 'Every line');
+});
+document.getElementById('download').addEventListener('click', () => {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([changes()], { type: 'application/json' }));
+  const d = new Date();
+  a.download = `quill-lines-${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}.json`;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+});
+</script>
+</body>
+</html>

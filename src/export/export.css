@@ -1,0 +1,368 @@
+/* The export dialog. Theme tokens only; every class starts with ex-. */
+.ex-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: 20px;
+  padding: 8px 20px 12px;
+  overflow: auto;
+  min-height: 0;
+}
+@media (max-width: 760px) {
+  .ex-body {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ex-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  align-content: start;
+}
+.ex-more {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  font: inherit;
+  font-weight: 700;
+  color: var(--text);
+  background: transparent;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+  padding: 8px 12px;
+  cursor: pointer;
+  text-align: left;
+}
+.ex-more small {
+  font-weight: 400;
+  color: var(--muted);
+}
+.ex-more:hover {
+  background: var(--hover-bg);
+}
+.ex-more:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.ex-card {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  grid-template-rows: auto 1fr;
+  column-gap: 8px;
+  row-gap: 4px;
+  text-align: left;
+  font: inherit;
+  color: var(--text);
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: background 0.12s var(--ease), transform 0.12s var(--ease-bounce);
+}
+.ex-card:hover:not(:disabled) {
+  background: var(--hover-bg);
+  transform: translateY(-1px);
+}
+.ex-card:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.ex-card.ex-chosen {
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+  border-color: transparent;
+}
+.ex-card:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.ex-card svg {
+  grid-row: span 2;
+  margin-top: 1px;
+}
+.ex-card-title {
+  font-weight: 800;
+  font-size: 14px;
+}
+.ex-card-title small {
+  /* Kept whole: "This frame" or "Animated SVG" broken over two lines reads as part of the name. */
+  display: inline-block;
+  white-space: nowrap;
+  font-weight: 600;
+  opacity: 0.7;
+  font-size: var(--fs-small);
+}
+.ex-card-good {
+  font-size: var(--fs-small);
+  line-height: 1.35;
+  opacity: 0.85;
+}
+
+.ex-options {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+}
+.ex-options fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.ex-options legend {
+  padding: 0;
+  margin-bottom: 4px;
+  font-weight: 800;
+  font-size: var(--fs-small);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+.ex-seg {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.ex-seg button {
+  font: inherit;
+  font-weight: 700;
+  color: var(--text);
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  padding: 5px 12px;
+  cursor: pointer;
+}
+.ex-seg button:hover:not(:disabled) {
+  background: var(--hover-bg);
+}
+.ex-seg button:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.ex-seg button.ex-on {
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+  border-color: transparent;
+}
+.ex-seg button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.ex-options select,
+.ex-options input[type='number'],
+.ex-options input[type='text'] {
+  font: inherit;
+  color: var(--text);
+  background: var(--raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  padding: 5px 8px;
+  min-width: 0;
+}
+.ex-options select:focus-visible,
+.ex-options input:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+.ex-check {
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  gap: 2px 8px;
+  align-items: start;
+  cursor: pointer;
+}
+.ex-check input {
+  margin: 2px 0 0;
+  accent-color: var(--sunny-deep);
+}
+.ex-check.ex-off {
+  opacity: 0.6;
+  cursor: default;
+}
+.ex-why {
+  grid-column: 2;
+  color: var(--muted);
+}
+.ex-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--fs-small);
+  line-height: 1.4;
+}
+.ex-carry .ex-note + .ex-note {
+  margin-top: 4px;
+}
+.ex-note.ex-warn {
+  color: var(--text);
+}
+.ex-sub {
+  margin: 6px 0 0;
+  font-weight: 800;
+  font-size: var(--fs-small);
+  color: var(--muted);
+}
+.ex-grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.ex-grid2 label,
+.ex-path {
+  display: grid;
+  gap: 4px;
+  font-weight: 700;
+}
+.ex-grid2 small {
+  font-weight: 500;
+  color: var(--muted);
+}
+.ex-path {
+  margin-top: 4px;
+}
+
+.ex-foot {
+  justify-content: flex-end;
+}
+.ex-summary {
+  margin-right: auto;
+  color: var(--muted);
+}
+.ex-summary.ex-problem {
+  color: var(--danger);
+}
+.ex-go {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.ex-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 20px 8px;
+  padding: 8px 12px;
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 12%, var(--panel));
+  border-radius: var(--radius-small);
+}
+
+/* Progress */
+.ex-error-row {
+  margin: 0 20px 8px;
+  align-items: center;
+}
+.ex-error-row .ex-error {
+  margin: 0;
+  padding: 8px 12px;
+  background: color-mix(in srgb, var(--danger) 12%, var(--panel));
+  border: 1px solid color-mix(in srgb, var(--danger) 30%, var(--line));
+  border-radius: var(--radius-small);
+}
+.ex-error-row .ex-error span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ex-quill {
+  justify-self: center;
+}
+.ex-progress {
+  grid-template-columns: 1fr;
+  padding-top: 16px;
+  min-width: min(420px, 80vw);
+}
+.ex-progress p {
+  margin: 0;
+}
+.ex-bar {
+  height: 12px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+.ex-bar div {
+  height: 100%;
+  background: var(--chosen-bg);
+  border-radius: var(--radius-pill);
+  transition: width 0.15s var(--ease);
+}
+
+/* Where a sprite sheet is going: engine cards (look A, the default) or chips (look B). */
+.ex-engines {
+  display: grid;
+  gap: 6px;
+}
+.ex-engines .ex-sub {
+  margin: 0;
+}
+.ex-engine-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+.ex-engine-row:not(.ex-engine-games) {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.ex-engine {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 4px;
+  min-height: 58px;
+  padding: 8px 4px;
+  font: inherit;
+  font-weight: 700;
+  font-size: var(--fs-small);
+  line-height: 1.2;
+  text-align: center;
+  color: var(--text);
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background 0.12s var(--ease), transform 0.12s var(--ease-bounce);
+}
+.ex-engine:hover {
+  background: var(--hover-bg);
+  transform: translateY(-1px);
+}
+.ex-engine:focus-visible,
+.ex-link:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.ex-engine.ex-chosen {
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+  border-color: transparent;
+}
+.ex-link {
+  font: inherit;
+  color: var(--accent);
+  background: none;
+  border: 0;
+  padding: 0;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.ex-grid3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.ex-grid3 label {
+  display: grid;
+  gap: 4px;
+  font-weight: 700;
+}
+.ex-grid3 small {
+  font-weight: 500;
+  color: var(--muted);
+}

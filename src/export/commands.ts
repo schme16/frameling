@@ -1,0 +1,57 @@
+import { registerCommands } from '../core/registry';
+import { exportAgain, openExportDialog } from './open';
+
+registerCommands([
+  {
+    id: 'file.export',
+    label: 'Export...',
+    category: 'File',
+    keys: ['Mod+E'],
+    description: 'Make a video, GIF, pictures, an SVG or a sprite sheet to share or use in a game.',
+    help: 'exporting',
+    keywords: ['video', 'gif', 'mp4', 'png', 'share', 'render', 'sprite sheet', 'godot', 'svg', 'apng', 'webm', 'lottie', 'animated svg'],
+    global: true,
+    run: () => openExportDialog(),
+  },
+  {
+    id: 'file.exportInteractives',
+    label: 'Export for Interactives...',
+    category: 'File',
+    description: 'Make one file to drop onto an Interactives page, with your clips and markers in it.',
+    help: 'export-interactives',
+    keywords: ['interactives', 'flplay', 'package', 'playable', 'web', 'course', 'layer'],
+    global: true,
+    run: () => openExportDialog('interactives'),
+  },
+  {
+    id: 'file.exportLottie',
+    label: 'Export a Lottie animation...',
+    category: 'File',
+    description: 'Save a small vector animation (Lottie JSON) for apps and websites.',
+    help: 'export-lottie',
+    keywords: ['lottie', 'bodymovin', 'json', 'vector animation', 'app', 'website'],
+    global: true,
+    run: () => openExportDialog('lottie'),
+  },
+  {
+    id: 'file.exportSvgAnimated',
+    label: 'Export a moving SVG...',
+    category: 'File',
+    description: 'Save one SVG file that plays the animation by itself in a browser.',
+    help: 'export-svg-animated',
+    keywords: ['animated svg', 'svg animation', 'css', 'web', 'vector animation'],
+    global: true,
+    run: () => openExportDialog('svganim'),
+  },
+  {
+    id: 'file.exportAgain',
+    label: 'Export again',
+    category: 'File',
+    keys: ['Mod+Shift+E'],
+    description: 'Export once more with the same settings as last time.',
+    help: 'exporting',
+    keywords: ['repeat', 'last export'],
+    global: true,
+    run: () => exportAgain(),
+  },
+]);

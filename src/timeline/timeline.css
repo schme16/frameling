@@ -1,0 +1,868 @@
+/* The timeline panel. Tokens only (see renderer/theme.css); every class starts with tl-. */
+
+.tl-root {
+  container: tl / inline-size;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--panel);
+  color: var(--text);
+  font-size: var(--fs-small);
+}
+
+/* ---------------------------------------------------------------- header */
+
+.tl-header {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  padding: 5px 10px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+.tl-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.tl-group-label {
+  color: var(--muted);
+  margin-right: 4px;
+}
+.tl-sep {
+  width: 1px;
+  height: 20px;
+  background: var(--line);
+}
+.tl-grow {
+  flex: 1;
+}
+
+.tl-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 28px;
+  min-width: 28px;
+  padding: 0 8px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-small);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 120ms var(--ease), transform 120ms var(--ease-bounce);
+}
+.tl-btn:hover:not(:disabled) {
+  background: var(--hover-bg);
+}
+.tl-btn:active:not(:disabled) {
+  transform: scale(0.95);
+}
+.tl-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.tl-btn.is-on {
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+}
+.tl-btn-num {
+  min-width: 26px;
+  padding: 0 6px;
+  font-weight: 700;
+}
+.tl-btn-mini {
+  height: 22px;
+  min-width: 22px;
+  padding: 0 3px;
+}
+.tl-play {
+  width: 38px;
+  background: var(--panel-2);
+  border-color: var(--line);
+  border-radius: var(--radius-pill);
+}
+
+.tl-counter {
+  display: inline-flex;
+  flex-direction: column;
+  line-height: 1.2;
+  min-width: 96px;
+  font-variant-numeric: tabular-nums;
+}
+.tl-counter-time {
+  color: var(--muted);
+  font-size: 11px;
+}
+.tl-fps {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--muted);
+}
+.tl-fps input {
+  width: 36px;
+  height: 26px;
+  box-sizing: border-box;
+  padding: 0 5px;
+  text-align: right;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  color: var(--text);
+}
+.tl-range {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 4px 2px 8px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--sky) 25%, var(--panel-2));
+  border: 1px solid color-mix(in srgb, var(--sky) 55%, transparent);
+}
+.tl-zoom {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+}
+.tl-zoom input {
+  width: 90px;
+  accent-color: var(--accent);
+}
+
+/* The hold buttons, and how the toolbar folds up so it stays on one row at the usual window sizes. */
+.tl-hold-full {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.tl-hold-menu {
+  display: none;
+  border-color: var(--line);
+}
+.tl-hold-item {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  width: 100%;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: var(--radius-small);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.tl-hold-item span {
+  margin-left: auto;
+  color: var(--muted);
+}
+.tl-hold-item:hover {
+  background: var(--hover-bg);
+}
+.tl-hold-item.is-on {
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+}
+.tl-hold-item.is-on span {
+  color: inherit;
+}
+.tl-hold-pop {
+  width: 200px;
+}
+@container tl (max-width: 1180px) {
+  .tl-hold-full {
+    display: none;
+  }
+  .tl-hold-menu {
+    display: inline-flex;
+  }
+  .tl-btn-frame .tl-btn-text {
+    display: none;
+  }
+  .tl-zoom input {
+    width: 64px;
+  }
+}
+
+@container tl (max-width: 1040px) {
+  .tl-header {
+    column-gap: 6px;
+  }
+  .tl-long {
+    display: none;
+  }
+  .tl-zoom input {
+    width: 48px;
+  }
+  .tl-zoom svg,
+  .tl-header > .tl-sep:nth-of-type(2) {
+    display: none;
+  }
+  .tl-header .tl-btn {
+    padding: 0 6px;
+  }
+}
+
+/* ---------------------------------------------------------------- scroll area */
+
+.tl-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  position: relative;
+  background: var(--panel-2);
+}
+.tl-body[data-dragging] {
+  cursor: grabbing;
+}
+/* Sticky parts need a parent as wide as the content, or they let go when you scroll past the visible width. */
+.tl-inner {
+  display: flex;
+  align-items: flex-start;
+  width: max-content;
+  min-width: 100%;
+}
+.tl-side {
+  position: sticky;
+  left: 0;
+  z-index: 6;
+  flex: none;
+  width: var(--side-w);
+  background: var(--panel);
+  border-right: 1px solid var(--line);
+}
+.tl-corner {
+  position: sticky;
+  top: 0;
+  z-index: 7;
+  box-sizing: border-box;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
+.tl-layer-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: center;
+  align-items: center;
+  gap: 4px;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 4px 8px;
+}
+.tl-layer-tools-title {
+  flex: 0 0 100%;
+  color: var(--muted);
+  font-weight: 700;
+}
+.tl-layer-tools .tl-btn {
+  height: 24px;
+  padding: 0 6px;
+  border-color: var(--line);
+}
+
+.tl-main {
+  position: relative;
+  flex: none;
+}
+.tl-top {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--panel);
+  box-shadow: 0 1px 0 var(--line);
+}
+
+/* ---------------------------------------------------------------- layer list */
+
+.tl-layer {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 4px 0 2px;
+  box-sizing: border-box;
+  border-bottom: 1px solid var(--line-soft);
+  cursor: pointer;
+  position: relative;
+}
+.tl-layer:hover {
+  background: var(--hover-bg);
+}
+.tl-layer.is-active {
+  background: var(--hover-bg);
+  box-shadow: inset 3px 0 0 var(--chosen-bg);
+}
+.tl-layer.drop-above {
+  box-shadow: inset 0 2px 0 var(--accent);
+}
+.tl-layer.drop-below {
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+.tl-grip {
+  display: grid;
+  place-items: center;
+  width: 12px;
+  color: var(--faint);
+  cursor: grab;
+}
+.tl-kind {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-small);
+}
+.tl-kind.is-vector {
+  background: color-mix(in srgb, var(--sky) 30%, transparent);
+}
+.tl-kind.is-pixel {
+  background: color-mix(in srgb, var(--mint) 30%, transparent);
+}
+.tl-layer-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tl-layer.is-reference .tl-layer-name {
+  font-style: italic;
+}
+.tl-ref-tag {
+  margin-left: 6px;
+  padding: 0 4px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-style: normal;
+  border: 1px dashed currentColor;
+  opacity: 0.75;
+}
+.tl-layer.is-hidden .tl-layer-name {
+  opacity: 0.5;
+}
+.tl-icon-btn {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-small);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.tl-icon-btn:hover {
+  background: var(--raised);
+  color: var(--text);
+}
+.tl-icon-btn[aria-pressed='true'] {
+  color: var(--text);
+}
+.tl-more {
+  opacity: 0;
+  font-size: 16px;
+  line-height: 1;
+}
+.tl-layer:hover .tl-more,
+.tl-layer:focus-within .tl-more,
+.tl-layer.is-active .tl-more {
+  opacity: 1;
+}
+
+.tl-name-input {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 1px 5px;
+  background: var(--raised);
+  border: 1px solid var(--focus);
+  border-radius: var(--radius-small);
+  color: var(--text);
+}
+
+/* ---------------------------------------------------------------- ruler, markers, clips */
+
+.tl-ruler {
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  border-bottom: 1px solid var(--line-soft);
+  /* A tick at the end of every frame, a longer one at the end of every fifth. */
+  background-image:
+    linear-gradient(to right, transparent calc(100% - 1px), var(--muted) 0),
+    linear-gradient(to right, transparent calc(100% - 1px), var(--faint) 0);
+  background-size: calc(var(--cw) * 5) 9px, var(--cw) 4px;
+  background-position: 0 100%, 0 100%;
+  background-repeat: repeat-x;
+}
+.tl-num {
+  position: absolute;
+  top: 3px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+.tl-sec {
+  position: absolute;
+  bottom: 0;
+  height: 13px;
+  width: 2px;
+  background: var(--sunny-deep);
+  pointer-events: none;
+}
+.tl-sec-label {
+  position: absolute;
+  left: 4px;
+  bottom: -1px;
+  font-size: 10px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.tl-onion-shade,
+.tl-range-shade {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+.tl-range-shade {
+  background: color-mix(in srgb, var(--sunny) 22%, transparent);
+}
+.tl-beyond {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  background: color-mix(in srgb, var(--bg) 55%, transparent);
+  border-left: 1px solid var(--line);
+  pointer-events: none;
+  z-index: 1;
+}
+.tl-length {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 14px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: ew-resize;
+  z-index: 3;
+}
+.tl-length span {
+  position: absolute;
+  left: 5px;
+  top: 4px;
+  bottom: 4px;
+  width: 4px;
+  border-radius: 2px;
+  background: var(--sunny);
+  transition: width 120ms var(--ease), left 120ms var(--ease);
+}
+.tl-length:hover span {
+  left: 3px;
+  width: 8px;
+}
+
+.tl-marks,
+.tl-clips {
+  position: relative;
+  border-bottom: 1px solid var(--line-soft);
+}
+/* What an empty markers or clips lane is for, so it doesn't read as a blank gap. */
+.tl-lane-empty {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  white-space: nowrap;
+  font-size: 11px;
+  color: var(--faint);
+  pointer-events: none;
+  user-select: none;
+}
+.tl-marker {
+  position: absolute;
+  top: 2px;
+  height: 16px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  max-width: 150px;
+  padding: 0 6px 0 3px;
+  border-left: 2px solid var(--peach);
+  border-radius: 0 var(--radius-small) var(--radius-small) 0;
+  background: color-mix(in srgb, var(--peach) 28%, var(--panel));
+  font-size: 11px;
+  cursor: pointer;
+  z-index: 2;
+}
+.tl-marker svg {
+  flex: none;
+  color: var(--peach);
+}
+.tl-marker .tl-name-input,
+.tl-clip .tl-name-input {
+  width: 96px;
+  flex: none;
+  padding: 0 4px;
+  font-size: 11px;
+}
+.tl-marker-name,
+.tl-clip-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tl-clip {
+  position: absolute;
+  top: 2px;
+  height: 18px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--sky) 60%, transparent);
+  border-radius: var(--radius-small);
+  background: color-mix(in srgb, var(--sky) 28%, var(--panel));
+  font-size: 11px;
+  cursor: pointer;
+}
+.tl-clip:hover {
+  background: color-mix(in srgb, var(--sky) 40%, var(--panel));
+}
+.tl-clip.is-picked {
+  background: var(--chosen-bg);
+  border-color: var(--sunny-deep);
+  color: var(--chosen-fg);
+}
+.tl-clip-loop {
+  flex: none;
+  opacity: 0.8;
+}
+.tl-clip-edge {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  cursor: ew-resize;
+}
+.tl-clip-edge.is-start {
+  left: 0;
+}
+.tl-clip-edge.is-end {
+  right: 0;
+}
+
+/* ---------------------------------------------------------------- rows and cels */
+
+.tl-rows {
+  position: relative;
+  cursor: default;
+}
+.tl-row {
+  position: relative;
+  box-sizing: border-box;
+  border-bottom: 1px solid var(--line-soft);
+  background-color: var(--panel-2);
+  background-image:
+    linear-gradient(to right, transparent calc(100% - 1px), var(--line) 0),
+    linear-gradient(to right, transparent calc(100% - 1px), var(--line-soft) 0);
+  background-size: calc(var(--cw) * 5) 100%, var(--cw) 100%;
+  background-position: 0 0, 0 0;
+  background-repeat: repeat-x;
+}
+.tl-row.is-active {
+  background-color: color-mix(in srgb, var(--sunny) 7%, var(--panel-2));
+}
+.tl-row.is-locked {
+  background-color: color-mix(in srgb, var(--faint) 10%, var(--panel-2));
+}
+.tl-cel {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  box-sizing: border-box;
+  overflow: hidden;
+  border-radius: var(--radius-small);
+  background-color: var(--cel-hold);
+  background-image: linear-gradient(to right, transparent calc(100% - 1px), color-mix(in srgb, var(--cel-key) 40%, transparent) 0);
+  background-size: var(--cw) 100%;
+  background-position: -1px 0;
+  background-repeat: repeat-x;
+  cursor: grab;
+}
+.tl-cel:hover {
+  box-shadow: 0 0 0 1px var(--cel-key);
+}
+/* Carried on automatically until the next drawing: a lighter hold, so a chosen hold still stands out. */
+.tl-cel.is-auto {
+  background-color: color-mix(in srgb, var(--cel-hold) 55%, transparent);
+}
+.tl-row.is-hidden .tl-cel {
+  opacity: 0.4;
+}
+.tl-row.is-locked .tl-cel {
+  cursor: not-allowed;
+}
+.tl-cel-key {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  display: grid;
+  place-items: center;
+  background: var(--cel-key);
+  border-radius: var(--radius-small);
+}
+.tl-cel-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--raised);
+}
+.tl-cel-handle {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 7px;
+  cursor: ew-resize;
+}
+.tl-cel-handle:hover {
+  background: color-mix(in srgb, var(--raised) 55%, transparent);
+}
+
+.tl-playhead {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 3;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--playhead) 13%, transparent);
+  will-change: transform;
+}
+.tl-playhead::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(50% - 1px);
+  width: 2px;
+  border-radius: 1px;
+  background: var(--playhead);
+}
+.tl-playhead-head {
+  position: absolute;
+  top: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 8px;
+  height: 16px;
+  box-sizing: border-box;
+  padding: 0 5px;
+  border-radius: var(--radius-pill);
+  background: var(--playhead);
+  color: var(--chosen-fg);
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 16px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.tl-cursor {
+  position: absolute;
+  left: 0;
+  right: 0;
+  box-sizing: border-box;
+  border: 2px solid var(--playhead);
+  border-radius: var(--radius-small);
+}
+
+.tl-ghost-cel,
+.tl-ghost-clip {
+  position: absolute;
+  z-index: 4;
+  box-sizing: border-box;
+  pointer-events: none;
+  border: 2px dashed var(--chosen-bg);
+  border-radius: var(--radius-small);
+  background: color-mix(in srgb, var(--chosen-bg) 22%, transparent);
+}
+.tl-ghost-cel.is-trim {
+  border-color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 18%, transparent);
+}
+.tl-ghost-clip {
+  border-color: var(--sky);
+  background: color-mix(in srgb, var(--sky) 22%, transparent);
+}
+.tl-ghost-line {
+  position: absolute;
+  z-index: 4;
+  width: 2px;
+  pointer-events: none;
+  background: var(--peach);
+}
+
+/* ---------------------------------------------------------------- menus and pop-ups */
+
+.tl-floating {
+  position: fixed;
+  z-index: 1000;
+  box-sizing: border-box;
+  padding: 4px;
+  background: var(--raised);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  font-size: var(--fs-small);
+}
+.tl-menu {
+  min-width: 250px;
+  max-width: 380px;
+}
+.tl-menu-heading {
+  padding: 5px 10px 4px;
+  color: var(--muted);
+  font-weight: 700;
+}
+.tl-menu-sep {
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--line);
+}
+.tl-menu-node {
+  padding: 2px 10px;
+}
+.tl-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 6px 10px 6px 4px;
+  border: 0;
+  border-radius: var(--radius-small);
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.tl-menu-item:hover:not(:disabled),
+.tl-menu-item:focus-visible {
+  background: var(--hover-bg);
+}
+.tl-menu-item:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.tl-menu-item.is-danger {
+  color: var(--danger);
+}
+.tl-menu-check {
+  width: 14px;
+  text-align: center;
+  color: var(--accent);
+}
+.tl-menu-label {
+  flex: 1;
+}
+.tl-menu-hint {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.tl-pop {
+  width: 290px;
+  padding: 10px 12px 12px;
+}
+.tl-pop-title {
+  font-weight: 800;
+  font-size: var(--fs);
+}
+.tl-pop-note {
+  margin: 4px 0 10px;
+  color: var(--muted);
+}
+.tl-pop-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.tl-pop-row > span:first-child {
+  flex: 1;
+}
+.tl-pop-row input[type='range'] {
+  flex: none;
+  width: 110px;
+  accent-color: var(--accent);
+}
+.tl-pop-row input[type='color'] {
+  width: 28px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  background: transparent;
+}
+.tl-pop-check {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  color: var(--muted);
+}
+.tl-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.tl-stepper output {
+  min-width: 14px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.tl-opacity {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.tl-opacity input {
+  flex: 1;
+  accent-color: var(--accent);
+}
+.tl-opacity output {
+  min-width: 34px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tl-btn,
+  .tl-length span {
+    transition: none;
+  }
+}
+
+/* Per-layer onion skin switch: faded when the layer is left out. */
+.tl-layer-onion.is-off {
+  opacity: 0.35;
+}

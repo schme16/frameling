@@ -1,0 +1,329 @@
+/**
+ * The tile tools, for tilemap layers: Tile brush [B], Tile rectangle [R], Tile fill [G], Tile eraser [E] and Pick tile
+ * [I]. They share keys with the drawing tools, which only work on other kinds of layer, so B is always "paint".
+ *
+ * A gesture works on a copy of the map shown live on the canvas and lands as one undo step when the pointer lifts,
+ * like the pixel tools.
+ */
+import { drawingAt, findLayer, tilemapGrid } from '../core/doc';
+import type { Doc, TilemapDrawing, TilemapLayer } from '../core/format';
+import { registerTool, type Tool, type ToolContext, type ToolPointer } from '../core/registry';
+import { pixelCanvas } from '../core/render';
+import { drawTileAt } from '../core/tilemap';
+import { store } from '../core/store';
+import { getHover, setLive } from '../canvas/controller';
+import { activeLayer, EDIT_HINTS, editActiveDrawing } from '../tools/edit';
+import { cellFlags, cellKey, cellLine, docToCell, fillCellRect, findTile, floodCells, getCell, makeCell, setCell, tileDrawingAt } from './model';
+import { getTileUi, setTileUi } from './state';
+import { TileToolOptions } from './TileToolOptions';
+
+/** The tilemap layer being drawn on, or a hint about why not. */
+function mapLayer(ctx: ToolContext): TilemapLayer | null {
+  const { layer, problem } = activeLayer();
+  if (problem) {
+    ctx.hint(EDIT_HINTS[problem]);
+    return null;
+  }
+  if (!layer || layer.kind !== 'tilemap') {
+    ctx.hint('Tile tools work on tilemap layers. Add one with Layer > Add a tilemap layer.');
+    return null;
+  }
+  return layer;
+}
+
+/** The cell value the brush paints, or 0 with a hint when there's nothing to paint with yet. */
+function brushValue(ctx: ToolContext): number {
+  const { doc } = store().get();
+  const ts = doc.tileset;
+  if (!ts?.tiles.length) {
+    ctx.hint('There are no tiles yet. Make one in the Tileset panel (New tile).');
+    return 0;
+  }
+  let { brush, flags } = getTileUi();
+  if (!findTile(ts, brush)) {
+    brush = ts.tiles[0].key;
+    setTileUi({ brush });
+  }
+  if (flags && ts.tileWidth !== ts.tileHeight) flags = cellFlags(flags) & ~0x20000000;
+  return makeCell(brush, flags);
+}
+
+/** A map edit in progress: a private copy of the cells, shown live, committed as one step. */
+class MapSession {
+  readonly columns: number;
+  readonly rows: number;
+  readonly cells: Uint32Array;
+  private base: TilemapDrawing | null;
+  changed = false;
+
+  constructor(
+    readonly doc: Doc,
+    readonly layer: TilemapLayer,
+    frame: number,
+  ) {
+    const d = drawingAt(doc, layer, frame);
+    if (d && d.kind === 'tilemap') {
+      this.base = d;
+      this.columns = d.columns;
+      this.rows = d.rows;
+      this.cells = new Uint32Array(d.cells);
+    } else {
+      const g = tilemapGrid(doc, layer);
+      this.base = null;
+      this.columns = g.columns;
+      this.rows = g.rows;
+      this.cells = new Uint32Array(g.columns * g.rows);
+    }
+  }
+
+  cell(x: number, y: number) {
+    return docToCell(this.doc, this.layer, x, y);
+  }
+
+  set(x: number, y: number, v: number): void {
+    if (setCell(this.cells, this.columns, this.rows, x, y, v)) this.changed = true;
+  }
+
+  /** Shows the cells as they are now. A fresh array each time, so the map's bitmap knows what changed. */
+  flush(): void {
+    setLive({ layerId: this.layer.id, kind: 'tilemap', drawing: { id: this.base?.id ?? `live-${this.layer.id}`, kind: 'tilemap', columns: this.columns, rows: this.rows, cells: new Uint32Array(this.cells) } });
+  }
+
+  commit(label: string, ctx: ToolContext): void {
+    setLive(null);
+    if (!this.changed) return;
+    const cells = this.cells;
+    const { columns, rows } = this;
+    const r = editActiveDrawing(label, 'tilemap', (d) => {
+      d.columns = columns;
+      d.rows = rows;
+      d.cells = cells;
+    });
+    if (r !== 'ok') ctx.hint(EDIT_HINTS[r]);
+  }
+
+  discard(): void {
+    setLive(null);
+  }
+}
+
+/** What's under a document position on the active tilemap layer. */
+function cellUnder(x: number, y: number): number {
+  const { doc, ui } = store().get();
+  const layer = findLayer(doc, ui.activeLayerId);
+  if (!layer || layer.kind !== 'tilemap') return 0;
+  const d = drawingAt(doc, layer, ui.frame);
+  if (!d || d.kind !== 'tilemap') return 0;
+  const c = docToCell(doc, layer, x, y);
+  return getCell(d, c.x, c.y);
+}
+
+/** Picks up the tile (and how it is turned) under the pointer. */
+function pickAt(e: ToolPointer, ctx: ToolContext, speak: boolean): boolean {
+  const v = cellUnder(e.x, e.y);
+  if (!v) {
+    if (speak) ctx.hint("There's no tile there to pick up.");
+    return false;
+  }
+  setTileUi({ brush: cellKey(v), flags: cellFlags(v) });
+  return true;
+}
+
+/** The slot rectangle on the active layer, in document pixels. */
+function slotRect(doc: Doc, layer: TilemapLayer, x: number, y: number) {
+  const tw = (doc.tileset?.tileWidth ?? 16) * layer.pixelSize;
+  const th = (doc.tileset?.tileHeight ?? 16) * layer.pixelSize;
+  return { x: x * tw, y: y * th, w: tw, h: th };
+}
+
+/** The brush tile, see-through, over the slot under the pointer (or over a rectangle of slots). */
+function drawGhost(g: CanvasRenderingContext2D, ctx: ToolContext, from?: { x: number; y: number }, erase = false): void {
+  const hover = getHover();
+  const { doc } = store().get();
+  const layer = findLayer(doc, store().get().ui.activeLayerId);
+  if (!hover || !layer || layer.kind !== 'tilemap') return;
+  const c = docToCell(doc, layer, hover.x, hover.y);
+  const a = from ?? c;
+  const x0 = Math.min(a.x, c.x);
+  const y0 = Math.min(a.y, c.y);
+  const x1 = Math.max(a.x, c.x);
+  const y1 = Math.max(a.y, c.y);
+  const r0 = slotRect(doc, layer, x0, y0);
+  const { brush, flags } = getTileUi();
+  const tile = findTile(doc.tileset, brush);
+  const img = tile && !erase ? tileDrawingAt(doc, tile, store().get().ui.frame) : undefined;
+  g.save();
+  if (img) {
+    g.globalAlpha = 0.6;
+    g.imageSmoothingEnabled = false;
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) drawTileAt(g, pixelCanvas(img), flags, r0.x + (x - x0) * r0.w, r0.y + (y - y0) * r0.h, r0.w, r0.h);
+  }
+  g.globalAlpha = 1;
+  g.lineWidth = 2 / ctx.zoom;
+  g.strokeStyle = erase ? '#ff6f91' : '#5ab8ff';
+  g.strokeRect(r0.x, r0.y, (x1 - x0 + 1) * r0.w, (y1 - y0 + 1) * r0.h);
+  g.restore();
+}
+
+// ---------------------------------------------------------------- brush and eraser
+
+function paintTool(erase: boolean): Tool {
+  let s: MapSession | null = null;
+  let last: { x: number; y: number } | null = null;
+  let value = 0;
+  let picking = false;
+  let lastEnd: { layerId: string; x: number; y: number } | null = null;
+  const stampLine = (to: { x: number; y: number }) => {
+    if (!s) return;
+    for (const p of last ? cellLine(last.x, last.y, to.x, to.y) : [to]) s.set(p.x, p.y, value);
+    last = to;
+    s.flush();
+  };
+  return {
+    id: erase ? 'tile-eraser' : 'tile-brush',
+    label: erase ? 'Tile eraser' : 'Tile brush',
+    icon: erase ? 'eraser' : 'brush',
+    key: erase ? 'e' : 'b',
+    layers: ['tilemap'],
+    order: erase ? 21 : 11,
+    help: 'tilemaps',
+    cursor: 'crosshair',
+    options: TileToolOptions,
+    down(e, ctx) {
+      // Alt+click picks up a tile, like the eyedropper.
+      if (!erase && e.alt) {
+        picking = true;
+        pickAt(e, ctx, true);
+        return;
+      }
+      const layer = mapLayer(ctx);
+      if (!layer) return;
+      value = erase ? 0 : brushValue(ctx);
+      if (!erase && !value) return;
+      const { doc, ui } = store().get();
+      s = new MapSession(doc, layer, ui.frame);
+      const here = s.cell(e.x, e.y);
+      // Shift+click: a straight line from where the last stroke ended.
+      last = e.shift && lastEnd?.layerId === layer.id ? { x: lastEnd.x, y: lastEnd.y } : null;
+      stampLine(here);
+    },
+    move(e, ctx) {
+      if (picking) return void pickAt(e, ctx, false);
+      if (s) stampLine(s.cell(e.x, e.y));
+    },
+    up(_e, ctx) {
+      picking = false;
+      if (!s) return;
+      if (last) lastEnd = { layerId: s.layer.id, x: last.x, y: last.y };
+      s.commit(erase ? 'Erase tiles' : 'Paint tiles', ctx);
+      s = null;
+      last = null;
+    },
+    cancel() {
+      s?.discard();
+      s = null;
+      last = null;
+      picking = false;
+    },
+    overlay(g, ctx) {
+      if (!s) drawGhost(g, ctx, undefined, erase);
+    },
+  };
+}
+
+export const tileBrushTool = paintTool(false);
+export const tileEraserTool = paintTool(true);
+
+// ---------------------------------------------------------------- rectangle
+
+let rect: { s: MapSession; from: { x: number; y: number }; value: number } | null = null;
+
+export const tileRectTool: Tool = {
+  id: 'tile-rect',
+  label: 'Tile rectangle',
+  icon: 'rect',
+  key: 'r',
+  layers: ['tilemap'],
+  order: 12,
+  help: 'tilemaps',
+  cursor: 'crosshair',
+  options: TileToolOptions,
+  down(e, ctx) {
+    const layer = mapLayer(ctx);
+    if (!layer) return;
+    // Alt+drag clears a rectangle instead.
+    const value = e.alt ? 0 : brushValue(ctx);
+    if (!e.alt && !value) return;
+    const { doc, ui } = store().get();
+    const s = new MapSession(doc, layer, ui.frame);
+    rect = { s, from: s.cell(e.x, e.y), value };
+  },
+  move() {},
+  up(e, ctx) {
+    if (!rect) return;
+    const { s, from, value } = rect;
+    const to = s.cell(e.x, e.y);
+    if (fillCellRect(s.cells, s.columns, s.rows, from.x, from.y, to.x, to.y, value)) s.changed = true;
+    rect = null;
+    s.commit(value ? 'Fill a rectangle with tiles' : 'Clear a rectangle of tiles', ctx);
+  },
+  cancel() {
+    rect?.s.discard();
+    rect = null;
+  },
+  overlay(g, ctx) {
+    drawGhost(g, ctx, rect?.from, rect ? !rect.value : false);
+  },
+};
+
+// ---------------------------------------------------------------- fill
+
+export const tileFillTool: Tool = {
+  id: 'tile-fill',
+  label: 'Tile fill',
+  icon: 'fill',
+  key: 'g',
+  layers: ['tilemap'],
+  order: 13,
+  help: 'tilemaps',
+  cursor: 'crosshair',
+  options: TileToolOptions,
+  down(e, ctx) {
+    const layer = mapLayer(ctx);
+    if (!layer) return;
+    const value = brushValue(ctx);
+    if (!value) return;
+    const { doc, ui } = store().get();
+    const s = new MapSession(doc, layer, ui.frame);
+    const c = s.cell(e.x, e.y);
+    if (c.x < 0 || c.y < 0 || c.x >= s.columns || c.y >= s.rows) return ctx.hint('Click inside the map to fill.');
+    if (floodCells(s.cells, s.columns, s.rows, c.x, c.y, value)) s.changed = true;
+    else ctx.hint('That area already has this tile.');
+    s.commit('Fill with tiles', ctx);
+  },
+  overlay(g, ctx) {
+    drawGhost(g, ctx);
+  },
+};
+
+// ---------------------------------------------------------------- picker
+
+export const tilePickerTool: Tool = {
+  id: 'tile-picker',
+  label: 'Pick tile',
+  icon: 'eyedropper',
+  key: 'i',
+  layers: ['tilemap'],
+  order: 70,
+  help: 'tilemaps',
+  cursor: 'crosshair',
+  options: TileToolOptions,
+  down(e, ctx) {
+    pickAt(e, ctx, true);
+  },
+  move(e, ctx) {
+    pickAt(e, ctx, false);
+  },
+};
+
+for (const t of [tileBrushTool, tileRectTool, tileFillTool, tileEraserTool, tilePickerTool]) registerTool(t);

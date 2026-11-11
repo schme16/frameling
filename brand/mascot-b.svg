@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Frameling mascot B: the stacked-frames blob">
+  <title>Frameling mascot B: the stacked-frames blob</title>
+<path d="M26,80 V26 H80" fill="none" stroke="#9b7bff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"/><path d="M486,80 V26 H432" fill="none" stroke="#9b7bff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"/><path d="M26,432 V486 H80" fill="none" stroke="#9b7bff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"/><path d="M486,432 V486 H432" fill="none" stroke="#9b7bff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"/><ellipse cx="332" cy="478" rx="107.5" ry="11.3" fill="#1d1b26" opacity="0.1"/>  <g>
+    <g transform="translate(146 468) rotate(0) scale(0.8536 0.9)"><path d="M0,-220 C100,-222 142,-152 142,-96 C142,-34 84,0 0,0 C-84,0 -142,-34 -142,-96 C-142,-152 -100,-222 0,-220 Z" fill="#5ab8ff" fill-opacity="0.12249999999999998" stroke="#5ab8ff" stroke-opacity="0.35" stroke-width="9" stroke-linejoin="round"/></g>
+    <g transform="translate(204 446) rotate(0) scale(0.8536 0.9)"><path d="M0,-220 C100,-222 142,-152 142,-96 C142,-34 84,0 0,0 C-84,0 -142,-34 -142,-96 C-142,-152 -100,-222 0,-220 Z" fill="#9b7bff" fill-opacity="0.21" stroke="#9b7bff" stroke-opacity="0.6" stroke-width="9" stroke-linejoin="round"/></g>
+    <g transform="translate(266 418) rotate(0) scale(0.8536 0.9)"><path d="M0,-220 C100,-222 142,-152 142,-96 C142,-34 84,0 0,0 C-84,0 -142,-34 -142,-96 C-142,-152 -100,-222 0,-220 Z" fill="#ff6f91" fill-opacity="0.2975" stroke="#ff6f91" stroke-opacity="0.85" stroke-width="9" stroke-linejoin="round"/></g>
+    <g transform="translate(332 384) rotate(0) scale(0.88 0.9)">
+      <ellipse cx="-58" cy="2" rx="30" ry="16" fill="#ff9e6d" stroke="#1d1b26" stroke-width="7"/><ellipse cx="58" cy="2" rx="30" ry="16" fill="#ff9e6d" stroke="#1d1b26" stroke-width="7"/>
+      <path d="M0,-220 C100,-222 142,-152 142,-96 C142,-34 84,0 0,0 C-84,0 -142,-34 -142,-96 C-142,-152 -100,-222 0,-220 Z" fill="#ffc94a" stroke="#1d1b26" stroke-width="9" stroke-linejoin="round"/>
+      <path d="M-98,-50 C-70,-14 70,-14 98,-50" fill="none" stroke="#f2a91c" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" opacity="0.6"/>
+      <path d="M-98,-150 Q-86,-184 -44,-198" fill="none" stroke="#fff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" opacity="0.8"/>
+      <ellipse cx="-50" cy="-122" rx="15" ry="22" fill="#1d1b26" /><ellipse cx="50" cy="-122" rx="15" ry="22" fill="#1d1b26" /><ellipse cx="-45" cy="-130" rx="5" ry="6" fill="#fff" /><ellipse cx="55" cy="-130" rx="5" ry="6" fill="#fff" />
+      <ellipse cx="-92" cy="-84" rx="20" ry="13" fill="#ff6f91" opacity="0.75"/><ellipse cx="92" cy="-84" rx="20" ry="13" fill="#ff6f91" opacity="0.75"/>
+      <path d="M-24,-90 Q0,-54 24,-90 Z" fill="#1d1b26" stroke="#1d1b26" stroke-width="6" stroke-linejoin="round"/>
+      <ellipse cx="0" cy="-76" rx="11" ry="6" fill="#ff6f91" />
+    </g>
+  </g>
+</svg>

@@ -1,0 +1,1 @@
+A: Palette panel shows one row per ramp (built default). B: all colours in one flat wrapped grid, ramps not visible.

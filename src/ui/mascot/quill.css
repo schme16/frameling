@@ -1,0 +1,91 @@
+/* Quill and his speech bubble. Colours come from theme.css tokens only. */
+
+.quill {
+  display: inline-block;
+  flex: none;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  pointer-events: none;
+  user-select: none;
+}
+.quill-flip {
+  transform: scaleX(-1);
+}
+
+.quill-says {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  min-width: 0;
+}
+.quill-says-top {
+  flex-direction: column;
+  align-items: center;
+}
+
+.quill-bubble {
+  white-space: pre-line;
+  position: relative;
+  min-width: 0;
+  flex: 1;
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  background: var(--raised);
+  border: 1px solid var(--line);
+  color: var(--text);
+  line-height: 1.4;
+}
+.quill-bubble > :first-child {
+  margin-top: 0;
+}
+.quill-bubble > :last-child {
+  margin-bottom: 0;
+}
+
+/* The tail: a small square turned 45 degrees, pointing at Quill. */
+.quill-says:not(.is-alone) > .quill-bubble::before {
+  content: '';
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background: inherit;
+  border: inherit;
+  border-top-color: transparent;
+  border-right-color: transparent;
+}
+.quill-says-left:not(.is-alone) > .quill-bubble::before {
+  left: -6px;
+  bottom: 14px;
+  transform: rotate(45deg);
+}
+.quill-says-top:not(.is-alone) > .quill-bubble::before {
+  left: calc(50% - 5px);
+  top: -6px;
+  transform: rotate(135deg);
+}
+
+/* Without Quill the bubble is just a plain note. */
+.quill-says.is-alone > .quill-bubble:not(.quill-bubble-own) {
+  background: transparent;
+  border-color: transparent;
+  padding: 0;
+}
+
+/* A Quill-sized empty state: him, then a friendly line. */
+.quill-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 16px 8px;
+  text-align: center;
+  color: var(--muted);
+}
+.quill-empty p {
+  margin: 0;
+}
+
+/* Quill's lines can hold line breaks. */
+.quill-empty {
+  white-space: pre-line;
+}

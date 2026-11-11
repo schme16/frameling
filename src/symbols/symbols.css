@@ -1,0 +1,304 @@
+/* Library, symbol properties, the editing bar and tween bars on the timeline. Theme tokens only. */
+.sy-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.sy-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px;
+  border-radius: var(--radius-small);
+  border: 1px solid var(--line-soft);
+  background: var(--panel-2);
+  cursor: grab;
+}
+.sy-item:hover {
+  background: var(--hover-bg);
+}
+.sy-thumb {
+  flex: none;
+  border-radius: calc(var(--radius-small) - 2px);
+  background: var(--bg);
+  border: 1px solid var(--line-soft);
+}
+.sy-item-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.sy-item-name {
+  all: unset;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: text;
+}
+.sy-item-name:focus-visible {
+  outline: 2px solid var(--focus);
+  border-radius: 3px;
+}
+.sy-item-meta {
+  font-size: var(--fs-small);
+  color: var(--faint);
+}
+.sy-item-actions {
+  display: flex;
+  gap: 2px;
+  opacity: 0.55;
+}
+.sy-item:hover .sy-item-actions,
+.sy-item:focus-within .sy-item-actions {
+  opacity: 1;
+}
+.sy-icon-btn {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+.sy-icon-btn:hover:not(:disabled) {
+  background: var(--hover-bg);
+}
+.sy-icon-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.sy-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.sy-section + .sy-section {
+  border-top: 1px solid var(--line-soft);
+  padding-top: 12px;
+}
+.sy-section-title {
+  margin: 0;
+  font-size: var(--fs);
+  font-weight: 800;
+}
+.sy-swap {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+.sy-swap > .cv-field {
+  flex: 1;
+  min-width: 0;
+}
+.sy-select {
+  width: 100%;
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+}
+.sy-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.sy-num {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.sy-num > span:first-child {
+  font-size: var(--fs-small);
+  font-weight: 700;
+  color: var(--muted);
+}
+.sy-num-box {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  background: var(--bg);
+}
+.sy-num-box input {
+  flex: 1;
+  min-width: 0;
+  height: 28px;
+  padding: 0 8px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+}
+.sy-num-box i {
+  padding-right: 8px;
+  font-style: normal;
+  color: var(--faint);
+}
+.sy-color {
+  width: 34px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  background: none;
+  cursor: pointer;
+}
+.sy-link {
+  all: unset;
+  color: var(--text);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.sy-curve {
+  display: block;
+  width: 100%;
+  max-width: 260px;
+  height: auto;
+  border-radius: var(--radius-small);
+  background: var(--panel-2);
+  border: 1px solid var(--line-soft);
+  touch-action: none;
+}
+.sy-curve-guide {
+  stroke: var(--line);
+  stroke-dasharray: 3 3;
+}
+.sy-curve-label {
+  font-size: 9px;
+  fill: var(--faint);
+}
+.sy-curve-line {
+  fill: none;
+  stroke: var(--grape);
+  stroke-width: 2.5;
+}
+.sy-curve-arm {
+  stroke: var(--muted);
+  stroke-width: 1;
+}
+.sy-curve-handle {
+  fill: var(--sunny);
+  stroke: var(--text);
+  stroke-width: 1.5;
+  cursor: grab;
+}
+.sy-curve-handle:focus-visible {
+  outline: none;
+  stroke: var(--focus);
+  stroke-width: 3;
+}
+
+/* The bar across the top of the canvas while a symbol is open. */
+.sy-editbar {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 4px 4px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--raised);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-small);
+  font-weight: 700;
+}
+.sy-crumb {
+  all: unset;
+  padding: 3px 8px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  color: var(--muted);
+}
+.sy-crumb:hover,
+.sy-crumb:focus-visible {
+  background: var(--hover-bg);
+  color: var(--text);
+}
+.sy-crumb[aria-current='true'] {
+  color: var(--text);
+  cursor: default;
+  background: none;
+}
+.sy-crumb-sep {
+  color: var(--faint);
+}
+.sy-done {
+  margin-left: 6px;
+  padding: 4px 12px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+  font: inherit;
+  cursor: pointer;
+}
+.cv-root.is-dropping {
+  outline: 3px dashed var(--grape);
+  outline-offset: -6px;
+}
+
+/* In-betweens on the timeline. A (default): a soft band with an arrow from key to key. */
+.tl-tween {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  pointer-events: none;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--grape) 22%, transparent);
+}
+.tl-tween::before {
+  content: '';
+  position: absolute;
+  left: 4px;
+  right: 7px;
+  top: 50%;
+  border-top: 2px solid var(--grape);
+}
+.tl-tween::after {
+  content: '';
+  position: absolute;
+  right: 2px;
+  top: calc(50% - 4px);
+  border: 4px solid transparent;
+  border-left: 6px solid var(--grape);
+  border-right: 0;
+}
+.tl-tween.is-broken {
+  background: none;
+}
+.tl-tween.is-broken::before {
+  border-top-style: dashed;
+  opacity: 0.6;
+}
+.tl-tween.is-broken::after {
+  display: none;
+}
+.sy-library,
+.sy-props {
+  padding: 12px;
+  color: var(--text);
+}
+.sy-size {
+  margin: 6px 0 0;
+  font-size: var(--fs-small);
+  color: var(--muted);
+}

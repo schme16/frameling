@@ -1,0 +1,142 @@
+.fl-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.fl-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.fl-now {
+  font-size: var(--fs-small);
+  color: var(--muted);
+}
+.fl-trigger {
+  border: 1px solid var(--line);
+  background: var(--raised);
+  color: var(--text);
+  border-radius: var(--radius-pill);
+  padding: 3px 10px;
+  font: inherit;
+  font-size: var(--fs-small);
+  cursor: pointer;
+}
+.fl-trigger:hover {
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+}
+.fl-scroll {
+  overflow: auto;
+  max-height: 420px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-small);
+  background: var(--canvas-bg);
+}
+.fl-graph {
+  display: block;
+  touch-action: none;
+  user-select: none;
+}
+.fl-rect {
+  fill: var(--raised);
+  stroke: var(--line);
+  stroke-width: 1.5;
+}
+.fl-box {
+  cursor: grab;
+  outline: none;
+}
+.fl-link:focus-visible {
+  outline: none;
+}
+.fl-link:focus-visible .fl-line {
+  stroke: var(--focus);
+  stroke-width: 3;
+}
+.fl-box[data-on='true'] .fl-rect,
+.fl-box:focus-visible .fl-rect {
+  stroke: var(--focus);
+  stroke-width: 2.5;
+}
+.fl-box[data-playing='true'] .fl-rect {
+  fill: color-mix(in srgb, var(--chosen-bg) 30%, var(--raised));
+}
+.fl-name {
+  fill: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+}
+.fl-sub {
+  fill: var(--muted);
+  font-size: 11px;
+}
+.fl-star {
+  fill: var(--sunny);
+  font-size: 13px;
+}
+.fl-port {
+  fill: var(--accent);
+  stroke: var(--panel);
+  stroke-width: 2;
+  cursor: crosshair;
+}
+.fl-port:hover {
+  fill: var(--sunny);
+}
+.fl-line {
+  stroke: var(--muted);
+  stroke-width: 2;
+  fill: none;
+}
+.fl-hit {
+  stroke: transparent;
+  stroke-width: 12;
+  cursor: pointer;
+}
+.fl-head {
+  fill: var(--muted);
+}
+.fl-link[data-on='true'] .fl-line {
+  stroke: var(--sunny);
+  stroke-width: 3;
+}
+.fl-label {
+  fill: var(--muted);
+  font-size: 11px;
+  pointer-events: none;
+  paint-order: stroke;
+  stroke: var(--canvas-bg);
+  stroke-width: 4px;
+}
+.fl-drafting {
+  stroke: var(--accent);
+  stroke-dasharray: 4 3;
+}
+.fl-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.fl-edit-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text);
+}
+.fl-trigger-name {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: var(--fs-small);
+  color: var(--muted);
+}
+.fl-trigger-name input {
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  padding: 5px 8px;
+  font: inherit;
+}

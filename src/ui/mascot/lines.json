@@ -1,0 +1,191 @@
+{
+  "$about": "Everything Quill says, in one place. Edit the text freely. Words in {curly} brackets are filled in by the app (a name, a theme), so keep them, spelled the same. A list is several bubbles shown together, or a set the app picks from (the 'where' says which). Not here: quest step instructions (src/quests/library.ts, tutorial content rather than Quill's personality), help topics, and plain app messages like errors. Review page: brand/dialogue/index.html. Apply an exported changes file with: npm run dialogue:apply <file.json>",
+  "onboarding.hello": {
+    "text": [
+      "Hi, I'm Quill!",
+      "Welcome to Frameling!",
+      "Here you draw things, then make them move, either Frame-by-frame, or let Tweens do the hard work.",
+      "Smooth vector art or chunky pixel art, toons, game sprites, stickers, explainers, or even backgrounds for your phone:",
+      "If it wiggles, we can help you make it.",
+      "It's easy and it's fun, I promise!"
+    ],
+    "where": "First-run hello, step 1 (Hello from Quill). Four bubbles beside Quill, one after another."
+  },
+  "onboarding.make.cartoons": { "text": "Cartoons! Can't wait to see it uploaded to newgrounds!", "where": "First-run hello, 'What would you like to make?': you just picked Sketches and cartoons." },
+  "onboarding.make.sprites": { "text": "Pixel heroes! Chunky and charming (just like me!)", "where": "First-run hello, 'What would you like to make?': you just picked Game sprites and pixel art." },
+  "onboarding.make.tiles": { "text": "Levels! I'll pack some snacks!", "where": "First-run hello, 'What would you like to make?': you just picked Tiles and levels." },
+  "onboarding.make.motion": {
+    "text": "Smooth moves! Can't wait to see your next infographic!",
+    "where": "First-run hello, 'What would you like to make?': you just picked Explainers and motion graphics."
+  },
+  "onboarding.make.interactives": { "text": "Interactive art, what will they think of next!", "where": "First-run hello, 'What would you like to make?': you just picked Things for Interactives." },
+  "onboarding.make.play": {
+    "text": "A great way to get the creative juices flowing! Just watch out for that blank canvas!",
+    "where": "First-run hello, 'What would you like to make?': you just picked Just playing."
+  },
+  "onboarding.make.none": { "text": "Pick as many as you like, or none at all. No wrong answers here! (Probably)", "where": "First-run hello, 'What would you like to make?': nothing picked yet." },
+  "onboarding.make.some": { "text": "Great picks!", "where": "First-run hello, 'What would you like to make?': after un-picking a card, with one to three still picked." },
+  "onboarding.make.lots": { "text": "Big plans, I love it.", "where": "First-run hello, 'What would you like to make?': after un-picking a card, with four or more still picked." },
+  "onboarding.make.lead": {
+    "text": "Pick as many as you like and afterwards Quill will set things up to suit.",
+    "where": "First-run hello, 'What would you like to make?': the line above the cards (not a bubble)."
+  },
+  "onboarding.themes.loved": {
+    "text": [
+      "You picked {theme}! My favourite!",
+      "Best. Day. Ever.",
+      "Ahhhh Just look at those little seeds. I could hug this whole screen!"
+    ],
+    "where": "First-run hello, 'Pick your colours': you picked his favourite (Strawberry). Two bubbles, and a little strawberry pops up beside him.",
+    "vars": ["theme"]
+  },
+  "onboarding.themes.hint": {
+    "text": [
+      "My favourite is {theme}.",
+      "Pink, super comfy on the eyes,  *sigh* I could look at it all day!",
+      "But it's your studio. Pick whatever makes you happy, I won't mind. (Much.)"
+    ],
+    "where": "First-run hello, 'Pick your colours': before you've picked his favourite. Two bubbles.",
+    "vars": ["theme"]
+  },
+  "onboarding.themes.favourite": { "text": "Quill's favourite", "where": "First-run hello, 'Pick your colours': the little heart label under the Strawberry theme cards." },
+  "onboarding.prefs.on": { "text": "Just a few handy bits and bobs. You can change any of them later in Preferences.", "where": "First-run hello, 'A few handy settings', with Show Quill on." },
+  "onboarding.prefs.off": { "text": "I'll stay hidden, but my words will still pop up here. (...sorry)", "where": "First-run hello, 'A few handy settings', after his goodbye when Show Quill is off." },
+  "onboarding.prefs.showQuill": { "text": "Off hides me everywhere. My words still show though.", "where": "First-run hello, 'A few handy settings': the hint beside the Show Quill switch." },
+  "onboarding.name": {
+    "text": [
+      "Every masterpiece needs a name.",
+      "Something poignant... or roll the dice for some silly ones!"
+    ],
+    "where": "First-run hello, 'Name your first animation'. Two bubbles."
+  },
+  "onboarding.done": {
+    "text": [
+      "Hooray! {name} is going to be brilliant.",
+      "Pick how you'd like to start.",
+      "I'll be in Help if you need me!"
+    ],
+    "where": "First-run hello, last step ('All set!'). Two bubbles. {name} is the animation's name, or the 'no name' words below.",
+    "vars": ["name"]
+  },
+  "onboarding.done.noName": { "text": "Your animation", "where": "Stands in for {name} at the start of the 'All set!' bubble when the name box was left empty." },
+  "onboarding.done.lead": {
+    "text": "Quill will set up the {workspace} workspace for you shortly. Now, how shall we start {name}?",
+    "where": "First-run hello, 'All set!': the line above the three ways to start. {workspace} and {name} show in bold.",
+    "vars": ["workspace", "name"]
+  },
+  "onboarding.done.leadNoName": { "text": "your animation", "where": "Stands in for {name} in the 'All set!' line above the cards when the name box was left empty." },
+  "onboarding.done.quest": { "text": "{quest}, step by step with me.", "where": "First-run hello, 'All set!': under 'Show me how' ({quest} is the suggested quest).", "vars": ["quest"] },
+  "onboarding.done.example": { "text": "{example}, ready to be poked at!", "where": "First-run hello, 'All set!': under 'Open an example' ({example} is the suggested example).", "vars": ["example"] },
+  "onboarding.done.blank": { "text": "Straight in. You know what you're doing.", "where": "First-run hello, 'All set!': under 'Just a blank page'." },
+  "onboarding.doze.asleep": { "text": "Zzz...", "where": "First-run hello: any step left untouched for 20 seconds. Quill nods off." },
+  "onboarding.doze.woke": {
+    "text": "Oh! Sorry, I nodded off. \nBut please take all the time you need!",
+    "where": "First-run hello: the first click or key after he nodded off. Shown above that step's own bubbles."
+  },
+  "onboarding.skipped": { "text": "No problem! Say hi again any time from Help > Meet Quill again.", "where": "A toast after 'Skip for now' in the first-run hello." },
+  "onboarding.ready": { "text": "{name} is ready. Have fun!", "where": "A toast after finishing the first-run hello with an example or a blank page.", "vars": ["name"] },
+  "sillyNames.pattern": {
+    "text": "The {adjective} {noun}",
+    "where": "First-run hello, 'Name your first animation': how a silly name is put together (and what Roll makes).",
+    "vars": ["adjective", "noun"]
+  },
+  "sillyNames.adjectives": {
+    "text": [
+      "Wobbly",
+      "Sleepy",
+      "Brave",
+      "Bouncy",
+      "Sneaky",
+      "Fluffy",
+      "Tiny",
+      "Dizzy",
+      "Grumpy",
+      "Sparkly",
+      "Jolly",
+      "Squishy",
+      "Zippy",
+      "Curious",
+      "Fancy"
+    ],
+    "where": "Silly names: the first word is picked at random from these. One word each."
+  },
+  "sillyNames.nouns": {
+    "text": [
+      "Pancake",
+      "Teacup",
+      "Dragon",
+      "Turnip",
+      "Comet",
+      "Noodle",
+      "Penguin",
+      "Muffin",
+      "Robot",
+      "Jellybean",
+      "Cactus",
+      "Snail",
+      "Pickle",
+      "Cloud",
+      "Biscuit"
+    ],
+    "where": "Silly names: the second word is picked at random from these. One word each."
+  },
+  "sillyNames.fallback": {
+    "text": [
+      "The Dancing Spoon",
+      "The Humming Kettle"
+    ],
+    "where": "Silly names: used only if Roll keeps landing on the same name (very rare). Two different names."
+  },
+  "goodbye.long": {
+    "text": [
+      "Oh... okay. I understand!",
+      "I'll be just over here. If you ever need me, say hi from Help > Meet Quill again, or switch me back on in Preferences."
+    ],
+    "where": "Switching Show Quill off in the first-run hello. Two bubbles while he's sad, then waves goodbye."
+  },
+  "goodbye.short": {
+    "text": "Oh... okay, I understand. If you ever need me, I'm in Help > Meet Quill again.",
+    "where": "A toast when Show Quill is switched off in Preferences. He's sad for a moment, waves, then goes."
+  },
+  "welcomeBack": { "text": "Yay! I knew you'd miss me. (I missed you too.)", "where": "Switching Show Quill back on (a toast from Preferences, or a bubble in the first-run hello). He cheers." },
+  "quests.panel.intro": { "text": "Short lessons that teach by doing. Pick one and  we'll go through it together!", "where": "The Quests panel, top, when no quest is going." },
+  "quests.panel.allDone": {
+    "text": "All quests complete! Gosh you're amazing!\nJust remember you can always do a quest again to refresh your memory (or even just for fun).",
+    "where": "The Quests panel, top, once every quest is done. He cheers."
+  },
+  "quests.praise": {
+    "text": [
+      "Nice!",
+      "Lovely.",
+      "There it is.",
+      "Yes!",
+      "Nicely done.",
+      "Look at that.",
+      "Smooth.",
+      "Perfect.",
+      "Awesome work!",
+      "<3",
+      "Slay",
+      "Let them cook!",
+      "You rizzedmaxxed that skibidi (is that what the kids say?)"
+    ],
+    "where": "The quest bar: a little cheer that pops up for a moment when a step is done. Takes turns through these."
+  },
+  "quests.badge": { "text": "You earned {badge}", "where": "The badge card at the end of a quest (with confetti): the heading. {badge} is the badge's name.", "vars": ["badge"] },
+  "quests.finished": { "text": "Quest Complete", "where": "The end-of-quest card heading, for a quest with no badge." },
+  "quests.finishedQuest": { "text": "You completed: {quest}.", "where": "The end-of-quest card, under the heading, for a quest that has no finish line of its own.", "vars": ["quest"] },
+  "welcome.hello": { "text": "Hiya! What are we cooking up today?", "where": "The Welcome sheet (Help > Welcome, or on start), beside Quill waving." },
+  "welcome.new": { "text": "Ready for a fresh start!", "where": "File > New: the same sheet's heading, beside Quill waving." },
+  "welcome.lead": { "text": "Pick any card. You can always change your mind later.", "where": "Welcome and File > New sheets, under the heading." },
+  "welcome.ready": {
+    "text": "A fresh {kind} is ready. Have fun!",
+    "where": "A toast after picking a card on the Welcome or File > New sheet. {kind} is the card's name in lower case.",
+    "vars": ["kind"]
+  },
+  "about.quill": { "text": "This is Quill. His quills are coloured pencils, and he loves to help.", "where": "Help > About Frameling, under the blurb, with Quill waving." },
+  "empty.help": { "text": "Uh oh, I couldn't find that", "where": "Help window: a search with no results. Quill thinks." },
+  "empty.shortcuts": { "text": "Nothing here by that name....", "where": "Preferences > Keyboard: a search with no results. Quill thinks." },
+  "empty.recent": { "text": "Nothing here yet. Drawings you open or save will show up here.", "where": "File > Open Recent with nothing in it. Quill doodles." },
+  "empty.recover": { "text": "Nothing to recover. \nbut just so you know, work you leave unsaved will show up here for a whole WEEK (just in-case).", "where": "File > Recover with nothing in it." }
+}

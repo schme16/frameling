@@ -1,0 +1,129 @@
+{
+  "name": "frameling",
+  "productName": "Frameling",
+  "version": "0.0.1",
+  "description": "A friendly desktop tool for drawing and animating 2D art, vector and pixel alike.",
+  "author": "Shane Gadsby",
+  "license": "UNLICENSED",
+  "private": true,
+  "type": "module",
+  "main": "dist/main/main.cjs",
+  "homepage": "https://github.com/schme16/frameling",
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "build": "npm run build:mascot && npm run typecheck && vite build && node scripts/build-main.mjs",
+    "build:web": "npm run build:mascot && npm run typecheck && vite build --config vite.web.config.ts",
+    "preview:web": "vite preview --config vite.web.config.ts",
+    "typecheck": "tsc --noEmit",
+    "build:mascot": "node scripts/build-mascot.mjs",
+    "test": "vitest run",
+    "a11y": "npm run build && electron scripts/a11y.cjs",
+    "help:audit": "vitest run test/ui/help-audit.test.ts test/ui/help-media.test.ts test/ui/help-words.test.ts",
+    "start": "npm run build && electron .",
+    "dist": "npm run build && electron-builder --publish never",
+    "dist:linux": "npm run build && electron-builder --linux AppImage --publish never",
+    "install-local": "node scripts/install-local.mjs",
+    "dialogue:shots": "npm run build && electron scripts/dialogue/shots.cjs",
+    "dialogue:page": "node scripts/dialogue/page.mjs",
+    "dialogue:apply": "node scripts/dialogue/apply.mjs"
+  },
+  "dependencies": {
+    "fflate": "^0.8.3",
+    "gifenc": "^1.0.3",
+    "immer": "^11.2.10",
+    "mediabunny": "^1.65.2",
+    "perfect-freehand": "^1.2.3",
+    "polygon-clipping": "^0.15.7",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@fontsource-variable/inter": "^5.3.0",
+    "@fontsource-variable/nunito": "^5.3.0",
+    "@types/node": "^22.20.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.3.0",
+    "ag-psd": "^34.1.0",
+    "axe-core": "^4.14.0",
+    "electron": "^45.3.0",
+    "electron-builder": "^26.18.0",
+    "esbuild": "^0.28.2",
+    "fake-indexeddb": "^6.2.8",
+    "jsdom": "^31.0.0",
+    "lottie-web": "^5.13.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.0"
+  },
+  "build": {
+    "appId": "com.schme16.frameling",
+    "productName": "Frameling",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "dist/**/*",
+      "package.json"
+    ],
+    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Graphics",
+      "synopsis": "Draw and animate 2D art",
+      "syncDesktopName": true,
+      "mimeTypes": [
+        "x-scheme-handler/frameling"
+      ]
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "include": "build/installer.nsh",
+      "artifactName": "${productName}-${version}-setup-${arch}.${ext}"
+    },
+    "portable": {
+      "artifactName": "${productName}-${version}-portable-${arch}.${ext}"
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "category": "public.app-category.graphics-design"
+    },
+    "fileAssociations": [
+      {
+        "ext": "frameling",
+        "name": "Frameling drawing",
+        "description": "Frameling drawing",
+        "mimeType": "application/x-frameling",
+        "role": "Editor"
+      },
+      {
+        "ext": "flplay",
+        "name": "Interactives animation",
+        "description": "Frameling animation for Interactives",
+        "mimeType": "application/vnd.frameling.playable+zip",
+        "role": "Editor"
+      }
+    ],
+    "protocols": [
+      {
+        "name": "Frameling link",
+        "schemes": [
+          "frameling"
+        ]
+      }
+    ]
+  },
+  "desktopName": "frameling.desktop"
+}

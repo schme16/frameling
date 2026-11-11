@@ -1,0 +1,4 @@
+Your templates on the New / welcome sheet (ab.png: A left, B right).
+A (built, default): stacked sections. "Built-in" examples, then the blank starters, then "Yours" with an Import template... card. Everything visible with one scroll; an online gallery would be one more section.
+B: Built-in and Yours as tabs. Tidier and shorter, but your own templates sit behind a click.
+To see B in the app: run with ?debug and set window.__templatesLayout = 'tabs' before opening File > New.

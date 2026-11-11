@@ -1,0 +1,343 @@
+/* The Effects panel, and the blend/mask/clip/folder marks in the timeline. Theme tokens only. */
+
+.fx-panel {
+  gap: 12px;
+}
+.fx-target {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 800;
+}
+.fx-target-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fx-term {
+  margin-left: 6px;
+  color: var(--muted);
+  font-size: var(--fs-small);
+  font-weight: 600;
+}
+
+/* Blend picker. */
+.fx-blend-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  background: var(--panel-2);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.fx-blend-btn:hover {
+  background: var(--hover-bg);
+}
+.fx-blend-btn:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.fx-blend-label {
+  font-weight: 700;
+}
+.fx-blend-btn .ui-icon:last-child {
+  margin-left: auto;
+  color: var(--muted);
+}
+.fx-blend-list {
+  width: 300px;
+  max-height: min(520px, 70vh);
+  overflow: auto;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  box-shadow: var(--stage-shadow);
+}
+.fx-blend-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: var(--radius-small);
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.fx-blend-item:hover,
+.fx-blend-item:focus-visible {
+  background: var(--hover-bg);
+  outline: none;
+}
+.fx-blend-item[data-on='true'] {
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+}
+.fx-blend-item[data-on='true'] .fx-term,
+.fx-blend-item[data-on='true'] .fx-blend-item-desc {
+  color: var(--chosen-fg);
+  opacity: 0.8;
+}
+.fx-blend-item-desc {
+  color: var(--muted);
+  font-size: var(--fs-small);
+  line-height: 1.35;
+}
+
+.fx-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-small);
+  background: var(--panel-2);
+}
+
+/* The stack. */
+.fx-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.fx-stack-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+.fx-stack-order {
+  color: var(--faint);
+  font-size: var(--fs-small);
+}
+.fx-empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--fs-small);
+}
+.fx-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 10px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  background: var(--panel-2);
+}
+.fx-card[data-off='true'] .fx-params,
+.fx-card[data-off='true'] .fx-card-name {
+  opacity: 0.45;
+}
+.fx-card-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.fx-card-name {
+  flex: 1;
+  min-width: 0;
+  font-weight: 800;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fx-icon-btn {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+.fx-icon-btn:hover {
+  background: var(--hover-bg);
+  color: var(--text);
+}
+.fx-icon-btn:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+.fx-anim[data-on='true'] {
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+}
+.fx-keys {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: var(--fs-small);
+}
+.fx-key-dot {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border: 2px solid var(--chosen-bg);
+  transform: rotate(45deg);
+  border-radius: 2px;
+}
+.fx-key-dot[data-on='true'] {
+  background: var(--chosen-bg);
+}
+.fx-link {
+  margin-left: auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.fx-params {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.fx-hex {
+  font-family: var(--font-mono);
+  font-size: var(--fs-small);
+}
+.fx-color {
+  width: 100%;
+  height: 26px;
+  padding: 2px;
+  border: 1px solid color-mix(in srgb, var(--text) 30%, transparent);
+  border-radius: 8px;
+  background: var(--panel);
+  cursor: pointer;
+}
+
+/* Adding effects: A is a grid of tiles, B a single button with a menu. */
+.fx-add-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+.fx-add-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 4px;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-small);
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: var(--fs-small);
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 120ms var(--ease-bounce);
+}
+.fx-add-tile:hover {
+  border-style: solid;
+  background: var(--hover-bg);
+  color: var(--text);
+  transform: translateY(-1px);
+}
+.fx-add-tile:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.fx-add-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-small);
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.fx-add-btn:hover {
+  background: var(--hover-bg);
+}
+.fx-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Timeline marks: a folder header row, indented layers, and little tags for blend, clip and mask. */
+.tl-folder {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 6px 0 4px;
+  border-bottom: 1px solid var(--line-soft);
+  background: color-mix(in srgb, var(--grape) 12%, var(--panel));
+  font-weight: 800;
+  cursor: default;
+}
+.tl-folder.is-hidden .tl-folder-name {
+  opacity: 0.5;
+}
+.tl-folder-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tl-folder-twisty {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+.tl-folder-twisty:hover {
+  background: var(--hover-bg);
+}
+.tl-row.is-folder {
+  background: color-mix(in srgb, var(--grape) 8%, transparent);
+}
+.tl-layer.in-folder {
+  padding-left: 14px;
+}
+.tl-layer.in-folder::before {
+  content: '';
+  position: absolute;
+  left: 7px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: color-mix(in srgb, var(--grape) 60%, transparent);
+}
+.tl-look-tag {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  margin-left: 2px;
+  color: var(--muted);
+  vertical-align: middle;
+}
+.tl-look-tag.is-mask {
+  color: var(--grape);
+}
+.tl-layer.is-mask .tl-layer-name {
+  font-style: italic;
+}
