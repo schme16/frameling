@@ -5,16 +5,52 @@
  *
  * Changing a colour while shapes are selected also recolours them (one undo step per drag).
  *
- * Keys: X brings the other box to the front, Shift+X swaps the two colours, Shift+D goes back to the defaults (yellow
+ * Keys: X brings the other box to the front, Shift+X swaps the two colours, Shift+D goes back to the defaults (the theme's
  * fill, black stroke; plain D is "copy drawing to next frame" in the timeline), / sets the box in front to none.
  */
 import type { Color } from '../core/format';
 import { registerCommands, registerHelp } from '../core/registry';
 import { store, type UiState } from '../core/store';
 import { activeDrawing, editActiveDrawing } from './edit';
+import { cssVar, subscribeTheme } from '../canvas/theme';
 
-// A soft yellow that reads on white paper, so the first shape and the first bucket click show up.
+// A soft yellow that reads on white paper, so the first shape and the first bucket click show up (see themeFill).
+/** The fill used when there's no theme to ask (tests, before the page styles load). */
 export const DEFAULT_FILL: Color = '#ffc94a';
+
+/** Any CSS colour as #rrggbb, or null if the browser can't read it. */
+function toHex(css: string): Color | null {
+  if (/^#[0-9a-f]{6}$/i.test(css)) return css.toLowerCase();
+  if (typeof OffscreenCanvas === 'undefined') return null;
+  const g = new OffscreenCanvas(1, 1).getContext('2d');
+  if (!g) return null;
+  g.fillStyle = '#000001';
+  g.fillStyle = css;
+  const v = String(g.fillStyle);
+  return /^#[0-9a-f]{6}$/i.test(v) && v !== '#000001' ? v : null;
+}
+
+/**
+ * The default fill comes from the editor's theme: its highlight colour (gold in the default themes, aqua in Ice Camo,
+ * lavender in Lilac Static and so on), so a new shape reads on white paper and feels part of the theme you picked.
+ */
+export function themeFill(): Color {
+  return toHex(cssVar('--chosen-bg', DEFAULT_FILL)) ?? DEFAULT_FILL;
+}
+
+// When the theme changes, a fill still on the old theme's default follows it; one you picked yourself stays.
+let lastThemeFill: Color = DEFAULT_FILL;
+function followTheme(): void {
+  const next = themeFill();
+  const ui = store().get().ui;
+  if ((ui.fillColor === lastThemeFill || ui.fillColor === DEFAULT_FILL) && next !== ui.fillColor) store().setUi({ fillColor: next });
+  lastThemeFill = next;
+}
+if (typeof document !== 'undefined') {
+  subscribeTheme(followTheme);
+  // Once the theme's tokens are on the page.
+  requestAnimationFrame(followTheme);
+}
 export const DEFAULT_STROKE: Color = '#1d1b26';
 
 /** The colour in the box that's in front, or null when it's set to none. */
@@ -91,9 +127,9 @@ export function swapColors(): void {
   applyToSelection('stroke');
 }
 
-/** Shift+D: yellow fill, black stroke. */
+/** Shift+D: the theme's fill colour and a black stroke. */
 export function resetColors(): void {
-  store().setUi({ fillColor: DEFAULT_FILL, color: DEFAULT_STROKE, strokeOn: true });
+  store().setUi({ fillColor: themeFill(), color: DEFAULT_STROKE, strokeOn: true });
   applyToSelection('fill');
   applyToSelection('stroke');
 }
@@ -129,12 +165,12 @@ registerCommands([
   },
   {
     id: 'colors.reset',
-    label: 'Default colours (yellow fill, black stroke)',
+    label: 'Default colours (theme fill, black stroke)',
     category: 'Colours',
     keys: ['Shift+D'],
-    description: 'Go back to a yellow fill and a black stroke.',
+    description: "Go back to the theme's fill colour and a black stroke.",
     help: 'fill-and-stroke',
-    keywords: ['default', 'reset', 'black', 'white', 'yellow'],
+    keywords: ['default', 'reset', 'black', 'white', 'yellow', 'theme'],
     run: resetColors,
   },
   {
@@ -169,7 +205,7 @@ Rectangles and ellipses use both: the fill inside and the stroke round the edge.
 
 - **X** brings the other box to the front.
 - **Shift+X** swaps the two colours.
-- **Shift+D** goes back to a yellow fill and a black stroke.
+- **Shift+D** goes back to the default colours: a black stroke, and a fill in your theme's highlight colour (gold in most themes, aqua or lavender in others). New shapes start with that fill too, so they show up on white paper.
 - **/** sets the box in front to none.
 
 ## Changing shapes you've already drawn

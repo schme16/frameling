@@ -2,6 +2,7 @@
 // reads the store (or the probe) to know when it's done. Keep the words warm and short.
 import { contentLength } from '../core/doc';
 import { store } from '../core/store';
+import { themeFill } from '../tools/wells';
 import { setDocLength } from '../timeline/ops';
 import { openSheet } from '../ui/overlays';
 import {
@@ -231,7 +232,7 @@ export const FILL_IT_IN: Quest = {
         // White paint on white paper looks like nothing happened, so start with a colour that shows.
         const ui = store().get().ui;
         const fill = ui.fillColor?.toLowerCase();
-        store().setUi({ activeWell: 'fill', ...(!fill || fill === '#ffffff' ? { fillColor: '#ffc94a' } : {}) });
+        store().setUi({ activeWell: 'fill', ...(!fill || fill === '#ffffff' ? { fillColor: themeFill() } : {}) });
       },
       done: (c) => c.edits.some((l) => l === 'Fill' || l === 'Recolour fill'),
       show: () => void demoFill(),

@@ -34,7 +34,7 @@ export function Wells() {
         <button type="button" className="cv-wells-btn" title="Swap fill and stroke (Shift+X)" aria-label="Swap fill and stroke colours" onClick={swapColors}>
           <Icon name="loop" size={14} />
         </button>
-        <button type="button" className="cv-wells-btn" title="Default colours: yellow fill, black stroke (Shift+D)" aria-label="Default colours" onClick={resetColors}>
+        <button type="button" className="cv-wells-btn" title="Default colours: theme fill, black stroke (Shift+D)" aria-label="Default colours" onClick={resetColors}>
           <span className="cv-wells-mini" aria-hidden="true" />
         </button>
         <button type="button" className="cv-wells-btn" title={`No ${active} (/)`} aria-label={`Set ${active} to none`} onClick={setActiveNone}>
