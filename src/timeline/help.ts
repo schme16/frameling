@@ -61,18 +61,7 @@ Press **Alt+1** to **Alt+4** to hold the current drawing for that many frames. T
 
 Example: click the first of three one-frame drawings and press **Alt+2**. It's held for two frames and the others slide along. Do the same to the rest and it plays on twos.
 
-## New drawings carry on until the next one
-
-When you draw on an empty frame, that drawing stays on screen until your next drawing, or to the end of the
-animation. So you can draw on frame 1, then frame 5, then frame 9, press play, and see each drawing in turn with no
-blank gaps. In the timeline a hold like this is a lighter block.
-
-Draw on a later frame of that lighter block and a **new drawing** starts there: the one before stays on the earlier
-frames, and shows faintly behind your new drawing so you can see where it was. Changing what's already there (moving,
-rubbing out, recolouring) works on the drawing you can see.
-
-Pick a hold yourself (**Alt+1** to **Alt+4**, or drag a block's end) and it stays exactly as you set it. Prefer every
-new drawing to last one frame? Change **How long a new drawing lasts** in Preferences > Behaviour.
+A new drawing stays on screen until your next one, so there are no blank gaps. See [New drawings carry on](help:drawings-carry-on).
 
 ## Making and changing keys
 
@@ -116,6 +105,24 @@ Click the little arrow beside the onion for:
 On the ruler, the frames being ghosted are softly shaded in the same colours.
 
 > Ghosts are only for you. They never show up when you play or export.`,
+  },
+  {
+    id: 'drawings-carry-on',
+    title: 'New drawings carry on',
+    section: 'Animating',
+    media: 'drawings-carry-on.mp4',
+    summary: 'A new drawing stays on screen until your next one (or the end), so playing never shows blank gaps.',
+    keywords: ['hold', 'carry on', 'until next', 'blank gap', 'disappears', 'exposure', 'one frame', 'auto hold'],
+    body: `When you draw on an empty frame, that drawing stays on screen until your next drawing, or to the end of the
+animation. So you can draw on frame 1, then frame 5, then frame 9, press play, and see each drawing in turn with no
+blank gaps. In the timeline a hold like this is a lighter block.
+
+Draw on a later frame of that lighter block and a **new drawing** starts there: the one before stays on the earlier
+frames, and shows faintly behind your new drawing so you can see where it was. Changing what's already there (moving,
+rubbing out, recolouring) works on the drawing you can see.
+
+Pick a hold yourself (**Alt+1** to **Alt+4**, or drag a block's end) and it stays exactly as you set it. Prefer every
+new drawing to last one frame? Change **How long a new drawing lasts** in Preferences > Behaviour.`,
   },
   {
     id: 'empty-frame-ghost',

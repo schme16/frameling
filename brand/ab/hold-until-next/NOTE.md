@@ -1,0 +1,1 @@
+A: a new drawing lasts one frame (old). B (default): it carries on until the next drawing or the end; play shows no blank gaps. ab.mp4 is a beginner drawing 3 balls on frames 1, 5, 9 and pressing play.

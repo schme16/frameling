@@ -79,7 +79,7 @@ export interface SubmenuDef {
 export const SUBMENUS: Record<string, SubmenuDef> = {
   export: {
     label: 'Export',
-    items: ['file.export', 'file.exportAgain', '-', 'file.exportInteractives', 'file.exportLottie', 'file.exportSvgAnimated', 'file.exportProres', 'file.exportPsd', 'file.exportPdf', 'file.exportIllustrator', '-', 'file.toggleUpdatePlayable'],
+    items: ['file.export', 'file.exportAgain', '-', 'file.exportInteractives', 'file.exportLottie', 'file.exportSvgAnimated', 'file.exportProres', 'file.exportPsd', 'file.exportPdf', 'file.exportIllustrator', 'tiles.export', '-', 'file.toggleUpdatePlayable'],
     prefixes: ['file.export'],
   },
 };

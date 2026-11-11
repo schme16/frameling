@@ -56,7 +56,7 @@ registerChoice<NewKeyHoldChoice>({
   ],
   default: 'until-next',
   category: 'Timeline',
-  help: 'timeline-frames',
+  help: 'drawings-carry-on',
   silent: true,
 });
 
