@@ -2,6 +2,7 @@
 import { createStore, readJson, writeJson } from './mini';
 import { DEFAULT_DARK, DEFAULT_LIGHT, surroundFor, type Theme } from './themes/builtIn';
 import { sanitizeCustomThemes, themeForMode, writeTheme } from './themes/model';
+import { DEFAULT_UNIT, isUnit, type Unit } from '../core/units';
 
 export type ThemePref = 'system' | 'dark' | 'light';
 export type LookPref = 'cosy' | 'crisp';
@@ -27,6 +28,10 @@ export interface Prefs {
   showQuill: boolean;
   /** Tile mode: fade the copies round the tile you're drawing (off shows them at full strength). */
   fadeTileCopies: boolean;
+  /** How sizes are shown: pixels, or mm, cm, inches or points at the document's DPI. */
+  units: Unit;
+  /** The first-run hello from Quill has been seen (or skipped). */
+  onboarded: boolean;
   /** Command id -> its shortcuts. An empty list means "no shortcut". Missing means "use the default". */
   keymap: Record<string, string[]>;
 }
@@ -45,6 +50,8 @@ export const DEFAULT_PREFS: Prefs = {
   showTips: true,
   showQuill: true,
   fadeTileCopies: false,
+  units: DEFAULT_UNIT,
+  onboarded: false,
   keymap: {},
 };
 
@@ -74,6 +81,8 @@ export function migratePrefs(raw: unknown): Prefs {
     showTips: bool(r.showTips, DEFAULT_PREFS.showTips),
     showQuill: bool(r.showQuill, DEFAULT_PREFS.showQuill),
     fadeTileCopies: bool(r.fadeTileCopies, DEFAULT_PREFS.fadeTileCopies),
+    units: isUnit(r.units) ? r.units : DEFAULT_PREFS.units,
+    onboarded: bool(r.onboarded, DEFAULT_PREFS.onboarded),
     keymap,
   };
 }

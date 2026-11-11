@@ -21,6 +21,7 @@ import { ToolStrip } from '../ui/ToolStrip';
 import { TooltipLayer } from '../ui/Tooltips';
 import { TopBar } from '../ui/TopBar';
 import { WelcomeSheet } from '../ui/Welcome';
+import { maybeOnboard, OnboardingSheet } from '../ui/onboarding';
 
 let welcomed = false;
 
@@ -35,7 +36,8 @@ export function App() {
 
   useEffect(() => {
     const off = [installKeyboard(), trackHover()];
-    if (!welcomed && getPrefs().showWelcome) openSheet('welcome');
+    // The first time, Quill's hello comes instead of the welcome sheet.
+    if (!welcomed && !maybeOnboard() && getPrefs().showWelcome) openSheet('welcome');
     welcomed = true;
     return () => off.forEach((f) => f());
   }, []);
@@ -64,6 +66,7 @@ export function App() {
       <AskDialog />
       <HelpWindow />
       <WelcomeSheet />
+      <OnboardingSheet />
       <AboutDialog />
       <ToastView />
       <TooltipLayer />

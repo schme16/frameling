@@ -1,5 +1,6 @@
 // Help for everything the shell does. Short words, what it does first, then how.
 import { registerHelpTopics } from '../core/registry';
+import './onboarding/help';
 
 registerHelpTopics([
   {
@@ -13,7 +14,7 @@ registerHelpTopics([
 
 ## Starting
 
-When Frameling opens, pick a card on the welcome sheet:
+The very first time, [Quill says hello](help:first-run) and helps you set things up. After that, when Frameling opens, pick a card on the welcome sheet:
 
 - **Doodle** is a wide, roomy page for sketching and cartoons.
 - **Square** is good for icons and posts.
@@ -139,7 +140,7 @@ Press the small **x** on a shortcut to remove it. **Reset** puts a command back 
 
 There are five pages:
 
-- **General**: [mode and look](help:look-and-feel), sounds, motion, the welcome sheet and [Show Quill](help:meet-quill).
+- **General**: [mode and look](help:look-and-feel), [units](help:units), sounds, motion, the welcome sheet and [Show Quill](help:meet-quill).
 - **Themes**: pick [themes](help:themes) and [make your own](help:make-your-own-theme).
 - **Behaviour**: [the choices Frameling asked you about](help:behaviour), like what N does.
 - **Keyboard**: see and change [shortcuts](help:keyboard-shortcuts).
