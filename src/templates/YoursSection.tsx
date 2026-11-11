@@ -29,13 +29,15 @@ export function SourceCards({ source, onPick, thumb }: { source: TemplateSource;
       {list.map((t) => (
         <div key={t.id} className="tpl-card-wrap">
           <button type="button" className="ui-example" onClick={() => onPick(t.make(), t.name.toLowerCase())} data-tip={t.author ? `By ${t.author}` : undefined} data-tip-desc={t.tags?.length ? t.tags.join(', ') : undefined}>
-            <span className="ui-example-art">{thumb(t)}</span>
-            <span className="ui-example-head">
-              <strong>{t.name}</strong>
-              <span className={`ui-badge ui-badge-${t.kind}`}>
+            <span className="ui-example-art">
+              {thumb(t)}
+              <span className={`ui-badge ui-badge-${t.kind} ui-example-badge`}>
                 <Icon name={t.kind === 'pixel' ? 'pixel' : 'vector'} size={12} />
                 {t.kind === 'pixel' ? 'Pixel' : 'Vector'}
               </span>
+            </span>
+            <span className="ui-example-head">
+              <strong>{t.name}</strong>
             </span>
             {t.blurb && <span className="ui-preset-blurb">{t.blurb}</span>}
           </button>

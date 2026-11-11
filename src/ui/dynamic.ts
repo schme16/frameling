@@ -5,6 +5,7 @@ import { allPanels, allTools, getCommand, registerCommand, type Command } from '
 import { findLayer } from '../core/doc';
 import type { LayerKind } from '../core/format';
 import { store } from '../core/store';
+import { pickTool } from '../tools/pick';
 import { applyWorkspace, currentWorkspace, isVisible, listWorkspaces, togglePanel } from './dock';
 
 const mine = new Map<string, string>();
@@ -43,7 +44,7 @@ export function syncDynamicCommands(): void {
       keywords: ['tool'],
       enabled: () => toolEnabled(t.layers),
       checked: (s) => s.ui.tool === t.id,
-      run: () => store().setUi({ tool: t.id }),
+      run: () => pickTool(t.id),
     });
   }
   for (const p of allPanels()) {

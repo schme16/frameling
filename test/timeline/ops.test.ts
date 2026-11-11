@@ -119,6 +119,27 @@ describe('duplicate key', () => {
   });
 });
 
+describe('copy an earlier key onto an empty frame', () => {
+  it('copies the last drawing before the frame, holding to the next key', () => {
+    const d = docWith([[0, 1], [6, 1]]);
+    const id = core.copyEarlierKey(d, L(d).id, 3);
+    expect(id).toBeTruthy();
+    expect(shape(L(d))).toEqual([[0, 1], [3, 3], [6, 1]]);
+    expect(L(d).cels[1].drawingId).not.toBe(L(d).cels[0].drawingId);
+    expect(isTidy(L(d))).toBe(true);
+  });
+  it('holds one frame when nothing comes after', () => {
+    const d = docWith([[0, 2]]);
+    core.copyEarlierKey(d, L(d).id, 5);
+    expect(shape(L(d))).toEqual([[0, 2], [5, 1]]);
+  });
+  it('does nothing on a frame that has a drawing, or with nothing earlier', () => {
+    const d = docWith([[2, 3]]);
+    expect(core.copyEarlierKey(d, L(d).id, 3)).toBeNull();
+    expect(core.copyEarlierKey(d, L(d).id, 0)).toBeNull();
+  });
+});
+
 describe('clear and delete key', () => {
   it('clear keeps the hold but swaps the drawing', () => {
     const d = docWith([[0, 3]]);
@@ -421,6 +442,13 @@ describe('applied ops: undo, labels and locking', () => {
     const s = storeWith([[0, 1]]);
     ops.duplicateKey();
     expect(s.get().ui.frame).toBe(1);
+  });
+  it('on an empty frame after a drawing, copies that drawing here and stays put', () => {
+    const s = storeWith([[0, 1]]);
+    s.setUi({ frame: 4 });
+    expect(ops.duplicateKey()).toMatchObject({ ok: true });
+    expect(shape(s.get().doc.layers[0])).toEqual([[0, 1], [4, 1]]);
+    expect(s.get().ui.frame).toBe(4);
   });
   it('refuses to edit a locked layer', () => {
     const s = storeWith([[0, 2]]);

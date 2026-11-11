@@ -299,13 +299,18 @@ export function makeTween(layerId?: Id, frame?: number, kind: 'classic' | 'shape
   const d0 = doc.drawings[cel.drawingId];
   if (!camera && (d0?.kind !== 'vector' || !d0.shapes.length)) return say('Draw something first: in-betweens move a drawing from one key to the next.');
   const hasNext = !!nextKey(layer, cel) || layer.cels.some((c) => c.start >= cel.start + cel.length);
-  if (!hasNext && f === cel.start && cel.length < 2) return say('Hold this drawing for a few frames first (drag its end in the timeline), so there is room to move.');
+  // A lone one-frame drawing has no room to move: hold it for about a second first, so the tween just works.
+  const room = !hasNext && f === cel.start && cel.length < 2 ? Math.max(2, Math.min(doc.fps, 48)) : 0;
 
   let endFrame = -1;
   let wrapped = false;
   store().update('Make in-betweens', (dd) => {
     const l = dd.layers.find((x) => x.id === layer.id)!;
     const a = l.cels.find((c) => c.id === cel.id)!;
+    if (room) {
+      a.length = room;
+      dd.length = Math.max(dd.length, a.start + room);
+    }
     const before = Object.keys(dd.symbols ?? {}).length;
     // A morph changes the shapes themselves, so they stay plain shapes.
     if (kind === 'classic') wrapIfPlain(dd, a.drawingId, 'Moving part');

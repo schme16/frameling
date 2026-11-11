@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { defaultSettings, fileSafe, frameNumber, outputSize, planExport, resolveRange, scaleChoices, slug } from '../../src/export/plan';
+import { defaultSettings, drawnFrames, fileSafe, frameNumber, outputSize, planExport, resolveRange, scaleChoices, slug } from '../../src/export/plan';
 import { DEFAULT_SHEET, type ExportSettings } from '../../src/export/types';
 import { sampleDoc } from './helpers';
 
@@ -43,5 +43,20 @@ describe('export plan', () => {
     expect(planExport(doc, base({ format: 'gif', range: 'clip', clipId: null }), 0).problem).toMatch(/Pick which clip/);
     expect(planExport(doc, base({ scale: 9999 }), 0).problem).toMatch(/bigger than/);
     expect(planExport(doc, base({ format: 'gif' }), 0).problem).toBeNull();
+  });
+});
+
+describe('drawn frames', () => {
+  const docOf = (cels: [number, number][], length: number, audio = false) => {
+    const d = sampleDoc();
+    return { ...d, length, audio: audio ? [{} as never] : undefined, layers: [{ ...d.layers[0], cels: cels.map(([start, len], i) => ({ id: `c${i}`, start, length: len, drawingId: 'x' })) }] };
+  };
+  it('says where the drawings stop when the end is empty', () => {
+    expect(drawnFrames(docOf([[0, 1], [1, 1], [2, 2]], 24))).toBe(4);
+  });
+  it('is null when the drawings reach the end, nothing is drawn, or there are sounds', () => {
+    expect(drawnFrames(docOf([[0, 24]], 24))).toBeNull();
+    expect(drawnFrames(docOf([], 24))).toBeNull();
+    expect(drawnFrames(docOf([[0, 2]], 24, true))).toBeNull();
   });
 });

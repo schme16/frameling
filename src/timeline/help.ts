@@ -62,7 +62,7 @@ Example: you have three drawings of a bouncing ball, each one frame long. Click 
 ## Making and changing keys
 
 - **New blank drawing (N):** starts an empty drawing here. If you're in the middle of a hold, the hold is cut in two, and the new drawing starts at your frame.
-- **Copy this drawing to the next frame (D):** a copy to nudge into the next pose. If the next frame is still part of a hold it just becomes its own drawing. If another drawing is already there, the later ones shift along to make room.
+- **Copy this drawing to the next frame (D):** a copy to nudge into the next pose. If the next frame is still part of a hold it just becomes its own drawing. If another drawing is already there, the later ones shift along to make room. On an empty frame (say you clicked a few frames ahead), it copies the last drawing to that frame instead, so you can carry on from where you were.
 - **Clear this drawing:** wipes it clean but keeps the frame and its hold.
 - **Make these frames empty:** takes the drawing away completely.
 

@@ -3,6 +3,7 @@ import { newDoc, newVectorDrawing } from '../../src/core/doc';
 import type { PathShape } from '../../src/core/format';
 import { resetStore } from '../../src/core/store';
 import { activeColor, resetColors, setActiveColor, setActiveNone, swapColors, toggleWell } from '../../src/tools/wells';
+import { pickTool, wellForTool } from '../../src/tools/pick';
 
 function setup() {
   const doc = newDoc();
@@ -63,5 +64,26 @@ describe('fill and stroke boxes', () => {
     expect(shapeOf(s).stroke?.color).toBe('#000000');
     s.undo();
     expect(shapeOf(s).fill).toBe('#ffffff');
+  });
+});
+
+describe('tools bring their colour box forward', () => {
+  it('the bucket brings the fill, line tools the stroke, others leave it', () => {
+    expect(wellForTool('fill')).toBe('fill');
+    expect(wellForTool('pencil')).toBe('stroke');
+    expect(wellForTool('rect')).toBeNull();
+    expect(wellForTool('select')).toBeNull();
+  });
+  it('so a swatch picked after choosing the bucket is what it pours', () => {
+    const s = setup();
+    pickTool('fill');
+    setActiveColor('#ff0000');
+    expect(s.get().ui.fillColor).toBe('#ff0000');
+    pickTool('rect');
+    expect(s.get().ui.activeWell).toBe('fill');
+    pickTool('brush');
+    setActiveColor('#00ff00');
+    expect(s.get().ui.color).toBe('#00ff00');
+    expect(s.get().ui.fillColor).toBe('#ff0000');
   });
 });

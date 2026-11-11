@@ -40,7 +40,7 @@ export function RigPanel() {
 
   if (!rig || !rig.rig.bones.length)
     return (
-      <div className="cv-options rg-panel" data-help="rig">
+      <div className="cv-panel cv-options rg-panel" data-help="rig">
         <Tip>
           No bones yet. Bones let you pose a character by dragging its arms and legs, like a puppet, and the frames in between move on their own.
         </Tip>
@@ -65,7 +65,7 @@ export function RigPanel() {
   };
 
   return (
-    <div className="cv-options rg-panel" data-help="rig">
+    <div className="cv-panel cv-options rg-panel" data-help="rig">
       <h3 className="rg-head">Bones</h3>
       <ul className="rg-bones" aria-label="Bones">
         {tree.map(({ bone, depth }) => (

@@ -72,5 +72,11 @@ export function isBlankDoc(doc: Doc): boolean {
 export function sizeLabel(doc: Doc): string {
   const px = doc.layers.find((l) => l.kind === 'pixel');
   if (px && px.kind === 'pixel' && doc.layers.every((l) => l.kind === 'pixel')) return `${Math.ceil(doc.width / px.pixelSize)} x ${Math.ceil(doc.height / px.pixelSize)} pixels`;
+  const map = doc.layers.find((l) => l.kind === 'tilemap');
+  if (map && doc.tileset && doc.layers.every((l) => l.kind === 'tilemap')) {
+    const cols = Math.ceil(doc.width / (doc.tileset.tileWidth * map.pixelSize));
+    const rows = Math.ceil(doc.height / (doc.tileset.tileHeight * map.pixelSize));
+    return `${cols} x ${rows} tiles`;
+  }
   return `${doc.width} x ${doc.height}`;
 }

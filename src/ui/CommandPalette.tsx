@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { syncDynamicCommands, isStaleCommand } from './dynamic';
 import { effectiveKeys } from './keys';
 import { openHelp, overlays, closePalette } from './overlays';
-import { commandEnabled, noteRecentCommand, paletteItems, rankPalette, runCommand, type PaletteHit } from './palette';
+import { commandEnabled, noteRecentCommand, notNowMessage, paletteItems, rankPalette, runCommand, type PaletteHit } from './palette';
+import { toast } from './toast';
 import { Icon } from './icons';
 import { Keys } from './ShortcutChip';
 import { Modal } from './Modal';
@@ -39,7 +40,12 @@ function PaletteDialog() {
       return;
     }
     const c = hit.item.command;
-    if (!commandEnabled(c)) return;
+    if (!commandEnabled(c)) {
+      // Say why nothing happened, with a way to find out more.
+      const help = c.help;
+      toast(notNowMessage(c), { kind: 'info', action: help ? { label: 'Read about it', run: () => openHelp(help) } : undefined });
+      return;
+    }
     closePalette();
     noteRecentCommand(c.id);
     // Let the palette close and focus return before the command runs, so commands that open things keep their focus.

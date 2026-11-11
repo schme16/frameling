@@ -101,12 +101,16 @@ export interface Plan {
   quest: string;
   /** Help topic ids worth a look, best first. */
   help: string[];
+  /** Template for "Just a blank page", when the plain starting page doesn't suit (pixel art wants a pixel grid). */
+  blank?: string;
+  /** A panel to bring to the front, when the workspace's first one isn't where this kind of work starts. */
+  panel?: string;
 }
 
 const PLANS: Record<Interest, Plan> = {
   cartoons: { workspace: 'animate', template: 'bouncing-ball', quest: 'bouncing-ball', help: ['timeline-onion', 'tool-brush', 'timeline-frames'] },
-  sprites: { workspace: 'pixel', template: 'hero-sprites', quest: 'pixel-pal', help: ['pixel-art', 'palette', 'export-sprite-sheets'] },
-  tiles: { workspace: 'pixel', template: 'tileset', quest: 'tiles', help: ['tileset', 'tilemaps', 'export-godot'] },
+  sprites: { workspace: 'pixel', template: 'hero-sprites', quest: 'pixel-pal', help: ['pixel-art', 'palette', 'export-sprite-sheets'], blank: 'blank-pixel' },
+  tiles: { workspace: 'pixel', template: 'tileset', quest: 'tiles', help: ['tileset', 'tilemaps', 'export-godot'], blank: 'blank-level', panel: 'tileset' },
   motion: { workspace: 'animate', template: 'bouncing-logo', quest: 'bouncing-ball', help: ['tweens', 'easing', 'motion-paths'] },
   interactives: { workspace: 'animate', template: 'blink', quest: 'share-it', help: ['export-interactives', 'timeline-clips', 'symbols'] },
   play: { workspace: 'draw', template: 'blank-vector', quest: 'fill-it-in', help: ['tool-brush', 'command-palette', 'examples'] },
@@ -126,7 +130,7 @@ export function planFor(interests: readonly Interest[], completedQuests: readonl
   for (const id of picks.length ? picks : (['play'] as Interest[])) for (const h of PLANS[id].help) if (!help.includes(h)) help.push(h);
   let quest = FIRST_QUEST;
   if (completedQuests.includes(FIRST_QUEST)) quest = picks.map((id) => PLANS[id].quest).find((q) => !completedQuests.includes(q)) ?? lead.quest;
-  return { workspace: lead.workspace, template: lead.template, quest, help: help.slice(0, 4) };
+  return { workspace: lead.workspace, template: lead.template, quest, help: help.slice(0, 4), ...(lead.blank ? { blank: lead.blank } : {}), ...(lead.panel ? { panel: lead.panel } : {}) };
 }
 
 // ---------------------------------------------------------------- silly names
