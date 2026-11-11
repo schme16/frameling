@@ -1,4 +1,4 @@
-import { newDoc } from '../core/doc';
+import { newDoc, uid } from '../core/doc';
 import type { Doc } from '../core/format';
 import {
   addClip, addMarker, addPixelLayer, blankGrid, emptyOf, hold, pixelDrawing, stamp, swatchesFrom,
@@ -195,5 +195,21 @@ export function makeHeroSprite(): Doc {
   // Feet hit the ground on the two contact frames of the run.
   addMarker(doc, 'footstep', 4);
   addMarker(doc, 'footstep', 7);
+  // The clip flow a game would use: idle and run swap on triggers, the one-shots go back to idle at their end.
+  const id = (name: string) => doc.clips.find((c) => c.name === name)!.id;
+  doc.flow = {
+    start: id('idle'),
+    transitions: [
+      { id: uid('t'), from: id('idle'), to: id('run'), when: 'trigger', trigger: 'run' },
+      { id: uid('t'), from: id('run'), to: id('idle'), when: 'trigger', trigger: 'stop' },
+      { id: uid('t'), from: id('idle'), to: id('jump'), when: 'trigger', trigger: 'jump' },
+      { id: uid('t'), from: id('run'), to: id('jump'), when: 'trigger', trigger: 'jump' },
+      { id: uid('t'), from: id('jump'), to: id('idle'), when: 'end' },
+      { id: uid('t'), from: id('idle'), to: id('hurt'), when: 'trigger', trigger: 'hit' },
+      { id: uid('t'), from: id('hurt'), to: id('idle'), when: 'end' },
+      { id: uid('t'), from: id('hurt'), to: id('die'), when: 'trigger', trigger: 'hit' },
+    ],
+    positions: { [id('idle')]: { x: 10, y: 100 }, [id('run')]: { x: 190, y: 14 }, [id('jump')]: { x: 190, y: 186 }, [id('hurt')]: { x: 10, y: 270 }, [id('die')]: { x: 190, y: 340 } },
+  };
   return doc;
 }

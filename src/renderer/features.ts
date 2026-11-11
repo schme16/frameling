@@ -7,6 +7,8 @@ import '../tools';
 import '../geometry';
 import '../timeline';
 import '../symbols';
+import '../camera';
+import '../flow';
 import '../io';
 import '../platform/help';
 import '../export';
