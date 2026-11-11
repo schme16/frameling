@@ -12,6 +12,8 @@ import { buildSheetFiles } from './engines';
 import { playablePackage } from './playable';
 import { saveFile } from '../io/file';
 import { frameToSvg } from './svg';
+import { animatedSvg } from './svg-anim';
+import { lottieJson } from './lottie';
 import { formatInfo, type ExportSettings } from './types';
 import { BT709_LIMITED, rgbaToI420 } from './yuv';
 
@@ -75,6 +77,16 @@ export async function runExport(ctx: RunContext): Promise<RunResult> {
     case 'svg': {
       step(0, 'Writing the drawing');
       const svg = frameToSvg(doc, plan.range.start, { scale: settings.scale, transparent: bg === 'none' });
+      return { kind: 'file', name: `${plan.name}.svg`, bytes: strToU8(svg) };
+    }
+    case 'lottie': {
+      step(0, 'Writing the animation');
+      const json = lottieJson(doc, { range: plan.range, transparent: bg === 'none' });
+      return { kind: 'file', name: `${plan.name}.json`, bytes: strToU8(json) };
+    }
+    case 'svganim': {
+      step(0, 'Writing the animation');
+      const svg = animatedSvg(doc, { range: plan.range, scale: settings.scale, transparent: bg === 'none', loop: settings.loop });
       return { kind: 'file', name: `${plan.name}.svg`, bytes: strToU8(svg) };
     }
     case 'pngseq': {
