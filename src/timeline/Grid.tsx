@@ -79,14 +79,8 @@ const GridRow = memo(function GridRow({ layer, cw, from, to, active }: { layer: 
 /** In-betweens on a key: a band with an arrow to the next key (dashed when the keys don't touch). */
 function TweenBar({ layer, cel, cw }: { layer: Layer; cel: Cel; cw: number }) {
   const next = nextKey(layer, cel);
-  const beads: number[] = [];
-  if (next) for (let i = 1; i < cel.length; i++) beads.push(ease(cel.tween!.ease, i / cel.length) * cel.length * cw);
   return (
-    <span className={`tl-tween${next ? '' : ' is-broken'}`} style={{ left: Math.min(cw, cel.length * cw) - 2, right: 0 }} title={next ? 'In-betweens: Frameling draws these frames' : "In-betweens with no key straight after, so nothing moves"}>
-      {beads.map((x, i) => (
-        <i key={i} className="tl-tween-bead" style={{ left: x - Math.min(cw, cel.length * cw) + 2 }} />
-      ))}
-    </span>
+    <span className={`tl-tween${next ? '' : ' is-broken'}`} style={{ left: Math.min(cw, cel.length * cw) - 2, right: 0 }} title={next ? 'In-betweens: Frameling draws these frames' : "In-betweens with no key straight after, so nothing moves"} />
   );
 }
 
