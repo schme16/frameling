@@ -68,3 +68,17 @@ describe('picking a command that cannot run', () => {
     expect(notNowMessage({ label: 'Do a thing' })).toMatch(/Try selecting something/);
   });
 });
+
+describe('doing beats reading', () => {
+  it('a command with a word starting with the query outranks a help page whose title starts with it', () => {
+    const its = paletteItems([c('view.themes', 'Choose themes...', { category: 'View' })], [t('themes', 'Themes', 'Pick the colours.')]);
+    expect(rankPalette('theme', its, [])[0].item.id).toBe('view.themes');
+  });
+});
+
+describe('filler words', () => {
+  it('finds the command in a plain sentence', () => {
+    expect(top('how do i make it play')[0]).toBe('command:timeline.play');
+    expect(top('the undo')[0]).toBe('command:edit.undo');
+  });
+});

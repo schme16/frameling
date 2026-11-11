@@ -4,7 +4,7 @@ import { findLayer } from '../core/doc';
 import type { LayerKind } from '../core/format';
 import { store, useStore } from '../core/store';
 import { syncDynamicCommands } from './dynamic';
-import { pickTool } from '../tools/wells';
+import { pickTool } from '../tools/pick';
 import { Icon } from './icons';
 
 /** The kind of layer being drawn on (the last one when none is picked), or null with no layers. */

@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { newDoc, newVectorDrawing } from '../../src/core/doc';
 import type { PathShape } from '../../src/core/format';
 import { resetStore } from '../../src/core/store';
-import { activeColor, pickTool, resetColors, setActiveColor, setActiveNone, swapColors, toggleWell, wellForTool } from '../../src/tools/wells';
+import { activeColor, resetColors, setActiveColor, setActiveNone, swapColors, toggleWell } from '../../src/tools/wells';
+import { pickTool, wellForTool } from '../../src/tools/pick';
 
 function setup() {
   const doc = newDoc();

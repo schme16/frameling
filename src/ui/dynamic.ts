@@ -5,7 +5,7 @@ import { allPanels, allTools, getCommand, registerCommand, type Command } from '
 import { findLayer } from '../core/doc';
 import type { LayerKind } from '../core/format';
 import { store } from '../core/store';
-import { pickTool } from '../tools/wells';
+import { pickTool } from '../tools/pick';
 import { applyWorkspace, currentWorkspace, isVisible, listWorkspaces, togglePanel } from './dock';
 
 const mine = new Map<string, string>();
