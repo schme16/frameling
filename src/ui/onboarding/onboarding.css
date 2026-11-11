@@ -1,6 +1,6 @@
 /*
- * Quill's first-run hello. Layout A (built): a full-window sheet with Quill large on the left and the step on the
- * right. Layout B (A/B only, swap the class to ob-b): a smaller centred card with Quill above the step.
+ * Quill's first-run hello: a full-window sheet with Quill large on the left and the step on the right (picked on the
+ * board over a smaller centred card).
  * Colours come from theme tokens only.
  */
 
@@ -106,9 +106,26 @@
 /* Hello: five little feature tiles. */
 .ob-hello {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 14px;
   margin-top: 12px;
+}
+/* Five tiles: three across the top, two wider ones under them. */
+.ob-hello .ob-feature {
+  grid-column: span 2;
+  min-height: 132px;
+}
+.ob-hello .ob-feature:nth-child(n + 4) {
+  grid-column: span 3;
+}
+@media (max-width: 760px) {
+  .ob-hello {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .ob-hello .ob-feature,
+  .ob-hello .ob-feature:nth-child(n + 4) {
+    grid-column: span 1;
+  }
 }
 .ob-feature {
   display: flex;
@@ -170,7 +187,8 @@
 }
 .ob-card.is-chosen {
   border-color: var(--chosen-bg);
-  background: color-mix(in srgb, var(--chosen-bg) 14%, var(--panel-2));
+  background: color-mix(in srgb, var(--chosen-bg) 18%, var(--panel-2));
+  box-shadow: 0 0 0 1px var(--chosen-bg), var(--shadow-small);
 }
 .ob-card.is-chosen .ob-card-icon {
   background: var(--chosen-bg);
@@ -375,47 +393,6 @@
   background: var(--chosen-bg);
 }
 
-/* Layout B: a smaller centred card, Quill above the step at half the size. Only used for the A/B picture. */
-.ui-modal.ob.ob-b {
-  width: min(720px, calc(100vw - 48px));
-  height: auto;
-  max-height: calc(100vh - 48px);
-}
-.ob-b .ob-body {
-  grid-template-columns: 1fr;
-}
-.ob-b .ob-quill {
-  flex-direction: row-reverse;
-  align-items: flex-end;
-  justify-content: flex-end;
-  padding: 18px 20px 0;
-  border-right: none;
-  border-bottom: 1px solid var(--line-soft);
-}
-.ob-b .ob-quill-stand {
-  min-height: 0;
-  padding: 0;
-}
-.ob-b .ob-berry {
-  left: 72px;
-  bottom: 40px;
-}
-.ob-b .ob-bubbles {
-  flex: 1;
-  padding-bottom: 12px;
-}
-.ob-b .ob-bubble {
-  font-size: 14px;
-}
-.ob-b .ob-quill:not(.is-alone) .ob-bubble:last-child::after {
-  left: -7px;
-  bottom: 14px;
-  transform: rotate(135deg);
-}
-.ob-b .ob-main {
-  padding: 18px 22px 8px;
-}
-
 @keyframes ob-pop {
   from {
     opacity: 0;
@@ -459,4 +436,25 @@
     border-right: none;
     border-bottom: 1px solid var(--line-soft);
   }
+}
+
+/* The Auto / Light / Dark choice leads the theme step. */
+.ob-mode {
+  margin-bottom: 6px;
+}
+.ob-mode h3 {
+  margin: 0 0 2px;
+  font-size: 14px;
+}
+.ob-mode p {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: var(--fs-small);
+}
+.ob-theme-row.is-unused {
+  opacity: 0.5;
+}
+.ob-theme-row.is-unused:hover,
+.ob-theme-row.is-unused:focus-within {
+  opacity: 1;
 }

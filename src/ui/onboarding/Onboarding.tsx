@@ -116,8 +116,6 @@ function Flow() {
   const pickedTheme = (mode: 'dark' | 'light') => themes.find((t) => t.id === (mode === 'dark' ? p.darkTheme : p.lightTheme));
   const loved = [pickedTheme('dark'), pickedTheme('light')].find((t) => isStrawberry(t));
   const lovesIt = !!loved;
-  // Layout B is only for the A/B picture: a smaller card with a smaller Quill.
-  const layoutB = document.documentElement.dataset.obLayout === 'b';
 
   const say = sayFor(s, { strawberryName: loved?.name ?? strawberry.light?.name ?? strawberry.dark?.name ?? 'Strawberry', lovesIt, quillOn: p.showQuill, name: s.name, plan });
   const anim: Script = mood
@@ -143,7 +141,7 @@ function Flow() {
   const last = s.step === 'done';
 
   return (
-    <Modal title={`Welcome to Frameling: ${TITLES[s.step]}`} size="lg" hideHeader className={`ob ${layoutB ? 'ob-b' : 'ob-a'}`} onClose={() => end('skipped')} initialFocus=".ob-next, .ob-go">
+    <Modal title={`Welcome to Frameling: ${TITLES[s.step]}`} size="lg" hideHeader className="ob ob-a" onClose={() => end('skipped')} initialFocus=".ob-next, .ob-go">
       <div className="ob-body" onPointerDown={poke} onKeyDown={poke}>
         <aside className={`ob-quill${quill ? '' : ' is-alone'}`}>
           <div className="ob-bubbles" aria-live="polite" key={`${s.step}-${dozing}-${mood?.n ?? 0}`}>
@@ -157,7 +155,7 @@ function Flow() {
             <div className="ob-quill-stand">
               <Quill
                 anim={anim}
-                size={layoutB ? 96 : 192}
+                size={192}
                 force={byePlaying}
                 onDone={byePlaying ? () => setMood((m) => m && { ...m, playing: false }) : undefined}
               />
@@ -345,8 +343,10 @@ function Themes({ themes, strawberry }: { themes: Theme[]; strawberry: { dark: T
   };
   const row = (mode: 'dark' | 'light') => {
     const chosen = mode === 'dark' ? p.darkTheme : p.lightTheme;
+    // With Light or Dark picked, the other row isn't used, so it steps back (still pickable for later).
+    const unused = p.theme !== 'system' && p.theme !== mode;
     return (
-      <div className="ob-theme-row">
+      <div className={`ob-theme-row${unused ? ' is-unused' : ''}`}>
         <h3>
           <Icon name={mode === 'dark' ? 'moon' : 'sun'} size={14} />
           {mode === 'dark' ? 'For dark mode' : 'For light mode'}
@@ -377,17 +377,18 @@ function Themes({ themes, strawberry }: { themes: Theme[]; strawberry: { dark: T
   };
   return (
     <>
-      <div className="ob-row">
-        <span>Mode</span>
+      <div className="ob-mode">
+        <h3>Light or dark?</h3>
+        <p>{p.theme === 'system' ? 'Auto follows your computer: light in the day, dark at night if it switches.' : p.theme === 'dark' ? 'Always dark, whatever your computer does.' : 'Always light, whatever your computer does.'}</p>
         <Segmented<ThemePref>
-          label="Mode"
+          label="Light or dark"
           value={p.theme}
           onChange={(theme) => {
             setThemePreview(null);
             setPrefs({ theme });
           }}
           options={[
-            { id: 'system', label: 'System', icon: 'settings' },
+            { id: 'system', label: 'Auto', icon: 'settings' },
             { id: 'dark', label: 'Dark', icon: 'moon' },
             { id: 'light', label: 'Light', icon: 'sun' },
           ]}
