@@ -52,9 +52,14 @@ export const MENUS: MenuDef[] = [
     items: ['rig.addBones', 'tools.bone', 'tools.pose', '-', 'rig.autoAttach', 'rig.bendLayer', 'rig.detachLayer', '-', 'rig.togglePin', 'rig.resetPose', 'rig.mirrorPose', 'rig.swapSides', 'rig.savePose', '-', 'view.panel.rig', 'rig.boneLook'],
   },
   {
+    label: 'Effects',
+    categories: ['Effects'],
+    items: ['view.panel.effects', '-', 'effects.add.blur', 'effects.add.glow', 'effects.add.shadow', 'effects.add.adjust', 'effects.add.outline', 'effects.add.pixelate', '-', 'layers.clipToBelow', 'layers.useAsMask', '-', 'layers.newFolder', 'layers.ungroupFolder', '-', 'effects.reset'],
+  },
+  {
     label: 'Help',
     categories: ['Help'],
-    items: ['help.contents', 'quests.open', 'file.openExample', 'help.shortcuts', 'help.welcome', '-', 'help.about'],
+    items: ['help.contents', 'quests.open', 'file.openExample', 'help.shortcuts', 'help.welcome', 'help.meetQuill', '-', 'help.about'],
   },
 ];
 

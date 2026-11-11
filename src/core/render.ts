@@ -9,6 +9,9 @@ import { getStroke } from 'perfect-freehand';
 import type { Color, Doc, Drawing, FillShape, Layer, PathShape, PixelDrawing, Shape, StrokeShape, SubPath } from './format';
 import { isPosed, poseAt, type PosedInstance, type PosedLayer } from './symbols';
 import { drawTilemap } from './tilemap';
+import { compositePlan, EffectCache } from '../effects/composite';
+import { buildPlan } from '../effects/plan';
+import { needsCompositor } from '../effects/model';
 
 export type Ctx2D = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 
@@ -384,11 +387,28 @@ export function renderFrame(g: Ctx2D, doc: Doc, frame: number, opts: RenderOptio
     g.fillStyle = doc.background;
     g.fillRect(0, 0, doc.width, doc.height);
   }
+  if (needsCompositor(doc)) {
+    renderComposited(g, doc, frame, opts);
+    return;
+  }
   for (const layer of doc.layers) {
     if (!opts.includeHidden && !layer.visible) continue;
     if (opts.layerFilter && !opts.layerFilter(layer)) continue;
     drawLayerAt(g, doc, layer, frame);
   }
+}
+
+// Effect results for exports and thumbnails, so a held drawing with a glow is blurred once, not every frame.
+const renderEffectCache = new EffectCache(16_000_000);
+
+/** A frame with blend modes, effects, clipping, masks or folders (see src/effects). */
+function renderComposited(g: Ctx2D, doc: Doc, frame: number, opts: RenderOptions): void {
+  const include = (l: Layer) => opts.includeHidden || l.visible;
+  compositePlan(g, doc, frame, buildPlan(doc, include, opts.includeHidden, opts.layerFilter), {
+    paint: (lg, l) => drawLayerAt(lg, doc, l.opacity >= 1 ? l : { ...l, opacity: 1 }, frame),
+    // Tilemaps can animate on their own, so only vector and pixel drawings are reused.
+    key: (l) => (l.kind === 'tilemap' ? undefined : poseAt(doc, l, frame)),
+  }, renderEffectCache);
 }
 
 /** Renders a frame to a new offscreen canvas at `scale` (for exports and thumbnails). */

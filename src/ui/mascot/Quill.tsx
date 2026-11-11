@@ -19,21 +19,23 @@ export interface QuillProps {
   flip?: boolean;
   onDone?: () => void;
   className?: string;
+  /** Show him even with Show Quill off. Only for his goodbye, which plays after the switch is already off. */
+  force?: boolean;
 }
 
 /** True when Quill should show. Bubbles use it to keep their text when he's hidden. */
 export const useShowQuill = (): boolean => usePrefs((p) => p.showQuill);
 
-/** True when a Quill would actually be drawn: turned on, and the art has loaded. */
-export function useQuillShown(): boolean {
+/** True when a Quill would actually be drawn: turned on (or forced, for his goodbye), and the art has loaded. */
+export function useQuillShown(force = false): boolean {
   const show = useShowQuill();
   const ready = quillSheet.use((s) => !!s);
   useEffect(loadQuill, []);
-  return show && ready;
+  return (show || force) && ready;
 }
 
-export function Quill({ anim = 'idle', then, size = 96, flip = false, onDone, className = '' }: QuillProps) {
-  if (!useQuillShown()) return null;
+export function Quill({ anim = 'idle', then, size = 96, flip = false, onDone, className = '', force = false }: QuillProps) {
+  if (!useQuillShown(force)) return null;
   return <QuillSprite anim={anim} then={then} size={size} flip={flip} onDone={onDone} className={className} />;
 }
 

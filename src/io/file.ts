@@ -4,6 +4,7 @@
  * Pure bytes in, bytes out (no DOM, no Electron), so it runs the same in the app and in Node tests. In memory a pixel
  * drawing holds raw RGBA; in the file `doc.json` holds the name of its PNG instead.
  */
+import { readFolders, readLayerLook } from '../effects/io';
 import { strFromU8, strToU8, unzipSync, zipSync, type Zippable } from 'fflate';
 import { FORMAT_VERSION, type Cel, type Doc, type Drawing, type Layer, type Shape, type SymbolDef, type Tween, type InstanceShape, type Tile, type Tileset, type Bone, type BonePose, type LayerBind, type Pose, type Rig, type SavedPose } from '../core/format';
 import { decodePng, encodePng } from './png';
@@ -209,6 +210,7 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
         ...(l.onion === false ? { onion: false } : {}),
         ...(l.reference === true ? { reference: true } : {}),
         ...readBind(l.bind),
+        ...readLayerLook(l),
         cels,
       };
       if (l.kind === 'pixel') layers.push({ ...base, kind: 'pixel', pixelSize: Math.max(1, Math.round(num(l.pixelSize, 1))), ...(l.paletteLock === true ? { paletteLock: true } : {}) });
@@ -230,6 +232,7 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
     width,
     height,
     fps,
+    ...(num(raw.dpi, 0) >= 1 && num(raw.dpi, 0) <= 10000 ? { dpi: num(raw.dpi, 0) } : {}),
     length,
     background: typeof raw.background === 'string' ? raw.background : null,
     layers,
@@ -238,6 +241,7 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
     markers: Array.isArray(raw.markers) ? raw.markers.filter((m: any) => isObj(m) && typeof m.id === 'string') : [],
     swatches: Array.isArray(raw.swatches) ? raw.swatches.filter((s: any) => isObj(s) && typeof s.id === 'string' && typeof s.color === 'string') : [],
     ...readPalette(raw.palette),
+    ...readFolders(raw.folders, layers),
     ...readSymbols(raw.symbols, readLayers, warnings),
   };
   if (tileset) doc.tileset = tileset;

@@ -14,4 +14,5 @@ import '../io';
 import '../platform/help';
 import '../export';
 import '../tiles';
+import '../effects';
 import '../quests';

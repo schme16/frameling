@@ -19,6 +19,7 @@ import { makeTween, removeTween } from '../symbols/ops';
 import '../symbols/symbols.css';
 import { MAX_CW, MIN_CW, setTl, tl, useTl } from './state';
 import { SoundMain, SoundSide } from '../audio/SoundRows';
+import { collapsedFolders, rowOfLayer, timelineRows, useTimelineRows } from '../effects/rows';
 
 export const SIDE_W = 216;
 const RULER_H = 26;
@@ -80,14 +81,8 @@ const GridRow = memo(function GridRow({ layer, cw, from, to, active }: { layer: 
 /** In-betweens on a key: a band with an arrow to the next key (dashed when the keys don't touch). */
 function TweenBar({ layer, cel, cw }: { layer: Layer; cel: Cel; cw: number }) {
   const next = nextKey(layer, cel);
-  const beads: number[] = [];
-  if (next) for (let i = 1; i < cel.length; i++) beads.push(ease(cel.tween!.ease, i / cel.length) * cel.length * cw);
   return (
-    <span className={`tl-tween${next ? '' : ' is-broken'}`} style={{ left: Math.min(cw, cel.length * cw) - 2, right: 0 }} title={next ? 'In-betweens: Frameling draws these frames' : "In-betweens with no key straight after, so nothing moves"}>
-      {beads.map((x, i) => (
-        <i key={i} className="tl-tween-bead" style={{ left: x - Math.min(cw, cel.length * cw) + 2 }} />
-      ))}
-    </span>
+    <span className={`tl-tween${next ? '' : ' is-broken'}`} style={{ left: Math.min(cw, cel.length * cw) - 2, right: 0 }} title={next ? 'In-betweens: Frameling draws these frames' : "In-betweens with no key straight after, so nothing moves"} />
   );
 }
 
@@ -215,8 +210,9 @@ export function TimelineBody() {
   const { from, to } = visibleFrames(view.left, view.width - SIDE_W, cw);
   const contentEnd = useMemo(() => layers.reduce((n, l) => Math.max(n, l.cels.length ? l.cels[l.cels.length - 1].start + l.cels[l.cels.length - 1].length : 0), 0), [layers]);
   const total = Math.max(length, contentEnd) + SLACK;
-  const activeRow = Math.max(0, layers.findIndex((l) => l.id === activeId));
-  const activeDisplayRow = layers.length - 1 - activeRow;
+  // Rows top first, with a header for each layer folder (see effects/rows.ts).
+  const rowList = useTimelineRows();
+  const activeDisplayRow = Math.max(0, rowOfLayer(rowList, activeId));
 
   // Track the scroll position and size.
   useEffect(() => {
@@ -296,10 +292,11 @@ export function TimelineBody() {
   const mainLeft = () => main.current?.getBoundingClientRect().left ?? 0;
   const frameAt = (e: { clientX: number }, clamp = true) => frameAtX(e.clientX - mainLeft(), tl().cw, clamp ? store().get().doc.length - 1 : Infinity);
   const layerAtY = (e: { clientY: number }): Layer | undefined => {
-    const ls = store().get().doc.layers;
+    const rs = timelineRows(store().get().doc, collapsedFolders());
     const y = e.clientY - (rows.current?.getBoundingClientRect().top ?? 0);
-    const i = Math.max(0, Math.min(ls.length - 1, Math.floor(y / ROW_H)));
-    return ls[ls.length - 1 - i];
+    const r = rs[Math.max(0, Math.min(rs.length - 1, Math.floor(y / ROW_H)))];
+    // A folder's header row has no frames of its own.
+    return r?.type === 'layer' ? r.layer : undefined;
   };
   const select = (layerId: Id, frame: number) => store().setUi({ frame, activeLayerId: layerId });
 
@@ -492,7 +489,7 @@ export function TimelineBody() {
 
   const gridStyle = { '--cw': `${cw}px`, '--row-h': `${ROW_H}px`, width: total * cw } as React.CSSProperties;
   const ghostCel = ghost?.kind === 'cel' ? ghost : null;
-  const ghostRow = ghostCel ? layers.length - 1 - layers.findIndex((l) => l.id === ghostCel.layerId) : -1;
+  const ghostRow = ghostCel ? rowOfLayer(rowList, ghostCel.layerId) : -1;
   const bodyStyle = { '--side-w': `${SIDE_W}px` } as React.CSSProperties;
 
   // Drawn here (not in the row) so a marker or clip being dragged shows where it will land.
@@ -531,10 +528,14 @@ export function TimelineBody() {
           {dragMarker ? <i className="tl-ghost-line" style={{ left: dragMarker.frame * cw, top: 0, height: RULER_H + MARKS_H }} /> : null}
           {dragClip ? <i className="tl-ghost-clip" style={{ left: dragClip.start * cw, width: (dragClip.end - dragClip.start + 1) * cw, top: RULER_H + MARKS_H, height: CLIPS_H }} /> : null}
         </div>
-        <div ref={rows} className="tl-rows" data-region="rows" style={{ height: layers.length * ROW_H }}>
-          {[...layers].reverse().map((l) => (
-            <GridRow key={l.id} layer={l} cw={cw} from={from} to={to} active={l.id === activeId} />
-          ))}
+        <div ref={rows} className="tl-rows" data-region="rows" style={{ height: rowList.length * ROW_H }}>
+          {rowList.map((r) =>
+            r.type === 'folder' ? (
+              <div key={`f-${r.folder.id}-${r.layerIds[0]}`} className={`tl-row is-folder${r.folder.visible ? '' : ' is-hidden'}`} style={{ height: ROW_H }} />
+            ) : (
+              <GridRow key={r.layer.id} layer={r.layer} cw={cw} from={from} to={to} active={r.layer.id === activeId} />
+            ),
+          )}
           <span className="tl-beyond" style={{ left: (ghost?.kind === 'length' ? ghost.length : length) * cw }} />
           <Playhead part="rows" cw={cw} activeRow={activeDisplayRow} />
           {ghostCel ? <i className={`tl-ghost-cel${ghostCel.trim ? ' is-trim' : ''}`} style={{ left: ghostCel.start * cw + 1, width: ghostCel.length * cw - 2, top: ghostRow * ROW_H + 3, height: ROW_H - 6 }} /> : null}

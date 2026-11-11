@@ -199,7 +199,7 @@ function layerToSvg(doc: Doc, layer: Layer, frame: number, id: string): string {
   else if (d.kind === 'tilemap') inner = pixelRects(flattenTilemap(doc, d, frame), layer.kind === 'tilemap' ? layer.pixelSize : 1);
   else inner = d.shapes.map(shapeToSvg).filter(Boolean);
   if (!inner.length) return '';
-  const attrs = `id="${esc(id)}"` + (layer.opacity < 1 ? ` opacity="${op(layer.opacity)}"` : '') + (d.kind !== 'vector' ? ' shape-rendering="crispEdges"' : '');
+  const attrs = `id="${esc(id)}"` + (layer.opacity < 1 ? ` opacity="${op(layer.opacity)}"` : '') + (d.kind !== 'vector' ? ' shape-rendering="crispEdges"' : '') + (layer.blend && layer.blend !== 'normal' ? ` style="mix-blend-mode:${layer.blend === 'add' ? 'plus-lighter' : layer.blend}"` : '');
   return `<g ${attrs}>\n${inner.join('\n')}\n</g>`;
 }
 
@@ -211,7 +211,8 @@ export function frameToSvg(doc: Doc, frame: number, opts: SvgOptions = {}): stri
   if (doc.background && !opts.transparent) lines.push(`<rect width="${n2(doc.width)}" height="${n2(doc.height)}"${paint('fill', doc.background, 1)}/>`);
   const used = new Set<string>();
   for (const layer of doc.layers) {
-    if (!layer.visible || layer.reference) continue;
+    // Mask layers are never shown. Effects, clipping and masks aren't in SVG files yet (see docs/effects.md).
+    if (!layer.visible || layer.reference || layer.mask || (layer.folder && doc.folders?.[layer.folder]?.visible === false)) continue;
     let id = layer.name.trim().replace(/[^A-Za-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '') || 'layer';
     if (/^[0-9-]/.test(id)) id = 'layer-' + id;
     while (used.has(id)) id += '_';

@@ -5,6 +5,7 @@ import './ui.css';
 import './commands';
 import './helpTopics';
 import './quests';
+import './onboarding';
 import { HelpPanel } from './HelpBrowser';
 import { applyPrefs } from './prefs';
 
