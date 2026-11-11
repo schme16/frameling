@@ -87,7 +87,7 @@ export function kitchenSinkDoc(): Doc {
   mask.mask = 'show';
   hold(mask, vectorDrawing(doc, [pathShape([rectPath(0, 0, 320, 120)], '#000000', null)]).id, 0, 24);
 
-  // ---- a symbol with a little animation inside, its own tilemap layer and an effect (ignored inside symbols)
+  // ---- a symbol with a little animation inside, its own tilemap layer and an effect inside
   const inner = (r: number) => vectorDrawing(doc, [pathShape([ellipsePath(0, 0, r, r)], ROSE, { color: INK, width: 2 })]);
   const ballLayer: VectorLayer = { id: uid('l'), name: 'Ball', kind: 'vector', visible: true, locked: false, opacity: 1, cels: [], effects: [fx('blur', { radius: 3 })] };
   hold(ballLayer, inner(12).id, 0, 2);

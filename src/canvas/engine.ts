@@ -10,7 +10,7 @@ import { activeLayer } from '../tools/edit';
 import './choices';
 import type { SpaceTapMode, WheelMode } from './choices';
 import * as ctl from './controller';
-import { SpaceTap, wheelIntent } from './input';
+import { pressesControl, SpaceTap, wheelIntent } from './input';
 import { perf } from './perf';
 import { neighbourFrames, upcomingFrames } from '../timeline/playback';
 import { FramePainter } from './pipeline';
@@ -474,6 +474,9 @@ export class CanvasEngine {
 
   private onPointerDown = (e: PointerEvent): void => {
     if (this.gesture) return;
+    // Buttons floating over the canvas (the tile banner's Done, the edit bar) get their own click: capturing the
+    // pointer here would send the release to the canvas and the click would never happen.
+    if (pressesControl(e.target)) return;
     this.spaceTap.spoil();
     this.refreshBounds();
     const active = document.activeElement as HTMLElement | null;

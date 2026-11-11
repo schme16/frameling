@@ -445,9 +445,29 @@ export interface PosedLayer {
   frame?: number;
 }
 
+/**
+ * A symbol whose layers have blend modes, effects, clipping, masks or folders: everything the compositor needs to
+ * draw it as the canvas does inside it. `drawings` holds every shown layer by id, masks included.
+ */
+export interface PosedLook {
+  /** The symbol's own frame (effects can change over it). */
+  frame: number;
+  /** All of the symbol's layers, bottom first, as the plan wants them. */
+  layers: Layer[];
+  /** The document's folders (symbol layers name them like stage layers do). */
+  folders?: Doc['folders'];
+  drawings: Map<Id, PosedLayer>;
+}
+
 /** An instance ready to draw: its matrix and the drawings its symbol shows at the frame in question. Runtime only. */
 export interface PosedInstance extends InstanceShape {
-  posed: { matrix: Mat; layers: PosedLayer[] };
+  /** `layers` never holds mask layers. `look` is there when the symbol's layers need the compositor. */
+  posed: { matrix: Mat; layers: PosedLayer[]; look?: PosedLook };
+}
+
+/** True when any of these layers changes how layers combine (the same test as effects/model layerHasLook). */
+export function layersHaveLook(layers: Layer[]): boolean {
+  return layers.some((l) => (!!l.blend && l.blend !== 'normal') || !!l.effects?.some((e) => e.on !== false) || !!l.clipToBelow || !!l.mask || !!l.folder);
 }
 
 export function isPosed(s: Shape): s is PosedInstance {
@@ -596,14 +616,18 @@ export function poseInstance(doc: Doc, s: InstanceShape, inner: number, depth = 
   const c = symbolContent(doc, s.symbolId);
   if (!c || inner < 0) return { ...s, posed: { matrix: [...IDENTITY_MAT], layers: [] } };
   const layers: PosedLayer[] = [];
+  const look = layersHaveLook(c.layers) ? { frame: inner, layers: c.layers, folders: doc.folders, drawings: new Map<Id, PosedLayer>() } : undefined;
   for (const l of c.layers) {
-    // Masks, reference layers and hidden folders never show. Other looks (blend, effects, clipping, masks) are left
-    // out inside symbols for now; the layer the instance sits on can have them.
-    if (!l.visible || l.mask || l.reference || (l.folder && doc.folders?.[l.folder]?.visible === false)) continue;
+    // Reference layers and hidden folders never show. Masks only cut (through `look`), so `layers` leaves them out.
+    if (!l.visible || l.reference || (l.folder && doc.folders?.[l.folder]?.visible === false)) continue;
+    if (l.mask && !look) continue;
     const dr = poseAt(doc, l, inner, depth + 1);
-    if (dr) layers.push({ drawing: dr, opacity: l.opacity, pixelSize: 'pixelSize' in l ? l.pixelSize : 1, frame: inner });
+    if (!dr) continue;
+    const pl: PosedLayer = { drawing: dr, opacity: l.opacity, pixelSize: 'pixelSize' in l ? l.pixelSize : 1, frame: inner };
+    look?.drawings.set(l.id, pl);
+    if (!l.mask) layers.push(pl);
   }
-  return { ...s, posed: { matrix: transformMatrix(s.transform, c.def.origin), layers } };
+  return { ...s, posed: { matrix: transformMatrix(s.transform, c.def.origin), layers, ...(look ? { look } : {}) } };
 }
 
 /** Where an instance on a layer actually is at `frame` (tweens applied), for overlays and the properties panel. */
@@ -686,7 +710,7 @@ function poseLiveCel(doc: Doc, layer: Layer, frame: number, live: Drawing): Draw
       if (same) return p;
       // Being moved, turned or faded right now (a drag on the canvas): the stored pose's drawings, the live place.
       const c = symbolContent(doc, s.symbolId);
-      return { ...s, posed: { matrix: c ? transformMatrix(s.transform, c.def.origin) : p.posed.matrix, layers: p.posed.layers } };
+      return { ...s, posed: { ...p.posed, matrix: c ? transformMatrix(s.transform, c.def.origin) : p.posed.matrix } };
     }),
   };
 }

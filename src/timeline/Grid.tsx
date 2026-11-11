@@ -134,6 +134,11 @@ function MarkersRow({ cw, from, to }: { cw: number; from: number; to: number }) 
   const editing = useTl((t) => (t.editing?.kind === 'marker' ? t.editing.id : null));
   return (
     <div className="tl-marks" data-region="markers" style={{ height: MARKS_H }} title="Double-click to add a marker: a named moment, like a footstep">
+      {markers.length === 0 && (
+        <span className="tl-lane-empty" style={{ left: from * cw + 8 }} aria-hidden="true">
+          Markers: double-click to name a moment
+        </span>
+      )}
       {markers
         .filter((m) => m.frame >= from && m.frame <= to)
         .map((m) => (
@@ -163,6 +168,11 @@ function ClipsRow({ cw, from, to }: { cw: number; from: number; to: number }) {
   const picked = useTl((t) => t.clipId);
   return (
     <div className="tl-clips" data-region="clips" style={{ height: CLIPS_H }} title="Drag across frames to make a clip: a named stretch like idle or run">
+      {clips.length === 0 && (
+        <span className="tl-lane-empty" style={{ left: from * cw + 8 }} aria-hidden="true">
+          Clips: drag across frames to make one, like idle or run
+        </span>
+      )}
       {clips
         .filter((c) => c.end >= from && c.start <= to)
         .map((c) => (

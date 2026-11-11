@@ -18,9 +18,9 @@
 import type { Cel, Doc, Drawing, InstanceShape, Layer } from '../core/format';
 import { isInstance, isPosed, poseAt, symbolContent, symbolFrame, type Mat, type PosedInstance } from '../core/symbols';
 import { cameraViewAt, layerCameraMatrix } from '../core/camera';
-import { defsBlock, drawingToSvg, esc, layerId, n2, n4, paint, shapeToSvg } from './svg';
+import { defsBlock, drawingToSvg, esc, layerId, n2, n4, paint, posedLayerSvg, shapeToSvg } from './svg';
 import { withSprites } from './svg-extra';
-import { composeSvg, tintAttr } from './svg-look';
+import { composeSvg, composeSymbol, tintAttr } from './svg-look';
 
 export interface AnimatedSvgOptions {
   range?: { start: number; end: number };
@@ -106,7 +106,11 @@ const cls = (...names: string[]) => {
 };
 
 /** A posed instance's content at its posed frame (its own nested copies drawn as they are posed). */
-function instanceContent(s: PosedInstance): string {
+function instanceContent(s: PosedInstance, doc: Doc): string {
+  if (s.posed.look) {
+    const looked = composeSymbol(s.posed.look, (pl) => posedLayerSvg(pl, doc));
+    if (looked !== null) return looked;
+  }
   const parts: string[] = [];
   for (const l of s.posed.layers) {
     const inner = l.drawing.kind === 'vector' ? l.drawing.shapes.map((x) => shapeToSvg(x)).filter(Boolean) : [];
@@ -163,7 +167,7 @@ function celSvg(w: Writer, doc: Doc, layer: Layer, cel: Cel, frames: number[], d
     });
     const inner: string[] = [];
     for (const idx of byInner.values()) {
-      const body = instanceContent(insts[idx[0]]);
+      const body = instanceContent(insts[idx[0]], doc);
       if (!body) continue;
       inner.push(byInner.size === 1 ? body : `<g${cls(w.shownOn(idx.map((i) => frames[i])))}>${body}</g>`);
     }

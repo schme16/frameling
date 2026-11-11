@@ -8,6 +8,7 @@ import { useStore } from '../core/store';
 import { EASE_PRESETS } from '../core/ease';
 import { ActionButton, Choice, Field, Tip } from '../canvas/controls';
 import { Icon } from '../ui/icons';
+import { showPanel } from '../ui/dock';
 import { ColorWell, Num, Section } from '../particles/fields';
 import { animInfo, fontFamilyCss, SHIPPED_FONTS, TEXT_ANIMS, TEXT_UNITS } from './model';
 import { addAnimator, onTextDefaults, removeAnimator, setTextDefaults, textDefaults, updateAnimator, updateTexts } from './ops';
@@ -84,6 +85,10 @@ export function TextOptions() {
       </div>
       <WeightPicker value={d.weight} onChange={(weight) => setTextDefaults({ weight })} />
       <Choice label="Line up" value={d.align} options={ALIGN} onChange={(align) => setTextDefaults({ align })} />
+      <Tip>To make text move (fade in, slide, type on, wave), select it and pick an animation in the Text panel.</Tip>
+      <ActionButton onClick={() => showPanel('text')} title="Text animations live in the Text panel">
+        Open the Text panel
+      </ActionButton>
     </div>
   );
 }
@@ -220,7 +225,7 @@ export function TextPanel() {
   const d = cel ? doc.drawings[cel.drawingId] : undefined;
   const picked = d?.kind === 'vector' ? d.shapes.filter((s): s is TextShape => s.type === 'text' && sel.includes(s.id)) : [];
   return (
-    <div className="cv-options tx-panel" data-help="text">
+    <div className="cv-panel cv-options tx-panel" data-help="text">
       {picked.length === 1 ? (
         <TextEditorPanel s={picked[0]} />
       ) : (

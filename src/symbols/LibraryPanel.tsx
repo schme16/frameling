@@ -56,7 +56,7 @@ export function LibraryPanel() {
     );
 
   return (
-    <div className="cv-options sy-library" data-help="symbols">
+    <div className="cv-panel cv-options sy-library" data-help="symbols">
       {!symbols.length ? (
         <>
           <Tip>

@@ -961,6 +961,29 @@ body.ui-resizing * {
   font-size: 17px;
 }
 
+/* An ask-the-first-time question comes from whatever is open, so it sits above other dialogs (Export is 900). */
+.ui-backdrop:has(.ui-choice) {
+  z-index: 950;
+}
+/* The question dialogs put their parts straight in the modal, so they need the side padding the header has. */
+.ui-choice > .ui-choice-q,
+.ui-ask > p {
+  margin: 16px 20px 14px;
+}
+.ui-ask > p + p {
+  margin-top: 0;
+}
+.ui-choice > .ui-choice-opts {
+  margin: 0 20px;
+}
+.ui-choice > .ui-choice-remember {
+  margin: 14px 20px 0;
+}
+.ui-choice > .ui-choice-foot,
+.ui-ask > .ui-choice-foot {
+  padding: 0 20px 16px;
+}
+
 /* Command palette */
 .ui-backdrop:has(.ui-palette) {
   align-items: start;
@@ -1948,7 +1971,7 @@ body.ui-resizing * {
 
 /* Recent files on the welcome sheet */
 .ui-recent {
-  padding: 6px 24px 0;
+  padding: 6px 24px 10px;
 }
 .ui-recent h3 {
   margin: 8px 0 6px;
@@ -2027,6 +2050,7 @@ body.ui-resizing * {
   transform: scale(0.98);
 }
 .ui-example-art {
+  position: relative;
   display: grid;
   place-items: center;
   height: 104px;
@@ -2057,6 +2081,12 @@ body.ui-resizing * {
   color: var(--text);
   font-size: 11px;
   font-weight: 700;
+}
+.ui-example-badge {
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+  box-shadow: var(--shadow-small);
 }
 .ui-badge-pixel {
   background: color-mix(in srgb, var(--grape) 24%, var(--panel));

@@ -3,7 +3,9 @@
  * what in this document will be turned into pictures or left out. Pure: no DOM.
  *
  * Keep it in step with the writers (lottie.ts, svg-look.ts, svg.ts, psd/pdf in layered.ts). Pictures-of-frames formats
- * (video, GIF, PNG, sheets) draw with the canvas renderer, so they keep everything.
+ * (video, GIF, PNG, sheets) draw with the canvas renderer, so they keep everything. Looks on a symbol's own layers
+ * count the same as on the stage: every writer composites them inside the copy (PDF turns the copy's layer into a
+ * picture for effects, clipping and masks, as it does on the stage).
  */
 import type { Doc, EffectKind } from '../core/format';
 import type { FormatId } from './types';
@@ -52,19 +54,19 @@ export const CARRY: Record<FormatId, FormatCarry> = {
   interactives: { summary: PICTURES + ' Clips, markers and the clip flow come along for Interactives to play.', help: 'export-interactives' },
   lottie: {
     help: 'export-lottie',
-    summary: 'Shapes, symbols, tweens, the camera, blend modes, masks, clipping and colour wash stay vector. Text becomes letter shapes (no fonts needed). Particles become little shapes, one per particle.',
+    summary: 'Shapes, symbols, tweens, the camera, blend modes, masks, clipping and colour wash stay vector, inside symbols too. Text becomes letter shapes (no fonts needed). Particles become little shapes, one per particle.',
     rows: { text: 'shapes', particles: 'shapes', effects: 'picture', bones: 'kept' },
     nativeEffects: ['blur', 'shadow'],
   },
   svganim: {
     help: 'export-svg-animated',
-    summary: 'Shapes, symbols, tweens, the camera, text, particles, blend modes, masks, clipping, colour wash and most effects stay vector.',
+    summary: 'Shapes, symbols, tweens, the camera, text, particles, blend modes, masks, clipping, colour wash and most effects stay vector, inside symbols too.',
     rows: { effects: 'kept', bones: 'picture' },
     nativeEffects: ['blur', 'shadow', 'adjust', 'glow', 'outline'],
   },
   svg: {
     help: 'export-svg',
-    summary: 'This frame as vector shapes, with text, blend modes, masks, clipping, colour wash and most effects kept.',
+    summary: 'This frame as vector shapes, with text, blend modes, masks, clipping, colour wash and most effects kept, inside symbols too.',
     rows: { effects: 'kept', bones: 'picture' },
     nativeEffects: ['blur', 'shadow', 'adjust', 'glow', 'outline'],
   },
@@ -73,11 +75,11 @@ export const CARRY: Record<FormatId, FormatCarry> = {
     rows: { text: 'picture', particles: 'picture', effects: 'picture', mask: 'kept', folders: 'kept' },
   },
   pdf: {
-    summary: 'Sharp vector shapes with your layers as PDF layers. Text becomes letter outlines. Layers with effects, clipping, masks or bending become pictures.',
+    summary: 'Sharp vector shapes with your layers as PDF layers. Text becomes letter outlines and colour wash recolours the shapes. Layers with effects, clipping, masks or bending (or holding a symbol with them inside) become pictures.',
     rows: { text: 'shapes', effects: 'picture', clip: 'picture', mask: 'picture', bones: 'picture', folders: 'kept' },
   },
   ai: {
-    summary: 'The same as PDF, opened by Illustrator with every shape editable. Layers with effects, clipping, masks or bending become pictures.',
+    summary: 'The same as PDF, opened by Illustrator with every shape editable. Layers with effects, clipping, masks or bending (or holding a symbol with them inside) become pictures.',
     rows: { text: 'shapes', effects: 'picture', clip: 'picture', mask: 'picture', bones: 'picture', folders: 'kept' },
   },
 };

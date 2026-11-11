@@ -49,8 +49,9 @@ The file also holds the finished picture, so apps that don't read layers still s
 - **Opacity and blend modes** are kept. (Glow brighter has no PDF version, so it becomes Lighten like light.)
 - **Text** comes across as shapes, so it looks right without the font.
 - **Particles** are real little shapes, every one of them.
+- **Symbols** keep their blend modes inside, and a **colour wash (tint)** on a copy recolours its shapes.
 
-Some things PDF can't draw as shapes come in as pictures at twice the page size: pixel and tile layers, layers with effects, clipped layers, masks, and art bent on bones. The Export window says how many when there are any.
+Some things PDF can't draw as shapes come in as pictures at twice the page size: pixel and tile layers, layers with effects, clipped layers, masks, and art bent on bones. A layer holding a symbol with effects, clipping or masks inside it becomes a picture too. The Export window says how many when there are any.
 
 **Size** sets the page size: at 1×, one stage pixel is one point (1/72 inch).`,
   },

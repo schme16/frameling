@@ -94,8 +94,6 @@ modes mix with it the same way exports do.
 - SVG has no Pixelate, so the still and moving SVG leave it out (the Export window says so first).
 - Folders don't nest. Move up / Move down step a layer into a folder at its edge and out of it again; any plain
   reorder keeps folders in one piece (`tidyFolders`), so there are never ghost copies of a folder.
-- Symbol instances get the look of the layer they sit on (blend, effects, masks, folders), in the editor and in
-  exports. Layers inside a symbol keep only their opacity for now; their own blend modes and effects are ignored.
 - The onion skin shows drawings plain, without effects.
 - In the editor, effect pictures are canvas-sized and keyed by the stage's position, so panning recomputes them (on
   the GPU, quick for blur and colour adjust, slower for a wide outline). Stage-sized effect buffers would fix it.
@@ -196,6 +194,16 @@ this document will become pictures or be left out. The Export window shows both 
   SVG filters (blur, shadow, colour matrices, glow, outline from the same ring of offsets the canvas uses), masks as
   `<mask>` (luminance, with the content forced white or black by a filter), clipping as a mask from `<use>` of the base,
   and tint as an `atop` flood filter. Effect settings that change are SMIL `<animate>` switching per frame.
+- **Looks inside symbols.** A symbol whose own layers use blend modes, effects, clipping, masks or folders poses with a
+  `posed.look` (core/symbols.ts: every shown layer by id, masks included, plus the symbol frame and folders). The
+  renderer (`lookPicture` in core/render.ts) composites those layers in symbol space with the same compositor, into a
+  picture cached per symbol, symbol frame, scale (snapped to quarter octaves) and the drawings shown, then draws it under
+  the copy's matrix, so effects grow and turn with each copy and a copy gliding along a tween reuses one picture per
+  symbol frame. The compositor keeps a scratch pool per nesting depth for this. SVG composites the same plan inside the
+  copy's group (`composeSymbol`, isolated), Lottie builds the symbol's precomp with `levelContent` (no camera; bakes
+  cropped to the symbol's own box), PSD draws through the renderer, and PDF keeps blend modes in an isolated group and
+  makes the layer a picture for effects, clipping and masks (`drawingHasLook`). PDF recolours shapes and pixels for a
+  copy's tint, innermost wash first.
 - `scripts/e2e/vector-check.cjs` checks all of it against `renderFrame` in Chromium, now also through lottie-web's SVG
   renderer (effects only play there; a Lottie frame passes when either renderer matches).
 
