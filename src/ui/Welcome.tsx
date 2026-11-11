@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { getCommand } from '../core/registry';
+import { renderFrameToCanvas } from '../core/render';
 import { store } from '../core/store';
 import type { Doc } from '../core/format';
 import { askAboutUnsavedChanges, listRecentFiles, openPath } from '../io/document';
@@ -19,7 +20,8 @@ export function WelcomeSheet() {
   return <Sheet mode={mode} />;
 }
 
-function Sheet({ mode }: { mode: 'welcome' | 'new' }) {
+function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
+  const mode = sheetMode === 'welcome' ? 'welcome' : 'new';
   const showWelcome = usePrefs((p) => p.showWelcome);
   const [custom, setCustom] = useState(false);
   const [spec, setSpec] = useState<CustomSpec>({ name: 'Untitled', width: 800, height: 600, fps: 12, pixel: false, pixelSize: 8 });
@@ -124,6 +126,8 @@ function Sheet({ mode }: { mode: 'welcome' | 'new' }) {
         </form>
       )}
 
+      <Examples scrollTo={sheetMode === 'examples'} onPick={(doc, name) => void make(doc, name)} />
+
       {recent.length > 0 && (
         <div className="ui-recent" data-help="saving-and-opening">
           <h3>Pick up where you left off</h3>
@@ -196,5 +200,86 @@ function Sheet({ mode }: { mode: 'welcome' | 'new' }) {
         </button>
       </footer>
     </Modal>
+  );
+}
+
+// ---------------------------------------------------------------- examples
+
+interface TemplateLike {
+  id: string;
+  name: string;
+  blurb: string;
+  kind: 'vector' | 'pixel';
+  /** The frame that makes the best picture (0 when missing). */
+  thumbnail?: () => number;
+  make(): Doc;
+}
+
+/** The example drawings, loaded when the sheet opens. If the templates area isn't there, the row just isn't shown. */
+function useTemplates(): TemplateLike[] {
+  const [list, setList] = useState<TemplateLike[]>([]);
+  useEffect(() => {
+    let live = true;
+    import('../templates')
+      .then((m) => live && setList(((m as { TEMPLATES?: TemplateLike[] }).TEMPLATES ?? []).filter((t) => t && typeof t.make === 'function')))
+      .catch(() => {});
+    return () => void (live = false);
+  }, []);
+  return list;
+}
+
+/** A small picture of frame 0, drawn when the card appears. */
+function Thumb({ template }: { template: TemplateLike }) {
+  const ref = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    try {
+      const doc = template.make();
+      const scale = Math.min(168 / doc.width, 96 / doc.height);
+      const img = renderFrameToCanvas(doc, Math.max(0, Math.min(doc.length - 1, template.thumbnail?.() ?? 0)), scale);
+      el.width = img.width;
+      el.height = img.height;
+      const g = el.getContext('2d');
+      if (g) {
+        // Pixel art should stay chunky in the little picture.
+        g.imageSmoothingEnabled = template.kind !== 'pixel';
+        g.drawImage(img, 0, 0);
+      }
+    } catch {
+      // No picture is fine, the card still works.
+    }
+  }, [template]);
+  return <canvas ref={ref} className="ui-example-thumb" aria-hidden="true" />;
+}
+
+function Examples({ onPick, scrollTo }: { onPick: (doc: Doc, name: string) => void; scrollTo: boolean }) {
+  const templates = useTemplates();
+  const box = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (scrollTo && templates.length) box.current?.scrollIntoView({ block: 'nearest' });
+  }, [scrollTo, templates.length]);
+  if (!templates.length) return null;
+  return (
+    <div className="ui-examples" ref={box} data-help="examples">
+      <h3>Start from an example</h3>
+      <div className="ui-example-list">
+        {templates.map((t) => (
+          <button key={t.id} type="button" className="ui-example" onClick={() => onPick(t.make(), t.name.toLowerCase())}>
+            <span className="ui-example-art">
+              <Thumb template={t} />
+            </span>
+            <span className="ui-example-head">
+              <strong>{t.name}</strong>
+              <span className={`ui-badge ui-badge-${t.kind}`}>
+                <Icon name={t.kind === 'pixel' ? 'pixel' : 'vector'} size={12} />
+                {t.kind === 'pixel' ? 'Pixel' : 'Vector'}
+              </span>
+            </span>
+            <span className="ui-preset-blurb">{t.blurb}</span>
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Frameling app icon">
+  <title>Frameling app icon</title>
+  <rect width="512" height="512" rx="112" fill="#2a2638"/>
+
+  <g transform="translate(0 0)">
+    <rect x="52" y="256" width="120" height="120" rx="34" fill="#ff6f91" stroke="#1d1b26" stroke-width="12" transform="rotate(-6 112 316)"/>
+    <rect x="124" y="226" width="150" height="150" rx="44" fill="#ff9e6d" stroke="#1d1b26" stroke-width="12"/>
+    <rect x="200" y="116" width="270" height="270" rx="80" fill="#ffc94a" stroke="#1d1b26" stroke-width="14" transform="rotate(4 335 251)"/>
+    <g transform="rotate(4 335 251)">
+      <ellipse cx="290" cy="236" rx="22" ry="33" fill="#1d1b26" /><ellipse cx="380" cy="236" rx="22" ry="33" fill="#1d1b26" /><ellipse cx="297" cy="224" rx="8" ry="9" fill="#fff" /><ellipse cx="387" cy="224" rx="8" ry="9" fill="#fff" />
+      <ellipse cx="258" cy="298" rx="24" ry="15" fill="#ff6f91" opacity="0.9"/><ellipse cx="412" cy="298" rx="24" ry="15" fill="#ff6f91" opacity="0.9"/>
+      <path d="M310,296 Q335,324 360,296" fill="none" stroke="#1d1b26" stroke-width="15" stroke-linecap="round" stroke-linejoin="round" />
+    </g>
+    <path d="M290,126 L268,78" fill="none" stroke="#ffc94a" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" /><ellipse cx="264" cy="72" rx="17" ry="17" fill="#ff6f91" /><path d="M382,126 L404,78" fill="none" stroke="#ffc94a" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" /><ellipse cx="408" cy="72" rx="17" ry="17" fill="#ff6f91" />
+  </g>
+</svg>

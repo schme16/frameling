@@ -286,6 +286,24 @@ The **undo** and **redo** buttons beside it do the same as **Ctrl+Z** and **Ctrl
 If a message has a button, like **Undo**, press it before the message leaves to take something back. Resting your mouse on a message keeps it there.`,
   },
   {
+    id: 'examples',
+    title: 'Examples',
+    section: 'Getting started',
+    summary: 'Ready-made drawings to start from, or to pick apart and learn.',
+    keywords: ['template', 'sample', 'demo', 'starter', 'learn', 'bouncing ball'],
+    body: `Not sure where to begin? Start from an example.
+
+## How
+
+Open **Help, Examples** (or **File, New drawing** and look under **Start from an example**). Press a card to open it. Each card shows a small picture, whether it is **vector** or **pixel** art, and what it is for.
+
+## Make it yours
+
+An example is a normal drawing, so you can change anything. Nothing happens to the original, and Frameling asks before it replaces a drawing you haven't saved.
+
+Looking at how an example is built is a good way to learn. Try the timeline to see where each drawing sits.`,
+  },
+  {
     id: 'quests',
     title: 'Quests',
     section: 'Getting started',

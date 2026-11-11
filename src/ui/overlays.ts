@@ -7,8 +7,8 @@ export interface Overlays {
   palette: boolean;
   prefs: { page: PrefsPage; /** Scroll to and highlight this command in the keyboard page. */ commandId?: string } | null;
   help: { topic?: string; anchor?: string; query?: string } | null;
-  /** `welcome` is the first-run sheet, `new` is the same chooser opened from File > New. */
-  sheet: 'welcome' | 'new' | null;
+  /** `welcome` is the first-run sheet, `new` is the same chooser opened from File > New, `examples` is the same sheet scrolled to the examples. */
+  sheet: 'welcome' | 'new' | 'examples' | null;
 }
 
 export const overlays = createStore<Overlays>({ palette: false, prefs: null, help: null, sheet: null });
@@ -26,7 +26,7 @@ export const closePrefs = () => patch({ prefs: null });
 export const openHelp = (topic?: string, anchor?: string, query?: string) => patch({ help: { topic, anchor, query }, palette: false });
 export const closeHelp = () => patch({ help: null });
 
-export const openSheet = (sheet: 'welcome' | 'new') => patch({ sheet, palette: false });
+export const openSheet = (sheet: 'welcome' | 'new' | 'examples') => patch({ sheet, palette: false });
 export const closeSheet = () => patch({ sheet: null });
 
 export const anyOverlayOpen = (): boolean => {

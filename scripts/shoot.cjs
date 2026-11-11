@@ -1,25 +1,80 @@
-// Takes screenshots of the built app for A/B looks and docs, without touching the real main process.
+// Takes screenshots of the built app for A/B looks, docs and checks, without touching the real main process.
 //
 //   npx electron scripts/shoot.cjs <outDir> [variant ...]
 //
-// A variant is `name:look:theme[:script]`, e.g. `cosy-dark:cosy:dark`. The optional script is a file of JavaScript
-// run in the page before the shot (to open a panel or draw something). Run `npm run build` first.
-const { app, BrowserWindow } = require('electron');
+// A variant is `name:look:theme[:steps.json]`, e.g. `cosy-dark:cosy:dark`. The optional steps file is a JSON array
+// run in order, with real input events (so pointer capture, pressure-less mouse drawing and shortcuts all behave as
+// they do for a person):
+//   {"eval": "js"}                      run JavaScript in the page
+//   {"click": [x, y]}                   left click at window coordinates
+//   {"drag": [[x, y], [x, y], ...], "steps": 6}   press at the first point, move through the rest, release
+//   {"key": "g", "mods": ["control"]}   press a key (Electron keyCode names)
+//   {"wait": 300}                       wait in ms
+//   {"shot": "name"}                    save an extra screenshot mid-way
+// Run `npm run build` first.
+const { app, BrowserWindow, ipcMain } = require('electron');
 const fs = require('node:fs');
 const path = require('node:path');
 
 const [outDir, ...variants] = process.argv.slice(2).filter((a) => !a.startsWith('--') && !a.endsWith('shoot.cjs'));
 const width = Number(process.env.SHOT_W || 1400);
 const height = Number(process.env.SHOT_H || 900);
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+async function runSteps(win, steps) {
+  const wc = win.webContents;
+  const send = (e) => wc.sendInputEvent(e);
+  for (const s of steps) {
+    if (s.eval) await wc.executeJavaScript(s.eval);
+    else if (s.wait) await sleep(s.wait);
+    else if (s.click) {
+      const [x, y] = s.click;
+      send({ type: 'mouseMove', x, y });
+      send({ type: 'mouseDown', x, y, button: 'left', clickCount: 1 });
+      await sleep(30);
+      send({ type: 'mouseUp', x, y, button: 'left', clickCount: 1 });
+      await sleep(80);
+    } else if (s.drag) {
+      const pts = s.drag;
+      const n = s.steps ?? 6;
+      send({ type: 'mouseMove', x: pts[0][0], y: pts[0][1] });
+      send({ type: 'mouseDown', x: pts[0][0], y: pts[0][1], button: 'left', clickCount: 1 });
+      await sleep(16);
+      for (let i = 1; i < pts.length; i++) {
+        const [ax, ay] = pts[i - 1];
+        const [bx, by] = pts[i];
+        for (let k = 1; k <= n; k++) {
+          const t = k / n;
+          send({ type: 'mouseMove', x: Math.round(ax + (bx - ax) * t), y: Math.round(ay + (by - ay) * t), modifiers: ['leftButtonDown'] });
+          await sleep(8);
+        }
+      }
+      const [lx, ly] = pts[pts.length - 1];
+      send({ type: 'mouseUp', x: lx, y: ly, button: 'left', clickCount: 1 });
+      await sleep(80);
+    } else if (s.key) {
+      const modifiers = s.mods ?? [];
+      send({ type: 'keyDown', keyCode: s.key, modifiers });
+      if (s.key.length === 1) send({ type: 'char', keyCode: s.key, modifiers });
+      send({ type: 'keyUp', keyCode: s.key, modifiers });
+      await sleep(80);
+    } else if (s.shot) {
+      fs.writeFileSync(path.join(outDir, `${s.shot}.png`), (await wc.capturePage()).toPNG());
+    }
+  }
+}
 
 app.whenReady().then(async () => {
+  // The real main process answers these; for shots there is no file and no history.
+  ipcMain.handle('app:launchFile', () => null);
+  ipcMain.handle('recent:list', () => []);
   fs.mkdirSync(outDir, { recursive: true });
   for (const v of variants.length ? variants : ['default::']) {
-    const [name, look, theme, script] = v.split(':');
+    const [name, look, theme, steps] = v.split(':');
     const win = new BrowserWindow({
       width,
       height,
-      show: false,
+      show: process.env.SHOT_SHOW === '1',
       paintWhenInitiallyHidden: true,
       webPreferences: {
         preload: path.join(__dirname, '../dist/preload/preload.cjs'),
@@ -28,18 +83,22 @@ app.whenReady().then(async () => {
         additionalArguments: ['--frameling-version=shot'],
       },
     });
+    const logs = [];
+    win.webContents.on('console-message', (e) => {
+      const m = e.message ?? e;
+      if (e.level === 'error' || e.level === 3) logs.push(String(m));
+    });
     await win.loadFile(path.join(__dirname, '../dist/renderer/index.html'));
     await win.webContents.executeJavaScript(`
-      try { localStorage.clear(); } catch {}
       ${look ? `document.documentElement.dataset.look = ${JSON.stringify(look)};` : ''}
       ${theme ? `document.documentElement.dataset.theme = ${JSON.stringify(theme)};` : ''}
       true;
     `);
-    if (script) await win.webContents.executeJavaScript(fs.readFileSync(script, 'utf8'));
-    await new Promise((r) => setTimeout(r, Number(process.env.SHOT_WAIT || 900)));
-    const img = await win.webContents.capturePage();
-    fs.writeFileSync(path.join(outDir, `${name}.png`), img.toPNG());
-    console.log(`shot ${name}`);
+    await sleep(Number(process.env.SHOT_WAIT || 900));
+    if (steps) await runSteps(win, JSON.parse(fs.readFileSync(steps, 'utf8')));
+    await sleep(300);
+    fs.writeFileSync(path.join(outDir, `${name}.png`), (await win.webContents.capturePage()).toPNG());
+    console.log(`shot ${name}${logs.length ? `\n  console errors:\n  ${logs.join('\n  ')}` : ''}`);
     win.destroy();
   }
   app.quit();

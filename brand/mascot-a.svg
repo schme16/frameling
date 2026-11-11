@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Frameling mascot A: the flipbook page">
+  <title>Frameling mascot A: the flipbook page</title>
+<ellipse cx="256" cy="458" rx="114" ry="12.5" fill="#1d1b26" opacity="0.1"/>  <g transform="translate(256 370) rotate(-5) scale(1 1)">
+    <!-- the rest of the flipbook, peeking out behind the front page -->
+    <path d="M-100,-290 H74 L140,-224 V-40 Q140,0 100,0 H-100 Q-140,0 -140,-40 V-250 Q-140,-290 -100,-290 Z" transform="translate(-18 16)" fill="#e9cf9c" stroke="#1d1b26" stroke-width="9" stroke-linejoin="round"/>
+    <path d="M-100,-290 H74 L140,-224 V-40 Q140,0 100,0 H-100 Q-140,0 -140,-40 V-250 Q-140,-290 -100,-290 Z" transform="translate(-9 8)" fill="#f6e3bb" stroke="#1d1b26" stroke-width="9" stroke-linejoin="round"/>
+    <path d="M-56,-6 L-74,24 L-46,38" fill="none" stroke="#1d1b26" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" /><ellipse cx="-38" cy="40" rx="18" ry="10" fill="#1d1b26" /><path d="M56,-6 L68,38" fill="none" stroke="#1d1b26" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" /><ellipse cx="74" cy="46" rx="18" ry="10" fill="#1d1b26" />
+    <path d="M-100,-290 H74 L140,-224 V-40 Q140,0 100,0 H-100 Q-140,0 -140,-40 V-250 Q-140,-290 -100,-290 Z" fill="#fffaf0" stroke="#1d1b26" stroke-width="10" stroke-linejoin="round"/>
+    <!-- the dog-eared corner, which is also an ear -->
+    <path d="M74,-290 L140,-224 L74,-224 Z" fill="#ff9e6d" stroke="#1d1b26" stroke-width="9" stroke-linejoin="round"/>
+    <ellipse cx="-52" cy="-170" rx="15" ry="21" fill="#1d1b26" /><ellipse cx="52" cy="-170" rx="15" ry="21" fill="#1d1b26" /><ellipse cx="-47" cy="-178" rx="5" ry="6" fill="#fff" /><ellipse cx="57" cy="-178" rx="5" ry="6" fill="#fff" /><ellipse cx="-90" cy="-126" rx="21" ry="14" fill="#ff6f91" opacity="0.8"/><ellipse cx="90" cy="-126" rx="21" ry="14" fill="#ff6f91" opacity="0.8"/><path d="M-24,-124 Q0,-94 24,-124" fill="none" stroke="#1d1b26" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" />
+  </g>
+</svg>

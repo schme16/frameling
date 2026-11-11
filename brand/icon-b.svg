@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Frameling app icon">
+  <title>Frameling app icon</title>
+  <rect width="512" height="512" rx="112" fill="#5ab8ff"/>
+
+  <g transform="translate(206 424) scale(0.98 0.96)"><path d="M0,-220 C100,-222 142,-152 142,-96 C142,-34 84,0 0,0 C-84,0 -142,-34 -142,-96 C-142,-152 -100,-222 0,-220 Z" fill="#9b7bff" stroke="#1d1b26" stroke-width="16" stroke-linejoin="round"/></g>
+  <g transform="translate(246 408) scale(0.98 0.96)"><path d="M0,-220 C100,-222 142,-152 142,-96 C142,-34 84,0 0,0 C-84,0 -142,-34 -142,-96 C-142,-152 -100,-222 0,-220 Z" fill="#ff6f91" stroke="#1d1b26" stroke-width="16" stroke-linejoin="round"/></g>
+  <g transform="translate(290 392) scale(0.98 0.96)">
+    <path d="M0,-220 C100,-222 142,-152 142,-96 C142,-34 84,0 0,0 C-84,0 -142,-34 -142,-96 C-142,-152 -100,-222 0,-220 Z" fill="#ffc94a" stroke="#1d1b26" stroke-width="16" stroke-linejoin="round"/>
+    <ellipse cx="-48" cy="-118" rx="24" ry="34" fill="#1d1b26" /><ellipse cx="48" cy="-118" rx="24" ry="34" fill="#1d1b26" /><ellipse cx="-41" cy="-130" rx="8" ry="9" fill="#fff" /><ellipse cx="55" cy="-130" rx="8" ry="9" fill="#fff" />
+    <ellipse cx="-92" cy="-70" rx="21" ry="14" fill="#ff6f91" opacity="0.85"/><ellipse cx="92" cy="-70" rx="21" ry="14" fill="#ff6f91" opacity="0.85"/>
+    <path d="M-28,-76 Q0,-44 28,-76" fill="none" stroke="#1d1b26" stroke-width="15" stroke-linecap="round" stroke-linejoin="round" />
+  </g>
+</svg>

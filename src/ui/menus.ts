@@ -44,7 +44,7 @@ export const MENUS: MenuDef[] = [
   {
     label: 'Help',
     categories: ['Help'],
-    items: ['help.contents', 'help.shortcuts', 'help.welcome', '-', 'help.about'],
+    items: ['help.contents', 'file.openExample', 'help.shortcuts', 'help.welcome', '-', 'help.about'],
   },
 ];
 

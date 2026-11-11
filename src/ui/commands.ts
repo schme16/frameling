@@ -30,6 +30,15 @@ registerCommands([
     run: () => openSheet('new'),
   },
   {
+    id: 'file.openExample',
+    label: 'Examples...',
+    category: 'Help',
+    description: 'Start from a ready-made drawing and see how it is put together.',
+    help: 'examples',
+    keywords: ['template', 'sample', 'demo', 'starter', 'learn'],
+    run: () => openSheet('examples'),
+  },
+  {
     id: 'view.commandPalette',
     label: 'Find a command',
     category: 'View',
