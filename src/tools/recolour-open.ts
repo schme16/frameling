@@ -29,7 +29,7 @@ registerHelp({
 2. **Pick what it becomes.** Click the colour box, or **Use my current colour** for the colour in the box in front.
 3. Check the **Now** and **After** pictures of this frame, then click **Recolour**.
 
-It changes every frame and every layer: brush lines, fills, shape outlines, gradients, text, particles, symbol colour washes, pixel drawings and tiles, and your swatches too.
+It changes every frame and every layer: brush lines, fills, shape outlines, gradients, text, particles, symbol colour washes, pixel drawings and tiles, the colours of layer and folder effects (glow, shadow and outline), and your swatches too.
 
 ## Close colours too
 

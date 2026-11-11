@@ -179,6 +179,12 @@ export function reverseStops(w: Well): void {
   edit(w, (g) => ({ ...g, stops: sortedStops(g.stops.map((s) => ({ ...s, at: 1 - s.at }))) }));
 }
 
+/** Shift+X: the two boxes trade gradients (call before swapping the plain colours). */
+export function swapGradientWells(): void {
+  if (!state.fill && !state.stroke) return;
+  set({ fill: state.stroke, stroke: state.fill, stop: { fill: state.stop.stroke, stroke: state.stop.fill } });
+}
+
 /** The gradient a new shape gets from a box, laid over these paths, or undefined when the box holds a plain colour. */
 export function gradientFor(w: Well, paths: PathShape['paths']): Gradient | undefined {
   const g = wellGradient(w);

@@ -1,10 +1,10 @@
 /**
  * "Recolour the whole animation" (palette swap): one colour swapped for another on every frame and every layer, in
  * vector shapes (fills, lines, gradients, text, particles, symbol washes) and pixel drawings (tiles too), plus the
- * swatches. With "close colours too", colours near the one picked shift by the same amount, so shading made from
+ * swatches, and the colours in layer and folder effects (glow, shadow, outline). With "close colours too", colours near the one picked shift by the same amount, so shading made from
  * nearby colours comes along. Pure: works on a document and returns a new one.
  */
-import type { Color, Doc, Drawing, Shape } from '../core/format';
+import type { Color, Doc, Drawing, Layer, LayerEffect, LayerFolder, Shape } from '../core/format';
 import { recolourGradient } from '../core/gradient';
 
 type RGB = [number, number, number];
@@ -137,6 +137,37 @@ function recolourDrawing(d: Drawing, map: (rgb: RGB) => RGB | null, f: (c: Color
   return { d, pixels: 0 };
 }
 
+/** An effect stack with its colour settings swapped, the same array when nothing changed. */
+function recolourEffects(fx: LayerEffect[] | undefined, f: (c: Color) => Color): LayerEffect[] | undefined {
+  if (!fx?.length) return fx;
+  let changed = false;
+  const out = fx.map((e) => {
+    let values: LayerEffect['values'] | null = null;
+    for (const [k, v] of Object.entries(e.values)) {
+      if (typeof v !== 'string') continue;
+      const n = f(v);
+      if (n === v) continue;
+      values ??= { ...e.values };
+      values[k] = n;
+    }
+    if (!values) return e;
+    changed = true;
+    return { ...e, values };
+  });
+  return changed ? out : fx;
+}
+
+function recolourLayers(layers: Layer[], f: (c: Color) => Color): Layer[] {
+  let changed = false;
+  const out = layers.map((l) => {
+    const effects = recolourEffects(l.effects, f);
+    if (effects === l.effects) return l;
+    changed = true;
+    return { ...l, effects };
+  });
+  return changed ? out : layers;
+}
+
 export interface RecolourResult {
   doc: Doc;
   /** Colours changed in shapes and swatches. */
@@ -166,7 +197,46 @@ export function recolourDoc(doc: Doc, from: Color, to: Color, opts: RecolourOpti
   });
   const background = opts.background && doc.background ? f(doc.background) : doc.background;
   const out: Doc = { ...doc, drawings: changed.length ? drawings : doc.drawings, swatches, background };
+  // Effects on layers, folders and the layers inside symbols.
+  out.layers = recolourLayers(doc.layers, f);
+  if (doc.folders) {
+    let any = false;
+    const folders: Record<string, LayerFolder> = {};
+    for (const [id, fo] of Object.entries(doc.folders)) {
+      const effects = recolourEffects(fo.effects, f);
+      folders[id] = effects === fo.effects ? fo : { ...fo, effects };
+      if (effects !== fo.effects) any = true;
+    }
+    if (any) out.folders = folders;
+  }
+  if (doc.symbols) {
+    let any = false;
+    const symbols: NonNullable<Doc['symbols']> = {};
+    for (const [id, sy] of Object.entries(doc.symbols)) {
+      const layers = recolourLayers(sy.layers, f);
+      symbols[id] = layers === sy.layers ? sy : { ...sy, layers };
+      if (layers !== sy.layers) any = true;
+    }
+    if (any) out.symbols = symbols;
+  }
   return { doc: out, colours: count.n, pixels, drawings: changed };
+}
+
+/** Puts a recolour into the document being edited: changed drawings, swatches, stage colour and effects. */
+export function applyRecolour(d: Doc, r: RecolourResult): void {
+  for (const id of r.drawings) d.drawings[id] = r.doc.drawings[id];
+  d.swatches = r.doc.swatches;
+  d.background = r.doc.background;
+  r.doc.layers.forEach((l, i) => {
+    if (d.layers[i] && d.layers[i].id === l.id && l.effects) d.layers[i].effects = l.effects;
+  });
+  if (r.doc.folders) for (const [id, fo] of Object.entries(r.doc.folders)) if (d.folders?.[id] && fo.effects) d.folders[id].effects = fo.effects;
+  if (r.doc.symbols)
+    for (const [id, sy] of Object.entries(r.doc.symbols))
+      sy.layers.forEach((l, i) => {
+        const dl = d.symbols?.[id]?.layers[i];
+        if (dl && dl.id === l.id && l.effects) dl.effects = l.effects;
+      });
 }
 
 /** The colours an animation uses, most used first (shapes count once each, pixels by how many there are, scaled down). */
@@ -204,6 +274,12 @@ export function usedColours(doc: Doc, limit = 32): Color[] {
       for (const [k, n] of local) note('#' + k.toString(16).padStart(6, '0'), Math.max(1, Math.round(n / 16)));
     }
   }
+  const noteFx = (fx: LayerEffect[] | undefined) => {
+    for (const e of fx ?? []) for (const v of Object.values(e.values)) if (typeof v === 'string') note(v);
+  };
+  for (const l of doc.layers) noteFx(l.effects);
+  for (const fo of Object.values(doc.folders ?? {})) noteFx(fo.effects);
+  for (const sy of Object.values(doc.symbols ?? {})) for (const l of sy.layers) noteFx(l.effects);
   return [...counts.entries()]
     .sort((a, b) => b[1] - a[1])
     .slice(0, limit)
