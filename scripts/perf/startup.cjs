@@ -158,6 +158,8 @@ function initialJs(dir) {
   return { files, kB: Math.round(bytes / 1024), gzipKB: Math.round(gz / 1024) };
 }
 
+const summaryInitial = () => initialJs('dist/renderer').files.map((f) => f.split('/').pop());
+
 const median = (xs) => [...xs].sort((a, b) => a - b)[Math.floor(xs.length / 2)];
 
 async function main() {
@@ -177,6 +179,20 @@ async function main() {
       console.log(`${i === 0 ? 'first' : 'again'}  from launch ${r.fromSpawnMs} ms  page ${r.pageMs} ms  page at ${cpu}x slower CPU ${r.throttledPageMs ?? '-'} ms`);
       // Let the first run settle (service worker install, code cache written) before the next launch.
       if (i === 0) await sleep(web ? 3000 : 1500);
+      c.close();
+      await stop(child);
+    }
+    let lazyCheck = null;
+    if (!web) {
+      // Every lazily loaded chunk, imported from file:// in the real app (sandboxed renderer, the app's own page).
+      const chunks = fs.readdirSync(path.join(root, 'dist/renderer/assets')).filter((f) => f.endsWith('.js') && !summaryInitial().includes(f));
+      const { c, child } = await launch('app', profile, null, port++);
+      lazyCheck = await c.evaluate(`(async () => {
+        const bad = [];
+        for (const f of ${JSON.stringify(chunks)}) { try { await import(new URL('./assets/' + f, location.href).href); } catch (e) { bad.push(f + ': ' + e); } }
+        return { tried: ${chunks.length}, bad, protocol: location.protocol };
+      })()`);
+      console.log(`lazy chunks from ${lazyCheck.protocol} ${lazyCheck.tried - lazyCheck.bad.length}/${lazyCheck.tried} loaded${lazyCheck.bad.length ? ': ' + lazyCheck.bad.join('; ') : ''}`);
       c.close();
       await stop(child);
     }
@@ -213,6 +229,7 @@ async function main() {
       medianThrottledPageMs: median(again.map((r) => r.throttledPageMs ?? 0)),
       initialJs: initialJs(web ? 'dist/web' : 'dist/renderer'),
       offline,
+      lazyCheck,
       runs: results,
     };
     console.log(`\nmedian of ${again.length} repeat launches: ${summary.medianFromLaunchMs} ms from launch, ${summary.medianPageMs} ms in the page (${summary.medianThrottledPageMs} ms at ${cpu}x slower CPU); first launch ${summary.firstLaunchMs} ms`);

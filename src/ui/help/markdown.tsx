@@ -2,6 +2,7 @@
 // > notes, ---, **bold**, *italic*, `code`, and [links](help:topic-id#heading) or [links](https://...).
 // Parsing is separate from rendering so it can be tested without a DOM.
 import { Fragment, type ReactNode } from 'react';
+import { platformKeysText } from '../keys';
 
 export type Inline =
   | { t: 'text'; text: string }
@@ -213,7 +214,8 @@ function renderInline(list: Inline[], onHelp: (topic: string, anchor?: string) =
 }
 
 export function Markdown({ text, onHelp }: { text: string; onHelp: (topic: string, anchor?: string) => void }) {
-  const blocks = parseBlocks(text);
+  // Shortcuts read the Mac way on a Mac. Headings stay as written, so links to them keep working.
+  const blocks = parseBlocks(text.split('\n').map((l) => (l.startsWith('#') ? l : platformKeysText(l))).join('\n'));
   return (
     <div className="ui-md">
       {blocks.map((b, i) => {

@@ -31,8 +31,14 @@ function fileFromArgs(args: string[], cwd = process.cwd()): string | null {
 }
 
 // frameling://open?path=... opens a file, so other apps (Interactives' "Edit in Frameling") can hand one over. Only the
-// installed app claims it (the installers register it too), so a dev run never takes it over.
-if (app.isPackaged) app.setAsDefaultProtocolClient(PROTOCOL);
+// installed app claims it (the macOS app, the Linux .desktop file and the Windows installer register it too, see
+// build/installer.nsh), so a dev run never takes it over. The Windows portable build runs from a temporary copy of
+// itself, so it registers the .exe the person actually has.
+if (app.isPackaged) {
+  const portable = process.env.PORTABLE_EXECUTABLE_FILE;
+  if (process.platform === 'win32' && portable) app.setAsDefaultProtocolClient(PROTOCOL, portable, []);
+  else app.setAsDefaultProtocolClient(PROTOCOL);
+}
 
 function openFileInWindow(file: string) {
   grantFile(file);

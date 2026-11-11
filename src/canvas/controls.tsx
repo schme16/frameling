@@ -1,4 +1,5 @@
 // Small form controls shared by the tool options and the colour panel. Plain words, big targets, theme tokens only.
+import { platformKeysText } from '../ui/keys';
 import type { ReactNode } from 'react';
 import './canvas.css';
 
@@ -53,7 +54,8 @@ export function Choice<T extends string>({ label, value, options, onChange }: { 
 }
 
 export function Tip({ children }: { children: ReactNode }) {
-  return <p className="cv-tip">{children}</p>;
+  // Plain text tips name keys the Mac way on a Mac.
+  return <p className="cv-tip">{typeof children === 'string' ? platformKeysText(children) : children}</p>;
 }
 
 export function ActionButton({ children, onClick, disabled, title }: { children: ReactNode; onClick: () => void; disabled?: boolean; title?: string }) {

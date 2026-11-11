@@ -4,6 +4,7 @@ import { app, dialog, shell, type BrowserWindow } from 'electron';
 import fs from 'node:fs';
 import path from 'node:path';
 import type { FileFilter, LibraryEntry, LibraryKind } from '../preload/api';
+import { pathKey } from './paths';
 
 /** Each kind keeps its files with one extension, so people can drop files into the folder by hand. */
 export const LIBRARY_EXT: Record<LibraryKind, string> = { plugins: '.zip', templates: '.frameling' };
@@ -142,7 +143,7 @@ export function listLinked(): string[] {
 }
 
 export function addLinked(p: string, write: (file: string, bytes: string) => void): void {
-  const list = [path.resolve(p), ...listLinked().filter((x) => x !== path.resolve(p))].slice(0, MAX_LINKED);
+  const list = [path.resolve(p), ...listLinked().filter((x) => pathKey(x) !== pathKey(p))].slice(0, MAX_LINKED);
   try {
     fs.mkdirSync(app.getPath('userData'), { recursive: true });
     write(linkedFile(), JSON.stringify(list));
@@ -152,7 +153,7 @@ export function addLinked(p: string, write: (file: string, bytes: string) => voi
 }
 
 export function isLinked(p: string): boolean {
-  return path.extname(p).toLowerCase() === '.flplay' && listLinked().includes(path.resolve(p));
+  return path.extname(p).toLowerCase() === '.flplay' && listLinked().some((x) => pathKey(x) === pathKey(p));
 }
 
 export async function pickFolder(win: BrowserWindow, title: string, lastDir: string): Promise<string | null> {

@@ -18,5 +18,7 @@ export function stripExt(name: string): string {
 /** The folder part of a path. */
 export function dirName(path: string): string {
   const i = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
+  // A file at the top of a Windows drive lives in "C:\", not "C:".
+  if (i === 2 && /^[A-Za-z]:/.test(path)) return path.slice(0, 3);
   return i > 0 ? path.slice(0, i) : '';
 }

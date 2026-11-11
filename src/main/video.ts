@@ -7,15 +7,30 @@ import path from 'node:path';
 type Handle = (channel: string, fn: (e: unknown, ...args: any[]) => unknown) => void;
 
 /** Where FFmpeg might be. GUI apps on macOS don't get the shell's PATH, so the usual install places are tried too. */
-export function candidates(): string[] {
-  const exe = process.platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg';
+export function candidates(platform: string = process.platform, env: NodeJS.ProcessEnv = process.env): string[] {
+  const win = platform === 'win32';
+  const p = win ? path.win32 : path.posix;
+  const exe = win ? 'ffmpeg.exe' : 'ffmpeg';
   const list: string[] = [];
-  if (process.env.FRAMELING_FFMPEG) list.push(process.env.FRAMELING_FFMPEG);
-  for (const dir of (process.env.PATH ?? '').split(path.delimiter)) if (dir) list.push(path.join(dir, exe));
-  if (process.platform === 'darwin') list.push('/opt/homebrew/bin/ffmpeg', '/usr/local/bin/ffmpeg', '/opt/local/bin/ffmpeg');
-  else if (process.platform === 'win32') list.push('C:\\ffmpeg\\bin\\ffmpeg.exe', path.join(process.env.ProgramFiles ?? 'C:\\Program Files', 'ffmpeg', 'bin', 'ffmpeg.exe'));
-  else list.push('/usr/bin/ffmpeg', '/usr/local/bin/ffmpeg', '/snap/bin/ffmpeg');
-  return [...new Set(list)];
+  if (env.FRAMELING_FFMPEG) list.push(env.FRAMELING_FFMPEG);
+  // Windows spells it Path, and a copy of the environment (tests) isn't case-blind like process.env is there.
+  const PATH = env.PATH ?? env.Path ?? '';
+  for (const dir of PATH.split(win ? ';' : ':')) if (dir) list.push(p.join(dir.replace(/^"|"$/g, ''), exe));
+  if (platform === 'darwin') list.push('/opt/homebrew/bin/ffmpeg', '/usr/local/bin/ffmpeg', '/opt/local/bin/ffmpeg');
+  else if (win) {
+    // The usual installs: by hand, winget, Chocolatey and Scoop. A program started before the install finished, or
+    // from a shortcut, may not have them on its PATH yet.
+    list.push('C:\\ffmpeg\\bin\\ffmpeg.exe', p.join(env.ProgramFiles ?? 'C:\\Program Files', 'ffmpeg', 'bin', 'ffmpeg.exe'));
+    if (env.LOCALAPPDATA) list.push(p.join(env.LOCALAPPDATA, 'Microsoft', 'WinGet', 'Links', 'ffmpeg.exe'));
+    list.push(p.join(env.ProgramData ?? 'C:\\ProgramData', 'chocolatey', 'bin', 'ffmpeg.exe'));
+    if (env.USERPROFILE) list.push(p.join(env.USERPROFILE, 'scoop', 'shims', 'ffmpeg.exe'));
+  } else list.push('/usr/bin/ffmpeg', '/usr/local/bin/ffmpeg', '/snap/bin/ffmpeg');
+  // Windows doesn't care about letter case, so C:\FFmpeg and c:\ffmpeg are tried once.
+  const seen = new Set<string>();
+  return list.filter((x) => {
+    const k = win ? x.toLowerCase() : x;
+    return seen.has(k) ? false : (seen.add(k), true);
+  });
 }
 
 export interface FfmpegProbe {
@@ -31,9 +46,9 @@ export function probeFfmpeg(): { bin: string | null; probe: FfmpegProbe } {
   if (probed) return probed;
   for (const bin of candidates()) {
     if (!fs.existsSync(bin)) continue;
-    const v = spawnSync(bin, ['-hide_banner', '-version'], { encoding: 'utf8', timeout: 8000 });
+    const v = spawnSync(bin, ['-hide_banner', '-version'], { encoding: 'utf8', timeout: 8000, windowsHide: true });
     if (v.status !== 0) continue;
-    const enc = spawnSync(bin, ['-hide_banner', '-encoders'], { encoding: 'utf8', timeout: 8000, maxBuffer: 8 * 1024 * 1024 });
+    const enc = spawnSync(bin, ['-hide_banner', '-encoders'], { encoding: 'utf8', timeout: 8000, maxBuffer: 8 * 1024 * 1024, windowsHide: true });
     const version = /ffmpeg version (\S+)/.exec(v.stdout)?.[1];
     if (!/prores_ks/.test(enc.stdout)) {
       probed = { bin: null, probe: { ok: false, version, reason: "The FFmpeg on this computer can't make ProRes. Install a full build from ffmpeg.org, then open Export again." } };
@@ -93,7 +108,7 @@ export function registerVideoIpc(handle: Handle, mayWrite: (p: string) => boolea
     const height = Math.round(Number(o?.height));
     const fps = Number(o?.fps);
     if (!(width > 0 && height > 0 && width <= 16384 && height <= 16384 && fps > 0 && fps <= 240)) return { error: 'That size or frame rate is not one ProRes can use.' };
-    const proc = spawn(bin, proresArgs({ width, height, fps, alpha: !!o.alpha, out }), { stdio: ['pipe', 'pipe', 'pipe'] });
+    const proc = spawn(bin, proresArgs({ width, height, fps, alpha: !!o.alpha, out }), { stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true });
     const job: Job = { proc, err: '', out, done: new Promise((r) => proc.on('exit', (code) => r(code))) };
     proc.stderr.on('data', (d) => {
       if (job.err.length < 4000) job.err += String(d);
