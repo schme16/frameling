@@ -434,7 +434,7 @@ Gold stays gold for chosen things by default, with dark text on it. If you chang
 
 - **Draw** has the tools and colours close, and a small timeline.
 - **Animate** gives the timeline lots of room.
-- **Pixel** puts the colour palette on the left.
+- **Pixel** is made for pixel art: only the pixel tools, a big palette, a real-size Preview and the pixel bar. See [The Pixel workspace](help:pixel-workspace).
 
 ## Switching
 

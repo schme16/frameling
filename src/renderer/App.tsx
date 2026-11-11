@@ -2,6 +2,7 @@
 // (command palette, preferences, help, welcome, tooltips, toasts). The pieces live in src/ui.
 import { useEffect, useState } from 'react';
 import { CanvasView } from '../canvas/CanvasView';
+import { PixelBar } from '../pixel/PixelBar';
 import { CommandPalette } from '../ui/CommandPalette';
 import { DockZoneView, Splitter } from '../ui/DockView';
 import { syncPanels } from '../ui/dock';
@@ -71,6 +72,7 @@ export function App() {
         <Splitter zone="left" />
         <div className="ui-center">
           <main className="ui-canvas" aria-label="Drawing canvas" data-help="canvas">
+            <PixelBar />
             <CanvasView />
           </main>
           <Splitter zone="bottom" />

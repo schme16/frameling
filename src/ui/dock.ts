@@ -1,6 +1,7 @@
 // Dock layout: which panels sit in the left, right and bottom zones, in what order, how big, and the workspaces
 // (saved layouts). The view lives in Dock.tsx; this file is plain state so it can be tested.
 import { allPanels, getPanel, type DockZone, type PanelDef } from '../core/registry';
+import type { LayerKind } from '../core/format';
 import { createStore, readRaw, writeJson } from './mini';
 
 export interface ZoneState {
@@ -24,6 +25,10 @@ export interface Workspace {
   name: string;
   builtin?: boolean;
   layout: Layout;
+  /** A pixel art workspace: the pixel bar over the canvas, export starting on a sprite sheet (missing = no). */
+  pixel?: boolean;
+  /** Tools the tool strip shows on each kind of layer, in this order (missing kind = every tool that works there). */
+  tools?: Partial<Record<LayerKind, string[]>>;
 }
 
 export interface DockState {
@@ -75,21 +80,49 @@ export function builtinWorkspaces(panels: PanelDef[] = allPanels()): Workspace[]
   animate.zones.bottom.size = 330;
   animate.zones.right.size = 280;
 
-  // Pixel: colours sit on the left where the palette is always in reach.
-  const pixel = layoutFrom(panels, (p) => (isColour(p) ? 'left' : p.zone));
-  pixel.zones.left.size = 240;
+  // Pixel: a big palette on the left where it's always in reach, the real-size Preview leading the right, and the
+  // panels pixel art never needs tucked away (View > Panels still has them).
+  const pixel = layoutFrom(panels, (p) => (isColour(p) ? 'left' : p.zone), (a, b) => (b.id === 'preview' ? 1 : 0) - (a.id === 'preview' ? 1 : 0));
+  pixel.zones.left.size = 280;
   // The pixel palette leads the left side when there is one.
   if (pixel.zones.left.tabs.includes('palette')) {
     pixel.zones.left.tabs = ['palette', ...pixel.zones.left.tabs.filter((t) => t !== 'palette')];
     pixel.zones.left.active = 'palette';
   }
+  for (const id of PIXEL_HIDDEN) {
+    for (const z of ZONES) pixel.zones[z].tabs = pixel.zones[z].tabs.filter((t) => t !== id);
+    if (panels.some((p) => p.id === id)) pixel.hidden.push(id);
+  }
+  for (const z of ZONES) if (!pixel.zones[z].tabs.includes(pixel.zones[z].active ?? '')) pixel.zones[z].active = pixel.zones[z].tabs[0] ?? null;
+  pixel.zones.right.size = 264;
   pixel.zones.bottom.size = 260;
 
   return [
     { id: 'draw', name: 'Draw', builtin: true, layout: draw },
     { id: 'animate', name: 'Animate', builtin: true, layout: animate },
-    { id: 'pixel', name: 'Pixel', builtin: true, layout: pixel },
+    { id: 'pixel', name: 'Pixel', builtin: true, layout: pixel, pixel: true, tools: { pixel: [...PIXEL_TOOLS] } },
   ];
+}
+
+/** The tools the Pixel workspace shows on a pixel layer, drawing tools first. Rig and vector-only tools are left out. */
+export const PIXEL_TOOLS = ['pencil', 'brush', 'eraser', 'fill', 'shade', 'dither', 'line', 'rect', 'ellipse', 'pixel-select', 'eyedropper', 'hand', 'zoom'] as const;
+/** Panels the Pixel workspace starts with closed. */
+export const PIXEL_HIDDEN = ['rig', 'lipsync', 'text', 'particles', 'camera', 'symbol-props'] as const;
+
+/**
+ * The tools to show in the strip: the ones that work on this layer kind, narrowed and ordered by the workspace's own
+ * list for that kind when it has one. Tools the list names that aren't registered are skipped.
+ */
+export function stripTools<T extends { id: string }>(usable: T[], kind: LayerKind | null, ws: Pick<Workspace, 'tools'> | undefined): T[] {
+  const only = kind ? ws?.tools?.[kind] : undefined;
+  if (!only) return usable;
+  const byId = new Map(usable.map((t) => [t.id, t]));
+  return only.map((id) => byId.get(id)).filter((t): t is T => !!t);
+}
+
+/** True when the current workspace is a pixel art one (the built-in Pixel, or one saved from it). */
+export function inPixelWorkspace(): boolean {
+  return !!currentWorkspace()?.pixel;
 }
 
 const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
@@ -258,7 +291,9 @@ export function saveWorkspace(name: string): Workspace | null {
   if (!clean) return null;
   const s = dock.get();
   const existing = s.user.find((w) => w.name.toLowerCase() === clean.toLowerCase());
-  const ws: Workspace = { id: existing?.id ?? `u-${Date.now().toString(36)}`, name: clean, layout: clone(s.layout) };
+  // A layout saved from the Pixel workspace stays a pixel one (its tool list and pixel bar come along).
+  const from = currentWorkspace();
+  const ws: Workspace = { id: existing?.id ?? `u-${Date.now().toString(36)}`, name: clean, layout: clone(s.layout), ...(from?.pixel ? { pixel: true } : {}), ...(from?.tools ? { tools: clone(from.tools) } : {}) };
   const user = existing ? s.user.map((w) => (w.id === ws.id ? ws : w)) : [...s.user, ws];
   commit({ ...s, user, workspaceId: ws.id });
   return ws;
