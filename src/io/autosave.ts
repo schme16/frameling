@@ -46,6 +46,10 @@ export function startFileServices(): void {
   if (!api) return;
 
   setInterval(() => void autosaveNow(), AUTOSAVE_EVERY_MS);
+  // Also when the window is hidden (another tab, minimised), as a browser tab can be closed without asking.
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') void autosaveNow();
+  });
 
   // Title bar and the desktop side's idea of "is there anything unsaved".
   let last = '';

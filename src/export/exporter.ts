@@ -3,6 +3,7 @@
 import type { VideoCodec } from 'mediabunny';
 import { store } from '../core/store';
 import { baseName, desktop } from '../io/desktop';
+import { can } from '../platform';
 import { notify } from '../io/notify';
 import { detectCapabilities } from './capabilities';
 import { filtersFor, planExport } from './plan';
@@ -89,7 +90,7 @@ export async function exportDocument(settings: ExportSettings, signal: AbortSign
 
   // Ask where first, so nobody waits for a long render just to cancel at the end.
   let target: string | null;
-  if (settings.format === 'sheet') target = await api.files.pickExportFolder({ title: 'Choose a folder for your sprite sheet' });
+  if (settings.format === 'sheet') target = await api.files.pickExportFolder({ title: 'Choose a folder for your sprite sheet', suggestedName: plan.name });
   else target = await api.files.pickExportFile({ suggestedName: `${plan.name}.${info.ext}`, filters: filtersFor(settings.format), title: `Export ${info.title}` });
   if (!target) return 'cancelled';
 
@@ -125,6 +126,6 @@ export async function exportDocument(settings: ExportSettings, signal: AbortSign
     shown = w.paths.find((p) => baseName(p) === result.main) ?? w.paths[0];
   }
   saveLastSettings(settings);
-  notify(`Exported ${baseName(shown)}.`, 'success', { label: 'Show in folder', run: () => void api.files.showInFolder(shown) }, 9000, 'cheer');
+  notify(`Exported ${baseName(shown)}.`, 'success', can('showInFolder') ? { label: 'Show in folder', run: () => void api.files.showInFolder(shown) } : undefined, 9000, 'cheer');
   return 'done';
 }
