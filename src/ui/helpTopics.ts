@@ -536,7 +536,7 @@ If a message has a button, like **Undo**, press it before the message leaves to 
 
 ## How
 
-Open **Help, Examples** (or **File, New drawing** and look under **Start from an example**). Press a card to open it. Each card shows a small picture, whether it is **vector** or **pixel** art, and what it is for.
+Open **Help, Examples** (or **File, New drawing** and look under **Start from an example**). Press a card to open it. Each card shows a small picture, whether it is **vector** or **pixel** art, and what it is for. The little chips under it (walk, loop, pixel...) say what is inside; rest your mouse on **+2** to see the rest. Square and tall drawings show whole on their card.
 
 Under the cards, **Or start blank, with layers ready** has empty starters by size: a blank vector stage with a Colour and a Lines layer, and a blank pixel grid.
 
@@ -544,7 +544,7 @@ Under the cards, **Or start blank, with layers ready** has empty starters by siz
 
 - **Learn the basics:** Bouncing ball, Flour sack hop, Blink, Morphing shapes.
 - **Characters:** Walk cycle (on twos, with onion skin on), Run cycle (pixel), Game hero sprite set, Paper doll puppet (bones), Lip sync mouth chart.
-- **Effects:** Explosion and smoke (drawn frames plus particles), Sparkle FX.
+- **Effects:** Explosion and smoke (drawn frames plus particles, with dark smoke that shows on light and dark backgrounds), Sparkle FX.
 - **For games and apps:** UI icon set (16x16 pixel icons), Sticker pack (emoji stickers), Tileset and level, Loading spinner.
 - **Video:** Title card (animated text and a camera move), Camera and parallax, Bouncing logo.
 
