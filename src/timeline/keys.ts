@@ -10,21 +10,30 @@ import { pruneDrawings } from '../core/doc';
 import { store } from '../core/store';
 import { ensureLength, MAX_LENGTH } from './edit-core';
 import { celRef, fxRef, parseRef, type KeyRef } from './tracks';
+import { applyPropEdits, planPropEdits, propWhy, type PropPicks } from './propKeys';
 
 const end = (c: { start: number; length: number }) => c.start + c.length;
 
 interface Picked {
   cels: Map<Id, Set<Id>>;
   fx: Map<Id, Map<Id, Set<number>>>;
+  /** Symbol property keys (one row's key on a drawing key). */
+  props: PropPicks;
 }
 
 function pick(refs: Iterable<KeyRef>): Picked {
   const cels = new Map<Id, Set<Id>>();
   const fx = new Map<Id, Map<Id, Set<number>>>();
+  const props: PropPicks = new Map();
   for (const r of refs) {
     const p = parseRef(r);
     if (!p) continue;
-    if (p.kind === 'cel') {
+    if (p.kind === 'prop') {
+      if (!props.has(p.layerId)) props.set(p.layerId, new Map());
+      const m = props.get(p.layerId)!;
+      if (!m.has(p.propId)) m.set(p.propId, new Set());
+      m.get(p.propId)!.add(p.celId);
+    } else if (p.kind === 'cel') {
       if (!cels.has(p.layerId)) cels.set(p.layerId, new Set());
       cels.get(p.layerId)!.add(p.celId);
     } else {
@@ -34,7 +43,23 @@ function pick(refs: Iterable<KeyRef>): Picked {
       m.get(p.effectId)!.add(p.frame);
     }
   }
-  return { cels, fx };
+  // A drawing key that is picked takes all its property keys along, so those aren't picked a second time.
+  for (const [layerId, byProp] of props) {
+    const own = cels.get(layerId);
+    if (!own) continue;
+    for (const [propId, ids] of byProp) {
+      for (const id of ids) if (own.has(id)) ids.delete(id);
+      if (!ids.size) byProp.delete(propId);
+    }
+    if (!byProp.size) props.delete(layerId);
+  }
+  return { cels, fx, props };
+}
+
+/** Drawing keys and property keys picked together on one layer can't be moved in one go. */
+function mixed(p: Picked): boolean {
+  for (const layerId of p.props.keys()) if (p.cels.has(layerId)) return true;
+  return false;
 }
 
 /** The layers the picked keys are on. */
@@ -78,7 +103,18 @@ function planFx(frames: number[], chosen: Set<number>, map: (f: number) => numbe
  * so theirs change), or null when nothing moved or the keys would collide (the doc is left alone then).
  */
 export function retimeKeys(doc: Doc, refs: Iterable<KeyRef>, map: (frame: number) => number): KeyRef[] | null {
-  const { cels, fx } = pick(refs);
+  const picked = pick(refs);
+  const { cels, fx } = picked;
+  keysWhy = '';
+  if (mixed(picked)) {
+    keysWhy = 'Move the drawing keys and the property keys one set at a time.';
+    return null;
+  }
+  const propPlan = planPropEdits(doc, picked.props, map);
+  if (!propPlan && picked.props.size) {
+    keysWhy = propWhy;
+    return null;
+  }
   const celPlans = new Map<Layer, { start: number; length: number }[]>();
   for (const [layerId, ids] of cels) {
     const layer = doc.layers.find((l) => l.id === layerId);
@@ -125,10 +161,21 @@ export function retimeKeys(doc: Doc, refs: Iterable<KeyRef>, map: (frame: number
     });
     p.keys.sort((a, b) => a.frame - b.frame);
   }
+  if (propPlan?.changed) {
+    changed = true;
+    out.push(...applyPropEdits(doc, propPlan));
+    for (const l of propPlan.layers) {
+      const last = l.layer.cels[l.layer.cels.length - 1];
+      if (last) furthest = Math.max(furthest, end(last));
+    }
+  }
   if (!changed) return null;
   ensureLength(doc, furthest);
   return out;
 }
+
+/** Why the last retime was refused, when it can say. */
+let keysWhy = '';
 
 /** The earliest frame among the picked keys. */
 export function firstFrameOf(doc: Doc, refs: Iterable<KeyRef>): number | undefined {
@@ -137,7 +184,7 @@ export function firstFrameOf(doc: Doc, refs: Iterable<KeyRef>): number | undefin
     const p = parseRef(r);
     const layer = p && doc.layers.find((l) => l.id === p.layerId);
     if (!p || !layer) continue;
-    const f = p.kind === 'cel' ? layer.cels.find((c) => c.id === p.celId)?.start : p.frame;
+    const f = p.kind === 'fx' ? p.frame : layer.cels.find((c) => c.id === p.celId)?.start;
     if (f !== undefined && (first === undefined || f < first)) first = f;
   }
   return first;
@@ -145,8 +192,10 @@ export function firstFrameOf(doc: Doc, refs: Iterable<KeyRef>): number | undefin
 
 /** Can the picked keys all move by `by` frames without running into anything? */
 export function canShift(doc: Doc, refs: KeyRef[], by: number): boolean {
-  const { cels, fx } = pick(refs);
+  const picked = pick(refs);
+  const { cels, fx } = picked;
   const map = (f: number) => f + by;
+  if (mixed(picked) || (picked.props.size && !planPropEdits(doc, picked.props, map))) return false;
   for (const [layerId, ids] of cels) {
     const layer = doc.layers.find((l) => l.id === layerId);
     if (layer && !planCels(layer, ids, map)) return false;
@@ -175,8 +224,19 @@ export const scaleMap = (anchor: number, factor: number) => (f: number) => ancho
  * on over them), otherwise they become empty. Returns false when nothing was there.
  */
 export function removeKeys(doc: Doc, refs: Iterable<KeyRef>): boolean {
-  const { cels, fx } = pick(refs);
+  const { cels, fx, props } = pick(refs);
   let changed = false;
+  // Property keys first: each only resets its own row to the key before it.
+  if (props.size) {
+    const plan = planPropEdits(doc, props, null);
+    if (!plan) {
+      keysWhy = propWhy;
+      if (!cels.size && !fx.size) return false;
+    } else if (plan.changed) {
+      applyPropEdits(doc, plan);
+      changed = true;
+    }
+  }
   for (const [layerId, ids] of cels) {
     const layer = doc.layers.find((l) => l.id === layerId);
     if (!layer) continue;
@@ -230,7 +290,7 @@ export function moveKeys(refs: KeyRef[], by: number, coalesce?: string): KeysOut
   if (locked) return { ok: false, why: LOCKED(locked) };
   let out: KeyRef[] | null = null;
   store().update(refs.length === 1 ? 'Move a key' : 'Move keys', (d) => void (out = retimeKeys(d as Doc, refs, (f) => f + by)), coalesce ? { coalesce } : undefined);
-  return out ? { ok: true, refs: out } : { ok: false, why: 'Those keys would land on other keys there.' };
+  return out ? { ok: true, refs: out } : { ok: false, why: keysWhy || 'Those keys would land on other keys there.' };
 }
 
 /** Spreads the keys out (factor above 1) or squeezes them together, from the earliest one, as one undo step. */
@@ -241,7 +301,7 @@ export function scaleKeys(refs: KeyRef[], factor: number, anchor?: number): Keys
   const a = anchor ?? firstFrameOf(store().get().doc, refs) ?? 0;
   let out: KeyRef[] | null = null;
   store().update(factor > 1 ? 'Spread keys out' : 'Squeeze keys together', (d) => void (out = retimeKeys(d as Doc, refs, scaleMap(a, factor))));
-  return out ? { ok: true, refs: out } : { ok: false, why: 'Squeezed that much, some keys would land on the same frame.' };
+  return out ? { ok: true, refs: out } : { ok: false, why: keysWhy || 'Squeezed that much, some keys would land on the same frame.' };
 }
 
 /** Deletes the keys, as one undo step. */
@@ -250,6 +310,7 @@ export function deleteKeys(refs: KeyRef[]): KeysOutcome {
   const locked = lockedAmong(refs);
   if (locked) return { ok: false, why: LOCKED(locked) };
   let done = false;
+  keysWhy = '';
   store().update(refs.length === 1 ? 'Delete a key' : 'Delete keys', (d) => void (done = removeKeys(d as Doc, refs)));
-  return done ? { ok: true, refs: [] } : { ok: false, why: '' };
+  return done ? { ok: true, refs: [] } : { ok: false, why: keysWhy };
 }

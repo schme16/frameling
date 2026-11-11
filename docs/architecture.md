@@ -268,7 +268,9 @@ Where things live:
   open layers, picked keys; no undo), `geometry.ts` (pixel and frame maths).
 - `edit-core.ts` is the pure document edits (new key, duplicate, clear, insert and remove frames, exposure, move and
   resize cels); `ops.ts` wraps them as undo steps that say why they can't run. `tracks.ts` and `keys.ts` handle
-  property rows and moving, scaling and deleting picked keys.
+  property rows and moving, scaling and deleting picked keys. A symbol's property key (`p:` ref) is one row's value on a
+  drawing key: `propKeys.ts` moves it alone (the key it leaves takes the earlier value, a landing frame inside a hold or
+  tween gets a drawing key cut out). Drawing (`c:`) and effect (`e:`) keys are as before.
 - `playback.ts`: one loop driven by `ui.playing`; the frame comes from the clock, not by counting. Plays the picked
   clip, the play range (`inout.ts`, `range.ts`) or everything, looping or ping-pong. Any document change stops it.
 - `tweenOffer.ts`: clicking between two keys can offer a classic or shape tween inline.

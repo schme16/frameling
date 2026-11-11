@@ -55,13 +55,15 @@ Learn more: [Frames, keys and holds](help:timeline-frames), [Keys, tweens and pr
 
 Click the **arrow** beside a layer's name to open it. You get a row for each thing that changes on it: position, size or turn of a symbol, where a camera looks, each bone of a puppet, each animated effect. Every key is a diamond on its row. A line joins two keys where the value glides between them.
 
+On a symbol, each row's keys move on their own: drag a **Position** diamond and only the position moves. Drop one between drawing keys and Frameling cuts a drawing key there. Bones, cameras and morphs belong to the drawing, so they move it whole.
+
 ## Picking and moving keys
 
 - **Click** a diamond to pick it. **Shift+click** picks more, across any layers.
 - **Drag** across the empty part of a property row (or **Shift** and drag anywhere empty) to pick every key in a box.
 - **Drag** a picked diamond to retime all the picked keys. A hold that ran up to the next key still does, so tweens stay joined.
 - Hold **Alt** while you drag to **stretch or squeeze** the picked keys from the first one: slower or faster.
-- **Delete** takes picked keys away. The drawing before carries on over the gap.
+- **Delete** takes picked keys away. The drawing before carries on over the gap. A symbol row's key goes alone.
 
 Right-click a key for **Spread out** and **Squeeze together** too.
 

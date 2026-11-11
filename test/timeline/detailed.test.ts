@@ -35,7 +35,8 @@ describe('property tracks', () => {
     expect(ids).toContain('position');
     const pos = tracks.find((t) => t.id === 'position')!;
     expect(pos.keys.length).toBeGreaterThan(1);
-    expect(pos.keys.every((k) => k.ref.startsWith('c:'))).toBe(true);
+    // Position keys belong to the symbol's position, not to the drawing, so they move on their own.
+    expect(pos.keys.every((k) => k.ref.startsWith('p:'))).toBe(true);
     expect(pos.spans.length).toBeGreaterThan(0);
     expect(pos.spans[0].kind).toBe('tween');
     // Cached until the drawings change.
