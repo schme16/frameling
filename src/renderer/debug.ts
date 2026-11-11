@@ -6,6 +6,7 @@ import * as tiles from '../tiles/debug';
 import { allCommands, getCommand } from '../core/registry';
 import { celebrate } from '../quests/feedback';
 import { getQuest, startQuest } from '../quests/registry';
+import { getPrefs, setPrefs } from '../ui/prefs';
 import { quillSheet, setQuillSheet, tick as quillTick } from '../ui/mascot/runtime';
 
 if (new URLSearchParams(location.search).has('debug')) {
@@ -19,6 +20,8 @@ if (new URLSearchParams(location.search).has('debug')) {
       return !!t;
     },
     tiles,
+    // Theme and look picks, for shots in a given theme.
+    prefs: { get: getPrefs, set: setPrefs },
     commands: () => allCommands().map((c) => c.id),
     // Swap in another Quill sheet (a placeholder, or art being tried out) without a rebuild.
     quests: {

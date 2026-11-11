@@ -1,6 +1,6 @@
 // Preferences: small, saved in localStorage, applied to <html> so the theme tokens do the rest.
 import { createStore, readJson, writeJson } from './mini';
-import { DEFAULT_DARK, DEFAULT_LIGHT, type Theme } from './themes/builtIn';
+import { DEFAULT_DARK, DEFAULT_LIGHT, surroundFor, type Theme } from './themes/builtIn';
 import { sanitizeCustomThemes, themeForMode, writeTheme } from './themes/model';
 
 export type ThemePref = 'system' | 'dark' | 'light';
@@ -134,6 +134,10 @@ export function applyPrefs(): void {
   // computer's own setting decides them, which always agrees with the theme chosen above.
   if (p.theme === 'system' && !preview) delete root.dataset.theme;
   else root.dataset.theme = theme.mode;
+  // A pattern around the page for the themes that have one (camo, strawberry seeds). Pure CSS, see canvas.css.
+  const surround = surroundFor(theme);
+  if (surround) root.dataset.surround = surround;
+  else delete root.dataset.surround;
   // Written every time (even when unchanged) so things that cache token values, like the canvas, hear about it.
   root.dataset.look = p.look;
   if (p.reduceMotion) root.dataset.motion = 'reduce';
