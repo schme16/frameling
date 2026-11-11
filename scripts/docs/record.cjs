@@ -133,6 +133,10 @@ async function runSteps(win, steps) {
         const y = Math.max(0, Math.floor(r[1] - pad));
         crop = [x, y, Math.min(width - x, Math.ceil(r[2] + pad * 2)), Math.min(height - y, Math.ceil(r[3] + pad * 2))];
       }
+      // A hidden window paints lazily, so the first capture can hand back the frame before the last step. Take a
+      // throwaway one to get it painting, then the real one.
+      await wc.capturePage();
+      await sleep(150);
       const img = await wc.capturePage(crop ? { x: crop[0], y: crop[1], width: crop[2], height: crop[3] } : undefined);
       fs.writeFileSync(path.join(outDir, `${s.shot}.png`), img.toPNG());
     }
@@ -144,6 +148,12 @@ app.whenReady().then(async () => {
   ipcMain.handle('recent:list', () => []);
   for (const c of ['autosave:read', 'autosave:clear', 'autosave:write', 'autosave:keep', 'autosave:readKept', 'autosave:removeKept', 'recent:add', 'recent:remove', 'recent:clear']) ipcMain.handle(c, () => null);
   ipcMain.handle('autosave:listKept', () => []);
+  // Plugins and templates live in memory for the run.
+  const lib = new Map();
+  ipcMain.handle('library:list', (_e, kind) => [...lib.keys()].filter((k) => k.startsWith(kind + '/')).map((k) => ({ id: k.slice(kind.length + 1), size: lib.get(k).length, modified: 0 })));
+  ipcMain.handle('library:read', (_e, kind, id) => lib.get(`${kind}/${id}`) ?? null);
+  ipcMain.handle('library:write', (_e, kind, id, bytes) => void lib.set(`${kind}/${id}`, bytes));
+  ipcMain.handle('library:remove', (_e, kind, id) => void lib.delete(`${kind}/${id}`));
   ipcMain.handle('app:askSaveChanges', () => 'discard');
   // Shots of the Export dialog show ProRes as available (the real check looks for FFmpeg).
   ipcMain.handle('video:probe', () => ({ ok: true }));

@@ -3,6 +3,7 @@ import { registerHelpTopics } from '../core/registry';
 registerHelpTopics([
   {
     id: 'rig',
+    order: 1,
     title: 'Bones: pose a character like a puppet',
     section: 'Rigging',
     media: 'rig.mp4',
@@ -23,6 +24,7 @@ Want to see one working first? **File > New** and pick **Paper doll puppet**: it
   },
   {
     id: 'rig-bones',
+    order: 2,
     title: 'The Bone tool: drawing a skeleton',
     section: 'Rigging',
     media: 'rig-bones.mp4',
@@ -44,6 +46,7 @@ Prefer slimmer bones? **Rig > Slim bones** switches the look.`,
   },
   {
     id: 'rig-attach',
+    order: 3,
     title: 'Attaching parts to bones',
     section: 'Rigging',
     media: 'rig-attach.png',
@@ -60,6 +63,7 @@ Want hands or mouths that change shape? Keep swapping drawings on the attached l
   },
   {
     id: 'rig-posing',
+    order: 4,
     title: 'The Pose tool: posing and IK',
     section: 'Rigging',
     media: 'rig-posing.mp4',

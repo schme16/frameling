@@ -3,6 +3,8 @@ import { registerHelpTopics } from '../core/registry';
 registerHelpTopics([
   {
     id: 'canvas-navigation',
+    order: 7,
+    media: 'canvas-navigation.mp4',
     title: 'Moving around the page',
     section: 'Drawing',
     summary: 'Zoom in to work on details, zoom out to see everything, and slide the page around.',
@@ -77,6 +79,7 @@ Turn it off or on from **View > Pixel grid**. The grid is only a guide. It never
   },
   {
     id: 'colours',
+    order: 5,
     title: 'Colours panel',
     section: 'Drawing',
     media: 'colours.png',

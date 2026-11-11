@@ -5,8 +5,8 @@ import type { HelpTopic } from '../../src/core/registry';
 import { Markdown, parseBlocks, parseHelpLink, parseInline, plain, slug } from '../../src/ui/help/markdown';
 import { searchHelp, sections } from '../../src/ui/help/search';
 import { allHelp } from '../../src/core/registry';
-import '../../src/core/commands';
-import '../../src/ui/helpTopics';
+// The shell's topics link out to every area (the overview does), so load them all.
+import '../../src/renderer/features';
 
 const topic = (id: string, title: string, body: string, extra: Partial<HelpTopic> = {}): HelpTopic => ({ id, title, summary: `About ${title}`, body, section: 'Basics', ...extra });
 

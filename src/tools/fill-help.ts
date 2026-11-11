@@ -30,14 +30,14 @@ If you draw a new line across an area you already filled, then click one side wi
 
 ## On pixel layers
 
-On a pixel layer the paint bucket fills the joined-up pixels of the colour you click. Turn on **Fill all of this colour** to recolour every pixel of that colour on the frame, even the ones that are not joined up. Pixel fills match colours exactly, so a pixel that is only slightly different is treated as a different colour.
+On a pixel layer the paint bucket fills the joined-up pixels of the colour you click. Colours must match exactly, so a slightly different pixel stops the fill.
 
 ## Options
 
 - **Close gaps**: how big a gap in your lines still counts as closed.
 - **Fill on top**: put the colour above your lines instead of behind them. Most of the time you want it off.
 - **Use lines from all layers**: the bucket sees lines on every visible layer, not just the one you are on. Keep your line art on one layer, pick a colour layer underneath, and fill there. Your lines stay clean and the colour is easy to change later.
-- **Fill all of this colour** (pixel layers): recolour every pixel of the clicked colour.
+- **Fill all of this colour** (pixel layers): recolour every pixel of that colour on the frame, joined up or not.
 
 ## Tips
 
