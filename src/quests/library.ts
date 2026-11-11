@@ -56,7 +56,7 @@ const pickBrush = () => store().setUi({ tool: 'brush' });
 export const FIRST_ANIMATION: Quest = {
   id: 'first-animation',
   title: 'Your first animation in 60 seconds',
-  summary: 'Draw a little thing, draw it again a bit different, press play. That is animation!',
+  summary: "Draw a doodle, draw it again a little different, that's animation!",
   minutes: 1,
   icon: 'sparkle',
   badge: { id: 'flipbooker', name: 'Flipbooker', icon: 'film', color: '--grape' },
