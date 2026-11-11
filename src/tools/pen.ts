@@ -10,7 +10,7 @@ import { uid } from '../core/doc';
 import { registerTool, type Tool, type ToolContext, type ToolPointer } from '../core/registry';
 import { drawShape, subPathsToPath2D } from '../core/render';
 import { store } from '../core/store';
-import { clearSnap, snapPt } from '../canvas/guides';
+import { clearSnap, snapLineEnd, snapPt } from '../canvas/guides';
 import { dragHandles, fromAnchors, type Anchor, type P } from '../geometry/pen';
 import { addShapes } from './merge-mode';
 import { noteColorUsed } from './recent';
@@ -126,8 +126,11 @@ const nearLast = (p: P, zoom: number) => !!path && path.length >= 2 && Math.hypo
 
 function placed(e: ToolPointer, ctx: ToolContext): P {
   const last = path?.anchors[path.length - 1];
-  if (e.shift && last) return constrain45(last, e);
-  return snapPt(e, ctx.zoom, e.mod);
+  if (!last) return snapPt(e, ctx.zoom, e.mod);
+  // From the last point: perspective directions when the guides show, Shift for 45 degree steps (or those directions).
+  const s = snapLineEnd(last, e, ctx.zoom, e.mod, e.shift);
+  if (e.shift && !s.constrained) return constrain45(last, e);
+  return s.pt;
 }
 
 export const penTool: Tool = {
@@ -174,8 +177,9 @@ export const penTool: Tool = {
     if (closing) finish(ctx, true);
     ctx.requestOverlay();
   },
-  hover(e) {
-    hover = { x: e.x, y: e.y };
+  hover(e, ctx) {
+    // The preview segment goes where a click would put the point (perspective and Shift included).
+    hover = path?.length && !nearFirst(e, ctx.zoom) ? placed(e, ctx) : { x: e.x, y: e.y };
   },
   cancel(ctx) {
     // Escape mid-drag: keep the points so far, drop the drag.

@@ -13,7 +13,12 @@ import { insertFrameAll, removeFrameAll } from '../../src/timeline/ops';
 import { resetStore } from '../../src/core/store';
 import { docWith } from '../timeline/helpers';
 import { DEFAULT_TOOL_SETTINGS, setToolSettings } from '../../src/tools/settings';
-import { addShapes, box, shapesNow, vectorStore } from './helpers';
+import { addShapes, box, ctx, drag, ptr, shapesNow, vectorStore } from './helpers';
+import { constrainWithVanishing, snapToVanishing } from '../../src/canvas/grid';
+import { snapLineEnd } from '../../src/canvas/guides';
+import { setViewSettings } from '../../src/canvas/viewSettings';
+import { lineTool } from '../../src/tools/shapes';
+import { penTool } from '../../src/tools/pen';
 
 beforeEach(() => {
   setToolSettings({ ...DEFAULT_TOOL_SETTINGS });
@@ -100,5 +105,59 @@ describe('play range follows inserted and removed frames', () => {
     expect(s.get().doc.inOut).toEqual({ start: 4, end: 7 });
     s.undo();
     expect(s.get().doc.inOut).toEqual({ start: 5, end: 8 });
+  });
+});
+
+describe('lines follow the perspective guides', () => {
+  const vp = { x: 300, y: 100 };
+  // Points on the ray from (0, 200) to the vanishing point have y + x / 3 = 200.
+  const onRay = (p: { x: number; y: number }) => p.y + p.x / 3;
+  it('pulls a line end onto the direction of a vanishing point when it comes close', () => {
+    const hit = snapToVanishing({ x: 0, y: 100 }, { x: 150, y: 104 }, [vp], 6);
+    expect(hit?.index).toBe(0);
+    expect(hit?.pt.y).toBeCloseTo(100);
+    expect(hit?.pt.x).toBeCloseTo(150);
+    expect(snapToVanishing({ x: 0, y: 100 }, { x: 150, y: 140 }, [vp], 6)).toBeNull();
+  });
+
+  it('with Shift, takes the nearest of the 45 degree steps and the vanishing directions', () => {
+    // From (0, 0) towards (300, 100) is about 18 degrees: nearer to that direction than to 0 or 45.
+    const c = constrainWithVanishing({ x: 0, y: 0 }, { x: 150, y: 52 }, [vp]);
+    expect(c.index).toBe(0);
+    expect(c.pt.y / c.pt.x).toBeCloseTo(1 / 3);
+    const flat = constrainWithVanishing({ x: 0, y: 0 }, { x: 150, y: 2 }, [vp]);
+    expect(flat.index).toBeNull();
+    expect(flat.pt.y).toBeCloseTo(0);
+  });
+
+  it('only while snapping is on, the guides show and Ctrl is up', () => {
+    store().update('Perspective', (d) => void (d.perspective = { points: [vp] }));
+    setViewSettings({ snap: true, perspective: true });
+    const a = { x: 0, y: 250 };
+    const b = { x: 100, y: 205 };
+    // The ray from (0, 250) to (300, 100) has y + x / 2 = 250.
+    const on = snapLineEnd(a, b, 1, false, false).pt;
+    expect(on.y + on.x / 2).toBeCloseTo(250);
+    expect(snapLineEnd(a, b, 1, true, false).pt).toEqual(b);
+    setViewSettings({ perspective: false });
+    expect(snapLineEnd(a, b, 1, false, false).pt).toEqual(b);
+    setViewSettings({ perspective: true });
+  });
+
+  it('the Line tool and the pen draw along it', () => {
+    store().update('Perspective', (d) => void (d.perspective = { points: [vp] }));
+    setViewSettings({ snap: true, perspective: true, grid: 'off' });
+    drag(lineTool, ctx(), [[0, 200], [150, 154]]);
+    const l = shapesNow()[0] as PathShape;
+    expect(onRay(l.paths[0].points[1])).toBeCloseTo(200);
+    const c = ctx();
+    penTool.down!(ptr(0, 200, { time: 50_000 }), c);
+    penTool.up!(ptr(0, 200, { time: 50_000 }), c);
+    // Shift, about 22 degrees up: nearer the vanishing direction (about 18) than 0 or 45.
+    penTool.down!(ptr(150, 140, { shift: true, time: 52_000 }), c);
+    penTool.up!(ptr(150, 140, { shift: true, time: 52_000 }), c);
+    penTool.onKey!({ key: 'Enter' } as KeyboardEvent, c);
+    const p = shapesNow()[1] as PathShape;
+    expect(onRay(p.paths[0].points[1])).toBeCloseTo(200);
   });
 });

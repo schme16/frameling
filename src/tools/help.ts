@@ -104,6 +104,7 @@ On a vector layer, ellipses are made of smooth curves, so they stay sharp howeve
 
 - Hold **Shift** to snap to straight, diagonal and upright angles.
 - Hold **Alt** to draw from the middle.
+- With [perspective guides](help:grids-perspective) showing, the line lines up with a vanishing point when you draw close to its direction (and Shift picks those directions too).
 
 Set how thick it is in the options.
 

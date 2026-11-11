@@ -15,7 +15,7 @@ registerHelpTopics([
 - **Click** to place a sharp corner.
 - **Click and drag** to place a smooth point: the drag pulls out handles that bend the curve.
 - Hold **Alt** while dragging to bend only the next part, leaving a corner.
-- Hold **Shift** to keep the next point at 45 degree steps.
+- Hold **Shift** to keep the next point at 45 degree steps (or lined up with a vanishing point, when [perspective guides](help:grids-perspective) show).
 
 ## Finishing
 
