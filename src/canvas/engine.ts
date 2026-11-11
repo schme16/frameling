@@ -344,6 +344,13 @@ export class CanvasEngine {
       tool.overlay(g, this.ctx);
       g.restore();
     }
+    const extra = ctl.getStageOverlays();
+    if (extra.length) {
+      g.save();
+      g.setTransform(rect.w / doc.width, 0, 0, rect.h / doc.height, rect.x, rect.y);
+      for (const fn of extra) fn(g, ui.zoom);
+      g.restore();
+    }
   }
 
   private drawPixelGrid(g: CanvasRenderingContext2D, rect: { x: number; y: number; w: number; h: number }, zoom: number, dpr: number): void {
