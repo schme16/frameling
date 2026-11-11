@@ -5,6 +5,7 @@ registerHelpTopics([
     id: 'exporting',
     title: 'Exporting',
     section: 'Exporting',
+    media: 'exporting.png',
     summary: 'Turn your drawing into a video, a GIF, pictures, an SVG or a sprite sheet.',
     keywords: ['export', 'share', 'render', 'save as video', 'gif', 'png', 'mp4', 'webm'],
     body: `Saving keeps your drawing editable. **Exporting** makes something to share or use somewhere else, and leaves your drawing as it is.

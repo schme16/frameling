@@ -5,6 +5,8 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   root: 'src/renderer',
   base: './',
+  // The repo's public/ folder (help pictures and videos), not src/renderer/public.
+  publicDir: '../../public',
   plugins: [react()],
   build: {
     outDir: '../../dist/renderer',

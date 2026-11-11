@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { allHelp, getHelp } from '../core/registry';
 import { Icon } from './icons';
 import { Markdown } from './help/markdown';
+import { HelpMedia } from './help/media';
 import { searchHelp, sections } from './help/search';
 import { closeHelp, overlays, openHelp } from './overlays';
 import { Modal } from './Modal';
@@ -93,7 +94,7 @@ export function HelpBrowser({ compact = false, initial, onExpand }: { compact?: 
       </div>
       <h2>{topic.title}</h2>
       <p className="ui-help-summary">{topic.summary}</p>
-      {topic.media && <img className="ui-help-media" src={`help/${topic.media}`} alt="" />}
+      {topic.media && <HelpMedia key={topic.id} media={topic.media} title={topic.title} />}
       <Markdown text={topic.body} onHelp={go} />
     </article>
   ) : null;

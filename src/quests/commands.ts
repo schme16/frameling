@@ -44,6 +44,7 @@ registerHelp({
   id: 'quests',
   title: 'Quests',
   section: 'Getting started',
+  media: 'quests-first-steps.mp4',
   summary: 'Short guided lessons that teach by doing, with a badge at the end of each.',
   keywords: ['tutorial', 'guide', 'lesson', 'learn', 'first animation', 'badge', 'show me', 'onboarding'],
   body: `A quest is a little lesson with a handful of steps. You do each step in the real app, and Frameling ticks it off by itself. Nothing is pretend: what you draw is your drawing.

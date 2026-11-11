@@ -152,6 +152,7 @@ registerHelp({
   id: 'fill-and-stroke',
   title: 'Fill and stroke colours',
   section: 'Drawing',
+  media: 'fill-and-stroke-boxes.png',
   summary: 'Two colour boxes: the fill for insides and the paint bucket, the stroke for lines and outlines.',
   keywords: ['fill', 'stroke', 'outline', 'colour', 'color', 'none', 'swap', 'default'],
   body: `The Colours panel has two boxes. The **fill** box (the solid square) colours the inside of shapes and is what the **paint bucket** pours. The **stroke** box (the square with a hole) colours **lines**: the brush, the pencil, pixel lines and the outline of shapes.

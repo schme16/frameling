@@ -25,6 +25,7 @@ When Frameling opens a new drawing, it fits the page for you.`,
     id: 'pixel-grid',
     title: 'Pixel grid',
     section: 'Drawing',
+    media: 'pixel-heart.mp4',
     summary: 'Lines between the pixels, shown when you zoom in close on a pixel layer.',
     keywords: ['grid', 'pixel art', 'lines'],
     body: `When you're on a pixel layer and zoomed in close (each pixel at least 6 screen pixels wide, which is 600% for single-pixel art), Frameling draws thin lines between the pixels so you can see exactly where each one is.
@@ -35,6 +36,7 @@ Turn it off or on from **View > Pixel grid**. The grid is only a guide. It never
     id: 'colours',
     title: 'Colours panel',
     section: 'Drawing',
+    media: 'colours.png',
     summary: 'Choose the colour you draw with, and keep a palette of favourites.',
     keywords: ['color', 'palette', 'swatch', 'hex', 'picker', 'paint'],
     body: `The big square at the top is the colour you're drawing with.
@@ -50,6 +52,7 @@ Tip: the Eyedropper (I) picks up any colour you can see on the page.`,
     id: 'tool-options',
     title: 'Tool options',
     section: 'Drawing',
+    media: 'tool-options.png',
     summary: 'The settings for the tool you are using, like brush size or whether a shape is filled.',
     keywords: ['settings', 'size', 'options'],
     body: `This panel changes to match whichever tool you've picked. Brush has size, smoothing and pointy ends. Shapes have fill and outline. The eraser has its reach.

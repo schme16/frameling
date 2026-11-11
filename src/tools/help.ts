@@ -5,6 +5,7 @@ registerHelpTopics([
     id: 'tool-brush',
     title: 'Brush',
     section: 'Drawing',
+    media: 'draw-brush.mp4',
     summary: 'Paint smooth, flowing lines. On a pixel layer it draws crisp pixels instead.',
     keywords: ['draw', 'paint', 'pen', 'stroke', 'ink', 'pixel pencil'],
     body: `Press **B**, then drag on the page.
@@ -51,27 +52,29 @@ Using a drawing pen? Flip it over and use the eraser end.`,
     id: 'tool-rect',
     title: 'Rectangle',
     section: 'Drawing',
+    media: 'shapes.png',
     summary: 'Drag to draw a rectangle, with an outline, a fill, or both.',
     keywords: ['box', 'square', 'shape', 'rounded'],
     body: `Press **R**, then drag from one corner to the opposite one.
 
 - Hold **Shift** to keep it a perfect square.
 - Hold **Alt** to draw from the middle instead of a corner.
-- In the options, choose **Outline**, **Filled** or **Both**, set how thick the outline is, and round the corners.
+- In the options, set how thick the outline is and how round the corners are.
 
-The outline uses your current colour. When you choose Both, the fill can be a second colour. Rectangles draw on vector layers.`,
+The inside uses your **fill** colour and the edge uses your **stroke** colour, so a new rectangle starts white with a black outline. Set either one to none for just an outline or just a solid shape. See [Fill and stroke colours](help:fill-and-stroke). Rectangles draw on vector layers.`,
   },
   {
     id: 'tool-ellipse',
     title: 'Ellipse',
     section: 'Drawing',
+    media: 'shapes.png',
     summary: 'Drag to draw an oval or a circle.',
     keywords: ['circle', 'oval', 'round', 'shape'],
     body: `Press **O**, then drag across the shape you want.
 
 - Hold **Shift** for a perfect circle.
 - Hold **Alt** to draw from the middle.
-- Choose **Outline**, **Filled** or **Both** in the options.
+- The inside uses your **fill** colour and the edge your **stroke** colour. See [Fill and stroke colours](help:fill-and-stroke).
 
 Ellipses are made of smooth curves, so they stay sharp however far you zoom in. They draw on vector layers.`,
   },
@@ -79,6 +82,7 @@ Ellipses are made of smooth curves, so they stay sharp however far you zoom in. 
     id: 'tool-line',
     title: 'Line',
     section: 'Drawing',
+    media: 'shapes.png',
     summary: 'Drag to draw a straight line.',
     keywords: ['straight', 'ruler', 'shape'],
     body: `Press **L**, then drag from where the line starts to where it ends.
@@ -92,6 +96,7 @@ Set how thick it is in the options. Lines draw on vector layers.`,
     id: 'tool-select',
     title: 'Select',
     section: 'Drawing',
+    media: 'select.png',
     summary: 'Pick shapes and lines to move, resize, turn, copy or delete.',
     keywords: ['move', 'resize', 'scale', 'rotate', 'turn', 'marquee', 'transform'],
     body: `Press **V**.
@@ -145,6 +150,7 @@ You can also zoom with **Ctrl+scroll**, or with **Ctrl+=** and **Ctrl+-**. **Ctr
     id: 'selecting',
     title: 'Selecting and moving',
     section: 'Drawing',
+    media: 'select.png',
     summary: 'Select everything, let go, and nudge a selection with the keyboard.',
     keywords: ['select all', 'deselect', 'nudge', 'arrow keys'],
     body: `- **Ctrl+A** selects everything on this frame of the layer you're on.

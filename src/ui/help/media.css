@@ -1,0 +1,26 @@
+/* Help pictures and videos: as wide as the article, never wider than they really are. */
+img.ui-help-media,
+.ui-help-video video {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius);
+  border: 1px solid var(--line, rgba(128, 128, 128, 0.25));
+  background: var(--panel-2, transparent);
+}
+.ui-help-video {
+  position: relative;
+  margin: 0 0 12px;
+  width: fit-content;
+  max-width: 100%;
+}
+.ui-help-video video {
+  cursor: pointer;
+}
+.ui-help-video-btn {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  background: var(--panel, #222);
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.35);
+}

@@ -5,6 +5,7 @@ registerHelpTopics([
     id: 'fill',
     title: 'Fill',
     section: 'Drawing',
+    media: 'fill-bucket.mp4',
     summary: 'The paint bucket pours colour into any area your lines close off. Click inside a shape to fill it.',
     keywords: ['paint bucket', 'colour', 'color', 'flood', 'fill in', 'bucket'],
     body: `The **paint bucket** (press **G**) fills the area you click with your current colour.
@@ -48,6 +49,7 @@ On a pixel layer the paint bucket fills the joined-up pixels of the colour you c
     id: 'fill-gaps',
     title: 'Closing gaps',
     section: 'Drawing',
+    media: 'fill-gaps.mp4',
     summary: 'Hand-drawn lines rarely meet perfectly. The Close gaps setting lets the paint bucket treat small gaps as closed.',
     keywords: ['gap', 'leak', 'not closed', 'spills', 'open shape', 'close gaps'],
     body: `When you draw a shape by hand the line almost never joins back up exactly. Left alone, the colour would find the tiny opening and spill out into everything around it, so the paint bucket would have nothing sensible to fill.

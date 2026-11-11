@@ -6,6 +6,7 @@ registerHelpTopics([
     id: 'timeline',
     title: 'The timeline',
     section: 'Animating',
+    media: 'timeline-scrub.mp4',
     summary: 'Where your animation lives: layers on the left, frames across the top, drawings as little blocks.',
     keywords: ['frames', 'layers', 'animation', 'dope sheet', 'exposure sheet'],
     body: `The timeline is the strip along the bottom. Time runs left to right, one square for each frame. Your layers are stacked on the left, the top layer in front.
@@ -38,6 +39,7 @@ Learn more: [Frames, keys and holds](help:timeline-frames), [Layers](help:timeli
     id: 'timeline-frames',
     title: 'Frames, keys and holds',
     section: 'Animating',
+    media: 'timeline-holds.mp4',
     summary: 'A frame is one picture in time. A key is where a new drawing starts, and a hold keeps it on screen for a while.',
     keywords: ['key', 'keyframe', 'hold', 'exposure', 'ones', 'twos', 'threes', 'on twos', 'duplicate', 'insert', 'remove frame', 'flipbook'],
     body: `Your animation plays at a set number of frames each second (the **fps** box in the timeline, 12 to start). Every frame can show a different drawing, but you rarely need to draw that many.
@@ -80,6 +82,7 @@ If a layer is locked its frames can't be changed. Click the padlock to unlock it
     id: 'timeline-onion',
     title: 'Onion skin',
     section: 'Animating',
+    media: 'onion-skin.mp4',
     summary: 'See faint ghosts of the frames before and after this one, so each drawing lines up with its neighbours.',
     keywords: ['onion skin', 'ghost', 'tracing', 'tint', 'previous frame', 'light table'],
     body: `Drawing a walk or a bounce is much easier when you can see where the last pose was. **Onion skin** (named after the thin paper animators traced through) shows the neighbouring frames as faint ghosts under your drawing.
@@ -102,6 +105,7 @@ On the ruler, the frames being ghosted are softly shaded in the same colours.
     id: 'timeline-layers',
     title: 'Layers: vector and pixel',
     section: 'Animating',
+    media: 'timeline-layers.png',
     summary: 'Layers are sheets of see-through paper. A vector layer is for smooth drawing, a pixel layer is for pixel art.',
     keywords: ['layer', 'vector', 'pixel', 'lock', 'hide', 'opacity', 'order', 'duplicate layer'],
     body: `Layers are like sheets of tracing paper stacked on top of each other. Put the background on a low layer and your character on a higher one, and you can change one without touching the other.
@@ -130,6 +134,7 @@ Shortcuts: **Ctrl+Shift+N** adds a vector layer.`,
     id: 'timeline-playing',
     title: 'Playing your animation',
     section: 'Animating',
+    media: 'timeline-playing.mp4',
     summary: 'Press Enter to watch it. It plays at your fps, and loops until you stop it.',
     keywords: ['play', 'pause', 'loop', 'fps', 'speed', 'preview', 'scrub', 'length'],
     body: `Press **Enter** (or the play button) to watch your animation, and again to stop.
@@ -161,6 +166,7 @@ You can also drag along the numbers at the top to scrub.`,
     id: 'timeline-clips',
     title: 'Clips',
     section: 'Animating',
+    media: 'timeline-clips-markers.png',
     summary: 'A clip is a named stretch of frames, like idle, run or jump. Games and sprite sheets use them to tell animations apart.',
     keywords: ['clip', 'animation', 'sprite sheet', 'godot', 'unity', 'idle', 'run', 'jump', 'range', 'loop'],
     body: `One file can hold many animations. A character might have an **idle**, a **run** and a **jump**. Mark each as a **clip**, a named range of frames, and games and sprite sheets can find them by name.
@@ -184,6 +190,7 @@ When you export a sprite sheet or a game animation file, each clip becomes its o
     id: 'timeline-markers',
     title: 'Markers',
     section: 'Animating',
+    media: 'timeline-clips-markers.png',
     summary: 'A marker names one moment, like a footstep or a hit, so a game can do something at exactly that frame.',
     keywords: ['marker', 'event', 'flag', 'footstep', 'sound', 'cue', 'note'],
     body: `A **marker** is a little flag on one frame with a name. It doesn't change what you see. It tells a game (or Interactives) *when* something should happen: play the footstep sound, flash the screen, spawn a puff of dust.

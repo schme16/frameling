@@ -6,6 +6,7 @@ registerHelpTopics([
     id: 'welcome',
     title: 'Welcome to Frameling',
     section: 'Getting started',
+    media: 'welcome.png',
     summary: 'Frameling is a friendly place to draw and make things move.',
     keywords: ['start', 'intro', 'begin', 'hello', 'first'],
     body: `Frameling lets you draw pictures and make them move, one frame at a time. It works for smooth vector art and for chunky pixel art.
@@ -33,6 +34,7 @@ Press **F1** over anything to read about it, or press **Ctrl+K** and type what y
     id: 'new-document',
     title: 'Starting a new drawing',
     section: 'Getting started',
+    media: 'new-document-cards.png',
     summary: 'Pick a size and start. You can change your mind later.',
     keywords: ['new', 'create', 'size', 'canvas', 'blank', 'preset', 'pixel size', 'fps'],
     body: `Open the chooser with **File, New drawing** or **Ctrl+N** (**Cmd+N** on a Mac).
@@ -82,6 +84,7 @@ Type in the search box. You don't need to spell things perfectly. Press **Ctrl+K
     id: 'command-palette',
     title: 'Finding things',
     section: 'Basics',
+    media: 'command-palette.png',
     summary: 'Press Ctrl+K and type. Frameling finds the command or the help page.',
     keywords: ['palette', 'search', 'find', 'command', 'ctrl+k', 'run', 'anything'],
     body: `Can't remember where something lives? Press **Ctrl+K** (**Cmd+K** on a Mac), or **Ctrl+Shift+P**.
@@ -102,6 +105,7 @@ Help pages show up in the list too. Choose one to read it.
     id: 'keyboard-shortcuts',
     title: 'Keyboard shortcuts',
     section: 'Basics',
+    media: 'keyboard-shortcuts.png',
     summary: 'Every command can have a shortcut, and you can change all of them.',
     keywords: ['keys', 'hotkey', 'rebind', 'keymap', 'conflict', 'mod', 'ctrl', 'cmd'],
     body: `Shortcuts are the quick way to do things. **Mod** means **Ctrl** on Windows and Linux, and **Cmd** on a Mac.
@@ -128,6 +132,7 @@ Press the small **x** on a shortcut to remove it. **Reset** puts a command back 
     id: 'preferences',
     title: 'Preferences',
     section: 'Settings',
+    media: 'preferences.png',
     summary: 'Themes, sounds, shortcuts and workspaces, all in one place.',
     keywords: ['settings', 'options', 'config'],
     body: `Open it with **Ctrl+,** (**Cmd+,** on a Mac), or **View, Preferences**.
@@ -146,6 +151,7 @@ Changes happen straight away and are remembered for next time.`,
     id: 'behaviour',
     title: 'Behaviour choices',
     section: 'Settings',
+    media: 'behaviour-choice.png',
     summary: 'Some things people like differently. Frameling asks the first time, then remembers.',
     keywords: ['ask', 'remember', 'choice', 'behaviour', 'behavior', 'preference', 'held', 'space', 'wheel'],
     body: `Animators work in different ways. For things like "should a new drawing start blank or as a copy?", Frameling asks you the first time it comes up, with a short explanation of each option.
@@ -187,6 +193,7 @@ A switch for sound effects. They aren't there yet, so for now it just remembers 
     id: 'themes',
     title: 'Themes',
     section: 'Settings',
+    media: 'themes.png',
     summary: 'Pick the colours Frameling wears, one for dark mode and one for light.',
     keywords: ['theme', 'themes', 'colour', 'color', 'colours', 'dark', 'light', 'contrast', 'high contrast', 'accessibility', 'palette', 'pastel', 'midnight', 'cocoa'],
     body: `A theme is a set of colours for the whole app. Frameling comes with several, each with a silly name and a calm mood.
@@ -226,6 +233,7 @@ Press **Make a copy to customise** on any card to [make your own theme](help:mak
     id: 'make-your-own-theme',
     title: 'Making your own theme',
     section: 'Settings',
+    media: 'theme-editor.png',
     summary: 'Copy a theme, change the colours you like, and see it on the whole app as you go.',
     keywords: ['custom', 'customise', 'customize', 'theme', 'editor', 'colour', 'color', 'picker', 'export', 'import', 'share', 'contrast', 'readable', 'palette', 'copy', 'clone'],
     body: `You can't break anything: you always work on your own copy, and the built-in themes stay as they were.
@@ -267,6 +275,7 @@ Gold stays gold for chosen things by default, with dark text on it. If you chang
     id: 'workspaces',
     title: 'Workspaces',
     section: 'Workspace',
+    media: 'workspaces.png',
     summary: 'A workspace is a saved way of arranging your panels.',
     keywords: ['layout', 'panels', 'draw', 'animate', 'pixel', 'reset', 'save', 'arrange'],
     body: `Different jobs want different rooms. Frameling comes with three:
@@ -319,6 +328,7 @@ Your layout is remembered. Save arrangements as [workspaces](help:workspaces).`,
     id: 'tool-strip',
     title: 'The tool strip',
     section: 'Basics',
+    media: 'tool-strip.png',
     summary: 'The tools down the left side. Pick one to draw with.',
     keywords: ['tools', 'toolbar', 'brush', 'shortcut', 'layer kind'],
     body: `The strip down the left holds your tools. The one with the gold glow is the one you're using.
@@ -337,6 +347,7 @@ Tool keys can be changed in [keyboard shortcuts](help:keyboard-shortcuts).`,
     id: 'menus',
     title: 'The menus',
     section: 'Basics',
+    media: 'menus.png',
     summary: 'File, Edit, View, Draw, Animate and Help, along the top.',
     keywords: ['menu bar', 'file', 'edit', 'view', 'draw', 'animate'],
     body: `The menu bar is along the top. Press a name to open it, then press a choice.
@@ -387,6 +398,7 @@ If a message has a button, like **Undo**, press it before the message leaves to 
     id: 'examples',
     title: 'Examples',
     section: 'Getting started',
+    media: 'examples.png',
     summary: 'Ready-made drawings to start from, or to pick apart and learn.',
     keywords: ['template', 'sample', 'demo', 'starter', 'learn', 'bouncing ball'],
     body: `Not sure where to begin? Start from an example.
