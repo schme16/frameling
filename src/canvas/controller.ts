@@ -76,14 +76,17 @@ export function zoomToDocRect(r: Rect): void {
   setView(zoomToRect(r, viewport.w, viewport.h));
 }
 
-function hasPixelLayer(): boolean {
-  return store().get().doc.layers.some((l) => l.kind === 'pixel');
+/** The smallest art pixel size of any pixel layer, or 0 when there are none. */
+function artPixel(): number {
+  let px = 0;
+  for (const l of store().get().doc.layers) if (l.kind === 'pixel') px = px ? Math.min(px, l.pixelSize) : l.pixelSize;
+  return px;
 }
 
 /** Fit the whole stage in the window. */
 export function fit(): void {
   const { doc } = store().get();
-  setView(fitView(viewport.w, viewport.h, doc.width, doc.height, 48, hasPixelLayer()), false);
+  setView(fitView(viewport.w, viewport.h, doc.width, doc.height, 48, artPixel()), false);
   autoFit = true;
 }
 

@@ -63,14 +63,16 @@ export function nextZoomStep(zoom: number, dir: 1 | -1): number {
 }
 
 /**
- * The view that shows the whole stage, centred, with some breathing room. With `whole` (pixel art) a zoom above 100%
- * is rounded down to a whole number so every art pixel is the same size on screen.
+ * The view that shows the whole stage, centred, with some breathing room. For pixel art pass the art pixel size
+ * (document pixels per art pixel): the zoom is rounded down so each art pixel is a whole number of screen pixels,
+ * which keeps every pixel the same size. `true` means an art pixel of 1.
  */
-export function fitView(vw: number, vh: number, dw: number, dh: number, padding = 48, whole = false): View {
+export function fitView(vw: number, vh: number, dw: number, dh: number, padding = 48, whole: boolean | number = false): View {
   const availW = Math.max(16, vw - padding * 2);
   const availH = Math.max(16, vh - padding * 2);
   let zoom = clampZoom(Math.min(availW / Math.max(1, dw), availH / Math.max(1, dh)));
-  if (whole && zoom > 1) zoom = Math.floor(zoom);
+  const px = whole === true ? 1 : whole || 0;
+  if (px > 0 && zoom * px >= 1) zoom = Math.floor(zoom * px + 1e-6) / px;
   return centerView({ zoom, panX: 0, panY: 0 }, vw, vh, dw, dh);
 }
 

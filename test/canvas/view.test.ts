@@ -66,6 +66,9 @@ describe('fitting', () => {
   it('rounds up-zooms to whole numbers for pixel art', () => {
     expect(fitView(1000, 700, 64, 64, 50, true).zoom).toBe(9);
     expect(fitView(1000, 700, 64, 64, 50, false).zoom).toBeCloseTo(600 / 64);
+    // A 32x32 grid at 8 document pixels per art pixel (256x256) in a 720x560 area: 1.81x would make art pixels
+    // 14.5 screen pixels, so it rounds to 14 (zoom 1.75) rather than all the way down to 1.
+    expect(fitView(720, 560, 256, 256, 48, 8).zoom).toBe(1.75);
   });
 
   it('zooms to a box', () => {

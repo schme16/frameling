@@ -81,6 +81,8 @@ app.whenReady().then(async () => {
         contextIsolation: true,
         sandbox: true,
         additionalArguments: ['--frameling-version=shot'],
+        // A hidden window is throttled, so CSS transitions and rAF never finish without this.
+        backgroundThrottling: false,
       },
     });
     const logs = [];
@@ -88,7 +90,7 @@ app.whenReady().then(async () => {
       const m = e.message ?? e;
       if (e.level === 'error' || e.level === 3) logs.push(String(m));
     });
-    await win.loadFile(path.join(__dirname, '../dist/renderer/index.html'));
+    await win.loadFile(path.join(__dirname, '../dist/renderer/index.html'), { query: { debug: '1' } });
     await win.webContents.executeJavaScript(`
       ${look ? `document.documentElement.dataset.look = ${JSON.stringify(look)};` : ''}
       ${theme ? `document.documentElement.dataset.theme = ${JSON.stringify(theme)};` : ''}
