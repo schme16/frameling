@@ -65,11 +65,11 @@ Below that are the [in-betweens](help:tweens) for the key under the playhead.`,
   {
     id: 'tween-offer',
     order: 2.5,
-    title: 'The in-betweens offer',
+    title: 'Fill the gap with one click (tween offer)',
     section: 'Symbols and motion',
     media: 'tween-offer.png',
     summary: 'Click a frame between two drawings and Frameling offers to fill the gap with in-betweens: Move or Morph.',
-    keywords: ['tween offer', 'in-betweens', 'make tween', 'between keys', 'move', 'morph', 'shape tween', 'classic tween', 'suggestion'],
+    keywords: ['tween offer', 'offer', 'suggestion', 'click a frame', 'quick tween'],
     body: `Click a frame in the timeline that sits between two drawings (held frames, or empty frames with a drawing after them), and a small **In-betweens?** offer appears on that stretch.
 
 - **Move** glides, grows, turns or fades the drawing from one key to the next (a classic tween). A plain drawing becomes a [symbol](help:symbols) first.

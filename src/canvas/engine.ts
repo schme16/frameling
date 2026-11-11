@@ -10,7 +10,7 @@ import { activeLayer } from '../tools/edit';
 import './choices';
 import type { SpaceTapMode, WheelMode } from './choices';
 import * as ctl from './controller';
-import { LIGHT_TABLE_OPACITY, lightTableItems } from './lightTable';
+import { LIGHT_TABLE_OPACITY, lightTableItems, lightTableTint } from './lightTable';
 import { pressesControl, SpaceTap, wheelIntent } from './input';
 import { perf } from './perf';
 import { neighbourFrames, upcomingFrames } from '../timeline/playback';
@@ -334,7 +334,7 @@ export class CanvasEngine {
       pasteboard: !ui.playing && !doc.editing?.length && !!stageCamera(doc) && !lookingThrough() ? { frame: cameraFrameNow() } : undefined,
       activeLayerId: ui.activeLayerId,
       ghost: getViewSettings().emptyGhost && !ui.playing && !ui.onion.enabled ? ghostItems(doc, ui.frame).filter((g) => !lt.some((l) => l.drawing === g.drawing)) : undefined,
-      lightTable: lt.length ? { items: lt, alpha: ui.lightTable?.opacity ?? LIGHT_TABLE_OPACITY, tint: null } : undefined,
+      lightTable: lt.length ? { items: lt, alpha: ui.lightTable?.opacity ?? LIGHT_TABLE_OPACITY, tint: lightTableTint() } : undefined,
     });
     if (!settled) {
       clearTimeout(this.settleTimer);

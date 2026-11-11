@@ -13,6 +13,15 @@ export type LightTable = NonNullable<UiState['lightTable']>;
 
 export const LIGHT_TABLE_OPACITY = 0.3;
 
+// The look under consideration (brand/ab/light-table): its own colours (the default) or a soft blue, like
+// non-photo blue pencil. Debug only for now.
+let tint: string | null = null;
+export const lightTableTint = (): string | null => tint;
+export function setLightTableTint(c: string | null): void {
+  tint = c;
+  store().setUi((ui) => (ui.lightTable ? { lightTable: { ...ui.lightTable } } : {}));
+}
+
 /** What the light table shows on `frame`: the pinned drawings, minus any that are the drawing already showing there. */
 export function lightTableItems(doc: Doc, lt: LightTable | null | undefined, frame: number): GhostItem[] {
   if (!lt || lt.frame < 0 || lt.frame >= doc.length) return [];

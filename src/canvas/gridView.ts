@@ -12,6 +12,35 @@ const nudge = () => store().setUi({});
 
 // ---------------------------------------------------------------- drawing
 
+// The look under consideration (brand/ab/grids): lines (the default) or dots at the corners. Debug only for now.
+let gridLook: 'lines' | 'dots' = 'lines';
+export function setGridLook(l: 'lines' | 'dots'): void {
+  gridLook = l;
+  requestOverlay();
+}
+
+function drawGridDots(g: CanvasRenderingContext2D, zoom: number, w: number, h: number): void {
+  const v = getViewSettings();
+  const r = 1.4 / zoom;
+  const step = gridStep(v.gridSize, zoom, 8);
+  g.beginPath();
+  if (v.grid === 'square') {
+    const s = v.gridSize * step;
+    for (let x = 0; x <= w; x += s) for (let y = 0; y <= h; y += s) {
+      g.moveTo(x + r, y);
+      g.arc(x, y, r, 0, Math.PI * 2);
+    }
+  } else {
+    const hx = (v.gridSize * step) / 2;
+    const hy = hx * isoRatio(v.isoStyle);
+    for (let j = 0; j * hy <= h; j++) for (let i = j % 2; i * hx <= w; i += 2) {
+      g.moveTo(i * hx + r, j * hy);
+      g.arc(i * hx, j * hy, r, 0, Math.PI * 2);
+    }
+  }
+  g.fill();
+}
+
 function drawGrid(g: CanvasRenderingContext2D, zoom: number): void {
   const v = getViewSettings();
   if (v.grid === 'off') return;
@@ -26,6 +55,13 @@ function drawGrid(g: CanvasRenderingContext2D, zoom: number): void {
   g.lineWidth = px;
   g.strokeStyle = cssVar('--faint', '#7d7591');
   g.globalAlpha = 0.55;
+  if (gridLook === 'dots') {
+    g.fillStyle = g.strokeStyle;
+    g.globalAlpha = 0.9;
+    drawGridDots(g, zoom, w, h);
+    g.restore();
+    return;
+  }
   g.beginPath();
   if (v.grid === 'square') {
     const step = v.gridSize * gridStep(v.gridSize, zoom);

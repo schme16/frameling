@@ -493,7 +493,7 @@
   position: absolute;
   top: 0;
   bottom: 0;
-  background: color-mix(in srgb, var(--bg) 50%, transparent);
+  background: color-mix(in srgb, var(--bg) 72%, transparent);
   pointer-events: none;
 }
 .tl-io {

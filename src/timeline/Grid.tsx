@@ -120,7 +120,8 @@ function Ruler({ cw, from, to, length, fps, total, ghostLength, ghostRange }: { 
     return hi < lo ? null : <i key={key} className="tl-onion-shade" style={{ left: lo * cw, width: (hi - lo + 1) * cw, background: `color-mix(in srgb, ${color} 42%, transparent)` }} />;
   };
   const end = ghostLength ?? length;
-  const saved = useStore((s) => inOutRange(s.doc));
+  useStore((s) => s.doc.inOut);
+  const saved = inOutRange(store().get().doc);
   const io = ghostRange ?? saved;
   return (
     <div className="tl-ruler" data-region="ruler" data-quest="timeline-ruler" style={{ height: RULER_H }}>
@@ -462,7 +463,8 @@ export function TimelineBody() {
       const doc = store().get().doc;
       const layer = doc.layers.find((l) => l.id === click.layerId);
       if (layer) offerTweenAt(doc, layer, click.frame);
-    } else closeTweenOffer();
+    } else if (d) closeTweenOffer();
+    // A press on the offer itself starts no drag, so it's left alone for its own click.
     setGhost(null);
     if (!d) return;
     if (main.current?.hasPointerCapture(e.pointerId)) main.current.releasePointerCapture(e.pointerId);

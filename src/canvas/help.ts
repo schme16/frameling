@@ -139,7 +139,7 @@ The perspective guides are saved with your drawing. Hide them with **View > Show
     section: 'Animating',
     media: 'light-table.png',
     summary: 'Pin a frame, or one drawing, so it shows faintly on every frame while you trace over it.',
-    keywords: ['light table', 'lightbox', 'trace', 'tracing', 'reference', 'pin', 'in-between', 'see through'],
+    keywords: ['light table', 'lightbox', 'trace', 'tracing', 'reference', 'pin', 'see through'],
     body: `Animators trace on a light table: a glowing desk that shows the drawing underneath through the paper. Frameling's light table shows a frame you choose, faintly, on every frame you go to.
 
 **Put something on it**
