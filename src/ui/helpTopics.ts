@@ -294,7 +294,7 @@ Turn this on to stop bouncing and fading. Quill stands still instead of moving. 
 
 ## Sounds
 
-Soft little sounds for quest steps, finished exports and "no". They're off until you turn them on. See [Sounds](help:sounds).`,
+Soft little sounds for quest steps, finished exports and "no". They're on to start with; switch them off here. See [Sounds](help:sounds).`,
   },
   {
     id: 'themes',
