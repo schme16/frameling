@@ -145,11 +145,12 @@ export class BitmapCache {
     if (from && from.drawing.kind === 'vector' && d.kind === 'vector') {
       g.drawImage(from.canvas, 0, 0);
       g.setTransform(w / doc.width, 0, 0, h / doc.height, 0, 0);
-      for (let i = from.drawing.shapes.length; i < d.shapes.length; i++) drawShape(g, d.shapes[i]);
+      for (let i = from.drawing.shapes.length; i < d.shapes.length; i++) drawShape(g, d.shapes[i], { doc, frame: 0 });
       this.appends++;
     } else {
       g.setTransform(w / doc.width, 0, 0, h / doc.height, 0, 0);
-      drawDrawing(g, d, pixelSize);
+      // The frame only matters to tilemaps, and those inside symbols carry their own.
+      drawDrawing(g, d, pixelSize, { doc, frame: 0 });
     }
     this.builds++;
     let list = this.map.get(d);

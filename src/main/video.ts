@@ -7,7 +7,7 @@ import path from 'node:path';
 type Handle = (channel: string, fn: (e: unknown, ...args: any[]) => unknown) => void;
 
 /** Where FFmpeg might be. GUI apps on macOS don't get the shell's PATH, so the usual install places are tried too. */
-function candidates(): string[] {
+export function candidates(): string[] {
   const exe = process.platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg';
   const list: string[] = [];
   if (process.env.FRAMELING_FFMPEG) list.push(process.env.FRAMELING_FFMPEG);

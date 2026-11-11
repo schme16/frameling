@@ -29,6 +29,7 @@ import { shapesBounds, symbolBounds } from '../canvas/geometry';
 import { cloneDrawing } from '../timeline/edit-core';
 import { activeLayer, editActiveDrawing, EDIT_HINTS } from '../tools/edit';
 import { toast } from '../ui/toast';
+import { leaveTileEdit } from '../tiles/tileEdit';
 
 registerChoice<'symbol' | 'morph'>({
   id: 'tween.plainDrawing',
@@ -130,6 +131,8 @@ export function editInstance(id?: Id): Result {
 
 /** Opens a symbol by itself (from the Library). */
 export function editSymbol(id: Id): Result {
+  // A tile open on the canvas goes back first, so the symbol opens in the document rather than in the tile.
+  leaveTileEdit();
   if (!store().get().doc.symbols?.[id]) return say("That symbol is missing, so there's nothing to edit.");
   return open(id, { matrix: [1, 0, 0, 1, 0, 0] }, 0);
 }
@@ -153,6 +156,7 @@ function open(symbolId: Id, at: { instanceId?: Id; matrix: [number, number, numb
 
 /** Goes back out one level (or `levels`, or all the way with Infinity). */
 export function leaveSymbol(levels = 1): Result {
+  leaveTileEdit();
   const doc = store().get().doc;
   if (!doc.editing?.length) return undefined;
   for (let i = 0; i < levels; i++) {
