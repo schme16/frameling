@@ -6,7 +6,7 @@
  */
 import { readFolders, readLayerLook } from '../effects/io';
 import { strFromU8, strToU8, unzipSync, zipSync, type Zippable } from 'fflate';
-import { BONE_STRETCH, FORMAT_VERSION, type Cel, type Doc, type Drawing, type Layer, type Shape, type SymbolDef, type Tween, type InstanceShape, type ClipFlow, type ClipTransition, type Tile, type Tileset, type Bone, type BonePose, type LayerBind, type Pose, type Rig, type SavedPose } from '../core/format';
+import { BONE_STRETCH, FORMAT_VERSION, LAYER_LABELS, type LayerLabel, type Cel, type Doc, type Drawing, type Layer, type Shape, type SymbolDef, type Tween, type InstanceShape, type ClipFlow, type ClipTransition, type Tile, type Tileset, type Bone, type BonePose, type LayerBind, type Pose, type Rig, type SavedPose } from '../core/format';
 import { decodePng, encodePng } from './png';
 import { rootDoc } from '../core/symbols';
 import { isEasing } from '../core/ease';
@@ -214,6 +214,7 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
         opacity: Math.min(1, Math.max(0, num(l.opacity, 1))),
         ...(l.onion === false ? { onion: false } : {}),
         ...(l.reference === true ? { reference: true } : {}),
+        ...((LAYER_LABELS as readonly unknown[]).includes(l.label) ? { label: l.label as LayerLabel } : {}),
         ...(typeof l.depth === 'number' && Number.isFinite(l.depth) && l.depth ? { depth: Math.max(-0.9, Math.min(100, l.depth)) } : {}),
         ...readBind(l.bind),
         ...readLayerLook(l),

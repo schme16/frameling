@@ -73,6 +73,10 @@ export interface Guide {
   at: number;
 }
 
+/** Colour labels a layer can wear on the timeline. */
+export const LAYER_LABELS = ['red', 'orange', 'yellow', 'green', 'teal', 'blue', 'purple', 'pink'] as const;
+export type LayerLabel = (typeof LAYER_LABELS)[number];
+
 export type LayerKind = 'vector' | 'pixel' | 'tilemap' | 'camera';
 
 export interface BaseLayer {
@@ -103,6 +107,8 @@ export interface BaseLayer {
    * half as much when the camera pans; negative values are closer and move more (above -0.9).
    */
   depth?: number;
+  /** A colour label for the timeline, to tell layers apart at a glance (missing = the kind's own colour). */
+  label?: LayerLabel;
   /**
    * Cels on this layer, sorted by `start`, never overlapping. A frame with no cel covering it is empty.
    */

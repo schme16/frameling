@@ -12,13 +12,17 @@ export interface TlState {
   clipId: Id | null;
   /** A name box that is open right now (a new clip or marker, or a layer being renamed). */
   editing: { kind: 'clip' | 'marker' | 'layer'; id: Id } | null;
+  /** Layers opened up to show their property rows (detailed timeline). */
+  open: ReadonlySet<Id>;
+  /** Keys picked on the detailed timeline (see tracks.ts for the ref format). */
+  keys: ReadonlySet<string>;
 }
 
 export const MIN_CW = 5;
 export const MAX_CW = 64;
 export const DEFAULT_CW = 22;
 
-let state: TlState = { cw: DEFAULT_CW, clipId: null, editing: null };
+let state: TlState = { cw: DEFAULT_CW, clipId: null, editing: null, open: new Set(), keys: new Set() };
 const listeners = new Set<() => void>();
 
 export function tl(): TlState {
@@ -30,6 +34,26 @@ export function setTl(patch: Partial<TlState>): void {
   next.cw = Math.max(MIN_CW, Math.min(MAX_CW, Math.round(next.cw * 100) / 100));
   state = next;
   for (const fn of listeners) fn();
+}
+
+/** Opens or folds a layer's property rows. */
+export function toggleOpen(id: Id, to?: boolean): void {
+  const next = new Set(state.open);
+  if (to ?? !next.has(id)) next.add(id);
+  else next.delete(id);
+  setTl({ open: next });
+}
+
+/** Picks keys (replacing the pick, or adding to it). */
+export function pickKeys(refs: Iterable<string>, add = false): void {
+  const next = new Set(add ? state.keys : []);
+  for (const r of refs) next.add(r);
+  if (!add && next.size === state.keys.size && [...next].every((r) => state.keys.has(r))) return;
+  setTl({ keys: next });
+}
+
+export function clearKeys(): void {
+  if (state.keys.size) setTl({ keys: new Set() });
 }
 
 export function subscribeTl(fn: () => void): () => void {

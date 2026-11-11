@@ -11,6 +11,7 @@ import { clearInOut } from './range';
 import { clearLightTable, lightTableLabel } from '../canvas/lightTable';
 import { MAX_CW, MIN_CW, setTl, tl, useTl } from './state';
 import { SoundButton } from '../audio/SoundButton';
+import { usePrefs } from '../ui/prefs';
 
 function Btn({ id, icon, text, title, pressed, disabled, onClick, className = '' }: { id?: string; icon?: string; text?: ReactNode; title: string; pressed?: boolean; disabled?: boolean; onClick?: () => void; className?: string }) {
   return (
@@ -253,6 +254,7 @@ export function Header() {
   const loop = useStore((s) => s.ui.loopPlayback);
   const pingPong = useStore((s) => !!s.ui.pingPong);
   const cw = useTl((t) => t.cw);
+  const clean = usePrefs((p) => p.cleanTimeline);
   return (
     <div className="tl-header" role="toolbar" aria-label="Timeline controls">
       <span className="tl-group" role="group" aria-label="Playback">
@@ -282,8 +284,11 @@ export function Header() {
       <span className="tl-sep" aria-hidden="true" />
       <OnionControls />
       <span className="tl-grow" />
+      <Btn id="view.cleanTimeline" icon="sliders" title="Clean timeline: plain blocks, no property rows" pressed={clean} className="tl-btn-mini tl-look-toggle" />
       <label className="tl-zoom" title="Zoom the timeline (or hold Ctrl and scroll)">
-        <Icon name="zoom" size={14} />
+        <button type="button" className="tl-btn tl-btn-mini" title={tip('timeline.zoomFit', 'Fit the whole animation in view')} aria-label="Fit the whole animation in view" onClick={() => runCmd('timeline.zoomFit')}>
+          <Icon name="zoom" size={14} />
+        </button>
         <input type="range" aria-label="Timeline zoom" min={MIN_CW} max={MAX_CW} value={cw} onChange={(e) => setTl({ cw: Number(e.target.value) })} />
       </label>
     </div>

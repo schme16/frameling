@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { usePopover } from '../ui/popover';
 
 export type MenuItem =
-  | { label: string; onClick: () => void; hint?: string; danger?: boolean; disabled?: boolean; checked?: boolean }
+  | { label: string; onClick: () => void; hint?: string; danger?: boolean; disabled?: boolean; checked?: boolean; swatch?: string }
   | { separator: true }
   | { heading: string }
   | { node: ReactNode };
@@ -64,6 +64,7 @@ export function ContextMenu({ x, y, items, onClose }: { x: number; y: number; it
               }}
             >
               <span className="tl-menu-check" aria-hidden="true">{it.checked ? '✓' : ''}</span>
+              {it.swatch ? <i className={`tl-menu-swatch tl-lc-${it.swatch}`} aria-hidden="true" /> : null}
               <span className="tl-menu-label">{it.label}</span>
               {it.hint ? <kbd className="tl-menu-hint">{it.hint}</kbd> : null}
             </button>

@@ -7,12 +7,18 @@ import { runCmd, tip } from './cmd';
 import { ContextMenu, InlineName, type MenuItem } from './Menu';
 import { addTilemapLayer } from '../tiles/ops';
 import * as ops from './ops';
-import { setTl, useTl } from './state';
+import { pickKeys, setTl, toggleOpen, useTl } from './state';
 import { FolderRow, LookTags, lookMenu } from '../effects/TimelineBits';
-import { useTimelineRows } from '../effects/rows';
 import { moveLayerInto } from '../effects/ops';
+import { LAYER_LABELS, type LayerLabel } from '../core/format';
+import { CLEAN_ROW_H, type LayoutRow } from './layout';
+import { useLayout } from './view';
+import { isSolo, LABEL_WORDS, setLayerLabel, toggleSolo } from './layerExtras';
+import { layerColorClass } from './Detail';
+import type { Track } from './tracks';
 
-export const ROW_H = 36;
+/** Height of a clean timeline row (the detailed one's rows are in layout.ts). */
+export const ROW_H = CLEAN_ROW_H;
 
 /** The buttons above the layer list: add (vector, pixel), duplicate, delete. */
 export function LayerTools() {
@@ -66,6 +72,11 @@ export function layerMenu(layer: Layer, onRename: () => void): MenuItem[] {
     { label: layer.visible ? 'Hide layer' : 'Show layer', onClick: () => void ops.setLayerVisible(layer.id, !layer.visible) },
     { label: layer.locked ? 'Unlock layer' : 'Lock layer (protect it from changes)', onClick: () => void ops.setLayerLocked(layer.id, !layer.locked) },
     { label: layer.reference ? 'Export this layer again' : 'Reference layer (leave out of exports)', onClick: () => void ops.setLayerReference(layer.id, !layer.reference) },
+    { label: isSolo(store().get().doc, layer.id) ? 'Show the other layers again' : 'Show only this layer (solo)', onClick: () => toggleSolo(layer.id) },
+    { separator: true },
+    { heading: 'Colour label' },
+    { label: 'None (the usual colour)', checked: !layer.label, onClick: () => setLayerLabel(layer.id, null) },
+    ...LAYER_LABELS.map((c: LayerLabel): MenuItem => ({ label: LABEL_WORDS[c], checked: layer.label === c, swatch: c, onClick: () => setLayerLabel(layer.id, c) })),
     { separator: true },
     { label: 'Add a vector layer above', onClick: () => void ops.addVectorLayer(layer.id) },
     { label: 'Add a pixel layer above', onClick: () => void ops.addPixelLayer(layer.id) },
@@ -76,6 +87,11 @@ export function layerMenu(layer: Layer, onRename: () => void): MenuItem[] {
 
 interface RowProps {
   layer: Layer;
+  /** Row height, and (detailed look) its property rows and whether they're showing. */
+  h: number;
+  detailed: boolean;
+  tracks: Track[];
+  open: boolean;
   inFolder?: boolean;
   active: boolean;
   editing: boolean;
@@ -87,13 +103,13 @@ interface RowProps {
   onMenu: (layer: Layer, x: number, y: number) => void;
 }
 
-const LayerRow = memo(function LayerRow({ layer, inFolder, active, editing, dropMark, onDragStart, onDragOver, onDrop, onDragEnd, onMenu }: RowProps) {
+const LayerRow = memo(function LayerRow({ layer, h, detailed, tracks, open, inFolder, active, editing, dropMark, onDragStart, onDragOver, onDrop, onDragEnd, onMenu }: RowProps) {
   const select = () => store().setUi({ activeLayerId: layer.id });
   const kind = layer.kind === 'pixel' ? 'Pixel layer (pixel art)' : layer.kind === 'tilemap' ? 'Tilemap layer (painted with tiles)' : layer.kind === 'camera' ? 'Camera (frames the scene)' : 'Vector layer (smooth drawing)';
   return (
     <div
-      className={`tl-layer${active ? ' is-active' : ''}${!layer.visible ? ' is-hidden' : ''}${layer.locked ? ' is-locked' : ''}${layer.reference ? ' is-reference' : ''}${inFolder ? ' in-folder' : ''}${layer.mask ? ' is-mask' : ''}${layer.clipToBelow ? ' is-clipped' : ''}${dropMark ? ` drop-${dropMark}` : ''}`}
-      style={{ height: ROW_H }}
+      className={`tl-layer${detailed ? ` is-detailed ${layerColorClass(layer)}` : ''}${active ? ' is-active' : ''}${!layer.visible ? ' is-hidden' : ''}${layer.locked ? ' is-locked' : ''}${layer.reference ? ' is-reference' : ''}${inFolder ? ' in-folder' : ''}${layer.mask ? ' is-mask' : ''}${layer.clipToBelow ? ' is-clipped' : ''}${dropMark ? ` drop-${dropMark}` : ''}`}
+      style={{ height: h }}
       draggable={!editing}
       data-layer={layer.id}
       role="listitem"
@@ -130,6 +146,22 @@ const LayerRow = memo(function LayerRow({ layer, inFolder, active, editing, drop
       onDragEnd={onDragEnd}
     >
       <span className="tl-grip" aria-hidden="true"><Icon name="grip" size={12} /></span>
+      {detailed ? (
+        tracks.length ? (
+          <button
+            type="button"
+            className="tl-twisty"
+            aria-expanded={open}
+            aria-label={open ? `Hide ${layer.name}'s properties` : `Show ${layer.name}'s properties`}
+            title={open ? 'Fold away the property rows' : `Show what changes on this layer: ${tracks.map((t) => t.label).join(', ')}`}
+            onClick={(e) => (e.stopPropagation(), toggleOpen(layer.id))}
+          >
+            <Icon name={open ? 'chevron-down' : 'chevron-right'} size={13} />
+          </button>
+        ) : (
+          <span className="tl-twisty-gap" aria-hidden="true" />
+        )
+      ) : null}
       <span className={`tl-kind is-${layer.kind}`} title={layer.kind === 'vector' && layer.rig ? 'Bones layer (the skeleton; each key is a pose)' : kind}>
         <Icon name={layer.kind === 'vector' && layer.rig ? 'bone' : layer.kind} size={13} />
       </span>
@@ -158,6 +190,7 @@ const LayerRow = memo(function LayerRow({ layer, inFolder, active, editing, drop
         </span>
       )}
       <LookTags layer={layer} />
+      {detailed ? <SoloButton layer={layer} /> : null}
       <button type="button" className="tl-icon-btn" title={layer.visible ? 'Hide this layer' : 'Show this layer'} aria-label={layer.visible ? 'Hide layer' : 'Show layer'} aria-pressed={!layer.visible} onClick={(e) => (e.stopPropagation(), ops.setLayerVisible(layer.id, !layer.visible))}>
         <Icon name={layer.visible ? 'eye' : 'eye-off'} size={15} />
       </button>
@@ -196,7 +229,8 @@ const LayerRow = memo(function LayerRow({ layer, inFolder, active, editing, drop
 /** The layer list, top layer first. */
 export function LayerList() {
   const layers = useStore((s) => s.doc.layers);
-  const rows = useTimelineRows();
+  const layout = useLayout();
+  const detailed = layout.style === 'detailed';
   const activeId = useStore((s) => s.ui.activeLayerId) ?? layers[layers.length - 1]?.id;
   const editing = useTl((t) => (t.editing?.kind === 'layer' ? t.editing.id : null));
   const [drag, setDrag] = useState<{ id: Id | null; over: Id | null; where: 'above' | 'below' }>({ id: null, over: null, where: 'above' });
@@ -218,14 +252,19 @@ export function LayerList() {
   };
 
   return (
-    <div className="tl-layers" role="list" aria-label="Layers, top layer first">
-      {rows.map((r) => {
-        if (r.type === 'folder') return <FolderRow key={`f-${r.folder.id}-${r.layerIds[0]}`} row={r} height={ROW_H} />;
+    <div className={`tl-layers${detailed ? ' is-detailed' : ''}`} role="list" aria-label="Layers, top layer first">
+      {layout.rows.map((r: LayoutRow) => {
+        if (r.kind === 'folder') return <FolderRow key={r.key} row={r.row} height={r.h} />;
+        if (r.kind === 'prop') return <PropLabel key={r.key} layer={r.layer} track={r.track} h={r.h} last={r.last} />;
         const l = r.layer;
         return (
         <LayerRow
           key={l.id}
           layer={l}
+          h={r.h}
+          detailed={detailed}
+          tracks={r.tracks}
+          open={r.open}
           inFolder={r.inFolder}
           active={l.id === activeId}
           editing={editing === l.id}
@@ -248,4 +287,46 @@ export function LayerList() {
       ) : null}
     </div>
   );
+}
+
+/** The solo switch: show only this layer while you work on it. */
+function SoloButton({ layer }: { layer: Layer }) {
+  const on = useStore((s) => isSolo(s.doc, layer.id));
+  return (
+    <button
+      type="button"
+      className={`tl-icon-btn tl-solo${on ? ' is-on' : ''}`}
+      title={on ? 'Show the other layers again' : 'Show only this layer (solo)'}
+      aria-label={on ? 'Show the other layers again' : 'Show only this layer'}
+      aria-pressed={on}
+      onClick={(e) => (e.stopPropagation(), toggleSolo(layer.id))}
+    >
+      <span aria-hidden="true">S</span>
+    </button>
+  );
+}
+
+/** A property row's name under an opened layer. */
+const PropLabel = memo(function PropLabel({ layer, track, h, last }: { layer: Layer; track: Track; h: number; last: boolean }) {
+  return (
+    <div
+      className={`tl-prop ${layerColorClass(layer)}${last ? ' is-last' : ''}`}
+      style={{ height: h }}
+      role="listitem"
+      aria-label={`${layer.name}: ${track.label}, ${track.keys.length} key${track.keys.length === 1 ? '' : 's'}`}
+      title={`${track.label}: ${track.keys.length} key${track.keys.length === 1 ? '' : 's'}. Click to pick them all.`}
+      onClick={(e) => {
+        store().setUi({ activeLayerId: layer.id });
+        pickTrackKeys(track, e.shiftKey);
+      }}
+    >
+      <Icon name={track.icon} size={12} />
+      <span className="tl-prop-name">{track.label}</span>
+      <span className="tl-prop-count">{track.keys.length}</span>
+    </div>
+  );
+});
+
+function pickTrackKeys(track: Track, add: boolean) {
+  pickKeys(track.keys.map((k) => k.ref), add);
 }
