@@ -6,10 +6,14 @@ import { getCommand } from '../core/registry';
 import { store, useStore } from '../core/store';
 import { EASE_PRESETS, presetOf } from '../core/ease';
 import { instanceAt, isInstance, nextKey, symbolContent } from '../core/symbols';
+import { morphNotes } from '../core/shape-tween';
 import { ActionButton, Choice, Field, Slider, Tip, Toggle } from '../canvas/controls';
 import { CurveEditor } from './CurveEditor';
 import { clearMotionPath, clearShapeHints, focusHints, editInstance, makeShapeTween, makeTween, makeTweenAsking, setTweenKind, pathFromSelection, removeTween, resetTransform, setEase, swapSymbol, updateInstances, updateTween, wouldNestInItself } from './ops';
 import './symbols.css';
+import { usePrefs } from '../ui/prefs';
+import { docDpi, formatSize, pxTo, roundIn, toPx, unitInfo } from '../core/units';
+import { instanceBounds } from '../canvas/geometry';
 
 export function Num({ label, value, onChange, step = 1, suffix, title }: { label: string; value: number; onChange: (v: number) => void; step?: number; suffix?: string; title?: string }) {
   const [draft, setDraft] = useState<string | null>(null);
@@ -46,6 +50,13 @@ export function Num({ label, value, onChange, step = 1, suffix, title }: { label
   );
 }
 
+/** A length typed in the chosen unit (Preferences > Units), stored as stage pixels. */
+export function LengthNum({ label, px, onPx, title }: { label: string; px: number; onPx: (px: number) => void; title?: string }) {
+  const unit = usePrefs((p) => p.units);
+  const dpi = useStore((s) => docDpi(s.doc));
+  return <Num label={label} value={roundIn(pxTo(px, unit, dpi), unit)} suffix={unit === 'px' ? undefined : unit} step={unit === 'px' ? 1 : 10 ** -unitInfo(unit).places} onChange={(v) => onPx(toPx(v, unit, dpi))} title={title} />;
+}
+
 export function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="sy-section">
@@ -60,6 +71,14 @@ const PLAY_OPTIONS: { value: PlayMode; label: string; title: string }[] = [
   { value: 'once', label: 'Play once', title: 'Plays its animation once, then holds the last frame' },
   { value: 'single', label: 'One frame', title: 'Shows just one frame of it (good for swapping poses)' },
 ];
+
+/** How big the instance is on the page, in the chosen unit. */
+function SizeOnPage({ inst }: { inst: InstanceShape }) {
+  const unit = usePrefs((p) => p.units);
+  const doc = useStore((s) => s.doc);
+  const b = instanceBounds(inst, doc);
+  return <p className="sy-size">Size on the page: {formatSize(b.w, b.h, unit, docDpi(doc))}</p>;
+}
 
 function InstanceSection({ inst, between }: { inst: InstanceShape; between: number | null }) {
   const doc = useStore((s) => s.doc);
@@ -92,13 +111,14 @@ function InstanceSection({ inst, between }: { inst: InstanceShape; between: numb
       </div>
       {between !== null && <Tip>You're between two keys, looking at an in-between. Changes go to the key on frame {between + 1}.</Tip>}
       <div className="sy-grid">
-        <Num label="X" value={t.x} onChange={(v) => set('Move', 'x', (s) => void (s.transform.x = v))} />
-        <Num label="Y" value={t.y} onChange={(v) => set('Move', 'y', (s) => void (s.transform.y = v))} />
+        <LengthNum label="X" px={t.x} onPx={(v) => set('Move', 'x', (s) => void (s.transform.x = v))} />
+        <LengthNum label="Y" px={t.y} onPx={(v) => set('Move', 'y', (s) => void (s.transform.y = v))} />
         <Num label="Width" suffix="%" value={t.scaleX * 100} onChange={(v) => set('Resize', 'sx', (s) => void (s.transform.scaleX = v / 100))} title="Size across (scale X)" />
         <Num label="Height" suffix="%" value={t.scaleY * 100} onChange={(v) => set('Resize', 'sy', (s) => void (s.transform.scaleY = v / 100))} title="Size up and down (scale Y)" />
         <Num label="Turn" suffix="°" value={t.rotation} onChange={(v) => set('Turn', 'rot', (s) => void (s.transform.rotation = v))} title="Rotation, in degrees" />
         <Num label="Slant" suffix="°" value={t.skew} onChange={(v) => set('Slant', 'skew', (s) => void (s.transform.skew = v))} title="Skew, in degrees" />
       </div>
+      <SizeOnPage inst={inst} />
       <Slider label="See-through" value={Math.round((1 - inst.opacity) * 100)} min={0} max={100} format={(v) => `${v}%`} onChange={(v) => set('See-through', 'op', (s) => void (s.opacity = 1 - v / 100))} hint="Fades the whole symbol (opacity). In-betweens can fade it in or out." />
       <Field label="Colour wash (tint)" value={`${Math.round((inst.tint?.amount ?? 0) * 100)}%`}>
         <div className="cv-row">
@@ -192,6 +212,9 @@ export function TweenSection() {
   const next = nextKey(layer, cel);
   const custom = Array.isArray(tw.ease);
   const preset = presetOf(tw.ease);
+  const from = doc.drawings[cel.drawingId];
+  const to = next ? doc.drawings[next.drawingId] : undefined;
+  const notes = shape && from?.kind === 'vector' && to?.kind === 'vector' ? morphNotes(from, to) : [];
   return (
     <Section title={camera ? 'Camera in-betweens' : shape ? 'In-betweens: morph (shape tween)' : 'In-betweens (tween)'}>
       {!camera && <Choice label="How it changes" value={shape ? 'shape' : 'classic'} options={KIND_OPTIONS} onChange={(v) => setTweenKind(v)} />}
@@ -223,6 +246,9 @@ export function TweenSection() {
         </select>
       </Field>
       <CurveEditor value={tw.ease} onChange={(e) => setEase(e, `ease-${cel.id}`)} />
+      {notes.map((n) => (
+        <Tip key={n}>{n}</Tip>
+      ))}
       {shape && (
         <Field label={`Shape hints (${hints.length})`}>
           <Tip>If the morph twists or crumples, pin points together: put a lettered hint on the first key, then drag its twin to the matching spot on the last key.</Tip>

@@ -57,6 +57,16 @@ export interface Doc {
   flow?: ClipFlow;
   /** Sound clips on the audio track, in the order they were added (missing = none). See `AudioClip`. */
   audio?: AudioClip[];
+  /** Guide lines dragged out of the rulers (missing = none). Never drawn in exports. See `Guide`. */
+  guides?: Guide[];
+}
+
+/** A guide line across the stage: `axis` 'x' is an up-and-down line at x = `at`, 'y' a sideways one at y = `at`. */
+export interface Guide {
+  id: Id;
+  axis: 'x' | 'y';
+  /** Stage pixels from the left (x) or top (y) edge. */
+  at: number;
 }
 
 export type LayerKind = 'vector' | 'pixel' | 'tilemap' | 'camera';
@@ -676,7 +686,12 @@ export interface BonePose {
   r: number;
   x?: number;
   y?: number;
+  /** Squash and stretch: the bone's length times this, with what hangs from it (missing = 1). Kept within BONE_STRETCH. */
+  s?: number;
 }
+
+/** How far a bone can squash or stretch, so it never flips inside out. */
+export const BONE_STRETCH = { min: 0.25, max: 3 } as const;
 
 export type Pose = Record<Id, BonePose>;
 

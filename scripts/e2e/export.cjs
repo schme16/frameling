@@ -11,7 +11,8 @@
 //   xvfb-run -a npx electron scripts/e2e/export.cjs [outDir] [options]
 //
 //   outDir               where outputs and the report go (default: a fresh folder under the system temp dir)
-//   --only=gif,mp4       only these formats (mp4 webm gif apng png pngseq svg sheet interactives psd pdf ai prores)
+//   --only=gif,mp4       only these formats (mp4 webm gif apng png pngseq svg sheet interactives psd pdf ai prores
+//                        godot-bones)
 //   --templates=a,b      only these templates (bouncing-ball hero-sprites blank-vector blank-pixel bouncing-logo stress kitchen-sink)
 //   --skip=files         skip a part: files (save/open/autosave/close), godot
 //   --show               leave the window visible (needs a real display)
@@ -1182,6 +1183,97 @@ function report() {
   return bad.length === 0;
 }
 
+// ---------------------------------------------------------------- Godot bones (the puppet as a skeleton)
+
+// The puppet with a bent body, a squash and an eased glide, exported as "Bones (editable in Godot)", loaded and played
+// in real Godot, and frames rendered there compared with Frameling's own PNG export of the same frames.
+async function godotBonesSection() {
+  const r = begin('puppet', 'sheet godot-bones');
+  try {
+    const dir = setAutomationDir(path.join(outDir, 'puppet', 'sheet-godot-bones'));
+    await loadTpl('puppet');
+    await ev(`(() => {
+      const F = window.__frameling;
+      const st = F.store();
+      const doc = st.get().doc;
+      const rig = doc.layers.find((l) => l.rig);
+      const chest = rig.rig.bones.find((b) => b.name === 'Chest').id;
+      st.update('e2e', (d) => {
+        const r = d.layers.find((l) => l.id === rig.id);
+        r.cels[0].tween = { ease: 'easeInOut' };
+        r.cels[1].tween = { ease: 'backOut' };
+        const p = d.drawings[r.cels[1].drawingId].pose;
+        p[chest] = { ...(p[chest] || { r: 0 }), s: 0.85 };
+      });
+      st.setUi({ activeLayerId: doc.layers.find((l) => l.name === 'Body').id });
+      F.run('rig.bendLayer');
+      return true;
+    })()`);
+    const defaults = await X('defaults()');
+    const settings = { ...defaults, format: 'sheet', range: 'all', clipId: null, scale: 1, transparent: false, sheet: { ...defaults.sheet, engine: 'godot', godot: true, godotScene: true, json: false, godotRig: 'bones', godotPath: '' } };
+    r.settings = settings;
+    const res = await X(`run(${JSON.stringify(settings)})`);
+    note(`${res.ms}ms`);
+    if (!check(res.outcome === 'done', `export did not finish: ${JSON.stringify(res)}`)) return;
+    const files = listFiles(dir).sort();
+    note(files.join(', '));
+    const scene = files.find((n) => n.endsWith('.tscn'));
+    if (!check(scene, 'no .tscn')) return;
+    check(files.filter((n) => n.endsWith('.png')).length >= 13, 'expected a picture for every part');
+    const tscn = fs.readFileSync(path.join(dir, scene), 'utf8');
+    check(tscn.includes('type="Skeleton2D"') && tscn.includes('type="Polygon2D"') && tscn.includes('type="AnimationPlayer"'), 'scene is missing the skeleton, the bent body or the player');
+    if (!GODOT || SKIP.includes('godot')) return;
+    const doc = await X('doc()');
+    const proj = path.join(dir, '_godot');
+    fs.rmSync(proj, { recursive: true, force: true });
+    fs.mkdirSync(path.join(proj, 'sprites'), { recursive: true });
+    for (const n of files) fs.copyFileSync(path.join(dir, n), path.join(proj, 'sprites', n));
+    const bg = (doc.background || '#ffffff').replace('#', '');
+    const c = [0, 2, 4].map((i) => (parseInt(bg.slice(i, i + 2), 16) / 255).toFixed(4)).join(', ');
+    fs.writeFileSync(path.join(proj, 'project.godot'), `config_version=5\n\n[application]\nconfig/name="bones"\n\n[rendering]\nrenderer/rendering_method="gl_compatibility"\nenvironment/defaults/default_clear_color=Color(${c}, 1)\n\n[display]\nwindow/size/viewport_width=${doc.width}\nwindow/size/viewport_height=${doc.height}\n`);
+    const shots = [0, 3, 6, 9, 15, 23];
+    fs.writeFileSync(
+      path.join(proj, 'render.gd'),
+      `extends SceneTree
+func _init():
+	var s = load("res://sprites/${scene}").instantiate()
+	root.add_child(s)
+	var ap: AnimationPlayer = s.get_node("AnimationPlayer")
+	# Autoplay starts on the first frame; let it, so it doesn't restart the clip after we seek.
+	await process_frame
+	print("ANIMS " + ",".join(ap.get_animation_list()))
+	for f in [${shots.join(', ')}]:
+		ap.play("walk")
+		ap.seek(f / ${doc.fps}.0, true)
+		ap.pause()
+		await process_frame
+		await process_frame
+		await RenderingServer.frame_post_draw
+		root.get_texture().get_image().save_png("res://shot-%d.png" % f)
+	print("RENDERED")
+	quit()
+`,
+    );
+    sh(GODOT, ['--headless', '--path', proj, '--import'], { timeout: 120000 });
+    const run = sh(GODOT, ['--path', proj, '--rendering-driver', 'opengl3', '--script', 'render.gd'], { timeout: 120000 });
+    if (!check(run.out.includes('RENDERED'), `Godot did not render: ${(run.err + run.out).slice(0, 400)}`)) return;
+    check(/ANIMS walk/.test(run.out), 'Godot has no walk animation');
+    let worst = 0;
+    for (const f of shots) {
+      const ref = await reference(settings, f, false);
+      const e = ref && rmse(path.join(proj, `shot-${f}.png`), ref);
+      if (e === null || e === undefined) continue;
+      worst = Math.max(worst, e);
+      note(`frame ${f}: rmse ${e.toFixed(4)}`);
+      // Godot resamples each part's picture, so edges differ a little. A part out of place is far more than this.
+      check(e < 0.03, `frame ${f} in Godot differs from Frameling's PNG (rmse ${e.toFixed(4)})`);
+    }
+    note(`godot bones ok, worst rmse ${worst.toFixed(4)}`);
+  } catch (e) {
+    fail(`harness error: ${e?.stack ?? e}`);
+  }
+}
+
 (async () => {
   const guard = setTimeout(() => {
     console.error('The run took far too long, giving up.');
@@ -1190,6 +1282,7 @@ function report() {
   try {
     await startApp();
     await exportMatrix();
+    if (!ONLY || ONLY.includes('godot-bones')) await godotBonesSection();
     if (!SKIP.includes('files')) await filesSection();
   } catch (e) {
     begin('harness', 'startup').failures.push(String(e?.stack ?? e));

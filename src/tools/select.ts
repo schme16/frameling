@@ -41,6 +41,7 @@ import { cutOut, mergeable, placeMoved, polygonGeom, shapeBox, shapeInsideArea, 
 import { getSelectSettings } from '../select/settings';
 import { drawLasso, lassoClosesAt, lassoPoint } from '../select/lasso';
 import { subPathsToPath2D } from '../core/render';
+import { clearSnap, snapMove, snapPt } from '../canvas/guides';
 
 /** How far off (screen pixels) a click can be and still hit a thin line. */
 const HIT_TOL = 5;
@@ -72,6 +73,8 @@ interface Gesture {
   lasso: Pt[] | null;
   /** A lasso left open between Alt+clicks (straight sides), waiting for the next corner. */
   open: boolean;
+  /** The move, resize or turn as last worked out (with snapping), so drawing it doesn't snap again. */
+  m?: Matrix;
 }
 
 let g: Gesture | null = null;
@@ -106,8 +109,8 @@ function midTween(): boolean {
   return !!layer && isInBetween(doc, layer, ui.frame);
 }
 
-/** The matrix the current gesture is applying. */
-function gestureMatrix(s: Gesture): Matrix {
+/** The matrix the current gesture is applying. With `zoom`, moves and resizes snap to guides and the page. */
+function gestureMatrix(s: Gesture, zoom?: number): Matrix {
   const { cur, start } = s;
   if (s.mode === 'move') {
     let dx = cur.x - start.x;
@@ -116,9 +119,19 @@ function gestureMatrix(s: Gesture): Matrix {
       if (Math.abs(dx) > Math.abs(dy)) dy = 0;
       else dx = 0;
     }
+    if (zoom) {
+      const lockX = cur.shift && dx === 0;
+      const lockY = cur.shift && dy === 0;
+      const snapped = snapMove(s.bounds, dx, dy, zoom, cur.mod);
+      dx = lockX ? 0 : snapped.dx;
+      dy = lockY ? 0 : snapped.dy;
+    }
     return translate(dx, dy);
   }
-  if (s.mode === 'scale' && s.bounds && s.handle && s.handle !== 'rotate') return scaleMatrixForHandle(s.bounds, s.handle, cur.x, cur.y, cur.shift, cur.alt);
+  if (s.mode === 'scale' && s.bounds && s.handle && s.handle !== 'rotate') {
+    const p = zoom ? snapPt(cur, zoom, cur.mod) : cur;
+    return scaleMatrixForHandle(s.bounds, s.handle, p.x, p.y, cur.shift, cur.alt);
+  }
   if (s.mode === 'rotate' && s.bounds) return rotateMatrixForHandle(s.bounds, s.startAngle, cur.x, cur.y, cur.shift);
   return IDENTITY;
 }
@@ -127,7 +140,7 @@ function updatePreview(s: Gesture, zoom: number): void {
   if (s.mode === 'marquee') return;
   if (!s.moved && Math.hypot(s.cur.x - s.start.x, s.cur.y - s.start.y) * zoom < DRAG_PX) return;
   s.moved = true;
-  const m = gestureMatrix(s);
+  const m = (s.m = gestureMatrix(s, zoom));
   const moved = new Map(s.originals.map((o) => [o.id, transformShape(o, m)]));
   setLive({ layerId: s.layerId, kind: 'vector', drawing: { ...s.drawing, shapes: s.drawing.shapes.map((x) => moved.get(x.id) ?? x) } });
 }
@@ -241,7 +254,8 @@ function up(e: ToolPointer, ctx: ToolContext): void {
     ctx.requestOverlay();
     return;
   }
-  const m = gestureMatrix(s);
+  const m = gestureMatrix(s, ctx.zoom);
+  clearSnap();
   const repl = new Map(s.originals.map((o) => [o.id, transformShape(o, m)]));
   const label = s.mode === 'move' ? 'Move' : s.mode === 'scale' ? 'Resize' : 'Rotate';
   if (activeIsMerge()) {
@@ -302,6 +316,7 @@ export function cancelOpenLasso(): boolean {
 }
 
 function cancel(ctx: ToolContext): void {
+  clearSnap();
   if (g?.mode === 'marquee') setSelection(g.base);
   g = null;
   setLive(null);
@@ -395,7 +410,7 @@ function overlay(gx: CanvasRenderingContext2D, ctx: ToolContext): void {
   }
   const b = g && g.mode !== 'marquee' ? g.bounds : shapesBounds(sel);
   if (!b || !sel.length) return;
-  const m = g && g.mode !== 'marquee' && g.moved ? gestureMatrix(g) : IDENTITY;
+  const m = g && g.mode !== 'marquee' && g.moved ? (g.m ?? gestureMatrix(g)) : IDENTITY;
 
   // Each selected shape gets a thin outline of its own box, so you can see what's in.
   gx.save();

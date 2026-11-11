@@ -16,8 +16,8 @@ import './symbols.css';
 /** The drag type a library row carries, read by the canvas when it's dropped there. */
 export const SYMBOL_DRAG_TYPE = 'application/x-frameling-symbol';
 
-/** Draws frame 0 of a symbol, fitted into a small canvas. */
-export function SymbolThumb({ doc, id, size = 44 }: { doc: Doc; id: Id; size?: number }) {
+/** Draws one frame of a symbol (frame 0 unless asked), fitted into a small canvas. Every frame uses the same fit. */
+export function SymbolThumb({ doc, id, size = 44, frame = 0, className = 'sy-thumb' }: { doc: Doc; id: Id; size?: number; frame?: number; className?: string }) {
   const ref = useRef<HTMLCanvasElement>(null);
   const c = symbolContent(doc, id);
   useEffect(() => {
@@ -34,9 +34,9 @@ export function SymbolThumb({ doc, id, size = 44 }: { doc: Doc; id: Id; size?: n
     const k = Math.min((size - pad * 2) / b.w, (size - pad * 2) / b.h);
     g.setTransform(k * dpr, 0, 0, k * dpr, (size / 2 - (b.x + b.w / 2) * k) * dpr, (size / 2 - (b.y + b.h / 2) * k) * dpr);
     const inst = { ...newInstance(id, c.def.origin), play: 'single' as const };
-    drawInstance(g, poseInstance(doc, inst, 0), { doc, frame: 0 });
+    drawInstance(g, poseInstance(doc, inst, frame), { doc, frame });
   });
-  return <canvas ref={ref} className="sy-thumb" style={{ width: size, height: size }} aria-hidden="true" />;
+  return <canvas ref={ref} className={className} style={{ width: size, height: size }} aria-hidden="true" />;
 }
 
 export function LibraryPanel() {

@@ -75,6 +75,8 @@ Want hands or mouths that change shape? Keep swapping drawings on the attached l
 
 **Every drag makes a key.** Posing on a frame with no pose of its own adds a key on the Bones layer. Frameling asks the first time whether the frames in between should **glide** from the last pose (smooth, with easing) or **jump** (stepped). Change it any time in **Preferences > Behaviour**. Glides use the same [easing](help:easing) as other in-betweens, so you can change the feel in the Symbol and motion panel.
 
+**Squash and stretch:** **Shift+drag** a bone to make it longer or shorter on this frame. See [squash and stretch](help:rig-stretch).
+
 **Rig > Reset pose** puts every bone back where it was drawn, on this frame.`,
   },
   {
@@ -92,9 +94,51 @@ Frameling lays a fine mesh of triangles over the drawing and ties each point to 
 
 **Tips:**
 - Draw the bones first, along the middle of the shape, then bend it.
+- If it bends in the wrong places, [paint how much it bends](help:rig-weights).
 - If you add bones later, choose **Bends with the bones** again to refresh the weights.
 - Pixel art keeps its crisp pixels as it bends.
 - SVG exports put bent layers in as pictures, since SVG can't bend shapes. Every other export shows exactly what you see.`,
+  },
+  {
+    id: 'rig-weights',
+    title: 'Paint how much it bends',
+    section: 'Rigging',
+    media: 'rig-weights.mp4',
+    summary: 'A soft brush for a bending layer: paint which parts follow a bone and how strongly (weight painting).',
+    keywords: ['weights', 'weight painting', 'weight paint', 'skin weights', 'influence', 'heat map', 'normalize', 'normalise', 'smooth weights'],
+    body: `When a layer [bends with the bones](help:rig-bend), Frameling guesses how strongly each part follows each bone. Most of the time the guess is fine. When a bend looks wrong (a sleeve that tears at the elbow, a tail that bends too early), paint it right.
+
+1. Pick the bending layer, then **Rig > Paint how much it bends**.
+2. Pick the **bone** in Tool options, or **Ctrl+click** it on the canvas.
+3. Paint. The colours show that bone's pull: **red** follows it fully, **blue** doesn't follow it at all, green and yellow are in between.
+
+**The brush:**
+- **More** makes the part under the brush follow the bone more. **Less** makes it follow less. Hold **Alt** to swap them for a moment.
+- **Smooth** evens out sudden changes, so the bend is softer.
+- **Size** and **Strength** change the brush. A gentle strength and a few strokes work best.
+
+**Tip:** pose the character first (bend the elbow right over), then paint. You see the result as you paint.
+
+Every point always follows its bones by 100% in total: take some pull away from one bone and the others get it. **Even out totals** (normalise) fixes points that don't add up, which can happen after deleting a bone. **Smooth all** softens the whole layer once, and **Start over** goes back to Frameling's guess.
+
+Each stroke is one step to undo.`,
+  },
+  {
+    id: 'rig-stretch',
+    title: 'Squash and stretch on bones',
+    section: 'Rigging',
+    media: 'rig-stretch.mp4',
+    summary: 'Shift+drag a bone to make it longer or shorter on this frame, for bouncy, cartoony motion.',
+    keywords: ['squash', 'stretch', 'squash and stretch', 'scale bone', 'bone length', 'cartoon', 'elastic'],
+    body: `Squash and stretch makes motion feel alive: a body squashes as it lands and stretches as it jumps.
+
+With the [Pose tool](help:rig-posing) (**O**), **Shift+drag** a bone along its length. It gets longer or shorter on this frame, and the parts on it stretch with it. Bones hanging from it come along too.
+
+You can also pick a bone and use the **Squash and stretch** slider in Tool options. **100%** is the length you drew.
+
+It's part of the pose, so it glides between keys like everything else, and it goes into [Godot](help:export-godot-bones) as the bone's scale.
+
+A bone can squash to a quarter of its length and stretch to three times it, so it never turns inside out.`,
   },
   {
     id: 'rig-pose-library',

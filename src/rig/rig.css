@@ -80,3 +80,36 @@
   border-radius: var(--radius-small);
   padding: 3px 6px;
 }
+
+/* Paint how much it bends: the colour key and the bone picker. */
+.rg-heat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.rg-heat-bar {
+  display: block;
+  height: 8px;
+  border-radius: 4px;
+  border: 1px solid var(--line);
+}
+.rg-heat-ends {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--muted);
+}
+.rg-bone-pick {
+  align-items: center;
+  gap: 8px;
+}
+.rg-bone-pick select {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  color: var(--text);
+  background: var(--raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  padding: 3px 6px;
+}

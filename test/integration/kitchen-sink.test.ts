@@ -126,10 +126,10 @@ describe('room for sound rows', () => {
 
 describe('layered exports (PSD, PDF, Illustrator) and bones', () => {
   it('a picture of one attached layer still follows its bone', async () => {
-    const { pictureDoc } = await import('../../src/export/layered-run');
+    const { soloDoc } = await import('../../src/export/layered');
     const d = kitchenSinkDoc();
     const hand = d.layers.find((l) => l.name === 'Hand (follows)')!;
-    const { doc: pd } = pictureDoc(d, [hand], true);
+    const pd = soloDoc(d, hand);
     const plain = d.drawings[hand.cels[0].drawingId];
     const { poseAt } = await import('../../src/core/symbols');
     expect(poseAt(d, hand, 18)).not.toBe(plain);
@@ -140,6 +140,6 @@ describe('layered exports (PSD, PDF, Illustrator) and bones', () => {
     const { needsPicture } = await import('../../src/export/layered');
     const d = kitchenSinkDoc();
     const sleeve = { ...d.layers.find((l) => l.name === 'Sleeve (bends)')!, effects: undefined };
-    expect(needsPicture(sleeve, 0)).toBe(true);
+    expect(needsPicture(sleeve, 0, d)).toBe(true);
   });
 });

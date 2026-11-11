@@ -388,11 +388,8 @@ export function pointOnPath(p: MotionPath, t: number): { x: number; y: number; a
   return { x: lerp(a.x, b.x, u), y: lerp(a.y, b.y, u), angle: Math.atan2(b.y - a.y, b.x - a.x) / RAD };
 }
 
-/** Where an instance is, `t` (eased) of the way from key `a` to key `b`. */
-export function tweenInstance(a: InstanceShape, b: InstanceShape | undefined, tw: Tween, t: number): InstanceShape {
-  if (!b) return a;
-  const ta = a.transform;
-  const tb = b.transform;
+/** A position and turn `t` (eased) of the way between two, with the tween's extra spins and motion path applied. */
+export function tweenTransform(ta: Transform2D, tb: Transform2D, tw: Tween, t: number): Transform2D {
   const out: Transform2D = {
     x: lerp(ta.x, tb.x, t),
     y: lerp(ta.y, tb.y, t),
@@ -410,6 +407,13 @@ export function tweenInstance(a: InstanceShape, b: InstanceShape | undefined, tw
     out.y = pt.y + lerp(ta.y - p0.y, tb.y - p1.y, t);
     if (tw.path.orient) out.rotation += pt.angle - p0.angle;
   }
+  return out;
+}
+
+/** Where an instance is, `t` (eased) of the way from key `a` to key `b`. */
+export function tweenInstance(a: InstanceShape, b: InstanceShape | undefined, tw: Tween, t: number): InstanceShape {
+  if (!b) return a;
+  const out = tweenTransform(a.transform, b.transform, tw, t);
   let tint = a.tint;
   if (a.tint || b.tint) {
     const ca = a.tint?.color ?? b.tint!.color;
@@ -562,7 +566,8 @@ function morphAt(doc: Doc, layer: Layer, cel: Cel, d: VectorDrawing, frame: numb
       const c = symbolContent(doc, s.symbolId);
       frames.push(c ? symbolFrame(s, local, c.length) : -1);
     }
-  const key = `shape|${tp.t.toFixed(5)}|${tp.next.id}|${tp.next.drawingId}|` + frames.join(',') + (hasMoving(d) ? `|@${local}` : '');
+  // Moving shapes on either key (a spare emitter fading in from the end key counts) change with every frame.
+  const key = `shape|${tp.t.toFixed(5)}|${tp.next.id}|${tp.next.drawingId}|` + frames.join(',') + (hasMoving(d) || hasMoving(to) ? `|@${local}` : '');
   const world = worldOf(doc);
   let byKey = world.cels.get(cel);
   if (!byKey) world.cels.set(cel, (byKey = new Map()));
@@ -570,7 +575,7 @@ function morphAt(doc: Doc, layer: Layer, cel: Cel, d: VectorDrawing, frame: numb
   if (hit) return hit;
   const tw = cel.tween!;
   let n = 0;
-  const shapes = morphShapes(d, to, tp.t, tw.hints ?? [], (a, b, t) => tweenInstance(a, b, tw, t)).map((s) => {
+  const shapes = morphShapes(d, to, tp.t, tw.hints ?? [], (a, b, t) => tweenInstance(a, b, tw, t), (a, b, t) => tweenTransform(a, b, tw, t)).map((s) => {
     if (!isInstance(s)) return poseMovingShape(doc, s, local, depth);
     const c = symbolContent(doc, s.symbolId);
     // Spare copies that grow in from the end key play from its start.

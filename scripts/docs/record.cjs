@@ -6,7 +6,8 @@
 // The renderer defaults to dist/renderer. Pass --renderer to point at a private `vite build --outDir` so a
 // capture never races someone else's build. The steps file is a JSON array:
 //   {"eval": "js"}  {"log": "js"} (prints the result)  {"wait": ms}  {"click": [x, y]}  {"key": "g", "mods": ["control"]}
-//   {"drag": [[x, y], ...], "steps": 6, "delay": 8}     delay is the ms between mouse moves, so slow strokes look drawn
+//   {"drag": [[x, y], ...], "steps": 6, "delay": 8, "mods": ["shift"]}   delay is the ms between mouse moves, so slow
+//                                                       strokes look drawn; mods are held down through the drag
 //   {"shot": "name", "crop": [x, y, w, h]}              PNG of the window (cropped if asked), or "el": "css selector", "pad": 12
 //   {"type": "text"}                                    sets the focused input's text (then fires input)
 //   {"rec": "name", "crop": [x, y, w, h], "every": 60}  start recording frames in the background
@@ -89,20 +90,22 @@ async function runSteps(win, steps) {
       const pts = s.drag;
       const n = s.steps ?? 6;
       const d = s.delay ?? 8;
-      send({ type: 'mouseMove', x: pts[0][0], y: pts[0][1] });
-      send({ type: 'mouseDown', x: pts[0][0], y: pts[0][1], button: 'left', clickCount: 1 });
+      // "mods": ["shift"] holds keys down through the whole drag.
+      const mods = s.mods ?? [];
+      send({ type: 'mouseMove', x: pts[0][0], y: pts[0][1], modifiers: mods });
+      send({ type: 'mouseDown', x: pts[0][0], y: pts[0][1], button: 'left', clickCount: 1, modifiers: mods });
       await sleep(16);
       for (let i = 1; i < pts.length; i++) {
         const [ax, ay] = pts[i - 1];
         const [bx, by] = pts[i];
         for (let k = 1; k <= n; k++) {
           const t = k / n;
-          send({ type: 'mouseMove', x: Math.round(ax + (bx - ax) * t), y: Math.round(ay + (by - ay) * t), modifiers: ['leftButtonDown'] });
+          send({ type: 'mouseMove', x: Math.round(ax + (bx - ax) * t), y: Math.round(ay + (by - ay) * t), modifiers: [...mods, 'leftButtonDown'] });
           await sleep(d);
         }
       }
       const [lx, ly] = pts[pts.length - 1];
-      send({ type: 'mouseUp', x: lx, y: ly, button: 'left', clickCount: 1 });
+      send({ type: 'mouseUp', x: lx, y: ly, button: 'left', clickCount: 1, modifiers: mods });
       await sleep(s.after ?? 80);
     } else if (s.key) {
       const modifiers = s.mods ?? [];

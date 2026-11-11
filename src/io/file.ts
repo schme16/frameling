@@ -6,7 +6,7 @@
  */
 import { readFolders, readLayerLook } from '../effects/io';
 import { strFromU8, strToU8, unzipSync, zipSync, type Zippable } from 'fflate';
-import { FORMAT_VERSION, type Cel, type Doc, type Drawing, type Layer, type Shape, type SymbolDef, type Tween, type InstanceShape, type ClipFlow, type ClipTransition, type Tile, type Tileset, type Bone, type BonePose, type LayerBind, type Pose, type Rig, type SavedPose } from '../core/format';
+import { BONE_STRETCH, FORMAT_VERSION, type Cel, type Doc, type Drawing, type Layer, type Shape, type SymbolDef, type Tween, type InstanceShape, type ClipFlow, type ClipTransition, type Tile, type Tileset, type Bone, type BonePose, type LayerBind, type Pose, type Rig, type SavedPose } from '../core/format';
 import { decodePng, encodePng } from './png';
 import { rootDoc } from '../core/symbols';
 import { isEasing } from '../core/ease';
@@ -256,7 +256,18 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
   if (tileset) doc.tileset = tileset;
   const audio = unpackAudio(raw.audio, entries, warnings);
   if (audio) doc.audio = audio;
+  const guides = readGuides(raw.guides);
+  if (guides) doc.guides = guides;
   return doc;
+}
+
+/** Guides, keeping only well-formed ones. */
+function readGuides(raw: unknown): Doc['guides'] {
+  if (!Array.isArray(raw)) return undefined;
+  const out = raw
+    .filter((g: any) => isObj(g) && (g.axis === 'x' || g.axis === 'y') && typeof g.at === 'number' && Number.isFinite(g.at))
+    .map((g: any) => ({ id: typeof g.id === 'string' && g.id ? g.id : 'g' + Math.random().toString(36).slice(2, 10), axis: g.axis as 'x' | 'y', at: g.at as number }));
+  return out.length ? out : undefined;
 }
 
 /** Symbols, if the file has any. One that can't be read is dropped (its instances then show nothing). */
@@ -292,6 +303,7 @@ function readPoseMap(p: unknown): Pose | undefined {
     const bp: BonePose = { r: num(b.r, 0) };
     if (typeof b.x === 'number' && Number.isFinite(b.x) && b.x) bp.x = b.x;
     if (typeof b.y === 'number' && Number.isFinite(b.y) && b.y) bp.y = b.y;
+    if (typeof b.s === 'number' && Number.isFinite(b.s) && b.s !== 1) bp.s = Math.min(BONE_STRETCH.max, Math.max(BONE_STRETCH.min, b.s));
     out[id] = bp;
   }
   return out;
