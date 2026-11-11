@@ -1,6 +1,6 @@
 /**
  * The selection commands on pixel layers. The Edit menu's own commands (Select all, Deselect, Copy, Cut, Paste,
- * Delete, the arrow key nudges, Undo) are taken over here so they do the pixel thing when a pixel layer is active,
+ * Delete, Duplicate, the arrow key nudges, Undo) are taken over here so they do the pixel thing when a pixel layer is active,
  * and what they always did otherwise. Plus Invert selection and the Lasso and Magic wand shortcuts.
  */
 import { getCommand, registerCommand, registerCommands, type Command } from '../core/registry';
@@ -15,6 +15,7 @@ import {
   cancelFloating,
   deleteFloating,
   dropFloating,
+  duplicateSelection,
   floatingPixels,
   floatPixels,
   isFloating,
@@ -139,6 +140,8 @@ function install(): void {
   extend('edit.cut', { enabled: hasSel, run: () => void (copyPixels() && deletePixels('Cut pixels')) });
   extend('edit.paste', { enabled: () => !!clip, run: () => void pastePixels() });
   extend('edit.delete', { enabled: hasSel, run: () => void deletePixels() });
+  // Ctrl+D. Plain D (copy the drawing to the next frame) is a different key and keeps working with a selection.
+  extend('edit.duplicate', { enabled: hasSel, run: () => void duplicateSelection() });
   // Undo while pixels are lifted just puts them back.
   extend('edit.undo', { enabled: isFloating, run: cancelFloating }, true);
   for (const [id, dx, dy] of [

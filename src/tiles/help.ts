@@ -105,7 +105,7 @@ Leave **Godot TileSet** and **Godot scene** ticked, pick a folder inside your Go
 
 - **name.png**: the tiles.
 - **name.tres**: a TileSet. Animated tiles keep their frames and timing.
-- **name.tscn**: a scene with one **TileMapLayer** for each of your tilemap layers, painted just like yours, flips and all. Drop it into a level.
+- **name.tscn**: a scene with one **TileMapLayer** for each of your tilemap layers, painted just like yours, flips, turns and all. Each layer is scaled to its pixel size, so the level is the same size in Godot as in Frameling. Drop it into a level.
 
 The files point at **res://tiles/name.png** unless you type another place. Put the picture there (or change the path to where it will live) and Godot opens everything without any setting up. The scene turns off smoothing so pixel art stays crisp.
 

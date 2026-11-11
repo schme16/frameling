@@ -3,8 +3,10 @@ import type { PixelDrawing } from '../../src/core/format';
 import { store } from '../../src/core/store';
 import { getPx } from '../../src/canvas/pixels';
 import { getCommand } from '../../src/core/registry';
+import { setChoice } from '../../src/core/choices';
 import '../../src/core/commands';
 import '../../src/tools';
+import '../../src/timeline/commands';
 import { pencilTool } from '../../src/tools/pencil';
 import { fillTool } from '../../src/tools/fill';
 import { DEFAULT_TOOL_SETTINGS, setToolSettings } from '../../src/tools/settings';
@@ -68,8 +70,21 @@ describe('picking pixels', () => {
     drag(pixelSelectTool, ctx(), [at(0, 0), at(1, 0)]);
     drag(pixelSelectTool, ctx(), [at(0, 2), at(1, 2)], { shift: true });
     expect(maskCount(pixelSelection()!)).toBe(4);
-    drag(pixelSelectTool, ctx(), [at(0, 0), at(0, 2)], { alt: true });
+    // Alt starting outside the selection takes away.
+    drag(pixelSelectTool, ctx(), [at(0, 1), at(1, 2)], { alt: true });
     expect(maskCount(pixelSelection()!)).toBe(2);
+  });
+
+  it('Alt starting inside takes away too when Preferences say so', () => {
+    setChoice('select.altInside', 'subtract');
+    try {
+      drag(pixelSelectTool, ctx(), [at(0, 0), at(1, 0)]);
+      drag(pixelSelectTool, ctx(), [at(0, 0), at(0, 1)], { alt: true });
+      expect(isFloating()).toBe(false);
+      expect(maskCount(pixelSelection()!)).toBe(1);
+    } finally {
+      setChoice('select.altInside', undefined);
+    }
   });
 
   it('the lasso picks what it goes round', () => {
@@ -183,6 +198,100 @@ describe('moving selected pixels', () => {
     setPixelSelection(rectMask(8, 8, 5, 5, 5, 5));
     run('edit.delete');
     expect(hex(5, 5)).toBeNull();
+  });
+});
+
+describe('duplicating and copying by dragging', () => {
+  it('Ctrl+D lifts a copy one pixel down and right, and lands as one undo step', () => {
+    setPixelSelection(rectMask(8, 8, 1, 1, 2, 1));
+    expect(enabled('edit.duplicate')).toBe(true);
+    run('edit.duplicate');
+    expect(isFloating()).toBe(true);
+    expect(maskBounds(pixelSelection()!)).toEqual({ x0: 2, y0: 2, x1: 3, y1: 2 });
+    run('select.none');
+    expect(hex(1, 1)).toBe('#ff0000');
+    expect(hex(2, 2)).toBe('#ff0000');
+    expect(hex(3, 2)).toBe('#ff0000');
+    expect(store().undoLabel()).toBe('Duplicate pixels');
+    store().undo();
+    expect(hex(2, 2)).toBeNull();
+    expect(hex(1, 1)).toBe('#ff0000');
+  });
+
+  it('Ctrl+D does nothing on a pixel layer with nothing selected, and plain D still copies the frame', () => {
+    expect(enabled('edit.duplicate')).toBe(false);
+    setPixelSelection(rectMask(8, 8, 1, 1, 2, 1));
+    // D (copy this drawing to the next frame) is another key, and still works with pixels selected.
+    expect(enabled('timeline.duplicateKey')).toBe(true);
+    run('timeline.duplicateKey');
+    expect(store().get().ui.frame).toBe(1);
+    expect(hex(1, 1)).toBe('#ff0000');
+  });
+
+  it('Alt+drag inside the selection drags a copy and leaves the original', () => {
+    setPixelSelection(rectMask(8, 8, 1, 1, 2, 1));
+    drag(pixelSelectTool, ctx(), [at(1, 1), at(1, 3)], { alt: true });
+    expect(isFloating()).toBe(true);
+    run('select.none');
+    expect(hex(1, 1)).toBe('#ff0000');
+    expect(hex(2, 1)).toBe('#ff0000');
+    expect(hex(1, 3)).toBe('#ff0000');
+    expect(hex(2, 3)).toBe('#ff0000');
+    expect(store().undoLabel()).toBe('Copy pixels');
+  });
+
+  it('Alt+drag on pixels already being moved puts them down and drags a copy from there', () => {
+    setPixelSelection(rectMask(8, 8, 1, 1, 1, 1));
+    drag(pixelSelectTool, ctx(), [at(1, 1), at(1, 3)]);
+    drag(pixelSelectTool, ctx(), [at(1, 3), at(3, 3)], { alt: true });
+    run('select.none');
+    expect(hex(1, 1)).toBeNull();
+    expect(hex(1, 3)).toBe('#ff0000');
+    expect(hex(3, 3)).toBe('#ff0000');
+  });
+});
+
+describe('undo and redo bring the selection back', () => {
+  it('a move: undo puts the outline where it started, redo where it landed', () => {
+    setPixelSelection(rectMask(8, 8, 1, 1, 2, 1));
+    drag(pixelSelectTool, ctx(), [at(1, 1), at(1, 4)]);
+    run('select.none');
+    expect(pixelSelection()).toBeNull();
+    store().undo();
+    expect(maskBounds(pixelSelection()!)).toEqual({ x0: 1, y0: 1, x1: 2, y1: 1 });
+    store().redo();
+    expect(maskBounds(pixelSelection()!)).toEqual({ x0: 1, y0: 4, x1: 2, y1: 4 });
+  });
+
+  it('painting inside a selection: undo brings back the selection it was painted in', () => {
+    setPixelSelection(rectMask(8, 8, 0, 0, 3, 3));
+    store().setUi({ tool: 'pencil', color: '#00ff00' });
+    drag(pencilTool, ctx(), [at(0, 3), at(3, 3)]);
+    forgetLastPixelEnd();
+    setPixelSelection(rectMask(8, 8, 6, 6, 7, 7));
+    store().undo();
+    expect(maskBounds(pixelSelection()!)).toEqual({ x0: 0, y0: 0, x1: 3, y1: 3 });
+    expect(hex(0, 3)).toBeNull();
+  });
+
+  it('a paste: undo goes back to the selection from before it', () => {
+    setPixelSelection(rectMask(8, 8, 1, 1, 2, 1));
+    run('edit.copy');
+    setPixelSelection(rectMask(8, 8, 5, 5, 5, 5));
+    run('edit.paste');
+    run('select.nudgeDown');
+    run('select.none');
+    store().undo();
+    expect(maskBounds(pixelSelection()!)).toEqual({ x0: 5, y0: 5, x1: 5, y1: 5 });
+    store().redo();
+    expect(maskBounds(pixelSelection()!)).toEqual({ x0: 1, y0: 2, x1: 2, y1: 2 });
+  });
+
+  it('undoing a step made with nothing selected lets go of the selection', () => {
+    // The sprite was drawn with nothing selected.
+    setPixelSelection(rectMask(8, 8, 1, 1, 1, 1));
+    store().undo();
+    expect(pixelSelection()).toBeNull();
   });
 });
 

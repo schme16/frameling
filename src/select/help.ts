@@ -8,7 +8,7 @@ registerHelpTopics([
     section: 'Pixel art',
     media: 'pixel-select.mp4',
     summary: 'Pick part of a pixel drawing with a box, a lasso or the magic wand, then move it, copy it, flip it or paint inside it.',
-    keywords: ['selection', 'marquee', 'lasso', 'magic wand', 'select colour', 'move pixels', 'floating selection', 'marching ants', 'invert', 'mask'],
+    keywords: ['selection', 'duplicate', 'alt drag copy', 'marquee', 'lasso', 'magic wand', 'select colour', 'move pixels', 'floating selection', 'marching ants', 'invert', 'mask'],
     body: `Press **V** on a pixel layer, then choose how to pick in the tool options:
 
 - **Box**: drag a rectangle (a *marquee*).
@@ -17,9 +17,11 @@ registerHelpTopics([
 
 The selected part gets a crawling dashed edge (*marching ants*).
 
-**Adding and taking away.** Hold **Shift** to add to the selection, **Alt** to take away, both to keep only the overlap. Or set **Each new pick** in the options.
+**Adding and taking away.** Hold **Shift** to add to the selection, **Alt** to take away (start outside the selection), both to keep only the overlap. Or set **Each new pick** in the options.
 
-**Moving.** Drag inside the selection to move those pixels (Shift keeps it straight). The arrow keys nudge one pixel, ten with Shift. The pixels float above the drawing while you move them, and land when you deselect, pick another tool, or change frame or layer. However many drags and nudges it took, it's **one undo step**. Undo while they're still floating just puts them back.
+**Moving.** Drag inside the selection to move those pixels (Shift keeps it straight). The arrow keys nudge one pixel, ten with Shift. The pixels float above the drawing while you move them, and land when you deselect, pick another tool, or change frame or layer. However many drags and nudges it took, it's **one undo step**. Undo while they're still floating just puts them back. Undo and Redo bring the selection back too, as it was before and after each step.
+
+**Copying.** Hold **Alt** and drag inside the selection to drag a copy, leaving the original. **Ctrl+D** (*duplicate*) makes a copy one pixel down and right, ready to drag. If you'd rather Alt always took away, change it in Preferences, Behaviour.
 
 **Copy, cut and paste.** Ctrl+C, Ctrl+X and Ctrl+V work on the selected pixels. A paste lands in the same place, floating, ready to drag. It works across frames and layers.
 

@@ -43,6 +43,8 @@ export interface TileAtlas {
   image: RawImage;
   /** Tile size in the picture (after scale). */
   tileWidth: number;
+  /** The picture's scale (1 when left out). */
+  scale?: number;
   tileHeight: number;
   columns: number;
   rows: number;
@@ -108,7 +110,7 @@ export function buildTileAtlas(doc: Doc, s: Pick<TilesetExportSettings, 'columns
       }
     });
   });
-  return { image: { width: W, height: H, pixels: px }, tileWidth: tw, tileHeight: th, columns: lay.columns, rows: lay.rows, margin: ex, spacing, tiles: lay.tiles };
+  return { image: { width: W, height: H, pixels: px }, tileWidth: tw, tileHeight: th, scale, columns: lay.columns, rows: lay.rows, margin: ex, spacing, tiles: lay.tiles };
 }
 
 /** The tilemap layers and the map each shows at `frame`. */
@@ -190,7 +192,11 @@ function nodeName(name: string, used: Set<string>, fallback: string): string {
   return n;
 }
 
-/** A scene with a Node2D holding one TileMapLayer per tilemap layer (bottom layer first, as Godot draws in order). */
+/**
+ * A scene with a Node2D holding one TileMapLayer per tilemap layer (bottom layer first, as Godot draws in order).
+ * Each layer is scaled by its pixel size over the picture's scale, so the level comes out the size it is in the
+ * document (a 16 px tile at pixel size 2 covers 32 px in both).
+ */
 export function godotTileScene(o: { tileSetPath: string; rootName: string; maps: { layer: TilemapLayer; map: TilemapDrawing | null }[]; atlas: TileAtlas }): string {
   const used = new Set<string>();
   const root = nodeName(o.rootName, used, 'Level');
@@ -202,6 +208,8 @@ export function godotTileScene(o: { tileSetPath: string; rootName: string; maps:
     out.push(`[node name=${gdString(nodeName(layer.name, used, 'Tiles'))} type="TileMapLayer" parent="."]`);
     if (!layer.visible) out.push('visible = false');
     if (layer.opacity < 1) out.push(`modulate = Color(1, 1, 1, ${gdFloat(layer.opacity)})`);
+    const k = (layer.pixelSize || 1) / (o.atlas.scale ?? 1);
+    if (k !== 1) out.push(`scale = Vector2(${gdFloat(k)}, ${gdFloat(k)})`);
     if (map) out.push(`tile_map_data = PackedByteArray(${godotTileMapData(map, o.atlas).join(', ')})`);
     out.push('tile_set = ExtResource("1_tiles")', '');
   }

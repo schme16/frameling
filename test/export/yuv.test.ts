@@ -37,3 +37,53 @@ describe('rgbaToI420 (limited range BT.709)', () => {
     expect(rgbaToI420(px(2, 2, [1, 2, 3]), 2, 2, buf)).toBe(buf);
   });
 });
+
+describe('rgbaToI420 matches the plain two pass version', () => {
+  // The straightforward version it replaced, kept here as the reference.
+  function reference(rgba: Uint8ClampedArray, width: number, height: number): Uint8Array {
+    const S = 1 << 16;
+    const KR = 0.2126;
+    const KB = 0.0722;
+    const KG = 1 - KR - KB;
+    const ys = 219 / 255;
+    const cbs = 224 / 255 / (2 * (1 - KB));
+    const crs = 224 / 255 / (2 * (1 - KR));
+    const R = Math.round;
+    const [YR, YG, YB] = [R(ys * KR * S), R(ys * KG * S), R(ys * KB * S)];
+    const [UR, UG, UB] = [R(cbs * -KR * S), R(cbs * -KG * S), R(cbs * (1 - KB) * S)];
+    const [VR, VG, VB] = [R(crs * (1 - KR) * S), R(crs * -KG * S), R(crs * -KB * S)];
+    const Y0 = 16 * S + S / 2;
+    const C0 = 128 * S + S / 2;
+    const cw = Math.ceil(width / 2);
+    const ch = Math.ceil(height / 2);
+    const dst = new Uint8Array(i420Size(width, height));
+    for (let i = 0; i < width * height; i++) dst[i] = (YR * rgba[i * 4] + YG * rgba[i * 4 + 1] + YB * rgba[i * 4 + 2] + Y0) >> 16;
+    for (let cy = 0; cy < ch; cy++) {
+      for (let cx = 0; cx < cw; cx++) {
+        const ys2 = [cy * 2, Math.min(cy * 2 + 1, height - 1)];
+        const xs2 = [cx * 2, Math.min(cx * 2 + 1, width - 1)];
+        let r = 0;
+        let g = 0;
+        let b = 0;
+        for (const y of ys2) for (const x of xs2) {
+          const k = (y * width + x) * 4;
+          r += rgba[k];
+          g += rgba[k + 1];
+          b += rgba[k + 2];
+        }
+        dst[width * height + cy * cw + cx] = (UR * r + UG * g + UB * b + 4 * C0) >> 18;
+        dst[width * height + cw * ch + cy * cw + cx] = (VR * r + VG * g + VB * b + 4 * C0) >> 18;
+      }
+    }
+    return dst;
+  }
+  it.each([[16, 8], [33, 17], [1, 1], [5, 2], [2, 5]])('%i x %i', (w, h) => {
+    const px = new Uint8ClampedArray(w * h * 4);
+    for (let i = 0; i < px.length; i++) px[i] = (i * 2654435761) >>> 24;
+    expect([...rgbaToI420(px, w, h)]).toEqual([...reference(px, w, h)]);
+    // A view that doesn't start on a 4 byte boundary still works.
+    const shifted = new Uint8ClampedArray(px.length + 1);
+    shifted.set(px, 1);
+    expect([...rgbaToI420(shifted.subarray(1), w, h)]).toEqual([...reference(px, w, h)]);
+  });
+});

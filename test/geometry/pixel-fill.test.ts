@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { floodFillPixels, parseColor, type Rgba } from '../../src/geometry/pixel-fill';
+import { floodFillPixels, floodFillPoints, parseColor, type Rgba } from '../../src/geometry/pixel-fill';
 
 /** Builds an RGBA grid from rows of characters: `.` transparent, `#` black, `r` red. */
 function grid(rows: string[]): { px: Uint8ClampedArray; w: number; h: number } {
@@ -95,5 +95,17 @@ describe('pixel flood fill', () => {
     expect(parseColor('#ff800080')).toEqual([255, 128, 0, 128]);
     expect(parseColor('#f80')).toEqual([255, 136, 0, 255]);
     expect(parseColor('nonsense')).toEqual([0, 0, 0, 255]);
+  });
+});
+
+describe('floodFillPoints', () => {
+  it('fills from each point on the result of the last, skipping points off the grid', () => {
+    const src = new Uint8ClampedArray(4 * 1 * 4);
+    src.set([0, 0, 0, 255], 4 * 1); // a wall at x = 1
+    const r = floodFillPoints(src, 4, 1, [[0, 0], [3, 0], [9, 0], [0, 0]], [255, 0, 0, 255]);
+    expect(r.changed).toBe(3);
+    expect([...r.pixels.slice(0, 4)]).toEqual([255, 0, 0, 255]);
+    expect([...r.pixels.slice(12, 16)]).toEqual([255, 0, 0, 255]);
+    expect(r.pixels).not.toBe(src);
   });
 });
