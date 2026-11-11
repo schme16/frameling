@@ -3,6 +3,7 @@ import { registerHelpTopics } from '../core/registry';
 registerHelpTopics([
   {
     id: 'exporting',
+    order: 1,
     title: 'Exporting',
     section: 'Exporting',
     media: 'exporting.png',
@@ -42,18 +43,20 @@ The five formats most people want come first: **Animated GIF**, **MP4 video**, *
 
 ## What carries over
 
-Under the options, **What carries over** says in a line what the picked format keeps. Videos, GIFs, PNGs and sprite sheets keep everything, since every frame is a finished picture. Vector and layered formats (SVG, Lottie, PDF, Photoshop) can't do quite everything, so if your drawing uses something one of them can't keep as it is, the note says what will become a picture or be left out, before you export.
+**What carries over** says what the picked format keeps. Videos, GIFs, PNGs and sprite sheets keep everything. Vector and layered formats (SVG, Lottie, PDF, Photoshop) can't keep quite everything, and the note says what changes before you export.
 
 ## Quick repeat
 
 **Ctrl+Shift+E** exports again with the same settings as last time, without asking questions (it still asks where to save).
 
-Every export is drawn exactly the way you see it on the canvas, at exact frame times, so a slow computer makes the same file as a fast one, just a little later.
+Every export looks exactly like the canvas, and a slow computer makes the same file as a fast one.
 
 More: [Video, GIF and APNG](help:export-video-gif-apng), [Sprite sheets](help:export-sprite-sheets), [SVG](help:export-svg), [Lottie](help:export-lottie), [Moving SVG](help:export-svg-animated), [Interactives](help:export-interactives), [ProRes](help:export-prores), [Photoshop](help:export-psd), [PDF](help:export-pdf), [Illustrator](help:export-illustrator).`,
   },
   {
     id: 'export-video-gif-apng',
+    order: 2,
+    media: 'export-video.png',
     title: 'Video, GIF and APNG',
     section: 'Exporting',
     summary: 'Which animated format to pick, and what the options do.',
@@ -110,33 +113,31 @@ Press **Ctrl+E**, pick **Sprite sheet**, then pick **where it's going**. Frameli
 | **Phaser** | An atlas JSON and an animations JSON | [Phaser](help:export-phaser) |
 | **PixiJS** | A spritesheet JSON with your animations in it | [PixiJS](help:export-pixi) |
 | **Web page (CSS)** | A CSS file with a class per animation, and a page to try it | [CSS sprites](help:export-css-sprites) |
-| **Any engine (JSON)** | The common JSON atlas most tools read | below |
+| **Any engine (JSON)** | The JSON atlas most tools read | below |
 | **Just the picture** | Only the PNG | |
-
-Your pick is remembered for next time.
 
 ## Pixel art: Art size
 
-For pixel art, the **Size** row has an **Art size** button: one art pixel becomes one pixel, so a 32 x 32 character comes out 32 x 32. That's what game engines want. They scale it up on screen and keep it sharp. The first time you pick an engine for pixel art, Frameling asks whether to switch to Art size.
+For pixel art, **Art size** (in the Size row) makes one art pixel one pixel, so a 32 x 32 character comes out 32 x 32. Game engines want that, and scale it up sharply themselves.
 
 ## An animation, or separate sprites
 
-- **An animation:** each **clip** (idle, run, jump...) becomes an animation, with its own loop setting and speed. Frames you held for longer play for longer. No clips? The whole timeline is one animation called **default**.
-- **Separate sprites:** each frame is its own sprite, for icons, items or tiles. Put a **marker** on a frame to name it ("heart", "coin"). Frames in a clip are named after the clip. Choose **All on one sheet** (an atlas of single sprites) or **One PNG each**.
+- **An animation:** each **clip** (idle, run, jump...) becomes an animation with its own loop and speed. No clips? The whole timeline is one called **default**.
+- **Separate sprites:** each frame is its own sprite, for icons, items or tiles. A **marker** on a frame names it ("coin"). Choose **All on one sheet** or **One PNG each**.
 
 ## Sheet options
 
 - **Tidy grid** puts every frame in a slot the same size. **Columns** sets how many per row (Auto makes it roughly square).
 - **Packed tight** fits frames of different sizes together like a jigsaw, for the smallest picture (a *packed atlas*). Best with **Trim** on.
 - **Padding:** empty pixels between frames, so neighbours never bleed into each other.
-- **Edge bleed:** copies each frame's edge pixels outward (*extrude*). Stops thin lines or seams showing when the game scales or moves sprites by part of a pixel.
-- **Trim empty space:** cuts each frame down to the part you drew. The data keeps where it came from, so nothing shifts when it plays.
-- **Power-of-two size:** rounds the sheet up to 64, 128, 256... Some older engines and graphics cards like that.
-- **Store repeated frames once:** frames that look the same as the one before aren't stored twice, and still play for the right time.
+- **Edge bleed:** copies edge pixels outward (*extrude*), so no seams show when sprites are scaled.
+- **Trim empty space:** cuts each frame down to the part you drew. Nothing shifts when it plays.
+- **Power-of-two size:** rounds the sheet up to 64, 128, 256..., for older engines.
+- **Store repeated frames once:** a frame the same as the one before isn't stored twice.
 
 ## Any engine (JSON)
 
-The common JSON atlas: \`frames\` says where each picture is, \`meta\` describes the sheet, and \`animations\` lists each clip's frames. **Frames as a list** keeps them in order (a *JSON array*); **Frames by name** keys them by name (a *JSON hash*).
+\`frames\` says where each picture is, \`meta\` describes the sheet and \`animations\` lists each clip's frames. **Frames as a list** is a *JSON array*; **Frames by name** is a *JSON hash*.
 
 \`\`\`
 { "frames": [ { "filename": "run_0", "frame": { "x": 1, "y": 1, "w": 32, "h": 32 },
@@ -347,6 +348,7 @@ The second class picks the clip. Loops keep going; clips that don't loop stop on
   },
   {
     id: 'export-svg',
+    media: 'export-svg.png',
     title: 'SVG',
     section: 'Exporting',
     summary: 'Export the frame you are on as a vector picture that stays sharp at any size.',
@@ -360,6 +362,7 @@ The second class picks the clip. Loops keep going; clips that don't loop stop on
 - Each layer is its own group named after the layer, so it's easy to find in other programs. Layer opacity is kept. Hidden layers are left out.
 - **Blend modes, clipping, masks and colour wash** come across as SVG's own blend modes, masks and filters.
 - **Effects** become SVG filters: Soften, Shadow, Colour adjust, Glow and Outline. Pixelate has no SVG version, so it's left out (the Export window says so first).
+- **Inside symbols** the same goes for each symbol's own layers: their blend modes, effects, masks and clipping stay with every copy.
 - **Size** only changes how large the picture is when it opens. You can scale it freely later.
 
 ## Good to know
@@ -374,14 +377,14 @@ The second class picks the clip. Loops keep going; clips that don't loop stop on
     media: 'export-lottie.png',
     summary: 'Export a small vector animation that apps and websites play with Lottie, sharp at any size.',
     keywords: ['lottie', 'bodymovin', 'json', 'lottie-web', 'after effects', 'app animation', 'vector animation', 'lottiefiles'],
-    body: `**Lottie animation** saves your animation as a Lottie file (a \`.json\`). Apps, websites and design tools play Lottie files with the free Lottie players (lottie-web on the web, Lottie for iOS and Android). Shapes stay shapes, so it plays sharp at any size and the file is small.
+    body: `**Lottie animation** saves a Lottie file (a \`.json\`) that apps and websites play with the free Lottie players. Shapes stay shapes, so it's sharp at any size and small.
 
 ## What carries over
 
 - **Drawings** become shapes: fills, outlines and line widths as they are. Brush strokes become their finished outline.
 - **Frame by frame:** each drawing shows for exactly the frames it's held.
 - **Symbols** become Lottie *precomps*, so a symbol used ten times is stored once. Each copy keeps its place, size, turn, slant and fade, and plays its own animation (loop, play once or one frame).
-- **In-betweens (tweens):** a symbol's moves become keyframes with their easing, so the file stays small. *Steady*, *Gentle start*, *Gentle stop*, *Gentle start and stop*, *Wind up*, *Overshoot* and your own curves are written exactly. *Springy*, *Bouncy* and paths to follow get a key on every frame.
+- **In-betweens (tweens)** become keyframes with their easing. *Springy*, *Bouncy* and paths to follow get a key on every frame.
 - **Morphs (shape tweens)** become path keyframes, one per frame, so the outline changes smoothly.
 - **The camera** pans, zooms and turns, and layers with depth move at their own speed.
 - **Pixel and tile layers** become pictures inside the file, made big enough to stay crisp.
@@ -389,18 +392,18 @@ The second class picks the clip. Loops keep going; clips that don't loop stop on
 - **Text** becomes letter shapes, traced from the font you picked, so it looks the same in every player and no font files are needed. Text animators move each letter.
 - **Particles** become one small shape per particle, moving frame by frame. Particles that draw a symbol use the symbol.
 - **Colour wash (tint)** on a symbol copy recolours that copy's shapes, so it looks the same everywhere.
-- **Blend modes** stay blend modes, and **masks** and **clipping** become Lottie *track mattes*.
+- **Blend modes** stay blend modes, and **masks** and **clipping** become Lottie *track mattes*, on the stage and inside symbols alike.
 - **Effects:** Soften and Shadow become Lottie's own Gaussian blur and drop shadow. Glow, Colour adjust, Outline and Pixelate have no Lottie version, so those layers become pictures (the Export window lists them before you export).
 
 ## Good to know
 
 - lottie-web's *canvas* player leaves effects out (its SVG player, the default, shows them, as do the iOS and Android players).
 - A faded layer fades each shape on its own, so where shapes on that layer overlap they can look a touch darker than in Frameling.
-- Size doesn't matter here: a Lottie player scales the animation to fit wherever it's shown.
-- Frameling checks every Lottie it makes against its own drawing of the same frames (the export test renders them with lottie-web), so what you see is what plays.`,
+- A Lottie player scales the animation to fit wherever it's shown, so size doesn't matter.`,
   },
   {
     id: 'export-svg-animated',
+    media: 'export-svg-animated.png',
     title: 'Moving SVG (animated SVG)',
     section: 'Exporting',
     summary: 'Export one SVG file that plays your animation by itself in any browser, even inside an image tag.',

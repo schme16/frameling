@@ -24,10 +24,10 @@
  */
 import type { Cel, Doc, Easing, InstanceShape, Layer, LayerEffect, ParticlesShape, PathShape, PixelDrawing, Shape, StrokeShape, SubPath, TextShape, Tween } from '../core/format';
 import { celAt } from '../core/doc';
-import { decompose, isInstance, isPosed, pairInstances, poseAt, symbolContent, symbolFrame, tweenInstance, type Mat, type PosedInstance } from '../core/symbols';
-import { renderFrame, strokeOutline } from '../core/render';
+import { decompose, isInstance, isPosed, layersHaveLook, pairInstances, poseAt, symbolContent, symbolFrame, tweenInstance, type Mat, type PosedInstance } from '../core/symbols';
+import { drawingBox, effectReach, renderFrame, strokeOutline } from '../core/render';
 import { buildPlan, planLayers, type PlanNode, type PlanStep } from '../effects/plan';
-import { effectInfo, isNoop, valuesAt } from '../effects/model';
+import { activeEffects, effectInfo, isNoop, valuesAt } from '../effects/model';
 import { canTraceText, glyphSprites, particleSprites, SPRITE_UNIT, type ParticleSprite } from './sprites';
 import { cameraViewAt, cameraViewOn, activeCamera, parallaxFactor } from '../core/camera';
 import { encodePng } from '../io/png';
@@ -535,6 +535,8 @@ interface Ctx {
   /** Plain words about what didn't come across exactly. */
   notes: Set<string>;
   comps: number;
+  /** Building a symbol's precomp with looks inside: its layers (no camera, pictures baked in symbol space). */
+  symbolLayers?: Layer[];
 }
 
 /** Instance transform to Lottie's (anchor at the registration point; Lottie's skew turns the other way). */
@@ -584,7 +586,17 @@ function symbolAsset(ctx: Ctx, symbolId: string, tints: Tint[] = ctx.tints): str
   ctx.assets.push(asset);
   const outer = ctx.tints;
   ctx.tints = tints;
-  const layers = buildLayers(ctx, c.layers, 0, c.length - 1, 0);
+  // Looks on the symbol's own layers follow the compositing plan, as on the stage (the canvas draws them that way).
+  const outerLayers = ctx.symbolLayers;
+  let layers: Json[];
+  if (layersHaveLook(c.layers)) {
+    ctx.symbolLayers = c.layers;
+    try {
+      layers = levelContent(ctx, buildPlan({ ...ctx.doc, layers: c.layers }, (l) => l.visible && !l.reference && l.kind !== 'camera'), { from: 0, to: c.length - 1, offset: 0 });
+    } finally {
+      ctx.symbolLayers = outerLayers;
+    }
+  } else layers = buildLayers(ctx, c.layers, 0, c.length - 1, 0);
   ctx.tints = outer;
   // Everything inside hangs off one null that moves it into the precomp's padded box (precomps clip to their box).
   const shift = { ty: 3, ind: 1, nm: 'Offset', ip: 0, op: c.length, st: 0, sr: 1, ks: { a: stat([0, 0]), p: stat([ctx.pad, ctx.pad]), s: stat([100, 100]), r: stat(0), o: stat(100) } };
@@ -703,7 +715,8 @@ const sig = (shapes: Shape[]) => shapes.map((s) => (s.type === 'instance' ? 'i:'
 
 /**
  * Lottie layers for a list of Frameling layers, bottom first, frames `from`..`to` (inclusive) shown at Lottie time
- * `frame - offset`. Used inside symbols, where layers keep only their opacity (as on the canvas).
+ * `frame - offset`. Used inside symbols with no looks on their layers (only opacity); symbols with looks go through
+ * levelContent, as the stage does.
  */
 function buildLayers(ctx: Ctx, layers: Layer[], from: number, to: number, offset: number): Json[] {
   const out: Json[] = [];
@@ -935,7 +948,8 @@ function assemble(ctx: Ctx, content: Json[], r: Range, shifted: boolean): Json[]
   const { doc } = ctx;
   const depthOf = (l: Json) => doc.layers.find((x) => x.id === l.frameling?.layer)?.depth ?? 0;
   const first = shifted ? 2 : 1;
-  const cam = cameraNulls(doc, r.from, r.to, content.filter((l) => !l.frameling?.noCam).map(depthOf), first);
+  // Inside a symbol nothing hangs off the camera (the copy's layer on the stage does).
+  const cam = ctx.symbolLayers ? { nulls: [] as Json[], parentOf: new Map<number, number>() } : cameraNulls(doc, r.from, r.to, content.filter((l) => !l.frameling?.noCam).map(depthOf), first);
   const shiftInd = shifted ? 1 : undefined;
   if (shifted) for (const nl of cam.nulls) nl.parent = 1;
   const layers = numbered(content, first + cam.nulls.length, (l) => (l.frameling?.noCam ? shiftInd : cam.parentOf.get(depthOf(l)) ?? shiftInd));
@@ -1072,11 +1086,14 @@ function bakeNode(ctx: Ctx, node: PlanNode, frames: number[], r: Range): Json[] 
   const ids = new Set(node.type === 'layer' ? [node.layer.id] : planLayers(node.steps).map((l) => l.id));
   const solo: Doc = {
     ...doc,
-    layers: doc.layers.map((l) => (node.type === 'layer' && l.id === node.layer.id ? { ...l, blend: undefined, opacity: 1, clipToBelow: false } : l)),
+    layers: (ctx.symbolLayers ?? doc.layers).map((l) => (node.type === 'layer' && l.id === node.layer.id ? { ...l, blend: undefined, opacity: 1, clipToBelow: false } : l)),
     folders: node.type === 'folder' && doc.folders ? { ...doc.folders, [node.folder.id]: { ...node.folder, blend: undefined, opacity: 1 } } : doc.folders,
   };
-  const W = Math.round(doc.width * BAKE_SCALE);
-  const H = Math.round(doc.height * BAKE_SCALE);
+  // On the stage the picture is the stage. Inside a symbol it's the box the drawings (and effects) cover, in symbol space.
+  const area = ctx.symbolLayers ? symbolArea(solo, ids, frames) : { x: 0, y: 0, w: doc.width, h: doc.height };
+  if (!area) return [];
+  const W = Math.round(area.w * BAKE_SCALE);
+  const H = Math.round(area.h * BAKE_SCALE);
   const c = new OffscreenCanvas(W, H);
   const g = c.getContext('2d', { willReadFrequently: true });
   if (!g) return null;
@@ -1085,7 +1102,7 @@ function bakeNode(ctx: Ctx, node: PlanNode, frames: number[], r: Range): Json[] 
   for (const f of frames) {
     g.setTransform(1, 0, 0, 1, 0, 0);
     g.clearRect(0, 0, W, H);
-    g.setTransform(BAKE_SCALE, 0, 0, BAKE_SCALE, 0, 0);
+    g.setTransform(BAKE_SCALE, 0, 0, BAKE_SCALE, -area.x * BAKE_SCALE, -area.y * BAKE_SCALE);
     renderFrame(g, solo, f, { background: false, layerFilter: (l) => ids.has(l.id) });
     const px = g.getImageData(0, 0, W, H).data;
     let x0 = W;
@@ -1119,13 +1136,40 @@ function bakeNode(ctx: Ctx, node: PlanNode, frames: number[], r: Range): Json[] 
       ctx.images.set(key, id);
       ctx.assets.push({ id, w, h, u: '', p: pngDataUrl(w, h, crop), e: 1 });
     }
-    const layer = { ty: 2, refId: id, nm: 'Baked', ip: f - r.offset, op: f + 1 - r.offset, st: 0, sr: 1, ks: { a: stat([0, 0]), p: stat([r3(x0 / BAKE_SCALE), r3(y0 / BAKE_SCALE)]), s: stat([100 / BAKE_SCALE, 100 / BAKE_SCALE]), r: stat(0), o: stat(100) }, frameling: { noCam: true } };
+    const layer = { ty: 2, refId: id, nm: 'Baked', ip: f - r.offset, op: f + 1 - r.offset, st: 0, sr: 1, ks: { a: stat([0, 0]), p: stat([r3(area.x + x0 / BAKE_SCALE), r3(area.y + y0 / BAKE_SCALE)]), s: stat([100 / BAKE_SCALE, 100 / BAKE_SCALE]), r: stat(0), o: stat(100) }, frameling: { noCam: true } };
     out.push(layer);
     prev = { hash, layer };
   }
   return out;
 }
 
+
+/** The box some of a symbol's layers cover over these frames, effects included (null when empty). */
+function symbolArea(solo: Doc, ids: Set<string>, frames: number[]): { x: number; y: number; w: number; h: number } | null {
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  let reach = 0;
+  for (const l of solo.layers) {
+    if (!ids.has(l.id)) continue;
+    const f0 = l.folder ? solo.folders?.[l.folder] : undefined;
+    for (const f of frames) {
+      let r = 0;
+      for (const e of [...activeEffects(l.effects, f), ...activeEffects(f0?.effects, f)]) r += effectReach(e.kind, e.v);
+      reach = Math.max(reach, r);
+      const d = poseAt(solo, l, f);
+      if (!d) continue;
+      const b = drawingBox(d, 'pixelSize' in l ? l.pixelSize : 1, solo);
+      x0 = Math.min(x0, b.x0);
+      y0 = Math.min(y0, b.y0);
+      x1 = Math.max(x1, b.x1);
+      y1 = Math.max(y1, b.y1);
+    }
+  }
+  if (!(x1 > x0 && y1 > y0)) return null;
+  const x = Math.floor(x0 - reach - 2);
+  const y = Math.floor(y0 - reach - 2);
+  // Kept under 4096 pixels a side at the bake scale.
+  return { x, y, w: Math.min(2048, Math.ceil(x1 + reach + 2 - x)), h: Math.min(2048, Math.ceil(y1 + reach + 2 - y)) };
+}
 
 /** The camera as null layers (one per depth), one value per frame. */
 function cameraNulls(doc: Doc, from: number, to: number, depths: number[], firstInd: number): { nulls: Json[]; parentOf: Map<number, number> } {

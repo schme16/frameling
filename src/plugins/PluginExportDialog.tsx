@@ -78,7 +78,7 @@ function Dialog({ job, done }: { job: PluginExportJob; done: () => void }) {
         )}
         {error && <p className="plugin-export-error" role="alert">{error}</p>}
       </div>
-      <footer className="ui-choice-foot">
+      <div className="ui-choice-foot">
         <button type="button" className="ui-btn ui-btn-quiet" onClick={() => openHelp('plugin-exports')}>
           <Icon name="help" size={14} /> Learn more
         </button>
@@ -89,7 +89,7 @@ function Dialog({ job, done }: { job: PluginExportJob; done: () => void }) {
         <button type="button" className="ui-btn ui-btn-primary" disabled={!!progress} onClick={() => void go()}>
           <Icon name="export" size={14} /> Export
         </button>
-      </footer>
+      </div>
     </Modal>
   );
 }

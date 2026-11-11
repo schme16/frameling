@@ -42,7 +42,7 @@ The selected part gets a crawling dashed edge (*marching ants*).
     media: 'lasso.mp4',
     summary: 'Draw round shapes to select them, or on a merge layer cut out exactly the bit inside.',
     keywords: ['lasso', 'freehand selection', 'polygon lasso', 'draw round', 'cut out'],
-    body: `Press **L**, or pick **Lasso** in the Select tool's options.
+    body: `Press **Shift+L**, or pick **Lasso** in the Select tool's options.
 
 - **Drag round** what you want. When you let go, every shape the lasso touches is selected.
 - **Straight sides:** hold **Alt** as you let go, then **Alt+click** each corner. Click without Alt, or on the first point, to finish. **Escape** gives up.

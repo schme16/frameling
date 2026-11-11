@@ -36,6 +36,8 @@ export interface Command {
   run: () => void | Promise<void>;
   /** Runs even while typing in a text field (default false). */
   global?: boolean;
+  /** Only works on these layer kinds (tools). Two commands may share a shortcut when these never overlap. */
+  layers?: LayerKind[];
 }
 
 const commands = new Map<string, Command>();
@@ -71,6 +73,8 @@ export interface HelpTopic {
   keywords?: string[];
   /** Optional picture or video shown at the top (path under public/help/). */
   media?: string;
+  /** Place in its section's list, lower first (missing = 50, then by title). Lets a section open with its overview. */
+  order?: number;
 }
 
 const topics = new Map<string, HelpTopic>();
@@ -156,7 +160,7 @@ export interface Tool {
   label: string;
   /** Icon name from src/ui/icons.tsx. */
   icon: string;
-  /** Default shortcut (single key, e.g. 'b'); registered as a `tools.<id>` command automatically. */
+  /** Default shortcut (a single key like 'b', or 'Shift+K'); registered as a `tools.<id>` command automatically. */
   key?: string;
   /** Which layer kinds it works on. */
   layers: LayerKind[];

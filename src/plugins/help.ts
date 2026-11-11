@@ -3,6 +3,7 @@ import { registerHelpTopics } from '../core/registry';
 registerHelpTopics([
   {
     id: 'plugins',
+    order: 1,
     title: 'Plugins',
     section: 'Plugins',
     summary: 'Add new commands, exports and panels to Frameling. Each plugin runs in a sandbox and can only do what you allowed.',
@@ -40,6 +41,7 @@ A plugin is a folder with a **manifest.json** and one script. See [Making a plug
   },
   {
     id: 'plugin-exports',
+    media: 'plugin-exports.png',
     title: 'Exporting with a plugin',
     section: 'Plugins',
     summary: 'Plugins can add new kinds of export. Frameling draws your frames, the plugin turns them into files, and you choose where they go.',
@@ -65,6 +67,7 @@ Frameling draws plugin panels itself, from a simple description the plugin sends
   },
   {
     id: 'making-plugins',
+    media: 'making-plugins.png',
     title: 'Making a plugin',
     section: 'Plugins',
     summary: 'A plugin is a manifest.json and one JavaScript file. It talks to Frameling through the frameling object.',

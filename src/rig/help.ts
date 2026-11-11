@@ -3,6 +3,7 @@ import { registerHelpTopics } from '../core/registry';
 registerHelpTopics([
   {
     id: 'rig',
+    order: 1,
     title: 'Bones: pose a character like a puppet',
     section: 'Rigging',
     media: 'rig.mp4',
@@ -15,7 +16,7 @@ registerHelpTopics([
 2. **Draw bones** over it with the [Bone tool](help:rig-bones) (**K**). Start at the hips, then draw from each bone's tip to make chains for the spine, arms and legs.
 3. **Attach the parts** with **Rig > Attach parts to bones** (**Shift+A**). Each layer follows the bone nearest it. Fix any in the **Rig panel**.
 
-Now pick the [Pose tool](help:rig-posing) (**O**), go to another frame and drag the bones. That's animation!
+Now pick the [Pose tool](help:rig-posing) (**Shift+K**), go to another frame and drag the bones. That's animation!
 
 The skeleton lives on its own **Bones** layer in the timeline. Each key on it is a pose. Hide it and the bones still move your character; it never shows in exports.
 
@@ -23,6 +24,7 @@ Want to see one working first? **File > New** and pick **Paper doll puppet**: it
   },
   {
     id: 'rig-bones',
+    order: 2,
     title: 'The Bone tool: drawing a skeleton',
     section: 'Rigging',
     media: 'rig-bones.mp4',
@@ -44,6 +46,7 @@ Prefer slimmer bones? **Rig > Slim bones** switches the look.`,
   },
   {
     id: 'rig-attach',
+    order: 3,
     title: 'Attaching parts to bones',
     section: 'Rigging',
     media: 'rig-attach.png',
@@ -60,12 +63,13 @@ Want hands or mouths that change shape? Keep swapping drawings on the attached l
   },
   {
     id: 'rig-posing',
+    order: 4,
     title: 'The Pose tool: posing and IK',
     section: 'Rigging',
     media: 'rig-posing.mp4',
     summary: 'Drag a bone to turn it, drag a tip to pull the whole limb (IK), drag the first joint to move everything. Alt+click pins a bone.',
     keywords: ['pose', 'IK', 'inverse kinematics', 'FK', 'forward kinematics', 'pin', 'plant foot', 'O', 'auto key'],
-    body: `Pick the **Pose tool** (**O**), go to a frame, and drag:
+    body: `Pick the **Pose tool** (**Shift+K**), go to a frame, and drag:
 
 - **A bone** to turn it around its joint. Everything hanging from it comes along. (Animators call this *FK*.)
 - **A tip** (the small dot) to pull the limb along, the way you'd move a puppet's hand: the arm bends at the elbow by itself. (This is *IK*, inverse kinematics.)
@@ -132,7 +136,7 @@ Each stroke is one step to undo.`,
     keywords: ['squash', 'stretch', 'squash and stretch', 'scale bone', 'bone length', 'cartoon', 'elastic'],
     body: `Squash and stretch makes motion feel alive: a body squashes as it lands and stretches as it jumps.
 
-With the [Pose tool](help:rig-posing) (**O**), **Shift+drag** a bone along its length. It gets longer or shorter on this frame, and the parts on it stretch with it. Bones hanging from it come along too.
+With the [Pose tool](help:rig-posing) (**Shift+K**), **Shift+drag** a bone along its length. It gets longer or shorter on this frame, and the parts on it stretch with it. Bones hanging from it come along too.
 
 You can also pick a bone and use the **Squash and stretch** slider in Tool options. **100%** is the length you drew.
 

@@ -107,6 +107,52 @@ add('pixelate averages squares', doc([layer('a', [rect('a', 0, 0, 2, 4, '#000000
     [12, 12, [255, 255, 0, 255], 1],
   ], 0, true);
 }
+// Looks inside a symbol: blend modes, effects, masks and clipping on the symbol's own layers show where it's placed.
+function symbolDoc(innerParts, inst = {}, stageExtra = {}, folders) {
+  const i = { id: 'inst', type: 'instance', symbolId: 'sym', transform: { x: 0, y: 0, scaleX: 1, scaleY: 1, rotation: 0, skew: 0 }, opacity: 1, play: 'loop', firstFrame: 0, ...inst };
+  const d = doc([layer('bg', full('#ffff00')), layer('stage', [i], stageExtra)], { symbols: { sym: { id: 'sym', name: 'Sym', layers: innerParts.map((p) => p.layer), length: 20, origin: { x: 0, y: 0 } } }, ...(folders ? { folders } : {}) });
+  for (const p of innerParts) d.drawings[p.drawing.id] = p.drawing;
+  return d;
+}
+add('inside a symbol: multiply', symbolDoc([layer('a', [rect('a', 0, 0, 8, H, '#ff0000')]), layer('b', [rect('b', 0, 0, W, H, '#0000ff')], { blend: 'multiply' })]), [
+  [2, 4, [0, 0, 0, 255], 2],
+  [12, 4, [0, 0, 255, 255], 2],
+], 0, true);
+add('inside a symbol: outline, moved and placed twice the size', symbolDoc([layer('a', [rect('a', 2, 2, 2, 2, '#000000')], { effects: [{ id: 'o', kind: 'outline', values: { color: '#ff0000', width: 1 } }] })], { transform: { x: 2, y: 2, scaleX: 2, scaleY: 2, rotation: 0, skew: 0 } }), [
+  [7, 7, [0, 0, 0, 255], 2],
+  [5, 7, [255, 0, 0, 255], 40],
+  [1, 1, [255, 255, 0, 255], 1],
+  [13, 13, [255, 255, 0, 255], 1],
+]);
+add('inside a symbol: a mask shows only the left half', symbolDoc([layer('a', full('#ff0000')), layer('m', [rect('m', 0, 0, 8, H, '#000000')], { mask: 'show' })]), [
+  [2, 4, [255, 0, 0, 255], 1],
+  [12, 4, [255, 255, 0, 255], 1],
+], 0, true);
+add('inside a symbol: clipped to the layer below', symbolDoc([layer('base', [rect('b', 0, 0, 8, H, '#ff0000')]), layer('clip', full('#00ff00'), { clipToBelow: true })]), [
+  [2, 4, [0, 255, 0, 255], 1],
+  [12, 4, [255, 255, 0, 255], 1],
+]);
+add('inside a symbol: shadow, on a faded copy', symbolDoc([layer('a', box(), { effects: [{ id: 's', kind: 'shadow', values: { color: '#ff0000', opacity: 1, x: 4, y: 4, softness: 0 } }] })], { opacity: 0.5 }), [
+  [12, 12, [255, 128, 0, 255], 3],
+  [7, 7, [128, 128, 0, 255], 3],
+]);
+add('inside a symbol: a faded folder with a hiding mask', symbolDoc([layer('a', full('#000000'), { folder: 'f' }), layer('m', [rect('m', 8, 0, 8, H, '#000000')], { folder: 'f', mask: 'hide' })], {}, {}, { f: { id: 'f', name: 'F', visible: true, opacity: 0.5 } }), [
+  [2, 4, [128, 128, 0, 255], 3],
+  [12, 4, [255, 255, 0, 255], 1],
+]);
+{
+  // A symbol with an outline inside, placed inside another symbol that multiplies it over a red layer.
+  const d = symbolDoc([layer('red', [rect('r', 0, 0, W, 8, '#ff0000')]), layer('copy', [{ id: 'in', type: 'instance', symbolId: 'inner', transform: { x: 0, y: 0, scaleX: 1, scaleY: 1, rotation: 0, skew: 0 }, opacity: 1, play: 'loop', firstFrame: 0 }], { blend: 'multiply' })]);
+  const inner = layer('box', box(), { effects: [{ id: 'o', kind: 'outline', values: { color: '#00ff00', width: 2 } }] });
+  d.symbols.inner = { id: 'inner', name: 'Inner', layers: [inner.layer], length: 20, origin: { x: 0, y: 0 } };
+  d.drawings[inner.drawing.id] = inner.drawing;
+  add('inside a symbol inside a symbol: outline, multiplied', d, [
+    [7, 7, [0, 0, 0, 255], 2],
+    [5, 6, [0, 0, 0, 255], 2],
+    [5, 10, [0, 255, 0, 255], 2],
+    [12, 2, [255, 0, 0, 255], 1],
+  ]);
+}
 const anim = () => [{ id: 'a', kind: 'blur', values: { radius: 0 }, keys: [{ frame: 0, values: { radius: 0 } }, { frame: 10, values: { radius: 3 } }] }];
 add('animated blur, frame 1: sharp', doc([layer('a', box(), { effects: anim() })]), [[5, 8, [255, 255, 255, 255], 1]], 0);
 add('animated blur, frame 11: soft', doc([layer('a', box(), { effects: anim() })]), [[5, 8, [200, 200, 200, 255], 50]], 10);

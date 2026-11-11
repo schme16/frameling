@@ -151,6 +151,7 @@ registerCommands([
 
 registerHelp({
   id: 'fill-and-stroke',
+  order: 4,
   title: 'Fill and stroke colours',
   section: 'Drawing',
   media: 'fill-and-stroke-boxes.png',

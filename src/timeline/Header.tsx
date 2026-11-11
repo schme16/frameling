@@ -16,7 +16,8 @@ function Btn({ id, icon, text, title, pressed, disabled, onClick, className = ''
       type="button"
       className={`tl-btn${pressed ? ' is-on' : ''} ${className}`}
       title={id ? tip(id, title) : title}
-      aria-label={title}
+      // Speech users say what they see, so the visible words have to be in the name.
+      aria-label={typeof text === 'string' && !title.toLowerCase().includes(text.toLowerCase()) ? `${text}: ${title}` : title}
       aria-pressed={pressed}
       disabled={disabled}
       onClick={onClick ?? (() => id && runCmd(id))}

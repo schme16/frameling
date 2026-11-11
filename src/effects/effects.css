@@ -17,7 +17,7 @@
 }
 .fx-term {
   margin-left: 6px;
-  color: var(--faint);
+  color: var(--muted);
   font-size: var(--fs-small);
   font-weight: 600;
 }
