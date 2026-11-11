@@ -114,6 +114,9 @@ if (typeof window !== 'undefined' && new URLSearchParams(location.search).has('d
     model,
     ops,
     load: (which: 'sprites' | 'shots') => store().load(which === 'shots' ? demoShots() : demoSprites()),
+    /** What the Export dialog's artboard row is set to, as if clicked. */
+    setExport: (p: Partial<{ mode: 'one' | 'each' | 'joined' | 'atlas'; ids: string[] | null }>) => import('./export').then((m) => m.setArtboardExport(p)),
+    setChoice: (id: string, v: string | undefined) => import('../core/choices').then((m) => m.setChoice(id, v)),
     player: () => import('./player').then((m) => m.openShotsPlayer()),
     exportDialog: (mode?: 'each' | 'joined' | 'atlas' | 'one') => import('./exportDialog').then((m) => m.openArtboardExport(mode)),
   };

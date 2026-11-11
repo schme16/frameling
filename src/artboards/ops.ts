@@ -9,6 +9,7 @@ import { leaveSymbol } from '../symbols/ops';
 import { leaveTileEdit } from '../tiles/tileEdit';
 import { getViewport, setView, zoomToDocRect } from '../canvas/controller';
 import { fitView } from '../canvas/view';
+import { lookingThrough } from '../camera/ops';
 import { resizeCanvas, type Anchor } from '../canvas/resize';
 import { toast } from '../ui/toast';
 import {
@@ -18,8 +19,11 @@ import {
   allBounds,
   arrangeArtboards,
   artboardDoc,
+  artboardLabelAt,
+  artboardAt,
   artboardsOf,
   deleteArtboard,
+  hasArtboards,
   duplicateArtboard,
   ensureArtboards,
   findArtboard,
@@ -108,6 +112,27 @@ export function goToArtboard(id: Id, reveal = false): void {
   const name = findArtboard(doc, id)!.name;
   store().update(`Go to "${name}"`, (d) => void switchArtboard(d as Doc, id));
   if (reveal) revealActive();
+}
+
+/**
+ * The artboard being worked on is the open one, and that is the only thing the timeline, onion skin and every tool
+ * read (the open artboard's content is the document's own fields), so following it is just opening the artboard a
+ * press lands on: its body, or its name above it. Returns true when it opened another one.
+ */
+export function openArtboardUnder(p: { x: number; y: number }, tool: string): boolean {
+  if (tool === 'artboard' || tool === 'hand' || tool === 'zoom') return false;
+  const s = store();
+  if (s.nestedTag()) return false;
+  const { doc, ui } = s.get();
+  if (!hasArtboards(doc) || doc.editing?.length || lookingThrough()) return false;
+  if (p.x >= 0 && p.y >= 0 && p.x < doc.width && p.y < doc.height) return false;
+  const a = activeArtboard(doc);
+  const x = p.x + a.x;
+  const y = p.y + a.y;
+  const id = artboardAt(doc, x, y) ?? artboardLabelAt(doc, x, y, ui.zoom);
+  if (!id || id === a.id) return false;
+  goToArtboard(id);
+  return activeId(store().get().doc) === id;
 }
 
 /** Moves the view to show the open artboard if any of it is out of sight. */

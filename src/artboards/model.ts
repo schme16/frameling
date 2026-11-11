@@ -129,6 +129,20 @@ export function artboardAt(doc: Doc, x: number, y: number): Id | null {
   return null;
 }
 
+/** Screen pixels above an artboard that count as its name label (the name is drawn there). */
+export const LABEL_PX = 22;
+
+/** The artboard whose name label is under a pasteboard point (the strip just above its top edge), if any. */
+export function artboardLabelAt(doc: Doc, x: number, y: number, zoom: number): Id | null {
+  const up = LABEL_PX / Math.max(zoom, 1e-6);
+  const bs = boxes(doc);
+  for (let i = bs.length - 1; i >= 0; i--) {
+    const b = bs[i];
+    if (x >= b.x && x < b.x + b.w && y >= b.y - up && y < b.y) return b.id;
+  }
+  return null;
+}
+
 const usedDrawings = (doc: Doc): Set<Id> => {
   const used = new Set<Id>();
   for (const l of doc.layers) for (const c of l.cels) used.add(c.drawingId);

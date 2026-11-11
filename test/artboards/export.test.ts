@@ -7,7 +7,7 @@ import { planExport, defaultSettings } from '../../src/export/plan';
 import { addArtboard, activeId, artboardDoc, artboardsOf, findArtboard } from '../../src/artboards/model';
 import { packArtboardAtlas } from '../../src/artboards/pack';
 import { buildReel, reelAt } from '../../src/artboards/player';
-import { goToArtboard, installArtboards, moveArtboardTo, resetArtboardView, resizeArtboard } from '../../src/artboards/ops';
+import { goToArtboard, installArtboards, moveArtboardTo, openArtboardUnder, resetArtboardView, resizeArtboard } from '../../src/artboards/ops';
 import { setViewport } from '../../src/canvas/controller';
 
 function img(w: number, h: number, fill: number): RawImage {
@@ -122,5 +122,45 @@ describe('artboards on the store', () => {
     expect(artboardsOf(store().get().doc)[0].x).toBe(30);
     expect(store().get().ui.panX).toBe(40);
     expect(store().get().ui.panY).toBe(5);
+  });
+});
+
+describe('the timeline follows the artboard you press on', () => {
+  const open = () => {
+    resetArtboardView();
+    resetStore(sprites());
+    installArtboards();
+    store().setUi({ zoom: 1, panX: 0, panY: 0 });
+    const [a, b] = artboardsOf(store().get().doc);
+    // A point in the open artboard's own space that lands on the other one's body.
+    const into = { x: b.x - a.x + 2, y: b.y - a.y + 2 };
+    return { a, b, into };
+  };
+
+  it('opens the artboard a press lands on, and the timeline (the document own layers and length) is its', () => {
+    const { a, b, into } = open();
+    expect(store().get().doc.length).toBe(2);
+    expect(openArtboardUnder(into, 'select')).toBe(true);
+    const doc = store().get().doc;
+    expect(activeId(doc)).toBe(b.id);
+    expect(doc.length).toBe(3);
+    expect(doc.layers).not.toBe(findArtboard(doc, a.id)!.content!.layers);
+    expect(findArtboard(doc, a.id)!.content).toBeDefined();
+    expect(findArtboard(doc, b.id)!.content).toBeUndefined();
+  });
+
+  it('also opens it from its name above the top edge', () => {
+    const { a, b } = open();
+    expect(openArtboardUnder({ x: b.x - a.x + 2, y: b.y - a.y - 10 }, 'brush')).toBe(true);
+    expect(activeId(store().get().doc)).toBe(b.id);
+  });
+
+  it('leaves the view tools and the Artboard tool alone, and presses inside the open artboard', () => {
+    const { a, b, into } = open();
+    for (const t of ['hand', 'zoom', 'artboard']) expect(openArtboardUnder(into, t)).toBe(false);
+    expect(openArtboardUnder({ x: 3, y: 3 }, 'brush')).toBe(false);
+    expect(openArtboardUnder({ x: -500, y: -500 }, 'brush')).toBe(false);
+    expect(activeId(store().get().doc)).toBe(a.id);
+    expect(b).toBeDefined();
   });
 });
