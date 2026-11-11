@@ -1,7 +1,7 @@
 /**
  * Select [V] on a pixel layer: pick pixels with a box, a lasso or the magic wand, then drag them to move them.
- * Shift adds to the selection, Alt takes away (Alt+drag inside it copies the pixels instead). Once something is selected, painting stays inside it, and the
- * Pixel menu's flips, turns and outlines work on just that part.
+ * Shift adds to the selection, Alt takes away (Alt+drag inside it copies the pixels instead). Once something
+ * is selected, painting stays inside it, and the Pixel menu's flips, turns and outlines work on just that part.
  */
 import { registerTool, type Tool, type ToolContext, type ToolPointer } from '../core/registry';
 import { currentChoice, registerChoice } from '../core/choices';

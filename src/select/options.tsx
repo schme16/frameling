@@ -64,7 +64,7 @@ export function PixelSelectOptions() {
         </>
       )}
       <Tip>
-        {count ? `${count} pixel${count === 1 ? '' : 's'} selected. Drag inside to move them; arrow keys nudge. ` : `${how} `}
+        {count ? `${count} pixel${count === 1 ? '' : 's'} selected. Drag inside to move them (Alt+drag for a copy, Ctrl+D to duplicate); arrow keys nudge. ` : `${how} `}
         Shift adds, Alt takes away. Painting stays inside the selection.
       </Tip>
       <div className="cv-row cv-wrap">
