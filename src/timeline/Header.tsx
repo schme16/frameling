@@ -8,6 +8,7 @@ import { Floating } from './Menu';
 import * as ops from './ops';
 import { inOutRange, playRange } from './playback';
 import { clearInOut } from './range';
+import { clearLightTable, lightTableLabel } from '../canvas/lightTable';
 import { MAX_CW, MIN_CW, setTl, tl, useTl } from './state';
 import { SoundButton } from '../audio/SoundButton';
 
@@ -223,6 +224,30 @@ function PlayRange() {
   );
 }
 
+function LightTableChip() {
+  const lt = useStore((s) => s.ui.lightTable);
+  const doc = useStore((s) => s.doc);
+  if (!lt) return null;
+  return (
+    <span className="tl-range tl-lighttable" title="Shown faintly on every frame, to trace over (light table). Click to go to it.">
+      <button type="button" className="tl-btn tl-btn-mini" aria-label={`Go to frame ${lt.frame + 1}`} onClick={() => store().setUi({ frame: lt.frame })}>
+        <Icon name="image" size={14} />
+        <span>Light table: {lightTableLabel(doc, lt)}</span>
+      </button>
+      <input
+        type="range"
+        min={10}
+        max={70}
+        value={Math.round(lt.opacity * 100)}
+        aria-label="Light table strength"
+        title="How strongly it shows"
+        onChange={(e) => store().setUi((ui) => (ui.lightTable ? { lightTable: { ...ui.lightTable, opacity: Number(e.target.value) / 100 } } : {}))}
+      />
+      <button type="button" className="tl-btn tl-btn-mini" aria-label="Clear the light table" onClick={() => clearLightTable()}><Icon name="close" size={12} /></button>
+    </span>
+  );
+}
+
 export function Header() {
   const playing = useStore((s) => s.ui.playing);
   const loop = useStore((s) => s.ui.loopPlayback);
@@ -244,6 +269,7 @@ export function Header() {
       <Counter />
       <FpsField />
       <PlayRange />
+      <LightTableChip />
       <span className="tl-sep" aria-hidden="true" />
       <span className="tl-group" role="group" aria-label="Drawings and frames">
         <Btn id="timeline.newKey" icon="key" text={<>New<span className="tl-long"> drawing</span></>} title="Start a new blank drawing on this frame (new key)" />

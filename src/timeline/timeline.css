@@ -125,6 +125,17 @@
   background: color-mix(in srgb, var(--sky) 25%, var(--panel-2));
   border: 1px solid color-mix(in srgb, var(--sky) 55%, transparent);
 }
+.tl-lighttable {
+  padding-left: 2px;
+}
+.tl-lighttable .tl-btn {
+  gap: 4px;
+  width: auto;
+  padding: 0 6px;
+}
+.tl-lighttable input[type='range'] {
+  width: 64px;
+}
 .tl-zoom {
   display: inline-flex;
   align-items: center;

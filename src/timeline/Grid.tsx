@@ -14,6 +14,7 @@ import { ContextMenu, InlineName, type MenuItem } from './Menu';
 import * as ops from './ops';
 import { goTo, inOutRange } from './playback';
 import { onionFrames } from '../canvas/onion';
+import { pinLightTable } from '../canvas/lightTable';
 import { clearInOut, setIn, setInOut, setOut } from './range';
 import { nextKey } from '../core/symbols';
 import { ease } from '../core/ease';
@@ -649,6 +650,12 @@ export function celMenu(layer: Layer, frame: number): MenuItem[] {
     { label: 'Remove a frame', hint: keyHint('timeline.removeFrame'), onClick: () => void say(ops.removeFrame(layer.id, frame)) },
     { separator: true },
     { label: 'Add a marker here', onClick: () => void ops.addMarker(frame) },
+    {
+      label: 'Put this drawing on the light table',
+      checked: store().get().ui.lightTable?.frame === frame && store().get().ui.lightTable?.layerId === layer.id,
+      disabled: none || (layer.kind !== 'vector' && layer.kind !== 'pixel'),
+      onClick: () => pinLightTable(frame, layer.id),
+    },
   ];
 }
 
