@@ -153,7 +153,7 @@ describe('onion skin, keys only', () => {
   });
   it('uses keys from every layer that takes part, and leaves out layers that do not', () => {
     const doc = docWith([[0, 4], [4, 4]], 8);
-    const extra = { ...doc.layers[0], id: 'L2', name: 'two', cels: [] };
+    const extra = { ...doc.layers[0], id: 'L2', name: 'two', cels: [] as typeof doc.layers[0]['cels'] };
     doc.layers.push(extra);
     addCel(doc, extra, 0, 2);
     addCel(doc, extra, 2, 6);

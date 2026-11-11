@@ -114,7 +114,7 @@ describe('light table', () => {
   });
   it('can show just one layer, even a hidden one', () => {
     const doc = docWith([[0, 2]], 4);
-    const extra = { ...doc.layers[0], id: 'L2', name: 'two', cels: [], visible: false };
+    const extra = { ...doc.layers[0], id: 'L2', name: 'two', cels: [] as typeof doc.layers[0]['cels'], visible: false };
     doc.layers.push(extra);
     addCel(doc, extra, 0, 1);
     expect(lightTableItems(doc, { frame: 0, opacity: 0.3 }, 3)).toHaveLength(1);
