@@ -274,7 +274,7 @@ describe('the Quests panel', () => {
   it('lists every quest, with the later ones locked until the first is done', () => {
     mount(<QuestsPanel />);
     expect(host.querySelectorAll('.qp-card')).toHaveLength(allQuests().length);
-    expect(text()).toContain('0 of 9 badges');
+    expect(text()).toContain('0 of 14 badges');
     // Your first animation, Pixel pal and Tiles start open (they're the first quests for different people).
     expect(host.querySelectorAll('.qp-card.is-locked').length).toBe(allQuests().length - 3);
     expect(text()).toContain('Locked. Do "Your first animation in 60 seconds" first.');
@@ -287,7 +287,7 @@ describe('the Quests panel', () => {
     expect(host.querySelectorAll('.qp-card.is-locked')).toHaveLength(0);
     expect(host.querySelector('.qp-card.is-done')?.textContent).toContain('Flipbooker');
     expect(host.querySelectorAll('.qm:not(.qm-empty)')).toHaveLength(1);
-    expect(text()).toContain('1 of 9 badges');
+    expect(text()).toContain('1 of 14 badges');
   });
 
   it('continues a paused quest and starts a quest from its button', () => {

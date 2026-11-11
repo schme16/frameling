@@ -32,6 +32,11 @@ import { gifCard } from './probe';
 import { SHADE_AND_SHINE } from '../pixel/quest';
 import { FIRST_TWEEN } from '../symbols/quest';
 import { TILES_QUEST } from '../tiles/quest';
+import { BONES_QUEST } from '../rig/quest';
+import { GLOW_QUEST } from '../effects/quest';
+import { PARTICLES_QUEST } from '../particles/quest';
+import { TEXT_QUEST } from '../text/quest';
+import { CAMERA_QUEST } from '../camera/quest';
 import { registerQuest } from './registry';
 import type { Quest } from './types';
 
@@ -329,6 +334,6 @@ export const SHARE_IT: Quest = {
   ],
 };
 
-export const QUESTS: Quest[] = [FIRST_ANIMATION, BOUNCING_BALL, FILL_IT_IN, PIXEL_PAL, SHADE_AND_SHINE, TILES_QUEST, FIRST_TWEEN, SHARE_IT];
+export const QUESTS: Quest[] = [FIRST_ANIMATION, BOUNCING_BALL, FILL_IT_IN, PIXEL_PAL, SHADE_AND_SHINE, TILES_QUEST, FIRST_TWEEN, SHARE_IT, BONES_QUEST, GLOW_QUEST, PARTICLES_QUEST, TEXT_QUEST, CAMERA_QUEST];
 
 for (const q of QUESTS) registerQuest(q);
