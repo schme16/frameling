@@ -59,12 +59,12 @@ A **key** (keyframe) is a frame where you drew something new. A **hold** is how 
 
 Press **Alt+1** to **Alt+4** to hold the current drawing for that many frames. The drawings after it move along to make room.
 
-Example: you have three drawings of a bouncing ball, each one frame long. Click the first and press **Alt+2**. It's now held for two frames, and the other two slide along. Do the same to the others and your ball bounces on twos.
+Example: click the first of three one-frame drawings and press **Alt+2**. It's held for two frames and the others slide along. Do the same to the rest and it plays on twos.
 
 ## Making and changing keys
 
 - **New blank drawing (N):** starts an empty drawing here. If you're in the middle of a hold, the hold is cut in two, and the new drawing starts at your frame.
-- **Copy this drawing to the next frame (D):** a copy to nudge into the next pose. If the next frame is still part of a hold it just becomes its own drawing. If another drawing is already there, the later ones shift along to make room. On an empty frame (say you clicked a few frames ahead), it copies the last drawing to that frame instead, so you can carry on from where you were.
+- **Copy this drawing to the next frame (D):** a copy to nudge into the next pose. If another drawing is already next, the later ones shift along. On an empty frame it copies the last drawing to that frame, so you can carry on.
 - **Clear this drawing:** wipes it clean but keeps the frame and its hold.
 - **Make these frames empty:** takes the drawing away completely.
 

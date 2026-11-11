@@ -50,8 +50,8 @@ For a layer in a [folder](help:layer-folders), pick **Folder** at the top of the
 ## Good to know
 
 - Every export (video, GIF, PNG, sprite sheets) shows effects exactly like the canvas. SVG and Lottie keep most of them too: the Export window says what each format keeps.
-- Effects are worked out once per drawing and remembered, so playback stays smooth.
-- Inside a [symbol](help:symbols), effects, blend modes, masks and clipping work just like on the stage, and every copy of the symbol shows them. They grow and turn with each copy. For one look on the whole symbol (say one shadow under all of it), put the effect on the layer the symbol sits on instead.`,
+- Effects are remembered per drawing, so playback stays smooth.
+- Inside a [symbol](help:symbols), effects, blend modes, masks and clipping work just like on the stage, and every copy of the symbol shows them. For one look on the whole symbol (one shadow under all of it), put the effect on the layer it sits on.`,
   },
   {
     id: 'blend-modes',
