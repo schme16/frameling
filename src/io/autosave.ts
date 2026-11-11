@@ -2,26 +2,13 @@
 // person's file). If the app is closed the hard way, the next start offers to bring that copy back.
 import { store } from '../core/store';
 import { desktop } from './desktop';
-import { clearAutosaveCopy, documentTitle, loadBytes, openPath, saveDocument } from './document';
-import { loadFile, saveFile } from './file';
+import { autosaveNow, clearAutosaveCopy, documentTitle, keepUnsavedWork, loadBytes, openPath, saveDocument } from './document';
+import { loadFile } from './file';
 import { notify } from './notify';
 
+export { autosaveNow };
+
 export const AUTOSAVE_EVERY_MS = 60_000;
-
-let lastDoc: unknown = null;
-
-export async function autosaveNow(): Promise<void> {
-  const api = desktop();
-  const { doc, ui } = store().get();
-  if (!api || !ui.dirty || doc === lastDoc) return;
-  try {
-    const bytes = saveFile(doc, api.versions.app);
-    await api.autosave.write(bytes, { name: doc.name, filePath: ui.filePath, docId: doc.id });
-    lastDoc = doc;
-  } catch {
-    // Try again at the next tick; a failed autosave should never get in the way.
-  }
-}
 
 /** Offers the autosaved copy back when it is newer than the saved file (or the work was never saved). */
 export async function offerRecovery(): Promise<void> {
@@ -77,6 +64,7 @@ export function startFileServices(): void {
 
   api.app.onOpenFile((p) => void openPath(p));
   api.app.onSaveBeforeClose(() => saveDocument());
+  api.app.onKeepUnsaved(() => keepUnsavedWork());
 
   void (async () => {
     const file = await api.app.getLaunchFile();

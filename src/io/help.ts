@@ -25,7 +25,7 @@ Press **Ctrl+O** (**Cmd+O**) and pick a file. You can also double-click a .frame
 
 ## If you have unsaved changes
 
-Opening something else, starting a new drawing, or closing the window all ask first: **Save**, **Don't save**, or **Cancel**. Nothing is lost by accident.
+Opening something else, starting a new drawing, or closing the window all ask first: **Save**, **Don't save**, or **Cancel**. Nothing is lost by accident. Even **Don't save** isn't final: the work is kept for 7 days (see [Autosave](help:autosave)).
 
 ## If a file won't open
 
@@ -55,10 +55,18 @@ Press **Restore** and you're back where you were. The drawing comes back marked 
 
 Frameling only offers this when the safety copy is newer than your saved file.
 
+## Changed your mind? Recover unsaved work
+
+When you choose **Don't save**, Frameling doesn't throw the work away. It keeps a copy for **7 days**. To get it back, open **File > Recover unsaved work...** (or search for it in the command palette).
+
+The list shows each kept drawing with a small picture, its name and when it was last changed. Press **Open** and it comes back as unsaved work, so **Save** asks where to put it. **Delete** removes a kept copy straight away. Copies older than 7 days are cleared out each time Frameling starts.
+
+A copy left behind by a crash is kept in the same list, even if you ignore the "Restore it?" question.
+
 ## Good to know
 
-- Saving clears the safety copy, because your file is up to date.
-- Choosing **Don't save** when closing also clears it. You said you didn't want those changes.
-- There's one safety copy at a time: the latest drawing you worked on.`,
+- Saving the drawing clears its kept copies, because your file is up to date.
+- There's one live safety copy at a time (the latest drawing you worked on). Kept copies are one per drawing, the newest.
+- None of this ever touches your own file.`
   },
 ]);

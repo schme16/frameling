@@ -44,6 +44,18 @@ export interface AutosaveInfo {
   fileModifiedAt: number | null;
 }
 
+/** An autosave copy kept after "Don't save" (or a crash), for a week. */
+export interface KeptAutosave {
+  id: string;
+  name: string;
+  filePath: string | null;
+  /** When the copy was made, and when it was put aside. */
+  savedAt: number;
+  keptAt: number;
+  /** A small picture of the first frame, as a data: URL, when one could be made. */
+  thumb?: string;
+}
+
 export type SaveChoice = 'save' | 'discard' | 'cancel';
 
 export interface FramelingApi {
@@ -75,6 +87,11 @@ export interface FramelingApi {
     write(bytes: Uint8Array, meta: AutosaveMeta): Promise<void>;
     read(): Promise<AutosaveInfo | null>;
     clear(): Promise<void>;
+    /** Puts the current autosave copy aside for 7 days (replacing an older one for the same drawing). */
+    keep(thumb?: string): Promise<void>;
+    listKept(): Promise<KeptAutosave[]>;
+    readKept(id: string): Promise<{ bytes: Uint8Array; meta: AutosaveMeta } | null>;
+    removeKept(id: string): Promise<void>;
   };
   app: {
     /** Tells the window about the document (title bar dot on macOS, "Save changes?" on close). */
@@ -85,6 +102,8 @@ export interface FramelingApi {
     onOpenFile(handler: (path: string) => void): () => void;
     /** Called when the window is closing with unsaved changes and they chose Save. Resolve true once saved, false to stay open. */
     onSaveBeforeClose(handler: () => Promise<boolean>): () => void;
+    /** Called when the window is closing and they chose "Don't save": put the work aside, then resolve. */
+    onKeepUnsaved(handler: () => Promise<void>): () => void;
     /** The "Save changes?" question as a native dialog. */
     askSaveChanges(name: string): Promise<SaveChoice>;
   };

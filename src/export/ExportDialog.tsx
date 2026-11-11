@@ -4,7 +4,9 @@ import { desktop } from '../io/desktop';
 import { Modal, mountModal } from '../io/mount';
 import { Icon } from '../ui/icons';
 import { detectCapabilities, type Capabilities } from './capabilities';
-import { describeError, exportDocument, loadLastSettings } from './exporter';
+import { describeError, exportDocument, loadLastSettings, loadSheetExtras, saveSheetExtras } from './exporter';
+import { setChoice, useChoice, getChoiceDef } from '../core/choices';
+import './choices';
 import { defaultSettings, hasPixelLayers, planExport, scaleChoices } from './plan';
 import { godotTexturePath } from './sheet';
 import type { Progress } from './run';
@@ -16,9 +18,11 @@ import './export.css';
 function startingSettings(): ExportSettings {
   const { doc } = store().get();
   const base = defaultSettings(doc);
+  const extras = loadSheetExtras();
+  if (extras) base.sheet = { ...base.sheet, ...extras };
   const last = loadLastSettings();
   if (!last || !FORMATS.some((f) => f.id === last.format)) return base;
-  const s: ExportSettings = { ...base, ...last, sheet: { ...DEFAULT_SHEET, ...last.sheet } };
+  const s: ExportSettings = { ...base, ...last, sheet: { ...DEFAULT_SHEET, ...last.sheet, ...extras } };
   if (s.range === 'clip' && !doc.clips.some((c) => c.id === s.clipId)) {
     s.range = 'all';
     s.clipId = null;
@@ -48,7 +52,14 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
   const running = progress !== null;
   const pixel = hasPixelLayers(doc);
   const set = (p: Partial<ExportSettings>) => setS((x) => ({ ...x, ...p }));
-  const setSheet = (p: Partial<ExportSettings['sheet']>) => setS((x) => ({ ...x, sheet: { ...x.sheet, ...p } }));
+  const setSheet = (p: Partial<ExportSettings['sheet']>) =>
+    setS((x) => {
+      const sheet = { ...x.sheet, ...p };
+      // JSON and Godot ticks are remembered the moment they change, even if this export is cancelled.
+      if ('json' in p || 'godot' in p || 'godotScene' in p) saveSheetExtras(sheet);
+      return { ...x, sheet };
+    });
+  const webmPref = useChoice<string>('export.webmCodec');
 
   const info = formatInfo(s.format);
   const plan = useMemo(() => planExport(doc, s, frame), [doc, s, frame]);
@@ -60,7 +71,7 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
     let live = true;
     void detectCapabilities(videoSize.width, videoSize.height).then((c) => live && setCaps(c));
     return () => void (live = false);
-  }, [videoSize.width, videoSize.height]);
+  }, [videoSize.width, videoSize.height, webmPref]);
 
   const support = (f: FormatId) => (f === 'mp4' || f === 'webm') && caps ? caps[f] : null;
   const unavailable = (f: FormatId): string | null => {
@@ -196,6 +207,20 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
               Transparent background
             </Check>
           </fieldset>
+
+          {s.format === 'webm' && (
+            <fieldset>
+              <legend>Video codec</legend>
+              <div className="ex-seg">
+                {(getChoiceDef('export.webmCodec')?.options ?? []).map((o) => (
+                  <button key={o.value} type="button" className={webmPref === o.value ? 'ex-on' : ''} aria-pressed={webmPref === o.value} title={o.detail} onClick={() => setChoice('export.webmCodec', o.value)}>
+                    {o.label}
+                  </button>
+                ))}
+              </div>
+              <p className="ex-note">{caps?.webm.ok ? `Making this one with ${caps.webm.codec === 'av1' ? 'AV1' : caps.webm.codec === 'vp9' ? 'VP9' : 'VP8'}${s.transparent && caps.webm.alphaCodec && caps.webm.alphaCodec !== caps.webm.codec ? ` (${caps.webm.alphaCodec.toUpperCase()} for the see-through background)` : ''}.` : 'Also in Preferences > Behaviour.'}</p>
+            </fieldset>
+          )}
 
           {(s.format === 'gif' || s.format === 'apng') && (
             <fieldset>

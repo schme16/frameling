@@ -7,7 +7,7 @@ import { notify } from '../io/notify';
 import { detectCapabilities } from './capabilities';
 import { filtersFor, planExport } from './plan';
 import { isCancelled, runExport, type Progress } from './run';
-import { formatInfo, type ExportSettings } from './types';
+import { formatInfo, type ExportSettings, type SheetSettings } from './types';
 
 const KEY = 'frameling.export.last';
 
@@ -24,6 +24,28 @@ export function loadLastSettings(): ExportSettings | null {
 export function saveLastSettings(s: ExportSettings): void {
   try {
     localStorage.setItem(KEY, JSON.stringify(s));
+  } catch {
+    // Remembering is a nicety, never a problem.
+  }
+}
+
+const EXTRAS_KEY = 'frameling.export.sheetExtras';
+
+/** The sprite sheet's "also save" ticks as last left, so they stay put between exports (JSON on and Godot off to begin with). */
+export function loadSheetExtras(): Pick<SheetSettings, 'json' | 'godot' | 'godotScene'> | null {
+  try {
+    const raw = localStorage.getItem(EXTRAS_KEY);
+    if (!raw) return null;
+    const v = JSON.parse(raw);
+    return { json: v.json !== false, godot: v.godot === true, godotScene: v.godotScene === true };
+  } catch {
+    return null;
+  }
+}
+
+export function saveSheetExtras(s: SheetSettings): void {
+  try {
+    localStorage.setItem(EXTRAS_KEY, JSON.stringify({ json: s.json, godot: s.godot, godotScene: s.godotScene }));
   } catch {
     // Remembering is a nicety, never a problem.
   }
@@ -67,6 +89,8 @@ export async function exportDocument(settings: ExportSettings, signal: AbortSign
     if (!c.ok) throw new ExportProblem(c.reason ?? "This computer can't make that kind of video.");
     videoCodec = c.codec;
     videoAlpha = c.alpha;
+    // Asked for see-through and the usual codec cannot: use the one that can.
+    if (settings.format === 'webm' && settings.transparent && c.alphaCodec) videoCodec = c.alphaCodec;
   }
 
   let result;

@@ -127,3 +127,34 @@
   color: var(--muted);
   padding: 8px 0 12px;
 }
+
+.io-recover {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.io-recover li {
+  display: grid;
+  grid-template-columns: 64px 1fr auto auto;
+  gap: 10px;
+  align-items: center;
+}
+.io-recover img,
+.io-thumb-none {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  background: var(--raised);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-small);
+}
+.io-recover-text {
+  display: grid;
+  min-width: 0;
+}
+.io-recover-text small {
+  color: var(--muted);
+  font-size: var(--fs-small);
+}

@@ -5,6 +5,7 @@ import type { RecentFile } from '../preload/api';
 import { baseName, desktop, stripExt } from './desktop';
 import { FileProblem, loadFile, saveFile } from './file';
 import { notify } from './notify';
+import { thumbnailOf } from './thumb';
 
 /** The name to show for the open document: its file name when it has one, else the document's own name. */
 export function documentTitle(): string {
@@ -17,6 +18,36 @@ export async function clearAutosaveCopy(): Promise<void> {
     await desktop()?.autosave.clear();
   } catch {
     // Nothing to clear is fine.
+  }
+}
+
+let lastDoc: unknown = null;
+
+export async function autosaveNow(): Promise<void> {
+  const api = desktop();
+  const { doc, ui } = store().get();
+  if (!api || !ui.dirty || doc === lastDoc) return;
+  try {
+    const bytes = saveFile(doc, api.versions.app);
+    await api.autosave.write(bytes, { name: doc.name, filePath: ui.filePath, docId: doc.id });
+    lastDoc = doc;
+  } catch {
+    // Try again at the next tick; a failed autosave should never get in the way.
+  }
+}
+
+/**
+ * Puts the unsaved work aside for a week (File > Recover unsaved work...) instead of throwing it away. Makes sure the
+ * autosave copy is current first. Quietly does nothing when there is nothing unsaved.
+ */
+export async function keepUnsavedWork(): Promise<void> {
+  const api = desktop();
+  if (!api || !store().get().ui.dirty) return;
+  try {
+    await autosaveNow();
+    await api.autosave.keep(await thumbnailOf(store().get().doc));
+  } catch {
+    // Putting a copy aside is a bonus. Never stop someone from carrying on.
   }
 }
 
@@ -48,7 +79,8 @@ export async function askAboutUnsavedChanges(): Promise<boolean> {
   else choice = window.confirm(`"${documentTitle()}" has changes that aren't saved. Throw them away?`) ? 'discard' : 'cancel';
   if (choice === 'cancel') return false;
   if (choice === 'save') return saveDocument();
-  // They chose to let the changes go, so the safety copy of them goes too.
+  // They chose to let the changes go. The work waits a week in Recover unsaved work..., then the autosave itself goes.
+  await keepUnsavedWork();
   await clearAutosaveCopy();
   return true;
 }
@@ -117,6 +149,8 @@ async function saveTo(path: string | null): Promise<boolean> {
     if (store().get().doc === doc) store().markSaved(r.path);
     else store().setUi({ filePath: r.path });
     void clearAutosaveCopy();
+    // Whatever was set aside for this drawing is in the file now.
+    void api.autosave.removeKept(doc.id).catch(() => undefined);
     notify('Saved.', 'success', undefined, 1600);
     return true;
   } finally {

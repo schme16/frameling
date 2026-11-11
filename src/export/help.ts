@@ -43,7 +43,7 @@ More: [Video, GIF and APNG](help:export-video-gif-apng), [Sprite sheets](help:ex
     title: 'Video, GIF and APNG',
     section: 'Exporting',
     summary: 'Which animated format to pick, and what the options do.',
-    keywords: ['mp4', 'webm', 'gif', 'apng', 'video', 'loop', 'dither', 'transparent', 'h264', 'vp9'],
+    keywords: ['mp4', 'webm', 'gif', 'apng', 'video', 'loop', 'dither', 'transparent', 'h264', 'vp9', 'av1', 'codec'],
     body: `## MP4 video
 
 Plays almost everywhere: phones, social media, slides. It can't have a see-through background, so your drawing's background colour is used (white if there isn't one). Videos need an even number of pixels, so a drawing with an odd size gets one extra row or column of background.
@@ -51,6 +51,8 @@ Plays almost everywhere: phones, social media, slides. It can't have a see-throu
 ## WebM video
 
 Great for websites. It can keep a **transparent background** on computers that support it. If yours doesn't, the option is greyed out and says so.
+
+WebM uses **AV1** when your computer can make it (smaller files, slower to make), and falls back to VP9, then VP8. You can pick **VP9** instead with the *Video codec* buttons in the export window, or in Preferences > Behaviour. If the codec you like can't keep a see-through background but another one can, Frameling uses that one when you ask for transparency.
 
 ## Animated GIF
 
@@ -87,6 +89,8 @@ Pick **Sprite sheet** in the export dialog and choose a folder. Frameling writes
 - the **picture** (a PNG),
 - a **JSON file** saying where every frame sits and which frames make up each animation,
 - and, if you tick them, files for [Godot](help:export-godot).
+
+The JSON and Godot ticks start as JSON on, Godot off, and then **remember what you last chose**, so you set them once.
 
 ## Options
 

@@ -32,6 +32,10 @@ const api: FramelingApi = {
     write: (bytes, meta) => call('autosave:write', bytes, meta),
     read: () => call('autosave:read'),
     clear: () => call('autosave:clear'),
+    keep: (thumb) => call('autosave:keep', thumb),
+    listKept: () => call('autosave:listKept'),
+    readKept: (id) => call('autosave:readKept', id),
+    removeKept: (id) => call('autosave:removeKept', id),
   },
   app: {
     setDocumentState: (state) => ipcRenderer.send('app:documentState', state),
@@ -53,6 +57,18 @@ const api: FramelingApi = {
       };
       ipcRenderer.on('app:saveBeforeClose', fn);
       return () => void ipcRenderer.removeListener('app:saveBeforeClose', fn);
+    },
+    onKeepUnsaved: (handler) => {
+      const fn = async () => {
+        try {
+          await handler();
+        } catch {
+          // Closing goes ahead either way.
+        }
+        ipcRenderer.send('app:keepUnsavedDone');
+      };
+      ipcRenderer.on('app:keepUnsaved', fn);
+      return () => void ipcRenderer.removeListener('app:keepUnsaved', fn);
     },
     askSaveChanges: (name) => call('app:askSaveChanges', name),
   },

@@ -3,7 +3,7 @@
 import { app } from 'electron';
 import fs from 'node:fs';
 import path from 'node:path';
-import type { AutosaveInfo, AutosaveMeta, RecentFile } from '../preload/api';
+import type { AutosaveInfo, AutosaveMeta, KeptAutosave, RecentFile } from '../preload/api';
 
 const MAX_RECENT = 12;
 
@@ -126,4 +126,95 @@ export function clearAutosave(): void {
       // Already gone.
     }
   }
+}
+
+// ---------------------------------------------------------------- kept copies
+
+/** How long a copy put aside by "Don't save" (or left by a crash) is kept. */
+export const KEEP_DAYS = 7;
+const keptDir = () => dataPath('autosave', 'kept');
+const keptId = (docId: string) => String(docId).replace(/[^A-Za-z0-9_-]/g, '_').slice(0, 80) || 'doc';
+
+/** Deletes kept copies older than a week. Run at start-up, and whenever the list is read. */
+export function pruneKept(now = Date.now()): void {
+  let names: string[];
+  try {
+    names = fs.readdirSync(keptDir());
+  } catch {
+    return;
+  }
+  for (const n of names.filter((x) => x.endsWith('.json'))) {
+    const id = n.slice(0, -5);
+    let keptAt = 0;
+    try {
+      keptAt = JSON.parse(fs.readFileSync(path.join(keptDir(), n), 'utf8')).keptAt;
+    } catch {
+      // A note nobody can read is as good as old.
+    }
+    if (typeof keptAt === 'number' && now - keptAt < KEEP_DAYS * 24 * 3600 * 1000) continue;
+    for (const f of [`${id}.frameling`, `${id}.json`]) fs.rmSync(path.join(keptDir(), f), { force: true });
+  }
+  // Pictures with no note (a half-finished copy) are of no use either.
+  for (const n of fs.readdirSync(keptDir()).filter((x) => x.endsWith('.frameling'))) {
+    if (!fs.existsSync(path.join(keptDir(), n.replace(/\.frameling$/, '.json')))) fs.rmSync(path.join(keptDir(), n), { force: true });
+  }
+}
+
+function sameFile(a: string, b: string): boolean {
+  try {
+    return fs.readFileSync(a).equals(fs.readFileSync(b));
+  } catch {
+    return false;
+  }
+}
+
+/** Puts the current autosave copy aside. One kept copy per drawing, so the newest wins. */
+export function keepAutosave(thumb?: string, now = Date.now()): boolean {
+  const note = readJson<(AutosaveMeta & { savedAt: number }) | null>(path.join(autosaveDir(), 'current.json'), null);
+  if (!note || !fs.existsSync(path.join(autosaveDir(), 'current.frameling'))) return false;
+  const id = keptId(note.docId);
+  fs.mkdirSync(keptDir(), { recursive: true });
+  // This very copy is already put aside (a crash copy kept at every start-up, say): leave its clock alone, and only
+  // add the thumbnail if it had none.
+  const had = readJson<KeptAutosave | null>(path.join(keptDir(), `${id}.json`), null);
+  if (had && had.savedAt === note.savedAt && sameFile(path.join(keptDir(), `${id}.frameling`), path.join(autosaveDir(), 'current.frameling'))) {
+    if (!had.thumb && typeof thumb === 'string' && thumb.startsWith('data:image/') && thumb.length < 200_000) writeFileAtomic(path.join(keptDir(), `${id}.json`), JSON.stringify({ ...had, thumb }));
+    return true;
+  }
+  fs.copyFileSync(path.join(autosaveDir(), 'current.frameling'), path.join(keptDir(), `${id}.frameling`));
+  const meta: KeptAutosave = { id, name: note.name, filePath: note.filePath ?? null, savedAt: note.savedAt, keptAt: now, ...(typeof thumb === 'string' && thumb.startsWith('data:image/') && thumb.length < 200_000 ? { thumb } : {}) };
+  writeFileAtomic(path.join(keptDir(), `${id}.json`), JSON.stringify(meta));
+  return true;
+}
+
+export function listKept(): KeptAutosave[] {
+  pruneKept();
+  let names: string[];
+  try {
+    names = fs.readdirSync(keptDir());
+  } catch {
+    return [];
+  }
+  const out: KeptAutosave[] = [];
+  for (const n of names.filter((x) => x.endsWith('.json'))) {
+    const m = readJson<KeptAutosave | null>(path.join(keptDir(), n), null);
+    if (m && typeof m.id === 'string' && typeof m.keptAt === 'number' && fs.existsSync(path.join(keptDir(), `${keptId(m.id)}.frameling`))) out.push(m);
+  }
+  return out.sort((a, b) => b.keptAt - a.keptAt);
+}
+
+export function readKept(id: string): { bytes: Uint8Array; meta: AutosaveMeta } | null {
+  const k = keptId(id);
+  const m = readJson<KeptAutosave | null>(path.join(keptDir(), `${k}.json`), null);
+  if (!m) return null;
+  try {
+    return { bytes: new Uint8Array(fs.readFileSync(path.join(keptDir(), `${k}.frameling`))), meta: { name: m.name, filePath: null, docId: k } };
+  } catch {
+    return null;
+  }
+}
+
+export function removeKept(id: string): void {
+  const k = keptId(id);
+  for (const f of [`${k}.frameling`, `${k}.json`]) fs.rmSync(path.join(keptDir(), f), { force: true });
 }

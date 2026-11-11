@@ -4,7 +4,7 @@ import { app, BrowserWindow, dialog, ipcMain, shell, type IpcMainInvokeEvent } f
 import fs from 'node:fs';
 import path from 'node:path';
 import type { AutosaveMeta, DocumentState, FileFilter, SaveChoice } from '../preload/api';
-import { addRecent, clearAutosave, clearRecent, lastDir, listRecent, readAutosave, rememberDir, removeRecent, writeAutosave, writeFileAtomic } from './store';
+import { addRecent, clearAutosave, clearRecent, keepAutosave, lastDir, listKept, listRecent, readAutosave, readKept, rememberDir, removeKept, removeRecent, writeAutosave, writeFileAtomic } from './store';
 
 const FILTERS: FileFilter[] = [{ name: 'Frameling drawings', extensions: ['frameling'] }];
 const MAX_OPEN_BYTES = 1024 * 1024 * 1024;
@@ -15,6 +15,7 @@ export interface IpcHooks {
   takeLaunchFile(): string | null;
   setDocumentState(s: DocumentState): void;
   saveBeforeCloseDone(ok: boolean): void;
+  keepUnsavedDone(): void;
 }
 
 // Paths people picked in dialogs this session (or opened). Writes anywhere else are refused.
@@ -54,6 +55,19 @@ export function safeFileName(name: string): string {
   return base && base !== '.' && base !== '..' ? base : 'file';
 }
 
+// TEST AUTOMATION. Only when FRAMELING_AUTOMATION_DIR is set (scripts/e2e/*.cjs does that, nothing else ever does):
+// the save dialogs are skipped and answer with a file inside that folder, named from the suggested name, so a script
+// can run Save As and every export without anyone clicking. With the variable unset this returns null and the real
+// dialogs run as normal. Names are cut down to a bare file name first, so nothing can point outside the folder.
+function automationTarget(suggestedName: string, forceExt?: string): string | null {
+  const dir = process.env.FRAMELING_AUTOMATION_DIR;
+  if (!dir) return null;
+  fs.mkdirSync(dir, { recursive: true });
+  let name = safeFileName(suggestedName);
+  if (forceExt && !name.toLowerCase().endsWith(forceExt)) name += forceExt;
+  return path.join(path.resolve(dir), name);
+}
+
 export function registerIpc(hooks: IpcHooks): void {
   // Only our own window may ask.
   const trusted = (e: IpcMainInvokeEvent) => e.sender === hooks.window()?.webContents;
@@ -83,15 +97,21 @@ export function registerIpc(hooks: IpcHooks): void {
     let target = opts.path;
     if (target && !granted.has(key(target))) target = null;
     if (!target) {
-      const r = await dialog.showSaveDialog(hooks.window()!, {
-        title: 'Save your drawing',
-        defaultPath: path.join(lastDir(), safeFileName(opts.suggestedName).replace(/\.frameling$/i, '') + '.frameling'),
-        filters: FILTERS,
-      });
-      if (r.canceled || !r.filePath) return null;
-      target = /\.frameling$/i.test(r.filePath) ? r.filePath : r.filePath + '.frameling';
-      grantFile(target);
-      rememberDir(target);
+      const auto = automationTarget(opts.suggestedName.replace(/\.frameling$/i, '') + '.frameling');
+      if (auto) {
+        target = auto;
+        grantFile(target);
+      } else {
+        const r = await dialog.showSaveDialog(hooks.window()!, {
+          title: 'Save your drawing',
+          defaultPath: path.join(lastDir(), safeFileName(opts.suggestedName).replace(/\.frameling$/i, '') + '.frameling'),
+          filters: FILTERS,
+        });
+        if (r.canceled || !r.filePath) return null;
+        target = /\.frameling$/i.test(r.filePath) ? r.filePath : r.filePath + '.frameling';
+        grantFile(target);
+        rememberDir(target);
+      }
     }
     try {
       writeFileAtomic(target, Buffer.from(opts.bytes));
@@ -104,6 +124,11 @@ export function registerIpc(hooks: IpcHooks): void {
 
   handle('files:pickExportFile', async (_e, opts: { suggestedName: string; filters: FileFilter[]; title?: string }) => {
     const exts = opts.filters.flatMap((f) => f.extensions);
+    const auto = automationTarget(opts.suggestedName, exts[0] ? '.' + exts[0] : undefined);
+    if (auto) {
+      grantFile(auto);
+      return auto;
+    }
     const r = await dialog.showSaveDialog(hooks.window()!, {
       title: opts.title ?? 'Export',
       defaultPath: path.join(lastDir(), safeFileName(opts.suggestedName)),
@@ -118,6 +143,14 @@ export function registerIpc(hooks: IpcHooks): void {
   });
 
   handle('files:pickExportFolder', async (_e, opts: { title?: string }) => {
+    // Automation (see automationTarget): the folder is the automation folder itself.
+    const autoDir = process.env.FRAMELING_AUTOMATION_DIR;
+    if (autoDir) {
+      const folder = path.resolve(autoDir);
+      fs.mkdirSync(folder, { recursive: true });
+      grantedFolders.add(key(folder));
+      return folder;
+    }
     const r = await dialog.showOpenDialog(hooks.window()!, { title: opts.title ?? 'Choose a folder', defaultPath: lastDir(), properties: ['openDirectory', 'createDirectory'], buttonLabel: 'Use this folder' });
     if (r.canceled || !r.filePaths[0]) return null;
     grantedFolders.add(key(r.filePaths[0]));
@@ -178,6 +211,18 @@ export function registerIpc(hooks: IpcHooks): void {
   });
   handle('autosave:read', () => readAutosave());
   handle('autosave:clear', () => clearAutosave());
+  handle('autosave:keep', (_e, thumb?: string) => {
+    try {
+      keepAutosave(typeof thumb === 'string' ? thumb : undefined);
+    } catch {
+      // Putting a copy aside is a bonus; never let it stop a close.
+    }
+  });
+  handle('autosave:listKept', () => listKept());
+  handle('autosave:readKept', (_e, id: string) => (typeof id === 'string' ? readKept(id) : null));
+  handle('autosave:removeKept', (_e, id: string) => {
+    if (typeof id === 'string') removeKept(id);
+  });
 
   handle('app:launchFile', () => hooks.takeLaunchFile());
 
@@ -197,6 +242,10 @@ export function registerIpc(hooks: IpcHooks): void {
   ipcMain.on('app:documentState', (e, s: DocumentState) => {
     if (e.sender !== hooks.window()?.webContents) return;
     hooks.setDocumentState({ dirty: !!s?.dirty, name: String(s?.name ?? 'Untitled'), filePath: typeof s?.filePath === 'string' ? s.filePath : null });
+  });
+  ipcMain.on('app:keepUnsavedDone', (e) => {
+    if (e.sender !== hooks.window()?.webContents) return;
+    hooks.keepUnsavedDone();
   });
   ipcMain.on('app:saveBeforeCloseDone', (e, ok: boolean) => {
     if (e.sender !== hooks.window()?.webContents) return;

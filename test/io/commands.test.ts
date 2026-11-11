@@ -14,12 +14,13 @@ describe('files and export commands', () => {
     expect(keys('file.export')).toEqual(['Mod+E']);
     expect(keys('file.exportAgain')).toEqual(['Mod+Shift+E']);
     expect(getCommand('file.openRecent')).toBeDefined();
+    expect(getCommand('file.recover')?.label).toBe('Recover unsaved work...');
     // file.new belongs to the ui area.
     expect(getCommand('file.new')).toBeUndefined();
   });
 
   it('gives every command a help topic that exists', () => {
-    for (const id of ['file.open', 'file.openRecent', 'file.save', 'file.saveAs', 'file.export', 'file.exportAgain']) {
+    for (const id of ['file.open', 'file.openRecent', 'file.recover', 'file.save', 'file.saveAs', 'file.export', 'file.exportAgain']) {
       const help = getCommand(id)!.help!;
       expect(getHelp(help), id).toBeDefined();
     }
