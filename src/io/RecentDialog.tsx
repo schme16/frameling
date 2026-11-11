@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Icon } from '../ui/icons';
 import { QuillEmpty } from '../ui/mascot';
+import { describePlace } from '../platform';
 import { dirName } from './desktop';
 import { clearRecentFiles, listRecentFiles, openPath } from './document';
 import { Modal, mountModal } from './mount';
@@ -42,7 +43,7 @@ function RecentDialog({ close }: { close: () => void }) {
                   <Icon name="open" />
                   <b>{f.name}</b>
                   <small title={f.path}>
-                    {when(f.openedAt)} in {dirName(f.path) || f.path}
+                    {when(f.openedAt)} {describePlace(f.path, dirName)}
                   </small>
                 </button>
               </li>

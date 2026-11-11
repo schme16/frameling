@@ -1,6 +1,6 @@
 name: Build desktop apps
 
-# Builds Frameling for Windows, macOS and Linux whenever a pull request targets main, and on demand.
+# Builds Frameling for Windows, macOS and Linux, and the web version, whenever a pull request targets main, and on demand.
 # The installers are attached to the run as artifacts. They are unsigned until signing is set up.
 on:
   pull_request:
@@ -49,5 +49,25 @@ jobs:
             release/*.AppImage
             release/*.exe
             release/*.dmg
+          if-no-files-found: error
+          retention-days: 14
+
+  web:
+    # The web build: static files for any web server, no installer. Uploaded for checking only; nothing is deployed.
+    name: Web
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build:web
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frameling-web
+          path: dist/web/
           if-no-files-found: error
           retention-days: 14

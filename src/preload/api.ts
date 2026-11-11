@@ -59,6 +59,8 @@ export interface KeptAutosave {
 export type SaveChoice = 'save' | 'discard' | 'cancel';
 
 export interface FramelingApi {
+  /** Which kind of home the page has: the desktop app, or a web browser (src/platform). Missing means desktop. */
+  kind?: 'desktop' | 'web';
   platform: string;
   versions: { app: string; electron: string; chrome: string };
   files: {
@@ -70,7 +72,8 @@ export interface FramelingApi {
     save(opts: { bytes: Uint8Array; path: string | null; suggestedName: string }): Promise<{ path: string } | FileFailure | null>;
     /** Asks where an export should go. null means they cancelled. */
     pickExportFile(opts: { suggestedName: string; filters: FileFilter[]; title?: string }): Promise<string | null>;
-    pickExportFolder(opts: { title?: string }): Promise<string | null>;
+    /** `suggestedName` names the zip a browser without folder access downloads instead. */
+    pickExportFolder(opts: { title?: string; suggestedName?: string }): Promise<string | null>;
     /** Writes to a path that pickExportFile returned. */
     write(path: string, bytes: Uint8Array): Promise<{ ok: true } | FileFailure>;
     /** Writes several files into a folder that pickExportFolder returned. null means they chose not to replace existing files. */

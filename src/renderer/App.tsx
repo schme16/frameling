@@ -14,6 +14,7 @@ import { openSheet } from '../ui/overlays';
 import { applyPrefs, getPrefs } from '../ui/prefs';
 import { PrefsModal } from '../ui/PrefsModal';
 import { ChoiceDialog } from '../ui/ChoiceDialog';
+import { AskDialog } from '../platform/AskDialog';
 import { StatusBar } from '../ui/StatusBar';
 import { ToastView } from '../ui/ToastView';
 import { ToolStrip } from '../ui/ToolStrip';
@@ -60,6 +61,7 @@ export function App() {
       <CommandPalette />
       <PrefsModal />
       <ChoiceDialog />
+      <AskDialog />
       <HelpWindow />
       <WelcomeSheet />
       <AboutDialog />

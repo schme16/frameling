@@ -6,6 +6,7 @@ import type { FramelingApi } from './api';
 const call = (channel: string, ...args: unknown[]) => ipcRenderer.invoke(channel, ...args);
 
 const api: FramelingApi = {
+  kind: 'desktop',
   platform: process.platform,
   versions: {
     app: process.argv.find((a) => a.startsWith('--frameling-version='))?.split('=')[1] ?? '',

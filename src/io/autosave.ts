@@ -1,6 +1,7 @@
 // Autosave: every minute, when there are unsaved changes, a copy goes to the app's own folder (never over the
 // person's file). If the app is closed the hard way, the next start offers to bring that copy back.
 import { store } from '../core/store';
+import { isWeb } from '../platform';
 import { desktop } from './desktop';
 import { autosaveNow, clearAutosaveCopy, documentTitle, keepUnsavedWork, loadBytes, openPath, saveDocument } from './document';
 import { loadFile } from './file';
@@ -9,6 +10,8 @@ import { notify } from './notify';
 export { autosaveNow };
 
 export const AUTOSAVE_EVERY_MS = 60_000;
+/** A browser tab is closed more easily than an app, so the web build keeps its copy fresher. */
+export const WEB_AUTOSAVE_EVERY_MS = 15_000;
 
 /** Offers the autosaved copy back when it is newer than the saved file (or the work was never saved). */
 export async function offerRecovery(): Promise<void> {
@@ -45,7 +48,11 @@ export function startFileServices(): void {
   const api = desktop();
   if (!api) return;
 
-  setInterval(() => void autosaveNow(), AUTOSAVE_EVERY_MS);
+  setInterval(() => void autosaveNow(), isWeb() ? WEB_AUTOSAVE_EVERY_MS : AUTOSAVE_EVERY_MS);
+  // Also when the window is hidden (another tab, minimised), as a browser tab can be closed without asking.
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') void autosaveNow();
+  });
 
   // Title bar and the desktop side's idea of "is there anything unsaved".
   let last = '';

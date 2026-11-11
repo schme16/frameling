@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { store, useStore } from '../core/store';
 import { baseName, desktop } from '../io/desktop';
+import { can } from '../platform';
 import { Modal, mountModal } from '../io/mount';
 import { notify } from '../io/notify';
 import { Icon } from '../ui/icons';
@@ -72,7 +73,7 @@ function ExportTilesetDialog({ close }: { close: () => void }) {
     if (!api) return notify('Exporting works in the Frameling desktop app.', 'info');
     setBusy(true);
     try {
-      const target = await api.files.pickExportFolder({ title: 'Choose a folder for your tileset' });
+      const target = await api.files.pickExportFolder({ title: 'Choose a folder for your tileset', suggestedName: `${doc.name || 'tileset'} tileset` });
       if (!target) return;
       const files = tilesetFiles(doc, s, frame);
       const w = await api.files.writeMany(target, files);
@@ -80,7 +81,7 @@ function ExportTilesetDialog({ close }: { close: () => void }) {
       if ('error' in w) return notify(w.error, 'error');
       saveSettings(s);
       const shown = w.paths.find((p) => p.endsWith('.png')) ?? w.paths[0];
-      notify(`Exported ${baseName(shown)}${files.length > 1 ? ` and ${files.length - 1} more` : ''}.`, 'success', { label: 'Show in folder', run: () => void api.files.showInFolder(shown) }, 9000, 'cheer');
+      notify(`Exported ${baseName(shown)}${w.paths.length > 1 ? ` and ${w.paths.length - 1} more` : ''}.`, 'success', can('showInFolder') ? { label: 'Show in folder', run: () => void api.files.showInFolder(shown) } : undefined, 9000, 'cheer');
       close();
     } finally {
       setBusy(false);

@@ -16,6 +16,8 @@ Every pull request into `main` builds the app for all three systems. Open the pu
 
 The builds aren't signed yet, so on Windows click **More info → Run anyway**, and on macOS right-click the app and choose **Open** the first time.
 
+The same run also has **frameling-web**: the web version, for machines where installing isn't allowed (see below).
+
 ## Work on it
 
 Needs Node 22.
@@ -28,6 +30,33 @@ npm run build          # mascot, type check, then build into dist/
 npm run build:mascot   # just rebuild Quill's sprite sheet and the app icons
 npm run dist           # installers for this system, into release/
 ```
+
+### The web version
+
+```bash
+npm run build:web      # static files into dist/web/
+npm run preview:web    # serves dist/web on http://localhost:5198
+```
+
+`dist/web/` is plain static files with relative paths, so it can be copied into any folder of any web server (a
+sub-path like `/tools/frameling/` is fine). It needs https (or localhost) for the offline copy and "Install as an app"
+to work. Nothing is deployed anywhere automatically.
+
+It is the same page as the desktop app. `src/platform/` works out where it's running: the desktop app's preload
+script puts the bridge on `window.frameling`, and in a plain browser `src/platform/web/` builds the same bridge in the
+page. Everything else goes through that bridge, so very little code knows the difference.
+
+| | Chrome, Edge | Firefox, Safari |
+|---|---|---|
+| Open and save | File System Access: Save asks once, then saves in place | Open is an upload; Save downloads the file each time |
+| Open recent | Remembers the files (the browser may ask to allow access again) | Reopens the browser's own copy of the file |
+| Multi-file exports (sprite sheet, tileset) | Into a folder you pick | One .zip download |
+| Autosave and Recover unsaved work | IndexedDB, every 15 seconds and when the tab is hidden, kept 7 days | Same |
+| Install as an app, offline | Yes (manifest, service worker, opens .frameling files) | Offline after the first visit. Safari can add it to the Dock or Home Screen; Firefox can't install it |
+
+Not in the browser: "Show in folder", the native "Save changes?" on close (the browser's own "Leave site?" shows
+instead, and the work is put aside in Recover unsaved work), and shortcuts the browser keeps (Ctrl+N, Ctrl+W, Ctrl+T).
+The in-app help topic "Frameling in a web browser" says the same in plain words.
 
 ### Install on this Linux machine
 
@@ -95,7 +124,8 @@ Changes stay additive: a new field is optional, and anything that would break an
 - `src/main/`: the Electron main process (windows, menus, files).
 - `src/preload/`: the small, safe bridge between the page and the desktop (`window.frameling`).
 - `src/renderer/`: the app's interface (React and TypeScript, built with Vite).
+- `src/platform/`: which bridge the page has (desktop or browser), and the browser one itself.
 - `scripts/`: dev, build and local install scripts.
-- `.github/workflows/build.yml`: the Windows, macOS and Linux builds.
+- `.github/workflows/build.yml`: the Windows, macOS and Linux builds, and the web build.
 
 Branches: work happens on `development`, which reaches `main` through pull requests, and each pull request builds the apps.

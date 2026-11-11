@@ -8,6 +8,7 @@ import '../geometry';
 import '../timeline';
 import '../symbols';
 import '../io';
+import '../platform/help';
 import '../export';
 import '../tiles';
 import '../quests';
