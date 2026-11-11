@@ -486,7 +486,7 @@ async function vSheet(files, dir, s, exp, caseCtx) {
   const generic = engine === 'json' || ((engine === 'godot' || engine === 'css') && s.sheet.json);
   const want = { godot: ['.tres'], unity: ['.json', '.cs'], phaser: ['.json', '-anims.json'], pixi: ['.json'], css: ['.css', '.html'], json: ['.json'], none: [] }[engine];
   for (const ext of want) check(names.some((n) => n.endsWith(ext)), `${engine}: no ${ext} file`);
-  const json = generic ? names.find((n) => n.endsWith('.json')) : null;
+  const json = generic ? names.find((n) => n.endsWith('.json') && !n.endsWith('-flow.json')) : null;
   check(generic ? !!json : engine !== 'none' || !names.some((n) => n.endsWith('.json')), 'json file presence does not match the setting');
   check(engine === 'godot' ? names.some((n) => n.endsWith('.tres')) : !names.some((n) => n.endsWith('.tres')), '.tres presence does not match the setting');
   check(engine === 'godot' && s.sheet.godotScene ? names.some((n) => n.endsWith('.tscn')) : !names.some((n) => n.endsWith('.tscn')), '.tscn presence does not match the setting');
