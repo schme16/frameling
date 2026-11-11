@@ -3,7 +3,6 @@ import { registerCommands } from '../core/registry';
 import { store } from '../core/store';
 import { center, fit, zoom100, zoomStep } from './controller';
 import { getViewSettings, setViewSettings } from './viewSettings';
-import { openDocumentSettings } from './DocumentSettings';
 
 registerCommands([
   {
@@ -78,6 +77,7 @@ registerCommands([
     description: 'Change the page size (canvas or image size), frame rate, DPI and background.',
     help: 'canvas-size',
     keywords: ['canvas size', 'image size', 'resize', 'page size', 'stage size', 'document settings', 'fps', 'frame rate', 'dpi', 'background', 'scale', 'crop'],
-    run: () => openDocumentSettings(),
+    // The dialog loads on first use.
+    run: () => void import('./DocumentSettings').then((m) => m.openDocumentSettings()),
   },
 ]);

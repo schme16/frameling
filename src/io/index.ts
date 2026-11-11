@@ -2,7 +2,6 @@
 // title, files opened from outside). Other areas can import the helpers below.
 import './commands';
 import './help';
-import './debug';
 import { startFileServices } from './autosave';
 
 export { askAboutUnsavedChanges, documentTitle, listRecentFiles, openDocument, openPath, saveDocument, saveDocumentAs } from './document';

@@ -1,7 +1,8 @@
 // "Edit in Frameling": an Interactives package (.flplay) can carry the editable drawing inside it. This takes it out,
 // and remembers per drawing which package it came from and whether saving should update it. Pure apart from storage.
 import { strFromU8, unzipSync } from 'fflate';
-import { PLAYABLE_FORMAT, type PlayableManifest } from '../export/playable';
+import type { PlayableManifest } from '../export/playable';
+import { PLAYABLE_FORMAT } from '../export/types';
 import { FileProblem } from '../io/file';
 
 export interface PlayableSource {

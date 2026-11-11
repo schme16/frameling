@@ -3,9 +3,7 @@ import { registerCommands } from '../../core/registry';
 import './help';
 import { openOnboarding } from '../overlays';
 import { getPrefs } from '../prefs';
-import { markFirstRun } from './Onboarding';
-
-export { OnboardingSheet } from './Onboarding';
+import { markFirstRun } from './state';
 
 registerCommands([
   {

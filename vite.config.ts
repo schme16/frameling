@@ -17,6 +17,14 @@ export default defineConfig({
     outDir: '../../dist/renderer',
     emptyOutDir: true,
     target: 'chrome140',
+    rolldownOptions: {
+      output: {
+        // Everything start-up needs goes in one file next to the entry, rather than the dozens of little shared
+        // pieces the splitter would make out of what the lazily loaded parts also use. The rest (export, dialogs,
+        // most panels) loads on first use, see src/core/lazy.ts.
+        codeSplitting: { groups: [{ name: 'app', tags: ['$initial'] }] },
+      },
+    },
   },
   server: { port: 5199, strictPort: true },
 });

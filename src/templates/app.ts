@@ -3,9 +3,7 @@
 import { registerCommands, registerHelpTopics } from '../core/registry';
 import { openSheet } from '../ui/overlays';
 import { importTemplate } from './actions';
-import { openSaveTemplate } from './SaveTemplateDialog';
 import './user';
-import './debug';
 
 registerCommands([
   {
@@ -15,7 +13,8 @@ registerCommands([
     description: 'Keep this drawing as a starting point in Your templates.',
     help: 'templates-yours',
     keywords: ['template', 'starter', 'preset', 'reuse', 'share', 'community'],
-    run: () => openSaveTemplate(),
+    // The dialog loads on first use.
+    run: () => void import('./SaveTemplateDialog').then((m) => m.openSaveTemplate()),
   },
   {
     id: 'file.importTemplate',

@@ -136,3 +136,6 @@ export function formatInfo(id: FormatId): FormatInfo {
 }
 
 export const DEFAULT_SHEET: SheetSettings = { columns: 0, padding: 0, trim: false, pot: false, dedupe: true, json: true, godot: false, godotScene: false, godotPath: '' };
+
+/** The format name inside a .flplay's manifest (here so opening one doesn't load the exporter). */
+export const PLAYABLE_FORMAT = 'frameling-playable';

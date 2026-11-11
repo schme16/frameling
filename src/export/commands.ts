@@ -1,5 +1,5 @@
 import { registerCommands } from '../core/registry';
-import { exportAgain, openExportDialog } from './ExportDialog';
+import { exportAgain, openExportDialog } from './open';
 
 registerCommands([
   {

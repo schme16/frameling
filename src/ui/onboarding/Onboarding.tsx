@@ -1,5 +1,6 @@
 // Quill's first-run hello: who he is, what Frameling is for, what you'd like to make, your colours, a few settings,
 // a name for your first animation, then off you go. Every step can be skipped. The steps live in flow.ts.
+import { isFirstRun, markFirstRun } from './state';
 import { useEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react';
 import { currentChoice, setChoice } from '../../core/choices';
 import { getHelp } from '../../core/registry';
@@ -22,8 +23,7 @@ import { DOZE_MS, INTERESTS, isStrawberry, makeReaction, planFor, reduceFlow, si
 import './onboarding.css';
 
 /** True while this is the automatic first-run showing (a skip then still opens the welcome sheet). */
-let firstRun = false;
-export const markFirstRun = (v: boolean) => void (firstRun = v);
+export { markFirstRun } from './state';
 
 export function OnboardingSheet() {
   const open = overlays.use((o) => !!o.onboarding);
@@ -87,9 +87,9 @@ function Flow() {
     closeOnboarding();
     if (how === 'skipped') {
       toast(line('onboarding.skipped'), { kind: 'info' });
-      if (firstRun && getPrefs().showWelcome) openSheet('welcome');
+      if (isFirstRun() && getPrefs().showWelcome) openSheet('welcome');
     }
-    firstRun = false;
+    markFirstRun(false);
   };
 
   const finish = async (go: 'quest' | 'template' | 'blank') => {

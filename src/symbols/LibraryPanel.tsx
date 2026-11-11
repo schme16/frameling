@@ -14,7 +14,8 @@ import { deleteUnused, duplicateSymbolById, editSymbol, placeInstance, renameSym
 import './symbols.css';
 
 /** The drag type a library row carries, read by the canvas when it's dropped there. */
-export const SYMBOL_DRAG_TYPE = 'application/x-frameling-symbol';
+import { SYMBOL_DRAG_TYPE } from './dragType';
+export { SYMBOL_DRAG_TYPE };
 
 /** Draws one frame of a symbol (frame 0 unless asked), fitted into a small canvas. Every frame uses the same fit. */
 export function SymbolThumb({ doc, id, size = 44, frame = 0, className = 'sy-thumb' }: { doc: Doc; id: Id; size?: number; frame?: number; className?: string }) {

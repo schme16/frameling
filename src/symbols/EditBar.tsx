@@ -4,7 +4,7 @@ import type { DragEvent, MouseEvent } from 'react';
 import { useStore, store } from '../core/store';
 import { topShapeAt } from '../canvas/geometry';
 import { screenToDoc } from '../canvas/view';
-import { SYMBOL_DRAG_TYPE } from './LibraryPanel';
+import { SYMBOL_DRAG_TYPE } from './dragType';
 import { currentKey, editInstance, editPath, leaveSymbol, placeInstance } from './ops';
 import './symbols.css';
 

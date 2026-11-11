@@ -1,7 +1,7 @@
 // How quests show up in the rest of the app: commands (palette, menus), the Quests panel and the help topic.
+import { lazyPanel } from '../core/lazy';
 import { registerCommands, registerHelp, registerPanel } from '../core/registry';
 import { showPanel } from '../ui/dock';
-import { QuestsPanel } from './QuestsPanel';
 import { questProgress } from './registry';
 import { putDownQuest, resumeQuest } from './runtime';
 
@@ -36,7 +36,7 @@ registerCommands([
   },
 ]);
 
-registerPanel({ id: 'quests', title: 'Quests', icon: 'quest', component: QuestsPanel, zone: 'right', order: 85, help: 'quests' });
+registerPanel({ id: 'quests', title: 'Quests', icon: 'quest', component: lazyPanel(() => import('./QuestsPanel').then((m) => m.QuestsPanel)), zone: 'right', order: 85, help: 'quests' });
 
 // The UI shell registered a placeholder topic with this id. Registering after it (features.ts imports this last)
 // replaces it.

@@ -1,15 +1,14 @@
 // Symbol and tween commands: palette, menus (Draw and Animate) and keys.
+import { lazyPanel } from '../core/lazy';
 import { getCommand, registerCommands, registerPanel } from '../core/registry';
 import { celAt, findLayer } from '../core/doc';
 import { store, type State } from '../core/store';
 import { EASE_PRESETS } from '../core/ease';
 import { toast } from '../ui/toast';
-import { LibraryPanel } from './LibraryPanel';
-import { PropertiesPanel } from './PropertiesPanel';
 import { clearShapeHints, hintTarget, makeShapeTween, makeTweenAsking, setTweenKind, currentKey, deleteUnused, editInstance, leaveSymbol, makeSymbolFromSelection, makeTween, pathFromSelection, removeTween, resetTransform, selectedInstance, setEase } from './ops';
 
-registerPanel({ id: 'library', title: 'Library', icon: 'symbol', component: LibraryPanel, zone: 'right', order: 30, help: 'symbols' });
-registerPanel({ id: 'symbol-props', title: 'Symbol and motion', icon: 'tween', component: PropertiesPanel, zone: 'right', order: 35, help: 'symbol-properties' });
+registerPanel({ id: 'library', title: 'Library', icon: 'symbol', component: lazyPanel(() => import('./LibraryPanel').then((m) => m.LibraryPanel)), zone: 'right', order: 30, help: 'symbols' });
+registerPanel({ id: 'symbol-props', title: 'Symbol and motion', icon: 'tween', component: lazyPanel(() => import('./PropertiesPanel').then((m) => m.PropertiesPanel)), zone: 'right', order: 35, help: 'symbol-properties' });
 
 const inside = (s: State) => !!s.doc.editing?.length;
 const tweenHere = (s: State) => {

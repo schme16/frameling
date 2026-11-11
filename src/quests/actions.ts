@@ -9,7 +9,6 @@ import { editActiveDrawing } from '../tools/edit';
 import { setFillOptions, getFillOptions, type GapPreset } from '../tools/fill-options';
 import { docFromPreset, PRESETS } from '../ui/presets';
 import { closeSheet } from '../ui/overlays';
-import { findTemplate } from '../templates';
 import { syncDynamicCommands } from '../ui/dynamic';
 import { toast } from '../ui/toast';
 import { closedShapeCenter, hasInkAt, hasPixelLayer, hasVectorLayer } from './predicates';
@@ -93,7 +92,7 @@ export function ensureTinySpritePage(): boolean | Promise<boolean> {
 
 /** Loads the Bouncing ball example. */
 export async function loadBouncingBall(): Promise<void> {
-  const t = findTemplate('bouncing-ball');
+  const t = (await import('../templates')).findTemplate('bouncing-ball');
   if (!t) return;
   if (!(await askAboutUnsavedChanges())) return;
   store().load(t.make());

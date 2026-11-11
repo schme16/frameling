@@ -1,0 +1,117 @@
+{
+  "label": "web",
+  "mode": "web",
+  "cpu": "AMD Ryzen 9 7900X 12-Core Processor",
+  "firstLaunchMs": 328,
+  "medianFromLaunchMs": 306,
+  "medianPageMs": 184,
+  "cpuSlowdown": 4,
+  "medianThrottledPageMs": 163,
+  "initialJs": {
+    "files": [
+      "assets/index-Bzv-d77_.js"
+    ],
+    "kB": 1811,
+    "gzipKB": 579
+  },
+  "offline": {
+    "pageMs": 176,
+    "lazy": {
+      "errors": [],
+      "loaded": []
+    }
+  },
+  "runs": [
+    {
+      "timeOrigin": 1794401986356.5,
+      "interactive": 201.09999999403954,
+      "domContentLoaded": 95.5,
+      "fcp": null,
+      "jsFiles": [
+        "index-Bzv-d77_.js"
+      ],
+      "jsBytes": 1854140,
+      "fromSpawnMs": 328,
+      "pageMs": 201,
+      "throttledPageMs": 385
+    },
+    {
+      "timeOrigin": 1794401990206,
+      "interactive": 355,
+      "domContentLoaded": 185.89999999850988,
+      "fcp": null,
+      "jsFiles": [
+        "index-Bzv-d77_.js"
+      ],
+      "jsBytes": 1854140,
+      "fromSpawnMs": 571,
+      "pageMs": 355,
+      "throttledPageMs": 388
+    },
+    {
+      "timeOrigin": 1794401991150.4,
+      "interactive": 186.29999999701977,
+      "domContentLoaded": 63.100000001490116,
+      "fcp": null,
+      "jsFiles": [
+        "index-Bzv-d77_.js"
+      ],
+      "jsBytes": 1854140,
+      "fromSpawnMs": 320,
+      "pageMs": 186,
+      "throttledPageMs": 163
+    },
+    {
+      "timeOrigin": 1794401991667.4,
+      "interactive": 163.29999999701977,
+      "domContentLoaded": 57,
+      "fcp": null,
+      "jsFiles": [
+        "index-Bzv-d77_.js"
+      ],
+      "jsBytes": 1854140,
+      "fromSpawnMs": 288,
+      "pageMs": 163,
+      "throttledPageMs": 159
+    },
+    {
+      "timeOrigin": 1794401992158.2,
+      "interactive": 183.70000000298023,
+      "domContentLoaded": 56.899999998509884,
+      "fcp": null,
+      "jsFiles": [
+        "index-Bzv-d77_.js"
+      ],
+      "jsBytes": 1854140,
+      "fromSpawnMs": 306,
+      "pageMs": 184,
+      "throttledPageMs": 163
+    },
+    {
+      "timeOrigin": 1794401992670.4,
+      "interactive": 156.29999999701977,
+      "domContentLoaded": 57.19999999552965,
+      "fcp": null,
+      "jsFiles": [
+        "index-Bzv-d77_.js"
+      ],
+      "jsBytes": 1854140,
+      "fromSpawnMs": 278,
+      "pageMs": 156,
+      "throttledPageMs": 161
+    },
+    {
+      "timeOrigin": 1794401993145.6,
+      "interactive": 182,
+      "domContentLoaded": 58.100000001490116,
+      "fcp": null,
+      "jsFiles": [
+        "index-Bzv-d77_.js"
+      ],
+      "jsBytes": 1854140,
+      "fromSpawnMs": 304,
+      "pageMs": 182,
+      "throttledPageMs": 162
+    }
+  ]
+}
