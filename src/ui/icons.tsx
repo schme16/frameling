@@ -5,6 +5,28 @@ import type { ReactNode } from 'react';
 const dot = (cx: number, cy: number, r = 1.2) => <circle cx={cx} cy={cy} r={r} fill="currentColor" stroke="none" />;
 
 const ICONS: Record<string, ReactNode> = {
+  // symbols and tweens
+  symbol: (
+    <>
+      <rect x="4" y="7" width="11" height="11" rx="2.5" />
+      <path d="M9 4h8.5A2.5 2.5 0 0 1 20 6.5V15" />
+    </>
+  ),
+  tween: (
+    <>
+      {dot(5, 12, 2.2)}
+      {dot(19, 12, 2.2)}
+      <path d="M8 12h7.5" />
+      <path d="M13 9l3 3-3 3" />
+    </>
+  ),
+  path: (
+    <>
+      <path d="M4 18c3-9 6 3 9-5s5-6 7-6" strokeDasharray="2.5 3" />
+      {dot(4, 18, 2)}
+      <path d="M17 4.5l3 2.5-3 2.5" />
+    </>
+  ),
   // drawing tools
   brush: (
     <>
@@ -41,6 +63,19 @@ const ICONS: Record<string, ReactNode> = {
     </>
   ),
   select: <path d="M6.2 4.4l11.6 6-5.1 1.6-2.1 5.2z" />,
+  lasso: (
+    <>
+      <path d="M8.5 15.5C5.2 14.6 3 12.6 3 10.2 3 6.8 7 4 12 4s9 2.8 9 6.2-4 6.2-9 6.2" />
+      <path d="M8.8 15.3c-.9 1.6-.5 3.3 1 3.9 1.4.6 1.6 1.7.7 2.8" />
+    </>
+  ),
+  wand: (
+    <>
+      <path d="M4 20l10-10" />
+      <path d="M16.5 3.5v3m0 4v3m-5-5h3m4 0h3" />
+      <path d="M13 11l-2-2" />
+    </>
+  ),
   hand: <path d="M9 11.5V5.7a1.5 1.5 0 0 1 3 0V10m0-1.8a1.5 1.5 0 0 1 3 0v2.3m0-.8a1.5 1.5 0 0 1 3 0v4.6a6 6 0 0 1-6 6h-.6a6 6 0 0 1-4.7-2.3l-3-3.9a1.5 1.5 0 0 1 2.3-1.9L9 14.2" />,
   zoom: (
     <>

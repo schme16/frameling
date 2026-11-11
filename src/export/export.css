@@ -308,19 +308,6 @@
   color: var(--chosen-fg);
   border-color: transparent;
 }
-.ex-engines-b .ex-engine-row,
-.ex-engines-b .ex-engine-row:not(.ex-engine-games) {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-.ex-engines-b .ex-engine {
-  display: inline-flex;
-  min-height: 0;
-  gap: 6px;
-  padding: 5px 12px;
-  border-radius: var(--radius-pill);
-}
 .ex-link {
   font: inherit;
   color: var(--accent);

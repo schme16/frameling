@@ -4,7 +4,7 @@
  * playing over held drawings with a glow blurs nothing new.
  */
 import type { Doc, Layer } from '../core/format';
-import { drawingAt } from '../core/doc';
+import { poseAt, poseLive } from '../core/symbols';
 import { drawDrawing } from '../core/render';
 import type { FramePainter, FrameParams } from '../canvas/pipeline';
 import type { Ctx } from './apply';
@@ -30,7 +30,7 @@ export function paintComposited(painter: FramePainter, g: CanvasRenderingContext
       lg.restore();
       return;
     }
-    const drawing = lv?.kind === 'vector' || lv?.kind === 'tilemap' ? lv.drawing : drawingAt(doc, layer, p.frame);
+    const drawing = lv?.kind === 'vector' ? poseLive(doc, layer, p.frame, lv.drawing) : lv?.kind === 'tilemap' ? lv.drawing : poseAt(doc, layer, p.frame);
     if (!drawing) return;
     if (drawing.kind === 'vector' && cacheable && !lv) {
       lg.save();
@@ -51,7 +51,7 @@ export function paintComposited(painter: FramePainter, g: CanvasRenderingContext
   };
   const key = (layer: Layer) => {
     if (p.live?.layerId === layer.id || layer.kind === 'tilemap') return undefined;
-    return drawingAt(doc, layer, p.frame);
+    return poseAt(doc, layer, p.frame);
   };
 
   g.save();

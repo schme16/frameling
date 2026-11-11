@@ -108,17 +108,17 @@ On a **pixel layer** the line is one pixel wide, and **Shift** snaps it to the c
     section: 'Drawing',
     media: 'select.png',
     summary: 'Pick shapes and lines to move, resize, turn, copy or delete.',
-    keywords: ['move', 'resize', 'scale', 'rotate', 'turn', 'marquee', 'transform'],
+    keywords: ['move', 'resize', 'scale', 'rotate', 'turn', 'marquee', 'transform', 'lasso'],
     body: `Press **V**.
 
 - **Click** a line or shape to select it. **Shift+click** adds more, or takes one off.
-- **Drag a box** round several to select them all.
+- **Drag a box** round several to select them all. Or pick **Lasso** in the options (or press **L**) and draw round them. See [Lasso](help:lasso).
 - **Drag a selection** to move it. Hold **Shift** to keep it in a straight line.
 - **Drag a corner** to resize. Hold **Shift** to keep its proportions, **Alt** to resize from the middle.
 - **Drag the round handle** above to turn it. Hold **Shift** to snap to neat angles.
 - **Arrow keys** nudge it by one pixel, or ten with Shift.
 
-Everything you do in one drag is one undo step. Selecting works on vector layers, and picks from the frame you're on.
+Everything you do in one drag is one undo step. Selecting picks from the frame you're on. On a pixel layer, Select picks pixels instead: see [Selecting pixels](help:pixel-select).
 
 See [Selecting and moving](help:selecting) for the keyboard shortcuts.`,
   },
@@ -167,7 +167,9 @@ You can also zoom with **Ctrl+scroll**, or with **Ctrl+=** and **Ctrl+-**. **Ctr
 - **Escape** lets go of the selection.
 - **Arrow keys** move the selection by one pixel. Add **Shift** to move ten.
 
-Nudging a few times in a row counts as one change, so one Undo takes it back.`,
+Nudging a few times in a row counts as one change, so one Undo takes it back.
+
+On a pixel layer these pick and move pixels, and **Ctrl+Shift+I** inverts the selection. See [Selecting pixels](help:pixel-select).`,
   },
   {
     id: 'copy-paste',
@@ -183,7 +185,7 @@ Nudging a few times in a row counts as one change, so one Undo takes it back.`,
 
 Pasting onto a different frame puts them in exactly the same place, which is handy for reusing a pose. Pasting onto the same frame puts the copy a little to the side. The pasted shapes are selected, ready to move.
 
-Copy and paste works between frames and layers of the same kind, inside Frameling.`,
+Copy and paste works between frames and layers of the same kind, inside Frameling. On a pixel layer it copies the selected pixels: see [Selecting pixels](help:pixel-select).`,
   },
   {
     id: 'duplicate-delete',

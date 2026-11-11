@@ -1,0 +1,4 @@
+How in-betweens (tweens) show on the timeline, on the Bouncing logo example's Logo layer.
+A (built, default): a soft purple band with an arrow from one key to the next (dashed with no arrow when the keys don't touch).
+B: one bead per in-between frame, placed by the easing, so bunched beads read as slow and spread ones as fast.
+B can be tried in the app with document.documentElement.dataset.tweenLook = 'beads' (the CSS for both is in src/symbols/symbols.css).

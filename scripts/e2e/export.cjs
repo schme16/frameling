@@ -11,8 +11,8 @@
 //   xvfb-run -a npx electron scripts/e2e/export.cjs [outDir] [options]
 //
 //   outDir               where outputs and the report go (default: a fresh folder under the system temp dir)
-//   --only=gif,mp4       only these formats (mp4 webm gif apng png pngseq svg sheet)
-//   --templates=a,b      only these templates (bouncing-ball hero-sprites blank-vector blank-pixel stress)
+//   --only=gif,mp4       only these formats (mp4 webm gif apng png pngseq svg sheet interactives)
+//   --templates=a,b      only these templates (bouncing-ball hero-sprites blank-vector blank-pixel bouncing-logo stress)
 //   --skip=files         skip a part: files (save/open/autosave/close), godot
 //   --show               leave the window visible (needs a real display)
 //   GODOT_BIN=/path/to/godot-4-editor    also loads the sprite sheet files in Godot
@@ -32,7 +32,7 @@ const argv = process.argv.slice(2).filter((a) => !a.endsWith('export.cjs'));
 const flag = (n) => argv.find((a) => a.startsWith(`--${n}=`))?.split('=')[1]?.split(',');
 const outDir = path.resolve(argv.find((a) => !a.startsWith('--')) ?? fs.mkdtempSync(path.join(os.tmpdir(), 'frameling-e2e-')));
 const ONLY = flag('only');
-const TEMPLATES = flag('templates') ?? ['bouncing-ball', 'hero-sprites', 'blank-vector', 'blank-pixel', 'stress'];
+const TEMPLATES = flag('templates') ?? ['bouncing-ball', 'hero-sprites', 'blank-vector', 'blank-pixel', 'bouncing-logo', 'stress'];
 const SKIP = flag('skip') ?? [];
 const GODOT = process.env.GODOT_BIN;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -404,6 +404,43 @@ async function vPngSeq(file, s, exp, caseCtx) {
   check(listing.every((n) => !n.includes('/')), 'zip entries sit in a folder');
 }
 
+// The Interactives package: a zip with the manifest and the atlas; the first and last frames put back together from
+// the atlas must match the PNG export of the same frame.
+async function vPlayable(file, s, exp, caseCtx) {
+  if (!need('unzip')) return;
+  const dir = path.join(path.dirname(file), '_zip');
+  fs.rmSync(dir, { recursive: true, force: true });
+  fs.mkdirSync(dir);
+  check(sh('unzip', ['-tq', file]).status === 0, 'unzip -t failed');
+  check(sh('unzip', ['-q', file, '-d', dir]).status === 0, 'unzip failed');
+  const names = fs.readdirSync(dir).sort();
+  check(names.includes('manifest.json') && names.includes('atlas.png'), `missing files: ${names}`);
+  check(names.includes('source.frameling') === (s.includeSource !== false), `source.frameling ${names.includes('source.frameling') ? 'there' : 'missing'}`);
+  const m = JSON.parse(fs.readFileSync(path.join(dir, 'manifest.json'), 'utf8'));
+  note(`${m.cells.length} pictures for ${m.frameCount} frames, atlas ${m.atlas.width}x${m.atlas.height}, clips ${m.clips.map((c) => c.name).join(' ')}`);
+  check(m.format === 'frameling-playable' && m.version === 1, 'not a frameling-playable manifest');
+  check(m.frameCount === exp.count && m.frames.length === exp.count, `${m.frameCount} frames, wanted ${exp.count}`);
+  check(m.frames.every((c) => c >= 0 && c < m.cells.length), 'a frame points at a picture that is not there');
+  check(m.clips.every((c) => c.start >= 0 && c.end < m.frameCount && c.start <= c.end), 'a clip is outside the frames');
+  check(m.background === (caseCtx.transparent ? null : m.background), 'background should be null when see-through');
+  const atlas = path.join(dir, 'atlas.png');
+  if (need('identify')) {
+    const d = identify(atlas)[0];
+    check(d[0] === m.atlas.width && d[1] === m.atlas.height, `atlas is ${d}, manifest says ${m.atlas.width}x${m.atlas.height}`);
+  }
+  if (!need('convert', 'compare')) return;
+  for (const k of [0, exp.count - 1]) {
+    const c = m.cells[m.frames[k]];
+    const out = path.join(dir, `_frame${k}.png`);
+    const bg = caseCtx.transparent ? 'none' : m.background;
+    const r = sh('convert', ['-size', `${exp.width}x${exp.height}`, `xc:${bg}`, '(', atlas, '-crop', `${c.w}x${c.h}+${c.x}+${c.y}`, '+repage', ')', '-geometry', `+${c.ox}+${c.oy}`, '-composite', out]);
+    if (!check(r.status === 0, `could not put frame ${k + 1} together: ${r.err.slice(0, 120)}`)) continue;
+    const ref = await reference(s, exp.plan.range.start + k, caseCtx.transparent);
+    const e = ref && rmse(out, ref);
+    if (e !== null && e !== undefined) check(e < TOL.lossless, `frame ${k + 1} differs from the PNG export (rmse ${e.toFixed(5)})`);
+  }
+}
+
 async function vSvg(file, s, exp, caseCtx) {
   const text = fs.readFileSync(file, 'utf8');
   if (need('xmllint')) {
@@ -566,8 +603,8 @@ func _init():
 
 // ---------------------------------------------------------------- the export matrix
 
-const ALL_FORMATS = ['png', 'svg', 'pngseq', 'apng', 'gif', 'mp4', 'webm', 'sheet'];
-const ANIM = new Set(['pngseq', 'apng', 'gif', 'mp4', 'webm', 'sheet']);
+const ALL_FORMATS = ['png', 'svg', 'pngseq', 'apng', 'gif', 'mp4', 'webm', 'sheet', 'interactives'];
+const ANIM = new Set(['pngseq', 'apng', 'gif', 'mp4', 'webm', 'sheet', 'interactives']);
 
 function listFiles(dir) {
   return fs.readdirSync(dir).filter((n) => !n.startsWith('_') && fs.statSync(path.join(dir, n)).isFile());
@@ -613,9 +650,9 @@ async function runCase(tpl, fmt, label, edit, opts = {}) {
     if (!check(files.length === 1, `expected 1 file, found ${files.length}: ${files}`)) return;
     const f = path.join(dir, files[0]);
     note(`${files[0]} ${fs.statSync(f).size} bytes`);
-    const ext = { mp4: '.mp4', webm: '.webm', gif: '.gif', apng: '.png', png: '.png', pngseq: '.zip', svg: '.svg' }[fmt];
+    const ext = { mp4: '.mp4', webm: '.webm', gif: '.gif', apng: '.png', png: '.png', pngseq: '.zip', svg: '.svg', interactives: '.flplay' }[fmt];
     check(files[0].endsWith(ext), `file name ${files[0]} does not end in ${ext}`);
-    const v = { mp4: vVideo, webm: vVideo, gif: vGif, apng: vApng, png: vPng, pngseq: vPngSeq, svg: vSvg }[fmt];
+    const v = { mp4: vVideo, webm: vVideo, gif: vGif, apng: vApng, png: vPng, pngseq: vPngSeq, svg: vSvg, interactives: vPlayable }[fmt];
     await v(f, settings, exp, caseCtx);
   } catch (e) {
     fail(`harness error: ${e?.stack ?? e}`);
@@ -665,6 +702,11 @@ async function exportMatrix() {
         for (const engine of ['phaser', 'pixi', 'unity', 'css']) await runCase(tpl, fmt, engine, (s) => ({ ...s, sheet: { ...s.sheet, engine, layout: 'packed', trim: true, padding: 1, json: false } }));
         // The phase 2 test: the hero at art size, packed, straight into Godot.
         if (tpl === 'hero-sprites') await runCase(tpl, fmt, 'art-size-godot', (s) => ({ ...s, scale: 1 / 8, transparent: true, sheet: { ...s.sheet, engine: 'godot', godotScene: true, json: true, layout: 'packed', trim: true, padding: 1, extrude: 1, godotPath: '' } }));
+      }
+      if (fmt === 'interactives') {
+        // What Interactives' own tests use as fixtures: small, see-through, without the editable drawing.
+        if (tpl === 'hero-sprites') await runCase(tpl, fmt, 'art-size', (s) => ({ ...s, scale: 1 / 8, transparent: true, includeSource: false }));
+        if (tpl === 'bouncing-ball') await runCase(tpl, fmt, 'quarter', (s) => ({ ...s, scale: 0.25, transparent: true, includeSource: false }));
       }
       if (tpl === 'bouncing-ball') {
         // Odd sizes: videos pad to even, everything else keeps the exact size.

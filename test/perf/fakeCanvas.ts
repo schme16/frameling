@@ -35,6 +35,7 @@ function fakeCtx(canvas: unknown) {
     getTransform: () => ({}),
     scale: noop,
     translate: noop,
+    transform: noop,
     clearRect: noop,
     fillRect: noop,
     beginPath: noop,

@@ -6,8 +6,10 @@
  */
 import { readFolders, readLayerLook } from '../effects/io';
 import { strFromU8, strToU8, unzipSync, zipSync, type Zippable } from 'fflate';
-import { FORMAT_VERSION, type Cel, type Doc, type Drawing, type Layer, type Shape, type Tile, type Tileset } from '../core/format';
+import { FORMAT_VERSION, type Cel, type Doc, type Drawing, type Layer, type Shape, type SymbolDef, type Tween, type InstanceShape, type Tile, type Tileset } from '../core/format';
 import { decodePng, encodePng } from './png';
+import { rootDoc } from '../core/symbols';
+import { isEasing } from '../core/ease';
 
 export const FILE_EXTENSION = 'frameling';
 
@@ -49,7 +51,9 @@ function pngFor(d: { width: number; height: number; pixels: Uint8ClampedArray })
 
 const safeName = (id: string) => id.replace(/[^A-Za-z0-9_-]/g, '_');
 
-export function saveFile(doc: Doc, appVersion = '', now: Date = new Date()): Uint8Array {
+export function saveFile(open: Doc, appVersion = '', now: Date = new Date()): Uint8Array {
+  // Saved as if no symbol were open for editing.
+  const doc = rootDoc(open);
   const files: Zippable = {};
   const drawings: Record<string, unknown> = {};
   const used = new Set<string>();
@@ -93,7 +97,7 @@ export function migrate(raw: any, from: number): any {
 
 // ---------------------------------------------------------------- loading
 
-const SHAPE_TYPES = new Set(['stroke', 'fill', 'path']);
+const SHAPE_TYPES = new Set(['stroke', 'fill', 'path', 'instance']);
 const MAX_UNZIPPED = 1024 * 1024 * 1024;
 
 function isObj(v: unknown): v is Record<string, any> {
@@ -149,7 +153,7 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
       continue;
     }
     if (d.kind === 'vector') {
-      const shapes: Shape[] = Array.isArray(d.shapes) ? d.shapes.filter((s: any) => isObj(s) && SHAPE_TYPES.has(s.type)) : [];
+      const shapes: Shape[] = Array.isArray(d.shapes) ? d.shapes.filter((s: any) => isObj(s) && SHAPE_TYPES.has(s.type)).map((s: any) => (s.type === 'instance' ? readInstance(s) : s)).filter((s: Shape | null): s is Shape => !!s) : [];
       if (!Array.isArray(d.shapes) || shapes.length !== d.shapes.length) warnings.push('Some shapes could not be read and were left out.');
       drawings[id] = { id: str(d.id, id), kind: 'vector', shapes };
     } else if (d.kind === 'pixel') {
@@ -175,38 +179,43 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
     }
   }
 
-  const layers: Layer[] = [];
-  for (const l of raw.layers) {
-    if (!isObj(l) || (l.kind !== 'vector' && l.kind !== 'pixel' && l.kind !== 'tilemap')) throw damaged();
-    const cels: Cel[] = [];
-    for (const c of Array.isArray(l.cels) ? l.cels : []) {
-      if (!isObj(c) || typeof c.drawingId !== 'string' || !drawings[c.drawingId]) {
-        warnings.push('Some frames pointed at a missing drawing and were left empty.');
-        continue;
+  // The same reader does the stage's layers and every symbol's.
+  const readLayers = (rawLayers: any[]): Layer[] => {
+    const layers: Layer[] = [];
+    for (const l of rawLayers) {
+      if (!isObj(l) || (l.kind !== 'vector' && l.kind !== 'pixel' && l.kind !== 'tilemap')) throw damaged();
+      const cels: Cel[] = [];
+      for (const c of Array.isArray(l.cels) ? l.cels : []) {
+        if (!isObj(c) || typeof c.drawingId !== 'string' || !drawings[c.drawingId]) {
+          warnings.push('Some frames pointed at a missing drawing and were left empty.');
+          continue;
+        }
+        const d = drawings[c.drawingId];
+        if (d.kind !== l.kind) {
+          warnings.push('A frame held the wrong kind of drawing for its layer and was left empty.');
+          continue;
+        }
+        cels.push({ id: str(c.id, c.drawingId + '-cel'), start: Math.max(0, Math.round(num(c.start, 0))), length: Math.max(1, Math.round(num(c.length, 1))), drawingId: c.drawingId, ...readTween(c.tween) });
       }
-      const d = drawings[c.drawingId];
-      if (d.kind !== l.kind) {
-        warnings.push('A frame held the wrong kind of drawing for its layer and was left empty.');
-        continue;
-      }
-      cels.push({ id: str(c.id, c.drawingId + '-cel'), start: Math.max(0, Math.round(num(c.start, 0))), length: Math.max(1, Math.round(num(c.length, 1))), drawingId: c.drawingId });
+      cels.sort((a, b) => a.start - b.start);
+      const base = {
+        id: str(l.id, 'layer' + layers.length),
+        name: str(l.name, 'Layer ' + (layers.length + 1)),
+        visible: bool(l.visible, true),
+        locked: bool(l.locked, false),
+        opacity: Math.min(1, Math.max(0, num(l.opacity, 1))),
+        ...(l.onion === false ? { onion: false } : {}),
+        ...(l.reference === true ? { reference: true } : {}),
+        ...readLayerLook(l),
+        cels,
+      };
+      if (l.kind === 'pixel') layers.push({ ...base, kind: 'pixel', pixelSize: Math.max(1, Math.round(num(l.pixelSize, 1))), ...(l.paletteLock === true ? { paletteLock: true } : {}) });
+      else if (l.kind === 'tilemap') layers.push({ ...base, kind: 'tilemap', pixelSize: Math.max(1, Math.round(num(l.pixelSize, 1))) });
+      else layers.push({ ...base, kind: 'vector', ...(l.drawMode === 'merge' ? { drawMode: 'merge' as const } : {}) });
     }
-    cels.sort((a, b) => a.start - b.start);
-    const base = {
-      id: str(l.id, 'layer' + layers.length),
-      name: str(l.name, 'Layer ' + (layers.length + 1)),
-      visible: bool(l.visible, true),
-      locked: bool(l.locked, false),
-      opacity: Math.min(1, Math.max(0, num(l.opacity, 1))),
-      ...(l.onion === false ? { onion: false } : {}),
-      ...(l.reference === true ? { reference: true } : {}),
-      ...readLayerLook(l),
-      cels,
-    };
-    if (l.kind === 'pixel') layers.push({ ...base, kind: 'pixel', pixelSize: Math.max(1, Math.round(num(l.pixelSize, 1))), ...(l.paletteLock === true ? { paletteLock: true } : {}) });
-    else if (l.kind === 'tilemap') layers.push({ ...base, kind: 'tilemap', pixelSize: Math.max(1, Math.round(num(l.pixelSize, 1))) });
-    else layers.push({ ...base, kind: 'vector', ...(l.drawMode === 'merge' ? { drawMode: 'merge' as const } : {}) });
-  }
+    return layers;
+  };
+  const layers = readLayers(raw.layers);
   const unique = new Set(layers.map((l) => l.id));
   if (unique.size !== layers.length) throw damaged();
 
@@ -228,9 +237,62 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
     swatches: Array.isArray(raw.swatches) ? raw.swatches.filter((s: any) => isObj(s) && typeof s.id === 'string' && typeof s.color === 'string') : [],
     ...readPalette(raw.palette),
     ...readFolders(raw.folders, layers),
+    ...readSymbols(raw.symbols, readLayers, warnings),
   };
   if (tileset) doc.tileset = tileset;
   return doc;
+}
+
+/** Symbols, if the file has any. One that can't be read is dropped (its instances then show nothing). */
+function readSymbols(raw: unknown, readLayers: (l: any[]) => Layer[], warnings: string[]): { symbols?: Record<string, SymbolDef> } {
+  if (!isObj(raw)) return {};
+  const symbols: Record<string, SymbolDef> = {};
+  for (const [id, s] of Object.entries<any>(raw)) {
+    if (!isObj(s) || !Array.isArray(s.layers)) {
+      warnings.push('A symbol could not be read and was left out.');
+      continue;
+    }
+    let layers: Layer[];
+    try {
+      layers = readLayers(s.layers);
+    } catch {
+      warnings.push('A symbol could not be read and was left out.');
+      continue;
+    }
+    const o = isObj(s.origin) ? s.origin : {};
+    symbols[id] = { id, name: str(s.name, 'Symbol'), layers, length: Math.max(1, Math.round(num(s.length, 1))), origin: { x: num(o.x, 0), y: num(o.y, 0) } };
+  }
+  return Object.keys(symbols).length ? { symbols } : {};
+}
+
+/** A key's in-betweens, if it has readable ones. */
+function readTween(t: unknown): { tween?: Tween } {
+  if (!isObj(t)) return {};
+  const tween: Tween = { ease: isEasing(t.ease) ? t.ease : 'linear' };
+  if (typeof t.spin === 'number' && Number.isFinite(t.spin) && t.spin) tween.spin = Math.round(t.spin);
+  if (isObj(t.path) && Array.isArray(t.path.points)) {
+    const points = t.path.points.filter((p: any) => isObj(p) && Number.isFinite(p.x) && Number.isFinite(p.y)).map((p: any) => ({ x: p.x, y: p.y, ...(isObj(p.c1) && isObj(p.c2) ? { c1: { x: num(p.c1.x, p.x), y: num(p.c1.y, p.y) }, c2: { x: num(p.c2.x, p.x), y: num(p.c2.y, p.y) } } : {}) }));
+    if (points.length > 1) tween.path = { points, orient: bool(t.path.orient, false) };
+  }
+  return { tween };
+}
+
+/** An instance shape with every field present and sane, or null. */
+function readInstance(s: any): InstanceShape | null {
+  if (typeof s.symbolId !== 'string' || typeof s.id !== 'string') return null;
+  const t = isObj(s.transform) ? s.transform : {};
+  const tint = isObj(s.tint) && typeof s.tint.color === 'string' ? { color: s.tint.color, amount: Math.min(1, Math.max(0, num(s.tint.amount, 0))) } : undefined;
+  return {
+    id: s.id,
+    ...(typeof s.group === 'string' ? { group: s.group } : {}),
+    type: 'instance',
+    symbolId: s.symbolId,
+    transform: { x: num(t.x, 0), y: num(t.y, 0), scaleX: num(t.scaleX, 1), scaleY: num(t.scaleY, 1), rotation: num(t.rotation, 0), skew: num(t.skew, 0) },
+    opacity: Math.min(1, Math.max(0, num(s.opacity, 1))),
+    ...(tint ? { tint } : {}),
+    play: s.play === 'once' || s.play === 'single' ? s.play : 'loop',
+    firstFrame: Math.max(0, Math.round(num(s.firstFrame, 0))),
+  };
 }
 
 /** The tileset, checked: tiles keep only frames whose pixels exist at the tile size, and keys stay unique. */

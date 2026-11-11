@@ -144,7 +144,9 @@ export function contentLength(doc: Doc): number {
 /** Removes drawings no cel (and no tile) points at. */
 export function pruneDrawings(doc: Doc): void {
   const used = new Set<string>();
-  for (const l of doc.layers) for (const c of l.cels) used.add(c.drawingId);
+  // Symbols' layers (and layers set aside while one is open) use the same drawings.
+  const lists: Layer[][] = [doc.layers, ...(doc.editing ?? []).map((f) => f.layers), ...Object.values(doc.symbols ?? {}).map((s) => s.layers)];
+  for (const list of lists) for (const l of list) for (const c of l.cels) used.add(c.drawingId);
   for (const t of doc.tileset?.tiles ?? []) for (const f of t.frames) used.add(f.drawingId);
   for (const id of Object.keys(doc.drawings)) if (!used.has(id)) delete doc.drawings[id];
 }

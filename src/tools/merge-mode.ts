@@ -279,11 +279,11 @@ registerHelp({
   media: 'merge-drawing.mp4',
   summary: 'Choose per layer: shapes that stay separate (object drawing), or shapes that cut and join like paint (merge drawing).',
   keywords: ['merge drawing', 'object drawing', 'flash', 'cut', 'join', 'group', 'break apart', 'shapes'],
-  body: `Each vector layer has a setting for how new shapes meet the ones already there. You'll find it at the top of the tool options, and **J** switches it.
+  body: `Each vector layer has a **Merge shapes together** switch at the top of the tool options, and **J** flips it.
 
-**Keep separate** (object drawing) is how layers start. Every line and shape stays on its own. You can click it later, move it, and everything under it is still there.
+**Off** (object drawing) is how layers start. Every line and shape stays on its own. You can click it later, move it, and everything under it is still there.
 
-**Merge together** (merge drawing) works like paint:
+**On** (merge drawing) works like paint:
 - Draw over the **same colour** and the two join into one shape.
 - Draw a **different colour** on top and it cuts away what's underneath. Move it off again and there's a hole.
 - A line drawn **across** a filled shape splits it, so the paint bucket and Select work on each side by itself.

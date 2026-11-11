@@ -82,7 +82,7 @@ To use the level in a game, see [Exporting a tileset](help:export-tileset).`,
     media: 'tile-mode.mp4',
     summary: 'Shows your drawing repeated on every side, and drawing off one edge carries on at the other. For seamless tiles and patterns.',
     keywords: ['seamless', 'wrap', 'repeat', 'pattern', 'tiling', 'texture', 'tile mode'],
-    body: `**Tile mode** shows eight copies of the stage around it, so you can see how your drawing looks when it repeats. A dashed frame marks the real one.
+    body: `**Tile mode** shows eight copies of the stage around it, so you can see how your drawing looks when it repeats. A dashed frame marks the real one. The copies show at full strength, exactly as the tiles will repeat in a game. To make the tile you're drawing stand out, turn on **Fade tile copies** in **Preferences > General**.
 
 Turn it on with **View > Tile mode** or **Shift+T**. It comes on by itself when you open a tile from the [Tileset panel](help:tileset).
 

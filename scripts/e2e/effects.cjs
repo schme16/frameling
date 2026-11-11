@@ -30,7 +30,7 @@ const px = (data, x, y) => data.slice((y * W + x) * 4, (y * W + x) * 4 + 4);
 const near = (a, b, tol) => a.every((v, i) => Math.abs(v - b[i]) <= tol);
 
 const cases = [];
-const add = (name, d, checks, frame = 0) => cases.push({ name, d, checks, frame });
+const add = (name, d, checks, frame = 0, editor = false) => cases.push({ name, d, checks, frame, editor });
 
 const full = (c) => [rect('r' + n, 0, 0, W, H, c)];
 
@@ -90,6 +90,23 @@ add('glow around the drawing', doc([layer('a', box(), { effects: [{ id: 'g', kin
 ]);
 add('colour adjust: no brightness is black', doc([layer('a', full('#ff8800'), { effects: [{ id: 'c', kind: 'adjust', values: { hue: 0, saturation: 100, brightness: 0, contrast: 100 } }] })]), [[4, 4, [0, 0, 0, 255], 1]]);
 add('pixelate averages squares', doc([layer('a', [rect('a', 0, 0, 2, 4, '#000000'), rect('b', 2, 0, 2, 4, '#ffffff')], { effects: [{ id: 'p', kind: 'pixelate', values: { size: 4 } }] })]), [[1, 1, [128, 128, 128, 255], 30]]);
+{
+  // A symbol instance on a layer with an outline and a blend mode: the instance's posed drawing goes through the
+  // compositor in the editor and in exports alike.
+  const inner = layer('inner', [rect('i', 6, 6, 4, 4, '#000000')]);
+  const inst = { id: 'inst', type: 'instance', symbolId: 'sym', transform: { x: 0, y: 0, scaleX: 1, scaleY: 1, rotation: 0, skew: 0 }, opacity: 1, play: 'loop', firstFrame: 0 };
+  const stage = layer('stage', [inst], { effects: [{ id: 'o', kind: 'outline', values: { color: '#ff0000', width: 2 } }] });
+  const d = doc([layer('bg', full('#ffff00')), stage], { symbols: { sym: { id: 'sym', name: 'Box', layers: [inner.layer], length: 20, origin: { x: 0, y: 0 } } } });
+  d.drawings[inner.drawing.id] = inner.drawing;
+  d.layers[1].blend = 'multiply';
+  add('symbol instance with an outline and multiply', d, [
+    [7, 7, [0, 0, 0, 255], 2],
+    [5, 7, [255, 0, 0, 255], 2],
+    [1, 1, [255, 255, 0, 255], 1],
+    [3, 12, [255, 255, 0, 255], 1],
+    [12, 12, [255, 255, 0, 255], 1],
+  ], 0, true);
+}
 const anim = () => [{ id: 'a', kind: 'blur', values: { radius: 0 }, keys: [{ frame: 0, values: { radius: 0 } }, { frame: 10, values: { radius: 3 } }] }];
 add('animated blur, frame 1: sharp', doc([layer('a', box(), { effects: anim() })]), [[5, 8, [255, 255, 255, 255], 1]], 0);
 add('animated blur, frame 11: soft', doc([layer('a', box(), { effects: anim() })]), [[5, 8, [200, 200, 200, 255], 50]], 10);
@@ -98,7 +115,7 @@ app.whenReady().then(async () => {
   for (const ch of ['app:launchFile', 'autosave:read', 'autosave:readKept']) ipcMain.handle(ch, () => null);
   for (const ch of ['recent:list', 'autosave:listKept']) ipcMain.handle(ch, () => []);
   for (const ch of ['autosave:write', 'autosave:clear', 'autosave:keep', 'autosave:removeKept', 'recent:add', 'recent:remove', 'recent:clear', 'app:documentState']) ipcMain.handle(ch, () => true);
-  const win = new BrowserWindow({ show: false, width: 400, height: 300, webPreferences: { preload: path.join(__dirname, '../../dist/preload/preload.cjs'), contextIsolation: true, sandbox: true, backgroundThrottling: false } });
+  const win = new BrowserWindow({ show: false, width: 1280, height: 800, webPreferences: { preload: path.join(__dirname, '../../dist/preload/preload.cjs'), contextIsolation: true, sandbox: true, backgroundThrottling: false } });
   await win.loadFile(path.join(__dirname, '../../dist/renderer/index.html'), { query: { debug: '1' } });
   let failed = 0;
   for (const c of cases) {
@@ -107,6 +124,13 @@ app.whenReady().then(async () => {
     for (const [x, y, want, tol] of c.checks) {
       const got = px(data, x, y);
       if (!near(got, want, tol)) bad.push(`(${x},${y}) got ${got.join(',')} want ${want.join(',')} ±${tol}`);
+    }
+    if (c.editor) {
+      // The same pixels on the editor canvas (scaled to fit the window, so only well inside each area is compared).
+      const got = await win.webContents.executeJavaScript(`window.__framelingEffects.editorPixels(${JSON.stringify(c.d)}, ${c.frame}, ${JSON.stringify(c.checks.map(([x, y]) => [x, y]))})`);
+      c.checks.forEach(([x, y, want, tol], i) => {
+        if (!near(got[i], want, tol + 40)) bad.push(`editor (${x},${y}) got ${got[i].join(',')} want ${want.join(',')}`);
+      });
     }
     if (bad.length) failed++;
     console.log(`${bad.length ? 'FAIL' : 'ok  '} ${c.name}${bad.length ? '\n     ' + bad.join('\n     ') : ''}`);

@@ -217,3 +217,32 @@ describe('timeline rows', () => {
     expect(rowOfLayer(shut, 'a')).toBe(2);
   });
 });
+
+describe('moving layers keeps folders in one piece', () => {
+  it('Move up and Move down step into and out of folders', async () => {
+    const { stepLayer, reorderLayer } = await import('../../src/timeline/edit-core');
+    const doc = docWith(['a', 'b', 'c', 'd']);
+    const f = edit.makeFolder(doc, ['b', 'c'])!;
+    // c is at the top edge of the folder: up takes it out, in place.
+    expect(stepLayer(doc, 'c', 'up')).toBe(true);
+    expect(doc.layers.map((l) => [l.id, l.folder ?? ''])).toEqual([['a', ''], ['b', f], ['c', ''], ['d', '']]);
+    // Down again puts it back in.
+    stepLayer(doc, 'c', 'down');
+    expect(doc.layers.find((l) => l.id === 'c')!.folder).toBe(f);
+    // a steps into the folder from below, then swaps inside it.
+    stepLayer(doc, 'a', 'up');
+    expect(doc.layers[0]).toMatchObject({ id: 'a', folder: f });
+    stepLayer(doc, 'a', 'up');
+    expect(doc.layers.map((l) => l.id)).toEqual(['b', 'a', 'c', 'd']);
+    // Stepping the last ones out removes the folder.
+    for (const id of ['c', 'a', 'b']) while (doc.layers.find((l) => l.id === id)!.folder) stepLayer(doc, id, 'up');
+    expect(doc.folders).toBeUndefined();
+    // A plain reorder that would split a folder never leaves a ghost copy.
+    const doc2 = docWith(['a', 'b', 'c', 'd', 'e']);
+    const g = edit.makeFolder(doc2, ['b', 'c', 'd'])!;
+    reorderLayer(doc2, 'b', 4);
+    expect(doc2.layers.filter((l) => l.folder === g).map((l) => l.id)).toEqual(['c', 'd']);
+    reorderLayer(doc2, 'a', 1);
+    expect(doc2.layers.filter((l) => l.folder === g).map((l) => l.id)).toEqual(['c', 'a', 'd']);
+  });
+});

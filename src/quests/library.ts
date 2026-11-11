@@ -30,6 +30,7 @@ import {
 } from './predicates';
 import { gifCard } from './probe';
 import { SHADE_AND_SHINE } from '../pixel/quest';
+import { FIRST_TWEEN } from '../symbols/quest';
 import { registerQuest } from './registry';
 import type { Quest } from './types';
 
@@ -56,7 +57,7 @@ const pickBrush = () => store().setUi({ tool: 'brush' });
 export const FIRST_ANIMATION: Quest = {
   id: 'first-animation',
   title: 'Your first animation in 60 seconds',
-  summary: 'Draw a little thing, draw it again a bit different, press play. That is animation!',
+  summary: "Draw a doodle, draw it again a little different, that's animation!",
   minutes: 1,
   icon: 'sparkle',
   badge: { id: 'flipbooker', name: 'Flipbooker', icon: 'film', color: '--grape' },
@@ -324,6 +325,6 @@ export const SHARE_IT: Quest = {
   ],
 };
 
-export const QUESTS: Quest[] = [FIRST_ANIMATION, BOUNCING_BALL, FILL_IT_IN, PIXEL_PAL, SHADE_AND_SHINE, SHARE_IT];
+export const QUESTS: Quest[] = [FIRST_ANIMATION, BOUNCING_BALL, FILL_IT_IN, PIXEL_PAL, SHADE_AND_SHINE, FIRST_TWEEN, SHARE_IT];
 
 for (const q of QUESTS) registerQuest(q);

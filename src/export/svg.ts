@@ -1,7 +1,7 @@
 // One frame as an SVG: vector layers become real paths (brush strokes as their outline shape, exactly the one the
 // canvas fills), pixel layers become one rectangle per run of same-coloured pixels, so nothing is lost.
 import type { Doc, Layer, PathShape, PixelDrawing, Shape, StrokeShape, SubPath } from '../core/format';
-import { drawingAt } from '../core/doc';
+import { isPosed, poseAt, type PosedInstance } from '../core/symbols';
 import { strokeOutline } from '../core/render';
 import { flattenTilemap } from '../tiles/model';
 
@@ -76,6 +76,7 @@ export function subPathsToPathData(paths: SubPath[]): string {
 }
 
 function shapeToSvg(s: Shape): string {
+  if (s.type === 'instance') return isPosed(s) ? instanceToSvg(s) : '';
   if (s.type === 'stroke') {
     const d = strokeToPathData(s);
     return d ? `<path d="${d}"${paint('fill', s.color, s.opacity)}/>` : '';
@@ -85,6 +86,20 @@ function shapeToSvg(s: Shape): string {
     return d ? `<path d="${d}"${paint('fill', s.color, s.opacity)} fill-rule="evenodd"/>` : '';
   }
   return pathShapeToSvg(s);
+}
+
+// A posed instance becomes a group with its matrix; its layers nest inside. Tint has no plain SVG equivalent, so
+// it's left out of SVG (video, GIF and sheets show it).
+function instanceToSvg(s: PosedInstance): string {
+  const inner: string[] = [];
+  for (const l of s.posed.layers) {
+    const parts = l.drawing.kind === 'pixel' ? pixelRects(l.drawing, l.pixelSize) : l.drawing.kind === 'vector' ? l.drawing.shapes.map(shapeToSvg).filter(Boolean) : [];
+    if (!parts.length) continue;
+    inner.push(l.opacity < 1 ? `<g opacity="${op(l.opacity)}">${parts.join('')}</g>` : parts.join(''));
+  }
+  if (!inner.length || s.opacity <= 0) return '';
+  const m = s.posed.matrix.map((v) => n2(v)).join(' ');
+  return `<g transform="matrix(${m})"${s.opacity < 1 ? ` opacity="${op(s.opacity)}"` : ''}>${inner.join('')}</g>`;
 }
 
 function pathShapeToSvg(s: PathShape): string {
@@ -145,7 +160,7 @@ export function pixelRects(d: PixelDrawing, size: number): string[] {
 }
 
 function layerToSvg(doc: Doc, layer: Layer, frame: number, id: string): string {
-  const d = drawingAt(doc, layer, frame);
+  const d = poseAt(doc, layer, frame);
   if (!d) return '';
   let inner: string[];
   if (d.kind === 'pixel') inner = pixelRects(d, layer.kind === 'pixel' ? layer.pixelSize : 1);

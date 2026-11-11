@@ -115,7 +115,7 @@ export function shapesToBarrier(shapes: readonly Shape[], opts: BarrierOptions):
     } else if (s.type === 'path') {
       if (s.stroke) pathWalls(s.paths, Math.max(s.stroke.width, opts.thinWidth), out);
       else if (s.fill) pathWalls(s.paths, opts.thinWidth, out);
-    } else if (opts.includeFills) {
+    } else if (s.type === 'fill' && opts.includeFills) {
       pathWalls(s.paths, opts.thinWidth, out);
     }
   }

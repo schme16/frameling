@@ -6,8 +6,8 @@
  * the transform before calling to scale or pan.
  */
 import { getStroke } from 'perfect-freehand';
-import type { Doc, Drawing, FillShape, Layer, PathShape, PixelDrawing, Shape, StrokeShape, SubPath } from './format';
-import { drawingAt } from './doc';
+import type { Color, Doc, Drawing, FillShape, Layer, PathShape, PixelDrawing, Shape, StrokeShape, SubPath } from './format';
+import { isPosed, poseAt, type PosedInstance, type PosedLayer } from './symbols';
 import { drawTilemap } from './tilemap';
 import { compositePlan, EffectCache } from '../effects/composite';
 import { buildPlan } from '../effects/plan';
@@ -114,6 +114,11 @@ export function shapePath(s: FillShape | PathShape): Path2D {
 }
 
 export function drawShape(g: Ctx2D, s: Shape): void {
+  if (s.type === 'instance') {
+    // Only posed instances can be drawn (poseAt gives them their symbol's drawings for the frame).
+    if (isPosed(s)) drawInstance(g, s);
+    return;
+  }
   g.globalAlpha = s.opacity;
   if (s.type === 'stroke') {
     g.fillStyle = s.color;
@@ -189,9 +194,69 @@ function fadeScratch(w: number, h: number): { c: OffscreenCanvas; g: OffscreenCa
   return { c: fadeBuffer, g };
 }
 
+// Buffers for instances and the layers inside them, one per nesting depth, since an instance's opacity and tint
+// apply to it as a whole and instances nest.
+const groupBuffers: OffscreenCanvas[] = [];
+let groupDepth = 0;
+
+function withGroupBuffer(g: Ctx2D, alpha: number, tint: { color: Color; amount: number } | undefined, draw: (lg: Ctx2D) => void): void {
+  const target = g.canvas as { width: number; height: number };
+  const w = Math.max(1, target.width);
+  const h = Math.max(1, target.height);
+  let c = groupBuffers[groupDepth];
+  if (!c || c.width !== w || c.height !== h) {
+    c = groupBuffers[groupDepth] = new OffscreenCanvas(w, h);
+    fadeStats.allocated++;
+  }
+  const lg = c.getContext('2d')!;
+  lg.setTransform(1, 0, 0, 1, 0, 0);
+  lg.clearRect(0, 0, w, h);
+  lg.setTransform(g.getTransform());
+  lg.imageSmoothingEnabled = g.imageSmoothingEnabled;
+  groupDepth++;
+  try {
+    draw(lg);
+  } finally {
+    groupDepth--;
+  }
+  if (tint && tint.amount > 0) {
+    lg.save();
+    lg.setTransform(1, 0, 0, 1, 0, 0);
+    lg.globalCompositeOperation = 'source-atop';
+    lg.globalAlpha = Math.min(1, tint.amount);
+    lg.fillStyle = tint.color;
+    lg.fillRect(0, 0, w, h);
+    lg.restore();
+  }
+  g.save();
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.globalAlpha = alpha;
+  g.drawImage(c, 0, 0);
+  g.restore();
+}
+
+function drawPosedLayer(g: Ctx2D, l: PosedLayer): void {
+  if (l.opacity >= 1) drawDrawing(g, l.drawing, l.pixelSize);
+  else if (l.opacity > 0) withGroupBuffer(g, l.opacity, undefined, (lg) => drawDrawing(lg, l.drawing, l.pixelSize));
+}
+
+/** Draws a posed symbol instance: its symbol's layers under its matrix, faded and tinted as a whole. */
+export function drawInstance(g: Ctx2D, s: PosedInstance): void {
+  if (s.opacity <= 0 || !s.posed.layers.length) return;
+  const m = s.posed.matrix;
+  const draw = (t: Ctx2D) => {
+    t.save();
+    t.transform(m[0], m[1], m[2], m[3], m[4], m[5]);
+    for (const l of s.posed.layers) drawPosedLayer(t, l);
+    t.restore();
+  };
+  if (s.opacity >= 1 && !(s.tint && s.tint.amount > 0)) draw(g);
+  else withGroupBuffer(g, s.opacity, s.tint, draw);
+}
+
 /** Draws a layer's drawing at a frame, with the layer's opacity. */
 export function drawLayerAt(g: Ctx2D, doc: Doc, layer: Layer, frame: number): void {
-  const d = drawingAt(doc, layer, frame);
+  const d = poseAt(doc, layer, frame);
   if (!d) return;
   const ps = layer.kind === 'vector' ? 1 : layer.pixelSize;
   if (layer.opacity >= 1) {
@@ -239,7 +304,7 @@ function renderComposited(g: Ctx2D, doc: Doc, frame: number, opts: RenderOptions
   compositePlan(g, doc, frame, buildPlan(doc, include, opts.includeHidden, opts.layerFilter), {
     paint: (lg, l) => drawLayerAt(lg, doc, l.opacity >= 1 ? l : { ...l, opacity: 1 }, frame),
     // Tilemaps can animate on their own, so only vector and pixel drawings are reused.
-    key: (l) => (l.kind === 'tilemap' ? undefined : drawingAt(doc, l, frame)),
+    key: (l) => (l.kind === 'tilemap' ? undefined : poseAt(doc, l, frame)),
   }, renderEffectCache);
 }
 

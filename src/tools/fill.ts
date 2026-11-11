@@ -18,6 +18,8 @@ import { FillOptionsPanel, gapWidth, getFillOptions } from './fill-options';
 import './fill-help';
 import { activeIsMerge, editShapes } from './merge-mode';
 import { mergeShapes } from '../geometry/merge';
+import { pixelSelection } from '../select/pixel-state';
+import { clipToMask } from '../select/mask';
 
 export const FILL_HINTS = {
   'no-fill': 'The fill colour is set to none. Pick a fill colour in the Colours panel (the solid box), then fill.',
@@ -110,7 +112,7 @@ export function barrierShapes(doc: Doc, frame: number, own: readonly Shape[], al
   for (const l of doc.layers) {
     if (l.id === activeLayerId || !l.visible || l.kind !== 'vector') continue;
     const d = drawingAt(doc, l, frame);
-    if (d?.kind === 'vector') for (const s of d.shapes) if (s.type !== 'fill') out.push(s);
+    if (d?.kind === 'vector') for (const s of d.shapes) if (s.type !== 'fill' && s.type !== 'instance') out.push(s);
   }
   return out;
 }
@@ -221,7 +223,9 @@ function fillPixels(e: ToolPointer, ctx: ToolContext) {
       ctx.hint(FILL_HINTS.same);
       return;
     }
-    const res = editActiveDrawing('Fill', 'pixel', (d) => void (d.pixels = r.pixels));
+    const sel = pixelSelection();
+    const filled = sel && sel.width === existing.width && sel.height === existing.height ? clipToMask(existing.pixels, r.pixels, sel) : r.pixels;
+    const res = editActiveDrawing('Fill', 'pixel', (d) => void (d.pixels = filled));
     if (res !== 'ok') ctx.hint(EDIT_HINTS[res]);
     else startPop(px * layer.pixelSize + layer.pixelSize / 2, py * layer.pixelSize + layer.pixelSize / 2, ui.color, ctx);
     return;
@@ -229,7 +233,9 @@ function fillPixels(e: ToolPointer, ctx: ToolContext) {
   // An empty frame gets a fresh drawing, which the fill then covers (it is all one clear colour).
   const res = editActiveDrawing('Fill', 'pixel', (d) => {
     if (px < 0 || py < 0 || px >= d.width || py >= d.height) return;
-    d.pixels = floodFillPixels(d.pixels, d.width, d.height, px, py, color, { mode, wrap: wrapOn }).pixels;
+    const filled = floodFillPixels(d.pixels, d.width, d.height, px, py, color, { mode, wrap: wrapOn }).pixels;
+    const sel = pixelSelection();
+    d.pixels = sel && sel.width === d.width && sel.height === d.height ? clipToMask(d.pixels, filled, sel) : filled;
   });
   if (res !== 'ok') ctx.hint(EDIT_HINTS[res]);
   else startPop(px * layer.pixelSize + layer.pixelSize / 2, py * layer.pixelSize + layer.pixelSize / 2, ui.color, ctx);

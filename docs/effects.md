@@ -92,8 +92,10 @@ modes mix with it the same way exports do.
 ## Known gaps
 
 - SVG export keeps blend modes (`mix-blend-mode`) and leaves mask layers out, but drops effects, clipping and masking.
-- Folders don't nest. Moving a layer out of its folder with Move up / Move down (rather than dragging) leaves it in
-  the folder as a second run, which draws and shows as a second copy of the folder. Dragging does the right thing.
+- Folders don't nest. Move up / Move down step a layer into a folder at its edge and out of it again; any plain
+  reorder keeps folders in one piece (`tidyFolders`), so there are never ghost copies of a folder.
+- Symbol instances get the look of the layer they sit on (blend, effects, masks, folders), in the editor and in
+  exports. Layers inside a symbol keep only their opacity for now; their own blend modes and effects are ignored.
 - The onion skin shows drawings plain, without effects.
 - In the editor, effect pictures are canvas-sized and keyed by the stage's position, so panning recomputes them (on
   the GPU, quick for blur and colour adjust, slower for a wide outline). Stage-sized effect buffers would fix it.

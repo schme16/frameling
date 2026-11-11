@@ -24,6 +24,7 @@ Press **Ctrl+E** (**Cmd+E** on a Mac), pick a format card, tweak the options if 
 | One picture per frame, for a video editor | **PNG sequence** |
 | Vector art that stays sharp at any size | **SVG drawing** |
 | Use it in a game or on a web page | **Sprite sheet** |
+| Put it on an Interactives page and control it there | **Interactives** |
 
 ## Options everyone shares
 
@@ -37,7 +38,7 @@ Press **Ctrl+E** (**Cmd+E** on a Mac), pick a format card, tweak the options if 
 
 Every export is drawn exactly the way you see it on the canvas, at exact frame times, so a slow computer makes the same file as a fast one, just a little later.
 
-More: [Video, GIF and APNG](help:export-video-gif-apng), [Sprite sheets](help:export-sprite-sheets), [SVG](help:export-svg).`,
+More: [Video, GIF and APNG](help:export-video-gif-apng), [Sprite sheets](help:export-sprite-sheets), [SVG](help:export-svg), [Interactives](help:export-interactives).`,
   },
   {
     id: 'export-video-gif-apng',
@@ -316,5 +317,42 @@ The second class picks the clip. Loops keep going; clips that don't loop stop on
 
 - SVG is a single still. To get more frames, use [PNG sequence](help:exporting) or one SVG per frame by moving the playhead and exporting again.
 - Brush strokes are exported as their finished outline, so they look right but won't be editable as brush strokes in other programs.`,
+  },
+  {
+    id: 'export-interactives',
+    title: 'Using animations in Interactives',
+    section: 'Exporting',
+    media: 'export-interactives.png',
+    summary: 'Make one file to drop onto an Interactives page, then play your clips with clicks, timelines and scripts.',
+    keywords: ['interactives', 'flplay', 'package', 'playable', 'course', 'web', 'layer', 'clips', 'markers', 'atlas'],
+    body: `Interactives builds clickable pages for courses. A Frameling animation can live on one of those pages as its own layer, and the page can play it, stop it, or wait for a moment in it.
+
+## In Frameling
+
+1. Name your clips in the timeline (idle, wave, run...). Each one becomes something Interactives can play. Add **markers** for moments the page should react to (a footstep, the ball landing).
+2. Press **Ctrl+E** and pick **Interactives**, or choose **File > Export for Interactives**.
+3. Pick the size. Pixel art starts at **Art size**: Interactives scales it up itself and keeps every pixel sharp.
+4. Press **Export** and save the \`.flplay\` file.
+
+## In Interactives
+
+1. Drag the \`.flplay\` file onto the canvas (or add it in **Assets** and press **Place**). It becomes a **Frameling animation** layer.
+2. In the inspector, pick the **clip** to show, and whether it **plays** when the page starts.
+3. To control it, use the nodes **Play a Frameling clip**, **Stop a Frameling animation** and **Show a Frameling frame**, and the events **When a Frameling clip ends** and **When a Frameling animation reaches a marker**. A timeline can also scrub its **Frameling frame**.
+
+## What's in the file
+
+- Every frame, with frames that look the same stored only once (a drawing held for 6 frames is one picture held for 6 frames).
+- Your clips, with their loop settings, and your markers.
+- The frame rate, size, and whether it is pixel art.
+- Your editable drawing too, unless you untick **Include the editable drawing**. Leave it in if you might change the animation later; take it out for the smallest file.
+
+## Good to know
+
+- Transparent background is on to start with, so the page shows through. Turn it off to keep your background colour.
+- [Reference layers](help:reference-layers) are left out, like every export.
+- Change the animation? Export again with **Ctrl+Shift+E** and replace the file in Interactives' Assets. Layers using it keep their settings.
+
+Interactives' own help has more: search it for **Frameling animations**.`,
   },
 ]);

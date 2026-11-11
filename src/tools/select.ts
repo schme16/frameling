@@ -1,5 +1,5 @@
 /**
- * Select [V]: click a shape, Shift+click to add or remove, or drag a box round several. Drag a selection to move
+ * Select [V]: click a shape, Shift+click to add or remove, or drag a box (or a lasso) round several. Drag a selection to move
  * it, drag a corner to resize (Shift keeps proportions, Alt resizes from the middle), drag the round handle above
  * it to turn it (Shift snaps to 15 degrees). Vector layers only.
  *
@@ -35,7 +35,9 @@ import { activeDrawing, activeLayer, editActiveDrawing } from './edit';
 import { SelectOptions } from './options/SelectOptions';
 import { reportEdit } from './util';
 import { activeIsMerge, editShapes, pendingCut, setCut, withGroups } from './merge-mode';
-import { cutOut, mergeable, placeMoved, polygonGeom, shapeBox } from '../geometry/merge';
+import { cutOut, mergeable, placeMoved, polygonGeom, shapeBox, shapeInsideArea, shapeTouchesArea, type Geom } from '../geometry/merge';
+import { getSelectSettings } from '../select/settings';
+import { drawLasso, lassoClosesAt, lassoPoint } from '../select/lasso';
 import { subPathsToPath2D } from '../core/render';
 
 /** How far off (screen pixels) a click can be and still hit a thin line. */
@@ -64,6 +66,10 @@ interface Gesture {
   toggleOffOnClick: Id | null;
   base: Id[];
   moved: boolean;
+  /** Lasso mode: the points so far (document pixels). */
+  lasso: Pt[] | null;
+  /** A lasso left open between Alt+clicks (straight sides), waiting for the next corner. */
+  open: boolean;
 }
 
 let g: Gesture | null = null;
@@ -114,6 +120,15 @@ function updatePreview(s: Gesture, zoom: number): void {
 }
 
 function down(e: ToolPointer, ctx: ToolContext): void {
+  // A lasso left open by Alt+click: this click adds the next corner (or closes it).
+  if (g?.open && g.lasso && vectorDrawing() !== g.drawing) g = null;
+  if (g?.open && g.lasso) {
+    g.open = false;
+    g.cur = e;
+    if (lassoClosesAt(g.lasso, e, ctx.zoom)) return finishLasso(g, ctx);
+    g.lasso.push({ x: e.x, y: e.y });
+    return;
+  }
   const { layer } = activeLayer();
   if (layer && layer.kind !== 'vector') return ctx.hint('Select works on vector layers. Pick a vector layer in the timeline first.');
   const d = vectorDrawing();
@@ -126,7 +141,7 @@ function down(e: ToolPointer, ctx: ToolContext): void {
   const originalsNow = cut ? cut.lifted : selectedOn(d);
   const bounds = shapesBounds(originalsNow);
   const drawing = cut ? { ...d, shapes: cut.shapes } : d;
-  const base = { layerId: layer.id, drawing, start: { x: e.x, y: e.y }, cur: e, bounds, startAngle: 0, toggleOffOnClick: null as Id | null, base: selectedIds(), moved: false };
+  const base = { layerId: layer.id, drawing, start: { x: e.x, y: e.y }, cur: e, bounds, startAngle: 0, toggleOffOnClick: null as Id | null, base: selectedIds(), moved: false, lasso: null, open: false };
 
   if (bounds) {
     const h = hitHandle(bounds, e.x, e.y, ctx.zoom);
@@ -161,12 +176,19 @@ function down(e: ToolPointer, ctx: ToolContext): void {
     return;
   }
   if (!e.shift) setSelection([]);
-  g = { ...base, drawing: d, mode: 'marquee', originals: [], handle: null, base: e.shift ? selectedIds() : [] };
+  if (cut) setCut(null);
+  const lasso = getSelectSettings().mode === 'lasso' ? [{ x: e.x, y: e.y }] : null;
+  g = { ...base, drawing: d, mode: 'marquee', originals: [], handle: null, base: e.shift ? selectedIds() : [], lasso };
 }
 
 function move(e: ToolPointer, ctx: ToolContext): void {
   if (!g) return;
   g.cur = e;
+  if (g.lasso) {
+    // The lasso picks when it closes; until then it's just a line.
+    if (!g.open) lassoPoint(g.lasso, e, ctx.zoom);
+    return;
+  }
   if (g.mode === 'marquee') {
     const r = rectFromPoints(g.start, e);
     const hits = withGroups(g.drawing.shapes, shapesInRect(g.drawing.shapes, r).map((s) => s.id));
@@ -181,6 +203,17 @@ function up(e: ToolPointer, ctx: ToolContext): void {
   g = null;
   if (!s) return;
   s.cur = e;
+  if (s.lasso) {
+    lassoPoint(s.lasso, e, ctx.zoom);
+    // Alt held as you let go keeps the lasso open: each Alt+click adds a straight side.
+    if (e.alt) {
+      s.open = true;
+      g = s;
+      ctx.requestOverlay();
+      return;
+    }
+    return finishLasso(s, ctx);
+  }
   if (s.mode === 'marquee') {
     g = s;
     move(e, ctx);
@@ -221,6 +254,33 @@ function up(e: ToolPointer, ctx: ToolContext): void {
   ctx.requestOverlay();
 }
 
+/** Closes a lasso and selects what it touches (on a merge layer, cuts out exactly what's inside it). */
+function finishLasso(s: Gesture, ctx: ToolContext): void {
+  g = null;
+  const pts = s.lasso ?? [];
+  const area = pts.length >= 3 ? polygonGeom(pts) : [];
+  if (!area.length) {
+    ctx.requestOverlay();
+    return;
+  }
+  const shapes = s.drawing.shapes;
+  const hits = withGroups(shapes, shapes.filter((x) => shapeTouchesArea(x, area)).map((x) => x.id));
+  const ids = new Set([...s.base, ...hits]);
+  setSelection(shapes.filter((x) => ids.has(x.id)).map((x) => x.id));
+  if (activeIsMerge()) pickPartIn(s.drawing, area, (x) => shapeInsideArea(x, area));
+  ctx.requestOverlay();
+}
+
+/** True while a lasso is waiting for its next Alt+click corner. */
+export const lassoIsOpen = (): boolean => !!g?.open;
+
+/** Lets go of a lasso left open between Alt+clicks. True when there was one. */
+export function cancelOpenLasso(): boolean {
+  if (!g?.open) return false;
+  g = null;
+  return true;
+}
+
 function cancel(ctx: ToolContext): void {
   if (g?.mode === 'marquee') setSelection(g.base);
   g = null;
@@ -234,8 +294,7 @@ function cancel(ctx: ToolContext): void {
  */
 function pickPart(d: VectorDrawing, r: Rect): void {
   setCut(null);
-  const ids = selectedIds();
-  if (!ids.length || r.w < 1 || r.h < 1) return;
+  if (r.w < 1 || r.h < 1) return;
   const area = polygonGeom([
     { x: r.x, y: r.y },
     { x: r.x + r.w, y: r.y },
@@ -243,9 +302,17 @@ function pickPart(d: VectorDrawing, r: Rect): void {
     { x: r.x, y: r.y + r.h },
   ]);
   const inside = (b: ReturnType<typeof shapeBox>) => !!b && b.x0 >= r.x && b.y0 >= r.y && b.x1 <= r.x + r.w && b.y1 <= r.y + r.h;
+  pickPartIn(d, area, (s) => inside(shapeBox(s)));
+}
+
+/** pickPart for any area (a box or a lasso). `inside` says whether a shape lies wholly in it. */
+function pickPartIn(d: VectorDrawing, area: Geom, inside: (s: Shape) => boolean): void {
+  setCut(null);
+  const ids = selectedIds();
+  if (!ids.length || !area.length) return;
   const sel = new Set(ids);
-  // Only worth it when some loose shape pokes out of the box.
-  if (!d.shapes.some((s) => sel.has(s.id) && mergeable(s) && !inside(shapeBox(s)))) return;
+  // Only worth it when some loose shape pokes out of the area.
+  if (!d.shapes.some((s) => sel.has(s.id) && mergeable(s) && !inside(s))) return;
   const c = cutOut(d.shapes, sel, area);
   const lifted = new Set(c.lifted);
   const pieces = c.shapes.filter((s) => lifted.has(s.id));
@@ -260,6 +327,10 @@ function pickPart(d: VectorDrawing, r: Rect): void {
 const RESIZE_CURSOR: Record<HandleId, string> = { nw: 'nwse-resize', se: 'nwse-resize', ne: 'nesw-resize', sw: 'nesw-resize', rotate: 'grab' };
 
 function hover(e: ToolPointer, ctx: ToolContext): void {
+  if (g?.open) {
+    g.cur = e;
+    return setCursor('crosshair');
+  }
   const d = vectorDrawing();
   if (!d) return setCursor(null);
   const cut = pendingCut();
@@ -273,7 +344,8 @@ function hover(e: ToolPointer, ctx: ToolContext): void {
 function overlay(gx: CanvasRenderingContext2D, ctx: ToolContext): void {
   const px = 1 / ctx.zoom;
   const ink = cssVar('--grape', '#9b7bff');
-  const marquee = g?.mode === 'marquee' ? rectFromPoints(g.start, g.cur) : null;
+  if (g?.lasso) drawLasso(gx, g.lasso, g.open ? g.cur : null, ctx.zoom, ink);
+  const marquee = g?.mode === 'marquee' && !g.lasso ? rectFromPoints(g.start, g.cur) : null;
   if (marquee) {
     gx.save();
     gx.globalAlpha = 0.14;
@@ -295,10 +367,10 @@ function overlay(gx: CanvasRenderingContext2D, ctx: ToolContext): void {
     gx.setLineDash([4 * px, 3 * px]);
     gx.lineWidth = 1.5 * px;
     gx.strokeStyle = 'white';
-    for (const s of cut.lifted) if (s.type !== 'stroke') gx.stroke(subPathsToPath2D(s.paths));
+    for (const s of cut.lifted) if (s.type === 'fill' || s.type === 'path') gx.stroke(subPathsToPath2D(s.paths));
     gx.lineDashOffset = 4 * px;
     gx.strokeStyle = ink;
-    for (const s of cut.lifted) if (s.type !== 'stroke') gx.stroke(subPathsToPath2D(s.paths));
+    for (const s of cut.lifted) if (s.type === 'fill' || s.type === 'path') gx.stroke(subPathsToPath2D(s.paths));
     gx.restore();
   }
   const b = g && g.mode !== 'marquee' ? g.bounds : shapesBounds(sel);

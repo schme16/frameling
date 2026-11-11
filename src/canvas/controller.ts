@@ -171,6 +171,19 @@ export function setCursor(c: string | null): void {
   sink?.cursor?.(c);
 }
 
+// ---------------------------------------------------------------- overlays that aren't a tool's
+
+/** Drawn on the overlay after the tool's own, in document coordinates, whatever tool is picked (marching ants). */
+export type StageOverlay = (g: CanvasRenderingContext2D, zoom: number) => void;
+const stageOverlays: StageOverlay[] = [];
+
+export function addStageOverlay(fn: StageOverlay): void {
+  if (!stageOverlays.includes(fn)) stageOverlays.push(fn);
+}
+export function getStageOverlays(): readonly StageOverlay[] {
+  return stageOverlays;
+}
+
 // ---------------------------------------------------------------- pointer extras
 
 let hover: Pt | null = null;

@@ -12,9 +12,11 @@ if (new URLSearchParams(location.search).has('debug')) {
   (window as unknown as { __frameling: unknown }).__frameling = {
     store,
     run: (id: string) => getCommand(id)?.run(),
+    // Opens a starter template by id (for shots of a known document).
     template: (id: string) => {
       const t = findTemplate(id);
       if (t) store().load(t.make());
+      return !!t;
     },
     tiles,
     commands: () => allCommands().map((c) => c.id),

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { sceneOf } from '../core/symbols';
 import { store, useStore } from '../core/store';
 import { desktop } from '../io/desktop';
 import { Modal, mountModal } from '../io/mount';
@@ -19,7 +20,7 @@ import './export.css';
 
 /** Last time's settings, repaired so they still make sense for this document. */
 function startingSettings(): ExportSettings {
-  const { doc } = store().get();
+  const { doc } = sceneOf(store().get().doc, 0);
   const base = defaultSettings(doc);
   const extras = loadSheetExtras();
   if (extras) base.sheet = { ...base.sheet, ...extras };
@@ -45,8 +46,9 @@ function Check({ checked, onChange, disabled, children, hint }: { checked: boole
 }
 
 function ExportDialog({ close, initial, autoStart }: { close: () => void; initial: ExportSettings; autoStart: boolean }) {
-  const doc = useStore((s) => s.doc);
-  const frame = useStore((s) => s.ui.frame);
+  const open = useStore((s) => s.doc);
+  const openFrame = useStore((s) => s.ui.frame);
+  const { doc, frame } = sceneOf(open, openFrame);
   const [s, setS] = useState<ExportSettings>(initial);
   const [progress, setProgress] = useState<Progress | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -167,7 +169,9 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
                     format: f.id,
                     ...((f.id === 'mp4' || f.id === 'webm') && s.range === 'frame' ? { range: 'all' as const } : {}),
                     // Sprites for games nearly always want a see-through background.
-                    ...(f.id === 'sheet' && s.format !== 'sheet' ? { transparent: true } : {}),
+                    ...((f.id === 'sheet' || f.id === 'interactives') && s.format !== f.id ? { transparent: true } : {}),
+                    // Interactives scales pixel art up itself, crisply, so the art's own size keeps the file small.
+                    ...(f.id === 'interactives' && s.format !== f.id && art ? { scale: art } : {}),
                   })
                 }
               >
@@ -225,6 +229,20 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
                   Also save a JSON file with where every frame is
                 </Check>
               )}
+            </fieldset>
+          )}
+          {s.format === 'interactives' && (
+            <fieldset>
+              <legend>For Interactives</legend>
+              <p className="ex-note">
+                One file to drop onto an Interactives page. Your clips and markers come with it, so a click can play "run" or wait for "hit".{' '}
+                <button type="button" className="ex-link" onClick={() => openHelp('export-interactives')}>
+                  How to use it in Interactives
+                </button>
+              </p>
+              <Check checked={s.includeSource !== false} onChange={(v) => set({ includeSource: v })}>
+                Include the editable drawing, so it can come back to Frameling
+              </Check>
             </fieldset>
           )}
           {info.animated ? (
@@ -411,8 +429,18 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
   );
 }
 
-export function openExportDialog(): void {
-  mountModal((close) => <ExportDialog close={close} initial={startingSettings()} autoStart={false} />);
+export function openExportDialog(format?: FormatId): void {
+  const initial = startingSettings();
+  if (format && format !== initial.format) {
+    const { doc } = store().get();
+    const art = artScale(doc);
+    initial.format = format;
+    if (format === 'interactives') {
+      initial.transparent = true;
+      if (art) initial.scale = art;
+    }
+  }
+  mountModal((close) => <ExportDialog close={close} initial={initial} autoStart={false} />);
 }
 
 /** Runs the last export again with the same settings, showing progress. Opens the dialog instead when there is no last one. */

@@ -499,9 +499,50 @@ kbd {
   flex: none;
   min-height: var(--ui-tab-h);
   padding: 4px 4px 0;
-  overflow-x: auto;
-  scrollbar-width: none;
+  overflow: hidden;
   border-bottom: 1px solid var(--line-soft);
+}
+/* Tabs that don't fit go behind this "+N" button (see tabFit.ts); the list opens fixed under it. */
+.ui-tab-more-wrap {
+  display: flex;
+  flex: none;
+}
+.ui-tab-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex: none;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  margin: 3px 0;
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  color: var(--text);
+  font-weight: 800;
+  font-size: var(--fs-small);
+  white-space: nowrap;
+}
+.ui-tab-more:hover,
+.ui-tab-more.is-open {
+  background: color-mix(in srgb, var(--accent) 38%, transparent);
+}
+.ui-tab-more-menu {
+  position: fixed;
+  left: auto;
+  min-width: 190px;
+  transform-origin: top right;
+}
+/* Off-screen copies of the tabs, measured to decide how they fit. */
+.ui-tab-measure {
+  position: absolute;
+  left: -10000px;
+  top: 0;
+  display: flex;
+  visibility: hidden;
+  pointer-events: none;
+}
+.ui-tab-measure-pair {
+  display: flex;
 }
 .ui-zone.is-collapsed.ui-zone-left .ui-tabbar,
 .ui-zone.is-collapsed.ui-zone-right .ui-tabbar {
@@ -2666,15 +2707,6 @@ body.ui-resizing * {
 }
 .ui-blank-text span {
   font-size: 11px;
-  font-weight: 700;
-  color: var(--muted);
-}
-.ui-example.is-blank .ui-example-art {
-  border: 2px dashed var(--line);
-  background: transparent;
-}
-.ui-example-blank-size {
-  font-size: var(--fs-small);
   font-weight: 700;
   color: var(--muted);
 }

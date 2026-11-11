@@ -109,7 +109,7 @@ A mask only reaches the layers under it in its own folder, so it never cuts into
     body: `A **folder** (layer group) holds layers that belong together, like the parts of a character.
 
 - **Make one:** pick a layer, then **Effects menu > Put layer in a new folder**.
-- **Add layers:** drag a layer onto a layer inside the folder. Drag it onto a layer outside to take it out.
+- **Add layers:** drag a layer onto a layer inside the folder, or use **Move layer up** / **Move layer down** to step it in at the folder's edge. Drag it onto a layer outside, or step it past the folder's edge, to take it out.
 - **Fold it:** click the arrow on the folder's row to hide its layers in the timeline. They still show on the canvas.
 - **Hide it:** the eye on the folder's row hides every layer in it.
 - **Remove it:** **Effects menu > Take layers out of this folder**. The layers stay where they are.

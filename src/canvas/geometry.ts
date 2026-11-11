@@ -2,8 +2,10 @@
  * Shape geometry for selecting and editing: bounds, hit testing and moving shapes about with a matrix.
  * All pure functions on the document types (no DOM), in document pixels unless a name says screen.
  */
-import type { FillShape, PathPoint, PathShape, Shape, StrokeShape, SubPath } from '../core/format';
+import type { Doc, FillShape, InstanceShape, Layer, PathPoint, PathShape, Shape, StrokeShape, SubPath } from '../core/format';
 import { strokeOutline } from '../core/render';
+import { store } from '../core/store';
+import { decompose, invert, symbolContent, transformMatrix } from '../core/symbols';
 import type { Pt, Rect } from './view';
 
 export type { Pt, Rect } from './view';
@@ -145,6 +147,75 @@ function boundsOfPoints(pts: ArrayLike<ArrayLike<number> | Pt>): Rect | null {
 const boundsCache = new WeakMap<Shape, Rect>();
 const ringsCache = new WeakMap<FillShape | PathShape, { pts: Pt[]; closed: boolean }[]>();
 
+// ---------------------------------------------------------------- symbol instances
+
+// Instances measure against the symbol they show, which lives in the document. Tools always work on the store's
+// document, so that's where they're looked up (tests can point it elsewhere).
+let docSource: () => Doc = () => store().get().doc;
+export function setGeometryDoc(fn: (() => Doc) | null): void {
+  docSource = fn ?? (() => store().get().doc);
+}
+
+const symBounds = new WeakMap<Layer[], { drawings: Doc['drawings']; symbols: Doc['symbols']; r: Rect | null }>();
+let boundsDepth = 0;
+
+/** The box a symbol covers over its whole timeline, in symbol space (null when it's empty). */
+export function symbolBounds(doc: Doc, id: string): Rect | null {
+  const c = symbolContent(doc, id);
+  if (!c || boundsDepth > 8) return null;
+  const hit = symBounds.get(c.layers);
+  if (hit && hit.drawings === doc.drawings && hit.symbols === doc.symbols) return hit.r;
+  const rects: Rect[] = [];
+  boundsDepth++;
+  try {
+    for (const l of c.layers)
+      for (const cel of l.cels) {
+        const d = doc.drawings[cel.drawingId];
+        if (!d) continue;
+        if (d.kind === 'vector') {
+          const b = unionRects(d.shapes.map((s) => (s.type === 'instance' ? instanceBoundsIn(doc, s) : shapeBounds(s))).filter((r): r is Rect => !!r));
+          if (b) rects.push(b);
+        } else if (d.kind === 'pixel' && l.kind === 'pixel') rects.push({ x: 0, y: 0, w: d.width * l.pixelSize, h: d.height * l.pixelSize });
+      }
+  } finally {
+    boundsDepth--;
+  }
+  const r = unionRects(rects);
+  symBounds.set(c.layers, { drawings: doc.drawings, symbols: doc.symbols, r });
+  return r;
+}
+
+function instanceBoundsIn(doc: Doc, s: InstanceShape): Rect | null {
+  const c = symbolContent(doc, s.symbolId);
+  const r = symbolBounds(doc, s.symbolId);
+  if (!c || !r) return null;
+  const m = transformMatrix(s.transform, c.def.origin);
+  return boundsOfPoints([apply(m, r.x, r.y), apply(m, r.x + r.w, r.y), apply(m, r.x + r.w, r.y + r.h), apply(m, r.x, r.y + r.h)]);
+}
+
+/** An instance's box on the stage (a small box at its position when its symbol is empty or missing). */
+export function instanceBounds(s: InstanceShape, doc: Doc = docSource()): Rect {
+  return instanceBoundsIn(doc, s) ?? { x: s.transform.x - 4, y: s.transform.y - 4, w: 8, h: 8 };
+}
+
+function hitInstance(s: InstanceShape, x: number, y: number, tol: number): boolean {
+  const doc = docSource();
+  const c = symbolContent(doc, s.symbolId);
+  const r = symbolBounds(doc, s.symbolId);
+  if (!c || !r) return rectContainsPoint(inflateRect(instanceBounds(s, doc), tol), x, y);
+  const m = transformMatrix(s.transform, c.def.origin);
+  const p = apply(invert(m), x, y);
+  const k = Math.max(1e-6, Math.min(Math.abs(s.transform.scaleX), Math.abs(s.transform.scaleY)));
+  return rectContainsPoint(inflateRect(r, tol / k), p.x, p.y);
+}
+
+function transformInstance(s: InstanceShape, m: Matrix): InstanceShape {
+  const c = symbolContent(docSource(), s.symbolId);
+  const origin = c?.def.origin ?? { x: 0, y: 0 };
+  const next = multiply(m, transformMatrix(s.transform, origin));
+  return { ...s, transform: decompose(next, origin) };
+}
+
 function rings(s: FillShape | PathShape): { pts: Pt[]; closed: boolean }[] {
   let r = ringsCache.get(s);
   if (!r) {
@@ -156,6 +227,8 @@ function rings(s: FillShape | PathShape): { pts: Pt[]; closed: boolean }[] {
 
 /** The box a shape covers, line width included. */
 export function shapeBounds(s: Shape): Rect {
+  // Not cached: the symbol behind an instance can change while the instance stays the same object.
+  if (s.type === 'instance') return instanceBounds(s);
   let b = boundsCache.get(s);
   if (b) return b;
   if (s.type === 'stroke') {
@@ -233,6 +306,7 @@ export function pointInRings(ringList: ArrayLike<ArrayLike<number> | Pt>[], x: n
  */
 export function hitShape(s: Shape, x: number, y: number, tol: number): boolean {
   if (!rectContainsPoint(inflateRect(shapeBounds(s), tol), x, y)) return false;
+  if (s.type === 'instance') return hitInstance(s, x, y, tol);
   if (s.type === 'stroke') {
     const o = strokeOutline(s);
     if (o.length > 2 && pointInRings([o], x, y)) return true;
@@ -268,6 +342,7 @@ function mapPaths(m: Matrix, paths: SubPath[]): SubPath[] {
 
 /** A new shape moved about by the matrix (same id). Widths and brush sizes scale with it. */
 export function transformShape<S extends Shape>(s: S, m: Matrix): S {
+  if (s.type === 'instance') return transformInstance(s, m) as S;
   const k = matrixScale(m);
   if (s.type === 'stroke') {
     const st = s as StrokeShape;

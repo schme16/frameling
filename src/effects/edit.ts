@@ -238,7 +238,7 @@ export function moveLayerInto(doc: Doc, layerId: Id, to: number, folder: Id | nu
   }
   if (folder && doc.folders?.[folder]) l.folder = folder;
   else delete l.folder;
-  pruneFolders(doc);
+  tidyFolders(doc);
   return true;
 }
 
@@ -248,4 +248,68 @@ export function pruneFolders(doc: Doc): void {
   const used = new Set(doc.layers.map((l) => l.folder));
   for (const id of Object.keys(doc.folders)) if (!used.has(id)) delete doc.folders[id];
   if (!Object.keys(doc.folders).length) delete doc.folders;
+}
+
+/**
+ * One step up or down, folder by folder like the timeline shows it. A layer at the edge of its folder steps out of
+ * it (staying put, now just outside); a layer next to a folder steps into it at that edge; anything else swaps with
+ * its neighbour.
+ */
+export function stepLayerThroughFolders(doc: Doc, layerId: Id, dir: 'up' | 'down'): boolean {
+  const i = doc.layers.findIndex((l) => l.id === layerId);
+  if (i < 0) return false;
+  const l = doc.layers[i];
+  const j = i + (dir === 'up' ? 1 : -1);
+  const nb = doc.layers[j];
+  if (l.folder) {
+    if (!nb || nb.folder !== l.folder) {
+      delete l.folder;
+      pruneFolders(doc);
+      return true;
+    }
+  } else {
+    if (!nb) return false;
+    if (nb.folder && doc.folders?.[nb.folder]) {
+      l.folder = nb.folder;
+      return true;
+    }
+  }
+  doc.layers[i] = nb;
+  doc.layers[j] = l;
+  return true;
+}
+
+/**
+ * Keeps every folder in one piece after layers move. The moved layer joins a folder it lands in the middle of, and
+ * leaves its own when it lands away from it; if a folder still ends up in more than one run, the layers outside its
+ * longest run leave it.
+ */
+export function tidyFolders(doc: Doc, movedId?: Id): void {
+  if (!doc.folders) return;
+  const ls = doc.layers;
+  const i = movedId ? ls.findIndex((l) => l.id === movedId) : -1;
+  if (i > 0 && i < ls.length - 1) {
+    const m = ls[i];
+    const f = ls[i - 1].folder;
+    if (f && ls[i + 1].folder === f) m.folder = f;
+    else if (m.folder && ls[i - 1].folder !== m.folder && ls[i + 1].folder !== m.folder) delete m.folder;
+  }
+  const runs = new Map<Id, { start: number; len: number }[]>();
+  for (let i = 0; i < ls.length; ) {
+    const f = ls[i].folder;
+    let j = i;
+    while (j < ls.length && ls[j].folder === f) j++;
+    if (f) {
+      const list = runs.get(f) ?? [];
+      list.push({ start: i, len: j - i });
+      runs.set(f, list);
+    }
+    i = j;
+  }
+  for (const list of runs.values()) {
+    if (list.length < 2) continue;
+    const keep = list.reduce((a, b) => (b.len > a.len ? b : a));
+    for (const r of list) if (r !== keep) for (let k = r.start; k < r.start + r.len; k++) delete ls[k].folder;
+  }
+  pruneFolders(doc);
 }
