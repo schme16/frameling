@@ -76,6 +76,11 @@ export function builtinWorkspaces(panels: PanelDef[] = allPanels()): Workspace[]
   // Pixel: colours sit on the left where the palette is always in reach.
   const pixel = layoutFrom(panels, (p) => (isColour(p) ? 'left' : p.zone));
   pixel.zones.left.size = 240;
+  // The pixel palette leads the left side when there is one.
+  if (pixel.zones.left.tabs.includes('palette')) {
+    pixel.zones.left.tabs = ['palette', ...pixel.zones.left.tabs.filter((t) => t !== 'palette')];
+    pixel.zones.left.active = 'palette';
+  }
   pixel.zones.bottom.size = 190;
 
   return [

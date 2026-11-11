@@ -5,6 +5,7 @@ import { drawShape } from '../../core/render';
 import { store, useStore } from '../../core/store';
 import { Choice, Slider, Tip, Toggle } from '../../canvas/controls';
 import { buildStroke } from '../vectorStroke';
+import { DrawModeToggle } from './DrawModeToggle';
 import { setToolSettings, useToolSettings } from '../settings';
 
 export function useActiveLayerKind(): 'vector' | 'pixel' {
@@ -54,6 +55,7 @@ function VectorBrushOptions() {
   const pressure = brush.thinning !== 0;
   return (
     <div className="cv-options">
+      <DrawModeToggle />
       <BrushPreview brush={brush} color={color} />
       <Slider label="Size" value={brush.size} min={1} max={120} format={(v) => `${v}px`} onChange={(v) => setBrush({ size: v })} />
       <Slider label="Smoothing" value={Math.round(brush.streamline * 100)} min={0} max={100} format={(v) => `${v}%`} onChange={(v) => setBrush({ streamline: v / 100, smoothing: v / 100 })} hint="Higher evens out a shaky hand." />

@@ -8,6 +8,7 @@
  */
 import { current, isDraft } from 'immer';
 import type { Cel, Clip, Doc, Drawing, Id, Layer, Marker, Shape } from '../core/format';
+import { currentChoice } from '../core/choices';
 import { celAt, findLayer, newDrawingFor, newPixelLayer, newVectorLayer, pruneDrawings, uid } from '../core/doc';
 
 /** What to do when a cel lands on top of others: shove them later (push) or cut them back (trim). */
@@ -268,6 +269,8 @@ function slotAbove(doc: Doc, aboveId?: Id | null): number {
 
 export function addVectorLayer(doc: Doc, aboveId?: Id | null, name?: string): Id {
   const l = newVectorLayer(name ?? uniqueLayerName(doc, 'Layer'));
+  // Preferences > Behaviour can make new vector layers merge shapes (see src/tools/merge-mode.ts).
+  if (currentChoice('draw.newLayerMode') === 'merge') l.drawMode = 'merge';
   doc.layers.splice(slotAbove(doc, aboveId), 0, l);
   return l.id;
 }

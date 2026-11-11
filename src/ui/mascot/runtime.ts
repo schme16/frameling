@@ -6,7 +6,7 @@ import { reducedMotion, subscribePrefs } from '../prefs';
 import { poseAt, scaleFor, type Beat, type Sheet, parseSheet } from './timing';
 
 /** Where the sheet image is, relative to the page (Electron loads the page from file://). */
-export const SHEET_URL = 'mascot/quill.png';
+export const SHEET_URL = 'mascot/mascot.png';
 
 /** How long with no input before an idle Quill dozes off. */
 export const SLEEP_AFTER = 60_000;
@@ -21,7 +21,7 @@ export interface LoadedSheet extends Sheet {
 export const quillSheet = createStore<LoadedSheet | null>(null);
 
 /** Where the frame list is. Fetched, which works from file:// in Electron and from the dev server alike. */
-export const META_URL = 'mascot/quill.json';
+export const META_URL = 'mascot/mascot.json';
 
 let loading = false;
 

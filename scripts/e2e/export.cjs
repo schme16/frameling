@@ -243,13 +243,15 @@ const TOL = { lossless: 0.0005, svg: 0.07, gif: 0.12, video: 0.1 };
 async function vVideo(file, s, exp, caseCtx) {
   if (!need('ffprobe', 'ffmpeg')) return;
   const webm = s.format === 'webm';
-  const p = JSON.parse(sh('ffprobe', ['-v', 'error', '-count_frames', '-select_streams', 'v:0', '-show_entries', 'stream=codec_name,profile,width,height,pix_fmt,nb_read_frames,avg_frame_rate,duration,level:stream_tags:format=duration,format_name', '-of', 'json', file]).out || '{}');
+  const p = JSON.parse(sh('ffprobe', ['-v', 'error', '-count_frames', '-select_streams', 'v:0', '-show_entries', 'stream=codec_name,profile,width,height,pix_fmt,color_range,color_space,color_primaries,color_transfer,nb_read_frames,avg_frame_rate,duration,level:stream_tags:format=duration,format_name', '-of', 'json', file]).out || '{}');
   const st = p.streams?.[0];
   if (!check(st, 'ffprobe found no video stream')) return;
   note(`${st.codec_name}${st.profile ? ' ' + st.profile : ''} ${st.width}x${st.height} ${st.pix_fmt} frames=${st.nb_read_frames} dur=${p.format?.duration}`);
   check(webm ? /^vp(8|9)$|^av1$/.test(st.codec_name) : st.codec_name === 'h264', `unexpected codec ${st.codec_name}`);
   check(st.width === exp.width && st.height === exp.height, `size ${st.width}x${st.height}, wanted ${exp.width}x${exp.height}`);
   check(st.width % 2 === 0 && st.height % 2 === 0, `odd video size ${st.width}x${st.height}`);
+  // MP4 is limited range BT.709 and says so (full range yuvj420p looks wrong in some players).
+  if (!webm) check(st.pix_fmt === 'yuv420p' && st.color_range === 'tv' && st.color_space === 'bt709' && st.color_primaries === 'bt709' && st.color_transfer === 'bt709', `colour ${st.pix_fmt} ${st.color_range} ${st.color_space}/${st.color_primaries}/${st.color_transfer}, wanted yuv420p tv bt709`);
   check(Number(st.nb_read_frames) === exp.count, `frame count ${st.nb_read_frames}, wanted ${exp.count}`);
   check(near(Number(p.format?.duration), exp.count / exp.fps, 1 / exp.fps + 0.02), `duration ${p.format?.duration}s, wanted about ${(exp.count / exp.fps).toFixed(3)}s`);
   const [n, d] = String(st.avg_frame_rate).split('/').map(Number);

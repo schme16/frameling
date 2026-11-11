@@ -326,6 +326,42 @@ const ICONS: Record<string, ReactNode> = {
       <path d="M9.5 4v16M9.5 14h11" />
     </>
   ),
+  // pixel art tools
+  shade: (
+    <>
+      <rect x="4" y="4" width="16" height="16" rx="3" />
+      <path d="M4 15.5L15.5 4M4 20l16-16" />
+      <path d="M9.5 20L20 9.5" />
+    </>
+  ),
+  dither: (
+    <>
+      <rect x="4" y="4" width="16" height="16" rx="3" />
+      <rect x="7" y="7" width="3" height="3" fill="currentColor" stroke="none" />
+      <rect x="14" y="7" width="3" height="3" fill="currentColor" stroke="none" />
+      <rect x="10.5" y="10.5" width="3" height="3" fill="currentColor" stroke="none" />
+      <rect x="7" y="14" width="3" height="3" fill="currentColor" stroke="none" />
+      <rect x="14" y="14" width="3" height="3" fill="currentColor" stroke="none" />
+    </>
+  ),
+  mirror: (
+    <>
+      <path d="M12 3v18" strokeDasharray="2 2.6" />
+      <path d="M9 7L4 17h5zM15 7l5 10h-5z" />
+    </>
+  ),
+  outline: (
+    <>
+      <rect x="4" y="4" width="16" height="16" rx="4" strokeDasharray="3 2.4" />
+      <rect x="8.5" y="8.5" width="7" height="7" rx="1.6" fill="currentColor" />
+    </>
+  ),
+  rotate: (
+    <>
+      <path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3" />
+      <path d="M19.5 4v4.5H15" />
+    </>
+  ),
 };
 
 export const ICON_NAMES = Object.keys(ICONS);

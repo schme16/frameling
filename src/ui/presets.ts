@@ -53,3 +53,18 @@ export function docFromCustom(c: CustomSpec): Doc {
   }
   return newDoc({ name, width: clampInt(c.width, 1, 8192, 1280), height: clampInt(c.height, 1, 8192, 720), fps });
 }
+
+/** True when nothing is drawn yet: no shapes and no coloured pixels in any drawing. Blank starters show as sizes. */
+export function isBlankDoc(doc: Doc): boolean {
+  for (const d of Object.values(doc.drawings)) {
+    if (d.kind === 'vector' ? d.shapes.length > 0 : d.kind === 'tilemap' ? d.cells.some((c) => c !== 0) : d.pixels.some((v, i) => i % 4 === 3 && v !== 0)) return false;
+  }
+  return true;
+}
+
+/** A starter's size the way the cards say it: "1280 x 720", or "32 x 32 pixels" for pixel art. */
+export function sizeLabel(doc: Doc): string {
+  const px = doc.layers.find((l) => l.kind === 'pixel');
+  if (px && px.kind === 'pixel' && doc.layers.every((l) => l.kind === 'pixel')) return `${Math.ceil(doc.width / px.pixelSize)} x ${Math.ceil(doc.height / px.pixelSize)} pixels`;
+  return `${doc.width} x ${doc.height}`;
+}

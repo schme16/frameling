@@ -6,6 +6,7 @@ import { createElement as h, useSyncExternalStore, type ReactNode } from 'react'
 import { useStore } from '../core/store';
 import { findLayer } from '../core/doc';
 import '../geometry/fill.css';
+import { DrawModeToggle } from './options/DrawModeToggle';
 
 export type GapPreset = 'none' | 'small' | 'medium' | 'large';
 
@@ -79,6 +80,7 @@ export function FillOptionsPanel(): ReactNode {
     pixel
       ? check('Fill all of this colour', 'Recolour every pixel with the colour you click, even where it is not joined up', o.allOfColour, (v) => setFillOptions({ allOfColour: v }))
       : [
+          h(DrawModeToggle, { key: 'mode' }),
           h(
             'div',
             { className: 'fl-fill-group', key: 'gap' },

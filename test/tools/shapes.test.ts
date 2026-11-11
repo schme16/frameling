@@ -110,7 +110,7 @@ describe('shape tools', () => {
     expect(l.paths[0].points).toEqual([{ x: 0, y: 0 }, { x: 100, y: 0 }]);
   });
 
-  it('makes nothing from a click, and refuses on a pixel layer with a reason', () => {
+  it('makes nothing from a click, and paints clean pixels on a pixel layer', () => {
     vectorStore();
     drag(rectTool, ctx(), [[10, 10], [10, 10]]);
     expect(shapesNow()).toHaveLength(0);
@@ -119,8 +119,9 @@ describe('shape tools', () => {
     pixelStore();
     const c = ctx();
     drag(rectTool, c, [[0, 0], [30, 30]]);
-    expect(c.hint).toHaveBeenCalledWith(expect.stringContaining('vector'));
-    expect(store().get().doc.layers[0].cels).toHaveLength(0);
+    expect(c.hint).not.toHaveBeenCalled();
+    expect(store().get().doc.layers[0].cels).toHaveLength(1);
+    expect(store().undoLabel()).toBe('Draw rectangle');
   });
 
   it('uses the modifier keys held at the end of the drag', () => {
