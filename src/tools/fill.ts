@@ -112,7 +112,7 @@ export function barrierShapes(doc: Doc, frame: number, own: readonly Shape[], al
   for (const l of doc.layers) {
     if (l.id === activeLayerId || !l.visible || l.kind !== 'vector') continue;
     const d = drawingAt(doc, l, frame);
-    if (d?.kind === 'vector') for (const s of d.shapes) if (s.type !== 'fill') out.push(s);
+    if (d?.kind === 'vector') for (const s of d.shapes) if (s.type !== 'fill' && s.type !== 'instance') out.push(s);
   }
   return out;
 }

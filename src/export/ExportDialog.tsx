@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { sceneOf } from '../core/symbols';
 import { store, useStore } from '../core/store';
 import { desktop } from '../io/desktop';
 import { Modal, mountModal } from '../io/mount';
@@ -19,7 +20,7 @@ import './export.css';
 
 /** Last time's settings, repaired so they still make sense for this document. */
 function startingSettings(): ExportSettings {
-  const { doc } = store().get();
+  const { doc } = sceneOf(store().get().doc, 0);
   const base = defaultSettings(doc);
   const extras = loadSheetExtras();
   if (extras) base.sheet = { ...base.sheet, ...extras };
@@ -45,8 +46,9 @@ function Check({ checked, onChange, disabled, children, hint }: { checked: boole
 }
 
 function ExportDialog({ close, initial, autoStart }: { close: () => void; initial: ExportSettings; autoStart: boolean }) {
-  const doc = useStore((s) => s.doc);
-  const frame = useStore((s) => s.ui.frame);
+  const open = useStore((s) => s.doc);
+  const openFrame = useStore((s) => s.ui.frame);
+  const { doc, frame } = sceneOf(open, openFrame);
   const [s, setS] = useState<ExportSettings>(initial);
   const [progress, setProgress] = useState<Progress | null>(null);
   const [error, setError] = useState<string | null>(null);

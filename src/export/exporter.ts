@@ -1,5 +1,6 @@
 // The part of exporting that talks to the desktop side: ask where to save, run the export, write the result, and say
 // how it went. The dialog and "Export again" both come through here.
+import { sceneOf } from '../core/symbols';
 import type { VideoCodec } from 'mediabunny';
 import { store } from '../core/store';
 import { baseName, desktop } from '../io/desktop';
@@ -82,8 +83,10 @@ export function describeError(e: unknown): string {
 export async function exportDocument(settings: ExportSettings, signal: AbortSignal, onProgress: (p: Progress) => void): Promise<ExportOutcome> {
   const api = desktop();
   if (!api) throw new ExportProblem('Exporting works in the Frameling desktop app.');
-  const { doc, ui } = store().get();
-  const plan = planExport(doc, settings, ui.frame);
+  const st = store().get();
+  // While a symbol is open, export the scene as it is saved.
+  const { doc, frame } = sceneOf(st.doc, st.ui.frame);
+  const plan = planExport(doc, settings, frame);
   if (plan.problem) throw new ExportProblem(plan.problem);
   const info = formatInfo(settings.format);
 
@@ -107,7 +110,7 @@ export async function exportDocument(settings: ExportSettings, signal: AbortSign
 
   let result;
   try {
-    result = await runExport({ doc, settings, currentFrame: ui.frame, signal, onProgress, videoCodec, videoAlpha, appVersion: api.versions.app });
+    result = await runExport({ doc, settings, currentFrame: frame, signal, onProgress, videoCodec, videoAlpha, appVersion: api.versions.app });
   } catch (e) {
     if (isCancelled(e)) return 'cancelled';
     throw e;

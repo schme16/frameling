@@ -6,6 +6,7 @@ import '../canvas';
 import '../tools';
 import '../geometry';
 import '../timeline';
+import '../symbols';
 import '../io';
 import '../export';
 import '../tiles';

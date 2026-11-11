@@ -42,6 +42,13 @@ export interface Doc {
   tileset?: Tileset;
   /** The pixel art palette: an ordered list of colours in ramps (optional; missing = the starter palette). */
   palette?: DocPalette;
+  /** Reusable drawings with their own timelines, by id (missing = none). See `SymbolDef`. */
+  symbols?: Record<Id, SymbolDef>;
+  /**
+   * Set while a symbol is open for editing in place: the stack of symbols entered, innermost last. While it's set,
+   * `layers` and `length` are the open symbol's, and each entry keeps what it replaced. Never saved (see rootDoc).
+   */
+  editing?: EditFrame[];
 }
 
 export type LayerKind = 'vector' | 'pixel' | 'tilemap';
@@ -100,6 +107,8 @@ export interface Cel {
   start: number;
   length: number;
   drawingId: Id;
+  /** In-betweens from this key to the next one on the layer, when the next one starts right where this ends. */
+  tween?: Tween;
 }
 
 export type Drawing = VectorDrawing | PixelDrawing | TilemapDrawing;
@@ -171,7 +180,7 @@ export interface TileFrame {
   duration: number;
 }
 
-export type Shape = StrokeShape | FillShape | PathShape;
+export type Shape = StrokeShape | FillShape | PathShape | InstanceShape;
 
 /** A point of a hand-drawn stroke: position, pen pressure (0 to 1, 0.5 when the device has none). */
 export interface StrokePoint {
@@ -278,4 +287,89 @@ export interface DocPalette {
   name: string;
   colors: Color[];
   ramps?: number[];
+}
+
+// ---------------------------------------------------------------- symbols and tweens
+
+/**
+ * A symbol: a reusable drawing with its own timeline. Its layers use the document's drawings, like the stage's do.
+ * Content is in symbol space, which is stage space as it was when the symbol was made, so an instance with the
+ * plain transform shows it exactly where it was drawn.
+ */
+export interface SymbolDef {
+  id: Id;
+  name: string;
+  layers: Layer[];
+  /** Length of its own timeline, in frames (at least 1). */
+  length: number;
+  /** The registration point in symbol space: what an instance's x, y place, and what it turns and scales around. */
+  origin: { x: number; y: number };
+}
+
+/** Where an instance sits. Angles are degrees. Applied as translate, rotate, skew, scale, around the symbol's origin. */
+export interface Transform2D {
+  x: number;
+  y: number;
+  scaleX: number;
+  scaleY: number;
+  rotation: number;
+  /** Horizontal skew, degrees. */
+  skew: number;
+}
+
+/** How an instance plays its symbol's timeline: round and round, once then hold the last frame, or one frame only. */
+export type PlayMode = 'loop' | 'once' | 'single';
+
+/** A placed copy of a symbol. Lives in a vector drawing like any shape, so select, move and arrange work on it. */
+export interface InstanceShape {
+  id: Id;
+  group?: Id;
+  type: 'instance';
+  symbolId: Id;
+  transform: Transform2D;
+  opacity: number;
+  /** Colour wash over the whole instance, amount 0 to 1 (missing = none). */
+  tint?: { color: Color; amount: number };
+  play: PlayMode;
+  /** The symbol frame it starts on (0-based). */
+  firstFrame: number;
+}
+
+/**
+ * An easing: a named preset (the same names Interactives uses) or a custom cubic bezier [x1, y1, x2, y2].
+ */
+export type Easing = 'linear' | 'easeIn' | 'easeOut' | 'easeInOut' | 'backIn' | 'backOut' | 'elasticOut' | 'bounceOut' | [number, number, number, number];
+
+/**
+ * In-betweens on a key. `kind` leaves room for shape tweens later (missing = 'classic': instances move between the
+ * transforms, opacity and tint they have on the two keys).
+ */
+export interface Tween {
+  kind?: 'classic';
+  ease: Easing;
+  /** Extra whole turns on the way (positive clockwise). */
+  spin?: number;
+  /** Follow this line on the way (stage coordinates of the layer). */
+  path?: MotionPath;
+}
+
+export interface MotionPath {
+  points: PathPoint[];
+  /** Turn to face along the line. */
+  orient: boolean;
+}
+
+/** One level of editing in place (see Doc.editing). */
+export interface EditFrame {
+  symbolId: Id;
+  /** The instance that was double-clicked, if any, to place the dimmed surroundings. */
+  instanceId?: Id;
+  /** What `layers`, `length` held before entering. */
+  layers: Layer[];
+  length: number;
+  /** Playhead and active layer outside, to put back on the way out. */
+  frame: number;
+  activeLayerId: Id | null;
+  /** Instance space to outer space, as [a, b, c, d, e, f]. */
+  matrix: [number, number, number, number, number, number];
 }

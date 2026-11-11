@@ -40,9 +40,9 @@ async function playThrough(q: Quest, r: ReturnType<typeof rig>) {
 
 describe('the five quests', () => {
   it('are registered, in order, with unique ids, steps and badges', () => {
-    expect(allQuests().map((q) => q.id)).toEqual(['first-animation', 'bouncing-ball', 'fill-it-in', 'pixel-pal', 'shade-and-shine', 'share-it']);
-    expect(new Set(QUESTS.map((q) => q.badge!.id)).size).toBe(6);
-    expect(QUESTS.map((q) => q.badge!.name)).toEqual(['Flipbooker', 'Squash & Stretch', 'Paint Pot', 'Pixel Pal', 'Shade Maker', 'Showtime']);
+    expect(allQuests().map((q) => q.id)).toEqual(['first-animation', 'bouncing-ball', 'fill-it-in', 'pixel-pal', 'shade-and-shine', 'first-tween', 'share-it']);
+    expect(new Set(QUESTS.map((q) => q.badge!.id)).size).toBe(7);
+    expect(QUESTS.map((q) => q.badge!.name)).toEqual(['Flipbooker', 'Squash & Stretch', 'Paint Pot', 'Pixel Pal', 'Shade Maker', 'Smooth Mover', 'Showtime']);
     for (const q of QUESTS) {
       expect(new Set(q.steps.map((s) => s.id)).size).toBe(q.steps.length);
       for (const s of q.steps) {

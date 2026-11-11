@@ -13,6 +13,10 @@ import { LayerList, LayerTools, ROW_H } from './Layers';
 import { ContextMenu, InlineName, type MenuItem } from './Menu';
 import * as ops from './ops';
 import { goTo } from './playback';
+import { nextKey } from '../core/symbols';
+import { ease } from '../core/ease';
+import { makeTween, removeTween } from '../symbols/ops';
+import '../symbols/symbols.css';
 import { MAX_CW, MIN_CW, setTl, tl, useTl } from './state';
 
 export const SIDE_W = 216;
@@ -64,12 +68,27 @@ const GridRow = memo(function GridRow({ layer, cw, from, to, active }: { layer: 
           <span className="tl-cel-key" style={{ width: Math.min(cw, c.length * cw) - 2 }}>
             <i className="tl-cel-dot" />
           </span>
+          {c.tween ? <TweenBar layer={layer} cel={c} cw={cw} /> : null}
           <span className="tl-cel-handle" title="Drag to hold this drawing for longer or shorter" />
         </div>
       ))}
     </div>
   );
 });
+
+/** In-betweens on a key: a band with an arrow to the next key (dashed when the keys don't touch). */
+function TweenBar({ layer, cel, cw }: { layer: Layer; cel: Cel; cw: number }) {
+  const next = nextKey(layer, cel);
+  const beads: number[] = [];
+  if (next) for (let i = 1; i < cel.length; i++) beads.push(ease(cel.tween!.ease, i / cel.length) * cel.length * cw);
+  return (
+    <span className={`tl-tween${next ? '' : ' is-broken'}`} style={{ left: Math.min(cw, cel.length * cw) - 2, right: 0 }} title={next ? 'In-betweens: Frameling draws these frames' : "In-betweens with no key straight after, so nothing moves"}>
+      {beads.map((x, i) => (
+        <i key={i} className="tl-tween-bead" style={{ left: x - Math.min(cw, cel.length * cw) + 2 }} />
+      ))}
+    </span>
+  );
+}
 
 function Ruler({ cw, from, to, length, fps, total, ghostLength }: { cw: number; from: number; to: number; length: number; fps: number; total: number; ghostLength: number | null }) {
   const onion = useStore((s) => s.ui.onion);
@@ -544,6 +563,10 @@ export function celMenu(layer: Layer, frame: number): MenuItem[] {
     { label: 'Copy this drawing to the next frame', hint: keyHint('timeline.duplicateKey'), disabled: none, onClick: () => void say(ops.duplicateKey(layer.id, frame)) },
     { label: 'Clear this drawing', disabled: none, onClick: () => void say(ops.clearKey(layer.id, frame)) },
     { label: 'Make these frames empty', disabled: none, onClick: () => void say(ops.deleteKey(layer.id, frame)) },
+    { separator: true },
+    cel?.tween
+      ? { label: 'Remove in-betweens', onClick: () => void removeTween(layer.id, frame) }
+      : { label: 'Make in-betweens (tween)', hint: keyHint('tween.make'), disabled: none || layer.kind !== 'vector', onClick: () => void makeTween(layer.id, frame) },
     { separator: true },
     hold(1),
     hold(2),

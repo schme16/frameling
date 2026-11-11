@@ -63,7 +63,7 @@ function ids(doc: Doc): string[] {
 
 describe('templates', () => {
   it('has the expected set with unique ids', () => {
-    expect(TEMPLATES.map((t) => t.id)).toEqual(['bouncing-ball', 'flour-sack-hop', 'blink', 'hero-sprites', 'sparkle-fx', 'tileset', 'blank-vector', 'blank-pixel']);
+    expect(TEMPLATES.map((t) => t.id)).toEqual(['bouncing-ball', 'flour-sack-hop', 'blink', 'hero-sprites', 'sparkle-fx', 'bouncing-logo', 'tileset', 'blank-vector', 'blank-pixel']);
     expect(new Set(TEMPLATES.map((t) => t.id)).size).toBe(TEMPLATES.length);
     for (const t of TEMPLATES) {
       expect(t.name.length).toBeGreaterThan(0);
@@ -102,7 +102,8 @@ describe('templates', () => {
 
       it('references every drawing and every cel finds its drawing', () => {
         const used = new Set<string>();
-        for (const layer of doc.layers) {
+        // Symbols' layers use the same drawings.
+        for (const layer of [...doc.layers, ...Object.values(doc.symbols ?? {}).flatMap((s) => s.layers)]) {
           for (const c of layer.cels) {
             const d = doc.drawings[c.drawingId];
             expect(d, `cel ${c.id} on ${layer.name}`).toBeDefined();
