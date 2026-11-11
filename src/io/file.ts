@@ -188,6 +188,8 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
       visible: bool(l.visible, true),
       locked: bool(l.locked, false),
       opacity: Math.min(1, Math.max(0, num(l.opacity, 1))),
+      ...(l.onion === false ? { onion: false } : {}),
+      ...(l.reference === true ? { reference: true } : {}),
       cels,
     };
     if (l.kind === 'pixel') layers.push({ ...base, kind: 'pixel', pixelSize: Math.max(1, Math.round(num(l.pixelSize, 1))), ...(l.paletteLock === true ? { paletteLock: true } : {}) });

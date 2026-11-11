@@ -162,7 +162,7 @@ export function frameToSvg(doc: Doc, frame: number, opts: SvgOptions = {}): stri
   if (doc.background && !opts.transparent) lines.push(`<rect width="${n2(doc.width)}" height="${n2(doc.height)}"${paint('fill', doc.background, 1)}/>`);
   const used = new Set<string>();
   for (const layer of doc.layers) {
-    if (!layer.visible) continue;
+    if (!layer.visible || layer.reference) continue;
     let id = layer.name.trim().replace(/[^A-Za-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '') || 'layer';
     if (/^[0-9-]/.test(id)) id = 'layer-' + id;
     while (used.has(id)) id += '_';

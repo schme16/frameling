@@ -49,7 +49,7 @@ export const TEMPLATES: Template[] = [
   {
     id: 'hero-sprites',
     name: 'Game hero sprite set',
-    blurb: 'A little pixel creature with idle, run and jump clips and footstep markers. Try it: recolour the scarf, then export a sprite sheet.',
+    blurb: 'A little pixel creature with idle, run, jump, hurt and die clips and footstep markers. Try it: recolour the scarf, then export it for Godot, Unity or the web.',
     kind: 'pixel',
     thumbnail: () => 0,
     make: makeHeroSprite,

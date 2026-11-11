@@ -61,6 +61,7 @@ export function layerMenu(layer: Layer, onRename: () => void): MenuItem[] {
     { separator: true },
     { label: layer.visible ? 'Hide layer' : 'Show layer', onClick: () => void ops.setLayerVisible(layer.id, !layer.visible) },
     { label: layer.locked ? 'Unlock layer' : 'Lock layer (protect it from changes)', onClick: () => void ops.setLayerLocked(layer.id, !layer.locked) },
+    { label: layer.reference ? 'Export this layer again' : 'Reference layer (leave out of exports)', onClick: () => void ops.setLayerReference(layer.id, !layer.reference) },
     { separator: true },
     { label: 'Add a vector layer above', onClick: () => void ops.addVectorLayer(layer.id) },
     { label: 'Add a pixel layer above', onClick: () => void ops.addPixelLayer(layer.id) },
@@ -84,7 +85,7 @@ const LayerRow = memo(function LayerRow({ layer, active, editing, dropMark, onDr
   const kind = layer.kind === 'pixel' ? 'Pixel layer (pixel art)' : 'Vector layer (smooth drawing)';
   return (
     <div
-      className={`tl-layer${active ? ' is-active' : ''}${!layer.visible ? ' is-hidden' : ''}${layer.locked ? ' is-locked' : ''}${dropMark ? ` drop-${dropMark}` : ''}`}
+      className={`tl-layer${active ? ' is-active' : ''}${!layer.visible ? ' is-hidden' : ''}${layer.locked ? ' is-locked' : ''}${layer.reference ? ' is-reference' : ''}${dropMark ? ` drop-${dropMark}` : ''}`}
       style={{ height: ROW_H }}
       draggable={!editing}
       data-layer={layer.id}
@@ -137,6 +138,11 @@ const LayerRow = memo(function LayerRow({ layer, active, editing, dropMark, onDr
       ) : (
         <span className="tl-layer-name" title="Double-click to rename" onDoubleClick={() => setTl({ editing: { kind: 'layer', id: layer.id } })}>
           {layer.name}
+          {layer.reference && (
+            <small className="tl-ref-tag" title="Reference layer: you see it while drawing, exports leave it out">
+              ref
+            </small>
+          )}
         </span>
       )}
       <button type="button" className="tl-icon-btn" title={layer.visible ? 'Hide this layer' : 'Show this layer'} aria-label={layer.visible ? 'Hide layer' : 'Show layer'} aria-pressed={!layer.visible} onClick={(e) => (e.stopPropagation(), ops.setLayerVisible(layer.id, !layer.visible))}>
