@@ -22,7 +22,7 @@
  *
  * In lottie-web's canvas renderer a layer fade still blends shape by shape, and effects don't play there.
  */
-import type { Cel, Doc, Easing, InstanceShape, Layer, LayerEffect, ParticlesShape, PathShape, PixelDrawing, Shape, StrokeShape, SubPath, TextShape, Tween } from '../core/format';
+import type { Cel, Doc, Easing, Gradient, InstanceShape, Layer, LayerEffect, ParticlesShape, PathShape, PixelDrawing, Shape, StrokeShape, SubPath, TextShape, Tween } from '../core/format';
 import { celAt } from '../core/doc';
 import { decompose, isInstance, isPosed, layersHaveLook, pairInstances, poseAt, symbolContent, symbolFrame, tweenInstance, type Mat, type PosedInstance } from '../core/symbols';
 import { drawingBox, effectReach, renderFrame, strokeOutline } from '../core/render';
@@ -32,6 +32,7 @@ import { canTraceText, glyphSprites, particleSprites, SPRITE_UNIT, type Particle
 import { cameraViewAt, cameraViewOn, activeCamera, parallaxFactor } from '../core/camera';
 import { encodePng } from '../io/png';
 import { flattenTilemap } from '../tiles/model';
+import { sortedStops } from '../core/gradient';
 import type { PosedMesh } from '../rig/pose';
 
 export interface LottieOptions {
@@ -172,11 +173,33 @@ function trOf(m: readonly number[], alpha: number): Tr {
   return { p: [r3(t.x), r3(t.y)], s: [r3(t.scaleX * 100), r3(t.scaleY * 100)], r: r3(t.rotation), sk: r3(-t.skew), o: r3(alpha * 100) };
 }
 
+/** A gradient as Lottie wants it: 1 linear or 2 radial, start and end, and the stops flattened (colours, then alphas). */
+interface LottieGrad {
+  t: number;
+  s: number[];
+  e: number[];
+  p: number;
+  k: number[];
+}
+
+export function lottieGradient(gr: Gradient, tints: Tint[]): LottieGrad {
+  const stops = sortedStops(gr.stops);
+  const k: number[] = [];
+  const alphas: number[] = [];
+  for (const st of stops) {
+    const c = tinted(st.color, tints);
+    k.push(r3(st.at), ...c.rgb);
+    alphas.push(r3(st.at), r3(c.alpha));
+  }
+  if (alphas.some((v, i) => i % 2 === 1 && v < 1)) k.push(...alphas);
+  return { t: gr.kind === 'radial' ? 2 : 1, s: [r3(gr.from.x), r3(gr.from.y)], e: [r3(gr.to.x), r3(gr.to.y)], p: stops.length, k };
+}
+
 /** The parts of a plain shape that can change from frame to frame. */
 interface ShapeLook {
   paths: Json[];
-  fill: { rgb: number[]; o: number } | null;
-  stroke: { rgb: number[]; o: number; w: number; lc: number; lj: number } | null;
+  fill: { rgb: number[]; o: number; grad?: LottieGrad } | null;
+  stroke: { rgb: number[]; o: number; w: number; lc: number; lj: number; grad?: LottieGrad } | null;
   /** A soft round sprite: a radial fade of this colour (SPRITE_UNIT across). */
   soft?: { rgb: number[] };
   /** Sprites move as a group; plain shapes have their points in stage space and no transform. */
@@ -194,15 +217,18 @@ function lookOf(s: Exclude<Shape, InstanceShape>, tints: Tint[]): ShapeLook {
   const paths = s.paths.filter((sp) => sp.points.length).map(lottiePath);
   if (s.type === 'fill') {
     const c = tinted(s.color, tints);
+    // A gradient's own stops carry their see-through, so the fill opacity is just the shape's.
+    if (s.gradient) return { paths, fill: { rgb: c.rgb, o: r3(s.opacity * 100), grad: lottieGradient(s.gradient, tints) }, stroke: null };
     return { paths, fill: { rgb: c.rgb, o: r3(c.alpha * s.opacity * 100) }, stroke: null };
   }
+  const ps = s as PathShape;
   const f = s.fill ? tinted(s.fill, tints) : null;
-  const st = (s as PathShape).stroke;
+  const st = ps.stroke;
   const sc = st ? tinted(st.color, tints) : null;
   return {
     paths,
-    fill: f ? { rgb: f.rgb, o: r3(f.alpha * s.opacity * 100) } : null,
-    stroke: st && sc ? { rgb: sc.rgb, o: r3(sc.alpha * s.opacity * 100), w: r3(st.width), lc: LC[st.cap], lj: LJ[st.join] } : null,
+    fill: f ? (ps.fillGradient ? { rgb: f.rgb, o: r3(s.opacity * 100), grad: lottieGradient(ps.fillGradient, tints) } : { rgb: f.rgb, o: r3(f.alpha * s.opacity * 100) }) : null,
+    stroke: st && sc ? { rgb: sc.rgb, o: r3((ps.strokeGradient ? 1 : sc.alpha) * s.opacity * 100), w: r3(st.width), lc: LC[st.cap], lj: LJ[st.join], ...(ps.strokeGradient ? { grad: lottieGradient(ps.strokeGradient, tints) } : {}) } : null,
   };
 }
 
@@ -298,6 +324,14 @@ export function padPath(p: Json, n: number): Json {
   return { c: p.c, v, i: ii, o: oo };
 }
 
+/** Start, end and stops of a gradient over a run of frames. They blend when every frame has the same number of stops. */
+function gradProps(first: LottieGrad, per: (LottieGrad | undefined)[], times: number[]): Json {
+  const all = per.map((g) => g ?? first);
+  const blend = all.every((g) => g.p === first.p && g.k.length === first.k.length && g.t === first.t);
+  const pick = blend ? all : all.map(() => first);
+  return { t: first.t, s: track(pick.map((g) => g.s), times, true), e: track(pick.map((g) => g.e), times, true), h: stat(0), a: stat(0), g: { p: first.p, k: track(pick.map((g) => g.k), times, true) } };
+}
+
 /** A group for one shape over a run of frames. */
 function shapeGroup(looks: ShapeLook[], times: number[], name: string): Json | null {
   const it: Json[] = [];
@@ -318,10 +352,12 @@ function shapeGroup(looks: ShapeLook[], times: number[], name: string): Json | n
   const anyStroke = looks.some((l) => l.stroke);
   if (anyStroke) {
     const st = looks.find((l) => l.stroke)!.stroke!;
+    // A gradient line: Lottie's gradient stroke, with the gradient as it is on its first frame.
+    const sg = looks.find((l) => l.stroke?.grad)?.stroke?.grad;
     it.push({
-      ty: 'st',
+      ty: sg ? 'gs' : 'st',
       nm: 'Line',
-      c: track(looks.map((l) => [...(l.stroke ?? st).rgb, 1]), times, true),
+      ...(sg ? gradProps(sg, looks.map((l) => l.stroke?.grad), times) : { c: track(looks.map((l) => [...(l.stroke ?? st).rgb, 1]), times, true) }),
       o: track(looks.map((l) => (l.stroke ? l.stroke.o : 0)), times, true),
       w: track(looks.map((l) => (l.stroke ? l.stroke.w : 0)), times, true),
       lc: st.lc,
@@ -331,7 +367,9 @@ function shapeGroup(looks: ShapeLook[], times: number[], name: string): Json | n
   }
   if (looks.some((l) => l.fill)) {
     const f = looks.find((l) => l.fill)!.fill!;
-    it.push({ ty: 'fl', nm: 'Fill', c: track(looks.map((l) => [...(l.fill ?? f).rgb, 1]), times, true), o: track(looks.map((l) => (l.fill ? l.fill.o : 0)), times, true), r: 2 });
+    const fg = looks.find((l) => l.fill?.grad)?.fill?.grad;
+    if (fg) it.push({ ty: 'gf', nm: 'Fill', ...gradProps(fg, looks.map((l) => l.fill?.grad), times), o: track(looks.map((l) => (l.fill ? l.fill.o : 0)), times, true), r: 2 });
+    else it.push({ ty: 'fl', nm: 'Fill', c: track(looks.map((l) => [...(l.fill ?? f).rgb, 1]), times, true), o: track(looks.map((l) => (l.fill ? l.fill.o : 0)), times, true), r: 2 });
   }
   if (looks.some((l) => l.soft)) {
     // The canvas's soft puff: full colour in the middle, two thirds at 45%, gone at the edge.

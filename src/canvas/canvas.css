@@ -609,3 +609,129 @@
   font: inherit;
   text-align: right;
 }
+
+/* Gradients in the Colours panel: a bar of the colours with a marker (a small square on a stem) per colour. */
+.cv-gradient {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.cv-gradient-bar {
+  position: relative;
+  height: 22px;
+  margin: 0 7px 14px;
+  border-radius: var(--radius-small);
+  border: 1px solid var(--line);
+  cursor: copy;
+  background-color: #fff;
+}
+.cv-gradient-stop {
+  position: absolute;
+  top: 100%;
+  width: 14px;
+  height: 14px;
+  margin: 3px 0 0 -7px;
+  padding: 0;
+  border-radius: 3px;
+  border: 2px solid var(--panel);
+  outline: 1px solid color-mix(in srgb, var(--text) 45%, transparent);
+  background: var(--stop);
+  cursor: ew-resize;
+  touch-action: none;
+}
+.cv-gradient-stop::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  width: 0;
+  height: 6px;
+  border-left: 1px solid color-mix(in srgb, var(--text) 45%, transparent);
+}
+.cv-gradient-stop[data-on='true'] {
+  outline: 2px solid var(--chosen-bg);
+  z-index: 1;
+}
+.cv-gradient-stop:focus-visible {
+  outline: 2px solid var(--focus, var(--chosen-bg));
+  outline-offset: 2px;
+}
+.cv-gradient-row {
+  display: flex;
+  align-items: end;
+  gap: 8px;
+}
+.cv-gradient-row > :first-child {
+  flex: 1;
+}
+/* A gradient in the stroke box: the gradient round the edge, the panel showing through the middle. */
+.cv-well-stroke.has-grad {
+  background: var(--wellg);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text) 25%, transparent);
+}
+.cv-well-stroke.has-grad::after {
+  content: '';
+  position: absolute;
+  inset: 9px;
+  border-radius: 2px;
+  background: var(--panel);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--text) 25%, transparent);
+}
+.cv-well-fill.has-grad {
+  background: var(--wellg);
+}
+.cv-recolour-open {
+  margin-top: 10px;
+  align-self: flex-start;
+}
+
+/* Recolour the whole animation */
+.cv-recolour {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.cv-recolour-pick,
+.cv-recolour-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.cv-recolour-pick label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.cv-recolour-pick input[type='color'] {
+  width: 44px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  background: none;
+}
+.cv-recolour-field .cv-slider {
+  flex: 1;
+  min-width: 140px;
+}
+.cv-recolour-previews {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.cv-recolour-fig {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+  font-size: 12px;
+  color: var(--muted);
+}
+.cv-recolour-canvas {
+  max-width: 220px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  background: repeating-conic-gradient(color-mix(in srgb, var(--text) 8%, transparent) 0 25%, transparent 0 50%) 0 0 / 12px 12px;
+}
