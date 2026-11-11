@@ -9,7 +9,9 @@ import { registerTool, type Tool, type ToolContext, type ToolPointer } from '../
 import { store } from '../core/store';
 import { fillRegion, pathsOverlap, type Rect } from '../geometry/fill';
 import { pointInPaths } from '../geometry/hit';
-import { floodFillPixels, parseColor } from '../geometry/pixel-fill';
+import { floodFillPixels, parseColor, type Rgba } from '../geometry/pixel-fill';
+import { snapToPalette } from '../pixel/ink';
+import { docPalette } from '../pixel/palette';
 import { activeDrawing, activeLayer, EDIT_HINTS, editActiveDrawing } from './edit';
 import { FillOptionsPanel, gapWidth, getFillOptions } from './fill-options';
 import './fill-help';
@@ -198,7 +200,8 @@ function fillPixels(e: ToolPointer, ctx: ToolContext) {
   if (!layer || layer.kind !== 'pixel') return;
   const px = Math.floor(e.x / layer.pixelSize);
   const py = Math.floor(e.y / layer.pixelSize);
-  const color = parseColor(ui.color);
+  // A palette-locked layer only takes palette colours.
+  const color = layer.paletteLock ? ([...snapToPalette(parseColor(ui.color), docPalette(store().get().doc))] as Rgba) : parseColor(ui.color);
   const mode = getFillOptions().allOfColour ? 'all' : 'contiguous';
   const existing = activeDrawing();
   if (existing && existing.kind === 'pixel') {

@@ -38,6 +38,8 @@ export interface Doc {
   markers: Marker[];
   /** The document's colour swatches. */
   swatches: Swatch[];
+  /** The pixel art palette: an ordered list of colours in ramps (optional; missing = the starter palette). */
+  palette?: DocPalette;
 }
 
 export type LayerKind = 'vector' | 'pixel';
@@ -70,6 +72,8 @@ export interface PixelLayer extends BaseLayer {
   kind: 'pixel';
   /** Document pixels per art pixel (a whole number, 1 or more). A 256x256 stage with pixelSize 8 is a 32x32 grid. */
   pixelSize: number;
+  /** Palette lock: everything painted on this layer snaps to the nearest palette colour (missing = off). */
+  paletteLock?: boolean;
 }
 
 export type Layer = VectorLayer | PixelLayer;
@@ -202,4 +206,15 @@ export interface Swatch {
   id: Id;
   name: string;
   color: Color;
+}
+
+/**
+ * A pixel art palette. Colours are in order; a ramp is a run of neighbours going from dark to light (or light to
+ * dark), which is what shading steps along. `ramps` lists where each ramp starts (index into `colors`); missing or
+ * empty means the whole palette is one ramp.
+ */
+export interface DocPalette {
+  name: string;
+  colors: Color[];
+  ramps?: number[];
 }

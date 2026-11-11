@@ -100,12 +100,19 @@ describe('pencil', () => {
     expect(st.brush.taperEnd).toBe(0);
   });
 
-  it('only works on vector layers', () => {
-    expect(pencilTool.layers).toEqual(['vector']);
+  it('is the one pixel pencil on a pixel layer', () => {
+    expect(pencilTool.layers).toEqual(['vector', 'pixel']);
     pixelStore();
+    setToolSettings({ pixelBrushSize: 5 });
     const c = ctx();
-    drag(pencilTool, c, wave);
-    expect(c.hint).toHaveBeenCalled();
+    drag(pencilTool, c, [[4, 4], [12, 4]]);
+    expect(c.hint).not.toHaveBeenCalled();
+    const { doc } = store().get();
+    const d = Object.values(doc.drawings)[0] as PixelDrawing;
+    // One pixel high whatever the brush size: row 1 stays clear.
+    expect(getPx(d.pixels, d.width, 0, 0)[3]).toBe(255);
+    expect(getPx(d.pixels, d.width, 1, 0)[3]).toBe(255);
+    expect(getPx(d.pixels, d.width, 0, 1)[3]).toBe(0);
   });
 });
 

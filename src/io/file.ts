@@ -190,7 +190,7 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
       opacity: Math.min(1, Math.max(0, num(l.opacity, 1))),
       cels,
     };
-    if (l.kind === 'pixel') layers.push({ ...base, kind: 'pixel', pixelSize: Math.max(1, Math.round(num(l.pixelSize, 1))) });
+    if (l.kind === 'pixel') layers.push({ ...base, kind: 'pixel', pixelSize: Math.max(1, Math.round(num(l.pixelSize, 1))), ...(l.paletteLock === true ? { paletteLock: true } : {}) });
     else layers.push({ ...base, kind: 'vector', ...(l.drawMode === 'merge' ? { drawMode: 'merge' as const } : {}) });
   }
   const unique = new Set(layers.map((l) => l.id));
@@ -211,7 +211,16 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
     clips: Array.isArray(raw.clips) ? raw.clips.filter((c: any) => isObj(c) && typeof c.id === 'string') : [],
     markers: Array.isArray(raw.markers) ? raw.markers.filter((m: any) => isObj(m) && typeof m.id === 'string') : [],
     swatches: Array.isArray(raw.swatches) ? raw.swatches.filter((s: any) => isObj(s) && typeof s.id === 'string' && typeof s.color === 'string') : [],
+    ...readPalette(raw.palette),
   };
+}
+
+/** The pixel palette, if the file has a usable one. */
+function readPalette(p: unknown): { palette?: Doc['palette'] } {
+  if (!isObj(p) || !Array.isArray(p.colors)) return {};
+  const colors = p.colors.filter((c: unknown) => typeof c === 'string' && /^#[0-9a-f]{6}([0-9a-f]{2})?$/i.test(c)).slice(0, 256);
+  const ramps = Array.isArray(p.ramps) ? [...new Set<number>(p.ramps.filter((n: unknown) => Number.isInteger(n) && (n as number) > 0 && (n as number) < colors.length))].sort((a, b) => a - b) : [];
+  return { palette: { name: str(p.name, 'Palette'), colors, ...(ramps.length ? { ramps } : {}) } };
 }
 
 /** Just the document, for callers that do not care about warnings. */

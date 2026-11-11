@@ -14,6 +14,8 @@ import { ShapeOptions } from './options/ShapeOptions';
 import { noteColorUsed } from './recent';
 import { getToolSettings, type ToolSettings } from './settings';
 import { canEdit, reportEdit } from './util';
+import { activePixelLayer, makePixelShape } from '../pixel/tools';
+import { byLayerKind, PixelShapeOptions } from '../pixel/ToolOptions';
 
 /** The control point distance that makes a quarter of a circle out of a cubic bezier. */
 const KAPPA = 0.5522847498307936;
@@ -138,6 +140,8 @@ interface Drag {
 
 function shapeTool(kind: 'rect' | 'ellipse' | 'line', label: string, icon: string, key: string, order: number, help: string, what: string): Tool {
   let drag: Drag | null = null;
+  // On a pixel layer the shape is painted as clean pixels instead (src/pixel/tools.ts).
+  const pix = makePixelShape(kind, label);
   const build = (): PathShape | null => {
     if (!drag) return null;
     const ui = store().get().ui;
@@ -148,12 +152,17 @@ function shapeTool(kind: 'rect' | 'ellipse' | 'line', label: string, icon: strin
     label,
     icon,
     key,
-    layers: ['vector'],
+    layers: ['vector', 'pixel'],
     order,
     help,
     cursor: 'crosshair',
-    options: ShapeOptions,
+    options: byLayerKind(ShapeOptions, PixelShapeOptions),
     down(e: ToolPointer, ctx: ToolContext) {
+      const px = activePixelLayer();
+      if (px) {
+        if (canEdit(ctx, 'pixel', what)) pix.down(e, ctx, px);
+        return;
+      }
       if (!canEdit(ctx, 'vector', what)) return;
       const ui = store().get().ui;
       if (kind !== 'line' && !ui.fillColor && !ui.strokeOn) {
@@ -163,9 +172,11 @@ function shapeTool(kind: 'rect' | 'ellipse' | 'line', label: string, icon: strin
       drag = { start: { x: e.x, y: e.y }, cur: e };
     },
     move(e) {
+      if (pix.active()) return pix.move(e);
       if (drag) drag.cur = e;
     },
     up(e, ctx) {
+      if (pix.active()) return pix.up(e, ctx);
       if (!drag) return;
       drag.cur = e;
       const shape = build();
@@ -181,9 +192,11 @@ function shapeTool(kind: 'rect' | 'ellipse' | 'line', label: string, icon: strin
     },
     cancel(ctx) {
       drag = null;
+      pix.cancel();
       ctx.requestOverlay();
     },
-    overlay(g) {
+    overlay(g, ctx) {
+      if (pix.active() || activePixelLayer()) return pix.overlay(g, ctx);
       const s = build();
       if (s) drawShape(g, s);
     },

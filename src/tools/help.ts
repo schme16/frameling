@@ -14,7 +14,7 @@ registerHelpTopics([
 
 In the options you can change the size, how much it smooths out wobbles, whether pressure matters, and whether lines start or end in a point.
 
-**On a pixel layer** it's a pixel pencil: hard-edged pixels, with the size counted in art pixels.
+**On a pixel layer** it paints hard-edged pixels, with the size counted in art pixels. (For one pixel lines, the [Pencil](help:tool-pencil) is quicker.)
 - **Pixel perfect** tidies the little L-shaped corners that make hand-drawn lines look lumpy, so they stay one pixel thick.
 - Hold **Shift** and click to draw a straight line from where you last stopped.
 
@@ -26,13 +26,17 @@ If the brush won't draw, the layer might be locked or hidden. Check it in the ti
     id: 'tool-pencil',
     title: 'Pencil',
     section: 'Drawing',
-    summary: 'A thin, even line, good for sketching and neat outlines.',
-    keywords: ['sketch', 'thin', 'line', 'draw'],
+    summary: 'A thin, even line for sketching. On a pixel layer it is the pixel pencil: one clean pixel at a time.',
+    keywords: ['sketch', 'thin', 'line', 'draw', 'pixel pencil', 'pixel perfect'],
     body: `Press **P**, then drag.
 
-The pencil draws a thin line that stays the same width, however hard you press. It follows your hand closely, which makes it good for sketching and rough animation.
+**On a vector layer** the pencil draws a thin line that stays the same width, however hard you press. It follows your hand closely, which makes it good for sketching and rough animation. For thicker lines that swell with pressure, use the Brush (B).
 
-For thicker lines that swell with pressure, use the Brush (B). The pencil works on vector layers. On a pixel layer, the Brush is your pencil.`,
+**On a pixel layer** it's the pixel pencil, the main tool for pixel art. It always paints one pixel at a time.
+- **Pixel perfect** (on unless you turn it off in the options) tidies the little L-shaped corners hand-drawn lines get, so curves stay one pixel thick.
+- Hold **Shift** and click to draw a straight line from where you last stopped.
+- It paints with the **stroke** colour. Pick colours from the [Palette](help:palette).
+- [Mirror drawing](help:pixel-mirror) and the [palette lock](help:palette-lock) work with it too.`,
   },
   {
     id: 'tool-eraser',
@@ -63,7 +67,9 @@ Using a drawing pen? Flip it over and use the eraser end.`,
 - Hold **Alt** to draw from the middle instead of a corner.
 - In the options, set how thick the outline is and how round the corners are.
 
-The inside uses your **fill** colour and the edge uses your **stroke** colour, so a new rectangle starts white with a black outline. Set either one to none for just an outline or just a solid shape. See [Fill and stroke colours](help:fill-and-stroke). Rectangles draw on vector layers.`,
+The inside uses your **fill** colour and the edge uses your **stroke** colour, so a new rectangle starts white with a black outline. Set either one to none for just an outline or just a solid shape. See [Fill and stroke colours](help:fill-and-stroke).
+
+On a **pixel layer** the rectangle is painted as clean pixels: a one pixel edge in the stroke colour, filled with the fill colour.`,
   },
   {
     id: 'tool-ellipse',
@@ -78,7 +84,7 @@ The inside uses your **fill** colour and the edge uses your **stroke** colour, s
 - Hold **Alt** to draw from the middle.
 - The inside uses your **fill** colour and the edge your **stroke** colour. See [Fill and stroke colours](help:fill-and-stroke).
 
-Ellipses are made of smooth curves, so they stay sharp however far you zoom in. They draw on vector layers.`,
+On a vector layer, ellipses are made of smooth curves, so they stay sharp however far you zoom in. On a **pixel layer** they're painted as clean, even pixel circles and ovals, with no doubled pixels.`,
   },
   {
     id: 'tool-line',
@@ -92,7 +98,9 @@ Ellipses are made of smooth curves, so they stay sharp however far you zoom in. 
 - Hold **Shift** to snap to straight, diagonal and upright angles.
 - Hold **Alt** to draw from the middle.
 
-Set how thick it is in the options. Lines draw on vector layers.`,
+Set how thick it is in the options.
+
+On a **pixel layer** the line is one pixel wide, and **Shift** snaps it to the clean pixel art slopes (1 across for 1 down, 2 for 1, 3 for 1, 4 for 1 and their upright twins), so every step in the line is the same length.`,
   },
   {
     id: 'tool-select',
