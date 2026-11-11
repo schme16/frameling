@@ -288,6 +288,7 @@ export class FramePainter {
     for (const layer of doc.layers) {
       if (!layer.visible) continue;
       const lv = p.live && p.live.layerId === layer.id ? p.live : null;
+      if (layer.kind === 'camera') continue;
       const pixelSize = layer.kind === 'vector' ? 1 : layer.pixelSize;
       if (lv?.kind === 'pixel') {
         g.save();

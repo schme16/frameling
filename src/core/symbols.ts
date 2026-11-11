@@ -11,6 +11,7 @@
 import type { Cel, Doc, Drawing, EditFrame, Id, InstanceShape, Layer, MotionPath, PathPoint, Shape, SymbolDef, Transform2D, Tween, VectorDrawing } from './format';
 import { ease } from './ease';
 import { celAt, uid } from './doc';
+import { morphShapes } from './shape-tween';
 
 // ---------------------------------------------------------------- matrices
 
@@ -489,6 +490,10 @@ export function poseAt(doc: Doc, layer: Layer, frame: number, depth = 0): Drawin
   const cel = celAt(layer, frame);
   if (!cel) return undefined;
   const d = doc.drawings[cel.drawingId];
+  if (d?.kind === 'vector' && cel.tween?.kind === 'shape') {
+    const m = morphAt(doc, layer, cel, d, frame, depth);
+    if (m) return m;
+  }
   if (!d || d.kind !== 'vector' || !hasInstances(d)) return d;
   if (depth > MAX_DEPTH) return undefined;
 
@@ -523,6 +528,42 @@ export function poseAt(doc: Doc, layer: Layer, frame: number, depth = 0): Drawin
   poseStats.built++;
   byKey.set(key, out);
   // Keep a scrub through a long tween from growing this without end.
+  if (byKey.size > 600) byKey.delete(byKey.keys().next().value!);
+  return out;
+}
+
+/** A shape tween's in-between at `frame`, or undefined on the key's own frame (or with no end key to morph to). */
+function morphAt(doc: Doc, layer: Layer, cel: Cel, d: VectorDrawing, frame: number, depth: number): Drawing | undefined {
+  const tp = tweenProgress(layer, cel, frame);
+  if (!tp || tp.t === 0) return undefined;
+  const to = doc.drawings[tp.next.drawingId];
+  if (to?.kind !== 'vector') return undefined;
+  if (depth > MAX_DEPTH) return undefined;
+  const local = frame - cel.start;
+  const frames: number[] = [];
+  for (const s of d.shapes)
+    if (isInstance(s)) {
+      const c = symbolContent(doc, s.symbolId);
+      frames.push(c ? symbolFrame(s, local, c.length) : -1);
+    }
+  const key = `shape|${tp.t.toFixed(5)}|${tp.next.id}|${tp.next.drawingId}|` + frames.join(',');
+  const world = worldOf(doc);
+  let byKey = world.cels.get(cel);
+  if (!byKey) world.cels.set(cel, (byKey = new Map()));
+  const hit = byKey.get(key);
+  if (hit) return hit;
+  const tw = cel.tween!;
+  let n = 0;
+  const shapes = morphShapes(d, to, tp.t, tw.hints ?? [], (a, b, t) => tweenInstance(a, b, tw, t)).map((s) => {
+    if (!isInstance(s)) return s;
+    const c = symbolContent(doc, s.symbolId);
+    // Spare copies that grow in from the end key play from its start.
+    const inner = n < frames.length ? frames[n++] : c ? symbolFrame(s, local, c.length) : -1;
+    return poseInstance(doc, s, inner, depth);
+  });
+  const out: VectorDrawing = { id: `${d.id}@${key}`, kind: 'vector', shapes };
+  poseStats.built++;
+  byKey.set(key, out);
   if (byKey.size > 600) byKey.delete(byKey.keys().next().value!);
   return out;
 }

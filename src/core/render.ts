@@ -9,6 +9,7 @@ import { getStroke } from 'perfect-freehand';
 import type { Color, Doc, Drawing, FillShape, Layer, PathShape, PixelDrawing, Shape, StrokeShape, SubPath } from './format';
 import { isPosed, poseAt, type PosedInstance, type PosedLayer } from './symbols';
 import { drawTilemap } from './tilemap';
+import { cameraViewAt, layerCameraMatrix } from './camera';
 
 export type Ctx2D = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 
@@ -19,6 +20,8 @@ export interface RenderOptions {
   layerFilter?: (layer: Layer) => boolean;
   /** Ignore layer visibility (export of hidden layers, for example). */
   includeHidden?: boolean;
+  /** Look through the camera, when the document has one (default true). The editor's own view passes false. */
+  camera?: boolean;
 }
 
 // Outlines and Path2Ds are cached per shape object. Shapes are immutable (edits make new objects), so the object
@@ -166,7 +169,7 @@ export function drawDrawing(g: Ctx2D, d: Drawing, pixelSize = 1, at?: DrawContex
     for (const s of d.shapes) drawShape(g, s);
   } else if (d.kind === 'tilemap') {
     if (at) drawTilemap(g, at.doc, d, pixelSize, at.frame, pixelCanvas);
-  } else {
+  } else if (d.kind === 'pixel') {
     const prev = g.imageSmoothingEnabled;
     g.imageSmoothingEnabled = false;
     g.drawImage(pixelCanvas(d), 0, 0, d.width * pixelSize, d.height * pixelSize);
@@ -255,6 +258,7 @@ export function drawInstance(g: Ctx2D, s: PosedInstance): void {
 export function drawLayerAt(g: Ctx2D, doc: Doc, layer: Layer, frame: number): void {
   const d = poseAt(doc, layer, frame);
   if (!d) return;
+  if (layer.kind === 'camera') return;
   const ps = layer.kind === 'vector' ? 1 : layer.pixelSize;
   if (layer.opacity >= 1) {
     drawDrawing(g, d, ps, { doc, frame });
@@ -281,10 +285,19 @@ export function renderFrame(g: Ctx2D, doc: Doc, frame: number, opts: RenderOptio
     g.fillStyle = doc.background;
     g.fillRect(0, 0, doc.width, doc.height);
   }
+  const view = opts.camera === false ? undefined : cameraViewAt(doc, frame);
   for (const layer of doc.layers) {
     if (!opts.includeHidden && !layer.visible) continue;
     if (opts.layerFilter && !opts.layerFilter(layer)) continue;
+    const m = layerCameraMatrix(doc, layer, view);
+    if (!m) {
+      drawLayerAt(g, doc, layer, frame);
+      continue;
+    }
+    g.save();
+    g.transform(m[0], m[1], m[2], m[3], m[4], m[5]);
     drawLayerAt(g, doc, layer, frame);
+    g.restore();
   }
 }
 

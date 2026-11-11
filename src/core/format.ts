@@ -49,9 +49,11 @@ export interface Doc {
    * `layers` and `length` are the open symbol's, and each entry keeps what it replaced. Never saved (see rootDoc).
    */
   editing?: EditFrame[];
+  /** How clips lead to each other: which plays first and what follows what (missing = no flow). See `ClipFlow`. */
+  flow?: ClipFlow;
 }
 
-export type LayerKind = 'vector' | 'pixel' | 'tilemap';
+export type LayerKind = 'vector' | 'pixel' | 'tilemap' | 'camera';
 
 export interface BaseLayer {
   id: Id;
@@ -64,6 +66,11 @@ export interface BaseLayer {
   onion?: boolean;
   /** A reference layer: shown while drawing, left out of every export (ground lines, sketches, guides). Missing = no. */
   reference?: boolean;
+  /**
+   * How far this layer is from the camera, for parallax (missing = 0, on the stage). 1 is twice as far, so it moves
+   * half as much when the camera pans; negative values are closer and move more (above -0.9).
+   */
+  depth?: number;
   /**
    * Cels on this layer, sorted by `start`, never overlapping. A frame with no cel covering it is empty.
    */
@@ -97,7 +104,15 @@ export interface TilemapLayer extends BaseLayer {
   pixelSize: number;
 }
 
-export type Layer = VectorLayer | PixelLayer | TilemapLayer;
+/**
+ * The camera: its drawings are camera views, keyed and tweened like any layer. The first visible camera layer on the
+ * stage frames every export and playback. It draws nothing itself.
+ */
+export interface CameraLayer extends BaseLayer {
+  kind: 'camera';
+}
+
+export type Layer = VectorLayer | PixelLayer | TilemapLayer | CameraLayer;
 
 /**
  * One drawing held on a layer for `length` frames (its exposure: 1 = "on ones", 2 = "on twos").
@@ -111,7 +126,25 @@ export interface Cel {
   tween?: Tween;
 }
 
-export type Drawing = VectorDrawing | PixelDrawing | TilemapDrawing;
+export type Drawing = VectorDrawing | PixelDrawing | TilemapDrawing | CameraDrawing;
+
+/**
+ * Where the camera looks: the stage-sized frame centred on (x, y) in stage pixels, `zoom` times closer (2 shows half
+ * as much), turned `rotation` degrees clockwise. The plain view is the stage itself: centre, zoom 1, no turn.
+ */
+export interface CameraView {
+  x: number;
+  y: number;
+  zoom: number;
+  rotation: number;
+}
+
+/** One key of a camera layer. */
+export interface CameraDrawing {
+  id: Id;
+  kind: 'camera';
+  view: CameraView;
+}
 
 export interface VectorDrawing {
   id: Id;
@@ -345,12 +378,22 @@ export type Easing = 'linear' | 'easeIn' | 'easeOut' | 'easeInOut' | 'backIn' | 
  * transforms, opacity and tint they have on the two keys).
  */
 export interface Tween {
-  kind?: 'classic';
+  /** 'shape' morphs the outlines, colours and strokes of one key's drawing into the next one's (shape tween). */
+  kind?: 'classic' | 'shape';
   ease: Easing;
   /** Extra whole turns on the way (positive clockwise). */
   spin?: number;
   /** Follow this line on the way (stage coordinates of the layer). */
   path?: MotionPath;
+  /** Shape tweens only: paired markers saying which point of the start drawing becomes which of the end one. */
+  hints?: ShapeHint[];
+}
+
+/** A shape hint: the point near `from` on the start key's drawing travels to the point near `to` on the end key's. */
+export interface ShapeHint {
+  id: Id;
+  from: { x: number; y: number };
+  to: { x: number; y: number };
 }
 
 export interface MotionPath {
@@ -372,4 +415,29 @@ export interface EditFrame {
   activeLayerId: Id | null;
   /** Instance space to outer space, as [a, b, c, d, e, f]. */
   matrix: [number, number, number, number, number, number];
+}
+
+// ---------------------------------------------------------------- clip flow (state graph)
+
+/**
+ * Which clip plays first and what follows what. States are the document's clips. Game engines and Interactives read
+ * this as a state machine; Frameling's own playback ignores it.
+ */
+export interface ClipFlow {
+  /** The clip that plays first (missing = the first clip). */
+  start?: Id;
+  transitions: ClipTransition[];
+  /** Where each clip's box sits in the flow panel, by clip id (missing = laid out automatically). */
+  positions?: Record<Id, { x: number; y: number }>;
+}
+
+/** Go from one clip to another when it ends, or when something triggers it (a key press, "jump", "hit"). */
+export interface ClipTransition {
+  id: Id;
+  from: Id;
+  to: Id;
+  /** 'end': when `from` finishes (a looping clip finishes each time round). 'trigger': when `trigger` is fired. */
+  when: 'end' | 'trigger';
+  /** The trigger's name, for 'trigger' transitions. */
+  trigger?: string;
 }

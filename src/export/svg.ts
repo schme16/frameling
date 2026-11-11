@@ -161,7 +161,7 @@ export function pixelRects(d: PixelDrawing, size: number): string[] {
 
 function layerToSvg(doc: Doc, layer: Layer, frame: number, id: string): string {
   const d = poseAt(doc, layer, frame);
-  if (!d) return '';
+  if (!d || d.kind === 'camera') return '';
   let inner: string[];
   if (d.kind === 'pixel') inner = pixelRects(d, layer.kind === 'pixel' ? layer.pixelSize : 1);
   else if (d.kind === 'tilemap') inner = pixelRects(flattenTilemap(doc, d, frame), layer.kind === 'tilemap' ? layer.pixelSize : 1);
