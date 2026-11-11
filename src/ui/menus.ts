@@ -47,6 +47,11 @@ export const MENUS: MenuDef[] = [
     items: ['timeline.play', 'timeline.toggleLoop', 'timeline.toggleOnion', '-', 'timeline.prevFrame', 'timeline.nextFrame', 'timeline.prevKey', 'timeline.nextKey', 'timeline.firstFrame', 'timeline.lastFrame', '-', 'timeline.newKey', 'timeline.emptyFrame', 'timeline.duplicateKey', 'timeline.clearKey', '-', 'timeline.insertFrame', 'timeline.removeFrame', 'timeline.addMarker'],
   },
   {
+    label: 'Effects',
+    categories: ['Effects'],
+    items: ['view.panel.effects', '-', 'effects.add.blur', 'effects.add.glow', 'effects.add.shadow', 'effects.add.adjust', 'effects.add.outline', 'effects.add.pixelate', '-', 'layers.clipToBelow', 'layers.useAsMask', '-', 'layers.newFolder', 'layers.ungroupFolder', '-', 'effects.reset'],
+  },
+  {
     label: 'Help',
     categories: ['Help'],
     items: ['help.contents', 'quests.open', 'file.openExample', 'help.shortcuts', 'help.welcome', '-', 'help.about'],
