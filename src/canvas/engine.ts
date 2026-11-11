@@ -20,6 +20,8 @@ import { drawTileModeFrame, tileCopyAlpha } from '../tiles/look';
 import { cssVar, subscribeTheme } from './theme';
 import { getViewSettings, subscribeViewSettings } from './viewSettings';
 import { drawDecorations } from './decorations';
+import { canvasCamera, lookingThrough, stageCamera } from '../camera/ops';
+import { invert, applyMat } from '../core/symbols';
 import { screenToDoc, stageDeviceRect, wheelZoomFactor, zoomAbout, type Pt } from './view';
 
 export interface EngineElements {
@@ -138,7 +140,7 @@ export class CanvasEngine {
     ro.observe(root);
     this.cleanups.push(() => ro.disconnect());
     this.cleanups.push(store().subscribe(this.onStore));
-    this.cleanups.push(subscribeViewSettings(() => this.invalidate(false, true)));
+    this.cleanups.push(subscribeViewSettings(() => this.invalidate(true, true)));
     this.cleanups.push(subscribeTileUi(() => this.invalidate(true, true)));
     this.cleanups.push(subscribePrefs(() => this.invalidate(true, true)));
     // Grid and handle colours come from theme tokens, so a theme or look change repaints both canvases.
@@ -319,6 +321,8 @@ export class CanvasEngine {
       zooming,
       tileMode: tileModeOn(),
       tileCopyAlpha: tileCopyAlpha(),
+      camera: canvasCamera()?.view,
+      pasteboard: !ui.playing && !doc.editing?.length && !!stageCamera(doc) && !lookingThrough(),
     });
     if (!settled) {
       clearTimeout(this.settleTimer);
@@ -340,21 +344,27 @@ export class CanvasEngine {
     const rect = stageDeviceRect({ zoom: ui.zoom, panX: ui.panX, panY: ui.panY }, doc.width, doc.height, dpr);
     if (tileModeOn()) drawTileModeFrame(g, rect, dpr);
     this.drawPixelGrid(g, rect, ui.zoom, dpr);
+    // Looking through the camera, everything drawn in stage space goes through it too.
+    const cam = canvasCamera()?.matrix;
+    const stageSpace = () => {
+      g.setTransform(rect.w / doc.width, 0, 0, rect.h / doc.height, rect.x, rect.y);
+      if (cam) g.transform(cam[0], cam[1], cam[2], cam[3], cam[4], cam[5]);
+    };
     g.save();
-    g.setTransform(rect.w / doc.width, 0, 0, rect.h / doc.height, rect.x, rect.y);
+    stageSpace();
     drawDecorations(g, this.ctx);
     g.restore();
     const tool = this.gesture?.kind === 'tool' ? this.gesture.tool : getTool(ui.tool);
     if (tool?.overlay && !(this.gesture?.kind === 'pan')) {
       g.save();
-      g.setTransform(rect.w / doc.width, 0, 0, rect.h / doc.height, rect.x, rect.y);
+      stageSpace();
       tool.overlay(g, this.ctx);
       g.restore();
     }
     const extra = ctl.getStageOverlays();
     if (extra.length) {
       g.save();
-      g.setTransform(rect.w / doc.width, 0, 0, rect.h / doc.height, rect.x, rect.y);
+      stageSpace();
       for (const fn of extra) fn(g, ui.zoom);
       g.restore();
     }
@@ -427,7 +437,10 @@ export class CanvasEngine {
 
   private toDocPoint(e: { clientX: number; clientY: number }): Pt {
     const { zoom, panX, panY } = store().get().ui;
-    return screenToDoc({ zoom, panX, panY }, e.clientX - this.bounds.left, e.clientY - this.bounds.top);
+    const p = screenToDoc({ zoom, panX, panY }, e.clientX - this.bounds.left, e.clientY - this.bounds.top);
+    // Through the camera, the screen shows camera space: tools still work in stage space.
+    const cam = canvasCamera()?.matrix;
+    return cam ? applyMat(invert(cam), p.x, p.y) : p;
   }
 
   private toPointer(e: PointerEvent): ToolPointer {

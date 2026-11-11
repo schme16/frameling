@@ -8,10 +8,10 @@ import { EASE_PRESETS, presetOf } from '../core/ease';
 import { instanceAt, isInstance, nextKey, symbolContent } from '../core/symbols';
 import { ActionButton, Choice, Field, Slider, Tip, Toggle } from '../canvas/controls';
 import { CurveEditor } from './CurveEditor';
-import { clearMotionPath, editInstance, makeTween, pathFromSelection, removeTween, resetTransform, setEase, swapSymbol, updateInstances, updateTween, wouldNestInItself } from './ops';
+import { clearMotionPath, clearShapeHints, editInstance, makeShapeTween, makeTween, makeTweenAsking, setTweenKind, pathFromSelection, removeTween, resetTransform, setEase, swapSymbol, updateInstances, updateTween, wouldNestInItself } from './ops';
 import './symbols.css';
 
-function Num({ label, value, onChange, step = 1, suffix, title }: { label: string; value: number; onChange: (v: number) => void; step?: number; suffix?: string; title?: string }) {
+export function Num({ label, value, onChange, step = 1, suffix, title }: { label: string; value: number; onChange: (v: number) => void; step?: number; suffix?: string; title?: string }) {
   const [draft, setDraft] = useState<string | null>(null);
   const shown = draft ?? String(Math.round(value * 100) / 100);
   const commit = (s: string) => {
@@ -46,7 +46,7 @@ function Num({ label, value, onChange, step = 1, suffix, title }: { label: strin
   );
 }
 
-function Section({ title, children }: { title: string; children: ReactNode }) {
+export function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="sy-section">
       <h3 className="sy-section-title">{title}</h3>
@@ -143,7 +143,12 @@ function InstanceSection({ inst, between }: { inst: InstanceShape; between: numb
   );
 }
 
-function TweenSection() {
+const KIND_OPTIONS: { value: 'classic' | 'shape'; label: string; title: string }[] = [
+  { value: 'classic', label: 'Move', title: 'Symbols glide, turn, resize and fade as whole pieces (classic tween)' },
+  { value: 'shape', label: 'Morph', title: 'The outlines and colours melt from one drawing into the next (shape tween)' },
+];
+
+export function TweenSection() {
   const doc = useStore((s) => s.doc);
   const frame = useStore((s) => s.ui.frame);
   const layerId = useStore((s) => s.ui.activeLayerId);
@@ -151,12 +156,13 @@ function TweenSection() {
   const layer = findLayer(doc, layerId) ?? doc.layers[doc.layers.length - 1];
   const cel = layer ? celAt(layer, frame) : undefined;
   if (!layer || !cel) return null;
-  if (layer.kind !== 'vector') return null;
+  if (layer.kind !== 'vector' && layer.kind !== 'camera') return null;
+  const camera = layer.kind === 'camera';
   const tw = cel.tween;
-  if (!tw) {
+  if (!tw && camera) {
     return (
-      <Section title="In-betweens (tween)">
-        <Tip>Make the drawing glide, grow, turn or fade from this key to the next one. Frameling draws every frame in between.</Tip>
+      <Section title="Camera in-betweens">
+        <Tip>Glide the camera from this key to the next: pan, zoom and turn smoothly, with easing.</Tip>
         <div className="cv-row cv-wrap">
           <ActionButton onClick={() => makeTween()} title="Make in-betweens (Ctrl+Shift+T)">
             Make in-betweens
@@ -165,11 +171,29 @@ function TweenSection() {
       </Section>
     );
   }
+  if (!tw) {
+    return (
+      <Section title="In-betweens (tween)">
+        <Tip>Make the drawing glide, grow, turn or fade from this key to the next one. Frameling draws every frame in between.</Tip>
+        <div className="cv-row cv-wrap">
+          <ActionButton onClick={() => makeTweenAsking()} title="Make in-betweens (Ctrl+Shift+T)">
+            Make in-betweens
+          </ActionButton>
+          <ActionButton onClick={() => makeShapeTween()} title="Morph between shapes (shape tween): outlines and colours melt into the next key's drawing">
+            Morph between shapes
+          </ActionButton>
+        </div>
+      </Section>
+    );
+  }
+  const shape = tw.kind === 'shape';
+  const hints = tw.hints ?? [];
   const next = nextKey(layer, cel);
   const custom = Array.isArray(tw.ease);
   const preset = presetOf(tw.ease);
   return (
-    <Section title="In-betweens (tween)">
+    <Section title={camera ? 'Camera in-betweens' : shape ? 'In-betweens: morph (shape tween)' : 'In-betweens (tween)'}>
+      {!camera && <Choice label="How it changes" value={shape ? 'shape' : 'classic'} options={KIND_OPTIONS} onChange={(v) => setTweenKind(v)} />}
       {next ? (
         <Tip>
           From frame {cel.start + 1} to frame {next.start + 1}. {preset ? preset.description : 'Your own curve.'}
@@ -198,6 +222,22 @@ function TweenSection() {
         </select>
       </Field>
       <CurveEditor value={tw.ease} onChange={(e) => setEase(e, `ease-${cel.id}`)} />
+      {shape && (
+        <Field label={`Shape hints (${hints.length})`}>
+          <Tip>If the morph twists or crumples, pin points together: put a lettered hint on the first key, then drag its twin to the matching spot on the last key.</Tip>
+          <div className="cv-row cv-wrap">
+            <ActionButton onClick={() => store().setUi({ tool: 'shape-hints', frame: cel.start })} title="Click the first key's outline to add a hint (Alt-click one to remove it)">
+              {hints.length ? 'Add or move hints' : 'Add shape hints'}
+            </ActionButton>
+            {next && hints.length > 0 && (
+              <ActionButton onClick={() => store().setUi({ tool: 'shape-hints', frame: next.start })} title="Go to the last key and drag the hints into place">
+                Place them on the last key
+              </ActionButton>
+            )}
+            {hints.length > 0 && <ActionButton onClick={() => clearShapeHints()}>Remove all hints</ActionButton>}
+          </div>
+        </Field>
+      )}
       <div className="sy-grid">
         <Num label="Extra spins" value={tw.spin ?? 0} onChange={(v) => updateTween('Extra spins', (t) => void (Math.round(v) ? (t.spin = Math.round(v)) : delete t.spin), { coalesce: `spin-${cel.id}` })} title="Whole turns on the way. Negative spins the other way." />
       </div>

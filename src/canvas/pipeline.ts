@@ -8,7 +8,9 @@
  * The shared renderer (core/render.ts) does all the actual drawing of shapes and pixels, so this view, thumbnails and
  * exports can never disagree about what a frame looks like.
  */
-import type { Doc, Drawing, Layer } from '../core/format';
+import type { CameraView, Doc, Drawing, Layer } from '../core/format';
+import { layerCameraMatrix } from '../core/camera';
+import type { Mat } from '../core/symbols';
 import { poseAt, poseLive } from '../core/symbols';
 import { paintEditBackdrop } from './backdrop';
 import { drawDrawing, drawShape, pixelCanvas } from '../core/render';
@@ -33,6 +35,10 @@ export interface FrameParams {
   tileMode?: boolean;
   /** How strongly the copies show in tile mode (1 = as strong as the stage). */
   tileCopyAlpha?: number;
+  /** Look through this camera view (the canvas is showing what the camera sees). */
+  camera?: CameraView;
+  /** Also show, faded, what's drawn off the stage (there's a camera to pan over it). */
+  pasteboard?: boolean;
 }
 
 const AROUND: [number, number][] = [
@@ -283,7 +289,8 @@ export class FramePainter {
     // Inside a symbol: the scene around it, dimmed, in the symbol's own space.
     if (doc.editing?.length) paintEditBackdrop(g, doc, rect);
 
-    if (p.onion.enabled && !p.playing) this.paintOnion(g, p, cacheable);
+    // Through the camera the onion skin would be in the wrong place, so it's left out.
+    if (p.onion.enabled && !p.playing && !p.camera) this.paintOnion(g, p, cacheable);
 
     for (const layer of doc.layers) {
       if (!layer.visible) continue;
@@ -297,12 +304,20 @@ export class FramePainter {
         const sx = rect.w / doc.width;
         const sy = rect.h / doc.height;
         g.setTransform(sx, 0, 0, sy, rect.x, rect.y);
+        const lc = p.camera ? layerCameraMatrix(doc, layer, p.camera) : undefined;
+        if (lc) g.transform(lc[0], lc[1], lc[2], lc[3], lc[4], lc[5]);
         g.drawImage(lv.canvas, 0, 0, lv.width * pixelSize, lv.height * pixelSize);
         g.restore();
         continue;
       }
       const drawing = lv?.kind === 'vector' ? poseLive(doc, layer, p.frame, lv.drawing) : lv?.kind === 'tilemap' ? lv.drawing : poseAt(doc, layer, p.frame);
       if (!drawing) continue;
+      const cam = p.camera ? layerCameraMatrix(doc, layer, p.camera) : undefined;
+      if (cam) {
+        // Moved by the camera: drawn straight through it (a stage-sized bitmap would cut off what's outside).
+        this.paintDirect(g, p, drawing, layer, pixelSize, cam);
+        continue;
+      }
       if (drawing.kind === 'vector' && cacheable && !lv) {
         let e = this.cache.find(drawing, pixelSize, rect.w, rect.h);
         if (!e && p.zooming) {
@@ -327,6 +342,11 @@ export class FramePainter {
       } else {
         this.paintDirect(g, p, drawing, layer, pixelSize);
       }
+    }
+    if (p.pasteboard && !copy && !p.live) {
+      g.restore();
+      this.paintPasteboard(g, p);
+      g.save();
     }
     if (copy && p.tileCopyAlpha !== undefined && p.tileCopyAlpha < 1) {
       // Fade a copy towards the canvas behind it.
@@ -353,13 +373,14 @@ export class FramePainter {
     return this.cache.find(prev, pixelSize, w, h);
   }
 
-  private paintDirect(g: CanvasRenderingContext2D, p: FrameParams, drawing: Drawing, layer: Layer, pixelSize: number): void {
+  private paintDirect(g: CanvasRenderingContext2D, p: FrameParams, drawing: Drawing, layer: Layer, pixelSize: number, cam?: Mat): void {
     const { doc, rect } = p;
     const sx = rect.w / doc.width;
     const sy = rect.h / doc.height;
     if (layer.opacity >= 1) {
       g.save();
       g.setTransform(sx, 0, 0, sy, rect.x, rect.y);
+      if (cam) g.transform(cam[0], cam[1], cam[2], cam[3], cam[4], cam[5]);
       drawDrawing(g, drawing, pixelSize, { doc, frame: p.frame });
       g.restore();
       return;
@@ -370,11 +391,44 @@ export class FramePainter {
     sg.setTransform(1, 0, 0, 1, 0, 0);
     sg.clearRect(0, 0, p.width, p.height);
     sg.setTransform(sx, 0, 0, sy, rect.x, rect.y);
+    if (cam) sg.transform(cam[0], cam[1], cam[2], cam[3], cam[4], cam[5]);
     drawDrawing(sg, drawing, pixelSize, { doc, frame: p.frame });
     g.save();
     g.setTransform(1, 0, 0, 1, 0, 0);
     g.globalAlpha = layer.opacity;
     g.drawImage(sc, 0, 0);
+    g.restore();
+  }
+
+  /**
+   * What's drawn beyond the stage, faded, so a camera has something to pan over. Drawn straight (no bitmaps: they only
+   * cover the stage), and skipped while a stroke is going in.
+   */
+  private paintPasteboard(g: CanvasRenderingContext2D, p: FrameParams): void {
+    const { doc, rect } = p;
+    g.save();
+    g.beginPath();
+    g.rect(0, 0, p.width, p.height);
+    g.rect(rect.x, rect.y, rect.w, rect.h);
+    g.clip('evenodd');
+    g.setTransform(rect.w / doc.width, 0, 0, rect.h / doc.height, rect.x, rect.y);
+    for (const layer of doc.layers) {
+      if (!layer.visible || layer.kind === 'camera') continue;
+      const d = poseAt(doc, layer, p.frame);
+      if (!d) continue;
+      g.globalAlpha = 1;
+      const ps = layer.kind === 'vector' ? 1 : layer.pixelSize;
+      if (layer.opacity < 1) {
+        // Close enough off stage: shapes fade one by one rather than as a whole layer.
+        g.globalAlpha = layer.opacity;
+      }
+      drawDrawing(g, d, ps, { doc, frame: p.frame });
+    }
+    // Faded towards the canvas colour, so the stage still reads as the stage.
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.globalAlpha = 0.55;
+    g.fillStyle = getComputedStyleSafe('--canvas-bg', '#121019');
+    g.fillRect(0, 0, p.width, p.height);
     g.restore();
   }
 
@@ -473,4 +527,9 @@ export class FramePainter {
     this.scratch = this.scratch2 = null;
     this.lastVector.clear();
   }
+}
+
+function getComputedStyleSafe(name: string, fallback: string): string {
+  if (typeof document === 'undefined') return fallback;
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
 }

@@ -3,7 +3,8 @@
  * (returned as a string so callers can toast or hint it), and otherwise change the document.
  */
 import type { Draft } from 'immer';
-import type { Cel, Doc, Easing, Id, InstanceShape, Layer, MotionPath, PathPoint, Shape, Tween, VectorDrawing } from '../core/format';
+import type { Cel, Doc, Easing, Id, InstanceShape, Layer, MotionPath, PathPoint, Shape, ShapeHint, Tween, VectorDrawing } from '../core/format';
+import { currentChoice, registerChoice, withChoice } from '../core/choices';
 import { celAt, findLayer, uid } from '../core/doc';
 import { store } from '../core/store';
 import { easeLabel } from '../core/ease';
@@ -28,6 +29,19 @@ import { shapesBounds, symbolBounds } from '../canvas/geometry';
 import { cloneDrawing } from '../timeline/edit-core';
 import { activeLayer, editActiveDrawing, EDIT_HINTS } from '../tools/edit';
 import { toast } from '../ui/toast';
+
+registerChoice<'symbol' | 'morph'>({
+  id: 'tween.plainDrawing',
+  title: 'In-betweens on a plain drawing',
+  question: 'This drawing is not a symbol. How should it change from this key to the next?',
+  category: 'Animation',
+  default: 'symbol',
+  help: 'Drawings that already hold symbols always move. You can switch any in-betweens in the Symbol and motion panel.',
+  options: [
+    { value: 'symbol', label: 'Move it as one piece', detail: 'Frameling makes it a symbol, then you move, turn, resize or fade it on the next key (classic tween).' },
+    { value: 'morph', label: 'Morph the shapes', detail: 'The outlines and colours melt into whatever you draw on the next key (shape tween).' },
+  ],
+});
 
 /** The first thing new in-betweens get. Gentle at both ends looks natural for most moves. */
 export const DEFAULT_EASE: Easing = 'easeInOut';
@@ -267,17 +281,19 @@ function wrapIfPlain(doc: Draft<Doc>, drawingId: Id, label: string): void {
  * it's partway through a hold, else on the hold's last frame. Drawings with no symbol in them are made into one
  * first (in-betweens move symbols).
  */
-export function makeTween(layerId?: Id, frame?: number): Result {
+export function makeTween(layerId?: Id, frame?: number, kind: 'classic' | 'shape' = 'classic'): Result {
   const { doc, ui } = store().get();
   const layer = findLayer(doc, layerId ?? ui.activeLayerId) ?? doc.layers[doc.layers.length - 1];
   const f = frame ?? ui.frame;
   if (!layer) return say(EDIT_HINTS['no-layer']);
   if (layer.locked) return say(EDIT_HINTS.locked);
-  if (layer.kind !== 'vector') return say('In-betweens work on drawing layers, not pixel layers.');
+  const camera = layer.kind === 'camera';
+  if (layer.kind !== 'vector' && !camera) return say('In-betweens work on drawing layers, not pixel layers.');
+  if (camera) kind = 'classic';
   const cel = celAt(layer, f);
   if (!cel) return say('Pick a frame with a drawing on it, then make in-betweens from there.');
   const d0 = doc.drawings[cel.drawingId];
-  if (d0?.kind !== 'vector' || !d0.shapes.length) return say('Draw something first: in-betweens move a drawing from one key to the next.');
+  if (!camera && (d0?.kind !== 'vector' || !d0.shapes.length)) return say('Draw something first: in-betweens move a drawing from one key to the next.');
   const hasNext = !!nextKey(layer, cel) || layer.cels.some((c) => c.start >= cel.start + cel.length);
   if (!hasNext && f === cel.start && cel.length < 2) return say('Hold this drawing for a few frames first (drag its end in the timeline), so there is room to move.');
 
@@ -287,7 +303,8 @@ export function makeTween(layerId?: Id, frame?: number): Result {
     const l = dd.layers.find((x) => x.id === layer.id)!;
     const a = l.cels.find((c) => c.id === cel.id)!;
     const before = Object.keys(dd.symbols ?? {}).length;
-    wrapIfPlain(dd, a.drawingId, 'Moving part');
+    // A morph changes the shapes themselves, so they stay plain shapes.
+    if (kind === 'classic') wrapIfPlain(dd, a.drawingId, 'Moving part');
     let b = nextKey(l as Layer, a as Cel);
     if (!b) {
       const after = l.cels.find((c) => c.start >= a.start + a.length);
@@ -312,9 +329,9 @@ export function makeTween(layerId?: Id, frame?: number): Result {
       dd.drawings[copy.id] = copy as never;
       b.drawingId = copy.id;
     }
-    wrapIfPlain(dd, b.drawingId, 'Moving part');
+    if (kind === 'classic') wrapIfPlain(dd, b.drawingId, 'Moving part');
     wrapped = Object.keys(dd.symbols ?? {}).length > before;
-    a.tween = { ease: a.tween?.ease ?? DEFAULT_EASE, ...(a.tween?.spin ? { spin: a.tween.spin } : {}), ...(a.tween?.path ? { path: a.tween.path } : {}) };
+    a.tween = { ...(kind === 'shape' ? { kind: 'shape' as const } : {}), ease: a.tween?.ease ?? DEFAULT_EASE, ...(a.tween?.spin ? { spin: a.tween.spin } : {}), ...(a.tween?.path ? { path: a.tween.path } : {}), ...(kind === 'shape' && a.tween?.hints ? { hints: a.tween.hints } : {}) };
     endFrame = b.start;
   });
   if (endFrame < 0) return undefined;
@@ -322,8 +339,130 @@ export function makeTween(layerId?: Id, frame?: number): Result {
   const endCel = celAt(findLayer(now, layer.id)!, endFrame);
   const endDrawing = endCel ? now.drawings[endCel.drawingId] : undefined;
   const first = endDrawing?.kind === 'vector' ? endDrawing.shapes.find(isInstance) : undefined;
+  if (camera) {
+    store().setUi({ frame: endFrame, activeLayerId: layer.id, selection: [], playing: false });
+    toast(`Added camera in-betweens. Now move the camera frame here on frame ${endFrame + 1}, then press play.`, { kind: 'success' });
+    return undefined;
+  }
+  if (kind === 'shape') {
+    store().setUi({ frame: endFrame, activeLayerId: layer.id, selection: [], playing: false });
+    toast(`Added a morph. Now change the drawing here on frame ${endFrame + 1} (reshape it, recolour it or draw something new), then press play.`, { kind: 'success' });
+    return undefined;
+  }
   store().setUi({ frame: endFrame, activeLayerId: layer.id, selection: first ? [first.id] : [], tool: 'select', playing: false });
   toast(`${wrapped ? 'Made it a symbol and added' : 'Added'} in-betweens. Now move or turn it here on frame ${endFrame + 1}, then press play.`, { kind: 'success' });
+  return undefined;
+}
+
+/** True when the key at the playhead holds plain shapes (no symbols), where moving and morphing are both sensible. */
+export function plainKeyHere(layerId?: Id, frame?: number): boolean {
+  const { doc, ui } = store().get();
+  const layer = findLayer(doc, layerId ?? ui.activeLayerId);
+  const cel = layer?.kind === 'vector' ? celAt(layer, frame ?? ui.frame) : undefined;
+  const d = cel ? doc.drawings[cel.drawingId] : undefined;
+  return d?.kind === 'vector' && d.shapes.length > 0 && !d.shapes.some(isInstance);
+}
+
+/**
+ * Make in-betweens the way the person likes for plain drawings: asks the first time whether to move it as one piece
+ * (it becomes a symbol) or morph its shapes, then remembers. Drawings with symbols always move.
+ */
+export function makeTweenAsking(layerId?: Id, frame?: number): void {
+  if (!plainKeyHere(layerId, frame)) {
+    makeTween(layerId, frame);
+    return;
+  }
+  withChoice<'symbol' | 'morph'>('tween.plainDrawing', (v) => void makeTween(layerId, frame, v === 'morph' ? 'shape' : 'classic'));
+}
+
+/** Morph between this key's drawing and the next one's (shape tween). */
+export function makeShapeTween(layerId?: Id, frame?: number): Result {
+  return makeTween(layerId, frame, 'shape');
+}
+
+/** Switches the in-betweens here between moving symbols and morphing shapes. */
+export function setTweenKind(kind: 'classic' | 'shape'): Result {
+  const k = currentTweenKey();
+  if (!k?.cel.tween) return say('Pick a frame with in-betweens first.');
+  if (kind === 'classic') {
+    const d = store().get().doc.drawings[k.cel.drawingId];
+    if (d?.kind === 'vector' && !d.shapes.some(isInstance)) return say('Moving as one piece needs a symbol. Select the drawing and press F8 to make it one, or keep morphing.');
+  }
+  return updateTween(kind === 'shape' ? 'Morph the shapes' : 'Move as one piece', (t) => {
+    if (kind === 'shape') t.kind = 'shape';
+    else {
+      delete t.kind;
+      delete t.hints;
+    }
+  });
+}
+
+// ---------------------------------------------------------------- shape hints
+
+/** The shape tween whose start or end key is at the playhead on the active layer, and which end we're on. */
+export function hintTarget(): { layer: Layer; cel: Cel; next: Cel; end: 'from' | 'to' } | undefined {
+  const { doc, ui } = store().get();
+  const layer = findLayer(doc, ui.activeLayerId);
+  if (!layer || layer.kind !== 'vector') return undefined;
+  const cel = celAt(layer, ui.frame);
+  if (!cel) return undefined;
+  // On a morph's own key (or anywhere in it): its start shapes.
+  const next = nextKey(layer, cel);
+  if (cel.tween?.kind === 'shape' && next && ui.frame === cel.start) return { layer, cel, next, end: 'from' };
+  // On the key a morph ends at: the end shapes.
+  const i = layer.cels.indexOf(cel);
+  const prev = i > 0 ? layer.cels[i - 1] : undefined;
+  if (prev?.tween?.kind === 'shape' && ui.frame === cel.start && nextKey(layer, prev) === cel) return { layer, cel: prev, next: cel, end: 'to' };
+  if (cel.tween?.kind === 'shape' && next) return { layer, cel, next, end: 'from' };
+  return undefined;
+}
+
+/** Adds a hint (a, b, c...) at a point, on both keys at once; drag its end-key twin into place afterwards. */
+export function addShapeHint(at: { x: number; y: number }): Result {
+  const t = hintTarget();
+  if (!t) return say('Shape hints go on a morph. Make one first (Animate > Morph between shapes), then add hints on its first or last key.');
+  if ((t.cel.tween?.hints?.length ?? 0) >= 26) return say('That is the most hints a morph can have (26).');
+  const id = uid('h');
+  return updateHints('Add a shape hint', t, (hs) => void hs.push({ id, from: { ...at }, to: { ...at } }));
+}
+
+export function moveShapeHint(id: Id, end: 'from' | 'to', at: { x: number; y: number }, coalesce?: string): Result {
+  const t = hintTarget();
+  if (!t) return undefined;
+  return updateHints('Move a shape hint', t, (hs) => {
+    const h = hs.find((x) => x.id === id);
+    if (h) h[end] = { x: at.x, y: at.y };
+  }, coalesce);
+}
+
+export function removeShapeHint(id: Id): Result {
+  const t = hintTarget();
+  if (!t) return undefined;
+  return updateHints('Remove a shape hint', t, (hs) => {
+    const i = hs.findIndex((x) => x.id === id);
+    if (i >= 0) hs.splice(i, 1);
+  });
+}
+
+export function clearShapeHints(): Result {
+  const t = hintTarget();
+  if (!t?.cel.tween?.hints?.length) return say('There are no shape hints here to remove.');
+  return updateHints('Remove all shape hints', t, (hs) => void hs.splice(0, hs.length));
+}
+
+function updateHints(label: string, t: { layer: Layer; cel: Cel }, fn: (hs: ShapeHint[]) => void, coalesce?: string): Result {
+  if (t.layer.locked) return say(EDIT_HINTS.locked);
+  store().update(
+    label,
+    (doc) => {
+      const c = doc.layers.find((l) => l.id === t.layer.id)?.cels.find((x) => x.id === t.cel.id);
+      if (!c?.tween) return;
+      const hs = (c.tween.hints ??= []) as ShapeHint[];
+      fn(hs);
+      if (!hs.length) delete c.tween.hints;
+    },
+    coalesce ? { coalesce } : {},
+  );
   return undefined;
 }
 
@@ -333,7 +472,7 @@ export function updateTween(label: string, fn: (t: Draft<Tween>) => void, opts: 
   if (!k) return say('Pick a frame with in-betweens first.');
   if (k.layer.locked) return say(EDIT_HINTS.locked);
   if (!k.cel.tween) {
-    const r = makeTween(k.layer.id, k.cel.start);
+    const r = makeTween(k.layer.id, k.cel.start, plainKeyHere(k.layer.id, k.cel.start) && currentChoice('tween.plainDrawing') === 'morph' ? 'shape' : 'classic');
     if (r) return r;
     store().setUi({ frame: k.cel.start });
   }

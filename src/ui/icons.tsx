@@ -27,6 +27,35 @@ const ICONS: Record<string, ReactNode> = {
       <path d="M17 4.5l3 2.5-3 2.5" />
     </>
   ),
+  // shape tweens, camera, clip flow
+  morph: (
+    <>
+      <rect x="3" y="9" width="8" height="8" rx="1.5" />
+      <circle cx="17.5" cy="13" r="4" />
+      <path d="M11.5 7.5c1.5-1.5 3.5-1.5 5 0" />
+    </>
+  ),
+  hint: (
+    <>
+      <circle cx="12" cy="12" r="7" />
+      <path d="M10 15.5V9.5h2.2a2 2 0 0 1 0 4H10" />
+    </>
+  ),
+  camera: (
+    <>
+      <rect x="3" y="7" width="13" height="10" rx="2.5" />
+      <path d="M16 11l5-3v8l-5-3" />
+      {dot(7.5, 12, 1.4)}
+    </>
+  ),
+  flow: (
+    <>
+      <rect x="3" y="4" width="7" height="5" rx="1.5" />
+      <rect x="14" y="15" width="7" height="5" rx="1.5" />
+      <path d="M6.5 9v3.5a2.5 2.5 0 0 0 2.5 2.5h4" />
+      <path d="M11.5 13l2 2-2 2" />
+    </>
+  ),
   // drawing tools
   brush: (
     <>
