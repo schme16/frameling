@@ -822,7 +822,9 @@ async function vPsd(file, s, exp, caseCtx) {
       check(flat.some((x) => x.trim().startsWith('Masked/')), 'the folder did not become a group');
       check(flat.some((x) => x.includes('Blue box') && x.includes('multiply')), 'blend mode was not kept');
       const g = psd.children.find((c) => c.name === 'Masked');
-      check(g && g.mask, 'the folder with a mask layer has no group mask');
+      check(g && !g.mask, 'the folder itself should not take the mask');
+      const inner = g && (g.children || []).find((c) => c.children && c.mask);
+      check(inner && inner.children.some((c) => c.name.startsWith('Blue box')), 'the layers under the mask are not in a masked group inside the folder');
     }
   }
   if (need('identify')) {

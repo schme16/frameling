@@ -7,7 +7,7 @@ import { unzlibSync } from 'fflate';
 import type { Doc, Layer, PathShape } from '../../src/core/format';
 import { newDoc, newPixelLayer, newVectorLayer } from '../../src/core/doc';
 import { pdfBlend, pdfString, writePdf } from '../../src/export/pdf';
-import { flatPlan, layeredPlan } from '../../src/export/layered';
+import { flatPlan, itemLayers, layeredPlan } from '../../src/export/layered';
 
 const rect = (id: string, x: number, y: number, w: number, h: number, fill: string, opacity = 1): PathShape => ({
   id,
@@ -119,7 +119,9 @@ describe('PDF export', () => {
     if (g.kind !== 'group') return;
     expect(g.passThrough).toBe(false);
     expect(g.masks.map((l) => l.id)).toEqual(['m']);
-    expect(g.layers.map((l) => (l.kind === 'layer' ? [l.layer.id, l.hidden] : null))).toEqual([
+    // The mask cuts the layer under it, so those two sit together in a masked item.
+    expect(g.layers.map((l) => l.kind)).toEqual(['masked']);
+    expect(itemLayers(g.layers).map((l) => [l.layer.id, l.hidden])).toEqual([
       ['b', false],
       ['m', true],
     ]);
