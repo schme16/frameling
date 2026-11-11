@@ -41,6 +41,10 @@ const shift = (p: { x: number; y: number }, dx: number) => {
   p.x += dx;
 };
 function shiftShape(s: Shape, dx: number): void {
+  if (s.type === 'instance') {
+    s.transform.x += dx;
+    return;
+  }
   if (s.type === 'stroke') {
     for (const p of s.points) shift(p, dx);
     return;

@@ -9,7 +9,8 @@
  * exports can never disagree about what a frame looks like.
  */
 import type { Doc, Drawing, Layer } from '../core/format';
-import { drawingAt } from '../core/doc';
+import { poseAt, poseLive } from '../core/symbols';
+import { paintEditBackdrop } from './backdrop';
 import { drawDrawing, drawShape, pixelCanvas } from '../core/render';
 import type { OnionSettings } from '../core/store';
 import type { Live } from './controller';
@@ -207,7 +208,7 @@ export class FramePainter {
     outer: for (const f of frames) {
       for (const layer of doc.layers) {
         if (!layer.visible) continue;
-        const d = drawingAt(doc, layer, f);
+        const d = poseAt(doc, layer, f);
         if (!d) continue;
         if (d.kind === 'pixel') {
           pixelCanvas(d);
@@ -224,7 +225,7 @@ export class FramePainter {
     // Furthest first, so the frames about to play are the freshest and the last to be evicted.
     for (let i = frames.length - 1; i >= 0; i--) {
       for (const layer of doc.layers) {
-        const d = layer.visible ? drawingAt(doc, layer, frames[i]) : undefined;
+        const d = layer.visible ? poseAt(doc, layer, frames[i]) : undefined;
         if (d?.kind === 'vector') this.cache.touch(d, 1, rect.w, rect.h);
       }
     }
@@ -245,6 +246,9 @@ export class FramePainter {
     const cacheable = this.isCacheable(rect, p.width, p.height);
     let settled = true;
 
+    // Inside a symbol: the scene around it, dimmed, in the symbol's own space.
+    if (doc.editing?.length) paintEditBackdrop(g, doc, rect);
+
     if (p.onion.enabled && !p.playing) this.paintOnion(g, p, cacheable);
 
     for (const layer of doc.layers) {
@@ -262,7 +266,7 @@ export class FramePainter {
         g.restore();
         continue;
       }
-      const drawing = lv?.kind === 'vector' ? lv.drawing : drawingAt(doc, layer, p.frame);
+      const drawing = lv?.kind === 'vector' ? poseLive(doc, layer, p.frame, lv.drawing) : poseAt(doc, layer, p.frame);
       if (!drawing) continue;
       if (drawing.kind === 'vector' && cacheable && !lv) {
         let e = this.cache.find(drawing, pixelSize, rect.w, rect.h);
@@ -350,9 +354,9 @@ export class FramePainter {
       const items: OnionItem[] = [];
       for (const layer of doc.layers) {
         if (!layer.visible || layer.onion === false) continue;
-        const d = drawingAt(doc, layer, f);
+        const d = poseAt(doc, layer, f);
         // A layer that's the same drawing here as on the current frame (a held background) isn't a ghost of anything.
-        if (!d || d === drawingAt(doc, layer, frame)) continue;
+        if (!d || d === poseAt(doc, layer, frame)) continue;
         items.push({ drawing: d, pixelSize: layer.kind === 'pixel' ? layer.pixelSize : 1 });
       }
       if (!items.length) continue;

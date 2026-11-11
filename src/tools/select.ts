@@ -295,10 +295,10 @@ function overlay(gx: CanvasRenderingContext2D, ctx: ToolContext): void {
     gx.setLineDash([4 * px, 3 * px]);
     gx.lineWidth = 1.5 * px;
     gx.strokeStyle = 'white';
-    for (const s of cut.lifted) if (s.type !== 'stroke') gx.stroke(subPathsToPath2D(s.paths));
+    for (const s of cut.lifted) if (s.type === 'fill' || s.type === 'path') gx.stroke(subPathsToPath2D(s.paths));
     gx.lineDashOffset = 4 * px;
     gx.strokeStyle = ink;
-    for (const s of cut.lifted) if (s.type !== 'stroke') gx.stroke(subPathsToPath2D(s.paths));
+    for (const s of cut.lifted) if (s.type === 'fill' || s.type === 'path') gx.stroke(subPathsToPath2D(s.paths));
     gx.restore();
   }
   const b = g && g.mode !== 'marquee' ? g.bounds : shapesBounds(sel);
