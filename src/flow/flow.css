@@ -48,6 +48,13 @@
   cursor: grab;
   outline: none;
 }
+.fl-link:focus-visible {
+  outline: none;
+}
+.fl-link:focus-visible .fl-line {
+  stroke: var(--focus);
+  stroke-width: 3;
+}
 .fl-box[data-on='true'] .fl-rect,
 .fl-box:focus-visible .fl-rect {
   stroke: var(--focus);

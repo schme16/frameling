@@ -27,7 +27,7 @@ function About() {
           </p>
         )}
       </div>
-      <footer className="ui-about-foot">
+      <div className="ui-about-foot">
         <button
           type="button"
           className="ui-btn ui-btn-quiet"
@@ -42,7 +42,7 @@ function About() {
         <button type="button" className="ui-btn ui-btn-primary ui-about-ok" onClick={closeAbout}>
           Lovely
         </button>
-      </footer>
+      </div>
     </Modal>
   );
 }

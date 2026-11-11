@@ -25,6 +25,7 @@ import {
 import { getSelectSettings } from './settings';
 import { drawLasso, lassoClosesAt, lassoPoint } from './lasso';
 import { PixelSelectOptions } from './options';
+import { reducedMotion } from '../ui/prefs';
 
 /** A drag shorter than this (screen pixels) is a click. */
 const DRAG_PX = 3;
@@ -293,7 +294,8 @@ addStageOverlay((gx, zoom) => {
   const path = antsPath(m, a.layer.pixelSize);
   const px = 1 / zoom;
   // Black and white dashes that crawl along, so the edge shows on any colour.
-  const crawl = (Date.now() / 60) % 8;
+  // They hold still when motion is turned down.
+  const crawl = reducedMotion() ? 0 : (Date.now() / 60) % 8;
   gx.save();
   gx.lineWidth = px;
   gx.setLineDash([4 * px, 4 * px]);

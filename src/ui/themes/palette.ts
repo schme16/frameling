@@ -30,7 +30,8 @@ export function paletteFromColour(seed: string, mode: ThemeMode): ThemeTokens {
 
   const text = ensureContrast(dark ? at(0.4, 0.94) : at(0.3, 0.14), bg, 9);
   const muted = ensureContrast(dark ? at(0.2, 0.74) : at(0.15, 0.38), panel2, 5.2);
-  const faint = ensureContrast(dark ? at(0.15, 0.58) : at(0.1, 0.55), panel, 3.4);
+  // Hints are words too, so they need 4.5 on both panel shades (the second one is the harder one).
+  const faint = ensureContrast(dark ? at(0.15, 0.58) : at(0.1, 0.55), panel2, 4.6);
 
   // The picked colour is the accent, moved only as far as needed to be readable as a link.
   const [, seedS] = hexToHsl(rgb ? seed : '#9b7bff');

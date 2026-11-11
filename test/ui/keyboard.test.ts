@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { registerCommand, registerTool } from '../../src/core/registry';
 import { resetStore, store } from '../../src/core/store';
 import { newDoc } from '../../src/core/doc';
-import { dispatchKey, holdKeyboard, installKeyboard, isTypingTarget, resetKeyboard } from '../../src/ui/keyboard';
+import { controlWantsKey, dispatchKey, holdKeyboard, installKeyboard, isTypingTarget, resetKeyboard } from '../../src/ui/keyboard';
 import { closePalette, overlays, openPrefs, closePrefs } from '../../src/ui/overlays';
 import { resetPrefs, setPrefs } from '../../src/ui/prefs';
 import { effectiveKeys } from '../../src/ui/keys';
@@ -30,6 +30,34 @@ beforeEach(() => {
 });
 afterEach(() => {
   document.body.innerHTML = '';
+});
+
+describe('keys a focused control needs', () => {
+  const el = (html: string) => {
+    document.body.innerHTML = html;
+    return document.body.firstElementChild as HTMLElement;
+  };
+  const k = (key: string, o: Partial<KeyboardEvent> = {}) => ({ key, ctrlKey: false, metaKey: false, altKey: false, ...o });
+  it('Enter on a button presses the button instead of a shortcut', () => {
+    registerCommand({ id: 't.enter', label: 'Enter', category: 'Test', keys: ['Enter'], run: () => void ran.push('enter') });
+    const b = el('<button>Go</button>');
+    b.focus();
+    expect(press('Enter', {}, b)).toBe(false);
+    expect(ran).toEqual([]);
+    expect(press('Enter', {}, document.body)).toBe(true);
+    expect(ran).toEqual(['enter']);
+  });
+  it('arrows belong to sliders, tabs and lists, but not to plain buttons', () => {
+    expect(controlWantsKey(el('<input type="range">'), k('ArrowLeft'))).toBe(true);
+    expect(controlWantsKey(el('<button role="tab">A</button>'), k('ArrowRight'))).toBe(true);
+    expect(controlWantsKey(el('<div role="option">A</div>'), k('Home'))).toBe(true);
+    expect(controlWantsKey(el('<button>A</button>'), k('ArrowLeft'))).toBe(false);
+    const box = el('<div role="checkbox" tabindex="0">A</div>');
+    box.focus();
+    expect(controlWantsKey(box, k('Enter'))).toBe(true);
+    expect(controlWantsKey(el('<button>A</button>'), k('Enter', { ctrlKey: true }))).toBe(false);
+    expect(controlWantsKey(el('<div>A</div>'), k('Enter'))).toBe(false);
+  });
 });
 
 describe('keyboard dispatcher', () => {

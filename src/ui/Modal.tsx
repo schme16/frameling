@@ -68,12 +68,12 @@ export function Modal({
     >
       <div ref={ref} className={`ui-modal ui-modal-${size} ${className}`} role="dialog" aria-modal="true" aria-label={title} tabIndex={-1} onKeyDown={onKey}>
         {!hideHeader && (
-          <header className="ui-modal-head">
+          <div className="ui-modal-head">
             <h2>{title}</h2>
             <button type="button" className="ui-icon-btn" aria-label="Close" title="Close" onClick={() => closeRef.current()}>
               <Icon name="close" />
             </button>
-          </header>
+          </div>
         )}
         {children}
       </div>
