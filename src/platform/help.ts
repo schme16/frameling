@@ -28,6 +28,8 @@ Exports made of several files (a **sprite sheet** with its data file, a tileset)
 
 There's no **Show in folder** button in a browser. Look in the folder you picked, or your Downloads.
 
+**ProRes video** needs the desktop app (it uses FFmpeg on your computer), and text can use Frameling's own fonts, Nunito and Inter, but not fonts installed on your computer.
+
 ## Your safety copies
 
 **Autosave** works the same: every minute, and whenever you switch away from the tab, Frameling keeps a copy of unsaved work inside the browser. If the tab closes with unsaved changes, the next visit offers it back, and **File > Recover unsaved work...** keeps it for 7 days. See [Autosave](help:autosave).

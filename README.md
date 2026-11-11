@@ -54,7 +54,7 @@ page. Everything else goes through that bridge, so very little code knows the di
 | Autosave and Recover unsaved work | IndexedDB, every 15 seconds and when the tab is hidden, kept 7 days | Same |
 | Install as an app, offline | Yes (manifest, service worker, opens .frameling files) | Offline after the first visit. Safari can add it to the Dock or Home Screen; Firefox can't install it |
 
-Not in the browser: "Show in folder", the native "Save changes?" on close (the browser's own "Leave site?" shows
+Not in the browser: ProRes export (it runs FFmpeg on the computer), fonts installed on the computer for text, "Show in folder", the native "Save changes?" on close (the browser's own "Leave site?" shows
 instead, and the work is put aside in Recover unsaved work), and shortcuts the browser keeps (Ctrl+N, Ctrl+W, Ctrl+T).
 The in-app help topic "Frameling in a web browser" says the same in plain words.
 
