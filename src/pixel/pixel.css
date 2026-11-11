@@ -159,7 +159,8 @@
   gap: 10px;
 }
 .px-mirror .cv-choice {
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
 }
 .px-extra {
   margin-top: 12px;

@@ -40,7 +40,7 @@ export function MirrorOptions() {
           { value: 'off', label: 'Off' },
           { value: 'h', label: 'Left and right', title: 'Whatever you draw on one side appears flipped on the other (a mirror line down the middle).' },
           { value: 'v', label: 'Top and bottom', title: 'A mirror line across the middle.' },
-          { value: 'both', label: 'Both', title: 'Four ways at once, like a snowflake.' },
+          { value: 'both', label: 'Both ways', title: 'Four ways at once, like a snowflake.' },
         ]}
         onChange={(v) => setPixelSettings({ symmetry: v })}
       />

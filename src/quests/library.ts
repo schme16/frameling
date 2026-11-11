@@ -1,4 +1,4 @@
-// The five quests. Each step says what to do in plain words, points at something on screen, and has a check that
+// The quests. Each step says what to do in plain words, points at something on screen, and has a check that
 // reads the store (or the probe) to know when it's done. Keep the words warm and short.
 import { contentLength } from '../core/doc';
 import { store } from '../core/store';
@@ -29,6 +29,7 @@ import {
   squashFrame,
 } from './predicates';
 import { gifCard } from './probe';
+import { SHADE_AND_SHINE } from '../pixel/quest';
 import { registerQuest } from './registry';
 import type { Quest } from './types';
 
@@ -323,6 +324,6 @@ export const SHARE_IT: Quest = {
   ],
 };
 
-export const QUESTS: Quest[] = [FIRST_ANIMATION, BOUNCING_BALL, FILL_IT_IN, PIXEL_PAL, SHARE_IT];
+export const QUESTS: Quest[] = [FIRST_ANIMATION, BOUNCING_BALL, FILL_IT_IN, PIXEL_PAL, SHADE_AND_SHINE, SHARE_IT];
 
 for (const q of QUESTS) registerQuest(q);
