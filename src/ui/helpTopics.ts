@@ -444,9 +444,11 @@ Looking at how an example is built is a good way to learn. Try the timeline to s
     title: 'Quests',
     section: 'Getting started',
     summary: 'Short guided lessons that teach by doing.',
-    keywords: ['tutorial', 'guide', 'lesson', 'learn', 'first animation'],
+    keywords: ['tutorial', 'guide', 'lesson', 'learn', 'first animation', 'badge', 'tiles quest'],
     body: `A quest is a little lesson with a few steps. You do each one in the real app, and Frameling ticks it off.
 
-The first one, **Your first animation in 60 seconds**, is on the welcome sheet. Quests are still being built, so for now it only points the way.`,
+The first one, **Your first animation**, is on the welcome sheet. Finish it and the rest open up in the **Quests** panel (Help > Open the Quests panel): the bouncing ball, filling in, a pixel pal, shading, **Tiles** (draw a seamless tile and paint a little level with it) and sharing. Each earns a badge.
+
+Stuck on a step? **Show me** does it for you, and **Tell me more** opens the help for it.`,
   },
 ]);
