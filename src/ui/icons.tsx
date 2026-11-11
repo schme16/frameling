@@ -84,6 +84,14 @@ const ICONS: Record<string, ReactNode> = {
       <path d="M12 13.2v7" />
     </>
   ),
+  weights: (
+    <>
+      <circle cx="5.5" cy="18.5" r="2" />
+      <path d="M7 17l5.2-5.2" />
+      <circle cx="16" cy="8" r="5" strokeDasharray="2 2" />
+      {dot(16, 8, 1.8)}
+    </>
+  ),
   rig: (
     <>
       <circle cx="12" cy="5" r="2" />

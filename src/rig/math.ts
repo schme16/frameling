@@ -6,7 +6,7 @@
  * posed matrix does the same in a pose. Its skin matrix (posed * inverse rest) takes art drawn at rest to where it is
  * in the pose, which is what an attached layer is drawn with.
  */
-import type { Bone, BonePose, Id, Pose, Rig, SkinMesh } from '../core/format';
+import { BONE_STRETCH, type Bone, type BonePose, type Id, type Pose, type Rig, type SkinMesh } from '../core/format';
 
 export type Mat = [number, number, number, number, number, number];
 export interface Pt {
@@ -108,6 +108,9 @@ function computeState(rig: Rig, pose: Pose): RigState {
     const moved = p && (p.x || p.y) ? mmul([1, 0, 0, 1, p.x ?? 0, p.y ?? 0], local) : local;
     let posed = mmul(parent ? parent.posed : I, moved);
     if (p?.r) posed = mmul(posed, rot(p.r));
+    // Squash and stretch along the bone; bones hanging from it come along (as in Godot and most rigs).
+    const st = stretchOf(p);
+    if (st !== 1) posed = mmul(posed, [st, 0, 0, 1, 0, 0]);
     const skin = mmul(posed, minv(rest));
     const base = { x: posed[4], y: posed[5] };
     const tip = mapply(posed, b.length, 0);
@@ -117,6 +120,24 @@ function computeState(rig: Rig, pose: Pose): RigState {
 }
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+
+/** A bone's squash and stretch in a pose (1 when it has none), kept within BONE_STRETCH. */
+export function stretchOf(p: BonePose | undefined): number {
+  const s = p?.s;
+  if (s === undefined || !Number.isFinite(s)) return 1;
+  return Math.min(BONE_STRETCH.max, Math.max(BONE_STRETCH.min, s));
+}
+
+/** A bone pose with only the parts that differ from rest written down. */
+export function bonePose(r: number, x = 0, y = 0, s = 1): BonePose {
+  const out: BonePose = { r };
+  if (x || y) {
+    out.x = x;
+    out.y = y;
+  }
+  if (Math.abs(s - 1) > 1e-6) out.s = Math.min(BONE_STRETCH.max, Math.max(BONE_STRETCH.min, s));
+  return out;
+}
 
 /** A pose `t` of the way from `a` to `b` (bones missing from one are at rest there). */
 export function lerpPose(a: Pose, b: Pose, t: number): Pose {
@@ -128,7 +149,7 @@ export function lerpPose(a: Pose, b: Pose, t: number): Pose {
     const r = lerp(p?.r ?? 0, q?.r ?? 0, t);
     const x = lerp(p?.x ?? 0, q?.x ?? 0, t);
     const y = lerp(p?.y ?? 0, q?.y ?? 0, t);
-    out[id] = x || y ? { r, x, y } : { r };
+    out[id] = bonePose(r, x, y, lerp(stretchOf(p), stretchOf(q), t));
   }
   return out;
 }
@@ -140,8 +161,9 @@ export function tidyPose(p: Pose): Pose {
     const r = Math.abs(b.r) < 1e-6 ? 0 : b.r;
     const x = Math.abs(b.x ?? 0) < 1e-6 ? 0 : b.x!;
     const y = Math.abs(b.y ?? 0) < 1e-6 ? 0 : b.y!;
-    if (!r && !x && !y) continue;
-    out[id] = x || y ? { r, x, y } : { r };
+    const s = stretchOf(b);
+    if (!r && !x && !y && Math.abs(s - 1) <= 1e-6) continue;
+    out[id] = bonePose(r, x, y, s);
   }
   return out;
 }
@@ -294,7 +316,33 @@ export function moveBone(rig: Rig, pose: Pose, id: Id, dx: number, dy: number): 
     }
   }
   const p = pose[id] ?? { r: 0 };
-  return { ...pose, [id]: { r: p.r, x: (p.x ?? 0) + lx, y: (p.y ?? 0) + ly } };
+  return { ...pose, [id]: { ...p, x: (p.x ?? 0) + lx, y: (p.y ?? 0) + ly } };
+}
+
+/**
+ * Squashes or stretches one bone so its tip lands as near `at` as it can along the bone (the pointer's distance from
+ * the joint over the bone's length at rest), within BONE_STRETCH.
+ */
+export function stretchBone(rig: Rig, pose: Pose, id: Id, at: Pt): Pose {
+  const s = rigState(rig, pose).get(id);
+  if (!s) return pose;
+  const len = s.bone.length || 1;
+  // How far along the bone's own line the pointer is, in the parent's (possibly stretched) units.
+  const ux = Math.cos(s.angle * RAD);
+  const uy = Math.sin(s.angle * RAD);
+  const along = (at.x - s.base.x) * ux + (at.y - s.base.y) * uy;
+  const cur = stretchOf(pose[id]);
+  const tipNow = Math.hypot(s.tip.x - s.base.x, s.tip.y - s.base.y) || len;
+  // Scale relative to now, so a stretched parent's own scale is taken into account.
+  const want = Math.min(BONE_STRETCH.max, Math.max(BONE_STRETCH.min, (cur * along) / tipNow));
+  const p = pose[id] ?? { r: 0 };
+  return { ...pose, [id]: bonePose(p.r, p.x ?? 0, p.y ?? 0, want) };
+}
+
+/** Sets one bone's squash and stretch directly (1 = as drawn). */
+export function setStretch(pose: Pose, id: Id, s: number): Pose {
+  const p = pose[id] ?? { r: 0 };
+  return { ...pose, [id]: bonePose(p.r, p.x ?? 0, p.y ?? 0, s) };
 }
 
 // ---------------------------------------------------------------- pins
@@ -392,7 +440,7 @@ export function mirrorPose(rig: Rig, pose: Pose): Pose {
     const src = other ? (byName.get(other.toLowerCase()) ?? b.id) : b.id;
     const p = pose[src];
     if (!p) continue;
-    out[b.id] = p.x || p.y ? { r: -p.r, x: -(p.x ?? 0), y: p.y ?? 0 } : { r: -p.r };
+    out[b.id] = bonePose(-p.r, -(p.x ?? 0), p.y ?? 0, stretchOf(p));
   }
   return out;
 }

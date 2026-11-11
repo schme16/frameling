@@ -1,10 +1,13 @@
 // Tool options for the Bone and Pose tools.
 import { getCommand } from '../core/registry';
 import { useStore } from '../core/store';
-import { ActionButton, Choice, Tip } from '../canvas/controls';
+import { ActionButton, Choice, Slider, Tip } from '../canvas/controls';
+import { BONE_STRETCH } from '../core/format';
+import { setStretch, stretchOf } from './math';
+import { rigPoseAt } from './pose';
 import { requestOverlay } from '../canvas/controller';
 import { setRigUi, useRigUi, type BoneMode } from './state';
-import { currentRig } from './ops';
+import { currentPose, currentRig, setPose } from './ops';
 
 const run = (id: string) => void getCommand(id)?.run();
 
@@ -47,13 +50,34 @@ export function BoneOptions() {
 
 export function PoseOptions() {
   const count = useStore((s) => currentRig(s.doc, s.ui.activeLayerId)?.rig.bones.length ?? 0);
+  const { selected } = useRigUi();
+  const stretch = useStore((s) => {
+    const rig = currentRig(s.doc, s.ui.activeLayerId);
+    return rig && selected && rig.rig.bones.some((b) => b.id === selected) ? stretchOf(rigPoseAt(s.doc, rig, s.ui.frame)[selected]) : undefined;
+  });
   return (
     <div className="cv-options">
       <Tip>
         {count
-          ? 'Drag a bone to turn it. Drag a tip (the small dot) to pull the chain along, like moving a hand (IK). Drag the first joint to move everything. Alt+click pins a bone so it stays put, like a planted foot.'
+          ? 'Drag a bone to turn it. Drag a tip (the small dot) to pull the chain along, like moving a hand (IK). Drag the first joint to move everything. Alt+click pins a bone so it stays put, like a planted foot. Shift+drag a bone to squash or stretch it.'
           : 'There are no bones yet. Draw some with the Bone tool (K) first.'}
       </Tip>
+      {stretch !== undefined && (
+        <Slider
+          label="Squash and stretch"
+          value={Math.round(stretch * 100)}
+          min={BONE_STRETCH.min * 100}
+          max={BONE_STRETCH.max * 100}
+          step={1}
+          format={(v) => `${v}%`}
+          hint="How long the picked bone is on this frame. 100% is as drawn. Bones hanging from it stretch along."
+          onChange={(v) => {
+            const rig = currentRig();
+            if (rig && selected) setPose(rig.id, setStretch(currentPose(rig), selected, v / 100), 'Squash and stretch', `rig-stretch-${selected}`);
+            requestOverlay();
+          }}
+        />
+      )}
       <div className="cv-row cv-wrap">
         <ActionButton disabled={!count} onClick={() => run('rig.savePose')}>
           Save pose

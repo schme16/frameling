@@ -6,7 +6,7 @@
  */
 import { readFolders, readLayerLook } from '../effects/io';
 import { strFromU8, strToU8, unzipSync, zipSync, type Zippable } from 'fflate';
-import { FORMAT_VERSION, type Cel, type Doc, type Drawing, type Layer, type Shape, type SymbolDef, type Tween, type InstanceShape, type ClipFlow, type ClipTransition, type Tile, type Tileset, type Bone, type BonePose, type LayerBind, type Pose, type Rig, type SavedPose } from '../core/format';
+import { BONE_STRETCH, FORMAT_VERSION, type Cel, type Doc, type Drawing, type Layer, type Shape, type SymbolDef, type Tween, type InstanceShape, type ClipFlow, type ClipTransition, type Tile, type Tileset, type Bone, type BonePose, type LayerBind, type Pose, type Rig, type SavedPose } from '../core/format';
 import { decodePng, encodePng } from './png';
 import { rootDoc } from '../core/symbols';
 import { isEasing } from '../core/ease';
@@ -303,6 +303,7 @@ function readPoseMap(p: unknown): Pose | undefined {
     const bp: BonePose = { r: num(b.r, 0) };
     if (typeof b.x === 'number' && Number.isFinite(b.x) && b.x) bp.x = b.x;
     if (typeof b.y === 'number' && Number.isFinite(b.y) && b.y) bp.y = b.y;
+    if (typeof b.s === 'number' && Number.isFinite(b.s) && b.s !== 1) bp.s = Math.min(BONE_STRETCH.max, Math.max(BONE_STRETCH.min, b.s));
     out[id] = bp;
   }
   return out;

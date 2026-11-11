@@ -47,6 +47,15 @@ export function layerLabels(doc: Doc, layer: Layer): string[] {
   return [];
 }
 
+/** The mouth symbol a layer uses (the first one it finds), for pictures of each mouth. */
+export function layerMouthSymbol(doc: Doc, layer: Layer): Id | undefined {
+  for (const c of layer.cels) {
+    const inst = mouthInstance(doc, doc.drawings[c.drawingId]);
+    if (inst) return inst.symbolId;
+  }
+  return undefined;
+}
+
 /** Which frame of the mouth symbol shows on a layer at `frame` (-1 when no mouth shows). */
 export function mouthFrameAt(doc: Doc, layer: Layer, frame: number): number {
   const cel = celAt(layer, frame);

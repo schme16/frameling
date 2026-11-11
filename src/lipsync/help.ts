@@ -43,7 +43,7 @@ It is a good first pass, not a perfect one: it works from how loud and how hissy
 Open the **Lip sync** panel (View menu). It shows the mouth on each frame around the playhead as a strip.
 
 1. Click a frame in the strip to go there.
-2. Click a mouth button to put that mouth on the frame.
+2. Click a mouth button to put that mouth on the frame. Each button shows a little picture of the mouth, with its name underneath.
 
 Keys are split and joined for you, so you never have to. Turn on **Go to the next frame after each pick** to work your way along quickly. If you have **Hear the sound while you drag the playhead** on, you hear each frame as you step to it.
 

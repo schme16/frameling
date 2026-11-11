@@ -91,6 +91,28 @@
   border-radius: var(--radius-pill);
   cursor: pointer;
 }
+.ls-mouth.has-pic {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 6px 3px;
+  min-width: 54px;
+  border-radius: var(--radius-small);
+  font-size: 10px;
+  line-height: 1.1;
+}
+.ls-mouth.has-pic span {
+  max-width: 60px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ls-pic {
+  display: block;
+  background: color-mix(in srgb, #ffffff 82%, transparent);
+  border-radius: 4px;
+}
 .ls-mouth:hover {
   filter: brightness(1.08);
 }

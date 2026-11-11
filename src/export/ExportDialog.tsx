@@ -13,6 +13,7 @@ import { artScale, defaultSettings, hasPixelLayers, planExport, scaleAllowed, sc
 import { EnginePicker } from './EnginePicker';
 import { openHelp } from '../ui/overlays';
 import { godotTexturePath } from './sheet';
+import { bonesRigs } from './godot-bones';
 import type { Progress } from './run';
 import { GIF_MAX_FPS } from './gif';
 import { proresSupport, type ProresSupport } from './prores';
@@ -66,7 +67,7 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
     setS((x) => {
       const sheet = { ...x.sheet, ...p };
       // The engine, ticks and layout are remembered the moment they change, even if this export is cancelled.
-      if (['json', 'godot', 'godotScene', 'engine', 'layout', 'content', 'separateFiles', 'jsonStyle', 'unityScript'].some((k) => k in p)) saveSheetExtras(sheet);
+      if (['json', 'godot', 'godotScene', 'engine', 'layout', 'content', 'separateFiles', 'jsonStyle', 'unityScript', 'godotRig'].some((k) => k in p)) saveSheetExtras(sheet);
       return { ...x, sheet };
     });
   const webmPref = useChoice<string>('export.webmCodec');
@@ -130,6 +131,8 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
   const sheet = normalizeSheet(s.sheet);
   const engine = engineInfo(sheet.engine);
   const separate = sheet.content === 'separate';
+  const hasBones = bonesRigs(doc).length > 0;
+  const godotBones = sheet.engine === 'godot' && hasBones && !separate && sheet.godotRig === 'bones';
   const artPx = art ? `${Math.round(doc.width * art)} × ${Math.round(doc.height * art)}` : '';
   const pickEngine = (id: EngineId) => {
     setSheet({ engine: id, ...(id === 'godot' ? { godot: true } : {}) });
@@ -211,9 +214,27 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
                   {engine.game ? `How to use it in ${engine.title}` : 'How to use it'}
                 </button>
               </p>
+              {sheet.engine === 'godot' && hasBones && !separate && (
+                <div className="ex-seg" role="group" aria-label="What Godot gets">
+                  <button type="button" className={sheet.godotRig !== 'bones' ? 'ex-on' : ''} aria-pressed={sheet.godotRig !== 'bones'} title="Every frame drawn onto a sprite sheet. Plays exactly as it looks here." onClick={() => setSheet({ godotRig: 'frames' })}>
+                    Baked frames
+                  </button>
+                  <button type="button" className={sheet.godotRig === 'bones' ? 'ex-on' : ''} aria-pressed={sheet.godotRig === 'bones'} title="The skeleton, the parts and an AnimationPlayer with every clip, so you can change poses and timing in Godot (Skeleton2D)." onClick={() => setSheet({ godotRig: 'bones' })}>
+                    Bones (editable in Godot)
+                  </button>
+                </div>
+              )}
+              {sheet.engine === 'godot' && hasBones && !separate && sheet.godotRig === 'bones' && (
+                <p className="ex-note">
+                  A scene with the skeleton, a picture for each part and every clip as an animation.{' '}
+                  <button type="button" className="ex-link" onClick={() => openHelp('export-godot-bones')}>
+                    How it works
+                  </button>
+                </p>
+              )}
               {sheet.engine === 'godot' && (
                 <>
-                  {!separate && (
+                  {!separate && !godotBones && (
                     <Check checked={s.sheet.godotScene} onChange={(v) => setSheet({ godotScene: v })}>
                       Also make a ready-to-play scene (.tscn)
                     </Check>
@@ -239,7 +260,7 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
                   </button>
                 </div>
               )}
-              {(sheet.engine === 'godot' || sheet.engine === 'css') && (
+              {((sheet.engine === 'godot' && !godotBones) || sheet.engine === 'css') && (
                 <Check checked={s.sheet.json} onChange={(v) => setSheet({ json: v })}>
                   Also save a JSON file with where every frame is
                 </Check>
@@ -394,7 +415,7 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
                 )}
               </fieldset>
 
-              {!(separate && sheet.separateFiles) && (
+              {!(separate && sheet.separateFiles) && !godotBones && (
                 <fieldset>
                   <legend>Sheet</legend>
                   <div className="ex-seg">
