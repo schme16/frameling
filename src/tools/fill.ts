@@ -3,8 +3,8 @@
  * FillShape for it, behind the lines. Clicking paint that is already there recolours it. On pixel layers it is a
  * plain flood fill. The heavy lifting is in `src/geometry/fill.ts`.
  */
-import type { Drawing, FillShape, Shape } from '../core/format';
-import { uid } from '../core/doc';
+import type { Doc, Drawing, FillShape, Shape } from '../core/format';
+import { drawingAt, uid } from '../core/doc';
 import { registerTool, type Tool, type ToolContext, type ToolPointer } from '../core/registry';
 import { store } from '../core/store';
 import { fillRegion, pathsOverlap, type Rect } from '../geometry/fill';
@@ -97,17 +97,32 @@ function drawPop(g: CanvasRenderingContext2D, ctx: ToolContext) {
 
 // ---------------------------------------------------------------- the tool
 
+/** The lines the bucket sees: the active drawing, plus every visible vector layer's drawing at this frame when asked. */
+export function barrierShapes(doc: Doc, frame: number, own: readonly Shape[], allLayers: boolean, activeLayerId: string | undefined): Shape[] {
+  if (!allLayers) return own.slice();
+  const out: Shape[] = own.slice();
+  for (const l of doc.layers) {
+    if (l.id === activeLayerId || !l.visible || l.kind !== 'vector') continue;
+    const d = drawingAt(doc, l, frame);
+    if (d?.kind === 'vector') for (const s of d.shapes) if (s.type !== 'fill') out.push(s);
+  }
+  return out;
+}
+
 function fillVector(e: ToolPointer, ctx: ToolContext) {
   const { doc, ui } = store().get();
   const drawing: Drawing | undefined = activeDrawing();
-  if (!drawing || drawing.kind !== 'vector') {
+  const opts = getFillOptions();
+  // With lines from all layers, the colour layer can start empty: the first fill makes its drawing.
+  if ((!drawing && !opts.allLayers) || (drawing && drawing.kind !== 'vector')) {
     ctx.hint(FILL_HINTS['no-drawing']);
     return;
   }
-  const opts = getFillOptions();
+  const own = drawing?.kind === 'vector' ? drawing.shapes : [];
   const bounds: Rect = { x: 0, y: 0, width: doc.width, height: doc.height };
-  const res = fillRegion(drawing.shapes, { x: e.x, y: e.y }, { gap: gapWidth(opts.gap, ui.brush.size), bounds });
-  const hit = paintAt(drawing.shapes, e.x, e.y);
+  const lines = barrierShapes(doc, ui.frame, own, opts.allLayers, activeLayer().layer?.id);
+  const res = fillRegion(lines, { x: e.x, y: e.y }, { gap: gapWidth(opts.gap, ui.brush.size), bounds });
+  const hit = paintAt(own, e.x, e.y);
 
   if (res.kind === 'outside' || res.kind === 'on-line') {
     ctx.hint(FILL_HINTS[res.kind]);

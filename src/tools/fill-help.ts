@@ -35,6 +35,7 @@ On a pixel layer the paint bucket fills the joined-up pixels of the colour you c
 
 - **Close gaps**: how big a gap in your lines still counts as closed.
 - **Fill on top**: put the colour above your lines instead of behind them. Most of the time you want it off.
+- **Use lines from all layers**: the bucket sees lines on every visible layer, not just the one you are on. Keep your line art on one layer, pick a colour layer underneath, and fill there. Your lines stay clean and the colour is easy to change later.
 - **Fill all of this colour** (pixel layers): recolour every pixel of the clicked colour.
 
 ## Tips

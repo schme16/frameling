@@ -16,6 +16,8 @@ export interface FillOptions {
   onTop: boolean;
   /** Recolour every pixel of the clicked colour, not just the connected area (pixel layers). */
   allOfColour: boolean;
+  /** See lines on every visible vector layer, not just the selected one (paint on its own layer under the line art). */
+  allLayers: boolean;
 }
 
 /**
@@ -38,7 +40,7 @@ export function gapWidth(preset: GapPreset, brushSize: number): number {
   return Math.round(base * k);
 }
 
-let state: FillOptions = { gap: 'small', onTop: false, allOfColour: false };
+let state: FillOptions = { gap: 'small', onTop: false, allOfColour: false, allLayers: false };
 const listeners = new Set<() => void>();
 
 export function getFillOptions(): FillOptions {
@@ -103,6 +105,12 @@ export function FillOptionsPanel(): ReactNode {
             h('div', { className: 'fl-fill-note' }, 'Lets you fill shapes whose lines do not quite meet.'),
           ),
           check('Fill on top', 'Put the colour above your lines instead of behind them', o.onTop, (v) => setFillOptions({ onTop: v })),
+          check(
+            'Use lines from all layers',
+            'Fill areas closed in by lines on any visible layer. Handy for keeping colour on its own layer under your line art.',
+            o.allLayers,
+            (v) => setFillOptions({ allLayers: v }),
+          ),
         ],
   );
 }
