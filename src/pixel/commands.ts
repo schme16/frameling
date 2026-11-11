@@ -13,7 +13,9 @@ import { activeDrawing, activeLayer, editActiveDrawing, EDIT_HINTS } from '../to
 import { docPalette, paletteRgb, reduceToPalette, remapColor, usesColor } from './palette';
 import { getPixelSettings, setPixelSettings, type SymmetryMode } from './settings';
 import { activePixelLayer } from './tools';
-import { flipH, flipV, outline, rotateQuarter } from './transform';
+import { flipH, flipV, outline, rotateQuarter, type Img } from './transform';
+import { dropFloating, isFloating, pixelSelection, setPixelSelection } from '../select/pixel-state';
+import { applyInSelection, type PixelOp, type SelectionKind } from '../select/ops';
 
 // ---------------------------------------------------------------- the document palette
 
@@ -79,8 +81,21 @@ const rgb3 = (c: string): [number, number, number] => {
 
 // ---------------------------------------------------------------- whole drawing operations
 
-/** Runs a pixel operation on the active drawing, with friendly words when there's nothing to work on. */
-export function editPixels(label: string, op: (d: PixelDrawing) => Uint8ClampedArray | null): boolean {
+/**
+ * What a pixel operation would make of a drawing: on the selected pixels when there's a selection (`kind` says how,
+ * see src/select/ops.ts), else on the whole drawing. Also the selection afterwards (it turns with the pixels).
+ */
+export function pixelsAfter(d: Img, op: PixelOp, kind: SelectionKind = 'clip'): { pixels: Uint8ClampedArray; mask: ReturnType<typeof pixelSelection> } | null {
+  const m = pixelSelection();
+  if (m && m.width === d.width && m.height === d.height) return applyInSelection(d, m, kind, op);
+  const out = op(d);
+  return out ? { pixels: out, mask: null } : null;
+}
+
+/** Runs a pixel operation on the active drawing (or just its selected pixels), with friendly words when there's nothing to work on. */
+export function editPixels(label: string, op: PixelOp, kind: SelectionKind = 'clip'): boolean {
+  // Pixels being moved land first, so the operation sees them where they are.
+  if (isFloating()) dropFloating();
   const { layer, problem } = activeLayer();
   if (problem) {
     hint(EDIT_HINTS[problem]);
@@ -95,10 +110,12 @@ export function editPixels(label: string, op: (d: PixelDrawing) => Uint8ClampedA
     hint('There is nothing drawn on this frame yet.');
     return false;
   }
-  const out = op(d);
-  if (!out) return false;
+  const res = pixelsAfter(d, op, kind);
+  if (!res) return false;
+  const out = res.pixels;
   const r = editActiveDrawing(label, 'pixel', (dr) => void (dr.pixels = out));
   if (r !== 'ok') hint(EDIT_HINTS[r]);
+  else if (res.mask) setPixelSelection(res.mask);
   return r === 'ok';
 }
 
@@ -110,14 +127,18 @@ export function addOutline(where: 'outside' | 'inside'): boolean {
   const layer = activePixelLayer();
   const pal = layer?.paletteLock ? docPalette(store().get().doc) : null;
   const color = pal ? snap(c, pal) : c;
-  return editPixels(where === 'outside' ? 'Add outline' : 'Add inside outline', (d) => {
-    const r = outline(d, color, where, getPixelSettings().outlineCorners);
-    if (!r.changed) {
-      hint('Nothing to outline here. Draw something first, or it already has that outline.');
-      return null;
-    }
-    return r.pixels;
-  });
+  return editPixels(
+    where === 'outside' ? 'Add outline' : 'Add inside outline',
+    (d) => {
+      const r = outline(d, color, where, getPixelSettings().outlineCorners);
+      if (!r.changed) {
+        hint('Nothing to outline here. Draw something first, or it already has that outline.');
+        return null;
+      }
+      return r.pixels;
+    },
+    'outline',
+  );
 }
 
 function snap(c: readonly [number, number, number, number], p: DocPalette): [number, number, number, number] {
@@ -172,11 +193,11 @@ registerCommands([
     id: 'pixel.flipH',
     label: 'Flip drawing left to right',
     category: 'Pixel',
-    description: 'Mirror the pixels on this frame, around the middle of what is drawn.',
+    description: 'Mirror the pixels on this frame (or just the selected ones), around the middle of what is drawn.',
     help: 'pixel-flip-rotate',
     keywords: ['flip', 'mirror', 'horizontal', 'reverse', 'turn around', 'face the other way'],
     enabled: pixelOnly,
-    run: () => void editPixels('Flip left to right', (d) => flipH(d)),
+    run: () => void editPixels('Flip left to right', (d, box) => flipH(d, box ?? 'content'), 'transform'),
   },
   {
     id: 'pixel.flipV',
@@ -186,7 +207,7 @@ registerCommands([
     help: 'pixel-flip-rotate',
     keywords: ['flip', 'vertical', 'upside down'],
     enabled: pixelOnly,
-    run: () => void editPixels('Flip upside down', (d) => flipV(d)),
+    run: () => void editPixels('Flip upside down', (d, box) => flipV(d, box ?? 'content'), 'transform'),
   },
   {
     id: 'pixel.rotateRight',
@@ -196,7 +217,7 @@ registerCommands([
     help: 'pixel-flip-rotate',
     keywords: ['rotate', 'turn', 'clockwise', '90'],
     enabled: pixelOnly,
-    run: () => void editPixels('Turn right', (d) => rotateQuarter(d, 1)),
+    run: () => void editPixels('Turn right', (d, box) => rotateQuarter(d, 1, box), 'transform'),
   },
   {
     id: 'pixel.rotateLeft',
@@ -206,7 +227,7 @@ registerCommands([
     help: 'pixel-flip-rotate',
     keywords: ['rotate', 'turn', 'anticlockwise', 'counterclockwise', '90'],
     enabled: pixelOnly,
-    run: () => void editPixels('Turn left', (d) => rotateQuarter(d, 3)),
+    run: () => void editPixels('Turn left', (d, box) => rotateQuarter(d, 3, box), 'transform'),
   },
   {
     id: 'pixel.rotate180',
@@ -216,7 +237,7 @@ registerCommands([
     help: 'pixel-flip-rotate',
     keywords: ['rotate', 'turn', '180', 'upside down'],
     enabled: pixelOnly,
-    run: () => void editPixels('Turn round', (d) => rotateQuarter(d, 2)),
+    run: () => void editPixels('Turn round', (d, box) => rotateQuarter(d, 2, box), 'transform'),
   },
   {
     id: 'pixel.outline',

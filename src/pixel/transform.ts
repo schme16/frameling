@@ -3,6 +3,14 @@
  * takes RGBA bytes and returns a new array the same size (pixels are never changed in place). Pure, no DOM.
  */
 
+/** An inclusive pixel box to flip or turn around, instead of the drawing's content (a selection's box). */
+export interface PixelBox {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+}
+
 export interface Img {
   width: number;
   height: number;
@@ -36,9 +44,9 @@ export function contentBounds(img: Img): { x0: number; y0: number; x1: number; y
 }
 
 /** Mirror left to right, around the middle of what's drawn (so a sprite stays where it is). */
-export function flipH(img: Img, around: 'canvas' | 'content' = 'content'): Uint8ClampedArray {
+export function flipH(img: Img, around: 'canvas' | 'content' | PixelBox = 'content'): Uint8ClampedArray {
   const { width: w, height: h, pixels: p } = img;
-  const b = around === 'content' ? contentBounds(img) : null;
+  const b = typeof around === 'object' ? around : around === 'content' ? contentBounds(img) : null;
   const sum = b ? b.x0 + b.x1 : w - 1;
   const src = u32(p);
   const out = new Uint8ClampedArray(p.length);
@@ -55,9 +63,9 @@ export function flipH(img: Img, around: 'canvas' | 'content' = 'content'): Uint8
 }
 
 /** Mirror top to bottom, around the middle of what's drawn. */
-export function flipV(img: Img, around: 'canvas' | 'content' = 'content'): Uint8ClampedArray {
+export function flipV(img: Img, around: 'canvas' | 'content' | PixelBox = 'content'): Uint8ClampedArray {
   const { width: w, height: h, pixels: p } = img;
-  const b = around === 'content' ? contentBounds(img) : null;
+  const b = typeof around === 'object' ? around : around === 'content' ? contentBounds(img) : null;
   const sum = b ? b.y0 + b.y1 : h - 1;
   const out = new Uint8ClampedArray(p.length);
   for (let y = 0; y < h; y++) {
@@ -72,11 +80,11 @@ export function flipV(img: Img, around: 'canvas' | 'content' = 'content'): Uint8
  * Turns by a multiple of 90 degrees (clockwise), exactly, around the middle of what's drawn. Pixels that would land
  * off the canvas are dropped.
  */
-export function rotateQuarter(img: Img, turns: number): Uint8ClampedArray {
+export function rotateQuarter(img: Img, turns: number, box?: PixelBox): Uint8ClampedArray {
   const { width: w, height: h, pixels: p } = img;
   const t = ((Math.round(turns) % 4) + 4) % 4;
   if (t === 0) return new Uint8ClampedArray(p);
-  const b = contentBounds(img);
+  const b = box ?? contentBounds(img);
   if (!b) return new Uint8ClampedArray(p);
   // Twice the centre, so odd and even sizes both turn on the pixel grid.
   const cx2 = b.x0 + b.x1;
@@ -141,11 +149,11 @@ export function scale2x(src: Uint32Array, w: number, h: number): Uint32Array {
  * with Scale2x three times, then each pixel picks the one colour under its centre (no blending, so no new colours).
  * The canvas size stays the same; anything turned off the edge is dropped.
  */
-export function rotateSmooth(img: Img, degrees: number): Uint8ClampedArray {
+export function rotateSmooth(img: Img, degrees: number, box?: PixelBox): Uint8ClampedArray {
   const { width: w, height: h, pixels: p } = img;
   const deg = ((degrees % 360) + 360) % 360;
-  if (deg % 90 === 0) return rotateQuarter(img, deg / 90);
-  const b = contentBounds(img);
+  if (deg % 90 === 0) return rotateQuarter(img, deg / 90, box);
+  const b = box ?? contentBounds(img);
   if (!b) return new Uint8ClampedArray(p);
   // Work on the content plus a margin, so the upscale stays small on a big canvas with a small sprite.
   const pad = 1;

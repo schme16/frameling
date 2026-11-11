@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { PixelDrawing } from '../core/format';
 import { mountModal, Modal } from '../io/mount';
 import { activeDrawing } from '../tools/edit';
-import { editPixels } from './commands';
+import { editPixels, pixelsAfter } from './commands';
 import { contentBounds, rotateSmooth } from './transform';
 import { hint } from '../canvas/controller';
 import './pixel.css';
@@ -23,9 +23,9 @@ function Preview({ d, pixels }: { d: PixelDrawing; pixels: Uint8ClampedArray }) 
 
 function RotateDialog({ d, close }: { d: PixelDrawing; close: () => void }) {
   const [angle, setAngle] = useState(15);
-  const turned = useMemo(() => rotateSmooth(d, angle), [d, angle]);
+  const turned = useMemo(() => pixelsAfter(d, (img, box) => rotateSmooth(img, angle, box), 'transform')?.pixels ?? d.pixels, [d, angle]);
   const apply = () => {
-    if (angle % 360 !== 0) editPixels(`Turn ${angle}°`, () => rotateSmooth(d, angle));
+    if (angle % 360 !== 0) editPixels(`Turn ${angle}°`, (img, box) => rotateSmooth(img, angle, box), 'transform');
     close();
   };
   return (
