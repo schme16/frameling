@@ -185,7 +185,8 @@ export function animatedSvg(doc: Doc, opts: AnimatedSvgOptions = {}): string {
   const used = new Set<string>();
   const views = Array.from({ length: count }, (_, i) => cameraViewAt(doc, from + i));
   for (const layer of doc.layers) {
-    if (!layer.visible || layer.reference || layer.kind === 'camera') continue;
+    // Mask layers are never shown; effects, blend modes, clipping and masks aren't carried (see docs/effects.md).
+    if (!layer.visible || layer.reference || layer.kind === 'camera' || layer.mask || (layer.folder && doc.folders?.[layer.folder]?.visible === false)) continue;
     const parts: string[] = [];
     for (const cel of layer.cels) {
       const a = Math.max(from, cel.start);

@@ -12,6 +12,7 @@ import type { Cel, Doc, Drawing, EditFrame, Id, InstanceShape, Layer, MotionPath
 import { ease } from './ease';
 import { celAt, uid } from './doc';
 import { morphShapes } from './shape-tween';
+import { boundDrawing, type PosedMesh } from '../rig/pose';
 
 // ---------------------------------------------------------------- matrices
 
@@ -432,6 +433,8 @@ export interface PosedLayer {
   drawing: Drawing;
   opacity: number;
   pixelSize: number;
+  /** Bent through a bone mesh (attached layers only). */
+  mesh?: PosedMesh;
 }
 
 /** An instance ready to draw: its matrix and the drawings its symbol shows at the frame in question. Runtime only. */
@@ -485,8 +488,16 @@ function worldOf(doc: Doc): World {
 /** How many poses were built, for tests. */
 export const poseStats = { built: 0 };
 
-/** What a layer shows at `frame`: its drawing, with instances posed. Plain drawings come back unchanged. */
+/**
+ * What a layer shows at `frame`: its drawing, with instances posed and moved by its bone if it's attached to one.
+ * Plain drawings come back unchanged.
+ */
 export function poseAt(doc: Doc, layer: Layer, frame: number, depth = 0): Drawing | undefined {
+  const d = poseCel(doc, layer, frame, depth);
+  return d && layer.bind ? boundDrawing(doc, layer, frame, d) : d;
+}
+
+function poseCel(doc: Doc, layer: Layer, frame: number, depth: number): Drawing | undefined {
   const cel = celAt(layer, frame);
   if (!cel) return undefined;
   const d = doc.drawings[cel.drawingId];
@@ -598,8 +609,13 @@ export function instanceAt(doc: Doc, layer: Layer, frame: number, id: Id): Insta
 
 /** A drawing being changed right now (a stroke in progress), with its instances posed like the stored one's. */
 export function poseLive(doc: Doc, layer: Layer, frame: number, live: Drawing): Drawing {
+  const d = poseLiveCel(doc, layer, frame, live);
+  return layer.bind ? boundDrawing(doc, layer, frame, d) : d;
+}
+
+function poseLiveCel(doc: Doc, layer: Layer, frame: number, live: Drawing): Drawing {
   if (live.kind !== 'vector' || !hasInstances(live)) return live;
-  const posed = poseAt(doc, layer, frame);
+  const posed = poseCel(doc, layer, frame, 0);
   const byId = new Map<Id, Shape>();
   if (posed?.kind === 'vector') for (const s of posed.shapes) if (isPosed(s)) byId.set(s.id, s);
   return { ...live, shapes: live.shapes.map((s) => (isInstance(s) ? (byId.get(s.id) ?? poseInstance(doc, s, 0)) : s)) };

@@ -10,6 +10,7 @@ import { current, isDraft } from 'immer';
 import type { Cel, Clip, Doc, Drawing, Id, Layer, Marker, Shape } from '../core/format';
 import { currentChoice } from '../core/choices';
 import { celAt, findLayer, newDrawingFor, newPixelLayer, newVectorLayer, pruneDrawings, uid } from '../core/doc';
+import { stepLayerThroughFolders, tidyFolders } from '../effects/edit';
 
 /** What to do when a cel lands on top of others: shove them later (push) or cut them back (trim). */
 export type Clash = 'push' | 'trim';
@@ -31,7 +32,8 @@ export function cloneDrawing(d: Drawing): Drawing {
   if (src.kind === 'camera') return { id: uid('k'), kind: 'camera', view: { ...src.view } };
   const shapes = structuredClone(src.shapes) as Shape[];
   for (const s of shapes) s.id = uid('s');
-  return { id: uid('v'), kind: 'vector', shapes };
+  // A bones layer's key keeps its pose.
+  return { id: uid('v'), kind: 'vector', shapes, ...(src.pose ? { pose: JSON.parse(JSON.stringify(src.pose)) } : {}) };
 }
 
 /** Makes sure the document is at least `frames` long. */
@@ -343,13 +345,14 @@ export function reorderLayer(doc: Doc, layerId: Id, to: number): boolean {
   if (from < 0 || from === dest) return false;
   const [l] = doc.layers.splice(from, 1);
   doc.layers.splice(dest, 0, l);
+  // Layer folders stay in one piece (see effects/edit.ts).
+  tidyFolders(doc, layerId);
   return true;
 }
 
-/** One step towards the top (`up`) or the bottom of the picture. */
+/** One step towards the top (`up`) or the bottom of the picture. Steps into and out of layer folders on the way. */
 export function stepLayer(doc: Doc, layerId: Id, dir: 'up' | 'down'): boolean {
-  const i = doc.layers.findIndex((l) => l.id === layerId);
-  return i >= 0 && reorderLayer(doc, layerId, i + (dir === 'up' ? 1 : -1));
+  return stepLayerThroughFolders(doc, layerId, dir);
 }
 
 export function setLayerVisible(doc: Doc, layerId: Id, visible: boolean): boolean {

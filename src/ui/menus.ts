@@ -19,7 +19,7 @@ export const MENUS: MenuDef[] = [
   {
     label: 'File',
     categories: ['File', 'Export'],
-    items: ['file.new', 'file.open', 'file.openRecent', 'file.recover', '-', 'file.save', 'file.saveAs', '-', 'file.export', 'file.exportInteractives', 'file.exportLottie', 'file.exportSvgAnimated', 'file.exportAgain'],
+    items: ['file.new', 'file.open', 'file.openRecent', 'file.recover', '-', 'file.save', 'file.saveAs', '-', 'file.export', 'file.exportInteractives', 'file.exportLottie', 'file.exportSvgAnimated', 'file.exportAgain', '-', 'audio.import'],
   },
   {
     label: 'Edit',
@@ -43,13 +43,23 @@ export const MENUS: MenuDef[] = [
   },
   {
     label: 'Animate',
-    categories: ['Animate', 'Animation', 'Timeline', 'Frames'],
+    categories: ['Animate', 'Animation', 'Timeline', 'Frames', 'Sound', 'Lip sync'],
     items: ['timeline.play', 'timeline.toggleLoop', 'timeline.toggleOnion', '-', 'timeline.prevFrame', 'timeline.nextFrame', 'timeline.prevKey', 'timeline.nextKey', 'timeline.firstFrame', 'timeline.lastFrame', '-', 'timeline.newKey', 'timeline.emptyFrame', 'timeline.duplicateKey', 'timeline.clearKey', '-', 'timeline.insertFrame', 'timeline.removeFrame', 'timeline.addMarker'],
+  },
+  {
+    label: 'Rig',
+    categories: ['Rig'],
+    items: ['rig.addBones', 'tools.bone', 'tools.pose', '-', 'rig.autoAttach', 'rig.bendLayer', 'rig.detachLayer', '-', 'rig.togglePin', 'rig.resetPose', 'rig.mirrorPose', 'rig.swapSides', 'rig.savePose', '-', 'view.panel.rig', 'rig.boneLook'],
+  },
+  {
+    label: 'Effects',
+    categories: ['Effects'],
+    items: ['view.panel.effects', '-', 'effects.add.blur', 'effects.add.glow', 'effects.add.shadow', 'effects.add.adjust', 'effects.add.outline', 'effects.add.pixelate', '-', 'layers.clipToBelow', 'layers.useAsMask', '-', 'layers.newFolder', 'layers.ungroupFolder', '-', 'effects.reset'],
   },
   {
     label: 'Help',
     categories: ['Help'],
-    items: ['help.contents', 'quests.open', 'file.openExample', 'help.shortcuts', 'help.welcome', '-', 'help.about'],
+    items: ['help.contents', 'quests.open', 'file.openExample', 'help.shortcuts', 'help.welcome', 'help.meetQuill', '-', 'help.about'],
   },
 ];
 

@@ -25,6 +25,7 @@ import { strokeOutline } from '../core/render';
 import { cameraViewAt, cameraViewOn, activeCamera, parallaxFactor } from '../core/camera';
 import { encodePng } from '../io/png';
 import { flattenTilemap } from '../tiles/model';
+import type { PosedMesh } from '../rig/pose';
 
 export interface LottieOptions {
   /** Frames to include (inclusive, document frame numbers). Default: the whole animation. */
@@ -339,6 +340,64 @@ function imageAsset(ctx: Ctx, key: string, d: PixelDrawing, pixelSize: number): 
   return id;
 }
 
+// ---------------------------------------------------------------- layers on bones
+
+type XY = { x: number; y: number };
+
+/** Where a rest-space point goes on a bent mesh: through the triangle holding it (or the nearest one). */
+function meshPoint(mesh: PosedMesh, x: number, y: number): XY {
+  const { src, dst, triangles } = mesh;
+  let best: { i: number; u: number; v: number; w: number; out: number } | null = null;
+  for (let t = 0; t + 2 < triangles.length; t += 3) {
+    const [a, b, c] = [triangles[t], triangles[t + 1], triangles[t + 2]];
+    const ax = src[a * 2], ay = src[a * 2 + 1], bx = src[b * 2], by = src[b * 2 + 1], cx = src[c * 2], cy = src[c * 2 + 1];
+    const det = (by - cy) * (ax - cx) + (cx - bx) * (ay - cy);
+    if (!det) continue;
+    const u = ((by - cy) * (x - cx) + (cx - bx) * (y - cy)) / det;
+    const v = ((cy - ay) * (x - cx) + (ax - cx) * (y - cy)) / det;
+    const w = 1 - u - v;
+    // How far outside the triangle the point is (0 inside), to fall back on the nearest.
+    const out = Math.max(0, -u) + Math.max(0, -v) + Math.max(0, -w);
+    if (!best || out < best.out) best = { i: t, u, v, w, out };
+    if (out === 0) break;
+  }
+  if (!best) return { x, y };
+  const [a, b, c] = [triangles[best.i], triangles[best.i + 1], triangles[best.i + 2]];
+  return { x: best.u * dst[a * 2] + best.v * dst[b * 2] + best.w * dst[c * 2], y: best.u * dst[a * 2 + 1] + best.v * dst[b * 2 + 1] + best.w * dst[c * 2 + 1] };
+}
+
+function mapShape(s: Exclude<Shape, InstanceShape>, f: (p: XY) => XY, alpha: number): Shape {
+  const sub = (paths: SubPath[]) => paths.map((sp) => ({ closed: sp.closed, points: sp.points.map((q) => ({ ...f(q), ...(q.c1 && q.c2 ? { c1: f(q.c1), c2: f(q.c2) } : {}) })) }));
+  if (s.type === 'stroke') {
+    // A brush stroke goes as its outline, so its width bends with the part too.
+    const o = strokeOutline(s);
+    return { id: s.id, type: 'fill', paths: [{ closed: true, points: o.map(([x, y]) => f({ x, y })) }], color: s.color, opacity: s.opacity * alpha };
+  }
+  return { ...s, paths: sub(s.paths), opacity: s.opacity * alpha };
+}
+
+/** Posed bone groups (no symbol) turned into plain shapes in stage space. Pixel art on a bone isn't carried. */
+function flattenBound(shapes: Shape[]): Shape[] {
+  const out: Shape[] = [];
+  for (const s of shapes) {
+    if (!(isPosed(s) && !s.symbolId)) {
+      out.push(s);
+      continue;
+    }
+    const m = s.posed.matrix;
+    for (const l of s.posed.layers) {
+      if (l.drawing.kind !== 'vector') continue;
+      const mesh = (l as { mesh?: PosedMesh }).mesh;
+      const f = (p: XY): XY => {
+        const q = mesh ? meshPoint(mesh, p.x, p.y) : p;
+        return { x: m[0] * q.x + m[2] * q.y + m[4], y: m[1] * q.x + m[3] * q.y + m[5] };
+      };
+      for (const t of flattenBound(l.drawing.shapes)) out.push(isInstance(t) ? t : mapShape(t, f, l.opacity * s.opacity));
+    }
+  }
+  return out;
+}
+
 /** Shape signature, to check every frame of a key has the same kinds of shape in the same order. */
 const sig = (shapes: Shape[]) => shapes.map((s) => (s.type === 'instance' ? 'i:' + s.symbolId : 'p')).join(',');
 
@@ -350,7 +409,8 @@ function buildLayers(ctx: Ctx, layers: Layer[], from: number, to: number, offset
   const out: Json[] = [];
   const { doc } = ctx;
   for (const layer of layers) {
-    if (!layer.visible || layer.reference || layer.kind === 'camera') continue;
+    // Mask layers are never shown; effects, blend modes, clipping and masks aren't carried (see docs/effects.md).
+    if (!layer.visible || layer.reference || layer.kind === 'camera' || layer.mask || (layer.folder && doc.folders?.[layer.folder]?.visible === false)) continue;
     const op = layer.opacity;
     for (const cel of layer.cels) {
       const a = Math.max(from, cel.start);
@@ -372,7 +432,11 @@ function buildLayers(ctx: Ctx, layers: Layer[], from: number, to: number, offset
       }
       const frames: number[] = [];
       for (let f = a; f <= b; f++) frames.push(f);
-      const drawings = frames.map((f) => poseAt(doc, layer, f));
+      // A layer on a bone comes back as one posed group: its shapes are moved (or bent) into place per frame.
+      const drawings = frames.map((f) => {
+        const d = poseAt(doc, layer, f);
+        return layer.bind && d?.kind === 'vector' ? { ...d, shapes: flattenBound(d.shapes) } : d;
+      });
       const first = drawings[0];
       if (!first || first.kind !== 'vector') continue;
       const s0 = sig(first.shapes);

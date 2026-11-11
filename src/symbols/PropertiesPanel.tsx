@@ -132,6 +132,7 @@ function InstanceSection({ inst, between }: { inst: InstanceShape; between: numb
           <div className="sy-grid">
             <Num label={inst.play === 'single' ? 'Frame' : 'Starts on'} value={inst.firstFrame + 1} onChange={(v) => set('First frame', 'first', (s) => void (s.firstFrame = Math.max(0, Math.min(c.length - 1, Math.round(v) - 1))))} title="Which of its own frames it starts on" />
           </div>
+          {c.def.frameLabels?.[inst.firstFrame] ? <Tip>Frame {inst.firstFrame + 1} is named "{c.def.frameLabels[inst.firstFrame]}".</Tip> : null}
         </>
       ) : (
         <Tip>Its drawing has one frame. Draw inside it and add frames to give it its own animation, like a flapping wing.</Tip>

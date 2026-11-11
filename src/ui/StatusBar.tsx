@@ -6,12 +6,15 @@ import { Icon } from './icons';
 import { usePrefs, reducedMotion } from './prefs';
 import { runCommand } from './palette';
 import { TIPS, tipText } from './tips';
+import { docDpi, formatSize } from '../core/units';
 
 export function StatusBar() {
   const zoom = useStore((s) => s.ui.zoom);
   const w = useStore((s) => s.doc.width);
   const h = useStore((s) => s.doc.height);
   const fps = useStore((s) => s.doc.fps);
+  const dpi = useStore((s) => docDpi(s.doc));
+  const units = usePrefs((p) => p.units);
   const frame = useStore((s) => s.ui.frame);
   const length = useStore((s) => s.doc.length);
   const pixel = useStore((s) => {
@@ -46,9 +49,9 @@ export function StatusBar() {
         <Icon name="zoom" size={14} />
         {Math.round(zoom * 100)}%
       </button>
-      <span className="ui-status-item" data-tip="Drawing size">
+      <span className="ui-status-item" data-tip="Drawing size" data-tip-desc={units === 'px' ? undefined : `${w} x ${h} px at ${dpi} DPI. Change units in Preferences.`}>
         <Icon name={pixel ? 'pixel' : 'image'} size={14} />
-        {w} x {h}
+        {units === 'px' ? `${w} x ${h}` : formatSize(w, h, units, dpi)}
         {pixel ? ` (${Math.ceil(w / pixel)} x ${Math.ceil(h / pixel)} pixels)` : ''}
       </span>
       <span className="ui-status-item" data-tip="Frames per second">
@@ -62,7 +65,7 @@ export function StatusBar() {
       <span className="ui-status-spacer" />
       {showTips && (
         <button type="button" className={`ui-status-tip${fade ? ' is-fading' : ''}`} onClick={next} data-tip="Show another tip" aria-label={`Tip: ${tipText(TIPS[tip])}. Press for another.`}>
-          <Icon name="sparkle" size={14} />
+          <Icon name="tip" size={14} />
           <span>{tipText(TIPS[tip])}</span>
         </button>
       )}

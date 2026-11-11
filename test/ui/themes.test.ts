@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { BUILT_IN_THEMES, DEFAULT_DARK, DEFAULT_LIGHT, getBuiltIn } from '../../src/ui/themes/builtIn';
+import { BUILT_IN_THEMES, CHOSEN_FROM_PALETTE, DEFAULT_DARK, DEFAULT_LIGHT, getBuiltIn, surroundFor } from '../../src/ui/themes/builtIn';
 import { contrast, ensureContrast, hexToHsl, hslToHex, isHex, mix, parseHex } from '../../src/ui/themes/color';
 import { checkContrast, fixPair, problems, problemsFor } from '../../src/ui/themes/contrast';
 import { addCustomTheme, deleteCustomTheme, saveCustomTheme, selectTheme } from '../../src/ui/themes/library';
@@ -37,8 +37,15 @@ describe('built-in themes', () => {
     }
   });
 
-  it('keeps the chosen-state rule: gold with dark text', () => {
+  it('keeps the chosen-state rule: gold with dark text (or a colour from the theme, still with dark text)', () => {
     for (const t of BUILT_IN_THEMES) {
+      if (CHOSEN_FROM_PALETTE.has(t.id)) {
+        expect(contrast(t.tokens['chosen-fg'], t.tokens['chosen-bg']), t.id).toBeGreaterThanOrEqual(7);
+        expect(parseHex(t.tokens['chosen-fg'])!.every((c) => c < 50), t.id).toBe(true);
+        // Chosen things still stand apart from the panels they sit on.
+        expect(contrast(t.tokens['chosen-bg'], t.tokens.panel), t.id).toBeGreaterThanOrEqual(1.5);
+        continue;
+      }
       const [h, s, l] = hexToHsl(t.tokens['chosen-bg']);
       expect(h, t.id).toBeGreaterThan(35);
       expect(h, t.id).toBeLessThan(50);
@@ -62,6 +69,16 @@ describe('built-in themes', () => {
       expect(contrast(t.tokens.faint, t.tokens.panel)).toBeGreaterThanOrEqual(4.5);
       expect(contrast(t.tokens.line, t.tokens.panel)).toBeGreaterThanOrEqual(3);
     }
+  });
+
+  it('only a few themes have non-gold chosen states and a surround pattern, and copies keep it', () => {
+    expect(CHOSEN_FROM_PALETTE.size).toBeLessThan(BUILT_IN_THEMES.length / 2);
+    for (const id of CHOSEN_FROM_PALETTE) expect(getBuiltIn(id), id).toBeDefined();
+    expect(surroundFor({ id: 'ice-camo' })).toBe('camo');
+    expect(surroundFor({ id: 'custom-1', basedOn: 'glacier-grid' })).toBe('camo');
+    expect(surroundFor({ id: 'lavender-hum' })).toBeNull();
+    expect(surroundFor({ id: 'strawberry' })).toBe('seeds');
+    expect(surroundFor({ id: DEFAULT_DARK })).toBeNull();
   });
 
   it('dark themes are dark and light themes are light', () => {
@@ -204,6 +221,12 @@ describe('applying a theme', () => {
     expect(root().style.getPropertyValue('color-scheme')).toBe('light');
     setPrefs({ theme: 'system' });
     expect(root().dataset.theme).toBeUndefined();
+  });
+  it('marks <html> for the camo surround only while a camo theme shows', () => {
+    setPrefs({ theme: 'dark', darkTheme: 'glacier-grid' });
+    expect(root().dataset.surround).toBe('camo');
+    setPrefs({ darkTheme: 'lilac-static' });
+    expect(root().dataset.surround).toBeUndefined();
   });
   it('System follows the computer, live', () => {
     let dark = true;

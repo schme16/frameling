@@ -72,7 +72,7 @@ This copies the AppImage to `/mnt/109313D2109313D2/lutris-applications/frameling
 Quill, the mascot, is drawn in Frameling itself. The source files are in `brand/mascot/`:
 
 - `mascot.frameling`: every animation. A 48 x 48 pixel layer at 100 fps (one frame is 10 ms), with one clip per
-  animation (idle, wave, talk, point, cheer, think, draw, sleep, oops). The clip's loop setting is whether it loops.
+  animation (idle, wave, talk, point, cheer, think, draw, sleep, oops, sad, wave-sad). The clip's loop setting is whether it loops.
 - `mascot-icon.frameling`: the app icon. The 32 px icon is on frame 0 (clip `icon32`, layer "32 px") and the
   hand-drawn 16 px one is on frame 1 (clip `icon16`, layer "16 px", pixel size 2). The 16 px art is used at 16 and
   48 px, the 32 px art everywhere else.
@@ -87,6 +87,11 @@ holding a drawing for 30 frames makes a 300 ms frame. Visible pixel layers are f
 so a hidden layer is a good place for reference sketches); vector layers are left out with a warning. Keep clip names
 as they are: the app asks for animations by name. `brand/quill/` is the old generator the art was first made with,
 kept for history only.
+
+Two scripts in `brand/mascot/` still compose poses from those old part grids (`compose.mjs`) and write them into
+`mascot.frameling`: `add-sad.mjs` adds the `sad` and `wave-sad` clips (`--force` redraws them, `--preview` only
+writes `brand/ab/sad-quill/contact-6x.png`), and `redraw-arms.mjs` swaps every old arm for the chunky ones built in
+`arms.mjs`, in place. Hand edits made in Frameling are left alone by both.
 
 ## The Interactives package (.flplay)
 

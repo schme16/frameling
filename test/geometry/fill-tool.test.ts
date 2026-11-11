@@ -6,6 +6,7 @@ import { resetStore, store } from '../../src/core/store';
 import { EDIT_HINTS } from '../../src/tools/edit';
 import { FILL_HINTS, indexBelowLines } from '../../src/tools/fill';
 import { setFillOptions } from '../../src/tools/fill-options';
+import { DEFAULT_PIXEL_SETTINGS, setPixelSettings } from '../../src/pixel/settings';
 import { arc, brokenCircle, stroke } from './helpers';
 
 function ptr(x: number, y: number): ToolPointer {
@@ -161,6 +162,37 @@ describe('paint bucket tool', () => {
       t.s.setUi({ fillColor: '#ff0000' });
       tool().down!(ptr(1, 1), t.ctx);
       expect([...t.drawing().pixels.slice(5 * 4, 5 * 4 + 4)]).toEqual([255, 0, 0, 255]);
+    });
+    it('fills the mirrored spot too when mirror drawing is on', () => {
+      setPixelSettings({ ...DEFAULT_PIXEL_SETTINGS, symmetry: 'h' });
+      try {
+        const t = pixelSetup();
+        t.s.setUi({ fillColor: '#ff0000' });
+        // Left of the wall at column 1; its mirror (line at 4) is column 6, right of the wall.
+        tool().down!(ptr(1, 1), t.ctx);
+        const px = t.drawing().pixels;
+        expect([...px.slice(0, 4)]).toEqual([255, 0, 0, 255]);
+        expect([...px.slice(6 * 4, 6 * 4 + 4)]).toEqual([255, 0, 0, 255]);
+        expect([...px.slice(4 * 4, 4 * 4 + 4)]).toEqual([0, 0, 0, 255]);
+        // One undo step for both halves.
+        t.s.undo();
+        expect(t.drawing().pixels).toBe(t.before);
+      } finally {
+        setPixelSettings({ ...DEFAULT_PIXEL_SETTINGS });
+      }
+    });
+    it('a mirrored fill that lands in the same area fills it once', () => {
+      setPixelSettings({ ...DEFAULT_PIXEL_SETTINGS, symmetry: 'v' });
+      try {
+        const t = pixelSetup();
+        t.s.setUi({ fillColor: '#ff0000' });
+        tool().down!(ptr(1, 1), t.ctx);
+        const px = t.drawing().pixels;
+        expect([...px.slice((7 * 8 + 1) * 4, (7 * 8 + 1) * 4 + 4)]).toEqual([255, 0, 0, 255]);
+        expect([...px.slice(5 * 4, 5 * 4 + 4)]).toEqual([0, 0, 0, 0]);
+      } finally {
+        setPixelSettings({ ...DEFAULT_PIXEL_SETTINGS });
+      }
     });
     it('says so when the area is already that colour', () => {
       const t = pixelSetup();

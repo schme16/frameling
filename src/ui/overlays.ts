@@ -11,6 +11,8 @@ export interface Overlays {
   sheet: 'welcome' | 'new' | 'examples' | null;
   /** The About Frameling card. */
   about: boolean;
+  /** Quill's first-run hello (Help > Meet Quill again). */
+  onboarding?: boolean;
 }
 
 export const overlays = createStore<Overlays>({ palette: false, prefs: null, help: null, sheet: null, about: false });
@@ -34,7 +36,10 @@ export const closeSheet = () => patch({ sheet: null });
 export const openAbout = () => patch({ about: true, palette: false });
 export const closeAbout = () => patch({ about: false });
 
+export const openOnboarding = () => patch({ onboarding: true, sheet: null, palette: false });
+export const closeOnboarding = () => patch({ onboarding: false });
+
 export const anyOverlayOpen = (): boolean => {
   const o = overlays.get();
-  return o.palette || !!o.prefs || !!o.help || !!o.sheet || o.about;
+  return o.palette || !!o.prefs || !!o.help || !!o.sheet || o.about || !!o.onboarding;
 };

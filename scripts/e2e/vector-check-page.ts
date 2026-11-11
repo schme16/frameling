@@ -1,6 +1,7 @@
 // The page side of vector-check.cjs: builds test documents, renders frames with Frameling's own renderer, with
 // lottie-web from the Lottie export, and lays the animated SVG out so the driver can capture it at any frame.
 // Bundled by esbuild into one script (see vector-check.cjs).
+import { makePuppet } from '../../src/templates/puppet';
 import lottie from 'lottie-web/build/player/lottie_canvas';
 import type { Doc, InstanceShape } from '../../src/core/format';
 import { makeSymbol } from '../../src/core/symbols';
@@ -93,6 +94,7 @@ const DOCS: Record<string, () => Doc> = {
   'tween-extras': tweenExtrasDoc,
   'morph-template': makeMorph,
   'camera-pan-template': makeCameraPan,
+  'puppet-template': makePuppet,
 };
 
 let doc: Doc;

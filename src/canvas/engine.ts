@@ -17,6 +17,7 @@ import { FramePainter } from './pipeline';
 import { subscribeTileUi, tileModeOn } from '../tiles/state';
 import { subscribePrefs } from '../ui/prefs';
 import { drawTileModeFrame, tileCopyAlpha } from '../tiles/look';
+import { maskFocusChanged } from '../effects/stage';
 import { cssVar, subscribeTheme } from './theme';
 import { getViewSettings, subscribeViewSettings } from './viewSettings';
 import { drawDecorations } from './decorations';
@@ -24,6 +25,7 @@ import { canvasCamera, currentView, lookingThrough, stageCamera } from '../camer
 import { cameraFrameCorners } from '../core/camera';
 import { invert, applyMat } from '../core/symbols';
 import { screenToDoc, stageDeviceRect, wheelZoomFactor, zoomAbout, type Pt } from './view';
+import { overlayMatrix, toLayerSpace } from '../rig/pose';
 
 export interface EngineElements {
   root: HTMLElement;
@@ -283,7 +285,7 @@ export class CanvasEngine {
     }
     const u = s.ui;
     const q = p.ui;
-    if (s.doc !== p.doc || u.frame !== q.frame || u.zoom !== q.zoom || u.panX !== q.panX || u.panY !== q.panY || u.onion !== q.onion || u.playing !== q.playing) {
+    if (s.doc !== p.doc || u.frame !== q.frame || u.zoom !== q.zoom || u.panX !== q.panX || u.panY !== q.panY || u.onion !== q.onion || u.playing !== q.playing || maskFocusChanged(s, p)) {
       if (u.zoom !== q.zoom) this.zoomingUntil = performance.now() + 160;
       this.invalidate(true, true);
     } else {
@@ -324,6 +326,7 @@ export class CanvasEngine {
       tileCopyAlpha: tileCopyAlpha(),
       camera: canvasCamera()?.view,
       pasteboard: !ui.playing && !doc.editing?.length && !!stageCamera(doc) && !lookingThrough() ? { frame: cameraFrameNow() } : undefined,
+      activeLayerId: ui.activeLayerId,
     });
     if (!settled) {
       clearTimeout(this.settleTimer);
@@ -359,6 +362,8 @@ export class CanvasEngine {
     if (tool?.overlay && !(this.gesture?.kind === 'pan')) {
       g.save();
       stageSpace();
+      const bm = overlayMatrix(doc, ui.activeLayerId, ui.frame, tool.id);
+      if (bm) g.transform(bm[0], bm[1], bm[2], bm[3], bm[4], bm[5]);
       tool.overlay(g, this.ctx);
       g.restore();
     }
@@ -444,8 +449,14 @@ export class CanvasEngine {
     return cam ? applyMat(invert(cam), p.x, p.y) : p;
   }
 
+  /** On a layer attached to a bone, tools work on the part's own art where it is at rest. */
+  private toLayerPoint(p: Pt): Pt {
+    const { doc, ui } = store().get();
+    return toLayerSpace(doc, ui.activeLayerId, ui.frame, this.gesture?.kind === 'tool' ? this.gesture.tool.id : ui.tool, p);
+  }
+
   private toPointer(e: PointerEvent): ToolPointer {
-    const p = this.toDocPoint(e);
+    const p = this.toLayerPoint(this.toDocPoint(e));
     const pen = e.pointerType === 'pen';
     return {
       x: p.x,
@@ -540,7 +551,7 @@ export class CanvasEngine {
     }
     this.lastPtr = ptr;
     const pred = typeof e.getPredictedEvents === 'function' ? e.getPredictedEvents() : [];
-    ctl.setPredicted(pred.map((pe) => this.toDocPoint(pe)));
+    ctl.setPredicted(pred.map((pe) => this.toLayerPoint(this.toDocPoint(pe))));
     this.invalidate(false, true);
   };
 

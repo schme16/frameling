@@ -36,7 +36,7 @@ registerCommands([
   },
 ]);
 
-registerPanel({ id: 'quests', title: 'Quests', icon: 'sparkle', component: QuestsPanel, zone: 'right', order: 85, help: 'quests' });
+registerPanel({ id: 'quests', title: 'Quests', icon: 'quest', component: QuestsPanel, zone: 'right', order: 85, help: 'quests' });
 
 // The UI shell registered a placeholder topic with this id. Registering after it (features.ts imports this last)
 // replaces it.

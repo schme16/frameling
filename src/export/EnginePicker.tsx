@@ -21,7 +21,9 @@ const ART: Record<EngineId, React.ReactNode> = {
   phaser: <path d="M13 2L5 13h6l-1 9 8-11h-6z" />,
   pixi: (
     <>
-      <path d="M12 3l3 6 6 3-6 3-3 6-3-6-6-3 6-3z" />
+      <path d="M12 3.5l4.2 7H7.8z" />
+      <rect x="3.5" y="13.5" width="7" height="7" rx="1.6" />
+      <circle cx="17" cy="17" r="3.5" />
     </>
   ),
   css: (

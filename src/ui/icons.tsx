@@ -56,6 +56,35 @@ const ICONS: Record<string, ReactNode> = {
       <path d="M11.5 13l2 2-2 2" />
     </>
   ),
+  // bones
+  bone: (
+    <>
+      <circle cx="6" cy="18" r="2.6" />
+      <path d="M8 16.2L16.6 6.8l1.9 1.9L9.8 18" />
+      <circle cx="18" cy="6" r="1.6" />
+    </>
+  ),
+  pose: (
+    <>
+      <circle cx="12" cy="4.8" r="2" />
+      <path d="M12 7.5v6.3M12 13.8l-3.6 6M12 13.8l3.8 3.4 1.2 3M12 9.6l-4.8 1.6M12 9.6l4.2-2.6" />
+    </>
+  ),
+  pin: (
+    <>
+      <path d="M9 3.8h6M10 3.8l-.6 6.4-3 3h11.2l-3-3-.6-6.4" />
+      <path d="M12 13.2v7" />
+    </>
+  ),
+  rig: (
+    <>
+      <circle cx="12" cy="5" r="2" />
+      {dot(12, 12, 1.6)}
+      {dot(7, 19, 1.6)}
+      {dot(17, 19, 1.6)}
+      <path d="M12 7v5M12 12l-5 7M12 12l5 7" />
+    </>
+  ),
   // drawing tools
   brush: (
     <>
@@ -98,11 +127,12 @@ const ICONS: Record<string, ReactNode> = {
       <path d="M8.8 15.3c-.9 1.6-.5 3.3 1 3.9 1.4.6 1.6 1.7.7 2.8" />
     </>
   ),
+  // A plain wand pointing at a pixel. No twinkles: stars and sparkles read as "AI" now.
   wand: (
     <>
-      <path d="M4 20l10-10" />
-      <path d="M16.5 3.5v3m0 4v3m-5-5h3m4 0h3" />
-      <path d="M13 11l-2-2" />
+      <path d="M4 20l8.6-8.6" />
+      <path d="M12.6 11.4l1.6-1.6" strokeWidth={3.4} />
+      <rect x="16.5" y="3.5" width="4.5" height="4.5" rx="1" fill="currentColor" />
     </>
   ),
   hand: <path d="M9 11.5V5.7a1.5 1.5 0 0 1 3 0V10m0-1.8a1.5 1.5 0 0 1 3 0v2.3m0-.8a1.5 1.5 0 0 1 3 0v4.6a6 6 0 0 1-6 6h-.6a6 6 0 0 1-4.7-2.3l-3-3.9a1.5 1.5 0 0 1 2.3-1.9L9 14.2" />,
@@ -191,6 +221,25 @@ const ICONS: Record<string, ReactNode> = {
       <path d="M6.5 16.5C8 5 15 19 17.5 7.5" />
       <circle cx="5" cy="18" r="2" />
       <circle cx="19" cy="6" r="2" />
+    </>
+  ),
+  // sound and lip sync
+  sound: (
+    <>
+      <path d="M4.5 9.5h3L12 5.8v12.4l-4.5-3.7h-3z" />
+      <path d="M15.4 9.2a4 4 0 0 1 0 5.6M17.9 6.7a7.4 7.4 0 0 1 0 10.6" />
+    </>
+  ),
+  'sound-off': (
+    <>
+      <path d="M4.5 9.5h3L12 5.8v12.4l-4.5-3.7h-3z" />
+      <path d="M16 9.5l4.5 5M20.5 9.5L16 14.5" />
+    </>
+  ),
+  mouth: (
+    <>
+      <path d="M3.6 11.4c2.8-1.5 5.1-1.2 8.4.3 3.3-1.5 5.6-1.8 8.4-.3-.6 4.2-4.1 6.6-8.4 6.6s-7.8-2.4-8.4-6.6z" />
+      <path d="M8.5 14.6c2-1 5-1 7 0" />
     </>
   ),
   palette: (
@@ -330,10 +379,33 @@ const ICONS: Record<string, ReactNode> = {
       {dot(15, 18, 1.5)}
     </>
   ),
-  sparkle: (
+  // quests: a dotted route to a pin
+  quest: (
     <>
-      <path d="M11 4c.6 4.6 2.4 6.4 7.4 8.4-5 2-6.8 3.8-7.4 8.4-.6-4.6-2.4-6.4-7.4-8.4C8.6 10.4 10.4 8.6 11 4z" />
-      <path d="M19 3.2v3.4M17.3 4.9h3.4" />
+      <path d="M17 3.5a3.6 3.6 0 0 0-3.6 3.6c0 2.7 3.6 6.2 3.6 6.2s3.6-3.5 3.6-6.2A3.6 3.6 0 0 0 17 3.5z" />
+      {dot(17, 7.1, 1.1)}
+      <path d="M7.5 19.5c3 0 3.5-2.8 6.5-2.8 1.6 0 2.5-.6 2.9-1.6" strokeDasharray="0.1 3.1" />
+      {dot(4.5, 19.5, 1.9)}
+    </>
+  ),
+  // tips: a lightbulb
+  tip: (
+    <>
+      <path d="M9.5 16.5v-1.2c0-.9-.5-1.6-1.2-2.3A6 6 0 1 1 15.7 13c-.7.7-1.2 1.4-1.2 2.3v1.2z" />
+      <path d="M9.5 19.5h5" />
+    </>
+  ),
+  // "Show me": watch it done for you
+  'show-me': (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M10 8.7v6.6a.6.6 0 0 0 .9.5l5.2-3.3a.6.6 0 0 0 0-1L10.9 8.2a.6.6 0 0 0-.9.5z" fill="currentColor" />
+    </>
+  ),
+  book: (
+    <>
+      <path d="M12 6.6C10.3 5.3 7.8 4.6 4 4.6v13.2c3.8 0 6.3.7 8 2 1.7-1.3 4.2-2 8-2V4.6c-3.8 0-6.3.7-8 2z" />
+      <path d="M12 6.6v13.2" />
     </>
   ),
   heart: <path d="M12 20s-7.7-4.7-7.7-10.4a4.3 4.3 0 0 1 7.7-2.5 4.3 4.3 0 0 1 7.7 2.5C19.7 15.3 12 20 12 20z" />,
@@ -424,6 +496,71 @@ const ICONS: Record<string, ReactNode> = {
     <>
       <path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3" />
       <path d="M19.5 4v4.5H15" />
+    </>
+  ),
+  // blend modes, effects, masks and folders
+  effects: (
+    <>
+      <path d="M5 19L15.5 8.5" />
+      <path d="M14 7l3 3" />
+      <path d="M8 4.5v3M6.5 6h3M18.5 13v3M17 14.5h3M19 4l.01 0" />
+    </>
+  ),
+  blend: (
+    <>
+      <circle cx="9.5" cy="10" r="5.5" />
+      <circle cx="14.5" cy="14" r="5.5" />
+    </>
+  ),
+  mask: (
+    <>
+      <rect x="3.5" y="5" width="17" height="14" rx="3" />
+      <circle cx="12" cy="12" r="4" fill="currentColor" />
+    </>
+  ),
+  'clip-below': (
+    <>
+      <path d="M7 4.5v7a3 3 0 0 0 3 3h8" />
+      <path d="M15 11.5l3 3-3 3" />
+    </>
+  ),
+  'fx-blur': (
+    <>
+      <circle cx="12" cy="12" r="3" fill="currentColor" />
+      <circle cx="12" cy="12" r="6.5" strokeDasharray="2 2.6" />
+      <circle cx="12" cy="12" r="9" strokeDasharray="1 3.4" opacity="0.6" />
+    </>
+  ),
+  'fx-halo': (
+    <>
+      <circle cx="12" cy="12" r="3.6" fill="currentColor" />
+      <path d="M12 3.5v2.2M12 18.3v2.2M3.5 12h2.2M18.3 12h2.2M6 6l1.6 1.6M16.4 16.4L18 18M6 18l1.6-1.6M16.4 7.6L18 6" />
+    </>
+  ),
+  'fx-shadow': (
+    <>
+      <rect x="8" y="8" width="11" height="11" rx="2.5" fill="currentColor" opacity="0.35" stroke="none" />
+      <rect x="5" y="5" width="11" height="11" rx="2.5" />
+    </>
+  ),
+  'fx-adjust': (
+    <>
+      <circle cx="12" cy="12" r="8" />
+      <path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor" />
+    </>
+  ),
+  'fx-outline': (
+    <>
+      <path d="M12 4.5l2.3 4.7 5.2.8-3.8 3.6.9 5.1L12 16.3l-4.6 2.4.9-5.1-3.8-3.6 5.2-.8z" fill="currentColor" opacity="0.35" />
+      <path d="M12 2.2l3 6.1 6.7 1-4.9 4.7 1.2 6.6L12 17.5 6 20.6l1.2-6.6-4.9-4.7 6.7-1z" />
+    </>
+  ),
+  'fx-pixelate': (
+    <>
+      <rect x="4" y="4" width="7" height="7" rx="1" fill="currentColor" />
+      <rect x="13" y="13" width="7" height="7" rx="1" fill="currentColor" />
+      <rect x="13" y="4" width="7" height="7" rx="1" />
+      <rect x="4" y="13" width="7" height="7" rx="1" />
     </>
   ),
 };

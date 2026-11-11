@@ -1,8 +1,9 @@
 /**
  * The pixel selection, and pixels lifted off the drawing while they're being moved (a "floating selection").
  *
- * The selection is a mask over the active pixel layer's art grid. It isn't part of the document (no undo), and it
- * stays put across frames, so you can select a spot once and work on it frame after frame.
+ * The selection is a mask over the active pixel layer's art grid. It isn't part of the document, and it stays put
+ * across frames, so you can select a spot once and work on it frame after frame. Each undo step remembers the
+ * selection from before and after it, so Undo and Redo bring the outline back along with the pixels.
  *
  * Moving selected pixels lifts them: the drawing shows the move live (through the canvas's live preview) and nothing
  * in the document changes until they're dropped (deselect, switch tool, frame or layer). The whole move, however many
@@ -39,6 +40,8 @@ interface Floating {
   label: string;
   /** A paste always lands, even if it wasn't moved. */
   pasted: boolean;
+  /** The selection before this started, for Undo to go back to. */
+  selBefore: Mask | null;
 }
 
 let sel: Mask | null = null;
@@ -48,6 +51,7 @@ let version = 0;
 const listeners = new Set<() => void>();
 
 function changed(): void {
+  if (!float) committed = sel;
   version++;
   for (const fn of listeners) fn();
   animateAnts();
@@ -137,7 +141,7 @@ export function floatingOffset(): { dx: number; dy: number } | null {
  * Lifts the selected pixels off the active drawing so they can be moved. `copy` leaves the originals where they
  * are. Returns false (with a friendly hint) when there's nothing it can lift.
  */
-export function liftSelection(copy = false): boolean {
+export function liftSelection(copy = false, label = copy ? 'Copy pixels' : 'Move pixels'): boolean {
   watch();
   if (float) return true;
   const m = pixelSelection();
@@ -162,8 +166,9 @@ export function liftSelection(copy = false): boolean {
     mask: m,
     dx: 0,
     dy: 0,
-    label: copy ? 'Copy pixels' : 'Move pixels',
+    label,
     pasted: copy,
+    selBefore: sel,
   };
   showLive();
   changed();
@@ -196,6 +201,7 @@ export function floatPixels(src: Uint8ClampedArray, mask: Mask, label = 'Paste')
     dy: 0,
     label,
     pasted: true,
+    selBefore: sel,
   };
   sel = mask;
   showLive();
@@ -210,6 +216,21 @@ export function moveFloatingTo(dx: number, dy: number): void {
   float.dy = dy;
   showLive();
   changed();
+}
+
+/** How far a duplicate lands from the original, in art pixels (right and down). */
+export const DUPLICATE_STEP = 1;
+
+/**
+ * Duplicate (Ctrl+D): a copy of the selected pixels, lifted and set one pixel down and right, ready to drag. The
+ * originals stay. Lifted pixels land first, so it copies them where they are.
+ */
+export function duplicateSelection(): boolean {
+  watch();
+  if (float) dropFloating();
+  if (!liftSelection(true, 'Duplicate pixels')) return false;
+  moveFloatingTo(DUPLICATE_STEP, DUPLICATE_STEP);
+  return true;
 }
 
 /** Nudges the selected pixels (lifting them first). Every nudge before they drop is one undo step. */
@@ -234,7 +255,7 @@ export function dropFloating(): void {
   const moved = shiftMask(f.mask, f.dx, f.dy);
   float = null;
   sel = maskEmpty(moved) ? null : moved;
-  if (f.dx || f.dy || f.pasted) writeBack(f, out);
+  if (f.dx || f.dy || f.pasted) landing(f, () => writeBack(f, out));
   setLive(null);
   changed();
 }
@@ -276,7 +297,7 @@ export function deleteFloating(label = 'Delete pixels'): void {
   float = null;
   sel = shiftMask(f.mask, f.dx, f.dy);
   if (maskEmpty(sel)) sel = null;
-  if (f.base !== f.from) writeBack({ ...f, label }, f.base);
+  if (f.base !== f.from) landing(f, () => writeBack({ ...f, label }, f.base));
   setLive(null);
   changed();
 }
@@ -287,6 +308,55 @@ export function floatingPixels(): { pixels: Uint8ClampedArray; mask: Mask } | nu
   if (!f) return null;
   const empty = new Uint8ClampedArray(f.src.length);
   return { pixels: overlayPixels(empty, f.src, f.width, f.height, f.dx, f.dy), mask: shiftMask(f.mask, f.dx, f.dy) };
+}
+
+// ---------------------------------------------------------------- the selection in undo and redo
+
+/** The selection before and after each undo step, by the step's id. */
+const marks = new Map<number, { before: Mask | null; after: Mask | null }>();
+const MARKS_KEPT = 400;
+/** The selection as it stood after the last step or selection change. */
+let committed: Mask | null = null;
+/** Set while lifted pixels land, so their step remembers the selection from before they were lifted. */
+let landingBefore: { m: Mask | null } | null = null;
+let seenIds: { undo: number | null; redo: number | null } = { undo: null, redo: null };
+let newestId = 0;
+
+function landing(f: Floating, write: () => void): void {
+  landingBefore = { m: f.selBefore };
+  try {
+    write();
+  } finally {
+    landingBefore = null;
+  }
+}
+
+/** Called on every store change: notes the selection for new steps, and puts it back on Undo and Redo. */
+function followHistory(s: Store, docChanged: boolean): void {
+  const was = seenIds;
+  const now = s.historyIds();
+  seenIds = now;
+  if (!docChanged) return;
+  if (now.undo !== null && now.undo > newestId) {
+    // A new step.
+    newestId = now.undo;
+    marks.set(now.undo, { before: landingBefore ? landingBefore.m : committed, after: sel });
+    if (marks.size > MARKS_KEPT) marks.delete(marks.keys().next().value!);
+    committed = sel;
+    return;
+  }
+  if (now.undo !== null && now.undo === was.undo && now.redo === null) {
+    // More of the same step (a drag that keeps going).
+    const m = marks.get(now.undo);
+    if (m) m.after = sel;
+    return;
+  }
+  let to: Mask | null | undefined;
+  if (now.redo !== null && now.redo === was.undo && now.redo !== was.redo) to = marks.get(now.redo)?.before;
+  else if (now.undo !== null && now.undo === was.redo && now.undo !== was.undo) to = marks.get(now.undo)?.after;
+  if (to === undefined || float || to === sel) return;
+  sel = to;
+  changed();
 }
 
 // ---------------------------------------------------------------- live preview
@@ -335,6 +405,10 @@ function watch(): void {
   sel = null;
   float = null;
   shifted = null;
+  committed = null;
+  marks.clear();
+  seenIds = s.historyIds();
+  newestId = Math.max(newestId, seenIds.undo ?? 0, seenIds.redo ?? 0);
   lastDocId = s.get().doc.id;
   let prev = s.get();
   s.subscribe(() => {
@@ -344,6 +418,8 @@ function watch(): void {
     prev = now;
     if (now.doc.id !== lastDocId) {
       lastDocId = now.doc.id;
+      marks.clear();
+      seenIds = s.historyIds();
       if (sel || float) {
         sel = null;
         float = null;
@@ -351,6 +427,7 @@ function watch(): void {
       }
       return;
     }
+    followHistory(s, now.doc !== was.doc);
     const f = float;
     if (!f) return;
     const ui = now.ui;
@@ -388,6 +465,8 @@ export function resetPixelSelection(): void {
   sel = null;
   float = null;
   shifted = null;
+  committed = null;
+  marks.clear();
   watching = null;
   setLive(null);
   animateAnts();

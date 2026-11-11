@@ -4,10 +4,10 @@ import '../../src/core/commands';
 import '../../src/tools';
 import '../../src/timeline';
 import '../../src/export';
+import '../../src/tiles';
 import { getCommand } from '../../src/core/registry';
 import { syncDynamicCommands } from '../../src/ui/dynamic';
 import { resetStore } from '../../src/core/store';
-import { newDoc } from '../../src/core/doc';
 import { makeBouncingBall } from '../../src/templates/bouncing-ball';
 import { setFillOptions } from '../../src/tools/fill-options';
 import { setScheduler } from '../../src/timeline/playback';
@@ -18,6 +18,10 @@ import { readProbe } from '../../src/quests/probe';
 import { allQuests, isUnlocked } from '../../src/quests/registry';
 import { FRESH_PROGRESS, NO_PROBE, type Quest, type StepCtx } from '../../src/quests/types';
 import { PRESETS, docFromPreset } from '../../src/ui/presets';
+import { TILES_QUEST, ensureTilePage, paintsAcrossEdge, stampedTiles } from '../../src/tiles/quest';
+import { editingTileKey, finishTileEdit } from '../../src/tiles/tileEdit';
+import { newDoc, newPixelDrawing, newTilemapDrawing, newTilemapLayer } from '../../src/core/doc';
+import { makeCell } from '../../src/tiles/model';
 import { ctxFor, pixelDoc, putPixels, putShapes, ring, rig, stroke, vectorDoc } from './helpers';
 
 beforeEach(() => {
@@ -38,11 +42,11 @@ async function playThrough(q: Quest, r: ReturnType<typeof rig>) {
   expect(r.progress.get()).toMatchObject({ active: null, completed: [q.id], badges: [q.badge!.id] });
 }
 
-describe('the five quests', () => {
+describe('the quests', () => {
   it('are registered, in order, with unique ids, steps and badges', () => {
-    expect(allQuests().map((q) => q.id)).toEqual(['first-animation', 'bouncing-ball', 'fill-it-in', 'pixel-pal', 'shade-and-shine', 'first-tween', 'share-it']);
-    expect(new Set(QUESTS.map((q) => q.badge!.id)).size).toBe(7);
-    expect(QUESTS.map((q) => q.badge!.name)).toEqual(['Flipbooker', 'Squash & Stretch', 'Paint Pot', 'Pixel Pal', 'Shade Maker', 'Smooth Mover', 'Showtime']);
+    expect(allQuests().map((q) => q.id)).toEqual(['first-animation', 'bouncing-ball', 'fill-it-in', 'pixel-pal', 'shade-and-shine', 'tiles', 'first-tween', 'share-it']);
+    expect(new Set(QUESTS.map((q) => q.badge!.id)).size).toBe(8);
+    expect(QUESTS.map((q) => q.badge!.name)).toEqual(['Flipbooker', 'Squash & Stretch', 'Paint Pot', 'Pixel Pal', 'Shade Maker', 'Level Builder', 'Smooth Mover', 'Showtime']);
     for (const q of QUESTS) {
       expect(new Set(q.steps.map((s) => s.id)).size).toBe(q.steps.length);
       for (const s of q.steps) {
@@ -316,6 +320,58 @@ describe('Pixel pal', () => {
     const r = rig([PIXEL_PAL], newDoc({ ...docFromPreset(PRESETS.find((p) => p.id === 'tiny-sprite')!), pixel: { pixelSize: 16 } }), undefined, { run: true, probe: readProbe });
     await playThrough(PIXEL_PAL, r);
     expect(r.store.get().doc.layers[0].cels.length).toBe(2);
+  });
+});
+
+describe('Tiles', () => {
+  it('starts on a Game sprite page, and keeps an empty one', async () => {
+    const st = resetStore(vectorDoc());
+    expect(await ensureTilePage()).toBe(true);
+    expect(st.get().doc.width).toBe(docFromPreset(PRESETS.find((p) => p.id === 'game-sprite')!).width);
+    expect(st.get().doc.layers[0].kind).toBe('pixel');
+    expect(ensureTilePage()).toBe(true);
+  });
+
+  it('edge: paint at both ends of a row or column, but not a tile painted all over', () => {
+    const d = newPixelDrawing(4, 4);
+    const put = (x: number, y: number) => d.pixels.set([0, 0, 0, 255], (y * 4 + x) * 4);
+    put(1, 1);
+    expect(paintsAcrossEdge(d)).toBe(false);
+    put(0, 2);
+    expect(paintsAcrossEdge(d)).toBe(false);
+    put(3, 2);
+    expect(paintsAcrossEdge(d)).toBe(true);
+    const v = newPixelDrawing(4, 4);
+    v.pixels.set([0, 0, 0, 255], (0 * 4 + 2) * 4);
+    v.pixels.set([0, 0, 0, 255], (3 * 4 + 2) * 4);
+    expect(paintsAcrossEdge(v)).toBe(true);
+    v.pixels.fill(255);
+    expect(paintsAcrossEdge(v)).toBe(false);
+  });
+
+  it('stamp: counts tiles on the tilemap layer', () => {
+    const doc = vectorDoc();
+    const layer = newTilemapLayer('Tiles', 1);
+    const map = newTilemapDrawing(4, 2);
+    map.cells[0] = makeCell(1);
+    map.cells[1] = makeCell(1);
+    doc.drawings[map.id] = map;
+    layer.cels.push({ id: 'c', start: 0, length: 1, drawingId: map.id });
+    doc.layers.push(layer);
+    const s = stateOf(doc);
+    expect(stampedTiles(s)).toBe(2);
+    expect(TILES_QUEST.steps.find((x) => x.id === 'stamp')!.done!(ctxFor(s))).toBe(false);
+  });
+
+  it('can be finished with nothing but Show me, leaving a seamless tile stamped on a map', async () => {
+    const r = rig([TILES_QUEST], docFromPreset(PRESETS.find((p) => p.id === 'game-sprite')!), undefined, { run: true, probe: readProbe });
+    await playThrough(TILES_QUEST, r);
+    expect(editingTileKey()).toBe(0);
+    const doc = r.store.get().doc;
+    const tile = doc.tileset!.tiles[0];
+    expect(paintsAcrossEdge(doc.drawings[tile.frames[0].drawingId] as never)).toBe(true);
+    expect(stampedTiles(r.store.get())).toBeGreaterThanOrEqual(3);
+    finishTileEdit();
   });
 });
 

@@ -308,7 +308,7 @@ export function ThemeEditor({ id, onDone, onOpen }: { id: string; onDone: () => 
                 ))}
               </div>
               <button type="button" className="ui-btn ui-btn-primary" onClick={() => commit({ tokens: paletteFromColour(seed, seedMode), mode: seedMode })}>
-                <Icon name="sparkle" size={14} />
+                <Icon name="palette" size={14} />
                 Make my palette
               </button>
             </div>

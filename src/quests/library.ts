@@ -31,6 +31,7 @@ import {
 import { gifCard } from './probe';
 import { SHADE_AND_SHINE } from '../pixel/quest';
 import { FIRST_TWEEN } from '../symbols/quest';
+import { TILES_QUEST } from '../tiles/quest';
 import { registerQuest } from './registry';
 import type { Quest } from './types';
 
@@ -59,7 +60,7 @@ export const FIRST_ANIMATION: Quest = {
   title: 'Your first animation in 60 seconds',
   summary: "Draw a doodle, draw it again a little different, that's animation!",
   minutes: 1,
-  icon: 'sparkle',
+  icon: 'quest',
   badge: { id: 'flipbooker', name: 'Flipbooker', icon: 'film', color: '--grape' },
   finish: 'You made something move. That is the whole trick, everything else is more of it.',
   prepare: ensureBlankVectorPage,
@@ -325,6 +326,6 @@ export const SHARE_IT: Quest = {
   ],
 };
 
-export const QUESTS: Quest[] = [FIRST_ANIMATION, BOUNCING_BALL, FILL_IT_IN, PIXEL_PAL, SHADE_AND_SHINE, FIRST_TWEEN, SHARE_IT];
+export const QUESTS: Quest[] = [FIRST_ANIMATION, BOUNCING_BALL, FILL_IT_IN, PIXEL_PAL, SHADE_AND_SHINE, TILES_QUEST, FIRST_TWEEN, SHARE_IT];
 
 for (const q of QUESTS) registerQuest(q);

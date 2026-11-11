@@ -94,3 +94,19 @@ export function floodFillPixels(src: Uint8ClampedArray, width: number, height: n
   }
   return { pixels: out, changed };
 }
+
+/**
+ * Flood fills from several points in turn (a click and its mirror images), each on the result of the one before.
+ * Points off the grid are skipped. `changed` is the total.
+ */
+export function floodFillPoints(src: Uint8ClampedArray, width: number, height: number, points: readonly (readonly [number, number])[], color: Rgba, opts: PixelFillOptions = {}): PixelFillResult {
+  let pixels = src;
+  let changed = 0;
+  for (const [x, y] of points) {
+    const r = floodFillPixels(pixels, width, height, x, y, color, opts);
+    if (!r.changed) continue;
+    pixels = r.pixels;
+    changed += r.changed;
+  }
+  return { pixels: changed ? pixels : new Uint8ClampedArray(src), changed };
+}

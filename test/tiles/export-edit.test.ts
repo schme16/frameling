@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { newDoc } from '../../src/core/doc';
-import { TILE_FLIP_X, type PixelDrawing } from '../../src/core/format';
+import { TILE_FLIP_X, type PixelDrawing, type TilemapLayer } from '../../src/core/format';
 import { resetStore } from '../../src/core/store';
-import { buildTileAtlas, DEFAULT_TILESET_EXPORT, godotTileMapData, layoutTiles, mapsAt, tiledMap, tiledTileset, tilesetFiles, tilesetJson } from '../../src/tiles/export';
+import { buildTileAtlas, DEFAULT_TILESET_EXPORT, godotTileMapData, godotTileScene, layoutTiles, mapsAt, tiledMap, tiledTileset, tilesetFiles, tilesetJson } from '../../src/tiles/export';
 import { addTile, ensureTileset, findTile, makeCell } from '../../src/tiles/model';
 import { editingTileKey, editTile, finishTileEdit } from '../../src/tiles/tileEdit';
 import { getTileUi, setTileUi } from '../../src/tiles/state';
@@ -50,6 +50,16 @@ describe('tileset export', () => {
     const atlas = buildTileAtlas(doc, DEFAULT_TILESET_EXPORT);
     const bytes = godotTileMapData(mapsAt(doc, 0)[0].map!, atlas);
     expect(bytes.length).toBe(2 + 12 * 12);
+  });
+
+  it('scales each Godot TileMapLayer by its pixel size over the picture scale', () => {
+    const { doc } = sampleTileDoc();
+    const scene = (scale: number) => godotTileScene({ tileSetPath: 'res://x.tres', rootName: 'L', maps: mapsAt(doc, 0), atlas: buildTileAtlas(doc, { ...DEFAULT_TILESET_EXPORT, scale }) });
+    expect(scene(1)).not.toContain('scale = ');
+    (doc.layers.find((l) => l.kind === 'tilemap') as TilemapLayer).pixelSize = 3;
+    expect(scene(1)).toContain('scale = Vector2(3.0, 3.0)');
+    expect(scene(3)).not.toContain('scale = ');
+    expect(scene(2)).toContain('scale = Vector2(1.5, 1.5)');
   });
 
   it('makes the files the dialog asks for', () => {

@@ -4,11 +4,13 @@
  * Pure bytes in, bytes out (no DOM, no Electron), so it runs the same in the app and in Node tests. In memory a pixel
  * drawing holds raw RGBA; in the file `doc.json` holds the name of its PNG instead.
  */
+import { readFolders, readLayerLook } from '../effects/io';
 import { strFromU8, strToU8, unzipSync, zipSync, type Zippable } from 'fflate';
-import { FORMAT_VERSION, type Cel, type Doc, type Drawing, type Layer, type Shape, type SymbolDef, type Tween, type InstanceShape, type ClipFlow, type ClipTransition, type Tile, type Tileset } from '../core/format';
+import { FORMAT_VERSION, type Cel, type Doc, type Drawing, type Layer, type Shape, type SymbolDef, type Tween, type InstanceShape, type ClipFlow, type ClipTransition, type Tile, type Tileset, type Bone, type BonePose, type LayerBind, type Pose, type Rig, type SavedPose } from '../core/format';
 import { decodePng, encodePng } from './png';
 import { rootDoc } from '../core/symbols';
 import { isEasing } from '../core/ease';
+import { packAudio, unpackAudio } from './audio-file';
 
 export const FILE_EXTENSION = 'frameling';
 
@@ -71,7 +73,9 @@ export function saveFile(open: Doc, appVersion = '', now: Date = new Date()): Ui
   }
   const manifest: Manifest = { format: 'frameling', version: FORMAT_VERSION, app: appVersion, created: now.toISOString(), name: doc.name };
   files['manifest.json'] = strToU8(JSON.stringify(manifest, null, 2));
-  files['doc.json'] = strToU8(JSON.stringify({ ...doc, drawings }));
+  // Sound bytes go in their own entries; `audio` in doc.json then names them (undefined leaves the key out).
+  const audio = packAudio(doc, files);
+  files['doc.json'] = strToU8(JSON.stringify({ ...doc, drawings, audio }));
   return zipSync(files, { level: 6 });
 }
 
@@ -111,7 +115,7 @@ const damaged = () => new FileProblem('This file looks damaged, so Frameling cou
 export function loadFile(bytes: Uint8Array): LoadedFile {
   let entries: Record<string, Uint8Array>;
   try {
-    entries = unzipSync(bytes, { filter: (f) => f.originalSize <= MAX_UNZIPPED && (f.name === 'manifest.json' || f.name === 'doc.json' || f.name.startsWith('pixels/')) });
+    entries = unzipSync(bytes, { filter: (f) => f.originalSize <= MAX_UNZIPPED && (f.name === 'manifest.json' || f.name === 'doc.json' || f.name.startsWith('pixels/') || f.name.startsWith('audio/')) });
   } catch {
     throw new FileProblem("That doesn't look like a Frameling file, so it could not be opened.");
   }
@@ -154,7 +158,7 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
     if (d.kind === 'vector') {
       const shapes: Shape[] = Array.isArray(d.shapes) ? d.shapes.filter((s: any) => isObj(s) && SHAPE_TYPES.has(s.type)).map((s: any) => (s.type === 'instance' ? readInstance(s) : s)).filter((s: Shape | null): s is Shape => !!s) : [];
       if (!Array.isArray(d.shapes) || shapes.length !== d.shapes.length) warnings.push('Some shapes could not be read and were left out.');
-      drawings[id] = { id: str(d.id, id), kind: 'vector', shapes };
+      drawings[id] = { id: str(d.id, id), kind: 'vector', shapes, ...readPose(d.pose) };
     } else if (d.kind === 'pixel') {
       const name = d.pixels;
       if (typeof name !== 'string' || !/^pixels\/[A-Za-z0-9_-]+\.png$/.test(name) || !entries[name]) throw damaged();
@@ -210,12 +214,14 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
         ...(l.onion === false ? { onion: false } : {}),
         ...(l.reference === true ? { reference: true } : {}),
         ...(typeof l.depth === 'number' && Number.isFinite(l.depth) && l.depth ? { depth: Math.max(-0.9, Math.min(100, l.depth)) } : {}),
+        ...readBind(l.bind),
+        ...readLayerLook(l),
         cels,
       };
       if (l.kind === 'pixel') layers.push({ ...base, kind: 'pixel', pixelSize: Math.max(1, Math.round(num(l.pixelSize, 1))), ...(l.paletteLock === true ? { paletteLock: true } : {}) });
       else if (l.kind === 'tilemap') layers.push({ ...base, kind: 'tilemap', pixelSize: Math.max(1, Math.round(num(l.pixelSize, 1))) });
       else if (l.kind === 'camera') layers.push({ ...base, kind: 'camera' });
-      else layers.push({ ...base, kind: 'vector', ...(l.drawMode === 'merge' ? { drawMode: 'merge' as const } : {}) });
+      else layers.push({ ...base, kind: 'vector', ...(l.drawMode === 'merge' ? { drawMode: 'merge' as const } : {}), ...readRig(l.rig) });
     }
     return layers;
   };
@@ -232,6 +238,7 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
     width,
     height,
     fps,
+    ...(num(raw.dpi, 0) >= 1 && num(raw.dpi, 0) <= 10000 ? { dpi: num(raw.dpi, 0) } : {}),
     length,
     background: typeof raw.background === 'string' ? raw.background : null,
     layers,
@@ -240,11 +247,14 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
     markers: Array.isArray(raw.markers) ? raw.markers.filter((m: any) => isObj(m) && typeof m.id === 'string') : [],
     swatches: Array.isArray(raw.swatches) ? raw.swatches.filter((s: any) => isObj(s) && typeof s.id === 'string' && typeof s.color === 'string') : [],
     ...readPalette(raw.palette),
+    ...readFolders(raw.folders, layers),
     ...readSymbols(raw.symbols, readLayers, warnings),
   };
   const flow = readFlow(raw.flow, doc.clips);
   if (flow) doc.flow = flow;
   if (tileset) doc.tileset = tileset;
+  const audio = unpackAudio(raw.audio, entries, warnings);
+  if (audio) doc.audio = audio;
   return doc;
 }
 
@@ -266,8 +276,69 @@ function readSymbols(raw: unknown, readLayers: (l: any[]) => Layer[], warnings: 
     }
     const o = isObj(s.origin) ? s.origin : {};
     symbols[id] = { id, name: str(s.name, 'Symbol'), layers, length: Math.max(1, Math.round(num(s.length, 1))), origin: { x: num(o.x, 0), y: num(o.y, 0) } };
+    if (Array.isArray(s.frameLabels) && s.frameLabels.length) symbols[id].frameLabels = s.frameLabels.map((x: unknown) => str(x, ''));
   }
   return Object.keys(symbols).length ? { symbols } : {};
+}
+
+// ---------------------------------------------------------------- bones
+
+function readPoseMap(p: unknown): Pose | undefined {
+  if (!isObj(p)) return undefined;
+  const out: Pose = {};
+  for (const [id, b] of Object.entries<any>(p)) {
+    if (!isObj(b)) continue;
+    const bp: BonePose = { r: num(b.r, 0) };
+    if (typeof b.x === 'number' && Number.isFinite(b.x) && b.x) bp.x = b.x;
+    if (typeof b.y === 'number' && Number.isFinite(b.y) && b.y) bp.y = b.y;
+    out[id] = bp;
+  }
+  return out;
+}
+
+function readPose(p: unknown): { pose?: Pose } {
+  const pose = readPoseMap(p);
+  return pose ? { pose } : {};
+}
+
+/** A skeleton, keeping only bones whose parent comes before them. */
+function readRig(r: unknown): { rig?: Rig } {
+  if (!isObj(r) || !Array.isArray(r.bones)) return {};
+  const bones: Bone[] = [];
+  const seen = new Set<string>();
+  for (const b of r.bones) {
+    if (!isObj(b) || typeof b.id !== 'string' || seen.has(b.id)) continue;
+    const parent = typeof b.parent === 'string' && seen.has(b.parent) ? b.parent : null;
+    bones.push({ id: b.id, name: str(b.name, 'Bone'), parent, x: num(b.x, 0), y: num(b.y, 0), angle: num(b.angle, 0), length: Math.max(1, num(b.length, 10)), ...(b.pin === true ? { pin: true } : {}) });
+    seen.add(b.id);
+  }
+  const rig: Rig = { bones };
+  if (Array.isArray(r.poses)) {
+    const poses: SavedPose[] = [];
+    for (const p of r.poses) {
+      const pose = isObj(p) ? readPoseMap(p.pose) : undefined;
+      if (pose && typeof p.id === 'string') poses.push({ id: p.id, name: str(p.name, 'Pose'), pose });
+    }
+    if (poses.length) rig.poses = poses;
+  }
+  return { rig };
+}
+
+function readBind(b: unknown): { bind?: LayerBind } {
+  if (!isObj(b) || typeof b.rig !== 'string' || typeof b.bone !== 'string') return {};
+  const bind: LayerBind = { rig: b.rig, bone: b.bone };
+  const m = b.mesh;
+  if (isObj(m) && Array.isArray(m.points) && Array.isArray(m.triangles) && Array.isArray(m.bones) && Array.isArray(m.weights)) {
+    const n = Math.floor(m.points.length / 2);
+    const ok =
+      m.points.every((v: unknown) => typeof v === 'number' && Number.isFinite(v)) &&
+      m.triangles.length % 3 === 0 &&
+      m.triangles.every((v: unknown) => Number.isInteger(v) && (v as number) >= 0 && (v as number) < n) &&
+      m.weights.length === n &&
+      m.weights.every((w: unknown) => Array.isArray(w) && w.every((v) => typeof v === 'number' && Number.isFinite(v)));
+    if (ok) bind.mesh = { points: m.points, triangles: m.triangles, bones: m.bones.map((x: unknown) => str(x, '')), weights: m.weights };
+  }
+  return { bind };
 }
 
 /** A key's in-betweens, if it has readable ones. */

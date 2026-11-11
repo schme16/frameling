@@ -24,6 +24,8 @@ export interface Doc {
   height: number;
   /** Frames per second. */
   fps: number;
+  /** Dots per inch, for showing sizes in mm, cm, in or pt (missing = 96, one document pixel per CSS pixel). */
+  dpi?: number;
   /** Total length in frames (at least 1). Playback and export run from 0 to length - 1 unless a clip says otherwise. */
   length: number;
   /** Stage colour, or null for transparent. */
@@ -42,6 +44,8 @@ export interface Doc {
   tileset?: Tileset;
   /** The pixel art palette: an ordered list of colours in ramps (optional; missing = the starter palette). */
   palette?: DocPalette;
+  /** Layer folders, by id (missing = none). Layers name theirs with `folder`. See src/effects. */
+  folders?: Record<Id, LayerFolder>;
   /** Reusable drawings with their own timelines, by id (missing = none). See `SymbolDef`. */
   symbols?: Record<Id, SymbolDef>;
   /**
@@ -51,6 +55,8 @@ export interface Doc {
   editing?: EditFrame[];
   /** How clips lead to each other: which plays first and what follows what (missing = no flow). See `ClipFlow`. */
   flow?: ClipFlow;
+  /** Sound clips on the audio track, in the order they were added (missing = none). See `AudioClip`. */
+  audio?: AudioClip[];
 }
 
 export type LayerKind = 'vector' | 'pixel' | 'tilemap' | 'camera';
@@ -66,6 +72,18 @@ export interface BaseLayer {
   onion?: boolean;
   /** A reference layer: shown while drawing, left out of every export (ground lines, sketches, guides). Missing = no. */
   reference?: boolean;
+  /** Attached to a bone, so it moves with the skeleton (missing = not attached). See `LayerBind`. */
+  bind?: LayerBind;
+  /** How the layer mixes with what's under it (missing = 'normal'). */
+  blend?: BlendMode;
+  /** Effects on the layer as a whole, applied first to last (missing = none). */
+  effects?: LayerEffect[];
+  /** Clip to the layer below: only shows where the layer (or folder) under it has drawing. Missing = no. */
+  clipToBelow?: boolean;
+  /** A mask layer: never shown itself; its drawing shows ('show') or hides ('hide') the layers under it in its folder. */
+  mask?: 'show' | 'hide';
+  /** The folder it sits in (a key of `doc.folders`). A folder's layers sit next to each other. Missing = none. */
+  folder?: Id;
   /**
    * How far this layer is from the camera, for parallax (missing = 0, on the stage). 1 is twice as far, so it moves
    * half as much when the camera pans; negative values are closer and move more (above -0.9).
@@ -84,6 +102,11 @@ export interface VectorLayer extends BaseLayer {
    * cut and join each other, so the layer behaves like one flat painting.
    */
   drawMode?: 'object' | 'merge';
+  /**
+   * Makes this a bones layer: it holds a skeleton, and each key's drawing holds a pose (`VectorDrawing.pose`) instead
+   * of shapes. Missing = an ordinary layer.
+   */
+  rig?: Rig;
 }
 
 export interface PixelLayer extends BaseLayer {
@@ -151,6 +174,8 @@ export interface VectorDrawing {
   kind: 'vector';
   /** Painted in order: index 0 is at the back. */
   shapes: Shape[];
+  /** On a bones layer: how each bone is turned and moved at this key (bones not listed are at rest). */
+  pose?: Pose;
 }
 
 /**
@@ -322,6 +347,60 @@ export interface DocPalette {
   ramps?: number[];
 }
 
+// ---------------------------------------------------------------- blend modes, effects and folders
+
+/** Canvas blend modes, plus 'add' (canvas calls it 'lighter'). */
+export type BlendMode =
+  | 'normal'
+  | 'multiply'
+  | 'screen'
+  | 'overlay'
+  | 'darken'
+  | 'lighten'
+  | 'color-dodge'
+  | 'color-burn'
+  | 'hard-light'
+  | 'soft-light'
+  | 'difference'
+  | 'exclusion'
+  | 'hue'
+  | 'saturation'
+  | 'color'
+  | 'luminosity'
+  | 'add';
+
+export type EffectKind = 'blur' | 'glow' | 'shadow' | 'adjust' | 'outline' | 'pixelate';
+
+/**
+ * One effect in a layer's stack. `values` holds every setting (numbers, and colours as hex). Numbers can be animated
+ * with `keys`: between two keys a value changes evenly, before the first and after the last it holds.
+ */
+export interface LayerEffect {
+  id: Id;
+  kind: EffectKind;
+  /** Missing = on. */
+  on?: boolean;
+  values: Record<string, number | string>;
+  /** Sorted by frame, at most one per frame. Missing or empty = not animated. */
+  keys?: EffectKey[];
+}
+
+export interface EffectKey {
+  frame: number;
+  values: Record<string, number>;
+}
+
+/** A layer folder (group): its layers fade, blend and take effects together, and masks inside stay inside. */
+export interface LayerFolder {
+  id: Id;
+  name: string;
+  visible: boolean;
+  /** 0 to 1. */
+  opacity: number;
+  blend?: BlendMode;
+  effects?: LayerEffect[];
+}
+
 // ---------------------------------------------------------------- symbols and tweens
 
 /**
@@ -337,6 +416,8 @@ export interface SymbolDef {
   length: number;
   /** The registration point in symbol space: what an instance's x, y place, and what it turns and scales around. */
   origin: { x: number; y: number };
+  /** Names for its frames, by frame number (a mouth chart's "A", "E", "M B P"...). Missing or empty = unnamed. */
+  frameLabels?: string[];
 }
 
 /** Where an instance sits. Angles are degrees. Applied as translate, rotate, skew, scale, around the symbol's origin. */
@@ -440,4 +521,86 @@ export interface ClipTransition {
   when: 'end' | 'trigger';
   /** The trigger's name, for 'trigger' transitions. */
   trigger?: string;
+}
+
+// ---------------------------------------------------------------- bones and rigs
+
+/** A skeleton: bones in the space of the layer list it sits in (the stage's, or a symbol's). */
+export interface Rig {
+  /** Parents always come before their children. */
+  bones: Bone[];
+  /** The pose library: named poses to put back on any frame. */
+  poses?: SavedPose[];
+}
+
+/** One bone, in its rest (setup) position. Angles are degrees, 0 pointing right, positive clockwise on screen. */
+export interface Bone {
+  id: Id;
+  name: string;
+  /** The bone it hangs from (missing or null = a root). */
+  parent?: Id | null;
+  /** Where the bone starts (its joint). */
+  x: number;
+  y: number;
+  angle: number;
+  length: number;
+  /** Pinned: its tip stays where it is while other bones move (missing = no). */
+  pin?: boolean;
+}
+
+/** How one bone differs from rest at a key: turned by `r` degrees, its joint moved by `x`, `y` (missing = 0). */
+export interface BonePose {
+  r: number;
+  x?: number;
+  y?: number;
+}
+
+export type Pose = Record<Id, BonePose>;
+
+export interface SavedPose {
+  id: Id;
+  name: string;
+  pose: Pose;
+}
+
+/**
+ * How a layer follows a skeleton. With only `bone`, the whole layer moves with that bone (cut-out style). With
+ * `mesh`, it bends: each mesh point follows a blend of bones by weight.
+ */
+export interface LayerBind {
+  /** The bones layer (in the same layer list). */
+  rig: Id;
+  bone: Id;
+  mesh?: SkinMesh;
+}
+
+/** A triangle mesh over a layer's art in rest position, with bone weights per point. */
+export interface SkinMesh {
+  /** Point positions, flat: x0, y0, x1, y1... */
+  points: number[];
+  /** Point indices, three per triangle. */
+  triangles: number[];
+  /** Bone ids the weights refer to by index. */
+  bones: Id[];
+  /** Per point: flat pairs of bone index and weight (weights sum to 1). */
+  weights: number[][];
+}
+
+// ---------------------------------------------------------------- sound
+
+/** A sound placed on the timeline. */
+export interface AudioClip {
+  id: Id;
+  name: string;
+  /** The frame it starts on (can be negative to start partway in). */
+  start: number;
+  /** 0 to 1 (missing = 1). */
+  volume?: number;
+  muted?: boolean;
+  /** The file as imported (WAV, MP3, OGG...). In a saved file it lives beside doc.json as `audio/<id>.<ext>`. */
+  data: Uint8Array;
+  /** Its media type, e.g. `audio/wav`. */
+  mime: string;
+  /** Length in seconds, once known (for drawing it before it's decoded). */
+  duration?: number;
 }

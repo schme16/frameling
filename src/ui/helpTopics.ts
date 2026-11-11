@@ -1,5 +1,6 @@
 // Help for everything the shell does. Short words, what it does first, then how.
 import { registerHelpTopics } from '../core/registry';
+import './onboarding/help';
 
 registerHelpTopics([
   {
@@ -13,7 +14,7 @@ registerHelpTopics([
 
 ## Starting
 
-When Frameling opens, pick a card on the welcome sheet:
+The very first time, [Quill says hello](help:first-run) and helps you set things up. After that, when Frameling opens, pick a card on the welcome sheet:
 
 - **Doodle** is a wide, roomy page for sketching and cartoons.
 - **Square** is good for icons and posts.
@@ -139,7 +140,7 @@ Press the small **x** on a shortcut to remove it. **Reset** puts a command back 
 
 There are five pages:
 
-- **General**: [mode and look](help:look-and-feel), sounds, motion, the welcome sheet and [Show Quill](help:meet-quill).
+- **General**: [mode and look](help:look-and-feel), [units](help:units), sounds, motion, the welcome sheet and [Show Quill](help:meet-quill).
 - **Themes**: pick [themes](help:themes) and [make your own](help:make-your-own-theme).
 - **Behaviour**: [the choices Frameling asked you about](help:behaviour), like what N does.
 - **Keyboard**: see and change [shortcuts](help:keyboard-shortcuts).
@@ -151,8 +152,9 @@ Changes happen straight away and are remembered for next time.`,
     id: 'meet-quill',
     title: 'Meet Quill',
     section: 'Getting started',
+    media: 'quill-goodbye.mp4',
     summary: 'Quill is the little hedgehog who shows you round. You can hide him in Preferences.',
-    keywords: ['quill', 'hedgehog', 'mascot', 'guide', 'helper', 'character', 'hide', 'show quill'],
+    keywords: ['quill', 'hedgehog', 'mascot', 'guide', 'helper', 'character', 'hide', 'show quill', 'turn off', 'goodbye', 'sad'],
     body: `Quill is a small pixel-art hedgehog whose quills are coloured pencils. He turns up to help:
 
 - He **waves** hello on the welcome sheet and in **Help, About Frameling**.
@@ -165,7 +167,9 @@ If nothing happens for about a minute he dozes off. Move the mouse or press a ke
 
 ## Hiding Quill
 
-Open **Preferences** (**Ctrl+,**), choose **General** and turn off **Show Quill**. He goes away everywhere. Anything he was saying still shows, just without him.
+Open **Preferences** (**Ctrl+,**), choose **General** and turn off **Show Quill** (or turn it off on the settings step of **Help > Meet Quill again**). He goes away everywhere. Anything he was saying still shows, just without him.
+
+He'll be a little sad about it (a sniffle, maybe a tear), but he understands. He waves a brave goodbye and then hides. Want him back? Turn **Show Quill** on again, or say hi from **Help > Meet Quill again**. He'll cheer.
 
 ## Less movement
 
@@ -219,7 +223,7 @@ A switch for sound effects. They aren't there yet, so for now it just remembers 
     section: 'Settings',
     media: 'themes.png',
     summary: 'Pick the colours Frameling wears, one for dark mode and one for light.',
-    keywords: ['theme', 'themes', 'colour', 'color', 'colours', 'dark', 'light', 'contrast', 'high contrast', 'accessibility', 'palette', 'pastel', 'midnight', 'cocoa'],
+    keywords: ['theme', 'themes', 'colour', 'color', 'colours', 'dark', 'light', 'contrast', 'high contrast', 'accessibility', 'palette', 'pastel', 'midnight', 'cocoa', 'strawberry', 'camo', 'aqua', 'lavender', 'lilac'],
     body: `A theme is a set of colours for the whole app. Frameling comes with several, each with a silly name and a calm mood.
 
 ## Choosing
@@ -229,7 +233,7 @@ Open **Preferences** (**Ctrl+,**), then **Themes**. You'll see two groups:
 - **For dark mode**: pick the theme to use when Frameling is dark.
 - **For light mode**: pick the theme to use when Frameling is light.
 
-Press a card to pick it. The change is instant. A gold tick shows which one is in use.
+Press a card to pick it. The change is instant. A tick shows which one is in use.
 
 ## Dark, light and System
 
@@ -240,6 +244,20 @@ The **Mode** switch decides which group is showing:
 - **System** follows your computer. When your computer goes dark in the evening, Frameling switches to your dark theme by itself, and back to your light theme in the morning.
 
 So you can have a pastel theme by day and a cosy dark one at night, without touching anything.
+
+## The themes
+
+| For dark mode | For light mode | Mood |
+| --- | --- | --- |
+| **Midnight Sketchbook** | **Paper & Honey** | The classic Frameling look. |
+| **Moonlit Pond** | **Studio White** | Calm and plain. |
+| **Hot Cocoa** | **Strawberry Milk** | Warm and cosy, soft and pink. |
+| **Strawberry Night** | **Strawberry** | Berry red, cream and little yellow seeds. Quill's favourite. |
+| **Glacier Grid** | **Ice Camo** | Charcoal, ice and bright aqua, with a faint camo print around the page. |
+| **Lilac Static** | **Lavender Hum** | Soft lilac with a little pastel glow. |
+| **Lantern Night** | **Sunbeam** | Extra contrast. |
+
+Chosen things (the tool, the tab, a switch that is on) are gold in most themes. The aqua and lilac themes use their own colour instead, still with dark words on it.
 
 ## Easier to see
 
@@ -448,9 +466,11 @@ Looking at how an example is built is a good way to learn. Try the timeline to s
     title: 'Quests',
     section: 'Getting started',
     summary: 'Short guided lessons that teach by doing.',
-    keywords: ['tutorial', 'guide', 'lesson', 'learn', 'first animation'],
+    keywords: ['tutorial', 'guide', 'lesson', 'learn', 'first animation', 'badge', 'tiles quest'],
     body: `A quest is a little lesson with a few steps. You do each one in the real app, and Frameling ticks it off.
 
-The first one, **Your first animation in 60 seconds**, is on the welcome sheet. Quests are still being built, so for now it only points the way.`,
+The first one, **Your first animation**, is on the welcome sheet. Finish it and the rest open up in the **Quests** panel (Help > Open the Quests panel): the bouncing ball, filling in, a pixel pal, shading, **Tiles** (draw a seamless tile and paint a little level with it) and sharing. Each earns a badge.
+
+Stuck on a step? **Show me** does it for you, and **Tell me more** opens the help for it.`,
   },
 ]);

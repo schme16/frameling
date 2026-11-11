@@ -64,7 +64,7 @@ The usual name for this is *ordered dithering*.`,
     keywords: ['symmetry', 'symmetrical', 'mirror', 'mirror mode', 'kaleidoscope', 'axis'],
     body: `Press **Shift+M** to turn it on. Press it again to change direction: **left and right**, **top and bottom**, **both** (four ways at once), then off.
 
-A dashed line on the page shows where the mirror is. Everything the pencil, brush, eraser, shade, dither and shape tools paint on a pixel layer is copied across it.
+A dashed line on the page shows where the mirror is. Everything the pencil, brush, eraser, shade, dither and shape tools paint on a pixel layer is copied across it, and the paint bucket fills the mirrored spot too.
 
 **Moving the mirror line.** In the tool options, drag **Mirror line across** or **Mirror line down**. It moves in half pixel steps: on a whole number the line runs between two pixels (both sides are copied), on a half it runs through the middle of a pixel column (that column is shared, which is how you get an odd-width face with one nose). **Back to the middle** puts it back.
 

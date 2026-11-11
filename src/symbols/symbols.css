@@ -292,27 +292,6 @@
 .tl-tween.is-broken::after {
   display: none;
 }
-/* B: one bead per in-between frame, spaced by the easing. */
-[data-tween-look='beads'] .tl-tween {
-  background: none;
-}
-[data-tween-look='beads'] .tl-tween::before,
-[data-tween-look='beads'] .tl-tween::after {
-  display: none;
-}
-.tl-tween-bead {
-  display: none;
-}
-[data-tween-look='beads'] .tl-tween-bead {
-  display: block;
-  position: absolute;
-  top: calc(50% - 3px);
-  width: 6px;
-  height: 6px;
-  margin-left: -3px;
-  border-radius: 50%;
-  background: var(--grape);
-}
 .sy-library,
 .sy-props {
   padding: 12px;
