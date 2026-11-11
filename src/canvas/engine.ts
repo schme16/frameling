@@ -14,6 +14,8 @@ import { SpaceTap, wheelIntent } from './input';
 import { perf } from './perf';
 import { neighbourFrames, upcomingFrames } from '../timeline/playback';
 import { FramePainter } from './pipeline';
+import { subscribeTileUi, tileModeOn } from '../tiles/state';
+import { drawTileModeFrame, tileCopyAlpha } from '../tiles/look';
 import { cssVar, subscribeTheme } from './theme';
 import { getViewSettings, subscribeViewSettings } from './viewSettings';
 import { screenToDoc, stageDeviceRect, wheelZoomFactor, zoomAbout, type Pt } from './view';
@@ -135,6 +137,7 @@ export class CanvasEngine {
     this.cleanups.push(() => ro.disconnect());
     this.cleanups.push(store().subscribe(this.onStore));
     this.cleanups.push(subscribeViewSettings(() => this.invalidate(false, true)));
+    this.cleanups.push(subscribeTileUi(() => this.invalidate(true, true)));
     // Grid and handle colours come from theme tokens, so a theme or look change repaints both canvases.
     this.cleanups.push(subscribeTheme(() => this.invalidate(true, true)));
     this.resize();
@@ -311,6 +314,8 @@ export class CanvasEngine {
       onion: ui.onion,
       playing: ui.playing,
       zooming,
+      tileMode: tileModeOn(),
+      tileCopyAlpha: tileCopyAlpha(),
     });
     if (!settled) {
       clearTimeout(this.settleTimer);
@@ -330,6 +335,7 @@ export class CanvasEngine {
     g.clearRect(0, 0, this.els.overlay.width, this.els.overlay.height);
     if (ui.playing) return;
     const rect = stageDeviceRect({ zoom: ui.zoom, panX: ui.panX, panY: ui.panY }, doc.width, doc.height, dpr);
+    if (tileModeOn()) drawTileModeFrame(g, rect, dpr);
     this.drawPixelGrid(g, rect, ui.zoom, dpr);
     const tool = this.gesture?.kind === 'tool' ? this.gesture.tool : getTool(ui.tool);
     if (tool?.overlay && !(this.gesture?.kind === 'pan')) {

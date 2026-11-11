@@ -28,7 +28,22 @@ export interface FrameParams {
   playing: boolean;
   /** The zoom is changing right now: use slightly stale bitmaps rather than re-rasterising on every wheel tick. */
   zooming: boolean;
+  /** Tile mode: also paint a copy of the stage on every side, so seams show. */
+  tileMode?: boolean;
+  /** How strongly the copies show in tile mode (1 = as strong as the stage). */
+  tileCopyAlpha?: number;
 }
+
+const AROUND: [number, number][] = [
+  [-1, -1],
+  [0, -1],
+  [1, -1],
+  [-1, 0],
+  [1, 0],
+  [-1, 1],
+  [0, 1],
+  [1, 1],
+];
 
 type Canvas2 = OffscreenCanvas | HTMLCanvasElement;
 
@@ -234,13 +249,31 @@ export class FramePainter {
 
   /** Draws the stage content (onion skin and layers). Returns false if it used stale bitmaps and wants another go. */
   paint(g: CanvasRenderingContext2D, p: FrameParams): boolean {
-    const { doc, rect } = p;
     g.setTransform(1, 0, 0, 1, 0, 0);
     g.clearRect(0, 0, p.width, p.height);
+    if (!p.tileMode) return this.paintStage(g, p, false);
+    // Tile mode: the eight copies around the stage first (each the same bitmaps, so it's just more blits).
+    let settled = true;
+    const r = p.rect;
+    for (const [i, j] of AROUND) {
+      const rect = { x: r.x + i * r.w, y: r.y + j * r.h, w: r.w, h: r.h };
+      if (rect.x >= p.width || rect.y >= p.height || rect.x + rect.w <= 0 || rect.y + rect.h <= 0) continue;
+      settled = this.paintStage(g, { ...p, rect, live: p.live, onion: { ...p.onion, enabled: false } }, true) && settled;
+    }
+    return this.paintStage(g, p, false) && settled;
+  }
+
+  private paintStage(g: CanvasRenderingContext2D, p: FrameParams, copy: boolean): boolean {
+    const { doc, rect } = p;
     g.save();
     g.beginPath();
     g.rect(rect.x, rect.y, rect.w, rect.h);
     g.clip();
+    // The stage's own background is the element behind the canvas; copies paint theirs here.
+    if (copy && doc.background) {
+      g.fillStyle = doc.background;
+      g.fillRect(rect.x, rect.y, rect.w, rect.h);
+    }
 
     // Whole-stage bitmaps only make sense while they're no bigger than the screen.
     const cacheable = this.isCacheable(rect, p.width, p.height);
@@ -263,7 +296,7 @@ export class FramePainter {
         g.restore();
         continue;
       }
-      const drawing = lv?.kind === 'vector' ? lv.drawing : drawingAt(doc, layer, p.frame);
+      const drawing = lv?.kind === 'vector' || lv?.kind === 'tilemap' ? lv.drawing : drawingAt(doc, layer, p.frame);
       if (!drawing) continue;
       if (drawing.kind === 'vector' && cacheable && !lv) {
         let e = this.cache.find(drawing, pixelSize, rect.w, rect.h);
@@ -289,6 +322,14 @@ export class FramePainter {
       } else {
         this.paintDirect(g, p, drawing, layer, pixelSize);
       }
+    }
+    if (copy && p.tileCopyAlpha !== undefined && p.tileCopyAlpha < 1) {
+      // Fade a copy towards the canvas behind it.
+      g.globalCompositeOperation = 'destination-out';
+      g.globalAlpha = 1 - p.tileCopyAlpha;
+      g.fillRect(rect.x, rect.y, rect.w, rect.h);
+      g.globalCompositeOperation = 'source-over';
+      g.globalAlpha = 1;
     }
     g.restore();
     return settled;

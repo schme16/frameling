@@ -8,6 +8,7 @@ import { drawingAt } from '../core/doc';
 import { setLive } from '../canvas/controller';
 import { getPx, setPx, type PxPt, type RGBA } from '../canvas/pixels';
 import { editActiveDrawing } from './edit';
+import { tileModeOn, wrap } from '../tiles/state';
 
 type LiveCanvas = HTMLCanvasElement | OffscreenCanvas;
 
@@ -72,7 +73,11 @@ export class PixelSession {
 
   /** Paints one pixel. */
   set(x: number, y: number, c: RGBA): void {
-    if (x < 0 || y < 0 || x >= this.width || y >= this.height) return;
+    if (tileModeOn()) {
+      // Tile mode: whatever goes off one edge comes back on the other.
+      x = wrap(x, this.width);
+      y = wrap(y, this.height);
+    } else if (x < 0 || y < 0 || x >= this.width || y >= this.height) return;
     const i = (y * this.width + x) * 4;
     const w = this.work;
     if (w[i] === c[0] && w[i + 1] === c[1] && w[i + 2] === c[2] && w[i + 3] === c[3]) return;

@@ -7,7 +7,7 @@
  * (asked the first time): make a new key here from a copy of the held drawing, or change the held drawing itself.
  */
 import { current, type Draft } from 'immer';
-import type { Doc, Drawing, Layer, PixelDrawing, VectorDrawing } from '../core/format';
+import type { Doc, Drawing, Layer, PixelDrawing, TilemapDrawing, VectorDrawing } from '../core/format';
 import { celAt, findLayer, newDrawingFor, uid } from '../core/doc';
 import { store } from '../core/store';
 import { registerChoice, withChoice } from '../core/choices';
@@ -61,10 +61,10 @@ export function activeDrawing(): Drawing | undefined {
  * Changes the active drawing in one undo step. `kind` limits it to vector or pixel layers.
  * Returns why nothing happened, if nothing did.
  */
-export function editActiveDrawing<K extends 'vector' | 'pixel'>(
+export function editActiveDrawing<K extends 'vector' | 'pixel' | 'tilemap'>(
   label: string,
   kind: K,
-  recipe: (drawing: Draft<K extends 'vector' ? VectorDrawing : PixelDrawing>, doc: Draft<Doc>) => void,
+  recipe: (drawing: Draft<K extends 'vector' ? VectorDrawing : K extends 'pixel' ? PixelDrawing : TilemapDrawing>, doc: Draft<Doc>) => void,
   opts: { coalesce?: string } = {},
 ): EditResult {
   const { layer, problem } = activeLayer();
@@ -82,7 +82,7 @@ export function editActiveDrawing<K extends 'vector' | 'pixel'>(
           // Make a new key here: the held cel ends just before this frame, and a copy of its drawing takes over.
           const src = doc.drawings[cel.drawingId];
           const copy = structuredClone(current(src)) as Draft<Drawing>;
-          copy.id = uid(src.kind === 'pixel' ? 'p' : 'v');
+          copy.id = uid(src.kind === 'pixel' ? 'p' : src.kind === 'tilemap' ? 't' : 'v');
           doc.drawings[copy.id] = copy;
           const end = cel.start + cel.length;
           cel.length = frame - cel.start;
