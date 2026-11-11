@@ -1,11 +1,20 @@
 // Preferences: small, saved in localStorage, applied to <html> so the theme tokens do the rest.
 import { createStore, readJson, writeJson } from './mini';
+import { DEFAULT_DARK, DEFAULT_LIGHT, type Theme } from './themes/builtIn';
+import { sanitizeCustomThemes, themeForMode, writeTheme } from './themes/model';
 
 export type ThemePref = 'system' | 'dark' | 'light';
 export type LookPref = 'cosy' | 'crisp';
 
 export interface Prefs {
+  /** The mode: follow the computer (system), or always dark, or always light. (Called `theme` since before themes existed.) */
   theme: ThemePref;
+  /** Which theme to use in dark mode (and for System when the computer is dark). A built-in id or a custom one. */
+  darkTheme: string;
+  /** Which theme to use in light mode (and for System when the computer is light). */
+  lightTheme: string;
+  /** Themes people made by copying and customising. */
+  customThemes: Theme[];
   look: LookPref;
   /** Stub for now: the sound effects arrive with the first quests. */
   sounds: boolean;
@@ -22,6 +31,9 @@ export const PREFS_KEY = 'frameling.prefs.v1';
 
 export const DEFAULT_PREFS: Prefs = {
   theme: 'system',
+  darkTheme: DEFAULT_DARK,
+  lightTheme: DEFAULT_LIGHT,
+  customThemes: [],
   look: 'cosy',
   sounds: false,
   reduceMotion: false,
@@ -30,7 +42,35 @@ export const DEFAULT_PREFS: Prefs = {
   keymap: {},
 };
 
-const prefsStore = createStore<Prefs>(readJson(PREFS_KEY, DEFAULT_PREFS));
+/**
+ * Turns whatever was saved (older versions, hand-edited, damaged) into good preferences. Before themes existed only
+ * `theme` was saved (system, dark or light), and it still means the same thing, so nothing else needs converting:
+ * the theme picks just start at the defaults.
+ */
+export function migratePrefs(raw: unknown): Prefs {
+  const r = (raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {}) as Record<string, unknown>;
+  const bool = (v: unknown, d: boolean) => (typeof v === 'boolean' ? v : d);
+  const customThemes = sanitizeCustomThemes(r.customThemes);
+  const keymap: Record<string, string[]> = {};
+  if (r.keymap && typeof r.keymap === 'object' && !Array.isArray(r.keymap)) {
+    for (const [k, v] of Object.entries(r.keymap)) if (Array.isArray(v)) keymap[k] = v.filter((x): x is string => typeof x === 'string');
+  }
+  const pick = (mode: 'dark' | 'light', id: unknown) => themeForMode(mode, typeof id === 'string' ? id : '', customThemes).id;
+  return {
+    theme: r.theme === 'dark' || r.theme === 'light' || r.theme === 'system' ? r.theme : DEFAULT_PREFS.theme,
+    darkTheme: pick('dark', r.darkTheme),
+    lightTheme: pick('light', r.lightTheme),
+    customThemes,
+    look: r.look === 'crisp' || r.look === 'cosy' ? r.look : DEFAULT_PREFS.look,
+    sounds: bool(r.sounds, DEFAULT_PREFS.sounds),
+    reduceMotion: bool(r.reduceMotion, DEFAULT_PREFS.reduceMotion),
+    showWelcome: bool(r.showWelcome, DEFAULT_PREFS.showWelcome),
+    showTips: bool(r.showTips, DEFAULT_PREFS.showTips),
+    keymap,
+  };
+}
+
+const prefsStore = createStore<Prefs>(migratePrefs(readJson(PREFS_KEY, {})));
 
 export const getPrefs = (): Prefs => prefsStore.get();
 export const usePrefs = <S,>(selector: (p: Prefs) => S): S => prefsStore.use(selector);
@@ -42,13 +82,51 @@ export function setPrefs(patch: Partial<Prefs>): void {
   applyPrefs();
 }
 
-/** Writes the look, theme and motion preferences onto <html>. Safe to call any time. */
+/** The theme being shown right now: the one being edited (a peek), else the pick for the current mode. */
+export function activeTheme(): Theme {
+  if (preview) return preview;
+  const p = prefsStore.get();
+  const mode = effectiveTheme();
+  return themeForMode(mode, mode === 'dark' ? p.darkTheme : p.lightTheme, p.customThemes);
+}
+
+// While the theme editor is open, the theme being edited shows on the whole app even if it isn't the one picked.
+let preview: Theme | null = null;
+
+/** Shows a theme on the whole app without picking it. Pass null to go back to the real pick. */
+export function setThemePreview(theme: Theme | null): void {
+  preview = theme;
+  applyPrefs();
+}
+
+let watchingSystem = false;
+
+/** Follow the computer going dark or light while the mode is System. */
+function watchSystem(): void {
+  if (watchingSystem) return;
+  try {
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+      if (prefsStore.get().theme === 'system') applyPrefs();
+    });
+    watchingSystem = true;
+  } catch {
+    // No matchMedia (tests): nothing to follow.
+  }
+}
+
+/** Writes the theme colours, look and motion preferences onto <html>. Safe to call any time. */
 export function applyPrefs(): void {
   if (typeof document === 'undefined') return;
+  watchSystem();
   const p = prefsStore.get();
   const root = document.documentElement;
-  if (p.theme === 'system') delete root.dataset.theme;
-  else root.dataset.theme = p.theme;
+  const theme = activeTheme();
+  writeTheme(root, theme);
+  // data-theme only says dark or light, for the few stylesheet rules that care. With System it's left off so the
+  // computer's own setting decides them, which always agrees with the theme chosen above.
+  if (p.theme === 'system' && !preview) delete root.dataset.theme;
+  else root.dataset.theme = theme.mode;
+  // Written every time (even when unchanged) so things that cache token values, like the canvas, hear about it.
   root.dataset.look = p.look;
   if (p.reduceMotion) root.dataset.motion = 'reduce';
   else delete root.dataset.motion;
@@ -77,7 +155,8 @@ export function reducedMotion(): boolean {
 
 /** For tests. */
 export function resetPrefs(): void {
-  prefsStore.set({ ...DEFAULT_PREFS, keymap: {} });
+  preview = null;
+  prefsStore.set({ ...DEFAULT_PREFS, customThemes: [], keymap: {} });
   writeJson(PREFS_KEY, prefsStore.get());
   applyPrefs();
 }

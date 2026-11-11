@@ -128,13 +128,14 @@ Press the small **x** on a shortcut to remove it. **Reset** puts a command back 
     id: 'preferences',
     title: 'Preferences',
     section: 'Settings',
-    summary: 'Look, sounds, shortcuts and workspaces, all in one place.',
+    summary: 'Themes, sounds, shortcuts and workspaces, all in one place.',
     keywords: ['settings', 'options', 'config'],
     body: `Open it with **Ctrl+,** (**Cmd+,** on a Mac), or **View, Preferences**.
 
-There are four pages:
+There are five pages:
 
-- **General**: [theme and look](help:look-and-feel), sounds, motion and the welcome sheet.
+- **General**: [mode and look](help:look-and-feel), sounds, motion and the welcome sheet.
+- **Themes**: pick [themes](help:themes) and [make your own](help:make-your-own-theme).
 - **Behaviour**: [the choices Frameling asked you about](help:behaviour), like what N does.
 - **Keyboard**: see and change [shortcuts](help:keyboard-shortcuts).
 - **Workspaces**: save and switch [panel layouts](help:workspaces).
@@ -157,20 +158,22 @@ Open **Preferences** (**Ctrl+,**) and choose **Behaviour**. Every choice is list
   },
   {
     id: 'look-and-feel',
-    title: 'Theme and look',
+    title: 'Mode and look',
     section: 'Settings',
     summary: 'Dark or light, soft or sharp. Make it feel right for you.',
-    keywords: ['dark', 'light', 'theme', 'cosy', 'crisp', 'motion', 'animation', 'reduce', 'sounds', 'rounded'],
-    body: `## Theme
+    keywords: ['dark', 'light', 'mode', 'theme', 'cosy', 'crisp', 'motion', 'animation', 'reduce', 'sounds', 'rounded'],
+    body: `## Mode
 
 **System** follows your computer. **Dark** is easy on the eyes at night. **Light** is bright and papery. Switch quickly with **View, Switch dark or light**.
 
+Which colours you get in each mode is up to you: see [Themes](help:themes).
+
 ## Look
 
-- **Cosy** is soft and rounded, with friendly bouncy movement.
+- **Cosy** is soft and rounded, with friendly bouncy movement. It's the one Frameling starts with.
 - **Crisp** is tighter and sharper, closer to a classic tool.
 
-Try both. Neither changes how anything works.
+Try both. Neither changes how anything works, and every [theme](help:themes) works with both.
 
 ## Reduce motion
 
@@ -179,6 +182,86 @@ Turn this on to stop bouncing and fading. Frameling also does this by itself whe
 ## Sounds
 
 A switch for sound effects. They aren't there yet, so for now it just remembers your choice.`,
+  },
+  {
+    id: 'themes',
+    title: 'Themes',
+    section: 'Settings',
+    summary: 'Pick the colours Frameling wears, one for dark mode and one for light.',
+    keywords: ['theme', 'themes', 'colour', 'color', 'colours', 'dark', 'light', 'contrast', 'high contrast', 'accessibility', 'palette', 'pastel', 'midnight', 'cocoa'],
+    body: `A theme is a set of colours for the whole app. Frameling comes with several, each with a silly name and a calm mood.
+
+## Choosing
+
+Open **Preferences** (**Ctrl+,**), then **Themes**. You'll see two groups:
+
+- **For dark mode**: pick the theme to use when Frameling is dark.
+- **For light mode**: pick the theme to use when Frameling is light.
+
+Press a card to pick it. The change is instant. A gold tick shows which one is in use.
+
+## Dark, light and System
+
+The **Mode** switch decides which group is showing:
+
+- **Dark** always uses your dark theme.
+- **Light** always uses your light theme.
+- **System** follows your computer. When your computer goes dark in the evening, Frameling switches to your dark theme by itself, and back to your light theme in the morning.
+
+So you can have a pastel theme by day and a cosy dark one at night, without touching anything.
+
+## Easier to see
+
+**Lantern Night** (dark) and **Sunbeam** (light) have extra contrast: brighter words and stronger borders. Try them if small text is hard to read.
+
+## Themes and the look
+
+Themes are only colours. [Cosy or Crisp](help:look-and-feel) is separate, so you can mix any theme with either look.
+
+## Make it yours
+
+Press **Make a copy to customise** on any card to [make your own theme](help:make-your-own-theme).`,
+  },
+  {
+    id: 'make-your-own-theme',
+    title: 'Making your own theme',
+    section: 'Settings',
+    summary: 'Copy a theme, change the colours you like, and see it on the whole app as you go.',
+    keywords: ['custom', 'customise', 'customize', 'theme', 'editor', 'colour', 'color', 'picker', 'export', 'import', 'share', 'contrast', 'readable', 'palette', 'copy', 'clone'],
+    body: `You can't break anything: you always work on your own copy, and the built-in themes stay as they were.
+
+## Start
+
+Open **Preferences, Themes**, and press **Make a copy to customise** on a theme you almost like. (Or press **Make my own theme** to copy the one you're using.) The editor opens and your copy is switched on, so the whole app shows it as you work.
+
+## Change colours
+
+The colours are in friendly groups: **Background**, **Panels**, **Text**, **Accent (gold)**, **Timeline**, **Canvas surround** and **Messages**. Press a square to pick a colour, or type a colour code like \`#ffc94a\`.
+
+Changes show straight away on the picture in the editor and on the app behind it. Hold **Hold to peek** to see the whole app without the dialog in the way.
+
+## Start from a colour
+
+Not sure where to begin? Under **Start from a colour**, pick one colour you like, choose dark or light, and press **Make my palette**. Frameling works out backgrounds, text and highlights to go with it. It's a starting point, so tweak anything after. You can undo it.
+
+## Easy to read
+
+Frameling checks the words against what they sit on. If something may be hard to read, you'll see a warning in plain words under that colour, and a **Make it easier to read** button that nudges the text colour for you. **Fix them for me** does all of them at once.
+
+Gold stays gold for chosen things by default, with dark text on it. If you change it, keep the text on it a strong contrast.
+
+## Undo, reset and more
+
+- **Undo** and **Redo** step through your changes.
+- **Reset** goes back to the theme you copied (or to how it was when you opened it).
+- **Duplicate** makes another copy to try something different.
+- **Delete** removes your theme. If it was in use, Frameling goes back to the usual one.
+- Rename it any time by typing in the name box at the top.
+- A theme is **for dark mode** or **for light mode**. Change that with the switch under the picture.
+
+## Share a theme
+
+**Export** saves your theme as a small file ending in **.frameling-theme.json**. Send it to a friend. On the **Themes** page, **Import a theme file** adds one to your list. If the file isn't a theme, Frameling says so and changes nothing.`,
   },
   {
     id: 'workspaces',

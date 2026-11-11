@@ -1948,7 +1948,7 @@ body.ui-resizing * {
 }
 .ui-example-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   gap: 12px;
 }
 .ui-example {
@@ -2095,4 +2095,499 @@ body.ui-resizing * {
   border-radius: var(--radius-small);
   border: 1px solid var(--line);
   background: var(--panel-2);
+}
+
+/* ------------------------------------------------------------ themes (Preferences > Themes, and the theme editor) */
+
+/* Holding "Hold to peek" in the editor lets the app behind the dialog show in full. */
+:root[data-theme-peek] .ui-backdrop {
+  opacity: 0;
+  pointer-events: none;
+  backdrop-filter: none;
+}
+
+/* The mini app preview. It sets the theme's tokens on itself, so everything below reads the card's theme, not the app's. */
+.th-prev {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  aspect-ratio: 16 / 10;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 8px;
+  overflow: hidden;
+  position: relative;
+}
+.th-prev b,
+.th-prev i,
+.th-prev u {
+  display: block;
+  text-decoration: none;
+  font-style: normal;
+  font-weight: 700;
+}
+.th-prev-top {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 11px;
+  padding: 0 4px;
+  border-radius: calc(var(--radius-small) * 0.6);
+  background: var(--panel);
+  border: 1px solid var(--line-soft);
+}
+.th-prev-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--faint);
+}
+.th-prev-dot:nth-child(1) {
+  background: var(--rose);
+}
+.th-prev-dot:nth-child(2) {
+  background: var(--sunny);
+}
+.th-prev-dot:nth-child(3) {
+  background: var(--mint);
+}
+.th-prev-title {
+  width: 26%;
+  height: 4px;
+  margin-left: 4px;
+  border-radius: 2px;
+  background: var(--muted);
+}
+.th-prev-pill {
+  width: 14%;
+  height: 5px;
+  margin-left: auto;
+  border-radius: 3px;
+  background: var(--accent);
+}
+.th-prev-mid {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  gap: 3px;
+}
+.th-prev-tools {
+  flex: none;
+  width: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  align-items: center;
+  padding: 3px 0;
+  border-radius: calc(var(--radius-small) * 0.6);
+  background: var(--panel);
+  border: 1px solid var(--line-soft);
+}
+.th-prev-tools i {
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+  background: var(--raised);
+  border: 1px solid var(--line);
+  box-sizing: border-box;
+}
+.th-prev-tools i.is-chosen {
+  background: var(--chosen-bg);
+  border-color: var(--chosen-bg);
+}
+.th-prev-canvas {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  place-items: center;
+  border-radius: calc(var(--radius-small) * 0.6);
+  background: var(--canvas-bg);
+}
+.th-prev-stage {
+  width: 74%;
+  aspect-ratio: 5 / 3;
+  background: #ffffff;
+  box-shadow: var(--stage-shadow);
+}
+.th-prev-side {
+  flex: none;
+  width: 22%;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 4px;
+  border-radius: calc(var(--radius-small) * 0.6);
+  background: var(--panel);
+  border: 1px solid var(--line-soft);
+}
+.th-prev-line {
+  height: 3px;
+  border-radius: 2px;
+  background: var(--text);
+}
+.th-prev-line.is-soft {
+  width: 70%;
+  background: var(--muted);
+}
+.th-prev-line.is-faint {
+  width: 50%;
+  background: var(--faint);
+}
+.th-prev-btn {
+  margin-top: auto;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--raised);
+  border: 1px solid var(--line);
+  box-sizing: border-box;
+}
+.th-prev-time {
+  flex: none;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 14px;
+  padding: 0 4px;
+  border-radius: calc(var(--radius-small) * 0.6);
+  background: var(--panel-2);
+  border: 1px solid var(--line-soft);
+}
+.th-prev-chip {
+  padding: 1px 4px;
+  border-radius: 999px;
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+  font-size: 6px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+.th-prev-cels {
+  display: flex;
+  gap: 2px;
+}
+.th-prev-cels i {
+  width: 9px;
+  height: 6px;
+  border-radius: 1.5px;
+  background: var(--cel);
+}
+.th-prev-cels i.is-key {
+  background: var(--cel-key);
+}
+.th-prev-cels i.is-hold {
+  background: var(--cel-hold);
+}
+.th-prev-playhead {
+  position: absolute;
+  top: 1px;
+  bottom: 1px;
+  left: 46%;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--playhead);
+}
+.th-prev-big {
+  font-size: 10px;
+}
+
+/* The gallery. */
+.th-modebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 10px 0 14px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.th-modebar .ui-pref-text span {
+  max-width: 340px;
+}
+.th-section h4,
+.th-editor h4 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 18px 0 8px;
+  font-size: 14px;
+}
+.th-now {
+  margin-left: 6px;
+  padding: 1px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+  font-size: 11px;
+  font-weight: 800;
+}
+.th-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+}
+.th-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  border: 2px solid var(--line-soft);
+  border-radius: var(--radius);
+  background: var(--panel-2);
+  transition: transform 0.2s var(--ui-pop), border-color 0.12s var(--ease);
+}
+.th-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--line);
+}
+.th-card.is-chosen {
+  border-color: var(--chosen-bg);
+  box-shadow: 0 0 0 1px var(--chosen-bg);
+}
+.th-card-pick {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-small);
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+}
+.th-card-name {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 0 2px;
+}
+.th-card-tick {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+}
+.th-card-desc {
+  padding: 0 2px;
+  color: var(--muted);
+  font-size: var(--fs-small);
+  line-height: 1.35;
+  min-height: 4em;
+}
+.th-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 0 2px 2px;
+}
+.th-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 22px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line-soft);
+}
+
+/* The editor. */
+.th-editor-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 0 8px;
+}
+.th-name {
+  flex: 1;
+  min-width: 0;
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--ui-btn-radius);
+  background: var(--bg);
+  color: var(--text);
+  user-select: text;
+  font-size: 16px;
+  font-weight: 800;
+}
+.th-editor-grid {
+  display: grid;
+  grid-template-columns: 230px minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+.th-editor-side {
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 4px;
+}
+.th-side-actions,
+.th-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.th-mode {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--muted);
+  font-size: var(--fs-small);
+}
+.th-mode .ui-segmented {
+  align-self: flex-start;
+}
+.th-danger {
+  background: var(--danger);
+  border-color: transparent;
+  color: var(--bg);
+}
+.th-helper,
+.th-check {
+  padding: 12px;
+  margin-top: 8px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius);
+  background: var(--panel-2);
+}
+.th-helper h4 {
+  margin: 0 0 4px;
+}
+.th-helper p {
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: var(--fs-small);
+  line-height: 1.4;
+}
+.th-helper-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.th-check {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.th-check p {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-weight: 700;
+}
+.th-check.has-problems {
+  border-color: var(--danger);
+}
+.th-group h4 {
+  margin: 20px 0 2px;
+}
+.th-group-hint {
+  margin: 0 0 4px;
+  color: var(--muted);
+  font-size: var(--fs-small);
+}
+.th-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+.th-row-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+.th-row-text span {
+  color: var(--muted);
+  font-size: var(--fs-small);
+}
+.th-warn {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  margin-top: 2px;
+  color: var(--danger);
+  font-size: var(--fs-small);
+  font-style: normal;
+  font-weight: 700;
+  line-height: 1.3;
+}
+.th-fix {
+  margin-top: 4px;
+}
+.th-swatch {
+  position: relative;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border: 2px solid var(--line);
+  border-radius: var(--radius-small);
+  overflow: hidden;
+  cursor: pointer;
+}
+.th-swatch:hover {
+  border-color: var(--faint);
+}
+.th-swatch:focus-within {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.th-swatch span {
+  position: absolute;
+  inset: 0;
+}
+.th-swatch input {
+  position: absolute;
+  inset: -4px;
+  width: calc(100% + 8px);
+  height: calc(100% + 8px);
+  opacity: 0;
+  cursor: pointer;
+}
+.th-hex {
+  flex: none;
+  width: 88px;
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--ui-btn-radius);
+  background: var(--bg);
+  color: var(--text);
+  user-select: text;
+  font-family: var(--font-mono);
+  font-size: var(--fs-small);
+  text-transform: lowercase;
+}
+@media (max-width: 760px) {
+  .th-editor-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .th-editor-side {
+    position: static;
+  }
+}
+.th-card-actions .ui-btn {
+  height: auto;
+  min-height: 24px;
+  padding: 3px 8px;
+  white-space: normal;
+  text-align: left;
+  line-height: 1.25;
 }

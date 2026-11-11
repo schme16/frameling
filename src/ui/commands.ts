@@ -5,6 +5,8 @@ import { resetLayout } from './dock';
 import { openHelp, openPrefs, openSheet, togglePalette } from './overlays';
 import { effectiveTheme, getPrefs, setPrefs } from './prefs';
 import { toast } from './toast';
+import { BUILT_IN_THEMES } from './themes/builtIn';
+import { selectTheme, themeById } from './themes/library';
 
 export function aboutText(): string {
   const v = typeof window !== 'undefined' ? window.frameling?.versions : undefined;
@@ -68,6 +70,33 @@ registerCommands([
     help: 'look-and-feel',
     keywords: ['theme', 'dark mode', 'light mode', 'night'],
     run: () => setPrefs({ theme: effectiveTheme() === 'dark' ? 'light' : 'dark' }),
+  },
+  {
+    id: 'view.themes',
+    label: 'Choose themes...',
+    category: 'View',
+    description: 'Pick your dark and light themes, or make your own.',
+    help: 'themes',
+    keywords: ['theme', 'colours', 'colors', 'customise', 'customize', 'palette'],
+    run: () => openPrefs('themes'),
+  },
+  {
+    id: 'view.nextTheme',
+    label: 'Next theme',
+    category: 'View',
+    description: 'Try the next theme for the mode you are in (dark or light).',
+    help: 'themes',
+    keywords: ['theme', 'cycle', 'switch theme'],
+    run: () => {
+      const mode = effectiveTheme();
+      const p = getPrefs();
+      const list = [...BUILT_IN_THEMES, ...p.customThemes].filter((t) => t.mode === mode);
+      const cur = mode === 'dark' ? p.darkTheme : p.lightTheme;
+      const next = list[(list.findIndex((t) => t.id === cur) + 1) % list.length];
+      if (!next) return;
+      selectTheme(next);
+      toast(`Theme: ${themeById(next.id)?.name ?? next.name}`);
+    },
   },
   {
     id: 'view.toggleLook',

@@ -29,7 +29,7 @@ export const MENUS: MenuDef[] = [
   {
     label: 'View',
     categories: ['View'],
-    items: ['view.zoomIn', 'view.zoomOut', 'view.fit', 'view.zoom100', 'view.center', 'view.pixelGrid', '-', 'group:panels', '-', 'group:workspaces', 'view.saveWorkspace', 'view.resetLayout', '-', 'view.toggleTheme', 'view.toggleLook', '-', 'view.commandPalette'],
+    items: ['view.zoomIn', 'view.zoomOut', 'view.fit', 'view.zoom100', 'view.center', 'view.pixelGrid', '-', 'group:panels', '-', 'group:workspaces', 'view.saveWorkspace', 'view.resetLayout', '-', 'view.toggleTheme', 'view.nextTheme', 'view.themes', 'view.toggleLook', '-', 'view.commandPalette'],
   },
   {
     label: 'Draw',

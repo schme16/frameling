@@ -2,9 +2,14 @@
  * Frameling design tokens. Every colour, radius, shadow and font in the app comes from here, so a look can change
  * in one place. Never hard-code colours in components.
  *
- * Two attributes on <html> pick the look:
- *   data-theme="dark" | "light"   (default follows the system)
- *   data-look="cosy" | "crisp"    (being decided with an A/B look: cosy = soft and rounded, crisp = tighter, like Interactives)
+ * Colours come from the chosen theme (src/ui/themes): applyPrefs writes every colour token below onto <html> as an
+ * inline style, which beats everything in this file. The values here are only what shows before that runs (and in
+ * anything that loads this file without the app), and they match the two default themes, Midnight Sketchbook and
+ * Paper & Honey. test/ui/themes.test.ts keeps them in step.
+ *
+ * Shape and type belong to the look, a separate choice from the theme:
+ *   data-look="cosy" | "crisp"    (cosy = soft and rounded, the default; crisp = tighter, like Interactives)
+ * data-theme="dark" | "light" is also set (left off for System) for the few stylesheet rules that care about it.
  */
 @import '@fontsource-variable/nunito';
 @import '@fontsource-variable/inter';
@@ -28,7 +33,7 @@
   --line-soft: #2e2a40;
   --text: #f4efe6;
   --muted: #b3aac4;
-  --faint: #7d7591;
+  --faint: #8a82a0;
   --canvas-bg: #121019;
   --stage-shadow: 0 6px 30px rgb(0 0 0 / 45%);
 
@@ -42,9 +47,9 @@
   --ok: var(--mint);
 
   /* Timeline. */
-  --cel: color-mix(in srgb, var(--grape) 55%, var(--panel-2));
+  --cel: color-mix(in srgb, var(--cel-key) 55%, var(--panel-2));
   --cel-key: var(--grape);
-  --cel-hold: color-mix(in srgb, var(--grape) 30%, var(--panel-2));
+  --cel-hold: color-mix(in srgb, var(--cel-key) 30%, var(--panel-2));
   --playhead: var(--rose);
 
   --font: 'Nunito Variable', 'Nunito', system-ui, sans-serif;
@@ -73,16 +78,21 @@
     --line: #e2d8c7;
     --line-soft: #ece4d6;
     --text: #2a2533;
-    --muted: #6b6378;
-    --faint: #9a92a6;
+    --muted: #665e73;
+    --faint: #8a8296;
     --canvas-bg: #e8e1d5;
     --stage-shadow: 0 6px 30px rgb(60 40 20 / 18%);
     --hover-bg: #f0e7d8;
     --shadow: 0 8px 28px rgb(60 40 20 / 16%);
     --shadow-small: 0 2px 8px rgb(60 40 20 / 12%);
-    --danger: #d64545;
-    --cel: color-mix(in srgb, var(--grape) 45%, var(--panel-2));
-    --cel-hold: color-mix(in srgb, var(--grape) 22%, var(--panel-2));
+    --danger: #c93d3d;
+    --accent: #6f4de6;
+    --focus: #a86200;
+    --ok: #2f9e79;
+    --cel-key: #8a68f2;
+    --playhead: #e0446b;
+    --cel: color-mix(in srgb, var(--cel-key) 45%, var(--panel-2));
+    --cel-hold: color-mix(in srgb, var(--cel-key) 22%, var(--panel-2));
     color-scheme: light;
   }
 }
@@ -95,16 +105,21 @@
   --line: #e2d8c7;
   --line-soft: #ece4d6;
   --text: #2a2533;
-  --muted: #6b6378;
-  --faint: #9a92a6;
+  --muted: #665e73;
+  --faint: #8a8296;
   --canvas-bg: #e8e1d5;
   --stage-shadow: 0 6px 30px rgb(60 40 20 / 18%);
   --hover-bg: #f0e7d8;
   --shadow: 0 8px 28px rgb(60 40 20 / 16%);
   --shadow-small: 0 2px 8px rgb(60 40 20 / 12%);
-  --danger: #d64545;
-  --cel: color-mix(in srgb, var(--grape) 45%, var(--panel-2));
-  --cel-hold: color-mix(in srgb, var(--grape) 22%, var(--panel-2));
+  --danger: #c93d3d;
+  --accent: #6f4de6;
+  --focus: #a86200;
+  --ok: #2f9e79;
+  --cel-key: #8a68f2;
+  --playhead: #e0446b;
+  --cel: color-mix(in srgb, var(--cel-key) 45%, var(--panel-2));
+  --cel-hold: color-mix(in srgb, var(--cel-key) 22%, var(--panel-2));
   color-scheme: light;
 }
 

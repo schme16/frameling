@@ -12,9 +12,14 @@ import { closePrefs, overlays, type PrefsPage } from './overlays';
 import { setPrefs, usePrefs, type LookPref, type ThemePref } from './prefs';
 import { toast } from './toast';
 import { BehaviourPage } from './ChoiceDialog';
+import { ThemesPage } from './themes/ThemesPage';
 
-const PAGES: { id: PrefsPage; label: string; icon: string; help: string }[] = [
+// The Themes page is local to this file for now (overlays.ts decides which pages can be opened from outside).
+type Page = PrefsPage;
+
+const PAGES: { id: Page; label: string; icon: string; help: string }[] = [
   { id: 'general', label: 'General', icon: 'settings', help: 'look-and-feel' },
+  { id: 'themes', label: 'Themes', icon: 'palette', help: 'themes' },
   { id: 'behaviour', label: 'Behaviour', icon: 'sliders', help: 'behaviour' },
   { id: 'keyboard', label: 'Keyboard', icon: 'keyboard', help: 'keyboard-shortcuts' },
   { id: 'workspaces', label: 'Workspaces', icon: 'workspace', help: 'workspaces' },
@@ -27,7 +32,7 @@ export function PrefsModal() {
 }
 
 function Prefs({ page, commandId }: { page: PrefsPage; commandId?: string }) {
-  const [current, setCurrent] = useState<PrefsPage>(page);
+  const [current, setCurrent] = useState<Page>(page);
   const active = PAGES.find((p) => p.id === current)!;
   return (
     <Modal title="Preferences" size="lg" className="ui-prefs" onClose={closePrefs}>
@@ -41,7 +46,8 @@ function Prefs({ page, commandId }: { page: PrefsPage; commandId?: string }) {
           ))}
         </nav>
         <div className="ui-prefs-page" data-help={active.help}>
-          {current === 'general' && <GeneralPage />}
+          {current === 'general' && <GeneralPage onThemes={() => setCurrent('themes')} />}
+          {current === 'themes' && <ThemesPage />}
           {current === 'behaviour' && <BehaviourPage />}
           {current === 'keyboard' && <KeyboardPage focusId={commandId} />}
           {current === 'workspaces' && <WorkspacesPage />}
@@ -88,14 +94,14 @@ export function Switch({ on, onChange, label }: { on: boolean; onChange: (v: boo
 
 // ---------------------------------------------------------------- general
 
-function GeneralPage() {
+function GeneralPage({ onThemes }: { onThemes: () => void }) {
   const p = usePrefs((x) => x);
   return (
     <>
       <h3>General</h3>
-      <Row label="Theme" hint="System follows your computer.">
+      <Row label="Mode" hint="System follows your computer, and uses your dark and light themes to match.">
         <Segmented<ThemePref>
-          label="Theme"
+          label="Mode"
           value={p.theme}
           onChange={(theme) => setPrefs({ theme })}
           options={[
@@ -104,6 +110,12 @@ function GeneralPage() {
             { id: 'light', label: 'Light', icon: 'sun' },
           ]}
         />
+      </Row>
+      <Row label="Theme" hint="Pick a theme for dark mode and one for light mode, or make your own.">
+        <button type="button" className="ui-btn" onClick={onThemes}>
+          <Icon name="palette" size={14} />
+          Choose themes...
+        </button>
       </Row>
       <Row label="Look" hint="Cosy is soft and rounded. Crisp is tighter and sharper.">
         <Segmented<LookPref>
