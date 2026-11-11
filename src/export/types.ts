@@ -1,6 +1,6 @@
 // What the export dialog collects, and what the exporters take.
 
-export type FormatId = 'mp4' | 'webm' | 'gif' | 'apng' | 'png' | 'pngseq' | 'svg' | 'sheet' | 'interactives';
+export type FormatId = 'mp4' | 'webm' | 'gif' | 'apng' | 'png' | 'pngseq' | 'svg' | 'sheet' | 'interactives' | 'lottie' | 'svganim';
 export type RangeKind = 'all' | 'clip' | 'frame';
 
 export interface SheetSettings {
@@ -119,6 +119,8 @@ export const FORMATS: FormatInfo[] = [
   { id: 'pngseq', title: 'PNG sequence', tag: '.zip', goodFor: 'Video editors and other tools that want one picture per frame.', icon: 'grid', ext: 'zip', animated: true, alpha: true },
   { id: 'svg', title: 'SVG drawing', tag: 'This frame', goodFor: 'Vector art that stays sharp at any size.', icon: 'image', ext: 'svg', animated: false, alpha: true },
   { id: 'sheet', title: 'Sprite sheet', tag: 'For games', goodFor: 'Godot, Unity, Phaser, PixiJS or a web page: every frame on one picture.', icon: 'grid', ext: 'png', animated: true, alpha: true },
+  { id: 'lottie', title: 'Lottie animation', tag: 'JSON', goodFor: 'Apps and websites: a small vector animation that plays at any size.', icon: 'play', ext: 'json', animated: true, alpha: true },
+  { id: 'svganim', title: 'Moving SVG', tag: 'Animated SVG', goodFor: 'A web page or an <img> tag: one file that plays by itself, sharp at any size.', icon: 'image', ext: 'svg', animated: true, alpha: true },
   { id: 'interactives', title: 'Interactives', tag: '.flplay', goodFor: 'Drop it into an Interactives page, then play it with clicks, timelines and scripts.', icon: 'play', ext: 'flplay', animated: true, alpha: true },
 ];
 

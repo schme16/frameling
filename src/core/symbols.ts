@@ -11,6 +11,8 @@
 import type { Cel, Doc, Drawing, EditFrame, Id, InstanceShape, Layer, MotionPath, PathPoint, Shape, SymbolDef, Transform2D, Tween, VectorDrawing } from './format';
 import { ease } from './ease';
 import { celAt, uid } from './doc';
+import { morphShapes } from './shape-tween';
+import { boundDrawing, type PosedMesh } from '../rig/pose';
 
 // ---------------------------------------------------------------- matrices
 
@@ -431,6 +433,8 @@ export interface PosedLayer {
   drawing: Drawing;
   opacity: number;
   pixelSize: number;
+  /** Bent through a bone mesh (attached layers only). */
+  mesh?: PosedMesh;
 }
 
 /** An instance ready to draw: its matrix and the drawings its symbol shows at the frame in question. Runtime only. */
@@ -484,11 +488,23 @@ function worldOf(doc: Doc): World {
 /** How many poses were built, for tests. */
 export const poseStats = { built: 0 };
 
-/** What a layer shows at `frame`: its drawing, with instances posed. Plain drawings come back unchanged. */
+/**
+ * What a layer shows at `frame`: its drawing, with instances posed and moved by its bone if it's attached to one.
+ * Plain drawings come back unchanged.
+ */
 export function poseAt(doc: Doc, layer: Layer, frame: number, depth = 0): Drawing | undefined {
+  const d = poseCel(doc, layer, frame, depth);
+  return d && layer.bind ? boundDrawing(doc, layer, frame, d) : d;
+}
+
+function poseCel(doc: Doc, layer: Layer, frame: number, depth: number): Drawing | undefined {
   const cel = celAt(layer, frame);
   if (!cel) return undefined;
   const d = doc.drawings[cel.drawingId];
+  if (d?.kind === 'vector' && cel.tween?.kind === 'shape') {
+    const m = morphAt(doc, layer, cel, d, frame, depth);
+    if (m) return m;
+  }
   if (!d || d.kind !== 'vector' || !hasInstances(d)) return d;
   if (depth > MAX_DEPTH) return undefined;
 
@@ -527,6 +543,42 @@ export function poseAt(doc: Doc, layer: Layer, frame: number, depth = 0): Drawin
   return out;
 }
 
+/** A shape tween's in-between at `frame`, or undefined on the key's own frame (or with no end key to morph to). */
+function morphAt(doc: Doc, layer: Layer, cel: Cel, d: VectorDrawing, frame: number, depth: number): Drawing | undefined {
+  const tp = tweenProgress(layer, cel, frame);
+  if (!tp || tp.t === 0) return undefined;
+  const to = doc.drawings[tp.next.drawingId];
+  if (to?.kind !== 'vector') return undefined;
+  if (depth > MAX_DEPTH) return undefined;
+  const local = frame - cel.start;
+  const frames: number[] = [];
+  for (const s of d.shapes)
+    if (isInstance(s)) {
+      const c = symbolContent(doc, s.symbolId);
+      frames.push(c ? symbolFrame(s, local, c.length) : -1);
+    }
+  const key = `shape|${tp.t.toFixed(5)}|${tp.next.id}|${tp.next.drawingId}|` + frames.join(',');
+  const world = worldOf(doc);
+  let byKey = world.cels.get(cel);
+  if (!byKey) world.cels.set(cel, (byKey = new Map()));
+  const hit = byKey.get(key);
+  if (hit) return hit;
+  const tw = cel.tween!;
+  let n = 0;
+  const shapes = morphShapes(d, to, tp.t, tw.hints ?? [], (a, b, t) => tweenInstance(a, b, tw, t)).map((s) => {
+    if (!isInstance(s)) return s;
+    const c = symbolContent(doc, s.symbolId);
+    // Spare copies that grow in from the end key play from its start.
+    const inner = n < frames.length ? frames[n++] : c ? symbolFrame(s, local, c.length) : -1;
+    return poseInstance(doc, s, inner, depth);
+  });
+  const out: VectorDrawing = { id: `${d.id}@${key}`, kind: 'vector', shapes };
+  poseStats.built++;
+  byKey.set(key, out);
+  if (byKey.size > 600) byKey.delete(byKey.keys().next().value!);
+  return out;
+}
+
 /** An instance with its symbol's drawings at symbol frame `inner`. */
 export function poseInstance(doc: Doc, s: InstanceShape, inner: number, depth = 0): PosedInstance {
   const c = symbolContent(doc, s.symbolId);
@@ -557,8 +609,13 @@ export function instanceAt(doc: Doc, layer: Layer, frame: number, id: Id): Insta
 
 /** A drawing being changed right now (a stroke in progress), with its instances posed like the stored one's. */
 export function poseLive(doc: Doc, layer: Layer, frame: number, live: Drawing): Drawing {
+  const d = poseLiveCel(doc, layer, frame, live);
+  return layer.bind ? boundDrawing(doc, layer, frame, d) : d;
+}
+
+function poseLiveCel(doc: Doc, layer: Layer, frame: number, live: Drawing): Drawing {
   if (live.kind !== 'vector' || !hasInstances(live)) return live;
-  const posed = poseAt(doc, layer, frame);
+  const posed = poseCel(doc, layer, frame, 0);
   const byId = new Map<Id, Shape>();
   if (posed?.kind === 'vector') for (const s of posed.shapes) if (isPosed(s)) byId.set(s.id, s);
   return { ...live, shapes: live.shapes.map((s) => (isInstance(s) ? (byId.get(s.id) ?? poseInstance(doc, s, 0)) : s)) };

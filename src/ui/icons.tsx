@@ -27,6 +27,64 @@ const ICONS: Record<string, ReactNode> = {
       <path d="M17 4.5l3 2.5-3 2.5" />
     </>
   ),
+  // shape tweens, camera, clip flow
+  morph: (
+    <>
+      <rect x="3" y="9" width="8" height="8" rx="1.5" />
+      <circle cx="17.5" cy="13" r="4" />
+      <path d="M11.5 7.5c1.5-1.5 3.5-1.5 5 0" />
+    </>
+  ),
+  hint: (
+    <>
+      <circle cx="12" cy="12" r="7" />
+      <path d="M10 15.5V9.5h2.2a2 2 0 0 1 0 4H10" />
+    </>
+  ),
+  camera: (
+    <>
+      <rect x="3" y="7" width="13" height="10" rx="2.5" />
+      <path d="M16 11l5-3v8l-5-3" />
+      {dot(7.5, 12, 1.4)}
+    </>
+  ),
+  flow: (
+    <>
+      <rect x="3" y="4" width="7" height="5" rx="1.5" />
+      <rect x="14" y="15" width="7" height="5" rx="1.5" />
+      <path d="M6.5 9v3.5a2.5 2.5 0 0 0 2.5 2.5h4" />
+      <path d="M11.5 13l2 2-2 2" />
+    </>
+  ),
+  // bones
+  bone: (
+    <>
+      <circle cx="6" cy="18" r="2.6" />
+      <path d="M8 16.2L16.6 6.8l1.9 1.9L9.8 18" />
+      <circle cx="18" cy="6" r="1.6" />
+    </>
+  ),
+  pose: (
+    <>
+      <circle cx="12" cy="4.8" r="2" />
+      <path d="M12 7.5v6.3M12 13.8l-3.6 6M12 13.8l3.8 3.4 1.2 3M12 9.6l-4.8 1.6M12 9.6l4.2-2.6" />
+    </>
+  ),
+  pin: (
+    <>
+      <path d="M9 3.8h6M10 3.8l-.6 6.4-3 3h11.2l-3-3-.6-6.4" />
+      <path d="M12 13.2v7" />
+    </>
+  ),
+  rig: (
+    <>
+      <circle cx="12" cy="5" r="2" />
+      {dot(12, 12, 1.6)}
+      {dot(7, 19, 1.6)}
+      {dot(17, 19, 1.6)}
+      <path d="M12 7v5M12 12l-5 7M12 12l5 7" />
+    </>
+  ),
   // drawing tools
   brush: (
     <>
@@ -163,6 +221,25 @@ const ICONS: Record<string, ReactNode> = {
       <path d="M6.5 16.5C8 5 15 19 17.5 7.5" />
       <circle cx="5" cy="18" r="2" />
       <circle cx="19" cy="6" r="2" />
+    </>
+  ),
+  // sound and lip sync
+  sound: (
+    <>
+      <path d="M4.5 9.5h3L12 5.8v12.4l-4.5-3.7h-3z" />
+      <path d="M15.4 9.2a4 4 0 0 1 0 5.6M17.9 6.7a7.4 7.4 0 0 1 0 10.6" />
+    </>
+  ),
+  'sound-off': (
+    <>
+      <path d="M4.5 9.5h3L12 5.8v12.4l-4.5-3.7h-3z" />
+      <path d="M16 9.5l4.5 5M20.5 9.5L16 14.5" />
+    </>
+  ),
+  mouth: (
+    <>
+      <path d="M3.6 11.4c2.8-1.5 5.1-1.2 8.4.3 3.3-1.5 5.6-1.8 8.4-.3-.6 4.2-4.1 6.6-8.4 6.6s-7.8-2.4-8.4-6.6z" />
+      <path d="M8.5 14.6c2-1 5-1 7 0" />
     </>
   ),
   palette: (

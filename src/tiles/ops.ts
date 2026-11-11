@@ -20,7 +20,7 @@ function uniqueLayerName(doc: Doc, base: string): string {
 export function tilemapPixelSize(doc: Doc): number {
   for (let i = doc.layers.length - 1; i >= 0; i--) {
     const l = doc.layers[i];
-    if (l.kind !== 'vector') return l.pixelSize;
+    if (l.kind === 'pixel' || l.kind === 'tilemap') return l.pixelSize;
   }
   const tw = doc.tileset?.tileWidth ?? DEFAULT_TILE_SIZE;
   return Math.max(1, Math.round(doc.width / (tw * 20)));

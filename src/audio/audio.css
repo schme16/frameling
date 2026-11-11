@@ -1,0 +1,113 @@
+/* Sound rows in the timeline. Every class starts with au-. Tokens only (see renderer/theme.css). */
+
+.au-side {
+  /* Pinned to the bottom of the timeline, so a sound is in view however many layers there are. */
+  position: sticky;
+  bottom: 0;
+  z-index: 4;
+  background: var(--panel);
+  border-top: 1px solid var(--line);
+}
+.au-side-row {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 4px 0 8px;
+  border-bottom: 1px solid var(--line-soft);
+  cursor: pointer;
+}
+.au-side-row:hover {
+  background: var(--hover-bg);
+}
+.au-side-row.is-picked {
+  background: var(--hover-bg);
+  box-shadow: inset 3px 0 0 var(--grape);
+}
+.au-kind {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-small);
+  background: color-mix(in srgb, var(--grape) 30%, transparent);
+}
+.au-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.au-side-row.is-muted .au-name {
+  color: var(--faint);
+  text-decoration: line-through;
+}
+.au-side-row .tl-icon-btn {
+  width: 22px;
+  height: 22px;
+}
+.au-vol {
+  flex: none;
+  width: 52px;
+  height: 12px;
+  accent-color: var(--grape);
+}
+
+.au-rows {
+  position: sticky;
+  bottom: 0;
+  z-index: 4;
+  background: var(--panel-2);
+  border-top: 1px solid var(--line);
+  cursor: default;
+}
+.au-row {
+  position: absolute;
+  left: 0;
+  right: 0;
+  box-sizing: border-box;
+  border-bottom: 1px solid var(--line-soft);
+  background-color: var(--panel-2);
+}
+.au-clip {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  box-sizing: border-box;
+  overflow: hidden;
+  border-radius: var(--radius-small);
+  background: color-mix(in srgb, var(--grape) 16%, var(--panel-2));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--grape) 45%, transparent);
+  color: color-mix(in srgb, var(--grape) 85%, var(--text));
+  cursor: grab;
+  touch-action: none;
+}
+.au-clip:hover,
+.au-clip.is-picked {
+  box-shadow: inset 0 0 0 2px var(--grape);
+}
+.au-clip.is-dragging {
+  cursor: grabbing;
+  opacity: 0.85;
+}
+.au-clip.is-muted {
+  opacity: 0.45;
+}
+.au-wave {
+  position: absolute;
+  top: 0;
+  pointer-events: none;
+}
+.au-loading {
+  position: sticky;
+  left: 8px;
+  display: inline-block;
+  padding: 0 8px;
+  line-height: 28px;
+  color: var(--muted);
+}
+.au-rows .tl-playhead {
+  z-index: 3;
+}

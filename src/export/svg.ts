@@ -1,9 +1,17 @@
 // One frame as an SVG: vector layers become real paths (brush strokes as their outline shape, exactly the one the
 // canvas fills), pixel layers become one rectangle per run of same-coloured pixels, so nothing is lost.
-import type { Doc, Layer, PathShape, PixelDrawing, Shape, StrokeShape, SubPath } from '../core/format';
+import type { Doc, Drawing, Layer, PathShape, PixelDrawing, Shape, StrokeShape, SubPath } from '../core/format';
 import { isPosed, poseAt, type PosedInstance } from '../core/symbols';
-import { strokeOutline } from '../core/render';
+import { drawMeshed, strokeOutline } from '../core/render';
+import { encodePng } from '../io/png';
 import { flattenTilemap } from '../tiles/model';
+import { cameraViewAt, layerCameraMatrix } from '../core/camera';
+
+/** A number with at most 4 decimals (matrices need more than 2). */
+export function n4(v: number): string {
+  const r = Math.round(v * 10000) / 10000;
+  return Object.is(r, -0) ? '0' : String(r);
+}
 
 export interface SvgOptions {
   /** Output size as a multiple of the document size (the drawing itself always keeps its own units). */
@@ -12,7 +20,7 @@ export interface SvgOptions {
   transparent?: boolean;
 }
 
-const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+export const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 /** A number with at most 2 decimals and no trailing zeros. */
 export function n2(v: number): string {
@@ -32,7 +40,7 @@ export function splitColor(c: string): { color: string; alpha: number } {
 
 const op = (v: number) => String(Math.round(v * 1000) / 1000);
 
-function paint(attr: 'fill' | 'stroke', color: string, opacity: number): string {
+export function paint(attr: 'fill' | 'stroke', color: string, opacity: number): string {
   const { color: c, alpha } = splitColor(color);
   const o = alpha * opacity;
   return ` ${attr}="${esc(c)}"` + (o < 1 ? ` ${attr}-opacity="${op(o)}"` : '');
@@ -75,7 +83,7 @@ export function subPathsToPathData(paths: SubPath[]): string {
   return d;
 }
 
-function shapeToSvg(s: Shape): string {
+export function shapeToSvg(s: Shape): string {
   if (s.type === 'instance') return isPosed(s) ? instanceToSvg(s) : '';
   if (s.type === 'stroke') {
     const d = strokeToPathData(s);
@@ -93,6 +101,12 @@ function shapeToSvg(s: Shape): string {
 function instanceToSvg(s: PosedInstance): string {
   const inner: string[] = [];
   for (const l of s.posed.layers) {
+    if (l.mesh) {
+      // A layer bent by bones has no vector equivalent, so it goes in as a picture.
+      const img = meshImage(l.drawing, l.pixelSize, l.mesh);
+      if (img) inner.push(l.opacity < 1 ? `<g opacity="${op(l.opacity)}">${img}</g>` : img);
+      continue;
+    }
     const parts = l.drawing.kind === 'pixel' ? pixelRects(l.drawing, l.pixelSize) : l.drawing.kind === 'vector' ? l.drawing.shapes.map(shapeToSvg).filter(Boolean) : [];
     if (!parts.length) continue;
     inner.push(l.opacity < 1 ? `<g opacity="${op(l.opacity)}">${parts.join('')}</g>` : parts.join(''));
@@ -100,6 +114,31 @@ function instanceToSvg(s: PosedInstance): string {
   if (!inner.length || s.opacity <= 0) return '';
   const m = s.posed.matrix.map((v) => n2(v)).join(' ');
   return `<g transform="matrix(${m})"${s.opacity < 1 ? ` opacity="${op(s.opacity)}"` : ''}>${inner.join('')}</g>`;
+}
+
+function meshImage(d: Parameters<typeof drawMeshed>[1], pixelSize: number, mesh: Parameters<typeof drawMeshed>[3]): string {
+  if (typeof OffscreenCanvas === 'undefined' || !mesh.dst.length) return '';
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (let i = 0; i < mesh.dst.length; i += 2) {
+    x0 = Math.min(x0, mesh.dst[i]);
+    y0 = Math.min(y0, mesh.dst[i + 1]);
+    x1 = Math.max(x1, mesh.dst[i]);
+    y1 = Math.max(y1, mesh.dst[i + 1]);
+  }
+  const k = 2;
+  const w = Math.max(1, Math.ceil((x1 - x0) * k));
+  const h = Math.max(1, Math.ceil((y1 - y0) * k));
+  if (w * h > 16_000_000) return '';
+  const c = new OffscreenCanvas(w, h);
+  const g = c.getContext('2d');
+  if (!g) return '';
+  g.setTransform(k, 0, 0, k, -x0 * k, -y0 * k);
+  drawMeshed(g, d, pixelSize, mesh);
+  const px = g.getImageData(0, 0, w, h).data;
+  const png = encodePng({ width: w, height: h, pixels: px });
+  let bin = '';
+  for (let i = 0; i < png.length; i += 0x8000) bin += String.fromCharCode(...png.subarray(i, i + 0x8000));
+  return `<image x="${n2(x0)}" y="${n2(y0)}" width="${n2(w / k)}" height="${n2(h / k)}" href="data:image/png;base64,${btoa(bin)}"/>`;
 }
 
 function pathShapeToSvg(s: PathShape): string {
@@ -159,13 +198,27 @@ export function pixelRects(d: PixelDrawing, size: number): string[] {
   return out;
 }
 
+/** The SVG elements for a drawing as a layer shows it (pixel and tile drawings as rectangles). */
+export function drawingToSvg(doc: Doc, layer: Layer, d: Drawing, frame: number): string[] {
+  if (d.kind === 'pixel') return pixelRects(d, layer.kind === 'pixel' ? layer.pixelSize : 1);
+  if (d.kind === 'tilemap') return pixelRects(flattenTilemap(doc, d, frame), layer.kind === 'tilemap' ? layer.pixelSize : 1);
+  if (d.kind === 'vector') return d.shapes.map(shapeToSvg).filter(Boolean);
+  return [];
+}
+
+/** A layer name made safe as an id, unique among `used`. */
+export function layerId(name: string, used: Set<string>): string {
+  let id = name.trim().replace(/[^A-Za-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '') || 'layer';
+  if (/^[0-9-]/.test(id)) id = 'layer-' + id;
+  while (used.has(id)) id += '_';
+  used.add(id);
+  return id;
+}
+
 function layerToSvg(doc: Doc, layer: Layer, frame: number, id: string): string {
   const d = poseAt(doc, layer, frame);
-  if (!d) return '';
-  let inner: string[];
-  if (d.kind === 'pixel') inner = pixelRects(d, layer.kind === 'pixel' ? layer.pixelSize : 1);
-  else if (d.kind === 'tilemap') inner = pixelRects(flattenTilemap(doc, d, frame), layer.kind === 'tilemap' ? layer.pixelSize : 1);
-  else inner = d.shapes.map(shapeToSvg).filter(Boolean);
+  if (!d || d.kind === 'camera') return '';
+  const inner = drawingToSvg(doc, layer, d, frame);
   if (!inner.length) return '';
   const attrs = `id="${esc(id)}"` + (layer.opacity < 1 ? ` opacity="${op(layer.opacity)}"` : '') + (d.kind !== 'vector' ? ' shape-rendering="crispEdges"' : '') + (layer.blend && layer.blend !== 'normal' ? ` style="mix-blend-mode:${layer.blend === 'add' ? 'plus-lighter' : layer.blend}"` : '');
   return `<g ${attrs}>\n${inner.join('\n')}\n</g>`;
@@ -178,15 +231,16 @@ export function frameToSvg(doc: Doc, frame: number, opts: SvgOptions = {}): stri
   const lines = [`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${n2(doc.width)} ${n2(doc.height)}">`];
   if (doc.background && !opts.transparent) lines.push(`<rect width="${n2(doc.width)}" height="${n2(doc.height)}"${paint('fill', doc.background, 1)}/>`);
   const used = new Set<string>();
+  const view = cameraViewAt(doc, frame);
   for (const layer of doc.layers) {
     // Mask layers are never shown. Effects, clipping and masks aren't in SVG files yet (see docs/effects.md).
     if (!layer.visible || layer.reference || layer.mask || (layer.folder && doc.folders?.[layer.folder]?.visible === false)) continue;
-    let id = layer.name.trim().replace(/[^A-Za-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '') || 'layer';
-    if (/^[0-9-]/.test(id)) id = 'layer-' + id;
-    while (used.has(id)) id += '_';
-    used.add(id);
+    const id = layerId(layer.name, used);
     const g = layerToSvg(doc, layer, frame, id);
-    if (g) lines.push(g);
+    if (!g) continue;
+    // Seen through the camera, like every other export.
+    const m = layerCameraMatrix(doc, layer, view);
+    lines.push(m ? `<g transform="matrix(${m.map((v) => n4(v)).join(' ')})">\n${g}\n</g>` : g);
   }
   lines.push('</svg>');
   return lines.join('\n') + '\n';

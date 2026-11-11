@@ -25,6 +25,8 @@ Press **Ctrl+E** (**Cmd+E** on a Mac), pick a format card, tweak the options if 
 | Vector art that stays sharp at any size | **SVG drawing** |
 | Use it in a game or on a web page | **Sprite sheet** |
 | Put it on an Interactives page and control it there | **Interactives** |
+| An app or website, as a small vector animation | **Lottie animation** |
+| A web page, one file that plays by itself | **Moving SVG** |
 
 ## Options everyone shares
 
@@ -38,7 +40,7 @@ Press **Ctrl+E** (**Cmd+E** on a Mac), pick a format card, tweak the options if 
 
 Every export is drawn exactly the way you see it on the canvas, at exact frame times, so a slow computer makes the same file as a fast one, just a little later.
 
-More: [Video, GIF and APNG](help:export-video-gif-apng), [Sprite sheets](help:export-sprite-sheets), [SVG](help:export-svg), [Interactives](help:export-interactives).`,
+More: [Video, GIF and APNG](help:export-video-gif-apng), [Sprite sheets](help:export-sprite-sheets), [SVG](help:export-svg), [Lottie](help:export-lottie), [Moving SVG](help:export-svg-animated), [Interactives](help:export-interactives).`,
   },
   {
     id: 'export-video-gif-apng',
@@ -317,6 +319,58 @@ The second class picks the clip. Loops keep going; clips that don't loop stop on
 
 - SVG is a single still. To get more frames, use [PNG sequence](help:exporting) or one SVG per frame by moving the playhead and exporting again.
 - Brush strokes are exported as their finished outline, so they look right but won't be editable as brush strokes in other programs.`,
+  },
+  {
+    id: 'export-lottie',
+    title: 'Lottie animation (JSON)',
+    section: 'Exporting',
+    media: 'export-lottie.png',
+    summary: 'Export a small vector animation that apps and websites play with Lottie, sharp at any size.',
+    keywords: ['lottie', 'bodymovin', 'json', 'lottie-web', 'after effects', 'app animation', 'vector animation', 'lottiefiles'],
+    body: `**Lottie animation** saves your animation as a Lottie file (a \`.json\`). Apps, websites and design tools play Lottie files with the free Lottie players (lottie-web on the web, Lottie for iOS and Android). Shapes stay shapes, so it plays sharp at any size and the file is small.
+
+## What carries over
+
+- **Drawings** become shapes: fills, outlines and line widths as they are. Brush strokes become their finished outline.
+- **Frame by frame:** each drawing shows for exactly the frames it's held.
+- **Symbols** become Lottie *precomps*, so a symbol used ten times is stored once. Each copy keeps its place, size, turn, slant and fade, and plays its own animation (loop, play once or one frame).
+- **In-betweens (tweens):** a symbol's moves become keyframes with their easing, so the file stays small. *Steady*, *Gentle start*, *Gentle stop*, *Gentle start and stop*, *Wind up*, *Overshoot* and your own curves are written exactly. *Springy*, *Bouncy* and paths to follow get a key on every frame.
+- **Morphs (shape tweens)** become path keyframes, one per frame, so the outline changes smoothly.
+- **The camera** pans, zooms and turns, and layers with depth move at their own speed.
+- **Pixel and tile layers** become pictures inside the file, made big enough to stay crisp.
+- **Clips** become named markers, so a player can play one clip by name. Markers come along too.
+
+## Good to know
+
+- **Colour wash (tint)** on symbol copies isn't carried. Lottie has no plain equivalent.
+- A faded layer fades each shape on its own, so where shapes on that layer overlap they can look a touch darker than in Frameling.
+- Size doesn't matter here: a Lottie player scales the animation to fit wherever it's shown.
+- Frameling checks every Lottie it makes against its own drawing of the same frames (the export test renders them with lottie-web), so what you see is what plays.`,
+  },
+  {
+    id: 'export-svg-animated',
+    title: 'Moving SVG (animated SVG)',
+    section: 'Exporting',
+    summary: 'Export one SVG file that plays your animation by itself in any browser, even inside an image tag.',
+    keywords: ['animated svg', 'svg animation', 'css animation', 'smil', 'web', 'img', 'vector animation'],
+    body: `**Moving SVG** saves the whole animation as one SVG file that plays by itself. Put it on a web page like any picture (an \`<img>\` tag works), and it stays sharp at any size.
+
+## How it works
+
+Every different drawing is written once and shown only on its frames. Symbol copies that glide, grow or turn are written once and moved frame by frame. The camera moves each layer the same way.
+
+It uses **CSS animations** inside the SVG rather than SVG's own animation tags (SMIL). Both play in Chrome, Edge, Firefox and Safari, also inside an image tag, but CSS can move a symbol copy with one transform (SMIL can't turn, slant and resize together in the right order), web pages can pause it or jump to a frame with the standard animation controls, and SMIL has been close to being dropped by Chrome before.
+
+## Options
+
+- **Loop forever:** play round and round, or once and stop on the last frame.
+- **Transparent background** leaves the stage colour out.
+
+## Good to know
+
+- **Morphs (shape tweens)** are a drawing per frame, so long morphs make bigger files.
+- **Colour wash (tint)** on symbol copies is left out, as in the still [SVG](help:export-svg).
+- Pixel layers become rectangles, like the still SVG, so a lot of pixel art makes a big file. A [video or animated PNG](help:export-video-gif-apng) suits that better.`,
   },
   {
     id: 'export-interactives',
