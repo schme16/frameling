@@ -358,6 +358,7 @@ The second class picks the clip. Loops keep going; clips that don't loop stop on
 - Each layer is its own group named after the layer, so it's easy to find in other programs. Layer opacity is kept. Hidden layers are left out.
 - **Blend modes, clipping, masks and colour wash** come across as SVG's own blend modes, masks and filters.
 - **Effects** become SVG filters: Soften, Shadow, Colour adjust, Glow and Outline. Pixelate has no SVG version, so it's left out (the Export window says so first).
+- **Inside symbols** the same goes for each symbol's own layers: their blend modes, effects, masks and clipping stay with every copy.
 - **Size** only changes how large the picture is when it opens. You can scale it freely later.
 
 ## Good to know
@@ -387,7 +388,7 @@ The second class picks the clip. Loops keep going; clips that don't loop stop on
 - **Text** becomes letter shapes, traced from the font you picked, so it looks the same in every player and no font files are needed. Text animators move each letter.
 - **Particles** become one small shape per particle, moving frame by frame. Particles that draw a symbol use the symbol.
 - **Colour wash (tint)** on a symbol copy recolours that copy's shapes, so it looks the same everywhere.
-- **Blend modes** stay blend modes, and **masks** and **clipping** become Lottie *track mattes*.
+- **Blend modes** stay blend modes, and **masks** and **clipping** become Lottie *track mattes*, on the stage and inside symbols alike.
 - **Effects:** Soften and Shadow become Lottie's own Gaussian blur and drop shadow. Glow, Colour adjust, Outline and Pixelate have no Lottie version, so those layers become pictures (the Export window lists them before you export).
 
 ## Good to know
