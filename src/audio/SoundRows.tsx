@@ -11,6 +11,8 @@ import { decodeClip, onDecoded, readyBuffer } from './decode';
 import { moveClip, removeClip, renameClip, setMuted, setVolume } from './ops';
 import { columnPeaks, displayGain, peaksFor } from './peaks';
 import { pickSound, soundUi } from './state';
+import { dock, resizeZone, zoneOf } from '../ui/dock';
+import { ROW_H } from '../timeline/Layers';
 
 /** Height of one sound row, on the layer side and on the grid side (they must match). */
 export const SOUND_H = 36;
@@ -206,14 +208,39 @@ const SideRow = memo(function SideRow({ clip, picked }: { clip: AudioClip; picke
   );
 });
 
+/** The timeline's header (ruler, markers, clips) and a scrollbar, which sit above and below the rows. */
+const TIMELINE_CHROME_H = 26 + 20 + 22 + 14;
+
+/**
+ * How tall the timeline panel needs to be so every sound row and at least two layer rows show, or null when it
+ * already is. `bodyH` is the scrolling area's height now, `zoneH` the bottom zone's.
+ */
+export function timelineRoomFor(sounds: number, layers: number, bodyH: number, zoneH: number): number | null {
+  const want = TIMELINE_CHROME_H + sounds * SOUND_H + Math.min(2, Math.max(1, layers)) * ROW_H;
+  return bodyH >= want ? null : zoneH + (want - bodyH);
+}
+
 /** The sound rows on the layer side, lined up with `SoundMain`. */
 export function SoundSide() {
   const audio = useStore((s) => s.doc.audio);
   const inSymbol = useStore((s) => !!s.doc.editing?.length);
   const picked = soundUi.use((s) => s.picked);
+  const ref = useRef<HTMLDivElement>(null);
+  const count = audio?.length ?? 0;
+  const docId = useStore((s) => s.doc.id);
+  // A sound row is pinned to the bottom of the timeline. When a sound comes in (or a file with sound opens) and the
+  // timeline is too short to show it and some layers too, the timeline grows to fit.
+  useEffect(() => {
+    if (!count || inSymbol) return;
+    const body = ref.current?.closest('.tl-body') as HTMLElement | null;
+    const zone = dock.get().layout.zones.bottom;
+    if (!body || zoneOf('timeline') !== 'bottom' || zone.collapsed) return;
+    const next = timelineRoomFor(count, store().get().doc.layers.length, body.clientHeight, zone.size);
+    if (next !== null) resizeZone('bottom', next);
+  }, [count, inSymbol, docId]);
   if (!audio?.length || inSymbol) return null;
   return (
-    <div className="au-side" role="list" aria-label="Sounds">
+    <div ref={ref} className="au-side" role="list" aria-label="Sounds">
       {audio.map((c) => (
         <SideRow key={c.id} clip={c} picked={picked === c.id} />
       ))}

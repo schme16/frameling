@@ -118,10 +118,10 @@ export function shapePath(s: FillShape | PathShape): Path2D {
   return p;
 }
 
-export function drawShape(g: Ctx2D, s: Shape): void {
+export function drawShape(g: Ctx2D, s: Shape, at?: DrawContext): void {
   if (s.type === 'instance') {
     // Only posed instances can be drawn (poseAt gives them their symbol's drawings for the frame).
-    if (isPosed(s)) drawInstance(g, s);
+    if (isPosed(s)) drawInstance(g, s, at);
     return;
   }
   if (s.type === 'text') return drawText(g, s);
@@ -173,7 +173,7 @@ export interface DrawContext {
 /** Draws one drawing (no layer opacity). Pixel drawings need the layer's pixel size, tilemaps the document too. */
 export function drawDrawing(g: Ctx2D, d: Drawing, pixelSize = 1, at?: DrawContext): void {
   if (d.kind === 'vector') {
-    for (const s of d.shapes) drawShape(g, s);
+    for (const s of d.shapes) drawShape(g, s, at);
   } else if (d.kind === 'tilemap') {
     if (at) drawTilemap(g, at.doc, d, pixelSize, at.frame, pixelCanvas);
   } else if (d.kind === 'pixel') {
@@ -242,17 +242,21 @@ function withGroupBuffer(g: Ctx2D, alpha: number, tint: { color: Color; amount: 
   g.restore();
 }
 
-function drawPosedLayer(g: Ctx2D, l: PosedLayer): void {
-  const draw = (t: Ctx2D) => (l.mesh ? drawMeshed(t, l.drawing, l.pixelSize, l.mesh) : drawDrawing(t, l.drawing, l.pixelSize));
+function drawPosedLayer(g: Ctx2D, l: PosedLayer, at?: DrawContext): void {
+  // Inside a symbol, tilemaps animate on the symbol's own frame.
+  const inner = at && l.frame !== undefined ? { doc: at.doc, frame: l.frame } : at;
+  const draw = (t: Ctx2D) => (l.mesh ? drawMeshed(t, l.drawing, l.pixelSize, l.mesh) : drawDrawing(t, l.drawing, l.pixelSize, inner));
   if (l.opacity >= 1) draw(g);
   else if (l.opacity > 0) withGroupBuffer(g, l.opacity, undefined, draw);
 }
 
 // ---------------------------------------------------------------- bent (mesh) drawing
 
-// A drawing's art at rest as a picture, per drawing and scale, for bending through a mesh.
+// A drawing's art at rest as a picture, per drawing, scale and mesh, for bending through a mesh. The picture is cut
+// to the mesh's rest points, so moving or adding a mesh point needs a new one.
 interface MeshTexture {
   k: number;
+  src: number[];
   x: number;
   y: number;
   canvas: OffscreenCanvas | HTMLCanvasElement;
@@ -262,11 +266,11 @@ const meshTextures = new WeakMap<Drawing, MeshTexture[]>();
 export const meshStats = { textures: 0 };
 
 function meshTexture(d: Drawing, pixelSize: number, src: number[], scale: number): MeshTexture {
-  if (d.kind === 'pixel') return { k: 1 / pixelSize, x: 0, y: 0, canvas: pixelCanvas(d) };
+  if (d.kind === 'pixel') return { k: 1 / pixelSize, src, x: 0, y: 0, canvas: pixelCanvas(d) };
   // Scales snap to powers of two so zooming doesn't redraw the picture every step.
   const k = Math.pow(2, Math.max(-2, Math.min(3, Math.ceil(Math.log2(Math.max(0.01, scale))))));
   const list = meshTextures.get(d) ?? [];
-  const hit = list.find((t) => t.k === k);
+  const hit = list.find((t) => t.k === k && t.src === src);
   if (hit) return hit;
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
   for (let i = 0; i < src.length; i += 2) {
@@ -282,7 +286,7 @@ function meshTexture(d: Drawing, pixelSize: number, src: number[], scale: number
   const tg = canvas.getContext('2d') as Ctx2D;
   tg.setTransform(k, 0, 0, k, (pad - x0 * k), (pad - y0 * k));
   drawDrawing(tg, d, pixelSize);
-  const t = { k, x: x0 - pad / k, y: y0 - pad / k, canvas };
+  const t = { k, src, x: x0 - pad / k, y: y0 - pad / k, canvas };
   list.push(t);
   if (list.length > 3) list.shift();
   meshTextures.set(d, list);
@@ -351,13 +355,13 @@ function affineOf(s: number[], t: number[]): number[] | null {
 }
 
 /** Draws a posed symbol instance: its symbol's layers under its matrix, faded and tinted as a whole. */
-export function drawInstance(g: Ctx2D, s: PosedInstance): void {
+export function drawInstance(g: Ctx2D, s: PosedInstance, at?: DrawContext): void {
   if (s.opacity <= 0 || !s.posed.layers.length) return;
   const m = s.posed.matrix;
   const draw = (t: Ctx2D) => {
     t.save();
     t.transform(m[0], m[1], m[2], m[3], m[4], m[5]);
-    for (const l of s.posed.layers) drawPosedLayer(t, l);
+    for (const l of s.posed.layers) drawPosedLayer(t, l, at);
     t.restore();
   };
   if (s.opacity >= 1 && !(s.tint && s.tint.amount > 0)) draw(g);

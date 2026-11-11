@@ -50,7 +50,8 @@ When a layer is in a [folder](help:layer-folders), the panel has **Layer** and *
 ## Good to know
 
 - Every export (video, GIF, PNG, sprite sheets) shows effects exactly like the canvas. SVG files keep [blend modes](help:blend-modes) but not effects yet.
-- Effects are worked out once per drawing and remembered, so playback stays smooth.`,
+- Effects are worked out once per drawing and remembered, so playback stays smooth.
+- Inside a [symbol](help:symbols), layers keep only their see-through setting: their effects, blend modes, masks and clipping show while you're drawing inside it, but not where the symbol is placed. To give a symbol a glow or a shadow, put the effect on the layer the symbol sits on.`,
   },
   {
     id: 'blend-modes',

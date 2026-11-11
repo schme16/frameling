@@ -13,12 +13,14 @@
  *   between frames. Their own animation is the same picture switching inside them.
  * - Shape tweens are a picture per frame.
  * - The camera is a transform on each layer, again a key per frame when it moves.
- * Colour wash (tint) on symbol copies isn't in SVG, as with the still SVG.
+ * - Blend modes, opacity, effects, clipping, masks and tint come from svg-look.ts, as in the still SVG.
  */
 import type { Cel, Doc, Drawing, InstanceShape, Layer } from '../core/format';
 import { isInstance, isPosed, poseAt, symbolContent, symbolFrame, type Mat, type PosedInstance } from '../core/symbols';
 import { cameraViewAt, layerCameraMatrix } from '../core/camera';
-import { drawingToSvg, esc, layerId, n2, n4, paint, shapeToSvg } from './svg';
+import { defsBlock, drawingToSvg, esc, layerId, n2, n4, paint, shapeToSvg } from './svg';
+import { withSprites } from './svg-extra';
+import { composeSvg, tintAttr } from './svg-look';
 
 export interface AnimatedSvgOptions {
   range?: { start: number; end: number };
@@ -107,7 +109,7 @@ const cls = (...names: string[]) => {
 function instanceContent(s: PosedInstance): string {
   const parts: string[] = [];
   for (const l of s.posed.layers) {
-    const inner = l.drawing.kind === 'vector' ? l.drawing.shapes.map(shapeToSvg).filter(Boolean) : [];
+    const inner = l.drawing.kind === 'vector' ? l.drawing.shapes.map((x) => shapeToSvg(x)).filter(Boolean) : [];
     if (!inner.length && l.drawing.kind !== 'vector') {
       // Pixel art inside a symbol: written through the still-SVG instance writer.
       const whole = shapeToSvg({ ...s, opacity: 1, posed: { matrix: [1, 0, 0, 1, 0, 0], layers: [l] } } as PosedInstance);
@@ -165,28 +167,28 @@ function celSvg(w: Writer, doc: Doc, layer: Layer, cel: Cel, frames: number[], d
       if (!body) continue;
       inner.push(byInner.size === 1 ? body : `<g${cls(w.shownOn(idx.map((i) => frames[i])))}>${body}</g>`);
     }
-    if (inner.length) parts.push(`<g${cls(move.cls)}${move.still}>${inner.join('')}</g>`);
+    if (inner.length) parts.push(`<g${cls(move.cls)}${move.still}${tintAttr(s0.tint)}>${inner.join('')}</g>`);
   });
   out.push(`<g${cls(w.shownOn(frames))}>${parts.join('')}</g>`);
   return out;
 }
 
-/** The whole animation as one animated SVG. */
-export function animatedSvg(doc: Doc, opts: AnimatedSvgOptions = {}): string {
+/** The whole animation as one animated SVG, and plain words about anything SVG couldn't keep. */
+export function animatedSvgExport(doc: Doc, opts: AnimatedSvgOptions = {}): { svg: string; notes: string[] } {
   const from = Math.max(0, opts.range?.start ?? 0);
   const to = Math.min(doc.length - 1, opts.range?.end ?? doc.length - 1);
   const count = to - from + 1;
-  const w = new Writer(count, count / doc.fps, opts.loop !== false);
+  const loop = opts.loop !== false;
+  const w = new Writer(count, count / doc.fps, loop);
   const scale = opts.scale ?? 1;
   const W = Math.max(1, Math.round(doc.width * scale));
   const H = Math.max(1, Math.round(doc.height * scale));
-  const body: string[] = [];
-  if (doc.background && !opts.transparent) body.push(`<rect width="${n2(doc.width)}" height="${n2(doc.height)}"${paint('fill', doc.background, 1)}/>`);
   const used = new Set<string>();
   const views = Array.from({ length: count }, (_, i) => cameraViewAt(doc, from + i));
-  for (const layer of doc.layers) {
-    // Mask layers are never shown; effects, blend modes, clipping and masks aren't carried (see docs/effects.md).
-    if (!layer.visible || layer.reference || layer.kind === 'camera' || layer.mask || (layer.folder && doc.folders?.[layer.folder]?.visible === false)) continue;
+  const notes = new Set<string>();
+  const defs: string[] = [];
+  const allFrames = Array.from({ length: count }, (_, i) => from + i);
+  const body = (layer: Layer): string => {
     const parts: string[] = [];
     for (const cel of layer.cels) {
       const a = Math.max(from, cel.start);
@@ -196,17 +198,26 @@ export function animatedSvg(doc: Doc, opts: AnimatedSvgOptions = {}): string {
       for (let f = a; f <= b; f++) docFrames.push(f);
       parts.push(...celSvg(w, doc, layer, cel, docFrames.map((f) => f - from), docFrames));
     }
-    if (!parts.length) continue;
+    if (!parts.length) return '';
     const id = layerId(layer.name, used);
-    let g = `<g id="${esc(id)}"${layer.opacity < 1 ? ` opacity="${op(layer.opacity)}"` : ''}${layer.kind !== 'vector' ? ' shape-rendering="crispEdges"' : ''}>\n${parts.join('\n')}\n</g>`;
+    let g = `<g id="${esc(id)}"${layer.kind !== 'vector' ? ' shape-rendering="crispEdges"' : ''}>\n${parts.join('\n')}\n</g>`;
     const mats = views.map((v) => layerCameraMatrix(doc, layer, v) ?? ([1, 0, 0, 1, 0, 0] as Mat));
     if (mats.some((m) => matStr(m) !== 'matrix(1,0,0,1,0,0)')) {
-      const frames = mats.map((_, i) => i);
-      const move = w.moving(frames, mats, mats.map(() => 1));
+      const move = w.moving(allFrames.map((_, i) => i), mats, mats.map(() => 1));
       g = `<g${cls(move.cls)}${move.still}>\n${g}\n</g>`;
     }
-    body.push(g);
-  }
+    return g;
+  };
+  const { value: content, defs: sprites } = withSprites(() => composeSvg({ doc, frames: allFrames, duration: count / doc.fps, loop, defs, notes, body }));
+  const out: string[] = [];
+  if (doc.background && !opts.transparent) out.push(`<rect width="${n2(doc.width)}" height="${n2(doc.height)}"${paint('fill', doc.background, 1)}/>`);
+  if (content) out.push(content);
   const style = w.styles.length ? `<style>\n${w.styles.join('\n')}\n</style>\n` : '';
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${n2(doc.width)} ${n2(doc.height)}">\n${style}${body.join('\n')}\n</svg>\n`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${n2(doc.width)} ${n2(doc.height)}">\n${style}${defsBlock([...defs, ...sprites], content)}${out.join('\n')}\n</svg>\n`;
+  return { svg, notes: [...notes] };
+}
+
+/** The whole animation as one animated SVG. */
+export function animatedSvg(doc: Doc, opts: AnimatedSvgOptions = {}): string {
+  return animatedSvgExport(doc, opts).svg;
 }

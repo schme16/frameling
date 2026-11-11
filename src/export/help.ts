@@ -38,6 +38,10 @@ Press **Ctrl+E** (**Cmd+E** on a Mac), pick a format card, tweak the options if 
 - **Size:** how many times bigger than your drawing. Pixel art only offers whole numbers, so every pixel stays a crisp square.
 - **Transparent background:** leave the background see-through, for formats that can do that. If a format can't, the box is greyed out and says why.
 
+## What carries over
+
+Under the options, **What carries over** says in a line what the picked format keeps. Videos, GIFs, PNGs and sprite sheets keep everything, since every frame is a finished picture. Vector and layered formats (SVG, Lottie, PDF, Photoshop) can't do quite everything, so if your drawing uses something one of them can't keep as it is, the note says what will become a picture or be left out, before you export.
+
 ## Quick repeat
 
 **Ctrl+Shift+E** exports again with the same settings as last time, without asking questions (it still asks where to save).
@@ -54,7 +58,7 @@ More: [Video, GIF and APNG](help:export-video-gif-apng), [Sprite sheets](help:ex
     keywords: ['mp4', 'webm', 'gif', 'apng', 'video', 'loop', 'dither', 'transparent', 'h264', 'vp9', 'av1', 'codec'],
     body: `## MP4 video
 
-Plays almost everywhere: phones, social media, slides. It can't have a see-through background, so your drawing's background colour is used (white if there isn't one). Videos need an even number of pixels, so a drawing with an odd size gets one extra row or column of background.
+Plays almost everywhere: phones, social media, slides. It can't have a see-through background, so your drawing's background colour is used (white if there isn't one). Videos need an even number of pixels, so a drawing with an odd size gets one extra row or column of background. If your animation has sound, see [Sound](help:sound) for how it plays on Apple devices.
 
 ## WebM video
 
@@ -352,6 +356,8 @@ The second class picks the clip. Loops keep going; clips that don't loop stop on
 - **Vector layers** become real paths: every brush stroke becomes one filled shape, and shapes keep their curves, fills and outlines.
 - **Pixel layers** become small rectangles: one for each run of pixels in the same colour. Nothing is lost, every pixel is still there, but a big pixel drawing makes a big file.
 - Each layer is its own group named after the layer, so it's easy to find in other programs. Layer opacity is kept. Hidden layers are left out.
+- **Blend modes, clipping, masks and colour wash** come across as SVG's own blend modes, masks and filters.
+- **Effects** become SVG filters: Soften, Shadow, Colour adjust, Glow and Outline. Pixelate has no SVG version, so it's left out (the Export window says so first).
 - **Size** only changes how large the picture is when it opens. You can scale it freely later.
 
 ## Good to know
@@ -378,10 +384,15 @@ The second class picks the clip. Loops keep going; clips that don't loop stop on
 - **The camera** pans, zooms and turns, and layers with depth move at their own speed.
 - **Pixel and tile layers** become pictures inside the file, made big enough to stay crisp.
 - **Clips** become named markers, so a player can play one clip by name. Markers come along too.
+- **Text** becomes letter shapes, traced from the font you picked, so it looks the same in every player and no font files are needed. Text animators move each letter.
+- **Particles** become one small shape per particle, moving frame by frame. Particles that draw a symbol use the symbol.
+- **Colour wash (tint)** on a symbol copy recolours that copy's shapes, so it looks the same everywhere.
+- **Blend modes** stay blend modes, and **masks** and **clipping** become Lottie *track mattes*.
+- **Effects:** Soften and Shadow become Lottie's own Gaussian blur and drop shadow. Glow, Colour adjust, Outline and Pixelate have no Lottie version, so those layers become pictures (the Export window lists them before you export).
 
 ## Good to know
 
-- **Colour wash (tint)** on symbol copies isn't carried. Lottie has no plain equivalent.
+- lottie-web's *canvas* player leaves effects out (its SVG player, the default, shows them, as do the iOS and Android players).
 - A faded layer fades each shape on its own, so where shapes on that layer overlap they can look a touch darker than in Frameling.
 - Size doesn't matter here: a Lottie player scales the animation to fit wherever it's shown.
 - Frameling checks every Lottie it makes against its own drawing of the same frames (the export test renders them with lottie-web), so what you see is what plays.`,
@@ -408,7 +419,8 @@ It uses **CSS animations** inside the SVG rather than SVG's own animation tags (
 ## Good to know
 
 - **Morphs (shape tweens)** are a drawing per frame, so long morphs make bigger files.
-- **Colour wash (tint)** on symbol copies is left out, as in the still [SVG](help:export-svg).
+- **Blend modes, masks, clipping, colour wash and effects** carry over as in the still [SVG](help:export-svg). Effects that change over time switch once per frame. Pixelate is left out.
+- Particles that draw a symbol write the symbol once and place it for every particle.
 - Pixel layers become rectangles, like the still SVG, so a lot of pixel art makes a big file. A [video or animated PNG](help:export-video-gif-apng) suits that better.`,
   },
   {

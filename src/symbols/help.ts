@@ -81,7 +81,12 @@ In the timeline, in-betweens show as a purple band with an arrow from one key to
 
 What moves: position, size, turn, slant, see-through and colour wash. Choose how it speeds up and slows down with [easing](help:easing), or send it along a curve with a [path](help:motion-paths). **Extra spins** adds whole turns on the way.
 
-While you're between two keys, the canvas shows the in-between. Changes you make go to the key where it started. To change where it ends, go to the end key.`,
+While you're between two keys, the canvas and the selection box show the in-between. If you **drag, resize or turn** it there, Frameling asks the first time what you'd like:
+
+- **Make a key here**: this frame becomes a key with your change, and the glide goes through it.
+- **Change the key before**: the same move goes to the key where the glide starts.
+
+Change your answer any time in **Preferences > Behaviour**. The numbers in the Properties panel always belong to the key where the glide starts (it says so while you're between keys).`,
   },
   {
     id: 'easing',
@@ -145,6 +150,8 @@ Already drew the line with the brush or pencil? Select it and choose **Follow th
 4. Press play.
 
 What melts: outlines and holes, fill colours (and see-through), line colours and widths, and brush strokes. Shapes pair up in the order you drew them. A shape with no partner shrinks away (or grows in from nothing), so a different number of pieces still works.
+
+Text and particles come along too. A piece of text moves, turns, resizes and changes colour into the text on the next key, and a particle emitter slides to its new spot and changes its speed, direction, size and colours while it keeps playing (the particles don't restart). Text pairs with text and emitters with emitters, in order, and one with no partner fades out or in. Different words or a different font crossfade, and an emitter keeps the first key's count, lifetime and sprite. The panel says so when that happens.
 
 Shapes stay plain shapes. Symbols on the same key glide like ordinary [in-betweens](help:tweens). Easing, extra spins and paths work as usual.
 

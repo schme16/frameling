@@ -19,8 +19,10 @@ import type { Progress } from './run';
 import { GIF_MAX_FPS } from './gif';
 import { proresSupport, type ProresSupport } from './prores';
 import { LayeredNotes } from './LayeredNotes';
+import { CarryNotes } from './CarryNotes';
 import { DEFAULT_SHEET, engineInfo, FORMATS, formatInfo, normalizeSheet, type EngineId, type ExportSettings, type FormatId } from './types';
 import './export.css';
+import { leaveTileEdit } from '../tiles/tileEdit';
 import { docDpi, formatSize } from '../core/units';
 import { usePrefs } from '../ui/prefs';
 
@@ -321,12 +323,7 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
           )}
 
           {s.format === 'lottie' ? (
-            <p className="ex-note">
-              Shapes stay shapes, so it plays sharp at any size. Symbols, in-betweens, the camera and clips (as markers) come along.{' '}
-              <button type="button" className="ex-link" onClick={() => openHelp('export-lottie')}>
-                What carries over
-              </button>
-            </p>
+            <p className="ex-note">No size to pick: shapes stay shapes, so a Lottie player draws it sharp at whatever size it's shown.</p>
           ) : (
           <fieldset>
             <legend>Size</legend>
@@ -354,6 +351,7 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
           </fieldset>
 
           <LayeredNotes format={s.format} doc={doc} />
+          <CarryNotes format={s.format} doc={doc} />
           {s.format === 'webm' && (
             <fieldset>
               <legend>Video codec</legend>
@@ -502,6 +500,8 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
 }
 
 export function openExportDialog(format?: FormatId): void {
+  // Exports are of the whole animation, so a tile open on the canvas goes back first.
+  leaveTileEdit();
   const initial = startingSettings();
   if (format && format !== initial.format) {
     const { doc } = store().get();
@@ -517,6 +517,7 @@ export function openExportDialog(format?: FormatId): void {
 
 /** Runs the last export again with the same settings, showing progress. Opens the dialog instead when there is no last one. */
 export function exportAgain(): void {
+  leaveTileEdit();
   const last = loadLastSettings();
   if (!last) return openExportDialog();
   mountModal((close) => <ExportDialog close={close} initial={startingSettings()} autoStart />);

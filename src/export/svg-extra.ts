@@ -4,6 +4,23 @@ import { posedParticles } from '../particles/draw';
 import type { Particle } from '../particles/model';
 import { fontFamilyCss, glyphLooks, isAnimatedText } from '../text/model';
 import { isPosedText, textLayout, textMatrix } from '../text/draw';
+import { instanceToSvg } from './svg';
+import { particleSprites } from './sprites';
+
+// Symbol sprites are written once each and placed with <use> while a writer collects them (see withSprites).
+let spriteIds: Map<string, string> | null = null;
+
+/** Runs `make` with symbol particle sprites shared through <use>; their definitions come back with the result. */
+export function withSprites<T>(make: () => T): { value: T; defs: string[] } {
+  const outer = spriteIds;
+  spriteIds = new Map();
+  try {
+    const value = make();
+    return { value, defs: [...spriteIds].map(([body, id]) => `<g id="${id}">${body}</g>`) };
+  } finally {
+    spriteIds = outer;
+  }
+}
 
 const n2 = (v: number) => String(Math.round(v * 100) / 100);
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -39,7 +56,7 @@ export function textToSvg(s: TextShape): string {
   return `<g transform="matrix(${m.map(n2).join(' ')})" ${attrs}${op < 1 ? ` opacity="${n2(op)}"` : ''}>${parts.join('')}</g>`;
 }
 
-/** A particle as an SVG element (symbol sprites come out as dots: SVG export keeps it simple). */
+/** A particle as an SVG element (symbol sprites go through symbolParticlesToSvg). */
 export function particleToSvg(s: ParticlesShape, p: Particle): string {
   const c = color(p.color);
   const a = p.alpha * s.opacity * c.alpha;
@@ -86,8 +103,29 @@ export function particleToSvg(s: ParticlesShape, p: Particle): string {
   }
 }
 
+/** Particles drawing a symbol: the symbol's own drawing, moved, turned and sized per particle. */
+function symbolParticlesToSvg(s: ParticlesShape): string {
+  const parts: string[] = [];
+  for (const sp of particleSprites(s)) {
+    if (!sp.sprite || sp.alpha <= 0) continue;
+    const body = instanceToSvg({ ...sp.sprite, opacity: 1, posed: { ...sp.sprite.posed, matrix: [1, 0, 0, 1, 0, 0] } });
+    if (!body) continue;
+    const tf = ` transform="matrix(${sp.m.map((v) => String(Math.round(v * 10000) / 10000)).join(' ')})"${sp.alpha < 1 ? ` opacity="${n2(sp.alpha)}"` : ''}`;
+    if (spriteIds) {
+      let id = spriteIds.get(body);
+      if (!id) {
+        id = `sprite${spriteIds.size}`;
+        spriteIds.set(body, id);
+      }
+      parts.push(`<use href="#${id}"${tf}/>`);
+    } else parts.push(`<g${tf}>${body}</g>`);
+  }
+  return parts.length ? `<g>${parts.join('')}</g>` : '';
+}
+
 export function particlesToSvg(s: ParticlesShape): string {
   if (s.opacity <= 0) return '';
+  if (s.sprite === 'symbol' && (s as { posedSprites?: unknown[] }).posedSprites?.length) return symbolParticlesToSvg(s);
   const parts = posedParticles(s).map((p) => particleToSvg(s, p)).filter(Boolean);
   return parts.length ? `<g>${parts.join('')}</g>` : '';
 }

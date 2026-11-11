@@ -5,7 +5,8 @@ import { isPosed, poseAt, type PosedInstance } from '../core/symbols';
 import { drawMeshed, strokeOutline } from '../core/render';
 import { encodePng } from '../io/png';
 import { flattenTilemap } from '../tiles/model';
-import { particlesToSvg, textToSvg } from './svg-extra';
+import { particlesToSvg, textToSvg, withSprites } from './svg-extra';
+import { composeSvg, tintAttr, tintDefs } from './svg-look';
 import { cameraViewAt, layerCameraMatrix } from '../core/camera';
 
 /** A number with at most 4 decimals (matrices need more than 2). */
@@ -84,8 +85,8 @@ export function subPathsToPathData(paths: SubPath[]): string {
   return d;
 }
 
-export function shapeToSvg(s: Shape): string {
-  if (s.type === 'instance') return isPosed(s) ? instanceToSvg(s) : '';
+export function shapeToSvg(s: Shape, doc?: Doc): string {
+  if (s.type === 'instance') return isPosed(s) ? instanceToSvg(s, doc) : '';
   if (s.type === 'text') return textToSvg(s);
   if (s.type === 'particles') return particlesToSvg(s);
   if (s.type === 'stroke') {
@@ -99,9 +100,8 @@ export function shapeToSvg(s: Shape): string {
   return pathShapeToSvg(s);
 }
 
-// A posed instance becomes a group with its matrix; its layers nest inside. Tint has no plain SVG equivalent, so
-// it's left out of SVG (video, GIF and sheets show it).
-function instanceToSvg(s: PosedInstance): string {
+// A posed instance becomes a group with its matrix; its layers nest inside. Its tint is a small filter (svg-look.ts).
+export function instanceToSvg(s: PosedInstance, doc?: Doc): string {
   const inner: string[] = [];
   for (const l of s.posed.layers) {
     if (l.mesh) {
@@ -110,13 +110,21 @@ function instanceToSvg(s: PosedInstance): string {
       if (img) inner.push(l.opacity < 1 ? `<g opacity="${op(l.opacity)}">${img}</g>` : img);
       continue;
     }
-    const parts = l.drawing.kind === 'pixel' ? pixelRects(l.drawing, l.pixelSize) : l.drawing.kind === 'vector' ? l.drawing.shapes.map(shapeToSvg).filter(Boolean) : [];
+    const dr = l.drawing;
+    const parts =
+      dr.kind === 'pixel'
+        ? pixelRects(dr, l.pixelSize)
+        : dr.kind === 'vector'
+          ? dr.shapes.map((x) => shapeToSvg(x, doc)).filter(Boolean)
+          : dr.kind === 'tilemap' && doc && l.frame !== undefined
+            ? pixelRects(flattenTilemap(doc, dr, l.frame), l.pixelSize)
+            : [];
     if (!parts.length) continue;
     inner.push(l.opacity < 1 ? `<g opacity="${op(l.opacity)}">${parts.join('')}</g>` : parts.join(''));
   }
   if (!inner.length || s.opacity <= 0) return '';
   const m = s.posed.matrix.map((v) => n2(v)).join(' ');
-  return `<g transform="matrix(${m})"${s.opacity < 1 ? ` opacity="${op(s.opacity)}"` : ''}>${inner.join('')}</g>`;
+  return `<g transform="matrix(${m})"${tintAttr(s.tint)}${s.opacity < 1 ? ` opacity="${op(s.opacity)}"` : ''}>${inner.join('')}</g>`;
 }
 
 function meshImage(d: Parameters<typeof drawMeshed>[1], pixelSize: number, mesh: Parameters<typeof drawMeshed>[3]): string {
@@ -205,7 +213,7 @@ export function pixelRects(d: PixelDrawing, size: number): string[] {
 export function drawingToSvg(doc: Doc, layer: Layer, d: Drawing, frame: number): string[] {
   if (d.kind === 'pixel') return pixelRects(d, layer.kind === 'pixel' ? layer.pixelSize : 1);
   if (d.kind === 'tilemap') return pixelRects(flattenTilemap(doc, d, frame), layer.kind === 'tilemap' ? layer.pixelSize : 1);
-  if (d.kind === 'vector') return d.shapes.map(shapeToSvg).filter(Boolean);
+  if (d.kind === 'vector') return d.shapes.map((x) => shapeToSvg(x, doc)).filter(Boolean);
   return [];
 }
 
@@ -223,28 +231,51 @@ function layerToSvg(doc: Doc, layer: Layer, frame: number, id: string): string {
   if (!d || d.kind === 'camera') return '';
   const inner = drawingToSvg(doc, layer, d, frame);
   if (!inner.length) return '';
-  const attrs = `id="${esc(id)}"` + (layer.opacity < 1 ? ` opacity="${op(layer.opacity)}"` : '') + (d.kind !== 'vector' ? ' shape-rendering="crispEdges"' : '') + (layer.blend && layer.blend !== 'normal' ? ` style="mix-blend-mode:${layer.blend === 'add' ? 'plus-lighter' : layer.blend}"` : '');
-  return `<g ${attrs}>\n${inner.join('\n')}\n</g>`;
+  // Opacity, blend mode and effects go on the groups around it (svg-look.ts).
+  return `<g id="${esc(id)}"${d.kind !== 'vector' ? ' shape-rendering="crispEdges"' : ''}>\n${inner.join('\n')}\n</g>`;
 }
 
-export function frameToSvg(doc: Doc, frame: number, opts: SvgOptions = {}): string {
+/** Definitions (filters, masks, shared sprites) as one <defs>, or nothing. */
+export function defsBlock(defs: string[], body: string): string {
+  const all = [...defs, ...tintDefs(body + defs.join(''))];
+  return all.length ? `<defs>\n${all.join('\n')}\n</defs>\n` : '';
+}
+
+/** One frame as SVG, and plain words about anything SVG couldn't keep. */
+export function frameSvgExport(doc: Doc, frame: number, opts: SvgOptions = {}): { svg: string; notes: string[] } {
   const scale = opts.scale ?? 1;
   const w = Math.max(1, Math.round(doc.width * scale));
   const h = Math.max(1, Math.round(doc.height * scale));
-  const lines = [`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${n2(doc.width)} ${n2(doc.height)}">`];
-  if (doc.background && !opts.transparent) lines.push(`<rect width="${n2(doc.width)}" height="${n2(doc.height)}"${paint('fill', doc.background, 1)}/>`);
   const used = new Set<string>();
   const view = cameraViewAt(doc, frame);
-  for (const layer of doc.layers) {
-    // Mask layers are never shown. Effects, clipping and masks aren't in SVG files yet (see docs/effects.md).
-    if (!layer.visible || layer.reference || layer.mask || (layer.folder && doc.folders?.[layer.folder]?.visible === false)) continue;
-    const id = layerId(layer.name, used);
-    const g = layerToSvg(doc, layer, frame, id);
-    if (!g) continue;
-    // Seen through the camera, like every other export.
-    const m = layerCameraMatrix(doc, layer, view);
-    lines.push(m ? `<g transform="matrix(${m.map((v) => n4(v)).join(' ')})">\n${g}\n</g>` : g);
-  }
+  const notes = new Set<string>();
+  const defs: string[] = [];
+  const { value: body, defs: sprites } = withSprites(() =>
+    composeSvg({
+      doc,
+      frames: [frame],
+      duration: 1 / doc.fps,
+      loop: false,
+      defs,
+      notes,
+      body(layer) {
+        const g = layerToSvg(doc, layer, frame, layerId(layer.name, used));
+        if (!g) return '';
+        // Seen through the camera, like every other export.
+        const m = layerCameraMatrix(doc, layer, view);
+        return m ? `<g transform="matrix(${m.map((v) => n4(v)).join(' ')})">\n${g}\n</g>` : g;
+      },
+    }),
+  );
+  const lines = [`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${n2(doc.width)} ${n2(doc.height)}">`];
+  const d = defsBlock([...defs, ...sprites], body);
+  if (d) lines.push(d.trimEnd());
+  if (doc.background && !opts.transparent) lines.push(`<rect width="${n2(doc.width)}" height="${n2(doc.height)}"${paint('fill', doc.background, 1)}/>`);
+  if (body) lines.push(body);
   lines.push('</svg>');
-  return lines.join('\n') + '\n';
+  return { svg: lines.join('\n') + '\n', notes: [...notes] };
+}
+
+export function frameToSvg(doc: Doc, frame: number, opts: SvgOptions = {}): string {
+  return frameSvgExport(doc, frame, opts).svg;
 }
