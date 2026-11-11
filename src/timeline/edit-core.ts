@@ -372,6 +372,15 @@ export function setLayerOnion(doc: Doc, layerId: Id, onion: boolean): boolean {
   return true;
 }
 
+/** A reference layer shows while drawing and is left out of exports (missing counts as off). */
+export function setLayerReference(doc: Doc, layerId: Id, reference: boolean): boolean {
+  const l = findLayer(doc, layerId);
+  if (!l || (l.reference === true) === reference) return false;
+  if (reference) l.reference = true;
+  else delete l.reference;
+  return true;
+}
+
 export function setLayerOpacity(doc: Doc, layerId: Id, opacity: number): boolean {
   const l = findLayer(doc, layerId);
   const o = Math.max(0, Math.min(1, opacity));

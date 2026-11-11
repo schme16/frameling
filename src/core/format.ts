@@ -55,6 +55,8 @@ export interface BaseLayer {
   opacity: number;
   /** Show this layer's frames around the current one in the onion skin (missing = yes). */
   onion?: boolean;
+  /** A reference layer: shown while drawing, left out of every export (ground lines, sketches, guides). Missing = no. */
+  reference?: boolean;
   /**
    * Cels on this layer, sorted by `start`, never overlapping. A frame with no cel covering it is empty.
    */

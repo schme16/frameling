@@ -75,3 +75,33 @@ export function sampleDoc(): Doc {
   doc.clips.push({ id: 'k1', name: 'idle', start: 0, end: 1, loop: true }, { id: 'k2', name: 'run', start: 2, end: 3, loop: false });
   return doc;
 }
+
+/**
+ * Every frame of a pixel-only document at art size (one art pixel = one pixel), composited in plain JS the way the
+ * canvas does it: visible, non-reference layers bottom first, "source over". Lets sheet tests run without a canvas.
+ */
+export function artFrames(doc: Doc): { width: number; height: number; pixels: Uint8ClampedArray }[] {
+  const layers = doc.layers.filter((l) => l.visible && !l.reference);
+  const p = layers[0].kind === 'pixel' ? layers[0].pixelSize : 1;
+  const w = Math.ceil(doc.width / p);
+  const h = Math.ceil(doc.height / p);
+  const out = [];
+  for (let f = 0; f < doc.length; f++) {
+    const px = new Uint8ClampedArray(w * h * 4);
+    for (const l of layers) {
+      const cel = l.cels.find((c) => f >= c.start && f < c.start + c.length);
+      const d = cel && doc.drawings[cel.drawingId];
+      if (!d || d.kind !== 'pixel') continue;
+      for (let i = 0; i < w * h; i++) {
+        const sa = (d.pixels[i * 4 + 3] / 255) * l.opacity;
+        if (!sa) continue;
+        const da = px[i * 4 + 3] / 255;
+        const oa = sa + da * (1 - sa);
+        for (let k = 0; k < 3; k++) px[i * 4 + k] = Math.round((d.pixels[i * 4 + k] * sa + px[i * 4 + k] * da * (1 - sa)) / oa);
+        px[i * 4 + 3] = Math.round(oa * 255);
+      }
+    }
+    out.push({ width: w, height: h, pixels: px });
+  }
+  return out;
+}

@@ -5,6 +5,8 @@ import { DEFAULT_SHEET, formatInfo, type ExportSettings, type FormatId } from '.
 
 export const MAX_SIDE = 8192;
 export const MAX_FRAMES = 5000;
+/** The biggest sprite sheet, the largest picture most graphics cards and engines will load. */
+export const MAX_SHEET_SIDE = 16384;
 
 export interface FrameRange {
   /** First and last frame, inclusive. */
@@ -29,6 +31,22 @@ export const hasPixelLayers = (doc: Doc): boolean => doc.layers.some((l) => l.ki
 export function scaleChoices(doc: Doc): number[] {
   return hasPixelLayers(doc) ? [1, 2, 3, 4, 6, 8] : [0.25, 0.5, 1, 2, 3, 4];
 }
+
+/**
+ * The scale where one art pixel becomes one pixel (1/8 for a 32 x 32 grid on a 256 stage), or null when the layers
+ * don't share one pixel size. Game engines want this size and scale it up themselves.
+ */
+export function artScale(doc: Doc): number | null {
+  const art = doc.layers.filter((l) => !l.reference);
+  if (!art.length || !art.every((l) => l.kind === 'pixel')) return null;
+  const sizes = new Set(art.map((l) => (l.kind === 'pixel' ? l.pixelSize : 1)));
+  if (sizes.size !== 1) return null;
+  const p = [...sizes][0];
+  return p > 1 ? 1 / p : null;
+}
+
+/** The scale is one of the choices offered for this document. */
+export const scaleAllowed = (doc: Doc, scale: number): boolean => scaleChoices(doc).includes(scale) || scale === artScale(doc);
 
 export function defaultSettings(doc: Doc): ExportSettings {
   const pixel = hasPixelLayers(doc);

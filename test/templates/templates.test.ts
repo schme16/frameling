@@ -198,13 +198,19 @@ describe('templates', () => {
       expect(d.markers.map((m) => m.name)).toEqual(['launch', 'land']);
     });
 
-    it('hero: idle 4, run 6, jump 3 and footsteps on run contacts', () => {
+    it('hero: idle 4, run 6, jump 3, hurt 3, die 7 (last pose held) and footsteps on run contacts', () => {
       const d = doc('hero-sprites');
       const len = (n: string) => {
         const c = d.clips.find((x) => x.name === n)!;
         return c.end - c.start + 1;
       };
-      expect([len('idle'), len('run'), len('jump')]).toEqual([4, 6, 3]);
+      expect([len('idle'), len('run'), len('jump'), len('hurt'), len('die')]).toEqual([4, 6, 3, 3, 7]);
+      expect(d.clips.map((c) => c.loop)).toEqual([true, true, false, false, false]);
+      expect(d.length).toBe(23);
+      // The ground is a reference layer, so exports leave it out.
+      expect(d.layers.find((l) => l.name === 'Ground')?.reference).toBe(true);
+      const pip = d.layers.find((l) => l.name === 'Pip')!;
+      expect(pip.cels[pip.cels.length - 1]).toMatchObject({ start: 19, length: 4 });
       const run = d.clips.find((c) => c.name === 'run')!;
       const steps = d.markers.filter((m) => m.name === 'footstep');
       expect(steps.length).toBeGreaterThanOrEqual(2);

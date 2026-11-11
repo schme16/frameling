@@ -7,8 +7,8 @@ import { encodePng, type RawImage } from '../io/png';
 import { ApngWriter } from './apng';
 import { backgroundFor, drawFrame, makeCanvas, readPixels } from './draw';
 import { buildPalette, GifWriter, sampleFrames } from './gif';
-import { frameNumber, planExport, slug, type Plan } from './plan';
-import { buildAnimations, buildAtlas, buildCells, composeSheet, godotResourcePath, godotScene, godotSpriteFrames, godotTexturePath, layoutCells } from './sheet';
+import { frameNumber, MAX_SHEET_SIDE, planExport, type Plan } from './plan';
+import { buildSheetFiles } from './engines';
 import { frameToSvg } from './svg';
 import { formatInfo, type ExportSettings } from './types';
 import { BT709_LIMITED, rgbaToI420 } from './yuv';
@@ -176,28 +176,18 @@ async function runSheet(ctx: RunContext, plan: Plan, rgbaAt: (i: number) => RawI
     frames.push({ width: img.width, height: img.height, pixels: new Uint8ClampedArray(img.pixels) });
   }
   step(plan.count, 'Packing the sheet');
-  const whole = settings.range === 'all';
-  const animations = buildAnimations({ clips: doc.clips, rangeStart: plan.range.start, rangeEnd: plan.range.end, fps: doc.fps, whole, onlyClipId: settings.clipId });
-  // A new clip must start a new cell, or two clips would share a picture that one of them might later change.
-  const cuts = new Set<number>();
-  for (const c of doc.clips) cuts.add(Math.min(c.start, c.end) - plan.range.start).add(Math.max(c.start, c.end) + 1 - plan.range.start);
-  const { cells, cellOfFrame } = buildCells(frames, { trim: sheet.trim, dedupe: sheet.dedupe, cuts });
-  const layout = layoutCells(cells, { columns: sheet.columns, padding: sheet.padding, pot: sheet.pot });
-  const png = encodePng(composeSheet(cells, layout));
-
-  const texturePath = godotTexturePath(sheet.godotPath, doc.name);
-  const base = (sheet.godot || sheet.godotScene ? texturePath.split('/').pop()!.replace(/\.[^.]*$/, '') : '') || slug(plan.name);
-  const files: { name: string; bytes: Uint8Array }[] = [{ name: `${base}.png`, bytes: png }];
-  if (sheet.json) {
-    const atlas = buildAtlas({ image: `${base}.png`, layout, cells, cellOfFrame, animations, fps: doc.fps, scale: settings.scale, frameCount: plan.count });
-    files.push({ name: `${base}.json`, bytes: strToU8(JSON.stringify(atlas, null, 2) + '\n') });
-  }
-  if (sheet.godot || sheet.godotScene) {
-    files.push({ name: `${base}.tres`, bytes: strToU8(godotSpriteFrames({ texturePath, layout, cells, cellOfFrame, animations })) });
-  }
-  if (sheet.godotScene) {
-    const node = doc.name.replace(/[^A-Za-z0-9]+/g, ' ').trim().split(' ').filter(Boolean).map((w) => w[0].toUpperCase() + w.slice(1)).join('') || 'Sprite';
-    files.push({ name: `${base}.tscn`, bytes: strToU8(godotScene({ resourcePath: godotResourcePath(texturePath), nodeName: node, animation: animations[0].name })) });
-  }
-  return { kind: 'files', folderName: base, files, main: `${base}.png` };
+  const crisp = doc.layers.length > 0 && doc.layers.every((l) => l.kind === 'pixel');
+  const out = buildSheetFiles({
+    doc,
+    sheet: settings.sheet,
+    frames,
+    range: plan.range,
+    whole: settings.range === 'all',
+    clipId: settings.clipId,
+    scale: settings.scale,
+    name: plan.name,
+    pixelArt: crisp,
+    maxSide: MAX_SHEET_SIDE,
+  });
+  return { kind: 'files', folderName: out.main.replace(/\.png$/, ''), files: out.files, main: out.main };
 }
