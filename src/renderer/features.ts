@@ -9,4 +9,5 @@ import '../timeline';
 import '../io';
 import '../export';
 import '../tiles';
+import '../effects';
 import '../quests';

@@ -4,6 +4,7 @@
  * Pure bytes in, bytes out (no DOM, no Electron), so it runs the same in the app and in Node tests. In memory a pixel
  * drawing holds raw RGBA; in the file `doc.json` holds the name of its PNG instead.
  */
+import { readFolders, readLayerLook } from '../effects/io';
 import { strFromU8, strToU8, unzipSync, zipSync, type Zippable } from 'fflate';
 import { FORMAT_VERSION, type Cel, type Doc, type Drawing, type Layer, type Shape, type Tile, type Tileset } from '../core/format';
 import { decodePng, encodePng } from './png';
@@ -199,6 +200,7 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
       opacity: Math.min(1, Math.max(0, num(l.opacity, 1))),
       ...(l.onion === false ? { onion: false } : {}),
       ...(l.reference === true ? { reference: true } : {}),
+      ...readLayerLook(l),
       cels,
     };
     if (l.kind === 'pixel') layers.push({ ...base, kind: 'pixel', pixelSize: Math.max(1, Math.round(num(l.pixelSize, 1))), ...(l.paletteLock === true ? { paletteLock: true } : {}) });
@@ -225,6 +227,7 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
     markers: Array.isArray(raw.markers) ? raw.markers.filter((m: any) => isObj(m) && typeof m.id === 'string') : [],
     swatches: Array.isArray(raw.swatches) ? raw.swatches.filter((s: any) => isObj(s) && typeof s.id === 'string' && typeof s.color === 'string') : [],
     ...readPalette(raw.palette),
+    ...readFolders(raw.folders, layers),
   };
   if (tileset) doc.tileset = tileset;
   return doc;

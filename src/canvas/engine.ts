@@ -316,6 +316,7 @@ export class CanvasEngine {
       zooming,
       tileMode: tileModeOn(),
       tileCopyAlpha: tileCopyAlpha(),
+      activeLayerId: ui.activeLayerId,
     });
     if (!settled) {
       clearTimeout(this.settleTimer);
