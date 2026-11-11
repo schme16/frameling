@@ -743,3 +743,22 @@
 .cv-recolour-canvas {
   image-rendering: pixelated;
 }
+.cv-gradient-preview {
+  height: 18px;
+  border-radius: var(--radius-small);
+  border: 1px solid var(--line);
+}
+.cv-gradient-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.cv-gradient-item .cv-slider {
+  flex: 1;
+}
+.cv-gradient-pct {
+  width: 3em;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}

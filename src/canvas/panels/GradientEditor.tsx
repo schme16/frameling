@@ -10,6 +10,13 @@ import { addStop, moveStop, removeStop, reverseStops, selectStop, setAngle, setP
 /** How far below the bar (in screen pixels) a dragged marker has to go to be taken away. */
 const DRAG_OFF = 36;
 
+// The A/B in brand/ab/gradient-editor: 'bar' (built: a bar with draggable markers) or 'list' (a row per colour, with
+// a position slider and a remove button). Set before the panel opens, with ?debug and __framelingGradientLook('list').
+let look: 'bar' | 'list' = 'bar';
+if (typeof window !== 'undefined' && typeof location !== 'undefined' && new URLSearchParams(location.search).has('debug')) {
+  (window as unknown as { __framelingGradientLook: (l: 'bar' | 'list') => void }).__framelingGradientLook = (l) => void (look = l);
+}
+
 export function GradientEditor() {
   const well = useStore((s) => s.ui.activeWell);
   const on = useStore((s) => (well === 'fill' ? s.ui.fillColor !== null : s.ui.strokeOn));
@@ -58,7 +65,31 @@ export function GradientEditor() {
         ]}
         onChange={(k) => setPaintKind(well, k)}
       />
-      {g && (
+      {g && look === 'list' && (
+        <>
+          <div className="cv-gradient-preview" style={{ backgroundImage: gradientCss({ kind: 'linear', stops: g.stops }) }} aria-hidden="true" />
+          {g.stops.map((s, i) => (
+            <div key={i} className="cv-gradient-item" data-on={i === sel}>
+              <button type="button" className="cv-swatch" data-on={i === sel} aria-pressed={i === sel} style={{ backgroundColor: s.color }} aria-label={`Colour ${i + 1}: ${s.color}`} onClick={() => selectStop(well, i)} />
+              <input type="range" className="cv-slider" min={0} max={100} value={Math.round(s.at * 100)} aria-label={`Where colour ${i + 1} sits`} onChange={(e) => moveStop(well, i, Number(e.target.value) / 100)} />
+              <span className="cv-gradient-pct">{Math.round(s.at * 100)}%</span>
+              <button type="button" className="cv-wells-btn" disabled={g.stops.length <= 2} aria-label={`Remove colour ${i + 1}`} onClick={() => removeStop(well, i)}>
+                x
+              </button>
+            </div>
+          ))}
+          <div className="cv-gradient-row">
+            <button type="button" className="cv-action" onClick={() => addStop(well, 0.5)}>
+              Add a colour
+            </button>
+            <button type="button" className="cv-action" onClick={() => reverseStops(well)}>
+              Reverse
+            </button>
+          </div>
+          {g.kind === 'linear' && <Slider label="Direction" value={g.angle} min={0} max={359} format={(v) => `${v} deg`} onChange={(v) => setAngle(well, v)} />}
+        </>
+      )}
+      {g && look === 'bar' && (
         <>
           <div
             className="cv-gradient-bar"
