@@ -26,8 +26,7 @@
     "mediabunny": "^1.65.2",
     "perfect-freehand": "^1.2.3",
     "react": "^19.3.1",
-    "react-dom": "^19.3.1",
-    "upng-js": "^2.1.0"
+    "react-dom": "^19.3.1"
   },
   "devDependencies": {
     "@fontsource-variable/inter": "^5.3.0",
@@ -35,7 +34,6 @@
     "@types/node": "^22.20.5",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
-    "@types/upng-js": "^2.1.5",
     "@vitejs/plugin-react": "^6.3.0",
     "electron": "^45.3.0",
     "electron-builder": "^26.18.0",
@@ -84,7 +82,16 @@
         "dmg"
       ],
       "category": "public.app-category.graphics-design"
-    }
+    },
+    "fileAssociations": [
+      {
+        "ext": "frameling",
+        "name": "Frameling drawing",
+        "description": "Frameling drawing",
+        "mimeType": "application/x-frameling",
+        "role": "Editor"
+      }
+    ]
   },
   "desktopName": "frameling.desktop"
 }

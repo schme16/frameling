@@ -1,0 +1,209 @@
+/**
+ * The paint bucket. On vector layers it finds the area enclosed around the click (closing small gaps) and adds a
+ * FillShape for it, behind the lines. Clicking paint that is already there recolours it. On pixel layers it is a
+ * plain flood fill. The heavy lifting is in `src/geometry/fill.ts`.
+ */
+import type { Drawing, FillShape, Shape } from '../core/format';
+import { uid } from '../core/doc';
+import { registerTool, type Tool, type ToolContext, type ToolPointer } from '../core/registry';
+import { store } from '../core/store';
+import { fillRegion, pathsOverlap, type Rect } from '../geometry/fill';
+import { pointInPaths } from '../geometry/hit';
+import { floodFillPixels, parseColor } from '../geometry/pixel-fill';
+import { activeDrawing, activeLayer, EDIT_HINTS, editActiveDrawing } from './edit';
+import { FillOptionsPanel, gapWidth, getFillOptions } from './fill-options';
+import './fill-help';
+
+export const FILL_HINTS = {
+  leak: "That area isn't closed in. Try a bigger gap setting, or close the gap.",
+  'on-line': 'You clicked right on a line. Click inside the area you want to fill.',
+  outside: "That spot is off the canvas. Click inside the area you want to fill.",
+  'no-drawing': 'There is nothing to fill on this frame yet. Draw some lines first.',
+  same: 'That area is already this colour.',
+};
+
+/** Share of an existing fill's ground the new area must cover before the click recolours it instead. */
+const SAME_AREA = 0.85;
+
+/** Index just under the lowest line, so new paint sits behind every stroke and path. */
+export function indexBelowLines(shapes: readonly Shape[]): number {
+  const i = shapes.findIndex((s) => s.type === 'stroke' || s.type === 'path');
+  return i < 0 ? shapes.length : i;
+}
+
+/** The topmost shape with paint under the point: a fill, or a path that has a fill colour. */
+export function paintAt(shapes: readonly Shape[], x: number, y: number): FillShape | Extract<Shape, { type: 'path' }> | undefined {
+  for (let i = shapes.length - 1; i >= 0; i--) {
+    const s = shapes[i];
+    if (s.type === 'fill' && pointInPaths(s.paths, x, y)) return s;
+    if (s.type === 'path' && s.fill && pointInPaths(s.paths, x, y)) return s;
+  }
+  return undefined;
+}
+
+// ---------------------------------------------------------------- the pop
+
+interface Pop {
+  x: number;
+  y: number;
+  at: number;
+  color: string;
+}
+let pop: Pop | null = null;
+let looping = false;
+const POP_MS = 420;
+const clock = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
+
+function startPop(x: number, y: number, color: string, ctx: ToolContext) {
+  pop = { x, y, at: clock(), color };
+  ctx.requestOverlay();
+}
+
+function keepAnimating(ctx: ToolContext) {
+  if (looping) return;
+  looping = true;
+  const step = () => {
+    looping = false;
+    if (pop) ctx.requestOverlay();
+  };
+  if (typeof requestAnimationFrame === 'function') requestAnimationFrame(step);
+  else setTimeout(step, 16);
+}
+
+function drawPop(g: CanvasRenderingContext2D, ctx: ToolContext) {
+  if (!pop) return;
+  const t = (clock() - pop.at) / POP_MS;
+  if (t >= 1) {
+    pop = null;
+    return;
+  }
+  // Sizes are on screen, so divide by the zoom to draw them in document pixels.
+  const z = Math.max(0.01, ctx.zoom);
+  const ease = 1 - (1 - t) ** 3;
+  g.save();
+  g.globalAlpha = 1 - t;
+  g.strokeStyle = pop.color;
+  g.lineWidth = (3 * (1 - t) + 1) / z;
+  g.beginPath();
+  g.arc(pop.x, pop.y, (6 + 34 * ease) / z, 0, Math.PI * 2);
+  g.stroke();
+  g.fillStyle = pop.color;
+  g.beginPath();
+  g.arc(pop.x, pop.y, (5 * (1 - ease) + 1) / z, 0, Math.PI * 2);
+  g.fill();
+  g.restore();
+  keepAnimating(ctx);
+}
+
+// ---------------------------------------------------------------- the tool
+
+function fillVector(e: ToolPointer, ctx: ToolContext) {
+  const { doc, ui } = store().get();
+  const drawing: Drawing | undefined = activeDrawing();
+  if (!drawing || drawing.kind !== 'vector') {
+    ctx.hint(FILL_HINTS['no-drawing']);
+    return;
+  }
+  const opts = getFillOptions();
+  const bounds: Rect = { x: 0, y: 0, width: doc.width, height: doc.height };
+  const res = fillRegion(drawing.shapes, { x: e.x, y: e.y }, { gap: gapWidth(opts.gap, ui.brush.size), bounds });
+  const hit = paintAt(drawing.shapes, e.x, e.y);
+
+  if (res.kind === 'outside' || res.kind === 'on-line') {
+    ctx.hint(FILL_HINTS[res.kind]);
+    return;
+  }
+  // Paint is already here and the lines around it have not changed (or have leaked since): recolour it.
+  if (hit && (res.kind === 'leak' || pathsOverlap(res.paths, hit.paths, bounds) >= SAME_AREA)) {
+    const current = hit.type === 'fill' ? hit.color : hit.fill;
+    if (current && current.toLowerCase() === ui.color.toLowerCase()) {
+      ctx.hint(FILL_HINTS.same);
+      return;
+    }
+    const id = hit.id;
+    const color = ui.color;
+    const r = editActiveDrawing('Recolour fill', 'vector', (d) => {
+      const s = d.shapes.find((x) => x.id === id);
+      if (!s) return;
+      if (s.type === 'fill') s.color = color;
+      else if (s.type === 'path') s.fill = color;
+    });
+    if (r !== 'ok') ctx.hint(EDIT_HINTS[r]);
+    else startPop(e.x, e.y, color, ctx);
+    return;
+  }
+  if (res.kind === 'leak') {
+    ctx.hint(FILL_HINTS.leak);
+    return;
+  }
+  const shape: FillShape = { id: uid('f'), type: 'fill', paths: res.paths, color: ui.color, opacity: 1 };
+  const r = editActiveDrawing('Fill', 'vector', (d) => {
+    // Behind every line, so lines always read on top of paint (unless asked otherwise).
+    const at = opts.onTop ? d.shapes.length : indexBelowLines(d.shapes);
+    d.shapes.splice(at, 0, shape as never);
+  });
+  if (r !== 'ok') ctx.hint(EDIT_HINTS[r]);
+  else startPop(e.x, e.y, ui.color, ctx);
+}
+
+function fillPixels(e: ToolPointer, ctx: ToolContext) {
+  const { ui } = store().get();
+  const { layer } = activeLayer();
+  if (!layer || layer.kind !== 'pixel') return;
+  const px = Math.floor(e.x / layer.pixelSize);
+  const py = Math.floor(e.y / layer.pixelSize);
+  const color = parseColor(ui.color);
+  const mode = getFillOptions().allOfColour ? 'all' : 'contiguous';
+  const existing = activeDrawing();
+  if (existing && existing.kind === 'pixel') {
+    if (px < 0 || py < 0 || px >= existing.width || py >= existing.height) {
+      ctx.hint(FILL_HINTS.outside);
+      return;
+    }
+    const r = floodFillPixels(existing.pixels, existing.width, existing.height, px, py, color, { mode });
+    if (!r.changed) {
+      ctx.hint(FILL_HINTS.same);
+      return;
+    }
+    const res = editActiveDrawing('Fill', 'pixel', (d) => void (d.pixels = r.pixels));
+    if (res !== 'ok') ctx.hint(EDIT_HINTS[res]);
+    else startPop(px * layer.pixelSize + layer.pixelSize / 2, py * layer.pixelSize + layer.pixelSize / 2, ui.color, ctx);
+    return;
+  }
+  // An empty frame gets a fresh drawing, which the fill then covers (it is all one clear colour).
+  const res = editActiveDrawing('Fill', 'pixel', (d) => {
+    if (px < 0 || py < 0 || px >= d.width || py >= d.height) return;
+    d.pixels = floodFillPixels(d.pixels, d.width, d.height, px, py, color, { mode }).pixels;
+  });
+  if (res !== 'ok') ctx.hint(EDIT_HINTS[res]);
+  else startPop(px * layer.pixelSize + layer.pixelSize / 2, py * layer.pixelSize + layer.pixelSize / 2, ui.color, ctx);
+}
+
+export const fillTool: Tool = {
+  id: 'fill',
+  label: 'Paint bucket',
+  icon: 'fill',
+  key: 'g',
+  layers: ['vector', 'pixel'],
+  order: 30,
+  help: 'fill',
+  cursor: 'crosshair',
+  options: FillOptionsPanel as Tool['options'],
+  down(e, ctx) {
+    const { layer, problem } = activeLayer();
+    if (problem || !layer) {
+      ctx.hint(EDIT_HINTS[problem ?? 'no-layer']);
+      return;
+    }
+    if (layer.kind === 'pixel') fillPixels(e, ctx);
+    else fillVector(e, ctx);
+  },
+  cancel() {
+    pop = null;
+  },
+  overlay(g, ctx) {
+    drawPop(g, ctx);
+  },
+};
+
+registerTool(fillTool);

@@ -168,15 +168,20 @@ export function drawLayerAt(g: Ctx2D, doc: Doc, layer: Layer, frame: number): vo
     drawDrawing(g, d, layer.kind === 'pixel' ? layer.pixelSize : 1);
     return;
   }
-  // Layer opacity applies to the layer as a whole, so overlapping strokes don't show through each other.
-  const c = new OffscreenCanvas(Math.max(1, Math.ceil(doc.width)), Math.max(1, Math.ceil(doc.height)));
+  // Layer opacity applies to the layer as a whole, so overlapping strokes don't show through each other. The layer
+  // is drawn into a buffer the size of the target canvas with the same transform, then composited 1:1, so a zoomed
+  // or scaled render stays sharp.
+  const target = g.canvas as { width: number; height: number };
+  const c = new OffscreenCanvas(Math.max(1, target.width), Math.max(1, target.height));
   const lg = c.getContext('2d')!;
+  lg.setTransform(g.getTransform());
+  lg.imageSmoothingEnabled = g.imageSmoothingEnabled;
   drawDrawing(lg, d, layer.kind === 'pixel' ? layer.pixelSize : 1);
-  const t = g.getTransform();
+  g.save();
+  g.setTransform(1, 0, 0, 1, 0, 0);
   g.globalAlpha = layer.opacity;
-  g.setTransform(t);
   g.drawImage(c, 0, 0);
-  g.globalAlpha = 1;
+  g.restore();
 }
 
 /** Draws a whole frame. */

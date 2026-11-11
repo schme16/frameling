@@ -1,0 +1,63 @@
+/* Paint bucket options. Theme tokens only. */
+.fl-fill-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  font-size: var(--fs-small);
+  color: var(--text);
+}
+.fl-fill-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.fl-fill-label {
+  color: var(--muted);
+  font-weight: 700;
+}
+.fl-fill-seg {
+  display: flex;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  overflow: hidden;
+  background: var(--panel-2);
+}
+.fl-fill-seg-btn {
+  flex: 1;
+  padding: 5px 8px;
+  border: 0;
+  border-right: 1px solid var(--line-soft);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+.fl-fill-seg-btn:last-child {
+  border-right: 0;
+}
+.fl-fill-seg-btn:hover {
+  background: var(--hover-bg);
+}
+.fl-fill-seg-btn[aria-checked='true'] {
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+  font-weight: 700;
+}
+.fl-fill-seg-btn:focus-visible,
+.fl-fill-check input:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+.fl-fill-note {
+  color: var(--faint);
+  line-height: 1.35;
+}
+.fl-fill-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+.fl-fill-check input {
+  accent-color: var(--chosen-bg);
+}

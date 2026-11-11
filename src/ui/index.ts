@@ -1,2 +1,14 @@
-// Registers the ui area's commands, panels, tools and help topics.
-export {};
+// The UI shell's entry point: registers its commands, help topics, panels and quests, and loads its styles.
+// The shell itself (layout, dock, menus, dialogs) is rendered by src/renderer/App.tsx from the files in this folder.
+import { registerPanel } from '../core/registry';
+import './ui.css';
+import './commands';
+import './helpTopics';
+import './quests';
+import { HelpPanel } from './HelpBrowser';
+import { applyPrefs } from './prefs';
+
+// Apply the saved theme and look straight away, before anything paints.
+applyPrefs();
+
+registerPanel({ id: 'help', title: 'Help', icon: 'help', component: HelpPanel, zone: 'right', order: 90, help: 'using-help' });

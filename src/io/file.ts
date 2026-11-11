@@ -1,0 +1,220 @@
+/**
+ * The `.frameling` file: a zip holding `manifest.json`, `doc.json` and one `pixels/<id>.png` per pixel drawing.
+ *
+ * Pure bytes in, bytes out (no DOM, no Electron), so it runs the same in the app and in Node tests. In memory a pixel
+ * drawing holds raw RGBA; in the file `doc.json` holds the name of its PNG instead.
+ */
+import { strFromU8, strToU8, unzipSync, zipSync, type Zippable } from 'fflate';
+import { FORMAT_VERSION, type Cel, type Doc, type Drawing, type Layer, type Shape } from '../core/format';
+import { decodePng, encodePng } from './png';
+
+export const FILE_EXTENSION = 'frameling';
+
+/** An error whose message is already fit to show to a person. */
+export class FileProblem extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'FileProblem';
+  }
+}
+
+export interface Manifest {
+  format: 'frameling';
+  version: number;
+  app: string;
+  created: string;
+  name: string;
+}
+
+export interface LoadedFile {
+  doc: Doc;
+  manifest: Manifest;
+  /** Small repairs made while opening (a missing drawing dropped, and so on), in plain words. */
+  warnings: string[];
+}
+
+// Encoded PNGs by pixel array. Edits replace the array, so an unchanged drawing never gets encoded twice (autosave
+// runs every minute and most drawings are not touched between runs).
+const pngCache = new WeakMap<Uint8ClampedArray, Uint8Array>();
+
+function pngFor(d: { width: number; height: number; pixels: Uint8ClampedArray }): Uint8Array {
+  let png = pngCache.get(d.pixels);
+  if (!png) {
+    png = encodePng({ width: d.width, height: d.height, pixels: d.pixels }, { level: 6 });
+    pngCache.set(d.pixels, png);
+  }
+  return png;
+}
+
+const safeName = (id: string) => id.replace(/[^A-Za-z0-9_-]/g, '_');
+
+export function saveFile(doc: Doc, appVersion = '', now: Date = new Date()): Uint8Array {
+  const files: Zippable = {};
+  const drawings: Record<string, unknown> = {};
+  const used = new Set<string>();
+  for (const [id, d] of Object.entries(doc.drawings)) {
+    if (d.kind === 'pixel') {
+      let name = `pixels/${safeName(id)}.png`;
+      while (used.has(name)) name = name.replace(/\.png$/, '_.png');
+      used.add(name);
+      files[name] = [pngFor(d), { level: 0 }];
+      drawings[id] = { ...d, pixels: name };
+    } else {
+      drawings[id] = d;
+    }
+  }
+  const manifest: Manifest = { format: 'frameling', version: FORMAT_VERSION, app: appVersion, created: now.toISOString(), name: doc.name };
+  files['manifest.json'] = strToU8(JSON.stringify(manifest, null, 2));
+  files['doc.json'] = strToU8(JSON.stringify({ ...doc, drawings }));
+  return zipSync(files, { level: 6 });
+}
+
+// ---------------------------------------------------------------- migration
+
+/**
+ * One step per format version: `MIGRATIONS[n]` turns a version n document into version n + 1. Version 1 is the only
+ * one so far, so the list is empty. When the format changes, bump FORMAT_VERSION and add the step here.
+ */
+export const MIGRATIONS: Record<number, (raw: any) => any> = {};
+
+export function migrate(raw: any, from: number): any {
+  let doc = raw;
+  for (let v = from; v < FORMAT_VERSION; v++) {
+    const step = MIGRATIONS[v];
+    if (!step) throw new FileProblem('This file is from a version of Frameling that this one cannot open any more.');
+    doc = step(doc);
+    doc.version = v + 1;
+  }
+  return doc;
+}
+
+// ---------------------------------------------------------------- loading
+
+const SHAPE_TYPES = new Set(['stroke', 'fill', 'path']);
+const MAX_UNZIPPED = 1024 * 1024 * 1024;
+
+function isObj(v: unknown): v is Record<string, any> {
+  return typeof v === 'object' && v !== null && !Array.isArray(v);
+}
+const num = (v: unknown, fallback: number) => (typeof v === 'number' && Number.isFinite(v) ? v : fallback);
+const str = (v: unknown, fallback: string) => (typeof v === 'string' ? v : fallback);
+const bool = (v: unknown, fallback: boolean) => (typeof v === 'boolean' ? v : fallback);
+
+const damaged = () => new FileProblem('This file looks damaged, so Frameling could not open it.');
+
+export function loadFile(bytes: Uint8Array): LoadedFile {
+  let entries: Record<string, Uint8Array>;
+  try {
+    entries = unzipSync(bytes, { filter: (f) => f.originalSize <= MAX_UNZIPPED && (f.name === 'manifest.json' || f.name === 'doc.json' || f.name.startsWith('pixels/')) });
+  } catch {
+    throw new FileProblem("That doesn't look like a Frameling file, so it could not be opened.");
+  }
+  if (!entries['manifest.json'] || !entries['doc.json']) throw new FileProblem("That doesn't look like a Frameling file, so it could not be opened.");
+
+  let manifest: Manifest;
+  let raw: any;
+  try {
+    manifest = JSON.parse(strFromU8(entries['manifest.json']));
+    raw = JSON.parse(strFromU8(entries['doc.json']));
+  } catch {
+    throw damaged();
+  }
+  if (!isObj(manifest) || manifest.format !== 'frameling' || !isObj(raw)) throw new FileProblem("That doesn't look like a Frameling file, so it could not be opened.");
+  const version = manifest.version;
+  if (typeof version !== 'number' || !Number.isInteger(version) || version < 1) throw damaged();
+  if (version > FORMAT_VERSION) throw new FileProblem(`This file was made with a newer Frameling (file version ${version}). Update Frameling and try again.`);
+
+  const warnings: string[] = [];
+  raw = migrate(raw, version);
+  const doc = buildDoc(raw, entries, warnings);
+  return { doc, manifest, warnings };
+}
+
+function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: string[]): Doc {
+  if (raw.format !== 'frameling') throw damaged();
+  const width = num(raw.width, 0);
+  const height = num(raw.height, 0);
+  const fps = num(raw.fps, 0);
+  if (width < 1 || height < 1 || fps <= 0 || !Array.isArray(raw.layers) || !isObj(raw.drawings)) throw damaged();
+  const length = Math.max(1, Math.round(num(raw.length, 1)));
+
+  // Drawings first, so cels can be checked against them.
+  const drawings: Record<string, Drawing> = {};
+  for (const [id, d] of Object.entries<any>(raw.drawings)) {
+    if (!isObj(d)) {
+      warnings.push('One drawing could not be read and was left out.');
+      continue;
+    }
+    if (d.kind === 'vector') {
+      const shapes: Shape[] = Array.isArray(d.shapes) ? d.shapes.filter((s: any) => isObj(s) && SHAPE_TYPES.has(s.type)) : [];
+      if (!Array.isArray(d.shapes) || shapes.length !== d.shapes.length) warnings.push('Some shapes could not be read and were left out.');
+      drawings[id] = { id: str(d.id, id), kind: 'vector', shapes };
+    } else if (d.kind === 'pixel') {
+      const name = d.pixels;
+      if (typeof name !== 'string' || !/^pixels\/[A-Za-z0-9_-]+\.png$/.test(name) || !entries[name]) throw damaged();
+      let img;
+      try {
+        img = decodePng(entries[name]);
+      } catch {
+        throw damaged();
+      }
+      if (img.width !== d.width || img.height !== d.height) throw damaged();
+      drawings[id] = { id: str(d.id, id), kind: 'pixel', width: img.width, height: img.height, pixels: img.pixels };
+    } else {
+      warnings.push('One drawing could not be read and was left out.');
+    }
+  }
+
+  const layers: Layer[] = [];
+  for (const l of raw.layers) {
+    if (!isObj(l) || (l.kind !== 'vector' && l.kind !== 'pixel')) throw damaged();
+    const cels: Cel[] = [];
+    for (const c of Array.isArray(l.cels) ? l.cels : []) {
+      if (!isObj(c) || typeof c.drawingId !== 'string' || !drawings[c.drawingId]) {
+        warnings.push('Some frames pointed at a missing drawing and were left empty.');
+        continue;
+      }
+      const d = drawings[c.drawingId];
+      if (d.kind !== l.kind) {
+        warnings.push('A frame held the wrong kind of drawing for its layer and was left empty.');
+        continue;
+      }
+      cels.push({ id: str(c.id, c.drawingId + '-cel'), start: Math.max(0, Math.round(num(c.start, 0))), length: Math.max(1, Math.round(num(c.length, 1))), drawingId: c.drawingId });
+    }
+    cels.sort((a, b) => a.start - b.start);
+    const base = {
+      id: str(l.id, 'layer' + layers.length),
+      name: str(l.name, 'Layer ' + (layers.length + 1)),
+      visible: bool(l.visible, true),
+      locked: bool(l.locked, false),
+      opacity: Math.min(1, Math.max(0, num(l.opacity, 1))),
+      cels,
+    };
+    if (l.kind === 'pixel') layers.push({ ...base, kind: 'pixel', pixelSize: Math.max(1, Math.round(num(l.pixelSize, 1))) });
+    else layers.push({ ...base, kind: 'vector' });
+  }
+  const unique = new Set(layers.map((l) => l.id));
+  if (unique.size !== layers.length) throw damaged();
+
+  return {
+    format: 'frameling',
+    version: FORMAT_VERSION,
+    id: str(raw.id, 'd' + Date.now().toString(36)),
+    name: str(raw.name, 'Untitled'),
+    width,
+    height,
+    fps,
+    length,
+    background: typeof raw.background === 'string' ? raw.background : null,
+    layers,
+    drawings,
+    clips: Array.isArray(raw.clips) ? raw.clips.filter((c: any) => isObj(c) && typeof c.id === 'string') : [],
+    markers: Array.isArray(raw.markers) ? raw.markers.filter((m: any) => isObj(m) && typeof m.id === 'string') : [],
+    swatches: Array.isArray(raw.swatches) ? raw.swatches.filter((s: any) => isObj(s) && typeof s.id === 'string' && typeof s.color === 'string') : [],
+  };
+}
+
+/** Just the document, for callers that do not care about warnings. */
+export function parseFile(bytes: Uint8Array): Doc {
+  return loadFile(bytes).doc;
+}

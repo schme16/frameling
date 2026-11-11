@@ -1,0 +1,91 @@
+/**
+ * The shape of `window.frameling`: the page's whole window into the desktop side. Types only, shared by the preload
+ * script (which builds it), the main process (which answers it) and the page (which calls it).
+ */
+
+export interface FileFilter {
+  name: string;
+  extensions: string[];
+}
+
+export interface OpenedFile {
+  path: string;
+  bytes: Uint8Array;
+}
+
+export interface FileFailure {
+  /** Friendly, ready to show. */
+  error: string;
+}
+
+export interface RecentFile {
+  path: string;
+  name: string;
+  openedAt: number;
+}
+
+export interface DocumentState {
+  dirty: boolean;
+  name: string;
+  filePath: string | null;
+}
+
+export interface AutosaveMeta {
+  name: string;
+  filePath: string | null;
+  docId: string;
+}
+
+export interface AutosaveInfo {
+  bytes: Uint8Array;
+  meta: AutosaveMeta;
+  savedAt: number;
+  /** When the saved file was last changed, if the autosave belongs to a saved file that still exists. */
+  fileModifiedAt: number | null;
+}
+
+export type SaveChoice = 'save' | 'discard' | 'cancel';
+
+export interface FramelingApi {
+  platform: string;
+  versions: { app: string; electron: string; chrome: string };
+  files: {
+    /** Shows the Open dialog. null means they cancelled. */
+    open(): Promise<OpenedFile | FileFailure | null>;
+    /** Reads a `.frameling` file (a recent file, a file dropped on the app...). */
+    read(path: string): Promise<OpenedFile | FileFailure>;
+    /** Writes the bytes to `path`, or asks where first when `path` is null. null means they cancelled. */
+    save(opts: { bytes: Uint8Array; path: string | null; suggestedName: string }): Promise<{ path: string } | FileFailure | null>;
+    /** Asks where an export should go. null means they cancelled. */
+    pickExportFile(opts: { suggestedName: string; filters: FileFilter[]; title?: string }): Promise<string | null>;
+    pickExportFolder(opts: { title?: string }): Promise<string | null>;
+    /** Writes to a path that pickExportFile returned. */
+    write(path: string, bytes: Uint8Array): Promise<{ ok: true } | FileFailure>;
+    /** Writes several files into a folder that pickExportFolder returned. null means they chose not to replace existing files. */
+    writeMany(folder: string, files: { name: string; bytes: Uint8Array }[]): Promise<{ paths: string[] } | FileFailure | null>;
+    showInFolder(path: string): Promise<void>;
+  };
+  recent: {
+    list(): Promise<RecentFile[]>;
+    add(path: string): Promise<void>;
+    remove(path: string): Promise<void>;
+    clear(): Promise<void>;
+  };
+  autosave: {
+    write(bytes: Uint8Array, meta: AutosaveMeta): Promise<void>;
+    read(): Promise<AutosaveInfo | null>;
+    clear(): Promise<void>;
+  };
+  app: {
+    /** Tells the window about the document (title bar dot on macOS, "Save changes?" on close). */
+    setDocumentState(state: DocumentState): void;
+    /** The file the app was launched with, once. */
+    getLaunchFile(): Promise<string | null>;
+    /** Called when a `.frameling` file is opened while the app is already running. Returns an unsubscribe function. */
+    onOpenFile(handler: (path: string) => void): () => void;
+    /** Called when the window is closing with unsaved changes and they chose Save. Resolve true once saved, false to stay open. */
+    onSaveBeforeClose(handler: () => Promise<boolean>): () => void;
+    /** The "Save changes?" question as a native dialog. */
+    askSaveChanges(name: string): Promise<SaveChoice>;
+  };
+}
