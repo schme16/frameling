@@ -19,7 +19,7 @@ export const MENUS: MenuDef[] = [
   {
     label: 'File',
     categories: ['File', 'Export'],
-    items: ['file.new', 'file.open', 'file.openRecent', 'file.recover', '-', 'file.save', 'file.saveAs', '-', 'file.export', 'file.exportInteractives', 'file.exportAgain'],
+    items: ['file.new', 'file.open', 'file.openRecent', 'file.recover', '-', 'file.save', 'file.saveAs', '-', 'file.export', 'file.exportInteractives', 'file.exportAgain', '-', 'audio.import'],
   },
   {
     label: 'Edit',
@@ -43,8 +43,13 @@ export const MENUS: MenuDef[] = [
   },
   {
     label: 'Animate',
-    categories: ['Animate', 'Animation', 'Timeline', 'Frames'],
+    categories: ['Animate', 'Animation', 'Timeline', 'Frames', 'Sound', 'Lip sync'],
     items: ['timeline.play', 'timeline.toggleLoop', 'timeline.toggleOnion', '-', 'timeline.prevFrame', 'timeline.nextFrame', 'timeline.prevKey', 'timeline.nextKey', 'timeline.firstFrame', 'timeline.lastFrame', '-', 'timeline.newKey', 'timeline.emptyFrame', 'timeline.duplicateKey', 'timeline.clearKey', '-', 'timeline.insertFrame', 'timeline.removeFrame', 'timeline.addMarker'],
+  },
+  {
+    label: 'Rig',
+    categories: ['Rig'],
+    items: ['rig.addBones', 'tools.bone', 'tools.pose', '-', 'rig.autoAttach', 'rig.bendLayer', 'rig.detachLayer', '-', 'rig.togglePin', 'rig.resetPose', 'rig.mirrorPose', 'rig.swapSides', 'rig.savePose', '-', 'view.panel.rig', 'rig.boneLook'],
   },
   {
     label: 'Help',

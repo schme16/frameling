@@ -63,7 +63,7 @@ function ids(doc: Doc): string[] {
 
 describe('templates', () => {
   it('has the expected set with unique ids', () => {
-    expect(TEMPLATES.map((t) => t.id)).toEqual(['bouncing-ball', 'flour-sack-hop', 'blink', 'hero-sprites', 'sparkle-fx', 'bouncing-logo', 'tileset', 'blank-vector', 'blank-pixel']);
+    expect(TEMPLATES.map((t) => t.id)).toEqual(['bouncing-ball', 'flour-sack-hop', 'blink', 'hero-sprites', 'sparkle-fx', 'bouncing-logo', 'puppet', 'tileset', 'lip-sync', 'blank-vector', 'blank-pixel']);
     expect(new Set(TEMPLATES.map((t) => t.id)).size).toBe(TEMPLATES.length);
     for (const t of TEMPLATES) {
       expect(t.name.length).toBeGreaterThan(0);

@@ -18,6 +18,7 @@ import { ease } from '../core/ease';
 import { makeTween, removeTween } from '../symbols/ops';
 import '../symbols/symbols.css';
 import { MAX_CW, MIN_CW, setTl, tl, useTl } from './state';
+import { SoundMain, SoundSide } from '../audio/SoundRows';
 
 export const SIDE_W = 216;
 const RULER_H = 26;
@@ -506,6 +507,7 @@ export function TimelineBody() {
           <LayerTools />
         </div>
         <LayerList />
+        <SoundSide />
       </div>
       <div
         ref={main}
@@ -537,6 +539,7 @@ export function TimelineBody() {
           <Playhead part="rows" cw={cw} activeRow={activeDisplayRow} />
           {ghostCel ? <i className={`tl-ghost-cel${ghostCel.trim ? ' is-trim' : ''}`} style={{ left: ghostCel.start * cw + 1, width: ghostCel.length * cw - 2, top: ghostRow * ROW_H + 3, height: ROW_H - 6 }} /> : null}
         </div>
+        <SoundMain cw={cw} from={from} to={to} />
       </div>
       </div>
       {menu ? <ContextMenu x={menu.x} y={menu.y} items={menu.items} onClose={() => setMenu(null)} /> : null}

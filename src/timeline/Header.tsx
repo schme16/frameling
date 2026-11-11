@@ -8,6 +8,7 @@ import { Floating } from './Menu';
 import * as ops from './ops';
 import { playRange } from './playback';
 import { MAX_CW, MIN_CW, setTl, tl, useTl } from './state';
+import { SoundButton } from '../audio/SoundButton';
 
 function Btn({ id, icon, text, title, pressed, disabled, onClick, className = '' }: { id?: string; icon?: string; text?: ReactNode; title: string; pressed?: boolean; disabled?: boolean; onClick?: () => void; className?: string }) {
   return (
@@ -189,6 +190,7 @@ export function Header() {
         <Btn id="timeline.removeFrame" icon="minus" text="Frame" title="Remove a frame" />
       </span>
       <HoldButtons />
+      <SoundButton />
       <span className="tl-sep" aria-hidden="true" />
       <OnionControls />
       <span className="tl-grow" />
