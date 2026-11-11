@@ -1,40 +1,25 @@
 // The docked zones (left, right, bottom): tabs you can drag, splitters you can pull, zones that fold away.
-import { Component, useEffect, useLayoutEffect, useRef, useState, type ErrorInfo, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { getPanel, type DockZone } from '../core/registry';
 import { clampSize, DEFAULT_SIZE, dock, hidePanel, movePanel, resizeZone, setActive, toggleCollapsed } from './dock';
 import { Icon } from './icons';
-import { createStore } from './mini';
+import { dragging, PanelBoundary } from './dockShared';
 import { fitTabs, NAMED_PANELS, type TabFit } from './tabFit';
-
-const dragging = createStore<string | null>(null);
-
-/** One broken panel shouldn't take the window with it. */
-class PanelBoundary extends Component<{ children: ReactNode; name: string }, { error: string | null }> {
-  state = { error: null as string | null };
-  static getDerivedStateFromError(e: unknown) {
-    return { error: e instanceof Error ? e.message : String(e) };
-  }
-  componentDidCatch(e: unknown, info: ErrorInfo) {
-    console.error(`Panel "${this.props.name}" crashed`, e, info.componentStack);
-  }
-  render() {
-    if (!this.state.error) return this.props.children;
-    return (
-      <div className="ui-panel-broken">
-        <Icon name="warning" size={20} />
-        <p>The {this.props.name} panel tripped over something.</p>
-        <button type="button" className="ui-btn" onClick={() => this.setState({ error: null })}>
-          Try again
-        </button>
-      </div>
-    );
-  }
-}
+import { PanelPicker } from './PanelPicker';
+import { RightDock } from './RightDock';
+import { panelPicker, rightStyle, togglePicker } from './rightStyle';
 
 const COLLAPSE_ICON: Record<DockZone, string> = { left: 'chevron-left', right: 'chevron-right', bottom: 'chevron-down' };
 const EXPAND_ICON: Record<DockZone, string> = { left: 'chevron-right', right: 'chevron-left', bottom: 'chevron-up' };
 
 export function DockZoneView({ zone }: { zone: DockZone }) {
+  const style = rightStyle.use((v) => v);
+  if (zone === 'right' && style !== 'tabs') return <RightDock zone={zone} style={style} />;
+  return <TabZoneView zone={zone} panelsButton={zone === 'right'} />;
+}
+
+function TabZoneView({ zone, panelsButton }: { zone: DockZone; panelsButton?: boolean }) {
+  const picker = panelPicker.use((v) => (panelsButton ? v : null));
   const z = dock.use((d) => d.layout.zones[zone]);
   const drag = dragging.use((v) => v);
   const [dropAt, setDropAt] = useState<number | null>(null);
@@ -63,7 +48,7 @@ export function DockZoneView({ zone }: { zone: DockZone }) {
       const full = [...m.querySelectorAll<HTMLElement>('[data-m="full"]')].map((e) => e.getBoundingClientRect().width);
       const icon = [...m.querySelectorAll<HTMLElement>('[data-m="icon"]')].map((e) => e.getBoundingClientRect().width);
       const more = m.querySelector<HTMLElement>('[data-m="more"]')?.getBoundingClientRect().width ?? 40;
-      const fold = el.querySelector<HTMLElement>('.ui-zone-fold')?.getBoundingClientRect().width ?? 24;
+      const fold = (el.querySelector<HTMLElement>('.ui-zone-fold')?.getBoundingClientRect().width ?? 24) + (el.querySelector<HTMLElement>('.ui-tab-panels')?.getBoundingClientRect().width ?? 0);
       const cs = getComputedStyle(el);
       const avail = el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - fold - 6;
       const next = fitTabs({ avail, gap: parseFloat(cs.columnGap) || 2, full, icon, active: Math.max(0, z.tabs.indexOf(activeId)), more, pinned: z.tabs.flatMap((t, i) => (NAMED_PANELS.has(t) ? [i] : [])) });
@@ -275,6 +260,22 @@ export function DockZoneView({ zone }: { zone: DockZone }) {
           </div>
         )}
         <span className="ui-tabbar-fill" />
+        {panelsButton && flat && (
+          <button
+            type="button"
+            className="ui-icon-btn ui-tab-panels"
+            data-panels-button
+            aria-haspopup="dialog"
+            aria-expanded={!!picker}
+            aria-label="All panels"
+            data-tip="All panels"
+            data-tip-desc="Every panel with what it's for. Open one, or bring back one you closed."
+            data-help="panels"
+            onClick={(e) => togglePicker(e.currentTarget)}
+          >
+            <Icon name="workspace" size={15} />
+          </button>
+        )}
         {collapseBtn}
       </div>
       {flat && (
@@ -305,6 +306,7 @@ export function DockZoneView({ zone }: { zone: DockZone }) {
           </span>
         </div>
       )}
+      {picker && <PanelPicker at={picker} side="below" onClose={() => panelPicker.set(null)} />}
       {!z.collapsed && panel && (
         <div className="ui-panel" role="tabpanel" id={`ui-panel-${active}`} aria-labelledby={`ui-tab-${active}`}>
           <h2 className="ui-sr-only">{panel.title}</h2>
