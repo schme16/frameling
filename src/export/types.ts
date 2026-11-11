@@ -1,6 +1,6 @@
 // What the export dialog collects, and what the exporters take.
 
-export type FormatId = 'mp4' | 'webm' | 'gif' | 'apng' | 'png' | 'pngseq' | 'svg' | 'sheet';
+export type FormatId = 'mp4' | 'webm' | 'gif' | 'apng' | 'png' | 'pngseq' | 'svg' | 'sheet' | 'interactives';
 export type RangeKind = 'all' | 'clip' | 'frame';
 
 export interface SheetSettings {
@@ -90,6 +90,8 @@ export interface ExportSettings {
   /** GIF only. */
   dither: boolean;
   sheet: SheetSettings;
+  /** Interactives package: carry the editable .frameling file inside it (missing = yes). */
+  includeSource?: boolean;
 }
 
 export interface FormatInfo {
@@ -99,7 +101,7 @@ export interface FormatInfo {
   tag: string;
   /** "Good for ..." in one line. */
   goodFor: string;
-  icon: 'film' | 'image' | 'grid';
+  icon: 'film' | 'image' | 'grid' | 'play';
   /** File extension without the dot (a .zip for sequences). */
   ext: string;
   /** Needs more than one frame. */
@@ -117,6 +119,7 @@ export const FORMATS: FormatInfo[] = [
   { id: 'pngseq', title: 'PNG sequence', tag: '.zip', goodFor: 'Video editors and other tools that want one picture per frame.', icon: 'grid', ext: 'zip', animated: true, alpha: true },
   { id: 'svg', title: 'SVG drawing', tag: 'This frame', goodFor: 'Vector art that stays sharp at any size.', icon: 'image', ext: 'svg', animated: false, alpha: true },
   { id: 'sheet', title: 'Sprite sheet', tag: 'For games', goodFor: 'Godot, Unity, Phaser, PixiJS or a web page: every frame on one picture.', icon: 'grid', ext: 'png', animated: true, alpha: true },
+  { id: 'interactives', title: 'Interactives', tag: '.flplay', goodFor: 'Drop it into an Interactives page, then play it with clicks, timelines and scripts.', icon: 'play', ext: 'flplay', animated: true, alpha: true },
 ];
 
 export function formatInfo(id: FormatId): FormatInfo {
