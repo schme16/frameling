@@ -27,6 +27,8 @@ export interface OnionSettings {
   afterColor: Color;
   /** Tint the onion frames (true) or show them in their own colours (false). */
   tint: boolean;
+  /** Count keys instead of frames, so held frames are skipped (missing = no). */
+  keysOnly?: boolean;
 }
 
 export interface UiState {
@@ -46,6 +48,8 @@ export interface UiState {
   brush: BrushSettings;
   playing: boolean;
   loopPlayback: boolean;
+  /** Play forward then backward (ping-pong) instead of jumping back to the start (missing = no). */
+  pingPong?: boolean;
   onion: OnionSettings;
   /** Viewport: zoom (1 = 100%) and pan (screen pixels of the stage's top-left). */
   zoom: number;

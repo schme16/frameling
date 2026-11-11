@@ -13,6 +13,9 @@ import type { Doc } from '../core/format';
 import { findLayer } from '../core/doc';
 import { store, type Store } from '../core/store';
 import { tl } from './state';
+import { inOutRange } from './inout';
+
+export { inOutRange };
 
 export interface Scheduler {
   now(): number;
@@ -37,25 +40,54 @@ export function setScheduler(s: Scheduler | null): void {
 /** A tick later than this after the last one is a stall (hidden window, busy page): carry on from here, don't jump. */
 const STALL_MS = 500;
 
-/** The first and last frame (inclusive) that play: the chosen clip, or the whole animation. */
+/**
+ * The first and last frame (inclusive) that play: the chosen clip, else the play range set on the ruler (in and out),
+ * else the whole animation.
+ */
 export function playRange(doc: Doc, clipId: string | null = tl().clipId): { start: number; end: number; clipLoops: boolean } {
   const last = Math.max(0, doc.length - 1);
   const clip = clipId ? doc.clips.find((c) => c.id === clipId) : undefined;
-  if (!clip) return { start: 0, end: last, clipLoops: true };
+  if (!clip) {
+    const io = inOutRange(doc);
+    return io ? { ...io, clipLoops: true } : { start: 0, end: last, clipLoops: true };
+  }
   const start = Math.max(0, Math.min(last, clip.start));
   return { start, end: Math.max(start, Math.min(last, clip.end)), clipLoops: clip.loop };
 }
 
+/**
+ * Where playback is after `idx` steps through a range `len` frames long: the position in the range (0 = its first
+ * frame), or done when it has reached the end and doesn't loop. Ping-pong goes forward then back (the ends show once
+ * per turn), and without looping it stops when it's back at the start.
+ */
+export function stepPosition(idx: number, len: number, loops: boolean, pingPong: boolean): { pos: number; done: boolean } {
+  if (len <= 1) return { pos: 0, done: !loops && idx > 0 };
+  if (!pingPong) {
+    if (idx >= len && !loops) return { pos: len - 1, done: true };
+    return { pos: idx % len, done: false };
+  }
+  const period = 2 * len - 2;
+  if (idx >= period && !loops) return { pos: 0, done: true };
+  const i = idx % period;
+  return { pos: i < len ? i : period - i, done: false };
+}
+
 /** The next `count` frames playback will show after `from`, in order, following the loop (or stopping at the end). */
-export function upcomingFrames(doc: Doc, from: number, count: number, loop: boolean, clipId: string | null = tl().clipId): number[] {
+export function upcomingFrames(doc: Doc, from: number, count: number, loop: boolean, clipId: string | null = tl().clipId, pingPong = false): number[] {
   const r = playRange(doc, clipId);
   const len = r.end - r.start + 1;
   const out: number[] = [];
   if (from < r.start || from > r.end) return out;
-  for (let k = 1; k <= Math.min(count, len - 1 + (loop ? 1 : 0)); k++) {
-    const i = from - r.start + k;
-    if (i >= len && !(loop && r.clipLoops)) break;
-    out.push(r.start + (i % len));
+  const loops = loop && r.clipLoops;
+  const seen = new Set<number>();
+  for (let k = 1; k <= count; k++) {
+    const st = stepPosition(from - r.start + k, len, loops, pingPong);
+    if (st.done) break;
+    const f = r.start + st.pos;
+    if (f === from) continue;
+    if (seen.has(f)) break;
+    seen.add(f);
+    out.push(f);
   }
   return out;
 }
@@ -95,7 +127,7 @@ function begin(): void {
   const r = playRange(doc);
   const loops = ui.loopPlayback && r.clipLoops;
   let f = ui.frame;
-  if (f < r.start || f > r.end || (!loops && f === r.end && r.end > r.start)) f = r.start;
+  if (f < r.start || f > r.end || (!loops && !ui.pingPong && f === r.end && r.end > r.start)) f = r.start;
   const t = scheduler.now();
   // Set up before moving the playhead: that change comes straight back through the store subscription.
   const mine: Run = { handle: null, t0: t, from: f - r.start, lastTick: t, shown: f, doc };
@@ -126,11 +158,12 @@ function tick(): void {
   cur.lastTick = t;
   const idx = cur.from + Math.floor(((t - cur.t0) * doc.fps) / 1000);
   const loops = ui.loopPlayback && r.clipLoops;
-  if (idx >= len && !loops) {
-    s.setUi({ frame: r.end, playing: false });
+  const st = stepPosition(idx, len, loops, !!ui.pingPong);
+  if (st.done) {
+    s.setUi({ frame: r.start + st.pos, playing: false });
     return stop();
   }
-  const frame = r.start + (idx % len);
+  const frame = r.start + st.pos;
   if (frame !== ui.frame) s.setUi({ frame });
   cur.shown = frame;
   cur.handle = scheduler.request(tick);

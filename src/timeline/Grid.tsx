@@ -12,7 +12,9 @@ import { frameAtX, holdWords, labelStep, visibleFrames, zoomScroll } from './geo
 import { LayerList, LayerTools, ROW_H } from './Layers';
 import { ContextMenu, InlineName, type MenuItem } from './Menu';
 import * as ops from './ops';
-import { goTo } from './playback';
+import { goTo, inOutRange } from './playback';
+import { onionFrames } from '../canvas/onion';
+import { clearInOut, setIn, setInOut, setOut } from './range';
 import { nextKey } from '../core/symbols';
 import { ease } from '../core/ease';
 import { makeTween, removeTween } from '../symbols/ops';
@@ -36,13 +38,16 @@ type Drag =
   | { kind: 'marker'; id: Id; startX: number; moved: boolean }
   | { kind: 'clipNew'; a: number }
   | { kind: 'clip'; id: Id; startX: number; moved: boolean }
-  | { kind: 'clipEdge'; id: Id; edge: 'start' | 'end' };
+  | { kind: 'clipEdge'; id: Id; edge: 'start' | 'end' }
+  | { kind: 'inOut'; a: number }
+  | { kind: 'inOutEdge'; edge: 'in' | 'out' };
 
 type Ghost =
   | { kind: 'cel'; layerId: Id; start: number; length: number; trim: boolean }
   | { kind: 'length'; length: number }
   | { kind: 'marker'; id: Id; frame: number }
-  | { kind: 'clip'; id: Id | null; start: number; end: number };
+  | { kind: 'clip'; id: Id | null; start: number; end: number }
+  | { kind: 'inOut'; start: number; end: number };
 
 // ---------------------------------------------------------------- the pieces that move often
 
@@ -92,10 +97,12 @@ function TweenBar({ layer, cel, cw }: { layer: Layer; cel: Cel; cw: number }) {
   );
 }
 
-function Ruler({ cw, from, to, length, fps, total, ghostLength }: { cw: number; from: number; to: number; length: number; fps: number; total: number; ghostLength: number | null }) {
+function Ruler({ cw, from, to, length, fps, total, ghostLength, ghostRange }: { cw: number; from: number; to: number; length: number; fps: number; total: number; ghostLength: number | null; ghostRange: { start: number; end: number } | null }) {
   const onion = useStore((s) => s.ui.onion);
   // Only the onion shading follows the frame, so the ruler stays still while playing when it is off.
   const frame = useStore((s) => (s.ui.onion.enabled ? s.ui.frame : -1));
+  // Keys only: the shaded frames move when the drawings do.
+  useStore((s) => (s.ui.onion.enabled && s.ui.onion.keysOnly ? s.doc.layers : null));
   const step = labelStep(cw);
   const labels: number[] = [];
   const secs: number[] = [];
@@ -111,10 +118,15 @@ function Ruler({ cw, from, to, length, fps, total, ghostLength }: { cw: number; 
     return hi < lo ? null : <i key={key} className="tl-onion-shade" style={{ left: lo * cw, width: (hi - lo + 1) * cw, background: `color-mix(in srgb, ${color} 42%, transparent)` }} />;
   };
   const end = ghostLength ?? length;
+  const saved = useStore((s) => inOutRange(s.doc));
+  const io = ghostRange ?? saved;
   return (
     <div className="tl-ruler" data-region="ruler" data-quest="timeline-ruler" style={{ height: RULER_H }}>
       {clip ? <i className="tl-range-shade" style={{ left: clip.start * cw, width: (clip.end - clip.start + 1) * cw }} /> : null}
-      {onion.enabled ? [shade(frame - onion.before, frame - 1, onion.beforeColor, 'b'), shade(frame + 1, frame + onion.after, onion.afterColor, 'a')] : null}
+      {onion.enabled && !onion.keysOnly ? [shade(frame - onion.before, frame - 1, onion.beforeColor, 'b'), shade(frame + 1, frame + onion.after, onion.afterColor, 'a')] : null}
+      {onion.enabled && onion.keysOnly && frame >= 0
+        ? onionFrames(store().get().doc, frame, onion).map((o) => shade(o.frame, o.frame, o.side === 'before' ? onion.beforeColor : onion.afterColor, `k${o.frame}`))
+        : null}
       {labels.map((f) => (
         <span key={`n${f}`} className="tl-num" style={{ left: f * cw, width: cw }}>
           {f + 1}
@@ -125,6 +137,14 @@ function Ruler({ cw, from, to, length, fps, total, ghostLength }: { cw: number; 
           {cw * fps >= 36 ? <span className="tl-sec-label">{f / fps}s</span> : null}
         </span>
       ))}
+      {io ? (
+        <>
+          <i className="tl-io-dim" style={{ left: 0, width: io.start * cw }} />
+          <i className="tl-io-dim" style={{ left: (io.end + 1) * cw, width: Math.max(0, (end - io.end - 1) * cw) }} />
+          <button type="button" className="tl-io tl-io-in" data-edge="in" style={{ left: io.start * cw - 1 }} title={`Play range starts at frame ${io.start + 1}. Drag to move it.`} aria-label={`Play range start, frame ${io.start + 1}`} tabIndex={-1} />
+          <button type="button" className="tl-io tl-io-out" data-edge="out" style={{ left: (io.end + 1) * cw - 7 }} title={`Play range ends at frame ${io.end + 1}. Drag to move it.`} aria-label={`Play range end, frame ${io.end + 1}`} tabIndex={-1} />
+        </>
+      ) : null}
       <span className="tl-beyond" style={{ left: end * cw }} />
       <button type="button" className="tl-length" style={{ left: end * cw - 7 }} title="Drag to make your animation longer or shorter" aria-label={`Animation length: ${end} frames. Drag to change.`} tabIndex={-1}>
         <span />
@@ -327,8 +347,15 @@ export function TimelineBody() {
       main.current?.setPointerCapture(e.pointerId);
     };
     if (region === 'ruler') {
+      const ioEdge = t.closest<HTMLElement>('.tl-io')?.dataset.edge as 'in' | 'out' | undefined;
       if (t.closest('.tl-length')) capture({ kind: 'length' });
-      else {
+      else if (ioEdge) capture({ kind: 'inOutEdge', edge: ioEdge });
+      // Shift and drag along the ruler marks out a play range.
+      else if (e.shiftKey) {
+        const a = frameAt(e);
+        capture({ kind: 'inOut', a });
+        setGhost({ kind: 'inOut', start: a, end: a });
+      } else {
         capture({ kind: 'scrub', pause: true });
         goTo(frameAt(e));
       }
@@ -399,6 +426,17 @@ export function TimelineBody() {
         if (!d.moved && Math.abs(e.clientX - d.startX) < 3) return;
         d.moved = true;
         break;
+      case 'inOut': {
+        const f = frameAt(e);
+        setGhost({ kind: 'inOut', start: Math.min(d.a, f), end: Math.max(d.a, f) });
+        break;
+      }
+      case 'inOutEdge': {
+        const r = inOutRange(doc) ?? { start: 0, end: doc.length - 1 };
+        const f = frameAt(e);
+        setGhost({ kind: 'inOut', start: d.edge === 'in' ? Math.min(f, r.end) : r.start, end: d.edge === 'out' ? Math.max(f, r.start) : r.end });
+        break;
+      }
       case 'clipEdge': {
         const c = doc.clips.find((x) => x.id === d.id);
         if (!c) return;
@@ -443,6 +481,11 @@ export function TimelineBody() {
       const ui = store().get().ui;
       if (on && (ui.frame < c.start || ui.frame > c.end)) store().setUi({ frame: c.start });
     } else if (d.kind === 'clipEdge' && g?.kind === 'clip' && g.id) ops.setClipRange(g.id, g.start, g.end);
+    else if ((d.kind === 'inOut' || d.kind === 'inOutEdge') && g?.kind === 'inOut') {
+      // A shift-click without a drag just moves the playhead, like a plain click.
+      if (d.kind === 'inOut' && g.start === g.end) goTo(g.start);
+      else setInOut(g.start, g.end);
+    }
   };
 
   const onDouble = (e: RPointerEvent<HTMLDivElement> | React.MouseEvent<HTMLDivElement>) => {
@@ -494,7 +537,16 @@ export function TimelineBody() {
       if (c) setMenu({ x: e.clientX, y: e.clientY, items: clipMenu(c) });
     } else if (region === 'ruler') {
       const f = frameAt(e);
-      setMenu({ x: e.clientX, y: e.clientY, items: [{ label: 'Add a marker here', onClick: () => addMarkerAt(f) }] });
+      setMenu({
+        x: e.clientX,
+        y: e.clientY,
+        items: [
+          { label: 'Add a marker here', onClick: () => addMarkerAt(f) },
+          { label: 'Start the play range here (in)', onClick: () => setIn(f) },
+          { label: 'End the play range here (out)', onClick: () => setOut(f) },
+          ...(doc.inOut ? [{ label: 'Play everything again (clear the play range)', onClick: () => clearInOut() }] : []),
+        ],
+      });
     }
   };
 
@@ -537,7 +589,7 @@ export function TimelineBody() {
         onContextMenu={onContext}
       >
         <div className="tl-top">
-          <Ruler cw={cw} from={from} to={to} length={length} fps={fps} total={total} ghostLength={ghost?.kind === 'length' ? ghost.length : null} />
+          <Ruler cw={cw} from={from} to={to} length={length} fps={fps} total={total} ghostLength={ghost?.kind === 'length' ? ghost.length : null} ghostRange={ghost?.kind === 'inOut' ? ghost : null} />
           <MarkersRow cw={cw} from={from} to={to} />
           <ClipsRow cw={cw} from={from} to={to} />
           <Playhead part="ruler" cw={cw} activeRow={activeDisplayRow} />

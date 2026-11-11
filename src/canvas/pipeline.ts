@@ -22,6 +22,7 @@ import { paintComposited } from '../effects/stage';
 import { EffectCache } from '../effects/composite';
 import { needsCompositor } from '../effects/model';
 import { GHOST_ALPHA, type GhostItem } from './ghost';
+import { onionFrames } from './onion';
 
 export interface FrameParams {
   doc: Doc;
@@ -484,13 +485,8 @@ export class FramePainter {
 
   private paintOnion(g: CanvasRenderingContext2D, p: FrameParams, cacheable: boolean): void {
     const { doc, frame, onion, rect } = p;
-    const offsets: [number, number][] = [];
-    for (let k = 1; k <= onion.before; k++) if (frame - k >= 0) offsets.push([-k, k]);
-    for (let k = 1; k <= onion.after; k++) if (frame + k < doc.length) offsets.push([k, k]);
     // Furthest first, so the nearest ghost ends up on top.
-    offsets.sort((a, b) => b[1] - a[1]);
-    for (const [off, dist] of offsets) {
-      const f = frame + off;
+    for (const { frame: f, side, dist } of onionFrames(doc, frame, onion)) {
       const items: OnionItem[] = [];
       for (const layer of doc.layers) {
         if (!layer.visible || layer.onion === false) continue;
@@ -502,7 +498,7 @@ export class FramePainter {
         items.push({ drawing: d, pixelSize: layer.kind === 'pixel' ? layer.pixelSize : 1 });
       }
       if (!items.length) continue;
-      const color = off < 0 ? onion.beforeColor : onion.afterColor;
+      const color = side === 'before' ? onion.beforeColor : onion.afterColor;
       const alpha = onion.opacity * Math.pow(0.65, dist - 1);
       g.globalAlpha = alpha;
       if (cacheable) {

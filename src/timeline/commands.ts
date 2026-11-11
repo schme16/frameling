@@ -92,6 +92,16 @@ registerCommands([
     run: () => store().setUi((ui) => ({ onion: { ...ui.onion, enabled: !ui.onion.enabled } })),
   },
   {
+    id: 'timeline.onionKeysOnly',
+    label: 'Onion skin shows only keys (skip held frames)',
+    category: 'Timeline',
+    description: 'Count drawings instead of frames, so a drawing held on twos shows once, and you see the poses before and after.',
+    help: 'timeline-onion',
+    keywords: ['onion skin', 'keys only', 'keyframes', 'skip holds', 'drawings only'],
+    checked: (s) => !!s.ui.onion.keysOnly,
+    run: () => store().setUi((ui) => ({ onion: { ...ui.onion, keysOnly: !ui.onion.keysOnly, enabled: ui.onion.keysOnly ? ui.onion.enabled : true } })),
+  },
+  {
     id: 'timeline.newKey',
     label: 'New drawing here (new key)',
     category: 'Timeline',

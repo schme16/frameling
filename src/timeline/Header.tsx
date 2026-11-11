@@ -6,7 +6,8 @@ import { runCmd, tip } from './cmd';
 import { seconds } from './geometry';
 import { Floating } from './Menu';
 import * as ops from './ops';
-import { playRange } from './playback';
+import { inOutRange, playRange } from './playback';
+import { clearInOut } from './range';
 import { MAX_CW, MIN_CW, setTl, tl, useTl } from './state';
 import { SoundButton } from '../audio/SoundButton';
 
@@ -183,6 +184,10 @@ function OnionControls() {
             <input type="checkbox" checked={onion.tint} onChange={(e) => set({ tint: e.target.checked })} />
             <span>Tint the ghosts (so before and after look different)</span>
           </label>
+          <label className="tl-pop-check">
+            <input type="checkbox" checked={!!onion.keysOnly} onChange={(e) => set({ keysOnly: e.target.checked })} />
+            <span>Only show keys (skip held frames)</span>
+          </label>
         </Floating>
       ) : null}
     </span>
@@ -194,7 +199,19 @@ function PlayRange() {
     const id = tl().clipId;
     return id ? s.doc.clips.find((c) => c.id === id) : undefined;
   });
+  const io = useStore((s) => s.doc.inOut);
   useTl((t) => t.clipId);
+  if (!clip && io) {
+    const r = inOutRange(store().get().doc);
+    if (!r) return null;
+    return (
+      <span className="tl-range" title="Only the play range plays. Drag its ends on the ruler, or Shift and drag along the ruler to mark a new one.">
+        <Icon name="range" size={14} />
+        <span>Frames {r.start + 1} to {r.end + 1}</span>
+        <button type="button" className="tl-btn tl-btn-mini" aria-label="Play everything again" onClick={() => clearInOut()}><Icon name="close" size={12} /></button>
+      </span>
+    );
+  }
   if (!clip) return null;
   const r = playRange(store().get().doc, clip.id);
   return (
@@ -209,6 +226,7 @@ function PlayRange() {
 export function Header() {
   const playing = useStore((s) => s.ui.playing);
   const loop = useStore((s) => s.ui.loopPlayback);
+  const pingPong = useStore((s) => !!s.ui.pingPong);
   const cw = useTl((t) => t.cw);
   return (
     <div className="tl-header" role="toolbar" aria-label="Timeline controls">
@@ -221,6 +239,7 @@ export function Header() {
         <Btn id="timeline.nextFrame" icon="next" title="Forward one frame" />
         <Btn id="timeline.lastFrame" icon="last" title="Go to the last frame" />
         <Btn id="timeline.toggleLoop" icon="loop" title="Loop: start again at the end" pressed={loop} />
+        <Btn id="timeline.togglePingPong" icon="pingpong" title="Play back and forth (ping-pong)" pressed={pingPong} />
       </span>
       <Counter />
       <FpsField />

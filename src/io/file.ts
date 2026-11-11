@@ -258,6 +258,11 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
   if (audio) doc.audio = audio;
   const guides = readGuides(raw.guides);
   if (guides) doc.guides = guides;
+  if (isObj(raw.inOut) && Number.isFinite(raw.inOut.start) && Number.isFinite(raw.inOut.end)) {
+    const a = Math.max(0, Math.min(length - 1, Math.round(raw.inOut.start)));
+    const b = Math.max(0, Math.min(length - 1, Math.round(raw.inOut.end)));
+    doc.inOut = { start: Math.min(a, b), end: Math.max(a, b) };
+  }
   return doc;
 }
 

@@ -240,7 +240,7 @@ export class CanvasEngine {
     const rect = stageDeviceRect({ zoom: ui.zoom, panX: ui.panX, panY: ui.panY }, doc.width, doc.height, dpr);
     const depth = this.painter.warmDepth(doc, rect);
     if (!depth) return;
-    const frames = upcomingFrames(doc, ui.frame, depth, ui.loopPlayback);
+    const frames = upcomingFrames(doc, ui.frame, depth, ui.loopPlayback, undefined, !!ui.pingPong);
     if (!frames.length) return;
     const done = this.painter.warm(doc, frames, rect, this.els.main.width, this.els.main.height, start + WARM_SLICE_MS);
     if (!done) this.keepWarming();

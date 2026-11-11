@@ -1,6 +1,7 @@
 // Works out what an export will be (which frames, how big, what it is called) before anything is drawn.
 // Pure functions on the document, so they are easy to test.
 import type { Doc } from '../core/format';
+import { inOutRange } from '../timeline/inout';
 import { DEFAULT_SHEET, formatInfo, type ExportSettings, type FormatId } from './types';
 
 export const MAX_SIDE = 8192;
@@ -75,7 +76,7 @@ export function drawnFrames(doc: Doc): number | null {
   return drawn > 0 && drawn < doc.length ? drawn : null;
 }
 
-/** The frames an export covers. Whole animation, one clip, or the frame being looked at. */
+/** The frames an export covers. Whole animation, one clip, the play range, or the frame being looked at. */
 export function resolveRange(doc: Doc, s: Pick<ExportSettings, 'range' | 'clipId' | 'format'>, currentFrame: number): FrameRange {
   const last = Math.max(0, doc.length - 1);
   const clamp = (n: number) => Math.min(last, Math.max(0, Math.round(n)));
@@ -86,6 +87,10 @@ export function resolveRange(doc: Doc, s: Pick<ExportSettings, 'range' | 'clipId
   if (s.range === 'clip') {
     const clip = doc.clips.find((c) => c.id === s.clipId);
     if (clip) return { start: clamp(Math.min(clip.start, clip.end)), end: clamp(Math.max(clip.start, clip.end)) };
+  }
+  if (s.range === 'inOut') {
+    const io = inOutRange(doc);
+    if (io) return io;
   }
   return { start: 0, end: last };
 }
@@ -130,6 +135,7 @@ export function planExport(doc: Doc, s: ExportSettings, currentFrame: number): P
     if (clip) name += '-' + fileSafe(clip.name);
   }
   if ((!info.animated || s.range === 'frame') && doc.length > 1) name += `-frame-${range.start + 1}`;
+  if (info.animated && s.range === 'inOut' && inOutRange(doc)) name += `-frames-${range.start + 1}-${range.end + 1}`;
 
   let problem: string | null = null;
   if (!(s.scale > 0)) problem = 'Pick a size first.';

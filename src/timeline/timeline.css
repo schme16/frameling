@@ -477,6 +477,37 @@
   width: 8px;
 }
 
+/* The play range (in and out): frames outside it are dimmed, with a bracket at each end to drag. */
+.tl-io-dim {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: color-mix(in srgb, var(--bg) 50%, transparent);
+  pointer-events: none;
+}
+.tl-io {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  width: 8px;
+  padding: 0;
+  border: 2px solid var(--mint, #4fd1a5);
+  background: transparent;
+  cursor: ew-resize;
+  z-index: 2;
+}
+.tl-io-in {
+  border-right: 0;
+  border-radius: 3px 0 0 3px;
+}
+.tl-io-out {
+  border-left: 0;
+  border-radius: 0 3px 3px 0;
+}
+.tl-io:hover {
+  background: color-mix(in srgb, var(--mint, #4fd1a5) 30%, transparent);
+}
+
 .tl-marks,
 .tl-clips {
   position: relative;
