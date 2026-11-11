@@ -81,6 +81,8 @@ export interface Quest {
   badge?: Badge;
   /** Quests to do first. The panel shows the quest as locked until they're done (with a way round it). */
   requires?: string[];
+  /** The Quests panel heading it sits under (src/quests/groups.ts). Looked up by id when left out. */
+  group?: 'start' | 'drawing' | 'motion' | 'rigging' | 'sharing' | 'more';
   /** Gets the document ready (a template, a pixel page). Resolves false when the person said no to losing their work. */
   prepare?: () => boolean | Promise<boolean>;
   /** Is the open document suitable for picking this quest up half way? */

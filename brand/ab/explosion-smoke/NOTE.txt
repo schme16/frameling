@@ -1,0 +1,4 @@
+Explosion and smoke template, frames 9, 15, 21 and 29 over see-through checks, a dark game background and a light one.
+A: the old light grey smoke, which washed out over the checks and light backgrounds.
+B (built): darker smoke (#3e3946 fading to #9d98a6, full strength at first) and darker late fireball frames; still a transparent background, so exports are unchanged in that respect.
+The other option, a soft dark backing on a reference layer, was not used: it only helps inside the app, while darker smoke also reads in the exported sprite sheet.

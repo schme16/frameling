@@ -1,4 +1,9 @@
-How the rulers look along the top and left of the canvas (View > Rulers, Ctrl+R). Shown mid-way through dragging a guide out of the top ruler, dark theme on top, light below.
-A (built, default): solid strips in the panel colour with a hairline edge, so the rulers read as part of the app frame; the page's own stretch is lightly shaded on each ruler.
+How the rulers along the top and left of the canvas look (View > Rulers, Ctrl+R).
+
+In plain words: A: the ruler strip is solid, so art scrolling under it is hidden; B: the strip is see-through, so you can see the art under the numbers, at the cost of busier numbers.
+
+rulers-ab.png: the Sticker pack template zoomed to 200% and scrolled so the smiley slides under both rulers, close-up of the top-left corner at double resolution. A on the left, B on the right; dark theme on top, light below. a.png and b.png are the dark-theme close-ups on their own.
+A (built, default): solid strips in the panel colour with a hairline edge, so the rulers read as part of the app frame.
 B: see-through "glass" strips (canvas colour at 55% with a blur), so the canvas seems to run right to the window edge.
 B can be tried in the app with ?debug and __framelingRulerLook('glass') (src/canvas/Rulers.tsx, setRulerLook).
+Remade with: SHOT_SCALE=2 npx electron scripts/shoot.cjs <dir> dark-solid::dark:<steps.json> ... (steps: prefs.set({showWelcome:false}), template('sticker-pack'), rulers on, store().setUi({zoom:2, panX:-240, panY:-210}), __framelingRulerLook).
