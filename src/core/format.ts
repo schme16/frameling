@@ -59,6 +59,10 @@ export interface Doc {
   audio?: AudioClip[];
   /** Guide lines dragged out of the rulers (missing = none). Never drawn in exports. See `Guide`. */
   guides?: Guide[];
+  /** The play range set on the timeline (in and out, inclusive): only these frames play and loop (missing = all). */
+  inOut?: { start: number; end: number };
+  /** Perspective guides: one or two vanishing points in stage pixels (missing = none). Never drawn in exports. */
+  perspective?: { points: { x: number; y: number }[] };
 }
 
 /** A guide line across the stage: `axis` 'x' is an up-and-down line at x = `at`, 'y' a sideways one at y = `at`. */
@@ -316,6 +320,25 @@ export interface FillShape {
   paths: SubPath[];
   color: Color;
   opacity: number;
+  /** Paints with this instead of `color` when set (`color` stays as its first stop, for anything that wants one colour). */
+  gradient?: Gradient;
+}
+
+/** One colour along a gradient, `at` from 0 (start) to 1 (end). */
+export interface GradientStop {
+  at: number;
+  color: Color;
+}
+
+/**
+ * A colour blend. Linear runs from `from` to `to`; radial is a circle centred on `from` reaching out to `to`. Both
+ * are in document pixels, the same space as the shape's points, so moving the shape moves its gradient too.
+ */
+export interface Gradient {
+  kind: 'linear' | 'radial';
+  stops: GradientStop[];
+  from: { x: number; y: number };
+  to: { x: number; y: number };
 }
 
 /** A geometric shape (rectangle, ellipse, line, polygon, pen path), with an optional fill and stroke. */
@@ -328,6 +351,9 @@ export interface PathShape {
   fill: Color | null;
   stroke: { color: Color; width: number; join: 'round' | 'miter' | 'bevel'; cap: 'round' | 'butt' | 'square' } | null;
   opacity: number;
+  /** Gradients for the inside and the outline, used instead of the plain colours when set. */
+  fillGradient?: Gradient;
+  strokeGradient?: Gradient;
 }
 
 export interface Clip {

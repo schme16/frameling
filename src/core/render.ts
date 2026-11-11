@@ -18,6 +18,7 @@ import { compositePlan, EffectCache } from '../effects/composite';
 import { buildPlan } from '../effects/plan';
 import { activeEffects, needsCompositor } from '../effects/model';
 import { ctx2, makeCanvas, type Canvas2 } from '../effects/apply';
+import { canvasGradient } from './gradient';
 
 export type Ctx2D = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 
@@ -141,16 +142,16 @@ export function drawShape(g: Ctx2D, s: Shape, at?: DrawContext): void {
     g.fillStyle = s.color;
     g.fill(strokePath(s));
   } else if (s.type === 'fill') {
-    g.fillStyle = s.color;
+    g.fillStyle = s.gradient ? canvasGradient(g, s.gradient) : s.color;
     g.fill(shapePath(s), 'evenodd');
   } else {
     const p = shapePath(s);
     if (s.fill) {
-      g.fillStyle = s.fill;
+      g.fillStyle = s.fillGradient ? canvasGradient(g, s.fillGradient) : s.fill;
       g.fill(p, 'evenodd');
     }
     if (s.stroke) {
-      g.strokeStyle = s.stroke.color;
+      g.strokeStyle = s.strokeGradient ? canvasGradient(g, s.strokeGradient) : s.stroke.color;
       g.lineWidth = s.stroke.width;
       g.lineJoin = s.stroke.join;
       g.lineCap = s.stroke.cap;

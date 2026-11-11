@@ -4,6 +4,7 @@
  * Pure bytes in, bytes out (no DOM, no Electron), so it runs the same in the app and in Node tests. In memory a pixel
  * drawing holds raw RGBA; in the file `doc.json` holds the name of its PNG instead.
  */
+import { cleanGradients } from '../core/gradient';
 import { readFolders, readLayerLook } from '../effects/io';
 import { strFromU8, strToU8, unzipSync, zipSync, type Zippable } from 'fflate';
 import { BONE_STRETCH, FORMAT_VERSION, type Cel, type Doc, type Drawing, type Layer, type Shape, type SymbolDef, type Tween, type InstanceShape, type ClipFlow, type ClipTransition, type Tile, type Tileset, type Bone, type BonePose, type LayerBind, type Pose, type Rig, type SavedPose } from '../core/format';
@@ -157,7 +158,7 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
       continue;
     }
     if (d.kind === 'vector') {
-      const shapes: Shape[] = Array.isArray(d.shapes) ? d.shapes.filter((s: any) => isObj(s) && SHAPE_TYPES.has(s.type)).map((s: any) => (s.type === 'instance' ? readInstance(s) : s.type === 'text' ? readTextShape(s) : s.type === 'particles' ? readParticlesShape(s) : s)).filter((s: Shape | null): s is Shape => !!s) : [];
+      const shapes: Shape[] = Array.isArray(d.shapes) ? d.shapes.filter((s: any) => isObj(s) && SHAPE_TYPES.has(s.type)).map((s: any) => (s.type === 'instance' ? readInstance(s) : s.type === 'text' ? readTextShape(s) : s.type === 'particles' ? readParticlesShape(s) : cleanGradients(s))).filter((s: Shape | null): s is Shape => !!s) : [];
       if (!Array.isArray(d.shapes) || shapes.length !== d.shapes.length) warnings.push('Some shapes could not be read and were left out.');
       drawings[id] = { id: str(d.id, id), kind: 'vector', shapes, ...readPose(d.pose) };
     } else if (d.kind === 'pixel') {
@@ -258,6 +259,15 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
   if (audio) doc.audio = audio;
   const guides = readGuides(raw.guides);
   if (guides) doc.guides = guides;
+  if (isObj(raw.inOut) && Number.isFinite(raw.inOut.start) && Number.isFinite(raw.inOut.end)) {
+    const a = Math.max(0, Math.min(length - 1, Math.round(raw.inOut.start)));
+    const b = Math.max(0, Math.min(length - 1, Math.round(raw.inOut.end)));
+    doc.inOut = { start: Math.min(a, b), end: Math.max(a, b) };
+  }
+  if (isObj(raw.perspective) && Array.isArray(raw.perspective.points)) {
+    const points = raw.perspective.points.filter((p: any) => isObj(p) && Number.isFinite(p.x) && Number.isFinite(p.y)).slice(0, 2).map((p: any) => ({ x: p.x as number, y: p.y as number }));
+    if (points.length) doc.perspective = { points };
+  }
   return doc;
 }
 

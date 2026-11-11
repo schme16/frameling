@@ -5,7 +5,15 @@ import { applyWorkspace, currentWorkspace, deleteWorkspace, dock, listWorkspaces
 import { isStaleCommand, syncDynamicCommands } from './dynamic';
 import { Icon } from './icons';
 import { QuillEmpty, setShowQuill } from './mascot';
-import { addBinding, allConflicts, comboFromEvent, comboToString, conflictsFor, effectiveKeys, removeBinding, resetBindings, setBindings } from './keys';
+import { addBinding, allConflicts, comboFromEvent, comboToString, conflictsFor, effectiveKeys, layeredOverrides, removeBinding, resetBindings, setBindings } from './keys';
+import { KEYMAP_SETS, keymapSet } from './keymapSets';
+import { previewCue, type SoundCue } from './sounds';
+
+// The Try button: every sound once, a moment apart.
+const TRY: SoundCue[] = ['step', 'exported', 'refused', 'nothingToUndo', 'tick', 'goodbye', 'celebrate'];
+function playAll(): void {
+  TRY.forEach((c, i) => setTimeout(() => previewCue(c), i * 900));
+}
 import { holdKeyboard } from './keyboard';
 import { Keys } from './ShortcutChip';
 import { wordsOf } from './match';
@@ -137,9 +145,26 @@ function GeneralPage({ onThemes }: { onThemes: () => void }) {
       <Row label="Units" hint="How sizes are shown. Pixels suit screens and games; mm, cm, inches and points suit print.">
         <Segmented<Unit> label="Units" value={p.units} onChange={(units) => setPrefs({ units })} options={UNITS.map((u) => ({ id: u.id, label: u.id }))} />
       </Row>
-      <Row label="Sounds" hint="Little sound effects. They aren't here yet, but your choice is remembered.">
-        <Switch label="Sounds" on={p.sounds} onChange={(sounds) => setPrefs({ sounds })} />
+      <Row label="Sounds" hint="Soft little sounds: a quest step done, an export finished, a no. Off unless you turn them on.">
+        <Switch
+          label="Sounds"
+          on={p.sounds}
+          onChange={(sounds) => {
+            setPrefs({ sounds });
+            if (sounds) previewCue('step');
+          }}
+        />
       </Row>
+      {p.sounds && (
+        <Row label="Volume" hint="How loud the sounds are. Press Try to hear them.">
+          <div className="ui-pref-volume">
+            <input type="range" className="cv-slider" min={0} max={100} step={5} value={Math.round(p.soundVolume * 100)} aria-label="Sound volume" onChange={(e) => setPrefs({ soundVolume: Number(e.target.value) / 100 })} onPointerUp={() => previewCue('step')} />
+            <button type="button" className="ui-btn ui-btn-small" onClick={() => playAll()}>
+              Try
+            </button>
+          </div>
+        </Row>
+      )}
       <Row label="Reduce motion" hint="Stops the bouncing and fading. Frameling also does this when your computer asks for calm.">
         <Switch label="Reduce motion" on={p.reduceMotion} onChange={(reduceMotion) => setPrefs({ reduceMotion })} />
       </Row>
@@ -177,11 +202,12 @@ interface Clash {
 function KeyboardPage({ focusId }: { focusId?: string }) {
   syncDynamicCommands();
   const keymap = usePrefs((p) => p.keymap);
+  const setId = usePrefs((p) => p.keymapSet);
   const [query, setQuery] = useState('');
   const [rec, setRec] = useState<Recording | null>(null);
   const [clash, setClash] = useState<Clash | null>(null);
   const commands = allCommands().filter((c) => !isStaleCommand(c.id));
-  const conflicts = useMemo(() => allConflicts(commands, keymap), [commands.length, keymap]);
+  const conflicts = useMemo(() => allConflicts(commands, layeredOverrides(setId, commands, keymap)), [commands.length, keymap, setId]);
   const listRef = useRef<HTMLDivElement>(null);
 
   // Wait for a key. Everything goes to the recorder, nothing reaches the shortcut handler.
@@ -230,12 +256,29 @@ function KeyboardPage({ focusId }: { focusId?: string }) {
   return (
     <>
       <h3>Keyboard</h3>
+      <Row label="Shortcut set" hint={`${keymapSet(setId).blurb} Your own changes stay on top of whichever set you pick.`}>
+        <select
+          className="ui-keyset"
+          aria-label="Shortcut set"
+          value={keymapSet(setId).id}
+          onChange={(e) => {
+            setPrefs({ keymapSet: e.target.value });
+            toast(`Now using ${keymapSet(e.target.value).label} shortcuts.${anyOverride ? ' Your own changes are kept.' : ''}`, { kind: 'success' });
+          }}
+        >
+          {KEYMAP_SETS.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.label}
+            </option>
+          ))}
+        </select>
+      </Row>
       <div className="ui-keyboard-top">
         <div className="ui-help-search">
           <Icon name="search" size={15} />
           <input type="search" aria-label="Search shortcuts" placeholder="Search commands or keys" value={query} onChange={(e) => setQuery(e.target.value)} data-autofocus />
         </div>
-        <button type="button" className="ui-btn" disabled={!anyOverride} onClick={() => (resetBindings(), toast('All shortcuts are back to how they came.', { kind: 'success' }))}>
+        <button type="button" className="ui-btn" disabled={!anyOverride} onClick={() => (resetBindings(), toast(setId === 'frameling' ? 'All shortcuts are back to how they came.' : `All shortcuts are back to the ${keymapSet(setId).label} set.`, { kind: 'success' }))}>
           Reset all
         </button>
       </div>

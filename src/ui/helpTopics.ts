@@ -185,6 +185,10 @@ Open **Help, Keyboard shortcuts**, or **Preferences, Keyboard**. Commands are gr
 
 Press the small **x** on a shortcut to remove it. **Reset** puts a command back how it came.
 
+## Keys from another tool
+
+Used Flash / Animate or a pixel tool before? Pick a [shortcut set](help:shortcut-sets) at the top of the page.
+
 ## Good to know
 
 - Typing in a text box never triggers shortcuts, so you can type a name with the letter b in it.
@@ -214,13 +218,44 @@ Press the small **x** on a shortcut to remove it. **Reset** puts a command back 
 
 There are five pages:
 
-- **General**: [mode and look](help:look-and-feel), [units](help:units), sounds, motion, the welcome sheet and [Show Quill](help:meet-quill).
+- **General**: [mode and look](help:look-and-feel), [units](help:units), [sounds](help:sounds), motion, the welcome sheet and [Show Quill](help:meet-quill).
 - **Themes**: pick [themes](help:themes) and [make your own](help:make-your-own-theme).
 - **Behaviour**: [the choices Frameling asked you about](help:behaviour), like what N does.
-- **Keyboard**: see and change [shortcuts](help:keyboard-shortcuts).
+- **Keyboard**: see and change [shortcuts](help:keyboard-shortcuts), or pick a [shortcut set](help:shortcut-sets).
 - **Workspaces**: save and switch [panel layouts](help:workspaces).
 
 Changes happen straight away and are remembered for next time.`,
+  },
+  {
+    id: 'installing',
+    title: 'Installing Frameling',
+    section: 'Getting started',
+    media: 'installing.png',
+    summary: 'Windows and macOS ask you to say Frameling is OK the first time you open it. Here is how.',
+    keywords: ['install', 'installer', 'download', 'smartscreen', 'run anyway', 'gatekeeper', 'damaged', 'cannot be opened', 'unidentified developer', 'open anyway', 'signed', 'certificate', 'windows protected your pc'],
+    body: `Frameling is signed, but not yet with a paid certificate, so Windows and macOS don't recognise it. The first time you open it they ask you to say it's OK. After that it opens like any other app.
+
+## Windows
+
+1. Open **Frameling-setup** (the installer) or **Frameling-portable** (runs without installing).
+2. If a blue **Windows protected your PC** box appears, click **More info**.
+3. Click **Run anyway**.
+
+The publisher shows as **Frameling (self-signed)**.
+
+## macOS
+
+1. Open the **.dmg** and drag **Frameling** into **Applications**.
+2. In Applications, **right-click** (or Control-click) Frameling and choose **Open**, then **Open** again.
+3. If macOS still won't open it, go to **System Settings**, **Privacy & Security**, scroll down and click **Open Anyway**.
+
+## Linux
+
+Make the **AppImage** executable (right-click, **Properties**, **Allow executing as a program**, or \`chmod +x\`) and double-click it.
+
+## Or skip installing
+
+The [web version](help:web-browser) runs in Chrome, Edge or Firefox with nothing to install.`,
   },
   {
     id: 'meet-quill',
@@ -290,7 +325,7 @@ Turn this on to stop bouncing and fading. Quill stands still instead of moving. 
 
 ## Sounds
 
-A switch for sound effects. They aren't there yet, so for now it just remembers your choice.`,
+Soft little sounds for quest steps, finished exports and "no". They're on to start with; switch them off here. See [Sounds](help:sounds).`,
   },
   {
     id: 'themes',
@@ -399,7 +434,7 @@ Gold stays gold for chosen things by default, with dark text on it. If you chang
 
 - **Draw** has the tools and colours close, and a small timeline.
 - **Animate** gives the timeline lots of room.
-- **Pixel** puts the colour palette on the left.
+- **Pixel** is made for pixel art: only the pixel tools, a big palette, a real-size Preview and the pixel bar. See [The Pixel workspace](help:pixel-workspace).
 
 ## Switching
 

@@ -149,6 +149,11 @@ export const PANEL_INFO: Record<string, PanelInfo> = {
     group: 'animate',
     keywords: ['frames', 'layers', 'keys', 'animation'],
   },
+  preview: {
+    blurb: 'Your animation playing at its real size, as it will look in a game.',
+    group: 'animate',
+    keywords: ['real size', 'actual size', 'play', 'sprite'],
+  },
   'clip-flow': {
     blurb: 'How your clips (idle, walk, jump) lead into each other, for games.',
     group: 'animate',

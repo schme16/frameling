@@ -1,0 +1,171 @@
+/* Version history dialog. Theme tokens only. */
+.vh-body {
+  display: grid;
+  grid-template-columns: 250px 1fr;
+  gap: 16px;
+  min-height: 420px;
+}
+.vh-list {
+  list-style: none;
+  margin: 0;
+  padding: 0 4px 0 0;
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  max-height: 520px;
+  overflow: auto;
+}
+.vh-row {
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-small);
+  padding: 6px 8px;
+  cursor: pointer;
+}
+.vh-row:hover {
+  background: var(--hover-bg);
+}
+.vh-row:focus-visible {
+  outline: 2px solid var(--focus);
+}
+.vh-row.is-picked {
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+}
+.vh-row.is-picked small {
+  color: inherit;
+  opacity: 0.8;
+}
+.vh-row img,
+.vh-row .io-thumb-none {
+  width: 56px;
+  height: 42px;
+  object-fit: contain;
+  background: var(--raised);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-small);
+}
+.vh-row-text {
+  display: grid;
+  min-width: 0;
+}
+.vh-row-text b {
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.vh-row-text b:not(.vh-named) {
+  font-weight: 600;
+}
+.vh-row-text small {
+  color: var(--muted);
+  font-size: var(--fs-small);
+}
+.vh-side {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  min-width: 0;
+}
+.vh-preview {
+  display: grid;
+  gap: 6px;
+}
+.vh-stage {
+  display: grid;
+  place-items: center;
+  min-height: 320px;
+  background: var(--raised);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius);
+  padding: 10px;
+}
+.vh-stage canvas {
+  max-width: 100%;
+  box-shadow: var(--shadow);
+}
+.vh-scrub {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 8px;
+  align-items: center;
+  font-size: var(--fs-small);
+  color: var(--muted);
+}
+.vh-info {
+  display: grid;
+  gap: 2px;
+}
+.vh-info b {
+  font-size: 15px;
+}
+.vh-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.vh-name {
+  display: flex;
+  gap: 8px;
+}
+.vh-name input,
+.vh-field input {
+  flex: 1;
+  font: inherit;
+  color: var(--text);
+  background: var(--raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  padding: 6px 10px;
+}
+.vh-field {
+  display: grid;
+  gap: 4px;
+  font-weight: 700;
+}
+.vh-foot-note {
+  margin-right: auto;
+  font-size: var(--fs-small);
+}
+.vh-preview-msg {
+  padding: 40px 0;
+  text-align: center;
+}
+
+/* The film strip look (an A/B option): versions across the top, the preview under them. */
+.vh-layout-strip .vh-body {
+  grid-template-columns: 1fr;
+}
+.vh-layout-strip .vh-list {
+  grid-auto-flow: column;
+  grid-auto-columns: 120px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  max-height: none;
+  padding-bottom: 6px;
+}
+.vh-layout-strip .vh-row {
+  grid-template-columns: 1fr;
+  justify-items: center;
+  text-align: center;
+}
+.vh-layout-strip .vh-row img,
+.vh-layout-strip .vh-row .io-thumb-none {
+  width: 104px;
+  height: 72px;
+}
+.vh-layout-strip .vh-row-text b {
+  max-width: 104px;
+}
+.vh .io-foot .io-btn {
+  white-space: nowrap;
+}

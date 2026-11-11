@@ -42,27 +42,3 @@ export function dismissCelebration(): void {
   partyTimer = null;
   feedback.set((f) => (f.celebration ? { ...f, celebration: null } : f));
 }
-
-/** A soft three-note chime, only when sounds are on in Preferences. Silent where there's no audio. */
-let audio: AudioContext | null = null;
-export function chime(): void {
-  if (typeof AudioContext === 'undefined') return;
-  try {
-    audio ??= new AudioContext();
-    const t = audio.currentTime;
-    [523.25, 659.25, 783.99].forEach((hz, i) => {
-      const o = audio!.createOscillator();
-      const g = audio!.createGain();
-      o.type = 'sine';
-      o.frequency.value = hz;
-      g.gain.setValueAtTime(0, t + i * 0.12);
-      g.gain.linearRampToValueAtTime(0.07, t + i * 0.12 + 0.02);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + i * 0.12 + 0.5);
-      o.connect(g).connect(audio!.destination);
-      o.start(t + i * 0.12);
-      o.stop(t + i * 0.12 + 0.55);
-    });
-  } catch {
-    // No audio here. Fine.
-  }
-}

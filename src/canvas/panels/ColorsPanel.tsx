@@ -6,11 +6,17 @@ import { hexToHsv, hsvToHex, parseHex, toHex, type HSV } from '../colors';
 import '../canvas.css';
 import { activeColor, setActiveColor } from '../../tools/wells';
 import { Wells } from './Wells';
+import { GradientEditor } from './GradientEditor';
+import { setStopColor, stopColor, useGradientWells, wellGradient } from '../../tools/gradient-wells';
+import { openRecolour } from '../../tools/recolour-open';
 import { usePopover } from '../../ui/popover';
 
-// Every colour change goes to whichever box is in front (fill or stroke), and to selected shapes.
+// Every colour change goes to whichever box is in front (fill or stroke), and to selected shapes. When that box
+// holds a gradient, it changes the gradient colour being edited instead.
 function setColor(c: string): void {
-  setActiveColor(c);
+  const w = store().get().ui.activeWell;
+  if (wellGradient(w)) setStopColor(w, c);
+  else setActiveColor(c);
 }
 
 /** Turns a drag on an element into 0..1 positions, with pointer capture so it keeps working outside the box. */
@@ -191,7 +197,12 @@ function SwatchMenu({ menu, onClose }: { menu: MenuState; onClose: () => void })
 export function ColorsPanel() {
   // The picker shows the box in front. When that box is "none", show the stroke colour so the picker has a
   // starting point; picking any colour turns "none" off.
-  const color = useStore((s) => activeColor(s.ui) ?? s.ui.color);
+  const plain = useStore((s) => activeColor(s.ui) ?? s.ui.color);
+  const well = useStore((s) => s.ui.activeWell);
+  // Re-read when the gradient changes, so the picker follows the marker being edited.
+  useGradientWells((s) => s[well]);
+  useGradientWells((s) => s.stop[well]);
+  const color = stopColor(well) ?? plain;
   const swatches = useStore((s) => s.doc.swatches);
   const recent = useRecentColors();
   const [menu, setMenu] = useState<MenuState | null>(null);
@@ -201,6 +212,7 @@ export function ColorsPanel() {
       <Wells />
       <Picker color={color} />
       <HexField color={color} />
+      <GradientEditor />
 
       <div className="cv-field-head">
         <span className="cv-field-label">Swatches</span>
@@ -250,6 +262,9 @@ export function ColorsPanel() {
           </div>
         </>
       )}
+      <button type="button" className="cv-action cv-recolour-open" title="Swap one colour for another everywhere: every frame, every layer, vector and pixel (palette swap)" onClick={openRecolour}>
+        Recolour the whole animation...
+      </button>
       {menu && <SwatchMenu menu={menu} onClose={() => setMenu(null)} />}
     </div>
   );

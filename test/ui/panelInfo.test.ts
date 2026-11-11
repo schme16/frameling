@@ -32,7 +32,7 @@ describe('right side: which panel goes where', () => {
   });
 
   it('knows every built-in right panel, with a sentence each', () => {
-    for (const id of [...SECTIONS, 'library', 'clip-flow', 'lipsync', 'quests', 'help', 'timeline']) {
+    for (const id of [...SECTIONS, 'library', 'clip-flow', 'lipsync', 'quests', 'help', 'timeline', 'preview']) {
       expect(PANEL_INFO[id], id).toBeTruthy();
       expect(PANEL_INFO[id].blurb.length, id).toBeGreaterThan(10);
       expect(PANEL_INFO[id].blurb, id).not.toMatch(/—/);

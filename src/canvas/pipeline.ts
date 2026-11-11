@@ -22,6 +22,7 @@ import { paintComposited } from '../effects/stage';
 import { EffectCache } from '../effects/composite';
 import { needsCompositor } from '../effects/model';
 import { GHOST_ALPHA, type GhostItem } from './ghost';
+import { onionFrames } from './onion';
 
 export interface FrameParams {
   doc: Doc;
@@ -51,6 +52,8 @@ export interface FrameParams {
   activeLayerId?: string | null;
   /** The empty frame ghost: last drawings to show faintly where a layer has nothing (see ghost.ts). */
   ghost?: GhostItem[];
+  /** The light table: a pinned frame or drawing shown faintly under everything (see lightTable.ts). */
+  lightTable?: { items: GhostItem[]; alpha: number; tint: string | null };
 }
 
 const AROUND: [number, number][] = [
@@ -306,6 +309,8 @@ export class FramePainter {
     // Inside a symbol: the scene around it, dimmed, in the symbol's own space.
     if (doc.editing?.length) paintEditBackdrop(g, doc, rect);
 
+    // The light table sits under the onion skin and the ghost: it's the page you trace on.
+    if (p.lightTable?.items.length && !p.playing && !p.camera && !copy) this.paintGhost(g, p, p.lightTable.items, cacheable, p.lightTable.alpha, p.lightTable.tint);
     // Through the camera the onion skin would be in the wrong place, so it's left out.
     if (p.onion.enabled && !p.playing && !p.camera) this.paintOnion(g, p, cacheable);
     else if (p.ghost?.length && !p.playing && !p.camera && !copy) this.paintGhost(g, p, p.ghost, cacheable);
@@ -484,13 +489,8 @@ export class FramePainter {
 
   private paintOnion(g: CanvasRenderingContext2D, p: FrameParams, cacheable: boolean): void {
     const { doc, frame, onion, rect } = p;
-    const offsets: [number, number][] = [];
-    for (let k = 1; k <= onion.before; k++) if (frame - k >= 0) offsets.push([-k, k]);
-    for (let k = 1; k <= onion.after; k++) if (frame + k < doc.length) offsets.push([k, k]);
     // Furthest first, so the nearest ghost ends up on top.
-    offsets.sort((a, b) => b[1] - a[1]);
-    for (const [off, dist] of offsets) {
-      const f = frame + off;
+    for (const { frame: f, side, dist } of onionFrames(doc, frame, onion)) {
       const items: OnionItem[] = [];
       for (const layer of doc.layers) {
         if (!layer.visible || layer.onion === false) continue;
@@ -502,7 +502,7 @@ export class FramePainter {
         items.push({ drawing: d, pixelSize: layer.kind === 'pixel' ? layer.pixelSize : 1 });
       }
       if (!items.length) continue;
-      const color = off < 0 ? onion.beforeColor : onion.afterColor;
+      const color = side === 'before' ? onion.beforeColor : onion.afterColor;
       const alpha = onion.opacity * Math.pow(0.65, dist - 1);
       g.globalAlpha = alpha;
       if (cacheable) {
@@ -521,17 +521,17 @@ export class FramePainter {
     }
   }
 
-  private paintGhost(g: CanvasRenderingContext2D, p: FrameParams, items: GhostItem[], cacheable: boolean): void {
+  private paintGhost(g: CanvasRenderingContext2D, p: FrameParams, items: GhostItem[], cacheable: boolean, alpha = GHOST_ALPHA, tint: string | null = null): void {
     const { doc, rect } = p;
-    g.globalAlpha = GHOST_ALPHA;
-    if (cacheable) g.drawImage(this.onionBitmap(doc, items, '', false, rect.w, rect.h), rect.x, rect.y);
+    g.globalAlpha = alpha;
+    if (cacheable) g.drawImage(this.onionBitmap(doc, items, tint ?? '', !!tint, rect.w, rect.h), rect.x, rect.y);
     else {
       const sc = (this.scratch2 = this.sized(this.scratch2, p.width, p.height));
       const sg = ctxOf(sc);
       sg.setTransform(1, 0, 0, 1, 0, 0);
       sg.clearRect(0, 0, p.width, p.height);
       sg.setTransform(rect.w / doc.width, 0, 0, rect.h / doc.height, rect.x, rect.y);
-      this.drawOnionItems(sg, items, '', false, p.width, p.height);
+      this.drawOnionItems(sg, items, tint ?? '', !!tint, p.width, p.height);
       g.drawImage(sc, 0, 0);
     }
     g.globalAlpha = 1;

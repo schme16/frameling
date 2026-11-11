@@ -1,0 +1,6 @@
+How you edit a gradient's colours in the Colours panel (pick Linear or Radial for the box in front).
+
+gradient-editor-ab.png: a two-colour linear gradient, dark theme. A on the left, B on the right.
+A (built, default): a bar of the gradient with a marker under it per colour. Click a marker to pick it, drag to move it, drag it down off the bar to remove it, click the bar to add a colour. Compact and direct, the way most drawing apps do it.
+B: a row per colour with a swatch, a position slider and a remove (x) button, plus "Add a colour". Every action is a plain button or slider (no hidden drag-off gesture), but it takes more room and the gradient itself is only a thin strip.
+B can be tried in the app with ?debug and __framelingGradientLook('list') before opening the Colours panel (src/canvas/panels/GradientEditor.tsx).

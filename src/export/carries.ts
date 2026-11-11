@@ -6,13 +6,16 @@
  * (video, GIF, PNG, sheets) draw with the canvas renderer, so they keep everything. Looks on a symbol's own layers
  * count the same as on the stage: every writer composites them inside the copy (PDF turns the copy's layer into a
  * picture for effects, clipping and masks, as it does on the stage).
+ *
+ * Gradients (linear and radial, fills and lines) are kept as real gradients by SVG, animated SVG, Lottie and PDF.
+ * PDF's gradients are solid colours only, so a see-through stop comes out solid there.
  */
 import type { Doc, EffectKind } from '../core/format';
 import type { FormatId } from './types';
 import { effectInfo } from '../effects/model';
 
 /** Things a document can have that not every format can carry. */
-export type Feature = 'text' | 'particles' | 'tint' | 'blend' | 'effects' | 'clip' | 'mask' | 'folders' | 'bones';
+export type Feature = 'text' | 'particles' | 'tint' | 'blend' | 'effects' | 'clip' | 'mask' | 'folders' | 'bones' | 'gradientAlpha';
 
 /** kept: as itself. shapes: kept, but as outlines or shapes rather than editable text. picture: baked into pictures. out: left out. */
 export type Carry = 'kept' | 'shapes' | 'picture' | 'out';
@@ -27,6 +30,7 @@ export const FEATURE_WORDS: Record<Feature, string> = {
   mask: 'masks',
   folders: 'layer folders',
   bones: 'bent (boned) drawings',
+  gradientAlpha: 'see-through colours inside gradients',
 };
 
 interface FormatCarry {
@@ -76,11 +80,11 @@ export const CARRY: Record<FormatId, FormatCarry> = {
   },
   pdf: {
     summary: 'Sharp vector shapes with your layers as PDF layers. Text becomes letter outlines and colour wash recolours the shapes. Layers with effects, clipping, masks or bending (or holding a symbol with them inside) become pictures.',
-    rows: { text: 'shapes', effects: 'picture', clip: 'picture', mask: 'picture', bones: 'picture', folders: 'kept' },
+    rows: { text: 'shapes', effects: 'picture', clip: 'picture', mask: 'picture', bones: 'picture', folders: 'kept', gradientAlpha: 'out' },
   },
   ai: {
     summary: 'The same as PDF, opened by Illustrator with every shape editable. Layers with effects, clipping, masks or bending (or holding a symbol with them inside) become pictures.',
-    rows: { text: 'shapes', effects: 'picture', clip: 'picture', mask: 'picture', bones: 'picture', folders: 'kept' },
+    rows: { text: 'shapes', effects: 'picture', clip: 'picture', mask: 'picture', bones: 'picture', folders: 'kept', gradientAlpha: 'out' },
   },
 };
 
@@ -110,6 +114,10 @@ export function docFeatures(doc: Doc): DocFeatures {
       if (s.type === 'text') features.add('text');
       else if (s.type === 'particles') features.add('particles');
       else if (s.type === 'instance' && s.tint && s.tint.amount > 0) features.add('tint');
+      else if (s.type === 'fill' || s.type === 'path') {
+        const grads = s.type === 'fill' ? [s.gradient] : [s.fillGradient, s.strokeGradient];
+        if (grads.some((g) => g?.stops.some((st) => /^#[0-9a-f]{6}(?!ff)[0-9a-f]{2}$/i.test(st.color)))) features.add('gradientAlpha');
+      }
     }
   }
   return { features, effectKinds };

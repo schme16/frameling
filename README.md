@@ -208,3 +208,18 @@ as one more source with its own section; there is no server for one today.
 - `.github/workflows/build.yml`: the Windows, macOS and Linux builds, and the web build.
 
 Branches: work happens on `development`, which reaches `main` through pull requests, and each pull request builds the apps.
+
+## Signing (pilot)
+
+Releases are signed the cheap way for now, like Godot's own builds:
+
+- **Windows:** signed with Frameling's self-signed code-signing certificate (publisher "Frameling (self-signed)"). The
+  build uses it when the repository secrets `WIN_CSC_LINK` (the .pfx, base64) and `WIN_CSC_KEY_PASSWORD` are set, and
+  builds unsigned otherwise. The certificate's public half is `build/frameling-codesign.cer`; the private key and its
+  password live outside the repo, with the maintainer. SmartScreen still warns ("More info", "Run anyway").
+- **macOS:** ad-hoc signed after packaging (`build/adhoc-sign.cjs`, `codesign --sign -`), so Apple Silicon will run it
+  once it's allowed (right-click, Open). Not notarised.
+- **Linux:** the AppImage needs no signing.
+
+The in-app help topic "Installing Frameling" walks people through the first-run prompts. Moving to paid certificates
+later means setting `CSC_LINK`/`CSC_KEY_PASSWORD` (and Apple's notarisation variables) and removing the ad-hoc hook.

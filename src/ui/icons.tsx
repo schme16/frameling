@@ -136,6 +136,34 @@ const ICONS: Record<string, ReactNode> = {
       <circle cx="19" cy="5" r="1.8" fill="currentColor" />
     </>
   ),
+  // Drawing tools added with the pen: pen nib, points on a curve, polygon, star, gradient
+  pen: (
+    <>
+      <path d="M12 3.5l5.2 7.6-2.4 7.4H9.2l-2.4-7.4z" />
+      <path d="M12 3.5v7.2" />
+      <circle cx="12" cy="12.2" r="1.4" />
+      <path d="M8.8 21h6.4" />
+    </>
+  ),
+  points: (
+    <>
+      <path d="M4.5 17.5C7 8 15 6 19.5 9" />
+      <rect x="2.8" y="15.8" width="3.4" height="3.4" rx="0.6" fill="currentColor" />
+      <rect x="10.3" y="8.3" width="3.4" height="3.4" rx="0.6" />
+      <path d="M7.4 12.6l9-3.8" />
+      <circle cx="17.6" cy="7.6" r="1.3" fill="currentColor" />
+    </>
+  ),
+  polygon: <path d="M12 3.8l8 5.8-3 9.6H7l-3-9.6z" />,
+  pointy: <path d="M12 3.6l2.5 5.3 5.8.7-4.3 4 1.1 5.8L12 16.6l-5.1 2.8 1.1-5.8-4.3-4 5.8-.7z" />,
+  gradient: (
+    <>
+      <rect x="3.8" y="5" width="16.4" height="14" rx="3" />
+      <path d="M8 5v14" opacity="0.85" />
+      <path d="M11.5 5v14" opacity="0.6" />
+      <path d="M15 5v14" opacity="0.35" />
+    </>
+  ),
   select: <path d="M6.2 4.4l11.6 6-5.1 1.6-2.1 5.2z" />,
   lasso: (
     <>
@@ -290,6 +318,13 @@ const ICONS: Record<string, ReactNode> = {
     </>
   ),
   loop: <path d="M17 3.8l3 3.2-3 3.2M20 7H8a4 4 0 0 0-4 4v.8M7 20.2L4 17l3-3.2M4 17h12a4 4 0 0 0 4-4v-.8" />,
+  pingpong: <path d="M16 5l4 3.5-4 3.5M20 8.5H6M8 12l-4 3.5L8 19M4 15.5h14" />,
+  range: (
+    <>
+      <path d="M7 5H4.5v14H7M17 5h2.5v14H17" />
+      <path d="M10 9.5l4 2.5-4 2.5z" fill="currentColor" />
+    </>
+  ),
   // small actions
   plus: <path d="M12 5v14M5 12h14" />,
   minus: <path d="M5 12h14" />,

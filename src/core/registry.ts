@@ -179,6 +179,10 @@ export interface Tool {
   cancel?(ctx: ToolContext): void;
   /** Draw the live preview on top of the stage, in document coordinates (the canvas sets up the transform). */
   overlay?(g: CanvasRenderingContext2D, ctx: ToolContext): void;
+  /** A key pressed between gestures while this tool is chosen. Return true to take it (before the shortcuts). */
+  onKey?(e: KeyboardEvent, ctx: ToolContext): boolean;
+  /** Another tool was picked: finish or drop anything left half done. */
+  leave?(ctx: ToolContext): void;
 }
 
 const tools = new Map<string, Tool>();

@@ -8,7 +8,7 @@
  */
 import { zlibSync } from 'fflate';
 import { cameraViewAt, layerCameraMatrix } from '../core/camera';
-import type { BlendMode, CameraView, Color, Doc, Drawing, Layer, ParticlesShape, PixelDrawing, Shape, SubPath } from '../core/format';
+import type { BlendMode, CameraView, Color, Doc, Drawing, Gradient, Layer, ParticlesShape, PixelDrawing, Shape, SubPath } from '../core/format';
 import { strokeOutline } from '../core/render';
 import { isPosed, poseAt, type PosedInstance } from '../core/symbols';
 import { flattenTilemap } from '../tiles/model';
@@ -17,6 +17,8 @@ import { posedParticles } from '../particles/draw';
 import type { Particle } from '../particles/model';
 import { textOutlines } from '../text/convert';
 import { flatPlan, type FlatUnit } from './layered';
+import { gradientKey, sortedStops } from '../core/gradient';
+import { flattenRing, lineArea } from '../geometry/merge';
 
 const PDF_BLEND: Record<BlendMode, string> = {
   normal: 'Normal',
@@ -112,6 +114,8 @@ export class PdfWriter {
   readonly gs: string[] = [];
   readonly xobjects: string[] = [];
   readonly ocgs: { id: number; name: string }[] = [];
+  readonly shadings: string[] = [];
+  private shadingKeys = new Map<string, string>();
   /** The shared resources dictionary every page and form points at (written last). */
   readonly resId: number;
 
@@ -153,6 +157,40 @@ export class PdfWriter {
       this.gsKeys.set(key, name);
       this.gs.push(`/${name} << /Type /ExtGState /ca ${num(fill)} /CA ${num(stroke)} /BM /${blend} >>`);
     }
+    return name;
+  }
+
+  /** A shading (a gradient) as a resource, shared when the same one comes up again. Returns its name. */
+  shading(gr: Gradient): string {
+    const key = gradientKey(gr);
+    let name = this.shadingKeys.get(key);
+    if (name) return name;
+    const stops = sortedStops(gr.stops);
+    // PDF wants the colours to run the whole way from 0 to 1.
+    if (stops[0].at > 0) stops.unshift({ at: 0, color: stops[0].color });
+    if (stops[stops.length - 1].at < 1) stops.push({ at: 1, color: stops[stops.length - 1].color });
+    const rgb = (c: Color) => {
+      const p = parseColor(c);
+      return `[${num(p.r)} ${num(p.g)} ${num(p.b)}]`;
+    };
+    const seg = (a: Color, b: Color) => `<< /FunctionType 2 /Domain [0 1] /C0 ${rgb(a)} /C1 ${rgb(b)} /N 1 >>`;
+    let fn: string;
+    if (stops.length <= 2) fn = seg(stops[0].color, stops[stops.length - 1].color);
+    else {
+      const fns: string[] = [];
+      const bounds: number[] = [];
+      for (let i = 0; i < stops.length - 1; i++) {
+        fns.push(seg(stops[i].color, stops[i + 1].color));
+        if (i > 0) bounds.push(Math.max(stops[i].at, (bounds[bounds.length - 1] ?? 0) + 1e-4));
+      }
+      fn = `<< /FunctionType 3 /Domain [0 1] /Functions [${fns.join(' ')}] /Bounds [${bounds.map(num).join(' ')}] /Encode [${fns.map(() => '0 1').join(' ')}] >>`;
+    }
+    const { from: a, to: b } = gr;
+    const coords = gr.kind === 'radial' ? `${num(a.x)} ${num(a.y)} 0 ${num(a.x)} ${num(a.y)} ${num(Math.hypot(b.x - a.x, b.y - a.y))}` : `${num(a.x)} ${num(a.y)} ${num(b.x)} ${num(b.y)}`;
+    const id = this.add(`<< /ShadingType ${gr.kind === 'radial' ? 3 : 2} /ColorSpace /DeviceRGB /Coords [${coords}] /Function ${fn} /Extend [true true] >>`);
+    name = `Sh${this.shadingKeys.size + 1}`;
+    this.shadingKeys.set(key, name);
+    this.shadings.push(`/${name} ${id} 0 R`);
     return name;
   }
 
@@ -206,7 +244,7 @@ export class PdfWriter {
     }
     this.set(pagesId, `<< /Type /Pages /Kids [${kids.map((k) => `${k} 0 R`).join(' ')}] /Count ${kids.length} >>`);
     const props = this.ocgs.map((o, i) => `/OC${i + 1} ${o.id} 0 R`).join(' ');
-    this.set(this.resId, `<< /ProcSet [/PDF /ImageC /ImageB] /ExtGState << ${this.gs.join(' ')} >> /XObject << ${this.xobjects.join(' ')} >> /Properties << ${props} >> >>`);
+    this.set(this.resId, `<< /ProcSet [/PDF /ImageC /ImageB] /ExtGState << ${this.gs.join(' ')} >> /XObject << ${this.xobjects.join(' ')} >> /Shading << ${this.shadings.join(' ')} >> /Properties << ${props} >> >>`);
     const ocgRefs = this.ocgs.map((o) => `${o.id} 0 R`).join(' ');
     // Layers listed top first, the way layer panels show them.
     const order = [...this.ocgs].reverse().map((o) => `${o.id} 0 R`).join(' ');
@@ -264,6 +302,12 @@ class Content {
     this.push(`${num(p.r)} ${num(p.g)} ${num(p.b)} rg`);
     if (a < 0.999) this.push(`/${this.w.state(a, 1)} gs`);
     return true;
+  }
+
+  /** Paints a gradient through the current path as a clip (`W*` even-odd, `W` non-zero). Ends the path. */
+  shade(gr: Gradient, opacity: number, rule: 'W*' | 'W'): void {
+    if (opacity < 0.999) this.push(`/${this.w.state(opacity, 1)} gs`);
+    this.push(`${rule} n /${this.w.shading(gr)} sh`);
   }
 
   strokeColor(c: Color, opacity: number): boolean {
@@ -376,16 +420,38 @@ function drawShape(cx: Content, ctx: PdfFrameContext, s: Shape): void {
       cx.push('f');
     }
   } else if (s.type === 'fill') {
-    if (cx.fillColor(s.color, s.opacity)) {
+    if (s.gradient) {
+      cx.subPaths(s.paths);
+      cx.shade(s.gradient, s.opacity, 'W*');
+    } else if (cx.fillColor(s.color, s.opacity)) {
       cx.subPaths(s.paths);
       cx.push('f*');
     }
   } else {
-    if (s.fill && cx.fillColor(s.fill, s.opacity)) {
+    if (s.fill && s.fillGradient) {
+      cx.push('q');
+      cx.subPaths(s.paths);
+      cx.shade(s.fillGradient, s.opacity, 'W*');
+      cx.push('Q');
+    } else if (s.fill && cx.fillColor(s.fill, s.opacity)) {
       cx.subPaths(s.paths);
       cx.push('f*');
     }
-    if (s.stroke && s.stroke.width > 0 && cx.strokeColor(s.stroke.color, s.opacity)) {
+    if (s.stroke && s.stroke.width > 0 && s.strokeGradient) {
+      // A gradient line: the line's own outline clips the gradient (PDF can only shade areas).
+      const st = s.stroke;
+      cx.push('q');
+      for (const sp of s.paths)
+        for (const poly of lineArea(flattenRing(sp), sp.closed, st.width, st.join, st.cap))
+          for (const ring of poly) {
+            if (ring.length < 3) continue;
+            cx.push(`${num(ring[0][0])} ${num(ring[0][1])} m`);
+            for (let i = 1; i < ring.length; i++) cx.push(`${num(ring[i][0])} ${num(ring[i][1])} l`);
+            cx.push('h');
+          }
+      cx.shade(s.strokeGradient, s.opacity, 'W');
+      cx.push('Q');
+    } else if (s.stroke && s.stroke.width > 0 && cx.strokeColor(s.stroke.color, s.opacity)) {
       cx.push(`${num(s.stroke.width)} w ${JOIN[s.stroke.join] ?? 1} j ${CAP[s.stroke.cap] ?? 1} J`);
       cx.subPaths(s.paths);
       cx.push('S');

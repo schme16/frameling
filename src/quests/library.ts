@@ -31,6 +31,8 @@ import {
 } from './predicates';
 import { gifCard } from './probe';
 import { SHADE_AND_SHINE } from '../pixel/quest';
+import { notePreviewFrame, previewFramesPlayed, resetPreviewFramesPlayed, setPreview } from '../pixel/preview';
+import { showPanel } from '../ui/dock';
 import { FIRST_TWEEN } from '../symbols/quest';
 import { TILES_QUEST } from '../tiles/quest';
 import { BONES_QUEST } from '../rig/quest';
@@ -300,6 +302,26 @@ export const PIXEL_PAL: Quest = {
       done: (c) => changedFromPrevious(c.state.doc, 1),
       show: () => void tweakPixels(),
       hint: 'Rub out a pixel with the eraser, or paint a new one.',
+    },
+    {
+      id: 'preview',
+      say: 'Watch your pal play at real size in the Preview panel.',
+      why: 'Pixel art looks different small. 1x is how big it will be in a game; click the picture to pause.',
+      target: '.px-preview',
+      enter: () => {
+        resetPreviewFramesPlayed();
+        showPanel('preview');
+        setPreview({ playing: true });
+      },
+      done: (c) => previewFramesPlayed() >= 24 || c.ran.has('pixel.previewSize') || c.ran.has('pixel.previewPlay'),
+      // Show me brings it up at real size, playing, and counts as watching.
+      show: () => {
+        showPanel('preview');
+        setPreview({ playing: true, zoom: 1 });
+        for (let i = 0; i < 24; i++) notePreviewFrame();
+      },
+      hint: 'The Preview is a panel on the right. View > Panels > Preview opens it.',
+      help: 'pixel-preview',
     },
   ],
 };

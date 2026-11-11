@@ -10,6 +10,7 @@ import { askAboutUnsavedChanges } from '../../io/document';
 import { applyWorkspace, showPanel } from '../dock';
 import { Icon } from '../icons';
 import { line, lineParts, lines } from '../mascot/lines';
+import { playCue } from '../sounds';
 import { goodbyeScript, GOODBYE_WORDS, Quill, useQuillShown, welcomeBackScript, WELCOME_BACK_WORDS, type Script } from '../mascot';
 import { Modal } from '../Modal';
 import { closeOnboarding, openHelp, openSheet, overlays } from '../overlays';
@@ -72,6 +73,7 @@ function Flow() {
   }, [s.step]);
   const quillSwitched = (on: boolean) => {
     setPrefs({ showQuill: on });
+    if (!on) playCue('goodbye');
     setMood((m) => ({ kind: on ? 'back' : 'bye', n: (m?.n ?? 0) + 1, playing: true }));
   };
 
