@@ -434,7 +434,7 @@ Gold stays gold for chosen things by default, with dark text on it. If you chang
 
 - **Draw** has the tools and colours close, and a small timeline.
 - **Animate** gives the timeline lots of room.
-- **Pixel** puts the colour palette on the left.
+- **Pixel** is made for pixel art: only the pixel tools, a big palette, a real-size Preview and the pixel bar. See [The Pixel workspace](help:pixel-workspace).
 
 ## Switching
 
@@ -451,22 +451,64 @@ Arrange the panels how you like. Then open **Preferences, Workspaces**, type a n
 See also [Panels](help:panels).`,
   },
   {
+    id: 'properties',
+    order: 2,
+    media: 'properties.mp4',
+    title: 'Properties',
+    section: 'Workspace',
+    summary: 'The settings for what you are doing now, in one place on the right.',
+    keywords: ['inspector', 'settings', 'options', 'selection', 'tool options', 'colours', 'effects', 'symbol', 'text', 'where is', 'find a setting', 'right side', 'sections', 'fold'],
+    body: `**Properties** is the first place on the right side's rail. It shows the settings for what you're doing right now, as sections in one list, so you don't have to know which panel holds what.
+
+## What shows
+
+- **Tool options** and **Colours** are always there while you draw.
+- Select a **symbol** and its size, turn, fade and in-betweens (**Symbol and motion**) show, with **Effects** for its layer. Selected things come first.
+- Pick the **Text** tool or select text and the text settings show. Select particles, pick the camera layer or the **Bone** tool and theirs do.
+
+## Also here
+
+Sections that don't apply yet wait at the bottom under **Also here**, each with what brings it up ("Select particles on the canvas"). Press one to open it anyway.
+
+## Fold sections
+
+Press a section's name to fold it, and again to open it. **Alt**-click opens only that one. Right-click folds or opens them all. Folded sections stay folded next time.
+
+## Help on anything
+
+Each section has a **?** that opens its help. Rest the mouse on a name on the rail to see what it's for.
+
+## With the keyboard
+
+Section names are buttons: **Tab** to one, **Enter** or **Space** folds it. Screen readers hear each section as a heading.
+
+Want a section somewhere else? Drag its name onto the left or bottom zone. See [Panels](help:panels).`,
+  },
+  {
     id: 'panels',
     order: 1,
     media: 'panels.png',
     title: 'Panels',
     section: 'Workspace',
-    summary: 'Panels dock on the left, right and bottom. Drag them where you like.',
+    summary: 'Panels dock on the left, right and bottom. The right side names every one on its rail.',
     keywords: ['dock', 'tabs', 'more', 'overflow', 'drag', 'resize', 'collapse', 'splitter', 'hide', 'show', 'move', 'missing panel', 'lost panel', 'panel gone', 'bring back', 'close panel'],
     body: `Panels hold things like the timeline, layers and colours. They live in three zones: **left**, **right** and **bottom**.
 
+## The right side
+
+The right side has a **rail** down its edge: an icon with a name for every place there, so you can see everything at a glance.
+
+- **Properties** comes first. It holds the settings for what you're doing now. See [Properties](help:properties).
+- Below it are the panels you open now and then: **Library**, **Clip flow**, **Lip sync**, **Quests** and **Help**. Press one to open it, and press it again to fold the side away.
+- **Panels**, at the bottom of the rail, lists every panel with a sentence on what it's for. Type to find one. Panels you closed are there too, marked *Closed*: pick one to bring it back. It's also in the **View** menu as **All panels**.
+
 ## Move
 
-Drag a panel's **tab** to another place in the same zone to reorder it, or onto another zone to move it there. A glow shows where it will land.
+Drag a panel's **tab** (or its name on the rail) to another place to reorder it, or onto another zone to move it there. A glow shows where it will land.
 
 ## When the tabs don't all fit
 
-When a zone gets narrow, the other tabs shrink to just their icon (hover one to see its name). **Colours** keeps its name while there is room, so it is easy to find. If even that's not enough, a **+N** button appears: click it to see the rest and open one. Widen the zone to bring the names back.
+On the left and bottom, when a zone gets narrow, the other tabs shrink to just their icon (hover one to see its name). If even that's not enough, a **+N** button lists the rest.
 
 ## Resize
 
@@ -474,15 +516,15 @@ Drag the thin line between a zone and the canvas. Arrow keys work too when the l
 
 ## Collapse
 
-Press the little arrow at the end of a tab bar to tuck a zone away. Press a tab to bring it back.
+Press the little arrow at the end of a tab bar, or at the bottom of the rail, to tuck a zone away. Press a tab or a rail name to bring it back.
 
 ## Show and hide
 
-Press the **x** on a tab to close that panel (or press **Delete** while the tab has the keyboard). Bring it back from the **View** menu. Panels with a tick are showing.
+Press the **x** on a tab (or by a panel's name on the right) to close it, or press **Delete** while its tab has the keyboard. Bring it back from **Panels** or the **View** menu. Panels with a tick are showing.
 
 ## With the keyboard
 
-**Tab** lands on the chosen tab of each zone. The **arrow keys** move between tabs, **Home** and **End** jump to the first and last.
+**Tab** lands on the chosen tab of each zone. The **arrow keys** move between tabs (up and down on the rail), **Home** and **End** jump to the first and last.
 
 Your layout is remembered. Save arrangements as [workspaces](help:workspaces).`,
   },

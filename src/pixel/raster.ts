@@ -160,3 +160,50 @@ export function dragBox(a: PxPt, b: PxPt, shift: boolean, alt: boolean): [PxPt, 
   if (alt) return [{ x: a.x - dx, y: a.y - dy }, { x: a.x + dx, y: a.y + dy }];
   return [a, { x: a.x + dx, y: a.y + dy }];
 }
+
+/**
+ * A straight-sided shape as clean pixels. `pts` are corners in pixel units (cell x spans x to x + 1). The fill takes
+ * every cell whose middle is inside (even-odd, so a star's middle stays filled); the edge joins the corners' cells
+ * with plain lines. Either can be left out.
+ */
+export function plotPolygon(pts: { x: number; y: number }[], closed: boolean, edge: Plot | null, fill?: Plot): void {
+  const n = pts.length;
+  if (!n) return;
+  if (fill && closed && n >= 3) {
+    let y0 = Infinity;
+    let y1 = -Infinity;
+    for (const p of pts) {
+      y0 = Math.min(y0, p.y);
+      y1 = Math.max(y1, p.y);
+    }
+    const xs: number[] = [];
+    for (let y = Math.floor(y0); y <= Math.ceil(y1); y++) {
+      const cy = y + 0.5;
+      xs.length = 0;
+      for (let i = 0; i < n; i++) {
+        const a = pts[i];
+        const b = pts[(i + 1) % n];
+        if (a.y <= cy === b.y <= cy) continue;
+        xs.push(a.x + ((cy - a.y) / (b.y - a.y)) * (b.x - a.x));
+      }
+      xs.sort((p, q) => p - q);
+      for (let k = 0; k + 1 < xs.length; k += 2) {
+        // Cells whose middles fall between the two crossings.
+        for (let x = Math.ceil(xs[k] - 0.5); x + 0.5 < xs[k + 1]; x++) fill(x, y);
+      }
+    }
+  }
+  if (!edge) return;
+  const cell = (p: { x: number; y: number }) => ({ x: Math.floor(p.x), y: Math.floor(p.y) });
+  if (n === 1) {
+    const c = cell(pts[0]);
+    edge(c.x, c.y);
+    return;
+  }
+  const segs = closed ? n : n - 1;
+  for (let i = 0; i < segs; i++) {
+    const a = cell(pts[i]);
+    const b = cell(pts[(i + 1) % n]);
+    plotLine(a.x, a.y, b.x, b.y, edge);
+  }
+}

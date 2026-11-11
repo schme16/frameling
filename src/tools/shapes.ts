@@ -10,9 +10,10 @@ import { drawShape } from '../core/render';
 import { store } from '../core/store';
 import type { Pt, Rect } from '../canvas/geometry';
 import { addShapes } from './merge-mode';
-import { clearSnap, snapPt } from '../canvas/guides';
+import { clearSnap, snapLineEnd, snapPt } from '../canvas/guides';
 import { ShapeOptions } from './options/ShapeOptions';
 import { noteColorUsed } from './recent';
+import { withWellGradients } from './gradient-wells';
 import { getToolSettings, type ToolSettings } from './settings';
 import { canEdit, reportEdit } from './util';
 import { activePixelLayer, makePixelShape } from '../pixel/tools';
@@ -146,7 +147,14 @@ function shapeTool(kind: 'rect' | 'ellipse' | 'line', label: string, icon: strin
   const build = (): PathShape | null => {
     if (!drag) return null;
     const ui = store().get().ui;
-    return makeShape(kind, drag.start, drag.cur, { shift: drag.cur.shift, alt: drag.cur.alt }, { ...shapeColors(ui), line: ui.color }, getToolSettings());
+    const s = makeShape(kind, drag.start, drag.cur, { shift: drag.cur.shift, alt: drag.cur.alt }, { ...shapeColors(ui), line: ui.color }, getToolSettings());
+    return s && withWellGradients(s);
+  };
+  // Where the drag ends: a line's end can follow the perspective guides (and Shift picks from their directions too).
+  const endAt = (d: Drag, e: ToolPointer, ctx: ToolContext): ToolPointer => {
+    if (kind !== 'line') return { ...e, ...snapPt(e, ctx.zoom, e.mod) };
+    const s = snapLineEnd(d.start, e, ctx.zoom, e.mod, e.shift);
+    return { ...e, ...s.pt, shift: s.constrained ? false : e.shift };
   };
   return {
     id: kind,
@@ -175,12 +183,12 @@ function shapeTool(kind: 'rect' | 'ellipse' | 'line', label: string, icon: strin
     },
     move(e, ctx) {
       if (pix.active()) return pix.move(e);
-      if (drag) drag.cur = { ...e, ...snapPt(e, ctx.zoom, e.mod) };
+      if (drag) drag.cur = endAt(drag, e, ctx);
     },
     up(e, ctx) {
       if (pix.active()) return pix.up(e, ctx);
       if (!drag) return;
-      drag.cur = { ...e, ...snapPt(e, ctx.zoom, e.mod) };
+      drag.cur = endAt(drag, e, ctx);
       clearSnap();
       const shape = build();
       drag = null;

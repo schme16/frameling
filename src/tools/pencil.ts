@@ -1,5 +1,6 @@
 /**
- * Pencil [P]: a thin, even line that follows the hand closely. On a pixel layer it's the pixel pencil: one pixel,
+ * Pencil [P]: a thin, even line that follows the hand closely. "Clean line" in the options makes it a smooth stroked
+ * path instead (centre-line), which Edit points can reshape. On a pixel layer it's the pixel pencil: one pixel,
  * pixel perfect corners, Shift+click for a straight line (src/pixel/tools.ts).
  */
 import type { BrushSettings } from '../core/format';
@@ -11,10 +12,11 @@ import { PencilOptions } from './options/PencilOptions';
 import { getToolSettings } from './settings';
 import { canEdit } from './util';
 import { VectorStroke } from './vectorStroke';
+import { CleanLine } from './cleanLine';
 import { activePixelLayer, makePixelPencil } from '../pixel/tools';
 import { byLayerKind } from '../pixel/ToolOptions';
 
-let stroke: VectorStroke | null = null;
+let stroke: VectorStroke | CleanLine | null = null;
 const pix = makePixelPencil();
 
 export function pencilBrush(): BrushSettings {
@@ -38,7 +40,9 @@ export const pencilTool: Tool = {
       return;
     }
     if (!canEdit(ctx, 'vector', 'The pencil')) return;
-    stroke = new VectorStroke(pencilBrush(), store().get().ui.color);
+    const t = getToolSettings();
+    // Clean line: an even stroked path you can edit by its points, instead of the hand-drawn outline.
+    stroke = t.pencilClean ? new CleanLine(store().get().ui.color, t.pencilSize) : new VectorStroke(pencilBrush(), store().get().ui.color);
     stroke.add(e, ctx.zoom);
   },
   move(e, ctx) {

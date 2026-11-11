@@ -29,7 +29,7 @@ export const MENUS: MenuDef[] = [
   {
     label: 'View',
     categories: ['View'],
-    items: ['view.zoomIn', 'view.zoomOut', 'view.fit', 'view.zoom100', 'view.center', 'view.pixelGrid', 'view.emptyGhost', 'view.whereDidItGo', '-', 'view.rulers', 'view.guides', 'view.snap', 'view.lockGuides', 'view.clearGuides', '-', 'view.gridSquare', 'view.gridIso', 'view.perspective1', 'view.perspective2', 'view.showPerspective', 'view.removePerspective', 'view.gridSettings', '-', 'view.lightTable', 'view.lightTableDrawing', 'view.clearLightTable', '-', 'group:panels', '-', 'group:workspaces', 'view.saveWorkspace', 'view.resetLayout', '-', 'view.toggleTheme', 'view.nextTheme', 'view.themes', 'view.toggleLook', 'view.toggleSounds', '-', 'view.commandPalette'],
+    items: ['view.zoomIn', 'view.zoomOut', 'view.fit', 'view.zoom100', 'view.center', 'view.pixelGrid', 'view.emptyGhost', 'view.whereDidItGo', '-', 'view.rulers', 'view.guides', 'view.snap', 'view.lockGuides', 'view.clearGuides', '-', 'view.gridSquare', 'view.gridIso', 'view.perspective1', 'view.perspective2', 'view.showPerspective', 'view.removePerspective', 'view.gridSettings', '-', 'view.lightTable', 'view.lightTableDrawing', 'view.clearLightTable', '-', 'group:panels', 'view.allPanels', '-', 'group:workspaces', 'view.saveWorkspace', 'view.resetLayout', '-', 'view.toggleTheme', 'view.nextTheme', 'view.themes', 'view.toggleLook', 'view.toggleSounds', '-', 'view.commandPalette'],
   },
   {
     label: 'Draw',
@@ -39,7 +39,7 @@ export const MENUS: MenuDef[] = [
   {
     label: 'Pixel',
     categories: ['Pixel'],
-    items: ['tools.pencil', 'tools.shade', 'tools.dither', 'pixel.mirror', '-', 'pixel.flipH', 'pixel.flipV', 'pixel.rotateRight', 'pixel.rotateLeft', 'pixel.rotate180', 'pixel.rotate', '-', 'pixel.outline', 'pixel.outlineInside', '-', 'view.panel.palette', 'pixel.paletteLock', 'pixel.reduceToPalette', 'palette.fromDrawing', 'palette.import', 'palette.exportGpl', 'palette.exportHex', 'palette.exportPal'],
+    items: ['tools.pencil', 'tools.shade', 'tools.dither', 'pixel.mirror', '-', 'pixel.flipH', 'pixel.flipV', 'pixel.rotateRight', 'pixel.rotateLeft', 'pixel.rotate180', 'pixel.rotate', '-', 'pixel.outline', 'pixel.outlineInside', '-', 'view.panel.palette', 'view.panel.preview', 'pixel.previewPlay', 'pixel.previewSize', 'view.workspace.pixel', '-', 'pixel.paletteLock', 'pixel.reduceToPalette', 'palette.fromDrawing', 'palette.import', 'palette.exportGpl', 'palette.exportHex', 'palette.exportPal'],
   },
   {
     label: 'Animate',

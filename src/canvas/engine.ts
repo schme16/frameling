@@ -17,6 +17,8 @@ import { neighbourFrames, upcomingFrames } from '../timeline/playback';
 import { FramePainter } from './pipeline';
 import { subscribeTileUi, tileModeOn } from '../tiles/state';
 import { subscribePrefs } from '../ui/prefs';
+import { anyOverlayOpen } from '../ui/overlays';
+import { controlWantsKey } from '../ui/keyboard';
 import { drawTileModeFrame, tileCopyAlpha } from '../tiles/look';
 import { maskFocusChanged } from '../effects/stage';
 import { cssVar, subscribeTheme } from './theme';
@@ -298,6 +300,7 @@ export class CanvasEngine {
     }
     if (u.tool !== q.tool) {
       if (this.gesture?.kind === 'tool' && !this.selfSwitch) this.cancelGesture();
+      if (!this.selfSwitch) getTool(q.tool)?.leave?.(this.ctx);
       this.updateCursor();
     }
   };
@@ -665,6 +668,17 @@ export class CanvasEngine {
       return;
     }
     if (this.spaceDown && !['Shift', 'Alt', 'Control', 'Meta'].includes(e.key)) this.spaceTap.spoil();
+    // The chosen tool gets first go at a key between gestures (Enter finishes a pen path), unless a focused control
+    // wants it.
+    if (!this.gesture && !this.spaceDown && !controlWantsKey(e.target, e) && !anyOverlayOpen()) {
+      const tool = this.currentTool();
+      if (tool?.onKey?.(e, this.ctx)) {
+        e.preventDefault();
+        e.stopPropagation();
+        this.invalidate(false, true);
+        return;
+      }
+    }
     this.modifiersChanged(e);
   };
 

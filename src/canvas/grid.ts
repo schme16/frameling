@@ -122,3 +122,61 @@ export function moveVanishing(points: Pt[], index: number, to: Pt, free: boolean
     return free ? p : { x: p.x, y: to.y };
   });
 }
+
+/** `b` moved onto the line through `a` with angle `ang` (radians): its nearest point on that line. */
+function onLine(a: Pt, b: Pt, ang: number): Pt {
+  const ux = Math.cos(ang);
+  const uy = Math.sin(ang);
+  const t = (b.x - a.x) * ux + (b.y - a.y) * uy;
+  return { x: a.x + ux * t, y: a.y + uy * t };
+}
+
+/** The angles (radians) of the lines from `a` towards each vanishing point; null where `a` sits on the point. */
+export function vanishingAngles(a: Pt, points: Pt[]): (number | null)[] {
+  return points.map((vp) => (Math.hypot(vp.x - a.x, vp.y - a.y) < 1e-6 ? null : Math.atan2(vp.y - a.y, vp.x - a.x)));
+}
+
+/**
+ * The end of a line from `a` pulled onto a vanishing point's direction when `b` comes within `tol` of that line.
+ * Returns the snapped end and which point it follows, or null.
+ */
+export function snapToVanishing(a: Pt, b: Pt, points: Pt[], tol: number): { pt: Pt; index: number } | null {
+  let best: { pt: Pt; index: number } | null = null;
+  let bd = tol;
+  vanishingAngles(a, points).forEach((ang, index) => {
+    if (ang === null) return;
+    const pt = onLine(a, b, ang);
+    const d = Math.hypot(pt.x - b.x, pt.y - b.y);
+    if (d <= bd) {
+      bd = d;
+      best = { pt, index };
+    }
+  });
+  return best;
+}
+
+/**
+ * Shift on a line with perspective guides: the nearest of the 45 degree steps and the vanishing point directions.
+ * `index` says which vanishing point won (null for a 45 degree step).
+ */
+export function constrainWithVanishing(a: Pt, b: Pt, points: Pt[]): { pt: Pt; index: number | null } {
+  const dir = Math.atan2(b.y - a.y, b.x - a.x);
+  // Lines run both ways, so angles compare modulo half a turn.
+  const off = (ang: number) => {
+    const d = Math.abs((((dir - ang) % Math.PI) + Math.PI) % Math.PI);
+    return Math.min(d, Math.PI - d);
+  };
+  let best = Math.round(dir / (Math.PI / 4)) * (Math.PI / 4);
+  let index: number | null = null;
+  let bd = off(best);
+  vanishingAngles(a, points).forEach((ang, i) => {
+    if (ang === null) return;
+    const d = off(ang);
+    if (d < bd - 1e-9) {
+      bd = d;
+      best = ang;
+      index = i;
+    }
+  });
+  return { pt: onLine(a, b, best), index };
+}

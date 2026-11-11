@@ -7,7 +7,7 @@ import { store } from '../core/store';
 import { addStageOverlay, hint, requestOverlay } from './controller';
 import { getSnapLines, setSnapLines, SNAP_PX, snapBox, snapPoint, snapTargets, withGuide, type SnapLine } from './snap';
 import { cssVar } from './theme';
-import { isoRatio, snapIso, squareLines } from './grid';
+import { constrainWithVanishing, isoRatio, snapIso, snapToVanishing, squareLines } from './grid';
 import { getViewSettings, setViewSettings } from './viewSettings';
 import type { Pt, Rect } from './view';
 
@@ -95,6 +95,48 @@ export function snapPt(p: Pt, zoom: number, bypass: boolean): Pt {
   return { x: s.x, y: s.y };
 }
 
+// The perspective direction a line end just snapped to (from the line's start towards a vanishing point), so it can flash.
+let ray: { from: Pt; vp: Pt } | null = null;
+
+function showRay(next: { from: Pt; vp: Pt } | null): void {
+  if (!ray && !next) return;
+  ray = next;
+  requestOverlay();
+}
+
+/** The vanishing points lines can follow: only while the perspective guides show and snapping is on. */
+function vanishingPoints(bypass: boolean): Pt[] {
+  const v = getViewSettings();
+  if (bypass || !v.snap || !v.perspective) return [];
+  return store().get().doc.perspective?.points ?? [];
+}
+
+/**
+ * The end of a line drawn from `a` (Line tool, pen segments). With perspective guides showing, it follows a vanishing
+ * point's direction when it comes close; with Shift it takes the nearest of the 45 degree steps and those directions.
+ * `constrained` says Shift was handled here, so the caller shouldn't snap to 45 degrees again.
+ */
+export function snapLineEnd(a: Pt, b: Pt, zoom: number, bypass: boolean, shift: boolean): { pt: Pt; constrained: boolean } {
+  const vps = vanishingPoints(bypass);
+  if (vps.length) {
+    if (shift) {
+      const c = constrainWithVanishing(a, b, vps);
+      showSnap([]);
+      showRay(c.index === null ? null : { from: a, vp: vps[c.index] });
+      return { pt: c.pt, constrained: true };
+    }
+    const hit = snapToVanishing(a, b, vps, (SNAP_PX * 1.5) / zoom);
+    if (hit) {
+      showSnap([]);
+      showRay({ from: a, vp: vps[hit.index] });
+      return { pt: hit.pt, constrained: false };
+    }
+  }
+  showRay(null);
+  if (shift) return { pt: b, constrained: false };
+  return { pt: snapPt(b, zoom, bypass), constrained: false };
+}
+
 /** A box being dragged by (dx, dy) pulled onto the nearest lines. */
 export function snapMove(box: Rect | null, dx: number, dy: number, zoom: number, bypass: boolean): { dx: number; dy: number } {
   const t = box && targets(bypass);
@@ -107,6 +149,7 @@ export function snapMove(box: Rect | null, dx: number, dy: number, zoom: number,
 /** Lets go of the snap lines (the gesture is over). */
 export function clearSnap(): void {
   showSnap([]);
+  showRay(null);
 }
 
 function showSnap(lines: SnapLine[]): void {
@@ -156,6 +199,22 @@ addStageOverlay((g, zoom) => {
     g.strokeStyle = cssVar('--rose', '#ff6f91');
     g.lineWidth = 1.25 * px;
     for (const s of snapped) line(g, s.axis, s.at, doc.width, doc.height);
+  }
+  if (ray) {
+    // The perspective line being followed, from the vanishing point out past the line's start.
+    const dx = ray.from.x - ray.vp.x;
+    const dy = ray.from.y - ray.vp.y;
+    const len = Math.hypot(dx, dy) || 1;
+    const reach = (doc.width + doc.height) * 4;
+    g.globalAlpha = 1;
+    g.strokeStyle = cssVar('--rose', '#ff6f91');
+    g.lineWidth = 1.25 * px;
+    g.setLineDash([5 * px, 3 * px]);
+    g.beginPath();
+    g.moveTo(ray.vp.x, ray.vp.y);
+    g.lineTo(ray.vp.x + (dx / len) * reach, ray.vp.y + (dy / len) * reach);
+    g.stroke();
+    g.setLineDash([]);
   }
   g.restore();
 });

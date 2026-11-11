@@ -1,0 +1,6 @@
+How points and curve handles look with the Pen (Shift+P), Edit points (A) and the Gradient tool (F).
+
+pen-handles-ab.png: a pen shape in Edit points with the top point chosen, close-up at 2x. A on the left, B on the right. a.png and b.png are each on their own.
+A (built, default): square points (filled when chosen), round handle ends. The usual vector-app look, so people who know other tools feel at home.
+B: round points and diamond handle ends. Softer, a little more "Frameling", but less like what people already know.
+B can be tried in the app with ?debug and __framelingHandleLook('round') (src/tools/point-handles.ts, setHandleLook).
