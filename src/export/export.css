@@ -166,6 +166,12 @@
   font-size: var(--fs-small);
   line-height: 1.4;
 }
+.ex-carry .ex-note + .ex-note {
+  margin-top: 4px;
+}
+.ex-note.ex-warn {
+  color: var(--text);
+}
 .ex-sub {
   margin: 6px 0 0;
   font-weight: 800;

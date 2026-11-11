@@ -17,6 +17,7 @@ import type { Progress } from './run';
 import { GIF_MAX_FPS } from './gif';
 import { proresSupport, type ProresSupport } from './prores';
 import { LayeredNotes } from './LayeredNotes';
+import { CarryNotes } from './CarryNotes';
 import { DEFAULT_SHEET, engineInfo, FORMATS, formatInfo, normalizeSheet, type EngineId, type ExportSettings, type FormatId } from './types';
 import './export.css';
 import { docDpi, formatSize } from '../core/units';
@@ -289,12 +290,7 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
           )}
 
           {s.format === 'lottie' ? (
-            <p className="ex-note">
-              Shapes stay shapes, so it plays sharp at any size. Symbols, in-betweens, the camera and clips (as markers) come along.{' '}
-              <button type="button" className="ex-link" onClick={() => openHelp('export-lottie')}>
-                What carries over
-              </button>
-            </p>
+            <p className="ex-note">No size to pick: shapes stay shapes, so a Lottie player draws it sharp at whatever size it's shown.</p>
           ) : (
           <fieldset>
             <legend>Size</legend>
@@ -322,6 +318,7 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
           </fieldset>
 
           <LayeredNotes format={s.format} doc={doc} />
+          <CarryNotes format={s.format} doc={doc} />
           {s.format === 'webm' && (
             <fieldset>
               <legend>Video codec</legend>

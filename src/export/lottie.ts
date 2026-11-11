@@ -16,7 +16,11 @@
  * - The camera is a null layer per depth that every stage layer hangs from (one key per frame when it moves).
  * - Clips become named markers (lottie-web's playSegments takes their names), markers become markers.
  *
- * Not carried: colour wash (tint) on symbol copies, and layer fades blend shape by shape rather than as one flat layer.
+ * - Blend modes, opacity, clipping, masks (track mattes), folders and effects follow the compositing plan, as the
+ *   canvas does (see docs/effects.md, "Vector exports"). Soften and Shadow are Lottie effects, other effects are baked.
+ * - Text is traced letters, particles a group per particle, tint a recoloured precomp (sprites.ts).
+ *
+ * In lottie-web's canvas renderer a layer fade still blends shape by shape, and effects don't play there.
  */
 import type { Cel, Doc, Easing, InstanceShape, Layer, LayerEffect, ParticlesShape, PathShape, PixelDrawing, Shape, StrokeShape, SubPath, TextShape, Tween } from '../core/format';
 import { celAt } from '../core/doc';
