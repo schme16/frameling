@@ -92,7 +92,7 @@ export function QuestBar() {
         </button>
         {step.show && (
           <button type="button" className="qb-btn qb-go" onClick={() => void engine.showMe()} title="I will do this step for you">
-            <Icon name="sparkle" size={14} /> Show me
+            <Icon name="show-me" size={14} /> Show me
           </button>
         )}
       </footer>

@@ -131,7 +131,7 @@ export function HelpBrowser({ compact = false, initial, onExpand }: { compact?: 
         ) : (
           (body ?? (
             <div className="ui-help-home">
-              <Icon name="sparkle" size={28} />
+              <Icon name="book" size={28} />
               <h2>How can we help?</h2>
               <p>Pick something from the list, or search. Pressing F1 over any button comes straight here.</p>
               <div className="ui-help-quick">

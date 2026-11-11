@@ -9,6 +9,9 @@ import { registerCommand } from '../../src/core/registry';
 import { helpIdFor } from '../../src/ui/help/context';
 import { TIPS, tipText } from '../../src/ui/tips';
 import { ICON_NAMES } from '../../src/ui/icons';
+import { readdirSync, readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 beforeEach(() => {
   resetPrefs();
@@ -129,7 +132,28 @@ describe('tips and icons', () => {
     for (const t of TIPS) expect(tipText(t)).not.toContain('{key');
   });
   it('has every icon the app was promised', () => {
-    const need = 'sliders brush pencil eraser fill rect ellipse line select hand zoom eyedropper layers timeline play pause stop prev next first last onion plus minus trash eye eye-off lock unlock duplicate settings help search export save open new undo redo palette clip marker key hold folder pixel vector close check chevron-left chevron-right chevron-up chevron-down grip sparkle heart loop film image grid warning info'.split(' ');
+    const need = 'sliders brush pencil eraser fill rect ellipse line select hand zoom eyedropper layers timeline play pause stop prev next first last onion plus minus trash eye eye-off lock unlock duplicate settings help search export save open new undo redo palette clip marker key hold folder pixel vector close check chevron-left chevron-right chevron-up chevron-down grip quest tip show-me book heart loop film image grid warning info'.split(' ');
     for (const n of need) expect(ICON_NAMES, n).toContain(n);
+  });
+  it('has no AI-looking icons, and every icon the code names exists', () => {
+    // Sparkles, stars, wands with twinkles and robot heads read as "AI feature" in today's apps. Say what the thing is.
+    for (const n of ICON_NAMES) expect(n).not.toMatch(/sparkle|star|magic|robot|brain|glow|^ai$/);
+    const root = join(dirname(fileURLToPath(import.meta.url)), '../../src');
+    const files: string[] = [];
+    const walk = (d: string) => {
+      for (const e of readdirSync(d, { withFileTypes: true })) {
+        const p = join(d, e.name);
+        if (e.isDirectory()) walk(p);
+        else if (/\.tsx?$/.test(e.name)) files.push(p);
+      }
+    };
+    walk(root);
+    for (const f of files) {
+      const src = readFileSync(f, 'utf8');
+      for (const m of src.matchAll(/<Icon name="([a-z-]+)"|\bicon: '([a-z-]+)'/g)) {
+        const n = m[1] ?? m[2];
+        expect(ICON_NAMES, `${n} in ${f.replace(/\\/g, '/')}`).toContain(n);
+      }
+    }
   });
 });

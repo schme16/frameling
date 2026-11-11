@@ -62,7 +62,7 @@ export function StatusBar() {
       <span className="ui-status-spacer" />
       {showTips && (
         <button type="button" className={`ui-status-tip${fade ? ' is-fading' : ''}`} onClick={next} data-tip="Show another tip" aria-label={`Tip: ${tipText(TIPS[tip])}. Press for another.`}>
-          <Icon name="sparkle" size={14} />
+          <Icon name="tip" size={14} />
           <span>{tipText(TIPS[tip])}</span>
         </button>
       )}
