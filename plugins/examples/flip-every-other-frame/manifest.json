@@ -1,0 +1,10 @@
+{
+  "id": "flip-every-other-frame",
+  "name": "Flip every other frame",
+  "version": "1.0.0",
+  "description": "Mirrors every other key on the layer you're on, for a quick wobble or a turn-around. One step to undo.",
+  "author": "Frameling examples",
+  "main": "main.js",
+  "permissions": ["document.read", "document.edit", "panels"],
+  "apiVersion": 1
+}

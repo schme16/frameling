@@ -5,6 +5,14 @@ import type { ReactNode } from 'react';
 const dot = (cx: number, cy: number, r = 1.2) => <circle cx={cx} cy={cy} r={r} fill="currentColor" stroke="none" />;
 
 const ICONS: Record<string, ReactNode> = {
+  // plugins and templates
+  plugin: <path d="M9 4.5a2 2 0 0 1 4 0V7h4a1 1 0 0 1 1 1v3.5h-1.5a2 2 0 0 0 0 4H18V19a1 1 0 0 1-1 1h-3.5v-1.5a2 2 0 0 0-4 0V20H6a1 1 0 0 1-1-1v-4h1.5a2 2 0 0 0 0-4H5V8a1 1 0 0 1 1-1h3z" />,
+  template: (
+    <>
+      <rect x="4" y="4" width="16" height="16" rx="2.5" />
+      <path d="M4 9h16M9 9v11" />
+    </>
+  ),
   // symbols and tweens
   symbol: (
     <>

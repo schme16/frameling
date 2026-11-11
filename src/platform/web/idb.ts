@@ -1,7 +1,7 @@
 // A very small promise wrapper around IndexedDB, just enough for the web build's own storage: recent files, file
-// handles, browser copies of files, and the autosave copies.
+// handles, browser copies of files, the autosave copies, and installed plugins and your templates.
 
-export const STORES = ['recent', 'handles', 'copies', 'autosave', 'kept'] as const;
+export const STORES = ['recent', 'handles', 'copies', 'autosave', 'kept', 'library'] as const;
 export type StoreName = (typeof STORES)[number];
 
 export interface Db {
@@ -22,7 +22,8 @@ const done = <T>(req: IDBRequest<T>): Promise<T> =>
 
 export function openDb(name = 'frameling', factory: IDBFactory = indexedDB): Promise<Db> {
   return new Promise((resolve, reject) => {
-    const req = factory.open(name, 1);
+    // Version 2 added 'library' (plugins and templates). onupgradeneeded only creates what's missing.
+    const req = factory.open(name, 2);
     req.onupgradeneeded = () => {
       for (const s of STORES) if (!req.result.objectStoreNames.contains(s)) req.result.createObjectStore(s);
     };

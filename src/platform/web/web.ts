@@ -7,7 +7,7 @@
  * (baseName gives the file name). The id finds the file handle or the browser's copy.
  */
 import { zipSync } from 'fflate';
-import type { AutosaveInfo, AutosaveMeta, DocumentState, FileFilter, FramelingApi, KeptAutosave, RecentFile, SaveChoice } from '../../preload/api';
+import type { AutosaveInfo, AutosaveMeta, DocumentState, FileFilter, FramelingApi, KeptAutosave, LibraryApi, LibraryEntry, LibraryKind, RecentFile, SaveChoice } from '../../preload/api';
 import type { Question } from '../ask';
 import { memoryDb, type Db } from './idb';
 
@@ -305,8 +305,37 @@ export function createWebApi(env: WebEnv): WebApi {
     for (const fn of keepHandlers) void fn().catch(() => undefined);
   });
 
+  const libKey = (kind: LibraryKind, id: string) => `${kind}/${id}`;
+  const library: LibraryApi = {
+    async list(kind) {
+      await ready;
+      const d = await db();
+      const out: LibraryEntry[] = [];
+      for (const k of await d.keys('library')) {
+        if (!k.startsWith(`${kind}/`)) continue;
+        const v = await d.get<{ bytes: Uint8Array; modified: number }>('library', k);
+        if (v) out.push({ id: k.slice(kind.length + 1), size: v.bytes.length, modified: v.modified });
+      }
+      return out;
+    },
+    async read(kind, id) {
+      await ready;
+      const v = await (await db()).get<{ bytes: Uint8Array }>('library', libKey(kind, id));
+      return v ? new Uint8Array(v.bytes) : null;
+    },
+    async write(kind, id, bytes) {
+      await ready;
+      await (await db()).put('library', libKey(kind, id), { bytes, modified: now() });
+    },
+    async remove(kind, id) {
+      await ready;
+      await (await db()).delete('library', libKey(kind, id));
+    },
+  };
+
   const api: WebApi = {
     kind: 'web',
+    library,
     platform: env.platform,
     versions: { app: env.appVersion, electron: '', chrome: '' },
     ready,
@@ -342,6 +371,33 @@ export function createWebApi(env: WebEnv): WebApi {
         const path = makePath('copy', newId(), f.name);
         await keepCopy(path, bytes).catch(() => undefined);
         return { path, bytes };
+      },
+      async openOther({ filters }) {
+        await ready;
+        const exts = filters.flatMap((f) => f.extensions.map((e) => `.${e}`));
+        if (env.pickers.showOpenFilePicker) {
+          let h: FileHandleLike | undefined;
+          try {
+            [h] = await env.pickers.showOpenFilePicker({ types: pickerTypes(filters), id: 'other' });
+          } catch (e) {
+            if (isAbort(e)) return null;
+            return { error: friendly(e, 'open') };
+          }
+          if (!h) return null;
+          try {
+            const bytes = await bytesOf(await h.getFile());
+            return { path: await remember('file', h, true), bytes };
+          } catch (e) {
+            return { error: friendly(e, 'open') };
+          }
+        }
+        const f = await env.pickUpload(exts.join(','));
+        if (!f) return null;
+        // Writing back to an uploaded file can only be a download.
+        return { path: makePath('download', newId(), f.name), bytes: await bytesOf(f) };
+      },
+      async linkPlayable() {
+        // The file handle is already kept (remember), which is all a browser can do.
       },
       async read(path) {
         await ready;

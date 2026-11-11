@@ -1,7 +1,7 @@
 // Which big floating things are open: command palette, preferences, help window, welcome and new-document sheets.
 import { createStore } from './mini';
 
-export type PrefsPage = 'general' | 'themes' | 'behaviour' | 'keyboard' | 'workspaces';
+export type PrefsPage = 'general' | 'themes' | 'behaviour' | 'keyboard' | 'workspaces' | 'plugins';
 
 export interface Overlays {
   palette: boolean;
