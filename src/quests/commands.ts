@@ -51,7 +51,7 @@ registerHelp({
 
 ## How it works
 
-A small bar appears at the bottom left with what to do next, and a soft gold ring shows you where. The dots show how far along you are.
+A small bar appears at the bottom left with what to do next, and a soft gold ring shows you where. [Quill](help:meet-quill) reads each step out in a speech bubble and points while the ring is showing. The dots show how far along you are.
 
 - **Show me** does the step for you, so you can watch how it is done. You can undo it like anything else.
 - **Skip** moves on without doing the step.

@@ -1,4 +1,5 @@
 import { Icon } from '../ui/icons';
+import { QuillSays } from '../ui/mascot';
 import { Medal } from './Medal';
 import { allQuests, getQuest, isUnlocked, questProgress } from './registry';
 import { engine, playQuest, resumeQuest } from './runtime';
@@ -9,6 +10,7 @@ export function QuestsPanel() {
   const list = allQuests();
   const earned = list.filter((q) => q.badge && p.badges.includes(q.badge.id)).length;
   const total = list.filter((q) => q.badge).length;
+  const allDone = list.length > 0 && list.every((q) => p.completed.includes(q.id));
   return (
     <div className="ui-panel qp" data-quest="panel">
       <div className="qp-head">
@@ -17,7 +19,13 @@ export function QuestsPanel() {
           {earned} of {total} badges
         </span>
       </div>
-      <p className="qp-lead">Short lessons that teach by doing. Each one earns a badge.</p>
+      {p.active || p.paused ? (
+        <p className="qp-lead">Short lessons that teach by doing. Each one earns a badge.</p>
+      ) : (
+        <QuillSays anim={allDone ? 'cheer' : 'idle'} then={allDone ? 'idle' : undefined} size={48} className="qp-quill">
+          <p className="qp-lead">{allDone ? 'You did every quest! Do one again any time.' : "Short lessons that teach by doing. Pick one and I'll walk you through it."}</p>
+        </QuillSays>
+      )}
       <ul className="qp-list">
         {list.map((q) => {
           const done = p.completed.includes(q.id);

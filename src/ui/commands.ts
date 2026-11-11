@@ -2,7 +2,7 @@
 import { getHelp, registerCommands } from '../core/registry';
 import { contextualHelpId } from './help/context';
 import { resetLayout } from './dock';
-import { openHelp, openPrefs, openSheet, togglePalette } from './overlays';
+import { openAbout, openHelp, openPrefs, openSheet, togglePalette } from './overlays';
 import { effectiveTheme, getPrefs, setPrefs } from './prefs';
 import { toast } from './toast';
 import { BUILT_IN_THEMES } from './themes/builtIn';
@@ -161,8 +161,10 @@ registerCommands([
     id: 'help.about',
     label: 'About Frameling',
     category: 'Help',
-    description: 'Which version you have.',
-    run: () => void toast(aboutText(), { kind: 'info' }),
+    description: 'Which version you have, and a hello from Quill.',
+    help: 'meet-quill',
+    keywords: ['version', 'quill', 'hedgehog', 'mascot'],
+    run: openAbout,
   },
 ]);
 

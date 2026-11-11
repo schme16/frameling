@@ -23,6 +23,8 @@ export interface Prefs {
   showWelcome: boolean;
   /** Show the friendly tips in the status bar. */
   showTips: boolean;
+  /** Show Quill, the hedgehog guide. Off hides him everywhere; his speech bubbles still show their words. */
+  showQuill: boolean;
   /** Command id -> its shortcuts. An empty list means "no shortcut". Missing means "use the default". */
   keymap: Record<string, string[]>;
 }
@@ -39,6 +41,7 @@ export const DEFAULT_PREFS: Prefs = {
   reduceMotion: false,
   showWelcome: true,
   showTips: true,
+  showQuill: true,
   keymap: {},
 };
 
@@ -66,6 +69,7 @@ export function migratePrefs(raw: unknown): Prefs {
     reduceMotion: bool(r.reduceMotion, DEFAULT_PREFS.reduceMotion),
     showWelcome: bool(r.showWelcome, DEFAULT_PREFS.showWelcome),
     showTips: bool(r.showTips, DEFAULT_PREFS.showTips),
+    showQuill: bool(r.showQuill, DEFAULT_PREFS.showQuill),
     keymap,
   };
 }

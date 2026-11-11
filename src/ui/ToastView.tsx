@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { Icon } from './icons';
+import { Quill, useQuillShown } from './mascot';
 import { dismissToast, toasts, type ToastItem } from './toast';
 
 const KIND_ICON = { info: 'info', success: 'check', warn: 'warning', error: 'warning' } as const;
 
 function ToastCard({ t }: { t: ToastItem }) {
   const [paused, setPaused] = useState(false);
+  const quill = useQuillShown() && !!t.quill;
   const timer = useRef<number | undefined>(undefined);
   useEffect(() => {
     if (paused || !t.duration) return;
@@ -14,7 +16,7 @@ function ToastCard({ t }: { t: ToastItem }) {
   }, [paused, t.duration, t.id]);
   return (
     <div className={`ui-toast ui-toast-${t.kind}`} role={t.kind === 'error' ? 'alert' : 'status'} onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)} onFocus={() => setPaused(true)} onBlur={() => setPaused(false)}>
-      <Icon name={KIND_ICON[t.kind]} size={16} />
+      {quill ? <Quill anim={t.quill!} then="idle" size={32} className="ui-toast-quill" /> : <Icon name={KIND_ICON[t.kind]} size={16} />}
       <span className="ui-toast-text">{t.message}</span>
       {t.action && (
         <button

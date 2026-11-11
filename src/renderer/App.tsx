@@ -2,6 +2,7 @@
 // (command palette, preferences, help, welcome, tooltips, toasts). The pieces live in src/ui.
 import { useEffect, useState } from 'react';
 import { CanvasView } from '../canvas/CanvasView';
+import { AboutDialog } from '../ui/About';
 import { CommandPalette } from '../ui/CommandPalette';
 import { DockZoneView, Splitter } from '../ui/DockView';
 import { syncPanels } from '../ui/dock';
@@ -61,6 +62,7 @@ export function App() {
       <ChoiceDialog />
       <HelpWindow />
       <WelcomeSheet />
+      <AboutDialog />
       <ToastView />
       <TooltipLayer />
     </div>

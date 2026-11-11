@@ -9,9 +9,11 @@ export interface Overlays {
   help: { topic?: string; anchor?: string; query?: string } | null;
   /** `welcome` is the first-run sheet, `new` is the same chooser opened from File > New, `examples` is the same sheet scrolled to the examples. */
   sheet: 'welcome' | 'new' | 'examples' | null;
+  /** The About Frameling card. */
+  about: boolean;
 }
 
-export const overlays = createStore<Overlays>({ palette: false, prefs: null, help: null, sheet: null });
+export const overlays = createStore<Overlays>({ palette: false, prefs: null, help: null, sheet: null, about: false });
 
 const patch = (p: Partial<Overlays>) => overlays.set((o) => ({ ...o, ...p }));
 
@@ -29,7 +31,10 @@ export const closeHelp = () => patch({ help: null });
 export const openSheet = (sheet: 'welcome' | 'new' | 'examples') => patch({ sheet, palette: false });
 export const closeSheet = () => patch({ sheet: null });
 
+export const openAbout = () => patch({ about: true, palette: false });
+export const closeAbout = () => patch({ about: false });
+
 export const anyOverlayOpen = (): boolean => {
   const o = overlays.get();
-  return o.palette || !!o.prefs || !!o.help || !!o.sheet;
+  return o.palette || !!o.prefs || !!o.help || !!o.sheet || o.about;
 };

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Icon } from '../ui/icons';
+import { QuillEmpty } from '../ui/mascot';
 import { dirName } from './desktop';
 import { clearRecentFiles, listRecentFiles, openPath } from './document';
 import { Modal, mountModal } from './mount';
@@ -25,7 +26,7 @@ function RecentDialog({ close }: { close: () => void }) {
     <Modal title="Open recent" onClose={close}>
       <div className="io-body">
         {files === null ? null : files.length === 0 ? (
-          <p className="io-empty">Nothing here yet. Drawings you open or save will show up here.</p>
+          <QuillEmpty anim="draw" className="io-empty">Nothing here yet. Drawings you open or save will show up here.</QuillEmpty>
         ) : (
           <ul className="io-recent">
             {files.map((f) => (

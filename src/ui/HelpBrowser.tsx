@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { allHelp, getHelp } from '../core/registry';
 import { Icon } from './icons';
+import { QuillEmpty } from './mascot';
 import { Markdown } from './help/markdown';
 import { HelpMedia } from './help/media';
 import { searchHelp, sections } from './help/search';
@@ -79,7 +80,11 @@ export function HelpBrowser({ compact = false, initial, onExpand }: { compact?: 
           <span>{h.snippet}</span>
         </button>
       ))}
-      {!hits.length && <p className="ui-help-empty">Nothing found. Try another word.</p>}
+      {!hits.length && (
+        <QuillEmpty anim={[{ anim: 'think', hold: 2400 }, { anim: 'idle' }]} className="ui-help-empty">
+          Nothing found. Try another word.
+        </QuillEmpty>
+      )}
     </div>
   );
 

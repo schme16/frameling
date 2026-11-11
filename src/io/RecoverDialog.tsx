@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { QuillEmpty } from '../ui/mascot';
 import { desktop } from './desktop';
 import { loadBytes } from './document';
 import { Modal, mountModal } from './mount';
@@ -34,7 +35,7 @@ function RecoverDialog({ close }: { close: () => void }) {
       <div className="io-body">
         <p className="io-muted">Drawings you chose not to save are kept here for 7 days, in case you change your mind.</p>
         {items === null ? null : items.length === 0 ? (
-          <p className="io-empty">Nothing to recover. Work you leave unsaved will show up here.</p>
+          <QuillEmpty anim="idle" className="io-empty">Nothing to recover. Work you leave unsaved will show up here.</QuillEmpty>
         ) : (
           <ul className="io-recover">
             {items.map((k, i) => (

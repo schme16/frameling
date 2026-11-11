@@ -113,6 +113,6 @@ export async function exportDocument(settings: ExportSettings, signal: AbortSign
     shown = w.paths.find((p) => baseName(p) === result.main) ?? w.paths[0];
   }
   saveLastSettings(settings);
-  notify(`Exported ${baseName(shown)}.`, 'success', { label: 'Show in folder', run: () => void api.files.showInFolder(shown) }, 9000);
+  notify(`Exported ${baseName(shown)}.`, 'success', { label: 'Show in folder', run: () => void api.files.showInFolder(shown) }, 9000, 'cheer');
   return 'done';
 }

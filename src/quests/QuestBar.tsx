@@ -1,5 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Icon } from '../ui/icons';
+import { QuillSays } from '../ui/mascot';
+import { stepScript } from '../ui/mascot/scripts';
 import { openHelp } from '../ui/overlays';
 import { engine, putDownQuest } from './runtime';
 import { feedback } from './feedback';
@@ -14,6 +16,16 @@ export function QuestBar() {
   const step = quest?.steps[p.step];
   const ref = useRef<HTMLElement>(null);
   const [side, setSide] = useState<'left' | 'right'>('left');
+
+  // Quill presents the step: a cheer when the last one was just done, talk, point at the ring, then idle.
+  const [cheerKey, setCheerKey] = useState(0);
+  useEffect(() => {
+    if (praise) setCheerKey(praise.key);
+  }, [praise?.key]);
+  const script = useMemo(
+    () => (step ? stepScript(step.say, { cheer: !!praise, pointing: !!resolveTarget(step.target), hint: p.hint && !!step.hint }) : []),
+    [quest?.id, step?.id, cheerKey, p.hint],
+  );
 
   // If the thing being pointed at sits where the bar is, hop to the other corner.
   useEffect(() => {
@@ -52,9 +64,11 @@ export function QuestBar() {
           <Icon name="close" size={14} />
         </button>
       </header>
-      <p className="qb-say" aria-live="polite">
-        {step.say}
-      </p>
+      <QuillSays anim={script} size={64} className="qb-quill">
+        <p className="qb-say" aria-live="polite">
+          {step.say}
+        </p>
+      </QuillSays>
       {step.why && <p className="qb-why">{step.why}</p>}
       {p.hint && step.hint && (
         <p className="qb-hint" role="note">

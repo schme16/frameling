@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { Icon } from '../ui/icons';
+import { Quill } from '../ui/mascot';
 import { dismissCelebration, feedback } from './feedback';
 import { Medal } from './Medal';
 import { allQuests, isUnlocked, questProgress, startQuest } from './registry';
@@ -33,6 +34,7 @@ export function Celebration() {
           ))}
         </div>
       )}
+      <Quill anim={[{ anim: 'cheer', hold: 2800 }, { anim: 'idle' }]} size={64} className="qc-quill" />
       {c.badge && <Medal badge={c.badge} size={56} />}
       <div className="qc-text">
         <strong>{c.badge ? `You earned ${c.badge.name}` : 'Quest finished'}</strong>

@@ -3,6 +3,7 @@ import { store, useStore } from '../core/store';
 import { desktop } from '../io/desktop';
 import { Modal, mountModal } from '../io/mount';
 import { Icon } from '../ui/icons';
+import { Quill, QuillSays } from '../ui/mascot';
 import { detectCapabilities, type Capabilities } from './capabilities';
 import { describeError, exportDocument, loadLastSettings, loadSheetExtras, saveSheetExtras } from './exporter';
 import { setChoice, useChoice, getChoiceDef } from '../core/choices';
@@ -118,6 +119,7 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
     return (
       <Modal title={`Exporting ${info.title}`} onClose={() => abort.current?.abort()} canClose={false} className="ex-running">
         <div className="ex-body ex-progress">
+          <Quill anim="think" size={64} className="ex-quill" />
           <div className="ex-bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label="Export progress">
             <div style={{ width: `${pct}%` }} />
           </div>
@@ -284,9 +286,11 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
       </div>
 
       {error && (
-        <p className="ex-error" role="alert">
-          <Icon name="warning" size={16} /> {error}
-        </p>
+        <QuillSays anim="oops" then="idle" size={48} className="ex-error-row" bubbleClassName="ex-error">
+          <span role="alert">
+            <Icon name="warning" size={16} /> {error}
+          </span>
+        </QuillSays>
       )}
       <div className="io-foot ex-foot">
         <span className={`ex-summary${plan.problem ? ' ex-problem' : ''}`} aria-live="polite">

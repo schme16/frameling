@@ -6,6 +6,7 @@ import type { Doc } from '../core/format';
 import { askAboutUnsavedChanges, listRecentFiles, openPath } from '../io/document';
 import type { RecentFile } from '../preload/api';
 import { Icon, Logo } from './icons';
+import { Quill, useQuillShown } from './mascot';
 import { Modal } from './Modal';
 import { closeSheet, overlays } from './overlays';
 import { runCommand } from './palette';
@@ -28,6 +29,7 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
   const [recent, setRecent] = useState<RecentFile[]>([]);
   const open = getCommand('file.open');
   const quest = getQuest('first-animation');
+  const quill = useQuillShown();
 
   useEffect(() => {
     let live = true;
@@ -49,7 +51,7 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
   return (
     <Modal title={mode === 'welcome' ? 'Welcome to Frameling' : 'New drawing'} size="lg" hideHeader className="ui-welcome" onClose={closeSheet} initialFocus=".ui-preset">
       <div className="ui-welcome-head">
-        <Logo size={48} />
+        {quill ? <Quill anim={[{ anim: 'wave', hold: 2480 }, { anim: 'idle' }]} size={96} className="ui-welcome-quill" /> : <Logo size={48} />}
         <div>
           <h2>{mode === 'welcome' ? 'Hello! What shall we make?' : 'Start something new'}</h2>
           <p>Pick a card. You can always change your mind later.</p>

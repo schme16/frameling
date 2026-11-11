@@ -370,6 +370,18 @@
   font-size: var(--fs-small);
   line-height: 1.45;
 }
+.qp-quill .quill-bubble {
+  padding: 6px 10px;
+}
+.qb-quill {
+  margin-left: -4px;
+}
+.qb-quill .quill-bubble {
+  padding: 6px 10px;
+}
+.qc-quill {
+  margin: -6px -6px -6px -4px;
+}
 .qp-list {
   display: flex;
   flex-direction: column;

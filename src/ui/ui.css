@@ -865,6 +865,9 @@ body.ui-resizing * {
 .ui-toast-error .ui-icon:first-child {
   color: var(--danger);
 }
+.ui-toast-quill {
+  margin: -6px -2px -6px -6px;
+}
 .ui-toast-text {
   line-height: 1.35;
 }
@@ -1051,6 +1054,9 @@ body.ui-resizing * {
   max-height: 100%;
   overflow-y: auto;
 }
+.ui-welcome-quill {
+  margin: -12px -4px -12px -8px;
+}
 .ui-welcome-head {
   position: relative;
   display: flex;
@@ -1201,6 +1207,33 @@ body.ui-resizing * {
   background: var(--chosen-bg);
   color: var(--chosen-fg);
   flex: none;
+}
+.ui-about-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 24px 24px 4px;
+  text-align: center;
+}
+.ui-about-body h2 {
+  margin: 4px 0 0;
+  font-size: 20px;
+}
+.ui-about-body p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.45;
+}
+.ui-about-body .ui-about-small {
+  color: var(--faint);
+  font-size: var(--fs-small);
+}
+.ui-about-foot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px 18px;
 }
 .ui-welcome-foot {
   display: flex;

@@ -3,6 +3,7 @@ import { allCommands, type Command } from '../core/registry';
 import { applyWorkspace, currentWorkspace, deleteWorkspace, dock, listWorkspaces, renameWorkspace, resetLayout, saveWorkspace } from './dock';
 import { isStaleCommand, syncDynamicCommands } from './dynamic';
 import { Icon } from './icons';
+import { QuillEmpty } from './mascot';
 import { addBinding, allConflicts, comboFromEvent, comboToString, conflictsFor, effectiveKeys, removeBinding, resetBindings, setBindings } from './keys';
 import { holdKeyboard } from './keyboard';
 import { Keys } from './ShortcutChip';
@@ -139,6 +140,9 @@ function GeneralPage({ onThemes }: { onThemes: () => void }) {
       </Row>
       <Row label="Tips" hint="A friendly tip in the status bar.">
         <Switch label="Tips" on={p.showTips} onChange={(showTips) => setPrefs({ showTips })} />
+      </Row>
+      <Row label="Show Quill" hint="Quill the hedgehog shows you round and cheers you on. Off hides him; his words still show.">
+        <Switch label="Show Quill" on={p.showQuill} onChange={(showQuill) => setPrefs({ showQuill })} />
       </Row>
     </>
   );
@@ -316,7 +320,11 @@ function KeyboardPage({ focusId }: { focusId?: string }) {
             })}
           </section>
         ))}
-        {!cats.length && <p className="ui-help-empty">No commands match that.</p>}
+        {!cats.length && (
+          <QuillEmpty anim={[{ anim: 'think', hold: 2400 }, { anim: 'idle' }]} size={64} className="ui-help-empty">
+            No commands match that.
+          </QuillEmpty>
+        )}
       </div>
     </>
   );

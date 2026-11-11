@@ -139,13 +139,37 @@ Press the small **x** on a shortcut to remove it. **Reset** puts a command back 
 
 There are five pages:
 
-- **General**: [mode and look](help:look-and-feel), sounds, motion and the welcome sheet.
+- **General**: [mode and look](help:look-and-feel), sounds, motion, the welcome sheet and [Show Quill](help:meet-quill).
 - **Themes**: pick [themes](help:themes) and [make your own](help:make-your-own-theme).
 - **Behaviour**: [the choices Frameling asked you about](help:behaviour), like what N does.
 - **Keyboard**: see and change [shortcuts](help:keyboard-shortcuts).
 - **Workspaces**: save and switch [panel layouts](help:workspaces).
 
 Changes happen straight away and are remembered for next time.`,
+  },
+  {
+    id: 'meet-quill',
+    title: 'Meet Quill',
+    section: 'Getting started',
+    summary: 'Quill is the little hedgehog who shows you round. You can hide him in Preferences.',
+    keywords: ['quill', 'hedgehog', 'mascot', 'guide', 'helper', 'character', 'hide', 'show quill'],
+    body: `Quill is a small pixel-art hedgehog whose quills are coloured pencils. He turns up to help:
+
+- He **waves** hello on the welcome sheet and in **Help, About Frameling**.
+- In a [quest](help:quests) he reads each step out in a speech bubble, **points** while the gold ring shows where to look, and **cheers** when you finish a step or earn a badge.
+- While an export is being made he has a **think**. He cheers on the message when it's done, and says **oops** if something went wrong.
+- He keeps you company where there's nothing to show yet, like a help search with no results.
+- A message that says no (or that something failed) has a tiny Quill on it.
+
+If nothing happens for about a minute he dozes off. Move the mouse or press a key and he wakes up.
+
+## Hiding Quill
+
+Open **Preferences** (**Ctrl+,**), choose **General** and turn off **Show Quill**. He goes away everywhere. Anything he was saying still shows, just without him.
+
+## Less movement
+
+With **Reduce motion** on (or when your computer asks apps to be calm), Quill stands still in one pose instead of moving. See [Mode and look](help:look-and-feel).`,
   },
   {
     id: 'behaviour',
@@ -183,7 +207,7 @@ Try both. Neither changes how anything works, and every [theme](help:themes) wor
 
 ## Reduce motion
 
-Turn this on to stop bouncing and fading. Frameling also does this by itself when your computer asks apps to be calm.
+Turn this on to stop bouncing and fading. Quill stands still instead of moving. Frameling also does this by itself when your computer asks apps to be calm.
 
 ## Sounds
 
