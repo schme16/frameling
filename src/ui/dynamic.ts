@@ -41,6 +41,7 @@ export function syncDynamicCommands(): void {
       description: `Switch to the ${t.label.toLowerCase()} tool.`,
       help: t.help,
       keywords: ['tool'],
+      layers: t.layers,
       enabled: () => toolEnabled(t.layers),
       checked: (s) => s.ui.tool === t.id,
       run: () => store().setUi({ tool: t.id }),

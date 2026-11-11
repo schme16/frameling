@@ -127,7 +127,16 @@ Press the small **x** on a shortcut to remove it. **Reset** puts a command back 
 
 - Typing in a text box never triggers shortcuts, so you can type a name with the letter b in it.
 - **Space** is for moving the canvas around. Holding it pauses every other shortcut.
-- Each tool has a single-letter key. Change those here too.`,
+- Each tool has a single-letter key. Change those here too.
+- Tools for different kinds of layer can share a letter: **B** is the Brush on a drawing layer and the Tile brush on a tile layer. That's not a clash, because only one of them works at a time.
+- A few keys moved so nothing clashes: **Lasso** is **Shift+L** (the Line tool keeps **L**), and the **Pose** tool is **Shift+K** (next to the Bone tool's **K**; the Ellipse keeps **O**).
+
+## Without a mouse
+
+- **Tab** and **Shift+Tab** move between buttons and boxes. The one you're on has a ring round it.
+- In a row of choices (tabs, the options in a panel), the **arrow keys** move between them.
+- **Esc** closes a dialog or menu, and you land back where you were.
+- **Mod+K** finds any command by name, even ones with no shortcut.`,
   },
   {
     id: 'preferences',
