@@ -6,6 +6,7 @@
 import type { Doc, Layer } from '../core/format';
 import { poseAt, poseLive } from '../core/symbols';
 import { drawDrawing } from '../core/render';
+import { layerCameraMatrix } from '../core/camera';
 import type { FramePainter, FrameParams } from '../canvas/pipeline';
 import type { Ctx } from './apply';
 import { BufferPool, ctx2 } from './apply';
@@ -21,8 +22,22 @@ export function paintComposited(painter: FramePainter, g: CanvasRenderingContext
   const sx = rect.w / doc.width;
   const sy = rect.h / doc.height;
   const paint = (lg: Ctx, layer: Layer) => {
+    if (layer.kind === 'camera') return;
     const lv = p.live && p.live.layerId === layer.id ? p.live : null;
     const pixelSize = layer.kind === 'vector' ? 1 : layer.pixelSize;
+    // Looking through the camera: drawn straight through it (stage-sized bitmaps would cut off what's outside).
+    const cam = p.camera ? layerCameraMatrix(doc, layer, p.camera) : undefined;
+    if (cam) {
+      const d = lv?.kind === 'vector' ? poseLive(doc, layer, p.frame, lv.drawing) : lv?.kind === 'tilemap' ? lv.drawing : poseAt(doc, layer, p.frame);
+      lg.save();
+      lg.transform(cam[0], cam[1], cam[2], cam[3], cam[4], cam[5]);
+      if (lv?.kind === 'pixel') {
+        lg.imageSmoothingEnabled = false;
+        lg.drawImage(lv.canvas, 0, 0, lv.width * pixelSize, lv.height * pixelSize);
+      } else if (d) drawDrawing(lg, d, pixelSize, { doc, frame: p.frame });
+      lg.restore();
+      return;
+    }
     if (lv?.kind === 'pixel') {
       lg.save();
       lg.imageSmoothingEnabled = false;
@@ -51,6 +66,7 @@ export function paintComposited(painter: FramePainter, g: CanvasRenderingContext
   };
   const key = (layer: Layer) => {
     if (p.live?.layerId === layer.id || layer.kind === 'tilemap') return undefined;
+    if (p.camera && layerCameraMatrix(doc, layer, p.camera)) return undefined;
     return poseAt(doc, layer, p.frame);
   };
 

@@ -8,7 +8,7 @@ export type LayeredItem =
   | { kind: 'group'; folder: LayerFolder; passThrough: boolean; masks: Layer[]; layers: LayeredItem[] };
 
 /** The layers that export at all (reference layers never do). */
-const exported = (l: Layer) => !l.reference;
+const exported = (l: Layer) => !l.reference && l.kind !== 'camera';
 
 export function folderPassThrough(f: LayerFolder, members: Layer[], frame = 0): boolean {
   return (f.blend ?? 'normal') === 'normal' && f.opacity >= 1 && !activeEffects(f.effects, frame).length && !members.some((l) => l.mask);
@@ -50,7 +50,7 @@ export type FlatUnit =
   | { kind: 'folder'; folder: LayerFolder; units: FlatUnit[] };
 
 export function needsPicture(l: Layer, frame: number): boolean {
-  return l.kind !== 'vector' || activeEffects(l.effects, frame).length > 0;
+  return (l.kind !== 'vector' && l.kind !== 'camera') || activeEffects(l.effects, frame).length > 0;
 }
 
 function stageUnits(layers: Layer[], frame: number): FlatUnit[] {

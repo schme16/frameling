@@ -6,7 +6,7 @@ import { newDoc, newPixelLayer } from '../../src/core/doc';
 import type { Doc, PixelDrawing } from '../../src/core/format';
 import { loadFile, saveFile } from '../../src/io/file';
 import { decodePng } from '../../src/io/png';
-import { blankImage, docToIcons, docToSheet, iconSvg, sameImage, scaleNearest, sheetToDoc, MASCOT_FPS } from '../../scripts/mascot/sheet';
+import { blankImage, crop, docToIcons, docToSheet, iconSvg, sameImage, scaleNearest, sheetToDoc, MASCOT_FPS } from '../../scripts/mascot/sheet';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const read = (rel: string) => new Uint8Array(readFileSync(join(ROOT, rel)));
@@ -22,8 +22,27 @@ describe('mascot.frameling (the source of the app mascot)', () => {
     expect(warnings).toEqual([]);
     expect(doc.width).toBe(48);
     expect(doc.fps).toBe(MASCOT_FPS);
-    expect(doc.clips.map((c) => c.name)).toEqual(['idle', 'wave', 'talk', 'point', 'cheer', 'think', 'draw', 'sleep', 'oops']);
+    expect(doc.clips.map((c) => c.name)).toEqual(['idle', 'wave', 'talk', 'point', 'cheer', 'think', 'draw', 'sleep', 'oops', 'sad', 'wave-sad']);
     expect(doc.clips.find((c) => c.name === 'cheer')!.loop).toBe(false);
+    expect(doc.clips.find((c) => c.name === 'sad')!.loop).toBe(true);
+    expect(doc.clips.find((c) => c.name === 'wave-sad')!.loop).toBe(false);
+  });
+
+  // add-sad.mjs only appends and redraw-arms.mjs only swaps the arm, so the original animations keep their timing,
+  // and the ones without an arm are still the old generator's pixels.
+  it.runIf(manifest.app === 'add-sad' || manifest.app === 'redraw-arms')('kept the original animations as they were (bar the arms)', () => {
+    const built = docToSheet(doc);
+    const old = json('brand/quill/b/quill.json');
+    const oldPng = png('brand/quill/b/quill.png');
+    for (const [name, a] of Object.entries(old.anims) as [string, { frames: { x: number; y: number; ms: number }[] }][]) {
+      const now = built.meta.anims[name];
+      expect(now.frames.map((f) => f.ms), name).toEqual(a.frames.map((f) => f.ms));
+      if (!['idle', 'talk', 'sleep', 'oops'].includes(name)) continue;
+      now.frames.forEach((f, i) => {
+        const was = a.frames[i];
+        expect(sameImage(crop(built.image, f.x, f.y, 48, 48), crop(oldPng, was.x, was.y, 48, 48)), `${name} ${i}`).toBe(true);
+      });
+    }
   });
 
   it.runIf(unedited)('builds a sheet pixel identical to the old generator, with the same frame list', () => {

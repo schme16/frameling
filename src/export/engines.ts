@@ -1,5 +1,6 @@
 // The data files each game engine (or a web page) wants next to a sprite sheet, and the step that turns rendered
 // frames into the finished set of files. Pure text and maths, so all of it is tested without a canvas.
+import { exportClipNames, flowManifest, type FlowManifest } from '../core/flow';
 import { strToU8 } from 'fflate';
 import type { Clip, Doc, Marker } from '../core/format';
 import { encodePng, type RawImage } from '../io/png';
@@ -338,12 +339,52 @@ export function godotAtlasTexture(texturePath: string, c: Cell, at: { x: number;
   return out.join('\n');
 }
 
+// ---------------------------------------------------------------- clip flow for Godot
+
+/** A GDScript for an AnimatedSprite2D that follows the clip flow: plays the start clip, moves on at clip ends, and `fire("name")` follows a trigger. */
+export function godotFlowScript(flow: FlowManifest, resource: string): string {
+  const data = JSON.stringify(flow, null, '\t').split('\n').join('\n');
+  return `# Made by Frameling. Attach to the AnimatedSprite2D that plays ${resource}.
+# It plays the clips the way the clip flow says: the start clip first, then on to the next one when a clip ends,
+# and fire("trigger name") follows a trigger (a jump, a hit). clip_changed tells you when it moves on.
+extends AnimatedSprite2D
+
+signal clip_changed(clip: String)
+
+const FLOW := ${data}
+
+func _ready() -> void:
+	animation_finished.connect(_on_clip_end)
+	animation_looped.connect(_on_clip_end)
+	go_to(FLOW["start"])
+
+## Plays a clip by name.
+func go_to(clip: String) -> void:
+	play(clip)
+	clip_changed.emit(clip)
+
+## Follows a trigger from the clip playing now. Returns false when it leads nowhere from here.
+func fire(trigger: String) -> bool:
+	for t in FLOW["transitions"]:
+		if t["from"] == animation and t["on"] == "trigger" and t["trigger"] == trigger:
+			go_to(t["to"])
+			return true
+	return false
+
+func _on_clip_end() -> void:
+	for t in FLOW["transitions"]:
+		if t["from"] == animation and t["on"] == "end":
+			go_to(t["to"])
+			return
+`;
+}
+
 // ---------------------------------------------------------------- the whole job
 
 export class SheetProblem extends Error {}
 
 export interface SheetJob {
-  doc: Pick<Doc, 'name' | 'clips' | 'markers' | 'fps'>;
+  doc: Pick<Doc, 'name' | 'clips' | 'markers' | 'fps'> & Partial<Pick<Doc, 'flow'>>;
   sheet: SheetSettings;
   /** The exported frames, first to last of the range. */
   frames: RawImage[];
@@ -410,6 +451,14 @@ export function buildSheetFiles(job: SheetJob): SheetFiles {
         cells.forEach((c, i) => files.push({ name: `${base}-${slug(names[i], 'sprite')}.tres`, bytes: text(godotAtlasTexture(texturePath, c, layout.positions[i])) }));
       } else {
         files.push({ name: `${base}.tres`, bytes: text(godotSpriteFrames({ texturePath, layout, cells, cellOfFrame, animations })) });
+        // The clip flow: which clip follows which, as JSON plus a small script that plays it.
+        const inRange = (c: Clip) => Math.max(range.start, Math.min(c.start, c.end)) <= Math.min(range.end, Math.max(c.start, c.end));
+        const names = exportClipNames(doc.clips, inRange);
+        const flow = job.whole ? flowManifest(doc, (c) => names.get(c.id)) : undefined;
+        if (flow) {
+          files.push({ name: `${base}-flow.json`, bytes: json(flow) });
+          files.push({ name: `${base}_flow.gd`, bytes: text(godotFlowScript(flow, `${base}.tres`)) });
+        }
         if (sheet.godotScene) {
           const node = doc.name.replace(/[^A-Za-z0-9]+/g, ' ').trim().split(' ').filter(Boolean).map((w) => w[0].toUpperCase() + w.slice(1)).join('') || 'Sprite';
           files.push({ name: `${base}.tscn`, bytes: text(godotScene({ resourcePath: godotResourcePath(texturePath), nodeName: node, animation: animations[0].name, pixelArt: job.pixelArt })) });

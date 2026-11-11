@@ -1,3 +1,4 @@
+import { line } from '../ui/mascot/lines';
 import { Icon } from '../ui/icons';
 import { QuillSays } from '../ui/mascot';
 import { Medal } from './Medal';
@@ -23,7 +24,7 @@ export function QuestsPanel() {
         <p className="qp-lead">Short lessons that teach by doing. Each one earns a badge.</p>
       ) : (
         <QuillSays anim={allDone ? 'cheer' : 'idle'} then={allDone ? 'idle' : undefined} size={48} className="qp-quill">
-          <p className="qp-lead">{allDone ? 'You did every quest! Do one again any time.' : "Short lessons that teach by doing. Pick one and I'll walk you through it."}</p>
+          <p className="qp-lead">{line(allDone ? 'quests.panel.allDone' : 'quests.panel.intro')}</p>
         </QuillSays>
       )}
       <ul className="qp-list">

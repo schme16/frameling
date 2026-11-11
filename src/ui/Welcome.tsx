@@ -1,3 +1,4 @@
+import { line } from './mascot/lines';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { getCommand } from '../core/registry';
 import { renderFrameToCanvas } from '../core/render';
@@ -12,8 +13,11 @@ import { closeSheet, overlays } from './overlays';
 import { runCommand } from './palette';
 import { clampInt, docFromCustom, docFromPreset, isBlankDoc, PRESETS, sizeLabel, type CustomSpec } from './presets';
 import { setPrefs, usePrefs } from './prefs';
+import { cleanDpi, formatSize, pxTo, roundIn, toPx, type Unit } from '../core/units';
 import { getQuest, startQuest } from './quests';
 import { toast } from './toast';
+import { MoreTemplates, SourceCards } from '../templates/YoursSection';
+import { templateSources } from '../templates/user';
 
 export function WelcomeSheet() {
   const mode = overlays.use((o) => o.sheet);
@@ -24,6 +28,7 @@ export function WelcomeSheet() {
 function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
   const mode = sheetMode === 'welcome' ? 'welcome' : 'new';
   const showWelcome = usePrefs((p) => p.showWelcome);
+  const units = usePrefs((p) => p.units);
   const [custom, setCustom] = useState(false);
   const [spec, setSpec] = useState<CustomSpec>({ name: 'Untitled', width: 800, height: 600, fps: 12, pixel: false, pixelSize: 8 });
   const [recent, setRecent] = useState<RecentFile[]>([]);
@@ -42,7 +47,7 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
     if (!(await askAboutUnsavedChanges())) return;
     store().load(doc);
     closeSheet();
-    toast(`A fresh ${label} is ready. Have fun!`, { kind: 'success' });
+    toast(line('welcome.ready', { kind: label }), { kind: 'success' });
   };
 
   const num = (key: 'width' | 'height' | 'fps' | 'pixelSize') => (e: React.ChangeEvent<HTMLInputElement>) => setSpec((s) => ({ ...s, [key]: e.target.value === '' ? 0 : Number(e.target.value) }));
@@ -53,8 +58,8 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
       <div className="ui-welcome-head">
         {quill ? <Quill anim={[{ anim: 'wave', hold: 2480 }, { anim: 'idle' }]} size={96} className="ui-welcome-quill" /> : <Logo size={64} />}
         <div>
-          <h2>{mode === 'welcome' ? 'Hello! What shall we make?' : 'Start something new'}</h2>
-          <p>Pick a card. You can always change your mind later.</p>
+          <h2>{line(mode === 'welcome' ? 'welcome.hello' : 'welcome.new')}</h2>
+          <p>{line('welcome.lead')}</p>
         </div>
         <button type="button" className="ui-icon-btn ui-welcome-x" aria-label="Close" onClick={closeSheet}>
           <Icon name="close" />
@@ -69,7 +74,7 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
               <Icon name={p.icon} size={22} />
             </span>
             <strong>{p.title}</strong>
-            <span className="ui-preset-size">{p.grid ? `${p.grid.width} x ${p.grid.height} pixels` : `${p.width} x ${p.height}`}</span>
+            <span className="ui-preset-size">{p.grid ? `${p.grid.width} x ${p.grid.height} pixels` : units === 'px' ? `${p.width} x ${p.height}` : formatSize(p.width, p.height, units)}</span>
             <span className="ui-preset-blurb">{p.blurb}</span>
           </button>
         ))}
@@ -96,12 +101,12 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
             <input type="text" value={spec.name} maxLength={80} onChange={(e) => setSpec((s) => ({ ...s, name: e.target.value }))} />
           </label>
           <label className="ui-field">
-            <span>{spec.pixel ? 'Grid width' : 'Width'}</span>
-            <input type="number" min={1} max={spec.pixel ? 512 : 8192} value={spec.width || ''} onChange={num('width')} />
+            <span>{spec.pixel ? 'Grid width' : units === 'px' ? 'Width' : `Width (${units})`}</span>
+            {spec.pixel || units === 'px' ? <input type="number" min={1} max={spec.pixel ? 512 : 8192} value={spec.width || ''} onChange={num('width')} /> : <UnitInput px={spec.width} unit={units} dpi={spec.dpi} onPx={(width) => setSpec((s) => ({ ...s, width }))} />}
           </label>
           <label className="ui-field">
-            <span>{spec.pixel ? 'Grid height' : 'Height'}</span>
-            <input type="number" min={1} max={spec.pixel ? 512 : 8192} value={spec.height || ''} onChange={num('height')} />
+            <span>{spec.pixel ? 'Grid height' : units === 'px' ? 'Height' : `Height (${units})`}</span>
+            {spec.pixel || units === 'px' ? <input type="number" min={1} max={spec.pixel ? 512 : 8192} value={spec.height || ''} onChange={num('height')} /> : <UnitInput px={spec.height} unit={units} dpi={spec.dpi} onPx={(height) => setSpec((s) => ({ ...s, height }))} />}
           </label>
           <label className="ui-field">
             <span>Frames a second</span>
@@ -111,6 +116,19 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
             <input type="checkbox" checked={spec.pixel} onChange={(e) => setSpec((s) => ({ ...s, pixel: e.target.checked, width: e.target.checked ? 64 : 800, height: e.target.checked ? 64 : 600 }))} />
             <span>Pixel art</span>
           </label>
+          {!spec.pixel && units !== 'px' && (
+            <label className="ui-field" data-tip="Dots per inch" data-tip-desc="How many pixels make an inch. 96 matches screens and the web; 300 is sharp for print.">
+              <span>DPI</span>
+              <input type="number" min={1} max={10000} value={spec.dpi ?? 96} onChange={(e) =>
+                  // The size you typed stays the same on paper, so the pixels change with the DPI.
+                  setSpec((s) => {
+                    const dpi = e.target.value === '' ? undefined : Number(e.target.value);
+                    const k = cleanDpi(dpi) / cleanDpi(s.dpi);
+                    return { ...s, dpi, width: s.width * k, height: s.height * k };
+                  })
+                } />
+            </label>
+          )}
           {spec.pixel && (
             <label className="ui-field">
               <span>Size of one pixel</span>
@@ -119,7 +137,7 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
           )}
           <div className="ui-custom-end">
             <span className="ui-custom-sum">
-              Makes a {dims.w} x {dims.h} drawing.
+              Makes a {dims.w} x {dims.h} drawing{!spec.pixel && units !== 'px' ? ` (${formatSize(dims.w, dims.h, units, cleanDpi(spec.dpi))})` : ''}.
             </span>
             <button type="submit" className="ui-btn ui-btn-primary">
               Start
@@ -201,6 +219,27 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
         </button>
       </footer>
     </Modal>
+  );
+}
+
+/** A size typed in mm, cm, in or pt. Keeps its own text while typing so "12." doesn't jump; hands back pixels. */
+function UnitInput({ px, unit, dpi, onPx }: { px: number; unit: Unit; dpi?: number; onPx: (px: number) => void }) {
+  const shown = px ? String(roundIn(pxTo(px, unit, cleanDpi(dpi)), unit)) : '';
+  const [text, setText] = useState<string | null>(null);
+  return (
+    <input
+      type="number"
+      min={0}
+      step="any"
+      value={text ?? shown}
+      onFocus={() => setText(shown)}
+      onBlur={() => setText(null)}
+      onChange={(e) => {
+        setText(e.target.value);
+        const v = Number(e.target.value);
+        onPx(e.target.value === '' || !Number.isFinite(v) ? 0 : toPx(v, unit, cleanDpi(dpi)));
+      }}
+    />
   );
 }
 
@@ -303,9 +342,13 @@ function Examples({ onPick, scrollTo }: { onPick: (doc: Doc, name: string) => vo
   const examples = starters.filter((s) => !s.blank);
   const blanks = starters.filter((s) => s.blank);
   const pick = (t: TemplateLike) => onPick(t.make(), t.name.toLowerCase());
+  const thumb = (t: TemplateLike) => <Thumb template={t} />;
+  // The tabs look is kept for the A/B board only (brand/ab/templates-yours); stacked sections won.
+  if ((window as { __templatesLayout?: string }).__templatesLayout === 'tabs') return <TabbedExamples examples={examples} pick={pick} onPick={onPick} thumb={thumb} />;
   return (
     <div className="ui-examples" ref={box} data-help="examples">
       <h3>Start from an example</h3>
+      <h4 className="tpl-section-title">Built-in</h4>
       <div className="ui-example-list">
         {examples.map(({ template: t }) => (
           <button key={t.id} type="button" className="ui-example" onClick={() => pick(t)}>
@@ -336,6 +379,41 @@ function Examples({ onPick, scrollTo }: { onPick: (doc: Doc, name: string) => vo
                   {fps ? `, ${fps} fps` : ''}
                 </span>
               </span>
+            </button>
+          ))}
+        </div>
+      )}
+      <MoreTemplates onPick={onPick} thumb={thumb} />
+    </div>
+  );
+}
+
+/** The other look from the A/B board: Built-in and Yours as tabs. */
+function TabbedExamples({ examples, pick, onPick, thumb }: { examples: Starter[]; pick: (t: TemplateLike) => void; onPick: (doc: Doc, name: string) => void; thumb: (t: TemplateLike) => React.ReactNode }) {
+  const sources = templateSources();
+  const [tab, setTab] = useState((window as { __templatesTab?: string }).__templatesTab ?? 'builtin');
+  const source = sources.find((s) => s.id === tab);
+  return (
+    <div className="ui-examples" data-help="examples">
+      <h3>Start from an example</h3>
+      <div className="ui-segmented tpl-tabs" role="tablist">
+        {[{ id: 'builtin', title: 'Built-in' }, ...sources].map((s) => (
+          <button key={s.id} type="button" role="tab" aria-selected={tab === s.id} className={`ui-seg${tab === s.id ? ' is-chosen' : ''}`} onClick={() => setTab(s.id)}>
+            {s.title}
+          </button>
+        ))}
+      </div>
+      {source ? (
+        <SourceCards source={source} onPick={onPick} thumb={thumb} />
+      ) : (
+        <div className="ui-example-list">
+          {examples.map(({ template: t }) => (
+            <button key={t.id} type="button" className="ui-example" onClick={() => pick(t)}>
+              <span className="ui-example-art">{thumb(t)}</span>
+              <span className="ui-example-head">
+                <strong>{t.name}</strong>
+              </span>
+              <span className="ui-preset-blurb">{t.blurb}</span>
             </button>
           ))}
         </div>

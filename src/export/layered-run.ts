@@ -12,7 +12,8 @@ import { writePsd, type PsdLayer } from './psd';
 export function layersPicture(doc: Doc, frame: number, layers: Layer[], scale: number, plain: boolean, crisp: boolean): RawImage {
   const ids = new Set(layers.map((l) => l.id));
   const only = plain && layers.length === 1 ? [{ ...layers[0], opacity: 1, blend: undefined, clipToBelow: false, mask: undefined, folder: undefined, visible: true }] : null;
-  const d: Doc = only ? { ...doc, layers: only as Layer[] } : doc;
+  // The camera layer stays, so a picture sees what the camera sees, like the merged frame does.
+  const d: Doc = only ? { ...doc, layers: [...doc.layers.filter((l) => l.kind === 'camera'), ...(only as Layer[])] } : doc;
   const w = Math.max(1, Math.round(doc.width * scale));
   const h = Math.max(1, Math.round(doc.height * scale));
   const c = makeCanvas(w, h);

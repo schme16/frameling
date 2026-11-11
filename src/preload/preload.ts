@@ -22,6 +22,16 @@ const api: FramelingApi = {
     write: (path, bytes) => call('files:write', path, bytes),
     writeMany: (folder, files) => call('files:writeMany', folder, files),
     showInFolder: (path) => call('files:showInFolder', path),
+    openOther: (opts) => call('files:openOther', opts),
+    readFolder: (opts) => call('files:readFolder', opts),
+    linkPlayable: (path) => call('files:linkPlayable', path),
+  },
+  library: {
+    list: (kind) => call('library:list', kind),
+    read: (kind, id) => call('library:read', kind, id),
+    write: (kind, id, bytes) => call('library:write', kind, id, bytes),
+    remove: (kind, id) => call('library:remove', kind, id),
+    showFolder: (kind) => call('library:showFolder', kind),
   },
   recent: {
     list: () => call('recent:list'),

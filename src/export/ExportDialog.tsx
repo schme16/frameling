@@ -19,6 +19,8 @@ import { proresSupport, type ProresSupport } from './prores';
 import { LayeredNotes } from './LayeredNotes';
 import { DEFAULT_SHEET, engineInfo, FORMATS, formatInfo, normalizeSheet, type EngineId, type ExportSettings, type FormatId } from './types';
 import './export.css';
+import { docDpi, formatSize } from '../core/units';
+import { usePrefs } from '../ui/prefs';
 
 /** Last time's settings, repaired so they still make sense for this document. */
 function startingSettings(): ExportSettings {
@@ -52,6 +54,7 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
   const openFrame = useStore((s) => s.ui.frame);
   const { doc, frame } = sceneOf(open, openFrame);
   const [s, setS] = useState<ExportSettings>(initial);
+  const units = usePrefs((p) => p.units);
   const [progress, setProgress] = useState<Progress | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [caps, setCaps] = useState<Capabilities | null>(null);
@@ -134,7 +137,10 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
     if (art && engineInfo(id).game && s.scale !== art) withChoice<string>('export.gameArtSize', (v) => v === 'art' && set({ scale: art }));
   };
   const frames = plan.count;
-  const summary = `${frames} frame${frames === 1 ? '' : 's'}, ${plan.width} × ${plan.height} px`;
+  // With units other than pixels, also say how big it prints: the same size at any scale, just more dots per inch.
+  const outDpi = Math.round(docDpi(doc) * s.scale);
+  const printed = units === 'px' ? '' : `, ${formatSize(plan.width, plan.height, units, outDpi)} at ${outDpi} DPI`;
+  const summary = `${frames} frame${frames === 1 ? '' : 's'}, ${plan.width} × ${plan.height} px${printed}`;
   const noClips = doc.clips.length === 0;
 
   if (running) {
@@ -282,6 +288,14 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
             <p className="ex-note">Exports frame {plan.range.start + 1}, the one you are looking at.</p>
           )}
 
+          {s.format === 'lottie' ? (
+            <p className="ex-note">
+              Shapes stay shapes, so it plays sharp at any size. Symbols, in-betweens, the camera and clips (as markers) come along.{' '}
+              <button type="button" className="ex-link" onClick={() => openHelp('export-lottie')}>
+                What carries over
+              </button>
+            </p>
+          ) : (
           <fieldset>
             <legend>Size</legend>
             <div className="ex-seg">
@@ -298,6 +312,7 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
             </div>
             <p className="ex-note">{s.scale === art ? `Real size: one art pixel is one pixel (${artPx}).` : pixel ? 'Whole numbers keep every pixel sharp and square.' : 'Bigger is sharper but makes a bigger file.'}</p>
           </fieldset>
+          )}
 
           <fieldset>
             <legend>Background</legend>
@@ -318,6 +333,21 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
                 ))}
               </div>
               <p className="ex-note">{caps?.webm.ok ? `Making this one with ${caps.webm.codec === 'av1' ? 'AV1' : caps.webm.codec === 'vp9' ? 'VP9' : 'VP8'}${s.transparent && caps.webm.alphaCodec && caps.webm.alphaCodec !== caps.webm.codec ? ` (${caps.webm.alphaCodec.toUpperCase()} for the see-through background)` : ''}.` : 'Also in Preferences > Behaviour.'}</p>
+            </fieldset>
+          )}
+
+          {s.format === 'svganim' && (
+            <fieldset>
+              <legend>Playback</legend>
+              <Check checked={s.loop} onChange={(v) => set({ loop: v })}>
+                Loop forever
+              </Check>
+              <p className="ex-note">
+                It plays by itself in any browser, also in an image tag.{' '}
+                <button type="button" className="ex-link" onClick={() => openHelp('export-svg-animated')}>
+                  How it works
+                </button>
+              </p>
             </fieldset>
           )}
 

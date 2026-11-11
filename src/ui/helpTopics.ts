@@ -1,5 +1,6 @@
 // Help for everything the shell does. Short words, what it does first, then how.
 import { registerHelpTopics } from '../core/registry';
+import './onboarding/help';
 
 registerHelpTopics([
   {
@@ -13,7 +14,7 @@ registerHelpTopics([
 
 ## Starting
 
-When Frameling opens, pick a card on the welcome sheet:
+The very first time, [Quill says hello](help:first-run) and helps you set things up. After that, when Frameling opens, pick a card on the welcome sheet:
 
 - **Doodle** is a wide, roomy page for sketching and cartoons.
 - **Square** is good for icons and posts.
@@ -139,7 +140,7 @@ Press the small **x** on a shortcut to remove it. **Reset** puts a command back 
 
 There are five pages:
 
-- **General**: [mode and look](help:look-and-feel), sounds, motion, the welcome sheet and [Show Quill](help:meet-quill).
+- **General**: [mode and look](help:look-and-feel), [units](help:units), sounds, motion, the welcome sheet and [Show Quill](help:meet-quill).
 - **Themes**: pick [themes](help:themes) and [make your own](help:make-your-own-theme).
 - **Behaviour**: [the choices Frameling asked you about](help:behaviour), like what N does.
 - **Keyboard**: see and change [shortcuts](help:keyboard-shortcuts).
@@ -151,8 +152,9 @@ Changes happen straight away and are remembered for next time.`,
     id: 'meet-quill',
     title: 'Meet Quill',
     section: 'Getting started',
+    media: 'quill-goodbye.mp4',
     summary: 'Quill is the little hedgehog who shows you round. You can hide him in Preferences.',
-    keywords: ['quill', 'hedgehog', 'mascot', 'guide', 'helper', 'character', 'hide', 'show quill'],
+    keywords: ['quill', 'hedgehog', 'mascot', 'guide', 'helper', 'character', 'hide', 'show quill', 'turn off', 'goodbye', 'sad'],
     body: `Quill is a small pixel-art hedgehog whose quills are coloured pencils. He turns up to help:
 
 - He **waves** hello on the welcome sheet and in **Help, About Frameling**.
@@ -165,7 +167,9 @@ If nothing happens for about a minute he dozes off. Move the mouse or press a ke
 
 ## Hiding Quill
 
-Open **Preferences** (**Ctrl+,**), choose **General** and turn off **Show Quill**. He goes away everywhere. Anything he was saying still shows, just without him.
+Open **Preferences** (**Ctrl+,**), choose **General** and turn off **Show Quill** (or turn it off on the settings step of **Help > Meet Quill again**). He goes away everywhere. Anything he was saying still shows, just without him.
+
+He'll be a little sad about it (a sniffle, maybe a tear), but he understands. He waves a brave goodbye and then hides. Want him back? Turn **Show Quill** on again, or say hi from **Help > Meet Quill again**. He'll cheer.
 
 ## Less movement
 

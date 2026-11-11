@@ -1,5 +1,6 @@
 // The little cheers: a one-word "Nice!" when a step is ticked, and the badge card (with confetti) when a quest is
 // finished. Plain state the components read; the runtime fills it in from engine events.
+import { lines } from '../ui/mascot/lines';
 import { createStore } from '../ui/mini';
 import type { Badge, Quest } from './types';
 
@@ -18,7 +19,7 @@ export interface Feedback {
 
 export const feedback = createStore<Feedback>({ praise: null, celebration: null });
 
-const WORDS = ['Nice!', 'Lovely.', 'There it is.', 'Yes!', 'Nicely done.', 'Look at that.', 'Smooth.', 'Perfect.'];
+const WORDS = lines('quests.praise');
 let key = 0;
 let praiseTimer: ReturnType<typeof setTimeout> | null = null;
 let partyTimer: ReturnType<typeof setTimeout> | null = null;

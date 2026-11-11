@@ -11,8 +11,11 @@ import { frameNumber, MAX_SHEET_SIDE, planExport, type Plan } from './plan';
 import { buildSheetFiles } from './engines';
 import { playablePackage } from './playable';
 import { saveFile } from '../io/file';
+import { NO_SOUND_NOTE, prepareSound } from '../audio/export';
 import { frameToSvg } from './svg';
 import { pdfFile, psdFile } from './layered-run';
+import { animatedSvg } from './svg-anim';
+import { lottieJson } from './lottie';
 import { formatInfo, type ExportSettings } from './types';
 import { BT709_LIMITED, rgbaToI420 } from './yuv';
 
@@ -38,7 +41,7 @@ export interface RunContext {
 }
 
 export type RunResult =
-  | { kind: 'file'; name: string; bytes: Uint8Array }
+  | { kind: 'file'; name: string; bytes: Uint8Array; /** Something worth telling them about the result (the video has no sound, say). */ note?: string }
   | { kind: 'files'; folderName: string; files: { name: string; bytes: Uint8Array }[]; /** The file to point at afterwards. */ main: string };
 
 export function isCancelled(e: unknown): boolean {
@@ -60,7 +63,7 @@ export async function runExport(ctx: RunContext): Promise<RunResult> {
   if (plan.problem) throw new Error(plan.problem);
   const info = formatInfo(settings.format);
   const bg = backgroundFor(doc, settings.transparent, settings.format === 'webm' ? !!ctx.videoAlpha : info.alpha);
-  const crisp = doc.layers.length > 0 && doc.layers.every((l) => l.kind !== 'vector');
+  const crisp = doc.layers.length > 0 && doc.layers.every((l) => l.kind !== 'vector' || !!l.rig);
   const target = { width: plan.width, height: plan.height, scale: settings.scale, background: bg, crisp };
   const canvas = makeCanvas(plan.width, plan.height);
   const frameAt = (i: number) => drawFrame(canvas, doc, plan.range.start + i, target);
@@ -76,6 +79,16 @@ export async function runExport(ctx: RunContext): Promise<RunResult> {
     case 'svg': {
       step(0, 'Writing the drawing');
       const svg = frameToSvg(doc, plan.range.start, { scale: settings.scale, transparent: bg === 'none' });
+      return { kind: 'file', name: `${plan.name}.svg`, bytes: strToU8(svg) };
+    }
+    case 'lottie': {
+      step(0, 'Writing the animation');
+      const json = lottieJson(doc, { range: plan.range, transparent: bg === 'none' });
+      return { kind: 'file', name: `${plan.name}.json`, bytes: strToU8(json) };
+    }
+    case 'svganim': {
+      step(0, 'Writing the animation');
+      const svg = animatedSvg(doc, { range: plan.range, scale: settings.scale, transparent: bg === 'none', loop: settings.loop });
       return { kind: 'file', name: `${plan.name}.svg`, bytes: strToU8(svg) };
     }
     case 'pngseq': {
@@ -130,6 +143,8 @@ export async function runExport(ctx: RunContext): Promise<RunResult> {
       const config = { codec, quality: QUALITY_HIGH, ...(bg === 'none' ? { alpha: 'keep' as const } : {}) };
       const source = mp4 ? new VideoSampleSource(config) : new CanvasSource(canvas, config);
       output.addVideoTrack(source, { frameRate: doc.fps });
+      // The timeline's sounds, mixed (a note comes back when there was sound but it could not go in).
+      const sound = await prepareSound(doc, mp4, plan.range.start, plan.count, output).catch(() => ({ track: null, note: NO_SOUND_NOTE }));
       try {
         await output.start();
         const dt = 1 / doc.fps;
@@ -151,7 +166,9 @@ export async function runExport(ctx: RunContext): Promise<RunResult> {
             frameAt(i);
             await source.add(i * dt, dt);
           }
+          await sound.track?.feed(i);
         }
+        sound.track?.finish();
         step(plan.count, 'Finishing the video');
         await output.finalize();
       } catch (e) {
@@ -160,7 +177,7 @@ export async function runExport(ctx: RunContext): Promise<RunResult> {
       }
       const buf = (output.target as BufferTarget).buffer;
       if (!buf) throw new Error('The video came out empty. Please try again.');
-      return { kind: 'file', name: `${plan.name}.${mp4 ? 'mp4' : 'webm'}`, bytes: new Uint8Array(buf) };
+      return { kind: 'file', name: `${plan.name}.${mp4 ? 'mp4' : 'webm'}`, bytes: new Uint8Array(buf), ...(sound.note ? { note: sound.note } : {}) };
     }
     case 'sheet':
       return runSheet(ctx, plan, rgbaAt, step);
@@ -218,7 +235,7 @@ async function runSheet(ctx: RunContext, plan: Plan, rgbaAt: (i: number) => RawI
     frames.push({ width: img.width, height: img.height, pixels: new Uint8ClampedArray(img.pixels) });
   }
   step(plan.count, 'Packing the sheet');
-  const crisp = doc.layers.length > 0 && doc.layers.every((l) => l.kind !== 'vector');
+  const crisp = doc.layers.length > 0 && doc.layers.every((l) => l.kind !== 'vector' || !!l.rig);
   const out = buildSheetFiles({
     doc,
     sheet: settings.sheet,

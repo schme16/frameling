@@ -7,7 +7,8 @@
  * Pure apart from text, which is traced into outlines (text/convert.ts, needs a canvas); without one it is skipped.
  */
 import { zlibSync } from 'fflate';
-import type { BlendMode, Color, Doc, Drawing, Layer, ParticlesShape, PixelDrawing, Shape, SubPath } from '../core/format';
+import { cameraViewAt, layerCameraMatrix } from '../core/camera';
+import type { BlendMode, CameraView, Color, Doc, Drawing, Layer, ParticlesShape, PixelDrawing, Shape, SubPath } from '../core/format';
 import { strokeOutline } from '../core/render';
 import { isPosed, poseAt, type PosedInstance } from '../core/symbols';
 import type { RawImage } from '../io/png';
@@ -312,6 +313,8 @@ export interface PdfFrameContext {
   pictureScale: number;
   /** Pixel art: pictures stay blocky when scaled (no smoothing). */
   crisp?: boolean;
+  /** What the camera sees on this frame, when the drawing has one. */
+  view?: CameraView;
 }
 
 function drawShape(cx: Content, ctx: PdfFrameContext, s: Shape): void {
@@ -486,7 +489,14 @@ function drawUnit(cx: Content, ctx: PdfFrameContext, u: FlatUnit): void {
   if (u.kind === 'vector') {
     const l = u.layer;
     const d = poseAt(ctx.doc, l, ctx.frame);
-    if (d) grouped(cx, ctx, l.opacity, l.blend, (c) => drawDrawing(c, ctx, d, l.kind === 'vector' ? 1 : l.pixelSize));
+    // Layers move with the camera (each by its own depth), like on the canvas.
+    const cam = layerCameraMatrix(ctx.doc, l, ctx.view);
+    if (d)
+      grouped(cx, ctx, l.opacity, l.blend, (c) => {
+        if (cam) c.push(`q ${cam.map(num).join(' ')} cm`);
+        drawDrawing(c, ctx, d, 'pixelSize' in l ? l.pixelSize : 1);
+        if (cam) c.push('Q');
+      });
   } else if (ctx.picture) {
     const img = ctx.picture(u.layers, !!u.own);
     // Pixel and tile layers stay blocky when the picture is scaled.
@@ -509,6 +519,7 @@ export function pdfFrameContent(ctx: PdfFrameContext, scale: number, background:
     cx.fillColor(background, 1);
     cx.push(`0 0 ${num(w)} ${num(h)} re f`);
   }
+  ctx.view = cameraViewAt(ctx.doc, ctx.frame);
   for (const u of flatPlan(ctx.doc, ctx.frame)) drawUnit(cx, ctx, u);
   return cx.toString();
 }

@@ -37,7 +37,7 @@ export function scaleChoices(doc: Doc): number[] {
  * don't share one pixel size. Game engines want this size and scale it up themselves.
  */
 export function artScale(doc: Doc): number | null {
-  const art = doc.layers.filter((l) => !l.reference);
+  const art = doc.layers.filter((l) => !l.reference && !(l.kind === 'vector' && l.rig));
   if (!art.length || !art.every((l) => l.kind !== 'vector')) return null;
   const sizes = new Set(art.map((l) => ('pixelSize' in l ? l.pixelSize : 1)));
   if (sizes.size !== 1) return null;
@@ -130,7 +130,7 @@ export function planExport(doc: Doc, s: ExportSettings, currentFrame: number): P
 
 export function filtersFor(format: FormatId): { name: string; extensions: string[] }[] {
   const info = formatInfo(format);
-  const names: Record<FormatId, string> = { mp4: 'MP4 video', webm: 'WebM video', gif: 'Animated GIF', apng: 'Animated PNG', png: 'PNG picture', pngseq: 'Zip file', svg: 'SVG drawing', sheet: 'PNG picture', interactives: 'Interactives package', pdf: 'PDF document', ai: 'Adobe Illustrator', psd: 'Photoshop document', prores: 'QuickTime movie' };
+  const names: Record<FormatId, string> = { mp4: 'MP4 video', webm: 'WebM video', gif: 'Animated GIF', apng: 'Animated PNG', png: 'PNG picture', pngseq: 'Zip file', svg: 'SVG drawing', sheet: 'PNG picture', interactives: 'Interactives package', lottie: 'Lottie animation', svganim: 'Animated SVG', pdf: 'PDF document', ai: 'Adobe Illustrator', psd: 'Photoshop document', prores: 'QuickTime movie' };
   return [{ name: names[format], extensions: [info.ext] }];
 }
 

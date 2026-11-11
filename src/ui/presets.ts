@@ -2,6 +2,7 @@
 // itself is grid x pixel size, since the document is measured in screen-sized units.
 import { newDoc } from '../core/doc';
 import type { Doc } from '../core/format';
+import { cleanDpi, DEFAULT_DPI } from '../core/units';
 
 export interface Preset {
   id: string;
@@ -32,6 +33,8 @@ export interface CustomSpec {
   fps: number;
   pixel: boolean;
   pixelSize: number;
+  /** Dots per inch, for sizes in mm, cm, in or pt (missing = 96). Not used for pixel art. */
+  dpi?: number;
 }
 
 export const clampInt = (n: number, lo: number, hi: number, fallback: number): number => (Number.isFinite(n) ? Math.max(lo, Math.min(hi, Math.round(n))) : fallback);
@@ -51,13 +54,16 @@ export function docFromCustom(c: CustomSpec): Doc {
     const h = clampInt(c.height, 1, 512, 64);
     return newDoc({ name, width: w * pixelSize, height: h * pixelSize, fps, pixel: { pixelSize } });
   }
-  return newDoc({ name, width: clampInt(c.width, 1, 8192, 1280), height: clampInt(c.height, 1, 8192, 720), fps });
+  const doc = newDoc({ name, width: clampInt(c.width, 1, 8192, 1280), height: clampInt(c.height, 1, 8192, 720), fps });
+  const dpi = cleanDpi(c.dpi);
+  if (dpi !== DEFAULT_DPI) doc.dpi = dpi;
+  return doc;
 }
 
 /** True when nothing is drawn yet: no shapes and no coloured pixels in any drawing. Blank starters show as sizes. */
 export function isBlankDoc(doc: Doc): boolean {
   for (const d of Object.values(doc.drawings)) {
-    if (d.kind === 'vector' ? d.shapes.length > 0 : d.kind === 'tilemap' ? d.cells.some((c) => c !== 0) : d.pixels.some((v, i) => i % 4 === 3 && v !== 0)) return false;
+    if (d.kind === 'vector' ? d.shapes.length > 0 : d.kind === 'tilemap' ? d.cells.some((c) => c !== 0) : d.kind === 'camera' ? false : d.pixels.some((v, i) => i % 4 === 3 && v !== 0)) return false;
   }
   return true;
 }

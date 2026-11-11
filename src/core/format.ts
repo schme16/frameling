@@ -24,6 +24,8 @@ export interface Doc {
   height: number;
   /** Frames per second. */
   fps: number;
+  /** Dots per inch, for showing sizes in mm, cm, in or pt (missing = 96, one document pixel per CSS pixel). */
+  dpi?: number;
   /** Total length in frames (at least 1). Playback and export run from 0 to length - 1 unless a clip says otherwise. */
   length: number;
   /** Stage colour, or null for transparent. */
@@ -51,9 +53,13 @@ export interface Doc {
    * `layers` and `length` are the open symbol's, and each entry keeps what it replaced. Never saved (see rootDoc).
    */
   editing?: EditFrame[];
+  /** How clips lead to each other: which plays first and what follows what (missing = no flow). See `ClipFlow`. */
+  flow?: ClipFlow;
+  /** Sound clips on the audio track, in the order they were added (missing = none). See `AudioClip`. */
+  audio?: AudioClip[];
 }
 
-export type LayerKind = 'vector' | 'pixel' | 'tilemap';
+export type LayerKind = 'vector' | 'pixel' | 'tilemap' | 'camera';
 
 export interface BaseLayer {
   id: Id;
@@ -66,6 +72,8 @@ export interface BaseLayer {
   onion?: boolean;
   /** A reference layer: shown while drawing, left out of every export (ground lines, sketches, guides). Missing = no. */
   reference?: boolean;
+  /** Attached to a bone, so it moves with the skeleton (missing = not attached). See `LayerBind`. */
+  bind?: LayerBind;
   /** How the layer mixes with what's under it (missing = 'normal'). */
   blend?: BlendMode;
   /** Effects on the layer as a whole, applied first to last (missing = none). */
@@ -76,6 +84,11 @@ export interface BaseLayer {
   mask?: 'show' | 'hide';
   /** The folder it sits in (a key of `doc.folders`). A folder's layers sit next to each other. Missing = none. */
   folder?: Id;
+  /**
+   * How far this layer is from the camera, for parallax (missing = 0, on the stage). 1 is twice as far, so it moves
+   * half as much when the camera pans; negative values are closer and move more (above -0.9).
+   */
+  depth?: number;
   /**
    * Cels on this layer, sorted by `start`, never overlapping. A frame with no cel covering it is empty.
    */
@@ -89,6 +102,11 @@ export interface VectorLayer extends BaseLayer {
    * cut and join each other, so the layer behaves like one flat painting.
    */
   drawMode?: 'object' | 'merge';
+  /**
+   * Makes this a bones layer: it holds a skeleton, and each key's drawing holds a pose (`VectorDrawing.pose`) instead
+   * of shapes. Missing = an ordinary layer.
+   */
+  rig?: Rig;
 }
 
 export interface PixelLayer extends BaseLayer {
@@ -109,7 +127,15 @@ export interface TilemapLayer extends BaseLayer {
   pixelSize: number;
 }
 
-export type Layer = VectorLayer | PixelLayer | TilemapLayer;
+/**
+ * The camera: its drawings are camera views, keyed and tweened like any layer. The first visible camera layer on the
+ * stage frames every export and playback. It draws nothing itself.
+ */
+export interface CameraLayer extends BaseLayer {
+  kind: 'camera';
+}
+
+export type Layer = VectorLayer | PixelLayer | TilemapLayer | CameraLayer;
 
 /**
  * One drawing held on a layer for `length` frames (its exposure: 1 = "on ones", 2 = "on twos").
@@ -123,13 +149,33 @@ export interface Cel {
   tween?: Tween;
 }
 
-export type Drawing = VectorDrawing | PixelDrawing | TilemapDrawing;
+export type Drawing = VectorDrawing | PixelDrawing | TilemapDrawing | CameraDrawing;
+
+/**
+ * Where the camera looks: the stage-sized frame centred on (x, y) in stage pixels, `zoom` times closer (2 shows half
+ * as much), turned `rotation` degrees clockwise. The plain view is the stage itself: centre, zoom 1, no turn.
+ */
+export interface CameraView {
+  x: number;
+  y: number;
+  zoom: number;
+  rotation: number;
+}
+
+/** One key of a camera layer. */
+export interface CameraDrawing {
+  id: Id;
+  kind: 'camera';
+  view: CameraView;
+}
 
 export interface VectorDrawing {
   id: Id;
   kind: 'vector';
   /** Painted in order: index 0 is at the back. */
   shapes: Shape[];
+  /** On a bones layer: how each bone is turned and moved at this key (bones not listed are at rest). */
+  pose?: Pose;
 }
 
 /**
@@ -370,6 +416,8 @@ export interface SymbolDef {
   length: number;
   /** The registration point in symbol space: what an instance's x, y place, and what it turns and scales around. */
   origin: { x: number; y: number };
+  /** Names for its frames, by frame number (a mouth chart's "A", "E", "M B P"...). Missing or empty = unnamed. */
+  frameLabels?: string[];
 }
 
 /** Where an instance sits. Angles are degrees. Applied as translate, rotate, skew, scale, around the symbol's origin. */
@@ -411,12 +459,22 @@ export type Easing = 'linear' | 'easeIn' | 'easeOut' | 'easeInOut' | 'backIn' | 
  * transforms, opacity and tint they have on the two keys).
  */
 export interface Tween {
-  kind?: 'classic';
+  /** 'shape' morphs the outlines, colours and strokes of one key's drawing into the next one's (shape tween). */
+  kind?: 'classic' | 'shape';
   ease: Easing;
   /** Extra whole turns on the way (positive clockwise). */
   spin?: number;
   /** Follow this line on the way (stage coordinates of the layer). */
   path?: MotionPath;
+  /** Shape tweens only: paired markers saying which point of the start drawing becomes which of the end one. */
+  hints?: ShapeHint[];
+}
+
+/** A shape hint: the point near `from` on the start key's drawing travels to the point near `to` on the end key's. */
+export interface ShapeHint {
+  id: Id;
+  from: { x: number; y: number };
+  to: { x: number; y: number };
 }
 
 export interface MotionPath {
@@ -563,3 +621,109 @@ export interface ParticlesShape {
   preset?: string;
 }
 
+// ---------------------------------------------------------------- clip flow (state graph)
+
+/**
+ * Which clip plays first and what follows what. States are the document's clips. Game engines and Interactives read
+ * this as a state machine; Frameling's own playback ignores it.
+ */
+export interface ClipFlow {
+  /** The clip that plays first (missing = the first clip). */
+  start?: Id;
+  transitions: ClipTransition[];
+  /** Where each clip's box sits in the flow panel, by clip id (missing = laid out automatically). */
+  positions?: Record<Id, { x: number; y: number }>;
+}
+
+/** Go from one clip to another when it ends, or when something triggers it (a key press, "jump", "hit"). */
+export interface ClipTransition {
+  id: Id;
+  from: Id;
+  to: Id;
+  /** 'end': when `from` finishes (a looping clip finishes each time round). 'trigger': when `trigger` is fired. */
+  when: 'end' | 'trigger';
+  /** The trigger's name, for 'trigger' transitions. */
+  trigger?: string;
+}
+
+// ---------------------------------------------------------------- bones and rigs
+
+/** A skeleton: bones in the space of the layer list it sits in (the stage's, or a symbol's). */
+export interface Rig {
+  /** Parents always come before their children. */
+  bones: Bone[];
+  /** The pose library: named poses to put back on any frame. */
+  poses?: SavedPose[];
+}
+
+/** One bone, in its rest (setup) position. Angles are degrees, 0 pointing right, positive clockwise on screen. */
+export interface Bone {
+  id: Id;
+  name: string;
+  /** The bone it hangs from (missing or null = a root). */
+  parent?: Id | null;
+  /** Where the bone starts (its joint). */
+  x: number;
+  y: number;
+  angle: number;
+  length: number;
+  /** Pinned: its tip stays where it is while other bones move (missing = no). */
+  pin?: boolean;
+}
+
+/** How one bone differs from rest at a key: turned by `r` degrees, its joint moved by `x`, `y` (missing = 0). */
+export interface BonePose {
+  r: number;
+  x?: number;
+  y?: number;
+}
+
+export type Pose = Record<Id, BonePose>;
+
+export interface SavedPose {
+  id: Id;
+  name: string;
+  pose: Pose;
+}
+
+/**
+ * How a layer follows a skeleton. With only `bone`, the whole layer moves with that bone (cut-out style). With
+ * `mesh`, it bends: each mesh point follows a blend of bones by weight.
+ */
+export interface LayerBind {
+  /** The bones layer (in the same layer list). */
+  rig: Id;
+  bone: Id;
+  mesh?: SkinMesh;
+}
+
+/** A triangle mesh over a layer's art in rest position, with bone weights per point. */
+export interface SkinMesh {
+  /** Point positions, flat: x0, y0, x1, y1... */
+  points: number[];
+  /** Point indices, three per triangle. */
+  triangles: number[];
+  /** Bone ids the weights refer to by index. */
+  bones: Id[];
+  /** Per point: flat pairs of bone index and weight (weights sum to 1). */
+  weights: number[][];
+}
+
+// ---------------------------------------------------------------- sound
+
+/** A sound placed on the timeline. */
+export interface AudioClip {
+  id: Id;
+  name: string;
+  /** The frame it starts on (can be negative to start partway in). */
+  start: number;
+  /** 0 to 1 (missing = 1). */
+  volume?: number;
+  muted?: boolean;
+  /** The file as imported (WAV, MP3, OGG...). In a saved file it lives beside doc.json as `audio/<id>.<ext>`. */
+  data: Uint8Array;
+  /** Its media type, e.g. `audio/wav`. */
+  mime: string;
+  /** Length in seconds, once known (for drawing it before it's decoded). */
+  duration?: number;
+}

@@ -142,6 +142,7 @@ export async function exportDocument(settings: ExportSettings, signal: AbortSign
     shown = w.paths.find((p) => baseName(p) === result.main) ?? w.paths[0];
   }
   saveLastSettings(settings);
-  notify(`Exported ${baseName(shown)}.`, 'success', can('showInFolder') ? { label: 'Show in folder', run: () => void api.files.showInFolder(shown) } : undefined, 9000, 'cheer');
+  const note = result.kind === 'file' ? result.note : undefined;
+  notify(`Exported ${baseName(shown)}.${note ? ` ${note}` : ''}`, note ? 'warn' : 'success', can('showInFolder') ? { label: 'Show in folder', run: () => void api.files.showInFolder(shown) } : undefined, 9000, 'cheer');
   return 'done';
 }

@@ -1,9 +1,10 @@
+import { line } from './mascot/lines';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { allCommands, type Command } from '../core/registry';
 import { applyWorkspace, currentWorkspace, deleteWorkspace, dock, listWorkspaces, renameWorkspace, resetLayout, saveWorkspace } from './dock';
 import { isStaleCommand, syncDynamicCommands } from './dynamic';
 import { Icon } from './icons';
-import { QuillEmpty } from './mascot';
+import { QuillEmpty, setShowQuill } from './mascot';
 import { addBinding, allConflicts, comboFromEvent, comboToString, conflictsFor, effectiveKeys, removeBinding, resetBindings, setBindings } from './keys';
 import { holdKeyboard } from './keyboard';
 import { Keys } from './ShortcutChip';
@@ -14,6 +15,8 @@ import { setPrefs, usePrefs, type LookPref, type ThemePref } from './prefs';
 import { toast } from './toast';
 import { BehaviourPage } from './ChoiceDialog';
 import { ThemesPage } from './themes/ThemesPage';
+import { PluginsPage } from '../plugins/PluginsPage';
+import { UNITS, type Unit } from '../core/units';
 
 // The Themes page is local to this file for now (overlays.ts decides which pages can be opened from outside).
 type Page = PrefsPage;
@@ -24,6 +27,7 @@ const PAGES: { id: Page; label: string; icon: string; help: string }[] = [
   { id: 'behaviour', label: 'Behaviour', icon: 'sliders', help: 'behaviour' },
   { id: 'keyboard', label: 'Keyboard', icon: 'keyboard', help: 'keyboard-shortcuts' },
   { id: 'workspaces', label: 'Workspaces', icon: 'workspace', help: 'workspaces' },
+  { id: 'plugins', label: 'Plugins', icon: 'plugin', help: 'plugins' },
 ];
 
 export function PrefsModal() {
@@ -52,6 +56,7 @@ function Prefs({ page, commandId }: { page: PrefsPage; commandId?: string }) {
           {current === 'behaviour' && <BehaviourPage />}
           {current === 'keyboard' && <KeyboardPage focusId={commandId} />}
           {current === 'workspaces' && <WorkspacesPage />}
+          {current === 'plugins' && <PluginsPage />}
         </div>
       </div>
     </Modal>
@@ -60,7 +65,7 @@ function Prefs({ page, commandId }: { page: PrefsPage; commandId?: string }) {
 
 // ---------------------------------------------------------------- pieces
 
-function Row({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
+export function Row({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
   return (
     <div className="ui-pref-row">
       <div className="ui-pref-text">
@@ -72,7 +77,7 @@ function Row({ label, hint, children }: { label: string; hint?: string; children
   );
 }
 
-function Segmented<T extends string>({ value, options, onChange, label }: { value: T; options: { id: T; label: string; icon?: string }[]; onChange: (v: T) => void; label: string }) {
+export function Segmented<T extends string>({ value, options, onChange, label }: { value: T; options: { id: T; label: string; icon?: string }[]; onChange: (v: T) => void; label: string }) {
   return (
     <div className="ui-segmented" role="radiogroup" aria-label={label}>
       {options.map((o) => (
@@ -129,6 +134,9 @@ function GeneralPage({ onThemes }: { onThemes: () => void }) {
           ]}
         />
       </Row>
+      <Row label="Units" hint="How sizes are shown. Pixels suit screens and games; mm, cm, inches and points suit print.">
+        <Segmented<Unit> label="Units" value={p.units} onChange={(units) => setPrefs({ units })} options={UNITS.map((u) => ({ id: u.id, label: u.id }))} />
+      </Row>
       <Row label="Sounds" hint="Little sound effects. They aren't here yet, but your choice is remembered.">
         <Switch label="Sounds" on={p.sounds} onChange={(sounds) => setPrefs({ sounds })} />
       </Row>
@@ -142,7 +150,7 @@ function GeneralPage({ onThemes }: { onThemes: () => void }) {
         <Switch label="Tips" on={p.showTips} onChange={(showTips) => setPrefs({ showTips })} />
       </Row>
       <Row label="Show Quill" hint="Quill the hedgehog shows you round and cheers you on. Off hides him; his words still show.">
-        <Switch label="Show Quill" on={p.showQuill} onChange={(showQuill) => setPrefs({ showQuill })} />
+        <Switch label="Show Quill" on={p.showQuill} onChange={setShowQuill} />
       </Row>
       <Row label="Fade tile copies" hint="In tile mode, fade the copies round the tile you're drawing so it stands out. Off shows them exactly as a game would.">
         <Switch label="Fade tile copies" on={p.fadeTileCopies} onChange={(fadeTileCopies) => setPrefs({ fadeTileCopies })} />
@@ -325,7 +333,7 @@ function KeyboardPage({ focusId }: { focusId?: string }) {
         ))}
         {!cats.length && (
           <QuillEmpty anim={[{ anim: 'think', hold: 2400 }, { anim: 'idle' }]} size={96} className="ui-help-empty">
-            No commands match that.
+            {line('empty.shortcuts')}
           </QuillEmpty>
         )}
       </div>

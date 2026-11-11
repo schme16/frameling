@@ -63,7 +63,7 @@ function ids(doc: Doc): string[] {
 
 describe('templates', () => {
   it('has the expected set with unique ids', () => {
-    expect(TEMPLATES.map((t) => t.id)).toEqual(['bouncing-ball', 'flour-sack-hop', 'blink', 'hero-sprites', 'sparkle-fx', 'bouncing-logo', 'tileset', 'blank-vector', 'blank-pixel']);
+    expect(TEMPLATES.map((t) => t.id)).toEqual(['bouncing-ball', 'flour-sack-hop', 'blink', 'hero-sprites', 'sparkle-fx', 'bouncing-logo', 'morphing-shapes', 'camera-parallax', 'puppet', 'tileset', 'lip-sync', 'blank-vector', 'blank-pixel']);
     expect(new Set(TEMPLATES.map((t) => t.id)).size).toBe(TEMPLATES.length);
     for (const t of TEMPLATES) {
       expect(t.name.length).toBeGreaterThan(0);
@@ -82,7 +82,8 @@ describe('templates', () => {
         expect(doc.layers.length).toBeGreaterThan(0);
         expect(new Set(doc.layers.map((l) => l.name)).size).toBe(doc.layers.length);
         // Pixel templates may use tilemap layers too (tiles are pixel art).
-        expect(doc.layers.every((l) => (t.kind === 'pixel' ? l.kind !== 'vector' : l.kind === 'vector'))).toBe(true);
+        // A camera layer can sit on either kind.
+        expect(doc.layers.every((l) => l.kind === 'camera' || (t.kind === 'pixel' ? l.kind !== 'vector' : l.kind === 'vector'))).toBe(true);
         const all = ids(doc);
         expect(new Set(all).size).toBe(all.length);
         expect(doc.swatches.length).toBeGreaterThan(0);

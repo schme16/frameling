@@ -43,22 +43,37 @@ replayed tween frame is the same object and blits from the bitmap cache. `drawSh
 per-depth buffer for group opacity and tint. The canvas, onion skin, thumbnails, GIF, video, sheets and SVG all draw
 through this, so they can't disagree. SVG writes instances as `<g transform="matrix(...)">` (tint is left out there).
 
-## Where the follow-ups fit
+## Phase 3 follow-ups (built)
 
-- **Shape tweens**: `Tween.kind = 'shape'`, with optional `hints: {from, to}[]`. `poseAt` already builds a fresh
-  drawing per tween frame, so a shape tween only adds a branch there that morphs paths between the two keys'
-  drawings (`geometry/morph.ts` exists). Nothing else changes.
-- **Camera**: a new layer kind `'camera'` whose cels hold one instance-like transform (and depth for parallax) and
-  tween with the same `Tween`. Rendering applies its inverse to the other layers. `tweenInstance` and the easing,
-  spin and path code are reusable as they are.
-- **State graph**: clips already exist on the stage. A graph of named states on a symbol (`SymbolDef.states?`, with
-  transitions) maps onto instance `play`/`firstFrame` (single frame is a pose, loop is a clip). Interactives' input
-  nodes would drive it.
-- **Lottie and animated SVG**: symbols map to Lottie precomps and instance transforms to layer `ks`; classic tweens
-  map to keyframes with `i`/`o` bezier handles (`bezierFor` gives the nearest cubic for every preset; bounce and
-  springy need baking into extra keys). Motion paths map to Lottie's position `ti`/`to`, or get baked.
-- **Unpack into layers (Interactives)**: an instance is a group with a matrix, so it maps to an Interactives
-  `InstanceNode` / group with the same transform fields.
+- **Shape tweens** (`core/shape-tween.ts`): `Tween.kind = 'shape'` with optional `hints: ShapeHint[]` (`{id, from, to}`).
+  `poseAt` has a branch (`morphAt`) that blends the key's drawing into the next key's. Shapes pair by order
+  (instances with instances, in order; other shapes with other shapes); each pair is planned once (WeakMap on the two
+  drawings plus a hint key) and the in-betweens just blend. Outlines become rings of cubic segments; the side with
+  fewer segments has its longest ones split until counts match, then the start point and direction with the least
+  travel are picked (both rings centred first). Hints split the outline at the nearest point on each key and the
+  stretches between hints are matched on their own; hints that cross the others are dropped. Pieces (subpaths)
+  pair by nearest middle, spares shrink to (or grow from) their middle. Strokes morph point by point after even
+  resampling; a stroke meeting a fill morphs as its outline. Fills, line colours and widths, opacity blend; a missing
+  fill fades via alpha. Instances in a morph use the classic `tweenInstance`.
+- **Camera** (`core/camera.ts`): `LayerKind 'camera'` with `CameraDrawing { view: {x, y, zoom, rotation} }` keys, so
+  the timeline, holds, key copies and `Tween` (easing, spin, path) work unchanged. The first visible camera layer on
+  the stage is in charge (never one in a symbol). `cameraMatrix(doc, view, factor)` is stage to output space;
+  `BaseLayer.depth` gives `parallaxFactor = 1 / (1 + depth)`, which scales pan and zoom (zoom as `zoom ^ factor`), not
+  the turn. `renderFrame` applies it per layer (`opts.camera: false` for the editor's own uses), so every export and
+  thumbnail goes through it. The canvas looks through it when asked (`viewSettings.throughCamera`, or while playing):
+  the painter draws camera-moved layers directly with the matrix, overlays and pointer input go through it too.
+  Otherwise it draws the camera frame and a faded pasteboard of what's off stage. `setCameraKey` splits a hold to
+  make a key, keeping the in-betweens going.
+- **Clip flow** (`core/flow.ts`): `Doc.flow = { start?, transitions: {id, from, to, when: 'end' | 'trigger', trigger?}[],
+  positions? }`; states are the clips. Exports write it by export clip name (`flowManifest`, `exportClipNames`):
+  the .flplay manifest gets an optional `flow` field, the Godot export adds `<base>-flow.json` and `<base>_flow.gd`
+  (an AnimatedSprite2D script: start clip, on-end transitions, `fire(trigger)`), checked in a real Godot by
+  `test/export/godot-e2e.test.ts`. Frameling's own play button ignores the flow; the panel's Try it follows it.
+- **Lottie and moving SVG** (`export/lottie.ts`, `export/svg-anim.ts`): symbols as precomps with time remap, classic
+  tweens as eased keys (bezier handles from `bezierFor`; springy, bouncy and paths baked per frame), shape tweens as
+  per-frame path keys, the camera as null parents per depth, pixel layers as PNG images. Moving SVG uses CSS
+  keyframes (SMIL can't animate a full matrix). `scripts/e2e/vector-check.cjs` renders both in Chromium (lottie-web
+  canvas renderer, SVG seeked through the Web Animations API) and compares with `renderFrame`.
 
 ## Not done yet
 
@@ -66,3 +81,6 @@ through this, so they can't disagree. SVG writes instances as `<g transform="mat
   Moving it there changes the start key.
 - Instances in a merge-mode layer never merge (they're treated like groups), and the paint bucket ignores them as
   walls.
+- Moving SVG and Lottie leave out tint (colour wash) on symbol copies.
+- Looking through the camera, onion skins are hidden, and tool sizes on screen don't follow the camera's zoom.
+- Off-stage drawing shows on the faded pasteboard only while a camera exists, and isn't cached (drawn directly).

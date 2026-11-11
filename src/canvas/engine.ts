@@ -21,7 +21,11 @@ import { maskFocusChanged } from '../effects/stage';
 import { cssVar, subscribeTheme } from './theme';
 import { getViewSettings, subscribeViewSettings } from './viewSettings';
 import { drawDecorations } from './decorations';
+import { canvasCamera, currentView, lookingThrough, stageCamera } from '../camera/ops';
+import { cameraFrameCorners } from '../core/camera';
+import { invert, applyMat } from '../core/symbols';
 import { screenToDoc, stageDeviceRect, wheelZoomFactor, zoomAbout, type Pt } from './view';
+import { overlayMatrix, toLayerSpace } from '../rig/pose';
 
 export interface EngineElements {
   root: HTMLElement;
@@ -139,7 +143,7 @@ export class CanvasEngine {
     ro.observe(root);
     this.cleanups.push(() => ro.disconnect());
     this.cleanups.push(store().subscribe(this.onStore));
-    this.cleanups.push(subscribeViewSettings(() => this.invalidate(false, true)));
+    this.cleanups.push(subscribeViewSettings(() => this.invalidate(true, true)));
     this.cleanups.push(subscribeTileUi(() => this.invalidate(true, true)));
     this.cleanups.push(subscribePrefs(() => this.invalidate(true, true)));
     // Grid and handle colours come from theme tokens, so a theme or look change repaints both canvases.
@@ -320,6 +324,8 @@ export class CanvasEngine {
       zooming,
       tileMode: tileModeOn(),
       tileCopyAlpha: tileCopyAlpha(),
+      camera: canvasCamera()?.view,
+      pasteboard: !ui.playing && !doc.editing?.length && !!stageCamera(doc) && !lookingThrough() ? { frame: cameraFrameNow() } : undefined,
       activeLayerId: ui.activeLayerId,
     });
     if (!settled) {
@@ -342,21 +348,29 @@ export class CanvasEngine {
     const rect = stageDeviceRect({ zoom: ui.zoom, panX: ui.panX, panY: ui.panY }, doc.width, doc.height, dpr);
     if (tileModeOn()) drawTileModeFrame(g, rect, dpr);
     this.drawPixelGrid(g, rect, ui.zoom, dpr);
+    // Looking through the camera, everything drawn in stage space goes through it too.
+    const cam = canvasCamera()?.matrix;
+    const stageSpace = () => {
+      g.setTransform(rect.w / doc.width, 0, 0, rect.h / doc.height, rect.x, rect.y);
+      if (cam) g.transform(cam[0], cam[1], cam[2], cam[3], cam[4], cam[5]);
+    };
     g.save();
-    g.setTransform(rect.w / doc.width, 0, 0, rect.h / doc.height, rect.x, rect.y);
+    stageSpace();
     drawDecorations(g, this.ctx);
     g.restore();
     const tool = this.gesture?.kind === 'tool' ? this.gesture.tool : getTool(ui.tool);
     if (tool?.overlay && !(this.gesture?.kind === 'pan')) {
       g.save();
-      g.setTransform(rect.w / doc.width, 0, 0, rect.h / doc.height, rect.x, rect.y);
+      stageSpace();
+      const bm = overlayMatrix(doc, ui.activeLayerId, ui.frame, tool.id);
+      if (bm) g.transform(bm[0], bm[1], bm[2], bm[3], bm[4], bm[5]);
       tool.overlay(g, this.ctx);
       g.restore();
     }
     const extra = ctl.getStageOverlays();
     if (extra.length) {
       g.save();
-      g.setTransform(rect.w / doc.width, 0, 0, rect.h / doc.height, rect.x, rect.y);
+      stageSpace();
       for (const fn of extra) fn(g, ui.zoom);
       g.restore();
     }
@@ -429,11 +443,20 @@ export class CanvasEngine {
 
   private toDocPoint(e: { clientX: number; clientY: number }): Pt {
     const { zoom, panX, panY } = store().get().ui;
-    return screenToDoc({ zoom, panX, panY }, e.clientX - this.bounds.left, e.clientY - this.bounds.top);
+    const p = screenToDoc({ zoom, panX, panY }, e.clientX - this.bounds.left, e.clientY - this.bounds.top);
+    // Through the camera, the screen shows camera space: tools still work in stage space.
+    const cam = canvasCamera()?.matrix;
+    return cam ? applyMat(invert(cam), p.x, p.y) : p;
+  }
+
+  /** On a layer attached to a bone, tools work on the part's own art where it is at rest. */
+  private toLayerPoint(p: Pt): Pt {
+    const { doc, ui } = store().get();
+    return toLayerSpace(doc, ui.activeLayerId, ui.frame, this.gesture?.kind === 'tool' ? this.gesture.tool.id : ui.tool, p);
   }
 
   private toPointer(e: PointerEvent): ToolPointer {
-    const p = this.toDocPoint(e);
+    const p = this.toLayerPoint(this.toDocPoint(e));
     const pen = e.pointerType === 'pen';
     return {
       x: p.x,
@@ -528,7 +551,7 @@ export class CanvasEngine {
     }
     this.lastPtr = ptr;
     const pred = typeof e.getPredictedEvents === 'function' ? e.getPredictedEvents() : [];
-    ctl.setPredicted(pred.map((pe) => this.toDocPoint(pe)));
+    ctl.setPredicted(pred.map((pe) => this.toLayerPoint(this.toDocPoint(pe))));
     this.invalidate(false, true);
   };
 
@@ -645,4 +668,12 @@ export class CanvasEngine {
     this.invalidate(false, true);
     this.updateCursor();
   }
+}
+
+/** The camera's view on the playhead's frame, as stage-space corners (for the pasteboard), when it's on. */
+function cameraFrameNow(): { x: number; y: number }[] | undefined {
+  const s = store().get();
+  const cam = stageCamera(s.doc);
+  const v = cam?.visible ? currentView(s) : undefined;
+  return v ? cameraFrameCorners(s.doc, v) : undefined;
 }
