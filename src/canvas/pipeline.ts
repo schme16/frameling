@@ -11,6 +11,7 @@
 import type { Doc, Drawing, Layer } from '../core/format';
 import { poseAt, poseLive } from '../core/symbols';
 import { paintEditBackdrop } from './backdrop';
+import { bindMatrixAt } from '../rig/pose';
 import { drawDrawing, drawShape, pixelCanvas } from '../core/render';
 import type { OnionSettings } from '../core/store';
 import type { Live } from './controller';
@@ -306,6 +307,9 @@ export class FramePainter {
         const sx = rect.w / doc.width;
         const sy = rect.h / doc.height;
         g.setTransform(sx, 0, 0, sy, rect.x, rect.y);
+        // Pixels being painted on a part attached to a bone show where the part is.
+        const bm = bindMatrixAt(doc, layer, p.frame);
+        if (bm) g.transform(bm[0], bm[1], bm[2], bm[3], bm[4], bm[5]);
         g.drawImage(lv.canvas, 0, 0, lv.width * pixelSize, lv.height * pixelSize);
         g.restore();
         continue;

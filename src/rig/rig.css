@@ -1,0 +1,82 @@
+.rg-panel {
+  gap: 8px;
+}
+.rg-head {
+  margin: 6px 0 0;
+  font-size: var(--fs-small);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.rg-bones,
+.rg-parts,
+.rg-poses {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.rg-bone,
+.rg-pose,
+.rg-part {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 2px 4px;
+  border-radius: var(--radius-small);
+}
+.rg-bone.is-on {
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+}
+.rg-bone.is-on .sy-icon-btn {
+  color: var(--chosen-fg);
+}
+.rg-name {
+  all: unset;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  font-weight: 700;
+}
+.rg-name:focus-visible {
+  outline: 2px solid var(--focus);
+  border-radius: 3px;
+}
+.rg-pose:hover,
+.rg-bone:not(.is-on):hover {
+  background: var(--hover-bg);
+}
+.rg-pin {
+  opacity: 0.45;
+}
+.rg-pin.is-on {
+  opacity: 1;
+  color: var(--rose);
+}
+.rg-part-name {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rg-part select {
+  max-width: 55%;
+  font: inherit;
+  color: var(--text);
+  background: var(--raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  padding: 3px 6px;
+}

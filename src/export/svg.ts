@@ -2,7 +2,8 @@
 // canvas fills), pixel layers become one rectangle per run of same-coloured pixels, so nothing is lost.
 import type { Doc, Layer, PathShape, PixelDrawing, Shape, StrokeShape, SubPath } from '../core/format';
 import { isPosed, poseAt, type PosedInstance } from '../core/symbols';
-import { strokeOutline } from '../core/render';
+import { drawMeshed, strokeOutline } from '../core/render';
+import { encodePng } from '../io/png';
 import { flattenTilemap } from '../tiles/model';
 
 export interface SvgOptions {
@@ -93,6 +94,12 @@ function shapeToSvg(s: Shape): string {
 function instanceToSvg(s: PosedInstance): string {
   const inner: string[] = [];
   for (const l of s.posed.layers) {
+    if (l.mesh) {
+      // A layer bent by bones has no vector equivalent, so it goes in as a picture.
+      const img = meshImage(l.drawing, l.pixelSize, l.mesh);
+      if (img) inner.push(l.opacity < 1 ? `<g opacity="${op(l.opacity)}">${img}</g>` : img);
+      continue;
+    }
     const parts = l.drawing.kind === 'pixel' ? pixelRects(l.drawing, l.pixelSize) : l.drawing.kind === 'vector' ? l.drawing.shapes.map(shapeToSvg).filter(Boolean) : [];
     if (!parts.length) continue;
     inner.push(l.opacity < 1 ? `<g opacity="${op(l.opacity)}">${parts.join('')}</g>` : parts.join(''));
@@ -100,6 +107,31 @@ function instanceToSvg(s: PosedInstance): string {
   if (!inner.length || s.opacity <= 0) return '';
   const m = s.posed.matrix.map((v) => n2(v)).join(' ');
   return `<g transform="matrix(${m})"${s.opacity < 1 ? ` opacity="${op(s.opacity)}"` : ''}>${inner.join('')}</g>`;
+}
+
+function meshImage(d: Parameters<typeof drawMeshed>[1], pixelSize: number, mesh: Parameters<typeof drawMeshed>[3]): string {
+  if (typeof OffscreenCanvas === 'undefined' || !mesh.dst.length) return '';
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (let i = 0; i < mesh.dst.length; i += 2) {
+    x0 = Math.min(x0, mesh.dst[i]);
+    y0 = Math.min(y0, mesh.dst[i + 1]);
+    x1 = Math.max(x1, mesh.dst[i]);
+    y1 = Math.max(y1, mesh.dst[i + 1]);
+  }
+  const k = 2;
+  const w = Math.max(1, Math.ceil((x1 - x0) * k));
+  const h = Math.max(1, Math.ceil((y1 - y0) * k));
+  if (w * h > 16_000_000) return '';
+  const c = new OffscreenCanvas(w, h);
+  const g = c.getContext('2d');
+  if (!g) return '';
+  g.setTransform(k, 0, 0, k, -x0 * k, -y0 * k);
+  drawMeshed(g, d, pixelSize, mesh);
+  const px = g.getImageData(0, 0, w, h).data;
+  const png = encodePng({ width: w, height: h, pixels: px });
+  let bin = '';
+  for (let i = 0; i < png.length; i += 0x8000) bin += String.fromCharCode(...png.subarray(i, i + 0x8000));
+  return `<image x="${n2(x0)}" y="${n2(y0)}" width="${n2(w / k)}" height="${n2(h / k)}" href="data:image/png;base64,${btoa(bin)}"/>`;
 }
 
 function pathShapeToSvg(s: PathShape): string {

@@ -130,8 +130,8 @@ const LayerRow = memo(function LayerRow({ layer, inFolder, active, editing, drop
       onDragEnd={onDragEnd}
     >
       <span className="tl-grip" aria-hidden="true"><Icon name="grip" size={12} /></span>
-      <span className={`tl-kind is-${layer.kind}`} title={kind}>
-        <Icon name={layer.kind} size={13} />
+      <span className={`tl-kind is-${layer.kind}`} title={layer.kind === 'vector' && layer.rig ? 'Bones layer (the skeleton; each key is a pose)' : kind}>
+        <Icon name={layer.kind === 'vector' && layer.rig ? 'bone' : layer.kind} size={13} />
       </span>
       {editing ? (
         <InlineName
@@ -145,6 +145,11 @@ const LayerRow = memo(function LayerRow({ layer, inFolder, active, editing, drop
       ) : (
         <span className="tl-layer-name" title="Double-click to rename" onDoubleClick={() => setTl({ editing: { kind: 'layer', id: layer.id } })}>
           {layer.name}
+          {layer.bind && (
+            <small className="tl-ref-tag" title={layer.bind.mesh ? 'Bends with the bones' : 'Follows a bone'}>
+              <Icon name="bone" size={10} />
+            </small>
+          )}
           {layer.reference && (
             <small className="tl-ref-tag" title="Reference layer: you see it while drawing, exports leave it out">
               ref

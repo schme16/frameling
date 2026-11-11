@@ -236,8 +236,111 @@ function withGroupBuffer(g: Ctx2D, alpha: number, tint: { color: Color; amount: 
 }
 
 function drawPosedLayer(g: Ctx2D, l: PosedLayer): void {
-  if (l.opacity >= 1) drawDrawing(g, l.drawing, l.pixelSize);
-  else if (l.opacity > 0) withGroupBuffer(g, l.opacity, undefined, (lg) => drawDrawing(lg, l.drawing, l.pixelSize));
+  const draw = (t: Ctx2D) => (l.mesh ? drawMeshed(t, l.drawing, l.pixelSize, l.mesh) : drawDrawing(t, l.drawing, l.pixelSize));
+  if (l.opacity >= 1) draw(g);
+  else if (l.opacity > 0) withGroupBuffer(g, l.opacity, undefined, draw);
+}
+
+// ---------------------------------------------------------------- bent (mesh) drawing
+
+// A drawing's art at rest as a picture, per drawing and scale, for bending through a mesh.
+interface MeshTexture {
+  k: number;
+  x: number;
+  y: number;
+  canvas: OffscreenCanvas | HTMLCanvasElement;
+}
+const meshTextures = new WeakMap<Drawing, MeshTexture[]>();
+/** How many mesh pictures were made, for tests. */
+export const meshStats = { textures: 0 };
+
+function meshTexture(d: Drawing, pixelSize: number, src: number[], scale: number): MeshTexture {
+  if (d.kind === 'pixel') return { k: 1 / pixelSize, x: 0, y: 0, canvas: pixelCanvas(d) };
+  // Scales snap to powers of two so zooming doesn't redraw the picture every step.
+  const k = Math.pow(2, Math.max(-2, Math.min(3, Math.ceil(Math.log2(Math.max(0.01, scale))))));
+  const list = meshTextures.get(d) ?? [];
+  const hit = list.find((t) => t.k === k);
+  if (hit) return hit;
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (let i = 0; i < src.length; i += 2) {
+    x0 = Math.min(x0, src[i]);
+    y0 = Math.min(y0, src[i + 1]);
+    x1 = Math.max(x1, src[i]);
+    y1 = Math.max(y1, src[i + 1]);
+  }
+  const pad = 2;
+  const w = Math.max(1, Math.min(4096, Math.ceil((x1 - x0) * k) + pad * 2));
+  const h = Math.max(1, Math.min(4096, Math.ceil((y1 - y0) * k) + pad * 2));
+  const canvas = typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(w, h) : Object.assign(document.createElement('canvas'), { width: w, height: h });
+  const tg = canvas.getContext('2d') as Ctx2D;
+  tg.setTransform(k, 0, 0, k, (pad - x0 * k), (pad - y0 * k));
+  drawDrawing(tg, d, pixelSize);
+  const t = { k, x: x0 - pad / k, y: y0 - pad / k, canvas };
+  list.push(t);
+  if (list.length > 3) list.shift();
+  meshTextures.set(d, list);
+  meshStats.textures++;
+  return t;
+}
+
+/** Draws a drawing bent through a mesh: each triangle's piece of the rest picture mapped onto where it is now. */
+export function drawMeshed(g: Ctx2D, d: Drawing, pixelSize: number, mesh: { src: number[]; dst: number[]; triangles: number[] }): void {
+  const m = g.getTransform();
+  const scale = Math.sqrt(Math.abs(m.a * m.d - m.b * m.c)) || 1;
+  const tex = meshTexture(d, pixelSize, mesh.src, scale);
+  // Texture pixels to rest space.
+  const tk = 1 / tex.k;
+  const { src, dst, triangles: tri } = mesh;
+  // Triangles are grown a little so neighbours overlap and no hairline seams show.
+  const grow = 0.6 / scale;
+  const prevSmooth = g.imageSmoothingEnabled;
+  if (d.kind === 'pixel') g.imageSmoothingEnabled = false;
+  for (let k = 0; k < tri.length; k += 3) {
+    const a = tri[k] * 2, b = tri[k + 1] * 2, c = tri[k + 2] * 2;
+    const s = [src[a], src[a + 1], src[b], src[b + 1], src[c], src[c + 1]];
+    const t = [dst[a], dst[a + 1], dst[b], dst[b + 1], dst[c], dst[c + 1]];
+    const am = affineOf(s, t);
+    if (!am) continue;
+    const cx = (t[0] + t[2] + t[4]) / 3;
+    const cy = (t[1] + t[3] + t[5]) / 3;
+    g.save();
+    g.beginPath();
+    for (let i = 0; i < 6; i += 2) {
+      const dx = t[i] - cx;
+      const dy = t[i + 1] - cy;
+      const len = Math.hypot(dx, dy) || 1;
+      const px = t[i] + (dx / len) * grow;
+      const py = t[i + 1] + (dy / len) * grow;
+      if (i) g.lineTo(px, py);
+      else g.moveTo(px, py);
+    }
+    g.closePath();
+    g.clip();
+    g.transform(am[0], am[1], am[2], am[3], am[4], am[5]);
+    g.transform(tk, 0, 0, tk, tex.x, tex.y);
+    // Only the piece of the picture under this triangle (plus a pixel), not the whole thing.
+    const sx0 = Math.max(0, Math.floor((Math.min(s[0], s[2], s[4]) - tex.x) * tex.k) - 2);
+    const sy0 = Math.max(0, Math.floor((Math.min(s[1], s[3], s[5]) - tex.y) * tex.k) - 2);
+    const sx1 = Math.min(tex.canvas.width, Math.ceil((Math.max(s[0], s[2], s[4]) - tex.x) * tex.k) + 2);
+    const sy1 = Math.min(tex.canvas.height, Math.ceil((Math.max(s[1], s[3], s[5]) - tex.y) * tex.k) + 2);
+    if (sx1 > sx0 && sy1 > sy0) g.drawImage(tex.canvas, sx0, sy0, sx1 - sx0, sy1 - sy0, sx0, sy0, sx1 - sx0, sy1 - sy0);
+    g.restore();
+  }
+  g.imageSmoothingEnabled = prevSmooth;
+}
+
+function affineOf(s: number[], t: number[]): number[] | null {
+  const [x0, y0, x1, y1, x2, y2] = s;
+  const det = x0 * (y1 - y2) - x1 * (y0 - y2) + x2 * (y0 - y1);
+  if (Math.abs(det) < 1e-9) return null;
+  const solve = (v0: number, v1: number, v2: number) => [
+    (v0 * (y1 - y2) - v1 * (y0 - y2) + v2 * (y0 - y1)) / det,
+    (x0 * (v1 - v2) - x1 * (v0 - v2) + x2 * (v0 - v1)) / det,
+    (x0 * (y1 * v2 - y2 * v1) - x1 * (y0 * v2 - y2 * v0) + x2 * (y0 * v1 - y1 * v0)) / det,
+  ];
+  const [a, c, e] = solve(t[0], t[2], t[4]);
+  const [b, d, f] = solve(t[1], t[3], t[5]);
+  return [a, b, c, d, e, f];
 }
 
 /** Draws a posed symbol instance: its symbol's layers under its matrix, faded and tinted as a whole. */
