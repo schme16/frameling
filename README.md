@@ -119,12 +119,47 @@ playable form of the animation, which Interactives drops onto a page as a "Frame
 
 Changes stay additive: a new field is optional, and anything that would break an older player bumps `version`.
 
+### Edit in Frameling (the round trip)
+
+**File > Open Interactives file...** (or double-clicking a `.flplay`, which the installers register) opens the
+`source.frameling` inside a package. Saving then writes the drawing back into the same `.flplay`, at the package's own
+`scale` and see-through choice, with the source included again (`src/interactives/`). The first save asks whether to
+just update the package or also keep a `.frameling` (Preferences > Behaviour). **File > Update the Interactives file
+when saving** turns it off for a drawing; the link is remembered per document id in `localStorage`
+(`frameling.playableLinks.v1`). The desktop side only writes to a package that was opened or picked
+(`files:linkPlayable` keeps that list in `linked-playables.json` in the user data folder).
+
+The installed app also answers `frameling://open?path=<absolute path to a .frameling or .flplay>` (registered by the
+installers; `src/main/library.ts` `fileFromUrl`). For a one-click **Edit in Frameling** in Interactives, its editor
+would need to:
+
+1. Know the local path of the `.flplay` (the desktop Interactives editor has it; a browser editor would have to
+   download the file first and use that path).
+2. Open `frameling://open?path=` with the path URL-encoded (`window.open` or `shell.openExternal`).
+3. Notice when the file changes (watch it, or a "Reload from Frameling" button) and load the new atlas.
+4. Offer it only when `manifest.source` isn't `null`, since without the source there's nothing to edit.
+
+## Plugins
+
+Sandboxed add-ons that add commands, exports and panels: see [docs/plugins.md](docs/plugins.md) for the API, the
+sandbox and the threat model. Examples are in `plugins/examples/`. Installed plugins live in `library/plugins/` in the
+user data folder (web: IndexedDB).
+
+## Templates
+
+Built-in templates are built in code (`src/templates/`). Your templates are `.frameling` files with a `template.json`
+beside the drawing (name, blurb, kind, tags, author, licence, card frame; `src/templates/community.ts`), kept in
+`library/templates/` in the user data folder (web: IndexedDB). Files dropped into that folder show up too. The welcome
+sheet lists sources from `registerTemplateSource` (`src/templates/user.ts`), so an online gallery can be added later
+as one more source with its own section; there is no server for one today.
+
 ## How it's put together
 
 - `src/main/`: the Electron main process (windows, menus, files).
 - `src/preload/`: the small, safe bridge between the page and the desktop (`window.frameling`).
 - `src/renderer/`: the app's interface (React and TypeScript, built with Vite).
 - `src/platform/`: which bridge the page has (desktop or browser), and the browser one itself.
+- `src/plugins/`: the plugin sandbox and API. `src/interactives/`: the .flplay round trip. `src/templates/`: templates.
 - `scripts/`: dev, build and local install scripts.
 - `.github/workflows/build.yml`: the Windows, macOS and Linux builds, and the web build.
 
