@@ -546,7 +546,9 @@ export function poseInstance(doc: Doc, s: InstanceShape, inner: number, depth = 
   if (!c || inner < 0) return { ...s, posed: { matrix: [...IDENTITY_MAT], layers: [] } };
   const layers: PosedLayer[] = [];
   for (const l of c.layers) {
-    if (!l.visible) continue;
+    // Masks, reference layers and hidden folders never show. Other looks (blend, effects, clipping, masks) are left
+    // out inside symbols for now; the layer the instance sits on can have them.
+    if (!l.visible || l.mask || l.reference || (l.folder && doc.folders?.[l.folder]?.visible === false)) continue;
     const dr = poseAt(doc, l, inner, depth + 1);
     if (dr) layers.push({ drawing: dr, opacity: l.opacity, pixelSize: 'pixelSize' in l ? l.pixelSize : 1, frame: inner });
   }

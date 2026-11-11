@@ -49,3 +49,16 @@ describe('tilemaps inside symbols', () => {
     expect(svg).toContain('fill="#50b43c"');
   });
 });
+
+describe('layers inside symbols that never show on their own', () => {
+  it('leaves masks, reference layers and hidden folders out of the instance', () => {
+    const doc = tilesInSymbol();
+    const inner = doc.symbols!.y1.layers[0];
+    const mk = (extra: object) => ({ ...inner, id: Math.random().toString(36), ...extra });
+    doc.folders = { off: { id: 'off', name: 'Off', visible: false, opacity: 1 } };
+    doc.symbols!.y1.layers.push(mk({ mask: 'show' }), mk({ reference: true }), mk({ folder: 'off' }));
+    const posed = poseAt(doc, doc.layers[0], 0);
+    const inst = posed?.kind === 'vector' ? posed.shapes[0] : undefined;
+    expect(inst && isPosed(inst) ? inst.posed.layers.length : -1).toBe(1);
+  });
+});
