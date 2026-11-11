@@ -5,7 +5,7 @@
  *
  * Changing a colour while shapes are selected also recolours them (one undo step per drag).
  *
- * Keys: X brings the other box to the front, Shift+X swaps the two colours, Shift+D goes back to the defaults (the theme's
+ * Keys: X brings the other box to the front, Shift+X swaps the two colours (and gradients), Shift+D goes back to the defaults (the theme's
  * fill, black stroke; plain D is "copy drawing to next frame" in the timeline), / sets the box in front to none.
  */
 import type { Color } from '../core/format';
@@ -13,6 +13,7 @@ import { registerCommands, registerHelp } from '../core/registry';
 import { store, type UiState } from '../core/store';
 import { activeDrawing, editActiveDrawing } from './edit';
 import { cssVar, subscribeTheme } from '../canvas/theme';
+import { applyGradientToSelection, getGradientWells, swapGradientWells } from './gradient-wells';
 
 // A soft yellow that reads on white paper, so the first shape and the first bucket click show up (see themeFill).
 /** The fill used when there's no theme to ask (tests, before the page styles load). */
@@ -117,14 +118,21 @@ export function toggleWell(): void {
   setActiveWell(store().get().ui.activeWell === 'fill' ? 'stroke' : 'fill');
 }
 
-/** Shift+X: swap the fill and stroke colours. */
+/** Shift+X: swap the fill and stroke colours, gradients included. */
 export function swapColors(): void {
   const ui = store().get().ui;
   const fill = ui.strokeOn ? ui.color : null;
   const stroke = ui.fillColor;
+  const g = getGradientWells();
+  const hadGradient = !!(g.fill || g.stroke);
+  swapGradientWells();
   store().setUi({ fillColor: fill, color: stroke ?? ui.color, strokeOn: stroke !== null });
   applyToSelection('fill');
   applyToSelection('stroke');
+  if (hadGradient) {
+    applyGradientToSelection('fill');
+    applyGradientToSelection('stroke');
+  }
 }
 
 /** Shift+D: the theme's fill colour and a black stroke. */
@@ -204,7 +212,7 @@ Rectangles and ellipses use both: the fill inside and the stroke round the edge.
 ## Quick keys
 
 - **X** brings the other box to the front.
-- **Shift+X** swaps the two colours.
+- **Shift+X** swaps the two colours. Gradients swap too, so a gradient fill becomes a gradient outline.
 - **Shift+D** goes back to the default colours: a black stroke, and a fill in your theme's highlight colour (gold in most themes, aqua or lavender in others). New shapes start with that fill too, so they show up on white paper.
 - **/** sets the box in front to none.
 

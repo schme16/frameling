@@ -12,3 +12,17 @@ export function inOutRange(doc: Doc): { start: number; end: number } | null {
   if (start === 0 && end === last) return null;
   return { start, end };
 }
+
+/**
+ * Moves the play range when whole-animation frames go in or out at `frame` (delta +1 inserted, -1 removed).
+ * Before the range it slides along; inside it the range grows or shrinks.
+ */
+export function shiftInOut(doc: Doc, frame: number, delta: number): void {
+  const io = doc.inOut;
+  if (!io || !delta) return;
+  const s = Math.min(io.start, io.end);
+  const e = Math.max(io.start, io.end);
+  if (frame > e) return;
+  if (frame < s) doc.inOut = { start: Math.max(0, s + delta), end: Math.max(0, e + delta) };
+  else doc.inOut = { start: s, end: Math.max(s, e + delta) };
+}

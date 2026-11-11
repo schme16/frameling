@@ -271,6 +271,15 @@ export class Store {
     this.emit();
   }
 
+  /** Gives the open document a new id (no undo step), for a Save as copy that starts its own version history. */
+  setDocId(id: string): void {
+    if (this.nested) {
+      this.nested.parent = { ...this.nested.parent, id };
+      this.merged = null;
+    } else this.state = { ...this.state, doc: { ...this.state.doc, id } };
+    this.emit();
+  }
+
   markSaved(filePath: string): void {
     this.setUi({ filePath, dirty: false });
   }

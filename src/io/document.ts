@@ -1,6 +1,7 @@
 // Opening, saving and the "unsaved changes?" question, on the page side. The bytes are made and read by file.ts; the
 // desktop side (src/main) does the dialogs and the disk.
 import { rootDoc } from '../core/symbols';
+import { uid } from '../core/doc';
 import { store } from '../core/store';
 import type { RecentFile } from '../preload/api';
 import { baseName, desktop, stripExt } from './desktop';
@@ -162,27 +163,37 @@ async function saveTo(path: string | null): Promise<boolean> {
   try {
     // While a tile is open for editing, the file gets the whole document with the tile as it is now.
     const doc = store().rootDoc();
+    // Save as on a drawing that already has a file makes a separate copy, so the copy gets its own id (and its own
+    // version history). The original keeps its id and history.
+    const oldPath = store().get().ui.filePath;
+    const copyId = path === null && oldPath ? uid('d') : null;
     let bytes: Uint8Array;
     try {
-      bytes = saveFile(doc, api.versions.app);
+      bytes = saveFile(copyId ? { ...doc, id: copyId } : doc, api.versions.app);
     } catch {
       notify("Something went wrong while packing up your drawing, so it wasn't saved. Please try again.", 'error');
       return false;
     }
-    const r = await api.files.save({ bytes, path, suggestedName: path ? stripExt(baseName(path)) : doc.name });
+    let r = await api.files.save({ bytes, path, suggestedName: path ? stripExt(baseName(path)) : doc.name });
+    if (!r) return false;
+    // Saved as over the same file after all: that's a plain save, so it keeps the drawing's own id.
+    if (copyId && !('error' in r) && r.path === oldPath) r = await api.files.save({ bytes: saveFile(doc, api.versions.app), path: r.path, suggestedName: doc.name });
     if (!r) return false;
     if ('error' in r) {
       notify(r.error, 'error');
       return false;
     }
     // If they kept drawing while the file was being written, the newest changes aren't in it yet.
-    if (store().rootDoc() === doc) store().markSaved(r.path);
+    const unchanged = store().rootDoc() === doc;
+    if (copyId && r.path !== oldPath) store().setDocId(copyId);
+    if (unchanged) store().markSaved(r.path);
     else store().setUi({ filePath: r.path });
     void clearAutosaveCopy();
     // Whatever was set aside for this drawing is in the file now.
     void api.autosave.removeKept(doc.id).catch(() => undefined);
     notify('Saved.', 'success', undefined, 1600);
-    for (const h of saveHooks) void h.after?.(doc, r.path)?.catch(() => undefined);
+    const saved = copyId && r.path !== oldPath ? store().rootDoc() : doc;
+    for (const h of saveHooks) void h.after?.(saved, r.path)?.catch(() => undefined);
     return true;
   } finally {
     saving = false;
