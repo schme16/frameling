@@ -67,7 +67,7 @@ function Approve({ m, verb, answer }: { m: PluginManifest; verb: string; answer:
           <Icon name="lock" size={14} /> Plugins run in a sandbox, away from your files and the rest of Frameling.
         </p>
       </div>
-      <footer className="ui-choice-foot">
+      <div className="ui-choice-foot">
         <button type="button" className="ui-btn ui-btn-quiet" onClick={() => openHelp('plugins')}>
           <Icon name="help" size={14} /> Learn more
         </button>
@@ -78,7 +78,7 @@ function Approve({ m, verb, answer }: { m: PluginManifest; verb: string; answer:
         <button type="button" className="ui-btn ui-btn-primary" onClick={() => answer({ permissions: net ? [...m.permissions] : asks, network: net ? [...m.network] : [] })}>
           {verb}
         </button>
-      </footer>
+      </div>
     </Modal>
   );
 }

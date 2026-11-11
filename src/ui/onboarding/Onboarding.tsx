@@ -178,7 +178,7 @@ function Flow() {
         </section>
       </div>
 
-      <footer className="ob-foot">
+      <div className="ob-foot">
         {last ? (
           <span />
         ) : (
@@ -204,7 +204,7 @@ function Flow() {
             </button>
           )}
         </span>
-      </footer>
+      </div>
     </Modal>
   );
 }

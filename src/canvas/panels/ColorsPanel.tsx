@@ -215,6 +215,7 @@ export function ColorsPanel() {
             type="button"
             className="cv-swatch"
             data-on={s.color.toLowerCase() === color.toLowerCase()}
+            aria-pressed={s.color.toLowerCase() === color.toLowerCase()}
             style={{ backgroundColor: s.color }}
             title={`${s.name} (${s.color}). Right-click to rename or remove.`}
             aria-label={`${s.name}, ${s.color}`}
@@ -247,7 +248,7 @@ export function ColorsPanel() {
           </div>
           <div className="cv-swatches">
             {recent.map((c) => (
-              <button key={c} type="button" className="cv-swatch" data-on={c === color.toLowerCase()} style={{ backgroundColor: c }} title={c} aria-label={`Recent colour ${c}`} onClick={() => setColor(c)} />
+              <button key={c} type="button" className="cv-swatch" data-on={c === color.toLowerCase()} aria-pressed={c === color.toLowerCase()} style={{ backgroundColor: c }} title={c} aria-label={`Recent colour ${c}`} onClick={() => setColor(c)} />
             ))}
           </div>
         </>

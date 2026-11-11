@@ -142,10 +142,25 @@ export function FlowPanel() {
             const on = picked?.kind === 'link' && picked.id === t.id;
             const label = t.when === 'end' ? 'at the end' : `on ${t.trigger}`;
             return (
-              <g key={t.id} className="fl-link" data-on={on} onPointerDown={(e) => { e.stopPropagation(); setPicked({ kind: 'link', id: t.id }); }}>
+              <g
+                key={t.id}
+                className="fl-link"
+                data-on={on}
+                tabIndex={0}
+                role="button"
+                aria-pressed={on}
+                aria-label={`${nameOf(t.from)} to ${nameOf(t.to)}, ${label}`}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setPicked({ kind: 'link', id: t.id });
+                  }
+                }}
+                onPointerDown={(e) => { e.stopPropagation(); setPicked({ kind: 'link', id: t.id }); }}
+              >
                 <line x1={from.x} y1={from.y} x2={to.x} y2={to.y} className="fl-hit" />
                 <line x1={from.x} y1={from.y} x2={to.x} y2={to.y} className="fl-line" markerEnd="url(#fl-head)" strokeDasharray={t.when === 'trigger' ? '5 4' : undefined} />
-                <text x={mid.x} y={twoWay ? mid.y + 4 : mid.y - 5} className="fl-label" textAnchor={anchor}>
+                <text x={mid.x} y={twoWay ? mid.y + 4 : mid.y - 5} className="fl-label" textAnchor={anchor} aria-hidden="true">
                   {label}
                 </text>
               </g>
@@ -166,9 +181,13 @@ export function FlowPanel() {
                 transform={`translate(${p.x} ${p.y})`}
                 tabIndex={0}
                 role="button"
-                aria-label={`${c.name}${c.id === start ? ', plays first' : ''}`}
+                aria-pressed={on}
+                aria-label={`${c.name} ${Math.abs(c.end - c.start) + 1} frames${c.loop ? ', loops' : ''}${c.id === start ? ', plays first' : ''}`}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') setPicked({ kind: 'clip', id: c.id });
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setPicked({ kind: 'clip', id: c.id });
+                  }
                 }}
                 onPointerDown={(e) => {
                   e.stopPropagation();
@@ -184,18 +203,21 @@ export function FlowPanel() {
                     ★
                   </text>
                 )}
-                <text x={c.id === start ? 26 : 12} y={19} className="fl-name">
-                  {c.name.length > 14 ? c.name.slice(0, 13) + '…' : c.name}
-                </text>
-                <text x={12} y={35} className="fl-sub">
-                  {Math.abs(c.end - c.start) + 1} frames{c.loop ? ', loops' : ''}
+                {/* One text with a real space between the lines, so the visible words read the same as its name. */}
+                <text>
+                  <tspan x={c.id === start ? 26 : 12} y={19} className="fl-name">
+                    {c.name.length > 14 ? c.name.slice(0, 13) + '…' : c.name}
+                  </tspan>{' '}
+                  <tspan x={12} y={35} className="fl-sub">
+                    {Math.abs(c.end - c.start) + 1} frames{c.loop ? ', loops' : ''}
+                  </tspan>
                 </text>
                 <circle
                   cx={BOX_W}
                   cy={BOX_H / 2}
                   r={7}
                   className="fl-port"
-                  aria-label={`Connect ${c.name} to another clip`}
+                  aria-hidden="true"
                   onPointerDown={(e) => {
                     e.stopPropagation();
                     (e.currentTarget.ownerSVGElement as SVGSVGElement).setPointerCapture(e.pointerId);
@@ -253,7 +275,28 @@ export function FlowPanel() {
           <div className="cv-row cv-wrap">
             {selClip.id !== start ? <ActionButton onClick={() => makeStart(selClip.id)}>Play this one first</ActionButton> : <Tip>This clip plays first (the star).</Tip>}
           </div>
-          <Tip>Drag its dot onto another clip to say what comes next.</Tip>
+          {doc.clips.length > 1 && (
+            <label className="fl-trigger-name">
+              <span>Then go to</span>
+              <select
+                value=""
+                onChange={(e) => {
+                  const id = e.target.value && connectClips(selClip.id, e.target.value);
+                  if (id) setPicked({ kind: 'link', id });
+                }}
+              >
+                <option value="">Pick a clip...</option>
+                {doc.clips
+                  .filter((c) => c.id !== selClip.id)
+                  .map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+              </select>
+            </label>
+          )}
+          <Tip>Drag its dot onto another clip to say what comes next, or pick one in Then go to.</Tip>
         </div>
       ) : (
         <Tip>Drag a clip's dot onto another clip to say what comes next. Click an arrow to choose when: at the end, or on a trigger like "jump". The star plays first.</Tip>

@@ -34,21 +34,21 @@ const SEED_TEXT = '#2a1a10';
 export const BUILT_IN_THEMES: Theme[] = [
   make('midnight-sketchbook', 'Midnight Sketchbook', 'dark', 'Deep plum and warm cream. The classic Frameling night.', {
     bg: '#17151f', panel: '#211e2c', 'panel-2': '#2a2638', raised: '#322d43', line: '#3a3550',
-    text: '#f4efe6', muted: '#b3aac4', faint: '#8a82a0', 'canvas-bg': '#121019',
+    text: '#f4efe6', muted: '#b3aac4', faint: '#958ea9', 'canvas-bg': '#121019',
     'chosen-bg': GOLD, 'chosen-fg': GOLD_TEXT, accent: '#9b7bff', focus: GOLD, danger: '#ff7b7b', ok: '#4fd1a5',
     'cel-key': '#9b7bff', playhead: '#ff6f91',
   }, { 'sunny-deep': '#f2a91c', 'hover-bg': '#36314a' }),
 
   make('moonlit-pond', 'Moonlit Pond', 'dark', 'Calm blue-grey, like water at night. Easy on the eyes.', {
     bg: '#12181f', panel: '#1a222c', 'panel-2': '#222c38', raised: '#2a3644', line: '#394758',
-    text: '#e8eef5', muted: '#a8b6c6', faint: '#7f90a4', 'canvas-bg': '#0d1217',
+    text: '#e8eef5', muted: '#a8b6c6', faint: '#8595a8', 'canvas-bg': '#0d1217',
     'chosen-bg': GOLD, 'chosen-fg': GOLD_TEXT, accent: '#6cc3f2', focus: GOLD, danger: '#ff8a8a', ok: '#5fd8b0',
     'cel-key': '#5ab8ff', playhead: '#ff8fa8',
   }),
 
   make('hot-cocoa', 'Hot Cocoa', 'dark', 'Warm browns and marshmallow cream. Cosy by the fire.', {
     bg: '#1d1510', panel: '#2a1f18', 'panel-2': '#352820', raised: '#403028', line: '#58443a',
-    text: '#f8ecdd', muted: '#cdb29c', faint: '#9a8170', 'canvas-bg': '#150f0b',
+    text: '#f8ecdd', muted: '#cdb29c', faint: '#a58e7f', 'canvas-bg': '#150f0b',
     'chosen-bg': GOLD, 'chosen-fg': GOLD_TEXT, accent: '#ff9e6d', focus: GOLD, danger: '#ff8080', ok: '#7fd8a8',
     'cel-key': '#e8895a', playhead: '#ff7f9d',
   }),
@@ -62,21 +62,21 @@ export const BUILT_IN_THEMES: Theme[] = [
 
   make('paper-and-honey', 'Paper & Honey', 'light', 'Warm paper and golden honey. The classic Frameling daytime.', {
     bg: '#f3eee6', panel: '#fffaf2', 'panel-2': '#f7f0e4', raised: '#ffffff', line: '#e2d8c7',
-    text: '#2a2533', muted: '#665e73', faint: '#8a8296', 'canvas-bg': '#e8e1d5',
+    text: '#2a2533', muted: '#665e73', faint: '#71697c', 'canvas-bg': '#e8e1d5',
     'chosen-bg': GOLD, 'chosen-fg': GOLD_TEXT, accent: '#6f4de6', focus: '#a86200', danger: '#c93d3d', ok: '#2f9e79',
     'cel-key': '#8a68f2', playhead: '#e0446b',
   }, { 'hover-bg': '#f0e7d8', 'sunny-deep': '#f2a91c' }),
 
   make('studio-white', 'Studio White', 'light', 'Clean, neutral and bright. Colours stand out against it.', {
     bg: '#eceef1', panel: '#ffffff', 'panel-2': '#f4f5f7', raised: '#ffffff', line: '#d3d8de',
-    text: '#1f2328', muted: '#56606b', faint: '#7f8893', 'canvas-bg': '#dde0e5',
+    text: '#1f2328', muted: '#56606b', faint: '#68717c', 'canvas-bg': '#dde0e5',
     'chosen-bg': GOLD, 'chosen-fg': GOLD_TEXT, accent: '#5b45d6', focus: '#a86200', danger: '#c62f2f', ok: '#1f8f6a',
     'cel-key': '#7a68e0', playhead: '#e0345f',
   }),
 
   make('strawberry-milk', 'Strawberry Milk', 'light', 'Soft pink pastels, sweet and gentle.', {
     bg: '#fbeaee', panel: '#fff7f9', 'panel-2': '#fadfe5', raised: '#ffffff', line: '#eec6d0',
-    text: '#3d2630', muted: '#74505d', faint: '#9c7885', 'canvas-bg': '#f4d6dd',
+    text: '#3d2630', muted: '#74505d', faint: '#7f5d69', 'canvas-bg': '#f4d6dd',
     'chosen-bg': GOLD, 'chosen-fg': GOLD_TEXT, accent: '#c02f6c', focus: '#a86200', danger: '#c62f3f', ok: '#23916c',
     'cel-key': '#d63f7c', playhead: '#7b5cf0',
   }),
@@ -90,42 +90,42 @@ export const BUILT_IN_THEMES: Theme[] = [
 
   make('strawberry', 'Strawberry', 'light', 'Ripe strawberry, cream and little yellow seeds, with a leafy green playhead.', {
     bg: '#fde7e5', panel: '#fffaf3', 'panel-2': '#fcebe4', raised: '#ffffff', line: '#f0cfc6',
-    text: '#3a1f24', muted: '#74484f', faint: '#9a6f75', 'canvas-bg': '#f5c6cc',
+    text: '#3a1f24', muted: '#74484f', faint: '#8a6166', 'canvas-bg': '#f5c6cc',
     'chosen-bg': SEED, 'chosen-fg': SEED_TEXT, accent: '#c92c4b', focus: '#24873f', danger: '#a81d36', ok: '#24873f',
     'cel-key': '#e8456a', playhead: '#24873f',
   }, { rose: '#e8456a', mint: '#4fbf6a' }),
 
   make('strawberry-night', 'Strawberry Night', 'dark', 'Strawberries after dark: deep berry, cream words, yellow seeds and a leaf.', {
     bg: '#1f1216', panel: '#2a181e', 'panel-2': '#341e25', raised: '#3e242d', line: '#573440',
-    text: '#fff1ec', muted: '#e0b9bf', faint: '#a98088', 'canvas-bg': '#2b1219',
+    text: '#fff1ec', muted: '#e0b9bf', faint: '#ab838b', 'canvas-bg': '#2b1219',
     'chosen-bg': SEED, 'chosen-fg': SEED_TEXT, accent: '#ff7d97', focus: SEED, danger: '#ffa08a', ok: '#8ee39c',
     'cel-key': '#ff6f8e', playhead: '#9ee88a',
   }, { rose: '#ff6f8e', mint: '#8ee39c', 'hover-bg': '#4a2b35' }),
 
   make('glacier-grid', 'Glacier Grid', 'dark', 'Charcoal and bright aqua, with a faint camo print around the page.', {
     bg: '#1a1e21', panel: '#22272b', 'panel-2': '#2a3034', raised: '#333a3f', line: '#434c52',
-    text: '#edf7f7', muted: '#a8b9bc', faint: '#7e8f93', 'canvas-bg': '#15191c',
+    text: '#edf7f7', muted: '#a8b9bc', faint: '#89999c', 'canvas-bg': '#15191c',
     'chosen-bg': '#22c3d6', 'chosen-fg': '#0b1a1e', accent: '#7fe0dc', focus: '#5fdcea', danger: '#ff8a80', ok: '#7ddc9c',
     'cel-key': '#9fe6dc', playhead: '#ff7a8f',
   }, { 'hover-bg': '#3a4247' }),
 
   make('ice-camo', 'Ice Camo', 'light', 'White, ice and aqua with charcoal words. Crisp and cool, with a faint camo print.', {
     bg: '#e8f0f1', panel: '#ffffff', 'panel-2': '#f0f6f7', raised: '#ffffff', line: '#c8d5d8',
-    text: '#1f2629', muted: '#4e5a5e', faint: '#77848a', 'canvas-bg': '#d9e6e8',
+    text: '#1f2629', muted: '#4e5a5e', faint: '#667277', 'canvas-bg': '#d9e6e8',
     'chosen-bg': '#22c3d6', 'chosen-fg': '#0b1a1e', accent: '#0d7a8c', focus: '#0d7a8c', danger: '#c2353a', ok: '#1d8a5f',
     'cel-key': '#0e8fa3', playhead: '#e0345f',
   }, { 'hover-bg': '#e2eef0' }),
 
   make('lilac-static', 'Lilac Static', 'dark', 'Dusky violet with soft lavender and a little pastel glow.', {
     bg: '#1a1724', panel: '#231f31', 'panel-2': '#2b263b', raised: '#353047', line: '#473f5d',
-    text: '#f4f0fb', muted: '#beb3d6', faint: '#8f85a9', 'canvas-bg': '#14111d',
+    text: '#f4f0fb', muted: '#beb3d6', faint: '#948bad', 'canvas-bg': '#14111d',
     'chosen-bg': '#c9b8e8', 'chosen-fg': '#1d1830', accent: '#b9a3f0', focus: '#d9ccf5', danger: '#ff8a9a', ok: '#7ee0b8',
     'cel-key': '#86c5ff', playhead: '#ff8fbf',
   }),
 
   make('lavender-hum', 'Lavender Hum', 'light', 'Soft lilac and white. Gentle and friendly, like a pastel morning.', {
     bg: '#efeaf8', panel: '#fbf9ff', 'panel-2': '#f3eefc', raised: '#ffffff', line: '#dbd1ee',
-    text: '#2a2438', muted: '#5d5272', faint: '#83789a', 'canvas-bg': '#e4dcf3',
+    text: '#2a2438', muted: '#5d5272', faint: '#716688', 'canvas-bg': '#e4dcf3',
     'chosen-bg': '#bba6ea', 'chosen-fg': '#1d1830', accent: '#6a4fc4', focus: '#6a4fc4', danger: '#c23a4f', ok: '#23866a',
     'cel-key': '#8a6fd6', playhead: '#e0457f',
   }),

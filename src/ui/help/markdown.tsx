@@ -219,8 +219,8 @@ export function Markdown({ text, onHelp }: { text: string; onHelp: (topic: strin
       {blocks.map((b, i) => {
         switch (b.t) {
           case 'heading': {
-            // The topic's own title is the h2 above this, so body headings start at h3.
-            const Tag = (`h${Math.min(6, b.level + 2)}`) as 'h3';
+            // The topic's own title is the h2 above this, so body headings start at h3 (# and ## both), with no gaps.
+            const Tag = (`h${Math.min(6, Math.max(3, b.level + 1))}`) as 'h3';
             return (
               <Tag key={i} id={`md-${b.slug}`}>
                 {b.text}

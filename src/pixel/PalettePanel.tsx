@@ -160,6 +160,7 @@ export function PalettePanel() {
                   style={{ backgroundColor: c }}
                   draggable
                   data-on={same(c, front)}
+                  aria-pressed={same(c, front)}
                   data-over={over === i}
                   title={`${c}. Click to paint with it, double-click to change it, right-click for more.`}
                   aria-label={`Palette colour ${i + 1}, ${c}${same(c, stroke) ? ', the stroke colour' : ''}${same(c, fill) ? ', the fill colour' : ''}`}

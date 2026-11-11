@@ -21,6 +21,7 @@ import { activeIsMerge, editShapes } from './merge-mode';
 import { mergeShapes } from '../geometry/merge';
 import { pixelSelection } from '../select/pixel-state';
 import { clipToMask } from '../select/mask';
+import { reducedMotion } from '../ui/prefs';
 
 export const FILL_HINTS = {
   'no-fill': 'The fill colour is set to none. Pick a fill colour in the Colours panel (the solid box), then fill.',
@@ -64,6 +65,8 @@ const POP_MS = 420;
 const clock = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
 
 function startPop(x: number, y: number, color: string, ctx: ToolContext) {
+  // The little ring is just for fun, so it's skipped when motion is turned down.
+  if (reducedMotion()) return;
   pop = { x, y, at: clock(), color };
   ctx.requestOverlay();
 }

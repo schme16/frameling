@@ -16,6 +16,7 @@ import { store, type Store } from '../core/store';
 import { hint, requestOverlay, setLive } from '../canvas/controller';
 import { activeLayer, editActiveDrawing, EDIT_HINTS } from '../tools/edit';
 import { clearPixels, extractPixels, maskEmpty, overlayPixels, shiftMask, type Mask } from './mask';
+import { reducedMotion } from '../ui/prefs';
 
 /** The pixel Select tool's id. Lifted pixels drop when another tool is picked. */
 export const PIXEL_SELECT_TOOL = 'pixel-select';
@@ -452,7 +453,7 @@ function watch(): void {
 let antsTimer: ReturnType<typeof setInterval> | null = null;
 
 function animateAnts(): void {
-  const want = !!(sel || float) && typeof window !== 'undefined';
+  const want = !!(sel || float) && typeof window !== 'undefined' && !reducedMotion();
   if (want && !antsTimer) antsTimer = setInterval(() => requestOverlay(), 120);
   else if (!want && antsTimer) {
     clearInterval(antsTimer);

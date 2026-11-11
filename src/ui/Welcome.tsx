@@ -193,7 +193,7 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
         </div>
       )}
 
-      <footer className="ui-welcome-foot">
+      <div className="ui-welcome-foot">
         {open && (
           <button
             type="button"
@@ -217,7 +217,7 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
         <button type="button" className="ui-btn ui-btn-quiet" onClick={closeSheet}>
           {mode === 'welcome' ? 'Skip for now' : 'Cancel'}
         </button>
-      </footer>
+      </div>
     </Modal>
   );
 }

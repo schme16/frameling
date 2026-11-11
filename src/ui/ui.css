@@ -492,6 +492,10 @@ kbd {
   height: 54px;
 }
 
+.ui-tabbar-tabs {
+  /* Only there to hold role=tablist round the tabs; the tabs still lay out in the bar. */
+  display: contents;
+}
 .ui-tabbar {
   display: flex;
   align-items: stretch;
@@ -989,6 +993,10 @@ body.ui-resizing * {
 }
 .ui-palette-input:focus-visible {
   outline: none;
+}
+/* The search box is the only thing that takes focus here, so its ring is a gold line under the whole row. */
+.ui-palette-search:focus-within {
+  box-shadow: inset 0 -2px 0 var(--focus);
 }
 .ui-palette-esc {
   font: 600 11px var(--font-mono);
@@ -1501,7 +1509,7 @@ body.ui-resizing * {
   color: var(--danger);
 }
 .ui-none {
-  color: var(--faint);
+  color: var(--muted);
 }
 .ui-recording {
   padding: 3px 12px;
