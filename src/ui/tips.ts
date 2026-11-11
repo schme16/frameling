@@ -10,6 +10,7 @@ export const TIPS: string[] = [
   'Drag a panel tab to another side to move it. It remembers where you put it.',
   'Rest your mouse on a button to see what it does, and its shortcut.',
   'Switch between Draw, Animate and Pixel layouts from the View menu.',
+  'Making pixel art? The Preview panel plays it at real size while you draw. Try the Pixel workspace.',
   'Every shortcut can be changed in Preferences, under Keyboard.',
   'Try the other look in Preferences. Cosy is soft, crisp is sharp.',
   'Press the name at the top to rename your drawing.',

@@ -15,6 +15,8 @@ import type { PaletteFormat } from './palette-io';
 import '../canvas/canvas.css';
 import './pixel.css';
 import { usePopover } from '../ui/popover';
+import { dock, inPixelWorkspace } from '../ui/dock';
+import { paletteIndexOf } from './bar';
 
 interface Menu {
   index: number;
@@ -123,6 +125,9 @@ export function PalettePanel() {
   }, [drawing, palette.colors]);
 
   const has = palette.colors.some((c) => same(c, front));
+  // Bigger colours in the Pixel workspace, where this panel is the main colour picker.
+  const big = !!dock.use((d) => d.workspaceId) && inPixelWorkspace();
+  const at = layer?.paletteLock ? paletteIndexOf(palette, front) : null;
   const onDrop = (to: number) => (e: DragEvent) => {
     e.preventDefault();
     if (drag !== null && drag !== to) setDocPalette(moveColor(palette, drag, to), 'Move palette colour');
@@ -136,7 +141,7 @@ export function PalettePanel() {
   };
 
   return (
-    <div className="cv-panel px-palette" data-help="palette">
+    <div className={`cv-panel px-palette${big ? ' is-big' : ''}`} data-help="palette">
       <div className="px-palette-top">
         <input className="cv-hex-input px-palette-name" value={name} aria-label="Palette name" spellCheck={false} onChange={(e) => setName(e.target.value)} onBlur={renameTo} onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()} />
         <span className="px-palette-count" title="Colours in this palette">
@@ -195,6 +200,13 @@ export function PalettePanel() {
           </div>
         ))}
       </div>
+
+      {at && (
+        <div className="px-palette-current" role="status">
+          <span className="px-bar-chip" style={{ backgroundColor: palette.colors[at.index] }} aria-hidden="true" />
+          {at.exact ? `Painting with colour ${at.index + 1} (index ${at.index})` : `Snaps to colour ${at.index + 1} (index ${at.index})`}
+        </div>
+      )}
 
       <div className="px-row">
         <ActionButton disabled={has || palette.colors.length >= 256} title={has ? 'The current colour is already in the palette' : 'Add the current colour to the end of the palette'} onClick={() => setDocPalette(insertColor(palette, front), 'Add palette colour')}>

@@ -26,6 +26,7 @@ import { leaveTileEdit } from '../tiles/tileEdit';
 import { docDpi, formatSize } from '../core/units';
 import { usePrefs } from '../ui/prefs';
 import { templateExport } from '../templates/setup';
+import { pixelExportStart } from '../pixel/workspace';
 
 /** Last time's settings, repaired so they still make sense for this document. */
 function startingSettings(): ExportSettings {
@@ -516,7 +517,12 @@ export function openExportDialog(format?: FormatId): void {
   // Exports are of the whole animation, so a tile open on the canvas goes back first.
   leaveTileEdit();
   // A template's own export choice (GIF for a spinner, separate sprites for icons) the first time it is exported.
-  const initial = templateExport(store().get().doc.id, startingSettings(), artScale(sceneOf(store().get().doc, 0).doc));
+  const start = startingSettings();
+  const docId = store().get().doc.id;
+  const artSize = artScale(sceneOf(store().get().doc, 0).doc);
+  const fromTemplate = templateExport(docId, start, artSize);
+  // No template choice: in the Pixel workspace, pixel art starts on a sprite sheet at art size.
+  const initial = fromTemplate === start ? pixelExportStart(docId, start, artSize) : fromTemplate;
   if (format && format !== initial.format) {
     const { doc } = store().get();
     const art = artScale(doc);

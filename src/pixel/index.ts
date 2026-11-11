@@ -9,8 +9,45 @@ import './tools';
 import { activePixelLayer } from './tools';
 import { withMirror } from './ToolOptions';
 import { exportPalette, importPalette, paletteFromDrawing } from './palette-files';
+import { store } from '../core/store';
+import { showPanel } from '../ui/dock';
+import { previewSettings, setPreview } from './preview';
+import { watchPixelDocs } from './workspace';
+import './workspace-help';
 
 registerPanel({ id: 'palette', title: 'Palette', icon: 'palette', component: lazyPanel(() => import('./PalettePanel').then((m) => m.PalettePanel)), zone: 'right', order: 25, help: 'palette' });
+registerPanel({ id: 'preview', title: 'Preview', icon: 'film', component: lazyPanel(() => import('./PreviewPanel').then((m) => m.PreviewPanel)), zone: 'right', order: 80, help: 'pixel-preview' });
+
+// Offer the Pixel workspace when pixel art opens (asked once).
+watchPixelDocs(store());
+
+registerCommand({
+  id: 'pixel.previewPlay',
+  label: 'Play or pause the Preview',
+  category: 'Pixel',
+  description: 'Start or stop the animation in the Preview panel, which plays it at real size while you draw.',
+  help: 'pixel-preview',
+  keywords: ['preview', 'real size', '1x', 'actual size', 'play', 'loop', 'sprite preview'],
+  checked: () => previewSettings.get().playing,
+  run: () => {
+    showPanel('preview');
+    setPreview({ playing: !previewSettings.get().playing });
+  },
+});
+registerCommand({
+  id: 'pixel.previewSize',
+  label: 'Preview size (1x, 2x, 3x, fit)',
+  category: 'Pixel',
+  description: 'Change how big the Preview panel shows the animation. 1x is real size.',
+  help: 'pixel-preview',
+  keywords: ['preview', 'zoom', 'real size', 'actual size', 'scale'],
+  run: () => {
+    showPanel('preview');
+    const order = [1, 2, 3, 'fit'] as const;
+    const at = order.indexOf(previewSettings.get().zoom);
+    setPreview({ zoom: order[(at + 1) % order.length] });
+  },
+});
 
 registerCommand({
   id: 'pixel.rotate',
