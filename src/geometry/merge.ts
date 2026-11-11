@@ -540,3 +540,25 @@ export function placeMoved(shapes: readonly Shape[], moved: readonly Shape[]): M
   const r = mergeShapes(rest, loose);
   return { shapes: r.shapes, added: [...kept, ...r.added] };
 }
+
+// ---------------------------------------------------------------- lasso tests
+
+/** True when the shape paints anywhere inside the area (a lasso): any overlap counts. */
+export function shapeTouchesArea(s: Shape, area: Geom): boolean {
+  const ab = geomBox(area);
+  if (!ab || !overlaps(shapeBox(s), ab)) return false;
+  for (const p of shapeParts(s)) {
+    const g = intersection(p.geom, area);
+    if (g && geomArea(g) >= MIN_AREA / 4) return true;
+  }
+  return false;
+}
+
+/** True when everything the shape paints is inside the area (nothing pokes out). */
+export function shapeInsideArea(s: Shape, area: Geom): boolean {
+  for (const p of shapeParts(s)) {
+    const g = difference(p.geom, area);
+    if (g && geomArea(g) >= MIN_AREA) return false;
+  }
+  return true;
+}

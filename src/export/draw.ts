@@ -42,7 +42,8 @@ export function drawFrame(canvas: OffscreenCanvas, doc: Doc, frame: number, t: D
   g.scale(t.scale, t.scale);
   // Layers that fade (opacity under 100%) are drawn small and scaled up, so smoothing would blur pixel art.
   if (t.crisp) g.imageSmoothingEnabled = false;
-  renderFrame(g, doc, frame, { background: false });
+  // Reference layers are only there to help while drawing.
+  renderFrame(g, doc, frame, { background: false, layerFilter: (l) => !l.reference });
   g.restore();
   return canvas;
 }

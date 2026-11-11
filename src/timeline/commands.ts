@@ -212,4 +212,14 @@ registerCommands([
     checked: (s) => !!findLayer(s.doc, s.ui.activeLayerId)?.locked,
     run: () => void ops.toggleLayerLocked(),
   },
+  {
+    id: 'layers.toggleReference',
+    label: 'Reference layer (leave out of exports)',
+    category: 'Layers',
+    description: 'You still see it while drawing, but videos, pictures and sprite sheets leave it out. Good for ground lines and sketches.',
+    help: 'reference-layers',
+    keywords: ['guide', 'guide layer', 'not exported', 'sketch', 'ground', 'helper', 'reference'],
+    checked: (s) => !!findLayer(s.doc, s.ui.activeLayerId)?.reference,
+    run: () => void ops.toggleLayerReference(),
+  },
 ]);

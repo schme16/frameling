@@ -27,6 +27,7 @@ function plain<T>(x: T): T {
 export function cloneDrawing(d: Drawing): Drawing {
   const src = plain(d);
   if (src.kind === 'pixel') return { ...src, id: uid('p'), pixels: new Uint8ClampedArray(src.pixels) };
+  if (src.kind === 'tilemap') return { ...src, id: uid('t'), cells: new Uint32Array(src.cells) };
   const shapes = structuredClone(src.shapes) as Shape[];
   for (const s of shapes) s.id = uid('s');
   return { id: uid('v'), kind: 'vector', shapes };
@@ -368,6 +369,15 @@ export function setLayerOnion(doc: Doc, layerId: Id, onion: boolean): boolean {
   if (!l || (l.onion !== false) === onion) return false;
   if (onion) delete l.onion;
   else l.onion = false;
+  return true;
+}
+
+/** A reference layer shows while drawing and is left out of exports (missing counts as off). */
+export function setLayerReference(doc: Doc, layerId: Id, reference: boolean): boolean {
+  const l = findLayer(doc, layerId);
+  if (!l || (l.reference === true) === reference) return false;
+  if (reference) l.reference = true;
+  else delete l.reference;
   return true;
 }
 

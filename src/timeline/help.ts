@@ -210,4 +210,23 @@ Type a name, like *footstep*, and press Enter.
 
 Markers come out in exports as events.`,
   },
+  {
+    id: 'reference-layers',
+    title: 'Reference layers',
+    section: 'Animating',
+    summary: 'A layer you see while drawing that every export leaves out, like a ground line or a rough sketch.',
+    keywords: ['reference', 'guide', 'guide layer', 'not exported', 'sketch', 'ground', 'helper layer', 'hide from export'],
+    body: `Some layers are only there to help you draw: the ground a character stands on, a rough sketch, a grid of where the feet go. Make it a **reference layer** and you still see it on the canvas, but videos, pictures, SVGs and sprite sheets all leave it out.
+
+## Make one
+
+Click the **⋯** button on a layer (or right-click it) and choose **Reference layer (leave out of exports)**. You can also find it in the command palette.
+
+A reference layer's name turns *italic* with a small **ref** tag. Choose **Export this layer again** from the same menu to undo it.
+
+## Good to know
+
+- Hiding a layer (the eye) also keeps it out of exports, but then you can't see it either. A reference layer stays visible.
+- The game hero template's **Ground** is a reference layer, so its sprite sheets come out with just the character and its shadow.`,
+  },
 ]);

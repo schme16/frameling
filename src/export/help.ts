@@ -23,7 +23,7 @@ Press **Ctrl+E** (**Cmd+E** on a Mac), pick a format card, tweak the options if 
 | One picture of the frame I'm on | **PNG picture** |
 | One picture per frame, for a video editor | **PNG sequence** |
 | Vector art that stays sharp at any size | **SVG drawing** |
-| Use it in a game | **Sprite sheet** |
+| Use it in a game or on a web page | **Sprite sheet** |
 
 ## Options everyone shares
 
@@ -81,78 +81,221 @@ GIF and APNG can **loop forever**, or play once and stop. Videos have no loop se
     id: 'export-sprite-sheets',
     title: 'Sprite sheets',
     section: 'Exporting',
-    summary: 'Put every frame on one picture, with a data file that says where each one is.',
-    keywords: ['sprite', 'atlas', 'sheet', 'texture', 'game', 'json', 'trim', 'padding', 'power of two'],
-    body: `A sprite sheet is one picture holding all your frames in a grid. Games load that one picture and cut the frames out.
+    media: 'export-sheet.png',
+    summary: 'Put every frame on one picture, with the files a game engine or web page needs to play it.',
+    keywords: ['sprite', 'atlas', 'sheet', 'texture', 'game', 'json', 'trim', 'padding', 'power of two', 'packed', 'extrude', 'bleed', 'icons', 'tiles', 'texture atlas', 'json hash', 'json array'],
+    body: `A sprite sheet is one picture holding all your frames. Games load that one picture and cut the frames out.
 
-Pick **Sprite sheet** in the export dialog and choose a folder. Frameling writes:
+Press **Ctrl+E**, pick **Sprite sheet**, then pick **where it's going**. Frameling saves the picture plus whatever that place needs, into a folder you choose.
 
-- the **picture** (a PNG),
-- a **JSON file** saying where every frame sits and which frames make up each animation,
-- and, if you tick them, files for [Godot](help:export-godot).
+## Where it's going
 
-The JSON and Godot ticks start as JSON on, Godot off, and then **remember what you last chose**, so you set them once.
+| Pick | You get | Steps |
+| --- | --- | --- |
+| **Godot** | Sprite frames (.tres) and a ready-to-play scene (.tscn) | [Godot](help:export-godot) |
+| **Unity** | A JSON file and a small importer script that slices the sprites and makes animation clips | [Unity](help:export-unity) |
+| **Phaser** | An atlas JSON and an animations JSON | [Phaser](help:export-phaser) |
+| **PixiJS** | A spritesheet JSON with your animations in it | [PixiJS](help:export-pixi) |
+| **Web page (CSS)** | A CSS file with a class per animation, and a page to try it | [CSS sprites](help:export-css-sprites) |
+| **Any engine (JSON)** | The common JSON atlas most tools read | below |
+| **Just the picture** | Only the PNG | |
 
-## Options
+Your pick is remembered for next time.
 
-- **Columns:** how many frames per row. Leave on **Auto** for a roughly square sheet.
-- **Padding:** empty pixels around every frame, which stops neighbouring frames bleeding into each other when the game scales things.
-- **Trim empty space:** cut each frame down to the part you drew. Smaller sheets. The data file keeps each frame's original size and position, so nothing shifts.
-- **Power-of-two size:** rounds the sheet up to 64, 128, 256, 512... Some older engines and graphics cards like that.
-- **Store repeated frames once:** a frame that looks the same as the one before it isn't stored again. Animating "on twos" makes sheets half the size, and the data file still plays them for the right time.
+## Pixel art: Art size
 
-## Your clips become animations
+For pixel art, the **Size** row has an **Art size** button: one art pixel becomes one pixel, so a 32 x 32 character comes out 32 x 32. That's what game engines want. They scale it up on screen and keep it sharp. The first time you pick an engine for pixel art, Frameling asks whether to switch to Art size.
 
-Each **clip** (idle, run, jump...) becomes an animation in the data file, with its own loop setting. No clips? The whole timeline is one animation called **default**.
+## An animation, or separate sprites
 
-You can also pick **A clip** under "What to export" to make a sheet from just that clip.
+- **An animation:** each **clip** (idle, run, jump...) becomes an animation, with its own loop setting and speed. Frames you held for longer play for longer. No clips? The whole timeline is one animation called **default**.
+- **Separate sprites:** each frame is its own sprite, for icons, items or tiles. Put a **marker** on a frame to name it ("heart", "coin"). Frames in a clip are named after the clip. Choose **All on one sheet** (an atlas of single sprites) or **One PNG each**.
 
-## The JSON file
+## Sheet options
+
+- **Tidy grid** puts every frame in a slot the same size. **Columns** sets how many per row (Auto makes it roughly square).
+- **Packed tight** fits frames of different sizes together like a jigsaw, for the smallest picture (a *packed atlas*). Best with **Trim** on.
+- **Padding:** empty pixels between frames, so neighbours never bleed into each other.
+- **Edge bleed:** copies each frame's edge pixels outward (*extrude*). Stops thin lines or seams showing when the game scales or moves sprites by part of a pixel.
+- **Trim empty space:** cuts each frame down to the part you drew. The data keeps where it came from, so nothing shifts when it plays.
+- **Power-of-two size:** rounds the sheet up to 64, 128, 256... Some older engines and graphics cards like that.
+- **Store repeated frames once:** frames that look the same as the one before aren't stored twice, and still play for the right time.
+
+## Any engine (JSON)
+
+The common JSON atlas: \`frames\` says where each picture is, \`meta\` describes the sheet, and \`animations\` lists each clip's frames. **Frames as a list** keeps them in order (a *JSON array*); **Frames by name** keys them by name (a *JSON hash*).
 
 \`\`\`
-{ "meta": { "image": "hero.png", "size": { "w": 256, "h": 128 }, "fps": 12 },
-  "frames": [ { "frame": { "x": 0, "y": 0, "w": 64, "h": 64 }, "sourceSize": { "w": 64, "h": 64 }, "duration": 83 } ],
-  "animations": { "idle": { "fps": 12, "loop": true, "frames": [0, 1, 2] } } }
+{ "frames": [ { "filename": "run_0", "frame": { "x": 1, "y": 1, "w": 32, "h": 32 },
+      "trimmed": false, "spriteSourceSize": { "x": 0, "y": 0, "w": 32, "h": 32 },
+      "sourceSize": { "w": 32, "h": 32 }, "duration": 83 } ],
+  "meta": { "image": "hero.png", "size": { "w": 256, "h": 128 }, "fps": 12 },
+  "animations": { "run": { "fps": 12, "loop": true, "frames": [0, 1, 2] } } }
 \`\`\`
 
-\`frames\` lists where each picture is. Each animation lists frame numbers into that list.`,
+Leave a layer out of every export by making it a [reference layer](help:reference-layers).`,
   },
   {
     id: 'export-godot',
     title: 'Using sprites in Godot',
     section: 'Exporting',
+    media: 'export-godot.png',
     summary: 'Step by step: from Frameling to an animated sprite in your Godot 4 project.',
-    keywords: ['godot', 'animatedsprite2d', 'spriteframes', 'tres', 'tscn', 'game engine', 'res://'],
+    keywords: ['godot', 'animatedsprite2d', 'spriteframes', 'tres', 'tscn', 'game engine', 'res://', 'atlastexture'],
     body: `This takes about a minute. It's written for Godot 4.
 
 ## In Frameling
 
-1. Press **Ctrl+E** and pick **Sprite sheet**.
-2. Tick **Godot sprite frames (.tres)**. Tick **Godot scene** too if you'd like a ready-made animated sprite.
-3. Under **Where the picture will live in your Godot project**, check the path. The default is \`res://sprites/<your name>.png\`. Change it if your project keeps pictures somewhere else, for example \`res://art/hero.png\`.
-4. Press **Export** and choose the folder **inside your Godot project** that matches that path. For \`res://sprites/\`, that's the \`sprites\` folder in your project (make it if it doesn't exist).
-
-Each of your clips becomes an animation, with its speed set to your frames per second and its loop setting kept. With no clips, the whole timeline is one animation called **default**.
+1. Press **Ctrl+E**, pick **Sprite sheet**, then the **Godot** card.
+2. For pixel art, pick **Art size**.
+3. Leave **Also make a ready-to-play scene** ticked.
+4. Check **Where the picture will live in your Godot project**. The default is \`res://sprites/<your name>.png\`. Change it if your project keeps pictures somewhere else, for example \`res://art/hero.png\`.
+5. Press **Export** and choose the folder **inside your Godot project** that matches that path. For \`res://sprites/\`, that's the \`sprites\` folder in your project (make it if it doesn't exist).
 
 ## In Godot
 
 1. Switch to Godot. It notices the new files and imports them.
-2. Add an **AnimatedSprite2D** node to your scene.
-3. In the Inspector, click **Sprite Frames**, then **Load**, and pick your \`.tres\` file. (Or just drag the \`.tscn\` into your scene if you made one.)
-4. Choose an animation in the **Animation** list and press play to preview it.
-5. To play it from a script:
+2. Drag the \`.tscn\` file into your scene. That's it: it plays your first clip straight away.
+3. To play another clip from a script:
 
 \`\`\`
 $AnimatedSprite2D.play("run")
 \`\`\`
 
-## Pixel art looks blurry?
+Every clip is there with its speed and loop setting, and held frames last as long as they do in Frameling. Pixel art scenes are set to sharp (nearest) filtering, so nothing looks blurry.
 
-Turn off texture smoothing. In **Project Settings**, find **Rendering > Textures > Default Texture Filter** and set it to **Nearest**.
+## Using the .tres yourself
+
+Add an **AnimatedSprite2D** node, click **Sprite Frames** in the Inspector, then **Load**, and pick the \`.tres\` file. If pixel art looks blurry there, set the node's **Texture > Filter** to **Nearest**.
+
+## Separate sprites
+
+With **Separate sprites**, each sprite gets its own small \`.tres\` (an *AtlasTexture*). Use them anywhere Godot takes a texture: a Sprite2D, a button icon, a TextureRect.
 
 ## If Godot says a file is missing
 
 The path you typed in Frameling has to match where the picture really is in your Godot project. Fix the path in the export dialog and export again, replacing the old files.`,
+  },
+  {
+    id: 'export-unity',
+    title: 'Using sprites in Unity',
+    section: 'Exporting',
+    media: 'export-unity.png',
+    summary: 'Drop the files into Unity: sprites are sliced and an animation clip is made for each of your clips.',
+    keywords: ['unity', 'sprite', 'slice', 'sprite editor', 'animation clip', 'anim', 'animator', 'c#', 'importer'],
+    body: `Written for Unity 2021.2 or newer, with the **2D Sprite** package (2D projects have it already).
+
+## In Frameling
+
+1. Press **Ctrl+E**, pick **Sprite sheet**, then the **Unity** card.
+2. For pixel art, pick **Art size**.
+3. Leave **Include the importer script** ticked the first time. A project only needs one copy, so untick it for later exports.
+4. Press **Export** and choose a folder **inside your project's Assets folder**, for example \`Assets/Sprites\`.
+
+## In Unity
+
+1. Switch to Unity. The small script (\`FramelingSheetImporter.cs\`) reads the \`.json\` beside your picture and cuts it into sprites. Pixel art is set to sharp (point) filtering with no compression.
+2. Next to the picture you'll find an animation clip for each of your clips (\`hero_run.anim\`...), with your loop settings.
+3. Drag a clip onto a sprite in your scene, and Unity sets up the Animator for you. Or open the picture's arrow to see every sprite.
+
+Export again any time: sprites keep their identity, so scenes that use them don't break.
+
+## Good to know
+
+- One sprite unit is the height of a frame, so a 32 pixel character is one unit tall.
+- If you already have a copy of the script, delete the extra one. Two copies stop scripts compiling.`,
+  },
+  {
+    id: 'export-phaser',
+    title: 'Using sprites in Phaser',
+    section: 'Exporting',
+    media: 'export-phaser.png',
+    summary: 'Load the atlas and the animations JSON in Phaser 3, then play any clip by name.',
+    keywords: ['phaser', 'phaser 3', 'atlas', 'anims', 'javascript', 'web game', 'load.atlas', 'load.animation'],
+    body: `## In Frameling
+
+Press **Ctrl+E**, pick **Sprite sheet**, then the **Phaser** card, and export into your game's assets folder. You get three files:
+
+- \`hero.png\`: the sheet,
+- \`hero.json\`: where every frame is (a JSON hash atlas),
+- \`hero-anims.json\`: one animation per clip, with speed and looping.
+
+## In your game
+
+\`\`\`
+preload() {
+  this.load.atlas('hero', 'assets/hero.png', 'assets/hero.json');
+  this.load.animation('hero-anims', 'assets/hero-anims.json');
+}
+create() {
+  const hero = this.add.sprite(200, 150, 'hero');
+  hero.play('run');
+}
+\`\`\`
+
+The atlas key must be the file's name (\`hero\` here), because the animations point at it.
+
+## Pixel art
+
+Export at **Art size**, and add \`pixelArt: true\` to your game config so Phaser keeps it sharp when scaled.`,
+  },
+  {
+    id: 'export-pixi',
+    title: 'Using sprites in PixiJS',
+    section: 'Exporting',
+    media: 'export-pixi.png',
+    summary: 'Load the spritesheet JSON in PixiJS and play a clip with an AnimatedSprite.',
+    keywords: ['pixi', 'pixijs', 'spritesheet', 'animatedsprite', 'javascript', 'web game', 'assets.load'],
+    body: `## In Frameling
+
+Press **Ctrl+E**, pick **Sprite sheet**, then the **PixiJS** card, and export into your project. You get \`hero.png\` and \`hero.json\`. The JSON lists every frame and an \`animations\` entry for each clip.
+
+## In your code
+
+\`\`\`
+const sheet = await PIXI.Assets.load('assets/hero.json');
+const hero = new PIXI.AnimatedSprite(sheet.animations.run);
+hero.animationSpeed = 12 / 60; // your frames per second, divided by 60
+hero.loop = true;
+hero.play();
+app.stage.addChild(hero);
+\`\`\`
+
+Frames you held for longer are listed more than once, so they play for the right time. Each clip's speed and loop setting are also in the JSON under \`meta.frameling.animations\`, if you'd rather read them than type them.
+
+## Pixel art
+
+Export at **Art size**, and set \`texture.source.scaleMode = 'nearest'\` (PixiJS 8) so it stays sharp when scaled.`,
+  },
+  {
+    id: 'export-css-sprites',
+    title: 'Sprites on a web page (CSS)',
+    section: 'Exporting',
+    media: 'export-css.png',
+    summary: 'Play your animation on any web page with one CSS file and a div. No scripts.',
+    keywords: ['css', 'css sprites', 'web', 'html', 'keyframes', 'background-position', 'website', 'icons'],
+    body: `## In Frameling
+
+Press **Ctrl+E**, pick **Sprite sheet**, then **Web page (CSS)**. You get:
+
+- \`hero.png\`, the sheet,
+- \`hero.css\`, with a class for every frame and for every clip,
+- \`hero.html\`, a page that shows each clip playing. Open it in a browser to check, and copy from it.
+
+## On your page
+
+\`\`\`
+<link rel="stylesheet" href="hero.css">
+<div class="hero hero-run"></div>
+\`\`\`
+
+The second class picks the clip. Loops keep going; clips that don't loop stop on their last frame. Swap the class to change clip.
+
+## Good to know
+
+- Animations keep every frame whole, so **Trim** is off for them.
+- Pixel art gets \`image-rendering: pixelated\`, so you can make it bigger with \`zoom\` or \`transform: scale()\` and it stays sharp.
+- With **Separate sprites**, each frame gets a class named after its marker (\`hero-heart\`), which makes icon sets easy.`,
   },
   {
     id: 'export-svg',

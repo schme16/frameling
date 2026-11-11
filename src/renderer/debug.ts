@@ -2,6 +2,7 @@
 // read and drive state. Never on in normal use.
 import { store } from '../core/store';
 import { findTemplate } from '../templates';
+import * as tiles from '../tiles/debug';
 import { allCommands, getCommand } from '../core/registry';
 import { celebrate } from '../quests/feedback';
 import { getQuest, startQuest } from '../quests/registry';
@@ -17,6 +18,7 @@ if (new URLSearchParams(location.search).has('debug')) {
       if (t) store().load(t.make());
       return !!t;
     },
+    tiles,
     commands: () => allCommands().map((c) => c.id),
     // Swap in another Quill sheet (a placeholder, or art being tried out) without a rebuild.
     quests: {

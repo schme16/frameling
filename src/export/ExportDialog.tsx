@@ -7,13 +7,15 @@ import { Icon } from '../ui/icons';
 import { Quill, QuillSays } from '../ui/mascot';
 import { detectCapabilities, type Capabilities } from './capabilities';
 import { describeError, exportDocument, loadLastSettings, loadSheetExtras, saveSheetExtras } from './exporter';
-import { setChoice, useChoice, getChoiceDef } from '../core/choices';
+import { setChoice, useChoice, getChoiceDef, withChoice } from '../core/choices';
 import './choices';
-import { defaultSettings, hasPixelLayers, planExport, scaleChoices } from './plan';
+import { artScale, defaultSettings, hasPixelLayers, planExport, scaleAllowed, scaleChoices } from './plan';
+import { EnginePicker } from './EnginePicker';
+import { openHelp } from '../ui/overlays';
 import { godotTexturePath } from './sheet';
 import type { Progress } from './run';
 import { GIF_MAX_FPS } from './gif';
-import { DEFAULT_SHEET, FORMATS, formatInfo, type ExportSettings, type FormatId } from './types';
+import { DEFAULT_SHEET, engineInfo, FORMATS, formatInfo, normalizeSheet, type EngineId, type ExportSettings, type FormatId } from './types';
 import './export.css';
 
 /** Last time's settings, repaired so they still make sense for this document. */
@@ -29,7 +31,7 @@ function startingSettings(): ExportSettings {
     s.range = 'all';
     s.clipId = null;
   }
-  if (!scaleChoices(doc).includes(s.scale)) s.scale = base.scale;
+  if (!scaleAllowed(doc, s.scale)) s.scale = base.scale;
   return s;
 }
 
@@ -58,8 +60,8 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
   const setSheet = (p: Partial<ExportSettings['sheet']>) =>
     setS((x) => {
       const sheet = { ...x.sheet, ...p };
-      // JSON and Godot ticks are remembered the moment they change, even if this export is cancelled.
-      if ('json' in p || 'godot' in p || 'godotScene' in p) saveSheetExtras(sheet);
+      // The engine, ticks and layout are remembered the moment they change, even if this export is cancelled.
+      if (['json', 'godot', 'godotScene', 'engine', 'layout', 'content', 'separateFiles', 'jsonStyle', 'unityScript'].some((k) => k in p)) saveSheetExtras(sheet);
       return { ...x, sheet };
     });
   const webmPref = useChoice<string>('export.webmCodec');
@@ -112,6 +114,16 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
   }, []);
 
   const scales = scaleChoices(doc);
+  const art = artScale(doc);
+  const sheet = normalizeSheet(s.sheet);
+  const engine = engineInfo(sheet.engine);
+  const separate = sheet.content === 'separate';
+  const artPx = art ? `${Math.round(doc.width * art)} × ${Math.round(doc.height * art)}` : '';
+  const pickEngine = (id: EngineId) => {
+    setSheet({ engine: id, ...(id === 'godot' ? { godot: true } : {}) });
+    // Pixel art for a game: offer the real size once, then remember the answer.
+    if (art && engineInfo(id).game && s.scale !== art) withChoice<string>('export.gameArtSize', (v) => v === 'art' && set({ scale: art }));
+  };
   const frames = plan.count;
   const summary = `${frames} frame${frames === 1 ? '' : 's'}, ${plan.width} × ${plan.height} px`;
   const noClips = doc.clips.length === 0;
@@ -152,7 +164,14 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
                 className={`ex-card${s.format === f.id ? ' ex-chosen' : ''}`}
                 disabled={!!why}
                 data-autofocus={s.format === f.id ? '' : undefined}
-                onClick={() => set({ format: f.id, ...((f.id === 'mp4' || f.id === 'webm') && s.range === 'frame' ? { range: 'all' as const } : {}) })}
+                onClick={() =>
+                  set({
+                    format: f.id,
+                    ...((f.id === 'mp4' || f.id === 'webm') && s.range === 'frame' ? { range: 'all' as const } : {}),
+                    // Sprites for games nearly always want a see-through background.
+                    ...(f.id === 'sheet' && s.format !== 'sheet' ? { transparent: true } : {}),
+                  })
+                }
               >
                 <Icon name={f.icon} size={22} />
                 <span className="ex-card-title">
@@ -165,6 +184,51 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
         </div>
 
         <div className="ex-options">
+          {s.format === 'sheet' && (
+            <fieldset>
+              <legend>Where it's going</legend>
+              <EnginePicker value={sheet.engine} onPick={pickEngine} />
+              <p className="ex-note">
+                {engine.files}.{' '}
+                <button type="button" className="ex-link" onClick={() => openHelp(engine.help)}>
+                  {engine.game ? `How to use it in ${engine.title}` : 'How to use it'}
+                </button>
+              </p>
+              {sheet.engine === 'godot' && (
+                <>
+                  {!separate && (
+                    <Check checked={s.sheet.godotScene} onChange={(v) => setSheet({ godotScene: v })}>
+                      Also make a ready-to-play scene (.tscn)
+                    </Check>
+                  )}
+                  <label className="ex-path">
+                    Where the picture will live in your Godot project
+                    <input type="text" spellCheck={false} placeholder={godotTexturePath('', doc.name)} value={s.sheet.godotPath} onChange={(e) => setSheet({ godotPath: e.target.value })} />
+                  </label>
+                </>
+              )}
+              {sheet.engine === 'unity' && (
+                <Check checked={sheet.unityScript} onChange={(v) => setSheet({ unityScript: v })}>
+                  Include the importer script (only needed once per project)
+                </Check>
+              )}
+              {sheet.engine === 'json' && (
+                <div className="ex-seg" role="group" aria-label="JSON frames">
+                  <button type="button" className={sheet.jsonStyle === 'array' ? 'ex-on' : ''} aria-pressed={sheet.jsonStyle === 'array'} title="Frames in a list, in order (often called JSON array)" onClick={() => setSheet({ jsonStyle: 'array' })}>
+                    Frames as a list
+                  </button>
+                  <button type="button" className={sheet.jsonStyle === 'hash' ? 'ex-on' : ''} aria-pressed={sheet.jsonStyle === 'hash'} title="Frames looked up by name (often called JSON hash)" onClick={() => setSheet({ jsonStyle: 'hash' })}>
+                    Frames by name
+                  </button>
+                </div>
+              )}
+              {(sheet.engine === 'godot' || sheet.engine === 'css') && (
+                <Check checked={s.sheet.json} onChange={(v) => setSheet({ json: v })}>
+                  Also save a JSON file with where every frame is
+                </Check>
+              )}
+            </fieldset>
+          )}
           {info.animated ? (
             <fieldset>
               <legend>What to export</legend>
@@ -196,13 +260,18 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
           <fieldset>
             <legend>Size</legend>
             <div className="ex-seg">
+              {art && (
+                <button type="button" className={s.scale === art ? 'ex-on' : ''} aria-pressed={s.scale === art} title={`One art pixel becomes one pixel (${artPx}). Best for game engines, which scale it up themselves.`} onClick={() => set({ scale: art })}>
+                  Art size
+                </button>
+              )}
               {scales.map((n) => (
                 <button key={n} type="button" className={s.scale === n ? 'ex-on' : ''} aria-pressed={s.scale === n} onClick={() => set({ scale: n })}>
                   {n < 1 ? `${n}×` : `${n}×`}
                 </button>
               ))}
             </div>
-            <p className="ex-note">{pixel ? 'Whole numbers keep every pixel sharp and square.' : 'Bigger is sharper but makes a bigger file.'}</p>
+            <p className="ex-note">{s.scale === art ? `Real size: one art pixel is one pixel (${artPx}).` : pixel ? 'Whole numbers keep every pixel sharp and square.' : 'Bigger is sharper but makes a bigger file.'}</p>
           </fieldset>
 
           <fieldset>
@@ -243,46 +312,81 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
           )}
 
           {s.format === 'sheet' && (
-            <fieldset>
-              <legend>Sheet</legend>
-              <div className="ex-grid2">
-                <label>
-                  Columns
-                  <input type="number" min={0} max={64} value={s.sheet.columns} onChange={(e) => setSheet({ columns: Math.max(0, Math.min(64, Math.round(+e.target.value || 0))) })} />
-                  <small>{s.sheet.columns === 0 ? 'Auto' : ' '}</small>
-                </label>
-                <label>
-                  Padding
-                  <input type="number" min={0} max={32} value={s.sheet.padding} onChange={(e) => setSheet({ padding: Math.max(0, Math.min(32, Math.round(+e.target.value || 0))) })} />
-                  <small>pixels between frames</small>
-                </label>
-              </div>
-              <Check checked={s.sheet.trim} onChange={(v) => setSheet({ trim: v })}>
-                Trim empty space around each frame
-              </Check>
-              <Check checked={s.sheet.pot} onChange={(v) => setSheet({ pot: v })}>
-                Make the sheet a power-of-two size (64, 128, 256...)
-              </Check>
-              <Check checked={s.sheet.dedupe} onChange={(v) => setSheet({ dedupe: v })}>
-                Store repeated frames once
-              </Check>
-              <p className="ex-sub">Also save</p>
-              <Check checked={s.sheet.json} onChange={(v) => setSheet({ json: v })}>
-                JSON file with where every frame is
-              </Check>
-              <Check checked={s.sheet.godot} onChange={(v) => setSheet({ godot: v })}>
-                Godot sprite frames (.tres)
-              </Check>
-              <Check checked={s.sheet.godotScene} onChange={(v) => setSheet({ godotScene: v })}>
-                Godot scene with an animated sprite (.tscn)
-              </Check>
-              {(s.sheet.godot || s.sheet.godotScene) && (
-                <label className="ex-path">
-                  Where the picture will live in your Godot project
-                  <input type="text" spellCheck={false} placeholder={godotTexturePath('', doc.name)} value={s.sheet.godotPath} onChange={(e) => setSheet({ godotPath: e.target.value })} />
-                </label>
+            <>
+              <fieldset>
+                <legend>What's on it</legend>
+                <div className="ex-seg">
+                  <button type="button" className={!separate ? 'ex-on' : ''} aria-pressed={!separate} title="Your clips become animations that play" onClick={() => setSheet({ content: 'animation' })}>
+                    An animation
+                  </button>
+                  <button type="button" className={separate ? 'ex-on' : ''} aria-pressed={separate} title="Each frame is its own sprite: icons, tiles, items" onClick={() => setSheet({ content: 'separate' })}>
+                    Separate sprites
+                  </button>
+                </div>
+                {separate && (
+                  <>
+                    <div className="ex-seg">
+                      <button type="button" className={!sheet.separateFiles ? 'ex-on' : ''} aria-pressed={!sheet.separateFiles} onClick={() => setSheet({ separateFiles: false })}>
+                        All on one sheet
+                      </button>
+                      <button type="button" className={sheet.separateFiles ? 'ex-on' : ''} aria-pressed={sheet.separateFiles} onClick={() => setSheet({ separateFiles: true })}>
+                        One PNG each
+                      </button>
+                    </div>
+                    <p className="ex-note">Each frame is one sprite. Put a marker on a frame to name it, or it is named after its clip.</p>
+                  </>
+                )}
+              </fieldset>
+
+              {!(separate && sheet.separateFiles) && (
+                <fieldset>
+                  <legend>Sheet</legend>
+                  <div className="ex-seg">
+                    <button type="button" className={sheet.layout === 'grid' ? 'ex-on' : ''} aria-pressed={sheet.layout === 'grid'} title="Every frame in a slot of the same size" onClick={() => setSheet({ layout: 'grid' })}>
+                      Tidy grid
+                    </button>
+                    <button type="button" className={sheet.layout === 'packed' ? 'ex-on' : ''} aria-pressed={sheet.layout === 'packed'} title="Frames fitted together as tightly as possible (packed atlas). Smallest picture, best with trimming." onClick={() => setSheet({ layout: 'packed' })}>
+                      Packed tight
+                    </button>
+                  </div>
+                  <div className="ex-grid3">
+                    {sheet.layout === 'grid' && (
+                      <label>
+                        Columns
+                        <input type="number" min={0} max={64} value={s.sheet.columns} onChange={(e) => setSheet({ columns: Math.max(0, Math.min(64, Math.round(+e.target.value || 0))) })} />
+                        <small>{s.sheet.columns === 0 ? 'Auto' : ' '}</small>
+                      </label>
+                    )}
+                    <label>
+                      Padding
+                      <input type="number" min={0} max={32} value={s.sheet.padding} onChange={(e) => setSheet({ padding: Math.max(0, Math.min(32, Math.round(+e.target.value || 0))) })} />
+                      <small>space between</small>
+                    </label>
+                    <label title="Repeats each frame's edge pixels outward, so scaled or moving sprites never show a thin seam (extrude)">
+                      Edge bleed
+                      <input type="number" min={0} max={8} value={sheet.extrude} onChange={(e) => setSheet({ extrude: Math.max(0, Math.min(8, Math.round(+e.target.value || 0))) })} />
+                      <small>extrude, pixels</small>
+                    </label>
+                  </div>
+                  <Check checked={s.sheet.trim} onChange={(v) => setSheet({ trim: v })} disabled={sheet.engine === 'css' && !separate} hint="CSS animations show every frame in the same box, so frames stay whole.">
+                    Trim empty space around each frame
+                  </Check>
+                  <Check checked={s.sheet.pot} onChange={(v) => setSheet({ pot: v })}>
+                    Make the sheet a power-of-two size (64, 128, 256...)
+                  </Check>
+                  {!separate && (
+                    <Check checked={s.sheet.dedupe} onChange={(v) => setSheet({ dedupe: v })}>
+                      Store repeated frames once
+                    </Check>
+                  )}
+                </fieldset>
               )}
-            </fieldset>
+              {separate && sheet.separateFiles && (
+                <Check checked={s.sheet.trim} onChange={(v) => setSheet({ trim: v })}>
+                  Trim empty space around each sprite
+                </Check>
+              )}
+            </>
           )}
         </div>
       </div>

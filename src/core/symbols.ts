@@ -535,7 +535,7 @@ export function poseInstance(doc: Doc, s: InstanceShape, inner: number, depth = 
   for (const l of c.layers) {
     if (!l.visible) continue;
     const dr = poseAt(doc, l, inner, depth + 1);
-    if (dr) layers.push({ drawing: dr, opacity: l.opacity, pixelSize: l.kind === 'pixel' ? l.pixelSize : 1 });
+    if (dr) layers.push({ drawing: dr, opacity: l.opacity, pixelSize: 'pixelSize' in l ? l.pixelSize : 1 });
   }
   return { ...s, posed: { matrix: transformMatrix(s.transform, c.def.origin), layers } };
 }

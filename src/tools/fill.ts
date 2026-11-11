@@ -4,7 +4,8 @@
  * plain flood fill. The heavy lifting is in `src/geometry/fill.ts`.
  */
 import type { Doc, Drawing, FillShape, Shape } from '../core/format';
-import { drawingAt, uid } from '../core/doc';
+import { drawingAt, pixelGrid, uid } from '../core/doc';
+import { tileModeOn, wrap } from '../tiles/state';
 import { registerTool, type Tool, type ToolContext, type ToolPointer } from '../core/registry';
 import { store } from '../core/store';
 import { fillRegion, pathsOverlap, type Rect } from '../geometry/fill';
@@ -17,6 +18,8 @@ import { FillOptionsPanel, gapWidth, getFillOptions } from './fill-options';
 import './fill-help';
 import { activeIsMerge, editShapes } from './merge-mode';
 import { mergeShapes } from '../geometry/merge';
+import { pixelSelection } from '../select/pixel-state';
+import { clipToMask } from '../select/mask';
 
 export const FILL_HINTS = {
   'no-fill': 'The fill colour is set to none. Pick a fill colour in the Colours panel (the solid box), then fill.',
@@ -198,8 +201,14 @@ function fillPixels(e: ToolPointer, ctx: ToolContext) {
   }
   const { layer } = activeLayer();
   if (!layer || layer.kind !== 'pixel') return;
-  const px = Math.floor(e.x / layer.pixelSize);
-  const py = Math.floor(e.y / layer.pixelSize);
+  const wrapOn = tileModeOn();
+  let px = Math.floor(e.x / layer.pixelSize);
+  let py = Math.floor(e.y / layer.pixelSize);
+  if (wrapOn) {
+    const g = pixelGrid(store().get().doc, layer);
+    px = wrap(px, g.width);
+    py = wrap(py, g.height);
+  }
   // A palette-locked layer only takes palette colours.
   const color = layer.paletteLock ? ([...snapToPalette(parseColor(ui.color), docPalette(store().get().doc))] as Rgba) : parseColor(ui.color);
   const mode = getFillOptions().allOfColour ? 'all' : 'contiguous';
@@ -209,12 +218,14 @@ function fillPixels(e: ToolPointer, ctx: ToolContext) {
       ctx.hint(FILL_HINTS.outside);
       return;
     }
-    const r = floodFillPixels(existing.pixels, existing.width, existing.height, px, py, color, { mode });
+    const r = floodFillPixels(existing.pixels, existing.width, existing.height, px, py, color, { mode, wrap: wrapOn });
     if (!r.changed) {
       ctx.hint(FILL_HINTS.same);
       return;
     }
-    const res = editActiveDrawing('Fill', 'pixel', (d) => void (d.pixels = r.pixels));
+    const sel = pixelSelection();
+    const filled = sel && sel.width === existing.width && sel.height === existing.height ? clipToMask(existing.pixels, r.pixels, sel) : r.pixels;
+    const res = editActiveDrawing('Fill', 'pixel', (d) => void (d.pixels = filled));
     if (res !== 'ok') ctx.hint(EDIT_HINTS[res]);
     else startPop(px * layer.pixelSize + layer.pixelSize / 2, py * layer.pixelSize + layer.pixelSize / 2, ui.color, ctx);
     return;
@@ -222,7 +233,9 @@ function fillPixels(e: ToolPointer, ctx: ToolContext) {
   // An empty frame gets a fresh drawing, which the fill then covers (it is all one clear colour).
   const res = editActiveDrawing('Fill', 'pixel', (d) => {
     if (px < 0 || py < 0 || px >= d.width || py >= d.height) return;
-    d.pixels = floodFillPixels(d.pixels, d.width, d.height, px, py, color, { mode }).pixels;
+    const filled = floodFillPixels(d.pixels, d.width, d.height, px, py, color, { mode, wrap: wrapOn }).pixels;
+    const sel = pixelSelection();
+    d.pixels = sel && sel.width === d.width && sel.height === d.height ? clipToMask(d.pixels, filled, sel) : filled;
   });
   if (res !== 'ok') ctx.hint(EDIT_HINTS[res]);
   else startPop(px * layer.pixelSize + layer.pixelSize / 2, py * layer.pixelSize + layer.pixelSize / 2, ui.color, ctx);

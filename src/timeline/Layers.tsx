@@ -5,6 +5,7 @@ import { Icon } from '../ui/icons';
 import { say } from './commands';
 import { runCmd, tip } from './cmd';
 import { ContextMenu, InlineName, type MenuItem } from './Menu';
+import { addTilemapLayer } from '../tiles/ops';
 import * as ops from './ops';
 import { setTl, useTl } from './state';
 
@@ -49,7 +50,7 @@ export function layerMenu(layer: Layer, onRename: () => void): MenuItem[] {
   const total = store().get().doc.layers.length;
   const index = store().get().doc.layers.findIndex((l) => l.id === layer.id);
   return [
-    { heading: `${layer.name} (${layer.kind === 'pixel' ? `pixel layer, ${layer.pixelSize}px squares` : 'vector layer'})` },
+    { heading: `${layer.name} (${layer.kind === 'pixel' ? `pixel layer, ${layer.pixelSize}px squares` : layer.kind === 'tilemap' ? 'tilemap layer' : 'vector layer'})` },
     { node: <OpacitySlider layerId={layer.id} /> },
     { separator: true },
     { label: 'Rename', onClick: onRename },
@@ -61,9 +62,11 @@ export function layerMenu(layer: Layer, onRename: () => void): MenuItem[] {
     { separator: true },
     { label: layer.visible ? 'Hide layer' : 'Show layer', onClick: () => void ops.setLayerVisible(layer.id, !layer.visible) },
     { label: layer.locked ? 'Unlock layer' : 'Lock layer (protect it from changes)', onClick: () => void ops.setLayerLocked(layer.id, !layer.locked) },
+    { label: layer.reference ? 'Export this layer again' : 'Reference layer (leave out of exports)', onClick: () => void ops.setLayerReference(layer.id, !layer.reference) },
     { separator: true },
     { label: 'Add a vector layer above', onClick: () => void ops.addVectorLayer(layer.id) },
     { label: 'Add a pixel layer above', onClick: () => void ops.addPixelLayer(layer.id) },
+    { label: 'Add a tilemap layer above', onClick: () => void addTilemapLayer(layer.id) },
   ];
 }
 
@@ -81,10 +84,10 @@ interface RowProps {
 
 const LayerRow = memo(function LayerRow({ layer, active, editing, dropMark, onDragStart, onDragOver, onDrop, onDragEnd, onMenu }: RowProps) {
   const select = () => store().setUi({ activeLayerId: layer.id });
-  const kind = layer.kind === 'pixel' ? 'Pixel layer (pixel art)' : 'Vector layer (smooth drawing)';
+  const kind = layer.kind === 'pixel' ? 'Pixel layer (pixel art)' : layer.kind === 'tilemap' ? 'Tilemap layer (painted with tiles)' : 'Vector layer (smooth drawing)';
   return (
     <div
-      className={`tl-layer${active ? ' is-active' : ''}${!layer.visible ? ' is-hidden' : ''}${layer.locked ? ' is-locked' : ''}${dropMark ? ` drop-${dropMark}` : ''}`}
+      className={`tl-layer${active ? ' is-active' : ''}${!layer.visible ? ' is-hidden' : ''}${layer.locked ? ' is-locked' : ''}${layer.reference ? ' is-reference' : ''}${dropMark ? ` drop-${dropMark}` : ''}`}
       style={{ height: ROW_H }}
       draggable={!editing}
       data-layer={layer.id}
@@ -137,6 +140,11 @@ const LayerRow = memo(function LayerRow({ layer, active, editing, dropMark, onDr
       ) : (
         <span className="tl-layer-name" title="Double-click to rename" onDoubleClick={() => setTl({ editing: { kind: 'layer', id: layer.id } })}>
           {layer.name}
+          {layer.reference && (
+            <small className="tl-ref-tag" title="Reference layer: you see it while drawing, exports leave it out">
+              ref
+            </small>
+          )}
         </span>
       )}
       <button type="button" className="tl-icon-btn" title={layer.visible ? 'Hide this layer' : 'Show this layer'} aria-label={layer.visible ? 'Hide layer' : 'Show layer'} aria-pressed={!layer.visible} onClick={(e) => (e.stopPropagation(), ops.setLayerVisible(layer.id, !layer.visible))}>

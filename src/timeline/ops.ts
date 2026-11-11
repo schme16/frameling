@@ -214,6 +214,16 @@ export function setLayerOnion(layerId: Id, onion: boolean): Outcome {
   return simple(onion ? 'Show layer in onion skin' : 'Leave layer out of onion skin', (d) => core.setLayerOnion(d, layerId, onion));
 }
 
+export function setLayerReference(layerId: Id, reference: boolean): Outcome {
+  return simple(reference ? 'Make reference layer (not exported)' : 'Export this layer again', (d) => core.setLayerReference(d, layerId, reference));
+}
+
+export function toggleLayerReference(layerId?: Id): Outcome {
+  const id = layerId ?? currentLayerId();
+  const l = findLayer(store().get().doc, id);
+  return l ? setLayerReference(l.id, !l.reference) : no('no-layer');
+}
+
 /** Drag a slider and it is one undo step. */
 export function setLayerOpacity(layerId: Id, opacity: number): Outcome {
   return simple('Change layer opacity', (d) => core.setLayerOpacity(d, layerId, opacity), { coalesce: `layer-opacity:${layerId}` });

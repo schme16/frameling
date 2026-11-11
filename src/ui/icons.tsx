@@ -63,6 +63,19 @@ const ICONS: Record<string, ReactNode> = {
     </>
   ),
   select: <path d="M6.2 4.4l11.6 6-5.1 1.6-2.1 5.2z" />,
+  lasso: (
+    <>
+      <path d="M8.5 15.5C5.2 14.6 3 12.6 3 10.2 3 6.8 7 4 12 4s9 2.8 9 6.2-4 6.2-9 6.2" />
+      <path d="M8.8 15.3c-.9 1.6-.5 3.3 1 3.9 1.4.6 1.6 1.7.7 2.8" />
+    </>
+  ),
+  wand: (
+    <>
+      <path d="M4 20l10-10" />
+      <path d="M16.5 3.5v3m0 4v3m-5-5h3m4 0h3" />
+      <path d="M13 11l-2-2" />
+    </>
+  ),
   hand: <path d="M9 11.5V5.7a1.5 1.5 0 0 1 3 0V10m0-1.8a1.5 1.5 0 0 1 3 0v2.3m0-.8a1.5 1.5 0 0 1 3 0v4.6a6 6 0 0 1-6 6h-.6a6 6 0 0 1-4.7-2.3l-3-3.9a1.5 1.5 0 0 1 2.3-1.9L9 14.2" />,
   zoom: (
     <>
@@ -119,6 +132,29 @@ const ICONS: Record<string, ReactNode> = {
       <rect x="13" y="13" width="7" height="7" rx="1.4" fill="currentColor" />
       <rect x="13" y="4" width="7" height="7" rx="1.4" />
       <rect x="4" y="13" width="7" height="7" rx="1.4" />
+    </>
+  ),
+  tilemap: (
+    <>
+      <rect x="3.5" y="3.5" width="17" height="17" rx="3" />
+      <path d="M3.5 12h17M12 3.5v17" />
+      <rect x="6" y="6" width="3.5" height="3.5" rx="0.8" fill="currentColor" stroke="none" />
+      <rect x="14.5" y="14.5" width="3.5" height="3.5" rx="0.8" fill="currentColor" stroke="none" />
+    </>
+  ),
+  tiles: (
+    <>
+      <rect x="3.5" y="3.5" width="7.5" height="7.5" rx="1.6" fill="currentColor" />
+      <rect x="13" y="3.5" width="7.5" height="7.5" rx="1.6" />
+      <rect x="3.5" y="13" width="7.5" height="7.5" rx="1.6" />
+      <path d="M13 16.75h7.5M16.75 13v7.5" />
+    </>
+  ),
+  'tile-mode': (
+    <>
+      <rect x="8" y="8" width="8" height="8" rx="1.4" fill="currentColor" />
+      <path d="M3.5 8h1.5M19 8h1.5M3.5 16h1.5M19 16h1.5M8 3.5v1.5M16 3.5v1.5M8 19v1.5M16 19v1.5" />
+      <rect x="3.5" y="3.5" width="17" height="17" rx="3" strokeDasharray="2 2.4" />
     </>
   ),
   vector: (

@@ -8,6 +8,7 @@
 import { getStroke } from 'perfect-freehand';
 import type { Color, Doc, Drawing, FillShape, Layer, PathShape, PixelDrawing, Shape, StrokeShape, SubPath } from './format';
 import { isPosed, poseAt, type PosedInstance, type PosedLayer } from './symbols';
+import { drawTilemap } from './tilemap';
 
 export type Ctx2D = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 
@@ -153,10 +154,18 @@ export function pixelCanvas(d: PixelDrawing): OffscreenCanvas | HTMLCanvasElemen
   return c;
 }
 
-/** Draws one drawing (no layer opacity). Pixel drawings need the layer's pixel size. */
-export function drawDrawing(g: Ctx2D, d: Drawing, pixelSize = 1): void {
+/** Where a drawing is shown, which tilemaps need for their tiles (and animated tiles for the frame). */
+export interface DrawContext {
+  doc: Doc;
+  frame: number;
+}
+
+/** Draws one drawing (no layer opacity). Pixel drawings need the layer's pixel size, tilemaps the document too. */
+export function drawDrawing(g: Ctx2D, d: Drawing, pixelSize = 1, at?: DrawContext): void {
   if (d.kind === 'vector') {
     for (const s of d.shapes) drawShape(g, s);
+  } else if (d.kind === 'tilemap') {
+    if (at) drawTilemap(g, at.doc, d, pixelSize, at.frame, pixelCanvas);
   } else {
     const prev = g.imageSmoothingEnabled;
     g.imageSmoothingEnabled = false;
@@ -246,8 +255,9 @@ export function drawInstance(g: Ctx2D, s: PosedInstance): void {
 export function drawLayerAt(g: Ctx2D, doc: Doc, layer: Layer, frame: number): void {
   const d = poseAt(doc, layer, frame);
   if (!d) return;
+  const ps = layer.kind === 'vector' ? 1 : layer.pixelSize;
   if (layer.opacity >= 1) {
-    drawDrawing(g, d, layer.kind === 'pixel' ? layer.pixelSize : 1);
+    drawDrawing(g, d, ps, { doc, frame });
     return;
   }
   // Layer opacity applies to the layer as a whole, so overlapping strokes don't show through each other. The layer
@@ -257,7 +267,7 @@ export function drawLayerAt(g: Ctx2D, doc: Doc, layer: Layer, frame: number): vo
   const { c, g: lg } = fadeScratch(Math.max(1, target.width), Math.max(1, target.height));
   lg.setTransform(g.getTransform());
   lg.imageSmoothingEnabled = g.imageSmoothingEnabled;
-  drawDrawing(lg, d, layer.kind === 'pixel' ? layer.pixelSize : 1);
+  drawDrawing(lg, d, ps, { doc, frame });
   g.save();
   g.setTransform(1, 0, 0, 1, 0, 0);
   g.globalAlpha = layer.opacity;

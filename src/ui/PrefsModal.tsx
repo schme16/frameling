@@ -144,6 +144,9 @@ function GeneralPage({ onThemes }: { onThemes: () => void }) {
       <Row label="Show Quill" hint="Quill the hedgehog shows you round and cheers you on. Off hides him; his words still show.">
         <Switch label="Show Quill" on={p.showQuill} onChange={(showQuill) => setPrefs({ showQuill })} />
       </Row>
+      <Row label="Fade tile copies" hint="In tile mode, fade the copies round the tile you're drawing so it stands out. Off shows them exactly as a game would.">
+        <Switch label="Fade tile copies" on={p.fadeTileCopies} onChange={(fadeTileCopies) => setPrefs({ fadeTileCopies })} />
+      </Row>
     </>
   );
 }

@@ -175,7 +175,7 @@ export function symbolBounds(doc: Doc, id: string): Rect | null {
         if (d.kind === 'vector') {
           const b = unionRects(d.shapes.map((s) => (s.type === 'instance' ? instanceBoundsIn(doc, s) : shapeBounds(s))).filter((r): r is Rect => !!r));
           if (b) rects.push(b);
-        } else if (l.kind === 'pixel') rects.push({ x: 0, y: 0, w: d.width * l.pixelSize, h: d.height * l.pixelSize });
+        } else if (d.kind === 'pixel' && l.kind === 'pixel') rects.push({ x: 0, y: 0, w: d.width * l.pixelSize, h: d.height * l.pixelSize });
       }
   } finally {
     boundsDepth--;

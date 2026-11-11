@@ -8,6 +8,7 @@ import type { State } from '../core/store';
 export function drawingHasInk(d: Drawing | undefined): boolean {
   if (!d) return false;
   if (d.kind === 'vector') return d.shapes.length > 0;
+  if (d.kind === 'tilemap') return d.cells.some((c) => c !== 0);
   const px = d.pixels;
   for (let i = 3; i < px.length; i += 4) if (px[i] > 0) return true;
   return false;

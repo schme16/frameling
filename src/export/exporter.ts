@@ -8,7 +8,8 @@ import { notify } from '../io/notify';
 import { detectCapabilities } from './capabilities';
 import { filtersFor, planExport } from './plan';
 import { isCancelled, runExport, type Progress } from './run';
-import { formatInfo, type ExportSettings, type SheetSettings } from './types';
+import { SheetProblem } from './engines';
+import { DEFAULT_SHEET, formatInfo, normalizeSheet, type ExportSettings, type SheetSettings } from './types';
 
 const KEY = 'frameling.export.last';
 
@@ -32,13 +33,22 @@ export function saveLastSettings(s: ExportSettings): void {
 
 const EXTRAS_KEY = 'frameling.export.sheetExtras';
 
-/** The sprite sheet's "also save" ticks as last left, so they stay put between exports (JSON on and Godot off to begin with). */
-export function loadSheetExtras(): Pick<SheetSettings, 'json' | 'godot' | 'godotScene'> | null {
+/** The sprite sheet choices that stay put between exports: the engine, the "also save" ticks and how the sheet is laid out. */
+export type SheetExtras = Pick<SheetSettings, 'json' | 'godot' | 'godotScene'> & Partial<Pick<SheetSettings, 'engine' | 'layout' | 'content' | 'separateFiles' | 'jsonStyle' | 'unityScript'>>;
+
+const EXTRA_KEYS = ['engine', 'layout', 'content', 'separateFiles', 'jsonStyle', 'unityScript'] as const;
+
+/** The sprite sheet's remembered choices as last left (JSON on and Godot off to begin with). */
+export function loadSheetExtras(): SheetExtras | null {
   try {
     const raw = localStorage.getItem(EXTRAS_KEY);
     if (!raw) return null;
     const v = JSON.parse(raw);
-    return { json: v.json !== false, godot: v.godot === true, godotScene: v.godotScene === true };
+    const out: SheetExtras = { json: v.json !== false, godot: v.godot === true, godotScene: v.godotScene === true };
+    // Only what was saved comes back, through the same checks as everything else.
+    const n = normalizeSheet({ ...DEFAULT_SHEET, ...v });
+    for (const k of EXTRA_KEYS) if (k in v) (out as Record<string, unknown>)[k] = n[k];
+    return out;
   } catch {
     return null;
   }
@@ -46,7 +56,9 @@ export function loadSheetExtras(): Pick<SheetSettings, 'json' | 'godot' | 'godot
 
 export function saveSheetExtras(s: SheetSettings): void {
   try {
-    localStorage.setItem(EXTRAS_KEY, JSON.stringify({ json: s.json, godot: s.godot, godotScene: s.godotScene }));
+    const v: Record<string, unknown> = { json: s.json, godot: s.godot, godotScene: s.godotScene };
+    for (const k of EXTRA_KEYS) if (s[k] !== undefined) v[k] = s[k];
+    localStorage.setItem(EXTRAS_KEY, JSON.stringify(v));
   } catch {
     // Remembering is a nicety, never a problem.
   }
@@ -58,7 +70,7 @@ export class ExportProblem extends Error {}
 
 /** Plain words for whatever went wrong. */
 export function describeError(e: unknown): string {
-  if (e instanceof ExportProblem) return e.message;
+  if (e instanceof ExportProblem || e instanceof SheetProblem) return e.message;
   const m = e instanceof Error ? e.message : '';
   if (/memory|allocation/i.test(m)) return 'There was not enough memory for that. Try a smaller size, or export one clip at a time.';
   return `Something went wrong while exporting${m ? ` (${m})` : ''}. Try a smaller size or another format.`;

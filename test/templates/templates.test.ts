@@ -63,7 +63,7 @@ function ids(doc: Doc): string[] {
 
 describe('templates', () => {
   it('has the expected set with unique ids', () => {
-    expect(TEMPLATES.map((t) => t.id)).toEqual(['bouncing-ball', 'flour-sack-hop', 'blink', 'hero-sprites', 'sparkle-fx', 'bouncing-logo', 'blank-vector', 'blank-pixel']);
+    expect(TEMPLATES.map((t) => t.id)).toEqual(['bouncing-ball', 'flour-sack-hop', 'blink', 'hero-sprites', 'sparkle-fx', 'bouncing-logo', 'tileset', 'blank-vector', 'blank-pixel']);
     expect(new Set(TEMPLATES.map((t) => t.id)).size).toBe(TEMPLATES.length);
     for (const t of TEMPLATES) {
       expect(t.name.length).toBeGreaterThan(0);
@@ -81,7 +81,8 @@ describe('templates', () => {
         expect(doc.fps).toBeGreaterThan(0);
         expect(doc.layers.length).toBeGreaterThan(0);
         expect(new Set(doc.layers.map((l) => l.name)).size).toBe(doc.layers.length);
-        expect(doc.layers.every((l) => l.kind === t.kind)).toBe(true);
+        // Pixel templates may use tilemap layers too (tiles are pixel art).
+        expect(doc.layers.every((l) => (t.kind === 'pixel' ? l.kind !== 'vector' : l.kind === 'vector'))).toBe(true);
         const all = ids(doc);
         expect(new Set(all).size).toBe(all.length);
         expect(doc.swatches.length).toBeGreaterThan(0);
@@ -110,6 +111,7 @@ describe('templates', () => {
             used.add(c.drawingId);
           }
         }
+        for (const tile of doc.tileset?.tiles ?? []) for (const f of tile.frames) used.add(f.drawingId);
         expect(Object.keys(doc.drawings).filter((id) => !used.has(id))).toEqual([]);
       });
 
@@ -197,13 +199,19 @@ describe('templates', () => {
       expect(d.markers.map((m) => m.name)).toEqual(['launch', 'land']);
     });
 
-    it('hero: idle 4, run 6, jump 3 and footsteps on run contacts', () => {
+    it('hero: idle 4, run 6, jump 3, hurt 3, die 7 (last pose held) and footsteps on run contacts', () => {
       const d = doc('hero-sprites');
       const len = (n: string) => {
         const c = d.clips.find((x) => x.name === n)!;
         return c.end - c.start + 1;
       };
-      expect([len('idle'), len('run'), len('jump')]).toEqual([4, 6, 3]);
+      expect([len('idle'), len('run'), len('jump'), len('hurt'), len('die')]).toEqual([4, 6, 3, 3, 7]);
+      expect(d.clips.map((c) => c.loop)).toEqual([true, true, false, false, false]);
+      expect(d.length).toBe(23);
+      // The ground is a reference layer, so exports leave it out.
+      expect(d.layers.find((l) => l.name === 'Ground')?.reference).toBe(true);
+      const pip = d.layers.find((l) => l.name === 'Pip')!;
+      expect(pip.cels[pip.cels.length - 1]).toMatchObject({ start: 19, length: 4 });
       const run = d.clips.find((c) => c.name === 'run')!;
       const steps = d.markers.filter((m) => m.name === 'footstep');
       expect(steps.length).toBeGreaterThanOrEqual(2);

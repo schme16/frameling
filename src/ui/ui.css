@@ -2669,12 +2669,3 @@ body.ui-resizing * {
   font-weight: 700;
   color: var(--muted);
 }
-.ui-example.is-blank .ui-example-art {
-  border: 2px dashed var(--line);
-  background: transparent;
-}
-.ui-example-blank-size {
-  font-size: var(--fs-small);
-  font-weight: 700;
-  color: var(--muted);
-}

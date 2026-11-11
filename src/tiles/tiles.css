@@ -1,0 +1,204 @@
+.tz-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+  min-height: 100%;
+}
+.tz-bar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.tz-grow {
+  flex: 1;
+}
+.tz-icon {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: var(--radius-small);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.tz-icon:hover:not(:disabled) {
+  background: var(--hover-bg);
+}
+.tz-icon:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.tz-icon.is-on {
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+}
+.tz-size {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--raised);
+  padding: 3px 10px;
+  font-size: var(--fs-small);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.tz-size:hover {
+  background: var(--hover-bg);
+}
+.tz-size-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 6px;
+  padding: 8px;
+  border-radius: var(--radius-small);
+  background: var(--raised);
+}
+.tz-size-form label {
+  display: flex;
+  flex-direction: column;
+  font-size: var(--fs-small);
+  gap: 2px;
+}
+.tz-size-form input {
+  width: 58px;
+}
+.tz-size-form small {
+  flex-basis: 100%;
+  color: var(--muted);
+}
+.tz-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+  gap: 6px;
+}
+.tz-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 6px 4px 4px;
+  border-radius: var(--radius-small);
+  border: 2px solid transparent;
+  background: var(--raised);
+  cursor: pointer;
+  outline: none;
+}
+.tz-tile:hover {
+  background: var(--hover-bg);
+}
+.tz-tile:focus-visible {
+  box-shadow: 0 0 0 2px var(--focus);
+}
+.tz-tile.is-chosen {
+  border-color: var(--chosen-bg);
+  background: color-mix(in srgb, var(--chosen-bg) 22%, var(--raised));
+}
+.tz-tile.is-editing {
+  border-style: dashed;
+  border-color: var(--accent);
+}
+.tz-tile.is-drop {
+  box-shadow: -4px 0 0 -1px var(--accent);
+}
+.tz-thumb {
+  display: block;
+  image-rendering: pixelated;
+  max-width: 100%;
+  background: repeating-conic-gradient(var(--line-soft) 0 25%, transparent 0 50%) 0 0 / 8px 8px;
+  border-radius: 3px;
+}
+.tz-name {
+  max-width: 100%;
+  font-size: var(--fs-small);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tz-name-input {
+  width: 100%;
+  font-size: var(--fs-small);
+}
+.tz-badge {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  min-width: 16px;
+  padding: 0 4px;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+}
+.tz-editing {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: var(--radius-small);
+  background: color-mix(in srgb, var(--accent) 18%, var(--raised));
+}
+.tz-editing span {
+  flex: 1;
+}
+.tz-done {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.tz-empty,
+.tz-hint {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+.tz-link {
+  border: 0;
+  padding: 0;
+  background: none;
+  color: var(--accent);
+  text-decoration: underline;
+  cursor: pointer;
+  font: inherit;
+}
+.tz-brush {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.tz-brush-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.tz-banner {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px 6px 14px;
+  border-radius: var(--radius-pill);
+  background: var(--panel);
+  box-shadow: var(--shadow-small);
+  z-index: 3;
+  white-space: nowrap;
+}
+
+.tz-atlas {
+  display: block;
+  max-width: 100%;
+  margin: 2px 0 10px;
+  image-rendering: pixelated;
+  background: repeating-conic-gradient(var(--line-soft) 0 25%, transparent 0 50%) 0 0 / 8px 8px;
+  border-radius: 4px;
+}

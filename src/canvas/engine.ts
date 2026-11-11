@@ -14,6 +14,9 @@ import { SpaceTap, wheelIntent } from './input';
 import { perf } from './perf';
 import { neighbourFrames, upcomingFrames } from '../timeline/playback';
 import { FramePainter } from './pipeline';
+import { subscribeTileUi, tileModeOn } from '../tiles/state';
+import { subscribePrefs } from '../ui/prefs';
+import { drawTileModeFrame, tileCopyAlpha } from '../tiles/look';
 import { cssVar, subscribeTheme } from './theme';
 import { getViewSettings, subscribeViewSettings } from './viewSettings';
 import { drawDecorations } from './decorations';
@@ -136,6 +139,8 @@ export class CanvasEngine {
     this.cleanups.push(() => ro.disconnect());
     this.cleanups.push(store().subscribe(this.onStore));
     this.cleanups.push(subscribeViewSettings(() => this.invalidate(false, true)));
+    this.cleanups.push(subscribeTileUi(() => this.invalidate(true, true)));
+    this.cleanups.push(subscribePrefs(() => this.invalidate(true, true)));
     // Grid and handle colours come from theme tokens, so a theme or look change repaints both canvases.
     this.cleanups.push(subscribeTheme(() => this.invalidate(true, true)));
     this.resize();
@@ -312,6 +317,8 @@ export class CanvasEngine {
       onion: ui.onion,
       playing: ui.playing,
       zooming,
+      tileMode: tileModeOn(),
+      tileCopyAlpha: tileCopyAlpha(),
     });
     if (!settled) {
       clearTimeout(this.settleTimer);
@@ -331,6 +338,7 @@ export class CanvasEngine {
     g.clearRect(0, 0, this.els.overlay.width, this.els.overlay.height);
     if (ui.playing) return;
     const rect = stageDeviceRect({ zoom: ui.zoom, panX: ui.panX, panY: ui.panY }, doc.width, doc.height, dpr);
+    if (tileModeOn()) drawTileModeFrame(g, rect, dpr);
     this.drawPixelGrid(g, rect, ui.zoom, dpr);
     g.save();
     g.setTransform(rect.w / doc.width, 0, 0, rect.h / doc.height, rect.x, rect.y);
@@ -341,6 +349,13 @@ export class CanvasEngine {
       g.save();
       g.setTransform(rect.w / doc.width, 0, 0, rect.h / doc.height, rect.x, rect.y);
       tool.overlay(g, this.ctx);
+      g.restore();
+    }
+    const extra = ctl.getStageOverlays();
+    if (extra.length) {
+      g.save();
+      g.setTransform(rect.w / doc.width, 0, 0, rect.h / doc.height, rect.x, rect.y);
+      for (const fn of extra) fn(g, ui.zoom);
       g.restore();
     }
   }

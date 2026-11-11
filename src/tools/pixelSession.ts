@@ -8,9 +8,11 @@ import { drawingAt } from '../core/doc';
 import { setLive } from '../canvas/controller';
 import { getPx, setPx, type PxPt, type RGBA } from '../canvas/pixels';
 import { editActiveDrawing } from './edit';
+import { tileModeOn, wrap } from '../tiles/state';
 import { lockedInk, makeMirror, mirrorPoints, type Ink, type Mirror } from '../pixel/ink';
 import { docPalette } from '../pixel/palette';
 import { getPixelSettings } from '../pixel/settings';
+import { pixelSelection } from '../select/pixel-state';
 
 type LiveCanvas = HTMLCanvasElement | OffscreenCanvas;
 
@@ -44,6 +46,8 @@ export class PixelSession {
   readonly mirror: Mirror;
   /** Turns an ink into one that snaps to the palette, when the layer has its palette lock on. */
   readonly lock: (ink: Ink) => Ink;
+  /** The selection: when there is one, painting stays inside it. */
+  private clip: Uint8Array | null = null;
   private pts = new Int32Array(8);
   private rgba = new Uint8Array(4);
 
@@ -66,6 +70,8 @@ export class PixelSession {
     this.mirror = makeMirror(opts.mirror === false ? 'off' : ps.symmetry, this.width, this.height, ps.axisX, ps.axisY);
     const pal = layer.paletteLock ? docPalette(doc) : null;
     this.lock = pal ? (ink) => lockedInk(ink, pal) : (ink) => ink;
+    const sel = pixelSelection();
+    if (sel && sel.width === this.width && sel.height === this.height) this.clip = sel.bits;
     this.canvas = makeLiveCanvas(this.width, this.height);
     if (this.canvas) {
       const g = this.canvas.getContext('2d') as CanvasRenderingContext2D;
@@ -85,7 +91,12 @@ export class PixelSession {
 
   /** Paints one pixel. */
   set(x: number, y: number, c: RGBA): void {
-    if (x < 0 || y < 0 || x >= this.width || y >= this.height) return;
+    if (tileModeOn()) {
+      // Tile mode: whatever goes off one edge comes back on the other.
+      x = wrap(x, this.width);
+      y = wrap(y, this.height);
+    } else if (x < 0 || y < 0 || x >= this.width || y >= this.height) return;
+    if (this.clip && !this.clip[y * this.width + x]) return;
     const i = (y * this.width + x) * 4;
     const w = this.work;
     if (w[i] === c[0] && w[i + 1] === c[1] && w[i + 2] === c[2] && w[i + 3] === c[3]) return;

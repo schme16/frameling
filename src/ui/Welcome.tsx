@@ -291,10 +291,6 @@ function AspectBox({ aspect, pixel }: { aspect: number; pixel: boolean }) {
   );
 }
 
-// Blank starters as a compact row of sizes (A, the default) or as dashed cards among the examples (B). B only shows
-// with data-blank-look="cards" on the page, for the side by side look in brand/ab/templates.
-const blankLook = () => (typeof document !== 'undefined' && document.documentElement.dataset.blankLook === 'cards' ? 'cards' : 'row');
-
 function Examples({ onPick, scrollTo }: { onPick: (doc: Doc, name: string) => void; scrollTo: boolean }) {
   const templates = useTemplates();
   const starters = useStarters(templates);
@@ -303,17 +299,19 @@ function Examples({ onPick, scrollTo }: { onPick: (doc: Doc, name: string) => vo
     if (scrollTo && templates.length) box.current?.scrollIntoView({ block: 'nearest' });
   }, [scrollTo, templates.length]);
   if (!templates.length) return null;
-  const cards = blankLook() === 'cards';
-  const examples = cards ? starters : starters.filter((s) => !s.blank);
-  const blanks = cards ? [] : starters.filter((s) => s.blank);
+  // Blank starters sit in a compact row of sizes under the examples (picked on the board over dashed cards).
+  const examples = starters.filter((s) => !s.blank);
+  const blanks = starters.filter((s) => s.blank);
   const pick = (t: TemplateLike) => onPick(t.make(), t.name.toLowerCase());
   return (
     <div className="ui-examples" ref={box} data-help="examples">
       <h3>Start from an example</h3>
       <div className="ui-example-list">
-        {examples.map(({ template: t, blank, size }) => (
-          <button key={t.id} type="button" className={`ui-example${blank ? ' is-blank' : ''}`} onClick={() => pick(t)}>
-            <span className="ui-example-art">{blank ? <span className="ui-example-blank-size">{size}</span> : <Thumb template={t} />}</span>
+        {examples.map(({ template: t }) => (
+          <button key={t.id} type="button" className="ui-example" onClick={() => pick(t)}>
+            <span className="ui-example-art">
+              <Thumb template={t} />
+            </span>
             <span className="ui-example-head">
               <strong>{t.name}</strong>
               <span className={`ui-badge ui-badge-${t.kind}`}>

@@ -1,12 +1,13 @@
 import { useEffect } from 'react';
 import { allTools, getTool } from '../core/registry';
 import { findLayer } from '../core/doc';
+import type { LayerKind } from '../core/format';
 import { store, useStore } from '../core/store';
 import { syncDynamicCommands } from './dynamic';
 import { Icon } from './icons';
 
 /** The kind of layer being drawn on (the last one when none is picked), or null with no layers. */
-function useActiveKind(): 'vector' | 'pixel' | null {
+function useActiveKind(): LayerKind | null {
   return useStore((s) => (findLayer(s.doc, s.ui.activeLayerId) ?? s.doc.layers[s.doc.layers.length - 1])?.kind ?? null);
 }
 

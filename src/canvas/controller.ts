@@ -6,6 +6,7 @@
 import type { Drawing, Id } from '../core/format';
 import { store } from '../core/store';
 import { toast } from '../ui/toast';
+import { tileModeOn } from '../tiles/state';
 import { centerView, clampPan, fitView, nextZoomStep, screenToDoc, stageDeviceRect, zoomAbout, zoomToRect, type Pt, type Rect, type View } from './view';
 import { clampZoom } from './view';
 
@@ -86,7 +87,10 @@ function artPixel(): number {
 /** Fit the whole stage in the window. */
 export function fit(): void {
   const { doc } = store().get();
-  setView(fitView(viewport.w, viewport.h, doc.width, doc.height, 48, artPixel()), false);
+  // In tile mode the stage has a copy on every side, so fit all nine.
+  const k = tileModeOn() ? 3 : 1;
+  const v = fitView(viewport.w, viewport.h, doc.width * k, doc.height * k, 48, artPixel());
+  setView(k === 1 ? v : { zoom: v.zoom, panX: v.panX + doc.width * v.zoom, panY: v.panY + doc.height * v.zoom }, false);
   autoFit = true;
 }
 
@@ -120,7 +124,8 @@ export function stageRect(): Rect {
  */
 export type Live =
   | { layerId: Id; kind: 'vector'; drawing: Drawing }
-  | { layerId: Id; kind: 'pixel'; canvas: CanvasImageSource; width: number; height: number };
+  | { layerId: Id; kind: 'pixel'; canvas: CanvasImageSource; width: number; height: number }
+  | { layerId: Id; kind: 'tilemap'; drawing: Drawing };
 
 let live: Live | null = null;
 
@@ -164,6 +169,19 @@ export function hint(message: string): void {
 /** A tool can ask for a cursor (resize arrows over a handle). null goes back to the tool's own. */
 export function setCursor(c: string | null): void {
   sink?.cursor?.(c);
+}
+
+// ---------------------------------------------------------------- overlays that aren't a tool's
+
+/** Drawn on the overlay after the tool's own, in document coordinates, whatever tool is picked (marching ants). */
+export type StageOverlay = (g: CanvasRenderingContext2D, zoom: number) => void;
+const stageOverlays: StageOverlay[] = [];
+
+export function addStageOverlay(fn: StageOverlay): void {
+  if (!stageOverlays.includes(fn)) stageOverlays.push(fn);
+}
+export function getStageOverlays(): readonly StageOverlay[] {
+  return stageOverlays;
 }
 
 // ---------------------------------------------------------------- pointer extras

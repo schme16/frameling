@@ -10,6 +10,7 @@ import { makeBouncingLogo } from './bouncing-logo';
 import { makeFlourSack } from './flour-sack';
 import { makeHeroSprite } from './hero-sprite';
 import { makeSparkle } from './sparkle';
+import { makeTileset } from './tileset';
 
 export interface Template {
   id: string;
@@ -50,7 +51,7 @@ export const TEMPLATES: Template[] = [
   {
     id: 'hero-sprites',
     name: 'Game hero sprite set',
-    blurb: 'A little pixel creature with idle, run and jump clips and footstep markers. Try it: recolour the scarf, then export a sprite sheet.',
+    blurb: 'A little pixel creature with idle, run, jump, hurt and die clips and footstep markers. Try it: recolour the scarf, then export it for Godot, Unity or the web.',
     kind: 'pixel',
     thumbnail: () => 0,
     make: makeHeroSprite,
@@ -70,6 +71,14 @@ export const TEMPLATES: Template[] = [
     kind: 'vector',
     thumbnail: () => 30,
     make: makeBouncingLogo,
+  },
+  {
+    id: 'tileset',
+    name: 'Tileset and level',
+    blurb: 'Five 16x16 tiles (with animated water) and a small level painted on tilemap layers. Try it: double-click the Grass tile in the Tileset panel, give it some flowers, then press Done and watch the whole level change.',
+    kind: 'pixel',
+    thumbnail: () => 0,
+    make: makeTileset,
   },
   {
     id: 'blank-vector',
