@@ -6,9 +6,12 @@
  * the transform before calling to scale or pan.
  */
 import { getStroke } from 'perfect-freehand';
-import type { Color, Doc, Drawing, FillShape, Layer, PathShape, PixelDrawing, Shape, StrokeShape, SubPath } from './format';
+import type { CameraView, Color, Doc, Drawing, FillShape, Layer, PathShape, PixelDrawing, Shape, StrokeShape, SubPath } from './format';
 import { isPosed, poseAt, type PosedInstance, type PosedLayer } from './symbols';
 import { drawTilemap } from './tilemap';
+import { drawText } from '../text/draw';
+import { drawParticles } from '../particles/draw';
+import { cameraViewAt, layerCameraMatrix } from './camera';
 import { compositePlan, EffectCache } from '../effects/composite';
 import { buildPlan } from '../effects/plan';
 import { needsCompositor } from '../effects/model';
@@ -22,6 +25,8 @@ export interface RenderOptions {
   layerFilter?: (layer: Layer) => boolean;
   /** Ignore layer visibility (export of hidden layers, for example). */
   includeHidden?: boolean;
+  /** Look through the camera, when the document has one (default true). The editor's own view passes false. */
+  camera?: boolean;
 }
 
 // Outlines and Path2Ds are cached per shape object. Shapes are immutable (edits make new objects), so the object
@@ -119,6 +124,8 @@ export function drawShape(g: Ctx2D, s: Shape, at?: DrawContext): void {
     if (isPosed(s)) drawInstance(g, s, at);
     return;
   }
+  if (s.type === 'text') return drawText(g, s);
+  if (s.type === 'particles') return drawParticles(g, s, drawInstance);
   g.globalAlpha = s.opacity;
   if (s.type === 'stroke') {
     g.fillStyle = s.color;
@@ -169,7 +176,7 @@ export function drawDrawing(g: Ctx2D, d: Drawing, pixelSize = 1, at?: DrawContex
     for (const s of d.shapes) drawShape(g, s, at);
   } else if (d.kind === 'tilemap') {
     if (at) drawTilemap(g, at.doc, d, pixelSize, at.frame, pixelCanvas);
-  } else {
+  } else if (d.kind === 'pixel') {
     const prev = g.imageSmoothingEnabled;
     g.imageSmoothingEnabled = false;
     g.drawImage(pixelCanvas(d), 0, 0, d.width * pixelSize, d.height * pixelSize);
@@ -363,6 +370,7 @@ export function drawInstance(g: Ctx2D, s: PosedInstance, at?: DrawContext): void
 export function drawLayerAt(g: Ctx2D, doc: Doc, layer: Layer, frame: number): void {
   const d = poseAt(doc, layer, frame);
   if (!d) return;
+  if (layer.kind === 'camera') return;
   const ps = layer.kind === 'vector' ? 1 : layer.pixelSize;
   if (layer.opacity >= 1) {
     drawDrawing(g, d, ps, { doc, frame });
@@ -389,14 +397,24 @@ export function renderFrame(g: Ctx2D, doc: Doc, frame: number, opts: RenderOptio
     g.fillStyle = doc.background;
     g.fillRect(0, 0, doc.width, doc.height);
   }
+  const view = opts.camera === false ? undefined : cameraViewAt(doc, frame);
   if (needsCompositor(doc)) {
-    renderComposited(g, doc, frame, opts);
+    renderComposited(g, doc, frame, opts, view);
     return;
   }
   for (const layer of doc.layers) {
     if (!opts.includeHidden && !layer.visible) continue;
     if (opts.layerFilter && !opts.layerFilter(layer)) continue;
+    if (layer.kind === 'camera') continue;
+    const m = layerCameraMatrix(doc, layer, view);
+    if (!m) {
+      drawLayerAt(g, doc, layer, frame);
+      continue;
+    }
+    g.save();
+    g.transform(m[0], m[1], m[2], m[3], m[4], m[5]);
     drawLayerAt(g, doc, layer, frame);
+    g.restore();
   }
 }
 
@@ -404,12 +422,22 @@ export function renderFrame(g: Ctx2D, doc: Doc, frame: number, opts: RenderOptio
 const renderEffectCache = new EffectCache(16_000_000);
 
 /** A frame with blend modes, effects, clipping, masks or folders (see src/effects). */
-function renderComposited(g: Ctx2D, doc: Doc, frame: number, opts: RenderOptions): void {
+function renderComposited(g: Ctx2D, doc: Doc, frame: number, opts: RenderOptions, view?: CameraView): void {
   const include = (l: Layer) => opts.includeHidden || l.visible;
   compositePlan(g, doc, frame, buildPlan(doc, include, opts.includeHidden, opts.layerFilter), {
-    paint: (lg, l) => drawLayerAt(lg, doc, l.opacity >= 1 ? l : { ...l, opacity: 1 }, frame),
+    paint: (lg, l) => {
+      // Each layer is painted through the camera (with its own depth); effects then work on what the camera sees.
+      const m = layerCameraMatrix(doc, l, view);
+      if (m) {
+        lg.save();
+        lg.transform(m[0], m[1], m[2], m[3], m[4], m[5]);
+      }
+      drawLayerAt(lg, doc, l.opacity >= 1 ? l : { ...l, opacity: 1 }, frame);
+      if (m) lg.restore();
+    },
     // Tilemaps can animate on their own, so only vector and pixel drawings are reused.
-    key: (l) => (l.kind === 'tilemap' ? undefined : poseAt(doc, l, frame)),
+    // A layer the camera moves isn't reused either: the same drawing sits somewhere else each frame.
+    key: (l) => (l.kind === 'tilemap' || layerCameraMatrix(doc, l, view) ? undefined : poseAt(doc, l, frame)),
   }, renderEffectCache);
 }
 

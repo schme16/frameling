@@ -41,7 +41,7 @@ const shift = (p: { x: number; y: number }, dx: number) => {
   p.x += dx;
 };
 function shiftShape(s: Shape, dx: number): void {
-  if (s.type === 'instance') {
+  if (s.type === 'instance' || s.type === 'text' || s.type === 'particles') {
     s.transform.x += dx;
     return;
   }

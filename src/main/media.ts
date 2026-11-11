@@ -4,18 +4,25 @@ import { spawn, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { candidates } from './video';
 
 let found: string | null | undefined;
 
-/** The ffmpeg to use: FRAMELING_FFMPEG if set, else the one on PATH, else null. Looked up once. */
+/** The ffmpeg to use (the same places ProRes looks, see video.ts) that can make AAC, or null. Looked up once. */
 export function ffmpegPath(): string | null {
   if (found !== undefined) return found;
-  const cand = process.env.FRAMELING_FFMPEG || 'ffmpeg';
-  try {
-    const r = spawnSync(cand, ['-hide_banner', '-encoders'], { encoding: 'utf8', timeout: 8000, windowsHide: true });
-    found = r.status === 0 && /\baac\b/.test(r.stdout) ? cand : null;
-  } catch {
-    found = null;
+  found = null;
+  for (const cand of candidates()) {
+    if (!fs.existsSync(cand)) continue;
+    try {
+      const r = spawnSync(cand, ['-hide_banner', '-encoders'], { encoding: 'utf8', timeout: 8000, windowsHide: true, maxBuffer: 8 * 1024 * 1024 });
+      if (r.status === 0 && /\baac\b/.test(r.stdout)) {
+        found = cand;
+        break;
+      }
+    } catch {
+      // Try the next one.
+    }
   }
   return found;
 }

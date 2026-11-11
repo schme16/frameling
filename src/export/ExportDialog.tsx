@@ -15,6 +15,8 @@ import { openHelp } from '../ui/overlays';
 import { godotTexturePath } from './sheet';
 import type { Progress } from './run';
 import { GIF_MAX_FPS } from './gif';
+import { proresSupport, type ProresSupport } from './prores';
+import { LayeredNotes } from './LayeredNotes';
 import { DEFAULT_SHEET, engineInfo, FORMATS, formatInfo, normalizeSheet, type EngineId, type ExportSettings, type FormatId } from './types';
 import './export.css';
 import { leaveTileEdit } from '../tiles/tileEdit';
@@ -72,7 +74,7 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
 
   const info = formatInfo(s.format);
   const plan = useMemo(() => planExport(doc, s, frame), [doc, s, frame]);
-  const video = s.format === 'mp4' || s.format === 'webm';
+  const video = s.format === 'mp4' || s.format === 'webm' || s.format === 'prores';
   const videoSize = useMemo(() => planExport(doc, { ...s, format: 'mp4' }, frame), [doc, s, frame]);
 
   // Ask what this computer can encode, at the size that matters.
@@ -82,8 +84,15 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
     return () => void (live = false);
   }, [videoSize.width, videoSize.height, webmPref]);
 
+  const [prores, setProres] = useState<ProresSupport | null>(null);
+  useEffect(() => {
+    let live = true;
+    void proresSupport(true).then((p) => live && setProres(p));
+    return () => void (live = false);
+  }, []);
   const support = (f: FormatId) => (f === 'mp4' || f === 'webm') && caps ? caps[f] : null;
   const unavailable = (f: FormatId): string | null => {
+    if (f === 'prores') return prores && !prores.ok ? (prores.reason ?? 'ProRes is not available here.') : null;
     const sp = support(f);
     return sp && !sp.ok ? sp.reason : null;
   };
@@ -93,7 +102,7 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
     if (!caps || !unavailable(s.format)) return;
     const next = FORMATS.find((f) => !unavailable(f.id) && f.animated && f.id !== 'sheet');
     if (next) set({ format: next.id });
-  }, [caps]);
+  }, [caps, prores]);
 
   const alphaOk = s.format === 'webm' ? !!caps?.webm.alpha : info.alpha;
   const alphaWhy = s.format === 'mp4' ? "MP4 videos can't be see-through. Try WebM, GIF or PNG." : s.format === 'webm' ? "This computer can't make see-through WebM. Try GIF, APNG or PNG sequence." : '';
@@ -174,7 +183,7 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
                 onClick={() =>
                   set({
                     format: f.id,
-                    ...((f.id === 'mp4' || f.id === 'webm') && s.range === 'frame' ? { range: 'all' as const } : {}),
+                    ...((f.id === 'mp4' || f.id === 'webm' || f.id === 'prores') && s.range === 'frame' ? { range: 'all' as const } : {}),
                     // Sprites for games nearly always want a see-through background.
                     ...((f.id === 'sheet' || f.id === 'interactives') && s.format !== f.id ? { transparent: true } : {}),
                     // Interactives scales pixel art up itself, crisply, so the art's own size keeps the file small.
@@ -280,6 +289,14 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
             <p className="ex-note">Exports frame {plan.range.start + 1}, the one you are looking at.</p>
           )}
 
+          {s.format === 'lottie' ? (
+            <p className="ex-note">
+              Shapes stay shapes, so it plays sharp at any size. Symbols, in-betweens, the camera and clips (as markers) come along.{' '}
+              <button type="button" className="ex-link" onClick={() => openHelp('export-lottie')}>
+                What carries over
+              </button>
+            </p>
+          ) : (
           <fieldset>
             <legend>Size</legend>
             <div className="ex-seg">
@@ -296,6 +313,7 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
             </div>
             <p className="ex-note">{s.scale === art ? `Real size: one art pixel is one pixel (${artPx}).` : pixel ? 'Whole numbers keep every pixel sharp and square.' : 'Bigger is sharper but makes a bigger file.'}</p>
           </fieldset>
+          )}
 
           <fieldset>
             <legend>Background</legend>
@@ -304,6 +322,7 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
             </Check>
           </fieldset>
 
+          <LayeredNotes format={s.format} doc={doc} />
           {s.format === 'webm' && (
             <fieldset>
               <legend>Video codec</legend>
@@ -315,6 +334,21 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
                 ))}
               </div>
               <p className="ex-note">{caps?.webm.ok ? `Making this one with ${caps.webm.codec === 'av1' ? 'AV1' : caps.webm.codec === 'vp9' ? 'VP9' : 'VP8'}${s.transparent && caps.webm.alphaCodec && caps.webm.alphaCodec !== caps.webm.codec ? ` (${caps.webm.alphaCodec.toUpperCase()} for the see-through background)` : ''}.` : 'Also in Preferences > Behaviour.'}</p>
+            </fieldset>
+          )}
+
+          {s.format === 'svganim' && (
+            <fieldset>
+              <legend>Playback</legend>
+              <Check checked={s.loop} onChange={(v) => set({ loop: v })}>
+                Loop forever
+              </Check>
+              <p className="ex-note">
+                It plays by itself in any browser, also in an image tag.{' '}
+                <button type="button" className="ex-link" onClick={() => openHelp('export-svg-animated')}>
+                  How it works
+                </button>
+              </p>
             </fieldset>
           )}
 

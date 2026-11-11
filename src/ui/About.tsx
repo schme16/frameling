@@ -1,4 +1,5 @@
 // Help > About Frameling: the version, and Quill saying hello.
+import { line } from './mascot/lines';
 import { Logo } from './icons';
 import { Quill, useQuillShown } from './mascot';
 import { Modal } from './Modal';
@@ -19,7 +20,7 @@ function About() {
         {quill ? <Quill anim={[{ anim: 'wave', hold: 2480 }, { anim: 'idle' }]} size={96} /> : <Logo size={64} />}
         <h2>Frameling{v?.app ? ` ${v.app}` : ''}</h2>
         <p>A friendly tool for drawing and animating, vector and pixel alike. Made with care, and a little bit of glitter.</p>
-        {quill && <p className="ui-about-quill">This is Quill. His quills are coloured pencils, and he loves to help.</p>}
+        {quill && <p className="ui-about-quill">{line('about.quill')}</p>}
         {v?.electron && (
           <p className="ui-about-small">
             Electron {v.electron}, Chrome {v.chrome}

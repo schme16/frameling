@@ -106,6 +106,7 @@ export function newDrawingFor(doc: Doc, layer: Layer): Drawing {
     const g = tilemapGrid(doc, layer);
     return newTilemapDrawing(g.columns, g.rows);
   }
+  if (layer.kind === 'camera') return { id: uid('k'), kind: 'camera', view: { x: doc.width / 2, y: doc.height / 2, zoom: 1, rotation: 0 } };
   return newVectorDrawing();
 }
 

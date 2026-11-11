@@ -5,6 +5,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { AutosaveMeta, DocumentState, FileFilter, SaveChoice } from '../preload/api';
 import { ffmpegPath, mp4SoundToAac } from './media';
+import { registerVideoIpc } from './video';
+import { addLinked, canOpenOther, cleanFilters, isLibraryKind, isLinked, libraryId, listLibrary, pickFolder, readLibrary, readSmallFolder, removeLibrary, showLibraryFolder, writeLibrary } from './library';
 import { addRecent, clearAutosave, clearRecent, keepAutosave, lastDir, listKept, listRecent, readAutosave, readKept, rememberDir, removeKept, removeRecent, writeAutosave, writeFileAtomic } from './store';
 
 const FILTERS: FileFilter[] = [{ name: 'Frameling drawings', extensions: ['frameling'] }];
@@ -90,7 +92,8 @@ export function registerIpc(hooks: IpcHooks): void {
   handle('files:read', (_e, p: string) => {
     if (typeof p !== 'string') return { error: 'That is not a file path.' };
     // Opened by double-click, a recent entry or a drop: anything that ends in .frameling, or that was picked before.
-    if (!granted.has(key(p)) && path.extname(p).toLowerCase() !== '.frameling') return { error: 'Frameling only opens .frameling files.' };
+    const ext = path.extname(p).toLowerCase();
+    if (!granted.has(key(p)) && ext !== '.frameling' && ext !== '.flplay') return { error: 'Frameling only opens .frameling and .flplay files.' };
     return readFile(p);
   });
 
@@ -160,7 +163,7 @@ export function registerIpc(hooks: IpcHooks): void {
   });
 
   handle('files:write', (_e, p: string, bytes: Uint8Array) => {
-    if (typeof p !== 'string' || !granted.has(key(p))) return { error: `Frameling can only save to a place you picked.` };
+    if (typeof p !== 'string' || !(granted.has(key(p)) || isLinked(p))) return { error: `Frameling can only save to a place you picked.` };
     try {
       writeFileAtomic(p, Buffer.from(bytes));
       return { ok: true };
@@ -254,6 +257,50 @@ export function registerIpc(hooks: IpcHooks): void {
   ipcMain.on('app:saveBeforeCloseDone', (e, ok: boolean) => {
     if (e.sender !== hooks.window()?.webContents) return;
     hooks.saveBeforeCloseDone(!!ok);
+  });
+
+  // ProRes through FFmpeg (src/main/video.ts), only into files picked in an export dialog.
+  registerVideoIpc(handle, (p) => granted.has(key(p)));
+  // ------------------------------------------------ plugins, templates and Interactives packages
+
+  handle('files:openOther', async (_e, opts: { filters: FileFilter[]; title?: string }) => {
+    const filters = cleanFilters(opts?.filters);
+    if (!filters.length) return null;
+    const r = await dialog.showOpenDialog(hooks.window()!, { title: typeof opts.title === 'string' ? opts.title.slice(0, 80) : 'Open', defaultPath: lastDir(), properties: ['openFile'], filters });
+    if (r.canceled || !r.filePaths[0]) return null;
+    if (!canOpenOther(r.filePaths[0])) return { error: `Frameling can't open that kind of file here.` };
+    rememberDir(r.filePaths[0]);
+    return readFile(r.filePaths[0]);
+  });
+
+  handle('files:readFolder', async (_e, opts: { title?: string }) => {
+    const dir = await pickFolder(hooks.window()!, typeof opts?.title === 'string' ? opts.title.slice(0, 80) : 'Choose a folder', lastDir());
+    if (!dir) return null;
+    const files = readSmallFolder(dir);
+    return 'error' in files ? files : { path: dir, files };
+  });
+
+  // Only a package this session opened (or picked) can be linked, so the page can't name any file it likes.
+  handle('files:linkPlayable', (_e, p: string) => {
+    if (typeof p === 'string' && granted.has(key(p)) && path.extname(p).toLowerCase() === '.flplay') addLinked(p, writeFileAtomic);
+  });
+
+  handle('library:list', (_e, kind: unknown) => (isLibraryKind(kind) ? listLibrary(kind) : []));
+  handle('library:read', (_e, kind: unknown, id: unknown) => {
+    const i = libraryId(id);
+    return isLibraryKind(kind) && i ? readLibrary(kind, i) : null;
+  });
+  handle('library:write', (_e, kind: unknown, id: unknown, bytes: Uint8Array) => {
+    const i = libraryId(id);
+    if (!isLibraryKind(kind) || !i || !(bytes instanceof Uint8Array)) throw new Error('Not allowed');
+    writeLibrary(kind, i, bytes, writeFileAtomic);
+  });
+  handle('library:remove', (_e, kind: unknown, id: unknown) => {
+    const i = libraryId(id);
+    if (isLibraryKind(kind) && i) removeLibrary(kind, i);
+  });
+  handle('library:showFolder', (_e, kind: unknown) => {
+    if (isLibraryKind(kind)) showLibraryFolder(kind);
   });
 
   app.on('will-quit', () => {

@@ -1,0 +1,89 @@
+/* Your templates on the welcome sheet, and the Save as template dialog. Theme tokens only. */
+
+.tpl-section {
+  margin-top: 14px;
+}
+.tpl-section-title,
+.ui-examples h4.tpl-section-title {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: var(--fs-small);
+  font-weight: 800;
+}
+.tpl-card-wrap {
+  position: relative;
+  display: flex;
+}
+.tpl-card-wrap > .ui-example {
+  flex: 1;
+}
+.tpl-card-tools {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--radius-small);
+  background: var(--raised);
+  box-shadow: var(--shadow-small);
+  opacity: 0;
+  transition: opacity 0.15s var(--ease);
+}
+.tpl-card-wrap:hover .tpl-card-tools,
+.tpl-card-tools:focus-within {
+  opacity: 1;
+}
+.tpl-import {
+  border-style: dashed;
+  background: transparent;
+}
+.tpl-import-art {
+  display: grid;
+  place-items: center;
+  height: 96px;
+  border-radius: var(--radius-small);
+  background: var(--panel-2);
+  color: var(--muted);
+}
+.tpl-loading {
+  min-height: 40px;
+}
+.tpl-empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--fs-small);
+}
+
+.tpl-save-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 18px 0;
+}
+.tpl-save-intro,
+.tpl-save-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--fs-small);
+}
+.tpl-save-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.tpl-save-body textarea,
+.tpl-save-body select {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  resize: vertical;
+}
+.tpl-save-body .ui-choice-foot {
+  margin: 4px 0 0;
+  padding-bottom: 16px;
+}

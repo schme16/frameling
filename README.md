@@ -54,7 +54,7 @@ page. Everything else goes through that bridge, so very little code knows the di
 | Autosave and Recover unsaved work | IndexedDB, every 15 seconds and when the tab is hidden, kept 7 days | Same |
 | Install as an app, offline | Yes (manifest, service worker, opens .frameling files) | Offline after the first visit. Safari can add it to the Dock or Home Screen; Firefox can't install it |
 
-Not in the browser: "Show in folder", the native "Save changes?" on close (the browser's own "Leave site?" shows
+Not in the browser: ProRes export (it runs FFmpeg on the computer), fonts installed on the computer for text, "Show in folder", the native "Save changes?" on close (the browser's own "Leave site?" shows
 instead, and the work is put aside in Recover unsaved work), and shortcuts the browser keeps (Ctrl+N, Ctrl+W, Ctrl+T).
 The in-app help topic "Frameling in a web browser" says the same in plain words.
 
@@ -93,6 +93,31 @@ Two scripts in `brand/mascot/` still compose poses from those old part grids (`c
 writes `brand/ab/sad-quill/contact-6x.png`), and `redraw-arms.mjs` swaps every old arm for the chunky ones built in
 `arms.mjs`, in place. Hand edits made in Frameling are left alone by both.
 
+### Editing Quill's words
+
+Everything Quill says is in one file, `src/ui/mascot/lines.json`: the first-run hello, his reactions, the Strawberry
+gushing, nodding off, goodbye and welcome back, the quest cheers and badge card, the welcome sheet, About, empty
+states and his toasts. Each entry has the `text`, a `where` (when and where it shows) and the `vars` it uses. Words
+in `{curly}` brackets are filled in by the app, so keep them. A list is several bubbles shown together, or a set the
+app picks from (silly names, quest cheers). Quest step instructions are tutorial content and stay in
+`src/quests/library.ts`; help topics and plain app messages (errors, saving) aren't in it either.
+
+The easy way to edit them is the review page, `brand/dialogue/index.html` (open it straight from disk). Each line
+has its screenshot in place and a box to change it; your edits are kept in that browser until you reset them.
+
+1. Edit the lines on the page, then press **Download my changes** (or **Copy my changes** and paste into a file).
+2. `npm run dialogue:apply ~/Downloads/quill-lines-2026-11-11.json` merges them into `lines.json` and prints what
+   changed. It refuses the whole file, and writes nothing, if a line lost or gained a `{placeholder}` or names a line
+   that doesn't exist. Add `--check` to see the changes without writing them.
+3. `npm run dialogue:page` refreshes the page's text; `npm run dialogue:shots` rebuilds the app and retakes every
+   screenshot too (about two minutes; it drives an off-screen window, see `scripts/dialogue/shots.cjs`). A shot
+   that only shows the nearest moment says so under the line.
+
+Code reads the lines through `line(id, vars)`, `lines(id, vars)` (for lists) and `lineParts(id, vars)` (to fill a
+placeholder with bold text) in `src/ui/mascot/lines.ts`; the ids are typed, so a typo fails `npm run typecheck`. A new
+line goes in `lines.json` with its `where`, and in the moments list in `shots.cjs`. `test/ui/quill-lines.test.ts`
+checks every line is used, every id used exists, and the placeholders match.
+
 ## The Interactives package (.flplay)
 
 **File > Export for Interactives** (or the **Interactives** card in the Export window) writes one `.flplay` file: the
@@ -124,12 +149,47 @@ playable form of the animation, which Interactives drops onto a page as a "Frame
 
 Changes stay additive: a new field is optional, and anything that would break an older player bumps `version`.
 
+### Edit in Frameling (the round trip)
+
+**File > Open Interactives file...** (or double-clicking a `.flplay`, which the installers register) opens the
+`source.frameling` inside a package. Saving then writes the drawing back into the same `.flplay`, at the package's own
+`scale` and see-through choice, with the source included again (`src/interactives/`). The first save asks whether to
+just update the package or also keep a `.frameling` (Preferences > Behaviour). **File > Update the Interactives file
+when saving** turns it off for a drawing; the link is remembered per document id in `localStorage`
+(`frameling.playableLinks.v1`). The desktop side only writes to a package that was opened or picked
+(`files:linkPlayable` keeps that list in `linked-playables.json` in the user data folder).
+
+The installed app also answers `frameling://open?path=<absolute path to a .frameling or .flplay>` (registered by the
+installers; `src/main/library.ts` `fileFromUrl`). For a one-click **Edit in Frameling** in Interactives, its editor
+would need to:
+
+1. Know the local path of the `.flplay` (the desktop Interactives editor has it; a browser editor would have to
+   download the file first and use that path).
+2. Open `frameling://open?path=` with the path URL-encoded (`window.open` or `shell.openExternal`).
+3. Notice when the file changes (watch it, or a "Reload from Frameling" button) and load the new atlas.
+4. Offer it only when `manifest.source` isn't `null`, since without the source there's nothing to edit.
+
+## Plugins
+
+Sandboxed add-ons that add commands, exports and panels: see [docs/plugins.md](docs/plugins.md) for the API, the
+sandbox and the threat model. Examples are in `plugins/examples/`. Installed plugins live in `library/plugins/` in the
+user data folder (web: IndexedDB).
+
+## Templates
+
+Built-in templates are built in code (`src/templates/`). Your templates are `.frameling` files with a `template.json`
+beside the drawing (name, blurb, kind, tags, author, licence, card frame; `src/templates/community.ts`), kept in
+`library/templates/` in the user data folder (web: IndexedDB). Files dropped into that folder show up too. The welcome
+sheet lists sources from `registerTemplateSource` (`src/templates/user.ts`), so an online gallery can be added later
+as one more source with its own section; there is no server for one today.
+
 ## How it's put together
 
 - `src/main/`: the Electron main process (windows, menus, files).
 - `src/preload/`: the small, safe bridge between the page and the desktop (`window.frameling`).
 - `src/renderer/`: the app's interface (React and TypeScript, built with Vite).
 - `src/platform/`: which bridge the page has (desktop or browser), and the browser one itself.
+- `src/plugins/`: the plugin sandbox and API. `src/interactives/`: the .flplay round trip. `src/templates/`: templates.
 - `scripts/`: dev, build and local install scripts.
 - `.github/workflows/build.yml`: the Windows, macOS and Linux builds, and the web build.
 

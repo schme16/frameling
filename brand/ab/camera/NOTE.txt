@@ -1,0 +1,4 @@
+How the camera frame shows on the canvas (Camera and parallax example, frame 45, camera layer picked).
+A (built, default): everything outside the camera's view is dimmed, the frame is a solid purple outline with a "Camera 100%" tab, corner handles and a yellow turn knob.
+B: a dashed purple outline with viewfinder corner marks and nothing dimmed, so the whole scene stays bright.
+B can be tried in the app with ?debug and __framelingCameraLook('viewfinder') (src/camera/canvas.ts, setFrameLook).

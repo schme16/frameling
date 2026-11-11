@@ -58,6 +58,25 @@ export interface KeptAutosave {
 
 export type SaveChoice = 'save' | 'discard' | 'cancel';
 
+/** What the app keeps in its own folder: installed plugins and your templates. */
+export type LibraryKind = 'plugins' | 'templates';
+
+export interface LibraryEntry {
+  id: string;
+  size: number;
+  modified: number;
+}
+
+/** A small store of files the app keeps for itself (desktop: a folder in the user data dir; web: IndexedDB). */
+export interface LibraryApi {
+  list(kind: LibraryKind): Promise<LibraryEntry[]>;
+  read(kind: LibraryKind, id: string): Promise<Uint8Array | null>;
+  write(kind: LibraryKind, id: string, bytes: Uint8Array): Promise<void>;
+  remove(kind: LibraryKind, id: string): Promise<void>;
+  /** Desktop only: shows the folder in the file manager, so files can be dropped in by hand. */
+  showFolder?(kind: LibraryKind): Promise<void>;
+}
+
 export interface FramelingApi {
   /** Which kind of home the page has: the desktop app, or a web browser (src/platform). Missing means desktop. */
   kind?: 'desktop' | 'web';
@@ -79,6 +98,12 @@ export interface FramelingApi {
     /** Writes several files into a folder that pickExportFolder returned. null means they chose not to replace existing files. */
     writeMany(folder: string, files: { name: string; bytes: Uint8Array }[]): Promise<{ paths: string[] } | FileFailure | null>;
     showInFolder(path: string): Promise<void>;
+    /** Shows the Open dialog for other kinds of file (a plugin, a template, an Interactives package). null means they cancelled. */
+    openOther?(opts: { filters: FileFilter[]; title?: string }): Promise<OpenedFile | FileFailure | null>;
+    /** Desktop only: pick a folder and read the files in it (a plugin being worked on). Small folders only. */
+    readFolder?(opts: { title?: string }): Promise<{ path: string; files: { name: string; bytes: Uint8Array }[] } | FileFailure | null>;
+    /** Lets Frameling write back to an Interactives package it opened, in later sessions too. */
+    linkPlayable?(path: string): Promise<void>;
   };
   /** Video helpers that need programs on the computer (missing in a browser). */
   media?: {
@@ -87,6 +112,7 @@ export interface FramelingApi {
     /** An MP4 with its sound turned into AAC (the picture untouched), or null when it couldn't be done. */
     toAac(bytes: Uint8Array): Promise<Uint8Array | null>;
   };
+  library?: LibraryApi;
   recent: {
     list(): Promise<RecentFile[]>;
     add(path: string): Promise<void>;
@@ -102,6 +128,16 @@ export interface FramelingApi {
     listKept(): Promise<KeptAutosave[]>;
     readKept(id: string): Promise<{ bytes: Uint8Array; meta: AutosaveMeta } | null>;
     removeKept(id: string): Promise<void>;
+  };
+  /** Video made by FFmpeg on this computer (desktop only; missing in the web version). */
+  video?: {
+    /** Whether FFmpeg is here and can make ProRes, and if not why, in plain words. */
+    probe(): Promise<{ ok: boolean; reason?: string; version?: string }>;
+    /** Starts a ProRes 4444 .mov at a path pickExportFile returned. Frames are raw RGBA, `width * height * 4` bytes. */
+    start(path: string, opts: { width: number; height: number; fps: number; alpha: boolean }): Promise<{ id: number } | FileFailure>;
+    frame(id: number, rgba: Uint8Array): Promise<{ ok: true } | FileFailure>;
+    finish(id: number): Promise<{ ok: true } | FileFailure>;
+    cancel(id: number): Promise<void>;
   };
   app: {
     /** Tells the window about the document (title bar dot on macOS, "Save changes?" on close). */

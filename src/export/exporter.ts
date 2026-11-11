@@ -15,6 +15,7 @@ import { canMakeAac } from '../audio/export';
 import { choose } from '../core/choices';
 import type { Mp4SoundChoice } from './choices';
 import './choices';
+import { runProres } from './prores';
 import { DEFAULT_SHEET, formatInfo, normalizeSheet, type ExportSettings, type SheetSettings } from './types';
 
 const KEY = 'frameling.export.last';
@@ -117,6 +118,18 @@ export async function exportDocument(settings: ExportSettings, signal: AbortSign
     videoAlpha = c.alpha;
     // Asked for see-through and the usual codec cannot: use the one that can.
     if (settings.format === 'webm' && settings.transparent && c.alphaCodec) videoCodec = c.alphaCodec;
+  }
+
+  if (settings.format === 'prores') {
+    try {
+      await runProres(doc, settings, frame, target, signal, onProgress);
+    } catch (e) {
+      if (isCancelled(e)) return 'cancelled';
+      throw new ExportProblem(e instanceof Error ? e.message : String(e));
+    }
+    saveLastSettings(settings);
+    notify(`Exported ${baseName(target)}.`, 'success', can('showInFolder') ? { label: 'Show in folder', run: () => void api.files.showInFolder(target!) } : undefined, 9000, 'cheer');
+    return 'done';
   }
 
   let result;

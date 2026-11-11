@@ -5,6 +5,14 @@ import type { ReactNode } from 'react';
 const dot = (cx: number, cy: number, r = 1.2) => <circle cx={cx} cy={cy} r={r} fill="currentColor" stroke="none" />;
 
 const ICONS: Record<string, ReactNode> = {
+  // plugins and templates
+  plugin: <path d="M9 4.5a2 2 0 0 1 4 0V7h4a1 1 0 0 1 1 1v3.5h-1.5a2 2 0 0 0 0 4H18V19a1 1 0 0 1-1 1h-3.5v-1.5a2 2 0 0 0-4 0V20H6a1 1 0 0 1-1-1v-4h1.5a2 2 0 0 0 0-4H5V8a1 1 0 0 1 1-1h3z" />,
+  template: (
+    <>
+      <rect x="4" y="4" width="16" height="16" rx="2.5" />
+      <path d="M4 9h16M9 9v11" />
+    </>
+  ),
   // symbols and tweens
   symbol: (
     <>
@@ -25,6 +33,35 @@ const ICONS: Record<string, ReactNode> = {
       <path d="M4 18c3-9 6 3 9-5s5-6 7-6" strokeDasharray="2.5 3" />
       {dot(4, 18, 2)}
       <path d="M17 4.5l3 2.5-3 2.5" />
+    </>
+  ),
+  // shape tweens, camera, clip flow
+  morph: (
+    <>
+      <rect x="3" y="9" width="8" height="8" rx="1.5" />
+      <circle cx="17.5" cy="13" r="4" />
+      <path d="M11.5 7.5c1.5-1.5 3.5-1.5 5 0" />
+    </>
+  ),
+  hint: (
+    <>
+      <circle cx="12" cy="12" r="7" />
+      <path d="M10 15.5V9.5h2.2a2 2 0 0 1 0 4H10" />
+    </>
+  ),
+  camera: (
+    <>
+      <rect x="3" y="7" width="13" height="10" rx="2.5" />
+      <path d="M16 11l5-3v8l-5-3" />
+      {dot(7.5, 12, 1.4)}
+    </>
+  ),
+  flow: (
+    <>
+      <rect x="3" y="4" width="7" height="5" rx="1.5" />
+      <rect x="14" y="15" width="7" height="5" rx="1.5" />
+      <path d="M6.5 9v3.5a2.5 2.5 0 0 0 2.5 2.5h4" />
+      <path d="M11.5 13l2 2-2 2" />
     </>
   ),
   // bones
@@ -532,6 +569,61 @@ const ICONS: Record<string, ReactNode> = {
       <rect x="13" y="13" width="7" height="7" rx="1" fill="currentColor" />
       <rect x="13" y="4" width="7" height="7" rx="1" />
       <rect x="4" y="13" width="7" height="7" rx="1" />
+    </>
+  ),
+  text: (
+    <>
+      <path d="M5 6.5V5h14v1.5" />
+      <path d="M12 5v14" />
+      <path d="M9 19h6" />
+    </>
+  ),
+  particles: (
+    <>
+      <circle cx="5.5" cy="18.5" r="2" fill="currentColor" />
+      <circle cx="11" cy="12" r="1.6" fill="currentColor" />
+      <circle cx="16" cy="7.5" r="1.3" fill="currentColor" />
+      <circle cx="19.5" cy="13" r="1" fill="currentColor" />
+      <circle cx="12.5" cy="4.5" r="0.9" fill="currentColor" />
+      <circle cx="17" cy="18" r="0.9" fill="currentColor" />
+    </>
+  ),
+  'pt-burst': (
+    <>
+      <circle cx="12" cy="12" r="2" fill="currentColor" />
+      <path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2 2M16.4 16.4l2 2M5.6 18.4l2-2M16.4 7.6l2-2" />
+    </>
+  ),
+  'pt-smoke': (
+    <>
+      <path d="M7 17.5a3.5 3.5 0 0 1 .4-7 4.5 4.5 0 0 1 8.7-.8 3.9 3.9 0 0 1 .4 7.8z" />
+      <path d="M9 21h6" opacity="0.6" />
+    </>
+  ),
+  'pt-rain': <path d="M8 4l-2 5M14 4l-2 5M20 4l-2 5M8 13l-2 5M14 13l-2 5M20 13l-2 5" />,
+  'pt-snow': (
+    <>
+      <path d="M12 3v18M4.2 7.5l15.6 9M4.2 16.5l15.6-9" />
+      <path d="M10 4.5l2 1.5 2-1.5M10 19.5l2-1.5 2 1.5" />
+    </>
+  ),
+  'pt-confetti': (
+    <>
+      <rect x="4" y="5" width="4" height="2.4" rx="0.5" transform="rotate(-20 6 6)" fill="currentColor" />
+      <rect x="14" y="4" width="4" height="2.4" rx="0.5" transform="rotate(25 16 5)" />
+      <rect x="9" y="11" width="4" height="2.4" rx="0.5" transform="rotate(10 11 12)" fill="currentColor" />
+      <rect x="16" y="14" width="4" height="2.4" rx="0.5" transform="rotate(-35 18 15)" fill="currentColor" />
+      <rect x="5" y="17" width="4" height="2.4" rx="0.5" transform="rotate(40 7 18)" />
+    </>
+  ),
+  'pt-dust': (
+    <>
+      <circle cx="6" cy="8" r="1" fill="currentColor" />
+      <circle cx="14" cy="5.5" r="0.8" fill="currentColor" />
+      <circle cx="18.5" cy="11" r="1.2" fill="currentColor" />
+      <circle cx="10" cy="13" r="0.9" fill="currentColor" />
+      <circle cx="5.5" cy="18" r="1.1" fill="currentColor" />
+      <circle cx="15" cy="18.5" r="0.8" fill="currentColor" />
     </>
   ),
 };

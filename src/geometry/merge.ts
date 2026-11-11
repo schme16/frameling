@@ -303,7 +303,7 @@ export function geomToFills(g: Geom, color: Color, opacity: number, keepId?: Id)
 // ---------------------------------------------------------------- merging
 
 /** Shapes that take part in merging: anything not in a group. */
-export const mergeable = (s: Shape): boolean => !s.group && s.type !== 'instance';
+export const mergeable = (s: Shape): boolean => !s.group && s.type !== 'instance' && s.type !== 'text' && s.type !== 'particles';
 
 const keyOf = (color: Color, opacity: number) => `${color.toLowerCase()}@${opacity}`;
 

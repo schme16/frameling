@@ -1,8 +1,8 @@
 # Effects and compositing (phase 5, first part)
 
-Kept light on purpose: it isn't After Effects. This part covers blend modes, the per-layer effects stack, clipping,
-masks and layer folders. Particles, text animators, expressions and PSD / PDF / `.ai` / ProRes export come later; how
-each fits is at the bottom.
+Kept light on purpose: it isn't After Effects. The first part covers blend modes, the per-layer effects stack,
+clipping, masks and layer folders. The second part adds particles, text with text animators, and PSD / PDF / `.ai` /
+ProRes export (sections near the end). Expressions and shader effects come later; how they fit is at the bottom.
 
 ## What's in the document
 
@@ -102,20 +102,68 @@ modes mix with it the same way exports do.
 - `warm()` (pre-rasterising before playback) warms layer bitmaps, not effect pictures; the first pass over an
   animated effect computes it live.
 
+## Particles (second part)
+
+An emitter is a shape in a vector drawing (`type: 'particles'`, `src/particles`), not a layer kind: it moves, scales
+and turns with the Select tool, sits on any vector layer, and gets the layer's blend modes, effects, masks and folders
+for free. "Add particles" asks once (choice `particles.where`) whether it goes on a layer of its own (the default).
+
+- **No simulation.** Particle n is born at `n / rate` (burst ones at 0) and its traits come from a hash of
+  (seed, n, trait). Where it is at age `a` is a closed formula: constant pull (gravity, wind) with linear drag,
+  `x = v0 (1 - e^-ka) / k + g / k (a - (1 - e^-ka) / k)`, plus a sine wander. So frame 500 costs the same as frame 1,
+  scrubbing backwards needs no cache to be exact, and every export matches the canvas. The alive set at time T is the
+  range of n born in `[T - maxLife, T]`, capped (`max`, hard cap 20000).
+- **Posing.** `poseAt` (core/symbols.ts) poses moving shapes per frame (`poseMovingShape`): an emitter becomes a
+  `PosedParticles` with its time, and the particle list is worked out once per posed object. Posed drawings are cached
+  per cel and frame like instances, so the canvas's bitmap cache and the effect cache work unchanged.
+- **Sprites:** dot, soft puff (a cached radial sprite per colour), square, star, twinkle, streak (along the velocity),
+  paper bit (flips), snowflake, or any symbol (its own animation plays from each particle's birth).
+- **Presets** (`PARTICLE_PRESETS`): Sparkle burst, Smoke, Rain, Snow, Confetti, Dust. Particles panel: preset cards,
+  then plain-words settings in folding sections. A/B of sliders against number boxes: `brand/ab/particles/`.
+
+## Text (second part)
+
+Text is a shape too (`type: 'text'`, `src/text`): words, font, size, weight, colour, alignment, spacing, a transform,
+and optional `animators`. Nunito and Inter ship with the app; the desktop app also lists common fonts found on the
+computer (probed by measuring). Layout measures prefix widths with the canvas, so kerning is kept (`layoutText`).
+
+- **Typing on the canvas:** the Text tool (T) puts a see-through textarea over the text with the same font, size and
+  transform; it holds the caret and selection while the canvas draws the real text. Nothing is added until the first
+  letter. Double-click text with Select or Text to type into it.
+- **Text animators** (Fade, Slide, Grow, Spin, Typewriter, Wave): per letter, word or line, with order (forward,
+  backward, middle, shuffled by seed), start, frames each, stagger and easing. The ordering, seeded shuffle and window
+  maths are ported from Interactives' `textmod.ts`, cut down to frame-based presets. Animated text is posed per frame
+  like particles; still text is never re-posed.
+- **Convert to shapes** (Ctrl+Shift+O) draws the text large, traces it (`traceMask` + `fitClosedLoop`) and makes one
+  even-odd fill. It works with any font, including ones only on this computer. PDF and `.ai` use the same outlines.
+- **SVG** keeps text as `<text>` (per glyph when animated); particles become circles, rects and polygons.
+
+## PSD, PDF, Illustrator and ProRes export (second part)
+
+- **PSD** (`export/psd.ts`, own writer, RLE): one PSD layer per Frameling layer (effects baked into its pixels via
+  the compositor, blend and opacity kept as PSD settings), names (plus Unicode `luni`), visibility, clipping, folders as
+  groups (pass-through when plain), mask layers in a folder as the group's layer mask, and the merged picture.
+  Structure: `export/layered.ts` `layeredPlan`. Checked with ag-psd (dev dependency, tests only) and ImageMagick.
+- **PDF** (`export/pdf.ts`, own writer): one page per frame, shapes as vector paths (brush strokes as their outline,
+  text as traced outlines, particles as primitives), each layer a PDF optional content group, layer and folder opacity
+  and blend modes as transparency groups (add maps to Screen). Pixel and tile layers, layers with effects, clipped
+  sets and masked sets become pictures with an SMask at twice the page size (`flatPlan`). Checked with Poppler and
+  Ghostscript.
+- **`.ai`**: the same PDF with the `.ai` extension. Illustrator opens PDF-compatible files as plain artwork (every
+  path editable, PDF layers as layers). There is no `AIPrivateData`, so Illustrator asks to save as a full .ai the first
+  time. Checked with Poppler (pdfinfo, pdftoppm) and Ghostscript; not yet opened in a real Illustrator, Inkscape or
+  Affinity, which all import PDF.
+- **ProRes** (`export/prores.ts`, `main/video.ts`): desktop only. The page draws each frame and streams raw RGBA over
+  IPC to FFmpeg (`prores_ks`, profile 4444, `yuva444p10le` when see-through), which writes the picked file. FFmpeg is
+  found on PATH, the usual install places, or `FRAMELING_FFMPEG`; without it the card says why in plain words.
+
+Known gaps in this part: Lottie export leaves text and particles out; PDF draws pixel art bent on a mesh (rigging)
+unbent; folder effects aren't baked into PSD; a mask layer on the stage (not in a folder) comes into a PSD as a hidden
+layer; shape tweens hold text and particles as they are on the start key; SVG draws symbol particles as dots.
+
 ## Later, and how it fits
 
-- **Particles**: a new layer kind (`kind: 'particles'`) whose drawing is an emitter description; the compositor
-  already takes a per-layer paint callback, so it slots in as one more `paint` and gets blend modes, effects, masks
-  and folders for free. Simulation must be deterministic per frame (seeded) so exports and scrubbing agree.
-- **Text animators**: Interactives' text modifiers (`interactives-player/src/textmod.ts`, pure: unit ranges, shapes,
-  per-piece styles) port almost as they are once Frameling has a text shape. Per-letter offsets, rotation, scale,
-  opacity and blur map onto the renderer; the weights are already frame-based.
 - **Expressions**: an optional `expr` next to an effect key's number (and later any animatable number), evaluated per
   frame by a small sandboxed evaluator like Interactives' `expr.ts`. The keys model above stays the source of truth.
 - **Shader effects**: Interactives' shader layer (`shader.ts`, shared WebGL context, presets) could become a seventh
   effect kind, run on the layer buffer. Needs a fallback for exports without WebGL.
-- **PSD / PDF / .ai export**: blend modes map one to one onto PSD; folders map to PSD groups, clipping to PSD
-  clipping, mask layers to group masks (rasterised). Effects would be baked into the layer's pixels. PDF and `.ai`
-  can carry blend modes and soft masks natively; effects get rasterised. All of it reads the same plan
-  (`buildPlan`), so the structure is decided in one place.
-- **ProRes**: an export container question, not a compositing one; every frame already comes out of `renderFrame`.

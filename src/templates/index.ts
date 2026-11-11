@@ -7,6 +7,8 @@ import { makeBlankPixel, makeBlankVector } from './blank';
 import { makeBlink } from './blink';
 import { makeBouncingBall } from './bouncing-ball';
 import { makeBouncingLogo } from './bouncing-logo';
+import { makeCameraPan } from './camera-pan';
+import { makeMorph } from './morph';
 import { makeFlourSack } from './flour-sack';
 import { makeHeroSprite } from './hero-sprite';
 import { makeLipSync } from './lip-sync';
@@ -73,6 +75,22 @@ export const TEMPLATES: Template[] = [
     kind: 'vector',
     thumbnail: () => 30,
     make: makeBouncingLogo,
+  },
+  {
+    id: 'morphing-shapes',
+    name: 'Morphing shapes',
+    blurb: 'A square melts into a circle, a star, then back, with shape tweens. Try it: go to frame 15 and redraw the circle as a heart, then press play.',
+    kind: 'vector',
+    thumbnail: () => 20,
+    make: makeMorph,
+  },
+  {
+    id: 'camera-parallax',
+    name: 'Camera and parallax',
+    blurb: 'A camera pans across a valley and zooms in on a house, with far hills drifting slower. Try it: press Shift+C to look through the camera, or give the Near hills a different distance in the Camera panel.',
+    kind: 'vector',
+    thumbnail: () => 20,
+    make: makeCameraPan,
   },
   {
     id: 'puppet',
