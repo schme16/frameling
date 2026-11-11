@@ -31,6 +31,8 @@ import {
   type Pt,
   type Rect,
 } from '../canvas/geometry';
+import { current, isDraft } from 'immer';
+import { isInBetween, shownDrawing } from '../core/symbols';
 import { activeDrawing, activeLayer, editActiveDrawing } from './edit';
 import { SelectOptions } from './options/SelectOptions';
 import { reportEdit } from './util';
@@ -88,9 +90,20 @@ function setSelection(ids: Id[]): void {
   store().setUi({ selection: ids });
 }
 
+// The drawing as it shows: on an in-between of a tween, its symbols are where they are on this frame, so the box,
+// clicks and drags match what you see.
 function vectorDrawing(): VectorDrawing | undefined {
-  const d = activeDrawing();
+  const { layer } = activeLayer();
+  const { doc, ui } = store().get();
+  const d = layer ? shownDrawing(doc, layer, ui.frame) : activeDrawing();
   return d && d.kind === 'vector' ? d : undefined;
+}
+
+/** The selection is being shown mid-tween (not as stored on the key). */
+function midTween(): boolean {
+  const { layer } = activeLayer();
+  const { doc, ui } = store().get();
+  return !!layer && isInBetween(doc, layer, ui.frame);
 }
 
 /** The matrix the current gesture is applying. */
@@ -246,8 +259,15 @@ function up(e: ToolPointer, ctx: ToolContext): void {
     ctx.requestOverlay();
     return;
   }
+  const between = midTween();
   const r = editActiveDrawing(label, 'vector', (d) => {
-    d.shapes = d.shapes.map((x) => repl.get(x.id) ?? x);
+    if (!between) {
+      d.shapes = d.shapes.map((x) => repl.get(x.id) ?? x);
+      return;
+    }
+    // Mid-tween: the same move applied to whatever the frame ends up holding, a new key (made from the in-between)
+    // or the key before (moved by the same amount).
+    d.shapes = d.shapes.map((x) => (repl.has(x.id) ? transformShape((isDraft(x) ? current(x) : x) as Shape, m) : x));
   });
   setLive(null);
   reportEdit(ctx, r);
