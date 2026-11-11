@@ -72,4 +72,38 @@ A copy left behind by a crash is kept in the same list, even if you press **Not 
 - There's one live safety copy at a time (the latest drawing you worked on). Kept copies are one per drawing, the newest.
 - None of this ever touches your own file.`
   },
+  {
+    id: 'version-history',
+    media: 'version-history.png',
+    title: 'Versions: go back to an earlier drawing',
+    section: 'Files',
+    summary: 'Frameling keeps earlier versions of your drawing as you work. Look back through them and bring one back.',
+    keywords: ['version', 'versions', 'version history', 'history', 'restore', 'revert', 'go back', 'earlier', 'older', 'snapshot', 'checkpoint', 'time machine', 'backup'],
+    body: `Tried something and liked it better before? Open **File > Versions...** to look back.
+
+## Versions Frameling keeps for you
+
+- **Every 10 minutes** while you're drawing, if something changed.
+- **Each time you save**, if something changed since the last version.
+- **Named versions**, whenever you want one: **File > Save a version...** (**Ctrl+Alt+S**). Give it a name like "Before the big change".
+
+Versions are kept in Frameling's own folder, never in your file, so your file stays the size it was.
+
+## Looking back
+
+The list shows each version, newest first, with a small picture and when it was made. Pick one to see it bigger. Drag the **Frame** slider to look through its frames.
+
+## Bringing one back
+
+- **Bring this back**: your drawing goes back to that version. It's one step, so **Ctrl+Z** (undo) brings your newer work straight back. Frameling also keeps a version of how it was, just in case.
+- **Open as a copy**: the version opens as a new, unsaved drawing, and your current drawing stays as it is.
+
+The first time, Frameling asks which of these you'd like **Bring this back** to do. You can change it later in Preferences > Behaviour.
+
+## How long they're kept
+
+- **Named versions** are kept until you delete them.
+- **Automatic versions**: all of them from the last hour, then one an hour for a day, then one a day for 2 weeks. Older ones are tidied away.
+- Press **Name it** on an automatic version to keep it for good. **Delete** removes a version straight away.`
+  },
 ]);
