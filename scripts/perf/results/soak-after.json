@@ -1,0 +1,228 @@
+{
+  "env": {
+    "label": "soak-after",
+    "cpuSlowdown": 1,
+    "electron": "45.3.0",
+    "chrome": "156.0.8078.96",
+    "cpu": "AMD Ryzen 9 7900X 12-Core Processor",
+    "window": [
+      1400,
+      900
+    ],
+    "gpu2dCanvas": "enabled",
+    "gpuFeatures": {
+      "canvas": "enabled",
+      "gpu_compositing": "enabled"
+    },
+    "gpuDevice": {
+      "vendorId": 4098
+    },
+    "dpr": 1,
+    "idleRafMs": 6.061538461538458,
+    "renderer": "/mnt/109313D2109313D2/projects/frameling-wt/startup/dist/renderer",
+    "when": "2026-11-11T13:34:24.622Z"
+  },
+  "soak": {
+    "kitchenSink600": {
+      "frames": 600,
+      "heapMB": [
+        8.4,
+        10.6,
+        10.7,
+        10.9,
+        11
+      ],
+      "growthAfterRound2MB": 0.3,
+      "bitmapCache": [
+        {
+          "entries": 212,
+          "megapixels": 39.9
+        },
+        {
+          "entries": 212,
+          "megapixels": 39.9
+        },
+        {
+          "entries": 212,
+          "megapixels": 39.9
+        },
+        {
+          "entries": 212,
+          "megapixels": 39.9
+        }
+      ],
+      "exportMs": [
+        6761,
+        3177,
+        5352,
+        3183
+      ],
+      "snapshotDiffRound2ToLast": {
+        "totalKB": 334,
+        "top": [
+          {
+            "name": "(code)",
+            "dCount": 395,
+            "dKB": 247
+          },
+          {
+            "name": "blink::HeapHashTableBacking<blink::HashTable<cppgc::internal",
+            "dCount": 0,
+            "dKB": 24
+          },
+          {
+            "name": "Object",
+            "dCount": 712,
+            "dKB": 16
+          },
+          {
+            "name": "(array)",
+            "dCount": 6,
+            "dKB": 14
+          },
+          {
+            "name": "system / WeakArrayList",
+            "dCount": 47,
+            "dKB": 14
+          },
+          {
+            "name": "(number)",
+            "dCount": 599,
+            "dKB": 7
+          },
+          {
+            "name": "LayoutShift",
+            "dCount": 20,
+            "dKB": 3
+          },
+          {
+            "name": "DOMRectReadOnly",
+            "dCount": 44,
+            "dKB": 2
+          },
+          {
+            "name": "(object shape)",
+            "dCount": 14,
+            "dKB": 1
+          },
+          {
+            "name": "system / ProtectedFixedArray",
+            "dCount": 38,
+            "dKB": 1
+          },
+          {
+            "name": "Array",
+            "dCount": 33,
+            "dKB": 1
+          },
+          {
+            "name": "(concatenated string)",
+            "dCount": 35,
+            "dKB": 1
+          }
+        ]
+      }
+    },
+    "strokes600": {
+      "frames": 600,
+      "heapMB": [
+        97.5,
+        101.2,
+        101.2,
+        100.9,
+        101.2
+      ],
+      "growthAfterRound2MB": 0,
+      "bitmapCache": [
+        {
+          "entries": 165,
+          "megapixels": 39.9
+        },
+        {
+          "entries": 165,
+          "megapixels": 39.9
+        },
+        {
+          "entries": 165,
+          "megapixels": 39.9
+        },
+        {
+          "entries": 165,
+          "megapixels": 39.9
+        }
+      ],
+      "exportMs": [
+        4164,
+        3814,
+        3874,
+        3785
+      ],
+      "snapshotDiffRound2ToLast": {
+        "totalKB": 275,
+        "top": [
+          {
+            "name": "(code)",
+            "dCount": 449,
+            "dKB": 216
+          },
+          {
+            "name": "(array)",
+            "dCount": -34,
+            "dKB": 19
+          },
+          {
+            "name": "Object",
+            "dCount": 670,
+            "dKB": 15
+          },
+          {
+            "name": "(number)",
+            "dCount": 616,
+            "dKB": 7
+          },
+          {
+            "name": "system / WeakArrayList",
+            "dCount": 0,
+            "dKB": 7
+          },
+          {
+            "name": "Array",
+            "dCount": 421,
+            "dKB": 7
+          },
+          {
+            "name": "DOMRectReadOnly",
+            "dCount": 36,
+            "dKB": 2
+          },
+          {
+            "name": "LayoutShift",
+            "dCount": 16,
+            "dKB": 2
+          },
+          {
+            "name": "system / ProtectedFixedArray",
+            "dCount": 60,
+            "dKB": 1
+          },
+          {
+            "name": "LayoutShiftAttribution",
+            "dCount": 18,
+            "dKB": 1
+          },
+          {
+            "name": "(string)",
+            "dCount": 619,
+            "dKB": 0
+          },
+          {
+            "name": "(object shape)",
+            "dCount": 7,
+            "dKB": 0
+          }
+        ]
+      }
+    }
+  },
+  "consoleErrors": []
+}

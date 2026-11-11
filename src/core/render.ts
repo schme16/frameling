@@ -38,25 +38,30 @@ const strokeCache = new WeakMap<StrokeShape, Path2D>();
 const pathCache = new WeakMap<FillShape | PathShape, Path2D>();
 const strokeOutlineCache = new WeakMap<StrokeShape, number[][]>();
 
-/** The filled outline polygon of a brush stroke, in document pixels. */
+/** The filled outline polygon of a brush stroke, worked out fresh. */
+function computeOutline(s: StrokeShape): number[][] {
+  const b = s.brush;
+  const simulate = s.points.every((p) => p.p === 0.5);
+  return getStroke(
+    s.points.map((p) => [p.x, p.y, p.p]),
+    {
+      size: b.size,
+      thinning: b.thinning,
+      smoothing: b.smoothing,
+      streamline: b.streamline,
+      simulatePressure: simulate,
+      start: { taper: b.taperStart, cap: b.capStart },
+      end: { taper: b.taperEnd, cap: b.capEnd },
+      last: true,
+    },
+  );
+}
+
+/** The filled outline polygon of a brush stroke, in document pixels. Kept for strokes that are hit-tested or exported. */
 export function strokeOutline(s: StrokeShape): number[][] {
   let o = strokeOutlineCache.get(s);
   if (!o) {
-    const b = s.brush;
-    const simulate = s.points.every((p) => p.p === 0.5);
-    o = getStroke(
-      s.points.map((p) => [p.x, p.y, p.p]),
-      {
-        size: b.size,
-        thinning: b.thinning,
-        smoothing: b.smoothing,
-        streamline: b.streamline,
-        simulatePressure: simulate,
-        start: { taper: b.taperStart, cap: b.capStart },
-        end: { taper: b.taperEnd, cap: b.capEnd },
-        last: true,
-      },
-    );
+    o = computeOutline(s);
     strokeOutlineCache.set(s, o);
   }
   return o;
@@ -86,7 +91,9 @@ export function outlinePath(points: number[][]): Path2D {
 export function strokePath(s: StrokeShape): Path2D {
   let p = strokeCache.get(s);
   if (!p) {
-    p = outlinePath(strokeOutline(s));
+    // Drawing only needs the Path2D, so the outline isn't kept too: as arrays of points it is several times the size
+    // of the stroke, and a long animation has a lot of strokes (300 MB of them in a 600 frame, 120,000 stroke test).
+    p = outlinePath(strokeOutlineCache.get(s) ?? computeOutline(s));
     strokeCache.set(s, p);
   }
   return p;

@@ -7,6 +7,7 @@ import type { Doc } from '../core/format';
 import { store } from '../core/store';
 import { detectCapabilities } from './capabilities';
 import { exportDocument } from './exporter';
+import { runExport } from './run';
 import { defaultSettings, planExport } from './plan';
 import type { ExportSettings } from './types';
 
@@ -64,6 +65,14 @@ if (typeof window !== 'undefined' && new URLSearchParams(location.search).has('d
     caps: (w: number, h: number) => detectCapabilities(w, h),
     addClip: (name: string, start: number, end: number) => store().update('Add clip', (d) => void d.clips.push({ id: 'clip-' + name, name, start, end, loop: true })),
     setFrame: (n: number) => store().setUi({ frame: n }),
+    /** Makes the export's bytes without saving them anywhere (the perf soak test). Returns the size and time. */
+    encode: async (s: ExportSettings) => {
+      const t0 = performance.now();
+      const st = store().get();
+      const r = await runExport({ doc: rootDoc(st.doc), settings: s, currentFrame: st.ui.frame, signal: new AbortController().signal, onProgress: () => undefined, appVersion: 'perf' });
+      const bytes = r.kind === 'file' ? r.bytes.length : -1;
+      return { bytes, ms: Math.round(performance.now() - t0) };
+    },
     /** Runs an export. `cancelAfterMs` presses Cancel that long after the start. */
     run: async (s: ExportSettings, cancelAfterMs?: number) => {
       const ac = new AbortController();

@@ -493,34 +493,63 @@ async function main() {
 
   // ------------------------------------------------------------------ soak (memory over repeated use)
   // A heap snapshot summed by constructor: { name: { count, size } }.
+  // Snapshots of big documents are far past the longest string V8 allows, so the chunks go to a file and the nodes and
+  // strings are read from it piecewise.
   async function heapSummary() {
     await js('window.__h.heap()');
     const d = wc.debugger;
     if (!d.isAttached()) d.attach('1.3');
-    let chunks = [];
+    const file = path.join(os.tmpdir(), `frameling-heap-${process.pid}.heapsnapshot`);
+    const fd = fs.openSync(file, 'w');
     const onMsg = (_e, method, params) => {
-      if (method === 'HeapProfiler.addHeapSnapshotChunk') chunks.push(params.chunk);
+      if (method === 'HeapProfiler.addHeapSnapshotChunk') fs.writeSync(fd, params.chunk);
     };
     d.on('message', onMsg);
     await d.sendCommand('HeapProfiler.enable');
     await d.sendCommand('HeapProfiler.collectGarbage');
     await d.sendCommand('HeapProfiler.takeHeapSnapshot', { reportProgress: false });
     d.removeListener('message', onMsg);
-    const snap = JSON.parse(chunks.join(''));
-    chunks = null;
-    const f = snap.snapshot.meta.node_fields;
-    const types = snap.snapshot.meta.node_types[0];
+    fs.closeSync(fd);
+    const buf = fs.readFileSync(file);
+    fs.rmSync(file, { force: true });
+    const metaEnd = buf.indexOf('"nodes":[');
+    const meta = JSON.parse(buf.subarray(buf.indexOf('{"node_fields"'), buf.indexOf(',"node_count"')).toString());
+    const f = meta.node_fields;
+    const types = meta.node_types[0];
+    const nodesEnd = buf.indexOf(']', metaEnd);
+    const sStart = buf.lastIndexOf('"strings":[');
+    const strings = JSON.parse(buf.subarray(sStart + 10, buf.lastIndexOf(']') + 1).toString());
     const [iType, iName, iSize] = ['type', 'name', 'self_size'].map((k) => f.indexOf(k));
     const out = {};
     let total = 0;
-    for (let i = 0; i < snap.nodes.length; i += f.length) {
-      const type = types[snap.nodes[i + iType]];
-      const size = snap.nodes[i + iSize];
+    // The nodes are a flat list of numbers, too many to hold at once, so they're summed one node at a time.
+    const node = new Array(f.length).fill(0);
+    let k = 0;
+    const take = () => {
+      const type = types[node[iType]];
+      const size = node[iSize];
       total += size;
-      const name = type === 'object' || type === 'native' || type === 'closure' ? snap.strings[snap.nodes[i + iName]] : '(' + type + ')';
+      const name = type === 'object' || type === 'native' || type === 'closure' ? strings[node[iName]] : '(' + type + ')';
       const o = (out[name] ??= { count: 0, size: 0 });
       o.count++;
       o.size += size;
+    };
+    let n = 0;
+    let inNum = false;
+    for (let i = metaEnd + 9; i <= nodesEnd; i++) {
+      const c = buf[i];
+      if (c >= 48 && c <= 57) {
+        n = n * 10 + (c - 48);
+        inNum = true;
+      } else if (inNum) {
+        node[k++] = n;
+        if (k === f.length) {
+          take();
+          k = 0;
+        }
+        n = 0;
+        inNum = false;
+      }
     }
     return { total, byName: out };
   }
@@ -564,7 +593,7 @@ async function main() {
         await js(`window.__frameling.run('timeline.play')`);
         await sleep(5000);
         await js(`window.__frameling.run('timeline.play')`);
-        const ex = await js(`(async () => { const s = { ...window.__framelingExport.defaults(), format: 'gif', range: 'all', scale: 0.25 }; return window.__framelingExport.run(s); })()`);
+        const ex = await js(`(async () => { const s = { ...window.__framelingExport.defaults(), format: 'gif', range: 'all', scale: 0.25 }; try { return await window.__framelingExport.encode(s); } catch (e) { return { error: String(e) }; } })()`);
         exports.push(ex.error ? 'error: ' + ex.error : ex.ms);
         await sleep(300);
         heaps.push(await js('window.__h.heap()'));

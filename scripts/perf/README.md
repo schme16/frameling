@@ -93,6 +93,9 @@ stroke is added, look-ahead depth against the memory budget. They count work aga
   memory budget, so the frame that arrives is only blits.
 - **Stepping and scrubbing**: when paused, idle callbacks pre-draw the two frames either side of the playhead.
   Onion skin ghosts are built from those same per-layer bitmaps rather than from the strokes again.
+- **Memory** (`soak`): drawing a stroke keeps only its Path2D; the outline as arrays of points is kept only for
+  strokes that are hit-tested or exported. Keeping it for every stroke drawn held 300 MB more on the 600 frame stroke
+  document (408 MB against 101 MB after a round). Bitmaps stay inside `BUDGET_PIXELS` (40 megapixels).
 - **Faded layers** in `core/render.ts` reuse one buffer rather than allocating a canvas per call.
 - **Live stroke** (`overlayDrawMs`): still redrawn from all its points on every frame, on purpose, so the preview is
   exactly the outline the finished stroke gets. It stays well under a millisecond at 2,000 points on a fast CPU and
