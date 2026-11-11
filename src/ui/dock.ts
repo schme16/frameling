@@ -1,5 +1,5 @@
 // Dock layout: which panels sit in the left, right and bottom zones, in what order, how big, and the workspaces
-// (saved layouts). The view lives in Dock.tsx; this file is plain state so it can be tested.
+// (saved layouts). The view lives in DockView.tsx; this file is plain state so it can be tested.
 import { allPanels, getPanel, type DockZone, type PanelDef } from '../core/registry';
 import type { LayerKind } from '../core/format';
 import { createStore, readRaw, writeJson } from './mini';

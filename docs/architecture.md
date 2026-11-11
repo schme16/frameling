@@ -1,0 +1,416 @@
+# Architecture
+
+How Frameling is put together, one short section per part, with the files to read. The document format has its own
+page (`docs/format.md`), and so do the tests (`docs/testing.md`).
+
+## The big picture
+
+Frameling is an Electron app with a React and TypeScript page, built with Vite. The same page also runs in a plain
+browser (the web build). There is no server.
+
+- **Main process** (`src/main/`): windows, file dialogs, the disk, autosave copies, the user library, FFmpeg for
+  ProRes. Bundled by esbuild to `dist/main/main.cjs` (`scripts/build-main.mjs`).
+- **Preload** (`src/preload/`): puts a small bridge on `window.frameling`. Bundled to `dist/preload/preload.cjs`.
+- **Renderer** (`src/renderer/` plus every feature folder): the whole app. Vite builds it to `dist/renderer`
+  (`vite.config.ts`, root `src/renderer`, relative `base: './'`) or to `dist/web` (`vite.web.config.ts`).
+- **Platform layer** (`src/platform/`): the page only talks to `window.frameling`. On the desktop that's the preload
+  bridge; in a browser `src/platform/web/` builds the same bridge in the page.
+
+Everything in the page reads and writes one store (`src/core/store.ts`). Features register commands, panels, tools,
+help topics and choices in registries (`src/core/registry.ts`), and the shell (menus, palette, keyboard, dock, help)
+is built from those registries. One renderer (`src/core/render.ts`) draws a frame for the canvas, thumbnails, onion
+skins and every export, so what you see is what you export.
+
+`npm run dev` (`scripts/dev.mjs`) builds main and preload, starts the Vite dev server on port 5199 and starts Electron
+with `FRAMELING_DEV_URL` pointing at it.
+
+## Main process
+
+`src/main/main.ts`:
+
+- One instance only. A second launch, macOS `open-file` and `open-url`, and `frameling://open?path=` links all open
+  their file in the running window (`fileFromArgs`). The protocol handler is registered only when packaged.
+- The window runs with `contextIsolation`, `sandbox` and no Node. The app version is passed as
+  `--frameling-version=`. New windows are refused (http links go to the browser) and navigation is blocked.
+- Closing with unsaved work asks Save / Don't save / Cancel natively. Don't save puts the work aside in "Recover
+  unsaved work" rather than deleting it. At start-up anything a crash left behind is put aside too.
+
+`src/main/ipc.ts` registers every channel (`files:*`, `recent:*`, `autosave:*`, `library:*`, `media:*`, `video:*`,
+`app:*`). Each handler checks the sender is our own window. Writes are allowed only to files or folders the person
+picked in a dialog this session, or to `.flplay` packages linked earlier (`linked-playables.json`). Opening is capped
+at 1 GB. `FRAMELING_AUTOMATION_DIR` makes save dialogs answer themselves, for `scripts/e2e/export.cjs`.
+
+Other files: `store.ts` (recent files in `files.json`, the autosave copy, kept copies for 7 days, atomic writes),
+`library.ts` (the user library, below, and `frameling://` parsing), `paths.ts` (case-insensitive path keys on
+Windows and macOS, safe file names), `menu.ts` (no native menu on Windows and Linux; a minimal one on macOS),
+`media.ts` (FFmpeg to re-encode MP4 sound to AAC), `video.ts` (FFmpeg ProRes 4444 jobs fed raw RGBA frames).
+
+## Preload and the bridge
+
+`src/preload/api.ts` is the bridge's type, `FramelingApi`: `kind` (`'desktop'` or `'web'`), `platform`, `versions`,
+`files`, `recent`, `autosave`, `app`, and the optional `library`, `media` and `video`. `src/preload/preload.ts` builds it
+from `ipcRenderer` and exposes it with `contextBridge`.
+
+## Platform layer: desktop and web
+
+- `src/platform/install.ts` is the first import in `src/renderer/main.tsx`. It calls `installPlatform()`; on the web it
+  also registers the web-only commands and starts the PWA.
+- `src/platform/index.ts`: `platformKind()` is `'none'` without a bridge, else `bridge.kind ?? 'desktop'`. `isWeb()`
+  and `can(feature)` (`showInFolder`, `nativeMenus`, `closeWithSave`, desktop only) are what code checks. Very little
+  code asks.
+- `src/platform/web/web.ts` (`createWebApi`): File System Access where the browser has it, otherwise upload and
+  download. Paths are made up (`<kind>:/<id>/<name>`). Multi-file exports go to a picked folder or a zip download.
+  No ProRes, media or folder reading.
+- `src/platform/web/idb.ts`: IndexedDB `frameling` with stores `recent`, `handles`, `copies`, `autosave`, `kept`,
+  `library`, and an in-memory fallback.
+- `src/platform/pwa.ts`: service worker (`sw.js`, written by `vite.web.config.ts`, which also writes the web manifest
+  with file handlers for `.frameling` and `.flplay`), and the "Install as an app" command.
+- `src/platform/ask.ts` + `AskDialog.tsx`: an in-page question (falls back to `confirm`).
+- `src/platform/library.ts`: the library API, or an in-memory one.
+- `src/io/desktop.ts` `desktop()` returns the bridge (desktop or web) or null.
+
+## The store
+
+`src/core/store.ts`. One `Store` holding `{doc, ui}`; `store()` returns it, `useStore(selector)` reads it in React,
+`resetStore()` is for tests.
+
+- **Changes** go through `update(label, recipe, {coalesce?})`, which runs immer's `produceWithPatches` on the doc.
+  No patches, no step. Otherwise it records `{patches, inverse, label}` on the undo stack, clears redo, marks the
+  document dirty and notifies listeners. Auto-freeze is off because pixel drawings hold typed arrays.
+- **UI state** (`setUi`) is a shallow merge with no undo: frame, tool, selection, zoom, pan, playing, and so on.
+- **Undo and redo** apply the inverse or forward patches. 300 steps are kept. Every undoable change must go through
+  `update`.
+- **Coalescing**: two updates with the same `coalesce` key within 1.2 s merge into one step, so a drag or typing is
+  one undo. Keys are chosen by the caller (`depth-<layerId>`, `type-<session>`, `rig-joint-<bone>-<end>`).
+- **No transactions.** A multi-part change is one recipe. Tools keep gesture state out of the doc with the canvas's
+  live preview (`setLive`) and commit once at the end.
+- `load(doc)` replaces the document and clears history. `markSaved(path)` clears dirty.
+
+Three ways of editing "something inside" the document:
+
+- **Tiles: nested editing** (`Store.enterNested` / `exitNested`, used by `src/tiles/tileEdit.ts`). Editing a tile swaps
+  in a small document of its own (one pixel layer, a cel per tile frame) with fresh undo stacks. `store().rootDoc()`
+  merges it back for saving. Leaving makes the whole session one undo step in the parent ("Edit tile ..."). Tile UI
+  (brush, flips, tile mode) lives in `src/tiles/state.ts`, outside the store.
+- **Symbols: `Doc.editing`** (`enterSymbol` / `exitSymbol` in `src/core/symbols.ts`, driven by `src/symbols/ops.ts`).
+  Entering moves the symbol's layers into `doc.layers` and pushes an `EditFrame` holding what they replaced, so the
+  timeline, canvas and tools work on it unchanged. Entering and leaving are ordinary undo steps. `rootDoc(doc)` puts
+  everything back for saving and is memoised.
+- **Artboards: swapping content** (`src/artboards/model.ts`, `ops.ts`). The open artboard's content is the document's
+  own fields; the others hold theirs in `Artboard.content`. `switchArtboard` swaps them (an undo step, refused while a
+  symbol is open). Leaving tile and symbol editing comes first. The view, frame and layer are remembered per artboard.
+  See `docs/artboards.md`.
+
+Save, autosave and versions always save `rootDoc(store().rootDoc())`: tile nesting merged, symbols put back.
+
+## Registries
+
+`src/core/registry.ts` holds module-level maps:
+
+- **Commands** (`registerCommand`): `{id 'area.verb', label, category, keys?, help?, keywords?, enabled?, checked?,
+  run, global?, layers?}`. Menus, the command palette, the keyboard, tooltips and the help audit all read them.
+- **Help topics** (`registerHelp`, `registerHelpTopics`): `{id, title, summary, body (Markdown, help:id links),
+  section, keywords?, media?, order?}`.
+- **Panels** (`registerPanel`): `{id, title, icon, component, zone: left|right|bottom, order?, help?}`.
+- **Tools** (`registerTool`): `{id, label, icon, key?, layers, options?, down, move, up, hover, cancel, overlay, onKey,
+  leave, ...}`.
+
+`src/ui/dynamic.ts` `syncDynamicCommands()` makes commands on demand for every tool (`tools.<id>`), panel
+(`view.panel.<id>`) and workspace (`view.workspace.<id>`), without overwriting ids a feature registered.
+
+**Choices** (`src/core/choices.ts`): "ask the first time, then remember". `registerChoice`, `choose(id)` (asks through
+the choice dialog), `withChoice`, `currentChoice`. Answers in `localStorage` `frameling.choices.v1`, changeable in
+Preferences > Behaviour.
+
+**How a feature plugs in.** `src/renderer/features.ts` imports every area for its side effects, in order. A feature
+folder's `index.ts` imports its `commands.ts` and `help.ts` and registers its panel, usually with `lazyPanel`. See
+`src/particles/index.ts` for a small one. Canvas hooks for features: `registerDecoration` (`src/canvas/decorations.ts`),
+`addStageOverlay`, `addCanvasGrab`, `addPointerDownHook` (`src/canvas/controller.ts`). Drawing a new kind of shape is
+wired into `src/core/render.ts` and `src/core/symbols.ts` directly, not through a registry.
+
+## The renderer and posing
+
+`src/core/render.ts` is the single source of truth for how a frame looks.
+
+- `renderFrame(g, doc, frame, opts)` paints the background, works out the camera view, and then either draws each
+  visible layer (`drawLayerAt`) or hands the whole frame to the effects compositor when any layer has a look.
+  `renderFrameToCanvas` returns an `OffscreenCanvas` for exports and thumbnails.
+- `drawLayerAt` poses the layer (`poseAt`), then `drawDrawing`: vector shapes one by one (`drawShape`), pixel drawings
+  as a cached canvas, tilemaps through `drawTilemap`. A faded layer reuses one scratch buffer.
+- `drawShape` handles strokes, fills and paths (gradients from `src/core/gradient.ts`), instances, text
+  (`src/text/draw.ts`) and particles (`src/particles/draw.ts`).
+
+**Posing** (`src/core/symbols.ts`): `poseAt(doc, layer, frame)` returns the drawing as it looks on that frame.
+
+- A plain drawing comes back as the same object, so caches keyed on it keep working.
+- A shape tween morphs the two keys (`morphShapes`, `src/core/shape-tween.ts`, with hints).
+- Instances are tweened between keys (easing from `src/core/ease.ts`, spin, motion paths) and posed recursively into
+  their symbol's timeline, at most 12 deep.
+- Moving shapes (animated text, particles) get their frame or time stamped on (`poseParticles`). Particles are worked
+  out from the seed for each frame (`src/particles/model.ts`), with no step simulation.
+- A layer bound to a bone is wrapped by `boundDrawing` (`src/rig/pose.ts`): moved by the bone, or bent through a skin
+  mesh. Bone maths is `src/rig/math.ts`; weights are `src/rig/weights.ts`.
+- `src/core/motions.ts` is data for one-click motions; it makes keys and plays no part in rendering.
+
+**Camera** (`src/core/camera.ts`): `cameraViewAt` finds the first visible camera layer and eases its keys;
+`layerCameraMatrix` applies parallax by `depth`. The editor decides whether to look through the camera
+(`src/camera/ops.ts`); `src/camera/canvas.ts` draws the camera frame and registers the camera tool.
+
+**Tilemaps** (`src/core/tilemap.ts`): one bitmap per map, repainting only changed slots; maps over 16 megapixels are
+drawn slot by slot. `src/tiles/look.ts` is editor-only (faded tile copies).
+
+**Effects compositor** (`src/effects/`): `plan.ts` turns the layer list into steps (clips, masks, folders);
+`composite.ts` runs them with a buffer pool per depth and caches effect results; `apply.ts` does each effect;
+`stage.ts` is the editor's way in, reusing the canvas's bitmaps. Symbols with a look inside are composited in their
+own space. See `docs/effects.md`.
+
+**Caches and invalidation.** Almost every cache is a `WeakMap` keyed on an object (a shape, a drawing, a pixel array,
+a cel, a doc). Immer makes new objects for anything edited and pixel and tile arrays are replaced, never changed, so
+an edit misses the old entry and the old one is garbage collected. The main ones:
+
+| Cache | File | Bounded by |
+|---|---|---|
+| Stroke and path `Path2D`s, pixel canvases, mesh textures, bounding boxes | `core/render.ts` | Object identity |
+| Symbol look pictures (32 MP), export effect results (16 MP) | `core/render.ts` | Pixel budget, oldest first |
+| Pose results per cel, shown in-betweens | `core/symbols.ts` | 600 per cel, 200, at most 4 "worlds" per drawings object |
+| `rootDoc` | `core/symbols.ts` | Doc identity |
+| Shape tween plans | `core/shape-tween.ts` | 8 |
+| Pose blends, meshes, bound drawings | `rig/pose.ts` | 400, identity |
+| Tilemap bitmaps | `core/tilemap.ts` | 24 maps; slot diffs repaint |
+| Text widths and layouts | `text/draw.ts` | 5000 / 400; cleared when a font loads |
+| Canvas layer bitmaps | `canvas/pipeline.ts` | 40 megapixels LRU |
+
+## The canvas
+
+- `src/canvas/CanvasView.tsx` is the React shell: stage div, main canvas, overlay canvas, the text editor, the symbol
+  edit bar, the tile banner and rulers. It creates a `CanvasEngine` and stays out of the hot path.
+- `src/canvas/engine.ts` `CanvasEngine` owns both canvases, the `FramePainter`, gestures (pan, tool, grab) and the
+  animation frame loop. It subscribes to the store and repaints the main canvas only when the doc, frame, view, onion
+  skin, light table or playing changes; anything else repaints only the overlay. While playing it pre-draws upcoming
+  frames in about 5 ms per tick (`warmAhead`); when paused, idle callbacks pre-draw neighbouring frames.
+- `src/canvas/pipeline.ts` `FramePainter.paint`: edit backdrop (symbol open), light table, onion skin or the empty
+  frame ghost, then layers (through the compositor when needed), then the pasteboard. Vector layers use whole-stage
+  bitmaps from `BitmapCache` (40 MP LRU); a new stroke is drawn onto a copy of the old bitmap rather than redrawing the
+  drawing. Tile mode draws eight copies around the stage.
+- `src/canvas/controller.ts` is the DOM-free meeting point: viewport (`getView`, `setView`, `fit`), live previews
+  (`setLive`), redraw requests, cursor, hints, and the feature hooks.
+- **Tool input**: pointer down pans (middle button, Space, hand tool), or runs pointer-down hooks, or a canvas handle
+  (`grabAt`), or the current tool. The pointer is turned into document space (through the camera, then bone space) and
+  passed to `tool.down/move/up`. Tools preview with `setLive` and the overlay, then commit with one `store().update`.
+- Pure helpers: `view.ts` (zoom and pan maths), `input.ts` (wheel intent, Space tap), `onion.ts`, `lightTable.ts`,
+  `snap.ts`, `grid.ts`, `guides.ts`. `perf.ts` records timings only with `?perf`.
+
+## The shell, dock and right side
+
+`src/renderer/App.tsx` lays out the top bar, tool strip, left zone, canvas (with the pixel bar), bottom zone, right zone
+and status bar, plus overlays (palette, preferences, choices, help, welcome, onboarding, About, toasts, tooltips).
+Before the first paint it applies preferences and syncs panels and dynamic commands; on mount it installs the
+keyboard, the roving keys and hover tracking, then onboarding or the welcome sheet. Two frames after mount it sets the
+`frameling:interactive` mark and starts warming lazy parts.
+
+- **Dock** (`src/ui/dock.ts`, view in `DockView.tsx`): zones `left`, `right`, `bottom`, each with tabs, active tab,
+  size and collapsed state, saved in `localStorage` `frameling.dock.v1`. `syncPanels()` places newly registered panels
+  by their `zone`. Tabs fit by `src/ui/tabFit.ts` (full, compact, or overflow behind "+N").
+- **Right side** (`src/ui/RightDock.tsx`), chosen by preference (`src/ui/rightStyle.ts`): `inspector` (default),
+  `rail` or `tabs`. The rail is a vertical labelled strip. In inspector mode, panels marked as sections (tool options,
+  colours, palette, tileset, motion, effects, text, particles, camera, bones) show as one stack of foldable sections
+  called Properties, with sections that don't apply yet listed under "Also here" and selection-related ones moved up.
+  Other panels (library, artboards, timeline, preview, clip flow, lip sync, quests, help, plugin panels) are rail
+  entries.
+- **`src/ui/panelInfo.ts`** is the data behind that: per panel a short name, blurb, rail group, whether it is a
+  section, when it's relevant and why it's idle, and search keywords. Unknown panels (plugins) go under "More".
+- `src/ui/PanelPicker.tsx` is the searchable list of every panel. `src/ui/rightCommands.ts` adds
+  `view.properties` and `view.allPanels`.
+- `src/symbols/PropertiesPanel.tsx` is the Motion section (instance and tween settings), not the whole inspector. Its
+  `Num` and `Section` controls are reused elsewhere.
+
+## Workspaces
+
+`src/ui/dock.ts` `builtinWorkspaces()` makes Draw, Animate and Pixel from the registered panels. Pixel puts colours and
+the palette on the left, closes panels pixel art rarely needs (`PIXEL_HIDDEN`) and narrows the tool strip
+(`PIXEL_TOOLS`). People can save, rename and delete their own (`saveWorkspace`). `applyWorkspace(id)` switches,
+called from `view.workspace.<id>`, Preferences > Workspaces and onboarding. `src/pixel/workspace.ts` offers to switch
+to Pixel when a pixel document opens (a remembered choice). `src/ui/presets.ts` is new-document size presets, not
+workspaces.
+
+## Lazy loading
+
+`src/core/lazy.ts`:
+
+- `lazyModule(load, {warm?})` memoises an `import()` and retries after a failure.
+- `lazyComponent(load)` wraps it in `React.lazy` and `Suspense`.
+- `lazyPanel(load)` is a warmed lazy component, for panels.
+- `warmLazyParts()` runs 1.5 s after start-up and loads warmed modules one at a time in idle time, so the first click
+  doesn't wait.
+
+Deferred this way: most dock panels (help, clip flow, tileset, artboards, bones, camera, effects, particles, text,
+quests, palette, preview, lip sync, library, motion), the Export dialog and every exporter (`src/export/open.ts`),
+Preferences, the help window and the welcome sheet (warmed), onboarding and About (not warmed), plugin exports. Some
+dialogs use plain `import()` without warming (document and grid settings, tileset export, artboard player and export,
+rotate, recolour, save template, versions). `src/renderer/debug.ts` loads only with `?debug`. Start-up cost is measured
+by `scripts/perf/startup.cjs`.
+
+## The timeline
+
+`src/timeline/`. One panel (`timeline`, bottom zone), two looks:
+
+- **Detailed** (default): key, hold and empty cells with diamonds, tweens drawn with their easing, property rows
+  under an opened layer (effect keys, drawing keys), colour labels, solo, multi-key pick, retime and stretch.
+- **Clean** (`prefs.cleanTimeline`, command `view.cleanTimeline`): one plain block per drawing.
+
+Where things live:
+
+- `TimelinePanel.tsx` = `Header.tsx` (counter, fps, holds, onion skin, play range, light table chip, an overflow menu
+  for what doesn't fit) + `TimelineBody` in `Grid.tsx` (ruler, markers and clips rows, playhead, drags, key picking,
+  context menus, the tween offer).
+- `Layers.tsx` (layer list), `Detail.tsx` (detailed rows and easing curves), `Menu.tsx` (floating menus),
+  `layout.ts` (row layout for both looks), `view.ts` (look and layout hooks), `state.ts` (timeline-only UI: cell width,
+  open layers, picked keys; no undo), `geometry.ts` (pixel and frame maths).
+- `edit-core.ts` is the pure document edits (new key, duplicate, clear, insert and remove frames, exposure, move and
+  resize cels); `ops.ts` wraps them as undo steps that say why they can't run. `tracks.ts` and `keys.ts` handle
+  property rows and moving, scaling and deleting picked keys.
+- `playback.ts`: one loop driven by `ui.playing`; the frame comes from the clock, not by counting. Plays the picked
+  clip, the play range (`inout.ts`, `range.ts`) or everything, looping or ping-pong. Any document change stops it.
+- `tweenOffer.ts`: clicking between two keys can offer a classic or shape tween inline.
+- `commands.ts`, `keyCommands.ts`, `choices.ts` (remembered answers about new keys and holds), `help.ts`.
+
+## Exports
+
+`src/export/`. The Export dialog (`ExportDialog.tsx`, opened lazily through `open.ts`) and "Export again" both call
+`exportDocument` (`exporter.ts`), which asks for a file or folder and then runs the export.
+
+- `plan.ts` (pure): range, size and name; limits 8192 px per side, 5000 frames, 16384 px sheets.
+- `run.ts` `runExport`: draws each frame with the shared renderer (`draw.ts`) and hands it to the format's writer.
+- `capabilities.ts`: what this machine can encode (WebCodecs through mediabunny: H.264 for MP4; AV1, VP9 or VP8 for
+  WebM, transparency only with VP9 and VP8).
+- `carries.ts` + `CarryNotes.tsx`: a table of what each format keeps (text, particles, tint, blend, effects, clipping,
+  masks, folders, bones, gradient alpha) as kept, shapes, picture or lost; `carryWarnings` tells the person before
+  they export. `LayeredNotes.tsx` does the same for the layered formats.
+
+Writers:
+
+- **MP4 / WebM** (`run.ts`): mediabunny. MP4 frames go through `yuv.ts`; sound from `src/audio/export.ts`, with AAC
+  made by FFmpeg on the desktop when needed (`src/main/media.ts`).
+- **GIF** (`gif.ts`, gifenc, one palette), **APNG** (`apng.ts`), **PNG** and **PNG sequence** (zip).
+- **Sprite sheet** (`sheet.ts` trim and dedupe, `pack.ts` max-rects, `engines.ts` data files for Godot, Unity, Phaser,
+  PixiJS, CSS and JSON, picked in `EnginePicker.tsx`). Godot gets `.tres`/`.tscn` and the clip flow.
+- **SVG** (`svg.ts`, `svg-extra.ts`, `svg-look.ts`) and **animated SVG** (`svg-anim.ts`, CSS keyframes).
+- **Lottie** (`lottie.ts`, symbols as precomps; `sprites.ts` for text and particles).
+- **PDF and .ai** (`pdf.ts`, one page per frame, layers as optional content).
+- **PSD** (`psd.ts`, `psd-layers.ts`, `layered.ts`, `layered-run.ts`): one layer per Frameling layer, folders as groups.
+- **ProRes** (`prores.ts`): desktop only, streams frames to FFmpeg (`src/main/video.ts`).
+- **Interactives `.flplay`** (`playable.ts`), described in `docs/format.md`.
+- **Godot add-on** (`godot-addon.ts`, zips `godot/addons/frameling_importer`) and **Godot bones** (`godot-bones.ts`,
+  `godot-bones-run.ts`: Skeleton2D scene with parts).
+- Plugin exports: `src/plugins/export.ts`. Per-artboard export: `src/artboards/export.ts`. Tilesets:
+  `src/tiles/export.ts`.
+
+`kitchenSink.ts` builds a document that uses every feature, for tests, `scripts/e2e/export.cjs` and perf.
+
+## io
+
+`src/io/`:
+
+- `file.ts`: read, validate and write `.frameling` (see `docs/format.md`).
+- `document.ts`: open, save, Save As (new doc id for the copy), "Save changes?". `registerOpener` lets other areas
+  claim file types (`.flplay` does) and `registerSaveHook` lets them act on save (versions, Interactives).
+- `autosave.ts`: autosaves every 60 s on the desktop, 15 s on the web, and when the window is hidden; opens the launch
+  file; offers recovery. `recovery.ts` holds what was found; `RecoverDialog.tsx` lists put-aside work.
+- `versions.ts`, `version-rules.ts`, `VersionsDialog.tsx`: version history, a copy at most every 10 minutes while the document changes, thinned
+  out (all within an hour, hourly for a day, daily for 14 days, at most 60 automatic and 400 MB). Restore or open as a
+  copy.
+- `png.ts` (own PNG codec), `thumb.ts`, `RecentDialog.tsx`, `notify.ts` (toasts from io and export).
+
+**The user library** (desktop: `library/<kind>/` in the user data folder, `src/main/library.ts`; web: IndexedDB):
+`plugins/*.zip`, `templates/*.frameling`, `versions/*.frameling`, `versions-index/*.json`. Also in the user data
+folder: `files.json`, `autosave/`, `linked-playables.json`.
+
+## Interactives round trip
+
+`src/interactives/`: `link.ts` reads the `source.frameling` out of a `.flplay` and remembers the link per document id
+(`localStorage` `frameling.playableLinks.v1`); `roundtrip.ts` opens it and, on save, re-exports into the same package
+(as well as, or instead of, a `.frameling`). Commands in `index.ts`.
+
+## Templates
+
+`src/templates/`: 21 built-in templates made in code (`index.ts`, helpers in `build.ts`, per-template setup in
+`setup.ts`). People's own templates are `.frameling` files with a `template.json` (`community.ts`) in the library;
+`user.ts` `registerTemplateSource` lists sources for the welcome sheet.
+
+## Plugins
+
+`src/plugins/`. Each plugin runs in a hidden `sandbox="allow-scripts"` iframe (`public/plugin-host.html`, or
+`plugin-host-net.html` with network) whose CSP blocks the network, and inside it a worker. `prelude.ts` builds the
+`frameling` API over a `MessageChannel` and removes network and storage APIs. `runtime.ts` checks each call against
+the plugin's permissions and limits; `ops.ts` applies edits as one undo step; `ui-schema.ts` cleans panel
+descriptions; `manager.ts` installs, enables and removes; approvals live in `localStorage` `frameling.plugins.v1`. The
+API and threat model are in `docs/plugins.md`; the manifest is in `docs/format.md`.
+
+## Other feature folders
+
+- `src/audio/`: sound clips on the timeline, decode, waveforms, playback that follows the playhead, offline mix.
+- `src/lipsync/`: guesses mouth shapes from sound (loudness and spectrum, no AI) and keys a mouth symbol.
+- `src/flow/`: the clip flow graph and its panel.
+- `src/pixel/`: pixel tools, palettes and palette files, transforms, the pixel bar and preview panel.
+- `src/select/`: pixel selections (box, lasso, wand, masks, floating selection) and the vector lasso.
+- `src/rig/`, `src/symbols/`, `src/text/`, `src/particles/`, `src/camera/`, `src/tiles/`, `src/effects/`,
+  `src/artboards/`, `src/geometry/` (fill, merge, morph, trace), `src/tools/`: as named.
+
+## Quests and onboarding
+
+- **Onboarding** (`src/ui/onboarding/`): `flow.ts` is a pure reducer through hello, what you want to make, themes,
+  preferences, a name, done. `planFor` turns interests into a workspace, template, first quest and help. Opens once on
+  first run (`maybeOnboard`), never under `?debug`.
+- **Quests** (`src/quests/`): `engine.ts` is a `QuestEngine` with no React or DOM (dependencies passed in), progress in
+  `localStorage` `frameling.quests.v1`. `runtime.ts` wires it to the store, commands, clock and DOM; `hook.ts` wraps
+  command runs while a quest is active. Quests are in `library.ts` and each feature's `quest.ts`; `predicates.ts`
+  checks the document, `probe.ts` reads what isn't in the store, `actions.ts` does "Show me how" through normal
+  commands. `QuestLayer.tsx` mounts the spotlight, quest bar and celebration in their own React root.
+
+## Quill, the mascot
+
+- `src/ui/mascot/timing.ts` (pure sheet maths), `runtime.ts` (loads `mascot/mascot.json` and `.png`, one shared timer
+  moves every Quill on screen by setting `background-position`, an idle clock sends him to sleep), `Quill.tsx`
+  (`Quill`, `QuillSays`, `QuillEmpty`), `scripts.ts` (little performances), `goodbye.ts` (turning him off and on).
+- `lines.json` holds everything he says; `lines.ts` reads it (`line`, `lines`, `lineParts`) with typed ids.
+- `npm run build:mascot` (`scripts/build-mascot.mjs`, helpers in `scripts/mascot/`) turns
+  `brand/mascot/mascot.frameling` into the sheet and `mascot-icon.frameling` into the app icons. See the README.
+
+## Help
+
+Topics are registered next to each feature (`src/*/help.ts`) and in `src/ui/helpTopics.ts`. `src/ui/HelpBrowser.tsx`
+is both the Help panel and the help window. `src/ui/help/`: `search.ts` (typo-tolerant search), `context.ts` (what F1
+opens: the element under the pointer or focused, via `data-help` or `data-command`), `markdown.tsx`, `media.tsx`
+(pictures and H.264 clips from `public/help/`), `audit.ts` (the help audit, see `docs/testing.md`).
+
+## Themes, preferences, keyboard, menus
+
+- **Preferences** (`src/ui/prefs.ts`, `localStorage` `frameling.prefs.v1`): theme, look (cosy or crisp), sounds,
+  reduced motion, welcome, tips, Quill, right side style, units, keymap and keymap set, clean timeline, and more.
+  `applyPrefs` writes the theme's CSS variables and `data-theme`, `data-look`, `data-motion` on `<html>`.
+  `src/ui/PrefsModal.tsx` has the pages (general, themes, behaviour, keyboard, workspaces, plugins).
+- **Themes** (`src/ui/themes/`): built-in themes (`builtIn.ts`), tokens and derived tokens (`tokens.ts`), custom themes
+  and the theme file (`model.ts`, `library.ts`), contrast checks and fixes (`contrast.ts`), the editor.
+- **Keyboard** (`src/ui/keyboard.ts`): one listener; in a field or with an overlay open only `global` commands fire.
+  `src/ui/keys.ts` parses `Mod+Shift+Z` combos and layers keys: command defaults, then the chosen set
+  (`src/ui/keymapSets.ts`: Frameling, Flash style, Pixel), then the person's own.
+- **Command palette** (`src/ui/palette.ts`, `CommandPalette.tsx`): commands and help topics, fuzzy matched
+  (`match.ts`); `runCommand` is the one runner menus and keys use too.
+- **Menus** (`src/ui/menus.ts`, `MenuBar.tsx`): lists of command ids per menu; commands of a menu's category that
+  aren't listed are added at the bottom.
+- **Toasts** (`src/ui/toast.ts`, `ToastView.tsx`) and **tooltips** (`src/ui/Tooltips.tsx`: one layer for the whole
+  app, built from `data-command`, `data-tip` or `title`).
+
+## Accessibility helpers
+
+- `src/ui/roving.ts`: one document listener gives arrow, Home and End keys to `radiogroup`, `listbox` and `menu`
+  roles. It skips events a component already handled.
+- `src/ui/popover.ts` `usePopover(ref, onClose)`: focus in on open, Escape closes (before the canvas sees it), focus
+  back afterwards.
+- Checked by `scripts/a11y.cjs` and `test/a11y/`.
+
+## Sounds
+
+`src/ui/sounds/`: every cue is synthesised from notes (`synth.ts`, no sample files): step, celebrate, exported,
+refused, goodbye, nothing to undo, tick. `index.ts` `playCue` caches each as an `AudioBuffer`, honours the sounds
+preference and rate-limits.

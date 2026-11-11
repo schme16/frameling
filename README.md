@@ -2,7 +2,30 @@
 
 A friendly desktop tool for drawing and animating 2D art, made for vector and pixel art alike. Draw frame by frame or tween between poses, then export to video, GIFs, sprite sheets, Godot, and natively into Interactives.
 
-Early days: what's here is the empty app shell and the build pipeline. The plan lives on the project board (project `frameling`, doc `evaluation`).
+It runs as a desktop app (Electron, Windows, macOS, Linux) and as a web page from the same code. The plan lives on
+the project board (project `frameling`, doc `evaluation`). Developer docs are in [docs/](docs/README.md).
+
+## What it does
+
+- **Drawing**: vector layers (pressure brush, pencil, pen, shapes, paint bucket, gradients, keep separate or merge
+  together) and pixel layers (pixel pencil, shade, dither, palettes and ramps, palette lock, mirror drawing,
+  selections). Reference layers, guides, grids, perspective guides.
+- **Animation**: a detailed timeline (keys, holds, tweens with easing, property rows, multi-key retime) or a clean
+  one; onion skin, light table, play range, ping-pong. Symbols with their own timelines, classic and shape tweens,
+  motion paths, one-click motions.
+- **Rigging and camera**: bones with IK, pins, squash and stretch, bending meshes and a pose library; a camera layer
+  with parallax depth.
+- **Tiles**: animated tiles, tilemap layers, tile editing in place.
+- **Effects**: blend modes, an effects stack with animated values, clip to below, masks, layer folders, text with text
+  animators, particle emitters.
+- **Sound**: sound clips on the timeline and lip sync from audio.
+- **Artboards**: several named canvases in one document. **Clip flow**: which clip follows which, for games.
+- **Export**: MP4, WebM, GIF, APNG, PNG and PNG sequences, sprite sheets with data for Godot, Unity, Phaser, PixiJS,
+  CSS and JSON, SVG and animated SVG, Lottie, PDF, `.ai`, PSD, ProRes 4444, Godot bones scenes and a Godot importer
+  add-on, and `.flplay` for Interactives (with a round trip back into Frameling).
+- **Around it**: autosave, recovery and version history, templates (built in and your own), sandboxed plugins, quests
+  and onboarding with Quill the mascot, in-app help with pictures and clips, themes and a theme editor, shortcut sets,
+  workspaces.
 
 ## Get it
 
@@ -14,7 +37,7 @@ Every pull request into `main` builds the app for all three systems. Open the pu
 | macOS | `Frameling-<version>-mac-arm64.dmg` (Apple silicon) or `...-mac-x64.dmg` (Intel) |
 | Linux | `Frameling-<version>-linux-x86_64.AppImage` (make it executable, then run it) |
 
-The builds aren't signed yet, so on Windows click **More info → Run anyway**, and on macOS right-click the app and choose **Open** the first time.
+The builds are only self-signed (Windows) and ad-hoc signed (macOS), so on Windows click **More info → Run anyway**, and on macOS right-click the app and choose **Open** the first time (see Signing, below).
 
 The same run also has **frameling-web**: the web version, for machines where installing isn't allowed (see below).
 
@@ -24,12 +47,23 @@ Needs Node 22.
 
 ```bash
 npm install
-npm run dev            # opens the app with hot reload
-npm test               # tests
+npm run dev            # opens the app with hot reload (Vite dev server on 5199)
+npm test               # vitest: everything under test/
+npm run typecheck      # tsc --noEmit
 npm run help:audit     # checks the in-app help, and prints what it found
-npm run build          # mascot, type check, then build into dist/
+npm run build          # mascot, type check, then build into dist/ (renderer, main, preload)
 npm run build:mascot   # just rebuild Quill's sprite sheet and the app icons
+npm start              # build, then run the built app
 npm run dist           # installers for this system, into release/
+npm run dist:linux     # just the Linux AppImage
+```
+
+Checks that drive the real app in Electron (accessibility, every export format, effects pixels, the plugin sandbox,
+performance, screenshots, help clips) are in [docs/testing.md](docs/testing.md). They all run inside xvfb, never on
+the desktop you're working at, for example:
+
+```bash
+xvfb-run -a -s "-screen 0 1600x1000x24" npm run a11y
 ```
 
 ### The web version
@@ -110,9 +144,9 @@ has its screenshot in place and a box to change it; your edits are kept in that 
 2. `npm run dialogue:apply ~/Downloads/quill-lines-2026-11-11.json` merges them into `lines.json` and prints what
    changed. It refuses the whole file, and writes nothing, if a line lost or gained a `{placeholder}` or names a line
    that doesn't exist. Add `--check` to see the changes without writing them.
-3. `npm run dialogue:page` refreshes the page's text; `npm run dialogue:shots` rebuilds the app and retakes every
-   screenshot too (about two minutes; it drives an off-screen window, see `scripts/dialogue/shots.cjs`). A shot
-   that only shows the nearest moment says so under the line.
+3. `npm run dialogue:page` refreshes the page's text; `xvfb-run -a -s "-screen 0 1600x1000x24" npm run
+   dialogue:shots` rebuilds the app and retakes every screenshot too (about two minutes, inside xvfb, see
+   `scripts/dialogue/shots.cjs`). A shot that only shows the nearest moment says so under the line.
 
 Code reads the lines through `line(id, vars)`, `lines(id, vars)` (for lists) and `lineParts(id, vars)` (to fill a
 placeholder with bold text) in `src/ui/mascot/lines.ts`; the ids are typed, so a typo fails `npm run typecheck`. A new
@@ -127,10 +161,17 @@ topic has no media, a media file is missing or unused, a `help:` link goes nowhe
 command has any more. It also lists topics over 400 words. `test/ui/help-words.test.ts` checks that the plain words
 people type ("rubber", "lost my work") find the right topic; add a pair there when someone can't find something.
 
-Media is captured from the built app: `npm run build`, then
-`npx electron scripts/docs/record.cjs <outDir> <steps.json> --prefs '{"showWelcome":false,"reduceMotion":true}'`
-(steps are documented at the top of the script; under xvfb wrap it in `xvfb-run -a`), and
-`scripts/docs/encode.sh <outDir>/<clip> <name>` turns a recorded clip into an H.264 MP4 and its poster.
+Media is captured from the built app, inside xvfb:
+
+```bash
+npm run build
+SHOT_SHOW=1 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/docs/record.cjs <outDir> <steps.json> \
+  --prefs '{"showWelcome":false,"reduceMotion":true}'
+scripts/docs/encode.sh <outDir>/<clip> <name>     # H.264 MP4 + poster into public/help/
+```
+
+The steps are documented at the top of the script and in [docs/testing.md](docs/testing.md). Clips are always
+H.264, never AV1.
 
 ## The Interactives package (.flplay)
 
@@ -158,10 +199,15 @@ playable form of the animation, which Interactives drops onto a page as a "Frame
 - `clips`: `{name, start, end, loop, runs}`, frames inclusive and counted from the package's first frame. `runs`
   is the clip as `{cell, frames, ms}`, for players that step picture by picture. Names are unique.
 - `markers`: `{name, frame}`, sorted by frame. Several can share a name (two footsteps).
-- `layers`: `{name, kind, visible, opacity, pixelSize?}`, for information. Frames are already flattened.
+- `layers`: `{name, kind, visible, opacity, pixelSize?}`, for information. Frames are already flattened. Reference
+  layers are left out.
 - `source`: `"source.frameling"` or `null`.
+- `app` (`"Frameling"`) and `appVersion`: what wrote it.
+- `flow` (optional): the clip flow by clip name, `{start, states: [{name, loop, frames}], transitions: [{from, to,
+  on: "end" | "trigger", trigger?}]}`, when the document has one.
 
 Changes stay additive: a new field is optional, and anything that would break an older player bumps `version`.
+The same format is in [docs/format.md](docs/format.md), next to the `.frameling` format.
 
 ### Edit in Frameling (the round trip)
 
@@ -199,12 +245,24 @@ as one more source with its own section; there is no server for one today.
 
 ## How it's put together
 
-- `src/main/`: the Electron main process (windows, menus, files).
+The full map is [docs/architecture.md](docs/architecture.md). In short:
+
+- `src/main/`: the Electron main process (windows, dialogs, files, autosave copies, the user library, FFmpeg).
 - `src/preload/`: the small, safe bridge between the page and the desktop (`window.frameling`).
-- `src/renderer/`: the app's interface (React and TypeScript, built with Vite).
 - `src/platform/`: which bridge the page has (desktop or browser), and the browser one itself.
-- `src/plugins/`: the plugin sandbox and API. `src/interactives/`: the .flplay round trip. `src/templates/`: templates.
-- `scripts/`: dev, build and local install scripts.
+- `src/renderer/`: the page's entry (`main.tsx`, `App.tsx`), `features.ts` (loads every area) and the `?debug` hooks.
+- `src/core/`: the document format (`format.ts`), the store with undo (`store.ts`), the registries, and the single
+  renderer (`render.ts`) and posing (`symbols.ts`) every view and export uses.
+- `src/canvas/`, `src/tools/`, `src/timeline/`, `src/ui/`: the canvas engine, the tools, the timeline, and the shell
+  (dock, menus, palette, keyboard, preferences, themes, help, Quill, onboarding, sounds).
+- One folder per feature: `artboards`, `audio`, `camera`, `effects`, `flow`, `geometry`, `lipsync`, `particles`,
+  `pixel`, `quests`, `rig`, `select`, `symbols`, `text`, `tiles`.
+- `src/io/`: files, autosave, recovery, versions. `src/export/`: every exporter. `src/plugins/`: the plugin sandbox
+  and API. `src/interactives/`: the .flplay round trip. `src/templates/`: templates.
+- `test/`: vitest. `scripts/`: dev, build, install, the mascot build, and the Electron harnesses (`e2e/`, `perf/`,
+  `docs/`, `dialogue/`, `a11y.cjs`, `shoot.cjs`); see [docs/testing.md](docs/testing.md).
+- `public/`: help media, the mascot sheet, the plugin host pages. `brand/`: mascot sources, A/B shots, the dialogue
+  review page. `godot/`: the Godot importer add-on. `plugins/examples/`: example plugins.
 - `.github/workflows/build.yml`: the Windows, macOS and Linux builds, and the web build.
 
 Branches: work happens on `development`, which reaches `main` through pull requests, and each pull request builds the apps.

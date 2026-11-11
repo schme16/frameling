@@ -7,7 +7,7 @@ A plugin adds commands, ways to export and panels to Frameling. It is a folder (
   drawing).
 - `contact-sheet`: two exports, a numbered contact sheet as a PNG and as a one-page PDF (export only).
 
-Install one with **Plugins > Install a plugin...** (a `.zip`), or, while working on it, **Preferences > Plugins >
+Install one with **Plugins > Install a plugin...** (a `.zip`, or the same zip renamed `.flplugin`), or, while working on it, **Preferences > Plugins >
 Install from folder...** (desktop only). Installing again with the same `id` updates it.
 
 ## The manifest
@@ -174,12 +174,12 @@ treated as hostile input.
 |---|---|
 | Reading files, running programs, Node | The plugin runs in the page's renderer, which has no Node (`nodeIntegration: false`, `sandbox: true`, `contextIsolation: true`). It never gets `window.frameling`. |
 | Reaching into the app's DOM, storage or the bridge | The worker has no DOM. The frame has `sandbox="allow-scripts"` without `allow-same-origin`, so it has an opaque origin: no access to the parent page, its storage or cookies, and no IndexedDB or cache storage of its own. `scripts/e2e/plugins.cjs` checks this in Electron. |
-| Talking to the internet without asking | The sandbox page's Content Security Policy: `default-src 'none'; connect-src 'none'` (fetch, XHR, WebSocket, EventSource), and scripts only from `blob:` and inline, so no `importScripts` from the web. A worker made from a `blob:` URL inherits that policy. The prelude also removes `fetch` and friends so the error is clear, but the policy is the wall. Checked in Electron. |
+| Talking to the internet without asking | The sandbox page's Content Security Policy: `default-src 'none'; connect-src 'none'` (fetch, XHR, WebSocket, EventSource), and scripts only from `blob:` and inline, so no `importScripts` from the web. A worker made from a `blob:` URL inherits that policy. The prelude also removes `fetch`, `XMLHttpRequest`, `WebSocket`, `EventSource`, `WebTransport`, `indexedDB` and `caches` so the error is clear, but the policy is the wall. Checked in Electron. |
 | Talking to sites it didn't list | `plugin-host-net.html` allows only `https:` and, before the worker starts, adds a second policy narrowing `connect-src` to the listed origins. Policies only ever add restrictions. Plain `http:` is never allowed. |
 | Popups, navigation, forms, downloads | Not allowed by the sandbox flags. The app also denies new windows and navigation (`src/main/main.ts`). |
 | Changing the drawing in ways the app can't handle | Edits are a short list of ops, each checked (ids exist, numbers are finite and in range, arrays the right size). A batch is applied in one `store.update`, so it is one undo step, and a bad op leaves the drawing untouched. Without `document.edit` the call is refused. |
 | Escaping through what Frameling draws | Panels are a small set of parts drawn by React from checked data; text is text. Export file names are cut down to plain names, and the files are written by Frameling to the place the person picked. |
-| Flooding the app | At most 50 commands, 10 exports, 5 panels, 200 panel parts, 5000 ops a batch and 1000 export files. Problems are shown at most three times. Exports can be cancelled; turning the plugin off kills it. |
+| Flooding the app | At most 50 commands, 10 exports, 5 panels, 200 panel parts nested at most 6 deep, 5000 ops a batch, and 1000 export files and 1 GB per export. Problems are shown at most three times. Exports can be cancelled; turning the plugin off kills it. |
 | Doing more after an update | Stored permissions are compared with the new manifest; anything new turns it off until approved again. |
 | A plugin pretending to be part of Frameling | Its commands sit in the Plugins menu and its toasts start with its name. Its panels have a puzzle-piece icon. |
 
