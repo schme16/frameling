@@ -23,6 +23,7 @@ export function ArtboardExportPicker({ settings }: { settings: ExportSettings })
     setArtboardExport({ ids: next.length === list.length ? null : next });
   };
   const mode = modes.find((m) => m.id === c.mode && !m.off) ? c.mode : 'one';
+  const total = list.filter((a) => chosen.has(a.id)).reduce((t, a) => t + (a.content ? a.content.length : doc.length), 0);
   const sizes = new Set(list.filter((a) => chosen.has(a.id)).map((a) => Object.values(sizeOf(doc, a)).join('x')));
   return (
     <fieldset className="ab-export">
@@ -45,8 +46,9 @@ export function ArtboardExportPicker({ settings }: { settings: ExportSettings })
         </div>
       )}
       {mode === 'joined' && sizes.size > 1 && <p className="ex-note">These artboards are different sizes. To play as one, they all need the same size.</p>}
+      {mode === 'joined' && sizes.size <= 1 && <p className="ex-note">{total} frames in all, one artboard after another. The size and summary below are for one artboard.</p>}
       {mode === 'atlas' && <p className="ex-note">Each artboard becomes an animation in the JSON, named after it; its clips come along as "artboard/clip".</p>}
-      {mode === 'each' && <p className="ex-note">Each file is named after its artboard (or its export name).</p>}
+      {mode === 'each' && <p className="ex-note">{chosen.size} files, each named after its artboard (or its export name).</p>}
     </fieldset>
   );
 }
