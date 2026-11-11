@@ -42,7 +42,7 @@ describe('paint bucket tool', () => {
 
   it('adds a fill behind the lines, in the current colour, and pops', () => {
     const t = setup([ring()]);
-    t.s.setUi({ color: '#ff6f91' });
+    t.s.setUi({ fillColor: '#ff6f91' });
     tool().down!(ptr(300, 300), t.ctx);
     const shapes = t.drawing().shapes;
     expect(shapes).toHaveLength(2);
@@ -78,7 +78,7 @@ describe('paint bucket tool', () => {
   it('recolours an existing fill instead of stacking another', () => {
     const t = setup([ring()]);
     tool().down!(ptr(300, 300), t.ctx);
-    t.s.setUi({ color: '#5ab8ff' });
+    t.s.setUi({ fillColor: '#5ab8ff' });
     tool().down!(ptr(250, 320), t.ctx);
     const shapes = t.drawing().shapes;
     expect(shapes).toHaveLength(2);
@@ -95,7 +95,7 @@ describe('paint bucket tool', () => {
       const dr = Object.values(d.drawings)[0] as VectorDrawing;
       dr.shapes.push(stroke([[190, 300], [410, 300]], 8) as never);
     });
-    t.s.setUi({ color: '#4fd1a5' });
+    t.s.setUi({ fillColor: '#4fd1a5' });
     tool().down!(ptr(300, 220), t.ctx);
     const kinds = t.drawing().shapes.map((s) => s.type);
     expect(kinds).toEqual(['fill', 'fill', 'stroke', 'stroke']);
@@ -147,7 +147,7 @@ describe('paint bucket tool', () => {
     }
     it('fills the joined-up area only, with a new array', () => {
       const t = pixelSetup();
-      t.s.setUi({ color: '#ff0000' });
+      t.s.setUi({ fillColor: '#ff0000' });
       tool().down!(ptr(1, 1), t.ctx);
       const px = t.drawing().pixels;
       expect(px).not.toBe(t.before);
@@ -158,13 +158,13 @@ describe('paint bucket tool', () => {
     it('all of this colour reaches the other side too', () => {
       setFillOptions({ allOfColour: true });
       const t = pixelSetup();
-      t.s.setUi({ color: '#ff0000' });
+      t.s.setUi({ fillColor: '#ff0000' });
       tool().down!(ptr(1, 1), t.ctx);
       expect([...t.drawing().pixels.slice(5 * 4, 5 * 4 + 4)]).toEqual([255, 0, 0, 255]);
     });
     it('says so when the area is already that colour', () => {
       const t = pixelSetup();
-      t.s.setUi({ color: '#000000' });
+      t.s.setUi({ fillColor: '#000000' });
       tool().down!(ptr(4, 3), t.ctx);
       expect(t.hints).toEqual([FILL_HINTS.same]);
     });

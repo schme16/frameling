@@ -7,10 +7,11 @@ import { Keys } from './ShortcutChip';
 import { effectiveKeys } from './keys';
 
 export function MenuBar() {
-  // Re-read whenever the document or UI changes, so ticks and greyed items stay true.
-  useStore((s) => s);
-  const menus = resolveMenus();
   const [open, setOpen] = useState<number | null>(null);
+  // While a menu is open, re-read on every change so ticks and greyed items stay true. While closed, don't
+  // re-render at all (the playhead moving would otherwise redraw the menu bar every frame).
+  useStore((s) => (open === null ? null : s));
+  const menus = resolveMenus();
   const bar = useRef<HTMLElement>(null);
 
   useEffect(() => {

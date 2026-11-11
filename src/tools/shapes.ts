@@ -2,6 +2,7 @@
  * Rectangle [R], Ellipse [O] and Line [L]: crisp vector shapes. Drag to draw. Shift keeps a rectangle square, an
  * ellipse round and a line at 45 degree steps. Alt draws from the centre. The options choose outline, fill or both.
  */
+import { shapeColors } from './wells';
 import type { PathPoint, PathShape, SubPath } from '../core/format';
 import { uid } from '../core/doc';
 import { registerTool, type Tool, type ToolContext, type ToolPointer } from '../core/registry';
@@ -92,8 +93,19 @@ export function lineSubPath(a: Pt, b: Pt): SubPath {
   return { closed: false, points: [{ x: a.x, y: a.y }, { x: b.x, y: b.y }] };
 }
 
-/** Builds the shape for a drag, from the colour and the tool options. */
-export function makeShape(kind: 'rect' | 'ellipse' | 'line', a: Pt, b: Pt, mod: { shift: boolean; alt: boolean }, color: string, s: ToolSettings): PathShape | null {
+/**
+ * Builds the shape for a drag, from the fill and stroke colours (as Illustrator does: either can be none) and the
+ * tool options. A line is all stroke, so it always uses the stroke colour, even when the stroke box is set to none.
+ */
+export function makeShape(
+  kind: 'rect' | 'ellipse' | 'line',
+  a: Pt,
+  b: Pt,
+  mod: { shift: boolean; alt: boolean },
+  colors: { fill: string | null; stroke: string | null; line: string },
+  s: ToolSettings,
+): PathShape | null {
+  const color = colors.line;
   if (kind === 'line') {
     const [p, q] = dragLine(a, b, mod.shift, mod.alt);
     if (Math.hypot(q.x - p.x, q.y - p.y) < 1) return null;
@@ -108,14 +120,13 @@ export function makeShape(kind: 'rect' | 'ellipse' | 'line', a: Pt, b: Pt, mod: 
   }
   const r = dragRect(a, b, mod.shift, mod.alt);
   if (r.w < 1 || r.h < 1) return null;
-  const outline = s.shapeMode !== 'fill';
-  const fill = s.shapeMode === 'outline' ? null : s.shapeMode === 'both' ? (s.shapeFill ?? color) : color;
+  if (!colors.fill && !colors.stroke) return null;
   return {
     id: uid('sh'),
     type: 'path',
     paths: [kind === 'rect' ? rectSubPath(r, s.cornerRadius) : ellipseSubPath(r)],
-    fill,
-    stroke: outline ? { color, width: s.shapeStroke, join: s.cornerRadius > 0 || kind === 'ellipse' ? 'round' : 'miter', cap: 'round' } : null,
+    fill: colors.fill,
+    stroke: colors.stroke ? { color: colors.stroke, width: s.shapeStroke, join: s.cornerRadius > 0 || kind === 'ellipse' ? 'round' : 'miter', cap: 'round' } : null,
     opacity: 1,
   };
 }
@@ -129,7 +140,8 @@ function shapeTool(kind: 'rect' | 'ellipse' | 'line', label: string, icon: strin
   let drag: Drag | null = null;
   const build = (): PathShape | null => {
     if (!drag) return null;
-    return makeShape(kind, drag.start, drag.cur, { shift: drag.cur.shift, alt: drag.cur.alt }, store().get().ui.color, getToolSettings());
+    const ui = store().get().ui;
+    return makeShape(kind, drag.start, drag.cur, { shift: drag.cur.shift, alt: drag.cur.alt }, { ...shapeColors(ui), line: ui.color }, getToolSettings());
   };
   return {
     id: kind,
@@ -143,6 +155,11 @@ function shapeTool(kind: 'rect' | 'ellipse' | 'line', label: string, icon: strin
     options: ShapeOptions,
     down(e: ToolPointer, ctx: ToolContext) {
       if (!canEdit(ctx, 'vector', what)) return;
+      const ui = store().get().ui;
+      if (kind !== 'line' && !ui.fillColor && !ui.strokeOn) {
+        ctx.hint('Fill and stroke are both set to none, so the shape would be invisible. Pick a colour for one of them.');
+        return;
+      }
       drag = { start: { x: e.x, y: e.y }, cur: e };
     },
     move(e) {
@@ -157,8 +174,10 @@ function shapeTool(kind: 'rect' | 'ellipse' | 'line', label: string, icon: strin
         const r = editActiveDrawing(`Draw ${label.toLowerCase()}`, 'vector', (d) => {
           d.shapes.push(shape);
         });
-        if (r === 'ok') noteColorUsed(store().get().ui.color);
-        else reportEdit(ctx, r);
+        if (r === 'ok') {
+          if (shape.fill) noteColorUsed(shape.fill);
+          if (shape.stroke) noteColorUsed(shape.stroke.color);
+        } else reportEdit(ctx, r);
       }
       ctx.requestOverlay();
     },

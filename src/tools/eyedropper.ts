@@ -2,6 +2,7 @@
  * Eyedropper [I]: click to pick up the colour you see on the canvas (all layers together, as it looks), and use it.
  * Drag to keep looking. Alt picks from the active layer only.
  */
+import { activeColor, setActiveColor } from './wells';
 import { renderFrame } from '../core/render';
 import { registerTool, type Tool, type ToolContext, type ToolPointer } from '../core/registry';
 import { store } from '../core/store';
@@ -42,7 +43,8 @@ function pick(e: ToolPointer, ctx: ToolContext, speak: boolean): void {
     if (speak) ctx.hint("There's nothing to pick up there. It's see-through.");
     return;
   }
-  if (c !== store().get().ui.color) store().setUi({ color: c });
+  // Into whichever colour box is in front (fill or stroke), as in Illustrator.
+  if (c !== activeColor()) setActiveColor(c);
 }
 
 export const eyedropperTool: Tool = {
@@ -62,7 +64,8 @@ export const eyedropperTool: Tool = {
     pick(e, ctx, false);
   },
   up() {
-    noteColorUsed(store().get().ui.color);
+    const c = activeColor();
+    if (c) noteColorUsed(c);
   },
 };
 

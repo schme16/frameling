@@ -15,11 +15,8 @@ export interface ToolSettings {
   /** Eraser: size in document pixels on vector layers, in art pixels on pixel layers. */
   eraserSize: number;
   eraserPixelSize: number;
-  /** Rectangle, ellipse and line. */
-  shapeMode: 'outline' | 'fill' | 'both';
+  /** Rectangle, ellipse and line: outline thickness. Colours come from the fill and stroke boxes (wells.ts). */
   shapeStroke: number;
-  /** Fill colour when the shape has both; null means "the same colour as the outline". */
-  shapeFill: string | null;
   cornerRadius: number;
   /** Eyedropper: pick from the active layer only. */
   pickActiveLayerOnly: boolean;
@@ -32,9 +29,7 @@ export const DEFAULT_TOOL_SETTINGS: ToolSettings = {
   pencilSize: 2,
   eraserSize: 16,
   eraserPixelSize: 1,
-  shapeMode: 'both',
   shapeStroke: 4,
-  shapeFill: null,
   cornerRadius: 0,
   pickActiveLayerOnly: false,
 };

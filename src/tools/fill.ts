@@ -15,6 +15,7 @@ import { FillOptionsPanel, gapWidth, getFillOptions } from './fill-options';
 import './fill-help';
 
 export const FILL_HINTS = {
+  'no-fill': 'The fill colour is set to none. Pick a fill colour in the Colours panel (the solid box), then fill.',
   leak: "That area isn't closed in. Try a bigger gap setting, or close the gap.",
   'on-line': 'You clicked right on a line. Click inside the area you want to fill.',
   outside: "That spot is off the canvas. Click inside the area you want to fill.",
@@ -110,7 +111,13 @@ export function barrierShapes(doc: Doc, frame: number, own: readonly Shape[], al
 }
 
 function fillVector(e: ToolPointer, ctx: ToolContext) {
-  const { doc, ui } = store().get();
+  const { doc } = store().get();
+  // The bucket pours the fill colour (the stroke colour is for lines), as in Illustrator.
+  const ui = { ...store().get().ui, color: store().get().ui.fillColor ?? '' };
+  if (!ui.color) {
+    ctx.hint(FILL_HINTS['no-fill']);
+    return;
+  }
   const drawing: Drawing | undefined = activeDrawing();
   const opts = getFillOptions();
   // With lines from all layers, the colour layer can start empty: the first fill makes its drawing.
@@ -162,7 +169,11 @@ function fillVector(e: ToolPointer, ctx: ToolContext) {
 }
 
 function fillPixels(e: ToolPointer, ctx: ToolContext) {
-  const { ui } = store().get();
+  const ui = { ...store().get().ui, color: store().get().ui.fillColor ?? '' };
+  if (!ui.color) {
+    ctx.hint(FILL_HINTS['no-fill']);
+    return;
+  }
   const { layer } = activeLayer();
   if (!layer || layer.kind !== 'pixel') return;
   const px = Math.floor(e.x / layer.pixelSize);

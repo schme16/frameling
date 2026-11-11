@@ -66,15 +66,23 @@ async function runSteps(win, steps) {
 
 app.whenReady().then(async () => {
   // The real main process answers these; for shots there is no file and no history.
-  ipcMain.handle('app:launchFile', () => null);
-  ipcMain.handle('recent:list', () => []);
+  for (const ch of ['app:launchFile', 'autosave:read', 'autosave:readKept', 'files:read']) ipcMain.handle(ch, () => null);
+  for (const ch of ['recent:list', 'autosave:listKept']) ipcMain.handle(ch, () => []);
+  for (const ch of ['autosave:write', 'autosave:clear', 'autosave:keep', 'autosave:removeKept', 'recent:add', 'recent:remove', 'recent:clear', 'app:documentState']) ipcMain.handle(ch, () => true);
+  for (const ch of ['app:documentState', 'app:keepUnsavedDone', 'app:saveBeforeCloseDone']) ipcMain.on(ch, () => {});
   fs.mkdirSync(outDir, { recursive: true });
   for (const v of variants.length ? variants : ['default::']) {
     const [name, look, theme, steps] = v.split(':');
     const win = new BrowserWindow({
       width,
       height,
-      show: process.env.SHOT_SHOW === '1',
+      // A truly hidden window only gets about one animation frame a second, so the canvas and React lag behind
+      // and shots go stale. Park a real, unfocusable window off-screen instead (SHOT_SHOW=1 puts it on screen).
+      show: true,
+      x: process.env.SHOT_SHOW === '1' ? undefined : -4000,
+      y: process.env.SHOT_SHOW === '1' ? undefined : 0,
+      focusable: process.env.SHOT_SHOW === '1',
+      skipTaskbar: process.env.SHOT_SHOW !== '1',
       paintWhenInitiallyHidden: true,
       webPreferences: {
         preload: path.join(__dirname, '../dist/preload/preload.cjs'),

@@ -375,3 +375,94 @@
     transition: none;
   }
 }
+
+/* Fill and stroke colour boxes (Wells.tsx). */
+.cv-wells {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.cv-wells-stack {
+  position: relative;
+  flex: none;
+  width: 58px;
+  height: 58px;
+}
+.cv-well {
+  position: absolute;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border-radius: var(--radius-small);
+  border: 1px solid color-mix(in srgb, var(--text) 25%, transparent);
+  cursor: pointer;
+  background-color: var(--panel-2);
+  transition: transform 120ms var(--ease-bounce);
+}
+.cv-well-fill {
+  left: 0;
+  top: 0;
+  background: var(--well, var(--panel-2));
+}
+/* The stroke box is a ring: its colour round the edge, the panel showing through the middle. */
+.cv-well-stroke {
+  right: 0;
+  bottom: 0;
+  background: var(--panel);
+  box-shadow: inset 0 0 0 9px var(--well, transparent), inset 0 0 0 10px color-mix(in srgb, var(--text) 25%, transparent);
+}
+.cv-well.is-front {
+  z-index: 1;
+  outline: 2px solid var(--chosen-bg);
+  outline-offset: 1px;
+}
+.cv-well:hover {
+  transform: scale(1.04);
+}
+/* "None" is a red slash, as in Illustrator. */
+.cv-well.is-none {
+  background-image: linear-gradient(to top right, transparent calc(50% - 1.5px), var(--danger) calc(50% - 1.5px), var(--danger) calc(50% + 1.5px), transparent calc(50% + 1.5px));
+}
+.cv-wells-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.cv-wells-btn {
+  width: 24px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  background: var(--panel-2);
+  cursor: pointer;
+}
+.cv-wells-btn:hover {
+  background: var(--hover-bg);
+}
+.cv-wells-mini {
+  width: 12px;
+  height: 12px;
+  background: linear-gradient(135deg, #fff 0 50%, #1d1b26 50%);
+  border: 1px solid color-mix(in srgb, var(--text) 30%, transparent);
+  border-radius: 2px;
+}
+.cv-wells-none {
+  width: 12px;
+  height: 12px;
+  border: 1px solid color-mix(in srgb, var(--text) 30%, transparent);
+  border-radius: 2px;
+  background: linear-gradient(to top right, transparent calc(50% - 1px), var(--danger) calc(50% - 1px), var(--danger) calc(50% + 1px), transparent calc(50% + 1px));
+}
+.cv-wells-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.cv-wells-text span {
+  color: var(--muted);
+  font-size: var(--fs-small);
+}

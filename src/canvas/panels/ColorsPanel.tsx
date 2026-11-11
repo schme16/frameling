@@ -4,9 +4,12 @@ import { store, useStore } from '../../core/store';
 import { noteColorUsed, useRecentColors } from '../../tools/recent';
 import { hexToHsv, hsvToHex, parseHex, toHex, type HSV } from '../colors';
 import '../canvas.css';
+import { activeColor, setActiveColor } from '../../tools/wells';
+import { Wells } from './Wells';
 
+// Every colour change goes to whichever box is in front (fill or stroke), and to selected shapes.
 function setColor(c: string): void {
-  if (store().get().ui.color !== c) store().setUi({ color: c });
+  setActiveColor(c);
 }
 
 /** Turns a drag on an element into 0..1 positions, with pointer capture so it keeps working outside the box. */
@@ -32,6 +35,11 @@ function useDrag(onMove: (x: number, y: number) => void, onEnd?: () => void) {
   };
 }
 
+function noteNow(): void {
+  const c = activeColor();
+  if (c) noteColorUsed(c);
+}
+
 function Picker({ color }: { color: string }) {
   // The hue and saturation are kept here because greys and blacks have no hue of their own: dragging down to black
   // shouldn't throw the hue away.
@@ -50,11 +58,11 @@ function Picker({ color }: { color: string }) {
   };
   const sv = useDrag(
     (x, y) => apply({ ...hsv, s: x, v: 1 - y }),
-    () => noteColorUsed(store().get().ui.color),
+    () => noteNow(),
   );
   const hue = useDrag(
     (x) => apply({ ...hsv, h: x * 360 }),
-    () => noteColorUsed(store().get().ui.color),
+    () => noteNow(),
   );
   const pure = hsvToHex({ h: hsv.h, s: 1, v: 1 });
   return (
@@ -184,16 +192,16 @@ function SwatchMenu({ menu, onClose }: { menu: MenuState; onClose: () => void })
 }
 
 export function ColorsPanel() {
-  const color = useStore((s) => s.ui.color);
+  // The picker shows the box in front. When that box is "none", show the stroke colour so the picker has a
+  // starting point; picking any colour turns "none" off.
+  const color = useStore((s) => activeColor(s.ui) ?? s.ui.color);
   const swatches = useStore((s) => s.doc.swatches);
   const recent = useRecentColors();
   const [menu, setMenu] = useState<MenuState | null>(null);
   const has = swatches.some((s) => s.color.toLowerCase() === color.toLowerCase());
   return (
     <div className="cv-panel cv-colors">
-      <div className="cv-current" aria-label={`Current colour ${color}`}>
-        <div className="cv-current-fill" style={{ backgroundColor: color }} />
-      </div>
+      <Wells />
       <Picker color={color} />
       <HexField color={color} />
 

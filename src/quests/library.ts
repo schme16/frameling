@@ -215,8 +215,14 @@ export const FILL_IT_IN: Quest = {
     {
       id: 'fill',
       say: 'Click inside your shape.',
-      why: 'Pick a colour first if you like. The paint tucks in behind the line.',
+      why: 'The bucket pours the fill colour: the solid box in the Colours panel. We picked a sunny yellow, but choose any colour you like. The paint tucks in behind the line.',
       target: SEL.canvas,
+      enter: () => {
+        // White paint on white paper looks like nothing happened, so start with a colour that shows.
+        const ui = store().get().ui;
+        const fill = ui.fillColor?.toLowerCase();
+        store().setUi({ activeWell: 'fill', ...(!fill || fill === '#ffffff' ? { fillColor: '#ffc94a' } : {}) });
+      },
       done: (c) => c.edits.some((l) => l === 'Fill' || l === 'Recolour fill'),
       show: () => void demoFill(),
       hint: 'If nothing happens, the line may have a gap. The next step is about that.',

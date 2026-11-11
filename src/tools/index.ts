@@ -1,5 +1,6 @@
 // Registers the tools area's commands, panels, tools and help topics.
 import './help';
+import './wells';
 import './select';
 import './brush';
 import './pencil';

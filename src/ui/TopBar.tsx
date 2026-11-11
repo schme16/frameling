@@ -61,9 +61,12 @@ function DocName() {
 }
 
 function CmdButton({ id, icon, label }: { id: string; icon: string; label: string }) {
-  useStore((s) => s);
+  // Only re-render when this button's enabled state actually flips.
+  const enabled = useStore(() => {
+    const c = getCommand(id);
+    return c ? commandEnabled(c) : false;
+  });
   const c = getCommand(id);
-  const enabled = c ? commandEnabled(c) : false;
   return (
     <button type="button" className={`ui-icon-btn${enabled ? '' : ' is-disabled'}`} aria-label={label} aria-disabled={!enabled} data-command={id} onClick={() => c && runCommand(c)}>
       <Icon name={icon} />

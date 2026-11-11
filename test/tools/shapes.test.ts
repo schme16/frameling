@@ -66,29 +66,37 @@ describe('outlines', () => {
 describe('shape tools', () => {
   it('draws a rectangle as one PathShape with fill and outline', () => {
     const s = vectorStore();
-    s.setUi({ color: '#5ab8ff' });
+    s.setUi({ color: '#5ab8ff', fillColor: '#ffc94a', strokeOn: true });
     drag(rectTool, ctx(), [[50, 50], [120, 90]]);
     const shape = shapesNow()[0] as PathShape;
     expect(shape.type).toBe('path');
-    expect(shape.fill).toBe('#5ab8ff');
+    expect(shape.fill).toBe('#ffc94a');
     expect(shape.stroke).toMatchObject({ color: '#5ab8ff', width: DEFAULT_TOOL_SETTINGS.shapeStroke });
     expect(shapeBounds({ ...shape, stroke: null })).toEqual({ x: 50, y: 50, w: 70, h: 40 });
     expect(s.undoLabel()).toBe('Draw rectangle');
   });
 
-  it('obeys the outline, fill and both choices', () => {
+  it('uses the fill and stroke boxes, either of which can be none (as in Illustrator)', () => {
     const s = vectorStore();
-    s.setUi({ color: '#ff0000' });
-    setToolSettings({ shapeMode: 'outline' });
+    s.setUi({ color: '#ff0000', fillColor: null, strokeOn: true });
     drag(rectTool, ctx(), [[0, 0], [50, 50]]);
-    setToolSettings({ shapeMode: 'fill' });
+    s.setUi({ fillColor: '#00ff00', strokeOn: false });
     drag(rectTool, ctx(), [[0, 0], [50, 50]]);
-    setToolSettings({ shapeMode: 'both', shapeFill: '#00ff00' });
+    s.setUi({ fillColor: '#00ff00', strokeOn: true });
     drag(rectTool, ctx(), [[0, 0], [50, 50]]);
     const [o, f, b] = shapesNow() as PathShape[];
     expect([o.fill, !!o.stroke]).toEqual([null, true]);
-    expect([f.fill, f.stroke]).toEqual(['#ff0000', null]);
+    expect([f.fill, f.stroke]).toEqual(['#00ff00', null]);
     expect([b.fill, b.stroke?.color]).toEqual(['#00ff00', '#ff0000']);
+  });
+
+  it('refuses when both boxes are none, with a reason', () => {
+    const s = vectorStore();
+    s.setUi({ fillColor: null, strokeOn: false });
+    const c = ctx();
+    drag(rectTool, c, [[0, 0], [50, 50]]);
+    expect(shapesNow()).toHaveLength(0);
+    expect(c.hint).toHaveBeenCalledWith(expect.stringContaining('none'));
   });
 
   it('draws an ellipse and a line', () => {
@@ -106,7 +114,7 @@ describe('shape tools', () => {
     vectorStore();
     drag(rectTool, ctx(), [[10, 10], [10, 10]]);
     expect(shapesNow()).toHaveLength(0);
-    expect(makeShape('line', { x: 0, y: 0 }, { x: 0.2, y: 0.2 }, { shift: false, alt: false }, '#000', DEFAULT_TOOL_SETTINGS)).toBeNull();
+    expect(makeShape('line', { x: 0, y: 0 }, { x: 0.2, y: 0.2 }, { shift: false, alt: false }, { fill: null, stroke: '#000', line: '#000' }, DEFAULT_TOOL_SETTINGS)).toBeNull();
 
     pixelStore();
     const c = ctx();

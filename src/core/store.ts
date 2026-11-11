@@ -35,7 +35,14 @@ export interface UiState {
   /** Selected shape ids on the active drawing. */
   selection: Id[];
   tool: ToolId;
+  /** The stroke colour: brush, pencil and pixel lines, and shape outlines. Never none (see `strokeOn`). */
   color: Color;
+  /** The fill colour: shape insides and the paint bucket. null means none. */
+  fillColor: Color | null;
+  /** False when the stroke is set to none (shapes are drawn without an outline; the brush still uses `color`). */
+  strokeOn: boolean;
+  /** Which colour box the picker, swatches and eyedropper change, as in Illustrator. */
+  activeWell: 'fill' | 'stroke';
   brush: BrushSettings;
   playing: boolean;
   loopPlayback: boolean;
@@ -75,6 +82,9 @@ function initialUi(doc: Doc): UiState {
     selection: [],
     tool: 'brush',
     color: '#1d1b26',
+    fillColor: '#ffffff',
+    strokeOn: true,
+    activeWell: 'stroke',
     brush: { ...DEFAULT_BRUSH },
     playing: false,
     loopPlayback: true,
@@ -172,7 +182,8 @@ export class Store {
   load(doc: Doc, filePath: string | null = null): void {
     this.undoStack = [];
     this.redoStack = [];
-    this.state = { doc, ui: { ...initialUi(doc), filePath, color: this.state.ui.color, brush: this.state.ui.brush, tool: this.state.ui.tool } };
+    const u = this.state.ui;
+    this.state = { doc, ui: { ...initialUi(doc), filePath, color: u.color, fillColor: u.fillColor, strokeOn: u.strokeOn, activeWell: u.activeWell, brush: u.brush, tool: u.tool } };
     this.emit();
   }
 
