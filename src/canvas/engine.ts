@@ -20,6 +20,7 @@ import { drawTileModeFrame, tileCopyAlpha } from '../tiles/look';
 import { maskFocusChanged } from '../effects/stage';
 import { cssVar, subscribeTheme } from './theme';
 import { getViewSettings, subscribeViewSettings } from './viewSettings';
+import { ghostItems } from './ghost';
 import { drawDecorations } from './decorations';
 import { canvasCamera, currentView, lookingThrough, stageCamera } from '../camera/ops';
 import { cameraFrameCorners } from '../core/camera';
@@ -327,6 +328,7 @@ export class CanvasEngine {
       camera: canvasCamera()?.view,
       pasteboard: !ui.playing && !doc.editing?.length && !!stageCamera(doc) && !lookingThrough() ? { frame: cameraFrameNow() } : undefined,
       activeLayerId: ui.activeLayerId,
+      ghost: getViewSettings().emptyGhost && !ui.playing && !ui.onion.enabled ? ghostItems(doc, ui.frame) : undefined,
     });
     if (!settled) {
       clearTimeout(this.settleTimer);

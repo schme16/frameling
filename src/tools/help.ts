@@ -67,7 +67,7 @@ Using a drawing pen? Flip it over and use the eraser end.`,
 - Hold **Alt** to draw from the middle instead of a corner.
 - In the options, set how thick the outline is and how round the corners are.
 
-The inside uses your **fill** colour and the edge uses your **stroke** colour, so a new rectangle starts white with a black outline. Set either one to none for just an outline or just a solid shape. See [Fill and stroke colours](help:fill-and-stroke).
+The inside uses your **fill** colour and the edge uses your **stroke** colour, so a new rectangle starts soft yellow with a black outline. Set either one to none for just an outline or just a solid shape. See [Fill and stroke colours](help:fill-and-stroke).
 
 On a **pixel layer** the rectangle is painted as clean pixels: a one pixel edge in the stroke colour, filled with the fill colour.`,
   },

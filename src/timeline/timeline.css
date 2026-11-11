@@ -534,6 +534,10 @@
 .tl-cel:hover {
   box-shadow: 0 0 0 1px var(--cel-key);
 }
+/* Carried on automatically until the next drawing: a lighter hold, so a chosen hold still stands out. */
+.tl-cel.is-auto {
+  background-color: color-mix(in srgb, var(--cel-hold) 55%, transparent);
+}
 .tl-row.is-hidden .tl-cel {
   opacity: 0.4;
 }

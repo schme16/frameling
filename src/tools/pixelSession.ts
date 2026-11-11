@@ -8,6 +8,8 @@ import { drawingAt } from '../core/doc';
 import { setLive } from '../canvas/controller';
 import { getPx, setPx, type PxPt, type RGBA } from '../canvas/pixels';
 import { editActiveDrawing } from './edit';
+import { autoHeldAt } from '../timeline/edit-core';
+import { markTracing } from '../canvas/ghost';
 import { tileModeOn, wrap } from '../tiles/state';
 import { lockedInk, makeMirror, mirrorPoints, type Ink, type Mirror } from '../pixel/ink';
 import { docPalette } from '../pixel/palette';
@@ -51,9 +53,14 @@ export class PixelSession {
   private pts = new Int32Array(8);
   private rgba = new Uint8Array(4);
 
-  constructor(doc: Doc, layer: PixelLayer, frame: number, opts: { mirror?: boolean } = {}) {
+  /** Painting on a frame that only carries the last drawing along: this starts a new drawing there. */
+  private fresh = false;
+
+  constructor(doc: Doc, layer: PixelLayer, frame: number, opts: { mirror?: boolean; adds?: boolean } = {}) {
     const d = drawingAt(doc, layer, frame);
-    if (d && d.kind === 'pixel') {
+    this.fresh = !!opts.adds && !!autoHeldAt(layer, frame);
+    if (this.fresh) markTracing(layer.id, frame);
+    if (d && d.kind === 'pixel' && !this.fresh) {
       this.width = d.width;
       this.height = d.height;
       this.base = d.pixels;
@@ -173,9 +180,14 @@ export class PixelSession {
       return 'nothing';
     }
     const pixels = new Uint8ClampedArray(this.work);
-    const r = editActiveDrawing(label, 'pixel', (d) => {
-      d.pixels = pixels;
-    });
+    const r = editActiveDrawing(
+      label,
+      'pixel',
+      (d) => {
+        d.pixels = pixels;
+      },
+      { adds: this.fresh },
+    );
     setLive(null);
     return r;
   }

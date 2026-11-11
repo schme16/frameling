@@ -5,7 +5,7 @@
  *
  * Changing a colour while shapes are selected also recolours them (one undo step per drag).
  *
- * Keys: X brings the other box to the front, Shift+X swaps the two colours, Shift+D goes back to the defaults (white
+ * Keys: X brings the other box to the front, Shift+X swaps the two colours, Shift+D goes back to the defaults (yellow
  * fill, black stroke; plain D is "copy drawing to next frame" in the timeline), / sets the box in front to none.
  */
 import type { Color } from '../core/format';
@@ -13,7 +13,8 @@ import { registerCommands, registerHelp } from '../core/registry';
 import { store, type UiState } from '../core/store';
 import { activeDrawing, editActiveDrawing } from './edit';
 
-export const DEFAULT_FILL: Color = '#ffffff';
+// A soft yellow that reads on white paper, so the first shape and the first bucket click show up.
+export const DEFAULT_FILL: Color = '#ffc94a';
 export const DEFAULT_STROKE: Color = '#1d1b26';
 
 /** The colour in the box that's in front, or null when it's set to none. */
@@ -90,7 +91,7 @@ export function swapColors(): void {
   applyToSelection('stroke');
 }
 
-/** Shift+D: white fill, black stroke. */
+/** Shift+D: yellow fill, black stroke. */
 export function resetColors(): void {
   store().setUi({ fillColor: DEFAULT_FILL, color: DEFAULT_STROKE, strokeOn: true });
   applyToSelection('fill');
@@ -128,12 +129,12 @@ registerCommands([
   },
   {
     id: 'colors.reset',
-    label: 'Default colours (white fill, black stroke)',
+    label: 'Default colours (yellow fill, black stroke)',
     category: 'Colours',
     keys: ['Shift+D'],
-    description: 'Go back to a white fill and a black stroke.',
+    description: 'Go back to a yellow fill and a black stroke.',
     help: 'fill-and-stroke',
-    keywords: ['default', 'reset', 'black', 'white'],
+    keywords: ['default', 'reset', 'black', 'white', 'yellow'],
     run: resetColors,
   },
   {
@@ -167,7 +168,7 @@ Rectangles and ellipses use both: the fill inside and the stroke round the edge.
 
 - **X** brings the other box to the front.
 - **Shift+X** swaps the two colours.
-- **Shift+D** goes back to a white fill and a black stroke.
+- **Shift+D** goes back to a yellow fill and a black stroke.
 - **/** sets the box in front to none.
 
 ## Changing shapes you've already drawn

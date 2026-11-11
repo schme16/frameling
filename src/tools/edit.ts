@@ -7,11 +7,13 @@
  * (asked the first time): make a new key here from a copy of the held drawing, or change the held drawing itself.
  */
 import { current, type Draft } from 'immer';
-import type { Doc, Drawing, Layer, PixelDrawing, TilemapDrawing, VectorDrawing } from '../core/format';
+import type { Cel, Doc, Drawing, Layer, PixelDrawing, TilemapDrawing, VectorDrawing } from '../core/format';
 import { celAt, findLayer, newDrawingFor, uid } from '../core/doc';
 import { isInBetween, shownDrawing } from '../core/symbols';
 import { store } from '../core/store';
 import { registerChoice, withChoice } from '../core/choices';
+import { autoHeldAt, newKeySpan, splitAutoHold } from '../timeline/edit-core';
+import { markTracing } from '../canvas/ghost';
 
 export type HeldFrameChoice = 'new-key' | 'edit-held';
 
@@ -66,6 +68,15 @@ export function activeLayer(): { layer: Layer | undefined; problem: Exclude<Edit
   return { layer, problem: null };
 }
 
+/**
+ * True when adding to the active layer here starts a new drawing: the frame is a later frame of an automatic hold
+ * (the last drawing just carries on until the next one).
+ */
+export function addingStartsNewDrawing(): boolean {
+  const { layer } = activeLayer();
+  return !!layer && !!autoHeldAt(layer, store().get().ui.frame);
+}
+
 /** The drawing showing on the active layer at the current frame, if any (read only). */
 export function activeDrawing(): Drawing | undefined {
   const { doc, ui } = store().get();
@@ -83,7 +94,7 @@ export function editActiveDrawing<K extends 'vector' | 'pixel' | 'tilemap'>(
   label: string,
   kind: K,
   recipe: (drawing: Draft<K extends 'vector' ? VectorDrawing : K extends 'pixel' ? PixelDrawing : TilemapDrawing>, doc: Draft<Doc>, split: boolean) => void,
-  opts: { coalesce?: string } = {},
+  opts: { coalesce?: string; adds?: boolean } = {},
 ): EditResult {
   const { layer, problem } = activeLayer();
   if (problem || !layer) return problem ?? 'no-layer';
@@ -114,22 +125,31 @@ export function editActiveDrawing<K extends 'vector' | 'pixel' | 'tilemap'>(
           l.cels.sort((a, b) => a.start - b.start);
           cel = l.cels.find((c) => c.start === frame)!;
         }
+        const auto = opts.adds && cel ? autoHeldAt(l as Layer, frame) : undefined;
+        if (auto) {
+          // A later frame of an automatic hold works like an empty frame: a new drawing starts here.
+          const d = newDrawingFor(doc as Doc, l as Layer);
+          doc.drawings[d.id] = d as Draft<Drawing>;
+          splitAutoHold(l as Layer, auto as Cel, frame, d.id);
+          cel = l.cels.find((c) => c.start === frame)!;
+          markTracing(l.id, frame);
+        }
         if (!cel) {
           const d = newDrawingFor(doc as Doc, l as Layer);
           doc.drawings[d.id] = d as Draft<Drawing>;
-          // The new key holds until the next key on this layer, or for one frame at the end.
-          const next = l.cels.find((c) => c.start > frame);
-          const length = next ? next.start - frame : 1;
-          l.cels.push({ id: uid('c'), start: frame, length, drawingId: d.id });
+          // Until the next key on this layer or the end (or for one frame, if that's the preference).
+          const span = newKeySpan(doc as Doc, l as Layer, frame);
+          l.cels.push({ id: uid('c'), start: frame, drawingId: d.id, ...span });
           l.cels.sort((a, b) => a.start - b.start);
-          if (frame + length > doc.length) doc.length = frame + length;
+          if (frame + span.length > doc.length) doc.length = frame + span.length;
           cel = l.cels.find((c) => c.start === frame)!;
+          if (l.cels.some((c) => c.start < frame)) markTracing(l.id, frame);
         }
         recipe(doc.drawings[cel.drawingId] as never, doc, split && !!held && held.start < frame);
       },
-      opts,
+      { coalesce: opts.coalesce },
     );
-  if (!held || held.start === frame) {
+  if (!held || held.start === frame || (opts.adds && autoHeldAt(layer, frame))) {
     apply(false);
     return 'ok';
   }

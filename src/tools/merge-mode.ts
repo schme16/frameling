@@ -65,7 +65,7 @@ export function editShapes(label: string, fn: (shapes: readonly Shape[]) => Shap
 /** Adds shapes to the active drawing: pushed on top on a normal layer, merged in on a merge layer. Returns the new ids. */
 export function addShapes(label: string, shapes: Shape[]): { result: EditResult | 'nothing'; ids: Id[] } {
   if (!activeIsMerge()) {
-    const r = editActiveDrawing(label, 'vector', (d) => void d.shapes.push(...(shapes as never[])));
+    const r = editActiveDrawing(label, 'vector', (d) => void d.shapes.push(...(shapes as never[])), { adds: true });
     return { result: r, ids: shapes.map((s) => s.id) };
   }
   let ids: Id[] = [];

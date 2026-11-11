@@ -106,11 +106,13 @@ export const FIRST_ANIMATION: Quest = {
       enter: () => {
         // Two drawings one frame each flicker too fast at 12 fps, so hold each for 2 frames, as long as every
         // drawing is still a single frame (never undo someone's own timing).
+        // The last drawing holding to the end on its own counts as one frame: nobody chose that.
         const doc = store().get().doc;
-        const cels = doc.layers.flatMap((l) => l.cels);
-        if (cels.length > 0 && cels.every((c) => c.length === 1)) {
+        const tail = (l: { cels: { autoHold?: boolean }[] }, i: number) => i === l.cels.length - 1 && !!l.cels[i].autoHold;
+        const cels = doc.layers.flatMap((l) => l.cels.map((c, i) => (tail(l, i) ? 1 : c.length)));
+        if (cels.length > 0 && cels.every((n) => n === 1)) {
           store().update('Hold drawings on twos', (d) => {
-            for (const l of d.layers) for (const c of l.cels) (c.start *= 2), (c.length = 2);
+            for (const l of d.layers) for (const c of l.cels) (c.start *= 2), (c.length = 2), delete c.autoHold;
           });
         }
         const n = contentLength(store().get().doc);
