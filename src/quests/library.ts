@@ -59,7 +59,7 @@ export const FIRST_ANIMATION: Quest = {
   title: 'Your first animation in 60 seconds',
   summary: "Draw a doodle, draw it again a little different, that's animation!",
   minutes: 1,
-  icon: 'sparkle',
+  icon: 'quest',
   badge: { id: 'flipbooker', name: 'Flipbooker', icon: 'film', color: '--grape' },
   finish: 'You made something move. That is the whole trick, everything else is more of it.',
   prepare: ensureBlankVectorPage,

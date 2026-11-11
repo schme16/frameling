@@ -69,11 +69,12 @@ const ICONS: Record<string, ReactNode> = {
       <path d="M8.8 15.3c-.9 1.6-.5 3.3 1 3.9 1.4.6 1.6 1.7.7 2.8" />
     </>
   ),
+  // A plain wand pointing at a pixel. No twinkles: stars and sparkles read as "AI" now.
   wand: (
     <>
-      <path d="M4 20l10-10" />
-      <path d="M16.5 3.5v3m0 4v3m-5-5h3m4 0h3" />
-      <path d="M13 11l-2-2" />
+      <path d="M4 20l8.6-8.6" />
+      <path d="M12.6 11.4l1.6-1.6" strokeWidth={3.4} />
+      <rect x="16.5" y="3.5" width="4.5" height="4.5" rx="1" fill="currentColor" />
     </>
   ),
   hand: <path d="M9 11.5V5.7a1.5 1.5 0 0 1 3 0V10m0-1.8a1.5 1.5 0 0 1 3 0v2.3m0-.8a1.5 1.5 0 0 1 3 0v4.6a6 6 0 0 1-6 6h-.6a6 6 0 0 1-4.7-2.3l-3-3.9a1.5 1.5 0 0 1 2.3-1.9L9 14.2" />,
@@ -301,10 +302,33 @@ const ICONS: Record<string, ReactNode> = {
       {dot(15, 18, 1.5)}
     </>
   ),
-  sparkle: (
+  // quests: a dotted route to a pin
+  quest: (
     <>
-      <path d="M11 4c.6 4.6 2.4 6.4 7.4 8.4-5 2-6.8 3.8-7.4 8.4-.6-4.6-2.4-6.4-7.4-8.4C8.6 10.4 10.4 8.6 11 4z" />
-      <path d="M19 3.2v3.4M17.3 4.9h3.4" />
+      <path d="M17 3.5a3.6 3.6 0 0 0-3.6 3.6c0 2.7 3.6 6.2 3.6 6.2s3.6-3.5 3.6-6.2A3.6 3.6 0 0 0 17 3.5z" />
+      {dot(17, 7.1, 1.1)}
+      <path d="M7.5 19.5c3 0 3.5-2.8 6.5-2.8 1.6 0 2.5-.6 2.9-1.6" strokeDasharray="0.1 3.1" />
+      {dot(4.5, 19.5, 1.9)}
+    </>
+  ),
+  // tips: a lightbulb
+  tip: (
+    <>
+      <path d="M9.5 16.5v-1.2c0-.9-.5-1.6-1.2-2.3A6 6 0 1 1 15.7 13c-.7.7-1.2 1.4-1.2 2.3v1.2z" />
+      <path d="M9.5 19.5h5" />
+    </>
+  ),
+  // "Show me": watch it done for you
+  'show-me': (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M10 8.7v6.6a.6.6 0 0 0 .9.5l5.2-3.3a.6.6 0 0 0 0-1L10.9 8.2a.6.6 0 0 0-.9.5z" fill="currentColor" />
+    </>
+  ),
+  book: (
+    <>
+      <path d="M12 6.6C10.3 5.3 7.8 4.6 4 4.6v13.2c3.8 0 6.3.7 8 2 1.7-1.3 4.2-2 8-2V4.6c-3.8 0-6.3.7-8 2z" />
+      <path d="M12 6.6v13.2" />
     </>
   ),
   heart: <path d="M12 20s-7.7-4.7-7.7-10.4a4.3 4.3 0 0 1 7.7-2.5 4.3 4.3 0 0 1 7.7 2.5C19.7 15.3 12 20 12 20z" />,
