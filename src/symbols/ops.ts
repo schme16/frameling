@@ -399,6 +399,14 @@ export function setTweenKind(kind: 'classic' | 'shape'): Result {
 
 // ---------------------------------------------------------------- shape hints
 
+// A key can end one morph and start the next. Which side the hints panel last asked for wins there.
+let hintFocus: { celId: Id; end: 'from' | 'to' } | null = null;
+
+/** Show the hints of the morph on `celId`, on its first key ('from') or its last ('to'). */
+export function focusHints(celId: Id, end: 'from' | 'to'): void {
+  hintFocus = { celId, end };
+}
+
 /** The shape tween whose start or end key is at the playhead on the active layer, and which end we're on. */
 export function hintTarget(): { layer: Layer; cel: Cel; next: Cel; end: 'from' | 'to' } | undefined {
   const { doc, ui } = store().get();
@@ -406,6 +414,11 @@ export function hintTarget(): { layer: Layer; cel: Cel; next: Cel; end: 'from' |
   if (!layer || layer.kind !== 'vector') return undefined;
   const cel = celAt(layer, ui.frame);
   if (!cel) return undefined;
+  if (hintFocus) {
+    const f = layer.cels.find((c) => c.id === hintFocus!.celId);
+    const n = f && f.tween?.kind === 'shape' ? nextKey(layer, f) : undefined;
+    if (f && n && ui.frame === (hintFocus.end === 'from' ? f.start : n.start)) return { layer, cel: f, next: n, end: hintFocus.end };
+  }
   // On a morph's own key (or anywhere in it): its start shapes.
   const next = nextKey(layer, cel);
   if (cel.tween?.kind === 'shape' && next && ui.frame === cel.start) return { layer, cel, next, end: 'from' };

@@ -23,7 +23,9 @@ interface Marker {
 export function hintMarkers(): { end: 'from' | 'to'; markers: Marker[] } | null {
   const t = hintTarget();
   if (!t) return null;
-  const { doc } = store().get();
+  const { doc, ui } = store().get();
+  // Only on the keys themselves: in between, the drawing is a blend the markers don't sit on.
+  if (ui.frame !== (t.end === 'from' ? t.cel.start : t.next.start)) return null;
   const d = doc.drawings[(t.end === 'from' ? t.cel : t.next).drawingId];
   if (d?.kind !== 'vector') return null;
   const hints = t.cel.tween?.hints ?? [];
@@ -66,6 +68,12 @@ export const shapeHintTool: Tool = {
     const t = hintTarget();
     if (!t) {
       ctx.hint('Shape hints go on a morph. Put the playhead on its first or last key.');
+      return;
+    }
+    if (store().get().ui.frame !== (t.end === 'from' ? t.cel.start : t.next.start)) {
+      // In the middle of the morph: hop to its first key, where hints go.
+      store().setUi({ frame: t.cel.start });
+      ctx.hint('Hints go on the keys. This is the first key of the morph: click its outline to add one.');
       return;
     }
     const hit = markerAt(e.x, e.y, ctx.zoom);

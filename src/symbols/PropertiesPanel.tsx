@@ -8,7 +8,7 @@ import { EASE_PRESETS, presetOf } from '../core/ease';
 import { instanceAt, isInstance, nextKey, symbolContent } from '../core/symbols';
 import { ActionButton, Choice, Field, Slider, Tip, Toggle } from '../canvas/controls';
 import { CurveEditor } from './CurveEditor';
-import { clearMotionPath, clearShapeHints, editInstance, makeShapeTween, makeTween, makeTweenAsking, setTweenKind, pathFromSelection, removeTween, resetTransform, setEase, swapSymbol, updateInstances, updateTween, wouldNestInItself } from './ops';
+import { clearMotionPath, clearShapeHints, focusHints, editInstance, makeShapeTween, makeTween, makeTweenAsking, setTweenKind, pathFromSelection, removeTween, resetTransform, setEase, swapSymbol, updateInstances, updateTween, wouldNestInItself } from './ops';
 import './symbols.css';
 
 export function Num({ label, value, onChange, step = 1, suffix, title }: { label: string; value: number; onChange: (v: number) => void; step?: number; suffix?: string; title?: string }) {
@@ -226,11 +226,11 @@ export function TweenSection() {
         <Field label={`Shape hints (${hints.length})`}>
           <Tip>If the morph twists or crumples, pin points together: put a lettered hint on the first key, then drag its twin to the matching spot on the last key.</Tip>
           <div className="cv-row cv-wrap">
-            <ActionButton onClick={() => store().setUi({ tool: 'shape-hints', frame: cel.start })} title="Click the first key's outline to add a hint (Alt-click one to remove it)">
+            <ActionButton onClick={() => { focusHints(cel.id, 'from'); store().setUi({ tool: 'shape-hints', frame: cel.start }); }} title="Click the first key's outline to add a hint (Alt-click one to remove it)">
               {hints.length ? 'Add or move hints' : 'Add shape hints'}
             </ActionButton>
             {next && hints.length > 0 && (
-              <ActionButton onClick={() => store().setUi({ tool: 'shape-hints', frame: next.start })} title="Go to the last key and drag the hints into place">
+              <ActionButton onClick={() => { focusHints(cel.id, 'to'); store().setUi({ tool: 'shape-hints', frame: next.start }); }} title="Go to the last key and drag the hints into place">
                 Place them on the last key
               </ActionButton>
             )}

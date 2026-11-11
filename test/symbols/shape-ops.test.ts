@@ -3,7 +3,7 @@ import { newDoc, newVectorDrawing } from '../../src/core/doc';
 import type { Cel, PathShape, VectorDrawing } from '../../src/core/format';
 import { resetStore, store } from '../../src/core/store';
 import { setChoice } from '../../src/core/choices';
-import { addShapeHint, clearShapeHints, hintTarget, makeShapeTween, makeTweenAsking, moveShapeHint, removeShapeHint, setTweenKind } from '../../src/symbols/ops';
+import { addShapeHint, clearShapeHints, focusHints, hintTarget, makeShapeTween, makeTweenAsking, moveShapeHint, removeShapeHint, setTweenKind } from '../../src/symbols/ops';
 import { hintMarkers } from '../../src/symbols/hints';
 import { poseAt } from '../../src/core/symbols';
 
@@ -93,5 +93,26 @@ describe('morphs (shape tweens)', () => {
     expect(Math.min(...xs)).toBeGreaterThan(10);
     expect(Math.max(...xs)).toBeLessThan(130);
     expect(s.fill).not.toBe('#ff0000');
+  });
+
+  it('on a key that ends one morph and starts the next, the side asked for wins', () => {
+    makeShapeTween();
+    // Second morph from the end key on to a new one.
+    store().update('more', (doc) => {
+      const l = doc.layers[0];
+      l.cels[1].length = 1;
+      l.cels[1].tween = { kind: 'shape', ease: 'linear' };
+      doc.drawings.dz = { id: 'dz', kind: 'vector', shapes: [square('y', 50)] };
+      l.cels.push({ id: 'c3', start: 12, length: 1, drawingId: 'dz' });
+      doc.length = 13;
+    });
+    const [first, second] = cels();
+    store().setUi({ frame: 11 });
+    expect(hintTarget()?.cel.id).toBe(second.id);
+    focusHints(first.id, 'to');
+    expect(hintTarget()).toMatchObject({ end: 'to' });
+    expect(hintTarget()?.cel.id).toBe(first.id);
+    focusHints(second.id, 'from');
+    expect(hintTarget()?.cel.id).toBe(second.id);
   });
 });
