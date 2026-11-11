@@ -29,6 +29,8 @@ export interface Prefs {
   showTips: boolean;
   /** Show Quill, the hedgehog guide. Off hides him everywhere; his speech bubbles still show their words. */
   showQuill: boolean;
+  /** How the right side is laid out: Properties with a labelled rail, every panel on the rail, or tabs. */
+  rightSide: 'inspector' | 'rail' | 'tabs';
   /** Tile mode: fade the copies round the tile you're drawing (off shows them at full strength). */
   fadeTileCopies: boolean;
   /** How sizes are shown: pixels, or mm, cm, inches or points at the document's DPI. */
@@ -55,6 +57,7 @@ export const DEFAULT_PREFS: Prefs = {
   showWelcome: true,
   showTips: true,
   showQuill: true,
+  rightSide: 'inspector',
   fadeTileCopies: false,
   units: DEFAULT_UNIT,
   onboarded: false,
@@ -88,6 +91,7 @@ export function migratePrefs(raw: unknown): Prefs {
     showWelcome: bool(r.showWelcome, DEFAULT_PREFS.showWelcome),
     showTips: bool(r.showTips, DEFAULT_PREFS.showTips),
     showQuill: bool(r.showQuill, DEFAULT_PREFS.showQuill),
+    rightSide: r.rightSide === 'rail' || r.rightSide === 'tabs' || r.rightSide === 'inspector' ? r.rightSide : DEFAULT_PREFS.rightSide,
     fadeTileCopies: bool(r.fadeTileCopies, DEFAULT_PREFS.fadeTileCopies),
     units: isUnit(r.units) ? r.units : DEFAULT_PREFS.units,
     onboarded: bool(r.onboarded, DEFAULT_PREFS.onboarded),

@@ -457,8 +457,10 @@ See also [Panels](help:panels).`,
     title: 'Properties',
     section: 'Workspace',
     summary: 'The settings for what you are doing now, in one place on the right.',
-    keywords: ['inspector', 'settings', 'options', 'selection', 'tool options', 'colours', 'effects', 'symbol', 'text', 'where is', 'find a setting', 'right side', 'sections', 'fold'],
+    keywords: ['inspector', 'settings', 'options', 'selection', 'tool options', 'colours', 'effects', 'symbol', 'text', 'where is', 'find a setting', 'right side', 'sections', 'fold', 'rail', 'tabs', 'layout'],
     body: `**Properties** is the first place on the right side's rail. It shows the settings for what you're doing right now, as sections in one list, so you don't have to know which panel holds what.
+
+Prefer it another way? **Preferences**, **General**, **Right side** offers **Rail** (every panel on the labelled rail, one at a time) or **Tabs** (the older row of tabs across the top, with a **Panels** list).
 
 ## What shows
 

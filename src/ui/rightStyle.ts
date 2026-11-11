@@ -1,12 +1,17 @@
-// How the right side is laid out. Properties with a labelled rail is the one people get; the other two are kept for
-// side by side comparisons (?debug only, see renderer/debug.ts).
+// How the right side is laid out, from the "Right side" preference (Preferences > General). Properties with a labelled
+// rail is the default (picked on the board); the other two are options.
 //   inspector  Properties: the settings for what you're doing as folding sections, the rest on a labelled rail
 //   rail       every panel on the labelled rail, one at a time
 //   tabs       tabs across the top as before, plus a Panels list
 import { createStore, readJson, writeJson } from './mini';
+import { getPrefs, subscribePrefs } from './prefs';
 
 export type RightStyle = 'inspector' | 'rail' | 'tabs';
-export const rightStyle = createStore<RightStyle>('inspector');
+export const rightStyle = createStore<RightStyle>(getPrefs().rightSide);
+subscribePrefs(() => {
+  const want = getPrefs().rightSide;
+  if (rightStyle.get() !== want) rightStyle.set(want);
+});
 
 // ---------------------------------------------------------------- folded sections
 
