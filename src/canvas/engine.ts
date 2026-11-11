@@ -20,7 +20,8 @@ import { drawTileModeFrame, tileCopyAlpha } from '../tiles/look';
 import { cssVar, subscribeTheme } from './theme';
 import { getViewSettings, subscribeViewSettings } from './viewSettings';
 import { drawDecorations } from './decorations';
-import { canvasCamera, lookingThrough, stageCamera } from '../camera/ops';
+import { canvasCamera, currentView, lookingThrough, stageCamera } from '../camera/ops';
+import { cameraFrameCorners } from '../core/camera';
 import { invert, applyMat } from '../core/symbols';
 import { screenToDoc, stageDeviceRect, wheelZoomFactor, zoomAbout, type Pt } from './view';
 
@@ -322,7 +323,7 @@ export class CanvasEngine {
       tileMode: tileModeOn(),
       tileCopyAlpha: tileCopyAlpha(),
       camera: canvasCamera()?.view,
-      pasteboard: !ui.playing && !doc.editing?.length && !!stageCamera(doc) && !lookingThrough(),
+      pasteboard: !ui.playing && !doc.editing?.length && !!stageCamera(doc) && !lookingThrough() ? { frame: cameraFrameNow() } : undefined,
     });
     if (!settled) {
       clearTimeout(this.settleTimer);
@@ -656,4 +657,12 @@ export class CanvasEngine {
     this.invalidate(false, true);
     this.updateCursor();
   }
+}
+
+/** The camera's view on the playhead's frame, as stage-space corners (for the pasteboard), when it's on. */
+function cameraFrameNow(): { x: number; y: number }[] | undefined {
+  const s = store().get();
+  const cam = stageCamera(s.doc);
+  const v = cam?.visible ? currentView(s) : undefined;
+  return v ? cameraFrameCorners(s.doc, v) : undefined;
 }

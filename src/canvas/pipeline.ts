@@ -37,8 +37,11 @@ export interface FrameParams {
   tileCopyAlpha?: number;
   /** Look through this camera view (the canvas is showing what the camera sees). */
   camera?: CameraView;
-  /** Also show, faded, what's drawn off the stage (there's a camera to pan over it). */
-  pasteboard?: boolean;
+  /**
+   * Also show what's drawn off the stage (there's a camera to pan over it): faded, except inside `frame` (the
+   * camera's view, in stage space), which shows as the camera sees it.
+   */
+  pasteboard?: { frame?: { x: number; y: number }[] };
 }
 
 const AROUND: [number, number][] = [
@@ -412,6 +415,18 @@ export class FramePainter {
     g.rect(rect.x, rect.y, rect.w, rect.h);
     g.clip('evenodd');
     g.setTransform(rect.w / doc.width, 0, 0, rect.h / doc.height, rect.x, rect.y);
+    const frame = p.pasteboard?.frame;
+    const framePath = () => {
+      g.beginPath();
+      frame!.forEach((q, i) => (i ? g.lineTo(q.x, q.y) : g.moveTo(q.x, q.y)));
+      g.closePath();
+    };
+    // The camera sees the stage colour beyond the stage too (exports fill the whole picture with it).
+    if (frame && doc.background) {
+      framePath();
+      g.fillStyle = doc.background;
+      g.fill();
+    }
     for (const layer of doc.layers) {
       if (!layer.visible || layer.kind === 'camera') continue;
       const d = poseAt(doc, layer, p.frame);
@@ -425,10 +440,19 @@ export class FramePainter {
       drawDrawing(g, d, ps, { doc, frame: p.frame });
     }
     // Faded towards the canvas colour, so the stage still reads as the stage.
-    g.setTransform(1, 0, 0, 1, 0, 0);
     g.globalAlpha = 0.55;
     g.fillStyle = getComputedStyleSafe('--canvas-bg', '#121019');
-    g.fillRect(0, 0, p.width, p.height);
+    if (frame) {
+      // Faded outside the camera's view only.
+      g.beginPath();
+      g.rect(-1e6, -1e6, 2e6, 2e6);
+      frame.forEach((q, i) => (i ? g.lineTo(q.x, q.y) : g.moveTo(q.x, q.y)));
+      g.closePath();
+      g.fill('evenodd');
+    } else {
+      g.setTransform(1, 0, 0, 1, 0, 0);
+      g.fillRect(0, 0, p.width, p.height);
+    }
     g.restore();
   }
 

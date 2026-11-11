@@ -17,6 +17,8 @@ let look: FrameLook = 'dim';
 export function setFrameLook(l: FrameLook): void {
   look = l;
 }
+// For the A/B pictures: ?debug pages can switch the look.
+if (typeof location !== 'undefined' && new URLSearchParams(location.search).has('debug')) (globalThis as { __framelingCameraLook?: typeof setFrameLook }).__framelingCameraLook = setFrameLook;
 
 const KNOB_GAP = 26;
 const HANDLE = 6;

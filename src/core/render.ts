@@ -289,6 +289,7 @@ export function renderFrame(g: Ctx2D, doc: Doc, frame: number, opts: RenderOptio
   for (const layer of doc.layers) {
     if (!opts.includeHidden && !layer.visible) continue;
     if (opts.layerFilter && !opts.layerFilter(layer)) continue;
+    if (layer.kind === 'camera') continue;
     const m = layerCameraMatrix(doc, layer, view);
     if (!m) {
       drawLayerAt(g, doc, layer, frame);
