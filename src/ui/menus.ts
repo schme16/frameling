@@ -52,6 +52,11 @@ export const MENUS: MenuDef[] = [
     items: ['view.panel.effects', '-', 'effects.add.blur', 'effects.add.glow', 'effects.add.shadow', 'effects.add.adjust', 'effects.add.outline', 'effects.add.pixelate', '-', 'layers.clipToBelow', 'layers.useAsMask', '-', 'layers.newFolder', 'layers.ungroupFolder', '-', 'effects.reset'],
   },
   {
+    label: 'Plugins',
+    categories: ['Plugins'],
+    items: ['plugins.manage', 'plugins.install', '-'],
+  },
+  {
     label: 'Help',
     categories: ['Help'],
     items: ['help.contents', 'quests.open', 'file.openExample', 'help.shortcuts', 'help.welcome', 'help.meetQuill', '-', 'help.about'],

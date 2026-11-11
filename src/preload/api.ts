@@ -58,6 +58,25 @@ export interface KeptAutosave {
 
 export type SaveChoice = 'save' | 'discard' | 'cancel';
 
+/** What the app keeps in its own folder: installed plugins and your templates. */
+export type LibraryKind = 'plugins' | 'templates';
+
+export interface LibraryEntry {
+  id: string;
+  size: number;
+  modified: number;
+}
+
+/** A small store of files the app keeps for itself (desktop: a folder in the user data dir; web: IndexedDB). */
+export interface LibraryApi {
+  list(kind: LibraryKind): Promise<LibraryEntry[]>;
+  read(kind: LibraryKind, id: string): Promise<Uint8Array | null>;
+  write(kind: LibraryKind, id: string, bytes: Uint8Array): Promise<void>;
+  remove(kind: LibraryKind, id: string): Promise<void>;
+  /** Desktop only: shows the folder in the file manager, so files can be dropped in by hand. */
+  showFolder?(kind: LibraryKind): Promise<void>;
+}
+
 export interface FramelingApi {
   /** Which kind of home the page has: the desktop app, or a web browser (src/platform). Missing means desktop. */
   kind?: 'desktop' | 'web';
@@ -79,7 +98,14 @@ export interface FramelingApi {
     /** Writes several files into a folder that pickExportFolder returned. null means they chose not to replace existing files. */
     writeMany(folder: string, files: { name: string; bytes: Uint8Array }[]): Promise<{ paths: string[] } | FileFailure | null>;
     showInFolder(path: string): Promise<void>;
+    /** Shows the Open dialog for other kinds of file (a plugin, a template, an Interactives package). null means they cancelled. */
+    openOther?(opts: { filters: FileFilter[]; title?: string }): Promise<OpenedFile | FileFailure | null>;
+    /** Desktop only: pick a folder and read the files in it (a plugin being worked on). Small folders only. */
+    readFolder?(opts: { title?: string }): Promise<{ path: string; files: { name: string; bytes: Uint8Array }[] } | FileFailure | null>;
+    /** Lets Frameling write back to an Interactives package it opened, in later sessions too. */
+    linkPlayable?(path: string): Promise<void>;
   };
+  library?: LibraryApi;
   recent: {
     list(): Promise<RecentFile[]>;
     add(path: string): Promise<void>;

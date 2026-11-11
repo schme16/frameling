@@ -1,0 +1,10 @@
+{
+  "id": "contact-sheet",
+  "name": "Contact sheet",
+  "version": "1.0.0",
+  "description": "Every frame side by side on one page, numbered, as a PNG picture or a PDF to print.",
+  "author": "Frameling examples",
+  "main": "main.js",
+  "permissions": ["export"],
+  "apiVersion": 1
+}

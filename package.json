@@ -66,7 +66,10 @@
       ],
       "category": "Graphics",
       "synopsis": "Draw and animate 2D art",
-      "syncDesktopName": true
+      "syncDesktopName": true,
+      "mimeTypes": [
+        "x-scheme-handler/frameling"
+      ]
     },
     "win": {
       "target": [
@@ -95,6 +98,21 @@
         "description": "Frameling drawing",
         "mimeType": "application/x-frameling",
         "role": "Editor"
+      },
+      {
+        "ext": "flplay",
+        "name": "Interactives animation",
+        "description": "Frameling animation for Interactives",
+        "mimeType": "application/vnd.frameling.playable+zip",
+        "role": "Editor"
+      }
+    ],
+    "protocols": [
+      {
+        "name": "Frameling link",
+        "schemes": [
+          "frameling"
+        ]
       }
     ]
   },

@@ -49,6 +49,10 @@ export function registerCommands(list: Command[]): void {
 export function getCommand(id: string): Command | undefined {
   return commands.get(id);
 }
+/** Takes a command away again (a plugin turned off). */
+export function unregisterCommand(id: string): void {
+  commands.delete(id);
+}
 export function allCommands(): Command[] {
   return [...commands.values()];
 }
@@ -108,6 +112,10 @@ export function registerPanel(p: PanelDef): void {
 }
 export function getPanel(id: string): PanelDef | undefined {
   return panels.get(id);
+}
+/** Takes a panel away again (a plugin turned off). */
+export function unregisterPanel(id: string): void {
+  panels.delete(id);
 }
 export function allPanels(): PanelDef[] {
   return [...panels.values()].sort((a, b) => (a.order ?? 50) - (b.order ?? 50));

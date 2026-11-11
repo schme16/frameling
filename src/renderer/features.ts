@@ -13,3 +13,4 @@ import '../export';
 import '../tiles';
 import '../effects';
 import '../quests';
+import '../plugins';
