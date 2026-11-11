@@ -398,16 +398,27 @@ export function TimelineBody() {
   // Keep the playhead on screen (not while you're dragging something, or the view would run away from your pointer).
   useEffect(() => {
     let last = store().get().ui.frame;
-    return store().subscribe(() => {
+    let raf = 0;
+    // Done on the next animation frame, so moving the playhead never waits for the timeline's layout.
+    const follow = () => {
+      raf = 0;
       const f = store().get().ui.frame;
-      if (f === last) return;
-      last = f;
       const el = scroller.current;
       if (!el || dragRef.current) return;
       const w = tl().cw;
       const viewW = el.clientWidth - sideRef.current;
       if (f * w < el.scrollLeft || (f + 1) * w > el.scrollLeft + viewW) el.scrollLeft = Math.max(0, f * w - viewW * 0.25);
+    };
+    const off = store().subscribe(() => {
+      const f = store().get().ui.frame;
+      if (f === last) return;
+      last = f;
+      if (!raf) raf = requestAnimationFrame(follow);
     });
+    return () => {
+      off();
+      if (raf) cancelAnimationFrame(raf);
+    };
   }, []);
 
   // Escape drops whatever you're dragging.
