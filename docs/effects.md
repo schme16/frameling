@@ -151,10 +151,15 @@ computer (probed by measuring). Layout measures prefix widths with the canvas, s
   Ghostscript.
 - **`.ai`**: the same PDF with the `.ai` extension. Illustrator opens PDF-compatible files as plain artwork (every
   path editable, PDF layers as layers). There is no `AIPrivateData`, so Illustrator asks to save as a full .ai the first
-  time. Not yet opened in a real Illustrator here; Inkscape and Affinity read it as PDF.
+  time. Checked with Poppler (pdfinfo, pdftoppm) and Ghostscript; not yet opened in a real Illustrator, Inkscape or
+  Affinity, which all import PDF.
 - **ProRes** (`export/prores.ts`, `main/video.ts`): desktop only. The page draws each frame and streams raw RGBA over
   IPC to FFmpeg (`prores_ks`, profile 4444, `yuva444p10le` when see-through), which writes the picked file. FFmpeg is
   found on PATH, the usual install places, or `FRAMELING_FFMPEG`; without it the card says why in plain words.
+
+Known gaps in this part: Lottie export leaves text and particles out; PDF draws pixel art bent on a mesh (rigging)
+unbent; folder effects aren't baked into PSD; a mask layer on the stage (not in a folder) comes into a PSD as a hidden
+layer; shape tweens hold text and particles as they are on the start key; SVG draws symbol particles as dots.
 
 ## Later, and how it fits
 
