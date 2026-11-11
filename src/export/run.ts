@@ -7,7 +7,7 @@ import { encodePng, type RawImage } from '../io/png';
 import { ApngWriter } from './apng';
 import { backgroundFor, drawFrame, makeCanvas, readPixels } from './draw';
 import { buildPalette, GifWriter, sampleFrames } from './gif';
-import { frameNumber, MAX_SIDE, planExport, type Plan } from './plan';
+import { frameNumber, MAX_SHEET_SIDE, planExport, type Plan } from './plan';
 import { buildSheetFiles } from './engines';
 import { frameToSvg } from './svg';
 import { formatInfo, type ExportSettings } from './types';
@@ -171,7 +171,7 @@ async function runSheet(ctx: RunContext, plan: Plan, rgbaAt: (i: number) => RawI
     scale: settings.scale,
     name: plan.name,
     pixelArt: crisp,
-    maxSide: MAX_SIDE,
+    maxSide: MAX_SHEET_SIDE,
   });
   return { kind: 'files', folderName: out.main.replace(/\.png$/, ''), files: out.files, main: out.main };
 }

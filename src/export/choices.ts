@@ -16,3 +16,18 @@ registerChoice<WebmCodecPref>({
     { value: 'vp9', label: 'VP9', detail: 'Quicker to make, and plays in a few more older players.' },
   ],
 });
+
+export type GameArtSize = 'art' | 'keep';
+
+registerChoice<GameArtSize>({
+  id: 'export.gameArtSize',
+  title: 'Pixel art size for game engines',
+  question: 'Export this pixel art at its real size for the game engine?',
+  category: 'Export',
+  default: 'art',
+  help: 'Game engines usually load pixel art at its real size (one art pixel is one pixel) and scale it up on screen, which keeps files small and edges sharp.',
+  options: [
+    { value: 'art', label: 'Yes, art size', detail: 'One art pixel becomes one pixel. Smallest files; the game scales it up.' },
+    { value: 'keep', label: 'Keep the size I picked', detail: 'Each art pixel stays as big as the Size buttons say.' },
+  ],
+});

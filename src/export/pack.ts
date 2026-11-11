@@ -68,6 +68,31 @@ export function packInto(items: Size[], binW: number, binH: number): { x: number
   return out;
 }
 
+const MAX_RECTS_ITEMS = 160;
+
+/** Rows of rectangles, tallest first, each row as tall as its tallest. Null when they don't fit. */
+export function packShelves(items: Size[], binW: number, binH: number): { x: number; y: number }[] | null {
+  const order = items.map((_, i) => i).sort((a, b) => items[b].h - items[a].h || items[b].w - items[a].w || a - b);
+  const out: { x: number; y: number }[] = new Array(items.length);
+  let x = 0;
+  let y = 0;
+  let rowH = 0;
+  for (const i of order) {
+    const { w, h } = items[i];
+    if (w > binW) return null;
+    if (x + w > binW) {
+      y += rowH;
+      x = 0;
+      rowH = 0;
+    }
+    if (y + h > binH) return null;
+    out[i] = { x, y };
+    x += w;
+    rowH = Math.max(rowH, h);
+  }
+  return out;
+}
+
 /**
  * Tries a range of sheet widths and keeps the one with the smallest area (squarer wins a tie). With `pot`, both
  * sides are powers of two. Returns null when nothing fits inside `maxSide`.
@@ -98,7 +123,8 @@ export function packSheet(items: Size[], opts: { pot?: boolean; maxSide: number 
   let best: Packed | null = null;
   let bestScore = Infinity;
   for (const w of [...widths].sort((a, b) => a - b)) {
-    const pos = packInto(items, w, opts.maxSide);
+    // Lots of sprites: rows (shelves) are near as tight and far quicker than the full method.
+    const pos = items.length > MAX_RECTS_ITEMS ? packShelves(items, w, opts.maxSide) : packInto(items, w, opts.maxSide);
     if (!pos) continue;
     let usedW = 0;
     let usedH = 0;
@@ -109,7 +135,8 @@ export function packSheet(items: Size[], opts: { pot?: boolean; maxSide: number 
     const W = opts.pot ? nextPow2(usedW) : usedW;
     const H = opts.pot ? nextPow2(usedH) : usedH;
     if (W > opts.maxSide || H > opts.maxSide) continue;
-    const score = W * H + Math.abs(W - H) / (W + H + 1);
+    // Smallest area, nudged towards square so a sheet never comes out as a thin strip.
+    const score = W * H * (1 + 0.15 * (Math.max(W, H) / Math.min(W, H) - 1));
     if (score < bestScore) {
       bestScore = score;
       best = { positions: pos, width: W, height: H };

@@ -2,7 +2,7 @@ import { strFromU8 } from 'fflate';
 import { describe, expect, it } from 'vitest';
 import type { RawImage } from '../../src/io/png';
 import { decodePng } from '../../src/io/png';
-import { packInto, packSheet } from '../../src/export/pack';
+import { packInto, packSheet, packShelves } from '../../src/export/pack';
 import { buildAnimations, buildCells, composeSheet, layoutCells, layoutPacked } from '../../src/export/sheet';
 import {
   animationCellNames, buildSheetFiles, cssSprites, hashAtlas, phaserAnimations, pixiSheet, separateSpriteNames, unitySheet,
@@ -36,6 +36,19 @@ describe('packing', () => {
     });
     // Tighter than a grid of 30 x 30 slots would be (3 x 3 slots = 8100).
     expect(p.width * p.height).toBeLessThan(8100 * 0.7);
+  });
+
+  it('stays roughly square, and handles hundreds of sprites quickly', () => {
+    const few = packSheet(Array.from({ length: 20 }, () => ({ w: 20, h: 18 })), { maxSide: 8192 })!;
+    expect(Math.max(few.width, few.height) / Math.min(few.width, few.height)).toBeLessThan(2);
+    const many = Array.from({ length: 1500 }, (_, i) => ({ w: 8 + ((i * 37) % 40), h: 8 + ((i * 53) % 40) }));
+    const t = performance.now();
+    const p = packSheet(many, { maxSide: 16384 })!;
+    expect(performance.now() - t).toBeLessThan(2000);
+    const rects = p.positions.map((q, i) => ({ ...q, ...many[i] }));
+    // Spot-check overlaps on a slice (all pairs would be slow).
+    rects.slice(0, 200).forEach((r, i) => rects.slice(i + 1).forEach((o) => expect(overlaps(r, o)).toBe(false)));
+    expect(packShelves([{ w: 5, h: 5 }], 4, 10)).toBeNull();
   });
 
   it('keeps to powers of two when asked, and says when it cannot fit', () => {

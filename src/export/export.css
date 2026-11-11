@@ -258,3 +258,89 @@
   border-radius: var(--radius-pill);
   transition: width 0.15s var(--ease);
 }
+
+/* Where a sprite sheet is going: engine cards (look A, the default) or chips (look B). */
+.ex-engines {
+  display: grid;
+  gap: 6px;
+}
+.ex-engines .ex-sub {
+  margin: 0;
+}
+.ex-engine-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+.ex-engine-row:not(.ex-engine-games) {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.ex-engine {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 4px;
+  min-height: 58px;
+  padding: 8px 4px;
+  font: inherit;
+  font-weight: 700;
+  font-size: var(--fs-small);
+  line-height: 1.2;
+  text-align: center;
+  color: var(--text);
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background 0.12s var(--ease), transform 0.12s var(--ease-bounce);
+}
+.ex-engine:hover {
+  background: var(--hover-bg);
+  transform: translateY(-1px);
+}
+.ex-engine:focus-visible,
+.ex-link:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.ex-engine.ex-chosen {
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+  border-color: transparent;
+}
+.ex-engines-b .ex-engine-row,
+.ex-engines-b .ex-engine-row:not(.ex-engine-games) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.ex-engines-b .ex-engine {
+  display: inline-flex;
+  min-height: 0;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: var(--radius-pill);
+}
+.ex-link {
+  font: inherit;
+  color: var(--accent);
+  background: none;
+  border: 0;
+  padding: 0;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.ex-grid3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.ex-grid3 label {
+  display: grid;
+  gap: 4px;
+  font-weight: 700;
+}
+.ex-grid3 small {
+  font-weight: 500;
+  color: var(--muted);
+}

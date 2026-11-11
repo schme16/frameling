@@ -434,10 +434,23 @@ async function vSheet(files, dir, s, exp, caseCtx) {
   note(names.join(', '));
   const base = names.find((n) => n.endsWith('.png'));
   check(!!base, 'no sheet png');
-  const json = names.find((n) => n.endsWith('.json'));
-  check(s.sheet.json ? !!json : !json, 'json file presence does not match the setting');
-  check(s.sheet.godot || s.sheet.godotScene ? names.some((n) => n.endsWith('.tres')) : !names.some((n) => n.endsWith('.tres')), '.tres presence does not match the setting');
-  check(s.sheet.godotScene ? names.some((n) => n.endsWith('.tscn')) : !names.some((n) => n.endsWith('.tscn')), '.tscn presence does not match the setting');
+  // Settings saved before engines existed say where they're going with the json and Godot ticks.
+  const engine = s.sheet.engine ?? (s.sheet.godot || s.sheet.godotScene ? 'godot' : s.sheet.json ? 'json' : 'none');
+  const generic = engine === 'json' || ((engine === 'godot' || engine === 'css') && s.sheet.json);
+  const want = { godot: ['.tres'], unity: ['.json', '.cs'], phaser: ['.json', '-anims.json'], pixi: ['.json'], css: ['.css', '.html'], json: ['.json'], none: [] }[engine];
+  for (const ext of want) check(names.some((n) => n.endsWith(ext)), `${engine}: no ${ext} file`);
+  const json = generic ? names.find((n) => n.endsWith('.json')) : null;
+  check(generic ? !!json : engine !== 'none' || !names.some((n) => n.endsWith('.json')), 'json file presence does not match the setting');
+  check(engine === 'godot' ? names.some((n) => n.endsWith('.tres')) : !names.some((n) => n.endsWith('.tres')), '.tres presence does not match the setting');
+  check(engine === 'godot' && s.sheet.godotScene ? names.some((n) => n.endsWith('.tscn')) : !names.some((n) => n.endsWith('.tscn')), '.tscn presence does not match the setting');
+  if (engine === 'phaser' || engine === 'pixi') {
+    const data = JSON.parse(fs.readFileSync(path.join(dir, names.find((n) => n.endsWith('.json') && !n.endsWith('-anims.json'))), 'utf8'));
+    const frameNames = Object.keys(data.frames);
+    check(frameNames.length > 0 && frameNames.every((n) => data.frames[n].frame && data.frames[n].sourceSize), `${engine}: frames are not a JSON hash`);
+    const lists = engine === 'pixi' ? Object.values(data.animations) : JSON.parse(fs.readFileSync(path.join(dir, names.find((n) => n.endsWith('-anims.json'))), 'utf8')).anims.map((a) => a.frames.map((f) => f.frame));
+    check(lists.length > 0 && lists.every((l) => l.every((n) => frameNames.includes(n))), `${engine}: an animation points at a missing frame`);
+    note(`${engine}: ${frameNames.length} frames, ${lists.length} animations`);
+  }
   if (!base) return;
   const [[sw, sh_]] = identify(path.join(dir, base));
   note(`sheet ${sw}x${sh_}`);
@@ -449,8 +462,10 @@ async function vSheet(files, dir, s, exp, caseCtx) {
   check(atlas.frames.every((f) => f.frame.x + f.frame.w <= sw && f.frame.y + f.frame.h <= sh_), 'a frame sits outside the sheet');
   check(atlas.frames.every((f) => f.sourceSize.w === exp.width && f.sourceSize.h === exp.height), `sourceSize is not ${exp.width}x${exp.height}`);
   // Padding: no two frames closer than the padding, and the first frame starts at the padding.
-  if (s.sheet.padding) check(atlas.frames[0].frame.x === s.sheet.padding && atlas.frames[0].frame.y === s.sheet.padding, 'first frame does not start at the padding');
-  if (s.sheet.columns) {
+  const pad = (s.sheet.padding || 0) + (s.sheet.extrude || 0);
+  if (pad && s.sheet.layout !== 'packed') check(atlas.frames[0].frame.x === pad && atlas.frames[0].frame.y === pad, 'first frame does not start at the padding');
+  if (pad) check(atlas.frames.every((f) => f.frame.x >= pad && f.frame.y >= pad && f.frame.x + f.frame.w <= sw - pad && f.frame.y + f.frame.h <= sh_ - pad), 'a frame is closer to the edge than the padding');
+  if (s.sheet.columns && s.sheet.layout !== 'packed') {
     const xs = new Set(atlas.frames.map((f) => f.frame.x));
     check(xs.size === Math.min(s.sheet.columns, atlas.frames.length), `columns=${s.sheet.columns} but frames use ${xs.size} columns`);
   }
@@ -644,6 +659,10 @@ async function exportMatrix() {
         await runCase(tpl, fmt, 'trim-pot-pad', (s) => ({ ...s, sheet: { ...s.sheet, trim: true, pot: true, padding: 2, columns: 3 } }));
         await runCase(tpl, fmt, 'godot', (s) => ({ ...s, sheet: { ...s.sheet, trim: true, dedupe: true, json: true, godot: true, godotScene: true, godotPath: '' } }));
         await runCase(tpl, fmt, 'nodedupe-godotpath', (s) => ({ ...s, sheet: { ...s.sheet, dedupe: false, json: true, godot: true, godotScene: true, godotPath: 'art/chars/hero.png' } }));
+        await runCase(tpl, fmt, 'packed-extrude', (s) => ({ ...s, sheet: { ...s.sheet, engine: 'json', layout: 'packed', trim: true, padding: 2, extrude: 1, json: true } }));
+        for (const engine of ['phaser', 'pixi', 'unity', 'css']) await runCase(tpl, fmt, engine, (s) => ({ ...s, sheet: { ...s.sheet, engine, layout: 'packed', trim: true, padding: 1, json: false } }));
+        // The phase 2 test: the hero at art size, packed, straight into Godot.
+        if (tpl === 'hero-sprites') await runCase(tpl, fmt, 'art-size-godot', (s) => ({ ...s, scale: 1 / 8, transparent: true, sheet: { ...s.sheet, engine: 'godot', godotScene: true, json: true, layout: 'packed', trim: true, padding: 1, extrude: 1, godotPath: '' } }));
       }
       if (tpl === 'bouncing-ball') {
         // Odd sizes: videos pad to even, everything else keeps the exact size.

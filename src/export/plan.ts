@@ -5,6 +5,8 @@ import { DEFAULT_SHEET, formatInfo, type ExportSettings, type FormatId } from '.
 
 export const MAX_SIDE = 8192;
 export const MAX_FRAMES = 5000;
+/** The biggest sprite sheet, the largest picture most graphics cards and engines will load. */
+export const MAX_SHEET_SIDE = 16384;
 
 export interface FrameRange {
   /** First and last frame, inclusive. */
