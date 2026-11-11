@@ -14,7 +14,7 @@ Options:
 | | |
 |---|---|
 | `--out file.json` | where to write the results (printed to the console when left out) |
-| `--only draw,playback` | run some tests only: `draw`, `playback`, `rigfx`, `templates`, `zoompan`, `memory` |
+| `--only draw,playback` | run some tests only: `draw`, `playback`, `rigfx`, `templates`, `zoompan`, `memory`, `soak` (`soak` only runs when named) |
 | `--label name` | a name stored in the results |
 | `PERF_RENDERER=dir` | use a renderer build from another folder, so you can measure without touching `dist/` (`npx vite build --outDir /somewhere/renderer`) |
 | `PERF_CPU_SLOWDOWN=4` | emulate a CPU four times slower (Chromium's CPU throttling). The GPU is unchanged. |
@@ -22,6 +22,30 @@ Options:
 
 A full run takes about two minutes. Don't run other Electron work at the same time, it skews the numbers. Compare
 runs from the same machine only, and run each twice if a difference is small.
+
+## Start-up time and bundle size
+
+`startup.cjs` launches the built app as a fresh process again and again and times it from launch to the first
+interactive frame (`frameling:interactive`, set in `src/renderer/App.tsx` two frames after the app mounts, so the
+canvas has drawn and the page is free for input). It also reports the JS the page needs before it can start (the entry
+file and anything it preloads, from `index.html`).
+
+```bash
+npm run build && node scripts/perf/startup.cjs --out scripts/perf/results/startup-desktop.json
+npx vite build --config vite.web.config.ts && node scripts/perf/startup.cjs --web --out scripts/perf/results/startup-web.json
+```
+
+- The desktop run starts the real main process (`dist/main/main.cjs`) through `launch.cjs`, which parks windows
+  off-screen. Afterwards it imports every lazily loaded chunk from `file://` in that real window, to prove they load.
+- `--web` serves `dist/web` from a sub-path (`/some/sub/path/frameling/`), then stops the server and opens the app
+  again offline, and opens Export, Preferences, Themes and Help, so the lazily loaded chunks have to come from the
+  service worker's copy.
+- The first launch has a fresh profile; the median is of the launches after it. `--cpu 4` (the default) also reloads
+  each page with the CPU slowed down four times; that number is only dependable for the desktop run, as Chromium drops
+  the throttling when a service worker takes the reload.
+
+What loads later is in `src/core/lazy.ts`: the Export dialog and every exporter, the big sheets and dialogs, and most
+dock panels load on first use, and in idle time a moment after start-up so the first click doesn't wait either.
 
 ## The hidden window
 
@@ -43,6 +67,7 @@ The page is opened with `?debug&perf`. `?perf` switches on `src/canvas/perf.ts`,
 | `templates` | Every starter template: `make()`, then `store.load`, to the first canvas paint. Median of three. | `makeMs`, `firstPaintMs`, `presentedMs` |
 | `zoompan` | 180 ctrl+wheel ticks in and out, then a middle-button pan circle, on a 300 stroke document and a 5 layer one. | `rafDelta`, `mainDrawMs`, `bitmapBuilds` |
 | `memory` | 200 strokes drawn, 100 undone. JS heap after a forced GC at the start, after the strokes and after the undos. | `growthMB` |
+| `soak` | The kitchen sink at 600 frames, then a 600 frame, 5 layer stroke document. Each is put through rounds (4, or `PERF_SOAK_ROUNDS`) of: scrub every frame, play 5 s, export a GIF of the lot. JS heap after a full GC after each round, the bitmap cache size, and a heap snapshot comparison (by constructor) between round 2 and the last. About four minutes. | `heapMB` per round, `growthAfterRound2MB` (should be near 0), `snapshotDiffRound2ToLast.top` |
 
 Every `stats` block is `{n, mean, p50, p95, p99, max}` in milliseconds.
 
