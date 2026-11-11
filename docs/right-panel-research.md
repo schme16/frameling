@@ -68,3 +68,29 @@ What it does well: empty sections still show their name, so people learn what's 
 3. **Show that a section exists even when it's empty** (Figma's header with +), so the panel teaches what's possible.
 4. **Fold, remember, never hide off-edge** (Interactives, Krita).
 5. **A list of every panel with a sentence each** (Window menu, Interactives' tips) for the rare ones.
+
+## Porting notes (for bringing Interactives' workspace system over)
+
+Interactives `lib/dock.ts` vs Frameling `src/ui/dock.ts`:
+
+- Interactives: `DockLayout { zones: Record<'left'|'right'|'bottom'|'top', {tabs, active}>, floats: FloatWin[] (x,y,w,h + tabs),
+  bottomFolded, topFolded, topHeight, tools: {place, x, y}, hidden?, hiddenTools? }`, a fixed `PanelId` union with `HOME`
+  zones, `normalise` (each panel in one place), `movePanel(p, DropTarget)` where a target is a zone index, a float
+  index or a new float. Workspaces live in `lib/workspaces.ts` (BUILT_IN with `about`, saved up to 12, rename/delete) and
+  `lib/essentials.ts` hides rarely used panels until the project uses them.
+- Frameling: `Layout { zones: Record<'left'|'right'|'bottom', {tabs, active, size, collapsed}>, hidden, known }`, panels
+  come from the registry (`registerPanel`, plugins add and remove them), `reconcile` places panels added later once,
+  workspaces (`builtinWorkspaces`, user ones, `pixel`/`tools` extras) in the same file.
+- Mapping: zones map one to one (add `top`); `size`/`collapsed` per zone replace `bottomFolded`/`topHeight`; Frameling's
+  `known` list has no Interactives equivalent and should stay (registry panels arrive late); `HOME` is Frameling's
+  `PanelDef.zone`. Floats and the movable tool rail are new.
+
+What the port should keep from this work (all presentation, no dock model of its own):
+
+- `src/ui/panelInfo.ts`: per panel blurb, rail group, short name, and for Properties sections `relevant`/`idle`/`detail`.
+  It is keyed by panel id and only reads the zone's `tabs`, so it works on any group (a float could be a rail too).
+- `src/ui/RightDock.tsx`: a renderer for one zone group. "Properties" is not a panel: it's the view shown when the
+  group's `active` is a section panel. So the layout, workspaces, drag targets and `showPanel` need no changes.
+- `src/ui/PanelPicker.tsx` (`view.allPanels`): the list of every panel with where it is or "Closed"; it only calls
+  `showPanel` and `zoneOf`.
+- `src/ui/dockShared.tsx` (`dragging`, `PanelBoundary`), `rightStyle.ts` (folded sections, the picker store).
