@@ -5,7 +5,7 @@ import type { Doc } from '../core/format';
 import { renderFrameToCanvas } from '../core/render';
 import { store } from '../core/store';
 import { mountModal, Modal } from '../io/mount';
-import { recolourDoc, usedColours } from './recolour';
+import { applyRecolour, recolourDoc, usedColours } from './recolour';
 import { activeColor } from './wells';
 import { noteColorUsed } from './recent';
 
@@ -51,11 +51,7 @@ function RecolourDialog({ close }: { close: () => void }) {
   const apply = () => {
     if (!nothing) {
       // One undo step: only the drawings that changed are swapped in.
-      store().update('Recolour the whole animation', (d) => {
-        for (const id of result.drawings) d.drawings[id] = result.doc.drawings[id] as never;
-        d.swatches = result.doc.swatches as never;
-        d.background = result.doc.background;
-      });
+      store().update('Recolour the whole animation', (d) => applyRecolour(d as Doc, result));
       noteColorUsed(to);
     }
     close();

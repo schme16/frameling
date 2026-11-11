@@ -12,6 +12,7 @@ import { celAt, findLayer } from '../core/doc';
 import { store } from '../core/store';
 import * as core from './edit-core';
 import type { Clash } from './edit-core';
+import { shiftInOut } from './inout';
 
 export type Reason = 'locked' | 'no-layer' | 'nothing-here' | 'last-layer' | 'no-change';
 export interface Outcome {
@@ -104,13 +105,22 @@ export function deleteKey(layerId?: Id, frame?: number): Outcome {
 export function insertFrame(layerId?: Id, frame?: number): Outcome {
   const t = target(layerId, frame);
   if (!t) return no('no-layer');
-  return edit('Add a frame', t.layerId, (d) => core.insertFrame(d, t.layerId, t.frame));
+  // With one layer, a frame on it is a frame of the whole animation, so the play range moves too.
+  return edit('Add a frame', t.layerId, (d) => {
+    const done = core.insertFrame(d, t.layerId, t.frame);
+    if (done && d.layers.length === 1) shiftInOut(d, t.frame, 1);
+    return done;
+  });
 }
 
 export function removeFrame(layerId?: Id, frame?: number): Outcome {
   const t = target(layerId, frame);
   if (!t) return no('no-layer');
-  return edit('Remove a frame', t.layerId, (d) => core.removeFrame(d, t.layerId, t.frame));
+  return edit('Remove a frame', t.layerId, (d) => {
+    const done = core.removeFrame(d, t.layerId, t.frame);
+    if (done && d.layers.length === 1) shiftInOut(d, t.frame, -1);
+    return done;
+  });
 }
 
 /** Adds a frame at the playhead on every unlocked layer, in one undo step (like adding a page to the whole flipbook). */
@@ -119,6 +129,7 @@ export function insertFrameAll(frame?: number): Outcome {
   let any = false;
   store().update('Add a frame (all layers)', (d) => {
     for (const l of d.layers) if (!l.locked && core.insertFrame(d, l.id, at)) any = true;
+    if (any) shiftInOut(d, at, 1);
   });
   return any ? ok() : no('nothing-here');
 }
@@ -130,6 +141,7 @@ export function removeFrameAll(frame?: number): Outcome {
   const before = store().get().doc;
   store().update('Remove a frame (all layers)', (d) => {
     for (const l of d.layers) if (!l.locked && core.removeFrame(d, l.id, at)) any = true;
+    if (any) shiftInOut(d, at, -1);
   });
   if (!any || store().get().doc === before) return no('nothing-here');
   return ok();

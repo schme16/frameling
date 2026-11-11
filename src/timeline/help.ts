@@ -235,6 +235,7 @@ Click the **x** beside the range in the top bar, or use **Timeline > Play everyt
 ## Good to know
 
 - The range is saved with your drawing.
+- It keeps hold of the same drawings when you add or remove frames on every layer (or on your only layer): frames added before it push it along, and frames added inside it make it longer.
 - A [clip](help:timeline-clips) you pick takes over while it's picked. Setting a range lets go of the clip.
 - **Export** offers **Play range** under "What to export", so you can save just that part as a GIF, a video or a sprite sheet.
 - It works with [back and forth](help:timeline-playing) (ping-pong) too.`,
