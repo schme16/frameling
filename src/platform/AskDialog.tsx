@@ -15,14 +15,14 @@ export function AskDialog() {
     <Modal title={q.title} size="sm" className="ui-ask" onClose={() => answer(q.cancel)} initialFocus=".ui-btn-primary">
       <p className="ui-choice-q">{q.message}</p>
       {q.detail && <p>{q.detail}</p>}
-      <footer className="ui-choice-foot">
+      <div className="ui-choice-foot">
         <span className="ui-spacer" />
         {q.buttons.map((b) => (
           <button key={b.value} type="button" className={`ui-btn${b.primary ? ' ui-btn-primary' : ''}`} onClick={() => answer(b.value)}>
             {b.label}
           </button>
         ))}
-      </footer>
+      </div>
     </Modal>
   );
 }

@@ -17,9 +17,9 @@ function HeatKey() {
     return `rgb(${r},${g},${b}) ${w * 100}%`;
   });
   return (
-    <div className="rg-heat" aria-hidden="true">
+    <div className="rg-heat" role="img" aria-label="Colour key: blue stays put, red follows fully">
       <span className="rg-heat-bar" style={{ background: `linear-gradient(90deg, ${stops.join(', ')})` }} />
-      <span className="rg-heat-ends">
+      <span className="rg-heat-ends" aria-hidden="true">
         <span>Stays put</span>
         <span>Follows fully</span>
       </span>

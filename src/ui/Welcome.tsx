@@ -16,7 +16,7 @@ import { setPrefs, usePrefs } from './prefs';
 import { cleanDpi, formatSize, pxTo, roundIn, toPx, type Unit } from '../core/units';
 import { getQuest, startQuest } from './quests';
 import { toast } from './toast';
-import { MoreTemplates, SourceCards } from '../templates/YoursSection';
+import { SourceCards } from '../templates/YoursSection';
 import { templateSources } from '../templates/user';
 
 export function WelcomeSheet() {
@@ -194,7 +194,7 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
         </div>
       )}
 
-      <footer className="ui-welcome-foot">
+      <div className="ui-welcome-foot">
         {open && (
           <button
             type="button"
@@ -218,7 +218,7 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
         <button type="button" className="ui-btn ui-btn-quiet" onClick={closeSheet}>
           {mode === 'welcome' ? 'Skip for now' : 'Cancel'}
         </button>
-      </footer>
+      </div>
     </Modal>
   );
 }
@@ -344,61 +344,32 @@ function Examples({ onPick, scrollTo }: { onPick: (doc: Doc, name: string) => vo
   const blanks = starters.filter((s) => s.blank);
   const pick = (t: TemplateLike) => onPick(t.make(), t.name.toLowerCase());
   const thumb = (t: TemplateLike) => <Thumb template={t} />;
-  // The tabs look is kept for the A/B board only (brand/ab/templates-yours); stacked sections won.
-  if ((window as { __templatesLayout?: string }).__templatesLayout === 'tabs') return <TabbedExamples examples={examples} pick={pick} onPick={onPick} thumb={thumb} />;
-  return (
-    <div className="ui-examples" ref={box} data-help="examples">
-      <h3>Start from an example</h3>
-      <h4 className="tpl-section-title">Built-in</h4>
-      <div className="ui-example-list">
-        {examples.map(({ template: t }) => (
-          <button key={t.id} type="button" className="ui-example" onClick={() => pick(t)}>
-            <span className="ui-example-art">
-              <Thumb template={t} />
-              {/* On the picture's corner, so long names get the whole width. */}
-              <span className={`ui-badge ui-badge-${t.kind} ui-example-badge`}>
-                <Icon name={t.kind === 'pixel' ? 'pixel' : 'vector'} size={12} />
-                {t.kind === 'pixel' ? 'Pixel' : 'Vector'}
-              </span>
-            </span>
-            <span className="ui-example-head">
-              <strong>{t.name}</strong>
-            </span>
-            <span className="ui-preset-blurb">{t.blurb}</span>
-          </button>
-        ))}
-      </div>
-      {blanks.length > 0 && (
-        <div className="ui-blank-row">
-          <span className="ui-blank-row-label">Or start blank, with layers ready:</span>
-          {blanks.map(({ template: t, size, aspect, fps }) => (
-            <button key={t.id} type="button" className="ui-blank" data-tip={t.blurb} onClick={() => pick(t)}>
-              <AspectBox aspect={aspect} pixel={t.kind === 'pixel'} />
-              <span className="ui-blank-text">
-                <strong>{t.name}</strong>
-                <span>
-                  {size}
-                  {fps ? `, ${fps} fps` : ''}
-                </span>
-              </span>
-            </button>
-          ))}
-        </div>
-      )}
-      <MoreTemplates onPick={onPick} thumb={thumb} />
-    </div>
-  );
+  return <TabbedExamples box={box} examples={examples} blanks={blanks} pick={pick} onPick={onPick} thumb={thumb} />;
 }
 
-/** The other look from the A/B board: Built-in and Yours as tabs. */
-function TabbedExamples({ examples, pick, onPick, thumb }: { examples: Starter[]; pick: (t: TemplateLike) => void; onPick: (doc: Doc, name: string) => void; thumb: (t: TemplateLike) => React.ReactNode }) {
+/** Built-in and Yours (and any other template source) as tabs: picked on the board over stacked sections. */
+function TabbedExamples({
+  box,
+  examples,
+  blanks,
+  pick,
+  onPick,
+  thumb,
+}: {
+  box: React.RefObject<HTMLDivElement | null>;
+  examples: Starter[];
+  blanks: Starter[];
+  pick: (t: TemplateLike) => void;
+  onPick: (doc: Doc, name: string) => void;
+  thumb: (t: TemplateLike) => React.ReactNode;
+}) {
   const sources = templateSources();
   const [tab, setTab] = useState((window as { __templatesTab?: string }).__templatesTab ?? 'builtin');
   const source = sources.find((s) => s.id === tab);
   return (
-    <div className="ui-examples" data-help="examples">
+    <div className="ui-examples" ref={box} data-help="examples">
       <h3>Start from an example</h3>
-      <div className="ui-segmented tpl-tabs" role="tablist">
+      <div className="ui-segmented tpl-tabs" role="tablist" aria-label="Which templates">
         {[{ id: 'builtin', title: 'Built-in' }, ...sources].map((s) => (
           <button key={s.id} type="button" role="tab" aria-selected={tab === s.id} className={`ui-seg${tab === s.id ? ' is-chosen' : ''}`} onClick={() => setTab(s.id)}>
             {s.title}
@@ -408,17 +379,43 @@ function TabbedExamples({ examples, pick, onPick, thumb }: { examples: Starter[]
       {source ? (
         <SourceCards source={source} onPick={onPick} thumb={thumb} />
       ) : (
-        <div className="ui-example-list">
-          {examples.map(({ template: t }) => (
-            <button key={t.id} type="button" className="ui-example" onClick={() => pick(t)}>
-              <span className="ui-example-art">{thumb(t)}</span>
-              <span className="ui-example-head">
-                <strong>{t.name}</strong>
-              </span>
-              <span className="ui-preset-blurb">{t.blurb}</span>
-            </button>
-          ))}
-        </div>
+        <>
+          <div className="ui-example-list" role="tabpanel">
+            {examples.map(({ template: t }) => (
+              <button key={t.id} type="button" className="ui-example" onClick={() => pick(t)}>
+                <span className="ui-example-art">
+                  <Thumb template={t} />
+                  {/* On the picture's corner, so long names get the whole width. */}
+                  <span className={`ui-badge ui-badge-${t.kind} ui-example-badge`}>
+                    <Icon name={t.kind === 'pixel' ? 'pixel' : 'vector'} size={12} />
+                    {t.kind === 'pixel' ? 'Pixel' : 'Vector'}
+                  </span>
+                </span>
+                <span className="ui-example-head">
+                  <strong>{t.name}</strong>
+                </span>
+                <span className="ui-preset-blurb">{t.blurb}</span>
+              </button>
+            ))}
+          </div>
+          {blanks.length > 0 && (
+            <div className="ui-blank-row">
+              <span className="ui-blank-row-label">Or start blank, with layers ready:</span>
+              {blanks.map(({ template: t, size, aspect, fps }) => (
+                <button key={t.id} type="button" className="ui-blank" data-tip={t.blurb} onClick={() => pick(t)}>
+                  <AspectBox aspect={aspect} pixel={t.kind === 'pixel'} />
+                  <span className="ui-blank-text">
+                    <strong>{t.name}</strong>
+                    <span>
+                      {size}
+                      {fps ? `, ${fps} fps` : ''}
+                    </span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </>
       )}
     </div>
   );

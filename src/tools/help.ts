@@ -117,7 +117,7 @@ On a **pixel layer** the line is one pixel wide, and **Shift** snaps it to the c
     body: `Press **V**.
 
 - **Click** a line or shape to select it. **Shift+click** adds more, or takes one off.
-- **Drag a box** round several to select them all. Or pick **Lasso** in the options (or press **L**) and draw round them. See [Lasso](help:lasso).
+- **Drag a box** round several to select them all. Or pick **Lasso** in the options (or press **Shift+L**) and draw round them. See [Lasso](help:lasso).
 - **Drag a selection** to move it. Hold **Shift** to keep it in a straight line.
 - **Drag a corner** to resize. Hold **Shift** to keep its proportions, **Alt** to resize from the middle.
 - **Drag the round handle** above to turn it. Hold **Shift** to snap to neat angles.

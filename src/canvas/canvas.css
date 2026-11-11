@@ -496,9 +496,18 @@
   pointer-events: none;
   z-index: 2;
 }
-/* Guide lines: a clear cyan that reads on light and dark pages and isn't any tool's colour. */
+/* Guide lines: a clear cyan that isn't any tool's colour. Light themes get a deeper one so the guide marks on the
+   rulers (and lines over a white page) stay at 3:1 or better. test/a11y/contrast.test.ts checks both. */
 :root {
   --guide: #2fc4e8;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme='dark']) {
+    --guide: #117d98;
+  }
+}
+:root[data-theme='light'] {
+  --guide: #117d98;
 }
 .cv-ruler,
 .cv-ruler-corner {
@@ -574,4 +583,29 @@
 .cv-root.has-rulers .sy-editbar,
 .cv-root.has-rulers .tz-banner {
   top: 30px;
+}
+
+/* The slider's number: click it to type one in. */
+.cv-slider-value {
+  border: 0;
+  padding: 0 4px;
+  margin: 0 -4px;
+  border-radius: var(--radius-small);
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: text;
+}
+.cv-slider-value:hover {
+  background: var(--hover-bg);
+}
+.cv-slider-type {
+  width: 6em;
+  padding: 1px 4px;
+  border: 1px solid var(--focus);
+  border-radius: var(--radius-small);
+  background: var(--raised);
+  color: var(--text);
+  font: inherit;
+  text-align: right;
 }

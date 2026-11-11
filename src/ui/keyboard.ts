@@ -39,6 +39,41 @@ export function isTypingTarget(t: EventTarget | null): boolean {
   return false;
 }
 
+function keyboardFocused(t: HTMLElement): boolean {
+  try {
+    return t.matches(':focus-visible');
+  } catch {
+    return document.activeElement === t;
+  }
+}
+
+const PRESSABLE_ROLES = /^(button|tab|menuitem|menuitemcheckbox|menuitemradio|option|radio|checkbox|switch|link|treeitem)$/;
+const MOVING_ROLES = /^(slider|spinbutton|tab|radio|option|menuitem|menuitemcheckbox|menuitemradio|treeitem|separator)$/;
+const MOVE_KEYS = /^(ArrowUp|ArrowDown|ArrowLeft|ArrowRight|Home|End|PageUp|PageDown)$/;
+
+/**
+ * True when the focused control needs this key itself: Enter on a button presses the button (not Play), and the
+ * arrows on a slider, tab or list move it (not the selection on the canvas). Keys with Ctrl/Cmd or Alt always go to
+ * the shortcuts.
+ */
+export function controlWantsKey(t: EventTarget | null, e: Pick<KeyboardEvent, 'key' | 'ctrlKey' | 'metaKey' | 'altKey'>): boolean {
+  if (!(t instanceof HTMLElement) || e.ctrlKey || e.metaKey || e.altKey) return false;
+  const role = t.getAttribute('role') ?? '';
+  const tag = t.tagName;
+  if (e.key === 'Enter') {
+    // Only when it was reached with the keyboard: after clicking a tool with the mouse, Enter still means Play.
+    if (!keyboardFocused(t)) return false;
+    if (tag === 'BUTTON' || tag === 'SUMMARY' || (tag === 'A' && t.hasAttribute('href'))) return true;
+    if (tag === 'INPUT' && /^(button|submit|reset|checkbox|radio|color|file|image)$/i.test((t as HTMLInputElement).type)) return true;
+    return PRESSABLE_ROLES.test(role);
+  }
+  if (MOVE_KEYS.test(e.key)) {
+    if (tag === 'INPUT' && /^(range|radio)$/i.test((t as HTMLInputElement).type)) return true;
+    return MOVING_ROLES.test(role);
+  }
+  return false;
+}
+
 /** Handles one keydown. Returns true when a command took it. */
 export function dispatchKey(e: KeyboardEvent): boolean {
   if (e.defaultPrevented || e.isComposing || capturing) return false;
@@ -51,6 +86,7 @@ export function dispatchKey(e: KeyboardEvent): boolean {
   if (!combo) return false;
   const found = currentKeymap().get(comboToString(combo));
   if (!found) return false;
+  if (controlWantsKey(e.target, e)) return false;
   const typing = isTypingTarget(e.target);
   const overlay = anyOverlayOpen();
   const candidates = found.filter((c) => (c.global || (!typing && !overlay)));

@@ -23,7 +23,7 @@ export const INTERESTS: InterestInfo[] = [
   { id: 'sprites', title: 'Game sprites and pixel art', blurb: 'Heroes, baddies and chunky little pixels.', icon: 'pixel', reaction: line('onboarding.make.sprites') },
   { id: 'tiles', title: 'Tiles and levels', blurb: 'Grass, walls and whole worlds to explore.', icon: 'tiles', reaction: line('onboarding.make.tiles') },
   { id: 'motion', title: 'Explainers and motion graphics', blurb: 'Logos, titles and smooth moves.', icon: 'tween', reaction: line('onboarding.make.motion') },
-  { id: 'interactives', title: 'Things for Interactives', blurb: 'Art people can click, poke and play with.', icon: 'play', reaction: line('onboarding.make.interactives') },
+  { id: 'interactives', title: 'Things for Interactives', blurb: 'Art you can poke!', icon: 'play', reaction: line('onboarding.make.interactives') },
   { id: 'play', title: 'Just playing', blurb: 'No plan at all. The best kind of plan.', icon: 'heart', reaction: line('onboarding.make.play') },
 ];
 
