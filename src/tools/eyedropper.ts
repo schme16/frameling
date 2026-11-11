@@ -31,7 +31,7 @@ export function sampleColor(x: number, y: number, activeLayerOnly: boolean): str
   g.clearRect(0, 0, 1, 1);
   // Aim the one pixel we read at the middle of the spot.
   g.setTransform(1, 0, 0, 1, 0.5 - x, 0.5 - y);
-  renderFrame(g, doc, ui.frame, activeLayerOnly ? { background: false, layerFilter: (l) => l.id === ui.activeLayerId } : {});
+  renderFrame(g, doc, ui.frame, activeLayerOnly ? { background: false, camera: false, layerFilter: (l) => l.id === ui.activeLayerId } : { camera: false });
   const d = g.getImageData(0, 0, 1, 1).data;
   if (d[3] === 0) return null;
   return toHex(d[0], d[1], d[2]);

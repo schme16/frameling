@@ -53,7 +53,7 @@ export function layerMenu(layer: Layer, onRename: () => void): MenuItem[] {
   const total = store().get().doc.layers.length;
   const index = store().get().doc.layers.findIndex((l) => l.id === layer.id);
   return [
-    { heading: `${layer.name} (${layer.kind === 'pixel' ? `pixel layer, ${layer.pixelSize}px squares` : layer.kind === 'tilemap' ? 'tilemap layer' : 'vector layer'})` },
+    { heading: `${layer.name} (${layer.kind === 'pixel' ? `pixel layer, ${layer.pixelSize}px squares` : layer.kind === 'tilemap' ? 'tilemap layer' : layer.kind === 'camera' ? 'camera' : 'vector layer'})` },
     { node: <OpacitySlider layerId={layer.id} /> },
     { separator: true },
     { label: 'Rename', onClick: onRename },
@@ -89,7 +89,7 @@ interface RowProps {
 
 const LayerRow = memo(function LayerRow({ layer, inFolder, active, editing, dropMark, onDragStart, onDragOver, onDrop, onDragEnd, onMenu }: RowProps) {
   const select = () => store().setUi({ activeLayerId: layer.id });
-  const kind = layer.kind === 'pixel' ? 'Pixel layer (pixel art)' : layer.kind === 'tilemap' ? 'Tilemap layer (painted with tiles)' : 'Vector layer (smooth drawing)';
+  const kind = layer.kind === 'pixel' ? 'Pixel layer (pixel art)' : layer.kind === 'tilemap' ? 'Tilemap layer (painted with tiles)' : layer.kind === 'camera' ? 'Camera (frames the scene)' : 'Vector layer (smooth drawing)';
   return (
     <div
       className={`tl-layer${active ? ' is-active' : ''}${!layer.visible ? ' is-hidden' : ''}${layer.locked ? ' is-locked' : ''}${layer.reference ? ' is-reference' : ''}${inFolder ? ' in-folder' : ''}${layer.mask ? ' is-mask' : ''}${layer.clipToBelow ? ' is-clipped' : ''}${dropMark ? ` drop-${dropMark}` : ''}`}

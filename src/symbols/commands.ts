@@ -6,7 +6,7 @@ import { EASE_PRESETS } from '../core/ease';
 import { toast } from '../ui/toast';
 import { LibraryPanel } from './LibraryPanel';
 import { PropertiesPanel } from './PropertiesPanel';
-import { currentKey, deleteUnused, editInstance, leaveSymbol, makeSymbolFromSelection, makeTween, pathFromSelection, removeTween, resetTransform, selectedInstance, setEase } from './ops';
+import { clearShapeHints, hintTarget, makeShapeTween, makeTweenAsking, setTweenKind, currentKey, deleteUnused, editInstance, leaveSymbol, makeSymbolFromSelection, makeTween, pathFromSelection, removeTween, resetTransform, selectedInstance, setEase } from './ops';
 
 registerPanel({ id: 'library', title: 'Library', icon: 'symbol', component: LibraryPanel, zone: 'right', order: 30, help: 'symbols' });
 registerPanel({ id: 'symbol-props', title: 'Symbol and motion', icon: 'tween', component: PropertiesPanel, zone: 'right', order: 35, help: 'symbol-properties' });
@@ -15,6 +15,10 @@ const inside = (s: State) => !!s.doc.editing?.length;
 const tweenHere = (s: State) => {
   const l = findLayer(s.doc, s.ui.activeLayerId);
   return !!(l && celAt(l, s.ui.frame)?.tween);
+};
+const cameraKeyHere = (s: State) => {
+  const l = findLayer(s.doc, s.ui.activeLayerId);
+  return l?.kind === 'camera' && !!celAt(l, s.ui.frame);
 };
 const showPanel = (id: string) => void getCommand(`view.panel.${id}`)?.run();
 
@@ -101,8 +105,41 @@ registerCommands([
     description: 'Makes the drawing glide, grow, turn or fade from this key to the next. Frameling draws the frames between.',
     keywords: ['tween', 'classic tween', 'motion tween', 'inbetween', 'in-between', 'interpolate', 'move', 'animate'],
     help: 'tweens',
-    enabled: (s) => !!currentKey() && !tweenHere(s),
-    run: () => void makeTween(),
+    enabled: (s) => (!!currentKey() || cameraKeyHere(s)) && !tweenHere(s),
+    run: () => makeTweenAsking(),
+  },
+  {
+    id: 'tween.morph',
+    label: 'Morph between shapes (shape tween)',
+    category: 'Animate',
+    keys: ['Mod+Shift+M'],
+    description: "Melts this key's outlines and colours into the next key's drawing. Draw a square here and a circle there, and it morphs.",
+    keywords: ['shape tween', 'morph', 'blend shapes', 'transform shape', 'inbetween', 'tween'],
+    help: 'shape-tweens',
+    enabled: (s) => !!currentKey() && !(findLayer(s.doc, s.ui.activeLayerId) && celAt(findLayer(s.doc, s.ui.activeLayerId)!, s.ui.frame)?.tween?.kind === 'shape'),
+    run: () => {
+      if (tweenHere(store().get())) void setTweenKind('shape');
+      else void makeShapeTween();
+    },
+  },
+  {
+    id: 'tween.hints',
+    label: 'Add shape hints',
+    category: 'Animate',
+    description: 'Pin a point of the first drawing to a point of the last one, so a morph that twists comes out right.',
+    keywords: ['shape hint', 'hints', 'morph', 'twist', 'shape tween', 'match points'],
+    help: 'shape-hints',
+    enabled: () => !!hintTarget(),
+    run: () => store().setUi({ tool: 'shape-hints' }),
+  },
+  {
+    id: 'tween.hints.clear',
+    label: 'Remove all shape hints',
+    category: 'Animate',
+    keywords: ['shape hint', 'clear hints', 'morph'],
+    help: 'shape-hints',
+    enabled: () => !!hintTarget()?.cel.tween?.hints?.length,
+    run: () => void clearShapeHints(),
   },
   {
     id: 'tween.remove',
