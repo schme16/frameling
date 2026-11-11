@@ -9,8 +9,9 @@ import { currentKey, editInstance, editPath, leaveSymbol, placeInstance } from '
 import './symbols.css';
 
 export function EditBar() {
-  const path = useStore((s) => (s.doc.editing?.length ? editPath(s.doc) : null));
-  if (!path) return null;
+  const doc = useStore((s) => s.doc);
+  if (!doc.editing?.length) return null;
+  const path = editPath(doc);
   return (
     <nav className="sy-editbar" aria-label="Where you are">
       {path.map((p, i) => {

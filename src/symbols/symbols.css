@@ -313,3 +313,8 @@
   border-radius: 50%;
   background: var(--grape);
 }
+.sy-library,
+.sy-props {
+  padding: 12px;
+  color: var(--text);
+}

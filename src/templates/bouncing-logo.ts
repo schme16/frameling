@@ -5,12 +5,16 @@ import { INK, PAPER, SKY, SUNNY, addVectorLayer, ellipsePath, emptyOf, fill, hol
 const LENGTH = 48;
 const GROUND = 470;
 
-function starPoints(r1: number, r2: number, n = 5): XY[] {
+// Symbols are drawn where they'd sit in the middle of the stage (symbol space is stage space), so drawing inside
+// one shows it in plain view.
+const MID = { x: 400, y: 300 };
+
+function starPoints(r1: number, r2: number, n = 5, cx = MID.x, cy = MID.y): XY[] {
   const pts: XY[] = [];
   for (let i = 0; i < n * 2; i++) {
     const a = -Math.PI / 2 + (i * Math.PI) / n;
     const r = i % 2 ? r2 : r1;
-    pts.push([Math.cos(a) * r, Math.sin(a) * r]);
+    pts.push([cx + Math.cos(a) * r, cy + Math.sin(a) * r]);
   }
   return pts;
 }
@@ -20,7 +24,7 @@ function addSymbol(doc: Doc, name: string, keys: Parameters<typeof vectorDrawing
   const id = uid('y');
   const layer: VectorLayer = { id: uid('l'), name: 'Layer 1', kind: 'vector', visible: true, locked: false, opacity: 1, cels: [] };
   keys.forEach((shapes, i) => hold(layer, vectorDrawing(doc, shapes).id, i * holdFor, holdFor));
-  (doc.symbols ??= {})[id] = { id, name, layers: [layer], length: keys.length * holdFor, origin: { x: 0, y: 0 } };
+  (doc.symbols ??= {})[id] = { id, name, layers: [layer], length: keys.length * holdFor, origin: { ...MID } };
   return id;
 }
 
@@ -52,11 +56,11 @@ export function makeBouncingLogo(): Doc {
   const star = addSymbol(doc, 'Star', [
     [
       pathShape([{ closed: true, points: starPoints(92, 44).map(([x, y]) => ({ x, y })) }], SUNNY, { color: INK, width: 9 }),
-      fill([ellipsePath(-22, -6, 8, 12), ellipsePath(22, -6, 8, 12)], INK),
-      inst(twinkle, { x: -38, y: -38 }) as never,
+      fill([ellipsePath(MID.x - 22, MID.y - 6, 8, 12), ellipsePath(MID.x + 22, MID.y - 6, 8, 12)], INK),
+      inst(twinkle, { x: MID.x - 38, y: MID.y - 38 }) as never,
     ],
   ]);
-  const shadow = addSymbol(doc, 'Shadow', [[fill([ellipsePath(0, 0, 90, 16)], INK, 0.25)]]);
+  const shadow = addSymbol(doc, 'Shadow', [[fill([ellipsePath(MID.x, MID.y, 90, 16)], INK, 0.25)]]);
 
   const ground = addVectorLayer(doc, 'Ground');
   hold(ground, vectorDrawing(doc, [fill([rectPath(0, GROUND, 800, 130)], SKY), pathShape([{ closed: false, points: [{ x: 0, y: GROUND }, { x: 800, y: GROUND }] }], null, { color: INK, width: 6 })]).id, 0, LENGTH);

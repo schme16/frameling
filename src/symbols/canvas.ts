@@ -6,7 +6,7 @@ import { celAt, findLayer } from '../core/doc';
 import type { InstanceShape } from '../core/format';
 import { registerTool, type Tool } from '../core/registry';
 import { store } from '../core/store';
-import { instanceAt, isInstance, nextKey } from '../core/symbols';
+import { instanceAt, isInstance, nextKey, pairInstances, tweenInstance } from '../core/symbols';
 import { cssVar } from '../canvas/theme';
 import { registerDecoration } from '../canvas/decorations';
 import { setMotionPath, simplify } from './ops';
@@ -57,7 +57,7 @@ export const motionPathTool: Tool = {
 registerTool(motionPathTool);
 
 /** Where the first instance of the key under the playhead sits on each frame of its in-betweens. */
-export function trailPoints(): { pts: { x: number; y: number }[]; current: number } | null {
+export function trailPoints(): { pts: { x: number; y: number }[]; line: { x: number; y: number }[]; current: number } | null {
   const { doc, ui } = store().get();
   const layer = findLayer(doc, ui.activeLayerId);
   const cel = layer ? celAt(layer, ui.frame) : undefined;
@@ -77,7 +77,16 @@ export function trailPoints(): { pts: { x: number; y: number }[]; current: numbe
       if (s) pts.push({ x: s.transform.x, y: s.transform.y });
     }
   }
-  return { pts, current: ui.frame - cel.start };
+  // The route itself, evenly in time without easing, so a motion path shows as a smooth curve.
+  const line: { x: number; y: number }[] = [];
+  const nk = nextKey(layer, cel)!;
+  const nd = doc.drawings[nk.drawingId];
+  const to = nd?.kind === 'vector' ? pairInstances([first], nd.shapes.filter(isInstance))[0] : undefined;
+  for (let k = 0; k <= 64; k++) {
+    const at = tweenInstance(first, to, cel.tween, k / 64);
+    line.push({ x: at.transform.x, y: at.transform.y });
+  }
+  return { pts, line, current: ui.frame - cel.start };
 }
 
 registerDecoration((g, ctx) => {
@@ -92,8 +101,8 @@ registerDecoration((g, ctx) => {
   g.globalAlpha = 0.55;
   g.setLineDash([4 / z, 4 / z]);
   g.beginPath();
-  g.moveTo(t.pts[0].x, t.pts[0].y);
-  for (const p of t.pts) g.lineTo(p.x, p.y);
+  g.moveTo(t.line[0].x, t.line[0].y);
+  for (const p of t.line) g.lineTo(p.x, p.y);
   g.stroke();
   g.setLineDash([]);
   g.globalAlpha = 1;

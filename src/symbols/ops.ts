@@ -24,7 +24,7 @@ import {
   symbolsInside,
   transformMatrix,
 } from '../core/symbols';
-import { shapesBounds } from '../canvas/geometry';
+import { shapesBounds, symbolBounds } from '../canvas/geometry';
 import { cloneDrawing } from '../timeline/edit-core';
 import { activeLayer, editActiveDrawing, EDIT_HINTS } from '../tools/edit';
 import { toast } from '../ui/toast';
@@ -131,6 +131,9 @@ function open(symbolId: Id, at: { instanceId?: Id; matrix: [number, number, numb
   if (!ok) return undefined;
   const now = store().get().doc;
   store().setUi({ frame: Math.min(frame, now.length - 1), activeLayerId: now.layers[now.layers.length - 1]?.id ?? null, selection: [], playing: false });
+  // Inside a symbol you draw in its own space, which only shows where it overlaps the stage.
+  const b = symbolBounds(now, symbolId);
+  if (b && (b.x + b.w < 0 || b.y + b.h < 0 || b.x > now.width || b.y > now.height)) toast("This symbol's drawing sits off the stage, so it's out of sight while you draw inside it.", { kind: 'warn' });
   return undefined;
 }
 
