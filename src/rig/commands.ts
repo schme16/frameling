@@ -10,6 +10,7 @@ import { deleteSelectedBone } from './tools';
 import { rigUi, setRigUi } from './state';
 import { artCoverage } from './coverage';
 import { isRigLayer } from './pose';
+import { normaliseActive, paintTarget, smoothActive } from './weightsTool';
 
 registerPanel({ id: 'rig', title: 'Rig', icon: 'rig', component: RigPanel, zone: 'right', order: 38, help: 'rig' });
 
@@ -69,6 +70,36 @@ registerCommands([
       if (!rig || !l) return;
       say(bendLayer(l.id, rig.id, artCoverage(doc, l, ui.frame)), `${l.name} now bends with the bones.`);
     },
+  },
+  {
+    id: 'rig.paintWeights',
+    label: 'Paint how much it bends',
+    category: 'Rig',
+    description: 'A soft brush for a bending layer: paint how strongly each part follows a bone (weight painting).',
+    keywords: ['weights', 'weight paint', 'skin weights', 'influence', 'bend', 'heat map', 'skinning'],
+    help: 'rig-weights',
+    enabled: (s) => !!paintTarget(s.doc, s.ui.activeLayerId),
+    run: () => store().setUi({ tool: 'weights' }),
+  },
+  {
+    id: 'rig.smoothWeights',
+    label: 'Smooth how it bends',
+    category: 'Rig',
+    description: 'Evens out the bending on the active layer once, so joints bend more softly (smooth weights).',
+    keywords: ['smooth weights', 'blur weights', 'soften bend'],
+    help: 'rig-weights',
+    enabled: (s) => !!paintTarget(s.doc, s.ui.activeLayerId),
+    run: () => say(smoothActive()),
+  },
+  {
+    id: 'rig.normaliseWeights',
+    label: 'Even out bending totals',
+    category: 'Rig',
+    description: 'Makes every point of the bending layer follow its bones by exactly 100% in total (normalise weights). Handy after deleting a bone.',
+    keywords: ['normalize weights', 'normalise weights', 'fix weights', 'weights add up'],
+    help: 'rig-weights',
+    enabled: (s) => !!paintTarget(s.doc, s.ui.activeLayerId),
+    run: () => say(normaliseActive(), 'Every point now follows its bones by 100% in total.'),
   },
   {
     id: 'rig.detachLayer',

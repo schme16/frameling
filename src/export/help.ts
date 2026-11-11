@@ -147,6 +147,41 @@ The common JSON atlas: \`frames\` says where each picture is, \`meta\` describes
 Leave a layer out of every export by making it a [reference layer](help:reference-layers).`,
   },
   {
+    id: 'export-godot-bones',
+    title: 'Bones in Godot: a character you can keep animating',
+    section: 'Exporting',
+    media: 'export-godot-bones.png',
+    summary: 'Send a character with bones to Godot as a skeleton, its parts and every clip, so you can change poses and timing in Godot.',
+    keywords: ['godot', 'skeleton2d', 'bone2d', 'animationplayer', 'polygon2d', 'rig', 'bones', 'cut-out', 'tscn', 'editable'],
+    body: `A sprite sheet bakes every frame into a picture. For a character with [bones](help:rig) you can send the skeleton itself instead, and keep animating it in Godot.
+
+## In Frameling
+
+1. Press **Ctrl+E**, pick **Sprite sheet**, then the **Godot** card.
+2. Under it, pick **Bones (editable in Godot)**. (You only see this when your drawing has bones.)
+3. Check **Where the picture will live in your Godot project**. The parts go in the same folder.
+4. Press **Export** and choose that folder inside your Godot project.
+
+## What you get
+
+- A scene (\`.tscn\`) with a **Skeleton2D** and a **Bone2D** for every bone, named like yours.
+- A picture for every part. Parts that follow one bone are **Sprite2D** nodes on that bone. Layers that [bend](help:rig-bend) are **Polygon2D** meshes with your [painted weights](help:rig-weights).
+- An **AnimationPlayer** with every clip as an animation, at your frame rate, looping like in Frameling. It plays the first one straight away.
+
+Drag the \`.tscn\` into your scene. Open the AnimationPlayer to change any key, or play another clip from a script:
+
+\`\`\`
+$AnimationPlayer.play("walk")
+\`\`\`
+
+## Good to know
+
+- Glides that are **Steady**, **Gentle start**, **Gentle stop** or **Gentle start and stop** use Godot's own easing, so they stay smooth and easy to edit. Other easings get a key on every frame.
+- Held poses snap, like they do here. [Squash and stretch](help:rig-stretch) becomes each bone's scale.
+- Swapped drawings (mouths, hands) swap the part's picture at the right frames.
+- Effects, blend modes and the camera aren't part of the scene. Pick **Baked frames** when you need those.`,
+  },
+  {
     id: 'export-godot',
     title: 'Using sprites in Godot',
     section: 'Exporting',
@@ -173,7 +208,7 @@ Leave a layer out of every export by making it a [reference layer](help:referenc
 $AnimatedSprite2D.play("run")
 \`\`\`
 
-Every clip is there with its speed and loop setting, and held frames last as long as they do in Frameling. Pixel art scenes are set to sharp (nearest) filtering, so nothing looks blurry.
+Every clip is there with its speed and loop setting, and held frames last as long as they do in Frameling. Got a character with bones? You can also send it as a [skeleton you can keep editing](help:export-godot-bones). Pixel art scenes are set to sharp (nearest) filtering, so nothing looks blurry.
 
 ## Using the .tres yourself
 

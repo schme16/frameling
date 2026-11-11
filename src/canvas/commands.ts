@@ -3,6 +3,7 @@ import { registerCommands } from '../core/registry';
 import { store } from '../core/store';
 import { center, fit, zoom100, zoomStep } from './controller';
 import { getViewSettings, setViewSettings } from './viewSettings';
+import { openDocumentSettings } from './DocumentSettings';
 
 registerCommands([
   {
@@ -65,5 +66,18 @@ registerCommands([
       // Menus read the tick from the store's state, so give them a nudge to look again.
       store().setUi({});
     },
+  },
+]);
+
+registerCommands([
+  {
+    id: 'document.settings',
+    label: 'Canvas size and speed...',
+    category: 'Edit',
+    keys: ['Mod+Alt+C'],
+    description: 'Change the page size (canvas or image size), frame rate, DPI and background.',
+    help: 'canvas-size',
+    keywords: ['canvas size', 'image size', 'resize', 'page size', 'stage size', 'document settings', 'fps', 'frame rate', 'dpi', 'background', 'scale', 'crop'],
+    run: () => openDocumentSettings(),
   },
 ]);

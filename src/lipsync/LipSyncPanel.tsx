@@ -6,7 +6,8 @@ import { goTo } from '../timeline/playback';
 import { Icon } from '../ui/icons';
 import { openHelp, openSheet } from '../ui/overlays';
 import { mouthForLabel, mouthInfo, normLabel } from './chart';
-import { layerLabels, mouthFrameAt, mouthLayers, pickMouthLayer, setMouthAt } from './apply';
+import { layerLabels, layerMouthSymbol, mouthFrameAt, mouthLayers, pickMouthLayer, setMouthAt } from './apply';
+import { SymbolThumb } from '../symbols/LibraryPanel';
 import './lipsync.css';
 
 const REACH = 5;
@@ -65,6 +66,7 @@ export function LipSyncPanel() {
   }
   const layer = layers.find((l) => l.id === chosen) ?? pickMouthLayer(doc, activeId)!;
   const labels = layerLabels(doc, layer);
+  const mouthId = layerMouthSymbol(doc, layer);
   const here = mouthFrameAt(doc, layer, frame);
   const cells: number[] = [];
   for (let f = frame - REACH; f <= frame + REACH; f++) cells.push(f);
@@ -129,8 +131,18 @@ export function LipSyncPanel() {
           if (!normLabel(label)) return null;
           const m = mouthForLabel(label);
           return (
-            <button key={i} type="button" className={`ls-mouth${here === i ? ' is-on' : ''}`} style={{ '--hue': mouthHue(i) } as React.CSSProperties} aria-pressed={here === i} title={m ? mouthInfo(m).sounds : `Show frame ${i + 1} of the mouth`} onClick={() => pick(i)}>
-              {label}
+            <button
+              key={i}
+              type="button"
+              className={`ls-mouth${mouthId ? ' has-pic' : ''}${here === i ? ' is-on' : ''}`}
+              style={{ '--hue': mouthHue(i) } as React.CSSProperties}
+              aria-pressed={here === i}
+              aria-label={label}
+              title={m ? `${label}: ${mouthInfo(m).sounds}` : `${label}: frame ${i + 1} of the mouth`}
+              onClick={() => pick(i)}
+            >
+              {mouthId && <SymbolThumb doc={doc} id={mouthId} frame={i} size={40} className="ls-pic" />}
+              <span>{label}</span>
             </button>
           );
         })}

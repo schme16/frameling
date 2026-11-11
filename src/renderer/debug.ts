@@ -8,6 +8,7 @@ import { celebrate, praise } from '../quests/feedback';
 import { allQuests, getQuest, questProgress, startQuest } from '../quests/registry';
 import { getPrefs, setPrefs } from '../ui/prefs';
 import { quillSheet, setQuillSheet, tick as quillTick } from '../ui/mascot/runtime';
+import { setWeightsLook } from '../rig/weightsTool';
 import { setShowQuill } from '../ui/mascot/goodbye';
 import { closeSheet, openHelp, openPrefs } from '../ui/overlays';
 import { toast } from '../ui/toast';
@@ -41,5 +42,7 @@ if (new URLSearchParams(location.search).has('debug')) {
     quill: { sheet: () => quillSheet.get(), setSheet: setQuillSheet, tick: quillTick, setShown: setShowQuill },
     toast,
     overlays: { openHelp, openPrefs, closeSheet },
+    // The weight painting look, for the A/B in brand/ab/weights.
+    weightsLook: setWeightsLook,
   };
 }

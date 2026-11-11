@@ -84,6 +84,14 @@ const ICONS: Record<string, ReactNode> = {
       <path d="M12 13.2v7" />
     </>
   ),
+  weights: (
+    <>
+      <circle cx="5.5" cy="18.5" r="2" />
+      <path d="M7 17l5.2-5.2" />
+      <circle cx="16" cy="8" r="5" strokeDasharray="2 2" />
+      {dot(16, 8, 1.8)}
+    </>
+  ),
   rig: (
     <>
       <circle cx="12" cy="5" r="2" />
@@ -324,6 +332,27 @@ const ICONS: Record<string, ReactNode> = {
       <circle cx="15" cy="7" r="2.4" />
       <circle cx="9" cy="12" r="2.4" />
       <circle cx="17" cy="17" r="2.4" />
+    </>
+  ),
+  // Two chain links: width and height kept together.
+  link: (
+    <>
+      <path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1" />
+      <path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" />
+    </>
+  ),
+  // The same links pulled apart.
+  unlink: (
+    <>
+      <path d="M13.5 7.3l.5-.5a4 4 0 0 1 5.7 5.7l-1.7 1.7" />
+      <path d="M10.5 16.7l-.5.5a4 4 0 0 1-5.7-5.7l1.7-1.7" />
+      <path d="M4 4l2 2M20 20l-2-2" />
+    </>
+  ),
+  ruler: (
+    <>
+      <rect x="3" y="7.5" width="18" height="9" rx="2" />
+      <path d="M7 7.5v3M11 7.5v4.5M15 7.5v3M19 7.5v1.5" />
     </>
   ),
   sliders: (

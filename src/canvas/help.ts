@@ -22,6 +22,49 @@ registerHelpTopics([
 When Frameling opens a new drawing, it fits the page for you.`,
   },
   {
+    id: 'canvas-size',
+    title: 'Canvas size and speed',
+    section: 'Drawing',
+    media: 'canvas-size.png',
+    summary: 'Make the page bigger or smaller, scale your whole drawing, and change the speed, DPI and background.',
+    keywords: ['canvas size', 'image size', 'resize', 'page size', 'stage', 'scale', 'crop', 'fps', 'frame rate', 'dpi', 'background', 'transparent', 'anchor'],
+    body: `Open it from **Edit > Canvas size and speed...** or press **Ctrl+Alt+C**.
+
+**Two ways to change the size**
+- **Change the page** (canvas size): your drawing stays the size it is, and space is added or trimmed round it. The little grid of squares (the anchor) says where your drawing stays. Pick the middle to grow evenly on every side, or a corner to add space on the other sides.
+- **Scale everything** (image size): your whole drawing grows or shrinks with the page. Lines get thicker or thinner to match, and so do effects like blur and shadows.
+
+Sizes are shown in your units (Preferences > Units). The chain button between width and height keeps the shape the same (keep proportions). Press it to change them apart.
+
+**Pixel art** stays crisp. Making the page bigger or smaller adds or removes rows and columns of pixels, moving by whole pixels only. Scaling goes in whole steps (2x, 3x...), so every pixel stays a clean square and nothing is blurred.
+
+**Trimmed too much?** Vector shapes outside the page are kept, so making it bigger again brings them back. Pixels outside the page are cut. Press **Ctrl+Z** to undo the whole change in one go.
+
+**Also here**
+- **Speed (frames per second)**: how many drawings show each second. 12 is the classic hand-drawn speed.
+- **Dots per inch (DPI)**: shown when your units aren't pixels. It changes how big the drawing prints, not its pixels.
+- **Background**: the page colour, or **See-through** for a transparent page.`,
+  },
+  {
+    id: 'rulers-guides',
+    title: 'Rulers and guides',
+    section: 'Drawing',
+    media: 'rulers-guides.png',
+    summary: 'Rulers along the canvas, guide lines you drag out of them, and snapping to guides and the page.',
+    keywords: ['ruler', 'rulers', 'guide', 'guides', 'snap', 'snapping', 'align', 'measure', 'units', 'magnet'],
+    body: `**Rulers**
+Press **Ctrl+R** (or **View > Rulers**) to show rulers along the top and left of the canvas. They count in your units and change as you zoom. A thin line on each ruler follows your pointer. Press the little box where they meet to switch units.
+
+**Guides**
+- Drag down from the top ruler for a sideways guide, or across from the left ruler for an up-and-down one. A label shows exactly where it is.
+- To move a guide, drag its little triangle on the ruler. To remove it, drag the triangle back onto the ruler.
+- **View > Guides** (**Ctrl+;**) hides or shows them. **View > Lock guides** stops them moving by accident. **View > Clear all guides** removes them all.
+- Guides are saved with your drawing, and never show up in exports.
+
+**Snapping**
+When you move or resize shapes, or draw rectangles, ellipses and lines, they jump onto guides and onto the page's edges and middle when they get close. A pink line shows what they snapped to. Hold **Ctrl** while dragging to stop snapping for a moment, or turn it off with **View > Snap to guides and page** (**Ctrl+Shift+;**).`,
+  },
+  {
     id: 'pixel-grid',
     title: 'Pixel grid',
     section: 'Drawing',
