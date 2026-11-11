@@ -2740,3 +2740,20 @@ body.ui-resizing * {
   font-weight: 700;
   color: var(--muted);
 }
+
+/* Submenus (File > Export) open to the side of their row. */
+.ui-menu-subwrap {
+  position: relative;
+}
+.ui-menu-subwrap > .ui-menu-item svg:last-child {
+  margin-left: auto;
+  opacity: 0.7;
+}
+.ui-menu-item.is-open {
+  background: var(--hover-bg);
+}
+.ui-submenu {
+  top: -7px;
+  left: calc(100% + 2px);
+  transform-origin: top left;
+}

@@ -10,7 +10,9 @@ registerHelpTopics([
     keywords: ['export', 'share', 'render', 'save as video', 'gif', 'png', 'mp4', 'webm'],
     body: `Saving keeps your drawing editable. **Exporting** makes something to share or use somewhere else, and leaves your drawing as it is.
 
-Press **Ctrl+E** (**Cmd+E** on a Mac), pick a format card, tweak the options if you like, and press **Export**. Frameling asks where to put it, then draws every frame and shows a progress bar. You can cancel any time.
+Press **Ctrl+E** (**Cmd+E** on a Mac), or choose **File > Export**, pick a format card, tweak the options if you like, and press **Export**. Frameling asks where to put it, then draws every frame and shows a progress bar. You can cancel any time.
+
+The five formats most people want come first: **Animated GIF**, **MP4 video**, **PNG sequence**, **Sprite sheet** and **Interactives**. The others are under **More formats**. Every export is also in the **File > Export** submenu.
 
 ## Which one?
 
@@ -435,7 +437,7 @@ It uses **CSS animations** inside the SVG rather than SVG's own animation tags (
 ## In Frameling
 
 1. Name your clips in the timeline (idle, wave, run...). Each one becomes something Interactives can play. Add **markers** for moments the page should react to (a footstep, the ball landing).
-2. Press **Ctrl+E** and pick **Interactives**, or choose **File > Export for Interactives**.
+2. Press **Ctrl+E** and pick **Interactives**, or choose **File > Export > Export for Interactives**.
 3. Pick the size. Pixel art starts at **Art size**: Interactives scales it up itself and keeps every pixel sharp.
 4. Press **Export** and save the \`.flplay\` file.
 

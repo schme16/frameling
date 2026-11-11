@@ -8,6 +8,9 @@ import { effectiveKeys } from './keys';
 
 export function MenuBar() {
   const [open, setOpen] = useState<number | null>(null);
+  // The open submenu (by label), inside the open menu.
+  const [sub, setSub] = useState<string | null>(null);
+  useEffect(() => setSub(null), [open]);
   // While a menu is open, re-read on every change so ticks and greyed items stay true. While closed, don't
   // re-render at all (the playhead moving would otherwise redraw the menu bar every frame).
   useStore((s) => (open === null ? null : s));
@@ -25,7 +28,7 @@ export function MenuBar() {
 
   const focusItem = (menu: number, which: 'first' | 'last' | number) => {
     requestAnimationFrame(() => {
-      const items = [...(bar.current?.querySelectorAll<HTMLElement>(`[data-menu="${menu}"] [role^="menuitem"]:not([aria-disabled="true"])`) ?? [])];
+      const items = [...(bar.current?.querySelectorAll<HTMLElement>(topItems(menu)) ?? [])];
       (which === 'first' ? items[0] : which === 'last' ? items[items.length - 1] : items[which])?.focus();
     });
   };
@@ -51,7 +54,7 @@ export function MenuBar() {
   };
 
   const onItemKey = (e: React.KeyboardEvent<HTMLElement>, index: number) => {
-    const list = [...(bar.current?.querySelectorAll<HTMLElement>(`[data-menu="${index}"] [role^="menuitem"]:not([aria-disabled="true"])`) ?? [])];
+    const list = [...(bar.current?.querySelectorAll<HTMLElement>(topItems(index)) ?? [])];
     const at = list.indexOf(e.currentTarget);
     if (e.key === 'ArrowDown') {
       e.preventDefault();
@@ -73,8 +76,58 @@ export function MenuBar() {
     } else if (e.key === 'Tab') setOpen(null);
   };
 
-  const row = (it: MenuItem, i: number, menu: number) => {
+  const subItems = () => [...(bar.current?.querySelectorAll<HTMLElement>('.ui-submenu [role^="menuitem"]:not([aria-disabled="true"])') ?? [])];
+  const onSubKey = (e: React.KeyboardEvent<HTMLElement>, menu: number) => {
+    const list = subItems();
+    const at = list.indexOf(e.currentTarget);
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      e.stopPropagation();
+      list[(at + (e.key === 'ArrowDown' ? 1 : -1) + list.length) % list.length]?.focus();
+    } else if (e.key === 'ArrowLeft' || e.key === 'Escape') {
+      e.preventDefault();
+      e.stopPropagation();
+      const label = sub;
+      setSub(null);
+      bar.current?.querySelector<HTMLElement>(`[data-menu="${menu}"] [data-sub="${label}"]`)?.focus();
+    } else if (e.key === 'Tab') setOpen(null);
+  };
+
+  const row = (it: MenuItem, i: number, menu: number, inSub = false): React.ReactNode => {
     if (it.kind === 'separator') return <div key={`s${i}`} className="ui-menu-sep" role="separator" />;
+    if (it.kind === 'submenu') {
+      const shown = sub === it.label;
+      return (
+        <div key={`sub-${it.label}`} className="ui-menu-subwrap" onMouseEnter={() => setSub(it.label)} onMouseLeave={() => setSub(null)}>
+          <button
+            type="button"
+            role="menuitem"
+            aria-haspopup="menu"
+            aria-expanded={shown}
+            data-sub={it.label}
+            className={`ui-menu-item${shown ? ' is-open' : ''}`}
+            onClick={() => setSub(shown ? null : it.label)}
+            onKeyDown={(e) => {
+              if (e.key === 'ArrowRight' || e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                e.stopPropagation();
+                setSub(it.label);
+                requestAnimationFrame(() => subItems()[0]?.focus());
+              } else onItemKey(e, menu);
+            }}
+          >
+            <span className="ui-menu-tick" />
+            <span className="ui-menu-label">{it.label}</span>
+            <Icon name="chevron-right" size={14} />
+          </button>
+          {shown && (
+            <div className="ui-menu ui-submenu" role="menu" aria-label={it.label}>
+              {it.items.map((x, j) => row(x, j, menu, true))}
+            </div>
+          )}
+        </div>
+      );
+    }
     const c = it.command;
     const enabled = commandEnabled(c);
     const checked = c.checked ? safe(() => c.checked!(store().get())) : undefined;
@@ -88,7 +141,7 @@ export function MenuBar() {
         aria-disabled={!enabled || undefined}
         className={`ui-menu-item${enabled ? '' : ' is-disabled'}`}
         data-command={c.id}
-        onKeyDown={(e) => onItemKey(e, menu)}
+        onKeyDown={(e) => (inSub ? onSubKey(e, menu) : onItemKey(e, menu))}
         onClick={() => {
           if (!enabled) return;
           setOpen(null);
@@ -130,6 +183,10 @@ export function MenuBar() {
     </nav>
   );
 }
+
+// The menu's own items, not the ones in an open submenu.
+const topItems = (menu: number) =>
+  `[data-menu="${menu}"] > [role^="menuitem"]:not([aria-disabled="true"]), [data-menu="${menu}"] > .ui-menu-subwrap > [role^="menuitem"]`;
 
 function safe<T>(fn: () => T): T | undefined {
   try {

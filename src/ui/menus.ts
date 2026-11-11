@@ -19,7 +19,7 @@ export const MENUS: MenuDef[] = [
   {
     label: 'File',
     categories: ['File', 'Export'],
-    items: ['file.new', 'file.open', 'file.openRecent', 'file.openPlayable', 'file.recover', '-', 'file.save', 'file.saveAs', 'file.saveAsTemplate', 'file.importTemplate', '-', 'file.export', 'file.exportInteractives', 'file.exportLottie', 'file.exportSvgAnimated', 'file.exportAgain', 'file.toggleUpdatePlayable', '-', 'audio.import'],
+    items: ['file.new', 'file.open', 'file.openRecent', 'file.openPlayable', 'file.recover', '-', 'file.save', 'file.saveAs', 'file.saveAsTemplate', 'file.importTemplate', '-', 'sub:export', 'audio.import'],
   },
   {
     label: 'Edit',
@@ -68,9 +68,26 @@ export const MENUS: MenuDef[] = [
   },
 ];
 
-export type MenuItem = { kind: 'command'; command: Command } | { kind: 'separator' };
+/** A submenu, named in a menu as `sub:<key>`. */
+export interface SubmenuDef {
+  label: string;
+  items: MenuEntry[];
+  /** Commands nobody names whose id starts with one of these join it at the end (new export formats land here). */
+  prefixes?: string[];
+}
 
-function expand(entry: string): string[] {
+export const SUBMENUS: Record<string, SubmenuDef> = {
+  export: {
+    label: 'Export',
+    items: ['file.export', 'file.exportAgain', '-', 'file.exportInteractives', 'file.exportLottie', 'file.exportSvgAnimated', 'file.exportProres', 'file.exportPsd', 'file.exportPdf', 'file.exportIllustrator', '-', 'file.toggleUpdatePlayable'],
+    prefixes: ['file.export'],
+  },
+};
+
+export type MenuItem = { kind: 'command'; command: Command } | { kind: 'separator' } | { kind: 'submenu'; label: string; items: MenuItem[] };
+
+function expand(entry: string, subs: Record<string, SubmenuDef> = SUBMENUS): string[] {
+  if (entry.startsWith('sub:')) return (subs[entry.slice(4)]?.items ?? []).filter((e) => e !== '-').flatMap((e) => expand(e, subs));
   if (entry === 'group:tools') return allTools().map((t) => `tools.${t.id}`);
   if (entry === 'group:panels') return allPanels().map((p) => `view.panel.${p.id}`);
   if (entry === 'group:workspaces') return listWorkspaces().map((w) => `view.workspace.${w.id}`);
@@ -78,9 +95,9 @@ function expand(entry: string): string[] {
 }
 
 /** Every command id named in any menu, so the auto-added ones don't repeat across menus. */
-function listedIds(menus: MenuDef[]): Set<string> {
+function listedIds(menus: MenuDef[], subs: Record<string, SubmenuDef> = SUBMENUS): Set<string> {
   const s = new Set<string>();
-  for (const m of menus) for (const e of m.items) for (const id of expand(e)) s.add(id);
+  for (const m of menus) for (const e of m.items) for (const id of expand(e, subs)) s.add(id);
   return s;
 }
 
@@ -88,24 +105,37 @@ function listedIds(menus: MenuDef[]): Set<string> {
  * The entries to show for a menu: named commands that exist, then any extra registered commands in the menu's
  * categories. Separators are tidied so there are never two in a row, or one at either end.
  */
-export function resolveMenu(menu: MenuDef, menus: MenuDef[] = MENUS, lookup: (id: string) => Command | undefined = getCommand, all: () => Command[] = allCommands): MenuItem[] {
+export function resolveMenu(menu: MenuDef, menus: MenuDef[] = MENUS, lookup: (id: string) => Command | undefined = getCommand, all: () => Command[] = allCommands, subs: Record<string, SubmenuDef> = SUBMENUS): MenuItem[] {
   const out: MenuItem[] = [];
   const seen = new Set<string>();
+  const named = listedIds(menus, subs);
+  // Prefixes the submenus here claim, so their stray commands don't also land at the bottom of the menu.
+  const claimed = menu.items.filter((e) => e.startsWith('sub:')).flatMap((e) => subs[e.slice(4)]?.prefixes ?? []);
   for (const e of menu.items) {
     if (e === '-') {
       out.push({ kind: 'separator' });
       continue;
     }
-    for (const id of expand(e)) {
+    if (e.startsWith('sub:')) {
+      const sub = subs[e.slice(4)];
+      if (!sub) continue;
+      const inner = resolveMenu({ label: sub.label, categories: [], items: sub.items }, menus, lookup, all, subs);
+      const extra = all()
+        .filter((c) => (sub.prefixes ?? []).some((p) => c.id.startsWith(p)) && !named.has(c.id) && !isDynamicCommand(c.id) && !isStaleCommand(c.id))
+        .sort((a, b) => a.label.localeCompare(b.label));
+      for (const c of extra) inner.push({ kind: 'command', command: c });
+      if (inner.length) out.push({ kind: 'submenu', label: sub.label, items: inner });
+      continue;
+    }
+    for (const id of expand(e, subs)) {
       const c = lookup(id);
       if (!c || seen.has(id) || isStaleCommand(id)) continue;
       seen.add(id);
       out.push({ kind: 'command', command: c });
     }
   }
-  const named = listedIds(menus);
   const extra = all()
-    .filter((c) => menu.categories.includes(c.category) && !named.has(c.id) && !seen.has(c.id) && !isDynamicCommand(c.id) && !isStaleCommand(c.id))
+    .filter((c) => menu.categories.includes(c.category) && !named.has(c.id) && !seen.has(c.id) && !claimed.some((p) => c.id.startsWith(p)) && !isDynamicCommand(c.id) && !isStaleCommand(c.id))
     .sort((a, b) => a.label.localeCompare(b.label));
   if (extra.length) {
     out.push({ kind: 'separator' });

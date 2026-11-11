@@ -136,3 +136,12 @@ export function formatInfo(id: FormatId): FormatInfo {
 }
 
 export const DEFAULT_SHEET: SheetSettings = { columns: 0, padding: 0, trim: false, pot: false, dedupe: true, json: true, godot: false, godotScene: false, godotPath: '' };
+
+/** The formats most people want, in the order the export dialog shows them. The rest sit under "More formats". */
+export const POPULAR_FORMATS: FormatId[] = ['gif', 'mp4', 'pngseq', 'sheet', 'interactives'];
+
+/** The format cards split into the popular ones and the rest (each in FORMATS order, popular in POPULAR order). */
+export function splitFormats(formats: FormatInfo[] = FORMATS): { popular: FormatInfo[]; more: FormatInfo[] } {
+  const popular = POPULAR_FORMATS.map((id) => formats.find((f) => f.id === id)).filter((f): f is FormatInfo => !!f);
+  return { popular, more: formats.filter((f) => !POPULAR_FORMATS.includes(f.id)) };
+}
