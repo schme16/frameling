@@ -82,17 +82,21 @@ export class EffectCache {
 
 // ---------------------------------------------------------------- compositing
 
-let sharedPool: BufferPool | null = null;
+// One pool per nesting depth: a symbol with effects inside is composited while its layer is being composited, on a
+// canvas of another size, and sharing one pool would hand the outer run buffers of the wrong size.
+const pools: BufferPool[] = [];
+let depth = 0;
 
 function poolFor(w: number, h: number): BufferPool {
-  if (!sharedPool) sharedPool = new BufferPool(w, h);
-  else sharedPool.resize(w, h);
-  return sharedPool;
+  let p = pools[depth];
+  if (!p) p = pools[depth] = new BufferPool(w, h);
+  else p.resize(w, h);
+  return p;
 }
 
 /** Scratch canvases made so far (for tests). */
 export function poolStats(): { made: number } {
-  return { made: sharedPool?.made ?? 0 };
+  return { made: pools.reduce((n, p) => n + p.made, 0) };
 }
 
 interface Run {
@@ -115,16 +119,16 @@ export function compositePlan(g: Ctx, doc: Doc, frame: number, steps: PlanStep[]
   const w = Math.max(1, target.width);
   const h = Math.max(1, target.height);
   const m = g.getTransform();
-  const run: Run = {
-    doc,
-    frame,
-    hooks,
-    cache,
-    pool: poolFor(w, h),
-    m,
-    scale: Math.sqrt(Math.abs(m.a * m.d - m.b * m.c)) || 1,
-    origin: { x: m.e, y: m.f },
-  };
+  const pool = poolFor(w, h);
+  depth++;
+  try {
+    compositeRun(g, steps, { doc, frame, hooks, cache, pool, m, scale: Math.sqrt(Math.abs(m.a * m.d - m.b * m.c)) || 1, origin: { x: m.e, y: m.f } });
+  } finally {
+    depth--;
+  }
+}
+
+function compositeRun(g: Ctx, steps: PlanStep[], run: Run): void {
   // A mask at the stage level cuts out the layers under it, not whatever was on the canvas before (the background).
   if (steps.some((s) => s.type === 'mask')) {
     const buf = run.pool.get();
