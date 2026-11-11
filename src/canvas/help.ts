@@ -33,7 +33,7 @@ When Frameling opens a new drawing, it fits the page for you.`,
     body: `Open it from **Edit > Canvas size and speed...** or press **Ctrl+Alt+C**.
 
 **Two ways to change the size**
-- **Change the page** (canvas size): your drawing stays the size it is, and space is added or trimmed round it. The little grid of squares (the anchor) says where your drawing stays. Pick the middle to grow evenly on every side, or a corner to add space on the other sides.
+- **Change the page** (canvas size): your drawing stays the size it is, and space is added or removed around it. The little grid of squares (the anchor) says where your drawing stays. Pick the middle to grow evenly on every side, or a corner to add space on the other sides.
 - **Scale everything** (image size): your whole drawing grows or shrinks with the page. Lines get thicker or thinner to match, and so do effects like blur and shadows.
 
 Sizes are shown in your units (Preferences > Units). The chain button between width and height keeps the shape the same (keep proportions). Press it to change them apart.
@@ -100,8 +100,12 @@ Tip: the Eyedropper (I) picks up any colour you can see on the page.`,
     section: 'Drawing',
     media: 'tool-options.png',
     summary: 'The settings for the tool you are using, like brush size or whether a shape is filled.',
-    keywords: ['settings', 'size', 'options'],
+    keywords: ['settings', 'size', 'options', 'slider', 'type a number', 'precise', 'fine'],
     body: `This panel changes to match whichever tool you've picked. Brush has size, smoothing and pointy ends. Shapes have fill and outline. The eraser has its reach.
+
+## Sliders
+
+Click a slider's number to type an exact value (Enter keeps it, Escape cancels). Hold **Shift** while dragging for big steps, or **Alt** or **Ctrl** for fine control. The arrow keys work the same way.
 
 Your settings are remembered, so the brush is just as you left it next time.`,
   },
