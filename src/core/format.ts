@@ -59,6 +59,42 @@ export interface Doc {
   audio?: AudioClip[];
   /** Guide lines dragged out of the rulers (missing = none). Never drawn in exports. See `Guide`. */
   guides?: Guide[];
+  /**
+   * Artboards: several named canvases in one document, each with its own size, background, layers and timeline (a
+   * sprite, a shot). The open one's content is the document's own fields (`width` to `guides`); the others keep theirs
+   * in `Artboard.content`. Palette, swatches, symbols, tiles and fps are shared. Missing = the document is one artboard.
+   * See src/artboards.
+   */
+  artboards?: Artboard[];
+  /** The id of the open artboard (missing = the first). */
+  activeArtboard?: Id;
+}
+
+/** One artboard (see Doc.artboards). */
+export interface Artboard {
+  id: Id;
+  name: string;
+  /** Top-left corner on the pasteboard, in document pixels. Content inside is measured from here. */
+  x: number;
+  y: number;
+  /** The file name exports use (missing = the name). */
+  exportName?: string;
+  /** What it holds while another artboard is open. Missing on the open one. */
+  content?: ArtboardContent;
+}
+
+/** The part of a document each artboard has its own copy of. */
+export interface ArtboardContent {
+  width: number;
+  height: number;
+  background: Color | null;
+  length: number;
+  layers: Layer[];
+  clips: Clip[];
+  markers: Marker[];
+  flow?: ClipFlow;
+  audio?: AudioClip[];
+  guides?: Guide[];
 }
 
 /** A guide line across the stage: `axis` 'x' is an up-and-down line at x = `at`, 'y' a sideways one at y = `at`. */

@@ -204,3 +204,16 @@ export function getPredicted(): Pt[] {
 export function setPredicted(p: Pt[]): void {
   predicted = p;
 }
+
+// ---------------------------------------------------------------- before a tool starts
+
+/** Runs before a tool gets a press, with the document point and the tool's id (artboards open the one clicked). */
+export type PointerDownHook = (p: Pt, tool: string) => void;
+const downHooks: PointerDownHook[] = [];
+
+export function addPointerDownHook(fn: PointerDownHook): void {
+  if (!downHooks.includes(fn)) downHooks.push(fn);
+}
+export function runPointerDownHooks(p: Pt, tool: string): void {
+  for (const fn of downHooks) fn(p, tool);
+}

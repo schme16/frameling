@@ -495,6 +495,8 @@ export class CanvasEngine {
       return;
     }
     if (e.button !== 0 && !penEraser) return;
+    // A press on another artboard opens it first, so the tool works there.
+    ctl.runPointerDownHooks(this.toDocPoint(e), penEraser ? 'eraser' : ui.tool);
 
     const tool = penEraser ? getTool('eraser') : getTool(ui.tool);
     if (!tool) return;
