@@ -19,3 +19,28 @@ export function stepScript(say: string, o: { cheer?: boolean; pointing?: boolean
   beats.push({ anim: 'idle' });
   return beats;
 }
+
+/** How long Quill is sad before his goodbye wave: the onboarding one, and the shorter one from Preferences. */
+export const SAD_HOLD = { long: 4200, short: 2400 };
+
+/** What Quill says when he's switched off. Warm, short, and where to find him again. */
+export const GOODBYE_WORDS = {
+  long: ["Oh... okay. I understand!", "I'll be just over here. If you ever need me, say hi from Help > Meet Quill again, or switch me back on in Preferences."],
+  short: "Oh... okay, I understand. If you ever need me, I'm in Help > Meet Quill again.",
+};
+
+/** What Quill says when he's switched back on. */
+export const WELCOME_BACK_WORDS = "Yay, I'm back! I knew you'd miss me. (I missed you too.)";
+
+/**
+ * Quill being switched off: sad for a moment (droopy quills, a tear), then a brave little goodbye wave. It ends on
+ * the wave, and whoever shows him hides him once it's done.
+ */
+export function goodbyeScript(short = false): Beat[] {
+  return [{ anim: 'sad', hold: short ? SAD_HOLD.short : SAD_HOLD.long }, { anim: 'wave-sad' }];
+}
+
+/** Quill switched back on: a happy cheer, then idle. */
+export function welcomeBackScript(): Beat[] {
+  return [{ anim: 'cheer' }, { anim: 'cheer' }, { anim: 'idle' }];
+}

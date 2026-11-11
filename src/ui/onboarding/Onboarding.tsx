@@ -8,7 +8,7 @@ import { UNITS, type Unit } from '../../core/units';
 import { askAboutUnsavedChanges } from '../../io/document';
 import { applyWorkspace } from '../dock';
 import { Icon } from '../icons';
-import { Quill, useQuillShown, type Script } from '../mascot';
+import { goodbyeScript, GOODBYE_WORDS, Quill, useQuillShown, welcomeBackScript, WELCOME_BACK_WORDS, type Script } from '../mascot';
 import { Modal } from '../Modal';
 import { closeOnboarding, openHelp, openSheet, overlays } from '../overlays';
 import { getPrefs, setPrefs, setThemePreview, usePrefs, type LookPref, type ThemePref } from '../prefs';
@@ -41,7 +41,10 @@ const TITLES: Record<StepId, string> = {
 
 function Flow() {
   const [s, dispatch] = useReducer(reduceFlow, undefined, () => startFlow(sillyName()));
-  const quill = useQuillShown();
+  // Show Quill switched on the settings step: a sad goodbye (he stays on screen until it's done), or a cheer.
+  const [mood, setMood] = useState<{ kind: 'bye' | 'back'; n: number; playing: boolean } | null>(null);
+  const byePlaying = mood?.kind === 'bye' && mood.playing;
+  const quill = useQuillShown(byePlaying);
   const [dozing, setDozing] = useState<'awake' | 'asleep' | 'woke'>('awake');
   const [beat, setBeat] = useState(0);
   const p = usePrefs((x) => x);
@@ -64,7 +67,12 @@ function Flow() {
     lastPoke.current = Date.now();
     setDozing('awake');
     setBeat((b) => b + 1);
+    setMood(null);
   }, [s.step]);
+  const quillSwitched = (on: boolean) => {
+    setPrefs({ showQuill: on });
+    setMood((m) => ({ kind: on ? 'back' : 'bye', n: (m?.n ?? 0) + 1, playing: true }));
+  };
 
   // Leaving the theme step (or the flow) drops any peek, so the real pick shows.
   useEffect(() => {
@@ -112,9 +120,24 @@ function Flow() {
   const layoutB = document.documentElement.dataset.obLayout === 'b';
 
   const say = sayFor(s, { strawberryName: loved?.name ?? strawberry.light?.name ?? strawberry.dark?.name ?? 'Strawberry', lovesIt, quillOn: p.showQuill, name: s.name, plan });
-  const anim: Script =
-    dozing === 'asleep' ? 'sleep' : dozing === 'woke' ? [{ anim: 'oops' }, { anim: 'idle' }] : animFor(s, lovesIt, beat);
-  const words = dozing === 'asleep' ? ['Zzz...'] : dozing === 'woke' ? ['Oh! Sorry, I nodded off. Take all the time you need.', ...say] : say;
+  const anim: Script = mood
+    ? mood.kind === 'bye'
+      ? goodbyeScript()
+      : welcomeBackScript()
+    : dozing === 'asleep'
+      ? 'sleep'
+      : dozing === 'woke'
+        ? [{ anim: 'oops' }, { anim: 'idle' }]
+        : animFor(s, lovesIt, beat);
+  const words = mood
+    ? mood.kind === 'bye'
+      ? GOODBYE_WORDS.long
+      : [WELCOME_BACK_WORDS]
+    : dozing === 'asleep'
+      ? ['Zzz...']
+      : dozing === 'woke'
+        ? ['Oh! Sorry, I nodded off. Take all the time you need.', ...say]
+        : say;
 
   const i = stepIndex(s.step);
   const last = s.step === 'done';
@@ -123,7 +146,7 @@ function Flow() {
     <Modal title={`Welcome to Frameling: ${TITLES[s.step]}`} size="lg" hideHeader className={`ob ${layoutB ? 'ob-b' : 'ob-a'}`} onClose={() => end('skipped')} initialFocus=".ob-next, .ob-go">
       <div className="ob-body" onPointerDown={poke} onKeyDown={poke}>
         <aside className={`ob-quill${quill ? '' : ' is-alone'}`}>
-          <div className="ob-bubbles" aria-live="polite" key={`${s.step}-${dozing}`}>
+          <div className="ob-bubbles" aria-live="polite" key={`${s.step}-${dozing}-${mood?.n ?? 0}`}>
             {words.map((w, n) => (
               <p key={n} className="ob-bubble" style={{ animationDelay: `${n * 450}ms` }}>
                 {w}
@@ -132,7 +155,12 @@ function Flow() {
           </div>
           {quill && (
             <div className="ob-quill-stand">
-              <Quill anim={anim} size={layoutB ? 96 : 192} />
+              <Quill
+                anim={anim}
+                size={layoutB ? 96 : 192}
+                force={byePlaying}
+                onDone={byePlaying ? () => setMood((m) => m && { ...m, playing: false }) : undefined}
+              />
               {lovesIt && s.step === 'themes' && <Berry />}
             </div>
           )}
@@ -144,7 +172,7 @@ function Flow() {
             {s.step === 'hello' && <Hello />}
             {s.step === 'make' && <Make s={s} toggle={(interest) => dispatch({ type: 'toggle', interest })} />}
             {s.step === 'themes' && <Themes themes={themes} strawberry={strawberry} />}
-            {s.step === 'prefs' && <Settings />}
+            {s.step === 'prefs' && <Settings onQuill={quillSwitched} />}
             {s.step === 'name' && <Name name={s.name} setName={(name) => dispatch({ type: 'name', name })} next={() => dispatch({ type: 'next' })} />}
             {s.step === 'done' && <Done s={s} plan={plan} go={(g) => void finish(g)} />}
           </div>
@@ -383,7 +411,7 @@ function Setting({ label, hint, children }: { label: string; hint: string; child
   );
 }
 
-function Settings() {
+function Settings({ onQuill }: { onQuill: (on: boolean) => void }) {
   const p = usePrefs((x) => x);
   const [wheel, setWheel] = useState(() => currentChoice<'zoom' | 'scroll'>('canvas.wheel'));
   return (
@@ -423,7 +451,7 @@ function Settings() {
         <Switch label="Reduce motion" on={p.reduceMotion} onChange={(reduceMotion) => setPrefs({ reduceMotion })} />
       </Setting>
       <Setting label="Show Quill" hint="Off hides me everywhere. My words still show.">
-        <Switch label="Show Quill" on={p.showQuill} onChange={(showQuill) => setPrefs({ showQuill })} />
+        <Switch label="Show Quill" on={p.showQuill} onChange={onQuill} />
       </Setting>
     </div>
   );

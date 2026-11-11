@@ -17,7 +17,7 @@ export interface Sheet {
   anims: Record<string, SheetAnim>;
 }
 
-export type QuillAnim = 'idle' | 'wave' | 'talk' | 'point' | 'cheer' | 'think' | 'draw' | 'sleep' | 'oops';
+export type QuillAnim = 'idle' | 'wave' | 'talk' | 'point' | 'cheer' | 'think' | 'draw' | 'sleep' | 'oops' | 'sad' | 'wave-sad';
 
 /** One step of a little performance: play `anim`, for `hold` ms if given (else once through, or forever if it loops). */
 export interface Beat {

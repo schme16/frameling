@@ -16,5 +16,7 @@ export const FAKE_SHEET: Sheet = {
     draw: { frames: row(192, [200, 200]), loop: true },
     sleep: { frames: row(224, [800, 800]), loop: true },
     oops: { frames: row(256, [100, 300]), loop: false },
+    sad: { frames: row(288, [600, 110, 150]), loop: true },
+    'wave-sad': { frames: row(320, [260, 300, 600]), loop: false },
   },
 };
