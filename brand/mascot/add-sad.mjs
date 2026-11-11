@@ -8,10 +8,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {loadMascotLib, ROOT} from '../../scripts/mascot/load.mjs';
-import {PALETTE, LAYERS, UPPER, B} from '../quill/quill-frames.mjs';
-import {blank, stamp} from '../quill/lib.mjs';
-
-const g = s => s.trim().split('\n').map(r => r.trim());
+import {compose, contactSheet, g, toImage, withParts} from './compose.mjs';
+import {ARMS} from './arms.mjs';
 const NEW = ['sad', 'wave-sad'];
 
 //new parts, in B's idle coordinates like the rest
@@ -86,11 +84,8 @@ const PARTS = {
 	},
 };
 
-const def = {...B, parts: {...B.parts}};
-for (const [layer, vs] of Object.entries(PARTS)) def.parts[layer] = {...def.parts[layer], ...vs};
-
-//a slow, droopy, not-quite-all-the-way-up wave
-def.parts.arm = {...def.parts.arm, low: def.parts.arm.wave1, lowUp: def.parts.arm.wave2};
+//the redrawn chunky arms (redraw-arms.mjs) wave goodbye too
+const def = withParts({...PARTS, arm: ARMS});
 
 const droop = {quills: 'droop', ear: 'flat', cheek: 'idle'};
 const POSES = {
@@ -120,88 +115,14 @@ const ANIMS = {
 	]},
 };
 
-/* -------------------------------------------- composing (same as brand/quill/build.mjs) ------ */
-
-function outline(cv) {
-	const h = cv.length, w = cv[0].length, out = cv.map(r => r.slice());
-	for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-		if (cv[y][x] !== '.') continue;
-		for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-			const c = cv[y + dy]?.[x + dx];
-			if (c && c !== '.' && c !== 'k') { out[y][x] = 'k'; break; }
-		}
-	}
-	return out;
-}
-
-function compose(pose) {
-	const N = def.size, cv = blank(N, N);
-	const k = def.offsetScale || 1, sc = v => Math.trunc(v * k);
-	const [bx, by] = def.base || [0, 0];
-	const [dx, dy] = [sc(pose.dx || 0) + bx, sc(pose.dy || 0) + by];
-	const [ux, uy] = (pose.up || [0, 0]).map(sc);
-	const put = (layer, variant) => {
-		const part = def.parts[layer]?.[variant];
-		if (!part) throw new Error(`no part ${layer}.${variant}`);
-		const up = UPPER.includes(layer) ? [ux, uy] : [0, 0];
-		//tears ride with the face until they let go of it
-		const fxUp = layer === 'fx' && (variant === 'tear0' || variant === 'tearR') ? [ux, uy] : [0, 0];
-		stamp(cv, part[2], part[0] + dx + up[0] + fxUp[0], part[1] + dy + up[1] + fxUp[1]);
-	};
-	for (const layer of LAYERS) {
-		if (layer === 'pencils') {
-			for (const p of def.pencils) {
-				//sad droops a touch further than sleep does
-				const nudge = pose.quills === 'spread' ? p.spread : pose.quills === 'droop' ? [p.droop[0], p.droop[1] + (p.droop[1] ? 1 : 0)] : [0, 0];
-				const tmp = blank(N, N);
-				stamp(tmp, p.rows, p.at[0] + dx + ux + nudge[0], p.at[1] + dy + uy + nudge[1], {swap: {c: p.c, C: p.C}});
-				stamp(cv, outline(tmp), 0, 0);
-			}
-			continue;
-		}
-		if (layer === 'fx') { for (const f of pose.fx || []) put('fx', f); continue; }
-		const v = pose[layer] ?? {body: 'idle', feet: 'stand', hood: 'idle', ear: 'idle', face: 'idle', cheek: 'idle', eyes: 'open', mouth: 'smile', arm: null}[layer];
-		if (v && v !== 'none') put(layer, v);
-	}
-	return cv.map(r => r.join(''));
-}
-
-const rgb = hex => [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16));
-function toImage(grid) {
-	const N = def.size, px = new Uint8ClampedArray(N * N * 4);
-	grid.forEach((row, y) => [...row].forEach((ch, x) => {
-		if (ch === '.') return;
-		const [r, gg, b] = rgb(PALETTE[ch]);
-		px.set([r, gg, b, 255], (y * N + x) * 4);
-	}));
-	return {width: N, height: N, pixels: px};
-}
-
 /* -------------------------------------------- go ------ */
 
 const lib = await loadMascotLib();
-const images = Object.fromEntries(Object.keys(POSES).map(n => [n, toImage(compose(POSES[n]))]));
+const images = Object.fromEntries(Object.keys(POSES).map(n => [n, toImage(compose(def, POSES[n], {faceFx: ['tear0', 'tearR'], sadDroop: true}))]));
 
 //contact sheet at 6x on dark and light, one row per anim, for checking by eye
 {
-	const S = 6, N = def.size, cell = N * S, pad = 6;
-	const cols = Math.max(...Object.values(ANIMS).map(a => a.frames.length));
-	const rows = Object.keys(ANIMS).length * 2;
-	const W = pad + cols * (cell + pad), H = pad + rows * (cell + pad);
-	const sheet = lib.blankImage(W, H);
-	const fill = (x, y, w, h, c) => { for (let j = y; j < y + h; j++) for (let i = x; i < x + w; i++) sheet.pixels.set([...c, 255], (j * W + i) * 4); };
-	fill(0, 0, W, H, [42, 39, 51]);
-	Object.values(ANIMS).forEach((a, r) => a.frames.forEach(([p], i) => {
-		for (const [bgI, bg] of [[0, [23, 21, 31]], [1, [243, 238, 230]]]) {
-			const x0 = pad + i * (cell + pad), y0 = pad + (r * 2 + bgI) * (cell + pad);
-			fill(x0, y0, cell, cell, bg);
-			const big = lib.scaleNearest(images[p], S);
-			for (let j = 0; j < cell; j++) for (let k = 0; k < cell; k++) {
-				const s = (j * cell + k) * 4;
-				if (big.pixels[s + 3]) sheet.pixels.set(big.pixels.subarray(s, s + 4), ((y0 + j) * W + x0 + k) * 4);
-			}
-		}
-	}));
+	const sheet = contactSheet(lib, Object.values(ANIMS).map(a => a.frames.map(([p]) => images[p])));
 	const dir = path.join(ROOT, 'brand/ab/sad-quill');
 	fs.mkdirSync(dir, {recursive: true});
 	fs.writeFileSync(path.join(dir, 'contact-6x.png'), lib.encodePng(sheet));

@@ -28,14 +28,16 @@ describe('mascot.frameling (the source of the app mascot)', () => {
     expect(doc.clips.find((c) => c.name === 'wave-sad')!.loop).toBe(false);
   });
 
-  // add-sad.mjs only appends, so the nine original animations still match the old generator frame for frame.
-  it.runIf(manifest.app === 'add-sad')('kept the original animations exactly as they were', () => {
+  // add-sad.mjs only appends and redraw-arms.mjs only swaps the arm, so the original animations keep their timing,
+  // and the ones without an arm are still the old generator's pixels.
+  it.runIf(manifest.app === 'add-sad' || manifest.app === 'redraw-arms')('kept the original animations as they were (bar the arms)', () => {
     const built = docToSheet(doc);
     const old = json('brand/quill/b/quill.json');
     const oldPng = png('brand/quill/b/quill.png');
     for (const [name, a] of Object.entries(old.anims) as [string, { frames: { x: number; y: number; ms: number }[] }][]) {
       const now = built.meta.anims[name];
       expect(now.frames.map((f) => f.ms), name).toEqual(a.frames.map((f) => f.ms));
+      if (!['idle', 'talk', 'sleep', 'oops'].includes(name)) continue;
       now.frames.forEach((f, i) => {
         const was = a.frames[i];
         expect(sameImage(crop(built.image, f.x, f.y, 48, 48), crop(oldPng, was.x, was.y, 48, 48)), `${name} ${i}`).toBe(true);
