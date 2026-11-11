@@ -91,6 +91,7 @@ function down(e: ToolPointer, ctx: ToolContext): void {
     sweep(vec, e.x, e.y, ctx);
     return;
   }
+  if (layer.kind !== 'pixel') return;
   const { doc, ui } = store().get();
   pix = new PixelStroke(doc, layer, ui.frame, { color: [0, 0, 0, 0], size: getToolSettings().eraserPixelSize, shape: getToolSettings().pixelBrushShape, perfect: false });
   pix.begin(pix.cell(e.x, e.y));

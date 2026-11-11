@@ -9,7 +9,7 @@ import { setPixelSettings, usePixelSettings, type SymmetryMode } from './setting
 import './pixel.css';
 
 function useLayerKind(): 'vector' | 'pixel' {
-  return useStore((s) => (findLayer(s.doc, s.ui.activeLayerId) ?? s.doc.layers[s.doc.layers.length - 1])?.kind ?? 'vector');
+  return useStore((s) => (findLayer(s.doc, s.ui.activeLayerId) ?? s.doc.layers[s.doc.layers.length - 1])?.kind === 'pixel' ? 'pixel' : 'vector');
 }
 
 function useGrid(): { w: number; h: number } {

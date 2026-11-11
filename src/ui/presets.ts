@@ -57,7 +57,7 @@ export function docFromCustom(c: CustomSpec): Doc {
 /** True when nothing is drawn yet: no shapes and no coloured pixels in any drawing. Blank starters show as sizes. */
 export function isBlankDoc(doc: Doc): boolean {
   for (const d of Object.values(doc.drawings)) {
-    if (d.kind === 'vector' ? d.shapes.length > 0 : d.pixels.some((v, i) => i % 4 === 3 && v !== 0)) return false;
+    if (d.kind === 'vector' ? d.shapes.length > 0 : d.kind === 'tilemap' ? d.cells.some((c) => c !== 0) : d.pixels.some((v, i) => i % 4 === 3 && v !== 0)) return false;
   }
   return true;
 }

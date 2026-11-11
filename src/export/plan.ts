@@ -25,7 +25,7 @@ export interface Plan {
   problem: string | null;
 }
 
-export const hasPixelLayers = (doc: Doc): boolean => doc.layers.some((l) => l.kind === 'pixel');
+export const hasPixelLayers = (doc: Doc): boolean => doc.layers.some((l) => l.kind !== 'vector');
 
 /** Scales that make sense for the document: whole numbers for pixel art, friendly steps otherwise. */
 export function scaleChoices(doc: Doc): number[] {
@@ -38,8 +38,8 @@ export function scaleChoices(doc: Doc): number[] {
  */
 export function artScale(doc: Doc): number | null {
   const art = doc.layers.filter((l) => !l.reference);
-  if (!art.length || !art.every((l) => l.kind === 'pixel')) return null;
-  const sizes = new Set(art.map((l) => (l.kind === 'pixel' ? l.pixelSize : 1)));
+  if (!art.length || !art.every((l) => l.kind !== 'vector')) return null;
+  const sizes = new Set(art.map((l) => ('pixelSize' in l ? l.pixelSize : 1)));
   if (sizes.size !== 1) return null;
   const p = [...sizes][0];
   return p > 1 ? 1 / p : null;

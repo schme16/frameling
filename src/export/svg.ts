@@ -3,6 +3,7 @@
 import type { Doc, Layer, PathShape, PixelDrawing, Shape, StrokeShape, SubPath } from '../core/format';
 import { drawingAt } from '../core/doc';
 import { strokeOutline } from '../core/render';
+import { flattenTilemap } from '../tiles/model';
 
 export interface SvgOptions {
   /** Output size as a multiple of the document size (the drawing itself always keeps its own units). */
@@ -148,9 +149,10 @@ function layerToSvg(doc: Doc, layer: Layer, frame: number, id: string): string {
   if (!d) return '';
   let inner: string[];
   if (d.kind === 'pixel') inner = pixelRects(d, layer.kind === 'pixel' ? layer.pixelSize : 1);
+  else if (d.kind === 'tilemap') inner = pixelRects(flattenTilemap(doc, d, frame), layer.kind === 'tilemap' ? layer.pixelSize : 1);
   else inner = d.shapes.map(shapeToSvg).filter(Boolean);
   if (!inner.length) return '';
-  const attrs = `id="${esc(id)}"` + (layer.opacity < 1 ? ` opacity="${op(layer.opacity)}"` : '') + (d.kind === 'pixel' ? ' shape-rendering="crispEdges"' : '');
+  const attrs = `id="${esc(id)}"` + (layer.opacity < 1 ? ` opacity="${op(layer.opacity)}"` : '') + (d.kind !== 'vector' ? ' shape-rendering="crispEdges"' : '');
   return `<g ${attrs}>\n${inner.join('\n')}\n</g>`;
 }
 

@@ -5,6 +5,7 @@ import { Icon } from '../ui/icons';
 import { say } from './commands';
 import { runCmd, tip } from './cmd';
 import { ContextMenu, InlineName, type MenuItem } from './Menu';
+import { addTilemapLayer } from '../tiles/ops';
 import * as ops from './ops';
 import { setTl, useTl } from './state';
 
@@ -49,7 +50,7 @@ export function layerMenu(layer: Layer, onRename: () => void): MenuItem[] {
   const total = store().get().doc.layers.length;
   const index = store().get().doc.layers.findIndex((l) => l.id === layer.id);
   return [
-    { heading: `${layer.name} (${layer.kind === 'pixel' ? `pixel layer, ${layer.pixelSize}px squares` : 'vector layer'})` },
+    { heading: `${layer.name} (${layer.kind === 'pixel' ? `pixel layer, ${layer.pixelSize}px squares` : layer.kind === 'tilemap' ? 'tilemap layer' : 'vector layer'})` },
     { node: <OpacitySlider layerId={layer.id} /> },
     { separator: true },
     { label: 'Rename', onClick: onRename },
@@ -65,6 +66,7 @@ export function layerMenu(layer: Layer, onRename: () => void): MenuItem[] {
     { separator: true },
     { label: 'Add a vector layer above', onClick: () => void ops.addVectorLayer(layer.id) },
     { label: 'Add a pixel layer above', onClick: () => void ops.addPixelLayer(layer.id) },
+    { label: 'Add a tilemap layer above', onClick: () => void addTilemapLayer(layer.id) },
   ];
 }
 
@@ -82,7 +84,7 @@ interface RowProps {
 
 const LayerRow = memo(function LayerRow({ layer, active, editing, dropMark, onDragStart, onDragOver, onDrop, onDragEnd, onMenu }: RowProps) {
   const select = () => store().setUi({ activeLayerId: layer.id });
-  const kind = layer.kind === 'pixel' ? 'Pixel layer (pixel art)' : 'Vector layer (smooth drawing)';
+  const kind = layer.kind === 'pixel' ? 'Pixel layer (pixel art)' : layer.kind === 'tilemap' ? 'Tilemap layer (painted with tiles)' : 'Vector layer (smooth drawing)';
   return (
     <div
       className={`tl-layer${active ? ' is-active' : ''}${!layer.visible ? ' is-hidden' : ''}${layer.locked ? ' is-locked' : ''}${layer.reference ? ' is-reference' : ''}${dropMark ? ` drop-${dropMark}` : ''}`}

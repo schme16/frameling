@@ -5,7 +5,7 @@
  * drawing holds raw RGBA; in the file `doc.json` holds the name of its PNG instead.
  */
 import { strFromU8, strToU8, unzipSync, zipSync, type Zippable } from 'fflate';
-import { FORMAT_VERSION, type Cel, type Doc, type Drawing, type Layer, type Shape } from '../core/format';
+import { FORMAT_VERSION, type Cel, type Doc, type Drawing, type Layer, type Shape, type Tile, type Tileset } from '../core/format';
 import { decodePng, encodePng } from './png';
 
 export const FILE_EXTENSION = 'frameling';
@@ -59,6 +59,8 @@ export function saveFile(doc: Doc, appVersion = '', now: Date = new Date()): Uin
       used.add(name);
       files[name] = [pngFor(d), { level: 0 }];
       drawings[id] = { ...d, pixels: name };
+    } else if (d.kind === 'tilemap') {
+      drawings[id] = { ...d, cells: Array.from(d.cells) };
     } else {
       drawings[id] = d;
     }
@@ -160,6 +162,13 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
       }
       if (img.width !== d.width || img.height !== d.height) throw damaged();
       drawings[id] = { id: str(d.id, id), kind: 'pixel', width: img.width, height: img.height, pixels: img.pixels };
+    } else if (d.kind === 'tilemap') {
+      const columns = Math.round(num(d.columns, 0));
+      const rows = Math.round(num(d.rows, 0));
+      if (columns < 1 || rows < 1 || columns * rows > 4_000_000 || !Array.isArray(d.cells) || d.cells.length !== columns * rows) throw damaged();
+      const cells = new Uint32Array(columns * rows);
+      for (let i = 0; i < cells.length; i++) cells[i] = num(d.cells[i], 0) >>> 0;
+      drawings[id] = { id: str(d.id, id), kind: 'tilemap', columns, rows, cells };
     } else {
       warnings.push('One drawing could not be read and was left out.');
     }
@@ -167,7 +176,7 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
 
   const layers: Layer[] = [];
   for (const l of raw.layers) {
-    if (!isObj(l) || (l.kind !== 'vector' && l.kind !== 'pixel')) throw damaged();
+    if (!isObj(l) || (l.kind !== 'vector' && l.kind !== 'pixel' && l.kind !== 'tilemap')) throw damaged();
     const cels: Cel[] = [];
     for (const c of Array.isArray(l.cels) ? l.cels : []) {
       if (!isObj(c) || typeof c.drawingId !== 'string' || !drawings[c.drawingId]) {
@@ -193,12 +202,14 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
       cels,
     };
     if (l.kind === 'pixel') layers.push({ ...base, kind: 'pixel', pixelSize: Math.max(1, Math.round(num(l.pixelSize, 1))), ...(l.paletteLock === true ? { paletteLock: true } : {}) });
+    else if (l.kind === 'tilemap') layers.push({ ...base, kind: 'tilemap', pixelSize: Math.max(1, Math.round(num(l.pixelSize, 1))) });
     else layers.push({ ...base, kind: 'vector', ...(l.drawMode === 'merge' ? { drawMode: 'merge' as const } : {}) });
   }
   const unique = new Set(layers.map((l) => l.id));
   if (unique.size !== layers.length) throw damaged();
 
-  return {
+  const tileset = readTileset(raw.tileset, drawings, warnings);
+  const doc: Doc = {
     format: 'frameling',
     version: FORMAT_VERSION,
     id: str(raw.id, 'd' + Date.now().toString(36)),
@@ -215,6 +226,44 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
     swatches: Array.isArray(raw.swatches) ? raw.swatches.filter((s: any) => isObj(s) && typeof s.id === 'string' && typeof s.color === 'string') : [],
     ...readPalette(raw.palette),
   };
+  if (tileset) doc.tileset = tileset;
+  return doc;
+}
+
+/** The tileset, checked: tiles keep only frames whose pixels exist at the tile size, and keys stay unique. */
+function readTileset(raw: any, drawings: Record<string, Drawing>, warnings: string[]): Tileset | undefined {
+  if (raw === undefined || raw === null) return undefined;
+  if (!isObj(raw)) {
+    warnings.push('The tiles could not be read and were left out.');
+    return undefined;
+  }
+  const tileWidth = Math.round(num(raw.tileWidth, 0));
+  const tileHeight = Math.round(num(raw.tileHeight, 0));
+  if (tileWidth < 1 || tileHeight < 1 || tileWidth > 1024 || tileHeight > 1024) {
+    warnings.push('The tiles could not be read and were left out.');
+    return undefined;
+  }
+  const tiles: Tile[] = [];
+  const keys = new Set<number>();
+  for (const t of Array.isArray(raw.tiles) ? raw.tiles : []) {
+    const key = Math.round(num(t?.key, 0));
+    if (!isObj(t) || key < 1 || key > 0x0fffffff || keys.has(key)) {
+      warnings.push('A tile could not be read and was left out.');
+      continue;
+    }
+    const frames = (Array.isArray(t.frames) ? t.frames : []).filter((f: any) => {
+      const d = isObj(f) && typeof f.drawingId === 'string' ? drawings[f.drawingId] : undefined;
+      return d && d.kind === 'pixel' && d.width === tileWidth && d.height === tileHeight;
+    });
+    if (!frames.length) {
+      warnings.push('A tile had no picture and was left out.');
+      continue;
+    }
+    keys.add(key);
+    tiles.push({ key, name: str(t.name, 'Tile ' + (tiles.length + 1)), frames: frames.map((f: any) => ({ drawingId: f.drawingId, duration: Math.max(1, Math.round(num(f.duration, 1))) })) });
+  }
+  const top = Math.max(0, ...keys);
+  return { tileWidth, tileHeight, tiles, nextKey: Math.max(top + 1, Math.round(num(raw.nextKey, 1))) };
 }
 
 /** The pixel palette, if the file has a usable one. */

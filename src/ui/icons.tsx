@@ -99,6 +99,29 @@ const ICONS: Record<string, ReactNode> = {
       <rect x="4" y="13" width="7" height="7" rx="1.4" />
     </>
   ),
+  tilemap: (
+    <>
+      <rect x="3.5" y="3.5" width="17" height="17" rx="3" />
+      <path d="M3.5 12h17M12 3.5v17" />
+      <rect x="6" y="6" width="3.5" height="3.5" rx="0.8" fill="currentColor" stroke="none" />
+      <rect x="14.5" y="14.5" width="3.5" height="3.5" rx="0.8" fill="currentColor" stroke="none" />
+    </>
+  ),
+  tiles: (
+    <>
+      <rect x="3.5" y="3.5" width="7.5" height="7.5" rx="1.6" fill="currentColor" />
+      <rect x="13" y="3.5" width="7.5" height="7.5" rx="1.6" />
+      <rect x="3.5" y="13" width="7.5" height="7.5" rx="1.6" />
+      <path d="M13 16.75h7.5M16.75 13v7.5" />
+    </>
+  ),
+  'tile-mode': (
+    <>
+      <rect x="8" y="8" width="8" height="8" rx="1.4" fill="currentColor" />
+      <path d="M3.5 8h1.5M19 8h1.5M3.5 16h1.5M19 16h1.5M8 3.5v1.5M16 3.5v1.5M8 19v1.5M16 19v1.5" />
+      <rect x="3.5" y="3.5" width="17" height="17" rx="3" strokeDasharray="2 2.4" />
+    </>
+  ),
   vector: (
     <>
       <path d="M6.5 16.5C8 5 15 19 17.5 7.5" />

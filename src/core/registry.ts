@@ -9,6 +9,7 @@
  * - **Tools**: canvas tools (brush, eraser, fill...).
  */
 import type { ComponentType } from 'react';
+import type { LayerKind } from './format';
 import type { State } from './store';
 
 // ---------------------------------------------------------------- commands
@@ -150,7 +151,7 @@ export interface Tool {
   /** Default shortcut (single key, e.g. 'b'); registered as a `tools.<id>` command automatically. */
   key?: string;
   /** Which layer kinds it works on. */
-  layers: ('vector' | 'pixel')[];
+  layers: LayerKind[];
   /** Toolbar order (lower first). */
   order?: number;
   help?: string;

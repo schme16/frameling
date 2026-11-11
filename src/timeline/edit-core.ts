@@ -27,6 +27,7 @@ function plain<T>(x: T): T {
 export function cloneDrawing(d: Drawing): Drawing {
   const src = plain(d);
   if (src.kind === 'pixel') return { ...src, id: uid('p'), pixels: new Uint8ClampedArray(src.pixels) };
+  if (src.kind === 'tilemap') return { ...src, id: uid('t'), cells: new Uint32Array(src.cells) };
   const shapes = structuredClone(src.shapes) as Shape[];
   for (const s of shapes) s.id = uid('s');
   return { id: uid('v'), kind: 'vector', shapes };

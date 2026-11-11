@@ -9,7 +9,8 @@ import { thumbnailOf } from './thumb';
 
 /** The name to show for the open document: its file name when it has one, else the document's own name. */
 export function documentTitle(): string {
-  const { doc, ui } = store().get();
+  const { ui } = store().get();
+  const doc = store().rootDoc();
   return ui.filePath ? stripExt(baseName(ui.filePath)) : doc.name || 'Untitled';
 }
 
@@ -25,7 +26,8 @@ let lastDoc: unknown = null;
 
 export async function autosaveNow(): Promise<void> {
   const api = desktop();
-  const { doc, ui } = store().get();
+  const { ui } = store().get();
+  const doc = store().rootDoc();
   if (!api || !ui.dirty || doc === lastDoc) return;
   try {
     const bytes = saveFile(doc, api.versions.app);
@@ -45,7 +47,7 @@ export async function keepUnsavedWork(): Promise<void> {
   if (!api || !store().get().ui.dirty) return;
   try {
     await autosaveNow();
-    await api.autosave.keep(await thumbnailOf(store().get().doc));
+    await api.autosave.keep(await thumbnailOf(store().rootDoc()));
   } catch {
     // Putting a copy aside is a bonus. Never stop someone from carrying on.
   }
@@ -131,7 +133,8 @@ async function saveTo(path: string | null): Promise<boolean> {
   if (saving) return false;
   saving = true;
   try {
-    const doc = store().get().doc;
+    // While a tile is open for editing, the file gets the whole document with the tile as it is now.
+    const doc = store().rootDoc();
     let bytes: Uint8Array;
     try {
       bytes = saveFile(doc, api.versions.app);
@@ -146,7 +149,7 @@ async function saveTo(path: string | null): Promise<boolean> {
       return false;
     }
     // If they kept drawing while the file was being written, the newest changes aren't in it yet.
-    if (store().get().doc === doc) store().markSaved(r.path);
+    if (store().rootDoc() === doc) store().markSaved(r.path);
     else store().setUi({ filePath: r.path });
     void clearAutosaveCopy();
     // Whatever was set aside for this drawing is in the file now.

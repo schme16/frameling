@@ -38,11 +38,13 @@ export interface Doc {
   markers: Marker[];
   /** The document's colour swatches. */
   swatches: Swatch[];
+  /** Pixel tiles that tilemap layers are painted with. Missing in documents that have never used tiles. */
+  tileset?: Tileset;
   /** The pixel art palette: an ordered list of colours in ramps (optional; missing = the starter palette). */
   palette?: DocPalette;
 }
 
-export type LayerKind = 'vector' | 'pixel';
+export type LayerKind = 'vector' | 'pixel' | 'tilemap';
 
 export interface BaseLayer {
   id: Id;
@@ -78,7 +80,17 @@ export interface PixelLayer extends BaseLayer {
   paletteLock?: boolean;
 }
 
-export type Layer = VectorLayer | PixelLayer;
+/**
+ * A grid of tiles from the document's tileset (a level, a floor, a wall). Its drawings are tilemap drawings, so it
+ * animates with keys like any other layer.
+ */
+export interface TilemapLayer extends BaseLayer {
+  kind: 'tilemap';
+  /** Document pixels per tile pixel, like a pixel layer's pixelSize. A 16 x 16 tile at pixelSize 2 covers 32 x 32. */
+  pixelSize: number;
+}
+
+export type Layer = VectorLayer | PixelLayer | TilemapLayer;
 
 /**
  * One drawing held on a layer for `length` frames (its exposure: 1 = "on ones", 2 = "on twos").
@@ -90,7 +102,7 @@ export interface Cel {
   drawingId: Id;
 }
 
-export type Drawing = VectorDrawing | PixelDrawing;
+export type Drawing = VectorDrawing | PixelDrawing | TilemapDrawing;
 
 export interface VectorDrawing {
   id: Id;
@@ -110,6 +122,53 @@ export interface PixelDrawing {
   width: number;
   height: number;
   pixels: Uint8ClampedArray;
+}
+
+/**
+ * Which tile sits in each slot of a tilemap. `cells` is row by row, `columns * rows` long. 0 is an empty slot; any
+ * other value is a tile's `key` in the low 28 bits plus the TILE_FLIP_* flags. In a saved file it is a plain number
+ * list. Edits replace the array (never mutate it in place), like pixel drawings.
+ */
+export interface TilemapDrawing {
+  id: Id;
+  kind: 'tilemap';
+  columns: number;
+  rows: number;
+  cells: Uint32Array;
+}
+
+/** Mirror left to right. The three flags use the same bits as Tiled's. */
+export const TILE_FLIP_X = 0x80000000;
+/** Mirror top to bottom. */
+export const TILE_FLIP_Y = 0x40000000;
+/** Swap x and y (a diagonal mirror). With TILE_FLIP_X it turns a tile a quarter clockwise. */
+export const TILE_FLIP_D = 0x20000000;
+/** The bits of a cell that hold the tile's key. */
+export const TILE_KEY_MASK = 0x0fffffff;
+
+/** The document's tiles. Every tile is the same size. */
+export interface Tileset {
+  /** Tile size in art pixels. */
+  tileWidth: number;
+  tileHeight: number;
+  /** In the order the Tileset panel and exports show them. */
+  tiles: Tile[];
+  /** The key the next new tile gets. Keys are never reused, so maps keep pointing at the right tile. */
+  nextKey: number;
+}
+
+export interface Tile {
+  /** What map cells store (1 or more). Stays the same when tiles are reordered. */
+  key: number;
+  name: string;
+  /** One frame for a still tile, more for an animated one (water, torches). Each is a pixel drawing in `drawings`. */
+  frames: TileFrame[];
+}
+
+export interface TileFrame {
+  drawingId: Id;
+  /** How many document frames it shows for. */
+  duration: number;
 }
 
 export type Shape = StrokeShape | FillShape | PathShape;

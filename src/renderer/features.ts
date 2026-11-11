@@ -8,4 +8,5 @@ import '../geometry';
 import '../timeline';
 import '../io';
 import '../export';
+import '../tiles';
 import '../quests';

@@ -72,6 +72,18 @@ interface HistoryEntry {
 
 type Listener = () => void;
 
+/** A document edited inside the open one (a tile), with the open document and its history put aside meanwhile. */
+interface Nested {
+  tag: string;
+  parent: Doc;
+  undo: HistoryEntry[];
+  redo: HistoryEntry[];
+  /** View and selection to go back to. */
+  ui: Pick<UiState, 'frame' | 'activeLayerId' | 'selection' | 'zoom' | 'panX' | 'panY'>;
+  /** The open document with the nested one's changes in it (pure: returns a new doc, or `parent` if nothing changed). */
+  merge: (parent: Doc, nested: Doc) => Doc;
+}
+
 const HISTORY_LIMIT = 300;
 const COALESCE_MS = 1200;
 
@@ -102,6 +114,8 @@ export class Store {
   private listeners = new Set<Listener>();
   private undoStack: HistoryEntry[] = [];
   private redoStack: HistoryEntry[] = [];
+  private nested: Nested | null = null;
+  private merged: { parent: Doc; child: Doc; out: Doc } | null = null;
 
   constructor(doc: Doc = newDoc()) {
     this.state = { doc, ui: initialUi(doc) };
@@ -178,8 +192,61 @@ export class Store {
     this.emit();
   }
 
+  /**
+   * Edits another document for a while (a tile, say), with its own undo history. The open document and its history
+   * wait until `exitNested()`. Meanwhile `rootDoc()` is the open document with the changes merged in, for saving.
+   */
+  enterNested(doc: Doc, opts: { tag: string; merge: (parent: Doc, nested: Doc) => Doc; ui?: Partial<UiState> }): void {
+    if (this.nested) this.exitNested();
+    const u = this.state.ui;
+    this.nested = {
+      tag: opts.tag,
+      parent: this.state.doc,
+      undo: this.undoStack,
+      redo: this.redoStack,
+      ui: { frame: u.frame, activeLayerId: u.activeLayerId, selection: u.selection, zoom: u.zoom, panX: u.panX, panY: u.panY },
+      merge: opts.merge,
+    };
+    this.undoStack = [];
+    this.redoStack = [];
+    this.state = { doc, ui: { ...u, frame: 0, selection: [], activeLayerId: doc.layers[doc.layers.length - 1]?.id ?? null, playing: false, ...opts.ui } };
+    this.emit();
+  }
+
+  /** Goes back to the open document. Returns the nested document as it was left (the caller merges it), or null. */
+  exitNested(): Doc | null {
+    const n = this.nested;
+    if (!n) return null;
+    const child = this.state.doc;
+    this.nested = null;
+    this.merged = null;
+    this.undoStack = n.undo;
+    this.redoStack = n.redo;
+    this.state = { doc: n.parent, ui: { ...this.state.ui, ...n.ui, playing: false } };
+    this.emit();
+    return child;
+  }
+
+  /** What is being edited inside the open document ("tile:3"), or null. */
+  nestedTag(): string | null {
+    return this.nested?.tag ?? null;
+  }
+
+  /** The open document as it would be saved: with whatever is being edited inside it (a tile) merged in. */
+  rootDoc(): Doc {
+    const n = this.nested;
+    if (!n) return this.state.doc;
+    const m = this.merged;
+    if (m && m.parent === n.parent && m.child === this.state.doc) return m.out;
+    const out = n.merge(n.parent, this.state.doc);
+    this.merged = { parent: n.parent, child: this.state.doc, out };
+    return out;
+  }
+
   /** Replaces the whole document (new or opened file). Clears history. */
   load(doc: Doc, filePath: string | null = null): void {
+    this.nested = null;
+    this.merged = null;
     this.undoStack = [];
     this.redoStack = [];
     const u = this.state.ui;

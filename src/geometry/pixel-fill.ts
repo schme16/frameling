@@ -14,6 +14,8 @@ export function parseColor(c: string): Rgba {
 export interface PixelFillOptions {
   /** `contiguous` fills the connected area (4-way); `all` recolours every pixel of the same colour. */
   mode?: 'contiguous' | 'all';
+  /** Tile mode: the area carries on across the edges (left meets right, top meets bottom). */
+  wrap?: boolean;
 }
 
 export interface PixelFillResult {
@@ -52,6 +54,20 @@ export function floodFillPixels(src: Uint8ClampedArray, width: number, height: n
     return { pixels: out, changed };
   }
   const seen = new Uint8Array(width * height);
+  if (opts.wrap) {
+    // Neighbours wrap around. Tiles are small, so a plain 4-way walk is plenty.
+    const todo = [y * width + x];
+    while (todo.length) {
+      const k = todo.pop()!;
+      if (seen[k] || !same(k * 4)) continue;
+      seen[k] = 1;
+      paint(k * 4);
+      const cx = k % width;
+      const cy = (k - cx) / width;
+      todo.push(cy * width + ((cx + 1) % width), cy * width + ((cx + width - 1) % width), ((cy + 1) % height) * width + cx, ((cy + height - 1) % height) * width + cx);
+    }
+    return { pixels: out, changed };
+  }
   const stack: number[] = [x, y];
   while (stack.length) {
     const sy = stack.pop()!;

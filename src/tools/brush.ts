@@ -32,6 +32,7 @@ function down(e: ToolPointer, ctx: ToolContext): void {
     vec.add(e, ctx.zoom);
     return;
   }
+  if (layer.kind !== 'pixel') return;
   const rgba = parseHex(ui.color);
   if (!rgba) return ctx.hint("That colour isn't something I can paint with. Pick one from the Colours panel.");
   const s = getToolSettings();
