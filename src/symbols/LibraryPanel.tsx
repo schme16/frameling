@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Doc, Id } from '../core/format';
 import { getCommand } from '../core/registry';
-import { useStore } from '../core/store';
+import { store, useStore } from '../core/store';
 import { newInstance, poseInstance, symbolContent, symbolUsage } from '../core/symbols';
 import { drawInstance } from '../core/render';
 import { symbolBounds } from '../canvas/geometry';
@@ -46,6 +46,14 @@ export function LibraryPanel() {
   const symbols = Object.values(doc.symbols ?? {}).sort((a, b) => a.name.localeCompare(b.name));
   const unused = symbols.filter((s) => !usage.get(s.id) && !doc.editing?.some((f) => f.symbolId === s.id)).length;
   const make = () => void getCommand('symbols.make')?.run();
+  const nested = useStore(() => store().nestedTag());
+
+  if (nested)
+    return (
+      <div className="cv-options sy-library" data-help="symbols">
+        <Tip>You're painting a tile right now. Press Done above the canvas to get back to your symbols.</Tip>
+      </div>
+    );
 
   return (
     <div className="cv-options sy-library" data-help="symbols">
