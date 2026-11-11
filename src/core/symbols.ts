@@ -470,6 +470,8 @@ interface World {
   drawings: Doc['drawings'];
   symbols: Doc['symbols'];
   live: Layer[] | null;
+  /** Particles are posed in seconds, so a frame rate change moves them. */
+  fps: number;
   cels: WeakMap<Cel, Map<string, Drawing>>;
 }
 let lastWorld: World | null = null;
@@ -478,11 +480,11 @@ const worlds = new WeakMap<object, World[]>();
 function worldOf(doc: Doc): World {
   const live = doc.editing?.length ? doc.layers : null;
   const w = lastWorld;
-  if (w && w.drawings === doc.drawings && w.symbols === doc.symbols && w.live === live) return w;
+  if (w && w.drawings === doc.drawings && w.symbols === doc.symbols && w.live === live && w.fps === doc.fps) return w;
   const list = worlds.get(doc.drawings) ?? [];
-  let hit = list.find((x) => x.symbols === doc.symbols && x.live === live);
+  let hit = list.find((x) => x.symbols === doc.symbols && x.live === live && x.fps === doc.fps);
   if (!hit) {
-    hit = { drawings: doc.drawings, symbols: doc.symbols, live, cels: new WeakMap() };
+    hit = { drawings: doc.drawings, symbols: doc.symbols, live, fps: doc.fps, cels: new WeakMap() };
     list.push(hit);
     if (list.length > 4) list.shift();
     worlds.set(doc.drawings, list);

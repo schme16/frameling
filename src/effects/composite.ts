@@ -232,7 +232,9 @@ function layerPicture(run: Run, layer: Layer): Picture | null {
   let sig = '';
   if (key) {
     const m = run.m;
-    sig = `${run.pool.w}x${run.pool.h}|${m.a},${m.b},${m.c},${m.d},${m.e},${m.f}|${JSON.stringify(fx)}`;
+    // The key is the posed drawing; a pixel layer's pixel size is on the layer, so it goes in here.
+    const ps = 'pixelSize' in layer ? layer.pixelSize : 1;
+    sig = `${run.pool.w}x${run.pool.h}|${m.a},${m.b},${m.c},${m.d},${m.e},${m.f}|${ps}|${JSON.stringify(fx)}`;
     const hit = run.cache!.get(key, sig);
     if (hit) return { canvas: hit, done: () => {} };
   }
