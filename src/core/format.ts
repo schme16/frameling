@@ -49,6 +49,8 @@ export interface Doc {
    * `layers` and `length` are the open symbol's, and each entry keeps what it replaced. Never saved (see rootDoc).
    */
   editing?: EditFrame[];
+  /** Sound clips on the audio track, in the order they were added (missing = none). See `AudioClip`. */
+  audio?: AudioClip[];
 }
 
 export type LayerKind = 'vector' | 'pixel' | 'tilemap';
@@ -64,6 +66,8 @@ export interface BaseLayer {
   onion?: boolean;
   /** A reference layer: shown while drawing, left out of every export (ground lines, sketches, guides). Missing = no. */
   reference?: boolean;
+  /** Attached to a bone, so it moves with the skeleton (missing = not attached). See `LayerBind`. */
+  bind?: LayerBind;
   /**
    * Cels on this layer, sorted by `start`, never overlapping. A frame with no cel covering it is empty.
    */
@@ -77,6 +81,11 @@ export interface VectorLayer extends BaseLayer {
    * cut and join each other, so the layer behaves like one flat painting.
    */
   drawMode?: 'object' | 'merge';
+  /**
+   * Makes this a bones layer: it holds a skeleton, and each key's drawing holds a pose (`VectorDrawing.pose`) instead
+   * of shapes. Missing = an ordinary layer.
+   */
+  rig?: Rig;
 }
 
 export interface PixelLayer extends BaseLayer {
@@ -118,6 +127,8 @@ export interface VectorDrawing {
   kind: 'vector';
   /** Painted in order: index 0 is at the back. */
   shapes: Shape[];
+  /** On a bones layer: how each bone is turned and moved at this key (bones not listed are at rest). */
+  pose?: Pose;
 }
 
 /**
@@ -304,6 +315,8 @@ export interface SymbolDef {
   length: number;
   /** The registration point in symbol space: what an instance's x, y place, and what it turns and scales around. */
   origin: { x: number; y: number };
+  /** Names for its frames, by frame number (a mouth chart's "A", "E", "M B P"...). Missing or empty = unnamed. */
+  frameLabels?: string[];
 }
 
 /** Where an instance sits. Angles are degrees. Applied as translate, rotate, skew, scale, around the symbol's origin. */
@@ -372,4 +385,86 @@ export interface EditFrame {
   activeLayerId: Id | null;
   /** Instance space to outer space, as [a, b, c, d, e, f]. */
   matrix: [number, number, number, number, number, number];
+}
+
+// ---------------------------------------------------------------- bones and rigs
+
+/** A skeleton: bones in the space of the layer list it sits in (the stage's, or a symbol's). */
+export interface Rig {
+  /** Parents always come before their children. */
+  bones: Bone[];
+  /** The pose library: named poses to put back on any frame. */
+  poses?: SavedPose[];
+}
+
+/** One bone, in its rest (setup) position. Angles are degrees, 0 pointing right, positive clockwise on screen. */
+export interface Bone {
+  id: Id;
+  name: string;
+  /** The bone it hangs from (missing or null = a root). */
+  parent?: Id | null;
+  /** Where the bone starts (its joint). */
+  x: number;
+  y: number;
+  angle: number;
+  length: number;
+  /** Pinned: its tip stays where it is while other bones move (missing = no). */
+  pin?: boolean;
+}
+
+/** How one bone differs from rest at a key: turned by `r` degrees, its joint moved by `x`, `y` (missing = 0). */
+export interface BonePose {
+  r: number;
+  x?: number;
+  y?: number;
+}
+
+export type Pose = Record<Id, BonePose>;
+
+export interface SavedPose {
+  id: Id;
+  name: string;
+  pose: Pose;
+}
+
+/**
+ * How a layer follows a skeleton. With only `bone`, the whole layer moves with that bone (cut-out style). With
+ * `mesh`, it bends: each mesh point follows a blend of bones by weight.
+ */
+export interface LayerBind {
+  /** The bones layer (in the same layer list). */
+  rig: Id;
+  bone: Id;
+  mesh?: SkinMesh;
+}
+
+/** A triangle mesh over a layer's art in rest position, with bone weights per point. */
+export interface SkinMesh {
+  /** Point positions, flat: x0, y0, x1, y1... */
+  points: number[];
+  /** Point indices, three per triangle. */
+  triangles: number[];
+  /** Bone ids the weights refer to by index. */
+  bones: Id[];
+  /** Per point: flat pairs of bone index and weight (weights sum to 1). */
+  weights: number[][];
+}
+
+// ---------------------------------------------------------------- sound
+
+/** A sound placed on the timeline. */
+export interface AudioClip {
+  id: Id;
+  name: string;
+  /** The frame it starts on (can be negative to start partway in). */
+  start: number;
+  /** 0 to 1 (missing = 1). */
+  volume?: number;
+  muted?: boolean;
+  /** The file as imported (WAV, MP3, OGG...). In a saved file it lives beside doc.json as `audio/<id>.<ext>`. */
+  data: Uint8Array;
+  /** Its media type, e.g. `audio/wav`. */
+  mime: string;
+  /** Length in seconds, once known (for drawing it before it's decoded). */
+  duration?: number;
 }

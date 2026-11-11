@@ -21,6 +21,7 @@ import { cssVar, subscribeTheme } from './theme';
 import { getViewSettings, subscribeViewSettings } from './viewSettings';
 import { drawDecorations } from './decorations';
 import { screenToDoc, stageDeviceRect, wheelZoomFactor, zoomAbout, type Pt } from './view';
+import { overlayMatrix, toLayerSpace } from '../rig/pose';
 
 export interface EngineElements {
   root: HTMLElement;
@@ -348,6 +349,8 @@ export class CanvasEngine {
     if (tool?.overlay && !(this.gesture?.kind === 'pan')) {
       g.save();
       g.setTransform(rect.w / doc.width, 0, 0, rect.h / doc.height, rect.x, rect.y);
+      const bm = overlayMatrix(doc, ui.activeLayerId, ui.frame, tool.id);
+      if (bm) g.transform(bm[0], bm[1], bm[2], bm[3], bm[4], bm[5]);
       tool.overlay(g, this.ctx);
       g.restore();
     }
@@ -430,8 +433,14 @@ export class CanvasEngine {
     return screenToDoc({ zoom, panX, panY }, e.clientX - this.bounds.left, e.clientY - this.bounds.top);
   }
 
+  /** On a layer attached to a bone, tools work on the part's own art where it is at rest. */
+  private toLayerPoint(p: Pt): Pt {
+    const { doc, ui } = store().get();
+    return toLayerSpace(doc, ui.activeLayerId, ui.frame, this.gesture?.kind === 'tool' ? this.gesture.tool.id : ui.tool, p);
+  }
+
   private toPointer(e: PointerEvent): ToolPointer {
-    const p = this.toDocPoint(e);
+    const p = this.toLayerPoint(this.toDocPoint(e));
     const pen = e.pointerType === 'pen';
     return {
       x: p.x,
@@ -526,7 +535,7 @@ export class CanvasEngine {
     }
     this.lastPtr = ptr;
     const pred = typeof e.getPredictedEvents === 'function' ? e.getPredictedEvents() : [];
-    ctl.setPredicted(pred.map((pe) => this.toDocPoint(pe)));
+    ctl.setPredicted(pred.map((pe) => this.toLayerPoint(this.toDocPoint(pe))));
     this.invalidate(false, true);
   };
 

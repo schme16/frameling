@@ -30,7 +30,8 @@ export function cloneDrawing(d: Drawing): Drawing {
   if (src.kind === 'tilemap') return { ...src, id: uid('t'), cells: new Uint32Array(src.cells) };
   const shapes = structuredClone(src.shapes) as Shape[];
   for (const s of shapes) s.id = uid('s');
-  return { id: uid('v'), kind: 'vector', shapes };
+  // A bones layer's key keeps its pose.
+  return { id: uid('v'), kind: 'vector', shapes, ...(src.pose ? { pose: JSON.parse(JSON.stringify(src.pose)) } : {}) };
 }
 
 /** Makes sure the document is at least `frames` long. */
