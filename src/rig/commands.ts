@@ -5,7 +5,7 @@ import { findLayer } from '../core/doc';
 import { toast } from '../ui/toast';
 import { requestOverlay } from '../canvas/controller';
 import { RigPanel } from './RigPanel';
-import { attachLayer, autoAttach, bendLayer, currentRig, ensureRig, mirrorCurrentPose, resetPose, savePose, setPin } from './ops';
+import { attachLayer, autoAttach, bendLayer, currentRig, ensureRig, mirrorCurrentPose, resetPose, savePose, setPin, swapCurrentSides } from './ops';
 import { deleteSelectedBone } from './tools';
 import { rigUi, setRigUi } from './state';
 import { artCoverage } from './coverage';
@@ -102,6 +102,16 @@ registerCommands([
     help: 'rig-pose-library',
     enabled: hasBones,
     run: () => say(mirrorCurrentPose()),
+  },
+  {
+    id: 'rig.swapSides',
+    label: 'Swap left and right',
+    category: 'Rig',
+    description: 'The left limbs take the right limbs\' pose and the other way round, without flipping anything. For side-on characters: the second half of a walk.',
+    keywords: ['swap legs', 'other foot', 'walk cycle', 'opposite pose', 'side view'],
+    help: 'rig-pose-library',
+    enabled: hasBones,
+    run: () => say(swapCurrentSides()),
   },
   {
     id: 'rig.resetPose',

@@ -9,7 +9,7 @@ import { celAt, findLayer, newVectorDrawing, uid } from '../core/doc';
 import { store } from '../core/store';
 import { currentChoice, registerChoice } from '../core/choices';
 import { shapesBounds } from '../canvas/geometry';
-import { boneBetween, gridMesh, mapply, minv, mirrorPose, nearestBone, rigState, skinMesh, tidyPose, wrapAngle, type Pt } from './math';
+import { boneBetween, gridMesh, mapply, minv, mirrorPose, nearestBone, rigState, skinMesh, swapSides, tidyPose, wrapAngle, type Pt } from './math';
 import { isRigLayer, rigPoseAt, type RigLayer } from './pose';
 
 export type NewPoseChoice = 'glide' | 'hold';
@@ -17,7 +17,7 @@ export type NewPoseChoice = 'glide' | 'hold';
 registerChoice<NewPoseChoice>({
   id: 'rig.newPose',
   title: 'Posing on a new frame',
-  question: 'You posed the bones on a frame that had no pose of its own yet. How should the frames in between move?',
+  question: "You're posing bones on a frame that has no pose of its own yet. How should the frames in between move?",
   options: [
     { value: 'glide', label: 'Glide from the last pose', detail: 'The bones move smoothly from the pose before to this one (a tween with easing).' },
     { value: 'hold', label: 'Jump to the new pose', detail: 'The old pose holds until this frame, then the bones snap to the new one (good for snappy, stepped motion).' },
@@ -260,6 +260,13 @@ export function mirrorCurrentPose(): string | undefined {
   const rig = currentRig();
   if (!rig) return 'There are no bones here yet. Draw some with the Bone tool (K).';
   setPose(rig.id, mirrorPose(rig.rig, currentPose(rig)), 'Mirror pose');
+  return undefined;
+}
+
+export function swapCurrentSides(): string | undefined {
+  const rig = currentRig();
+  if (!rig) return 'There are no bones here yet. Draw some with the Bone tool (K).';
+  setPose(rig.id, swapSides(rig.rig, currentPose(rig)), 'Swap left and right');
   return undefined;
 }
 

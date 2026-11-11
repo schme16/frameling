@@ -183,7 +183,7 @@ export function ikChain(rig: Rig, id: Id, max = 3): Id[] {
  * every segment's length. One segment points at it; two are solved exactly (keeping the side the middle joint bends to);
  * longer chains use CCD (cyclic coordinate descent). A target out of reach straightens the chain toward it.
  */
-export function solvePoints(joints: Pt[], target: Pt, iterations = 24): Pt[] {
+export function solvePoints(joints: Pt[], target: Pt, iterations = 24, bendHint = 0): Pt[] {
   const n = joints.length - 1;
   const p = joints.map((q) => ({ ...q }));
   if (n < 1) return p;
@@ -200,8 +200,9 @@ export function solvePoints(joints: Pt[], target: Pt, iterations = 24): Pt[] {
     const [l1, l2] = lens;
     const d = Math.max(Math.abs(l1 - l2), Math.min(l1 + l2, dist));
     const cross = (p[1].x - root.x) * (p[2].y - root.y) - (p[1].y - root.y) * (p[2].x - root.x);
-    // Keep the elbow on the side it's on now (a straight arm bends the "clockwise" way).
-    const bend = cross > 1e-9 ? -1 : 1;
+    // Keep the elbow on the side it's on now. A straight limb bends the way it was drawn (the hint), else clockwise.
+    const side = Math.abs(cross) > 1e-6 * (l1 + l2) * (l1 + l2) ? cross : bendHint;
+    const bend = side > 0 ? -1 : 1;
     let a = 0;
     if (l1 > 1e-9 && d > 1e-9) a = Math.acos(Math.max(-1, Math.min(1, (l1 * l1 + d * d - l2 * l2) / (2 * l1 * d))));
     const mid = { x: root.x + Math.cos(phi + bend * a) * l1, y: root.y + Math.sin(phi + bend * a) * l1 };
@@ -243,7 +244,13 @@ export function solveIK(rig: Rig, pose: Pose, chain: Id[], target: Pt, endOf?: (
   if (!chain.length) return pose;
   const st0 = rigState(rig, pose);
   const joints = chainPoints(st0, chain, endOf?.(st0));
-  const want = solvePoints(joints, target);
+  let hint = 0;
+  if (chain.length === 2) {
+    // Which way the limb bends as drawn, for when it's straight now.
+    const r = chainPoints(rigState(rig), chain, endOf?.(rigState(rig)));
+    hint = (r[1].x - r[0].x) * (r[2].y - r[0].y) - (r[1].y - r[0].y) * (r[2].x - r[0].x);
+  }
+  const want = solvePoints(joints, target, 24, hint);
   return turnChainTo(rig, pose, chain, want, endOf);
 }
 
@@ -356,6 +363,21 @@ function matchCase(src: string, word: string): string {
   if (src === src.toUpperCase()) return word.toUpperCase();
   if (src[0] === src[0].toUpperCase()) return word[0].toUpperCase() + word.slice(1);
   return word;
+}
+
+/**
+ * The pose with left and right swapped and nothing turned around: the near leg takes the far leg's pose. For a
+ * character seen from the side, this is the second half of a walk.
+ */
+export function swapSides(rig: Rig, pose: Pose): Pose {
+  const byName = new Map(rig.bones.map((b) => [b.name.toLowerCase(), b.id]));
+  const out: Pose = {};
+  for (const b of rig.bones) {
+    const other = mirrorName(b.name);
+    const src = other ? (byName.get(other.toLowerCase()) ?? b.id) : b.id;
+    if (pose[src]) out[b.id] = { ...pose[src] };
+  }
+  return out;
 }
 
 /**

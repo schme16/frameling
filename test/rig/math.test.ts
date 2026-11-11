@@ -260,3 +260,17 @@ describe('weights, meshes and skinning', () => {
     expect(triangleTransform([0, 0, 1, 1, 2, 2], [0, 0, 1, 1, 2, 2])).toBeNull();
   });
 });
+
+describe('IK bend hint', () => {
+  it('a straight limb bends the way it was drawn', () => {
+    const straight = [{ x: 0, y: 0 }, { x: 0, y: 50 }, { x: 0, y: 100 }];
+    const fwd = solvePoints(straight, { x: 0, y: 80 }, 24, -1);
+    const back = solvePoints(straight, { x: 0, y: 80 }, 24, 1);
+    expect(Math.sign(fwd[1].x)).toBe(-Math.sign(back[1].x));
+    // A knee drawn a little forward (+x) of the hip-ankle line keeps bending forward.
+    const leg: Rig = { bones: [boneBetween('t', 'Thigh', { x: 0, y: 0 }, { x: 4, y: 50 }, null), boneBetween('s', 'Shin', { x: 4, y: 50 }, { x: 0, y: 100 }, 't')] };
+    const straightened = solveIK(leg, {}, ['t', 's'], { x: 0, y: 200 });
+    const bent = solveIK(leg, straightened, ['t', 's'], { x: 0, y: 70 });
+    expect(rigState(leg, bent).get('s')!.base.x).toBeGreaterThan(10);
+  });
+});

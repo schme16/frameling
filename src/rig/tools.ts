@@ -28,7 +28,9 @@ export function hitBone(st: RigState, p: Pt, zoom: number, prefer?: Id | null): 
     if (s) list.unshift(s);
   }
   for (const s of list) if (Math.hypot(p.x - s.tip.x, p.y - s.tip.y) <= r) return { id: s.bone.id, part: 'tip' };
-  for (const s of list) if (Math.hypot(p.x - s.base.x, p.y - s.base.y) <= r) return { id: s.bone.id, part: 'base' };
+  // Where joints share a point (hips and thighs), the root wins, so dragging it moves the whole skeleton.
+  const bases = [...list.filter((s) => !s.bone.parent), ...list.filter((s) => s.bone.parent)];
+  for (const s of bases) if (Math.hypot(p.x - s.base.x, p.y - s.base.y) <= r) return { id: s.bone.id, part: 'base' };
   for (const s of list) {
     const dx = s.tip.x - s.base.x;
     const dy = s.tip.y - s.base.y;
