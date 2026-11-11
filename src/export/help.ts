@@ -336,9 +336,9 @@ The second class picks the clip. Loops keep going; clips that don't loop stop on
 
 ## In Interactives
 
-1. Drag the \`.flplay\` file onto the canvas (or add it in **Assets** and drag it in from there). It becomes a **Frameling animation** layer.
+1. Drag the \`.flplay\` file onto the canvas (or add it in **Assets** and press **Place**). It becomes a **Frameling animation** layer.
 2. In the inspector, pick the **clip** to show, and whether it **plays** when the page starts.
-3. To control it, use the graph nodes **Play animation clip**, **Stop animation** and **Go to animation frame**, and the events **When an animation clip ends** and **When an animation reaches a marker**. A timeline can also scrub its **frame**.
+3. To control it, use the nodes **Play a Frameling clip**, **Stop a Frameling animation** and **Show a Frameling frame**, and the events **When a Frameling clip ends** and **When a Frameling animation reaches a marker**. A timeline can also scrub its **Frameling frame**.
 
 ## What's in the file
 
@@ -351,6 +351,8 @@ The second class picks the clip. Loops keep going; clips that don't loop stop on
 
 - Transparent background is on to start with, so the page shows through. Turn it off to keep your background colour.
 - [Reference layers](help:reference-layers) are left out, like every export.
-- Change the animation? Export again with **Ctrl+Shift+E** and replace the file in Interactives' Assets. Layers using it keep their settings.`,
+- Change the animation? Export again with **Ctrl+Shift+E** and replace the file in Interactives' Assets. Layers using it keep their settings.
+
+Interactives' own help has more: search it for **Frameling animations**.`,
   },
 ]);
