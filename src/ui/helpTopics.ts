@@ -227,6 +227,37 @@ There are five pages:
 Changes happen straight away and are remembered for next time.`,
   },
   {
+    id: 'installing',
+    title: 'Installing Frameling',
+    section: 'Getting started',
+    media: 'installing.png',
+    summary: 'Windows and macOS ask you to say Frameling is OK the first time you open it. Here is how.',
+    keywords: ['install', 'installer', 'download', 'smartscreen', 'run anyway', 'gatekeeper', 'damaged', 'cannot be opened', 'unidentified developer', 'open anyway', 'signed', 'certificate', 'windows protected your pc'],
+    body: `Frameling is signed, but not yet with a paid certificate, so Windows and macOS don't recognise it. The first time you open it they ask you to say it's OK. After that it opens like any other app.
+
+## Windows
+
+1. Open **Frameling-setup** (the installer) or **Frameling-portable** (runs without installing).
+2. If a blue **Windows protected your PC** box appears, click **More info**.
+3. Click **Run anyway**.
+
+The publisher shows as **Frameling (self-signed)**.
+
+## macOS
+
+1. Open the **.dmg** and drag **Frameling** into **Applications**.
+2. In Applications, **right-click** (or Control-click) Frameling and choose **Open**, then **Open** again.
+3. If macOS still won't open it, go to **System Settings**, **Privacy & Security**, scroll down and click **Open Anyway**.
+
+## Linux
+
+Make the **AppImage** executable (right-click, **Properties**, **Allow executing as a program**, or \`chmod +x\`) and double-click it.
+
+## Or skip installing
+
+The [web version](help:web-browser) runs in Chrome, Edge or Firefox with nothing to install.`,
+  },
+  {
     id: 'meet-quill',
     title: 'Meet Quill',
     section: 'Getting started',
