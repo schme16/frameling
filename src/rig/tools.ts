@@ -293,7 +293,7 @@ export const poseTool: Tool = {
   id: 'pose',
   label: 'Pose',
   icon: 'pose',
-  key: 'o',
+  key: 'Shift+K',
   layers: ['vector', 'pixel', 'tilemap'],
   order: 71,
   help: 'rig-posing',

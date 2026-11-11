@@ -78,14 +78,14 @@ const EMITTERS: { value: ParticlesShape['emitter']; label: string; title: string
 
 function Presets({ s, compact }: { s?: ParticlesShape; compact: boolean }) {
   return (
-    <div className={compact ? 'pt-presets pt-presets-compact' : 'pt-presets'} role="list">
+    <div className={compact ? 'pt-presets pt-presets-compact' : 'pt-presets'} role="group" aria-label="Presets">
       {PARTICLE_PRESETS.map((p) => (
         <button
           key={p.id}
           type="button"
-          role="listitem"
           className="pt-preset"
-          data-on={s?.preset === p.id}
+          data-on={s ? s.preset === p.id : undefined}
+          aria-pressed={s ? s.preset === p.id : undefined}
           title={s ? `${p.description} Click to use these settings on the selected particles.` : `${p.description} Click to add it.`}
           onClick={() => (s ? applyPreset(p.id) : addParticles(p.id))}
         >

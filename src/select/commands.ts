@@ -198,7 +198,7 @@ const commands: Command[] = [
     id: 'select.lasso',
     label: 'Lasso',
     category: 'Tools',
-    keys: ['L'],
+    keys: ['Shift+L'],
     description: 'The Select tool, drawing round what you want. Hold Alt as you let go for straight sides.',
     help: 'pixel-select',
     keywords: ['lasso', 'freehand selection', 'polygon lasso', 'draw round'],

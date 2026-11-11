@@ -4,6 +4,8 @@ import { registerHelpTopics } from '../core/registry';
 registerHelpTopics([
   {
     id: 'pixel-art',
+    order: 1,
+    media: 'pixel-art.png',
     title: 'Making pixel art',
     section: 'Pixel art',
     summary: 'The tools for a game sprite made entirely of pixels, and the order most people use them in.',
@@ -100,11 +102,12 @@ Anything turned off the edge of the page is cut off, so leave a little room.`,
   },
   {
     id: 'palette',
+    order: 2,
     title: 'The Palette panel',
     section: 'Pixel art',
     media: 'palette-panel.png',
     summary: "Your document's colours for pixel art, in ramps. Click to paint, drag to reorder, load and save palette files.",
-    keywords: ['palette', 'colours', 'colors', 'ramp', 'gpl', 'hex', 'pal', 'jasc', 'gimp', 'lospec', 'swap', 'recolour'],
+    keywords: ['palette', 'colours', 'colors', 'ramp', 'gpl', 'hex', 'pal', 'jasc', 'gimp', 'lospec', 'swap', 'recolour', 'colour palette', 'swatches'],
     body: `Open it from View > Palette, or switch to the **Pixel** workspace, which puts it on the left.
 
 **Painting.** Click a colour to put it in the colour box that's in front (stroke or fill). The little **S** and **F** tags show your stroke and fill colours, and a dot shows the colours used on this frame. Right-click a colour to use it for lines or for the bucket directly.
@@ -123,6 +126,7 @@ The palette is saved with your document. Until you change it, a new document use
   },
   {
     id: 'palette-lock',
+    media: 'palette-lock.png',
     title: 'Palette lock (indexed colour)',
     section: 'Pixel art',
     summary: 'Keep a pixel layer to palette colours only: everything you paint snaps to the nearest one.',

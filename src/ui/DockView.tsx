@@ -163,17 +163,32 @@ export function DockZoneView({ zone }: { zone: DockZone }) {
           role="tab"
           id={`ui-tab-${id}`}
           aria-selected={on && !z.collapsed}
-          aria-controls={`ui-panel-${id}`}
+          aria-controls={on && !z.collapsed ? `ui-panel-${id}` : undefined}
+          aria-label={p.title}
+          // One stop per tab strip: Tab lands on the chosen tab, the arrow keys move along.
+          tabIndex={on ? 0 : -1}
           className="ui-tab-main"
           data-help={p.help ?? 'panels'}
           data-tip={p.title}
           data-tip-desc={z.collapsed ? 'Press to open. Drag to move it.' : 'Drag to move it to another place.'}
           onClick={() => setActive(zone, id)}
           onKeyDown={(e) => {
-            const step = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
-            if (!step) return;
+            // Delete closes the panel, like the little x does.
+            if (e.key === 'Delete') {
+              e.preventDefault();
+              e.stopPropagation();
+              hidePanel(id);
+              return;
+            }
+            const n = z.tabs.length;
+            const vertical = z.collapsed && !horizontal;
+            const back = e.key === 'ArrowLeft' || (vertical && e.key === 'ArrowUp');
+            const fwd = e.key === 'ArrowRight' || (vertical && e.key === 'ArrowDown');
+            const to = e.key === 'Home' ? 0 : e.key === 'End' ? n - 1 : fwd ? (i + 1) % n : back ? (i - 1 + n) % n : -1;
+            if (to < 0) return;
             e.preventDefault();
-            const next = z.tabs[(i + step + z.tabs.length) % z.tabs.length];
+            e.stopPropagation();
+            const next = z.tabs[to];
             setActive(zone, next);
             requestAnimationFrame(() => document.getElementById(`ui-tab-${next}`)?.focus());
           }}
@@ -182,7 +197,8 @@ export function DockZoneView({ zone }: { zone: DockZone }) {
           {flat && !(iconOnly && !on) && <span className="ui-tab-title">{p.title}</span>}
         </button>
         {on && !z.collapsed && (
-          <button type="button" className="ui-tab-close" aria-label={`Close ${p.title} panel`} data-tip={`Close ${p.title}`} data-tip-desc="Bring it back from the View menu." onClick={() => hidePanel(id)}>
+          // Kept out of the tab order and away from screen readers: Delete on the tab does the same.
+          <button type="button" className="ui-tab-close" tabIndex={-1} aria-hidden="true" data-tip={`Close ${p.title}`} data-tip-desc="Bring it back from the View menu." onClick={() => hidePanel(id)}>
             <Icon name="close" size={12} />
           </button>
         )}
@@ -208,8 +224,10 @@ export function DockZoneView({ zone }: { zone: DockZone }) {
 
   return (
     <section className={`ui-zone ui-zone-${zone}${z.collapsed ? ' is-collapsed' : ''}${dropClass}`} style={style} aria-label={`${zone} panels`} onDragOver={onDragOver} onDrop={onDrop}>
-      <div className="ui-tabbar" role="tablist" ref={bar} aria-orientation={z.collapsed && !horizontal ? 'vertical' : 'horizontal'}>
-        {tabs}
+      <div className="ui-tabbar" ref={bar}>
+        <div className="ui-tabbar-tabs" role="tablist" aria-label={`${zone} panels`} aria-orientation={z.collapsed && !horizontal ? 'vertical' : 'horizontal'}>
+          {tabs}
+        </div>
         {fit && fit.hidden.length > 0 && (
           <div className="ui-tab-more-wrap">
             <button
@@ -289,6 +307,7 @@ export function DockZoneView({ zone }: { zone: DockZone }) {
       )}
       {!z.collapsed && panel && (
         <div className="ui-panel" role="tabpanel" id={`ui-panel-${active}`} aria-labelledby={`ui-tab-${active}`}>
+          <h2 className="ui-sr-only">{panel.title}</h2>
           <PanelBoundary name={panel.title} key={active}>
             <panel.component />
           </PanelBoundary>

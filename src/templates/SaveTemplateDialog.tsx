@@ -85,7 +85,7 @@ function SaveTemplate({ close }: { close: () => void }) {
           </span>{' '}
           {doc.width} x {doc.height}, {doc.length} {doc.length === 1 ? 'frame' : 'frames'} at {doc.fps} fps. The card shows the frame you're on.
         </p>
-        <footer className="ui-choice-foot">
+        <div className="ui-choice-foot">
           <button type="button" className="ui-btn ui-btn-quiet" onClick={() => openHelp('templates-yours')}>
             <Icon name="help" size={14} /> Learn more
           </button>
@@ -96,7 +96,7 @@ function SaveTemplate({ close }: { close: () => void }) {
           <button type="submit" className="ui-btn ui-btn-primary" disabled={busy}>
             <Icon name="template" size={14} /> Save template
           </button>
-        </footer>
+        </div>
       </form>
     </Modal>
   );

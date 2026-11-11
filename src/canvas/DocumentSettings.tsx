@@ -161,7 +161,7 @@ function DocumentSettings({ close }: { close: () => void }) {
         <div className="ds-modes" role="radiogroup" aria-label="When the size changes">
           <button type="button" role="radio" aria-checked={mode === 'canvas'} data-on={mode === 'canvas'} onClick={() => setMode('canvas')} data-autofocus>
             <strong>Change the page</strong>
-            <span>Your drawing stays the same size. Space is added or trimmed round it (canvas size).</span>
+            <span>Your drawing stays the same size. Space is added or removed around it (canvas size).</span>
           </button>
           <button
             type="button"

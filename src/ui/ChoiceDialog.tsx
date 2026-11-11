@@ -61,7 +61,7 @@ function Ask({ pending }: { pending: Pending }) {
         <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
         Remember my choice. You can change it any time in Preferences, Behaviour.
       </label>
-      <footer className="ui-choice-foot">
+      <div className="ui-choice-foot">
         {def.help && (
           <button type="button" className="ui-btn ui-btn-quiet" onClick={() => openHelp(def.help)}>
             <Icon name="help" size={14} /> Learn more
@@ -71,7 +71,7 @@ function Ask({ pending }: { pending: Pending }) {
         <button type="button" className="ui-btn ui-btn-primary" onClick={() => finish({ value, remember })}>
           OK
         </button>
-      </footer>
+      </div>
     </Modal>
   );
 }

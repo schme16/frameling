@@ -399,7 +399,11 @@
   border: 1px solid var(--line-soft);
 }
 .qp-card.is-locked {
-  opacity: 0.8;
+  border-style: dashed;
+}
+/* Locked cards look quieter through their icon and border; fading the words too made them hard to read. */
+.qp-card.is-locked > :not(.qp-body) {
+  opacity: 0.6;
 }
 .qp-body {
   display: flex;

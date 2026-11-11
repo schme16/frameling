@@ -197,17 +197,27 @@ export function buildKeymap(commands: Command[], overrides: Record<string, strin
   return map;
 }
 
-/** Other commands already using this shortcut. */
+/** True when two commands can both be live at once. Tools for different layer kinds (Brush and Tile brush) never are. */
+export function sameContext(a: Pick<Command, 'layers'>, b: Pick<Command, 'layers'>): boolean {
+  if (!a.layers || !b.layers) return true;
+  return a.layers.some((k) => b.layers!.includes(k));
+}
+
+/** Other commands already using this shortcut where this one works too. */
 export function conflictsFor(shortcut: string, exceptId: string, commands: Command[], overrides: Record<string, string[]> = getPrefs().keymap): Command[] {
   const want = normaliseCombo(shortcut);
   if (!want) return [];
-  return commands.filter((c) => c.id !== exceptId && effectiveKeys(c, overrides).includes(want));
+  const self = commands.find((c) => c.id === exceptId) ?? {};
+  return commands.filter((c) => c.id !== exceptId && effectiveKeys(c, overrides).includes(want) && sameContext(self, c));
 }
 
-/** Every shortcut that two or more commands share, with who shares it. */
+/** Every shortcut that two or more commands share in the same place, with who shares it. */
 export function allConflicts(commands: Command[], overrides: Record<string, string[]> = getPrefs().keymap): Map<string, Command[]> {
   const out = new Map<string, Command[]>();
-  for (const [k, list] of buildKeymap(commands, overrides)) if (list.length > 1) out.set(k, list);
+  for (const [k, list] of buildKeymap(commands, overrides)) {
+    const clash = list.filter((c) => list.some((o) => o !== c && sameContext(c, o)));
+    if (clash.length > 1) out.set(k, clash);
+  }
   return out;
 }
 

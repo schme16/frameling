@@ -26,6 +26,7 @@ Needs Node 22.
 npm install
 npm run dev            # opens the app with hot reload
 npm test               # tests
+npm run help:audit     # checks the in-app help, and prints what it found
 npm run build          # mascot, type check, then build into dist/
 npm run build:mascot   # just rebuild Quill's sprite sheet and the app icons
 npm run dist           # installers for this system, into release/
@@ -117,6 +118,19 @@ Code reads the lines through `line(id, vars)`, `lines(id, vars)` (for lists) and
 placeholder with bold text) in `src/ui/mascot/lines.ts`; the ids are typed, so a typo fails `npm run typecheck`. A new
 line goes in `lines.json` with its `where`, and in the moments list in `shots.cjs`. `test/ui/quill-lines.test.ts`
 checks every line is used, every id used exists, and the placeholders match.
+
+## In-app help
+
+Topics are registered with `registerHelp` next to the feature (`src/*/help.ts`), and every one has a picture or a
+short clip in `public/help/`. `npm run help:audit` (also part of `npm test`) fails when a command has no topic, a
+topic has no media, a media file is missing or unused, a `help:` link goes nowhere, or a topic names a shortcut no
+command has any more. It also lists topics over 400 words. `test/ui/help-words.test.ts` checks that the plain words
+people type ("rubber", "lost my work") find the right topic; add a pair there when someone can't find something.
+
+Media is captured from the built app: `npm run build`, then
+`npx electron scripts/docs/record.cjs <outDir> <steps.json> --prefs '{"showWelcome":false,"reduceMotion":true}'`
+(steps are documented at the top of the script; under xvfb wrap it in `xvfb-run -a`), and
+`scripts/docs/encode.sh <outDir>/<clip> <name>` turns a recorded clip into an H.264 MP4 and its poster.
 
 ## The Interactives package (.flplay)
 
