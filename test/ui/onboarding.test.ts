@@ -63,6 +63,9 @@ describe('onboarding flow', () => {
     expect(planFor(['sprites'])).toMatchObject({ workspace: 'pixel', template: 'hero-sprites' });
     expect(planFor(['tiles', 'cartoons'])).toMatchObject({ workspace: 'animate', template: 'bouncing-ball' });
     expect(planFor(['motion']).help).toContain('tweens');
+    // Pixel people get a pixel grid for a blank page; everyone else the plain page.
+    expect(planFor(['sprites']).blank).toBe('blank-pixel');
+    expect(planFor(['tiles', 'cartoons']).blank).toBeUndefined();
     expect(planFor(['tiles', 'sprites', 'motion', 'cartoons']).help.length).toBeLessThanOrEqual(4);
     // Newcomers get the 60-second quest first, then the one that suits them.
     expect(planFor(['tiles']).quest).toBe(FIRST_QUEST);
@@ -77,6 +80,7 @@ describe('onboarding flow', () => {
       for (const done of [[], [FIRST_QUEST]]) {
         const p = planFor([x.id], done);
         expect(findTemplate(p.template), p.template).toBeTruthy();
+        if (p.blank) expect(findTemplate(p.blank), p.blank).toBeTruthy();
         expect(getQuest(p.quest), p.quest).toBeTruthy();
         for (const h of p.help) expect(getHelp(h), h).toBeTruthy();
       }

@@ -96,9 +96,9 @@ function Flow() {
     applyWorkspace(plan.workspace);
     const name = s.name.trim() || 'Untitled';
     end('done');
-    if (go === 'template') {
+    if (go === 'template' || (go === 'blank' && plan.blank)) {
       const { findTemplate } = await import('../../templates');
-      const t = findTemplate(plan.template);
+      const t = findTemplate(go === 'blank' && plan.blank ? plan.blank : plan.template);
       if (!t || !(await askAboutUnsavedChanges())) return;
       const doc = t.make();
       doc.name = name;
@@ -540,7 +540,7 @@ function Done({ s, plan, go }: { s: FlowState; plan: ReturnType<typeof planFor>;
           <span className="ob-card-icon">
             <Icon name="brush" size={24} />
           </span>
-          <strong>Just a blank page</strong>
+          <strong>{plan.blank === 'blank-pixel' ? 'Just a blank pixel grid' : 'Just a blank page'}</strong>
           <span>{line('onboarding.done.blank')}</span>
         </button>
       </div>

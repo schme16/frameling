@@ -4,6 +4,7 @@ import { findLayer } from '../core/doc';
 import type { LayerKind } from '../core/format';
 import { store, useStore } from '../core/store';
 import { syncDynamicCommands } from './dynamic';
+import { pickTool } from '../tools/wells';
 import { Icon } from './icons';
 
 /** The kind of layer being drawn on (the last one when none is picked), or null with no layers. */
@@ -44,7 +45,7 @@ export function ToolStrip() {
           aria-pressed={current === t.id}
           data-command={`tools.${t.id}`}
           data-help={t.help}
-          onClick={() => store().setUi({ tool: t.id })}
+          onClick={() => pickTool(t.id)}
         >
           <Icon name={t.icon} size={20} />
         </button>

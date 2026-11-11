@@ -961,6 +961,29 @@ body.ui-resizing * {
   font-size: 17px;
 }
 
+/* An ask-the-first-time question comes from whatever is open, so it sits above other dialogs (Export is 900). */
+.ui-backdrop:has(.ui-choice) {
+  z-index: 950;
+}
+/* The question dialogs put their parts straight in the modal, so they need the side padding the header has. */
+.ui-choice > .ui-choice-q,
+.ui-ask > p {
+  margin: 16px 20px 14px;
+}
+.ui-ask > p + p {
+  margin-top: 0;
+}
+.ui-choice > .ui-choice-opts {
+  margin: 0 20px;
+}
+.ui-choice > .ui-choice-remember {
+  margin: 14px 20px 0;
+}
+.ui-choice > .ui-choice-foot,
+.ui-ask > .ui-choice-foot {
+  padding: 0 20px 16px;
+}
+
 /* Command palette */
 .ui-backdrop:has(.ui-palette) {
   align-items: start;

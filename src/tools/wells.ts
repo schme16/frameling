@@ -75,6 +75,23 @@ export function setActiveWell(w: 'fill' | 'stroke'): void {
   store().setUi({ activeWell: w });
 }
 
+/**
+ * The box a tool paints with, so picking a tool brings it to the front: the bucket pours the fill, line tools draw
+ * with the stroke. Then clicking a swatch always changes the colour you're about to paint with. Shape tools use both
+ * boxes and the rest use none, so they leave the boxes alone (null).
+ */
+export function wellForTool(tool: string): 'fill' | 'stroke' | null {
+  if (tool === 'fill') return 'fill';
+  if (tool === 'brush' || tool === 'pencil' || tool === 'line' || tool === 'shade' || tool === 'dither') return 'stroke';
+  return null;
+}
+
+/** Switches tool, bringing its colour box to the front (see wellForTool). */
+export function pickTool(tool: string): void {
+  const w = wellForTool(tool);
+  store().setUi(w ? { tool, activeWell: w } : { tool });
+}
+
 /** X: bring the other box to the front. */
 export function toggleWell(): void {
   setActiveWell(store().get().ui.activeWell === 'fill' ? 'stroke' : 'fill');
@@ -157,7 +174,7 @@ registerHelp({
   keywords: ['fill', 'stroke', 'outline', 'colour', 'color', 'none', 'swap', 'default'],
   body: `The Colours panel has two boxes. The **fill** box (the solid square) colours the inside of shapes and is what the **paint bucket** pours. The **stroke** box (the square with a hole) colours **lines**: the brush, the pencil, pixel lines and the outline of shapes.
 
-Click a box to bring it to the front. The picker, the swatches and the eyedropper change whichever box is in front.
+Click a box to bring it to the front. The picker, the swatches and the eyedropper change whichever box is in front. Picking a tool brings its box forward for you: the paint bucket brings the fill, and the brush, pencil and line bring the stroke, so the colour you click next is the one you paint with.
 
 ## Shapes
 
