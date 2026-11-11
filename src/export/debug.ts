@@ -57,6 +57,7 @@ if (typeof window !== 'undefined' && new URLSearchParams(location.search).has('d
     loadStress: () => store().load(stressDoc(), null),
     // Every feature at once (symbols, tweens, effects, folders, masks, tiles, bones, sound): see kitchenSink.ts.
     loadKitchenSink: async () => store().load((await import('./kitchenSink')).kitchenSinkDoc(), null),
+    loadKitchenSinkPerf: async (frames?: number) => store().load((await import('./kitchenSink')).kitchenSinkPerfDoc(frames), null),
     doc: () => rootDoc(store().get().doc),
     defaults: () => defaultSettings(rootDoc(store().get().doc)),
     plan: (s: ExportSettings) => planExport(rootDoc(store().get().doc), s, store().get().ui.frame),

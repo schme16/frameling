@@ -151,3 +151,39 @@ export function kitchenSinkDoc(): Doc {
   addMarker(doc, 'top', 6);
   return doc;
 }
+
+/**
+ * The kitchen sink stretched for timing playback (scripts/perf, test `rigfx`): `frames` long at 24 fps, the arm and
+ * the ball moving all the time, ten layers with effects on several and a bending layer.
+ */
+export function kitchenSinkPerfDoc(frames = 300): Doc {
+  const doc = kitchenSinkDoc();
+  doc.fps = 24;
+  doc.length = frames;
+  doc.clips = [];
+  doc.markers = [];
+  for (const l of doc.layers) {
+    if (l.cels.length === 1) l.cels[0].length = frames;
+  }
+  // Keys every 12 frames, back and forth, gliding between.
+  const bones = doc.layers.find((l) => l.kind === 'vector' && l.rig)!;
+  const balls = doc.layers.find((l) => l.name === 'Bouncing ball')!;
+  for (const l of [bones, balls]) {
+    const [a, b] = l.cels;
+    l.cels = [];
+    for (let f = 0, i = 0; f < frames; f += 12, i++) {
+      const src = i % 2 ? b : a;
+      l.cels.push({ ...src, id: uid('c'), start: f, length: Math.min(12, frames - f), ...(f + 12 < frames ? { tween: a.tween } : { tween: undefined }) });
+    }
+  }
+  const glowPx = addPixelLayer(doc, 'Sparkles', 4);
+  const g = newPixelDrawing(80, 48);
+  for (let k = 0; k < 40; k++) g.pixels.set([255, 220, 120, 255], ((k * 7) % 48) * 80 * 4 + ((k * 13) % 80) * 4);
+  doc.drawings[g.id] = g;
+  hold(glowPx, g.id, 0, frames);
+  glowPx.effects = [fx('glow', { size: 6, color: SUNNY })];
+  // Under the bones layer, which stays on top.
+  const top = doc.layers.pop()!;
+  doc.layers.splice(doc.layers.length - 1, 0, top);
+  return doc;
+}

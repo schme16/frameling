@@ -344,6 +344,32 @@ async function main() {
     return out;
   }
 
+  // ------------------------------------------------------------------ effects, folders, masks, tiles, bones, symbols
+  // The kitchen sink stretched to 300 frames at 24 fps (src/export/kitchenSink.ts): ten layers, effects on several,
+  // a folder with a mask, tiles, a tweening symbol and an arm bending a mesh layer. Played at 1x for 8 seconds.
+  async function rigfx() {
+    await js(`window.__framelingExport.loadKitchenSinkPerf(300)`);
+    await js(`window.__frameling.store().setUi({ tool: 'brush', playing: false, frame: 0 })`);
+    await js('window.__h.raf2()');
+    await sleep(500);
+    const out = {};
+    for (const lap of ['first', 'second']) {
+      await js(`window.__frameling.store().setUi({ frame: 0, playing: false })`);
+      await js('window.__h.raf2()');
+      await js('window.__h.takeLongs(); window.__framelingPerf.reset(); window.__h.startRaf()');
+      await js(`window.__frameling.run('timeline.play')`);
+      await sleep(8000);
+      await js(`window.__frameling.run('timeline.play')`);
+      await js('window.__h.stopRaf()');
+      const longs = await js('window.__h.takeLongs()');
+      const bag = await readBag();
+      const dt = deltas(bag.painted.map((p) => p.t));
+      const skipped = bag.painted.slice(1).reduce((n, p, i) => n + Math.max(0, p.frame - bag.painted[i].frame - 1), 0);
+      out[lap] = { framesPainted: bag.painted.length, framesSkipped: skipped, paintIntervalMs: stats(dt), latePaints: dt.filter((d) => d > (1000 / 24) * 1.5).length, paintMs: stats(bag.mainMs), longTasks: longs.length, longTaskMaxMs: longs.length ? Math.round(Math.max(...longs.map((l) => l.d))) : 0 };
+    }
+    return out;
+  }
+
   // ------------------------------------------------------------------ templates
   async function templates() {
     const out = {};
@@ -465,7 +491,7 @@ async function main() {
     return { bitmapCache: cacheSize, strokesDrawn: strokes, strokesAfterUndo: strokesLeft, heapMBStart: mb(heap0), heapMBAfter200Strokes: mb(heap200), heapMBAfter100Undos: mb(heapUndo), growthMB: mb(heapUndo - heap0) };
   }
 
-  const tests = { draw: drawLong, playback, templates, zoompan: zoomPan, memory };
+  const tests = { draw: drawLong, playback, rigfx, templates, zoompan: zoomPan, memory };
   await load();
   const gpu = await app.getGPUInfo('basic').catch(() => null);
   const feat = app.getGPUFeatureStatus();

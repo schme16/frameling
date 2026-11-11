@@ -1,0 +1,74 @@
+{
+  "env": {
+    "label": "rigfx-4x",
+    "cpuSlowdown": 4,
+    "electron": "45.3.0",
+    "chrome": "156.0.8078.96",
+    "cpu": "AMD Ryzen 9 7900X 12-Core Processor",
+    "window": [
+      1400,
+      900
+    ],
+    "gpu2dCanvas": "enabled",
+    "gpuFeatures": {
+      "canvas": "enabled",
+      "gpu_compositing": "enabled"
+    },
+    "gpuDevice": {
+      "vendorId": 4098
+    },
+    "dpr": 1,
+    "idleRafMs": 6.061538461538458,
+    "renderer": "/mnt/109313D2109313D2/projects/frameling-wt/qa/dist/renderer",
+    "when": "2026-11-11T11:56:00.603Z"
+  },
+  "rigfx": {
+    "first": {
+      "framesPainted": 193,
+      "framesSkipped": 0,
+      "paintIntervalMs": {
+        "n": 192,
+        "mean": 41.53,
+        "p50": 42.3,
+        "p95": 44,
+        "p99": 45.2,
+        "max": 45.6
+      },
+      "latePaints": 0,
+      "paintMs": {
+        "n": 193,
+        "mean": 2.08,
+        "p50": 1.9,
+        "p95": 3.9,
+        "p99": 4.8,
+        "max": 4.8
+      },
+      "longTasks": 0,
+      "longTaskMaxMs": 0
+    },
+    "second": {
+      "framesPainted": 194,
+      "framesSkipped": 0,
+      "paintIntervalMs": {
+        "n": 193,
+        "mean": 41.52,
+        "p50": 42.3,
+        "p95": 43.9,
+        "p99": 48.3,
+        "max": 50.4
+      },
+      "latePaints": 0,
+      "paintMs": {
+        "n": 194,
+        "mean": 2.15,
+        "p50": 2.1,
+        "p95": 3.3,
+        "p99": 3.8,
+        "max": 4.3
+      },
+      "longTasks": 0,
+      "longTaskMaxMs": 0
+    }
+  },
+  "consoleErrors": []
+}
