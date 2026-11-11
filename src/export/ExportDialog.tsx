@@ -15,6 +15,8 @@ import { openHelp } from '../ui/overlays';
 import { godotTexturePath } from './sheet';
 import type { Progress } from './run';
 import { GIF_MAX_FPS } from './gif';
+import { proresSupport, type ProresSupport } from './prores';
+import { LayeredNotes } from './LayeredNotes';
 import { DEFAULT_SHEET, engineInfo, FORMATS, formatInfo, normalizeSheet, type EngineId, type ExportSettings, type FormatId } from './types';
 import './export.css';
 import { docDpi, formatSize } from '../core/units';
@@ -71,7 +73,7 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
 
   const info = formatInfo(s.format);
   const plan = useMemo(() => planExport(doc, s, frame), [doc, s, frame]);
-  const video = s.format === 'mp4' || s.format === 'webm';
+  const video = s.format === 'mp4' || s.format === 'webm' || s.format === 'prores';
   const videoSize = useMemo(() => planExport(doc, { ...s, format: 'mp4' }, frame), [doc, s, frame]);
 
   // Ask what this computer can encode, at the size that matters.
@@ -81,8 +83,15 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
     return () => void (live = false);
   }, [videoSize.width, videoSize.height, webmPref]);
 
+  const [prores, setProres] = useState<ProresSupport | null>(null);
+  useEffect(() => {
+    let live = true;
+    void proresSupport(true).then((p) => live && setProres(p));
+    return () => void (live = false);
+  }, []);
   const support = (f: FormatId) => (f === 'mp4' || f === 'webm') && caps ? caps[f] : null;
   const unavailable = (f: FormatId): string | null => {
+    if (f === 'prores') return prores && !prores.ok ? (prores.reason ?? 'ProRes is not available here.') : null;
     const sp = support(f);
     return sp && !sp.ok ? sp.reason : null;
   };
@@ -92,7 +101,7 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
     if (!caps || !unavailable(s.format)) return;
     const next = FORMATS.find((f) => !unavailable(f.id) && f.animated && f.id !== 'sheet');
     if (next) set({ format: next.id });
-  }, [caps]);
+  }, [caps, prores]);
 
   const alphaOk = s.format === 'webm' ? !!caps?.webm.alpha : info.alpha;
   const alphaWhy = s.format === 'mp4' ? "MP4 videos can't be see-through. Try WebM, GIF or PNG." : s.format === 'webm' ? "This computer can't make see-through WebM. Try GIF, APNG or PNG sequence." : '';
@@ -173,7 +182,7 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
                 onClick={() =>
                   set({
                     format: f.id,
-                    ...((f.id === 'mp4' || f.id === 'webm') && s.range === 'frame' ? { range: 'all' as const } : {}),
+                    ...((f.id === 'mp4' || f.id === 'webm' || f.id === 'prores') && s.range === 'frame' ? { range: 'all' as const } : {}),
                     // Sprites for games nearly always want a see-through background.
                     ...((f.id === 'sheet' || f.id === 'interactives') && s.format !== f.id ? { transparent: true } : {}),
                     // Interactives scales pixel art up itself, crisply, so the art's own size keeps the file small.
@@ -312,6 +321,7 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
             </Check>
           </fieldset>
 
+          <LayeredNotes format={s.format} doc={doc} />
           {s.format === 'webm' && (
             <fieldset>
               <legend>Video codec</legend>

@@ -42,6 +42,7 @@
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.3.0",
+    "ag-psd": "^34.1.0",
     "electron": "^45.3.0",
     "electron-builder": "^26.18.0",
     "esbuild": "^0.28.2",
@@ -70,7 +71,10 @@
       ],
       "category": "Graphics",
       "synopsis": "Draw and animate 2D art",
-      "syncDesktopName": true
+      "syncDesktopName": true,
+      "mimeTypes": [
+        "x-scheme-handler/frameling"
+      ]
     },
     "win": {
       "target": [
@@ -99,6 +103,21 @@
         "description": "Frameling drawing",
         "mimeType": "application/x-frameling",
         "role": "Editor"
+      },
+      {
+        "ext": "flplay",
+        "name": "Interactives animation",
+        "description": "Frameling animation for Interactives",
+        "mimeType": "application/vnd.frameling.playable+zip",
+        "role": "Editor"
+      }
+    ],
+    "protocols": [
+      {
+        "name": "Frameling link",
+        "schemes": [
+          "frameling"
+        ]
       }
     ]
   },

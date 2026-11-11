@@ -42,7 +42,7 @@ function applyToSelection(which: 'fill' | 'stroke'): void {
       for (const s of dr.shapes) {
         if (!ids.has(s.id)) continue;
         if (which === 'fill') {
-          if (s.type === 'fill' && fill) s.color = fill;
+          if ((s.type === 'fill' || s.type === 'text') && fill) s.color = fill;
           else if (s.type === 'path') s.fill = fill;
         } else {
           if (s.type === 'stroke' && stroke) s.color = stroke;

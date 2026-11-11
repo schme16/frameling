@@ -43,7 +43,12 @@ interface Style {
 type Plan =
   | { kind: 'area'; id: string; rings: RingPair[]; a: Style; b: Style }
   | { kind: 'stroke'; id: string; from: StrokeShape; to: StrokeShape; pa: StrokePoint[]; pb: StrokePoint[] }
-  | { kind: 'instance'; a: InstanceShape; b: InstanceShape | undefined };
+  | { kind: 'instance'; a: InstanceShape; b: InstanceShape | undefined }
+  // Text and particles don't morph: they stay as they are on the start key.
+  | { kind: 'keep'; shape: Shape };
+
+/** Shapes made of outlines, the ones a shape tween can morph. */
+const morphable = (s: Shape): boolean => s.type !== 'instance' && s.type !== 'text' && s.type !== 'particles';
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 const lp = (p: P, q: P, t: number): P => ({ x: lerp(p.x, q.x, t), y: lerp(p.y, q.y, t) });
@@ -469,6 +474,7 @@ function styleOf(s: FillShape | PathShape): Style {
 /** A shape with nothing left: shrunk to its middle and fully see-through (for spare shapes). */
 function vanished(s: Shape): Shape {
   if (s.type === 'instance') return { ...s, opacity: 0, transform: { ...s.transform, scaleX: 0.001, scaleY: 0.001 } };
+  if (s.type === 'text' || s.type === 'particles') return { ...s, opacity: 0 };
   if (s.type === 'stroke') {
     const c = s.points.reduce((m, p) => ({ x: m.x + p.x / s.points.length, y: m.y + p.y / s.points.length }), { x: 0, y: 0 });
     return { ...s, opacity: 0, points: s.points.map((p) => ({ x: c.x, y: c.y, p: p.p })) };
@@ -486,6 +492,7 @@ function planPair(a: Shape, b: Shape, hints: ShapeHint[]): Plan {
     const n = Math.max(2, a.points.length, b.points.length);
     return { kind: 'stroke', id: a.id, from: a, to: b, pa: resampleStroke(a.points, n), pb: resampleStroke(b.points, n) };
   }
+  if (a.type === 'text' || a.type === 'particles' || b.type === 'text' || b.type === 'particles') return { kind: 'keep', shape: a };
   const fa = a.type === 'stroke' ? strokeAsFill(a) : a;
   const fb = b.type === 'stroke' ? strokeAsFill(b) : b;
   return { kind: 'area', id: a.id, rings: matchOutlines(fa.paths, fb.paths, hints), a: styleOf(fa), b: styleOf(fb) };
@@ -499,8 +506,8 @@ function planDrawings(from: VectorDrawing, to: VectorDrawing, hints: ShapeHint[]
   // Symbol copies pair with symbol copies, other shapes with other shapes, each in order.
   const ai = A.filter((s) => s.type === 'instance') as InstanceShape[];
   const bi = B.filter((s) => s.type === 'instance') as InstanceShape[];
-  const ao = A.filter((s) => s.type !== 'instance');
-  const bo = B.filter((s) => s.type !== 'instance');
+  const ao = A.filter(morphable) as (StrokeShape | FillShape | PathShape)[];
+  const bo = B.filter(morphable) as (StrokeShape | FillShape | PathShape)[];
   const hintOwner = new Map<string, number>();
   for (const h of hints) {
     let best = -1;
@@ -530,6 +537,7 @@ function planDrawings(from: VectorDrawing, to: VectorDrawing, hints: ShapeHint[]
   let ii = 0;
   for (const s of A) {
     if (s.type === 'instance') ordered.push(instPlans[ii++]);
+    else if (s.type === 'text' || s.type === 'particles') ordered.push({ kind: 'keep', shape: s });
     else ordered.push(plans[pi++]);
   }
   while (pi < plans.length) ordered.push(plans[pi++]);
@@ -566,6 +574,10 @@ export function morphShapes(from: VectorDrawing, to: VectorDrawing, t: number, h
   for (const p of plansFor(from, to, hints)) {
     if (p.kind === 'instance') {
       out.push(blend(p.a, p.b, t));
+      continue;
+    }
+    if (p.kind === 'keep') {
+      out.push(p.shape);
       continue;
     }
     if (p.kind === 'stroke') {
@@ -615,7 +627,7 @@ export function snapHint(d: VectorDrawing, p: P): P {
   let best: P = p;
   let bd = Infinity;
   for (const s of d.shapes) {
-    if (s.type === 'instance') continue;
+    if (s.type === 'instance' || s.type === 'text' || s.type === 'particles') continue;
     const paths = s.type === 'stroke' ? strokeAsFill(s).paths : s.paths;
     for (const r of ringsOf(paths)) {
       const n = nearestOn(r.segs, p);

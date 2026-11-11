@@ -384,3 +384,37 @@ describe('the window', () => {
     expect(api.versions.electron).toBe('');
   });
 });
+
+describe('web library, other files and write-back', () => {
+  it('keeps plugins and templates in IndexedDB, apart from each other, across visits', async () => {
+    const { api, factory } = setup();
+    await api.library!.write('templates', 'walk', bytes(1, 2));
+    await api.library!.write('plugins', 'walk', bytes(9));
+    expect((await api.library!.list('templates')).map((e) => [e.id, e.size])).toEqual([['walk', 2]]);
+    const again = setup({ factory }).api;
+    expect(await again.library!.read('templates', 'walk')).toEqual(bytes(1, 2));
+    expect(await again.library!.read('plugins', 'walk')).toEqual(bytes(9));
+    await again.library!.remove('templates', 'walk');
+    expect(await again.library!.list('templates')).toEqual([]);
+  });
+
+  it('opens a .flplay with the picker and writes back to the same file', async () => {
+    const f = new FakeFile('walk.flplay');
+    f.data = bytes(5, 6);
+    const { api } = setup({ pickers: { showOpenFilePicker: async () => [f] } });
+    const r = await api.files.openOther!({ filters: [{ name: 'Interactives', extensions: ['flplay'] }] });
+    if (!r || 'error' in r) throw new Error('expected a file');
+    expect(r.bytes).toEqual(bytes(5, 6));
+    expect(await api.files.write(r.path, bytes(7))).toEqual({ ok: true });
+    expect(f.data).toEqual(bytes(7));
+  });
+
+  it('without pickers, an uploaded file is written back as a download', async () => {
+    const upload = new File([bytes(1) as BlobPart], 'walk.flplay');
+    const { api, downloads } = setup({ upload });
+    const r = await api.files.openOther!({ filters: [{ name: 'Interactives', extensions: ['flplay'] }] });
+    if (!r || 'error' in r) throw new Error('expected a file');
+    await api.files.write(r.path, bytes(2));
+    expect(downloads).toEqual([{ name: 'walk.flplay', bytes: bytes(2) }]);
+  });
+});

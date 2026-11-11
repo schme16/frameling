@@ -1,6 +1,7 @@
 import { app, BrowserWindow, dialog, shell } from 'electron';
 import path from 'node:path';
 import { grantFile, registerIpc } from './ipc';
+import { fileFromUrl, PROTOCOL } from './library';
 import { setupMenu } from './menu';
 import { clearAutosave, keepAutosave, pruneKept } from './store';
 import type { DocumentState } from '../preload/api';
@@ -17,11 +18,21 @@ let closeApproved = false;
 let askingClose = false;
 let keepDone: (() => void) | null = null;
 
-/** The first `.frameling` in a list of command line arguments, as an absolute path. */
+/** The first `.frameling` or `.flplay` (or `frameling://open?path=` link) in a list of command line arguments, as an absolute path. */
 function fileFromArgs(args: string[], cwd = process.cwd()): string | null {
-  const a = args.find((x) => !x.startsWith('-') && x.toLowerCase().endsWith('.frameling'));
+  for (const x of args) {
+    if (x.toLowerCase().startsWith(`${PROTOCOL}:`)) {
+      const f = fileFromUrl(x);
+      if (f) return f;
+    }
+  }
+  const a = args.find((x) => !x.startsWith('-') && /\.(frameling|flplay)$/i.test(x));
   return a ? path.resolve(cwd, a) : null;
 }
+
+// frameling://open?path=... opens a file, so other apps (Interactives' "Edit in Frameling") can hand one over. Only the
+// installed app claims it (the installers register it too), so a dev run never takes it over.
+if (app.isPackaged) app.setAsDefaultProtocolClient(PROTOCOL);
 
 function openFileInWindow(file: string) {
   grantFile(file);
@@ -153,6 +164,13 @@ app.on('second-instance', (_e, argv, cwd) => {
 app.on('open-file', (e, file) => {
   e.preventDefault();
   openFileInWindow(path.resolve(file));
+});
+
+// macOS hands frameling:// links over this way.
+app.on('open-url', (e, url) => {
+  e.preventDefault();
+  const f = fileFromUrl(url);
+  if (f) openFileInWindow(f);
 });
 
 app.whenReady().then(() => {

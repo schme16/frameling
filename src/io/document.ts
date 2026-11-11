@@ -98,6 +98,24 @@ export async function openDocument(): Promise<void> {
   if (await loadBytes(r.bytes, r.path)) void api.recent.add(r.path);
 }
 
+// Other kinds of file that open into a drawing (an Interactives package with its drawing inside), by path.
+const openers: { test: (path: string) => boolean; open: (bytes: Uint8Array, path: string) => Promise<boolean> }[] = [];
+
+export function registerOpener(test: (path: string) => boolean, open: (bytes: Uint8Array, path: string) => Promise<boolean>): void {
+  openers.push({ test, open });
+}
+
+/** Ways to take over Save: `instead` runs when the drawing has no file yet (resolve null to carry on as usual); `after` runs once a save worked. */
+export interface SaveHook {
+  instead?: () => Promise<boolean | null>;
+  after?: (doc: import('../core/format').Doc, path: string) => Promise<void>;
+}
+const saveHooks: SaveHook[] = [];
+
+export function registerSaveHook(h: SaveHook): void {
+  saveHooks.push(h);
+}
+
 /** Opens a file we already know the path of (recent files, double-click, command line). */
 export async function openPath(path: string): Promise<boolean> {
   const api = desktop();
@@ -108,6 +126,8 @@ export async function openPath(path: string): Promise<boolean> {
     void api.recent.remove(path);
     return false;
   }
+  const other = openers.find((o) => o.test(r.path));
+  if (other) return other.open(r.bytes, r.path);
   const ok = await loadBytes(r.bytes, r.path);
   if (ok) void api.recent.add(r.path);
   return ok;
@@ -115,6 +135,12 @@ export async function openPath(path: string): Promise<boolean> {
 
 /** Saves to the document's file, or asks where when it has none yet. Resolves true when it is saved. */
 export async function saveDocument(): Promise<boolean> {
+  if (!store().get().ui.filePath) {
+    for (const h of saveHooks) {
+      const r = await h.instead?.();
+      if (r !== null && r !== undefined) return r;
+    }
+  }
   return saveTo(store().get().ui.filePath);
 }
 
@@ -156,6 +182,7 @@ async function saveTo(path: string | null): Promise<boolean> {
     // Whatever was set aside for this drawing is in the file now.
     void api.autosave.removeKept(doc.id).catch(() => undefined);
     notify('Saved.', 'success', undefined, 1600);
+    for (const h of saveHooks) void h.after?.(doc, r.path)?.catch(() => undefined);
     return true;
   } finally {
     saving = false;

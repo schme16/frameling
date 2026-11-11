@@ -145,6 +145,8 @@ interface ShapeLook {
 }
 
 function lookOf(s: Exclude<Shape, InstanceShape>): ShapeLook {
+  // Text and particles aren't in Lottie files yet (see docs/effects.md): they come out empty.
+  if (s.type === 'text' || s.type === 'particles') return { paths: [], fill: null, stroke: null };
   if (s.type === 'stroke') {
     const c = lottieColor(s.color);
     const p = strokeOutlinePath(s);
@@ -367,6 +369,7 @@ function meshPoint(mesh: PosedMesh, x: number, y: number): XY {
 }
 
 function mapShape(s: Exclude<Shape, InstanceShape>, f: (p: XY) => XY, alpha: number): Shape {
+  if (s.type === 'text' || s.type === 'particles') return s;
   const sub = (paths: SubPath[]) => paths.map((sp) => ({ closed: sp.closed, points: sp.points.map((q) => ({ ...f(q), ...(q.c1 && q.c2 ? { c1: f(q.c1), c2: f(q.c2) } : {}) })) }));
   if (s.type === 'stroke') {
     // A brush stroke goes as its outline, so its width bends with the part too.

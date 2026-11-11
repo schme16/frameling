@@ -142,6 +142,8 @@ app.whenReady().then(async () => {
   for (const c of ['autosave:read', 'autosave:clear', 'autosave:write', 'autosave:keep', 'autosave:readKept', 'autosave:removeKept', 'recent:add', 'recent:remove', 'recent:clear']) ipcMain.handle(c, () => null);
   ipcMain.handle('autosave:listKept', () => []);
   ipcMain.handle('app:askSaveChanges', () => 'discard');
+  // Shots of the Export dialog show ProRes as available (the real check looks for FFmpeg).
+  ipcMain.handle('video:probe', () => ({ ok: true }));
   fs.mkdirSync(outDir, { recursive: true });
   const win = new BrowserWindow({
     width,

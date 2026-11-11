@@ -80,6 +80,12 @@ app.whenReady().then(async () => {
   for (const ch of ['recent:list', 'autosave:listKept']) ipcMain.handle(ch, () => []);
   for (const ch of ['autosave:write', 'autosave:clear', 'autosave:keep', 'autosave:removeKept', 'recent:add', 'recent:remove', 'recent:clear', 'app:documentState']) ipcMain.handle(ch, () => true);
   for (const ch of ['app:documentState', 'app:keepUnsavedDone', 'app:saveBeforeCloseDone']) ipcMain.on(ch, () => {});
+  // Plugins and templates live in memory for the run.
+  const lib = new Map();
+  ipcMain.handle('library:list', (_e, kind) => [...lib.keys()].filter((k) => k.startsWith(kind + '/')).map((k) => ({ id: k.slice(kind.length + 1), size: lib.get(k).length, modified: 0 })));
+  ipcMain.handle('library:read', (_e, kind, id) => lib.get(`${kind}/${id}`) ?? null);
+  ipcMain.handle('library:write', (_e, kind, id, bytes) => void lib.set(`${kind}/${id}`, bytes));
+  ipcMain.handle('library:remove', (_e, kind, id) => void lib.delete(`${kind}/${id}`));
   fs.mkdirSync(outDir, { recursive: true });
   for (const v of variants.length ? variants : ['default::']) {
     const [name, look, theme, steps] = v.split(':');

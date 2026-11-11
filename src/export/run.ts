@@ -13,6 +13,7 @@ import { playablePackage } from './playable';
 import { saveFile } from '../io/file';
 import { NO_SOUND_NOTE, prepareSound } from '../audio/export';
 import { frameToSvg } from './svg';
+import { pdfFile, psdFile } from './layered-run';
 import { animatedSvg } from './svg-anim';
 import { lottieJson } from './lottie';
 import { formatInfo, type ExportSettings } from './types';
@@ -180,6 +181,23 @@ export async function runExport(ctx: RunContext): Promise<RunResult> {
     }
     case 'sheet':
       return runSheet(ctx, plan, rgbaAt, step);
+    case 'psd': {
+      step(0, 'Drawing every layer');
+      const bytes = psdFile(doc, plan.range.start, settings.scale, bg, crisp);
+      return { kind: 'file', name: `${plan.name}.psd`, bytes };
+    }
+    case 'pdf':
+    case 'ai': {
+      const frames: number[] = [];
+      for (let i = 0; i < plan.count; i++) frames.push(plan.range.start + i);
+      step(0, 'Writing the pages');
+      await breathe(signal, 0);
+      const bytes = pdfFile(doc, frames, settings.scale, bg === 'none', crisp, (i) => step(i + 1, `Writing page ${i + 1} of ${plan.count}`), settings.format === 'ai');
+      return { kind: 'file', name: `${plan.name}.${settings.format}`, bytes };
+    }
+    case 'prores':
+      // Streamed to FFmpeg by the desktop side (prores.ts), never through here.
+      throw new Error('ProRes is made by the desktop app.');
     case 'interactives': {
       const frames: RawImage[] = [];
       for (let i = 0; i < plan.count; i++) {
