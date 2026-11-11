@@ -18,6 +18,7 @@ import { canEdit, reportEdit } from './util';
 import { shapeColors } from './wells';
 import { withWellGradients } from './gradient-wells';
 import { PolyStarOptions } from './options/PolyStarOptions';
+import { activePixelLayer, makePixelPathShape } from '../pixel/tools';
 
 /** Corners of a polygon (or a star, with `inner` from 0 to 1) round a circle of radius 1, the first one pointing up. */
 export function polyPoints(count: number, inner: number | null): Pt[] {
@@ -80,17 +81,24 @@ function polyStarTool(kind: 'polygon' | 'star', label: string, key: string, orde
     const s = makePolyStar(kind, drag.start, drag.cur, drag.cur, shapeColors());
     return s && withWellGradients(s);
   };
+  // On a pixel layer it's painted as clean pixels (src/pixel/tools.ts).
+  const pix = makePixelPathShape(label, (a, e) => makePolyStar(kind, a, e, e, shapeColors()));
   return {
     id: kind,
     label,
     icon: kind === 'star' ? 'pointy' : 'polygon',
     key,
-    layers: ['vector'],
+    layers: ['vector', 'pixel'],
     order,
     help: 'tool-polygon-star',
     cursor: 'crosshair',
     options: PolyStarOptions,
     down(e, ctx: ToolContext) {
+      const px = activePixelLayer();
+      if (px) {
+        if (canEdit(ctx, 'pixel', label + 's')) pix.down(e, ctx, px);
+        return;
+      }
       if (!canEdit(ctx, 'vector', label + 's')) return;
       const ui = store().get().ui;
       if (!ui.fillColor && !ui.strokeOn) {
@@ -101,9 +109,11 @@ function polyStarTool(kind: 'polygon' | 'star', label: string, key: string, orde
       clearSnap();
     },
     move(e, ctx) {
+      if (pix.active()) return pix.move(e);
       if (drag) drag.cur = { ...e, ...snapPt(e, ctx.zoom, e.mod) };
     },
     up(e, ctx) {
+      if (pix.active()) return pix.up(e, ctx);
       if (!drag) return;
       drag.cur = { ...e, ...snapPt(e, ctx.zoom, e.mod) };
       clearSnap();
@@ -121,9 +131,11 @@ function polyStarTool(kind: 'polygon' | 'star', label: string, key: string, orde
     cancel(ctx) {
       drag = null;
       clearSnap();
+      pix.cancel();
       ctx.requestOverlay();
     },
-    overlay(g) {
+    overlay(g, ctx) {
+      if (pix.active() || activePixelLayer()) return pix.overlay(g, ctx);
       const s = build();
       if (s) drawShape(g, s);
     },

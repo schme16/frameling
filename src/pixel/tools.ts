@@ -5,7 +5,7 @@
  * a palette-locked layer (both handled by PixelSession).
  */
 import { findLayer } from '../core/doc';
-import type { PixelLayer } from '../core/format';
+import type { PathShape, PixelLayer, SubPath } from '../core/format';
 import { registerCommand, registerTool, type Tool, type ToolContext, type ToolPointer } from '../core/registry';
 import { store } from '../core/store';
 import { parseHex } from '../canvas/colors';
@@ -20,7 +20,8 @@ import { getToolSettings } from '../tools/settings';
 import { reportEdit } from '../tools/util';
 import { ditherInk, shadeInk, solidInk, type Ink } from './ink';
 import { docPalette } from './palette';
-import { dragBox, plotEllipse, plotLine, plotRect, plotRectInside, snapCleanLine } from './raster';
+import { dragBox, plotEllipse, plotLine, plotPolygon, plotRect, plotRectInside, snapCleanLine } from './raster';
+import { flattenSubPath } from '../geometry/hit';
 import { getPixelSettings } from './settings';
 import { DitherOptions, PixelPencilOptions, ShadeOptions } from './ToolOptions';
 
@@ -332,6 +333,91 @@ export function makePixelShape(kind: PixelShapeKind, label: string) {
         const ui = store().get().ui;
         if (kind === 'line' || ui.strokeOn) noteColorUsed(ui.color);
         if (kind !== 'line' && ui.fillColor) noteColorUsed(ui.fillColor);
+      } else if (r !== 'nothing') reportEdit(ctx, r);
+      ctx.requestOverlay();
+    },
+    cancel(): void {
+      session?.discard();
+      session = null;
+      start = null;
+    },
+    overlay(g: CanvasRenderingContext2D, ctx: ToolContext): void {
+      if (session) return drawMirrorLines(g, ctx);
+      hoverFootprint(g, ctx, 1, null);
+    },
+  };
+}
+
+// ---------------------------------------------------------------- pen, polygon and star on a pixel layer
+
+/**
+ * Paints outlines (in document units) as clean pixels: the fill colour inside closed ones, the stroke colour round
+ * the edge. With no stroke the fill covers the edge too, like the pixel rectangle. Curves are cut into short lines.
+ */
+export function paintPixelPaths(session: PixelSession, paths: SubPath[], colors: { fill: string | null; stroke: string | null }): void {
+  const fill = colors.fill ? parseHex(colors.fill) : null;
+  const stroke = colors.stroke ? parseHex(colors.stroke) : null;
+  const fi = fill ? session.lock(solidInk(fill)) : null;
+  const si = stroke ? session.lock(solidInk(stroke)) : null;
+  const edge = si ?? fi;
+  if (!edge) return;
+  const ps = session.pixelSize;
+  for (const sp of paths) {
+    const flat = flattenSubPath(sp);
+    const pts: { x: number; y: number }[] = [];
+    for (let i = 0; i < flat.length; i += 2) pts.push({ x: flat[i] / ps, y: flat[i + 1] / ps });
+    plotPolygon(pts, sp.closed, (x, y) => session.paint(x, y, edge), fi && sp.closed ? (x, y) => session.paint(x, y, fi) : undefined);
+  }
+}
+
+/** Puts a finished vector shape onto the pixel layer as pixels, one undo step. Used by the pen. */
+export function commitPixelPath(shape: PathShape, label: string, ctx: ToolContext): void {
+  const layer = activePixelLayer();
+  if (!layer) return;
+  const { doc, ui } = store().get();
+  const session = new PixelSession(doc, layer, ui.frame, { adds: true });
+  paintPixelPaths(session, shape.paths, { fill: shape.fill, stroke: shape.stroke?.color ?? null });
+  const r = session.commit(label);
+  if (r === 'ok') {
+    if (shape.fill) noteColorUsed(shape.fill);
+    if (shape.stroke) noteColorUsed(shape.stroke.color);
+  } else if (r !== 'nothing') reportEdit(ctx, r);
+}
+
+/** The handlers the polygon and star use on a pixel layer: `build` makes the vector shape for a drag. */
+export function makePixelPathShape(label: string, build: (a: { x: number; y: number }, e: ToolPointer) => PathShape | null) {
+  let session: PixelSession | null = null;
+  let start: { x: number; y: number } | null = null;
+  const draw = (e: ToolPointer) => {
+    if (!session || !start) return;
+    session.reset();
+    const shape = build(start, e);
+    if (shape) paintPixelPaths(session, shape.paths, { fill: shape.fill, stroke: shape.stroke?.color ?? null });
+    session.flush();
+  };
+  return {
+    active: () => !!session,
+    down(e: ToolPointer, ctx: ToolContext, layer: PixelLayer): void {
+      const { doc, ui } = store().get();
+      if (!ui.fillColor && !ui.strokeOn) return ctx.hint('Fill and stroke are both set to none, so the shape would be invisible. Pick a colour for one of them.');
+      session = new PixelSession(doc, layer, ui.frame, { adds: true });
+      start = { x: e.x, y: e.y };
+      draw(e);
+    },
+    move(e: ToolPointer): void {
+      draw(e);
+    },
+    up(e: ToolPointer, ctx: ToolContext): void {
+      draw(e);
+      const s = session;
+      session = null;
+      start = null;
+      if (!s) return;
+      const r = s.commit(`Draw ${label.toLowerCase()}`);
+      if (r === 'ok') {
+        const ui = store().get().ui;
+        if (ui.strokeOn) noteColorUsed(ui.color);
+        if (ui.fillColor) noteColorUsed(ui.fillColor);
       } else if (r !== 'nothing') reportEdit(ctx, r);
       ctx.requestOverlay();
     },

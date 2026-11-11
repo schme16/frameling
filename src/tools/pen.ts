@@ -11,6 +11,7 @@ import { registerTool, type Tool, type ToolContext, type ToolPointer } from '../
 import { drawShape, subPathsToPath2D } from '../core/render';
 import { store } from '../core/store';
 import { clearSnap, snapLineEnd, snapPt } from '../canvas/guides';
+import { activePixelLayer, commitPixelPath } from '../pixel/tools';
 import { dragHandles, fromAnchors, type Anchor, type P } from '../geometry/pen';
 import { addShapes } from './merge-mode';
 import { noteColorUsed } from './recent';
@@ -113,6 +114,8 @@ function finish(ctx: ToolContext, closed: boolean): void {
     ctx.hint('Fill and stroke are both set to none, so the shape would be invisible. Pick a colour for one of them.');
     return;
   }
+  // On a pixel layer the finished path is painted as clean pixels.
+  if (activePixelLayer()) return commitPixelPath(shape, closed ? 'Draw with the pen' : 'Draw a pen line', ctx);
   const s = withWellGradients(shape);
   const r = addShapes(closed ? 'Draw with the pen' : 'Draw a pen line', [s]).result;
   if (r === 'ok') {
@@ -138,13 +141,13 @@ export const penTool: Tool = {
   label: 'Pen',
   icon: 'pen',
   key: 'Shift+P',
-  layers: ['vector'],
+  layers: ['vector', 'pixel'],
   order: 65,
   help: 'tool-pen',
   cursor: 'crosshair',
   options: PenOptions,
   down(e, ctx) {
-    if (!path && !canEdit(ctx, 'vector', 'The pen')) return;
+    if (!path && !canEdit(ctx, activePixelLayer() ? 'pixel' : 'vector', 'The pen')) return;
     const double = e.time - lastUp.time < DOUBLE_MS && Math.hypot(e.x - lastUp.x, e.y - lastUp.y) * ctx.zoom <= GRAB_PX;
     if (path && nearFirst(e, ctx.zoom)) {
       path.closing = true;

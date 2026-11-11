@@ -25,7 +25,7 @@ registerHelpTopics([
 
 Got a point slightly wrong? Finish, then fix it with [Edit points](help:tool-points) (**A**).
 
-The pen works on vector layers, in both drawing modes. On a layer set to merge, the new shape joins or cuts what it lands on, like any other. See [Merge shapes or keep them separate](help:merge-drawing).`,
+The pen works on vector layers, in both drawing modes. On a **pixel layer** it works too: when you finish, the path is painted as clean pixels, the fill inside a closed shape and a one pixel edge in the stroke colour. On a layer set to merge, the new shape joins or cuts what it lands on, like any other. See [Merge shapes or keep them separate](help:merge-drawing).`,
   },
   {
     id: 'tool-points',
@@ -62,6 +62,8 @@ Each drag is one step to undo.`,
 - Hold **Alt** to draw from the middle.
 - In the options, set the number of **Sides** (3 makes a triangle, 6 a hexagon), or for a star the number of **Points** and the **Dip depth**: how far in the dips between the points go.
 
-The inside uses the **fill** colour and the edge the **stroke** colour, like the [Rectangle](help:tool-rect). Gradients work too. To reshape one afterwards, use [Edit points](help:tool-points) (**A**).`,
+The inside uses the **fill** colour and the edge the **stroke** colour, like the [Rectangle](help:tool-rect). Gradients work too. To reshape one afterwards, use [Edit points](help:tool-points) (**A**).
+
+On a **pixel layer** they're painted as clean pixels: solid colour inside, a one pixel edge in the stroke colour, no blurry edges. With the stroke set to none the fill covers the edge too.`,
   },
 ]);
