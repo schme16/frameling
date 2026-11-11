@@ -12,7 +12,7 @@
 //
 //   outDir               where outputs and the report go (default: a fresh folder under the system temp dir)
 //   --only=gif,mp4       only these formats (mp4 webm gif apng png pngseq svg sheet interactives)
-//   --templates=a,b      only these templates (bouncing-ball hero-sprites blank-vector blank-pixel bouncing-logo stress)
+//   --templates=a,b      only these templates (bouncing-ball hero-sprites blank-vector blank-pixel bouncing-logo stress kitchen-sink)
 //   --skip=files         skip a part: files (save/open/autosave/close), godot
 //   --show               leave the window visible (needs a real display)
 //   GODOT_BIN=/path/to/godot-4-editor    also loads the sprite sheet files in Godot
@@ -32,7 +32,7 @@ const argv = process.argv.slice(2).filter((a) => !a.endsWith('export.cjs'));
 const flag = (n) => argv.find((a) => a.startsWith(`--${n}=`))?.split('=')[1]?.split(',');
 const outDir = path.resolve(argv.find((a) => !a.startsWith('--')) ?? fs.mkdtempSync(path.join(os.tmpdir(), 'frameling-e2e-')));
 const ONLY = flag('only');
-const TEMPLATES = flag('templates') ?? ['bouncing-ball', 'hero-sprites', 'blank-vector', 'blank-pixel', 'bouncing-logo', 'stress'];
+const TEMPLATES = flag('templates') ?? ['bouncing-ball', 'hero-sprites', 'blank-vector', 'blank-pixel', 'bouncing-logo', 'stress', 'kitchen-sink'];
 const SKIP = flag('skip') ?? [];
 const GODOT = process.env.GODOT_BIN;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -113,7 +113,8 @@ const ev = (js) => win.webContents.executeJavaScript(js, true);
 const X = (call) => ev(`window.__framelingExport.${call}`);
 const IO = (call) => ev(`window.__framelingIo.${call}`);
 
-const loadTpl = (tpl) => X(tpl === 'stress' ? 'loadStress()' : `load(${JSON.stringify(tpl)})`);
+// stress and kitchen-sink are fixtures, not templates people see (src/export/debug.ts, src/export/kitchenSink.ts).
+const loadTpl = (tpl) => X(tpl === 'stress' ? 'loadStress()' : tpl === 'kitchen-sink' ? 'loadKitchenSink()' : `load(${JSON.stringify(tpl)})`);
 
 function setAutomationDir(d) {
   fs.mkdirSync(d, { recursive: true });
