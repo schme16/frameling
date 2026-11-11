@@ -42,6 +42,7 @@ import { getSelectSettings } from '../select/settings';
 import { drawLasso, lassoClosesAt, lassoPoint } from '../select/lasso';
 import { subPathsToPath2D } from '../core/render';
 import { clearSnap, snapMove, snapPt } from '../canvas/guides';
+import { lockedLayerAt } from '../canvas/lost';
 
 /** How far off (screen pixels) a click can be and still hit a thin line. */
 const HIT_TOL = 5;
@@ -202,6 +203,12 @@ function down(e: ToolPointer, ctx: ToolContext): void {
     return;
   }
   if (!e.shift) setSelection([]);
+  if (!e.shift && !cut) {
+    // Clicked something you can see but can't pick: say it's on a locked layer instead of doing nothing.
+    const { doc, ui } = store().get();
+    const locked = lockedLayerAt(doc, ui.frame, e.x, e.y, layer.id, (shapes, x, y) => topShapeAt(shapes, x, y, HIT_TOL / ctx.zoom));
+    if (locked) ctx.hint(`That's on "${locked.name}", which is locked. Unlock it in the timeline to select it.`);
+  }
   if (cut) setCut(null);
   const lasso = getSelectSettings().mode === 'lasso' ? [{ x: e.x, y: e.y }] : null;
   g = { ...base, drawing: d, mode: 'marquee', originals: [], handle: null, base: e.shift ? selectedIds() : [], lasso };

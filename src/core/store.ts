@@ -27,6 +27,8 @@ export interface OnionSettings {
   afterColor: Color;
   /** Tint the onion frames (true) or show them in their own colours (false). */
   tint: boolean;
+  /** Count keys instead of frames, so held frames are skipped (missing = no). */
+  keysOnly?: boolean;
 }
 
 export interface UiState {
@@ -46,7 +48,14 @@ export interface UiState {
   brush: BrushSettings;
   playing: boolean;
   loopPlayback: boolean;
+  /** Play forward then backward (ping-pong) instead of jumping back to the start (missing = no). */
+  pingPong?: boolean;
   onion: OnionSettings;
+  /**
+   * The light table: a frame (or one layer's drawing on it) shown faintly on every frame, to trace over. Not the
+   * onion skin: it stays put while you move around. Missing or null = off.
+   */
+  lightTable?: { frame: number; layerId?: Id; opacity: number } | null;
   /** Viewport: zoom (1 = 100%) and pan (screen pixels of the stage's top-left). */
   zoom: number;
   panX: number;

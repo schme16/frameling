@@ -23,6 +23,7 @@ import { CarryNotes } from './CarryNotes';
 import { DEFAULT_SHEET, engineInfo, FORMATS, formatInfo, normalizeSheet, splitFormats, type EngineId, type ExportSettings, type FormatId, type FormatInfo } from './types';
 import './export.css';
 import { leaveTileEdit } from '../tiles/tileEdit';
+import { inOutRange } from '../timeline/inout';
 import { docDpi, formatSize } from '../core/units';
 import { usePrefs } from '../ui/prefs';
 import { templateExport } from '../templates/setup';
@@ -41,6 +42,7 @@ function startingSettings(): ExportSettings {
     s.range = 'all';
     s.clipId = null;
   }
+  if (s.range === 'inOut' && !inOutRange(doc)) s.range = 'all';
   if (!scaleAllowed(doc, s.scale)) s.scale = base.scale;
   return s;
 }
@@ -155,6 +157,7 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
   const printed = units === 'px' ? '' : `, ${formatSize(plan.width, plan.height, units, outDpi)} at ${outDpi} DPI`;
   const summary = `${frames} frame${frames === 1 ? '' : 's'}, ${plan.width} × ${plan.height} px${printed}`;
   const noClips = doc.clips.length === 0;
+  const io = inOutRange(doc);
   // Only for the top level: inside a symbol the length is the symbol's.
   const drawn = open === doc ? drawnFrames(doc) : null;
 
@@ -310,6 +313,11 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
                 <button type="button" className={s.range === 'clip' ? 'ex-on' : ''} aria-pressed={s.range === 'clip'} disabled={noClips} title={noClips ? 'No clips yet. Make one in the timeline.' : undefined} onClick={() => set({ range: 'clip', clipId: s.clipId ?? doc.clips[0]?.id ?? null })}>
                   A clip
                 </button>
+                {io ? (
+                  <button type="button" className={s.range === 'inOut' ? 'ex-on' : ''} aria-pressed={s.range === 'inOut'} title={`The play range you set on the timeline: frames ${io.start + 1} to ${io.end + 1}`} onClick={() => set({ range: 'inOut' })}>
+                    Play range
+                  </button>
+                ) : null}
                 <button type="button" className={s.range === 'frame' ? 'ex-on' : ''} aria-pressed={s.range === 'frame'} disabled={video} title={video ? 'A video needs more than one frame.' : undefined} onClick={() => set({ range: 'frame' })}>
                   This frame
                 </button>
@@ -322,6 +330,7 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
                   </button>
                 </p>
               )}
+              {s.range === 'inOut' && io && <p className="ex-note">Frames {io.start + 1} to {io.end + 1}: the play range you set on the timeline.</p>}
               {s.range === 'clip' && !noClips && (
                 <select aria-label="Clip" value={s.clipId ?? ''} onChange={(e) => set({ clipId: e.target.value })}>
                   {doc.clips.map((c) => (

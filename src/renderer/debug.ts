@@ -21,11 +21,27 @@ import { showPanel } from '../ui/dock';
 import { BUILT_IN_THEMES } from '../ui/themes/builtIn';
 import { toast } from '../ui/toast';
 import { recovery } from '../io/recovery';
+import { setViewSettings } from '../canvas/viewSettings';
+import { setGridLook } from '../canvas/gridView';
+import { setLightTableTint } from '../canvas/lightTable';
+import { offerTweenAt } from '../timeline/tweenOffer';
 
 if (new URLSearchParams(location.search).has('debug')) {
   (window as unknown as { __frameling: unknown }).__frameling = {
     store,
     run: (id: string) => getCommand(id)?.run(),
+    // Grids, light table and the tween offer, for their help shots and A/Bs.
+    anim: {
+      view: setViewSettings,
+      gridLook: setGridLook,
+      lightTableTint: setLightTableTint,
+      offerTween: (layerName: string, frame: number) => {
+        const { doc } = store().get();
+        const layer = doc.layers.find((l) => l.name === layerName);
+        if (layer) store().setUi({ activeLayerId: layer.id, frame });
+        return layer ? !!offerTweenAt(store().get().doc, layer, frame) : false;
+      },
+    },
     // Opens a starter template by id (for shots of a known document).
     template: (id: string) => {
       const t = findTemplate(id);

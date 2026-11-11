@@ -192,3 +192,32 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Grid and perspective settings. */
+.gs-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 420px;
+}
+.gs-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.gs-label {
+  min-width: 84px;
+  font-weight: 700;
+}
+.gs-rule {
+  width: 100%;
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin: 2px 0;
+}
+@media (max-width: 520px) {
+  .gs-body {
+    min-width: 0;
+  }
+}

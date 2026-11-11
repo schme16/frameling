@@ -128,7 +128,7 @@ export async function exportDocument(settings: ExportSettings, signal: AbortSign
       throw new ExportProblem(e instanceof Error ? e.message : String(e));
     }
     saveLastSettings(settings);
-    notify(`Exported ${baseName(target)}.`, 'success', can('showInFolder') ? { label: 'Show in folder', run: () => void api.files.showInFolder(target!) } : undefined, 9000, 'cheer');
+    notify(`Exported ${baseName(target)}.`, 'success', can('showInFolder') ? { label: 'Show in folder', run: () => void api.files.showInFolder(target!) } : undefined, 9000, 'cheer', 'exported');
     return 'done';
   }
 
@@ -153,6 +153,6 @@ export async function exportDocument(settings: ExportSettings, signal: AbortSign
   }
   saveLastSettings(picked);
   const note = result.kind === 'file' ? result.note : undefined;
-  notify(`Exported ${baseName(shown)}.${note ? ` ${note}` : ''}`, note ? 'warn' : 'success', can('showInFolder') ? { label: 'Show in folder', run: () => void api.files.showInFolder(shown) } : undefined, 9000, 'cheer');
+  notify(`Exported ${baseName(shown)}.${note ? ` ${note}` : ''}`, note ? 'warn' : 'success', can('showInFolder') ? { label: 'Show in folder', run: () => void api.files.showInFolder(shown) } : undefined, 9000, 'cheer', 'exported');
   return 'done';
 }

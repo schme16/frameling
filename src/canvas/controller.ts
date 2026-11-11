@@ -184,6 +184,29 @@ export function getStageOverlays(): readonly StageOverlay[] {
   return stageOverlays;
 }
 
+// ---------------------------------------------------------------- handles on the canvas that aren't a tool's
+
+/**
+ * Something on the canvas you can grab whatever tool is picked (a vanishing point). `hit` is asked on hover and on
+ * press, in stage pixels; the first one that says yes gets the drag instead of the tool.
+ */
+export interface CanvasGrab {
+  hit(p: Pt, zoom: number): boolean;
+  cursor?: string;
+  down(p: Pt): void;
+  move(p: Pt, shift: boolean): void;
+  up(p: Pt): void;
+  cancel?(): void;
+}
+const grabs: CanvasGrab[] = [];
+
+export function addCanvasGrab(g: CanvasGrab): void {
+  if (!grabs.includes(g)) grabs.push(g);
+}
+export function grabAt(p: Pt, zoom: number): CanvasGrab | null {
+  return grabs.find((g) => g.hit(p, zoom)) ?? null;
+}
+
 // ---------------------------------------------------------------- pointer extras
 
 let hover: Pt | null = null;

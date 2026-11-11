@@ -1,7 +1,8 @@
 // What the export dialog collects, and what the exporters take.
 
 export type FormatId = 'mp4' | 'webm' | 'gif' | 'apng' | 'png' | 'pngseq' | 'svg' | 'sheet' | 'interactives' | 'lottie' | 'svganim' | 'pdf' | 'ai' | 'psd' | 'prores';
-export type RangeKind = 'all' | 'clip' | 'frame';
+/** 'inOut' is the play range set on the timeline (see Doc.inOut). */
+export type RangeKind = 'all' | 'clip' | 'frame' | 'inOut';
 
 export interface SheetSettings {
   /** 0 picks a roughly square layout. */
