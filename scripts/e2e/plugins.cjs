@@ -4,6 +4,9 @@
 //   npm run build
 //   xvfb-run -a npx electron scripts/e2e/plugins.cjs
 //
+// The web build: `npm run build:web && npm run preview:web`, then PLUGINS_URL=http://localhost:5198/ the same command
+// (no desktop bridge: the page builds its own, and plugins are kept in IndexedDB).
+//
 // Exits non-zero when anything fails.
 const { app, BrowserWindow, ipcMain } = require('electron');
 const fs = require('node:fs');
@@ -48,12 +51,14 @@ app.whenReady().then(async () => {
   for (const ch of ['recent:list', 'autosave:listKept', 'library:list']) ipcMain.handle(ch, () => []);
   for (const ch of ['autosave:write', 'autosave:clear', 'autosave:keep', 'autosave:removeKept', 'recent:add', 'recent:remove', 'recent:clear', 'library:write', 'library:remove']) ipcMain.handle(ch, () => true);
   for (const ch of ['app:documentState', 'app:keepUnsavedDone', 'app:saveBeforeCloseDone']) ipcMain.on(ch, () => {});
-  const win = new BrowserWindow({ show: false, width: 1200, height: 800, webPreferences: { preload: path.join(root, 'dist/preload/preload.cjs'), contextIsolation: true, sandbox: true, backgroundThrottling: false } });
+  const web = process.env.PLUGINS_URL;
+  const win = new BrowserWindow({ show: false, width: 1200, height: 800, webPreferences: { ...(web ? {} : { preload: path.join(root, 'dist/preload/preload.cjs') }), contextIsolation: true, sandbox: true, backgroundThrottling: false } });
   const errors = [];
   win.webContents.on('console-message', (e) => {
     if (e.level === 'error' || e.level === 3) errors.push(String(e.message ?? e));
   });
-  await win.loadFile(path.join(root, 'dist/renderer/index.html'), { query: { debug: '1' } });
+  if (web) await win.loadURL(`${web}${web.includes('?') ? '&' : '?'}debug=1`);
+  else await win.loadFile(path.join(root, 'dist/renderer/index.html'), { query: { debug: '1' } });
   await sleep(800);
   const js = (code) => win.webContents.executeJavaScript(code);
 

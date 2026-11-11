@@ -130,4 +130,45 @@ Already drew the line with the brush or pencil? Select it and choose **Follow th
 
 **Straight line again** removes the path.`,
   },
+  {
+    id: 'shape-tweens',
+    title: 'Morph between shapes (shape tweens)',
+    section: 'Animating',
+    media: 'shape-tweens.mp4',
+    summary: "Draw one shape on a key and a different one on the next, and Frameling melts the first into the second: outlines, colours and line widths.",
+    keywords: ['shape tween', 'morph', 'blend', 'metamorphosis', 'transform shape', 'Ctrl+Shift+M', 'inbetween'],
+    body: `**Morphing** turns one drawing into another: a square into a circle, a closed eye into an open one, a puddle into a splash. Animators call it a *shape tween*.
+
+1. Draw the first shape and hold it for a few frames.
+2. Press **Ctrl+Shift+M** (or **Animate > Morph between shapes**, or **Morph between shapes** in the **Symbol and motion** panel).
+3. Frameling makes an end key and takes you there. Change the drawing: reshape it, recolour it, or rub it out and draw something new.
+4. Press play.
+
+What melts: outlines and holes, fill colours (and see-through), line colours and widths, and brush strokes. Shapes pair up in the order you drew them. A shape with no partner shrinks away (or grows in from nothing), so a different number of pieces still works.
+
+Shapes stay plain shapes. Symbols on the same key glide like ordinary [in-betweens](help:tweens). Easing, extra spins and paths work as usual.
+
+**Move or Morph:** the **How it changes** switch in the panel flips any in-betweens between the two. The first time you make in-betweens on a plain drawing, Frameling asks which you'd like (change it later in **Preferences > Behaviour**).
+
+If the morph twists, crumples or turns inside out, add [shape hints](help:shape-hints).`,
+  },
+  {
+    id: 'shape-hints',
+    title: 'Shape hints: fixing a twisty morph',
+    section: 'Animating',
+    media: 'shape-hints.png',
+    summary: 'Pin a point of the first drawing to a point of the last one with lettered markers, so a morph goes the way you mean.',
+    keywords: ['shape hint', 'hints', 'morph', 'shape tween', 'twist', 'match points', 'correspondence'],
+    body: `Frameling matches the two outlines of a [morph](help:shape-tweens) by itself, picking the shortest way for every point. When that isn't what you meant (a face turns inside out, a letter twists), **shape hints** tell it which point goes where.
+
+1. Put the playhead on the morph's **first key** and choose **Add shape hints** in the **Symbol and motion** panel (the **Shape hints** tool).
+2. Click on the outline where a point should start. A gold marker **a** appears. Add more: **b**, **c**...
+3. Press **Place them on the last key**. The same letters show there in mint green. Drag each one to where that point should end up.
+4. Play it. The outline between two hints is matched on its own, so each stretch goes where you said.
+
+Tips:
+- Go round the shape in the same direction on both keys (a, b, c clockwise on both). Hints that cross over each other are left out.
+- Two or three hints usually do it. Put them on corners and tips.
+- **Alt-click** a marker to remove it, or **Remove all hints** in the panel.`,
+  },
 ]);

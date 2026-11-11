@@ -29,9 +29,11 @@ export function cloneDrawing(d: Drawing): Drawing {
   const src = plain(d);
   if (src.kind === 'pixel') return { ...src, id: uid('p'), pixels: new Uint8ClampedArray(src.pixels) };
   if (src.kind === 'tilemap') return { ...src, id: uid('t'), cells: new Uint32Array(src.cells) };
+  if (src.kind === 'camera') return { id: uid('k'), kind: 'camera', view: { ...src.view } };
   const shapes = structuredClone(src.shapes) as Shape[];
   for (const s of shapes) s.id = uid('s');
-  return { id: uid('v'), kind: 'vector', shapes };
+  // A bones layer's key keeps its pose.
+  return { id: uid('v'), kind: 'vector', shapes, ...(src.pose ? { pose: JSON.parse(JSON.stringify(src.pose)) } : {}) };
 }
 
 /** Makes sure the document is at least `frames` long. */
@@ -95,6 +97,8 @@ function nextKeyStart(layer: Layer, frame: number): number | undefined {
 export function newBlankKey(doc: Doc, layerId: Id, frame: number, copy = false): Id | null {
   const layer = findLayer(doc, layerId);
   if (!layer || frame < 0) return null;
+  // A blank camera key would jump back to the plain view; carry on from where it was instead.
+  if (layer.kind === 'camera') copy = true;
   const cel = celAt(layer, frame);
   const make = (src?: Drawing): Drawing => {
     const d = copy && src ? cloneDrawing(src) : newDrawingFor(doc, layer);

@@ -8,7 +8,8 @@ import { UNITS, type Unit } from '../../core/units';
 import { askAboutUnsavedChanges } from '../../io/document';
 import { applyWorkspace } from '../dock';
 import { Icon } from '../icons';
-import { Quill, useQuillShown, type Script } from '../mascot';
+import { line, lineParts, lines } from '../mascot/lines';
+import { goodbyeScript, GOODBYE_WORDS, Quill, useQuillShown, welcomeBackScript, WELCOME_BACK_WORDS, type Script } from '../mascot';
 import { Modal } from '../Modal';
 import { closeOnboarding, openHelp, openSheet, overlays } from '../overlays';
 import { getPrefs, setPrefs, setThemePreview, usePrefs, type LookPref, type ThemePref } from '../prefs';
@@ -41,7 +42,10 @@ const TITLES: Record<StepId, string> = {
 
 function Flow() {
   const [s, dispatch] = useReducer(reduceFlow, undefined, () => startFlow(sillyName()));
-  const quill = useQuillShown();
+  // Show Quill switched on the settings step: a sad goodbye (he stays on screen until it's done), or a cheer.
+  const [mood, setMood] = useState<{ kind: 'bye' | 'back'; n: number; playing: boolean } | null>(null);
+  const byePlaying = mood?.kind === 'bye' && mood.playing;
+  const quill = useQuillShown(byePlaying);
   const [dozing, setDozing] = useState<'awake' | 'asleep' | 'woke'>('awake');
   const [beat, setBeat] = useState(0);
   const p = usePrefs((x) => x);
@@ -64,7 +68,12 @@ function Flow() {
     lastPoke.current = Date.now();
     setDozing('awake');
     setBeat((b) => b + 1);
+    setMood(null);
   }, [s.step]);
+  const quillSwitched = (on: boolean) => {
+    setPrefs({ showQuill: on });
+    setMood((m) => ({ kind: on ? 'back' : 'bye', n: (m?.n ?? 0) + 1, playing: true }));
+  };
 
   // Leaving the theme step (or the flow) drops any peek, so the real pick shows.
   useEffect(() => {
@@ -77,7 +86,7 @@ function Flow() {
     setThemePreview(null);
     closeOnboarding();
     if (how === 'skipped') {
-      toast('No problem! Say hi again any time from Help > Meet Quill again.', { kind: 'info' });
+      toast(line('onboarding.skipped'), { kind: 'info' });
       if (firstRun && getPrefs().showWelcome) openSheet('welcome');
     }
     firstRun = false;
@@ -94,13 +103,13 @@ function Flow() {
       const doc = t.make();
       doc.name = name;
       store().load(doc);
-      toast(`${name} is ready. Have fun!`, { kind: 'success' });
+      toast(line('onboarding.ready', { name }), { kind: 'success' });
     } else if (go === 'quest') {
       renameWhenReady(name);
       startQuest(plan.quest);
     } else {
       renameWhenReady(name);
-      toast(`${name} is ready. Have fun!`, { kind: 'success' });
+      toast(line('onboarding.ready', { name }), { kind: 'success' });
     }
   };
 
@@ -108,22 +117,35 @@ function Flow() {
   const pickedTheme = (mode: 'dark' | 'light') => themes.find((t) => t.id === (mode === 'dark' ? p.darkTheme : p.lightTheme));
   const loved = [pickedTheme('dark'), pickedTheme('light')].find((t) => isStrawberry(t));
   const lovesIt = !!loved;
-  // Layout B is only for the A/B picture: a smaller card with a smaller Quill.
-  const layoutB = document.documentElement.dataset.obLayout === 'b';
 
   const say = sayFor(s, { strawberryName: loved?.name ?? strawberry.light?.name ?? strawberry.dark?.name ?? 'Strawberry', lovesIt, quillOn: p.showQuill, name: s.name, plan });
-  const anim: Script =
-    dozing === 'asleep' ? 'sleep' : dozing === 'woke' ? [{ anim: 'oops' }, { anim: 'idle' }] : animFor(s, lovesIt, beat);
-  const words = dozing === 'asleep' ? ['Zzz...'] : dozing === 'woke' ? ['Oh! Sorry, I nodded off. Take all the time you need.', ...say] : say;
+  const anim: Script = mood
+    ? mood.kind === 'bye'
+      ? goodbyeScript()
+      : welcomeBackScript()
+    : dozing === 'asleep'
+      ? 'sleep'
+      : dozing === 'woke'
+        ? [{ anim: 'oops' }, { anim: 'idle' }]
+        : animFor(s, lovesIt, beat);
+  const words = mood
+    ? mood.kind === 'bye'
+      ? GOODBYE_WORDS.long
+      : [WELCOME_BACK_WORDS]
+    : dozing === 'asleep'
+      ? lines('onboarding.doze.asleep')
+      : dozing === 'woke'
+        ? [...lines('onboarding.doze.woke'), ...say]
+        : say;
 
   const i = stepIndex(s.step);
   const last = s.step === 'done';
 
   return (
-    <Modal title={`Welcome to Frameling: ${TITLES[s.step]}`} size="lg" hideHeader className={`ob ${layoutB ? 'ob-b' : 'ob-a'}`} onClose={() => end('skipped')} initialFocus=".ob-next, .ob-go">
+    <Modal title={`Welcome to Frameling: ${TITLES[s.step]}`} size="lg" hideHeader className="ob ob-a" onClose={() => end('skipped')} initialFocus=".ob-next, .ob-go">
       <div className="ob-body" onPointerDown={poke} onKeyDown={poke}>
         <aside className={`ob-quill${quill ? '' : ' is-alone'}`}>
-          <div className="ob-bubbles" aria-live="polite" key={`${s.step}-${dozing}`}>
+          <div className="ob-bubbles" aria-live="polite" key={`${s.step}-${dozing}-${mood?.n ?? 0}`}>
             {words.map((w, n) => (
               <p key={n} className="ob-bubble" style={{ animationDelay: `${n * 450}ms` }}>
                 {w}
@@ -132,7 +154,12 @@ function Flow() {
           </div>
           {quill && (
             <div className="ob-quill-stand">
-              <Quill anim={anim} size={layoutB ? 96 : 192} />
+              <Quill
+                anim={anim}
+                size={192}
+                force={byePlaying}
+                onDone={byePlaying ? () => setMood((m) => m && { ...m, playing: false }) : undefined}
+              />
               {lovesIt && s.step === 'themes' && <Berry />}
             </div>
           )}
@@ -144,7 +171,7 @@ function Flow() {
             {s.step === 'hello' && <Hello />}
             {s.step === 'make' && <Make s={s} toggle={(interest) => dispatch({ type: 'toggle', interest })} />}
             {s.step === 'themes' && <Themes themes={themes} strawberry={strawberry} />}
-            {s.step === 'prefs' && <Settings />}
+            {s.step === 'prefs' && <Settings onQuill={quillSwitched} />}
             {s.step === 'name' && <Name name={s.name} setName={(name) => dispatch({ type: 'name', name })} next={() => dispatch({ type: 'next' })} />}
             {s.step === 'done' && <Done s={s} plan={plan} go={(g) => void finish(g)} />}
           </div>
@@ -204,23 +231,17 @@ function renameWhenReady(name: string) {
 function sayFor(s: FlowState, o: { strawberryName: string; lovesIt: boolean; quillOn: boolean; name: string; plan: ReturnType<typeof planFor> }): string[] {
   switch (s.step) {
     case 'hello':
-      return [
-        "Hi! I'm Quill. Welcome to Frameling!",
-        'Here you draw things and make them move. Frame by frame, or let tweens fill in the middle bits.',
-        'Smooth vector art or chunky pixel art. Cartoons, game sprites, stickers, explainers, bits for Interactives...',
-        "If it wiggles, we can make it. It's easy, and it's fun. Promise!",
-      ];
+      return lines('onboarding.hello');
     case 'make':
       return [makeReaction(s)];
     case 'themes':
-      if (o.lovesIt) return [`You picked ${o.strawberryName}! My favourite! Best. Day. Ever.`, 'Look at those little seeds. I could hug this whole screen.'];
-      return [`My favourite is ${o.strawberryName}. Pink, cream and tiny yellow seeds. Mmm, I could look at it all day!`, "But it's your studio. Pick whatever makes you happy, I won't mind. (Much.)"];
+      return lines(o.lovesIt ? 'onboarding.themes.loved' : 'onboarding.themes.hint', { theme: o.strawberryName });
     case 'prefs':
-      return o.quillOn ? ['Just a few handy bits. You can change any of them later in Preferences.'] : ["Okay! I'll be very quiet. Hidden, even. My words will still pop up here."];
+      return lines(o.quillOn ? 'onboarding.prefs.on' : 'onboarding.prefs.off');
     case 'name':
-      return ['Every masterpiece needs a name.', 'Or a silly one. Silly is good. Roll the dice!'];
+      return lines('onboarding.name');
     case 'done':
-      return [`Hooray! ${o.name.trim() || 'Your animation'} is going to be brilliant.`, "Pick how you'd like to start. I'll be in Help if you need me!"];
+      return lines('onboarding.done', { name: o.name.trim() || line('onboarding.done.noName') });
   }
 }
 
@@ -289,7 +310,7 @@ function Hello() {
 function Make({ s, toggle }: { s: FlowState; toggle: (i: (typeof INTERESTS)[number]['id']) => void }) {
   return (
     <>
-      <p className="ob-lead">Pick as many as you like. Quill will set things up to suit.</p>
+      <p className="ob-lead">{line('onboarding.make.lead')}</p>
       <div className="ob-cards" role="group" aria-label="What would you like to make?">
         {INTERESTS.map((x, n) => {
           const on = s.interests.includes(x.id);
@@ -317,8 +338,10 @@ function Themes({ themes, strawberry }: { themes: Theme[]; strawberry: { dark: T
   };
   const row = (mode: 'dark' | 'light') => {
     const chosen = mode === 'dark' ? p.darkTheme : p.lightTheme;
+    // With Light or Dark picked, the other row isn't used, so it steps back (still pickable for later).
+    const unused = p.theme !== 'system' && p.theme !== mode;
     return (
-      <div className="ob-theme-row">
+      <div className={`ob-theme-row${unused ? ' is-unused' : ''}`}>
         <h3>
           <Icon name={mode === 'dark' ? 'moon' : 'sun'} size={14} />
           {mode === 'dark' ? 'For dark mode' : 'For light mode'}
@@ -336,7 +359,7 @@ function Themes({ themes, strawberry }: { themes: Theme[]; strawberry: { dark: T
                     {fav && (
                       <span className="ob-fav">
                         <Icon name="heart" size={11} />
-                        Quill's favourite
+                        {line('onboarding.themes.favourite')}
                       </span>
                     )}
                   </span>
@@ -349,17 +372,18 @@ function Themes({ themes, strawberry }: { themes: Theme[]; strawberry: { dark: T
   };
   return (
     <>
-      <div className="ob-row">
-        <span>Mode</span>
+      <div className="ob-mode">
+        <h3>Light or dark?</h3>
+        <p>{p.theme === 'system' ? 'Auto follows your computer: light in the day, dark at night if it switches.' : p.theme === 'dark' ? 'Always dark, whatever your computer does.' : 'Always light, whatever your computer does.'}</p>
         <Segmented<ThemePref>
-          label="Mode"
+          label="Light or dark"
           value={p.theme}
           onChange={(theme) => {
             setThemePreview(null);
             setPrefs({ theme });
           }}
           options={[
-            { id: 'system', label: 'System', icon: 'settings' },
+            { id: 'system', label: 'Auto', icon: 'settings' },
             { id: 'dark', label: 'Dark', icon: 'moon' },
             { id: 'light', label: 'Light', icon: 'sun' },
           ]}
@@ -383,7 +407,7 @@ function Setting({ label, hint, children }: { label: string; hint: string; child
   );
 }
 
-function Settings() {
+function Settings({ onQuill }: { onQuill: (on: boolean) => void }) {
   const p = usePrefs((x) => x);
   const [wheel, setWheel] = useState(() => currentChoice<'zoom' | 'scroll'>('canvas.wheel'));
   return (
@@ -422,8 +446,8 @@ function Settings() {
       <Setting label="Reduce motion" hint="Stops the bouncing and fading.">
         <Switch label="Reduce motion" on={p.reduceMotion} onChange={(reduceMotion) => setPrefs({ reduceMotion })} />
       </Setting>
-      <Setting label="Show Quill" hint="Off hides me everywhere. My words still show.">
-        <Switch label="Show Quill" on={p.showQuill} onChange={(showQuill) => setPrefs({ showQuill })} />
+      <Setting label="Show Quill" hint={line('onboarding.prefs.showQuill')}>
+        <Switch label="Show Quill" on={p.showQuill} onChange={onQuill} />
       </Setting>
     </div>
   );
@@ -491,7 +515,7 @@ function Done({ s, plan, go }: { s: FlowState; plan: ReturnType<typeof planFor>;
   return (
     <div className="ob-done">
       <p className="ob-lead">
-        I'll set up the <strong>{ws}</strong> workspace for you. Now, how shall we start <strong>{s.name.trim() || 'your animation'}</strong>?
+        {lineParts('onboarding.done.lead', { workspace: <strong key="ws">{ws}</strong>, name: <strong key="name">{s.name.trim() || line('onboarding.done.leadNoName')}</strong> })}
       </p>
       <div className="ob-go-list">
         {quest && (
@@ -500,7 +524,7 @@ function Done({ s, plan, go }: { s: FlowState; plan: ReturnType<typeof planFor>;
               <Icon name={quest.icon} size={24} />
             </span>
             <strong>Show me how</strong>
-            <span>{quest.title}, step by step with me.</span>
+            <span>{line('onboarding.done.quest', { quest: quest.title })}</span>
           </button>
         )}
         {templateName && (
@@ -509,7 +533,7 @@ function Done({ s, plan, go }: { s: FlowState; plan: ReturnType<typeof planFor>;
               <Icon name="film" size={24} />
             </span>
             <strong>Open an example</strong>
-            <span>{templateName}, ready to poke at and change.</span>
+            <span>{line('onboarding.done.example', { example: templateName })}</span>
           </button>
         )}
         <button type="button" className="ob-go" onClick={() => go('blank')}>
@@ -517,7 +541,7 @@ function Done({ s, plan, go }: { s: FlowState; plan: ReturnType<typeof planFor>;
             <Icon name="brush" size={24} />
           </span>
           <strong>Just a blank page</strong>
-          <span>Straight in. You know what you're doing.</span>
+          <span>{line('onboarding.done.blank')}</span>
         </button>
       </div>
       {help.length > 0 && (

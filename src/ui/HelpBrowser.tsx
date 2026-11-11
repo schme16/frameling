@@ -1,4 +1,5 @@
 // The help reader, used both in the Help panel (compact) and the big help window.
+import { line } from './mascot/lines';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { allHelp, getHelp } from '../core/registry';
 import { Icon } from './icons';
@@ -82,7 +83,7 @@ export function HelpBrowser({ compact = false, initial, onExpand }: { compact?: 
       ))}
       {!hits.length && (
         <QuillEmpty anim={[{ anim: 'think', hold: 2400 }, { anim: 'idle' }]} className="ui-help-empty">
-          Nothing found. Try another word.
+          {line('empty.help')}
         </QuillEmpty>
       )}
     </div>

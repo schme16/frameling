@@ -49,7 +49,7 @@ export function paintEditBackdrop(g: Ctx2D, doc: Doc, rect: Rect): void {
     bg.setTransform(rect.w / doc.width, 0, 0, rect.h / doc.height, rect.x, rect.y);
     const m = invert(editingMatrix(doc));
     bg.transform(m[0], m[1], m[2], m[3], m[4], m[5]);
-    renderFrame(bg, backdropDoc(doc), stack[0].frame, { background: false });
+    renderFrame(bg, backdropDoc(doc), stack[0].frame, { background: false, camera: false });
     cache = { doc, w: target.width, h: target.height, rect: key, canvas };
   }
   g.save();

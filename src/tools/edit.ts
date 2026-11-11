@@ -28,7 +28,7 @@ registerChoice<HeldFrameChoice>({
   help: 'timeline-frames',
 });
 
-export type EditResult = 'ok' | 'no-layer' | 'locked' | 'hidden' | 'wrong-kind';
+export type EditResult = 'ok' | 'no-layer' | 'locked' | 'hidden' | 'wrong-kind' | 'bones';
 
 /** Friendly words for why an edit didn't happen, for `ctx.hint`. */
 export const EDIT_HINTS: Record<Exclude<EditResult, 'ok'>, string> = {
@@ -36,6 +36,7 @@ export const EDIT_HINTS: Record<Exclude<EditResult, 'ok'>, string> = {
   locked: 'This layer is locked. Unlock it in the timeline to draw on it.',
   hidden: 'This layer is hidden. Show it in the timeline to draw on it.',
   'wrong-kind': "This tool doesn't work on this kind of layer.",
+  bones: 'This is the Bones layer: it holds the skeleton. Pick another layer to draw on.',
 };
 
 /** The active layer, and whether it can be drawn on. */
@@ -70,6 +71,7 @@ export function editActiveDrawing<K extends 'vector' | 'pixel' | 'tilemap'>(
   const { layer, problem } = activeLayer();
   if (problem || !layer) return problem ?? 'no-layer';
   if (layer.kind !== kind) return 'wrong-kind';
+  if (layer.kind === 'vector' && layer.rig) return 'bones';
   const frame = store().get().ui.frame;
   const held = celAt(layer, frame);
   const apply = (split: boolean) =>

@@ -7,9 +7,13 @@ import { makeBlankPixel, makeBlankVector } from './blank';
 import { makeBlink } from './blink';
 import { makeBouncingBall } from './bouncing-ball';
 import { makeBouncingLogo } from './bouncing-logo';
+import { makeCameraPan } from './camera-pan';
+import { makeMorph } from './morph';
 import { makeFlourSack } from './flour-sack';
 import { makeHeroSprite } from './hero-sprite';
+import { makeLipSync } from './lip-sync';
 import { makeSparkle } from './sparkle';
+import { makePuppet } from './puppet';
 import { makeTileset } from './tileset';
 
 export interface Template {
@@ -73,12 +77,44 @@ export const TEMPLATES: Template[] = [
     make: makeBouncingLogo,
   },
   {
+    id: 'morphing-shapes',
+    name: 'Morphing shapes',
+    blurb: 'A square melts into a circle, a star, then back, with shape tweens. Try it: go to frame 15 and redraw the circle as a heart, then press play.',
+    kind: 'vector',
+    thumbnail: () => 20,
+    make: makeMorph,
+  },
+  {
+    id: 'camera-parallax',
+    name: 'Camera and parallax',
+    blurb: 'A camera pans across a valley and zooms in on a house, with far hills drifting slower. Try it: press Shift+C to look through the camera, or give the Near hills a different distance in the Camera panel.',
+    kind: 'vector',
+    thumbnail: () => 20,
+    make: makeCameraPan,
+  },
+  {
+    id: 'puppet',
+    name: 'Paper doll puppet',
+    blurb: 'A cut-out character with bones and a walk made from four poses. Try it: pick the Pose tool (O), go to frame 6 and drag a hand, or click Wave in the Rig panel.',
+    kind: 'vector',
+    thumbnail: () => 6,
+    make: makePuppet,
+  },
+  {
     id: 'tileset',
     name: 'Tileset and level',
     blurb: 'Five 16x16 tiles (with animated water) and a small level painted on tilemap layers. Try it: double-click the Grass tile in the Tileset panel, give it some flowers, then press Done and watch the whole level change.',
     kind: 'pixel',
     thumbnail: () => 0,
     make: makeTileset,
+  },
+  {
+    id: 'lip-sync',
+    name: 'Lip sync mouth chart',
+    blurb: 'A face with a mouth that has the ten standard talking shapes, with a little "hello" already on it. Try it: File > Import sound, then Animate > Auto lip sync, and fix any mouth in the Lip sync panel.',
+    kind: 'vector',
+    thumbnail: () => 11,
+    make: makeLipSync,
   },
   {
     id: 'blank-vector',

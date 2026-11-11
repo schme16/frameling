@@ -2,3 +2,4 @@
 import './commands';
 import './canvas';
 import './help';
+import './hints';

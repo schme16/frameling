@@ -1,5 +1,7 @@
 // The first-run hello from Quill, as plain data and a reducer: which step shows, what was picked, and what to suggest
-// afterwards. No DOM and no stores, so it's all easy to test. Onboarding.tsx draws it.
+// afterwards. No DOM and no stores, so it's all easy to test. Onboarding.tsx draws it. Quill's words are in
+// ../mascot/lines.json.
+import { line, lines } from '../mascot/lines';
 
 export type StepId = 'hello' | 'make' | 'themes' | 'prefs' | 'name' | 'done';
 
@@ -17,12 +19,12 @@ export interface InterestInfo {
 }
 
 export const INTERESTS: InterestInfo[] = [
-  { id: 'cartoons', title: 'Sketches and cartoons', blurb: 'Doodles that wiggle, blink and bounce.', icon: 'brush', reaction: 'Cartoons! I love a good wobbly line.' },
-  { id: 'sprites', title: 'Game sprites and pixel art', blurb: 'Heroes, baddies and chunky little pixels.', icon: 'pixel', reaction: 'Pixel heroes! Chunky and charming, just like me.' },
-  { id: 'tiles', title: 'Tiles and levels', blurb: 'Grass, walls and whole worlds to explore.', icon: 'tiles', reaction: 'Levels! I will pack snacks for the explorers.' },
-  { id: 'motion', title: 'Explainers and motion graphics', blurb: 'Logos, titles and smooth moves.', icon: 'tween', reaction: 'Smooth moves! Tweens draw the in-between bits for you.' },
-  { id: 'interactives', title: 'Things for Interactives', blurb: 'Art people can click, poke and play with.', icon: 'play', reaction: 'Interactives! Your art gets clicked, poked and played with.' },
-  { id: 'play', title: 'Just playing', blurb: 'No plan at all. The best kind of plan.', icon: 'heart', reaction: 'Just playing is my favourite kind of making.' },
+  { id: 'cartoons', title: 'Sketches and cartoons', blurb: 'Doodles that wiggle, blink and bounce.', icon: 'brush', reaction: line('onboarding.make.cartoons') },
+  { id: 'sprites', title: 'Game sprites and pixel art', blurb: 'Heroes, baddies and chunky little pixels.', icon: 'pixel', reaction: line('onboarding.make.sprites') },
+  { id: 'tiles', title: 'Tiles and levels', blurb: 'Grass, walls and whole worlds to explore.', icon: 'tiles', reaction: line('onboarding.make.tiles') },
+  { id: 'motion', title: 'Explainers and motion graphics', blurb: 'Logos, titles and smooth moves.', icon: 'tween', reaction: line('onboarding.make.motion') },
+  { id: 'interactives', title: 'Things for Interactives', blurb: 'Art people can click, poke and play with.', icon: 'play', reaction: line('onboarding.make.interactives') },
+  { id: 'play', title: 'Just playing', blurb: 'No plan at all. The best kind of plan.', icon: 'heart', reaction: line('onboarding.make.play') },
 ];
 
 export interface FlowState {
@@ -83,9 +85,9 @@ export function reduceFlow(s: FlowState, a: FlowAction): FlowState {
 /** What Quill says on the "what would you like to make" step. */
 export function makeReaction(s: Pick<FlowState, 'interests' | 'lastPick'>): string {
   if (s.lastPick) return INTERESTS.find((x) => x.id === s.lastPick)!.reaction;
-  if (s.interests.length >= 4) return 'All of it? Yes! Big plans, I love it.';
-  if (s.interests.length) return 'Great picks. Add more if you like.';
-  return 'Pick as many as you like, or none at all. No wrong answers here!';
+  if (s.interests.length >= 4) return line('onboarding.make.lots');
+  if (s.interests.length) return line('onboarding.make.some');
+  return line('onboarding.make.none');
 }
 
 // ---------------------------------------------------------------- what to suggest
@@ -129,17 +131,18 @@ export function planFor(interests: readonly Interest[], completedQuests: readonl
 
 // ---------------------------------------------------------------- silly names
 
-const ADJECTIVES = ['Wobbly', 'Sleepy', 'Brave', 'Bouncy', 'Sneaky', 'Fluffy', 'Tiny', 'Dizzy', 'Grumpy', 'Sparkly', 'Jolly', 'Squishy', 'Zippy', 'Curious', 'Fancy'];
-const NOUNS = ['Pancake', 'Teacup', 'Dragon', 'Turnip', 'Comet', 'Noodle', 'Penguin', 'Muffin', 'Robot', 'Jellybean', 'Cactus', 'Snail', 'Pickle', 'Cloud', 'Biscuit'];
+const ADJECTIVES = lines('sillyNames.adjectives');
+const NOUNS = lines('sillyNames.nouns');
+const FALLBACK = lines('sillyNames.fallback');
 
 /** A silly name for a first animation, like "The Wobbly Pancake". Pass a random source for tests. */
 export function sillyName(rand: () => number = Math.random, not?: string): string {
   const pick = <T,>(list: T[]) => list[Math.min(list.length - 1, Math.floor(rand() * list.length))];
   for (let i = 0; i < 6; i++) {
-    const name = `The ${pick(ADJECTIVES)} ${pick(NOUNS)}`;
+    const name = line('sillyNames.pattern', { adjective: pick(ADJECTIVES), noun: pick(NOUNS) });
     if (name !== not) return name;
   }
-  return not === 'The Dancing Spoon' ? 'The Humming Kettle' : 'The Dancing Spoon';
+  return not === FALLBACK[0] ? FALLBACK[1] : FALLBACK[0];
 }
 
 // ---------------------------------------------------------------- Quill's favourite theme

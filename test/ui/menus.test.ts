@@ -33,7 +33,7 @@ describe('menu filtering', () => {
     const r = registry([c('file.new'), c('edit.undo', 'Undo', 'File')]);
     expect(shape(resolveMenu(menu, [menu, other], r.lookup, r.all))).toEqual(['file.new']);
   });
-  it('the real menus are named File, Edit, View, Draw, Pixel, Animate, Effects, Plugins and Help', () => {
-    expect(MENUS.map((m) => m.label)).toEqual(['File', 'Edit', 'View', 'Draw', 'Pixel', 'Animate', 'Effects', 'Plugins', 'Help']);
+  it('the real menus are named File, Edit, View, Draw, Pixel, Animate, Rig, Effects, Plugins and Help', () => {
+    expect(MENUS.map((m) => m.label)).toEqual(['File', 'Edit', 'View', 'Draw', 'Pixel', 'Animate', 'Rig', 'Effects', 'Plugins', 'Help']);
   });
 });

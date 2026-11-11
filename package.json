@@ -20,7 +20,10 @@
     "start": "npm run build && electron .",
     "dist": "npm run build && electron-builder --publish never",
     "dist:linux": "npm run build && electron-builder --linux AppImage --publish never",
-    "install-local": "node scripts/install-local.mjs"
+    "install-local": "node scripts/install-local.mjs",
+    "dialogue:shots": "npm run build && electron scripts/dialogue/shots.cjs",
+    "dialogue:page": "node scripts/dialogue/page.mjs",
+    "dialogue:apply": "node scripts/dialogue/apply.mjs"
   },
   "dependencies": {
     "fflate": "^0.8.3",
@@ -44,6 +47,7 @@
     "esbuild": "^0.28.2",
     "fake-indexeddb": "^6.2.8",
     "jsdom": "^31.0.0",
+    "lottie-web": "^5.13.0",
     "typescript": "^7.0.2",
     "vite": "^8.3.8",
     "vitest": "^5.1.0"

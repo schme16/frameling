@@ -1,9 +1,10 @@
+import { line } from './mascot/lines';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { allCommands, type Command } from '../core/registry';
 import { applyWorkspace, currentWorkspace, deleteWorkspace, dock, listWorkspaces, renameWorkspace, resetLayout, saveWorkspace } from './dock';
 import { isStaleCommand, syncDynamicCommands } from './dynamic';
 import { Icon } from './icons';
-import { QuillEmpty } from './mascot';
+import { QuillEmpty, setShowQuill } from './mascot';
 import { addBinding, allConflicts, comboFromEvent, comboToString, conflictsFor, effectiveKeys, removeBinding, resetBindings, setBindings } from './keys';
 import { holdKeyboard } from './keyboard';
 import { Keys } from './ShortcutChip';
@@ -149,7 +150,7 @@ function GeneralPage({ onThemes }: { onThemes: () => void }) {
         <Switch label="Tips" on={p.showTips} onChange={(showTips) => setPrefs({ showTips })} />
       </Row>
       <Row label="Show Quill" hint="Quill the hedgehog shows you round and cheers you on. Off hides him; his words still show.">
-        <Switch label="Show Quill" on={p.showQuill} onChange={(showQuill) => setPrefs({ showQuill })} />
+        <Switch label="Show Quill" on={p.showQuill} onChange={setShowQuill} />
       </Row>
       <Row label="Fade tile copies" hint="In tile mode, fade the copies round the tile you're drawing so it stands out. Off shows them exactly as a game would.">
         <Switch label="Fade tile copies" on={p.fadeTileCopies} onChange={(fadeTileCopies) => setPrefs({ fadeTileCopies })} />
@@ -332,7 +333,7 @@ function KeyboardPage({ focusId }: { focusId?: string }) {
         ))}
         {!cats.length && (
           <QuillEmpty anim={[{ anim: 'think', hold: 2400 }, { anim: 'idle' }]} size={96} className="ui-help-empty">
-            No commands match that.
+            {line('empty.shortcuts')}
           </QuillEmpty>
         )}
       </div>

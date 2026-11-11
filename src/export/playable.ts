@@ -2,6 +2,7 @@
 // clips, markers, layers), atlas.png (every different picture once, packed tight) and, when asked, the editable
 // .frameling file. Pure maths and bytes, so it is all tested without a canvas. The format is written up in the
 // README (The Interactives package).
+import { exportClipNames, flowManifest, type FlowManifest } from '../core/flow';
 import { strToU8, zipSync, type Zippable } from 'fflate';
 import type { Doc } from '../core/format';
 import { encodePng, type RawImage } from '../io/png';
@@ -66,6 +67,8 @@ export interface PlayableManifest {
   layers: { name: string; kind: string; visible: boolean; opacity: number; pixelSize?: number }[];
   /** The editable Frameling file inside the package, when it was included. */
   source: string | null;
+  /** How the clips lead to each other (by clip name), when the document has a clip flow. Added in Frameling 0.x; older readers ignore it. */
+  flow?: FlowManifest;
 }
 
 export interface PlayableJob {
@@ -151,6 +154,9 @@ export function buildPlayable(job: PlayableJob): { manifest: PlayableManifest; a
       .map((l) => ({ name: l.name, kind: l.kind, visible: l.visible, opacity: l.opacity, ...(l.kind === 'pixel' ? { pixelSize: l.pixelSize } : {}) })),
     source: job.source ? 'source.frameling' : null,
   };
+  const names = exportClipNames(doc.clips, (c) => Math.max(range.start, Math.min(c.start, c.end)) <= Math.min(range.end, Math.max(c.start, c.end)), false);
+  const flow = flowManifest(doc, (c) => names.get(c.id));
+  if (flow) manifest.flow = flow;
   return { manifest, atlas };
 }
 

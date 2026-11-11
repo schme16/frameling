@@ -165,3 +165,67 @@ func _process(delta):
     expect(line).toContain('ran:die:playing=false:finished=true:frame=3');
   }, 240000);
 });
+
+// The clip flow script runs in a real Godot: it starts on the first clip, follows a trigger, and moves on by itself
+// when a one-shot clip ends.
+describe.skipIf(!GODOT)('the clip flow script plays in Godot', () => {
+  it('starts on idle, jumps on a trigger, and lands back on idle when the jump ends', async () => {
+    const { makeHeroSprite } = await import('../../src/templates/hero-sprite');
+    const { buildSheetFiles } = await import('../../src/export/engines');
+    const { artScale } = await import('../../src/export/plan');
+    const { DEFAULT_SHEET } = await import('../../src/export/types');
+    const { artFrames } = await import('./helpers');
+    const doc = makeHeroSprite();
+    const out = buildSheetFiles({
+      doc,
+      sheet: { ...DEFAULT_SHEET, engine: 'godot', godotScene: true, json: false },
+      frames: artFrames(doc) as unknown as RawImage[],
+      range: { start: 0, end: doc.length - 1 },
+      whole: true,
+      clipId: null,
+      scale: artScale(doc)!,
+      name: doc.name,
+      pixelArt: true,
+      maxSide: 8192,
+    });
+    const dir = mkdtempSync(path.join(tmpdir(), 'frameling-godot-flow-'));
+    mkdirSync(path.join(dir, 'sprites'));
+    writeFileSync(path.join(dir, 'project.godot'), 'config_version=5\n\n[application]\nconfig/name="flow"\n');
+    for (const f of out.files) writeFileSync(path.join(dir, 'sprites', f.name), f.bytes);
+    const tres = out.files.find((f) => f.name.endsWith('.tres'))!.name;
+    const gd = out.files.find((f) => f.name.endsWith('_flow.gd'))!.name;
+    writeFileSync(
+      path.join(dir, 'play.gd'),
+      `extends SceneTree
+var node: AnimatedSprite2D
+var t := 0.0
+var step := 0
+var out := []
+
+func _init():
+	node = AnimatedSprite2D.new()
+	node.sprite_frames = load("res://sprites/${tres}")
+	node.set_script(load("res://sprites/${gd}"))
+	root.add_child(node)
+
+func _process(delta):
+	t += delta
+	if step == 0 and t > 0.1:
+		out.append("start:%s" % node.animation)
+		out.append("nowhere:%s" % node.fire("nothing"))
+		out.append("fire:%s:%s" % [node.fire("jump"), node.animation])
+		step = 1
+		t = 0.0
+	elif step == 1 and t > 1.5:
+		out.append("after:%s" % node.animation)
+		print("RESULT " + ",".join(out))
+		return true
+	return false
+`,
+    );
+    execFileSync(GODOT!, ['--headless', '--path', dir, '--import'], { stdio: 'pipe', timeout: 120000 });
+    const res = execFileSync(GODOT!, ['--headless', '--path', dir, '--script', 'play.gd'], { encoding: 'utf8', timeout: 120000 });
+    const line = res.split('\n').find((l) => l.startsWith('RESULT ')) ?? res;
+    expect(line).toBe('RESULT start:idle,nowhere:false,fire:true:jump,after:idle');
+  }, 240000);
+});
