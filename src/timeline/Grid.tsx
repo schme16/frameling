@@ -91,7 +91,7 @@ function Ruler({ cw, from, to, length, fps, total, ghostLength }: { cw: number; 
   };
   const end = ghostLength ?? length;
   return (
-    <div className="tl-ruler" data-region="ruler" style={{ height: RULER_H }}>
+    <div className="tl-ruler" data-region="ruler" data-quest="timeline-ruler" style={{ height: RULER_H }}>
       {clip ? <i className="tl-range-shade" style={{ left: clip.start * cw, width: (clip.end - clip.start + 1) * cw }} /> : null}
       {onion.enabled ? [shade(frame - onion.before, frame - 1, onion.beforeColor, 'b'), shade(frame + 1, frame + onion.after, onion.afterColor, 'a')] : null}
       {labels.map((f) => (

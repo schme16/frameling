@@ -109,6 +109,7 @@ export function MenuBar() {
             type="button"
             role="menuitem"
             data-top
+            data-quest={`menu-${menu.label.toLowerCase()}`}
             aria-haspopup="menu"
             aria-expanded={open === index}
             className={`ui-menu-top${open === index ? ' is-open' : ''}`}

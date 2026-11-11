@@ -85,7 +85,7 @@ export function FillOptionsPanel(): ReactNode {
             h('div', { className: 'fl-fill-label', id: 'fl-fill-gap-label' }, 'Close gaps'),
             h(
               'div',
-              { className: 'fl-fill-seg', role: 'radiogroup', 'aria-labelledby': 'fl-fill-gap-label' },
+              { className: 'fl-fill-seg', role: 'radiogroup', 'aria-labelledby': 'fl-fill-gap-label', 'data-quest': 'close-gaps' },
               ORDER.map((p) =>
                 h(
                   'button',

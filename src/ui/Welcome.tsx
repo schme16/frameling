@@ -11,7 +11,7 @@ import { closeSheet, overlays } from './overlays';
 import { runCommand } from './palette';
 import { clampInt, docFromCustom, docFromPreset, PRESETS, type CustomSpec } from './presets';
 import { setPrefs, usePrefs } from './prefs';
-import { allQuests, startQuest } from './quests';
+import { getQuest, startQuest } from './quests';
 import { toast } from './toast';
 
 export function WelcomeSheet() {
@@ -27,7 +27,7 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
   const [spec, setSpec] = useState<CustomSpec>({ name: 'Untitled', width: 800, height: 600, fps: 12, pixel: false, pixelSize: 8 });
   const [recent, setRecent] = useState<RecentFile[]>([]);
   const open = getCommand('file.open');
-  const quest = allQuests()[0];
+  const quest = getQuest('first-animation');
 
   useEffect(() => {
     let live = true;
@@ -166,7 +166,6 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
             onClick={() => {
               startQuest(quest.id);
               closeSheet();
-              toast('Quests are on their way. For now, draw something, go to the next frame, draw again and press play!', { kind: 'info', duration: 8000 });
             }}
           >
             Show me
