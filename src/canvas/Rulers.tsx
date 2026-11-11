@@ -7,7 +7,7 @@ import { store } from '../core/store';
 import { docDpi, pxTo, roundIn, showNumber, toPx, UNITS, unitInfo } from '../core/units';
 import { getPrefs, setPrefs, subscribePrefs, usePrefs } from '../ui/prefs';
 import { cancelGuideDrag, endGuideDrag, getGuideDrag, moveGuideDrag, startGuideDrag } from './guides';
-import { RULER, rulerTicks } from './rulers';
+import { RULER, rulerTicks } from './rulerTicks';
 import { nearest, SNAP_PX } from './snap';
 import { cssVar, subscribeTheme } from './theme';
 import { getViewSettings, subscribeViewSettings } from './viewSettings';

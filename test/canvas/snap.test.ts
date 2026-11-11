@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { guideDrop, nearest, snapBox, snapPoint, snapTargets, snapValue, withGuide } from '../../src/canvas/snap';
-import { niceStep, rulerTicks, subdivisions } from '../../src/canvas/rulers';
+import { niceStep, rulerTicks, subdivisions } from '../../src/canvas/rulerTicks';
 import { formatLength, pxTo, roundIn, toPx, UNITS } from '../../src/core/units';
 
 const page = { width: 200, height: 100, guides: [{ id: 'g', axis: 'x' as const, at: 37 }] };

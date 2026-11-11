@@ -45,3 +45,28 @@ it('spells every relative import with the same letter case as the file', () => {
   }
   expect(bad).toEqual([]);
 });
+
+// Windows and macOS see "rulers.ts" and "Rulers.tsx" as the same module, so `./Rulers` picks the wrong one there.
+it('has no two script files in a folder whose names differ only by letter case', async () => {
+  const { readdirSync, statSync } = await import('node:fs');
+  const { join, parse } = await import('node:path');
+  const clashes: string[] = [];
+  const walk = (dir: string) => {
+    const seen = new Map<string, string>();
+    for (const f of readdirSync(dir)) {
+      const p = join(dir, f);
+      if (statSync(p).isDirectory()) {
+        walk(p);
+        continue;
+      }
+      const { name, ext } = parse(f);
+      if (!/^\.(ts|tsx|js|mjs|cjs)$/.test(ext)) continue;
+      const key = name.toLowerCase();
+      const other = seen.get(key);
+      if (other && other !== name) clashes.push(`${dir}: ${other} / ${name}`);
+      seen.set(key, name);
+    }
+  };
+  walk(path.join(root, 'src'));
+  expect(clashes).toEqual([]);
+});
