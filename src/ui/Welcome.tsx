@@ -12,6 +12,7 @@ import { closeSheet, overlays } from './overlays';
 import { runCommand } from './palette';
 import { clampInt, docFromCustom, docFromPreset, isBlankDoc, PRESETS, sizeLabel, type CustomSpec } from './presets';
 import { setPrefs, usePrefs } from './prefs';
+import { cleanDpi, formatSize, pxTo, roundIn, toPx, type Unit } from '../core/units';
 import { getQuest, startQuest } from './quests';
 import { toast } from './toast';
 
@@ -24,6 +25,7 @@ export function WelcomeSheet() {
 function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
   const mode = sheetMode === 'welcome' ? 'welcome' : 'new';
   const showWelcome = usePrefs((p) => p.showWelcome);
+  const units = usePrefs((p) => p.units);
   const [custom, setCustom] = useState(false);
   const [spec, setSpec] = useState<CustomSpec>({ name: 'Untitled', width: 800, height: 600, fps: 12, pixel: false, pixelSize: 8 });
   const [recent, setRecent] = useState<RecentFile[]>([]);
@@ -69,7 +71,7 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
               <Icon name={p.icon} size={22} />
             </span>
             <strong>{p.title}</strong>
-            <span className="ui-preset-size">{p.grid ? `${p.grid.width} x ${p.grid.height} pixels` : `${p.width} x ${p.height}`}</span>
+            <span className="ui-preset-size">{p.grid ? `${p.grid.width} x ${p.grid.height} pixels` : units === 'px' ? `${p.width} x ${p.height}` : formatSize(p.width, p.height, units)}</span>
             <span className="ui-preset-blurb">{p.blurb}</span>
           </button>
         ))}
@@ -96,12 +98,12 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
             <input type="text" value={spec.name} maxLength={80} onChange={(e) => setSpec((s) => ({ ...s, name: e.target.value }))} />
           </label>
           <label className="ui-field">
-            <span>{spec.pixel ? 'Grid width' : 'Width'}</span>
-            <input type="number" min={1} max={spec.pixel ? 512 : 8192} value={spec.width || ''} onChange={num('width')} />
+            <span>{spec.pixel ? 'Grid width' : units === 'px' ? 'Width' : `Width (${units})`}</span>
+            {spec.pixel || units === 'px' ? <input type="number" min={1} max={spec.pixel ? 512 : 8192} value={spec.width || ''} onChange={num('width')} /> : <UnitInput px={spec.width} unit={units} dpi={spec.dpi} onPx={(width) => setSpec((s) => ({ ...s, width }))} />}
           </label>
           <label className="ui-field">
-            <span>{spec.pixel ? 'Grid height' : 'Height'}</span>
-            <input type="number" min={1} max={spec.pixel ? 512 : 8192} value={spec.height || ''} onChange={num('height')} />
+            <span>{spec.pixel ? 'Grid height' : units === 'px' ? 'Height' : `Height (${units})`}</span>
+            {spec.pixel || units === 'px' ? <input type="number" min={1} max={spec.pixel ? 512 : 8192} value={spec.height || ''} onChange={num('height')} /> : <UnitInput px={spec.height} unit={units} dpi={spec.dpi} onPx={(height) => setSpec((s) => ({ ...s, height }))} />}
           </label>
           <label className="ui-field">
             <span>Frames a second</span>
@@ -111,6 +113,19 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
             <input type="checkbox" checked={spec.pixel} onChange={(e) => setSpec((s) => ({ ...s, pixel: e.target.checked, width: e.target.checked ? 64 : 800, height: e.target.checked ? 64 : 600 }))} />
             <span>Pixel art</span>
           </label>
+          {!spec.pixel && units !== 'px' && (
+            <label className="ui-field" data-tip="Dots per inch" data-tip-desc="How many pixels make an inch. 96 matches screens and the web; 300 is sharp for print.">
+              <span>DPI</span>
+              <input type="number" min={1} max={10000} value={spec.dpi ?? 96} onChange={(e) =>
+                  // The size you typed stays the same on paper, so the pixels change with the DPI.
+                  setSpec((s) => {
+                    const dpi = e.target.value === '' ? undefined : Number(e.target.value);
+                    const k = cleanDpi(dpi) / cleanDpi(s.dpi);
+                    return { ...s, dpi, width: s.width * k, height: s.height * k };
+                  })
+                } />
+            </label>
+          )}
           {spec.pixel && (
             <label className="ui-field">
               <span>Size of one pixel</span>
@@ -119,7 +134,7 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
           )}
           <div className="ui-custom-end">
             <span className="ui-custom-sum">
-              Makes a {dims.w} x {dims.h} drawing.
+              Makes a {dims.w} x {dims.h} drawing{!spec.pixel && units !== 'px' ? ` (${formatSize(dims.w, dims.h, units, cleanDpi(spec.dpi))})` : ''}.
             </span>
             <button type="submit" className="ui-btn ui-btn-primary">
               Start
@@ -201,6 +216,27 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
         </button>
       </footer>
     </Modal>
+  );
+}
+
+/** A size typed in mm, cm, in or pt. Keeps its own text while typing so "12." doesn't jump; hands back pixels. */
+function UnitInput({ px, unit, dpi, onPx }: { px: number; unit: Unit; dpi?: number; onPx: (px: number) => void }) {
+  const shown = px ? String(roundIn(pxTo(px, unit, cleanDpi(dpi)), unit)) : '';
+  const [text, setText] = useState<string | null>(null);
+  return (
+    <input
+      type="number"
+      min={0}
+      step="any"
+      value={text ?? shown}
+      onFocus={() => setText(shown)}
+      onBlur={() => setText(null)}
+      onChange={(e) => {
+        setText(e.target.value);
+        const v = Number(e.target.value);
+        onPx(e.target.value === '' || !Number.isFinite(v) ? 0 : toPx(v, unit, cleanDpi(dpi)));
+      }}
+    />
   );
 }
 
