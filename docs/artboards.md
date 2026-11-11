@@ -88,7 +88,8 @@ by artboards. A/B: `brand/ab/artboards/ab.png` and `ab.mp4` (A built, B mocked).
 
 ### Not done yet / later
 
-- The Export dialog's frame count and "A clip" still describe the open artboard when exporting several.
+- When exporting several, the Export dialog's own summary line and "A clip" still describe the open artboard (the
+  Which artboards row gives the joined total).
 - Shots of different sizes can't be joined (letterboxing would be the next step).
 - Transitions between shots, and a storyboard view of all shots as a strip.
 - Variations (B), if it turns out to be wanted: an optional `crops` list on an artboard, exported as extra files.
