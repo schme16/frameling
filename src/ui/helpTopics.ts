@@ -185,6 +185,10 @@ Open **Help, Keyboard shortcuts**, or **Preferences, Keyboard**. Commands are gr
 
 Press the small **x** on a shortcut to remove it. **Reset** puts a command back how it came.
 
+## Keys from another tool
+
+Used Flash / Animate or a pixel tool before? Pick a [shortcut set](help:shortcut-sets) at the top of the page.
+
 ## Good to know
 
 - Typing in a text box never triggers shortcuts, so you can type a name with the letter b in it.
@@ -214,10 +218,10 @@ Press the small **x** on a shortcut to remove it. **Reset** puts a command back 
 
 There are five pages:
 
-- **General**: [mode and look](help:look-and-feel), [units](help:units), sounds, motion, the welcome sheet and [Show Quill](help:meet-quill).
+- **General**: [mode and look](help:look-and-feel), [units](help:units), [sounds](help:sounds), motion, the welcome sheet and [Show Quill](help:meet-quill).
 - **Themes**: pick [themes](help:themes) and [make your own](help:make-your-own-theme).
 - **Behaviour**: [the choices Frameling asked you about](help:behaviour), like what N does.
-- **Keyboard**: see and change [shortcuts](help:keyboard-shortcuts).
+- **Keyboard**: see and change [shortcuts](help:keyboard-shortcuts), or pick a [shortcut set](help:shortcut-sets).
 - **Workspaces**: save and switch [panel layouts](help:workspaces).
 
 Changes happen straight away and are remembered for next time.`,
@@ -290,7 +294,7 @@ Turn this on to stop bouncing and fading. Quill stands still instead of moving. 
 
 ## Sounds
 
-A switch for sound effects. They aren't there yet, so for now it just remembers your choice.`,
+Soft little sounds for quest steps, finished exports and "no". They're on to start with; switch them off here. See [Sounds](help:sounds).`,
   },
   {
     id: 'themes',

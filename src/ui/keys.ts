@@ -3,7 +3,8 @@
 // A combo is written `Mod+Shift+Z`, `Alt+ArrowLeft`, `F1`, `b`, `Space`. `Mod` is Ctrl on Windows and Linux, Cmd on
 // macOS. Combos are normalised to `Mod+Alt+Shift+key` with letters lower-case, so two spellings of one shortcut are
 // equal. For symbols that need Shift to type (`?`, `+`) Shift isn't part of the combo: the character says it.
-import type { Command } from '../core/registry';
+import { allCommands, type Command } from '../core/registry';
+import { DEFAULT_KEYMAP_SET, keymapSet } from './keymapSets';
 import { getPrefs, setPrefs } from './prefs';
 
 export interface Combo {
@@ -176,15 +177,65 @@ export function comboLabel(shortcut: string, mac = isMacPlatform()): string {
 
 // ---------------------------------------------------------------- the keymap
 
-/** The shortcuts a command uses now: the person's choice if they made one, else the default. */
-export function effectiveKeys(cmd: Pick<Command, 'id' | 'keys'>, overrides: Record<string, string[]> = getPrefs().keymap): string[] {
+/**
+ * The keys a set gives each command it changes, as an override map: the set's own entries, plus the commands that lose
+ * a default key because the set hands it to something else that works in the same place.
+ */
+export function setBaseKeys(setId: string, commands: Command[]): Record<string, string[]> {
+  const set = keymapSet(setId);
+  const out: Record<string, string[]> = {};
+  const given: { combo: string; cmd: Command }[] = [];
+  for (const c of commands) {
+    const keys = set.keys[c.id];
+    if (!keys) continue;
+    out[c.id] = keys.map(normaliseCombo).filter(Boolean);
+    for (const combo of out[c.id]) given.push({ combo, cmd: c });
+  }
+  if (!given.length) return out;
+  for (const c of commands) {
+    if (out[c.id] || !c.keys?.length) continue;
+    const mine = c.keys.map(normaliseCombo).filter(Boolean);
+    const kept = mine.filter((k) => !given.some((g) => g.combo === k && sameContext(g.cmd, c)));
+    if (kept.length !== mine.length) out[c.id] = kept;
+  }
+  return out;
+}
+
+/** A set's keys with the person's own changes on top: the full override map that `effectiveKeys` reads. */
+export function layeredOverrides(setId: string, commands: Command[], personal: Record<string, string[]>): Record<string, string[]> {
+  if (keymapSet(setId).id === DEFAULT_KEYMAP_SET) return personal;
+  return { ...setBaseKeys(setId, commands), ...personal };
+}
+
+let layered: { set: string; personal: Record<string, string[]>; count: number; map: Record<string, string[]> } | null = null;
+
+/** The override map in use now: the picked set plus the person's changes. Cached until either (or the commands) change. */
+export function activeOverrides(): Record<string, string[]> {
+  const p = getPrefs();
+  if (keymapSet(p.keymapSet).id === DEFAULT_KEYMAP_SET) return p.keymap;
+  const cmds = allCommands();
+  if (!layered || layered.set !== p.keymapSet || layered.personal !== p.keymap || layered.count !== cmds.length) {
+    layered = { set: p.keymapSet, personal: p.keymap, count: cmds.length, map: layeredOverrides(p.keymapSet, cmds, p.keymap) };
+  }
+  return layered.map;
+}
+
+/** What a command gets before the person changes anything: the picked set's keys, else Frameling's. */
+export function baseKeys(cmd: Pick<Command, 'id' | 'keys'>): string[] {
+  const p = getPrefs();
+  const fromSet = keymapSet(p.keymapSet).id === DEFAULT_KEYMAP_SET ? undefined : setBaseKeys(p.keymapSet, allCommands())[cmd.id];
+  return (fromSet ?? cmd.keys ?? []).map(normaliseCombo).filter(Boolean);
+}
+
+/** The shortcuts a command uses now: the person's choice if they made one, else the set's, else the default. */
+export function effectiveKeys(cmd: Pick<Command, 'id' | 'keys'>, overrides: Record<string, string[]> = activeOverrides()): string[] {
   const o = overrides[cmd.id];
   // A bare Space is the canvas's pan key and is never a shortcut.
   return (o ?? cmd.keys ?? []).map(normaliseCombo).filter((k) => k && k !== 'Space');
 }
 
 /** Shortcut -> commands that use it. More than one command under a shortcut is a conflict. */
-export function buildKeymap(commands: Command[], overrides: Record<string, string[]> = getPrefs().keymap): Map<string, Command[]> {
+export function buildKeymap(commands: Command[], overrides: Record<string, string[]> = activeOverrides()): Map<string, Command[]> {
   const map = new Map<string, Command[]>();
   for (const c of commands) {
     for (const k of effectiveKeys(c, overrides)) {
@@ -204,7 +255,7 @@ export function sameContext(a: Pick<Command, 'layers'>, b: Pick<Command, 'layers
 }
 
 /** Other commands already using this shortcut where this one works too. */
-export function conflictsFor(shortcut: string, exceptId: string, commands: Command[], overrides: Record<string, string[]> = getPrefs().keymap): Command[] {
+export function conflictsFor(shortcut: string, exceptId: string, commands: Command[], overrides: Record<string, string[]> = activeOverrides()): Command[] {
   const want = normaliseCombo(shortcut);
   if (!want) return [];
   const self = commands.find((c) => c.id === exceptId) ?? {};
@@ -212,7 +263,7 @@ export function conflictsFor(shortcut: string, exceptId: string, commands: Comma
 }
 
 /** Every shortcut that two or more commands share in the same place, with who shares it. */
-export function allConflicts(commands: Command[], overrides: Record<string, string[]> = getPrefs().keymap): Map<string, Command[]> {
+export function allConflicts(commands: Command[], overrides: Record<string, string[]> = activeOverrides()): Map<string, Command[]> {
   const out = new Map<string, Command[]>();
   for (const [k, list] of buildKeymap(commands, overrides)) {
     const clash = list.filter((c) => list.some((o) => o !== c && sameContext(c, o)));
@@ -232,7 +283,7 @@ export function shortcutLabel(cmd: Pick<Command, 'id' | 'keys'>, mac = isMacPlat
 /** Gives a command exactly these shortcuts. If that's the same as its defaults, the override is dropped. */
 export function setBindings(cmd: Pick<Command, 'id' | 'keys'>, keys: string[]): void {
   const next = [...new Set(keys.map(normaliseCombo).filter(Boolean))];
-  const defaults = (cmd.keys ?? []).map(normaliseCombo).filter(Boolean);
+  const defaults = baseKeys(cmd);
   const same = next.length === defaults.length && next.every((k, i) => k === defaults[i]);
   const keymap = { ...getPrefs().keymap };
   if (same) delete keymap[cmd.id];
@@ -253,7 +304,7 @@ export function removeBinding(cmd: Pick<Command, 'id' | 'keys'>, shortcut: strin
   setBindings(cmd, effectiveKeys(cmd).filter((k) => k !== combo));
 }
 
-/** Back to the default shortcuts, for one command or for all. */
+/** Back to the set's shortcuts (Frameling's own by default), for one command or for all. */
 export function resetBindings(id?: string): void {
   if (!id) return setPrefs({ keymap: {} });
   const keymap = { ...getPrefs().keymap };

@@ -1,6 +1,7 @@
 // Gentle messages that appear at the bottom of the window and go away on their own.
 import type { QuillAnim, Script } from './mascot/timing';
 import { createStore } from './mini';
+import { playCue, type SoundCue } from './sounds';
 
 export type ToastKind = 'info' | 'success' | 'warn' | 'error';
 
@@ -19,6 +20,8 @@ export interface ToastOptions {
   quill?: Script | null;
   /** Quill's goodbye: he shows even though Show Quill is now off, plays `quill` once, then goes. */
   farewell?: boolean;
+  /** The sound with it (when Sounds is on). Default: the "can't do that" one for refusals and errors, else none. */
+  sound?: SoundCue | null;
 }
 
 export interface ToastItem {
@@ -40,6 +43,8 @@ export function toast(message: string, opts: ToastOptions = {}): number {
   const id = nextId++;
   const item: ToastItem = { id, message, kind: opts.kind ?? 'info', action: opts.action, duration: opts.duration ?? (opts.action ? 7000 : 4000), quill: opts.quill !== undefined ? opts.quill : quillFor(opts.kind ?? 'info'), farewell: opts.farewell };
   toasts.set((list) => [...list, item].slice(-MAX_VISIBLE));
+  const sound = opts.sound !== undefined ? opts.sound : opts.farewell ? 'goodbye' : item.kind === 'warn' || item.kind === 'error' ? 'refused' : null;
+  if (sound) playCue(sound);
   return id;
 }
 

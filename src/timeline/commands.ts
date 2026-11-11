@@ -5,6 +5,10 @@ import { registerCommands } from '../core/registry';
 import { findLayer } from '../core/doc';
 import { store } from '../core/store';
 import { toast } from '../ui/toast';
+import { playCue } from '../ui/sounds';
+
+// A soft page-flip when stepping by hand. Never while playing (stepping then just moves the playhead).
+const tick = () => void (store().get().ui.playing || playCue('tick'));
 import * as ops from './ops';
 import * as pb from './playback';
 import { setTl } from './state';
@@ -47,8 +51,8 @@ registerCommands([
     checked: (s) => s.ui.playing,
     run: () => pb.togglePlay(),
   },
-  { id: 'timeline.prevFrame', label: 'Previous frame', category: 'Timeline', keys: [','], description: 'Step back one frame.', help: 'timeline-playing', run: () => pb.stepFrame(-1) },
-  { id: 'timeline.nextFrame', label: 'Next frame', category: 'Timeline', keys: ['.'], description: 'Step forward one frame.', help: 'timeline-playing', run: () => pb.stepFrame(1) },
+  { id: 'timeline.prevFrame', label: 'Previous frame', category: 'Timeline', keys: [','], description: 'Step back one frame.', help: 'timeline-playing', run: () => (pb.stepFrame(-1), tick()) },
+  { id: 'timeline.nextFrame', label: 'Next frame', category: 'Timeline', keys: ['.'], description: 'Step forward one frame.', help: 'timeline-playing', run: () => (pb.stepFrame(1), tick()) },
   {
     id: 'timeline.prevKey',
     label: 'Previous drawing (key)',
