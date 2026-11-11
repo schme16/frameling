@@ -59,6 +59,11 @@ export interface BaseLayer {
 
 export interface VectorLayer extends BaseLayer {
   kind: 'vector';
+  /**
+   * How new shapes meet old ones (missing = 'object'). 'object': each shape stays separate. 'merge': ungrouped shapes
+   * cut and join each other, so the layer behaves like one flat painting.
+   */
+  drawMode?: 'object' | 'merge';
 }
 
 export interface PixelLayer extends BaseLayer {
@@ -130,6 +135,8 @@ export interface BrushSettings {
 /** A brush or pencil stroke, kept as its input points so it can be re-rendered or re-styled losslessly. */
 export interface StrokeShape {
   id: Id;
+  /** Shapes sharing a group id select and move together, and never merge (missing = not grouped). */
+  group?: Id;
   type: 'stroke';
   points: StrokePoint[];
   brush: BrushSettings;
@@ -156,6 +163,8 @@ export interface SubPath {
  */
 export interface FillShape {
   id: Id;
+  /** Shapes sharing a group id select and move together, and never merge (missing = not grouped). */
+  group?: Id;
   type: 'fill';
   paths: SubPath[];
   color: Color;
@@ -165,6 +174,8 @@ export interface FillShape {
 /** A geometric shape (rectangle, ellipse, line, polygon, pen path), with an optional fill and stroke. */
 export interface PathShape {
   id: Id;
+  /** Shapes sharing a group id select and move together, and never merge (missing = not grouped). */
+  group?: Id;
   type: 'path';
   paths: SubPath[];
   fill: Color | null;

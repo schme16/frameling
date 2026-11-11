@@ -13,6 +13,8 @@ import { floodFillPixels, parseColor } from '../geometry/pixel-fill';
 import { activeDrawing, activeLayer, EDIT_HINTS, editActiveDrawing } from './edit';
 import { FillOptionsPanel, gapWidth, getFillOptions } from './fill-options';
 import './fill-help';
+import { activeIsMerge, editShapes } from './merge-mode';
+import { mergeShapes } from '../geometry/merge';
 
 export const FILL_HINTS = {
   'no-fill': 'The fill colour is set to none. Pick a fill colour in the Colours panel (the solid box), then fill.',
@@ -128,7 +130,9 @@ function fillVector(e: ToolPointer, ctx: ToolContext) {
   const own = drawing?.kind === 'vector' ? drawing.shapes : [];
   const bounds: Rect = { x: 0, y: 0, width: doc.width, height: doc.height };
   const lines = barrierShapes(doc, ui.frame, own, opts.allLayers, activeLayer().layer?.id);
-  const res = fillRegion(lines, { x: e.x, y: e.y }, { gap: gapWidth(opts.gap, ui.brush.size), bounds });
+  // On a merge layer the lines are painted areas themselves, so their edges are the walls.
+  const merge = activeIsMerge();
+  const res = fillRegion(lines, { x: e.x, y: e.y }, { gap: gapWidth(opts.gap, ui.brush.size), bounds, includeFills: merge });
   const hit = paintAt(own, e.x, e.y);
 
   if (res.kind === 'outside' || res.kind === 'on-line') {
@@ -144,12 +148,24 @@ function fillVector(e: ToolPointer, ctx: ToolContext) {
     }
     const id = hit.id;
     const color = ui.color;
-    const r = editActiveDrawing('Recolour fill', 'vector', (d) => {
-      const s = d.shapes.find((x) => x.id === id);
-      if (!s) return;
-      if (s.type === 'fill') s.color = color;
-      else if (s.type === 'path') s.fill = color;
-    });
+    const r =
+      merge && hit.type === 'fill' && !hit.group
+        ? // Recoloured paint joins any paint of the new colour it touches.
+          editShapes('Recolour fill', (before) => {
+            const at = before.findIndex((x) => x.id === id);
+            return mergeShapes(
+              before.filter((x) => x.id !== id),
+              [{ ...hit, color }],
+              { under: true, at },
+            ).shapes;
+          })
+        : editActiveDrawing('Recolour fill', 'vector', (d) => {
+            const s = d.shapes.find((x) => x.id === id);
+            if (!s) return;
+            if (s.type === 'fill') s.color = color;
+            else if (s.type === 'path') s.fill = color;
+          });
+    if (r === 'nothing') return;
     if (r !== 'ok') ctx.hint(EDIT_HINTS[r]);
     else startPop(e.x, e.y, color, ctx);
     return;
@@ -159,11 +175,15 @@ function fillVector(e: ToolPointer, ctx: ToolContext) {
     return;
   }
   const shape: FillShape = { id: uid('f'), type: 'fill', paths: res.paths, color: ui.color, opacity: 1 };
-  const r = editActiveDrawing('Fill', 'vector', (d) => {
-    // Behind every line, so lines always read on top of paint (unless asked otherwise).
-    const at = opts.onTop ? d.shapes.length : indexBelowLines(d.shapes);
-    d.shapes.splice(at, 0, shape as never);
-  });
+  const r = merge
+    ? // Paint only covers empty ground, and joins any of its own colour it touches.
+      editShapes('Fill', (before) => mergeShapes(before, [shape], { under: true, at: indexBelowLines(before) }).shapes)
+    : editActiveDrawing('Fill', 'vector', (d) => {
+        // Behind every line, so lines always read on top of paint (unless asked otherwise).
+        const at = opts.onTop ? d.shapes.length : indexBelowLines(d.shapes);
+        d.shapes.splice(at, 0, shape as never);
+      });
+  if (r === 'nothing') return;
   if (r !== 'ok') ctx.hint(EDIT_HINTS[r]);
   else startPop(e.x, e.y, ui.color, ctx);
 }

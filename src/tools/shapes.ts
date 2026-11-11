@@ -9,7 +9,7 @@ import { registerTool, type Tool, type ToolContext, type ToolPointer } from '../
 import { drawShape } from '../core/render';
 import { store } from '../core/store';
 import type { Pt, Rect } from '../canvas/geometry';
-import { editActiveDrawing } from './edit';
+import { addShapes } from './merge-mode';
 import { ShapeOptions } from './options/ShapeOptions';
 import { noteColorUsed } from './recent';
 import { getToolSettings, type ToolSettings } from './settings';
@@ -171,13 +171,11 @@ function shapeTool(kind: 'rect' | 'ellipse' | 'line', label: string, icon: strin
       const shape = build();
       drag = null;
       if (shape) {
-        const r = editActiveDrawing(`Draw ${label.toLowerCase()}`, 'vector', (d) => {
-          d.shapes.push(shape);
-        });
+        const r = addShapes(`Draw ${label.toLowerCase()}`, [shape]).result;
         if (r === 'ok') {
           if (shape.fill) noteColorUsed(shape.fill);
           if (shape.stroke) noteColorUsed(shape.stroke.color);
-        } else reportEdit(ctx, r);
+        } else if (r !== 'nothing') reportEdit(ctx, r);
       }
       ctx.requestOverlay();
     },
