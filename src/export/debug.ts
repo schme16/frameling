@@ -1,6 +1,7 @@
 // With ?debug in the page address, expose the export machinery so scripts/e2e/export.cjs can drive it in the real app.
 // exportDocument is the very function the dialog's Export button calls, so this runs the same path a person does.
 // Never on in normal use.
+import { rootDoc } from '../core/symbols';
 import { DEFAULT_BRUSH, newDoc, newPixelDrawing, newPixelLayer, newVectorDrawing, newVectorLayer } from '../core/doc';
 import type { Doc } from '../core/format';
 import { store } from '../core/store';
@@ -54,9 +55,9 @@ if (typeof window !== 'undefined' && new URLSearchParams(location.search).has('d
     templates: async () => (await import('../templates')).TEMPLATES.map((t) => t.id),
     load: async (id: string) => store().load((await import('../templates')).findTemplate(id)!.make(), null),
     loadStress: () => store().load(stressDoc(), null),
-    doc: () => store().get().doc,
-    defaults: () => defaultSettings(store().get().doc),
-    plan: (s: ExportSettings) => planExport(store().get().doc, s, store().get().ui.frame),
+    doc: () => rootDoc(store().get().doc),
+    defaults: () => defaultSettings(rootDoc(store().get().doc)),
+    plan: (s: ExportSettings) => planExport(rootDoc(store().get().doc), s, store().get().ui.frame),
     caps: (w: number, h: number) => detectCapabilities(w, h),
     addClip: (name: string, start: number, end: number) => store().update('Add clip', (d) => void d.clips.push({ id: 'clip-' + name, name, start, end, loop: true })),
     setFrame: (n: number) => store().setUi({ frame: n }),

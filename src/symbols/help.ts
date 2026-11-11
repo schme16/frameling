@@ -1,0 +1,133 @@
+import { registerHelpTopics } from '../core/registry';
+
+registerHelpTopics([
+  {
+    id: 'symbols',
+    title: 'Symbols: drawings you can reuse',
+    section: 'Animating',
+    media: 'symbols.png',
+    summary: 'Make a drawing once, then place it as many times as you like. Change it once and every copy changes.',
+    keywords: ['symbol', 'library', 'reuse', 'instance', 'component', 'movie clip', 'graphic', 'convert to symbol', 'F8'],
+    body: `A **symbol** is a drawing you can reuse. Each copy of it on the canvas (an *instance*) can have its own size, turn, fade and colour wash, but they all share one drawing. Fix a line inside the symbol and every copy is fixed.
+
+**Make one:** select what you drew with the Select tool (V), then press **F8**, or pick **Draw > Make a reusable symbol**. Nothing selected? The whole drawing on this frame becomes the symbol.
+
+**The Library** lists every symbol in your document (**View > Library**):
+- **Drag** a symbol onto the canvas to place a copy, or press its **+** button to drop one in the middle.
+- **Click its name** to rename it.
+- The pencil opens it so you can [draw inside it](help:symbols-editing). The copy button makes a separate symbol you can change on its own.
+- The bin deletes a symbol nothing uses. **Delete unused** tidies them all away.
+
+**Symbols can move by themselves.** A symbol has its own timeline, so a flapping wing or a blinking eye can be one symbol that loops wherever you put it. See [Symbol and motion](help:symbol-properties) for how each copy plays.
+
+Symbols can go inside other symbols, as deep as you like (just never inside themselves). They are what [in-betweens](help:tweens) move.`,
+  },
+  {
+    id: 'symbols-editing',
+    title: 'Drawing inside a symbol',
+    section: 'Animating',
+    media: 'symbols-editing.png',
+    summary: 'Double-click a symbol to open it and draw inside. The rest of the scene stays in view, faded.',
+    keywords: ['edit symbol', 'edit in place', 'enter symbol', 'breadcrumb', 'back to scene', 'F9', 'double-click'],
+    body: `**Double-click** a symbol on the canvas with the Select tool (or press **F9**) to open it. The rest of the scene fades back so you can see where it sits, and the timeline shows the symbol's own frames and layers.
+
+Draw, add layers and add frames just as you would on the main stage. Every copy of the symbol changes with you.
+
+The bar at the top of the canvas shows where you are, like **Scene › Bird › Wing**. Click any name to go back to it, or press **Done**. You can also double-click an empty spot, or press **Shift+F9**, to go back out one level.
+
+Undo works as usual. Going into and out of a symbol are steps too, so undoing far enough takes you back out.`,
+  },
+  {
+    id: 'symbol-properties',
+    title: 'Symbol and motion panel',
+    section: 'Animating',
+    media: 'symbol-properties.png',
+    summary: "Change a symbol copy's place, size, turn, fade, colour wash and how it plays its own animation, plus the in-betweens on this key.",
+    keywords: ['properties', 'inspector', 'transform', 'scale', 'rotate', 'skew', 'opacity', 'alpha', 'tint', 'swap symbol', 'loop', 'play once', 'single frame', 'first frame'],
+    body: `Select a symbol on the canvas and open **View > Symbol and motion**.
+
+**Shows** picks which symbol this copy is. Swapping keeps its place, size and turn, which is handy for mouth shapes or hand poses.
+
+**X, Y, Width, Height, Turn and Slant** place it exactly. (The industry words are position, scale, rotation and skew.) You can also drag it, its corners and its round handle on the canvas.
+
+**See-through** fades the whole copy, and **Colour wash** tints it any colour (opacity and tint). Both can change smoothly with [in-betweens](help:tweens), so a copy can fade in or flash red.
+
+**Its own animation**, for symbols with more than one frame:
+- **Loop** plays round and round.
+- **Play once** plays to the end, then holds the last frame.
+- **One frame** shows just one frame, picked with **Frame**. Great for a symbol that holds a set of poses.
+
+**Starts on** picks which of its frames it begins with, so a crowd of copies don't all blink at once.
+
+Below that are the [in-betweens](help:tweens) for the key under the playhead.`,
+  },
+  {
+    id: 'tweens',
+    title: 'In-betweens (tweens)',
+    section: 'Animating',
+    media: 'tweens.mp4',
+    summary: 'Pose a symbol on two keys and Frameling draws the frames in between: moving, growing, turning and fading.',
+    keywords: ['tween', 'classic tween', 'motion tween', 'inbetween', 'interpolation', 'keyframe', 'Ctrl+Shift+T', 'move', 'glide'],
+    body: `Drawing every frame by hand is lovely for squash and stretch, but when something just needs to **glide, grow, turn or fade**, let Frameling draw the frames in between. Animators call these *in-betweens*, or *tweens*.
+
+1. Draw something and hold it for a few frames (drag the end of its cel in the timeline).
+2. Press **Ctrl+Shift+T** (or right-click the cel and choose **Make in-betweens**).
+3. Frameling makes an end key and moves the playhead there. **Move, resize or turn** the drawing there.
+4. Press play.
+
+If the drawing wasn't a [symbol](help:symbols) yet, it becomes one, because in-betweens move symbols.
+
+In the timeline, in-betweens show as a purple band with an arrow from one key to the next. A dashed line means the keys have come apart, so nothing moves until they touch again.
+
+What moves: position, size, turn, slant, see-through and colour wash. Choose how it speeds up and slows down with [easing](help:easing), or send it along a curve with a [path](help:motion-paths). **Extra spins** adds whole turns on the way.
+
+While you're between two keys, the canvas shows the in-between. Changes you make go to the key where it started. To change where it ends, go to the end key.`,
+  },
+  {
+    id: 'easing',
+    title: 'Easing: how in-betweens speed up and slow down',
+    section: 'Animating',
+    media: 'easing.png',
+    summary: 'Gentle start, gentle stop, bouncy, springy, overshoot... or draw your own curve.',
+    keywords: ['ease', 'easing', 'ease in', 'ease out', 'bounce', 'elastic', 'back', 'overshoot', 'curve', 'bezier', 'timing', 'spacing'],
+    body: `Real things rarely move at one steady speed. **Easing** is how in-betweens speed up and slow down.
+
+Pick one in the **Symbol and motion** panel, or from the command palette ("Easing: ..."):
+
+| Name | What it does |
+|---|---|
+| **Steady** (linear) | The same speed all the way. Robotic, sometimes just right. |
+| **Gentle start** (ease in) | Starts slowly and speeds up, like something falling. |
+| **Gentle stop** (ease out) | Moves off quickly and slows down, like a sliding puck. |
+| **Gentle start and stop** (ease in and out) | Slow at both ends. The natural choice for most moves, and what new in-betweens use. |
+| **Wind up** (anticipation) | Pulls back a little before it goes. |
+| **Overshoot** (back out) | Goes a bit too far, then settles back. |
+| **Springy** (elastic) | Wobbles like a spring before it settles. |
+| **Bouncy** (bounce) | Lands and bounces. |
+
+**Your own curve:** drag the two yellow handles on the graph. Time runs left to right and the move runs bottom to top, so a steep part is fast and a flat part is slow. Handles above the top line make it overshoot. With a handle focused, the arrow keys nudge it.
+
+On the canvas, the dots along the motion trail show one in-between each. Bunched-up dots are slow, spread-out dots are fast.`,
+  },
+  {
+    id: 'motion-paths',
+    title: 'Paths to follow (motion paths)',
+    section: 'Animating',
+    media: 'motion-paths.png',
+    summary: 'Make in-betweens travel along a line you draw, and turn to face along it if you like.',
+    keywords: ['motion path', 'guide', 'guide layer', 'follow path', 'orient to path', 'curve', 'trajectory'],
+    body: `Out of the box, in-betweens move in a straight line. To send them along a curve:
+
+1. Go to a frame with in-betweens.
+2. In **Symbol and motion**, press **Draw a path** (or choose **Animate > Draw a path to follow**).
+3. Drag the route on the canvas. That's it: press play.
+
+The path keeps its shape, and bends just enough that it still starts and ends exactly where your two keys are. So you can move either key afterwards and the path follows along.
+
+Turn on **Turn to face along the path** for things that should point where they're going: a paper plane, a fish, a car on a road.
+
+Already drew the line with the brush or pencil? Select it and choose **Follow the selected line**. The line becomes the path and leaves the drawing.
+
+**Straight line again** removes the path.`,
+  },
+]);

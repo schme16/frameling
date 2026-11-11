@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import './canvas.css';
 import { CanvasEngine } from './engine';
+import { EditBar, onCanvasDoubleClick, onCanvasDragLeave, onCanvasDragOver, onCanvasDrop } from '../symbols/EditBar';
 
 export function CanvasView() {
   const rootRef = useRef<HTMLDivElement>(null);
@@ -27,10 +28,11 @@ export function CanvasView() {
   }, []);
 
   return (
-    <div className="cv-root" ref={rootRef} tabIndex={-1} aria-label="Drawing canvas" role="application">
+    <div className="cv-root" ref={rootRef} tabIndex={-1} aria-label="Drawing canvas" role="application" onDoubleClick={onCanvasDoubleClick} onDragOver={onCanvasDragOver} onDragLeave={onCanvasDragLeave} onDrop={onCanvasDrop}>
       <div className="cv-stage" ref={stageRef} />
       <canvas className="cv-layer" ref={mainRef} />
       <canvas className="cv-layer cv-overlay" ref={overlayRef} />
+      <EditBar />
       {hint && (
         <div className="cv-hint" key={hint.id} role="status" aria-live="polite">
           {hint.text}

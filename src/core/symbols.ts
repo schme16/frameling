@@ -563,3 +563,8 @@ export function poseLive(doc: Doc, layer: Layer, frame: number, live: Drawing): 
   if (posed?.kind === 'vector') for (const s of posed.shapes) if (isPosed(s)) byId.set(s.id, s);
   return { ...live, shapes: live.shapes.map((s) => (isInstance(s) ? (byId.get(s.id) ?? poseInstance(doc, s, 0)) : s)) };
 }
+
+/** The document and playhead of the main stage, even while a symbol is open (for exports and thumbnails). */
+export function sceneOf(doc: Doc, frame: number): { doc: Doc; frame: number } {
+  return doc.editing?.length ? { doc: rootDoc(doc), frame: doc.editing[0].frame } : { doc, frame };
+}

@@ -6,6 +6,7 @@ import type { Doc } from '../core/format';
 import { makeBlankPixel, makeBlankVector } from './blank';
 import { makeBlink } from './blink';
 import { makeBouncingBall } from './bouncing-ball';
+import { makeBouncingLogo } from './bouncing-logo';
 import { makeFlourSack } from './flour-sack';
 import { makeHeroSprite } from './hero-sprite';
 import { makeSparkle } from './sparkle';
@@ -61,6 +62,14 @@ export const TEMPLATES: Template[] = [
     kind: 'pixel',
     thumbnail: () => 2,
     make: makeSparkle,
+  },
+  {
+    id: 'bouncing-logo',
+    name: 'Bouncing logo',
+    blurb: 'A star drops in with a bounce, pops, spins and fades, all with in-betweens. Try it: click the Logo layer between two keys and pick a different easing in Symbol and motion.',
+    kind: 'vector',
+    thumbnail: () => 30,
+    make: makeBouncingLogo,
   },
   {
     id: 'blank-vector',

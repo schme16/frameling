@@ -16,6 +16,7 @@ import { neighbourFrames, upcomingFrames } from '../timeline/playback';
 import { FramePainter } from './pipeline';
 import { cssVar, subscribeTheme } from './theme';
 import { getViewSettings, subscribeViewSettings } from './viewSettings';
+import { drawDecorations } from './decorations';
 import { screenToDoc, stageDeviceRect, wheelZoomFactor, zoomAbout, type Pt } from './view';
 
 export interface EngineElements {
@@ -331,6 +332,10 @@ export class CanvasEngine {
     if (ui.playing) return;
     const rect = stageDeviceRect({ zoom: ui.zoom, panX: ui.panX, panY: ui.panY }, doc.width, doc.height, dpr);
     this.drawPixelGrid(g, rect, ui.zoom, dpr);
+    g.save();
+    g.setTransform(rect.w / doc.width, 0, 0, rect.h / doc.height, rect.x, rect.y);
+    drawDecorations(g, this.ctx);
+    g.restore();
     const tool = this.gesture?.kind === 'tool' ? this.gesture.tool : getTool(ui.tool);
     if (tool?.overlay && !(this.gesture?.kind === 'pan')) {
       g.save();

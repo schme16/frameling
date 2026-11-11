@@ -1,5 +1,6 @@
 // Opening, saving and the "unsaved changes?" question, on the page side. The bytes are made and read by file.ts; the
 // desktop side (src/main) does the dialogs and the disk.
+import { rootDoc } from '../core/symbols';
 import { store } from '../core/store';
 import type { RecentFile } from '../preload/api';
 import { baseName, desktop, stripExt } from './desktop';
@@ -45,7 +46,7 @@ export async function keepUnsavedWork(): Promise<void> {
   if (!api || !store().get().ui.dirty) return;
   try {
     await autosaveNow();
-    await api.autosave.keep(await thumbnailOf(store().get().doc));
+    await api.autosave.keep(await thumbnailOf(rootDoc(store().get().doc)));
   } catch {
     // Putting a copy aside is a bonus. Never stop someone from carrying on.
   }

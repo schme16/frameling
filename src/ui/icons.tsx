@@ -5,6 +5,28 @@ import type { ReactNode } from 'react';
 const dot = (cx: number, cy: number, r = 1.2) => <circle cx={cx} cy={cy} r={r} fill="currentColor" stroke="none" />;
 
 const ICONS: Record<string, ReactNode> = {
+  // symbols and tweens
+  symbol: (
+    <>
+      <rect x="4" y="7" width="11" height="11" rx="2.5" />
+      <path d="M9 4h8.5A2.5 2.5 0 0 1 20 6.5V15" />
+    </>
+  ),
+  tween: (
+    <>
+      {dot(5, 12, 2.2)}
+      {dot(19, 12, 2.2)}
+      <path d="M8 12h7.5" />
+      <path d="M13 9l3 3-3 3" />
+    </>
+  ),
+  path: (
+    <>
+      <path d="M4 18c3-9 6 3 9-5s5-6 7-6" strokeDasharray="2.5 3" />
+      {dot(4, 18, 2)}
+      <path d="M17 4.5l3 2.5-3 2.5" />
+    </>
+  ),
   // drawing tools
   brush: (
     <>
