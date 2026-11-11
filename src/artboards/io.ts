@@ -96,5 +96,14 @@ function readContent(c: unknown, entries: Record<string, Uint8Array>, warnings: 
   if (audio) out.audio = audio;
   const guides = r.readGuides(c.guides);
   if (guides) out.guides = guides;
+  if (isObj(c.inOut) && Number.isFinite(c.inOut.start) && Number.isFinite(c.inOut.end)) {
+    const a = Math.max(0, Math.min(out.length - 1, Math.round(c.inOut.start)));
+    const b = Math.max(0, Math.min(out.length - 1, Math.round(c.inOut.end)));
+    out.inOut = { start: Math.min(a, b), end: Math.max(a, b) };
+  }
+  if (isObj(c.perspective) && Array.isArray(c.perspective.points)) {
+    const points = c.perspective.points.filter((p: any) => isObj(p) && Number.isFinite(p.x) && Number.isFinite(p.y)).slice(0, 2).map((p: any) => ({ x: p.x as number, y: p.y as number }));
+    if (points.length) out.perspective = { points };
+  }
   return out;
 }

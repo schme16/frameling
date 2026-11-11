@@ -10,12 +10,15 @@ import { activeLayer } from '../tools/edit';
 import './choices';
 import type { SpaceTapMode, WheelMode } from './choices';
 import * as ctl from './controller';
+import { LIGHT_TABLE_OPACITY, lightTableItems, lightTableTint } from './lightTable';
 import { pressesControl, SpaceTap, wheelIntent } from './input';
 import { perf } from './perf';
 import { neighbourFrames, upcomingFrames } from '../timeline/playback';
 import { FramePainter } from './pipeline';
 import { subscribeTileUi, tileModeOn } from '../tiles/state';
 import { subscribePrefs } from '../ui/prefs';
+import { anyOverlayOpen } from '../ui/overlays';
+import { controlWantsKey } from '../ui/keyboard';
 import { drawTileModeFrame, tileCopyAlpha } from '../tiles/look';
 import { maskFocusChanged } from '../effects/stage';
 import { cssVar, subscribeTheme } from './theme';
@@ -37,7 +40,8 @@ export interface EngineElements {
 
 type Gesture =
   | { kind: 'pan'; pointerId: number; startX: number; startY: number; panX: number; panY: number }
-  | { kind: 'tool'; pointerId: number; tool: Tool; restoreTool: string | null };
+  | { kind: 'tool'; pointerId: number; tool: Tool; restoreTool: string | null }
+  | { kind: 'grab'; pointerId: number; grab: ctl.CanvasGrab };
 
 /** Spare time per tick that playback may spend rasterising upcoming frames, in ms. */
 export const WARM_SLICE_MS = 5;
@@ -73,6 +77,8 @@ export class CanvasEngine {
   private altDown = false;
   private inside = false;
   private cursorOverride: string | null = null;
+  /** The cursor for a canvas handle under the pointer (a vanishing point), or null. */
+  private grabHover: string | null = null;
   private lastPtr: ToolPointer | null = null;
   private selfSwitch = false;
   private zoomingUntil = 0;
@@ -240,7 +246,7 @@ export class CanvasEngine {
     const rect = stageDeviceRect({ zoom: ui.zoom, panX: ui.panX, panY: ui.panY }, doc.width, doc.height, dpr);
     const depth = this.painter.warmDepth(doc, rect);
     if (!depth) return;
-    const frames = upcomingFrames(doc, ui.frame, depth, ui.loopPlayback);
+    const frames = upcomingFrames(doc, ui.frame, depth, ui.loopPlayback, undefined, !!ui.pingPong);
     if (!frames.length) return;
     const done = this.painter.warm(doc, frames, rect, this.els.main.width, this.els.main.height, start + WARM_SLICE_MS);
     if (!done) this.keepWarming();
@@ -286,7 +292,7 @@ export class CanvasEngine {
     }
     const u = s.ui;
     const q = p.ui;
-    if (s.doc !== p.doc || u.frame !== q.frame || u.zoom !== q.zoom || u.panX !== q.panX || u.panY !== q.panY || u.onion !== q.onion || u.playing !== q.playing || maskFocusChanged(s, p)) {
+    if (s.doc !== p.doc || u.frame !== q.frame || u.zoom !== q.zoom || u.panX !== q.panX || u.panY !== q.panY || u.onion !== q.onion || u.lightTable !== q.lightTable || u.playing !== q.playing || maskFocusChanged(s, p)) {
       if (u.zoom !== q.zoom) this.zoomingUntil = performance.now() + 160;
       this.invalidate(true, true);
     } else {
@@ -294,6 +300,7 @@ export class CanvasEngine {
     }
     if (u.tool !== q.tool) {
       if (this.gesture?.kind === 'tool' && !this.selfSwitch) this.cancelGesture();
+      if (!this.selfSwitch) getTool(q.tool)?.leave?.(this.ctx);
       this.updateCursor();
     }
   };
@@ -313,6 +320,7 @@ export class CanvasEngine {
     this.els.stage.classList.toggle('cv-checker', !doc.background);
 
     const zooming = performance.now() < this.zoomingUntil;
+    const lt = ui.playing ? [] : lightTableItems(doc, ui.lightTable, ui.frame);
     const settled = this.painter.paint(this.mg, {
       doc,
       frame: ui.frame,
@@ -328,7 +336,8 @@ export class CanvasEngine {
       camera: canvasCamera()?.view,
       pasteboard: !ui.playing && !doc.editing?.length && !!stageCamera(doc) && !lookingThrough() ? { frame: cameraFrameNow() } : undefined,
       activeLayerId: ui.activeLayerId,
-      ghost: getViewSettings().emptyGhost && !ui.playing && !ui.onion.enabled ? ghostItems(doc, ui.frame) : undefined,
+      ghost: getViewSettings().emptyGhost && !ui.playing && !ui.onion.enabled ? ghostItems(doc, ui.frame).filter((g) => !lt.some((l) => l.drawing === g.drawing)) : undefined,
+      lightTable: lt.length ? { items: lt, alpha: ui.lightTable?.opacity ?? LIGHT_TABLE_OPACITY, tint: lightTableTint() } : undefined,
     });
     if (!settled) {
       clearTimeout(this.settleTimer);
@@ -424,6 +433,8 @@ export class CanvasEngine {
   private updateCursor(): void {
     let c: string;
     if (this.gesture?.kind === 'pan') c = 'grabbing';
+    else if (this.gesture?.kind === 'grab') c = 'grabbing';
+    else if (this.grabHover && !this.spaceDown) c = this.grabHover;
     else if (this.spaceDown && this.inside) c = 'grab';
     else if (this.cursorOverride) c = this.cursorOverride;
     else {
@@ -498,6 +509,18 @@ export class CanvasEngine {
     // A press on another artboard opens it first, so the tool works there.
     ctl.runPointerDownHooks(this.toDocPoint(e), penEraser ? 'eraser' : ui.tool);
 
+    // Handles that work with any tool (vanishing points) come before the tool.
+    const grab = !penEraser && !ui.playing ? ctl.grabAt(this.toDocPoint(e), ui.zoom) : null;
+    if (grab) {
+      e.preventDefault();
+      this.els.root.setPointerCapture(e.pointerId);
+      this.gesture = { kind: 'grab', pointerId: e.pointerId, grab };
+      grab.down(this.toDocPoint(e));
+      this.updateCursor();
+      this.invalidate(false, true);
+      return;
+    }
+
     const tool = penEraser ? getTool('eraser') : getTool(ui.tool);
     if (!tool) return;
     const layer = activeLayer().layer;
@@ -534,6 +557,8 @@ export class CanvasEngine {
       if (ui.playing) return;
       const ptr = this.toPointer(e);
       ctl.setHover({ x: ptr.x, y: ptr.y });
+      const hg = ctl.grabAt(this.toDocPoint(e), ui.zoom);
+      this.grabHover = hg ? (hg.cursor ?? 'move') : null;
       const tool = this.currentTool();
       tool?.hover?.(ptr, this.ctx);
       this.updateCursor();
@@ -541,6 +566,11 @@ export class CanvasEngine {
       return;
     }
     if (e.pointerId !== g.pointerId) return;
+    if (g.kind === 'grab') {
+      g.grab.move(this.toDocPoint(e), e.shiftKey);
+      this.invalidate(false, true);
+      return;
+    }
     if (g.kind === 'pan') {
       ctl.setView(
         { zoom: store().get().ui.zoom, panX: g.panX + (e.clientX - g.startX), panY: g.panY + (e.clientY - g.startY) },
@@ -571,7 +601,7 @@ export class CanvasEngine {
       ctl.setPredicted([]);
       g.tool.up?.(this.toPointer(e), this.ctx);
       this.restoreTool(g);
-    }
+    } else if (g.kind === 'grab') g.grab.up(this.toDocPoint(e));
     this.lastPtr = null;
     this.updateCursor();
     this.invalidate(false, true);
@@ -594,6 +624,7 @@ export class CanvasEngine {
     if (!g) return;
     this.gesture = null;
     if (this.els.root.hasPointerCapture?.(g.pointerId)) this.els.root.releasePointerCapture(g.pointerId);
+    if (g.kind === 'grab') g.grab.cancel?.();
     if (g.kind === 'tool') {
       g.tool.cancel?.(this.ctx);
       ctl.setPredicted([]);
@@ -639,6 +670,17 @@ export class CanvasEngine {
       return;
     }
     if (this.spaceDown && !['Shift', 'Alt', 'Control', 'Meta'].includes(e.key)) this.spaceTap.spoil();
+    // The chosen tool gets first go at a key between gestures (Enter finishes a pen path), unless a focused control
+    // wants it.
+    if (!this.gesture && !this.spaceDown && !controlWantsKey(e.target, e) && !anyOverlayOpen()) {
+      const tool = this.currentTool();
+      if (tool?.onKey?.(e, this.ctx)) {
+        e.preventDefault();
+        e.stopPropagation();
+        this.invalidate(false, true);
+        return;
+      }
+    }
     this.modifiersChanged(e);
   };
 

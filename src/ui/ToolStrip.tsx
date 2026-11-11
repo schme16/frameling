@@ -6,6 +6,7 @@ import { store, useStore } from '../core/store';
 import { syncDynamicCommands } from './dynamic';
 import { pickTool } from '../tools/pick';
 import { Icon } from './icons';
+import { currentWorkspace, dock, stripTools } from './dock';
 
 /** The kind of layer being drawn on (the last one when none is picked), or null with no layers. */
 function useActiveKind(): LayerKind | null {
@@ -16,12 +17,16 @@ export function ToolStrip() {
   syncDynamicCommands();
   const kind = useActiveKind();
   const current = useStore((s) => s.ui.tool);
-  const tools = allTools().filter((t) => !kind || t.layers.includes(kind));
+  // The workspace can narrow the strip (the Pixel workspace shows only pixel art tools on pixel layers).
+  const wsId = dock.use((d) => d.workspaceId);
+  const usable = allTools().filter((t) => !kind || t.layers.includes(kind));
+  const tools = stripTools(usable, kind, wsId ? currentWorkspace() : undefined);
   const ids = tools.map((t) => t.id).join(',');
 
-  // The picked tool doesn't work on this kind of layer: move to the first one that does.
+  // The picked tool doesn't work on this kind of layer: move to the first one that does. A tool the workspace only
+  // leaves out of the strip still works (picked by its key, say), so it's left alone.
   useEffect(() => {
-    if (tools.length && getTool(current) && !tools.some((t) => t.id === current)) store().setUi({ tool: tools[0].id });
+    if (tools.length && getTool(current) && !usable.some((t) => t.id === current)) store().setUi({ tool: tools[0].id });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current, ids]);
 

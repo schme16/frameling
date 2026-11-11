@@ -51,7 +51,7 @@ To join shots into one video they need to be the same size; Frameling tells you 
     title: 'Exporting artboards',
     section: 'Exporting',
     media: 'artboards-export.png',
-    summary: 'Export each artboard as its own file (into a folder or one zip), all of them in order as one, or every frame packed onto one sprite sheet.',
+    summary: 'Export each artboard as its own file (into a folder or one zip), all of them in order as one, or every frame packed onto one picture (an atlas).',
     keywords: ['export artboards', 'export all', 'batch export', 'atlas', 'texture atlas', 'pack', 'zip', 'each sprite'],
     body: `When a file has more than one [artboard](help:artboards), the **Export** dialog has a **Which artboards** row. Pick the format and settings as usual, then:
 

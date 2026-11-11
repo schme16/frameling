@@ -83,7 +83,10 @@
       "target": [
         "nsis",
         "portable"
-      ]
+      ],
+      "signtoolOptions": {
+        "publisherName": "Frameling (self-signed)"
+      }
     },
     "nsis": {
       "oneClick": false,
@@ -98,7 +101,10 @@
       "target": [
         "dmg"
       ],
-      "category": "public.app-category.graphics-design"
+      "category": "public.app-category.graphics-design",
+      "identity": null,
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false
     },
     "fileAssociations": [
       {
@@ -123,7 +129,8 @@
           "frameling"
         ]
       }
-    ]
+    ],
+    "afterPack": "build/adhoc-sign.cjs"
   },
   "desktopName": "frameling.desktop"
 }

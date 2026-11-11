@@ -62,6 +62,8 @@ export function takeContent(doc: Doc): ArtboardContent {
   if (doc.flow) c.flow = doc.flow;
   if (doc.audio) c.audio = doc.audio;
   if (doc.guides) c.guides = doc.guides;
+  if (doc.inOut) c.inOut = doc.inOut;
+  if (doc.perspective) c.perspective = doc.perspective;
   return c;
 }
 
@@ -80,6 +82,10 @@ export function putContent(doc: Doc, c: ArtboardContent): void {
   else delete doc.audio;
   if (c.guides) doc.guides = c.guides;
   else delete doc.guides;
+  if (c.inOut) doc.inOut = c.inOut;
+  else delete doc.inOut;
+  if (c.perspective) doc.perspective = c.perspective;
+  else delete doc.perspective;
 }
 
 /** An artboard's content, whether it is open or not. */
@@ -424,6 +430,8 @@ export function joinShots(doc: Doc, ids: Id[]): { doc: Doc; starts: number[] } |
   delete out.flow;
   delete out.audio;
   delete out.guides;
+  delete out.inOut;
+  delete out.perspective;
   if (!oneBg) out.background = null;
   const starts: number[] = [];
   let at = 0;

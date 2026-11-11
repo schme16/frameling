@@ -2,8 +2,9 @@
  * Shape geometry for selecting and editing: bounds, hit testing and moving shapes about with a matrix.
  * All pure functions on the document types (no DOM), in document pixels unless a name says screen.
  */
-import type { Doc, FillShape, InstanceShape, Layer, PathPoint, PathShape, Shape, StrokeShape, SubPath } from '../core/format';
+import type { Doc, FillShape, Gradient, InstanceShape, Layer, PathPoint, PathShape, Shape, StrokeShape, SubPath } from '../core/format';
 import { strokeOutline } from '../core/render';
+import { mapGradient } from '../core/gradient';
 import { store } from '../core/store';
 import { decompose, invert, symbolContent, transformMatrix } from '../core/symbols';
 import type { Pt, Rect } from './view';
@@ -363,9 +364,16 @@ export function transformShape<S extends Shape>(s: S, m: Matrix): S {
     };
     return out as S;
   }
-  if (s.type === 'fill') return { ...(s as FillShape), paths: mapPaths(m, (s as FillShape).paths) } as S;
+  const mg = (gr: Gradient | undefined) => gr && mapGradient(gr, (p) => apply(m, p.x, p.y));
+  if (s.type === 'fill') {
+    const fs = s as FillShape;
+    return { ...fs, paths: mapPaths(m, fs.paths), ...(fs.gradient ? { gradient: mg(fs.gradient) } : {}) } as S;
+  }
   const ps = s as PathShape;
-  return { ...ps, paths: mapPaths(m, ps.paths), stroke: ps.stroke ? { ...ps.stroke, width: ps.stroke.width * k } : null } as S;
+  const out: PathShape = { ...ps, paths: mapPaths(m, ps.paths), stroke: ps.stroke ? { ...ps.stroke, width: ps.stroke.width * k } : null };
+  if (ps.fillGradient) out.fillGradient = mg(ps.fillGradient);
+  if (ps.strokeGradient) out.strokeGradient = mg(ps.strokeGradient);
+  return out as S;
 }
 
 export function transformShapes(shapes: Shape[], m: Matrix): Shape[] {

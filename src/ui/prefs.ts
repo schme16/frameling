@@ -18,7 +18,7 @@ export interface Prefs {
   /** Themes people made by copying and customising. */
   customThemes: Theme[];
   look: LookPref;
-  /** Soft sound effects (quest steps, export done, refusals). Off by default. */
+  /** Soft sound effects (quest steps, export done, refusals). On by default (picked on the board). */
   sounds: boolean;
   /** How loud the sounds are, 0 to 1. */
   soundVolume: number;
@@ -49,7 +49,7 @@ export const DEFAULT_PREFS: Prefs = {
   lightTheme: DEFAULT_LIGHT,
   customThemes: [],
   look: 'cosy',
-  sounds: false,
+  sounds: true,
   soundVolume: 0.6,
   reduceMotion: false,
   showWelcome: true,

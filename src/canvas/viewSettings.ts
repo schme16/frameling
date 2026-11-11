@@ -18,10 +18,18 @@ interface ViewSettings {
   lockGuides: boolean;
   /** On a frame with nothing drawn, show the last drawing faintly (the empty frame ghost). */
   emptyGhost: boolean;
+  /** A grid over the page: squares, isometric diamonds, or none. */
+  grid: 'off' | 'square' | 'iso';
+  /** Grid spacing in stage pixels (an isometric diamond's width). */
+  gridSize: number;
+  /** Isometric slope: 2:1 (pixel art, 26.6 degrees) or true isometric (30 degrees). */
+  isoStyle: '2:1' | '30';
+  /** Show the document's perspective guides. */
+  perspective: boolean;
 }
 
 const KEY = 'frameling.view';
-let state: ViewSettings = { pixelGrid: true, throughCamera: false, cameraWhilePlaying: true, rulers: false, guides: true, snap: true, lockGuides: false, emptyGhost: true };
+let state: ViewSettings = { pixelGrid: true, throughCamera: false, cameraWhilePlaying: true, rulers: false, guides: true, snap: true, lockGuides: false, emptyGhost: true, grid: 'off', gridSize: 32, isoStyle: '2:1', perspective: true };
 const listeners = new Set<() => void>();
 
 try {
@@ -31,6 +39,10 @@ try {
     if (saved && typeof saved.throughCamera === 'boolean') state = { ...state, throughCamera: saved.throughCamera };
     if (saved && typeof saved.cameraWhilePlaying === 'boolean') state = { ...state, cameraWhilePlaying: saved.cameraWhilePlaying };
     for (const k of ['rulers', 'guides', 'snap', 'lockGuides', 'emptyGhost'] as const) if (saved && typeof saved[k] === 'boolean') state = { ...state, [k]: saved[k] };
+    if (saved && (saved.grid === 'square' || saved.grid === 'iso' || saved.grid === 'off')) state = { ...state, grid: saved.grid };
+    if (saved && Number.isFinite(saved.gridSize) && saved.gridSize >= 1 && saved.gridSize <= 4096) state = { ...state, gridSize: saved.gridSize };
+    if (saved && (saved.isoStyle === '2:1' || saved.isoStyle === '30')) state = { ...state, isoStyle: saved.isoStyle };
+    if (saved && typeof saved.perspective === 'boolean') state = { ...state, perspective: saved.perspective };
   }
 } catch {
   // storage can be unavailable; the defaults are fine

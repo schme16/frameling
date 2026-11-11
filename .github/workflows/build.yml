@@ -1,7 +1,8 @@
 name: Build desktop apps
 
 # Builds Frameling for Windows, macOS and Linux, and the web version, whenever a pull request targets main, and on demand.
-# The installers are attached to the run as artifacts. They are unsigned until signing is set up.
+# The installers are attached to the run as artifacts. Windows is signed with a self-signed certificate and macOS is
+# ad-hoc signed, so both need allowing once on first run (see the 'Installing Frameling' help topic).
 on:
   pull_request:
     branches: [main]
@@ -42,6 +43,10 @@ jobs:
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Windows: signed with Frameling's self-signed code-signing certificate when these secrets are set (an
+          # unsigned build otherwise). macOS: ad-hoc signed by build/adhoc-sign.cjs, like Godot. Linux needs neither.
+          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
       - uses: actions/upload-artifact@v4
         with:
           name: frameling-${{ matrix.name }}

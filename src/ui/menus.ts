@@ -19,7 +19,7 @@ export const MENUS: MenuDef[] = [
   {
     label: 'File',
     categories: ['File', 'Export'],
-    items: ['file.new', 'file.open', 'file.openRecent', 'file.openPlayable', 'file.recover', '-', 'file.save', 'file.saveAs', 'file.saveAsTemplate', 'file.importTemplate', '-', 'sub:export', 'audio.import'],
+    items: ['file.new', 'file.open', 'file.openRecent', 'file.openPlayable', 'file.recover', '-', 'file.save', 'file.saveAs', 'file.saveVersion', 'file.versions', 'file.saveAsTemplate', 'file.importTemplate', '-', 'sub:export', 'audio.import'],
   },
   {
     label: 'Edit',
@@ -29,7 +29,7 @@ export const MENUS: MenuDef[] = [
   {
     label: 'View',
     categories: ['View', 'Artboards'],
-    items: ['view.zoomIn', 'view.zoomOut', 'view.fit', 'view.zoom100', 'view.center', 'view.pixelGrid', 'view.emptyGhost', '-', 'view.rulers', 'view.guides', 'view.snap', 'view.lockGuides', 'view.clearGuides', '-', 'group:panels', '-', 'group:workspaces', 'view.saveWorkspace', 'view.resetLayout', '-', 'view.toggleTheme', 'view.nextTheme', 'view.themes', 'view.toggleLook', 'view.toggleSounds', '-', 'view.commandPalette'],
+    items: ['view.zoomIn', 'view.zoomOut', 'view.fit', 'view.zoom100', 'view.center', 'view.pixelGrid', 'view.emptyGhost', 'view.whereDidItGo', '-', 'view.rulers', 'view.guides', 'view.snap', 'view.lockGuides', 'view.clearGuides', '-', 'view.gridSquare', 'view.gridIso', 'view.perspective1', 'view.perspective2', 'view.showPerspective', 'view.removePerspective', 'view.gridSettings', '-', 'view.lightTable', 'view.lightTableDrawing', 'view.clearLightTable', '-', 'group:panels', '-', 'group:workspaces', 'view.saveWorkspace', 'view.resetLayout', '-', 'view.toggleTheme', 'view.nextTheme', 'view.themes', 'view.toggleLook', 'view.toggleSounds', '-', 'view.commandPalette'],
   },
   {
     label: 'Draw',
@@ -39,12 +39,12 @@ export const MENUS: MenuDef[] = [
   {
     label: 'Pixel',
     categories: ['Pixel'],
-    items: ['tools.pencil', 'tools.shade', 'tools.dither', 'pixel.mirror', '-', 'pixel.flipH', 'pixel.flipV', 'pixel.rotateRight', 'pixel.rotateLeft', 'pixel.rotate180', 'pixel.rotate', '-', 'pixel.outline', 'pixel.outlineInside', '-', 'view.panel.palette', 'pixel.paletteLock', 'pixel.reduceToPalette', 'palette.fromDrawing', 'palette.import', 'palette.exportGpl', 'palette.exportHex', 'palette.exportPal'],
+    items: ['tools.pencil', 'tools.shade', 'tools.dither', 'pixel.mirror', '-', 'pixel.flipH', 'pixel.flipV', 'pixel.rotateRight', 'pixel.rotateLeft', 'pixel.rotate180', 'pixel.rotate', '-', 'pixel.outline', 'pixel.outlineInside', '-', 'view.panel.palette', 'view.panel.preview', 'pixel.previewPlay', 'pixel.previewSize', 'view.workspace.pixel', '-', 'pixel.paletteLock', 'pixel.reduceToPalette', 'palette.fromDrawing', 'palette.import', 'palette.exportGpl', 'palette.exportHex', 'palette.exportPal'],
   },
   {
     label: 'Animate',
     categories: ['Animate', 'Animation', 'Timeline', 'Frames', 'Sound', 'Lip sync'],
-    items: ['timeline.play', 'timeline.toggleLoop', 'timeline.toggleOnion', '-', 'timeline.prevFrame', 'timeline.nextFrame', 'timeline.prevKey', 'timeline.nextKey', 'timeline.firstFrame', 'timeline.lastFrame', '-', 'timeline.newKey', 'timeline.emptyFrame', 'timeline.duplicateKey', 'timeline.clearKey', '-', 'timeline.insertFrame', 'timeline.removeFrame', 'timeline.addMarker'],
+    items: ['timeline.play', 'timeline.toggleLoop', 'timeline.togglePingPong', 'timeline.toggleOnion', 'timeline.onionKeysOnly', '-', 'timeline.setIn', 'timeline.setOut', 'timeline.clearInOut', '-', 'timeline.prevFrame', 'timeline.nextFrame', 'timeline.prevKey', 'timeline.nextKey', 'timeline.firstFrame', 'timeline.lastFrame', '-', 'timeline.newKey', 'timeline.emptyFrame', 'timeline.duplicateKey', 'timeline.clearKey', '-', 'timeline.insertFrame', 'timeline.removeFrame', 'timeline.addMarker', '-', 'sub:motions'],
   },
   {
     label: 'Rig',
@@ -77,6 +77,11 @@ export interface SubmenuDef {
 }
 
 export const SUBMENUS: Record<string, SubmenuDef> = {
+  motions: {
+    label: 'One-click motions',
+    items: ['motion.bounce', 'motion.wobble', 'motion.float', 'motion.popIn', 'motion.shake', 'motion.fadeIn'],
+    prefixes: ['motion.'],
+  },
   export: {
     label: 'Export',
     items: ['file.export', 'file.exportAgain', '-', 'file.exportInteractives', 'file.exportLottie', 'file.exportSvgAnimated', 'file.exportProres', 'file.exportPsd', 'file.exportPdf', 'file.exportIllustrator', 'tiles.export', 'file.exportGodotAddon', '-', 'file.toggleUpdatePlayable'],

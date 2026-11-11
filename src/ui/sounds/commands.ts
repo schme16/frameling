@@ -42,13 +42,13 @@ registerHelpTopics([
     title: 'Sounds',
     section: 'Settings',
     media: 'sounds.png',
-    summary: 'Soft little sounds that tell you something happened. Off until you turn them on.',
+    summary: 'Soft little sounds that tell you something happened. On to start with; easy to switch off.',
     keywords: ['sound', 'audio', 'chime', 'beep', 'mute', 'quiet', 'volume', 'noise', 'effects'],
-    body: `Frameling can make a few soft sounds, so you hear that something happened without looking. They're **off** until you turn them on.
+    body: `Frameling can make a few soft sounds, so you hear that something happened without looking. They're **on** to start with, and quiet.
 
-## Turn them on
+## Turn them off or on
 
-Open **Preferences** (**Ctrl+,**), choose **General** and turn on **Sounds**. A **Volume** slider appears, with a **Try** button that plays each sound once. Or use **View, Sounds on or off**.
+Open **Preferences** (**Ctrl+,**), choose **General** and switch **Sounds** off or on. While they're on, a **Volume** slider shows, with a **Try** button that plays each sound once. Or use **View, Sounds on or off**.
 
 ## What you'll hear
 

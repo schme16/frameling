@@ -48,6 +48,28 @@ Sizes are shown in your units (Preferences > Units). The chain button between wi
 - **Background**: the page colour, or **See-through** for a transparent page.`,
   },
   {
+    id: 'where-did-it-go',
+    title: 'Where did my drawing go?',
+    section: 'Drawing',
+    media: 'where-did-it-go.png',
+    summary: 'When a frame looks empty but something is drawn on it, Frameling says why and brings it back with one click.',
+    keywords: ['lost', 'missing', 'disappeared', 'vanished', 'gone', 'invisible', 'hidden layer', 'opacity', 'see-through', 'off canvas', 'off the page', 'mask', 'locked', 'where did my drawing go'],
+    body: `Sometimes a drawing is there but you can't see it. When you land on a frame that looks empty, Frameling checks why, and a little note pops up with a button that fixes it:
+
+- **On a hidden layer** (or in a hidden folder): **Show it** turns the layer back on.
+- **Fully see-through** (opacity 0), on the layer, its folder or the drawing itself: **Make it solid** sets it back to full strength.
+- **Masked away**: a mask layer above it has nothing drawn where your drawing is. **Turn the mask off** hides the mask layer.
+- **Off the page**: **Bring it back** moves it to the middle of the page.
+
+Each one is a normal step you can undo with **Ctrl+Z**. Frameling only mentions each one once per document, so it never nags. Things that fade or fly in on purpose (keys with in-betweens) are left alone.
+
+**Ask any time:** **View > Where did my drawing go?** (or **Ctrl+K** and type "lost") checks this frame. If nothing is drawn here at all, it tells you the nearest frame that has a drawing and takes you there.
+
+**Locked layers:** click something on a locked layer with the Select tool and Frameling says it's locked, instead of doing nothing. Unlock it with the padlock in the timeline.
+
+A frame with nothing drawn on it yet isn't lost: the [ghost on empty frames](help:empty-frame-ghost) shows your last drawing faintly there.`,
+  },
+  {
     id: 'rulers-guides',
     title: 'Rulers and guides',
     section: 'Drawing',
@@ -64,7 +86,7 @@ Press **Ctrl+R** (or **View > Rulers**) to show rulers along the top and left of
 - Guides are saved with your drawing, and never show up in exports.
 
 **Snapping**
-When you move or resize shapes, or draw rectangles, ellipses and lines, they jump onto guides and onto the page's edges and middle when they get close. A pink line shows what they snapped to. Hold **Ctrl** while dragging to stop snapping for a moment, or turn it off with **View > Snap to guides and page** (**Ctrl+Shift+;**).`,
+When you move or resize shapes, or draw rectangles, ellipses and lines, they jump onto guides and onto the page's edges and middle when they get close. A pink line shows what they snapped to. Hold **Ctrl** while dragging to stop snapping for a moment, or turn it off with **View > Snap to guides, grid and page** (**Ctrl+Shift+;**). When a [grid](help:grids-perspective) is showing, things snap to it too.`,
   },
   {
     id: 'pixel-grid',
@@ -108,5 +130,50 @@ Tip: the Eyedropper (I) picks up any colour you can see on the page.`,
 Click a slider's number to type an exact value (Enter keeps it, Escape cancels). Hold **Shift** while dragging for big steps, or **Alt** or **Ctrl** for fine control. The arrow keys work the same way.
 
 Your settings are remembered, so the brush is just as you left it next time.`,
+  },
+  {
+    id: 'grids-perspective',
+    title: 'Grids and perspective guides',
+    section: 'Drawing',
+    media: 'grids-perspective.png',
+    summary: 'A square or isometric grid over the page, and perspective lines that meet at vanishing points you can drag.',
+    keywords: ['grid', 'square grid', 'isometric', 'iso', '2:1', 'snap to grid', 'perspective', 'vanishing point', 'horizon', 'one point', 'two point', 'graph paper'],
+    body: `**Grids**
+- **View > Square grid** (**Ctrl+'**) puts graph paper over the page.
+- **View > Isometric grid** shows diamonds for drawing boxes, rooms and tiles in 3D. Pick **2:1** for pixel art (two across for one down, the slope games use) or **30 degrees** for true isometric drawings.
+- **View > Grid and perspective settings...** sets the size, in your units (Preferences > Units). For isometric it's the width of one diamond.
+
+While snapping is on (**View > Snap to guides, grid and page**), shapes and corners jump onto the square grid's lines, and onto the isometric grid's corners. Hold **Ctrl** while dragging to stop it for a moment. When you zoom far out, the grid thins itself out so it never turns into a grey smudge.
+
+**Perspective guides**
+- **View > Perspective guides: one point** shows lines meeting at one vanishing point on the horizon. Use it for a road, a hallway or train tracks heading away from you.
+- **Two point** has two vanishing points, for boxes and buildings seen from a corner.
+
+The horizon is the yellow line. Drag a round handle to move its vanishing point (it works with any tool). With two, the horizon stays level, so moving one up moves the other with it. Hold **Shift** to tilt it. Points can go off the page: zoom out to reach them. **Lock guides** stops them moving by accident.
+
+The perspective guides are saved with your drawing. Hide them with **View > Show perspective guides**, or take them away with **Remove perspective guides**.
+
+> Grids and guides are only for you. They never show when you play or export.`,
+  },
+  {
+    id: 'light-table',
+    title: 'Light table (trace a frame)',
+    section: 'Animating',
+    media: 'light-table.png',
+    summary: 'Pin a frame, or one drawing, so it shows faintly on every frame while you trace over it.',
+    keywords: ['light table', 'lightbox', 'trace', 'tracing', 'reference', 'pin', 'see through'],
+    body: `Animators trace on a light table: a glowing desk that shows the drawing underneath through the paper. Frameling's light table shows a frame you choose, faintly, on every frame you go to.
+
+**Put something on it**
+- **View > Put this frame on the light table** pins the whole frame you're on.
+- To pin just one drawing, right-click it in the timeline and pick **Put this drawing on the light table**. Or use **View > Put this layer's drawing on the light table**.
+
+Now go to any other frame and draw over it. The timeline's top bar shows what's on the light table, with a slider for how strongly it shows, and an **x** to clear it. Click its name to jump back to that frame.
+
+**How it's different**
+- The [onion skin](help:timeline-onion) shows the frames next to the one you're on, so it moves as you move. The light table stays put on the frame you chose. You can have both at once.
+- The [ghost on empty frames](help:empty-frame-ghost) only shows the last drawing, and only on an empty frame. The light table shows whatever you pinned, everywhere.
+
+It's only for you: it never shows when you play or export.`,
   },
 ]);

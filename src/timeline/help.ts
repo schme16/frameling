@@ -89,7 +89,7 @@ If a layer is locked its frames can't be changed. Click the padlock to unlock it
     section: 'Animating',
     media: 'onion-skin.mp4',
     summary: 'See faint ghosts of the frames before and after this one, so each drawing lines up with its neighbours.',
-    keywords: ['onion skin', 'ghost', 'tracing', 'tint', 'previous frame', 'light table'],
+    keywords: ['onion skin', 'ghost', 'tracing', 'tint', 'previous frame', 'keys only', 'held frames', 'twos'],
     body: `Drawing a walk or a bounce is much easier when you can see where the last pose was. **Onion skin** (named after the thin paper animators traced through) shows the neighbouring frames as faint ghosts under your drawing.
 
 Press **Shift+O**, or click the onion in the timeline's top bar.
@@ -101,6 +101,8 @@ Click the little arrow beside the onion for:
 - **Frames before** and **frames after**: how many ghosts to show on each side. 2 before and 1 after is a good start.
 - **Strength:** how strong the nearest ghost is. Ones further away fade.
 - **Colours:** frames before are tinted rose and frames after mint, so you can tell them apart. Turn the tint off to see them in their own colours.
+
+- **Only show keys (skip held frames):** counts drawings instead of frames. If your drawings are held for two or three frames each (on twos or threes), the ghosts are the poses before and after this one, not copies of the drawing you're on. Also in **Timeline > Onion skin shows only keys**.
 
 On the ruler, the frames being ghosted are softly shaded in the same colours.
 
@@ -139,7 +141,9 @@ Start drawing and the ghost stays behind your new lines until you go to another 
 It's only for you: it never shows when you play or export. It hides while the [onion skin](help:timeline-onion) is on,
 since that already shows the frames around this one.
 
-Turn it off or on in **View > Ghost on empty frames**.`,
+Turn it off or on in **View > Ghost on empty frames**.
+
+Want to trace a particular frame, not just the last one? Put it on the [light table](help:light-table).`,
   },
   {
     id: 'timeline-layers',
@@ -178,7 +182,7 @@ Shortcuts: **Ctrl+Shift+N** adds a vector layer.`,
     section: 'Animating',
     media: 'timeline-playing.mp4',
     summary: 'Press Enter to watch it. It plays at your fps, and loops until you stop it.',
-    keywords: ['play', 'pause', 'loop', 'fps', 'speed', 'preview', 'scrub', 'length'],
+    keywords: ['play', 'pause', 'loop', 'fps', 'speed', 'preview', 'scrub', 'length', 'ping-pong', 'back and forth', 'boomerang'],
     body: `Press **Enter** (or the play button) to watch your animation, and again to stop.
 
 ## Speed and length
@@ -189,7 +193,9 @@ Shortcuts: **Ctrl+Shift+N** adds a vector layer.`,
 ## Playback
 
 - **Loop** (the loop button) starts again when it reaches the end. Turn it off to stop on the last frame.
+- **Back and forth** (ping-pong, the button beside loop) plays to the end and then backwards to the start, instead of jumping back. Lovely for breathing, swinging and floating. With loop off it plays there and back once.
 - If you've picked a [clip](help:timeline-clips), only that part plays. Click the clip again to go back to playing everything.
+- To play just part of the animation without making a clip, set a [play range](help:timeline-play-range).
 - If your computer can't keep up, playback skips frames to stay in time instead of slowing down.
 - Changing anything while it plays stops it, so you never edit a moving target.
 
@@ -203,6 +209,35 @@ Shortcuts: **Ctrl+Shift+N** adds a vector layer.`,
 | Home and End | First and last frame |
 
 You can also drag along the numbers at the top to scrub.`,
+  },
+  {
+    id: 'timeline-play-range',
+    order: 3.5,
+    title: 'Play just part of it (play range)',
+    section: 'Animating',
+    media: 'timeline-play-range.png',
+    summary: 'Mark a start and end on the ruler, and only that part plays and loops. Export can save just that part too.',
+    keywords: ['play range', 'in and out', 'in point', 'out point', 'work area', 'loop part', 'preview range', 'section'],
+    body: `Working on the jump in the middle of a long animation? Set a **play range** (in and out) and only those frames play, over and over, while you polish them.
+
+## Set it
+
+- **Shift and drag** along the numbers at the top of the timeline.
+- Or go to a frame and press **Alt+[** to start the range there, then go to another and press **Alt+]** to end it.
+- Or right-click the numbers and pick **Start the play range here** or **End the play range here**.
+
+Frames outside the range are dimmed on the ruler, and there's a bracket at each end. Drag a bracket to move that end. The timeline's top bar shows the range, with an **x** to clear it.
+
+## Clear it
+
+Click the **x** beside the range in the top bar, or use **Timeline > Play everything again**. Undo (**Ctrl+Z**) also brings back a range you changed.
+
+## Good to know
+
+- The range is saved with your drawing.
+- A [clip](help:timeline-clips) you pick takes over while it's picked. Setting a range lets go of the clip.
+- **Export** offers **Play range** under "What to export", so you can save just that part as a GIF, a video or a sprite sheet.
+- It works with [back and forth](help:timeline-playing) (ping-pong) too.`,
   },
   {
     id: 'timeline-clips',

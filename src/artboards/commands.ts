@@ -126,7 +126,7 @@ registerCommands([
     label: 'Pack artboards into one sprite sheet...',
     category: 'Export',
     description: 'Every frame of every artboard on one picture, with a JSON atlas that names them.',
-    keywords: ['atlas', 'texture atlas', 'sprite sheet', 'pack'],
+    keywords: ['atlas', 'texture atlas', 'pack'],
     help: 'artboards-export',
     enabled: many,
     run: () => void import('./exportDialog').then((m) => m.openArtboardExport('atlas')),

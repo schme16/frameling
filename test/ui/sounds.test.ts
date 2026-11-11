@@ -58,8 +58,9 @@ describe('rate limits', () => {
 });
 
 describe('when they play', () => {
-  it('off by default, and nothing plays then', () => {
-    expect(DEFAULT_PREFS.sounds).toBe(false);
+  it('on by default, and nothing plays once turned off', () => {
+    expect(DEFAULT_PREFS.sounds).toBe(true);
+    setPrefs({ sounds: false });
     expect(cueWanted('step', 0)).toBe(false);
   });
 
