@@ -1,7 +1,7 @@
 // Runs an export: draws each frame at an exact frame number (so the result never depends on how fast this computer
 // is), feeds the encoder, and hands back the finished file or files. Needs a canvas, so it only runs in the app.
 import { strToU8, zipSync, type Zippable } from 'fflate';
-import { BufferTarget, CanvasSource, Mp4OutputFormat, Output, QUALITY_HIGH, WebMOutputFormat, type VideoCodec } from 'mediabunny';
+import { BufferTarget, CanvasSource, Mp4OutputFormat, Output, QUALITY_HIGH, VideoSample, VideoSampleSource, WebMOutputFormat, type VideoCodec } from 'mediabunny';
 import type { Doc } from '../core/format';
 import { encodePng, type RawImage } from '../io/png';
 import { ApngWriter } from './apng';
@@ -11,6 +11,7 @@ import { frameNumber, MAX_SHEET_SIDE, planExport, type Plan } from './plan';
 import { buildSheetFiles } from './engines';
 import { frameToSvg } from './svg';
 import { formatInfo, type ExportSettings } from './types';
+import { BT709_LIMITED, rgbaToI420 } from './yuv';
 
 export interface Progress {
   done: number;
@@ -121,17 +122,32 @@ export async function runExport(ctx: RunContext): Promise<RunResult> {
       if (!codec) throw new Error("This computer can't make that kind of video.");
       const mp4 = settings.format === 'mp4';
       const output = new Output({ format: mp4 ? new Mp4OutputFormat({ fastStart: 'in-memory' }) : new WebMOutputFormat(), target: new BufferTarget() });
-      const source = new CanvasSource(canvas, { codec, quality: QUALITY_HIGH, ...(bg === 'none' ? { alpha: 'keep' as const } : {}) });
+      // MP4 frames are converted to limited range BT.709 here (see yuv.ts); left to the browser they come out full
+      // range. WebM keeps the canvas path, which is what carries a see-through background.
+      const config = { codec, quality: QUALITY_HIGH, ...(bg === 'none' ? { alpha: 'keep' as const } : {}) };
+      const source = mp4 ? new VideoSampleSource(config) : new CanvasSource(canvas, config);
       output.addVideoTrack(source, { frameRate: doc.fps });
       try {
         await output.start();
         const dt = 1 / doc.fps;
+        let yuv: Uint8Array | undefined;
         for (let i = 0; i < plan.count; i++) {
           await breathe(signal, i);
           step(i, `Drawing frame ${i + 1} of ${plan.count}`);
-          frameAt(i);
           // The time of each frame is its number divided by the frame rate, however long drawing it took.
-          await source.add(i * dt, dt);
+          if (source instanceof VideoSampleSource) {
+            const img = rgbaAt(i);
+            yuv = rgbaToI420(img.pixels, img.width, img.height, yuv);
+            const sample = new VideoSample(yuv, { format: 'I420', codedWidth: img.width, codedHeight: img.height, timestamp: i * dt, duration: dt, colorSpace: BT709_LIMITED });
+            try {
+              await source.add(sample);
+            } finally {
+              sample.close();
+            }
+          } else {
+            frameAt(i);
+            await source.add(i * dt, dt);
+          }
         }
         step(plan.count, 'Finishing the video');
         await output.finalize();

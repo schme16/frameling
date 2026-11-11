@@ -11,8 +11,9 @@
   "homepage": "https://github.com/schme16/frameling",
   "scripts": {
     "dev": "node scripts/dev.mjs",
-    "build": "npm run typecheck && vite build && node scripts/build-main.mjs",
+    "build": "npm run build:mascot && npm run typecheck && vite build && node scripts/build-main.mjs",
     "typecheck": "tsc --noEmit",
+    "build:mascot": "node scripts/build-mascot.mjs",
     "test": "vitest run",
     "start": "npm run build && electron .",
     "dist": "npm run build && electron-builder --publish never",
@@ -25,6 +26,7 @@
     "immer": "^11.2.10",
     "mediabunny": "^1.65.2",
     "perfect-freehand": "^1.2.3",
+    "polygon-clipping": "^0.15.7",
     "react": "^19.3.1",
     "react-dom": "^19.3.1"
   },

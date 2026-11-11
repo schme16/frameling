@@ -1,0 +1,3 @@
+A (default, built): blank templates leave the example cards and show as a compact row of sizes ("Or start blank, with layers ready") with an aspect-ratio outline.
+B: blank templates stay in the example grid as cards with a dashed outline and the size label in place of a picture.
+B can be previewed in the app with document.documentElement.dataset.blankLook = "cards" (debug only).

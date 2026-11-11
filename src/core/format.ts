@@ -38,6 +38,8 @@ export interface Doc {
   markers: Marker[];
   /** The document's colour swatches. */
   swatches: Swatch[];
+  /** The pixel art palette: an ordered list of colours in ramps (optional; missing = the starter palette). */
+  palette?: DocPalette;
 }
 
 export type LayerKind = 'vector' | 'pixel';
@@ -61,12 +63,19 @@ export interface BaseLayer {
 
 export interface VectorLayer extends BaseLayer {
   kind: 'vector';
+  /**
+   * How new shapes meet old ones (missing = 'object'). 'object': each shape stays separate. 'merge': ungrouped shapes
+   * cut and join each other, so the layer behaves like one flat painting.
+   */
+  drawMode?: 'object' | 'merge';
 }
 
 export interface PixelLayer extends BaseLayer {
   kind: 'pixel';
   /** Document pixels per art pixel (a whole number, 1 or more). A 256x256 stage with pixelSize 8 is a 32x32 grid. */
   pixelSize: number;
+  /** Palette lock: everything painted on this layer snaps to the nearest palette colour (missing = off). */
+  paletteLock?: boolean;
 }
 
 export type Layer = VectorLayer | PixelLayer;
@@ -132,6 +141,8 @@ export interface BrushSettings {
 /** A brush or pencil stroke, kept as its input points so it can be re-rendered or re-styled losslessly. */
 export interface StrokeShape {
   id: Id;
+  /** Shapes sharing a group id select and move together, and never merge (missing = not grouped). */
+  group?: Id;
   type: 'stroke';
   points: StrokePoint[];
   brush: BrushSettings;
@@ -158,6 +169,8 @@ export interface SubPath {
  */
 export interface FillShape {
   id: Id;
+  /** Shapes sharing a group id select and move together, and never merge (missing = not grouped). */
+  group?: Id;
   type: 'fill';
   paths: SubPath[];
   color: Color;
@@ -167,6 +180,8 @@ export interface FillShape {
 /** A geometric shape (rectangle, ellipse, line, polygon, pen path), with an optional fill and stroke. */
 export interface PathShape {
   id: Id;
+  /** Shapes sharing a group id select and move together, and never merge (missing = not grouped). */
+  group?: Id;
   type: 'path';
   paths: SubPath[];
   fill: Color | null;
@@ -193,4 +208,15 @@ export interface Swatch {
   id: Id;
   name: string;
   color: Color;
+}
+
+/**
+ * A pixel art palette. Colours are in order; a ramp is a run of neighbours going from dark to light (or light to
+ * dark), which is what shading steps along. `ramps` lists where each ramp starts (index into `colors`); missing or
+ * empty means the whole palette is one ramp.
+ */
+export interface DocPalette {
+  name: string;
+  colors: Color[];
+  ramps?: number[];
 }

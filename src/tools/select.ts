@@ -34,6 +34,9 @@ import {
 import { activeDrawing, activeLayer, editActiveDrawing } from './edit';
 import { SelectOptions } from './options/SelectOptions';
 import { reportEdit } from './util';
+import { activeIsMerge, editShapes, pendingCut, setCut, withGroups } from './merge-mode';
+import { cutOut, mergeable, placeMoved, polygonGeom, shapeBox } from '../geometry/merge';
+import { subPathsToPath2D } from '../core/render';
 
 /** How far off (screen pixels) a click can be and still hit a thin line. */
 const HIT_TOL = 5;
@@ -118,9 +121,12 @@ function down(e: ToolPointer, ctx: ToolContext): void {
     if (!e.shift) setSelection([]);
     return;
   }
-  const originalsNow = selectedOn(d);
+  // Part of a merged shape picked with a box: the gesture works on the drawing as if it were cut there.
+  const cut = pendingCut();
+  const originalsNow = cut ? cut.lifted : selectedOn(d);
   const bounds = shapesBounds(originalsNow);
-  const base = { layerId: layer.id, drawing: d, start: { x: e.x, y: e.y }, cur: e, bounds, startAngle: 0, toggleOffOnClick: null as Id | null, base: selectedIds(), moved: false };
+  const drawing = cut ? { ...d, shapes: cut.shapes } : d;
+  const base = { layerId: layer.id, drawing, start: { x: e.x, y: e.y }, cur: e, bounds, startAngle: 0, toggleOffOnClick: null as Id | null, base: selectedIds(), moved: false };
 
   if (bounds) {
     const h = hitHandle(bounds, e.x, e.y, ctx.zoom);
@@ -129,25 +135,33 @@ function down(e: ToolPointer, ctx: ToolContext): void {
       return;
     }
   }
+  if (cut && !e.shift && topShapeAt(cut.lifted, e.x, e.y, HIT_TOL / ctx.zoom)) {
+    g = { ...base, mode: 'move', originals: cut.lifted, handle: null };
+    return;
+  }
   const hit = topShapeAt(d.shapes, e.x, e.y, HIT_TOL / ctx.zoom);
   if (hit) {
-    const ids = new Set(selectedIds());
+    // Clicking outside a picked part lets go of it and starts afresh.
+    if (cut) setCut(null);
+    const ids = new Set(cut ? [] : selectedIds());
     let toggle: Id | null = null;
+    // A shape in a group brings the whole group with it.
+    const family = withGroups(d.shapes, [hit.id]);
     if (e.shift) {
       if (ids.has(hit.id)) toggle = hit.id;
-      else ids.add(hit.id);
+      else for (const id of family) ids.add(id);
     } else if (!ids.has(hit.id)) {
       ids.clear();
-      ids.add(hit.id);
+      for (const id of family) ids.add(id);
     }
     const list = d.shapes.filter((s) => ids.has(s.id)).map((s) => s.id);
     setSelection(list);
     const originals = d.shapes.filter((s) => ids.has(s.id));
-    g = { ...base, mode: 'move', originals, bounds: shapesBounds(originals), handle: null, toggleOffOnClick: toggle };
+    g = { ...base, drawing: d, mode: 'move', originals, bounds: shapesBounds(originals), handle: null, toggleOffOnClick: toggle };
     return;
   }
   if (!e.shift) setSelection([]);
-  g = { ...base, mode: 'marquee', originals: [], handle: null, base: e.shift ? selectedIds() : [] };
+  g = { ...base, drawing: d, mode: 'marquee', originals: [], handle: null, base: e.shift ? selectedIds() : [] };
 }
 
 function move(e: ToolPointer, ctx: ToolContext): void {
@@ -155,7 +169,7 @@ function move(e: ToolPointer, ctx: ToolContext): void {
   g.cur = e;
   if (g.mode === 'marquee') {
     const r = rectFromPoints(g.start, e);
-    const hits = shapesInRect(g.drawing.shapes, r).map((s) => s.id);
+    const hits = withGroups(g.drawing.shapes, shapesInRect(g.drawing.shapes, r).map((s) => s.id));
     setSelection([...new Set([...g.base, ...hits])]);
   } else {
     updatePreview(g, ctx.zoom);
@@ -171,6 +185,7 @@ function up(e: ToolPointer, ctx: ToolContext): void {
     g = s;
     move(e, ctx);
     g = null;
+    if (activeIsMerge()) pickPart(s.drawing, rectFromPoints(s.start, e));
     ctx.requestOverlay();
     return;
   }
@@ -183,6 +198,21 @@ function up(e: ToolPointer, ctx: ToolContext): void {
   const m = gestureMatrix(s);
   const repl = new Map(s.originals.map((o) => [o.id, transformShape(o, m)]));
   const label = s.mode === 'move' ? 'Move' : s.mode === 'scale' ? 'Resize' : 'Rotate';
+  if (activeIsMerge()) {
+    // Lands the merge way: joins its colour and cuts others where it ends up.
+    let ids: Id[] = [];
+    const r = editShapes(label, () => {
+      const p = placeMoved(s.drawing.shapes, [...repl.values()]);
+      ids = p.added;
+      return p.shapes;
+    });
+    setCut(null);
+    setLive(null);
+    if (r === 'ok') setSelection(ids);
+    else if (r !== 'nothing') reportEdit(ctx, r);
+    ctx.requestOverlay();
+    return;
+  }
   const r = editActiveDrawing(label, 'vector', (d) => {
     d.shapes = d.shapes.map((x) => repl.get(x.id) ?? x);
   });
@@ -198,16 +228,46 @@ function cancel(ctx: ToolContext): void {
   ctx.requestOverlay();
 }
 
+/**
+ * On a merge layer, a box that only covers part of a shape picks just that part. Nothing is cut yet: the cut waits
+ * (see pendingCut) until the part is moved or changed.
+ */
+function pickPart(d: VectorDrawing, r: Rect): void {
+  setCut(null);
+  const ids = selectedIds();
+  if (!ids.length || r.w < 1 || r.h < 1) return;
+  const area = polygonGeom([
+    { x: r.x, y: r.y },
+    { x: r.x + r.w, y: r.y },
+    { x: r.x + r.w, y: r.y + r.h },
+    { x: r.x, y: r.y + r.h },
+  ]);
+  const inside = (b: ReturnType<typeof shapeBox>) => !!b && b.x0 >= r.x && b.y0 >= r.y && b.x1 <= r.x + r.w && b.y1 <= r.y + r.h;
+  const sel = new Set(ids);
+  // Only worth it when some loose shape pokes out of the box.
+  if (!d.shapes.some((s) => sel.has(s.id) && mergeable(s) && !inside(shapeBox(s)))) return;
+  const c = cutOut(d.shapes, sel, area);
+  const lifted = new Set(c.lifted);
+  const pieces = c.shapes.filter((s) => lifted.has(s.id));
+  if (!pieces.length) {
+    setSelection([]);
+    return;
+  }
+  // The selection names the shapes the part comes from, so it still reads right everywhere else.
+  setCut({ drawingId: d.id, from: d.shapes, selection: selectedIds(), shapes: c.shapes, lifted: pieces });
+}
+
 const RESIZE_CURSOR: Record<HandleId, string> = { nw: 'nwse-resize', se: 'nwse-resize', ne: 'nesw-resize', sw: 'nesw-resize', rotate: 'grab' };
 
 function hover(e: ToolPointer, ctx: ToolContext): void {
   const d = vectorDrawing();
   if (!d) return setCursor(null);
-  const sel = selectedOn(d);
+  const cut = pendingCut();
+  const sel = cut ? cut.lifted : selectedOn(d);
   const b = shapesBounds(sel);
   const h = b ? hitHandle(b, e.x, e.y, ctx.zoom) : null;
   if (h) return setCursor(RESIZE_CURSOR[h]);
-  setCursor(topShapeAt(d.shapes, e.x, e.y, HIT_TOL / ctx.zoom) ? 'move' : null);
+  setCursor(topShapeAt(cut ? cut.lifted : d.shapes, e.x, e.y, HIT_TOL / ctx.zoom) || topShapeAt(d.shapes, e.x, e.y, HIT_TOL / ctx.zoom) ? 'move' : null);
 }
 
 function overlay(gx: CanvasRenderingContext2D, ctx: ToolContext): void {
@@ -227,7 +287,20 @@ function overlay(gx: CanvasRenderingContext2D, ctx: ToolContext): void {
   }
   const d = vectorDrawing();
   if (!d) return;
-  const sel = g && g.mode !== 'marquee' ? g.originals : selectedOn(d);
+  const cut = g ? null : pendingCut();
+  const sel = g && g.mode !== 'marquee' ? g.originals : cut ? cut.lifted : selectedOn(d);
+  if (cut) {
+    // The picked part, outlined with marching-ant dashes so it reads as "just this bit".
+    gx.save();
+    gx.setLineDash([4 * px, 3 * px]);
+    gx.lineWidth = 1.5 * px;
+    gx.strokeStyle = 'white';
+    for (const s of cut.lifted) if (s.type !== 'stroke') gx.stroke(subPathsToPath2D(s.paths));
+    gx.lineDashOffset = 4 * px;
+    gx.strokeStyle = ink;
+    for (const s of cut.lifted) if (s.type !== 'stroke') gx.stroke(subPathsToPath2D(s.paths));
+    gx.restore();
+  }
   const b = g && g.mode !== 'marquee' ? g.bounds : shapesBounds(sel);
   if (!b || !sel.length) return;
   const m = g && g.mode !== 'marquee' && g.moved ? gestureMatrix(g) : IDENTITY;

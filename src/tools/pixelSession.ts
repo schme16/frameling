@@ -8,6 +8,9 @@ import { drawingAt } from '../core/doc';
 import { setLive } from '../canvas/controller';
 import { getPx, setPx, type PxPt, type RGBA } from '../canvas/pixels';
 import { editActiveDrawing } from './edit';
+import { lockedInk, makeMirror, mirrorPoints, type Ink, type Mirror } from '../pixel/ink';
+import { docPalette } from '../pixel/palette';
+import { getPixelSettings } from '../pixel/settings';
 
 type LiveCanvas = HTMLCanvasElement | OffscreenCanvas;
 
@@ -37,8 +40,14 @@ export class PixelSession {
   private img: ImageData | null = null;
   private dirty: { x0: number; y0: number; x1: number; y1: number } | null = null;
   changed = false;
+  /** Mirror drawing, read once when the session starts. */
+  readonly mirror: Mirror;
+  /** Turns an ink into one that snaps to the palette, when the layer has its palette lock on. */
+  readonly lock: (ink: Ink) => Ink;
+  private pts = new Int32Array(8);
+  private rgba = new Uint8Array(4);
 
-  constructor(doc: Doc, layer: PixelLayer, frame: number) {
+  constructor(doc: Doc, layer: PixelLayer, frame: number, opts: { mirror?: boolean } = {}) {
     const d = drawingAt(doc, layer, frame);
     if (d && d.kind === 'pixel') {
       this.width = d.width;
@@ -53,6 +62,10 @@ export class PixelSession {
     this.work = new Uint8ClampedArray(this.base);
     this.layerId = layer.id;
     this.pixelSize = layer.pixelSize;
+    const ps = getPixelSettings();
+    this.mirror = makeMirror(opts.mirror === false ? 'off' : ps.symmetry, this.width, this.height, ps.axisX, ps.axisY);
+    const pal = layer.paletteLock ? docPalette(doc) : null;
+    this.lock = pal ? (ink) => lockedInk(ink, pal) : (ink) => ink;
     this.canvas = makeLiveCanvas(this.width, this.height);
     if (this.canvas) {
       const g = this.canvas.getContext('2d') as CanvasRenderingContext2D;
@@ -86,6 +99,34 @@ export class PixelSession {
       if (x > d.x1) d.x1 = x;
       if (y > d.y1) d.y1 = y;
     }
+  }
+
+  /** Paints one pixel (and its mirror images) with an ink. The ink sees the pixel as it was before the session. */
+  paint(x: number, y: number, ink: Ink): void {
+    const n = mirrorPoints(this.mirror, x, y, this.pts);
+    const c = this.rgba;
+    for (let k = 0; k < n; k++) {
+      const px = this.pts[k * 2];
+      const py = this.pts[k * 2 + 1];
+      if (px < 0 || py < 0 || px >= this.width || py >= this.height) continue;
+      if (ink.color(px, py, this.base, (py * this.width + px) * 4, c)) this.set(px, py, [c[0], c[1], c[2], c[3]]);
+    }
+  }
+
+  /** Puts one pixel (and its mirror images) back to how it was before the session. */
+  restore(x: number, y: number): void {
+    const n = mirrorPoints(this.mirror, x, y, this.pts);
+    for (let k = 0; k < n; k++) {
+      const px = this.pts[k * 2];
+      const py = this.pts[k * 2 + 1];
+      if (px < 0 || py < 0 || px >= this.width || py >= this.height) continue;
+      this.set(px, py, this.getBase(px, py));
+    }
+  }
+
+  /** Paints a brush footprint around a pixel with an ink (mirrored). */
+  stampInk(p: PxPt, offsets: PxPt[], ink: Ink): void {
+    for (const o of offsets) this.paint(p.x + o.x, p.y + o.y, ink);
   }
 
   /** Paints a brush footprint around a pixel. */

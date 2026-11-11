@@ -7,6 +7,8 @@ import { bringForward, bringToFront, sendBackward, sendToBack } from '../canvas/
 import { flipMatrix, shapesBounds, transformShape, translate, type Matrix } from '../canvas/geometry';
 import { activeDrawing, activeLayer, editActiveDrawing, EDIT_HINTS } from './edit';
 import { clipboardHasShapes, copyToClipboard, duplicateShapes, notePasted, pasteFromClipboard } from './clipboard';
+import { activeIsMerge, addShapes, cutBase, editShapes, pendingCut, setCut } from './merge-mode';
+import { placeMoved } from '../geometry/merge';
 
 function vectorDrawing(): VectorDrawing | undefined {
   const d = activeDrawing();
@@ -15,6 +17,9 @@ function vectorDrawing(): VectorDrawing | undefined {
 
 /** The selected shapes of the active drawing, back to front. */
 export function selectedShapes(): Shape[] {
+  // Part of a merged shape picked with a box: the part is what's selected.
+  const c = pendingCut();
+  if (c) return c.lifted;
   const d = vectorDrawing();
   if (!d) return [];
   const ids = new Set(store().get().ui.selection);
@@ -45,13 +50,39 @@ function transformSelected(label: string, m: (shapes: Shape[]) => Matrix, opts: 
   const sel = selectedShapes();
   if (!sel.length) return;
   const matrix = m(sel);
+  if (activeIsMerge()) {
+    let ids: Id[] = [];
+    const r = editShapes(
+      label,
+      (before) => {
+        const p = placeMoved(cutBase(before), transformShapesOf(sel, matrix));
+        ids = p.added;
+        return p.shapes;
+      },
+      opts,
+    );
+    setCut(null);
+    if (r === 'ok') setSelection(ids);
+    else if (r !== 'nothing') say(EDIT_HINTS[r]);
+    return;
+  }
   const repl = new Map(sel.map((s) => [s.id, transformShape(s, matrix)]));
   change(label, (d) => void (d.shapes = d.shapes.map((x) => repl.get(x.id) ?? x)), opts);
 }
 
+const transformShapesOf = (shapes: Shape[], m: Matrix): Shape[] => shapes.map((s) => transformShape(s, m));
+
 function deleteSelected(label: string): void {
   const ids = new Set(selectedShapes().map((s) => s.id));
   if (!ids.size) return;
+  if (pendingCut()) {
+    // Only the picked part goes; the rest of the shape stays, with a hole where the part was.
+    const r = editShapes(label, (before) => cutBase(before).filter((s) => !ids.has(s.id)));
+    setCut(null);
+    if (r === 'ok') setSelection([]);
+    else if (r !== 'nothing') say(EDIT_HINTS[r]);
+    return;
+  }
   if (change(label, (d) => void (d.shapes = d.shapes.filter((s) => !ids.has(s.id))))) setSelection([]);
 }
 
@@ -118,7 +149,11 @@ registerCommands([
     enabled: hasSelection,
     run: () => {
       const copies = duplicateShapes(selectedShapes());
-      if (copies.length && change('Duplicate', (d) => void d.shapes.push(...copies))) setSelection(copies.map((c) => c.id));
+      if (!copies.length) return;
+      // On a merge layer the copies merge where they land.
+      const { result, ids } = addShapes('Duplicate', copies);
+      if (result === 'ok') setSelection(ids);
+      else if (result !== 'nothing') say(EDIT_HINTS[result]);
     },
   },
   {
@@ -156,10 +191,12 @@ registerCommands([
       const { layer } = activeLayer();
       if (layer && layer.kind !== 'vector') return say('Pasting shapes needs a vector layer. Pick one in the timeline first.');
       const copies = pasteFromClipboard(vectorDrawing()?.id ?? null);
-      if (copies.length && change('Paste', (d) => void d.shapes.push(...copies))) {
+      if (!copies.length) return;
+      const { result, ids } = addShapes('Paste', copies);
+      if (result === 'ok') {
         notePasted(vectorDrawing()?.id);
-        setSelection(copies.map((c) => c.id));
-      }
+        setSelection(ids);
+      } else if (result !== 'nothing') say(EDIT_HINTS[result]);
     },
   },
   {
