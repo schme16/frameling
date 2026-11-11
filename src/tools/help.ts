@@ -35,6 +35,8 @@ If the brush won't draw, the layer might be locked or hidden. Check it in the ti
 
 **On a vector layer** the pencil draws a thin line that stays the same width, however hard you press. It follows your hand closely, which makes it good for sketching and rough animation. For thicker lines that swell with pressure, use the Brush (B).
 
+**Clean line.** Set **Line** to **Clean line** in the options and the pencil smooths what you draw into a few even curves (a centre-line stroke). You can then reshape it point by point with [Edit points](help:tool-points) (**A**). Good for tidy outlines and inking.
+
 **On a pixel layer** it's the pixel pencil, the main tool for pixel art. It always paints one pixel at a time.
 - **Pixel perfect** (on unless you turn it off in the options) tidies the little L-shaped corners hand-drawn lines get, so curves stay one pixel thick.
 - Hold **Shift** and click to draw a straight line from where you last stopped.

@@ -13,6 +13,7 @@ import { addShapes } from './merge-mode';
 import { clearSnap, snapPt } from '../canvas/guides';
 import { ShapeOptions } from './options/ShapeOptions';
 import { noteColorUsed } from './recent';
+import { withWellGradients } from './gradient-wells';
 import { getToolSettings, type ToolSettings } from './settings';
 import { canEdit, reportEdit } from './util';
 import { activePixelLayer, makePixelShape } from '../pixel/tools';
@@ -146,7 +147,8 @@ function shapeTool(kind: 'rect' | 'ellipse' | 'line', label: string, icon: strin
   const build = (): PathShape | null => {
     if (!drag) return null;
     const ui = store().get().ui;
-    return makeShape(kind, drag.start, drag.cur, { shift: drag.cur.shift, alt: drag.cur.alt }, { ...shapeColors(ui), line: ui.color }, getToolSettings());
+    const s = makeShape(kind, drag.start, drag.cur, { shift: drag.cur.shift, alt: drag.cur.alt }, { ...shapeColors(ui), line: ui.color }, getToolSettings());
+    return s && withWellGradients(s);
   };
   return {
     id: kind,

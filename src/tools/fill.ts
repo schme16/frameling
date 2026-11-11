@@ -18,6 +18,7 @@ import { activeDrawing, activeLayer, EDIT_HINTS, editActiveDrawing } from './edi
 import { FillOptionsPanel, gapWidth, getFillOptions } from './fill-options';
 import './fill-help';
 import { activeIsMerge, editShapes } from './merge-mode';
+import { gradientFor, withWellGradients } from './gradient-wells';
 import { mergeShapes } from '../geometry/merge';
 import { pixelSelection } from '../select/pixel-state';
 import { clipToMask } from '../select/mask';
@@ -151,7 +152,10 @@ function fillVector(e: ToolPointer, ctx: ToolContext) {
   // Paint is already here and the lines around it have not changed (or have leaked since): recolour it.
   if (hit && (res.kind === 'leak' || pathsOverlap(res.paths, hit.paths, bounds) >= SAME_AREA)) {
     const current = hit.type === 'fill' ? hit.color : hit.fill;
-    if (current && current.toLowerCase() === ui.color.toLowerCase()) {
+    // With a gradient in the fill box, the area takes the gradient laid over its own size.
+    const grad = gradientFor('fill', hit.paths);
+    const hadGrad = hit.type === 'fill' ? hit.gradient : hit.fillGradient;
+    if (!grad && !hadGrad && current && current.toLowerCase() === ui.color.toLowerCase()) {
       ctx.hint(FILL_HINTS.same);
       return;
     }
@@ -164,15 +168,22 @@ function fillVector(e: ToolPointer, ctx: ToolContext) {
             const at = before.findIndex((x) => x.id === id);
             return mergeShapes(
               before.filter((x) => x.id !== id),
-              [{ ...hit, color }],
+              [grad ? { ...hit, color, gradient: grad } : (({ gradient: _g, ...rest }) => ({ ...rest, color }))(hit)],
               { under: true, at },
             ).shapes;
           })
         : editActiveDrawing('Recolour fill', 'vector', (d) => {
             const s = d.shapes.find((x) => x.id === id);
             if (!s) return;
-            if (s.type === 'fill') s.color = color;
-            else if (s.type === 'path') s.fill = color;
+            if (s.type === 'fill') {
+              s.color = color;
+              if (grad) s.gradient = grad;
+              else delete s.gradient;
+            } else if (s.type === 'path') {
+              s.fill = color;
+              if (grad) s.fillGradient = grad;
+              else delete s.fillGradient;
+            }
           });
     if (r === 'nothing') return;
     if (r !== 'ok') ctx.hint(EDIT_HINTS[r]);
@@ -183,7 +194,7 @@ function fillVector(e: ToolPointer, ctx: ToolContext) {
     ctx.hint(FILL_HINTS.leak);
     return;
   }
-  const shape: FillShape = { id: uid('f'), type: 'fill', paths: res.paths, color: ui.color, opacity: 1 };
+  const shape: FillShape = withWellGradients({ id: uid('f'), type: 'fill', paths: res.paths, color: ui.color, opacity: 1 });
   const r = merge
     ? // Paint only covers empty ground, and joins any of its own colour it touches.
       editShapes('Fill', (before) => mergeShapes(before, [shape], { under: true, at: indexBelowLines(before) }).shapes)
