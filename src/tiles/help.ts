@@ -38,7 +38,7 @@ Water, torches and conveyor belts can move. Open the tile and use the timeline a
     id: 'tilemaps',
     title: 'Tilemap layers and the tile tools',
     section: 'Drawing',
-    media: 'tilemaps.png',
+    media: 'tilemaps.mp4',
     summary: 'A layer you paint with tiles instead of colours, for game levels. Brush, rectangle, fill, eraser and pick.',
     keywords: ['tilemap', 'tile map', 'level', 'map', 'stamp', 'tile brush', 'flip', 'rotate', 'grid'],
     body: `A **tilemap layer** is a grid you paint with tiles from the [Tileset panel](help:tileset). Change a tile and every copy of it in the map changes too.
@@ -79,7 +79,7 @@ To use the level in a game, see [Exporting a tileset](help:export-tileset).`,
     id: 'tile-mode',
     title: 'Tile mode (seamless drawing)',
     section: 'Drawing',
-    media: 'tile-mode.png',
+    media: 'tile-mode.mp4',
     summary: 'Shows your drawing repeated on every side, and drawing off one edge carries on at the other. For seamless tiles and patterns.',
     keywords: ['seamless', 'wrap', 'repeat', 'pattern', 'tiling', 'texture', 'tile mode'],
     body: `**Tile mode** shows eight copies of the stage around it, so you can see how your drawing looks when it repeats. A dashed frame marks the real one.
