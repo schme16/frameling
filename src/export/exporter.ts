@@ -16,6 +16,8 @@ import { choose } from '../core/choices';
 import type { Mp4SoundChoice } from './choices';
 import './choices';
 import { runProres } from './prores';
+import type { Doc } from '../core/format';
+import { ArtboardExportProblem, exportArtboards, exportsSeveral } from '../artboards/export';
 import { DEFAULT_SHEET, formatInfo, normalizeSheet, type ExportSettings, type SheetSettings } from './types';
 
 const KEY = 'frameling.export.last';
@@ -87,12 +89,20 @@ export function describeError(e: unknown): string {
  * Asks where to save, draws and encodes, writes the file(s) and says so with a "Show in folder" button.
  * Resolves 'cancelled' when they back out of the save dialog or press Cancel, and throws for real problems.
  */
-export async function exportDocument(settings: ExportSettings, signal: AbortSignal, onProgress: (p: Progress) => void): Promise<ExportOutcome> {
+export async function exportDocument(settings: ExportSettings, signal: AbortSignal, onProgress: (p: Progress) => void, only?: Doc): Promise<ExportOutcome> {
   const api = desktop();
   if (!api) throw new ExportProblem('Exporting works in the Frameling desktop app.');
   const st = store().get();
+  // Several artboards at once (each its own file, all in order, or one atlas): see src/artboards/export.ts.
+  if (!only && exportsSeveral(store().rootDoc(), settings)) {
+    try {
+      return await exportArtboards(settings, signal, onProgress, (d) => exportDocument(settings, signal, onProgress, d));
+    } catch (e) {
+      throw e instanceof ArtboardExportProblem ? new ExportProblem(e.message) : e;
+    }
+  }
   // While a symbol is open, export the scene as it is saved.
-  const { doc, frame } = sceneOf(st.doc, st.ui.frame);
+  const { doc, frame } = only ? { doc: only, frame: 0 } : sceneOf(st.doc, st.ui.frame);
   const picked = settings;
   // MP4 with sound, on a computer that can only make Opus sound and has no ffmpeg to fix it: ask (once) what to do.
   if (settings.format === 'mp4' && audibleClips(doc.audio).length && !(await canMakeAac()) && !(await api.media?.aacAvailable().catch(() => false))) {

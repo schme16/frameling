@@ -147,6 +147,8 @@ export function pruneDrawings(doc: Doc): void {
   const used = new Set<string>();
   // Symbols' layers (and layers set aside while one is open) use the same drawings.
   const lists: Layer[][] = [doc.layers, ...(doc.editing ?? []).map((f) => f.layers), ...Object.values(doc.symbols ?? {}).map((s) => s.layers)];
+  // Artboards that aren't open keep their layers aside.
+  for (const a of doc.artboards ?? []) if (a.content) lists.push(a.content.layers);
   for (const list of lists) for (const l of list) for (const c of l.cels) used.add(c.drawingId);
   for (const t of doc.tileset?.tiles ?? []) for (const f of t.frames) used.add(f.drawingId);
   for (const id of Object.keys(doc.drawings)) if (!used.has(id)) delete doc.drawings[id];

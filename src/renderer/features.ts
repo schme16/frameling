@@ -8,6 +8,7 @@ import '../geometry';
 import '../timeline';
 import '../symbols';
 import '../camera';
+import '../artboards';
 import '../flow';
 import '../rig';
 import '../audio';

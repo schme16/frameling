@@ -21,6 +21,7 @@ export function anyLayer(doc: Doc, id: Id): Layer | undefined {
   if (!m) {
     m = new Map();
     const lists: Layer[][] = [doc.layers, ...(doc.editing ?? []).map((f) => f.layers), ...Object.values(doc.symbols ?? {}).map((s) => s.layers)];
+    for (const a of doc.artboards ?? []) if (a.content) lists.push(a.content.layers);
     for (const list of lists) for (const l of list) if (!m.has(l.id)) m.set(l.id, l);
     layerIndex.set(doc, m);
   }

@@ -27,6 +27,7 @@ import { inOutRange } from '../timeline/inout';
 import { docDpi, formatSize } from '../core/units';
 import { usePrefs } from '../ui/prefs';
 import { templateExport } from '../templates/setup';
+import { ArtboardExportPicker } from '../artboards/ExportPicker';
 import { pixelExportStart } from '../pixel/workspace';
 
 /** Last time's settings, repaired so they still make sense for this document. */
@@ -226,6 +227,7 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
         </div>
 
         <div className="ex-options">
+          <ArtboardExportPicker settings={s} />
           {s.format === 'sheet' && (
             <fieldset>
               <legend>Where it's going</legend>

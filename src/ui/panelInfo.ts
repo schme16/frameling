@@ -144,6 +144,11 @@ export const PANEL_INFO: Record<string, PanelInfo> = {
     group: 'make',
     keywords: ['symbols', 'assets', 'reuse'],
   },
+  artboards: {
+    blurb: 'Several canvases in one file: a sprite each, or a shot each, side by side.',
+    group: 'make',
+    keywords: ['artboard', 'canvases', 'sprites', 'shots', 'scenes', 'pages'],
+  },
   timeline: {
     blurb: 'Your frames and layers over time: draw a frame, then the next, and play them back.',
     group: 'animate',
