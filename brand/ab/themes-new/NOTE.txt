@@ -1,0 +1,13 @@
+New built-in themes (dark | light in each picture):
+  camo-app.png / camo-picker.png              Glacier Grid | Ice Camo      (from the camo headband photo)
+  lavender-app.png / lavender-picker.png      Lilac Static | Lavender Hum  (from the lavender headset)
+  strawberry-app.png / strawberry-picker.png  Strawberry Night | Strawberry (Quill's favourite, for onboarding)
+  all-themes.png                              all six together
+Built: camo and lilac themes use their own chosen colour (aqua #22c3d6, lavender #c9b8e8 / #bba6ea light) with dark
+text, instead of gold. Strawberry keeps the gold rule with a sunnier seed yellow (#ffd23f), cels strawberry red,
+playhead leafy green. Surround patterns (static CSS gradients, no animation): faint angular camo shards for the camo
+pair, little yellow seeds for the strawberry pair, nothing for lavender.
+Alternatives considered, not rendered: camo A (built) = charcoal panels with aqua chosen, B = closer to the photo with
+deep-teal panels (#0e8fa3 family), rejected as it makes text and cels fight the background. Lavender A (built) =
+lavender chosen, B = gold chosen with lavender only as accent (safer, but loses the headset feel). Strawberry: the
+seed surround can be switched off by dropping the two ids from SURROUNDS in builtIn.ts if it reads as too busy.
