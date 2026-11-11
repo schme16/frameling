@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
 import type { Command, HelpTopic } from '../../src/core/registry';
-import { paletteItems, rankPalette, scoreItem } from '../../src/ui/palette';
+import { notNowMessage, paletteItems, rankPalette, scoreItem } from '../../src/ui/palette';
 import { editDistance, inOrder, scoreWord, wordsOf } from '../../src/ui/match';
 
 const c = (id: string, label: string, extra: Partial<Command> = {}): Command => ({ id, label, category: 'Test', run: () => {}, ...extra });
@@ -60,4 +60,11 @@ describe('ranking', () => {
     expect(list.some((x) => x.startsWith('help:'))).toBe(false);
   });
   it('scores zero for no match', () => expect(scoreItem('qqqq', items[0])).toBe(0));
+});
+
+describe('picking a command that cannot run', () => {
+  it('says so, pointing at help when there is some', () => {
+    expect(notNowMessage({ label: 'Make in-betweens (tween)', help: 'tweens' })).toBe('"Make in-betweens (tween)" can\'t be used right now. Its help page says what it needs.');
+    expect(notNowMessage({ label: 'Do a thing' })).toMatch(/Try selecting something/);
+  });
 });

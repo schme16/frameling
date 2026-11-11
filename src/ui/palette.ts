@@ -94,6 +94,11 @@ export function noteRecentCommand(id: string): void {
 }
 
 /** Runs a command the way a click would: skips disabled ones, and says so (gently) if it fails. */
+/** What to say when someone picks a command that can't run right now, instead of nothing happening. */
+export function notNowMessage(c: Pick<Command, 'label' | 'help'>): string {
+  return `"${c.label}" can't be used right now.${c.help ? ' Its help page says what it needs.' : ' Try selecting something or moving to a frame with a drawing first.'}`;
+}
+
 export function runCommand(c: Command): boolean {
   if (!commandEnabled(c)) return false;
   try {

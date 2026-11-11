@@ -70,7 +70,7 @@ Below that are the [in-betweens](help:tweens) for the key under the playhead.`,
     keywords: ['tween', 'classic tween', 'motion tween', 'inbetween', 'interpolation', 'keyframe', 'Ctrl+Shift+T', 'move', 'glide'],
     body: `Drawing every frame by hand is lovely for squash and stretch, but when something just needs to **glide, grow, turn or fade**, let Frameling draw the frames in between. Animators call these *in-betweens*, or *tweens*.
 
-1. Draw something and hold it for a few frames (drag the end of its cel in the timeline).
+1. Draw something. (A drawing that only lasts one frame gets held for about a second, so there is room to move. Drag the end of its cel in the timeline to change how long.)
 2. Press **Ctrl+Shift+T** (or right-click the cel and choose **Make in-betweens**).
 3. Frameling makes an end key and moves the playhead there. **Move, resize or turn** the drawing there.
 4. Press play.
