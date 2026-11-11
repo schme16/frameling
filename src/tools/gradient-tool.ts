@@ -131,7 +131,8 @@ export const gradientTool: Tool = {
     write(t.id, drag.which, next, drag.key);
     ctx.requestOverlay();
   },
-  up(_e, ctx) {
+  up(e, ctx) {
+    if (drag) gradientTool.move!(e, ctx);
     drag = null;
     ctx.requestOverlay();
   },

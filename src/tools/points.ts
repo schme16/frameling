@@ -209,7 +209,8 @@ export const pointsTool: Tool = {
     writeSub(drag.sub, next, drag.kind === 'point' ? 'Move point' : 'Bend curve', drag.key);
     ctx.requestOverlay();
   },
-  up(_e, ctx) {
+  up(e, ctx) {
+    if (drag) pointsTool.move!(e, ctx);
     drag = null;
     ctx.requestOverlay();
   },
