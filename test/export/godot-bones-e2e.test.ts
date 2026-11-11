@@ -161,6 +161,8 @@ func _init():
 	var s = load("res://puppet.tscn").instantiate()
 	root.add_child(s)
 	var ap: AnimationPlayer = s.get_node("AnimationPlayer")
+	# Autoplay starts on the first frame; let it, so it doesn't restart the clip after we seek.
+	await process_frame
 	for f in [${shots.join(', ')}]:
 		ap.play("walk")
 		ap.seek(f / ${doc.fps}.0, true)
