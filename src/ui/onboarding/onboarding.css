@@ -44,6 +44,7 @@
   gap: 8px;
 }
 .ob-bubble {
+  white-space: pre-line;
   position: relative;
   margin: 0;
   padding: 10px 14px;

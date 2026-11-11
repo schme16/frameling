@@ -60,7 +60,7 @@ describe("Quill's lines", () => {
     expect(fill('Hi {name}, {x}', { name: 'Bo' })).toBe('Hi Bo, {x}');
     expect(line('onboarding.ready', { name: 'Blob' })).toBe(lines('onboarding.ready', { name: 'Blob' })[0]);
     expect(line('onboarding.ready', { name: 'Blob' })).toContain('Blob');
-    expect(lines('onboarding.hello').length).toBe(4);
+    expect(lines('onboarding.hello').length).toBe(6);
     const parts = lineParts('onboarding.done.lead', { workspace: 1, name: 2 });
     expect(parts.filter((p) => typeof p === 'number')).toEqual([1, 2]);
     expect(parts.filter((p) => typeof p === 'string').join('')).not.toContain('{');
