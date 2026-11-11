@@ -1,0 +1,120 @@
+// With ?debug in the page address, expose artboard actions and two demo documents for help pictures and A/B shots.
+// Never on in normal use.
+import { newDoc, newPixelDrawing, newVectorLayer, uid } from '../core/doc';
+import type { Doc, PixelLayer, VectorDrawing } from '../core/format';
+import { store } from '../core/store';
+import * as model from './model';
+import * as ops from './ops';
+
+/** Paints a filled box of art pixels. */
+function box(px: Uint8ClampedArray, w: number, x0: number, y0: number, bw: number, bh: number, hex: string): void {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  for (let y = y0; y < y0 + bh; y++)
+    for (let x = x0; x < x0 + bw; x++) {
+      if (x < 0 || y < 0 || x >= w) continue;
+      const i = (y * w + x) * 4;
+      if (i < 0 || i + 3 >= px.length) continue;
+      px[i] = r;
+      px[i + 1] = g;
+      px[i + 2] = b;
+      px[i + 3] = 255;
+    }
+}
+
+/** A little blob character: body, eyes and feet, squashed by `squash` and lifted by `lift` art pixels. */
+function blob(d: { width: number; height: number; pixels: Uint8ClampedArray }, colour: string, lift: number, squash: number, step: number): void {
+  const w = d.width;
+  const bw = 12 + squash;
+  const bh = 10 - squash;
+  const x0 = Math.round((w - bw) / 2);
+  const y0 = d.height - 6 - bh - lift;
+  box(d.pixels, w, x0 + 1, y0, bw - 2, 1, '#1d1b26');
+  box(d.pixels, w, x0, y0 + 1, bw, bh, '#1d1b26');
+  box(d.pixels, w, x0 + 1, y0 + 1, bw - 2, bh - 1, colour);
+  box(d.pixels, w, x0 + 3, y0 + 3, 2, 2, '#1d1b26');
+  box(d.pixels, w, x0 + bw - 5, y0 + 3, 2, 2, '#1d1b26');
+  box(d.pixels, w, x0 + 2 + step, y0 + bh + 1, 3, 2, '#1d1b26');
+  box(d.pixels, w, x0 + bw - 5 - step, y0 + bh + 1, 3, 2, '#1d1b26');
+  // Ground shadow.
+  box(d.pixels, w, Math.round(w / 2) - 6, d.height - 3, 12, 1, '#8a8598');
+}
+
+/** Three 32 x 32 sprites (Idle, Run, Jump), four frames each, side by side. */
+export function demoSprites(): Doc {
+  const doc = newDoc({ name: 'Blob sprites', width: 128, height: 128, length: 4, background: '#fffaf0', pixel: { pixelSize: 4 } });
+  const sets: [string, string, (f: number) => [number, number, number]][] = [
+    ['Idle', '#4fd1a5', (f) => [0, f % 2, 0]],
+    ['Run', '#ff9e6d', (f) => [f % 2, 0, f % 2 ? 2 : -1]],
+    ['Jump', '#9b7bff', (f) => [[0, 6, 9, 3][f], [2, -1, -1, 1][f], 0]],
+  ];
+  sets.forEach(([name, colour, pose], k) => {
+    if (k > 0) {
+      const id = model.addArtboard(doc, { name, background: ['#fffaf0', '#eaf6ff', '#f6efff'][k] });
+      model.switchArtboard(doc, id);
+    } else model.renameArtboard(doc, model.activeId(doc), name);
+    const layer = doc.layers[0] as PixelLayer;
+    layer.name = 'Blob';
+    layer.cels = [];
+    for (let f = 0; f < 4; f++) {
+      const d = newPixelDrawing(32, 32);
+      const [lift, squash, step] = pose(f);
+      blob(d, colour, lift, squash, step);
+      doc.drawings[d.id] = d;
+      layer.cels.push({ id: uid('c'), start: f, length: 1, drawingId: d.id });
+    }
+  });
+  model.switchArtboard(doc, model.artboardsOf(doc)[0].id);
+  return doc;
+}
+
+const rect = (x: number, y: number, w: number, h: number, fill: string) => ({ id: uid('s'), type: 'path' as const, paths: [{ closed: true, points: [{ x, y }, { x: x + w, y }, { x: x + w, y: y + h }, { x, y: y + h }] }], fill, stroke: null, opacity: 1 });
+const circle = (cx: number, cy: number, r: number, fill: string) => {
+  const k = 0.5523 * r;
+  return {
+    id: uid('s'),
+    type: 'path' as const,
+    paths: [{ closed: true, points: [{ x: cx + r, y: cy }, { x: cx, y: cy + r, c1: { x: cx + r, y: cy + k }, c2: { x: cx + k, y: cy + r } }, { x: cx - r, y: cy, c1: { x: cx - k, y: cy + r }, c2: { x: cx - r, y: cy + k } }, { x: cx, y: cy - r, c1: { x: cx - r, y: cy - k }, c2: { x: cx - k, y: cy - r } }, { x: cx + r, y: cy, c1: { x: cx + k, y: cy - r }, c2: { x: cx + r, y: cy - k } }] }],
+    fill,
+    stroke: { color: '#1d1b26', width: 3, join: 'round' as const, cap: 'round' as const },
+    opacity: 1,
+  };
+};
+
+/** Three 320 x 180 shots of a ball's day out: wide, close-up, and the landing, each with its own length. */
+export function demoShots(): Doc {
+  const doc = newDoc({ name: 'Ball film', width: 320, height: 180, length: 24, background: '#5ab8ff', fps: 12 });
+  const shots: [string, string, number, (f: number, n: number) => VectorDrawing['shapes']][] = [
+    ['Wide: the hill', '#5ab8ff', 24, (f, n) => [rect(0, 130, 320, 50, '#6abf4b'), circle(40 + (240 * f) / (n - 1), 115 - Math.abs(Math.sin((f / (n - 1)) * Math.PI * 2)) * 60, 14, '#ff6f91')]],
+    ['Close-up: the face', '#ffc94a', 12, (f) => [circle(160, 95, 70, '#ff6f91'), circle(135, 80, 8 + (f % 6 < 3 ? 0 : -6), '#1d1b26'), circle(185, 80, 8 + (f % 6 < 3 ? 0 : -6), '#1d1b26'), rect(140, 120, 40, 6 + (f % 4), '#1d1b26')]],
+    ['Landing', '#9b7bff', 16, (f, n) => [rect(0, 140, 320, 40, '#4fd1a5'), circle(160, Math.min(126, 20 + (f / (n - 1)) * 160), 14, '#ff6f91')]],
+  ];
+  shots.forEach(([name, bg, length, draw], k) => {
+    if (k > 0) {
+      const id = model.addArtboard(doc, { name, background: bg, length });
+      model.switchArtboard(doc, id);
+    } else model.renameArtboard(doc, model.activeId(doc), name);
+    doc.length = length;
+    doc.background = bg;
+    const layer = newVectorLayer('Action');
+    doc.layers = [layer];
+    for (let f = 0; f < length; f++) {
+      const d: VectorDrawing = { id: uid('v'), kind: 'vector', shapes: draw(f, length) };
+      doc.drawings[d.id] = d;
+      layer.cels.push({ id: uid('c'), start: f, length: 1, drawingId: d.id });
+    }
+  });
+  model.switchArtboard(doc, model.artboardsOf(doc)[0].id);
+  return doc;
+}
+
+if (typeof window !== 'undefined' && new URLSearchParams(location.search).has('debug')) {
+  (window as unknown as { __framelingArtboards: unknown }).__framelingArtboards = {
+    model,
+    ops,
+    load: (which: 'sprites' | 'shots') => store().load(which === 'shots' ? demoShots() : demoSprites()),
+    player: () => import('./player').then((m) => m.openShotsPlayer()),
+    exportDialog: (mode?: 'each' | 'joined' | 'atlas' | 'one') => import('./exportDialog').then((m) => m.openArtboardExport(mode)),
+  };
+}

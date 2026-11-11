@@ -214,7 +214,8 @@ export function switchArtboard(d: Doc, id: Id): boolean {
 export function freshName(doc: Doc, base = 'Artboard'): string {
   const names = new Set(artboardsOf(doc).map((a) => a.name.toLowerCase()));
   const stem = base.replace(/\s+\d+$/, '');
-  for (let k = 1; ; k++) {
+  // A plain new one counts on from how many there are; a copy of "Walk" is "Walk 2".
+  for (let k = stem === 'Artboard' ? artboardsOf(doc).length + 1 : 2; ; k++) {
     const n = `${stem} ${k}`;
     if (!names.has(n.toLowerCase())) return n;
   }

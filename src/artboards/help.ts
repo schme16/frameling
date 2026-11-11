@@ -20,7 +20,7 @@ registerHelpTopics([
 - **Alt+drag** to copy it.
 - On pixel art, sizes and places snap to whole art pixels.
 
-**In the Artboards panel:** click one to open it, double-click to fill the window with it, drag to reorder. The pencil renames it. Underneath, set the open one's **Name**, **Export as** (the file name it exports with), **W** and **H**, and **Background** (or **See-through**).
+**In the Artboards panel:** click one to open it, double-click to fill the window with it, drag to reorder, double-click its name to rename it. Underneath, set the open one's **Name**, **Export as** (the file name it exports with), **W** and **H**, and **Background** (or **See-through**).
 
 **Getting around:** **Alt+PageDown** and **Alt+PageUp** go to the next and previous artboard. **Ctrl+Alt+0** fits them all in the window. **View > Zoom to artboard** fills the window with the open one. **Line up** puts them in a tidy row.
 

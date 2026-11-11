@@ -96,7 +96,7 @@ export function ArtboardsPanel() {
               }}
               onClick={() => a.id !== open && goToArtboard(a.id, true)}
               onDoubleClick={() => zoomToArtboard(a.id)}
-              title="Click to draw on it, double-click to fill the window with it, drag to reorder"
+              title="Click to draw on it, double-click to fill the window with it, drag to reorder. Double-click the name to rename it."
             >
               <Thumb doc={doc} id={a.id} />
               <div className="sy-item-text">
@@ -120,13 +120,10 @@ export function ArtboardsPanel() {
                 </span>
               </div>
               <div className="sy-item-actions" onClick={(e) => e.stopPropagation()}>
-                <button type="button" className="sy-icon-btn" aria-label={`Rename ${a.name}`} title="Rename" onClick={() => setRenaming(a.id)}>
-                  <Icon name="pencil" size={15} />
-                </button>
-                <button type="button" className="sy-icon-btn" aria-label={`Move ${a.name} up`} title="Earlier in the list (and in Play all)" disabled={i === 0} onClick={() => reorderArtboardById(a.id, i - 1)}>
+                <button type="button" className="sy-icon-btn ab-move" aria-label={`Move ${a.name} up`} title="Earlier in the list (and in Play all)" disabled={i === 0} onClick={() => reorderArtboardById(a.id, i - 1)}>
                   <Icon name="chevron-up" size={15} />
                 </button>
-                <button type="button" className="sy-icon-btn" aria-label={`Move ${a.name} down`} title="Later in the list (and in Play all)" disabled={i === list.length - 1} onClick={() => reorderArtboardById(a.id, i + 1)}>
+                <button type="button" className="sy-icon-btn ab-move" aria-label={`Move ${a.name} down`} title="Later in the list (and in Play all)" disabled={i === list.length - 1} onClick={() => reorderArtboardById(a.id, i + 1)}>
                   <Icon name="chevron-down" size={15} />
                 </button>
                 <button type="button" className="sy-icon-btn" aria-label={`Duplicate ${a.name}`} title="Make a copy beside it" onClick={() => duplicateArtboardById(a.id)}>

@@ -6,6 +6,7 @@ import '../io/debug';
 import '../effects/debug';
 import '../templates/debug';
 import '../plugins/debug';
+import '../artboards/debug';
 import { store } from '../core/store';
 import { findTemplate } from '../templates';
 import * as tiles from '../tiles/debug';

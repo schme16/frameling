@@ -10,7 +10,9 @@ import { setCursor } from '../canvas/controller';
 import type { Anchor } from '../canvas/resize';
 import { activeArtboard, activeId, artboardAt, boxes } from './model';
 import { duplicateArtboardById, goToArtboard, installArtboards, moveArtboardTo, newArtboard, resizeArtboard } from './ops';
-import { ArtboardToolOptions } from './options';
+import { lazyComponent } from '../core/lazy';
+
+const ArtboardToolOptions = lazyComponent(() => import('./options').then((m) => m.ArtboardToolOptions));
 
 type Pt = { x: number; y: number };
 type Box = { x: number; y: number; w: number; h: number };

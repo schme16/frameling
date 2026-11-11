@@ -18,7 +18,19 @@
   box-shadow: 0 -3px 0 var(--focus);
 }
 .ab-name {
-  cursor: pointer;
+  cursor: text;
+}
+.ab-item .sy-item-meta {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ab-item .sy-icon-btn {
+  width: 22px;
+  height: 24px;
+}
+.ab-item .sy-item-actions {
+  gap: 0;
 }
 .ab-fields {
   display: flex;
@@ -126,4 +138,7 @@
 }
 .ab-player-foot .io-muted {
   margin-right: auto;
+}
+.ab-item:not(:hover):not(:focus-within) .ab-move {
+  display: none;
 }

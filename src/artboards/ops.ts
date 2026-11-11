@@ -3,7 +3,7 @@
  * changes (by a click, the panel, undo or redo), and remembers the frame and layer each artboard was left on.
  */
 import type { Doc, Id } from '../core/format';
-import { store } from '../core/store';
+import { store, type Store } from '../core/store';
 import { findLayer } from '../core/doc';
 import { leaveSymbol } from '../symbols/ops';
 import { leaveTileEdit } from '../tiles/tileEdit';
@@ -74,11 +74,11 @@ function onStore(): void {
   s.setUi({ frame: Math.max(0, Math.min(doc.length - 1, m?.frame ?? 0)), activeLayerId: layer, selection: [], playing: false, panX: ui.panX + dx, panY: ui.panY + dy });
 }
 
-let installed = false;
-/** Hooks the store (once). */
+let installed: Store | null = null;
+/** Hooks the store (once per store). */
 export function installArtboards(): void {
-  if (installed) return;
-  installed = true;
+  if (installed === store()) return;
+  installed = store();
   store().subscribe(onStore);
   // The open artboard's frame and layer, kept up to date so going back finds them.
   store().subscribe(() => {
