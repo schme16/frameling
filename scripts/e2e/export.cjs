@@ -258,6 +258,10 @@ async function vVideo(file, s, exp, caseCtx) {
   const [n, d] = String(st.avg_frame_rate).split('/').map(Number);
   check(near(n / d, exp.fps, 0.6), `frame rate ${st.avg_frame_rate}, wanted ${exp.fps}`);
   check(sh('ffmpeg', ['-v', 'error', '-i', file, '-f', 'null', '-']).err.trim() === '', 'ffmpeg reports decode errors');
+  if (caseCtx.sound && exp.count > 1) {
+    const a = sh('ffprobe', ['-v', 'error', '-select_streams', 'a:0', '-show_entries', 'stream=codec_name', '-of', 'csv=p=0', file]).out.trim();
+    if (check(a, 'the document has sound but the video has none')) note(`sound: ${a}`);
+  }
 
   // Alpha: ask ffprobe for the tag, then decode with the VP9 decoder that understands it.
   const wantAlpha = webm && caseCtx.transparent && caseCtx.alphaExpected;
@@ -463,7 +467,8 @@ async function vSvg(file, s, exp, caseCtx) {
     const e = ref && rmse(png, ref);
     if (e !== null && e !== undefined) {
       note(`render vs png rmse=${e.toFixed(4)}`);
-      check(e < TOL.svg, `SVG renders differently from the PNG export (rmse ${e.toFixed(4)})`);
+      if (caseCtx.svgApprox) note('effects and masks are left out of SVG, so it is not compared closely');
+      else check(e < TOL.svg, `SVG renders differently from the PNG export (rmse ${e.toFixed(4)})`);
     }
     if (caseCtx.transparent) check(hasAlpha(png) === true, 'transparent SVG renders with no transparent pixels');
   }
@@ -624,7 +629,13 @@ async function runCase(tpl, fmt, label, edit, opts = {}) {
     const exp = await expectationFor(settings);
     // The dialog's own capability probe decides what a video can do here.
     const caps = await X(`caps(${exp.width}, ${exp.height})`);
-    const caseCtx = { transparent: settings.transparent && (fmt === 'webm' ? !!caps.webm.alpha : fmt !== 'mp4'), alphaExpected: !!caps.webm.alpha };
+    const caseCtx = {
+      transparent: settings.transparent && (fmt === 'webm' ? !!caps.webm.alpha : fmt !== 'mp4'),
+      alphaExpected: !!caps.webm.alpha,
+      sound: await ev('!!window.__framelingExport.doc().audio?.some((c) => !c.muted)'),
+      // SVG leaves out effects, masks and clipping (see export help), so it only roughly matches a document using them.
+      svgApprox: tpl === 'kitchen-sink',
+    };
     if (fmt === 'webm' && settings.transparent && !caps.webm.alpha) note('this computer cannot do see-through WebM, so the background is kept');
     r.settings = settings;
     const res = await X(`run(${JSON.stringify(settings)}, ${opts.cancelAfter ?? 'undefined'})`);
