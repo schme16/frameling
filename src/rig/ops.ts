@@ -9,7 +9,7 @@ import { celAt, findLayer, newVectorDrawing, uid } from '../core/doc';
 import { store } from '../core/store';
 import { currentChoice, registerChoice } from '../core/choices';
 import { shapesBounds } from '../canvas/geometry';
-import { boneBetween, gridMesh, mapply, minv, mirrorPose, nearestBone, rigState, skinMesh, swapSides, tidyPose, wrapAngle, type Pt } from './math';
+import { boneBetween, boneForBox, gridMesh, mapply, minv, mirrorPose, nearestBone, rigState, skinMesh, swapSides, tidyPose, wrapAngle, type Pt } from './math';
 import { isRigLayer, rigPoseAt, type RigLayer } from './pose';
 
 export type NewPoseChoice = 'glide' | 'hold';
@@ -386,12 +386,27 @@ export function autoAttach(rigId?: Id): number {
   const { doc, ui } = store().get();
   const r = rigId ? doc.layers.find((l) => l.id === rigId) : currentRig();
   if (!isRigLayer(r) || !r.rig.bones.length) return 0;
+  // Layers much bigger than the skeleton, or off to one side of it (a floor, a sky), are scenery, not parts.
+  const st = rigState(r.rig);
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (const s of st.values())
+    for (const p of [s.base, s.tip]) {
+      x0 = Math.min(x0, p.x);
+      y0 = Math.min(y0, p.y);
+      x1 = Math.max(x1, p.x);
+      y1 = Math.max(y1, p.y);
+    }
+  const size = Math.max(x1 - x0, y1 - y0, 20);
   const plan: [Id, Id][] = [];
   for (const l of attachableLayers(doc)) {
     if (l.bind || l.reference) continue;
     const box = layerArtBox(doc, l, ui.frame);
     if (!box) continue;
-    const b = nearestBone(r.rig, { x: box.x + box.w / 2, y: box.y + box.h / 2 });
+    const cx = box.x + box.w / 2;
+    const cy = box.y + box.h / 2;
+    if (Math.max(box.w, box.h) > size * 1.5) continue;
+    if (cx < x0 - size * 0.3 || cx > x1 + size * 0.3 || cy < y0 - size * 0.3 || cy > y1 + size * 0.3) continue;
+    const b = boneForBox(r.rig, box);
     if (b) plan.push([l.id, b.id]);
   }
   if (!plan.length) return 0;

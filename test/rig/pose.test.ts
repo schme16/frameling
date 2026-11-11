@@ -197,3 +197,17 @@ describe('bones in the document', () => {
     expect(arm.bind).toEqual(layer(ids.armId).bind);
   });
 });
+
+describe('auto attach leaves scenery alone', () => {
+  it('skips a floor much wider than the skeleton', () => {
+    setup();
+    store().update('floor', (d) => {
+      const dr = newVectorDrawing();
+      dr.shapes.push(box('floor', -400, 150, 1000, 40));
+      d.drawings[dr.id] = dr;
+      d.layers.unshift({ id: 'floor', name: 'Floor', kind: 'vector', visible: true, locked: false, opacity: 1, cels: [{ id: 'fc', start: 0, length: 20, drawingId: dr.id }] });
+    });
+    expect(autoAttach()).toBe(1);
+    expect(layer('floor').bind).toBeUndefined();
+  });
+});

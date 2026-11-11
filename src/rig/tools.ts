@@ -163,11 +163,10 @@ function startBone(e: ToolPointer, ctx: ToolContext): void {
   if (hit && st) {
     const s = st.get(hit.id)!;
     if (hit.part === 'tip') from = { ...s.tip };
-    else if (hit.part === 'base') {
-      from = { ...s.base };
-      parent = s.bone.parent ?? null;
-    }
-    if (hit.part !== 'base') parent = hit.id;
+    else if (hit.part === 'base') from = { ...s.base };
+    // From a joint it hangs from the same parent, except at a root's joint, where it hangs from the root (legs from
+    // the hips).
+    parent = hit.part === 'base' && s.bone.parent ? s.bone.parent : hit.id;
   }
   const rigId = rig?.id ?? '';
   boneDrag = { kind: 'new', rigId, from, to: from, parent };

@@ -424,6 +424,35 @@ export function nearestBone(rig: Rig, p: Pt): Bone | undefined {
 }
 
 /**
+ * The bone a part drawn in `box` most likely belongs to: the one that runs closest along the box's long middle line
+ * (so a forearm drawn over the top of a thigh still picks the forearm).
+ */
+export function boneForBox(rig: Rig, box: { x: number; y: number; w: number; h: number }): Bone | undefined {
+  const st = rigState(rig);
+  const cx = box.x + box.w / 2;
+  const cy = box.y + box.h / 2;
+  const tall = box.h >= box.w;
+  const pts: Pt[] = [];
+  for (let k = 0; k <= 4; k++) {
+    const t = 0.1 + (0.8 * k) / 4;
+    pts.push(tall ? { x: cx, y: box.y + box.h * t } : { x: box.x + box.w * t, y: cy });
+  }
+  let best: Bone | undefined;
+  let bd = Infinity;
+  for (const b of rig.bones) {
+    const s = st.get(b.id)!;
+    // The middle counts double, so a small part sits with the bone right under it.
+    let d = distanceToSegment({ x: cx, y: cy }, s.base, s.tip);
+    for (const p of pts) d += distanceToSegment(p, s.base, s.tip) / 2;
+    if (d < bd - 1e-6) {
+      bd = d;
+      best = b;
+    }
+  }
+  return best;
+}
+
+/**
  * Automatic weights for one point: the (up to `max`) nearest bones pull it in proportion to 1 / distance^3, so a point
  * on a bone follows it rigidly and one between two bones blends them. Flat pairs [bone index, weight], summing to 1.
  */
