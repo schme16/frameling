@@ -6,6 +6,7 @@ import { desktop } from './desktop';
 import { autosaveNow, clearAutosaveCopy, documentTitle, keepUnsavedWork, loadBytes, openPath, saveDocument } from './document';
 import { loadFile } from './file';
 import { notify } from './notify';
+import { closeSheet } from '../ui/overlays';
 
 export { autosaveNow };
 
@@ -36,6 +37,8 @@ export async function offerRecovery(): Promise<void> {
     {
       label: 'Restore',
       run: () => {
+        // The welcome sheet may be up on start; get it out of the way so the work is right there.
+        closeSheet();
         void loadBytes(found.bytes, found.meta.filePath, { dirty: true });
       },
     },

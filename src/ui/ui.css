@@ -1971,7 +1971,7 @@ body.ui-resizing * {
 
 /* Recent files on the welcome sheet */
 .ui-recent {
-  padding: 6px 24px 0;
+  padding: 6px 24px 10px;
 }
 .ui-recent h3 {
   margin: 8px 0 6px;

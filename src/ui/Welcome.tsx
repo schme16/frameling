@@ -66,6 +66,30 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
         </button>
       </div>
 
+      {/* First, so someone coming back finds their work without scrolling past every example. */}
+      {recent.length > 0 && (
+        <div className="ui-recent" data-help="saving-and-opening">
+          <h3>Pick up where you left off</h3>
+          <div className="ui-recent-list">
+            {recent.map((r) => (
+              <button
+                key={r.path}
+                type="button"
+                className="ui-recent-item"
+                data-tip={r.path}
+                onClick={() => {
+                  closeSheet();
+                  window.setTimeout(() => void openPath(r.path), 0);
+                }}
+              >
+                <Icon name="film" size={16} />
+                <span>{r.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="ui-presets" data-help="new-document">
         {PRESETS.map((p, i) => (
           <button key={p.id} type="button" className="ui-preset" style={{ animationDelay: `${i * 50}ms` }} onClick={() => void make(docFromPreset(p), p.title.toLowerCase())}>
@@ -147,29 +171,6 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
       )}
 
       <Examples scrollTo={sheetMode === 'examples'} onPick={(doc, name) => void make(doc, name)} />
-
-      {recent.length > 0 && (
-        <div className="ui-recent" data-help="saving-and-opening">
-          <h3>Pick up where you left off</h3>
-          <div className="ui-recent-list">
-            {recent.map((r) => (
-              <button
-                key={r.path}
-                type="button"
-                className="ui-recent-item"
-                data-tip={r.path}
-                onClick={() => {
-                  closeSheet();
-                  window.setTimeout(() => void openPath(r.path), 0);
-                }}
-              >
-                <Icon name="film" size={16} />
-                <span>{r.name}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
 
       {quest && mode === 'welcome' && (
         <div className="ui-quest">
