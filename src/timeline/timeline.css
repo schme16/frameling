@@ -1030,7 +1030,7 @@
 .tl-overflow {
   display: none;
 }
-@container tl (max-width: 780px) {
+@container tl (max-width: 900px) {
   .tl-header .tl-fold-1 {
     display: none;
   }
@@ -1043,6 +1043,18 @@
 }
 @container tl (max-width: 620px) {
   .tl-header .tl-fold-2 {
+    display: none;
+  }
+}
+/* A play range or light table chip takes room, so the header folds sooner while one shows. */
+@container tl (max-width: 1100px) {
+  .tl-header:has(.tl-range) .tl-fold-1 {
+    display: none;
+  }
+  .tl-header:has(.tl-range) .tl-overflow {
+    display: inline-flex;
+  }
+  .tl-header:has(.tl-range) .tl-zoom input {
     display: none;
   }
 }
