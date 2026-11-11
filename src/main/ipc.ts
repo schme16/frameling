@@ -4,6 +4,7 @@ import { app, BrowserWindow, dialog, ipcMain, shell, type IpcMainInvokeEvent } f
 import fs from 'node:fs';
 import path from 'node:path';
 import type { AutosaveMeta, DocumentState, FileFilter, SaveChoice } from '../preload/api';
+import { registerVideoIpc } from './video';
 import { addRecent, clearAutosave, clearRecent, keepAutosave, lastDir, listKept, listRecent, readAutosave, readKept, rememberDir, removeKept, removeRecent, writeAutosave, writeFileAtomic } from './store';
 
 const FILTERS: FileFilter[] = [{ name: 'Frameling drawings', extensions: ['frameling'] }];
@@ -251,6 +252,9 @@ export function registerIpc(hooks: IpcHooks): void {
     if (e.sender !== hooks.window()?.webContents) return;
     hooks.saveBeforeCloseDone(!!ok);
   });
+
+  // ProRes through FFmpeg (src/main/video.ts), only into files picked in an export dialog.
+  registerVideoIpc(handle, (p) => granted.has(key(p)));
 
   app.on('will-quit', () => {
     granted.clear();

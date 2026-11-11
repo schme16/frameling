@@ -110,7 +110,7 @@ export function planExport(doc: Doc, s: ExportSettings, currentFrame: number): P
   const info = formatInfo(s.format);
   const range = resolveRange(doc, s, currentFrame);
   const count = range.end - range.start + 1;
-  const video = s.format === 'mp4' || s.format === 'webm';
+  const video = s.format === 'mp4' || s.format === 'webm' || s.format === 'prores';
   const { width, height } = outputSize(doc, s.scale, video);
   let name = fileSafe(doc.name);
   if (info.animated && s.range === 'clip') {
@@ -130,7 +130,7 @@ export function planExport(doc: Doc, s: ExportSettings, currentFrame: number): P
 
 export function filtersFor(format: FormatId): { name: string; extensions: string[] }[] {
   const info = formatInfo(format);
-  const names: Record<FormatId, string> = { mp4: 'MP4 video', webm: 'WebM video', gif: 'Animated GIF', apng: 'Animated PNG', png: 'PNG picture', pngseq: 'Zip file', svg: 'SVG drawing', sheet: 'PNG picture', interactives: 'Interactives package' };
+  const names: Record<FormatId, string> = { mp4: 'MP4 video', webm: 'WebM video', gif: 'Animated GIF', apng: 'Animated PNG', png: 'PNG picture', pngseq: 'Zip file', svg: 'SVG drawing', sheet: 'PNG picture', interactives: 'Interactives package', pdf: 'PDF document', ai: 'Adobe Illustrator', psd: 'Photoshop document', prores: 'QuickTime movie' };
   return [{ name: names[format], extensions: [info.ext] }];
 }
 

@@ -96,6 +96,16 @@ export interface FramelingApi {
     readKept(id: string): Promise<{ bytes: Uint8Array; meta: AutosaveMeta } | null>;
     removeKept(id: string): Promise<void>;
   };
+  /** Video made by FFmpeg on this computer (desktop only; missing in the web version). */
+  video?: {
+    /** Whether FFmpeg is here and can make ProRes, and if not why, in plain words. */
+    probe(): Promise<{ ok: boolean; reason?: string; version?: string }>;
+    /** Starts a ProRes 4444 .mov at a path pickExportFile returned. Frames are raw RGBA, `width * height * 4` bytes. */
+    start(path: string, opts: { width: number; height: number; fps: number; alpha: boolean }): Promise<{ id: number } | FileFailure>;
+    frame(id: number, rgba: Uint8Array): Promise<{ ok: true } | FileFailure>;
+    finish(id: number): Promise<{ ok: true } | FileFailure>;
+    cancel(id: number): Promise<void>;
+  };
   app: {
     /** Tells the window about the document (title bar dot on macOS, "Save changes?" on close). */
     setDocumentState(state: DocumentState): void;
