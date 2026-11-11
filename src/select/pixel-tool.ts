@@ -1,9 +1,10 @@
 /**
  * Select [V] on a pixel layer: pick pixels with a box, a lasso or the magic wand, then drag them to move them.
- * Shift adds to the selection, Alt takes away. Once something is selected, painting stays inside it, and the
+ * Shift adds to the selection, Alt takes away (Alt+drag inside it copies the pixels instead). Once something is selected, painting stays inside it, and the
  * Pixel menu's flips, turns and outlines work on just that part.
  */
 import { registerTool, type Tool, type ToolContext, type ToolPointer } from '../core/registry';
+import { currentChoice, registerChoice } from '../core/choices';
 import { cssVar } from '../canvas/theme';
 import { addStageOverlay, setCursor } from '../canvas/controller';
 import type { Pt } from '../canvas/geometry';
@@ -31,9 +32,28 @@ const DRAG_PX = 3;
 type Gesture =
   | { kind: 'box'; op: SelectOp; start: Pt; cur: Pt; size: number }
   | { kind: 'lasso'; op: SelectOp; pts: Pt[]; cur: Pt; size: number; open: boolean }
-  | { kind: 'move'; start: Pt; startCell: { x: number; y: number }; from: { dx: number; dy: number }; size: number; lifted: boolean };
+  | { kind: 'move'; start: Pt; startCell: { x: number; y: number }; from: { dx: number; dy: number }; size: number; lifted: boolean; copy: boolean };
 
 let g: Gesture | null = null;
+
+export type AltInsideChoice = 'copy' | 'subtract';
+
+registerChoice<AltInsideChoice>({
+  id: 'select.altInside',
+  title: 'Alt+drag inside a pixel selection',
+  question: 'What should Alt+drag do when it starts inside the selected pixels?',
+  category: 'Pixel art',
+  silent: true,
+  default: 'copy',
+  help: 'Alt+drag outside the selection always takes away from it.',
+  options: [
+    { value: 'copy', label: 'Copy the pixels', detail: 'Drags a copy and leaves the originals where they were.' },
+    { value: 'subtract', label: 'Take away from the selection', detail: 'Draws a box or lasso that is cut out of the selection.' },
+  ],
+});
+
+/** Alt (without Shift) pressed inside the selection drags a copy, unless Preferences say Alt takes away there too. */
+const altCopies = (e: ToolPointer): boolean => e.alt && !e.shift && currentChoice<AltInsideChoice>('select.altInside') === 'copy';
 
 /** Which way a new selection goes: Shift adds, Alt takes away, otherwise what the options say. */
 function opFor(e: ToolPointer): SelectOp {
@@ -64,9 +84,12 @@ function down(e: ToolPointer, ctx: ToolContext): void {
   const cell = cellOf(e, size);
   const sel = pixelSelection();
   const mode = getSelectSettings().mode;
-  // Inside the selection with no keys held: drag the pixels.
-  if (sel && !e.shift && !e.alt && maskHas(sel, cell.x, cell.y)) {
-    g = { kind: 'move', start: { x: e.x, y: e.y }, startCell: cell, from: floatingOffset() ?? { dx: 0, dy: 0 }, size, lifted: isFloating() };
+  // Inside the selection with no keys held: drag the pixels. With Alt: drag a copy.
+  const copy = altCopies(e);
+  if (sel && !e.shift && (!e.alt || copy) && maskHas(sel, cell.x, cell.y)) {
+    // Copying pixels that are already lifted puts them down first, then copies them from there.
+    if (copy && isFloating()) dropFloating();
+    g = { kind: 'move', start: { x: e.x, y: e.y }, startCell: cell, from: floatingOffset() ?? { dx: 0, dy: 0 }, size, lifted: isFloating(), copy };
     return;
   }
   const op = opFor(e);
@@ -102,7 +125,7 @@ function move(e: ToolPointer, ctx: ToolContext): void {
         g = null;
         return;
       }
-      if (!liftSelection()) {
+      if (!liftSelection(g.copy)) {
         g = null;
         return;
       }
@@ -193,7 +216,9 @@ function hover(e: ToolPointer): void {
   const sel = pixelSelection();
   if (!a || !sel) return setCursor(null);
   const c = cellOf(e, a.layer.pixelSize);
-  setCursor(!e.shift && !e.alt && maskHas(sel, c.x, c.y) ? 'move' : null);
+  if (e.shift || !maskHas(sel, c.x, c.y)) return setCursor(null);
+  if (!e.alt) return setCursor('move');
+  setCursor(altCopies(e) ? 'copy' : null);
 }
 
 function overlay(gx: CanvasRenderingContext2D, ctx: ToolContext): void {

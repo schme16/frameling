@@ -63,6 +63,8 @@ export interface State {
 }
 
 interface HistoryEntry {
+  /** Stays the same through undo and redo, so other parts can remember things about a step. */
+  id: number;
   patches: Patch[];
   inverse: Patch[];
   label: string;
@@ -85,6 +87,7 @@ interface Nested {
 }
 
 const HISTORY_LIMIT = 300;
+let nextEntryId = 1;
 const COALESCE_MS = 1200;
 
 function initialUi(doc: Doc): UiState {
@@ -148,7 +151,7 @@ export class Store {
       last.inverse.unshift(...inverse);
       last.at = now;
     } else {
-      this.undoStack.push({ patches, inverse, label, coalesce: opts.coalesce, at: now });
+      this.undoStack.push({ id: nextEntryId++, patches, inverse, label, coalesce: opts.coalesce, at: now });
       if (this.undoStack.length > HISTORY_LIMIT) this.undoStack.shift();
     }
     this.redoStack = [];
@@ -174,6 +177,11 @@ export class Store {
   }
   redoLabel(): string | null {
     return this.redoStack[this.redoStack.length - 1]?.label ?? null;
+  }
+
+  /** Ids of the steps Undo and Redo would take next (they keep their id as they move between the two). */
+  historyIds(): { undo: number | null; redo: number | null } {
+    return { undo: this.undoStack[this.undoStack.length - 1]?.id ?? null, redo: this.redoStack[this.redoStack.length - 1]?.id ?? null };
   }
 
   undo(): void {
