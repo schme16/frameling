@@ -1,0 +1,1 @@
+A (built): "Shapes on this layer" as two buttons, Separate | Merge, each with a small picture (two circles apart vs joined), hint underneath names the industry term. B: a single "Merge shapes together" on/off switch with the same hint. Left of each pair is a separate-objects layer, right is a merge layer.

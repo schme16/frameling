@@ -44,6 +44,8 @@ For thicker lines that swell with pressure, use the Brush (B). The pencil works 
 
 **On a vector layer** it erases whole lines. Anything the circle touches, a stroke or a shape, disappears as a whole, so one quick swipe removes a line without you having to trace it. The **Reach** option sets how close you need to get. If you took out too much, Undo brings it back.
 
+**On a layer set to Merge** it rubs out just the area under the circle instead, the way a real eraser does. See [Merge shapes or keep them separate](help:merge-drawing).
+
 **On a pixel layer** it clears pixels as you drag, and you choose its size in art pixels.
 
 Using a drawing pen? Flip it over and use the eraser end.`,

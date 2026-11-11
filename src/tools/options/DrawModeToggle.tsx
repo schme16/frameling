@@ -14,7 +14,7 @@ function Glyph({ mode }: { mode: DrawMode }) {
           <circle cx="17" cy="8" r="6" fill="currentColor" opacity="0.35" stroke="currentColor" strokeWidth="1.3" />
         </>
       ) : (
-        <path d="M9 2a6 6 0 0 1 4 1.5A6 6 0 1 1 13 12.5 6 6 0 1 1 9 2z" fill="currentColor" opacity="0.8" />
+        <path d="M13 3.53A6 6 0 1 0 13 12.47A6 6 0 1 0 13 3.53Z" fill="currentColor" opacity="0.85" />
       )}
     </svg>
   );
@@ -38,7 +38,7 @@ export function DrawModeToggle({ variant = 'segments' }: { variant?: 'segments' 
         {(['object', 'merge'] as const).map((m) => (
           <button key={m} type="button" role="radio" aria-checked={mode === m} className="cv-choice-btn" data-on={mode === m} title={m === 'object' ? 'Keep shapes separate (object drawing). Key: J' : 'Merge shapes together (merge drawing). Key: J'} onClick={() => set(m)}>
             <Glyph mode={m} />
-            {m === 'object' ? 'Keep separate' : 'Merge together'}
+            {m === 'object' ? 'Separate' : 'Merge'}
           </button>
         ))}
       </div>
