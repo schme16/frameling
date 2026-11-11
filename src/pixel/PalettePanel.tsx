@@ -14,6 +14,7 @@ import { colorUse, docPalette, insertColor, makeRamp, moveColor, paletteRgb, ram
 import type { PaletteFormat } from './palette-io';
 import '../canvas/canvas.css';
 import './pixel.css';
+import { usePopover } from '../ui/popover';
 
 interface Menu {
   index: number;
@@ -53,14 +54,10 @@ function ChipMenu({ menu, palette, onClose }: { menu: Menu; palette: DocPalette;
   const front = useStore((s) => activeColor(s.ui) ?? s.ui.color);
   useEffect(() => {
     const away = (e: Event) => ref.current && !ref.current.contains(e.target as Node) && onClose();
-    const esc = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     window.addEventListener('pointerdown', away, true);
-    window.addEventListener('keydown', esc, true);
-    return () => {
-      window.removeEventListener('pointerdown', away, true);
-      window.removeEventListener('keydown', esc, true);
-    };
+    return () => window.removeEventListener('pointerdown', away, true);
   }, [onClose]);
+  usePopover(ref, onClose);
   if (!color) return null;
   const startsRamp = (palette.ramps ?? []).includes(menu.index);
   const item = (label: string, run: () => void, danger = false, disabled = false) => (

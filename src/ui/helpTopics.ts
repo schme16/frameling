@@ -134,7 +134,9 @@ Press the small **x** on a shortcut to remove it. **Reset** puts a command back 
 ## Without a mouse
 
 - **Tab** and **Shift+Tab** move between buttons and boxes. The one you're on has a ring round it.
-- In a row of choices (tabs, the options in a panel), the **arrow keys** move between them.
+- In a row of choices (tabs, the options in a panel), a list or a menu, the **arrow keys** move between them.
+- **Enter** or **Space** presses the button you're on. (When you got there with Tab, Enter presses it rather than playing the animation.)
+- With a slider or a list picked, the arrow keys change that, not the selection on the canvas.
 - **Esc** closes a dialog or menu, and you land back where you were.
 - **Mod+K** finds any command by name, even ones with no shortcut.`,
   },
@@ -375,7 +377,11 @@ Press the little arrow at the end of a tab bar to tuck a zone away. Press a tab 
 
 ## Show and hide
 
-Press the **x** on a tab to close that panel. Bring it back from the **View** menu. Panels with a tick are showing.
+Press the **x** on a tab to close that panel (or press **Delete** while the tab has the keyboard). Bring it back from the **View** menu. Panels with a tick are showing.
+
+## With the keyboard
+
+**Tab** lands on the chosen tab of each zone. The **arrow keys** move between tabs, **Home** and **End** jump to the first and last.
 
 Your layout is remembered. Save arrangements as [workspaces](help:workspaces).`,
   },

@@ -1919,6 +1919,8 @@ body.ui-resizing * {
 
 @media (prefers-reduced-motion: reduce) {
   .ui-app *,
+  .io-backdrop,
+  .io-backdrop *,
   .ui-backdrop,
   .ui-tip,
   .ui-toast,
@@ -1929,6 +1931,8 @@ body.ui-resizing * {
   }
 }
 :root[data-motion='reduce'] .ui-app *,
+:root[data-motion='reduce'] .io-backdrop,
+:root[data-motion='reduce'] .io-backdrop *,
 :root[data-motion='reduce'] .ui-backdrop,
 :root[data-motion='reduce'] .ui-tip,
 :root[data-motion='reduce'] .ui-toast,

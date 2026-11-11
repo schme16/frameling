@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
+import { usePopover } from '../ui/popover';
 
 export type MenuItem =
   | { label: string; onClick: () => void; hint?: string; danger?: boolean; disabled?: boolean; checked?: boolean }
@@ -23,21 +24,14 @@ export function Floating({ x, y, onClose, children, className = '' }: { x: numbe
     const down = (e: PointerEvent) => {
       if (!ref.current?.contains(e.target as Node)) onClose();
     };
-    const key = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.stopPropagation();
-        onClose();
-      }
-    };
     window.addEventListener('pointerdown', down, true);
-    window.addEventListener('keydown', key, true);
     window.addEventListener('blur', onClose);
     return () => {
       window.removeEventListener('pointerdown', down, true);
-      window.removeEventListener('keydown', key, true);
       window.removeEventListener('blur', onClose);
     };
   }, [onClose]);
+  usePopover(ref, onClose);
   return createPortal(
     <div ref={ref} className={`tl-floating ${className}`} style={{ left: at.x, top: at.y }} onContextMenu={(e) => e.preventDefault()}>
       {children}
@@ -48,9 +42,11 @@ export function Floating({ x, y, onClose, children, className = '' }: { x: numbe
 
 /** A right-click menu. Closes when something is picked. */
 export function ContextMenu({ x, y, items, onClose }: { x: number; y: number; items: MenuItem[]; onClose: () => void }) {
+  // A menu may only hold menu items. With a slider or a box in it, it's a plain group of buttons instead.
+  const plain = items.some((it) => 'node' in it);
   return (
     <Floating x={x} y={y} onClose={onClose} className="tl-menu">
-      <div role="menu">
+      <div role={plain ? 'group' : 'menu'}>
         {items.map((it, i) => {
           if ('separator' in it) return <div key={i} className="tl-menu-sep" role="separator" />;
           if ('heading' in it) return <div key={i} className="tl-menu-heading">{it.heading}</div>;
@@ -59,7 +55,7 @@ export function ContextMenu({ x, y, items, onClose }: { x: number; y: number; it
             <button
               key={i}
               type="button"
-              role="menuitem"
+              role={plain ? undefined : 'menuitem'}
               className={`tl-menu-item${it.danger ? ' is-danger' : ''}`}
               disabled={it.disabled}
               onClick={() => {

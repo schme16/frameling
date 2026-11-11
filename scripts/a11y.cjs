@@ -108,6 +108,8 @@ const js = (win, code) => win.webContents.executeJavaScript(`(async () => { ${co
 async function key(win, keyCode, modifiers = []) {
   if (!win.webContents.isFocused()) win.webContents.focus();
   win.webContents.sendInputEvent({ type: 'keyDown', keyCode, modifiers });
+  // Buttons press on the typed character, not the key going down.
+  if (keyCode === 'Return') win.webContents.sendInputEvent({ type: 'char', keyCode: '\r', modifiers });
   win.webContents.sendInputEvent({ type: 'keyUp', keyCode, modifiers });
   await sleep(60);
 }
@@ -171,9 +173,11 @@ const FOCUS_PROBE = `
   const ring = has(cs) || (el.parentElement && has(getComputedStyle(el.parentElement))) || after === focusColour || after === sunny;
   const name = el.getAttribute('aria-label') || el.getAttribute('title') || (el.textContent || '').trim().slice(0, 30) || el.tagName;
   const r = el.getBoundingClientRect();
+  if (!el.dataset.a11yStop) el.dataset.a11yStop = String((window.__a11yN = (window.__a11yN || 0) + 1));
+  const stop = el.dataset.a11yStop;
   const id = el.id ? '#' + el.id : '';
   const cls = typeof el.className === 'string' && el.className ? '.' + el.className.trim().split(/\\s+/).slice(0, 2).join('.') : '';
-  return { ring, name, sel: el.tagName.toLowerCase() + id + cls, visible: r.width > 0 && r.height > 0, inDialog: !!el.closest('[role=dialog]') };
+  return { ring, name, stop, sel: el.tagName.toLowerCase() + id + cls, visible: r.width > 0 && r.height > 0, inDialog: !!el.closest('[role=dialog]') };
 `;
 
 async function tabWalk(win, max, { inDialog = false } = {}) {
@@ -188,7 +192,7 @@ async function tabWalk(win, max, { inDialog = false } = {}) {
     const f = await js(win, FOCUS_PROBE);
     if (!f) continue;
     if (inDialog && !f.inDialog) return { seen, noRing, escaped: f.sel };
-    const k = f.sel + '|' + f.name;
+    const k = f.sel + '|' + f.name + '|' + f.stop;
     if (k === last) stuck++;
     last = k;
     if (seen.includes(k)) break;
@@ -294,6 +298,45 @@ app.whenReady().then(async () => {
     console.log(`   keys ${k.problems.length ? 'x ' + k.problems.join('; ') : 'ok'} (${k.stops} tab stops)`);
   }
 
+  // Little popups opened from a button with the keyboard: focus goes in, Escape closes, focus comes back.
+  const POPUPS = [
+    ['blend modes', 'effects', 'bouncing-logo', '.fx-blend-btn', '.tl-floating'],
+    ['layer options', 'timeline', 'bouncing-ball', '.tl-more', '.tl-floating'],
+  ];
+  for (const [n, panel, doc, opener, pop] of POPUPS) {
+    const name = `popup ${n}`;
+    if (!want(name)) continue;
+    await reset(win, doc);
+    await js(win, `__frameling.showPanel(${JSON.stringify(panel)}); __frameling.run('select.all')`);
+    await sleep(250);
+    const found = await js(win, `const b = document.querySelector(${JSON.stringify(opener)}); b?.focus(); window.__a11yFrom = b; return !!b`);
+    if (!found) {
+      report.keyboard.push({ name, problems: [], stops: 0, missing: true });
+      console.log(`${name}: opener not found`);
+      continue;
+    }
+    // Step off and back with the keyboard, so it has keyboard focus the way a person reaching it with Tab would.
+    await key(win, 'Tab', ['shift']);
+    await key(win, 'Tab');
+    await js(win, `if (document.activeElement !== window.__a11yFrom) window.__a11yFrom?.focus()`);
+    await key(win, 'Return');
+    await sleep(300);
+    const problems = [];
+    const open = await js(win, `const p = document.querySelector(${JSON.stringify(pop)}); return { open: !!p, inside: !!p && p.contains(document.activeElement) }`);
+    if (!open.open) problems.push('Enter did not open it');
+    else {
+      if (!open.inside) problems.push('focus did not move into it');
+      add(name, await axe(win, pop));
+      await key(win, 'Escape');
+      await sleep(200);
+      const after = await js(win, `return { open: !!document.querySelector(${JSON.stringify(pop)}), back: document.activeElement === window.__a11yFrom }`);
+      if (after.open) problems.push('Escape did not close it');
+      else if (!after.back) problems.push('focus did not come back');
+    }
+    report.keyboard.push({ name, problems, stops: 0 });
+    console.log(`   keys ${problems.length ? 'x ' + problems.join('; ') : 'ok'}`);
+  }
+
   // The main window with the keyboard alone: Tab through it and look for things with no ring, and traps.
   if (want('tab')) {
     await reset(win);
@@ -301,7 +344,7 @@ app.whenReady().then(async () => {
     const problems = [];
     if (walk.noRing.length) problems.push(`no visible focus ring: ${[...new Set(walk.noRing)].join(', ')}`);
     if (walk.stuck > 3) problems.push('focus got stuck');
-    report.keyboard.push({ name: 'main tab order', problems, stops: walk.seen.length });
+    report.keyboard.push({ name: 'main tab order', problems, stops: walk.seen.length, order: walk.seen });
     console.log(`tab main: ${walk.seen.length} stops ${problems.length ? 'x ' + problems.join('; ') : 'ok'}`);
   }
 

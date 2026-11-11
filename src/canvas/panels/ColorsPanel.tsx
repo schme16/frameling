@@ -6,6 +6,7 @@ import { hexToHsv, hsvToHex, parseHex, toHex, type HSV } from '../colors';
 import '../canvas.css';
 import { activeColor, setActiveColor } from '../../tools/wells';
 import { Wells } from './Wells';
+import { usePopover } from '../../ui/popover';
 
 // Every colour change goes to whichever box is in front (fill or stroke), and to selected shapes.
 function setColor(c: string): void {
@@ -145,14 +146,10 @@ function SwatchMenu({ menu, onClose }: { menu: MenuState; onClose: () => void })
     const away = (e: Event) => {
       if (ref.current && !ref.current.contains(e.target as Node)) onClose();
     };
-    const esc = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     window.addEventListener('pointerdown', away, true);
-    window.addEventListener('keydown', esc, true);
-    return () => {
-      window.removeEventListener('pointerdown', away, true);
-      window.removeEventListener('keydown', esc, true);
-    };
+    return () => window.removeEventListener('pointerdown', away, true);
   }, [onClose]);
+  usePopover(ref, onClose);
   if (!sw) return null;
   const rename = () => {
     const n = name.trim();

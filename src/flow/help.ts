@@ -17,6 +17,7 @@ Open **View > Clip flow**. Every clip is a box.
   - **On a trigger**: when something fires a named trigger, like **jump** or **hit**. Games fire it from code; in Interactives it's a node.
 - **Click a box** and press **Play this one first** to choose the starting clip (it gets a star).
 - Drag boxes around to tidy up. **Remove this arrow** deletes one.
+- **With the keyboard:** Tab to a box and press **Enter**, then pick a clip under **Then go to** to draw the arrow. Arrows can be reached with Tab too.
 
 Arrows from a looping clip start out as triggers named after where they go, since a loop never ends on its own. Arrows from other clips start as **At the end**.
 

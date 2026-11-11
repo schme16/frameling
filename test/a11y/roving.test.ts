@@ -11,6 +11,7 @@ describe('arrow keys in a row of choices', () => {
     expect(nextIndex('End', 0, 3)).toBe(2);
     expect(nextIndex('a', 0, 3)).toBe(-1);
     expect(nextIndex('ArrowRight', 0, 0)).toBe(-1);
+    expect(nextIndex('ArrowRight', 0, 3, true)).toBe(-1);
   });
 
   let off: (() => void) | null = null;
@@ -31,6 +32,24 @@ describe('arrow keys in a row of choices', () => {
     expect(e.defaultPrevented).toBe(true);
     expect(document.activeElement).toBe(c);
     expect(picked).toBe('C');
+  });
+
+  it('moves along a list without picking, and menus only go up and down', () => {
+    off = installRovingKeys();
+    document.body.innerHTML = `<div role="listbox"><button role="option">A</button><button role="option">B</button></div><div role="menu"><button role="menuitem">X</button><button role="menuitem">Y</button></div>`;
+    const [a, b, x] = [...document.querySelectorAll('button')];
+    let clicked = false;
+    b.addEventListener('click', () => (clicked = true));
+    a.focus();
+    a.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true }));
+    expect(document.activeElement).toBe(b);
+    expect(clicked).toBe(false);
+    x.focus();
+    const side = new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true });
+    x.dispatchEvent(side);
+    expect(side.defaultPrevented).toBe(false);
+    x.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true, cancelable: true }));
+    expect(document.activeElement?.textContent).toBe('Y');
   });
 
   it('leaves other keys and other elements alone', () => {
