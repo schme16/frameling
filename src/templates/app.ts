@@ -6,6 +6,11 @@ import { importTemplate } from './actions';
 import { openSaveTemplate } from './SaveTemplateDialog';
 import './user';
 import './debug';
+import { store } from '../core/store';
+import { watchSetups } from './setup';
+
+// Onion skin and the like for templates that ask for it, as their documents open.
+watchSetups(store());
 
 registerCommands([
   {

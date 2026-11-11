@@ -13,6 +13,8 @@ function fakeCtx(): any {
     get(_t, name: string) {
       if (name in props) return props[name];
       if (name === 'getTransform') return () => ({});
+      if (name === 'createRadialGradient' || name === 'createLinearGradient') return () => ({ addColorStop() {} });
+      if (name === 'measureText') return (s: string) => ({ width: s.length * 10 });
       return (...args: unknown[]) => void calls.push(`${name}:${args.length}`);
     },
     set(_t, name: string, v) {
@@ -63,7 +65,7 @@ function ids(doc: Doc): string[] {
 
 describe('templates', () => {
   it('has the expected set with unique ids', () => {
-    expect(TEMPLATES.map((t) => t.id)).toEqual(['bouncing-ball', 'flour-sack-hop', 'blink', 'hero-sprites', 'sparkle-fx', 'bouncing-logo', 'morphing-shapes', 'camera-parallax', 'puppet', 'tileset', 'lip-sync', 'blank-vector', 'blank-pixel', 'blank-level']);
+    expect(TEMPLATES.map((t) => t.id)).toEqual(['bouncing-ball', 'flour-sack-hop', 'blink', 'hero-sprites', 'sparkle-fx', 'bouncing-logo', 'morphing-shapes', 'camera-parallax', 'puppet', 'tileset', 'lip-sync', 'walk-cycle', 'run-cycle', 'explosion-fx', 'sticker-pack', 'ui-icons', 'title-card', 'loading-spinner', 'blank-vector', 'blank-pixel', 'blank-level']);
     expect(new Set(TEMPLATES.map((t) => t.id)).size).toBe(TEMPLATES.length);
     for (const t of TEMPLATES) {
       expect(t.name.length).toBeGreaterThan(0);
