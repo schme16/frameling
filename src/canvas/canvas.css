@@ -488,3 +488,90 @@
 }
 
 /* Keep separate / Merge together, at the top of vector tool options. */
+
+/* Rulers along the top and left (View > Rulers). The ticks are drawn on the canvases; this is the strip behind. */
+.cv-rulers {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+/* Guide lines: a clear cyan that reads on light and dark pages and isn't any tool's colour. */
+:root {
+  --guide: #2fc4e8;
+}
+.cv-ruler,
+.cv-ruler-corner {
+  position: absolute;
+  pointer-events: auto;
+  background: var(--panel);
+}
+.cv-ruler-top {
+  left: 20px;
+  top: 0;
+  right: 0;
+  height: 20px;
+  width: calc(100% - 20px);
+  border-bottom: 1px solid var(--line);
+  cursor: row-resize;
+}
+.cv-ruler-left {
+  left: 0;
+  top: 20px;
+  bottom: 0;
+  width: 20px;
+  height: calc(100% - 20px);
+  border-right: 1px solid var(--line);
+  cursor: col-resize;
+}
+.cv-ruler-corner {
+  all: unset;
+  position: absolute;
+  pointer-events: auto;
+  left: 0;
+  top: 0;
+  width: 20px;
+  height: 20px;
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--muted);
+  background: var(--panel);
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+}
+.cv-ruler-corner:hover {
+  color: var(--text);
+  background: var(--hover-bg);
+}
+.cv-ruler-corner:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+/* B for the A/B: see-through strips over the canvas. */
+.cv-rulers[data-look='glass'] .cv-ruler,
+.cv-rulers[data-look='glass'] .cv-ruler-corner {
+  background: color-mix(in srgb, var(--canvas-bg) 55%, transparent);
+  backdrop-filter: blur(6px);
+  border-color: transparent;
+}
+.cv-ruler-readout {
+  position: absolute;
+  padding: 3px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--raised);
+  color: var(--text);
+  box-shadow: var(--shadow-small);
+  font-size: var(--fs-small);
+  font-weight: 700;
+  white-space: nowrap;
+  pointer-events: none;
+}
+/* Bars across the top of the canvas move down out of the ruler's way. */
+.cv-root.has-rulers .sy-editbar,
+.cv-root.has-rulers .tz-banner {
+  top: 30px;
+}

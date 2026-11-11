@@ -10,6 +10,7 @@ import { drawShape } from '../core/render';
 import { store } from '../core/store';
 import type { Pt, Rect } from '../canvas/geometry';
 import { addShapes } from './merge-mode';
+import { clearSnap, snapPt } from '../canvas/guides';
 import { ShapeOptions } from './options/ShapeOptions';
 import { noteColorUsed } from './recent';
 import { getToolSettings, type ToolSettings } from './settings';
@@ -169,16 +170,18 @@ function shapeTool(kind: 'rect' | 'ellipse' | 'line', label: string, icon: strin
         ctx.hint('Fill and stroke are both set to none, so the shape would be invisible. Pick a colour for one of them.');
         return;
       }
-      drag = { start: { x: e.x, y: e.y }, cur: e };
+      drag = { start: snapPt(e, ctx.zoom, e.mod), cur: e };
+      clearSnap();
     },
-    move(e) {
+    move(e, ctx) {
       if (pix.active()) return pix.move(e);
-      if (drag) drag.cur = e;
+      if (drag) drag.cur = { ...e, ...snapPt(e, ctx.zoom, e.mod) };
     },
     up(e, ctx) {
       if (pix.active()) return pix.up(e, ctx);
       if (!drag) return;
-      drag.cur = e;
+      drag.cur = { ...e, ...snapPt(e, ctx.zoom, e.mod) };
+      clearSnap();
       const shape = build();
       drag = null;
       if (shape) {
@@ -192,6 +195,7 @@ function shapeTool(kind: 'rect' | 'ellipse' | 'line', label: string, icon: strin
     },
     cancel(ctx) {
       drag = null;
+      clearSnap();
       pix.cancel();
       ctx.requestOverlay();
     },

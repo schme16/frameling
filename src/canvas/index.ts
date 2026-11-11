@@ -5,6 +5,7 @@ import { ToolOptionsPanel } from './panels/ToolOptionsPanel';
 import './canvas.css';
 import './choices';
 import './commands';
+import './guides';
 import './help';
 
 registerPanel({ id: 'tool-options', title: 'Tool options', icon: 'sliders', component: ToolOptionsPanel, zone: 'right', order: 10, help: 'tool-options' });

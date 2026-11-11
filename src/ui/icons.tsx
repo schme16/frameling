@@ -326,6 +326,27 @@ const ICONS: Record<string, ReactNode> = {
       <circle cx="17" cy="17" r="2.4" />
     </>
   ),
+  // Two chain links: width and height kept together.
+  link: (
+    <>
+      <path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1" />
+      <path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" />
+    </>
+  ),
+  // The same links pulled apart.
+  unlink: (
+    <>
+      <path d="M13.5 7.3l.5-.5a4 4 0 0 1 5.7 5.7l-1.7 1.7" />
+      <path d="M10.5 16.7l-.5.5a4 4 0 0 1-5.7-5.7l1.7-1.7" />
+      <path d="M4 4l2 2M20 20l-2-2" />
+    </>
+  ),
+  ruler: (
+    <>
+      <rect x="3" y="7.5" width="18" height="9" rx="2" />
+      <path d="M7 7.5v3M11 7.5v4.5M15 7.5v3M19 7.5v1.5" />
+    </>
+  ),
   sliders: (
     <>
       <path d="M5 4v6M5 14v6M12 4v2M12 10v10M19 4v10M19 18v2" />

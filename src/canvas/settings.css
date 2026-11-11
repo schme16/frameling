@@ -1,0 +1,194 @@
+/* Canvas size and speed dialog. */
+.ds-modal {
+  width: min(560px, calc(100vw - 32px));
+}
+.ds-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.ds-modes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.ds-modes button {
+  all: unset;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  cursor: pointer;
+  background: var(--bg);
+}
+.ds-modes button:hover {
+  background: var(--hover-bg);
+}
+.ds-modes button[data-on='true'] {
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+  border-color: transparent;
+}
+.ds-modes button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.ds-modes span {
+  font-size: var(--fs-small);
+  opacity: 0.85;
+}
+.ds-size {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 18px;
+  align-items: center;
+}
+.ds-body input[type='number'] {
+  height: 32px;
+  box-sizing: border-box;
+  font: inherit;
+}
+.ds-fields {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 8px;
+  align-items: end;
+}
+.ds-fields > .ui-field:nth-child(4),
+.ds-px {
+  grid-column: 1 / -1;
+}
+.ds-px {
+  margin: 0;
+  font-size: var(--fs-small);
+  color: var(--muted);
+}
+.ds-len {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ds-len input {
+  flex: 1;
+  width: 100%;
+}
+.ds-len i {
+  font-style: normal;
+  font-size: var(--fs-small);
+  color: var(--muted);
+  min-width: 1.6em;
+}
+.ds-link {
+  all: unset;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: var(--ui-control-h, 32px);
+  border-radius: var(--radius-small);
+  color: var(--muted);
+  cursor: pointer;
+}
+.ds-link[data-on='true'] {
+  color: var(--text);
+  background: var(--hover-bg);
+}
+.ds-link:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+.ds-link:focus-visible {
+  outline: 2px solid var(--accent);
+}
+.ds-place {
+  display: grid;
+  grid-template-columns: auto auto;
+  grid-template-rows: auto auto;
+  align-items: center;
+  column-gap: 10px;
+  row-gap: 4px;
+}
+.ds-place .ds-preview {
+  grid-row: 1 / 3;
+}
+.ds-preview {
+  width: 104px;
+  height: 104px;
+}
+.ds-preview .ds-new {
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+}
+.ds-preview .ds-old {
+  fill: color-mix(in srgb, var(--sunny) 55%, transparent);
+  stroke: var(--sunny-deep, var(--sunny));
+  stroke-width: 1.5;
+}
+.ds-anchor {
+  display: grid;
+  grid-template-columns: repeat(3, 18px);
+  gap: 3px;
+}
+.ds-anchor button {
+  all: unset;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  cursor: pointer;
+}
+.ds-anchor button:hover {
+  background: var(--hover-bg);
+}
+.ds-anchor button[data-on='true'] {
+  background: var(--chosen-bg);
+  border-color: transparent;
+}
+.ds-anchor button:focus-visible {
+  outline: 2px solid var(--accent);
+}
+.ds-anchor-note {
+  font-size: var(--fs-small);
+  color: var(--muted);
+  max-width: 90px;
+}
+.ds-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.ds-bg {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: var(--ui-control-h, 32px);
+}
+.ds-bg input[type='color'] {
+  width: 40px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  background: none;
+}
+.ds-bg input[type='color']:disabled {
+  opacity: 0.4;
+}
+.ds-note {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: var(--radius-small);
+  background: color-mix(in srgb, var(--sunny) 18%, transparent);
+  font-size: var(--fs-small);
+}
+@media (max-width: 520px) {
+  .ds-size,
+  .ds-modes,
+  .ds-row {
+    grid-template-columns: 1fr;
+  }
+}
