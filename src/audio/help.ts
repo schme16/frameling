@@ -40,7 +40,11 @@ Each sound has controls on the left of its row:
 
 ## In your video
 
-Exporting an **MP4 or WebM** mixes every unmuted sound into the video. MP4 uses AAC when your computer can make it, and Opus when it can't. If your computer can't make sound for video at all, the video is made without it and Frameling tells you so. GIFs, PNGs and the other formats have no sound.
+Exporting an **MP4 or WebM** mixes every unmuted sound into the video.
+
+MP4 sound is **AAC**, the kind every player knows. The desktop app can't make AAC by itself, so it uses **ffmpeg** if it's on your computer (a free program; on Linux it's usually there already). Without ffmpeg the sound would be **Opus**, which plays in Chrome, Edge, Firefox, VLC and Windows, but QuickTime, Safari and iPhones play the video silent. The first time that happens Frameling asks whether to keep the MP4 or make a WebM instead (change it in Preferences > Behaviour).
+
+If your computer can't make sound for video at all, the video is made without it and Frameling tells you so. GIFs, PNGs and the other formats have no sound.
 
 Sounds are saved inside your .frameling file, so they travel with it.
 

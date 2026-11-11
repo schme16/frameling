@@ -4,6 +4,7 @@ import { app, BrowserWindow, dialog, ipcMain, shell, type IpcMainInvokeEvent } f
 import fs from 'node:fs';
 import path from 'node:path';
 import type { AutosaveMeta, DocumentState, FileFilter, SaveChoice } from '../preload/api';
+import { ffmpegPath, mp4SoundToAac } from './media';
 import { addRecent, clearAutosave, clearRecent, keepAutosave, lastDir, listKept, listRecent, readAutosave, readKept, rememberDir, removeKept, removeRecent, writeAutosave, writeFileAtomic } from './store';
 
 const FILTERS: FileFilter[] = [{ name: 'Frameling drawings', extensions: ['frameling'] }];
@@ -190,6 +191,9 @@ export function registerIpc(hooks: IpcHooks): void {
     }
     return { paths: targets.map((t) => t.file) };
   });
+
+  handle('media:aacAvailable', () => !!ffmpegPath());
+  handle('media:toAac', (_e, bytes: Uint8Array) => (bytes instanceof Uint8Array ? mp4SoundToAac(bytes) : null));
 
   handle('files:showInFolder', (_e, p: string) => {
     if (typeof p === 'string' && fs.existsSync(p)) shell.showItemInFolder(p);

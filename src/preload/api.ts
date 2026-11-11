@@ -80,6 +80,13 @@ export interface FramelingApi {
     writeMany(folder: string, files: { name: string; bytes: Uint8Array }[]): Promise<{ paths: string[] } | FileFailure | null>;
     showInFolder(path: string): Promise<void>;
   };
+  /** Video helpers that need programs on the computer (missing in a browser). */
+  media?: {
+    /** Whether ffmpeg is there to turn a video's sound into AAC. */
+    aacAvailable(): Promise<boolean>;
+    /** An MP4 with its sound turned into AAC (the picture untouched), or null when it couldn't be done. */
+    toAac(bytes: Uint8Array): Promise<Uint8Array | null>;
+  };
   recent: {
     list(): Promise<RecentFile[]>;
     add(path: string): Promise<void>;

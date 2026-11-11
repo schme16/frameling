@@ -31,3 +31,19 @@ registerChoice<GameArtSize>({
     { value: 'keep', label: 'Keep the size I picked', detail: 'Each art pixel stays as big as the Size buttons say.' },
   ],
 });
+
+export type Mp4SoundChoice = 'mp4' | 'webm';
+
+registerChoice<Mp4SoundChoice>({
+  id: 'export.mp4Sound',
+  title: 'MP4 videos with sound',
+  question:
+    "This computer can't make the usual kind of sound for MP4 (AAC), so the sound would be Opus. Opus plays in Chrome, Edge, Firefox, VLC and Windows, but Apple's QuickTime, Safari and iPhones play the video silent. What would you like?",
+  category: 'Export',
+  default: 'mp4',
+  help: 'Installing ffmpeg fixes this for good: Frameling finds it and makes the sound AAC, which plays everywhere.',
+  options: [
+    { value: 'mp4', label: 'Keep it MP4', detail: 'Sound plays almost everywhere, but not in QuickTime, Safari or on iPhones.' },
+    { value: 'webm', label: 'Make a WebM instead', detail: 'Made for the web: plays with sound in every browser, though not in QuickTime.' },
+  ],
+});

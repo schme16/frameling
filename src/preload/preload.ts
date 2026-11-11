@@ -23,6 +23,10 @@ const api: FramelingApi = {
     writeMany: (folder, files) => call('files:writeMany', folder, files),
     showInFolder: (path) => call('files:showInFolder', path),
   },
+  media: {
+    aacAvailable: () => call('media:aacAvailable'),
+    toAac: (bytes) => call('media:toAac', bytes),
+  },
   recent: {
     list: () => call('recent:list'),
     add: (path) => call('recent:add', path),

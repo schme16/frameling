@@ -261,6 +261,8 @@ async function vVideo(file, s, exp, caseCtx) {
   if (caseCtx.sound && exp.count > 1) {
     const a = sh('ffprobe', ['-v', 'error', '-select_streams', 'a:0', '-show_entries', 'stream=codec_name', '-of', 'csv=p=0', file]).out.trim();
     if (check(a, 'the document has sound but the video has none')) note(`sound: ${a}`);
+    // ffmpeg is here (it's checking this file), so the app should have used it to make MP4 sound AAC.
+    if (!webm) check(a === 'aac', `MP4 sound is ${a}, wanted aac (QuickTime and Safari play Opus in MP4 silent)`);
   }
 
   // Alpha: ask ffprobe for the tag, then decode with the VP9 decoder that understands it.
