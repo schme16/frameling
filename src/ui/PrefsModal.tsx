@@ -177,6 +177,18 @@ function GeneralPage({ onThemes }: { onThemes: () => void }) {
       <Row label="Tips" hint="A friendly tip in the status bar.">
         <Switch label="Tips" on={p.showTips} onChange={(showTips) => setPrefs({ showTips })} />
       </Row>
+      <Row label="Right side" hint="Properties shows the settings for what you're doing, with the other panels on a labelled rail. Rail puts every panel on the rail. Tabs is the older row of tabs.">
+        <Segmented<'inspector' | 'rail' | 'tabs'>
+          label="Right side"
+          value={p.rightSide}
+          onChange={(rightSide) => setPrefs({ rightSide })}
+          options={[
+            { id: 'inspector', label: 'Properties' },
+            { id: 'rail', label: 'Rail' },
+            { id: 'tabs', label: 'Tabs' },
+          ]}
+        />
+      </Row>
       <Row label="Show Quill" hint="Quill the hedgehog shows you round and cheers you on. Off hides him; his words still show.">
         <Switch label="Show Quill" on={p.showQuill} onChange={setShowQuill} />
       </Row>

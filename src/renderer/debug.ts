@@ -6,6 +6,7 @@ import '../io/debug';
 import '../effects/debug';
 import '../templates/debug';
 import '../plugins/debug';
+import '../artboards/debug';
 import { store } from '../core/store';
 import { findTemplate } from '../templates';
 import * as tiles from '../tiles/debug';
@@ -18,7 +19,7 @@ import { setWeightsLook } from '../rig/weightsTool';
 import { setShowQuill } from '../ui/mascot/goodbye';
 import { closeSheet, openHelp, openPrefs, overlays } from '../ui/overlays';
 import { showPanel } from '../ui/dock';
-import { rightStyle, type RightStyle } from '../ui/rightStyle';
+import type { RightStyle } from '../ui/rightStyle';
 import { BUILT_IN_THEMES } from '../ui/themes/builtIn';
 import { toast } from '../ui/toast';
 import { recovery } from '../io/recovery';
@@ -75,7 +76,7 @@ if (new URLSearchParams(location.search).has('debug')) {
     tools: () => allTools().map((t) => t.id),
     showPanel,
     // The right side's layout, for side by side shots: 'inspector' (the real one), 'rail' or 'tabs'.
-    rightStyle: (v: RightStyle) => rightStyle.set(v),
+    rightStyle: (v: RightStyle) => setPrefs({ rightSide: v }),
     themes: () => BUILT_IN_THEMES.map((t) => ({ id: t.id, mode: t.mode })),
     // The weight painting look, for the A/B in brand/ab/weights.
     weightsLook: setWeightsLook,

@@ -111,6 +111,7 @@ export function allLayerLists(doc: Doc): Layer[][] {
   const out: Layer[][] = [doc.layers];
   for (const f of doc.editing ?? []) out.push(f.layers);
   for (const s of Object.values(doc.symbols ?? {})) out.push(s.layers);
+  for (const a of doc.artboards ?? []) if (a.content) out.push(a.content.layers);
   return out;
 }
 

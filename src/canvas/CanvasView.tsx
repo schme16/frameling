@@ -7,6 +7,7 @@ import { TileEditBanner } from '../tiles/TileEditBanner';
 import { Rulers } from './Rulers';
 import { useViewSettings } from './viewSettings';
 import { onTextDoubleClick, TextEditor } from '../text/TextEditor';
+import { ArtboardsUnderlay } from '../artboards/Underlay';
 
 export function CanvasView() {
   const rootRef = useRef<HTMLDivElement>(null);
@@ -34,6 +35,7 @@ export function CanvasView() {
 
   return (
     <div className={`cv-root${rulers ? ' has-rulers' : ''}`} ref={rootRef} tabIndex={-1} aria-label="Drawing canvas" role="application" onDoubleClick={(e) => void (onTextDoubleClick(e) || onCanvasDoubleClick(e))} onDragOver={onCanvasDragOver} onDragLeave={onCanvasDragLeave} onDrop={onCanvasDrop}>
+      <ArtboardsUnderlay />
       <div className="cv-stage" ref={stageRef} />
       <canvas className="cv-layer" ref={mainRef} />
       <canvas className="cv-layer cv-overlay" ref={overlayRef} />

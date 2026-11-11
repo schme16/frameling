@@ -506,6 +506,8 @@ export class CanvasEngine {
       return;
     }
     if (e.button !== 0 && !penEraser) return;
+    // A press on another artboard opens it first, so the tool works there.
+    ctl.runPointerDownHooks(this.toDocPoint(e), penEraser ? 'eraser' : ui.tool);
 
     // Handles that work with any tool (vanishing points) come before the tool.
     const grab = !penEraser && !ui.playing ? ctl.grabAt(this.toDocPoint(e), ui.zoom) : null;

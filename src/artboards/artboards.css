@@ -1,0 +1,144 @@
+/* Artboards: the panel, the tool's options, the export row and the Play all window. */
+.ab-underlay {
+  z-index: 0;
+}
+.ab-item {
+  cursor: pointer;
+}
+.ab-item.ab-open {
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+  border-color: var(--chosen-bg);
+}
+.ab-item.ab-open .sy-item-meta,
+.ab-item.ab-open .sy-icon-btn {
+  color: var(--chosen-fg);
+}
+.ab-item.ab-over {
+  box-shadow: 0 -3px 0 var(--focus);
+}
+.ab-name {
+  cursor: text;
+}
+.ab-item .sy-item-meta {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ab-item .sy-icon-btn {
+  width: 22px;
+  height: 24px;
+}
+.ab-item .sy-item-actions {
+  gap: 0;
+}
+.ab-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ab-field {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--fs-small);
+}
+.ab-field input {
+  min-width: 0;
+  padding: 4px 6px;
+  border-radius: 6px;
+  border: 1px solid var(--line-soft);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+}
+.ab-bg {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--fs-small);
+}
+.ab-bg > span {
+  width: 72px;
+}
+.ab-bg input[type='color'] {
+  width: 32px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid var(--line-soft);
+  border-radius: 6px;
+  background: none;
+}
+.ab-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.ab-tool-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ab-export-modes {
+  flex-wrap: wrap;
+}
+.ab-export-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 14px;
+  margin-top: 6px;
+  max-height: 120px;
+  overflow: auto;
+}
+.ab-player-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ab-player-canvas {
+  width: 100%;
+  height: min(58vh, 480px);
+  display: block;
+  border-radius: 8px;
+  background: var(--canvas-bg);
+}
+.ab-player-strip {
+  display: flex;
+  gap: 3px;
+}
+.ab-shot {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 6px 8px;
+  border: 1px solid var(--line-soft);
+  border-radius: 6px;
+  background: var(--panel-2);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--fs-small);
+  cursor: pointer;
+  text-align: left;
+}
+.ab-shot span {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.ab-shot-on {
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+  border-color: var(--chosen-bg);
+}
+.ab-player-foot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.ab-player-foot .io-muted {
+  margin-right: auto;
+}
+.ab-item:not(:hover):not(:focus-within) .ab-move {
+  display: none;
+}

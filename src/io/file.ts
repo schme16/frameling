@@ -13,6 +13,7 @@ import { rootDoc } from '../core/symbols';
 import { isEasing } from '../core/ease';
 import { readParticlesShape, readTextShape } from './shapes-extra';
 import { packAudio, unpackAudio } from './audio-file';
+import { packArtboards, readArtboards } from '../artboards/io';
 
 export const FILE_EXTENSION = 'frameling';
 
@@ -77,7 +78,8 @@ export function saveFile(open: Doc, appVersion = '', now: Date = new Date()): Ui
   files['manifest.json'] = strToU8(JSON.stringify(manifest, null, 2));
   // Sound bytes go in their own entries; `audio` in doc.json then names them (undefined leaves the key out).
   const audio = packAudio(doc, files);
-  files['doc.json'] = strToU8(JSON.stringify({ ...doc, drawings, audio }));
+  // Artboards that aren't open carry their own sounds the same way.
+  files['doc.json'] = strToU8(JSON.stringify({ ...doc, drawings, audio, ...packArtboards(doc, files) }));
   return zipSync(files, { level: 6 });
 }
 
@@ -269,11 +271,12 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
     const points = raw.perspective.points.filter((p: any) => isObj(p) && Number.isFinite(p.x) && Number.isFinite(p.y)).slice(0, 2).map((p: any) => ({ x: p.x as number, y: p.y as number }));
     if (points.length) doc.perspective = { points };
   }
+  Object.assign(doc, readArtboards(raw, entries, warnings, { readLayers, readFlow, readGuides }));
   return doc;
 }
 
 /** Guides, keeping only well-formed ones. */
-function readGuides(raw: unknown): Doc['guides'] {
+export function readGuides(raw: unknown): Doc['guides'] {
   if (!Array.isArray(raw)) return undefined;
   const out = raw
     .filter((g: any) => isObj(g) && (g.axis === 'x' || g.axis === 'y') && typeof g.at === 'number' && Number.isFinite(g.at))
@@ -386,7 +389,7 @@ function readTween(t: unknown): { tween?: Tween } {
 }
 
 /** The clip flow, keeping only transitions between clips that exist. */
-function readFlow(raw: unknown, clips: { id: string }[]): ClipFlow | undefined {
+export function readFlow(raw: unknown, clips: { id: string }[]): ClipFlow | undefined {
   if (!isObj(raw)) return undefined;
   const ids = new Set(clips.map((c) => c.id));
   const transitions: ClipTransition[] = (Array.isArray(raw.transitions) ? raw.transitions : [])

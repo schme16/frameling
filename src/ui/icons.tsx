@@ -13,6 +13,13 @@ const ICONS: Record<string, ReactNode> = {
       <path d="M4 9h16M9 9v11" />
     </>
   ),
+  // artboards: a page with crop marks at two corners
+  artboard: (
+    <>
+      <rect x="6" y="6" width="12" height="12" rx="1.5" />
+      <path d="M6 2v2.5M2 6h2.5M18 22v-2.5M22 18h-2.5" />
+    </>
+  ),
   // symbols and tweens
   symbol: (
     <>
