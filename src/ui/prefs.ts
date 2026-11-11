@@ -3,6 +3,7 @@ import { createStore, readJson, writeJson } from './mini';
 import { DEFAULT_DARK, DEFAULT_LIGHT, surroundFor, type Theme } from './themes/builtIn';
 import { sanitizeCustomThemes, themeForMode, writeTheme } from './themes/model';
 import { DEFAULT_UNIT, isUnit, type Unit } from '../core/units';
+import { DEFAULT_KEYMAP_SET, isKeymapSet } from './keymapSets';
 
 export type ThemePref = 'system' | 'dark' | 'light';
 export type LookPref = 'cosy' | 'crisp';
@@ -17,8 +18,10 @@ export interface Prefs {
   /** Themes people made by copying and customising. */
   customThemes: Theme[];
   look: LookPref;
-  /** Stub for now: the sound effects arrive with the first quests. */
+  /** Soft sound effects (quest steps, export done, refusals). On by default (picked on the board). */
   sounds: boolean;
+  /** How loud the sounds are, 0 to 1. */
+  soundVolume: number;
   reduceMotion: boolean;
   /** Show the welcome sheet when the app starts. */
   showWelcome: boolean;
@@ -34,6 +37,8 @@ export interface Prefs {
   onboarded: boolean;
   /** Command id -> its shortcuts. An empty list means "no shortcut". Missing means "use the default". */
   keymap: Record<string, string[]>;
+  /** The shortcut set underneath the person's own changes (see keymapSets.ts). */
+  keymapSet: string;
 }
 
 export const PREFS_KEY = 'frameling.prefs.v1';
@@ -44,7 +49,8 @@ export const DEFAULT_PREFS: Prefs = {
   lightTheme: DEFAULT_LIGHT,
   customThemes: [],
   look: 'cosy',
-  sounds: false,
+  sounds: true,
+  soundVolume: 0.6,
   reduceMotion: false,
   showWelcome: true,
   showTips: true,
@@ -53,6 +59,7 @@ export const DEFAULT_PREFS: Prefs = {
   units: DEFAULT_UNIT,
   onboarded: false,
   keymap: {},
+  keymapSet: DEFAULT_KEYMAP_SET,
 };
 
 /**
@@ -76,6 +83,7 @@ export function migratePrefs(raw: unknown): Prefs {
     customThemes,
     look: r.look === 'crisp' || r.look === 'cosy' ? r.look : DEFAULT_PREFS.look,
     sounds: bool(r.sounds, DEFAULT_PREFS.sounds),
+    soundVolume: typeof r.soundVolume === 'number' && Number.isFinite(r.soundVolume) ? Math.min(1, Math.max(0, r.soundVolume)) : DEFAULT_PREFS.soundVolume,
     reduceMotion: bool(r.reduceMotion, DEFAULT_PREFS.reduceMotion),
     showWelcome: bool(r.showWelcome, DEFAULT_PREFS.showWelcome),
     showTips: bool(r.showTips, DEFAULT_PREFS.showTips),
@@ -84,6 +92,7 @@ export function migratePrefs(raw: unknown): Prefs {
     units: isUnit(r.units) ? r.units : DEFAULT_PREFS.units,
     onboarded: bool(r.onboarded, DEFAULT_PREFS.onboarded),
     keymap,
+    keymapSet: isKeymapSet(r.keymapSet) ? r.keymapSet : DEFAULT_PREFS.keymapSet,
   };
 }
 

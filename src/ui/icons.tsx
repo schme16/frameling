@@ -318,6 +318,13 @@ const ICONS: Record<string, ReactNode> = {
     </>
   ),
   loop: <path d="M17 3.8l3 3.2-3 3.2M20 7H8a4 4 0 0 0-4 4v.8M7 20.2L4 17l3-3.2M4 17h12a4 4 0 0 0 4-4v-.8" />,
+  pingpong: <path d="M16 5l4 3.5-4 3.5M20 8.5H6M8 12l-4 3.5L8 19M4 15.5h14" />,
+  range: (
+    <>
+      <path d="M7 5H4.5v14H7M17 5h2.5v14H17" />
+      <path d="M10 9.5l4 2.5-4 2.5z" fill="currentColor" />
+    </>
+  ),
   // small actions
   plus: <path d="M12 5v14M5 12h14" />,
   minus: <path d="M5 12h14" />,

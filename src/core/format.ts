@@ -59,6 +59,10 @@ export interface Doc {
   audio?: AudioClip[];
   /** Guide lines dragged out of the rulers (missing = none). Never drawn in exports. See `Guide`. */
   guides?: Guide[];
+  /** The play range set on the timeline (in and out, inclusive): only these frames play and loop (missing = all). */
+  inOut?: { start: number; end: number };
+  /** Perspective guides: one or two vanishing points in stage pixels (missing = none). Never drawn in exports. */
+  perspective?: { points: { x: number; y: number }[] };
 }
 
 /** A guide line across the stage: `axis` 'x' is an up-and-down line at x = `at`, 'y' a sideways one at y = `at`. */

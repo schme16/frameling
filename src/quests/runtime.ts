@@ -5,7 +5,8 @@ import { store } from '../core/store';
 import { getPrefs, reducedMotion } from '../ui/prefs';
 import { runCommandById } from './actions';
 import { QuestEngine, type StateSource } from './engine';
-import { celebrate, chime, dismissCelebration, praise } from './feedback';
+import { celebrate, dismissCelebration, praise } from './feedback';
+import { playCue } from '../ui/sounds';
 import { watchCommands, type CommandWatch } from './hook';
 import { readProbe } from './probe';
 import { getQuest, questProgress, setStarter, setStopper } from './registry';
@@ -58,11 +59,14 @@ function stopWatching(): void {
 engine.on((e) => {
   if (e.kind === 'start') startWatching();
   else if (e.kind === 'stop') stopWatching();
-  else if (e.kind === 'step' && !e.skipped) praise();
+  else if (e.kind === 'step' && !e.skipped) {
+    praise();
+    playCue('step');
+  }
   else if (e.kind === 'finish') {
     stopWatching();
     celebrate(e.quest, e.badge, reducedMotion());
-    if (getPrefs().sounds) chime();
+    playCue('celebrate');
   }
 });
 

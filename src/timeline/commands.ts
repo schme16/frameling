@@ -5,6 +5,10 @@ import { registerCommands } from '../core/registry';
 import { findLayer } from '../core/doc';
 import { store } from '../core/store';
 import { toast } from '../ui/toast';
+import { playCue } from '../ui/sounds';
+
+// A soft page-flip when stepping by hand. Never while playing (stepping then just moves the playhead).
+const tick = () => void (store().get().ui.playing || playCue('tick'));
 import * as ops from './ops';
 import * as pb from './playback';
 import { setTl } from './state';
@@ -47,8 +51,8 @@ registerCommands([
     checked: (s) => s.ui.playing,
     run: () => pb.togglePlay(),
   },
-  { id: 'timeline.prevFrame', label: 'Previous frame', category: 'Timeline', keys: [','], description: 'Step back one frame.', help: 'timeline-playing', run: () => pb.stepFrame(-1) },
-  { id: 'timeline.nextFrame', label: 'Next frame', category: 'Timeline', keys: ['.'], description: 'Step forward one frame.', help: 'timeline-playing', run: () => pb.stepFrame(1) },
+  { id: 'timeline.prevFrame', label: 'Previous frame', category: 'Timeline', keys: [','], description: 'Step back one frame.', help: 'timeline-playing', run: () => (pb.stepFrame(-1), tick()) },
+  { id: 'timeline.nextFrame', label: 'Next frame', category: 'Timeline', keys: ['.'], description: 'Step forward one frame.', help: 'timeline-playing', run: () => (pb.stepFrame(1), tick()) },
   {
     id: 'timeline.prevKey',
     label: 'Previous drawing (key)',
@@ -90,6 +94,16 @@ registerCommands([
     keywords: ['onion skin', 'ghost', 'see through', 'tracing'],
     checked: (s) => s.ui.onion.enabled,
     run: () => store().setUi((ui) => ({ onion: { ...ui.onion, enabled: !ui.onion.enabled } })),
+  },
+  {
+    id: 'timeline.onionKeysOnly',
+    label: 'Onion skin shows only keys (skip held frames)',
+    category: 'Timeline',
+    description: 'Count drawings instead of frames, so a drawing held on twos shows once, and you see the poses before and after.',
+    help: 'timeline-onion',
+    keywords: ['onion skin', 'keys only', 'keyframes', 'skip holds', 'drawings only'],
+    checked: (s) => !!s.ui.onion.keysOnly,
+    run: () => store().setUi((ui) => ({ onion: { ...ui.onion, keysOnly: !ui.onion.keysOnly, enabled: ui.onion.keysOnly ? ui.onion.enabled : true } })),
   },
   {
     id: 'timeline.newKey',
