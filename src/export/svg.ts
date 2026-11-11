@@ -5,6 +5,7 @@ import { isPosed, poseAt, type PosedInstance } from '../core/symbols';
 import { drawMeshed, strokeOutline } from '../core/render';
 import { encodePng } from '../io/png';
 import { flattenTilemap } from '../tiles/model';
+import { particlesToSvg, textToSvg } from './svg-extra';
 import { cameraViewAt, layerCameraMatrix } from '../core/camera';
 
 /** A number with at most 4 decimals (matrices need more than 2). */
@@ -85,6 +86,8 @@ export function subPathsToPathData(paths: SubPath[]): string {
 
 export function shapeToSvg(s: Shape): string {
   if (s.type === 'instance') return isPosed(s) ? instanceToSvg(s) : '';
+  if (s.type === 'text') return textToSvg(s);
+  if (s.type === 'particles') return particlesToSvg(s);
   if (s.type === 'stroke') {
     const d = strokeToPathData(s);
     return d ? `<path d="${d}"${paint('fill', s.color, s.opacity)}/>` : '';

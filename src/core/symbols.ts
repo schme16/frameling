@@ -11,6 +11,8 @@
 import type { Cel, Doc, Drawing, EditFrame, Id, InstanceShape, Layer, MotionPath, PathPoint, Shape, SymbolDef, Transform2D, Tween, VectorDrawing } from './format';
 import { ease } from './ease';
 import { celAt, uid } from './doc';
+import { isAnimatedText } from '../text/model';
+import { poseParticles } from '../particles/draw';
 import { morphShapes } from './shape-tween';
 import { boundDrawing, type PosedMesh } from '../rig/pose';
 
@@ -505,7 +507,8 @@ function poseCel(doc: Doc, layer: Layer, frame: number, depth: number): Drawing 
     const m = morphAt(doc, layer, cel, d, frame, depth);
     if (m) return m;
   }
-  if (!d || d.kind !== 'vector' || !hasInstances(d)) return d;
+  if (!d || d.kind !== 'vector') return d;
+  if (!hasInstances(d)) return hasMoving(d) ? poseMoving(doc, cel, d, frame - cel.start, depth) : d;
   if (depth > MAX_DEPTH) return undefined;
 
   const local = frame - cel.start;
@@ -521,7 +524,7 @@ function poseCel(doc: Doc, layer: Layer, frame: number, depth: number): Drawing 
     const c = symbolContent(doc, s.symbolId);
     frames.push(c ? symbolFrame(s, local, c.length) : -1);
   }
-  const key = (tp ? `${tp.t.toFixed(5)}|${tp.next.id}|${tp.next.drawingId}|` : '-|') + frames.join(',');
+  const key = (tp ? `${tp.t.toFixed(5)}|${tp.next.id}|${tp.next.drawingId}|` : '-|') + frames.join(',') + (hasMoving(d) ? `|@${local}` : '');
   const world = worldOf(doc);
   let byKey = world.cels.get(cel);
   if (!byKey) world.cels.set(cel, (byKey = new Map()));
@@ -530,7 +533,7 @@ function poseCel(doc: Doc, layer: Layer, frame: number, depth: number): Drawing 
 
   let n = 0;
   const shapes: Shape[] = d.shapes.map((s) => {
-    if (!isInstance(s)) return s;
+    if (!isInstance(s)) return poseMovingShape(doc, s, local, depth);
     const i = n++;
     const at = tp ? tweenInstance(s, pairs[i], cel.tween!, tp.t) : s;
     return poseInstance(doc, at, frames[i], depth);
@@ -557,7 +560,7 @@ function morphAt(doc: Doc, layer: Layer, cel: Cel, d: VectorDrawing, frame: numb
       const c = symbolContent(doc, s.symbolId);
       frames.push(c ? symbolFrame(s, local, c.length) : -1);
     }
-  const key = `shape|${tp.t.toFixed(5)}|${tp.next.id}|${tp.next.drawingId}|` + frames.join(',');
+  const key = `shape|${tp.t.toFixed(5)}|${tp.next.id}|${tp.next.drawingId}|` + frames.join(',') + (hasMoving(d) ? `|@${local}` : '');
   const world = worldOf(doc);
   let byKey = world.cels.get(cel);
   if (!byKey) world.cels.set(cel, (byKey = new Map()));
@@ -566,7 +569,7 @@ function morphAt(doc: Doc, layer: Layer, cel: Cel, d: VectorDrawing, frame: numb
   const tw = cel.tween!;
   let n = 0;
   const shapes = morphShapes(d, to, tp.t, tw.hints ?? [], (a, b, t) => tweenInstance(a, b, tw, t)).map((s) => {
-    if (!isInstance(s)) return s;
+    if (!isInstance(s)) return poseMovingShape(doc, s, local, depth);
     const c = symbolContent(doc, s.symbolId);
     // Spare copies that grow in from the end key play from its start.
     const inner = n < frames.length ? frames[n++] : c ? symbolFrame(s, local, c.length) : -1;
@@ -614,14 +617,47 @@ export function poseLive(doc: Doc, layer: Layer, frame: number, live: Drawing): 
 }
 
 function poseLiveCel(doc: Doc, layer: Layer, frame: number, live: Drawing): Drawing {
-  if (live.kind !== 'vector' || !hasInstances(live)) return live;
+  if (live.kind !== 'vector' || (!hasInstances(live) && !hasMoving(live))) return live;
   const posed = poseCel(doc, layer, frame, 0);
   const byId = new Map<Id, Shape>();
-  if (posed?.kind === 'vector') for (const s of posed.shapes) if (isPosed(s)) byId.set(s.id, s);
-  return { ...live, shapes: live.shapes.map((s) => (isInstance(s) ? (byId.get(s.id) ?? poseInstance(doc, s, 0)) : s)) };
+  if (posed?.kind === 'vector') for (const s of posed.shapes) if (isPosed(s) || s.type === 'text' || s.type === 'particles') byId.set(s.id, s);
+  const local = frame - (celAt(layer, frame)?.start ?? frame);
+  return { ...live, shapes: live.shapes.map((s) => (isInstance(s) ? (byId.get(s.id) ?? poseInstance(doc, s, 0)) : s.type === 'text' || s.type === 'particles' ? poseMovingShape(doc, s, local) : s)) };
 }
 
 /** The document and playhead of the main stage, even while a symbol is open (for exports and thumbnails). */
 export function sceneOf(doc: Doc, frame: number): { doc: Doc; frame: number } {
   return doc.editing?.length ? { doc: rootDoc(doc), frame: doc.editing[0].frame } : { doc, frame };
 }
+
+// ---------------------------------------------------------------- text and particles
+
+/** Whether a drawing has shapes that change by themselves from frame to frame (animated text, particles). */
+export function hasMoving(d: Drawing | undefined): boolean {
+  return !!d && d.kind === 'vector' && d.shapes.some((s) => s.type === 'particles' || (s.type === 'text' && isAnimatedText(s)));
+}
+
+/** A text or particle shape posed `local` frames after its key began; anything else as it is. */
+export function poseMovingShape(doc: Doc, s: Shape, local: number, depth = 0): Shape {
+  if (s.type === 'text') return isAnimatedText(s) ? ({ ...s, posedFrame: local } as Shape) : s;
+  if (s.type !== 'particles') return s;
+  const c = s.sprite === 'symbol' && s.symbolId && depth < MAX_DEPTH ? symbolContent(doc, s.symbolId) : undefined;
+  const at: InstanceShape | null = c ? { id: `${s.id}-sprite`, type: 'instance', symbolId: s.symbolId!, transform: identityTransform(0, 0), opacity: 1, play: 'loop', firstFrame: 0 } : null;
+  return poseParticles(doc, s, local, (f) => (at ? poseInstance(doc, at, f, depth + 1) : null), c?.length ?? 1);
+}
+
+/** A drawing with moving shapes but no instances, posed and cached per frame like instances are. */
+function poseMoving(doc: Doc, cel: Cel, d: VectorDrawing, local: number, depth: number): Drawing {
+  const key = `moving|${local}`;
+  const world = worldOf(doc);
+  let byKey = world.cels.get(cel);
+  if (!byKey) world.cels.set(cel, (byKey = new Map()));
+  const hit = byKey.get(key);
+  if (hit) return hit;
+  const out: VectorDrawing = { id: `${d.id}@${key}`, kind: 'vector', shapes: d.shapes.map((s) => poseMovingShape(doc, s, local, depth)) };
+  poseStats.built++;
+  byKey.set(key, out);
+  if (byKey.size > 600) byKey.delete(byKey.keys().next().value!);
+  return out;
+}
+

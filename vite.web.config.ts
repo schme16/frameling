@@ -45,7 +45,7 @@ function webApp(version: string): Plugin {
         background_color: '#17151f',
         theme_color: '#17151f',
         icons: ICON_SIZES.map((s) => ({ src: `icons/${s}x${s}.png`, sizes: `${s}x${s}`, type: 'image/png', purpose: 'any' })),
-        file_handlers: [{ action: './', accept: { 'application/x-frameling': ['.frameling'] } }],
+        file_handlers: [{ action: './', accept: { 'application/x-frameling': ['.frameling'], 'application/vnd.frameling.playable+zip': ['.flplay'] } }],
       };
       writeFileSync(path.join(out, 'manifest.webmanifest'), JSON.stringify(manifest, null, 2));
 

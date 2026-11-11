@@ -10,6 +10,7 @@ import { BONE_STRETCH, FORMAT_VERSION, type Cel, type Doc, type Drawing, type La
 import { decodePng, encodePng } from './png';
 import { rootDoc } from '../core/symbols';
 import { isEasing } from '../core/ease';
+import { readParticlesShape, readTextShape } from './shapes-extra';
 import { packAudio, unpackAudio } from './audio-file';
 
 export const FILE_EXTENSION = 'frameling';
@@ -100,7 +101,7 @@ export function migrate(raw: any, from: number): any {
 
 // ---------------------------------------------------------------- loading
 
-const SHAPE_TYPES = new Set(['stroke', 'fill', 'path', 'instance']);
+const SHAPE_TYPES = new Set(['stroke', 'fill', 'path', 'instance', 'text', 'particles']);
 const MAX_UNZIPPED = 1024 * 1024 * 1024;
 
 function isObj(v: unknown): v is Record<string, any> {
@@ -156,7 +157,7 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
       continue;
     }
     if (d.kind === 'vector') {
-      const shapes: Shape[] = Array.isArray(d.shapes) ? d.shapes.filter((s: any) => isObj(s) && SHAPE_TYPES.has(s.type)).map((s: any) => (s.type === 'instance' ? readInstance(s) : s)).filter((s: Shape | null): s is Shape => !!s) : [];
+      const shapes: Shape[] = Array.isArray(d.shapes) ? d.shapes.filter((s: any) => isObj(s) && SHAPE_TYPES.has(s.type)).map((s: any) => (s.type === 'instance' ? readInstance(s) : s.type === 'text' ? readTextShape(s) : s.type === 'particles' ? readParticlesShape(s) : s)).filter((s: Shape | null): s is Shape => !!s) : [];
       if (!Array.isArray(d.shapes) || shapes.length !== d.shapes.length) warnings.push('Some shapes could not be read and were left out.');
       drawings[id] = { id: str(d.id, id), kind: 'vector', shapes, ...readPose(d.pose) };
     } else if (d.kind === 'pixel') {

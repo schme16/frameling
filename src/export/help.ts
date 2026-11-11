@@ -27,6 +27,10 @@ Press **Ctrl+E** (**Cmd+E** on a Mac), pick a format card, tweak the options if 
 | Put it on an Interactives page and control it there | **Interactives** |
 | An app or website, as a small vector animation | **Lottie animation** |
 | A web page, one file that plays by itself | **Moving SVG** |
+| Edit it in a video editor, with a see-through background | **ProRes video** |
+| Keep working on this frame in Photoshop, Krita or Affinity | **Photoshop layers** |
+| Print it, or share sharp vector pages | **PDF** |
+| Keep working on the shapes in Adobe Illustrator | **Illustrator** |
 
 ## Options everyone shares
 
@@ -40,7 +44,7 @@ Press **Ctrl+E** (**Cmd+E** on a Mac), pick a format card, tweak the options if 
 
 Every export is drawn exactly the way you see it on the canvas, at exact frame times, so a slow computer makes the same file as a fast one, just a little later.
 
-More: [Video, GIF and APNG](help:export-video-gif-apng), [Sprite sheets](help:export-sprite-sheets), [SVG](help:export-svg), [Lottie](help:export-lottie), [Moving SVG](help:export-svg-animated), [Interactives](help:export-interactives).`,
+More: [Video, GIF and APNG](help:export-video-gif-apng), [Sprite sheets](help:export-sprite-sheets), [SVG](help:export-svg), [Lottie](help:export-lottie), [Moving SVG](help:export-svg-animated), [Interactives](help:export-interactives), [ProRes](help:export-prores), [Photoshop](help:export-psd), [PDF](help:export-pdf), [Illustrator](help:export-illustrator).`,
   },
   {
     id: 'export-video-gif-apng',

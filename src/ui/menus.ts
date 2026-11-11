@@ -19,7 +19,7 @@ export const MENUS: MenuDef[] = [
   {
     label: 'File',
     categories: ['File', 'Export'],
-    items: ['file.new', 'file.open', 'file.openRecent', 'file.recover', '-', 'file.save', 'file.saveAs', '-', 'file.export', 'file.exportInteractives', 'file.exportLottie', 'file.exportSvgAnimated', 'file.exportAgain', '-', 'audio.import'],
+    items: ['file.new', 'file.open', 'file.openRecent', 'file.openPlayable', 'file.recover', '-', 'file.save', 'file.saveAs', 'file.saveAsTemplate', 'file.importTemplate', '-', 'file.export', 'file.exportInteractives', 'file.exportLottie', 'file.exportSvgAnimated', 'file.exportAgain', 'file.toggleUpdatePlayable', '-', 'audio.import'],
   },
   {
     label: 'Edit',
@@ -55,6 +55,11 @@ export const MENUS: MenuDef[] = [
     label: 'Effects',
     categories: ['Effects'],
     items: ['view.panel.effects', '-', 'effects.add.blur', 'effects.add.glow', 'effects.add.shadow', 'effects.add.adjust', 'effects.add.outline', 'effects.add.pixelate', '-', 'layers.clipToBelow', 'layers.useAsMask', '-', 'layers.newFolder', 'layers.ungroupFolder', '-', 'effects.reset'],
+  },
+  {
+    label: 'Plugins',
+    categories: ['Plugins'],
+    items: ['plugins.manage', 'plugins.install', '-'],
   },
   {
     label: 'Help',

@@ -11,7 +11,8 @@
 //   xvfb-run -a npx electron scripts/e2e/export.cjs [outDir] [options]
 //
 //   outDir               where outputs and the report go (default: a fresh folder under the system temp dir)
-//   --only=gif,mp4       only these formats (mp4 webm gif apng png pngseq svg sheet interactives godot-bones)
+//   --only=gif,mp4       only these formats (mp4 webm gif apng png pngseq svg sheet interactives psd pdf ai prores
+//                        godot-bones)
 //   --templates=a,b      only these templates (bouncing-ball hero-sprites blank-vector blank-pixel bouncing-logo stress)
 //   --skip=files         skip a part: files (save/open/autosave/close), godot
 //   --show               leave the window visible (needs a real display)
@@ -603,8 +604,8 @@ func _init():
 
 // ---------------------------------------------------------------- the export matrix
 
-const ALL_FORMATS = ['png', 'svg', 'pngseq', 'apng', 'gif', 'mp4', 'webm', 'sheet', 'interactives'];
-const ANIM = new Set(['pngseq', 'apng', 'gif', 'mp4', 'webm', 'sheet', 'interactives']);
+const ALL_FORMATS = ['png', 'svg', 'pngseq', 'apng', 'gif', 'mp4', 'webm', 'sheet', 'interactives', 'psd', 'pdf', 'ai', 'prores'];
+const ANIM = new Set(['pngseq', 'apng', 'gif', 'mp4', 'webm', 'sheet', 'interactives', 'pdf', 'ai', 'prores']);
 
 function listFiles(dir) {
   return fs.readdirSync(dir).filter((n) => !n.startsWith('_') && fs.statSync(path.join(dir, n)).isFile());
@@ -650,9 +651,9 @@ async function runCase(tpl, fmt, label, edit, opts = {}) {
     if (!check(files.length === 1, `expected 1 file, found ${files.length}: ${files}`)) return;
     const f = path.join(dir, files[0]);
     note(`${files[0]} ${fs.statSync(f).size} bytes`);
-    const ext = { mp4: '.mp4', webm: '.webm', gif: '.gif', apng: '.png', png: '.png', pngseq: '.zip', svg: '.svg', interactives: '.flplay' }[fmt];
+    const ext = { mp4: '.mp4', webm: '.webm', gif: '.gif', apng: '.png', png: '.png', pngseq: '.zip', svg: '.svg', interactives: '.flplay', psd: '.psd', pdf: '.pdf', ai: '.ai', prores: '.mov' }[fmt];
     check(files[0].endsWith(ext), `file name ${files[0]} does not end in ${ext}`);
-    const v = { mp4: vVideo, webm: vVideo, gif: vGif, apng: vApng, png: vPng, pngseq: vPngSeq, svg: vSvg, interactives: vPlayable }[fmt];
+    const v = { mp4: vVideo, webm: vVideo, gif: vGif, apng: vApng, png: vPng, pngseq: vPngSeq, svg: vSvg, interactives: vPlayable, psd: vPsd, pdf: vPdf, ai: vPdf, prores: vProres }[fmt];
     await v(f, settings, exp, caseCtx);
   } catch (e) {
     fail(`harness error: ${e?.stack ?? e}`);
@@ -669,7 +670,11 @@ async function exportMatrix() {
   for (const tpl of TEMPLATES) {
     for (const fmt of ALL_FORMATS) {
       if (ONLY && !ONLY.includes(fmt)) continue;
-      const video = fmt === 'mp4' || fmt === 'webm';
+      const video = fmt === 'mp4' || fmt === 'webm' || fmt === 'prores';
+      if (LAYERED.has(fmt)) {
+        await layeredCases(tpl, fmt);
+        continue;
+      }
       await runCase(tpl, fmt, 'defaults');
       await runCase(tpl, fmt, 'transparent', (s) => ({ ...s, transparent: true }));
       if (ANIM.has(fmt)) {
@@ -715,6 +720,174 @@ async function exportMatrix() {
         if (video) await runCase(tpl, fmt, 'huge', (s) => ({ ...s, scale: 4 }), { friendlyError: /too big|can't make|bigger/i });
         if (ANIM.has(fmt) && fmt !== 'sheet') await runCase(tpl, fmt, 'cancel', (s) => ({ ...s, scale: 3 }), { cancelAfter: 15, expectCancel: true });
       }
+    }
+  }
+}
+
+// ---------------------------------------------------------------- PSD, PDF, Illustrator and ProRes
+
+const LAYERED = new Set(['psd', 'pdf', 'ai', 'prores']);
+
+// Text, particles, a folder with a mask and a clipped layer on top of whatever the template has, so the layered
+// formats meet everything they map.
+const ADD_EXTRAS = `(() => {
+  const st = __frameling.store();
+  st.update('extras', (d) => {
+    const v1 = { id: 'e2e-v1', kind: 'vector', shapes: [
+      { id: 'e2e-t', type: 'text', text: 'Hi there', font: 'Nunito', size: 40, weight: 800, color: '#ff3366', align: 'left', lineHeight: 1.2, letterSpacing: 0, opacity: 1, transform: { x: 20, y: 60, scaleX: 1, scaleY: 1, rotation: 0, skew: 0 }, animators: [{ id: 'e2e-a', kind: 'slide', by: 'letter', start: 0, duration: 6, stagger: 1, amount: 30, angle: 90 }] },
+      { id: 'e2e-p', type: 'particles', transform: { x: d.width / 2, y: d.height / 2, scaleX: 1, scaleY: 1, rotation: 0, skew: 0 }, emitter: 'point', width: 0, height: 0, rate: 0, burst: 30, emitFor: 0, life: 4, variance: 0.4, speed: 120, direction: -90, spread: 180, gravity: 0, wind: 0, drag: 1, sizeStart: 12, sizeEnd: 6, colorStart: '#ffd400', colorEnd: '#ff8800', opacityStart: 1, opacityEnd: 1, spin: 90, sprite: 'star', seed: 3, opacity: 1 },
+    ] };
+    const v2 = { id: 'e2e-v2', kind: 'vector', shapes: [{ id: 'e2e-r', type: 'path', paths: [{ closed: true, points: [{ x: 0, y: 0 }, { x: d.width / 2, y: 0 }, { x: d.width / 2, y: d.height / 2 }, { x: 0, y: d.height / 2 }] }], fill: '#3366ff', stroke: null, opacity: 1 }] };
+    const v3 = { id: 'e2e-v3', kind: 'vector', shapes: [{ id: 'e2e-c', type: 'path', paths: [{ closed: true, points: [{ x: 10, y: 10 }, { x: d.width / 3, y: 10 }, { x: d.width / 3, y: d.height / 3 }, { x: 10, y: d.height / 3 }] }], fill: '#000000', stroke: null, opacity: 1 }] };
+    d.drawings['e2e-v1'] = v1; d.drawings['e2e-v2'] = v2; d.drawings['e2e-v3'] = v3;
+    const cel = (id) => [{ id: 'cel-' + id, start: 0, length: d.length, drawingId: id }];
+    const base = { visible: true, locked: false, opacity: 1, kind: 'vector' };
+    d.folders = { ...(d.folders || {}), 'e2e-f': { id: 'e2e-f', name: 'Masked', visible: true, opacity: 1 } };
+    d.layers.push(
+      { ...base, id: 'e2e-l2', name: 'Blue box', cels: cel('e2e-v2'), folder: 'e2e-f', blend: 'multiply', opacity: 0.8 },
+      { ...base, id: 'e2e-l3', name: 'Mask', cels: cel('e2e-v3'), folder: 'e2e-f', mask: 'show' },
+      { ...base, id: 'e2e-l1', name: 'Text and stars', cels: cel('e2e-v1') },
+    );
+  });
+  return true;
+})()`;
+
+async function layeredCases(tpl, fmt) {
+  const anim = fmt !== 'psd';
+  await runCase(tpl, fmt, 'defaults', (s) => ({ ...s, range: anim ? 'all' : s.range }));
+  await runCase(tpl, fmt, 'transparent', (s) => ({ ...s, transparent: true }));
+  await runCase(tpl, fmt, 'extras', (s) => ({ ...s, transparent: fmt !== 'pdf' }), { prepare: ADD_EXTRAS });
+  if (!isPixelTpl(tpl)) await runCase(tpl, fmt, 'scale2', (s) => ({ ...s, scale: 2 }));
+  else await runCase(tpl, fmt, 'pixel-scale3', (s) => ({ ...s, scale: 3 }));
+  if (anim) {
+    await runCase(tpl, fmt, 'clip', async (s) => ({ ...s, range: 'clip', clipId: (await X('doc()')).clips[0].id }), { prepare: tpl === 'hero-sprites' ? '' : `__framelingExport.addClip('mid', ${tpl === 'stress' ? '1, 2' : '2, 5'})` });
+    if (fmt === 'prores') await runCase(tpl, fmt, 'this-frame', (s) => ({ ...s, range: 'frame' }), { expectError: /at least two frames/ });
+    else await runCase(tpl, fmt, 'this-frame', (s) => ({ ...s, range: 'frame' }));
+  }
+  if (fmt === 'prores' && tpl === 'bouncing-ball') await runCase(tpl, fmt, 'cancel', (s) => ({ ...s, scale: 3 }), { cancelAfter: 15, expectCancel: true });
+}
+
+/** Reads a PSD with ag-psd (a dev dependency, for checks only). */
+function readPsdFile(file) {
+  try {
+    const psd = require('ag-psd');
+    psd.initializeCanvas(
+      () => {
+        throw new Error('no canvas');
+      },
+      (w, h) => ({ width: w, height: h, data: new Uint8ClampedArray(w * h * 4) }),
+    );
+    const b = fs.readFileSync(file);
+    return psd.readPsd(b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength), { useImageData: true });
+  } catch (e) {
+    fail(`ag-psd could not read it: ${e?.message ?? e}`);
+    return null;
+  }
+}
+
+async function vPsd(file, s, exp, caseCtx) {
+  const head = fs.readFileSync(file).subarray(0, 26);
+  check(head.toString('latin1', 0, 4) === '8BPS', 'not a PSD (no 8BPS signature)');
+  check(head.readUInt32BE(18) === exp.width && head.readUInt32BE(14) === exp.height, `PSD size ${head.readUInt32BE(18)}x${head.readUInt32BE(14)}, wanted ${exp.width}x${exp.height}`);
+  const psd = readPsdFile(file);
+  if (psd) {
+    const flat = [];
+    const walk = (list, depth) => {
+      for (const l of list ?? []) {
+        flat.push(`${'  '.repeat(depth)}${l.name}${l.children ? '/' : ''}${l.hidden ? ' (hidden)' : ''}${l.clipping ? ' (clipped)' : ''}${l.blendMode && l.blendMode !== 'normal' ? ' ' + l.blendMode : ''}`);
+        walk(l.children, depth + 1);
+      }
+    };
+    walk(psd.children, 0);
+    note(`layers: ${flat.join(' | ')}`);
+    const docLayers = exp.doc.layers.filter((l) => !l.reference);
+    const leafCount = flat.filter((x) => !x.trimEnd().endsWith('/') && !/\/( \(|$)/.test(x)).length;
+    check(leafCount >= docLayers.length, `PSD has ${leafCount} layers, the drawing has ${docLayers.length}`);
+    for (const l of docLayers) check(flat.some((x) => x.trim().startsWith(l.name)), `layer "${l.name}" is missing from the PSD`);
+    if (exp.doc.layers.some((l) => l.id === 'e2e-l2')) {
+      check(flat.some((x) => x.trim().startsWith('Masked/')), 'the folder did not become a group');
+      check(flat.some((x) => x.includes('Blue box') && x.includes('multiply')), 'blend mode was not kept');
+      const g = psd.children.find((c) => c.name === 'Masked');
+      check(g && g.mask, 'the folder with a mask layer has no group mask');
+    }
+  }
+  if (need('identify')) {
+    const r = sh('identify', [file]);
+    check(r.status === 0, `ImageMagick cannot read it: ${r.err.slice(0, 160)}`);
+    note(`identify sees ${r.out.trim().split('\n').length} images`);
+  }
+  if (need('convert')) {
+    const png = path.join(path.dirname(file), '_psd.png');
+    sh('convert', [`${file}[0]`, png]);
+    if (!check(fs.existsSync(png), 'ImageMagick could not flatten it')) return;
+    const ref = await reference(s, exp.plan.range.start, caseCtx.transparent);
+    const e = ref && rmse(png, ref);
+    if (e !== null && e !== undefined) {
+      note(`merged vs png rmse=${e.toFixed(5)}`);
+      check(e < TOL.lossless * 4, `the merged picture differs from the PNG export (rmse ${e.toFixed(5)})`);
+    }
+  }
+}
+
+async function vPdf(file, s, exp, caseCtx) {
+  const b = fs.readFileSync(file);
+  check(b.toString('latin1', 0, 8) === '%PDF-1.7', 'no PDF header');
+  if (!need('pdfinfo', 'pdftoppm')) return;
+  const info = sh('pdfinfo', [file]);
+  if (!check(info.status === 0, `pdfinfo: ${info.err.slice(0, 200)}`)) return;
+  const pages = Number(/Pages:\s+(\d+)/.exec(info.out)?.[1]);
+  check(pages === exp.count, `${pages} pages, wanted ${exp.count}`);
+  const size = /Page size:\s+([\d.]+) x ([\d.]+)/.exec(info.out);
+  const pw = Number(size?.[1]);
+  const ph = Number(size?.[2]);
+  check(near(pw, exp.doc.width * s.scale, 0.5) && near(ph, exp.doc.height * s.scale, 0.5), `page ${pw}x${ph}pt, wanted ${exp.doc.width * s.scale}x${exp.doc.height * s.scale}`);
+  if (exp.doc.layers.length) check(/\/OCProperties/.test(b.toString('latin1')), 'no PDF layers (optional content)');
+  const dir = path.dirname(file);
+  for (const k of [0, exp.count - 1]) {
+    const base = path.join(dir, `_pdf-${k}`);
+    // Rendered at 72 dpi, a point is a pixel, which is the PNG export's size.
+    const r = sh('pdftoppm', ['-f', String(k + 1), '-l', String(k + 1), '-r', '72', '-scale-to-x', String(exp.width), '-scale-to-y', String(exp.height), '-png', '-singlefile', ...(caseCtx.transparent ? [] : []), file, base]);
+    if (!check(r.status === 0 && fs.existsSync(base + '.png'), `pdftoppm could not draw page ${k + 1}: ${r.err.slice(0, 160)}`)) continue;
+    // pdftoppm paints white under a see-through page, so compare against the PNG export (see-through when asked) on white.
+    const ref = await reference(s, exp.plan.range.start + k, caseCtx.transparent);
+    const refWhite = ref && path.join(dir, `_ref-white-${k}.png`);
+    if (ref) sh('convert', [ref, '-background', 'white', '-alpha', 'remove', '-alpha', 'off', refWhite]);
+    const e = refWhite && rmse(base + '.png', refWhite);
+    if (e !== null && e !== undefined) {
+      note(`page ${k + 1} vs png rmse=${e.toFixed(4)}`);
+      check(e < TOL.svg, `page ${k + 1} looks different from the PNG export (rmse ${e.toFixed(4)})`);
+    }
+  }
+  if (need('gs')) {
+    const r = sh('gs', ['-q', '-dNOPAUSE', '-dBATCH', '-sDEVICE=nullpage', file]);
+    check(r.status === 0 && !/error/i.test(r.err + r.out), `Ghostscript reports problems: ${(r.err + r.out).slice(0, 200)}`);
+  }
+}
+
+async function vProres(file, s, exp, caseCtx) {
+  if (!need('ffprobe', 'ffmpeg')) return;
+  const p = JSON.parse(sh('ffprobe', ['-v', 'error', '-count_frames', '-select_streams', 'v:0', '-show_entries', 'stream=codec_name,profile,width,height,pix_fmt,nb_read_frames,avg_frame_rate:format=duration,format_name', '-of', 'json', file]).out || '{}');
+  const st = p.streams?.[0];
+  if (!check(st, 'ffprobe found no video stream')) return;
+  note(`${st.codec_name} ${st.profile} ${st.width}x${st.height} ${st.pix_fmt} frames=${st.nb_read_frames}`);
+  check(st.codec_name === 'prores', `codec ${st.codec_name}, wanted prores`);
+  check(/4444/.test(st.profile ?? ''), `profile ${st.profile}, wanted 4444`);
+  check(/mov/.test(p.format?.format_name ?? ''), `container ${p.format?.format_name}`);
+  check(st.width === exp.width && st.height === exp.height, `size ${st.width}x${st.height}, wanted ${exp.width}x${exp.height}`);
+  check(Number(st.nb_read_frames) === exp.count, `frame count ${st.nb_read_frames}, wanted ${exp.count}`);
+  const wantAlpha = caseCtx.transparent;
+  check(wantAlpha ? st.pix_fmt === 'yuva444p10le' || st.pix_fmt === 'yuva444p12le' : !/^yuva/.test(st.pix_fmt), `pix_fmt ${st.pix_fmt} for ${wantAlpha ? 'a see-through' : 'a solid'} background`);
+  const dir = path.dirname(file);
+  for (const k of [0, exp.count - 1]) {
+    const o = path.join(dir, `_pr-${k}.png`);
+    sh('ffmpeg', ['-v', 'error', '-y', '-i', file, '-vf', `select=eq(n\\,${k})`, '-vframes', '1', '-pix_fmt', 'rgba', o]);
+    if (!check(fs.existsSync(o), `could not decode frame ${k}`)) continue;
+    if (wantAlpha && k === 0) check(hasAlpha(o) === true, 'decoded ProRes frame has no transparent pixels');
+    const ref = await reference(s, exp.plan.range.start + k, wantAlpha);
+    const e = ref && rmse(o, ref);
+    if (e !== null && e !== undefined) {
+      note(`frame ${k} vs png rmse=${e.toFixed(4)}`);
+      check(e < TOL.video / 4, `frame ${k} differs from the PNG export (rmse ${e.toFixed(4)})`);
     }
   }
 }

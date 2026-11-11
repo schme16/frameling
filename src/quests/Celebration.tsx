@@ -1,3 +1,4 @@
+import { line } from '../ui/mascot/lines';
 import { useEffect } from 'react';
 import { Icon } from '../ui/icons';
 import { Quill } from '../ui/mascot';
@@ -37,8 +38,8 @@ export function Celebration() {
       <Quill anim={[{ anim: 'cheer', hold: 2800 }, { anim: 'idle' }]} size={96} className="qc-quill" />
       {c.badge && <Medal badge={c.badge} size={56} />}
       <div className="qc-text">
-        <strong>{c.badge ? `You earned ${c.badge.name}` : 'Quest finished'}</strong>
-        <span>{c.quest.finish ?? `You finished ${c.quest.title}.`}</span>
+        <strong>{c.badge ? line('quests.badge', { badge: c.badge.name }) : line('quests.finished')}</strong>
+        <span>{c.quest.finish ?? line('quests.finishedQuest', { quest: c.quest.title })}</span>
         {next && (
           <button type="button" className="qb-btn qb-go" onClick={() => startQuest(next.id)}>
             Next: {next.title}
