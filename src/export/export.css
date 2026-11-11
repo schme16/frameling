@@ -19,6 +19,33 @@
   gap: 8px;
   align-content: start;
 }
+.ex-more {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  font: inherit;
+  font-weight: 700;
+  color: var(--text);
+  background: transparent;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+  padding: 8px 12px;
+  cursor: pointer;
+  text-align: left;
+}
+.ex-more small {
+  font-weight: 400;
+  color: var(--muted);
+}
+.ex-more:hover {
+  background: var(--hover-bg);
+}
+.ex-more:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
 .ex-card {
   display: grid;
   grid-template-columns: 24px 1fr;

@@ -50,11 +50,11 @@ It **never touches your own file**. It's only a safety net.
 
 ## Getting your work back
 
-If Frameling closes unexpectedly (a power cut, a crash), the next time you start it you'll see:
+If Frameling closes unexpectedly (a power cut, a crash), the next time you start it the welcome sheet's first card
+says **Your unsaved work from today at 22:50** (with your own time). If the welcome sheet is turned off, a message at
+the bottom asks instead.
 
-> We kept a copy of your unsaved work. Restore it?
-
-Press **Restore** and you're back where you were. The drawing comes back marked as unsaved, so press **Ctrl+S** to keep it.
+Press **Restore** and you're back where you were. **Not now** leaves it in Recover unsaved work. The drawing comes back marked as unsaved, so press **Ctrl+S** to keep it.
 
 Frameling only offers this when the safety copy is newer than your saved file.
 
@@ -64,7 +64,7 @@ When you choose **Don't save**, Frameling doesn't throw the work away. It keeps 
 
 The list shows each kept drawing with a small picture, its name and when it was last changed. Press **Open** and it comes back as unsaved work, so **Save** asks where to put it. **Delete** removes a kept copy straight away. Copies older than 7 days are cleared out each time Frameling starts.
 
-A copy left behind by a crash is kept in the same list, even if you ignore the "Restore it?" question.
+A copy left behind by a crash is kept in the same list, even if you press **Not now**.
 
 ## Good to know
 

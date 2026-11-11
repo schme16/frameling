@@ -1,6 +1,7 @@
 /* The timeline panel. Tokens only (see renderer/theme.css); every class starts with tl-. */
 
 .tl-root {
+  container: tl / inline-size;
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -133,6 +134,81 @@
 .tl-zoom input {
   width: 90px;
   accent-color: var(--accent);
+}
+
+/* The hold buttons, and how the toolbar folds up so it stays on one row at the usual window sizes. */
+.tl-hold-full {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.tl-hold-menu {
+  display: none;
+  border-color: var(--line);
+}
+.tl-hold-item {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  width: 100%;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: var(--radius-small);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.tl-hold-item span {
+  margin-left: auto;
+  color: var(--muted);
+}
+.tl-hold-item:hover {
+  background: var(--hover-bg);
+}
+.tl-hold-item.is-on {
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+}
+.tl-hold-item.is-on span {
+  color: inherit;
+}
+.tl-hold-pop {
+  width: 200px;
+}
+@container tl (max-width: 1180px) {
+  .tl-hold-full {
+    display: none;
+  }
+  .tl-hold-menu {
+    display: inline-flex;
+  }
+  .tl-btn-frame .tl-btn-text {
+    display: none;
+  }
+  .tl-zoom input {
+    width: 64px;
+  }
+}
+
+@container tl (max-width: 1040px) {
+  .tl-header {
+    column-gap: 6px;
+  }
+  .tl-long {
+    display: none;
+  }
+  .tl-zoom input {
+    width: 48px;
+  }
+  .tl-zoom svg,
+  .tl-header > .tl-sep:nth-of-type(2) {
+    display: none;
+  }
+  .tl-header .tl-btn {
+    padding: 0 6px;
+  }
 }
 
 /* ---------------------------------------------------------------- scroll area */
@@ -533,6 +609,10 @@
 }
 .tl-cel:hover {
   box-shadow: 0 0 0 1px var(--cel-key);
+}
+/* Carried on automatically until the next drawing: a lighter hold, so a chosen hold still stands out. */
+.tl-cel.is-auto {
+  background-color: color-mix(in srgb, var(--cel-hold) 55%, transparent);
 }
 .tl-row.is-hidden .tl-cel {
   opacity: 0.4;

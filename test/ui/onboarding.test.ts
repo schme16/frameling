@@ -69,8 +69,13 @@ describe('onboarding flow', () => {
     expect(planFor(['tiles']).panel).toBe('tileset');
     expect(planFor(['tiles', 'sprites', 'motion', 'cartoons']).help.length).toBeLessThanOrEqual(4);
     // Newcomers get the 60-second quest first, then the one that suits them.
-    expect(planFor(['tiles']).quest).toBe(FIRST_QUEST);
-    expect(planFor(['tiles'], [FIRST_QUEST]).quest).toBe('tiles');
+    expect(planFor(['cartoons']).quest).toBe(FIRST_QUEST);
+    expect(planFor(['cartoons'], [FIRST_QUEST]).quest).toBe('bouncing-ball');
+    // Sprite and tile people get a quest in their own kind of art first.
+    expect(planFor(['tiles']).quest).toBe('tiles');
+    expect(planFor(['sprites']).quest).toBe('pixel-pal');
+    expect(planFor(['sprites'], ['pixel-pal']).quest).toBe(FIRST_QUEST);
+    expect(planFor(['cartoons', 'sprites']).quest).toBe(FIRST_QUEST);
     expect(planFor(['interactives'], [FIRST_QUEST]).quest).toBe('share-it');
   });
 

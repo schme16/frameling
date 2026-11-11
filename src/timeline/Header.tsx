@@ -77,13 +77,55 @@ function HoldButtons() {
     const l = findLayer(s.doc, s.ui.activeLayerId) ?? s.doc.layers[s.doc.layers.length - 1];
     return (l && celAt(l, s.ui.frame)?.length) ?? 0;
   });
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
   const words = ['', 'on ones', 'on twos', 'on threes', 'on fours'];
   return (
-    <span className="tl-group" role="group" aria-label="How long to hold this drawing">
-      <span className="tl-group-label" title="How many frames this drawing stays on screen before the next one (exposure).">Hold for</span>
-      {[1, 2, 3, 4].map((n) => (
-        <Btn key={n} id={`timeline.hold${n}`} text={n} title={`Hold this drawing for ${n} frame${n === 1 ? '' : 's'} (${words[n]})`} pressed={length === n} className="tl-btn-num" />
-      ))}
+    <span className="tl-group tl-hold" role="group" aria-label="How long to hold this drawing">
+      {/* Wide timelines show the four buttons; narrower ones fold them into one button with a menu (CSS decides). */}
+      <span className="tl-hold-full">
+        <span className="tl-group-label" title="How many frames this drawing stays on screen before the next one (exposure).">Hold for</span>
+        {[1, 2, 3, 4].map((n) => (
+          <Btn key={n} id={`timeline.hold${n}`} text={n} title={`Hold this drawing for ${n} frame${n === 1 ? '' : 's'} (${words[n]})`} pressed={length === n} className="tl-btn-num" />
+        ))}
+      </span>
+      <button
+        type="button"
+        className="tl-btn tl-hold-menu"
+        title="How many frames this drawing stays on screen before the next one (exposure)"
+        aria-haspopup="menu"
+        aria-expanded={!!pos}
+        onClick={(e) => {
+          const r = e.currentTarget.getBoundingClientRect();
+          setPos(pos ? null : { x: r.left, y: r.bottom + 4 });
+        }}
+      >
+        <span className="tl-btn-text">
+          Hold<span className="tl-long"> for</span> <strong>{length || '-'}</strong>
+        </span>
+        <Icon name="chevron-down" size={14} />
+      </button>
+      {pos ? (
+        <Floating x={pos.x} y={pos.y} onClose={() => setPos(null)} className="tl-pop tl-hold-pop">
+          <div className="tl-pop-title">Hold for</div>
+          <div role="menu" aria-label="Hold for">
+            {[1, 2, 3, 4].map((n) => (
+              <button
+                key={n}
+                type="button"
+                role="menuitemradio"
+                aria-checked={length === n}
+                className={`tl-hold-item${length === n ? ' is-on' : ''}`}
+                onClick={() => {
+                  setPos(null);
+                  runCmd(`timeline.hold${n}`);
+                }}
+              >
+                <strong>{n}</strong> frame{n === 1 ? '' : 's'} <span>{words[n]}</span>
+              </button>
+            ))}
+          </div>
+        </Floating>
+      ) : null}
     </span>
   );
 }
@@ -185,10 +227,10 @@ export function Header() {
       <PlayRange />
       <span className="tl-sep" aria-hidden="true" />
       <span className="tl-group" role="group" aria-label="Drawings and frames">
-        <Btn id="timeline.newKey" icon="key" text="New drawing" title="Start a new blank drawing on this frame (new key)" />
+        <Btn id="timeline.newKey" icon="key" text={<>New<span className="tl-long"> drawing</span></>} title="Start a new blank drawing on this frame (new key)" />
         <Btn id="timeline.duplicateKey" icon="duplicate" text="Copy" title="Copy this drawing to the next frame (duplicate key)" />
-        <Btn id="timeline.insertFrame" icon="plus" text="Frame" title="Add a frame: hold this drawing one frame longer" />
-        <Btn id="timeline.removeFrame" icon="minus" text="Frame" title="Remove a frame" />
+        <Btn id="timeline.insertFrame" icon="plus" text="Frame" title="Add a frame: hold this drawing one frame longer" className="tl-btn-frame" />
+        <Btn id="timeline.removeFrame" icon="minus" text="Frame" title="Remove a frame" className="tl-btn-frame" />
       </span>
       <HoldButtons />
       <SoundButton />

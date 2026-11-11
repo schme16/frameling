@@ -4,7 +4,7 @@ import { getPanel, type DockZone } from '../core/registry';
 import { clampSize, DEFAULT_SIZE, dock, hidePanel, movePanel, resizeZone, setActive, toggleCollapsed } from './dock';
 import { Icon } from './icons';
 import { createStore } from './mini';
-import { fitTabs, type TabFit } from './tabFit';
+import { fitTabs, NAMED_PANELS, type TabFit } from './tabFit';
 
 const dragging = createStore<string | null>(null);
 
@@ -66,8 +66,8 @@ export function DockZoneView({ zone }: { zone: DockZone }) {
       const fold = el.querySelector<HTMLElement>('.ui-zone-fold')?.getBoundingClientRect().width ?? 24;
       const cs = getComputedStyle(el);
       const avail = el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - fold - 6;
-      const next = fitTabs({ avail, gap: parseFloat(cs.columnGap) || 2, full, icon, active: Math.max(0, z.tabs.indexOf(activeId)), more });
-      setFit((f) => (f && f.mode === next.mode && f.shown.join() === next.shown.join() ? f : next));
+      const next = fitTabs({ avail, gap: parseFloat(cs.columnGap) || 2, full, icon, active: Math.max(0, z.tabs.indexOf(activeId)), more, pinned: z.tabs.flatMap((t, i) => (NAMED_PANELS.has(t) ? [i] : [])) });
+      setFit((f) => (f && f.mode === next.mode && f.shown.join() === next.shown.join() && f.named.join() === next.named.join() ? f : next));
     };
     run();
     const ro = new ResizeObserver(run);
@@ -194,7 +194,7 @@ export function DockZoneView({ zone }: { zone: DockZone }) {
           }}
         >
           <Icon name={p.icon} size={15} />
-          {flat && !(iconOnly && !on) && <span className="ui-tab-title">{p.title}</span>}
+          {flat && !(iconOnly && !on && !fit?.named.includes(i)) && <span className="ui-tab-title">{p.title}</span>}
         </button>
         {on && !z.collapsed && (
           // Kept out of the tab order and away from screen readers: Delete on the tab does the same.

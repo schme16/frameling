@@ -12,7 +12,7 @@
 //   {"wait": 300}                       wait in ms
 //   {"shot": "name"}                    save an extra screenshot mid-way
 //   {"down": [x, y]} / {"move": [x, y]} / {"up": [x, y]}   press, move (held if pressed) and release, for shots mid-drag
-// SHOT_LOG=1 also prints console errors as they happen (handy when a step hangs). Run `npm run build` first.
+// SHOT_SCALE=2 shoots at twice the pixel density. SHOT_LOG=1 also prints console errors as they happen (handy when a step hangs). Run `npm run build` first.
 const { app, BrowserWindow, ipcMain } = require('electron');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -71,6 +71,13 @@ async function runSteps(win, steps) {
     }
   }
 }
+
+// SHOT_SCALE=2 renders at twice the pixel density, for close-up crops that stay sharp.
+if (process.env.SHOT_SCALE) app.commandLine.appendSwitch('force-device-scale-factor', String(process.env.SHOT_SCALE));
+
+// Each variant closes its window before the next opens; without this Electron quits as soon as the first one closes,
+// and the next variant's load fails (ERR_FAILED) and the run stalls.
+app.on('window-all-closed', () => {});
 
 app.whenReady().then(async () => {
   // The real main process answers these; for shots there is no file and no history.

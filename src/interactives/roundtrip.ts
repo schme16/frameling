@@ -92,7 +92,7 @@ export async function updatePlayable(link: PlayableLink): Promise<boolean> {
     notify(`Updated ${baseName(link.path)}.`, 'success', undefined, 2500);
     return true;
   } catch (e) {
-    notify(`${baseName(link.path)} wasn't updated${e instanceof FileProblem ? `: ${e.message}` : '. Try File > Export for Interactives.'}`, 'error', undefined, 9000);
+    notify(`${baseName(link.path)} wasn't updated${e instanceof FileProblem ? `: ${e.message}` : '. Try File > Export > Export for Interactives.'}`, 'error', undefined, 9000);
     return false;
   }
 }

@@ -203,7 +203,7 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
           warnings.push('A frame held the wrong kind of drawing for its layer and was left empty.');
           continue;
         }
-        cels.push({ id: str(c.id, c.drawingId + '-cel'), start: Math.max(0, Math.round(num(c.start, 0))), length: Math.max(1, Math.round(num(c.length, 1))), drawingId: c.drawingId, ...readTween(c.tween) });
+        cels.push({ id: str(c.id, c.drawingId + '-cel'), start: Math.max(0, Math.round(num(c.start, 0))), length: Math.max(1, Math.round(num(c.length, 1))), drawingId: c.drawingId, ...readTween(c.tween), ...(c.autoHold === true ? { autoHold: true } : {}) });
       }
       cels.sort((a, b) => a.start - b.start);
       const base = {

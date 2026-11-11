@@ -18,6 +18,8 @@ import { getQuest, startQuest } from './quests';
 import { toast } from './toast';
 import { SourceCards } from '../templates/YoursSection';
 import { templateSources } from '../templates/user';
+import { fitThumb, tagChips } from './exampleCards';
+import { dismissPending, recovery, restorePending, whenSaved } from '../io/recovery';
 
 export function WelcomeSheet() {
   const mode = overlays.use((o) => o.sheet);
@@ -35,6 +37,7 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
   const open = getCommand('file.open');
   const quest = getQuest('first-animation');
   const quill = useQuillShown();
+  const found = recovery.use((r) => r);
 
   useEffect(() => {
     let live = true;
@@ -65,6 +68,25 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
           <Icon name="close" />
         </button>
       </div>
+
+      {/* Work found after a crash comes before everything else. */}
+      {found && (
+        <div className="ui-recover-card" role="group" aria-label="Unsaved work" data-help="autosave">
+          <Icon name="undo" size={22} />
+          <div>
+            <strong>Your unsaved work from {whenSaved(found.savedAt)}</strong>
+            <span>
+              {found.name} was still open when Frameling closed. We kept a copy.
+            </span>
+          </div>
+          <button type="button" className="ui-btn ui-btn-primary" onClick={restorePending}>
+            Restore
+          </button>
+          <button type="button" className="ui-btn" data-tip="It stays in File > Recover unsaved work for 7 days." onClick={dismissPending}>
+            Not now
+          </button>
+        </div>
+      )}
 
       {/* First, so someone coming back finds their work without scrolling past every example. */}
       {recent.length > 0 && (
@@ -251,6 +273,8 @@ interface TemplateLike {
   name: string;
   blurb: string;
   kind: 'vector' | 'pixel';
+  /** Words for searching and the little chips on the card. */
+  tags?: string[];
   /** The frame that makes the best picture (0 when missing). */
   thumbnail?: () => number;
   make(): Doc;
@@ -277,10 +301,14 @@ function Thumb({ template }: { template: TemplateLike }) {
     if (!el) return;
     try {
       const doc = template.make();
-      const scale = Math.min(168 / doc.width, 96 / doc.height);
-      const img = renderFrameToCanvas(doc, Math.max(0, Math.min(doc.length - 1, template.thumbnail?.() ?? 0)), scale);
+      // Fitted whole (square and tall pages used to fill the box and run under the badge), drawn at the screen's
+      // pixel density so it stays sharp.
+      const fit = fitThumb(doc.width, doc.height);
+      const img = renderFrameToCanvas(doc, Math.max(0, Math.min(doc.length - 1, template.thumbnail?.() ?? 0)), fit.scale * (window.devicePixelRatio || 1));
       el.width = img.width;
       el.height = img.height;
+      el.style.width = `${fit.w}px`;
+      el.style.height = `${fit.h}px`;
       const g = el.getContext('2d');
       if (g) {
         // Pixel art should stay chunky in the little picture.
@@ -347,6 +375,30 @@ function Examples({ onPick, scrollTo }: { onPick: (doc: Doc, name: string) => vo
   return <TabbedExamples box={box} examples={examples} blanks={blanks} pick={pick} onPick={onPick} thumb={thumb} />;
 }
 
+/** A built-in template's tags as small chips under its blurb (the first few, then "+2"). */
+function TagChips({ tags }: { tags?: string[] }) {
+  const { shown, more } = tagChips(tags);
+  if (!shown.length) return null;
+  return (
+    <span className="ui-example-tags">
+      <span className="ui-sr-only">Tags: </span>
+      {shown.map((tag) => (
+        <span key={tag} className="ui-tag-chip">
+          {tag}
+        </span>
+      ))}
+      {more.length > 0 && (
+        <>
+          <span className="ui-tag-chip is-more" data-tip={more.join(', ')} aria-hidden="true">
+            +{more.length}
+          </span>
+          <span className="ui-sr-only">{more.join(', ')}</span>
+        </>
+      )}
+    </span>
+  );
+}
+
 /** Built-in and Yours (and any other template source) as tabs: picked on the board over stacked sections. */
 function TabbedExamples({
   box,
@@ -395,6 +447,7 @@ function TabbedExamples({
                   <strong>{t.name}</strong>
                 </span>
                 <span className="ui-preset-blurb">{t.blurb}</span>
+                <TagChips tags={t.tags} />
               </button>
             ))}
           </div>

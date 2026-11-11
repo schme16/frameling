@@ -6,7 +6,8 @@ import { desktop } from './desktop';
 import { autosaveNow, clearAutosaveCopy, documentTitle, keepUnsavedWork, loadBytes, openPath, saveDocument } from './document';
 import { loadFile } from './file';
 import { notify } from './notify';
-import { closeSheet } from '../ui/overlays';
+import { closeSheet, overlays } from '../ui/overlays';
+import { recovery, restorePending } from './recovery';
 
 export { autosaveNow };
 
@@ -31,16 +32,20 @@ export async function offerRecovery(): Promise<void> {
     await clearAutosaveCopy();
     return;
   }
+  const restore = () => {
+    // The welcome sheet may be up on start; get it out of the way so the work is right there.
+    closeSheet();
+    void loadBytes(found.bytes, found.meta.filePath, { dirty: true });
+  };
+  recovery.set({ name: found.meta.name || 'Untitled', savedAt: found.savedAt, restore });
+  // The welcome sheet shows it as a card. Without the sheet, a toast asks.
+  if (overlays.get().sheet) return;
   notify(
     'We kept a copy of your unsaved work. Restore it?',
     'info',
     {
       label: 'Restore',
-      run: () => {
-        // The welcome sheet may be up on start; get it out of the way so the work is right there.
-        closeSheet();
-        void loadBytes(found.bytes, found.meta.filePath, { dirty: true });
-      },
+      run: restorePending,
     },
     30_000,
   );

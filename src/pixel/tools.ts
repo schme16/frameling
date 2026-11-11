@@ -313,7 +313,7 @@ export function makePixelShape(kind: PixelShapeKind, label: string) {
     down(e: ToolPointer, ctx: ToolContext, layer: PixelLayer): void {
       const { doc, ui } = store().get();
       if (kind !== 'line' && !ui.fillColor && !ui.strokeOn) return ctx.hint('Fill and stroke are both set to none, so the shape would be invisible. Pick a colour for one of them.');
-      session = new PixelSession(doc, layer, ui.frame);
+      session = new PixelSession(doc, layer, ui.frame, { adds: true });
       size = layer.pixelSize;
       start = docToPixel(e.x, e.y, size);
       draw(e);

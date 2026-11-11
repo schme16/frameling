@@ -157,6 +157,11 @@ export interface Cel {
   drawingId: Id;
   /** In-betweens from this key to the next one on the layer, when the next one starts right where this ends. */
   tween?: Tween;
+  /**
+   * Held automatically (missing = no): the hold reaches the next key or the end, and gives way when someone draws on
+   * a later frame of it, as if those frames were empty. Choosing a length (Hold for, dragging the end) clears it.
+   */
+  autoHold?: boolean;
 }
 
 export type Drawing = VectorDrawing | PixelDrawing | TilemapDrawing | CameraDrawing;

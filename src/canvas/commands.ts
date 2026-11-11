@@ -66,6 +66,19 @@ registerCommands([
       store().setUi({});
     },
   },
+  {
+    id: 'view.emptyGhost',
+    label: 'Ghost on empty frames',
+    category: 'View',
+    description: 'On a frame with nothing drawn yet, show the last drawing faintly, so you can see where it went and draw over it.',
+    help: 'empty-frame-ghost',
+    keywords: ['ghost', 'faint', 'empty frame', 'disappeared', 'vanished', 'tracing', 'lightbox'],
+    checked: () => getViewSettings().emptyGhost,
+    run: () => {
+      setViewSettings({ emptyGhost: !getViewSettings().emptyGhost });
+      store().setUi({});
+    },
+  },
 ]);
 
 registerCommands([

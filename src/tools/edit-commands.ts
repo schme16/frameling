@@ -5,7 +5,7 @@ import { store } from '../core/store';
 import { toast } from '../ui/toast';
 import { bringForward, bringToFront, sendBackward, sendToBack } from '../canvas/arrange';
 import { flipMatrix, shapesBounds, transformShape, translate, type Matrix } from '../canvas/geometry';
-import { activeDrawing, activeLayer, editActiveDrawing, EDIT_HINTS } from './edit';
+import { activeDrawing, activeLayer, addingStartsNewDrawing, editActiveDrawing, EDIT_HINTS } from './edit';
 import { clipboardHasShapes, copyToClipboard, duplicateShapes, notePasted, pasteFromClipboard } from './clipboard';
 import { activeIsMerge, addShapes, cutBase, editShapes, pendingCut, setCut } from './merge-mode';
 import { placeMoved } from '../geometry/merge';
@@ -190,7 +190,8 @@ registerCommands([
     run: () => {
       const { layer } = activeLayer();
       if (layer && layer.kind !== 'vector') return say('Pasting shapes needs a vector layer. Pick one in the timeline first.');
-      const copies = pasteFromClipboard(vectorDrawing()?.id ?? null);
+      // Onto a frame that's only carrying the last drawing along, the paste starts a new drawing, so it lands in place.
+      const copies = pasteFromClipboard(addingStartsNewDrawing() ? null : (vectorDrawing()?.id ?? null));
       if (!copies.length) return;
       const { result, ids } = addShapes('Paste', copies);
       if (result === 'ok') {

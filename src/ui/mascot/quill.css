@@ -24,6 +24,7 @@
 }
 
 .quill-bubble {
+  white-space: pre-line;
   position: relative;
   min-width: 0;
   flex: 1;
@@ -82,4 +83,9 @@
 }
 .quill-empty p {
   margin: 0;
+}
+
+/* Quill's lines can hold line breaks. */
+.quill-empty {
+  white-space: pre-line;
 }

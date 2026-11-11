@@ -66,7 +66,13 @@ const GridRow = memo(function GridRow({ layer, cw, from, to, active }: { layer: 
   return (
     <div className={`tl-row${active ? ' is-active' : ''}${layer.visible ? '' : ' is-hidden'}${layer.locked ? ' is-locked' : ''}`} style={{ height: ROW_H }} data-layer={layer.id}>
       {shown.map((c) => (
-        <div key={c.id} className="tl-cel" data-cel={c.id} style={{ left: c.start * cw + 1, width: c.length * cw - 2 }}>
+        <div
+          key={c.id}
+          className={`tl-cel${c.autoHold && c.length > 1 ? ' is-auto' : ''}`}
+          data-cel={c.id}
+          style={{ left: c.start * cw + 1, width: c.length * cw - 2 }}
+          title={c.autoHold && c.length > 1 ? 'This drawing carries on until your next one. Draw on a later frame to start a new drawing there.' : undefined}
+        >
           <span className="tl-cel-key" style={{ width: Math.min(cw, c.length * cw) - 2 }}>
             <i className="tl-cel-dot" />
           </span>

@@ -431,7 +431,7 @@ Drag a panel's **tab** to another place in the same zone to reorder it, or onto 
 
 ## When the tabs don't all fit
 
-When a zone gets narrow, the other tabs shrink to just their icon (hover one to see its name). If even that's not enough, a **+N** button appears: click it to see the rest and open one. Widen the zone to bring the names back.
+When a zone gets narrow, the other tabs shrink to just their icon (hover one to see its name). **Colours** keeps its name while there is room, so it is easy to find. If even that's not enough, a **+N** button appears: click it to see the rest and open one. Widen the zone to bring the names back.
 
 ## Resize
 
@@ -531,20 +531,32 @@ If a message has a button, like **Undo**, press it before the message leaves to 
     section: 'Getting started',
     media: 'examples.png',
     summary: 'Ready-made drawings to start from, or to pick apart and learn.',
-    keywords: ['template', 'sample', 'demo', 'starter', 'learn', 'bouncing ball'],
+    keywords: ['template', 'sample', 'demo', 'starter', 'learn', 'bouncing ball', 'walk cycle', 'run cycle', 'explosion', 'sticker', 'emoji', 'icons', 'title card', 'spinner'],
     body: `Not sure where to begin? Start from an example.
 
 ## How
 
-Open **Help, Examples** (or **File, New drawing** and look under **Start from an example**). Press a card to open it. Each card shows a small picture, whether it is **vector** or **pixel** art, and what it is for.
+Open **Help, Examples** (or **File, New drawing** and look under **Start from an example**). Press a card to open it. Each card shows a small picture, whether it is **vector** or **pixel** art, and what it is for. The little chips under it (walk, loop, pixel...) say what is inside; rest your mouse on **+2** to see the rest. Square and tall drawings show whole on their card.
 
-Under the cards, **Or start blank, with layers ready** has empty starters by size: a blank vector stage with a Colour and a Lines layer, and a blank pixel grid. They are like the size cards at the top, with the layers already set up.
+Under the cards, **Or start blank, with layers ready** has empty starters by size: a blank vector stage with a Colour and a Lines layer, and a blank pixel grid.
+
+## What there is
+
+- **Learn the basics:** Bouncing ball, Flour sack hop, Blink, Morphing shapes.
+- **Characters:** Walk cycle (on twos, with onion skin on), Run cycle (pixel), Game hero sprite set, Paper doll puppet (bones), Lip sync mouth chart.
+- **Effects:** Explosion and smoke (drawn frames plus particles, with dark smoke that shows on light and dark backgrounds), Sparkle FX.
+- **For games and apps:** UI icon set (16x16 pixel icons), Sticker pack (emoji stickers), Tileset and level, Loading spinner.
+- **Video:** Title card (animated text and a camera move), Camera and parallax, Bouncing logo.
+
+## Set up for you
+
+Some examples get things ready when they open. The walk cycle turns [onion skin](help:timeline-onion) on. The first time you export, the spinner starts on a see-through GIF, the icons and stickers on separate pictures, and the run cycle on a sprite sheet at its real pixel size. Pick anything else in **Export** if you like; next time it remembers your choice.
 
 ## Make it yours
 
 An example is a normal drawing, so you can change anything. Nothing happens to the original, and Frameling asks before it replaces a drawing you haven't saved.
 
-Looking at how an example is built is a good way to learn. Try the timeline to see where each drawing sits.`,
+Every card ends with a **Try it** idea. Looking at how an example is built is a good way to learn: try the timeline to see where each drawing sits.`,
   },
   {
     id: 'quests',
@@ -555,7 +567,7 @@ Looking at how an example is built is a good way to learn. Try the timeline to s
     keywords: ['tutorial', 'guide', 'lesson', 'learn', 'first animation', 'badge', 'tiles quest'],
     body: `A quest is a little lesson with a few steps. You do each one in the real app, and Frameling ticks it off.
 
-The first one, **Your first animation**, is on the welcome sheet. Finish it and the rest open up in the **Quests** panel (Help > Open the Quests panel): the bouncing ball, filling in, a pixel pal, shading, **Tiles** (draw a seamless tile and paint a little level with it) and sharing. Each earns a badge.
+The first one, **Your first animation**, is on the welcome sheet (sprite and tile people start with **Pixel pal** or **Tiles** instead). Finish it and the rest open up in the **Quests** panel (Help > Open the Quests panel): the bouncing ball, filling in, a pixel pal, shading, **Tiles** (draw a seamless tile and paint a little level with it) and sharing. Each earns a badge.
 
 Stuck on a step? **Show me** does it for you, and **Tell me more** opens the help for it.`,
   },

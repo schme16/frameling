@@ -2024,6 +2024,35 @@ body.ui-resizing * {
   white-space: nowrap;
 }
 
+/* Work found after a crash: the welcome sheet's first card. */
+.ui-recover-card {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: 12px;
+  margin: 6px 24px 4px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--sunny) 55%, var(--line));
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--sunny) 12%, var(--raised));
+  animation: ui-drop 0.2s var(--ui-pop);
+}
+.ui-recover-card > svg {
+  color: var(--sunny);
+}
+.ui-recover-card strong {
+  display: block;
+}
+.ui-recover-card span {
+  color: var(--muted);
+  font-size: 13px;
+}
+@media (max-width: 560px) {
+  .ui-recover-card {
+    grid-template-columns: auto 1fr;
+  }
+}
+
 /* Examples row on the welcome sheet */
 .ui-examples {
   padding: 4px 24px 8px;
@@ -2063,9 +2092,13 @@ body.ui-resizing * {
 }
 .ui-example-art {
   position: relative;
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
   height: 104px;
+  /* The bottom band is the badge's, so the picture never runs under it. */
+  padding: 6px 6px 28px;
   margin-bottom: 4px;
   border-radius: var(--radius);
   background: var(--panel-2);
@@ -2074,6 +2107,7 @@ body.ui-resizing * {
 .ui-example-thumb {
   max-width: 100%;
   max-height: 100%;
+  object-fit: contain;
   border-radius: 4px;
   box-shadow: var(--shadow-small);
 }
@@ -2108,6 +2142,23 @@ body.ui-resizing * {
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+.ui-example-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 2px;
+}
+.ui-tag-chip {
+  padding: 0 6px;
+  border-radius: var(--radius-pill);
+  background: var(--panel-2);
+  border: 1px solid var(--line-soft);
+  color: var(--muted);
+  font-size: 10.5px;
+  line-height: 16px;
+  white-space: nowrap;
 }
 
 /* Ask-the-first-time choices (ChoiceDialog.tsx) and Preferences > Behaviour. */
@@ -2751,4 +2802,21 @@ body.ui-resizing * {
   font-size: 11px;
   font-weight: 700;
   color: var(--muted);
+}
+
+/* Submenus (File > Export) open to the side of their row. */
+.ui-menu-subwrap {
+  position: relative;
+}
+.ui-menu-subwrap > .ui-menu-item svg:last-child {
+  margin-left: auto;
+  opacity: 0.7;
+}
+.ui-menu-item.is-open {
+  background: var(--hover-bg);
+}
+.ui-submenu {
+  top: -7px;
+  left: calc(100% + 2px);
+  transform-origin: top left;
 }

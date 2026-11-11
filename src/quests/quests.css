@@ -382,6 +382,27 @@
 .qc-quill {
   margin: -6px -6px -6px -4px;
 }
+.qp-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 4px;
+}
+.qp-group-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 6px 2px 0;
+  color: var(--muted);
+  font-size: var(--fs-small);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.qp-group-count {
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
 .qp-list {
   display: flex;
   flex-direction: column;
