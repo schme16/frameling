@@ -219,7 +219,7 @@ A switch for sound effects. They aren't there yet, so for now it just remembers 
     section: 'Settings',
     media: 'themes.png',
     summary: 'Pick the colours Frameling wears, one for dark mode and one for light.',
-    keywords: ['theme', 'themes', 'colour', 'color', 'colours', 'dark', 'light', 'contrast', 'high contrast', 'accessibility', 'palette', 'pastel', 'midnight', 'cocoa'],
+    keywords: ['theme', 'themes', 'colour', 'color', 'colours', 'dark', 'light', 'contrast', 'high contrast', 'accessibility', 'palette', 'pastel', 'midnight', 'cocoa', 'strawberry', 'camo', 'aqua', 'lavender', 'lilac'],
     body: `A theme is a set of colours for the whole app. Frameling comes with several, each with a silly name and a calm mood.
 
 ## Choosing
@@ -229,7 +229,7 @@ Open **Preferences** (**Ctrl+,**), then **Themes**. You'll see two groups:
 - **For dark mode**: pick the theme to use when Frameling is dark.
 - **For light mode**: pick the theme to use when Frameling is light.
 
-Press a card to pick it. The change is instant. A gold tick shows which one is in use.
+Press a card to pick it. The change is instant. A tick shows which one is in use.
 
 ## Dark, light and System
 
@@ -240,6 +240,20 @@ The **Mode** switch decides which group is showing:
 - **System** follows your computer. When your computer goes dark in the evening, Frameling switches to your dark theme by itself, and back to your light theme in the morning.
 
 So you can have a pastel theme by day and a cosy dark one at night, without touching anything.
+
+## The themes
+
+| For dark mode | For light mode | Mood |
+| --- | --- | --- |
+| **Midnight Sketchbook** | **Paper & Honey** | The classic Frameling look. |
+| **Moonlit Pond** | **Studio White** | Calm and plain. |
+| **Hot Cocoa** | **Strawberry Milk** | Warm and cosy, soft and pink. |
+| **Strawberry Night** | **Strawberry** | Berry red, cream and little yellow seeds. Quill's favourite. |
+| **Glacier Grid** | **Ice Camo** | Charcoal, ice and bright aqua, with a faint camo print around the page. |
+| **Lilac Static** | **Lavender Hum** | Soft lilac with a little pastel glow. |
+| **Lantern Night** | **Sunbeam** | Extra contrast. |
+
+Chosen things (the tool, the tab, a switch that is on) are gold in most themes. The aqua and lilac themes use their own colour instead, still with dark words on it.
 
 ## Easier to see
 
