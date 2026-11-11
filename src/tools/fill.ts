@@ -1,7 +1,7 @@
 /**
  * The paint bucket. On vector layers it finds the area enclosed around the click (closing small gaps) and adds a
  * FillShape for it, behind the lines. Clicking paint that is already there recolours it. On pixel layers it is a
- * plain flood fill. The heavy lifting is in `src/geometry/fill.ts`.
+ * plain flood fill (mirrored when mirror drawing is on). The heavy lifting is in `src/geometry/fill.ts`.
  */
 import type { Doc, Drawing, FillShape, Shape } from '../core/format';
 import { drawingAt, pixelGrid, uid } from '../core/doc';
@@ -10,8 +10,9 @@ import { registerTool, type Tool, type ToolContext, type ToolPointer } from '../
 import { store } from '../core/store';
 import { fillRegion, pathsOverlap, type Rect } from '../geometry/fill';
 import { pointInPaths } from '../geometry/hit';
-import { floodFillPixels, parseColor, type Rgba } from '../geometry/pixel-fill';
-import { snapToPalette } from '../pixel/ink';
+import { floodFillPoints, parseColor, type Rgba } from '../geometry/pixel-fill';
+import { makeMirror, mirrorPoints, snapToPalette } from '../pixel/ink';
+import { getPixelSettings } from '../pixel/settings';
 import { docPalette } from '../pixel/palette';
 import { activeDrawing, activeLayer, EDIT_HINTS, editActiveDrawing } from './edit';
 import { FillOptionsPanel, gapWidth, getFillOptions } from './fill-options';
@@ -193,6 +194,24 @@ function fillVector(e: ToolPointer, ctx: ToolContext) {
   else startPop(e.x, e.y, ui.color, ctx);
 }
 
+/** The clicked pixel and its mirror images while mirror drawing is on (wrapped round in tile mode). */
+export function fillPoints(x: number, y: number, width: number, height: number, wrapOn: boolean): [number, number][] {
+  const ps = getPixelSettings();
+  const out = new Int32Array(8);
+  const n = mirrorPoints(makeMirror(ps.symmetry, width, height, ps.axisX, ps.axisY), x, y, out);
+  const pts: [number, number][] = [];
+  for (let k = 0; k < n; k++) {
+    let px = out[k * 2];
+    let py = out[k * 2 + 1];
+    if (wrapOn) {
+      px = wrap(px, width);
+      py = wrap(py, height);
+    }
+    if (px >= 0 && py >= 0 && px < width && py < height) pts.push([px, py]);
+  }
+  return pts;
+}
+
 function fillPixels(e: ToolPointer, ctx: ToolContext) {
   const ui = { ...store().get().ui, color: store().get().ui.fillColor ?? '' };
   if (!ui.color) {
@@ -218,7 +237,7 @@ function fillPixels(e: ToolPointer, ctx: ToolContext) {
       ctx.hint(FILL_HINTS.outside);
       return;
     }
-    const r = floodFillPixels(existing.pixels, existing.width, existing.height, px, py, color, { mode, wrap: wrapOn });
+    const r = floodFillPoints(existing.pixels, existing.width, existing.height, fillPoints(px, py, existing.width, existing.height, wrapOn), color, { mode, wrap: wrapOn });
     if (!r.changed) {
       ctx.hint(FILL_HINTS.same);
       return;
@@ -233,7 +252,7 @@ function fillPixels(e: ToolPointer, ctx: ToolContext) {
   // An empty frame gets a fresh drawing, which the fill then covers (it is all one clear colour).
   const res = editActiveDrawing('Fill', 'pixel', (d) => {
     if (px < 0 || py < 0 || px >= d.width || py >= d.height) return;
-    const filled = floodFillPixels(d.pixels, d.width, d.height, px, py, color, { mode, wrap: wrapOn }).pixels;
+    const filled = floodFillPoints(d.pixels, d.width, d.height, fillPoints(px, py, d.width, d.height, wrapOn), color, { mode, wrap: wrapOn }).pixels;
     const sel = pixelSelection();
     d.pixels = sel && sel.width === d.width && sel.height === d.height ? clipToMask(d.pixels, filled, sel) : filled;
   });
