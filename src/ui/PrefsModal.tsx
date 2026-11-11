@@ -142,6 +142,9 @@ function GeneralPage({ onThemes }: { onThemes: () => void }) {
           ]}
         />
       </Row>
+      <Row label="Clean timeline" hint="Off shows the detailed timeline: keys as diamonds, tweens with their easing, and rows for what changes on each layer. On shows one plain block per drawing.">
+        <Switch label="Clean timeline" on={p.cleanTimeline} onChange={(cleanTimeline) => setPrefs({ cleanTimeline })} />
+      </Row>
       <Row label="Units" hint="How sizes are shown. Pixels suit screens and games; mm, cm, inches and points suit print.">
         <Segmented<Unit> label="Units" value={p.units} onChange={(units) => setPrefs({ units })} options={UNITS.map((u) => ({ id: u.id, label: u.id }))} />
       </Row>

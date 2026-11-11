@@ -41,6 +41,8 @@ export interface Prefs {
   keymap: Record<string, string[]>;
   /** The shortcut set underneath the person's own changes (see keymapSets.ts). */
   keymapSet: string;
+  /** The plain timeline (one block per drawing, no property rows). Off shows the detailed one. */
+  cleanTimeline: boolean;
 }
 
 export const PREFS_KEY = 'frameling.prefs.v1';
@@ -63,6 +65,7 @@ export const DEFAULT_PREFS: Prefs = {
   onboarded: false,
   keymap: {},
   keymapSet: DEFAULT_KEYMAP_SET,
+  cleanTimeline: false,
 };
 
 /**
@@ -97,6 +100,7 @@ export function migratePrefs(raw: unknown): Prefs {
     onboarded: bool(r.onboarded, DEFAULT_PREFS.onboarded),
     keymap,
     keymapSet: isKeymapSet(r.keymapSet) ? r.keymapSet : DEFAULT_PREFS.keymapSet,
+    cleanTimeline: bool(r.cleanTimeline, DEFAULT_PREFS.cleanTimeline),
   };
 }
 

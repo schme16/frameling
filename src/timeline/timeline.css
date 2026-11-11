@@ -966,3 +966,95 @@
     animation: none;
   }
 }
+
+/* The header stays on one row: chips and labels fold to short forms as the timeline gets narrower. */
+.tl-header {
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+.tl-header > * {
+  flex-shrink: 0;
+}
+.tl-chip-short {
+  display: none;
+}
+@container tl (max-width: 1240px) {
+  .tl-range .tl-chip-long {
+    display: none;
+  }
+  .tl-range .tl-chip-short {
+    display: inline;
+  }
+  .tl-lighttable input[type='range'] {
+    width: 44px;
+  }
+}
+@container tl (max-width: 1040px) {
+  .tl-counter-time {
+    display: none;
+  }
+  .tl-counter {
+    min-width: 0;
+  }
+  .tl-fps span {
+    display: none;
+  }
+}
+@container tl (max-width: 960px) {
+  .tl-header .tl-group .tl-btn-text {
+    display: none;
+  }
+  .tl-header .tl-hold-menu .tl-btn-text {
+    display: inline;
+  }
+  .tl-zoom input {
+    width: 40px;
+  }
+}
+@container tl (max-width: 860px) {
+  .tl-lighttable input[type='range'],
+  .tl-header > .tl-sep {
+    display: none;
+  }
+  .tl-header {
+    column-gap: 4px;
+  }
+  .tl-counter-frame {
+    font-size: 11px;
+  }
+}
+.tl-layer-name > small {
+  display: inline-flex;
+  vertical-align: middle;
+}
+.tl-overflow {
+  display: none;
+}
+@container tl (max-width: 900px) {
+  .tl-header .tl-fold-1 {
+    display: none;
+  }
+  .tl-header .tl-overflow {
+    display: inline-flex;
+  }
+  .tl-zoom input {
+    display: none;
+  }
+}
+@container tl (max-width: 620px) {
+  .tl-header .tl-fold-2 {
+    display: none;
+  }
+}
+/* A play range or light table chip takes room, so the header folds sooner while one shows. */
+@container tl (max-width: 1100px) {
+  .tl-header:has(.tl-range) .tl-fold-1 {
+    display: none;
+  }
+  .tl-header:has(.tl-range) .tl-overflow {
+    display: inline-flex;
+  }
+  .tl-header:has(.tl-range) .tl-zoom input {
+    display: none;
+  }
+}

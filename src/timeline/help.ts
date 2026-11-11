@@ -14,8 +14,8 @@ registerHelpTopics([
 
 ## Reading it
 
-- A **bright block with a dot** is a drawing (a *key*). It's where a new drawing starts.
-- A **paler tail** after it means the drawing is *held*: it stays on screen for those frames.
+- A **solid cell with a diamond** (a bright block with a dot on the clean timeline) is a drawing (a *key*). It's where a new drawing starts.
+- A **paler band** after it means the drawing is *held*: it stays on screen for those frames.
 - An **empty square** means nothing is drawn on that layer at that frame.
 - The **pink line** is the playhead: the frame you're looking at and drawing on.
 
@@ -34,7 +34,60 @@ registerHelpTopics([
 
 > The frame counter counts from 1, like a flipbook page. "3 / 24" means page three of twenty-four.
 
-Learn more: [Frames, keys and holds](help:timeline-frames), [Layers](help:timeline-layers), [Playing your animation](help:timeline-playing).`,
+Learn more: [Frames, keys and holds](help:timeline-frames), [Keys, tweens and property rows](help:timeline-detailed), [Layers](help:timeline-layers), [Playing your animation](help:timeline-playing).`,
+  },
+  {
+    id: 'timeline-detailed',
+    order: 2.5,
+    title: 'Keys, tweens and property rows',
+    section: 'Animating',
+    media: 'timeline-detailed.mp4',
+    summary: 'The detailed timeline: keys as diamonds, tweens with their easing, and a row for everything that changes on a layer.',
+    keywords: ['keyframe', 'diamond', 'retime', 'property', 'tracks', 'graph', 'clean timeline', 'simple timeline', 'solo', 'colour label', 'scale keys', 'fit'],
+    body: `The timeline starts out **detailed**. Each layer row shows its drawings as cells:
+
+- A **solid cell with a diamond** is a key: a new drawing starts there.
+- A **paler band with a small box at the end** is a hold: the drawing stays on screen until the box. Stripes mean it carries on by itself until your next drawing.
+- An **empty cell** shows nothing on that layer.
+- A **purple arrow** is in-betweens (a tween) to the next key, with a little curve showing the easing. A **green arrow** melts one shape into the next (a morph).
+
+## Property rows
+
+Click the **arrow** beside a layer's name to open it. You get a row for each thing that changes on it: position, size or turn of a symbol, where a camera looks, each bone of a puppet, each animated effect. Every key is a diamond on its row. A line joins two keys where the value glides between them.
+
+## Picking and moving keys
+
+- **Click** a diamond to pick it. **Shift+click** picks more, across any layers.
+- **Drag** across the empty part of a property row (or **Shift** and drag anywhere empty) to pick every key in a box.
+- **Drag** a picked diamond to retime all the picked keys. A hold that ran up to the next key still does, so tweens stay joined.
+- Hold **Alt** while you drag to **stretch or squeeze** the picked keys from the first one: slower or faster.
+- **Delete** takes picked keys away. The drawing before carries on over the gap.
+
+Right-click a key for **Spread out** and **Squeeze together** too.
+
+## With the keyboard
+
+Click the frames once so the timeline has the keys, then:
+
+| Keys | Does |
+| --- | --- |
+| Arrow keys | move round the cells, rows included |
+| Shift + arrows | pick the keys you pass over |
+| Ctrl + Left or Right | jump to the previous or next key on the row |
+| Alt + Left or Right | nudge the picked keys a frame |
+| Delete | delete the picked keys |
+| Esc | let go of the picked keys |
+
+## Around the edges
+
+- The ruler shows **seconds** along the top and **frames** underneath. Markers draw a faint line down through the rows.
+- **Ctrl + scroll** zooms; the magnifier button **fits** the whole animation in view.
+- **S** on a layer shows only that layer (solo). Click it again to bring the others back as they were.
+- Give a layer a **colour label** from its **...** menu, to tell layers apart at a glance.
+
+## Prefer it simpler?
+
+Turn on **Clean timeline** (the sliders button in the timeline, **View > Clean timeline**, or **Preferences > General**) for one plain block per drawing and no property rows. Everything else works the same.`,
   },
   {
     id: 'timeline-frames',
