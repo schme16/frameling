@@ -3,6 +3,7 @@
 // is built, when the palette or a menu opens, and at startup. It's cheap to call again and again.
 import { allPanels, allTools, getCommand, registerCommand, type Command } from '../core/registry';
 import { findLayer } from '../core/doc';
+import type { LayerKind } from '../core/format';
 import { store } from '../core/store';
 import { applyWorkspace, currentWorkspace, isVisible, listWorkspaces, togglePanel } from './dock';
 
@@ -24,7 +25,7 @@ function ensure(cmd: Command): void {
   registerCommand(cmd);
 }
 
-export function toolEnabled(layers: ('vector' | 'pixel')[]): boolean {
+export function toolEnabled(layers: LayerKind[]): boolean {
   const { doc, ui } = store().get();
   const layer = findLayer(doc, ui.activeLayerId) ?? doc.layers[doc.layers.length - 1];
   return !layer || layers.includes(layer.kind);

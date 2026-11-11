@@ -213,6 +213,7 @@ export class FramePainter {
           pixelCanvas(d);
           continue;
         }
+        if (d.kind === 'tilemap') continue;
         if (this.cache.has(d, 1, rect.w, rect.h)) continue;
         if (performance.now() >= deadline) {
           done = false;
@@ -250,7 +251,7 @@ export class FramePainter {
     for (const layer of doc.layers) {
       if (!layer.visible) continue;
       const lv = p.live && p.live.layerId === layer.id ? p.live : null;
-      const pixelSize = layer.kind === 'pixel' ? layer.pixelSize : 1;
+      const pixelSize = layer.kind === 'vector' ? 1 : layer.pixelSize;
       if (lv?.kind === 'pixel') {
         g.save();
         g.globalAlpha = layer.opacity;
@@ -313,7 +314,7 @@ export class FramePainter {
     if (layer.opacity >= 1) {
       g.save();
       g.setTransform(sx, 0, 0, sy, rect.x, rect.y);
-      drawDrawing(g, drawing, pixelSize);
+      drawDrawing(g, drawing, pixelSize, { doc, frame: p.frame });
       g.restore();
       return;
     }
@@ -323,7 +324,7 @@ export class FramePainter {
     sg.setTransform(1, 0, 0, 1, 0, 0);
     sg.clearRect(0, 0, p.width, p.height);
     sg.setTransform(sx, 0, 0, sy, rect.x, rect.y);
-    drawDrawing(sg, drawing, pixelSize);
+    drawDrawing(sg, drawing, pixelSize, { doc, frame: p.frame });
     g.save();
     g.setTransform(1, 0, 0, 1, 0, 0);
     g.globalAlpha = layer.opacity;
@@ -353,6 +354,8 @@ export class FramePainter {
         const d = drawingAt(doc, layer, f);
         // A layer that's the same drawing here as on the current frame (a held background) isn't a ghost of anything.
         if (!d || d === drawingAt(doc, layer, frame)) continue;
+        // Tilemaps stay out of the onion skin: a level behind the character isn't a ghost of anything.
+        if (d.kind === 'tilemap') continue;
         items.push({ drawing: d, pixelSize: layer.kind === 'pixel' ? layer.pixelSize : 1 });
       }
       if (!items.length) continue;

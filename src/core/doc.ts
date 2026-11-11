@@ -1,7 +1,7 @@
 /**
  * Helpers for reading and building documents. Pure functions on the format types, no DOM.
  */
-import type { BrushSettings, Cel, Doc, Drawing, Id, Layer, PixelDrawing, PixelLayer, VectorDrawing, VectorLayer } from './format';
+import type { BrushSettings, Cel, Doc, Drawing, Id, Layer, PixelDrawing, PixelLayer, TilemapDrawing, TilemapLayer, VectorDrawing, VectorLayer } from './format';
 import { FORMAT_VERSION } from './format';
 
 let counter = 0;
@@ -65,6 +65,24 @@ export function newPixelLayer(name: string, pixelSize: number): PixelLayer {
   return { id: uid('l'), name, kind: 'pixel', pixelSize: Math.max(1, Math.round(pixelSize)), visible: true, locked: false, opacity: 1, cels: [] };
 }
 
+export function newTilemapLayer(name: string, pixelSize: number): TilemapLayer {
+  return { id: uid('l'), name, kind: 'tilemap', pixelSize: Math.max(1, Math.round(pixelSize)), visible: true, locked: false, opacity: 1, cels: [] };
+}
+
+/** Tile size used before a document has a tileset. */
+export const DEFAULT_TILE_SIZE = 16;
+
+/** How many tiles fit across and down the stage on a tilemap layer (a part tile at the edge counts). */
+export function tilemapGrid(doc: Doc, layer: TilemapLayer): { columns: number; rows: number } {
+  const tw = (doc.tileset?.tileWidth ?? DEFAULT_TILE_SIZE) * layer.pixelSize;
+  const th = (doc.tileset?.tileHeight ?? DEFAULT_TILE_SIZE) * layer.pixelSize;
+  return { columns: Math.max(1, Math.ceil(doc.width / tw)), rows: Math.max(1, Math.ceil(doc.height / th)) };
+}
+
+export function newTilemapDrawing(columns: number, rows: number): TilemapDrawing {
+  return { id: uid('t'), kind: 'tilemap', columns, rows, cells: new Uint32Array(columns * rows) };
+}
+
 /** The art grid size of a pixel layer. */
 export function pixelGrid(doc: Doc, layer: PixelLayer): { width: number; height: number } {
   return { width: Math.ceil(doc.width / layer.pixelSize), height: Math.ceil(doc.height / layer.pixelSize) };
@@ -83,6 +101,10 @@ export function newDrawingFor(doc: Doc, layer: Layer): Drawing {
   if (layer.kind === 'pixel') {
     const g = pixelGrid(doc, layer);
     return newPixelDrawing(g.width, g.height);
+  }
+  if (layer.kind === 'tilemap') {
+    const g = tilemapGrid(doc, layer);
+    return newTilemapDrawing(g.columns, g.rows);
   }
   return newVectorDrawing();
 }
@@ -119,9 +141,10 @@ export function contentLength(doc: Doc): number {
   return n;
 }
 
-/** Removes drawings no cel points at. */
+/** Removes drawings no cel (and no tile) points at. */
 export function pruneDrawings(doc: Doc): void {
   const used = new Set<string>();
   for (const l of doc.layers) for (const c of l.cels) used.add(c.drawingId);
+  for (const t of doc.tileset?.tiles ?? []) for (const f of t.frames) used.add(f.drawingId);
   for (const id of Object.keys(doc.drawings)) if (!used.has(id)) delete doc.drawings[id];
 }
