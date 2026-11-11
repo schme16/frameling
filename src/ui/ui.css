@@ -2820,3 +2820,13 @@ body.ui-resizing * {
   left: calc(100% + 2px);
   transform-origin: top left;
 }
+
+/* Preferences: the sound volume slider with its Try button. */
+.ui-pref-volume {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ui-pref-volume input[type='range'] {
+  width: 140px;
+}
