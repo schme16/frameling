@@ -28,10 +28,12 @@ registerCommands([
 registerHelpTopics([
   {
     id: 'undo',
+    order: 2,
+    media: 'undo.mp4',
     title: 'Undo and redo',
     section: 'Basics',
     summary: 'Every change can be taken back with Undo, and put back with Redo.',
-    keywords: ['mistake', 'back', 'revert'],
+    keywords: ['mistake', 'back', 'revert', 'go back', 'oops', 'take back'],
     body: `Made a mistake? Press **Ctrl+Z** (**Cmd+Z** on a Mac) to undo it. Press it again to keep going back.
 
 Changed your mind? **Ctrl+Shift+Z** (or **Ctrl+Y**) puts the change back.

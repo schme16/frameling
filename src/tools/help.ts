@@ -3,6 +3,7 @@ import { registerHelpTopics } from '../core/registry';
 registerHelpTopics([
   {
     id: 'tool-brush',
+    order: 1,
     title: 'Brush',
     section: 'Drawing',
     media: 'draw-brush.mp4',
@@ -24,6 +25,8 @@ If the brush won't draw, the layer might be locked or hidden. Check it in the ti
   },
   {
     id: 'tool-pencil',
+    order: 2,
+    media: 'tool-pencil.mp4',
     title: 'Pencil',
     section: 'Drawing',
     summary: 'A thin, even line for sketching. On a pixel layer it is the pixel pencil: one clean pixel at a time.',
@@ -40,10 +43,12 @@ If the brush won't draw, the layer might be locked or hidden. Check it in the ti
   },
   {
     id: 'tool-eraser',
+    order: 3,
+    media: 'tool-eraser.mp4',
     title: 'Eraser',
     section: 'Drawing',
     summary: 'Rub things out. On vector layers it removes whole lines, on pixel layers it clears pixels.',
-    keywords: ['rub', 'delete', 'remove', 'erase whole lines'],
+    keywords: ['rub', 'delete', 'remove', 'erase whole lines', 'rubber', 'rub out'],
     body: `Press **E**, then drag over what you want gone.
 
 **On a vector layer** it erases whole lines. Anything the circle touches, a stroke or a shape, disappears as a whole, so one quick swipe removes a line without you having to trace it. The **Reach** option sets how close you need to get. If you took out too much, Undo brings it back.
@@ -108,7 +113,7 @@ On a **pixel layer** the line is one pixel wide, and **Shift** snaps it to the c
     section: 'Drawing',
     media: 'select.png',
     summary: 'Pick shapes and lines to move, resize, turn, copy or delete.',
-    keywords: ['move', 'resize', 'scale', 'rotate', 'turn', 'marquee', 'transform', 'lasso'],
+    keywords: ['move', 'resize', 'scale', 'rotate', 'turn', 'marquee', 'transform', 'lasso', 'move tool', 'arrow tool'],
     body: `Press **V**.
 
 - **Click** a line or shape to select it. **Shift+click** adds more, or takes one off.
@@ -124,16 +129,18 @@ See [Selecting and moving](help:selecting) for the keyboard shortcuts.`,
   },
   {
     id: 'tool-eyedropper',
+    media: 'tool-eyedropper.mp4',
     title: 'Eyedropper',
     section: 'Drawing',
     summary: 'Pick up a colour from the page and draw with it.',
-    keywords: ['pick', 'sample', 'colour', 'color'],
+    keywords: ['pick', 'sample', 'colour', 'color', 'colour picker', 'color picker', 'pick a colour', 'sample colour'],
     body: `Press **I**, then click any colour you can see. It becomes your drawing colour straight away. Drag to keep looking around.
 
 It picks what the page looks like, all the layers together. Hold **Alt** to pick from only the layer you're on. If you click a see-through spot there's nothing to pick up.`,
   },
   {
     id: 'tool-hand',
+    media: 'canvas-navigation.mp4',
     title: 'Hand',
     section: 'Drawing',
     summary: 'Drag the page around.',
@@ -144,6 +151,7 @@ You don't have to switch tools to do it. Hold **Space** and drag with any tool, 
   },
   {
     id: 'tool-zoom',
+    media: 'canvas-navigation.mp4',
     title: 'Zoom',
     section: 'Drawing',
     summary: 'Click to zoom in, Alt+click to zoom out, drag a box to zoom to it.',
@@ -158,11 +166,12 @@ You can also zoom with **Ctrl+scroll**, or with **Ctrl+=** and **Ctrl+-**. **Ctr
   },
   {
     id: 'selecting',
+    order: 6,
     title: 'Selecting and moving',
     section: 'Drawing',
     media: 'select.png',
     summary: 'Select everything, let go, and nudge a selection with the keyboard.',
-    keywords: ['select all', 'deselect', 'nudge', 'arrow keys'],
+    keywords: ['select all', 'deselect', 'nudge', 'arrow keys', 'rotate', 'scale', 'resize', 'turn'],
     body: `- **Ctrl+A** selects everything on this frame of the layer you're on.
 - **Escape** lets go of the selection.
 - **Arrow keys** move the selection by one pixel. Add **Shift** to move ten.
@@ -173,6 +182,7 @@ On a pixel layer these pick and move pixels, and **Ctrl+Shift+I** inverts the se
   },
   {
     id: 'copy-paste',
+    media: 'copy-paste.png',
     title: 'Copy, cut and paste',
     section: 'Drawing',
     summary: 'Copy shapes and paste them on the same frame or a different one.',
@@ -189,6 +199,7 @@ Copy and paste works between frames and layers of the same kind, inside Framelin
   },
   {
     id: 'duplicate-delete',
+    media: 'duplicate-delete.mp4',
     title: 'Duplicate and delete',
     section: 'Drawing',
     summary: 'Make a copy right beside the selection, or remove it.',
@@ -200,6 +211,7 @@ Both can be undone.`,
   },
   {
     id: 'flip',
+    media: 'flip.mp4',
     title: 'Flip',
     section: 'Drawing',
     summary: 'Mirror the selection left to right or top to bottom.',
@@ -208,10 +220,11 @@ Both can be undone.`,
   },
   {
     id: 'arrange',
+    media: 'arrange.mp4',
     title: 'Bring forward and send back',
     section: 'Drawing',
     summary: 'Change which shapes sit in front of others.',
-    keywords: ['order', 'layer order', 'front', 'back', 'stack', 'z-order'],
+    keywords: ['order', 'layer order', 'front', 'back', 'stack', 'z-order', 'on top', 'behind', 'in front'],
     body: `Shapes on one layer are stacked like paper cut-outs. Select one, then:
 
 - **Ctrl+]** brings it forward one step. **Ctrl+Shift+]** brings it to the very front.

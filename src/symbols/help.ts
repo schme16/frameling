@@ -3,8 +3,9 @@ import { registerHelpTopics } from '../core/registry';
 registerHelpTopics([
   {
     id: 'symbols',
+    order: 1,
     title: 'Symbols: drawings you can reuse',
-    section: 'Animating',
+    section: 'Symbols and motion',
     media: 'symbols.png',
     summary: 'Make a drawing once, then place it as many times as you like. Change it once and every copy changes.',
     keywords: ['symbol', 'library', 'reuse', 'instance', 'component', 'movie clip', 'graphic', 'convert to symbol', 'F8'],
@@ -25,7 +26,7 @@ Symbols can go inside other symbols, as deep as you like (just never inside them
   {
     id: 'symbols-editing',
     title: 'Drawing inside a symbol',
-    section: 'Animating',
+    section: 'Symbols and motion',
     media: 'symbols-editing.png',
     summary: 'Double-click a symbol to open it and draw inside. The rest of the scene stays in view, faded.',
     keywords: ['edit symbol', 'edit in place', 'enter symbol', 'breadcrumb', 'back to scene', 'F9', 'double-click'],
@@ -40,7 +41,7 @@ Undo works as usual. Going into and out of a symbol are steps too, so undoing fa
   {
     id: 'symbol-properties',
     title: 'Symbol and motion panel',
-    section: 'Animating',
+    section: 'Symbols and motion',
     media: 'symbol-properties.png',
     summary: "Change a symbol copy's place, size, turn, fade, colour wash and how it plays its own animation, plus the in-betweens on this key.",
     keywords: ['properties', 'inspector', 'transform', 'scale', 'rotate', 'skew', 'opacity', 'alpha', 'tint', 'swap symbol', 'loop', 'play once', 'single frame', 'first frame'],
@@ -63,8 +64,9 @@ Below that are the [in-betweens](help:tweens) for the key under the playhead.`,
   },
   {
     id: 'tweens',
+    order: 2,
     title: 'In-betweens (tweens)',
-    section: 'Animating',
+    section: 'Symbols and motion',
     media: 'tweens.mp4',
     summary: 'Pose a symbol on two keys and Frameling draws the frames in between: moving, growing, turning and fading.',
     keywords: ['tween', 'classic tween', 'motion tween', 'inbetween', 'interpolation', 'keyframe', 'Ctrl+Shift+T', 'move', 'glide'],
@@ -90,8 +92,9 @@ Change your answer any time in **Preferences > Behaviour**. The numbers in the P
   },
   {
     id: 'easing',
+    order: 3,
     title: 'Easing: how in-betweens speed up and slow down',
-    section: 'Animating',
+    section: 'Symbols and motion',
     media: 'easing.png',
     summary: 'Gentle start, gentle stop, bouncy, springy, overshoot... or draw your own curve.',
     keywords: ['ease', 'easing', 'ease in', 'ease out', 'bounce', 'elastic', 'back', 'overshoot', 'curve', 'bezier', 'timing', 'spacing'],
@@ -117,7 +120,7 @@ On the canvas, the dots along the motion trail show one in-between each. Bunched
   {
     id: 'motion-paths',
     title: 'Paths to follow (motion paths)',
-    section: 'Animating',
+    section: 'Symbols and motion',
     media: 'motion-paths.png',
     summary: 'Make in-betweens travel along a line you draw, and turn to face along it if you like.',
     keywords: ['motion path', 'guide', 'guide layer', 'follow path', 'orient to path', 'curve', 'trajectory'],
@@ -138,7 +141,7 @@ Already drew the line with the brush or pencil? Select it and choose **Follow th
   {
     id: 'shape-tweens',
     title: 'Morph between shapes (shape tweens)',
-    section: 'Animating',
+    section: 'Symbols and motion',
     media: 'shape-tweens.mp4',
     summary: "Draw one shape on a key and a different one on the next, and Frameling melts the first into the second: outlines, colours and line widths.",
     keywords: ['shape tween', 'morph', 'blend', 'metamorphosis', 'transform shape', 'Ctrl+Shift+M', 'inbetween'],
@@ -162,7 +165,7 @@ If the morph twists, crumples or turns inside out, add [shape hints](help:shape-
   {
     id: 'shape-hints',
     title: 'Shape hints: fixing a twisty morph',
-    section: 'Animating',
+    section: 'Symbols and motion',
     media: 'shape-hints.png',
     summary: 'Pin a point of the first drawing to a point of the last one with lettered markers, so a morph goes the way you mean.',
     keywords: ['shape hint', 'hints', 'morph', 'shape tween', 'twist', 'match points', 'correspondence'],

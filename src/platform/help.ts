@@ -8,7 +8,7 @@ registerHelpTopics([
     summary: 'Frameling also runs in a browser tab, with nothing to install. Here is what works a little differently.',
     keywords: ['browser', 'web', 'chrome', 'edge', 'firefox', 'safari', 'download', 'install', 'offline', 'pwa', 'locked down'],
     media: 'web-browser.png',
-    body: `Can't install apps on your computer? Frameling runs in a web browser too. Drawing, animating and exporting all work the same. Only a few things about **files** are different, because a web page isn't allowed to roam around your computer.
+    body: `Can't install apps on your computer? Frameling runs in a web browser too. Drawing, animating and exporting work the same. Only **files** work a little differently, because a web page can't roam around your computer.
 
 ## Saving and opening
 
@@ -22,23 +22,19 @@ registerHelpTopics([
 
 ## Exporting
 
-GIFs, videos and pictures work the same. Where the browser can't pick a save spot, the file simply downloads.
+Exports work the same. Where the browser can't pick a save spot, the file downloads. Exports of several files (a **sprite sheet** and its data, a tileset) go into a folder you choose in Chrome and Edge, and download as one **.zip** elsewhere.
 
-Exports made of several files (a **sprite sheet** with its data file, a tileset) go into a folder you choose in Chrome and Edge. Other browsers download them together as one **.zip** file. Unzip it to get the files.
-
-There's no **Show in folder** button in a browser. Look in the folder you picked, or your Downloads.
-
-**ProRes video** needs the desktop app (it uses FFmpeg on your computer), and text can use Frameling's own fonts, Nunito and Inter, but not fonts installed on your computer.
+**ProRes video** needs the desktop app, and text can use Frameling's own fonts but not ones installed on your computer.
 
 ## Your safety copies
 
-**Autosave** works the same: every minute, and whenever you switch away from the tab, Frameling keeps a copy of unsaved work inside the browser. If the tab closes with unsaved changes, the next visit offers it back, and **File > Recover unsaved work...** keeps it for 7 days. See [Autosave](help:autosave).
+[Autosave](help:autosave) works the same, every minute and whenever you switch tabs. The next visit offers unsaved work back, and **File > Recover unsaved work...** keeps it for 7 days.
 
-These copies, your recent files list and your preferences live in **this browser on this computer**. A different browser, or a private window, starts fresh. Clearing the browser's site data clears them too, so always **Save** work you care about.
+These copies, your recent files and your preferences live in **this browser on this computer**. Another browser, a private window or clearing site data starts fresh, so always **Save** work you care about.
 
 ## Closing the tab
 
-A browser can't ask "Save changes?" with a Save button when you close a tab. It shows its own "Leave site?" question instead. If you leave anyway, your work is put aside in **Recover unsaved work...**, just like choosing **Don't save**.
+A browser shows its own "Leave site?" question instead of "Save changes?". If you leave anyway, your work waits in **Recover unsaved work...**.
 
 ## Keyboard shortcuts
 

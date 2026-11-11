@@ -5,6 +5,7 @@ import './onboarding/help';
 registerHelpTopics([
   {
     id: 'welcome',
+    order: 1,
     title: 'Welcome to Frameling',
     section: 'Getting started',
     media: 'welcome.png',
@@ -29,10 +30,68 @@ Draw something on one frame. Move to the next frame and draw it again, a little 
 
 ## Stuck?
 
-Press **F1** over anything to read about it, or press **Ctrl+K** and type what you want to do. See [Finding things](help:command-palette).`,
+Press **F1** over anything to read about it, or press **Ctrl+K** and type what you want to do. See [Finding things](help:command-palette).
+
+Want the whole picture first? See [What's in Frameling](help:whats-in-frameling).`,
+  },
+  {
+    id: 'whats-in-frameling',
+    order: 2,
+    title: "What's in Frameling",
+    section: 'Getting started',
+    media: 'tour.mp4',
+    summary: 'Everything Frameling can do on one page, with a link to each part.',
+    keywords: ['overview', 'tour', 'features', 'everything', 'what can it do', 'contents', 'map'],
+    body: `Frameling is for drawing pictures and making them move. Here's everything in it, in the order most people meet it.
+
+## Draw
+
+- [Brush](help:tool-brush), [Pencil](help:tool-pencil), [Eraser](help:tool-eraser) and [shapes](help:tool-rect).
+- [Colours](help:fill-and-stroke), the [paint bucket](help:fill) and [text](help:text).
+- [Select and move](help:selecting), [copy](help:copy-paste), [flip](help:flip) and [stack](help:arrange) things.
+- [Rulers and guides](help:rulers-guides), and [moving around the page](help:canvas-navigation).
+
+## Animate
+
+- The [timeline](help:timeline): [frames, keys and holds](help:timeline-frames), [layers](help:timeline-layers), [playing](help:timeline-playing).
+- [Onion skin](help:timeline-onion) shows the frames around this one, so you can draw the next pose.
+- [Clips](help:timeline-clips) and [markers](help:timeline-markers) name the parts of an animation.
+
+## Pixel art
+
+[Big square pixels](help:pixel-art) with a [palette](help:palette), [shading](help:tool-shade), [dithering](help:tool-dither) and [mirror drawing](help:pixel-mirror). [Tiles](help:tileset) build game maps.
+
+## Symbols and motion
+
+Draw once, reuse it as a [symbol](help:symbols), and let Frameling draw the [in-betweens](help:tweens) with [easing](help:easing), [paths](help:motion-paths) and [morphs](help:shape-tweens). Add a [camera](help:camera).
+
+## Bones
+
+[Pose a character like a puppet](help:rig): draw a skeleton, attach the parts and pose.
+
+## Effects
+
+[Glow, shadow and blur](help:effects), [blend modes](help:blend-modes), [masks](help:masks) and [particles](help:particles) like sparkles and snow.
+
+## Sound
+
+Add [speech, music and effects](help:sound), and let [lip sync](help:lip-sync) pick the mouths.
+
+## Save and share
+
+[Save your work](help:saving-and-opening) ([autosave](help:autosave) keeps a safety copy). [Export](help:exporting) a [video or GIF](help:export-video-gif-apng), [sprite sheets](help:export-sprite-sheets) for games, [SVG](help:export-svg) and more.
+
+## Make it yours
+
+[Preferences](help:preferences), [themes](help:themes), [panels](help:panels), [workspaces](help:workspaces), [keyboard shortcuts](help:keyboard-shortcuts) and [plugins](help:plugins).
+
+## Learn as you go
+
+[Quests](help:quests) are short guided lessons. [Examples](help:examples) are ready-made animations to pull apart. Press **F1** over anything to read about it.`,
   },
   {
     id: 'new-document',
+    order: 3,
     title: 'Starting a new drawing',
     section: 'Getting started',
     media: 'new-document-cards.png',
@@ -61,6 +120,8 @@ If your current drawing has changes you haven't saved, Frameling asks before it 
   },
   {
     id: 'using-help',
+    order: 6,
+    media: 'using-help.png',
     title: 'Using help',
     section: 'Getting started',
     summary: 'Help is one key away, and it knows what you are pointing at.',
@@ -83,6 +144,7 @@ Type in the search box. You don't need to spell things perfectly. Press **Ctrl+K
   },
   {
     id: 'command-palette',
+    order: 1,
     title: 'Finding things',
     section: 'Basics',
     media: 'command-palette.png',
@@ -131,6 +193,7 @@ Press the small **x** on a shortcut to remove it. **Reset** puts a command back 
   },
   {
     id: 'preferences',
+    order: 1,
     title: 'Preferences',
     section: 'Settings',
     media: 'preferences.png',
@@ -192,6 +255,7 @@ Open **Preferences** (**Ctrl+,**) and choose **Behaviour**. Every choice is list
   },
   {
     id: 'look-and-feel',
+    media: 'look-and-feel.png',
     title: 'Mode and look',
     section: 'Settings',
     summary: 'Dark or light, soft or sharp. Make it feel right for you.',
@@ -342,10 +406,12 @@ See also [Panels](help:panels).`,
   },
   {
     id: 'panels',
+    order: 1,
+    media: 'panels.png',
     title: 'Panels',
     section: 'Workspace',
     summary: 'Panels dock on the left, right and bottom. Drag them where you like.',
-    keywords: ['dock', 'tabs', 'more', 'overflow', 'drag', 'resize', 'collapse', 'splitter', 'hide', 'show', 'move'],
+    keywords: ['dock', 'tabs', 'more', 'overflow', 'drag', 'resize', 'collapse', 'splitter', 'hide', 'show', 'move', 'missing panel', 'lost panel', 'panel gone', 'bring back', 'close panel'],
     body: `Panels hold things like the timeline, layers and colours. They live in three zones: **left**, **right** and **bottom**.
 
 ## Move
@@ -406,6 +472,7 @@ With a menu open, use the **arrow keys** to move, **Enter** to choose, and **Esc
   },
   {
     id: 'status-bar',
+    media: 'status-bar.png',
     title: 'The status bar',
     section: 'Basics',
     summary: 'The thin strip at the bottom: zoom, size, speed, frame and a tip.',
@@ -420,6 +487,7 @@ With a menu open, use the **arrow keys** to move, **Enter** to choose, and **Esc
   },
   {
     id: 'document-name',
+    media: 'document-name.png',
     title: 'Naming your drawing',
     section: 'Basics',
     summary: 'The name at the top. Press it to change it.',
@@ -432,6 +500,7 @@ The **undo** and **redo** buttons beside it do the same as **Ctrl+Z** and **Ctrl
   },
   {
     id: 'messages',
+    media: 'messages.png',
     title: 'Little messages',
     section: 'Basics',
     summary: 'Gentle notes that pop up and go away by themselves.',
@@ -442,6 +511,7 @@ If a message has a button, like **Undo**, press it before the message leaves to 
   },
   {
     id: 'examples',
+    order: 4,
     title: 'Examples',
     section: 'Getting started',
     media: 'examples.png',
@@ -463,6 +533,7 @@ Looking at how an example is built is a good way to learn. Try the timeline to s
   },
   {
     id: 'quests',
+    order: 5,
     title: 'Quests',
     section: 'Getting started',
     summary: 'Short guided lessons that teach by doing.',

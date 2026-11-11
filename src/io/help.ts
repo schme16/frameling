@@ -3,6 +3,8 @@ import { registerHelpTopics } from '../core/registry';
 registerHelpTopics([
   {
     id: 'saving-and-opening',
+    order: 1,
+    media: 'saving-and-opening.png',
     title: 'Saving and opening',
     section: 'Files',
     summary: 'Save your drawing as a .frameling file, and open it again any time.',
@@ -37,10 +39,11 @@ Want to share your work as a video, a GIF or pictures? That's **Export**, a diff
   },
   {
     id: 'autosave',
+    media: 'autosave.png',
     title: 'Autosave',
     section: 'Files',
     summary: 'Frameling keeps a safety copy of unsaved work every minute, in case something goes wrong.',
-    keywords: ['recover', 'crash', 'lost', 'backup', 'restore', 'safety'],
+    keywords: ['recover', 'crash', 'lost', 'backup', 'restore', 'safety', 'lost my work', 'lost work', 'safety copy'],
     body: `Every minute, if you have unsaved changes, Frameling tucks a copy of your work away in its own private folder.
 
 It **never touches your own file**. It's only a safety net.

@@ -30,6 +30,7 @@ Choose **Help > Meet Quill again**, or press **Ctrl+K** and type "Meet Quill". E
   },
   {
     id: 'units',
+    media: 'units.png',
     title: 'Units: pixels, mm, cm, inches',
     section: 'Getting started',
     summary: 'Show sizes in pixels, or in millimetres, centimetres, inches or points for print.',

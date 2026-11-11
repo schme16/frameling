@@ -86,7 +86,7 @@ registerCommands([
     category: 'Timeline',
     keys: ['Shift+O'],
     description: 'Show faint ghosts of the frames before and after, to help you draw the next pose.',
-    help: 'timeline.toggleOnion',
+    help: 'timeline-onion',
     keywords: ['onion skin', 'ghost', 'see through', 'tracing'],
     checked: (s) => s.ui.onion.enabled,
     run: () => store().setUi((ui) => ({ onion: { ...ui.onion, enabled: !ui.onion.enabled } })),

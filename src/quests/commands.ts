@@ -42,6 +42,7 @@ registerPanel({ id: 'quests', title: 'Quests', icon: 'quest', component: QuestsP
 // replaces it.
 registerHelp({
   id: 'quests',
+  order: 5,
   title: 'Quests',
   section: 'Getting started',
   media: 'quests-first-steps.mp4',
