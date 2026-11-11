@@ -206,3 +206,11 @@
   background: color-mix(in srgb, var(--accent) 35%, transparent);
   color: transparent;
 }
+
+/* Many short choices (the particle look) wrap onto more rows instead of squeezing. */
+.pt-wrap .cv-choice {
+  flex-wrap: wrap;
+}
+.pt-wrap .cv-choice-btn {
+  flex: 1 0 30%;
+}

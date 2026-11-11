@@ -310,6 +310,8 @@ export interface PdfFrameContext {
   /** A picture of these layers alone (with their effects, clipping and masks), the stage's size at `pictureScale`. */
   picture?: (layers: Layer[], own: boolean) => RawImage | null;
   pictureScale: number;
+  /** Pixel art: pictures stay blocky when scaled (no smoothing). */
+  crisp?: boolean;
 }
 
 function drawShape(cx: Content, ctx: PdfFrameContext, s: Shape): void {
@@ -465,8 +467,8 @@ function drawParticles(cx: Content, ctx: PdfFrameContext, s: ParticlesShape): vo
   }
 }
 
-function drawPicture(cx: Content, ctx: PdfFrameContext, img: RawImage): void {
-  const name = ctx.writer.image(img, true);
+function drawPicture(cx: Content, ctx: PdfFrameContext, img: RawImage, crisp: boolean): void {
+  const name = ctx.writer.image(img, !crisp);
   const { width: w, height: h } = ctx.doc;
   cx.push(`q ${num(w)} 0 0 ${num(-h)} 0 ${num(h)} cm /${name} Do Q`);
 }
@@ -487,9 +489,11 @@ function drawUnit(cx: Content, ctx: PdfFrameContext, u: FlatUnit): void {
     if (d) grouped(cx, ctx, l.opacity, l.blend, (c) => drawDrawing(c, ctx, d, l.kind === 'vector' ? 1 : l.pixelSize));
   } else if (ctx.picture) {
     const img = ctx.picture(u.layers, !!u.own);
+    // Pixel and tile layers stay blocky when the picture is scaled.
+    const crisp = !!ctx.crisp || u.layers.every((l) => l.kind !== 'vector');
     if (img) {
-      if (u.own) grouped(cx, ctx, u.own.opacity, u.own.blend, (c) => drawPicture(c, ctx, img));
-      else drawPicture(cx, ctx, img);
+      if (u.own) grouped(cx, ctx, u.own.opacity, u.own.blend, (c) => drawPicture(c, ctx, img, crisp));
+      else drawPicture(cx, ctx, img, crisp);
     }
   }
   cx.push('EMC');
@@ -518,6 +522,7 @@ export interface PdfOptions {
   /** Pictures of layers PDF can't draw as vector (from the renderer). */
   picture?: (frame: number, layers: Layer[], own: boolean) => RawImage | null;
   pictureScale?: number;
+  crisp?: boolean;
   creator?: string;
   /** Called after each page, for progress. */
   onPage?: (i: number) => void;
@@ -526,7 +531,7 @@ export interface PdfOptions {
 export function writePdf(doc: Doc, opts: PdfOptions): Uint8Array {
   const writer = new PdfWriter();
   const pages = opts.frames.map((frame, i) => {
-    const content = pdfFrameContent({ writer, doc, frame, picture: opts.picture ? (ls, own) => opts.picture!(frame, ls, own) : undefined, pictureScale: opts.pictureScale ?? 1 }, opts.scale, opts.background);
+    const content = pdfFrameContent({ writer, doc, frame, picture: opts.picture ? (ls, own) => opts.picture!(frame, ls, own) : undefined, pictureScale: opts.pictureScale ?? 1, crisp: opts.crisp }, opts.scale, opts.background);
     opts.onPage?.(i);
     return { content, width: doc.width * opts.scale, height: doc.height * opts.scale };
   });

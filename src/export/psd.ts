@@ -331,10 +331,27 @@ export function writePsd(width: number, height: number, layers: PsdLayer[], merg
   o.bytes(liBytes);
   o.u32(0);
 
-  // Merged image: RLE, every row count first (R, G, B, A planes), then the rows.
+  // Merged image: RLE, every row count first (R, G, B, A planes), then the rows. Photoshop keeps the merged colours
+  // blended onto white where they're see-through (readers that ignore alpha still show it right; Photoshop and
+  // ImageMagick take the white back out), so they're stored that way here too.
   o.u16(1);
-  const planes = [0, 1, 2, 3].map((ch) => rlePlane(cropPlane(merged, { top: 0, left: 0, bottom: height, right: width }, ch), width, height));
+  const matted = matteWhite(merged);
+  const planes = [0, 1, 2, 3].map((ch) => rlePlane(cropPlane(matted, { top: 0, left: 0, bottom: height, right: width }, ch), width, height));
   for (const p of planes) for (const c of p.counts) o.u16(c);
   for (const p of planes) for (const d of p.data) o.bytes(d);
   return o.finish();
+}
+
+/** Colours blended onto white by their alpha (alpha kept), the way Photoshop stores the merged picture. */
+export function matteWhite(img: RawImage): RawImage {
+  const p = img.pixels;
+  const out = new Uint8ClampedArray(p.length);
+  for (let i = 0; i < p.length; i += 4) {
+    const a = p[i + 3] / 255;
+    out[i] = p[i] * a + 255 * (1 - a);
+    out[i + 1] = p[i + 1] * a + 255 * (1 - a);
+    out[i + 2] = p[i + 2] * a + 255 * (1 - a);
+    out[i + 3] = p[i + 3];
+  }
+  return { width: img.width, height: img.height, pixels: out };
 }

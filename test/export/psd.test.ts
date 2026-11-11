@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { initializeCanvas, readPsd } from 'ag-psd';
-import { blendKey, packBits, writePsd, type PsdLayer } from '../../src/export/psd';
+import { blendKey, matteWhite, packBits, writePsd, type PsdLayer } from '../../src/export/psd';
 import type { RawImage } from '../../src/io/png';
 
 function img(w: number, h: number, fill: (x: number, y: number) => [number, number, number, number]): RawImage {
@@ -86,5 +86,7 @@ describe('PSD writer', () => {
     expect(shade.hidden).toBe(true);
     expect(shade.blendMode).toBe('multiply');
     expect(psd.imageData!.data[4 * 3]).toBe(30);
+    // See-through merged pixels are stored blended onto white, like Photoshop does.
+    expect(matteWhite(img(1, 1, () => [0, 0, 255, 128])).pixels.slice(0, 4)).toEqual(Uint8ClampedArray.from([127, 127, 255, 128]));
   });
 });

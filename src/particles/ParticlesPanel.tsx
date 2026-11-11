@@ -115,7 +115,9 @@ function EmitterEditor({ s, look }: { s: ParticlesShape; look: PanelLook }) {
         <Presets s={s} compact />
       </Section>
       <Section title="How they look">
+        <div className="pt-wrap">
         <Choice<ParticleSprite> label="Each particle is" value={s.sprite} options={SPRITES.filter((x) => x.value !== 'symbol' || symbols.length).map((x) => ({ value: x.value, label: x.label }))} onChange={(v) => upd('Particle look', 'sprite', (d) => void ((d.sprite = v), v === 'symbol' && !d.symbolId && symbols[0] && (d.symbolId = symbols[0].id)))} />
+        </div>
         {s.sprite === 'symbol' && (
           <label className="pt-row">
             <span>Symbol</span>

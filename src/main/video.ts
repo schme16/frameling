@@ -94,7 +94,7 @@ export function registerVideoIpc(handle: Handle, mayWrite: (p: string) => boolea
     const fps = Number(o?.fps);
     if (!(width > 0 && height > 0 && width <= 16384 && height <= 16384 && fps > 0 && fps <= 240)) return { error: 'That size or frame rate is not one ProRes can use.' };
     const proc = spawn(bin, proresArgs({ width, height, fps, alpha: !!o.alpha, out }), { stdio: ['pipe', 'pipe', 'pipe'] });
-    const job: Job = { proc, err: '', out, done: new Promise((r) => proc.on('close', (code) => r(code))) };
+    const job: Job = { proc, err: '', out, done: new Promise((r) => proc.on('exit', (code) => r(code))) };
     proc.stderr.on('data', (d) => {
       if (job.err.length < 4000) job.err += String(d);
     });
@@ -127,7 +127,9 @@ export function registerVideoIpc(handle: Handle, mayWrite: (p: string) => boolea
     const job = jobs.get(id);
     if (!job) return;
     jobs.delete(id);
-    job.proc.kill();
+    // FFmpeg tidies up on a polite stop by reading the rest of its input, so close that and stop it hard.
+    job.proc.stdin.destroy();
+    job.proc.kill('SIGKILL');
     await job.done;
     try {
       fs.rmSync(job.out, { force: true });

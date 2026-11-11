@@ -81,6 +81,7 @@ export function pdfFile(doc: Doc, frames: number[], scale: number, transparent: 
     creator: ai ? 'Frameling (PDF compatible Illustrator file)' : 'Frameling',
     picture: (frame, layers, own) => layersPicture(doc, frame, layers, pictureScale, own, crisp),
     pictureScale,
+    crisp,
     onPage,
   });
 }
