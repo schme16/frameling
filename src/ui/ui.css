@@ -2830,3 +2830,13 @@ body.ui-resizing * {
 .ui-pref-volume input[type='range'] {
   width: 140px;
 }
+
+/* Preferences > Keyboard: the shortcut set picker, styled like the Behaviour page's choices. */
+.ui-keyset {
+  max-width: 280px;
+  padding: 6px 8px;
+  border-radius: var(--radius-small);
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  color: var(--text);
+}

@@ -42,8 +42,11 @@ func _init():
 
 function heroPackage(): { bytes: Uint8Array; clips: { name: string; loop: boolean }[]; fps: number; width: number; height: number } {
   const doc = makeHeroSprite();
-  const { bytes, manifest } = playablePackage({ doc, frames: artFrames(doc), range: { start: 0, end: doc.length - 1 }, scale: 1, pixelArt: true, background: null, maxSide: 4096 });
-  return { bytes, clips: manifest.clips, fps: manifest.fps, width: doc.width, height: doc.height };
+  // At art size (one art pixel = one pixel), the way the app exports a pixel sprite for a game.
+  const frames = artFrames(doc);
+  const scale = frames[0].width / doc.width;
+  const { bytes, manifest } = playablePackage({ doc, frames, range: { start: 0, end: doc.length - 1 }, scale, pixelArt: true, background: null, maxSide: 4096 });
+  return { bytes, clips: manifest.clips, fps: manifest.fps, width: frames[0].width, height: frames[0].height };
 }
 
 function run(dir: string, args: string[]): string {

@@ -258,6 +258,7 @@ function KeyboardPage({ focusId }: { focusId?: string }) {
       <h3>Keyboard</h3>
       <Row label="Shortcut set" hint={`${keymapSet(setId).blurb} Your own changes stay on top of whichever set you pick.`}>
         <select
+          className="ui-keyset"
           aria-label="Shortcut set"
           value={keymapSet(setId).id}
           onChange={(e) => {
