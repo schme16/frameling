@@ -20,7 +20,10 @@ registerHelpTopics([
 | Layer folders | Groups (a plain folder is a pass-through group) |
 | Clip to the layer below | A clipping mask |
 | A mask layer in a folder | The group's layer mask |
+| A mask layer on the stage | A group holding everything under it, with the mask as its layer mask |
 | Effects (glow, shadow...) | Baked into the layer's pixels |
+| A folder with effects | A group holding one finished picture of the folder (your layers stay inside, switched off) |
+| Layers bent on bones | Bent, the way they look on the canvas |
 
 Vector drawings become pixels at the export size, so pick a bigger **Size** for print. Pixel art at a whole-number size stays crisp.
 
@@ -29,8 +32,8 @@ The file also holds the finished picture, so apps that don't read layers still s
 ## Good to know
 
 - One frame at a time. For every frame, use [PNG sequence](help:exporting).
-- A mask layer that sits right on the stage (not in a folder) comes across as a hidden layer, so its shape is kept but it doesn't mask. Put it in a folder (Effects > Use as mask does that for you) to keep it working.
-- Effects on a folder are not baked in yet.`,
+- A folder with effects (a glow or shadow on the whole folder) can't be a plain group, because a group can't hold effects. Its group holds one layer called "(with effects)", which is the folder drawn together with the effects. Your own layers are inside the group too, switched off. To edit them, switch them on and switch the "(with effects)" layer off. The effects won't follow your edits, since they were baked in.
+- A mask layer on the stage hides or shows everything under it. In the PSD those layers sit together in a group called "Masked by ...", and the mask is that group's layer mask. The mask layer itself is kept inside, switched off.`,
   },
   {
     id: 'export-pdf',
@@ -47,7 +50,7 @@ The file also holds the finished picture, so apps that don't read layers still s
 - **Text** comes across as shapes, so it looks right without the font.
 - **Particles** are real little shapes, every one of them.
 
-Some things PDF can't draw as shapes come in as pictures at twice the page size: pixel and tile layers, layers with effects, clipped layers, and masks. The Export window says how many when there are any.
+Some things PDF can't draw as shapes come in as pictures at twice the page size: pixel and tile layers, layers with effects, clipped layers, masks, and art bent on bones. The Export window says how many when there are any.
 
 **Size** sets the page size: at 1×, one stage pixel is one point (1/72 inch).`,
   },

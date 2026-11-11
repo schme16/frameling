@@ -146,6 +146,8 @@ Already drew the line with the brush or pencil? Select it and choose **Follow th
 
 What melts: outlines and holes, fill colours (and see-through), line colours and widths, and brush strokes. Shapes pair up in the order you drew them. A shape with no partner shrinks away (or grows in from nothing), so a different number of pieces still works.
 
+Text and particles come along too. A piece of text moves, turns, resizes and changes colour into the text on the next key, and a particle emitter slides to its new spot and changes its speed, direction, size and colours while it keeps playing (the particles don't restart). Text pairs with text and emitters with emitters, in order, and one with no partner fades out or in. Different words or a different font crossfade, and an emitter keeps the first key's count, lifetime and sprite. The panel says so when that happens.
+
 Shapes stay plain shapes. Symbols on the same key glide like ordinary [in-betweens](help:tweens). Easing, extra spins and paths work as usual.
 
 **Move or Morph:** the **How it changes** switch in the panel flips any in-betweens between the two. The first time you make in-betweens on a plain drawing, Frameling asks which you'd like (change it later in **Preferences > Behaviour**).

@@ -91,7 +91,7 @@ modes mix with it the same way exports do.
 
 ## Known gaps
 
-- SVG export keeps blend modes (`mix-blend-mode`) and leaves mask layers out, but drops effects, clipping and masking.
+- SVG has no Pixelate, so the still and moving SVG leave it out (the Export window says so first).
 - Folders don't nest. Move up / Move down step a layer into a folder at its edge and out of it again; any plain
   reorder keeps folders in one piece (`tidyFolders`), so there are never ghost copies of a folder.
 - Symbol instances get the look of the layer they sit on (blend, effects, masks, folders), in the editor and in
@@ -136,19 +136,32 @@ computer (probed by measuring). Layout measures prefix widths with the canvas, s
   like particles; still text is never re-posed.
 - **Convert to shapes** (Ctrl+Shift+O) draws the text large, traces it (`traceMask` + `fitClosedLoop`) and makes one
   even-odd fill. It works with any font, including ones only on this computer. PDF and `.ai` use the same outlines.
-- **SVG** keeps text as `<text>` (per glyph when animated); particles become circles, rects and polygons.
+- **SVG** keeps text as `<text>` (per glyph when animated); particles become circles, rects and polygons, and symbol
+  particles draw the symbol (written once as a `<g id="spriteN">`, placed per particle with `<use>`).
 
 ## PSD, PDF, Illustrator and ProRes export (second part)
 
 - **PSD** (`export/psd.ts`, own writer, RLE): one PSD layer per Frameling layer (effects baked into its pixels via
   the compositor, blend and opacity kept as PSD settings), names (plus Unicode `luni`), visibility, clipping, folders as
   groups (pass-through when plain), mask layers in a folder as the group's layer mask, and the merged picture.
-  Structure: `export/layered.ts` `layeredPlan`. Checked with ag-psd (dev dependency, tests only) and ImageMagick.
+  Structure: `export/layered.ts` `layeredPlan`, records in `export/psd-layers.ts`. Checked with ag-psd (dev dependency,
+  tests only) and ImageMagick.
+  - A folder with effects becomes a group (its own opacity and blend kept as group settings) holding one baked layer,
+    `<Folder> (with effects)`, drawn by the compositor with the folder's masks and effects but not its own opacity or
+    blend, plus the original layers hidden underneath for editing.
+  - A visible mask layer on the stage wraps everything under it in an isolated (normal) group, `Masked by <mask>`, with
+    the mask as the group's layer mask (hide inverted); the mask layer stays inside, hidden. Later masks wrap earlier
+    groups. A layer straight after a mask isn't clipped.
+  - Single-layer pictures (PSD layers, PDF layers with effects) keep the bones layer (`soloDoc`), so layers bent on
+    bones come out bent. Checked by compositing the read-back PSD against the merged picture (worst channel difference
+    1.1/255).
 - **PDF** (`export/pdf.ts`, own writer): one page per frame, shapes as vector paths (brush strokes as their outline,
   text as traced outlines, particles as primitives), each layer a PDF optional content group, layer and folder opacity
   and blend modes as transparency groups (add maps to Screen). Pixel and tile layers, layers with effects, clipped
   sets and masked sets become pictures with an SMask at twice the page size (`flatPlan`). Checked with Poppler and
-  Ghostscript.
+  Ghostscript. Vector layers bent on a mesh (and layers or symbol copies holding a bent layer) become pictures through
+  the renderer (`needsPicture`/`drawingHasMesh` in `layered.ts`), so they come out bent; layers that only follow a bone
+  stay vector.
 - **`.ai`**: the same PDF with the `.ai` extension. Illustrator opens PDF-compatible files as plain artwork (every
   path editable, PDF layers as layers). There is no `AIPrivateData`, so Illustrator asks to save as a full .ai the first
   time. Checked with Poppler (pdfinfo, pdftoppm) and Ghostscript; not yet opened in a real Illustrator, Inkscape or
@@ -157,9 +170,34 @@ computer (probed by measuring). Layout measures prefix widths with the canvas, s
   IPC to FFmpeg (`prores_ks`, profile 4444, `yuva444p10le` when see-through), which writes the picked file. FFmpeg is
   found on PATH, the usual install places, or `FRAMELING_FFMPEG`; without it the card says why in plain words.
 
-Known gaps in this part: Lottie export leaves text and particles out; PDF draws pixel art bent on a mesh (rigging)
-unbent; folder effects aren't baked into PSD; a mask layer on the stage (not in a folder) comes into a PSD as a hidden
-layer; shape tweens hold text and particles as they are on the start key; SVG draws symbol particles as dots.
+Known gaps in this part: a mask layer inside a folder becomes a group mask over the whole folder in PSD (the canvas
+masks only the layers under it); baked PSD folder pictures don't follow later edits to the hidden originals.
+
+## Vector exports: what carries over
+
+`export/carries.ts` is the one table of what each format keeps (`CARRY`), and `carryWarnings(doc, format)` lists what in
+this document will become pictures or be left out. The Export window shows both under "What carries over"
+(`CarryNotes.tsx`). Keep the table in step with the writers.
+
+- **Lottie** (`export/lottie.ts`) follows the compositing plan (`buildPlan`): blend modes as `bm` (add becomes screen),
+  opacity, masks and clipping as alpha track mattes (the matte a precomp right above a precomp of what it cuts), folders
+  that isolate as precomps. Every precomp over the stage carries its own camera nulls under an offset null. Soften and
+  Shadow are Lottie's Gaussian Blur (blurriness = radius / 0.3) and Drop Shadow (softness x2, direction from x/y), which
+  lottie-web's SVG renderer, the mobile players and Skottie play; lottie-web's canvas renderer ignores effects. Other
+  effects bake the layer or folder (drawn by `renderFrame` without its own blend and opacity) into a PNG per different
+  frame, cropped, at 2x. Symbol tint recolours the precomp (a precomp per symbol and tint; the sum is linear, so
+  recolouring each shape equals washing the group). Text is traced once per letter, font and size (`sprites.ts`
+  `glyphOutline`, the Convert to shapes tracer) and each letter is a group with its own transform, so text animators
+  are transform keys. Picked over Lottie text layers because those need the font in every player and players differ a
+  lot in text support; traced letters look the same everywhere. Particles are a group per particle (static sprite path
+  at 10 units, transform keyed per frame, faded to 0 outside its life), symbol particles a precomp layer per particle.
+  Sprite keys that a straight line already hits within a small tolerance are dropped (`smoothTrack`).
+- **SVG and moving SVG** (`export/svg-look.ts`, shared): the same plan, with `mix-blend-mode`, group opacity, effects as
+  SVG filters (blur, shadow, colour matrices, glow, outline from the same ring of offsets the canvas uses), masks as
+  `<mask>` (luminance, with the content forced white or black by a filter), clipping as a mask from `<use>` of the base,
+  and tint as an `atop` flood filter. Effect settings that change are SMIL `<animate>` switching per frame.
+- `scripts/e2e/vector-check.cjs` checks all of it against `renderFrame` in Chromium, now also through lottie-web's SVG
+  renderer (effects only play there; a Lottie frame passes when either renderer matches).
 
 ## Later, and how it fits
 

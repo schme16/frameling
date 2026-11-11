@@ -6,6 +6,7 @@ import { getCommand } from '../core/registry';
 import { store, useStore } from '../core/store';
 import { EASE_PRESETS, presetOf } from '../core/ease';
 import { instanceAt, isInstance, nextKey, symbolContent } from '../core/symbols';
+import { morphNotes } from '../core/shape-tween';
 import { ActionButton, Choice, Field, Slider, Tip, Toggle } from '../canvas/controls';
 import { CurveEditor } from './CurveEditor';
 import { clearMotionPath, clearShapeHints, focusHints, editInstance, makeShapeTween, makeTween, makeTweenAsking, setTweenKind, pathFromSelection, removeTween, resetTransform, setEase, swapSymbol, updateInstances, updateTween, wouldNestInItself } from './ops';
@@ -211,6 +212,9 @@ export function TweenSection() {
   const next = nextKey(layer, cel);
   const custom = Array.isArray(tw.ease);
   const preset = presetOf(tw.ease);
+  const from = doc.drawings[cel.drawingId];
+  const to = next ? doc.drawings[next.drawingId] : undefined;
+  const notes = shape && from?.kind === 'vector' && to?.kind === 'vector' ? morphNotes(from, to) : [];
   return (
     <Section title={camera ? 'Camera in-betweens' : shape ? 'In-betweens: morph (shape tween)' : 'In-betweens (tween)'}>
       {!camera && <Choice label="How it changes" value={shape ? 'shape' : 'classic'} options={KIND_OPTIONS} onChange={(v) => setTweenKind(v)} />}
@@ -242,6 +246,9 @@ export function TweenSection() {
         </select>
       </Field>
       <CurveEditor value={tw.ease} onChange={(e) => setEase(e, `ease-${cel.id}`)} />
+      {notes.map((n) => (
+        <Tip key={n}>{n}</Tip>
+      ))}
       {shape && (
         <Field label={`Shape hints (${hints.length})`}>
           <Tip>If the morph twists or crumples, pin points together: put a lettered hint on the first key, then drag its twin to the matching spot on the last key.</Tip>

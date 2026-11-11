@@ -35,7 +35,7 @@ async function bundle() {
   });
   fs.writeFileSync(
     path.join(outDir, 'index.html'),
-    `<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;background:#fff;overflow:hidden}#svg{position:absolute;left:0;top:0;line-height:0}#lottie{position:absolute;left:0;top:0;visibility:hidden}</style></head><body><div id="svg"></div><div id="lottie"></div><script src="page.js"></script></body></html>`,
+    `<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;background:#fff;overflow:hidden}#svg{position:absolute;left:0;top:0;line-height:0}#lottie{position:absolute;left:0;top:0;visibility:hidden}#lsvg{position:absolute;left:0;top:0;visibility:hidden;background:#fff}</style></head><body><div id="svg"></div><div id="lsvg"></div><div id="lottie"></div><script src="page.js"></script></body></html>`,
   );
 }
 
@@ -77,7 +77,25 @@ app.whenReady().then(async () => {
           for (const [k, url] of Object.entries(pics)) fs.writeFileSync(path.join(outDir, `${name}-${k}-${f}.png`), Buffer.from(url.split(',')[1], 'base64'));
         }
         const svg = await ev(`check.svgCompare(${f}, ${JSON.stringify(rgba)})`);
-        const bad = lot.mean > MAX_MEAN || lot.off > MAX_OFF || svg.mean > MAX_MEAN || svg.off > MAX_OFF;
+        // Lottie through lottie-web's SVG renderer, which plays effects (the canvas renderer leaves them out).
+        const lr = await ev(`check.lsvgSeek(${f})`);
+        await ev('new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))');
+        const limg = await win.webContents.capturePage({ x: Math.round(lr.x), y: Math.round(lr.y), width: info.width, height: info.height });
+        const lsized = limg.getSize().width === info.width ? limg : limg.resize({ width: info.width, height: info.height });
+        const lb = lsized.toBitmap();
+        const lrgba = new Array(lb.length);
+        for (let i = 0; i < lb.length; i += 4) {
+          lrgba[i] = lb[i + 2];
+          lrgba[i + 1] = lb[i + 1];
+          lrgba[i + 2] = lb[i];
+          lrgba[i + 3] = lb[i + 3];
+        }
+        const lsvg = await ev(`check.svgCompare(${f}, ${JSON.stringify(lrgba)})`);
+        // Lottie passes when either renderer matches: effects only play in the SVG one.
+        const lotBad = (lot.mean > MAX_MEAN || lot.off > MAX_OFF) && (lsvg.mean > MAX_MEAN || lsvg.off > MAX_OFF);
+        const bad = lotBad || svg.mean > MAX_MEAN || svg.off > MAX_OFF;
+        if (f === frames[2] || lsvg.mean > MAX_MEAN) fs.writeFileSync(path.join(outDir, `${name}-lottiesvg-${f}.png`), lsized.toPNG());
+
         failed ||= bad;
         if (bad) {
           // Keep the pictures of a frame that's off, to look at.
@@ -85,7 +103,7 @@ app.whenReady().then(async () => {
           const pics = await ev(`check.lottiePictures(${f})`);
           for (const [k, url] of Object.entries(pics)) fs.writeFileSync(path.join(outDir, `${name}-${k}-${f}.png`), Buffer.from(url.split(',')[1], 'base64'));
         }
-        report.push({ doc: name, frame: f, lottieMean: +lot.mean.toFixed(2), lottieOff: +lot.off.toFixed(2), svgMean: +svg.mean.toFixed(2), svgOff: +svg.off.toFixed(2), bad });
+        report.push({ doc: name, frame: f, lottieMean: +lot.mean.toFixed(2), lottieOff: +lot.off.toFixed(2), svgMean: +svg.mean.toFixed(2), svgOff: +svg.off.toFixed(2), lottieSvgMean: +lsvg.mean.toFixed(2), lottieSvgOff: +lsvg.off.toFixed(2), bad });
       }
       report.push({ doc: name, lottieBytes: info.lottieBytes, svgBytes: info.svgBytes });
     }

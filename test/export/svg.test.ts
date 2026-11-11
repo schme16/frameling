@@ -74,7 +74,7 @@ describe('svg', () => {
     doc.drawings[d.id] = d;
     layer.cels.push({ id: 'c', start: 0, length: 1, drawingId: d.id });
     doc.layers = [layer];
-    expect(frameToSvg(doc, 0)).toContain('<g id="Sprite-1" opacity="0.5" shape-rendering="crispEdges">\n<rect x="0" y="0" width="2" height="2" fill="#010203"/>\n</g>');
+    expect(frameToSvg(doc, 0)).toContain('<g opacity="0.5"><g id="Sprite-1" shape-rendering="crispEdges">\n<rect x="0" y="0" width="2" height="2" fill="#010203"/>\n</g>');
   });
 
   it('skips hidden layers and empty frames, and reads short hex colours', () => {
