@@ -317,8 +317,10 @@ function Themes({ themes, strawberry }: { themes: Theme[]; strawberry: { dark: T
   };
   const row = (mode: 'dark' | 'light') => {
     const chosen = mode === 'dark' ? p.darkTheme : p.lightTheme;
+    // With Light or Dark picked, the other row isn't used, so it steps back (still pickable for later).
+    const unused = p.theme !== 'system' && p.theme !== mode;
     return (
-      <div className="ob-theme-row">
+      <div className={`ob-theme-row${unused ? ' is-unused' : ''}`}>
         <h3>
           <Icon name={mode === 'dark' ? 'moon' : 'sun'} size={14} />
           {mode === 'dark' ? 'For dark mode' : 'For light mode'}
@@ -349,17 +351,18 @@ function Themes({ themes, strawberry }: { themes: Theme[]; strawberry: { dark: T
   };
   return (
     <>
-      <div className="ob-row">
-        <span>Mode</span>
+      <div className="ob-mode">
+        <h3>Light or dark?</h3>
+        <p>{p.theme === 'system' ? 'Auto follows your computer: light in the day, dark at night if it switches.' : p.theme === 'dark' ? 'Always dark, whatever your computer does.' : 'Always light, whatever your computer does.'}</p>
         <Segmented<ThemePref>
-          label="Mode"
+          label="Light or dark"
           value={p.theme}
           onChange={(theme) => {
             setThemePreview(null);
             setPrefs({ theme });
           }}
           options={[
-            { id: 'system', label: 'System', icon: 'settings' },
+            { id: 'system', label: 'Auto', icon: 'settings' },
             { id: 'dark', label: 'Dark', icon: 'moon' },
             { id: 'light', label: 'Light', icon: 'sun' },
           ]}

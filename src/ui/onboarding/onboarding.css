@@ -460,3 +460,24 @@
     border-bottom: 1px solid var(--line-soft);
   }
 }
+
+/* The Auto / Light / Dark choice leads the theme step. */
+.ob-mode {
+  margin-bottom: 6px;
+}
+.ob-mode h3 {
+  margin: 0 0 2px;
+  font-size: 14px;
+}
+.ob-mode p {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: var(--fs-small);
+}
+.ob-theme-row.is-unused {
+  opacity: 0.5;
+}
+.ob-theme-row.is-unused:hover,
+.ob-theme-row.is-unused:focus-within {
+  opacity: 1;
+}
