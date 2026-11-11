@@ -162,11 +162,11 @@ describe('artboards: shots in order', () => {
     expect(shotAt(r.starts, 5)).toEqual({ shot: 1, frame: 1 });
   });
 
-  it('refuses shots of different sizes', () => {
+  it('joins shots of different sizes instead of refusing', () => {
     const doc = pixelDoc();
     const b = addArtboard(doc, { width: 10 });
     const r = joinShots(doc, [artboardsOf(doc)[0].id, b]);
-    expect('problem' in r && r.problem).toMatch(/different size/);
+    expect('problem' in r).toBe(false);
   });
 });
 

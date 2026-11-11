@@ -91,6 +91,12 @@
   max-height: 120px;
   overflow: auto;
 }
+.ab-export-fit {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+}
 .ab-player-body {
   display: flex;
   flex-direction: column;

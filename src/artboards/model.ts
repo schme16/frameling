@@ -6,10 +6,12 @@
  * two. Functions that change a document change the one they are given (an immer draft or a plain object).
  */
 import { current, isDraft } from 'immer';
-import type { Artboard, ArtboardContent, ClipFlow, Doc, Drawing, Id, Layer } from '../core/format';
+import type { Artboard, ArtboardContent, CameraView, ClipFlow, Doc, Drawing, Id, Layer } from '../core/format';
+import { cameraInverse, cameraViewOn } from '../core/camera';
 import { newPixelLayer, newVectorLayer, pruneDrawings, uid } from '../core/doc';
 import { rootDoc } from '../core/symbols';
 import { fileSafe } from '../export/plan';
+import { currentFit, fitPlacement, sameSize, type FitMode, type Placement } from './fit';
 
 /** The id of the artboard a document without any has. */
 export const FIRST_ID = 'artboard-1';
@@ -410,23 +412,33 @@ export function arrangeArtboards(d: Doc, columns = 0): void {
 
 // ---------------------------------------------------------------- shots in order
 
+export interface JoinOptions {
+  /** How a shot of another size fits the picture (default: whatever Preferences says, Fit). */
+  fit?: FitMode;
+  /** The picture's size (default: the first shot's). */
+  size?: { width: number; height: number };
+  /** The colour of the bars (default: each shot's own stage colour). */
+  barColor?: string | null;
+}
+
 /**
- * Several artboards one after another as one document, for playing or exporting them as a single film. Every shot
- * must be the same size. Each shot becomes a clip named after it, its markers and sounds move along with it, and the
- * stage colour of a shot that has its own goes in as a filled layer underneath.
+ * Several artboards one after another as one document, for playing or exporting them as a single film. The picture
+ * is the first shot's size (or `size`); a shot of another size is fitted into it, with bars (the stage colour) or
+ * cropped to fill (see fit.ts), by a camera key set for each of its frames. Each shot becomes a clip named after it,
+ * its markers and sounds move along with it, and the stage colour of a shot that has its own goes in as a filled
+ * layer underneath.
  */
-export function joinShots(doc: Doc, ids: Id[]): { doc: Doc; starts: number[] } | { problem: string } {
+export function joinShots(doc: Doc, ids: Id[], opts: JoinOptions = {}): { doc: Doc; starts: number[] } | { problem: string } {
   const root = rootDoc(doc);
   const shots = ids.map((id) => findArtboard(root, id)).filter((a): a is Artboard => !!a);
   if (!shots.length) return { problem: 'Pick at least one artboard.' };
   const views = shots.map((a) => artboardDoc(root, a.id));
-  const w = views[0].width;
-  const h = views[0].height;
-  const odd = shots.find((_, i) => views[i].width !== w || views[i].height !== h);
-  if (odd) return { problem: `"${odd.name}" is a different size. Shots play one after another in one picture, so they need to be the same size (${w} x ${h}).` };
+  const w = Math.max(1, Math.round(opts.size?.width ?? views[0].width));
+  const h = Math.max(1, Math.round(opts.size?.height ?? views[0].height));
+  const mode = opts.fit ?? currentFit();
   const bgs = new Set(views.map((v) => v.background));
   const oneBg = bgs.size === 1;
-  const out: Doc = { ...views[0], name: fileSafe(root.name), layers: [], clips: [], markers: [], drawings: { ...root.drawings } };
+  const out: Doc = { ...views[0], width: w, height: h, name: fileSafe(root.name), layers: [], clips: [], markers: [], drawings: { ...root.drawings } };
   if (root.folders) out.folders = { ...root.folders };
   delete out.flow;
   delete out.audio;
@@ -436,17 +448,20 @@ export function joinShots(doc: Doc, ids: Id[]): { doc: Doc; starts: number[] } |
   if (!oneBg) out.background = null;
   const starts: number[] = [];
   let at = 0;
-  // One camera for the whole film: each shot's own keys, or the plain view where a shot has none.
+  // One camera for the whole film: each shot's own keys, or the plain view where a shot has none. A shot of another
+  // size gets one too: it is how it is scaled and centred into the picture.
+  const fitted = views.map((v) => !sameSize(v.width, v.height, w, h));
   let camera: Layer | null = null;
-  if (views.some((v) => v.layers.some((l) => l.kind === 'camera' && l.visible))) camera = { id: uid('l'), name: 'Camera', kind: 'camera', visible: true, locked: false, opacity: 1, cels: [] };
+  if (fitted.some(Boolean) || views.some((v) => v.layers.some((l) => l.kind === 'camera' && l.visible))) camera = { id: uid('l'), name: 'Camera', kind: 'camera', visible: true, locked: false, opacity: 1, cels: [] };
   views.forEach((v, k) => {
     const shot = shots[k];
     starts.push(at);
     const len = v.length;
     const tag = (s: string) => `${shot.id}:${s}`;
+    const place = fitted[k] ? fitPlacement(v.width, v.height, w, h, mode) : null;
     if (!oneBg && v.background) {
       const dId = tag('bg');
-      out.drawings[dId] = { id: dId, kind: 'vector', shapes: [{ id: dId, type: 'path', paths: [{ closed: true, points: [{ x: 0, y: 0 }, { x: w, y: 0 }, { x: w, y: h }, { x: 0, y: h }] }], fill: v.background, stroke: null, opacity: 1 }] };
+      out.drawings[dId] = { id: dId, kind: 'vector', shapes: [{ id: dId, type: 'path', paths: [{ closed: true, points: [{ x: 0, y: 0 }, { x: v.width, y: 0 }, { x: v.width, y: v.height }, { x: 0, y: v.height }] }], fill: v.background, stroke: null, opacity: 1 }] };
       out.layers.push({ id: tag('bg'), name: `${shot.name} background`, kind: 'vector', visible: true, locked: false, opacity: 1, cels: [{ id: tag('bgc'), start: at, length: len, drawingId: dId }] });
     }
     const cam = v.layers.find((l) => l.kind === 'camera' && l.visible);
@@ -462,13 +477,27 @@ export function joinShots(doc: Doc, ids: Id[]): { doc: Doc; starts: number[] } |
       out.layers.push(nl);
     }
     if (camera) {
-      if (cam) camera.cels.push(...shiftCels(cam, at, len, tag));
-      else {
+      if (cam) {
+        const cels = shiftCels(cam, at, len, tag);
+        if (place) {
+          // The shot's own camera, zoomed by the fit (zoom is a ratio, so it scales every key and in-between alike).
+          for (const c of cels) {
+            const src = v.drawings[c.drawingId];
+            if (src?.kind !== 'camera') continue;
+            const nd = `${c.drawingId}:fit${k}`;
+            out.drawings[nd] = { id: nd, kind: 'camera', view: { ...src.view, zoom: src.view.zoom * place.k } };
+            c.drawingId = nd;
+          }
+        }
+        camera.cels.push(...cels);
+      } else {
         const dId = tag('cam');
-        out.drawings[dId] = { id: dId, kind: 'camera', view: { x: w / 2, y: h / 2, zoom: 1, rotation: 0 } };
+        out.drawings[dId] = { id: dId, kind: 'camera', view: place ? { x: v.width / 2, y: v.height / 2, zoom: place.k, rotation: 0 } : { x: w / 2, y: h / 2, zoom: 1, rotation: 0 } };
         camera.cels.push({ id: tag('camc'), start: at, length: len, drawingId: dId });
       }
     }
+    const barColor = opts.barColor === undefined ? v.background : opts.barColor;
+    if (place?.bars.length && barColor) out.layers.push(barsLayer(out, v, cam, place, barColor, { w, h }, at, len, tag, shot.name));
     out.clips.push({ id: tag('clip'), name: shot.name, start: at, end: at + len - 1, loop: false });
     for (const m of v.markers) if (m.frame < len) out.markers.push({ ...m, id: tag(m.id), frame: m.frame + at });
     for (const a of v.audio ?? []) (out.audio ??= []).push({ ...a, id: tag(a.id), start: a.start + at });
@@ -479,6 +508,40 @@ export function joinShots(doc: Doc, ids: Id[]): { doc: Doc; starts: number[] } |
   out.length = Math.max(1, at);
   pruneDrawings(out);
   return { doc: out, starts };
+}
+
+/**
+ * The bars for a shot fitted with bars: a layer on top of the shot's others, drawn where the camera will put the
+ * edges of the picture (so they stay put whatever the shot's own camera does, and hide what hangs off the stage).
+ */
+function barsLayer(out: Doc, v: Doc, cam: Layer | undefined, place: Placement, color: string, pic: { w: number; h: number }, at: number, len: number, tag: (s: string) => string, name: string): Layer {
+  const reach = 2 * Math.max(pic.w, pic.h);
+  const cels: Layer['cels'] = [];
+  let prev = '';
+  for (let f = 0; f < len; f++) {
+    const own = cam ? cameraViewOn(v, cam, f) : undefined;
+    const view: CameraView = own ? { ...own, zoom: own.zoom * place.k } : { x: v.width / 2, y: v.height / 2, zoom: place.k, rotation: 0 };
+    const key = `${view.x},${view.y},${view.zoom},${view.rotation}`;
+    if (key === prev) {
+      cels[cels.length - 1].length++;
+      continue;
+    }
+    prev = key;
+    // The picture's edges are fixed on screen; the stage-space shape that lands there is found by undoing the camera.
+    const inv = cameraInverse({ width: pic.w, height: pic.h }, view);
+    const at2 = (x: number, y: number) => ({ x: inv[0] * x + inv[2] * y + inv[4], y: inv[1] * x + inv[3] * y + inv[5] });
+    const paths = place.bars.map((b) => {
+      const x0 = b.x <= 0 ? -reach : b.x;
+      const y0 = b.y <= 0 ? -reach : b.y;
+      const x1 = b.x + b.w >= pic.w ? pic.w + reach : b.x + b.w;
+      const y1 = b.y + b.h >= pic.h ? pic.h + reach : b.y + b.h;
+      return { closed: true, points: [at2(x0, y0), at2(x1, y0), at2(x1, y1), at2(x0, y1)] };
+    });
+    const id = tag(`bars${cels.length}`);
+    out.drawings[id] = { id, kind: 'vector', shapes: [{ id, type: 'path', paths, fill: color, stroke: null, opacity: 1 }] };
+    cels.push({ id: tag(`barc${cels.length}`), start: at + f, length: 1, drawingId: id });
+  }
+  return { id: tag('bars'), name: `${name} bars`, kind: 'vector', visible: true, locked: false, opacity: 1, cels };
 }
 
 /** A layer's cels moved `by` frames, cut at the shot's end, with no in-betweens running into the next shot. */

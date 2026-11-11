@@ -1,6 +1,8 @@
 // The Export dialog's "Which artboards" row. Only shows when the document has more than one artboard.
 import type { Id } from '../core/format';
 import { useStore } from '../core/store';
+import { setChoice, useChoice } from '../core/choices';
+import type { FitMode } from './fit';
 import type { ExportSettings } from '../export/types';
 import { artboardsOf, hasArtboards, activeArtboard, sizeOf } from './model';
 import { artboardExport, currentArtboardExport, modeOff, setArtboardExport, type ArtboardExportMode } from './export';
@@ -8,6 +10,7 @@ import { artboardExport, currentArtboardExport, modeOff, setArtboardExport, type
 export function ArtboardExportPicker({ settings }: { settings: ExportSettings }) {
   const doc = useStore((s) => s.doc);
   artboardExport.use((c) => c);
+  const fit = useChoice<FitMode>('artboards.fit');
   if (!hasArtboards(doc) || doc.editing?.length) return null;
   const c = currentArtboardExport(doc);
   const list = artboardsOf(doc);
@@ -24,6 +27,8 @@ export function ArtboardExportPicker({ settings }: { settings: ExportSettings })
   };
   const mode = modes.find((m) => m.id === c.mode && !m.off) ? c.mode : 'one';
   const total = list.filter((a) => chosen.has(a.id)).reduce((t, a) => t + (a.content ? a.content.length : doc.length), 0);
+  const firstPick = list.find((a) => chosen.has(a.id));
+  const firstSize = firstPick ? `${sizeOf(doc, firstPick).w} x ${sizeOf(doc, firstPick).h}` : '';
   const sizes = new Set(list.filter((a) => chosen.has(a.id)).map((a) => Object.values(sizeOf(doc, a)).join('x')));
   return (
     <fieldset className="ab-export">
@@ -45,7 +50,21 @@ export function ArtboardExportPicker({ settings }: { settings: ExportSettings })
           ))}
         </div>
       )}
-      {mode === 'joined' && sizes.size > 1 && <p className="ex-note">These artboards are different sizes. To play as one, they all need the same size.</p>}
+      {mode === 'joined' && sizes.size > 1 && (
+        <div className="ab-export-fit">
+          <div className="ex-seg" role="group" aria-label="Shots of different sizes">
+            <button type="button" className={fit === 'bars' ? 'ex-on' : ''} aria-pressed={fit === 'bars'} title="Show the whole shot, with bars at the sides or top and bottom" onClick={() => setChoice('artboards.fit', 'bars')}>
+              Fit (bars)
+            </button>
+            <button type="button" className={fit === 'fill' ? 'ex-on' : ''} aria-pressed={fit === 'fill'} title="Cover the whole picture and crop what hangs over" onClick={() => setChoice('artboards.fit', 'fill')}>
+              Fill (crop)
+            </button>
+          </div>
+          <p className="ex-note">
+            These artboards are different sizes, so the picture is the first one's size ({firstSize}). {fit === 'bars' ? 'Each shot is shown whole, with bars (its stage colour) where it does not fill the picture.' : 'Each shot covers the picture and what hangs over is cropped.'} {total} frames in all.
+          </p>
+        </div>
+      )}
       {mode === 'joined' && sizes.size <= 1 && <p className="ex-note">{total} frames in all, one artboard after another. The size and summary below are for one artboard.</p>}
       {mode === 'atlas' && <p className="ex-note">Each artboard becomes an animation in the JSON, named after it; its clips come along as "artboard/clip".</p>}
       {mode === 'each' && <p className="ex-note">{chosen.size} files, each named after its artboard (or its export name).</p>}

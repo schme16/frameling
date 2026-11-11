@@ -1,12 +1,14 @@
-// "Play all in order": the artboards one after another, like shots in a film, in a window of their own. Each shot
-// plays at its own size, fitted into the window, for its own length. Nothing in the document changes.
+// "Play all in order": the artboards one after another, like shots in a film, in a window of their own. The picture is
+// the first shot's size; a shot of another size gets bars or is cropped (Fit or Fill). Nothing in the document changes.
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Doc, Id } from '../core/format';
 import { store } from '../core/store';
+import { setChoice, useChoice } from '../core/choices';
 import { renderFrame } from '../core/render';
 import { Modal, mountModal } from '../io/mount';
 import { leaveTileEdit } from '../tiles/tileEdit';
 import { artboardDoc, artboardsOf, shotAt } from './model';
+import { fitPlacement, sameSize, type FitMode } from './fit';
 
 export interface Reel {
   shots: { id: Id; name: string; doc: Doc }[];
@@ -41,6 +43,8 @@ function ShotsPlayer({ close }: { close: () => void }) {
   const [playing, setPlaying] = useState(true);
   const [loop, setLoop] = useState(true);
   const clock = useRef({ t0: 0, from: 0 });
+  const fit = useChoice<FitMode>('artboards.fit');
+  const mixed = reel.shots.some((s) => !sameSize(s.doc.width, s.doc.height, reel.shots[0].doc.width, reel.shots[0].doc.height));
 
   useEffect(() => {
     if (!playing) return;
@@ -77,14 +81,30 @@ function ShotsPlayer({ close }: { close: () => void }) {
     g.setTransform(1, 0, 0, 1, 0, 0);
     g.clearRect(0, 0, W, H);
     const d = shot.doc;
-    const k = Math.min(W / d.width, H / d.height);
-    const ox = (W - d.width * k) / 2;
-    const oy = (H - d.height * k) / 2;
+    // The picture is the first shot's size, like the joined export. A shot of another size is fitted into it.
+    const pic = reel.shots[0].doc;
+    const k = Math.min(W / pic.width, H / pic.height);
+    const ox = (W - pic.width * k) / 2;
+    const oy = (H - pic.height * k) / 2;
     g.setTransform(k, 0, 0, k, ox, oy);
     g.imageSmoothingEnabled = !d.layers.some((l) => l.kind === 'pixel');
+    // Bars and stage are the shot's own colour, so they read as one.
     g.fillStyle = d.background ?? '#ffffff';
-    g.fillRect(0, 0, d.width, d.height);
+    g.fillRect(0, 0, pic.width, pic.height);
+    const p = sameSize(d.width, d.height, pic.width, pic.height) ? null : fitPlacement(d.width, d.height, pic.width, pic.height, fit);
+    g.save();
+    g.beginPath();
+    if (p) {
+      g.rect(Math.max(0, p.x), Math.max(0, p.y), Math.min(pic.width, p.w), Math.min(pic.height, p.h));
+      g.clip();
+      g.translate(p.x, p.y);
+      g.scale(p.k, p.k);
+    } else {
+      g.rect(0, 0, d.width, d.height);
+      g.clip();
+    }
     renderFrame(g, d, at.frame, { background: false, layerFilter: (l) => !l.reference });
+    g.restore();
   });
 
   if (!shot) return null;
@@ -113,6 +133,16 @@ function ShotsPlayer({ close }: { close: () => void }) {
           <span className="io-muted">
             {shot.name}, frame {at.frame + 1} of {shot.doc.length}
           </span>
+          {mixed && (
+            <div className="ex-seg" role="group" aria-label="Shots of different sizes">
+              <button type="button" className={fit === 'bars' ? 'ex-on' : ''} aria-pressed={fit === 'bars'} title="Show the whole shot, with bars" onClick={() => setChoice('artboards.fit', 'bars')}>
+                Fit (bars)
+              </button>
+              <button type="button" className={fit === 'fill' ? 'ex-on' : ''} aria-pressed={fit === 'fill'} title="Cover the picture and crop what hangs over" onClick={() => setChoice('artboards.fit', 'fill')}>
+                Fill (crop)
+              </button>
+            </div>
+          )}
           <label className="ex-check">
             <input type="checkbox" checked={loop} onChange={(e) => setLoop(e.target.checked)} />
             <span>Loop</span>
