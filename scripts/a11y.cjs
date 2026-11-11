@@ -170,7 +170,9 @@ const FOCUS_PROBE = `
   const sunny = getComputedStyle(probe).color;
   probe.remove();
   const after = getComputedStyle(el, '::after').backgroundColor;
-  const ring = has(cs) || (el.parentElement && has(getComputedStyle(el.parentElement))) || after === focusColour || after === sunny;
+  // In a drawing (SVG), the ring is the shape's outline turning the focus colour.
+  const strokes = el instanceof SVGElement ? [el, ...el.querySelectorAll('rect, circle, path, line')].map((x) => getComputedStyle(x).stroke) : [];
+  const ring = has(cs) || (el.parentElement && has(getComputedStyle(el.parentElement))) || after === focusColour || after === sunny || strokes.includes(focusColour);
   const name = el.getAttribute('aria-label') || el.getAttribute('title') || (el.textContent || '').trim().slice(0, 30) || el.tagName;
   const r = el.getBoundingClientRect();
   if (!el.dataset.a11yStop) el.dataset.a11yStop = String((window.__a11yN = (window.__a11yN || 0) + 1));
@@ -200,6 +202,25 @@ async function tabWalk(win, max, { inDialog = false } = {}) {
     if (!f.ring && f.visible) noRing.push(`${f.sel} "${f.name}"`);
   }
   return { seen, noRing, stuck };
+}
+
+// Tab through one panel from its first control: every stop needs a ring.
+async function panelKeys(win, scope) {
+  const first = await js(win, `const p = document.querySelector(${JSON.stringify(scope)}); const f = p && [...p.querySelectorAll('button, input, select, textarea, [href], [tabindex]')].find((x) => x.tabIndex >= 0 && !x.disabled && x.getClientRects().length); f?.focus(); return !!f`);
+  if (!first) return null;
+  await key(win, 'Tab', ['shift']);
+  await key(win, 'Tab');
+  const noRing = [];
+  let stops = 0;
+  for (let i = 0; i < 60; i++) {
+    const f = await js(win, `const inside = !!document.activeElement?.closest(${JSON.stringify(scope)}); if (!inside) return null; ${FOCUS_PROBE}`);
+    if (!f) break;
+    stops++;
+    if (!f.ring && f.visible) noRing.push(`${f.sel} "${f.name}"`);
+    await key(win, 'Tab');
+    await sleep(100);
+  }
+  return { problems: noRing.length ? [`no visible focus ring: ${[...new Set(noRing)].join(', ')}`] : [], stops };
 }
 
 async function dialogKeys(win) {
@@ -256,6 +277,11 @@ app.whenReady().then(async () => {
     await js(win, `__frameling.run('select.all')`);
     await sleep(250);
     add(`${name} (selected)`, await axe(win, `#ui-panel-${id}`));
+    const k = await panelKeys(win, `#ui-panel-${id}`);
+    if (k) {
+      report.keyboard.push({ name, ...k });
+      if (k.problems.length) console.log(`   keys x ${k.problems.join('; ')}`);
+    }
   }
 
   // Every tool's options.
