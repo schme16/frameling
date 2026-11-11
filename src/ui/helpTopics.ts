@@ -132,13 +132,28 @@ Press the small **x** on a shortcut to remove it. **Reset** puts a command back 
     keywords: ['settings', 'options', 'config'],
     body: `Open it with **Ctrl+,** (**Cmd+,** on a Mac), or **View, Preferences**.
 
-There are three pages:
+There are four pages:
 
 - **General**: [theme and look](help:look-and-feel), sounds, motion and the welcome sheet.
+- **Behaviour**: [the choices Frameling asked you about](help:behaviour), like what N does.
 - **Keyboard**: see and change [shortcuts](help:keyboard-shortcuts).
 - **Workspaces**: save and switch [panel layouts](help:workspaces).
 
 Changes happen straight away and are remembered for next time.`,
+  },
+  {
+    id: 'behaviour',
+    title: 'Behaviour choices',
+    section: 'Settings',
+    summary: 'Some things people like differently. Frameling asks the first time, then remembers.',
+    keywords: ['ask', 'remember', 'choice', 'behaviour', 'behavior', 'preference', 'held', 'space', 'wheel'],
+    body: `Animators work in different ways. For things like "should a new drawing start blank or as a copy?", Frameling asks you the first time it comes up, with a short explanation of each option.
+
+Tick **Remember my choice** and it won't ask again. Untick it to be asked again next time.
+
+## Changing your mind
+
+Open **Preferences** (**Ctrl+,**) and choose **Behaviour**. Every choice is listed there. Pick a different answer, or pick **Ask me** to be asked again next time.`,
   },
   {
     id: 'look-and-feel',

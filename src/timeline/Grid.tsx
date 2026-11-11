@@ -1,4 +1,6 @@
 import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent as RPointerEvent } from 'react';
+import { withChoice } from '../core/choices';
+import { clashFor, type HoldChoice } from './choices';
 import { celAt } from '../core/doc';
 import type { Cel, Clip, Id, Layer } from '../core/format';
 import { store, useStore } from '../core/store';
@@ -381,10 +383,16 @@ export function TimelineBody() {
     setGhost(null);
     if (!d) return;
     if (main.current?.hasPointerCapture(e.pointerId)) main.current.releasePointerCapture(e.pointerId);
-    const clash = e.altKey ? 'trim' : 'push';
+    // Push later drawings along or cover them: the remembered choice, and Alt does the other one.
+    const alt = e.altKey;
+    const withClash = (fn: (clash: 'push' | 'trim') => void) =>
+      withChoice<HoldChoice>('timeline.holdLonger', (choice) => {
+        const c = clashFor(choice);
+        fn(alt ? (c === 'push' ? 'trim' : 'push') : c);
+      });
     if (d.kind === 'length' && g?.kind === 'length') ops.setDocLength(g.length);
-    else if (d.kind === 'move' && d.moved && g?.kind === 'cel') say(ops.moveCel(d.layerId, d.celId, g.start, clash, g.layerId !== d.layerId ? g.layerId : undefined));
-    else if (d.kind === 'resize' && g?.kind === 'cel') say(ops.resizeCel(d.layerId, d.celId, g.length, clash));
+    else if (d.kind === 'move' && d.moved && g?.kind === 'cel') withClash((clash) => say(ops.moveCel(d.layerId, d.celId, g.start, clash, g.layerId !== d.layerId ? g.layerId : undefined)));
+    else if (d.kind === 'resize' && g?.kind === 'cel') withClash((clash) => say(ops.resizeCel(d.layerId, d.celId, g.length, clash)));
     else if (d.kind === 'marker') {
       if (d.moved && g?.kind === 'marker') ops.moveMarker(d.id, g.frame);
       else {

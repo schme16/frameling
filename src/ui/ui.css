@@ -2013,3 +2013,86 @@ body.ui-resizing * {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+/* Ask-the-first-time choices (ChoiceDialog.tsx) and Preferences > Behaviour. */
+.ui-spacer {
+  flex: 1;
+}
+.ui-choice-q {
+  margin: 0 0 14px;
+  line-height: 1.5;
+}
+.ui-choice-opts {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ui-choice-opt {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  text-align: left;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel-2);
+  cursor: pointer;
+  transition: border-color 120ms var(--ease), transform 120ms var(--ease-bounce);
+}
+.ui-choice-opt:hover {
+  border-color: color-mix(in srgb, var(--sunny) 50%, var(--line));
+}
+.ui-choice-opt.is-chosen {
+  border-color: var(--sunny);
+  background: color-mix(in srgb, var(--sunny) 12%, var(--panel-2));
+}
+.ui-choice-dot {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  border-radius: 50%;
+  border: 2px solid var(--faint);
+}
+.ui-choice-opt.is-chosen .ui-choice-dot {
+  border-color: var(--sunny);
+  background: radial-gradient(var(--sunny) 0 45%, transparent 50%);
+}
+.ui-choice-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.ui-choice-text span {
+  color: var(--muted);
+  font-size: var(--fs-small);
+  line-height: 1.45;
+}
+.ui-choice-remember {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 14px;
+  color: var(--muted);
+  font-size: var(--fs-small);
+}
+.ui-choice-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+.ui-behaviour h3 {
+  margin: 18px 0 6px;
+  font-size: var(--fs-small);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+.ui-behaviour select {
+  max-width: 220px;
+  padding: 6px 8px;
+  border-radius: var(--radius-small);
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+}

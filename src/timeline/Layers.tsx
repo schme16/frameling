@@ -147,6 +147,16 @@ const LayerRow = memo(function LayerRow({ layer, active, editing, dropMark, onDr
       </button>
       <button
         type="button"
+        className={`tl-icon-btn tl-layer-onion${layer.onion === false ? ' is-off' : ''}`}
+        title={layer.onion === false ? 'Show this layer in the onion skin' : 'Leave this layer out of the onion skin (handy for backgrounds)'}
+        aria-label={layer.onion === false ? 'Show in onion skin' : 'Leave out of onion skin'}
+        aria-pressed={layer.onion !== false}
+        onClick={(e) => (e.stopPropagation(), ops.setLayerOnion(layer.id, layer.onion === false))}
+      >
+        <Icon name="onion" size={15} />
+      </button>
+      <button
+        type="button"
         className="tl-icon-btn tl-more"
         title="More: see-through slider, move up or down, duplicate, delete"
         aria-label="More layer options"

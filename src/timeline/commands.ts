@@ -1,3 +1,5 @@
+import { withChoice } from '../core/choices';
+import { clashFor, type FrameScopeChoice, type HoldChoice, type NewKeyChoice } from './choices';
 /** Everything you can do from the timeline as commands: they feed the shortcuts, the palette and the tooltips. */
 import { registerCommands } from '../core/registry';
 import { findLayer } from '../core/doc';
@@ -21,8 +23,17 @@ const exposure = (n: number) => ({
   description: `Show this drawing for ${n} frame${n === 1 ? '' : 's'} before the next one.`,
   help: 'timeline-frames',
   keywords: ['exposure', 'hold', 'twos', 'threes', 'ones', 'duration'],
-  run: () => void say(ops.setExposure(n)),
+  run: () => withChoice<HoldChoice>('timeline.holdLonger', (c) => void say(ops.setExposure(n, undefined, undefined, clashFor(c)))),
 });
+
+/** Adds or removes a frame on every layer or just this one, per the remembered choice (`other` flips it, for Alt). */
+function frameEdit(kind: 'insert' | 'remove', other: boolean) {
+  withChoice<FrameScopeChoice>('timeline.frameScope', (scope) => {
+    const all = (scope === 'all') !== other;
+    if (kind === 'insert') say(all ? ops.insertFrameAll() : ops.insertFrame());
+    else say(all ? ops.removeFrameAll() : ops.removeFrame());
+  });
+}
 
 registerCommands([
   {
@@ -82,13 +93,13 @@ registerCommands([
   },
   {
     id: 'timeline.newKey',
-    label: 'New blank drawing here (new key)',
+    label: 'New drawing here (new key)',
     category: 'Timeline',
     keys: ['N'],
-    description: 'Start a fresh, empty drawing on this frame. A held drawing is split in two.',
+    description: 'Start a new drawing on this frame, blank or as a copy (your choice in Preferences, Behaviour). A held drawing is split in two.',
     help: 'timeline-frames',
-    keywords: ['keyframe', 'blank', 'new frame', 'empty'],
-    run: () => void say(ops.newBlankKey()),
+    keywords: ['keyframe', 'blank', 'new frame', 'empty', 'copy'],
+    run: () => withChoice<NewKeyChoice>('timeline.newKey', (c) => void say(ops.newBlankKey(undefined, undefined, c === 'copy'))),
   },
   {
     id: 'timeline.duplicateKey',
@@ -109,20 +120,38 @@ registerCommands([
     label: 'Add a frame (hold one longer)',
     category: 'Timeline',
     keys: ['='],
-    description: 'Show this drawing for one more frame. Everything after it moves along.',
+    description: 'Show this drawing for one more frame. Everything after it moves along. Every layer or just this one, as you chose; hold Alt for the other.',
     help: 'timeline-frames',
     keywords: ['insert', 'extend', 'longer'],
-    run: () => void say(ops.insertFrame()),
+    run: () => frameEdit('insert', false),
+  },
+  {
+    id: 'timeline.insertFrameOther',
+    label: 'Add a frame (the other way: all layers or just this one)',
+    category: 'Timeline',
+    keys: ['Alt+='],
+    description: 'Like Add a frame, but on every layer if you usually do one, or one layer if you usually do all.',
+    help: 'timeline-frames',
+    run: () => frameEdit('insert', true),
   },
   {
     id: 'timeline.removeFrame',
     label: 'Remove a frame',
     category: 'Timeline',
     keys: ['-'],
-    description: 'Take one frame out of this layer. Everything after it moves back.',
+    description: 'Take one frame out. Everything after it moves back. Every layer or just this one, as you chose; hold Alt for the other.',
     help: 'timeline-frames',
     keywords: ['delete frame', 'shorter'],
-    run: () => void say(ops.removeFrame()),
+    run: () => frameEdit('remove', false),
+  },
+  {
+    id: 'timeline.removeFrameOther',
+    label: 'Remove a frame (the other way: all layers or just this one)',
+    category: 'Timeline',
+    keys: ['Alt+-'],
+    description: 'Like Remove a frame, but on every layer if you usually do one, or one layer if you usually do all.',
+    help: 'timeline-frames',
+    run: () => frameEdit('remove', true),
   },
   exposure(1),
   exposure(2),

@@ -106,15 +106,37 @@ export function removeFrame(layerId?: Id, frame?: number): Outcome {
   return edit('Remove a frame', t.layerId, (d) => core.removeFrame(d, t.layerId, t.frame));
 }
 
+/** Adds a frame at the playhead on every unlocked layer, in one undo step (like adding a page to the whole flipbook). */
+export function insertFrameAll(frame?: number): Outcome {
+  const at = frame ?? store().get().ui.frame;
+  let any = false;
+  store().update('Add a frame (all layers)', (d) => {
+    for (const l of d.layers) if (!l.locked && core.insertFrame(d, l.id, at)) any = true;
+  });
+  return any ? ok() : no('nothing-here');
+}
+
+/** Removes the frame at the playhead from every unlocked layer, in one undo step. */
+export function removeFrameAll(frame?: number): Outcome {
+  const at = frame ?? store().get().ui.frame;
+  let any = false;
+  const before = store().get().doc;
+  store().update('Remove a frame (all layers)', (d) => {
+    for (const l of d.layers) if (!l.locked && core.removeFrame(d, l.id, at)) any = true;
+  });
+  if (!any || store().get().doc === before) return no('nothing-here');
+  return ok();
+}
+
 const ON: Record<number, string> = { 1: ' (on ones)', 2: ' (on twos)', 3: ' (on threes)', 4: ' (on fours)' };
 
 /** Holds the drawing at the frame for `frames` frames (1 = on ones, 2 = on twos...). */
-export function setExposure(frames: number, layerId?: Id, frame?: number): Outcome {
+export function setExposure(frames: number, layerId?: Id, frame?: number, clash: Clash = 'push'): Outcome {
   const t = target(layerId, frame);
   if (!t) return no('no-layer');
   const layer = findLayer(store().get().doc, t.layerId);
   if (layer && !celAt(layer, t.frame)) return no('nothing-here');
-  return edit(`Hold for ${frames} frame${frames === 1 ? '' : 's'}${ON[frames] ?? ''}`, t.layerId, (d) => core.setExposure(d, t.layerId, t.frame, frames));
+  return edit(`Hold for ${frames} frame${frames === 1 ? '' : 's'}${ON[frames] ?? ''}`, t.layerId, (d) => core.setExposure(d, t.layerId, t.frame, frames, clash));
 }
 
 export function moveCel(layerId: Id, celId: Id, start: number, clash: Clash = 'push', toLayerId?: Id): Outcome {
@@ -186,6 +208,10 @@ export function setLayerVisible(layerId: Id, visible: boolean): Outcome {
 
 export function setLayerLocked(layerId: Id, locked: boolean): Outcome {
   return simple(locked ? 'Lock layer' : 'Unlock layer', (d) => core.setLayerLocked(d, layerId, locked));
+}
+
+export function setLayerOnion(layerId: Id, onion: boolean): Outcome {
+  return simple(onion ? 'Show layer in onion skin' : 'Leave layer out of onion skin', (d) => core.setLayerOnion(d, layerId, onion));
 }
 
 /** Drag a slider and it is one undo step. */

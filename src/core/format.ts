@@ -49,6 +49,8 @@ export interface BaseLayer {
   locked: boolean;
   /** 0 to 1. */
   opacity: number;
+  /** Show this layer's frames around the current one in the onion skin (missing = yes). */
+  onion?: boolean;
   /**
    * Cels on this layer, sorted by `start`, never overlapping. A frame with no cel covering it is empty.
    */

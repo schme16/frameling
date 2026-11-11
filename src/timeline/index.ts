@@ -1,5 +1,6 @@
 // Registers the timeline area's commands, panels, tools and help topics.
 import { registerPanel } from '../core/registry';
+import './choices';
 import './commands';
 import './help';
 import { installPlayback } from './playback';

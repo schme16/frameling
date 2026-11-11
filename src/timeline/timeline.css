@@ -758,3 +758,8 @@
     transition: none;
   }
 }
+
+/* Per-layer onion skin switch: faded when the layer is left out. */
+.tl-layer-onion.is-off {
+  opacity: 0.35;
+}

@@ -11,9 +11,11 @@ import { Modal } from './Modal';
 import { closePrefs, overlays, type PrefsPage } from './overlays';
 import { setPrefs, usePrefs, type LookPref, type ThemePref } from './prefs';
 import { toast } from './toast';
+import { BehaviourPage } from './ChoiceDialog';
 
 const PAGES: { id: PrefsPage; label: string; icon: string; help: string }[] = [
   { id: 'general', label: 'General', icon: 'settings', help: 'look-and-feel' },
+  { id: 'behaviour', label: 'Behaviour', icon: 'sliders', help: 'behaviour' },
   { id: 'keyboard', label: 'Keyboard', icon: 'keyboard', help: 'keyboard-shortcuts' },
   { id: 'workspaces', label: 'Workspaces', icon: 'workspace', help: 'workspaces' },
 ];
@@ -40,6 +42,7 @@ function Prefs({ page, commandId }: { page: PrefsPage; commandId?: string }) {
         </nav>
         <div className="ui-prefs-page" data-help={active.help}>
           {current === 'general' && <GeneralPage />}
+          {current === 'behaviour' && <BehaviourPage />}
           {current === 'keyboard' && <KeyboardPage focusId={commandId} />}
           {current === 'workspaces' && <WorkspacesPage />}
         </div>

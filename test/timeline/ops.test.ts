@@ -549,3 +549,43 @@ describe('applied ops: undo, labels and locking', () => {
     }
   });
 });
+
+describe('onion skin per layer', () => {
+  it('turns a layer out of the onion skin and back, one undo step each', async () => {
+    const { newDoc } = await import('../../src/core/doc');
+    const { resetStore } = await import('../../src/core/store');
+    const ops = await import('../../src/timeline/ops');
+    const s = resetStore(newDoc());
+    const id = s.get().doc.layers[0].id;
+    expect(ops.setLayerOnion(id, false).ok).toBe(true);
+    expect(s.get().doc.layers[0].onion).toBe(false);
+    expect(ops.setLayerOnion(id, false).ok).toBe(false);
+    ops.setLayerOnion(id, true);
+    expect(s.get().doc.layers[0].onion).toBeUndefined();
+    s.undo();
+    expect(s.get().doc.layers[0].onion).toBe(false);
+  });
+});
+
+describe('frames on every layer', () => {
+  it('adds and removes a frame on all unlocked layers in one undo step', async () => {
+    const { newDoc, newVectorDrawing, newVectorLayer } = await import('../../src/core/doc');
+    const { resetStore } = await import('../../src/core/store');
+    const doc = newDoc();
+    doc.layers.push(newVectorLayer('B'), newVectorLayer('C'));
+    doc.layers[2].locked = true;
+    for (const l of doc.layers) {
+      const d = newVectorDrawing();
+      doc.drawings[d.id] = d;
+      l.cels.push({ id: 'c' + l.id, start: 0, length: 2, drawingId: d.id });
+    }
+    const s = resetStore(doc);
+    s.setUi({ frame: 0 });
+    expect(ops.insertFrameAll().ok).toBe(true);
+    expect(s.get().doc.layers.map((l) => l.cels[0].length)).toEqual([3, 3, 2]);
+    expect(ops.removeFrameAll().ok).toBe(true);
+    expect(s.get().doc.layers.map((l) => l.cels[0].length)).toEqual([2, 2, 2]);
+    s.undo();
+    expect(s.get().doc.layers.map((l) => l.cels[0].length)).toEqual([3, 3, 2]);
+  });
+});

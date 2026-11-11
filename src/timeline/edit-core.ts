@@ -212,12 +212,12 @@ export function removeFrame(doc: Doc, layerId: Id, frame: number): boolean {
   return true;
 }
 
-/** Sets how long the drawing at `frame` is held (1 = on ones, 2 = on twos...). Later cels get pushed along. */
-export function setExposure(doc: Doc, layerId: Id, frame: number, frames: number): boolean {
+/** Sets how long the drawing at `frame` is held (1 = on ones, 2 = on twos...). Later cels get pushed along, or covered. */
+export function setExposure(doc: Doc, layerId: Id, frame: number, frames: number, clash: Clash = 'push'): boolean {
   const layer = findLayer(doc, layerId);
   const cel = layer && celAt(layer, frame);
   if (!layer || !cel) return false;
-  return resizeCel(doc, layerId, cel.id, frames, 'push');
+  return resizeCel(doc, layerId, cel.id, frames, clash);
 }
 
 /** Changes the length of a cel (dragging its end). Returns false if nothing changed. */
@@ -356,6 +356,15 @@ export function setLayerLocked(doc: Doc, layerId: Id, locked: boolean): boolean 
   const l = findLayer(doc, layerId);
   if (!l || l.locked === locked) return false;
   l.locked = locked;
+  return true;
+}
+
+/** Whether a layer shows in the onion skin (missing counts as on). */
+export function setLayerOnion(doc: Doc, layerId: Id, onion: boolean): boolean {
+  const l = findLayer(doc, layerId);
+  if (!l || (l.onion !== false) === onion) return false;
+  if (onion) delete l.onion;
+  else l.onion = false;
   return true;
 }
 
