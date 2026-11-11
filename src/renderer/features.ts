@@ -7,6 +7,7 @@ import '../tools';
 import '../geometry';
 import '../timeline';
 import '../io';
+import '../platform/help';
 import '../export';
 import '../tiles';
 import '../quests';

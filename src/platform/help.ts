@@ -44,6 +44,6 @@ A few shortcuts belong to the browser and can't be used by any web page, such as
 
 ## Install it as an app
 
-**Help > Install Frameling as an app...** adds Frameling to your apps (in Chrome and Edge). It then opens in its own window, works **offline**, and can open .frameling files when you double-click them. Firefox and Safari can't install it, but the page still works offline once it has loaded.`,
+**Help > Install Frameling as an app...** adds Frameling to your apps (in Chrome and Edge). It then opens in its own window, works **offline**, and can open .frameling files when you double-click them. In Safari, use **Share > Add to Dock** (or **Add to Home Screen** on an iPad). Firefox can't install it, but the page still works offline once it has loaded.`,
   },
 ]);

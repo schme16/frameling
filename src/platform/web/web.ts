@@ -17,6 +17,7 @@ import { memoryDb, type Db } from './idb';
 export interface FileHandleLike {
   kind: 'file';
   name: string;
+  isSameEntry?(other: FileHandleLike | DirHandleLike): Promise<boolean>;
   getFile(): Promise<Blob & { lastModified?: number }>;
   createWritable(): Promise<{ write(data: Uint8Array | Blob): Promise<void>; close(): Promise<void> }>;
   queryPermission?(opts: { mode: 'read' | 'readwrite' }): Promise<PermissionState>;
@@ -26,6 +27,7 @@ export interface FileHandleLike {
 export interface DirHandleLike {
   kind: 'directory';
   name: string;
+  isSameEntry?(other: FileHandleLike | DirHandleLike): Promise<boolean>;
   getFileHandle(name: string, opts?: { create?: boolean }): Promise<FileHandleLike>;
   queryPermission?(opts: { mode: 'read' | 'readwrite' }): Promise<PermissionState>;
   requestPermission?(opts: { mode: 'read' | 'readwrite' }): Promise<PermissionState>;
@@ -165,13 +167,38 @@ export function createWebApi(env: WebEnv): WebApi {
 
   const db = () => dbp;
 
-  async function remember(kind: 'file' | 'folder', h: FileHandleLike | DirHandleLike): Promise<string> {
+  /**
+   * Gives a picked handle a path. Drawings (`keep`) are stored so Open recent works on the next visit, and a file
+   * that already has a path gets the same one back, so it isn't listed twice.
+   */
+  async function remember(kind: 'file' | 'folder', h: FileHandleLike | DirHandleLike, keep = false): Promise<string> {
+    if (keep && h.isSameEntry) {
+      const known = new Map(handles);
+      try {
+        const d = await db();
+        for (const id of await d.keys('handles')) if (!known.has(id)) known.set(id, (await d.get<FileHandleLike>('handles', id))!);
+      } catch {
+        // Only this visit's handles, then.
+      }
+      for (const [id, other] of known) {
+        try {
+          if (other?.kind === h.kind && (await h.isSameEntry(other as FileHandleLike))) {
+            handles.set(id, h);
+            return makePath(kind, id, h.name);
+          }
+        } catch {
+          // A stale handle; carry on looking.
+        }
+      }
+    }
     const id = newId();
     handles.set(id, h);
-    try {
-      await (await db()).put('handles', id, h);
-    } catch {
-      // Some browsers can't store handles. They still work until the page closes.
+    if (keep) {
+      try {
+        await (await db()).put('handles', id, h);
+      } catch {
+        // Some browsers can't store handles. They still work until the page closes.
+      }
     }
     return makePath(kind, id, h.name);
   }
@@ -234,6 +261,19 @@ export function createWebApi(env: WebEnv): WebApi {
     return !!(await (await db()).get('copies', path));
   }
 
+  async function addRecent(path: string): Promise<void> {
+    const p = parsePath(path);
+    if (!p) return;
+    try {
+      const d = await db();
+      await d.put('recent', path, { path, name: p.name.replace(/\.[^.]+$/, ''), openedAt: now() } satisfies RecentFile);
+      const all = (await d.all<RecentFile>('recent')).sort((a, b) => b.openedAt - a.openedAt);
+      for (const r of all.slice(MAX_RECENT)) await forgetFile(r.path);
+    } catch {
+      // The list is a convenience.
+    }
+  }
+
   // ------------------------------------------------ startup
 
   const ready = (async () => {
@@ -273,7 +313,7 @@ export function createWebApi(env: WebEnv): WebApi {
     async receiveFiles(list) {
       const h = list.find((x) => x?.kind === 'file');
       if (!h) return;
-      const path = await remember('file', h);
+      const path = await remember('file', h, true);
       if (openFileHandlers.size) for (const fn of openFileHandlers) fn(path);
       else launchFile = path;
     },
@@ -291,7 +331,7 @@ export function createWebApi(env: WebEnv): WebApi {
           if (!h) return null;
           try {
             const bytes = await bytesOf(await h.getFile());
-            return { path: await remember('file', h), bytes };
+            return { path: await remember('file', h, true), bytes };
           } catch (e) {
             return { error: friendly(e, 'open') };
           }
@@ -330,6 +370,7 @@ export function createWebApi(env: WebEnv): WebApi {
             const h = await handleFor(p.id);
             if (h?.kind === 'file' && (await allowed(h, 'readwrite'))) {
               await writeHandle(h, bytes);
+              await addRecent(path!);
               return { path: path! };
             }
           }
@@ -342,12 +383,15 @@ export function createWebApi(env: WebEnv): WebApi {
               throw e;
             }
             await writeHandle(h, bytes);
-            return { path: await remember('file', h) };
+            const saved = await remember('file', h, true);
+            await addRecent(saved);
+            return { path: saved };
           }
           // No way to write a file in place: download it, and keep a copy so Open recent still works.
           const target = p && (p.kind === 'copy' || p.kind === 'download') ? path! : makePath('copy', newId(), fileName);
           env.download(parsePath(target)!.name, bytes);
           await keepCopy(target, bytes).catch(() => undefined);
+          await addRecent(target);
           return { path: target };
         } catch (e) {
           return { error: friendly(e, 'save') };
@@ -459,12 +503,7 @@ export function createWebApi(env: WebEnv): WebApi {
       },
       async add(path) {
         await ready;
-        const d = await db();
-        const p = parsePath(path);
-        if (!p) return;
-        await d.put('recent', path, { path, name: p.name.replace(/\.[^.]+$/, ''), openedAt: now() } satisfies RecentFile);
-        const all = (await d.all<RecentFile>('recent')).sort((a, b) => b.openedAt - a.openedAt);
-        for (const r of all.slice(MAX_RECENT)) await forgetFile(r.path);
+        await addRecent(path);
       },
       async remove(path) {
         await ready;

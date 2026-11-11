@@ -40,6 +40,9 @@ class FakeFile implements FileHandleLike {
   async requestPermission() {
     return this.permission;
   }
+  async isSameEntry(other: unknown) {
+    return other === this;
+  }
 }
 
 class FakeDir implements DirHandleLike {
@@ -123,6 +126,16 @@ describe('opening and saving with the File System Access API', () => {
     expect(again).toEqual(r);
     expect(showSaveFilePicker).toHaveBeenCalledTimes(1);
     expect([...target.data]).toEqual([4]);
+  });
+
+  it('lists saved and opened drawings once each in Open recent', async () => {
+    const f = new FakeFile('Walk.frameling');
+    const { api } = setup({ pickers: { showSaveFilePicker: async () => f, showOpenFilePicker: async () => [f] } });
+    const saved = await api.files.save({ bytes: bytes(1), path: null, suggestedName: 'Walk' });
+    const opened = await api.files.open();
+    expect(opened && 'path' in opened && opened.path).toBe(saved && 'path' in saved && saved.path);
+    await api.recent.add((opened as { path: string }).path);
+    expect((await api.recent.list()).map((r) => r.name)).toEqual(['Walk']);
   });
 
   it('opens a picked file and can read it again by its path', async () => {
