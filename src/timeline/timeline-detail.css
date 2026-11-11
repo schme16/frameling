@@ -287,8 +287,8 @@
   height: clamp(5px, calc(var(--cw) * 0.42), 10px);
   transform: rotate(45deg);
   box-sizing: border-box;
-  border: 1.5px solid color-mix(in srgb, var(--lc) 45%, #000);
-  background: var(--raised);
+  border: 1.5px solid color-mix(in srgb, var(--lc) 40%, #000);
+  background: #fff;
   pointer-events: none;
 }
 .tl-dkey.is-picked {
@@ -296,7 +296,7 @@
   border-color: var(--chosen-fg);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--chosen-bg) 55%, transparent);
 }
-.tl-dkey-cell:has(.is-picked) {
+.tl-dkey-cell.is-picked {
   box-shadow: 0 0 0 2px var(--chosen-bg);
   z-index: 1;
 }

@@ -2,9 +2,10 @@ import { useState, type ReactNode } from 'react';
 import { celAt, findLayer } from '../core/doc';
 import { store, useStore } from '../core/store';
 import { Icon } from '../ui/icons';
-import { runCmd, tip } from './cmd';
+import { keyHint, runCmd, tip } from './cmd';
 import { seconds } from './geometry';
-import { Floating } from './Menu';
+import { ContextMenu, Floating, type MenuItem } from './Menu';
+import { getCommand } from '../core/registry';
 import * as ops from './ops';
 import { inOutRange, playRange } from './playback';
 import { clearInOut } from './range';
@@ -209,7 +210,8 @@ function PlayRange() {
     return (
       <span className="tl-range" title="Only the play range plays. Drag its ends on the ruler, or Shift and drag along the ruler to mark a new one.">
         <Icon name="range" size={14} />
-        <span>Frames {r.start + 1} to {r.end + 1}</span>
+        <span className="tl-chip-long">Frames {r.start + 1} to {r.end + 1}</span>
+        <span className="tl-chip-short">{r.start + 1}-{r.end + 1}</span>
         <button type="button" className="tl-btn tl-btn-mini" aria-label="Play everything again" onClick={() => clearInOut()}><Icon name="close" size={12} /></button>
       </span>
     );
@@ -219,7 +221,8 @@ function PlayRange() {
   return (
     <span className="tl-range" title="Only this clip plays. Click it again in the clips row to play everything.">
       <Icon name="clip" size={14} />
-      <span>{clip.name} (frames {r.start + 1} to {r.end + 1})</span>
+      <span className="tl-chip-long">{clip.name} (frames {r.start + 1} to {r.end + 1})</span>
+      <span className="tl-chip-short">{clip.name}</span>
       <button type="button" className="tl-btn tl-btn-mini" aria-label="Play everything again" onClick={() => setTl({ clipId: null })}><Icon name="close" size={12} /></button>
     </span>
   );
@@ -230,10 +233,10 @@ function LightTableChip() {
   const doc = useStore((s) => s.doc);
   if (!lt) return null;
   return (
-    <span className="tl-range tl-lighttable" title="Shown faintly on every frame, to trace over (light table). Click to go to it.">
+    <span className="tl-range tl-lighttable" aria-label={`Light table: ${lightTableLabel(doc, lt)}`} title="Shown faintly on every frame, to trace over (light table). Click to go to it.">
       <button type="button" className="tl-btn tl-btn-mini" aria-label={`Go to frame ${lt.frame + 1}`} onClick={() => store().setUi({ frame: lt.frame })}>
         <Icon name="image" size={14} />
-        <span>Light table: {lightTableLabel(doc, lt)}</span>
+        <span className="tl-chip-long">Light table: {lightTableLabel(doc, lt)}</span>
       </button>
       <input
         type="range"
@@ -246,6 +249,53 @@ function LightTableChip() {
       />
       <button type="button" className="tl-btn tl-btn-mini" aria-label="Clear the light table" onClick={() => clearLightTable()}><Icon name="close" size={12} /></button>
     </span>
+  );
+}
+
+// On a narrow timeline the buttons that don't fit fold into this menu (CSS decides which show).
+const OVERFLOW: { id: string; fold: 1 | 2 }[] = [
+  { id: 'timeline.togglePingPong', fold: 1 },
+  { id: 'timeline.newKey', fold: 1 },
+  { id: 'timeline.duplicateKey', fold: 1 },
+  { id: 'timeline.insertFrame', fold: 1 },
+  { id: 'timeline.removeFrame', fold: 1 },
+  { id: 'timeline.hold1', fold: 2 },
+  { id: 'timeline.hold2', fold: 2 },
+  { id: 'timeline.hold3', fold: 2 },
+  { id: 'timeline.hold4', fold: 2 },
+  { id: 'audio.import', fold: 1 },
+  { id: 'timeline.toggleOnion', fold: 2 },
+  { id: 'view.cleanTimeline', fold: 1 },
+  { id: 'timeline.zoomFit', fold: 1 },
+];
+
+function OverflowMenu() {
+  const [pos, setPos] = useState<{ x: number; y: number; deep: boolean } | null>(null);
+  const items = (): MenuItem[] =>
+    OVERFLOW.filter((o) => o.fold === 1 || pos?.deep)
+      .map((o) => getCommand(o.id))
+      .filter((c): c is NonNullable<typeof c> => !!c)
+      .map((c) => ({ label: c.label, hint: keyHint(c.id), checked: c.checked ? c.checked(store().get()) : undefined, onClick: () => runCmd(c.id) }));
+  return (
+    <>
+    <button
+      type="button"
+      className="tl-btn tl-overflow"
+      title="More timeline buttons"
+      aria-label="More timeline buttons"
+      aria-haspopup="menu"
+      aria-expanded={!!pos}
+      onClick={(e) => {
+        const r = e.currentTarget.getBoundingClientRect();
+        // When the hold and onion buttons are folded away too, they join the menu.
+        const deep = getComputedStyle(e.currentTarget.parentElement!.querySelector('.tl-fold-2') ?? e.currentTarget).display === 'none';
+        setPos(pos ? null : { x: r.left, y: r.bottom + 4, deep });
+      }}
+    >
+      <span aria-hidden="true">{'⋯'}</span>
+    </button>
+    {pos ? <ContextMenu x={pos.x} y={pos.y} items={items()} onClose={() => setPos(null)} /> : null}
+    </>
   );
 }
 
@@ -266,25 +316,32 @@ export function Header() {
         <Btn id="timeline.nextFrame" icon="next" title="Forward one frame" />
         <Btn id="timeline.lastFrame" icon="last" title="Go to the last frame" />
         <Btn id="timeline.toggleLoop" icon="loop" title="Loop: start again at the end" pressed={loop} />
-        <Btn id="timeline.togglePingPong" icon="pingpong" title="Play back and forth (ping-pong)" pressed={pingPong} />
+        <Btn id="timeline.togglePingPong" icon="pingpong" title="Play back and forth (ping-pong)" pressed={pingPong} className="tl-fold-1" />
       </span>
       <Counter />
       <FpsField />
       <PlayRange />
       <LightTableChip />
       <span className="tl-sep" aria-hidden="true" />
-      <span className="tl-group" role="group" aria-label="Drawings and frames">
+      <span className="tl-group tl-fold-1" role="group" aria-label="Drawings and frames">
         <Btn id="timeline.newKey" icon="key" text={<>New<span className="tl-long"> drawing</span></>} title="Start a new blank drawing on this frame (new key)" />
         <Btn id="timeline.duplicateKey" icon="duplicate" text="Copy" title="Copy this drawing to the next frame (duplicate key)" />
         <Btn id="timeline.insertFrame" icon="plus" text="Frame" title="Add a frame: hold this drawing one frame longer" className="tl-btn-frame" />
         <Btn id="timeline.removeFrame" icon="minus" text="Frame" title="Remove a frame" className="tl-btn-frame" />
       </span>
-      <HoldButtons />
-      <SoundButton />
+      <span className="tl-fold-2">
+        <HoldButtons />
+      </span>
+      <span className="tl-fold-1">
+        <SoundButton />
+      </span>
       <span className="tl-sep" aria-hidden="true" />
-      <OnionControls />
+      <span className="tl-fold-2">
+        <OnionControls />
+      </span>
       <span className="tl-grow" />
-      <Btn id="view.cleanTimeline" icon="sliders" title="Clean timeline: plain blocks, no property rows" pressed={clean} className="tl-btn-mini tl-look-toggle" />
+      <OverflowMenu />
+      <Btn id="view.cleanTimeline" icon="sliders" title="Clean timeline: plain blocks, no property rows" pressed={clean} className="tl-btn-mini tl-look-toggle tl-fold-1" />
       <label className="tl-zoom" title="Zoom the timeline (or hold Ctrl and scroll)">
         <button type="button" className="tl-btn tl-btn-mini" title={tip('timeline.zoomFit', 'Fit the whole animation in view')} aria-label="Fit the whole animation in view" onClick={() => runCmd('timeline.zoomFit')}>
           <Icon name="zoom" size={14} />

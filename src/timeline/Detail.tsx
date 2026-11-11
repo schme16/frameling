@@ -61,8 +61,8 @@ export const DetailRow = memo(function DetailRow({ layer, cw, from, to, active, 
             style={{ left: c.start * cw, width: w }}
             title={celTitle(layer, c, tweened)}
           >
-            <span className="tl-dkey-cell" style={{ width: cw }}>
-              <span className={`tl-dkey${picked.has(ref) ? ' is-picked' : ''}`} data-key={ref} />
+            <span className={`tl-dkey-cell${picked.has(ref) ? ' is-picked' : ''}`} style={{ width: cw }} data-key={ref}>
+              <span className={`tl-dkey${picked.has(ref) ? ' is-picked' : ''}`} />
             </span>
             {tweened && w - cw > 26 ? (
               <span className="tl-dspan" style={{ left: cw, width: w - cw }}>
