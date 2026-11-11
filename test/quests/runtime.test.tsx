@@ -290,6 +290,26 @@ describe('the Quests panel', () => {
     expect(text()).toContain('1 of 14 badges');
   });
 
+  it('groups quests under headings with done counts', () => {
+    act(() => questProgress.set((p) => ({ ...p, completed: ['first-animation'], badges: ['flipbooker'] })));
+    mount(<QuestsPanel />);
+    const heads = [...host.querySelectorAll('.qp-group-head')];
+    expect(heads.map((h) => h.querySelector('span')?.textContent)).toEqual([
+      'Getting started',
+      'Drawing and pixel art',
+      'Motion',
+      'Rigging and effects',
+      'Sharing',
+      'More quests',
+    ]);
+    expect(heads[0].querySelector('.qp-group-count')?.textContent).toBe('1/3');
+    expect(heads[0].textContent).toContain('1 of 3 done');
+    // Each heading names its section for screen readers, and every card still has its buttons in reading order.
+    const first = host.querySelector('.qp-group')!;
+    expect(first.getAttribute('aria-labelledby')).toBe(heads[0].id);
+    expect(host.querySelectorAll('.qp-group .qp-card')).toHaveLength(allQuests().length);
+  });
+
   it('continues a paused quest and starts a quest from its button', () => {
     act(() => questProgress.set((p) => ({ ...p, paused: { id: 'first-animation', step: 1 } })));
     mount(<QuestsPanel />);

@@ -47,7 +47,7 @@ registerHelp({
   section: 'Getting started',
   media: 'quests-first-steps.mp4',
   summary: 'Short guided lessons that teach by doing, with a badge at the end of each.',
-  keywords: ['tutorial', 'guide', 'lesson', 'learn', 'first animation', 'badge', 'show me', 'onboarding'],
+  keywords: ['tutorial', 'guide', 'lesson', 'learn', 'first animation', 'badge', 'show me', 'onboarding', 'quest groups'],
   body: `A quest is a little lesson with a handful of steps. You do each step in the real app, and Frameling ticks it off by itself.
 
 ## How it works
@@ -61,17 +61,28 @@ A small bar appears at the bottom left with what to do next, and a soft gold rin
 
 ## The quests
 
+The panel sorts them under five headings, each with how many you have done (like 1/3).
+
+**Getting started**
 - **Your first animation in 60 seconds** (Flipbooker). Draw, copy to the next frame, change it a little, press play. Onion skin is on for you.
 - **Bouncing ball** (Squash & Stretch). Scrub the example, find the squash and change how long it is held.
 - **Fill it in** (Paint Pot). The paint bucket and Close gaps.
+
+**Drawing and pixel art**
 - **Pixel pal**, **Shade and shine** and **Tiles**: a tiny sprite, shading with the palette, and a seamless tile painted into a level.
+- **Say it with text** (Wordsmith). Letters that [pop in and wave](help:text-animators).
+
+**Motion**
 - **Your first tween** (Smooth Mover). Draw once, let Frameling draw the frames between.
-- **Share it** (Showtime). Open Export and choose Animated GIF. Nothing is saved.
+- **Camera move** (Director). A [camera](help:camera) pan with far hills that drift slower.
+
+**Rigging and effects**
 - **Bones and a pose** (Puppeteer). Give an arm [bones](help:rig-bones) and make it wave.
 - **Make it glow** (Lamplighter). A [glow](help:effects), the Add [blend mode](help:blend-modes) and a flicker.
 - **Particle party** (Confetti Cannon). [Particles](help:particles) from a preset, made your own.
-- **Say it with text** (Wordsmith). Letters that [pop in and wave](help:text-animators).
-- **Camera move** (Director). A [camera](help:camera) pan with far hills that drift slower.
+
+**Sharing**
+- **Share it** (Showtime). Open Export and choose Animated GIF. Nothing is saved.
 
 The first quest opens the others. If you said you're here for game sprites, **Pixel pal** is your first quest instead, and for tiles and levels it's **Tiles**; both are open from the start. If you already know your way around, **Try it anyway** is there on every locked one.
 
