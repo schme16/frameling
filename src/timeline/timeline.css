@@ -908,3 +908,61 @@
 .tl-layer-onion.is-off {
   opacity: 0.35;
 }
+
+/* The offer to make in-betweens on a clicked span between two keys. Small, and out of the way of the cels. */
+.tl-offer {
+  position: absolute;
+  z-index: 6;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 0 3px 0 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--panel);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.22);
+  font-size: var(--fs-small);
+  white-space: nowrap;
+  animation: tl-offer-in 140ms var(--ease);
+}
+.tl-offer-text {
+  color: var(--muted);
+  margin-right: 2px;
+}
+.tl-offer-btn,
+.tl-offer-x {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 20px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--text);
+  font-weight: 700;
+}
+.tl-offer-btn:hover,
+.tl-offer-btn:focus-visible {
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+}
+.tl-offer-x {
+  padding: 0 5px;
+  color: var(--muted);
+}
+.tl-offer-x:hover,
+.tl-offer-x:focus-visible {
+  color: var(--text);
+}
+@keyframes tl-offer-in {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tl-offer {
+    animation: none;
+  }
+}

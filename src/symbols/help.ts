@@ -63,6 +63,26 @@ Undo works as usual. Going into and out of a symbol are steps too, so undoing fa
 Below that are the [in-betweens](help:tweens) for the key under the playhead.`,
   },
   {
+    id: 'tween-offer',
+    order: 2.5,
+    title: 'The in-betweens offer',
+    section: 'Symbols and motion',
+    media: 'tween-offer.png',
+    summary: 'Click a frame between two drawings and Frameling offers to fill the gap with in-betweens: Move or Morph.',
+    keywords: ['tween offer', 'in-betweens', 'make tween', 'between keys', 'move', 'morph', 'shape tween', 'classic tween', 'suggestion'],
+    body: `Click a frame in the timeline that sits between two drawings (held frames, or empty frames with a drawing after them), and a small **In-betweens?** offer appears on that stretch.
+
+- **Move** glides, grows, turns or fades the drawing from one key to the next (a classic tween). A plain drawing becomes a [symbol](help:symbols) first.
+- **Morph** melts one drawing's shapes into the next (a [shape tween](help:shape-tweens)). It's offered when both drawings are plain shapes.
+- **x** (or **Esc**) says no thanks. It won't offer again on that stretch until something on the layer changes.
+
+Either way it's one step, so **Ctrl+Z** takes it straight back. You can reach the buttons with **Tab**.
+
+It never shows while playing, scrubbing or dragging, and it goes away by itself when you move to another frame or start playing.
+
+Don't want it? Turn it off in **Preferences > Behaviour > Offer in-betweens between keys**. You can still use **Ctrl+Shift+T** or the right-click menu.`,
+  },
+  {
     id: 'tweens',
     order: 2,
     title: 'In-betweens (tweens)',
@@ -78,6 +98,8 @@ Below that are the [in-betweens](help:tweens) for the key under the playhead.`,
 4. Press play.
 
 If the drawing wasn't a [symbol](help:symbols) yet, it becomes one, because in-betweens move symbols.
+
+**Even quicker:** click a frame between two drawings in the timeline, and a little [In-betweens? offer](help:tween-offer) appears there. One click makes them.
 
 In the timeline, in-betweens show as a purple band with an arrow from one key to the next. A dashed line means the keys have come apart, so nothing moves until they touch again.
 

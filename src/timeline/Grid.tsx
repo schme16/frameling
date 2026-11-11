@@ -15,6 +15,7 @@ import * as ops from './ops';
 import { goTo, inOutRange } from './playback';
 import { onionFrames } from '../canvas/onion';
 import { pinLightTable } from '../canvas/lightTable';
+import { acceptTweenOffer, closeTweenOffer, dismissTweenOffer, offerTweenAt, tweenOffer } from './tweenOffer';
 import { clearInOut, setIn, setInOut, setOut } from './range';
 import { nextKey } from '../core/symbols';
 import { ease } from '../core/ease';
@@ -238,6 +239,8 @@ export function TimelineBody() {
   const main = useRef<HTMLDivElement>(null);
   const rows = useRef<HTMLDivElement>(null);
   const dragRef = useRef<Drag | null>(null);
+  // A plain click on a frame (no drag), which may offer in-betweens when it lets go.
+  const clickRef = useRef<{ x: number; y: number; layerId: Id; frame: number } | null>(null);
   const [ghost, setGhost] = useState<Ghost | null>(null);
   const [view, setView] = useState({ left: 0, width: 800 });
   const [menu, setMenu] = useState<{ x: number; y: number; items: MenuItem[] } | null>(null);
@@ -364,6 +367,7 @@ export function TimelineBody() {
       const layer = layerAtY(e);
       if (!layer) return;
       const f = frameAt(e);
+      clickRef.current = t.closest('.tl-cel-handle') ? null : { x: e.clientX, y: e.clientY, layerId: layer.id, frame: f };
       const cel = celAt(layer, f);
       select(layer.id, f);
       if (cel && t.closest('.tl-cel-handle')) capture({ kind: 'resize', layerId: layer.id, celId: cel.id, start: cel.start });
@@ -452,6 +456,13 @@ export function TimelineBody() {
     const d = dragRef.current;
     const g = ghost;
     dragRef.current = null;
+    const click = clickRef.current;
+    clickRef.current = null;
+    if (click && Math.abs(e.clientX - click.x) < 3 && Math.abs(e.clientY - click.y) < 3 && !store().get().ui.playing) {
+      const doc = store().get().doc;
+      const layer = doc.layers.find((l) => l.id === click.layerId);
+      if (layer) offerTweenAt(doc, layer, click.frame);
+    } else closeTweenOffer();
     setGhost(null);
     if (!d) return;
     if (main.current?.hasPointerCapture(e.pointerId)) main.current.releasePointerCapture(e.pointerId);
@@ -607,6 +618,7 @@ export function TimelineBody() {
           )}
           <span className="tl-beyond" style={{ left: (ghost?.kind === 'length' ? ghost.length : length) * cw }} />
           <Playhead part="rows" cw={cw} activeRow={activeDisplayRow} />
+          <TweenOfferView cw={cw} rows={rowList} />
           {ghostCel ? <i className={`tl-ghost-cel${ghostCel.trim ? ' is-trim' : ''}`} style={{ left: ghostCel.start * cw + 1, width: ghostCel.length * cw - 2, top: ghostRow * ROW_H + 3, height: ROW_H - 6 }} /> : null}
         </div>
         <SoundMain cw={cw} from={from} to={to} />
@@ -620,6 +632,45 @@ export function TimelineBody() {
 // ---------------------------------------------------------------- menus
 
 /** What you can do to a cell, in plain words. */
+/** The small offer to make in-betweens, on the span that was clicked. */
+function TweenOfferView({ cw, rows }: { cw: number; rows: ReturnType<typeof useTimelineRows> }) {
+  const o = tweenOffer.use((v) => v);
+  if (!o) return null;
+  const row = rowOfLayer(rows, o.layerId);
+  if (row < 0) return null;
+  const close = () => dismissTweenOffer(store().get().doc);
+  return (
+    <div
+      className="tl-offer"
+      data-region="offer"
+      role="group"
+      aria-label={`Make in-betweens from frame ${o.start + 1} to frame ${o.end + 2}?`}
+      style={{ left: (o.start + 1) * cw + 2, top: row * ROW_H + 5, height: ROW_H - 10 }}
+      onKeyDown={(e) => {
+        if (e.key === 'Escape') {
+          e.stopPropagation();
+          close();
+        }
+      }}
+    >
+      <span className="tl-offer-text" aria-live="polite">In-betweens?</span>
+      <button type="button" className="tl-offer-btn" title={`Move it from this drawing to the next (classic tween)${keyHint('tween.make') ? `, ${keyHint('tween.make')}` : ''}`} onClick={() => acceptTweenOffer('classic')}>
+        <Icon name="tween" size={13} />
+        Move
+      </button>
+      {o.morph ? (
+        <button type="button" className="tl-offer-btn" title="Melt this drawing's shapes into the next one (shape tween)" onClick={() => acceptTweenOffer('shape')}>
+          <Icon name="morph" size={13} />
+          Morph
+        </button>
+      ) : null}
+      <button type="button" className="tl-offer-x" aria-label="No thanks" title="No thanks (it won't ask again here until something changes)" onClick={close}>
+        <Icon name="close" size={11} />
+      </button>
+    </div>
+  );
+}
+
 export function celMenu(layer: Layer, frame: number): MenuItem[] {
   const cel = celAt(layer, frame);
   const none = !cel;
