@@ -275,7 +275,8 @@ describe('the Quests panel', () => {
     mount(<QuestsPanel />);
     expect(host.querySelectorAll('.qp-card')).toHaveLength(allQuests().length);
     expect(text()).toContain('0 of 9 badges');
-    expect(host.querySelectorAll('.qp-card.is-locked').length).toBe(allQuests().length - 1);
+    // Your first animation, Pixel pal and Tiles start open (they're the first quests for different people).
+    expect(host.querySelectorAll('.qp-card.is-locked').length).toBe(allQuests().length - 3);
     expect(text()).toContain('Locked. Do "Your first animation in 60 seconds" first.');
     expect(button('Try it anyway')).toBeTruthy();
   });

@@ -252,7 +252,8 @@ export const PIXEL_PAL: Quest = {
   minutes: 3,
   icon: 'pixel',
   badge: { id: 'pixel-pal', name: 'Pixel Pal', icon: 'pixel', color: '--mint' },
-  requires: ['first-animation'],
+  // A first quest in its own right for sprite people, so it needs nothing before it.
+  requires: [],
   finish: 'Two frames of pixel art. Press Enter to watch it, and keep adding frames for a walk or a wave.',
   prepare: ensureTinySpritePage,
   ready: hasPixelLayer,

@@ -107,6 +107,9 @@ export interface Plan {
   panel?: string;
 }
 
+/** Interests whose own quest makes a better first one than the 60-second animation (a pixel sprite, a tile). */
+const OWN_FIRST: readonly Interest[] = ['sprites', 'tiles'];
+
 const PLANS: Record<Interest, Plan> = {
   cartoons: { workspace: 'animate', template: 'bouncing-ball', quest: 'bouncing-ball', help: ['timeline-onion', 'tool-brush', 'timeline-frames'] },
   sprites: { workspace: 'pixel', template: 'hero-sprites', quest: 'pixel-pal', help: ['pixel-art', 'palette', 'export-sprite-sheets'], blank: 'blank-pixel' },
@@ -121,7 +124,7 @@ export const FIRST_QUEST = 'first-animation';
 
 /**
  * What to suggest for the picks: the first pick (in card order) picks the workspace and the template, help topics
- * come from every pick, and the quest is the 60-second one until that's done.
+ * come from every pick, and the quest is the 60-second one until that's done (sprite and tile people get their own first).
  */
 export function planFor(interests: readonly Interest[], completedQuests: readonly string[] = []): Plan {
   const picks = INTERESTS.map((x) => x.id).filter((id) => interests.includes(id));
@@ -129,7 +132,10 @@ export function planFor(interests: readonly Interest[], completedQuests: readonl
   const help: string[] = [];
   for (const id of picks.length ? picks : (['play'] as Interest[])) for (const h of PLANS[id].help) if (!help.includes(h)) help.push(h);
   let quest = FIRST_QUEST;
-  if (completedQuests.includes(FIRST_QUEST)) quest = picks.map((id) => PLANS[id].quest).find((q) => !completedQuests.includes(q)) ?? lead.quest;
+  // Sprite and tile people start with a quest in their own kind of art.
+  const leadId = picks[0];
+  if (leadId && OWN_FIRST.includes(leadId) && !completedQuests.includes(lead.quest)) quest = lead.quest;
+  else if (completedQuests.includes(FIRST_QUEST)) quest = picks.map((id) => PLANS[id].quest).find((q) => !completedQuests.includes(q)) ?? lead.quest;
   return { workspace: lead.workspace, template: lead.template, quest, help: help.slice(0, 4), ...(lead.blank ? { blank: lead.blank } : {}), ...(lead.panel ? { panel: lead.panel } : {}) };
 }
 

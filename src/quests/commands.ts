@@ -66,7 +66,7 @@ A small bar appears at the bottom left with what to do next, and a soft gold rin
 - **Pixel pal** (Pixel Pal). Make a tiny two-frame sprite on a pixel grid.
 - **Share it** (Showtime). Open Export and choose Animated GIF. Nothing is saved, so there is nothing to undo.
 
-The first quest opens the others. If you already know your way around, **Try it anyway** is there on every locked one.
+The first quest opens the others. If you said you're here for game sprites, **Pixel pal** is your first quest instead, and for tiles and levels it's **Tiles**; both are open from the start. If you already know your way around, **Try it anyway** is there on every locked one.
 
 ## Little things
 
