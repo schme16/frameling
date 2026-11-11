@@ -4,6 +4,7 @@ import { lazyPanel } from '../core/lazy';
 import { registerPanel } from '../core/registry';
 import './ui.css';
 import './commands';
+import './rightCommands';
 import './helpTopics';
 import './quests';
 import './onboarding';
