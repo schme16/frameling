@@ -123,3 +123,23 @@ describe('room for sound rows', () => {
     expect(timelineRoomFor(2, 1, 150, 230)).toBe(230 + (82 + 72 + 36 - 150));
   });
 });
+
+describe('layered exports (PSD, PDF, Illustrator) and bones', () => {
+  it('a picture of one attached layer still follows its bone', async () => {
+    const { pictureDoc } = await import('../../src/export/layered-run');
+    const d = kitchenSinkDoc();
+    const hand = d.layers.find((l) => l.name === 'Hand (follows)')!;
+    const { doc: pd } = pictureDoc(d, [hand], true);
+    const plain = d.drawings[hand.cels[0].drawingId];
+    const { poseAt } = await import('../../src/core/symbols');
+    expect(poseAt(d, hand, 18)).not.toBe(plain);
+    expect(poseAt(pd, pd.layers[pd.layers.length - 1], 18)).not.toBe(plain);
+  });
+
+  it('a bent layer goes in as a picture, since vectors can not bend', async () => {
+    const { needsPicture } = await import('../../src/export/layered');
+    const d = kitchenSinkDoc();
+    const sleeve = { ...d.layers.find((l) => l.name === 'Sleeve (bends)')!, effects: undefined };
+    expect(needsPicture(sleeve, 0)).toBe(true);
+  });
+});

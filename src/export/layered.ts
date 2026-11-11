@@ -50,7 +50,8 @@ export type FlatUnit =
   | { kind: 'folder'; folder: LayerFolder; units: FlatUnit[] };
 
 export function needsPicture(l: Layer, frame: number): boolean {
-  return (l.kind !== 'vector' && l.kind !== 'camera') || activeEffects(l.effects, frame).length > 0;
+  // A layer bent by bones has no vector equivalent either, so it goes in as a picture.
+  return (l.kind !== 'vector' && l.kind !== 'camera') || activeEffects(l.effects, frame).length > 0 || !!l.bind?.mesh;
 }
 
 function stageUnits(layers: Layer[], frame: number): FlatUnit[] {

@@ -868,7 +868,9 @@ async function vPdf(file, s, exp, caseCtx) {
     const e = refWhite && rmse(base + '.png', refWhite);
     if (e !== null && e !== undefined) {
       note(`page ${k + 1} vs png rmse=${e.toFixed(4)}`);
-      check(e < TOL.svg, `page ${k + 1} looks different from the PNG export (rmse ${e.toFixed(4)})`);
+      // The kitchen sink's symbol has a colour wash, which PDF leaves out (see the PDF help), so it is allowed a little more.
+      const tol = caseCtx.svgApprox ? 0.1 : TOL.svg;
+      check(e < tol, `page ${k + 1} looks different from the PNG export (rmse ${e.toFixed(4)})`);
     }
   }
   if (need('gs')) {

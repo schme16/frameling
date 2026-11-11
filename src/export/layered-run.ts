@@ -9,11 +9,19 @@ import { writePdf } from './pdf';
 import { writePsd, type PsdLayer } from './psd';
 
 /** A picture of some layers on their own, at `scale`. `plain` takes the layer's blend and opacity off (PSD keeps them itself). */
+/** The document a picture of `layers` is drawn from (just the one layer, plain, when `plain` and there's one). */
+export function pictureDoc(doc: Doc, layers: Layer[], plain: boolean): { doc: Doc; only: boolean } {
+  const only = plain && layers.length === 1 ? [{ ...layers[0], opacity: 1, blend: undefined, clipToBelow: false, mask: undefined, folder: undefined, visible: true }] : null;
+  if (!only) return { doc, only: false };
+  // The camera layer stays, so a picture sees what the camera sees, like the merged frame does. Bones layers stay
+  // too, so a layer attached to a bone is posed (they draw nothing themselves, and the filter leaves them out).
+  const keep = doc.layers.filter((l) => l.kind === 'camera' || (l.kind === 'vector' && !!l.rig && l.id !== only[0].id));
+  return { doc: { ...doc, layers: [...keep, ...(only as Layer[])] }, only: true };
+}
+
 export function layersPicture(doc: Doc, frame: number, layers: Layer[], scale: number, plain: boolean, crisp: boolean): RawImage {
   const ids = new Set(layers.map((l) => l.id));
-  const only = plain && layers.length === 1 ? [{ ...layers[0], opacity: 1, blend: undefined, clipToBelow: false, mask: undefined, folder: undefined, visible: true }] : null;
-  // The camera layer stays, so a picture sees what the camera sees, like the merged frame does.
-  const d: Doc = only ? { ...doc, layers: [...doc.layers.filter((l) => l.kind === 'camera'), ...(only as Layer[])] } : doc;
+  const { doc: d, only } = pictureDoc(doc, layers, plain);
   const w = Math.max(1, Math.round(doc.width * scale));
   const h = Math.max(1, Math.round(doc.height * scale));
   const c = makeCanvas(w, h);

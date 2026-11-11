@@ -47,7 +47,7 @@ The file also holds the finished picture, so apps that don't read layers still s
 - **Text** comes across as shapes, so it looks right without the font.
 - **Particles** are real little shapes, every one of them.
 
-Some things PDF can't draw as shapes come in as pictures at twice the page size: pixel and tile layers, layers with effects, clipped layers, and masks. The Export window says how many when there are any.
+Some things PDF can't draw as shapes come in as pictures at twice the page size: pixel and tile layers, layers with effects, layers that bend with bones, clipped layers, and masks. The Export window says how many when there are any. The colour wash (tint) on symbol copies is left out, as in [SVG](help:export-svg).
 
 **Size** sets the page size: at 1×, one stage pixel is one point (1/72 inch).`,
   },
