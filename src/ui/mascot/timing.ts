@@ -30,7 +30,7 @@ export type Script = QuillAnim | Beat[];
 
 const num = (v: unknown, min: number): number | null => (typeof v === 'number' && Number.isFinite(v) && v >= min ? v : null);
 
-/** Checks a quill.json. Anything broken (a frame with no time, a missing size) gives null, and Quill just isn't drawn. */
+/** Checks a mascot.json. Anything broken (a frame with no time, a missing size) gives null, and Quill just isn't drawn. */
 export function parseSheet(raw: unknown): Sheet | null {
   if (!raw || typeof raw !== 'object') return null;
   const r = raw as Record<string, unknown>;

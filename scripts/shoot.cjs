@@ -66,7 +66,9 @@ async function runSteps(win, steps) {
 
 app.whenReady().then(async () => {
   // The real main process answers these; for shots there is no file and no history.
-  for (const ch of ['app:launchFile', 'autosave:read', 'autosave:readKept', 'files:read']) ipcMain.handle(ch, () => null);
+  for (const ch of ['app:launchFile', 'autosave:read', 'autosave:readKept']) ipcMain.handle(ch, () => null);
+  // A step can open a real .frameling file: {"eval": "__framelingIo.openPath('/abs/path.frameling')"}.
+  ipcMain.handle('files:read', (_e, p) => (typeof p === 'string' && p.endsWith('.frameling') && fs.existsSync(p) ? { bytes: new Uint8Array(fs.readFileSync(p)), path: p } : { error: 'No such file.' }));
   for (const ch of ['recent:list', 'autosave:listKept']) ipcMain.handle(ch, () => []);
   for (const ch of ['autosave:write', 'autosave:clear', 'autosave:keep', 'autosave:removeKept', 'recent:add', 'recent:remove', 'recent:clear', 'app:documentState']) ipcMain.handle(ch, () => true);
   for (const ch of ['app:documentState', 'app:keepUnsavedDone', 'app:saveBeforeCloseDone']) ipcMain.on(ch, () => {});

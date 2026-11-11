@@ -431,6 +431,8 @@ If a message has a button, like **Undo**, press it before the message leaves to 
 
 Open **Help, Examples** (or **File, New drawing** and look under **Start from an example**). Press a card to open it. Each card shows a small picture, whether it is **vector** or **pixel** art, and what it is for.
 
+Under the cards, **Or start blank, with layers ready** has empty starters by size: a blank vector stage with a Colour and a Lines layer, and a blank pixel grid. They are like the size cards at the top, with the layers already set up.
+
 ## Make it yours
 
 An example is a normal drawing, so you can change anything. Nothing happens to the original, and Frameling asks before it replaces a drawing you haven't saved.

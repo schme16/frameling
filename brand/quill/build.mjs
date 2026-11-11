@@ -1,3 +1,7 @@
+// HISTORICAL. The mascot's source is now brand/mascot/mascot.frameling (edit it in Frameling, then npm run build:mascot).
+// This is the generator the art was first drawn with: ascii part grids in quill-frames.mjs, composed into poses.
+// It no longer writes into the app. Its sheet lands in brand/quill/b and its icons in brand/quill/icons, as the
+// reference brand/mascot/convert-from-quill.mjs converted from.
 // Builds Quill's sprite sheets, metadata, previews and the app icon from quill-frames.mjs.
 //   node brand/quill/build.mjs           everything (B goes to public/mascot, A to brand/quill/a)
 //   node brand/quill/build.mjs --quick   sheets, json and contact sheets only (no gif/mp4)
@@ -17,10 +21,10 @@ const ROOT = path.resolve(HERE, '../..');
 const QUICK = process.argv.includes('--quick');
 const DARK = '#17151f', LIGHT = '#f3eee6';
 
-//B (48px) won the A/B and is what the app ships. A (32px) still builds, into brand/quill/a, for reference.
+//B (48px) won the A/B and is what the app ships (via brand/mascot now). A (32px) still builds, into brand/quill/a, for reference.
 const VARIANTS = [
 	{name: 'a', label: 'A 32PX', def: A, anims: ANIMS, sheet: path.join(HERE, 'a'), prev: path.join(HERE, 'a')},
-	{name: 'b', label: 'B 48PX', def: frames.B, anims: frames.ANIMS_B || ANIMS, sheet: path.join(ROOT, 'public/mascot'), prev: path.join(HERE, 'b')},
+	{name: 'b', label: 'B 48PX', def: frames.B, anims: frames.ANIMS_B || ANIMS, sheet: path.join(HERE, 'b'), prev: path.join(HERE, 'b')},
 ];
 
 /* ---------------------------------------------------------------- composing ------ */
@@ -232,33 +236,16 @@ function abVideo(built) {
 
 function buildIcons() {
 	const big = ICONS.icon32, small = ICONS.icon16;
-	const dir = path.join(ROOT, 'build'), sets = path.join(dir, 'icons');
-	fs.mkdirSync(sets, {recursive: true});
+	const dir = path.join(HERE, 'icons');
+	fs.mkdirSync(dir, {recursive: true});
 	const scaled = (g, s) => {
 		const n = g.length, img = image(n * s, n * s);
 		drawGrid(img, g, 0, 0, s, ICONS.palette);
 		return img;
 	};
-	writePNG(path.join(dir, 'icon.png'), scaled(big, 32));
-	for (const size of [16, 32, 48, 64, 128, 256, 512]) {
-		const g = size === 16 || size === 48 ? small : big;
-		writePNG(path.join(sets, `${size}x${size}.png`), scaled(g, size / g.length));
-	}
-	//the in-app logo (top bar), drawn at 1x and scaled up crisply by the page
-	writePNG(path.join(ROOT, 'public', 'mascot', 'logo.png'), scaled(big, 1));
-	//svg twin of the 32px art: one rect per horizontal run of a colour
-	let rects = '';
-	big.forEach((row, y) => {
-		for (let x = 0; x < row.length;) {
-			const c = row[x];
-			let e = x;
-			while (row[e + 1] === c) e++;
-			if (c !== '.') rects += `<rect x="${x}" y="${y}" width="${e - x + 1}" height="1" fill="${ICONS.palette[c]}"/>`;
-			x = e + 1;
-		}
-	});
-	fs.writeFileSync(path.join(dir, 'icon.svg'),
-		`<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 32 32" shape-rendering="crispEdges">${rects}</svg>\n`);
+	//the two icon grids at 1x, the reference the mascot-icon.frameling conversion started from
+	writePNG(path.join(dir, 'icon32.png'), scaled(big, 1));
+	writePNG(path.join(dir, 'icon16.png'), scaled(small, 1));
 	//preview of the icon at every size on both backgrounds
 	const sizes = [16, 32, 48, 64, 128, 256], pad = 16, W = pad + sizes.reduce((t, s) => t + s + pad, 0), H = 2 * (256 + pad) + pad;
 	const pv = image(W, H);
