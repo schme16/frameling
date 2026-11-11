@@ -257,6 +257,18 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.tl-layer.is-reference .tl-layer-name {
+  font-style: italic;
+}
+.tl-ref-tag {
+  margin-left: 6px;
+  padding: 0 4px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-style: normal;
+  border: 1px dashed currentColor;
+  opacity: 0.75;
+}
 .tl-layer.is-hidden .tl-layer-name {
   opacity: 0.5;
 }

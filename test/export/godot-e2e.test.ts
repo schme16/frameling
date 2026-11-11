@@ -70,3 +70,98 @@ func _init():
     expect(line).toContain('tex:8.0:8.0');
   }, 240000);
 });
+
+// The phase 2 success test: a game sprite set made entirely in pixel mode (the hero template, with idle, run, jump,
+// hurt and die) runs in Godot with no manual setup. Exported exactly as the app does at art size, dropped into
+// res://sprites, then played in a running scene tree.
+describe.skipIf(!GODOT)('the hero template plays in Godot with no setup', () => {
+  it('every clip plays with the right loop, speed and held frames', async () => {
+    const { makeHeroSprite } = await import('../../src/templates/hero-sprite');
+    const { buildSheetFiles } = await import('../../src/export/engines');
+    const { artScale } = await import('../../src/export/plan');
+    const { DEFAULT_SHEET } = await import('../../src/export/types');
+    const { artFrames } = await import('./helpers');
+    const doc = makeHeroSprite();
+    const out = buildSheetFiles({
+      doc,
+      sheet: { ...DEFAULT_SHEET, engine: 'godot', godotScene: true, json: false, trim: true, layout: 'packed', padding: 1, extrude: 1 },
+      frames: artFrames(doc) as unknown as RawImage[],
+      range: { start: 0, end: doc.length - 1 },
+      whole: true,
+      clipId: null,
+      scale: artScale(doc)!,
+      name: doc.name,
+      pixelArt: true,
+      maxSide: 8192,
+    });
+    const dir = mkdtempSync(path.join(tmpdir(), 'frameling-godot-hero-'));
+    mkdirSync(path.join(dir, 'sprites'));
+    writeFileSync(path.join(dir, 'project.godot'), 'config_version=5\n\n[application]\nconfig/name="hero"\n');
+    for (const f of out.files) writeFileSync(path.join(dir, 'sprites', f.name), f.bytes);
+    const scene = out.files.find((f) => f.name.endsWith('.tscn'))!.name;
+    writeFileSync(
+      path.join(dir, 'play.gd'),
+      `extends SceneTree
+var node: AnimatedSprite2D
+var clips := ["idle", "run", "jump", "hurt", "die"]
+var at := 0
+var t := 0.0
+var finished := false
+var out := []
+
+func _init():
+	node = (load("res://sprites/${scene}") as PackedScene).instantiate()
+	root.add_child(node)
+	var sf := node.sprite_frames
+	out.append("filter:%d" % node.texture_filter)
+	out.append("autoplay:%s" % node.autoplay)
+	for a in clips:
+		var total := 0.0
+		for i in sf.get_frame_count(a):
+			total += sf.get_frame_duration(a, i)
+		out.append("%s:%d:%s:%s:%s" % [a, sf.get_frame_count(a), total, sf.get_animation_speed(a), sf.get_animation_loop(a)])
+	node.animation_finished.connect(func(): finished = true)
+	_start()
+
+func _start():
+	t = 0.0
+	finished = false
+	node.play(clips[at])
+
+func _process(delta):
+	t += delta
+	# Each clip gets a little over twice its length: loops must still be going, the others must have finished.
+	var sf := node.sprite_frames
+	var a: String = clips[at]
+	var total := 0.0
+	for i in sf.get_frame_count(a):
+		total += sf.get_frame_duration(a, i)
+	if t < total / sf.get_animation_speed(a) * 2.2:
+		return false
+	out.append("ran:%s:playing=%s:finished=%s:frame=%d" % [a, node.is_playing(), finished, node.frame])
+	at += 1
+	if at >= clips.size():
+		print("RESULT " + ",".join(out))
+		return true
+	_start()
+	return false
+`,
+    );
+    execFileSync(GODOT!, ['--headless', '--path', dir, '--import'], { stdio: 'pipe', timeout: 120000 });
+    const res = execFileSync(GODOT!, ['--headless', '--path', dir, '--fixed-fps', '60', '--script', 'play.gd'], { encoding: 'utf8', timeout: 120000 });
+    const line = res.split('\n').find((l) => l.startsWith('RESULT ')) ?? res;
+    expect(line).toContain('filter:1');
+    expect(line).toContain('autoplay:idle');
+    expect(line).toContain('idle:4:4.0:12.0:true');
+    expect(line).toContain('run:6:6.0:12.0:true');
+    expect(line).toContain('jump:3:3.0:12.0:false');
+    expect(line).toContain('hurt:3:3.0:12.0:false');
+    // The last die pose is one drawing held for 4 frames.
+    expect(line).toContain('die:4:7.0:12.0:false');
+    expect(line).toContain('ran:idle:playing=true:finished=false');
+    expect(line).toContain('ran:run:playing=true:finished=false');
+    expect(line).toContain('ran:jump:playing=false:finished=true:frame=2');
+    expect(line).toContain('ran:hurt:playing=false:finished=true:frame=2');
+    expect(line).toContain('ran:die:playing=false:finished=true:frame=3');
+  }, 240000);
+});

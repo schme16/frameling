@@ -3,6 +3,7 @@
 import type { Clip } from '../core/format';
 import type { RawImage } from '../io/png';
 import { slug } from './plan';
+import { packSheet } from './pack';
 
 export interface Rect {
   x: number;
@@ -113,49 +114,93 @@ export interface Layout {
   cellW: number;
   cellH: number;
   padding: number;
+  /** Edge pixels repeated around each frame (inside the padding). */
+  extrude: number;
+  /** Packed tightly rather than on a grid (columns, rows and slot size then mean nothing). */
+  packed: boolean;
   /** The whole sheet. */
   width: number;
   height: number;
-  /** Top left of each slot. */
+  /** Top left of each frame's picture (after any extrude). */
   positions: { x: number; y: number }[];
 }
 
-export function layoutGrid(opts: { count: number; cellW: number; cellH: number; columns?: number; padding?: number; pot?: boolean }): Layout {
+export function layoutGrid(opts: { count: number; cellW: number; cellH: number; columns?: number; padding?: number; pot?: boolean; extrude?: number }): Layout {
   const count = Math.max(1, opts.count);
   const padding = Math.max(0, Math.round(opts.padding ?? 0));
-  const columns = opts.columns && opts.columns > 0 ? Math.min(Math.round(opts.columns), count) : autoColumns(count, opts.cellW + padding, opts.cellH + padding);
+  const e = Math.max(0, Math.round(opts.extrude ?? 0));
+  const slotW = opts.cellW + 2 * e;
+  const slotH = opts.cellH + 2 * e;
+  const columns = opts.columns && opts.columns > 0 ? Math.min(Math.round(opts.columns), count) : autoColumns(count, slotW + padding, slotH + padding);
   const rows = Math.ceil(count / columns);
-  let width = columns * opts.cellW + (columns + 1) * padding;
-  let height = rows * opts.cellH + (rows + 1) * padding;
+  let width = columns * slotW + (columns + 1) * padding;
+  let height = rows * slotH + (rows + 1) * padding;
   if (opts.pot) {
     width = nextPow2(width);
     height = nextPow2(height);
   }
   const positions = Array.from({ length: count }, (_, i) => ({
-    x: padding + (i % columns) * (opts.cellW + padding),
-    y: padding + Math.floor(i / columns) * (opts.cellH + padding),
+    x: padding + (i % columns) * (slotW + padding) + e,
+    y: padding + Math.floor(i / columns) * (slotH + padding) + e,
   }));
-  return { columns, rows, cellW: opts.cellW, cellH: opts.cellH, padding, width, height, positions };
+  return { columns, rows, cellW: opts.cellW, cellH: opts.cellH, padding, extrude: e, packed: false, width, height, positions };
 }
 
 /** The layout for a set of cells: the slot is as big as the biggest cell. */
-export function layoutCells(cells: Cell[], o: { columns?: number; padding?: number; pot?: boolean }): Layout {
+export function layoutCells(cells: Cell[], o: { columns?: number; padding?: number; pot?: boolean; extrude?: number }): Layout {
   const cellW = Math.max(1, ...cells.map((c) => c.image.width));
   const cellH = Math.max(1, ...cells.map((c) => c.image.height));
   return layoutGrid({ count: cells.length, cellW, cellH, ...o });
 }
 
-/** Paints the cells onto one transparent picture. */
+/**
+ * Packs cells of different sizes tightly (best with trimming on). Padding goes around every frame and the sheet's
+ * edge, the same as on a grid. Null when they can't fit inside `maxSide`.
+ */
+export function layoutPacked(cells: Cell[], o: { padding?: number; pot?: boolean; extrude?: number; maxSide: number }): Layout | null {
+  const padding = Math.max(0, Math.round(o.padding ?? 0));
+  const e = Math.max(0, Math.round(o.extrude ?? 0));
+  const items = cells.map((c) => ({ w: c.image.width + 2 * e + padding, h: c.image.height + 2 * e + padding }));
+  // The far edge's padding comes from each item; the near edge gets one more strip.
+  const packed = packSheet(items, { maxSide: o.maxSide - padding, pot: o.pot && padding === 0 });
+  if (!packed) return null;
+  let width = packed.width + padding;
+  let height = packed.height + padding;
+  if (o.pot) {
+    width = nextPow2(width);
+    height = nextPow2(height);
+  }
+  const positions = packed.positions.map((p) => ({ x: padding + p.x + e, y: padding + p.y + e }));
+  const cellW = Math.max(1, ...cells.map((c) => c.image.width));
+  const cellH = Math.max(1, ...cells.map((c) => c.image.height));
+  return { columns: 0, rows: 0, cellW, cellH, padding, extrude: e, packed: true, width, height, positions };
+}
+
+/** Paints the cells onto one transparent picture, with each frame's edge repeated outward when the layout extrudes. */
 export function composeSheet(cells: Cell[], layout: Layout): RawImage {
-  const pixels = new Uint8ClampedArray(layout.width * layout.height * 4);
+  const W = layout.width;
+  const pixels = new Uint8ClampedArray(W * layout.height * 4);
+  const e = layout.extrude ?? 0;
   cells.forEach((c, i) => {
     const at = layout.positions[i];
-    for (let y = 0; y < c.image.height; y++) {
-      const from = y * c.image.width * 4;
-      pixels.set(c.image.pixels.subarray(from, from + c.image.width * 4), ((at.y + y) * layout.width + at.x) * 4);
+    const { width: w, height: h } = c.image;
+    for (let y = 0; y < h; y++) {
+      const from = y * w * 4;
+      pixels.set(c.image.pixels.subarray(from, from + w * 4), ((at.y + y) * W + at.x) * 4);
+    }
+    if (!e) return;
+    // Each pixel of the ring copies the nearest edge pixel of the frame.
+    for (let y = -e; y < h + e; y++) {
+      const sy = Math.min(h - 1, Math.max(0, y));
+      for (let x = -e; x < w + e; x++) {
+        if (y >= 0 && y < h && x >= 0 && x < w) continue;
+        const sx = Math.min(w - 1, Math.max(0, x));
+        const from = (sy * w + sx) * 4;
+        pixels.set(c.image.pixels.subarray(from, from + 4), ((at.y + y) * W + at.x + x) * 4);
+      }
     }
   });
-  return { width: layout.width, height: layout.height, pixels };
+  return { width: W, height: layout.height, pixels };
 }
 
 // ---------------------------------------------------------------- animations
@@ -220,20 +265,42 @@ export interface AtlasInput {
   fps: number;
   scale: number;
   frameCount: number;
+  /** A name per cell. With names, each frame also gets a `filename`. */
+  names?: string[];
+  /** `hash` keys frames by name (and animations list names); `array` lists them in order (animations list indexes). */
+  style?: 'array' | 'hash';
+}
+
+/** One frame's entry in the common JSON atlas shape. */
+export function atlasFrame(c: Cell, at: { x: number; y: number }) {
+  return {
+    frame: { x: at.x, y: at.y, w: c.image.width, h: c.image.height },
+    rotated: false,
+    trimmed: c.image.width !== c.source.w || c.image.height !== c.source.h,
+    spriteSourceSize: { ...c.trim },
+    sourceSize: { w: c.source.w, h: c.source.h },
+  };
 }
 
 /** A generic atlas any engine or script can read: where each frame is on the picture, and how the animations use them. */
 export function buildAtlas(a: AtlasInput) {
+  const meta = { app: 'Frameling', format: 'frameling-atlas', version: 1, image: a.image, size: { w: a.layout.width, h: a.layout.height }, scale: a.scale, fps: a.fps, frameCount: a.frameCount };
+  const duration = (c: Cell) => Math.round((c.held * 1000) / a.fps);
+  if (a.style === 'hash' && a.names) {
+    const names = a.names;
+    return {
+      meta,
+      frames: Object.fromEntries(a.cells.map((c, i) => [names[i], { ...atlasFrame(c, a.layout.positions[i]), duration: duration(c) }])),
+      animations: Object.fromEntries(a.animations.map((an) => [an.name, { fps: an.fps, loop: an.loop, frames: an.frames.map((f) => names[a.cellOfFrame[f]]) }])),
+    };
+  }
   return {
-    meta: { app: 'Frameling', format: 'frameling-atlas', version: 1, image: a.image, size: { w: a.layout.width, h: a.layout.height }, scale: a.scale, fps: a.fps, frameCount: a.frameCount },
+    meta,
     frames: a.cells.map((c, i) => ({
       index: i,
-      frame: { x: a.layout.positions[i].x, y: a.layout.positions[i].y, w: c.image.width, h: c.image.height },
-      rotated: false,
-      trimmed: c.image.width !== c.source.w || c.image.height !== c.source.h,
-      spriteSourceSize: { ...c.trim },
-      sourceSize: { w: c.source.w, h: c.source.h },
-      duration: Math.round((c.held * 1000) / a.fps),
+      ...(a.names ? { filename: a.names[i] } : {}),
+      ...atlasFrame(c, a.layout.positions[i]),
+      duration: duration(c),
     })),
     animations: Object.fromEntries(
       a.animations.map((an) => [an.name, { fps: an.fps, loop: an.loop, frames: an.frames.map((f) => a.cellOfFrame[f]) }]),
@@ -295,7 +362,7 @@ export function godotSpriteFrames(g: GodotInput): string {
 }
 
 /** A small scene with an AnimatedSprite2D that is ready to drop into a Godot project. */
-export function godotScene(o: { resourcePath: string; nodeName: string; animation: string }): string {
+export function godotScene(o: { resourcePath: string; nodeName: string; animation: string; pixelArt?: boolean }): string {
   const name = o.nodeName.replace(/[^A-Za-z0-9_ -]/g, '').trim() || 'Sprite';
   return [
     '[gd_scene load_steps=2 format=3]',
@@ -306,6 +373,8 @@ export function godotScene(o: { resourcePath: string; nodeName: string; animatio
     'sprite_frames = ExtResource("1_frames")',
     `animation = &${gdString(o.animation)}`,
     `autoplay = ${gdString(o.animation)}`,
+    // Nearest-neighbour, so pixel art stays crisp without touching the project settings.
+    ...(o.pixelArt ? ['texture_filter = 1'] : []),
     '',
   ].join('\n');
 }

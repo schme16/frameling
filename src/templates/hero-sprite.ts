@@ -81,22 +81,26 @@ interface Look {
   squash?: number[];
   stretch?: number[];
   blink?: boolean;
+  /** Shift sideways, in pixels (negative is left). */
+  dx?: number;
+  /** Everything but the outline turns cream for one frame, the classic "ouch" flash. */
+  flash?: boolean;
 }
 
 function frameGrid(look: Look): string[][] {
   const g = blankGrid(GRID, GRID);
   const up = look.up ?? 0;
   let body = [...look.body];
+  // Closing the eyes is just taking the shine and top of each eye out (row 6 holds the eyes).
+  if (look.blink) body = body.map((r, i) => (i === 6 ? r.replace(/wK/g, 'bb') : r));
+  if (look.flash) body = body.map((r) => r.replace(/[^K.]/g, 'w'));
   if (look.squash) body = body.filter((_, i) => !look.squash!.includes(i));
   if (look.stretch) body = body.flatMap((r, i) => (look.stretch!.includes(i) ? [r, r] : [r]));
   // The body's last row sits on row 13 of the sprite, whatever its height.
   const bodyTop = OY + 14 - body.length + (look.dy ?? 0) - up;
-  stamp(g, look.legs, OX, OY + 14 - up);
-  stamp(g, body, OX, bodyTop);
-  if (look.blink) {
-    // Closing the eyes is just taking the shine and top of each eye out.
-    for (const x of [OX + 4, OX + 5, OX + 10, OX + 11]) g[bodyTop + 6][x] = 'b';
-  }
+  const ox = OX + (look.dx ?? 0);
+  stamp(g, look.flash ? look.legs.map((r) => r.replace(/[^K.]/g, 'w')) : look.legs, ox, OY + 14 - up);
+  stamp(g, body, ox, bodyTop);
   return g;
 }
 
@@ -137,34 +141,59 @@ const JUMP: Look[] = [
 ];
 /** Half the shadow's width for each jump frame. */
 const JUMP_SHADOW = [7, 4, 6];
+// Knocked back, a flash, and back on its feet with eyes screwed shut.
+const HURT: Look[] = [
+  { body: BODY_FRONT, legs: LEGS_STAND, blink: true, dx: -2, up: 1 },
+  { body: BODY_FRONT, legs: LEGS_STAND, flash: true, dx: -2, up: 1 },
+  { body: BODY_FRONT, legs: LEGS_STAND, blink: true, dx: -1 },
+];
+// Wobbles, then sinks down flatter and flatter. The last pose is held (see DIE_HOLD).
+const DIE: Look[] = [
+  { body: BODY_FRONT, legs: LEGS_STAND, blink: true, dy: 1 },
+  { body: BODY_FRONT, legs: LEGS_TUCK, blink: true, squash: [11, 12] },
+  { body: BODY_FRONT, legs: LEGS_TUCK, blink: true, squash: [3, 4, 11, 12] },
+  { body: BODY_FRONT, legs: LEGS_TUCK, blink: true, squash: [1, 3, 4, 5, 11, 12] },
+];
+const DIE_SHADOW = [7, 8, 8, 9];
+/** How many frames the last "die" pose stays on screen (one drawing, held). */
+const DIE_HOLD = 4;
 
-/** A small original creature with idle, run and jump clips, in 32x32 pixel art. */
+/** A small original creature with idle, run, jump, hurt and die clips, in 32x32 pixel art. */
 export function makeHeroSprite(): Doc {
-  const doc = emptyOf(newDoc({ name: 'Game hero sprite set', width: 256, height: 256, fps: 12, length: 13, background: '#bfe6ff' }));
+  const looks = [...IDLE, ...RUN, ...JUMP, ...HURT, ...DIE];
+  const halves = [...IDLE.map(() => 7), ...RUN.map(() => 7), ...JUMP_SHADOW, ...HURT.map(() => 7), ...DIE_SHADOW];
+  const length = looks.length + DIE_HOLD - 1;
+  const doc = emptyOf(newDoc({ name: 'Game hero sprite set', width: 256, height: 256, fps: 12, length, background: '#bfe6ff' }));
   swatchesFrom(doc, [
     ['Outline', PALETTE.K], ['Body', PALETTE.b], ['Body shade', PALETTE.d], ['Belly', PALETTE.l], ['Cheek', PALETTE.r],
     ['Scarf', PALETTE.s], ['Scarf shade', PALETTE.S], ['Grass', PALETTE.G], ['Earth', PALETTE.E], ['Cream', PALETTE.w],
   ]);
 
+  // The ground is a reference layer: there to stand on while drawing, left out of exports so sprites come out clean.
   const ground = addPixelLayer(doc, 'Ground', 8);
+  ground.reference = true;
   const shadow = addPixelLayer(doc, 'Shadow', 8);
   const hero = addPixelLayer(doc, 'Pip', 8);
 
-  hold(ground, pixelDrawing(doc, groundGrid(), PALETTE).id, 0, 13);
+  hold(ground, pixelDrawing(doc, groundGrid(), PALETTE).id, 0, length);
 
-  const looks = [...IDLE, ...RUN, ...JUMP];
-  const halves = [...IDLE.map(() => 7), ...RUN.map(() => 7), ...JUMP_SHADOW];
   looks.forEach((look, f) => {
-    hold(hero, pixelDrawing(doc, frameGrid(look), PALETTE).id, f);
-    hold(shadow, pixelDrawing(doc, shadowGrid(halves[f]), PALETTE).id, f);
+    const n = f === looks.length - 1 ? DIE_HOLD : 1;
+    hold(hero, pixelDrawing(doc, frameGrid(look), PALETTE).id, f, n);
+    hold(shadow, pixelDrawing(doc, shadowGrid(halves[f]), PALETTE).id, f, n);
   });
 
-  addClip(doc, 'idle', 0, 3, true);
-  addClip(doc, 'run', 4, 9, true);
-  addClip(doc, 'jump', 10, 12, false);
+  const at = (name: string, n: number, loop: boolean) => {
+    const start = doc.clips.length ? Math.max(...doc.clips.map((c) => c.end)) + 1 : 0;
+    addClip(doc, name, start, start + n - 1, loop);
+  };
+  at('idle', IDLE.length, true);
+  at('run', RUN.length, true);
+  at('jump', JUMP.length, false);
+  at('hurt', HURT.length, false);
+  at('die', DIE.length + DIE_HOLD - 1, false);
   // Feet hit the ground on the two contact frames of the run.
   addMarker(doc, 'footstep', 4);
   addMarker(doc, 'footstep', 7);
   return doc;
 }
-
