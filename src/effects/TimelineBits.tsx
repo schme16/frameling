@@ -97,28 +97,15 @@ export function FolderRow({ row, height }: { row: Extract<TimelineRow, { type: '
   );
 }
 
-/** Small marks after a layer's name: clipped, mask, blend mode, effects. */
+/** One small mark after a layer's name (mask, clipped, or blend and effects), with the whole story in its tooltip. */
 export function LookTags({ layer }: { layer: Layer }) {
   const summary = lookSummary(layer);
   if (!summary) return null;
+  const icon = layer.mask ? 'mask' : layer.clipToBelow ? 'clip-below' : 'effects';
   return (
-    <>
-      {layer.clipToBelow && (
-        <span className="tl-look-tag" title="Clipped to the layer below: only shows where that layer has drawing">
-          <Icon name="clip-below" size={12} />
-        </span>
-      )}
-      {layer.mask && (
-        <span className="tl-look-tag is-mask" title={layer.mask === 'hide' ? 'Mask: hides the layers under it where it has drawing' : 'Mask: the layers under it only show where it has drawing'}>
-          <Icon name="mask" size={12} />
-        </span>
-      )}
-      {((layer.blend && layer.blend !== 'normal') || layer.effects?.some((e) => e.on !== false)) && (
-        <span className="tl-look-tag" title={summary}>
-          <Icon name="effects" size={12} />
-        </span>
-      )}
-    </>
+    <span className={`tl-look-tag${layer.mask ? ' is-mask' : ''}`} title={summary} aria-label={summary} role="img">
+      <Icon name={icon} size={12} />
+    </span>
   );
 }
 

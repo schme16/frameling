@@ -329,8 +329,9 @@
 }
 .tl-look-tag {
   display: inline-grid;
+  flex: none;
   place-items: center;
-  margin-left: 4px;
+  margin-left: 2px;
   color: var(--muted);
   vertical-align: middle;
 }

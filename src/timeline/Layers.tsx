@@ -150,9 +150,9 @@ const LayerRow = memo(function LayerRow({ layer, inFolder, active, editing, drop
               ref
             </small>
           )}
-          <LookTags layer={layer} />
         </span>
       )}
+      <LookTags layer={layer} />
       <button type="button" className="tl-icon-btn" title={layer.visible ? 'Hide this layer' : 'Show this layer'} aria-label={layer.visible ? 'Hide layer' : 'Show layer'} aria-pressed={!layer.visible} onClick={(e) => (e.stopPropagation(), ops.setLayerVisible(layer.id, !layer.visible))}>
         <Icon name={layer.visible ? 'eye' : 'eye-off'} size={15} />
       </button>

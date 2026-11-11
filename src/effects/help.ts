@@ -5,7 +5,7 @@ registerHelpTopics([
     id: 'effects',
     title: 'Effects: glow, shadow, blur and more',
     section: 'Effects',
-    media: 'effects-panel.png',
+    media: 'effects.mp4',
     summary: 'Give a layer a glow, a shadow, a soft blur, an outline, new colours or big pixels. Open the Effects panel and pick one.',
     keywords: ['effect', 'fx', 'glow', 'shadow', 'drop shadow', 'blur', 'outline', 'stroke', 'pixelate', 'mosaic', 'hue', 'saturation', 'brightness', 'contrast', 'colour adjust', 'animate effect'],
     body: `Effects change how a whole layer looks, without touching your drawing. Take them off again any time and the drawing is just as it was.
@@ -103,6 +103,7 @@ A mask only reaches the layers under it in its own folder, so it never cuts into
     id: 'layer-folders',
     title: 'Layer folders',
     section: 'Effects',
+    media: 'layer-folders.png',
     summary: 'Put layers in a folder to fade, blend, mask and add effects to them together. Fold it shut to tidy the timeline.',
     keywords: ['folder', 'group', 'layer group', 'collapse', 'tidy'],
     body: `A **folder** (layer group) holds layers that belong together, like the parts of a character.

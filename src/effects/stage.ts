@@ -3,7 +3,7 @@
  * drawing is rasterised once per zoom), and finished effect pictures are kept in the painter's effect cache, so
  * playing over held drawings with a glow blurs nothing new.
  */
-import type { Layer } from '../core/format';
+import type { Doc, Layer } from '../core/format';
 import { drawingAt } from '../core/doc';
 import { drawDrawing } from '../core/render';
 import type { FramePainter, FrameParams } from '../canvas/pipeline';
@@ -86,3 +86,10 @@ export function paintComposited(painter: FramePainter, g: CanvasRenderingContext
 
 /** The colour a mask layer shows in while it's being drawn. */
 export const MASK_TINT = '#9b7bff';
+
+/** Picking a mask layer, or leaving one, changes the canvas (the faint mask overlay). */
+export function maskFocusChanged(s: { doc: Doc; ui: { activeLayerId: string | null } }, p: { doc: Doc; ui: { activeLayerId: string | null } }): boolean {
+  if (s.ui.activeLayerId === p.ui.activeLayerId) return false;
+  const isMask = (x: typeof s) => !!x.doc.layers.find((l) => l.id === x.ui.activeLayerId)?.mask;
+  return isMask(s) || isMask(p);
+}

@@ -16,6 +16,7 @@ import { neighbourFrames, upcomingFrames } from '../timeline/playback';
 import { FramePainter } from './pipeline';
 import { subscribeTileUi, tileModeOn } from '../tiles/state';
 import { drawTileModeFrame, tileCopyAlpha } from '../tiles/look';
+import { maskFocusChanged } from '../effects/stage';
 import { cssVar, subscribeTheme } from './theme';
 import { getViewSettings, subscribeViewSettings } from './viewSettings';
 import { screenToDoc, stageDeviceRect, wheelZoomFactor, zoomAbout, type Pt } from './view';
@@ -277,7 +278,7 @@ export class CanvasEngine {
     }
     const u = s.ui;
     const q = p.ui;
-    if (s.doc !== p.doc || u.frame !== q.frame || u.zoom !== q.zoom || u.panX !== q.panX || u.panY !== q.panY || u.onion !== q.onion || u.playing !== q.playing) {
+    if (s.doc !== p.doc || u.frame !== q.frame || u.zoom !== q.zoom || u.panX !== q.panX || u.panY !== q.panY || u.onion !== q.onion || u.playing !== q.playing || maskFocusChanged(s, p)) {
       if (u.zoom !== q.zoom) this.zoomingUntil = performance.now() + 160;
       this.invalidate(true, true);
     } else {
