@@ -63,6 +63,18 @@ export function defaultSettings(doc: Doc): ExportSettings {
   };
 }
 
+/**
+ * How many frames from the start have a drawing on any layer, when that is fewer than the animation's length (so the
+ * end would export empty). Null when the drawings reach the end, nothing is drawn yet, or there are sounds (which
+ * may want the quiet frames).
+ */
+export function drawnFrames(doc: Doc): number | null {
+  if (doc.audio?.length) return null;
+  let drawn = 0;
+  for (const l of doc.layers) for (const c of l.cels) drawn = Math.max(drawn, c.start + c.length);
+  return drawn > 0 && drawn < doc.length ? drawn : null;
+}
+
 /** The frames an export covers. Whole animation, one clip, or the frame being looked at. */
 export function resolveRange(doc: Doc, s: Pick<ExportSettings, 'range' | 'clipId' | 'format'>, currentFrame: number): FrameRange {
   const last = Math.max(0, doc.length - 1);

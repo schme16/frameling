@@ -28,7 +28,7 @@ export const FILL_HINTS = {
   'on-line': 'You clicked right on a line. Click inside the area you want to fill.',
   outside: "That spot is off the canvas. Click inside the area you want to fill.",
   'no-drawing': 'There is nothing to fill on this frame yet. Draw some lines first.',
-  same: 'That area is already this colour.',
+  same: 'That area is already this colour. Pick a new fill colour in the Colours panel (the solid box), then click again.',
 };
 
 /** Share of an existing fill's ground the new area must cover before the click recolours it instead. */

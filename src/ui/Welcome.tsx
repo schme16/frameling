@@ -354,13 +354,14 @@ function Examples({ onPick, scrollTo }: { onPick: (doc: Doc, name: string) => vo
           <button key={t.id} type="button" className="ui-example" onClick={() => pick(t)}>
             <span className="ui-example-art">
               <Thumb template={t} />
-            </span>
-            <span className="ui-example-head">
-              <strong>{t.name}</strong>
-              <span className={`ui-badge ui-badge-${t.kind}`}>
+              {/* On the picture's corner, so long names get the whole width. */}
+              <span className={`ui-badge ui-badge-${t.kind} ui-example-badge`}>
                 <Icon name={t.kind === 'pixel' ? 'pixel' : 'vector'} size={12} />
                 {t.kind === 'pixel' ? 'Pixel' : 'Vector'}
               </span>
+            </span>
+            <span className="ui-example-head">
+              <strong>{t.name}</strong>
             </span>
             <span className="ui-preset-blurb">{t.blurb}</span>
           </button>
