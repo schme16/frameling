@@ -84,8 +84,9 @@
         "nsis",
         "portable"
       ],
-      "publisherName": "Frameling (self-signed)",
-      "verifyUpdateCodeSignature": false
+      "signtoolOptions": {
+        "publisherName": "Frameling (self-signed)"
+      }
     },
     "nsis": {
       "oneClick": false,
