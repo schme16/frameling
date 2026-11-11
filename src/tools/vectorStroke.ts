@@ -7,7 +7,7 @@ import { uid } from '../core/doc';
 import type { ToolContext, ToolPointer } from '../core/registry';
 import { drawShape } from '../core/render';
 import { getPredicted } from '../canvas/controller';
-import { editActiveDrawing } from './edit';
+import { addShapes } from './merge-mode';
 import { noteColorUsed } from './recent';
 import { reportEdit } from './util';
 
@@ -61,10 +61,9 @@ export class VectorStroke {
     if (last && (last.x !== e.x || last.y !== e.y)) this.points.push({ x: e.x, y: e.y, p: e.hasPressure ? e.pressure : 0.5 });
     const shape = this.shape();
     if (!shape) return;
-    const r = editActiveDrawing('Draw stroke', 'vector', (d) => {
-      d.shapes.push(shape);
-    });
+    // On a merge layer the stroke joins or cuts what it lands on.
+    const r = addShapes('Draw stroke', [shape]).result;
     if (r === 'ok') noteColorUsed(this.color);
-    else reportEdit(ctx, r);
+    else if (r !== 'nothing') reportEdit(ctx, r);
   }
 }

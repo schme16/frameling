@@ -191,7 +191,7 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
       cels,
     };
     if (l.kind === 'pixel') layers.push({ ...base, kind: 'pixel', pixelSize: Math.max(1, Math.round(num(l.pixelSize, 1))) });
-    else layers.push({ ...base, kind: 'vector' });
+    else layers.push({ ...base, kind: 'vector', ...(l.drawMode === 'merge' ? { drawMode: 'merge' as const } : {}) });
   }
   const unique = new Set(layers.map((l) => l.id));
   if (unique.size !== layers.length) throw damaged();

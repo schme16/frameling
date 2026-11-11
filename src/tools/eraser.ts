@@ -2,7 +2,7 @@
  * Eraser [E]. On a vector layer it removes whole lines and shapes it touches ("erase whole lines"), previewing them
  * disappearing as you go. On a pixel layer it clears pixels.
  */
-import type { Drawing, Id, VectorDrawing } from '../core/format';
+import type { Drawing, Id, Shape, VectorDrawing } from '../core/format';
 import { findLayer } from '../core/doc';
 import { registerTool, type Tool, type ToolContext, type ToolPointer } from '../core/registry';
 import { store } from '../core/store';
@@ -15,12 +15,16 @@ import { EraserOptions } from './options/EraserOptions';
 import { PixelStroke } from './pixelStroke';
 import { getToolSettings } from './settings';
 import { reportEdit } from './util';
+import { activeIsMerge, editShapes } from './merge-mode';
+import { eraseArea, sweepGeom } from '../geometry/merge';
 
 interface VectorGesture {
   layerId: Id;
   drawing: VectorDrawing;
   removed: Set<Id>;
   last: { x: number; y: number } | null;
+  /** Merge layers rub out area instead of whole lines: the shapes as they are so far. */
+  area: { shapes: Shape[]; changed: boolean } | null;
 }
 let vec: VectorGesture | null = null;
 let pix: PixelStroke | null = null;
@@ -42,6 +46,16 @@ function reach(ctx: ToolContext): number {
 
 function sweep(g: VectorGesture, x: number, y: number, ctx: ToolContext): void {
   const r = reach(ctx);
+  if (g.area) {
+    // One capsule from the last spot to this one, so a fast flick still rubs out everything in between.
+    const e = eraseArea(g.area.shapes, sweepGeom(g.last ?? { x, y }, { x, y }, r));
+    g.last = { x, y };
+    if (e.changed) {
+      g.area = { shapes: e.shapes, changed: true };
+      setLive({ layerId: g.layerId, kind: 'vector', drawing: { ...g.drawing, shapes: e.shapes } });
+    }
+    return;
+  }
   // Walk from the last position so a fast flick can't jump over a line.
   const from = g.last ?? { x, y };
   const d = Math.hypot(x - from.x, y - from.y);
@@ -70,10 +84,10 @@ function down(e: ToolPointer, ctx: ToolContext): void {
     const d = activeDrawing();
     if (!d || d.kind !== 'vector' || !d.shapes.length) {
       // Nothing on this frame to erase. A gesture with no drawing just does nothing.
-      vec = { layerId: layer.id, drawing: { id: '', kind: 'vector', shapes: [] }, removed: new Set(), last: null };
+      vec = { layerId: layer.id, drawing: { id: '', kind: 'vector', shapes: [] }, removed: new Set(), last: null, area: null };
       return;
     }
-    vec = { layerId: layer.id, drawing: d, removed: new Set(), last: null };
+    vec = { layerId: layer.id, drawing: d, removed: new Set(), last: null, area: activeIsMerge() ? { shapes: d.shapes.slice(), changed: false } : null };
     sweep(vec, e.x, e.y, ctx);
     return;
   }
@@ -92,7 +106,11 @@ function up(e: ToolPointer, ctx: ToolContext): void {
     const g = vec;
     vec = null;
     sweep(g, e.x, e.y, ctx);
-    if (g.removed.size) {
+    if (g.area?.changed) {
+      const shapes = g.area.shapes;
+      const r = editShapes('Erase', () => shapes);
+      if (r !== 'nothing') reportEdit(ctx, r);
+    } else if (g.removed.size) {
       const gone = g.removed;
       const r = editActiveDrawing('Erase lines', 'vector', (d) => {
         d.shapes = d.shapes.filter((s) => !gone.has(s.id));

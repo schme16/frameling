@@ -25,6 +25,7 @@
     "immer": "^11.2.10",
     "mediabunny": "^1.65.2",
     "perfect-freehand": "^1.2.3",
+    "polygon-clipping": "^0.15.7",
     "react": "^19.3.1",
     "react-dom": "^19.3.1"
   },

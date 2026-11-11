@@ -2,6 +2,7 @@ import { useStore } from '../../core/store';
 import { Slider, Tip } from '../../canvas/controls';
 import { Wells } from '../../canvas/panels/Wells';
 import { setToolSettings, useToolSettings } from '../settings';
+import { DrawModeToggle } from './DrawModeToggle';
 
 export function ShapeOptions() {
   const tool = useStore((s) => s.ui.tool);
@@ -11,6 +12,7 @@ export function ShapeOptions() {
   const isLine = tool === 'line';
   return (
     <div className="cv-options">
+      <DrawModeToggle />
       <Wells />
       {(isLine || strokeOn) && <Slider label={isLine ? 'Thickness' : 'Outline thickness'} value={stroke} min={1} max={60} format={(v) => `${v}px`} onChange={(v) => setToolSettings({ shapeStroke: v })} />}
       {tool === 'rect' && <Slider label="Rounded corners" value={radius} min={0} max={200} format={(v) => (v ? `${v}px` : 'Square')} onChange={(v) => setToolSettings({ cornerRadius: v })} />}
