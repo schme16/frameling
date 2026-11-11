@@ -327,12 +327,16 @@ See also [Panels](help:panels).`,
     title: 'Panels',
     section: 'Workspace',
     summary: 'Panels dock on the left, right and bottom. Drag them where you like.',
-    keywords: ['dock', 'tabs', 'drag', 'resize', 'collapse', 'splitter', 'hide', 'show', 'move'],
+    keywords: ['dock', 'tabs', 'more', 'overflow', 'drag', 'resize', 'collapse', 'splitter', 'hide', 'show', 'move'],
     body: `Panels hold things like the timeline, layers and colours. They live in three zones: **left**, **right** and **bottom**.
 
 ## Move
 
 Drag a panel's **tab** to another place in the same zone to reorder it, or onto another zone to move it there. A glow shows where it will land.
+
+## When the tabs don't all fit
+
+When a zone gets narrow, the other tabs shrink to just their icon (hover one to see its name). If even that's not enough, a **+N** button appears: click it to see the rest and open one. Widen the zone to bring the names back.
 
 ## Resize
 

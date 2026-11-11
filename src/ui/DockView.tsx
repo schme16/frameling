@@ -1,9 +1,10 @@
 // The docked zones (left, right, bottom): tabs you can drag, splitters you can pull, zones that fold away.
-import { Component, useRef, useState, type ErrorInfo, type ReactNode } from 'react';
+import { Component, useEffect, useLayoutEffect, useRef, useState, type ErrorInfo, type ReactNode } from 'react';
 import { getPanel, type DockZone } from '../core/registry';
 import { clampSize, DEFAULT_SIZE, dock, hidePanel, movePanel, resizeZone, setActive, toggleCollapsed } from './dock';
 import { Icon } from './icons';
 import { createStore } from './mini';
+import { fitTabs, type TabFit } from './tabFit';
 
 const dragging = createStore<string | null>(null);
 
@@ -39,6 +40,56 @@ export function DockZoneView({ zone }: { zone: DockZone }) {
   const [dropAt, setDropAt] = useState<number | null>(null);
   const bar = useRef<HTMLDivElement>(null);
   const horizontal = zone === 'bottom';
+  const measure = useRef<HTMLDivElement>(null);
+  const [fit, setFit] = useState<TabFit | null>(null);
+  // Where the "+N" list opens (fixed, so the zone's own clipping can't cut it off), or null when it's shut.
+  const [moreAt, setMoreAt] = useState<{ top: number; right: number } | null>(null);
+  const moreOpen = moreAt !== null;
+  const setMoreOpen = (open: boolean) => setMoreAt(open ? moreAt : null);
+  const flat = !z.collapsed || horizontal;
+  const activeId = z.active ?? z.tabs[0];
+  const tabKey = z.tabs.join('|');
+
+  // Measure the tabs as they'd look with and without names, and fit them to the bar. Runs again when the bar
+  // changes size, so tabs never scroll out of sight.
+  useLayoutEffect(() => {
+    const el = bar.current;
+    const m = measure.current;
+    if (!el || !m || !flat) {
+      setFit(null);
+      return;
+    }
+    const run = () => {
+      const full = [...m.querySelectorAll<HTMLElement>('[data-m="full"]')].map((e) => e.getBoundingClientRect().width);
+      const icon = [...m.querySelectorAll<HTMLElement>('[data-m="icon"]')].map((e) => e.getBoundingClientRect().width);
+      const more = m.querySelector<HTMLElement>('[data-m="more"]')?.getBoundingClientRect().width ?? 40;
+      const fold = el.querySelector<HTMLElement>('.ui-zone-fold')?.getBoundingClientRect().width ?? 24;
+      const cs = getComputedStyle(el);
+      const avail = el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - fold - 6;
+      const next = fitTabs({ avail, gap: parseFloat(cs.columnGap) || 2, full, icon, active: Math.max(0, z.tabs.indexOf(activeId)), more });
+      setFit((f) => (f && f.mode === next.mode && f.shown.join() === next.shown.join() ? f : next));
+    };
+    run();
+    const ro = new ResizeObserver(run);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [tabKey, activeId, flat]);
+
+  // The "+N" list closes on a click elsewhere or Escape.
+  useEffect(() => {
+    if (!moreOpen) return;
+    const close = (e: Event) => {
+      if (e instanceof KeyboardEvent && e.key !== 'Escape') return;
+      if (e instanceof PointerEvent && (e.target as HTMLElement).closest?.('.ui-tab-more-wrap')) return;
+      setMoreOpen(false);
+    };
+    window.addEventListener('pointerdown', close, true);
+    window.addEventListener('keydown', close, true);
+    return () => {
+      window.removeEventListener('pointerdown', close, true);
+      window.removeEventListener('keydown', close, true);
+    };
+  }, [moreOpen]);
 
   if (!z.tabs.length) {
     if (!drag) return null;
@@ -62,11 +113,11 @@ export function DockZoneView({ zone }: { zone: DockZone }) {
 
   const indexAt = (e: React.DragEvent): number => {
     const tabs = [...(bar.current?.querySelectorAll<HTMLElement>('.ui-tab') ?? [])];
-    for (let i = 0; i < tabs.length; i++) {
-      const r = tabs[i].getBoundingClientRect();
-      if (e.clientX < r.left + r.width / 2) return i;
+    for (const t of tabs) {
+      const r = t.getBoundingClientRect();
+      if (e.clientX < r.left + r.width / 2) return Number(t.dataset.index);
     }
-    return tabs.length;
+    return z.tabs.length;
   };
   const onDragOver = (e: React.DragEvent) => {
     if (!drag) return;
@@ -83,15 +134,19 @@ export function DockZoneView({ zone }: { zone: DockZone }) {
   };
   const dropClass = drag ? ' is-target' : '';
 
+  const shown = fit ? new Set(fit.shown) : null;
+  const iconOnly = fit !== null && fit.mode !== 'full';
   const tabs = z.tabs.map((id, i) => {
     const p = getPanel(id);
     if (!p) return null;
+    if (shown && !shown.has(i)) return null;
     const on = id === active;
     return (
       <div
         key={id}
         className={`ui-tab${on && !z.collapsed ? ' is-chosen' : ''}${drag === id ? ' is-dragging' : ''}${dropAt === i && drag ? ' drop-before' : ''}${dropAt === i + 1 && i === z.tabs.length - 1 && drag ? ' drop-after' : ''}`}
         role="presentation"
+        data-index={i}
         draggable
         onDragStart={(e) => {
           e.dataTransfer.setData('text/plain', id);
@@ -124,7 +179,7 @@ export function DockZoneView({ zone }: { zone: DockZone }) {
           }}
         >
           <Icon name={p.icon} size={15} />
-          {(!z.collapsed || horizontal) && <span className="ui-tab-title">{p.title}</span>}
+          {flat && !(iconOnly && !on) && <span className="ui-tab-title">{p.title}</span>}
         </button>
         {on && !z.collapsed && (
           <button type="button" className="ui-tab-close" aria-label={`Close ${p.title} panel`} data-tip={`Close ${p.title}`} data-tip-desc="Bring it back from the View menu." onClick={() => hidePanel(id)}>
@@ -155,9 +210,83 @@ export function DockZoneView({ zone }: { zone: DockZone }) {
     <section className={`ui-zone ui-zone-${zone}${z.collapsed ? ' is-collapsed' : ''}${dropClass}`} style={style} aria-label={`${zone} panels`} onDragOver={onDragOver} onDrop={onDrop}>
       <div className="ui-tabbar" role="tablist" ref={bar} aria-orientation={z.collapsed && !horizontal ? 'vertical' : 'horizontal'}>
         {tabs}
+        {fit && fit.hidden.length > 0 && (
+          <div className="ui-tab-more-wrap">
+            <button
+              type="button"
+              className={`ui-tab-more${moreOpen ? ' is-open' : ''}`}
+              aria-haspopup="menu"
+              aria-expanded={moreOpen}
+              aria-label={`${fit.hidden.length} more panel${fit.hidden.length === 1 ? '' : 's'}`}
+              data-tip={`${fit.hidden.length} more panel${fit.hidden.length === 1 ? '' : 's'}`}
+              data-tip-desc="There isn't room for every tab here. Widen the panels to see them all."
+              onClick={(e) => {
+                if (moreOpen) return setMoreOpen(false);
+                const r = e.currentTarget.getBoundingClientRect();
+                setMoreAt({ top: r.bottom + 4, right: Math.max(8, window.innerWidth - r.right) });
+              }}
+            >
+              +{fit.hidden.length}
+              <Icon name="chevron-down" size={12} />
+            </button>
+            {moreOpen && (
+              <div className="ui-menu ui-tab-more-menu" role="menu" aria-label="More panels" style={{ top: moreAt.top, right: moreAt.right }}>
+                {fit.hidden.map((i) => {
+                  const p = getPanel(z.tabs[i]);
+                  if (!p) return null;
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      role="menuitem"
+                      className="ui-menu-item"
+                      onClick={() => {
+                        setActive(zone, z.tabs[i]);
+                        setMoreOpen(false);
+                      }}
+                    >
+                      <span className="ui-menu-tick">
+                        <Icon name={p.icon} size={14} />
+                      </span>
+                      <span className="ui-menu-label">{p.title}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
         <span className="ui-tabbar-fill" />
         {collapseBtn}
       </div>
+      {flat && (
+        <div className="ui-tab-measure" ref={measure} aria-hidden="true">
+          {z.tabs.map((id) => {
+            const p = getPanel(id);
+            if (!p) return null;
+            return (
+              <span key={id} className="ui-tab-measure-pair">
+                <span className="ui-tab" data-m="full">
+                  <span className="ui-tab-main">
+                    <Icon name={p.icon} size={15} />
+                    <span className="ui-tab-title">{p.title}</span>
+                  </span>
+                  {id === activeId && !z.collapsed && <span className="ui-tab-close" />}
+                </span>
+                <span className="ui-tab" data-m="icon">
+                  <span className="ui-tab-main">
+                    <Icon name={p.icon} size={15} />
+                  </span>
+                </span>
+              </span>
+            );
+          })}
+          <span className="ui-tab-more" data-m="more">
+            +9
+            <Icon name="chevron-down" size={12} />
+          </span>
+        </div>
+      )}
       {!z.collapsed && panel && (
         <div className="ui-panel" role="tabpanel" id={`ui-panel-${active}`} aria-labelledby={`ui-tab-${active}`}>
           <PanelBoundary name={panel.title} key={active}>
