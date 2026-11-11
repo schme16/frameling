@@ -217,7 +217,7 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
               )}
               {sheet.engine === 'godot' && hasBones && !separate && sheet.godotRig === 'bones' && (
                 <p className="ex-note">
-                  A scene with the skeleton, a picture for each part and every clip as an animation. The sheet settings below don't apply.{' '}
+                  A scene with the skeleton, a picture for each part and every clip as an animation.{' '}
                   <button type="button" className="ex-link" onClick={() => openHelp('export-godot-bones')}>
                     How it works
                   </button>
@@ -405,7 +405,7 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
                 )}
               </fieldset>
 
-              {!(separate && sheet.separateFiles) && (
+              {!(separate && sheet.separateFiles) && !godotBones && (
                 <fieldset>
                   <legend>Sheet</legend>
                   <div className="ex-seg">

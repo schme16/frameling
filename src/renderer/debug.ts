@@ -8,6 +8,7 @@ import { celebrate } from '../quests/feedback';
 import { getQuest, startQuest } from '../quests/registry';
 import { getPrefs, setPrefs } from '../ui/prefs';
 import { quillSheet, setQuillSheet, tick as quillTick } from '../ui/mascot/runtime';
+import { setWeightsLook } from '../rig/weightsTool';
 
 if (new URLSearchParams(location.search).has('debug')) {
   (window as unknown as { __frameling: unknown }).__frameling = {
@@ -32,5 +33,7 @@ if (new URLSearchParams(location.search).has('debug')) {
       },
     },
     quill: { sheet: () => quillSheet.get(), setSheet: setQuillSheet, tick: quillTick },
+    // The weight painting look, for the A/B in brand/ab/weights.
+    weightsLook: setWeightsLook,
   };
 }
