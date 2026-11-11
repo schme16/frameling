@@ -7,10 +7,10 @@ import type { FileFilter, LibraryEntry, LibraryKind } from '../preload/api';
 import { pathKey } from './paths';
 
 /** Each kind keeps its files with one extension, so people can drop files into the folder by hand. */
-export const LIBRARY_EXT: Record<LibraryKind, string> = { plugins: '.zip', templates: '.frameling' };
+export const LIBRARY_EXT: Record<LibraryKind, string> = { plugins: '.zip', templates: '.frameling', versions: '.frameling', 'versions-index': '.json' };
 const MAX_LIBRARY_FILE = 64 * 1024 * 1024;
 
-export const isLibraryKind = (k: unknown): k is LibraryKind => k === 'plugins' || k === 'templates';
+export const isLibraryKind = (k: unknown): k is LibraryKind => k === 'plugins' || k === 'templates' || k === 'versions' || k === 'versions-index';
 
 /** Ids are file names without the extension: letters, numbers, dashes and underscores only. */
 export function libraryId(id: unknown): string | null {

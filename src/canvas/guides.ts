@@ -7,6 +7,7 @@ import { store } from '../core/store';
 import { addStageOverlay, hint, requestOverlay } from './controller';
 import { getSnapLines, setSnapLines, SNAP_PX, snapBox, snapPoint, snapTargets, withGuide, type SnapLine } from './snap';
 import { cssVar } from './theme';
+import { isoRatio, snapIso, squareLines } from './grid';
 import { getViewSettings, setViewSettings } from './viewSettings';
 import type { Pt, Rect } from './view';
 
@@ -66,14 +67,29 @@ export function cancelGuideDrag(): void {
 
 /** Snapping for the gesture in hand: off when the setting is off or Ctrl (Cmd) is held. */
 function targets(bypass: boolean) {
-  if (bypass || !getViewSettings().snap) return null;
-  return snapTargets(store().get().doc, getViewSettings().guides);
+  const v = getViewSettings();
+  if (bypass || !v.snap) return null;
+  const doc = store().get().doc;
+  const t = snapTargets(doc, v.guides);
+  // A square grid that's showing is more lines to snap to.
+  if (v.grid === 'square') {
+    const g = squareLines(v.gridSize, doc.width, doc.height);
+    t.x.push(...g.x);
+    t.y.push(...g.y);
+  }
+  return t;
 }
 
 /** A point pulled onto guides and the page's edges and middle (shape corners, line ends). */
 export function snapPt(p: Pt, zoom: number, bypass: boolean): Pt {
   const t = targets(bypass);
   if (!t) return showSnap([]), p;
+  const v = getViewSettings();
+  // An isometric grid pulls points onto its corners.
+  if (v.grid === 'iso') {
+    const q = snapIso(p, v.gridSize, isoRatio(v.isoStyle));
+    if (Math.hypot(q.x - p.x, q.y - p.y) <= SNAP_PX / zoom) return showSnap([]), q;
+  }
   const s = snapPoint(p, t, SNAP_PX / zoom);
   showSnap(s.lines);
   return { x: s.x, y: s.y };
@@ -177,10 +193,10 @@ registerCommands([
   },
   {
     id: 'view.snap',
-    label: 'Snap to guides and page',
+    label: 'Snap to guides, grid and page',
     category: 'View',
     keys: ['Mod+Shift+;'],
-    description: 'Shapes and selections jump onto guides and the page edges and middle when they get close. Hold Ctrl while dragging to stop it for a moment.',
+    description: 'Shapes and selections jump onto guides, the grid (when it shows) and the page edges and middle when they get close. Hold Ctrl while dragging to stop it for a moment.',
     help: 'rulers-guides',
     keywords: ['snap', 'snapping', 'magnet', 'align'],
     checked: () => getViewSettings().snap,

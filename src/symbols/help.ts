@@ -63,6 +63,26 @@ Undo works as usual. Going into and out of a symbol are steps too, so undoing fa
 Below that are the [in-betweens](help:tweens) for the key under the playhead.`,
   },
   {
+    id: 'tween-offer',
+    order: 2.5,
+    title: 'Fill the gap with one click (tween offer)',
+    section: 'Symbols and motion',
+    media: 'tween-offer.png',
+    summary: 'Click a frame between two drawings and Frameling offers to fill the gap with in-betweens: Move or Morph.',
+    keywords: ['tween offer', 'offer', 'suggestion', 'click a frame', 'quick tween'],
+    body: `Click a frame in the timeline that sits between two drawings (held frames, or empty frames with a drawing after them), and a small **In-betweens?** offer appears on that stretch.
+
+- **Move** glides, grows, turns or fades the drawing from one key to the next (a classic tween). A plain drawing becomes a [symbol](help:symbols) first.
+- **Morph** melts one drawing's shapes into the next (a [shape tween](help:shape-tweens)). It's offered when both drawings are plain shapes.
+- **x** (or **Esc**) says no thanks. It won't offer again on that stretch until something on the layer changes.
+
+Either way it's one step, so **Ctrl+Z** takes it straight back. You can reach the buttons with **Tab**.
+
+It never shows while playing, scrubbing or dragging, and it goes away by itself when you move to another frame or start playing.
+
+Don't want it? Turn it off in **Preferences > Behaviour > Offer in-betweens between keys**. You can still use **Ctrl+Shift+T** or the right-click menu.`,
+  },
+  {
     id: 'tweens',
     order: 2,
     title: 'In-betweens (tweens)',
@@ -78,6 +98,8 @@ Below that are the [in-betweens](help:tweens) for the key under the playhead.`,
 4. Press play.
 
 If the drawing wasn't a [symbol](help:symbols) yet, it becomes one, because in-betweens move symbols.
+
+**Even quicker:** click a frame between two drawings in the timeline, and a little [In-betweens? offer](help:tween-offer) appears there. One click makes them.
 
 In the timeline, in-betweens show as a purple band with an arrow from one key to the next. A dashed line means the keys have come apart, so nothing moves until they touch again.
 
@@ -116,6 +138,36 @@ Pick one in the **Symbol and motion** panel, or from the command palette ("Easin
 **Your own curve:** drag the two yellow handles on the graph. Time runs left to right and the move runs bottom to top, so a steep part is fast and a flat part is slow. Handles above the top line make it overshoot. With a handle focused, the arrow keys nudge it.
 
 On the canvas, the dots along the motion trail show one in-between each. Bunched-up dots are slow, spread-out dots are fast.`,
+  },
+  {
+    id: 'one-click-motions',
+    order: 4,
+    title: 'One-click motions: bounce, wobble, float',
+    section: 'Symbols and motion',
+    media: 'one-click-motions.mp4',
+    summary: 'Make something bounce, wobble, float, pop in, shake or fade in with one click. You get ordinary keys you can change.',
+    keywords: ['motion preset', 'animate preset', 'preset', 'bounce', 'wobble', 'float', 'pop in', 'shake', 'fade in', 'one click', 'quick animation', 'effect'],
+    body: `Want something to move without setting up every key? Pick a motion and Frameling does the keys for you.
+
+**How**
+1. Go to the frame where the motion should start.
+2. Select what should move with the Select tool (V). Nothing selected moves the whole drawing on this frame.
+3. Pick **Animate > One-click motions**, or right-click the frame in the timeline, or press **Ctrl+K** and type "make it".
+
+**The motions**
+- **Bounce**: crouches, hops up and lands with a squash, like a ball.
+- **Wobble**: rocks side to side and settles, like jelly.
+- **Float**: drifts gently up and back down. It loops smoothly.
+- **Pop in**: springs up from small and clear, going a little too far before it settles (overshoot).
+- **Shake**: shudders side to side, quick and getting smaller. Good for "no!" or a hit.
+- **Fade in**: starts clear and fades up.
+
+**What it makes**
+Plain [keys with in-betweens](help:tweens), each with its own [easing](help:easing). Nothing is hidden: drag the keys to change the timing, move the drawing on any key to change a pose, or change an easing in the Symbol and motion panel. Every motion ends just as it started, so it loops, and you can add another one straight after it.
+
+Shapes that aren't a [symbol](help:symbols) yet are made into one first, so they can move as one piece. **Ctrl+Z** undoes the whole motion in one go.
+
+**Not enough room?** If the motion runs into the next drawing on the layer, Frameling asks the first time whether to make it quicker to fit or move the later drawings along, then remembers (Preferences > Behaviour).`,
   },
   {
     id: 'motion-paths',
