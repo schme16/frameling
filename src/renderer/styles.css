@@ -1,0 +1,28 @@
+:root {
+  --bg: #1d1b26;
+  --ink: #f4efe6;
+  --muted: #b3aac4;
+  --gold: #ffc94a;
+  --rose: #ff8fab;
+  --sky: #7cc8ff;
+  color-scheme: dark;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+html, body, #root { height: 100%; margin: 0; }
+body { background: var(--bg); color: var(--ink); }
+.welcome { height: 100%; display: grid; place-content: center; text-align: center; gap: 4px; }
+.welcome h1 { font-size: 44px; margin: 16px 0 4px; letter-spacing: 0.5px; }
+.welcome p { margin: 0; font-size: 18px; }
+.welcome .soon { color: var(--muted); font-size: 15px; margin-top: 8px; }
+.welcome .version { color: var(--muted); font-size: 12px; margin-top: 24px; }
+/* Three flipbook pages that take turns popping up, like a tiny animation. */
+.mascot { position: relative; width: 96px; height: 96px; margin: 0 auto; }
+.page { position: absolute; inset: 0; border-radius: 18px; animation: flip 1.2s steps(1) infinite; opacity: 0; }
+.p1 { background: var(--gold); animation-delay: 0s; transform: rotate(-6deg); }
+.p2 { background: var(--rose); animation-delay: 0.4s; transform: rotate(3deg) translateY(-6px); }
+.p3 { background: var(--sky); animation-delay: 0.8s; transform: rotate(8deg); }
+@keyframes flip { 0% { opacity: 1; } 33.34% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .page { animation: none; }
+  .p1 { opacity: 1; }
+}
