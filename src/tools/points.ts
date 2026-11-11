@@ -155,7 +155,7 @@ export const pointsTool: Tool = {
   icon: 'points',
   key: 'a',
   layers: ['vector'],
-  order: 12,
+  order: 6,
   help: 'tool-points',
   cursor: 'default',
   options: PointsOptions,

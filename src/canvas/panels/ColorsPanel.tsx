@@ -200,7 +200,8 @@ export function ColorsPanel() {
   const plain = useStore((s) => activeColor(s.ui) ?? s.ui.color);
   const well = useStore((s) => s.ui.activeWell);
   // Re-read when the gradient changes, so the picker follows the marker being edited.
-  useGradientWells((s) => [s[well], s.stop[well]]);
+  useGradientWells((s) => s[well]);
+  useGradientWells((s) => s.stop[well]);
   const color = stopColor(well) ?? plain;
   const swatches = useStore((s) => s.doc.swatches);
   const recent = useRecentColors();

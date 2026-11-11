@@ -16,12 +16,15 @@ function Preview({ doc, frame, label }: { doc: Doc; frame: number; label: string
   useEffect(() => {
     const c = ref.current;
     if (!c || typeof OffscreenCanvas === 'undefined') return;
-    const k = Math.min(PREVIEW / doc.width, PREVIEW / doc.height);
+    // Small (pixel art) documents grow by whole steps so pixels stay crisp.
+    const fit = Math.min(PREVIEW / doc.width, PREVIEW / doc.height);
+    const k = fit >= 1 ? Math.floor(fit) : fit;
     c.width = Math.max(1, Math.round(doc.width * k));
     c.height = Math.max(1, Math.round(doc.height * k));
     const g = c.getContext('2d');
     if (!g) return;
     g.clearRect(0, 0, c.width, c.height);
+    g.imageSmoothingEnabled = false;
     g.drawImage(renderFrameToCanvas(doc, frame, k), 0, 0);
   }, [doc, frame]);
   return (
