@@ -4,6 +4,7 @@ import { app, BrowserWindow, dialog, ipcMain, shell, type IpcMainInvokeEvent } f
 import fs from 'node:fs';
 import path from 'node:path';
 import type { AutosaveMeta, DocumentState, FileFilter, SaveChoice } from '../preload/api';
+import { registerVideoIpc } from './video';
 import { addLinked, canOpenOther, cleanFilters, isLibraryKind, isLinked, libraryId, listLibrary, pickFolder, readLibrary, readSmallFolder, removeLibrary, showLibraryFolder, writeLibrary } from './library';
 import { addRecent, clearAutosave, clearRecent, keepAutosave, lastDir, listKept, listRecent, readAutosave, readKept, rememberDir, removeKept, removeRecent, writeAutosave, writeFileAtomic } from './store';
 
@@ -254,6 +255,8 @@ export function registerIpc(hooks: IpcHooks): void {
     hooks.saveBeforeCloseDone(!!ok);
   });
 
+  // ProRes through FFmpeg (src/main/video.ts), only into files picked in an export dialog.
+  registerVideoIpc(handle, (p) => granted.has(key(p)));
   // ------------------------------------------------ plugins, templates and Interactives packages
 
   handle('files:openOther', async (_e, opts: { filters: FileFilter[]; title?: string }) => {

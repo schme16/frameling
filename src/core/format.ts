@@ -238,7 +238,7 @@ export interface TileFrame {
   duration: number;
 }
 
-export type Shape = StrokeShape | FillShape | PathShape | InstanceShape;
+export type Shape = StrokeShape | FillShape | PathShape | InstanceShape | TextShape | ParticlesShape;
 
 /** A point of a hand-drawn stroke: position, pen pressure (0 to 1, 0.5 when the device has none). */
 export interface StrokePoint {
@@ -496,6 +496,129 @@ export interface EditFrame {
   activeLayerId: Id | null;
   /** Instance space to outer space, as [a, b, c, d, e, f]. */
   matrix: [number, number, number, number, number, number];
+}
+
+// ---------------------------------------------------------------- text and particles
+
+/** How a text animator splits the text. */
+export type TextUnit = 'letter' | 'word' | 'line';
+
+/** What a text animator does to each piece. */
+export type TextAnimKind = 'fade' | 'slide' | 'scale' | 'rotate' | 'typewriter' | 'wave';
+
+/**
+ * One text animator. Pieces (letters, words or lines) each take `duration` frames, starting `stagger` frames apart,
+ * from `start` frames after the key begins. 'in' animates from the changed look to the plain text, 'out' the other
+ * way. A wave never ends: `duration` is one swing and `stagger` how far behind each piece runs.
+ */
+export interface TextAnimator {
+  id: Id;
+  kind: TextAnimKind;
+  by: TextUnit;
+  /** Missing = 'in'. */
+  direction?: 'in' | 'out';
+  start: number;
+  duration: number;
+  stagger: number;
+  /** Which piece goes first (missing = 'forward'). */
+  order?: 'forward' | 'backward' | 'middle' | 'random';
+  /** Distance (slide, wave) in document pixels, size (scale, 0 to 4) or angle (rotate, degrees). */
+  amount: number;
+  /** Slide direction in degrees, 90 = from below (missing = 90). */
+  angle?: number;
+  ease?: Easing;
+  seed?: number;
+  /** Missing = on. */
+  on?: boolean;
+}
+
+/**
+ * Text as one shape: lines of a font at a size, placed and turned by `transform` (the first line's baseline starts at
+ * the origin; the anchor moves with `align`). Kept as text, so it stays editable; "Convert to shapes" makes outlines.
+ */
+export interface TextShape {
+  id: Id;
+  group?: Id;
+  type: 'text';
+  text: string;
+  /** Font family name ('Nunito', 'Inter', or a font on this computer). */
+  font: string;
+  size: number;
+  /** 100 to 900. */
+  weight: number;
+  italic?: boolean;
+  color: Color;
+  align: 'left' | 'center' | 'right';
+  /** Line spacing as a multiple of the size (missing = 1.2). */
+  lineHeight?: number;
+  /** Extra space between letters, document pixels (missing = 0). */
+  letterSpacing?: number;
+  opacity: number;
+  transform: Transform2D;
+  animators?: TextAnimator[];
+}
+
+/** What each particle looks like. 'symbol' draws `ParticlesShape.symbolId`. */
+export type ParticleSprite = 'dot' | 'soft' | 'square' | 'star' | 'spark' | 'streak' | 'confetti' | 'flake' | 'symbol';
+
+/**
+ * A particle emitter. Particles are worked out from the seed for every frame on their own (no step-by-step
+ * simulation), so scrubbing, playing and every export show exactly the same particles. Time starts when its key starts.
+ * Speeds are document pixels per second, times are seconds.
+ */
+export interface ParticlesShape {
+  id: Id;
+  group?: Id;
+  type: 'particles';
+  /** Where the emitter sits and how it is turned and stretched (origin = its centre). */
+  transform: Transform2D;
+  /** Where particles start: one point, along a line (`width` long) or inside a box (`width` x `height`). */
+  emitter: 'point' | 'line' | 'area';
+  width: number;
+  height: number;
+  /** Particles per second. */
+  rate: number;
+  /** Particles all at once at the start. */
+  burst: number;
+  /** Stop making new ones after this many seconds (0 = keep going). */
+  emitFor: number;
+  /** Start as if it had already been running (rain and snow already falling). */
+  prewarm?: boolean;
+  life: number;
+  /** 0 to 1: how much each particle's life, speed, size and spin differ. */
+  variance: number;
+  speed: number;
+  /** Degrees: 0 = right, -90 = up. Turns with the emitter. */
+  direction: number;
+  /** Degrees either side of `direction`. */
+  spread: number;
+  /** Pull down (positive) or up, pixels per second per second. */
+  gravity: number;
+  /** Push right (positive) or left, pixels per second per second. */
+  wind: number;
+  /** Slows particles down, 0 (none) to 5 (stops fast). */
+  drag: number;
+  /** A gentle wander, in pixels. */
+  wobble?: number;
+  sizeStart: number;
+  sizeEnd: number;
+  colorStart: Color;
+  colorEnd: Color;
+  /** 'life' (missing): from the start colour to the end one as they age. 'random': each gets its own mix of the two. */
+  colorBy?: 'life' | 'random';
+  /** 0 to 1. */
+  opacityStart: number;
+  opacityEnd: number;
+  /** Degrees per second. */
+  spin: number;
+  sprite: ParticleSprite;
+  symbolId?: Id;
+  seed: number;
+  /** At most this many alive at once (missing = 2000). */
+  max?: number;
+  opacity: number;
+  /** The preset it started from, for the panel. */
+  preset?: string;
 }
 
 // ---------------------------------------------------------------- clip flow (state graph)

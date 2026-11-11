@@ -118,6 +118,7 @@ export function applyOp(doc: Draft<Doc>, raw: unknown): void {
       if (o.fill !== undefined && o.fill !== null && !isColor(o.fill)) throw new OpProblem('fill must be a colour like "#ffcc00", or null.');
       if (o.opacity !== undefined && !fin(o.opacity)) throw new OpProblem('opacity must be a number from 0 to 1.');
       if (s.type === 'instance') throw new OpProblem("A symbol's copy has no colours of its own to change.");
+      if (s.type === 'particles') throw new OpProblem('Particles have their own colours; change them in the Particles panel.');
       if (o.opacity !== undefined) s.opacity = Math.min(1, Math.max(0, o.opacity));
       if (s.type === 'path') {
         if (o.fill !== undefined) s.fill = o.fill;

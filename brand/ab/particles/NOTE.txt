@@ -1,0 +1,1 @@
+A: the selected emitter's settings as labelled sliders, motion and emitter sections folded (built, default). B: compact two-column number boxes with every section open. Switch to B for a look with localStorage frameling.particles.look = 'numbers'.

@@ -1,6 +1,6 @@
 // What the export dialog collects, and what the exporters take.
 
-export type FormatId = 'mp4' | 'webm' | 'gif' | 'apng' | 'png' | 'pngseq' | 'svg' | 'sheet' | 'interactives' | 'lottie' | 'svganim';
+export type FormatId = 'mp4' | 'webm' | 'gif' | 'apng' | 'png' | 'pngseq' | 'svg' | 'sheet' | 'interactives' | 'lottie' | 'svganim' | 'pdf' | 'ai' | 'psd' | 'prores';
 export type RangeKind = 'all' | 'clip' | 'frame';
 
 export interface SheetSettings {
@@ -101,7 +101,7 @@ export interface FormatInfo {
   tag: string;
   /** "Good for ..." in one line. */
   goodFor: string;
-  icon: 'film' | 'image' | 'grid' | 'play';
+  icon: 'film' | 'image' | 'grid' | 'play' | 'layers' | 'vector';
   /** File extension without the dot (a .zip for sequences). */
   ext: string;
   /** Needs more than one frame. */
@@ -121,6 +121,10 @@ export const FORMATS: FormatInfo[] = [
   { id: 'sheet', title: 'Sprite sheet', tag: 'For games', goodFor: 'Godot, Unity, Phaser, PixiJS or a web page: every frame on one picture.', icon: 'grid', ext: 'png', animated: true, alpha: true },
   { id: 'lottie', title: 'Lottie animation', tag: 'JSON', goodFor: 'Apps and websites: a small vector animation that plays at any size.', icon: 'play', ext: 'json', animated: true, alpha: true },
   { id: 'svganim', title: 'Moving SVG', tag: 'Animated SVG', goodFor: 'A web page or an <img> tag: one file that plays by itself, sharp at any size.', icon: 'image', ext: 'svg', animated: true, alpha: true },
+  { id: 'prores', title: 'ProRes video', tag: '.mov 4444', goodFor: 'Video editors (Premiere, Final Cut, Resolve), with a see-through background.', icon: 'film', ext: 'mov', animated: true, alpha: true },
+  { id: 'psd', title: 'Photoshop layers', tag: 'PSD', goodFor: 'This frame with every layer kept: names, blend modes, folders.', icon: 'layers', ext: 'psd', animated: false, alpha: true },
+  { id: 'pdf', title: 'PDF', tag: 'Vector', goodFor: 'Printing and sharing sharp vector art. A page per frame, layers kept.', icon: 'vector', ext: 'pdf', animated: true, alpha: true },
+  { id: 'ai', title: 'Illustrator', tag: '.ai', goodFor: 'Opens in Adobe Illustrator with every shape editable.', icon: 'vector', ext: 'ai', animated: true, alpha: true },
   { id: 'interactives', title: 'Interactives', tag: '.flplay', goodFor: 'Drop it into an Interactives page, then play it with clicks, timelines and scripts.', icon: 'play', ext: 'flplay', animated: true, alpha: true },
 ];
 

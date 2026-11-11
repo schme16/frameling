@@ -48,6 +48,13 @@ const api: FramelingApi = {
     readKept: (id) => call('autosave:readKept', id),
     removeKept: (id) => call('autosave:removeKept', id),
   },
+  video: {
+    probe: () => call('video:probe'),
+    start: (path, opts) => call('video:start', path, opts),
+    frame: (id, rgba) => call('video:frame', id, rgba),
+    finish: (id) => call('video:finish', id),
+    cancel: (id) => call('video:cancel', id),
+  },
   app: {
     setDocumentState: (state) => ipcRenderer.send('app:documentState', state),
     getLaunchFile: () => call('app:launchFile'),
