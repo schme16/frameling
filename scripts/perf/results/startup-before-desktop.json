@@ -2,96 +2,123 @@
   "label": "desktop",
   "mode": "desktop",
   "cpu": "AMD Ryzen 9 7900X 12-Core Processor",
-  "firstLaunchMs": 343,
-  "medianFromLaunchMs": 327,
-  "medianPageMs": 175,
+  "firstLaunchMs": 307,
+  "medianFromLaunchMs": 294,
+  "medianPageMs": 171,
   "cpuSlowdown": 4,
-  "medianThrottledPageMs": 403,
+  "medianThrottledPageMs": 320,
   "initialJs": {
     "files": [
-      "assets/index-C4kARPwx.js"
+      "assets/index-DpuFJmf3.js"
     ],
-    "kB": 1811,
-    "gzipKB": 579
+    "kB": 1871,
+    "gzipKB": 600
   },
   "offline": null,
+  "lazyCheck": {
+    "tried": 1,
+    "bad": [],
+    "protocol": "file:"
+  },
   "runs": [
     {
-      "timeOrigin": 1794401975112.9,
-      "interactive": 218.29999999701977,
-      "domContentLoaded": 66.19999999552965,
+      "timeOrigin": 1794404234008.5,
+      "interactive": 185.5,
+      "domContentLoaded": 67.5,
       "fcp": null,
       "jsFiles": [],
       "jsBytes": 0,
-      "fromSpawnMs": 343,
-      "pageMs": 218,
-      "throttledPageMs": 406
+      "fromSpawnMs": 307,
+      "pageMs": 186,
+      "throttledPageMs": 297
     },
     {
-      "timeOrigin": 1794401977406.2,
-      "interactive": 199.10000000149012,
-      "domContentLoaded": 68.40000000596046,
+      "timeOrigin": 1794404236259.2,
+      "interactive": 170.89999999850988,
+      "domContentLoaded": 74.10000000149012,
       "fcp": null,
       "jsFiles": [],
       "jsBytes": 0,
-      "fromSpawnMs": 327,
-      "pageMs": 199,
-      "throttledPageMs": 180
+      "fromSpawnMs": 303,
+      "pageMs": 171,
+      "throttledPageMs": 332
     },
     {
-      "timeOrigin": 1794401977940,
-      "interactive": 169.5,
-      "domContentLoaded": 66.30000000447035,
-      "fcp": null,
-      "jsFiles": [],
-      "jsBytes": 0,
-      "fromSpawnMs": 289,
-      "pageMs": 170,
-      "throttledPageMs": 405
-    },
-    {
-      "timeOrigin": 1794401978667.6,
-      "interactive": 174.5,
-      "domContentLoaded": 65.09999999403954,
-      "fcp": null,
-      "jsFiles": [],
-      "jsBytes": 0,
-      "fromSpawnMs": 297,
-      "pageMs": 175,
-      "throttledPageMs": 396
-    },
-    {
-      "timeOrigin": 1794401979389,
-      "interactive": 167.39999999850988,
-      "domContentLoaded": 70,
+      "timeOrigin": 1794404237011.3,
+      "interactive": 168.29999999701977,
+      "domContentLoaded": 72.79999999701977,
       "fcp": null,
       "jsFiles": [],
       "jsBytes": 0,
       "fromSpawnMs": 290,
-      "pageMs": 167,
-      "throttledPageMs": 403
-    },
-    {
-      "timeOrigin": 1794401980109.5,
-      "interactive": 212.89999999850988,
-      "domContentLoaded": 81.09999999403954,
-      "fcp": null,
-      "jsFiles": [],
-      "jsBytes": 0,
-      "fromSpawnMs": 337,
-      "pageMs": 213,
-      "throttledPageMs": 394
-    },
-    {
-      "timeOrigin": 1794401980901,
-      "interactive": 168.19999999552965,
-      "domContentLoaded": 66.79999999701977,
-      "fcp": null,
-      "jsFiles": [],
-      "jsBytes": 0,
-      "fromSpawnMs": 327,
       "pageMs": 168,
-      "throttledPageMs": 412
+      "throttledPageMs": 329
+    },
+    {
+      "timeOrigin": 1794404237763.6,
+      "interactive": 155.20000000298023,
+      "domContentLoaded": 70.5,
+      "fcp": null,
+      "jsFiles": [],
+      "jsBytes": 0,
+      "fromSpawnMs": 283,
+      "pageMs": 155,
+      "throttledPageMs": 317
+    },
+    {
+      "timeOrigin": 1794404238489,
+      "interactive": 180.79999999701977,
+      "domContentLoaded": 76.69999999552965,
+      "fcp": null,
+      "jsFiles": [],
+      "jsBytes": 0,
+      "fromSpawnMs": 304,
+      "pageMs": 181,
+      "throttledPageMs": 315
+    },
+    {
+      "timeOrigin": 1794404239236.2,
+      "interactive": 171.29999999701977,
+      "domContentLoaded": 70.60000000149012,
+      "fcp": null,
+      "jsFiles": [],
+      "jsBytes": 0,
+      "fromSpawnMs": 293,
+      "pageMs": 171,
+      "throttledPageMs": 266
+    },
+    {
+      "timeOrigin": 1794404239935.3,
+      "interactive": 162.79999999701977,
+      "domContentLoaded": 70.79999999701977,
+      "fcp": null,
+      "jsFiles": [],
+      "jsBytes": 0,
+      "fromSpawnMs": 286,
+      "pageMs": 163,
+      "throttledPageMs": 340
+    },
+    {
+      "timeOrigin": 1794404240695,
+      "interactive": 165.09999999403954,
+      "domContentLoaded": 68.89999999850988,
+      "fcp": null,
+      "jsFiles": [],
+      "jsBytes": 0,
+      "fromSpawnMs": 294,
+      "pageMs": 165,
+      "throttledPageMs": 320
+    },
+    {
+      "timeOrigin": 1794404241430.8,
+      "interactive": 190.89999999850988,
+      "domContentLoaded": 66.39999999850988,
+      "fcp": null,
+      "jsFiles": [],
+      "jsBytes": 0,
+      "fromSpawnMs": 312,
+      "pageMs": 191,
+      "throttledPageMs": 311
     }
   ]
 }
