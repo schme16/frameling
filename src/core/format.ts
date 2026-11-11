@@ -44,6 +44,8 @@ export interface Doc {
   tileset?: Tileset;
   /** The pixel art palette: an ordered list of colours in ramps (optional; missing = the starter palette). */
   palette?: DocPalette;
+  /** Layer folders, by id (missing = none). Layers name theirs with `folder`. See src/effects. */
+  folders?: Record<Id, LayerFolder>;
   /** Reusable drawings with their own timelines, by id (missing = none). See `SymbolDef`. */
   symbols?: Record<Id, SymbolDef>;
   /**
@@ -66,6 +68,16 @@ export interface BaseLayer {
   onion?: boolean;
   /** A reference layer: shown while drawing, left out of every export (ground lines, sketches, guides). Missing = no. */
   reference?: boolean;
+  /** How the layer mixes with what's under it (missing = 'normal'). */
+  blend?: BlendMode;
+  /** Effects on the layer as a whole, applied first to last (missing = none). */
+  effects?: LayerEffect[];
+  /** Clip to the layer below: only shows where the layer (or folder) under it has drawing. Missing = no. */
+  clipToBelow?: boolean;
+  /** A mask layer: never shown itself; its drawing shows ('show') or hides ('hide') the layers under it in its folder. */
+  mask?: 'show' | 'hide';
+  /** The folder it sits in (a key of `doc.folders`). A folder's layers sit next to each other. Missing = none. */
+  folder?: Id;
   /**
    * Cels on this layer, sorted by `start`, never overlapping. A frame with no cel covering it is empty.
    */
@@ -289,6 +301,60 @@ export interface DocPalette {
   name: string;
   colors: Color[];
   ramps?: number[];
+}
+
+// ---------------------------------------------------------------- blend modes, effects and folders
+
+/** Canvas blend modes, plus 'add' (canvas calls it 'lighter'). */
+export type BlendMode =
+  | 'normal'
+  | 'multiply'
+  | 'screen'
+  | 'overlay'
+  | 'darken'
+  | 'lighten'
+  | 'color-dodge'
+  | 'color-burn'
+  | 'hard-light'
+  | 'soft-light'
+  | 'difference'
+  | 'exclusion'
+  | 'hue'
+  | 'saturation'
+  | 'color'
+  | 'luminosity'
+  | 'add';
+
+export type EffectKind = 'blur' | 'glow' | 'shadow' | 'adjust' | 'outline' | 'pixelate';
+
+/**
+ * One effect in a layer's stack. `values` holds every setting (numbers, and colours as hex). Numbers can be animated
+ * with `keys`: between two keys a value changes evenly, before the first and after the last it holds.
+ */
+export interface LayerEffect {
+  id: Id;
+  kind: EffectKind;
+  /** Missing = on. */
+  on?: boolean;
+  values: Record<string, number | string>;
+  /** Sorted by frame, at most one per frame. Missing or empty = not animated. */
+  keys?: EffectKey[];
+}
+
+export interface EffectKey {
+  frame: number;
+  values: Record<string, number>;
+}
+
+/** A layer folder (group): its layers fade, blend and take effects together, and masks inside stay inside. */
+export interface LayerFolder {
+  id: Id;
+  name: string;
+  visible: boolean;
+  /** 0 to 1. */
+  opacity: number;
+  blend?: BlendMode;
+  effects?: LayerEffect[];
 }
 
 // ---------------------------------------------------------------- symbols and tweens

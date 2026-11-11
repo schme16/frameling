@@ -15,6 +15,9 @@ import { drawDrawing, drawShape, pixelCanvas } from '../core/render';
 import type { OnionSettings } from '../core/store';
 import type { Live } from './controller';
 import type { Rect } from './view';
+import { paintComposited } from '../effects/stage';
+import { EffectCache } from '../effects/composite';
+import { needsCompositor } from '../effects/model';
 
 export interface FrameParams {
   doc: Doc;
@@ -33,6 +36,8 @@ export interface FrameParams {
   tileMode?: boolean;
   /** How strongly the copies show in tile mode (1 = as strong as the stage). */
   tileCopyAlpha?: number;
+  /** The layer being worked on (a mask layer being drawn shows faintly on top). */
+  activeLayerId?: string | null;
 }
 
 const AROUND: [number, number][] = [
@@ -195,6 +200,8 @@ interface OnionEntry {
 
 export class FramePainter {
   readonly cache = new BitmapCache();
+  /** Finished effect pictures (glows, blurs) for layers that have effects. */
+  readonly effects = new EffectCache();
   private onionCache: OnionEntry[] = [];
   private scratch: Canvas2 | null = null;
   private scratch2: Canvas2 | null = null;
@@ -270,8 +277,10 @@ export class FramePainter {
     g.beginPath();
     g.rect(rect.x, rect.y, rect.w, rect.h);
     g.clip();
-    // The stage's own background is the element behind the canvas; copies paint theirs here.
-    if (copy && doc.background) {
+    // The stage's own background is the element behind the canvas; copies paint theirs here. So do frames with blend
+    // modes, which need something real to blend with.
+    const composited = needsCompositor(doc);
+    if ((copy || composited) && doc.background) {
       g.fillStyle = doc.background;
       g.fillRect(rect.x, rect.y, rect.w, rect.h);
     }
@@ -285,7 +294,8 @@ export class FramePainter {
 
     if (p.onion.enabled && !p.playing) this.paintOnion(g, p, cacheable);
 
-    for (const layer of doc.layers) {
+    if (composited) settled = paintComposited(this, g, p, cacheable) && settled;
+    else for (const layer of doc.layers) {
       if (!layer.visible) continue;
       const lv = p.live && p.live.layerId === layer.id ? p.live : null;
       const pixelSize = layer.kind === 'vector' ? 1 : layer.pixelSize;
@@ -466,7 +476,19 @@ export class FramePainter {
     return canvas;
   }
 
+  /** A vector drawing's stage-sized bitmap, built (from the last one this layer showed, if it only grew) when missing. */
+  vectorBitmap(doc: Doc, layerId: string, d: Drawing, pixelSize: number, w: number, h: number): Entry {
+    let e = this.cache.find(d, pixelSize, w, h);
+    if (!e) {
+      e = this.cache.build(doc, d, pixelSize, w, h, this.growthSource(layerId, d, pixelSize, w, h));
+      this.cache.dropOtherScales(d, w, h);
+    }
+    this.lastVector.set(layerId, d);
+    return e;
+  }
+
   clear(): void {
+    this.effects.clear();
     this.cache.clear();
     this.onionCache = [];
     this.scratch = this.scratch2 = null;

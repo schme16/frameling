@@ -421,6 +421,71 @@ const ICONS: Record<string, ReactNode> = {
       <path d="M19.5 4v4.5H15" />
     </>
   ),
+  // blend modes, effects, masks and folders
+  effects: (
+    <>
+      <path d="M5 19L15.5 8.5" />
+      <path d="M14 7l3 3" />
+      <path d="M8 4.5v3M6.5 6h3M18.5 13v3M17 14.5h3M19 4l.01 0" />
+    </>
+  ),
+  blend: (
+    <>
+      <circle cx="9.5" cy="10" r="5.5" />
+      <circle cx="14.5" cy="14" r="5.5" />
+    </>
+  ),
+  mask: (
+    <>
+      <rect x="3.5" y="5" width="17" height="14" rx="3" />
+      <circle cx="12" cy="12" r="4" fill="currentColor" />
+    </>
+  ),
+  'clip-below': (
+    <>
+      <path d="M7 4.5v7a3 3 0 0 0 3 3h8" />
+      <path d="M15 11.5l3 3-3 3" />
+    </>
+  ),
+  'fx-blur': (
+    <>
+      <circle cx="12" cy="12" r="3" fill="currentColor" />
+      <circle cx="12" cy="12" r="6.5" strokeDasharray="2 2.6" />
+      <circle cx="12" cy="12" r="9" strokeDasharray="1 3.4" opacity="0.6" />
+    </>
+  ),
+  'fx-halo': (
+    <>
+      <circle cx="12" cy="12" r="3.6" fill="currentColor" />
+      <path d="M12 3.5v2.2M12 18.3v2.2M3.5 12h2.2M18.3 12h2.2M6 6l1.6 1.6M16.4 16.4L18 18M6 18l1.6-1.6M16.4 7.6L18 6" />
+    </>
+  ),
+  'fx-shadow': (
+    <>
+      <rect x="8" y="8" width="11" height="11" rx="2.5" fill="currentColor" opacity="0.35" stroke="none" />
+      <rect x="5" y="5" width="11" height="11" rx="2.5" />
+    </>
+  ),
+  'fx-adjust': (
+    <>
+      <circle cx="12" cy="12" r="8" />
+      <path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor" />
+    </>
+  ),
+  'fx-outline': (
+    <>
+      <path d="M12 4.5l2.3 4.7 5.2.8-3.8 3.6.9 5.1L12 16.3l-4.6 2.4.9-5.1-3.8-3.6 5.2-.8z" fill="currentColor" opacity="0.35" />
+      <path d="M12 2.2l3 6.1 6.7 1-4.9 4.7 1.2 6.6L12 17.5 6 20.6l1.2-6.6-4.9-4.7 6.7-1z" />
+    </>
+  ),
+  'fx-pixelate': (
+    <>
+      <rect x="4" y="4" width="7" height="7" rx="1" fill="currentColor" />
+      <rect x="13" y="13" width="7" height="7" rx="1" fill="currentColor" />
+      <rect x="13" y="4" width="7" height="7" rx="1" />
+      <rect x="4" y="13" width="7" height="7" rx="1" />
+    </>
+  ),
 };
 
 export const ICON_NAMES = Object.keys(ICONS);

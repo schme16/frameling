@@ -1,0 +1,1 @@
+A: the six effects always on show as a grid of tiles under the stack (built, default). B: one 'Add effect' button that opens a menu with each effect's description.
