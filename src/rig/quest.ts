@@ -114,7 +114,7 @@ export const BONES_QUEST: Quest = {
     },
     {
       id: 'pose',
-      say: 'Go to frame 13, pick the Pose tool (O) and drag the hand up for a wave.',
+      say: 'The Pose tool (Shift+K) is picked. Go to frame 13 and drag the hand up for a wave.',
       why: 'A pose on a new frame makes a key. The frames in between glide from one pose to the next.',
       target: [SEL.ruler, SEL.canvas],
       enter: () => store().setUi({ tool: 'pose' }),

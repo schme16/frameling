@@ -531,20 +531,32 @@ If a message has a button, like **Undo**, press it before the message leaves to 
     section: 'Getting started',
     media: 'examples.png',
     summary: 'Ready-made drawings to start from, or to pick apart and learn.',
-    keywords: ['template', 'sample', 'demo', 'starter', 'learn', 'bouncing ball'],
+    keywords: ['template', 'sample', 'demo', 'starter', 'learn', 'bouncing ball', 'walk cycle', 'run cycle', 'explosion', 'sticker', 'emoji', 'icons', 'title card', 'spinner'],
     body: `Not sure where to begin? Start from an example.
 
 ## How
 
 Open **Help, Examples** (or **File, New drawing** and look under **Start from an example**). Press a card to open it. Each card shows a small picture, whether it is **vector** or **pixel** art, and what it is for.
 
-Under the cards, **Or start blank, with layers ready** has empty starters by size: a blank vector stage with a Colour and a Lines layer, and a blank pixel grid. They are like the size cards at the top, with the layers already set up.
+Under the cards, **Or start blank, with layers ready** has empty starters by size: a blank vector stage with a Colour and a Lines layer, and a blank pixel grid.
+
+## What there is
+
+- **Learn the basics:** Bouncing ball, Flour sack hop, Blink, Morphing shapes.
+- **Characters:** Walk cycle (on twos, with onion skin on), Run cycle (pixel), Game hero sprite set, Paper doll puppet (bones), Lip sync mouth chart.
+- **Effects:** Explosion and smoke (drawn frames plus particles), Sparkle FX.
+- **For games and apps:** UI icon set (16x16 pixel icons), Sticker pack (emoji stickers), Tileset and level, Loading spinner.
+- **Video:** Title card (animated text and a camera move), Camera and parallax, Bouncing logo.
+
+## Set up for you
+
+Some examples get things ready when they open. The walk cycle turns [onion skin](help:timeline-onion) on. The first time you export, the spinner starts on a see-through GIF, the icons and stickers on separate pictures, and the run cycle on a sprite sheet at its real pixel size. Pick anything else in **Export** if you like; next time it remembers your choice.
 
 ## Make it yours
 
 An example is a normal drawing, so you can change anything. Nothing happens to the original, and Frameling asks before it replaces a drawing you haven't saved.
 
-Looking at how an example is built is a good way to learn. Try the timeline to see where each drawing sits.`,
+Every card ends with a **Try it** idea. Looking at how an example is built is a good way to learn: try the timeline to see where each drawing sits.`,
   },
   {
     id: 'quests',

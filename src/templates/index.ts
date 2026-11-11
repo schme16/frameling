@@ -107,7 +107,7 @@ export const TEMPLATES: Template[] = [
   {
     id: 'puppet',
     name: 'Paper doll puppet',
-    blurb: 'A cut-out character with bones and a walk made from four poses. Try it: pick the Pose tool (O), go to frame 6 and drag a hand, or click Wave in the Rig panel.',
+    blurb: 'A cut-out character with bones and a walk made from four poses. Try it: pick the Pose tool (Shift+K), go to frame 6 and drag a hand, or click Wave in the Rig panel.',
     kind: 'vector',
     thumbnail: () => 6,
     make: makePuppet,
@@ -133,7 +133,7 @@ export const TEMPLATES: Template[] = [
     name: 'Walk cycle',
     blurb: 'A character walking on the spot: 8 drawings on twos, with onion skin already on so you see the drawings either side. Try it: go to a passing frame (marker) and lift the knee higher, then play.',
     kind: 'vector',
-    thumbnail: () => 4,
+    thumbnail: () => 0,
     tags: ['walk', 'cycle', 'character', 'on twos', 'onion skin', 'loop'],
     setup: { onion: { enabled: true, before: 1, after: 1 }, export: { format: 'gif', loop: true } },
     make: makeWalkCycle,
