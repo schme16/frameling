@@ -48,6 +48,28 @@ Sizes are shown in your units (Preferences > Units). The chain button between wi
 - **Background**: the page colour, or **See-through** for a transparent page.`,
   },
   {
+    id: 'where-did-it-go',
+    title: 'Where did my drawing go?',
+    section: 'Drawing',
+    media: 'where-did-it-go.png',
+    summary: 'When a frame looks empty but something is drawn on it, Frameling says why and brings it back with one click.',
+    keywords: ['lost', 'missing', 'disappeared', 'vanished', 'gone', 'invisible', 'hidden layer', 'opacity', 'see-through', 'off canvas', 'off the page', 'mask', 'locked', 'where did my drawing go'],
+    body: `Sometimes a drawing is there but you can't see it. When you land on a frame that looks empty, Frameling checks why, and a little note pops up with a button that fixes it:
+
+- **On a hidden layer** (or in a hidden folder): **Show it** turns the layer back on.
+- **Fully see-through** (opacity 0), on the layer, its folder or the drawing itself: **Make it solid** sets it back to full strength.
+- **Masked away**: a mask layer above it has nothing drawn where your drawing is. **Turn the mask off** hides the mask layer.
+- **Off the page**: **Bring it back** moves it to the middle of the page.
+
+Each one is a normal step you can undo with **Ctrl+Z**. Frameling only mentions each one once per document, so it never nags. Things that fade or fly in on purpose (keys with in-betweens) are left alone.
+
+**Ask any time:** **View > Where did my drawing go?** (or **Ctrl+K** and type "lost") checks this frame. If nothing is drawn here at all, it tells you the nearest frame that has a drawing and takes you there.
+
+**Locked layers:** click something on a locked layer with the Select tool and Frameling says it's locked, instead of doing nothing. Unlock it with the padlock in the timeline.
+
+A frame with nothing drawn on it yet isn't lost: the [ghost on empty frames](help:empty-frame-ghost) shows your last drawing faintly there.`,
+  },
+  {
     id: 'rulers-guides',
     title: 'Rulers and guides',
     section: 'Drawing',

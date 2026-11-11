@@ -7,8 +7,11 @@ import './choices';
 import './commands';
 import './guides';
 import './help';
+import { installLostHint } from './lostHint';
 
 registerPanel({ id: 'tool-options', title: 'Tool options', icon: 'sliders', component: ToolOptionsPanel, zone: 'right', order: 10, help: 'tool-options' });
 registerPanel({ id: 'colors', title: 'Colours', icon: 'palette', component: ColorsPanel, zone: 'right', order: 20, help: 'colours' });
+
+installLostHint();
 
 export { CanvasView } from './CanvasView';
