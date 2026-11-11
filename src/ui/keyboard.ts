@@ -4,10 +4,11 @@
 // only `global` commands work. A held Space is the canvas's pan key, so nothing fires while it's down.
 import { allCommands, type Command } from '../core/registry';
 import { syncDynamicCommands } from './dynamic';
-import { buildKeymap, comboFromEvent, comboToString } from './keys';
+import { activeOverrides, buildKeymap, comboFromEvent, comboToString } from './keys';
 import { anyOverlayOpen } from './overlays';
 import { commandEnabled, runCommand } from './palette';
 import { getPrefs } from './prefs';
+import { playCue } from './sounds';
 
 let spaceHeld = false;
 let capturing = 0;
@@ -25,7 +26,7 @@ export function holdKeyboard(): () => void {
 export function currentKeymap(): Map<string, Command[]> {
   syncDynamicCommands();
   const cmds = allCommands();
-  const keymap = getPrefs().keymap;
+  const keymap = activeOverrides();
   if (!cache || cache.count !== cmds.length || cache.keymap !== keymap) cache = { count: cmds.length, keymap, map: buildKeymap(cmds, keymap) };
   return cache.map;
 }
@@ -93,7 +94,11 @@ export function dispatchKey(e: KeyboardEvent): boolean {
   // Only a command that can run right now takes the key. Otherwise the next binding, or the browser, gets it
   // (arrow-key nudges must not swallow arrows when nothing is selected).
   const cmd = candidates.find(commandEnabled);
-  if (!cmd) return false;
+  if (!cmd) {
+    // Undo with nothing left to undo: a soft bonk, so you know the key did land.
+    if (candidates.some((c) => c.id === 'edit.undo')) playCue('nothingToUndo');
+    return false;
+  }
   e.preventDefault();
   runCommand(cmd);
   return true;

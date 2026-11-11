@@ -7,6 +7,7 @@ import './commands';
 import './helpTopics';
 import './quests';
 import './onboarding';
+import './sounds/commands';
 import { applyPrefs } from './prefs';
 
 // Apply the saved theme and look straight away, before anything paints.

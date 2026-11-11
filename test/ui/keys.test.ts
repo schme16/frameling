@@ -183,3 +183,31 @@ describe('conflicts', () => {
     expect(allConflicts([a, b, c]).size).toBe(0);
   });
 });
+
+describe('shortcut sets underneath', () => {
+  it('a set changes the base, and matching it again drops the personal override', async () => {
+    const { registerCommand, unregisterCommand } = await import('../../src/core/registry');
+    const { setPrefs } = await import('../../src/ui/prefs');
+    const nk = cmd('timeline.newKey', ['n']);
+    registerCommand(nk);
+    try {
+      setPrefs({ keymapSet: 'flash' });
+      expect(effectiveKeys(nk)).toEqual(['F7']);
+      setBindings(nk, ['g']);
+      expect(getPrefs().keymap['timeline.newKey']).toEqual(['g']);
+      setBindings(nk, ['F7']);
+      expect(getPrefs().keymap['timeline.newKey']).toBeUndefined();
+      resetBindings();
+      setPrefs({ keymapSet: 'frameling' });
+      expect(effectiveKeys(nk)).toEqual(['n']);
+    } finally {
+      unregisterCommand('timeline.newKey');
+    }
+  });
+
+  it('an unknown saved set falls back to Frameling', async () => {
+    const { migratePrefs } = await import('../../src/ui/prefs');
+    expect(migratePrefs({ keymapSet: 'nope' }).keymapSet).toBe('frameling');
+    expect(migratePrefs({ keymapSet: 'pixel' }).keymapSet).toBe('pixel');
+  });
+});

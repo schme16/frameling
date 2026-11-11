@@ -29,7 +29,7 @@ export const MENUS: MenuDef[] = [
   {
     label: 'View',
     categories: ['View'],
-    items: ['view.zoomIn', 'view.zoomOut', 'view.fit', 'view.zoom100', 'view.center', 'view.pixelGrid', 'view.emptyGhost', '-', 'view.rulers', 'view.guides', 'view.snap', 'view.lockGuides', 'view.clearGuides', '-', 'group:panels', '-', 'group:workspaces', 'view.saveWorkspace', 'view.resetLayout', '-', 'view.toggleTheme', 'view.nextTheme', 'view.themes', 'view.toggleLook', '-', 'view.commandPalette'],
+    items: ['view.zoomIn', 'view.zoomOut', 'view.fit', 'view.zoom100', 'view.center', 'view.pixelGrid', 'view.emptyGhost', '-', 'view.rulers', 'view.guides', 'view.snap', 'view.lockGuides', 'view.clearGuides', '-', 'group:panels', '-', 'group:workspaces', 'view.saveWorkspace', 'view.resetLayout', '-', 'view.toggleTheme', 'view.nextTheme', 'view.themes', 'view.toggleLook', 'view.toggleSounds', '-', 'view.commandPalette'],
   },
   {
     label: 'Draw',
@@ -79,7 +79,7 @@ export interface SubmenuDef {
 export const SUBMENUS: Record<string, SubmenuDef> = {
   export: {
     label: 'Export',
-    items: ['file.export', 'file.exportAgain', '-', 'file.exportInteractives', 'file.exportLottie', 'file.exportSvgAnimated', 'file.exportProres', 'file.exportPsd', 'file.exportPdf', 'file.exportIllustrator', 'tiles.export', '-', 'file.toggleUpdatePlayable'],
+    items: ['file.export', 'file.exportAgain', '-', 'file.exportInteractives', 'file.exportLottie', 'file.exportSvgAnimated', 'file.exportProres', 'file.exportPsd', 'file.exportPdf', 'file.exportIllustrator', 'tiles.export', 'file.exportGodotAddon', '-', 'file.toggleUpdatePlayable'],
     prefixes: ['file.export'],
   },
 };

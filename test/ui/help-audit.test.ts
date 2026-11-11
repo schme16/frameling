@@ -10,11 +10,13 @@ import type { Command, HelpTopic } from '../../src/core/registry';
 import { allCommands, allHelp, allPanels, allTools } from '../../src/core/registry';
 import { auditHelp, formatAudit, helpLinksIn, shortcutsIn } from '../../src/ui/help/audit';
 import '../../src/renderer/features';
+import { KEYMAP_SETS } from '../../src/ui/keymapSets';
 
 const helpDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../public/help');
 
 // Keys a topic may name that no command has: the browser's own (web-browser) and renaming a tile in the Tileset panel.
-const EXTRA_KEYS = ['Mod+W', 'Mod+T', 'F2'];
+// Plus every key a shortcut set gives (the shortcut-sets topic names them).
+const EXTRA_KEYS = ['Mod+W', 'Mod+T', 'F2', ...KEYMAP_SETS.flatMap((s) => Object.values(s.keys).flat())];
 
 const run = () => auditHelp({ topics: allHelp(), commands: allCommands(), panels: allPanels(), tools: allTools(), files: readdirSync(helpDir), extraKeys: EXTRA_KEYS });
 
