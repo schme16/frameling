@@ -48,7 +48,7 @@ export function LibraryPanel() {
   const make = () => void getCommand('symbols.make')?.run();
 
   return (
-    <div className="cv-options sy-library" data-help="symbols">
+    <div className="cv-panel cv-options sy-library" data-help="symbols">
       {!symbols.length ? (
         <>
           <Tip>
