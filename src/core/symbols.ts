@@ -434,6 +434,8 @@ export interface PosedLayer {
   pixelSize: number;
   /** Bent through a bone mesh (attached layers only). */
   mesh?: PosedMesh;
+  /** The symbol's own frame it was posed at (tilemaps inside need it for animated tiles). Missing = the outer frame. */
+  frame?: number;
 }
 
 /** An instance ready to draw: its matrix and the drawings its symbol shows at the frame in question. Runtime only. */
@@ -546,7 +548,7 @@ export function poseInstance(doc: Doc, s: InstanceShape, inner: number, depth = 
   for (const l of c.layers) {
     if (!l.visible) continue;
     const dr = poseAt(doc, l, inner, depth + 1);
-    if (dr) layers.push({ drawing: dr, opacity: l.opacity, pixelSize: 'pixelSize' in l ? l.pixelSize : 1 });
+    if (dr) layers.push({ drawing: dr, opacity: l.opacity, pixelSize: 'pixelSize' in l ? l.pixelSize : 1, frame: inner });
   }
   return { ...s, posed: { matrix: transformMatrix(s.transform, c.def.origin), layers } };
 }

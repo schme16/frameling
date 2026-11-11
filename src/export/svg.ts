@@ -76,8 +76,8 @@ export function subPathsToPathData(paths: SubPath[]): string {
   return d;
 }
 
-function shapeToSvg(s: Shape): string {
-  if (s.type === 'instance') return isPosed(s) ? instanceToSvg(s) : '';
+function shapeToSvg(s: Shape, doc?: Doc): string {
+  if (s.type === 'instance') return isPosed(s) ? instanceToSvg(s, doc) : '';
   if (s.type === 'stroke') {
     const d = strokeToPathData(s);
     return d ? `<path d="${d}"${paint('fill', s.color, s.opacity)}/>` : '';
@@ -91,7 +91,7 @@ function shapeToSvg(s: Shape): string {
 
 // A posed instance becomes a group with its matrix; its layers nest inside. Tint has no plain SVG equivalent, so
 // it's left out of SVG (video, GIF and sheets show it).
-function instanceToSvg(s: PosedInstance): string {
+function instanceToSvg(s: PosedInstance, doc?: Doc): string {
   const inner: string[] = [];
   for (const l of s.posed.layers) {
     if (l.mesh) {
@@ -100,7 +100,15 @@ function instanceToSvg(s: PosedInstance): string {
       if (img) inner.push(l.opacity < 1 ? `<g opacity="${op(l.opacity)}">${img}</g>` : img);
       continue;
     }
-    const parts = l.drawing.kind === 'pixel' ? pixelRects(l.drawing, l.pixelSize) : l.drawing.kind === 'vector' ? l.drawing.shapes.map(shapeToSvg).filter(Boolean) : [];
+    const dr = l.drawing;
+    const parts =
+      dr.kind === 'pixel'
+        ? pixelRects(dr, l.pixelSize)
+        : dr.kind === 'vector'
+          ? dr.shapes.map((x) => shapeToSvg(x, doc)).filter(Boolean)
+          : doc && l.frame !== undefined
+            ? pixelRects(flattenTilemap(doc, dr, l.frame), l.pixelSize)
+            : [];
     if (!parts.length) continue;
     inner.push(l.opacity < 1 ? `<g opacity="${op(l.opacity)}">${parts.join('')}</g>` : parts.join(''));
   }
@@ -197,7 +205,7 @@ function layerToSvg(doc: Doc, layer: Layer, frame: number, id: string): string {
   let inner: string[];
   if (d.kind === 'pixel') inner = pixelRects(d, layer.kind === 'pixel' ? layer.pixelSize : 1);
   else if (d.kind === 'tilemap') inner = pixelRects(flattenTilemap(doc, d, frame), layer.kind === 'tilemap' ? layer.pixelSize : 1);
-  else inner = d.shapes.map(shapeToSvg).filter(Boolean);
+  else inner = d.shapes.map((x) => shapeToSvg(x, doc)).filter(Boolean);
   if (!inner.length) return '';
   const attrs = `id="${esc(id)}"` + (layer.opacity < 1 ? ` opacity="${op(layer.opacity)}"` : '') + (d.kind !== 'vector' ? ' shape-rendering="crispEdges"' : '') + (layer.blend && layer.blend !== 'normal' ? ` style="mix-blend-mode:${layer.blend === 'add' ? 'plus-lighter' : layer.blend}"` : '');
   return `<g ${attrs}>\n${inner.join('\n')}\n</g>`;
