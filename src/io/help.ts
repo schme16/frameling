@@ -15,7 +15,7 @@ registerHelpTopics([
 
 Press **Ctrl+S** (**Cmd+S** on a Mac). The first time, Frameling asks where to put the file and what to call it. After that, Save quietly updates the same file.
 
-Want a second copy, or a new version to try something risky on? Use **Save as...** (**Ctrl+Shift+S**) to save under a new name. You carry on working in the new copy.
+Want a second copy, or a new version to try something risky on? Use **Save as...** (**Ctrl+Shift+S**) to save under a new name. You carry on working in the new copy, and the copy keeps its own [versions](help:version-history), separate from the original's.
 
 A dot next to the name at the top of the window means there are changes that aren't saved yet.
 
@@ -88,6 +88,8 @@ A copy left behind by a crash is kept in the same list, even if you press **Not 
 - **Named versions**, whenever you want one: **File > Save a version...** (**Ctrl+Alt+S**). Give it a name like "Before the big change".
 
 Versions are kept in Frameling's own folder, never in your file, so your file stays the size it was.
+
+Each drawing has its own list. A copy made with **Save as...** starts a fresh list, and the original keeps its versions.
 
 ## Looking back
 
