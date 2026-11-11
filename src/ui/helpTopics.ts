@@ -354,7 +354,7 @@ Drag a panel's **tab** to another place in the same zone to reorder it, or onto 
 
 ## When the tabs don't all fit
 
-When a zone gets narrow, the other tabs shrink to just their icon (hover one to see its name). If even that's not enough, a **+N** button appears: click it to see the rest and open one. Widen the zone to bring the names back.
+When a zone gets narrow, the other tabs shrink to just their icon (hover one to see its name). **Colours** keeps its name while there is room, so it is easy to find. If even that's not enough, a **+N** button appears: click it to see the rest and open one. Widen the zone to bring the names back.
 
 ## Resize
 

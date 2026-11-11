@@ -17,7 +17,12 @@ export interface TabFitInput {
   active: number;
   /** Width of the "+N" button. */
   more: number;
+  /** Tabs that keep their names too when there's room (Colours: a beginner looks for it by name first). */
+  pinned?: number[];
 }
+
+/** Panels whose tab keeps its name whenever the bar has room for it. */
+export const NAMED_PANELS = new Set(['colors']);
 
 export interface TabFit {
   mode: 'full' | 'compact' | 'overflow';
@@ -25,6 +30,8 @@ export interface TabFit {
   shown: number[];
   /** Indices behind the "+N" button, in bar order. */
   hidden: number[];
+  /** Indices that show their name (every shown tab in full mode). */
+  named: number[];
 }
 
 const total = (ws: number[], gap: number) => ws.reduce((a, w) => a + w, 0) + gap * Math.max(0, ws.length - 1);
@@ -32,17 +39,32 @@ const total = (ws: number[], gap: number) => ws.reduce((a, w) => a + w, 0) + gap
 export function fitTabs(p: TabFitInput): TabFit {
   const n = p.full.length;
   const all = [...Array(n).keys()];
-  if (total(p.full, p.gap) <= p.avail) return { mode: 'full', shown: all, hidden: [] };
-  const compact = all.map((i) => (i === p.active ? p.full[i] : p.icon[i]));
-  if (total(compact, p.gap) <= p.avail) return { mode: 'compact', shown: all, hidden: [] };
-  // The open tab always shows; then as many others as fit, nearest to it first so the neighbourhood stays put.
+  if (total(p.full, p.gap) <= p.avail) return { mode: 'full', shown: all, hidden: [], named: all };
+  const pinned = (p.pinned ?? []).filter((i) => i >= 0 && i < n && i !== p.active);
+  const widths = (named: Set<number>) => all.map((i) => (named.has(i) ? p.full[i] : p.icon[i]));
+  // Names for the open tab and the pinned ones if they fit, else just the open one.
+  for (const named of [new Set([p.active, ...pinned]), new Set([p.active])]) {
+    if (named.size > 1 && !pinned.length) continue;
+    if (total(widths(named), p.gap) <= p.avail) return { mode: 'compact', shown: all, hidden: [], named: [...named].sort((a, b) => a - b) };
+  }
+  // The open tab always shows; then the pinned ones (named if they fit), then as many others as fit, nearest to it
+  // first so the neighbourhood stays put.
+  const compact = widths(new Set([p.active]));
   let used = compact[p.active] + p.gap + p.more;
   const keep = new Set([p.active]);
-  const order = all.filter((i) => i !== p.active).sort((a, b) => Math.abs(a - p.active) - Math.abs(b - p.active) || a - b);
+  const named = new Set([p.active]);
+  for (const i of pinned) {
+    const w = used + p.full[i] + p.gap <= p.avail ? p.full[i] : compact[i];
+    if (used + w + p.gap > p.avail) continue;
+    used += w + p.gap;
+    keep.add(i);
+    if (w === p.full[i]) named.add(i);
+  }
+  const order = all.filter((i) => !keep.has(i)).sort((a, b) => Math.abs(a - p.active) - Math.abs(b - p.active) || a - b);
   for (const i of order) {
     if (used + compact[i] + p.gap > p.avail) break;
     used += compact[i] + p.gap;
     keep.add(i);
   }
-  return { mode: 'overflow', shown: all.filter((i) => keep.has(i)), hidden: all.filter((i) => !keep.has(i)) };
+  return { mode: 'overflow', shown: all.filter((i) => keep.has(i)), hidden: all.filter((i) => !keep.has(i)), named: [...named].sort((a, b) => a - b) };
 }
