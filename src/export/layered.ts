@@ -2,7 +2,7 @@
 // what has to be flattened into a picture because the format can't express it. Pure, so it can be tested.
 import type { Doc, Layer, LayerFolder } from '../core/format';
 import { activeEffects } from '../effects/model';
-import { poseAt, isPosed } from '../core/symbols';
+import { poseAt, isPosed, type PosedLook } from '../core/symbols';
 import type { Drawing } from '../core/format';
 
 export type LayeredItem =
@@ -86,10 +86,31 @@ export function drawingHasMesh(d: Drawing | undefined, depth = 0): boolean {
   return d.shapes.some((s) => s.type === 'instance' && isPosed(s) && s.posed.layers.some((pl) => !!pl.mesh || drawingHasMesh(pl.drawing, depth + 1)));
 }
 
-/** PDF can't bend art on a mesh, so a layer showing any comes in as a picture the canvas's own drawing made. */
+/** A symbol's own looks PDF can't draw as vector: effects, clipping, masks, or a folder that changes how it combines. */
+export function lookNeedsPicture(look: PosedLook): boolean {
+  return look.layers.some((l) => {
+    if (!l.visible || l.reference) return false;
+    if (activeEffects(l.effects, look.frame).length || l.clipToBelow || l.mask) return true;
+    const f = l.folder ? look.folders?.[l.folder] : undefined;
+    return !!f && f.visible && !folderPassThrough(f, [], look.frame);
+  });
+}
+
+/** True when a drawing holds a symbol copy whose own looks PDF can't draw (anywhere inside it). */
+export function drawingHasLook(d: Drawing | undefined, depth = 0): boolean {
+  if (!d || d.kind !== 'vector' || depth > 8) return false;
+  return d.shapes.some((s) => s.type === 'instance' && isPosed(s) && ((!!s.posed.look && lookNeedsPicture(s.posed.look)) || s.posed.layers.some((pl) => drawingHasLook(pl.drawing, depth + 1))));
+}
+
+/**
+ * PDF can't bend art on a mesh, or draw effects, clipping or masks (on the layer or inside a symbol on it), so such a
+ * layer comes in as a picture the canvas's own drawing made.
+ */
 export function needsPicture(l: Layer, frame: number, doc?: Doc): boolean {
   if ((l.kind !== 'vector' && l.kind !== 'camera') || activeEffects(l.effects, frame).length > 0) return true;
-  return !!doc && l.kind === 'vector' && drawingHasMesh(poseAt(doc, l, frame));
+  if (!doc || l.kind !== 'vector') return false;
+  const d = poseAt(doc, l, frame);
+  return drawingHasMesh(d) || drawingHasLook(d);
 }
 
 function stageUnits(doc: Doc, layers: Layer[], frame: number): FlatUnit[] {

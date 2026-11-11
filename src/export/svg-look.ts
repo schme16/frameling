@@ -10,6 +10,7 @@
  */
 import type { Doc, Layer, LayerEffect } from '../core/format';
 import { buildPlan, type PlanNode, type PlanStep } from '../effects/plan';
+import type { PosedLayer, PosedLook } from '../core/symbols';
 import { effectInfo, isNoop, valuesAt } from '../effects/model';
 import { outlineOffsets } from '../effects/apply';
 import { splitColor, esc } from './svg';
@@ -216,13 +217,43 @@ function level(host: SvgLookHost, steps: PlanStep[]): string {
   return acc;
 }
 
+// The composer running now, so symbol copies written in the middle of it can put their filters and masks in its defs.
+let running: SvgLookHost | null = null;
+
 /** Every visible layer of the document, composited the way the canvas does it. */
 export function composeSvg(host: SvgLookHost): string {
   const include = (l: Layer) => l.visible && !l.reference && l.kind !== 'camera';
   const steps = buildPlan(host.doc, include);
-  const out = level(host, steps);
-  // Masks at the stage level cut the layers, never the stage colour, so the stage is its own group.
-  return steps.some((s) => s.type === 'mask') ? `<g style="isolation:isolate">${out}</g>` : out;
+  const outer = running;
+  running = host;
+  try {
+    const out = level(host, steps);
+    // Masks at the stage level cut the layers, never the stage colour, so the stage is its own group.
+    return steps.some((s) => s.type === 'mask') ? `<g style="isolation:isolate">${out}</g>` : out;
+  } finally {
+    running = outer;
+  }
+}
+
+/**
+ * A symbol's own layers with their looks (blend modes, effects, clipping, masks, folders), in symbol space, as one
+ * isolated group the way the canvas draws it. `body` writes a layer's drawing. Null outside a composer (the caller
+ * then writes the layers plainly).
+ */
+export function composeSymbol(look: PosedLook, body: (pl: PosedLayer) => string): string | null {
+  const host = running;
+  if (!host) return null;
+  const sub: SvgLookHost = {
+    ...host,
+    doc: { ...host.doc, layers: look.layers, folders: look.folders },
+    frames: [look.frame],
+    body: (l) => {
+      const pl = look.drawings.get(l.id);
+      return pl ? body(pl) : '';
+    },
+  };
+  const out = level(sub, buildPlan(sub.doc, (l) => l.visible && !l.reference));
+  return out ? `<g style="isolation:isolate">${out}</g>` : '';
 }
 
 /** The tint filters a finished SVG refers to (`url(#tint-rrggbb-aaaa)`), as <filter> definitions. */

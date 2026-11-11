@@ -221,6 +221,46 @@ function effectsDoc(): Doc {
   return doc;
 }
 
+/** A symbol with looks on its own layers (shadow, multiply, clipping, a hiding mask, blur), placed three ways. */
+function symbolLooksDoc(): Doc {
+  const doc = newDoc({ name: 'Symbol looks', width: 400, height: 300, length: 24, fps: 12 });
+  doc.layers = [];
+  const fx = (kind: LayerEffect['kind'], values: Record<string, number | string>): LayerEffect => ({ id: uid('e'), kind, values: { ...defaultValues(kind), ...values } });
+  const back = addVectorLayer(doc, 'Back');
+  hold(back, vectorDrawing(doc, [fill([rectPath(0, 0, 400, 150)], '#ffc94a'), fill([rectPath(0, 150, 400, 150)], '#4fd1a5')]).id, 0, 24);
+  const stage = doc.layers;
+  doc.layers = [];
+  const disc = addVectorLayer(doc, 'Disc');
+  disc.effects = [fx('shadow', { x: 6, y: 6, softness: 4, opacity: 0.6 })];
+  hold(disc, vectorDrawing(doc, [fill([ellipsePath(0, 0, 40, 40)], '#5ab8ff')]).id, 0, 24);
+  const ink = addVectorLayer(doc, 'Ink');
+  ink.blend = 'multiply';
+  hold(ink, vectorDrawing(doc, [sq(-22, -22, 44, '#ff6f91')]).id, 0, 24);
+  const shine = addVectorLayer(doc, 'Shine');
+  shine.clipToBelow = true;
+  hold(shine, vectorDrawing(doc, [fill([rectPath(-40, -40, 30, 80)], '#ffffff')]).id, 0, 24);
+  const hole = addVectorLayer(doc, 'Hole');
+  hole.mask = 'hide';
+  hold(hole, vectorDrawing(doc, [fill([ellipsePath(18, -18, 9, 9)], '#000000')]).id, 0, 24);
+  const dot = addVectorLayer(doc, 'Dot');
+  dot.effects = [fx('blur', { radius: 3 })];
+  hold(dot, vectorDrawing(doc, [fill([ellipsePath(0, 28, 7, 7)], '#1d1b26')]).id, 0, 24);
+  doc.symbols = { badge: { id: 'badge', name: 'Badge', layers: doc.layers, length: 1, origin: { x: 0, y: 0 } } };
+  doc.layers = stage;
+  const inst = (x: number, y: number, more: Partial<InstanceShape> = {}, t: Partial<InstanceShape['transform']> = {}): InstanceShape => ({ id: 'b1', type: 'instance', symbolId: 'badge', transform: { x, y, scaleX: 1, scaleY: 1, rotation: 0, skew: 0, ...t }, opacity: 1, play: 'loop', firstFrame: 0, ...more });
+  const mover = addVectorLayer(doc, 'Mover');
+  const k0 = vectorDrawing(doc, []);
+  k0.shapes = [inst(90, 200)];
+  const k1 = vectorDrawing(doc, []);
+  k1.shapes = [inst(310, 200, {}, { rotation: 90 })];
+  hold(mover, k0.id, 0, 16);
+  hold(mover, k1.id, 16, 8);
+  mover.cels[0].tween = { ease: 'linear' };
+  const still = addVectorLayer(doc, 'Still');
+  hold(still, vectorDrawing(doc, [{ ...inst(120, 75, { opacity: 0.8 }, { scaleX: 1.4, scaleY: 1.4 }), id: 'b2' }, { ...inst(290, 75, { tint: { color: '#9b7bff', amount: 0.5 } }, { scaleX: 0.8, scaleY: 0.8, skew: 10 }), id: 'b3' }]).id, 0, 24);
+  return doc;
+}
+
 const DOCS: Record<string, () => Doc> = {
   text: textDoc,
   particles: particlesDoc,
@@ -229,6 +269,7 @@ const DOCS: Record<string, () => Doc> = {
   blend: blendDoc,
   masks: maskDoc,
   effects: effectsDoc,
+  'symbol-looks': symbolLooksDoc,
   'bouncing-logo': makeBouncingLogo,
   'shape-tween': shapeTweenDoc,
   camera: cameraDoc,

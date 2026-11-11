@@ -1,12 +1,12 @@
 // One frame as an SVG: vector layers become real paths (brush strokes as their outline shape, exactly the one the
 // canvas fills), pixel layers become one rectangle per run of same-coloured pixels, so nothing is lost.
 import type { Doc, Drawing, Layer, PathShape, PixelDrawing, Shape, StrokeShape, SubPath } from '../core/format';
-import { isPosed, poseAt, type PosedInstance } from '../core/symbols';
+import { isPosed, poseAt, type PosedInstance, type PosedLayer } from '../core/symbols';
 import { drawMeshed, strokeOutline } from '../core/render';
 import { encodePng } from '../io/png';
 import { flattenTilemap } from '../tiles/model';
 import { particlesToSvg, textToSvg, withSprites } from './svg-extra';
-import { composeSvg, tintAttr, tintDefs } from './svg-look';
+import { composeSvg, composeSymbol, tintAttr, tintDefs } from './svg-look';
 import { cameraViewAt, layerCameraMatrix } from '../core/camera';
 
 /** A number with at most 4 decimals (matrices need more than 2). */
@@ -100,28 +100,34 @@ export function shapeToSvg(s: Shape, doc?: Doc): string {
   return pathShapeToSvg(s);
 }
 
+/** One layer of a posed instance, without its opacity. */
+export function posedLayerSvg(l: PosedLayer, doc?: Doc): string {
+  // A layer bent by bones has no vector equivalent, so it goes in as a picture.
+  if (l.mesh) return meshImage(l.drawing, l.pixelSize, l.mesh);
+  const dr = l.drawing;
+  const parts =
+    dr.kind === 'pixel'
+      ? pixelRects(dr, l.pixelSize)
+      : dr.kind === 'vector'
+        ? dr.shapes.map((x) => shapeToSvg(x, doc)).filter(Boolean)
+        : dr.kind === 'tilemap' && doc && l.frame !== undefined
+          ? pixelRects(flattenTilemap(doc, dr, l.frame), l.pixelSize)
+          : [];
+  return parts.join('');
+}
+
 // A posed instance becomes a group with its matrix; its layers nest inside. Its tint is a small filter (svg-look.ts).
+// A symbol with looks on its own layers is composited inside the group, as the canvas does it.
 export function instanceToSvg(s: PosedInstance, doc?: Doc): string {
   const inner: string[] = [];
-  for (const l of s.posed.layers) {
-    if (l.mesh) {
-      // A layer bent by bones has no vector equivalent, so it goes in as a picture.
-      const img = meshImage(l.drawing, l.pixelSize, l.mesh);
-      if (img) inner.push(l.opacity < 1 ? `<g opacity="${op(l.opacity)}">${img}</g>` : img);
-      continue;
+  const looked = s.posed.look ? composeSymbol(s.posed.look, (pl) => posedLayerSvg(pl, doc)) : null;
+  if (looked !== null) {
+    if (looked) inner.push(looked);
+  } else
+    for (const l of s.posed.layers) {
+      const body = posedLayerSvg(l, doc);
+      if (body) inner.push(l.opacity < 1 ? `<g opacity="${op(l.opacity)}">${body}</g>` : body);
     }
-    const dr = l.drawing;
-    const parts =
-      dr.kind === 'pixel'
-        ? pixelRects(dr, l.pixelSize)
-        : dr.kind === 'vector'
-          ? dr.shapes.map((x) => shapeToSvg(x, doc)).filter(Boolean)
-          : dr.kind === 'tilemap' && doc && l.frame !== undefined
-            ? pixelRects(flattenTilemap(doc, dr, l.frame), l.pixelSize)
-            : [];
-    if (!parts.length) continue;
-    inner.push(l.opacity < 1 ? `<g opacity="${op(l.opacity)}">${parts.join('')}</g>` : parts.join(''));
-  }
   if (!inner.length || s.opacity <= 0) return '';
   const m = s.posed.matrix.map((v) => n2(v)).join(' ');
   return `<g transform="matrix(${m})"${tintAttr(s.tint)}${s.opacity < 1 ? ` opacity="${op(s.opacity)}"` : ''}>${inner.join('')}</g>`;
