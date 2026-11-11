@@ -2024,6 +2024,35 @@ body.ui-resizing * {
   white-space: nowrap;
 }
 
+/* Work found after a crash: the welcome sheet's first card. */
+.ui-recover-card {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: 12px;
+  margin: 6px 24px 4px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--sunny) 55%, var(--line));
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--sunny) 12%, var(--raised));
+  animation: ui-drop 0.2s var(--ui-pop);
+}
+.ui-recover-card > svg {
+  color: var(--sunny);
+}
+.ui-recover-card strong {
+  display: block;
+}
+.ui-recover-card span {
+  color: var(--muted);
+  font-size: 13px;
+}
+@media (max-width: 560px) {
+  .ui-recover-card {
+    grid-template-columns: auto 1fr;
+  }
+}
+
 /* Examples row on the welcome sheet */
 .ui-examples {
   padding: 4px 24px 8px;
@@ -2751,4 +2780,21 @@ body.ui-resizing * {
   font-size: 11px;
   font-weight: 700;
   color: var(--muted);
+}
+
+/* Submenus (File > Export) open to the side of their row. */
+.ui-menu-subwrap {
+  position: relative;
+}
+.ui-menu-subwrap > .ui-menu-item svg:last-child {
+  margin-left: auto;
+  opacity: 0.7;
+}
+.ui-menu-item.is-open {
+  background: var(--hover-bg);
+}
+.ui-submenu {
+  top: -7px;
+  left: calc(100% + 2px);
+  transform-origin: top left;
 }

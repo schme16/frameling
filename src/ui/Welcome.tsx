@@ -18,6 +18,7 @@ import { getQuest, startQuest } from './quests';
 import { toast } from './toast';
 import { SourceCards } from '../templates/YoursSection';
 import { templateSources } from '../templates/user';
+import { dismissPending, recovery, restorePending, whenSaved } from '../io/recovery';
 
 export function WelcomeSheet() {
   const mode = overlays.use((o) => o.sheet);
@@ -35,6 +36,7 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
   const open = getCommand('file.open');
   const quest = getQuest('first-animation');
   const quill = useQuillShown();
+  const found = recovery.use((r) => r);
 
   useEffect(() => {
     let live = true;
@@ -65,6 +67,25 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
           <Icon name="close" />
         </button>
       </div>
+
+      {/* Work found after a crash comes before everything else. */}
+      {found && (
+        <div className="ui-recover-card" role="group" aria-label="Unsaved work" data-help="autosave">
+          <Icon name="undo" size={22} />
+          <div>
+            <strong>Your unsaved work from {whenSaved(found.savedAt)}</strong>
+            <span>
+              {found.name} was still open when Frameling closed. We kept a copy.
+            </span>
+          </div>
+          <button type="button" className="ui-btn ui-btn-primary" onClick={restorePending}>
+            Restore
+          </button>
+          <button type="button" className="ui-btn" data-tip="It stays in File > Recover unsaved work for 7 days." onClick={dismissPending}>
+            Not now
+          </button>
+        </div>
+      )}
 
       {/* First, so someone coming back finds their work without scrolling past every example. */}
       {recent.length > 0 && (

@@ -14,6 +14,7 @@ import { closeSheet, openHelp, openPrefs, overlays } from '../ui/overlays';
 import { showPanel } from '../ui/dock';
 import { BUILT_IN_THEMES } from '../ui/themes/builtIn';
 import { toast } from '../ui/toast';
+import { recovery } from '../io/recovery';
 
 if (new URLSearchParams(location.search).has('debug')) {
   (window as unknown as { __frameling: unknown }).__frameling = {
@@ -43,6 +44,8 @@ if (new URLSearchParams(location.search).has('debug')) {
     },
     quill: { sheet: () => quillSheet.get(), setSheet: setQuillSheet, tick: quillTick, setShown: setShowQuill },
     toast,
+    // Work found after a crash, for shots of the welcome sheet's recovery card.
+    recovery,
     overlays: { openHelp, openPrefs, closeSheet, state: overlays },
     // The accessibility check (scripts/a11y.cjs) opens every panel and picks every tool.
     panels: () => allPanels().map((p) => p.id),

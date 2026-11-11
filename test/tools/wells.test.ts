@@ -25,7 +25,7 @@ describe('fill and stroke boxes', () => {
   it('starts Illustrator style: white fill, black stroke, stroke in front', () => {
     const s = setup();
     resetColors();
-    expect([s.get().ui.fillColor, s.get().ui.color, s.get().ui.strokeOn]).toEqual(['#ffffff', '#1d1b26', true]);
+    expect([s.get().ui.fillColor, s.get().ui.color, s.get().ui.strokeOn]).toEqual(['#ffc94a', '#1d1b26', true]);
   });
 
   it('X brings the other box forward, and colours go to the box in front', () => {

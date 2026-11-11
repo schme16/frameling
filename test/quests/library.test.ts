@@ -67,10 +67,10 @@ describe('the quests', () => {
       }
   });
 
-  it('the first quest is open from the start, the others wait for it', () => {
+  it('the first quests are open from the start (Pixel pal is a sprite person\'s first), the others wait', () => {
     const p = { ...FRESH_PROGRESS };
     expect(isUnlocked(FIRST_ANIMATION, p)).toBe(true);
-    for (const q of QUESTS.slice(1)) expect(isUnlocked(q, p)).toBe(false);
+    for (const q of QUESTS.slice(1)) expect(isUnlocked(q, p)).toBe(q.id === 'pixel-pal' || q.id === 'tiles');
     for (const q of QUESTS.slice(1)) expect(isUnlocked(q, { ...p, completed: ['first-animation'] })).toBe(true);
   });
 });

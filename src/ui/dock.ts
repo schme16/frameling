@@ -35,7 +35,7 @@ export interface DockState {
 }
 
 export const ZONES: DockZone[] = ['left', 'right', 'bottom'];
-export const DEFAULT_SIZE: Record<DockZone, number> = { left: 260, right: 300, bottom: 230 };
+export const DEFAULT_SIZE: Record<DockZone, number> = { left: 260, right: 316, bottom: 230 };
 export const MIN_SIZE: Record<DockZone, number> = { left: 180, right: 200, bottom: 110 };
 export const MAX_SIZE: Record<DockZone, number> = { left: 560, right: 640, bottom: 640 };
 export const DOCK_KEY = 'frameling.dock.v1';
@@ -65,7 +65,8 @@ function layoutFrom(panels: PanelDef[], place: (p: PanelDef) => DockZone, order:
 /** The three layouts that come with the app. They're built from whatever panels are registered. */
 export function builtinWorkspaces(panels: PanelDef[] = allPanels()): Workspace[] {
   const draw = layoutFrom(panels, (p) => p.zone);
-  draw.zones.right.size = 300;
+  // Wide enough for Tool options, a named Colours tab and the +N button.
+  draw.zones.right.size = 316;
   // Tall enough for the timeline buttons and two layer rows at the default window size.
   draw.zones.bottom.size = 260;
 

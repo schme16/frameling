@@ -139,7 +139,12 @@ describe('moving, resizing and turning', () => {
 
   it('works on the frame you are on', () => {
     drag(selectTool, ctx(), [[50, 50], [50, 50]]);
-    store().setUi({ frame: 5 });
+    // The drawing carries on to later frames, so it can be picked there too.
+    store().setUi({ frame: 5, selection: [] });
+    drag(selectTool, ctx(), [[50, 50], [50, 50]]);
+    expect(selection()).toEqual(['a']);
+    store().update('Empty after frame 1', (d) => void (d.layers[0].cels[0].length = 1));
+    store().setUi({ selection: [] });
     drag(selectTool, ctx(), [[50, 50], [50, 50]]);
     expect(selection()).toEqual([]);
   });

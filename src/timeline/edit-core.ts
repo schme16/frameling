@@ -38,7 +38,10 @@ export function cloneDrawing(d: Drawing): Drawing {
 
 /** Makes sure the document is at least `frames` long. */
 export function ensureLength(doc: Doc, frames: number): void {
-  if (frames > doc.length) doc.length = Math.min(MAX_LENGTH, frames);
+  if (frames <= doc.length) return;
+  const was = doc.length;
+  doc.length = Math.min(MAX_LENGTH, frames);
+  followEnd(doc, was);
 }
 
 function ensureFits(doc: Doc, layer: Layer): void {
@@ -86,6 +89,50 @@ function nextKeyStart(layer: Layer, frame: number): number | undefined {
   return layer.cels.find((c) => c.start > frame)?.start;
 }
 
+/** True when new drawings hold until the next one (the `timeline.newKeyHold` preference, on unless set to one frame). */
+export function holdsUntilNext(): boolean {
+  return currentChoice('timeline.newKeyHold') !== 'one-frame';
+}
+
+/**
+ * Makes room for a new key on the empty `frame` and says how long it should be. Holding until the next drawing: an
+ * automatic hold before it stretches to meet it (no blank gap), and the new key reaches the next key or the end of
+ * the animation. Otherwise it's the old rule: until the next key, or one frame.
+ */
+export function newKeySpan(doc: Doc, layer: Layer, frame: number, hold = holdsUntilNext()): { length: number; autoHold?: true } {
+  const next = nextKeyStart(layer, frame);
+  if (!hold) return { length: next === undefined ? 1 : next - frame };
+  const prev = [...layer.cels].reverse().find((c) => c.start < frame);
+  if (prev?.autoHold && end(prev) < frame) prev.length = frame - prev.start;
+  return { length: next !== undefined ? next - frame : Math.max(1, doc.length - frame), autoHold: true };
+}
+
+/** The automatic hold `frame` is a later frame of (where drawing starts a new key), if any. */
+export function autoHeldAt(layer: Layer, frame: number): Cel | undefined {
+  const c = celAt(layer, frame);
+  return c?.autoHold && !c.tween && c.start < frame ? c : undefined;
+}
+
+/**
+ * Cuts the automatic hold at `frame`: the earlier part keeps its drawing, and a new key with `drawingId` takes the
+ * rest (still held automatically). Returns the new cel.
+ */
+export function splitAutoHold(layer: Layer, cel: Cel, frame: number, drawingId: Id): Cel {
+  const c: Cel = { id: uid('c'), start: frame, length: end(cel) - frame, drawingId, autoHold: true };
+  cel.length = frame - cel.start;
+  layer.cels.push(c);
+  layer.cels.sort((a, b) => a.start - b.start);
+  return c;
+}
+
+/** After the animation length changes, automatic holds that reached the old end reach the new one. */
+export function followEnd(doc: Doc, oldLength: number): void {
+  for (const layer of doc.layers) {
+    const last = layer.cels[layer.cels.length - 1];
+    if (last?.autoHold && end(last) >= oldLength && doc.length > last.start) last.length = doc.length - last.start;
+  }
+}
+
 // ---------------------------------------------------------------- keys
 
 /**
@@ -107,9 +154,9 @@ export function newBlankKey(doc: Doc, layerId: Id, frame: number, copy = false):
   };
   let id: Id;
   if (!cel) {
-    const next = nextKeyStart(layer, frame);
+    const span = newKeySpan(doc, layer, frame);
     const d = make();
-    const c: Cel = { id: uid('c'), start: frame, length: next === undefined ? 1 : next - frame, drawingId: d.id };
+    const c: Cel = { id: uid('c'), start: frame, drawingId: d.id, ...span };
     layer.cels.push(c);
     layer.cels.sort((a, b) => a.start - b.start);
     id = c.id;
@@ -121,7 +168,7 @@ export function newBlankKey(doc: Doc, layerId: Id, frame: number, copy = false):
     const oldEnd = end(cel);
     const d = make(doc.drawings[cel.drawingId]);
     cel.length = frame - cel.start;
-    const c: Cel = { id: uid('c'), start: frame, length: oldEnd - frame, drawingId: d.id };
+    const c: Cel = { id: uid('c'), start: frame, length: oldEnd - frame, drawingId: d.id, ...(cel.autoHold ? { autoHold: true } : {}) };
     layer.cels.push(c);
     layer.cels.sort((a, b) => a.start - b.start);
     id = c.id;
@@ -146,7 +193,7 @@ export function duplicateKey(doc: Doc, layerId: Id, frame: number): Id | null {
   doc.drawings[copy.id] = copy;
   let c: Cel;
   if (target < end(cel)) {
-    c = { id: uid('c'), start: target, length: end(cel) - target, drawingId: copy.id };
+    c = { id: uid('c'), start: target, length: end(cel) - target, drawingId: copy.id, ...(cel.autoHold ? { autoHold: true } : {}) };
     cel.length = target - cel.start;
   } else {
     if (celAt(layer, target)) shiftFrom(layer, target, 1);
@@ -170,8 +217,7 @@ export function copyEarlierKey(doc: Doc, layerId: Id, frame: number): Id | null 
   if (!before) return null;
   const copy = cloneDrawing(doc.drawings[before.drawingId]);
   doc.drawings[copy.id] = copy;
-  const next = nextKeyStart(layer, frame);
-  const c: Cel = { id: uid('c'), start: frame, length: next === undefined ? 1 : next - frame, drawingId: copy.id };
+  const c: Cel = { id: uid('c'), start: frame, drawingId: copy.id, ...newKeySpan(doc, layer, frame) };
   layer.cels.push(c);
   layer.cels.sort((a, b) => a.start - b.start);
   ensureFits(doc, layer);
@@ -196,6 +242,9 @@ export function deleteKey(doc: Doc, layerId: Id, frame: number): boolean {
   const cel = layer && celAt(layer, frame);
   if (!layer || !cel) return false;
   layer.cels = layer.cels.filter((c) => c !== cel);
+  // An automatic hold right before it carries on over the frames it leaves.
+  const prev = layer.cels.find((c) => end(c) === cel.start);
+  if (prev?.autoHold) prev.length += cel.length;
   pruneDrawings(doc);
   return true;
 }
@@ -211,6 +260,7 @@ export function insertFrame(doc: Doc, layerId: Id, frame: number): boolean {
   if (cel) {
     shiftFrom(layer, end(cel), 1);
     cel.length += 1;
+    delete cel.autoHold;
   } else {
     shiftFrom(layer, frame, 1);
   }
@@ -228,6 +278,7 @@ export function removeFrame(doc: Doc, layerId: Id, frame: number): boolean {
   const cel = celAt(layer, frame);
   if (cel) {
     const wasEnd = end(cel);
+    delete cel.autoHold;
     if (cel.length > 1) cel.length -= 1;
     else layer.cels = layer.cels.filter((c) => c !== cel);
     shiftFrom(layer, wasEnd, -1);
@@ -254,6 +305,7 @@ export function resizeCel(doc: Doc, layerId: Id, celId: Id, length: number, clas
   const n = Math.max(1, Math.round(length));
   if (!layer || !cel || cel.length === n) return false;
   cel.length = n;
+  delete cel.autoHold;
   resolve(layer, cel, clash);
   ensureFits(doc, layer);
   return true;
@@ -427,7 +479,9 @@ export function setFps(doc: Doc, fps: number): boolean {
 export function setDocLength(doc: Doc, length: number): boolean {
   const n = Math.max(1, Math.min(MAX_LENGTH, Math.round(length)));
   if (Number.isNaN(n) || n === doc.length) return false;
+  const was = doc.length;
   doc.length = n;
+  followEnd(doc, was);
   return true;
 }
 

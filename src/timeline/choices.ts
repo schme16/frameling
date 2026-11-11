@@ -4,6 +4,7 @@ import { registerChoice } from '../core/choices';
 export type NewKeyChoice = 'blank' | 'copy';
 export type HoldChoice = 'push' | 'cover';
 export type FrameScopeChoice = 'all' | 'layer';
+export type NewKeyHoldChoice = 'until-next' | 'one-frame';
 
 registerChoice<NewKeyChoice>({
   id: 'timeline.newKey',
@@ -42,6 +43,21 @@ registerChoice<FrameScopeChoice>({
   default: 'all',
   category: 'Timeline',
   help: 'timeline-frames',
+});
+
+// A preference, not a question: holding until the next drawing is what nearly everyone expects.
+registerChoice<NewKeyHoldChoice>({
+  id: 'timeline.newKeyHold',
+  title: 'How long a new drawing lasts',
+  question: 'When you draw on an empty frame, how long should the new drawing stay on screen?',
+  options: [
+    { value: 'until-next', label: 'Until the next drawing', detail: 'It stays until your next drawing, or the end, so playing never shows blank gaps. Draw on a later frame to start a new drawing there.' },
+    { value: 'one-frame', label: 'One frame', detail: 'Each drawing is one frame (on ones) until you hold it longer. Empty frames stay empty.' },
+  ],
+  default: 'until-next',
+  category: 'Timeline',
+  help: 'drawings-carry-on',
+  silent: true,
 });
 
 /** "Hold longer" choice in the words the edit code uses. */

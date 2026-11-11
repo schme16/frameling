@@ -16,10 +16,12 @@ interface ViewSettings {
   snap: boolean;
   /** Guides can't be moved or added (they still show and snap). */
   lockGuides: boolean;
+  /** On a frame with nothing drawn, show the last drawing faintly (the empty frame ghost). */
+  emptyGhost: boolean;
 }
 
 const KEY = 'frameling.view';
-let state: ViewSettings = { pixelGrid: true, throughCamera: false, cameraWhilePlaying: true, rulers: false, guides: true, snap: true, lockGuides: false };
+let state: ViewSettings = { pixelGrid: true, throughCamera: false, cameraWhilePlaying: true, rulers: false, guides: true, snap: true, lockGuides: false, emptyGhost: true };
 const listeners = new Set<() => void>();
 
 try {
@@ -28,7 +30,7 @@ try {
     if (saved && typeof saved.pixelGrid === 'boolean') state = { ...state, pixelGrid: saved.pixelGrid };
     if (saved && typeof saved.throughCamera === 'boolean') state = { ...state, throughCamera: saved.throughCamera };
     if (saved && typeof saved.cameraWhilePlaying === 'boolean') state = { ...state, cameraWhilePlaying: saved.cameraWhilePlaying };
-    for (const k of ['rulers', 'guides', 'snap', 'lockGuides'] as const) if (saved && typeof saved[k] === 'boolean') state = { ...state, [k]: saved[k] };
+    for (const k of ['rulers', 'guides', 'snap', 'lockGuides', 'emptyGhost'] as const) if (saved && typeof saved[k] === 'boolean') state = { ...state, [k]: saved[k] };
   }
 } catch {
   // storage can be unavailable; the defaults are fine

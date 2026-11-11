@@ -97,7 +97,7 @@ function initialUi(doc: Doc): UiState {
     selection: [],
     tool: 'brush',
     color: '#1d1b26',
-    fillColor: '#ffffff',
+    fillColor: '#ffc94a',
     strokeOn: true,
     activeWell: 'stroke',
     brush: { ...DEFAULT_BRUSH },

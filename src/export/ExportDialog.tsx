@@ -20,7 +20,7 @@ import { GIF_MAX_FPS } from './gif';
 import { proresSupport, type ProresSupport } from './prores';
 import { LayeredNotes } from './LayeredNotes';
 import { CarryNotes } from './CarryNotes';
-import { DEFAULT_SHEET, engineInfo, FORMATS, formatInfo, normalizeSheet, type EngineId, type ExportSettings, type FormatId } from './types';
+import { DEFAULT_SHEET, engineInfo, FORMATS, formatInfo, normalizeSheet, splitFormats, type EngineId, type ExportSettings, type FormatId, type FormatInfo } from './types';
 import './export.css';
 import { leaveTileEdit } from '../tiles/tileEdit';
 import { docDpi, formatSize } from '../core/units';
@@ -75,6 +75,11 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
     });
   const webmPref = useChoice<string>('export.webmCodec');
 
+  // The popular formats first; the rest open under "More formats" (and stay open while one of them is chosen).
+  const groups = useMemo(() => splitFormats(FORMATS), []);
+  const moreChosen = groups.more.some((f) => f.id === s.format);
+  const [more, setMore] = useState(false);
+  const showMore = more || moreChosen;
   const info = formatInfo(s.format);
   const plan = useMemo(() => planExport(doc, s, frame), [doc, s, frame]);
   const video = s.format === 'mp4' || s.format === 'webm' || s.format === 'prores';
@@ -176,7 +181,7 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
     <Modal title="Export" onClose={close} wide>
       <div className="ex-body">
         <div className="ex-cards" role="radiogroup" aria-label="Format">
-          {FORMATS.map((f) => {
+          {[...groups.popular, ...(showMore ? groups.more : [])].map((f: FormatInfo) => {
             const why = unavailable(f.id);
             return (
               <button
@@ -206,6 +211,13 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
               </button>
             );
           })}
+          {!moreChosen && (
+            <button type="button" className="ex-more" aria-expanded={showMore} onClick={() => setMore((m) => !m)}>
+              <Icon name={showMore ? 'chevron-up' : 'chevron-down'} size={16} />
+              {showMore ? 'Fewer formats' : `More formats (${groups.more.length})`}
+              {!showMore && <small>WebM, PNG picture, SVG, Lottie, PSD, PDF and more</small>}
+            </button>
+          )}
         </div>
 
         <div className="ex-options">

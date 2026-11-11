@@ -106,11 +106,13 @@ export const FIRST_ANIMATION: Quest = {
       enter: () => {
         // Two drawings one frame each flicker too fast at 12 fps, so hold each for 2 frames, as long as every
         // drawing is still a single frame (never undo someone's own timing).
+        // The last drawing holding to the end on its own counts as one frame: nobody chose that.
         const doc = store().get().doc;
-        const cels = doc.layers.flatMap((l) => l.cels);
-        if (cels.length > 0 && cels.every((c) => c.length === 1)) {
+        const tail = (l: { cels: { autoHold?: boolean }[] }, i: number) => i === l.cels.length - 1 && !!l.cels[i].autoHold;
+        const cels = doc.layers.flatMap((l) => l.cels.map((c, i) => (tail(l, i) ? 1 : c.length)));
+        if (cels.length > 0 && cels.every((n) => n === 1)) {
           store().update('Hold drawings on twos', (d) => {
-            for (const l of d.layers) for (const c of l.cels) (c.start *= 2), (c.length = 2);
+            for (const l of d.layers) for (const c of l.cels) (c.start *= 2), (c.length = 2), delete c.autoHold;
           });
         }
         const n = contentLength(store().get().doc);
@@ -166,7 +168,7 @@ export const BOUNCING_BALL: Quest = {
     },
     {
       id: 'hold',
-      say: 'Hold this drawing for longer. Press 2 under "Hold for".',
+      say: 'Hold this drawing for longer. Pick 2 under "Hold for".',
       why: 'Holding a drawing on twos means it shows for two frames. Longer on the ground feels heavier.',
       target: SEL.hold,
       done: (c) => celSignature(c.state.doc) !== celSignature(c.entry.state.doc),
@@ -250,7 +252,8 @@ export const PIXEL_PAL: Quest = {
   minutes: 3,
   icon: 'pixel',
   badge: { id: 'pixel-pal', name: 'Pixel Pal', icon: 'pixel', color: '--mint' },
-  requires: ['first-animation'],
+  // A first quest in its own right for sprite people, so it needs nothing before it.
+  requires: [],
   finish: 'Two frames of pixel art. Press Enter to watch it, and keep adding frames for a walk or a wave.',
   prepare: ensureTinySpritePage,
   ready: hasPixelLayer,

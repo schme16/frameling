@@ -431,7 +431,7 @@ Drag a panel's **tab** to another place in the same zone to reorder it, or onto 
 
 ## When the tabs don't all fit
 
-When a zone gets narrow, the other tabs shrink to just their icon (hover one to see its name). If even that's not enough, a **+N** button appears: click it to see the rest and open one. Widen the zone to bring the names back.
+When a zone gets narrow, the other tabs shrink to just their icon (hover one to see its name). **Colours** keeps its name while there is room, so it is easy to find. If even that's not enough, a **+N** button appears: click it to see the rest and open one. Widen the zone to bring the names back.
 
 ## Resize
 
@@ -555,7 +555,7 @@ Looking at how an example is built is a good way to learn. Try the timeline to s
     keywords: ['tutorial', 'guide', 'lesson', 'learn', 'first animation', 'badge', 'tiles quest'],
     body: `A quest is a little lesson with a few steps. You do each one in the real app, and Frameling ticks it off.
 
-The first one, **Your first animation**, is on the welcome sheet. Finish it and the rest open up in the **Quests** panel (Help > Open the Quests panel): the bouncing ball, filling in, a pixel pal, shading, **Tiles** (draw a seamless tile and paint a little level with it) and sharing. Each earns a badge.
+The first one, **Your first animation**, is on the welcome sheet (sprite and tile people start with **Pixel pal** or **Tiles** instead). Finish it and the rest open up in the **Quests** panel (Help > Open the Quests panel): the bouncing ball, filling in, a pixel pal, shading, **Tiles** (draw a seamless tile and paint a little level with it) and sharing. Each earns a badge.
 
 Stuck on a step? **Show me** does it for you, and **Tell me more** opens the help for it.`,
   },

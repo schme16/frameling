@@ -21,6 +21,7 @@ import type { Rect } from './view';
 import { paintComposited } from '../effects/stage';
 import { EffectCache } from '../effects/composite';
 import { needsCompositor } from '../effects/model';
+import { GHOST_ALPHA, type GhostItem } from './ghost';
 
 export interface FrameParams {
   doc: Doc;
@@ -48,6 +49,8 @@ export interface FrameParams {
   pasteboard?: { frame?: { x: number; y: number }[] };
   /** The layer being worked on (a mask layer being drawn shows faintly on top). */
   activeLayerId?: string | null;
+  /** The empty frame ghost: last drawings to show faintly where a layer has nothing (see ghost.ts). */
+  ghost?: GhostItem[];
 }
 
 const AROUND: [number, number][] = [
@@ -305,6 +308,7 @@ export class FramePainter {
 
     // Through the camera the onion skin would be in the wrong place, so it's left out.
     if (p.onion.enabled && !p.playing && !p.camera) this.paintOnion(g, p, cacheable);
+    else if (p.ghost?.length && !p.playing && !p.camera && !copy) this.paintGhost(g, p, p.ghost, cacheable);
 
     if (composited) settled = paintComposited(this, g, p, cacheable) && settled;
     else for (const layer of doc.layers) {
@@ -515,6 +519,22 @@ export class FramePainter {
       }
       g.globalAlpha = 1;
     }
+  }
+
+  private paintGhost(g: CanvasRenderingContext2D, p: FrameParams, items: GhostItem[], cacheable: boolean): void {
+    const { doc, rect } = p;
+    g.globalAlpha = GHOST_ALPHA;
+    if (cacheable) g.drawImage(this.onionBitmap(doc, items, '', false, rect.w, rect.h), rect.x, rect.y);
+    else {
+      const sc = (this.scratch2 = this.sized(this.scratch2, p.width, p.height));
+      const sg = ctxOf(sc);
+      sg.setTransform(1, 0, 0, 1, 0, 0);
+      sg.clearRect(0, 0, p.width, p.height);
+      sg.setTransform(rect.w / doc.width, 0, 0, rect.h / doc.height, rect.x, rect.y);
+      this.drawOnionItems(sg, items, '', false, p.width, p.height);
+      g.drawImage(sc, 0, 0);
+    }
+    g.globalAlpha = 1;
   }
 
   /**

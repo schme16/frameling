@@ -42,7 +42,8 @@ export class PixelStroke {
     frame: number,
     private opts: PixelStrokeOptions,
   ) {
-    this.session = new PixelSession(doc, layer, frame);
+    // Plain paint adds a new drawing over a carried-along one; rubbing out or shading works on what's there.
+    this.session = new PixelSession(doc, layer, frame, { adds: !opts.ink && opts.color[3] > 0 });
     this.offsets = brushOffsets(opts.size, opts.shape);
     this.ink = this.session.lock(opts.ink ?? solidInk(opts.color));
     // The corner clean-up only means something for a one pixel line.

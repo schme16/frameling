@@ -106,7 +106,8 @@ export const TILES_QUEST: Quest = {
   minutes: 4,
   icon: 'tiles',
   badge: { id: 'level-builder', name: 'Level Builder', icon: 'tiles', color: '--mint' },
-  requires: ['first-animation'],
+  // A first quest in its own right for tile people, so it needs nothing before it.
+  requires: [],
   finish: 'A seamless tile and a level made of it. Add more tiles (grass, walls, water) and export the lot for your game with File, Export tileset.',
   prepare: ensureTilePage,
   ready: hasPixelLayer,

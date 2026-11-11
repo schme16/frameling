@@ -7,11 +7,12 @@ import { addCel, docWith, isTidy, shape, storeWith } from './helpers';
 const L = (doc: ReturnType<typeof docWith>) => doc.layers[0];
 
 describe('new blank key', () => {
-  it('makes a one-frame key on an empty frame at the end', () => {
+  it('makes a key on an empty frame at the end that holds to the end', () => {
     const d = docWith([[0, 2]]);
     const id = core.newBlankKey(d, L(d).id, 5);
     expect(id).toBeTruthy();
-    expect(shape(L(d))).toEqual([[0, 2], [5, 1]]);
+    expect(shape(L(d))).toEqual([[0, 2], [5, 19]]);
+    expect(L(d).cels[1].autoHold).toBe(true);
   });
   it('fills an empty gap up to the next key', () => {
     const d = docWith([[0, 1], [6, 2]]);
@@ -128,10 +129,10 @@ describe('copy an earlier key onto an empty frame', () => {
     expect(L(d).cels[1].drawingId).not.toBe(L(d).cels[0].drawingId);
     expect(isTidy(L(d))).toBe(true);
   });
-  it('holds one frame when nothing comes after', () => {
+  it('holds to the end when nothing comes after', () => {
     const d = docWith([[0, 2]]);
     core.copyEarlierKey(d, L(d).id, 5);
-    expect(shape(L(d))).toEqual([[0, 2], [5, 1]]);
+    expect(shape(L(d))).toEqual([[0, 2], [5, 19]]);
   });
   it('does nothing on a frame that has a drawing, or with nothing earlier', () => {
     const d = docWith([[2, 3]]);
@@ -447,7 +448,7 @@ describe('applied ops: undo, labels and locking', () => {
     const s = storeWith([[0, 1]]);
     s.setUi({ frame: 4 });
     expect(ops.duplicateKey()).toMatchObject({ ok: true });
-    expect(shape(s.get().doc.layers[0])).toEqual([[0, 1], [4, 1]]);
+    expect(shape(s.get().doc.layers[0])).toEqual([[0, 1], [4, 20]]);
     expect(s.get().ui.frame).toBe(4);
   });
   it('refuses to edit a locked layer', () => {
