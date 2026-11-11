@@ -6,7 +6,7 @@ import { getHelp } from '../../core/registry';
 import { store } from '../../core/store';
 import { UNITS, type Unit } from '../../core/units';
 import { askAboutUnsavedChanges } from '../../io/document';
-import { applyWorkspace } from '../dock';
+import { applyWorkspace, showPanel } from '../dock';
 import { Icon } from '../icons';
 import { line, lineParts, lines } from '../mascot/lines';
 import { goodbyeScript, GOODBYE_WORDS, Quill, useQuillShown, welcomeBackScript, WELCOME_BACK_WORDS, type Script } from '../mascot';
@@ -94,6 +94,7 @@ function Flow() {
 
   const finish = async (go: 'quest' | 'template' | 'blank') => {
     applyWorkspace(plan.workspace);
+    if (plan.panel) showPanel(plan.panel);
     const name = s.name.trim() || 'Untitled';
     end('done');
     if (go === 'template' || (go === 'blank' && plan.blank)) {
@@ -540,7 +541,7 @@ function Done({ s, plan, go }: { s: FlowState; plan: ReturnType<typeof planFor>;
           <span className="ob-card-icon">
             <Icon name="brush" size={24} />
           </span>
-          <strong>{plan.blank === 'blank-pixel' ? 'Just a blank pixel grid' : 'Just a blank page'}</strong>
+          <strong>{plan.blank === 'blank-pixel' ? 'Just a blank pixel grid' : plan.blank === 'blank-level' ? 'Just a blank level' : 'Just a blank page'}</strong>
           <span>{line('onboarding.done.blank')}</span>
         </button>
       </div>

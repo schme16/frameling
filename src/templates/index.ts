@@ -3,7 +3,7 @@
  * format as it changes. `make()` returns a fresh document every time.
  */
 import type { Doc } from '../core/format';
-import { makeBlankPixel, makeBlankVector } from './blank';
+import { makeBlankLevel, makeBlankPixel, makeBlankVector } from './blank';
 import { makeBlink } from './blink';
 import { makeBouncingBall } from './bouncing-ball';
 import { makeBouncingLogo } from './bouncing-logo';
@@ -129,6 +129,13 @@ export const TEMPLATES: Template[] = [
     blurb: 'A 32x32 pixel grid at 12 fps, each pixel 8 screen pixels wide. Try it: draw a 2-frame blink, then press play.',
     kind: 'pixel',
     make: makeBlankPixel,
+  },
+  {
+    id: 'blank-level',
+    name: 'Blank level',
+    blurb: 'A 320x192 stage for 20 by 12 tiles of 16x16, with an empty tilemap layer. Try it: make a tile in the Tileset panel, then paint the level with it.',
+    kind: 'pixel',
+    make: makeBlankLevel,
   },
 ];
 

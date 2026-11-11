@@ -63,3 +63,9 @@ export class SpaceTap {
     this.down = null;
   }
 }
+
+/** Whether a press landed on a control laid over the canvas, which should get the press instead of the tools. */
+export function pressesControl(target: EventTarget | null): boolean {
+  const el = target as Element | null;
+  return !!el && typeof el.closest === 'function' && !!el.closest('button, a[href], select, [role="button"]');
+}

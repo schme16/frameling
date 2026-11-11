@@ -66,6 +66,7 @@ describe('onboarding flow', () => {
     // Pixel people get a pixel grid for a blank page; everyone else the plain page.
     expect(planFor(['sprites']).blank).toBe('blank-pixel');
     expect(planFor(['tiles', 'cartoons']).blank).toBeUndefined();
+    expect(planFor(['tiles']).panel).toBe('tileset');
     expect(planFor(['tiles', 'sprites', 'motion', 'cartoons']).help.length).toBeLessThanOrEqual(4);
     // Newcomers get the 60-second quest first, then the one that suits them.
     expect(planFor(['tiles']).quest).toBe(FIRST_QUEST);
