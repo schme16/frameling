@@ -5,6 +5,8 @@ import { celAt, findLayer } from '../core/doc';
 import { store, type State } from '../core/store';
 import { EASE_PRESETS } from '../core/ease';
 import { toast } from '../ui/toast';
+import { MOTIONS } from '../core/motions';
+import { canMotion, makeMotion } from './motion-ops';
 import { clearShapeHints, hintTarget, makeShapeTween, makeTweenAsking, setTweenKind, currentKey, deleteUnused, editInstance, leaveSymbol, makeSymbolFromSelection, makeTween, pathFromSelection, removeTween, resetTransform, selectedInstance, setEase } from './ops';
 
 registerPanel({ id: 'library', title: 'Library', icon: 'symbol', component: lazyPanel(() => import('./LibraryPanel').then((m) => m.LibraryPanel)), zone: 'right', order: 30, help: 'symbols' });
@@ -180,3 +182,17 @@ registerCommands([
     run: () => void setEase(p.id),
   })),
 ]);
+
+// One-click motions: Make it bounce, wobble, float...
+registerCommands(
+  MOTIONS.map((m) => ({
+    id: `motion.${m.id}`,
+    label: `Make it ${m.label.toLowerCase()}`,
+    category: 'Animate',
+    description: `${m.description} Adds keys with in-betweens from the playhead, on the selection or the whole drawing.`,
+    keywords: ['one-click motion', 'animate preset', 'preset', 'motion', 'effect', m.label.toLowerCase(), m.id],
+    help: 'one-click-motions',
+    enabled: (s: State) => canMotion(s.doc),
+    run: () => makeMotion(m.id),
+  })),
+);

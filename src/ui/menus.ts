@@ -44,7 +44,7 @@ export const MENUS: MenuDef[] = [
   {
     label: 'Animate',
     categories: ['Animate', 'Animation', 'Timeline', 'Frames', 'Sound', 'Lip sync'],
-    items: ['timeline.play', 'timeline.toggleLoop', 'timeline.toggleOnion', '-', 'timeline.prevFrame', 'timeline.nextFrame', 'timeline.prevKey', 'timeline.nextKey', 'timeline.firstFrame', 'timeline.lastFrame', '-', 'timeline.newKey', 'timeline.emptyFrame', 'timeline.duplicateKey', 'timeline.clearKey', '-', 'timeline.insertFrame', 'timeline.removeFrame', 'timeline.addMarker'],
+    items: ['timeline.play', 'timeline.toggleLoop', 'timeline.toggleOnion', '-', 'timeline.prevFrame', 'timeline.nextFrame', 'timeline.prevKey', 'timeline.nextKey', 'timeline.firstFrame', 'timeline.lastFrame', '-', 'timeline.newKey', 'timeline.emptyFrame', 'timeline.duplicateKey', 'timeline.clearKey', '-', 'timeline.insertFrame', 'timeline.removeFrame', 'timeline.addMarker', '-', 'sub:motions'],
   },
   {
     label: 'Rig',
@@ -77,6 +77,11 @@ export interface SubmenuDef {
 }
 
 export const SUBMENUS: Record<string, SubmenuDef> = {
+  motions: {
+    label: 'One-click motions',
+    items: ['motion.bounce', 'motion.wobble', 'motion.float', 'motion.popIn', 'motion.shake', 'motion.fadeIn'],
+    prefixes: ['motion.'],
+  },
   export: {
     label: 'Export',
     items: ['file.export', 'file.exportAgain', '-', 'file.exportInteractives', 'file.exportLottie', 'file.exportSvgAnimated', 'file.exportProres', 'file.exportPsd', 'file.exportPdf', 'file.exportIllustrator', 'tiles.export', '-', 'file.toggleUpdatePlayable'],
