@@ -168,7 +168,7 @@ export const BOUNCING_BALL: Quest = {
     },
     {
       id: 'hold',
-      say: 'Hold this drawing for longer. Press 2 under "Hold for".',
+      say: 'Hold this drawing for longer. Pick 2 under "Hold for".',
       why: 'Holding a drawing on twos means it shows for two frames. Longer on the ground feels heavier.',
       target: SEL.hold,
       done: (c) => celSignature(c.state.doc) !== celSignature(c.entry.state.doc),

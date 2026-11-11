@@ -55,7 +55,7 @@ A **key** (keyframe) is a frame where you drew something new. A **hold** is how 
 | 3 frames | on threes | slow, chunky, stop-motion feel |
 | 4 frames | on fours | very slow or stylised moves |
 
-Press **Alt+1** to **Alt+4** to hold the current drawing for that many frames. The drawings after it move along to make room.
+Press **Alt+1** to **Alt+4** to hold the current drawing for that many frames. The drawings after it move along to make room. The **Hold for** buttons in the timeline do the same (on a narrow timeline they fold into one **Hold** button with a menu).
 
 Example: you have three drawings of a bouncing ball, each one frame long. Click the first and press **Alt+2**. It's now held for two frames, and the other two slide along. Do the same to the others and your ball bounces on twos.
 

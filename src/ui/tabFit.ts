@@ -42,14 +42,22 @@ export function fitTabs(p: TabFitInput): TabFit {
   if (total(p.full, p.gap) <= p.avail) return { mode: 'full', shown: all, hidden: [], named: all };
   const pinned = (p.pinned ?? []).filter((i) => i >= 0 && i < n && i !== p.active);
   const widths = (named: Set<number>) => all.map((i) => (named.has(i) ? p.full[i] : p.icon[i]));
-  // Names for the open tab and the pinned ones if they fit, else just the open one.
-  for (const named of [new Set([p.active, ...pinned]), new Set([p.active])]) {
-    if (named.size > 1 && !pinned.length) continue;
-    if (total(widths(named), p.gap) <= p.avail) return { mode: 'compact', shown: all, hidden: [], named: [...named].sort((a, b) => a - b) };
+  // Names for the open tab and the pinned ones if they all fit.
+  const both = new Set([p.active, ...pinned]);
+  if (pinned.length && total(widths(both), p.gap) <= p.avail) return { mode: 'compact', shown: all, hidden: [], named: [...both].sort((a, b) => a - b) };
+  // A pinned name is worth a tab or two behind the "+N" button, as long as the name itself fits.
+  if (pinned.length) {
+    const o = overflow(p, all, pinned);
+    if (pinned.every((i) => o.named.includes(i))) return o;
   }
-  // The open tab always shows; then the pinned ones (named if they fit), then as many others as fit, nearest to it
-  // first so the neighbourhood stays put.
-  const compact = widths(new Set([p.active]));
+  if (total(widths(new Set([p.active])), p.gap) <= p.avail) return { mode: 'compact', shown: all, hidden: [], named: [p.active] };
+  return overflow(p, all, pinned);
+}
+
+// The open tab always shows; then the pinned ones (named if they fit), then as many others as fit, nearest to it
+// first so the neighbourhood stays put.
+function overflow(p: TabFitInput, all: number[], pinned: number[]): TabFit {
+  const compact = all.map((i) => (i === p.active ? p.full[i] : p.icon[i]));
   let used = compact[p.active] + p.gap + p.more;
   const keep = new Set([p.active]);
   const named = new Set([p.active]);

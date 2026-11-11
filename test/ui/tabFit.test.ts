@@ -36,4 +36,8 @@ describe('fitTabs', () => {
     expect(f.shown).toEqual([0, 3]);
     expect(f.named).toEqual([3]);
   });
+  it('puts icon tabs behind +N rather than lose a pinned name that fits', () => {
+    const f = fitTabs({ ...base, avail: 240, active: 0, pinned: [3] });
+    expect(f).toEqual({ mode: 'overflow', shown: [0, 3], hidden: [1, 2], named: [0, 3] });
+  });
 });
