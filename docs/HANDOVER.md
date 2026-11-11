@@ -111,7 +111,6 @@ light table, version history, shortcut sets, sounds (on by default), a Godot imp
   - `.ai` never opened in Illustrator.
   - Multi-artboard exports (each, zip, atlas) not run end to end in the app.
   - Lottie canvas player blends per shape; big baked effects make big Lottie files.
-  - PSD: a mask inside a folder masks the whole folder.
 - **Rig**
   - Bones export to Godot leaves out effects, camera and bones in symbols.
   - Lip sync guesses are rough.
@@ -121,7 +120,7 @@ light table, version history, shortcut sets, sounds (on by default), a Godot imp
   - "Variations" for animation is mocked, not built.
 - **Timeline**
   - At 1280 wide several header buttons live in a ⋯ menu.
-  - Property-row keys on symbols move the whole drawing.
+  - Retiming a symbol property key inside a tween cuts out a drawing key; other rows then show a diamond there and the easing of that span changes shape (bones and camera rows still move the whole drawing).
 - **Canvas**
   - Rectangles and ellipses don't snap to perspective.
   - Onion skin hides when looking through the camera.

@@ -150,6 +150,93 @@ describe('stage masks in a PSD', () => {
   });
 });
 
+describe('masks inside a folder in a PSD', () => {
+  const doc = () => {
+    const d = newDoc({ width: W, height: H });
+    d.folders = { f: { id: 'f', name: 'Head', visible: true, opacity: 1 } };
+    // A under the folder; in it B, a mask M (right half), then C above the mask; D on the stage above.
+    d.layers = [layer('A'), layer('B', { folder: 'f' }), layer('M', { mask: 'show', folder: 'f' }), layer('C', { folder: 'f' }), layer('D')];
+    return d;
+  };
+
+  it('wraps only the layers under the mask, inside the folder', () => {
+    const g = layeredPlan(doc())[1];
+    if (g.kind !== 'group') throw new Error();
+    expect(g.layers.map((i) => i.kind)).toEqual(['masked', 'layer']);
+    const psd = read(layeredPlan(doc()));
+    // The folder group itself takes no mask.
+    const head = psd.children![1];
+    expect(head.name).toBe('Head');
+    expect(head.mask).toBeUndefined();
+    expect(head.children!.map((c) => c.name)).toEqual(['Masked by M', 'C']);
+    const masked = head.children![0];
+    expect(masked.children!.map((c) => c.name)).toEqual(['B', 'M (mask)']);
+    expect(masked.mask).toBeTruthy();
+    const md = masked.mask!.imageData!.data;
+    const per = md.length / (W * H);
+    expect(Array.from({ length: W }, (_, x) => (md[x * per] === 0 ? 0 : 255))).toEqual([0, 0, 0, 0, 255, 255, 255, 255]);
+    // The layers outside the mask carry nothing of it.
+    expect(head.children![1].mask).toBeUndefined();
+    expect(psd.children![0].mask).toBeUndefined();
+    expect(psd.children![2].mask).toBeUndefined();
+  });
+
+  it('a mask at the bottom of a folder has nothing to cut and stays a hidden layer', () => {
+    const d = doc();
+    d.layers = [layer('M', { mask: 'show', folder: 'f' }), layer('C', { folder: 'f' })];
+    const g = layeredPlan(d)[0];
+    if (g.kind !== 'group') throw new Error();
+    expect(g.layers.map((i) => i.kind)).toEqual(['layer', 'layer']);
+    const head = read(layeredPlan(d)).children![0];
+    expect(head.mask).toBeUndefined();
+    expect(head.children!.map((c) => [c.name, !!c.hidden])).toEqual([['M (mask)', true], ['C', false]]);
+  });
+
+  it('a hidden mask in a folder does nothing', () => {
+    const d = doc();
+    d.layers = [layer('B', { folder: 'f' }), layer('M', { mask: 'show', visible: false, folder: 'f' }), layer('C', { folder: 'f' })];
+    const g = layeredPlan(d)[0];
+    if (g.kind !== 'group') throw new Error();
+    expect(g.layers.map((i) => i.kind)).toEqual(['layer', 'layer', 'layer']);
+  });
+
+  it('composites like the canvas: B is cut to the mask, C above it is whole', () => {
+    const psd = read(layeredPlan(doc()));
+    type Px = [number, number, number, number];
+    const blank = (): Px[] => Array.from({ length: W * H }, () => [0, 0, 0, 0] as Px);
+    const over = (dst: Px[], src: Px[]) => {
+      for (let i = 0; i < dst.length; i++) if (src[i][3] === 255) dst[i] = src[i];
+    };
+    const draw = (node: NonNullable<typeof psd.children>[number]): Px[] => {
+      const out = blank();
+      if (node.children) {
+        for (const c of node.children) if (!c.hidden) over(out, draw(c));
+        if (node.mask) {
+          const md = node.mask.imageData!.data;
+          const per = md.length / (W * H);
+          for (let i = 0; i < out.length; i++) if (md[i * per] === 0) out[i] = [0, 0, 0, 0];
+        }
+        return out;
+      }
+      const d = node.imageData;
+      if (!d) return out;
+      for (let y = 0; y < d.height; y++)
+        for (let x = 0; x < d.width; x++) {
+          const o = (y * d.width + x) * 4;
+          out[(y + node.top!) * W + x + node.left!] = [d.data[o], d.data[o + 1], d.data[o + 2], d.data[o + 3]];
+        }
+      return out;
+    };
+    // Only the folder's own content: B (blue, columns 0 to 3) masked to columns 4 to 7 leaves nothing; C is green on 0 and 1.
+    const head = draw(psd.children![1]);
+    const row = head.slice(0, W).map((p) => (p[3] ? `${p[0]},${p[1]},${p[2]}` : '-'));
+    expect(row).toEqual(['0,255,0', '0,255,0', '-', '-', '-', '-', '-', '-']);
+    // A stays whole underneath.
+    const a = draw(psd.children![0]);
+    expect(a.slice(0, W).every((p) => p[3] === 255)).toBe(true);
+  });
+});
+
 describe('folder effects in a PSD', () => {
   const doc = () => {
     const d = newDoc({ width: W, height: H });

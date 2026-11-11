@@ -19,7 +19,7 @@ registerHelpTopics([
 | Blend modes | The same blend mode (Glow brighter becomes Linear Dodge) |
 | Layer folders | Groups (a plain folder is a pass-through group) |
 | Clip to the layer below | A clipping mask |
-| A mask layer in a folder | The group's layer mask |
+| A mask layer in a folder | A "Masked by ..." group inside the folder, holding the layers under the mask, with the mask as its layer mask |
 | A mask layer on the stage | A group holding everything under it, with the mask as its layer mask |
 | Effects (glow, shadow...) | Baked into the layer's pixels |
 | A folder with effects | A group holding one finished picture of the folder (your layers stay inside, switched off) |
@@ -33,7 +33,7 @@ The file also holds the finished picture, so apps that don't read layers still s
 
 - One frame at a time. For every frame, use [PNG sequence](help:exporting).
 - A folder with effects (a glow or shadow on the whole folder) can't be a plain group, because a group can't hold effects. Its group holds one layer called "(with effects)", which is the folder drawn together with the effects. Your own layers are inside the group too, switched off. To edit them, switch them on and switch the "(with effects)" layer off. The effects won't follow your edits, since they were baked in.
-- A mask layer on the stage hides or shows everything under it. In the PSD those layers sit together in a group called "Masked by ...", and the mask is that group's layer mask. The mask layer itself is kept inside, switched off.`,
+- A mask layer on the stage hides or shows everything under it. In the PSD those layers sit together in a group called "Masked by ...", and the mask is that group's layer mask. The mask layer itself is kept inside, switched off. A mask inside a folder works the same way, but only for the layers under it in that folder: the layers above it and the rest of the file aren't cut.`,
   },
   {
     id: 'export-pdf',

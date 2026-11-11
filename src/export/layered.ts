@@ -19,6 +19,25 @@ export function folderPassThrough(f: LayerFolder, members: Layer[], frame = 0): 
   return (f.blend ?? 'normal') === 'normal' && f.opacity >= 1 && !activeEffects(f.effects, frame).length && !members.some((l) => l.mask);
 }
 
+/**
+ * A folder's layers as items. Like on the stage, a visible mask cuts only what is under it in the folder: those layers
+ * become a "masked" item, and layers above the mask are left alone.
+ */
+function folderItems(members: Layer[], f: LayerFolder): LayeredItem[] {
+  let out: LayeredItem[] = [];
+  members.forEach((m, k) => {
+    const item: LayeredItem = { kind: 'layer', layer: m, clipping: !!m.clipToBelow && k > 0 && !members[k - 1].mask, hidden: !m.visible || !f.visible || !!m.mask, mask: !!m.mask };
+    if (m.mask && m.visible && out.length) out = [{ kind: 'masked', mask: m, layers: [...out, item] }];
+    else out.push(item);
+  });
+  return out;
+}
+
+/** The plain layers in a list of items, bottom first, looking inside masked wrappers. */
+export function itemLayers(items: LayeredItem[]): Extract<LayeredItem, { kind: 'layer' }>[] {
+  return items.flatMap((x) => (x.kind === 'layer' ? [x] : x.kind === 'masked' ? itemLayers(x.layers) : []));
+}
+
 /** Layers bottom first, folders as groups (folders are one level deep). Hidden layers are kept, marked hidden. */
 export function layeredPlan(doc: Doc, frame = 0): LayeredItem[] {
   let out: LayeredItem[] = [];
@@ -45,7 +64,7 @@ export function layeredPlan(doc: Doc, frame = 0): LayeredItem[] {
       passThrough: folderPassThrough(f, members, frame),
       baked: activeEffects(f.effects, frame).length > 0,
       masks: members.filter((m) => m.mask && m.visible),
-      layers: members.map((m, k) => ({ kind: 'layer', layer: m, clipping: !!m.clipToBelow && k > 0 && !members[k - 1].mask, hidden: !m.visible || !f.visible || !!m.mask, mask: !!m.mask })),
+      layers: folderItems(members, f),
     });
   }
   return out;

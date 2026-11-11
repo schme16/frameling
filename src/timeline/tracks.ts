@@ -2,8 +2,10 @@
  * Property tracks for the detailed timeline: what changes on a layer over time, one row per thing (position, zoom,
  * a bone, an effect), with a diamond wherever that thing has a key. Pure, worked out from the document, never stored.
  *
- * Two kinds of key live here. A drawing key (`c:`) is a cel: moving one moves that drawing, so every property row it
- * shows on moves with it. An effect key (`e:`) is one of an effect's own keys, independent of the drawings.
+ * Three kinds of key live here. A drawing key (`c:`) is a cel: moving one moves that drawing, so every property row it
+ * shows on moves with it. An effect key (`e:`) is one of an effect's own keys, independent of the drawings. A symbol
+ * property key (`p:`, on the position, size, turn, slant, see-through and tint rows) is one property of the symbol
+ * copies on a drawing key: moving it moves only that property (see propKeys.ts).
  */
 import type { Cel, Doc, Easing, Id, InstanceShape, Layer, LayerEffect } from '../core/format';
 import { isInstance, nextKey, pairInstances } from '../core/symbols';
@@ -13,13 +15,18 @@ export type KeyRef = string;
 
 export const celRef = (layerId: Id, celId: Id): KeyRef => `c:${layerId}:${celId}`;
 export const fxRef = (layerId: Id, effectId: Id, frame: number): KeyRef => `e:${layerId}:${effectId}:${frame}`;
+export const propRef = (layerId: Id, propId: string, celId: Id): KeyRef => `p:${layerId}:${propId}:${celId}`;
 
-export type ParsedRef = { kind: 'cel'; layerId: Id; celId: Id } | { kind: 'fx'; layerId: Id; effectId: Id; frame: number };
+export type ParsedRef =
+  | { kind: 'cel'; layerId: Id; celId: Id }
+  | { kind: 'fx'; layerId: Id; effectId: Id; frame: number }
+  | { kind: 'prop'; layerId: Id; propId: string; celId: Id };
 
 export function parseRef(ref: KeyRef): ParsedRef | null {
   const p = ref.split(':');
   if (p[0] === 'c' && p.length === 3) return { kind: 'cel', layerId: p[1], celId: p[2] };
   if (p[0] === 'e' && p.length === 4 && Number.isFinite(Number(p[3]))) return { kind: 'fx', layerId: p[1], effectId: p[2], frame: Number(p[3]) };
+  if (p[0] === 'p' && p.length === 4) return { kind: 'prop', layerId: p[1], propId: p[2], celId: p[3] };
   return null;
 }
 
@@ -47,10 +54,10 @@ export interface Track {
   spans: TrackSpan[];
 }
 
-const r1 = (n: number) => String(Math.round(n * 10) / 10);
-const same = (a: number[], b: number[]) => a.length === b.length && a.every((v, i) => Math.abs(v - b[i]) < 1e-6);
+export const r1 = (n: number) => String(Math.round(n * 10) / 10);
+export const same = (a: number[], b: number[]) => a.length === b.length && a.every((v, i) => Math.abs(v - b[i]) < 1e-6);
 
-interface Prop<T> {
+export interface Prop<T> {
   id: string;
   label: string;
   icon: string;
@@ -62,7 +69,7 @@ interface Prop<T> {
  * Keys for one property read off each drawing key: a key wherever the value differs from the key before (the first
  * key with a value always counts). Spans follow the tweens. Returns null when the property never changes.
  */
-function celTrack<T>(layer: Layer, values: (T | undefined)[], prop: Prop<T>): Track | null {
+function celTrack<T>(layer: Layer, values: (T | undefined)[], prop: Prop<T>, refOf: (cel: Cel) => KeyRef = (c) => celRef(layer.id, c.id)): Track | null {
   const keys: TrackKey[] = [];
   const spans: TrackSpan[] = [];
   let prev: number[] | null = null;
@@ -76,7 +83,7 @@ function celTrack<T>(layer: Layer, values: (T | undefined)[], prop: Prop<T>): Tr
     }
     const differs = !prev || !same(prev, v);
     if (prev && differs) changes++;
-    if (differs) keys.push({ frame: cel.start, ref: celRef(layer.id, cel.id), value: prop.words(v) });
+    if (differs) keys.push({ frame: cel.start, ref: refOf(cel), value: prop.words(v) });
     prev = v;
   });
   if (!changes) return null;
@@ -108,21 +115,38 @@ function addTweenSpans(layer: Layer, keys: TrackKey[], spans: TrackSpan[]): void
   }
 }
 
-const POSITION: Prop<InstanceShape[]> = { id: 'position', label: 'Position', icon: 'path', read: (l) => (l.length ? l.flatMap((s) => [s.transform.x, s.transform.y]) : null), words: (v) => `x ${r1(v[0])}, y ${r1(v[1])}` };
-const SCALE: Prop<InstanceShape[]> = { id: 'scale', label: 'Size', icon: 'rect', read: (l) => (l.length ? l.flatMap((s) => [s.transform.scaleX, s.transform.scaleY]) : null), words: (v) => `${Math.round(v[0] * 100)}% by ${Math.round(v[1] * 100)}%` };
-const ROTATION: Prop<InstanceShape[]> = { id: 'rotation', label: 'Turn', icon: 'rotate', read: (l) => (l.length ? l.map((s) => s.transform.rotation) : null), words: (v) => `${r1(v[0])} degrees` };
-const SKEW: Prop<InstanceShape[]> = { id: 'skew', label: 'Slant', icon: 'shade', read: (l) => (l.length ? l.map((s) => s.transform.skew) : null), words: (v) => `${r1(v[0])} degrees` };
-const OPACITY: Prop<InstanceShape[]> = { id: 'opacity', label: 'See-through', icon: 'eye', read: (l) => (l.length ? l.map((s) => s.opacity) : null), words: (v) => `${Math.round(v[0] * 100)}%` };
-const TINT: Prop<InstanceShape[]> = {
-  id: 'tint',
-  label: 'Tint',
-  icon: 'palette',
-  read: (l) => (l.length ? l.flatMap((s) => [s.tint ? s.tint.amount : 0, s.tint ? parseInt(s.tint.color.replace('#', '').slice(0, 6), 16) || 0 : 0]) : null),
-  words: (v) => `${Math.round(v[0] * 100)}%`,
-};
+/** A property of a symbol copy that gets its own row: how to read it as numbers and write it back. */
+export interface InstProp extends Prop<InstanceShape[]> {
+  get: (s: InstanceShape) => number[];
+  set: (s: InstanceShape, v: number[]) => void;
+}
+
+function instProp(id: string, label: string, icon: string, get: InstProp['get'], set: InstProp['set'], words: (v: number[]) => string): InstProp {
+  return { id, label, icon, get, set, words, read: (l) => (l.length ? l.flatMap(get) : null) };
+}
+
+const POSITION = instProp('position', 'Position', 'path', (s) => [s.transform.x, s.transform.y], (s, v) => void ((s.transform.x = v[0]), (s.transform.y = v[1])), (v) => `x ${r1(v[0])}, y ${r1(v[1])}`);
+const SCALE = instProp('scale', 'Size', 'rect', (s) => [s.transform.scaleX, s.transform.scaleY], (s, v) => void ((s.transform.scaleX = v[0]), (s.transform.scaleY = v[1])), (v) => `${Math.round(v[0] * 100)}% by ${Math.round(v[1] * 100)}%`);
+const ROTATION = instProp('rotation', 'Turn', 'rotate', (s) => [s.transform.rotation], (s, v) => void (s.transform.rotation = v[0]), (v) => `${r1(v[0])} degrees`);
+const SKEW = instProp('skew', 'Slant', 'shade', (s) => [s.transform.skew], (s, v) => void (s.transform.skew = v[0]), (v) => `${r1(v[0])} degrees`);
+const OPACITY = instProp('opacity', 'See-through', 'eye', (s) => [s.opacity], (s, v) => void (s.opacity = v[0]), (v) => `${Math.round(v[0] * 100)}%`);
+const TINT = instProp(
+  'tint',
+  'Tint',
+  'palette',
+  (s) => [s.tint ? s.tint.amount : 0, s.tint ? parseInt(s.tint.color.replace('#', '').slice(0, 6), 16) || 0 : 0],
+  (s, v) => {
+    if (!v[0] && !v[1]) delete s.tint;
+    else s.tint = { amount: v[0], color: `#${Math.round(v[1]).toString(16).padStart(6, '0')}` };
+  },
+  (v) => `${Math.round(v[0] * 100)}%`,
+);
+
+/** The symbol properties that have rows, in row order. */
+export const INSTANCE_PROPS: readonly InstProp[] = [POSITION, SCALE, ROTATION, SKEW, OPACITY, TINT];
 
 /** Instances on each key, paired with the key before so the same thing is compared with itself. */
-function instanceLists(doc: Doc, layer: Layer): (InstanceShape[] | undefined)[] {
+export function instanceLists(doc: Doc, layer: Layer): (InstanceShape[] | undefined)[] {
   let prev: InstanceShape[] | undefined;
   return layer.cels.map((c) => {
     const d = doc.drawings[c.drawingId];
@@ -217,8 +241,8 @@ export function layerTracks(doc: Doc, layer: Layer): Track[] {
   else if (layer.kind === 'vector') {
     tracks.push(...boneTracks(doc, layer));
     const lists = instanceLists(doc, layer);
-    if (lists.some((l) => l?.length)) for (const p of [POSITION, SCALE, ROTATION, SKEW, OPACITY, TINT]) {
-      const t = celTrack(layer, lists, p);
+    if (lists.some((l) => l?.length)) for (const p of INSTANCE_PROPS) {
+      const t = celTrack(layer, lists, p, (c) => propRef(layer.id, p.id, c.id));
       if (t) tracks.push(t);
     }
     const s = shapeTrack(layer);
@@ -246,7 +270,7 @@ export function keyFrame(doc: Doc, ref: KeyRef): number | undefined {
   if (!p) return undefined;
   const layer = doc.layers.find((l) => l.id === p.layerId);
   if (!layer) return undefined;
-  if (p.kind === 'cel') return layer.cels.find((c) => c.id === p.celId)?.start;
+  if (p.kind === 'cel' || p.kind === 'prop') return layer.cels.find((c) => c.id === p.celId)?.start;
   const e = layer.effects?.find((x) => x.id === p.effectId);
   return e?.keys?.some((k) => k.frame === p.frame) ? p.frame : undefined;
 }

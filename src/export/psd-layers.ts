@@ -2,7 +2,7 @@
 // structure can be tested and read back with a PSD reader without a canvas.
 import type { Layer, LayerFolder } from '../core/format';
 import type { RawImage } from '../io/png';
-import type { LayeredItem } from './layered';
+import { itemLayers, type LayeredItem } from './layered';
 import type { PsdLayer } from './psd';
 
 export interface PsdPictures {
@@ -53,23 +53,17 @@ export function psdRecords(plan: LayeredItem[], pics: PsdPictures): PsdLayer[] {
         continue;
       }
       out.push({ name: it.folder.name, group: 'end', opacity: 1, blend: 'pass' });
-      const members = it.layers.filter((x): x is Extract<LayeredItem, { kind: 'layer' }> => x.kind === 'layer');
-      let mask: Uint8Array | undefined;
+      const members = itemLayers(it.layers);
       if (it.baked) {
         // The folder has effects (glow, shadow...), which a group can't hold. The group gets one finished picture of the
         // folder (its masks and clipping already applied) and the layers stay inside, hidden, to edit or bring back.
         for (const x of members) out.push(layer(x, true));
         out.push({ name: `${it.folder.name} (with effects)`, image: pics.folder(it.folder, members.map((x) => x.layer)), opacity: 1, blend: 'normal' });
       } else {
-        for (const x of members) out.push(layer(x));
-        // Mask layers in a folder become the group's mask: where they have drawing shows ('show') or hides ('hide').
-        for (const m of it.masks) {
-          const a = maskOf(m);
-          if (!mask) mask = a;
-          else for (let i = 0; i < mask.length; i++) mask[i] = (mask[i] * a[i]) / 255;
-        }
+        // A mask layer in a folder cuts only the layers under it: they sit in their own "Masked by" group inside the folder.
+        out.push(...walk(it.layers));
       }
-      out.push({ name: it.folder.name, group: 'open', opacity: it.folder.opacity, blend: it.passThrough ? 'pass' : (it.folder.blend ?? 'normal'), hidden: !it.folder.visible, mask });
+      out.push({ name: it.folder.name, group: 'open', opacity: it.folder.opacity, blend: it.passThrough ? 'pass' : (it.folder.blend ?? 'normal'), hidden: !it.folder.visible });
     }
     return out;
   };
