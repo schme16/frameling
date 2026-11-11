@@ -1,16 +1,20 @@
 // How tile mode looks on the canvas: the copies around the stage, and a thin frame marking the real one.
 import { cssVar } from '../canvas/theme';
 
-let copyAlpha = 1;
+import { getPrefs } from '../ui/prefs';
+
+/** How faded copies show when the "Fade tile copies" preference is on. */
+export const FADED_TILE_COPIES = 0.45;
+let override: number | null = null;
 
 /** How strongly the copies around the stage show (1 = as strong as the stage itself). */
 export function tileCopyAlpha(): number {
-  return copyAlpha;
+  return override ?? (getPrefs().fadeTileCopies ? FADED_TILE_COPIES : 1);
 }
 
-/** For looks comparisons and screenshots. */
-export function setTileCopyAlpha(a: number): void {
-  copyAlpha = Math.max(0, Math.min(1, a));
+/** For looks comparisons and screenshots (null goes back to the preference). */
+export function setTileCopyAlpha(a: number | null): void {
+  override = a === null ? null : Math.max(0, Math.min(1, a));
 }
 
 /** A dashed frame around the stage, so you can tell the real tile from its copies. Device pixels. */

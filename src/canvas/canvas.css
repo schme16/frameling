@@ -468,12 +468,3 @@
 }
 
 /* Keep separate / Merge together, at the top of vector tool options. */
-.cv-drawmode .cv-choice-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-}
-.cv-drawmode-glyph {
-  flex: none;
-}

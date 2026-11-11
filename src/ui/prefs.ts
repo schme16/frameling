@@ -25,6 +25,8 @@ export interface Prefs {
   showTips: boolean;
   /** Show Quill, the hedgehog guide. Off hides him everywhere; his speech bubbles still show their words. */
   showQuill: boolean;
+  /** Tile mode: fade the copies round the tile you're drawing (off shows them at full strength). */
+  fadeTileCopies: boolean;
   /** Command id -> its shortcuts. An empty list means "no shortcut". Missing means "use the default". */
   keymap: Record<string, string[]>;
 }
@@ -42,6 +44,7 @@ export const DEFAULT_PREFS: Prefs = {
   showWelcome: true,
   showTips: true,
   showQuill: true,
+  fadeTileCopies: false,
   keymap: {},
 };
 
@@ -70,6 +73,7 @@ export function migratePrefs(raw: unknown): Prefs {
     showWelcome: bool(r.showWelcome, DEFAULT_PREFS.showWelcome),
     showTips: bool(r.showTips, DEFAULT_PREFS.showTips),
     showQuill: bool(r.showQuill, DEFAULT_PREFS.showQuill),
+    fadeTileCopies: bool(r.fadeTileCopies, DEFAULT_PREFS.fadeTileCopies),
     keymap,
   };
 }

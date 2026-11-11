@@ -43,20 +43,17 @@ export function EngineIcon({ id, size = 18 }: { id: EngineId; size?: number }) {
   );
 }
 
-/** Look B (chips in a row) is kept for the A/B comparison; cards (A) are the default. */
-const look = (): 'a' | 'b' => (typeof document !== 'undefined' && document.documentElement.dataset.enginePicker === 'b' ? 'b' : 'a');
-
 export function EnginePicker({ value, onPick }: { value: EngineId; onPick: (id: EngineId) => void }) {
   const games = ENGINES.filter((e) => e.game);
   const others = ENGINES.filter((e) => !e.game);
   const item = (e: (typeof ENGINES)[number]) => (
     <button key={e.id} type="button" role="radio" aria-checked={value === e.id} className={`ex-engine${value === e.id ? ' ex-chosen' : ''}`} title={e.files} onClick={() => onPick(e.id)}>
-      <EngineIcon id={e.id} size={look() === 'a' ? 20 : 15} />
+      <EngineIcon id={e.id} size={20} />
       <span>{e.title}</span>
     </button>
   );
   return (
-    <div className={`ex-engines ex-engines-${look()}`} role="radiogroup" aria-label="Where the sprite sheet is going">
+    <div className={"ex-engines ex-engines-a"} role="radiogroup" aria-label="Where the sprite sheet is going">
       <p className="ex-sub">For a game engine</p>
       <div className="ex-engine-row ex-engine-games" role="group" aria-label="Game engines">
         {games.map(item)}

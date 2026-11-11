@@ -15,6 +15,7 @@ import { perf } from './perf';
 import { neighbourFrames, upcomingFrames } from '../timeline/playback';
 import { FramePainter } from './pipeline';
 import { subscribeTileUi, tileModeOn } from '../tiles/state';
+import { subscribePrefs } from '../ui/prefs';
 import { drawTileModeFrame, tileCopyAlpha } from '../tiles/look';
 import { cssVar, subscribeTheme } from './theme';
 import { getViewSettings, subscribeViewSettings } from './viewSettings';
@@ -138,6 +139,7 @@ export class CanvasEngine {
     this.cleanups.push(store().subscribe(this.onStore));
     this.cleanups.push(subscribeViewSettings(() => this.invalidate(false, true)));
     this.cleanups.push(subscribeTileUi(() => this.invalidate(true, true)));
+    this.cleanups.push(subscribePrefs(() => this.invalidate(true, true)));
     // Grid and handle colours come from theme tokens, so a theme or look change repaints both canvases.
     this.cleanups.push(subscribeTheme(() => this.invalidate(true, true)));
     this.resize();
