@@ -21,7 +21,7 @@ import { GIF_MAX_FPS } from './gif';
 import { proresSupport, type ProresSupport } from './prores';
 import { LayeredNotes } from './LayeredNotes';
 import { CarryNotes } from './CarryNotes';
-import { DEFAULT_SHEET, engineInfo, FORMATS, formatInfo, normalizeSheet, splitFormats, type EngineId, type ExportSettings, type FormatId, type FormatInfo } from './types';
+import { aiFramesOf, DEFAULT_SHEET, engineInfo, FORMATS, formatInfo, normalizeSheet, splitFormats, type AiFrames, type EngineId, type ExportSettings, type FormatId, type FormatInfo } from './types';
 import './export.css';
 import { leaveTileEdit } from '../tiles/tileEdit';
 import { inOutRange } from '../timeline/inout';
@@ -31,6 +31,14 @@ import { templateExport } from '../templates/setup';
 import { ArtboardExportPicker } from '../artboards/ExportPicker';
 import { artboardExport, artboardSummary, planArtboards } from '../artboards/export';
 import { pixelExportStart } from '../pixel/workspace';
+
+/** The ways an Illustrator file can hold an animation's frames. */
+const AI_FRAMES: { id: AiFrames; label: string; title: string; note: string }[] = [
+  { id: 'one', label: 'This frame', title: 'Only the frame you are looking at', note: 'Illustrator opens the frame you are looking at, with your layers and folders as real Illustrator layers.' },
+  { id: 'files', label: 'One file per frame', title: 'A zip with a .ai file for every frame', note: 'A zip with a .ai file for every frame, each with real layers.' },
+  { id: 'artboards', label: 'One artboard per frame', title: 'Every frame side by side as an artboard in one file', note: 'Every frame sits side by side as an artboard in one Illustrator file, with the same layers all the way through.' },
+  { id: 'pages', label: 'Pages', title: 'One PDF page per frame', note: 'One PDF page per frame in a single file. Illustrator asks which page to open and brings it in as groups, without the layer names.' },
+];
 
 /** Last time's settings, repaired so they still make sense for this document. */
 function startingSettings(): ExportSettings {
@@ -313,7 +321,20 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
               </Check>
             </fieldset>
           )}
-          {info.animated ? (
+          {s.format === 'ai' && doc.length > 1 && (
+            <fieldset>
+              <legend>Several frames in Illustrator</legend>
+              <div className="ex-seg">
+                {AI_FRAMES.map((o) => (
+                  <button key={o.id} type="button" className={aiFramesOf(s) === o.id ? 'ex-on' : ''} aria-pressed={aiFramesOf(s) === o.id} title={o.title} onClick={() => set({ aiFrames: o.id })}>
+                    {o.label}
+                  </button>
+                ))}
+              </div>
+              <p className="ex-note">{AI_FRAMES.find((o) => o.id === aiFramesOf(s))?.note}</p>
+            </fieldset>
+          )}
+          {info.animated && !(s.format === 'ai' && aiFramesOf(s) === 'one') ? (
             <fieldset>
               <legend>What to export</legend>
               <div className="ex-seg">

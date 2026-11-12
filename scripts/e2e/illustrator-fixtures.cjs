@@ -2,7 +2,7 @@
 // builds its document with the debug hooks (`window.__framelingExport`, `window.__frameling`), plus what Illustrator
 // should find in the .ai file Frameling writes from it.
 //
-// expect.layers: layer names that must exist (anywhere in the layer tree).
+// expect.layers: layer names that must exist (anywhere in the layer tree). expect.tree: [folder, its layers] pairs. expect.opacity: layer name to percent.
 // expect.hidden: names that must be off. expect.minPaths: at least this many path items. expect.size: artboard size.
 // expect.minGroups: at least this many groups (one per layer or folder). expect.maxRmse: the largest difference to Frameling's own PNG.
 
@@ -56,7 +56,8 @@ const fixtures = [
     ];
   });
 })()`,
-    expect: { size: [320, 180], layers: ['Sky', 'Hills', 'Hero body', 'Hero eyes', 'Multiply yellow'], hidden: ['Hidden red'], minPaths: 8, minGroups: 5, maxRmse: 0.06 },
+    // tree: a folder's layers, top first (the way Illustrator lists them); opacity in percent.
+    expect: { size: [320, 180], layers: ['Sky', 'Hills', 'Hero body', 'Hero eyes', 'Characters', 'Scenery', 'Multiply yellow', 'Ünï 日本 half see-through'], tree: [['Scenery', ['Hills', 'Sky']], ['Characters', ['Hero eyes', 'Hero body']]], opacity: { Scenery: 70, 'Ünï 日本 half see-through': 50 }, hidden: ['Hidden red'], minPaths: 8, minGroups: 5, maxRmse: 0.03 },
   },
   {
     id: 'paths',
@@ -139,6 +140,22 @@ const fixtures = [
   });
 })()`,
     expect: { size: [320, 180], layers: ['Words'], minPaths: 3, maxRmse: 0.06 },
+  },
+  {
+    id: 'text-big',
+    title: 'Text, drawn at 4 times the size',
+    scale: 4,
+    code: `(async () => { ${HEAD}
+  return setup('TextBig', 160, 90, (d) => {
+    const T = (id, text, x, y, size, extra) => ({ id, type: 'text', text, font: 'Nunito', size, weight: 800, color: '#ff3366', align: 'left', lineHeight: 1.2, letterSpacing: 0, opacity: 1, transform: TX(x, y), ...extra });
+    d.drawings.d1 = { id: 'd1', kind: 'vector', shapes: [
+      T('t1', 'Hamburg@', 6, 34, 30),
+      T('t2', 'Quick 85%', 6, 70, 22, { color: '#1d1b26', weight: 400, italic: true }),
+    ] };
+    d.layers = [layer('l1', 'Words', 'd1')];
+  });
+})()`,
+    expect: { size: [640, 360], layers: ['Words'], minPaths: 3, maxRmse: 0.04 },
   },
   {
     id: 'symbols',

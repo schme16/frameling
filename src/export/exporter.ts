@@ -7,7 +7,7 @@ import { baseName, desktop } from '../io/desktop';
 import { can } from '../platform';
 import { notify } from '../io/notify';
 import { detectCapabilities } from './capabilities';
-import { filtersFor, planExport } from './plan';
+import { filtersFor, outputExt, planExport } from './plan';
 import { isCancelled, runExport, type Progress } from './run';
 import { SheetProblem } from './engines';
 import { audibleClips } from '../audio/clips';
@@ -115,7 +115,7 @@ export async function exportDocument(settings: ExportSettings, signal: AbortSign
   // Ask where first, so nobody waits for a long render just to cancel at the end.
   let target: string | null;
   if (settings.format === 'sheet') target = await api.files.pickExportFolder({ title: 'Choose a folder for your sprite sheet', suggestedName: plan.name });
-  else target = await api.files.pickExportFile({ suggestedName: `${plan.name}.${info.ext}`, filters: filtersFor(settings.format), title: `Export ${info.title}` });
+  else target = await api.files.pickExportFile({ suggestedName: `${plan.name}.${outputExt(settings)}`, filters: filtersFor(settings.format, settings), title: `Export ${info.title}` });
   if (!target) return 'cancelled';
 
   let videoCodec: VideoCodec | null = null;

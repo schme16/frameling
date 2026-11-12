@@ -57,7 +57,7 @@ export function psdFile(doc: Doc, frame: number, scale: number, background: Back
 }
 
 /** A PDF (or a PDF-compatible .ai) with a page per frame. */
-export function pdfFile(doc: Doc, frames: number[], scale: number, transparent: boolean, crisp: boolean, onPage: (i: number) => void, ai = false): Uint8Array {
+export function pdfFile(doc: Doc, frames: number[], scale: number, transparent: boolean, crisp: boolean, onPage: (i: number) => void, ai = false, native = false): Uint8Array {
   // Pictures of flattened layers are drawn at twice the page size (at least the stage size), so they print sharp.
   const pictureScale = Math.min(4, Math.max(1, scale * 2), 8192 / Math.max(doc.width, doc.height));
   return writePdf(doc, {
@@ -70,5 +70,6 @@ export function pdfFile(doc: Doc, frames: number[], scale: number, transparent: 
     pictureScale,
     crisp,
     onPage,
+    native,
   });
 }

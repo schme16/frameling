@@ -2,7 +2,7 @@
 // Pure functions on the document, so they are easy to test.
 import type { Doc } from '../core/format';
 import { inOutRange } from '../timeline/inout';
-import { DEFAULT_SHEET, formatInfo, type ExportSettings, type FormatId } from './types';
+import { aiFramesOf, DEFAULT_SHEET, formatInfo, oneFrameOnly, type ExportSettings, type FormatId } from './types';
 
 export const MAX_SIDE = 8192;
 export const MAX_FRAMES = 5000;
@@ -77,10 +77,10 @@ export function drawnFrames(doc: Doc): number | null {
 }
 
 /** The frames an export covers. Whole animation, one clip, the play range, or the frame being looked at. */
-export function resolveRange(doc: Doc, s: Pick<ExportSettings, 'range' | 'clipId' | 'format'>, currentFrame: number): FrameRange {
+export function resolveRange(doc: Doc, s: Pick<ExportSettings, 'range' | 'clipId' | 'format' | 'aiFrames'>, currentFrame: number): FrameRange {
   const last = Math.max(0, doc.length - 1);
   const clamp = (n: number) => Math.min(last, Math.max(0, Math.round(n)));
-  if (!formatInfo(s.format).animated || s.range === 'frame') {
+  if (oneFrameOnly(s, formatInfo(s.format).animated)) {
     const f = clamp(currentFrame);
     return { start: f, end: f };
   }
@@ -130,24 +130,31 @@ export function planExport(doc: Doc, s: ExportSettings, currentFrame: number): P
   const video = s.format === 'mp4' || s.format === 'webm' || s.format === 'prores';
   const { width, height } = outputSize(doc, s.scale, video);
   let name = fileSafe(doc.name);
-  if (info.animated && s.range === 'clip') {
+  const one = oneFrameOnly(s, info.animated);
+  if (info.animated && !one && s.range === 'clip') {
     const clip = doc.clips.find((c) => c.id === s.clipId);
     if (clip) name += '-' + fileSafe(clip.name);
   }
-  if ((!info.animated || s.range === 'frame') && doc.length > 1) name += `-frame-${range.start + 1}`;
-  if (info.animated && s.range === 'inOut' && inOutRange(doc)) name += `-frames-${range.start + 1}-${range.end + 1}`;
+  if (one && doc.length > 1) name += `-frame-${range.start + 1}`;
+  if (info.animated && !one && s.range === 'inOut' && inOutRange(doc)) name += `-frames-${range.start + 1}-${range.end + 1}`;
 
   let problem: string | null = null;
   if (!(s.scale > 0)) problem = 'Pick a size first.';
   else if (width > MAX_SIDE || height > MAX_SIDE) problem = `That is bigger than ${MAX_SIDE} pixels on one side. Choose a smaller size.`;
   else if (count > MAX_FRAMES) problem = 'That is a lot of frames. Try exporting one clip at a time.';
-  else if (s.range === 'clip' && info.animated && !doc.clips.some((c) => c.id === s.clipId)) problem = 'Pick which clip to export.';
+  else if (s.range === 'clip' && info.animated && !one && !doc.clips.some((c) => c.id === s.clipId)) problem = 'Pick which clip to export.';
   else if (video && count < 2) problem = 'A video needs at least two frames. Try the whole animation or a clip.';
   return { range, count, width, height, name, problem };
 }
 
-export function filtersFor(format: FormatId): { name: string; extensions: string[] }[] {
+/** The file extension an export saves as (a zip when each frame is its own Illustrator file). */
+export function outputExt(s: Pick<ExportSettings, 'format' | 'aiFrames'>): string {
+  return s.format === 'ai' && aiFramesOf(s) === 'files' ? 'zip' : formatInfo(s.format).ext;
+}
+
+export function filtersFor(format: FormatId, s?: Pick<ExportSettings, 'format' | 'aiFrames'>): { name: string; extensions: string[] }[] {
   const info = formatInfo(format);
+  if (s && format === 'ai' && outputExt(s) === 'zip') return [{ name: 'Zip file', extensions: ['zip'] }];
   const names: Record<FormatId, string> = { mp4: 'MP4 video', webm: 'WebM video', gif: 'Animated GIF', apng: 'Animated PNG', png: 'PNG picture', pngseq: 'Zip file', svg: 'SVG drawing', sheet: 'PNG picture', interactives: 'Interactives package', lottie: 'Lottie animation', svganim: 'Animated SVG', pdf: 'PDF document', ai: 'Adobe Illustrator', psd: 'Photoshop document', prores: 'QuickTime movie' };
   return [{ name: names[format], extensions: [info.ext] }];
 }
