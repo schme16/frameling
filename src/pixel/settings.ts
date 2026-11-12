@@ -22,6 +22,8 @@ export interface PixelSettings {
   spraySize: number;
   /** Pixel shapes are filled in Paint (false = outline only). Only in the Pixel workspace, where shapes use Paint. */
   shapeFilled: boolean;
+  /** Slices (named rectangles) are drawn on the canvas. */
+  showSlices: boolean;
 }
 
 export const DEFAULT_PIXEL_SETTINGS: PixelSettings = {
@@ -34,6 +36,7 @@ export const DEFAULT_PIXEL_SETTINGS: PixelSettings = {
   outlineCorners: false,
   spraySize: 8,
   shapeFilled: false,
+  showSlices: true,
 };
 
 const KEY = 'frameling.pixelSettings';

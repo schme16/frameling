@@ -19,6 +19,8 @@ import { previewSettings, setPreview } from './preview';
 import { watchOnePicture, watchPixelDocs } from './workspace';
 import './workspace-help';
 import './wayCommands';
+import './import';
+import './slices';
 import { installWayWatchers } from './wayOps';
 import { askAboutKeys } from './keysAsk';
 
