@@ -148,6 +148,8 @@ Taken from the board; the built version is the user's pick unless noted.
   - Onboarding is a full-window sheet; its theme step leads with Auto/Dark/Light.
   - Export shows popular formats first, with a File > Export submenu.
   - Merge drawing is one on/off switch.
+- **Floating windows:** compact style (tabs in the bar) by default, Titled in Preferences > Workspaces.
+- **Joining shots of different sizes:** Fit (bars) by default, Fill in Preferences > Behaviour.
 - **Small looks:** solid rulers, line grid, light table in own colours, pen with square points, gradient bar editor,
   heat-map weights, pointed bones, dim-outside camera frame, tween band with arrow.
 - **Icons:** no AI-looking icons (no sparkles); a test enforces it.
