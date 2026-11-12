@@ -143,10 +143,28 @@ xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/export.cjs [out
 | `--skip=files` | Skip save/open/autosave/close. `--skip=godot` skips the Godot checks. |
 | `--show` | Leave the window visible. |
 | `GODOT_BIN=/path/to/godot-4-editor` | Also load the sprite sheet exports and the Godot bones export in Godot and compare frames. |
+| `UNITY_BIN=/path/to/Unity/Editor/Unity` | Also compile the Unity importer script and import the Unity sprite sheet in a throwaway project (see below). `--skip=unity` skips it. |
 
 Each format runs with defaults, see-through, and (for animated ones) a clip range; PSD, PDF, `.ai` and ProRes also run
 their layered cases. Needs `ffprobe`, `ffmpeg`, ImageMagick (`convert`, `compare`), `rsvg-convert`, `xmllint` and
 `unzip` on PATH; a missing tool skips its checks and says so. Exits non-zero on any failure. Gives up after 55 minutes.
+
+### Unity check
+
+```bash
+UNITY_BIN=/mnt/109313D2109313D2/unity-editors/6000.6.4f1/Editor/Unity \
+  xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/export.cjs --only=sheet --templates=hero-sprites,bouncing-ball --skip=files
+```
+
+For the `unity` sheet case of `hero-sprites` and `bouncing-ball`, it makes a throwaway project in the output folder
+(`_unity-project`, with the 2D Sprite package added), drops the exported picture, json and `FramelingSheetImporter.cs`
+into its Assets plus the test script `scripts/e2e/unity/FramelingSheetCheck.cs`, and runs Unity in batch mode. Unity
+compiles the importer and imports the sheet, then the test script checks the texture settings (sprite mode, pixels per
+unit, no resize), every sprite's rect and pivot, and every animation clip (key count, key times, frame rate, loop, length).
+It also plays each clip on a real Animator and checks which sprite shows on every tick, then changes the json, imports the
+picture again and checks the clips follow and the sprite ids stay the same. Logs and reports are in the case's folder
+(`unity-*.log`, `unity-report-*.txt`). Takes a few minutes, mostly Unity starting up. The Unity editor must be
+installed and licensed for the user running the check.
 
 ## Effects pixels: scripts/e2e/effects.cjs
 

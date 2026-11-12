@@ -14,9 +14,10 @@
 //   --only=gif,mp4       only these formats (mp4 webm gif apng png pngseq svg sheet interactives psd pdf ai prores
 //                        godot-bones)
 //   --templates=a,b      only these templates (bouncing-ball hero-sprites blank-vector blank-pixel bouncing-logo stress kitchen-sink)
-//   --skip=files         skip a part: files (save/open/autosave/close), godot
+//   --skip=files         skip a part: files (save/open/autosave/close), godot, unity
 //   --show               leave the window visible (needs a real display)
 //   GODOT_BIN=/path/to/godot-4-editor    also loads the sprite sheet files in Godot
+//   UNITY_BIN=/path/to/Unity/Editor/Unity  also compiles the Unity importer and imports the Unity sprite sheet in a throwaway project
 //
 // It uses a throwaway user-data folder inside outDir, so it never touches your real settings, recent files or autosave.
 // Needs on PATH: ffprobe, ffmpeg, convert and compare (ImageMagick), rsvg-convert, xmllint, unzip. A missing tool skips
@@ -36,6 +37,7 @@ const ONLY = flag('only');
 const TEMPLATES = flag('templates') ?? ['bouncing-ball', 'hero-sprites', 'blank-vector', 'blank-pixel', 'bouncing-logo', 'stress', 'kitchen-sink'];
 const SKIP = flag('skip') ?? [];
 const GODOT = process.env.GODOT_BIN;
+const UNITY = process.env.UNITY_BIN;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 fs.rmSync(outDir, { recursive: true, force: true });
@@ -503,6 +505,7 @@ async function vSheet(files, dir, s, exp, caseCtx) {
   const [[sw, sh_]] = identify(path.join(dir, base));
   note(`sheet ${sw}x${sh_}`);
   if (s.sheet.pot) check((sw & (sw - 1)) === 0 && (sh_ & (sh_ - 1)) === 0, `sheet is ${sw}x${sh_}, not a power of two`);
+  if (UNITY && !SKIP.includes('unity') && engine === 'unity' && UNITY_TEMPLATES.includes(caseCtx.tpl)) await unityCheck(dir, names);
   if (!json) return;
   const atlas = JSON.parse(fs.readFileSync(path.join(dir, json), 'utf8'));
   check(atlas.meta.size.w === sw && atlas.meta.size.h === sh_, `json says ${atlas.meta.size.w}x${atlas.meta.size.h}, the picture is ${sw}x${sh_}`);
@@ -551,6 +554,65 @@ async function vSheet(files, dir, s, exp, caseCtx) {
     check(/\[gd_resource type="SpriteFrames"/.test(t), 'tres header');
   }
   if (GODOT && !SKIP.includes('godot') && tres && s.sheet.godotScene) await godotCheck(dir, names, atlas, s, exp);
+}
+
+// Unity is slow to start, so only these templates go through it (the hero has several clips and is pixel art).
+const UNITY_TEMPLATES = ['hero-sprites', 'bouncing-ball'];
+let unityProject = null;
+
+/** Makes (once per run) a throwaway project that has the 2D Sprite package the importer needs. */
+function unityProjectDir() {
+  if (unityProject) return unityProject;
+  const proj = path.join(outDir, '_unity-project');
+  const r = sh(UNITY, ['-batchmode', '-nographics', '-quit', '-createProject', proj, '-logFile', path.join(outDir, 'unity-create.log')], { timeout: 600000 });
+  if (!fs.existsSync(path.join(proj, 'Packages', 'manifest.json'))) throw new Error(`Unity could not make a project: ${(r.err + r.out).slice(0, 300)} (see unity-create.log)`);
+  const mf = path.join(proj, 'Packages', 'manifest.json');
+  const m = JSON.parse(fs.readFileSync(mf, 'utf8'));
+  m.dependencies['com.unity.2d.sprite'] = '1.0.0';
+  fs.writeFileSync(mf, JSON.stringify(m, null, 2));
+  return (unityProject = proj);
+}
+
+/** Drops the exported sheet and the importer script into the project, lets Unity compile and import them, and checks the sprites and clips. */
+async function unityCheck(dir, names) {
+  const proj = unityProjectDir();
+  const assets = path.join(proj, 'Assets');
+  fs.rmSync(path.join(assets, 'Frameling'), { recursive: true, force: true });
+  fs.rmSync(path.join(assets, 'Editor'), { recursive: true, force: true });
+  fs.mkdirSync(path.join(assets, 'Frameling'), { recursive: true });
+  fs.mkdirSync(path.join(assets, 'Editor'), { recursive: true });
+  const png = names.find((n) => n.endsWith('.png'));
+  check(names.includes('FramelingSheetImporter.cs'), 'unity: the importer script was not exported');
+  // Like a person would: the picture and its json in a folder, the importer script anywhere under Assets.
+  for (const n of names) fs.copyFileSync(path.join(dir, n), path.join(assets, n.endsWith('.cs') ? 'Editor' : 'Frameling', n));
+  fs.copyFileSync(path.join(__dirname, 'unity', 'FramelingSheetCheck.cs'), path.join(assets, 'Editor', 'FramelingSheetCheck.cs'));
+  const sheetArg = `Assets/Frameling/${png}`;
+  const ids = path.join(dir, 'unity-ids.txt');
+  runUnity(proj, dir, 'first import', ['-sheet', sheetArg, '-ids', ids]);
+  // Re-export: the json changes (a new speed and a longer first hold), the picture is imported again, and nothing may break.
+  const jsonFile = path.join(assets, 'Frameling', png.replace(/\.png$/, '.json'));
+  const data = JSON.parse(fs.readFileSync(jsonFile, 'utf8'));
+  if (data.animations.length) {
+    data.animations[0].fps = 24;
+    data.animations[0].holds[0] += 1;
+    fs.writeFileSync(jsonFile, JSON.stringify(data));
+    runUnity(proj, dir, 're-import', ['-sheet', sheetArg, '-ids', ids, '-reimport']);
+  }
+}
+
+/** One Unity batchmode run of the check script; its report lines become notes and failures. */
+function runUnity(proj, dir, label, args) {
+  const report = path.join(dir, `unity-report-${label.replace(/\W+/g, '-')}.txt`);
+  const log = path.join(dir, `unity-${label.replace(/\W+/g, '-')}.log`);
+  fs.rmSync(report, { force: true });
+  const r = sh(UNITY, ['-batchmode', '-nographics', '-projectPath', proj, '-executeMethod', 'FramelingSheetCheck.Run', ...args, '-report', report, '-logFile', log], { timeout: 600000 });
+  const lines = (fs.existsSync(report) ? fs.readFileSync(report, 'utf8') : '').split('\n').filter(Boolean);
+  lines.filter((l) => !l.startsWith('FAIL') && !l.startsWith('UNITY-')).forEach((l) => note(`unity ${label}: ${l}`));
+  lines.filter((l) => l.startsWith('FAIL')).forEach((l) => fail(`unity ${label}: ${l}`));
+  if (lines.includes('UNITY-OK')) return note(`unity ${label} ok`);
+  const logText = fs.existsSync(log) ? fs.readFileSync(log, 'utf8') : '';
+  const errs = logText.split('\n').filter((l) => /error CS\d+|Compilation failed|Exception/.test(l)).slice(0, 8);
+  fail(`unity ${label}: no pass (exit ${r.status}); ${errs.join(' | ') || 'see ' + path.basename(log)}`);
 }
 
 async function godotCheck(dir, names, atlas, s, exp) {
@@ -633,6 +695,7 @@ async function runCase(tpl, fmt, label, edit, opts = {}) {
     // The dialog's own capability probe decides what a video can do here.
     const caps = await X(`caps(${exp.width}, ${exp.height})`);
     const caseCtx = {
+      tpl,
       transparent: settings.transparent && (fmt === 'webm' ? !!caps.webm.alpha : fmt !== 'mp4'),
       alphaExpected: !!caps.webm.alpha,
       sound: await ev('!!window.__framelingExport.doc().audio?.some((c) => !c.muted)'),

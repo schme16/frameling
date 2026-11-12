@@ -232,7 +232,7 @@ The path you typed in Frameling has to match where the picture really is in your
     media: 'export-unity.png',
     summary: 'Drop the files into Unity: sprites are sliced and an animation clip is made for each of your clips.',
     keywords: ['unity', 'sprite', 'slice', 'sprite editor', 'animation clip', 'anim', 'animator', 'c#', 'importer'],
-    body: `Written for Unity 2021.2 or newer, with the **2D Sprite** package (2D projects have it already).
+    body: `Written for Unity 2021.2 or newer, and checked in Unity 6.6. It needs the **2D Sprite** package: 2D projects have it already. In a 3D project, add it first (**Window > Package Manager > Unity Registry > 2D Sprite**), or Unity reports an error about \`UnityEditor.U2D.Sprites\`.
 
 ## In Frameling
 
