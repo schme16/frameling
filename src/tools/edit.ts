@@ -9,6 +9,7 @@
 import { current, type Draft } from 'immer';
 import type { Cel, Doc, Drawing, Layer, PixelDrawing, TilemapDrawing, VectorDrawing } from '../core/format';
 import { celAt, findLayer, newDrawingFor, uid } from '../core/doc';
+import { cutSlice } from '../core/ease';
 import { isInBetween, shownDrawing } from '../core/symbols';
 import { store } from '../core/store';
 import { registerChoice, withChoice } from '../core/choices';
@@ -118,9 +119,15 @@ export function editActiveDrawing<K extends 'vector' | 'pixel' | 'tilemap'>(
           copy.id = uid(src.kind === 'pixel' ? 'p' : src.kind === 'tilemap' ? 't' : 'v');
           doc.drawings[copy.id] = copy;
           const end = cel.start + cel.length;
+          // The glide carries on from the new key to the next one. Each half plays its part of the one easing curve,
+          // so the motion keeps its easing instead of starting the curve again.
+          const [firstSlice, secondSlice] = tweened && cel.tween ? cutSlice(current(cel).tween!, (frame - cel.start) / cel.length) : [undefined, undefined];
+          const tween = tweened && cel.tween ? { ...(cel.tween.kind ? { kind: cel.tween.kind } : {}), ease: current(cel).tween!.ease, ...(secondSlice ? { slice: secondSlice } : {}) } : undefined;
+          if (tweened && cel.tween) {
+            if (firstSlice) cel.tween.slice = firstSlice;
+            else delete cel.tween.slice;
+          }
           cel.length = frame - cel.start;
-          // The glide carries on from the new key to the next one.
-          const tween = tweened && cel.tween ? { ...(cel.tween.kind ? { kind: cel.tween.kind } : {}), ease: current(cel).tween!.ease } : undefined;
           l.cels.push({ id: uid('c'), start: frame, length: end - frame, drawingId: copy.id, ...(tween ? { tween } : {}) });
           l.cels.sort((a, b) => a.start - b.start);
           cel = l.cels.find((c) => c.start === frame)!;
