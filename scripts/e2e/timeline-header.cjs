@@ -147,6 +147,55 @@ async function run(width) {
     }
     console.log(`     folded at ${width}, ${st.name}: ${m.folded.join(', ') || 'nothing'}`);
   }
+  // The menu is the way to things that fold: the onion settings open from it, and a quest's selectors find the items in it.
+  if (width === 1280) {
+    await js(`__frameling.store().update("range", (d) => { d.inOut = { start: 2, end: 9 }; }); true`);
+    await sleep(350);
+    const label = `${width} wide, play range chip`;
+    const foldedNow = () => js(`(document.querySelector('.tl-header').getAttribute('data-folded') || '')`);
+    // Onion skin is among the last to fold, so at 1280 it never folds: narrow the window until it does.
+    let f = await foldedNow();
+    for (let w = width; !f.split(' ').includes('onion') && w > 600; ) {
+      w -= 60;
+      win.setContentSize(w, 800);
+      await sleep(400);
+      f = await foldedNow();
+    }
+    check(f.split(' ').includes('onion'), `${label}: the onion buttons are folded once the window is narrowed (${f})`);
+    const opened = await js(`(() => { const o = document.querySelector('.tl-header .tl-overflow'); o.click(); return new Promise((r) => setTimeout(() => {
+      const shown = (el) => { const b = el.getBoundingClientRect(); return b.width > 0 && b.height > 0; };
+      const find = (sel) => [...document.querySelectorAll(sel)].find(shown);
+      const items = [...document.querySelectorAll('.tl-more-menu .tl-menu-item')];
+      const entry = items.find((b) => b.getAttribute('aria-label') === 'Onion skin settings');
+      const b = o.getBoundingClientRect();
+      r({
+        copy: !!find(':is(.tl-header, .tl-more-menu) [aria-label^="Copy this drawing"]'),
+        onion: !!find(':is(.tl-header, .tl-more-menu) [aria-label^="See the frames around"]'),
+        hold: !!find(':is(.tl-header, .tl-more-menu) [aria-label="How long to hold this drawing"]'),
+        settings: !!entry, bottom: b.bottom, left: b.left,
+      });
+      entry && entry.click();
+    }, 200)); })()`);
+    check(opened.copy && opened.onion && opened.hold, `${label}: quest selectors find the folded buttons in the menu`);
+    check(opened.settings, `${label}: the menu has "Onion skin settings"`);
+    await sleep(250);
+    const pop = await js(`(() => { const p = document.querySelector('.tl-pop'); if (!p) return null; const r = p.getBoundingClientRect(); return { top: r.top, left: r.left, right: r.right, bottom: r.bottom, inside: r.right <= innerWidth && r.bottom <= innerHeight, menuGone: !document.querySelector('.tl-more-menu'), text: p.textContent.slice(0, 40) }; })()`);
+    check(!!pop && pop.menuGone && /Onion skin/.test(pop.text), `${label}: the onion settings open from the menu (${pop ? pop.text : 'nothing'})`);
+    check(!!pop && pop.inside && Math.abs(pop.top - (opened.bottom + 4)) < 3 && pop.left <= opened.left + 3 || (!!pop && pop.inside && pop.right >= opened.left), `${label}: the settings sit under the more button and on screen`);
+    // The settings really work from here: one more frame before.
+    const before = await js(`__frameling.store().get().ui.onion.before`);
+    await js(`document.querySelector('.tl-pop [aria-label="More frames before"]').click(); true`);
+    await sleep(100);
+    check((await js(`__frameling.store().get().ui.onion.before`)) === before + 1, `${label}: "More frames before" works from the menu's box`);
+    await js(`document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); document.body.click(); true`);
+    await sleep(150);
+    check(await js(`!document.querySelector('.tl-pop')`), `${label}: the settings box closes`);
+    if (process.env.HEADER_SHOTS) {
+      await js(`document.querySelector('.tl-header .tl-overflow').click(); true`);
+      await sleep(250);
+      fs.writeFileSync(path.join(process.env.HEADER_SHOTS, `header-${width}-more-menu.png`), (await win.webContents.capturePage()).toPNG());
+    }
+  }
   check(seenFolds.size > 1, `${width} wide: the folding follows the content (${seenFolds.size} different folds seen)`);
   win.destroy();
 }

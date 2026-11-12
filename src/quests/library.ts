@@ -44,14 +44,15 @@ import { registerQuest } from './registry';
 import type { Quest } from './types';
 
 // Selectors that already exist in other areas. If one goes missing the ring just doesn't show; the step still works.
+// The timeline ones also match the same button in the header's "more" menu, where it folds when the header is narrow.
 export const SEL = {
   canvas: '.cv-root',
   brush: '[data-command="tools.brush"]',
   fill: '[data-command="tools.fill"]',
-  copy: '.tl-header [aria-label^="Copy this drawing"]',
+  copy: ':is(.tl-header, .tl-more-menu) [aria-label^="Copy this drawing"]',
   play: '.tl-header .tl-play',
-  onion: '.tl-header [aria-label^="See the frames around"]',
-  hold: '.tl-header [aria-label="How long to hold this drawing"]',
+  onion: ':is(.tl-header, .tl-more-menu) [aria-label^="See the frames around"]',
+  hold: ':is(.tl-header, .tl-more-menu) [aria-label="How long to hold this drawing"]',
   ruler: '.tl-ruler',
   contact: '.tl-marker[title^="contact"]',
   gap: '.fl-fill-seg',
