@@ -1,6 +1,7 @@
 // What this computer can encode as video, asked up front so the dialog can grey things out and say why.
 import { canEncodeVideo, type VideoCodec } from 'mediabunny';
 import { currentChoice } from '../core/choices';
+import { where } from '../io/desktop';
 import './choices';
 
 export interface VideoSupport {
@@ -19,7 +20,7 @@ export interface Capabilities {
   webm: VideoSupport;
 }
 
-const NO_ENCODER = "This computer's video encoder isn't available, so videos can't be made here.";
+const noEncoder = (): string => `${where()}'s video encoder isn't available, so videos can't be made here.`;
 
 async function can(codec: VideoCodec, width: number, height: number, alpha = false): Promise<boolean> {
   try {
@@ -76,15 +77,15 @@ export function detectCapabilities(width: number, height: number): Promise<Capab
 }
 
 async function probe(width: number, height: number, pref: string): Promise<Capabilities> {
-  if (typeof VideoEncoder === 'undefined') return { mp4: { ok: false, codec: null, alpha: false, reason: NO_ENCODER }, webm: { ok: false, codec: null, alpha: false, reason: NO_ENCODER } };
+  if (typeof VideoEncoder === 'undefined') return { mp4: { ok: false, codec: null, alpha: false, reason: noEncoder() }, webm: { ok: false, codec: null, alpha: false, reason: noEncoder() } };
   const big = width > 4096 || height > 4096;
   // MP4 uses H.264, the one that plays everywhere.
   const avc = await can('avc', width, height);
   const mp4: VideoSupport = avc
     ? { ok: true, codec: 'avc', alpha: false, reason: null }
-    : { ok: false, codec: null, alpha: false, reason: big ? 'This size is too big for MP4 on this computer. Try a smaller size.' : "This computer can't make H.264 video. WebM or GIF will still work." };
+    : { ok: false, codec: null, alpha: false, reason: big ? 'This size is too big for MP4 here. Try a smaller size.' : `${where()} can't make H.264 video. WebM or GIF will still work.` };
   // WebM: the codec they prefer (AV1 unless they changed it), then the others in turn.
-  let webm: VideoSupport = { ok: false, codec: null, alpha: false, reason: big ? 'This size is too big for WebM on this computer. Try a smaller size.' : "This computer can't make WebM video. MP4 or GIF will still work." };
+  let webm: VideoSupport = { ok: false, codec: null, alpha: false, reason: big ? 'This size is too big for WebM here. Try a smaller size.' : `${where()} can't make WebM video. MP4 or GIF will still work.` };
   const order = webmOrder(pref);
   // A see-through WebM is only widely understood with VP9 (or VP8). AV1 can be written with an alpha channel, but
   // browsers and ffmpeg ignore it, so AV1 is never used for transparency however the choice is set.

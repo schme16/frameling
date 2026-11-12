@@ -279,6 +279,7 @@ const flow = (name, fn) => (flows[name] = fn);
 module.exports = { flow, check, sleep, makeWindow, errors, tmp };
 process.on('uncaughtException', (e) => { console.error(e); app.exit(1); });
 require('./web-flows.cjs');
+require('./web-flows-safari-apis.cjs');
 
 app.commandLine.appendSwitch('ignore-gpu-blocklist');
 app.setPath('userData', path.join(tmp, 'user'));

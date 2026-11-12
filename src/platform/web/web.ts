@@ -101,6 +101,7 @@ const MIME: Record<string, string> = {
   apng: 'image/apng',
   svg: 'image/svg+xml',
   mp4: 'video/mp4',
+  mov: 'video/quicktime',
   webm: 'video/webm',
   json: 'application/json',
   zip: 'application/zip',
