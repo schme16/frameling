@@ -115,6 +115,23 @@ the letter case on disk. Windows and macOS don't care, Linux does, so this catch
 `test/ui/quill-lines.test.ts` checks every line in `src/ui/mascot/lines.json` is used, every id the code uses exists,
 and placeholders match.
 
+## Lip sync accuracy: scripts/lipsync/
+
+Measures the mouth guesser against speech with known phoneme timing, offline. Nothing here is part of `npm test` (the
+tests use two small committed fixtures in `test/lipsync/fixtures/`).
+
+```bash
+python3 scripts/lipsync/make_refs.py /tmp/refs        # libespeak-ng + libflite via ctypes: wavs and phoneme timing
+node scripts/lipsync/eval.mjs /tmp/refs [--fps 24] [--text] [--src old/analysis.ts] [--confusion] [--voices slt,kal]
+node scripts/lipsync/train.mjs /tmp/refs --hidden 128 --epochs 25   # rewrites src/lipsync/model.ts
+```
+
+`eval.mjs` reports frame accuracy, shape accuracy on spoken frames, rest/speech agreement, how close each mouth change
+is to the true one, flicker (changes per true change) and lip-closure recall and precision, on the training lines, the
+held-out lines and a noisy copy of those. `--src` scores another copy of `analysis.ts` (for before and after).
+The model is trained only on the `train` split, so the `held` split stays honest; `--exclude-voices` on train.mjs plus
+`--voices` on eval.mjs measures voices it has never heard. `ab_data.mjs` and `ab_clip.py` make the before/after clip.
+
 ## Build first
 
 Every Electron harness except `vector-check.cjs` loads `dist/`, so build first:

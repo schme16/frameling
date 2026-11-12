@@ -185,3 +185,27 @@
   border-radius: var(--radius-small);
   padding: 4px 6px;
 }
+.ls-say {
+  font: inherit;
+  font-weight: 400;
+  color: var(--text);
+  background: var(--raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  padding: 6px;
+  resize: vertical;
+}
+.ls-words {
+  align-self: flex-start;
+  font: inherit;
+  color: var(--accent);
+  background: none;
+  border: 0;
+  padding: 2px 0;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.ls-words:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
