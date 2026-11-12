@@ -15,6 +15,7 @@ import { hasPlaySettings } from '../core/clipPlay';
 import type { FormatId } from './types';
 import { effectInfo } from '../effects/model';
 
+import { shapeFeatureOf } from './shapeExport';
 import { exporterOf, type Carry, type Feature, type FormatCarry } from './registry';
 import './builtin';
 
@@ -63,8 +64,8 @@ export function docFeatures(doc: Doc): DocFeatures {
   for (const d of Object.values(doc.drawings)) {
     if (d.kind !== 'vector') continue;
     for (const s of d.shapes) {
-      if (s.type === 'text') features.add('text');
-      else if (s.type === 'particles') features.add('particles');
+      const kind = s.type !== 'stroke' && s.type !== 'fill' && s.type !== 'path' && s.type !== 'instance' ? shapeFeatureOf(s.type) : undefined;
+      if (kind) features.add(kind);
       else if (s.type === 'instance' && s.tint && s.tint.amount > 0) features.add('tint');
       else if (s.type === 'fill' || s.type === 'path') {
         const grads = s.type === 'fill' ? [s.gradient] : [s.fillGradient, s.strokeGradient];

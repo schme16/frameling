@@ -160,8 +160,13 @@ when the sound would not play everywhere), so with Audio off nothing is asked an
 **How a core area plugs in.** `src/renderer/features.ts` imports every area for its side effects, in order. A folder's
 `index.ts` imports its `commands.ts` and `help.ts` and registers its panel, usually with `lazyPanel`. See
 `src/particles/index.ts` for a small one. Canvas hooks for features: `registerDecoration` (`src/canvas/decorations.ts`),
-`addStageOverlay`, `addCanvasGrab`, `addPointerDownHook` (`src/canvas/controller.ts`). Drawing a new kind of shape is
-wired into `src/core/render.ts` and `src/core/symbols.ts` directly, not through a registry.
+`addStageOverlay`, `addCanvasGrab`, `addPointerDownHook` (`src/canvas/controller.ts`). A new kind of shape (beyond strokes, fills, paths and symbol instances) registers a
+`ShapeKind` (`src/core/shapeKinds.ts`: `draw`, `extend` (box), `bounds`, `hit`, `transform`, `moving`, `pose`, `read`), and the export side registers a
+`ShapeExport` (`src/export/shapeExport.ts`: `svg`, `pdf`, `lottie`, and the `feature` name "What carries over" uses). Text (`src/text/kind.ts`) and particles
+(`src/particles/kind.ts`) do; `render.ts`, `symbols.ts`, `canvas/geometry.ts`, `io/file.ts` and the SVG, PDF/Illustrator and Lottie writers ask the registry and
+import neither. A kind stays registered for good, also while its feature is off, so a drawing that holds one still draws, exports and saves; the export code
+(`text/exports.ts`, `particles/exports.ts`) is loaded on first use (`loadShapeExports`, awaited by the formats that write shapes), and
+`test/setup-kinds.ts` registers and loads them for every test. Lottie hands a kind a `LottieKit` (the writer's own helpers) so its sprites come out the same.
 
 ## The renderer and posing
 
@@ -172,8 +177,8 @@ wired into `src/core/render.ts` and `src/core/symbols.ts` directly, not through 
   `renderFrameToCanvas` returns an `OffscreenCanvas` for exports and thumbnails.
 - `drawLayerAt` poses the layer (`poseAt`), then `drawDrawing`: vector shapes one by one (`drawShape`), pixel drawings
   as a cached canvas, tilemaps through `drawTilemap`. A faded layer reuses one scratch buffer.
-- `drawShape` handles strokes, fills and paths (gradients from `src/core/gradient.ts`), instances, text
-  (`src/text/draw.ts`) and particles (`src/particles/draw.ts`).
+- `drawShape` handles strokes, fills and paths (gradients from `src/core/gradient.ts`) and instances; text
+  (`src/text/draw.ts`) and particles (`src/particles/draw.ts`) draw through their registered shape kinds.
 
 **Posing** (`src/core/symbols.ts`): `poseAt(doc, layer, frame)` returns the drawing as it looks on that frame.
 
@@ -181,7 +186,7 @@ wired into `src/core/render.ts` and `src/core/symbols.ts` directly, not through 
 - A shape tween morphs the two keys (`morphShapes`, `src/core/shape-tween.ts`, with hints).
 - Instances are tweened between keys (easing from `src/core/ease.ts`, spin, motion paths) and posed recursively into
   their symbol's timeline, at most 12 deep.
-- Moving shapes (animated text, particles) get their frame or time stamped on (`poseParticles`). Particles are worked
+- Moving shapes (animated text, particles) get their frame or time stamped on by their kind's `pose` (`poseParticles`). Particles are worked
   out from the seed for each frame (`src/particles/model.ts`), with no step simulation.
 - A layer bound to a bone is wrapped by `boundDrawing` (`src/rig/pose.ts`): moved by the bone, or bent through a skin
   mesh. Bone maths is `src/rig/math.ts`; weights are `src/rig/weights.ts`.

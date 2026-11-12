@@ -20,7 +20,7 @@ const SRC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../sr
 const FEATURE_FOLDERS = ['audio', 'particles', 'text', 'tiles', 'rig', 'flow', 'interactives', 'lipsync', 'effects'];
 
 /** Core files that still import a feature folder (to burn down: core should call a registry instead). */
-const CORE_BACK_IMPORTS = ['core/render.ts -> effects', 'core/render.ts -> particles', 'core/render.ts -> text', 'core/symbols.ts -> particles', 'core/symbols.ts -> rig', 'core/symbols.ts -> text', 'core/tilemap.ts -> tiles'];
+const CORE_BACK_IMPORTS = ['core/render.ts -> effects', 'core/symbols.ts -> rig', 'core/tilemap.ts -> tiles'];
 
 /** Who may import a folder whose feature has moved onto a descriptor. */
 const CONVERTED: Record<string, { importers: string[] }> = {

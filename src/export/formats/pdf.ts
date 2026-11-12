@@ -4,9 +4,11 @@ import { frameNumber, planFrames } from '../plan';
 import { pdfFile } from '../layered-run';
 import { breathe } from '../runtime';
 import { aiFramesOf } from '../types';
+import { loadShapeExports } from '../shapeExport';
 import type { ExporterRun } from '../registry';
 
 export const run: ExporterRun['run'] = async ({ doc, settings, signal }, { plan, bg, crisp, step }) => {
+  await loadShapeExports();
   const frames = planFrames(plan);
   const ai = settings.format === 'ai';
   const how = aiFramesOf(settings);

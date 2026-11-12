@@ -2,6 +2,7 @@
 import { lazyPanel } from '../core/lazy';
 import { registerPanel } from '../core/registry';
 import { store } from '../core/store';
+import './kind';
 import './tool';
 import './commands';
 import './help';

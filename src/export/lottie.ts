@@ -26,14 +26,14 @@
  * multiplies opacity into each shape) fades the group as one too. Effects don't play in that renderer.
  * Pictures made from effects are cropped, shared when they repeat and stored as WebP or PNG (see PICTURE_LOOKS).
  */
-import type { Cel, Doc, Easing, Gradient, InstanceShape, Layer, LayerEffect, ParticlesShape, PathShape, PixelDrawing, Shape, StrokeShape, SubPath, TextShape, Tween } from '../core/format';
+import type { Cel, Doc, Easing, Gradient, InstanceShape, Layer, LayerEffect, PathShape, PixelDrawing, Shape, StrokeShape, SubPath, Tween } from '../core/format';
 import { celAt } from '../core/doc';
 import { decompose, isInstance, isPosed, layersHaveLook, pairInstances, poseAt, symbolContent, symbolFrame, tweenInstance, type Mat, type PosedInstance } from '../core/symbols';
 import { drawingBox, effectReach, renderFrame, strokeOutline } from '../core/render';
 import { folderChain } from '../core/folders';
 import { buildPlan, planLayers, type PlanNode, type PlanStep } from '../effects/plan';
 import { activeEffects, effectInfo, isNoop, valuesAt } from '../effects/model';
-import { canTraceText, glyphSprites, particleSprites, SPRITE_UNIT, type ParticleSprite } from './sprites';
+import { shapeExportOf } from './shapeExport';
 import { cameraViewAt, cameraViewOn, activeCamera, depthAnchor, depthScale, parallaxFactor } from '../core/camera';
 import { encodePng } from '../io/png';
 import { fitClosed, sampleMidpointSpline } from './curve-fit';
@@ -230,7 +230,7 @@ export function strokeOutlinePath(s: StrokeShape, fit = false): Json | null {
 const LC = { butt: 1, round: 2, square: 3 } as const;
 const LJ = { miter: 1, round: 2, bevel: 3 } as const;
 
-type Tint = { color: string; amount: number };
+export type Tint = { color: string; amount: number };
 
 /** How strongly a tint mixes in: its amount (never over 1) times the colour's own see-through, as the canvas paints it. */
 function tintStrength(t: Tint): { a: number; rgb: [number, number, number] } {
@@ -288,11 +288,14 @@ export function lottieGradient(gr: Gradient, tints: Tint[]): LottieGrad {
 }
 
 /** The parts of a plain shape that can change from frame to frame. */
+/** The radius of a soft sprite's fade: half of what particles draw their sprites at before scaling. */
+const SOFT_RADIUS = 5;
+
 export interface ShapeLook {
   paths: Json[];
   fill: { rgb: number[]; o: number; grad?: LottieGrad } | null;
   stroke: { rgb: number[]; o: number; w: number; lc: number; lj: number; grad?: LottieGrad } | null;
-  /** A soft round sprite: a radial fade of this colour (SPRITE_UNIT across). */
+  /** A soft round sprite: a radial fade of this colour (SOFT_RADIUS wide, the size particle sprites are drawn at). */
   soft?: { rgb: number[] };
   /** Sprites move as a group; plain shapes have their points in stage space and no transform. */
   tr?: Tr;
@@ -303,7 +306,7 @@ export interface ShapeLook {
 /** `still`: the shape doesn't change over the run, so a brush outline may be refitted with fewer points. */
 function lookOf(s: Exclude<Shape, InstanceShape>, tints: Tint[], still = false): ShapeLook {
   // Text and particles are turned into sprites before this (expandSprites).
-  if (s.type === 'text' || s.type === 'particles') return { paths: [], fill: null, stroke: null };
+  if (s.type !== 'stroke' && s.type !== 'fill' && s.type !== 'path') return { paths: [], fill: null, stroke: null };
   if (s.type === 'stroke') {
     const c = tinted(s.color, tints);
     const p = strokeOutlinePath(s, still);
@@ -641,7 +644,7 @@ function shapeGroupOf(looks: ShapeLook[], times: number[], name: string): Json |
     // The canvas's soft puff: full colour in the middle, two thirds at 45%, gone at the edge.
     const f = looks.find((l) => l.soft)!.soft!;
     const stops = (c: number[]) => [0, ...c, 0.45, ...c, 1, ...c, 0, 1, 0.45, r3(0xaa / 255), 1, 0];
-    it.push({ ty: 'gf', nm: 'Soft', o: stat(100), r: 1, t: 2, s: stat([0, 0]), e: stat([SPRITE_UNIT / 2, 0]), h: stat(0), a: stat(0), g: { p: 3, k: smoothTrack(looks.map((l) => stops((l.soft ?? f).rgb)), times, COLOUR_TOL) } });
+    it.push({ ty: 'gf', nm: 'Soft', o: stat(100), r: 1, t: 2, s: stat([0, 0]), e: stat([SOFT_RADIUS, 0]), h: stat(0), a: stat(0), g: { p: 3, k: smoothTrack(looks.map((l) => stops((l.soft ?? f).rgb)), times, COLOUR_TOL) } });
   }
   let outer: Json | null = null;
   if (looks[0].tr) {
@@ -704,46 +707,8 @@ function starSub(r: number, points: number, inner: number): SubPath {
   return { closed: true, points: pts };
 }
 
-/** One particle as a sprite look (symbol sprites are handled as precomp layers instead). */
-function particleLook(s: ParticlesShape, sp: ParticleSprite, tints: Tint[]): ShapeLook {
-  const c = tinted(sp.p.color, tints);
-  const R = SPRITE_UNIT / 2;
-  const fillOf = { rgb: c.rgb, o: r3(c.alpha * 100) };
-  const p = sp.p;
-  switch (s.sprite) {
-    case 'streak': {
-      const len = Math.max(p.size * 2, Math.hypot(p.vx, p.vy) * 0.05);
-      const ang = Math.atan2(p.vy, p.vx);
-      // Drawn along its own axis and moved by the group, so only the length changes the path and the position keys thin out.
-      const line: SubPath = { closed: false, points: [{ x: 0, y: 0 }, { x: -len, y: 0 }] };
-      const cos = Math.cos(ang);
-      const sin = Math.sin(ang);
-      return { paths: [lottiePath(line)], fill: null, stroke: { rgb: c.rgb, o: r3(c.alpha * 100), w: r3(p.size), lc: 2, lj: 2 }, tr: trOf([cos, sin, -sin, cos, p.x, p.y], sp.alpha) };
-    }
-    case 'flake': {
-      const lines: SubPath[] = [0, 1, 2].map((i) => {
-        const a = (i * Math.PI) / 3;
-        return { closed: false, points: [{ x: Math.cos(a) * R, y: Math.sin(a) * R }, { x: -Math.cos(a) * R, y: -Math.sin(a) * R }] };
-      });
-      const k = Math.max(1e-4, p.size / SPRITE_UNIT);
-      return { paths: lines.map(lottiePath), fill: null, stroke: { rgb: c.rgb, o: r3(c.alpha * 100), w: r3(Math.max(0.6, p.size / 9) / k), lc: 2, lj: 2 }, tr: trOf(sp.m, sp.alpha) };
-    }
-    case 'soft':
-      return { paths: [lottiePath(circleSub(R))], fill: null, stroke: null, soft: { rgb: c.rgb }, tr: trOf(sp.m, sp.alpha) };
-    case 'square':
-      return { paths: [lottiePath(rectSub(-R, -R, SPRITE_UNIT, SPRITE_UNIT))], fill: fillOf, stroke: null, tr: trOf(sp.m, sp.alpha) };
-    case 'confetti':
-      return { paths: [lottiePath(rectSub(-R, -R * 0.5, SPRITE_UNIT, SPRITE_UNIT * 0.5))], fill: fillOf, stroke: null, tr: trOf(sp.m, sp.alpha) };
-    case 'star':
-    case 'spark':
-      return { paths: [lottiePath(starSub(R, s.sprite === 'star' ? 5 : 4, s.sprite === 'star' ? 0.45 : 0.22))], fill: fillOf, stroke: null, tr: trOf(sp.m, sp.alpha) };
-    default:
-      return { paths: [lottiePath(circleSub(R))], fill: fillOf, stroke: null, tr: trOf(sp.m, sp.alpha) };
-  }
-}
-
 /** A symbol used as a particle sprite, on one frame. */
-interface SymbolSprite {
+export interface SymbolSprite {
   type: 'psym';
   symbolId: string;
   m: Mat;
@@ -752,11 +717,11 @@ interface SymbolSprite {
   inner: number;
 }
 /** A sprite look standing in for a shape. */
-interface LookItem {
+export interface LookItem {
   type: 'look';
   look: ShapeLook;
 }
-type Item = Shape | LookItem | SymbolSprite;
+export type Item = Shape | LookItem | SymbolSprite;
 
 /** Copies the nearest shown frame's sprite into frames where it's missing, faded right out. */
 function fillGaps<T extends LookItem | SymbolSprite>(col: (T | null)[], hide: (t: T) => T): T[] | null {
@@ -778,63 +743,41 @@ const hideLook = (l: LookItem): LookItem => ({ type: 'look', look: { ...l.look, 
 const hideSym = (s: SymbolSprite): SymbolSprite => ({ ...s, alpha: 0 });
 
 /**
+ * What a kind of shape that Lottie cannot hold as it is (text, particles) uses to turn itself into sprites: the
+ * number formatting, path and transform makers and gap filling the writer itself uses, so the sprites come out the same.
+ */
+export interface LottieKit {
+  /** Plain words about what did not come across exactly. */
+  note(message: string): void;
+  /** Colour washes in force where the shape sits, innermost first. */
+  tints: Tint[];
+  tinted(c: string, tints: Tint[]): { rgb: [number, number, number]; alpha: number };
+  r3(v: number): number;
+  lottiePath(sp: SubPath): Json;
+  trOf(m: readonly number[], alpha: number): Tr;
+  circleSub(r: number): SubPath;
+  rectSub(x: number, y: number, w: number, h: number): SubPath;
+  starSub(r: number, points: number, inner: number): SubPath;
+  fillGaps<T extends LookItem | SymbolSprite>(col: (T | null)[], hide: (t: T) => T): T[] | null;
+  hideLook(l: LookItem): LookItem;
+  hideSym(s: SymbolSprite): SymbolSprite;
+}
+
+/**
  * Text and particles turned into sprites, frame by frame, with the same number of items on every frame: a letter per
  * letter, and a slot per particle that's alive on any of the frames (faded out where it isn't).
  */
 function expandSprites(ctx: Ctx, shapes: Shape[][]): Item[][] {
+  const kit: LottieKit = { note: (m) => void ctx.notes.add(m), tints: ctx.tints, tinted, r3, lottiePath, trOf, circleSub, rectSub, starSub, fillGaps, hideLook, hideSym };
   const n = shapes[0].length;
   const frames = shapes.length;
   const cols: Item[][][] = [];
   for (let k = 0; k < n; k++) {
     const s0 = shapes[0][k];
-    if (s0.type === 'text') {
-      if (!canTraceText()) {
-        ctx.notes.add('Text was left out (it needs the app to trace the letters).');
-        cols.push(shapes.map(() => []));
-        continue;
-      }
-      const per = shapes.map((list) => glyphSprites(list[k] as TextShape));
-      const most = Math.max(...per.map((g) => g.length));
-      const items: LookItem[][] = [];
-      for (let g = 0; g < most; g++) {
-        const col = per.map((gs, f): LookItem | null => {
-          const gl = gs[g];
-          if (!gl) return null;
-          const t = shapes[f][k] as TextShape;
-          const c = tinted(t.color, ctx.tints);
-          return { type: 'look', look: { paths: gl.paths.map(lottiePath), fill: { rgb: c.rgb, o: r3(c.alpha * 100) }, stroke: null, tr: trOf(gl.m, gl.alpha) } };
-        });
-        const full = fillGaps(col, hideLook);
-        if (full) items.push(full);
-      }
-      cols.push(shapes.map((_, f) => items.map((c) => c[f])));
-      continue;
-    }
-    if (s0.type === 'particles') {
-      const per = shapes.map((list) => particleSprites(list[k] as ParticlesShape));
-      const keys: number[] = [];
-      const seen = new Set<number>();
-      for (const list of per)
-        for (const sp of list)
-          if (!seen.has(sp.key)) {
-            seen.add(sp.key);
-            keys.push(sp.key);
-          }
-      const byKey = per.map((list) => new Map(list.map((sp) => [sp.key, sp])));
-      const slots: Item[][] = [];
-      for (const key of keys) {
-        const col = byKey.map((m, f): LookItem | SymbolSprite | null => {
-          const sp = m.get(key);
-          if (!sp) return null;
-          const s = shapes[f][k] as ParticlesShape;
-          if (sp.sprite) return { type: 'psym', symbolId: s.symbolId!, m: sp.m, alpha: sp.alpha, inner: sp.inner ?? 0 };
-          return { type: 'look', look: particleLook(s, sp, ctx.tints) };
-        });
-        const first = col.find((x) => x);
-        const full = first?.type === 'psym' ? fillGaps(col as (SymbolSprite | null)[], hideSym) : fillGaps(col as (LookItem | null)[], hideLook);
-        if (full) slots.push(full);
-      }
-      cols.push(shapes.map((_, f) => slots.map((c) => c[f])));
+    // Text and particles (and any kind like them) turn themselves into sprites, through their registered export.
+    const make = s0.type !== 'stroke' && s0.type !== 'fill' && s0.type !== 'path' && s0.type !== 'instance' ? shapeExportOf(s0.type)?.lottie : undefined;
+    if (make) {
+      cols.push(make(kit, shapes.map((list) => list[k])));
       continue;
     }
     cols.push(shapes.map((list) => [list[k]]));
@@ -1009,7 +952,7 @@ function meshPoint(mesh: PosedMesh, x: number, y: number): XY {
 }
 
 function mapShape(s: Exclude<Shape, InstanceShape>, f: (p: XY) => XY, alpha: number): Shape {
-  if (s.type === 'text' || s.type === 'particles') return s;
+  if (s.type !== 'stroke' && s.type !== 'fill' && s.type !== 'path') return s;
   const sub = (paths: SubPath[]) => paths.map((sp) => ({ closed: sp.closed, points: sp.points.map((q) => ({ ...f(q), ...(q.c1 && q.c2 ? { c1: f(q.c1), c2: f(q.c2) } : {}) })) }));
   if (s.type === 'stroke') {
     // A brush stroke goes as its outline, so its width bends with the part too.

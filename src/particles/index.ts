@@ -1,6 +1,7 @@
 // Particles: emitters as shapes in vector drawings, worked out per frame from a seed (see model.ts).
 import { lazyPanel } from '../core/lazy';
 import { registerPanel } from '../core/registry';
+import './kind';
 import './commands';
 import './help';
 
