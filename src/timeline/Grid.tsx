@@ -7,6 +7,7 @@ import { store, useStore } from '../core/store';
 import { Icon } from '../ui/icons';
 import { say } from './commands';
 import { keyHint } from './cmd';
+import { chipBox } from './clipLayout';
 import { MAX_LENGTH } from './edit-core';
 import { frameAtX, holdWords, labelStep, visibleFrames, zoomScroll } from './geometry';
 import { LayerList, LayerTools, ROW_H } from './Layers';
@@ -33,7 +34,8 @@ import { clampShift, deleteKeys, firstFrameOf, moveKeys, scaleKeys, scaleMap } f
 import { clearKeys, pickKeys } from './state';
 import { toast } from '../ui/toast';
 import { clipPlayItems } from './ClipPlay';
-import { showPanel } from '../ui/dock';
+import { isSection } from '../ui/panelInfo';
+import { panelTitle, showPanel, showPanelGently } from '../ui/dock';
 import { playWords } from '../core/clipPlay';
 
 export const SIDE_W = 216;
@@ -226,7 +228,29 @@ function MarkersRow({ cw, from, to, h }: { cw: number; from: number; to: number;
   );
 }
 
-function ClipsRow({ cw, from, to, h }: { cw: number; from: number; to: number; h: number }) {
+let toldClipKept = false;
+/**
+ * Picks a clip to play on its own (or lets go of it, when it is the picked one), and shows how it plays in
+ * Properties. That only comes forward when it hides nothing: with Preview (or Layers...) in front it stays put, and
+ * a toast says where the Clip settings are, the first time.
+ */
+export function pickClip(id: Id): void {
+  const c = store().get().doc.clips.find((x) => x.id === id);
+  if (!c) return;
+  const on = tl().clipId === c.id ? null : c.id;
+  setTl({ clipId: on });
+  if (on) {
+    const kept = showPanelGently('clip-play', isSection);
+    if (kept && !toldClipKept) {
+      toldClipKept = true;
+      toast(`${panelTitle(kept)} stays in front.`, { duration: 6000, action: { label: 'Show Clip settings', run: () => showPanel('clip-play') } });
+    }
+  }
+  const ui = store().get().ui;
+  if (on && (ui.frame < c.start || ui.frame > c.end)) store().setUi({ frame: c.start });
+}
+
+export function ClipsRow({ cw, from, to, h }: { cw: number; from: number; to: number; h: number }) {
   const clips = useStore((s) => s.doc.clips);
   const editing = useTl((t) => (t.editing?.kind === 'clip' ? t.editing.id : null));
   const picked = useTl((t) => t.clipId);
@@ -239,27 +263,54 @@ function ClipsRow({ cw, from, to, h }: { cw: number; from: number; to: number; h
       )}
       {clips
         .filter((c) => c.end >= from && c.start <= to)
-        .map((c) => (
-          <div key={c.id} className={`tl-clip${picked === c.id ? ' is-picked' : ''}`} data-clip={c.id} style={{ left: c.start * cw + 1, width: (c.end - c.start + 1) * cw - 2 }} title={`${c.name}: frames ${c.start + 1} to ${c.end + 1}${playWords(c) ? ', ' + playWords(c) : ''}. Click to play just this clip and see how it plays in Properties. Double-click to rename. Right-click for more.`}>
-            <span className="tl-clip-edge is-start" data-edge="start" />
-            {editing === c.id ? (
-              <InlineName
-                label="Clip name"
-                value={c.name}
-                onDone={(v) => {
-                  setTl({ editing: null });
-                  if (v !== null) ops.renameClip(c.id, v);
-                }}
-              />
-            ) : (
-              <span className="tl-clip-name">{c.name}</span>
-            )}
-            {c.direction === 'reverse' ? <Icon name="play" size={10} className="tl-clip-loop tl-clip-back" /> : null}
-            {c.direction === 'pingpong' || c.direction === 'pingpong-reverse' ? <Icon name="pingpong" size={11} className="tl-clip-loop" /> : null}
-            {c.loop ? <Icon name="loop" size={11} className="tl-clip-loop" /> : c.repeat && c.repeat > 1 ? <span className="tl-clip-times">{`x${c.repeat}`}</span> : null}
-            <span className="tl-clip-edge is-end" data-edge="end" />
-          </div>
-        ))}
+        .map((c) => {
+          const box = chipBox(c, cw);
+          const how = playWords(c);
+          const tip = `${c.name}: frames ${c.start + 1} to ${c.end + 1}${how ? ', ' + how : ''}. Click to play just this clip and see how it plays in Properties. Double-click to rename. Right-click for more.`;
+          return (
+            <div
+              key={c.id}
+              className={`tl-clip${picked === c.id ? ' is-picked' : ''}${editing === c.id ? ' is-editing' : ''}`}
+              data-clip={c.id}
+              data-mode={box.mode}
+              role="button"
+              tabIndex={0}
+              aria-pressed={picked === c.id}
+              aria-label={`Clip ${c.name}, frames ${c.start + 1} to ${c.end + 1}${how ? ', ' + how : ''}`}
+              style={{ left: box.left, width: box.width }}
+              title={tip}
+              onKeyDown={(e) => {
+                if (e.target !== e.currentTarget) return;
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  pickClip(c.id);
+                } else if (e.key === 'F2') {
+                  e.preventDefault();
+                  setTl({ editing: { kind: 'clip', id: c.id } });
+                }
+              }}
+            >
+              {box.edge ? <span className="tl-clip-edge is-start" data-edge="start" style={{ width: box.edge }} /> : null}
+              {editing === c.id ? (
+                <InlineName
+                  label="Clip name"
+                  value={c.name}
+                  onDone={(v) => {
+                    setTl({ editing: null });
+                    if (v !== null) ops.renameClip(c.id, v);
+                  }}
+                />
+              ) : box.mode === 'full' ? (
+                <span className="tl-clip-name">{c.name}</span>
+              ) : null}
+              {box.mode === 'icon' ? <Icon name="clip" size={11} className="tl-clip-loop" /> : null}
+              {box.mode === 'full' && c.direction === 'reverse' ? <Icon name="play" size={10} className="tl-clip-loop tl-clip-back" /> : null}
+              {box.mode === 'full' && (c.direction === 'pingpong' || c.direction === 'pingpong-reverse') ? <Icon name="pingpong" size={11} className="tl-clip-loop" /> : null}
+              {box.mode === 'full' ? c.loop ? <Icon name="loop" size={11} className="tl-clip-loop" /> : c.repeat && c.repeat > 1 ? <span className="tl-clip-times">{`x${c.repeat}`}</span> : null : null}
+              {box.edge ? <span className="tl-clip-edge is-end" data-edge="end" style={{ width: box.edge }} /> : null}
+            </div>
+          );
+        })}
     </div>
   );
 }
@@ -681,14 +732,7 @@ export function TimelineBody() {
       const o = ops.addClip(g.start, g.end);
       if (o.id) setTl({ editing: { kind: 'clip', id: o.id } });
     } else if (d.kind === 'clip' && !d.moved) {
-      const c = store().get().doc.clips.find((x) => x.id === d.id);
-      if (!c) return;
-      const on = tl().clipId === c.id ? null : c.id;
-      setTl({ clipId: on });
-      // Its play settings show in Properties (Clip).
-      if (on) showPanel('clip-play');
-      const ui = store().get().ui;
-      if (on && (ui.frame < c.start || ui.frame > c.end)) store().setUi({ frame: c.start });
+      pickClip(d.id);
     } else if (d.kind === 'clipEdge' && g?.kind === 'clip' && g.id) ops.setClipRange(g.id, g.start, g.end);
     else if ((d.kind === 'inOut' || d.kind === 'inOutEdge') && g?.kind === 'inOut') {
       // A shift-click without a drag just moves the playhead, like a plain click.
@@ -1049,6 +1093,7 @@ export function celMenu(layer: Layer, frame: number): MenuItem[] {
 function clipMenu(c: Clip): MenuItem[] {
   return [
     { heading: `Clip: ${c.name} (frames ${c.start + 1} to ${c.end + 1})` },
+    { label: 'Show how it plays in Properties', onClick: () => { setTl({ clipId: c.id }); showPanel('clip-play'); } },
     { label: tl().clipId === c.id ? 'Play everything again' : 'Play just this clip', onClick: () => setTl({ clipId: tl().clipId === c.id ? null : c.id }) },
     { label: 'Rename', onClick: () => setTl({ editing: { kind: 'clip', id: c.id } }) },
     { separator: true },

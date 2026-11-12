@@ -297,6 +297,18 @@ export function isFront(l: Layout, id: string): boolean {
   return l.floats.find((f) => f.id === at.float)?.active === id;
 }
 
+/**
+ * What fronting a panel would cover: the panel now in front of its place when that is something other than a
+ * Properties section (so Preview, Layers and the like). Null when nothing is lost: it is the front one already, a
+ * section is in front, or it is not on screen (hidden, or its zone is folded, which fronting would undo).
+ */
+export function coveredBy(l: Layout, id: string, isSect: (id: string) => boolean): string | null {
+  const at = locate(l, id);
+  if (!at) return null;
+  const front = 'zone' in at ? (l.zones[at.zone].collapsed ? null : activeOfGroup(l, at.zone, at.group)) : (l.floats.find((f) => f.id === at.float)?.active ?? null);
+  return front && front !== id && !isSect(front) ? front : null;
+}
+
 /** Drops the tabs `keep` says no to from every group of a zone, fixing each group's front tab. Empty groups go. */
 export function retainTabs(z: ZoneState, keep: (id: string) => boolean): void {
   const sh = sharesOf(z);

@@ -344,6 +344,7 @@ Click the **x** beside the range in the top bar, or use **Timeline > Play everyt
 ## Using a clip
 
 - **Click** a clip to play just that part. Playback and the first and last frame buttons stay inside it. Click it again to go back to the whole animation.
+- A **short clip** shrinks to a small icon, or just a coloured bar when it is only a frame or two, so it never covers its neighbour. Rest the mouse on it for its name, or zoom in the timeline. Tab reaches each clip; **Enter** picks it and **F2** renames it.
 - **Double-click** to rename it. Right-click for more: which way it plays, how often it repeats, delete.
 - **Plays** and **Repeat** are saved with the clip: forward, backward or [back and forth](help:timeline-clip-play), and forever (a run cycle), once (a jump) or a number of times. A game engine reads them too.
 
@@ -363,6 +364,8 @@ When you export a sprite sheet or a game animation file, each clip becomes its o
 ## Setting it
 
 Click the clip in the clips row: its settings open in **Properties**, under **Clip**. Right-click gives the same choices as a menu. Resting the mouse on a clip tells you how it plays.
+
+With Preview in front, a click leaves it there and offers **Show Clip settings**.
 
 - **Plays:** **Forward**, **Backward** (reverse), **Back and forth** or **Back and forth, backward first** (it starts from the last frame).
 - **Repeat:** **Forever** (it loops), **Once** (it stops and holds its last frame) or a number of **times**. Type the number in the box and press Enter. For back and forth, each direction counts as one (see below).

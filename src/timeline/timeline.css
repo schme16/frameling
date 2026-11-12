@@ -577,14 +577,32 @@
   align-items: center;
   gap: 4px;
   padding: 0 5px;
-  /* A short clip still shows a readable name (it can run over the next clip a little; the picked one stays on top). */
-  min-width: 44px;
+  /* Never wider than its frames, so neighbours don't overlap: short ones show an icon, then just the colour (see clipLayout.ts). */
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--sky) 60%, transparent);
   border-radius: var(--radius-small);
   background: color-mix(in srgb, var(--sky) 28%, var(--panel));
   font-size: 11px;
   cursor: pointer;
+}
+.tl-clip[data-mode='icon'] {
+  justify-content: center;
+  padding: 0 2px;
+}
+.tl-clip[data-mode='bar'] {
+  padding: 0;
+  border-radius: 2px;
+}
+.tl-clip:focus-visible {
+  outline: 2px solid var(--focus, var(--sunny-deep));
+  outline-offset: 1px;
+  z-index: 3;
+}
+/* While its name is being typed the box needs its room, over the neighbours for a moment. */
+.tl-clip.is-editing {
+  overflow: visible;
+  min-width: 110px;
+  z-index: 4;
 }
 .tl-clip:hover {
   background: color-mix(in srgb, var(--sky) 40%, var(--panel));
