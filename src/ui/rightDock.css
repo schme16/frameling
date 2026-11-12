@@ -72,10 +72,32 @@
   border-left: 0;
 }
 .rd-rail-items,
+.rd-rgroup,
+.rd-tablist,
 .rd-group {
   display: flex;
   flex-direction: column;
   gap: 2px;
+}
+/* Stacked groups share the rail: a heading over each group's places, and a line between the groups. */
+.rd-rail-items {
+  gap: 0;
+}
+.rd-rgroup + .rd-rgroup {
+  margin-top: 6px;
+  padding-top: 4px;
+  border-top: 1px solid var(--line);
+}
+.rd-ghead {
+  margin: 0;
+  padding: 2px 2px 3px;
+  color: var(--muted);
+  font-size: 9.5px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: 0.06em;
+  text-align: center;
+  text-transform: uppercase;
 }
 .rd-sep {
   display: block;

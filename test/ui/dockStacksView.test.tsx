@@ -225,15 +225,102 @@ describe('stacked groups on the tab style', () => {
   });
 });
 
-describe('stacked groups under the Properties rail', () => {
-  it('the first group keeps the rail and the groups under it are ordinary tabbed groups', () => {
-    mount('inspector');
-    expect(host.querySelector('.rd-top .rd-rail')).not.toBeNull();
+describe('stacked groups share one rail on the Properties and rail style', () => {
+  beforeEach(() => mount('inspector'));
+  const rail = () => host.querySelector<HTMLElement>('.rd-rail')!;
+  const tabsIn = (el: Element) => [...el.querySelectorAll('[role="tab"]')].map((t) => t.getAttribute('aria-label'));
+
+  it('draws one rail for the side, a heading per group, and a content box per group', () => {
+    expect(host.querySelectorAll('.rd-rail')).toHaveLength(1);
+    const lists = rail().querySelectorAll('[role="tablist"]');
+    expect(lists).toHaveLength(2);
+    expect([...rail().querySelectorAll('.rd-ghead')].map((h) => h.textContent)).toEqual(['Top', 'Bottom']);
+    // Places sit in their kinds (Preview is a Make place), the group's own order inside each.
+    expect(tabsIn(lists[0]).sort()).toEqual(['Layers', 'Preview']);
+    expect(tabsIn(lists[1])).toEqual(['Colours']);
     const groups = host.querySelectorAll('.ui-group');
     expect(groups).toHaveLength(2);
-    expect(groups[1].querySelector('[role="tab"]')!.getAttribute('aria-label')).toBe('Colours');
+    expect(groups[0].querySelector('.rd-rail')).toBeNull();
     expect(groups[1].querySelector('.rd-rail')).toBeNull();
+    expect(groups[0].textContent).toContain('layers body');
+    expect(groups[1].textContent).toContain('colours body');
+    expect(groups[1].querySelector('.rd-head-title')!.textContent).toBe('Colours');
     expect(split()).not.toBeNull();
+  });
+
+  it('labels each list by its heading and each content box by its front tab', () => {
+    for (const [i, h] of [...rail().querySelectorAll('.rd-ghead')].entries()) {
+      expect(rail().querySelectorAll('[role="tablist"]')[i].getAttribute('aria-labelledby')).toBe(h.id);
+    }
+    const panels = host.querySelectorAll('[role="tabpanel"]');
+    expect([...panels].map((p) => p.getAttribute('aria-labelledby'))).toEqual(['rd-tab-layers', 'rd-tab-colours']);
+    expect(panels[1].id).toBe('rd-body-1');
+    expect(host.querySelector('#rd-tab-colours')!.getAttribute('aria-controls')).toBe('rd-body-1');
+    expect(host.querySelector('#rd-tab-layers')!.getAttribute('aria-controls')).toBe('rd-body');
+  });
+
+  it('a lone group keeps the plain rail with no headings', () => {
+    act(() => placePanel('colours', { zone: 'right', group: 0 }));
+    expect(host.querySelectorAll('.rd-ghead')).toHaveLength(0);
+    expect(rail().querySelector('[role="tablist"]')!.getAttribute('aria-label')).toBe('Right side');
+    expect(host.querySelectorAll('.ui-group')).toHaveLength(1);
+    expect(rail().getAttribute('data-dock-strip')).not.toBeNull();
+  });
+
+  it('pressing a rail place in the lower group fronts it there only, and the arrows walk the whole rail', () => {
+    act(() => placePanel('preview', { zone: 'right', group: 1 }));
+    act(() => host.querySelector<HTMLElement>('#rd-tab-preview')!.click());
+    expect(activeOfGroup(dock.get().layout, 'right', 1)).toBe('preview');
+    expect(activeOfGroup(dock.get().layout, 'right', 0)).toBe('layers');
+    // The side stays open: a stacked side doesn't fold on a second press.
+    act(() => host.querySelector<HTMLElement>('#rd-tab-preview')!.click());
+    expect(dock.get().layout.zones.right.collapsed).toBe(false);
+    key(host.querySelector('#rd-tab-layers')!, 'ArrowDown');
+    expect(activeOfGroup(dock.get().layout, 'right', 0)).toBe('layers');
+    const last = [...host.querySelectorAll('.rd-rail [role="tab"]')].pop()!;
+    act(() => placePanel('colours', { zone: 'right', group: 1 }));
+    key(host.querySelector('#rd-tab-layers')!, 'End');
+    expect(activeOfGroup(dock.get().layout, 'right', 1)).toBe(last.id.replace('rd-tab-', ''));
+  });
+
+  it('each group is its own drop bar, so a drop lands in the group it is over', () => {
+    const strips = rail().querySelectorAll<HTMLElement>('[data-dock-strip]');
+    expect([...strips].map((e) => e.dataset.dockGroup)).toEqual(['0', '1']);
+    expect(strips[1].dataset.dockTabs).toBe('colours');
+    document.elementsFromPoint = () => [host.querySelector('#rd-tab-colours')!];
+    expect(targetAt(10, 10)).toEqual({ zone: 'right', group: 1, index: 0 });
+    document.elementsFromPoint = () => [host.querySelector('#rd-tab-layers')!];
+    expect(targetAt(10, 10)).toMatchObject({ zone: 'right' });
+    expect(targetAt(10, 10)).not.toHaveProperty('group');
+    // The rail between the groups, off any bar, takes a drop at the end of the first group.
+    document.elementsFromPoint = () => [rail()];
+    expect(targetAt(10, 10)).toEqual({ zone: 'right' });
+  });
+
+  it('a drop on a group box still joins or splits it', () => {
+    document.elementsFromPoint = () => [host.querySelectorAll('.ui-group')[1]];
+    expect(targetAt(10, 10)).toMatchObject({ zone: 'right', group: 1 });
+  });
+
+  it('the splitter works from the keyboard as on the other sides', () => {
+    const before = shares()[0];
+    key(split(), 'ArrowDown');
+    expect(shares()[0]).toBeGreaterThan(before);
+    key(split(), 'Enter');
+    expect(shares()[0]).toBeCloseTo(0.5);
+  });
+
+  it('a folded side shows just the rail, headings and all', () => {
+    act(() => void (dock.set((s) => ({ ...s, layout: { ...s.layout, zones: { ...s.layout.zones, right: { ...s.layout.zones.right, collapsed: true } } } }))));
+    expect(host.querySelectorAll('.ui-group')).toHaveLength(0);
+    expect(host.querySelectorAll('.rd-ghead')).toHaveLength(2);
+    expect(host.querySelector('[aria-selected="true"]')).toBeNull();
+  });
+
+  it('the tab style keeps plain tab groups', () => {
+    mount('tabs');
+    expect(host.querySelector('.rd-rail')).toBeNull();
+    expect(host.querySelectorAll('.ui-group [role="tablist"]')).toHaveLength(2);
   });
 });
 

@@ -167,6 +167,35 @@ export function railGroups(ids: string[], groupOf: (id: string) => RailGroup = (
   return RAIL_GROUPS.map((group) => ({ group, ids: ids.filter((id) => groupOf(id) === group) })).filter((g) => g.ids.length > 0);
 }
 
+/** The plain word for a stacked group of the right side, by where it sits: Top, Upper, Lower, Bottom. */
+export function groupWord(index: number, count: number): string {
+  if (count <= 1) return 'Right side';
+  if (index === 0) return 'Top';
+  if (index === count - 1) return 'Bottom';
+  return count === 3 ? 'Middle' : index === 1 ? 'Upper' : 'Lower';
+}
+
+/** One stacked group of the right side, ready to draw: its Properties sections (the first group only), its rail places and its front panel. */
+export interface RightGroupPlan {
+  index: number;
+  /** Every panel in the group, in the group's own order. */
+  tabs: string[];
+  sections: string[];
+  places: { group: RailGroup; ids: string[] }[];
+  active: string | null;
+  /** The front panel is one of the Properties sections. */
+  onProps: boolean;
+}
+
+/** The right side's groups as the rail draws them. Only the first group folds its sections into Properties. */
+export function planRight(groups: { tabs: string[]; active: string | null }[], merge: boolean): RightGroupPlan[] {
+  return groups.map((g, index) => {
+    const { sections, rail } = splitZone(g.tabs, merge && index === 0);
+    const active = g.active && g.tabs.includes(g.active) ? g.active : (g.tabs[0] ?? null);
+    return { index, tabs: g.tabs, sections, places: railGroups(rail), active, onProps: sections.length > 0 && !!active && sections.includes(active) };
+  });
+}
+
 /**
  * Which sections Properties shows now, and which wait below as "also here". A section shows when it applies, or when
  * it's the one asked for (`active`), so asking for Effects with nothing selected still brings it up. With something

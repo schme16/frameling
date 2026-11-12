@@ -9,7 +9,7 @@ import { particlesFeature } from '../../src/particles';
 import { rigFeature } from '../../src/rig';
 import { textFeature } from '../../src/text';
 import { tilesFeature } from '../../src/tiles';
-import { infoFor, isSection, registerPanelInfo, matchPanel, PANEL_INFO, railGroups, sectionsNow, splitZone } from '../../src/ui/panelInfo';
+import { groupWord, infoFor, isSection, registerPanelInfo, matchPanel, PANEL_INFO, planRight, railGroups, sectionsNow, splitZone } from '../../src/ui/panelInfo';
 import { folded, foldAll, onlyOpen, setFolded } from '../../src/ui/rightStyle';
 
 // A feature adds its own entry when it is on.
@@ -39,6 +39,30 @@ describe('right side: which panel goes where', () => {
       { group: 'learn', ids: ['help', 'quests'] },
       { group: 'more', ids: ['plugin.x'] },
     ]);
+  });
+
+  it('plans stacked groups for one rail: Properties only in the first, the rest are plain places', () => {
+    const plan = planRight(
+      [
+        { tabs: ['tool-options', 'library', 'colors'], active: 'colors' },
+        { tabs: ['colors2', 'preview'], active: null },
+        { tabs: ['effects'], active: 'effects' },
+      ],
+      true,
+    );
+    expect(plan[0]).toMatchObject({ index: 0, sections: ['tool-options', 'colors'], active: 'colors', onProps: true, places: [{ group: 'make', ids: ['library'] }] });
+    expect(plan[1]).toMatchObject({ sections: [], active: 'colors2', onProps: false });
+    // A Properties section dragged into a lower group is just a place there.
+    expect(plan[2]).toMatchObject({ sections: [], onProps: false });
+    expect(plan[2].places.flatMap((g) => g.ids)).toEqual(['effects']);
+    expect(planRight([{ tabs: ['tool-options', 'library'], active: 'library' }], false)[0].sections).toEqual([]);
+  });
+
+  it('names stacked groups by where they sit', () => {
+    expect(groupWord(0, 1)).toBe('Right side');
+    expect([0, 1].map((i) => groupWord(i, 2))).toEqual(['Top', 'Bottom']);
+    expect([0, 1, 2].map((i) => groupWord(i, 3))).toEqual(['Top', 'Middle', 'Bottom']);
+    expect([0, 1, 2, 3].map((i) => groupWord(i, 4))).toEqual(['Top', 'Upper', 'Lower', 'Bottom']);
   });
 
   it('knows every built-in right panel, with a sentence each', () => {

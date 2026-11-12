@@ -595,7 +595,7 @@ Prefer no dragging? Right-click a tab (or press the menu key on it) and choose *
 
 ## Fill a group
 
-Drag any tab onto another group's tab bar, or into its body, to put it there. Press **Move into the group above** or **below** in a tab's menu to do the same without dragging. A group left with no tabs goes away, and the one beside it takes the room.
+Drag any tab (or a name on the right-hand rail) onto another group's tab bar or heading, or into its body, to put it there. Press **Move into the group above** or **below** in a tab's menu to do the same without dragging. A group left with no tabs goes away, and the one beside it takes the room.
 
 ## Resize
 
@@ -607,7 +607,7 @@ Drag the tabs into one group again, or right-click a tab and choose **Join this 
 
 ## On the right side
 
-The right side keeps its **Properties** and rail in the first group, at the top. Any group you stack under it is a plain group of tabs across the whole width of the side, with its own tab bar. Fold the side away and every group shrinks to its icons.
+The right side has one rail for all its groups. Each group gets a heading on the rail (**Top**, **Bottom**, and so on) with its panels listed under it, and the group's panel shows in its own box beside the rail, with the line between boxes to pull. **Properties** stays at the top of the first group. Drag a name on the rail to move a panel between groups. Fold the side away and the rail stays, headings and all. (If you set the right side to plain tabs in Preferences, each group has its own tab bar instead.)
 
 ## Kept with your workspace
 
