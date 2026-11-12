@@ -62,7 +62,7 @@ describe('.frameling file', () => {
     const bytes = saveFile(doc, '9.9.9', new Date('2026-01-02T03:04:05Z'));
     expect([bytes[0], bytes[1]]).toEqual([0x50, 0x4b]);
     const loaded = loadFile(bytes);
-    expect(loaded.manifest).toMatchObject({ format: 'frameling', version: 1, app: '9.9.9', created: '2026-01-02T03:04:05.000Z', name: 'Round trip' });
+    expect(loaded.manifest).toMatchObject({ format: 'frameling', version: 2, app: '9.9.9', created: '2026-01-02T03:04:05.000Z', name: 'Round trip' });
     const pixelId = Object.values(doc.drawings).find((d) => d.kind === 'pixel')!.id;
     // The pixels live as a png, named in doc.json.
     const text = new TextDecoder('latin1').decode(bytes);

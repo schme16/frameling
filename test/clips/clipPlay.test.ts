@@ -10,11 +10,16 @@ import {
   directedPosition,
   entryFrame,
   holdFrame,
+  holdPosition,
+  stillPositions,
+  repeatWords,
   indexOfPosition,
   playWords,
   readClip,
 } from '../../src/core/clipPlay';
-import { loadFile, saveFile } from '../../src/io/file';
+import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
+import { loadFile, migrate, saveFile } from '../../src/io/file';
+import { FORMAT_VERSION } from '../../src/core/format';
 import { docWith } from '../timeline/helpers';
 
 describe('one pass of a clip', () => {
@@ -39,11 +44,28 @@ describe('where it is after some steps', () => {
     expect(directedPosition(3, 3, 'forward', 1)).toEqual({ pos: 2, done: true });
     expect(directedPosition(3, 3, 'reverse', 1)).toEqual({ pos: 0, done: true });
   });
-  it('a back and forth clip that plays once ends where it started', () => {
-    const seen = [0, 1, 2, 3].map((i) => directedPosition(i, 3, 'pingpong', 1));
-    expect(seen.map((s) => s.pos)).toEqual([0, 1, 2, 1]);
-    expect(directedPosition(4, 3, 'pingpong', 1)).toEqual({ pos: 0, done: true });
-    expect(directedPosition(4, 3, 'pingpong-reverse', 1)).toEqual({ pos: 2, done: true });
+  it('back and forth counts each direction as one: 1 is there only, 2 there and back, 3 there, back, there', () => {
+    const run = (plays: number, dir: 'pingpong' | 'pingpong-reverse' = 'pingpong') => bakedPositions(4, dir, plays);
+    expect(run(1)).toEqual([0, 1, 2, 3]);
+    expect(run(2)).toEqual([0, 1, 2, 3, 2, 1, 0]);
+    expect(run(3)).toEqual([0, 1, 2, 3, 2, 1, 0, 1, 2, 3]);
+    expect(run(1, 'pingpong-reverse')).toEqual([3, 2, 1, 0]);
+    expect(run(2, 'pingpong-reverse')).toEqual([3, 2, 1, 0, 1, 2, 3]);
+    expect(run(3, 'pingpong-reverse')).toEqual([3, 2, 1, 0, 1, 2, 3, 2, 1, 0]);
+  });
+  it('holds where the last direction ends', () => {
+    expect(directedPosition(3, 4, 'pingpong', 1)).toEqual({ pos: 3, done: false });
+    expect(directedPosition(4, 4, 'pingpong', 1)).toEqual({ pos: 3, done: true });
+    expect(directedPosition(7, 4, 'pingpong', 2)).toEqual({ pos: 0, done: true });
+    expect(directedPosition(10, 4, 'pingpong', 3)).toEqual({ pos: 3, done: true });
+    expect(directedPosition(4, 4, 'pingpong-reverse', 1)).toEqual({ pos: 0, done: true });
+    expect(directedPosition(7, 4, 'pingpong-reverse', 2)).toEqual({ pos: 3, done: true });
+    expect(holdPosition(4, 'pingpong', 2)).toBe(0);
+    expect(holdPosition(4, 'pingpong-reverse', 3)).toBe(0);
+  });
+  it('two frames and one frame still bounce', () => {
+    expect(bakedPositions(2, 'pingpong', 3)).toEqual([0, 1, 0, 1]);
+    expect(bakedPositions(1, 'pingpong', 3)).toEqual([0, 0, 0]);
   });
   it('plays N times, then holds', () => {
     const order = [];
@@ -67,11 +89,12 @@ describe('the whole order, for formats with no direction of their own', () => {
   it('bakes one pass for a loop and every pass for a repeat', () => {
     expect(bakedPositions(3, 'pingpong', Infinity)).toEqual([0, 1, 2, 1]);
     expect(bakedPositions(3, 'forward', 2)).toEqual([0, 1, 2, 0, 1, 2]);
-    expect(bakedPositions(3, 'pingpong', 2)).toEqual([0, 1, 2, 1, 0, 1, 2, 1, 0]);
+    expect(bakedPositions(3, 'pingpong', 2)).toEqual([0, 1, 2, 1, 0]);
     expect(bakedPositions(3, 'reverse', 1)).toEqual([2, 1, 0]);
   });
   it('maps frames through the order', () => {
-    expect(bakeFrames(['a', 'b', 'c'], 'pingpong', 1)).toEqual(['a', 'b', 'c', 'b', 'a']);
+    expect(bakeFrames(['a', 'b', 'c'], 'pingpong', 2)).toEqual(['a', 'b', 'c', 'b', 'a']);
+    expect(bakeFrames(['a', 'b', 'c'], 'pingpong', 1)).toEqual(['a', 'b', 'c']);
   });
   it('works on a clip', () => {
     const c = { start: 4, end: 6, loop: false, direction: 'reverse' as const, repeat: 2 };
@@ -82,7 +105,7 @@ describe('the whole order, for formats with no direction of their own', () => {
   });
   it('baked order and stepping agree', () => {
     for (const dir of ['forward', 'reverse', 'pingpong', 'pingpong-reverse'] as const) {
-      for (const plays of [1, 2, 3]) {
+      for (const plays of [1, 2, 3, 4, 5]) {
         const baked = bakedPositions(4, dir, plays);
         const stepped: number[] = [];
         for (let i = 0; i < baked.length; i++) stepped.push(directedPosition(i, 4, dir, plays).pos);
@@ -92,7 +115,23 @@ describe('the whole order, for formats with no direction of their own', () => {
   });
 });
 
+describe('stills hold each frame once', () => {
+  it('keeps the direction and drops the repeat and the way back', () => {
+    expect(stillPositions(4, 'forward')).toEqual([0, 1, 2, 3]);
+    expect(stillPositions(4, 'reverse')).toEqual([3, 2, 1, 0]);
+    expect(stillPositions(4, 'pingpong')).toEqual([0, 1, 2, 3]);
+    expect(stillPositions(4, 'pingpong-reverse')).toEqual([3, 2, 1, 0]);
+  });
+});
+
 describe('what a clip says about itself', () => {
+  it('counts back and forth by direction in words', () => {
+    expect(repeatWords('forward', 3)).toBe('3 times');
+    expect(repeatWords('pingpong', 1)).toBe('There only');
+    expect(repeatWords('pingpong', 2)).toBe('There and back');
+    expect(repeatWords('pingpong-reverse', 3)).toBe('3 ways (there, back, there)');
+    expect(repeatWords('pingpong', Infinity)).toBe('Forever');
+  });
   it('reads no direction as forward and a loop as forever', () => {
     expect(clipDirection({})).toBe('forward');
     expect(clipPlays({ loop: true, repeat: 4 })).toBe(Infinity);
@@ -102,7 +141,7 @@ describe('what a clip says about itself', () => {
   it('says it in words', () => {
     expect(playWords({ loop: true })).toBe('loops');
     expect(playWords({ loop: false })).toBe('');
-    expect(playWords({ loop: false, direction: 'pingpong', repeat: 3 })).toBe('back and forth, 3 times');
+    expect(playWords({ loop: false, direction: 'pingpong', repeat: 3 })).toBe('back and forth, 3 ways');
   });
 });
 
@@ -153,5 +192,65 @@ describe('the pixel Preview panel follows the clip too', () => {
     const all = previewFrames(doc, 'all', 0);
     expect(previewPosition(10, all, true)).toEqual({ frame: 0, done: false });
     expect(previewPosition(10, all, false)).toEqual({ frame: 9, done: true });
+  });
+});
+
+describe('old files: a back and forth repeat counted whole trips, now it counts each direction', () => {
+  /** A saved file turned back into one an older Frameling (format 1) wrote. */
+  const asVersion1 = (bytes: Uint8Array): Uint8Array => {
+    const entries = unzipSync(bytes);
+    entries['manifest.json'] = strToU8(JSON.stringify({ ...JSON.parse(strFromU8(entries['manifest.json'])), version: 1 }));
+    return zipSync(entries);
+  };
+  const oldDoc = () => {
+    const doc = docWith([[0, 1]], 12);
+    doc.clips.push(
+      { id: 'a', name: 'trips3', start: 0, end: 3, loop: false, direction: 'pingpong', repeat: 3 },
+      { id: 'b', name: 'once', start: 0, end: 3, loop: false, direction: 'pingpong' },
+      { id: 'c', name: 'backwards', start: 4, end: 7, loop: false, direction: 'pingpong-reverse', repeat: 2 },
+      { id: 'd', name: 'loops', start: 0, end: 3, loop: true, direction: 'pingpong' },
+      { id: 'e', name: 'fwd3', start: 0, end: 3, loop: false, repeat: 3 },
+      { id: 'f', name: 'rev', start: 0, end: 3, loop: false, direction: 'reverse' },
+    );
+    return doc;
+  };
+
+  it('doubles the repeat so an old clip plays the same frames', () => {
+    const old = oldDoc();
+    // What an old file's clips played (whole trips, the turn frames once, ending where they started).
+    const oldOrder = (len: number, trips: number) => {
+      const trip = [...Array(len).keys(), ...[...Array(len).keys()].reverse().slice(1, -1)];
+      return [...Array.from({ length: trips }, () => trip).flat(), 0];
+    };
+    const back = loadFile(asVersion1(saveFile(old, '1.0.0'))).doc;
+    const by = (n: string) => back.clips.find((c) => c.name === n)!;
+    expect(by('trips3').repeat).toBe(6);
+    expect(clipOrder(by('trips3'))).toEqual(oldOrder(4, 3));
+    expect(by('once').repeat).toBe(2);
+    expect(clipOrder(by('once'))).toEqual(oldOrder(4, 1));
+    expect(by('backwards').repeat).toBe(4);
+    expect(clipOrder(by('backwards')).map((f) => f - 4)).toEqual([3, 2, 1, 0, 1, 2, 3, 2, 1, 0, 1, 2, 3]);
+  });
+
+  it('leaves loops, forward and backward clips alone', () => {
+    const back = loadFile(asVersion1(saveFile(oldDoc(), '1.0.0'))).doc;
+    const by = (n: string) => back.clips.find((c) => c.name === n)!;
+    expect('repeat' in by('loops')).toBe(false);
+    expect(by('fwd3').repeat).toBe(3);
+    expect('repeat' in by('rev')).toBe(false);
+  });
+
+  it('does it once: a file saved now is not changed when it opens again', () => {
+    const doc = oldDoc();
+    const now = saveFile(doc, '1.2.3');
+    expect(JSON.parse(strFromU8(unzipSync(now)['manifest.json'])).version).toBe(FORMAT_VERSION);
+    expect(loadFile(now).doc.clips).toEqual(doc.clips);
+  });
+
+  it('migrates the clips of artboards too', () => {
+    const raw = { clips: [], artboards: [{ id: 'x', content: { clips: [{ id: 'k', loop: false, direction: 'pingpong', repeat: 2 }] } }, { id: 'y' }] };
+    const out = migrate(raw, 1);
+    expect(out.artboards[0].content.clips[0].repeat).toBe(4);
+    expect(out.version).toBe(FORMAT_VERSION);
   });
 });

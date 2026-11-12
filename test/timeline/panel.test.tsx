@@ -203,7 +203,8 @@ describe('timeline panel', () => {
     expect(s.get().doc.clips[0].direction).toBe('pingpong');
     expect(host.querySelector('.tl-clip svg')).toBeTruthy();
     open();
-    act(() => item('Once').click());
+    expect([...document.querySelectorAll('.tl-menu-heading')].map((e) => e.textContent)).toContain('Repeat 3 = there, back, there');
+    act(() => item('There only').click());
     expect(s.get().doc.clips[0]).toMatchObject({ loop: false });
     open();
     const box = document.querySelector<HTMLInputElement>('.tl-menu-times input')!;
