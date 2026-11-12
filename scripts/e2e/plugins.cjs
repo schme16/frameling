@@ -12,6 +12,7 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const fs = require('node:fs');
 const path = require('node:path');
+const { installIpcStubs } = require('../ipc-stubs.cjs');
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const root = path.join(__dirname, '../..');
@@ -63,18 +64,15 @@ if (DIAG) app.commandLine.appendSwitch('enable-features', PLUGIN_PROCESS_FEATURE
 console.log(`measuring ${DIAG ? 'on' : 'off'}`);
 
 app.whenReady().then(async () => {
-  for (const ch of ['app:launchFile', 'autosave:read', 'autosave:readKept', 'library:read']) ipcMain.handle(ch, () => null);
-  for (const ch of ['recent:list', 'autosave:listKept', 'library:list']) ipcMain.handle(ch, () => []);
-  for (const ch of ['autosave:write', 'autosave:clear', 'autosave:keep', 'autosave:removeKept', 'recent:add', 'recent:remove', 'recent:clear', 'library:write', 'library:remove']) ipcMain.handle(ch, () => true);
   // The real memory lookup (src/main/pluginMemory.ts) over the real window's frames and process metrics.
   let theWindow = null;
-  ipcMain.handle('plugins:memory', () => {
-    const frames = theWindow.webContents.mainFrame.framesInSubtree.map((f) => ({ url: f.url, pid: f.osProcessId }));
-    return pluginMemory(frames, app.getAppMetrics().map((p) => ({ pid: p.pid, workingSetKb: p.memory.workingSetSize })), process.pid);
+  installIpcStubs(ipcMain, {
+    'plugins:memory': () => {
+      const frames = theWindow.webContents.mainFrame.framesInSubtree.map((f) => ({ url: f.url, pid: f.osProcessId }));
+      return pluginMemory(frames, app.getAppMetrics().map((p) => ({ pid: p.pid, workingSetKb: p.memory.workingSetSize })), process.pid);
+    },
+    'plugins:isolated': () => DIAG,
   });
-  ipcMain.handle('plugins:isolated', () => DIAG);
-  ipcMain.handle('plugins:setDiagnostics', () => undefined);
-  for (const ch of ['app:documentState', 'app:keepUnsavedDone', 'app:saveBeforeCloseDone']) ipcMain.on(ch, () => {});
   const web = process.env.PLUGINS_URL;
   const win = new BrowserWindow({ show: false, width: 1200, height: 800, webPreferences: { ...(web ? {} : { preload: path.join(root, 'dist/preload/preload.cjs') }), contextIsolation: true, sandbox: true, backgroundThrottling: false } });
   theWindow = win;

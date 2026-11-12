@@ -35,7 +35,7 @@ export function FeaturesPage() {
                 )}
               </div>
               <div className="ui-pref-control">
-                <button type="button" role="switch" aria-checked={on} aria-label={`${f.name} on or off`} aria-disabled={user ? true : undefined} aria-describedby={user ? noteId : undefined} className={`ui-switch${on ? ' is-on' : ''}${user ? ' is-disabled' : ''}`} onClick={() => !user && change(f.id, !on)}>
+                <button type="button" role="switch" aria-checked={on} aria-label={`${f.name} on or off`} data-testid={`feature-switch-${f.id}`} aria-disabled={user ? true : undefined} aria-describedby={user ? noteId : undefined} className={`ui-switch${on ? ' is-on' : ''}${user ? ' is-disabled' : ''}`} onClick={() => !user && change(f.id, !on)}>
                   <span className="ui-switch-knob" />
                 </button>
               </div>

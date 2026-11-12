@@ -16,6 +16,7 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const fs = require('node:fs');
 const path = require('node:path');
+const { installIpcStubs } = require('./ipc-stubs.cjs');
 
 const [outDir, ...variants] = process.argv.slice(2).filter((a) => !a.startsWith('--') && !a.endsWith('shoot.cjs'));
 const width = Number(process.env.SHOT_W || 1400);
@@ -81,19 +82,11 @@ app.on('window-all-closed', () => {});
 
 app.whenReady().then(async () => {
   // The real main process answers these; for shots there is no file and no history.
-  for (const ch of ['app:launchFile', 'autosave:read', 'autosave:readKept']) ipcMain.handle(ch, () => null);
+  // The real main process answers these; for shots there is no file and no history (stand-ins in scripts/ipc-stubs.cjs).
   // A step can open a real .frameling file: {"eval": "__framelingIo.openPath('/abs/path.frameling')"}.
-  ipcMain.handle('files:read', (_e, p) => (typeof p === 'string' && p.endsWith('.frameling') && fs.existsSync(p) ? { bytes: new Uint8Array(fs.readFileSync(p)), path: p } : { error: 'No such file.' }));
-  for (const ch of ['recent:list', 'autosave:listKept']) ipcMain.handle(ch, () => []);
-  for (const ch of ['autosave:write', 'autosave:clear', 'autosave:keep', 'autosave:removeKept', 'recent:add', 'recent:remove', 'recent:clear', 'app:documentState']) ipcMain.handle(ch, () => true);
-  for (const ch of ['app:documentState', 'app:keepUnsavedDone', 'app:saveBeforeCloseDone']) ipcMain.on(ch, () => {});
-  // Plugins and templates live in memory for the run.
-  const lib = new Map();
-  ipcMain.handle('plugins:memory', () => ({}));
-  ipcMain.handle('library:list', (_e, kind) => [...lib.keys()].filter((k) => k.startsWith(kind + '/')).map((k) => ({ id: k.slice(kind.length + 1), size: lib.get(k).length, modified: 0 })));
-  ipcMain.handle('library:read', (_e, kind, id) => lib.get(`${kind}/${id}`) ?? null);
-  ipcMain.handle('library:write', (_e, kind, id, bytes) => void lib.set(`${kind}/${id}`, bytes));
-  ipcMain.handle('library:remove', (_e, kind, id) => void lib.delete(`${kind}/${id}`));
+  installIpcStubs(ipcMain, {
+    'files:read': (_e, p) => (typeof p === 'string' && p.endsWith('.frameling') && fs.existsSync(p) ? { bytes: new Uint8Array(fs.readFileSync(p)), path: p } : { error: 'No such file.' }),
+  });
   fs.mkdirSync(outDir, { recursive: true });
   for (const v of variants.length ? variants : ['default::']) {
     const [name, look, theme, steps] = v.split(':');

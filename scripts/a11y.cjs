@@ -12,6 +12,7 @@ const { app, BrowserWindow, ipcMain } = require('electron');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+const { installIpcStubs } = require('./ipc-stubs.cjs');
 
 const args = process.argv.slice(2);
 const flag = (n) => args.includes(n);
@@ -286,17 +287,7 @@ const add = (name, res) => {
 const want = (name) => !only || only.some((o) => name.startsWith(o));
 
 app.whenReady().then(async () => {
-  for (const ch of ['app:launchFile', 'autosave:read', 'autosave:readKept']) ipcMain.handle(ch, () => null);
-  ipcMain.handle('files:read', () => ({ error: 'No such file.' }));
-  for (const ch of ['recent:list', 'autosave:listKept']) ipcMain.handle(ch, () => []);
-  for (const ch of ['autosave:write', 'autosave:clear', 'autosave:keep', 'autosave:removeKept', 'recent:add', 'recent:remove', 'recent:clear', 'app:documentState']) ipcMain.handle(ch, () => true);
-  for (const ch of ['app:keepUnsavedDone', 'app:saveBeforeCloseDone']) ipcMain.on(ch, () => {});
-  const lib = new Map();
-  ipcMain.handle('plugins:memory', () => ({}));
-  ipcMain.handle('library:list', (_e, kind) => [...lib.keys()].filter((k) => k.startsWith(kind + '/')).map((k) => ({ id: k.slice(kind.length + 1), size: lib.get(k).length, modified: 0 })));
-  ipcMain.handle('library:read', (_e, kind, id) => lib.get(`${kind}/${id}`) ?? null);
-  ipcMain.handle('library:write', (_e, kind, id, bytes) => void lib.set(`${kind}/${id}`, bytes));
-  ipcMain.handle('library:remove', (_e, kind, id) => void lib.delete(`${kind}/${id}`));
+  installIpcStubs(ipcMain);
 
   const win = await makeWindow();
   await load(win);
@@ -400,7 +391,7 @@ app.whenReady().then(async () => {
     { n: 'blend modes', panel: 'effects', doc: 'bouncing-logo', opener: '.fx-blend-btn', pop: '.tl-floating', open: 'enter' },
     { n: 'layer options', panel: 'timeline', doc: 'bouncing-ball', opener: '.tl-more', pop: '.tl-floating', open: 'enter' },
     { n: 'hold for', panel: 'timeline', doc: 'bouncing-ball', opener: '.tl-hold-menu', pop: '.tl-floating', open: 'enter' },
-    { n: 'onion skin', panel: 'timeline', doc: 'bouncing-ball', opener: 'button[aria-label="Onion skin settings"]', pop: '.tl-floating', open: 'enter' },
+    { n: 'onion skin', panel: 'timeline', doc: 'bouncing-ball', opener: '[data-testid="timeline.onionSettings"]', pop: '.tl-floating', open: 'enter' },
     { n: 'all panels', panel: null, doc: 'bouncing-ball', opener: '[data-panels-button]', pop: '.rd-picker', open: 'enter' },
     { n: 'tool group', panel: null, doc: 'bouncing-ball', prefs: { toolRail: 'stacked' }, opener: 'button[data-tool-group]', pop: '.ui-tool-fly', open: 'menu' },
     { n: 'swatch menu', panel: 'colors', doc: 'bouncing-ball', opener: '.cv-swatch:not(.cv-swatch-add)', pop: '.cv-menu', open: 'context' },

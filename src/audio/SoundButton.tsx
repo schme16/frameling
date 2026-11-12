@@ -5,7 +5,7 @@ import { runCmd, tip } from '../timeline/cmd';
 export function SoundButton() {
   return (
     <span className="tl-group" role="group" aria-label="Sound">
-      <button type="button" className="tl-btn" title={tip('audio.import', 'Add a sound: speech, music or effects to line your drawings up with')} aria-label="Add a sound" onClick={() => runCmd('audio.import')}>
+      <button type="button" className="tl-btn" title={tip('audio.import', 'Add a sound: speech, music or effects to line your drawings up with')} aria-label="Add a sound" data-testid="audio.import" onClick={() => runCmd('audio.import')}>
         <Icon name="sound" size={16} />
       </button>
     </span>
