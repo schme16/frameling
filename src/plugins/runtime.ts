@@ -1,7 +1,8 @@
 // The host's side of one running plugin. It answers the plugin's messages, and checks every one of them: the plugin
 // can send anything at all down its port, so nothing it says is trusted. It knows nothing about the DOM or the app;
 // the manager hands it a transport (the sandbox) and hooks (the store, registries and toasts).
-import type { Doc } from '../core/format';
+import { cleanRepeat, clipDirection } from '../core/clipPlay';
+import type { Clip, ClipDirection, Doc } from '../core/format';
 import { encodePng } from '../io/png';
 import type { Permission, PluginManifest } from './manifest';
 import { sanitizeUi, type UiNode } from './ui-schema';
@@ -43,6 +44,28 @@ export interface ExportFrame {
   data: Uint8ClampedArray;
 }
 
+/**
+ * A clip as a plugin's exporter sees it. `direction` and `repeat` were added after the first version (the plugin API
+ * version did not change): a plugin that does not read them keeps working. The frames it gets are the range in order,
+ * unbaked, so a plugin that wants the play order builds it from these.
+ */
+export interface ExportClip {
+  name: string;
+  start: number;
+  end: number;
+  /** Plays for ever. */
+  loop: boolean;
+  /** Which way it plays: 'forward', 'reverse', 'pingpong' (0 to n-1 and back) or 'pingpong-reverse'. */
+  direction: ClipDirection;
+  /** How many times it plays when `loop` is false (1 = once). Not used when `loop` is true. */
+  repeat: number;
+}
+
+/** The clips of a document as an exporter plugin is told about them. */
+export function exportClips(clips: Pick<Clip, 'name' | 'start' | 'end' | 'loop' | 'direction' | 'repeat'>[]): ExportClip[] {
+  return clips.map((c) => ({ name: c.name, start: c.start, end: c.end, loop: c.loop, direction: clipDirection(c), repeat: cleanRepeat(c.repeat) ?? 1 }));
+}
+
 export interface ExportInfo {
   name: string;
   fps: number;
@@ -51,7 +74,7 @@ export interface ExportInfo {
   scale: number;
   /** The document frame each picture is (the range may not start at 0). */
   frameNumbers: number[];
-  clips: { name: string; start: number; end: number; loop: boolean }[];
+  clips: ExportClip[];
   markers: { name: string; frame: number }[];
 }
 

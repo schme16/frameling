@@ -8,7 +8,7 @@ import { can } from '../platform';
 import { backgroundFor, drawFrame, makeCanvas, readPixels } from '../export/draw';
 import { defaultSettings, planExport } from '../export/plan';
 import { runtimeOf } from './manager';
-import type { ExportFrame, PluginExporterDef } from './runtime';
+import { exportClips, type ExportFrame, type PluginExporterDef } from './runtime';
 
 export interface PluginExportJob {
   pluginId: string;
@@ -62,7 +62,7 @@ export async function runPluginExport(job: PluginExportJob, choice: PluginExport
     height: plan.height,
     scale: choice.scale,
     frameNumbers,
-    clips: doc.clips.map((c) => ({ name: c.name, start: c.start, end: c.end, loop: c.loop })),
+    clips: exportClips(doc.clips),
     markers: doc.markers.map((m) => ({ name: m.name, frame: m.frame })),
   };
   let files;
