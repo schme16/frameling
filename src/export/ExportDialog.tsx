@@ -33,7 +33,7 @@ import { isFeatureOn } from '../features/host';
 import { useFeaturesVersion } from '../features/use';
 import { templateExport } from '../templates/setup';
 import { ArtboardExportPicker } from '../artboards/ExportPicker';
-import { artboardExport, artboardSummary, planArtboards } from '../artboards/export';
+import { artboardExport, artboardSummary, planArtboards, singleFrameNote } from '../artboards/export';
 import { customPicture } from '../artboards/fit';
 import { pixelExportStart } from '../pixel/workspace';
 import { sheetExported } from '../pixel/moments';
@@ -447,7 +447,7 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
               )}
             </fieldset>
           ) : (
-            <p className="ex-note">Exports frame {plan.range.start + 1}, the one you are looking at.</p>
+            <p className="ex-note">{singleFrameNote(abPlan, plan.range.start)}</p>
           )}
 
           {s.format === 'lottie' ? (

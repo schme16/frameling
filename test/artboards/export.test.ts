@@ -8,7 +8,7 @@ import { addArtboard, activeId, artboardDoc, artboardsOf, findArtboard } from '.
 import { packArtboardAtlas } from '../../src/artboards/pack';
 import { buildReel, reelAt } from '../../src/artboards/player';
 import { goToArtboard, installArtboards, moveArtboardTo, openArtboardUnder, resetArtboardView, resizeArtboard } from '../../src/artboards/ops';
-import { artboardExport, artboardSummary, planArtboards, setArtboardExport } from '../../src/artboards/export';
+import { artboardExport, artboardSummary, planArtboards, setArtboardExport, singleFrameNote } from '../../src/artboards/export';
 import { setViewport } from '../../src/canvas/controller';
 
 function img(w: number, h: number, fill: number): RawImage {
@@ -167,7 +167,7 @@ describe('the timeline follows the artboard you press on', () => {
 });
 
 describe('the Export footer for several artboards', () => {
-  const setup = (format: 'gif' | 'sheet') => {
+  const setup = (format: 'gif' | 'sheet' | 'png') => {
     resetArtboardView();
     const doc = sprites();
     resetStore(doc);
@@ -226,5 +226,16 @@ describe('the Export footer for several artboards', () => {
     setArtboardExport({ mode: 'atlas' });
     const a = planArtboards(store().rootDoc(), s, 0)!;
     expect(artboardSummary(a)).toBe('5 frames on one sheet, sizes vary');
+  });
+
+  it('a still format says one frame from each board, not the open board\'s frame', () => {
+    const { s } = setup('png');
+    expect(singleFrameNote(null, 3)).toBe('Exports frame 4, the one you are looking at.');
+    setArtboardExport({ mode: 'each' });
+    const a = planArtboards(store().rootDoc(), s, 3)!;
+    expect(singleFrameNote(a, 3)).toBe('Exports one frame from each of the 2 boards, the one each was last showing.');
+    const [, run] = artboardsOf(store().rootDoc());
+    setArtboardExport({ ids: [run.id] });
+    expect(singleFrameNote(planArtboards(store().rootDoc(), s, 3)!, 3)).toBe('Exports one frame, the one that board was last showing.');
   });
 });

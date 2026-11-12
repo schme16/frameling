@@ -170,6 +170,16 @@ export function artboardSummary(a: ArtboardPlan, printed = ''): string {
 }
 
 /**
+ * The Export dialog's note for a format that makes one frame: with several boards it is one frame from each board
+ * (the one it was last showing), not the frame of the open board. `frame` is the open board's frame, from 0.
+ */
+export function singleFrameNote(a: ArtboardPlan | null, frame: number): string {
+  if (!a || a.mode !== 'each' || a.files < 1) return `Exports frame ${frame + 1}, the one you are looking at.`;
+  if (a.files === 1) return 'Exports one frame, the one that board was last showing.';
+  return `Exports one frame from each of the ${a.files} boards, the one each was last showing.`;
+}
+
+/**
  * Exports several artboards. `exportOne` is the Export dialog's ordinary export of a given document (it asks where
  * to save). Resolves like it: 'done', 'cancelled' or 'stopped'.
  */
