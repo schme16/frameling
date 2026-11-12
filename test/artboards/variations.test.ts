@@ -85,11 +85,16 @@ describe('variations: making one', () => {
     const c = a.content!;
     expect(c.layers.map((l) => l.id)).toEqual(['L2', 'L1']);
     expect(c.width).toBe(200);
-    // Its keys point at its own drawing ids, which are the original's drawings until something changes.
+    // Closed, its keys point straight at the original's drawings (no copy per key), until it overrides one.
     const cel = layerOf(c, 'L1').cels[0];
-    expect(cel.drawingId).toBe(aliasId('d1', v));
-    const own = doc().drawings[cel.drawingId] as VectorDrawing;
-    expect(own.id).toBe(cel.drawingId);
+    expect(cel.drawingId).toBe('d1');
+    expect(Object.keys(doc().drawings).filter((k) => k.endsWith(`~${v}`))).toEqual([]);
+    expect(layerOf(c, 'L1')).toBe(layerOf(artboardsOf(doc())[0].content ?? { layers: doc().layers }, 'L1'));
+    // Open, it has its own drawing id for every key: the original's drawing until an edit changes it.
+    open(v);
+    const own = doc().drawings[layerOf(doc(), 'L1').cels[0].drawingId] as VectorDrawing;
+    expect(layerOf(doc(), 'L1').cels[0].drawingId).toBe(aliasId('d1', v));
+    expect(own.id).toBe(aliasId('d1', v));
     expect(own.shapes).toBe((doc().drawings.d1 as VectorDrawing).shapes);
     expect(variationsOf(doc(), root())).toHaveLength(1);
     expect(familyIds(doc(), v)).toEqual([root(), v]);
@@ -648,8 +653,10 @@ describe('variations: settling only what an edit touched', () => {
     open(root());
     update('original drawing', (d) => void (shape(d, 'd2', 's3').fill = '#222222'));
     inStep();
-    expect(shape(doc(), aliasId('d2', b), 's3').fill).toBe('#222222');
-    expect(shape(doc(), aliasId('d2', a), 's3').fill).toBe('#222222');
+    // Variations that override nothing of d2 point at the original's drawing, so they follow it by themselves.
+    expect(layerOf(findArtboard(doc(), b)!.content!, 'L1').cels[1].drawingId).toBe('d2');
+    expect(findArtboard(doc(), a)!.content!.layers.find((l) => l.id === 'L1')!.cels[1].drawingId).toBe('d2');
+    expect(doc().drawings[aliasId('d2', b)]).toBeUndefined();
     update('original key', (d) => void d.layers.find((l) => l.id === 'L1')!.cels.push({ id: 'c8', start: 8, length: 1, drawingId: 'd1' }));
     inStep();
     expect(findArtboard(doc(), b)!.content!.layers.find((l) => l.id === 'L1')!.cels.some((c) => c.id === 'c8')).toBe(true);
@@ -966,5 +973,114 @@ describe('variations: redrawn pictures are stored as what changed', () => {
     expect([mine.cells[3], mine.cells[41], mine.cells[4]]).toEqual([9, 7, 5]);
     expect((loaded.drawings[t.id] as TilemapDrawing).cells[3]).toBe(5);
     expect(findArtboard(loaded, v)!.overrides!.drawings![t.id]).toEqual({ replaced: true });
+  });
+});
+
+describe('variations: a closed variation only has copies of what it overrides', () => {
+  const copies = (v: string) => Object.keys(doc().drawings).filter((k) => k.endsWith(`~${v}`));
+  const celsOf = (c: { layers: Layer[] }, lid: string) => layerOf(c, lid).cels.map((x) => x.drawingId);
+  const inStep = () => expect(settleVariations(doc())).toBeNull();
+
+  it('closing keeps copies for overridden drawings only, opening gives every key one again', () => {
+    const v = make();
+    open(v);
+    // Open: every key has its own drawing.
+    expect(celsOf(doc(), 'L1')).toEqual([aliasId('d1', v), aliasId('d2', v)]);
+    expect(celsOf(doc(), 'L2')).toEqual([aliasId('d3', v)]);
+    expect(copies(v).sort()).toEqual([aliasId('d1', v), aliasId('d2', v), aliasId('d3', v)].sort());
+    update('Recolour', (d) => void (shape(d, aliasId('d1', v), 's1').fill = '#ff00ff'));
+    inStep();
+    open(root());
+    inStep();
+    // Closed: the recoloured drawing has a copy, the rest is the original's own.
+    const c = findArtboard(doc(), v)!.content!;
+    expect(celsOf(c, 'L1')).toEqual([aliasId('d1', v), 'd2']);
+    expect(celsOf(c, 'L2')).toEqual(['d3']);
+    expect(copies(v)).toEqual([aliasId('d1', v)]);
+    expect(shape(doc(), aliasId('d1', v), 's1').fill).toBe('#ff00ff');
+    expect(shape(doc(), 'd1', 's1').fill).toBe('#ff0000');
+    // The untouched layer is the original's very layer.
+    expect(layerOf(c, 'L2')).toBe(layerOf(doc(), 'L2'));
+    // Open it again: all keys are its own once more, the override is kept, and a new edit stays in the variation.
+    open(v);
+    inStep();
+    expect(celsOf(doc(), 'L1')).toEqual([aliasId('d1', v), aliasId('d2', v)]);
+    expect(copies(v)).toHaveLength(3);
+    update('Recolour another', (d) => void (shape(d, aliasId('d2', v), 's3').fill = '#123456'));
+    inStep();
+    expect(shape(doc(), 'd2', 's3').fill).toBe('#0000ff');
+    expect(Object.keys(findArtboard(doc(), v)!.overrides!.drawings!).sort()).toEqual(['d1', 'd2']);
+    open(root());
+    inStep();
+    expect(copies(v).sort()).toEqual([aliasId('d1', v), aliasId('d2', v)]);
+  });
+
+  it('an edit of an overridden drawing in the original arrives, an edit of any other costs the variation nothing', () => {
+    const v = make();
+    open(v);
+    update('Recolour', (d) => void (shape(d, aliasId('d1', v), 's1').fill = '#ff00ff'));
+    open(root());
+    const before = findArtboard(doc(), v)!.content;
+    update('original d2', (d) => void (shape(d, 'd2', 's3').fill = '#222222'));
+    inStep();
+    expect(findArtboard(doc(), v)!.content).toBe(before);
+    expect(copies(v)).toEqual([aliasId('d1', v)]);
+    // d1's own override stays, and the rest of d1 follows the original.
+    update('original d1', (d) => void (shape(d, 'd1', 's2').fill = '#333333'));
+    inStep();
+    expect(shape(doc(), aliasId('d1', v), 's1').fill).toBe('#ff00ff');
+    expect(shape(doc(), aliasId('d1', v), 's2').fill).toBe('#333333');
+    // Opened, the variation sees the new d2 through its own copy of it.
+    open(v);
+    expect(shape(doc(), aliasId('d2', v), 's3').fill).toBe('#222222');
+    inStep();
+  });
+
+  it('a reset while closed drops the copy, and the key follows the original again', () => {
+    const v = make();
+    open(v);
+    update('Recolour', (d) => void (shape(d, aliasId('d1', v), 's1').fill = '#ff00ff'));
+    open(root());
+    update('Reset', (d) => void resetVariation(d, v));
+    inStep();
+    expect(copies(v)).toEqual([]);
+    expect(celsOf(findArtboard(doc(), v)!.content!, 'L1')).toEqual(['d1', 'd2']);
+    expect(findArtboard(doc(), v)!.overrides).toEqual({});
+    // Resetting one difference while open keeps every key its own.
+    open(v);
+    update('Recolour', (d) => void (shape(d, aliasId('d1', v), 's1').fill = '#ff00ff'));
+    const item = listDifferences(doc(), v).find((i) => i.reset.t === 'drawing')!;
+    update('Reset one', (d) => void resetDifference(d, v, item.reset));
+    inStep();
+    expect(celsOf(doc(), 'L1')).toEqual([aliasId('d1', v), aliasId('d2', v)]);
+    expect(shape(doc(), aliasId('d1', v), 's1').fill).toBe('#ff0000');
+  });
+
+  it('a variation opened through a file load has its own drawings too, so edits never reach the original', () => {
+    const v = make();
+    open(v);
+    update('Recolour', (d) => void (shape(d, aliasId('d1', v), 's1').fill = '#ff00ff'));
+    const loaded = loadFile(saveFile(doc())).doc;
+    expect(activeId(loaded)).toBe(v);
+    expect(layerOf(loaded, 'L1').cels.map((c) => c.drawingId)).toEqual([aliasId('d1', v), aliasId('d2', v)]);
+    resetStore(loaded);
+    update('Edit', (d) => void (shape(d, aliasId('d2', v), 's3').fill = '#abcdef'));
+    expect(shape(doc(), 'd2', 's3').fill).toBe('#0000ff');
+    expect(findArtboard(doc(), v)!.overrides!.drawings!.d2).toBeTruthy();
+    inStep();
+  });
+
+  it('a size change on a closed variation zooms its own camera keys and keeps the copies tidy', () => {
+    const doc0 = sample();
+    const cam: CameraDrawing = { id: 'k1', kind: 'camera', view: { x: 100, y: 50, zoom: 1, rotation: 0 } };
+    doc0.drawings.k1 = cam;
+    doc0.layers.push({ id: 'C', name: 'Cam', kind: 'camera', visible: true, locked: false, opacity: 1, cels: [{ id: 'ck', start: 0, length: 8, drawingId: 'k1' }] } as Layer);
+    resetStore(doc0);
+    const v = make();
+    update('Resize', (d) => void setVariationSize(d, v, 100, 200, 'fill'));
+    inStep();
+    expect((doc().drawings[aliasId('k1', v)] as CameraDrawing).view.zoom).toBe(2);
+    expect(copies(v)).toEqual([aliasId('k1', v)]);
+    expect(celsOf(findArtboard(doc(), v)!.content!, 'L1')).toEqual(['d1', 'd2']);
   });
 });

@@ -42,6 +42,12 @@ function measure(count: number): string {
   const ids: string[] = [];
   for (let i = 0; i < count; i++) update('Make', (d) => void ids.push(makeVariation(d, activeId(d))!));
   const original = time(edit);
+  // Opening a variation gives every key its own drawing; going back drops the copies it does not override.
+  const home = activeId(store().get().doc);
+  const switching = time(() => {
+    update('Open', (d) => void switchArtboard(d, ids[0]));
+    update('Back', (d) => void switchArtboard(d, home));
+  }, 5);
   update('Open', (d) => void switchArtboard(d, ids[0]));
   const v = aliasId('d5_7', ids[0]);
   let m = 0;
@@ -57,7 +63,7 @@ function measure(count: number): string {
     }),
   );
   expect(findArtboard(store().get().doc, ids[0])!.overrides).toBeTruthy();
-  return `${count} variation(s), 9,600 keys: no variations ${plain.toFixed(2)} ms | edit a drawing of the original ${original.toFixed(2)} ms | edit a drawing in the open variation ${inVariation.toFixed(2)} ms | layer look in the open variation ${layerEdit.toFixed(2)} ms`;
+  return `${count} variation(s), 9,600 keys: no variations ${plain.toFixed(2)} ms | edit a drawing of the original ${original.toFixed(2)} ms | edit a drawing in the open variation ${inVariation.toFixed(2)} ms | layer look in the open variation ${layerEdit.toFixed(2)} ms | open and close it ${switching.toFixed(2)} ms`;
 }
 
 // A benchmark, not a check: it only prints timings, and on a busy machine it can outlast the usual test timeout.

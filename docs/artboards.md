@@ -150,12 +150,19 @@ did not change and that nobody wrote a drawing of is not looked at; a drawing-on
 drawings (`IncrementalDiff`) or re-resolves just the touched ones (`IncrementalResolve`); an edit that touches key lists
 or anything unclear (the whole `drawings` table, the artboard list) does the full pass. On a 9,600-key document
 (40 layers x 240 keys, one drawing per key) the settling now costs about 0.03 ms. What is left per edit is immer
-copying the `drawings` table, which holds one alias per key per variation (see `test/artboards/variationsPerf.test.ts`,
-which prints the numbers). A future step would be to not make aliases for closed variations' unchanged drawings.
+copying the `drawings` table (see `test/artboards/variationsPerf.test.ts`, which prints the numbers; run it with
+`VARIATIONS_PERF=1`). A variation that is **not open** keeps a copy only of the drawings it overrides, so the table is
+at most twice the original's however many variations there are: editing a drawing of the original went from 16 ms
+(one variation) and 55 ms (four) to 2 ms in both.
 
-**Own drawings.** A variation's keys point at its own drawings in `doc.drawings`, `<original id>~<artboard id>`, which
-are the original's object with a different `id` until an edit replaces it (immer copies on write, so the original is
-never touched, and a tool that writes `doc.drawings[drawing.id]` lands on the right one). A vector recolour is stored
+**Own drawings.** The **open** variation's keys all point at its own drawings in `doc.drawings`,
+`<original id>~<artboard id>`, which are the original's object with a different `id` until an edit replaces it (immer
+copies on write, so the original is never touched, and a tool that writes `doc.drawings[drawing.id]` lands on the
+right one). A variation that is **closed** points a key at its own copy only when it overrides that drawing; every other
+key points straight at the original's drawing, so the original's edits reach it with no work and no table entry
+(`resolveContent` with `all` false, the default). Opening one (any `switchArtboard`, or a file that was saved on a
+variation) makes the settler give every key its copy (`openAliasing`; a few tens of milliseconds for 9,600 keys, one
+immer patch per copy), and closing it drops the copies nobody overrides. A vector recolour is stored
 as shape property patches (so geometry edits to the original still arrive); a pixel or tile edit makes the variation's
 drawing for that key its own (`replaced`) and tools work on the whole drawing in memory. **In a file** such a drawing is
 saved as what changed (`variationDiffs` in `variationsIo.ts`): the bounding rectangle of the changed pixels as a small

@@ -3,9 +3,12 @@
  * (`Artboard.overrides`): size, colours, timing, a layer's look, a drawing's shapes. Pure functions, no DOM.
  *
  * How it fits the artboards model: the open artboard's content is the document's own fields, so a variation that is
- * open is edited like any other artboard. Its cels point at its own drawings in `doc.drawings`, named
+ * open is edited like any other artboard. While it is open its cels point at its own drawings in `doc.drawings`, named
  * `<original id>~<variation id>` (the same object as the original's until an edit changes it, with its own `id`, so a
- * tool that writes by `drawing.id` never reaches the original's). After every edit `settleVariations` (run by the
+ * tool that writes by `drawing.id` never reaches the original's). While it is closed only the drawings it overrides
+ * have such a copy; its other keys point straight at the original's drawings, so editing the original copies no
+ * per-variation table. Opening aliases every key, closing drops the copies nobody overrides. After every edit
+ * `settleVariations` (run by the
  * store, in the same undo step) does the bookkeeping in both directions:
  *   - the open variation's overrides are worked out again from what is on the stage (`diffContent`);
  *   - a variation that is not open gets its content worked out from its original and its overrides
@@ -362,35 +365,44 @@ function aliasObject(d: Drawing, alias: Id): Drawing {
   return hit;
 }
 
-const aliasCel = (c: Cel, vid: Id, baseDrawings: Record<Id, Drawing>): Cel => (baseDrawings[c.drawingId] ? { ...c, drawingId: aliasId(c.drawingId, vid) } : c);
+/** No overrides: a closed variation with no changed drawings aliases nothing. */
+const NO_DRAWINGS: Record<Id, DrawingOverride> = {};
 
-const resolvedLayerMemo = new WeakMap<Layer, Map<Id, { item: Item<ListOverride<Cel>> | undefined; out: Layer }>>();
+/** The key with its own drawing id, when the drawing exists and (for a closed variation, `only` set) the variation overrides it. */
+const aliasCel = (c: Cel, vid: Id, baseDrawings: Record<Id, Drawing>, only?: Record<Id, DrawingOverride>): Cel => (baseDrawings[c.drawingId] && (!only || only[c.drawingId]) ? { ...c, drawingId: aliasId(c.drawingId, vid) } : c);
 
-function resolveLayer(b: Layer, item: Item<ListOverride<Cel>> | undefined, vid: Id, baseDrawings: Record<Id, Drawing>): Layer {
+const resolvedLayerMemo = new WeakMap<Layer, Map<Id, { item: Item<ListOverride<Cel>> | undefined; only: Record<Id, DrawingOverride> | undefined; out: Layer }>>();
+
+function resolveLayer(b: Layer, item: Item<ListOverride<Cel>> | undefined, vid: Id, baseDrawings: Record<Id, Drawing>, only?: Record<Id, DrawingOverride>): Layer {
   let m = resolvedLayerMemo.get(b);
   if (!m) resolvedLayerMemo.set(b, (m = new Map()));
   const hit = m.get(vid);
-  if (hit && hit.item === item) return hit.out;
-  const cels = applyList(b.cels, item?.sub, (c, it) => applyPatch(c, it?.patch)).map((c) => aliasCel(c, vid, baseDrawings));
-  cels.sort((x, y) => x.start - y.start);
-  const out = { ...applyPatch(b, item?.patch), cels } as Layer;
-  out.id = b.id;
-  m.set(vid, { item, out });
+  if (hit && hit.item === item && hit.only === only) return hit.out;
+  let out: Layer;
+  // Nothing of this layer is changed or aliased: it is the original's own layer.
+  if (!item && only && !b.cels.some((c) => only[c.drawingId])) out = b;
+  else {
+    const cels = applyList(b.cels, item?.sub, (c, it) => applyPatch(c, it?.patch)).map((c) => aliasCel(c, vid, baseDrawings, only));
+    cels.sort((x, y) => x.start - y.start);
+    out = { ...applyPatch(b, item?.patch), cels } as Layer;
+    out.id = b.id;
+  }
+  m.set(vid, { item, only, out });
   return out;
 }
 
-const addedLayerMemo = new WeakMap<Layer, Map<Id, Layer>>();
+const addedLayerMemo = new WeakMap<Layer, Map<Id, { only: Record<Id, DrawingOverride> | undefined; out: Layer }>>();
 
-function resolveAdded(l: Layer, vid: Id, baseDrawings: Record<Id, Drawing>): Layer {
+function resolveAdded(l: Layer, vid: Id, baseDrawings: Record<Id, Drawing>, only?: Record<Id, DrawingOverride>): Layer {
   let m = addedLayerMemo.get(l);
   if (!m) addedLayerMemo.set(l, (m = new Map()));
   let hit = m.get(vid);
-  if (!hit) {
-    const cels = l.cels.map((c) => aliasCel(c, vid, baseDrawings));
+  if (!hit || hit.only !== only) {
+    const cels = l.cels.map((c) => aliasCel(c, vid, baseDrawings, only));
     cels.sort((x, y) => x.start - y.start);
-    m.set(vid, (hit = { ...l, cels } as Layer));
+    m.set(vid, (hit = { only, out: { ...l, cels } as Layer }));
   }
-  return hit;
+  return hit.out;
 }
 
 export interface Resolved {
@@ -432,9 +444,12 @@ export interface IncrementalResolve {
  * A variation's content: the original's with the overrides on. `have` is where the drawings that are the variation's
  * own copies (pixels, tiles) are looked up, normally `doc.drawings`. With `inc` only the drawings that can have changed
  * are returned (the ones in layers that are new since `inc.prev`, and the touched ones the variation has already).
+ * Only the drawings the variation overrides get their own id, unless `all` (the open variation, whose tools write by
+ * drawing id): then every key does.
  */
-export function resolveContent(base: ArtboardContent, baseDrawings: Record<Id, Drawing>, ov: VariationOverrides | undefined, vid: Id, have: Record<Id, Drawing> = baseDrawings, inc?: IncrementalResolve): Resolved {
+export function resolveContent(base: ArtboardContent, baseDrawings: Record<Id, Drawing>, ov: VariationOverrides | undefined, vid: Id, have: Record<Id, Drawing> = baseDrawings, inc?: IncrementalResolve, all = false): Resolved {
   const o = ov ?? {};
+  const only = all ? undefined : (o.drawings ?? NO_DRAWINGS);
   const content: ArtboardContent = { ...base };
   if (o.stage) {
     const c = content as unknown as Record<string, unknown>;
@@ -444,8 +459,8 @@ export function resolveContent(base: ArtboardContent, baseDrawings: Record<Id, D
   content.layers = applyList(
     base.layers,
     o.layers,
-    (b, it) => resolveLayer(b, it, vid, baseDrawings),
-    (l) => resolveAdded(l, vid, baseDrawings),
+    (b, it) => resolveLayer(b, it, vid, baseDrawings, only),
+    (l) => resolveAdded(l, vid, baseDrawings, only),
   );
   const sound = resolveAudio(base.audio, o.audio);
   if (sound?.length) content.audio = sound;
@@ -469,6 +484,45 @@ export function resolveContent(base: ArtboardContent, baseDrawings: Record<Id, D
     }
   }
   return { content, drawings };
+}
+
+const openLayerMemo = new WeakMap<Layer, Map<Id, Layer>>();
+
+/** A layer with every key at the variation's own drawing id (what the open variation needs), or the same layer when it is. */
+function aliasOpenLayer(l: Layer, vid: Id, drawings: Record<Id, Drawing>): Layer {
+  let m = openLayerMemo.get(l);
+  if (!m) openLayerMemo.set(l, (m = new Map()));
+  let hit = m.get(vid);
+  if (!hit) {
+    const need = (c: Cel) => !!drawings[c.drawingId] && splitAlias(c.drawingId)?.vid !== vid;
+    hit = l.cels.some(need) ? ({ ...l, cels: l.cels.map((c) => (need(c) ? { ...c, drawingId: aliasId(c.drawingId, vid) } : c)) } as Layer) : l;
+    m.set(vid, hit);
+  }
+  return hit;
+}
+
+/**
+ * What the open variation needs so that every key has its own drawing (the tools write by drawing id, so a key that
+ * still pointed at the original's drawing would change the original): the layers, and the copies to put in
+ * `doc.drawings` for the keys that just got one. Null when it is all there already.
+ */
+function openAliasing(doc: Doc, a: Artboard): { layers: Layer[]; drawings: [Id, Drawing][] } | null {
+  const layers = doc.layers.map((l) => aliasOpenLayer(l, a.id, doc.drawings));
+  if (!layers.some((l, i) => l !== doc.layers[i])) return null;
+  const ov = a.overrides ?? {};
+  const drawings: [Id, Drawing][] = [];
+  const seen = new Set<Id>();
+  layers.forEach((l, i) => {
+    if (l === doc.layers[i]) return;
+    l.cels.forEach((c, j) => {
+      if (c === doc.layers[i].cels[j] || seen.has(c.drawingId)) return;
+      seen.add(c.drawingId);
+      const sp = splitAlias(c.drawingId);
+      const d = sp && aliasDrawing(doc.drawings, ov, sp.orig, c.drawingId, doc.drawings);
+      if (d && doc.drawings[c.drawingId] !== d) drawings.push([c.drawingId, d]);
+    });
+  });
+  return { layers, drawings };
 }
 
 function sameContent(a: ArtboardContent | undefined, b: ArtboardContent): boolean {
@@ -541,6 +595,12 @@ function aliasesTouched(ids: Set<Id>, vid: Id): Set<Id> {
   return out;
 }
 
+/** Adds and drops entries of `doc.drawings` (one patch each: immer walks a table put in whole, which costs far more). */
+function editDrawings(d: Draft<Doc>, add: [Id, Drawing][], drop: Id[]): void {
+  for (const k of drop) delete d.drawings[k];
+  for (const [k, v] of add) if (d.drawings[k] !== v) d.drawings[k] = v as never;
+}
+
 /**
  * What to change in the document so that every variation is in step: the open variation's overrides follow what is on
  * the stage, and the others' content follows their original. Null when everything already is. The store runs this
@@ -556,6 +616,20 @@ export function settleVariations(doc: Doc, ctx?: { patches: readonly ImmerPatch[
   const open = activeId(doc);
   const jobs: ((d: Draft<Doc>, a: Draft<Artboard>) => void)[] = [];
   const ids: Id[] = [];
+  const addDrawings: [Id, Drawing][] = [];
+  const dropDrawings: Id[] = [];
+  // Whole-table scans (the copies a closed variation no longer needs) only when everything is checked.
+  let copies: Map<Id, Id[]> | undefined;
+  const copiesOf = (vid: Id): Id[] => {
+    if (!copies) {
+      copies = new Map();
+      for (const k of Object.keys(doc.drawings)) {
+        const sp = k.includes(SEP) ? splitAlias(k) : null;
+        if (sp) (copies.get(sp.vid) ?? copies.set(sp.vid, []).get(sp.vid)!).push(k);
+      }
+    }
+    return copies.get(vid) ?? [];
+  };
   for (let ai = 0; ai < list.length; ai++) {
     const a = list[ai];
     if (!a.variationOf) continue;
@@ -574,29 +648,45 @@ export function settleVariations(doc: Doc, ctx?: { patches: readonly ImmerPatch[
     const mine = everything ? null : aliasesTouched(t!.drawings, a.id);
     if (a.id === open) {
       if (!everything && !srcTouched && !t!.content && !mine!.size) continue;
+      // Opened (or keys added): every key gets its own drawing, so no tool can write to the original's.
+      const own = everything || srcTouched || t!.cels ? openAliasing(doc, a) : null;
+      const cur = own ? { ...takeContent(doc), layers: own.layers } : takeContent(doc);
+      const curDrawings = own?.drawings.length ? { ...doc.drawings, ...Object.fromEntries(own.drawings) } : doc.drawings;
       const inc: IncrementalDiff | undefined = everything || srcTouched || t!.cels ? undefined : { prev: a.overrides?.drawings, check: mine! };
-      const ov = diffContent(base, doc.drawings, takeContent(doc), doc.drawings, a.id, inc);
+      const ov = diffContent(base, doc.drawings, cur, curDrawings, a.id, inc);
       if (a.overrides?.palette) ov.palette = a.overrides.palette;
-      if (!deepEqual(ov, a.overrides ?? {})) {
+      const changed = !deepEqual(ov, a.overrides ?? {});
+      if (changed || own) {
         ids.push(a.id);
-        jobs.push((_d, x) => void (x.overrides = ov));
+        if (own) addDrawings.push(...own.drawings);
+        jobs.push((d, x) => {
+          if (own) d.layers = own.layers as never;
+          if (changed) x.overrides = ov;
+        });
       }
     } else {
-      if (!everything && !srcTouched && !t!.own.has(ai) && !mine!.size) continue;
-      const inc: IncrementalResolve | undefined = everything || !a.content ? undefined : { prev: a.content, touched: touchedOriginals(t!.drawings, a.id) };
+      const touched = everything ? undefined : touchedOriginals(t!.drawings, a.id);
+      // Only drawings the variation overrides have a copy of its own; the others are the original's and follow it by themselves.
+      if (touched) for (const o of [...touched]) if (!a.overrides?.drawings?.[o]) touched.delete(o);
+      if (!everything && !srcTouched && !t!.own.has(ai) && !touched!.size) continue;
+      const inc: IncrementalResolve | undefined = everything || !a.content ? undefined : { prev: a.content, touched: touched! };
       const r = resolveContent(base, doc.drawings, a.overrides, a.id, doc.drawings, inc);
       const stale = Object.entries(r.drawings).filter(([k, v]) => doc.drawings[k] !== v);
-      if (!sameContent(a.content, r.content) || stale.length) {
+      const unused = everything ? copiesOf(a.id).filter((k) => !a.overrides?.drawings?.[splitAlias(k)!.orig]) : [];
+      if (!sameContent(a.content, r.content) || stale.length || unused.length) {
         ids.push(a.id);
-        jobs.push((d, x) => {
-          for (const [k, v] of stale) d.drawings[k] = v as never;
-          x.content = r.content as never;
+        const same = sameContent(a.content, r.content);
+        dropDrawings.push(...unused);
+        addDrawings.push(...(stale as [Id, Drawing][]));
+        jobs.push((_d, x) => {
+          if (!same) x.content = r.content as never;
         });
       }
     }
   }
   if (!jobs.length) return null;
   return (d) => {
+    if (addDrawings.length || dropDrawings.length) editDrawings(d, addDrawings, dropDrawings);
     jobs.forEach((j, i) => {
       const a = d.artboards?.find((x) => x.id === ids[i]);
       if (a) j(d, a);
@@ -706,11 +796,19 @@ function install(d: Doc, vid: Id, ov: VariationOverrides, dropAliases: Id[] = []
   const p = parts(d, vid);
   const target = findArtboard(d, vid);
   if (!p || !target) return;
-  for (const k of dropAliases) delete d.drawings[k];
   const next = normalize(ov);
   target.overrides = next;
-  const r = resolveContent(p.base, p.s.drawings, next, vid);
-  for (const [k, v] of Object.entries(r.drawings)) if (d.drawings[k] !== v) d.drawings[k] = v as never;
+  // The open variation has a drawing of its own for every key; a closed one only for the drawings it overrides.
+  const r = resolveContent(p.base, p.s.drawings, next, vid, p.s.drawings, undefined, p.open);
+  const drop = [...dropAliases];
+  if (!p.open) {
+    // Copies a closed variation no longer needs.
+    for (const k of Object.keys(p.s.drawings)) {
+      const sp = k.includes(SEP) ? splitAlias(k) : null;
+      if (sp?.vid === vid && !next.drawings?.[sp.orig]) drop.push(k);
+    }
+  }
+  editDrawings(d, Object.entries(r.drawings), drop);
   if (p.open) putContent(d, r.content);
   else target.content = r.content;
 }
@@ -984,8 +1082,9 @@ export function setVariationSize(d: Doc, vid: Id, w: number, h: number, mode: Fi
   if (!p) return false;
   const W = Math.max(1, Math.round(w));
   const H = Math.max(1, Math.round(h));
-  const cur = p.open ? takeContent(p.s) : p.a.content!;
-  const r = resolveContent(p.base, p.s.drawings, p.a.overrides, vid);
+  // Worked on with a drawing of its own for every key, which is what the camera keys below are changed through.
+  const r = resolveContent(p.base, p.s.drawings, p.a.overrides, vid, p.s.drawings, undefined, true);
+  const cur = p.open ? takeContent(p.s) : { ...p.a.content!, layers: r.content.layers };
   const content: ArtboardContent = { ...cur, width: W, height: H };
   const drawings: Record<Id, Drawing> = { ...p.s.drawings, ...r.drawings };
   const fid = framingLayerId(vid);
@@ -1011,7 +1110,10 @@ export function setVariationSize(d: Doc, vid: Id, w: number, h: number, mode: Fi
   const ov = diffContent(p.base, p.s.drawings, content, drawings, vid);
   // Drawings made here (the framing key) live in doc.drawings under their own id; the changed aliases come with them.
   for (const l of ov.layers?.added ?? []) for (const c of l.cels) if (drawings[c.drawingId] && !p.s.drawings[c.drawingId]) d.drawings[c.drawingId] = drawings[c.drawingId] as never;
-  for (const [key, v] of Object.entries(drawings)) if (splitAlias(key)?.vid === vid && p.s.drawings[key] !== v) d.drawings[key] = v as never;
+  for (const [key, v] of Object.entries(drawings)) {
+    const sp = splitAlias(key);
+    if (sp?.vid === vid && ov.drawings?.[sp.orig] && p.s.drawings[key] !== v) d.drawings[key] = v as never;
+  }
   install(d, vid, ov);
   return true;
 }
@@ -1196,5 +1298,13 @@ export function familyIds(doc: Doc, id: Id): Id[] {
 export function switchOpenVariation(doc: Doc, id: Id): Doc {
   const a = findArtboard(doc, id);
   if (!a?.variationOf || !a.content) return doc;
-  return produce(doc, (d) => void switchArtboard(d as Doc, id));
+  return produce(doc, (d) => {
+    if (!switchArtboard(d as Doc, id)) return;
+    // Same as the store's settler does on any switch: every key of the open variation gets its own drawing.
+    const s = snap(d as Doc);
+    const own = openAliasing(s, findArtboard(s, id)!);
+    if (!own) return;
+    d.layers = own.layers as never;
+    editDrawings(d, own.drawings, []);
+  });
 }
