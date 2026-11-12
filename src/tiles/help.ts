@@ -26,7 +26,7 @@ Undo works while you draw the tile, and the whole visit counts as one step after
 - **Double-click** it (or press **Enter**) to draw it.
 - **Drag** tiles to put them in a different order. Maps don't change.
 - **Double-click the name** (or press **F2**) to rename it.
-- The buttons along the top: new, duplicate, draw, delete, [tile mode](help:tile-mode), and the **tile size** (16 × 16 to begin with). Changing the size crops or pads every tile from its top-left corner.
+- The buttons along the top: new, duplicate, draw, delete, [tile mode](help:tile-mode), and the **tile size** (16 × 16 to begin with). Changing the size crops or pads every tile from its top-left corner. The same form has **Grid starts at x, y**, see [Where the tile grid starts](help:tile-grid).
 
 Deleting a tile empties the places it was used. Undo puts it all back.
 
@@ -69,6 +69,10 @@ Paint a tile mirrored or turned without drawing a new one:
 
 The buttons are in the Tool options panel too. Game engines get the same flips, so nothing needs redrawing there.
 
+## Where the grid starts
+
+If your tiles do not start at the stage's top-left corner, see [Where the tile grid starts](help:tile-grid).
+
 ## Size
 
 A tilemap layer is as big as the stage, in whole tiles. Its **pixel size** matches your pixel layers, so tiles and sprites line up. Tilemaps animate like any layer: add a key to change the map on a later frame.
@@ -89,6 +93,34 @@ Turn it on with **View > Tile mode** or **Shift+T**. It comes on by itself when 
 While it's on, pixel drawing **wraps**: a line that goes off the right edge comes back on the left, and the paint bucket fills across the edges too. That makes seams easy to fix, because you can draw right over them. You can draw on the copies as well; your pixels land in the matching place on the real stage.
 
 Tile mode works on any pixel layer, so it's handy for backgrounds that scroll forever and patterns for fabric or wallpaper.`,
+  },
+  {
+    id: 'tile-grid',
+    title: 'Where the tile grid starts',
+    section: 'Drawing',
+    media: 'tile-grid.png',
+    summary: 'For tiles that do not start at the top-left corner of the stage: say where the first tile edge sits, by typing it or dragging a handle.',
+    keywords: ['tile grid', 'grid start', 'grid origin', 'offset', 'tilemap', 'aseprite', 'tile edge', 'tile size'],
+    body: `Most levels have a tile edge right at the top-left corner of the stage, and that is how Frameling starts. A drawing brought in from Aseprite can start its tiles a few pixels in. Tell Frameling where, and the tiles line up.
+
+## Type it
+
+1. Open the [Tileset panel](help:tileset) and press the **tile size** button (it says 16 × 16 to begin with).
+2. Fill in **Grid starts at x, y**. They are pixel counts from the stage's top-left corner. **0, 0** means the tiles start at the corner.
+3. Press **Set**.
+
+## Or drag it
+
+With a tile tool on a tilemap layer, a **round handle** sits on the first tile corner. Drag it. Blue lines show where the tiles will fall, and a message says where the grid starts when you let go.
+
+## Good to know
+
+- The grid can start anywhere inside the first tile. Pick a bigger number than the tile is wide and it stops at the last pixel.
+- Tiles already on the map move with the grid. Nothing is lost.
+- It is one step on the undo list.
+- The Godot and Tiled exports use the same start, so the level lines up in the game too.
+
+Related: [Tiles and the Tileset panel](help:tileset), [Tilemap layers](help:tilemaps).`,
   },
   {
     id: 'export-tileset',

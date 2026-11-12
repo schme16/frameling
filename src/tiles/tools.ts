@@ -13,7 +13,8 @@ import { drawTileAt } from '../core/tilemap';
 import { store } from '../core/store';
 import { getHover, setLive } from '../canvas/controller';
 import { activeLayer, EDIT_HINTS, editActiveDrawing } from '../tools/edit';
-import { cellFlags, cellKey, cellLine, docToCell, fillCellRect, findTile, floodCells, getCell, makeCell, setCell, tileDrawingAt } from './model';
+import { cellFlags, clampGrid, cellKey, cellLine, docToCell, fillCellRect, findTile, floodCells, getCell, makeCell, setCell, tileDrawingAt } from './model';
+import { setTileGrid } from './ops';
 import { getTileUi, setTileUi } from './state';
 import { TileToolOptions } from './TileToolOptions';
 
@@ -335,4 +336,118 @@ export const tilePickerTool: Tool = {
   },
 };
 
-for (const t of [tileBrushTool, tileRectTool, tileFillTool, tileEraserTool, tilePickerTool]) registerTool(t);
+// ---------------------------------------------------------------- the grid handle
+
+/** Where the first tile edge sits on the active tilemap layer, in document pixels (the handle's place). */
+function gridHandleAt(doc: Doc, layer: TilemapLayer): { x: number; y: number } {
+  const ts = doc.tileset;
+  return { x: (ts?.gridX ?? 0) * layer.pixelSize, y: (ts?.gridY ?? 0) * layer.pixelSize };
+}
+
+let gridDrag: { gx: number; gy: number } | null = null;
+
+/** The grid start (art pixels, kept inside the first tile) for a pointer position. */
+function gridFromPointer(doc: Doc, layer: TilemapLayer, e: ToolPointer): { gx: number; gy: number } {
+  const ts = doc.tileset;
+  return { gx: clampGrid(e.x / layer.pixelSize, ts?.tileWidth ?? 16), gy: clampGrid(e.y / layer.pixelSize, ts?.tileHeight ?? 16) };
+}
+
+function handleLayer(): { doc: Doc; layer: TilemapLayer } | null {
+  const { doc, ui } = store().get();
+  const layer = findLayer(doc, ui.activeLayerId);
+  return layer && layer.kind === 'tilemap' && doc.tileset ? { doc, layer } : null;
+}
+
+/**
+ * Gives a tile tool the grid handle: a round handle on the first tile corner that you drag to say where the tile
+ * grid starts. Anything not on the handle goes to the tool as usual.
+ */
+function withGridHandle(tool: Tool): Tool {
+  const near = (e: ToolPointer, ctx: ToolContext): boolean => {
+    const h = handleLayer();
+    if (!h) return false;
+    const p = gridHandleAt(h.doc, h.layer);
+    return Math.hypot(e.x - p.x, e.y - p.y) * ctx.zoom <= 9;
+  };
+  return {
+    ...tool,
+    down(e, ctx) {
+      const h = handleLayer();
+      if (h && near(e, ctx)) {
+        gridDrag = gridFromPointer(h.doc, h.layer, e);
+        ctx.requestOverlay();
+        return;
+      }
+      tool.down?.(e, ctx);
+    },
+    move(e, ctx) {
+      const h = handleLayer();
+      if (gridDrag && h) {
+        gridDrag = gridFromPointer(h.doc, h.layer, e);
+        ctx.requestOverlay();
+        return;
+      }
+      tool.move?.(e, ctx);
+    },
+    up(e, ctx) {
+      if (gridDrag) {
+        const { gx, gy } = gridDrag;
+        gridDrag = null;
+        const was = store().get().doc.tileset;
+        if (gx !== (was?.gridX ?? 0) || gy !== (was?.gridY ?? 0)) {
+          setTileGrid(gx, gy);
+          ctx.hint(gx || gy ? `The tile grid now starts ${gx} across and ${gy} down. Undo puts it back.` : 'The tile grid starts at the corner again.');
+        }
+        ctx.requestOverlay();
+        return;
+      }
+      tool.up?.(e, ctx);
+    },
+    hover(e, ctx) {
+      tool.hover?.(e, ctx);
+      ctx.requestOverlay();
+    },
+    cancel(ctx) {
+      gridDrag = null;
+      tool.cancel?.(ctx);
+    },
+    leave(ctx) {
+      gridDrag = null;
+      tool.leave?.(ctx);
+    },
+    overlay(g, ctx) {
+      tool.overlay?.(g, ctx);
+      const h = handleLayer();
+      if (!h) return;
+      const { doc, layer } = h;
+      const ps = layer.pixelSize;
+      const ts = doc.tileset!;
+      const p = gridDrag ? { x: gridDrag.gx * ps, y: gridDrag.gy * ps } : gridHandleAt(doc, layer);
+      const hover = getHover();
+      const hot = !!gridDrag || (!!hover && Math.hypot(hover.x - p.x, hover.y - p.y) * ctx.zoom <= 9);
+      g.save();
+      if (gridDrag) {
+        // While dragging, the grid lines show where the tiles will fall.
+        const tw = ts.tileWidth * ps;
+        const th = ts.tileHeight * ps;
+        g.lineWidth = 1 / ctx.zoom;
+        g.strokeStyle = 'rgba(90, 184, 255, 0.8)';
+        g.beginPath();
+        for (let x = p.x - Math.ceil(p.x / tw) * tw; x <= doc.width; x += tw) (g.moveTo(x, 0), g.lineTo(x, doc.height));
+        for (let y = p.y - Math.ceil(p.y / th) * th; y <= doc.height; y += th) (g.moveTo(0, y), g.lineTo(doc.width, y));
+        g.stroke();
+      }
+      const r = (hot ? 7 : 5) / ctx.zoom;
+      g.beginPath();
+      g.arc(p.x, p.y, r, 0, Math.PI * 2);
+      g.fillStyle = hot ? '#5ab8ff' : 'rgba(255, 255, 255, 0.92)';
+      g.fill();
+      g.lineWidth = 2 / ctx.zoom;
+      g.strokeStyle = '#1d1b26';
+      g.stroke();
+      g.restore();
+    },
+  };
+}
+
+for (const t of [tileBrushTool, tileRectTool, tileFillTool, tileEraserTool, tilePickerTool]) registerTool(withGridHandle(t));

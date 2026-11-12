@@ -258,6 +258,27 @@ module.exports = [
     ],
   },
   {
+    // The tile grid starting a few pixels in: the Tileset panel's size form with Grid starts at x, y, and the handle on the canvas.
+    name: 'tile-grid',
+    prefs: { showTips: false },
+    steps: [
+      js(`${F}.template('tileset')`),
+      wait(600),
+      js(`${F}.showPanel('tileset')`),
+      wait(400),
+      js(`(() => { const st = ${F}.store(); const l = st.get().doc.layers.find((x) => x.name === 'Ground'); st.setUi({ activeLayerId: l.id, tool: 'tile-brush' }); st.update('Grid', (d) => { d.tileset.gridX = 5; d.tileset.gridY = 7; }); })()`),
+      js(`${F}.run('view.fit')`),
+      wait(500),
+      js(`document.querySelector('.tz-size')?.click()`),
+      wait(500),
+      { down: [214, 108] },
+      { held: [217, 111] },
+      { held: [219, 114], after: 300 },
+      { shot: '@', crop: [120, 50, 1070, 680] },
+      { up: [219, 114] },
+    ],
+  },
+  {
     name: 'export-tileset',
     steps: [
       js(`${F}.template('tileset')`),

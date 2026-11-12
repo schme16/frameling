@@ -65,6 +65,12 @@
 .tz-size-form input {
   width: 58px;
 }
+.tz-size-form .tz-grid-start {
+  display: flex;
+  flex-basis: 100%;
+  align-items: end;
+  gap: 6px;
+}
 .tz-size-form small {
   flex-basis: 100%;
   color: var(--muted);

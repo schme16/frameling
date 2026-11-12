@@ -5,7 +5,7 @@
  * Nothing here knows about the store or the DOM, so it runs in tests and in exports. Functions that change a document
  * take the doc (a draft inside `store().update`, or a plain object) and change it in place.
  */
-import { DEFAULT_TILE_SIZE, newPixelDrawing, tileOrigin } from '../core/doc';
+import { DEFAULT_TILE_SIZE, newPixelDrawing, tileOrigin, tilemapGrid } from '../core/doc';
 import type { Doc, Id, PixelDrawing, Tile, TilemapDrawing, TilemapLayer, Tileset } from '../core/format';
 import { TILE_FLIP_D, TILE_FLIP_X, TILE_FLIP_Y, TILE_KEY_MASK } from '../core/format';
 
@@ -213,6 +213,43 @@ export function setTileSize(doc: Doc, w: number, h: number): boolean {
   }
   ts.tileWidth = W;
   ts.tileHeight = H;
+  // A grid start has to stay inside the first tile.
+  if ((ts.gridX ?? 0) >= W) delete ts.gridX;
+  if ((ts.gridY ?? 0) >= H) delete ts.gridY;
+  return true;
+}
+
+/** A grid start made to fit: a whole number from 0 up to the tile size minus 1. */
+export const clampGrid = (v: number, tile: number): number => Math.max(0, Math.min(tile - 1, Math.round(v) || 0));
+
+/**
+ * Sets where a tile edge sits from the stage's top-left corner (0 = the tiles start at the corner). The tiles already
+ * on a map move with the grid, and maps grow to still cover the stage. Returns false when nothing changed.
+ */
+export function setTileGrid(doc: Doc, x: number, y: number): boolean {
+  const ts = ensureTileset(doc);
+  const gx = clampGrid(x, ts.tileWidth);
+  const gy = clampGrid(y, ts.tileHeight);
+  if (gx === (ts.gridX ?? 0) && gy === (ts.gridY ?? 0)) return false;
+  if (gx) ts.gridX = gx;
+  else delete ts.gridX;
+  if (gy) ts.gridY = gy;
+  else delete ts.gridY;
+  for (const layer of doc.layers) {
+    if (layer.kind !== 'tilemap') continue;
+    const g = tilemapGrid(doc, layer);
+    for (const cel of layer.cels) {
+      const d = doc.drawings[cel.drawingId];
+      if (!d || d.kind !== 'tilemap' || (d.columns >= g.columns && d.rows >= g.rows)) continue;
+      const columns = Math.max(d.columns, g.columns);
+      const rows = Math.max(d.rows, g.rows);
+      const cells = new Uint32Array(columns * rows);
+      for (let r = 0; r < d.rows; r++) cells.set(d.cells.subarray(r * d.columns, (r + 1) * d.columns), r * columns);
+      d.columns = columns;
+      d.rows = rows;
+      d.cells = cells;
+    }
+  }
   return true;
 }
 
