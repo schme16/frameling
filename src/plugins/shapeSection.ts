@@ -5,7 +5,7 @@ import { registerPanel, unregisterPanel } from '../core/registry';
 import { syncPanels } from '../ui/dock';
 import { syncDynamicCommands } from '../ui/dynamic';
 import { PANEL_INFO, registerPanelInfo } from '../ui/panelInfo';
-import { plugins } from './manager';
+import { plugins } from './state';
 import { pickedPluginShape } from './shapeProps';
 
 export const SHAPE_SECTION = 'plugin-shape';
