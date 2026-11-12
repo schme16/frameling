@@ -4,6 +4,7 @@ import type { Doc } from '../../src/core/format';
 import { strokeOutline } from '../../src/core/render';
 import { docToLottie, smoothTrack } from '../../src/export/lottie';
 import { newParticles } from '../../src/particles/model';
+import { defaultValues } from '../../src/effects/model';
 import { fitClosed, sampleMidpointSpline, type Cubic, type Pt } from '../../src/export/curve-fit';
 import { addVectorLayer, fill, hold, rectPath, stroke, vectorDrawing } from '../../src/templates/build';
 
@@ -168,5 +169,18 @@ describe('Lottie export, smaller files', () => {
       expect(first.v[1][0]).toBeLessThan(0);
       expect(g.it.find((x: { ty: string }) => x.ty === 'tr').p).toBeDefined();
     }
+  });
+
+  it('Soften stays a Lottie blur unless pictures are asked for; where pictures cannot be made it stays a blur', () => {
+    const doc = newDoc({ width: 200, height: 100, length: 4 });
+    doc.layers = [];
+    const l = addVectorLayer(doc, 'Soft');
+    l.effects = [{ id: uid('e'), kind: 'blur', values: { ...defaultValues('blur'), radius: 5 } }];
+    hold(l, vectorDrawing(doc, [fill([rectPath(10, 10, 50, 50)], '#ff0000')]).id, 0, 4);
+    const soft = (data: { layers: { nm: string; ef?: unknown[] }[] }) => data.layers.find((x) => x.nm === 'Soft')!;
+    expect(soft(docToLottie(doc)).ef).toHaveLength(1);
+    // These tests have no canvas to draw pictures on, so asking for pictures falls back to the blur.
+    const asked = docToLottie(doc, { softAndShadow: 'pictures' });
+    expect(soft(asked).ef).toHaveLength(1);
   });
 });

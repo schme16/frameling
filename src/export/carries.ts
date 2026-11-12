@@ -129,6 +129,11 @@ export function bakesEffects(doc: Doc, format: FormatId, found: DocFeatures = do
   return CARRY[format].rows?.effects === 'picture' && [...found.effectKinds].some((k) => !native.has(k));
 }
 
+/** Does this document have Soften or Shadow, which Lottie can do itself but not every player draws? */
+export function hasSoftOrShadow(found: DocFeatures): boolean {
+  return found.effectKinds.has('blur') || found.effectKinds.has('shadow');
+}
+
 /** Plain-words lines about what in this document won't come across as it is, for this format. Empty = all of it. */
 export function carryWarnings(doc: Doc, format: FormatId, found: DocFeatures = docFeatures(doc)): string[] {
   const c = CARRY[format];

@@ -9,9 +9,11 @@
  *   the copy's (anchor = the symbol's registration point) and whose time remap picks the symbol frame to show.
  * - Classic tweens become two keys with the easing as bezier handles when the easing is a cubic (steady, gentle
  *   start/stop, wind up, overshoot, custom curves are exact; gentle start and stop is two halves). Springy, bouncy and
- *   motion paths are baked, one key per frame.
- * - Shape tweens become path keyframes, one per frame (the outlines are matched once, so every frame has the same
- *   points and the keys blend smoothly between frames).
+ *   motion paths are baked per frame, then keys are fitted to the samples (see fitKeys: a few eased keys within
+ *   tolerances no one can see).
+ * - Shape tweens become path keyframes (the outlines are matched once, so every frame has the same points and the keys
+ *   blend smoothly between frames), thinned the same way.
+ * - Brush outlines are refitted with far fewer points (curve-fit.ts) and a drawing shown in several keys is one precomp.
  * - Pixel and tile layers become PNG image assets, scaled up to stage size with hard edges so they stay crisp.
  * - The camera is a null layer per depth that every stage layer hangs from (one key per frame when it moves).
  * - Clips become named markers (lottie-web's playSegments takes their names), markers become markers.
@@ -49,6 +51,11 @@ export interface LottieOptions {
    */
   pictures?: PictureLook;
   bake?: Partial<BakeSpec>;
+  /**
+   * Soften and Shadow as Lottie's own blur and drop shadow ('effects', the default, small) or as pictures
+   * ('pictures'), which players that leave Lottie's effects out (lottie-web's canvas player) show too.
+   */
+  softAndShadow?: 'effects' | 'pictures';
 }
 
 export type PictureLook = 'balanced' | 'sharp' | 'small';
@@ -729,6 +736,8 @@ interface Ctx {
   /** How baked pictures are made. */
   pictures: PictureLook;
   bake?: Partial<BakeSpec>;
+  /** Soften and Shadow are baked too (see LottieOptions.softAndShadow). */
+  bakeSoft?: boolean;
   bank?: PictureBank;
 }
 
@@ -1302,13 +1311,15 @@ function nodePicture(ctx: Ctx, node: PlanNode, r: Range): { pieces: Json[]; ef: 
   const times = frames.map((f) => f - r.offset);
   const active = (look.effects ?? []).filter((e) => e.on !== false);
   const native = nativeEffects(active, frames, times);
-  if (native) return { pieces: nodeContent(ctx, node, r), ef: native };
+  const chosen = !!native && !!ctx.bakeSoft && active.length > 0;
+  if (native && !chosen) return { pieces: nodeContent(ctx, node, r), ef: native };
   const name = node.type === 'layer' ? node.layer.name : node.folder.name;
   const baked = bakeNode(ctx, node, frames, r);
   if (baked) {
-    ctx.notes.add(`"${name}" became pictures, since Lottie has no ${active.map((e) => effectInfo(e.kind).label.toLowerCase()).filter((v, i, a) => a.indexOf(v) === i).join(' or ')} effect.`);
+    ctx.notes.add(chosen ? `"${name}" became pictures, as chosen, so players without Lottie's blur and shadow show it too.` : `"${name}" became pictures, since Lottie has no ${active.map((e) => effectInfo(e.kind).label.toLowerCase()).filter((v, i, a) => a.indexOf(v) === i).join(' or ')} effect.`);
     return { pieces: baked, ef: [] };
   }
+  if (native) return { pieces: nodeContent(ctx, node, r), ef: native };
   ctx.notes.add(`The effects on "${name}" were left out (they need the app to draw them).`);
   return { pieces: nodeContent(ctx, node, r), ef: nativeEffects(active.filter((e) => e.kind === 'blur' || e.kind === 'shadow'), frames, times) ?? [] };
 }
@@ -1579,7 +1590,7 @@ export function lottieExport(doc: Doc, opts: LottieOptions = {}): { data: Json; 
   const from = Math.max(0, opts.range?.start ?? 0);
   const to = Math.min(doc.length - 1, opts.range?.end ?? doc.length - 1);
   const count = to - from + 1;
-  const ctx: Ctx = { doc, assets: [], symbolAssets: new Map(), sharedDrawings: new Map(), images: new Map(), pad: Math.max(doc.width, doc.height) * 2, tints: [], notes: new Set(), comps: 0, pictures: opts.pictures ?? 'balanced', bake: opts.bake };
+  const ctx: Ctx = { doc, assets: [], symbolAssets: new Map(), sharedDrawings: new Map(), images: new Map(), pad: Math.max(doc.width, doc.height) * 2, tints: [], notes: new Set(), comps: 0, pictures: opts.pictures ?? 'balanced', bake: opts.bake, bakeSoft: opts.softAndShadow === 'pictures' };
   const include = (l: Layer) => l.visible && !l.reference && l.kind !== 'camera';
   const r: Range = { from, to, offset: from };
   const content = levelContent(ctx, buildPlan(doc, include), r);

@@ -21,7 +21,7 @@ import { GIF_MAX_FPS } from './gif';
 import { proresSupport, type ProresSupport } from './prores';
 import { LayeredNotes } from './LayeredNotes';
 import { CarryNotes } from './CarryNotes';
-import { bakesEffects } from './carries';
+import { bakesEffects, docFeatures, hasSoftOrShadow } from './carries';
 import { DEFAULT_SHEET, engineInfo, FORMATS, formatInfo, normalizeSheet, splitFormats, type EngineId, type ExportSettings, type FormatId, type FormatInfo } from './types';
 import './export.css';
 import { leaveTileEdit } from '../tiles/tileEdit';
@@ -50,6 +50,7 @@ function startingSettings(): ExportSettings {
   if (!scaleAllowed(doc, s.scale)) s.scale = base.scale;
   if (s.lottiePictures && !PICTURE_CHOICES.some((c) => c.id === s.lottiePictures)) delete s.lottiePictures;
   if (s.lottieFile && !FILE_CHOICES.some((c) => c.id === s.lottieFile)) delete s.lottieFile;
+  if (s.lottieSoft && s.lottieSoft !== 'pictures') delete s.lottieSoft;
   return s;
 }
 
@@ -385,7 +386,12 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
                 </div>
                 <p className="ex-note">{FILE_CHOICES.find((c) => c.id === (s.lottieFile ?? 'json'))!.note}</p>
               </fieldset>
-              {bakesEffects(doc, 'lottie') && (
+              {hasSoftOrShadow(docFeatures(doc)) && (
+                <Check checked={s.lottieSoft === 'pictures'} onChange={(v) => set({ lottieSoft: v ? 'pictures' : undefined })}>
+                  Draw Soften and Shadow as pictures, so every player shows them (a bigger file)
+                </Check>
+              )}
+              {(bakesEffects(doc, 'lottie') || (s.lottieSoft === 'pictures' && hasSoftOrShadow(docFeatures(doc)))) && (
                 <fieldset>
                   <legend>Pictures from effects</legend>
                   <div className="ex-seg">
