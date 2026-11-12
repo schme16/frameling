@@ -178,8 +178,9 @@ const entries = [
     steps: [L.js(`__framelingArtboards.load('mixed')`), L.wait(400), L.js(`__framelingArtboards.player()`), L.wait(1500), { click: [704, 622], after: 700 }, { shot: '@', el: '[role=dialog]', pad: 12 }],
   },
   {
+    // Four boards that are the frames of one blob, as one sprite sheet: All in order, as one, with Sprite sheet picked.
     name: 'artboards-export',
-    steps: [L.js(`__framelingArtboards.load('shots')`), L.wait(400), L.js(`__framelingArtboards.exportDialog('joined')`), L.wait(1500), { shot: '@', el: '[role=dialog]', pad: 0 }],
+    steps: [L.js(`__framelingArtboards.load('frames')`), L.wait(400), L.js(`__framelingArtboards.exportDialog('atlas')`), L.wait(1500), L.js(`__framelingArtboards.setExport({ mode: 'joined' })`), L.wait(900), { shot: '@', el: '[role=dialog]', pad: 0 }],
   },
   {
     // Variations: the original and two linked copies side by side; open one to see what it changes; then recolour the

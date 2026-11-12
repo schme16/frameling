@@ -3,6 +3,7 @@
 import { lazyPanel } from '../core/lazy';
 import { getTool, registerCommand, registerPanel } from '../core/registry';
 import './commands';
+import './habits';
 import './help';
 import { drawMirrorLines } from './tools';
 import './tools';
@@ -12,7 +13,7 @@ import { exportPalette, importPalette, paletteFromDrawing } from './palette-file
 import { store } from '../core/store';
 import { showPanel } from '../ui/dock';
 import { previewSettings, setPreview } from './preview';
-import { watchPixelDocs } from './workspace';
+import { watchOnePicture, watchPixelDocs } from './workspace';
 import './workspace-help';
 
 registerPanel({ id: 'palette', title: 'Palette', icon: 'palette', component: lazyPanel(() => import('./PalettePanel').then((m) => m.PalettePanel)), zone: 'right', order: 25, help: 'palette' });
@@ -20,6 +21,8 @@ registerPanel({ id: 'preview', title: 'Preview', icon: 'film', component: lazyPa
 
 // Offer the Pixel workspace when pixel art opens (asked once).
 watchPixelDocs(store());
+// A one-picture file has nothing to preview: the Preview stays away until it moves.
+watchOnePicture(store());
 
 registerCommand({
   id: 'pixel.previewPlay',

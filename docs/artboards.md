@@ -84,10 +84,14 @@ by artboards. A/B: `brand/ab/artboards/ab.png` and `ab.mp4` (A built, B mocked).
 - Switching is the same as for pixel art.
 - **Play all in order** opens a player window: each shot at its own size, fitted, for its own length, with a strip of
   shots to jump between and a loop switch. It never changes the document.
-- **Export "All in order, as one"** (video and animation formats) builds one document with `joinShots`: the shots end
+- **Export "All in order, as one"** (video, animation and Sprite sheet formats) builds one document with `joinShots`: the shots end
   to end, each a clip named after it, markers and sounds moved along, a shot's own stage colour as a filled layer
   underneath when they differ, one merged camera layer (the plain view where a shot has none), and in-betweens cut at
-  each shot's end. Shots of different sizes are fitted (below).
+  each shot's end. Shots of different sizes are fitted (below). With Sprite sheet the boards are the frames of ONE sprite
+  (`filmOf` in `export.ts`): the clips are dropped so the engine data has a single animation, `default`, with every
+  frame of every ticked board in list order, and the range is always the whole film. Tested per engine format in
+  `test/artboards/frames-sheet.test.ts`; `frames-sheet-e2e.test.ts` (GODOT_BIN) and `scripts/e2e/artboards.cjs`
+  (also WEB_ENGINES=1) load the files in the real engines.
 - **Export "Each as its own file"** gives a file per shot.
 
 ### Shots of different sizes

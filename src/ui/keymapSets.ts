@@ -57,32 +57,69 @@ export const KEYMAP_SETS: KeymapSet[] = [
     },
   },
   {
+    // The id stays `pixel` so a saved choice keeps working; the name people see is Aseprite keys.
     id: 'pixel',
-    label: 'Familiar from pixel tools (Aseprite-like)',
-    blurb: 'B is the pencil, U the rectangle, M and Q select, Alt+N adds a frame and F3 shows the onion skin.',
+    label: 'Aseprite keys',
+    blurb: 'The keys Aseprite artists know: B pencil, U rectangle, M and Q select, X swaps colours, + and - change the brush, [ and ] step the palette, 1 to 6 zoom, Tab hides the panels, Alt+N adds a frame.',
     keys: {
-      // Tools
+      // Tools (Aseprite's own letters; ours stay as a second key where they are free)
       'tools.pencil': ['b'],
       'tools.brush': ['p'],
-      'tools.rect': ['u'],
-      'tools.ellipse': ['Shift+U'],
+      'tools.rect': ['u', 'r'],
+      'tools.ellipse': ['Shift+U', 'o'],
+      'tools.polygon': ['Shift+D'],
+      'tools.star': ['Shift+P'],
+      'tools.pen': ['Shift+Alt+P'],
       'tools.pixel-select': ['m', 'v'],
       'select.lasso': ['q'],
-      // Colours: X swaps them, like the front and back colours
+      // The mirror button's key makes room for Aseprite's Shift+M
+      'pixel.mirror': ['Shift+Alt+M'],
+      'rig.mirrorPose': ['Mod+Alt+M'],
+      // Colours: X swaps them, like the front and back colours; [ and ] step along the palette
       'colors.swap': ['x'],
       'colors.toggleWell': ['Shift+X'],
-      // Frames and layers
-      'timeline.duplicateKey': ['Alt+N', 'd'],
-      'timeline.removeFrame': ['Alt+C', '-'],
+      'colors.reset': ['Shift+Alt+D'],
+      'pixel.previousColor': ['['],
+      'pixel.nextColor': [']'],
+      // Brush size
+      'pixel.sizeUp': ['+', '='],
+      'pixel.sizeDown': ['-'],
+      // Zoom: 100%, 200%, 400%, 800%, 1600%, 3200%
+      'pixel.zoom1': ['1'],
+      'pixel.zoom2': ['2'],
+      'pixel.zoom3': ['3'],
+      'pixel.zoom4': ['4'],
+      'pixel.zoom5': ['5'],
+      'pixel.zoom6': ['6'],
+      // Frames: arrows step, Alt+N adds one (a copy), Alt+B an empty one, Alt+M a linked one, Alt+C removes one
+      'timeline.prevFrame': ['ArrowLeft', ','],
+      'timeline.nextFrame': ['ArrowRight', '.'],
+      'timeline.duplicateKey': ['Alt+N', 'Alt+D', 'd'],
+      'timeline.newKey': ['Alt+B', 'n'],
+      'timeline.insertFrame': ['Alt+M'],
+      'timeline.removeFrame': ['Alt+C'],
       'timeline.toggleOnion': ['F3', 'Shift+O'],
+      // The arrows step frames, so nudging a selection moves to Alt+arrows (Shift for ten)
+      'select.nudgeLeft': ['Alt+ArrowLeft'],
+      'select.nudgeRight': ['Alt+ArrowRight'],
+      'select.nudgeUp': ['Alt+ArrowUp'],
+      'select.nudgeDown': ['Alt+ArrowDown'],
+      // Layers
       'layers.addPixel': ['Shift+N'],
       'layers.duplicate': ['Mod+J'],
-      // Selection
+      // Selection and flipping
       'select.none': ['Mod+D', 'Escape'],
       'edit.duplicate': ['Mod+Alt+D'],
-      // View
-      'view.pixelGrid': ["Mod+'"],
+      'pixel.flipH': ['Shift+H'],
+      'pixel.flipV': ['Shift+V'],
+      'tiles.flipX': ['Mod+Shift+H'],
+      'tiles.flipY': ['Mod+Shift+V'],
+      // View, sprite and files
+      'view.pixelGrid': ["Mod+Shift+'"],
       'view.fit': ['Mod+0'],
+      'view.hidePanels': ['Tab', 'Mod+\\'],
+      'document.settings': ['c', 'Mod+Alt+C'],
+      'file.exportAgain': ['Mod+Shift+X', 'Mod+Shift+E'],
     },
   },
 ];

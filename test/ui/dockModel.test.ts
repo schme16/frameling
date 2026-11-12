@@ -106,6 +106,23 @@ describe('normaliseLayout', () => {
   });
 });
 
+describe('bringing back a hidden panel', () => {
+  it('makes a new layout, and leaves the old one alone, so the change is seen', () => {
+    const before = closePanel(sample(), 'library');
+    const snapshot = JSON.stringify(before);
+    const after = movePanelTo(before, 'library', { zone: 'right' });
+    expect(after).not.toBe(before);
+    expect(after.zones.right).not.toBe(before.zones.right);
+    expect(JSON.stringify(before)).toBe(snapshot);
+    expect(tabs(after, 'right')).toContain('library');
+    expect(after.hidden).not.toContain('library');
+  });
+  it('closing a panel that is already hidden changes nothing', () => {
+    const hidden = closePanel(sample(), 'library');
+    expect(closePanel(hidden, 'library')).toBe(hidden);
+  });
+});
+
 describe('moving panels', () => {
   it('moves between zones and makes it the front tab', () => {
     const l = movePanelTo(sample(), 'library', { zone: 'top' });

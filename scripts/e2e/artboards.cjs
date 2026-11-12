@@ -6,6 +6,10 @@
 //   npm run build
 //   xvfb-run -a npx electron scripts/e2e/artboards.cjs [outDir]
 //
+// Also: boards as frames of one sprite exported as a sprite sheet for every engine (one animation, a frame per board,
+// in order). GODOT_BIN=/path/to/godot-4-editor also loads it in Godot, WEB_ENGINES=1 in the real Phaser, PixiJS and
+// CSS (see docs/testing.md), and --only=frames-sheet runs just this part.
+//
 // Exits non-zero when anything fails. Uses a throwaway profile inside outDir.
 const { app, BrowserWindow } = require('electron');
 const cp = require('node:child_process');
@@ -15,6 +19,9 @@ const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 
 const root = path.resolve(__dirname, '../..');
+const WEB = process.env.WEB_ENGINES === '1';
+// Phaser needs a WebGL context, so the web engines run on software GL (as in export.cjs).
+if (WEB) for (const sw of [['ignore-gpu-blocklist'], ['use-gl', 'angle'], ['use-angle', 'swiftshader'], ['enable-unsafe-swiftshader']]) app.commandLine.appendSwitch(...sw);
 const argv = process.argv.slice(2).filter((a) => !a.endsWith('artboards.cjs'));
 const outDir = path.resolve(argv.find((a) => !a.startsWith('--')) ?? fs.mkdtempSync(path.join(os.tmpdir(), 'frameling-ab-')));
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -309,6 +316,174 @@ async function followSection() {
   check(u.open === 'Wide' && u.timeline.includes('Layer A'), `after undo: ${u.open}`);
 }
 
+
+// ---------------------------------------------------------------- boards as frames of one sprite, as a sprite sheet
+
+const GODOT = process.env.GODOT_BIN;
+const FRAMES = 4;
+// Slow, so the engines' own timing checks (a pass of the loop in the right time) have room for start-up jitter.
+const FPS = 2;
+/** The colour of board i, as hex and as bytes: a different one each so a wrong order shows. */
+const boardRgb = (i) => [40 * (i + 1), 10, 255 - 40 * i];
+const boardHex = (i) => boardRgb(i).map((v) => v.toString(16).padStart(2, '0')).join('').toUpperCase();
+
+// A 32 x 32 sprite (8 stage pixels per art pixel) as four boards, Frame 1 to 4, each one frame of one solid colour.
+const FRAMES_SETUP = `(async () => {
+  const E = window.__framelingExport, A = window.__framelingArtboards, S = window.__frameling.store();
+  await E.load('blank-pixel');
+  const rgb = (i) => [40 * (i + 1), 10, 255 - 40 * i];
+  const drawing = (id, i) => { const px = new Uint8ClampedArray(32 * 32 * 4); for (let p = 0; p < 32 * 32; p++) px.set([...rgb(i), 255], p * 4); return { id, kind: 'pixel', width: 32, height: 32, pixels: px }; };
+  const layer = (id, drawingId) => ({ id, name: 'Layer', kind: 'pixel', pixelSize: 8, visible: true, locked: false, opacity: 1, cels: [{ id: id + 'c', start: 0, length: 1, drawingId }] });
+  S.update('setup', (d) => {
+    d.name = 'Hero'; d.width = 256; d.height = 256; d.background = null; d.length = 1; d.fps = ${FPS}; d.clips = []; d.markers = [];
+    d.drawings = { d0: drawing('d0', 0) };
+    d.layers = [layer('L0', 'd0')];
+    for (let i = 1; i < ${FRAMES}; i++) {
+      const id = A.model.addArtboard(d, { name: 'Frame ' + (i + 1), width: 256, height: 256, length: 1, background: null });
+      d.drawings['d' + i] = drawing('d' + i, i);
+      d.artboards.find((a) => a.id === id).content.layers = [layer('L' + i, 'd' + i)];
+    }
+    A.model.renameArtboard(d, d.artboards[0].id, 'Frame 1');
+  });
+  return true;
+})()`;
+
+/** Reads each engine's own files back to where every frame of every animation sits on the sheet. */
+function readFramesBack(engine, dir, names) {
+  const j = (n) => JSON.parse(fs.readFileSync(path.join(dir, n), 'utf8'));
+  const base = names.find((n) => n.endsWith('.png')).replace(/\.png$/, '');
+  const out = {};
+  const box = (f) => ({ x: f.x, y: f.y, w: f.w, h: f.h });
+  if (engine === 'json') {
+    const a = j(`${base}.json`);
+    for (const [k, v] of Object.entries(a.animations)) out[k] = v.frames.map((i) => box(a.frames[i].frame));
+  } else if (engine === 'phaser') {
+    const atlas = j(`${base}.json`).frames;
+    for (const a of j(`${base}-anims.json`).anims) out[a.key] = a.frames.map((f) => box(atlas[f.frame].frame));
+  } else if (engine === 'pixi') {
+    const a = j(`${base}.json`);
+    for (const [k, list] of Object.entries(a.animations)) out[k] = list.map((n) => box(a.frames[n].frame));
+  } else if (engine === 'unity') {
+    const a = j(`${base}.json`);
+    const by = new Map(a.frames.map((f) => [f.name, f]));
+    for (const an of a.animations) out[an.name] = an.frames.map((n) => box({ ...by.get(n), y: a.height - by.get(n).y - by.get(n).h }));
+  } else if (engine === 'godot') {
+    const t = fs.readFileSync(path.join(dir, `${base}.tres`), 'utf8');
+    const regions = new Map([...t.matchAll(/\[sub_resource type="AtlasTexture" id="([^"]+)"\]\s+atlas = [^\n]+\s+region = Rect2\((\d+), (\d+), (\d+), (\d+)\)/g)].map((m) => [m[1], { x: +m[2], y: +m[3], w: +m[4], h: +m[5] }]));
+    for (const m of t.matchAll(/"frames": \[(.*?)\],\s+"loop": (true|false),\s+"name": &"([^"]+)"/gs)) out[m[3]] = [...m[1].matchAll(/SubResource\("([^"]+)"\)/g)].map((r) => regions.get(r[1]));
+  } else if (engine === 'css') {
+    const css = fs.readFileSync(path.join(dir, `${base}.css`), 'utf8');
+    const w = +/width: (\d+)px/.exec(css)[1];
+    const h = +/height: (\d+)px/.exec(css)[1];
+    for (const k of css.matchAll(/@keyframes ([\w-]+) \{(.*?)\n\}/gs)) {
+      const steps = [...k[2].matchAll(/(\d+)% \{ background-position: ([^;]+); \}/g)].filter((m) => m[1] !== '100');
+      out[k[1].replace(new RegExp(`^${base}-`), '')] = steps.map((m) => {
+        const [x, y] = m[2].trim().split(/\s+/).map((v) => Math.abs(parseInt(v, 10)));
+        return { x, y, w, h };
+      });
+    }
+  }
+  return out;
+}
+
+/** Loads the files in a real Godot 4: one animation, a frame per board, each showing that board's colour. */
+function godotFrames(dir, names) {
+  const proj = path.join(dir, '_godot');
+  fs.rmSync(proj, { recursive: true, force: true });
+  fs.mkdirSync(path.join(proj, 'sprites'), { recursive: true });
+  for (const n of names) fs.copyFileSync(path.join(dir, n), path.join(proj, 'sprites', n));
+  const base = names.find((n) => n.endsWith('.png')).replace(/\.png$/, '');
+  fs.writeFileSync(path.join(proj, 'project.godot'), 'config_version=5\n\n[application]\nconfig/name="boards"\n');
+  fs.writeFileSync(
+    path.join(proj, 'check.gd'),
+    `extends SceneTree
+func _init():
+	var node = (load("res://sprites/${base}.tscn") as PackedScene).instantiate()
+	var sf: SpriteFrames = node.sprite_frames
+	var out := ["names:%s" % ",".join(sf.get_animation_names()), "start:%s" % node.animation]
+	for i in sf.get_frame_count("default"):
+		var c: Color = sf.get_frame_texture("default", i).get_image().get_pixel(1, 1)
+		out.append("f%d:%d,%d,%d" % [i, round(c.r * 255), round(c.g * 255), round(c.b * 255)])
+	print("RESULT " + ";".join(out))
+	quit()
+`,
+  );
+  sh(GODOT, ['--headless', '--path', proj, '--import']);
+  const r = sh(GODOT, ['--headless', '--path', proj, '--script', 'check.gd']);
+  return (r.stdout || '').split('\n').find((l) => l.startsWith('RESULT ')) ?? `(no result) ${(r.stderr || '').slice(0, 200)}`;
+}
+
+async function framesSheetSection() {
+  await ev(FRAMES_SETUP);
+  await ev(`window.__frameling.overlays.closeSheet()`);
+  await setMode('joined');
+  const base = await settings({ format: 'sheet', range: 'all', transparent: true, scale: 1 / 8 });
+  let webChecker;
+  for (const engine of ['json', 'godot', 'phaser', 'pixi', 'unity', 'css']) {
+    begin(`boards as frames, sprite sheet for ${engine}`);
+    const dir = setDir(path.join(outDir, `frames-sheet-${engine}`));
+    const sheet = { ...base.sheet, engine, godotScene: true, trim: false, padding: 0, extrude: 0, layout: 'grid', columns: 2, dedupe: true };
+    const res = await run({ ...base, sheet });
+    check(res.outcome === 'done', `did not finish: ${JSON.stringify(res)}`);
+    const names = files(dir);
+    const image = names.find((n) => n.endsWith('.png'));
+    if (!check(!!image, `no sheet picture in ${names}`)) continue;
+    let played;
+    try {
+      played = readFramesBack(engine, dir, names);
+    } catch (e) {
+      check(false, `could not read the ${engine} files: ${e}`);
+      continue;
+    }
+    const anims = Object.keys(played);
+    check(anims.length === 1 && anims[0] === 'default', `animations: ${anims}`);
+    const frames = played.default ?? [];
+    check(frames.length === FRAMES, `the animation has ${frames.length} frames, wanted ${FRAMES}`);
+    frames.forEach((r, i) => {
+      const got = hex(path.join(dir, image), r.x + Math.floor(r.w / 2), r.y + Math.floor(r.h / 2));
+      check(got === boardHex(i), `frame ${i + 1} shows ${got}, wanted ${boardHex(i)}`);
+    });
+    note(`frames: ${frames.map((r) => `${r.x},${r.y}`).join(' ')}`);
+    if (engine === 'godot' && GODOT) {
+      const line = godotFrames(dir, names);
+      check(line.includes('names:default') && line.includes('start:default'), `Godot: ${line}`);
+      for (let i = 0; i < FRAMES; i++) check(line.includes(`f${i}:${boardRgb(i).join(',')}`), `Godot frame ${i + 1}: ${line}`);
+      note('godot ok');
+    }
+    if (WEB && (engine === 'phaser' || engine === 'pixi' || engine === 'css')) {
+      try {
+        webChecker ??= await require('./web-engines/check.cjs').createWebChecker();
+        const refs = [];
+        for (let i = 0; i < FRAMES; i++) {
+          const ref = path.join(dir, `_ref-${i}.png`);
+          sh('convert', ['-size', '32x32', `xc:#${boardHex(i)}`, ref]);
+          refs.push(ref);
+        }
+        const job = {
+          engine, dir, image, separate: false, width: 32, height: 32,
+          json: names.find((n) => n.endsWith('.json') && !n.endsWith('-anims.json')),
+          anims: names.find((n) => n.endsWith('-anims.json')),
+          css: names.find((n) => n.endsWith('.css')),
+          html: names.find((n) => n.endsWith('.html')),
+          animations: [{ name: 'default', fps: FPS, loop: true, count: FRAMES, times: 1, checks: refs.map((ref, i) => ({ i, ref })) }],
+        };
+        if (engine !== 'css') {
+          const data = JSON.parse(fs.readFileSync(path.join(dir, job.json), 'utf8'));
+          job.key = image.replace(/\.png$/, '');
+          job.frameNames = Object.keys(data.frames);
+          job.meta = data.meta.frameling ?? null;
+        }
+        const r = await webChecker.run(job);
+        for (const p of r.problems) check(false, `${engine} in the real engine: ${p}`);
+        for (const n of r.notes) note(n);
+        note(`${engine} engine ok`);
+      } catch (e) {
+        check(false, `could not run the ${engine} engine check: ${e?.message ?? e}`);
+      }
+    }
+  }
+}
+
 function report() {
   const bad = results.filter((r) => r.failures.length);
   for (const r of results) {
@@ -324,9 +499,12 @@ function report() {
   const guard = setTimeout(() => process.exit(2), 10 * 60 * 1000);
   try {
     await startApp();
-    await exportsSection();
-    await videoSection();
-    await followSection();
+    if (!argv.includes('--only=frames-sheet')) {
+      await exportsSection();
+      await videoSection();
+      await followSection();
+    }
+    await framesSheetSection();
   } catch (e) {
     begin('harness').failures.push(String(e?.stack ?? e));
   }

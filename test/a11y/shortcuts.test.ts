@@ -64,7 +64,7 @@ describe('shortcut sets', () => {
     const cmds = allCommands();
     const o = layeredOverrides('pixel', cmds, { 'tools.pencil': ['y'] });
     expect(effectiveKeys(cmds.find((c) => c.id === 'tools.pencil')!, o)).toEqual(['y']);
-    expect(effectiveKeys(cmds.find((c) => c.id === 'tools.rect')!, o)).toEqual(['u']);
+    expect(effectiveKeys(cmds.find((c) => c.id === 'tools.rect')!, o)).toContain('u');
   });
 });
 

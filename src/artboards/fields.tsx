@@ -2,7 +2,8 @@
 import type { Id } from '../core/format';
 import { useStore } from '../core/store';
 import { Num } from '../symbols/PropertiesPanel';
-import { exportNameOf, findArtboard, sizeOf } from './model';
+import { artPixelOf, artSizeOf, docSizeOf } from '../pixel/units';
+import { artboardDoc, exportNameOf, findArtboard, sizeOf } from './model';
 import { renameArtboardById, resizeArtboard, setArtboardBackgroundById, setExportNameById } from './ops';
 import './artboards.css';
 
@@ -11,7 +12,15 @@ export function ArtboardFields({ id }: { id: Id }) {
   const doc = useStore((s) => s.doc);
   const a = findArtboard(doc, id);
   if (!a) return null;
-  const { w, h } = sizeOf(doc, a);
+  // Pixel art shows its size in art pixels (32 x 32), not the stage's own units.
+  const px = artPixelOf(artboardDoc(doc, a.id));
+  const full = sizeOf(doc, a);
+  const { w, h } = artSizeOf(full.w, full.h, px);
+  const resize = (aw: number, ah: number) => {
+    const d = docSizeOf(aw, ah, px);
+    // A side that wasn't changed keeps its exact size, even if the stage isn't a whole number of art pixels.
+    resizeArtboard(a.id, aw === w ? full.w : d.w, ah === h ? full.h : d.h);
+  };
   const bg = a.content ? a.content.background : doc.background;
   return (
     <div className="ab-fields">
@@ -24,8 +33,8 @@ export function ArtboardFields({ id }: { id: Id }) {
         <input key={`e-${a.id}`} type="text" placeholder={exportNameOf(doc, a.id)} defaultValue={a.exportName ?? ''} maxLength={120} spellCheck={false} onBlur={(e) => setExportNameById(a.id, e.target.value)} onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()} />
       </label>
       <div className="sy-grid">
-        <Num label="W" value={w} onChange={(v) => resizeArtboard(a.id, v, h)} title="Width in pixels. The drawing stays put at the top-left." />
-        <Num label="H" value={h} onChange={(v) => resizeArtboard(a.id, w, v)} title="Height in pixels. The drawing stays put at the top-left." />
+        <Num label="W" value={w} onChange={(v) => resize(v, h)} title="Width in pixels. The drawing stays put at the top-left." />
+        <Num label="H" value={h} onChange={(v) => resize(w, v)} title="Height in pixels. The drawing stays put at the top-left." />
       </div>
       <div className="ab-bg">
         <span>Background</span>

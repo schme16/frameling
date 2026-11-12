@@ -96,7 +96,7 @@ export async function exportDocument(settings: ExportSettings, signal: AbortSign
   // Several artboards at once (each its own file, all in order, or one atlas): see src/artboards/export.ts.
   if (!only && exportsSeveral(store().rootDoc(), settings)) {
     try {
-      return await exportArtboards(settings, signal, onProgress, (d) => exportDocument(settings, signal, onProgress, d));
+      return await exportArtboards(settings, signal, onProgress, (d, st) => exportDocument(st, signal, onProgress, d));
     } catch (e) {
       throw e instanceof ArtboardExportProblem ? new ExportProblem(e.message) : e;
     }

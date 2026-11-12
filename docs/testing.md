@@ -363,7 +363,10 @@ stage) and runs every artboard export through the real app: this artboard, each 
 subset, the sprite sheet atlas, and all in order as one with Fit and with Fill (PNG sequence, GIF, MP4, WebM). Outputs
 are read back with ImageMagick, ffprobe and unzip: sizes, zip contents, atlas JSON, and pixel colours (the bars, the
 crop, what is hidden off the stage). Then it clicks with real mouse events (Select and Brush, and a name label) to
-check the open artboard, the stage and the Timeline panel follow, and that Undo goes back.
+check the open artboard, the stage and the Timeline panel follow, and that Undo goes back. Last it exports four pixel boards as the
+frames of one sprite, as a sprite sheet for every engine, and reads each engine's files back to one animation with the
+frames in board order. `GODOT_BIN` also loads it in Godot and `WEB_ENGINES=1` in Phaser, PixiJS and CSS; `--only=frames-sheet`
+runs just this part.
 
 ```bash
 npm run build

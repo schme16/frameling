@@ -16,13 +16,35 @@ What changes:
 
 - **The tool strip shows only pixel tools** on a pixel layer: pencil, brush, eraser, bucket, shade, dither, line, rectangle, ellipse, select, eyedropper, hand and zoom. Other tools still work from their keys.
 - **The [Palette](help:palette) is on the left, with bigger colours**, laid out in its ramps.
-- **The [Preview](help:pixel-preview) panel** leads the right side, playing your animation at real size.
+- **The [Preview](help:pixel-preview) panel** leads the right side, playing your animation at real size. A one-picture file (one frame) starts with it put away, and it comes forward by itself when you add a second frame.
+- **The status bar speaks in pixels**: the zoom is a percentage of screen pixels per pixel of your sprite (800%) and the size is the sprite's own, like 32 x 32. See [Aseprite habits](help:pixel-aseprite-habits) for the zoom keys.
 - **The [pixel bar](help:pixel-bar)** sits over the canvas with brush size and shape, pixel perfect, mirror drawing, onion skin, tile mode and the grid.
 - **The timeline** shows your clips (idle, run, jump) along the top.
 - **Export starts on a sprite sheet at art size**, one art pixel to one pixel, the first time you open it on a drawing. See [Sprite sheets](help:export-sprite-sheets).
 - Panels pixel art rarely needs (bones, lip sync, text, particles, camera) start closed. View > Panels opens any of them.
 
 The pixel grid shows whenever you're zoomed in far enough to see it. Turn it off with the grid switch on the pixel bar.`,
+  },
+  {
+    id: 'pixel-aseprite-habits',
+    media: 'pixel-aseprite-habits.png',
+    title: 'Aseprite habits',
+    section: 'Pixel art',
+    summary: 'Hold Alt to pick a colour, + and - for the brush size, [ and ] along the palette, 1 to 6 to zoom, Tab to hide the panels.',
+    keywords: ['aseprite', 'alt eyedropper', 'brush size keys', 'plus minus', 'palette keys', 'zoom keys', 'hide panels', 'tab', 'habits', 'shortcuts'],
+    body: `If you know Aseprite, your fingers already know most of this.
+
+- **Hold Alt and click** with the pencil, brush, eraser, bucket, shade or dither to pick up the colour you click, then let go and carry on with the same tool. Alt picks from everything you see. The line, rectangle and ellipse keep Alt for drawing from the middle.
+- **+ and -** make the brush, eraser or dither one pixel bigger or smaller. The pencil is always one pixel, so **+** turns it into the brush at 2 pixels.
+- **[ and ]** paint with the colour before or after this one in the [palette](help:palette). After the last it starts again at the first.
+- **1 to 6** zoom to 100%, 200%, 400%, 800%, 1600% and 3200%. Zoom is how many screen pixels each pixel of your sprite takes, so 800% shows every art pixel 8 screen pixels wide. The number is in the status bar.
+- **Tab** puts the panels away, and brings them back. It works while the mouse is over the canvas and nothing else has the keyboard, so Tab still moves round the panels everywhere else.
+
+## Turn the keys on
+
+**+ - [ ] 1 to 6** and **Tab** come with **Aseprite keys**, a [shortcut set](help:shortcut-sets): Preferences, Keyboard, Shortcut set. The same commands are in the [command palette](help:command-palette) (type "brush size" or "zoom"), and you can give them any key you like. **Alt** works for everyone.
+
+The status bar and the [Artboards](help:artboards) panel use pixel units in the Pixel workspace: your sprite is **32 x 32**, not the size of the page it sits on.`,
   },
   {
     id: 'pixel-bar',

@@ -10,7 +10,7 @@ registerHelpTopics([
     section: 'Pixel art',
     summary: 'The tools for a game sprite made entirely of pixels, and the order most people use them in.',
     keywords: ['pixel art', 'sprite', 'game', 'retro', '8-bit', 'workflow'],
-    body: `Start a **Game sprite** or **Tiny sprite** from File > New, or add a pixel layer to any page. Then switch to the [Pixel workspace](help:pixel-workspace) (View > Workspaces): only the pixel tools, the Palette right beside you, and a [Preview](help:pixel-preview) playing your sprite at real size.
+    body: `Start a **Game sprite** or **Tiny sprite** from File > New (one frame to start, add more to animate), or add a pixel layer to any page. Then switch to the [Pixel workspace](help:pixel-workspace) (View > Workspaces): only the pixel tools, the Palette right beside you, and a [Preview](help:pixel-preview) playing your sprite at real size.
 
 A sprite usually goes like this:
 
