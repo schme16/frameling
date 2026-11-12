@@ -621,6 +621,19 @@ function unityCheckIn(proj, pkg, dir, names) {
     fs.writeFileSync(jsonFile, JSON.stringify(data));
   }
   runUnity(proj, dir, `re-import ${where}`, ['-sheet', sheetArg, '-ids', ids, '-expect', expect, '-reimport']);
+  const logOf = (label) => {
+    const f = path.join(dir, `unity-${label.replace(/\W+/g, '-')}.log`);
+    return fs.existsSync(f) ? fs.readFileSync(f, 'utf8') : '';
+  };
+  const warning = /another copy of FramelingSheetImporter/;
+  check(!warning.test(logOf(`first import ${where}`)) && !warning.test(logOf(`re-import ${where}`)), `unity ${where}: warned about another importer copy when there is only one`);
+  // An older copy of the script in Assets/Editor: the importer must say so in the Console, naming that file.
+  fs.mkdirSync(path.join(assets, 'Editor'), { recursive: true });
+  fs.writeFileSync(path.join(assets, 'Editor', 'FramelingSheetImporter.cs'), '#if UNITY_EDITOR\nusing UnityEditor;\npublic class FramelingSheetImporter : AssetPostprocessor { }\n#endif\n');
+  runUnity(proj, dir, `older copy ${where}`, ['-sheet', sheetArg, '-ids', ids, '-expect', expect, '-reimport', '-wait', '25']);
+  const text = logOf(`older copy ${where}`);
+  check(warning.test(text) && text.includes('Delete the older file Assets/Editor/FramelingSheetImporter.cs'), `unity ${where}: no Console warning naming the older copy in Assets/Editor`);
+  fs.rmSync(path.join(assets, 'Editor'), { recursive: true, force: true });
 }
 
 /** One Unity batchmode run of the check script; its report lines become notes and failures. */
@@ -1421,6 +1434,9 @@ async function godotBonesExtrasSection(name = 'bones-extras', extra = {}, more) 
     // Symbols with bones on a layer that follows a bone: the copies sit under that bone and swing with it.
     if (!ONLY || ONLY.includes('godot-bones'))
       await godotBonesExtrasSection('bones-on-bone', { onBone: true }, ({ tscn }) => check(tscn.includes('type="CanvasGroup" parent="Body bones/Root"') || tscn.includes('type="Node2D" parent="Body bones/Root"'), 'the symbol copies should sit under the bone'));
+    // A symbol with bones inside a symbol with bones, on a layer that follows the outer symbol's bone: it nests under that Bone2D.
+    if (!ONLY || ONLY.includes('godot-bones'))
+      await godotBonesExtrasSection('bones-body-arm', { bodyArm: true }, ({ tscn }) => check(/type="Node2D" parent="Body\/Body bones\/Spine"/.test(tscn) && /name="Arm" type="Node2D" parent="Body\/Body bones\/Spine"/.test(tscn), 'the arm should sit under the body symbol\'s bone'));
     if (!SKIP.includes('files')) await filesSection();
   } catch (e) {
     begin('harness', 'startup').failures.push(String(e?.stack ?? e));

@@ -18,7 +18,7 @@ import { minv, mmul, restMatrix, stretchOf, type Mat } from '../rig/math';
 import type { Animation } from './sheet';
 import { bonesRigs, groupLayout, type GroupItem, type BonesPart, type BonesScope, type BonesTexture, type NativeBlend, type NestedInstance } from './godot-bones-scope';
 
-export { groupLayout, maskLinks, carriedMasks, bakeScales, maxStretch, MAX_BAKE, bonesParts, bonesRigs, bonesScope, bonesStage, bonesNotes, allScopes, hasBonesToExport, restPicture, riggedSymbols, partLook, nativeBlend, BonesNotes } from './godot-bones-scope';
+export { groupLayout, groupBlocker, maskLinks, carriedMasks, bakeScales, maxStretch, MAX_BAKE, bonesParts, bonesRigs, bonesScope, bonesStage, bonesNotes, allScopes, hasBonesToExport, restPicture, riggedSymbols, partLook, nativeBlend, BonesNotes } from './godot-bones-scope';
 export type { PartMask, BonesPart, BonesScope, BonesTexture, InstState, NativeBlend, NestedInstance, PartKind, PartLook } from './godot-bones-scope';
 
 // ---------------------------------------------------------------- writing Godot text
@@ -530,7 +530,7 @@ function build(o: BonesSceneInput): { text: string; shaders: Set<NativeBlend> } 
         `transform = ${xf(m)}`,
         '',
       );
-      const nodesOf = emit(inst.scope, path, zUnit(inst.scope), { blend: inst.look.blend, tint }, () => path, group ? layout : undefined);
+      const nodesOf = emit(inst.scope, path, zUnit(inst.scope), { blend: inst.look.blend !== 'mix' ? inst.look.blend : (inherit?.blend ?? 'mix'), tint: tint ?? inherit?.tint }, () => path, group ? layout : undefined);
       res.nested.push({ inst, path, nodes: nodesOf, tint, group, toBone });
     }
     return res;

@@ -207,7 +207,7 @@ describe('Godot bones: looks', () => {
   });
 
   it('says nothing for the plain puppet', () => {
-    expect(bonesNotes(makePuppet())).toEqual({ native: [], baked: [], skipped: [] });
+    expect(bonesNotes(makePuppet())).toEqual({ native: [], baked: [], skipped: [], fades: [] });
   });
 
   it('writes the tint shader only for a tinted symbol, one per blend', () => {

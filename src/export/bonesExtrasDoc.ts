@@ -19,6 +19,8 @@ export interface ExtrasOptions {
   fade?: boolean;
   /** The hero layer (with the arm copies) follows a swinging bone on the stage. */
   onBone?: boolean;
+  /** The hero layer holds a Body symbol (its own bone and a swinging body) with an arm copy on a layer that follows the body bone. */
+  bodyArm?: boolean;
 }
 
 /**
@@ -115,6 +117,31 @@ export function bonesExtrasDoc(o: ExtrasOptions = {}): Doc {
     ];
     doc.layers.push(body);
     hero.bind = { rig: body.id, bone: 'sb' };
+  }
+  if (o.bodyArm) {
+    // Body symbol: one bone, a torso on it, and a layer on the bone that holds the arm.
+    const brig = newVectorLayer('Body bones') as VectorLayer;
+    brig.rig = { bones: [boneBetween('bb', 'Spine', { x: 0, y: 0 }, { x: 0, y: -50 }, null)] };
+    const q0 = vectorDrawing(doc, []);
+    q0.pose = { bb: { r: 0 } };
+    const q1 = vectorDrawing(doc, []);
+    q1.pose = { bb: { r: 20 } };
+    brig.cels = [
+      { id: uid('c'), start: 0, length: 6, drawingId: q0.id },
+      { id: uid('c'), start: 6, length: 6, drawingId: q1.id },
+    ];
+    const torso = newVectorLayer('Torso') as VectorLayer;
+    torso.bind = { rig: brig.id, bone: 'bb' };
+    hold(torso, vectorDrawing(doc, [pathShape([rectPath(-12, -50, 24, 50)], '#9b7bff', null)]).id, 0, 12);
+    const holder = newVectorLayer('Arm holder') as VectorLayer;
+    holder.bind = { rig: brig.id, bone: 'bb' };
+    const hd = vectorDrawing(doc, []);
+    hd.shapes = [inst(0, -45)];
+    hold(holder, hd.id, 0, 12);
+    const bodyId = uid('sym');
+    doc.symbols![bodyId] = { id: bodyId, name: 'Body', layers: [brig, torso, holder], length: 12, origin: { x: 0, y: 0 } };
+    h0.shapes = [inst(120, 220, { symbolId: bodyId })];
+    h1.shapes = [inst(130, 220, { symbolId: bodyId, opacity: 0.8, tint: { color: '#ff0000', amount: 0.5 } })];
   }
   doc.layers.push(hero);
 

@@ -179,20 +179,18 @@ $AnimationPlayer.play("walk")
 
 ## Good to know
 
-- **Steady** and **Gentle** glides use Godot's own easing. Other easings get a key on every frame.
-- Held poses snap, like they do here. [Squash and stretch](help:rig-stretch) becomes each bone's scale. Swapped drawings (mouths, hands) swap the part's picture.
-- Pictures are drawn at your export size.
+- **Steady** and **Gentle** glides use Godot's own easing. Other easings get a key on every frame. Held poses snap. [Squash and stretch](help:rig-stretch) becomes each bone's scale. Swapped drawings (mouths, hands) swap the part's picture.
 
 ## Symbols, camera and looks
 
-- A [symbol](help:symbols) with its own bones comes as a node for each copy, with its own Skeleton2D and parts. Its place, fade and [timeline](help:symbol-properties) are keys. On a layer that follows a bone, the copy sits under that bone. On a layer with effects or masks, or a bent one, it is drawn into the pictures.
-- A symbol that fades is a **CanvasGroup**: it fades as one picture, so overlapping parts don't show through. If its parts can't be ordered by the scene tree, or use Add or Multiply, each part fades alone.
+- A [symbol](help:symbols) with its own bones comes as a node for each copy, with its own Skeleton2D and parts. Its place, fade and [timeline](help:symbol-properties) are keys. On a layer that follows a bone, the copy sits under that bone, inside symbols too. On a layer with effects or masks, or a bent one, it is drawn into the pictures.
+- A symbol that fades is a **CanvasGroup**: it fades as one picture, so overlapping parts don't show through. If its parts can't be ordered by the scene tree, or use Add or Multiply, each part fades alone, and the export window says which symbols and why.
 - A symbol copied large gets bigger pictures, up to 4 times your export size (less on a huge stage), so it stays sharp.
 - The [camera](help:camera) becomes a **Camera2D** with position, zoom and turn keys. Layers with a depth go under a **Parallax2D**.
 - The camera and depth layers line up when your Godot window is the stage size times the export scale. For other sizes, attach the saved \`-fit-window.gd\` to the scene's root, or set Project Settings > Display > Window to that size with Stretch Mode **canvas_items** and Aspect **keep**.
-- A layer's fade is the node's modulate. **Add** and **Multiply** use a CanvasItemMaterial (Screen becomes Add, other modes draw normal). A symbol's colour wash uses a tiny shader saved next to the scene.
+- A layer's fade is the node's modulate. **Add** and **Multiply** use a CanvasItemMaterial (Screen becomes Add, other modes draw normal). A symbol's colour wash uses a tiny shader saved beside the scene.
 - [Effects](help:effects) are baked into the part's picture, since Godot has none built in. So are **masks** and "clip to the layer below", when the part and the mask move together. One that follows a bone, or sits at another depth, is left out.
-- Hidden or reference layers inside a symbol with effects are left out of its pictures.
+- Hidden or reference layers inside a symbol with effects are left out.
 
 The export window lists what was baked or left out for your drawing.`,
   },
@@ -267,7 +265,7 @@ Export again any time: sprites keep their identity, so scenes that use them don'
 
 - One sprite unit is the height of a frame, so a 32 pixel character is one unit tall.
 - Keep the \`.cs\` and \`.asmdef\` files together in one folder. The \`.asmdef\` is how the script knows whether the 2D Sprite package is there.
-- If you already have a copy of the pair, delete the extra one. Two copies stop scripts compiling.
+- Only keep one copy. If another \`FramelingSheetImporter.cs\` is in your project (an older one in \`Assets/Editor\`, say), Unity's Console shows a warning naming it. Delete that older file, and its \`.asmdef\` if it has one: two copies cut every sheet twice, and two \`.asmdef\` files can stop scripts compiling.
 - A sheet exported as separate sprites has no clips, so you get the sprites and no animation clips.`,
   },
   {

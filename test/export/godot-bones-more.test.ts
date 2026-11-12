@@ -169,6 +169,21 @@ describe('Godot bones: masks and clip to the layer below', () => {
     expect(sky.frameOf).toEqual([0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1]);
   });
 
+  it('cuts a clipped layer to its base with the base effects (the compositor cuts it the same way)', () => {
+    const doc = bonesExtrasDoc();
+    const paint = maskLayer(doc, 'Paint', undefined, 1);
+    paint.clipToBelow = true;
+    const sky = doc.layers[0];
+    sky.effects = [{ id: uid('e'), kind: 'blur', values: { radius: 2 } }];
+    // The cut shape is the base layer itself, whose effects the runner paints in; the clipped layer takes none of them.
+    expect(partOf(doc, 'Paint').masks).toEqual([{ layer: sky, op: 'in', clip: true }]);
+    expect(partOf(doc, 'Paint').look!.effects).toEqual([]);
+    expect(partOf(doc, 'Paint').pictures.length).toBe(1);
+    // An animated base effect changes the cut, so the clipped layer gets a picture for each step.
+    sky.effects = [{ id: uid('e'), kind: 'blur', values: { radius: 0 }, keys: [{ frame: 0, values: { radius: 0 } }, { frame: 11, values: { radius: 8 } }] }];
+    expect(partOf(doc, 'Paint').pictures.length).toBeGreaterThan(1);
+  });
+
   it('does not carry a mask that moves with a bone or sits at another depth, and says so', () => {
     const doc = bonesExtrasDoc();
     const cut = maskLayer(doc, 'Cut', 'show', 1);
@@ -272,6 +287,32 @@ describe('Godot bones: a faded symbol is a CanvasGroup', () => {
     expect(armGroup(doc)).not.toContain('CanvasGroup');
   });
 
+  it('says in the notes when a faded symbol fades part by part, and why', () => {
+    expect(bonesNotes(bonesExtrasDoc({ fade: true })).fades).toEqual([]);
+    expect(bonesNotes(bonesExtrasDoc()).fades).toEqual([]);
+    // Interleaved parts.
+    const doc = bonesExtrasDoc({ fade: true });
+    const sym = Object.values(doc.symbols!)[0];
+    const [rig, upper, lower, hand] = sym.layers;
+    sym.layers = [rig, upper, hand, lower];
+    const n = bonesNotes(doc).fades;
+    expect(n.length).toBe(1);
+    expect(n[0]).toContain('Arm on Hero');
+    expect(n[0]).toContain('cannot draw them in the right order');
+    // Add on the layer.
+    const add = bonesExtrasDoc({ fade: true });
+    add.layers.find((l) => l.name === 'Hero')!.blend = 'add';
+    expect(bonesNotes(add).fades.join('|')).toContain('uses Add or Multiply');
+    // A part with Multiply inside the symbol.
+    const mul = bonesExtrasDoc({ fade: true });
+    Object.values(mul.symbols!)[0].layers.find((l) => l.name === 'Hand')!.blend = 'multiply';
+    expect(bonesNotes(mul).fades.join('|')).toContain('some of its parts use Add or Multiply');
+    // A symbol holding a symbol with bones.
+    const body = bonesExtrasDoc({ bodyArm: true });
+    body.layers.find((l) => l.name === 'Hero')!.opacity = 0.5;
+    expect(bonesNotes(body).fades.join('|')).toContain('Body on Hero (it holds symbols with bones of their own)');
+  });
+
   it('lays out the layers around a skeleton that sit wholly behind or in front of it', () => {
     const doc = bonesExtrasDoc({ fade: true });
     const sym = Object.values(doc.symbols!)[0];
@@ -283,6 +324,39 @@ describe('Godot bones: a faded symbol is a CanvasGroup', () => {
     expect(lay.ok).toBe(true);
     const names = lay.top.map((i) => ('part' in i ? i.part.layer.name : 'skeleton'));
     expect(names).toEqual(['Shadow', 'skeleton', 'Hand']);
+  });
+});
+
+// ---------------------------------------------------------------- symbols inside symbols
+
+describe('Godot bones: a symbol with bones inside a symbol with bones', () => {
+  it('sits under the right bone of the outer symbol', () => {
+    const doc = bonesExtrasDoc({ bodyArm: true });
+    const top = bonesStage(doc, { start: 0, end: 11 });
+    expect(top.nested.map((n) => n.name)).toEqual(['Body']);
+    const body = top.nested[0].scope;
+    expect(body.parts.map((p) => p.layer.name)).toEqual(['Torso']);
+    expect(body.nested.map((n) => n.name)).toEqual(['Arm']);
+    expect(body.nested[0].bind?.bone).toBe('bb');
+    const { tscn } = sceneOf(doc, 1);
+    expect(tscn).toContain('[node name="Arm" type="Node2D" parent="Body/Body bones/Spine"]');
+    expect(tscn).toContain('[node name="Arm bones" type="Skeleton2D" parent="Body/Body bones/Spine/Arm"]');
+    expect(bonesNotes(doc).skipped).toEqual([]);
+  });
+
+  it('washes the inner symbol with the outer one tint too', () => {
+    const { tscn } = sceneOf(bonesExtrasDoc({ bodyArm: true }), 1);
+    const part = (n: string) => tscn.split(`[node name="${n}" type="Sprite2D"`)[1].split('\n\n')[0];
+    expect(part('Torso')).toContain('material = SubResource("Tint_');
+    expect(part('Upper arm')).toContain('material = SubResource("Tint_');
+    expect(part('Hand')).toContain('material = SubResource("Tint_');
+  });
+
+  it('stays under the bone when the outer symbol itself follows a bone on the stage', () => {
+    const doc = bonesExtrasDoc({ bodyArm: true, onBone: true });
+    const { tscn } = sceneOf(doc, 1);
+    expect(tscn).toContain('[node name="Body" type="Node2D" parent="Body bones/Root"]');
+    expect(tscn).toContain('[node name="Arm" type="Node2D" parent="Body bones/Root/Body/Body bones/Spine"]');
   });
 });
 
