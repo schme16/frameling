@@ -213,28 +213,58 @@ const ADAM7 = [
 ] as const;
 
 /** Undoes the row filters of `h` rows (each `stride` bytes after a filter byte) that start at `from` in `raw`. */
-function unfilter(raw: Uint8Array, from: number, stride: number, bpp: number, h: number): Uint8Array {
+export function unfilter(raw: Uint8Array, from: number, stride: number, bpp: number, h: number): Uint8Array {
   const rows = new Uint8Array(stride * h);
+  // One tight loop per filter type (the type is picked per row), with the first row and the first pixel split off so the
+  // loops have no edge checks. A big drawing has millions of bytes to go through here when a file opens.
+  const lead = Math.min(bpp, stride);
   for (let y = 0; y < h; y++) {
     const f = raw[from + y * (stride + 1)];
     const src = from + y * (stride + 1) + 1;
     const dst = y * stride;
     const prev = dst - stride;
-    for (let i = 0; i < stride; i++) {
-      const x = raw[src + i];
-      const a = i >= bpp ? rows[dst + i - bpp] : 0;
-      const b = y > 0 ? rows[prev + i] : 0;
-      const c = y > 0 && i >= bpp ? rows[prev + i - bpp] : 0;
-      let v: number;
-      switch (f) {
-        case 0: v = x; break;
-        case 1: v = x + a; break;
-        case 2: v = x + b; break;
-        case 3: v = x + ((a + b) >> 1); break;
-        case 4: v = x + paeth(a, b, c); break;
-        default: throw new Error('The PNG picture is damaged');
-      }
-      rows[dst + i] = v & 255;
+    switch (f) {
+      case 0:
+        rows.set(raw.subarray(src, src + stride), dst);
+        break;
+      case 1:
+        for (let i = 0; i < lead; i++) rows[dst + i] = raw[src + i];
+        for (let i = bpp; i < stride; i++) rows[dst + i] = raw[src + i] + rows[dst + i - bpp];
+        break;
+      case 2:
+        if (y === 0) rows.set(raw.subarray(src, src + stride), dst);
+        else for (let i = 0; i < stride; i++) rows[dst + i] = raw[src + i] + rows[prev + i];
+        break;
+      case 3:
+        if (y === 0) {
+          for (let i = 0; i < lead; i++) rows[dst + i] = raw[src + i];
+          for (let i = bpp; i < stride; i++) rows[dst + i] = raw[src + i] + (rows[dst + i - bpp] >> 1);
+        } else {
+          for (let i = 0; i < lead; i++) rows[dst + i] = raw[src + i] + (rows[prev + i] >> 1);
+          for (let i = bpp; i < stride; i++) rows[dst + i] = raw[src + i] + ((rows[dst + i - bpp] + rows[prev + i]) >> 1);
+        }
+        break;
+      case 4:
+        if (y === 0) {
+          // With nothing above, the Paeth guess is the pixel to the left.
+          for (let i = 0; i < lead; i++) rows[dst + i] = raw[src + i];
+          for (let i = bpp; i < stride; i++) rows[dst + i] = raw[src + i] + rows[dst + i - bpp];
+        } else {
+          for (let i = 0; i < lead; i++) rows[dst + i] = raw[src + i] + rows[prev + i];
+          for (let i = bpp; i < stride; i++) {
+            const a = rows[dst + i - bpp];
+            const b = rows[prev + i];
+            const c = rows[prev + i - bpp];
+            const pa = b > c ? b - c : c - b;
+            const pb = a > c ? a - c : c - a;
+            const pc = a + b - c - c;
+            const pcAbs = pc < 0 ? -pc : pc;
+            rows[dst + i] = raw[src + i] + (pa <= pb && pa <= pcAbs ? a : pb <= pcAbs ? b : c);
+          }
+        }
+        break;
+      default:
+        throw new Error('The PNG picture is damaged');
     }
   }
   return rows;
