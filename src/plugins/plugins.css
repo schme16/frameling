@@ -259,7 +259,7 @@
   margin: 0;
   padding: 10px;
   border-radius: var(--radius);
-  background: var(--peach-soft, var(--chosen-bg));
+  background: var(--peach-soft);
   font-size: var(--fs-small);
 }
 .plugin-approve-warn > svg {

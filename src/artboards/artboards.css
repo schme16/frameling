@@ -336,7 +336,7 @@
   border-radius: 6px;
 }
 .ab-recolour-row[data-changed='true'] {
-  background: var(--bg-hover, rgba(127, 127, 127, 0.12));
+  background: rgba(127, 127, 127, 0.12);
 }
 .ab-recolour-chip {
   width: 22px;

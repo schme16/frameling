@@ -70,7 +70,7 @@ What's in `test/`, by folder:
 | `tiles/` | Tile model, copy with alpha, export and edit. `godot-tiles-e2e` needs `GODOT_BIN`. |
 | `timeline/` | Timeline ops, geometry, playback, play range, hold until next, tween offer, the detailed timeline and both panels. |
 | `tools/` | Brush, selection, shapes, merge mode, wells, hold drawing, drawing gaps, follow-ups. |
-| `ui/` | Dock (model, live state and workspaces, stacked tab groups, floating windows and dragging, tool group names), right dock, panelInfo, tab fitting, menus, keyboard and keys, palette, themes, sounds, onboarding, Quill (runtime, view, goodbye, lines), starters, example cards, and the help checks. |
+| `ui/` | Dock (model, live state and workspaces, stacked tab groups, floating windows and dragging, tool group names), right dock, panelInfo, tab fitting, menus, keyboard and keys, palette, themes, sounds, onboarding, Quill (runtime, view, goodbye, lines), starters, example cards, and the help checks. `ui/css-vars.test.ts` fails when a `var(--x)` in the CSS or in an inline style is not defined anywhere (a theme token, a stylesheet or a style prop), because an undefined one just takes its fallback. |
 | top level | `smoke.test.ts` (package targets), `core.test.ts` (store, undo, registries), `case-sensitive-imports.test.ts`. |
 
 Godot checks inside vitest:
@@ -585,8 +585,14 @@ axe "serious" or "critical" result or a keyboard failure.
 ```bash
 xvfb-run -a -s "-screen 0 1600x1000x24" npm run a11y          # builds, then runs
 npm run build
-xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/a11y.cjs [--json out.json] [--themes] [--only name,name]
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/a11y.cjs [--json out.json] [--themes] [--only name,name] [--theme dark|light] [--shots dir]
 ```
+
+A full run is about 120 views and takes 4 to 6 minutes (more when the machine is busy), and prints nothing new when piped
+into `tail` until it ends, so give it time before calling it stuck. It always exits: 0 clean, 1 problems found, 2 when the
+run itself failed (an error, or no end after `A11Y_TIMEOUT` minutes, 30 by default). Without `--theme` it follows the
+system, which is light under xvfb, so run it once with `--theme dark` too: colour contrast problems differ by theme.
+`--shots <dir>` saves a picture of each dialog as it is checked (it puts the window on the virtual screen).
 
 Popups (`popup ...`) also check that Tab and Shift+Tab out of one close it and land on another control, and so does
 focus moving elsewhere. Every scenario sets up its own state, so any `--only` subset works on its own;

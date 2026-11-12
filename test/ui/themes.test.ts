@@ -201,6 +201,22 @@ describe('deriving tokens', () => {
     expect(next['hover-bg']).toBe('#123456');
     expect(deriveTokens(t, 'dark', ['text'])['line-soft']).toBe(t['line-soft']);
   });
+  it('the soft warning tint follows the panel and peach, and text reads on it in every built-in theme', () => {
+    for (const t of BUILT_IN_THEMES) {
+      expect(isHex(t.tokens['peach-soft']), t.id).toBe(true);
+      expect(contrast(t.tokens.text, t.tokens['peach-soft']), t.id).toBeGreaterThanOrEqual(4.5);
+      // A tint, not the gold chosen colour: it stays close to the panel it sits on.
+      expect(contrast(t.tokens['peach-soft'], t.tokens.panel), t.id).toBeLessThan(1.5);
+    }
+    const t = getBuiltIn(DEFAULT_DARK)!.tokens;
+    const next = deriveTokens({ ...t, panel: '#102030' }, 'dark', ['panel']);
+    expect(next['peach-soft']).toBe(mix(t.peach, '#102030', 0.14));
+    expect(deriveTokens(t, 'dark', ['text'])['peach-soft']).toBe(t['peach-soft']);
+    // A custom theme saved before the tint existed gets one worked out.
+    const old: Record<string, unknown> = { ...t };
+    delete old['peach-soft'];
+    expect(completeTokens(old, 'dark')['peach-soft']).toBe(t['peach-soft']);
+  });
   it('every editor control is a real core token', () => {
     for (const c of EDITOR_CONTROLS) expect((CORE_TOKENS as readonly string[]).includes(c.token), c.token).toBe(true);
     for (const c of CORE_TOKENS) expect(EDITOR_CONTROLS.some((e) => e.token === c), c).toBe(true);
