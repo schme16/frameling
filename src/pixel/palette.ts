@@ -163,6 +163,29 @@ export function colorUse(pixels: Uint8ClampedArray, rgb: Uint8Array, counts: Uin
   colorUseRange(pixels, rgb, counts, 0, pixels.length >> 2);
 }
 
+/** Counts already made, by pixel array. Edits replace the array, so a hit is always about these exact pixels. */
+const useCache = new WeakMap<Uint8ClampedArray, { colors: readonly string[]; counts: Uint32Array }>();
+
+/** The count `colorUse` would make for these pixels and palette, if it was made before (frames you come back to cost nothing). */
+export function cachedColorUse(pixels: Uint8ClampedArray, colors: readonly string[]): Uint32Array | null {
+  const hit = useCache.get(pixels);
+  return hit && hit.colors === colors ? hit.counts : null;
+}
+
+export function rememberColorUse(pixels: Uint8ClampedArray, colors: readonly string[], counts: Uint32Array): void {
+  useCache.set(pixels, { colors, counts });
+}
+
+/** `colorUse` for a palette's colour list, answered from the cache when these pixels were counted with this very list. */
+export function colorUseOf(pixels: Uint8ClampedArray, colors: readonly string[]): Uint32Array {
+  const hit = cachedColorUse(pixels, colors);
+  if (hit) return hit;
+  const counts = new Uint32Array(colors.length);
+  colorUse(pixels, paletteRgb(colors), counts);
+  rememberColorUse(pixels, colors, counts);
+  return counts;
+}
+
 /**
  * The same count over pixels [from, to) only, so a big drawing can be counted a slice at a time without holding the
  * page. Reads the block as 32-bit pixels and looks each colour up in a small hash of the palette (the first of equal

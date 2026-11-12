@@ -10,7 +10,7 @@ import { noteColorUsed } from '../tools/recent';
 import { STARTER_PALETTES } from './builtin';
 import { changePaletteColor, reduceActiveToPalette, setDocPalette, togglePaletteLock } from './commands';
 import { exportPalette, importPalette, paletteFromDrawing } from './palette-files';
-import { colorUse, colorUseRange, docPalette, insertColor, makeRamp, moveColor, paletteRgb, ramps, removeColor, toggleRampStart } from './palette';
+import { cachedColorUse, colorUseOf, colorUseRange, docPalette, insertColor, makeRamp, moveColor, paletteRgb, ramps, removeColor, rememberColorUse, toggleRampStart } from './palette';
 import type { PaletteFormat } from './palette-io';
 import '../canvas/canvas.css';
 import './pixel.css';
@@ -128,17 +128,19 @@ export function PalettePanel() {
     return d?.kind === 'pixel' ? d : null;
   })() : null;
   const slowDrawing = !!drawing && drawing.pixels.length > SLOW_PIXELS * 4;
-  const quick = useMemo(() => {
-    const counts = new Uint32Array(palette.colors.length);
-    if (drawing && !slowDrawing) colorUse(drawing.pixels, paletteRgb(palette.colors), counts);
-    return counts;
-  }, [drawing, slowDrawing, palette.colors]);
+  // Counts are kept per pixel array, so stepping back to a frame already counted costs nothing.
+  const quick = useMemo(() => (drawing && !slowDrawing ? colorUseOf(drawing.pixels, palette.colors) : new Uint32Array(palette.colors.length)), [drawing, slowDrawing, palette.colors]);
   // A big drawing is counted a slice at a time after the edit, so letting go of the pen never waits for it. The dots
   // keep the last count until the new one is ready.
   const [counted, setCounted] = useState<Uint32Array | null>(null);
   useEffect(() => {
     if (!drawing || !slowDrawing) return;
     const px = drawing.pixels;
+    const known = cachedColorUse(px, palette.colors);
+    if (known) {
+      setCounted(known);
+      return;
+    }
     const rgb = paletteRgb(palette.colors);
     const counts = new Uint32Array(palette.colors.length);
     const total = px.length >> 2;
@@ -149,7 +151,10 @@ export function PalettePanel() {
       colorUseRange(px, rgb, counts, at, to);
       at = to;
       if (at < total) timer = window.setTimeout(step, 0);
-      else setCounted(counts);
+      else {
+        rememberColorUse(px, palette.colors, counts);
+        setCounted(counts);
+      }
     };
     timer = window.setTimeout(step, 30);
     return () => window.clearTimeout(timer);

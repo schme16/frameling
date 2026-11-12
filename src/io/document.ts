@@ -6,7 +6,7 @@ import { uid } from '../core/doc';
 import { store } from '../core/store';
 import type { RecentFile } from '../preload/api';
 import { baseName, desktop, stripExt } from './desktop';
-import { FileProblem, loadFile, saveFileAsync } from './file';
+import { FileProblem, loadFileAsync, saveFileAsync } from './file';
 import { notify } from './notify';
 import { thumbnailOf } from './thumb';
 
@@ -61,7 +61,7 @@ export async function keepUnsavedWork(): Promise<void> {
 export async function loadBytes(bytes: Uint8Array, filePath: string | null, opts: { dirty?: boolean; confirm?: boolean } = {}): Promise<boolean> {
   let loaded;
   try {
-    loaded = loadFile(bytes);
+    loaded = await loadFileAsync(bytes);
   } catch (e) {
     notify(e instanceof FileProblem ? e.message : 'Frameling could not open that file.', 'error');
     return false;

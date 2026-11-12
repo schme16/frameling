@@ -8,7 +8,8 @@ import { cleanGradients } from '../core/gradient';
 import { readFolders, readLayerLook } from '../effects/io';
 import { strFromU8, strToU8, unzipSync, zip, zipSync, type Zippable } from 'fflate';
 import { BONE_STRETCH, FORMAT_VERSION, LAYER_LABELS, type LayerLabel, type Cel, type Doc, type Drawing, type KeptShape, type Layer, type Shape, type Slice, type SliceKey, type SymbolDef, type Tween, type InstanceShape, type ClipFlow, type ClipTransition, type Tile, type Tileset, type Bone, type BonePose, type LayerBind, type Pose, type Rig, type SavedPose } from '../core/format';
-import { decodePng, encodePng } from './png';
+import { decodePng, encodePng, type RawImage } from './png';
+import { decodePngsInWorkers, zipInWorker } from './ioClient';
 import { trimmedDrawing } from '../core/pixelBounds';
 import { rootDoc } from '../core/symbols';
 import { isEasing } from '../core/ease';
@@ -62,13 +63,88 @@ function pngFor(d: { width: number; height: number; pixels: Uint8ClampedArray })
 
 const safeName = (id: string) => id.replace(/[^A-Za-z0-9_-]/g, '_');
 
+// doc.json is mostly drawings, and most of them are the same object from one save to the next (an edit replaces the
+// drawing it touches). So a vector or tile drawing's text is kept, already UTF-8 encoded, by drawing: saving again only
+// has to write out what changed. A hit needs the very same object with the very same shapes array and length.
+interface DrawingText {
+  /** `"id":{...}` as UTF-8. */
+  bytes: Uint8Array;
+  id: string;
+  shapes: unknown;
+  kept: unknown;
+  count: number;
+}
+const drawingText = new WeakMap<object, DrawingText>();
+const enc = new TextEncoder();
+
+/** One entry of the saved `drawings` object: what to write, as a value or (when it was kept) as ready `"id":value` bytes. */
+type DrawingEntry = { id: string; value: () => unknown; bytes?: Uint8Array };
+
+/** The entry for a drawing whose saved form is `value()`, with its bytes from the cache when this drawing was written before. */
+function cachedEntry(id: string, d: Drawing, value: () => unknown): DrawingEntry {
+  const shapes = d.kind === 'vector' ? d.shapes : undefined;
+  const kept = d.kind === 'vector' ? d.kept : undefined;
+  const count = d.kind === 'vector' ? d.shapes.length : d.kind === 'tilemap' ? d.cells.length : 0;
+  const hit = drawingText.get(d);
+  if (hit && hit.id === id && hit.shapes === shapes && hit.kept === kept && hit.count === count) return { id, value, bytes: hit.bytes };
+  const bytes = enc.encode(`${JSON.stringify(id)}:${JSON.stringify(value())}`);
+  drawingText.set(d, { bytes, id, shapes, kept, count });
+  return { id, value, bytes };
+}
+
+/** A string the saved document cannot contain by accident: stands where the drawings go while the rest is written out. */
+const DRAWINGS_MARK = '\u0000frameling-drawings\u0000';
+const COMMA = new Uint8Array([0x2c]);
+
+/**
+ * The UTF-8 bytes of `JSON.stringify({ ...rest, drawings })`, where `rest` holds the marker in `drawings`' place. The
+ * same bytes as stringifying everything in one go: the rest is written once, and the marker is swapped for the
+ * drawings' text, which for a drawing seen before is copied from the cache instead of written again.
+ */
+function docJsonBytes(rest: Record<string, unknown>, entries: DrawingEntry[]): Uint8Array {
+  const text = JSON.stringify(rest);
+  const mark = JSON.stringify(DRAWINGS_MARK);
+  const at = text.indexOf(mark);
+  if (at < 0 || text.indexOf(mark, at + 1) >= 0) {
+    // The marker is somewhere it should not be (or missing): write it the plain way.
+    const all: Record<string, unknown> = {};
+    for (const e of entries) all[e.id] = e.value();
+    return enc.encode(JSON.stringify({ ...rest, drawings: all }));
+  }
+  const parts: Uint8Array[] = [enc.encode(text.slice(0, at) + '{')];
+  // Entries without bytes are written as text and encoded in one go.
+  let pending = '';
+  entries.forEach((e, i) => {
+    if (!e.bytes) {
+      pending += `${i ? ',' : ''}${JSON.stringify(e.id)}:${JSON.stringify(e.value())}`;
+      return;
+    }
+    if (pending) {
+      parts.push(enc.encode(pending));
+      pending = '';
+    }
+    if (i) parts.push(COMMA);
+    parts.push(e.bytes);
+  });
+  parts.push(enc.encode(pending + '}' + text.slice(at + mark.length)));
+  let total = 0;
+  for (const p of parts) total += p.length;
+  const out = new Uint8Array(total);
+  let o = 0;
+  for (const p of parts) {
+    out.set(p, o);
+    o += p.length;
+  }
+  return out;
+}
+
 /** Everything that goes in the file, ready to be zipped (the part of saving that has to look at the document). */
 function filesToSave(open: Doc, appVersion: string, now: Date): Zippable {
   // Saved as if no symbol were open for editing.
   const closed = closedForSave(rootDoc(open));
   const doc = closed.doc;
   const files: Zippable = {};
-  const drawings: Record<string, unknown> = {};
+  const entries: DrawingEntry[] = [];
   const used = new Set<string>();
   // A drawing a variation redrew is stored as what differs from its original's, when that is smaller.
   const diffs = variationDiffs(doc, files, pngFor);
@@ -81,21 +157,27 @@ function filesToSave(open: Doc, appVersion: string, now: Date): Zippable {
       const t = tileFrames.has(id) ? d : trimmedDrawing(d);
       if (t.width < 1 || t.height < 1) {
         // Nothing painted: no picture entry at all.
-        drawings[id] = { ...t, width: 0, height: 0, pixels: '' };
+        const empty = { ...t, width: 0, height: 0, pixels: '' };
+        entries.push({ id, value: () => empty });
         continue;
       }
       let name = `pixels/${safeName(id)}.png`;
       while (used.has(name)) name = name.replace(/\.png$/, '_.png');
       used.add(name);
       files[name] = [pngFor(t), { level: 0 }];
-      drawings[id] = { ...t, pixels: name };
+      const saved = { ...t, pixels: name };
+      entries.push({ id, value: () => saved });
     } else if (d.kind === 'tilemap') {
-      drawings[id] = { ...d, cells: Array.from(d.cells) };
+      entries.push(cachedEntry(id, d, () => ({ ...d, cells: Array.from(d.cells) })));
     } else if (d.kind === 'vector' && d.kept?.length) {
-      const { kept: _kept, ...rest } = d;
-      drawings[id] = { ...rest, shapes: shapesForSave(d) };
+      entries.push(
+        cachedEntry(id, d, () => {
+          const { kept: _kept, ...rest } = d;
+          return { ...rest, shapes: shapesForSave(d) };
+        }),
+      );
     } else {
-      drawings[id] = d;
+      entries.push(d.kind === 'vector' ? cachedEntry(id, d, () => d) : { id, value: () => d });
     }
   }
   const manifest: Manifest = { format: 'frameling', version: FORMAT_VERSION, app: appVersion, created: now.toISOString(), name: doc.name };
@@ -103,7 +185,7 @@ function filesToSave(open: Doc, appVersion: string, now: Date): Zippable {
   // Sound bytes go in their own entries; `audio` in doc.json then names them (undefined leaves the key out).
   const audio = packAudio(doc, files);
   // Artboards that aren't open carry their own sounds the same way.
-  files['doc.json'] = strToU8(JSON.stringify({ ...doc, drawings, audio, ...packArtboards(doc, files, diffs), ...(closed.reopen ? { variationOpen: closed.reopen } : {}) }));
+  files['doc.json'] = docJsonBytes({ ...doc, drawings: DRAWINGS_MARK, audio, ...packArtboards(doc, files, diffs), ...(closed.reopen ? { variationOpen: closed.reopen } : {}) }, entries);
   return files;
 }
 
@@ -116,8 +198,16 @@ export function saveFile(open: Doc, appVersion = '', now: Date = new Date()): Ui
  * the pen meanwhile (on a big drawing the sync version holds the page for a second or more). Autosave, Save and
  * versions use this.
  */
-export function saveFileAsync(open: Doc, appVersion = '', now: Date = new Date()): Promise<Uint8Array> {
-  const files = filesToSave(open, appVersion, now);
+export async function saveFileAsync(open: Doc, appVersion = '', now: Date = new Date()): Promise<Uint8Array> {
+  let files = filesToSave(open, appVersion, now);
+  // One worker does all the zipping (checksums included, which fflate's own async zip would do on this thread).
+  // doc.json is the big one and is made fresh for each save, so its buffer is handed over rather than copied.
+  const doc = files['doc.json'];
+  const size = doc instanceof Uint8Array ? doc.length : 0;
+  const made = await zipInWorker(files, 6, doc instanceof Uint8Array ? [doc] : []);
+  if (made) return made;
+  // No worker (or it failed): the handed over buffer is gone, so make the files again.
+  if (doc instanceof Uint8Array && doc.length !== size) files = filesToSave(open, appVersion, now);
   return new Promise((resolve, reject) => zip(files, { level: 6 }, (err, data) => (err ? reject(err) : resolve(data))));
 }
 
@@ -182,6 +272,19 @@ const bool = (v: unknown, fallback: boolean) => (typeof v === 'boolean' ? v : fa
 const damaged = () => new FileProblem('This file looks damaged, so Frameling could not open it.');
 
 export function loadFile(bytes: Uint8Array): LoadedFile {
+  return loadEntries(unzipFile(bytes));
+}
+
+/**
+ * The same as `loadFile`, with the pictures of a big pixel document decoded on worker threads in parallel (inflating and
+ * unfiltering 100 frames of a large stage holds the page for a second or more). Falls back to decoding here.
+ */
+export async function loadFileAsync(bytes: Uint8Array): Promise<LoadedFile> {
+  const entries = unzipFile(bytes);
+  return loadEntries(entries, await decodePngsInWorkers(entries));
+}
+
+function unzipFile(bytes: Uint8Array): Record<string, Uint8Array> {
   let entries: Record<string, Uint8Array>;
   try {
     entries = unzipSync(bytes, { filter: (f) => f.originalSize <= MAX_UNZIPPED && (f.name === 'manifest.json' || f.name === 'doc.json' || f.name.startsWith('pixels/') || f.name.startsWith('audio/')) });
@@ -189,7 +292,10 @@ export function loadFile(bytes: Uint8Array): LoadedFile {
     throw new FileProblem("That doesn't look like a Frameling file, so it could not be opened.");
   }
   if (!entries['manifest.json'] || !entries['doc.json']) throw new FileProblem("That doesn't look like a Frameling file, so it could not be opened.");
+  return entries;
+}
 
+function loadEntries(entries: Record<string, Uint8Array>, decoded?: Map<string, RawImage>): LoadedFile {
   let manifest: Manifest;
   let raw: any;
   try {
@@ -205,11 +311,11 @@ export function loadFile(bytes: Uint8Array): LoadedFile {
 
   const warnings: string[] = [];
   raw = migrate(raw, version);
-  const doc = buildDoc(raw, entries, warnings);
+  const doc = buildDoc(raw, entries, warnings, decoded);
   return { doc, manifest, warnings };
 }
 
-function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: string[]): Doc {
+function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: string[], decoded?: Map<string, RawImage>): Doc {
   if (raw.format !== 'frameling') throw damaged();
   const width = num(raw.width, 0);
   const height = num(raw.height, 0);
@@ -252,7 +358,7 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
       if (typeof name !== 'string' || !/^pixels\/[A-Za-z0-9_-]+\.png$/.test(name) || !entries[name]) throw damaged();
       let img;
       try {
-        img = decodePng(entries[name]);
+        img = decoded?.get(name) ?? decodePng(entries[name]);
       } catch {
         throw damaged();
       }

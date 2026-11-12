@@ -445,7 +445,8 @@ const ACTIONS = {
   'open-file': {
     kinds: ['vector', 'pixel'], unit: 'opens', units: 1,
     async setup() { await ev(`window.__swBytes = window.__framelingArtboards.saveBytes(); true`); },
-    async act() { await ev(`window.__framelingArtboards.openBytes(window.__swBytes); true`); await sleep(400); },
+    // The app opens files through loadFileAsync (pictures decoded on workers); older builds only had the sync hook.
+    async act() { await ev(`(async () => { const A = window.__framelingArtboards; await (A.openBytesAsync || (async (b) => A.openBytes(b)))(window.__swBytes); return true; })()`); await sleep(400); },
   },
   'autosave': {
     kinds: ['vector', 'pixel'], unit: 'saves', units: 1,

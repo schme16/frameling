@@ -169,3 +169,8 @@ software, so `setTransform` and `drawImage` (where Chrome does the drawing) and 
 called) are large and not the app's script; compare them between runs rather than chasing them, and look at the app's own functions.
 Numbers move 20 to 30 percent from run to run on small actions; run twice before believing a small difference.
 
+
+The second sweep round (`results/sweep-after-2.json`, compare it with `sweep-after.json` using `compare-sweep.cjs`) moved the
+rest of file saving and opening off the page's thread: `save-file` and `autosave` hand a finished `doc.json` (kept per drawing
+between saves) to a worker, and `open-file` of a pixel document decodes its pictures on workers (the harness calls
+`openBytesAsync`, the path File > Open takes; `openBytes` is the plain synchronous reader, kept for older builds).

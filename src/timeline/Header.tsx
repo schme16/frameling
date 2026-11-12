@@ -15,7 +15,7 @@ import { useFeaturesVersion } from '../features/use';
 import { TimelineSlot } from './slots';
 import { usePrefs } from '../ui/prefs';
 import { moreRequest } from './headerMenu';
-import { FOLD_STEPS, chooseFold, foldedAt, foldSlack, switchLabel, type FoldStep } from './headerFold';
+import { FOLD_STEPS, chooseFold, foldedAt, foldSlack, headerChange, switchLabel, type FoldStep } from './headerFold';
 
 function Btn({ id, icon, text, title, pressed, disabled, onClick, className = '', step }: { id?: string; icon?: string; text?: ReactNode; title: string; pressed?: boolean; disabled?: boolean; onClick?: () => void; className?: string; step?: FoldStep }) {
   return (
@@ -349,7 +349,11 @@ function neededWidth(h: HTMLElement): number {
   return sum + (parseFloat(cs.columnGap) || 0) * Math.max(0, n - 1);
 }
 
-const setFolded = (h: HTMLElement, level: number) => h.setAttribute('data-folded', foldedAt(level).join(' '));
+// Writing the same value again still makes the page redo its styles, and measuring right after forces a layout.
+const setFolded = (h: HTMLElement, level: number) => {
+  const v = foldedAt(level).join(' ');
+  if (h.getAttribute('data-folded') !== v) h.setAttribute('data-folded', v);
+};
 
 /**
  * Folds the header's buttons into the "more" menu only as far as the real width needs (the rarest first), and unfolds
@@ -373,7 +377,15 @@ function useFolding(ref: { current: HTMLElement | null }): number {
     const ro = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(() => fit(true));
     ro?.observe(h);
     // Chips and buttons coming and going can free or need room; a changing number (the frame counter) can only need it.
-    const mo = new MutationObserver((rs) => fit(rs.some((r) => r.type === 'childList')));
+    // Only a button or chip coming or going, or the text getting longer, is worth measuring (see headerChange).
+    let textLen = (h.textContent ?? '').length;
+    const mo = new MutationObserver((rs) => {
+      const len = (h.textContent ?? '').length;
+      const grew = len > textLen;
+      textLen = len;
+      const change = headerChange(rs, grew);
+      if (change !== 'none') fit(change === 'structure');
+    });
     mo.observe(h, { childList: true, subtree: true, characterData: true });
     void document.fonts?.ready.then(() => fit(true));
     return () => {
