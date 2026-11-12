@@ -458,24 +458,35 @@ export function setExporterOpener(fn: typeof exporterOpener): void {
   exporterOpener = fn;
 }
 
+/** Bumped by every stop, so a start that was still waiting for its sandbox can tell it was overtaken (turned off, or restarted with other powers). */
+const epochs = new Map<string, number>();
+const starting = new Set<string>();
+
 async function start(p: InstalledPlugin): Promise<void> {
   const id = p.manifest.id;
   const pkg = packages.get(id);
-  if (!pkg || runtimes.has(id)) return;
+  if (!pkg || runtimes.has(id) || starting.has(id)) return;
+  const epoch = epochs.get(id) ?? 0;
+  const current = () => (epochs.get(id) ?? 0) === epoch;
+  starting.add(id);
   patch(id, { status: 'starting', problem: undefined });
   const network = p.granted.includes('network') ? p.network : [];
   try {
     const transport = await starter(pkg, network);
-    // Turned off while it was starting.
-    if (!plugins.get().find((x) => x.manifest.id === id)?.enabled) return transport.close();
+    // Turned off, or restarted with other powers, while it was starting: this one must not run (with the old powers).
+    if (!current() || !plugins.get().find((x) => x.manifest.id === id)?.enabled) return transport.close();
     const rt = new PluginRuntime(pkg.manifest, p.granted, transport, hooksFor(pkg.manifest, (def) => exporterOpener(id, def)));
     runtimes.set(id, rt);
   } catch (e) {
-    patch(id, { status: 'problem', problem: e instanceof Error ? e.message : 'It could not start.' });
+    if (current()) patch(id, { status: 'problem', problem: e instanceof Error ? e.message : 'It could not start.' });
+  } finally {
+    if (current()) starting.delete(id);
   }
 }
 
 function stop(id: string): void {
+  epochs.set(id, (epochs.get(id) ?? 0) + 1);
+  starting.delete(id);
   runtimes.get(id)?.stop();
   runtimes.delete(id);
   // Its tools and canvas guide go with it, and the person is taken off a tool that is gone.
@@ -702,7 +713,7 @@ export async function removePlugin(id: string): Promise<void> {
 
 /** Turns plugins off and forgets them (tests). */
 export function resetPluginsForTests(): void {
-  for (const id of [...runtimes.keys()]) stop(id);
+  for (const id of new Set([...runtimes.keys(), ...starting])) stop(id);
   packages.clear();
   plugins.set([]);
   panelTrees.set({});
