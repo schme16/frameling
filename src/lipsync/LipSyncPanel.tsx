@@ -96,6 +96,9 @@ export function LipSyncPanel() {
         <button type="button" className="io-btn ls-auto" disabled={!has} title={has ? 'Listen to the sound and put a mouth on every frame' : 'Add a sound first (File > Import sound)'} onClick={() => getCommand('lipsync.auto')?.run()}>
           Auto lip sync
         </button>
+        <button type="button" className="io-btn ls-auto" disabled={!has} title="Type what is said, and the mouths line up with the words" onClick={() => getCommand('lipsync.autoWords')?.run()}>
+          With the words...
+        </button>
       </div>
 
       <div className="ls-strip" role="listbox" aria-label="Mouth on each frame around the playhead">

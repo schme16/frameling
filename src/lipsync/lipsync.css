@@ -10,6 +10,7 @@
 }
 .ls-head {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   justify-content: space-between;
@@ -184,4 +185,14 @@
   border: 1px solid var(--line);
   border-radius: var(--radius-small);
   padding: 4px 6px;
+}
+.ls-say {
+  font: inherit;
+  font-weight: 400;
+  color: var(--text);
+  background: var(--raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  padding: 6px;
+  resize: vertical;
 }

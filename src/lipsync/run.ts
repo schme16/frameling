@@ -2,7 +2,7 @@
 import type { Doc, Id } from '../core/format';
 import { store } from '../core/store';
 import { decodeClip } from '../audio/decode';
-import { guessMouths, toMono } from './analysis';
+import { guessMouthsAsync, toMono } from './analysis';
 import { applyMouths, isMouthLayer } from './apply';
 
 export type LipSyncResult = { ok: true; keys: number; first: number; frames: number } | { ok: false; why: string };
@@ -22,7 +22,8 @@ export function samplesFor(channels: Float32Array[], sampleRate: number, clip: {
   return skip ? mono.subarray(Math.min(mono.length, skip)) : mono;
 }
 
-export async function lipSync(clipId: Id, layerId: Id): Promise<LipSyncResult> {
+/** `text` is what is said, if the person typed it: it helps line the mouths up with the words. */
+export async function lipSync(clipId: Id, layerId: Id, text = ''): Promise<LipSyncResult> {
   const doc: Doc = store().get().doc;
   const clip = doc.audio?.find((c) => c.id === clipId);
   const layer = doc.layers.find((l) => l.id === layerId);
@@ -33,7 +34,7 @@ export async function lipSync(clipId: Id, layerId: Id): Promise<LipSyncResult> {
   const { first, frames } = soundFrames({ start: clip.start, duration: buf.duration }, doc.fps, doc.length);
   if (!frames) return { ok: false, why: 'The sound sits outside the animation. Drag it onto the frames, or make the animation longer.' };
   const channels = Array.from({ length: buf.numberOfChannels }, (_, c) => buf.getChannelData(c));
-  const mouths = guessMouths(samplesFor(channels, buf.sampleRate, clip, doc.fps), buf.sampleRate, doc.fps, frames);
+  const mouths = await guessMouthsAsync(samplesFor(channels, buf.sampleRate, clip, doc.fps), buf.sampleRate, doc.fps, frames, { text: text.trim() });
   let keys = 0;
   store().update(`Lip sync "${clip.name}"`, (d) => {
     keys = applyMouths(d, layerId, first, mouths);

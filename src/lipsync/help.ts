@@ -7,7 +7,7 @@ export const lipsyncHelp: HelpTopic[] = [
     section: 'Sound',
     media: 'lip-sync.mp4',
     summary: 'Frameling listens to a sound and puts the right mouth on every frame. You can fix any mouth by hand.',
-    keywords: ['lip sync', 'lipsync', 'mouth', 'talking', 'speech', 'phoneme', 'viseme', 'mouth chart', 'phoneme chart', 'dialogue', 'auto', 'speak'],
+    keywords: ['lip sync', 'words', 'script', 'transcript', 'lipsync', 'mouth', 'talking', 'speech', 'phoneme', 'viseme', 'mouth chart', 'phoneme chart', 'dialogue', 'auto', 'speak'],
     body: `Lip sync is matching a character's mouth to what they say. Frameling listens to the sound and does a first pass, then you tidy it up. Nothing is sent anywhere.
 
 ## What you need
@@ -36,7 +36,11 @@ Frameling finds each mouth by the **name of its frame** ("M B P", "mbp" and "MBP
 
 Press **Animate > Auto lip sync...** (or the button in the Lip sync panel). With more than one sound or mouth layer it asks which. It writes a key for each stretch of the same mouth, as **one undo step**.
 
-It's a good first pass, not a perfect one: it listens for how loud and how hissy the sound is, and roughly which vowel. Fix the rest by hand.
+It's a good first pass, not a perfect one. Frameling listens to how loud the sound is, where its energy sits (which tells the vowels apart), whether it is hissy or humming, and the quick dips that mean the lips closed. It all happens on your computer. Fix the rest by hand.
+
+## Typing the words
+
+If you know what is said, press **Animate > Auto lip sync with the words...** (or **With the words...** in the Lip sync panel) and type it. Frameling lines the mouths up with your words, which helps most when the recording is noisy or mumbled. Frameling remembers the words for that sound until you close the app.
 
 ## Fixing it by hand
 
