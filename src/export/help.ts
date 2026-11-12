@@ -407,7 +407,7 @@ The second class picks the clip. Loops keep going; clips that don't loop stop on
 Under **File type** in the Export window:
 
 - **Lottie (.json)**: one plain file that every Lottie player opens.
-- **dotLottie (.lottie)**: a much smaller zip holding the animation and its pictures as files. Plays in the dotLottie players (LottieFiles, web, iOS, Android). Its **layout** is *Current* (default) or *Older*, for old players. Both keep the loop setting: *Current* as a tiny play script (the web player runs it when you give it `stateMachineId`).
+- **dotLottie (.lottie)**: a much smaller zip holding the animation and its pictures as files. Plays in the dotLottie players (LottieFiles, web, iOS, Android). Its **layout** is *Current* (default) or *Older*, for old players. Both keep the loop setting: *Current* as a tiny play script (the web player runs it when given a stateMachineId).
 
 ## What carries over
 
