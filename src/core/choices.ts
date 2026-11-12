@@ -27,6 +27,8 @@ export interface ChoiceDef<V extends string = string> {
   /** Groups it in Preferences > Behaviour. */
   category: string;
   help?: string;
+  /** Quill asks it: his face sits beside the question in the dialog (and it stays a plain question with Quill off). */
+  quill?: boolean;
   /** Never ask: just use the remembered answer or the default (for choices that are preferences, not questions). */
   silent?: boolean;
 }
@@ -146,6 +148,17 @@ export function withChoice<V extends string = string>(id: string, fn: (value: V)
     return;
   }
   void choose<V>(id).then(fn);
+}
+
+/** Calls `fn` whenever a remembered answer changes, with the choice and its new value (undefined = forgotten). */
+export function onChoiceChange(fn: (id: string, value: string | undefined) => void): () => void {
+  let seen = { ...answers };
+  const check = () => {
+    for (const id of new Set([...Object.keys(seen), ...Object.keys(answers)])) if (seen[id] !== answers[id]) fn(id, answers[id]);
+    seen = { ...answers };
+  };
+  listeners.add(check);
+  return () => void listeners.delete(check);
 }
 
 /** React: the current answer (remembered or default), re-rendering when it changes. */

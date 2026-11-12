@@ -41,8 +41,8 @@ export const BUILTIN_RAILS: Record<string, ToolGroup[]> = {
   // Pixel tools first: draw with the eyedropper in reach, shade, dither and pixel select, then shapes; the vector-only
   // tools (select and pen, rig) come after.
   pixel: [
-    { id: 'draw', tools: ['pencil', 'brush', 'eraser', 'fill', 'eyedropper'] },
-    { id: 'pixel', name: 'Pixel tools', tools: ['shade', 'dither', 'pixel-select'] },
+    { id: 'draw', tools: ['pencil', 'eraser', 'fill', 'eyedropper'] },
+    { id: 'pixel', name: 'Pixel tools', tools: ['shade', 'dither', 'spray', 'pixel-select'] },
     { id: 'shapes', tools: ['line', 'rect', 'ellipse', 'polygon', 'star'] },
     { id: 'view', tools: ['hand', 'zoom'] },
     { id: 'extras', tools: [] },

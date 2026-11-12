@@ -3608,3 +3608,14 @@ body.dock-dragging * {
 body.dock-dragging .ui-tip {
   display: none;
 }
+
+/* Quill beside a question he asks (ChoiceDialog.tsx). */
+.ui-choice-quill {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.ui-choice-quill .ui-choice-q {
+  margin: 0;
+}

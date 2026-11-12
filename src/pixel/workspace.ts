@@ -5,6 +5,7 @@ import type { Doc, Id } from '../core/format';
 import type { ExportSettings } from '../export/types';
 import { applyWorkspace, dock, hidePanel, inPixelWorkspace, showPanel } from '../ui/dock';
 import { isPlaced } from '../ui/dockModel';
+import { isPixelDoc } from './way';
 
 export const PIXEL_DOC_CHOICE = 'workspace.pixelDocs';
 
@@ -21,33 +22,30 @@ registerChoice({
   ],
 });
 
-/** Pixel art: at least one pixel layer and no vector drawing layers (reference layers and rigs don't count). */
-export function isPixelDoc(doc: Doc): boolean {
-  let pixel = 0;
-  for (const l of doc.layers) {
-    if (l.kind === 'pixel') pixel++;
-    else if (l.kind === 'vector' && !l.reference && !l.rig) return false;
-  }
-  return pixel > 0;
-}
+export { isPixelDoc };
 
 interface DocSource {
   get(): { doc: Doc };
   subscribe(fn: () => void): () => void;
 }
 
-/** Watches for documents opening, and offers the Pixel workspace when one is pixel art and you're not in it. */
-export function watchPixelDocs(s: DocSource, switchTo: () => void = () => void applyWorkspace('pixel')): () => void {
+/**
+ * Watches for documents opening, and offers the Pixel workspace when one is pixel art and you're not in it. `then` runs
+ * after that question (or at once when you're in it already): the "Coming from Aseprite?" question.
+ */
+export function watchPixelDocs(s: DocSource, switchTo: () => void = () => void applyWorkspace('pixel'), then: () => void = () => {}): () => void {
   // The document that's there at start-up isn't "opening".
   let last: Id = s.get().doc.id;
   return s.subscribe(() => {
     const { doc } = s.get();
     if (doc.id === last) return;
     last = doc.id;
-    if (!isPixelDoc(doc) || inPixelWorkspace()) return;
+    if (!isPixelDoc(doc)) return;
+    if (inPixelWorkspace()) return then();
     withChoice(PIXEL_DOC_CHOICE, (v) => {
       // Still the same document, and still not in a pixel workspace, by the time they answer.
       if (v === 'switch' && s.get().doc.id === doc.id && !inPixelWorkspace()) switchTo();
+      then();
     });
   });
 }

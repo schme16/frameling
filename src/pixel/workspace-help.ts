@@ -14,8 +14,9 @@ registerHelpTopics([
 
 What changes:
 
-- **The tool strip shows only pixel tools** on a pixel layer: pencil, brush, eraser, bucket, shade, dither, line, rectangle, ellipse, select, eyedropper, hand and zoom. Other tools still work from their keys.
-- **The [Palette](help:palette) is on the left, with bigger colours**, laid out in its ramps.
+- **The tool strip shows only pixel tools** on a pixel layer: pencil, eraser, bucket, shade, dither, spray, line, rectangle, ellipse, select, eyedropper, hand and zoom. The pencil has a size, and size 1 is the plain pencil. Other tools still work from their keys.
+- **The [Palette](help:palette) is on the left, with bigger colours**, laid out in its ramps, and the two big [Paint and Back](help:pixel-wells) squares at the top.
+- **The mode chip** at the start of the pixel bar says how the sprite is built, and the layout follows it: see [The four ways to build a sprite](help:pixel-ways).
 - **The [Preview](help:pixel-preview) panel** leads the right side, playing your animation at real size. A one-picture file (one frame) starts with it put away, and it comes forward by itself when you add a second frame.
 - **The status bar speaks in pixels**: the zoom is a percentage of screen pixels per pixel of your sprite (800%) and the size is the sprite's own, like 32 x 32. See [Aseprite habits](help:pixel-aseprite-habits) for the zoom keys.
 - **The [pixel bar](help:pixel-bar)** sits over the canvas with brush size and shape, pixel perfect, mirror drawing, onion skin, tile mode and the grid.
@@ -35,12 +36,14 @@ The pixel grid shows whenever you're zoomed in far enough to see it. Turn it off
     body: `If you know Aseprite, your fingers already know most of this.
 
 - **Hold Alt and click** with the pencil, brush, eraser, bucket, shade or dither to pick up the colour you click, then let go and carry on with the same tool. Alt picks from everything you see. The line, rectangle and ellipse keep Alt for drawing from the middle.
-- **+ and -** make the brush, eraser or dither one pixel bigger or smaller. The pencil is always one pixel, so **+** turns it into the brush at 2 pixels.
+- **+ and -** make the pencil, eraser, dither or spray one pixel bigger or smaller.
 - **[ and ]** paint with the colour before or after this one in the [palette](help:palette). After the last it starts again at the first.
 - **1 to 6** zoom to 100%, 200%, 400%, 800%, 1600% and 3200%. Zoom is how many screen pixels each pixel of your sprite takes, so 800% shows every art pixel 8 screen pixels wide. The number is in the status bar.
 - **Tab** puts the panels away, and brings them back. It works while the mouse is over the canvas and nothing else has the keyboard, so Tab still moves round the panels everywhere else.
 
 ## Turn the keys on
+
+The first time a pixel file opens, Quill asks once **"Coming from Aseprite?"** with two answers: **Use Aseprite keys** or **Use Frameling keys**. Your answer is remembered, and you can change it any time in Preferences, Behaviour (or pick a set in Keyboard).
 
 **+ - [ ] 1 to 6** and **Tab** come with **Aseprite keys**, a [shortcut set](help:shortcut-sets): Preferences, Keyboard, Shortcut set. The same commands are in the [command palette](help:command-palette) (type "brush size" or "zoom"), and you can give them any key you like. **Alt** works for everyone.
 
@@ -55,7 +58,8 @@ The status bar and the [Artboards](help:artboards) panel use pixel units in the 
     keywords: ['pixel bar', 'context bar', 'brush size', 'brush shape', 'symmetry', 'quick toggles'],
     body: `In the [Pixel workspace](help:pixel-workspace), a slim bar runs across the top of the canvas. It changes with the tool.
 
-- **Size 1 to 8** sets the brush, shade, eraser or dither size in pixels. The pencil is always one pixel, so picking a bigger size switches to the brush, which is the pencil with a size.
+- **The chip** at the start says how the sprite is built (One picture, Animation, Frames on boards, Sprites on a sheet). Click it to change. See [The four ways to build a sprite](help:pixel-ways).
+- **Size 1 to 8** sets the pencil, shade, eraser, dither or spray size in pixels. Size 1 is the plain pencil.
 - **Square or round** sets the brush shape. Round shows from size 3.
 - **Pixel perfect** tidies the corners of hand-drawn lines so they stay one pixel thick.
 - With **Select**, pick a box, a lasso or the magic wand.
@@ -79,6 +83,7 @@ The sliders button at the end opens the Tool options panel, with everything else
 - **1x** is real size: one art pixel is one screen pixel, as in a game. **2x** and **3x** are double and triple. **Fit** is as big as fits, in whole steps so pixels stay square.
 - Click the picture, or the play button, to pause and play. Paused, it shows the frame you're on.
 - The loop button switches between looping and playing once.
+- **Quill for scale**: a tiny Quill, 48 pixels tall, stands next to your sprite at the same scale so you can feel how big it really is. The heart button turns him off. He is not there when Quill is turned off in Preferences.
 - **All frames** or **This clip**: play everything, or just the clip the playhead is in (idle, run...).
 - It plays at your frames per second and holds each drawing as long as the timeline does, so timing looks right.
 - Every change shows straight away, so you can draw a frame and watch it move.

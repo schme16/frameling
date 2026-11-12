@@ -318,6 +318,7 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
     const points = raw.perspective.points.filter((p: any) => isObj(p) && Number.isFinite(p.x) && Number.isFinite(p.y)).slice(0, 2).map((p: any) => ({ x: p.x as number, y: p.y as number }));
     if (points.length) doc.perspective = { points };
   }
+  if (isObj(raw.sprite) && ['picture', 'animation', 'boards', 'sheet'].includes(raw.sprite.way)) doc.sprite = { way: raw.sprite.way };
   Object.assign(doc, readArtboards(raw, entries, warnings, { readLayers, readFlow, readGuides, readPalette, top: layers }));
   resolveAfterLoad(doc, warnings);
   upgradeLineage(doc);

@@ -7,7 +7,9 @@ import { renderFrame } from '../core/render';
 import { store, useStore } from '../core/store';
 import { sceneOf } from '../core/symbols';
 import { Icon } from '../ui/icons';
-import { framesDue, previewIndex, previewPosition, notePreviewFrame, previewBase, previewFrames, previewScale, previewSettings, setPreview, type PreviewZoom } from './preview';
+import { Quill, useQuillShown } from '../ui/mascot';
+import { line } from '../ui/mascot/lines';
+import { QUILL_ART_HEIGHT, quillFits, framesDue, previewIndex, previewPosition, notePreviewFrame, previewBase, previewFrames, previewScale, previewSettings, setPreview, type PreviewZoom } from './preview';
 import './pixel.css';
 
 type Frames = Map<number, OffscreenCanvas>;
@@ -37,6 +39,7 @@ export function PreviewPanel() {
   const doc = useStore((s) => s.doc);
   const mainFrame = useStore((s) => s.ui.frame);
   const mainPlaying = useStore((s) => s.ui.playing);
+  const quillOn = useQuillShown();
   const [shown, setShown] = useState(0);
   const [boxSize, setBoxSize] = useState({ w: 240, h: 200 });
 
@@ -47,6 +50,7 @@ export function PreviewPanel() {
   const artW = Math.max(1, Math.round(sdoc.width * base));
   const artH = Math.max(1, Math.round(sdoc.height * base));
   const scale = previewScale(settings.zoom, artW, artH, boxSize.w - 16, boxSize.h - 16);
+  const showQuill = quillOn && settings.quillForScale && quillFits(scale, artW, artH, boxSize.w, boxSize.h);
 
   // The panel's size, for Fit.
   useEffect(() => {
@@ -174,7 +178,14 @@ export function PreviewPanel() {
           }
         }}
       >
-        <canvas ref={canvas} className="px-preview-canvas" aria-hidden="true" />
+        <div className="px-preview-row">
+          <canvas ref={canvas} className="px-preview-canvas" aria-hidden="true" />
+          {showQuill && (
+            <span className="px-preview-quill" title={line('pixel.scale.hover')} style={{ height: QUILL_ART_HEIGHT * scale }}>
+              <Quill anim="idle" size={QUILL_ART_HEIGHT * scale} />
+            </span>
+          )}
+        </div>
         {scale !== 1 && artW <= 256 && artH <= 256 && (
           <span className="px-preview-inset" title="Real size: one art pixel is one screen pixel">
             <canvas ref={inset} className="px-preview-canvas" aria-hidden="true" />
@@ -193,6 +204,11 @@ export function PreviewPanel() {
             </button>
           ))}
         </div>
+        {quillOn && (
+          <button type="button" className="px-preview-loop px-preview-scale" aria-pressed={settings.quillForScale} data-on={settings.quillForScale} title="Quill for scale: a tiny Quill stands next to your sprite at the same scale, so you can feel how big it is" aria-label="Quill for scale" onClick={() => setPreview({ quillForScale: !settings.quillForScale })}>
+            <Icon name="heart" size={16} />
+          </button>
+        )}
         <button type="button" className="px-preview-loop" aria-pressed={settings.loop} data-on={settings.loop} title={settings.loop ? 'Looping. Click to play once and stop.' : 'Playing once. Click to loop.'} aria-label="Loop the preview" onClick={() => setPreview({ loop: !settings.loop, playing: true })}>
           <Icon name="loop" size={16} />
         </button>

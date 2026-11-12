@@ -6,6 +6,8 @@ import { resetColors, setActiveNone, setActiveWell, swapColors } from '../../too
 import { Icon } from '../../ui/icons';
 import { useGradientWells } from '../../tools/gradient-wells';
 import { gradientCss } from '../../core/gradient';
+import { usePaintWells } from '../../tools/pixelWells';
+import { PaintWells } from '../../pixel/PaintWells';
 
 function Box({ which, color, front }: { which: 'fill' | 'stroke'; color: string | null; front: boolean }) {
   const label = which === 'fill' ? 'Fill colour' : 'Stroke colour';
@@ -28,6 +30,9 @@ export function Wells() {
   const fill = useStore((s) => s.ui.fillColor);
   const stroke = useStore((s) => (s.ui.strokeOn ? s.ui.color : null));
   const active = useStore((s) => s.ui.activeWell);
+  // The Pixel workspace has Paint and Back instead.
+  const paintWells = usePaintWells();
+  if (paintWells) return <PaintWells />;
   return (
     <div className="cv-wells" data-quest="color-wells">
       <div className="cv-wells-stack">

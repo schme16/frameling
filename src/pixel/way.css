@@ -1,0 +1,251 @@
+/* The four ways to build a sprite: the chooser, the starter cards, the mode chip, the change dialog and the folded bar. Theme tokens only. */
+.px-chooser {
+  width: min(900px, 100%);
+}
+.px-chooser-head {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px 4px;
+}
+.px-chooser-head h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+}
+.px-chooser-head p {
+  margin: 4px 0 0;
+  color: var(--muted);
+}
+.px-way-cards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin: 10px 0 14px;
+}
+.px-way-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 10px;
+  font: inherit;
+  text-align: left;
+  color: var(--text);
+  background: var(--raised);
+  border: 2px solid var(--line);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: transform 140ms var(--ease-bounce), border-color 120ms var(--ease);
+}
+.px-way-card:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--chosen-bg) 55%, var(--line));
+}
+.px-way-card:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.px-way-card.is-chosen {
+  border-color: var(--chosen-bg);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--chosen-bg) 35%, transparent);
+}
+.px-way-art {
+  display: grid;
+  place-items: center;
+  align-self: stretch;
+  padding: 6px;
+  border-radius: var(--radius-small);
+  background: repeating-conic-gradient(color-mix(in srgb, var(--text) 8%, transparent) 0 25%, transparent 0 50%) 0 0 / 12px 12px, color-mix(in srgb, var(--grape, #9b7bff) 16%, var(--panel));
+  color: var(--text);
+}
+.px-way-art svg {
+  max-width: 100%;
+  height: auto;
+}
+.px-way-card strong {
+  font-size: 15px;
+}
+.px-way-tag {
+  padding: 1px 9px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--chosen-bg) 22%, var(--panel));
+  border: 1px solid color-mix(in srgb, var(--chosen-bg) 50%, transparent);
+  font-size: var(--fs-small);
+  font-weight: 700;
+}
+.px-way-blurb {
+  color: var(--muted);
+  font-size: var(--fs-small);
+  line-height: 1.35;
+}
+.px-size-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  margin-bottom: 12px;
+}
+.px-size-label {
+  font-weight: 700;
+}
+.px-size-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.px-size-chip {
+  padding: 4px 12px;
+  font: inherit;
+  font-size: var(--fs-small);
+  font-weight: 700;
+  color: var(--text);
+  background: var(--raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+}
+.px-size-chip[aria-checked='true'] {
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+  border-color: transparent;
+}
+.px-size-chip:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.px-size-own {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.px-size-own input {
+  width: 64px;
+  font: inherit;
+  padding: 3px 6px;
+  color: var(--text);
+  background: var(--field, var(--raised));
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+}
+.px-chooser-says {
+  margin-top: 4px;
+}
+.px-starters {
+  margin: 8px 0 4px;
+}
+.px-starters h3 {
+  margin: 0 0 4px;
+  font-size: 14px;
+}
+@media (max-width: 760px) {
+  .px-way-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .px-way-card {
+    transition: none;
+  }
+  .px-way-card:hover {
+    transform: none;
+  }
+}
+
+/* Change how this sprite is built */
+.px-changeway {
+  width: min(900px, 100%);
+}
+.px-way-card.is-off {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.px-way-card.is-off:hover {
+  transform: none;
+  border-color: var(--line);
+}
+.px-way-term {
+  color: var(--muted);
+  font-size: var(--fs-small);
+  font-style: italic;
+}
+.px-way-off {
+  margin: 0 0 4px;
+  padding: 8px 12px;
+  border-radius: var(--radius-small);
+  background: color-mix(in srgb, var(--danger, #ff6f91) 14%, var(--panel));
+  font-size: var(--fs-small);
+  line-height: 1.4;
+}
+.px-way-off-quiet {
+  background: var(--panel-2);
+  color: var(--muted);
+}
+
+/* The mode chip at the start of the Pixel bar */
+.px-way-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px 3px 8px;
+  font: inherit;
+  font-weight: 800;
+  color: var(--chosen-fg);
+  background: var(--chosen-bg);
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.px-way-chip:hover {
+  filter: brightness(1.06);
+}
+.px-way-chip:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* The slim bar under a one-picture sprite, where its timeline would be */
+.px-picture-strip {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 4px 10px;
+  background: var(--panel);
+  border-top: 1px solid var(--line-soft);
+  color: var(--muted);
+  font-size: var(--fs-small);
+}
+/* The message, not Quill's own span */
+.px-picture-strip > .px-picture-say {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Export: Quill's sentence about the sheet */
+.px-sheet-says {
+  margin-bottom: 4px;
+}
+.px-sheet-says-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+.px-link {
+  padding: 0;
+  font: inherit;
+  font-weight: 700;
+  color: var(--link, var(--chosen-bg));
+  background: none;
+  border: 0;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.px-link:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}

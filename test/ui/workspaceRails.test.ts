@@ -35,8 +35,8 @@ describe('the three defaults', () => {
     applyWorkspace('pixel');
     const g = currentGroups();
     expect(ids(g).slice(0, 3)).toEqual(['draw', 'pixel', 'shapes']);
-    expect(g[0].tools.slice(0, 5)).toEqual(['pencil', 'brush', 'eraser', 'fill', 'eyedropper']);
-    expect(g[1].tools).toEqual(['shade', 'dither', 'pixel-select']);
+    expect(g[0].tools.slice(0, 4)).toEqual(['pencil', 'eraser', 'fill', 'eyedropper']);
+    expect(g[1].tools).toEqual(['shade', 'dither', 'spray', 'pixel-select']);
     expect(ids(g).indexOf('select')).toBeGreaterThan(ids(g).indexOf('pixel'));
     expect(ids(g).indexOf('rig')).toBeGreaterThan(ids(g).indexOf('shapes'));
     expect(groupOf(g, 'select')).toBe('select');

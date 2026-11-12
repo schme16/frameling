@@ -99,6 +99,12 @@ function Flow() {
     if (plan.panel) showPanel(plan.panel);
     const name = s.name.trim() || 'Untitled';
     end('done');
+    // A blank pixel grid is Quill's pixel chooser: one picture, an animation, frames on boards or sprites on a sheet.
+    if (go === 'blank' && plan.blank === 'blank-pixel') {
+      const { openPixelChooser } = await import('../../pixel/Chooser');
+      openPixelChooser();
+      return;
+    }
     if (go === 'template' || (go === 'blank' && plan.blank)) {
       const { findTemplate } = await import('../../templates');
       const t = findTemplate(go === 'blank' && plan.blank ? plan.blank : plan.template);

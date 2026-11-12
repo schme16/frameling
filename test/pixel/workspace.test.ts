@@ -210,7 +210,8 @@ describe('the pixel bar', () => {
     expect(sizeSettingFor('shade')).toBe('pixelBrushSize');
     expect(sizeSettingFor('eraser')).toBe('eraserPixelSize');
     expect(sizeSettingFor('dither')).toBe('ditherSize');
-    expect(sizeSettingFor('pencil')).toBe('pencil');
+    expect(sizeSettingFor('pencil')).toBe('pixelBrushSize');
+    expect(sizeSettingFor('spray')).toBe('spraySize');
     expect(sizeSettingFor('fill')).toBeNull();
     expect(hasShape('fill')).toBe(false);
     expect(hasPerfect('pencil')).toBe(true);

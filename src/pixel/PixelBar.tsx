@@ -15,7 +15,14 @@ import { Icon } from '../ui/icons';
 import { BAR_SIZES, hasMirror, hasPerfect, hasShape, paletteIndexOf, sizeSettingFor } from './bar';
 import { docPalette } from './palette';
 import { setPixelSettings, usePixelSettings, type SymmetryMode } from './settings';
+import { Quill, useQuillShown } from '../ui/mascot';
+import { line } from '../ui/mascot/lines';
+import { chipLabel, isPixelDoc, wayOf } from './way';
+import { WayIcon } from './WayDiagrams';
+import { openChangeWay } from './ChangeWay';
+import { makeItMove } from './wayOps';
 import './pixel.css';
+import './way.css';
 
 const run = (id: string) => void getCommand(id)?.run();
 
@@ -34,24 +41,18 @@ function SizeButtons({ tool }: { tool: string }) {
   const brush = useToolSettings((s) => s.pixelBrushSize);
   const eraser = useToolSettings((s) => s.eraserPixelSize);
   const dither = usePixelSettings((s) => s.ditherSize);
+  const spray = usePixelSettings((s) => s.spraySize);
   if (!which) return null;
-  const value = which === 'pencil' ? 1 : which === 'pixelBrushSize' ? brush : which === 'eraserPixelSize' ? eraser : dither;
+  const value = which === 'pixelBrushSize' ? brush : which === 'eraserPixelSize' ? eraser : which === 'spraySize' ? spray : dither;
   const pick = (n: number) => {
-    if (which === 'pencil') {
-      // The pencil is always one pixel; bigger sizes are the brush, which is the same pen with a size.
-      if (n === 1) return;
-      setToolSettings({ pixelBrushSize: n });
-      store().setUi({ tool: 'brush' });
-      return;
-    }
-    if (which === 'ditherSize') setPixelSettings({ ditherSize: n });
+    if (which === 'ditherSize' || which === 'spraySize') setPixelSettings({ [which]: n });
     else setToolSettings({ [which]: n });
   };
   return (
     <div className="px-bar-group" role="radiogroup" aria-label="Brush size in pixels">
       <span className="px-bar-label">Size</span>
       {BAR_SIZES.map((n) => (
-        <button key={n} type="button" role="radio" className="px-bar-size" aria-checked={value === n} data-on={value === n ? 'true' : undefined} title={which === 'pencil' && n > 1 ? `${n} pixels (switches to the Brush, the pencil with a size)` : `${n} pixel${n === 1 ? '' : 's'}`} onClick={() => pick(n)}>
+        <button key={n} type="button" role="radio" className="px-bar-size" aria-checked={value === n} data-on={value === n ? 'true' : undefined} title={`${n} pixel${n === 1 ? '' : 's'}${tool === 'pencil' && n === 1 ? ' (the plain pencil)' : ''}`} onClick={() => pick(n)}>
           {n}
         </button>
       ))}
@@ -133,6 +134,36 @@ function PaletteIndex() {
   );
 }
 
+/** The mode chip: which of the four ways this sprite is built. Click it to change how. */
+function WayChip() {
+  const label = useStore((s) => chipLabel(s.doc));
+  const way = useStore((s) => wayOf(s.doc));
+  return (
+    <button type="button" className="px-way-chip" data-help="pixel-ways" aria-label={`${label}. Change how this sprite is built`} title="How this sprite is built. Click to change it." onClick={openChangeWay}>
+      <WayIcon way={way} />
+      {label}
+      <Icon name="chevron-down" size={14} />
+    </button>
+  );
+}
+
+/** Where the timeline would be for a one-picture sprite: it is folded away, with a friendly way to make it move. */
+export function PictureStrip() {
+  const wsId = dock.use((d) => d.workspaceId);
+  const picture = useStore((s) => isPixelDoc(s.doc) && wayOf(s.doc) === 'picture');
+  const quill = useQuillShown();
+  if (!wsId || !inPixelWorkspace() || !picture) return null;
+  return (
+    <div className="px-picture-strip" role="group" aria-label="One picture" data-help="pixel-ways">
+      {quill && <Quill anim="idle" size={32} />}
+      <span className="px-picture-say">{line('pixel.folded')}</span>
+      <button type="button" className="io-btn io-primary" data-command="pixel.makeItMove" onClick={makeItMove}>
+        <Icon name="play" size={14} /> Make it move
+      </button>
+    </div>
+  );
+}
+
 export function PixelBar() {
   const wsId = dock.use((d) => d.workspaceId);
   const pixelLayer = useStore((s) => (findLayer(s.doc, s.ui.activeLayerId) ?? s.doc.layers[s.doc.layers.length - 1])?.kind === 'pixel');
@@ -141,9 +172,11 @@ export function PixelBar() {
   const onion = useStore((s) => s.ui.onion.enabled);
   const tiles = useTileUi((s) => s.tileMode);
   const grid = useViewSettings((v) => v.pixelGrid);
+  const pixelDoc = useStore((s) => isPixelDoc(s.doc));
   if (!wsId || !inPixelWorkspace() || !pixelLayer) return null;
   return (
     <div className="px-bar" role="toolbar" aria-label="Pixel art options" data-help="pixel-bar">
+      {pixelDoc && <WayChip />}
       <SizeButtons tool={tool} />
       {hasShape(tool) && <ShapeButtons />}
       {hasPerfect(tool) && (

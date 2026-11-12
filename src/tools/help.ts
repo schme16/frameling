@@ -37,10 +37,10 @@ If the brush won't draw, the layer might be locked or hidden. Check it in the ti
 
 **Clean line.** Set **Line** to **Clean line** in the options and the pencil smooths what you draw into a few even curves (a centre-line stroke). You can then reshape it point by point with [Edit points](help:tool-points) (**A**). Good for tidy outlines and inking.
 
-**On a pixel layer** it's the pixel pencil, the main tool for pixel art. It always paints one pixel at a time.
+**On a pixel layer** it's the pixel pencil, the main tool for pixel art. It has a **size**: size 1 is the plain pencil, and bigger sizes are the same tool with a thicker tip (the Brush on a pixel layer is the same pen).
 - **Pixel perfect** (on unless you turn it off in the options) tidies the little L-shaped corners hand-drawn lines get, so curves stay one pixel thick.
 - Hold **Shift** and click to draw a straight line from where you last stopped.
-- It paints with the **stroke** colour. Pick colours from the [Palette](help:palette).
+- It paints with the **stroke** colour, called **Paint** in the Pixel workspace (see [Paint and Back](help:pixel-wells)). Pick colours from the [Palette](help:palette).
 - [Mirror drawing](help:pixel-mirror) and the [palette lock](help:palette-lock) work with it too.`,
   },
   {

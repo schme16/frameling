@@ -197,5 +197,74 @@
   "empty.help": { "text": "Uh oh, I couldn't find that", "where": "Help window: a search with no results. Quill thinks." },
   "empty.shortcuts": { "text": "Nothing here by that name....", "where": "Preferences > Keyboard: a search with no results. Quill thinks." },
   "empty.recent": { "text": "Nothing here yet. Drawings you open or save will show up here.", "where": "File > Open Recent with nothing in it. Quill doodles." },
-  "empty.recover": { "text": "Nothing to recover. \nbut just so you know, work you leave unsaved will show up here for a whole WEEK (just in-case).", "where": "File > Recover with nothing in it." }
+  "empty.recover": { "text": "Nothing to recover. \nbut just so you know, work you leave unsaved will show up here for a whole WEEK (just in-case).", "where": "File > Recover with nothing in it." },
+  "pixel.chooser.title": { "text": "Pixel time! What are we making?", "where": "Pixel chooser (New > Pixel art): the heading beside Quill." },
+  "pixel.chooser.lead": { "text": "Pick the one that sounds most like it. You can change your mind later.", "where": "Pixel chooser: the line under the heading." },
+  "pixel.chooser.unsure": { "text": "Not sure? Pick An animation. You can switch any time and nothing is lost.", "where": "Pixel chooser: Quill's bubble before you have picked a card." },
+  "pixel.chooser.picture": { "text": "One lovely picture. Simple and sweet!", "where": "Pixel chooser: you picked One picture." },
+  "pixel.chooser.animation": { "text": "Frames on a timeline, just like you know it.", "where": "Pixel chooser: you picked An animation." },
+  "pixel.chooser.boards": { "text": "Every frame gets its own little board. Tidy!", "where": "Pixel chooser: you picked Frames on boards." },
+  "pixel.chooser.sheet": { "text": "A whole cast on one sheet. I will hold the coin.", "where": "Pixel chooser: you picked Sprites on a sheet." },
+  "pixel.chooser.ready": { "text": "Your sprite is ready. Have fun!", "where": "A toast after Start in the pixel chooser." },
+  "pixel.keys.ask": {
+    "text": "Coming from Aseprite? I can use its keys: B for the pencil, X to swap colours, [ and ] to step along the palette, and number keys to zoom. Or I can keep Frameling's own.",
+    "where": "The ask-once question the first time a pixel file opens (\"Coming from Aseprite?\"). Quill is in the dialog."
+  },
+  "pixel.keys.aseprite": { "text": "Aseprite keys are on. You can change them any time in Preferences, Keyboard.", "where": "A toast after you pick Use Aseprite keys." },
+  "pixel.keys.frameling": { "text": "Frameling's own keys it is. Aseprite keys are in Preferences, Keyboard if you change your mind.", "where": "A toast after you pick Use Frameling keys." },
+  "pixel.empty": { "text": "Click a colour, click the grid. That is pixel art!", "where": "A toast the first time a brand new empty pixel sprite opens (once, ever)." },
+  "pixel.altPick": { "text": "You held Alt: that is the eyedropper. Aseprite habits welcome here!", "where": "A toast the first time you hold Alt to pick a colour while drawing (once, ever)." },
+  "pixel.perfect": { "text": "No double corners. Crisp!", "where": "A toast the first time pixel perfect tidies a corner in a stroke (once, ever)." },
+  "pixel.frame2": { "text": "A second frame! Now it moves.", "where": "A toast when a one-picture sprite gets its second frame (once per file)." },
+  "pixel.twoBoards.ask": {
+    "text": "Two boards! Are these frames of one sprite, or two different sprites?",
+    "where": "The ask-once question when a one-picture or animation sprite gets a second board."
+  },
+  "pixel.ase.open": { "text": "An Aseprite file! I will be gentle. Your original is never touched.", "where": "A toast when an .aseprite file opens (once per session)." },
+  "pixel.sheet.baked": {
+    "text": "Sheet baked! {engine} is going to love it.",
+    "where": "A toast after a sprite sheet is exported. {engine} is Godot, Unity, Phaser or PixiJS, or \"your engine\" for the others.",
+    "vars": ["engine"]
+  },
+  "pixel.sheet.many": { "text": "That is a lot of frames. Someone has been busy.", "where": "A toast after a sprite sheet of 100 frames or more is exported." },
+  "pixel.makeItMove": { "text": "Let's make it move! I added a few frames to play with.", "where": "A toast after Make it move turns a one-picture sprite into an animation." },
+  "pixel.folded": { "text": "One picture, so no timeline. Want it to move?", "where": "The folded timeline bar of a one-picture sprite, beside the Make it move button." },
+  "pixel.way.change": { "text": "Same sprite, built another way. Nothing is lost, and Undo brings it back.", "where": "The Change how this sprite is built dialog: Quill's bubble." },
+  "pixel.scale.hover": { "text": "I am 48 pixels tall. How tall are you?", "where": "The Preview: hovering Quill for scale, the tiny Quill standing next to your sprite." },
+  "pixel.sheet.picture": { "text": "This is one picture, so the sheet has a single frame.", "where": "Export, Sprite sheet: Quill's sentence for a one-picture sprite." },
+  "pixel.sheet.animation": {
+    "text": "This sheet has 1 sprite with {frames}.",
+    "where": "Export, Sprite sheet: Quill's sentence for an animation (one board). {frames} is like \"6 frames\".",
+    "vars": ["frames"]
+  },
+  "pixel.sheet.one": {
+    "text": "This sheet has 1 sprite, just the board you have open, with {frames}.",
+    "where": "Export, Sprite sheet: Quill's sentence when only the open board goes on the sheet. {frames} is like \"4 frames\".",
+    "vars": ["frames"]
+  },
+  "pixel.sheet.cast": {
+    "text": "This sheet has {sprites}, one per board, {frames} in all.",
+    "where": "Export, Sprite sheet: Quill's sentence for sprites on a sheet. {sprites} is like \"3 sprites\", {frames} like \"12 frames\".",
+    "vars": ["sprites", "frames"]
+  },
+  "pixel.sheet.boards": {
+    "text": "This sheet is {boards} played as frames of one sprite, {frames} in all.",
+    "where": "Export, Sprite sheet: Quill's sentence for frames on boards. {boards} is like \"4 boards\", {frames} like \"4 frames\".",
+    "vars": ["boards", "frames"]
+  },
+  "pixel.sheet.each": {
+    "text": "This makes {sheets}, one per board, named after each board.",
+    "where": "Export, Sprite sheet: Quill's sentence when every board goes in its own file. {sheets} is like \"3 sheets\".",
+    "vars": ["sheets"]
+  },
+  "pixel.quest.praise": {
+    "text": [
+      "Chunky!",
+      "Crisp!",
+      "Pixel-perfect (literally).",
+      "Look at those pixels.",
+      "Tidy little pixels."
+    ],
+    "where": "Pixel quests: the one-word cheer when a step is ticked (replaces the usual cheers in pixel quests)."
+  }
 }
