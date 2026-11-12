@@ -148,6 +148,10 @@ export interface VariationOverrides {
   layers?: ListOverride<Layer, ListOverride<Cel>>;
   /** Drawings of the original that changed, by the original's drawing id. */
   drawings?: Record<Id, DrawingOverride>;
+  /** Sound clips by id: volume, mute, start and name changes, clips left out, clips added. */
+  audio?: ListOverride<AudioClip>;
+  /** This variation's own palette (a colourway for pixel art). Missing = the original's. */
+  palette?: DocPalette;
 }
 
 /** The part of a document each artboard has its own copy of. */

@@ -21,6 +21,8 @@ import {
   resetVariation,
   resolveContent,
   setVariationSize,
+  settleVariations,
+  touchOf,
   splitAlias,
   variationsOf,
 } from '../../src/artboards/variations';
@@ -617,5 +619,69 @@ describe('variations: more', () => {
     expect(artboardDoc(doc(), w).width).toBe(200);
     setArtboardExport({ mode: 'one', ids: null });
     expect(artboardExport.get().mode).toBe('one');
+  });
+});
+
+describe('variations: settling only what an edit touched', () => {
+  /** Nothing is left for a full check to do: the incremental settle kept everything in step. */
+  const inStep = () => expect(settleVariations(doc())).toBeNull();
+
+  it('stays in step through a mix of edits to the original and to the open variation', () => {
+    const a = make();
+    const b = make();
+    open(a);
+    const A = (id: string) => aliasId(id, a);
+    update('recolour in the variation', (d) => void (shape(d, A('d1'), 's1').fill = '#abcdef'));
+    inStep();
+    update('layer look', (d) => void (d.layers.find((l) => l.id === 'L1')!.opacity = 0.4));
+    inStep();
+    update('length and background', (d) => {
+      d.length = 12;
+      d.background = '#111111';
+    });
+    inStep();
+    update('a key', (d) => void d.layers.find((l) => l.id === 'L2')!.cels.push({ id: 'c9', start: 8, length: 2, drawingId: A('d3') }));
+    inStep();
+    open(root());
+    update('original drawing', (d) => void (shape(d, 'd2', 's3').fill = '#222222'));
+    inStep();
+    expect(shape(doc(), aliasId('d2', b), 's3').fill).toBe('#222222');
+    expect(shape(doc(), aliasId('d2', a), 's3').fill).toBe('#222222');
+    update('original key', (d) => void d.layers.find((l) => l.id === 'L1')!.cels.push({ id: 'c8', start: 8, length: 1, drawingId: 'd1' }));
+    inStep();
+    expect(findArtboard(doc(), b)!.content!.layers.find((l) => l.id === 'L1')!.cels.some((c) => c.id === 'c8')).toBe(true);
+    update('original layer look', (d) => void (d.layers.find((l) => l.id === 'L2')!.opacity = 0.7));
+    inStep();
+    expect(findArtboard(doc(), b)!.content!.layers.find((l) => l.id === 'L2')!.opacity).toBe(0.7);
+    // The variation's recolour is still its own.
+    expect(shape(doc(), A('d1'), 's1').fill).toBe('#abcdef');
+    expect(shape(doc(), 'd1', 's1').fill).toBe('#ff0000');
+  });
+
+  it('leaves a variation alone when its original did not change', () => {
+    const a = make();
+    const b = make();
+    const before = findArtboard(doc(), b)!.content;
+    open(a);
+    update('recolour', (d) => void (shape(d, aliasId('d1', a), 's1').fill = '#00ffff'));
+    update('look', (d) => void (d.layers[0].opacity = 0.5));
+    expect(findArtboard(doc(), b)!.content).toBe(before);
+    expect(findArtboard(doc(), a)!.overrides!.drawings!.d1).toBeTruthy();
+  });
+
+  it('reads patches: drawings, layer keys and artboards', () => {
+    const t = touchOf([
+      { op: 'replace', path: ['drawings', 'd1', 'shapes', 0, 'fill'], value: 1 },
+      { op: 'replace', path: ['layers', 1, 'opacity'], value: 1 },
+      { op: 'add', path: ['layers', 1, 'cels', 2], value: 1 },
+      { op: 'replace', path: ['artboards', 0, 'content', 'background'], value: null },
+      { op: 'replace', path: ['artboards', 2, 'overrides'], value: {} },
+    ]);
+    expect(t).toMatchObject({ full: false, content: true, cels: true });
+    expect([...t.drawings]).toEqual(['d1']);
+    expect([...t.closed]).toEqual([0]);
+    expect([...t.own]).toEqual([2]);
+    expect(touchOf([{ op: 'replace', path: ['drawings'], value: {} }]).full).toBe(true);
+    expect(touchOf([{ op: 'replace', path: ['layers', 1, 'opacity'], value: 1 }]).cels).toBe(false);
   });
 });

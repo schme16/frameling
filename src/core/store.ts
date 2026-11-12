@@ -22,10 +22,33 @@ export type ToolId = string;
  * Something that keeps the document consistent after a change (a variation following its original, say): given the
  * document a change made, it returns a recipe for what else to change, or null. Its changes join the same undo step.
  */
-export type Settler = (doc: Doc) => ((draft: Draft<Doc>) => void) | null;
+export type Settler = (doc: Doc, ctx?: SettleContext) => ((draft: Draft<Doc>) => void) | null;
+/** What a change did, for a settler that only wants to look at what it touched. */
+export interface SettleContext {
+  /** The patches of the change itself (not of earlier settlers). */
+  patches: Patch[];
+  /** The document before the change. */
+  before: Doc;
+}
 const settlers: Settler[] = [];
 export function registerSettler(fn: Settler): void {
   if (!settlers.includes(fn)) settlers.push(fn);
+}
+
+/**
+ * Something that refuses a change that would be lost or would reach where it should not (editing what a variation
+ * shares with its original): given the document before and after, it returns a plain sentence to say why, or null.
+ * A refused change is dropped whole (nothing is recorded) and the sentence goes to the blocked handler.
+ */
+export type Guard = (before: Doc, next: Doc, patches: Patch[]) => string | null;
+const guards: Guard[] = [];
+let blockedHandler: (message: string) => void = () => {};
+export function registerGuard(fn: Guard): void {
+  if (!guards.includes(fn)) guards.push(fn);
+}
+/** Where a refused change's sentence goes (the app shows it as a note). */
+export function onBlocked(fn: (message: string) => void): void {
+  blockedHandler = fn;
 }
 
 export interface OnionSettings {
@@ -168,8 +191,14 @@ export class Store {
   update(label: string, recipe: (doc: Draft<Doc>) => void, opts: { coalesce?: string } = {}): void {
     let [next, patches, inverse] = produceWithPatches(this.state.doc, recipe);
     if (!patches.length) return;
+    const before = this.state.doc;
+    for (const guard of guards) {
+      const why = guard(before, next, patches);
+      if (why) return blockedHandler(why);
+    }
+    const own = patches;
     for (const settle of settlers) {
-      const fix = settle(next);
+      const fix = settle(next, { patches: own, before });
       if (!fix) continue;
       const [n2, p2, i2] = produceWithPatches(next, fix);
       if (!p2.length) continue;
