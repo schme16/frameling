@@ -580,7 +580,7 @@ interface Ctx {
 /** Instance transform to Lottie's (anchor at the registration point; Lottie's skew turns the other way). */
 function instanceKs(insts: InstanceShape[], times: number[], origin: { x: number; y: number }, pad: number, tween?: { cel: Cel; next: Cel; a: InstanceShape; b: InstanceShape; tw: Tween; offset: number }): Json {
   const ks: Json = { a: stat([r3(origin.x + pad), r3(origin.y + pad)]) };
-  const exact = tween && !tween.tw.path ? exactEase(tween.tw.ease) : null;
+  const exact = tween && !tween.tw.path && !tween.tw.slice ? exactEase(tween.tw.ease) : null;
   if (tween && exact) {
     // Two keys (or three for gentle start and stop) with the easing as handles.
     const t0 = tween.cel.start - tween.offset;

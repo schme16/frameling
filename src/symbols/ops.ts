@@ -340,7 +340,7 @@ export function makeTween(layerId?: Id, frame?: number, kind: 'classic' | 'shape
     }
     if (kind === 'classic') wrapIfPlain(dd, b.drawingId, 'Moving part');
     wrapped = Object.keys(dd.symbols ?? {}).length > before;
-    a.tween = { ...(kind === 'shape' ? { kind: 'shape' as const } : {}), ease: a.tween?.ease ?? DEFAULT_EASE, ...(a.tween?.spin ? { spin: a.tween.spin } : {}), ...(a.tween?.path ? { path: a.tween.path } : {}), ...(kind === 'shape' && a.tween?.hints ? { hints: a.tween.hints } : {}) };
+    a.tween = { ...(kind === 'shape' ? { kind: 'shape' as const } : {}), ease: a.tween?.ease ?? DEFAULT_EASE, ...(a.tween?.slice ? { slice: a.tween.slice } : {}), ...(a.tween?.spin ? { spin: a.tween.spin } : {}), ...(a.tween?.path ? { path: a.tween.path } : {}), ...(kind === 'shape' && a.tween?.hints ? { hints: a.tween.hints } : {}) };
     endFrame = b.start;
   });
   if (endFrame < 0) return undefined;
@@ -514,6 +514,8 @@ export function updateTween(label: string, fn: (t: Draft<Tween>) => void, opts: 
 export function setEase(e: Easing, coalesce?: string): Result {
   return updateTween(`Easing: ${easeLabel(e)}`, (t) => {
     t.ease = (Array.isArray(e) ? [...e] : e) as Easing;
+    // A picked easing is for the whole span, not for what was left of an older curve.
+    delete t.slice;
   }, { coalesce });
 }
 

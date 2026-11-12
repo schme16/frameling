@@ -151,7 +151,7 @@ export function rigKeys(rig: Layer, frames: number[], fps: number): RigKey[] {
     const next = k ? rig.cels[k.index + 1] : undefined;
     const gliding = !!cel?.tween && !!next && next.start === cel.start + cel.length && f >= cel.start && f < next.start;
     if (gliding) {
-      const c = exactTransition(cel!.tween!.ease);
+      const c = cel!.tween!.slice ? undefined : exactTransition(cel!.tween!.ease);
       const end = i + (next!.start - f);
       // The whole glide is inside this animation, from its first frame: two keys and Godot's curve.
       if (c !== undefined && f === cel!.start && end <= n - 1 && frames[end] === next!.start) {

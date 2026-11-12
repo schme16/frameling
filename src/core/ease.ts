@@ -114,6 +114,27 @@ export function ease(e: Easing | undefined, t: number): number {
   }
 }
 
+/** A span's eased progress at `raw` (0..1 along the span): its easing curve, or the part of it the span plays. */
+export function tweenEase(tw: { ease: Easing; slice?: [number, number] }, raw: number): number {
+  const sl = tw.slice;
+  if (!sl) return ease(tw.ease, raw);
+  const a = ease(tw.ease, sl[0]);
+  const d = ease(tw.ease, sl[1]) - a;
+  if (Math.abs(d) < 1e-9) return raw;
+  return (ease(tw.ease, sl[0] + (sl[1] - sl[0]) * Math.max(0, Math.min(1, raw))) - a) / d;
+}
+
+/**
+ * The parts of the curve a span plays after being cut `at` (0..1 along the span) in two: first half, second half.
+ * Each half plays its own part of the same curve, so the motion over the whole span does not change.
+ */
+export function cutSlice(tw: { slice?: [number, number] }, at: number): [[number, number] | undefined, [number, number] | undefined] {
+  const [a, b] = tw.slice ?? [0, 1];
+  const m = a + (b - a) * at;
+  const tidy = (x: number, y: number): [number, number] | undefined => (x === 0 && y === 1 ? undefined : [x, y]);
+  return [tidy(a, m), tidy(m, b)];
+}
+
 /** The nearest cubic bezier to a preset, so dragging a curve handle starts from what was there. */
 export function bezierFor(e: Easing): [number, number, number, number] {
   if (Array.isArray(e)) return [e[0], e[1], e[2], e[3]];

@@ -4,7 +4,7 @@
  * the canvas, onion skin, thumbnails and every export show the same thing.
  */
 import type { Cel, Doc, Drawing, Id, Layer, Pose, Rig, VectorDrawing, VectorLayer } from '../core/format';
-import { ease } from '../core/ease';
+import { tweenEase } from '../core/ease';
 import { deformMesh, lerpPose, mapply, minv, mmul, rigState, unposeOnMesh, type Mat, type RigState } from './math';
 
 export type RigLayer = VectorLayer & { rig: Rig };
@@ -59,7 +59,7 @@ export function rigPoseAt(doc: Doc, layer: Layer, frame: number): Pose {
   if (!cel.tween || !next || next.start !== cel.start + cel.length || frame < cel.start || frame >= next.start) return pa;
   const b = doc.drawings[next.drawingId];
   if (!a || !b) return pa;
-  const t = ease(cel.tween.ease, (frame - cel.start) / cel.length);
+  const t = tweenEase(cel.tween, (frame - cel.start) / cel.length);
   if (t === 0) return pa;
   let byB = lerpCache.get(a);
   if (!byB) lerpCache.set(a, (byB = new WeakMap()));

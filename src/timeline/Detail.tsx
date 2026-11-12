@@ -4,7 +4,7 @@
  */
 import { memo } from 'react';
 import type { Cel, Easing, Layer } from '../core/format';
-import { ease, easeLabel } from '../core/ease';
+import { easeLabel, tweenEase } from '../core/ease';
 import { nextKey } from '../core/symbols';
 import { holdWords } from './geometry';
 import { celRef, type Track } from './tracks';
@@ -17,12 +17,12 @@ export function layerColorClass(layer: Layer): string {
 }
 
 /** The easing as a little curve, drawn inside a tween span (or bigger elsewhere). */
-export function EaseCurve({ ease: e, width, height = 12 }: { ease: Easing | undefined; width: number; height?: number }) {
+export function EaseCurve({ ease: e, slice, width, height = 12 }: { ease: Easing | undefined; slice?: [number, number]; width: number; height?: number }) {
   const n = Math.max(6, Math.min(40, Math.round(width / 5)));
   const pts: string[] = [];
   for (let i = 0; i <= n; i++) {
     const t = i / n;
-    const v = ease(e, t);
+    const v = tweenEase({ ease: e ?? 'linear', slice }, t);
     pts.push(`${(t * width).toFixed(1)},${(1 + (height - 2) * (1 - v)).toFixed(1)}`);
   }
   return (
@@ -66,7 +66,7 @@ export const DetailRow = memo(function DetailRow({ layer, cw, from, to, active, 
             </span>
             {tweened && w - cw > 26 ? (
               <span className="tl-dspan" style={{ left: cw, width: w - cw }}>
-                <EaseCurve ease={c.tween!.ease} width={Math.max(8, w - cw - 10)} />
+                <EaseCurve ease={c.tween!.ease} slice={c.tween!.slice} width={Math.max(8, w - cw - 10)} />
               </span>
             ) : null}
             {!tweened && c.length > 1 ? <span className="tl-dend" style={{ width: Math.min(cw, 10) }} /> : null}
@@ -95,7 +95,7 @@ export const PropRow = memo(function PropRow({ layer, track, cw, from, to, picke
           const w = (s.to - s.from) * cw;
           return (
             <span key={`s${s.from}`} className={`tl-pspan is-${s.kind}`} style={{ left: (s.from + 0.5) * cw, width: w }} title={s.kind === 'even' ? 'Changes evenly between these keys' : `In-betweens: ${s.ease ? easeLabel(s.ease).toLowerCase() : 'steady'}`}>
-              {s.kind !== 'even' && w > 30 ? <EaseCurve ease={s.ease} width={w - 14} height={10} /> : null}
+              {s.kind !== 'even' && w > 30 ? <EaseCurve ease={s.ease} slice={s.slice} width={w - 14} height={10} /> : null}
             </span>
           );
         })}

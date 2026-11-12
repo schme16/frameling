@@ -7,7 +7,7 @@
  */
 import type { CameraDrawing, CameraLayer, CameraView, Doc, Id, Layer } from './format';
 import { celAt, uid } from './doc';
-import { ease } from './ease';
+import { tweenEase } from './ease';
 import { invert, mul, pointOnPath, type Mat, IDENTITY_MAT } from './symbols';
 
 const RAD = Math.PI / 180;
@@ -72,7 +72,7 @@ export function cameraViewOn(doc: Doc, layer: Layer, frame: number): CameraView 
   const next = layer.cels[i + 1];
   const nd = next && next.start === cel.start + cel.length ? doc.drawings[next.drawingId] : undefined;
   if (nd?.kind !== 'camera') return d.view;
-  const t = ease(tw.ease, (frame - cel.start) / cel.length);
+  const t = tweenEase(tw, (frame - cel.start) / cel.length);
   const v = mixViews(d.view, nd.view, t, tw.spin ?? 0);
   if (tw.path && tw.path.points.length > 1) {
     // Same as a symbol's motion path: follow the line, bent so it still starts and ends on the two keys.
