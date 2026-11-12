@@ -73,6 +73,53 @@ export function sanitizePicks(raw: unknown): SnapPicks {
   return out;
 }
 
+/** Only the ticks someone chose, over the defaults (so a default that changes later still reaches everyone who never chose). */
+export type SnapChosen = Partial<Record<SnapContext, Partial<Record<SnapTarget, boolean>>>>;
+
+/** A sparse set of chosen ticks made safe: only known targets with true or false in them. */
+export function sanitizeChosen(raw: unknown): SnapChosen {
+  const out: SnapChosen = {};
+  if (!raw || typeof raw !== 'object') return out;
+  for (const ctx of Object.keys(defaultPicks()) as SnapContext[]) {
+    const saved = (raw as Record<string, unknown>)[ctx];
+    if (!saved || typeof saved !== 'object') continue;
+    for (const id of Object.keys(defaultPicks()[ctx]) as SnapTarget[]) {
+      const v = (saved as Record<string, unknown>)[id];
+      if (typeof v === 'boolean') out[ctx] = { ...out[ctx], [id]: v };
+    }
+  }
+  return out;
+}
+
+/** What the defaults were before other shapes and other artboards came on by default. */
+function oldDefaultPicks(): SnapPicks {
+  const d = defaultPicks();
+  return { ...d, vector: { ...d.vector, shapes: false }, artboard: { artboards: false } };
+}
+
+/**
+ * Ticks saved by the first versions of the options were the whole set, written whenever anything changed, so a person who
+ * never touched Other shapes still had it stored as off. Any saved tick equal to the old default counts as not chosen.
+ */
+export function migrateSavedPicks(raw: unknown): SnapChosen {
+  const chosen = sanitizeChosen(raw);
+  const old = oldDefaultPicks();
+  const out: SnapChosen = {};
+  for (const ctx of Object.keys(chosen) as SnapContext[]) {
+    for (const [id, v] of Object.entries(chosen[ctx] ?? {}) as [SnapTarget, boolean][]) {
+      if (old[ctx][id] === v) continue;
+      out[ctx] = { ...out[ctx], [id]: v };
+    }
+  }
+  return out;
+}
+
+/** The chosen ticks with one set. */
+export function withChosen(chosen: SnapChosen, ctx: SnapContext, id: SnapTarget, on: boolean): SnapChosen {
+  if (!appliesIn(id, ctx)) return chosen;
+  return { ...chosen, [ctx]: { ...chosen[ctx], [id]: on } };
+}
+
 /** The ticks with one changed (a new object; the old one is left alone). */
 export function withPick(picks: SnapPicks, ctx: SnapContext, id: SnapTarget, on: boolean): SnapPicks {
   if (!appliesIn(id, ctx)) return picks;
