@@ -148,7 +148,7 @@ module.exports = [
         setUi({ tool: 'rect' }),
         away,
         wait(500),
-        { shot: '@', crop: [359, 47, 835, 418] },
+        { shot: '@', crop: [403, 47, 791, 418] },
       ];
     })(),
   },
@@ -177,7 +177,7 @@ module.exports = [
         stroke(g, [[19, 9], [24, 15]], { steps: 6 }),
         away,
         wait(5400),
-        { shot: '@', crop: [359, 47, 835, 418] },
+        { shot: '@', crop: [403, 47, 791, 418] },
       ];
     })(),
   },
