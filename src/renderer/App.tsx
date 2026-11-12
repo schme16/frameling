@@ -12,7 +12,7 @@ import { syncDynamicCommands } from '../ui/dynamic';
 import { trackHover } from '../ui/help/context';
 import { installKeyboard } from '../ui/keyboard';
 import { installRovingKeys } from '../ui/roving';
-import { openSheet, overlays, type Overlays } from '../ui/overlays';
+import { installSheetCloser, openSheet, overlays, type Overlays } from '../ui/overlays';
 import { applyPrefs, getPrefs } from '../ui/prefs';
 import { ChoiceDialog } from '../ui/ChoiceDialog';
 import { AskDialog } from '../platform/AskDialog';
@@ -53,7 +53,7 @@ export function App() {
   });
 
   useEffect(() => {
-    const off = [installKeyboard(), installRovingKeys(), trackHover()];
+    const off = [installKeyboard(), installRovingKeys(), trackHover(), installSheetCloser()];
     // The first time, Quill's hello comes instead of the welcome sheet.
     if (!welcomed && !maybeOnboard() && getPrefs().showWelcome) openSheet('welcome');
     welcomed = true;
