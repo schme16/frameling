@@ -15,7 +15,7 @@ registerHelpTopics([
 
 In the options you can change the size, how much it smooths out wobbles, whether pressure matters, and whether lines start or end in a point.
 
-**On a pixel layer** it paints hard-edged pixels, with the size counted in art pixels. (For one pixel lines, the [Pencil](help:tool-pencil) is quicker.)
+**On a pixel layer** it paints hard-edged pixels, with the size counted in art pixels. Looking through a zoomed [camera](help:camera), the size is what you see: a 4 pixel brush paints 2 pixels through a camera zoomed in 2x (whole pixels, rounded, never less than 1). (For one pixel lines, the [Pencil](help:tool-pencil) is quicker.)
 - **Pixel perfect** tidies the little L-shaped corners that make hand-drawn lines look lumpy, so they stay one pixel thick.
 - Hold **Shift** and click to draw a straight line from where you last stopped.
 
@@ -57,7 +57,7 @@ If the brush won't draw, the layer might be locked or hidden. Check it in the ti
 
 **On a layer set to Merge** it rubs out just the area under the circle instead, the way a real eraser does. See [Merge shapes or keep them separate](help:merge-drawing).
 
-**On a pixel layer** it clears pixels as you drag, and you choose its size in art pixels.
+**On a pixel layer** it clears pixels as you drag, and you choose its size in art pixels. Through a zoomed [camera](help:camera) the size is what you see, in whole pixels.
 
 Using a drawing pen? Flip it over and use the eraser end.`,
   },
@@ -77,7 +77,7 @@ Using a drawing pen? Flip it over and use the eraser end.`,
 
 The inside uses your **fill** colour and the edge uses your **stroke** colour, so a new rectangle starts soft yellow with a black outline. Set either one to none for just an outline or just a solid shape. See [Fill and stroke colours](help:fill-and-stroke).
 
-On a **pixel layer** the rectangle is painted as clean pixels: a one pixel edge in the stroke colour, filled with the fill colour.`,
+On a **pixel layer** the rectangle is painted as clean pixels: a one pixel edge in the stroke colour, filled with the fill colour. It follows the perspective guides and **On a plane** too, painted as crisp pixels with no soft edges, and it keeps to the palette when the layer's palette is locked.`,
   },
   {
     id: 'tool-ellipse',
@@ -93,7 +93,7 @@ On a **pixel layer** the rectangle is painted as clean pixels: a one pixel edge 
 - The inside uses your **fill** colour and the edge your **stroke** colour. See [Fill and stroke colours](help:fill-and-stroke).
 - With [perspective guides](help:grids-perspective) showing and snapping on, the ellipse is the one a circle makes when it lies on that floor or wall, so a plate on a table or a clock on a wall sits right. Pick the plane in the options, or leave it on **Auto**.
 
-On a vector layer, ellipses are made of smooth curves, so they stay sharp however far you zoom in. On a **pixel layer** they're painted as clean, even pixel circles and ovals, with no doubled pixels.`,
+On a vector layer, ellipses are made of smooth curves, so they stay sharp however far you zoom in. On a **pixel layer** they're painted as clean, even pixel circles and ovals, with no doubled pixels. On the perspective guides they follow the plane the same way, as crisp pixels.`,
   },
   {
     id: 'tool-line',
@@ -110,7 +110,7 @@ On a vector layer, ellipses are made of smooth curves, so they stay sharp howeve
 
 Set how thick it is in the options.
 
-On a **pixel layer** the line is one pixel wide, and **Shift** snaps it to the clean pixel art slopes (1 across for 1 down, 2 for 1, 3 for 1, 4 for 1 and their upright twins), so every step in the line is the same length.`,
+On a **pixel layer** the line is one pixel wide, lines up with a vanishing point the same way, and **Shift** snaps it to the clean pixel art slopes (1 across for 1 down, 2 for 1, 3 for 1, 4 for 1 and their upright twins), so every step in the line is the same length.`,
   },
   {
     id: 'tool-select',

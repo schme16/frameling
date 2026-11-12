@@ -3,6 +3,7 @@ import type { ComponentType } from 'react';
 import { findLayer } from '../core/doc';
 import { useStore } from '../core/store';
 import { ActionButton, Choice, Slider, Tip, Toggle } from '../canvas/controls';
+import { PlaneOption } from '../tools/options/ShapeOptions';
 import { setToolSettings, useToolSettings } from '../tools/settings';
 import { DITHER_PATTERNS, type DitherPattern } from './dither';
 import { setPixelSettings, usePixelSettings, type SymmetryMode } from './settings';
@@ -80,8 +81,10 @@ export function PixelPencilOptions() {
 }
 
 export function PixelShapeOptions() {
+  const tool = useStore((s) => s.ui.tool);
   return (
     <div className="cv-options">
+      <PlaneOption show={tool !== 'line'} />
       <MirrorOptions />
       <Tip>On a pixel layer, shapes are one pixel thick: the stroke colour round the edge and the fill colour inside (set either to none). Shift makes a square or a circle, and snaps lines to clean pixel steps. Alt draws from the middle.</Tip>
     </div>

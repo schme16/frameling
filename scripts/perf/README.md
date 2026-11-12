@@ -14,7 +14,7 @@ Options:
 | | |
 |---|---|
 | `--out file.json` | where to write the results (printed to the console when left out) |
-| `--only draw,playback` | run some tests only: `draw`, `playback`, `rigfx`, `templates`, `zoompan`, `memory`, `soak` (`soak` only runs when named) |
+| `--only draw,playback` | run some tests only: `draw`, `playback`, `rigfx`, `templates`, `zoompan`, `onioncam`, `memory`, `soak` (`soak` only runs when named) |
 | `--label name` | a name stored in the results |
 | `PERF_RENDERER=dir` | use a renderer build from another folder, so you can measure without touching `dist/` (`npx vite build --outDir /somewhere/renderer`) |
 | `PERF_CPU_SLOWDOWN=4` | emulate a CPU four times slower (Chromium's CPU throttling). The GPU is unchanged. |

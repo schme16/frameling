@@ -16,7 +16,7 @@ import { canEdit, reportEdit } from './util';
 import { drawPixelFootprint, drawRing } from './cursors';
 import { VectorStroke } from './vectorStroke';
 import { docToPixel } from '../canvas/pixels';
-import { viewSizeFactor } from './view-size';
+import { viewPixelSize, viewSizeFactor } from './view-size';
 
 let vec: VectorStroke | null = null;
 let pix: PixelStroke | null = null;
@@ -37,7 +37,7 @@ function down(e: ToolPointer, ctx: ToolContext): void {
   const rgba = parseHex(ui.color);
   if (!rgba) return ctx.hint("That colour isn't something I can paint with. Pick one from the Colours panel.");
   const s = getToolSettings();
-  pix = new PixelStroke(doc, layer, ui.frame, { color: rgba, size: s.pixelBrushSize, shape: s.pixelBrushShape, perfect: s.pixelPerfect });
+  pix = new PixelStroke(doc, layer, ui.frame, { color: rgba, size: viewPixelSize(s.pixelBrushSize), shape: s.pixelBrushShape, perfect: s.pixelPerfect });
   pixColor = ui.color;
   const here = pix.cell(e.x, e.y);
   const from = e.shift ? lastPixelEnd(doc, layer) : null;
@@ -82,7 +82,7 @@ function overlay(g: CanvasRenderingContext2D, ctx: ToolContext): void {
   const layer = activeLayer().layer;
   if (layer?.kind === 'pixel') {
     const s = getToolSettings();
-    drawPixelFootprint(g, ctx, docToPixel(h.x, h.y, layer.pixelSize), layer.pixelSize, s.pixelBrushSize, s.pixelBrushShape, ui.color);
+    drawPixelFootprint(g, ctx, docToPixel(h.x, h.y, layer.pixelSize), layer.pixelSize, viewPixelSize(s.pixelBrushSize), s.pixelBrushShape, ui.color);
   } else {
     drawRing(g, ctx, h.x, h.y, (ui.brush.size * viewSizeFactor()) / 2);
   }

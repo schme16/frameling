@@ -15,7 +15,7 @@ import { EraserOptions } from './options/EraserOptions';
 import { PixelStroke } from './pixelStroke';
 import { getToolSettings } from './settings';
 import { reportEdit } from './util';
-import { viewSizeFactor } from './view-size';
+import { viewPixelSize, viewSizeFactor } from './view-size';
 import { activeIsMerge, editShapes } from './merge-mode';
 import { eraseArea, sweepGeom } from '../geometry/merge';
 
@@ -95,7 +95,7 @@ function down(e: ToolPointer, ctx: ToolContext): void {
   }
   if (layer.kind !== 'pixel') return;
   const { doc, ui } = store().get();
-  pix = new PixelStroke(doc, layer, ui.frame, { color: [0, 0, 0, 0], size: getToolSettings().eraserPixelSize, shape: getToolSettings().pixelBrushShape, perfect: false });
+  pix = new PixelStroke(doc, layer, ui.frame, { color: [0, 0, 0, 0], size: viewPixelSize(getToolSettings().eraserPixelSize), shape: getToolSettings().pixelBrushShape, perfect: false });
   pix.begin(pix.cell(e.x, e.y));
 }
 
@@ -144,7 +144,7 @@ function overlay(g: CanvasRenderingContext2D, ctx: ToolContext): void {
   if (!h) return;
   const layer = findLayer(store().get().doc, store().get().ui.activeLayerId) ?? store().get().doc.layers.at(-1);
   if (layer?.kind === 'pixel') {
-    drawPixelFootprint(g, ctx, docToPixel(h.x, h.y, layer.pixelSize), layer.pixelSize, getToolSettings().eraserPixelSize, getToolSettings().pixelBrushShape, null);
+    drawPixelFootprint(g, ctx, docToPixel(h.x, h.y, layer.pixelSize), layer.pixelSize, viewPixelSize(getToolSettings().eraserPixelSize), getToolSettings().pixelBrushShape, null);
   } else {
     drawRing(g, ctx, h.x, h.y, reach(ctx));
   }

@@ -161,7 +161,7 @@ Click the little arrow beside the onion for:
 
 On the ruler, the frames being ghosted are softly shaded in the same colours.
 
-Looking through the [camera](help:camera)? The ghosts go through it too, so they sit where you see the drawing.
+Looking through the [camera](help:camera)? The ghosts go through it too, so they sit where you see the drawing, and they stay quick even with heavy drawings.
 
 > Ghosts are only for you. They never show up when you play or export.`,
   },
@@ -196,7 +196,7 @@ there so the drawing doesn't seem to vanish, and so you have something to trace 
 Start drawing and the ghost stays behind your new lines until you go to another frame.
 
 It's only for you: it never shows when you play or export. It hides while the [onion skin](help:timeline-onion) is on,
-since that already shows the frames around this one.
+since that already shows the frames around this one. Looking through the [camera](help:camera), it goes through it too.
 
 Turn it off or on in **View > Ghost on empty frames**.
 

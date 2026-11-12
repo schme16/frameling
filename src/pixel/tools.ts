@@ -10,6 +10,7 @@ import { registerCommand, registerTool, type Tool, type ToolContext, type ToolPo
 import { store } from '../core/store';
 import { parseHex } from '../canvas/colors';
 import { getHover } from '../canvas/controller';
+import { vanishingPoints } from '../canvas/guides';
 import { docToPixel, type PxPt } from '../canvas/pixels';
 import { activeLayer, EDIT_HINTS } from '../tools/edit';
 import { drawPixelFootprint } from '../tools/cursors';
@@ -18,8 +19,10 @@ import { PixelStroke, lastPixelEnd } from '../tools/pixelStroke';
 import { noteColorUsed } from '../tools/recent';
 import { getToolSettings } from '../tools/settings';
 import { reportEdit } from '../tools/util';
+import { viewPixelSize } from '../tools/view-size';
 import { ditherInk, shadeInk, solidInk, type Ink } from './ink';
 import { docPalette } from './palette';
+import { perspectivePixelOutline, type PixelPerspective } from './perspective';
 import { dragBox, plotEllipse, plotLine, plotPolygon, plotRect, plotRectInside, snapCleanLine } from './raster';
 import { flattenSubPath } from '../geometry/hit';
 import { getPixelSettings } from './settings';
@@ -116,7 +119,7 @@ function inkTool(spec: InkToolSpec): Tool {
       const ink = spec.ink();
       if (typeof ink === 'string') return ctx.hint(ink);
       const { doc, ui } = store().get();
-      stroke = new PixelStroke(doc, layer, ui.frame, { color: [0, 0, 0, 255], size: spec.size(), shape: getToolSettings().pixelBrushShape, perfect: spec.perfect(), ink });
+      stroke = new PixelStroke(doc, layer, ui.frame, { color: [0, 0, 0, 255], size: viewPixelSize(spec.size()), shape: getToolSettings().pixelBrushShape, perfect: spec.perfect(), ink });
       const here = stroke.cell(e.x, e.y);
       const from = e.shift ? lastPixelEnd(doc, layer) : null;
       if (from) stroke.beginLine(from, here);
@@ -144,7 +147,7 @@ function inkTool(spec: InkToolSpec): Tool {
     },
     overlay(g, ctx) {
       if (stroke) return drawMirrorLines(g, ctx);
-      hoverFootprint(g, ctx, spec.size(), spec.hoverColor());
+      hoverFootprint(g, ctx, viewPixelSize(spec.size()), spec.hoverColor());
     },
   };
 }
@@ -259,7 +262,8 @@ export type PixelShapeKind = 'rect' | 'ellipse' | 'line';
 /**
  * Paints a pixel shape between two cells into a session (after a reset, so it can be called on every move).
  * Rectangles and ellipses take the fill colour inside and the stroke colour round the edge (either can be none); a
- * line always uses the stroke colour. Shift squares the box, or snaps a line to a clean pixel slope.
+ * line always uses the stroke colour. Shift squares the box, or snaps a line to a clean pixel slope. `persp` puts a
+ * rectangle or ellipse on a perspective plane.
  */
 export function paintPixelShape(
   session: PixelSession,
@@ -268,6 +272,7 @@ export function paintPixelShape(
   b: PxPt,
   mod: { shift: boolean; alt: boolean },
   colors: { fill: string | null; stroke: string | null; line: string },
+  persp?: PixelPerspective,
 ): void {
   session.reset();
   if (kind === 'line') {
@@ -282,6 +287,9 @@ export function paintPixelShape(
     return;
   }
   const [p, q] = dragBox(a, b, mod.shift, mod.alt);
+  // With perspective guides showing, it follows the plane it's drawn on, rasterised as crisply as a flat one.
+  const outline = persp && perspectivePixelOutline(kind, p, q, session.pixelSize, persp);
+  if (outline) return paintPixelPaths(session, [outline], { fill: colors.fill, stroke: colors.stroke });
   const fill = colors.fill ? parseHex(colors.fill) : null;
   const stroke = colors.stroke ? parseHex(colors.stroke) : null;
   const fi = fill ? session.lock(solidInk(fill)) : null;
@@ -306,7 +314,8 @@ export function makePixelShape(kind: PixelShapeKind, label: string) {
     if (!session || !start) return;
     const ui = store().get().ui;
     const here = docToPixel(e.x, e.y, size);
-    paintPixelShape(session, kind, start, here, { shift: e.shift, alt: e.alt }, { fill: ui.fillColor, stroke: ui.strokeOn ? ui.color : null, line: ui.color });
+    const persp = kind === 'line' ? undefined : { vps: vanishingPoints(e.mod), plane: getToolSettings().perspectivePlane };
+    paintPixelShape(session, kind, start, here, { shift: e.shift, alt: e.alt }, { fill: ui.fillColor, stroke: ui.strokeOn ? ui.color : null, line: ui.color }, persp);
     session.flush();
   };
   return {

@@ -34,7 +34,7 @@ export function lightTableItems(doc: Doc, lt: LightTable | null | undefined, fra
     if (!d || d.kind === 'tilemap' || d.kind === 'camera') continue;
     // On the pinned frame itself (or while the same drawing is held) it would just double up.
     if (d === poseAt(doc, layer, frame)) continue;
-    out.push({ drawing: d, pixelSize: layer.kind === 'pixel' ? layer.pixelSize : 1 });
+    out.push({ drawing: d, pixelSize: layer.kind === 'pixel' ? layer.pixelSize : 1, layerId: layer.id });
   }
   return out;
 }
