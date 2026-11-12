@@ -265,7 +265,7 @@ function EffectCard({ target, effect, first, last }: { target: Target; effect: L
             setMenu({ x: r.left, y: r.bottom + 2 });
           }}
         >
-          <span aria-hidden="true">{'⋯'}</span>
+          <Icon name="more" size={16} />
         </button>
       </div>
       {animated && (

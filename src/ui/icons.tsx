@@ -5,6 +5,14 @@ import type { ReactNode } from 'react';
 const dot = (cx: number, cy: number, r = 1.2) => <circle cx={cx} cy={cy} r={r} fill="currentColor" stroke="none" />;
 
 const ICONS: Record<string, ReactNode> = {
+  // the "more" button: three dots. Drawn, not a text glyph, so the first paint needn't hunt the system for a font that has one.
+  more: (
+    <>
+      {dot(5, 12, 1.8)}
+      {dot(12, 12, 1.8)}
+      {dot(19, 12, 1.8)}
+    </>
+  ),
   // plugins and templates
   plugin: <path d="M9 4.5a2 2 0 0 1 4 0V7h4a1 1 0 0 1 1 1v3.5h-1.5a2 2 0 0 0 0 4H18V19a1 1 0 0 1-1 1h-3.5v-1.5a2 2 0 0 0-4 0V20H6a1 1 0 0 1-1-1v-4h1.5a2 2 0 0 0 0-4H5V8a1 1 0 0 1 1-1h3z" />,
   template: (
