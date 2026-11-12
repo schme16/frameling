@@ -187,7 +187,7 @@ describe('Godot bones: looks', () => {
     expect(node).toContain('material = SubResource("Blend_add")');
   });
 
-  it('puts a folder\'s fade and blend on its layers and leaves out hidden folders and mask layers', () => {
+  it('puts a folder\'s fade and blend on its layers, keeps hidden folders (as hidden nodes) and leaves out mask layers', () => {
     const doc = bonesExtrasDoc();
     doc.folders = { f1: { id: 'f1', name: 'Group', visible: true, opacity: 0.5, blend: 'multiply' } };
     const sky = doc.layers.find((l) => l.name === 'Sky')!;
@@ -195,7 +195,7 @@ describe('Godot bones: looks', () => {
     const p = bonesParts(doc, { start: 0, end: 11 }).find((x) => x.layer.name === 'Sky')!;
     expect(p.look).toMatchObject({ opacity: 0.5, blend: 'mul' });
     doc.folders.f1.visible = false;
-    expect(bonesParts(doc, { start: 0, end: 11 }).some((x) => x.layer.name === 'Sky')).toBe(false);
+    expect(bonesParts(doc, { start: 0, end: 11 }).some((x) => x.layer.name === 'Sky')).toBe(true);
     sky.folder = undefined;
     doc.layers.find((l) => l.name === 'Glow')!.mask = 'show';
     expect(bonesParts(doc, { start: 0, end: 11 }).some((x) => x.layer.name === 'Glow')).toBe(false);
@@ -228,7 +228,7 @@ describe('Godot bones: looks', () => {
   });
 
   it('says nothing for the plain puppet', () => {
-    expect(bonesNotes(makePuppet())).toEqual({ native: [], baked: [], skipped: [], fades: [], tips: [] });
+    expect(bonesNotes(makePuppet())).toEqual({ native: [], baked: [], skipped: [], fades: [], tips: [], folded: [] });
   });
 
   it('writes the tint shader only for a tinted symbol, one per blend', () => {

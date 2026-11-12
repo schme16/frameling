@@ -27,6 +27,8 @@ export interface ExtrasOptions {
   armFade?: number;
   /** The glow layer uses this blend mode (at 0.7 fade, no glow effect) and also covers part of the sun, so it blends over two backdrops. */
   glowBlend?: BlendMode;
+  /** Layer folders on the stage: Scenery (Hills.far, and inside it the faded Props.faded with two crates), a hidden Ghosts folder (with a hidden Inner folder inside) and Cast (the hero layer). */
+  folders?: boolean;
 }
 
 /**
@@ -93,7 +95,28 @@ export function bonesExtrasDoc(o: ExtrasOptions = {}): Doc {
     doc.layers.push(win);
   }
 
+  if (o.folders) {
+    const folder = (id: string, name: string, visible: boolean, opacity: number, parent?: string) => ((doc.folders ??= {})[id] = { id, name, visible, opacity, ...(parent ? { parent } : {}) });
+    folder('scenery', 'Scenery', true, 1);
+    folder('props', 'Props.faded', true, 0.5, 'scenery');
+    folder('ghosts', 'Ghosts', false, 1);
+    folder('inner', 'Inner', false, 1, 'ghosts');
+    folder('cast', 'Cast', true, 1);
+    const box = (name: string, inFolder: string, x: number, y: number, w: number, h: number, color: string) => {
+      const l = newVectorLayer(name) as VectorLayer;
+      l.folder = inFolder;
+      hold(l, vectorDrawing(doc, [pathShape([rectPath(x, y, w, h)], color, null)]).id, 0, 12);
+      doc.layers.push(l);
+    };
+    box('Hills.far', 'scenery', -40, 150, 440, 130, '#3f8f5f');
+    box('Crate', 'props', 20, 170, 40, 40, '#d08a3a');
+    box('Crate', 'props', 70, 185, 30, 30, '#a05a2a');
+    box('Ghost', 'ghosts', 140, 90, 120, 110, '#ff3030');
+    box('Ghost 2', 'inner', 10, 10, 70, 70, '#ff00ff');
+  }
+
   const hero = newVectorLayer('Hero') as VectorLayer;
+  if (o.folders) hero.folder = 'cast';
   const h0 = vectorDrawing(doc, []);
   h0.shapes = [inst(90, 150), inst(250, 190, { transform: { x: 250, y: 190, scaleX: 0.8, scaleY: 0.8, rotation: -15, skew: 0 } })];
   const h1 = vectorDrawing(doc, []);

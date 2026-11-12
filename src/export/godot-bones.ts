@@ -12,13 +12,14 @@
 import type { Cel, Doc, Easing, Id, Layer } from '../core/format';
 import { activeCamera, cameraViewAt, depthAnchor, depthScale, parallaxFactor, plainView, clampZoom } from '../core/camera';
 import { celAt } from '../core/doc';
+import { folderChain } from '../core/folders';
 import { nextKey } from '../core/symbols';
 import { poseKeyAt, rigPoseAt, type RigLayer } from '../rig/pose';
 import { minv, mmul, restMatrix, stretchOf, type Mat } from '../rig/math';
 import { withNativeBounce, type Animation } from './sheet';
-import { bonesRigs, groupLayout, isShaderBlend, type GroupItem, type BonesPart, type BonesScope, type BonesTexture, type NativeBlend, type NestedInstance } from './godot-bones-scope';
+import { bonesRigs, groupLayout, isShaderBlend, nativeFolderFades, type GroupItem, type BonesPart, type BonesScope, type BonesTexture, type NativeBlend, type NestedInstance } from './godot-bones-scope';
 
-export { groupLayout, groupBlocker, maskLinks, carriedMasks, bakeScales, maxStretch, MAX_BAKE, bonesParts, bonesRigs, bonesScope, bonesStage, bonesNotes, allScopes, hasBonesToExport, restPicture, riggedSymbols, partLook, nativeBlend, BonesNotes } from './godot-bones-scope';
+export { groupLayout, groupBlocker, nativeFolderFades, maskLinks, carriedMasks, bakeScales, maxStretch, MAX_BAKE, bonesParts, bonesRigs, bonesScope, bonesStage, bonesNotes, allScopes, hasBonesToExport, restPicture, riggedSymbols, partLook, nativeBlend, BonesNotes } from './godot-bones-scope';
 export type { PartMask, BonesPart, BonesScope, BonesTexture, InstState, NativeBlend, NestedInstance, PartKind, PartLook } from './godot-bones-scope';
 
 // ---------------------------------------------------------------- writing Godot text
@@ -405,6 +406,7 @@ function build(o: BonesSceneInput): { text: string; shaders: Set<NativeBlend> } 
   };
 
   const top: BonesScope = { layers: doc.layers, range: o.range, parts: o.parts, rigs: bonesRigs(doc), nested: o.nested ?? [], textures: o.textures };
+  const nativeFades = nativeFolderFades(doc, top, o.textures, !!camera);
 
   const emit = (sc: BonesScope, parentPath: string, unit: number, inherit: { blend: NativeBlend; tint?: Tint } | undefined, parentOf: (l: Layer) => string, grouped?: ReturnType<typeof groupLayout>): ScopeNodes => {
     // A grouped symbol's nodes are written in the order its layout says, so each kind is held back until then.
@@ -412,6 +414,26 @@ function build(o: BonesSceneInput): { text: string; shaders: Set<NativeBlend> } 
     const textures = sc.textures ?? sc.parts.map((p) => p.pictures.map(() => ({ path: 'res://missing.png', x: 0, y: 0, w: 1, h: 1 })));
     const at = (p: string) => p || '.';
     const under = (p: string, n: string) => (p ? `${p}/${n}` : n);
+    // On the stage every folder is a Node2D with its layers inside, nested like the folders (hidden ones are hidden nodes).
+    const stage = sc === top;
+    const folderNodes = new Map<string, string>();
+    const folderHost = (layer: Layer, host: string): string => {
+      let parent = host;
+      for (const f of folderChain(doc.folders, layer.folder)) {
+        const key = `${host}|${f.id}`;
+        let path = folderNodes.get(key);
+        if (!path) {
+          const n = name(at(parent), f.name);
+          path = under(parent, n);
+          folderNodes.set(key, path);
+          nodes.push(`[node name=${gdString(n)} type="Node2D" parent=${gdString(at(parent))}]`, ...(f.visible ? [] : ['visible = false']), ...(nativeFades.has(f.id) ? [`modulate = Color(1, 1, 1, ${gdNum(f.opacity)})`] : []), '');
+        }
+        parent = path;
+      }
+      return parent;
+    };
+    // The fade a layer still carries itself: its folders' fades that are on their nodes are taken off.
+    const nodeFade = (layer: Layer) => folderChain(doc.folders, layer.folder).reduce((n, f) => (nativeFades.has(f.id) ? n * f.opacity : n), 1);
     const res: ScopeNodes = { sc, rigs: [], partPath: [], nested: [] };
     const bonePath = new Map<Id, string>();
     const skelPath = new Map<Id, string>();
@@ -467,8 +489,10 @@ function build(o: BonesSceneInput): { text: string; shaders: Set<NativeBlend> } 
       // Inside a CanvasGroup the order is the scene tree's (Godot leaves children on other z out of the group).
       const zl = grouped ? [] : [`z_index = ${Math.max(-4096, Math.min(4096, p.z * unit))}`];
       const put = (...lines: string[]) => (held ? void held.part.set(p, lines) : void nodes.push(...lines));
-      const op = p.look?.opacity ?? p.layer.opacity;
-      const fade = op < 1 ? [`modulate = Color(1, 1, 1, ${gdNum(op)})`] : [];
+      // Parts that sit under a bone are not in their folder's node, so their folders' fades stay on them.
+      const rides = (p.kind === 'mesh' && !!p.rig && !!p.mesh && skelPath.has(p.rig.id)) || (p.kind === 'cut' && !!p.rig && !!p.bone && bonePath.has(p.bone));
+      const op = Math.min(1, (p.look?.opacity ?? p.layer.opacity) / (stage && !rides ? nodeFade(p.layer) : 1));
+      const fade = op < 1 - 1e-6 ? [`modulate = Color(1, 1, 1, ${gdNum(op)})`] : [];
       const hidden = p.frameOf[0] < 0 ? ['visible = false'] : [];
       const blend = p.look?.blend ?? 'mix';
       if (p.kind === 'mesh' && p.rig && p.mesh && skelPath.has(p.rig.id)) {
@@ -545,7 +569,7 @@ function build(o: BonesSceneInput): { text: string; shaders: Set<NativeBlend> } 
         );
         return;
       }
-      const host = parentOf(p.layer);
+      const host = stage ? folderHost(p.layer, parentOf(p.layer)) : parentOf(p.layer);
       const n = name(at(host), p.layer.name);
       res.partPath.push(under(host, n));
       put(`[node name=${gdString(n)} type="Sprite2D" parent=${gdString(at(host))}]`, ...zl, ...hidden, ...fade, ...materialFor(blend, under(host, n)), `position = ${v2(t0.x / bk(t0), t0.y / bk(t0))}`, ...shrink(t0), `texture = ${tex(t0.path)}`, 'centered = false', '');
@@ -555,7 +579,7 @@ function build(o: BonesSceneInput): { text: string; shaders: Set<NativeBlend> } 
     const emitNested = (inst: NestedInstance) => {
       // On a layer that follows a bone the copy sits under that bone: its matrix is taken from the bone's rest place.
       const boneHost = inst.bind ? bonePath.get(inst.bind.bone) : undefined;
-      const host = boneHost ?? parentOf(inst.layer);
+      const host = boneHost ?? (stage ? folderHost(inst.layer, parentOf(inst.layer)) : parentOf(inst.layer));
       const n = name(at(host), inst.name);
       const path = under(host, n);
       const firstAt = inst.at.findIndex((s) => !!s);

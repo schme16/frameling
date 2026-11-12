@@ -22,7 +22,7 @@ describe('nested folders in the Godot bones scene', () => {
     expect(bonesParts(doc, range).find((x) => x.layer.name === 'Sky')!.look!.blend).toBe('add');
   });
 
-  it('leaves out a layer whose outer folder is hidden, and stacks folder effects', () => {
+  it('keeps a layer whose outer folder is hidden (the folder node is hidden), and stacks folder effects', () => {
     const doc = bonesExtrasDoc();
     doc.folders = {
       outer: { id: 'outer', name: 'Outer', visible: true, opacity: 1, effects: [{ id: 'e1', kind: 'blur', values: { radius: 3 } }] },
@@ -32,6 +32,6 @@ describe('nested folders in the Godot bones scene', () => {
     const p = bonesParts(doc, range).find((x) => x.layer.name === 'Sky')!;
     expect(p.look!.effects.map((e) => e.kind)).toEqual(['glow', 'blur']);
     doc.folders.outer.visible = false;
-    expect(bonesParts(doc, range).some((x) => x.layer.name === 'Sky')).toBe(false);
+    expect(bonesParts(doc, range).some((x) => x.layer.name === 'Sky')).toBe(true);
   });
 });
