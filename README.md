@@ -134,7 +134,7 @@ npm run install-local                 # build the AppImage and install it
 npm run install-local -- --no-build   # install the last build without rebuilding
 ```
 
-This copies the AppImage to `/mnt/109313D2109313D2/lutris-applications/frameling/frameling.AppImage`. If Frameling is running from there, the script closes it first so the file can be replaced. Set `FRAMELING_INSTALL_DIR` to install somewhere else.
+This copies the AppImage to `/mnt/109313D2109313D2/lutris-applications/frameling/frameling.AppImage`. If Frameling is running from there, the script closes it first so the file can be replaced. Set `FRAMELING_INSTALL_DIR` to install somewhere else. It also writes the launcher, which lists Frameling under "Open with" for Aseprite files (and adds the Aseprite file type to your own mime folder if nothing else defines it) without becoming their default.
 
 ### Editing the mascot
 

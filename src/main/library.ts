@@ -3,6 +3,7 @@
 import { app, dialog, shell, type BrowserWindow } from 'electron';
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import type { FileFilter, LibraryEntry, LibraryKind } from '../preload/api';
 import { pathKey } from './paths';
 
@@ -185,4 +186,30 @@ export function fileFromUrl(url: string, exists: (p: string) => boolean = fs.exi
   if (ext !== '.frameling' && ext !== '.flplay') return null;
   const abs = path.resolve(p);
   return exists(abs) ? abs : null;
+}
+
+/**
+ * The file to open from a list of command line arguments: a `frameling://open?path=` link, or the first drawing,
+ * animation or Aseprite file. Launchers that pass `%U` hand over `file://` links, so those count too. Absolute path.
+ */
+export function fileFromArgs(args: string[], cwd = process.cwd()): string | null {
+  for (const x of args) {
+    if (x.toLowerCase().startsWith(`${PROTOCOL}:`)) {
+      const f = fileFromUrl(x);
+      if (f) return f;
+    }
+  }
+  for (const x of args) {
+    if (x.startsWith('-')) continue;
+    let p = x;
+    if (/^file:\/\//i.test(x)) {
+      try {
+        p = fileURLToPath(x);
+      } catch {
+        continue;
+      }
+    }
+    if (/\.(frameling|flplay|aseprite|ase)$/i.test(p)) return path.resolve(cwd, p);
+  }
+  return null;
 }

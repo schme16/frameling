@@ -12,7 +12,7 @@ registerHelpTopics([
 
 ## Open one as a new drawing
 
-Press **Ctrl+O** (**Cmd+O**) and pick a file ending in **.aseprite** or **.ase**. You can also drag the file onto the Frameling window. It opens as a new, unsaved drawing, so **Save** asks where to keep it as a .frameling file. Your original Aseprite file is never changed.
+Press **Ctrl+O** (**Cmd+O**) and pick a file ending in **.aseprite** or **.ase**. You can also drag the file onto the Frameling window, or right-click it in your file manager and choose **Open with Frameling**. Frameling is offered there but never takes over the double-click, so Aseprite keeps that. It opens as a new, unsaved drawing, so **Save** asks where to keep it as a .frameling file. Your original Aseprite file is never changed.
 
 ## Add one to the drawing you have open
 

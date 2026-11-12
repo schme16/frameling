@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Aseprite's own file type name, so Frameling shows up under "Open with" for .aseprite and .ase files. Only installed
+     when no program on the computer has defined it already (scripts/linux-integration.mjs). The magic number is
+     0xA5E0 at byte 4 of every Aseprite file, which tells them apart from other .ase files (Adobe swatches). -->
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+  <mime-type type="application/x-aseprite">
+    <comment>Aseprite sprite</comment>
+    <sub-class-of type="application/octet-stream"/>
+    <magic priority="60">
+      <match type="little16" value="0xA5E0" offset="4"/>
+    </magic>
+    <glob pattern="*.aseprite" weight="60"/>
+    <glob pattern="*.ase" weight="60"/>
+  </mime-type>
+</mime-info>
