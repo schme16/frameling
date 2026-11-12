@@ -152,6 +152,20 @@ describe('SVG keeps the look', () => {
     expect(notes.join(' ')).toMatch(/Pixelate on "Back" was left out/);
   });
 
+  it('draws soft puffs with a gradient that fades to nothing, one per colour', () => {
+    const doc = base();
+    const l = addVectorLayer(doc, 'Smoke');
+    const d = vectorDrawing(doc, []);
+    d.shapes = [{ ...newParticles(uid('s'), 'smoke', { x: 50, y: 40 }), prewarm: true }];
+    hold(l, d.id, 0, 4);
+    for (const svg of [frameToSvg(doc, 2), animatedSvg(doc)]) {
+      expect(svg).toMatch(/<circle [^>]*fill="url\(#soft-[0-9a-f]+\)"/);
+      expect(svg).toMatch(/<radialGradient id="soft-[0-9a-f]+"><stop offset="0" stop-color="#[0-9a-f]{6}"\/><stop offset="0.45"[^>]*stop-opacity="0.667"\/><stop offset="1"[^>]*stop-opacity="0"\/>/);
+      const ids = svg.match(/<radialGradient id="(soft-[0-9a-f]+)"/g) ?? [];
+      expect(new Set(ids).size).toBe(ids.length);
+    }
+  });
+
   it('draws symbol particles with the symbol, written once and placed with <use>', () => {
     const doc = base();
     const k = vectorDrawing(doc, [fill([ellipsePath(5, 5, 5, 5)], '#ff00ff')]);
