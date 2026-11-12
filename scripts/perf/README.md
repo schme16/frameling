@@ -36,7 +36,7 @@ npx vite build --config vite.web.config.ts && node scripts/perf/startup.cjs --we
 ```
 
 - The desktop run starts the real main process (`dist/main/main.cjs`) through `launch.cjs`, which parks windows
-  off-screen. Afterwards it imports every lazily loaded chunk from `file://` in that real window, to prove they load.
+  off-screen on a real desktop and keeps them on-screen under xvfb (`display.cjs`; `PERF_ONSCREEN=1` or `0` forces it). Afterwards it imports every lazily loaded chunk from `file://` in that real window, to prove they load.
 - `--web` serves `dist/web` from a sub-path (`/some/sub/path/frameling/`), then stops the server and opens the app
   again offline, and opens Export, Preferences, Themes and Help, so the lazily loaded chunks have to come from the
   service worker's copy.
@@ -49,7 +49,8 @@ dock panels load on first use, and in idle time a moment after start-up so the f
 
 ## The hidden window
 
-The window is parked off-screen (x = -4000) and can't take focus, so nothing appears on the desktop. It is not
+The window is parked off-screen (x = -4000) and can't take focus, so nothing appears on the desktop (`startup.cjs` keeps it on-screen under xvfb, where an off-screen window is never
+drawn). It is not
 truly hidden on purpose: with this app a hidden Electron window only gets one `requestAnimationFrame` a second, so
 there is nothing to measure (`PERF_HIDDEN=1` shows that). Frames come at the display's refresh rate; the results
 record it as `env.idleRafMs` (6.06 ms means a 165 Hz display), so remember it when reading frame deltas.

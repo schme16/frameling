@@ -6,7 +6,8 @@
 //   node scripts/perf/startup.cjs --runs 11 --out scripts/perf/results/startup.json
 //
 // Each launch is a fresh Electron process. The first launch uses a brand new profile (first run: no code cache, Quill's
-// hello); the rest reuse it, like someone opening the app again. Windows are parked off-screen (launch.cjs).
+// hello); the rest reuse it, like someone opening the app again. Windows are parked off-screen on a real desktop and kept on-screen under xvfb
+// (launch.cjs, display.cjs); PERF_ONSCREEN=1 or 0 overrides.
 const { spawn } = require('node:child_process');
 const fs = require('node:fs');
 const http = require('node:http');

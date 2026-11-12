@@ -326,7 +326,9 @@ Environment: `PERF_RENDERER=<dir>` (measure a renderer built elsewhere with `npx
 
 `startup.cjs`: launches the built app as a fresh process again and again and times launch to the
 `frameling:interactive` mark (set in `src/renderer/App.tsx`), plus the JS needed before start. It starts Electron
-through `launch.cjs`, which parks every window off-screen.
+through `launch.cjs`, which keeps every window unfocusable. Under xvfb (the way to run it) the window stays on-screen in
+the virtual display, because an off-screen window is never drawn there and the launch never gets interactive; on a real
+desktop it is parked off-screen so nothing shows. `scripts/perf/display.cjs` decides; `PERF_ONSCREEN=1` or `0` forces it.
 
 ```bash
 npm run build
