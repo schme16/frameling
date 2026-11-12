@@ -24,6 +24,7 @@ import { makeTween, removeTween } from '../symbols/ops';
 import { MOTIONS } from '../core/motions';
 import { makeMotion } from '../symbols/motion-ops';
 import '../symbols/symbols.css';
+import { attachPinch } from '../canvas/pinch';
 import { MAX_CW, MIN_CW, setTl, tl, useTl } from './state';
 import { TimelineSlot } from './slots';
 import { DetailRow, PropRow } from './Detail';
@@ -415,22 +416,29 @@ export function TimelineBody() {
     };
   }, []);
 
-  // Ctrl + wheel zooms around the pointer.
+  // Ctrl + wheel zooms around the pointer, and so does a pinch in Safari (which sends gesture events instead).
   useEffect(() => {
     const el = scroller.current;
     if (!el) return;
-    const wheel = (e: WheelEvent) => {
-      if (!e.ctrlKey && !e.metaKey) return;
-      e.preventDefault();
+    const zoomAt = (factor: number, clientX: number) => {
       const old = tl().cw;
-      const next = Math.max(MIN_CW, Math.min(MAX_CW, old * Math.exp(-e.deltaY * 0.0015)));
+      const next = Math.max(MIN_CW, Math.min(MAX_CW, old * factor));
       if (next === old) return;
-      const visibleX = e.clientX - el.getBoundingClientRect().left - sideRef.current;
+      const visibleX = clientX - el.getBoundingClientRect().left - sideRef.current;
       keepScroll.current = zoomScroll(el.scrollLeft, Math.max(0, visibleX), old, next);
       setTl({ cw: next });
     };
+    const wheel = (e: WheelEvent) => {
+      if (!e.ctrlKey && !e.metaKey) return;
+      e.preventDefault();
+      zoomAt(Math.exp(-e.deltaY * 0.0015), e.clientX);
+    };
     el.addEventListener('wheel', wheel, { passive: false });
-    return () => el.removeEventListener('wheel', wheel);
+    const unpinch = attachPinch(el, (factor, x) => zoomAt(factor, x));
+    return () => {
+      el.removeEventListener('wheel', wheel);
+      unpinch?.();
+    };
   }, []);
   useLayoutEffect(() => {
     if (keepScroll.current !== null && scroller.current) {

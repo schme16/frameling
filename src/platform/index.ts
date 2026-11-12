@@ -5,7 +5,9 @@
  * and asks this module about the few things that differ, rather than checking for Electron itself.
  */
 import type { FramelingApi } from '../preload/api';
+import { dismissToast, toast } from '../ui/toast';
 import { ask } from './ask';
+import { createSaveOffers, GESTURE_EVENTS, isSafariLike, needsFreshClick } from './saveReady';
 import { openDb } from './web/idb';
 import { createWebApi, describeWebPath, type FileHandleLike, type Pickers, type WebApi } from './web/web';
 
@@ -52,7 +54,7 @@ export function guessOs(nav: { platform?: string; userAgent?: string; userAgentD
   return 'linux';
 }
 
-export function download(name: string, bytes: Uint8Array): void {
+function saveNow(name: string, bytes: Uint8Array): void {
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([bytes as BlobPart]));
   a.download = name;
@@ -61,6 +63,33 @@ export function download(name: string, bytes: Uint8Array): void {
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 30_000);
+}
+
+/** When the person last clicked, touched or pressed a key in the page (ms, 0 = never). */
+let lastGestureAt = 0;
+let watchingGestures = false;
+
+function watchGestures(): void {
+  if (watchingGestures || typeof window === 'undefined') return;
+  watchingGestures = true;
+  for (const t of GESTURE_EVENTS) window.addEventListener(t, () => (lastGestureAt = performance.now()), { capture: true, passive: true });
+}
+
+const offers = createSaveOffers({
+  save: saveNow,
+  show: (message, onSave) => toast(message, { kind: 'success', duration: 0, quill: null, sound: null, action: { label: 'Save', run: onSave } }),
+  hide: dismissToast,
+});
+
+/** Saves the files that finished too late to download on their own. Returns how many there were. */
+export const saveWaitingFiles = (): number => offers.saveAll();
+export const waitingFiles = (): number => offers.pending();
+
+/** Hands the bytes to the browser as a download, or (in Safari, long after the last click) offers a Save button first. */
+export function download(name: string, bytes: Uint8Array): void {
+  const since = lastGestureAt ? performance.now() - lastGestureAt : Infinity;
+  if (typeof navigator !== 'undefined' && needsFreshClick(isSafariLike(navigator.userAgent), since)) offers.offer(name, bytes);
+  else saveNow(name, bytes);
 }
 
 export function pickUpload(accept: string): Promise<File | null> {
@@ -79,10 +108,15 @@ let web: WebApi | null = null;
 /** The web bridge, when this is the web build. */
 export const webApi = (): WebApi | null => web;
 
+let savedHook: (() => void) | null = null;
+/** What to do after each autosave to the browser's storage (set by install.ts, which has the UI to hand). */
+export const setSavedHook = (fn: (() => void) | null): void => void (savedHook = fn);
+
 /** Builds the browser bridge when there's no desktop one. Run once, before the app starts. */
 export function installPlatform(): void {
   if (typeof window === 'undefined' || bridge()?.files) return;
   const w = window as unknown as Pickers & { frameling?: FramelingApi };
+  watchGestures();
   web = createWebApi({
     db: typeof indexedDB !== 'undefined' ? openDb() : Promise.reject(new Error('no IndexedDB')),
     pickers: {
@@ -95,6 +129,7 @@ export function installPlatform(): void {
     ask,
     appVersion: typeof __FRAMELING_VERSION__ === 'string' ? __FRAMELING_VERSION__ : '',
     platform: guessOs(),
+    onSaved: () => savedHook?.(),
     events: window,
   });
   w.frameling = web;
