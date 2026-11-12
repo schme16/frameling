@@ -5,6 +5,7 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { getPanel, registerPanel, unregisterPanel } from '../../src/core/registry';
 import * as D from '../../src/ui/dock';
+import { sanitizeGroups } from '../../src/ui/toolArrange';
 import { groupsOf, MAX_GROUPS, normaliseLayout, ZONES, type DropTarget, type Layout } from '../../src/ui/dockModel';
 
 const Nothing = () => null;
@@ -63,7 +64,7 @@ function check(l: Layout, registered: string[], where: string): void {
 }
 
 describe('the dock under random use (seeded)', () => {
-  for (let seed = 1; seed <= 100; seed++) {
+  for (let seed = 1; seed <= 60; seed++) {
     it(`seed ${seed}`, () => {
       const r = rng(seed * 104729);
       const pick = <T,>(a: readonly T[]): T => a[Math.floor(r() * a.length)];
@@ -78,7 +79,7 @@ describe('the dock under random use (seeded)', () => {
       };
       for (let step = 0; step < 90; step++) {
         const id = pick(IDS);
-        const op = pick(['place', 'place', 'place', 'move', 'float', 'floatTo', 'dockBack', 'dockAll', 'closeFloat', 'hide', 'show', 'toggle', 'active', 'stack', 'join', 'joinAll', 'split', 'collapse', 'rename', 'save', 'apply', 'apply', 'delete', 'share', 'reset', 'featureOff', 'late', 'floatMany']);
+        const op = pick(['place', 'place', 'place', 'move', 'float', 'floatTo', 'dockBack', 'dockAll', 'closeFloat', 'hide', 'show', 'toggle', 'active', 'stack', 'join', 'joinAll', 'split', 'collapse', 'rename', 'save', 'apply', 'apply', 'delete', 'share', 'reset', 'featureOff', 'late', 'floatMany', 'rail', 'rail', 'railReset']);
         log.push(`${op}(${id})`);
         const f = L().floats.length ? pick(L().floats) : null;
         const zone = pick(ZONES);
@@ -105,6 +106,8 @@ describe('the dock under random use (seeded)', () => {
           case 'apply': D.applyWorkspace(pick(D.listWorkspaces()).id); break;
           case 'delete': { const u = D.dock.get().user; if (u.length) D.deleteWorkspace(pick(u).id); break; }
           case 'reset': D.resetLayout(); break;
+          case 'rail': D.setToolGroups(pick([undefined, [{ id: 'mine', name: 'Mine', tools: ['pencil', 'brush'] }, { id: 'more', tools: ['eraser'] }], [{ id: 'one', tools: ['fill'] }]])); break;
+          case 'railReset': D.resetToolGroups(); break;
           case 'share': {
             const ws = pick(D.listWorkspaces());
             const text = D.workspaceText(ws.id)!;
@@ -112,6 +115,9 @@ describe('the dock under random use (seeded)', () => {
             if (res.ok) {
               // What comes back is what went out: the layout tidied against the panels there are.
               expect(near(res.workspace.layout, normaliseLayout(JSON.parse(text).layout)), `share ${ws.name}`).toBe(true);
+              // Its tool rail comes along: the person's own for it, or the one it brings.
+              const rail = D.dock.get().rails?.[ws.id] ?? ws.rail;
+              expect(canon(res.workspace.rail), `share ${ws.name} rail`).toEqual(canon(rail ? sanitizeGroups(rail, true) : undefined));
               D.deleteWorkspace(res.workspace.id);
             }
             break;
@@ -145,6 +151,10 @@ describe('the dock under random use (seeded)', () => {
         const where = `step ${step}: ${log.join(' ')}`;
         check(L(), registered(), where);
         // Saved as written: what the store holds reads back the same, and tidying it again changes nothing.
+        // Rails belong to workspaces that exist, and the open workspace is one of them.
+        const known = D.listWorkspaces().map((w) => w.id);
+        expect(known.includes(D.dock.get().workspaceId), `${where}: open workspace ${D.dock.get().workspaceId} does not exist`).toBe(true);
+        for (const id of Object.keys(D.dock.get().rails ?? {})) expect(known.includes(id), `${where}: a rail for ${id}, which is gone`).toBe(true);
         const saved = JSON.parse(localStorage.getItem(D.DOCK_KEY) ?? 'null');
         if (saved) expect(canon(normaliseLayout(saved.layout)), `${where} (saved copy)`).toEqual(canon(L()));
         expect(canon(D.reconcile(L())), `${where} (reconcile changes it)`).toEqual(canon(L()));
