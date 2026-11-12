@@ -109,11 +109,11 @@ Drag a diamond, stretch a few (**Alt** and drag) or press **Delete**, and only t
 
 ## Dropping a diamond between drawings
 
-Frameling makes a drawing key there to hold it. If the diamond lands inside in-betweens (a tween), the two halves play the same curve the one span did, so the other rows keep their easing and nothing speeds up or slows down. Other rows show no diamond there, because nothing was set on them: they are on the curve exactly where they would have been. A row only gets a diamond at the new key if its value there is not what the curve gives.
+Frameling makes a drawing key there to hold it. If the diamond lands inside in-betweens (a tween), the two halves play the same curve the one span did, and share out its extra spins and cut its motion path where the object is, so the other rows keep their easing and nothing speeds up, slows down or jumps. Other rows show no diamond there, because nothing was set on them: they are on the curve exactly where they would have been. A row only gets a diamond at the new key if its value there is not what the curve gives.
 
 ## When it says no
 
-Frameling tells you in plain words. It can't land on another key of the same row, on a frame with nothing to hold a key (an empty frame, or no camera key), inside a morph, a motion path or a spin, or on a locked layer. The first key of a row stays: it's where the row starts.
+Frameling tells you in plain words. It can't land on another key of the same row, on a frame with nothing to hold a key (an empty frame, or no camera key), inside a morph (a shape melting into the next one), or on a locked layer. A motion path can also say no at a frame where a bouncy easing runs back over the path. The first key of a row stays: it's where the row starts.
 
 ## The exception
 
