@@ -406,10 +406,23 @@ now gives a shadowed layer an invisible rectangle (`Shadow room`, fill opacity 0
 frames plus the shadow's reach (`effectReach`, in `layersBox` and `shadowRoom` in `lottie.ts`); shape layers carry it inside,
 pictures and symbol copies go in a precomp with a room layer (one per camera depth, so it moves with them). Pinned in
 `test/export/lottie-shadow-room.test.ts`. The script plays small documents (a box, a dot, held drawings, a folder, a symbol copy, a pixel
-layer, shadow with soften both ways round, a panning camera) in the editor, lottie-web's SVG and canvas players and (with
+layer, shadow with soften both ways round, a panning camera, zoomed and turning cameras) in the editor, lottie-web's SVG and canvas players and (with
 `DOTLOTTIE_DIR`) the dotLottie player, saves a PNG of each, and prints the share of the editor's shadow ink each shows and the
 RMSE against it. It fails when the SVG or dotLottie player shows under 85 percent or is more than 6 away. lottie-web's canvas
 player ignores effects, so a shadow never shows there (reported only; "Draw Soften and Shadow as pictures" is the way).
+
+Two more things it found. Behind a zooming or turning camera, both players scaled a shadow's distance and softness with the
+layer's zoom (the editor's stay in stage pixels, since it applies the effect to what the camera sees) and the direction turned
+with the camera: RMSE 12 to 18 against the editor. A layer hangs off the camera null, a precomp over the stage does not, so
+`withLook` (`cameraBendsEffects` in `lottie.ts`) puts effects on such a precomp whenever the camera zooms, turns or fits a shot
+(a pan alone keeps them on the layer); the numbers are the editor's own, nothing is divided by the zoom. RMSE after: 0.1 to 1.5 in
+the SVG player, 2.5 to 3.2 in ThorVG (a plain shadow is 1.2 to 1.7 there; its shadow is about 5 percent lighter once scaled).
+Checks `zoom`, `zoomMove`, `zoomStack`, `zoomFolder`, `pixelZoom`; `test/export/lottie-camera-effects.test.ts`.
+And a pixel layer's shadow that "looked hard-edged and clipped to the picture" was not about pictures: ThorVG cuts a shadow's
+source at the canvas edge before it shifts it, so a sprite (or a vector box, same RMSE) touching the top or left edge of the stage
+throws a shadow with a cut line at the offset (RMSE 3.6 for a 24 px sprite at the corner, 5.8 for a box; the SVG player is exact).
+A sprite inside the stage is 0.3 to 1.9 off. A transparent border round the picture and the room layers change nothing there.
+It can't be fixed in the file; "Draw Soften and Shadow as pictures" is exact.
 
 ```bash
 DOTLOTTIE_DIR=$PWD/pkg/package xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/shadow-clip.cjs [outDir]

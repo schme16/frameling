@@ -16,6 +16,9 @@ const H = 200;
 const fx = (kind: LayerEffect['kind'], values: Record<string, number | string>): LayerEffect => ({ id: uid('e'), kind, values: { ...defaultValues(kind), ...values } });
 const SHADOW = { color: '#000000', opacity: 0.8, x: 34, y: 24, softness: 5 };
 
+/** A small sprite sitting (6, 4) art pixels in from the corner, so its shadow is not at the stage's edge. */
+const SPRITE = ['............', '............', '............', '............', '......##....', '.....####...', '.....####...', '......##....'];
+
 const fresh = (name: string, length = 8): Doc => {
   const doc = newDoc({ name, width: W, height: H, length, fps: 12 });
   doc.layers = [];
@@ -80,7 +83,67 @@ const DOCS: Record<string, () => Doc> = {
     const doc = fresh('Pixel');
     const l = addPixelLayer(doc, 'Sprite', 6);
     l.effects = [fx('shadow', SHADOW)];
-    hold(l, pixelDrawing(doc, ['.##.', '####', '####', '.##.'], { '#': '#5ab8ff' }).id, 0, 8);
+    hold(l, pixelDrawing(doc, SPRITE, { '#': '#5ab8ff' }).id, 0, 8);
+    return doc;
+  },
+  /** A pixel layer with a shadow thrown up and to the left (the other way round from `pixel`). */
+  pixelUp() {
+    const doc = fresh('PixelUp');
+    const l = addPixelLayer(doc, 'Sprite', 6);
+    l.effects = [fx('shadow', { ...SHADOW, x: -30, y: -20 })];
+    hold(l, pixelDrawing(doc, ['..........................', '..........................', '..........................', '..........................', '..........................', '..........................', '..........................', '..........................', '..........................', '..........................', '..........................', '..........................', '..........................', '..................##......', '.................####.....', '.................####.....', '..................##......'], { '#': '#5ab8ff' }).id, 0, 8);
+    return doc;
+  },
+  /** A folder with a pixel layer and a vector layer and a shadow on the folder. */
+  pixelFolder() {
+    const doc = fresh('PixelFolder');
+    doc.folders = { f1: { id: 'f1', name: 'Pair', visible: true, opacity: 1, effects: [fx('shadow', SHADOW)] } };
+    const a = addPixelLayer(doc, 'Sprite', 6);
+    a.folder = 'f1';
+    hold(a, pixelDrawing(doc, SPRITE, { '#': '#5ab8ff' }).id, 0, 8);
+    const b = addVectorLayer(doc, 'Dot');
+    b.folder = 'f1';
+    hold(b, vectorDrawing(doc, [fill([ellipsePath(120, 100, 16, 16)], '#ffc94a')]).id, 0, 8);
+    return doc;
+  },
+  /** A pixel layer with a shadow and a blur behind a zoomed camera. */
+  pixelZoom() {
+    const doc = fresh('PixelZoom');
+    const l = addPixelLayer(doc, 'Sprite', 6);
+    l.effects = [fx('shadow', { ...SHADOW, x: 12, y: 8, softness: 3 })];
+    hold(l, pixelDrawing(doc, SPRITE, { '#': '#5ab8ff' }).id, 0, 8);
+    const { layer, drawing } = newCameraLayer(doc);
+    doc.drawings[drawing.id] = drawing;
+    doc.layers.push(layer);
+    setCameraKey(doc, layer, 0, { x: 90, y: 70, zoom: 1.6, rotation: 0 });
+    return doc;
+  },
+  /** Shadow and blur behind a zoomed camera. */
+  zoomStack() {
+    const doc = fresh('ZoomStack');
+    const l = addVectorLayer(doc, 'Box');
+    l.effects = [fx('shadow', { ...SHADOW, x: 12, y: 8, softness: 3 }), fx('blur', { radius: 1.5 })];
+    hold(l, vectorDrawing(doc, [fill([rectPath(110, 70, 40, 30)], '#ffc94a')]).id, 0, 8);
+    const { layer, drawing } = newCameraLayer(doc);
+    doc.drawings[drawing.id] = drawing;
+    doc.layers.push(layer);
+    setCameraKey(doc, layer, 0, { x: W / 2, y: H / 2, zoom: 1.6, rotation: 0 });
+    return doc;
+  },
+  /** A folder with a shadow behind a zoomed camera. */
+  zoomFolder() {
+    const doc = fresh('ZoomFolder');
+    doc.folders = { f1: { id: 'f1', name: 'Pair', visible: true, opacity: 1, effects: [fx('shadow', { ...SHADOW, x: 12, y: 8, softness: 3 })] } };
+    const a = addVectorLayer(doc, 'A');
+    a.folder = 'f1';
+    hold(a, vectorDrawing(doc, [fill([rectPath(100, 70, 30, 30)], '#4fd1a5')]).id, 0, 8);
+    const b = addVectorLayer(doc, 'B');
+    b.folder = 'f1';
+    hold(b, vectorDrawing(doc, [fill([ellipsePath(170, 100, 16, 16)], '#ffc94a')]).id, 0, 8);
+    const { layer, drawing } = newCameraLayer(doc);
+    doc.drawings[drawing.id] = drawing;
+    doc.layers.push(layer);
+    setCameraKey(doc, layer, 0, { x: W / 2, y: H / 2, zoom: 1.6, rotation: 0 });
     return doc;
   },
   /** Shadow and blur on one layer. */
@@ -110,6 +173,32 @@ const DOCS: Record<string, () => Doc> = {
     doc.layers.push(layer);
     setCameraKey(doc, layer, 0, { x: W / 2, y: H / 2, zoom: 1, rotation: 0 });
     setCameraKey(doc, layer, 7, { x: 200, y: 120, zoom: 1, rotation: 0 });
+    layer.cels[0].tween = { ease: 'linear' };
+    return doc;
+  },
+  /** A shadowed box seen through a camera zoomed in (the shadow's offset and softness stay in stage pixels). */
+  zoom() {
+    const doc = fresh('Zoom');
+    const l = addVectorLayer(doc, 'Box');
+    l.effects = [fx('shadow', { ...SHADOW, x: 12, y: 8, softness: 3 })];
+    hold(l, vectorDrawing(doc, [fill([rectPath(110, 70, 40, 30)], '#9b7bff')]).id, 0, 8);
+    const { layer, drawing } = newCameraLayer(doc);
+    doc.drawings[drawing.id] = drawing;
+    doc.layers.push(layer);
+    setCameraKey(doc, layer, 0, { x: W / 2, y: H / 2, zoom: 1.6, rotation: 0 });
+    return doc;
+  },
+  /** The same with a zoom that changes over the clip, and a pan and a tilt. */
+  zoomMove() {
+    const doc = fresh('ZoomMove');
+    const l = addVectorLayer(doc, 'Box');
+    l.effects = [fx('shadow', { ...SHADOW, x: 12, y: 8, softness: 3 })];
+    hold(l, vectorDrawing(doc, [fill([rectPath(110, 70, 40, 30)], '#9b7bff')]).id, 0, 8);
+    const { layer, drawing } = newCameraLayer(doc);
+    doc.drawings[drawing.id] = drawing;
+    doc.layers.push(layer);
+    setCameraKey(doc, layer, 0, { x: W / 2, y: H / 2, zoom: 1, rotation: 0 });
+    setCameraKey(doc, layer, 7, { x: 140, y: 90, zoom: 2, rotation: 15 });
     layer.cels[0].tween = { ease: 'linear' };
     return doc;
   },
@@ -182,14 +271,14 @@ const frameOf = (doc: Doc, frame: number) => frame;
     canvas.remove();
     return res;
   },
-  async thorvg(name: string, frame: number, base: string) {
+  async thorvg(name: string, frame: number, base: string, json?: string) {
     const mod = await import(/* @vite-ignore */ base + '/index.js');
     mod.DotLottie.setWasmUrl(base + '/dotlottie-player.wasm');
     const canvas = document.createElement('canvas');
     canvas.width = W;
     canvas.height = H;
     document.body.appendChild(canvas);
-    const player = new mod.DotLottie({ canvas, data: JSON.stringify(docToLottie(DOCS[name]())), autoplay: false, renderConfig: { devicePixelRatio: 1, autoResize: false }, layout: { fit: 'fill', align: [0.5, 0.5] } });
+    const player = new mod.DotLottie({ canvas, data: json ?? JSON.stringify(docToLottie(DOCS[name]())), autoplay: false, renderConfig: { devicePixelRatio: 1, autoResize: false }, layout: { fit: 'fill', align: [0.5, 0.5] } });
     await new Promise<void>((res, rej) => {
       player.addEventListener('load', () => res());
       player.addEventListener('loadError', (e: unknown) => rej(new Error('load error ' + JSON.stringify(e))));
