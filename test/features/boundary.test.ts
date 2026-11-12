@@ -8,6 +8,10 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { allFeatures, registerFeatures } from '../../src/features/host';
 import { PLANNED_FEATURES } from '../../src/features/planned';
+import type { FeatureDescriptor } from '../../src/features/feature';
+import { audioFeature } from '../../src/audio';
+import { flowFeature } from '../../src/flow';
+import { interactivesFeature } from '../../src/interactives';
 import { lipsyncFeature } from '../../src/lipsync';
 
 const SRC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../src');
@@ -20,8 +24,13 @@ const CORE_BACK_IMPORTS = ['core/render.ts -> effects', 'core/render.ts -> parti
 
 /** Who may import a folder whose feature has moved onto a descriptor. */
 const CONVERTED: Record<string, { importers: string[] }> = {
+  // The export code reads sound data by name to mix and mux it (it stays in the file whether or not the feature is on).
+  audio: { importers: ['renderer/features.ts', 'lipsync/commands.tsx', 'lipsync/run.ts', 'export/exporter.ts', 'export/run.ts'] },
+  flow: { importers: ['renderer/features.ts'] },
+  interactives: { importers: ['renderer/features.ts'] },
   lipsync: { importers: ['renderer/features.ts', 'templates/lip-sync.ts'] },
 };
+const DESCRIPTORS: Record<string, FeatureDescriptor> = { audio: audioFeature, flow: flowFeature, interactives: interactivesFeature, lipsync: lipsyncFeature };
 
 const walk = (dir: string): string[] => readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(dir, e.name)) : /\.(ts|tsx)$/.test(e.name) ? [path.join(dir, e.name)] : []));
 const IMPORT = /(?:from\s+|import\s*\(\s*|import\s+)['"](\.[^'"]+)['"]/g;
@@ -65,7 +74,7 @@ describe('a feature that has a descriptor', () => {
   const converted = Object.keys(CONVERTED);
 
   it('the list here matches what the app has converted', () => {
-    registerFeatures([...PLANNED_FEATURES, lipsyncFeature]);
+    registerFeatures([...PLANNED_FEATURES, ...Object.values(DESCRIPTORS)]);
     const real = allFeatures().filter((d) => d.optional && !d.legacy).map((d) => d.id);
     expect(real.sort()).toEqual([...converted].sort());
   });
@@ -78,7 +87,7 @@ describe('a feature that has a descriptor', () => {
     });
 
     it(`${id}: imports no other feature folder except what it requires`, () => {
-      const desc = id === 'lipsync' ? lipsyncFeature : undefined;
+      const desc = DESCRIPTORS[id];
       const allowed = new Set([id, ...(desc?.requires ?? [])]);
       const bad = pairs((i) => i.file.startsWith(`${id}/`) && FEATURE_FOLDERS.includes(i.folder) && !allowed.has(i.folder));
       expect(bad).toEqual([]);

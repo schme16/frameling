@@ -162,6 +162,9 @@ export function offFeaturesUsedBy(doc: Doc): FeatureDescriptor[] {
   });
 }
 
+/** The feature that is off and opens this kind of file, if any. */
+export const offFeatureOpening = (path: string): FeatureDescriptor | undefined => offFeatures().find((d) => d.opens?.(path));
+
 /** Help topics of features that are off, each with its feature: for finding them in a search and offering to turn them on. */
 export function hiddenHelp(): { topic: HelpTopic; feature: FeatureDescriptor }[] {
   return offFeatures().flatMap((feature) => (feature.help ?? []).map((topic) => ({ topic, feature })));

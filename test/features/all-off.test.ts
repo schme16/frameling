@@ -29,7 +29,8 @@ const features = switchableFeatures();
 
 describe('every optional feature turned off', () => {
   beforeAll(() => {
-    for (const f of features) expect(setFeatureOn(f.id, false, { remember: false }).ok, f.id).toBe(true);
+    // Newest first, so a feature goes before the ones it needs (Lip sync before Audio).
+    for (const f of [...features].reverse()) expect(setFeatureOn(f.id, false, { remember: false }).ok, f.id).toBe(true);
     syncDynamicCommands();
   });
   afterAll(() => {
@@ -84,6 +85,6 @@ describe('every optional feature turned off', () => {
     for (const f of [...features].reverse()) setFeatureOn(f.id, true, { remember: false });
     for (const f of features) expect(isFeatureOn(f.id)).toBe(true);
     expect(snap()).toEqual(allOn);
-    for (const f of features) setFeatureOn(f.id, false, { remember: false });
+    for (const f of [...features].reverse()) setFeatureOn(f.id, false, { remember: false });
   });
 });

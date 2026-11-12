@@ -24,7 +24,7 @@ import { MOTIONS } from '../core/motions';
 import { makeMotion } from '../symbols/motion-ops';
 import '../symbols/symbols.css';
 import { MAX_CW, MIN_CW, setTl, tl, useTl } from './state';
-import { SoundMain, SoundSide } from '../audio/SoundRows';
+import { TimelineSlot } from './slots';
 import { DetailRow, PropRow } from './Detail';
 import { rowAtY, rowOfLayerIn, type Layout, type LayoutRow } from './layout';
 import { currentLayout, useLayout } from './view';
@@ -852,7 +852,7 @@ export function TimelineBody() {
           <LayerTools />
         </div>
         <LayerList />
-        <SoundSide />
+        <TimelineSlot slot="side" />
       </div>
       <div
         ref={main}
@@ -899,7 +899,7 @@ export function TimelineBody() {
           {dragKeys ? <KeysGhost layout={layout} refs={picked} map={dragKeys.map} text={dragKeys.text} cw={cw} /> : null}
           {box ? <i className="tl-box" style={{ left: Math.min(box.x0, box.x1), top: Math.min(box.y0, box.y1), width: Math.abs(box.x1 - box.x0), height: Math.abs(box.y1 - box.y0) }} /> : null}
         </div>
-        <SoundMain cw={cw} from={from} to={to} />
+        <TimelineSlot slot="main" cw={cw} from={from} to={to} />
       </div>
       </div>
       {menu ? <ContextMenu x={menu.x} y={menu.y} items={menu.items} onClose={() => setMenu(null)} /> : null}

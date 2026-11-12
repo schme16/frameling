@@ -139,7 +139,13 @@ export async function openPath(path: string): Promise<boolean> {
     void api.recent.remove(path);
     return false;
   }
-  const other = openers.find((o) => o.test(r.path));
+  let other = openers.find((o) => o.test(r.path));
+  if (!other) {
+    // A kind of file that needs a feature that is turned off: offer to turn it on, then open it.
+    const [{ offFeatureOpening }, { offerTurnOnForFile }] = await Promise.all([import('../features/host'), import('../features/prompt')]);
+    const feature = offFeatureOpening(r.path);
+    if (feature && (await offerTurnOnForFile(feature, baseName(r.path)))) other = openers.find((o) => o.test(r.path));
+  }
   if (other) return other.open(r.bytes, r.path);
   const ok = await loadBytes(r.bytes, r.path);
   if (ok) void api.recent.add(r.path);

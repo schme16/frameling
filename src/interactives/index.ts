@@ -1,8 +1,10 @@
-// Edit in Frameling: open the drawing inside an Interactives package, and save it back there.
-import { registerCommands, registerHelpTopics } from '../core/registry';
-import { currentLink, openPlayable, toggleUpdate, updatePlayable } from './roundtrip';
+// Edit in Frameling: open the drawing inside an Interactives package, and save it back there. A feature that can be
+// turned off (Preferences > Features). Exporting for Interactives stays with the other exports.
+import type { Command, HelpTopic } from '../core/registry';
+import { defineFeature } from '../features/feature';
+import { currentLink, interactivesChoices, isPlayablePath, openPlayable, registerRoundTrip, toggleUpdate, updatePlayable } from './roundtrip';
 
-registerCommands([
+const commands: Command[] = [
   {
     id: 'file.openPlayable',
     label: 'Open Interactives file...',
@@ -37,9 +39,9 @@ registerCommands([
       if (l) await updatePlayable(l);
     },
   },
-]);
+];
 
-registerHelpTopics([
+const help: HelpTopic[] = [
   {
     id: 'edit-in-frameling',
     title: 'Edit in Frameling (Interactives round trip)',
@@ -70,4 +72,18 @@ A .flplay exported without the editable drawing only has the finished pictures, 
 
 Other apps on your computer can ask Frameling to open a file with a **frameling://open?path=...** link (the desktop app sets this up when it's installed). That's how an "Edit in Frameling" button in Interactives can work.`,
   },
-]);
+];
+
+export const interactivesFeature = defineFeature({
+  id: 'interactives',
+  name: 'Interactives',
+  about: 'Open an Interactives file (.flplay) to change the drawing inside it, and save your changes back into it.',
+  optional: true,
+  commands,
+  help,
+  choices: interactivesChoices,
+  opens: isPlayablePath,
+  // A drawing that came out of an Interactives file carries a small marker (see export/run.ts).
+  usedBy: (doc) => !!doc.ext?.interactives,
+  activate: registerRoundTrip,
+});

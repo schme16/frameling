@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { newDoc } from '../../src/core/doc';
-import { setChoice } from '../../src/core/choices';
+import { registerChoice, setChoice } from '../../src/core/choices';
+import { audioChoices } from '../../src/audio/choices';
 import { Store } from '../../src/core/store';
 
 // A pretend Web Audio: decoding gives a 2 second sound, playing just keeps a list.
@@ -52,6 +53,8 @@ vi.stubGlobal('OfflineAudioContext', FakeOffline);
 
 import { installAudio, voiceCount } from '../../src/audio/engine';
 import { decodeClip } from '../../src/audio/decode';
+
+for (const c of audioChoices) registerChoice(c);
 
 async function setup(start = 0) {
   const doc = newDoc({ fps: 24, length: 96 });

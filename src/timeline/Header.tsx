@@ -11,7 +11,8 @@ import { inOutRange, playRange } from './playback';
 import { clearInOut } from './range';
 import { clearLightTable, lightTableLabel } from '../canvas/lightTable';
 import { MAX_CW, MIN_CW, setTl, tl, useTl } from './state';
-import { SoundButton } from '../audio/SoundButton';
+import { useFeaturesVersion } from '../features/use';
+import { TimelineSlot } from './slots';
 import { usePrefs } from '../ui/prefs';
 import { moreRequest } from './headerMenu';
 import { FOLD_STEPS, chooseFold, foldedAt, foldSlack, switchLabel, type FoldStep } from './headerFold';
@@ -387,6 +388,8 @@ export function Header() {
   const clean = usePrefs((p) => p.cleanTimeline);
   const ref = useRef<HTMLDivElement>(null);
   const level = useFolding(ref);
+  // A feature turned on or off adds or takes away buttons and the commands folded into "more".
+  useFeaturesVersion();
   return (
     <div ref={ref} className="tl-header" role="toolbar" aria-label="Timeline controls">
       <span className="tl-group" role="group" aria-label="Playback">
@@ -414,9 +417,7 @@ export function Header() {
       <span data-step="hold">
         <HoldButtons />
       </span>
-      <span data-step="sound">
-        <SoundButton />
-      </span>
+      <TimelineSlot slot="header" />
       <span className="tl-sep" data-sep="2" aria-hidden="true" />
       <span data-step="onion">
         <OnionControls />

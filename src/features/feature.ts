@@ -43,6 +43,8 @@ export interface FeatureDescriptor {
   /** Rail name, blurb and Properties placement for its panels, by panel id. */
   sections?: Record<string, PanelInfo>;
 
+  /** Says which file paths it opens (an Interactives package, say), so opening one while it is off can offer to turn it on. */
+  opens?(path: string): boolean;
   /** True when a document holds data this feature made, so opening it with the feature off can offer to turn it on. */
   usedBy?(doc: Doc): boolean;
   /** Anything else it registers. Runs while the feature is registered as its owner, so what it adds is taken away again with it. */

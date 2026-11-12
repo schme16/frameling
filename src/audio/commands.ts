@@ -1,5 +1,5 @@
 import { currentChoice, setChoice } from '../core/choices';
-import { registerCommands } from '../core/registry';
+import type { Command } from '../core/registry';
 import { store } from '../core/store';
 import { toast } from '../ui/toast';
 import { moveClip, importSound, pickedClip, removeClip, setMuted } from './ops';
@@ -7,7 +7,7 @@ import type { ScrubSoundChoice } from './choices';
 
 const hasSound = () => !!store().get().doc.audio?.length;
 
-registerCommands([
+export const audioCommands: Command[] = [
   {
     id: 'audio.import',
     label: 'Import sound...',
@@ -68,4 +68,4 @@ registerCommands([
     checked: () => currentChoice<ScrubSoundChoice>('audio.scrub') === 'on',
     run: () => setChoice('audio.scrub', currentChoice<ScrubSoundChoice>('audio.scrub') === 'on' ? 'off' : 'on'),
   },
-]);
+];

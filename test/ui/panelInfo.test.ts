@@ -2,12 +2,14 @@
 import { describe, expect, it } from 'vitest';
 import { newDoc } from '../../src/core/doc';
 import { Store, type State } from '../../src/core/store';
+import { flowFeature } from '../../src/flow';
 import { lipsyncFeature } from '../../src/lipsync';
 import { infoFor, isSection, registerPanelInfo, matchPanel, PANEL_INFO, railGroups, sectionsNow, splitZone } from '../../src/ui/panelInfo';
 import { folded, foldAll, onlyOpen, setFolded } from '../../src/ui/rightStyle';
 
 // Lip sync adds its own entry when its feature is on.
 registerPanelInfo('lipsync', lipsyncFeature.sections!.lipsync);
+registerPanelInfo('clip-flow', flowFeature.sections!['clip-flow']);
 
 const SECTIONS = ['tool-options', 'colors', 'palette', 'tileset', 'symbol-props', 'effects', 'text', 'particles', 'camera', 'rig'];
 

@@ -1,6 +1,6 @@
-import { registerHelpTopics } from '../core/registry';
+import type { HelpTopic } from '../core/registry';
 
-registerHelpTopics([
+export const flowHelp: HelpTopic[] = [
   {
     id: 'clip-flow',
     title: 'Clip flow: what plays after what (state machine)',
@@ -29,4 +29,4 @@ Arrows from a looping clip start out as triggers named after where they go, sinc
 
 Frameling's own play button still plays the whole timeline or the picked clip, so the flow never gets in the way while you animate.`,
   },
-]);
+];
