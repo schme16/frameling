@@ -166,3 +166,10 @@ describe('Interactives', () => {
     expect(isFeatureOn('interactives')).toBe(true);
   });
 });
+
+describe('defaults', () => {
+  it('every feature, switchable or planned, is on when nothing was ever chosen', () => {
+    for (const f of [...PLANNED_FEATURES, audioFeature, flowFeature, interactivesFeature, lipsyncFeature]) expect(isFeatureOn(f.id), f.id).toBe(true);
+    expect(PLANNED_FEATURES.map((f) => f.id)).toEqual(expect.arrayContaining(['camera', 'godot-export']));
+  });
+});

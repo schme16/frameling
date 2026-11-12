@@ -123,18 +123,24 @@ the choice dialog), `withChoice`, `currentChoice`. Answers in `localStorage` `fr
 Preferences > Behaviour.
 
 **Features (the trusted tier).** `src/features/feature.ts` defines `FeatureDescriptor`: id, name, a one-line `about`,
-`optional`, `requires`, and what it registers (`commands`, `panels`, `tools`, `help`, `quests`, `templates` ids, `menus`,
-`sections` (panel info), plus `activate`/`deactivate` and `usedBy(doc)`). `src/features/host.ts` `registerFeatures` runs
+`optional`, `requires`, and what it registers (`commands`, `panels`, `tools`, `help`, `quests`, `choices`, `templates` ids,
+`menus`, `sections` (panel info), plus `activate`/`deactivate`, `usedBy(doc)` and `opens(path)`). `src/features/host.ts` `registerFeatures` runs
 each registration inside `withOwner(id, ...)` (`src/core/owners.ts`); every registry that adds something calls
 `ownedUndo`, so `setFeatureOn(id, false)` takes away exactly that feature's things and `true` puts them back, no restart.
 Choices live in `localStorage` `frameling.features.v1` (the ids turned off). A feature with `legacy: true` still registers
 when its folder is imported (`src/features/planned.ts`) and is not offered in Preferences > Features until it is converted.
-Lip sync (`src/lipsync/index.ts`) is the first converted one, copy it. Opening a drawing whose `usedBy` says it holds data
+Converted so far: Lip sync, Audio, Clip flow and Interactives (`src/lipsync`, `src/audio`, `src/flow`, `src/interactives`
+`index.ts`, copy one). Audio shows its rows through timeline slots (`src/timeline/slots.ts`: `registerTimelinePart` for
+the layer side, the grid and the header), so `timeline/` imports nothing from it. The data stays in the document
+(`doc.audio`, `doc.flow`); Interactives leaves a marker in `doc.ext.interactives` (written by the Interactives export
+for the drawing it embeds). A tool says which rail group it starts in with `group` and `groupAt` (`src/ui/toolArrange.ts`
+names no tools). Turning a feature off parks where its panels were (`parkPanels` in `src/ui/dock.ts`) and turning it on
+puts them back there; the palette offers "Turn on X" and a lesson of it (`quests` or `Quest.features`) is put down. Opening a drawing whose `usedBy` says it holds data
 of a feature that is off asks "Turn it on?" (`src/features/prompt.ts`, called from `io/document.ts`); help topics of an off
 feature are hidden and a help search offers "Turn on X" (`hiddenHelp()`). `test/features/boundary.test.ts` keeps `core/`
 from importing feature folders (a short list of today's back-imports may only shrink). `test/features/all-off.test.ts`
-runs the help audit and the shortcut check with every optional feature off. Not yet owner-tagged: canvas hooks, openers,
-save hooks, choices, template sources.
+runs the help audit and the shortcut check with every optional feature off. Owner-tagged registrations also include canvas
+hooks, file openers, save hooks, choices and template sources: call them from `activate()`.
 
 **How a core area plugs in.** `src/renderer/features.ts` imports every area for its side effects, in order. A folder's
 `index.ts` imports its `commands.ts` and `help.ts` and registers its panel, usually with `lazyPanel`. See
