@@ -13,6 +13,7 @@ const web = args.includes('--web');
 const root = new URL('../..', import.meta.url).pathname;
 const out = mkdtempSync(join(tmpdir(), 'frameling-bundle-'));
 let report;
+const only = args.includes('--folder') ? args[args.indexOf('--folder') + 1] : null;
 const analyse = {
   name: 'analyse',
   generateBundle(_o, bundle) {
@@ -68,4 +69,5 @@ for (const [f, n] of report.folders.slice(0, top)) console.log(k(n), f);
 console.log('\nmodules that only load because of one importer, by total bytes they pull in (total, own, loaded through)');
 for (const [f, n, own, by] of report.dominated.slice(0, top * 2)) console.log(k(n), k(own), f.padEnd(48), '<-', by);
 console.log('\nbiggest modules');
+if (only) { for (const [f, n] of report.mods.filter(([f]) => f.startsWith(only))) console.log(k(n), f); }
 for (const [f, n] of report.mods.slice(0, top)) console.log(k(n), f);
