@@ -2,6 +2,7 @@
 // See record.cjs for the list of steps. Needs Electron (it drives a BrowserWindow's webContents).
 const fs = require('node:fs');
 const path = require('node:path');
+const { installIpcStubs } = require('../ipc-stubs.cjs');
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -157,24 +158,14 @@ async function runSteps(win, steps, { outDir, width, height, name }) {
 }
 
 
-/** Answers the main process's calls in memory (no real files, recents or autosave), like shoot.cjs does. Returns a
- * function that empties the in-memory library (plugins, templates). */
+/** Answers the main process's calls in memory (no real files, recents or autosave), like shoot.cjs does, with the
+ * shared stand-ins in scripts/ipc-stubs.cjs. Returns a function that empties the in-memory library (plugins, templates). */
 function mockMain(ipcMain) {
-  ipcMain.handle('app:launchFile', () => null);
-  ipcMain.handle('recent:list', () => []);
-  for (const c of ['autosave:read', 'autosave:clear', 'autosave:write', 'autosave:keep', 'autosave:readKept', 'autosave:removeKept', 'recent:add', 'recent:remove', 'recent:clear']) ipcMain.handle(c, () => null);
-  ipcMain.handle('autosave:listKept', () => []);
-  // Plugins and templates live in memory for the run.
-  const lib = new Map();
-  ipcMain.handle('plugins:memory', () => ({}));
-  ipcMain.handle('library:list', (_e, kind) => [...lib.keys()].filter((k) => k.startsWith(kind + '/')).map((k) => ({ id: k.slice(kind.length + 1), size: lib.get(k).length, modified: 0 })));
-  ipcMain.handle('library:read', (_e, kind, id) => lib.get(`${kind}/${id}`) ?? null);
-  ipcMain.handle('library:write', (_e, kind, id, bytes) => void lib.set(`${kind}/${id}`, bytes));
-  ipcMain.handle('library:remove', (_e, kind, id) => void lib.delete(`${kind}/${id}`));
-  ipcMain.handle('app:askSaveChanges', () => 'discard');
-  // Shots of the Export dialog show ProRes as available (the real check looks for FFmpeg).
-  ipcMain.handle('video:probe', () => ({ ok: true }));
-  return () => lib.clear();
+  const stubs = installIpcStubs(ipcMain, {
+    // Shots of the Export dialog show ProRes as available (the real check looks for FFmpeg).
+    'video:probe': () => ({ ok: true }),
+  });
+  return stubs.clearLibrary;
 }
 
 /** A window that paints while hidden, for capturePage. */

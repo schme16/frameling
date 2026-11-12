@@ -8,6 +8,7 @@
 // near-transparent pixels don't count rounding noise), or when the GPU path was not used.
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('node:path');
+const { installIpcStubs } = require('../ipc-stubs.cjs');
 
 // Without a real GPU (xvfb) Chromium blocks WebGL; software WebGL (SwiftShader) lets the GPU path run.
 if (process.env.PIXELBLEND_NO_SOFTWARE_GL !== '1') {
@@ -39,9 +40,7 @@ process.on('unhandledRejection', (e) => {
 });
 
 app.whenReady().then(async () => {
-  for (const ch of ['app:launchFile', 'autosave:read', 'autosave:readKept']) ipcMain.handle(ch, () => null);
-  for (const ch of ['recent:list', 'autosave:listKept', 'library:list']) ipcMain.handle(ch, () => []);
-  for (const ch of ['autosave:write', 'autosave:clear', 'autosave:keep', 'autosave:removeKept', 'recent:add', 'recent:remove', 'recent:clear', 'app:documentState']) ipcMain.handle(ch, () => true);
+  installIpcStubs(ipcMain);
   const win = new BrowserWindow({ show: false, width: 1280, height: 800, webPreferences: { preload: path.join(__dirname, '../../dist/preload/preload.cjs'), contextIsolation: true, sandbox: true, backgroundThrottling: false } });
   win.webContents.on('console-message', (e) => (e.level === 'error' || e.level === 3) && console.log('page error:', String(e.message ?? e)));
   await win.loadFile(path.join(__dirname, '../../dist/renderer/index.html'), { query: { debug: '1' } });
