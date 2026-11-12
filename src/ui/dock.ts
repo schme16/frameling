@@ -3,7 +3,7 @@
 // DockFloats.tsx and RightDock.tsx. This file is plain state so it can be tested.
 import { allPanels, allTools, getPanel, type DockZone, type PanelDef } from '../core/registry';
 import type { LayerKind } from '../core/format';
-import { activeOfGroup, cleanName, clone, closeFloat, closePanel, clampSize, dockAllFloats, dockFloat, emptyLayout, evenSplit, frontPanel, groupTabs, isFront, joinAllGroups, joinGroupUp, locate, FLOAT_DEFAULT, MAX_SAVED, moveGroupTo, movePanelTo, nameOf, normaliseLayout, nudgeSplit, placeToolsIn, placedIds, raiseFloat, renameFloatIn, renamePanelIn, resizeBox, retainTabs, sanitizeWorkspace, sanitizeWorkspaces, setFloatBox, splitGroupsAt, stackPanels, ZONES, type DropTarget, type Layout, type Place, type ToolsPlace, type Workspace } from './dockModel';
+import { activeOfGroup, cleanName, clone, closeFloat, closePanel, clampSize, coveredBy, dockAllFloats, dockFloat, emptyLayout, evenSplit, frontPanel, groupTabs, isFront, joinAllGroups, joinGroupUp, locate, FLOAT_DEFAULT, MAX_SAVED, moveGroupTo, movePanelTo, nameOf, normaliseLayout, nudgeSplit, placeToolsIn, placedIds, raiseFloat, renameFloatIn, renamePanelIn, resizeBox, retainTabs, sanitizeWorkspace, sanitizeWorkspaces, setFloatBox, splitGroupsAt, stackPanels, ZONES, type DropTarget, type Layout, type Place, type ToolsPlace, type Workspace } from './dockModel';
 import { createStore, readRaw, writeJson } from './mini';
 import { BUILTIN_RAILS, resolveGroups, sanitizeGroups, type ToolGroup } from './toolArrange';
 import { parseWorkspaceText, uniqueWorkspaceName, workspaceToText } from './workspaceFile';
@@ -531,6 +531,21 @@ export function showPanel(id: string): void {
   const l = dock.get().layout;
   if (locate(l, id)) apply((x) => frontPanel(x, id));
   else movePanel(id, p.zone);
+}
+
+/**
+ * Brings a panel forward only when that hides nothing the person chose to look at: a Properties section in front (or
+ * the panel itself) is fine, Preview or Layers in front stays. A hidden panel or a folded zone stays as it is too.
+ * Says what it left in front, or null when there is nothing to say.
+ */
+export function showPanelGently(id: string, isSect: (id: string) => boolean): string | null {
+  const l = dock.get().layout;
+  const at = locate(l, id);
+  if (!at || ('zone' in at && l.zones[at.zone].collapsed)) return null;
+  const front = coveredBy(l, id, isSect);
+  if (front) return front;
+  apply((x) => frontPanel(x, id));
+  return null;
 }
 
 /** Puts one panel over another in a zone (each front of its own group), opening whichever was hidden. A missing panel: the other just comes to the front. */
