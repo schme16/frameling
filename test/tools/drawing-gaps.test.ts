@@ -146,6 +146,22 @@ describe('pen: Enter after closing a shape', () => {
     expect(penTool.onKey!(key('Enter'), c)).toBe(false);
   });
 
+  it('takes the held-down repeats of that Enter too, until a fresh press', () => {
+    const c = ctx();
+    let now = 10_000;
+    vi.spyOn(performance, 'now').mockImplementation(() => now);
+    closeShape(c);
+    now += 300;
+    const held = { key: 'Enter', repeat: true } as KeyboardEvent;
+    expect(penTool.onKey!(key('Enter'), c)).toBe(true);
+    now += CLOSE_ENTER_MS * 2;
+    expect(penTool.onKey!(held, c)).toBe(true);
+    expect(penTool.onKey!(held, c)).toBe(true);
+    // Let go and press again: that one plays.
+    expect(penTool.onKey!(key('Enter'), c)).toBe(false);
+    expect(penTool.onKey!(held, c)).toBe(false);
+  });
+
   it('knows how soon is soon', () => {
     expect(enterEndsClosing(-Infinity, 5)).toBe(false);
     expect(enterEndsClosing(100, 100 + CLOSE_ENTER_MS - 1)).toBe(true);

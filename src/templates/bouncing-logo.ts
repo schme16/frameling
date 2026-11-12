@@ -46,11 +46,12 @@ function tweenKeys(doc: Doc, layer: Layer, keys: { at: number; shapes: InstanceS
 export function makeBouncingLogo(): Doc {
   const doc = emptyOf(newDoc({ name: 'Bouncing logo', width: 800, height: 600, fps: 24, length: LENGTH, background: '#eaf6ff' }));
 
-  // A twinkle that loops inside the star: four frames of a little shine growing and shrinking.
+  // A twinkle that loops inside the star: four frames of a little coral shine growing and shrinking (coral, not white,
+  // so it shows on the star and in the Library in both light and dark).
   const twinkle = addSymbol(
     doc,
     'Twinkle',
-    [6, 10, 13, 9].map((r) => [pathShape([{ closed: true, points: starPoints(r, r * 0.35, 4).map(([x, y]) => ({ x, y })) }], '#ffffff', null)]),
+    [6, 10, 13, 9].map((r) => [pathShape([{ closed: true, points: starPoints(r, r * 0.35, 4).map(([x, y]) => ({ x, y })) }], '#ff6f91', null)]),
     3,
   );
   const star = addSymbol(doc, 'Star', [

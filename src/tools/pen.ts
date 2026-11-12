@@ -96,6 +96,8 @@ let press: { at: P; dragged: boolean; time: number } | null = null;
 let lastUp = { time: -Infinity, x: 0, y: 0 };
 let hover: P | null = null;
 let closedAt = -Infinity;
+// The pen took an Enter (finishing a shape) and that key may still be held: its repeats are the pen's too.
+let enterHeld = false;
 
 function colors() {
   const ui = store().get().ui;
@@ -203,13 +205,19 @@ export const penTool: Tool = {
   },
   onKey(e, ctx) {
     // Enter right after closing a shape is the habit of finishing: take it, so it doesn't start Play and hide the shape.
+    // Held-down repeats of that Enter are taken too, so key repeat never starts Play either.
     if (!path) {
-      if (e.key !== 'Enter' || !enterEndsClosing(closedAt, performance.now())) return false;
+      if (e.key !== 'Enter') return false;
+      if (e.repeat && enterHeld) return true;
+      enterHeld = false;
+      if (!enterEndsClosing(closedAt, performance.now())) return false;
       closedAt = -Infinity;
+      enterHeld = true;
       return true;
     }
     if (e.key === 'Enter' || e.key === 'Escape') {
       finish(ctx, false);
+      if (e.key === 'Enter') enterHeld = true;
       return true;
     }
     if (e.key === 'Backspace' || e.key === 'Delete') {
@@ -221,6 +229,7 @@ export const penTool: Tool = {
   },
   leave(ctx) {
     closedAt = -Infinity;
+    enterHeld = false;
     finish(ctx, false);
   },
   overlay(g, ctx) {
