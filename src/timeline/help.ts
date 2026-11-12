@@ -81,7 +81,7 @@ Click the frames once so the timeline has the keys, then:
 ## Around the edges
 
 - The ruler shows **seconds** along the top and **frames** underneath. Markers draw a faint line down through the rows.
-- **Ctrl + scroll** zooms; the magnifier button **fits** the whole animation in view. In a narrow window it moves, with ping-pong, add a sound and clean timeline, into the **...** menu at the end of the buttons. New drawing, copy, add and remove a frame, hold and onion skin stay on the buttons as icons: hover one for its name.
+- **Ctrl + scroll** zooms; the magnifier button **fits** the whole animation in view. In a narrow window back and forth, add a sound and clean timeline move into the **...** menu at the end of the buttons; the rest stay as icons (hover one for its name).
 - **S** on a layer shows only that layer (solo). Click it again to bring the others back as they were.
 - Give a layer a **colour label** from its **...** menu, to tell layers apart at a glance.
 
@@ -280,7 +280,7 @@ Shortcuts: **Ctrl+Shift+N** adds a vector layer.`,
 ## Playback
 
 - **Loop** (the loop button) starts again when it reaches the end. Turn it off to stop on the last frame.
-- **Back and forth** (ping-pong, the button beside loop) plays to the end and then backwards to the start, instead of jumping back. Lovely for breathing, swinging and floating. With loop off it plays there and back once.
+- **Back and forth** (the button beside loop) plays to the end and then backwards to the start, instead of jumping back. Lovely for breathing, swinging and floating. With loop off it plays there and back once.
 - If you've picked a [clip](help:timeline-clips), only that part plays. Click the clip again to go back to playing everything.
 - To play just part of the animation without making a clip, set a [play range](help:timeline-play-range).
 - If your computer can't keep up, playback skips frames to stay in time instead of slowing down.
@@ -325,7 +325,7 @@ Click the **x** beside the range in the top bar, or use **Timeline > Play everyt
 - It keeps hold of the same drawings when you add or remove frames on every layer (or on your only layer): frames added before it push it along, and frames added inside it make it longer.
 - A [clip](help:timeline-clips) you pick takes over while it's picked. Setting a range lets go of the clip.
 - **Export** offers **Play range** under "What to export", so you can save just that part as a GIF, a video or a sprite sheet.
-- It works with [back and forth](help:timeline-playing) (ping-pong) too.`,
+- It works with [back and forth](help:timeline-playing) too.`,
   },
   {
     id: 'timeline-clips',
@@ -362,9 +362,9 @@ When you export a sprite sheet or a game animation file, each clip becomes its o
 
 ## Setting it
 
-Right-click the clip in the clips row (or pick it and use the command palette, **Ctrl+K**).
+Click the clip in the clips row: its settings open in **Properties**, under **Clip**. Right-click gives the same choices as a menu. Resting the mouse on a clip tells you how it plays.
 
-- **Plays:** **Forward**, **Backward** (reverse), **Back and forth** (ping-pong) or **Back and forth, from the end**.
+- **Plays:** **Forward**, **Backward** (reverse), **Back and forth** or **Back and forth, backward first** (it starts from the last frame).
 - **Repeat:** **Forever** (it loops), **Once** (it stops and holds its last frame) or a number of **times**. Type the number in the box and press Enter. For back and forth, each direction counts as one (see below).
 
 The clip shows a small sign for what it does: the loop arrows, back and forth arrows, or a backward arrow with the count.
@@ -379,21 +379,21 @@ With back and forth, **each direction counts as one**, the same as in Aseprite. 
 - **Repeat 2** is there and back: 1 2 3 4 3 2 1.
 - **Repeat 3** is there, back, there: 1 2 3 4 3 2 1 2 3 4.
 
-**Forever** goes there and back for ever. Older files that repeated a back and forth clip a number of trips are changed when they open, so they play just as they did.
+**Forever** goes there and back for ever.
 
 ## Playing it
 
-Pick the clip and press play. It plays the way you set it, so you see exactly what a game will. The **Play back and forth** button in the timeline bar still works for any clip that has no direction of its own.
+Pick the clip and press play. It plays the way you set it, so you see what a game will. The **Play back and forth** button in the timeline bar works for any clip with no direction of its own.
 
 ## In exports
 
 - **Sprite sheets** (Godot, Unity, Phaser, PixiJS, CSS, JSON): each clip lists its frames in the order it plays. Phaser and CSS use their own repeat count for a forward clip that plays several times. Looping clips loop; the others hold their last frame.
 - **GIF, APNG, video, Lottie and dotLottie:** exporting one clip bakes the order in.
 - **PNG sequence, PDF and Illustrator pages:** these show each frame once, in the order the clip starts (a back and forth clip comes out 1 2 3 4, not 1 2 3 4 3 2 1), however often it repeats.
-- **Back and forth in Godot and Phaser:** a back and forth clip that loops can use the game engine's own ping-pong instead of listing every frame, which makes smaller files. In Godot the two end frames then show twice; Phaser plays it the same. Change it in **Preferences > Behaviour**, under *Back-and-forth clips in game engines*. Everything else always lists the frames.
+- **Back and forth in Godot and Phaser:** a back and forth clip that loops can use the game engine's own back and forth loop instead of listing every frame, which makes smaller files. In Godot the two end frames then show twice; Phaser plays it the same. Change it in **Preferences > Behaviour**, under *Back-and-forth clips in game engines*. Everything else always lists the frames.
 - **Interactives** has its own forward, loop or once, so a clip that plays another way is written out in order there.
 
-Old files open exactly as before: a clip with nothing set plays forward.`,
+A clip with nothing set plays forward.`,
   },
   {
     id: 'timeline-markers',

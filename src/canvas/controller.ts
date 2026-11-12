@@ -85,9 +85,27 @@ function artPixel(): number {
   return px;
 }
 
-/** Fit the whole stage in the window. */
-export function fit(): void {
+/**
+ * Something that knows a better "whole picture" than the one page (the artboards: every board at once). It gets the
+ * canvas size and answers a view, or null to use the plain page.
+ */
+let fitHook: ((vp: Viewport) => View | null) | null = null;
+export function setFitHook(fn: ((vp: Viewport) => View | null) | null): void {
+  fitHook = fn;
+}
+
+/**
+ * Fit the whole stage in the window. When the fit is automatic (a document opening, the window or a panel changing
+ * size) and the file has several artboards, all of them are fitted; the Fit command itself fits the open page.
+ */
+export function fit(auto = false): void {
   const { doc } = store().get();
+  const all = auto && !tileModeOn() ? fitHook?.(viewport) : null;
+  if (all) {
+    setView(all, false);
+    autoFit = true;
+    return;
+  }
   // In tile mode the stage has a copy on every side, so fit all nine.
   const k = tileModeOn() ? 3 : 1;
   const v = fitView(viewport.w, viewport.h, doc.width * k, doc.height * k, 48, artPixel());

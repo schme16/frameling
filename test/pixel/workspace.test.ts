@@ -8,7 +8,7 @@ import { DEFAULT_SHEET, type ExportSettings } from '../../src/export/types';
 import { applyWorkspace, builtinWorkspaces, currentWorkspace, inPixelWorkspace, PIXEL_TOOLS, resetDock, saveWorkspace, stripTools } from '../../src/ui/dock';
 import { BAR_SIZES, hasMirror, hasPerfect, hasShape, paletteIndexOf, sizeSettingFor } from '../../src/pixel/bar';
 import { framesDue, nextPreviewFrame, previewBase, previewFrames, previewScale, setPreview, previewSettings } from '../../src/pixel/preview';
-import { isPixelDoc, PIXEL_DOC_CHOICE, pixelExportStart, watchPixelDocs } from '../../src/pixel/workspace';
+import { isPixelDoc, madeOnPurpose, PIXEL_DOC_CHOICE, pixelExportStart, pixelStartTool, VECTOR_DOC_CHOICE, watchPixelDocs, watchPixelTool } from '../../src/pixel/workspace';
 
 const Nothing = () => null;
 beforeAll(() => {
@@ -111,8 +111,50 @@ describe('opening pixel art', () => {
 
   const reRegister = () => {
     _resetChoicesForTests();
-    registerChoice({ id: PIXEL_DOC_CHOICE, title: 't', question: 'q', category: 'Workspace', default: 'switch', options: [{ value: 'switch', label: 'a' }, { value: 'stay', label: 'b' }] });
+    for (const id of [PIXEL_DOC_CHOICE, VECTOR_DOC_CHOICE]) registerChoice({ id, title: 't', question: 'q', category: 'Workspace', default: 'switch', options: [{ value: 'switch', label: 'a' }, { value: 'stay', label: 'b' }] });
   };
+
+  it('switches without asking for a document just made on purpose, either way', () => {
+    reRegister();
+    const s = fakeStore(newDoc());
+    let toPixel = 0;
+    let toDraw = 0;
+    const off = watchPixelDocs(s, () => toPixel++, undefined, () => toDraw++);
+    // No remembered answer, and nothing asked: made on purpose goes straight over.
+    s.load(madeOnPurpose(pixelDoc()));
+    expect(toPixel).toBe(1);
+    applyWorkspace('pixel');
+    s.load(madeOnPurpose(newDoc()));
+    expect(toDraw).toBe(1);
+    // A file that is opened still goes through the question (here answered: switch).
+    applyWorkspace('draw');
+    setChoice(PIXEL_DOC_CHOICE, 'stay');
+    s.load(pixelDoc());
+    expect(toPixel).toBe(1);
+    off();
+  });
+
+  it('offers Draw once when a drawing opens in the Pixel workspace, remembered, and leaves pixel art there alone', () => {
+    reRegister();
+    const s = fakeStore(pixelDoc());
+    let toDraw = 0;
+    const off = watchPixelDocs(s, () => {}, undefined, () => toDraw++);
+    applyWorkspace('pixel');
+    setChoice(VECTOR_DOC_CHOICE, 'switch');
+    s.load(pixelDoc());
+    expect(toDraw).toBe(0);
+    s.load(newDoc());
+    expect(toDraw).toBe(1);
+    setChoice(VECTOR_DOC_CHOICE, 'stay');
+    s.load(newDoc());
+    expect(toDraw).toBe(1);
+    // Not in the Pixel workspace: nothing to offer.
+    applyWorkspace('draw');
+    setChoice(VECTOR_DOC_CHOICE, 'switch');
+    s.load(newDoc());
+    expect(toDraw).toBe(1);
+    off();
+  });
 
   it('offers the Pixel workspace when pixel art opens, not for the document already there or for vector', () => {
     reRegister();
@@ -226,5 +268,45 @@ describe('the pixel bar', () => {
     expect(paletteIndexOf(p, '#10ee10')).toEqual({ index: 2, exact: false });
     expect(paletteIndexOf({ name: 'E', colors: [] }, '#ff0000')).toBeNull();
     expect(paletteIndexOf(p, 'nope')).toBeNull();
+  });
+});
+
+describe('the tool a pixel sprite starts on', () => {
+  it('is the Pencil unless the tool in hand is already in the rail', () => {
+    expect(pixelStartTool('brush', 'pixel')).toBe('pencil');
+    expect(pixelStartTool('select', null)).toBe('pencil');
+    expect(pixelStartTool('shade', 'pixel')).toBeNull();
+    expect(pixelStartTool('eraser', 'pixel')).toBeNull();
+    expect(pixelStartTool('brush', 'tilemap')).toBeNull();
+  });
+
+  it('is picked when the Pixel workspace is entered or a sprite opens in it, and only then', () => {
+    const subs = new Set<() => void>();
+    let cur = pixelDoc();
+    let tool = 'brush';
+    const s = {
+      get: () => ({ doc: cur, ui: { tool, activeLayerId: cur.layers[0].id } }),
+      subscribe: (fn: () => void) => (subs.add(fn), () => void subs.delete(fn)),
+      setUi: (p: { tool: string }) => void (tool = p.tool),
+    };
+    const fire = () => subs.forEach((f) => f());
+    resetDock();
+    const off = watchPixelTool(s);
+    expect(tool).toBe('brush');
+    applyWorkspace('pixel');
+    fire();
+    expect(tool).toBe('pencil');
+    // Their own pick stays on later changes.
+    tool = 'brush';
+    fire();
+    expect(tool).toBe('brush');
+    // A new sprite in the same workspace starts on it again; a drawing does not.
+    cur = newDoc();
+    fire();
+    expect(tool).toBe('brush');
+    cur = pixelDoc();
+    fire();
+    expect(tool).toBe('pencil');
+    off();
   });
 });

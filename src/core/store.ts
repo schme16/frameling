@@ -170,6 +170,8 @@ export class Store {
   private merged: { parent: Doc; child: Doc; out: Doc } | null = null;
   /** What the selection stands for while it follows across keys (see followSelection). */
   private follow: FollowMemory | null = null;
+  /** How many times a whole document has been put in (new or opened), so the canvas can refit even when it is the same file again. */
+  loads = 0;
 
   constructor(doc: Doc = newDoc()) {
     this.state = { doc, ui: initialUi(doc) };
@@ -351,6 +353,7 @@ export class Store {
     this.follow = null;
     this.undoStack = [];
     this.redoStack = [];
+    this.loads++;
     const u = this.state.ui;
     this.state = { doc, ui: { ...initialUi(doc), filePath, color: u.color, fillColor: u.fillColor, strokeOn: u.strokeOn, activeWell: u.activeWell, brush: u.brush, tool: u.tool } };
     this.emit();

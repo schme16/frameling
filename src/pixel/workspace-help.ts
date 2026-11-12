@@ -10,7 +10,7 @@ registerHelpTopics([
     section: 'Pixel art',
     summary: 'A layout made for pixel art: only the pixel tools, a big palette, a real-size preview and a bar of quick switches.',
     keywords: ['pixel workspace', 'layout', 'sprite', 'aseprite', 'pixel mode', 'game art'],
-    body: `Pick **View > Workspaces > Pixel**. When you open pixel art in another workspace, Frameling asks once whether to switch, and remembers your answer (change it in Preferences, under Behaviour).
+    body: `Pick **View > Workspaces > Pixel**. When you open a pixel art file in another workspace, Frameling asks once whether to switch, and remembers your answer. It goes the other way too: open a drawing while you are in Pixel and it offers Draw, once. A new pixel art file switches by itself, and starts on the Pencil. Change the answers in Preferences, under Behaviour.
 
 What changes:
 

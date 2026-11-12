@@ -197,9 +197,9 @@ describe('timeline panel', () => {
     const item = (label: string) => [...document.querySelectorAll<HTMLButtonElement>('.tl-menu-item')].find((b) => b.textContent!.includes(label))!;
     open();
     const words = [...document.querySelectorAll('.tl-menu-heading, .tl-menu-item')].map((e) => e.textContent!.replace('✓', '').trim());
-    expect(words).toEqual(expect.arrayContaining(['Plays', 'Forward', 'Backward (reverse)', 'Back and forth (ping-pong)', 'Back and forth, from the end', 'Repeat', 'Forever (loops)', 'Once (then holds the last frame)']));
+    expect(words).toEqual(expect.arrayContaining(['Plays', 'Forward', 'Backward (reverse)', 'Back and forth', 'Back and forth, backward first', 'Repeat', 'Forever (loops)', 'Once (then holds the last frame)']));
     expect(item('Forward').textContent).toContain('✓');
-    act(() => item('Back and forth (ping-pong)').click());
+    act(() => item('Back and forth').click());
     expect(s.get().doc.clips[0].direction).toBe('pingpong');
     expect(host.querySelector('.tl-clip svg')).toBeTruthy();
     open();

@@ -61,7 +61,7 @@ The export window lists what was baked or left out for your drawing.`,
 ## In Frameling
 
 1. Press **Ctrl+E**, pick **Sprite sheet**, then the **Godot** card.
-2. For pixel art, pick **Art size**.
+2. Pixel art goes out at real size by itself.
 3. Leave **Also make a ready-to-play scene** ticked.
 4. Check **Where the picture will live in your Godot project**. The default is \`res://sprites/<your name>.png\`. Change it if your project keeps pictures somewhere else, for example \`res://art/hero.png\`.
 5. Press **Export** and choose the folder **inside your Godot project** that matches that path. For \`res://sprites/\`, that's the \`sprites\` folder in your project (make it if it doesn't exist).
@@ -76,7 +76,7 @@ The export window lists what was baked or left out for your drawing.`,
 $AnimatedSprite2D.play("run")
 \`\`\`
 
-Every clip is there with its speed and loop setting, and held frames last as long as they do in Frameling. A clip that plays backward or back and forth has its frames listed in that order (Godot's animations have no direction of their own), and one that plays a number of times lists them that many times and doesn't loop. A back and forth clip that loops can instead use Godot's own **ping-pong** loop (a smaller file, but the two end frames show twice, and it needs Godot 4.7 or newer: older Godot plays those clips forward only): choose it in **Preferences > Behaviour**, *Back-and-forth clips in game engines*. Clips that play a set number of directions are always listed frame by frame. Got a character with bones? You can also send it as a [skeleton you can keep editing](help:export-godot-bones). Pixel art scenes are set to sharp (nearest) filtering, so nothing looks blurry.
+Every clip is there with its speed and loop setting, and held frames last as long as they do in Frameling. A clip that plays backward or back and forth has its frames listed in that order (Godot's animations have no direction of their own), and one that plays a number of times lists them that many times and doesn't loop. A back and forth clip that loops can instead use Godot's own back and forth loop (it calls it **ping-pong**) (a smaller file, but the two end frames show twice, and it needs Godot 4.7 or newer: older Godot plays those clips forward only): choose it in **Preferences > Behaviour**, *Back-and-forth clips in game engines*. Clips that play a set number of directions are always listed frame by frame. Got a character with bones? You can also send it as a [skeleton you can keep editing](help:export-godot-bones). Pixel art scenes are set to sharp (nearest) filtering, so nothing looks blurry.
 
 ## Using the .tres yourself
 

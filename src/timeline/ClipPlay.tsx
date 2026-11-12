@@ -10,8 +10,8 @@ import type { MenuItem } from './Menu';
 export const DIRECTION_HELP: Record<ClipDirection, string> = {
   forward: 'Forward',
   reverse: 'Backward (reverse)',
-  pingpong: 'Back and forth (ping-pong)',
-  'pingpong-reverse': 'Back and forth, from the end',
+  pingpong: 'Back and forth',
+  'pingpong-reverse': 'Back and forth, backward first',
 };
 
 export function repeatLabel(c: Pick<Clip, 'loop' | 'repeat' | 'direction'>): string {

@@ -7,6 +7,7 @@ import { getTool, type PanelDef } from '../core/registry';
 import type { State } from '../core/store';
 import { ownedUndo } from '../core/owners';
 import { allSliceCount } from '../pixel/slices/model';
+import { tl } from '../timeline/state';
 
 /** Where a panel sits on the rail. Properties first, then the rest in this order with a line between groups. */
 export type RailGroup = 'properties' | 'make' | 'animate' | 'learn' | 'more';
@@ -79,6 +80,15 @@ export const PANEL_INFO: Record<string, PanelInfo> = {
     relevant: (s) => layerOf(s)?.kind === 'pixel' || allSliceCount(s.doc) > 0,
     idle: 'Pick a pixel layer',
     keywords: ['slice', 'slices', '9-patch', 'nine patch', 'pivot', 'hitbox', 'region'],
+  },
+  'clip-play': {
+    short: 'Clip',
+    blurb: 'How the clip you clicked on the timeline plays: forward, backward or back and forth, and how many times.',
+    group: 'properties',
+    section: true,
+    relevant: () => !!tl().clipId,
+    idle: 'Click a clip on the timeline',
+    keywords: ['clip', 'direction', 'repeat', 'back and forth', 'backward', 'loop', 'once', 'times'],
   },
   'symbol-props': {
     short: 'Motion',
@@ -215,6 +225,8 @@ export function sectionsNow(sections: string[], s: State, active: string | null)
     (on || id === active ? shown : idle).push(id);
   }
   // Like Illustrator's Properties: with something selected, what's about it comes first, the tool and colours after.
+  // A clip you just clicked leads: its settings are what you came for.
+  if (shown.includes('clip-play')) shown.splice(0, 0, ...shown.splice(shown.indexOf('clip-play'), 1));
   if (s.ui.selection.length) {
     const first = shown.filter((id) => PANEL_INFO[id]?.selection);
     return { shown: [...first, ...shown.filter((id) => !first.includes(id))], idle };

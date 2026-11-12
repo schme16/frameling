@@ -1,4 +1,5 @@
 // Registers the timeline area's commands, panels, tools and help topics.
+import { lazyPanel } from '../core/lazy';
 import { registerPanel } from '../core/registry';
 import './choices';
 import './commands';
@@ -10,6 +11,7 @@ import { installTweenOffer } from './tweenOffer';
 import { store } from '../core/store';
 import { TimelinePanel } from './TimelinePanel';
 
+registerPanel({ id: 'clip-play', title: 'Clip', icon: 'timeline', component: lazyPanel(() => import('./ClipPanel').then((m) => m.ClipPanel)), zone: 'right', order: 36, help: 'timeline-clip-play' });
 registerPanel({ id: 'timeline', title: 'Timeline', icon: 'timeline', component: TimelinePanel, zone: 'bottom', order: 10, help: 'timeline' });
 
 // One playback loop for the app, driven by `ui.playing`.

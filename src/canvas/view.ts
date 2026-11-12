@@ -76,6 +76,17 @@ export function fitView(vw: number, vh: number, dw: number, dh: number, padding 
   return centerView({ zoom, panX: 0, panY: 0 }, vw, vh, dw, dh);
 }
 
+/**
+ * The view that shows a box of the document whole, centred, with margins. `above` is room in screen pixels kept over
+ * the box (for the names written above artboards). The zoom is not rounded: this is for several boards at once.
+ */
+export function fitRectView(r: Rect, vw: number, vh: number, padding = 48, above = 0): View {
+  const availW = Math.max(16, vw - padding * 2);
+  const availH = Math.max(16, vh - padding * 2 - above);
+  const zoom = clampZoom(Math.min(availW / Math.max(1, r.w), availH / Math.max(1, r.h)));
+  return { zoom, panX: vw / 2 - (r.x + r.w / 2) * zoom, panY: (vh + above) / 2 - (r.y + r.h / 2) * zoom };
+}
+
 /** The same zoom, with the stage centred in the canvas area. */
 export function centerView(v: View, vw: number, vh: number, dw: number, dh: number): View {
   return { zoom: v.zoom, panX: (vw - dw * v.zoom) / 2, panY: (vh - dh * v.zoom) / 2 };

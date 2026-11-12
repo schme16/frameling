@@ -1,11 +1,10 @@
 // What a sprite sheet export asks: where it is going (the engine and its extras) and how the sheet is laid out.
-import { useChoice, withChoice } from '../../core/choices';
+import { useChoice } from '../../core/choices';
 import { sheetExported } from '../../pixel/moments';
 import { sheetFooter } from '../../pixel/sheetMode';
 import { isPixelDoc } from '../../pixel/way';
 import { store } from '../../core/store';
 import { openHelp, openPrefs } from '../../ui/overlays';
-import { artScale } from '../plan';
 import { BonesLookNotes } from '../BonesLookNotes';
 import { EnginePicker } from '../EnginePicker';
 import { hasBonesToExport } from '../godot-bones-scope';
@@ -17,7 +16,6 @@ import { Check } from './controls';
 /** Where it is going: the engine picker and what that engine adds. */
 export function SheetWhere({ s, set, setSheet, doc }: ExportUiProps) {
   const bounceMode = useChoice<string>('export.clipEngineBounce');
-  const art = artScale(doc);
   const sheet = normalizeSheet(s.sheet);
   const engine = engineInfo(sheet.engine);
   const separate = sheet.content === 'separate';
@@ -25,8 +23,6 @@ export function SheetWhere({ s, set, setSheet, doc }: ExportUiProps) {
   const godotBones = sheet.engine === 'godot' && hasBones && !separate && sheet.godotRig === 'bones';
   const pickEngine = (id: EngineId) => {
     setSheet({ engine: id, ...(id === 'godot' ? { godot: true } : {}) });
-    // Pixel art for a game: offer the real size once, then remember the answer.
-    if (art && engineInfo(id).game && s.scale !== art) withChoice<string>('export.gameArtSize', (v) => v === 'art' && set({ scale: art }));
   };
   return (
     <fieldset>
@@ -40,7 +36,7 @@ export function SheetWhere({ s, set, setSheet, doc }: ExportUiProps) {
       </p>
       {(sheet.engine === 'godot' || sheet.engine === 'phaser') && !separate && doc.clips.some((c) => c.direction === 'pingpong' || c.direction === 'pingpong-reverse') && (
         <p className="ex-note">
-          Back and forth clips: {bounceMode === 'engine' ? (sheet.engine === 'godot' ? "Godot's own ping-pong is used for clips that loop (smaller files, but the two end frames show twice). It needs Godot 4.7 or newer: older Godot plays those clips forward only." : "Phaser's own yoyo is used where it can (smaller files, plays the same).") : 'every frame is listed in order, so the ends show once, just like here.'}{' '}
+          Back and forth clips: {bounceMode === 'engine' ? (sheet.engine === 'godot' ? "Godot's own back and forth loop (it calls it ping-pong) is used for clips that loop (smaller files, but the two end frames show twice). It needs Godot 4.7 or newer: older Godot plays those clips forward only." : "Phaser's own yoyo is used where it can (smaller files, plays the same).") : 'every frame is listed in order, so the ends show once, just like here.'}{' '}
           <button type="button" className="ex-link" onClick={() => openPrefs('behaviour')}>
             Change in Preferences
           </button>

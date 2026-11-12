@@ -104,6 +104,7 @@ export class CanvasEngine {
   private settleTimer = 0;
   private prev: State;
   private docId: string;
+  private loads: number;
   private bounds = { left: 0, top: 0 };
   private cleanups: (() => void)[] = [];
   private lastDpr = 0;
@@ -118,6 +119,7 @@ export class CanvasEngine {
     this.prev = store().get();
     if (perf) perf.painter = this.painter;
     this.docId = this.prev.doc.id;
+    this.loads = store().loads;
     const self = this;
     this.ctx = {
       get zoom() {
@@ -178,7 +180,7 @@ export class CanvasEngine {
     // Grid and handle colours come from theme tokens, so a theme or look change repaints both canvases.
     this.cleanups.push(subscribeTheme(() => this.invalidate(true, true)));
     this.resize();
-    ctl.fit();
+    ctl.fit(true);
     return () => this.destroy();
   }
 
@@ -215,7 +217,7 @@ export class CanvasEngine {
       this.painter.clear();
     }
     ctl.setViewport({ w, h, dpr });
-    if (ctl.isAutoFit()) ctl.fit();
+    if (ctl.isAutoFit()) ctl.fit(true);
     this.invalidate(true, true);
   };
 
@@ -306,11 +308,13 @@ export class CanvasEngine {
     const p = this.prev;
     this.prev = s;
     if (s === p) return;
-    if (s.doc.id !== this.docId) {
+    // A new or opened document gets its whole page in view, even when it is the same file as before.
+    if (s.doc.id !== this.docId || store().loads !== this.loads) {
       this.docId = s.doc.id;
+      this.loads = store().loads;
       this.painter.clear();
       ctl.setLive(null);
-      ctl.fit();
+      ctl.fit(true);
     }
     const u = s.ui;
     const q = p.ui;

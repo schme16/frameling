@@ -47,7 +47,7 @@ describe('the preference', () => {
     expect(def.category).toBe('Export');
     expect(def.options.map((o) => [o.value, o.label])).toEqual([
       ['bake', 'Baked, ends show once'],
-      ['engine', "Engine's own ping-pong"],
+      ['engine', "The engine's own back and forth"],
     ]);
     expect(currentChoice('export.clipEngineBounce')).toBe('bake');
   });

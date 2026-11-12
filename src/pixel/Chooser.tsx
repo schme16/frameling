@@ -10,6 +10,7 @@ import { Quill, QuillSays, useQuillShown } from '../ui/mascot';
 import { line } from '../ui/mascot/lines';
 import { openSheet } from '../ui/overlays';
 import { toast } from '../ui/toast';
+import { madeOnPurpose } from './workspace';
 import { newSpriteDoc, SIZE_CHOICES, WAYS, type WayInfo } from './way';
 import { WayDiagram } from './WayDiagrams';
 import './way.css';
@@ -17,7 +18,7 @@ import './way.css';
 /** Makes the sprite and opens it (asking about unsaved changes first). Returns false when the person said no. */
 export async function startSprite(way: SpriteWay, width: number, height: number): Promise<boolean> {
   if (!(await askAboutUnsavedChanges())) return false;
-  store().load(newSpriteDoc({ way, width, height }));
+  store().load(madeOnPurpose(newSpriteDoc({ way, width, height })));
   toast(line('pixel.chooser.ready'), { kind: 'success' });
   return true;
 }

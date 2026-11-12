@@ -8,8 +8,8 @@ import { findLayer } from '../core/doc';
 import { existingSelection } from '../core/followSelection';
 import { leaveSymbol } from '../symbols/ops';
 import { leaveTileEdit } from '../tiles/tileEdit';
-import { getViewport, setView, zoomToDocRect } from '../canvas/controller';
-import { fitView } from '../canvas/view';
+import { getViewport, setFitHook, setView, type Viewport } from '../canvas/controller';
+import { fitRectView, fitView, type View } from '../canvas/view';
 import { lookingThrough } from '../camera/ops';
 import { resizeCanvas, type Anchor } from '../canvas/resize';
 import { toast } from '../ui/toast';
@@ -163,14 +163,29 @@ export function zoomToArtboard(id?: Id): void {
   setView(fitView(vp.w, vp.h, doc.width, doc.height, 48, px));
 }
 
-/** Shows every artboard at once. */
-export function fitAllArtboards(): void {
-  const { doc } = store().get();
+/** Room kept above the boards for their names, in screen pixels. */
+const NAME_ROOM = 28;
+
+/** The view that shows every artboard at once, centred with margins (and room for the names), or null with only one board. */
+export function allBoardsView(doc: Doc, vp: Pick<Viewport, 'w' | 'h'>): View | null {
+  if (!hasArtboards(doc) || artboardsOf(doc).length < 2) return null;
   const a = activeArtboard(doc);
   const b = allBounds(doc);
   // The view is measured from the open artboard's corner.
-  zoomToDocRect({ x: b.x - a.x - 24, y: b.y - a.y - 24, w: b.w + 48, h: b.h + 48 });
+  return fitRectView({ x: b.x - a.x, y: b.y - a.y, w: b.w, h: b.h }, vp.w, vp.h, 48, NAME_ROOM);
 }
+
+/** Shows every artboard at once. */
+export function fitAllArtboards(): void {
+  const { doc } = store().get();
+  const vp = getViewport();
+  const a = activeArtboard(doc);
+  const b = allBounds(doc);
+  setView(allBoardsView(doc, vp) ?? fitRectView({ x: b.x - a.x, y: b.y - a.y, w: b.w, h: b.h }, vp.w, vp.h, 48, NAME_ROOM));
+}
+
+// Opening a file with several boards, or resizing the window, shows all of them (not just the open one).
+setFitHook((vp) => allBoardsView(store().get().doc, vp));
 
 /** Adds an artboard beside the others and opens it. */
 export function newArtboard(o: NewArtboard = {}, open = true): Id | null {

@@ -9,7 +9,7 @@ import { Quill, QuillSays } from '../ui/mascot';
 import { describeError, exportDocument, loadLastSettings, loadSheetExtras, saveSheetExtras } from './exporter';
 import { useChoice } from '../core/choices';
 import './choices';
-import { artScale, defaultSettings, drawnFrames, hasPixelLayers, planExport, scaleAllowed, scaleChoices } from './plan';
+import { artScale, defaultSettings, sheetRealSize, withRealSize, drawnFrames, hasPixelLayers, planExport, scaleAllowed, scaleChoices } from './plan';
 import { setDocLength } from '../timeline/ops';
 import type { Progress } from './run';
 import { CarryNotes } from './CarryNotes';
@@ -61,7 +61,9 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
   const open = useStore((s) => s.doc);
   const openFrame = useStore((s) => s.ui.frame);
   const { doc, frame } = sceneOf(open, openFrame);
-  const [s, setS] = useState<ExportSettings>(initial);
+  const [raw, setS] = useState<ExportSettings>(initial);
+  // Pixel art on a sheet for a game engine is always real size, whatever the Size buttons last said.
+  const s = useMemo(() => withRealSize(doc, raw), [doc, raw]);
   const units = usePrefs((p) => p.units);
   const [progress, setProgress] = useState<Progress | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -151,6 +153,7 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
 
   const scales = scaleChoices(doc);
   const art = artScale(doc);
+  const realSize = sheetRealSize(doc, s);
   const artPx = art ? `${Math.round(doc.width * art)} × ${Math.round(doc.height * art)}` : '';
   const frames = plan.count;
   // With units other than pixels, also say how big it prints: the same size at any scale, just more dots per inch.
@@ -270,19 +273,25 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
           ) : (
           <fieldset>
             <legend>Size</legend>
-            <div className="ex-seg">
-              {art && (
-                <button type="button" className={s.scale === art ? 'ex-on' : ''} aria-pressed={s.scale === art} title={`One art pixel becomes one pixel (${artPx}). Best for game engines, which scale it up themselves.`} onClick={() => set({ scale: art })}>
-                  Art size
-                </button>
-              )}
-              {scales.map((n) => (
-                <button key={n} type="button" className={s.scale === n ? 'ex-on' : ''} aria-pressed={s.scale === n} onClick={() => set({ scale: n })}>
-                  {n < 1 ? `${n}×` : `${n}×`}
-                </button>
-              ))}
-            </div>
-            <p className="ex-note">{s.scale === art ? `Real size: one art pixel is one pixel (${artPx}).` : pixel ? 'Whole numbers keep every pixel sharp and square.' : 'Bigger is sharper but makes a bigger file.'}</p>
+            {realSize !== null ? (
+              <p className="ex-note ex-realsize">Real size: one art pixel is one pixel ({artPx} each frame). The game scales it up, which keeps the files small and the edges sharp.</p>
+            ) : (
+              <>
+                <div className="ex-seg">
+                  {art && !scales.includes(art) && (
+                    <button type="button" className={s.scale === art ? 'ex-on' : ''} aria-pressed={s.scale === art} title={`One art pixel becomes one pixel (${artPx}). Best for game engines, which scale it up themselves.`} onClick={() => set({ scale: art })}>
+                      Art size
+                    </button>
+                  )}
+                  {scales.map((n) => (
+                    <button key={n} type="button" className={s.scale === n ? 'ex-on' : ''} aria-pressed={s.scale === n} onClick={() => set({ scale: n })}>
+                      {n}×
+                    </button>
+                  ))}
+                </div>
+                <p className="ex-note">{s.scale === art ? `Real size: one art pixel is one pixel (${artPx}).` : pixel ? 'Whole numbers keep every pixel sharp and square.' : 'Bigger is sharper but makes a bigger file.'}</p>
+              </>
+            )}
           </fieldset>
           )}
 

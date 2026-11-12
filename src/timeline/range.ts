@@ -94,7 +94,7 @@ registerCommands([
   },
   {
     id: 'timeline.togglePingPong',
-    label: 'Play back and forth (ping-pong)',
+    label: 'Play back and forth',
     category: 'Timeline',
     description: 'Play to the end, then backwards to the start, instead of jumping back. Great for breathing, swinging and floating.',
     help: 'timeline-playing',

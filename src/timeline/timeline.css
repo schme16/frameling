@@ -576,7 +576,9 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 0 8px;
+  padding: 0 5px;
+  /* A short clip still shows a readable name (it can run over the next clip a little; the picked one stays on top). */
+  min-width: 44px;
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--sky) 60%, transparent);
   border-radius: var(--radius-small);
@@ -588,6 +590,7 @@
   background: color-mix(in srgb, var(--sky) 40%, var(--panel));
 }
 .tl-clip.is-picked {
+  z-index: 2;
   background: var(--chosen-bg);
   border-color: var(--sunny-deep);
   color: var(--chosen-fg);
@@ -1083,4 +1086,28 @@
 /* Little text marks drawn by CSS, so a row's text is just its name (the row's label says the rest). */
 .tl-glyph::before {
   content: attr(data-glyph);
+}
+
+/* The Plays and Repeat fields of a clip (the Clip section of Properties, and the clip flow panel). */
+.fl-trigger-name {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: var(--fs-small);
+  color: var(--muted);
+}
+.fl-trigger-name input {
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  padding: 5px 8px;
+  font: inherit;
+}
+.tl-clip-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  color: var(--text);
 }

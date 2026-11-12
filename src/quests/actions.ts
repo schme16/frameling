@@ -11,6 +11,7 @@ import { docFromPreset, PRESETS } from '../ui/presets';
 import { closeSheet } from '../ui/overlays';
 import { syncDynamicCommands } from '../ui/dynamic';
 import { toast } from '../ui/toast';
+import { madeOnPurpose } from '../pixel/workspace';
 import { closedShapeCenter, hasInkAt, hasPixelLayer, hasVectorLayer } from './predicates';
 
 /** A loop of stroke points: a hand-drawn-looking ball, ends meeting. */
@@ -68,7 +69,7 @@ export function nudgeDrawing(dx = 60): boolean {
 /** Puts a new document on screen after asking about unsaved work. False when they said no. */
 export async function freshPage(make: () => Doc): Promise<boolean> {
   if (!(await askAboutUnsavedChanges())) return false;
-  store().load(make());
+  store().load(madeOnPurpose(make()));
   return true;
 }
 
