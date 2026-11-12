@@ -4,6 +4,10 @@ import { newDoc, newPixelDrawing, newPixelLayer, newVectorLayer } from '../../sr
 import type { CameraDrawing, Doc, Layer, PathShape, PixelDrawing, VectorDrawing } from '../../src/core/format';
 import { resetStore, store } from '../../src/core/store';
 import { loadFile, saveFile } from '../../src/io/file';
+import { defaultSettings } from '../../src/export/plan';
+import { artboardExport, planArtboards, setArtboardExport } from '../../src/artboards/export';
+import { followSelection } from '../../src/core/followSelection';
+import { resizeArtboard } from '../../src/artboards/ops';
 import { activeId, artboardDoc, artboardsOf, deleteArtboard, duplicateArtboard, exportNames, findArtboard, joinShots, switchArtboard, takeContent } from '../../src/artboards/model';
 import {
   aliasId,
@@ -523,5 +527,81 @@ describe('variations: exporting', () => {
     expect(familyIds(doc(), root())).toEqual([root(), v, w]);
     resetStore(sample());
     expect(familyIds(doc(), root())).toEqual([]);
+  });
+});
+
+describe('variations: more', () => {
+  function walk(): Doc {
+    // One layer with a shape that carries lineage through four keys, each its own drawing.
+    const d0 = newDoc({ name: 'Walk', width: 100, height: 100, length: 4, fps: 12 });
+    const layer = { ...newVectorLayer('Hero'), id: 'H' };
+    for (let f = 0; f < 4; f++) {
+      const sh = { ...rect(`s${f}`, '#ff0000', f * 5), origin: f ? 's0' : undefined };
+      d0.drawings[`k${f}`] = { id: `k${f}`, kind: 'vector', shapes: [sh] };
+      layer.cels.push({ id: `c${f}`, start: f, length: 1, drawingId: `k${f}` });
+    }
+    d0.layers = [layer];
+    return d0;
+  }
+
+  it('a recolour across a layer\'s keys is one line with one reset', () => {
+    resetStore(walk());
+    const v = make();
+    open(v);
+    update('Recolour all', (d) => {
+      for (let f = 0; f < 4; f++) ((d.drawings[aliasId(`k${f}`, v)] as VectorDrawing).shapes[0] as PathShape).fill = '#00ffff';
+    });
+    const list = listDifferences(doc(), v);
+    expect(list).toHaveLength(1);
+    expect(list[0].label).toBe('Drawings on 4 keys: 4 shapes recoloured');
+    expect(list[0]).toMatchObject({ group: 'Hero', layer: 'H', frame: 0 });
+    update('Reset', (d) => void resetDifference(d, v, list[0].reset));
+    expect(listDifferences(doc(), v)).toEqual([]);
+    expect(shape(doc(), aliasId('k2', v), 's2').fill).toBe('#ff0000');
+  });
+
+  it('the selection follows a shape from key to key inside a variation', () => {
+    resetStore(walk());
+    const v = make();
+    open(v);
+    const r = followSelection(doc(), 'H', ['s0'], 0, 2);
+    expect(r?.selection).toEqual(['s2']);
+  });
+
+  it('an edit that changes nothing adds no undo step and no overrides', () => {
+    const v = make();
+    open(v);
+    const steps = store().canUndo();
+    update('Nothing', (d) => void (d.layers.find((l) => l.id === 'L1')!.opacity = 1));
+    expect(store().canUndo()).toBe(steps);
+    expect(findArtboard(doc(), v)!.overrides).toEqual({});
+  });
+
+  it('typing a size on a variation changes only its picture and frames the original', () => {
+    const v = make();
+    open(v);
+    resizeArtboard(v, 100, 100);
+    const a = findArtboard(doc(), v)!;
+    expect(doc().width).toBe(100);
+    expect(a.overrides!.stage).toEqual({ set: { width: 100 } });
+    expect(doc().layers.some((l) => l.kind === 'camera')).toBe(true);
+    // The original keeps its size and layers.
+    expect(findArtboard(doc(), root())!.content!.width).toBe(200);
+    expect(findArtboard(doc(), root())!.content!.layers.some((l) => l.kind === 'camera')).toBe(false);
+  });
+
+  it('exports plan one file per picked artboard, variations included, at their own sizes', () => {
+    const v = make({ size: { width: 100, height: 100 } });
+    const w = make();
+    open(root());
+    setArtboardExport({ mode: 'each', ids: familyIds(doc(), root()) });
+    const settings = { ...defaultSettings(doc()), format: 'png' as const };
+    const plan = planArtboards(doc(), settings, 0)!;
+    expect(plan.files).toBe(3);
+    expect(plan.problem).toBeNull();
+    expect(artboardDoc(doc(), v).width).toBe(100);
+    expect(artboardDoc(doc(), w).width).toBe(200);
+    setArtboardExport({ mode: 'one', ids: null });
+    expect(artboardExport.get().mode).toBe('one');
   });
 });

@@ -195,23 +195,11 @@
 .ab-item.ab-var {
   margin-left: 10px;
 }
-.ab-name-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-}
-.ab-name-row .ab-name {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 .ab-badge {
   display: inline-flex;
-  flex: none;
   align-items: center;
   gap: 3px;
+  margin-right: 6px;
   padding: 0 5px;
   border-radius: 8px;
   border: 1px solid currentColor;

@@ -6,6 +6,7 @@ import { store } from '../core/store';
 import * as model from './model';
 import * as ops from './ops';
 import { makeVariation } from './variations';
+import { loadFile, saveFile } from '../io/file';
 
 /** Paints a filled box of art pixels. */
 function box(px: Uint8ClampedArray, w: number, x0: number, y0: number, bw: number, bh: number, hex: string): void {
@@ -152,6 +153,9 @@ if (typeof window !== 'undefined' && new URLSearchParams(location.search).has('d
     model,
     ops,
     load: (which: 'sprites' | 'shots' | 'mixed' | 'variations') => (which === 'variations' ? loadVariationsDemo() : store().load(which === 'mixed' ? demoShots(true) : which === 'shots' ? demoShots() : demoSprites())),
+    /** The document saved to bytes, and bytes opened as the document (for checking a file round trip). */
+    saveBytes: () => saveFile(store().get().doc),
+    openBytes: (b: Uint8Array) => store().load(loadFile(b).doc),
     /** What the Export dialog's artboard row is set to, as if clicked. */
     setExport: (p: Partial<{ mode: 'one' | 'each' | 'joined' | 'atlas'; ids: string[] | null }>) => import('./export').then((m) => m.setArtboardExport(p)),
     setChoice: (id: string, v: string | undefined) => import('../core/choices').then((m) => m.setChoice(id, v)),

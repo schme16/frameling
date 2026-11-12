@@ -19,6 +19,12 @@ import { paintThumbBackdrop } from '../canvas/thumbBackdrop';
 import '../symbols/symbols.css';
 import './artboards.css';
 
+/** The length of an artboard, open or not. */
+const sizeOfLength = (doc: Doc, id: Id): number => {
+  const a = findArtboard(doc, id);
+  return a?.content ? a.content.length : doc.length;
+};
+
 const DRAG_TYPE = 'application/x-frameling-artboard';
 
 /** Frame 0 of an artboard, fitted into a small box. */
@@ -114,16 +120,14 @@ export function ArtboardsPanel() {
                     }}
                   />
                 ) : (
-                  <span className="ab-name-row">
-                    <span className="sy-item-name ab-name" onDoubleClick={(e) => (e.stopPropagation(), setRenaming(a.id))}>
-                      {a.name}
-                    </span>
-                    {a.variationOf && <VariationBadge of={sourceOf(doc, a)?.name ?? 'its original'} />}
+                  <span className="sy-item-name ab-name" onDoubleClick={(e) => (e.stopPropagation(), setRenaming(a.id))}>
+                    {a.name}
                   </span>
                 )}
                 <span className="sy-item-meta">
+                  {a.variationOf && <VariationBadge of={sourceOf(doc, a)?.name ?? 'its original'} />}
                   {w} x {h}
-                  {len > 1 ? `, ${len} frames` : ''}
+                  {len > 1 && len !== (a.variationOf ? sizeOfLength(doc, a.variationOf) : -1) ? `, ${len} frames` : ''}
                 </span>
               </div>
               <div className="sy-item-actions" onClick={(e) => e.stopPropagation()}>

@@ -50,8 +50,8 @@ export function ArtboardExportPicker({ settings }: { settings: ExportSettings })
         ))}
       </div>
       {family.length > 1 && (
-        <div className="ab-export-family">
-          <button type="button" className={`cv-action${familyOn ? ' ex-on' : ''}`} aria-pressed={familyOn} title="Tick this artboard and all its variations (linked copies), each as its own file" onClick={() => setArtboardExport({ ids: family, mode: mode === 'one' ? 'each' : mode })}>
+        <div className="ex-seg ab-export-family">
+          <button type="button" className={familyOn ? 'ex-on' : ''} aria-pressed={familyOn} title="Tick this artboard and all its variations (linked copies), each as its own file" onClick={() => setArtboardExport({ ids: family, mode: mode === 'one' ? 'each' : mode })}>
             This artboard and its variations ({family.length})
           </button>
         </div>
