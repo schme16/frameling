@@ -173,7 +173,7 @@ const id = (p: string) => `${p}${(++n).toString(36)}`;
 
 function baseDoc(name: string, width: number, height: number, fps: number, swatches: Swatch[]): Doc {
   n = 0;
-  return { format: 'frameling', version: FORMAT_VERSION, id: 'mascot-' + name.toLowerCase().replace(/[^a-z0-9]+/g, '-'), name, width, height, fps, length: 1, background: null, layers: [], drawings: {}, clips: [], markers: [], swatches };
+  return { format: 'frameling', version: FORMAT_VERSION, lineage: true, id: 'mascot-' + name.toLowerCase().replace(/[^a-z0-9]+/g, '-'), name, width, height, fps, length: 1, background: null, layers: [], drawings: {}, clips: [], markers: [], swatches };
 }
 
 /**

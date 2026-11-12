@@ -64,7 +64,7 @@ window.__h = (() => {
   // layers x frames, each frame a different drawing of strokesPer strokes (or one cel when frames is 1).
   function mkDoc({ width = 1280, height = 720, fps = 24, frames = 1, layers = 1, strokesPer = 50, pts = 12, seed = 7, opacity = 1 }) {
     const r = prng(seed);
-    const doc = { format: 'frameling', version: 1, id: id('doc'), name: 'perf', width, height, fps, length: frames, background: '#ffffff', layers: [], drawings: {}, clips: [], markers: [], swatches: [] };
+    const doc = { format: 'frameling', version: 1, lineage: true, id: id('doc'), name: 'perf', width, height, fps, length: frames, background: '#ffffff', layers: [], drawings: {}, clips: [], markers: [], swatches: [] };
     for (let l = 0; l < layers; l++) {
       const layer = { id: id('l'), name: 'L' + l, kind: 'vector', visible: true, locked: false, opacity, cels: [] };
       for (let f = 0; f < frames; f++) {
