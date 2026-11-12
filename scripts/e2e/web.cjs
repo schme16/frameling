@@ -107,6 +107,16 @@ const SHIM = `
       }, 10);
     };
   }
+  // Safari stand-ins, for checking the web build's Safari paths in Chromium: ?ua=safari looks like Safari (late downloads
+  // are held back for a Save button), ?gesture=1 has GestureEvent (pinch), ?persist=grant|deny answers storage.persist().
+  const q = new URLSearchParams(location.search);
+  S.persistCalls = 0;
+  if (q.get('ua') === 'safari') Object.defineProperty(navigator, 'userAgent', { get: () => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15' });
+  if (q.get('gesture')) window.GestureEvent = function GestureEvent() {};
+  if (q.get('persist')) {
+    navigator.storage.persisted = async () => false;
+    navigator.storage.persist = async () => { S.persistCalls++; return q.get('persist') === 'grant'; };
+  }
   if (mode === 'plain') {
     delete window.showOpenFilePicker; delete window.showSaveFilePicker; delete window.showDirectoryPicker;
   } else {

@@ -543,6 +543,7 @@ xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/web.cjs [--only
 | `model-*` | Nested folders, clip direction and repeat, and variations saved, opened again and compared; a ping-pong clip's play order. |
 | `snapping`, `prefs`, `features`, `pen` | Snapping ticks and a real drag onto the page edge, every Preferences page, Features switches kept across a reload, Chromium pen events on the Pen and tablet pad and the Brush. |
 | `offline` | The service worker caches the whole app, the app opens with the server stopped (lazy dialogs, Help, Save still work) and again when it is back. |
+| `safari` | Safari's ways, with stand-ins from the shim in the page address (`?ua=safari` looks like Safari, `?gesture=1` has GestureEvent, `?persist=grant\|deny` answers `navigator.storage.persist()`): pinch from gesture events on the canvas and timeline, a late export held back for a "Your file is ready" Save button (button and command), and the one-time "browser may clear your work" notice. |
 | `plugins` | The sandbox page policy, an example plugin installs, runs and is kept across a reload, and what a plugin does offline. |
 | `sweep` | The app served from a sub-folder (`/tools/frameling/`), every panel and tool, every help picture and clip served, a help clip decodes. |
 | `web-only` | Install as an app, the browser help topic, About, the tab title, "Leave site?". |

@@ -78,7 +78,7 @@ function watchGestures(): void {
 const offers = createSaveOffers({
   save: saveNow,
   show: (message, onSave) => toast(message, { kind: 'success', duration: 0, quill: null, sound: null, action: { label: 'Save', run: onSave } }),
-  hide: dismissToast,
+  hide: (id) => dismissToast(id),
 });
 
 /** Saves the files that finished too late to download on their own. Returns how many there were. */
