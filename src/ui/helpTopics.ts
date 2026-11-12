@@ -194,7 +194,7 @@ Used Flash / Animate or a pixel tool before? Pick a [shortcut set](help:shortcut
 - Typing in a text box never triggers shortcuts, so you can type a name with the letter b in it.
 - **Space** is for moving the canvas around. Holding it pauses every other shortcut.
 - Each tool has a single-letter key. Change those here too.
-- On a pixel sprite: **+** makes the brush bigger, **[** and **]** step along the palette, and **1** to **6** zoom from 100% to 3200%. **=** adds a frame and **-** removes one, in every set but Aseprite keys, where they change the brush size instead.
+- On a pixel sprite: **+** makes the brush bigger and **_** (Shift and minus) smaller, **[** and **]** step along the palette, and **1** to **6** zoom from 100% to 3200%. **=** adds a frame and **-** removes one, in every set but Aseprite keys, where they change the brush size instead.
 - The **arrow keys** nudge the selection (**Shift** for ten pixels) in every set. In Aseprite keys, **Alt+Left** and **Alt+Right** step between frames.
 - Tools for different kinds of layer can share a letter: **B** is the Brush on a drawing layer and the Tile brush on a tile layer. That's not a clash, because only one of them works at a time.
 - A few keys moved so nothing clashes: **Lasso** is **Shift+L** (the Line tool keeps **L**), and the Rig feature's Pose tool sits next to its Bone tool on a **Shift** key (the Ellipse keeps **O**).

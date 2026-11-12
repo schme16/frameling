@@ -102,6 +102,8 @@ registerCommands([
     id: 'pixel.sizeDown',
     label: 'Smaller brush',
     category: 'Pixel',
+    // Shift+- (`-` stays Remove a frame in Frameling's own keys; the Aseprite set uses `-`)
+    keys: ['_'],
     description: 'Make the pencil, eraser, dither or spray one pixel smaller.',
     help: 'pixel-aseprite-habits',
     keywords: ['brush size', 'smaller', 'minus', 'size down', 'thinner'],
