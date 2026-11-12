@@ -22,6 +22,7 @@ import { fitThumb, tagChips } from './exampleCards';
 import { paintThumbBackdrop } from '../canvas/thumbBackdrop';
 import { dismissPending, recovery, restorePending, whenSaved } from '../io/recovery';
 import { hiddenTemplateIds } from '../features/host';
+import { openPixelChooser, PixelStarters } from '../pixel/Chooser';
 
 export function WelcomeSheet() {
   const mode = overlays.use((o) => o.sheet);
@@ -115,7 +116,7 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
       )}
 
       <div className="ui-presets" data-help="new-document">
-        {PRESETS.map((p, i) => (
+        {PRESETS.filter((p) => !p.pixelSize).map((p, i) => (
           <button key={p.id} type="button" className="ui-preset" style={{ animationDelay: `${i * 50}ms` }} onClick={() => void make(docFromPreset(p), p.title.toLowerCase())}>
             <span className={`ui-preset-art ${p.pixelSize ? 'is-pixel' : ''}`}>
               <span className="ui-preset-shape" style={{ aspectRatio: `${p.width} / ${p.height}` }} />
@@ -126,6 +127,26 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
             <span className="ui-preset-blurb">{p.blurb}</span>
           </button>
         ))}
+        {quill && (
+          <button
+            type="button"
+            className="ui-preset"
+            style={{ animationDelay: '100ms' }}
+            data-help="pixel-new"
+            onClick={() => {
+              closeSheet();
+              window.setTimeout(openPixelChooser, 0);
+            }}
+          >
+            <span className="ui-preset-art is-pixel">
+              <span className="ui-preset-shape" style={{ aspectRatio: '1 / 1' }} />
+              <Icon name="pixel" size={22} />
+            </span>
+            <strong>Pixel art</strong>
+            <span className="ui-preset-size">Chunky little pixels</span>
+            <span className="ui-preset-blurb">One picture, an animation, frames on boards or sprites on a sheet. Quill asks which.</span>
+          </button>
+        )}
         <button type="button" className={`ui-preset${custom ? ' is-chosen' : ''}`} style={{ animationDelay: '200ms' }} aria-expanded={custom} onClick={() => setCustom((c) => !c)}>
           <span className="ui-preset-art">
             <Icon name="settings" size={22} />
@@ -135,6 +156,8 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
           <span className="ui-preset-blurb">Choose the size, the speed and pixel art or not.</span>
         </button>
       </div>
+
+      {!quill && <PixelStarters onMade={closeSheet} />}
 
       {custom && (
         <form

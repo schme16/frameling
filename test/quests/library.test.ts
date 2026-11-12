@@ -5,6 +5,9 @@ import '../../src/tools';
 import '../../src/timeline';
 import '../../src/export';
 import '../../src/tiles';
+import '../../src/artboards';
+import '../../src/pixel';
+import { PIXEL_WAY_QUESTS } from '../../src/pixel/quests-ways';
 import { getCommand } from '../../src/core/registry';
 import { syncDynamicCommands } from '../../src/ui/dynamic';
 import { resetStore } from '../../src/core/store';
@@ -44,9 +47,9 @@ async function playThrough(q: Quest, r: ReturnType<typeof rig>) {
 
 describe('the quests', () => {
   it('are registered, in order, with unique ids, steps and badges', () => {
-    expect(allQuests().map((q) => q.id)).toEqual(['first-animation', 'bouncing-ball', 'fill-it-in', 'pixel-pal', 'shade-and-shine', 'tiles', 'first-tween', 'share-it', 'bones-and-pose', 'make-it-glow', 'particle-party', 'say-it-with-text', 'camera-move']);
-    expect(new Set(QUESTS.map((q) => q.badge!.id)).size).toBe(13);
-    expect(QUESTS.map((q) => q.badge!.name)).toEqual(['Flipbooker', 'Squash & Stretch', 'Paint Pot', 'Pixel Pal', 'Shade Maker', 'Level Builder', 'Smooth Mover', 'Showtime', 'Puppeteer', 'Lamplighter', 'Confetti Cannon', 'Wordsmith', 'Director']);
+    expect(allQuests().map((q) => q.id)).toEqual(['first-animation', 'bouncing-ball', 'fill-it-in', 'pixel-pal', 'shade-and-shine', 'tiles', 'first-tween', 'share-it', 'bones-and-pose', 'make-it-glow', 'particle-party', 'say-it-with-text', 'camera-move', 'one-tiny-picture', 'board-by-board', 'cast-on-a-sheet']);
+    expect(new Set(QUESTS.map((q) => q.badge!.id)).size).toBe(16);
+    expect(QUESTS.map((q) => q.badge!.name)).toEqual(['Flipbooker', 'Squash & Stretch', 'Paint Pot', 'Pixel Pal', 'Shade Maker', 'Level Builder', 'Smooth Mover', 'Showtime', 'Puppeteer', 'Lamplighter', 'Confetti Cannon', 'Wordsmith', 'Director', 'Icon Maker', 'Storyboarder', 'Sheet Master']);
     for (const q of QUESTS) {
       expect(new Set(q.steps.map((s) => s.id)).size).toBe(q.steps.length);
       for (const s of q.steps) {
@@ -70,7 +73,7 @@ describe('the quests', () => {
   it('the first quests are open from the start (Pixel pal is a sprite person\'s first), the others wait', () => {
     const p = { ...FRESH_PROGRESS };
     expect(isUnlocked(FIRST_ANIMATION, p)).toBe(true);
-    for (const q of QUESTS.slice(1)) expect(isUnlocked(q, p)).toBe(q.id === 'pixel-pal' || q.id === 'tiles');
+    for (const q of QUESTS.slice(1)) expect(isUnlocked(q, p)).toBe(q.id === 'pixel-pal' || q.id === 'tiles' || PIXEL_WAY_QUESTS.includes(q));
     for (const q of QUESTS.slice(1)) expect(isUnlocked(q, { ...p, completed: ['first-animation'] })).toBe(true);
   });
 });

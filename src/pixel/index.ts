@@ -17,6 +17,9 @@ import { getPixelSettings } from './settings';
 import { previewSettings, setPreview } from './preview';
 import { watchOnePicture, watchPixelDocs } from './workspace';
 import './workspace-help';
+import './wayCommands';
+import { installWayWatchers } from './wayOps';
+import { askAboutKeys } from './keysAsk';
 
 registerPanel({ id: 'palette', title: 'Palette', icon: 'palette', component: lazyPanel(() => import('./PalettePanel').then((m) => m.PalettePanel)), zone: 'right', order: 25, help: 'palette' });
 registerPanel({ id: 'preview', title: 'Preview', icon: 'film', component: lazyPanel(() => import('./PreviewPanel').then((m) => m.PreviewPanel)), zone: 'right', order: 80, help: 'pixel-preview' });
@@ -33,7 +36,8 @@ dock.subscribe(syncWells);
 syncWells();
 
 // Offer the Pixel workspace when pixel art opens (asked once).
-watchPixelDocs(store());
+watchPixelDocs(store(), undefined, askAboutKeys);
+installWayWatchers(store());
 // A one-picture file has nothing to preview: the Preview stays away until it moves.
 watchOnePicture(store());
 

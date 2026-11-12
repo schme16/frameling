@@ -36,6 +36,8 @@ import { ArtboardExportPicker } from '../artboards/ExportPicker';
 import { artboardExport, artboardSummary, planArtboards } from '../artboards/export';
 import { customPicture } from '../artboards/fit';
 import { pixelExportStart } from '../pixel/workspace';
+import { sheetExported } from '../pixel/moments';
+import { isPixelDoc } from '../pixel/way';
 
 /** The ways an Illustrator file can hold an animation's frames. */
 const AI_FRAMES: { id: AiFrames; label: string; title: string; note: string }[] = [
@@ -186,6 +188,7 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
     setProgress({ done: 0, total: abPlan?.frames ?? plan.count, label: 'Getting ready' });
     try {
       const outcome = await exportDocument(s, ac.signal, setProgress);
+      if (outcome === 'done' && s.format === 'sheet' && isPixelDoc(store().rootDoc())) sheetExported(sheet.engine, abPlan?.frames ?? plan.count);
       if (outcome === 'done' || autoStart) return close();
     } catch (e) {
       setError(describeError(e));

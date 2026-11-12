@@ -31,6 +31,7 @@ import {
 } from './predicates';
 import { gifCard } from './probe';
 import { SHADE_AND_SHINE } from '../pixel/quest';
+import { PIXEL_WAY_QUESTS } from '../pixel/quests-ways';
 import { notePreviewFrame, previewFramesPlayed, resetPreviewFramesPlayed, setPreview } from '../pixel/preview';
 import { showPanel } from '../ui/dock';
 import { FIRST_TWEEN } from '../symbols/quest';
@@ -358,6 +359,6 @@ export const SHARE_IT: Quest = {
   ],
 };
 
-export const QUESTS: Quest[] = [FIRST_ANIMATION, BOUNCING_BALL, FILL_IT_IN, PIXEL_PAL, SHADE_AND_SHINE, TILES_QUEST, FIRST_TWEEN, SHARE_IT, BONES_QUEST, GLOW_QUEST, PARTICLES_QUEST, TEXT_QUEST, CAMERA_QUEST];
+export const QUESTS: Quest[] = [FIRST_ANIMATION, BOUNCING_BALL, FILL_IT_IN, PIXEL_PAL, SHADE_AND_SHINE, TILES_QUEST, FIRST_TWEEN, SHARE_IT, BONES_QUEST, GLOW_QUEST, PARTICLES_QUEST, TEXT_QUEST, CAMERA_QUEST, ...PIXEL_WAY_QUESTS];
 
 for (const q of QUESTS) registerQuest(q);

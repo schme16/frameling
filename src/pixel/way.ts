@@ -12,6 +12,7 @@ import { current, isDraft } from 'immer';
 import type { Artboard, ArtboardContent, Clip, Doc, Id, Layer, PixelLayer, SpriteWay } from '../core/format';
 import { newDoc, newPixelDrawing, pruneDrawings, uid } from '../core/doc';
 import { addArtboard, artboardsOf, contentOf, ensureArtboards, gapFor, sizeOf } from '../artboards/model';
+import { line } from '../ui/mascot/lines';
 import { START_FRAMES } from './units';
 
 export interface WayInfo {
@@ -94,22 +95,27 @@ export function chipLabel(doc: Doc): string {
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
 /**
- * Quill's one sentence about how a sprite sheet is built. `mode` is what the Export dialog will do with the boards:
- * only the open one, each on its own, all in order as frames, or all packed as sprites.
+ * Quill's one sentence about how a sprite sheet is built (the words are in src/ui/mascot/lines.json). `mode` is what
+ * the Export dialog will do with the boards: only the open one, each on its own, all in order as frames, or all packed
+ * as sprites.
  */
 export function sheetSentence(doc: Doc, mode: 'one' | 'each' | 'joined' | 'atlas', ids: Id[] | null = null): string {
   const way = wayOf(doc);
-  const list = artboardsOf(doc).filter((a) => !ids || ids.includes(a.id));
-  const lengths = new Map(artboardsOf(doc).map((a, i) => [a.id, boardLengths(doc)[i]]));
-  const frames = list.reduce((n, a) => n + (lengths.get(a.id) ?? 1), 0);
+  const all = artboardsOf(doc);
+  const lens = boardLengths(doc);
+  const list = all.filter((a) => !ids || ids.includes(a.id));
+  const frames = list.reduce((n, a) => n + lens[all.indexOf(a)], 0);
   if (boardCount(doc) <= 1 || mode === 'one') {
-    const own = boardCount(doc) <= 1 ? doc.length : (lengths.get(artboardsOf(doc).find((a) => !a.content)?.id ?? '') ?? doc.length);
-    if (way === 'picture' && own <= 1) return 'This is one picture, so the sheet has a single frame.';
-    return `This sheet has 1 sprite${boardCount(doc) > 1 ? `, just the board you have open,` : ''} with ${plural(own, 'frame')}.`;
+    const open = all.findIndex((a) => !a.content);
+    const own = boardCount(doc) <= 1 ? doc.length : lens[Math.max(0, open)];
+    if (way === 'picture' && own <= 1) return line('pixel.sheet.picture');
+    const frames = plural(own, 'frame');
+    if (boardCount(doc) > 1) return line('pixel.sheet.one', { frames });
+    return line('pixel.sheet.animation', { frames });
   }
-  if (mode === 'each') return `This makes ${plural(list.length, 'sheet')}, one per board, named after each board.`;
-  if (mode === 'joined') return `This sheet is ${plural(list.length, 'board')} played as frames of one sprite, ${plural(frames, 'frame')} in all.`;
-  return `This sheet has ${plural(list.length, 'sprite')}, one per board, ${plural(frames, 'frame')} in all.`;
+  if (mode === 'each') return line('pixel.sheet.each', { sheets: plural(list.length, 'sheet') });
+  if (mode === 'joined') return line('pixel.sheet.boards', { boards: plural(list.length, 'board'), frames: plural(frames, 'frame') });
+  return line('pixel.sheet.cast', { sprites: plural(list.length, 'sprite'), frames: plural(frames, 'frame') });
 }
 
 // ---------------------------------------------------------------- starting a sprite

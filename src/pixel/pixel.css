@@ -571,3 +571,15 @@
     animation: none;
   }
 }
+
+/* Quill for scale: he stands next to the sprite on the same baseline, at the same scale. */
+.px-preview-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+}
+.px-preview-quill {
+  display: block;
+  flex: none;
+  pointer-events: auto;
+}

@@ -15,7 +15,14 @@ import { Icon } from '../ui/icons';
 import { BAR_SIZES, hasMirror, hasPerfect, hasShape, paletteIndexOf, sizeSettingFor } from './bar';
 import { docPalette } from './palette';
 import { setPixelSettings, usePixelSettings, type SymmetryMode } from './settings';
+import { Quill, useQuillShown } from '../ui/mascot';
+import { line } from '../ui/mascot/lines';
+import { chipLabel, isPixelDoc, wayOf } from './way';
+import { WayIcon } from './WayDiagrams';
+import { openChangeWay } from './ChangeWay';
+import { makeItMove } from './wayOps';
 import './pixel.css';
+import './way.css';
 
 const run = (id: string) => void getCommand(id)?.run();
 
@@ -127,6 +134,36 @@ function PaletteIndex() {
   );
 }
 
+/** The mode chip: which of the four ways this sprite is built. Click it to change how. */
+function WayChip() {
+  const label = useStore((s) => chipLabel(s.doc));
+  const way = useStore((s) => wayOf(s.doc));
+  return (
+    <button type="button" className="px-way-chip" data-help="pixel-ways" aria-label={`${label}. Change how this sprite is built`} title="How this sprite is built. Click to change it." onClick={openChangeWay}>
+      <WayIcon way={way} />
+      {label}
+      <Icon name="chevron-down" size={14} />
+    </button>
+  );
+}
+
+/** Where the timeline would be for a one-picture sprite: it is folded away, with a friendly way to make it move. */
+export function PictureStrip() {
+  const wsId = dock.use((d) => d.workspaceId);
+  const picture = useStore((s) => isPixelDoc(s.doc) && wayOf(s.doc) === 'picture');
+  const quill = useQuillShown();
+  if (!wsId || !inPixelWorkspace() || !picture) return null;
+  return (
+    <div className="px-picture-strip" role="group" aria-label="One picture" data-help="pixel-ways">
+      {quill && <Quill anim="idle" size={32} />}
+      <span>{line('pixel.folded')}</span>
+      <button type="button" className="io-btn io-primary" data-command="pixel.makeItMove" onClick={makeItMove}>
+        <Icon name="play" size={14} /> Make it move
+      </button>
+    </div>
+  );
+}
+
 export function PixelBar() {
   const wsId = dock.use((d) => d.workspaceId);
   const pixelLayer = useStore((s) => (findLayer(s.doc, s.ui.activeLayerId) ?? s.doc.layers[s.doc.layers.length - 1])?.kind === 'pixel');
@@ -135,9 +172,11 @@ export function PixelBar() {
   const onion = useStore((s) => s.ui.onion.enabled);
   const tiles = useTileUi((s) => s.tileMode);
   const grid = useViewSettings((v) => v.pixelGrid);
+  const pixelDoc = useStore((s) => isPixelDoc(s.doc));
   if (!wsId || !inPixelWorkspace() || !pixelLayer) return null;
   return (
     <div className="px-bar" role="toolbar" aria-label="Pixel art options" data-help="pixel-bar">
+      {pixelDoc && <WayChip />}
       <SizeButtons tool={tool} />
       {hasShape(tool) && <ShapeButtons />}
       {hasPerfect(tool) && (

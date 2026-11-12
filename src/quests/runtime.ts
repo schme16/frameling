@@ -10,6 +10,7 @@ import { playCue } from '../ui/sounds';
 import { watchCommands, type CommandWatch } from './hook';
 import { readProbe } from './probe';
 import { getQuest, questProgress, setStarter, setStopper } from './registry';
+import { PIXEL_QUESTS } from '../pixel/quests-ways';
 
 const source: StateSource = {
   get: () => store().get(),
@@ -60,7 +61,7 @@ engine.on((e) => {
   if (e.kind === 'start') startWatching();
   else if (e.kind === 'stop') stopWatching();
   else if (e.kind === 'step' && !e.skipped) {
-    praise();
+    praise(PIXEL_QUESTS.has(e.quest.id));
     playCue('step');
   }
   else if (e.kind === 'finish') {

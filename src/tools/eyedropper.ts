@@ -11,6 +11,7 @@ import { canvasCamera } from '../camera/ops';
 import { EyedropperOptions } from './options/EyedropperOptions';
 import { noteColorUsed } from './recent';
 import { getToolSettings } from './settings';
+import { toolEvent } from './toolEvents';
 
 let probe: { c: OffscreenCanvas | HTMLCanvasElement; g: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D } | null = null;
 
@@ -91,7 +92,10 @@ export const plainPointer = (e: ToolPointer): ToolPointer => (e.alt ? { ...e, al
 /** The eyedropper for one press made with Alt held over another tool. */
 export const tempEyedropperTool: Tool = {
   ...eyedropperTool,
-  down: (e, ctx) => eyedropperTool.down?.(plainPointer(e), ctx),
+  down: (e, ctx) => {
+    toolEvent('altPick');
+    eyedropperTool.down?.(plainPointer(e), ctx);
+  },
   move: (e, ctx) => eyedropperTool.move?.(plainPointer(e), ctx),
 };
 
