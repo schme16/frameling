@@ -94,7 +94,7 @@ export function allHelp(): HelpTopic[] {
 
 // ---------------------------------------------------------------- panels
 
-export type DockZone = 'left' | 'right' | 'bottom';
+export type DockZone = 'left' | 'right' | 'bottom' | 'top';
 
 export interface PanelDef {
   id: string;

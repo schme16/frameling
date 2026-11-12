@@ -68,7 +68,7 @@ export function syncDynamicCommands(): void {
       id,
       label: `${w.name} workspace`,
       category: 'View',
-      description: w.builtin ? `Arrange the panels for ${w.name.toLowerCase()}ing.` : 'Your saved panel layout.',
+      description: w.about ?? (w.builtin ? `Arrange the panels for ${w.name.toLowerCase()}ing.` : 'Your saved panel layout.'),
       help: 'workspaces',
       keywords: ['layout', 'panels', 'arrange', w.name],
       checked: () => currentWorkspace()?.id === w.id,

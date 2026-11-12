@@ -1,19 +1,23 @@
-// The docked zones (left, right, bottom): tabs you can drag, splitters you can pull, zones that fold away.
+// The docked zones (left, right, bottom, top): tabs you can drag, splitters you can pull, zones that fold away.
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { getPanel, type DockZone } from '../core/registry';
-import { clampSize, DEFAULT_SIZE, dock, hidePanel, movePanel, resizeZone, setActive, toggleCollapsed } from './dock';
+import { clampSize, DEFAULT_SIZE, dock, hidePanel, panelsAway, resizeZone, setActive, toggleCollapsed } from './dock';
+import { dragState, dropIndexFor, startPanelDrag } from './dockDrag';
+import { menuPoint, openDockMenu, panelMenu } from './dockMenus';
 import { Icon } from './icons';
-import { dragging, PanelBoundary } from './dockShared';
+import { PanelBoundary } from './dockShared';
 import { fitTabs, NAMED_PANELS, type TabFit } from './tabFit';
 import { PanelPicker } from './PanelPicker';
 import { RightDock } from './RightDock';
 import { panelPicker, rightStyle, togglePicker } from './rightStyle';
 
-const COLLAPSE_ICON: Record<DockZone, string> = { left: 'chevron-left', right: 'chevron-right', bottom: 'chevron-down' };
-const EXPAND_ICON: Record<DockZone, string> = { left: 'chevron-right', right: 'chevron-left', bottom: 'chevron-up' };
+const COLLAPSE_ICON: Record<DockZone, string> = { left: 'chevron-left', right: 'chevron-right', bottom: 'chevron-down', top: 'chevron-up' };
+const EXPAND_ICON: Record<DockZone, string> = { left: 'chevron-right', right: 'chevron-left', bottom: 'chevron-up', top: 'chevron-down' };
 
 export function DockZoneView({ zone }: { zone: DockZone }) {
   const style = rightStyle.use((v) => v);
+  const away = panelsAway.use((v) => v);
+  if (away) return null;
   if (zone === 'right' && style !== 'tabs') return <RightDock zone={zone} style={style} />;
   return <TabZoneView zone={zone} panelsButton={zone === 'right'} />;
 }
@@ -21,10 +25,11 @@ export function DockZoneView({ zone }: { zone: DockZone }) {
 function TabZoneView({ zone, panelsButton }: { zone: DockZone; panelsButton?: boolean }) {
   const picker = panelPicker.use((v) => (panelsButton ? v : null));
   const z = dock.use((d) => d.layout.zones[zone]);
-  const drag = dragging.use((v) => v);
-  const [dropAt, setDropAt] = useState<number | null>(null);
+  const drag = dragState.use((d) => (d && d.kind !== 'tools' ? d.panels[0] : null));
+  const dropAt = dragState.use((d) => dropIndexFor(d, { zone }, z.tabs.length));
+  const names = dock.use((d) => d.layout.names);
   const bar = useRef<HTMLDivElement>(null);
-  const horizontal = zone === 'bottom';
+  const horizontal = zone === 'bottom' || zone === 'top';
   const measure = useRef<HTMLDivElement>(null);
   const [fit, setFit] = useState<TabFit | null>(null);
   // Where the "+N" list opens (fixed, so the zone's own clipping can't cut it off), or null when it's shut.
@@ -76,48 +81,13 @@ function TabZoneView({ zone, panelsButton }: { zone: DockZone; panelsButton?: bo
     };
   }, [moreOpen]);
 
-  if (!z.tabs.length) {
-    if (!drag) return null;
-    return (
-      <div
-        className={`ui-zone ui-zone-${zone} ui-zone-empty is-target`}
-        onDragOver={(e) => e.preventDefault()}
-        onDrop={(e) => {
-          e.preventDefault();
-          if (drag) movePanel(drag, zone);
-          dragging.set(null);
-        }}
-      >
-        <span>Drop here</span>
-      </div>
-    );
-  }
+  // An empty zone takes no room. While something is dragged, the bands over the canvas edges stand in for it.
+  if (!z.tabs.length) return null;
 
   const active = z.active ?? z.tabs[0];
   const panel = getPanel(active);
 
-  const indexAt = (e: React.DragEvent): number => {
-    const tabs = [...(bar.current?.querySelectorAll<HTMLElement>('.ui-tab') ?? [])];
-    for (const t of tabs) {
-      const r = t.getBoundingClientRect();
-      if (e.clientX < r.left + r.width / 2) return Number(t.dataset.index);
-    }
-    return z.tabs.length;
-  };
-  const onDragOver = (e: React.DragEvent) => {
-    if (!drag) return;
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    setDropAt(indexAt(e));
-  };
-  const onDrop = (e: React.DragEvent) => {
-    if (!drag) return;
-    e.preventDefault();
-    movePanel(drag, zone, dropAt ?? indexAt(e));
-    dragging.set(null);
-    setDropAt(null);
-  };
-  const dropClass = drag ? ' is-target' : '';
+  const dropClass = `${drag ? ' is-target' : ''}${dropAt !== null ? ' is-over' : ''}`;
 
   const shown = fit ? new Set(fit.shown) : null;
   const iconOnly = fit !== null && fit.mode !== 'full';
@@ -126,21 +96,18 @@ function TabZoneView({ zone, panelsButton }: { zone: DockZone; panelsButton?: bo
     if (!p) return null;
     if (shown && !shown.has(i)) return null;
     const on = id === active;
+    const title = names?.[id] ?? p.title;
     return (
       <div
         key={id}
         className={`ui-tab${on && !z.collapsed ? ' is-chosen' : ''}${drag === id ? ' is-dragging' : ''}${dropAt === i && drag ? ' drop-before' : ''}${dropAt === i + 1 && i === z.tabs.length - 1 && drag ? ' drop-after' : ''}`}
         role="presentation"
-        data-index={i}
-        draggable
-        onDragStart={(e) => {
-          e.dataTransfer.setData('text/plain', id);
-          e.dataTransfer.effectAllowed = 'move';
-          dragging.set(id);
-        }}
-        onDragEnd={() => {
-          dragging.set(null);
-          setDropAt(null);
+        data-dock-tab={id}
+        data-panel-id={id}
+        onPointerDown={(e) => startPanelDrag(e, id)}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          openDockMenu(e.clientX, e.clientY, panelMenu(id, { x: e.clientX, y: e.clientY }));
         }}
       >
         <button
@@ -149,13 +116,13 @@ function TabZoneView({ zone, panelsButton }: { zone: DockZone; panelsButton?: bo
           id={`ui-tab-${id}`}
           aria-selected={on && !z.collapsed}
           aria-controls={on && !z.collapsed ? `ui-panel-${id}` : undefined}
-          aria-label={p.title}
+          aria-label={title}
           // One stop per tab strip: Tab lands on the chosen tab, the arrow keys move along.
           tabIndex={on ? 0 : -1}
           className="ui-tab-main"
           data-help={p.help ?? 'panels'}
-          data-tip={p.title}
-          data-tip-desc={z.collapsed ? 'Press to open. Drag to move it.' : 'Drag to move it to another place.'}
+          data-tip={title}
+          data-tip-desc={z.collapsed ? 'Press to open. Drag to move it. Right-click for more.' : 'Drag to move it, out to a window or to another side. Right-click for more.'}
           onClick={() => setActive(zone, id)}
           onKeyDown={(e) => {
             // Delete closes the panel, like the little x does.
@@ -163,6 +130,13 @@ function TabZoneView({ zone, panelsButton }: { zone: DockZone; panelsButton?: bo
               e.preventDefault();
               e.stopPropagation();
               hidePanel(id);
+              return;
+            }
+            if (e.key === 'ContextMenu' || (e.shiftKey && e.key === 'F10')) {
+              e.preventDefault();
+              e.stopPropagation();
+              const at = menuPoint(e.currentTarget);
+              openDockMenu(at.x, at.y, panelMenu(id, at));
               return;
             }
             const n = z.tabs.length;
@@ -179,11 +153,11 @@ function TabZoneView({ zone, panelsButton }: { zone: DockZone; panelsButton?: bo
           }}
         >
           <Icon name={p.icon} size={15} />
-          {flat && !(iconOnly && !on && !fit?.named.includes(i)) && <span className="ui-tab-title">{p.title}</span>}
+          {flat && !(iconOnly && !on && !fit?.named.includes(i)) && <span className="ui-tab-title">{title}</span>}
         </button>
         {on && !z.collapsed && (
           // Kept out of the tab order and away from screen readers: Delete on the tab does the same.
-          <button type="button" className="ui-tab-close" tabIndex={-1} aria-hidden="true" data-tip={`Close ${p.title}`} data-tip-desc="Bring it back from the View menu." onClick={() => hidePanel(id)}>
+          <button type="button" className="ui-tab-close" tabIndex={-1} aria-hidden="true" data-tip={`Close ${title}`} data-tip-desc="Bring it back from the View menu." onClick={() => hidePanel(id)}>
             <Icon name="close" size={12} />
           </button>
         )}
@@ -208,8 +182,8 @@ function TabZoneView({ zone, panelsButton }: { zone: DockZone; panelsButton?: bo
   const style = z.collapsed ? undefined : horizontal ? { height: z.size } : { width: z.size };
 
   return (
-    <section className={`ui-zone ui-zone-${zone}${z.collapsed ? ' is-collapsed' : ''}${dropClass}`} style={style} aria-label={`${zone} panels`} onDragOver={onDragOver} onDrop={onDrop}>
-      <div className="ui-tabbar" ref={bar}>
+    <section className={`ui-zone ui-zone-${zone}${z.collapsed ? ' is-collapsed' : ''}${dropClass}`} style={style} aria-label={`${zone} panels`} data-dock-area="" data-dock-zone={zone}>
+      <div className="ui-tabbar" ref={bar} data-dock-strip="" data-dock-zone={zone} data-dock-tabs={z.tabs.join(',')} data-dock-axis={z.collapsed && !horizontal ? 'y' : 'x'}>
         <div className="ui-tabbar-tabs" role="tablist" aria-label={`${zone} panels`} aria-orientation={z.collapsed && !horizontal ? 'vertical' : 'horizontal'}>
           {tabs}
         </div>
@@ -251,7 +225,7 @@ function TabZoneView({ zone, panelsButton }: { zone: DockZone; panelsButton?: bo
                       <span className="ui-menu-tick">
                         <Icon name={p.icon} size={14} />
                       </span>
-                      <span className="ui-menu-label">{p.title}</span>
+                      <span className="ui-menu-label">{names?.[p.id] ?? p.title}</span>
                     </button>
                   );
                 })}
@@ -288,7 +262,7 @@ function TabZoneView({ zone, panelsButton }: { zone: DockZone; panelsButton?: bo
                 <span className="ui-tab" data-m="full">
                   <span className="ui-tab-main">
                     <Icon name={p.icon} size={15} />
-                    <span className="ui-tab-title">{p.title}</span>
+                    <span className="ui-tab-title">{names?.[id] ?? p.title}</span>
                   </span>
                   {id === activeId && !z.collapsed && <span className="ui-tab-close" />}
                 </span>
@@ -308,8 +282,8 @@ function TabZoneView({ zone, panelsButton }: { zone: DockZone; panelsButton?: bo
       )}
       {picker && <PanelPicker at={picker} side="below" onClose={() => panelPicker.set(null)} />}
       {!z.collapsed && panel && (
-        <div className="ui-panel" role="tabpanel" id={`ui-panel-${active}`} aria-labelledby={`ui-tab-${active}`}>
-          <h2 className="ui-sr-only">{panel.title}</h2>
+        <div className="ui-panel" role="tabpanel" id={`ui-panel-${active}`} aria-labelledby={`ui-tab-${active}`} data-panel-id={active}>
+          <h2 className="ui-sr-only">{names?.[active] ?? panel.title}</h2>
           <PanelBoundary name={panel.title} key={active}>
             <panel.component />
           </PanelBoundary>
@@ -323,9 +297,11 @@ function TabZoneView({ zone, panelsButton }: { zone: DockZone; panelsButton?: bo
 export function Splitter({ zone }: { zone: DockZone }) {
   const z = dock.use((d) => d.layout.zones[zone]);
   const start = useRef<{ pos: number; size: number } | null>(null);
-  if (!z.tabs.length || z.collapsed) return null;
-  const horizontal = zone === 'bottom';
-  const sign = zone === 'left' ? 1 : -1;
+  const away = panelsAway.use((v) => v);
+  if (!z.tabs.length || z.collapsed || away) return null;
+  const horizontal = zone === 'bottom' || zone === 'top';
+  // Dragging right grows the left side, left grows the right side; down grows the top, up grows the bottom.
+  const sign = zone === 'left' || zone === 'top' ? 1 : -1;
 
   return (
     <div
@@ -344,7 +320,7 @@ export function Splitter({ zone }: { zone: DockZone }) {
       onPointerMove={(e) => {
         if (!start.current) return;
         const delta = (horizontal ? e.clientY : e.clientX) - start.current.pos;
-        resizeZone(zone, start.current.size + (horizontal ? -delta : sign * delta));
+        resizeZone(zone, start.current.size + sign * delta);
       }}
       onPointerUp={() => {
         start.current = null;
@@ -356,8 +332,8 @@ export function Splitter({ zone }: { zone: DockZone }) {
       }}
       onDoubleClick={() => resizeZone(zone, DEFAULT_SIZE[zone])}
       onKeyDown={(e) => {
-        const grow = horizontal ? 'ArrowUp' : zone === 'left' ? 'ArrowRight' : 'ArrowLeft';
-        const shrink = horizontal ? 'ArrowDown' : zone === 'left' ? 'ArrowLeft' : 'ArrowRight';
+        const grow = zone === 'top' ? 'ArrowDown' : horizontal ? 'ArrowUp' : zone === 'left' ? 'ArrowRight' : 'ArrowLeft';
+        const shrink = zone === 'top' ? 'ArrowUp' : horizontal ? 'ArrowDown' : zone === 'left' ? 'ArrowLeft' : 'ArrowRight';
         if (e.key !== grow && e.key !== shrink) return;
         e.preventDefault();
         resizeZone(zone, clampSize(zone, z.size + (e.key === grow ? 16 : -16)));

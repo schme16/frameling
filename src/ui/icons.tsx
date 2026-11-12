@@ -535,6 +535,19 @@ const ICONS: Record<string, ReactNode> = {
     </>
   ),
   moon: <path d="M19.5 14.6A8 8 0 0 1 9.4 4.5a8 8 0 1 0 10.1 10.1z" />,
+  // a window floating over another, and a panel docked along the bottom of one
+  float: (
+    <>
+      <rect x="3.5" y="9" width="11.5" height="10" rx="2.2" />
+      <path d="M9 9V7.2a2.2 2.2 0 0 1 2.2-2.2h7.1a2.2 2.2 0 0 1 2.2 2.2v6.6a2.2 2.2 0 0 1-2.2 2.2H15" />
+    </>
+  ),
+  dock: (
+    <>
+      <rect x="3.5" y="4.5" width="17" height="15" rx="2.6" />
+      <path d="M3.5 14.5h17" />
+    </>
+  ),
   workspace: (
     <>
       <rect x="3.5" y="4" width="17" height="16" rx="3" />

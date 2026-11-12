@@ -2840,3 +2840,394 @@ body.ui-resizing * {
   background: var(--panel-2);
   color: var(--text);
 }
+
+/* ------------------------------------------------------------ dock: top zone, floating windows, drag bands */
+
+.ui-zone-top.is-collapsed {
+  height: auto;
+}
+.ui-zone.is-over {
+  outline: 2px solid var(--sunny);
+  outline-offset: -3px;
+}
+
+/* The tool rail on the top or bottom edge, or floating over the canvas. */
+.ui-tools-grip {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 16px;
+  margin: -4px 0 -2px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--faint);
+  cursor: grab;
+}
+.ui-tools-grip:hover,
+.ui-tools-grip:focus-visible {
+  color: var(--text);
+}
+.ui-tools-grip .ui-icon {
+  transform: rotate(90deg);
+}
+.ui-tools.is-sideways {
+  flex-direction: row;
+  width: auto;
+  height: 50px;
+  padding: 0 8px 0 2px;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+:root[data-look='crisp'] .ui-tools.is-sideways {
+  width: auto;
+  height: 44px;
+  padding: 0 6px 0 2px;
+}
+.ui-tools.is-sideways .ui-tools-grip {
+  width: 16px;
+  height: 100%;
+  margin: 0 -2px 0 0;
+}
+.ui-tools.is-sideways .ui-tools-grip .ui-icon {
+  transform: none;
+}
+.ui-float-tools {
+  position: fixed;
+  z-index: 34;
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+.ui-float-tools .ui-tools {
+  border-color: color-mix(in srgb, var(--sunny) 45%, var(--line));
+  box-shadow: none;
+}
+
+/* Floating windows. */
+.ui-float {
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-small);
+  overflow: hidden;
+}
+.ui-float.is-front {
+  border-color: color-mix(in srgb, var(--sunny) 50%, var(--line));
+  box-shadow: var(--shadow);
+}
+.ui-float.is-over,
+.ui-float:has(.is-over) {
+  outline: 2px solid var(--sunny);
+  outline-offset: -3px;
+}
+.ui-float-head {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  background: var(--panel-2);
+  border-bottom: 1px solid var(--line-soft);
+}
+.ui-float-bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 34px;
+  padding: 0 4px 0 2px;
+  cursor: grab;
+}
+.ui-float-grip {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-small);
+  background: transparent;
+  color: var(--faint);
+  cursor: grab;
+}
+.ui-float-grip:hover,
+.ui-float-grip:focus-visible {
+  color: var(--text);
+  background: var(--hover-bg);
+}
+.ui-float-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 800;
+  font-size: var(--fs-small);
+  cursor: default;
+}
+.ui-float-fill {
+  flex: 1;
+}
+.ui-float-btns {
+  flex: none;
+  display: flex;
+  gap: 0;
+}
+.ui-float-btns .ui-icon-btn {
+  width: 26px;
+  height: 26px;
+}
+.ui-float-row {
+  padding: 0 4px;
+  border-top: 1px solid var(--line-soft);
+}
+.ui-float-tabs {
+  display: flex;
+  gap: 2px;
+  min-width: 0;
+  overflow: hidden;
+  padding-top: 3px;
+}
+.ui-float-compact .ui-float-tabs {
+  flex: 1;
+  align-self: flex-end;
+}
+.ui-float-compact .ui-float-bar {
+  align-items: flex-end;
+  padding-top: 3px;
+}
+.ui-float-compact .ui-float-grip,
+.ui-float-compact .ui-float-btns {
+  align-self: center;
+}
+.ui-float-body {
+  flex: 1;
+  min-height: 0;
+}
+.ui-float-rz {
+  position: absolute;
+  z-index: 2;
+}
+.ui-float-rz-n,
+.ui-float-rz-s {
+  left: 10px;
+  right: 10px;
+  height: 6px;
+  cursor: ns-resize;
+}
+.ui-float-rz-n {
+  top: 0;
+}
+.ui-float-rz-s {
+  bottom: 0;
+}
+.ui-float-rz-e,
+.ui-float-rz-w {
+  top: 10px;
+  bottom: 10px;
+  width: 6px;
+  cursor: ew-resize;
+}
+.ui-float-rz-e {
+  right: 0;
+}
+.ui-float-rz-w {
+  left: 0;
+}
+.ui-float-rz-ne,
+.ui-float-rz-nw,
+.ui-float-rz-se,
+.ui-float-rz-sw {
+  width: 12px;
+  height: 12px;
+}
+.ui-float-rz-ne {
+  top: 0;
+  right: 0;
+  cursor: nesw-resize;
+}
+.ui-float-rz-nw {
+  top: 0;
+  left: 0;
+  cursor: nwse-resize;
+}
+.ui-float-rz-se {
+  bottom: 0;
+  right: 0;
+  cursor: nwse-resize;
+}
+.ui-float-rz-sw {
+  bottom: 0;
+  left: 0;
+  cursor: nesw-resize;
+}
+
+/* While dragging: the bands to dock on, the ghost of a new window, and the label by the pointer. */
+body.dock-dragging {
+  user-select: none;
+  cursor: grabbing;
+}
+body.dock-dragging * {
+  cursor: grabbing !important;
+}
+.dock-edge {
+  position: fixed;
+  z-index: 18;
+  display: grid;
+  place-items: center;
+  border: 2px dashed color-mix(in srgb, var(--sunny) 70%, transparent);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--sunny) 12%, transparent);
+  color: var(--text);
+  font-weight: 800;
+  font-size: var(--fs-small);
+  text-align: center;
+  transition: background 0.12s var(--ease), border-color 0.12s var(--ease);
+}
+.dock-edge-left span,
+.dock-edge-right span {
+  writing-mode: vertical-rl;
+}
+.dock-edge-left span {
+  transform: rotate(180deg);
+}
+.dock-edge.is-over {
+  border-style: solid;
+  border-color: var(--sunny);
+  background: color-mix(in srgb, var(--sunny) 34%, transparent);
+}
+.dock-ghost {
+  position: fixed;
+  z-index: 19;
+  width: 380px;
+  height: 320px;
+  max-width: 60vw;
+  max-height: 60vh;
+  border: 2px dashed var(--sunny);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--sunny) 10%, transparent);
+  pointer-events: none;
+}
+.dock-chip {
+  position: fixed;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 320px;
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--raised);
+  box-shadow: var(--shadow);
+  font-size: var(--fs-small);
+  white-space: nowrap;
+  pointer-events: none;
+}
+.dock-chip strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dock-chip span {
+  color: var(--muted);
+}
+
+/* The dock's right-click menu and the name box. */
+.ui-dock-menu {
+  position: fixed;
+  z-index: 60;
+  min-width: 230px;
+}
+.ui-dock-menu-head {
+  padding: 4px 10px 2px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+}
+.ui-menu-item.is-danger {
+  color: var(--danger, #d94c4c);
+}
+.ui-dock-rename {
+  position: fixed;
+  z-index: 61;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 260px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--raised);
+  box-shadow: var(--shadow);
+}
+.ui-dock-rename label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-weight: 700;
+  font-size: var(--fs-small);
+}
+.ui-dock-rename-row {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+/* Preferences > Workspaces */
+.ui-ws {
+  flex-wrap: wrap;
+  row-gap: 4px;
+}
+.ui-ws-text {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 200px;
+  min-width: 0;
+  padding: 3px 0;
+}
+.ui-ws-text .ui-tag {
+  margin-left: 8px;
+}
+.ui-ws-about {
+  color: var(--muted);
+  font-size: var(--fs-small);
+}
+.ui-ws-acts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-left: auto;
+}
+.ui-ws-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 18px 0 8px;
+  font-size: var(--fs-small);
+}
+.ui-ws-head span {
+  color: var(--muted);
+  font-weight: 600;
+}
+.ui-ws-share {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.ui-ws-paste textarea {
+  width: 100%;
+  resize: vertical;
+  font-family: ui-monospace, monospace;
+  font-size: var(--fs-small);
+}
+.ui-float-compact .ui-float-fill {
+  display: none;
+}

@@ -6,6 +6,24 @@ import { createStore } from './mini';
 /** The panel being dragged, if any. */
 export const dragging = createStore<string | null>(null);
 
+/** The panel the person last pressed in or tabbed into, so "move this panel" commands know which one. */
+export const lastPanel = createStore<string | null>(null);
+
+/** Follows where the person works. Panel bodies, tabs, rail items and Properties sections carry `data-panel-id`. */
+export function installPanelFocus(): () => void {
+  const note = (e: Event) => {
+    const el = e.target instanceof Element ? e.target.closest('[data-panel-id]') : null;
+    const id = el?.getAttribute('data-panel-id');
+    if (id) lastPanel.set(id);
+  };
+  document.addEventListener('pointerdown', note, true);
+  document.addEventListener('focusin', note, true);
+  return () => {
+    document.removeEventListener('pointerdown', note, true);
+    document.removeEventListener('focusin', note, true);
+  };
+}
+
 /** One broken panel shouldn't take the window with it. */
 export class PanelBoundary extends Component<{ children: ReactNode; name: string }, { error: string | null }> {
   state = { error: null as string | null };

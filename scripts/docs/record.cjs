@@ -6,6 +6,7 @@
 // The renderer defaults to dist/renderer. Pass --renderer to point at a private `vite build --outDir` so a
 // capture never races someone else's build. The steps file is a JSON array:
 //   {"eval": "js"}  {"log": "js"} (prints the result)  {"wait": ms}  {"click": [x, y]}  {"key": "g", "mods": ["control"]}
+//   {"down": [x, y]} {"held": [x, y]} {"up": [x, y]}      press, move with the button held, release (for a shot mid-drag)
 //   {"drag": [[x, y], ...], "steps": 6, "delay": 8, "mods": ["shift"]}   delay is the ms between mouse moves, so slow
 //                                                       strokes look drawn; mods are held down through the drag
 //   {"shot": "name", "crop": [x, y, w, h]}              PNG of the window (cropped if asked), or "el": "css selector", "pad": 12
@@ -83,6 +84,12 @@ async function runSteps(win, steps) {
       await sleep(30);
       send({ type: 'mouseUp', x, y, button: 'left', clickCount: 1 });
       await sleep(s.after ?? 80);
+    } else if (s.down || s.held || s.up) {
+      // Hold the button over several steps, for a shot in the middle of a drag: down, then held moves, then up.
+      const [x, y] = s.down || s.held || s.up;
+      if (s.down) send({ type: 'mouseMove', x, y });
+      send({ type: s.down ? 'mouseDown' : s.up ? 'mouseUp' : 'mouseMove', x, y, button: 'left', clickCount: 1, modifiers: s.held ? ['leftButtonDown'] : [] });
+      await sleep(s.after ?? 60);
     } else if (s.move) {
       send({ type: 'mouseMove', x: s.move[0], y: s.move[1] });
       await sleep(s.after ?? 80);
