@@ -60,9 +60,9 @@ Some things PDF can't draw as shapes come in as pictures at twice the page size:
     title: 'Illustrator (.ai)',
     section: 'Exporting',
     media: 'export-pdf.png',
-    summary: 'A .ai file that Adobe Illustrator opens as its own, with your layers and folders as real Illustrator layers and every shape editable.',
+    summary: 'A .ai file that Adobe Illustrator opens as its own, with your layers and folders as real Illustrator layers, every shape editable and your text as live text.',
     keywords: ['ai', 'illustrator', 'adobe', 'vector', 'layers', 'artboards', 'gradients', 'affinity designer', 'inkscape', 'coreldraw'],
-    body: `**Illustrator** saves an \`.ai\` file that opens in Adobe Illustrator as a real Illustrator document: your layers and folders arrive as Illustrator layers with their names, every shape is a path you can select, reshape and recolour, and gradients are gradients.
+    body: `**Illustrator** saves an \`.ai\` file that opens in Adobe Illustrator as a real Illustrator document: your layers and folders arrive as Illustrator layers with their names, every shape is a path you can select, reshape and recolour, gradients are gradients, and your text is live text.
 
 ## How to open it
 
@@ -81,10 +81,10 @@ When the animation has more than one frame, the export window asks how to put th
 ## What comes across
 
 - **Layers and folders:** names (accents and other scripts too), folders holding their layers (and folders inside folders, as layers inside layers), each layer's opacity and blend mode, and the folder's.
-- **Shapes:** fills, lines with their width, joins and caps, see-through colours, and linear and radial gradients with see-through stops. A shape with a fill and a line is one path, and shapes with holes are compound paths.
-- **Text** comes as letter outlines, not live text, and a symbol copy is plain shapes.
+- **Shapes:** fills, lines with their width, joins and caps, see-through colours, and linear and radial gradients with see-through stops. A line painted with a gradient is a real gradient line. A shape with a fill and a line is one path, and shapes with holes are compound paths. A symbol copy is plain shapes.
+- **Text** stays live text you can retype, with its font, size, colour, spacing, alignment and opacity. Illustrator needs the font installed: without it (Frameling's Nunito and Inter are not on most computers) it shows another font and keeps the name. For the same letters everywhere, use **Convert to shapes** first. Text animators come as outlines.
 - **Pictures:** pixel layers, effects, clipping, masks and bending on bones come in as pictures, with their see-through parts.
-- **Hidden layers and folders** arrive as hidden Illustrator layers with their art inside, so you can switch them on there. A visible layer inside a hidden folder stays on its own. Programs that only read the PDF part don't show them, and the Pages way (a plain PDF) leaves them out.
+- **Hidden layers and folders** arrive as hidden Illustrator layers with their art inside, so you can switch them on there. A visible layer inside a hidden folder stays on its own. A folder with an effect or a mask is one picture, and its hidden layers wait in a hidden folder beside it. Programs that read only the PDF part, and the Pages way, leave them out.
 
 ## Good to know
 

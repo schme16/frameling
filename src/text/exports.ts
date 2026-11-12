@@ -61,16 +61,20 @@ function textToLottie(kit: LottieKit, frames: TextShape[]): ReturnType<NonNullab
 
 export const textExport: ShapeExport<TextShape> = {
   svg: textToSvg,
-  // Letters become outlines, filled in the text's colour.
-  pdf(cx, _ctx, s) {
+  // Letters become outlines, filled in the text's colour. The Illustrator data also gets the live text (when the text stays
+  // put), marked in the content so the PDF part's readers pass it by.
+  pdf(cx, ctx, s) {
+    const live = ctx.includeHidden && !isAnimatedText(s) && s.text.trim() && s.opacity > 0;
     const paths = textOutlines(s);
-    if (!paths.length) return;
+    if (!paths.length && !live) return;
+    if (live) cx.push(`/FrText << /I ${ctx.writer.live({ kind: 'text', text: s.text, font: s.font, weight: s.weight, italic: !!s.italic, size: s.size, color: s.color, align: s.align, lineHeight: s.lineHeight ?? 1.2, letterSpacing: s.letterSpacing ?? 0, opacity: s.opacity, matrix: [...textMatrix(s)] })} >> BDC`);
     cx.push('q');
-    if (cx.fillColor(s.color, s.opacity)) {
+    if (paths.length && cx.fillColor(s.color, s.opacity)) {
       cx.subPaths(paths);
       cx.push('f*');
     }
     cx.push('Q');
+    if (live) cx.push('EMC');
   },
   lottie: textToLottie,
 };

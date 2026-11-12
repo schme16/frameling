@@ -8,8 +8,8 @@
 //   ILLUSTRATOR_PREFIX   the Wine prefix Illustrator is installed in (the folder with drive_c)
 //   WINE_RUNNER          the Wine build to run it with (a folder with bin/wine). Found from the Lutris game file for the
 //                        prefix when not set.
-//   --only=a,b           only these cases (layers-folders nested-folders hidden-layers paths gradients masks text symbols frames scale2-transparent
-//                        text-big artboards stress kitchen-sink bouncing-ball bouncing-logo)
+//   --only=a,b           only these cases (layers-folders nested-folders hidden-layers hidden-in-effect-folder paths gradients masks text text-live
+//                        text-big symbols frames scale2-transparent artboards stress kitchen-sink bouncing-ball bouncing-logo)
 //   --keep-going         do not refuse when Illustrator or Wine seems to be running for the prefix (never use this
 //                        when someone may be working in Illustrator)
 //
@@ -321,6 +321,26 @@ function judge(t, got, entry) {
   const ex = t.expect;
   note(`artboards ${f.artboards.map((a) => `${a.w}x${a.h}`).join(',')}, layers ${f.layers.map((l) => l.name).join(' | ')}, paths ${f.counts.paths}, compound ${f.counts.compound}, groups ${f.counts.groups}, text ${f.counts.texts}, rasters ${f.counts.rasters}, fills ${JSON.stringify(f.fills)}`);
   if (!t.pdfOnly && (t.caseId === 'layers-folders' || t.caseId === 'nested-folders' || t.caseId === 'frames-artboards')) layerTreePicture(t, f);
+  // Live text: a text frame for each text, with the words, the font, the size, the colour and the alignment.
+  const textFrames = (f.textLines ?? []).map((line) => {
+    const o = Object.fromEntries(line.split('\t').map((kv) => [kv.slice(0, kv.indexOf('=')), kv.slice(kv.indexOf('=') + 1)]));
+    const m = /(\d+),(\d+),(\d+)/.exec(o.fill ?? '');
+    return { contents: o.contents ?? '', kind: o.kind ?? '', font: o.font ?? '', size: Number(o.size), tracking: Number(o.tracking), leading: Number(o.leading), justification: o.just ?? '', opacity: Number(o.opacity), rgb: m ? [Number(m[1]), Number(m[2]), Number(m[3])] : null };
+  });
+  for (const want of ex.texts ?? []) {
+    const got = textFrames.find((x) => x.contents === want.contents);
+    if (!check(!!got, `no text frame says "${want.contents}" (found: ${textFrames.map((x) => JSON.stringify(x.contents)).join(', ') || 'none'})`)) continue;
+    check(got.kind.endsWith('POINTTEXT'), `"${want.contents}" is ${got.kind}, expected point text`);
+    if (want.font) check(got.font === want.font, `"${want.contents}" is in ${got.font}, expected ${want.font}`);
+    if (want.size) check(Math.abs(got.size - want.size) < 0.05, `"${want.contents}" is ${got.size} pt, expected ${want.size}`);
+    if (want.rgb) check(!!got.rgb && got.rgb.every((v, i) => Math.abs(v - want.rgb[i]) <= 1), `"${want.contents}" is coloured ${JSON.stringify(got.rgb)}, expected ${JSON.stringify(want.rgb)}`);
+    if (want.tracking !== undefined) check(Math.abs(got.tracking - want.tracking) <= 1, `"${want.contents}" has tracking ${got.tracking}, expected ${want.tracking}`);
+    if (want.opacity !== undefined) check(Math.abs(got.opacity - want.opacity) < 1, `"${want.contents}" has opacity ${got.opacity}, expected ${want.opacity}`);
+    if (want.align) check(got.justification.endsWith(want.align), `"${want.contents}" is aligned ${got.justification}, expected ${want.align}`);
+  }
+  if (ex.noText) check(textFrames.length === 0, `expected no live text, found ${textFrames.length} text frames`);
+  // Lines painted with a gradient come as real gradient strokes.
+  if (ex.gradientStrokes) check((f.strokes ?? []).filter((x) => x.kind === 'GradientColor').length >= ex.gradientStrokes, `expected ${ex.gradientStrokes} gradient stroke(s), strokes found: ${(f.strokes ?? []).map((x) => x.kind).join(', ')}`);
   const boards = t.artboards ?? 1;
   check(f.artboards.length === boards, `expected ${boards} artboard${boards === 1 ? '' : 's'}, found ${f.artboards.length}`);
   const sizeWanted = ex.size ?? null;

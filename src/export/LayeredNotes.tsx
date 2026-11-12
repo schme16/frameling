@@ -1,7 +1,7 @@
 // What the PSD, PDF, Illustrator and ProRes exports keep, in a sentence or two, with a link to the full help.
 import type { Doc } from '../core/format';
 import { openHelp } from '../ui/overlays';
-import { flatPlan } from './layered';
+import { flatPlan, pictureCount } from './layered';
 
 const NOTES: Partial<Record<string, { legend: string; text: string; help: string; link: string }>> = {
   psd: {
@@ -18,7 +18,7 @@ const NOTES: Partial<Record<string, { legend: string; text: string; help: string
   },
   ai: {
     legend: 'For Illustrator',
-    text: 'Illustrator opens it as its own file, with every shape editable, your layers and folders as real Illustrator layers, and gradients as gradients. Hidden layers and folders come in hidden. Other programs read it as a PDF without them.',
+    text: 'Illustrator opens it as its own file, with every shape editable, your layers and folders as real Illustrator layers, gradients as gradients and your text as live text (it needs the text\'s font installed, or it shows another one). Hidden layers and folders come in hidden. Other programs read it as a PDF, with letter outlines and without the hidden layers.',
     help: 'export-illustrator',
     link: 'How to open it',
   },
@@ -33,7 +33,7 @@ const NOTES: Partial<Record<string, { legend: string; text: string; help: string
 export function LayeredNotes({ format, doc }: { format: string; doc: Doc }) {
   const n = NOTES[format];
   if (!n) return null;
-  const pictures = format === 'pdf' || format === 'ai' ? flatPlan(doc).filter((u) => u.kind === 'picture').length : 0;
+  const pictures = format === 'pdf' || format === 'ai' ? pictureCount(flatPlan(doc, 0, format === 'ai')) : 0;
   return (
     <fieldset>
       <legend>{n.legend}</legend>

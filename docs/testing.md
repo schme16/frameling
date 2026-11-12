@@ -326,7 +326,7 @@ ILLUSTRATOR_PREFIX=/path/to/wine/prefix xvfb-run -a -s "-screen 0 1600x1000x24" 
 |---|---|
 | `ILLUSTRATOR_PREFIX` | The Wine prefix Illustrator is installed in (the folder with `drive_c`). |
 | `WINE_RUNNER` | The Wine build to run it with (a folder with `bin/wine`). Found from the Lutris game file for the prefix when not set. |
-| `--only=a,b` | Cases: `layers-folders hidden-layers paths gradients gradients-pdf masks text text-big symbols frames frames-files frames-artboards frames-one scale2-transparent artboards stress kitchen-sink bouncing-ball bouncing-logo`. |
+| `--only=a,b` | Cases: `layers-folders nested-folders hidden-layers hidden-in-effect-folder paths gradients gradients-pdf masks text text-live text-big symbols frames frames-files frames-artboards frames-one scale2-transparent artboards stress kitchen-sink bouncing-ball bouncing-logo`. |
 | `--keep-going` | Run even if something already runs in the prefix (never when someone may be using Illustrator). |
 
 It refuses to start when any process has the prefix as its `WINEPREFIX`. Illustrator runs in a Wine virtual desktop
@@ -344,7 +344,7 @@ Illustrator takes about 20 seconds to start. Cases with `expect.pdfReader` also 
 The cases cover the four ways an animation goes into `.ai` (`aiFrames` in the export settings): `frames-one` (this frame),
 `frames-files` (a zip of one file per frame, each opened), `frames-artboards` (one file with an artboard per frame, each
 artboard exported and compared), and `frames` / `gradients-pdf` (pages: a plain PDF, which Illustrator imports as groups
-without layer names, so only the pictures are compared). `text-big` draws text at 4 times the size to show the outlines.
+without layer names, so only the pictures are compared). Text is live Illustrator text in the data: `text-live` (Arial, which the Wine prefix has) checks each text frame's words, font, size, colour, tracking, alignment and place, and `text` does the same for Nunito, which Illustrator does not have (it keeps the font name and shows another font, so its picture limit is looser). `text-big` draws text at 4 times the size as "Pages" (a plain PDF, no live text) to show the letter outlines of the PDF part. `gradients` checks that a line painted with a gradient is a real gradient stroke, and `hidden-in-effect-folder` that hidden layers inside a folder with an effect stay as hidden layers.
 
 What Illustrator does with the file: it holds Illustrator's own data (the page's `/PieceInfo /Illustrator /Private`
 streams, written by `src/export/ai-native.ts`), so Illustrator opens it as its own document, with layers, sublayers,
@@ -353,6 +353,8 @@ layer names are dropped (one "Layer 1", with a group per Frameling layer or fold
 with several pages asks "PDF Import Options". Probing the format: save a small file from Illustrator itself with an
 ExtendScript (`doc.saveAs` with `Compatibility.ILLUSTRATOR17` and `compressed = false`) and read its `AIPrivateData`
 streams; the layer, path, gradient and raster operators in `ai-native.ts` were worked out that way.
+
+Live text (`ai-text.ts`) is in the setup part of the data, as `%AI11_BeginTextDocument` with one `/AI11TextDocument : /ASCII85Decode` block: the text engine's document, nested dictionaries with numbers for keys. Facts found by saving texts from Illustrator and decoding that block: whole numbers and reals are different types (a size written `36` is read as 36/65536, write `36.0`); the fill is a `/SimplePaint` with `[alpha r g b]` (a `/CAITextPaint` without its id string is ignored); each story has a text ending in a return, a character run, an optional paragraph run (`/0` is 0 left, 1 right, 2 centre) and a layout cache that may be an empty list (Illustrator lays the text out itself, but a missing cache key hangs it); each frame has an origin and a matrix `[a b c d tx ty]` in a y down space whose (0, 0) is the file's (0, 0) moved by the ruler origin (8191 less half the artboard, plus a half point). The layer item only says which story it is (`/AI11Text` with `/StoryIndex`). Probe by decoding with a small script: ASCII85 the lines after `/AI11TextDocument`, each with its leading `%` taken off.
 
 ## Effects pixels: scripts/e2e/effects.cjs
 

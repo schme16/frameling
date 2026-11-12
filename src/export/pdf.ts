@@ -136,6 +136,11 @@ function stopsFunction(stops: Gradient['stops'], comp: (c: Color) => string): st
   return `<< /FunctionType 3 /Domain [0 1] /Functions [${fns.join(' ')}] /Bounds [${bounds.map(num).join(' ')}] /Encode [${fns.map(() => '0 1').join(' ')}] >>`;
 }
 
+/** What Illustrator's own data gets in place of the outlines the PDF part draws. */
+export type LiveInfo =
+  | { kind: 'text'; text: string; font: string; weight: number; italic: boolean; size: number; color: Color; align: 'left' | 'center' | 'right'; lineHeight: number; letterSpacing: number; opacity: number; matrix: number[] }
+  | { kind: 'stroke'; paths: SubPath[]; width: number; join: 'miter' | 'round' | 'bevel'; cap: 'butt' | 'round' | 'square'; gradient: Gradient; opacity: number };
+
 /** Collects objects and writes the file with its cross-reference table. */
 export class PdfWriter {
   private objs: Obj[] = [];
@@ -153,6 +158,8 @@ export class PdfWriter {
   readonly shadingInfo = new Map<string, Gradient>();
   readonly formInfo = new Map<string, string>();
   readonly imageInfo = new Map<string, RawImage>();
+  /** Text and gradient lines drawn twice for the Illustrator data: the PDF part has outlines, the data has the real thing (marked in the content as `/FrText << /I n >> BDC`). */
+  readonly liveInfo = new Map<number, LiveInfo>();
   /** The shared resources dictionary every page and form points at (written last). */
   readonly resId: number;
 
@@ -196,6 +203,13 @@ export class PdfWriter {
       this.gsInfo.set(name, { fill, stroke, blend, fade: false });
     }
     return name;
+  }
+
+  /** Notes what a marked piece of the content stands for in Illustrator's data; returns its number. */
+  live(info: LiveInfo): number {
+    const id = this.liveInfo.size + 1;
+    this.liveInfo.set(id, info);
+    return id;
   }
 
   /** A shading (a gradient) as a resource, shared when the same one comes up again. Returns its name. */
@@ -528,6 +542,7 @@ function drawShape(cx: Content, ctx: PdfFrameContext, s: Shape): void {
     if (s.stroke && s.stroke.width > 0 && s.strokeGradient) {
       // A gradient line: the line's own outline clips the gradient (PDF can only shade areas).
       const st = s.stroke;
+      if (ctx.includeHidden) cx.push(`/FrStroke << /I ${ctx.writer.live({ kind: 'stroke', paths: s.paths, width: st.width, join: st.join, cap: st.cap, gradient: s.strokeGradient, opacity: s.opacity })} >> BDC`);
       cx.push('q');
       cx.shade(s.strokeGradient, s.opacity, 'W', (c) => {
         for (const sp of s.paths)
@@ -540,6 +555,7 @@ function drawShape(cx: Content, ctx: PdfFrameContext, s: Shape): void {
             }
       });
       cx.push('Q');
+      if (ctx.includeHidden) cx.push('EMC');
     } else if (s.stroke && s.stroke.width > 0 && cx.strokeColor(s.stroke.color, s.opacity)) {
       cx.push(`${num(s.stroke.width)} w ${JOIN[s.stroke.join] ?? 1} j ${CAP[s.stroke.cap] ?? 1} J`);
       cx.subPaths(s.paths);
