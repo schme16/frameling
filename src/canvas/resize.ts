@@ -9,7 +9,7 @@
  * by steps that keep every art pixel a whole number of stage pixels, so pixel art never goes blurry.
  */
 import type { CameraDrawing, Cel, Doc, Drawing, Guide, Layer, LayerEffect, PixelDrawing, Shape, SymbolDef, TilemapDrawing, VectorDrawing } from '../core/format';
-import { DEFAULT_TILE_SIZE } from '../core/doc';
+import { DEFAULT_TILE_SIZE, tileOrigin } from '../core/doc';
 import { EFFECTS } from '../effects/model';
 import { scaleBy, transformShape, translate, type Matrix } from './geometry';
 
@@ -216,7 +216,8 @@ export function resizeCanvas(doc: Doc, w: number, h: number, anchor: Anchor): Re
       const ox = stage ? Math.round(dx / tw) : 0;
       const oy = stage ? Math.round(dy / th) : 0;
       if (stage && (ox * tw !== dx || oy * th !== dy)) notes.add('tile-shift');
-      drawings[id] = regridTiles(d, Math.max(1, Math.ceil(w / tw)), Math.max(1, Math.ceil(h / th)), ox, oy);
+      const to = tileOrigin(doc, layer.pixelSize);
+      drawings[id] = regridTiles(d, Math.max(1, Math.ceil((w - to.x) / tw)), Math.max(1, Math.ceil((h - to.y) / th)), ox, oy);
     }
   }
   if (w < doc.width || h < doc.height) notes.add('cropped');
@@ -263,7 +264,10 @@ export function scaleArtwork(doc: Doc, w: number, h: number): ResizeResult {
     if (d.kind === 'vector' && o.stage) drawings[id] = d.shapes.length ? { ...d, shapes: d.shapes.map((s) => mapShape(s, m)) } : d;
     else if (d.kind === 'camera' && o.stage) drawings[id] = { ...d, view: { ...d.view, x: d.view.x * kx, y: d.view.y * ky } };
     else if (d.kind === 'pixel' && (layer.kind === 'pixel' || layer.kind === 'tilemap')) drawings[id] = regridPixels(d, Math.ceil(w / layer.pixelSize), Math.ceil(h / layer.pixelSize), 0, 0);
-    else if (d.kind === 'tilemap' && layer.kind === 'tilemap') drawings[id] = regridTiles(d, Math.max(1, Math.ceil(w / (tile.w * layer.pixelSize))), Math.max(1, Math.ceil(h / (tile.h * layer.pixelSize))), 0, 0);
+    else if (d.kind === 'tilemap' && layer.kind === 'tilemap') {
+      const to = tileOrigin(doc, layer.pixelSize);
+      drawings[id] = regridTiles(d, Math.max(1, Math.ceil((w - to.x) / (tile.w * layer.pixelSize))), Math.max(1, Math.ceil((h - to.y) / (tile.h * layer.pixelSize))), 0, 0);
+    }
     // Poses on bones layers hold moves as well as turns.
     const nd = drawings[id];
     if (nd.kind === 'vector' && nd.pose && o.stage) {

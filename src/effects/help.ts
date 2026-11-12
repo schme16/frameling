@@ -59,7 +59,7 @@ For a layer in a [folder](help:layer-folders), pick **Folder** at the top of the
     section: 'Effects',
     media: 'blend-modes.png',
     summary: 'Make a layer darken like ink, lighten like light, glow, or only colour what is under it. Set it at the top of the Effects panel.',
-    keywords: ['blend', 'blend mode', 'multiply', 'screen', 'overlay', 'add', 'lighter', 'soft light', 'hard light', 'difference', 'colour', 'color', 'hue', 'luminosity', 'mix'],
+    keywords: ['blend', 'blend mode', 'multiply', 'screen', 'overlay', 'add', 'lighter', 'soft light', 'hard light', 'difference', 'colour', 'color', 'hue', 'luminosity', 'mix', 'subtract', 'divide'],
     body: `Normally a layer covers what is under it, like paint. A **blend mode** makes it mix instead.
 
 Pick the layer, open the **Effects** panel and click **Blend**. Each mode says what it does. The ones you'll use most:
@@ -69,6 +69,7 @@ Pick the layer, open the **Effects** panel and click **Blend**. Each mode says w
 - **Glow brighter** (Add): colours add up towards white. Fire, sparks, magic, lasers.
 - **Boost contrast** (Overlay): darks darker, lights lighter. Texture and mood.
 - **Colour only** (Colour): paints its colour onto the shading underneath. Tint a grey drawing.
+- **Glow brighter, plain** (Linear dodge), **Take away** (Subtract) and **Brighten by dividing** (Divide): what Aseprite's Addition, Subtract and Divide import as, mixed exactly as it does. SVG, Lottie and PDF show Subtract and Divide as Normal.
 
 A blend mode mixes with **everything under the layer**, including the stage colour. In a [folder](help:layer-folders) that has its own blend mode or see-through, layers only mix with the folder's other layers.
 

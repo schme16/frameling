@@ -38,7 +38,6 @@ Search for **Use palette from an Aseprite file** in the command palette (Ctrl+K)
 
 After an import, a message says **See what changed** whenever something couldn't be matched exactly. Typical cases:
 
-- **Subtract and Divide** blend modes don't exist in Frameling, so those layers blend normally.
 - **Slices** (including 9-patch and pivots) are kept in the notes but not shown.
 - **Groups inside groups** become one folder. Hiding, fading and names carry over.
 - Anything drawn **outside the canvas** is cropped.

@@ -57,10 +57,10 @@ describe.skipIf(!BIN)('files made by the real Aseprite', () => {
   afterAll(() => rmSync(path.dirname(dir), { recursive: true, force: true }));
 
   it('made every fixture', () => {
-    expect(names.sort()).toEqual(['blends', 'gray', 'groups', 'indexed', 'linked', 'meta', 'rgba', 'tilemap']);
+    expect(names.sort()).toEqual(['blends', 'gray', 'groups', 'indexed', 'linked', 'meta', 'rgba', 'tilegrid', 'tilemap']);
   });
 
-  for (const name of ['blends', 'gray', 'groups', 'indexed', 'linked', 'meta', 'rgba', 'tilemap']) {
+  for (const name of ['blends', 'gray', 'groups', 'indexed', 'linked', 'meta', 'rgba', 'tilegrid', 'tilemap']) {
     it(`${name}: every layer of every frame matches Aseprite's own picture`, () => {
       const file = parseAseprite(new Uint8Array(readFileSync(path.join(dir, `${name}.aseprite`))));
       const { doc } = asepriteDoc(file, name);
@@ -127,6 +127,10 @@ describe.skipIf(!BIN)('files made by the real Aseprite', () => {
     const tm = open('tilemap');
     expect(tm.layers.map((l) => l.kind)).toEqual(['pixel', 'tilemap', 'pixel']);
     expect(tm.tileset!.tiles).toHaveLength(2);
+    // A tile grid that starts at the header's grid x and y: the maps on it are tiles, the one off it is flat pixels.
+    const tg = open('tilegrid');
+    expect(tg.layers.map((l) => l.kind)).toEqual(['pixel', 'tilemap', 'pixel']);
+    expect([tg.tileset!.gridX, tg.tileset!.gridY]).toEqual([2, 3]);
     const ix = open('indexed');
     expect(ix.palette!.colors).toHaveLength(8);
     expect(ix.palette!.colors[5]).toBe('#09090980');

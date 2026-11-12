@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { newDoc, newTilemapDrawing, newTilemapLayer, pruneDrawings } from '../../src/core/doc';
+import { newDoc, newTilemapDrawing, newTilemapLayer, pruneDrawings, tileOrigin, tilemapGrid } from '../../src/core/doc';
 import { TILE_FLIP_D, TILE_FLIP_X, TILE_FLIP_Y, type PixelDrawing } from '../../src/core/format';
 import { loadFile, saveFile } from '../../src/io/file';
 import {
@@ -9,6 +9,7 @@ import {
   cellKey,
   cellLine,
   deleteTile,
+  docToCell,
   duplicateTile,
   ensureTileset,
   fillCellRect,
@@ -182,5 +183,58 @@ describe('files', () => {
     const doc = newDoc();
     const back = loadFile(saveFile(doc)).doc;
     expect(back.tileset).toBeUndefined();
+  });
+});
+
+describe('a tile grid that starts off the corner', () => {
+  const make = () => {
+    const doc = newDoc({ name: 't', width: 10, height: 6 });
+    const ts = ensureTileset(doc, 4, 4);
+    ts.gridX = 1;
+    ts.gridY = 3;
+    return doc;
+  };
+
+  it('starts its first slot before the stage so the corner stays covered', () => {
+    const doc = make();
+    expect(tileOrigin(doc)).toEqual({ x: -3, y: -1 });
+    expect(tileOrigin(doc, 2)).toEqual({ x: -6, y: -2 });
+    const layer = newTilemapLayer('T', 1);
+    expect(tilemapGrid(doc, layer)).toEqual({ columns: 4, rows: 2 });
+    expect(tileOrigin(newDoc({ name: 'p', width: 4, height: 4 }))).toEqual({ x: 0, y: 0 });
+  });
+
+  it('finds the slot under a point from the grid start', () => {
+    const doc = make();
+    const layer = newTilemapLayer('T', 1);
+    expect(docToCell(doc, layer, 0, 0)).toEqual({ x: 0, y: 0 });
+    expect(docToCell(doc, layer, 0, 3)).toEqual({ x: 0, y: 1 });
+    expect(docToCell(doc, layer, 1, 3)).toEqual({ x: 1, y: 1 });
+  });
+
+  it('draws a flattened map from the stage corner and keeps the grid start in the file', () => {
+    const doc = make();
+    const tile = addTile(doc);
+    (doc.drawings[tile.frames[0].drawingId] as PixelDrawing).pixels.fill(255);
+    const map = newTilemapDrawing(4, 2);
+    map.cells[1] = tile.key;
+    const flat = flattenTilemap(doc, map, 0);
+    expect([flat.width, flat.height]).toEqual([13, 7]);
+    // Slot (1,0) starts at (1,-1): it covers x 1 to 4 and y 0 to 2.
+    expect(px(flat, 1, 0)[3]).toBe(255);
+    expect(px(flat, 0, 0)[3]).toBe(0);
+    expect(px(flat, 4, 2)[3]).toBe(255);
+    expect(px(flat, 5, 0)[3]).toBe(0);
+    const back = loadFile(saveFile(doc)).doc;
+    expect([back.tileset!.gridX, back.tileset!.gridY]).toEqual([1, 3]);
+  });
+
+  it('drops a grid start that is not inside a tile', () => {
+    const doc = make();
+    doc.tileset!.gridX = 9;
+    doc.tileset!.gridY = -2;
+    const back = loadFile(saveFile(doc)).doc;
+    expect(back.tileset!.gridX).toBeUndefined();
+    expect(back.tileset!.gridY).toBeUndefined();
   });
 });

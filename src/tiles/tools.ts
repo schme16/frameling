@@ -5,7 +5,7 @@
  * A gesture works on a copy of the map shown live on the canvas and lands as one undo step when the pointer lifts,
  * like the pixel tools.
  */
-import { drawingAt, findLayer, tilemapGrid } from '../core/doc';
+import { drawingAt, findLayer, tileOrigin, tilemapGrid } from '../core/doc';
 import type { Doc, TilemapDrawing, TilemapLayer } from '../core/format';
 import { registerTool, type Tool, type ToolContext, type ToolPointer } from '../core/registry';
 import { pixelCanvas } from '../core/render';
@@ -133,7 +133,8 @@ function pickAt(e: ToolPointer, ctx: ToolContext, speak: boolean): boolean {
 function slotRect(doc: Doc, layer: TilemapLayer, x: number, y: number) {
   const tw = (doc.tileset?.tileWidth ?? 16) * layer.pixelSize;
   const th = (doc.tileset?.tileHeight ?? 16) * layer.pixelSize;
-  return { x: x * tw, y: y * th, w: tw, h: th };
+  const o = tileOrigin(doc, layer.pixelSize);
+  return { x: o.x + x * tw, y: o.y + y * th, w: tw, h: th };
 }
 
 /** The brush tile, see-through, over the slot under the pointer (or over a rectangle of slots). */

@@ -38,6 +38,15 @@
   flex-wrap: wrap;
   gap: 2px;
 }
+.px-ramp-name {
+  flex-basis: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+  font-size: var(--fs-small);
+  font-weight: 600;
+}
 .px-chip {
   position: relative;
   width: 26px;

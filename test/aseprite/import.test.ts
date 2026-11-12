@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { drawingAt } from '../../src/core/doc';
 import { TILE_FLIP_D, TILE_FLIP_X, TILE_FLIP_Y, type Doc, type Layer, type PixelDrawing, type TilemapDrawing } from '../../src/core/format';
 import { loadFile, saveFile } from '../../src/io/file';
+import { flattenTilemap } from '../../src/tiles/model';
 import { asepriteDoc, asepritePieces, blendFor, mergePieces, planTiming, scaleRgba, tagPlay } from '../../src/aseprite/convert';
 import { clipOrder } from '../../src/core/clipPlay';
 import { AsepriteProblem, parseAseprite } from '../../src/aseprite/parse';
@@ -244,14 +245,13 @@ describe('layers and groups', () => {
     expect(doc.layers.map((l) => l.name)).toEqual(['Solo', 'A', 'Inner / B', 'Ref', 'Locked', 'Sub', 'Div']);
   });
 
-  it('maps every blend mode with an equal and says which have none', () => {
-    const modes = ['normal', 'multiply', 'screen', 'overlay', 'darken', 'lighten', 'color-dodge', 'color-burn', 'hard-light', 'soft-light', 'difference', 'exclusion', 'hue', 'saturation', 'color', 'luminosity', 'add'];
+  it('maps every blend mode to its equal, and says so for one it does not know', () => {
+    const modes = ['normal', 'multiply', 'screen', 'overlay', 'darken', 'lighten', 'color-dodge', 'color-burn', 'hard-light', 'soft-light', 'difference', 'exclusion', 'hue', 'saturation', 'color', 'luminosity', 'linear-dodge', 'subtract', 'divide'];
     modes.forEach((m, i) => expect(blendFor(i)).toBe(m));
-    expect(blendFor(17)).toBeNull();
-    expect(blendFor(18)).toBeNull();
-    expect(byName('Sub').blend).toBeUndefined();
-    expect(notes.join(' ')).toContain('no "Subtract" blend mode');
-    expect(notes.join(' ')).toContain('no "Divide" blend mode');
+    expect(blendFor(19)).toBeNull();
+    expect(byName('Sub').blend).toBe('subtract');
+    expect(byName('Div').blend).toBe('divide');
+    expect(notes.join(' ')).not.toContain('blend mode');
   });
 
   it('ignores layer opacity when the file says it is not valid', () => {
@@ -382,8 +382,9 @@ describe('tilemaps', () => {
   const tile = (c: RGBA) => solid(tw, tw, c);
   const tiles = [...tile([0, 0, 0, 0]), ...tile([255, 0, 0, 255]), ...rgbaImage(2, 2, (x, y) => [0, x * 255, y * 255, 255])];
   const ts = tilesetChunk({ tileWidth: 2, tileHeight: 2, count: 3, data: tiles, name: 'Ground' });
-  const mk = (tilesData: number[], x = 0, y = 0, opacity = 255, w = 2, h = 2) =>
+  const mk = (tilesData: number[], x = 0, y = 0, opacity = 255, w = 2, h = 2, grid?: [number, number, number, number]) =>
     aseFile({
+      ...(grid ? { grid } : {}),
       width: 6,
       height: 4,
       depth: 32,
@@ -416,6 +417,40 @@ describe('tilemaps', () => {
     expect(map.cells[1 * 3 + 1]).toBe(1);
     expect(map.cells[1 * 3 + 2]).toBe(1);
     expect(map.cells.filter(Boolean)).toHaveLength(2);
+  });
+
+  it('keeps tiles that sit on a tile grid starting off the corner, in the right place', () => {
+    // Grid starts at (1,1): the cel at (3,1) is one tile in, and the map's first slot starts at (-1,-1).
+    const { doc, notes } = open(mk([1, 2, 0, 1], 3, 1, 255, 2, 2, [1, 1, 2, 2]));
+    expect(doc.layers[0].kind).toBe('tilemap');
+    expect(notes.filter((n) => n.includes('flat'))).toEqual([]);
+    expect([doc.tileset!.gridX, doc.tileset!.gridY]).toEqual([1, 1]);
+    const map = drawingAt(doc, doc.layers[0], 0) as TilemapDrawing;
+    expect([map.columns, map.rows]).toEqual([4, 3]);
+    // Slot (x, y) starts at (-1 + 2x, -1 + 2y), so the cel's tiles are slots (2,1), (3,1), (2,2), (3,2).
+    expect(map.cells[1 * 4 + 2]).toBe(1);
+    expect(map.cells[1 * 4 + 3]).toBe(2);
+    expect(map.cells[2 * 4 + 3]).toBe(1);
+    expect(map.cells.filter(Boolean)).toHaveLength(3);
+    // Flattened, it matches where Aseprite draws them: tile 1 is red at (3,1).
+    const flat = flattenTilemap(doc, map, 0);
+    expect([flat.width, flat.height]).toEqual([7, 5]);
+    expect(px(flat, 3, 1)).toEqual([255, 0, 0, 255]);
+    expect(px(flat, 4, 2)).toEqual([255, 0, 0, 255]);
+    expect(px(flat, 5, 1)[3]).toBe(255);
+    expect(px(flat, 2, 1)[3]).toBe(0);
+  });
+
+  it('still flattens a map that fits neither the corner nor the header grid', () => {
+    const { doc } = open(mk([1, 1], 1, 0, 255, 2, 1, [1, 1, 2, 2]));
+    expect(doc.layers[0].kind).toBe('pixel');
+    expect(doc.tileset?.gridX).toBeUndefined();
+  });
+
+  it('keeps the corner grid when the map fits it, whatever the header grid says', () => {
+    const { doc } = open(mk([1, 1], 2, 2, 255, 2, 1, [1, 1, 2, 2]));
+    expect(doc.layers[0].kind).toBe('tilemap');
+    expect(doc.tileset?.gridX).toBeUndefined();
   });
 
   it('draws the layer flat when its tiles are off the grid, with the flips applied', () => {

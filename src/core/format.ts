@@ -323,6 +323,13 @@ export interface Tileset {
   /** Tile size in art pixels. */
   tileWidth: number;
   tileHeight: number;
+  /**
+   * Where a tile edge sits across and down the stage, in art pixels from its top-left corner (0 up to the tile size
+   * minus 1; missing = 0, the tiles start at the corner). Opening an Aseprite drawing whose tile grid does not start at
+   * the corner sets it.
+   */
+  gridX?: number;
+  gridY?: number;
   /** In the order the Tileset panel and exports show them. */
   tiles: Tile[];
   /** The key the next new tile gets. Keys are never reused, so maps keep pointing at the right tile. */
@@ -495,6 +502,10 @@ export interface DocPalette {
   name: string;
   colors: Color[];
   ramps?: number[];
+  /** A name for each colour, in the same order as `colors` ('' = none). Missing = no names. */
+  names?: string[];
+  /** A name for a ramp, by the index of its first colour (0 for the first ramp), like the groups of a swatch file. */
+  rampNames?: Record<number, string>;
 }
 
 // ---------------------------------------------------------------- blend modes, effects and folders
@@ -517,7 +528,13 @@ export type BlendMode =
   | 'saturation'
   | 'color'
   | 'luminosity'
-  | 'add';
+  | 'add'
+  /** Adding colours with the plain blend (Aseprite's Addition, Photoshop's Linear Dodge). Done pixel by pixel. */
+  | 'linear-dodge'
+  /** Taking the colours away from what is under (Aseprite's Subtract). Done pixel by pixel, not by the canvas. */
+  | 'subtract'
+  /** Dividing what is under by the colours (Aseprite's Divide). Done pixel by pixel. */
+  | 'divide';
 
 export type EffectKind = 'blur' | 'glow' | 'shadow' | 'adjust' | 'outline' | 'pixelate';
 

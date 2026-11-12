@@ -491,7 +491,13 @@ function readTileset(raw: any, drawings: Record<string, Drawing>, warnings: stri
     tiles.push({ key, name: str(t.name, 'Tile ' + (tiles.length + 1)), frames: frames.map((f: any) => ({ drawingId: f.drawingId, duration: Math.max(1, Math.round(num(f.duration, 1))) })) });
   }
   const top = Math.max(0, ...keys);
-  return { tileWidth, tileHeight, tiles, nextKey: Math.max(top + 1, Math.round(num(raw.nextKey, 1))) };
+  const edge = (v: unknown, size: number): number => {
+    const n = Math.round(num(v, 0));
+    return n > 0 && n < size ? n : 0;
+  };
+  const gridX = edge(raw.gridX, tileWidth);
+  const gridY = edge(raw.gridY, tileHeight);
+  return { tileWidth, tileHeight, tiles, nextKey: Math.max(top + 1, Math.round(num(raw.nextKey, 1))), ...(gridX ? { gridX } : {}), ...(gridY ? { gridY } : {}) };
 }
 
 /** The pixel palette, if the file has a usable one. */
@@ -499,7 +505,11 @@ function readPalette(p: unknown): { palette?: Doc['palette'] } {
   if (!isObj(p) || !Array.isArray(p.colors)) return {};
   const colors = p.colors.filter((c: unknown) => typeof c === 'string' && /^#[0-9a-f]{6}([0-9a-f]{2})?$/i.test(c)).slice(0, 256);
   const ramps = Array.isArray(p.ramps) ? [...new Set<number>(p.ramps.filter((n: unknown) => Number.isInteger(n) && (n as number) > 0 && (n as number) < colors.length))].sort((a, b) => a - b) : [];
-  return { palette: { name: str(p.name, 'Palette'), colors, ...(ramps.length ? { ramps } : {}) } };
+  // Names only make sense when every colour was kept, so they still line up.
+  const names = Array.isArray(p.names) && p.colors.length === colors.length && p.names.length <= colors.length && p.names.some((n: unknown) => typeof n === 'string' && n) ? p.names.map((n: unknown) => (typeof n === 'string' ? n.slice(0, 200) : '')) : [];
+  const rampNames: Record<number, string> = {};
+  if (isObj(p.rampNames)) for (const [k, v] of Object.entries(p.rampNames)) if (typeof v === 'string' && v && Number.isInteger(+k) && +k >= 0 && +k < colors.length) rampNames[+k] = v.slice(0, 200);
+  return { palette: { name: str(p.name, 'Palette'), colors, ...(ramps.length ? { ramps } : {}), ...(names.length ? { names } : {}), ...(Object.keys(rampNames).length ? { rampNames } : {}) } };
 }
 
 /** Just the document, for callers that do not care about warnings. */

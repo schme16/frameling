@@ -5,7 +5,7 @@
  * Nothing here knows about the store or the DOM, so it runs in tests and in exports. Functions that change a document
  * take the doc (a draft inside `store().update`, or a plain object) and change it in place.
  */
-import { DEFAULT_TILE_SIZE, newPixelDrawing } from '../core/doc';
+import { DEFAULT_TILE_SIZE, newPixelDrawing, tileOrigin } from '../core/doc';
 import type { Doc, Id, PixelDrawing, Tile, TilemapDrawing, TilemapLayer, Tileset } from '../core/format';
 import { TILE_FLIP_D, TILE_FLIP_X, TILE_FLIP_Y, TILE_KEY_MASK } from '../core/format';
 
@@ -222,7 +222,8 @@ export function setTileSize(doc: Doc, w: number, h: number): boolean {
 export function docToCell(doc: Doc, layer: TilemapLayer, x: number, y: number): { x: number; y: number } {
   const tw = (doc.tileset?.tileWidth ?? DEFAULT_TILE_SIZE) * layer.pixelSize;
   const th = (doc.tileset?.tileHeight ?? DEFAULT_TILE_SIZE) * layer.pixelSize;
-  return { x: Math.floor(x / tw), y: Math.floor(y / th) };
+  const o = tileOrigin(doc, layer.pixelSize);
+  return { x: Math.floor((x - o.x) / tw), y: Math.floor((y - o.y) / th) };
 }
 
 export function inMap(d: Pick<TilemapDrawing, 'columns' | 'rows'>, x: number, y: number): boolean {
@@ -346,11 +347,15 @@ export function blitTile(src: PixelDrawing, flags: number, dst: Uint8ClampedArra
   }
 }
 
-/** A tilemap as one pixel drawing (columns x tile width by rows x tile height), at a document frame. */
+/**
+ * A tilemap as one pixel drawing (columns x tile width by rows x tile height), at a document frame. It starts at the
+ * stage's corner: when the tile grid starts off the corner, the part of the first slots outside the stage is cut.
+ */
 export function flattenTilemap(doc: Doc, d: TilemapDrawing, frame = 0): PixelDrawing {
   const tw = doc.tileset?.tileWidth ?? DEFAULT_TILE_SIZE;
   const th = doc.tileset?.tileHeight ?? DEFAULT_TILE_SIZE;
-  const out = newPixelDrawing(d.columns * tw, d.rows * th);
+  const o = tileOrigin(doc);
+  const out = newPixelDrawing(Math.max(1, d.columns * tw + o.x), Math.max(1, d.rows * th + o.y));
   out.id = d.id + '-flat';
   const tiles = new Map<number, PixelDrawing | undefined>();
   for (let y = 0; y < d.rows; y++) {
@@ -363,7 +368,7 @@ export function flattenTilemap(doc: Doc, d: TilemapDrawing, frame = 0): PixelDra
         tiles.set(k, t ? tileDrawingAt(doc, t, frame) : undefined);
       }
       const src = tiles.get(k);
-      if (src) blitTile(src, cellFlags(v), out.pixels, out.width, out.height, x * tw, y * th);
+      if (src) blitTile(src, cellFlags(v), out.pixels, out.width, out.height, o.x + x * tw, o.y + y * th);
     }
   }
   return out;

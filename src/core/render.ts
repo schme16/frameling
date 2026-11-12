@@ -8,7 +8,7 @@
 import { getStroke } from 'perfect-freehand';
 import type { CameraView, Color, Doc, Drawing, FillShape, Layer, PathShape, PixelDrawing, Shape, StrokeShape, SubPath } from './format';
 import { isPosed, poseAt, type PosedInstance, type PosedLayer, type PosedLook } from './symbols';
-import { DEFAULT_TILE_SIZE } from './doc';
+import { DEFAULT_TILE_SIZE, tileOrigin } from './doc';
 import { drawText, textBounds } from '../text/draw';
 import { posedParticles } from '../particles/draw';
 import { drawTilemap } from './tilemap';
@@ -407,8 +407,9 @@ export function drawingBox(d: Drawing, pixelSize = 1, doc?: Doc): Box {
     grow(b, 0, 0);
     grow(b, d.width * pixelSize, d.height * pixelSize);
   } else if (d.kind === 'tilemap') {
-    grow(b, 0, 0);
-    grow(b, d.columns * (doc?.tileset?.tileWidth ?? DEFAULT_TILE_SIZE) * pixelSize, d.rows * (doc?.tileset?.tileHeight ?? DEFAULT_TILE_SIZE) * pixelSize);
+    const o = doc ? tileOrigin(doc, pixelSize) : { x: 0, y: 0 };
+    grow(b, o.x, o.y);
+    grow(b, o.x + d.columns * (doc?.tileset?.tileWidth ?? DEFAULT_TILE_SIZE) * pixelSize, o.y + d.rows * (doc?.tileset?.tileHeight ?? DEFAULT_TILE_SIZE) * pixelSize);
   } else if (d.kind === 'vector')
     for (const s of d.shapes) {
       if (s.type === 'stroke') for (const [x, y] of strokeOutline(s)) grow(b, x, y);

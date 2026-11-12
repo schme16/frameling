@@ -572,6 +572,13 @@ timing, tags and notes. Reference layers are checked by value, since Aseprite le
 `openPath` (the double-click and recent-files path), adds one to the open drawing, undoes it, and fails on any page error. With no
 files it uses the sample. It only reads the files you give it.
 
+Blend modes: `ASEPRITE_BIN=... xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/blend-aseprite.cjs [outDir]` (after
+`npm run build`) has Aseprite composite every blend mode at four opacities over solid and see-through backdrops
+(`blend-aseprite.lua`), opens the same files in the real app, renders them with the real renderer and compares per pixel,
+against Aseprite and against the W3C maths in floats (`blend-reference.cjs`). It writes `blend-report.md` and `.json`.
+Result: Frameling matches the W3C maths within rounding in every mode; Aseprite matches it over solid backdrops but mixes
+see-through backdrops its own way (up to 64 of 255 off). `test/aseprite/blend-bin.test.ts` checks the pixel modes against it.
+
 ## Quill's dialogue
 
 ```bash

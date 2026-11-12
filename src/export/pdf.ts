@@ -41,6 +41,10 @@ const PDF_BLEND: Record<BlendMode, string> = {
   luminosity: 'Luminosity',
   // PDF has no add; Screen is the nearest.
   add: 'Screen',
+  // Nor Subtract or Divide: those layers go in as Normal.
+  'linear-dodge': 'Screen',
+  subtract: 'Normal',
+  divide: 'Normal',
 };
 
 export function pdfBlend(b: BlendMode | undefined): string {

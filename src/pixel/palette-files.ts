@@ -6,6 +6,7 @@ import { desktop } from '../io/desktop';
 import { notify } from '../io/notify';
 import { setDocPalette } from './commands';
 import { PaletteProblem, paletteFromPixels, parsePaletteFile, writePalette, type PaletteFormat } from './palette-io';
+import { isAdobeSwatches, parseAdobeSwatches } from './ase-swatches';
 import { docPalette } from './palette';
 import { store } from '../core/store';
 import { activeDrawing } from '../tools/edit';
@@ -44,13 +45,31 @@ async function imagePixels(file: File): Promise<Uint8ClampedArray> {
   return g.getImageData(0, 0, w, h).data;
 }
 
+/** Uses an Adobe swatch file (.ase) as the drawing's palette. False when the bytes are not one. */
+export function swatchesIntoPalette(bytes: Uint8Array, fileName: string): boolean {
+  if (!isAdobeSwatches(bytes)) return false;
+  try {
+    const r = parseAdobeSwatches(bytes, fileName.replace(/^.*[\\/]/, '').replace(/\.[^.]+$/, '') || 'Swatches');
+    setDocPalette(r.palette, 'Load palette');
+    const n = r.palette.colors.length;
+    const extra = [r.groups > 1 ? `${r.groups} groups became ramps` : '', r.cut ? `the first 256 of ${r.total} colours were kept` : '', r.skipped ? `${r.skipped} colour${r.skipped === 1 ? '' : 's'} could not be read` : ''].filter(Boolean);
+    notify(`Loaded "${r.palette.name}": ${n} colour${n === 1 ? '' : 's'}${extra.length ? ` (${extra.join('; ')})` : ''}.`, extra.length && (r.cut || r.skipped) ? 'warn' : 'success');
+  } catch (e) {
+    notify(e instanceof PaletteProblem ? e.message : "That file couldn't be read as a palette.", 'warn');
+  }
+  return true;
+}
+
 /** Reads a palette from a file the person picks: a palette file, or the colours of a picture. */
 export async function importPalette(): Promise<void> {
-  const file = await pickFile('.gpl,.hex,.pal,.txt,image/png,image/gif,image/jpeg,image/webp,image/bmp');
+  const file = await pickFile('.gpl,.hex,.pal,.txt,.ase,image/png,image/gif,image/jpeg,image/webp,image/bmp');
   if (!file) return;
   try {
     let p: DocPalette;
-    if (IMAGE.test(file.name) || file.type.startsWith('image/')) p = paletteFromPixels(await imagePixels(file), file.name.replace(/\.[^.]+$/, ''), 32);
+    if (/\.ase$/i.test(file.name)) {
+      if (swatchesIntoPalette(new Uint8Array(await file.arrayBuffer()), file.name)) return;
+      throw new PaletteProblem("That .ase file is an Aseprite drawing, not swatches. Use File > Open, or Use palette from an Aseprite file.");
+    } else if (IMAGE.test(file.name) || file.type.startsWith('image/')) p = paletteFromPixels(await imagePixels(file), file.name.replace(/\.[^.]+$/, ''), 32);
     else p = parsePaletteFile(file.name, await file.text());
     setDocPalette(p, 'Load palette');
     notify(`Loaded "${p.name}": ${p.colors.length} colour${p.colors.length === 1 ? '' : 's'}.`, 'success');

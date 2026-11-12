@@ -8,7 +8,8 @@
  */
 import type { BlendMode, Doc, Layer, LayerEffect } from '../core/format';
 import { applyEffect, BufferPool, ctx2, makeCanvas, type Canvas2, type Ctx } from './apply';
-import { activeEffects, compositeOp } from './model';
+import { activeEffects, compositeOp, isPixelBlend } from './model';
+import { blendPixels } from './pixelBlend';
 import type { PlanNode, PlanStep } from './plan';
 
 export interface CompositeHooks {
@@ -143,11 +144,25 @@ function compositeRun(g: Ctx, steps: PlanStep[], run: Run): void {
 /** Draws a canvas-sized picture onto a target 1:1, whatever the target's transform. */
 function blit(g: Ctx, c: Canvas2, blend: BlendMode | undefined, alpha: number): void {
   if (alpha <= 0) return;
+  if (blend && isPixelBlend(blend)) return blitPixels(g, c, blend, alpha);
   g.save();
   g.setTransform(1, 0, 0, 1, 0, 0);
   g.globalAlpha = alpha;
   g.globalCompositeOperation = compositeOp(blend);
   g.drawImage(c, 0, 0);
+  g.restore();
+}
+
+/** Blend modes the canvas lacks: mixes the two pictures pixel by pixel and puts the result back. */
+function blitPixels(g: Ctx, c: Canvas2, blend: BlendMode, alpha: number): void {
+  const w = c.width;
+  const h = c.height;
+  const back = g.getImageData(0, 0, w, h);
+  const top = ctx2(c).getImageData(0, 0, w, h);
+  blendPixels(back.data, top.data, blend, alpha);
+  g.save();
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.putImageData(back, 0, 0);
   g.restore();
 }
 

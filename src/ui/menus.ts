@@ -94,7 +94,7 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
   },
   import: {
     label: 'Import',
-    items: ['file.importAseprite'],
+    items: ['file.importAseprite', 'palette.import'],
   },
   export: {
     label: 'Export',

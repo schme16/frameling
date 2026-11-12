@@ -64,9 +64,9 @@ registerCommand({
   id: 'palette.import',
   label: 'Load a palette...',
   category: 'Pixel',
-  description: 'Load a .gpl, .hex or .pal palette file, or take the colours from a picture.',
+  description: 'Load a .gpl, .hex, .pal or Adobe swatch (.ase) palette file, or take the colours from a picture.',
   help: 'palette',
-  keywords: ['palette', 'import', 'gpl', 'hex', 'pal', 'jasc', 'gimp', 'lospec', 'colours from image'],
+  keywords: ['palette', 'import', 'gpl', 'hex', 'pal', 'jasc', 'gimp', 'lospec', 'colours from image', 'ase', 'adobe', 'swatches', 'illustrator', 'photoshop'],
   run: () => void importPalette(),
 });
 registerCommand({

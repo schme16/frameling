@@ -75,7 +75,7 @@ Repaired, with a warning:
   empty). Cels are sorted by `start`; `start` is clamped to 0 or more and `length` to 1 or more.
 - A symbol that can't be read is dropped (its instances then draw nothing).
 - Tiles with a bad or duplicate key, or no frame whose drawing is a pixel drawing of exactly the tile size, are
-  dropped. A tileset with a tile size outside 1 to 1024 is dropped. `nextKey` is raised past the highest key.
+  dropped. A tileset with a tile size outside 1 to 1024 is dropped. An optional `gridX`/`gridY` (0 to tile size minus 1, where a tile edge sits from the stage corner) outside that range is dropped. `nextKey` is raised past the highest key.
 - A sound whose bytes are missing, or with a duplicate id, is dropped.
 - An artboard that can't be read is dropped. If no artboard is the open one, the document's own content gets a new
   artboard (`artboard-open`) at 0, 0, so nothing is lost.
@@ -292,7 +292,7 @@ See `docs/effects.md`.
   maths are in `src/core/clipPlay.ts` (`directedPosition` for playback, `bakedPositions` for exports).
   `Marker`: `{id, name, frame}`. `Swatch`: `{id, name, color}`.
 - `DocPalette`: `{name, colors, ramps?}`; `ramps` lists where each ramp starts.
-- `Tileset`: `{tileWidth, tileHeight, tiles, nextKey}`. `Tile`: `{key, name, frames: {drawingId, duration}[]}`. Keys
+- `Tileset`: `{tileWidth, tileHeight, tiles, nextKey, gridX?, gridY?}`. `Tile`: `{key, name, frames: {drawingId, duration}[]}`. Keys
   are never reused, so maps keep pointing at the right tile.
 
 ### Clip flow (`f587827`)

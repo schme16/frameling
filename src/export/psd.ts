@@ -46,6 +46,9 @@ const BLEND_KEYS: Record<PsdBlend, string> = {
   color: 'colr',
   luminosity: 'lum ',
   add: 'lddg',
+  'linear-dodge': 'lddg',
+  subtract: 'fsub',
+  divide: 'fdiv',
 };
 
 export function blendKey(b: PsdBlend | undefined): string {
