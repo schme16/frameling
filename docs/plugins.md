@@ -274,9 +274,9 @@ Every item may have `stroke`, `fill`, `width`, `opacity`, `join`, `cap`; on guid
 ### Shapes (version 2, `shapes`)
 
 ```js
-frameling.shapes.register({ kind: 'star', label: 'Star' }, (props) => drawList);      // local coordinates, (0, 0) is the middle
+frameling.shapes.register({ kind: 'star', label: 'Star', options: [/* the settings form, optional */] }, (props) => drawList);   // local coordinates, (0, 0) is the middle
 const inst = await frameling.shapes.place('star', { points: 5 }, { x: 300, y: 200 }); // adds it, picks it; one undo step
-await frameling.shapes.update(inst, 'star', { points: 7 });                            // redraws it, centred where it was
+await frameling.shapes.update(inst, 'star', { points: 7 });                            // redraws it, keeping what the person did to it
 ```
 
 A plugin shape is **ordinary vector shapes**, so every tool, renderer and exporter (SVG, PDF, Lottie, ...) works on it, and
@@ -290,6 +290,25 @@ Moving, colouring or deleting the parts with the ordinary tools works. Changing 
 drawing that uses a plugin that is off or not installed opens, Frameling says so, with a **Turn it on** button
 (`src/plugins/docPrompt.ts`). A plugin can only redraw its own shapes (the ext key holds its id). At most 20 shapes a
 second; a locked layer refuses them.
+
+**Properties.** While a plugin with the `shapes` power is installed, Properties has a **Plugin shape** section
+(`PluginShapePanel.tsx`, `shapeSection.ts`). With one plugin shape picked it says who made it, and:
+
+- the plugin is on and gave `options` when it registered the kind (the same four kinds as exporter options: `number`,
+  `choice`, `switch`, `text`): a **Change settings** form, drawn by Frameling. Choices and switches redraw the shape at
+  once; numbers and text on Enter or when the box is left. Each is one undo step ("<plugin>: Redraw <kind>"). Values are
+  checked against the options (`cleanValues`) and merged into the shape's `props`, so a plugin's own extra props survive.
+- no `options` but the plugin has a panel: a **Change settings** button that opens that panel.
+- the plugin is off: a **Turn it on** button (the usual question first if it asks for more than before).
+- the plugin is not installed: a plain note; the shape is ordinary shapes.
+
+**Redrawing keeps the person's work.** The first part's `ext` also holds `m` (where the plugin's coordinates sat on
+the stage when it was last drawn) and `ref` (up to three anchor points as they were then). On a redraw Frameling finds
+the move, scale, turn, flip or slant that took those points to where the parts' anchors are now (`refit` in
+`shapes.ts`) and puts the new drawing through the same change, so a star scaled 2x and turned stays scaled and turned
+when its points change. The plugin's own origin `(0, 0)` stays where it was (it is no longer re-centred on the old
+drawing's box). Shapes with no `m`/`ref` (placed by an earlier Frameling) and shapes whose points were edited one by one
+(the anchor count changed) are redrawn centred on where the old drawing was, as before.
 
 ### Files (version 2, `files.read`)
 

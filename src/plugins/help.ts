@@ -43,6 +43,29 @@ Frameling also keeps an eye on each plugin. If one **stops responding** (stuck i
 A plugin is a folder with a **manifest.json** and one script. See [Making a plugin](help:making-plugins).`,
   },
   {
+    id: 'plugin-shapes',
+    media: 'plugin-shapes.png',
+    title: 'Shapes made by a plugin',
+    section: 'Plugins',
+    summary: 'A shape a plugin drew keeps its settings. Pick it and change them in Properties, or turn the plugin on if it is off.',
+    keywords: ['plugin', 'shape', 'settings', 'properties', 'star', 'change settings', 'turn it on'],
+    body: `Some plugins add their own **kinds of shape**, like a star with a number of points. Frameling keeps them as ordinary shapes, so you can move, colour, scale and turn them with the usual tools, and they export like anything else.
+
+## Change its settings
+
+Pick the shape with the **Select** tool. **Properties** shows a **Plugin shape** section with a **Change settings** form: numbers, choices, switches or text, whatever the plugin offers. Change one and the shape is drawn again with it. One **Undo** (Ctrl+Z) takes it back.
+
+If you had scaled, turned or moved the shape, it **stays that way**: the new drawing is moved, scaled and turned the same. (If you edited its points one by one, it is redrawn where it was instead.)
+
+## If the plugin is off
+
+The section says so and shows **Turn it on**. Until then the shape still works like any other, you just can't change its settings. Frameling may ask you to allow the plugin again.
+
+## If you don't have the plugin
+
+A file made with a plugin you don't have still opens and looks right. The shape is plain shapes; install the plugin to change its settings. See [Plugins](help:plugins).`,
+  },
+  {
     id: 'plugin-exports',
     media: 'plugin-exports.png',
     title: 'Exporting with a plugin',

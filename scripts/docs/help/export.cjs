@@ -174,6 +174,27 @@ module.exports = [
     ],
   },
   {
+    // A star the plugin made, picked: Properties shows its Plugin shape section with the Change settings form.
+    name: 'plugin-shapes',
+    steps: [
+      template('bouncing-ball'),
+      wait(500),
+      js(`window.__framelingPlugins.install(${JSON.stringify(example('star-kit'))}); true`),
+      wait(900),
+      js(`document.querySelectorAll('.plugin-approve [role=switch]').forEach((b) => b.click()); true`),
+      wait(300),
+      js(`document.querySelector('.plugin-approve .ui-btn-primary')?.click(); true`),
+      wait(2500),
+      js(`(async () => { const f = window.__frameling; const s = f.store(); const l = s.get().doc.layers.find((x) => x.kind === 'vector'); s.setUi({ activeLayerId: l.id, frame: 0 }); await window.__framelingPlugins.runtime('star-kit').toolEvent('stamp', { type: 'down', x: 300, y: 220, pressure: 0.5, shift: false, alt: false, mod: false, button: 0, frame: 0, drawingId: null, zoom: 1 }); })()`),
+      wait(700),
+      js(`__frameling.showPanel('plugin-shape')`),
+      wait(1200),
+      { move: [640, 790] },
+      wait(300),
+      { shot: '@', crop: [880, 330, 330, 400] },
+    ],
+  },
+  {
     name: 'plugin-panel',
     steps: [template('bouncing-ball'), wait(500), ...installPlugin('flip-every-other-frame'), wait(5500), js(`__frameling.showPanel('plugin.flip-every-other-frame.flip')`), wait(1200), { move: [640, 790] }, wait(300), { shot: '@', crop: [780, 20, 500, 300] }],
   },

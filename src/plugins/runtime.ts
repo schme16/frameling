@@ -51,6 +51,8 @@ export interface PluginToolDef {
 export interface PluginShapeDef {
   kind: string;
   label: string;
+  /** Version 2: the settings Properties shows for a shape of this kind (a number, a choice, a switch or text each). */
+  options: ExportOption[];
 }
 
 /** What a tool hears: where the pointer is, in stage coordinates, and what it was doing. */
@@ -408,7 +410,7 @@ export class PluginRuntime {
     } else if (m.kind === 'shape') {
       if (!this.allow('shapes', 'add a kind of shape')) return;
       if (this.shapeKinds.size >= LIMITS.shapeKinds && !this.shapeKinds.has(id)) return;
-      const def: PluginShapeDef = { kind: id, label: cleanText(d.label, 40) || id };
+      const def: PluginShapeDef = { kind: id, label: cleanText(d.label, 40) || id, options: this.manifest.apiVersion >= 2 ? sanitizeOptions(d.options) : [] };
       this.shapeKinds.set(id, def);
       this.hooks.addShapeKind?.(def);
     }
@@ -471,6 +473,12 @@ export class PluginRuntime {
     const y = typeof a.y === 'number' && Number.isFinite(a.y) ? a.y : undefined;
     const drawn = sanitizeDrawList(await this.request('shapeDraw', { kind, props }, undefined, undefined, TIMEOUTS.shapeDraw));
     return this.hooks.placeShape({ pluginId: this.manifest.id, kind, props, drawn, at: { x, y }, ...(inst ? { inst } : {}), drawingId: typeof a.drawingId === 'string' ? a.drawingId : null });
+  }
+
+  /** Draws one of its shapes again from new settings, as if the plugin had asked (Properties uses this). Throws in plain words. */
+  async redrawShape(a: { kind: string; inst: string; props: unknown; drawingId?: string | null }): Promise<string> {
+    if (this.stopped || !this.can('shapes')) throw new Error('This plugin is not able to draw shapes right now.');
+    return this.placeShape({ kind: a.kind, inst: a.inst, props: a.props, drawingId: a.drawingId ?? null }, true);
   }
 
   /** Asks the plugin to do something, and waits for its answer (for `timeoutMs` at most, when given). */

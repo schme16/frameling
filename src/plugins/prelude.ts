@@ -220,7 +220,7 @@ var api = {
       if (!def || typeof def.kind !== 'string' || !/^[A-Za-z0-9_-]{1,40}$/.test(def.kind)) throw new Error('A kind of shape needs a kind made of letters, numbers, dashes or underscores.');
       if (typeof draw !== 'function') throw new Error('A kind of shape needs a function that draws it from its settings.');
       shapeKinds.set(def.kind, draw);
-      send({ t: 'register', kind: 'shape', def: { id: def.kind, label: def.label } });
+      send({ t: 'register', kind: 'shape', def: { id: def.kind, label: def.label, options: def.options } });
     },
     place: function (kind, props, at) {
       return call('shapes.place', { kind: String(kind), props: props || {}, x: at && at.x, y: at && at.y });
