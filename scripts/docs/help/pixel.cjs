@@ -270,6 +270,9 @@ module.exports = [
       js(`document.querySelectorAll('.tz-tile')[3]?.click()`),
       away,
       wait(400),
+      // The panel keeps its own scroll: bring the Tileset heading to the top so the whole tile list shows.
+      js(`(() => { const sc = document.querySelector('.tz-tile')?.closest('.rd-scroll'); const h = sc && [...sc.querySelectorAll('.rd-sec-toggle')].find((b) => b.textContent.includes('Tileset')); if (h) sc.scrollTop += h.getBoundingClientRect().top - sc.getBoundingClientRect().top - 80; return true; })()`),
+      wait(300),
       { shot: '@', crop: [194, 47, 1000, 335] },
     ],
   },
@@ -327,6 +330,9 @@ module.exports = [
       js(`${F}.run('help.welcome')`),
       wait(1500),
       away,
+      // The hidden window only paints on a shot, so let the banner's pop-in finish before the real one.
+      { shot: 'kick', crop: [0, 0, 8, 8] },
+      wait(700),
       { shot: '@', crop: [224, 121, 823, 84] },
     ],
   },
@@ -607,8 +613,9 @@ module.exports = [
         return true;
       })()`),
       wait(4000),
-      { click: [655, 106], after: 700 },
-      { move: [726, 438], after: 2200 },
+      // The Help menu of the app in the frame sits where it does in this page (underneath), 84 px higher than in the window.
+      { clickOn: '.ui-menubar [role=menuitem]', text: 'Help', dy: 84, after: 700 },
+      { clickOn: '.ui-menubar [role=menuitem]', text: 'Help', dx: 71, dy: 416, hover: true, after: 2200 },
       { shot: '@' },
     ],
   },

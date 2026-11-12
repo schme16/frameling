@@ -12,6 +12,7 @@
 // The capture steps live in scripts/docs/help/*.cjs. Each file exports an array of entries:
 //   { name: 'select',            // the topic's `media` without its extension: select.png or tour.mp4 -> 'select', 'tour'
 //     prefs: {...},              // extra preferences on top of the defaults (showWelcome off, the default theme for the mode)
+//     choices: {...},            // answers to ask-once questions, on top of workspace.follow: 'never' (so that one never shows)
 //     size: [1280, 800],         // window size, default 1280 x 800
 //     steps: [...],              // the record.cjs steps. {"shot": "@"} saves the picture, {"rec": "@", ...} starts the clip.
 //     width: 800,                // widest the output gets (default 800)
@@ -24,7 +25,7 @@ const { execFileSync } = require('node:child_process');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { runSteps, sleep, stopActiveRec, mockMain, makeWindow } = require('./steps.cjs');
+const { issues, runSteps, sleep, stopActiveRec, mockMain, makeWindow } = require('./steps.cjs');
 
 const root = path.join(__dirname, '../..');
 const argv = process.argv.slice(2).filter((a) => !a.endsWith('help-media.cjs'));
@@ -75,9 +76,13 @@ async function capture(win, e, mode, tmp, lib) {
     showWelcome: false,
     ...(e.prefs ?? {}),
   };
-  await win.webContents.executeJavaScript(`localStorage.clear(); sessionStorage.clear(); localStorage.setItem('frameling.prefs.v1', ${JSON.stringify(JSON.stringify(prefs))}); true;`);
+  // The first-time "Workspace follows the drawing" question would pop up over any pixel art; the pictures keep the
+  // layout they were set up with (Never). An entry that shows a question answers it itself with `choices`.
+  const choices = { 'workspace.follow': 'never', ...(e.choices ?? {}) };
+  await win.webContents.executeJavaScript(`localStorage.clear(); sessionStorage.clear(); localStorage.setItem('frameling.prefs.v1', ${JSON.stringify(JSON.stringify(prefs))}); localStorage.setItem('frameling.choices.v1', ${JSON.stringify(JSON.stringify(choices))}); true;`);
   await win.loadFile(path.join(rendererDir, 'index.html'), { query: { debug: '1' } });
   await sleep(e.wait ?? Number(process.env.SHOT_WAIT || 2000));
+  issues.clear();
   const work = path.join(tmp, `${e.name}-${mode}`);
   fs.rmSync(work, { recursive: true, force: true });
   fs.mkdirSync(work, { recursive: true });
@@ -126,7 +131,7 @@ app.whenReady().then(async () => {
       try {
         const out = await capture(win, e, mode, tmp, lib);
         made++;
-        console.log(`ok ${out}${logs.length ? `  (console errors: ${logs.slice(0, 2).join(' | ')})` : ''}`);
+        console.log(`ok ${out}${issues.size ? `  [LOOK: ${[...issues].slice(0, 3).join(' | ')}]` : ''}${logs.length ? `  (console errors: ${logs.slice(0, 2).join(' | ')})` : ''}`);
       } catch (err) {
         failed.push(`${e.name} (${mode}): ${err.message}`);
         console.log(`FAILED ${e.name} (${mode}): ${err.message}`);

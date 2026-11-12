@@ -778,6 +778,11 @@ theme (Midnight sketchbook for dark, Paper and honey for light), the welcome she
 person has it, so the pair differs only in colour. Pictures and posters are scaled to 800 px wide at most (`width` changes it) and saved as 256 colour PNGs (a third the size, no visible loss on UI),
 clips go through `encode.sh` (H.264, yuv420p, under 1 MB each). Run the script under xvfb like everything else: the npm
 script already does. `--renderer <dir>` uses a private `vite build --outDir`; `--out <dir>` writes elsewhere.
+Every entry starts with the first-time question "Workspace follows the drawing" answered Never (so it never covers pixel art);
+an entry can give other answers, or change that one, with `choices: { 'workspace.follow': 'always' }`. Steps can click by selector
+instead of by position with `{"clickOn": ".ui-menubar [role=menuitem]", "text": "Animate", "after": 900}` (`"hover": true` only moves
+there, `"dx"`, `"dy"` shift the point), which keeps a clip working when a menu or button moves. Each capture looks for a question
+left open or a loading state in the frame and prints `[LOOK: ...]` after the entry's `ok` line: look at those files.
 
 `test/ui/help-media.test.ts` fails when a topic's media has no entry (so it can't be shot again), when an entry is for no
 topic, or when a file is missing, unused or too big. To add help media for a new topic: write the entry, run
