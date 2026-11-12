@@ -109,14 +109,12 @@ light table, version history, shortcut sets, sounds (on by default), a Godot imp
   - Unity importer script never compiled in Unity.
   - Phaser, PixiJS and CSS only checked against their schemas.
   - `.ai` never opened in Illustrator.
-  - Multi-artboard exports (each, zip, atlas) not run end to end in the app.
   - Lottie canvas player blends per shape; big baked effects make big Lottie files.
 - **Rig**
   - Bones export to Godot leaves out effects, camera and bones in symbols.
   - Lip sync guesses are rough.
 - **Artboards**
-  - Shots of different sizes can't be joined (no letterboxing).
-  - The timeline reads the open artboard only.
+  - Joined shots of other sizes: parallax layers sit slightly off the fit; the picture size is always the first shot's.
   - "Variations" for animation is mocked, not built.
 - **Timeline**
   - At 1280 wide several header buttons live in a ⋯ menu.
