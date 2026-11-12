@@ -22,7 +22,7 @@ const check = (ok, what) => {
 const ALWAYS = ['Go to the first frame', 'Back one frame', 'Play', 'Forward one frame', 'Go to the last frame', 'Loop', 'Frames per second'];
 // Fold order (src/timeline/headerFold.ts), with a label that names each step's button on the header.
 const STEPS = [
-  ['pingpong', 'ping-pong'],
+  ['pingpong', 'back and forth'],
   ['sound', 'Add a sound'],
   ['clean', 'Clean timeline'],
   ['fit', 'Fit the whole animation'],
@@ -205,7 +205,7 @@ app.on('window-all-closed', () => {});
 app.whenReady().then(async () => {
   for (const ch of ['app:launchFile', 'autosave:read', 'autosave:readKept']) ipcMain.handle(ch, () => null);
   for (const ch of ['recent:list', 'autosave:listKept', 'library:list']) ipcMain.handle(ch, () => []);
-  for (const ch of ['autosave:write', 'autosave:clear', 'autosave:keep', 'autosave:removeKept', 'recent:add', 'recent:remove', 'recent:clear', 'app:documentState', 'library:write', 'library:remove']) ipcMain.handle(ch, () => true);
+  for (const ch of ['autosave:write', 'autosave:clear', 'autosave:keep', 'autosave:removeKept', 'recent:add', 'recent:remove', 'recent:clear', 'app:documentState', 'library:write', 'library:remove', 'plugins:setDiagnostics']) ipcMain.handle(ch, () => true);
   ipcMain.handle('library:read', () => null);
   for (const ch of ['app:documentState', 'app:keepUnsavedDone', 'app:saveBeforeCloseDone']) ipcMain.on(ch, () => {});
   for (const w of [1280, 1400]) await run(w);
