@@ -7,9 +7,11 @@ import { encodePng, type RawImage } from '../io/png';
 import { slug } from './plan';
 import {
   animationRuns, atlasFrame, buildAnimations, buildAtlas, buildCells, composeSheet, godotResourcePath, godotScene,
-  godotSpriteFrames, godotTexturePath, layoutCells, layoutPacked, type Animation, type Cell, type Layout,
+  cropImage, godotSpriteFrames, godotTexturePath, layoutCells, layoutPacked, type Animation, type Cell, type Layout,
 } from './sheet';
 import { normalizeSheet, type SheetSettings } from './types';
+import type { ExportSlice } from '../pixel/slices/model';
+import { cssNineFile, cssSliceRules, godotSlicesScene, sliceFrames, sliceMeta, sliceNames, unitySlices } from './slices';
 
 // ---------------------------------------------------------------- names
 
@@ -196,7 +198,7 @@ using UnityEngine;
 
 public class FramelingSheetImporter : AssetPostprocessor
 {
-    [System.Serializable] public class FrameData { public string name; public float x, y, w, h, pivotX, pivotY; }
+    [System.Serializable] public class FrameData { public string name; public float x, y, w, h, pivotX, pivotY, borderL, borderB, borderR, borderT; }
     [System.Serializable] public class AnimData { public string name; public float fps; public bool loop; public string[] frames; public int[] holds; }
     [System.Serializable] public class SheetData { public string format; public int version; public string image; public int width, height; public float pixelsPerUnit; public bool pixelArt; public FrameData[] frames; public AnimData[] animations; }
 
@@ -277,6 +279,7 @@ public class FramelingSheetImporter : AssetPostprocessor
             rect = new Rect(f.x, f.y, f.w, f.h),
             alignment = SpriteAlignment.Custom,
             pivot = new Vector2(f.pivotX, f.pivotY),
+            border = new Vector4(f.borderL, f.borderB, f.borderR, f.borderT),
             spriteID = old.TryGetValue(f.name, out var id) ? id : GUID.Generate(),
         }).ToArray();
         provider.SetSpriteRects(rects);
@@ -295,6 +298,7 @@ public class FramelingSheetImporter : AssetPostprocessor
             rect = new Rect(f.x, f.y, f.w, f.h),
             alignment = (int)SpriteAlignment.Custom,
             pivot = new Vector2(f.pivotX, f.pivotY),
+            border = new Vector4(f.borderL, f.borderB, f.borderR, f.borderT),
         }).ToArray();
 #pragma warning restore 618
     }
@@ -510,6 +514,12 @@ func _on_clip_end() -> void:
 `;
 }
 
+/** A hash atlas (Phaser, PixiJS) with the slices added as frames, and listed in the meta the way Aseprite lists them. */
+function withSlices<T extends { frames: Record<string, unknown>; meta: Record<string, unknown> }>(a: T, slices: readonly ExportSlice[], names: readonly string[], at: { x: number; y: number }, key: 'pivot' | 'anchor'): T {
+  if (!slices.length) return a;
+  return { ...a, frames: { ...a.frames, ...sliceFrames(slices, names, at, key) }, meta: { ...a.meta, slices: sliceMeta(slices, names) } };
+}
+
 // ---------------------------------------------------------------- the whole job
 
 export class SheetProblem extends Error {}
@@ -531,6 +541,8 @@ export interface SheetJob {
   maxSide: number;
   /** Let Godot and Phaser bounce looping or even-count back and forth clips themselves (the preference). */
   nativeBounce?: boolean;
+  /** Slices of the sprite, in pixels of the exported picture (see src/pixel/slices). They are written next to the frames. */
+  slices?: ExportSlice[];
 }
 
 export interface SheetFiles {
@@ -558,6 +570,9 @@ export function buildSheetFiles(job: SheetJob): SheetFiles {
   // CSS animations show every frame in the same box, so they keep frames whole.
   const trim = sheet.trim && !(engine === 'css' && !separate);
   const { cells, cellOfFrame } = buildCells(job.frames, { trim, dedupe: sheet.dedupe && !separate, cuts });
+  const slices = job.slices ?? [];
+  // Slices are measured on the whole first frame, so that one stays whole on the sheet.
+  if (slices.length && cells[0] && job.frames[0]) cells[0] = { ...cells[0], image: job.frames[0], trim: { x: 0, y: 0, w: job.frames[0].width, h: job.frames[0].height } };
   const names = separate ? separateSpriteNames({ ...range, clips: doc.clips, markers: doc.markers }) : animationCellNames(animations, cellOfFrame, cells.length);
 
   const texturePath = godotTexturePath(sheet.godotPath, doc.name);
@@ -573,7 +588,12 @@ export function buildSheetFiles(job: SheetJob): SheetFiles {
   const image = `${base}.png`;
   const files: { name: string; bytes: Uint8Array }[] = [{ name: image, bytes: encodePng(composeSheet(cells, layout)) }];
   const d: SheetData = { image, layout, cells, cellOfFrame, animations, names };
-  const genericJson = () => buildAtlas({ image, layout, cells, cellOfFrame, animations, fps: doc.fps, scale: job.scale, frameCount: job.frames.length, names, style: sheet.jsonStyle });
+  const sNames = sliceNames(slices, names, (n) => safeName(n, 'slice'));
+  const at0 = layout.positions[0] ?? { x: 0, y: 0 };
+  const genericJson = () => {
+    const a = buildAtlas({ image, layout, cells, cellOfFrame, animations, fps: doc.fps, scale: job.scale, frameCount: job.frames.length, names, style: sheet.jsonStyle });
+    return slices.length ? { ...a, meta: { ...a.meta, slices: sliceMeta(slices, sNames) } } : a;
+  };
 
   switch (engine) {
     case 'json':
@@ -592,6 +612,7 @@ export function buildSheetFiles(job: SheetJob): SheetFiles {
           files.push({ name: `${base}-flow.json`, bytes: json(flow) });
           files.push({ name: `${base}_flow.gd`, bytes: text(godotFlowScript(flow, `${base}.tres`)) });
         }
+        if (slices.length) files.push({ name: `${base}-slices.tscn`, bytes: text(godotSlicesScene(texturePath, slices, sNames, at0, job.pixelArt)) });
         if (sheet.godotScene) {
           const node = doc.name.replace(/[^A-Za-z0-9]+/g, ' ').trim().split(' ').filter(Boolean).map((w) => w[0].toUpperCase() + w.slice(1)).join('') || 'Sprite';
           files.push({ name: `${base}.tscn`, bytes: text(godotScene({ resourcePath: godotResourcePath(texturePath), nodeName: node, animation: animations[0].name, pixelArt: job.pixelArt })) });
@@ -599,18 +620,27 @@ export function buildSheetFiles(job: SheetJob): SheetFiles {
       }
       break;
     case 'phaser':
-      files.push({ name: `${base}.json`, bytes: json(hashAtlas(d)) });
+      files.push({ name: `${base}.json`, bytes: json(withSlices(hashAtlas(d), slices, sNames, at0, 'pivot')) });
       if (animations.length) files.push({ name: `${base}-anims.json`, bytes: json(phaserAnimations(d, base, job.nativeBounce)) });
       break;
     case 'pixi':
-      files.push({ name: `${base}.json`, bytes: json(pixiSheet(d)) });
+      files.push({ name: `${base}.json`, bytes: json(withSlices(pixiSheet(d), slices, sNames, at0, 'anchor')) });
       break;
     case 'unity':
-      files.push({ name: `${base}.json`, bytes: json(unitySheet(d, { pixelArt: job.pixelArt })) });
+      {
+        const u = unitySheet(d, { pixelArt: job.pixelArt });
+        // Slices are sprites too: their own rect, pivot and border.
+        files.push({ name: `${base}.json`, bytes: json(slices.length ? { ...u, frames: [...u.frames, ...unitySlices(slices, sNames, at0, layout.height)] } : u) });
+      }
       if (sheet.unityScript) files.push({ name: UNITY_SCRIPT_NAME, bytes: text(UNITY_SCRIPT) }, { name: UNITY_ASMDEF_NAME, bytes: text(UNITY_ASMDEF) });
       break;
     case 'css': {
-      const css = cssSprites(d, { prefix: base, pixelArt: job.pixelArt, separate });
+      let css = cssSprites(d, { prefix: base, pixelArt: job.pixelArt, separate });
+      if (slices.length) {
+        css += cssSliceRules({ prefix: cssPrefix(base), image, base, slices, names: sNames, at: at0, pixelArt: job.pixelArt, classOf: cssId });
+        // A 9-patch is its own small picture, cut from the first frame, because border-image takes a whole picture.
+        slices.forEach((s, i) => s.center && files.push({ name: cssNineFile(base, sNames[i]), bytes: encodePng(cropImage(job.frames[0], { x: s.x, y: s.y, w: s.w, h: s.h })) }));
+      }
       files.push({ name: `${base}.css`, bytes: text(css) }, { name: `${base}.html`, bytes: text(cssPreviewPage(d, { prefix: base, css: `${base}.css`, title: doc.name, pixelArt: job.pixelArt, separate })) });
       break;
     }

@@ -11,6 +11,7 @@ import { backgroundFor, drawFrame, makeCanvas, readPixels } from './draw';
 import { buildPalette, GifWriter, sampleFrames } from './gif';
 import { frameNumber, MAX_SHEET_SIDE, planExport, planFrames, type Plan } from './plan';
 import { buildSheetFiles } from './engines';
+import { slicesForExport } from '../pixel/slices/model';
 import { playablePackage } from './playable';
 import { saveFile } from '../io/file';
 import { NO_SOUND_NOTE, prepareSound } from '../audio/export';
@@ -296,6 +297,7 @@ async function runSheet(ctx: RunContext, plan: Plan, rgbaAt: (i: number) => RawI
     pixelArt: crisp,
     maxSide: MAX_SHEET_SIDE,
     nativeBounce: currentChoice('export.clipEngineBounce') === 'engine',
+    slices: slicesForExport(doc.layers, settings.scale),
   });
   return { kind: 'files', folderName: out.main.replace(/\.png$/, ''), files: out.files, main: out.main };
 }

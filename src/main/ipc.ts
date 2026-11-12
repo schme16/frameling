@@ -11,8 +11,8 @@ import { addRecent, clearAutosave, clearRecent, keepAutosave, lastDir, listKept,
 import { pathKey, safeFileName } from './paths';
 
 const FILTERS: FileFilter[] = [{ name: 'Frameling drawings', extensions: ['frameling'] }];
-// File > Open also takes Aseprite files, which open as a new drawing.
-const OPEN_FILTERS: FileFilter[] = [{ name: 'Drawings and Aseprite files', extensions: ['frameling', 'aseprite', 'ase'] }, ...FILTERS, { name: 'Aseprite files', extensions: ['aseprite', 'ase'] }];
+// File > Open also takes Aseprite files and pictures (PNG, GIF, sprite sheets), which open as a new drawing.
+const OPEN_FILTERS: FileFilter[] = [{ name: 'Drawings, Aseprite files and pictures', extensions: ['frameling', 'aseprite', 'ase', 'png', 'gif'] }, ...FILTERS, { name: 'Aseprite files', extensions: ['aseprite', 'ase'] }, { name: 'Pictures and sprite sheets', extensions: ['png', 'gif', 'webp', 'jpg', 'jpeg', 'bmp'] }];
 const MAX_OPEN_BYTES = 1024 * 1024 * 1024;
 
 export interface IpcHooks {

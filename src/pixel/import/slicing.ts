@@ -271,3 +271,18 @@ export function onEqualFrames(images: RawImage[], align: Align, size?: Size): Ra
     return { width: w, height: h, pixels: out };
   });
 }
+
+// ---------------------------------------------------------------- guessing
+
+/**
+ * Does this still picture look like a sprite sheet? When the gutters give three or more pieces of about the same size,
+ * yes: cutting by gutters is the way to start. Otherwise it is one picture.
+ */
+export function looksLikeSheet(img: RawImage): boolean {
+  const cells = autoCells(img, defaultAuto());
+  if (cells.length < 3 || cells.length > 4096) return false;
+  const widths = cells.map((c) => c.w);
+  const heights = cells.map((c) => c.h);
+  const near = (list: number[]) => Math.max(...list) <= Math.min(...list) * 1.5 + 2;
+  return near(widths) && near(heights);
+}

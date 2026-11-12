@@ -8,6 +8,7 @@ import type { Clip, Doc, DocPalette, PixelDrawing, PixelLayer, Slice, SpriteWay 
 import { addArtboard, artboardsOf, ensureArtboards } from '../../artboards/model';
 import type { RawImage } from '../../io/png';
 import { paletteFromPixels } from '../palette-io';
+import { docPalette } from '../palette';
 import type { Picture } from './picture';
 import { autoCells, cutCell, gridCells, isBlank, onEqualFrames, orderCells, unrotate, type Align, type AutoSpec, type Cell, type CellOrder, type GridSpec } from './slicing';
 import type { SheetData, SheetSlice, SheetTag } from './sheetJson';
@@ -185,6 +186,21 @@ export function spritePalette(s: Sprite, name: string): DocPalette | null {
   } catch {
     return null;
   }
+}
+
+/** How many different solid colours the frames use (counting stops at `cap`). */
+export function colourCount(s: Sprite, cap = 9999): number {
+  const seen = new Set<number>();
+  const use = s.frames.length > 64 ? s.frames.filter((_, i) => i % Math.ceil(s.frames.length / 64) === 0) : s.frames;
+  for (const f of use) {
+    const p = f.image.pixels;
+    for (let i = 0; i < p.length; i += 4) {
+      if (p[i + 3] < 128) continue;
+      seen.add((p[i] << 16) | (p[i + 1] << 8) | p[i + 2]);
+      if (seen.size >= cap) return cap;
+    }
+  }
+  return seen.size;
 }
 
 /** Adds the colours not there yet to a palette, keeping what is there (to 256). */
@@ -380,7 +396,7 @@ export function spriteInto(d: Draft<Doc>, s: Sprite, o: BuildOptions, from = 0):
   }
   if (o.palette) {
     const p = spritePalette(s, o.name);
-    if (p) doc.palette = mergePalette(doc.palette, p);
+    if (p) doc.palette = mergePalette(doc.palette ?? docPalette(doc), p);
   }
   return notes;
 }

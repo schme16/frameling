@@ -296,7 +296,7 @@ export interface Slice {
   h: number;
   /** The stretchy middle of a 9-patch, in the same coordinates (inside the slice). Missing = not a 9-patch. */
   center?: { x: number; y: number; w: number; h: number };
-  /** The pivot, in the same coordinates (it may sit outside the rectangle). Missing = the engine's default. */
+  /** The pivot, a point on the pixel grid in the same coordinates (it may sit outside the rectangle; 0, 0 is the layer's top left corner). Missing = the engine's default. */
   pivot?: { x: number; y: number };
   /** The colour it is drawn in on the canvas (missing = a colour picked from its name). */
   color?: Color;

@@ -269,6 +269,9 @@ export function PalettePanel() {
         <ActionButton disabled={!drawing} onClick={paletteFromDrawing} title="Make a palette from the colours in the drawing on this frame">
           From drawing
         </ActionButton>
+        <ActionButton onClick={() => void import('./import/run').then((m) => m.pickPictureForPalette())} title="Add the colours of a PNG, GIF or sprite sheet to the palette, or use them in its place">
+          From a picture...
+        </ActionButton>
       </div>
 
       {layer ? (

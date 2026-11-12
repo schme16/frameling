@@ -384,7 +384,11 @@ describe('tags, slices and user data', () => {
     expect(ext.slices[1].keys[0].center).toEqual({ x: 2, y: 2, width: 4, height: 4 });
     expect(ext.slices[1].keys[0].pivot).toEqual({ x: 1, y: 1 });
     expect(ext.slices[1].nineSlice).toBe(true);
-    expect(notes.join(' ')).toContain('2 slices');
+    // The slices also live on the layer now, as Frameling slices.
+    const slices = (doc.layers[0] as { slices?: { name: string; x: number; y: number; w: number; h: number; center?: unknown; pivot?: unknown }[] }).slices!;
+    expect(slices.map((s) => [s.name, s.x, s.y, s.w, s.h])).toEqual([['hitbox', 1, 2, 3, 4], ['panel', 0, 0, 8, 8]]);
+    expect(slices[1].center).toEqual({ x: 2, y: 2, w: 4, h: 4 });
+    expect(slices[1].pivot).toEqual({ x: 1, y: 1 });
     expect(file.layers[0].userData).toEqual({ text: 'layer note', props: { solid: true, weight: 7, kind: 'wall' } });
     expect(file.frames[0].cels[0].userData).toEqual({ text: 'cel note' });
     expect((doc.layers[0].ext!.aseprite as Record<string, unknown>).userData).toBeDefined();

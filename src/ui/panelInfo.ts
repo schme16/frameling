@@ -71,6 +71,14 @@ export const PANEL_INFO: Record<string, PanelInfo> = {
     idle: 'Pick a pixel layer',
     keywords: ['pixel', 'colours', 'indexed'],
   },
+  slices: {
+    blurb: 'Named rectangles on a pixel layer, with a 9-patch middle and a pivot, for your game engine.',
+    group: 'properties',
+    section: true,
+    relevant: (s) => layerOf(s)?.kind === 'pixel',
+    idle: 'Pick a pixel layer',
+    keywords: ['slice', 'slices', '9-patch', 'nine patch', 'pivot', 'hitbox', 'region'],
+  },
   tileset: {
     blurb: 'The tiles you paint tile maps with, and making new ones.',
     group: 'properties',
