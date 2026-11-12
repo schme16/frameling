@@ -13,10 +13,11 @@ import { withMirror } from './ToolOptions';
 import { exportPalette, importPalette, paletteFromDrawing } from './palette-files';
 import { store } from '../core/store';
 import { dock, inPixelWorkspace, showPanel } from '../ui/dock';
-import { setPaintWells, setShapeFilledSource } from '../tools/pixelWells';
+import { paintWellsOn, setPaintWells, setShapeFilledSource } from '../tools/pixelWells';
+import { isPixelDoc } from './way';
 import { getPixelSettings } from './settings';
 import { previewSettings, setPreview } from './preview';
-import { watchOnePicture, watchPixelDocs } from './workspace';
+import { watchOnePicture, watchPixelDocs, watchPixelTool } from './workspace';
 import './workspace-help';
 import './wayCommands';
 import './import';
@@ -30,16 +31,19 @@ registerPanel({ id: 'preview', title: 'Preview', icon: 'film', component: lazyPa
 // Paint and Back: in the Pixel workspace the two colour wells are Paint and Back, and every pixel tool paints with Paint.
 setShapeFilledSource(() => getPixelSettings().shapeFilled);
 const syncWells = () => {
-  const on = inPixelWorkspace();
-  setPaintWells(on);
+  // Paint and Back belong to pixel art: a drawing opened in the Pixel workspace keeps Fill and Stroke.
+  setPaintWells(inPixelWorkspace() && isPixelDoc(store().get().doc));
   const ui = store().get().ui;
-  if (on && (!ui.strokeOn || ui.activeWell !== 'stroke')) store().setUi({ strokeOn: true, activeWell: 'stroke' });
+  if (paintWellsOn() && (!ui.strokeOn || ui.activeWell !== 'stroke')) store().setUi({ strokeOn: true, activeWell: 'stroke' });
 };
 dock.subscribe(syncWells);
+store().subscribe(syncWells);
 syncWells();
 
 // Offer the Pixel workspace when pixel art opens (asked once).
 watchPixelDocs(store(), undefined, askAboutKeys);
+// Entering the Pixel workspace with a pixel sprite starts on the Pencil, so a tool is lit.
+watchPixelTool(store());
 installWayWatchers(store());
 // A one-picture file has nothing to preview: the Preview stays away until it moves.
 watchOnePicture(store());

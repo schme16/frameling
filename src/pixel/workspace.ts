@@ -3,7 +3,7 @@
 import { registerChoice, withChoice } from '../core/choices';
 import type { Doc, Id } from '../core/format';
 import type { ExportSettings } from '../export/types';
-import { applyWorkspace, dock, hidePanel, inPixelWorkspace, showPanel } from '../ui/dock';
+import { applyWorkspace, dock, hidePanel, inPixelWorkspace, PIXEL_TOOLS, showPanel } from '../ui/dock';
 import { isPlaced } from '../ui/dockModel';
 import { isPixelDoc } from './way';
 
@@ -24,30 +24,106 @@ registerChoice({
 
 export { isPixelDoc };
 
+export const VECTOR_DOC_CHOICE = 'workspace.vectorDocs';
+
+registerChoice({
+  id: VECTOR_DOC_CHOICE,
+  title: 'Opening a drawing in the Pixel workspace',
+  question: 'This is a drawing, not pixel art. Switch to the Draw workspace? It has the colours and the brush tools close at hand.',
+  category: 'Workspace',
+  help: 'workspaces',
+  default: 'switch',
+  options: [
+    { value: 'switch', label: 'Switch to Draw', detail: 'The usual tools and colours for drawing.' },
+    { value: 'stay', label: 'Keep the Pixel workspace', detail: 'Stay as you are. View > Workspaces switches any time.' },
+  ],
+});
+
+// Documents the person just made on purpose (New pixel art, a template, a preset): the workspace follows them without asking.
+const madeHere = new Set<Id>();
+
+/** Say that this document was just made on purpose, so the matching workspace is picked without a question. Call before loading it. */
+export function madeOnPurpose(doc: Doc): Doc {
+  madeHere.add(doc.id);
+  return doc;
+}
+
 interface DocSource {
   get(): { doc: Doc };
   subscribe(fn: () => void): () => void;
 }
 
 /**
- * Watches for documents opening, and offers the Pixel workspace when one is pixel art and you're not in it. `then` runs
- * after that question (or at once when you're in it already): the "Coming from Aseprite?" question.
+ * Watches for documents opening, and makes the workspace follow the kind of document: pixel art opening outside the
+ * Pixel workspace offers it, a drawing opening inside it offers Draw (each asked once, then remembered). A document the
+ * person just made on purpose (see madeOnPurpose) switches without asking. `then` runs after the pixel question (or at
+ * once when you're in it already): the "Coming from Aseprite?" question.
  */
-export function watchPixelDocs(s: DocSource, switchTo: () => void = () => void applyWorkspace('pixel'), then: () => void = () => {}): () => void {
+export function watchPixelDocs(
+  s: DocSource,
+  switchTo: () => void = () => void applyWorkspace('pixel'),
+  then: () => void = () => {},
+  toDraw: () => void = () => void applyWorkspace('draw'),
+): () => void {
   // The document that's there at start-up isn't "opening".
   let last: Id = s.get().doc.id;
   return s.subscribe(() => {
     const { doc } = s.get();
     if (doc.id === last) return;
     last = doc.id;
-    if (!isPixelDoc(doc)) return;
+    const mine = madeHere.delete(doc.id);
+    if (!isPixelDoc(doc)) {
+      if (!inPixelWorkspace()) return;
+      if (mine) return toDraw();
+      return withChoice(VECTOR_DOC_CHOICE, (v) => {
+        if (v === 'switch' && s.get().doc.id === doc.id && inPixelWorkspace()) toDraw();
+      });
+    }
     if (inPixelWorkspace()) return then();
+    if (mine) {
+      switchTo();
+      return then();
+    }
     withChoice(PIXEL_DOC_CHOICE, (v) => {
       // Still the same document, and still not in a pixel workspace, by the time they answer.
       if (v === 'switch' && s.get().doc.id === doc.id && !inPixelWorkspace()) switchTo();
       then();
     });
   });
+}
+
+/** The tool a pixel sprite starts on: the Pencil, when the tool in hand is not one the Pixel workspace's rail shows. */
+export function pixelStartTool(tool: string, layerKind: string | null): string | null {
+  if (layerKind !== null && layerKind !== 'pixel') return null;
+  return (PIXEL_TOOLS as readonly string[]).includes(tool) ? null : 'pencil';
+}
+
+interface ToolSource extends DocSource {
+  get(): { doc: Doc; ui: { tool: string; activeLayerId: Id | null } };
+  setUi(patch: { tool: string }): void;
+}
+
+/**
+ * Entering the Pixel workspace, or opening a pixel document in it, picks the Pencil when the tool in hand (the vector
+ * Brush, say) isn't in the rail, so something is always lit. After that the person's own picks stay.
+ */
+export function watchPixelTool(s: ToolSource, d: { inPixelWorkspace(): boolean; subscribe(fn: () => void): () => void } = realDock): () => void {
+  let seen = '';
+  const check = () => {
+    const { doc, ui } = s.get();
+    const on = d.inPixelWorkspace() && isPixelDoc(doc);
+    const key = on ? doc.id : '';
+    if (key === seen) return;
+    seen = key;
+    if (!on) return;
+    const layer = doc.layers.find((l) => l.id === ui.activeLayerId) ?? doc.layers[doc.layers.length - 1];
+    const next = pixelStartTool(ui.tool, layer?.kind ?? null);
+    if (next) s.setUi({ tool: next });
+  };
+  const offDoc = s.subscribe(check);
+  const offDock = d.subscribe(check);
+  check();
+  return () => (offDoc(), offDock());
 }
 
 const sheetStarted = new Set<Id>();
