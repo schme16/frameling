@@ -140,7 +140,7 @@ function Flyout({ group, groups, anchor, place, visible, current, onPick, onClos
           </button>
         );
       })}
-      <button type="button" role="menuitem" className="ui-tool-fly-item ui-tool-fly-rename" aria-label={`Rename ${groupName(group, groups)}`} data-tip="Rename this group" data-tip-desc="Give the group a name of your own." data-help="tool-strip" onClick={rename}>
+      <button type="button" role="menuitem" className="ui-tool-fly-item ui-tool-fly-rename" data-tip="Rename this group" data-tip-desc="Give the group a name of your own." data-help="tool-strip" onClick={rename}>
         <Icon name="pencil" size={16} />
         <span>Rename group...</span>
       </button>

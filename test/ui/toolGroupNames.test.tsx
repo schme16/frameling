@@ -265,7 +265,7 @@ describe('renaming in the page', () => {
     const fly = document.querySelector('.ui-tool-fly')!;
     expect(fly.querySelector('.ui-tool-fly-head')!.textContent).toBe('Shapes');
     const rename = fly.querySelector<HTMLElement>('.ui-tool-fly-rename')!;
-    expect(rename.getAttribute('aria-label')).toBe('Rename Shapes');
+    expect(rename.textContent).toBe('Rename group...');
     fire(rename, 'click');
     expect(document.querySelector('.ui-tool-fly')).toBeNull();
     expect(renaming.get()).toMatchObject({ kind: 'group', id: 'shapes' });
