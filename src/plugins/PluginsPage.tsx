@@ -15,7 +15,7 @@ export function PluginsPage() {
   return (
     <div className="plugin-page" data-help="plugins">
       <h3>Plugins</h3>
-      <p className="ui-pref-intro">Plugins add commands, ways to export and panels. Each one runs in its own sandbox, away from your files, and can only do what it asked for when you installed it.</p>
+      <p className="ui-pref-intro">Plugins add commands, ways to export, panels and, if you allow it, tools, shapes and guides on your canvas. Each one runs in its own sandbox, away from your files, and can only do what you allowed. Each power has its own switch below.</p>
       <div className="plugin-page-actions">
         <button type="button" className="ui-btn ui-btn-primary" onClick={() => void installFromFile()}>
           <Icon name="plus" size={14} />

@@ -210,7 +210,7 @@ never the drawing:
 | `frame.changed` | `{ frame }`. At most every 80 ms. |
 | `export.started`, `export.finished` | `{ format, name }`, and for finished `{ ok, cancelled, error }`. `format` is the format id, or `plugin:<plugin>:<exporter>`. |
 
-While a burst of changes goes by, only the newest is sent, once the gap is over. No more than 40 events a second go to a
+Changes the plugin makes itself are announced too, so a plugin that edits in answer to `document.changed` can keep itself busy: check what changed before editing. While a burst of changes goes by, only the newest is sent, once the gap is over. No more than 40 events a second go to a
 plugin, and a plugin that does not finish handling them (200 waiting) stops being told, with a message.
 
 ### Exporter options (version 2)
