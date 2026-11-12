@@ -439,6 +439,8 @@ export function asepritePieces(file: AseFile, name: string, target?: Target): Pi
         w = c.image.width;
         h = c.image.height;
         px = imageRgba(file, c.image, paletteAt(file, c.frame), l.background);
+        // Aseprite draws an indexed background layer opaque, whatever the palette's alpha says.
+        if (l.background && file.depth === 8) for (let i = 3; i < px.length; i += 4) px[i] = 255;
       } else if (c.tilemap) {
         const t = c.tilemap;
         const tsx = ts;

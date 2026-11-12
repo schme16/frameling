@@ -381,6 +381,7 @@ const hasData = (u: AseUserData): boolean => u.text !== undefined || u.color !==
 const keepUser = (u: AseUserData | undefined): AseUserData | undefined => (u && hasData(u) ? u : undefined);
 
 export function parseAseprite(bytes: Uint8Array): AseFile {
+  if (bytes.length >= 4 && bytes[0] === 0x41 && bytes[1] === 0x53 && bytes[2] === 0x45 && bytes[3] === 0x46) throw new AsepriteProblem('That is an Adobe swatch file that also ends in .ase, not an Aseprite drawing.');
   if (bytes.length < 128) throw new AsepriteProblem("That doesn't look like an Aseprite file (it is too small).");
   const r = new Reader(bytes);
   r.u32();
