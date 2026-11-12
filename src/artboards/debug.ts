@@ -82,17 +82,17 @@ const circle = (cx: number, cy: number, r: number, fill: string) => {
   };
 };
 
-/** Three 320 x 180 shots of a ball's day out: wide, close-up, and the landing, each with its own length. */
-export function demoShots(): Doc {
+/** Three shots of a ball's day out: wide, close-up, and the landing, each with its own length. 320 x 180 each, or with `mixed` the wide one, a square close-up and a tall landing. */
+export function demoShots(mixed = false): Doc {
   const doc = newDoc({ name: 'Ball film', width: 320, height: 180, length: 24, background: '#5ab8ff', fps: 12 });
-  const shots: [string, string, number, (f: number, n: number) => VectorDrawing['shapes']][] = [
+  const shots: [string, string, number, (f: number, n: number, w: number) => VectorDrawing['shapes']][] = [
     ['Wide: the hill', '#5ab8ff', 24, (f, n) => [rect(0, 130, 320, 50, '#6abf4b'), circle(40 + (240 * f) / (n - 1), 115 - Math.abs(Math.sin((f / (n - 1)) * Math.PI * 2)) * 60, 14, '#ff6f91')]],
-    ['Close-up: the face', '#ffc94a', 12, (f) => [circle(160, 95, 70, '#ff6f91'), circle(135, 80, 8 + (f % 6 < 3 ? 0 : -6), '#1d1b26'), circle(185, 80, 8 + (f % 6 < 3 ? 0 : -6), '#1d1b26'), rect(140, 120, 40, 6 + (f % 4), '#1d1b26')]],
-    ['Landing', '#9b7bff', 16, (f, n) => [rect(0, 140, 320, 40, '#4fd1a5'), circle(160, Math.min(126, 20 + (f / (n - 1)) * 160), 14, '#ff6f91')]],
+    ['Close-up: the face', '#ffc94a', 12, (f, _n, w) => [circle(w / 2, 95, 70, '#ff6f91'), circle(w / 2 - 25, 80, 8 + (f % 6 < 3 ? 0 : -6), '#1d1b26'), circle(w / 2 + 25, 80, 8 + (f % 6 < 3 ? 0 : -6), '#1d1b26'), rect(w / 2 - 20, 120, 40, 6 + (f % 4), '#1d1b26')]],
+    ['Landing', '#9b7bff', 16, (f, n, w) => [rect(0, 140, w, 40, '#4fd1a5'), circle(w / 2, Math.min(126, 20 + (f / (n - 1)) * 160), 14, '#ff6f91')]],
   ];
   shots.forEach(([name, bg, length, draw], k) => {
     if (k > 0) {
-      const id = model.addArtboard(doc, { name, background: bg, length });
+      const id = model.addArtboard(doc, { name, background: bg, length, width: mixed ? [320, 180, 120][k] : 320 });
       model.switchArtboard(doc, id);
     } else model.renameArtboard(doc, model.activeId(doc), name);
     doc.length = length;
@@ -100,7 +100,7 @@ export function demoShots(): Doc {
     const layer = newVectorLayer('Action');
     doc.layers = [layer];
     for (let f = 0; f < length; f++) {
-      const d: VectorDrawing = { id: uid('v'), kind: 'vector', shapes: draw(f, length) };
+      const d: VectorDrawing = { id: uid('v'), kind: 'vector', shapes: draw(f, length, doc.width) };
       doc.drawings[d.id] = d;
       layer.cels.push({ id: uid('c'), start: f, length: 1, drawingId: d.id });
     }
@@ -113,7 +113,10 @@ if (typeof window !== 'undefined' && new URLSearchParams(location.search).has('d
   (window as unknown as { __framelingArtboards: unknown }).__framelingArtboards = {
     model,
     ops,
-    load: (which: 'sprites' | 'shots') => store().load(which === 'shots' ? demoShots() : demoSprites()),
+    load: (which: 'sprites' | 'shots' | 'mixed') => store().load(which === 'mixed' ? demoShots(true) : which === 'shots' ? demoShots() : demoSprites()),
+    /** What the Export dialog's artboard row is set to, as if clicked. */
+    setExport: (p: Partial<{ mode: 'one' | 'each' | 'joined' | 'atlas'; ids: string[] | null }>) => import('./export').then((m) => m.setArtboardExport(p)),
+    setChoice: (id: string, v: string | undefined) => import('../core/choices').then((m) => m.setChoice(id, v)),
     player: () => import('./player').then((m) => m.openShotsPlayer()),
     exportDialog: (mode?: 'each' | 'joined' | 'atlas' | 'one') => import('./exportDialog').then((m) => m.openArtboardExport(mode)),
   };

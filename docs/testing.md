@@ -42,7 +42,7 @@ What's in `test/`, by folder:
 | Folder | Covers |
 |---|---|
 | `a11y/` | Contrast of theme tokens, the roving tab index helper, and the shortcut clash test (below). |
-| `artboards/` | Artboard model (switching, content swap) and per-artboard export. |
+| `artboards/` | Artboard model (switching, content swap), per-artboard export, fitting shots of different sizes (`fit.test.ts`: the camera keys and bars of a joined film) and the press-to-open rule the timeline follows. |
 | `audio/` | Sound clips, mixing, the audio engine. |
 | `camera/` | Camera layer ops. |
 | `canvas/` | View maths, input, grids, snapping, resize, pixel helpers, rulers, the lost-canvas hint, theme colours. |
@@ -165,6 +165,20 @@ difference and the share of pixels off by more than 48, and fails when a frame i
 
 ```bash
 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/vector-check.cjs [outDir]
+```
+
+## Artboards end to end: scripts/e2e/artboards.cjs
+
+Builds a two-artboard document of different sizes (320 x 180 red and 200 x 200 green, with a shape hanging off the
+stage) and runs every artboard export through the real app: this artboard, each into a folder, each into one zip, a
+subset, the sprite sheet atlas, and all in order as one with Fit and with Fill (PNG sequence, GIF, MP4, WebM). Outputs
+are read back with ImageMagick, ffprobe and unzip: sizes, zip contents, atlas JSON, and pixel colours (the bars, the
+crop, what is hidden off the stage). Then it clicks with real mouse events (Select and Brush, and a name label) to
+check the open artboard, the stage and the Timeline panel follow, and that Undo goes back.
+
+```bash
+npm run build
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/artboards.cjs [outDir]
 ```
 
 ## Plugin sandbox: scripts/e2e/plugins.cjs
@@ -324,7 +338,7 @@ own `debug.ts`, which put test hooks on `window`. None of it is in the normal st
 | Global | From | What |
 |---|---|---|
 | `__frameling` | `src/renderer/debug.ts` | `store`, `run(commandId)`, `template(id)`, `prefs`, `commands()`, `panels()`, `tools()`, `showPanel`, `quests`, `quill`, `toast`, `recovery`, `overlays`, `rightStyle`, `themes()`, `anim` (grids, light table, tween offer), `tiles`, and more. |
-| `__framelingExport` | `src/export/debug.ts` | Drives exports for `e2e/export.cjs`. |
+| `__framelingExport` | `src/export/debug.ts` | Drives exports for `e2e/export.cjs` and `e2e/artboards.cjs`. |
 | `__framelingIo` | `src/io/debug.ts` | Open a path, file helpers. |
 | `__framelingEffects`, `__framelingTemplates`, `__framelingPlugins`, `__framelingArtboards`, `__framelingAudio` | each area's `debug.ts` or `index.ts` | Area hooks for its harness and help shots. |
 | `__framelingCameraLook`, `__framelingRulerLook`, `__framelingGradientLook`, `__framelingHandleLook` | `src/camera/canvas.ts`, `src/canvas/Rulers.tsx`, `src/canvas/panels/GradientEditor.tsx`, `src/tools/point-handles.ts` | Swap a look for A/B shots. |
