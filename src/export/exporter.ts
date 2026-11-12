@@ -85,6 +85,16 @@ export function describeError(e: unknown): string {
  * Asks where to save, draws and encodes, writes the file(s) and says so with a "Show in folder" button.
  * Resolves 'cancelled' when they back out of the save dialog or press Cancel, and throws for real problems.
  */
+/**
+ * Where to write a file the exporter named differently than expected (an MP4 that became a MOV). Only a browser
+ * download, which has a name and no place, takes the new ending: a file the person picked keeps its own name.
+ */
+export function targetFor(target: string, madeName: string): string {
+  const ext = /\.[A-Za-z0-9]+$/.exec(madeName)?.[0];
+  if (!ext || !target.startsWith('download:/')) return target;
+  return /\.[A-Za-z0-9]+$/.test(target) ? target.replace(/\.[A-Za-z0-9]+$/, ext) : target + ext;
+}
+
 export async function exportDocument(settings: ExportSettings, signal: AbortSignal, onProgress: (p: Progress) => void, only?: Doc): Promise<ExportOutcome> {
   const api = desktop();
   if (!api) throw new ExportProblem('Exporting works in the Frameling desktop app.');
@@ -140,9 +150,11 @@ export async function exportDocument(settings: ExportSettings, signal: AbortSign
 
   let shown: string;
   if (result.kind === 'file') {
-    const w = await api.files.write(target, result.bytes);
+    // A video whose sound could only be kept as it is turns out as a MOV, not the MP4 asked for (see audio/export.ts).
+    const dest = targetFor(target, result.name);
+    const w = await api.files.write(dest, result.bytes);
     if ('error' in w) throw new ExportProblem(w.error);
-    shown = target;
+    shown = dest;
   } else {
     const w = await api.files.writeMany(target, result.files);
     if (!w) return 'stopped';

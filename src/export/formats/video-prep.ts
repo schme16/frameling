@@ -1,7 +1,7 @@
 // What MP4 and WebM check before they start: that this computer can make them, which codec to use, and (for an MP4
 // with sound) what to do when the sound would not play everywhere. Loaded on first use.
 import { audibleClips } from '../../audio/clips';
-import { canMakeAac } from '../../audio/export';
+import { canMakeAac, canMakeOpus } from '../../audio/export';
 import { choose, getChoiceDef } from '../../core/choices';
 import type { Doc } from '../../core/format';
 import { desktop } from '../../io/desktop';
@@ -37,7 +37,8 @@ export async function videoSupport(format: Video, size: { width: number; height:
 export async function settleMp4Sound(doc: Doc, s: ExportSettings): Promise<ExportSettings> {
   const api = desktop();
   if (!api || !getChoiceDef('export.mp4Sound')) return s;
-  if (audibleClips(doc.audio).length && !(await canMakeAac()) && !(await api.media?.aacAvailable().catch(() => false))) {
+  // Without Opus either (older Safari) the sound goes in uncompressed, which plays everywhere, so there is nothing to ask.
+  if (audibleClips(doc.audio).length && !(await canMakeAac()) && (await canMakeOpus()) && !(await api.media?.aacAvailable().catch(() => false))) {
     if ((await choose<string>('export.mp4Sound')) === 'webm') return { ...s, format: 'webm' };
   }
   return s;

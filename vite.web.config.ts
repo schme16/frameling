@@ -23,7 +23,8 @@ function webApp(version: string): Plugin {
     transformIndexHtml(html) {
       return html.replace(
         '</head>',
-        `    <link rel="manifest" href="./manifest.webmanifest" />
+        `    <script src="./browser-check.js"></script>
+    <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" type="image/png" sizes="32x32" href="./icons/32x32.png" />
     <link rel="apple-touch-icon" href="./icons/256x256.png" />
     <meta name="theme-color" content="#17151f" />
@@ -33,6 +34,8 @@ function webApp(version: string): Plugin {
     },
     closeBundle() {
       mkdirSync(path.join(out, 'icons'), { recursive: true });
+      // The check that says "needs a newer browser" runs before the app (the page's policy only allows scripts from its own folder).
+      copyFileSync(path.join(root, 'scripts/web/browser-check.js'), path.join(out, 'browser-check.js'));
       for (const s of [32, ...ICON_SIZES]) copyFileSync(path.join(root, `build/icons/${s}x${s}.png`), path.join(out, `icons/${s}x${s}.png`));
       const manifest = {
         name: 'Frameling',

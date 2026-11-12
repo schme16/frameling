@@ -15,7 +15,8 @@ import { allFormats, splitFormats } from '../../src/export/types';
 import { defaultSettings } from '../../src/export/plan';
 
 vi.mock('../../src/io/desktop', async (orig) => ({ ...(await orig<object>()), desktop: () => ({ media: { aacAvailable: async () => false } }) }));
-vi.mock('../../src/audio/export', async (orig) => ({ ...(await orig<object>()), canMakeAac: async () => false }));
+const encoders = vi.hoisted(() => ({ opus: true }));
+vi.mock('../../src/audio/export', async (orig) => ({ ...(await orig<object>()), canMakeAac: async () => false, canMakeOpus: async () => encoders.opus }));
 
 const BUILT_IN = ['mp4', 'webm', 'gif', 'apng', 'png', 'pngseq', 'svg', 'sheet', 'lottie', 'svganim', 'prores', 'psd', 'pdf', 'ai'];
 
@@ -98,6 +99,19 @@ describe('sound in a video', () => {
     setChoice('export.mp4Sound', 'webm');
     expect((await settleMp4Sound(doc, s)).format).toBe('webm');
     setChoice('export.mp4Sound', undefined);
+  });
+
+  it('a browser with no audio encoder at all (older Safari) asks nothing: the MP4 carries the sound uncompressed', async () => {
+    const doc = Object.assign(newDoc(), { audio: [sound] });
+    const s = { ...defaultSettings(doc), format: 'mp4' };
+    setChoice('export.mp4Sound', 'webm');
+    encoders.opus = false;
+    try {
+      expect(await settleMp4Sound(doc, s)).toBe(s);
+    } finally {
+      encoders.opus = true;
+      setChoice('export.mp4Sound', undefined);
+    }
   });
 
   it('with Audio off nothing is asked and the video stays an MP4 (the sound still goes in)', async () => {
