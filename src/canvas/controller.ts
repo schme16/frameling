@@ -4,7 +4,7 @@
  * canvas component, so they work (and test) without any DOM.
  */
 import { ownedUndo } from '../core/owners';
-import type { Drawing, Id } from '../core/format';
+import type { Drawing, Id, PixelDrawing } from '../core/format';
 import { store } from '../core/store';
 import { toast } from '../ui/toast';
 import { tileModeOn } from '../tiles/state';
@@ -125,7 +125,22 @@ export function stageRect(): Rect {
  */
 export type Live =
   | { layerId: Id; kind: 'vector'; drawing: Drawing }
-  | { layerId: Id; kind: 'pixel'; canvas: CanvasImageSource; /** Where the canvas sits on the art grid (art pixels; 0 when it covers the grid). */ x?: number; y?: number; width: number; height: number }
+  | {
+      layerId: Id;
+      kind: 'pixel';
+      canvas: CanvasImageSource;
+      /** Where the canvas sits on the art grid (art pixels; 0 when it covers the grid). */
+      x?: number;
+      y?: number;
+      width: number;
+      height: number;
+      /**
+       * A stroke in progress: the canvas holds only these tiles (art pixel rectangles); everywhere else the layer shows
+       * `base`, the drawing as it was (none when it started empty). `fill` makes the canvas the whole picture instead,
+       * when a screen needs that (see livePixels.ts). Missing = the canvas is the whole picture.
+       */
+      sparse?: { base: PixelDrawing | null; tiles: readonly { x: number; y: number; w: number; h: number }[]; fill: () => void };
+    }
   | { layerId: Id; kind: 'tilemap'; drawing: Drawing };
 
 let live: Live | null = null;

@@ -487,6 +487,18 @@ npm run build
 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/pixel-camera.cjs [outDir]
 ```
 
+## Live pixel stroke preview: scripts/e2e/pixel-live.cjs
+
+While a pixel stroke is held down the canvas shows the old drawing with only the touched 128 x 128 tiles drawn live
+(`src/canvas/livePixels.ts`, `src/tools/pixelSession.ts`). The script draws strokes (pencil and eraser) over a drawing that
+fills the grid, at ten zoom levels, takes the canvas while the stroke is held and again after it is let go, and the two
+must be pixel for pixel the same (at 33% and below the odd screen pixel may differ, and is only listed).
+
+```bash
+npm run build
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/pixel-live.cjs [outDir]
+```
+
 ## Plugin sandbox: scripts/e2e/plugins.cjs
 
 Checks the sandbox page blocks network and storage, the frame can't reach the app, and both example plugins in
@@ -528,7 +540,8 @@ focus moving elsewhere. Every scenario sets up its own state, so any `--only` su
 Full details, options and how to read the numbers are in `scripts/perf/README.md`. Results go in
 `scripts/perf/results/`.
 
-`run.cjs`: real input events, real GPU canvas, numbers as JSON. Tests: `draw`, `playback`, `rigfx`, `templates`,
+`run.cjs`: real input events, real GPU canvas, numbers as JSON. Tests: `draw`, `playback`, `rigfx`, `pixellive` (the first
+dab of a stroke on a 2048 and a 4096 pixel drawing that fills the grid: pointer to picture, and what is uploaded), `templates`,
 `zoompan`, `memory`, and `soak` (only when named in `--only`; about four minutes, `PERF_SOAK_ROUNDS` sets the rounds).
 
 ```bash
@@ -661,15 +674,18 @@ WEB_ENGINES=1 xvfb-run -a -s "-screen 0 1600x1000x24" npx vitest run test/export
   delays and tags, and its slices must equal both Aseprite's JSON and the slices read from the .aseprite file.
 - `slices-godot-e2e`: the `-slices.tscn` loads in Godot 4: a NinePatchRect with its margins and region, a Sprite2D on an
   AtlasTexture with the pivot as its origin, and the pixels of each region.
-  A second test plays a slice that moves: the AnimationPlayer is sought to several times and the region, offset,
-  borders and the colour in each region are read back.
+  A second test plays a slice that moves: the AnimationPlayer (one animation per document clip, named after it) is sought to
+  several times, also in a clip that plays backward, and the region, offset, borders and the colour in each region are read
+  back. A slice whose first key has no 9-patch middle and a later one does must be a NinePatchRect with borders of 0 until
+  that key.
 - `slices-unity-e2e`: a throwaway Unity project, with and without the 2D Sprite package, imports the sheet through the
   importer script; each sprite's rect, pivot and border are read back (`scripts/e2e/unity/FramelingSliceCheck.cs`).
-  A moving slice is checked too: a sprite per key with its own pivot and the colour in its middle, and the clip the
-  importer makes for it.
+  A moving slice is checked too: a sprite per key with its own pivot and the colour in its middle, and a clip per document
+  clip (`slice_<slice>_<clip>`, in that clip's order, backward included) that the importer makes for it.
 - `slices-web-e2e`: Phaser 3 and 4, PixiJS 8 load the atlas (frame regions, pivot, anchor) and Chromium draws the CSS
   9-patch stretched (`scripts/e2e/web-slices.cjs`).
-  The moving slice is loaded there as well: a frame with its own pivot or anchor per key, and the animation that plays them.
+  The moving slice is loaded there as well: a frame with its own pivot or anchor per key, and an animation per document clip
+  that plays them in that clip's order.
 - `test/export/slices-moving.test.ts` (no engine needed) checks the same exports as text and reads the sheet picture to
   prove each key's region holds the colour that frame drew there.
 

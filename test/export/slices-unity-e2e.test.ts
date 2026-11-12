@@ -59,7 +59,8 @@ function movingFiles() {
     ] },
   ];
   return buildSheetFiles({
-    doc: { name: 'Mover', clips: [], markers: [], fps: 10 },
+    // Two clips: "run" through every frame, and "drop" backward from frame 5 to 1.
+    doc: { name: 'Mover', clips: [{ id: 'c1', name: 'run', start: 0, end: 5, loop: true }, { id: 'c2', name: 'drop', start: 1, end: 5, loop: false, direction: 'reverse' }], markers: [], fps: 10 },
     sheet: { ...DEFAULT_SHEET, engine: 'unity', trim: true, dedupe: false, json: false, unityScript: true },
     frames,
     range: { start: 0, end: 5 },
@@ -109,8 +110,10 @@ describe.skipIf(!UNITY)('Unity imports the slices of a sprite sheet export', () 
     expect(s.hand.slice(4, 6)).toEqual([2, 0]);
     expect(s.hand_f3.slice(4, 6)).toEqual([3, 3]);
     expect(s.hand_f5.slice(4, 6)).toEqual([3, 3]);
-    // The clip that plays them: each key's sprite for two frames of 0.1 s, and a last key on the clip's final tick.
-    expect(got.clips.mover_slice_hand, JSON.stringify(got.clips)).toEqual({ rate: 10, keys: '0=hand,0.2=hand_f3,0.4=hand_f5,0.5=hand_f5' });
+    // A clip for each of the document's clips: each key's sprite for two frames of 0.1 s, and a last key on the clip's final tick.
+    expect(got.clips.mover_slice_hand_run, JSON.stringify(got.clips)).toEqual({ rate: 10, keys: '0=hand,0.2=hand_f3,0.4=hand_f5,0.5=hand_f5' });
+    // Backward over frames 5 to 1: the keys the other way round, the last held one tick (so no extra closing key, like the clip of the sprites).
+    expect(got.clips.mover_slice_hand_drop, JSON.stringify(got.clips)).toEqual({ rate: 10, keys: '0=hand_f5,0.2=hand_f3,0.4=hand' });
   };
 
   const expectSprites = (got: ReturnType<typeof run>) => {

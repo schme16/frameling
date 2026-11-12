@@ -98,28 +98,42 @@ describe('tiled pixel session', () => {
     expect(s.commit('Nothing')).toBe('nothing');
   });
 
-  it('the live canvas covers the old block and the painted area, growing as a stroke goes out', () => {
-    const made: { w: number; h: number; puts: unknown[][]; draws: unknown[][] }[] = [];
+  /** Fake canvases that record what is put on them and drawn onto them. */
+  const fakes = () => {
+    const made: { w: number; h: number; puts: unknown[][]; draws: unknown[][]; ops: string[] }[] = [];
     class FakeCanvas {
-      w: number;
-      h: number;
       rec: (typeof made)[number];
-      constructor(w: number, h: number) {
-        this.w = w;
-        this.h = h;
-        this.rec = { w, h, puts: [], draws: [] };
+      constructor(public w: number, public h: number) {
+        this.rec = { w, h, puts: [], draws: [], ops: [] };
         made.push(this.rec);
       }
       getContext() {
-        return { putImageData: (...a: unknown[]) => this.rec.puts.push(a), drawImage: (...a: unknown[]) => this.rec.draws.push(a) };
+        const self = this;
+        const g = {
+          globalCompositeOperation: 'source-over',
+          putImageData: (...a: unknown[]) => self.rec.puts.push(a),
+          drawImage: (...a: unknown[]) => self.rec.draws.push([...a, g.globalCompositeOperation]),
+          save() {},
+          restore() {},
+          beginPath() {},
+          rect() {},
+          clip() {},
+        };
+        return g;
       }
     }
     vi.stubGlobal('OffscreenCanvas', FakeCanvas);
     vi.stubGlobal('ImageData', class { constructor(public data: Uint8ClampedArray, public width: number, public height: number) {} });
+    return made;
+  };
+
+  it('the live preview is sparse: only touched tiles go up (whole, once), over the drawing as it was', () => {
+    const made = fakes();
     start();
     const a = session();
     for (let x = 300; x < 330; x++) a.set(x, 200, [255, 0, 0, 255]);
     a.commit('Block');
+    const old = Object.values(store().get().doc.drawings).find((d) => d.kind === 'pixel') as PixelDrawing;
     made.length = 0;
     const s = session();
     expect(made.length).toBe(0);
@@ -128,16 +142,82 @@ describe('tiled pixel session', () => {
     const live = getLive();
     expect(live && live.kind === 'pixel').toBe(true);
     if (!live || live.kind !== 'pixel') return;
-    // The old block is at (300, 200), the new pixel at (10, 10): the canvas holds both, and is smaller than the grid.
-    expect(live.x ?? 0).toBeLessThanOrEqual(10);
-    expect(live.y ?? 0).toBeLessThanOrEqual(10);
-    expect((live.x ?? 0) + live.width).toBeGreaterThanOrEqual(330);
-    expect((live.y ?? 0) + live.height).toBeGreaterThanOrEqual(201);
+    // The old block (at 300, 200) is not put on the canvas: only the tile of the new pixel is, whole.
+    expect(made.length).toBe(1);
+    expect(made[0].puts).toHaveLength(1);
+    expect(made[0].puts[0].slice(3)).toEqual([0, 0, 128, 128]);
+    expect(live.sparse?.base).toBe(old);
+    expect(live.sparse?.tiles).toEqual([{ x: 0, y: 0, w: 128, h: 128 }]);
+    // Painting again in the same tile puts only what changed.
+    s.set(11, 10, [0, 255, 0, 255]);
+    s.flush();
+    expect(made[0].puts[1].slice(3)).toEqual([11, 10, 1, 1]);
+    // A tile that holds the old block goes up whole with the old pixels in it (the picture there is replaced, not added to).
+    s.set(301, 201, [0, 0, 255, 255]);
+    s.flush();
+    const after = getLive();
+    expect(after && after.kind === 'pixel' && after.sparse?.tiles.length).toBe(2);
+    const reds = made.flatMap((m) => m.puts).filter((p) => {
+      const data = (p[0] as { data: Uint8ClampedArray }).data;
+      const o = ((200 & 127) * 128 + (300 & 127)) * 4;
+      return data[o] === 255 && data[o + 3] === 255;
+    });
+    expect(reds.length).toBeGreaterThan(0);
+    // The canvas grew as the stroke went out of it, and still holds tiles only.
+    s.set(415, 295, [0, 0, 255, 255]);
+    s.flush();
+    const end = getLive();
+    expect(end && end.kind === 'pixel' && end.sparse?.tiles.length).toBe(3);
+    // The result is still the old block with the new pixels on it.
+    expect(s.commit('Done')).toBe('ok');
+    const d = Object.values(store().get().doc.drawings).find((x) => x.kind === 'pixel') as PixelDrawing;
+    const grid = gridPixels(d, W, H);
+    expect([...grid.slice((200 * W + 300) * 4, (200 * W + 300) * 4 + 4)]).toEqual([255, 0, 0, 255]);
+    expect([...grid.slice((10 * W + 10) * 4, (10 * W + 10) * 4 + 4)]).toEqual([0, 255, 0, 255]);
+  });
+
+  it('asking for the whole picture makes a canvas over the old block with the old drawing under the tiles, and it stays whole as it grows', () => {
+    const made = fakes();
+    start();
+    const a = session();
+    for (let x = 300; x < 330; x++) a.set(x, 200, [255, 0, 0, 255]);
+    a.commit('Block');
+    made.length = 0;
+    const s = session();
+    s.set(10, 10, [0, 255, 0, 255]);
+    s.flush();
+    const live = getLive();
+    if (!live || live.kind !== 'pixel' || !live.sparse) throw new Error('expected a sparse preview');
+    expect(live.width).toBeLessThan(W);
+    live.sparse.fill();
+    // A new canvas over the live tile and the old block, the old picture drawn on it (canvas to canvas), then the tile put on it whole.
+    const whole = getLive();
+    expect(whole && whole.kind === 'pixel' && whole.sparse).toBeUndefined();
+    if (!whole || whole.kind !== 'pixel') return;
+    const rec = made[1];
+    expect(rec.w).toBe(whole.width);
+    expect(whole.x ?? 0).toBe(0);
+    expect((whole.x ?? 0) + whole.width).toBeGreaterThanOrEqual(330);
+    expect((whole.y ?? 0) + whole.height).toBeGreaterThanOrEqual(201);
+    expect(rec.draws).toHaveLength(1);
+    expect(rec.puts).toHaveLength(1);
+    expect(rec.puts[0].slice(3)).toEqual([0, 0, 128, 128]);
+    // Growing keeps it whole: the new canvas gets the old picture and the old canvas put back over its own area.
     const before = made.length;
     s.set(415, 295, [0, 0, 255, 255]);
     s.flush();
-    expect(made.length).toBe(before + 1);
-    const after = getLive();
-    expect(after && after.kind === 'pixel' && after.x === 0 && after.y === 0 && after.width === W && after.height === H).toBe(true);
+    const grown = getLive();
+    expect(grown && grown.kind === 'pixel' && grown.sparse).toBeUndefined();
+    if (made.length > before) expect(made[before].draws.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('a stroke that starts on an empty frame has no old picture to show under the tiles', () => {
+    fakes();
+    start();
+    const s = session();
+    s.set(5, 5, [1, 2, 3, 255]);
+    s.flush();
+    const live = getLive();
+    expect(live && live.kind === 'pixel' && live.sparse?.base).toBeNull();
   });
 });
