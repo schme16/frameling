@@ -52,7 +52,7 @@ To export them, see [exporting artboards](help:artboards-export). For animation,
     media: 'artboards-letterbox.png',
     summary: 'Shots of different sizes can play and export as one film. Fit shows the whole shot with bars; Fill covers the picture and crops what hangs over.',
     keywords: ['letterbox', 'pillarbox', 'bars', 'black bars', 'fit', 'fill', 'crop', 'different sizes', 'aspect ratio', 'join shots', 'mixed sizes'],
-    body: `The picture of a film is the size of its **first** shot. A shot of another size is placed into that picture, in one of two ways:
+    body: `The picture of a film is the size of its **first** shot, unless you pick another **Picture size** (see below). A shot of another size is placed into that picture, in one of two ways:
 
 - **Fit (bars)** is the default. The whole shot shows, as big as it can be, centred, with **bars** at the sides (a tall shot) or top and bottom (a wide one). Nothing is cut off, and anything hanging off the edge of the shot's stage stays hidden.
 - **Fill (crop)** makes the shot cover the whole picture, so no bars, but what hangs over the edges is **cropped**.
@@ -60,9 +60,9 @@ To export them, see [exporting artboards](help:artboards-export). For animation,
 **Where to pick:** in **Play all in order** (the **Fit (bars)** and **Fill (crop)** buttons next to **Loop**, shown when the shots differ in size), and in the **Export** dialog under **All in order, as one**. It is the same setting in both, and Frameling remembers it. It is also in **Preferences > Behaviour**, with the **bar colour**: the first shot's background colour (the default), black or white.
 
 **Good to know:**
-- A shot's own camera moves still work. Frameling zooms them for the fit.
+- A shot's own camera moves still work, and so do layers with depth (the parallax): Frameling zooms them for the fit and keeps far layers where the plain fit puts them.
 - Shots the same size as the picture are left exactly as they are.
-- To change the picture's size, put the shot you want first in the Artboards panel (drag it to the top).
+- **Picture size** sets how big the picture is: **First shot** (the default), **Largest shot** (the picture is as big as the biggest shot, so none of them has to shrink), or **Custom** (type a width and height). It sits next to Fit and Fill, in **Play all in order** and in the Export dialog. Or put the shot you want first in the Artboards panel (drag it to the top).
 - Exporting **each as its own file** never fits anything: every shot keeps its own size.
 
 See [artboards as shots](help:artboards-shots) and [exporting artboards](help:artboards-export).`,

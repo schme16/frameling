@@ -203,7 +203,7 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
     } else if (d.kind === 'camera') {
       const v = isObj(d.view) ? d.view : {};
       const zoom = num(v.zoom, 1);
-      drawings[id] = { id: str(d.id, id), kind: 'camera', view: { x: num(v.x, width / 2), y: num(v.y, height / 2), zoom: zoom > 0 ? zoom : 1, rotation: num(v.rotation, 0) }, ...readExt(d.ext, warnings) };
+      drawings[id] = { id: str(d.id, id), kind: 'camera', view: { x: num(v.x, width / 2), y: num(v.y, height / 2), zoom: zoom > 0 ? zoom : 1, rotation: num(v.rotation, 0), ...(isObj(v.fit) && num(v.fit.k, 0) > 0 && num(v.fit.w, 0) > 0 && num(v.fit.h, 0) > 0 ? { fit: { k: num(v.fit.k, 1), w: num(v.fit.w, 1), h: num(v.fit.h, 1) } } : {}) }, ...readExt(d.ext, warnings) };
     } else {
       warnings.push('One drawing could not be read and was left out.');
     }

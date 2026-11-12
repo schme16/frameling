@@ -4,6 +4,7 @@
  * "fill" covers the whole picture and crops what hangs over.
  */
 import { currentChoice, registerChoice } from '../core/choices';
+import { createStore, readRaw, writeJson } from '../ui/mini';
 
 export type FitMode = 'bars' | 'fill';
 
@@ -47,6 +48,61 @@ export function barColorFor(background: string | null): string | null {
 /** How shots of different sizes fit: what Preferences says (Fit by default). */
 export const currentFit = (): FitMode => currentChoice<FitMode>('artboards.fit');
 
+
+export type PictureSize = 'first' | 'largest' | 'custom';
+
+registerChoice<PictureSize>({
+  id: 'artboards.pictureSize',
+  title: 'Picture size when shots are joined',
+  question: 'How big should the picture be when shots are played or exported in order?',
+  category: 'Export',
+  default: 'first',
+  silent: true,
+  help: 'Used by Play all in order and by exporting the artboards all in order, as one. Shots of another size are fitted into it.',
+  options: [
+    { value: 'first', label: 'First shot', detail: 'The picture is the size of the first shot.' },
+    { value: 'largest', label: 'Largest shot', detail: 'The picture is the size of the biggest shot, so none of them has to shrink.' },
+    { value: 'custom', label: 'Custom', detail: 'Type the width and height you want.' },
+  ],
+});
+
+export interface PicSize {
+  width: number;
+  height: number;
+}
+
+/** Biggest picture side a custom size can be. */
+export const MAX_PICTURE_SIDE = 8192;
+
+const CUSTOM_KEY = 'frameling.artboards.customPicture.v1';
+const clampSide = (n: number): number => Math.max(1, Math.min(MAX_PICTURE_SIDE, Math.round(Number.isFinite(n) ? n : 1)));
+const readCustom = (): PicSize | null => {
+  const v = readRaw<Partial<PicSize> | null>(CUSTOM_KEY, null);
+  return v && Number.isFinite(v.width) && Number.isFinite(v.height) ? { width: clampSide(v.width!), height: clampSide(v.height!) } : null;
+};
+
+/** The size typed in for "Custom" (null until one is typed: then the first shot's size stands in). */
+export const customPicture = createStore<PicSize | null>(readCustom());
+
+export function setCustomPicture(size: PicSize): void {
+  const s = { width: clampSide(size.width), height: clampSide(size.height) };
+  customPicture.set(s);
+  writeJson(CUSTOM_KEY, s);
+}
+
+/** The picture's size for shots of these sizes (in order): the first, the one with the most area, or the custom size. */
+export function pictureSizeFor(sizes: readonly PicSize[], mode: PictureSize, custom: PicSize | null = null): PicSize {
+  const first = sizes[0] ?? { width: 1, height: 1 };
+  if (mode === 'custom') return custom ? { width: clampSide(custom.width), height: clampSide(custom.height) } : { ...first };
+  if (mode === 'largest') return sizes.reduce((best, s) => (s.width * s.height > best.width * best.height ? s : best), first);
+  return { ...first };
+}
+
+/** How the picture is sized: what the Export dialog and the player say (First shot by default). */
+export const currentPictureSize = (sizes: readonly PicSize[]): PicSize => {
+  const c = pictureSizeFor(sizes, currentChoice<PictureSize>('artboards.pictureSize'), customPicture.get());
+  return { width: c.width, height: c.height };
+};
 
 export interface Placement {
   /** Scale from the shot to the picture. */

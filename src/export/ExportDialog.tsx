@@ -31,6 +31,7 @@ import { usePrefs } from '../ui/prefs';
 import { templateExport } from '../templates/setup';
 import { ArtboardExportPicker } from '../artboards/ExportPicker';
 import { artboardExport, artboardSummary, planArtboards } from '../artboards/export';
+import { customPicture } from '../artboards/fit';
 import { pixelExportStart } from '../pixel/workspace';
 
 /** Last time's settings, repaired so they still make sense for this document. */
@@ -100,7 +101,9 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
   const plan = useMemo(() => planExport(doc, s, frame), [doc, s, frame]);
   // Exporting several artboards: the footer tells about all of them (for "as one", the whole joined film).
   const abChoice = artboardExport.use((c) => c);
-  const abPlan = useMemo(() => planArtboards(store().rootDoc(), s, frame), [open, s, frame, abChoice]);
+  // The fit and the picture size change what comes out, so the footer follows them too.
+  const abLook = [useChoice<string>('artboards.fit'), useChoice<string>('artboards.pictureSize'), customPicture.use((c) => c)];
+  const abPlan = useMemo(() => planArtboards(store().rootDoc(), s, frame), [open, s, frame, abChoice, ...abLook]);
   const video = s.format === 'mp4' || s.format === 'webm' || s.format === 'prores';
   const videoSize = useMemo(() => planExport(doc, { ...s, format: 'mp4' }, frame), [doc, s, frame]);
 

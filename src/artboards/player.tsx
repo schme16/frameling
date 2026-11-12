@@ -1,5 +1,5 @@
 // "Play all in order": the artboards one after another, like shots in a film, in a window of their own. The picture is
-// the first shot's size; a shot of another size gets bars or is cropped (Fit or Fill). Nothing in the document changes.
+// the first shot's size (or the largest, or a custom size); a shot of another size gets bars or is cropped (Fit or Fill). Nothing in the document changes.
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Doc, Id } from '../core/format';
 import { store } from '../core/store';
@@ -8,7 +8,8 @@ import { renderFrame } from '../core/render';
 import { Modal, mountModal } from '../io/mount';
 import { leaveTileEdit } from '../tiles/tileEdit';
 import { artboardDoc, artboardsOf, shotAt } from './model';
-import { barColorFor, fitPlacement, sameSize, type FitMode } from './fit';
+import { barColorFor, currentPictureSize, customPicture, fitPlacement, sameSize, type FitMode } from './fit';
+import { PictureSizeControl } from './PictureSize';
 
 export interface Reel {
   shots: { id: Id; name: string; doc: Doc }[];
@@ -44,7 +45,11 @@ function ShotsPlayer({ close }: { close: () => void }) {
   const [loop, setLoop] = useState(true);
   const clock = useRef({ t0: 0, from: 0 });
   const fit = useChoice<FitMode>('artboards.fit');
-  const mixed = reel.shots.some((s) => !sameSize(s.doc.width, s.doc.height, reel.shots[0].doc.width, reel.shots[0].doc.height));
+  useChoice('artboards.pictureSize');
+  customPicture.use((c) => c);
+  const sizes = useMemo(() => reel.shots.map((s) => ({ width: s.doc.width, height: s.doc.height })), [reel]);
+  const picSize = currentPictureSize(sizes);
+  const mixed = sizes.some((s) => !sameSize(s.width, s.height, picSize.width, picSize.height));
 
   useEffect(() => {
     if (!playing) return;
@@ -81,8 +86,8 @@ function ShotsPlayer({ close }: { close: () => void }) {
     g.setTransform(1, 0, 0, 1, 0, 0);
     g.clearRect(0, 0, W, H);
     const d = shot.doc;
-    // The picture is the first shot's size, like the joined export. A shot of another size is fitted into it.
-    const pic = reel.shots[0].doc;
+    // The picture is the size the joined export would use. A shot of another size is fitted into it.
+    const pic = { width: picSize.width, height: picSize.height, background: reel.shots[0].doc.background };
     const k = Math.min(W / pic.width, H / pic.height);
     const ox = (W - pic.width * k) / 2;
     const oy = (H - pic.height * k) / 2;
@@ -140,6 +145,7 @@ function ShotsPlayer({ close }: { close: () => void }) {
           <span className="io-muted">
             {shot.name}, frame {at.frame + 1} of {shot.doc.length}
           </span>
+          <PictureSizeControl sizes={sizes} />
           {mixed && (
             <div className="ex-seg" role="group" aria-label="Shots of different sizes">
               <button type="button" className={fit === 'bars' ? 'ex-on' : ''} aria-pressed={fit === 'bars'} title="Show the whole shot, with bars" onClick={() => setChoice('artboards.fit', 'bars')}>

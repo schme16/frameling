@@ -240,6 +240,12 @@ export interface CameraView {
   y: number;
   zoom: number;
   rotation: number;
+  /**
+   * Only on the camera of a film joined from shots of different sizes (never saved by the editor): this view was
+   * scaled by `k` to fit a shot of `w` x `h` into the picture. `zoom` already includes `k`; layers at another depth
+   * zoom the shot's own zoom by their factor and the fit comes after, so they line up with the plain fit.
+   */
+  fit?: { k: number; w: number; h: number };
 }
 
 /** One key of a camera layer. */

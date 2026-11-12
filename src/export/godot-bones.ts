@@ -10,7 +10,7 @@
  * only, so scaling just scales their moves.
  */
 import type { Cel, Doc, Easing, Id, Layer } from '../core/format';
-import { activeCamera, cameraViewAt, parallaxFactor, plainView, clampZoom } from '../core/camera';
+import { activeCamera, cameraViewAt, depthAnchor, depthScale, parallaxFactor, plainView, clampZoom } from '../core/camera';
 import { celAt } from '../core/doc';
 import { nextKey } from '../core/symbols';
 import { poseKeyAt, rigPoseAt, type RigLayer } from '../rig/pose';
@@ -685,9 +685,8 @@ function build(o: BonesSceneInput): { text: string; shaders: Set<NativeBlend> } 
       for (const g of depthGroups) {
         // Scale about the camera's own centre of the layer, by how much less the far layer zooms.
         const grow = (v: ReturnType<typeof view>) => {
-          const sc = Math.pow(clampZoom(v.zoom), g.factor - 1);
-          const px = doc.width / 2 + (v.x - doc.width / 2) * g.factor;
-          const py = doc.height / 2 + (v.y - doc.height / 2) * g.factor;
+          const sc = depthScale(v, g.factor) / clampZoom(v.zoom);
+          const { x: px, y: py } = depthAnchor(doc, v, g.factor);
           return [sc, 0, 0, sc, px * (1 - sc) * k, py * (1 - sc) * k];
         };
         vtrack(`${g.path}:transform`, keys(grow), (v) => xf(v));
