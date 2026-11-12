@@ -54,19 +54,25 @@ describe('help audit (the checks)', () => {
     const a = auditHelp({
       topics: [topic('undo', 'Press **Ctrl+Z**. Or **Ctrl+Q**. See [x](help:nope) and [y](help:fill#nowhere) and [z](help:fill#tips).', { media: 'undo.mp4' }), topic('fill', `## Tips\n\n${'word '.repeat(420)}`)],
       commands: [cmd('edit.undo', { keys: ['Mod+Z'], help: 'undo' }), cmd('edit.lost'), cmd('edit.bad', { help: 'gone' })],
-      files: ['undo.mp4', 'stray.png'],
+      files: ['undo-dark.mp4', 'undo-dark-poster.png', 'undo-light.mp4', 'stray.png'],
     });
     expect(a.commandsWithoutHelp).toEqual(['edit.lost']);
     expect(a.topicsWithoutMedia).toEqual(['fill']);
-    expect(a.missingMedia).toEqual(['undo -> undo-poster.png']);
+    expect(a.missingMedia).toEqual(['undo -> undo-light-poster.png']);
     expect(a.orphanFiles).toEqual(['stray.png']);
     expect(a.longTopics).toEqual(['fill (421 words)']);
     expect(a.shortcutDrift).toEqual(['undo: Ctrl+Q']);
     expect(a.brokenLinks).toEqual(['undo -> help:nope', 'undo -> help:fill#nowhere', 'command edit.bad -> help:gone']);
   });
 
+  it('wants both the dark and the light version of a picture', () => {
+    const a = auditHelp({ topics: [topic('t', 'Hi.', { media: 'x.png' })], commands: [], files: ['x-dark.png'] });
+    expect(a.missingMedia).toEqual(['t -> x-light.png']);
+    expect(a.orphanFiles).toEqual([]);
+  });
+
   it('lets a shortcut through when it is allowed on purpose', () => {
-    const a = auditHelp({ topics: [topic('t', 'Press **Ctrl+W**.', { media: 'x.png' })], commands: [], files: ['x.png'], extraKeys: ['Mod+W'] });
+    const a = auditHelp({ topics: [topic('t', 'Press **Ctrl+W**.', { media: 'x.png' })], commands: [], files: ['x-dark.png', 'x-light.png'], extraKeys: ['Mod+W'] });
     expect(a.shortcutDrift).toEqual([]);
   });
 });

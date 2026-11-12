@@ -18,6 +18,7 @@
     "build:mascot": "node scripts/build-mascot.mjs",
     "test": "vitest run",
     "a11y": "npm run build && electron scripts/a11y.cjs",
+    "help:media": "npm run build && SHOT_SHOW=1 xvfb-run -a -s \"-screen 0 1600x1000x24\" electron scripts/docs/help-media.cjs",
     "help:audit": "vitest run test/ui/help-audit.test.ts test/ui/help-media.test.ts test/ui/help-words.test.ts",
     "start": "npm run build && electron .",
     "dist": "npm run build && electron-builder --publish never",

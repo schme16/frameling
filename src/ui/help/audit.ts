@@ -3,7 +3,7 @@
 // Pure: the caller hands in the registries and the list of files in public/help/, so it runs in a test.
 import type { Command, HelpTopic, PanelDef, Tool } from '../../core/registry';
 import { normaliseCombo } from '../keys';
-import { isVideo, posterFor } from './media';
+import { mediaFiles } from './media';
 import { slug } from './markdown';
 
 export interface HelpAuditInput {
@@ -85,7 +85,7 @@ export function auditHelp(input: HelpAuditInput): HelpAudit {
   const have = new Set(files);
   for (const t of topics) {
     if (!t.media) continue;
-    const need = isVideo(t.media) ? [t.media, posterFor(t.media)] : [t.media];
+    const need = mediaFiles(t.media);
     for (const f of need) {
       used.add(f);
       if (!have.has(f)) missingMedia.push(`${t.id} -> ${f}`);
