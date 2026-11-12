@@ -167,6 +167,13 @@ export function pruneDrawings(doc: Doc): void {
   const lists: Layer[][] = [doc.layers, ...(doc.editing ?? []).map((f) => f.layers), ...Object.values(doc.symbols ?? {}).map((s) => s.layers)];
   // Artboards that aren't open keep their layers aside.
   for (const a of doc.artboards ?? []) if (a.content) lists.push(a.content.layers);
+  // A variation that is open has its added keys' drawings only in its overrides (its stage points at its own copies).
+  for (const a of doc.artboards ?? []) {
+    const ls = a.overrides?.layers;
+    if (!ls) continue;
+    for (const l of ls.added ?? []) for (const c of l.cels) used.add(c.drawingId);
+    for (const it of Object.values(ls.items ?? {})) for (const c of it.sub?.added ?? []) used.add(c.drawingId);
+  }
   for (const list of lists) for (const l of list) for (const c of l.cels) used.add(c.drawingId);
   for (const t of doc.tileset?.tiles ?? []) for (const f of t.frames) used.add(f.drawingId);
   for (const id of Object.keys(doc.drawings)) if (!used.has(id)) delete doc.drawings[id];
