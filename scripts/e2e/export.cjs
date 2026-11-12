@@ -1835,7 +1835,7 @@ func _process(_d):
 
 // Loads a bones export in real Godot (a project with the export's files in sprites/), plays an animation, saves a
 // picture of each wanted frame and compares it with Frameling's own PNG export of the same frame.
-async function renderBonesInGodot({ dir, files, scene, settings, shots, anim, tolerance, probes = [] }) {
+async function renderBonesInGodot({ dir, files, scene, settings, shots, anim, tolerance, probes = [], tree }) {
   if (!GODOT || SKIP.includes('godot')) return;
   const doc = await X('doc()');
   const proj = path.join(dir, '_godot');
@@ -1855,6 +1855,9 @@ func _init():
 	# Autoplay starts on the first frame; let it, so it doesn't restart the clip after we seek.
 	await process_frame
 	print("ANIMS " + ",".join(ap.get_animation_list()))
+	# The scene tree as Godot loaded it: path, class, own visibility, whether it shows, and its fade.
+	for n in s.find_children("*", "CanvasItem", true, false):
+		print("NODE " + str(s.get_path_to(n)) + "|" + n.get_class() + "|" + str(n.visible) + "|" + str(n.is_visible_in_tree()) + "|" + str(snapped(n.modulate.a, 0.001)))
 	for f in [${shots.join(', ')}]:
 		ap.play("${anim}")
 		ap.seek(f / ${doc.fps}.0, true)
@@ -1887,6 +1890,20 @@ func _init():
     }
     if (!check(run.out.includes('RENDERED'), `Godot did not render: ${(run.err + run.out).slice(0, 400)}`)) return;
     check(new RegExp(`ANIMS .*${anim}`).test(run.out), `Godot has no ${anim} animation`);
+    if (tree && !pass.probesOnly) {
+      // The scene tree: node names, nesting, classes, who is hidden (and who shows because of it) and who carries a fade.
+      const found = new Map(run.out.split('\n').filter((l) => l.startsWith('NODE ')).map((l) => l.slice(5).split('|')).map(([p, ...rest]) => [p, rest]));
+      for (const t of tree) {
+        const got = found.get(t.path);
+        if (!check(got, `Godot's scene has no node ${t.path} (has ${[...found.keys()].join(', ')})`)) continue;
+        const [cls, own, shows, alpha] = got;
+        check(!t.cls || cls === t.cls, `${t.path} is a ${cls}, not a ${t.cls}`);
+        check(t.visible === undefined || own === (t.visible ? 'true' : 'false'), `${t.path} own visibility is ${own}`);
+        check(t.shows === undefined || shows === (t.shows ? 'true' : 'false'), `${t.path} shows in the tree: ${shows}`);
+        check(t.alpha === undefined || Math.abs(Number(alpha) - t.alpha) < 0.002, `${t.path} fade is ${alpha}, not ${t.alpha}`);
+      }
+      note(`scene tree ok (${tree.length} nodes checked)`);
+    }
     for (const f of shots) {
       const ref = await refOf(f);
       const e = ref && rmse(path.join(proj, `shot-${f}.png`), ref);
@@ -1958,6 +1975,52 @@ async function godotBonesExtrasSection(name = 'bones-extras', extra = {}, more, 
   }
 }
 
+
+// Layer folders as Node2D nodes: nested folders, a hidden one (with a hidden one inside) and a faded one with two layers that do not overlap.
+// The tree is checked in real Godot and the pictures against Frameling's own frames (the hidden layers must not show).
+async function godotBonesFoldersSection() {
+  if (flag('section') && !flag('section').includes('bones-folders')) return;
+  const r = begin('bones-folders', 'sheet godot-bones');
+  try {
+    const dir = setAutomationDir(path.join(outDir, 'bones-folders', 'sheet-godot-bones'));
+    await X(`loadBonesExtras(false, ${JSON.stringify({ folders: true })})`);
+    const defaults = await X('defaults()');
+    const settings = { ...defaults, format: 'sheet', range: 'all', clipId: null, scale: 1, transparent: false, sheet: { ...defaults.sheet, engine: 'godot', godot: true, godotScene: true, json: false, godotRig: 'bones', godotPath: '' } };
+    r.settings = settings;
+    const res = await X(`run(${JSON.stringify(settings)})`);
+    if (!check(res.outcome === 'done', `export did not finish: ${JSON.stringify(res)}`)) return;
+    const files = listFiles(dir).sort();
+    note(files.join(', '));
+    const scene = files.find((n) => n.endsWith('.tscn'));
+    if (!check(scene, 'no .tscn')) return;
+    const tscn = fs.readFileSync(path.join(dir, scene), 'utf8');
+    check(/\[node name="Props_faded" type="Node2D" parent="Scenery"\]\nmodulate = Color\(1, 1, 1, 0\.5\)/.test(tscn), 'the faded Props.faded folder should carry its fade on its node');
+    const tree = [
+      { path: 'Scenery', cls: 'Node2D', visible: true, alpha: 1 },
+      { path: 'Scenery/Hills_far', cls: 'Sprite2D', alpha: 1 },
+      { path: 'Scenery/Props_faded', cls: 'Node2D', visible: true, alpha: 0.5 },
+      { path: 'Scenery/Props_faded/Crate', cls: 'Sprite2D', alpha: 1 },
+      { path: 'Scenery/Props_faded/Crate 2', cls: 'Sprite2D', alpha: 1 },
+      { path: 'Ghosts', cls: 'Node2D', visible: false, shows: false },
+      { path: 'Ghosts/Ghost', cls: 'Sprite2D', visible: true, shows: false },
+      { path: 'Ghosts/Inner', cls: 'Node2D', visible: false, shows: false },
+      { path: 'Ghosts/Inner/Ghost 2', cls: 'Sprite2D', visible: true, shows: false },
+      { path: 'Cast', cls: 'Node2D', visible: true, shows: true },
+      { path: 'Cast/Arm', cls: 'CanvasGroup', shows: true },
+      { path: 'Sky', cls: 'Sprite2D', shows: true },
+    ];
+    // The frame-0 colours where the hidden folders' red and magenta squares would be, and over the faded crate.
+    const probes = [
+      { frame: 0, x: 200, y: 95, tol: 6, what: 'where the hidden Ghost would be (the sky)' },
+      { frame: 0, x: 40, y: 40, tol: 6, what: 'where the hidden Ghost 2 would be (the sky)' },
+      { frame: 0, x: 40, y: 190, tol: 6, what: 'the half faded crate over the hills' },
+    ];
+    await renderBonesInGodot({ dir, files, scene, settings, shots: [0, 3, 6, 8, 11], anim: 'default', tolerance: 0.03, probes, tree });
+  } catch (e) {
+    fail(`harness error: ${e?.stack ?? e}`);
+  }
+}
+
 (async () => {
   const guard = setTimeout(() => {
     console.error('The run took far too long, giving up.');
@@ -1969,6 +2032,7 @@ async function godotBonesExtrasSection(name = 'bones-extras', extra = {}, more, 
     await svgAnimCases();
     if ((!ONLY || ONLY.includes('godot-bones')) && !flag('section')) await godotBonesSection();
     if ((!ONLY || ONLY.includes('godot-bones') || ONLY.includes('godot-bones-bounce')) && !flag('section')) for (const native of [false, true]) await godotBonesBounceSection(native);
+    if (!ONLY || ONLY.includes('godot-bones')) await godotBonesFoldersSection();
     if (!ONLY || ONLY.includes('godot-bones')) await godotBonesExtrasSection();
     // A symbol copied three times its size: its pictures are baked bigger and scaled back down in the scene.
     if (!ONLY || ONLY.includes('godot-bones'))

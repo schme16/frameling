@@ -7,7 +7,7 @@
  * A scope is a list of layers over a range of frames: the stage over the exported range, or a symbol over its own
  * timeline. A symbol that has bones (or holds symbols that do) becomes a nested rig under its instance.
  */
-import type { Doc, Drawing, Id, Layer, LayerEffect, SkinMesh, VectorDrawing } from '../core/format';
+import type { Doc, Drawing, Id, Layer, LayerEffect, LayerFolder, SkinMesh, VectorDrawing } from '../core/format';
 import { activeCamera } from '../core/camera';
 import { celAt } from '../core/doc';
 import { folderChain } from '../core/folders';
@@ -163,7 +163,7 @@ export function bakeScales(top: BonesScope, doc: { width: number; height: number
 // ---------------------------------------------------------------- notes
 
 /** What happened to the look of the layers, in plain words, for the export dialog and the help topic. */
-export type BonesNoteLines = { native: string[]; baked: string[]; skipped: string[]; fades: string[]; tips: string[] };
+export type BonesNoteLines = { native: string[]; baked: string[]; skipped: string[]; fades: string[]; tips: string[]; folded: string[] };
 
 /** Said once when the scene has a faded symbol drawn as a CanvasGroup. */
 export const FADE_TIP = "Faded symbols look best with Godot's Forward+ or Mobile renderer. On Compatibility (web exports), they come out a little darker.";
@@ -176,6 +176,8 @@ export class BonesNotes {
   fades = new Map<string, string>();
   /** A faded symbol became a CanvasGroup (Godot's Compatibility renderer draws those a little darker). */
   groups = false;
+  /** Folder looks that go on each layer instead of the folder's node: "Fade on Clouds" -> why. */
+  folded = new Map<string, string>();
 
   fadeFallback(symbol: string, layer: string, why: string): void {
     this.fades.set(`${symbol} on ${layer}`, why);
@@ -196,7 +198,7 @@ export class BonesNotes {
   /** Short lines: [what, ...] each with the layer names. */
   lines(): BonesNoteLines {
     const list = (m: Map<string, Set<string>>) => [...m].map(([what, layers]) => `${what} on ${[...layers].join(', ')}`);
-    return { native: [...this.native], baked: list(this.baked), skipped: list(this.skipped), fades: [...this.fades].map(([what, why]) => `${what} (${why})`), tips: this.groups ? [FADE_TIP] : [] };
+    return { native: [...this.native], baked: list(this.baked), skipped: list(this.skipped), fades: [...this.fades].map(([what, why]) => `${what} (${why})`), tips: this.groups ? [FADE_TIP] : [], folded: [...this.folded].map(([what, why]) => `${what} (${why})`) };
   }
 }
 
@@ -284,6 +286,22 @@ export function nativeBlend(mode: Layer['blend']): { blend: NativeBlend; exact: 
 /** True when the layer sits in a folder that is switched off, or in one inside such a folder. */
 function inHiddenFolder(doc: Doc, l: Layer): boolean {
   return folderChain(doc.folders, l.folder).some((f) => !f.visible);
+}
+
+/** True when the layer follows a bone that is there, so its picture sits under that bone (not under a folder's node). */
+export function ridesBone(layers: Layer[], l: Layer): boolean {
+  if (!l.bind) return false;
+  const r = layers.find((x) => x.id === l.bind!.rig);
+  return isRigLayer(r) && r.rig.bones.some((b) => b.id === l.bind!.bone);
+}
+
+/**
+ * True when a layer is left out because of its folders. On the stage a hidden folder is a hidden node that holds its
+ * layers, so only layers that ride a bone are left out (they cannot sit in the node). Inside symbols folders are
+ * folded into the layers, and a hidden one hides them.
+ */
+function leftOutByFolder(doc: Doc, layers: Layer[], l: Layer, stage: boolean): boolean {
+  return inHiddenFolder(doc, l) && (!stage || ridesBone(layers, l));
 }
 
 /** The look of a layer (with its folders'), noting in `notes` what Godot does itself, what gets baked and what can't go. */
@@ -403,28 +421,34 @@ export interface MaskLinks {
   camera: boolean;
 }
 
-export function maskLinks(doc: Doc, layers: Layer[]): MaskLinks {
+export function maskLinks(doc: Doc, layers: Layer[], stage = false): MaskLinks {
   const cuts = new Map<Layer, PartMask[]>();
   const folderClipped = new Set<Layer>();
   const lookDoc = { ...doc, layers } as Doc;
-  const plan = buildPlan(lookDoc, (l) => l.visible, false, (l) => !l.reference);
-  const walk = (steps: PlanStep[], outer: PartMask[]) => {
-    steps.forEach((st, i) => {
-      if (st.type === 'mask') return;
-      const above: PartMask[] = [...steps.slice(i + 1).flatMap((x) => (x.type === 'mask' ? [{ layer: x.layer, op: x.layer.mask === 'hide' ? ('out' as const) : ('in' as const) }] : [])), ...outer];
-      if (st.node.type === 'layer') {
-        cuts.set(st.node.layer, above);
-        for (const c of st.clips) cuts.set(c, [{ layer: st.node.layer, op: 'in', clip: true }, ...above]);
-      } else {
-        walk(st.node.steps, above);
-        for (const c of st.clips) {
-          cuts.set(c, above);
-          folderClipped.add(c);
+  const collect = (hidden: boolean, keep: (l: Layer) => boolean) => {
+    const plan = buildPlan(lookDoc, (l) => l.visible, hidden, (l) => !l.reference);
+    const walk = (steps: PlanStep[], outer: PartMask[]) => {
+      steps.forEach((st, i) => {
+        if (st.type === 'mask') return;
+        const above: PartMask[] = [...steps.slice(i + 1).flatMap((x) => (x.type === 'mask' ? [{ layer: x.layer, op: x.layer.mask === 'hide' ? ('out' as const) : ('in' as const) }] : [])), ...outer];
+        if (st.node.type === 'layer') {
+          if (keep(st.node.layer)) cuts.set(st.node.layer, above);
+          for (const c of st.clips) if (keep(c)) cuts.set(c, [{ layer: st.node.layer, op: 'in', clip: true }, ...above]);
+        } else {
+          walk(st.node.steps, above);
+          for (const c of st.clips) {
+            if (!keep(c)) continue;
+            cuts.set(c, above);
+            folderClipped.add(c);
+          }
         }
-      }
-    });
+      });
+    };
+    walk(plan, []);
   };
-  walk(plan, []);
+  collect(false, () => true);
+  // On the stage a hidden folder's layers are still exported (in a hidden node), cut by the masks inside their folder.
+  if (stage && layers.some((l) => inHiddenFolder(doc, l))) collect(true, (l) => inHiddenFolder(doc, l));
   return { cuts, folderClipped, camera: !!activeCamera(doc) };
 }
 
@@ -440,10 +464,10 @@ export function carriedMasks(links: MaskLinks, layer: Layer): { carried: PartMas
 }
 
 /** Says in `notes` what happens to the masks and clipping among these layers. */
-export function noteMasks(doc: Doc, layers: Layer[], notes: BonesNotes, links = maskLinks(doc, layers)): void {
+export function noteMasks(doc: Doc, layers: Layer[], notes: BonesNotes, links = maskLinks(doc, layers), stage = false): void {
   for (const layer of layers) {
     if (!layer.visible || layer.reference || isRigLayer(layer) || layer.kind === 'camera' || layer.mask) continue;
-    if (inHiddenFolder(doc, layer)) continue;
+    if (leftOutByFolder(doc, layers, layer, stage)) continue;
     const { carried, lost } = carriedMasks(links, layer);
     for (const m of carried) notes.bake(m.clip ? 'Clip to the layer below' : m.op === 'out' ? 'Hide mask' : 'Show mask', layer.name);
     if (lost.length) notes.skip('Masks and clipping are not applied (the part or the mask moves with a bone, or sits at another depth)', layer.name);
@@ -487,11 +511,16 @@ export function bonesScope(
   const parts: BonesPart[] = [];
   const nested: NestedInstance[] = [];
   const n = range.end - range.start + 1;
-  const links = maskLinks(doc, layers);
-  if (notes) noteMasks(doc, layers, notes, links);
+  // On the stage every folder is a node of its own, so a hidden folder's layers are still exported (the node is hidden).
+  const stage = depth === 0;
+  const links = maskLinks(doc, layers, stage);
+  if (notes) noteMasks(doc, layers, notes, links, stage);
   layers.forEach((layer, z) => {
     if (!layer.visible || layer.reference || isRigLayer(layer) || layer.kind === 'camera') return;
-    if (inHiddenFolder(doc, layer)) return;
+    if (leftOutByFolder(doc, layers, layer, stage)) {
+      notes?.skip('Left out: in a hidden folder and following a bone, so not inside the folder’s node', layer.name);
+      return;
+    }
     let look = partLook(doc, layer, notes);
     if (layer.mask) return;
     // A layer whose base is hidden is hidden with it (the compositor's rule).
@@ -665,6 +694,79 @@ export function symbolDropsHiddenLayers(doc: Doc, id: Id): boolean {
   return layers.some((l) => layerHasEffects(doc, l)) && layers.some(dropped);
 }
 
+// ---------------------------------------------------------------- folders as nodes
+
+/** True when a part's picture sits under its bone, not under its folder's node. */
+export const partRides = (p: BonesPart): boolean => p.kind !== 'free';
+
+/** A folder's fade that can go on its node: not 0 (that hides it) and not 1 (nothing to fade). */
+const fadesFolder = (f: LayerFolder) => f.opacity < 1 - 1e-6 && f.opacity > 1e-6;
+
+/**
+ * The folders on the stage whose fade goes on their own node (Godot fades each child of a node on its own, so that
+ * only looks like Frameling's one-picture fade when nothing in the folder overlaps). A folder qualifies when it holds
+ * one free part, or several at one depth whose pictures do not overlap. A symbol with bones, or a part on
+ * a bone, among several needs a group: its fade goes on each layer instead.
+ */
+export function nativeFolderFades(doc: Doc, top: BonesScope, textures: BonesTexture[][], camera: boolean): Set<Id> {
+  const out = new Set<Id>();
+  const faded = Object.values(doc.folders ?? {}).filter(fadesFolder);
+  if (!faded.length) return out;
+  interface Item {
+    chain: Id[];
+    rides: boolean;
+    inst: boolean;
+    depth: number;
+    box: Box | null;
+  }
+  const depthOf = (l: Layer) => (camera && !l.bind && l.depth ? l.depth : 0);
+  const items: Item[] = [
+    ...top.parts.map((p, i): Item => {
+      let box: Box | null = null;
+      for (const t of textures[i] ?? []) {
+        const b = t.bake ?? 1;
+        const r = { x0: t.x / b, y0: t.y / b, x1: (t.x + t.w) / b, y1: (t.y + t.h) / b };
+        box = box ? { x0: Math.min(box.x0, r.x0), y0: Math.min(box.y0, r.y0), x1: Math.max(box.x1, r.x1), y1: Math.max(box.y1, r.y1) } : r;
+      }
+      return { chain: folderChain(doc.folders, p.layer.folder).map((f) => f.id), rides: partRides(p), inst: false, depth: depthOf(p.layer), box };
+    }),
+    ...top.nested.map((n): Item => ({ chain: folderChain(doc.folders, n.layer.folder).map((f) => f.id), rides: !!n.bind, inst: true, depth: depthOf(n.layer), box: null })),
+  ];
+  for (const f of faded) {
+    const mine = items.filter((it) => it.chain.includes(f.id));
+    if (!mine.length) continue;
+    if (mine.some((it) => it.rides || it.inst)) continue;
+    if (mine.length > 1) {
+      if (mine.some((it) => it.depth !== mine[0].depth || !it.box)) continue;
+      // One pixel of room: a soft edge counts as overlapping.
+      const hit = (a: Box, b: Box) => a.x0 - 1 < b.x1 && b.x0 - 1 < a.x1 && a.y0 - 1 < b.y1 && b.y0 - 1 < a.y1;
+      if (mine.some((a, i) => mine.slice(i + 1).some((b) => hit(a.box!, b.box!)))) continue;
+    }
+    out.add(f.id);
+  }
+  return out;
+}
+
+interface Box {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+}
+
+/** Says in `notes` what the stage's folders become, and which of their looks go on each layer instead of the folder's node. */
+function noteFolders(doc: Doc, drawnUnder: Map<Id, number>, ridingUnder: Map<Id, string[]>, notes: BonesNotes): void {
+  const used = Object.values(doc.folders ?? {}).filter((f) => drawnUnder.get(f.id));
+  if (!used.length) return;
+  notes.native.add('Layer folders: a Node2D each, nested the same way, so a whole folder can be hidden or scripted');
+  for (const f of used) {
+    if (f.opacity < 1 - 1e-6 && (drawnUnder.get(f.id) ?? 0) > 1) notes.folded.set(`Fade on ${f.name}`, 'goes on the folder’s node when its layers do not overlap, else on each layer');
+    if (f.blend && f.blend !== 'normal') notes.folded.set(`Blend mode on ${f.name}`, 'on each layer');
+    const riding = ridingUnder.get(f.id);
+    if (riding?.length) notes.folded.set(`Layers on a bone in ${f.name} (${riding.join(', ')})`, 'they stay under their bone, so hiding or fading the folder does not reach them');
+  }
+}
+
 /**
  * What the export dialog says about the look of the layers, without building any pictures: the effects that get baked,
  * what Godot does itself and what can't go. Cheap enough to run on every render of the dialog.
@@ -674,15 +776,27 @@ export function bonesNotes(doc: Doc): BonesNoteLines {
   const rigged = riggedSymbols(doc);
   const seen = new Set<Id>();
   const scopes = new Map<Id, BonesScope>();
+  // How many layers each folder holds that get exported (stage only: every folder there is a node of its own).
+  const drawnUnder = new Map<Id, number>();
+  const ridingUnder = new Map<Id, string[]>();
   // `under`: this symbol sits inside a faded one that is a CanvasGroup, and Godot cannot nest a group in a group: its
   // faded symbols are drawn into pictures ('drawn'), or fade part by part when that cannot be ('plain').
   const scan = (layers: Layer[], depth: number, inherit: NativeBlend = 'mix', under: false | 'plain' | 'drawn' = false) => {
-    const links = maskLinks(doc, layers);
-    noteMasks(doc, layers, notes, links);
+    const stage = depth === 0;
+    const links = maskLinks(doc, layers, stage);
+    noteMasks(doc, layers, notes, links, stage);
     for (const layer of layers) {
       if (!layer.visible || layer.reference || isRigLayer(layer) || layer.kind === 'camera') continue;
-      if (inHiddenFolder(doc, layer)) continue;
+      if (leftOutByFolder(doc, layers, layer, stage)) {
+        notes.skip('Left out: in a hidden folder and following a bone, so not inside the folder’s node', layer.name);
+        continue;
+      }
       const look = partLook(doc, layer, notes);
+      if (stage && !layer.mask && links.cuts.has(layer))
+        for (const f of folderChain(doc.folders, layer.folder)) {
+          drawnUnder.set(f.id, (drawnUnder.get(f.id) ?? 0) + 1);
+          if (ridesBone(layers, layer)) ridingUnder.set(f.id, [...(ridingUnder.get(f.id) ?? []), layer.name]);
+        }
       if (symbolsOnLayer(doc, layer).some((id) => symbolDropsHiddenLayers(doc, id))) notes.skip('Hidden or reference layers inside symbols with effects are left out of the pictures', layer.name);
       if (layer.mask || !links.cuts.has(layer)) continue;
       if (under === 'drawn' && depth < MAX_NEST && rigged.size && holdsInstanceOf(doc, layer, rigged) && layerFadesInstances(doc, layer, rigged, look.opacity)) {
@@ -731,6 +845,7 @@ export function bonesNotes(doc: Doc): BonesNoteLines {
     }
   };
   scan(doc.layers, 0);
+  noteFolders(doc, drawnUnder, ridingUnder, notes);
   if (doc.layers.some((l) => l.kind === 'camera' && l.visible)) {
     notes.native.add('Camera: a Camera2D that moves and zooms like the stage camera');
     notes.native.add('Window size: attach the included fit-window script so the camera and depth layers line up at any window size');

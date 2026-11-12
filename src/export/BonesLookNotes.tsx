@@ -6,7 +6,7 @@ import { bonesNotes } from './godot-bones-scope';
 
 export function BonesLookNotes({ doc }: { doc: Doc }) {
   const n = useMemo(() => bonesNotes(doc), [doc]);
-  if (!n.native.length && !n.baked.length && !n.skipped.length && !n.fades.length && !n.tips.length) return null;
+  if (!n.native.length && !n.baked.length && !n.skipped.length && !n.fades.length && !n.tips.length && !n.folded.length) return null;
   return (
     <div className="ex-bones-look">
       {n.native.length > 0 && (
@@ -22,6 +22,11 @@ export function BonesLookNotes({ doc }: { doc: Doc }) {
       {n.fades.length > 0 && (
         <p className="ex-note">
           <b>Faded part by part:</b> {n.fades.join('; ')}. Where parts overlap, the overlap shows through. Godot can only fade a symbol as one picture when its parts (and any symbols with bones inside it) sit in order and none use a blend mode other than normal, and it cannot fade one group inside another (a faded symbol inside a faded one is drawn into pictures when it can be, and fades part by part when it cannot).
+        </p>
+      )}
+      {n.folded.length > 0 && (
+        <p className="ex-note">
+          <b>Folders:</b> {n.folded.join('; ')}. A fade, blend mode or effect that goes on each layer instead of the folder's node is applied layer by layer, so where faded layers overlap, the overlap shows through (Godot cannot fade a node's children as one picture without a group, which would break their order).
         </p>
       )}
       {n.tips.map((t) => (
