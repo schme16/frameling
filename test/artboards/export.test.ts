@@ -8,6 +8,7 @@ import { addArtboard, activeId, artboardDoc, artboardsOf, findArtboard } from '.
 import { packArtboardAtlas } from '../../src/artboards/pack';
 import { buildReel, reelAt } from '../../src/artboards/player';
 import { goToArtboard, installArtboards, moveArtboardTo, openArtboardUnder, resetArtboardView, resizeArtboard } from '../../src/artboards/ops';
+import { artboardExport, artboardSummary, planArtboards, setArtboardExport } from '../../src/artboards/export';
 import { setViewport } from '../../src/canvas/controller';
 
 function img(w: number, h: number, fill: number): RawImage {
@@ -162,5 +163,61 @@ describe('the timeline follows the artboard you press on', () => {
     expect(openArtboardUnder({ x: -500, y: -500 }, 'brush')).toBe(false);
     expect(activeId(store().get().doc)).toBe(a.id);
     expect(b).toBeDefined();
+  });
+});
+
+describe('the Export footer for several artboards', () => {
+  const setup = (format: 'gif' | 'sheet') => {
+    resetArtboardView();
+    const doc = sprites();
+    resetStore(doc);
+    artboardExport.set({ mode: 'one', ids: null, docId: '' });
+    return { doc: store().rootDoc(), s: { ...defaultSettings(doc), format, range: 'all' as const, scale: 1 } };
+  };
+
+  it('has nothing to add for just the open artboard', () => {
+    const { doc, s } = setup('gif');
+    expect(planArtboards(doc, s, 0)).toBeNull();
+  });
+
+  it('as one: the frames of every ticked artboard and the first shot size', () => {
+    const { doc, s } = setup('gif');
+    setArtboardExport({ mode: 'joined' });
+    const a = planArtboards(store().rootDoc(), s, 0)!;
+    expect(a.frames).toBe(5);
+    expect(a.size).toEqual({ width: 16, height: 16 });
+    expect(a.problem).toBeNull();
+    expect(artboardSummary(a)).toBe('5 frames in all, 16 × 16 px');
+    expect(planExport(doc, s, 0).count).toBe(2);
+    // Untick the first: the film is now Run alone, in its own size.
+    const [, run] = artboardsOf(doc);
+    setArtboardExport({ ids: [run.id] });
+    const b = planArtboards(store().rootDoc(), s, 0)!;
+    expect(b.frames).toBe(3);
+    expect(b.size).toEqual({ width: 32, height: 16 });
+    // Nothing ticked is a problem, not a silent zero.
+    setArtboardExport({ ids: [] });
+    expect(planArtboards(store().rootDoc(), s, 0)!.problem).toMatch(/at least one/);
+  });
+
+  it('as one: the size follows the export scale', () => {
+    const { s } = setup('gif');
+    setArtboardExport({ mode: 'joined' });
+    expect(planArtboards(store().rootDoc(), { ...s, scale: 2 }, 0)!.size).toEqual({ width: 32, height: 32 });
+  });
+
+  it('each as its own file: files and frames in all, no single size', () => {
+    const { s } = setup('gif');
+    setArtboardExport({ mode: 'each' });
+    const a = planArtboards(store().rootDoc(), s, 0)!;
+    expect([a.files, a.frames, a.size]).toEqual([2, 5, null]);
+    expect(artboardSummary(a)).toBe('2 files, 5 frames in all');
+  });
+
+  it('packed onto one sheet: every frame on one sheet', () => {
+    const { s } = setup('sheet');
+    setArtboardExport({ mode: 'atlas' });
+    const a = planArtboards(store().rootDoc(), s, 0)!;
+    expect(artboardSummary(a)).toBe('5 frames on one sheet');
   });
 });

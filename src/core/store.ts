@@ -10,6 +10,7 @@ import { applyPatches, enablePatches, produceWithPatches, setAutoFreeze, type Dr
 import { useSyncExternalStore } from 'react';
 import type { BrushSettings, Color, Doc, Id } from './format';
 import { DEFAULT_BRUSH, newDoc } from './doc';
+import { followTextSelection } from './followSelection';
 
 enablePatches();
 // Pixel drawings hold typed arrays, which immer can't freeze; we never mutate state outside update() anyway.
@@ -171,7 +172,14 @@ export class Store {
   /** Changes UI state (no undo). */
   setUi(patch: Partial<UiState> | ((ui: UiState) => Partial<UiState>)): void {
     const p = typeof patch === 'function' ? patch(this.state.ui) : patch;
-    this.state = { ...this.state, ui: { ...this.state.ui, ...p } };
+    const was = this.state.ui;
+    let ui = { ...was, ...p };
+    // Moving the playhead (or playing) keeps selected text selected on the next key.
+    if (p.frame !== undefined && p.frame !== was.frame && !('selection' in p) && ui.activeLayerId === was.activeLayerId) {
+      const kept = followTextSelection(this.state.doc, ui.activeLayerId, was.selection, was.frame, p.frame);
+      if (kept) ui = { ...ui, selection: kept };
+    }
+    this.state = { ...this.state, ui };
     this.emit();
   }
 

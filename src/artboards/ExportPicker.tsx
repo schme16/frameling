@@ -65,7 +65,7 @@ export function ArtboardExportPicker({ settings }: { settings: ExportSettings })
           </p>
         </div>
       )}
-      {mode === 'joined' && sizes.size <= 1 && <p className="ex-note">{total} frames in all, one artboard after another. The size and summary below are for one artboard.</p>}
+      {mode === 'joined' && sizes.size <= 1 && <p className="ex-note">{total} frames in all, one artboard after another.</p>}
       {mode === 'atlas' && <p className="ex-note">Each artboard becomes an animation in the JSON, named after it; its clips come along as "artboard/clip".</p>}
       {mode === 'each' && <p className="ex-note">{chosen.size} files, each named after its artboard (or its export name).</p>}
     </fieldset>

@@ -28,6 +28,7 @@ import { docDpi, formatSize } from '../core/units';
 import { usePrefs } from '../ui/prefs';
 import { templateExport } from '../templates/setup';
 import { ArtboardExportPicker } from '../artboards/ExportPicker';
+import { artboardExport, artboardSummary, planArtboards } from '../artboards/export';
 import { pixelExportStart } from '../pixel/workspace';
 
 /** Last time's settings, repaired so they still make sense for this document. */
@@ -87,6 +88,9 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
   const showMore = more || moreChosen;
   const info = formatInfo(s.format);
   const plan = useMemo(() => planExport(doc, s, frame), [doc, s, frame]);
+  // Exporting several artboards: the footer tells about all of them (for "as one", the whole joined film).
+  const abChoice = artboardExport.use((c) => c);
+  const abPlan = useMemo(() => planArtboards(store().rootDoc(), s, frame), [open, s, frame, abChoice]);
   const video = s.format === 'mp4' || s.format === 'webm' || s.format === 'prores';
   const videoSize = useMemo(() => planExport(doc, { ...s, format: 'mp4' }, frame), [doc, s, frame]);
 
@@ -124,7 +128,7 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
     setError(null);
     const ac = new AbortController();
     abort.current = ac;
-    setProgress({ done: 0, total: plan.count, label: 'Getting ready' });
+    setProgress({ done: 0, total: abPlan?.frames ?? plan.count, label: 'Getting ready' });
     try {
       const outcome = await exportDocument(s, ac.signal, setProgress);
       if (outcome === 'done' || autoStart) return close();
@@ -156,7 +160,9 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
   // With units other than pixels, also say how big it prints: the same size at any scale, just more dots per inch.
   const outDpi = Math.round(docDpi(doc) * s.scale);
   const printed = units === 'px' ? '' : `, ${formatSize(plan.width, plan.height, units, outDpi)} at ${outDpi} DPI`;
-  const summary = `${frames} frame${frames === 1 ? '' : 's'}, ${plan.width} × ${plan.height} px${printed}`;
+  const joinedPrinted = abPlan?.size && units !== 'px' ? `, ${formatSize(abPlan.size.width, abPlan.size.height, units, outDpi)} at ${outDpi} DPI` : '';
+  const summary = abPlan ? artboardSummary(abPlan, joinedPrinted) : `${frames} frame${frames === 1 ? '' : 's'}, ${plan.width} × ${plan.height} px${printed}`;
+  const problem = abPlan ? abPlan.problem : plan.problem;
   const noClips = doc.clips.length === 0;
   const io = inOutRange(doc);
   // Only for the top level: inside a symbol the length is the symbol's.
@@ -510,13 +516,13 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
         </QuillSays>
       )}
       <div className="io-foot ex-foot">
-        <span className={`ex-summary${plan.problem ? ' ex-problem' : ''}`} aria-live="polite">
-          {plan.problem ?? summary}
+        <span className={`ex-summary${problem ? ' ex-problem' : ''}`} aria-live="polite">
+          {problem ?? summary}
         </span>
         <button type="button" className="io-btn" onClick={close}>
           Cancel
         </button>
-        <button type="button" className="io-btn io-primary ex-go" disabled={!!plan.problem || !desktop()} title={!desktop() ? 'Exporting works in the Frameling desktop app.' : undefined} onClick={() => void start()}>
+        <button type="button" className="io-btn io-primary ex-go" disabled={!!problem || !desktop()} title={!desktop() ? 'Exporting works in the Frameling desktop app.' : undefined} onClick={() => void start()}>
           <Icon name="export" size={16} /> Export
         </button>
       </div>
