@@ -30,6 +30,7 @@ import { setViewSettings } from '../canvas/viewSettings';
 import { setGridLook } from '../canvas/gridView';
 import { setLightTableTint } from '../canvas/lightTable';
 import { offerTweenAt } from '../timeline/tweenOffer';
+import { setGuidesOnStage } from '../camera/ops';
 
 if (new URLSearchParams(location.search).has('debug')) {
   (window as unknown as { __frameling: unknown }).__frameling = {
@@ -38,6 +39,8 @@ if (new URLSearchParams(location.search).has('debug')) {
     // Grids, light table and the tween offer, for their help shots and A/Bs.
     anim: {
       view: setViewSettings,
+      // Guides, grid and snap lines on the stage instead of the picked depth layer (the old look, for the A/B).
+      guidesOnStage: setGuidesOnStage,
       gridLook: setGridLook,
       lightTableTint: setLightTableTint,
       offerTween: (layerName: string, frame: number) => {

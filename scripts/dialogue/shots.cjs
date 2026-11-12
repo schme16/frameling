@@ -138,6 +138,20 @@ const GROUPS = {
     { wait: 3000 },
     { shot: ['welcome.new'], crop: '.ui-welcome-head', pad: 24 },
   ],
+  workspaces: [
+    // A rearranged tool strip, then Reset layout: Quill asks about the tools.
+    { js: `__frameling.dock.setToolGroups([{ id: 'mine', tools: __frameling.tools().reverse() }])` },
+    { wait: 600 },
+    run('view.resetLayout'),
+    { wait: 900 },
+    { shot: ['workspaces.resetTools'], crop: TOAST, pad: 60 },
+    // The note about where the old single tool arrangement went: an older saved layout, then a restart.
+    { js: `(() => { const k = 'frameling.dock.v1'; const d = JSON.parse(localStorage.getItem(k)); delete d.rails; d.layout.tools.groups = [{ id: 'mine', tools: __frameling.tools().reverse() }]; localStorage.setItem(k, JSON.stringify(d)); localStorage.removeItem('frameling.dock.railNote.v1'); })()` },
+    { reload: true },
+    { js: `__frameling.overlays.closeSheet()` },
+    { wait: 1500 },
+    { shot: ['workspaces.railKept'], crop: TOAST, pad: 60 },
+  ],
   about: [run('help.about'), { wait: 3000 }, { shot: ['about.quill'], crop: '.ui-about', pad: 0 }],
   empty: [
     { js: `__frameling.overlays.openHelp(undefined, undefined, 'zzqxwv')` },
@@ -203,7 +217,7 @@ app.whenReady().then(async () => {
   // The real main process answers these; for shots there is no file and no history.
   for (const ch of ['app:launchFile', 'autosave:read', 'autosave:readKept']) ipcMain.handle(ch, () => null);
   ipcMain.handle('files:read', () => ({ error: 'No such file.' }));
-  for (const ch of ['recent:list', 'autosave:listKept']) ipcMain.handle(ch, () => []);
+  for (const ch of ['recent:list', 'autosave:listKept', 'library:list']) ipcMain.handle(ch, () => []);
   for (const ch of ['autosave:write', 'autosave:clear', 'autosave:keep', 'autosave:removeKept', 'recent:add', 'recent:remove', 'recent:clear', 'app:documentState']) ipcMain.handle(ch, () => true);
   for (const ch of ['app:documentState', 'app:keepUnsavedDone', 'app:saveBeforeCloseDone']) ipcMain.on(ch, () => {});
   fs.mkdirSync(OUT, { recursive: true });
@@ -244,6 +258,11 @@ app.whenReady().then(async () => {
       try {
         if (s.js) await win.webContents.executeJavaScript(s.js);
         else if (s.wait) await sleep(s.wait);
+        else if (s.reload) {
+          // A restart of the app: same storage, fresh page.
+          await win.loadFile(path.join(ROOT, 'dist/renderer/index.html'), { query: { debug: '1' } });
+          await sleep(1200);
+        }
         else if (s.click) await clickAt(win, s.click);
         else if (s.key) {
           win.webContents.sendInputEvent({ type: 'keyDown', keyCode: s.key });

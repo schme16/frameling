@@ -177,7 +177,7 @@ has its screenshot in place and a box to change it; your edits are kept in that 
 2. `npm run dialogue:apply ~/Downloads/quill-lines-2026-11-11.json` merges them into `lines.json` and prints what
    changed. It refuses the whole file, and writes nothing, if a line lost or gained a `{placeholder}` or names a line
    that doesn't exist. Add `--check` to see the changes without writing them.
-3. `npm run dialogue:page` refreshes the page's text; `xvfb-run -a -s "-screen 0 1600x1000x24" npm run
+3. `npm run dialogue:page` refreshes the page's text; `SHOT_SHOW=1 xvfb-run -a -s "-screen 0 1600x1000x24" npm run
    dialogue:shots` rebuilds the app and retakes every screenshot too (about two minutes, inside xvfb, see
    `scripts/dialogue/shots.cjs`). A shot that only shows the nearest moment says so under the line.
 

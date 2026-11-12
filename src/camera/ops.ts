@@ -123,6 +123,11 @@ export function canvasLayerCamera(s: State = store().get()): Mat | null {
   return layerCameraMatrix(s.doc, layer, cam.view) ?? [1, 0, 0, 1, 0, 0];
 }
 
+/** Debug only (the depth guides A/B in brand/ab/depth-guides): draw guides, grid and snap lines on the stage, as before they followed the picked layer. */
+let guidesOnStage = false;
+export const setGuidesOnStage = (on: boolean): void => void (guidesOnStage = on);
+export const getGuidesOnStage = (): boolean => guidesOnStage;
+
 /**
  * The camera for things aimed at, or drawn over, the picked layer: its own matrix (a layer at another depth moves at
  * its own speed), or the plain camera for the stage tools, which work on the stage as a whole. Null with no camera.

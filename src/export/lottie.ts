@@ -225,13 +225,18 @@ const LJ = { miter: 1, round: 2, bevel: 3 } as const;
 
 type Tint = { color: string; amount: number };
 
+/** How strongly a tint mixes in: its amount (never over 1) times the colour's own see-through, as the canvas paints it. */
+function tintStrength(t: Tint): { a: number; rgb: [number, number, number] } {
+  const w = lottieColor(t.color);
+  return { a: Math.max(0, Math.min(1, t.amount)) * w.alpha, rgb: w.rgb };
+}
+
 /** A colour washed by symbol tints, innermost first (the same sum the canvas does with source-atop). */
 function tinted(c: string, tints: Tint[]): { rgb: [number, number, number]; alpha: number } {
   const out = lottieColor(c);
   for (const t of tints) {
-    const a = Math.max(0, Math.min(1, t.amount));
+    const { a, rgb: w } = tintStrength(t);
     if (a <= 0) continue;
-    const w = lottieColor(t.color).rgb;
     out.rgb = out.rgb.map((v, i) => r3(v * (1 - a) + w[i] * a)) as [number, number, number];
   }
   return out;
@@ -841,9 +846,9 @@ function imageAsset(ctx: Ctx, key: string, d: PixelDrawing, pixelSize: number): 
   }
   // Colour washes of the symbol it sits in, baked into the picture.
   for (const t of ctx.tints) {
-    const a = Math.max(0, Math.min(1, t.amount));
+    const { a, rgb } = tintStrength(t);
     if (a <= 0) continue;
-    const c = lottieColor(t.color).rgb.map((v) => v * 255);
+    const c = rgb.map((v) => v * 255);
     for (let i = 0; i < big.length; i += 4) for (let j = 0; j < 3; j++) big[i + j] = big[i + j] * (1 - a) + c[j] * a;
   }
   const id = `image_${ctx.images.size}`;

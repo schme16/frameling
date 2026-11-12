@@ -14,6 +14,7 @@ import { buildAnimations } from '../../src/export/sheet';
 import type { Doc } from '../../src/core/format';
 import { nestedTintDoc } from './nested-tint-doc';
 
+const mix = (c: number[], w: number[], a: number) => c.map((v, i) => v * (1 - a) + w[i] * a);
 const RED = { color: '#ff0000', amount: 0.5 };
 const BLUE = { color: '#0000ff', amount: 0.5 };
 
@@ -131,6 +132,21 @@ describe('tint stacking in Lottie', () => {
     expect(text).toContain('[0.376,0.126,0.626,1]');
     expect(text).not.toContain('[0.251,0.251,0.751,1]');
   });
+  it('counts the see-through of a tint colour, as the canvas, SVG and Godot do', () => {
+    const fillOf = (inner: typeof RED | undefined, outer: typeof RED | undefined) => {
+      const text = JSON.stringify(lottieExport(nestedTintDoc(inner, outer)).data.assets);
+      return JSON.parse(/"ty":"fl","nm":"Fill","c":\{"a":0,"k":(\[[^\]]*\])/.exec(text)![1]) as number[];
+    };
+    const close = (got: number[], want: number[]) => want.forEach((v, i) => expect(got[i]).toBeCloseTo(v, 2));
+    const half = 128 / 255;
+    // A half see-through red at full amount is a half wash: grey 0.5 goes to about (0.75, 0.25, 0.25).
+    close(fillOf(undefined, { color: '#ff000080', amount: 1 }), mix([0.502, 0.502, 0.502], [1, 0, 0], half));
+    // A fully see-through tint changes nothing.
+    close(fillOf(undefined, { color: '#ff000000', amount: 1 }), [0.502, 0.502, 0.502]);
+    // Stacked: inner first, then the outer over it, each with its own see-through folded in.
+    const mid = mix([0.502, 0.502, 0.502], [1, 0, 0], half);
+    close(fillOf({ color: '#ff000080', amount: 1 }, BLUE), mix(mid, [0, 0, 1], 0.5));
+  });
 });
 
 describe('tint stacking in PDF', () => {
@@ -151,7 +167,6 @@ describe('tint stacking in PDF', () => {
 
 // ---------------------------------------------------------------- Godot
 
-const mix = (c: number[], w: number[], a: number) => c.map((v, i) => v * (1 - a) + w[i] * a);
 const rgb = (hex: string) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
 
 describe('stackWash', () => {

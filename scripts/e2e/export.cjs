@@ -1442,7 +1442,7 @@ async function godotBonesSection() {
 
 // Loads a bones export in real Godot (a project with the export's files in sprites/), plays an animation, saves a
 // picture of each wanted frame and compares it with Frameling's own PNG export of the same frame.
-async function renderBonesInGodot({ dir, files, scene, settings, shots, anim, tolerance }) {
+async function renderBonesInGodot({ dir, files, scene, settings, shots, anim, tolerance, probes = [] }) {
   if (!GODOT || SKIP.includes('godot')) return;
   const doc = await X('doc()');
   const proj = path.join(dir, '_godot');
@@ -1487,13 +1487,20 @@ func _init():
     note(`frame ${f}: rmse ${e.toFixed(4)}`);
     // Godot resamples each part's picture, so edges differ a little. A part out of place is far more than this.
     check(e < tolerance, `frame ${f} in Godot differs from Frameling's PNG (rmse ${e.toFixed(4)})`);
+    // Single points where colour matters more than edges (a wash on a part): the two must agree to a few levels.
+    for (const pr of probes.filter((q) => q.frame === f)) {
+      const at = (file) => (/\((\d+),(\d+),(\d+)\)/.exec(sh('convert', [file, '-background', '#ff00ff', '-alpha', 'remove', '-alpha', 'off', '-format', `%[pixel:p{${pr.x},${pr.y}}]`, 'info:']).out) ?? []).slice(1).map(Number);
+      const g = at(path.join(proj, `shot-${f}.png`));
+      const fr = at(ref);
+      check(g.length === 3 && fr.length === 3 && g.every((v, i) => Math.abs(v - fr[i]) <= 6), `frame ${f} at ${pr.x},${pr.y}: Godot ${g} but Frameling ${fr} (${pr.what})`);
+    }
   }
   note(`godot bones ok, worst rmse ${worst.toFixed(4)}`);
 }
 
 // A symbol with its own bones (moving, faded and tinted), a camera that pans, turns and zooms, a far layer with depth
 // and an Add glow with an effect, exported as bones and compared in Godot with Frameling's own frames.
-async function godotBonesExtrasSection(name = 'bones-extras', extra = {}, more) {
+async function godotBonesExtrasSection(name = 'bones-extras', extra = {}, more, probes = []) {
   const r = begin(name, 'sheet godot-bones');
   try {
     const dir = setAutomationDir(path.join(outDir, name, 'sheet-godot-bones'));
@@ -1515,7 +1522,7 @@ async function godotBonesExtrasSection(name = 'bones-extras', extra = {}, more) 
     check(files.some((n) => n.endsWith('.gdshader')), 'no tint shader');
     check(files.some((n) => n.endsWith('-fit-window.gd')), 'no fit-window script for the camera');
     if (more) await more({ tscn, files, dir });
-    await renderBonesInGodot({ dir, files, scene, settings, shots: [0, 3, 6, 8, 11], anim: 'default', tolerance: 0.03 });
+    await renderBonesInGodot({ dir, files, scene, settings, shots: [0, 3, 6, 8, 11], anim: 'default', tolerance: 0.03, probes });
   } catch (e) {
     fail(`harness error: ${e?.stack ?? e}`);
   }
@@ -1546,6 +1553,13 @@ async function godotBonesExtrasSection(name = 'bones-extras', extra = {}, more) 
     // A symbol with bones inside a symbol with bones, on a layer that follows the outer symbol's bone: it nests under that Bone2D.
     if (!ONLY || ONLY.includes('godot-bones'))
       await godotBonesExtrasSection('bones-body-arm', { bodyArm: true }, ({ tscn }) => check(/type="Node2D" parent="Body\/Body bones\/Spine"/.test(tscn) && /name="Arm" type="Node2D" parent="Body\/Body bones\/Spine"/.test(tscn), 'the arm should sit under the body symbol\'s bone'));
+    // A tinted symbol inside a tinted symbol: Godot's picture must match Frameling's (the outer wash over the inner one).
+    if (!ONLY || ONLY.includes('godot-bones'))
+      await godotBonesExtrasSection('bones-stacked-tint', { bodyArm: true, armTint: { color: '#0000ff', amount: 0.5 } }, undefined, [
+        { frame: 0, x: 120, y: 175, what: 'the arm with its own blue wash' },
+        { frame: 3, x: 140, y: 185, what: 'the arm, outer red wash half in over its blue one' },
+        { frame: 6, x: 100, y: 177, what: 'the arm, both washes in' },
+      ]);
     if (!SKIP.includes('files')) await filesSection();
   } catch (e) {
     begin('harness', 'startup').failures.push(String(e?.stack ?? e));
