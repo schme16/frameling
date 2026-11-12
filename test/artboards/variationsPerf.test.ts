@@ -60,7 +60,9 @@ function measure(count: number): string {
   return `${count} variation(s), 9,600 keys: no variations ${plain.toFixed(2)} ms | edit a drawing of the original ${original.toFixed(2)} ms | edit a drawing in the open variation ${inVariation.toFixed(2)} ms | layer look in the open variation ${layerEdit.toFixed(2)} ms`;
 }
 
-describe('variations: cost of an edit (prints ms, asserts nothing about time)', () => {
-  it('one variation', () => void console.log('PERF', measure(1)));
-  it('four variations', () => void console.log('PERF', measure(4)));
+// A benchmark, not a check: it only prints timings, and on a busy machine it can outlast the usual test timeout.
+// Run it with VARIATIONS_PERF=1 npx vitest run test/artboards/variationsPerf.test.ts.
+describe.runIf(process.env.VARIATIONS_PERF)('variations: cost of an edit (prints ms, asserts nothing about time)', () => {
+  it('one variation', () => void console.log('PERF', measure(1)), 120_000);
+  it('four variations', () => void console.log('PERF', measure(4)), 120_000);
 });

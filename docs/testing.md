@@ -663,3 +663,7 @@ Copies the newest `release/*.AppImage` to `/mnt/109313D2109313D2/lutris-applicat
 - `web`: `npm ci`, `npm test`, `npm run build:web`, uploads `frameling-web`.
 
 CI runs vitest only. The Electron harnesses are run by hand, under xvfb, before merging work they cover.
+
+## Variations edit cost (opt-in)
+
+`VARIATIONS_PERF=1 npx vitest run test/artboards/variationsPerf.test.ts` prints how long an edit takes on a 9,600-key document with one and four variations. It asserts nothing about time, so it's off in `npm test`.
