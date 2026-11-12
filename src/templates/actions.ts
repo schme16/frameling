@@ -3,7 +3,7 @@ import { rootDoc } from '../core/symbols';
 import { store } from '../core/store';
 import { baseName, desktop } from '../io/desktop';
 import { FileProblem } from '../io/file';
-import { notify } from '../io/notify';
+import { notify, notifySaved } from '../io/notify';
 import { can } from '../platform';
 import { ask } from '../platform/ask';
 import { fileSafe } from '../export/plan';
@@ -59,7 +59,7 @@ export async function shareTemplate(cardId: string, name: string): Promise<void>
   if (!target) return;
   const w = await api.files.write(target, bytes);
   if ('error' in w) return notify(w.error, 'error');
-  notify(`Saved ${baseName(target)}. Anyone can add it with Import template.`, 'success', can('showInFolder') ? { label: 'Show in folder', run: () => void api.files.showInFolder(target) } : undefined, 8000);
+  notifySaved(`Saved ${baseName(target)}. Anyone can add it with Import template.`, 'success', can('showInFolder') ? { label: 'Show in folder', run: () => void api.files.showInFolder(target) } : undefined, 8000);
 }
 
 export async function importTemplate(): Promise<boolean> {

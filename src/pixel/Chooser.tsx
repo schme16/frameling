@@ -57,6 +57,7 @@ export function WayCards({ value, onPick, onStart }: { value: SpriteWay | null; 
           aria-checked={value === w.id}
           className={`px-way-card${value === w.id ? ' is-chosen' : ''}`}
           data-way={w.id}
+          data-testid={`pixel.way.${w.id}`}
           onClick={() => onPick(w.id)}
           onDoubleClick={() => onStart?.(w.id)}
         >
@@ -81,11 +82,11 @@ export function SizeRow({ label, size, onSize }: { label: string; size: { w: num
       <span className="px-size-label">{label}</span>
       <div className="px-size-chips" role="radiogroup" aria-label={label}>
         {SIZE_CHOICES.map((c) => (
-          <button key={c.w} type="button" role="radio" aria-checked={!own && size.w === c.w && size.h === c.h} className="px-size-chip" onClick={() => (setOwn(false), onSize({ w: c.w, h: c.h }))}>
+          <button key={c.w} type="button" role="radio" aria-checked={!own && size.w === c.w && size.h === c.h} className="px-size-chip" data-testid={`pixel.size.${c.w}x${c.h}`} onClick={() => (setOwn(false), onSize({ w: c.w, h: c.h }))}>
             {c.w} x {c.h}
           </button>
         ))}
-        <button type="button" role="radio" aria-checked={own} className="px-size-chip" onClick={() => setOwn(true)}>
+        <button type="button" role="radio" aria-checked={own} className="px-size-chip" data-testid="pixel.size.own" onClick={() => setOwn(true)}>
           Your own size
         </button>
       </div>
@@ -135,6 +136,7 @@ function Chooser({ close }: { close: () => void }) {
         <button
           type="button"
           className="io-btn"
+          data-testid="pixel.back"
           onClick={() => {
             close();
             openSheet('new');
@@ -142,7 +144,7 @@ function Chooser({ close }: { close: () => void }) {
         >
           Back
         </button>
-        <button type="button" className="io-btn io-primary" data-autofocus="" disabled={!way} onClick={() => void start()}>
+        <button type="button" className="io-btn io-primary" data-testid="pixel.start" data-autofocus="" disabled={!way} onClick={() => void start()}>
           Start
         </button>
       </div>

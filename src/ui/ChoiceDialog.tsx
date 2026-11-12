@@ -55,6 +55,7 @@ function Ask({ pending }: { pending: Pending }) {
             role="radio"
             aria-checked={value === o.value}
             className={`ui-choice-opt${value === o.value ? ' is-chosen' : ''}`}
+            data-testid={`choice.${def.id}.${o.value}`}
             onClick={() => setValue(o.value)}
             onDoubleClick={() => finish({ value: o.value, remember })}
           >
@@ -67,17 +68,17 @@ function Ask({ pending }: { pending: Pending }) {
         ))}
       </div>
       <label className="ui-choice-remember">
-        <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
+        <input type="checkbox" data-testid={`choice.${def.id}.remember`} checked={remember} onChange={(e) => setRemember(e.target.checked)} />
         Remember my choice. You can change it any time in Preferences, Behaviour.
       </label>
       <div className="ui-choice-foot">
         {def.help && (
-          <button type="button" className="ui-btn ui-btn-quiet" onClick={() => openHelp(def.help)}>
+          <button type="button" className="ui-btn ui-btn-quiet" data-testid={`choice.${def.id}.help`} onClick={() => openHelp(def.help)}>
             <Icon name="help" size={14} /> Learn more
           </button>
         )}
         <span className="ui-spacer" />
-        <button type="button" className="ui-btn ui-btn-primary" onClick={() => finish({ value, remember })}>
+        <button type="button" className="ui-btn ui-btn-primary" data-testid={`choice.${def.id}.ok`} onClick={() => finish({ value, remember })}>
           OK
         </button>
       </div>

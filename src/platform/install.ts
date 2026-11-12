@@ -22,7 +22,7 @@ if (isWeb()) {
     storage: typeof navigator !== 'undefined' ? navigator.storage : undefined,
     seen: noticeMemory(safeLocalStorage()),
     tell: () => {
-      toast(STORAGE_NOTICE, { kind: 'info', duration: 20000, quill: null, action: { label: 'Tell me more', run: () => openHelp('web-browser') }, decline: { label: 'Okay', run: () => undefined } });
+      toast(STORAGE_NOTICE, { kind: 'info', duration: 20000, quill: null, action: { label: 'Tell me more', run: () => openHelp('web-browser') }, decline: { label: 'Okay', id: 'okay', run: () => undefined } });
     },
   });
   setSavedHook(() => void keep());

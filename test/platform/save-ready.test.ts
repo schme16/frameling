@@ -90,4 +90,38 @@ describe('waiting files', () => {
     shown[1].onSave();
     expect(saved).toEqual(['a.png', 'b.png']);
   });
+  it('says "exported" at once when the file went straight to the browser', () => {
+    const { offers, saved } = make();
+    const said: string[] = [];
+    offers.direct('a.png', new Uint8Array(1));
+    offers.whenSaved(() => said.push('Exported a.png.'));
+    expect(saved).toEqual(['a.png']);
+    expect(said).toEqual(['Exported a.png.']);
+  });
+  it('holds "exported" back until Save is pressed, and says it after the file is handed over', () => {
+    const order: string[] = [];
+    let id = 1;
+    let onSave = () => undefined as void;
+    const offers = createSaveOffers({
+      save: (name) => void order.push(`save ${name}`),
+      show: (m, f) => ((onSave = f), order.push('ready toast'), id++),
+      hide: () => void order.push('hide ready toast'),
+    });
+    offers.offer('a.png', new Uint8Array(1));
+    offers.whenSaved(() => order.push('Exported a.png.'));
+    expect(order).toEqual(['ready toast']);
+    onSave();
+    expect(order).toEqual(['ready toast', 'hide ready toast', 'save a.png', 'Exported a.png.']);
+    // Said once only.
+    offers.saveAll();
+    expect(order.filter((x) => x.startsWith('Exported'))).toHaveLength(1);
+  });
+  it('a file that goes straight through is not held back by an older waiting one', () => {
+    const { offers } = make();
+    const said: string[] = [];
+    offers.offer('late.png', new Uint8Array(1));
+    offers.direct('now.png', new Uint8Array(1));
+    offers.whenSaved(() => said.push('Exported now.png.'));
+    expect(said).toEqual(['Exported now.png.']);
+  });
 });

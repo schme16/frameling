@@ -222,7 +222,7 @@ async function section() {
     input.dispatchEvent(new Event('input', { bubbles: true }));
     input.dispatchEvent(new Event('change', { bubbles: true }));
     await wait(300);
-    const btn = [...document.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Recolour');
+    const btn = document.querySelector('[data-testid="recolour.apply"]');
     out.canApply = !!btn && !btn.disabled;
     btn?.click();
     await wait(300);

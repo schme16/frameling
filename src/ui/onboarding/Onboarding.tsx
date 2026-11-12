@@ -206,12 +206,12 @@ function Flow() {
         </span>
         <span className="ob-foot-end">
           {i > 0 && (
-            <button type="button" className="ui-btn" onClick={() => dispatch({ type: 'back' })}>
+            <button type="button" className="ui-btn" data-testid="onboarding.back" onClick={() => dispatch({ type: 'back' })}>
               Back
             </button>
           )}
           {!last && (
-            <button type="button" className="ui-btn ui-btn-primary ob-next" onClick={() => dispatch({ type: 'next' })}>
+            <button type="button" className="ui-btn ui-btn-primary ob-next" data-testid="onboarding.next" onClick={() => dispatch({ type: 'next' })}>
               {s.step === 'hello' ? "Let's go!" : 'Next'}
               <Icon name="next" size={14} />
             </button>
