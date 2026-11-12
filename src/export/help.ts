@@ -390,7 +390,7 @@ The second class picks the clip. Loops keep going; clips that don't loop stop on
     section: 'Exporting',
     media: 'export-lottie.png',
     summary: 'Export a small vector animation that apps and websites play with Lottie, sharp at any size.',
-    keywords: ['lottie', 'bodymovin', 'json', 'lottie-web', 'after effects', 'app animation', 'vector animation', 'lottiefiles'],
+    keywords: ['lottie', 'dotlottie', '.lottie', 'bodymovin', 'json', 'lottie-web', 'after effects', 'app animation', 'vector animation', 'lottiefiles'],
     body: `**Lottie animation** saves a Lottie file that apps and websites play with the free Lottie players. Shapes stay shapes, so it's sharp at any size and small.
 
 ## File type
