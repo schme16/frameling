@@ -22,7 +22,7 @@ export function ArtboardExportPicker({ settings }: { settings: ExportSettings })
   const modes: { id: ArtboardExportMode; label: string; title: string; off?: string }[] = [
     { id: 'one', label: `This artboard (${activeArtboard(doc).name})`, title: 'Just the artboard you have open' },
     { id: 'each', label: 'Each as its own file', title: 'One file per artboard, named after it' },
-    { id: 'joined', label: 'All in order, as one', title: 'The artboards one after another, like shots in a film', off: modeOff('joined', settings) ?? undefined },
+    { id: 'joined', label: 'All in order, as one', title: settings.format === 'sheet' ? 'Every artboard is one frame of one sprite, in order, as one animation on the sheet' : 'The artboards one after another, like shots in a film', off: modeOff('joined', settings) ?? undefined },
     { id: 'atlas', label: 'Packed onto one sheet', title: 'Every frame of every artboard on one picture, with a JSON atlas', off: modeOff('atlas', settings) ?? undefined },
   ];
   const toggle = (id: Id, on: boolean) => {
@@ -75,7 +75,9 @@ export function ArtboardExportPicker({ settings }: { settings: ExportSettings })
           </p>
         </div>
       )}
-      {mode === 'joined' && sizes.size <= 1 && <p className="ex-note">{total} frames in all, one artboard after another.</p>}
+      {mode === 'joined' && sizes.size <= 1 && (
+        <p className="ex-note">{settings.format === 'sheet' ? `${total} frames in all. Each artboard is a frame of one sprite, in order, and they play as one animation. Their clips are left out.` : `${total} frames in all, one artboard after another.`}</p>
+      )}
       {mode === 'atlas' && <p className="ex-note">Each artboard becomes an animation in the JSON, named after it; its clips come along as "artboard/clip".</p>}
       {mode === 'each' && <p className="ex-note">{chosen.size} files, each named after its artboard (or its export name).</p>}
     </fieldset>

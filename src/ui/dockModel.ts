@@ -231,7 +231,9 @@ export function floatTitle(l: Layout, f: FloatWin, titleOf: (id: string) => stri
 /** Takes the panel out of wherever it is (empty windows close). Returns the same layout when it wasn't placed. */
 function take(l: Layout, id: string): { next: Layout; from: Place | null; at: number } {
   const from = locate(l, id);
-  if (!from) return { next: l, from, at: -1 };
+  // A copy even when the panel isn't placed (a hidden one being brought back): the callers change `next`, and the
+  // layout in the store must stay untouched so the change is seen.
+  if (!from) return { next: clone(l), from, at: -1 };
   const next = clone(l);
   let at = -1;
   const pull = (g: { tabs: string[]; active: string | null }) => {
@@ -352,6 +354,7 @@ export function closeFloat(l: Layout, floatId: string): Layout {
 
 /** Closes a panel (it stays in `known`, so it doesn't come back by itself). */
 export function closePanel(l: Layout, id: string): Layout {
+  if (!locate(l, id) && l.hidden.includes(id)) return l;
   const { next } = take(l, id);
   if (!next.hidden.includes(id)) next.hidden.push(id);
   return next;

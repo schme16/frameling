@@ -40,7 +40,7 @@ To export them, see [exporting artboards](help:artboards-export). For animation,
 **Play them in order:** press **Play all in order** in the Artboards panel. They play one after another in their own window, in the panel's order. The strip under the picture shows each shot; click one to jump to it. Drag them in the panel to change the order.
 
 **Export them:**
-- **All in order, as one** makes one video or GIF of every shot back to back. Each shot becomes a named clip, and its sounds and markers come along.
+- **All in order, as one** makes one video or GIF of every shot back to back. Each shot becomes a named clip, and its sounds and markers come along. With **Sprite sheet**, every board is a frame of one sprite instead.
 - **Each as its own file** gives a file per shot.
 - **This artboard** exports just the one you have open.
 `,
@@ -79,7 +79,8 @@ See [artboards as shots](help:artboards-shots) and [exporting artboards](help:ar
 - **This artboard** exports the one you have open, as always.
 - **Each as its own file** exports every ticked artboard separately, named after it (or its **Export as** name). The first time, Frameling asks whether they go **into a folder** or **one zip file**, and remembers (change it in Preferences > Behaviour).
 - **All in order, as one** joins them end to end, for videos, GIFs and other animations. Shots of different sizes get bars or are cropped to fill: see [shots of different sizes](help:artboards-letterbox).
-- **Packed onto one sheet** (with **Sprite sheet** picked) puts every frame of every ticked artboard on one picture, packed tightly, with a JSON atlas. Each artboard is an animation named after it, and its clips come along as "artboard/clip".
+- **All in order, as one**, with **Sprite sheet** picked, makes one sprite: each artboard is a frame, in the order of the list, and they play as one animation in Godot, Unity, Phaser, PixiJS and the web. Use it when you draw a frame on each board. The boards' own clips are left out, so it stays one animation. See [Sprite sheets](help:export-sprite-sheets).
+- **Packed onto one sheet** (with **Sprite sheet** picked) is for a cast: it puts every frame of every ticked artboard on one picture, packed tightly, with a JSON atlas. Each artboard is an animation named after it, and its clips come along as "artboard/clip".
 
 **File > Export artboards** and **File > Pack artboards into one sprite sheet** open the dialog already set up.`,
   },

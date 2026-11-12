@@ -129,6 +129,7 @@ For pixel art, **Art size** (in the Size row) makes one art pixel one pixel, so 
 
 - **An animation:** each **clip** (idle, run, jump...) becomes an animation with its own loop and speed. A clip that plays [backward, back and forth or a set number of times](help:timeline-clip-play) is saved that way. No clips? The whole timeline is one called **default**.
 - **Separate sprites:** each frame is its own sprite, for icons, items or tiles. A **marker** on a frame names it ("coin"). Choose **All on one sheet** or **One PNG each**.
+- **A frame on each artboard?** See [Exporting artboards](help:artboards-export).
 
 ## Sheet options
 

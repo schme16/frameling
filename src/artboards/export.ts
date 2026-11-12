@@ -63,7 +63,7 @@ class ArtboardExportProblem extends Error {}
 
 /** Why a way of exporting doesn't go with this format (or null when it does). */
 export function modeOff(mode: ArtboardExportMode, settings: ExportSettings): string | null {
-  if (mode === 'joined' && (!formatInfo(settings.format).animated || settings.format === 'sheet')) return 'Pick a video or animation format for this';
+  if (mode === 'joined' && !formatInfo(settings.format).animated) return 'Pick a video, an animation or a sprite sheet for this';
   if (mode === 'atlas' && settings.format !== 'sheet') return 'Pick Sprite sheet for this';
   return null;
 }
@@ -77,6 +77,18 @@ export function effectiveMode(doc: Doc, settings: ExportSettings): ArtboardExpor
 /** True when this export is about more than the open artboard. */
 export function exportsSeveral(doc: Doc, settings: ExportSettings): boolean {
   return effectiveMode(doc, settings) !== 'one';
+}
+
+/**
+ * The artboards one after another as one film, and the settings to export it with. A sprite sheet turns it into one
+ * sprite: every frame of every artboard in order, as a single animation (the boards' own clips are left out, they
+ * would split it), always the whole of it.
+ */
+export function filmOf(root: Doc, ids: Id[], settings: ExportSettings): { doc: Doc; starts: number[]; settings: ExportSettings } | { problem: string } {
+  const r = joinShots(root, ids);
+  if ('problem' in r) return r;
+  if (settings.format !== 'sheet') return { ...r, settings };
+  return { doc: { ...r.doc, clips: [] }, starts: r.starts, settings: { ...settings, range: 'all', clipId: null } };
 }
 
 /** Which artboards, in list order. */
@@ -107,9 +119,9 @@ export function planArtboards(root: Doc, settings: ExportSettings, currentFrame:
   const ids = chosenIds(root, currentArtboardExport(root));
   if (!ids.length) return { mode, files: 0, frames: 0, size: null, problem: 'Pick at least one artboard to export.' };
   if (mode === 'joined') {
-    const r = joinShots(root, ids);
+    const r = filmOf(root, ids, settings);
     if ('problem' in r) return { mode, files: 1, frames: 0, size: null, problem: r.problem };
-    const p = planExport(r.doc, settings, currentFrame);
+    const p = planExport(r.doc, r.settings, currentFrame);
     return { mode, files: 1, frames: p.count, size: { width: p.width, height: p.height }, problem: p.problem };
   }
   if (mode === 'atlas') return { mode, files: 1, frames: ids.reduce((t, id) => t + artboardDoc(root, id).length, 0), size: null, problem: null };
@@ -140,7 +152,7 @@ export async function exportArtboards(
   settings: ExportSettings,
   signal: AbortSignal,
   onProgress: (p: Progress) => void,
-  exportOne: (doc: Doc) => Promise<'done' | 'cancelled' | 'stopped'>,
+  exportOne: (doc: Doc, settings: ExportSettings) => Promise<'done' | 'cancelled' | 'stopped'>,
 ): Promise<'done' | 'cancelled' | 'stopped'> {
   const api = desktop();
   if (!api) throw new ArtboardExportProblem('Exporting works in the Frameling desktop app.');
@@ -150,9 +162,9 @@ export async function exportArtboards(
   if (!ids.length) throw new ArtboardExportProblem('Pick at least one artboard to export.');
 
   if (c.mode === 'joined') {
-    const r = joinShots(root, ids);
+    const r = filmOf(root, ids, settings);
     if ('problem' in r) throw new ArtboardExportProblem(r.problem);
-    return exportOne(r.doc);
+    return exportOne(r.doc, r.settings);
   }
 
   const info = formatInfo(settings.format);

@@ -42,6 +42,24 @@ function blob(d: { width: number; height: number; pixels: Uint8ClampedArray }, c
 }
 
 /** Three 32 x 32 sprites (Idle, Run, Jump), four frames each, side by side. */
+/** One blob jumping, a frame to a board: Frame 1 to 4 (the boards-as-frames way of making a sprite). */
+export function demoFrames(): Doc {
+  const doc = newDoc({ name: 'Blob jump', width: 128, height: 128, length: 1, background: '#fffaf0', pixel: { pixelSize: 4 } });
+  const poses: [number, number][] = [[0, 2], [4, -1], [9, -2], [4, -1]];
+  poses.forEach(([lift, squash], k) => {
+    if (k > 0) model.switchArtboard(doc, model.addArtboard(doc, { name: `Frame ${k + 1}`, length: 1 }));
+    else model.renameArtboard(doc, model.activeId(doc), 'Frame 1');
+    const layer = doc.layers[0] as PixelLayer;
+    layer.name = 'Blob';
+    const d = newPixelDrawing(32, 32);
+    blob(d, '#4fd1a5', lift, squash, 0);
+    doc.drawings[d.id] = d;
+    layer.cels = [{ id: uid('c'), start: 0, length: 1, drawingId: d.id }];
+  });
+  model.switchArtboard(doc, model.artboardsOf(doc)[0].id);
+  return doc;
+}
+
 export function demoSprites(): Doc {
   const doc = newDoc({ name: 'Blob sprites', width: 128, height: 128, length: 4, background: '#fffaf0', pixel: { pixelSize: 4 } });
   const sets: [string, string, (f: number) => [number, number, number]][] = [
@@ -113,7 +131,7 @@ if (typeof window !== 'undefined' && new URLSearchParams(location.search).has('d
   (window as unknown as { __framelingArtboards: unknown }).__framelingArtboards = {
     model,
     ops,
-    load: (which: 'sprites' | 'shots' | 'mixed') => store().load(which === 'mixed' ? demoShots(true) : which === 'shots' ? demoShots() : demoSprites()),
+    load: (which: 'sprites' | 'shots' | 'mixed' | 'frames') => store().load(which === 'mixed' ? demoShots(true) : which === 'shots' ? demoShots() : which === 'frames' ? demoFrames() : demoSprites()),
     /** What the Export dialog's artboard row is set to, as if clicked. */
     setExport: (p: Partial<{ mode: 'one' | 'each' | 'joined' | 'atlas'; ids: string[] | null }>) => import('./export').then((m) => m.setArtboardExport(p)),
     setChoice: (id: string, v: string | undefined) => import('../core/choices').then((m) => m.setChoice(id, v)),
