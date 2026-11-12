@@ -97,4 +97,19 @@ describe('Canvas size on a variation', () => {
     expect(findArtboard(doc(), v)!.content!.width).toBe(100);
     expect(camOf(v).view.zoom).toBeCloseTo(0.5, 5);
   });
+
+  it('a variation has no anchor picker (there is nothing to anchor) and says so; the original keeps it', async () => {
+    installArtboards();
+    const orig = activeId(doc());
+    await makeVariationOf(orig, 'square');
+    act(() => openDocumentSettings());
+    expect(document.querySelector('.ds-anchor')).toBeNull();
+    expect(document.querySelector('.ds-anchor-note')?.textContent).toMatch(/camera frames it/);
+    act(() => document.querySelector<HTMLButtonElement>('.io-primary')!.click());
+    document.body.innerHTML = '';
+    goToArtboard(orig);
+    act(() => openDocumentSettings());
+    expect(document.querySelector('.ds-anchor')).not.toBeNull();
+    expect(document.querySelector('.ds-anchor-note')?.textContent).toMatch(/Drawing stays at the/);
+  });
 });
