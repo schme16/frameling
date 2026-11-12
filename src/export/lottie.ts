@@ -9,9 +9,11 @@
  *   the copy's (anchor = the symbol's registration point) and whose time remap picks the symbol frame to show.
  * - Classic tweens become two keys with the easing as bezier handles when the easing is a cubic (steady, gentle
  *   start/stop, wind up, overshoot, custom curves are exact; gentle start and stop is two halves). Springy, bouncy and
- *   motion paths are baked, one key per frame.
- * - Shape tweens become path keyframes, one per frame (the outlines are matched once, so every frame has the same
- *   points and the keys blend smoothly between frames).
+ *   motion paths are baked per frame, then keys are fitted to the samples (see fitKeys: a few eased keys within
+ *   tolerances no one can see).
+ * - Shape tweens become path keyframes (the outlines are matched once, so every frame has the same points and the keys
+ *   blend smoothly between frames), thinned the same way.
+ * - Brush outlines are refitted with far fewer points (curve-fit.ts) and a drawing shown in several keys is one precomp.
  * - Pixel and tile layers become PNG image assets, scaled up to stage size with hard edges so they stay crisp.
  * - The camera is a null layer per depth that every stage layer hangs from (one key per frame when it moves).
  * - Clips become named markers (lottie-web's playSegments takes their names), markers become markers.
@@ -33,6 +35,7 @@ import { activeEffects, effectInfo, isNoop, valuesAt } from '../effects/model';
 import { canTraceText, glyphSprites, particleSprites, SPRITE_UNIT, type ParticleSprite } from './sprites';
 import { cameraViewAt, cameraViewOn, activeCamera, depthAnchor, depthScale, parallaxFactor } from '../core/camera';
 import { encodePng } from '../io/png';
+import { fitClosed, sampleMidpointSpline } from './curve-fit';
 import { flattenTilemap } from '../tiles/model';
 import { sortedStops } from '../core/gradient';
 import type { PosedMesh } from '../rig/pose';
@@ -48,6 +51,11 @@ export interface LottieOptions {
    */
   pictures?: PictureLook;
   bake?: Partial<BakeSpec>;
+  /**
+   * Soften and Shadow as Lottie's own blur and drop shadow ('effects', the default, small) or as pictures
+   * ('pictures'), which players that leave Lottie's effects out (lottie-web's canvas player) show too.
+   */
+  softAndShadow?: 'effects' | 'pictures';
 }
 
 export type PictureLook = 'balanced' | 'sharp' | 'small';
@@ -66,6 +74,31 @@ const r3 = (v: number) => {
   const x = Math.round(v * 1000) / 1000;
   return Object.is(x, -0) ? 0 : x;
 };
+
+/** Path numbers: two decimals is a hundredth of a stage pixel, far below what shows even at four times the size. */
+const rp = (v: number) => {
+  const x = Math.round(v * 100) / 100;
+  return Object.is(x, -0) ? 0 : x;
+};
+/** How far (stage pixels) a brush outline may move when it is refitted with fewer points. */
+const FIT_TOLERANCE = 0.05;
+
+// How far a value may stray from the straight line between kept keys (see smoothTrack): what no one can see.
+/** Stage pixels (positions, path points, gradient ends). */
+const POS_TOL = 0.25;
+const PATH_TOL = 0.05;
+/** Colour channels and gradient stops, 0..1: half a step of 8-bit colour. */
+const COLOUR_TOL = 0.004;
+/** Opacity in percent. */
+const OPACITY_TOL = 0.5;
+const WIDTH_TOL = 0.05;
+/** Scale in percent, rotation and skew in degrees. */
+const SCALE_TOL = 0.25;
+const ANGLE_TOL = 0.5;
+// A symbol copy can be as big as the stage, so a hair of scale or turn is many pixels at its edge: tighter.
+const COPY_POS_TOL = 0.05;
+const COPY_SCALE_TOL = 0.02;
+const COPY_ANGLE_TOL = 0.02;
 
 /** `#rgb[a]` / `#rrggbb[aa]` as Lottie's 0..1 rgb and an alpha. */
 export function lottieColor(c: string): { rgb: [number, number, number]; alpha: number } {
@@ -128,22 +161,50 @@ export function lottiePath(sp: SubPath): Json {
   const oo: number[][] = [];
   for (let k = 0; k < n; k++) {
     const p = pts[k];
-    v.push([r3(p.x), r3(p.y)]);
+    v.push([rp(p.x), rp(p.y)]);
     // In: the second control of the curve arriving here. Out: the first control of the curve leaving.
     const arrive = k > 0 || sp.closed ? p : undefined;
-    ii.push(arrive?.c2 && arrive.c1 ? [r3(arrive.c2.x - p.x), r3(arrive.c2.y - p.y)] : [0, 0]);
+    ii.push(arrive?.c2 && arrive.c1 ? [rp(arrive.c2.x - p.x), rp(arrive.c2.y - p.y)] : [0, 0]);
     const next = k + 1 < n ? pts[k + 1] : sp.closed ? pts[0] : undefined;
-    oo.push(next?.c1 && next.c2 ? [r3(next.c1.x - p.x), r3(next.c1.y - p.y)] : [0, 0]);
+    oo.push(next?.c1 && next.c2 ? [rp(next.c1.x - p.x), rp(next.c1.y - p.y)] : [0, 0]);
   }
   return { c: sp.closed, v, i: ii, o: oo };
 }
 
 /** A brush stroke's outline, smoothed like the canvas does it (quadratic curves through the midpoints). */
-export function strokeOutlinePath(s: StrokeShape): Json | null {
+const fitCache = new WeakMap<StrokeShape, Json>();
+
+/** The same outline with fewer points: cubics fitted to the smoothed outline, kept only when they are fewer. */
+function fittedOutline(s: StrokeShape, n: number): Json | null {
+  const hit = fitCache.get(s);
+  // A copy each time: players write into what they are given.
+  if (hit !== undefined) return hit && { c: hit.c, v: hit.v.map((x: number[]) => [...x]), i: hit.i.map((x: number[]) => [...x]), o: hit.o.map((x: number[]) => [...x]) };
+  let out: Json | null = null;
+  const cubics = fitClosed(sampleMidpointSpline(strokeOutline(s), 0.75), FIT_TOLERANCE);
+  if (cubics.length && cubics.length < n) {
+    out = {
+      c: true,
+      v: cubics.map((c) => [rp(c[0][0]), rp(c[0][1])]),
+      i: cubics.map((_, k) => {
+        const c = cubics[(k + cubics.length - 1) % cubics.length];
+        return [rp(c[2][0] - c[3][0]), rp(c[2][1] - c[3][1])];
+      }),
+      o: cubics.map((c) => [rp(c[1][0] - c[0][0]), rp(c[1][1] - c[0][1])]),
+    };
+  }
+  fitCache.set(s, out);
+  return out && fittedOutline(s, n);
+}
+
+export function strokeOutlinePath(s: StrokeShape, fit = false): Json | null {
   const p = strokeOutline(s);
   const n = p.length;
   if (n < 2) return null;
-  if (n < 4) return { c: true, v: p.map(([x, y]) => [r3(x), r3(y)]), i: p.map(() => [0, 0]), o: p.map(() => [0, 0]) };
+  if (fit && n >= 4) {
+    const f = fittedOutline(s, n);
+    if (f) return f;
+  }
+  if (n < 4) return { c: true, v: p.map(([x, y]) => [rp(x), rp(y)]), i: p.map(() => [0, 0]), o: p.map(() => [0, 0]) };
   const v: number[][] = [];
   const ii: number[][] = [];
   const oo: number[][] = [];
@@ -152,9 +213,9 @@ export function strokeOutlinePath(s: StrokeShape): Json | null {
     const a = p[k];
     const b = p[(k + 1) % n];
     const m = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
-    v.push([r3(m[0]), r3(m[1])]);
-    ii.push([r3((2 / 3) * (a[0] - m[0])), r3((2 / 3) * (a[1] - m[1]))]);
-    oo.push([r3((2 / 3) * (b[0] - m[0])), r3((2 / 3) * (b[1] - m[1]))]);
+    v.push([rp(m[0]), rp(m[1])]);
+    ii.push([rp((2 / 3) * (a[0] - m[0])), rp((2 / 3) * (a[1] - m[1]))]);
+    oo.push([rp((2 / 3) * (b[0] - m[0])), rp((2 / 3) * (b[1] - m[1]))]);
   }
   return { c: true, v, i: ii, o: oo };
 }
@@ -223,12 +284,13 @@ interface ShapeLook {
   tr?: Tr;
 }
 
-function lookOf(s: Exclude<Shape, InstanceShape>, tints: Tint[]): ShapeLook {
+/** `still`: the shape doesn't change over the run, so a brush outline may be refitted with fewer points. */
+function lookOf(s: Exclude<Shape, InstanceShape>, tints: Tint[], still = false): ShapeLook {
   // Text and particles are turned into sprites before this (expandSprites).
   if (s.type === 'text' || s.type === 'particles') return { paths: [], fill: null, stroke: null };
   if (s.type === 'stroke') {
     const c = tinted(s.color, tints);
-    const p = strokeOutlinePath(s);
+    const p = strokeOutlinePath(s, still);
     return { paths: p ? [p] : [], fill: { rgb: c.rgb, o: r3(c.alpha * s.opacity * 100) }, stroke: null };
   }
   const paths = s.paths.filter((sp) => sp.points.length).map(lottiePath);
@@ -281,36 +343,110 @@ const linear = () => ({ o: { x: [0], y: [0] }, i: { x: [1], y: [1] } });
 export function smoothTrack(values: (number | number[])[], times: number[], tol: number): Json {
   const vs = values.map((v) => (Array.isArray(v) ? v : [v]));
   if (vs.every((v) => same(v, vs[0]))) return stat(values[0]);
-  const keep = [0];
-  let a = 0;
-  for (let j = 2; j < vs.length; j++) {
-    // Can a straight line from key a to key j stand in for every frame between?
-    let ok = true;
-    for (let i = a + 1; i < j && ok; i++) {
-      const u = (times[i] - times[a]) / (times[j] - times[a]);
-      for (let c = 0; c < vs[i].length; c++) if (Math.abs(vs[a][c] + (vs[j][c] - vs[a][c]) * u - vs[i][c]) > tol) ok = false;
+  return { a: 1, k: fitKeys(vs, times, tol).map(({ i, ease }, n, all) => keyOf(vs[i], times[i], n < all.length - 1 ? vs[all[n + 1].i] : undefined, ease)) };
+}
+
+/** A key: the value, and how it moves to the next key's (held when they are the same). */
+function keyOf(v: number[], t: number, next: number[] | undefined, ease: [number, number]): Json {
+  const key: Json = { t, s: v };
+  if (!next) return key;
+  if (same(v, next)) key.h = 1;
+  else Object.assign(key, ease === LINEAR ? linear() : bez(1 / 3, ease[0], 2 / 3, ease[1]));
+  return key;
+}
+
+const LINEAR: [number, number] = [1 / 3, 2 / 3];
+
+/**
+ * One shared easing (a cubic bezier whose x handles sit at a third and two thirds, so only the two y values vary) that
+ * carries every component from frame `a` to frame `j` within `tol`, or null. Straight lines are tried first; else the
+ * curve is a least squares fit, which suits drag, gravity and fades, where every component follows the same timing.
+ */
+function fitSegment(vs: number[][], times: number[], a: number, j: number, tol: number): [number, number] | null {
+  if (j === a + 1) return LINEAR;
+  const span = times[j] - times[a];
+  const off = (ease: [number, number]) => {
+    let worst = 0;
+    for (let i = a + 1; i < j; i++) {
+      const u = (times[i] - times[a]) / span;
+      const g = 3 * (1 - u) * (1 - u) * u * ease[0] + 3 * (1 - u) * u * u * ease[1] + u * u * u;
+      for (let c = 0; c < vs[i].length; c++) worst = Math.max(worst, Math.abs(vs[a][c] + (vs[j][c] - vs[a][c]) * g - vs[i][c]));
     }
-    if (!ok) {
-      a = j - 1;
-      keep.push(a);
+    return worst;
+  };
+  if (off(LINEAR) <= tol) return LINEAR;
+  let m00 = 0;
+  let m01 = 0;
+  let m11 = 0;
+  let r0 = 0;
+  let r1 = 0;
+  for (let i = a + 1; i < j; i++) {
+    const u = (times[i] - times[a]) / span;
+    const A = 3 * (1 - u) * (1 - u) * u;
+    const B = 3 * (1 - u) * u * u;
+    for (let c = 0; c < vs[i].length; c++) {
+      const d = vs[j][c] - vs[a][c];
+      const r = vs[i][c] - vs[a][c] - d * u * u * u;
+      m00 += d * d * A * A;
+      m01 += d * d * A * B;
+      m11 += d * d * B * B;
+      r0 += d * r * A;
+      r1 += d * r * B;
     }
   }
-  if (keep[keep.length - 1] !== vs.length - 1) keep.push(vs.length - 1);
-  return {
-    a: 1,
-    k: keep.map((i, n) => {
-      const key: Json = { t: times[i], s: vs[i] };
-      if (n < keep.length - 1) {
-        if (same(vs[i], vs[keep[n + 1]])) key.h = 1;
-        else Object.assign(key, linear());
+  const det = m00 * m11 - m01 * m01;
+  if (Math.abs(det) < 1e-12) return null;
+  const ease: [number, number] = [(r0 * m11 - r1 * m01) / det, (m00 * r1 - m01 * r0) / det];
+  const r = ease.map((y) => r6(y)) as [number, number];
+  // Between the two keys the value must stay between their values: an overshoot would take an opacity below zero or a
+  // colour past white between frames, which players clamp in different places.
+  for (let k = 1; k < 20; k++) {
+    const t = k / 20;
+    const g = 3 * (1 - t) * (1 - t) * t * r[0] + 3 * (1 - t) * t * t * r[1] + t * t * t;
+    if (g < 0 || g > 1) return null;
+  }
+  return off(r) <= tol ? r : null;
+}
+
+/** The frames that still need a key, each with the easing to the next one. Frames in between lie within `tol`. */
+function fitKeys(vs: number[][], times: number[], tol: number): { i: number; ease: [number, number] }[] {
+  const out: { i: number; ease: [number, number] }[] = [];
+  let a = 0;
+  while (a < vs.length - 1) {
+    let best = a + 1;
+    let bestEase = LINEAR;
+    // A curve needs a few frames to be told from a line, so a miss on a short stretch doesn't end the search.
+    let misses = 0;
+    for (let j = a + 2; j < vs.length && misses < 4; j++) {
+      const e = fitSegment(vs, times, a, j, tol);
+      if (!e) {
+        misses++;
+        continue;
       }
-      return key;
-    }),
-  };
+      misses = 0;
+      best = j;
+      bestEase = e;
+    }
+    out.push({ i: a, ease: bestEase });
+    a = best;
+  }
+  out.push({ i: vs.length - 1, ease: LINEAR });
+  return out;
+}
+
+const flatPath = (p: Json): number[] => [...p.v.flat(), ...p.i.flat(), ...p.o.flat()];
+
+/**
+ * A path that changes over frames (every frame has the same number of points), keys left out where the straight line
+ * between neighbours stays within `tol` stage pixels at every point and handle.
+ */
+function pathTrack(vals: Json[], times: number[], tol: number): Json {
+  const flat = vals.map(flatPath);
+  return { a: 1, k: fitKeys(flat, times, tol).map(({ i, ease }, n, all) => ({ ...keyOf(flat[i], times[i], n < all.length - 1 ? flat[all[n + 1].i] : undefined, ease), s: [vals[i]] })) };
 }
 
 // A fresh one each time: lottie-web writes into the data it's given, so shared objects break it.
-const noTr = () => ({ ty: 'tr', p: stat([0, 0]), a: stat([0, 0]), s: stat([100, 100]), r: stat(0), o: stat(100), sk: stat(0), sa: stat(0) });
+const noTr = () => ({ ty: 'tr', p: stat([0, 0]), a: stat([0, 0]), s: stat([100, 100]), r: stat(0), o: stat(100) });
 
 /** Angles per frame without jumps of a whole turn, so blending between frames takes the short way. */
 function unwrap(rs: number[]): number[] {
@@ -346,7 +482,7 @@ function gradProps(first: LottieGrad, per: (LottieGrad | undefined)[], times: nu
   const all = per.map((g) => g ?? first);
   const blend = all.every((g) => g.p === first.p && g.k.length === first.k.length && g.t === first.t);
   const pick = blend ? all : all.map(() => first);
-  return { t: first.t, s: track(pick.map((g) => g.s), times, true), e: track(pick.map((g) => g.e), times, true), h: stat(0), a: stat(0), g: { p: first.p, k: track(pick.map((g) => g.k), times, true) } };
+  return { t: first.t, s: smoothTrack(pick.map((g) => g.s), times, POS_TOL), e: smoothTrack(pick.map((g) => g.e), times, POS_TOL), h: stat(0), a: stat(0), g: { p: first.p, k: smoothTrack(pick.map((g) => g.k), times, COLOUR_TOL) } };
 }
 
 /** A group for one shape over a run of frames. */
@@ -362,7 +498,7 @@ function shapeGroup(looks: ShapeLook[], times: number[], name: string): Json | n
     const blend = vals.every((v) => v.v.length === vals[0].v.length);
     const most = Math.max(...vals.map((v) => v.v.length));
     if (!blend) for (let j = 0; j < vals.length; j++) vals[j] = padPath(vals[j], most);
-    it.push({ ty: 'sh', nm: `Path ${k + 1}`, ks: track(vals, times, blend, (v) => v) });
+    it.push({ ty: 'sh', nm: `Path ${k + 1}`, ks: blend && !vals.every((v) => same(v, vals[0])) ? pathTrack(vals, times, PATH_TOL) : track(vals, times, blend, (v) => v) });
   }
   // Fill and line are kept on every frame where any frame has them (see-through where missing), so the structure
   // is the same throughout.
@@ -374,9 +510,9 @@ function shapeGroup(looks: ShapeLook[], times: number[], name: string): Json | n
     it.push({
       ty: sg ? 'gs' : 'st',
       nm: 'Line',
-      ...(sg ? gradProps(sg, looks.map((l) => l.stroke?.grad), times) : { c: track(looks.map((l) => [...(l.stroke ?? st).rgb, 1]), times, true) }),
-      o: track(looks.map((l) => (l.stroke ? l.stroke.o : 0)), times, true),
-      w: track(looks.map((l) => (l.stroke ? l.stroke.w : 0)), times, true),
+      ...(sg ? gradProps(sg, looks.map((l) => l.stroke?.grad), times) : { c: smoothTrack(looks.map((l) => [...(l.stroke ?? st).rgb, 1]), times, COLOUR_TOL) }),
+      o: smoothTrack(looks.map((l) => (l.stroke ? l.stroke.o : 0)), times, OPACITY_TOL),
+      w: smoothTrack(looks.map((l) => (l.stroke ? l.stroke.w : 0)), times, WIDTH_TOL),
       lc: st.lc,
       lj: st.lj,
       ml: 10,
@@ -385,25 +521,25 @@ function shapeGroup(looks: ShapeLook[], times: number[], name: string): Json | n
   if (looks.some((l) => l.fill)) {
     const f = looks.find((l) => l.fill)!.fill!;
     const fg = looks.find((l) => l.fill?.grad)?.fill?.grad;
-    if (fg) it.push({ ty: 'gf', nm: 'Fill', ...gradProps(fg, looks.map((l) => l.fill?.grad), times), o: track(looks.map((l) => (l.fill ? l.fill.o : 0)), times, true), r: 2 });
-    else it.push({ ty: 'fl', nm: 'Fill', c: track(looks.map((l) => [...(l.fill ?? f).rgb, 1]), times, true), o: track(looks.map((l) => (l.fill ? l.fill.o : 0)), times, true), r: 2 });
+    if (fg) it.push({ ty: 'gf', nm: 'Fill', ...gradProps(fg, looks.map((l) => l.fill?.grad), times), o: smoothTrack(looks.map((l) => (l.fill ? l.fill.o : 0)), times, OPACITY_TOL), r: 2 });
+    else it.push({ ty: 'fl', nm: 'Fill', c: smoothTrack(looks.map((l) => [...(l.fill ?? f).rgb, 1]), times, COLOUR_TOL), o: smoothTrack(looks.map((l) => (l.fill ? l.fill.o : 0)), times, OPACITY_TOL), r: 2 });
   }
   if (looks.some((l) => l.soft)) {
     // The canvas's soft puff: full colour in the middle, two thirds at 45%, gone at the edge.
     const f = looks.find((l) => l.soft)!.soft!;
     const stops = (c: number[]) => [0, ...c, 0.45, ...c, 1, ...c, 0, 1, 0.45, r3(0xaa / 255), 1, 0];
-    it.push({ ty: 'gf', nm: 'Soft', o: stat(100), r: 1, t: 2, s: stat([0, 0]), e: stat([SPRITE_UNIT / 2, 0]), h: stat(0), a: stat(0), g: { p: 3, k: track(looks.map((l) => stops((l.soft ?? f).rgb)), times, true) } });
+    it.push({ ty: 'gf', nm: 'Soft', o: stat(100), r: 1, t: 2, s: stat([0, 0]), e: stat([SPRITE_UNIT / 2, 0]), h: stat(0), a: stat(0), g: { p: 3, k: smoothTrack(looks.map((l) => stops((l.soft ?? f).rgb)), times, COLOUR_TOL) } });
   }
   if (looks[0].tr) {
     const trs = looks.map((l) => l.tr!);
     it.push({
       ty: 'tr',
       a: stat([0, 0]),
-      p: smoothTrack(trs.map((t) => t.p), times, 0.02),
-      s: smoothTrack(trs.map((t) => t.s), times, 0.1),
-      r: smoothTrack(unwrap(trs.map((t) => t.r)), times, 0.05),
-      o: smoothTrack(trs.map((t) => t.o), times, 0.2),
-      sk: smoothTrack(trs.map((t) => t.sk), times, 0.05),
+      p: smoothTrack(trs.map((t) => t.p), times, POS_TOL),
+      s: smoothTrack(trs.map((t) => t.s), times, SCALE_TOL),
+      r: smoothTrack(unwrap(trs.map((t) => t.r)), times, ANGLE_TOL),
+      o: smoothTrack(trs.map((t) => t.o), times, OPACITY_TOL),
+      sk: smoothTrack(trs.map((t) => t.sk), times, ANGLE_TOL),
       sa: stat(0),
     });
   } else it.push(noTr());
@@ -449,8 +585,11 @@ function particleLook(s: ParticlesShape, sp: ParticleSprite, tints: Tint[]): Sha
     case 'streak': {
       const len = Math.max(p.size * 2, Math.hypot(p.vx, p.vy) * 0.05);
       const ang = Math.atan2(p.vy, p.vx);
-      const line: SubPath = { closed: false, points: [{ x: p.x, y: p.y }, { x: p.x - Math.cos(ang) * len, y: p.y - Math.sin(ang) * len }] };
-      return { paths: [lottiePath(line)], fill: null, stroke: { rgb: c.rgb, o: r3(c.alpha * 100), w: r3(p.size), lc: 2, lj: 2 }, tr: trOf([1, 0, 0, 1, 0, 0], sp.alpha) };
+      // Drawn along its own axis and moved by the group, so only the length changes the path and the position keys thin out.
+      const line: SubPath = { closed: false, points: [{ x: 0, y: 0 }, { x: -len, y: 0 }] };
+      const cos = Math.cos(ang);
+      const sin = Math.sin(ang);
+      return { paths: [lottiePath(line)], fill: null, stroke: { rgb: c.rgb, o: r3(c.alpha * 100), w: r3(p.size), lc: 2, lj: 2 }, tr: trOf([cos, sin, -sin, cos, p.x, p.y], sp.alpha) };
     }
     case 'flake': {
       const lines: SubPath[] = [0, 1, 2].map((i) => {
@@ -582,6 +721,8 @@ interface Ctx {
   doc: Doc;
   assets: Json[];
   symbolAssets: Map<string, string>;
+  /** Precomps for drawings shown in several keys of a layer, by drawing and colour wash. */
+  sharedDrawings: Map<string, string>;
   images: Map<string, string>;
   /** How far symbol content may sit outside the stage before a copy clips it. */
   pad: number;
@@ -595,6 +736,8 @@ interface Ctx {
   /** How baked pictures are made. */
   pictures: PictureLook;
   bake?: Partial<BakeSpec>;
+  /** Soften and Shadow are baked too (see LottieOptions.softAndShadow). */
+  bakeSoft?: boolean;
   bank?: PictureBank;
 }
 
@@ -621,12 +764,12 @@ function instanceKs(insts: InstanceShape[], times: number[], origin: { x: number
     ks.o = keyed((s) => [r3(s.opacity * 100)]);
     return ks;
   }
-  ks.p = track(insts.map((s) => [r3(s.transform.x), r3(s.transform.y)]), times, true);
-  ks.s = track(insts.map((s) => [r3(s.transform.scaleX * 100), r3(s.transform.scaleY * 100)]), times, true);
-  ks.r = track(insts.map((s) => r3(s.transform.rotation)), times, true);
-  ks.sk = track(insts.map((s) => r3(-s.transform.skew)), times, true);
+  ks.p = smoothTrack(insts.map((s) => [r3(s.transform.x), r3(s.transform.y)]), times, COPY_POS_TOL);
+  ks.s = smoothTrack(insts.map((s) => [r3(s.transform.scaleX * 100), r3(s.transform.scaleY * 100)]), times, COPY_SCALE_TOL);
+  ks.r = smoothTrack(insts.map((s) => r3(s.transform.rotation)), times, COPY_ANGLE_TOL);
+  ks.sk = smoothTrack(insts.map((s) => r3(-s.transform.skew)), times, COPY_ANGLE_TOL);
   ks.sa = stat(0);
-  ks.o = track(insts.map((s) => r3(s.opacity * 100)), times, true);
+  ks.o = smoothTrack(insts.map((s) => r3(s.opacity * 100)), times, 0.2);
   return ks;
 }
 
@@ -792,6 +935,7 @@ function layerPieces(ctx: Ctx, layer: Layer, from: number, to: number, offset: n
   const out: Json[] = [];
   const { doc } = ctx;
   const op = withOpacity ? layer.opacity : 1;
+  const uses = drawingUses(doc, layer, from, to);
   for (const cel of layer.cels) {
     const a = Math.max(from, cel.start);
     const b = Math.min(to, cel.start + cel.length - 1);
@@ -810,6 +954,11 @@ function layerPieces(ctx: Ctx, layer: Layer, from: number, to: number, offset: n
       out.push(tag({ ty: 2, refId: id, ip: a - offset, op: b + 1 - offset, st: 0, sr: 1, ks: { a: stat([0, 0]), p: stat([0, 0]), s: stat([100, 100]), r: stat(0), o: stat(100) } }));
       continue;
     }
+    const shared = (uses.get(cel.drawingId) ?? 0) > 1 ? sharedDrawing(ctx, layer, cel, uses.get(cel.drawingId)!) : undefined;
+    if (shared) {
+      out.push(tag({ ty: 0, refId: shared, w: doc.width + ctx.pad * 2, h: doc.height + ctx.pad * 2, ip: a - offset, op: b + 1 - offset, st: a - offset, sr: 1, ks: { a: stat([ctx.pad, ctx.pad]), p: stat([0, 0]), s: stat([100, 100]), r: stat(0), o: stat(100) } }));
+      continue;
+    }
     const frames: number[] = [];
     for (let f = a; f <= b; f++) frames.push(f);
     // A layer on a bone comes back as one posed group: its shapes are moved (or bent) into place per frame.
@@ -822,12 +971,54 @@ function layerPieces(ctx: Ctx, layer: Layer, from: number, to: number, offset: n
     const s0 = sig(first.shapes);
     if (!drawings.every((d) => d?.kind === 'vector' && sig(d.shapes) === s0)) {
       // The shapes change kind partway (shouldn't happen): every frame on its own.
-      frames.forEach((f, k) => out.push(...vectorRuns(ctx, layer, cel, [f], [drawings[k]!.kind === 'vector' ? (drawings[k] as any).shapes : []], offset).map(tag)));
+      frames.forEach((f, k) => out.push(...vectorRuns(ctx, layer, cel, [f], [drawings[k]!.kind === 'vector' ? (drawings[k] as any).shapes : []], offset, true).map(tag)));
       continue;
     }
-    out.push(...vectorRuns(ctx, layer, cel, frames, drawings.map((d) => (d as any).shapes as Shape[]), offset).map(tag));
+    out.push(...vectorRuns(ctx, layer, cel, frames, drawings.map((d) => (d as any).shapes as Shape[]), offset, drawings.every((d) => d === first)).map(tag));
   }
   return out;
+}
+
+/** Does this key show a plain drawing (paths, fills and brush strokes only) that is the same on every frame of it? */
+function plainKey(doc: Doc, layer: Layer, cel: Cel): boolean {
+  if (layer.bind || cel.tween || (layer.kind && layer.kind !== 'vector')) return false;
+  const d = doc.drawings[cel.drawingId];
+  return d?.kind === 'vector' && d.shapes.every((s) => s.type === 'path' || s.type === 'fill' || s.type === 'stroke') && poseAt(doc, layer, cel.start) === d;
+}
+
+/** How many keys of the layer (inside the range) show each plain drawing. */
+function drawingUses(doc: Doc, layer: Layer, from: number, to: number): Map<string, number> {
+  const uses = new Map<string, number>();
+  for (const cel of layer.cels) {
+    if (cel.start > to || cel.start + cel.length - 1 < from || !plainKey(doc, layer, cel)) continue;
+    uses.set(cel.drawingId, (uses.get(cel.drawingId) ?? 0) + 1);
+  }
+  return uses;
+}
+
+/**
+ * A drawing that comes back in several keys is written once, as a precomp the keys point at (the shapes are the bulk
+ * of the file). Only when that saves bytes: a small drawing costs less than the precomp layer that would replace it.
+ */
+function sharedDrawing(ctx: Ctx, layer: Layer, cel: Cel, uses: number): string | undefined {
+  const mapKey = cel.drawingId + '#' + tintKey(ctx.tints);
+  const known = ctx.sharedDrawings.get(mapKey);
+  if (known) return known;
+  const d = ctx.doc.drawings[cel.drawingId];
+  if (d?.kind !== 'vector') return undefined;
+  const pieces = vectorRuns(ctx, layer, cel, [cel.start], [d.shapes], cel.start, true);
+  if (!pieces.length || pieces.some((l) => l.ty !== 4)) return undefined;
+  // Each use costs a precomp layer (about 330 bytes) instead of the shape layer; the precomp itself about 300 more.
+  if ((uses - 1) * (JSON.stringify(pieces).length - 330) < 300) return undefined;
+  const id = `drawing_${ctx.sharedDrawings.size}`;
+  ctx.sharedDrawings.set(mapKey, id);
+  for (const l of pieces) {
+    l.ip = 0;
+    l.op = ctx.doc.length + 1;
+  }
+  const shift = { ty: 3, ind: 1, nm: 'Offset', ip: 0, op: ctx.doc.length + 1, st: 0, sr: 1, ks: { a: stat([0, 0]), p: stat([ctx.pad, ctx.pad]), s: stat([100, 100]), r: stat(0), o: stat(100) } };
+  ctx.assets.push({ id, nm: 'Drawing', fr: ctx.doc.fps, layers: [...numbered(pieces, 2, 1), shift] });
+  return id;
 }
 
 /** An opacity property multiplied by `by`. */
@@ -837,7 +1028,7 @@ function scaleO(o: Json, by: number): Json {
 }
 
 /** A key's shapes over its frames: runs of plain shapes become shape layers, symbol copies become precomp layers. */
-function vectorRuns(ctx: Ctx, layer: Layer, cel: Cel, frames: number[], rawShapes: Shape[][], offset: number): Json[] {
+function vectorRuns(ctx: Ctx, layer: Layer, cel: Cel, frames: number[], rawShapes: Shape[][], offset: number, still: boolean): Json[] {
   const { doc } = ctx;
   const times = frames.map((f) => f - offset);
   const ip = frames[0] - offset;
@@ -849,7 +1040,7 @@ function vectorRuns(ctx: Ctx, layer: Layer, cel: Cel, frames: number[], rawShape
   const flush = () => {
     if (!run.length) return;
     const groups = run
-      .map((k) => shapeGroup(items.map((list) => (list[k].type === 'look' ? (list[k] as LookItem).look : lookOf(list[k] as Exclude<Shape, InstanceShape>, ctx.tints))), times, `Shape ${k + 1}`))
+      .map((k) => shapeGroup(items.map((list) => (list[k].type === 'look' ? (list[k] as LookItem).look : lookOf(list[k] as Exclude<Shape, InstanceShape>, ctx.tints, still))), times, `Shape ${k + 1}`))
       .filter((g): g is Json => !!g)
       .reverse();
     if (groups.length) out.push({ ty: 4, ip, op: opEnd, st: 0, sr: 1, ks: { a: stat([0, 0]), p: stat([0, 0]), s: stat([100, 100]), r: stat(0), o: stat(100) }, shapes: groups });
@@ -886,12 +1077,12 @@ function vectorRuns(ctx: Ctx, layer: Layer, cel: Cel, frames: number[], rawShape
       const ts = sps.map((s) => decompose(s.m, c.def.origin));
       const ks: Json = {
         a: stat([r3(c.def.origin.x + ctx.pad), r3(c.def.origin.y + ctx.pad)]),
-        p: smoothTrack(ts.map((t) => [r3(t.x), r3(t.y)]), times, 0.02),
-        s: smoothTrack(ts.map((t) => [r3(t.scaleX * 100), r3(t.scaleY * 100)]), times, 0.1),
-        r: smoothTrack(unwrap(ts.map((t) => r3(t.rotation))), times, 0.05),
-        sk: smoothTrack(ts.map((t) => r3(-t.skew)), times, 0.05),
+        p: smoothTrack(ts.map((t) => [r3(t.x), r3(t.y)]), times, POS_TOL),
+        s: smoothTrack(ts.map((t) => [r3(t.scaleX * 100), r3(t.scaleY * 100)]), times, SCALE_TOL),
+        r: smoothTrack(unwrap(ts.map((t) => r3(t.rotation))), times, ANGLE_TOL),
+        sk: smoothTrack(ts.map((t) => r3(-t.skew)), times, ANGLE_TOL),
         sa: stat(0),
-        o: smoothTrack(sps.map((s) => r3(s.alpha * 100)), times, 0.2),
+        o: smoothTrack(sps.map((s) => r3(s.alpha * 100)), times, OPACITY_TOL),
       };
       out.push(precompLayer(ref, c, track(sps.map((s) => r3((s.inner + 0.001) / doc.fps)), times, false), ks));
       continue;
@@ -1120,13 +1311,15 @@ function nodePicture(ctx: Ctx, node: PlanNode, r: Range): { pieces: Json[]; ef: 
   const times = frames.map((f) => f - r.offset);
   const active = (look.effects ?? []).filter((e) => e.on !== false);
   const native = nativeEffects(active, frames, times);
-  if (native) return { pieces: nodeContent(ctx, node, r), ef: native };
+  const chosen = !!native && !!ctx.bakeSoft && active.length > 0;
+  if (native && !chosen) return { pieces: nodeContent(ctx, node, r), ef: native };
   const name = node.type === 'layer' ? node.layer.name : node.folder.name;
   const baked = bakeNode(ctx, node, frames, r);
   if (baked) {
-    ctx.notes.add(`"${name}" became pictures, since Lottie has no ${active.map((e) => effectInfo(e.kind).label.toLowerCase()).filter((v, i, a) => a.indexOf(v) === i).join(' or ')} effect.`);
+    ctx.notes.add(chosen ? `"${name}" became pictures, as chosen, so players without Lottie's blur and shadow show it too.` : `"${name}" became pictures, since Lottie has no ${active.map((e) => effectInfo(e.kind).label.toLowerCase()).filter((v, i, a) => a.indexOf(v) === i).join(' or ')} effect.`);
     return { pieces: baked, ef: [] };
   }
+  if (native) return { pieces: nodeContent(ctx, node, r), ef: native };
   ctx.notes.add(`The effects on "${name}" were left out (they need the app to draw them).`);
   return { pieces: nodeContent(ctx, node, r), ef: nativeEffects(active.filter((e) => e.kind === 'blur' || e.kind === 'shadow'), frames, times) ?? [] };
 }
@@ -1397,7 +1590,7 @@ export function lottieExport(doc: Doc, opts: LottieOptions = {}): { data: Json; 
   const from = Math.max(0, opts.range?.start ?? 0);
   const to = Math.min(doc.length - 1, opts.range?.end ?? doc.length - 1);
   const count = to - from + 1;
-  const ctx: Ctx = { doc, assets: [], symbolAssets: new Map(), images: new Map(), pad: Math.max(doc.width, doc.height) * 2, tints: [], notes: new Set(), comps: 0, pictures: opts.pictures ?? 'balanced', bake: opts.bake };
+  const ctx: Ctx = { doc, assets: [], symbolAssets: new Map(), sharedDrawings: new Map(), images: new Map(), pad: Math.max(doc.width, doc.height) * 2, tints: [], notes: new Set(), comps: 0, pictures: opts.pictures ?? 'balanced', bake: opts.bake, bakeSoft: opts.softAndShadow === 'pictures' };
   const include = (l: Layer) => l.visible && !l.reference && l.kind !== 'camera';
   const r: Range = { from, to, offset: from };
   const content = levelContent(ctx, buildPlan(doc, include), r);

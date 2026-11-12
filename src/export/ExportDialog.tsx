@@ -21,7 +21,7 @@ import { GIF_MAX_FPS } from './gif';
 import { proresSupport, type ProresSupport } from './prores';
 import { LayeredNotes } from './LayeredNotes';
 import { CarryNotes } from './CarryNotes';
-import { bakesEffects } from './carries';
+import { bakesEffects, docFeatures, hasSoftOrShadow } from './carries';
 import { DEFAULT_SHEET, engineInfo, FORMATS, formatInfo, normalizeSheet, splitFormats, type EngineId, type ExportSettings, type FormatId, type FormatInfo } from './types';
 import './export.css';
 import { leaveTileEdit } from '../tiles/tileEdit';
@@ -50,6 +50,8 @@ function startingSettings(): ExportSettings {
   if (s.range === 'inOut' && !inOutRange(doc)) s.range = 'all';
   if (!scaleAllowed(doc, s.scale)) s.scale = base.scale;
   if (s.lottiePictures && !PICTURE_CHOICES.some((c) => c.id === s.lottiePictures)) delete s.lottiePictures;
+  if (s.lottieFile && !FILE_CHOICES.some((c) => c.id === s.lottieFile)) delete s.lottieFile;
+  if (s.lottieSoft && s.lottieSoft !== 'pictures') delete s.lottieSoft;
   return s;
 }
 
@@ -58,6 +60,12 @@ const PICTURE_CHOICES: { id: NonNullable<ExportSettings['lottiePictures']>; labe
   { id: 'balanced', label: 'Balanced', note: 'Sharp on high density screens and about half the size of Sharpest. Saved as WebP, which every current browser and phone plays.' },
   { id: 'sharp', label: 'Sharpest', note: 'Every pixel kept, saved as PNG. The biggest file, and it plays in the oldest players too.' },
   { id: 'small', label: 'Smallest', note: 'Half the detail, so the smallest file. Edges look a little soft on high density screens.' },
+];
+
+/** The two kinds of Lottie file. */
+const FILE_CHOICES: { id: NonNullable<ExportSettings['lottieFile']>; label: string; note: string }[] = [
+  { id: 'json', label: 'Lottie (.json)', note: 'One plain file that every Lottie player opens.' },
+  { id: 'dotlottie', label: 'dotLottie (.lottie)', note: 'One smaller file that holds the animation and its pictures. Plays in the dotLottie players (LottieFiles, web, iOS, Android), which not every older Lottie player is.' },
 ];
 
 function Check({ checked, onChange, disabled, children, hint }: { checked: boolean; onChange: (v: boolean) => void; disabled?: boolean; children: React.ReactNode; hint?: string }) {
@@ -370,7 +378,23 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
           {s.format === 'lottie' ? (
             <>
               <p className="ex-note">No size to pick: shapes stay shapes, so a Lottie player draws it sharp at whatever size it's shown.</p>
-              {bakesEffects(doc, 'lottie') && (
+              <fieldset>
+                <legend>File type</legend>
+                <div className="ex-seg">
+                  {FILE_CHOICES.map((c) => (
+                    <button key={c.id} type="button" className={(s.lottieFile ?? 'json') === c.id ? 'ex-on' : ''} aria-pressed={(s.lottieFile ?? 'json') === c.id} onClick={() => set({ lottieFile: c.id })}>
+                      {c.label}
+                    </button>
+                  ))}
+                </div>
+                <p className="ex-note">{FILE_CHOICES.find((c) => c.id === (s.lottieFile ?? 'json'))!.note}</p>
+              </fieldset>
+              {hasSoftOrShadow(docFeatures(doc)) && (
+                <Check checked={s.lottieSoft === 'pictures'} onChange={(v) => set({ lottieSoft: v ? 'pictures' : undefined })}>
+                  Draw Soften and Shadow as pictures, so every player shows them (a bigger file)
+                </Check>
+              )}
+              {(bakesEffects(doc, 'lottie') || (s.lottieSoft === 'pictures' && hasSoftOrShadow(docFeatures(doc)))) && (
                 <fieldset>
                   <legend>Pictures from effects</legend>
                   <div className="ex-seg">

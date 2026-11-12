@@ -98,6 +98,10 @@ export interface ExportSettings {
   includeSource?: boolean;
   /** Lottie only: how pictures made from effects are stored (missing = balanced). */
   lottiePictures?: 'balanced' | 'sharp' | 'small';
+  /** Lottie only: one `.json`, or a dotLottie `.lottie` that carries its pictures as files (missing = json). */
+  lottieFile?: 'json' | 'dotlottie';
+  /** Lottie only: Soften and Shadow as Lottie's own effects (missing) or as pictures every player shows. */
+  lottieSoft?: 'effects' | 'pictures';
 }
 
 export interface FormatInfo {

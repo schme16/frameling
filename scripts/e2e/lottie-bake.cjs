@@ -20,6 +20,7 @@ const VARIANTS = [
   { label: 'webp q.9 1.5x', opts: { bake: { scale: 1.5, format: 'webp', quality: 0.9 } } },
   { label: 'webp q.9 1x', opts: { bake: { scale: 1, format: 'webp', quality: 0.9 } } },
   { label: 'small (webp q.8 1x)', opts: { pictures: 'small' } },
+  { label: 'soften+shadow as pictures', opts: { softAndShadow: 'pictures' } },
 ];
 
 app.whenReady().then(async () => {

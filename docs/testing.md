@@ -279,12 +279,24 @@ It also prints one summary line per document: RMSE (0 to 255, both over white) a
 and SVG players, the Lottie file size and where the bytes go (baked effect pictures, pixel-layer pictures, keyframes,
 shapes, other; see `src/export/lottie-size.ts`). Every built-in template is included as `tpl:<id>` (reported, but a
 mismatch there doesn't fail the run), plus `overlap` (faded layer, folder and symbol copy with overlapping shapes) and
-`heavy-effects` (moving Glow and Outline over 36 frames). `QUIET=1` leaves out the per-frame lines.
+`heavy-effects` (moving Glow and Outline over 36 frames). `QUIET=1` leaves out the per-frame lines. The size is taken before lottie-web plays the file (it adds fields to the data it is given). Small RMSE changes
+between runs of a size or tolerance change (a few hundredths) are pixel rounding; the tolerances in `lottie.ts` (`FIT_TOLERANCE`, `*_TOL`) were chosen so
+they stay at that level, so re-run this and compare the table before and after changing one.
+
+### dotLottie in the dotLottie player: scripts/e2e/dotlottie-check.cjs
+
+Plays a document as plain JSON and as a `.lottie` in the dotLottie web player (ThorVG, run in Chromium) and prints the sizes, the RMSE of each
+against Frameling's frames and how far the two players are from each other (0 means the zip carries everything, pictures included). The
+player isn't a dependency: unpack a pinned copy (`npm pack @lottiefiles/dotlottie-web@0.81.0`) and point `DOTLOTTIE_DIR` at its `package` folder.
+
+```bash
+DOTLOTTIE_DIR=$PWD/pkg/package ONLY=tpl:hero-sprites,heavy-effects xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/dotlottie-check.cjs
+```
 
 ### Lottie picture looks: scripts/e2e/lottie-bake.cjs
 
 Bakes a document with each "Pictures from effects" look and some single settings, and prints the file size, the part that is
-pictures and the RMSE against Frameling's own frames (lottie-web canvas), so the size and quality trade-off can be read off.
+pictures and the RMSE against Frameling's own frames (lottie-web canvas), so the size and quality trade-off can be read off. The last row bakes Soften and Shadow too ("Draw Soften and Shadow as pictures").
 `AB=<dir>` also writes one frame per look at twice the stage size, to compare by eye (used for brand/ab/lottie-size/).
 
 ```bash

@@ -146,10 +146,15 @@ export function planExport(doc: Doc, s: ExportSettings, currentFrame: number): P
   return { range, count, width, height, name, problem };
 }
 
-export function filtersFor(format: FormatId): { name: string; extensions: string[] }[] {
+/** The file extension this export is saved with (a Lottie export can be a dotLottie `.lottie`). */
+export function extensionFor(s: Pick<ExportSettings, 'format' | 'lottieFile'>): string {
+  return s.format === 'lottie' && s.lottieFile === 'dotlottie' ? 'lottie' : formatInfo(s.format).ext;
+}
+
+export function filtersFor(format: FormatId, lottieFile?: ExportSettings['lottieFile']): { name: string; extensions: string[] }[] {
   const info = formatInfo(format);
   const names: Record<FormatId, string> = { mp4: 'MP4 video', webm: 'WebM video', gif: 'Animated GIF', apng: 'Animated PNG', png: 'PNG picture', pngseq: 'Zip file', svg: 'SVG drawing', sheet: 'PNG picture', interactives: 'Interactives package', lottie: 'Lottie animation', svganim: 'Animated SVG', pdf: 'PDF document', ai: 'Adobe Illustrator', psd: 'Photoshop document', prores: 'QuickTime movie' };
-  return [{ name: names[format], extensions: [info.ext] }];
+  return [{ name: format === 'lottie' && lottieFile === 'dotlottie' ? 'dotLottie animation' : names[format], extensions: [extensionFor({ format, lottieFile })] }];
 }
 
 /** Zero-padded frame numbers: 0001, 0002... with enough digits for the count. */
