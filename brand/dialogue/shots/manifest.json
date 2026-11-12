@@ -167,5 +167,11 @@
   },
   "onboarding.ready": {
     "file": "shots/onboarding.ready.png"
+  },
+  "workspaces.resetTools": {
+    "file": "shots/workspaces.resetTools.png"
+  },
+  "workspaces.railKept": {
+    "file": "shots/workspaces.railKept.png"
   }
 }
