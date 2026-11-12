@@ -119,6 +119,9 @@ const notify = (e: FeatureChange) => {
   for (const fn of [...listeners]) fn(e);
 };
 
+/** The feature that is on and needs this one, if any (so this one cannot be turned off yet). */
+export const needsIt = (id: string): FeatureDescriptor | undefined => [...features.values()].find((x) => live.has(x.id) && (x.requires ?? []).includes(id));
+
 export type SwitchResult = { ok: true } | { ok: false; reason: string };
 
 /** Turns an optional feature on or off. `remember: false` leaves the saved choice alone (tests). */
@@ -138,7 +141,7 @@ export function setFeatureOn(id: string, on: boolean, opts: { remember?: boolean
     turnedOff.delete(id);
     activate(d);
   } else {
-    const user = [...features.values()].find((x) => live.has(x.id) && (x.requires ?? []).includes(id));
+    const user = needsIt(id);
     if (user) return { ok: false, reason: `${user.name} needs ${d.name}. Turn off ${user.name} first.` };
     turnedOff.add(id);
     deactivate(d);
