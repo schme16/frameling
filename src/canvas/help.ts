@@ -86,7 +86,37 @@ Press **Ctrl+R** (or **View > Rulers**) to show rulers along the top and left of
 - Guides are saved with your drawing, and never show up in exports.
 
 **Snapping**
-When you move or resize shapes, or draw rectangles, ellipses and lines, they jump onto guides and onto the page's edges and middle when they get close. A pink line shows what they snapped to. Hold **Ctrl** while dragging to stop snapping for a moment, or turn it off with **View > Snap to guides, grid and page** (**Ctrl+Shift+;**). When a [grid](help:grids-perspective) is showing, things snap to it too.`,
+Shapes jump onto guides, the page's edges and middle, the grid and more when they get close, and a small note at the bottom of the canvas says what they snapped to. Pick exactly what to snap to in [Snapping](help:snapping). Hold **Ctrl** while dragging to stop it for a moment.`,
+  },
+  {
+    id: 'snapping',
+    title: 'Snapping',
+    section: 'Drawing',
+    media: 'snapping.mp4',
+    summary: 'Pick what shapes jump onto: the page, guides, the grid, other shapes, perspective lines, pixels, angles and other artboards.',
+    keywords: ['snap', 'snapping', 'magnet', 'align', 'guides', 'grid', 'page', 'edges', 'centre', 'center', 'other shapes', 'smart guides', 'perspective', 'pixel cells', 'angle', 'shift', 'artboard', 'ctrl', 'turn off snapping'],
+    body: `Snapping is a little pull: when a shape you are drawing or moving gets close to something, it jumps onto it so things line up. You choose what it can jump onto.
+
+**Change it**
+- Press the **Snap** button at the bottom of the window (**View > Snapping options...**, or **Preferences > Snapping**).
+- The big switch turns all snapping on or off (**View > Snapping**, **Ctrl+Shift+;**). Hold **Ctrl** while dragging to skip it for one shape.
+- Tick or untick any row. Each kind of layer has its own ticks, and the column for the layer you are on is shaded. Your choices are remembered.
+- Every row is also a command in the command palette (**Ctrl+K**): try "snap to guides" or "snap to other shapes".
+
+**What you can snap to**
+- **Page edges** and **Page middle**: the border of the page, and its middle across and down.
+- **Guides**: the lines you drag out of the rulers ([Rulers and guides](help:rulers-guides)).
+- **Grid**: the square or isometric [grid](help:grids-perspective), while it shows.
+- **Other shapes**: the edges, middles and corner points of the other shapes in your drawing, so a new shape lines up with what is already there. Off until you tick it.
+- **Perspective lines**: lines and boxes follow the vanishing points, while the perspective guides show.
+- **Pixel cells** (pixel layers): your drawing stays on whole pixels, and guides, the grid and the page stay out of the way. Untick it if a pixel layer should snap to those too.
+- **Angle steps**: with **Shift**, a line turns to the nearest 45 degrees (or toward a vanishing point) and a rotation moves in steps. Shift is something you ask for, so the big switch and Ctrl don't stop it. Untick it if Shift should do nothing there.
+- **Other artboards**: when you move or size an [artboard](help:artboards), its edges and middle line up with the other artboards'. Off until you tick it.
+
+**What snapped**
+A pink line shows the edge or guide a shape landed on, and a small note at the bottom of the canvas says it in words, like "Snapped to guide and page edge".
+
+By default vector layers snap to the page, guides, the grid and perspective lines, and pixel layers stick to their cells.`,
   },
   {
     id: 'pixel-grid',
@@ -143,7 +173,7 @@ Your settings are remembered, so the brush is just as you left it next time.`,
 - **View > Isometric grid** shows diamonds for drawing boxes, rooms and tiles in 3D. Pick **2:1** for pixel art (two across for one down, the slope games use) or **30 degrees** for true isometric drawings.
 - **View > Grid and perspective settings...** sets the size, in your units (Preferences > Units). For isometric it's the width of one diamond.
 
-While snapping is on (**View > Snap to guides, grid and page**), shapes and corners jump onto the square grid's lines, and onto the isometric grid's corners. Hold **Ctrl** while dragging to stop it for a moment. When you zoom far out, the grid thins itself out so it never turns into a grey smudge.
+While snapping is on (**View > Snapping**, with Grid ticked in [Snapping](help:snapping)), shapes and corners jump onto the square grid's lines, and onto the isometric grid's corners. Hold **Ctrl** while dragging to stop it for a moment. When you zoom far out, the grid thins itself out so it never turns into a grey smudge.
 
 **Perspective guides**
 - **View > Perspective guides: one point** shows lines meeting at one vanishing point on the horizon. Use it for a road, a hallway or train tracks heading away from you.
@@ -153,7 +183,7 @@ The horizon is the yellow line. Drag a round handle to move its vanishing point 
 
 **Rectangles and ellipses** follow them too. Drag a rectangle across the floor and it becomes a four-sided floor tile whose edges run to the vanishing points. Drag it on a wall and the upright edges stay upright. An ellipse comes out as the ellipse a circle makes on that plane. Choose the plane in the tool's options (**Auto**, **Flat**, **Floor**, **Wall**), or leave **Auto** to guess from where you drag. **Flat** draws an ordinary rectangle.
 
-**Drawing along them.** While the guides show and snapping is on, the **Line** tool and the **Pen** follow them: draw near the direction of a vanishing point and the line lines up with it exactly, with a dashed pink line to show which one. Hold **Shift** to pick from the vanishing point directions as well as the usual straight and diagonal angles. Hold **Ctrl** to draw freely.
+**Drawing along them.** While the guides show and Perspective lines is ticked in [Snapping](help:snapping), the **Line** tool and the **Pen** follow them: draw near the direction of a vanishing point and the line lines up with it exactly, with a dashed pink line to show which one. Hold **Shift** to pick from the vanishing point directions as well as the usual straight and diagonal angles. Hold **Ctrl** to draw freely.
 
 The perspective guides are saved with your drawing. Hide them with **View > Show perspective guides**, or take them away with **Remove perspective guides**.
 

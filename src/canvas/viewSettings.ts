@@ -1,5 +1,6 @@
 // Little bits of view state that aren't part of the document or the shared UI state.
 import { useSyncExternalStore } from 'react';
+import { defaultPicks, sanitizePicks, type SnapPicks } from './snapModel';
 
 interface ViewSettings {
   /** Show the pixel grid on pixel layers when zoomed in far enough. */
@@ -12,8 +13,10 @@ interface ViewSettings {
   rulers: boolean;
   /** Show the document's guide lines. */
   guides: boolean;
-  /** Shapes and selections snap to guides and to the page's edges and middle. */
+  /** The master switch for snapping (View > Snapping). */
   snap: boolean;
+  /** Which things snap to what, for vector layers, pixel layers and artboards (see snapModel.ts). */
+  snapPicks: SnapPicks;
   /** Guides can't be moved or added (they still show and snap). */
   lockGuides: boolean;
   /** On a frame with nothing drawn, show the last drawing faintly (the empty frame ghost). */
@@ -29,7 +32,7 @@ interface ViewSettings {
 }
 
 const KEY = 'frameling.view';
-let state: ViewSettings = { pixelGrid: true, throughCamera: false, cameraWhilePlaying: true, rulers: false, guides: true, snap: true, lockGuides: false, emptyGhost: true, grid: 'off', gridSize: 32, isoStyle: '2:1', perspective: true };
+let state: ViewSettings = { pixelGrid: true, throughCamera: false, cameraWhilePlaying: true, rulers: false, guides: true, snap: true, snapPicks: defaultPicks(), lockGuides: false, emptyGhost: true, grid: 'off', gridSize: 32, isoStyle: '2:1', perspective: true };
 const listeners = new Set<() => void>();
 
 try {
@@ -39,6 +42,7 @@ try {
     if (saved && typeof saved.throughCamera === 'boolean') state = { ...state, throughCamera: saved.throughCamera };
     if (saved && typeof saved.cameraWhilePlaying === 'boolean') state = { ...state, cameraWhilePlaying: saved.cameraWhilePlaying };
     for (const k of ['rulers', 'guides', 'snap', 'lockGuides', 'emptyGhost'] as const) if (saved && typeof saved[k] === 'boolean') state = { ...state, [k]: saved[k] };
+    if (saved && saved.snapPicks) state = { ...state, snapPicks: sanitizePicks(saved.snapPicks) };
     if (saved && (saved.grid === 'square' || saved.grid === 'iso' || saved.grid === 'off')) state = { ...state, grid: saved.grid };
     if (saved && Number.isFinite(saved.gridSize) && saved.gridSize >= 1 && saved.gridSize <= 4096) state = { ...state, gridSize: saved.gridSize };
     if (saved && (saved.isoStyle === '2:1' || saved.isoStyle === '30')) state = { ...state, isoStyle: saved.isoStyle };

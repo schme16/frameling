@@ -27,6 +27,7 @@ import { ThemesPage } from './themes/ThemesPage';
 import { PluginsPage } from '../plugins/PluginsPage';
 import { FeaturesPage } from '../features/FeaturesPage';
 import { UNITS, type Unit } from '../core/units';
+import { SnapPanel } from '../canvas/SnapOptions';
 
 // The Themes page is local to this file for now (overlays.ts decides which pages can be opened from outside).
 type Page = PrefsPage;
@@ -36,6 +37,7 @@ const PAGES: { id: Page; label: string; icon: string; help: string }[] = [
   { id: 'themes', label: 'Themes', icon: 'palette', help: 'themes' },
   { id: 'behaviour', label: 'Behaviour', icon: 'sliders', help: 'behaviour' },
   { id: 'keyboard', label: 'Keyboard', icon: 'keyboard', help: 'keyboard-shortcuts' },
+  { id: 'snapping', label: 'Snapping', icon: 'magnet', help: 'snapping' },
   { id: 'workspaces', label: 'Workspaces', icon: 'workspace', help: 'workspaces' },
   { id: 'plugins', label: 'Plugins', icon: 'plugin', help: 'plugins' },
   { id: 'features', label: 'Features', icon: 'grid', help: 'features' },
@@ -66,6 +68,7 @@ function Prefs({ page, commandId }: { page: PrefsPage; commandId?: string }) {
           {current === 'themes' && <ThemesPage />}
           {current === 'behaviour' && <BehaviourPage />}
           {current === 'keyboard' && <KeyboardPage focusId={commandId} />}
+          {current === 'snapping' && <SnappingPage />}
           {current === 'workspaces' && <WorkspacesPage />}
           {current === 'plugins' && <PluginsPage />}
           {current === 'features' && <FeaturesPage />}
@@ -107,6 +110,18 @@ export function Switch({ on, onChange, label }: { on: boolean; onChange: (v: boo
     <button type="button" role="switch" aria-checked={on} aria-label={label} className={`ui-switch${on ? ' is-on' : ''}`} onClick={() => onChange(!on)}>
       <span className="ui-switch-knob" />
     </button>
+  );
+}
+
+// ---------------------------------------------------------------- snapping
+
+function SnappingPage() {
+  return (
+    <>
+      <h3>Snapping</h3>
+      <p className="ui-pref-intro">Pick what shapes jump onto when they get close. The Snap button at the bottom of the window opens the same choices.</p>
+      <SnapPanel wide />
+    </>
   );
 }
 

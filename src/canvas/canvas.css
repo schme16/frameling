@@ -762,3 +762,135 @@
   font-variant-numeric: tabular-nums;
   color: var(--muted);
 }
+
+/* ------------------------------------------------------------ snapping options and the "Snapped to" note */
+.sn-pop {
+  position: fixed;
+  z-index: 60;
+  width: 360px;
+  max-width: calc(100vw - 16px);
+  max-height: calc(100vh - 60px);
+  overflow: auto;
+  padding: 12px;
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  animation: ui-drop 0.14s var(--ui-pop);
+}
+.sn-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: var(--fs);
+}
+.sn-panel.is-wide {
+  max-width: 520px;
+}
+.sn-master {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+.sn-master span {
+  display: flex;
+  flex-direction: column;
+}
+.sn-master small,
+.sn-note {
+  color: var(--muted);
+  font-size: var(--fs-small);
+  font-weight: 500;
+}
+.sn-note {
+  margin: 0;
+}
+.sn-grid {
+  display: grid;
+  grid-template-columns: 1fr 86px 86px;
+  align-items: center;
+  row-gap: 2px;
+  transition: opacity 0.15s var(--ease);
+}
+.sn-panel.is-off .sn-grid,
+.sn-panel.is-off .sn-extra {
+  opacity: 0.55;
+}
+.sn-head {
+  font-size: var(--fs-small);
+  color: var(--muted);
+  text-align: center;
+  padding-bottom: 4px;
+}
+.sn-head.is-here {
+  color: var(--text);
+}
+.sn-name {
+  font-weight: 700;
+  padding: 5px 0;
+}
+.sn-name i {
+  font-style: normal;
+  font-weight: 500;
+  color: var(--muted);
+  font-size: var(--fs-small);
+}
+.sn-cell {
+  display: flex;
+  justify-content: center;
+  align-self: stretch;
+  align-items: center;
+}
+.sn-cell.is-here {
+  background: var(--hover-bg);
+}
+.sn-tick {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--sunny);
+}
+.sn-tick:disabled {
+  opacity: 0.45;
+}
+.sn-na {
+  color: var(--faint);
+}
+.sn-extra {
+  border-top: 1px solid var(--line);
+  padding-top: 8px;
+}
+.sn-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+.sn-reset {
+  align-self: flex-start;
+}
+.sn-button.is-off {
+  opacity: 0.7;
+}
+.sn-chip {
+  position: absolute;
+  left: 14px;
+  bottom: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: var(--radius-pill);
+  background: var(--raised);
+  color: var(--text);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-small);
+  font-size: var(--fs-small);
+  font-weight: 700;
+  pointer-events: none;
+}
+.sn-chip .ui-icon {
+  color: var(--rose, #ff6f91);
+}

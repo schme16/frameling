@@ -49,7 +49,7 @@ Want the whole picture first? See [What's in Frameling](help:whats-in-frameling)
 - [Brush](help:tool-brush), [Pencil](help:tool-pencil), [Eraser](help:tool-eraser) and [shapes](help:tool-rect).
 - [Colours](help:fill-and-stroke), the [paint bucket](help:fill) and [text](help:text).
 - [Select and move](help:selecting), [copy](help:copy-paste), [flip](help:flip) and [stack](help:arrange) things.
-- [Rulers and guides](help:rulers-guides), and [moving around the page](help:canvas-navigation).
+- [Rulers and guides](help:rulers-guides), [snapping](help:snapping), and [moving around the page](help:canvas-navigation).
 
 ## Animate
 

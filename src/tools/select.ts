@@ -41,7 +41,7 @@ import { cutOut, mergeable, placeMoved, polygonGeom, shapeBox, shapeInsideArea, 
 import { getSelectSettings } from '../select/settings';
 import { drawLasso, lassoClosesAt, lassoPoint } from '../select/lasso';
 import { subPathsToPath2D } from '../core/render';
-import { clearSnap, snapMove, snapPt } from '../canvas/guides';
+import { angleSteps, clearSnap, snapMove, snapPt } from '../canvas/guides';
 import { lockedLayerAt } from '../canvas/lost';
 
 /** How far off (screen pixels) a click can be and still hit a thin line. */
@@ -130,10 +130,10 @@ function gestureMatrix(s: Gesture, zoom?: number): Matrix {
     return translate(dx, dy);
   }
   if (s.mode === 'scale' && s.bounds && s.handle && s.handle !== 'rotate') {
-    const p = zoom ? snapPt(cur, zoom, cur.mod) : cur;
+    const p = zoom ? snapPt(cur, zoom, cur.mod, true) : cur;
     return scaleMatrixForHandle(s.bounds, s.handle, p.x, p.y, cur.shift, cur.alt);
   }
-  if (s.mode === 'rotate' && s.bounds) return rotateMatrixForHandle(s.bounds, s.startAngle, cur.x, cur.y, cur.shift);
+  if (s.mode === 'rotate' && s.bounds) return rotateMatrixForHandle(s.bounds, s.startAngle, cur.x, cur.y, cur.shift && angleSteps());
   return IDENTITY;
 }
 
