@@ -96,6 +96,7 @@ async function shot() {
 async function stroke(tool, zoom, label) {
   await ev(`window.__frameling.store().setUi({ tool: ${JSON.stringify(tool)}, zoom: ${zoom} })`);
   await sleep(300);
+  const before = await shot();
   const box = await ev(`(() => { const r = document.querySelector('.cv-root').getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; })()`);
   const cx = Math.round(box.x + box.w / 2);
   const cy = Math.round(box.y + box.h / 2);
@@ -117,6 +118,16 @@ async function stroke(tool, zoom, label) {
   await sleep(400);
   const done = await shot();
   if (process.env.PIXEL_LIVE_PNG) await shotPng(`${label.replace(/\W+/g, '-')}-done.png`);
+  // The finished picture is made from the old one plus the touched tiles; a copy of the pixels (a new array) is drawn the plain way, from scratch. They must be the same.
+  await ev(`window.__frameling.store().update('rebuild', (d) => { for (const k of Object.keys(d.drawings)) { const x = d.drawings[k]; if (x.kind === 'pixel' && x.pixels.length) x.pixels = new Uint8ClampedArray(x.pixels); } })`);
+  await sleep(400);
+  const scratch = await shot();
+  await ev(`window.__frameling.run('edit.undo')`);
+  await sleep(200);
+  let penUp = 0;
+  for (let i = 0; i < scratch.length; i += 4) if (scratch[i] !== done[i] || scratch[i + 1] !== done[i + 1] || scratch[i + 2] !== done[i + 2]) penUp++;
+  console.log(`${penUp ? 'FAIL' : 'ok  '} ${label}: ${penUp} screen pixels differ between the finished picture and one rebuilt from the pixels`);
+  if (penUp) failures.push(label + ' (rebuild)');
   let diff = 0;
   let first = -1;
   for (let i = 0; i < held.length; i += 4) {
@@ -141,6 +152,23 @@ async function stroke(tool, zoom, label) {
     }
     console.log(`     differing box: x ${x0}..${x1}, y ${y0}..${y1}`);
   }
+  await ev(`window.__frameling.run('edit.undo')`);
+  await sleep(300);
+  // Undo gives back the old picture (the cached picture of the new drawing was made from it, so it has to be made again).
+  const undone = await shot();
+  let back = 0;
+  for (let i = 0; i < undone.length; i += 4) if (undone[i] !== before[i] || undone[i + 1] !== before[i + 1] || undone[i + 2] !== before[i + 2]) back++;
+  // Only at 100% and up: further out the hover ring and the settling zoom make the pictures differ whatever the code does.
+  const strict = zoom >= 1;
+  console.log(`${back && strict ? 'FAIL' : 'ok  '} ${label}: ${back} screen pixels differ between before the stroke and after undo`);
+  if (back && strict) failures.push(label + ' (undo)');
+  await ev(`window.__frameling.run('edit.redo')`);
+  await sleep(300);
+  const redone = await shot();
+  let again = 0;
+  for (let i = 0; i < redone.length; i += 4) if (redone[i] !== done[i] || redone[i + 1] !== done[i + 1] || redone[i + 2] !== done[i + 2]) again++;
+  console.log(`${again && strict ? 'FAIL' : 'ok  '} ${label}: ${again} screen pixels differ between the finished stroke and after redo`);
+  if (again && strict) failures.push(label + ' (redo)');
   await ev(`window.__frameling.run('edit.undo')`);
   await sleep(200);
 }
