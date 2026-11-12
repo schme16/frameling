@@ -146,6 +146,53 @@ async function section() {
   res = await run(await settings({ format: 'png', range: 'frame' }));
   check(res.outcome === 'done', `did not finish: ${JSON.stringify(res)}`);
   check(hex(path.join(dir, 'Orange ball-frame-1.png'), 40, 115) === 'FF9E1F', 'the recolour did not survive saving');
+
+  begin('opening a variation gives every key its own drawing, closing it keeps copies only of what it changed');
+  const probe = await ev(`(() => {
+    const A = window.__framelingArtboards;
+    const s = window.__frameling.store();
+    const doc0 = s.get().doc;
+    const orange = doc0.artboards.find((a) => a.name === 'Orange ball');
+    const home = doc0.activeArtboard ?? doc0.artboards[0].id;
+    const copies = () => Object.keys(s.get().doc.drawings).filter((k) => k.endsWith('~' + orange.id));
+    const out = { before: copies().length };
+    A.ops.goToArtboard(orange.id);
+    const d1 = s.get().doc;
+    const ids = d1.layers.flatMap((l) => l.cels.map((c) => c.drawingId));
+    out.cels = ids.length;
+    out.allOwn = ids.every((id) => id.endsWith('~' + orange.id) || !d1.drawings[id.split('~')[0]]);
+    // Recolour one shape through the alias, as a tool would.
+    const first = d1.layers.flatMap((l) => l.cels).find((c) => d1.drawings[c.drawingId]?.kind === 'vector' && d1.drawings[c.drawingId].shapes.length);
+    const orig = first.drawingId.split('~')[0];
+    const origFill = d1.drawings[orig].shapes[0].fill;
+    s.update('Recolour in the variation', (d) => { d.drawings[first.drawingId].shapes[0].fill = '#123456'; });
+    out.originalKept = s.get().doc.drawings[orig].shapes[0].fill === origFill;
+    out.overridden = !!s.get().doc.artboards.find((a) => a.id === orange.id).overrides?.drawings?.[orig];
+    A.ops.goToArtboard(home);
+    const d2 = s.get().doc;
+    const keys = copies();
+    out.afterClose = keys.length;
+    out.copyIsOverridden = keys.every((k) => Object.keys(d2.artboards.find((a) => a.id === orange.id).overrides.drawings).includes(k.split('~')[0]));
+    out.overrides = Object.keys(d2.artboards.find((a) => a.id === orange.id).overrides.drawings).length;
+    // The square cut overrides almost nothing, so it has almost no copies.
+    const square = d2.artboards.find((a) => a.name === 'Square cut');
+    out.squareCopies = Object.keys(d2.drawings).filter((k) => k.endsWith('~' + square.id)).length;
+    out.squareOverrides = Object.keys(square.overrides.drawings ?? {}).length;
+    out.squareKeys = square.content.layers.reduce((n, l) => n + l.cels.length, 0);
+    return JSON.stringify(out);
+  })()`);
+  const pr = JSON.parse(probe);
+  note(`${pr.cels} keys, ${pr.before} copies before, ${pr.afterClose} after closing`);
+  check(pr.allOwn, 'the open variation still has keys on the original drawings');
+  check(pr.originalKept, 'a recolour in the open variation reached the original');
+  check(pr.overridden, 'the recolour was not recorded as an override');
+  check(pr.afterClose === pr.overrides && pr.copyIsOverridden, `after closing there are ${pr.afterClose} copies for ${pr.overrides} overridden drawings`);
+  check(pr.squareCopies === pr.squareOverrides && pr.squareCopies < pr.squareKeys, `the square cut has ${pr.squareCopies} copies for ${pr.squareOverrides} overridden drawings and ${pr.squareKeys} keys`);
+  note(`square cut: ${pr.squareCopies} copies, ${pr.squareKeys} keys`);
+  dir = setDir(path.join(outDir, 'each-edited'));
+  res = await run(await settings({ format: 'png', range: 'frame' }));
+  check(res.outcome === 'done', `did not finish: ${JSON.stringify(res)}`);
+  check(hex(path.join(dir, 'Ball-frame-1.png'), 40, 115) === 'FF6F91', 'the original changed colour');
   await setChoice('artboards.exportAs', undefined);
 }
 
