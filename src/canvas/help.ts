@@ -93,28 +93,30 @@ Shapes jump onto guides, the page's edges and middle, the grid and more when the
     title: 'Snapping',
     section: 'Drawing',
     media: 'snapping.mp4',
-    summary: 'Pick what shapes jump onto: the page, guides, the grid, other shapes, perspective lines, pixels, angles and other artboards.',
-    keywords: ['snap', 'snapping', 'magnet', 'align', 'guides', 'grid', 'page', 'edges', 'centre', 'center', 'other shapes', 'smart guides', 'perspective', 'pixel cells', 'angle', 'shift', 'artboard', 'ctrl', 'turn off snapping'],
+    summary: 'Pick what shapes jump onto: the page, guides, the grid, other shapes, equal gaps, perspective lines, pixels, angles and other artboards, and how close is close enough.',
+    keywords: ['snap', 'snapping', 'magnet', 'align', 'guides', 'grid', 'page', 'edges', 'centre', 'center', 'other shapes', 'equal gaps', 'spacing', 'distance', 'how close', 'all layers', 'smart guides', 'perspective', 'pixel cells', 'angle', 'shift', 'artboard', 'ctrl', 'turn off snapping'],
     body: `Snapping is a little pull: when a shape you are drawing or moving gets close to something, it jumps onto it so things line up. You choose what it can jump onto.
 
 **Change it**
 - Press the **Snap** button at the bottom of the window (**View > Snapping options...**, or **Preferences > Snapping**).
 - The big switch turns all snapping on or off (**View > Snapping**, **Ctrl+Shift+;**). Hold **Ctrl** while dragging to skip it for one shape.
 - Tick or untick any row. Each kind of layer has its own ticks, and the column for the layer you are on is shaded. Your choices are remembered.
+- **Snap distance** is how close, in screen pixels, something has to come before it jumps. Drag it up if snapping feels shy, down if it grabs too eagerly.
 - Every row is also a command in the command palette (**Ctrl+K**): try "snap to guides" or "snap to other shapes".
 
 **What you can snap to**
 - **Page edges** and **Page middle**: the border of the page, and its middle across and down.
 - **Guides**: the lines you drag out of the rulers ([Rulers and guides](help:rulers-guides)).
 - **Grid**: the square or isometric [grid](help:grids-perspective), while it shows.
-- **Other shapes**: the edges, middles and corner points of the other shapes in your drawing, so a new shape lines up with what is already there. On to begin with.
+- **Other shapes**: the edges, middles and corner points of the other shapes in your drawing, so a new shape lines up with what is already there. On to begin with. **All layers, not just this one** decides whether that looks at every visible layer (the usual) or only the layer you are on.
+- **Equal gaps**: move or draw next to other shapes and it settles where the space matches a space already there, or sits exactly in the middle of one. Little bars show the gaps with their size. Off to begin with, so tick it when you want it.
 - **Perspective lines**: lines and boxes follow the vanishing points, while the perspective guides show.
 - **Pixel cells** (pixel layers): your drawing stays on whole pixels, and guides, the grid and the page stay out of the way. Untick it if a pixel layer should snap to those too.
 - **Angle steps**: with **Shift**, a line turns to the nearest 45 degrees (or toward a vanishing point) and a rotation moves in steps. Shift is something you ask for, so the big switch and Ctrl don't stop it. Untick it if Shift should do nothing there.
 - **Other artboards**: when you move or size an [artboard](help:artboards), its edges and middle line up with the other artboards'. On to begin with.
 
 **What snapped**
-A pink line shows the edge or guide a shape landed on, and a small note at the bottom of the canvas says it in words, like "Snapped to guide and page edge".
+A line shows the edge or guide a shape landed on, and each kind has its own colour, so you can tell a guide from the page edge at a glance. A small note at the bottom of the canvas says it in words, with a dot in the same colour, like "Snapped to guide and page edge". The colours follow your theme and stay easy to see in every one.
 
 By default vector layers snap to the page, guides, the grid, perspective lines and other shapes, artboards line up with each other, and pixel layers stick to their cells. If you already changed these ticks, Frameling keeps your choices.`,
   },
@@ -183,7 +185,7 @@ The horizon is the yellow line. Drag a round handle to move its vanishing point 
 
 **Rectangles and ellipses** follow them too. Drag a rectangle across the floor and it becomes a four-sided floor tile whose edges run to the vanishing points. Drag it on a wall and the upright edges stay upright. An ellipse comes out as the ellipse a circle makes on that plane. Choose the plane in the tool's options (**Auto**, **Flat**, **Floor**, **Wall**), or leave **Auto** to guess from where you drag. **Flat** draws an ordinary rectangle.
 
-**Drawing along them.** While the guides show and Perspective lines is ticked in [Snapping](help:snapping), the **Line** tool and the **Pen** follow them: draw near the direction of a vanishing point and the line lines up with it exactly, with a dashed pink line to show which one. Hold **Shift** to pick from the vanishing point directions as well as the usual straight and diagonal angles. Hold **Ctrl** to draw freely.
+**Drawing along them.** While the guides show and Perspective lines is ticked in [Snapping](help:snapping), the **Line** tool and the **Pen** follow them: draw near the direction of a vanishing point and the line lines up with it exactly, with a dashed line to show which one. Hold **Shift** to pick from the vanishing point directions as well as the usual straight and diagonal angles. Hold **Ctrl** to draw freely.
 
 The perspective guides are saved with your drawing. Hide them with **View > Show perspective guides**, or take them away with **Remove perspective guides**.
 
