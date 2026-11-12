@@ -740,15 +740,17 @@ With **Tool rail style** set to **Stacked** in Preferences, press and hold a gro
     title: 'The menus',
     section: 'Basics',
     media: 'menus.png',
-    summary: 'File, Edit, View, Draw, Animate and Help, along the top.',
+    summary: 'File, Edit, View, Artboards, Draw, Animate and Help, along the top.',
     keywords: ['menu bar', 'file', 'edit', 'view', 'draw', 'animate'],
     body: `The menu bar is along the top. Press a name to open it, then press a choice.
 
 - A **tick** means it is switched on.
 - **Greyed** choices can't be used right now (nothing to undo yet, for example).
 - Shortcuts are shown on the right.
+- A **small arrow** on the right opens a smaller menu beside it (Snapping and Panels, in View, for example).
+- A menu that is taller than the window **scrolls**: use the mouse wheel, or the arrow keys.
 
-With a menu open, use the **arrow keys** to move, **Enter** to choose, and **Esc** to close.`,
+With a menu open, use the **arrow keys** to move, **Home** and **End** to jump to the first or last choice, **Enter** to choose, and **Esc** to close.`,
   },
   {
     id: 'status-bar',

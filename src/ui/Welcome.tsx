@@ -73,6 +73,25 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
         </button>
       </div>
 
+      {/* Work found after a crash comes before everything else. */}
+      {found && (
+        <div className="ui-recover-card" role="group" aria-label="Unsaved work" data-help="autosave">
+          <Icon name="undo" size={22} />
+          <div>
+            <strong>Your unsaved work from {whenSaved(found.savedAt)}</strong>
+            <span>
+              {found.name} was still open when Frameling closed. We kept a copy.
+            </span>
+          </div>
+          <button type="button" className="ui-btn ui-btn-primary" onClick={restorePending}>
+            Restore
+          </button>
+          <button type="button" className="ui-btn" data-tip="It stays in File > Recover unsaved work for 7 days." onClick={dismissPending}>
+            Not now
+          </button>
+        </div>
+      )}
+
       {/* A newcomer's best first step sits at the top, and stays there while the sheet scrolls, until something has been drawn. */}
       {quest && mode === 'welcome' && !firstDrawn && (
         <div className="ui-quest ui-quest-pinned" data-help="quests">
@@ -92,25 +111,6 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
             }}
           >
             Show me
-          </button>
-        </div>
-      )}
-
-      {/* Work found after a crash comes before everything else. */}
-      {found && (
-        <div className="ui-recover-card" role="group" aria-label="Unsaved work" data-help="autosave">
-          <Icon name="undo" size={22} />
-          <div>
-            <strong>Your unsaved work from {whenSaved(found.savedAt)}</strong>
-            <span>
-              {found.name} was still open when Frameling closed. We kept a copy.
-            </span>
-          </div>
-          <button type="button" className="ui-btn ui-btn-primary" onClick={restorePending}>
-            Restore
-          </button>
-          <button type="button" className="ui-btn" data-tip="It stays in File > Recover unsaved work for 7 days." onClick={dismissPending}>
-            Not now
           </button>
         </div>
       )}
