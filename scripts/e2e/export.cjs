@@ -1868,24 +1868,43 @@ func _init():
 `,
   );
   sh(GODOT, ['--headless', '--path', proj, '--import'], { timeout: 120000 });
-  const run = sh(GODOT, ['--path', proj, '--rendering-driver', 'opengl3', '--script', 'render.gd'], { timeout: 120000 });
-  if (!check(run.out.includes('RENDERED'), `Godot did not render: ${(run.err + run.out).slice(0, 400)}`)) return;
-  check(new RegExp(`ANIMS .*${anim}`).test(run.out), `Godot has no ${anim} animation`);
+  // Pass 1 is Godot's Compatibility renderer (OpenGL). Its CanvasGroup buffer keeps see-through amounts in only 4 steps while the
+  // window is opaque, so a half-faded part inside a faded group comes out a few levels darker than Frameling; probes with `compatTol`
+  // allow for that there, and are held to `tol` in pass 2 on the Mobile renderer (Vulkan), which has no such limit.
+  const refs = new Map();
+  const refOf = async (f) => {
+    if (!refs.has(f)) refs.set(f, await reference(settings, f, false));
+    return refs.get(f);
+  };
+  const passes = [{ name: 'compatibility', args: ['--rendering-driver', 'opengl3'] }];
+  if (probes.some((q) => q.compatTol)) passes.push({ name: 'mobile', args: ['--rendering-driver', 'vulkan', '--rendering-method', 'mobile'], probesOnly: true });
   let worst = 0;
-  for (const f of shots) {
-    const ref = await reference(settings, f, false);
-    const e = ref && rmse(path.join(proj, `shot-${f}.png`), ref);
-    if (e === null || e === undefined) continue;
-    worst = Math.max(worst, e);
-    note(`frame ${f}: rmse ${e.toFixed(4)}`);
-    // Godot resamples each part's picture, so edges differ a little. A part out of place is far more than this.
-    check(e < tolerance, `frame ${f} in Godot differs from Frameling's PNG (rmse ${e.toFixed(4)})`);
-    // Single points where colour matters more than edges (a wash on a part): the two must agree to a few levels.
-    for (const pr of probes.filter((q) => q.frame === f)) {
-      const at = (file) => (/\((\d+),(\d+),(\d+)\)/.exec(sh('convert', [file, '-background', '#ff00ff', '-alpha', 'remove', '-alpha', 'off', '-format', `%[pixel:p{${pr.x},${pr.y}}]`, 'info:']).out) ?? []).slice(1).map(Number);
-      const g = at(path.join(proj, `shot-${f}.png`));
-      const fr = at(ref);
-      check(g.length === 3 && fr.length === 3 && g.every((v, i) => Math.abs(v - fr[i]) <= (pr.tol ?? 6)), `frame ${f} at ${pr.x},${pr.y}: Godot ${g} but Frameling ${fr} (${pr.what})`);
+  for (const pass of passes) {
+    const run = sh(GODOT, ['--path', proj, ...pass.args, '--script', 'render.gd'], { timeout: 120000 });
+    if (pass.probesOnly && !run.out.includes('RENDERED')) {
+      note(`Godot's ${pass.name} renderer did not start here, so the exact probes were not checked`);
+      continue;
+    }
+    if (!check(run.out.includes('RENDERED'), `Godot did not render: ${(run.err + run.out).slice(0, 400)}`)) return;
+    check(new RegExp(`ANIMS .*${anim}`).test(run.out), `Godot has no ${anim} animation`);
+    for (const f of shots) {
+      const ref = await refOf(f);
+      const e = ref && rmse(path.join(proj, `shot-${f}.png`), ref);
+      if (e === null || e === undefined) continue;
+      if (!pass.probesOnly) {
+        worst = Math.max(worst, e);
+        note(`frame ${f}: rmse ${e.toFixed(4)}`);
+        // Godot resamples each part's picture, so edges differ a little. A part out of place is far more than this.
+        check(e < tolerance, `frame ${f} in Godot differs from Frameling's PNG (rmse ${e.toFixed(4)})`);
+      }
+      // Single points where colour matters more than edges (a wash on a part): the two must agree to a few levels.
+      for (const pr of probes.filter((q) => q.frame === f && (!pass.probesOnly || q.compatTol))) {
+        const at = (file) => (/\((\d+),(\d+),(\d+)\)/.exec(sh('convert', [file, '-background', '#ff00ff', '-alpha', 'remove', '-alpha', 'off', '-format', `%[pixel:p{${pr.x},${pr.y}}]`, 'info:']).out) ?? []).slice(1).map(Number);
+        const g = at(path.join(proj, `shot-${f}.png`));
+        const fr = at(ref);
+        const tol = pass.probesOnly ? (pr.tol ?? 6) : (pr.compatTol ?? pr.tol ?? 6);
+        check(g.length === 3 && fr.length === 3 && g.every((v, i) => Math.abs(v - fr[i]) <= tol), `frame ${f} at ${pr.x},${pr.y}: Godot ${g} (${pass.name}) but Frameling ${fr} (${pr.what})`);
+      }
     }
   }
   note(`godot bones ok, worst rmse ${worst.toFixed(4)}`);
@@ -1903,9 +1922,10 @@ const blendAt = (what) => [{ frame: 0, x: 180, y: 60, what: `${what} over the sk
 const BLEND_PROBES = { 'linear-dodge': blendAt('linear dodge'), subtract: blendAt('subtract'), divide: blendAt('divide') };
 // Where the lower arm lies under the big hand of the faded arm inside the faded Body: one picture, so the arm does not show through.
 const NESTED_PROBES = [
-  // Looser than the others: a fade inside a tinted fade comes out a few levels darker in Godot than in Frameling (before this change too); showing through is 30 levels.
-  { frame: 6, x: 200, y: 172, tol: 12, what: 'the lower arm under the hand, both inside the faded arm inside the faded Body' },
-  { frame: 8, x: 200, y: 178, tol: 12, what: 'the lower arm under the hand, both inside the faded arm inside the faded Body' },
+  // Exact (6 levels) on Godot's Mobile renderer; the Compatibility renderer keeps see-through amounts in a CanvasGroup in 4 steps, so allow 12 there (showing through is 30 levels).
+  { frame: 6, x: 200, y: 172, tol: 6, compatTol: 12, what: 'the lower arm under the hand, both inside the faded arm inside the faded Body' },
+  { frame: 8, x: 200, y: 178, tol: 6, compatTol: 12, what: 'the lower arm under the hand, both inside the faded arm inside the faded Body' },
+  { frame: 6, x: 100, y: 180, tol: 6, compatTol: 12, what: 'the half-faded arm alone inside the faded, washed Body' },
 ];
 async function godotBonesExtrasSection(name = 'bones-extras', extra = {}, more, probes = []) {
   // --section=bones-nested-fade[,more] runs just those extras (and not the other Godot bones checks).

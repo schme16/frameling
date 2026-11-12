@@ -265,6 +265,11 @@ back and forth and looping, `thrice` forward 3 times, `back` backward once, `pla
   order as the baked list). `--only=godot-bones-bounce` loads the skeleton export in Godot and reads the
   AnimationPlayer: baked is a loop of 2n - 2 frames (mode 1), native is `loop_mode = 2` over n frames and the animation
   time goes up and back down; a clip with a set number of directions stays baked.
+- `godot-bones`: loads each Godot bones case in real Godot and compares five frames with Frameling's PNG (rmse) plus single-pixel
+  probes. `--section=bones-nested-fade,bones-blend-subtract` runs just those cases (`bones-blend-linear-dodge`, `-subtract` and
+  `-divide` check the blend shader; `bones-nested-fade` the fade inside a tinted fade). Probes with `compatTol` run twice: on the
+  Compatibility renderer (OpenGL) with that looser tolerance, because its CanvasGroup buffer keeps alpha in 4 steps (RGB10_A2) while
+  the window is opaque, and on the Mobile renderer (Vulkan, skipped with a note when it cannot start) with `tol`.
 - `gif`, `apng`, `mp4`, `webm`: `clip-pingpong`, `clip-pingpong-reverse`, `clip-bounce2`, `clip-bounce3`, `clip-repeat3`,
   `clip-backward` export one clip and check that picture k is the document frame the order rules give. `pngseq` runs the
   same cases and holds each frame once, in the order the clip starts (`stillOrder`), whatever the repeat. The loop flag of a
