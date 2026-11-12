@@ -12,7 +12,7 @@ import '../pixel/debug';
 import { store } from '../core/store';
 import { findTemplate } from '../templates';
 import * as tiles from '../tiles/debug';
-import { allCommands, allPanels, allTools, getCommand } from '../core/registry';
+import { allCommands, allHelp, allPanels, allTools, getCommand } from '../core/registry';
 import { celebrate, praise } from '../quests/feedback';
 import { allQuests, getQuest, questProgress, startQuest } from '../quests/registry';
 import { getPrefs, setPrefs } from '../ui/prefs';
@@ -59,6 +59,8 @@ if (new URLSearchParams(location.search).has('debug')) {
     // Theme and look picks, for shots in a given theme.
     prefs: { get: getPrefs, set: setPrefs },
     commands: () => allCommands().map((c) => c.id),
+    /** Every help topic with its picture or clip, for the web check that every file is served. */
+    help: () => allHelp().map((t) => ({ id: t.id, media: t.media ?? null })),
     // The dock (panels, floating windows, workspaces), for shots and checks.
     dock: { ...dockApi, chrome: dockFloats.setFloatChrome },
     // Swap in another Quill sheet (a placeholder, or art being tried out) without a rebuild.

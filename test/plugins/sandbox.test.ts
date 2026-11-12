@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { hostPage, makeFrame, SANDBOX_FLAGS } from '../../src/plugins/sandbox';
+import { hostPage, makeFrame, SANDBOX_FLAGS, startFailure } from '../../src/plugins/sandbox';
 
 const pub = path.join(path.dirname(fileURLToPath(import.meta.url)), '../../public');
 const csp = (file: string) => /http-equiv="Content-Security-Policy" content="([^"]+)"/.exec(readFileSync(path.join(pub, file), 'utf8'))![1];
@@ -44,5 +44,13 @@ describe('plugin sandbox', () => {
       expect(page).toContain('e.source !== window.parent');
       expect(page).not.toMatch(/eval\(|new Function|innerHTML|document\.write/);
     }
+  });
+
+  it('says why a sandbox did not start, and blames the missing connection only in a browser that is offline', () => {
+    const win = (kind: string | undefined, onLine: boolean) => ({ navigator: { onLine } as Navigator, frameling: { kind } });
+    expect(startFailure(win('web', false))).toMatch(/need a connection/);
+    expect(startFailure(win('web', true))).toBe("The plugin's sandbox did not start.");
+    expect(startFailure(win('desktop', false))).toBe("The plugin's sandbox did not start.");
+    expect(startFailure(win(undefined, false))).toBe("The plugin's sandbox did not start.");
   });
 });

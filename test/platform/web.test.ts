@@ -327,6 +327,20 @@ describe('autosave in the browser', () => {
     expect(await api.autosave.listKept()).toEqual([]);
   });
 
+  it('puts aside the picture sent with the autosave when the closing page has none to give', async () => {
+    const factory = new IDBFactory();
+    const first = setup({ factory, now: () => 1000 }).api;
+    await first.autosave.write(bytes(4), { ...meta, thumb: 'data:image/png;base64,BBBB' });
+    // No page is left to draw one: the next visit keeps the copy with the picture from the autosave.
+    const second = setup({ factory, now: () => 2000 }).api;
+    expect((await second.autosave.listKept())[0].thumb).toBe('data:image/png;base64,BBBB');
+    // A picture that is not a picture is never kept.
+    const third = setup({ now: () => 3000 }).api;
+    await third.autosave.write(bytes(5), { ...meta, thumb: 'javascript:alert(1)' });
+    await third.autosave.keep();
+    expect((await third.autosave.listKept())[0].thumb).toBeUndefined();
+  });
+
   it('knows when a picked file is newer than the copy', async () => {
     const f = new FakeFile('Walk.frameling');
     f.modified = 9999;

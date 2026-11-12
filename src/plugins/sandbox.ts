@@ -12,6 +12,16 @@ export function hostPage(network: string[]): string {
   return network.length ? 'plugin-host-net.html' : 'plugin-host.html';
 }
 
+/**
+ * Why a sandbox did not start, in plain words. In a browser the sandbox page is fetched from the network (a sandboxed frame
+ * has no origin of its own, so the offline copy can't answer for it), so offline is the likely reason there.
+ */
+export function startFailure(win: Pick<Window, 'navigator'> & { frameling?: { kind?: string } }): string {
+  const web = (win as { frameling?: { kind?: string } }).frameling?.kind === 'web';
+  if (web && win.navigator.onLine === false) return "The plugin's sandbox did not start. In a browser, plugins start from the web page, so they need a connection. They start again when you are back online.";
+  return "The plugin's sandbox did not start.";
+}
+
 export interface SandboxStart {
   code: string;
   plugin: { id: string; name: string; version: string };
@@ -43,7 +53,7 @@ export function startSandbox(s: SandboxStart, doc: Document = document): Promise
     const timer = win.setTimeout(() => {
       cleanup();
       frame.remove();
-      reject(new Error("The plugin's sandbox did not start."));
+      reject(new Error(startFailure(win)));
     }, READY_MS);
     const onMessage = (e: MessageEvent) => {
       if (e.source !== frame.contentWindow || (e.data as { t?: string })?.t !== 'frameling-plugin-host-ready') return;
