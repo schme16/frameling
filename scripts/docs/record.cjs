@@ -29,7 +29,8 @@ const opt = (name, def) => {
 const rendererDir = opt('renderer', path.join(__dirname, '../../dist/renderer'));
 const look = opt('look', 'cosy');
 const theme = opt('theme', 'dark');
-// Extra preferences, as JSON, e.g. --prefs '{"showWelcome":false}'. The theme and look above are always set.
+// Extra preferences, as JSON, e.g. --prefs '{"showTips":false}'. The theme and look above are always set, and the
+// Welcome screen and first-run hello are off (they would swallow the first click) unless asked for.
 const extraPrefs = JSON.parse(opt('prefs', '{}'));
 const [outDir, stepsFile] = argv;
 const width = Number(process.env.SHOT_W || 1280);
@@ -47,7 +48,7 @@ app.whenReady().then(async () => {
   });
   await win.loadFile(path.join(rendererDir, 'index.html'), { query: { debug: '1' } });
   // Preferences live in localStorage, so write them and load again for the app to pick them up.
-  const prefs = { theme, look, darkTheme: 'midnight-sketchbook', ...extraPrefs };
+  const prefs = { theme, look, darkTheme: 'midnight-sketchbook', showWelcome: false, onboarded: true, ...extraPrefs };
   await win.webContents.executeJavaScript(`localStorage.clear(); localStorage.setItem('frameling.prefs.v1', ${JSON.stringify(JSON.stringify(prefs))}); true;`);
   await win.loadFile(path.join(rendererDir, 'index.html'), { query: { debug: '1' } });
   await sleep(Number(process.env.SHOT_WAIT || 3000));
