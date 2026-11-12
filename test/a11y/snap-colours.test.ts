@@ -83,7 +83,7 @@ describe('snap colours as theme tokens', () => {
   });
   it('survive export and import', () => {
     const base = BUILT_IN_THEMES.find((t) => t.mode === 'dark')!;
-    const mine = { ...base, id: 'my-x', name: 'Mine', builtIn: false, tokens: { ...base.tokens, 'snap-spacing': '#ff00aa' } };
+    const mine = { ...base, id: 'my-x', name: 'Mine', builtIn: false, tokens: { ...base.tokens, 'snap-spacing': '#ff00aa' } as Record<string, string> };
     const r = importThemeText(themeToFile(mine), []);
     expect(r.ok).toBe(true);
     if (r.ok) for (const n of SNAP_TOKENS) expect(r.theme.tokens[n], n).toBe(mine.tokens[n]);
@@ -91,7 +91,7 @@ describe('snap colours as theme tokens', () => {
   it('are made to show by "Start from a colour", for any seed and mode', () => {
     for (const seed of ['#9b7bff', '#ffc94a', '#222222', '#ffffff', '#00ff88']) {
       for (const mode of ['dark', 'light'] as const) {
-        const p = paletteFromColour(seed, mode);
+        const p: Record<string, string> = paletteFromColour(seed, mode);
         for (const n of SNAP_TOKENS) for (const surface of ['canvas-bg', 'panel', 'raised']) expect(contrast(p[n], p[surface]), `${seed} ${mode} ${n} on ${surface}`).toBeGreaterThanOrEqual(3);
       }
     }
