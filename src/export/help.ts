@@ -407,25 +407,26 @@ The second class picks the clip. Loops keep going; clips that don't loop stop on
 Under **File type** in the Export window:
 
 - **Lottie (.json)**: one plain file that every Lottie player opens.
-- **dotLottie (.lottie)**: a much smaller zip holding the animation and its pictures as files. Plays in the dotLottie players (LottieFiles, web, iOS, Android), not every older Lottie player.
+- **dotLottie (.lottie)**: a much smaller zip holding the animation and its pictures as files. Plays in the dotLottie players (LottieFiles, web, iOS, Android), not every older Lottie player. Its **layout** is *Current* (default) or *Older*, for old players. Only *Older* keeps the loop setting.
 
 ## What carries over
 
-- **Drawings** become shapes: fills, outlines and line widths as they are. Brush strokes become their finished outline, with far fewer points.
+- **Drawings** become shapes: fills, outlines and line widths as they are.
 - **Frame by frame:** each drawing shows for exactly the frames it's held, and one used again is stored once.
 - **Symbols** become Lottie *precomps*, stored once however often they're used. Each copy keeps its place, size, turn, slant and fade, and plays its own animation.
-- **In-betweens (tweens)** become keyframes with their easing. *Springy*, *Bouncy*, paths to follow and **morphs** get keys fitted to the motion, so a few stand in for every frame.
+- **In-betweens (tweens)** become keyframes with their easing. *Springy*, *Bouncy*, paths to follow and **morphs** get keys fitted to the motion, so a few stand in for every frame. Sideways and falling motion (drag and gravity) is timed separately.
+- **Puppets:** a bone part that only turns is one still shape with a few turn keys.
 - **The camera** pans, zooms and turns, and layers with depth move at their own speed.
 - **Pixel and tile layers** become pictures inside the file, made big enough to stay crisp.
 - **Clips** become named markers, so a player can play one clip by name. Markers come along too. A Lottie file has no clip direction or repeat count, so those aren't carried.
 - **Text** becomes letter shapes, so no font files are needed. **Particles** become one small shape each. **Colour wash** recolours the copy's shapes.
 - **Blend modes** stay as they are; **masks** and **clipping** become *track mattes*.
 - **Fades:** a layer, folder or symbol copy you fade is faded as one picture, so overlapping shapes don't show through each other (a see-through matte in the file).
-- **Effects:** Soften and Shadow become Lottie's own blur and drop shadow. Glow, Colour adjust, Outline and Pixelate have no Lottie version, so those layers become pictures (the Export window lists them first). Tick **Draw Soften and Shadow as pictures** to make those pictures too, for players that skip Lottie's effects.
+- **Effects:** Soften and Shadow become Lottie's own blur and drop shadow. Glow, Colour adjust, Outline and Pixelate have no Lottie version, so those layers become pictures. Tick **Draw Soften and Shadow as pictures** to make those pictures too, for players that skip Lottie's effects.
 
 ## Pictures from effects
 
-Only the part an effect touches is saved, and a picture that comes out the same again is stored once. Under **Pictures from effects** in the Export window:
+Only the part an effect touches is saved, and repeats are stored once. Under **Pictures from effects** in the Export window:
 
 - **Balanced** (the default): WebP at twice the stage size. Looks like Sharpest at about half the size. Every current browser and phone plays WebP.
 - **Sharpest**: PNG at twice the stage size. Biggest, and plays in the oldest players too.
@@ -435,8 +436,7 @@ A glow on something that moves is a new picture every frame, so it adds up. Put 
 
 ## Good to know
 
-- lottie-web's *canvas* player leaves effects out (its SVG player, the default, shows them, as do the dotLottie, iOS and Android players).
-- A crowd of small faded things (a particle burst) fades each shape on its own, to keep canvas players quick.`,
+- lottie-web's *canvas* player leaves effects out (its SVG player, the default, shows them, as do the dotLottie, iOS and Android players).`,
   },
   {
     id: 'export-svg-animated',

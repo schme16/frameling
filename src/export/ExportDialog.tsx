@@ -70,6 +70,7 @@ function startingSettings(): ExportSettings {
   if (s.lottiePictures && !PICTURE_CHOICES.some((c) => c.id === s.lottiePictures)) delete s.lottiePictures;
   if (s.lottieFile && !FILE_CHOICES.some((c) => c.id === s.lottieFile)) delete s.lottieFile;
   if (s.lottieSoft && s.lottieSoft !== 'pictures') delete s.lottieSoft;
+  if (s.dotLottieVersion !== 1) delete s.dotLottieVersion;
   return s;
 }
 
@@ -84,6 +85,12 @@ const PICTURE_CHOICES: { id: NonNullable<ExportSettings['lottiePictures']>; labe
 const FILE_CHOICES: { id: NonNullable<ExportSettings['lottieFile']>; label: string; note: string }[] = [
   { id: 'json', label: 'Lottie (.json)', note: 'One plain file that every Lottie player opens.' },
   { id: 'dotlottie', label: 'dotLottie (.lottie)', note: 'One smaller file that holds the animation and its pictures. Plays in the dotLottie players (LottieFiles, web, iOS, Android), which not every older Lottie player is.' },
+];
+
+/** The two layouts of a dotLottie file. */
+const LAYOUT_CHOICES: { id: 1 | 2; label: string; note: string }[] = [
+  { id: 2, label: 'Current', note: 'The layout the dotLottie players and LottieFiles use today. It has no place for "loop", so the player decides whether it repeats.' },
+  { id: 1, label: 'Older', note: 'The first layout, for older dotLottie players. It also carries the loop setting.' },
 ];
 
 /** Says that the clip being exported sets the loop, and lets a hand-made choice go back to following it. */
@@ -445,6 +452,19 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
                 </div>
                 <p className="ex-note">{FILE_CHOICES.find((c) => c.id === (s.lottieFile ?? 'json'))!.note}</p>
               </fieldset>
+              {s.lottieFile === 'dotlottie' && (
+                <fieldset>
+                  <legend>dotLottie layout</legend>
+                  <div className="ex-seg">
+                    {LAYOUT_CHOICES.map((c) => (
+                      <button key={c.id} type="button" className={(s.dotLottieVersion ?? 2) === c.id ? 'ex-on' : ''} aria-pressed={(s.dotLottieVersion ?? 2) === c.id} onClick={() => set({ dotLottieVersion: c.id === 2 ? undefined : c.id })}>
+                        {c.label}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="ex-note">{LAYOUT_CHOICES.find((c) => c.id === (s.dotLottieVersion ?? 2))!.note}</p>
+                </fieldset>
+              )}
               {hasSoftOrShadow(docFeatures(doc)) && (
                 <Check checked={s.lottieSoft === 'pictures'} onChange={(v) => set({ lottieSoft: v ? 'pictures' : undefined })}>
                   Draw Soften and Shadow as pictures, so every player shows them (a bigger file)
