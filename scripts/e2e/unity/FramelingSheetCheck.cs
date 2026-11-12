@@ -128,6 +128,8 @@ public static class FramelingSheetCheck
                 Check(keys.Length == wantKeys, "clip " + a.name + " has " + keys.Length + " keys, wanted " + wantKeys);
                 Check(Near(clip.frameRate, a.fps), "clip " + a.name + " frame rate " + clip.frameRate + " != " + a.fps);
                 Check(clip.isLooping == a.loop, "clip " + a.name + " loop " + clip.isLooping + " != " + a.loop);
+                var wantWrap = a.loop ? WrapMode.Loop : WrapMode.ClampForever;
+                Check(clip.wrapMode == wantWrap, "clip " + a.name + " wrap mode " + clip.wrapMode + " != " + wantWrap);
                 Check(Near(clip.length, total, 0.002f), "clip " + a.name + " length " + clip.length + " != " + total);
                 float t = 0;
                 for (int i = 0; i < a.frames.Length && i < keys.Length; i++)

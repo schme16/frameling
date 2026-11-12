@@ -7,7 +7,7 @@ import { renderFrame } from '../core/render';
 import { store, useStore } from '../core/store';
 import { sceneOf } from '../core/symbols';
 import { Icon } from '../ui/icons';
-import { framesDue, nextPreviewFrame, notePreviewFrame, previewBase, previewFrames, previewScale, previewSettings, setPreview, type PreviewZoom } from './preview';
+import { framesDue, previewIndex, previewPosition, notePreviewFrame, previewBase, previewFrames, previewScale, previewSettings, setPreview, type PreviewZoom } from './preview';
 import './pixel.css';
 
 type Frames = Map<number, OffscreenCanvas>;
@@ -121,9 +121,11 @@ export function PreviewPanel() {
       setShown(scene.frame);
       return;
     }
-    if (frameRef.current < range.start || frameRef.current > range.end) frameRef.current = range.start;
+    if (frameRef.current < range.start || frameRef.current > range.end) frameRef.current = previewPosition(0, range, settings.loop).frame;
     paint(frameRef.current);
     setShown(frameRef.current);
+    // Steps taken so far, counted the way the clip plays (backward and back and forth have their own order).
+    let idx = previewIndex(frameRef.current, range);
     let raf = 0;
     let last = performance.now();
     let carry = 0;
@@ -132,24 +134,25 @@ export function PreviewPanel() {
       carry = rest;
       last = now;
       if (steps) {
-        let f: number | null = frameRef.current;
-        for (let i = 0; i < steps && f !== null; i++) f = nextPreviewFrame(f, range, settings.loop);
-        if (f === null) {
-          // One play-through done: stop on the last frame.
-          setPreview({ playing: false });
-          return;
-        }
+        idx += steps;
+        const st = previewPosition(idx, range, settings.loop);
+        const f = st.frame;
         frameRef.current = f;
         notePreviewFrame();
         paint(f);
         setShown(f);
+        if (st.done) {
+          // The last pass is done: stop on the frame it holds.
+          setPreview({ playing: false });
+          return;
+        }
       }
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [own, sdoc, scene.frame, range.start, range.end, settings.loop, scale]);
+  }, [own, sdoc, scene.frame, range.start, range.end, range.direction, range.plays, settings.loop, scale]);
 
   const togglePlay = () => setPreview({ playing: !settings.playing });
   const clipNote = range.clip ? `${range.clip}, ` : '';

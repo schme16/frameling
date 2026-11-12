@@ -2,6 +2,8 @@
 // the frames at the document's speed. No DOM, so it can be tested.
 import type { Doc } from '../core/format';
 import { artScale } from '../export/plan';
+import type { ClipDirection } from '../core/format';
+import { clipDirection, clipPlays, directedPosition, indexOfPosition } from '../core/clipPlay';
 import { createStore, readJson, writeJson } from '../ui/mini';
 
 export type PreviewZoom = 1 | 2 | 3 | 'fit';
@@ -41,12 +43,21 @@ export function previewBase(doc: Doc): number {
   return artScale(doc) ?? 1;
 }
 
-/** The frames the preview loops over, first and last inclusive, and the clip's name when it's one clip. */
-export function previewFrames(doc: Doc, range: PreviewRange, frame: number): { start: number; end: number; clip: string | null } {
+/** The frames the preview loops over, first and last inclusive, the clip's name when it's one clip, and how that clip plays. */
+export interface PreviewFrames {
+  start: number;
+  end: number;
+  clip: string | null;
+  direction?: ClipDirection;
+  /** How many times the clip plays (Infinity when it says forever; missing when there is no clip). */
+  plays?: number;
+}
+
+export function previewFrames(doc: Doc, range: PreviewRange, frame: number): PreviewFrames {
   const last = Math.max(0, doc.length - 1);
   if (range === 'clip') {
     const c = doc.clips.find((x) => frame >= x.start && frame <= x.end);
-    if (c) return { start: Math.max(0, Math.min(last, c.start)), end: Math.max(0, Math.min(last, c.end)), clip: c.name };
+    if (c) return { start: Math.max(0, Math.min(last, c.start)), end: Math.max(0, Math.min(last, c.end)), clip: c.name, direction: clipDirection(c), plays: clipPlays(c) };
   }
   return { start: 0, end: last, clip: null };
 }
@@ -56,6 +67,22 @@ export function nextPreviewFrame(f: number, r: { start: number; end: number }, l
   if (f < r.start || f > r.end) return r.start;
   if (f < r.end) return f + 1;
   return loop ? r.start : null;
+}
+
+/**
+ * Where the preview is after `idx` steps through the range: the frame, and whether the last pass is done (the frame
+ * is then the one it holds). A clip's own direction and repeat count win; the Loop switch decides for the rest.
+ */
+export function previewPosition(idx: number, r: PreviewFrames, loop: boolean): { frame: number; done: boolean } {
+  const len = r.end - r.start + 1;
+  const plays = r.plays !== undefined && Number.isFinite(r.plays) ? r.plays : loop ? Infinity : 1;
+  const st = directedPosition(idx, len, r.direction ?? 'forward', plays);
+  return { frame: r.start + st.pos, done: st.done };
+}
+
+/** The step count that shows `frame`, going the way the range plays. */
+export function previewIndex(frame: number, r: PreviewFrames): number {
+  return indexOfPosition(frame - r.start, r.end - r.start + 1, r.direction ?? 'forward');
 }
 
 /**

@@ -135,3 +135,23 @@ describe('reading a clip from a file', () => {
     expect(back.clips[0]).toEqual({ id: 'k2', name: 'x', start: 2, end: 5, loop: false });
   });
 });
+
+describe('the pixel Preview panel follows the clip too', () => {
+  it('steps back and forth, backward and a set number of times', async () => {
+    const { previewFrames, previewPosition, previewIndex } = await import('../../src/pixel/preview');
+    const doc = docWith([[0, 1]], 10);
+    doc.clips.push({ id: 'a', name: 'bounce', start: 2, end: 4, loop: true, direction: 'pingpong' });
+    doc.clips.push({ id: 'b', name: 'twice', start: 6, end: 7, loop: false, repeat: 2 });
+    const r = previewFrames(doc, 'clip', 3);
+    expect(Array.from({ length: 5 }, (_, i) => previewPosition(i, r, true).frame)).toEqual([2, 3, 4, 3, 2]);
+    expect(previewIndex(4, r)).toBe(2);
+    const t = previewFrames(doc, 'clip', 6);
+    // The clip's own count beats the Loop switch.
+    expect(previewPosition(3, t, true)).toEqual({ frame: 7, done: false });
+    expect(previewPosition(4, t, true)).toEqual({ frame: 7, done: true });
+    // With no clip it is the plain loop (or one play-through).
+    const all = previewFrames(doc, 'all', 0);
+    expect(previewPosition(10, all, true)).toEqual({ frame: 0, done: false });
+    expect(previewPosition(10, all, false)).toEqual({ frame: 9, done: true });
+  });
+});

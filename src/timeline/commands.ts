@@ -41,7 +41,51 @@ function frameEdit(kind: 'insert' | 'remove', other: boolean) {
   });
 }
 
+// How the picked clip plays: one command per way, ticked for the one it uses now.
+type WithClips = { doc: { clips: Clip[] } };
+const pickedClip = (s: WithClips) => s.doc.clips.find((c) => c.id === tl().clipId);
+const directionCommand = (id: string, direction: ClipDirection, label: string, description: string, keywords: string[]) => ({
+  id,
+  label,
+  category: 'Timeline',
+  description,
+  help: 'timeline-clip-play',
+  keywords: ['clip', 'direction', 'play', ...keywords],
+  enabled: (s: WithClips) => !!pickedClip(s),
+  checked: (s: WithClips) => {
+    const c = pickedClip(s);
+    return !!c && clipDirection(c) === direction;
+  },
+  run: () => {
+    const c = pickedClip(store().get());
+    if (c) say(ops.setClipDirection(c.id, direction));
+  },
+});
+const repeatCommand = (id: string, repeat: 'forever' | number, label: string, description: string, keywords: string[]) => ({
+  id,
+  label,
+  category: 'Timeline',
+  description,
+  help: 'timeline-clip-play',
+  keywords: ['clip', 'repeat', 'play', ...keywords],
+  enabled: (s: WithClips) => !!pickedClip(s),
+  checked: (s: WithClips) => {
+    const c = pickedClip(s);
+    return !!c && clipPlays(c) === (repeat === 'forever' ? Infinity : repeat);
+  },
+  run: () => {
+    const c = pickedClip(store().get());
+    if (c) say(ops.setClipRepeat(c.id, repeat));
+  },
+});
+
 registerCommands([
+  directionCommand('timeline.clipForward', 'forward', 'Clip plays forward', 'The clip you picked plays from its first frame to its last.', ['normal']),
+  directionCommand('timeline.clipBackward', 'reverse', 'Clip plays backward', 'The clip you picked plays from its last frame back to its first.', ['reverse', 'rewind']),
+  directionCommand('timeline.clipBackAndForth', 'pingpong', 'Clip plays back and forth (ping-pong)', 'The clip you picked plays to its end and back again, showing each end once.', ['ping pong', 'pingpong', 'boomerang', 'yoyo', 'bounce']),
+  directionCommand('timeline.clipBackAndForthEnd', 'pingpong-reverse', 'Clip plays back and forth, from the end', 'Like back and forth, but starting from the last frame.', ['ping pong', 'pingpong', 'reverse']),
+  repeatCommand('timeline.clipForever', 'forever', 'Clip repeats forever (loops)', 'The clip you picked starts again each time it finishes. Games and sprite sheets read this too.', ['loop', 'forever']),
+  repeatCommand('timeline.clipOnce', 1, 'Clip plays once, then holds the last frame', 'The clip you picked plays one time and stays on its last frame. Right-click a clip to repeat it a number of times.', ['once', 'one shot', 'no loop']),
   {
     id: 'timeline.play',
     label: 'Play or pause',

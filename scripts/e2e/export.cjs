@@ -233,8 +233,39 @@ function parseGif(b) {
 async function expectationFor(settings) {
   const plan = await X(`plan(${JSON.stringify(settings)})`);
   const doc = await X('doc()');
-  return { plan, doc, fps: doc.fps, count: plan.count, width: plan.width, height: plan.height };
+  // A clip that plays backward, back and forth or a set number of times is baked into GIF, APNG and video: the picture
+  // at each position comes from the order worked out here, which the app's own plan must agree with.
+  const clip = settings.range === 'clip' ? doc.clips.find((c) => c.id === settings.clipId) : null;
+  const baked = clip && BAKED.has(settings.format) && (clip.direction && clip.direction !== 'forward' || (!clip.loop && clip.repeat > 1));
+  const len = clip ? Math.abs(plan.range.end - plan.range.start) + 1 : 0;
+  const order = baked ? oracleOrder(len, clip.direction || 'forward', playsOf(clip)).all : null;
+  if (baked) check(JSON.stringify(order) === JSON.stringify(plan.order), `the plan's frame order ${JSON.stringify(plan.order)} is not ${JSON.stringify(order)}`);
+  else check(!plan.order, `the plan has a frame order for a plain export: ${JSON.stringify(plan.order)}`);
+  return { plan, doc, fps: doc.fps, count: plan.count, width: plan.width, height: plan.height, frameOf: (k) => plan.range.start + (order ? order[k] : k) };
 }
+
+const BAKED = new Set(['gif', 'apng', 'mp4', 'webm', 'prores']);
+
+/**
+ * One pass and the whole order a clip plays, worked out here from the rules in docs/format.md, not from the app's
+ * code: forward 0..n-1, backward n-1..0, back and forth 0..n-1 then down to 1 (the ends once per turn), and a clip that
+ * plays N times does N passes and ends on the frame it holds (the start for back and forth, else the last one played).
+ */
+function oracleOrder(len, dir, plays) {
+  const up = [...Array(len).keys()];
+  const down = up.slice().reverse();
+  let pass = up;
+  if (dir === 'reverse') pass = down;
+  else if (dir === 'pingpong') pass = len > 1 ? up.concat(down.slice(1, -1)) : [0];
+  else if (dir === 'pingpong-reverse') pass = len > 1 ? down.concat(up.slice(1, -1)) : [0];
+  if (plays === Infinity) return { pass, all: pass };
+  let all = [];
+  for (let i = 0; i < plays; i++) all = all.concat(pass);
+  const hold = dir === 'reverse' || dir === 'pingpong' ? 0 : len - 1;
+  if (all[all.length - 1] !== hold) all.push(hold);
+  return { pass, all };
+}
+const playsOf = (c) => (c.loop ? Infinity : c.repeat > 1 ? c.repeat : 1);
 
 /** A reference PNG of one frame at the same size and background, made by the app's own PNG export. */
 let refN = 0;
@@ -298,7 +329,7 @@ async function vVideo(file, s, exp, caseCtx) {
       // A blank see-through frame is all alpha; a drawn one has a mix. Either way something must be see-through.
       check(a === true, 'decoded WebM frame has no transparent pixels');
     }
-    const ref = await reference(s, exp.plan.range.start + k, wantAlpha);
+    const ref = await reference(s, exp.frameOf(k), wantAlpha);
     if (ref) {
       const e = rmse(dec, ref);
       note(`frame ${k} vs png rmse=${e?.toFixed(4)}`);
@@ -337,7 +368,7 @@ async function vGif(file, s, exp, caseCtx) {
       if (!check(fs.existsSync(dec), `could not decode frame ${k}`)) continue;
       const wantAlpha = caseCtx.transparent;
       if (wantAlpha && k === 0) check(g.transparent[0], 'GIF asked for transparency but frame 0 has no transparent colour');
-      const ref = await reference(s, exp.plan.range.start + k, wantAlpha);
+      const ref = await reference(s, exp.frameOf(k), wantAlpha);
       const e = ref && rmse(dec, ref);
       if (e !== null && e !== undefined) {
         note(`frame ${k} vs png rmse=${e.toFixed(4)}`);
@@ -368,7 +399,7 @@ async function vApng(file, s, exp, caseCtx) {
     for (const k of [0, exp.count - 1]) {
       const dec = path.join(dir, `_a-${String(k + 1).padStart(4, '0')}.png`);
       if (!check(fs.existsSync(dec), `could not decode frame ${k}`)) continue;
-      const ref = await reference(s, exp.plan.range.start + k, caseCtx.transparent);
+      const ref = await reference(s, exp.frameOf(k), caseCtx.transparent);
       const e = ref && rmse(dec, ref);
       if (e !== null && e !== undefined) check(e < TOL.lossless, `frame ${k} differs from the PNG export (rmse ${e.toFixed(5)})`);
       if (k === 0 && caseCtx.transparent) check(hasAlpha(dec) === true, 'transparent APNG frame has no transparent pixels');
@@ -508,6 +539,17 @@ async function vSheet(files, dir, s, exp, caseCtx) {
     check(lists.length > 0 && lists.every((l) => l.every((n) => frameNames.includes(n))), `${engine}: an animation points at a missing frame`);
     note(`${engine}: ${frameNames.length} frames, ${lists.length} animations`);
   }
+  if (engine === 'unity' && s.sheet.content !== 'separate' && !s.sheet.dedupe) {
+    // Unity's json lists each clip's pictures in the order they play, with the clip's own settings beside them.
+    const u = JSON.parse(fs.readFileSync(path.join(dir, names.find((n) => n.endsWith('.json'))), 'utf8'));
+    for (const w of expectedAnimations(exp.doc, s, exp.plan.range)) {
+      const a = u.animations.find((x) => x.name === w.name);
+      if (!check(a, `unity json has no animation ${w.name}`)) continue;
+      check(a.holds.reduce((x, y) => x + y, 0) === w.frames.length, `unity ${w.name}: ${a.holds.reduce((x, y) => x + y, 0)} frames, wanted ${w.frames.length}`);
+      check(JSON.stringify(a.frames) === JSON.stringify(w.pos.map((p) => `${w.name}_${p}`)), `unity ${w.name}: pictures ${a.frames} are not in the order ${w.pos}`);
+      check(a.loop === w.loop && (a.direction ?? 'forward') === w.dir, `unity ${w.name}: loop ${a.loop} direction ${a.direction}, wanted ${w.loop} ${w.dir}`);
+    }
+  }
   if (!base) return;
   const [[sw, sh_]] = identify(path.join(dir, base));
   note(`sheet ${sw}x${sh_}`);
@@ -531,16 +573,17 @@ async function vSheet(files, dir, s, exp, caseCtx) {
   // Rebuild document frames from the sheet using the json, and compare with the app's own PNG export of that frame.
   if (!need('convert', 'compare')) return;
   const doc = exp.doc;
-  const whole = s.range === 'all';
-  const clipOf = (name) => doc.clips.find((c) => c.name === name || name.startsWith(c.name));
   // For each cell, one document frame that shows it.
   const docFrameOfCell = new Map();
+  const wantAnims = expectedAnimations(doc, s, exp.plan.range);
   for (const [an, anim] of Object.entries(atlas.animations)) {
-    const clip = whole && an !== 'default' ? clipOf(an) : null;
-    const first = clip ? Math.max(exp.plan.range.start, Math.min(clip.start, clip.end)) : exp.plan.range.start;
+    const w = wantAnims.find((x) => x.name === an);
+    if (w) check(w.frames.length === anim.frames.length, `${an}: json lists ${anim.frames.length} frames, wanted ${w.frames.length} (direction ${w.dir}, plays ${w.plays})`);
     anim.frames.forEach((cell, j) => {
-      if (!docFrameOfCell.has(cell)) docFrameOfCell.set(cell, first + j);
+      const docFrame = exp.plan.range.start + (w ? w.frames[j] : j);
+      if (!docFrameOfCell.has(cell)) docFrameOfCell.set(cell, docFrame);
     });
+    if (w && anim.direction !== undefined) check(anim.direction === w.dir, `${an}: json says direction ${anim.direction}, wanted ${w.dir}`);
   }
   let checked = 0;
   let worst = 0;
@@ -579,18 +622,23 @@ function expectedAnimations(doc, s, range) {
     return t;
   };
   const all = Array.from({ length: n }, (_, i) => i);
+  // The frames in the order they play: the clip's own frames put through the order rules.
+  const played = (frames, c) => {
+    const o = oracleOrder(frames.length, c?.direction || 'forward', c ? playsOf(c) : Infinity);
+    return { frames: o.all.map((p) => frames[p]), pos: o.all, pass: o.pass.map((p) => frames[p]), plays: c ? playsOf(c) : Infinity, dir: c?.direction || 'forward' };
+  };
   if (s.range !== 'all') {
     const clip = doc.clips.find((c) => c.id === s.clipId);
-    return [{ name: unique(clip?.name ?? 'default'), fps: doc.fps, loop: clip?.loop ?? true, frames: all }];
+    return [{ name: unique(clip?.name ?? 'default'), fps: doc.fps, loop: clip?.loop ?? true, ...played(all, clip) }];
   }
   const out = doc.clips
     .map((c) => {
       const a = Math.max(range.start, Math.min(c.start, c.end));
       const b = Math.min(range.end, Math.max(c.start, c.end));
-      return { name: unique(c.name), fps: doc.fps, loop: c.loop, frames: a > b ? [] : Array.from({ length: b - a + 1 }, (_, i) => a - range.start + i) };
+      return { name: unique(c.name), fps: doc.fps, loop: c.loop, ...played(a > b ? [] : Array.from({ length: b - a + 1 }, (_, i) => a - range.start + i), c) };
     })
     .filter((a) => a.frames.length);
-  return out.length ? out : [{ name: unique('default'), fps: doc.fps, loop: true, frames: all }];
+  return out.length ? out : [{ name: unique('default'), fps: doc.fps, loop: true, ...played(all, null) }];
 }
 
 /** Which frames of an animation to compare pixel by pixel: all of a short one, else the ends and an even spread. */
@@ -614,7 +662,7 @@ async function webCheck(engine, dir, names, s, exp, caseCtx) {
   const image = names.find((n) => n.endsWith('.png') && !n.startsWith('_'));
   const jsonName = names.find((n) => n.endsWith('.json') && !n.endsWith('-anims.json') && !n.endsWith('-flow.json'));
   const animsName = names.find((n) => n.endsWith('-anims.json'));
-  const animations = separate ? [{ name: 'sprites', fps: doc.fps, loop: false, frames: Array.from({ length: range.end - range.start + 1 }, (_, i) => i) }] : expectedAnimations(doc, s, range);
+  const animations = separate ? [{ name: 'sprites', fps: doc.fps, loop: false, plays: 1, dir: 'forward', pass: [], frames: Array.from({ length: range.end - range.start + 1 }, (_, i) => i) }] : expectedAnimations(doc, s, range);
   // The pictures to compare with: the app's own PNG of each document frame, copied next to the exports so the page can load them.
   const refs = new Map();
   const refOf = async (docFrame) => {
@@ -629,12 +677,15 @@ async function webCheck(engine, dir, names, s, exp, caseCtx) {
   const job = { engine, dir, image, json: jsonName, anims: animsName, css: names.find((n) => n.endsWith('.css')), html: names.find((n) => n.endsWith('.html')), separate, width: exp.width, height: exp.height };
   job.animations = [];
   for (const a of animations) {
+    // Phaser and CSS repeat a forward or backward clip themselves (one pass, N times); everything else lists every frame.
+    const native = (engine === 'phaser' || engine === 'css') && !a.loop && a.plays > 1 && !a.dir.startsWith('pingpong');
+    const listed = native ? a.pass : a.frames;
     const checks = [];
-    for (const i of pickFrames(a.frames.length)) {
-      const ref = await refOf(range.start + a.frames[i]);
+    for (const i of pickFrames(listed.length)) {
+      const ref = await refOf(range.start + listed[i]);
       if (ref) checks.push({ i, ref });
     }
-    job.animations.push({ name: a.name, fps: a.fps, loop: a.loop, count: a.frames.length, checks });
+    job.animations.push({ name: a.name, fps: a.fps, loop: a.loop, count: listed.length, times: native ? a.plays : 1, checks });
   }
   if (engine !== 'css') {
     const data = JSON.parse(fs.readFileSync(path.join(dir, jsonName), 'utf8'));
@@ -867,6 +918,10 @@ async function runCase(tpl, fmt, label, edit, opts = {}) {
   }
 }
 
+// Clips for the play-order cases: back and forth that loops, a forward clip that plays 3 times, a backward clip that
+// plays once, and a plain loop. They do not overlap, so every picture belongs to one clip.
+const PLAY_CLIPS = `__framelingExport.clearClips(); __framelingExport.addClip('swing', 2, 5, true, 'pingpong'); __framelingExport.addClip('thrice', 6, 7, false, 'forward', 3); __framelingExport.addClip('back', 8, 11, false, 'reverse'); __framelingExport.addClip('plain', 12, 13)`;
+
 const isPixelTpl = (t) => t === 'hero-sprites' || t === 'blank-pixel';
 
 async function exportMatrix() {
@@ -893,6 +948,12 @@ async function exportMatrix() {
           async (s) => ({ ...s, range: 'clip', clipId: (await X('doc()')).clips[0].id }),
           { prepare: tpl === 'hero-sprites' ? '' : addClip(tpl) },
         );
+      }
+      if (BAKED.has(fmt) && fmt !== 'prores' && tpl === 'bouncing-ball') {
+        // A clip exported as GIF, APNG or video comes out in the order it plays: back and forth, 3 times, backward.
+        for (const [label, name] of [['clip-pingpong', 'swing'], ['clip-repeat3', 'thrice'], ['clip-backward', 'back']]) {
+          await runCase(tpl, fmt, label, async (s) => ({ ...s, range: 'clip', clipId: 'clip-' + name }), { prepare: PLAY_CLIPS });
+        }
       }
       if (!isPixelTpl(tpl)) {
         await runCase(tpl, fmt, 'scale2', (s) => ({ ...s, scale: 2 }));
@@ -926,6 +987,15 @@ async function exportMatrix() {
             for (const engine of ['phaser', 'pixi', 'css']) await runCase(tpl, fmt, `${engine}-names`, (s) => ({ ...s, sheet: { ...s.sheet, engine, layout: 'packed', trim: true, padding: 1, json: false } }), { prepare });
           }
           await runCase(tpl, fmt, 'css-separate', (s) => ({ ...s, sheet: { ...s.sheet, engine: 'css', content: 'separate', separateFiles: false, trim: false, layout: 'packed', padding: 1, json: false } }), { prepare: clips });
+        }
+        // Clips that play another way: back and forth (loops), 3 times, backward, and a plain loop, in each engine. Engines
+        // that can run are loaded in the real thing (Godot with GODOT_BIN, Phaser, PixiJS and CSS with WEB_ENGINES=1, Unity with UNITY_BIN).
+        if (tpl === 'bouncing-ball') {
+          const play = PLAY_CLIPS;
+          await runCase(tpl, fmt, 'play-godot', (s) => ({ ...s, sheet: { ...s.sheet, trim: true, dedupe: false, json: true, godot: true, godotScene: true, godotPath: '' } }), { prepare: play });
+          await runCase(tpl, fmt, 'play-json', (s) => ({ ...s, sheet: { ...s.sheet, engine: 'json', layout: 'packed', trim: true, dedupe: false, padding: 1, json: true } }), { prepare: play });
+          await runCase(tpl, fmt, 'play-unity', (s) => ({ ...s, sheet: { ...s.sheet, engine: 'unity', layout: 'packed', trim: true, dedupe: false, padding: 1, json: false } }), { prepare: play });
+          if (WEB) for (const engine of ['phaser', 'pixi', 'css']) await runCase(tpl, fmt, `play-${engine}`, (s) => ({ ...s, sheet: { ...s.sheet, engine, layout: 'packed', trim: true, dedupe: false, padding: 1, json: false } }), { prepare: play });
         }
         // No clips: separate sprites make a json with no animations, so Unity must cut the sprites and make no .anim files.
         if (tpl === 'bouncing-ball') await runCase(tpl, fmt, 'unity-noclips', (s) => ({ ...s, sheet: { ...s.sheet, engine: 'unity', content: 'separate', separateFiles: false, layout: 'packed', trim: true, padding: 1, json: false } }));
@@ -1111,7 +1181,7 @@ async function vProres(file, s, exp, caseCtx) {
     sh('ffmpeg', ['-v', 'error', '-y', '-i', file, '-vf', `select=eq(n\\,${k})`, '-vframes', '1', '-pix_fmt', 'rgba', o]);
     if (!check(fs.existsSync(o), `could not decode frame ${k}`)) continue;
     if (wantAlpha && k === 0) check(hasAlpha(o) === true, 'decoded ProRes frame has no transparent pixels');
-    const ref = await reference(s, exp.plan.range.start + k, wantAlpha);
+    const ref = await reference(s, exp.frameOf(k), wantAlpha);
     const e = ref && rmse(o, ref);
     if (e !== null && e !== undefined) {
       note(`frame ${k} vs png rmse=${e.toFixed(4)}`);

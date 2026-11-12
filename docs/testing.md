@@ -48,6 +48,7 @@ What's in `test/`, by folder:
 | `canvas/` | View maths, input, grids, snapping, resize, pixel helpers, rulers, the lost-canvas hint, theme colours. |
 | `core/` | Camera maths, ask-once choices, gradients, held frames, shape tweens (including text), symbols. |
 | `effects/` | Effect model and how effects look inside symbols. |
+| `clips/` | How a clip plays (`src/core/clipPlay.ts`): the order of one pass, stepping, repeat counts, baking for formats without direction, reading a clip from a file. Exporters are in `export/clip-play.test.ts`. |
 | `export/` | Every writer (APNG, GIF, sheet, SVG and animated SVG, Lottie, PDF, PSD, ProRes, YUV, playable, Godot, Godot add-on, Godot bones), the plan, capabilities, engine presets and fidelity. `*-e2e.test.ts` load the output in a real Godot 4 and are skipped unless `GODOT_BIN` is set. |
 | `geometry/` | Fill, flood, merge, morph, pen, raster, tracing. |
 | `integration/` | Whole-feature runs: the kitchen sink document, selecting mid-tween, nested editing, tiles inside symbols. |
@@ -199,6 +200,22 @@ file the export did not write is a failure too. On failure the picture the engin
 `_web-fail-*.png`. The cases per template are the engine defaults (`phaser`, `pixi`, `css`: packed, trimmed), `-grid` (no trim, no dedupe, power of
 two, see-through), `-clips` and `-names` (extra clips, one that does not loop, awkward names), and `css-separate`. Timing is
 real time, so each animation gets three goes and passes if one is within the limits.
+
+### Clips that play another way (direction and repeat)
+
+`export.cjs` adds these cases for `bouncing-ball` (its own clips are cleared first; the clips are `PLAY_CLIPS`: `swing`
+back and forth and looping, `thrice` forward 3 times, `back` backward once, `plain` a loop):
+
+- `sheet`: `play-godot` (real Godot with `GODOT_BIN`: every animation's frames and `loop`), `play-json`, `play-unity` (the
+  json's picture order, loop and direction; with `UNITY_BIN` the clips are imported and played on a real Animator, and
+  `FramelingSheetCheck.cs` also checks the wrap mode), and with `WEB_ENGINES=1` `play-phaser`, `play-pixi`, `play-css`.
+  Phaser must read `repeat` 2 for `thrice` (one pass, N - 1), CSS `iteration-count` 3, and every frame of every
+  animation is compared with the app's own PNG of the document frame the rules say it shows.
+- `gif`, `apng`, `mp4`, `webm`: `clip-pingpong`, `clip-repeat3`, `clip-backward` export one clip and check that picture k
+  is the document frame the order rules give.
+
+The expected order is written out again in `export.cjs` (`oracleOrder`, from `docs/format.md`), not taken from the
+app's code, and the app's own export plan has to agree with it.
 
 ### Unity check
 
