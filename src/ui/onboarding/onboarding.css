@@ -356,6 +356,16 @@
   border-color: var(--line);
 }
 
+.ob-off-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
 /* Footer: skip on the left, dots in the middle, back and next on the right. */
 .ob-foot {
   display: grid;

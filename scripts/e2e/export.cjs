@@ -953,6 +953,9 @@ var want := {}
 var names := []
 var ai := -1
 var go := true
+var steady := 0
+var since := 0
+var step := 0.0
 var seen := []
 var out := {}
 func _initialize():
@@ -961,12 +964,20 @@ func _initialize():
 	# One animation per run (its name follows the --): a sprite that starts later in a long run dwells a tick longer on the
 	# ends of a ping-pong in a headless run, so each one is played from the start of its own run.
 	names = [OS.get_cmdline_user_args()[0]]
+	step = 0.5 / float(OS.get_cmdline_user_args()[1])
 	for n in names:
 		var one := AnimatedSprite2D.new()
 		one.sprite_frames = sf
 		root.add_child(one)
 		sprites.append(one)
-func _process(_d):
+func _process(d):
+	# Two engine ticks per picture, looked at in the middle of each one. The first ticks of an engine run can come with other
+	# time steps than --fixed-fps asks for (4.8 beta shows 1/30, 1/20, 1/30 first), so playing starts once the step has been
+	# right a few ticks in a row. And a tick that ends exactly on a picture's end (whole ticks per picture) is a coin toss in
+	# the engine's float maths: a held picture right after a plain one can be dropped a tick early. Half-way points are not.
+	if steady < 4:
+		steady = steady + 1 if absf(d - step) < 0.0000001 else 0
+		return false
 	if go:
 		# Each animation is started from a tick, on a sprite of its own, so the next ticks show it from its first picture.
 		ai += 1
@@ -977,7 +988,11 @@ func _process(_d):
 		sp = sprites[ai]
 		sp.play(names[ai])
 		seen = []
+		since = 0
 		go = false
+		return false
+	since += 1
+	if since % 2 == 0:
 		return false
 	var a = names[ai]
 	var t = sf.get_frame_texture(a, sp.frame)
@@ -1027,7 +1042,7 @@ func _process(_d):
 async function godotPlayCheck(proj, atlas, s, exp, caseCtx) {
   const played = {};
   for (const an of Object.keys(atlas.animations)) {
-    const play = sh(GODOT, ['--headless', '--fixed-fps', String(exp.fps), '--path', proj, '--script', 'play.gd', '--', an], { timeout: 120000 });
+    const play = sh(GODOT, ['--headless', '--fixed-fps', String(exp.fps * 2), '--path', proj, '--script', 'play.gd', '--', an, String(exp.fps)], { timeout: 120000 });
     const line = play.out.split('\n').find((l) => l.startsWith('PLAYED '));
     if (!check(line, `Godot did not play ${an}: ${(play.err + play.out).slice(0, 300)}`)) return;
     Object.assign(played, JSON.parse(line.slice(7)));

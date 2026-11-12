@@ -77,6 +77,15 @@
   "onboarding.done.leadNoName": { "text": "your animation", "where": "Stands in for {name} in the 'All set!' line above the cards when the name box was left empty." },
   "onboarding.done.quest": { "text": "{quest}, step by step with me.", "where": "First-run hello, 'All set!': under 'Show me how' ({quest} is the suggested quest).", "vars": ["quest"] },
   "onboarding.done.example": { "text": "{example}, ready to be poked at!", "where": "First-run hello, 'All set!': under 'Open an example' ({example} is the suggested example).", "vars": ["example"] },
+  "onboarding.tilesOff.note": {
+    "text": "You picked Tiles and levels, but Tiles is turned off, so it is left out of the suggestions below.",
+    "where": "First-run hello, 'What would you like to make?' and 'All set!': a note when Tiles and levels was picked and the Tiles feature is off."
+  },
+  "onboarding.tilesOff.why": {
+    "text": "Tiles and levels needs the Tiles feature, which is turned off.",
+    "where": "First-run hello: the question that opens from the Tiles-is-off note, before 'Turn Tiles on?'."
+  },
+  "onboarding.tilesOff.button": { "text": "Turn Tiles on", "where": "First-run hello: the button on the Tiles-is-off note, which asks before turning Tiles on." },
   "onboarding.done.blank": { "text": "Straight in. You know what you're doing.", "where": "First-run hello, 'All set!': under 'Just a blank page'." },
   "onboarding.doze.asleep": { "text": "Zzz...", "where": "First-run hello: any step left untouched for 20 seconds. Quill nods off." },
   "onboarding.doze.woke": {

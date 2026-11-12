@@ -29,6 +29,18 @@ export async function offerTurnOnForFile(feature: FeatureDescriptor, fileName: s
   return answer === 'on' && setFeatureOn(feature.id, true).ok;
 }
 
+/** Something a person asked for needs a feature that is off (a Tiles pick in the hello): asks, and says whether it was turned on. */
+export async function offerTurnOnForWish(feature: FeatureDescriptor, why: string): Promise<boolean> {
+  const answer = await ask({
+    title: 'A feature is turned off',
+    message: `${why} Turn ${feature.name} on?`,
+    detail: `You can turn it on or off any time in Preferences, Features.`,
+    buttons: [{ value: 'on', label: 'Turn on', primary: true }, { value: 'off', label: 'Not now' }],
+    cancel: 'off',
+  });
+  return answer === 'on' && setFeatureOn(feature.id, true).ok;
+}
+
 /** Asks about every turned-off feature `doc` uses. Resolves to the ids that were turned on. */
 export async function offerTurnOn(doc: Doc): Promise<string[]> {
   const used = offFeaturesUsedBy(doc);
