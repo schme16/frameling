@@ -87,7 +87,9 @@ Runs `test/ui/help-audit.test.ts`, `help-media.test.ts` and `help-words.test.ts`
 too) and prints the full report. Fails when:
 
 - a command has no help topic;
-- a topic has no picture or clip, or names a file missing from `public/help/`;
+- a topic has no picture or clip, or names a file missing from `public/help/`: a topic names a base file (`select.png`)
+  and both `select-dark.png` and `select-light.png` have to exist (a clip also needs `tour-dark-poster.png` and
+  `tour-light-poster.png`);
 - a file in `public/help/` isn't used by any topic (a video's poster counts as used);
 - a `help:` link points at a topic or heading that doesn't exist;
 - a topic names a shortcut no command has any more (keys from `KEYMAP_SETS` and a few browser keys are allowed);
@@ -297,7 +299,38 @@ someone else's build. Preferences go into `localStorage` (`frameling.prefs.v1`) 
 default, at the real pace from the timing list) and `public/help/<name>-poster.png` (the last frame unless one is
 given). Always H.264: the people this is for can't play AV1. Needs `ffmpeg` and ImageMagick.
 
-Then register the file on the topic (`media:` in its `registerHelp`) and run `npm run help:audit`.
+Then register the file on the topic (`media:` in its `registerHelp`) and run `npm run help:audit`. (For help media use
+`help-media.cjs` below instead of running these two by hand: it makes both the dark and the light files.)
+
+### Help media in dark and light: scripts/docs/help-media.cjs
+
+Every help picture and clip exists twice, `<name>-dark.<ext>` and `<name>-light.<ext>` (a clip's poster is
+`<name>-dark-poster.png` and `<name>-light-poster.png`). A topic's `media` names the base file (`select.png`,
+`tour.mp4`); there are no base files in `public/help/`. The help browser (`src/ui/help/media.tsx`) adds the suffix for the
+mode the app is in (`effectiveTheme()`), and switches live: when the Dark / Light / Auto setting changes, and when Auto
+follows the computer going dark or light.
+
+One command regenerates all of them, both themes:
+
+```bash
+npm run help:media                        # npm run build, then every entry in dark and light, inside xvfb
+npm run help:media -- --only select,tour  # just those names (base names, no extension)
+npm run help:media -- --theme light       # one theme only
+npm run help:media -- --list              # every entry and whether it is a picture or a clip
+```
+
+It runs the steps in `scripts/docs/help/*.cjs` (one file per area; files starting with `_` aren't entries). Each entry is
+`{ name, steps, prefs?, size?, width?, poster?, wait? }`: `name` is the topic's media base name, `steps` are the
+`record.cjs` steps (`{"shot": "@"}` saves the picture, `{"rec": "@", "crop": [...], "every": 60}` ... `{"rec": "stop"}`
+records the clip; `@` means the entry's name). The same steps run once per theme in a fresh page, with that mode's default
+theme (Midnight sketchbook for dark, Paper and honey for light), the welcome sheet off, and everything else as a new
+person has it, so the pair differs only in colour. Pictures are scaled to 800 px wide at most (`width` changes it),
+clips go through `encode.sh` (H.264, yuv420p, under 1 MB each). Run the script under xvfb like everything else: the npm
+script already does. `--renderer <dir>` uses a private `vite build --outDir`; `--out <dir>` writes elsewhere.
+
+`test/ui/help-media.test.ts` fails when a topic's media has no entry (so it can't be shot again), when an entry is for no
+topic, or when a file is missing, unused or too big. To add help media for a new topic: write the entry, run
+`npm run help:media -- --only <name>`, look at both files, then set `media: '<name>.png'` on the topic.
 
 ## Quill's dialogue
 

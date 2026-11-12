@@ -161,16 +161,17 @@ topic has no media, a media file is missing or unused, a `help:` link goes nowhe
 command has any more. It also lists topics over 400 words. `test/ui/help-words.test.ts` checks that the plain words
 people type ("rubber", "lost my work") find the right topic; add a pair there when someone can't find something.
 
-Media is captured from the built app, inside xvfb:
+Every picture and clip is in public/help/ twice, `<name>-dark` and `<name>-light`, and the help browser shows the one for
+the mode the app is in (and switches with it, Auto included). A topic's `media` names the base file (`select.png`). They
+are all captured from the built app, inside xvfb, by the steps in `scripts/docs/help/`:
 
 ```bash
-npm run build
-SHOT_SHOW=1 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/docs/record.cjs <outDir> <steps.json> \
-  --prefs '{"showWelcome":false,"reduceMotion":true}'
-scripts/docs/encode.sh <outDir>/<clip> <name>     # H.264 MP4 + poster into public/help/
+npm run help:media                         # everything, both themes
+npm run help:media -- --only select,tour   # just those
 ```
 
-The steps are documented at the top of the script and in [docs/testing.md](docs/testing.md). Clips are always
+To add media for a new topic, add an entry there (the help media test fails if a topic has none) and run it with
+`--only`. The entry format, the step list and the details are in [docs/testing.md](docs/testing.md). Clips are always
 H.264, never AV1.
 
 ## The Interactives package (.flplay)

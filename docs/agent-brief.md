@@ -9,7 +9,8 @@ Frameling is a desktop 2D animation app (Electron 45, React 19, TypeScript, Vite
 "Performance is a priority, but the highest priority is ease of use and how delightful it is to use." Plain words in
 the UI, with the industry term second. Every feature: a command (with keys where sensible) in the command palette,
 a menu entry where it fits, and a help topic (registerHelp) written super user friendly, clear and to the point,
-with a screenshot or short H.264 clip in public/help/ (see how existing topics set `media`). Where a new behaviour
+with a screenshot or short H.264 clip in public/help/ (see how existing topics set `media`; every file exists as `-dark` and
+`-light`, made by an entry in scripts/docs/help/ with `npm run help:media -- --only <name>`, see docs/testing.md). Where a new behaviour
 has two reasonable answers, use the "ask the first time, then remember" choices system (src/core/choices.ts,
 `registerChoice`/`withChoice`) or a preference, rather than guessing silently.
 
