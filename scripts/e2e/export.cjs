@@ -1366,6 +1366,7 @@ async function godotBonesExtrasSection(name = 'bones-extras', extra = {}, more) 
     check(/\[node name="Arm" type="(Node2D|CanvasGroup)"/.test(tscn) && tscn.includes('type="Skeleton2D" parent="Arm"'), "scene is missing the symbol's own skeleton");
     check(!tscn.includes('name="Hero"'), 'the hero layer should hold only the live symbol copies');
     check(files.some((n) => n.endsWith('.gdshader')), 'no tint shader');
+    check(files.some((n) => n.endsWith('-fit-window.gd')), 'no fit-window script for the camera');
     if (more) await more({ tscn, files, dir });
     await renderBonesInGodot({ dir, files, scene, settings, shots: [0, 3, 6, 8, 11], anim: 'default', tolerance: 0.03 });
   } catch (e) {
