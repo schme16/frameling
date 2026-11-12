@@ -600,6 +600,26 @@ kbd {
   box-shadow: var(--shadow);
   animation: ui-drop 0.14s var(--ui-pop);
 }
+.ui-tool-fly-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 2px 2px 10px;
+  color: var(--muted);
+  font-size: var(--fs-small);
+  font-weight: 800;
+}
+.ui-tool-fly-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ui-tool-fly-rename {
+  width: 24px;
+  height: 24px;
+}
 .ui-tool-fly-item {
   display: flex;
   align-items: center;

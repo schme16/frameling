@@ -15,9 +15,9 @@ export const dockMenu = createStore<{ x: number; y: number; items: DockMenuItem[
 export const openDockMenu = (x: number, y: number, items: DockMenuItem[]): void => dockMenu.set({ x, y, items });
 export const closeDockMenu = (): void => dockMenu.set(null);
 
-/** The name box: which panel or window it is renaming and where it hangs. */
-export const renaming = createStore<{ kind: 'panel' | 'float'; id: string; x: number; y: number } | null>(null);
-export const askRename = (kind: 'panel' | 'float', id: string, x: number, y: number): void => renaming.set({ kind, id, x, y });
+/** The name box: which panel, window or tool group it is renaming and where it hangs. */
+export const renaming = createStore<{ kind: 'panel' | 'float' | 'group'; id: string; x: number; y: number } | null>(null);
+export const askRename = (kind: 'panel' | 'float' | 'group', id: string, x: number, y: number): void => renaming.set({ kind, id, x, y });
 
 const WHERE: Record<DockZone, string> = { left: 'the left side', right: 'the right side', bottom: 'the bottom', top: 'the top' };
 
