@@ -4,6 +4,7 @@ import { app, BrowserWindow, dialog, ipcMain, shell, type IpcMainInvokeEvent } f
 import fs from 'node:fs';
 import path from 'node:path';
 import type { AutosaveMeta, DocumentState, FileFilter, SaveChoice } from '../preload/api';
+import { psNamesFor, type FontWant } from './fonts';
 import { ffmpegPath, mp4SoundToAac } from './media';
 import { registerVideoIpc } from './video';
 import { addLinked, canOpenOther, cleanFilters, isLibraryKind, isLinked, libraryId, listLibrary, pickFolder, readLibrary, readSmallFolder, removeLibrary, showLibraryFolder, writeLibrary } from './library';
@@ -304,6 +305,7 @@ export function registerIpc(hooks: IpcHooks): void {
   });
 
   // For the plugin watchdog: how much memory each plugin's sandbox holds (plugin id to bytes). Nothing about the plugins' contents.
+  handle('fonts:psNames', (_e, wants: FontWant[]) => (Array.isArray(wants) ? psNamesFor(wants.slice(0, 500)) : []));
   handle('plugins:memory', () => {
     const wc = hooks.window()?.webContents;
     if (!wc) return {};

@@ -5,6 +5,7 @@ import { pdfFile } from '../layered-run';
 import { breathe } from '../runtime';
 import { aiFramesOf } from '../types';
 import { loadShapeExports } from '../shapeExport';
+import { learnFontNames } from '../ai-fonts';
 import type { ExporterRun } from '../registry';
 
 export const run: ExporterRun['run'] = async ({ doc, settings, signal }, { plan, bg, crisp, step }) => {
@@ -12,6 +13,8 @@ export const run: ExporterRun['run'] = async ({ doc, settings, signal }, { plan,
   const frames = planFrames(plan);
   const ai = settings.format === 'ai';
   const how = aiFramesOf(settings);
+  // Illustrator text names its fonts by PostScript name: ask the computer's font files for the real ones first.
+  if (ai) await learnFontNames(doc);
   step(0, 'Writing the pages');
   await breathe(signal, 0);
   if (ai && how === 'files') {

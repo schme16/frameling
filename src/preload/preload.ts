@@ -36,6 +36,9 @@ const api: FramelingApi = {
   plugins: {
     memory: () => call('plugins:memory'),
   },
+  fonts: {
+    psNames: (wants) => call('fonts:psNames', wants),
+  },
   media: {
     aacAvailable: () => call('media:aacAvailable'),
     toAac: (bytes) => call('media:toAac', bytes),

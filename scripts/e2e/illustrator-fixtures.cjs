@@ -247,7 +247,7 @@ const fixtures = [
       texts: [
         { contents: 'Hello Illustrator', font: 'Nunito-ExtraBold', size: 36, rgb: [255, 51, 102], align: 'LEFT' },
         { contents: 'Two lines\nof centred text', font: 'Nunito-Regular', size: 20, rgb: [29, 27, 38], align: 'CENTER' },
-        { contents: 'Italic 123', font: 'Nunito-SemiBoldItalic', size: 28, rgb: [51, 102, 255], align: 'LEFT' },
+        { contents: 'Italic 123', font: 'NunitoItalic-SemiBold', size: 28, rgb: [51, 102, 255], align: 'LEFT' },
       ],
       minPaths: 0,
       // Another font is drawn (lighter, and no italic), so the picture is a good way off.

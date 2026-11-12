@@ -18,7 +18,8 @@ import type { Color, Gradient } from '../core/format';
 import { sortedStops } from '../core/gradient';
 import type { RawImage } from '../io/png';
 import type { PdfWriter } from './pdf';
-import { psFontName, textItem, textSetupLines, type AiTextFrame } from './ai-text';
+import { liveFontName } from './ai-fonts';
+import { textItem, textSetupLines, type AiTextFrame } from './ai-text';
 
 type Mat = [number, number, number, number, number, number];
 const ident: Mat = [1, 0, 0, 1, 0, 0];
@@ -364,7 +365,7 @@ function translate(run: Run, content: string, rootName: string): AiLayer[] {
     const index = run.res.texts.length;
     run.res.texts.push({
       text: info.text,
-      font: psFontName(info.font, info.weight, info.italic),
+      font: liveFontName(info.font, info.weight, info.italic),
       size,
       rgb: col.rgb,
       align: info.align === 'center' ? 2 : info.align === 'right' ? 1 : 0,
