@@ -9,10 +9,34 @@
 // the speed and loop the json carries, and checks names, counts, timing and the pixels against Frameling's own PNGs.
 window.runCheck = async function (cfg) {
   const r = WE.report();
+  // WebGPU is only used when this Chromium really has it; otherwise the run says so and stops, it does not fail.
+  if (cfg.renderer === 'webgpu') {
+    let why = '';
+    try {
+      const adapter = navigator.gpu ? await navigator.gpu.requestAdapter() : null;
+      if (!adapter) why = navigator.gpu ? 'no WebGPU adapter' : 'navigator.gpu is missing';
+      else await adapter.requestDevice();
+    } catch (e) {
+      why = String(e);
+    }
+    if (why) {
+      r.notes.push(`PixiJS WebGPU skipped: ${why}`);
+      return WE.plain(r);
+    }
+  }
   const app = new PIXI.Application();
-  await app.init({ width: cfg.width, height: cfg.height, backgroundAlpha: 0, antialias: false, resolution: 1, autoDensity: false, preference: 'webgl', autoStart: false, preserveDrawingBuffer: true });
+  await app.init({ width: cfg.width, height: cfg.height, backgroundAlpha: 0, antialias: false, resolution: 1, autoDensity: false, preference: cfg.renderer === 'webgpu' ? 'webgpu' : 'webgl', autoStart: false, preserveDrawingBuffer: true });
   document.getElementById('stage').appendChild(app.canvas);
-  r.notes.push(`PixiJS ${PIXI.VERSION}, ${app.renderer.name}`);
+  r.notes.push(`PixiJS ${PIXI.VERSION}, ${app.renderer.name}${cfg.display !== 1 ? `, shown at ${cfg.display}x` : ''}`);
+  r.expect(app.renderer.name === cfg.renderer, `asked for the ${cfg.renderer} renderer, got ${app.renderer.name}`);
+  // A WebGPU canvas is only readable in the task that drew it, so every picture is copied out straight away.
+  const snap = () => {
+    const c = document.createElement('canvas');
+    c.width = cfg.width;
+    c.height = cfg.height;
+    c.getContext('2d').drawImage(app.canvas, 0, 0);
+    return c;
+  };
   const sheet = await PIXI.Assets.load(cfg.json);
   if (!r.expect(sheet && sheet.animations, 'Assets.load gave no spritesheet with animations')) return WE.plain(r);
   // The help topic's way for pixel art (the sheet has one picture, so one texture's source is all of them).
@@ -35,13 +59,14 @@ window.runCheck = async function (cfg) {
     }
     const speed = meta ? meta.animationSpeed : exp.fps / 60;
     const sprite = new PIXI.AnimatedSprite(textures, false);
+    sprite.scale.set(cfg.display);
     sprite.animationSpeed = speed;
     sprite.loop = exp.loop;
     app.stage.addChild(sprite);
     for (const c of exp.checks) {
       sprite.gotoAndStop(c.i);
       app.render();
-      await r.pixel(`${exp.name}[${c.i}]`, app.canvas, cfg.width, cfg.height, c.ref);
+      await r.pixel(`${exp.name}[${c.i}]`, snap(), cfg.width, cfg.height, c.ref);
     }
     app.stage.removeChild(sprite);
 
@@ -53,6 +78,7 @@ window.runCheck = async function (cfg) {
         const ex = (cond, t) => { if (!cond) probs.push(t); };
         // As the help topic does it: the sprite updates itself from PixiJS's shared ticker.
         const s2 = new PIXI.AnimatedSprite(textures);
+        s2.scale.set(cfg.display);
         s2.animationSpeed = speed;
         s2.loop = exp.loop;
         const seen = [0];

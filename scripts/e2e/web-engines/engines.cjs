@@ -15,6 +15,13 @@ const PINNED = {
     file: 'package/dist/phaser.min.js',
     integrity: 'sha512-/cziz/5ZIn02uDkC9RzN8VF9x3Gs3XdFFf9nkiMEQT3p7hQlWuyjy4QWosU802qqno2YSLn2BfqwOKLv/sSVfQ==',
   },
+  // Phaser 4 (Beam renderer), pinned next to 3.90. Same package, so the cache folder name carries the version.
+  phaser4: {
+    version: '4.2.1',
+    pkg: 'phaser',
+    file: 'package/dist/phaser.min.js',
+    integrity: 'sha512-WUNwCPJpdjvZiuT6SgCfYVW8Qw/3j0jJ4ws7P2QkhFLFu74sbGuyHJcbFueGkY/AYO4Pi47bNQXn1OCJeLX//w==',
+  },
   pixi: {
     version: '8.23.0',
     pkg: 'pixi.js',
@@ -46,7 +53,7 @@ function download(url, redirects = 5) {
   });
 }
 
-/** Returns { phaser: path, pixi: path } to the pinned builds, fetching what is missing. */
+/** Returns { phaser, phaser4, pixi } as paths to the pinned builds, fetching what is missing. */
 async function ensureEngines() {
   const out = {};
   for (const [id, p] of Object.entries(PINNED)) {
