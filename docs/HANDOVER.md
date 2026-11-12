@@ -94,9 +94,9 @@ light table, version history, shortcut sets, sounds (on by default), a Godot imp
 
 ## The queue, in order
 
-1. **Help media in light and dark** (board task 17): capture every help picture and clip in both, the help browser
-   picks by the current mode (and follows Auto), the help audit checks both exist. Do this last, after any other big
-   UI change, so nothing is captured twice.
+Empty. Tasks 17 (help media in light and dark) and 18 (workspace system) are done (2026-11-12). Help media is
+recaptured with `npm run help:media` (every topic, both modes, under xvfb; see `docs/testing.md`); rerun the entries
+a UI change touches (`-- --only a,b`).
 
 ## Known gaps (from the agents' reports, not yet done)
 
@@ -123,7 +123,12 @@ light table, version history, shortcut sets, sounds (on by default), a Godot imp
   - Safari/WebKit untested for the web build.
   - The `frameling://` handler on Windows comes from a custom NSIS script, untested.
 - **Workspaces:** a zone is one tab group (no stacked groups inside a zone); floats have no keyboard resize; `zoneOf()` is null for a panel in a float (use `placeOf()`); `npm run a11y` reports 11 keyboard issues (Escape on dialogs, focus into popups, focus rings on `div.tl-main` and the right splitter), not yet checked whether they predate workspaces.
-- **Help media:** a few clips predate the latest UI changes (task 17 will recapture everything).
+- **Help media / small app issues seen while capturing:**
+  - Library thumbnail for "Twinkle" (white star) is nearly invisible in light mode.
+  - Artboards export footer in "all in order" says 24 frames while the text above says 52.
+  - Playing or moving the playhead clears a text layer selection, so the Text panel says "Pick the Text tool" (maybe intended).
+  - Enter right after closing a pen shape seemed to make the drawing vanish (Enter plays?).
+  - A few clips are approximations: web-browser has no browser chrome, installing is an in-page mock, canvas-navigation zooms by clicks (the runner has no wheel step).
 
 ## Decisions already made (don't reopen)
 
