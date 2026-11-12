@@ -3,9 +3,9 @@ import { createPortal } from 'react-dom';
 import { usePopover } from '../ui/popover';
 
 export type MenuItem =
-  | { label: string; onClick: () => void; hint?: string; danger?: boolean; disabled?: boolean; checked?: boolean; swatch?: string }
+  | { label: string; onClick: () => void; hint?: string; danger?: boolean; disabled?: boolean; checked?: boolean; swatch?: string; /** An accessible name that matches the button this item stands in for. */ aria?: string }
   | { separator: true }
-  | { heading: string }
+  | { heading: string; /** Makes the heading a named group, so it can be found like the thing it stands for. */ aria?: string }
   | { node: ReactNode };
 
 /**
@@ -41,21 +41,22 @@ export function Floating({ x, y, onClose, children, className = '' }: { x: numbe
 }
 
 /** A right-click menu. Closes when something is picked. */
-export function ContextMenu({ x, y, items, onClose }: { x: number; y: number; items: MenuItem[]; onClose: () => void }) {
+export function ContextMenu({ x, y, items, onClose, className = '' }: { x: number; y: number; items: MenuItem[]; onClose: () => void; className?: string }) {
   // A menu may only hold menu items. With a slider or a box in it, it's a plain group of buttons instead.
   const plain = items.some((it) => 'node' in it);
   return (
-    <Floating x={x} y={y} onClose={onClose} className="tl-menu">
+    <Floating x={x} y={y} onClose={onClose} className={`tl-menu ${className}`}>
       <div role={plain ? 'group' : 'menu'}>
         {items.map((it, i) => {
           if ('separator' in it) return <div key={i} className="tl-menu-sep" role="separator" />;
-          if ('heading' in it) return <div key={i} className="tl-menu-heading">{it.heading}</div>;
+          if ('heading' in it) return <div key={i} className="tl-menu-heading" role={it.aria && !plain ? 'group' : undefined} aria-label={it.aria}>{it.heading}</div>;
           if ('node' in it) return <div key={i} className="tl-menu-node">{it.node}</div>;
           return (
             <button
               key={i}
               type="button"
               role={plain ? undefined : 'menuitem'}
+              aria-label={it.aria}
               className={`tl-menu-item${it.danger ? ' is-danger' : ''}`}
               disabled={it.disabled}
               onClick={() => {

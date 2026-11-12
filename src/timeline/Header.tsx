@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { celAt, findLayer } from '../core/doc';
 import { store, useStore } from '../core/store';
 import { Icon } from '../ui/icons';
@@ -13,6 +13,7 @@ import { clearLightTable, lightTableLabel } from '../canvas/lightTable';
 import { MAX_CW, MIN_CW, setTl, tl, useTl } from './state';
 import { SoundButton } from '../audio/SoundButton';
 import { usePrefs } from '../ui/prefs';
+import { moreRequest } from './headerMenu';
 import { FOLD_STEPS, chooseFold, foldedAt, foldSlack, switchLabel, type FoldStep } from './headerFold';
 
 function Btn({ id, icon, text, title, pressed, disabled, onClick, className = '', step }: { id?: string; icon?: string; text?: ReactNode; title: string; pressed?: boolean; disabled?: boolean; onClick?: () => void; className?: string; step?: FoldStep }) {
@@ -136,11 +137,53 @@ function HoldButtons() {
   );
 }
 
+/** The onion skin settings box. It sits at a point on screen, and is opened from its header button or, when that is folded, from the "more" menu. */
+function OnionPopup({ pos, onClose }: { pos: { x: number; y: number }; onClose: () => void }) {
+  const onion = useStore((s) => s.ui.onion);
+  const set = (p: Partial<typeof onion>) => store().setUi((ui) => ({ onion: { ...ui.onion, ...p } }));
+  const step = (key: 'before' | 'after', by: number) => set({ [key]: Math.max(0, Math.min(8, onion[key] + by)) });
+  return (
+    <Floating x={pos.x} y={pos.y} onClose={onClose} className="tl-pop">
+      <div className="tl-pop-title">Onion skin</div>
+      <p className="tl-pop-note">Faint ghosts of the frames around this one, to help you line up your next drawing.</p>
+      <div className="tl-pop-row">
+        <span>Frames before</span>
+        <span className="tl-stepper">
+          <button type="button" className="tl-btn tl-btn-mini" aria-label="Fewer frames before" onClick={() => step('before', -1)}><Icon name="minus" size={12} /></button>
+          <output>{onion.before}</output>
+          <button type="button" className="tl-btn tl-btn-mini" aria-label="More frames before" onClick={() => step('before', 1)}><Icon name="plus" size={12} /></button>
+        </span>
+        <input type="color" aria-label="Colour of frames before" value={onion.beforeColor.slice(0, 7)} onChange={(e) => set({ beforeColor: e.target.value })} />
+      </div>
+      <div className="tl-pop-row">
+        <span>Frames after</span>
+        <span className="tl-stepper">
+          <button type="button" className="tl-btn tl-btn-mini" aria-label="Fewer frames after" onClick={() => step('after', -1)}><Icon name="minus" size={12} /></button>
+          <output>{onion.after}</output>
+          <button type="button" className="tl-btn tl-btn-mini" aria-label="More frames after" onClick={() => step('after', 1)}><Icon name="plus" size={12} /></button>
+        </span>
+        <input type="color" aria-label="Colour of frames after" value={onion.afterColor.slice(0, 7)} onChange={(e) => set({ afterColor: e.target.value })} />
+      </div>
+      <label className="tl-pop-row">
+        <span>Strength</span>
+        <input type="range" min={5} max={100} value={Math.round(onion.opacity * 100)} onChange={(e) => set({ opacity: Number(e.target.value) / 100 })} />
+        <output>{Math.round(onion.opacity * 100)}%</output>
+      </label>
+      <label className="tl-pop-check">
+        <input type="checkbox" checked={onion.tint} onChange={(e) => set({ tint: e.target.checked })} />
+        <span>Tint the ghosts (so before and after look different)</span>
+      </label>
+      <label className="tl-pop-check">
+        <input type="checkbox" checked={!!onion.keysOnly} onChange={(e) => set({ keysOnly: e.target.checked })} />
+        <span>Only show keys (skip held frames)</span>
+      </label>
+    </Floating>
+  );
+}
+
 function OnionControls() {
   const onion = useStore((s) => s.ui.onion);
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
-  const set = (p: Partial<typeof onion>) => store().setUi((ui) => ({ onion: { ...ui.onion, ...p } }));
-  const step = (key: 'before' | 'after', by: number) => set({ [key]: Math.max(0, Math.min(8, onion[key] + by)) });
   return (
     <span className="tl-group tl-onion">
       <Btn id="timeline.toggleOnion" icon="onion" title="See the frames around this one (onion skin)" pressed={onion.enabled} />
@@ -158,43 +201,7 @@ function OnionControls() {
       >
         <Icon name="chevron-down" size={14} />
       </button>
-      {pos ? (
-        <Floating x={pos.x} y={pos.y} onClose={() => setPos(null)} className="tl-pop">
-          <div className="tl-pop-title">Onion skin</div>
-          <p className="tl-pop-note">Faint ghosts of the frames around this one, to help you line up your next drawing.</p>
-          <div className="tl-pop-row">
-            <span>Frames before</span>
-            <span className="tl-stepper">
-              <button type="button" className="tl-btn tl-btn-mini" aria-label="Fewer frames before" onClick={() => step('before', -1)}><Icon name="minus" size={12} /></button>
-              <output>{onion.before}</output>
-              <button type="button" className="tl-btn tl-btn-mini" aria-label="More frames before" onClick={() => step('before', 1)}><Icon name="plus" size={12} /></button>
-            </span>
-            <input type="color" aria-label="Colour of frames before" value={onion.beforeColor.slice(0, 7)} onChange={(e) => set({ beforeColor: e.target.value })} />
-          </div>
-          <div className="tl-pop-row">
-            <span>Frames after</span>
-            <span className="tl-stepper">
-              <button type="button" className="tl-btn tl-btn-mini" aria-label="Fewer frames after" onClick={() => step('after', -1)}><Icon name="minus" size={12} /></button>
-              <output>{onion.after}</output>
-              <button type="button" className="tl-btn tl-btn-mini" aria-label="More frames after" onClick={() => step('after', 1)}><Icon name="plus" size={12} /></button>
-            </span>
-            <input type="color" aria-label="Colour of frames after" value={onion.afterColor.slice(0, 7)} onChange={(e) => set({ afterColor: e.target.value })} />
-          </div>
-          <label className="tl-pop-row">
-            <span>Strength</span>
-            <input type="range" min={5} max={100} value={Math.round(onion.opacity * 100)} onChange={(e) => set({ opacity: Number(e.target.value) / 100 })} />
-            <output>{Math.round(onion.opacity * 100)}%</output>
-          </label>
-          <label className="tl-pop-check">
-            <input type="checkbox" checked={onion.tint} onChange={(e) => set({ tint: e.target.checked })} />
-            <span>Tint the ghosts (so before and after look different)</span>
-          </label>
-          <label className="tl-pop-check">
-            <input type="checkbox" checked={!!onion.keysOnly} onChange={(e) => set({ keysOnly: e.target.checked })} />
-            <span>Only show keys (skip held frames)</span>
-          </label>
-        </Floating>
-      ) : null}
+      {pos ? <OnionPopup pos={pos} onClose={() => setPos(null)} /> : null}
     </span>
   );
 }
@@ -276,36 +283,50 @@ function overflowCommands(folded: FoldStep[]) {
 
 function OverflowMenu({ folded }: { folded: FoldStep[] }) {
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
+  // The onion settings box, when the person picks it from the menu (its own button is folded): it opens under the "more" button.
+  const [onionPos, setOnionPos] = useState<{ x: number; y: number } | null>(null);
+  const btn = useRef<HTMLButtonElement>(null);
   const list = overflowCommands(folded);
+  const below = () => {
+    const r = btn.current?.getBoundingClientRect();
+    return r ? { x: r.left, y: r.bottom + 4 } : null;
+  };
   // Which folded switches are on: the string only changes when one flips, so the header doesn't redraw on every edit.
   usePrefs((p) => p.cleanTimeline);
   const states = useStore((s) => list.map((o) => (o.cmd.checked?.(s) ? '1' : '0')).join(''));
   const on = list.filter((o, i) => o.step !== 'hold' && states[i] === '1').length;
+  // Something outside (a quest) asked for the menu, to show a button that is folded into it.
+  const asked = moreRequest.use((r) => r);
+  useEffect(() => {
+    if (!asked) return;
+    moreRequest.set(false);
+    const at = below();
+    if (at && folded.length) setPos(at);
+  }, [asked, folded.length]);
+  const items: MenuItem[] = [];
+  list.forEach((o) => {
+    // Hold is a choice of one: a named group of its four, found like the folded hold buttons.
+    if (o.id === 'timeline.hold1') items.push({ heading: 'Hold for', aria: 'How long to hold this drawing' });
+    items.push({ label: o.cmd.label, aria: o.cmd.label, hint: keyHint(o.id), checked: o.cmd.checked ? o.cmd.checked(store().get()) : undefined, onClick: () => runCmd(o.id) });
+    if (o.id === 'timeline.toggleOnion') items.push({ label: 'Onion skin settings...', aria: 'Onion skin settings', onClick: () => setOnionPos(below()) });
+  });
   return (
     <>
       <button
+        ref={btn}
         type="button"
         className="tl-btn tl-overflow"
         title="More timeline buttons"
         aria-label={switchLabel(on)}
         aria-haspopup="menu"
         aria-expanded={!!pos}
-        onClick={(e) => {
-          const r = e.currentTarget.getBoundingClientRect();
-          setPos(pos ? null : { x: r.left, y: r.bottom + 4 });
-        }}
+        onClick={() => setPos(pos ? null : below())}
       >
         <span aria-hidden="true">{'⋯'}</span>
         {on ? <i className="tl-overflow-dot" aria-hidden="true" /> : null}
       </button>
-      {pos ? (
-        <ContextMenu
-          x={pos.x}
-          y={pos.y}
-          items={list.map((o): MenuItem => ({ label: o.cmd.label, hint: keyHint(o.id), checked: o.cmd.checked ? o.cmd.checked(store().get()) : undefined, onClick: () => runCmd(o.id) }))}
-          onClose={() => setPos(null)}
-        />
-      ) : null}
+      {pos ? <ContextMenu x={pos.x} y={pos.y} items={items} onClose={() => setPos(null)} className="tl-more-menu" /> : null}
+      {onionPos ? <OnionPopup pos={onionPos} onClose={() => setOnionPos(null)} /> : null}
     </>
   );
 }

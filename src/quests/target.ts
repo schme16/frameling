@@ -1,5 +1,6 @@
 // Finding the thing a step points at. Plain DOM reads, nothing else.
 import { store } from '../core/store';
+import { foldedStepOf, moreRequest } from '../timeline/headerMenu';
 import { currentGroups, flyRequest, frontTools } from '../ui/toolRail';
 import type { QuestTarget } from './types';
 
@@ -23,6 +24,30 @@ let askedFor: { id: string; using: string } | null = null;
 /** Forgets the flyout a quest opened (for the tests). */
 export function forgetFlyoutAsk(): void {
   askedFor = null;
+}
+
+/** The selector a quest last opened the timeline's "more" menu for, so a menu the person closed isn't opened again every moment. */
+let askedMore: string | null = null;
+
+/** Forgets the menu a quest opened (for the tests). */
+export function forgetMoreAsk(): void {
+  askedMore = null;
+}
+
+/**
+ * Where a timeline button is when it is folded into the header's "more" menu. The menu is opened once with the item in it
+ * (the menu's items match the same selectors, so the ring then goes round the item); the "more" button is what the ring
+ * goes round meanwhile, and after the person closes the menu.
+ */
+function foldedHeaderButton(list: Element[], sel: string, shown: (el: Element) => boolean): Element | null {
+  if (!list.some((el) => foldedStepOf(el))) return null;
+  const more = [...document.querySelectorAll('.tl-header .tl-overflow')].find(shown);
+  if (!more) return null;
+  if (askedMore !== sel) {
+    askedMore = sel;
+    moreRequest.set(true);
+  }
+  return more;
 }
 
 /**
@@ -59,7 +84,10 @@ export function resolveTarget(t: QuestTarget | undefined, shown: (el: Element) =
       return null;
     }
   }
-  for (const sel of Array.isArray(t) ? t : [t]) {
+  const sels = Array.isArray(t) ? t : [t];
+  // Pointing at something else ends the last menu request: the next one may open it again.
+  if (askedMore && !sels.includes(askedMore)) askedMore = null;
+  for (const sel of sels) {
     let list: Element[] = [];
     try {
       list = [...document.querySelectorAll(sel)];
@@ -69,8 +97,13 @@ export function resolveTarget(t: QuestTarget | undefined, shown: (el: Element) =
     const hit = list.find(shown);
     const tool = TOOL_BUTTON.exec(sel)?.[1];
     if (hit) {
+      // Back on the header itself (it was widened): the next fold may ask again.
+      if (askedMore === sel && !hit.closest('.tl-more-menu')) askedMore = null;
       return hit;
     }
+    // A button folded into the timeline header's "more" menu is found in the menu.
+    const folded = foldedHeaderButton(list, sel, shown);
+    if (folded) return folded;
     // A tool inside a stacked group of the tool rail has no button of its own to find.
     const group = tool && stackedToolButton(tool, shown);
     if (group) return group;

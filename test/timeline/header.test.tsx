@@ -11,6 +11,9 @@ import '../../src/renderer/features';
 import { Header } from '../../src/timeline/Header';
 import { FOLD_STEPS } from '../../src/timeline/headerFold';
 import { setTl } from '../../src/timeline/state';
+import { SEL } from '../../src/quests/library';
+import { forgetMoreAsk, resolveTarget } from '../../src/quests/target';
+import { moreRequest } from '../../src/timeline/headerMenu';
 import { docWith } from './helpers';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -37,10 +40,12 @@ beforeEach(() => {
   document.body.appendChild(host);
   sheet = document.createElement('style');
   // The same hiding rules the real stylesheet has for folded steps.
-  sheet.textContent = FOLD_STEPS.map((s) => `.tl-header[data-folded~="${s}"] [data-step="${s}"] { display: none; }`).join('\n');
+  sheet.textContent = '.tl-overflow { display: none; }\n.tl-header[data-folded]:not([data-folded=""]) .tl-overflow { display: inline-flex; }\n' + FOLD_STEPS.map((s) => `.tl-header[data-folded~="${s}"] [data-step="${s}"] { display: none; }`).join('\n');
   document.head.appendChild(sheet);
   root = createRoot(host);
   resetStore(docWith([[0, 2]], 24));
+  moreRequest.set(false);
+  forgetMoreAsk();
 });
 afterEach(() => {
   act(() => root.unmount());
@@ -121,5 +126,95 @@ describe('timeline header folding', () => {
     act(() => store().setUi({ pingPong: true }));
     expect(folded()).toEqual([]);
     expect(more().querySelector('.tl-overflow-dot')).toBeNull();
+  });
+});
+
+// jsdom doesn't hide the children of a hidden box, so "showing" walks up the way a browser's layout would.
+const showing = (el: Element) => {
+  for (let e: Element | null = el; e; e = e.parentElement) if (getComputedStyle(e).display === 'none') return false;
+  return true;
+};
+/** What a quest does: look for the target, then React catches up with whatever it asked for. */
+const find = (sel: string) => {
+  let el: Element | null = null;
+  act(() => void (el = resolveTarget(sel, showing)));
+  return el as Element | null;
+};
+const menuOpen = () => !!document.querySelector('.tl-more-menu');
+
+describe('quests pointing at a button folded into the more menu', () => {
+  it('find the button on the header while it is not folded, and leave the menu alone', () => {
+    mount();
+    expect(find(SEL.copy)).toBe(host.querySelector('[aria-label^="Copy this drawing"]'));
+    expect(menuOpen()).toBe(false);
+  });
+
+  it('open the menu once and find the matching item in it', () => {
+    available = 50;
+    mount();
+    // Not open yet: the ring goes round the "more" button, and the menu is asked to open.
+    expect(find(SEL.copy)).toBe(more());
+    expect(menuOpen()).toBe(true);
+    const item = find(SEL.copy)!;
+    expect(item.closest('.tl-more-menu')).not.toBeNull();
+    expect(item.getAttribute('role')).toBe('menuitem');
+    expect(item.getAttribute('aria-label')).toMatch(/^Copy this drawing/);
+    expect(find(SEL.onion)!.closest('.tl-more-menu')).not.toBeNull();
+  });
+
+  it('do not open the menu again after the person closes it', () => {
+    available = 50;
+    mount();
+    find(SEL.copy);
+    expect(menuOpen()).toBe(true);
+    act(() => void document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+    act(() => void document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true })));
+    expect(menuOpen()).toBe(false);
+    expect(find(SEL.copy)).toBe(more());
+    expect(menuOpen()).toBe(false);
+    // Another target in between lets a later ask open it again.
+    find(SEL.play);
+    find(SEL.copy);
+    expect(menuOpen()).toBe(true);
+  });
+
+  it('find the hold group as a named group in the menu', () => {
+    available = 50;
+    mount();
+    find(SEL.hold);
+    const g = find(SEL.hold)!;
+    expect(g.closest('.tl-more-menu')).not.toBeNull();
+    expect(g.textContent).toBe('Hold for');
+  });
+
+  it('never touch the menu for a button that is not folded', () => {
+    available = 50;
+    mount();
+    expect(find(SEL.play)).toBe(header().querySelector('.tl-play'));
+    expect(menuOpen()).toBe(false);
+  });
+});
+
+describe('onion settings from the more menu', () => {
+  it('list an entry that opens the box under the more button, with the same controls', () => {
+    available = 50;
+    mount();
+    expect(host.querySelector('[aria-label="Onion skin settings"]')!.closest('[data-step="onion"]')).not.toBeNull();
+    act(() => more().click());
+    const entry = [...document.querySelectorAll<HTMLElement>('.tl-menu-item')].find((b) => b.getAttribute('aria-label') === 'Onion skin settings')!;
+    expect(entry).toBeTruthy();
+    act(() => entry.click());
+    expect(menuOpen()).toBe(false);
+    const pop = document.querySelector<HTMLElement>('.tl-pop')!;
+    expect(pop.textContent).toContain('Onion skin');
+    expect(pop.style.top).toBe('32px');
+    const before = store().get().ui.onion.before;
+    act(() => (pop.querySelector('[aria-label="More frames before"]') as HTMLElement).click());
+    expect(store().get().ui.onion.before).toBe(before + 1);
+  });
+
+  it('do not list it while the onion buttons are still on the header', () => {
+    mount();
+    expect(menu().some((t) => /onion skin settings/i.test(t))).toBe(false);
   });
 });
