@@ -2,6 +2,7 @@
 // Pure functions on the document, so they are easy to test.
 import type { Doc } from '../core/format';
 import { inOutRange } from '../timeline/inout';
+import { bakedPositions, clipDirection, clipPlays, hasPlaySettings } from '../core/clipPlay';
 import { DEFAULT_SHEET, formatInfo, type ExportSettings, type FormatId } from './types';
 
 export const MAX_SIDE = 8192;
@@ -17,7 +18,13 @@ export interface FrameRange {
 
 export interface Plan {
   range: FrameRange;
+  /** How many pictures the file holds. */
   count: number;
+  /**
+   * For a clip that plays backward, back and forth or a set number of times, in a format that has no such setting
+   * (GIF, APNG, videos): which frame of the range each picture shows, counted from its first. Missing = in order.
+   */
+  order?: number[];
   width: number;
   height: number;
   /** A file name (or folder name) base, with no extension. */
@@ -123,10 +130,22 @@ export function slug(name: string, fallback = 'sprites'): string {
   return s || fallback;
 }
 
+/** Formats that show the pictures one after another with no direction or repeat count of their own. */
+const BAKED_FORMATS: FormatId[] = ['gif', 'apng', 'mp4', 'webm', 'prores'];
+
+/** The order a clip's frames go in for such a format, or undefined when it just plays through once, forward. */
+export function clipPlayOrder(doc: Doc, s: Pick<ExportSettings, 'range' | 'clipId' | 'format'>, range: FrameRange): number[] | undefined {
+  if (s.range !== 'clip' || !BAKED_FORMATS.includes(s.format)) return undefined;
+  const clip = doc.clips.find((c) => c.id === s.clipId);
+  if (!clip || !hasPlaySettings(clip)) return undefined;
+  return bakedPositions(range.end - range.start + 1, clipDirection(clip), clipPlays(clip));
+}
+
 export function planExport(doc: Doc, s: ExportSettings, currentFrame: number): Plan {
   const info = formatInfo(s.format);
   const range = resolveRange(doc, s, currentFrame);
-  const count = range.end - range.start + 1;
+  const order = clipPlayOrder(doc, s, range);
+  const count = order ? order.length : range.end - range.start + 1;
   const video = s.format === 'mp4' || s.format === 'webm' || s.format === 'prores';
   const { width, height } = outputSize(doc, s.scale, video);
   let name = fileSafe(doc.name);
@@ -143,7 +162,7 @@ export function planExport(doc: Doc, s: ExportSettings, currentFrame: number): P
   else if (count > MAX_FRAMES) problem = 'That is a lot of frames. Try exporting one clip at a time.';
   else if (s.range === 'clip' && info.animated && !doc.clips.some((c) => c.id === s.clipId)) problem = 'Pick which clip to export.';
   else if (video && count < 2) problem = 'A video needs at least two frames. Try the whole animation or a clip.';
-  return { range, count, width, height, name, problem };
+  return { range, count, ...(order ? { order } : {}), width, height, name, problem };
 }
 
 /** The file extension this export is saved with (a Lottie export can be a dotLottie `.lottie`). */

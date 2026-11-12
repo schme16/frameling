@@ -11,6 +11,7 @@
  * PDF's gradients are solid colours only, so a see-through stop comes out solid there.
  */
 import type { Doc, EffectKind } from '../core/format';
+import { hasPlaySettings } from '../core/clipPlay';
 import type { FormatId } from './types';
 import { effectInfo } from '../effects/model';
 
@@ -135,10 +136,18 @@ export function hasSoftOrShadow(found: DocFeatures): boolean {
 }
 
 /** Plain-words lines about what in this document won't come across as it is, for this format. Empty = all of it. */
+/** Formats that carry clips but not how they play (the player has no direction or repeat count). */
+const CLIP_PLAY_LEFT_OUT: Partial<Record<FormatId, string>> = {
+  interactives: 'Interactives plays a clip forward, looping or once. Clips that play backward, back and forth or a set number of times are not carried (the drawing inside the package still has them).',
+  lottie: 'A Lottie file has no clip direction or repeat count: clips become markers with their names only.',
+};
+
 export function carryWarnings(doc: Doc, format: FormatId, found: DocFeatures = docFeatures(doc)): string[] {
   const c = CARRY[format];
-  if (!c.rows) return [];
-  const out: string[] = [];
+  const clipNote = CLIP_PLAY_LEFT_OUT[format];
+  const clipWarn = clipNote && doc.clips.some((k) => hasPlaySettings(k)) ? [clipNote] : [];
+  if (!c.rows) return clipWarn;
+  const out: string[] = [...clipWarn];
   const pictures: string[] = [];
   const left: string[] = [];
   for (const f of found.features) {

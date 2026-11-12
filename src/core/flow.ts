@@ -4,14 +4,16 @@
  * States are the document's clips. A transition goes from one clip to another when the first ends, or when a named
  * trigger fires. Exports write it by clip name, the way game engines and Interactives refer to animations.
  */
-import type { Clip, ClipFlow, ClipTransition, Doc, Id } from './format';
+import type { Clip, ClipDirection, ClipFlow, ClipTransition, Doc, Id } from './format';
 import { uid } from './doc';
+import { readClipPlay } from './clipPlay';
 
 /** The flow as exports write it: names, not ids. */
 export interface FlowManifest {
   /** The clip that plays first. */
   start: string;
-  states: { name: string; loop: boolean; frames: number }[];
+  /** `direction` and `repeat` are there only when the clip has them (see `Clip`); `frames` counts the clip's own frames. */
+  states: { name: string; loop: boolean; frames: number; direction?: ClipDirection; repeat?: number }[];
   transitions: { from: string; to: string; on: 'end' | 'trigger'; trigger?: string }[];
 }
 
@@ -59,9 +61,15 @@ export function flowManifest(doc: Pick<Doc, 'clips' | 'flow'>, nameOf: (c: Clip)
   const start = (f.start && named.get(f.start)) || [...named.values()][0];
   return {
     start: start.name,
-    states: [...named.values()].map(({ clip, name }) => ({ name, loop: clip.loop, frames: Math.abs(clip.end - clip.start) + 1 })),
+    states: [...named.values()].map(({ clip, name }) => ({ name, loop: clip.loop, frames: Math.abs(clip.end - clip.start) + 1, ...stateExtras(clip) })),
     transitions: transitions.map((t) => ({ from: named.get(t.from)!.name, to: named.get(t.to)!.name, on: t.when, ...(t.when === 'trigger' ? { trigger: t.trigger || 'go' } : {}) })),
   };
+}
+
+/** A clip's direction, and its repeat count when it plays a set number of times (the flow never needs it for a loop). */
+function stateExtras(c: Clip): { direction?: ClipDirection; repeat?: number } {
+  const { direction, repeat } = readClipPlay(c);
+  return { ...(direction ? { direction } : {}), ...(!c.loop && repeat ? { repeat } : {}) };
 }
 
 /** Clip names the way sheet exports make them: trimmed, never empty, unique in clip order. */

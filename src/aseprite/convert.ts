@@ -3,6 +3,7 @@
  * Pure data in and out (no DOM, no store). `asepriteDoc` makes a whole new document; `mergePieces` adds the pieces to
  * a draft of an open one. Everything that could not be carried over exactly is said in `notes`, in plain words.
  */
+import { CLIP_DIRECTIONS, MAX_REPEAT } from '../core/clipPlay';
 import { newDoc, uid } from '../core/doc';
 import {
   TILE_FLIP_D,
@@ -503,17 +504,21 @@ export function asepritePieces(file: AseFile, name: string, target?: Target): Pi
 
   // Tags become clips.
   const clips: Clip[] = [];
-  const odd: string[] = [];
-  const repeats: string[] = [];
   for (const t of file.tags) {
     const from = Math.min(Math.max(0, t.from), file.frames.length - 1);
     const to = Math.min(Math.max(from, t.to), file.frames.length - 1);
-    clips.push({ id: uid('k'), name: plain(t.name) || 'Tag', start: timing.starts[from], end: timing.starts[to] + timing.holds[to] - 1, loop: t.repeat === 0 });
-    if (t.direction) odd.push(`${plain(t.name)} (${DIRECTIONS[t.direction] ?? 'direction ' + t.direction})`);
-    if (t.repeat > 1) repeats.push(`${plain(t.name)} (${t.repeat} times)`);
+    // Direction and repeat count map straight across (Aseprite numbers its directions in the same order). 0 repeats means forever there.
+    const direction = CLIP_DIRECTIONS[t.direction];
+    clips.push({
+      id: uid('k'),
+      name: plain(t.name) || 'Tag',
+      start: timing.starts[from],
+      end: timing.starts[to] + timing.holds[to] - 1,
+      loop: t.repeat === 0,
+      ...(direction && direction !== 'forward' ? { direction } : {}),
+      ...(t.repeat > 1 ? { repeat: Math.min(t.repeat, MAX_REPEAT) } : {}),
+    });
   }
-  if (odd.length) notes.push(`Clips play forward in Frameling. These tags play another way in Aseprite: ${odd.join(', ')}. Their direction is kept in the drawing's notes.`);
-  if (repeats.length) notes.push(`Clips can loop or play once. These tags repeat a set number of times in Aseprite and play once here: ${repeats.join(', ')}.`);
 
   for (const [mode, names] of blendMissing) notes.push(`Frameling has no "${blendName(mode)}" blend mode, so ${listOf(names)} blend${names.length === 1 ? 's' : ''} normally.`);
   if (flattened.length) notes.push(`Tilemap layers drawn as flat pixels instead of tiles: ${flattened.join('; ')}.`);

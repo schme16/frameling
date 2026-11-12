@@ -114,6 +114,7 @@ describe.skipIf(!BIN)('files made by the real Aseprite', () => {
     expect([byName('back').start, byName('back').end, byName('back').loop]).toEqual([4, 10, true]);
     expect([byName('bounce').start, byName('bounce').end, byName('bounce').loop]).toEqual([8, 13, false]);
     expect([byName('bounceback').start, byName('bounceback').end, byName('bounceback').loop]).toEqual([0, 13, true]);
+    expect([byName('back').direction, byName('bounce').direction, byName('bounce').repeat, byName('bounceback').direction]).toEqual(['reverse', 'pingpong', 3, 'pingpong-reverse']);
     const tags = (doc.ext!.aseprite as { tags: { name: string; direction: string; repeat: number }[] }).tags;
     const tagOf = (n: string) => tags.find((t) => t.name === n)!;
     expect([tagOf('idle').direction, tagOf('back').direction, tagOf('bounce').direction, tagOf('bounceback').direction]).toEqual(['forward', 'reverse', 'ping-pong', 'ping-pong reverse']);

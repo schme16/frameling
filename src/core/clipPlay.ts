@@ -167,7 +167,7 @@ export function playWords(c: ClipPlaySpec): string {
 }
 
 /** Cleans what was read from a file: only a known direction (and not 'forward', which is the default) and a whole repeat count are kept. */
-export function readClipPlay(raw: Record<string, unknown>): { direction?: ClipDirection; repeat?: number } {
+export function readClipPlay(raw: { direction?: unknown; repeat?: unknown }): { direction?: ClipDirection; repeat?: number } {
   const out: { direction?: ClipDirection; repeat?: number } = {};
   if (isDirection(raw.direction) && raw.direction !== 'forward') out.direction = raw.direction;
   const r = cleanRepeat(raw.repeat);

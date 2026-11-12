@@ -34,7 +34,7 @@ export function animationCellNames(animations: Animation[], cellOfFrame: number[
   const names: (string | null)[] = new Array(cellCount).fill(null);
   const unique = uniquer();
   for (const a of animations) {
-    animationRuns(a, cellOfFrame).forEach((r, k) => {
+    animationRuns({ ...a, frames: a.clip ?? a.frames }, cellOfFrame).forEach((r, k) => {
       if (names[r.cell] === null) names[r.cell] = unique(`${safeName(a.name, 'anim')}_${k}`);
     });
   }
@@ -82,27 +82,40 @@ export function expandedNames(a: Animation, d: Pick<SheetData, 'cellOfFrame' | '
   return a.frames.map((f) => d.names[d.cellOfFrame[f]]);
 }
 
-/** Phaser 3 animations, the shape `this.anims.fromJSON` and `this.load.animation` read. */
+/**
+ * Phaser 3 animations, the shape `this.anims.fromJSON` and `this.load.animation` read. Backward is the frames the
+ * other way round, and a clip that plays N times uses Phaser's own `repeat` (N - 1) when one pass ends where it
+ * should. Back and forth that plays a set number of times lists every frame instead: Phaser's `yoyo` shows the ends
+ * twice and would end on the wrong frame.
+ */
 export function phaserAnimations(d: SheetData, textureKey: string) {
   return {
-    anims: d.animations.map((a) => ({
-      key: a.name,
-      type: 'frame',
-      frames: expandedNames(a, d).map((frame) => ({ key: textureKey, frame })),
-      frameRate: a.fps,
-      repeat: a.loop ? -1 : 0,
-      delay: 0,
-      yoyo: false,
-    })),
+    anims: d.animations.map((a) => {
+      const native = !a.loop && a.repeat && a.pass && !a.direction?.startsWith('pingpong');
+      return {
+        key: a.name,
+        type: 'frame',
+        frames: expandedNames(native ? { ...a, frames: a.pass! } : a, d).map((frame) => ({ key: textureKey, frame })),
+        frameRate: a.fps,
+        repeat: a.loop ? -1 : native ? a.repeat! - 1 : 0,
+        delay: 0,
+        yoyo: false,
+      };
+    }),
     globalTimeScale: 1,
   };
+}
+
+/** What a clip says about how it plays, when it says something: written next to frame lists that already follow it. */
+export function playExtras(a: Pick<Animation, 'direction' | 'repeat'>): { direction?: string; repeat?: number } {
+  return { ...(a.direction ? { direction: a.direction } : {}), ...(a.repeat ? { repeat: a.repeat } : {}) };
 }
 
 // ---------------------------------------------------------------- PixiJS
 
 /** A PixiJS spritesheet: the hash atlas plus `animations`, which `Spritesheet` turns into lists of textures. */
 export function pixiSheet(d: SheetData) {
-  const base = hashAtlas(d, { frameling: { animations: Object.fromEntries(d.animations.map((a) => [a.name, { fps: a.fps, loop: a.loop, animationSpeed: Math.round((a.fps / 60) * 10000) / 10000 }])) } });
+  const base = hashAtlas(d, { frameling: { animations: Object.fromEntries(d.animations.map((a) => [a.name, { fps: a.fps, loop: a.loop, animationSpeed: Math.round((a.fps / 60) * 10000) / 10000, ...playExtras(a) }])) } });
   return { frames: base.frames, animations: Object.fromEntries(d.animations.map((a) => [a.name, expandedNames(a, d)])), meta: base.meta };
 }
 
@@ -131,7 +144,7 @@ export function unitySheet(d: SheetData, o: { pixelArt: boolean }) {
     }),
     animations: d.animations.map((a) => {
       const runs = animationRuns(a, d.cellOfFrame);
-      return { name: a.name, fps: a.fps, loop: a.loop, frames: runs.map((r) => d.names[r.cell]), holds: runs.map((r) => r.frames) };
+      return { name: a.name, fps: a.fps, loop: a.loop, ...playExtras(a), frames: runs.map((r) => d.names[r.cell]), holds: runs.map((r) => r.frames) };
     }),
   };
 }
@@ -326,6 +339,8 @@ public class FramelingSheetImporter : AssetPostprocessor
             var settings = AnimationUtility.GetAnimationClipSettings(clip);
             settings.loopTime = a.loop;
             AnimationUtility.SetAnimationClipSettings(clip, settings);
+            // Looping clips wrap; the others stay on their last frame. (Backward and back and forth are already in the order of the keys.)
+            clip.wrapMode = a.loop ? WrapMode.Loop : WrapMode.ClampForever;
             var clipPath = folder + "/" + baseName + "_" + a.name + ".anim";
             var existing = AssetDatabase.LoadAssetAtPath<AnimationClip>(clipPath);
             if (existing != null)
@@ -388,13 +403,18 @@ export function cssSprites(d: SheetData, o: { prefix: string; pixelArt: boolean;
     const size = o.separate ? ` width: ${c.image.width}px; height: ${c.image.height}px;` : '';
     out.push(`.${cls} { background-position: ${pos(d.layout.positions[i])};${size} }`);
   });
-  for (const [k, a] of d.animations.entries()) {
+  for (const [k, anim] of d.animations.entries()) {
+    // A clip that plays forward or backward N times repeats one pass with `animation-iteration-count`. Back and forth
+    // lists every frame instead: `animation-direction: alternate` shows each end twice, and so does a reversed run of
+    // step-end keyframes (it shows each picture a step late).
+    const times = !anim.loop && anim.repeat && anim.pass && !anim.direction?.startsWith('pingpong') ? anim.repeat : 1;
+    const a = times > 1 ? { ...anim, frames: anim.pass! } : anim;
     const runs = animationRuns(a, d.cellOfFrame);
     const total = a.frames.length;
     const name = `${p}-${ids.animations[k]}`;
     const seconds = Math.round((total / a.fps) * 10000) / 10000;
     out.push('', `.${name} {`, `  background-position: ${pos(d.layout.positions[runs[0].cell])};`);
-    out.push(`  animation: ${name} ${seconds}s step-end ${a.loop ? 'infinite' : '1 forwards'};`, '}');
+    out.push(`  animation: ${name} ${seconds}s step-end ${a.loop ? 'infinite' : `${times} forwards`};`, '}');
     out.push(`@keyframes ${name} {`);
     let t = 0;
     for (const r of runs) {
