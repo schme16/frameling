@@ -555,7 +555,8 @@ queue. Open the app with `?shim=plain` or `?shim=picker` in a flow's `w.load(mod
 the page wrote or downloaded, `w.files.stage(...)` / `w.files.upload(...)` to give it a file, `w.run(id)` to start a
 command without waiting for its dialog, and `w.answerChoice()` for Quill's "Remember my choice" questions.
 
-The harness finds the Chromium it ships in, so what it proves is Chromium's behaviour. Safari and Firefox are covered by
+The whole run takes a few minutes (longer on a busy machine, as software GL is slow), so use `--only` while working on one area.
+The harness runs in the Chromium that Electron ships, so what it proves is Chromium's behaviour. Safari and Firefox are covered by
 reading the code (see the WebKit notes on the board), not by this run.
 
 ## Plugin sandbox: scripts/e2e/plugins.cjs
