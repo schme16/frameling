@@ -111,7 +111,7 @@ Tile mode works on any pixel layer, so it's handy for backgrounds that scroll fo
 
 ## Or drag it
 
-With a tile tool on a tilemap layer, a **round handle** sits on the first tile corner. Drag it. Blue lines show where the tiles will fall, and a message says where the grid starts when you let go.
+With a tile tool on a tilemap layer, hold **Alt** (or keep the tile size form open) and a **round handle** appears on the first tile corner. Drag it. It stays out of the way the rest of the time, so a click at the stage corner paints as usual. Blue lines show where the tiles will fall, and a message says where the grid starts when you let go.
 
 ## Good to know
 

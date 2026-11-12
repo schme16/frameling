@@ -113,6 +113,11 @@ export interface FramelingApi {
     toAac(bytes: Uint8Array): Promise<Uint8Array | null>;
   };
   library?: LibraryApi;
+  /** Desktop only: what the plugin watchdog can see. */
+  plugins?: {
+    /** Bytes of memory held by each running plugin's sandbox, by plugin id (a plugin without a process of its own is left out). */
+    memory(): Promise<Record<string, number>>;
+  };
   recent: {
     list(): Promise<RecentFile[]>;
     add(path: string): Promise<void>;

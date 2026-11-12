@@ -38,7 +38,7 @@ function SizeForm({ w, h, gx, gy, onDone }: { w: number; h: number; gx: number; 
         Height
         <input type="number" min={1} max={256} value={th} onChange={(e) => setH(e.target.value)} />
       </label>
-      <span className="tz-grid-start" title="Where a tile edge sits from the top-left corner of the stage. Leave at 0 when your tiles start at the corner. You can also drag the round handle on the canvas.">
+      <span className="tz-grid-start" title="Where a tile edge sits from the top-left corner of the stage. Leave at 0 when your tiles start at the corner. You can also drag the round handle on the canvas, while this form is open or with Alt held.">
         <label>
           Grid starts at x
           <input type="number" min={0} max={255} value={x} onChange={(e) => setX(e.target.value)} aria-label="Grid starts at x" />

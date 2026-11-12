@@ -83,6 +83,11 @@ async function serve(method, a) {
 }
 async function onMessage(m) {
   if (!m || typeof m !== 'object') return;
+  if (m.t === 'ping') {
+    // The host's heartbeat: a worker stuck in a loop can't answer it.
+    send({ t: 'pong', n: m.n });
+    return;
+  }
   if (m.t === 'event') {
     var fns = listeners.get(m.name);
     if (fns) {
@@ -201,7 +206,7 @@ var api = {
       needId(def, 'A tool');
       if (typeof onEvent !== 'function') throw new Error('A tool needs a function that hears the pointer.');
       tools.set(def.id, onEvent);
-      send({ t: 'register', kind: 'tool', def: { id: def.id, label: def.label, icon: def.icon, layers: def.layers } });
+      send({ t: 'register', kind: 'tool', def: { id: def.id, label: def.label, icon: def.icon, layers: def.layers, snap: def.snap, keys: def.keys } });
     },
   },
   canvas: {
@@ -215,7 +220,7 @@ var api = {
       if (!def || typeof def.kind !== 'string' || !/^[A-Za-z0-9_-]{1,40}$/.test(def.kind)) throw new Error('A kind of shape needs a kind made of letters, numbers, dashes or underscores.');
       if (typeof draw !== 'function') throw new Error('A kind of shape needs a function that draws it from its settings.');
       shapeKinds.set(def.kind, draw);
-      send({ t: 'register', kind: 'shape', def: { id: def.kind, label: def.label } });
+      send({ t: 'register', kind: 'shape', def: { id: def.kind, label: def.label, options: def.options } });
     },
     place: function (kind, props, at) {
       return call('shapes.place', { kind: String(kind), props: props || {}, x: at && at.x, y: at && at.y });

@@ -2,6 +2,7 @@
 // (commands, exports, panels) into the app's registries. The plugin code itself only ever runs in its sandbox.
 import type { ComponentType } from 'react';
 import { registerCommand, registerPanel, registerTool, unregisterCommand, unregisterPanel, type ToolPointer } from '../core/registry';
+import { clearSnap, snapPt } from '../canvas/guides';
 import { removeOwned, withOwner } from '../core/owners';
 import { drawingAt, findLayer } from '../core/doc';
 import { store } from '../core/store';
@@ -17,7 +18,7 @@ import { syncDynamicCommands } from '../ui/dynamic';
 import { ICON_NAMES } from '../ui/icons';
 import { createStore } from '../ui/mini';
 import { setEventSink } from './bus';
-import { drawDrawList, type DrawList } from './drawlist';
+import { drawDrawList, handleAt, type DrawList } from './drawlist';
 import { summarize, type PluginEventName } from './events';
 import { PERMISSIONS, packPlugin, PluginProblem, readPluginFiles, readPluginZip, samePermissions, type Decision, type Permission, type PluginManifest, type PluginPackage } from './manifest';
 import { applyOps } from './ops';
@@ -25,6 +26,7 @@ import { decide, elevatedIn, needsChoices, powerName, RISKS } from './powers';
 import { EventPipe } from './pipe';
 import { PluginRuntime, type HostHooks, type PluginExporterDef, type PluginToolDef, type Transport } from './runtime';
 import { startSandbox } from './sandbox';
+import { tripMessage, type Trip } from './watchdog';
 import { addPluginShape, redrawPluginShape, ShapeProblem } from './shapes';
 import type { UiNode } from './ui-schema';
 
@@ -219,7 +221,29 @@ function hooksFor(m: PluginManifest, onExporter: (def: PluginExporterDef) => voi
       notify(`The "${m.name}" plugin hit a problem: ${message}`, 'error', { label: 'Turn it off', run: () => void setEnabled(pid, false) }, 9000);
     },
     loaded: () => patch(pid, { status: 'on', problem: undefined }),
+    watchdog: (trip) => void turnOffForTrouble(m, trip),
+    memory: () => memoryOf(pid),
   };
+}
+
+let memorySeen: { at: number; sizes: Record<string, number> } | null = null;
+/** The plugin's memory in bytes (desktop only). One look at the whole app serves every plugin asking within a second. */
+async function memoryOf(pid: string): Promise<number | null> {
+  const ask = desktop()?.plugins?.memory;
+  if (!ask) return null;
+  if (!memorySeen || Date.now() - memorySeen.at > 1000) {
+    const sizes = await ask().catch(() => ({}) as Record<string, number>);
+    memorySeen = { at: Date.now(), sizes };
+  }
+  return memorySeen.sizes[pid] ?? null;
+}
+
+/** A plugin got stuck or grew too big: turn it off, remember that, and say so plainly with a way back. */
+async function turnOffForTrouble(m: PluginManifest, trip: Trip): Promise<void> {
+  const message = tripMessage(m.name, trip);
+  await setEnabled(m.id, false);
+  patch(m.id, { problem: message });
+  notify(message, 'warn', { label: 'Turn it on', run: () => void setEnabled(m.id, true) }, 12000);
 }
 
 /** The one decoration a plugin with the canvas power gets: it draws whatever the plugin last sent. Taken away with the plugin. */
@@ -243,25 +267,54 @@ function addPluginTool(m: PluginManifest, def: PluginToolDef): void {
   const pid = m.id;
   const id = toolId(pid, def.id);
   const rtOf = () => runtimes.get(pid);
-  const pipe = new EventPipe<{ type: 'down' | 'move' | 'up' | 'hover' | 'cancel' | 'leave' } & Record<string, unknown>, { hint(message: string): void } | undefined>(async (ev, ctx) => {
+  type Ev = { type: 'down' | 'move' | 'up' | 'hover' | 'cancel' | 'leave' | 'key' } & Record<string, unknown>;
+  type Ctx = { hint(message: string): void } | undefined;
+  const pipe = new EventPipe<Ev, Ctx>(async (ev, ctx) => {
     const hint = await rtOf()?.toolEvent(def.id, ev as never);
     if (hint) {
       ctx?.hint(`${m.name}: ${hint}`);
     }
   });
+  const overlayOf = () => overlays.get(pid)?.get(`tool:${def.id}`);
+  // Where the pointer last was (so a key press has a place), the handle being dragged and the one the pointer is over.
+  let last = { x: 0, y: 0, rawX: 0, rawY: 0 };
+  let lastCtx: { zoom: number; hint(message: string): void } | undefined;
+  let dragging: string | null = null;
+  let over: string | null = null;
+  const setOver = (h: string | null) => {
+    if (h === over) return;
+    over = h;
+    overlayRequester();
+  };
   const send = (type: 'down' | 'move' | 'up' | 'hover', e: ToolPointer, ctx: { zoom: number; hint(message: string): void }) => {
     const st = store().get();
     const layer = findLayer(st.doc, st.ui.activeLayerId);
+    // A press on one of the tool's handles starts a drag that keeps that handle's id until the release.
+    const list = overlayOf();
+    const under = list ? handleAt(list, e.x, e.y, ctx.zoom) : null;
+    if (type === 'down' && under) dragging = under;
+    const handle = dragging ?? (type === 'hover' ? under : null);
+    setOver(dragging ?? under);
+    const p = def.snap ? snapPt(e, ctx.zoom, e.mod) : e;
+    last = { x: p.x, y: p.y, rawX: e.x, rawY: e.y };
+    lastCtx = ctx;
     pipe.push(
-      { type, x: e.x, y: e.y, pressure: e.pressure, shift: e.shift, alt: e.alt, mod: e.mod, button: e.button, frame: st.ui.frame, drawingId: layer ? (drawingAt(st.doc, layer, st.ui.frame)?.id ?? null) : null, zoom: ctx.zoom },
+      { type, x: p.x, y: p.y, rawX: e.x, rawY: e.y, ...(handle ? { handle } : {}), pressure: e.pressure, shift: e.shift, alt: e.alt, mod: e.mod, button: e.button, frame: st.ui.frame, drawingId: layer ? (drawingAt(st.doc, layer, st.ui.frame)?.id ?? null) : null, zoom: ctx.zoom },
       ctx,
     );
+    if (type === 'up') {
+      dragging = null;
+      if (def.snap) clearSnap();
+    }
   };
   const plain = (type: 'cancel' | 'leave', ctx: { zoom: number }) => {
     const st = store().get();
+    dragging = null;
+    setOver(null);
+    if (def.snap) clearSnap();
     pipe.push({ type, x: 0, y: 0, pressure: 0, shift: false, alt: false, mod: false, button: 0, frame: st.ui.frame, drawingId: null, zoom: ctx.zoom }, undefined);
   };
-  withOwner(ownerOf(pid), () =>
+  withOwner(ownerOf(pid), () => {
     registerTool({
       id,
       label: def.label,
@@ -277,11 +330,27 @@ function addPluginTool(m: PluginManifest, def: PluginToolDef): void {
       cancel: (ctx) => plain('cancel', ctx),
       leave: (ctx) => plain('leave', ctx),
       overlay: (g, ctx) => {
-        const list = overlays.get(pid)?.get(`tool:${def.id}`);
-        if (list?.length) drawDrawList(g, list, ctx.zoom);
+        const list = overlayOf();
+        if (list?.length) drawDrawList(g, list, ctx.zoom, dragging ?? over);
       },
-    }),
-  );
+    });
+    // Its named keys are commands with no key of their own: people give them keys in Preferences > Keyboard, and a key only does something while the tool is picked.
+    for (const k of def.keys) {
+      registerCommand({
+        id: `${id}.key.${k.id}`,
+        label: `${def.label}: ${k.label}`,
+        category: 'Plugins',
+        description: `A key for the ${def.label} tool of the ${m.name} plugin. It works while that tool is picked.`,
+        help: 'plugin-tools',
+        keywords: ['plugin', 'tool', 'key', m.name, def.label],
+        enabled: (s) => s.ui.tool === id,
+        run: () => {
+          const st = store().get();
+          pipe.push({ type: 'key', key: k.id, x: last.x, y: last.y, rawX: last.rawX, rawY: last.rawY, pressure: 0, shift: false, alt: false, mod: false, button: 0, frame: st.ui.frame, drawingId: null, zoom: lastCtx?.zoom ?? 1 }, lastCtx);
+        },
+      });
+    }
+  });
   syncDynamicCommands();
   announceUiChange();
 }

@@ -198,4 +198,14 @@ describe('Text', () => {
     expect(await offerTurnOn(opened)).toEqual(['text']);
     expect(getTool('text')).toBeTruthy();
   });
+
+  it('a plugin shape (a path with a text shape beside it, data in ext) keeps its ext and its text with Text off', () => {
+    const doc = docWithText();
+    const d = doc.drawings.d as VectorDrawing;
+    d.shapes = [{ ...d.shapes[0], ext: { 'plugin.star-kit': { kind: 'label', inst: 'i1', part: 1 } } } as never];
+    off('text');
+    const back = loadFile(saveFile(doc, 't')).doc.drawings.d as VectorDrawing;
+    expect(back.shapes[0].type).toBe('text');
+    expect((back.shapes[0] as { ext?: unknown }).ext).toEqual({ 'plugin.star-kit': { kind: 'label', inst: 'i1', part: 1 } });
+  });
 });

@@ -38,10 +38,10 @@ $AnimationPlayer.play("walk")
 ## Symbols, camera and looks
 
 - A [symbol](help:symbols) with its own bones comes as a node for each copy, with its own Skeleton2D and parts. Its place, fade and [timeline](help:symbol-properties) are keys. On a layer that follows a bone, the copy sits under that bone, inside symbols too. On a layer with effects or masks, or a bent one, it is drawn into the pictures.
-- A symbol that fades is a **CanvasGroup**: it fades as one picture, so overlapping parts don't show through, even with a bones symbol inside. If its parts can't be ordered by the scene tree, or use Add or Multiply, each part fades alone, and the export window says which and why.
+- A symbol that fades is a **CanvasGroup**: it fades as one picture, so overlaps don't show through, bones symbols inside too (a faded one inside is drawn into pictures, with no live skeleton). Parts that can't be ordered by the scene tree, or use Add or Multiply, fade alone; the export window says why.
 - A symbol copied large gets bigger pictures, up to 4 times your export size (less on a huge stage), so it stays sharp.
 - The [camera](help:camera) becomes a **Camera2D** with position, zoom and turn keys. Layers with a depth go under a **Parallax2D**.
-- The camera and depth layers line up when your Godot window is the stage size times the export scale. For other sizes, attach the saved \`-fit-window.gd\` to the scene's root, or set Project Settings > Display > Window to that size with Stretch Mode **canvas_items** and Aspect **keep**.
+- Camera and depth layers line up when your Godot window is the stage size times the export scale. For other sizes, attach the saved \`-fit-window.gd\` to the scene's root, or set Project Settings > Display > Window to that size with Stretch Mode **canvas_items** and Aspect **keep**.
 - A layer's fade is the node's modulate. **Add** and **Multiply** use a CanvasItemMaterial (Screen becomes Add, other modes draw normal). A symbol's colour wash uses a tiny shader saved beside the scene.
 - [Effects](help:effects) are baked into the part's picture, since Godot has none built in. So are **masks** and "clip to the layer below", when the part and the mask move together. One that follows a bone, or sits at another depth, is left out.
 - Hidden or reference layers inside a symbol with effects are left out.
@@ -75,7 +75,7 @@ The export window lists what was baked or left out for your drawing.`,
 $AnimatedSprite2D.play("run")
 \`\`\`
 
-Every clip is there with its speed and loop setting, and held frames last as long as they do in Frameling. A clip that plays backward or back and forth has its frames listed in that order (Godot's animations have no direction of their own), and one that plays a number of times lists them that many times and doesn't loop. A back and forth clip that loops can instead use Godot's own **ping-pong** loop (a smaller file, but the two end frames show twice): choose it in **Preferences > Behaviour**, *Back-and-forth clips in game engines*. Clips that play a set number of directions are always listed frame by frame. Got a character with bones? You can also send it as a [skeleton you can keep editing](help:export-godot-bones). Pixel art scenes are set to sharp (nearest) filtering, so nothing looks blurry.
+Every clip is there with its speed and loop setting, and held frames last as long as they do in Frameling. A clip that plays backward or back and forth has its frames listed in that order (Godot's animations have no direction of their own), and one that plays a number of times lists them that many times and doesn't loop. A back and forth clip that loops can instead use Godot's own **ping-pong** loop (a smaller file, but the two end frames show twice, and it needs Godot 4.7 or newer: older Godot plays those clips forward only): choose it in **Preferences > Behaviour**, *Back-and-forth clips in game engines*. Clips that play a set number of directions are always listed frame by frame. Got a character with bones? You can also send it as a [skeleton you can keep editing](help:export-godot-bones). Pixel art scenes are set to sharp (nearest) filtering, so nothing looks blurry.
 
 ## Using the .tres yourself
 

@@ -75,6 +75,13 @@ What each computer can build:
 Only a Mac can build the macOS app. Builds made this way are unsigned on Windows; macOS ones are ad-hoc signed (see
 Signing, below).
 
+## Changes
+
+- **Files are now format version 2.** Every `.frameling` file saved by this build is version 2 (back and forth clip
+  repeat counts changed meaning). This build opens older files and upgrades them as it opens them, but earlier builds
+  can't open a version 2 file: they say it was made with a newer Frameling. Keep a copy of anything you still need to
+  open in an older build, and update every machine you share files with. Details in `docs/format.md`.
+
 ## Work on it
 
 Needs Node 22.

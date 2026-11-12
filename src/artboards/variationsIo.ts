@@ -6,12 +6,13 @@
  * variation made are ordinary entries in `drawings`; the ones it redrew (pixels, tiles) are saved as `<id>~<variation>`.
  * Everything else about it is worked out from its original when the file opens.
  */
-import { LAYER_LABELS, type Artboard, type AudioClip, type DiffRect, type DrawingDiff, type PixelDrawing, type Cel, type Doc, type Drawing, type DrawingOverride, type Id, type Layer, type ListOverride, type Patch, type Shape, type VariationOverrides } from '../core/format';
+import { LAYER_LABELS, type Artboard, type AudioClip, type DiffRect, type DrawingDiff, type PixelDrawing, type Cel, type Doc, type Drawing, type DrawingOverride, type Id, type Layer, type ListOverride, type Patch, type PaletteOverride, type Shape, type VariationOverrides } from '../core/format';
 import { readClip } from '../core/clipPlay';
 import { packAudio, unpackAudio } from '../io/audio-file';
 import { decodePng } from '../io/png';
 import type { Zippable } from 'fflate';
 import { activeId, findArtboard, switchArtboard, takeContent } from './model';
+import { basePalette, migrateLegacy, recolourDrawing, rgbKey, tidyChanges } from './paletteOverride';
 import { aliasId, normalize, resolveContent, sourceOf, splitAlias, STAGE_KEYS } from './variations';
 import type { ArtboardReaders } from './io';
 import { produce } from 'immer';
@@ -190,8 +191,16 @@ export function readOverrides(raw: unknown, r: Pick<ArtboardReaders, 'readLayers
     });
     if (audio) out.audio = audio;
   }
-  const pal = r.readPalette?.(raw.palette)?.palette;
-  if (pal?.colors.length) out.palette = pal;
+  if (isObj(raw.palette)) {
+    if (Array.isArray(raw.palette.changes)) {
+      const changes = tidyChanges(raw.palette.changes.filter((c: unknown) => isObj(c) && typeof c.from === 'string' && typeof c.to === 'string' && rgbKey(c.from) >= 0 && rgbKey(c.to) >= 0).map((c: any) => ({ from: c.from as string, to: c.to as string })));
+      if (changes.length) out.palette = { changes };
+    } else {
+      // A file from before colourways were per colour: the whole palette, turned into changes once the original's is known.
+      const legacy = r.readPalette?.(raw.palette)?.palette;
+      if (legacy?.colors.length) out.palette = { changes: [], legacy };
+    }
+  }
   return normalize(out);
 }
 
@@ -375,7 +384,7 @@ export function variationDiffs(doc: Doc, files: Zippable, png: (d: { width: numb
       if (!o.replaced) continue;
       const alias = aliasId(orig, a.id);
       const mine = doc.drawings[alias];
-      const base = doc.drawings[orig];
+      const base = doc.drawings[orig] && recolourDrawing(doc.drawings[orig], a.overrides?.palette);
       if (!mine || !base || mine.kind !== base.kind) continue;
       if (mine.kind === 'pixel' && base.kind === 'pixel') {
         const rs = changedRects(base, mine);
@@ -405,12 +414,12 @@ export function variationDiffs(doc: Doc, files: Zippable, png: (d: { width: numb
 }
 
 /** After reading: the whole redrawn drawings made from the original's and each stored change, which are then dropped. */
-function applyDiffs(doc: Doc, a: Artboard): void {
+function applyDiffs(doc: Doc, a: Artboard, pal?: PaletteOverride): void {
   for (const [orig, o] of Object.entries(a.overrides?.drawings ?? {})) {
     const diff = o.diff;
     if (!diff) continue;
     delete o.diff;
-    const base = doc.drawings[orig];
+    const base = doc.drawings[orig] && recolourDrawing(doc.drawings[orig], pal);
     const alias = aliasId(orig, a.id);
     const rects = [...(diff.rect ? [diff.rect] : []), ...(diff.rects ?? [])].filter((r) => r.pixels instanceof Uint8ClampedArray);
     if (base?.kind === 'pixel' && rects.length) {
@@ -453,6 +462,7 @@ export function variationForSave(a: Artboard, files?: Zippable, diffs?: Map<Id, 
   if (!a.variationOf) return a;
   const { content: _c, ...rest } = a;
   let ov = a.overrides ?? {};
+  if (ov.palette?.legacy) ov = { ...ov, palette: { changes: ov.palette.changes } };
   if (diffs?.size && ov.drawings) {
     const drawings = { ...ov.drawings };
     for (const [orig, o] of Object.entries(drawings)) {
@@ -487,7 +497,14 @@ export function resolveAfterLoad(doc: Doc, warnings: string[]): void {
       list.splice(i, 1);
       continue;
     }
-    applyDiffs(doc, a);
+    // Stored changes of a drawing are on top of the original's, with the colourway on (an older file: without it).
+    const legacy = a.overrides?.palette?.legacy;
+    applyDiffs(doc, a, legacy ? undefined : a.overrides?.palette);
+    if (legacy && a.overrides) {
+      const changes = migrateLegacy(basePalette(doc), legacy);
+      if (changes.length) a.overrides.palette = { changes };
+      else delete a.overrides.palette;
+    }
     const r = resolveContent(base, doc.drawings, a.overrides, a.id);
     Object.assign(doc.drawings, r.drawings);
     a.content = r.content;

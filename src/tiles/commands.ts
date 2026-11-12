@@ -56,7 +56,7 @@ export const TILE_COMMANDS: Command[] = [
     id: 'tiles.gridStart',
     label: 'Where the tile grid starts...',
     category: 'Tiles',
-    description: 'For tiles that do not start at the stage corner: type where the first tile edge sits, or drag the handle on the canvas.',
+    description: 'For tiles that do not start at the stage corner: type where the first tile edge sits, or drag the handle on the canvas (it shows while the form is open, or with Alt held).',
     help: 'tile-grid',
     keywords: ['tile grid', 'grid start', 'grid origin', 'offset', 'tilemap', 'tile size'],
     run: () => {

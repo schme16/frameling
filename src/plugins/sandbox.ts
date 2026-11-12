@@ -20,7 +20,7 @@ export interface SandboxStart {
 }
 
 /** Makes the hidden frame (not yet in the page). */
-export function makeFrame(doc: Document, network: string[]): HTMLIFrameElement {
+export function makeFrame(doc: Document, network: string[], pluginId?: string): HTMLIFrameElement {
   const f = doc.createElement('iframe');
   f.setAttribute('sandbox', SANDBOX_FLAGS);
   f.setAttribute('aria-hidden', 'true');
@@ -30,12 +30,14 @@ export function makeFrame(doc: Document, network: string[]): HTMLIFrameElement {
   f.className = 'plugin-sandbox';
   f.style.cssText = 'position:fixed;width:0;height:0;border:0;visibility:hidden;pointer-events:none;left:-10px;top:-10px';
   f.src = new URL(hostPage(network), doc.baseURI).href;
+  // The page ignores it. The desktop app reads it to tell which plugin's process is which (src/main/ipc.ts, plugins:memory).
+  if (pluginId && /^[a-z0-9-]{1,60}$/.test(pluginId)) f.src += `?plugin=${pluginId}`;
   return f;
 }
 
 /** Starts a plugin in its own sandbox and gives back the way to talk to it. */
 export function startSandbox(s: SandboxStart, doc: Document = document): Promise<Transport> {
-  const frame = makeFrame(doc, s.network);
+  const frame = makeFrame(doc, s.network, s.plugin.id);
   return new Promise((resolve, reject) => {
     const win = doc.defaultView!;
     const timer = win.setTimeout(() => {

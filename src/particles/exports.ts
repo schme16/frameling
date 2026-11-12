@@ -6,7 +6,7 @@ import { instanceToSvg } from '../export/svg';
 import { Content, drawInstance, grouped, num, parseColor, type PdfFrameContext } from '../export/pdf';
 import type { Item, LookItem, LottieKit, ShapeLook, SymbolSprite } from '../export/lottie';
 import type { ShapeExport } from '../export/shapeExport';
-import { n2, sharedSprite, svgColor } from '../export/svg-extra';
+import { n2, sharedSprite, softPuff, svgColor } from '../export/svg-extra';
 import { posedParticles } from './draw';
 import type { Particle } from './model';
 import { particleSprites, SPRITE_UNIT, type ParticleSprite } from './sprites';
@@ -54,7 +54,7 @@ export function particleToSvg(s: ParticlesShape, p: Particle): string {
       return `<path d="${d.join('')}" stroke="${c.fill}" stroke-width="${n2(Math.max(0.6, p.size / 9))}" stroke-linecap="round" fill="none" transform="${at}"${op}/>`;
     }
     case 'soft':
-      return `<circle cx="${n2(p.x)}" cy="${n2(p.y)}" r="${n2(r * 0.7)}" fill="${c.fill}" opacity="${n2(a * 0.6)}"/>`;
+      return softPuff(c.fill, p.x, p.y, r, op);
     default:
       return `<circle cx="${n2(p.x)}" cy="${n2(p.y)}" r="${n2(r)}" fill="${c.fill}"${op}/>`;
   }

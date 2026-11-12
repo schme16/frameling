@@ -1,0 +1,10 @@
+{
+  "id": "runaway-test",
+  "name": "Runaway test",
+  "version": "1.0.0",
+  "description": "For testing the safety net: one command freezes, one grabs lots of memory. Frameling turns it off.",
+  "author": "Frameling examples",
+  "main": "main.js",
+  "permissions": [],
+  "apiVersion": 2
+}

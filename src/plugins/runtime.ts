@@ -9,6 +9,7 @@ import { EventGate, MAX_UNANSWERED, type PluginEventName } from './events';
 import type { Permission, PluginManifest } from './manifest';
 import { cleanValues, sanitizeOptions, type ExportOption, type OptionValues } from './options';
 import { sanitizeUi, type UiNode } from './ui-schema';
+import { Watchdog, type Trip } from './watchdog';
 
 export interface Transport {
   post(msg: unknown, transfer?: Transferable[]): void;
@@ -44,19 +45,39 @@ export interface PluginToolDef {
   icon: string;
   /** The layer kinds it works on. */
   layers: ('vector' | 'pixel')[];
+  /** Points come to it pulled onto Frameling's snap lines (the person's snapping choices; Ctrl or Cmd bypasses them). Off unless asked for. */
+  snap: boolean;
+  /** Named keys it listens for. Each is a command in Keyboard settings with no key to start with; pressing it while the tool is picked sends a `key` event. */
+  keys: PluginToolKey[];
 }
+
+export interface PluginToolKey {
+  id: string;
+  label: string;
+}
+
+export const MAX_TOOL_KEYS = 8;
 
 /** A kind of shape a plugin draws (version 2, needs the `shapes` power). */
 export interface PluginShapeDef {
   kind: string;
   label: string;
+  /** Version 2: the settings Properties shows for a shape of this kind (a number, a choice, a switch or text each). */
+  options: ExportOption[];
 }
 
 /** What a tool hears: where the pointer is, in stage coordinates, and what it was doing. */
 export interface ToolEvent {
-  type: 'down' | 'move' | 'up' | 'hover' | 'cancel' | 'leave';
+  type: 'down' | 'move' | 'up' | 'hover' | 'cancel' | 'leave' | 'key';
+  /** Stage coordinates; pulled onto the snap lines when the tool asked for `snap` (`rawX`, `rawY` are where the pointer really is). */
   x: number;
   y: number;
+  rawX?: number;
+  rawY?: number;
+  /** The handle of the tool's last picture that the pointer is over, or is dragging (a drag keeps this id from the press to the release). */
+  handle?: string;
+  /** For `type: 'key'`: which of the tool's named keys was pressed. */
+  key?: string;
   pressure: number;
   shift: boolean;
   alt: boolean;
@@ -160,6 +181,10 @@ export interface HostHooks {
   pickFile?(opts: { extensions: string[]; title: string }): Promise<PickedFile | null>;
   /** The set of events the plugin listens to changed. */
   subscriptionsChanged?(): void;
+  /** The plugin got stuck or used too much memory (see watchdog.ts). Turning it off is the host's job. Without this, nobody watches. */
+  watchdog?(trip: Trip): void;
+  /** How much memory the plugin's sandbox holds right now, or null where that can't be seen (the web version). */
+  memory?(): Promise<number | null>;
 }
 
 const LIMITS = { commands: 50, exporters: 10, panels: 5, files: 1000, bytes: 1024 * 1024 * 1024, tools: 5, shapeKinds: 10, overlaysPerSecond: 30, shapesPerSecond: 20, pickBytes: 50 * 1024 * 1024 };
@@ -241,6 +266,9 @@ export class PluginRuntime {
   private nextId = 1;
   private stopped = false;
   private problems = 0;
+  private watch: Watchdog | null = null;
+  /** Commands and exports being waited for: honest work that may keep the worker busy for a while. */
+  private heavy = 0;
 
   constructor(
     readonly manifest: PluginManifest,
@@ -250,6 +278,15 @@ export class PluginRuntime {
   ) {
     this.gate = new EventGate((name, payload) => this.sendEvent(name, payload));
     transport.onMessage((m) => void this.receive(m));
+    if (hooks.watchdog) {
+      this.watch = new Watchdog({
+        ping: (n) => this.send({ t: 'ping', n }),
+        trip: (t) => hooks.watchdog!(t),
+        busy: () => this.heavy > 0,
+        memory: hooks.memory ? () => hooks.memory!() : undefined,
+      });
+      this.watch.start();
+    }
   }
 
   private can(p: Permission): boolean {
@@ -305,6 +342,9 @@ export class PluginRuntime {
         return this.subscribe(m.event);
       case 'unsubscribe':
         if (this.subscribed.delete(m.event as PluginEventName)) this.hooks.subscriptionsChanged?.();
+        return;
+      case 'pong':
+        this.watch?.pong(m.n);
         return;
       case 'evAck':
         this.unanswered = Math.max(0, this.unanswered - 1);
@@ -382,13 +422,18 @@ export class PluginRuntime {
       if (!this.allow('tools', 'add a tool')) return;
       if (this.tools.size >= LIMITS.tools && !this.tools.has(id)) return;
       const layers = (Array.isArray(d.layers) ? d.layers : ['vector']).filter((l: unknown): l is 'vector' | 'pixel' => l === 'vector' || l === 'pixel');
-      const def: PluginToolDef = { id, label: cleanText(d.label, 40) || id, icon: typeof d.icon === 'string' ? d.icon.slice(0, 40) : 'plugin', layers: layers.length ? layers : ['vector'] };
+      const keys: PluginToolKey[] = [];
+      for (const k of Array.isArray(d.keys) ? d.keys : []) {
+        const kid = isObj(k) ? cleanId(k.id) : null;
+        if (kid && !keys.some((x) => x.id === kid) && keys.length < MAX_TOOL_KEYS) keys.push({ id: kid, label: cleanText(k.label, 40) || kid });
+      }
+      const def: PluginToolDef = { id, label: cleanText(d.label, 40) || id, icon: typeof d.icon === 'string' ? d.icon.slice(0, 40) : 'plugin', layers: layers.length ? layers : ['vector'], snap: d.snap === true, keys };
       this.tools.set(id, def);
       this.hooks.addTool?.(def);
     } else if (m.kind === 'shape') {
       if (!this.allow('shapes', 'add a kind of shape')) return;
       if (this.shapeKinds.size >= LIMITS.shapeKinds && !this.shapeKinds.has(id)) return;
-      const def: PluginShapeDef = { kind: id, label: cleanText(d.label, 40) || id };
+      const def: PluginShapeDef = { kind: id, label: cleanText(d.label, 40) || id, options: this.manifest.apiVersion >= 2 ? sanitizeOptions(d.options) : [] };
       this.shapeKinds.set(id, def);
       this.hooks.addShapeKind?.(def);
     }
@@ -453,6 +498,12 @@ export class PluginRuntime {
     return this.hooks.placeShape({ pluginId: this.manifest.id, kind, props, drawn, at: { x, y }, ...(inst ? { inst } : {}), drawingId: typeof a.drawingId === 'string' ? a.drawingId : null });
   }
 
+  /** Draws one of its shapes again from new settings, as if the plugin had asked (Properties uses this). Throws in plain words. */
+  async redrawShape(a: { kind: string; inst: string; props: unknown; drawingId?: string | null }): Promise<string> {
+    if (this.stopped || !this.can('shapes')) throw new Error('This plugin is not able to draw shapes right now.');
+    return this.placeShape({ kind: a.kind, inst: a.inst, props: a.props, drawingId: a.drawingId ?? null }, true);
+  }
+
   /** Asks the plugin to do something, and waits for its answer (for `timeoutMs` at most, when given). */
   private request(method: string, args: unknown, transfer?: Transferable[], signal?: AbortSignal, timeoutMs?: number): Promise<unknown> {
     if (this.stopped) return Promise.reject(new Error('The plugin is off.'));
@@ -510,10 +561,13 @@ export class PluginRuntime {
   }
 
   async runCommand(id: string): Promise<void> {
+    this.heavy++;
     try {
       await this.request('command', { id });
     } catch (e) {
       this.problem(e instanceof Error ? e.message : String(e));
+    } finally {
+      this.heavy--;
     }
   }
 
@@ -524,7 +578,13 @@ export class PluginRuntime {
     const transfer = frames.map((f) => f.data.buffer as ArrayBuffer);
     // Whatever the dialog sent, the plugin only gets values that fit the options it described.
     const values: OptionValues = cleanValues(ex.options, options);
-    const raw = await this.request('export', { id, frames, info, options: values }, transfer, signal);
+    this.heavy++;
+    let raw: unknown;
+    try {
+      raw = await this.request('export', { id, frames, info, options: values }, transfer, signal);
+    } finally {
+      this.heavy--;
+    }
     return normalizeFiles(raw, `${safeName(info.name, 'export')}.${ex.extension}`);
   }
 
@@ -535,6 +595,7 @@ export class PluginRuntime {
   stop(): void {
     if (this.stopped) return;
     this.stopped = true;
+    this.watch?.stop();
     this.gate.stop();
     for (const w of this.waiting.values()) w.reject(new Error('The plugin was turned off.'));
     this.waiting.clear();

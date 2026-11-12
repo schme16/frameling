@@ -44,6 +44,6 @@ registerChoice<ClipEngineBounce>({
   help: 'Only Godot and Phaser can bounce a clip themselves; every other format always lists the frames. The engine\'s own ping-pong works for clips that loop (and in Phaser, for an even number of directions); other back and forth clips are always listed frame by frame.',
   options: [
     { value: 'bake', label: 'Baked, ends show once', detail: 'Every frame is listed in the order it plays, so the ends show once and it looks exactly like Frameling. A little more data.' },
-    { value: 'engine', label: "Engine's own ping-pong", detail: 'Smaller data: only one direction is listed and the engine bounces it. In Godot the two end frames show twice; Phaser plays it the same as baked.' },
+    { value: 'engine', label: "Engine's own ping-pong", detail: 'Smaller data: only one direction is listed and the engine bounces it. In Godot the two end frames show twice, and it needs Godot 4.7 or newer (older Godot plays it forward only); Phaser plays it the same as baked.' },
   ],
 });

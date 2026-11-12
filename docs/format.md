@@ -189,7 +189,7 @@ Rect               = { x, y, w, h, pixels: "pixels/diff_<id>.png" }
   `perspective`.
 - `audio` is by sound clip id: `items[id].patch` changes `volume`, `muted`, `start` or `name`; `removed` are the
   original's clips this variation leaves out; `added` are clips made in it (their bytes in `audio/<id>.<ext>`, `data` names
-  the entry, as for any sound). `palette` is a whole pixel palette that replaces the original's for this variation.
+  the entry, as for any sound). `palette` is `{ changes: [{ from, to }] }`: the pixel palette colours this variation changed, `from` the original's colour and `to` its own. Pixels of the original in a changed colour show in the new one; everything else follows the original. An older file's whole palette (`{ name, colors }`) is read as changes.
 - `layers` is by layer id. `items[id].patch` changes layer properties (`visible`, `opacity`, `name`, `blend`, ...);
   `items[id].sub` is the same shape for that layer's cels (`start`, `length`, `tween`, ...; a cel's `drawingId`
   names the original's drawing or one the variation made). `added` are layers (and cels, shapes) made in the

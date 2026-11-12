@@ -12,6 +12,8 @@ kinds of shape, guides on the canvas and options in the Export dialog. It is a f
   (`canvas`, `events`).
 - `layer-fader` (version 2): a tool that answers with a preview and an edit (`tools`, `document.write`).
 - `export-report` (version 2): an exporter with options (text, choice, number, switch) and export events.
+- `runaway-test` (version 2): a deliberately badly behaved plugin (one command freezes, one grabs memory) for seeing the
+  watchdog work. Not for everyday use.
 
 **Version 1 plugins keep working unchanged.** A manifest without `apiVersion` (or with 1) is a version 1 plugin: same
 API, same install question as before. Version 2 only adds.
@@ -231,8 +233,8 @@ description (wrong kinds and out of range fall back to the default) and passed a
 ### Tools (version 2, `tools`)
 
 ```js
-frameling.tools.register({ id: 'stamp', label: 'Star stamp', icon: 'polygon', layers: ['vector'] }, async (e) => {
-  // e = { type: 'down' | 'move' | 'up' | 'hover' | 'cancel' | 'leave', x, y, pressure, shift, alt, mod, button, frame, drawingId, zoom }
+frameling.tools.register({ id: 'stamp', label: 'Star stamp', icon: 'polygon', layers: ['vector'], snap: true, keys: [{ id: 'bigger', label: 'Bigger stars' }] }, async (e) => {
+  // e = { type: 'down' | 'move' | 'up' | 'hover' | 'cancel' | 'leave' | 'key', x, y, rawX, rawY, handle?, key?, pressure, shift, alt, mod, button, frame, drawingId, zoom }
   return { overlay: [...], ops: [...], label: 'Stamp', hint: 'Short message' };   // everything optional
 });
 ```
@@ -242,6 +244,21 @@ one at a time: while the plugin is still answering, pointer moves pile up into t
 dropped. The answer is checked: `overlay` is a draw list shown while the tool is picked, `ops` are the same edit ops as
 `document.edit()` (applied as one undo step called `<plugin>: <label>`, and only if it was allowed `document.write`), and
 `hint` is shown near the cursor. A tool that fails to answer within 2 seconds three times in a row is left alone.
+
+**Handles.** A `handle` item in the tool's overlay (see Draw lists) is a dot the person can drag. Frameling hit-tests the
+pointer against the handles of the tool's last overlay (as near as 8 screen pixels at any zoom). Over one, `hover` events
+carry `handle: '<id>'`; pressing on one starts a drag, and the `down`, `move` and `up` of that drag all carry its `handle`
+id, so the plugin moves whatever the handle stands for and answers with a new overlay. A press elsewhere has no `handle`.
+
+**Snapping.** With `snap: true` in the tool's definition, `x` and `y` come pulled onto Frameling's snap lines the way the
+built-in tools' points do (page, guides, grid, other shapes, the person's choices and distance from the Snap options;
+Ctrl or Cmd, or snapping switched off, leaves the point alone), and Frameling shows the snap lines. `rawX` and `rawY` are
+where the pointer really is, and are always sent. Without `snap`, `x` and `y` are raw, as before.
+
+**Keys.** `keys: [{ id, label }]` (at most 8) names actions a tool listens for. Each becomes a command `plugin.<plugin id>.tool.<tool id>.key.<key id>`
+("<Tool label>: <label>") in the command palette and Preferences > Keyboard, with **no key to start with**, so a plugin can
+never take a key. It only runs while the tool is picked, and the plugin hears `{ type: 'key', key: '<id>', x, y, rawX, rawY }`
+with the last pointer place. The commands go when the plugin is turned off.
 
 ### Canvas guides (version 2, `canvas`)
 
@@ -255,7 +272,7 @@ most 30 updates a second.
 ### Draw lists
 
 Pictures a plugin sends (tool previews, guides, the drawing of a shape) are **draw lists**: plain data that Frameling checks
-and draws itself. The plugin never gets a canvas. At most 1000 items and 20000 points; colours are `#rrggbb` or `#rrggbbaa`.
+and draws itself. The plugin never gets a canvas. At most 1000 items and 20000 points; colours are `#rrggbb` or `#rrggbbaa`. At most 100 `text` items.
 
 | Item | Fields |
 |---|---|
@@ -264,7 +281,13 @@ and draws itself. The plugin never gets a canvas. At most 1000 items and 20000 p
 | `ellipse` | `cx`, `cy`, `rx`, `ry` |
 | `polygon`, `polyline` | `points: [[x, y], ...]` |
 | `path` | `d: [['M', x, y], ['L', x, y], ['Q', cx, cy, x, y], ['C', c1x, c1y, c2x, c2y, x, y], ['Z']]` |
-| `text` | `x`, `y`, `text`, `size`, `align` (guides and previews only; left out of shapes) |
+| `text` | `x`, `y` (the left, middle or right of the first line's baseline, by `align`), `text`, `size`, `align`, `font`, `weight` (100 to 900), `italic` |
+| `handle` | `id`, `x`, `y`, `size` (screen pixels, 4 to 40, default 10), `shape` (`square`, `circle` or `diamond`); in tool overlays only, at most 50 (see Tools) |
+
+`font` is a family name: the fonts Frameling ships (Nunito, Inter) or one the text tools found on this computer (desktop). A
+name that is not available, or is not a plain name (letters, numbers, spaces, dots and dashes), is drawn in plain sans-serif; a
+plugin can never load a font from anywhere. In a shape's draw list a `text` item becomes an ordinary text shape in that font
+(Nunito when it is not available), in the stage colour `fill`; a `handle` is left out.
 
 Every item may have `stroke`, `fill`, `width`, `opacity`, `join`, `cap`; on guides also `dash: [on, off]` and `screen: true`
 (widths and dashes in screen pixels, so they keep their size at any zoom). A line with no colour is a thin black line.
@@ -272,9 +295,9 @@ Every item may have `stroke`, `fill`, `width`, `opacity`, `join`, `cap`; on guid
 ### Shapes (version 2, `shapes`)
 
 ```js
-frameling.shapes.register({ kind: 'star', label: 'Star' }, (props) => drawList);      // local coordinates, (0, 0) is the middle
+frameling.shapes.register({ kind: 'star', label: 'Star', options: [/* the settings form, optional */] }, (props) => drawList);   // local coordinates, (0, 0) is the middle
 const inst = await frameling.shapes.place('star', { points: 5 }, { x: 300, y: 200 }); // adds it, picks it; one undo step
-await frameling.shapes.update(inst, 'star', { points: 7 });                            // redraws it, centred where it was
+await frameling.shapes.update(inst, 'star', { points: 7 });                            // redraws it, keeping what the person did to it
 ```
 
 A plugin shape is **ordinary vector shapes**, so every tool, renderer and exporter (SVG, PDF, Lottie, ...) works on it, and
@@ -288,6 +311,25 @@ Moving, colouring or deleting the parts with the ordinary tools works. Changing 
 drawing that uses a plugin that is off or not installed opens, Frameling says so, with a **Turn it on** button
 (`src/plugins/docPrompt.ts`). A plugin can only redraw its own shapes (the ext key holds its id). At most 20 shapes a
 second; a locked layer refuses them.
+
+**Properties.** While a plugin with the `shapes` power is installed, Properties has a **Plugin shape** section
+(`PluginShapePanel.tsx`, `shapeSection.ts`). With one plugin shape picked it says who made it, and:
+
+- the plugin is on and gave `options` when it registered the kind (the same four kinds as exporter options: `number`,
+  `choice`, `switch`, `text`): a **Change settings** form, drawn by Frameling. Choices and switches redraw the shape at
+  once; numbers and text on Enter or when the box is left. Each is one undo step ("<plugin>: Redraw <kind>"). Values are
+  checked against the options (`cleanValues`) and merged into the shape's `props`, so a plugin's own extra props survive.
+- no `options` but the plugin has a panel: a **Change settings** button that opens that panel.
+- the plugin is off: a **Turn it on** button (the usual question first if it asks for more than before).
+- the plugin is not installed: a plain note; the shape is ordinary shapes.
+
+**Redrawing keeps the person's work.** The first part's `ext` also holds `m` (where the plugin's coordinates sat on
+the stage when it was last drawn) and `ref` (up to three anchor points as they were then). On a redraw Frameling finds
+the move, scale, turn, flip or slant that took those points to where the parts' anchors are now (`refit` in
+`shapes.ts`) and puts the new drawing through the same change, so a star scaled 2x and turned stays scaled and turned
+when its points change. The plugin's own origin `(0, 0)` stays where it was (it is no longer re-centred on the old
+drawing's box). Shapes with no `m`/`ref` (placed by an earlier Frameling) and shapes whose points were edited one by one
+(the anchor count changed) are redrawn centred on where the old drawing was, as before.
 
 ### Files (version 2, `files.read`)
 
@@ -315,6 +357,28 @@ app page ──MessagePort── sandboxed iframe (plugin-host.html) ── star
    the app's command, panel and export registries, and takes it all away when the plugin is turned off.
 
 Turning a plugin off removes the frame, which ends its worker even if it's stuck in a loop.
+
+### The watchdog
+
+`src/plugins/watchdog.ts`, started by each `PluginRuntime`. It is a safety net for careless plugins (a loop that never ends,
+a list that grows for ever), not a security boundary: a plugin set on mischief has other ways to be a nuisance and the
+person can always turn it off.
+
+- **Heartbeat.** Every second the host sends `{ t: 'ping' }` and the prelude answers `{ t: 'pong' }` from the worker's
+  own event loop, so a worker stuck in a loop cannot answer. A ping unanswered for 10 seconds (60 seconds while a command or an
+  export is running, which may think for a while) means stuck. A tick that comes very late (the computer slept) is not blamed on the plugin.
+- **Memory.** The desktop app starts Chromium with `IsolateSandboxedIframes:grouping/per-document` (`PLUGIN_PROCESS_FEATURE`,
+  `src/main/main.ts`; without it every plugin's frame shares one process), so each plugin has a process of its own (about 90 MB
+  to begin with), and the frame's address carries `?plugin=<id>` (the page ignores it). The main process (`plugins:memory`, `src/main/pluginMemory.ts`)
+  matches each plugin frame's process id to Electron's process metrics and reports bytes held per plugin, every 4 seconds
+  at most. A process shared with another plugin or the app is left out. Over 1 GB turns the plugin off. The web build
+  cannot see this (`performance.memory` and `measureUserAgentSpecificMemory` do not exist in a sandboxed worker, which is
+  not cross-origin isolated), so only the heartbeat runs there.
+- **What happens.** The plugin is turned off the ordinary way (so it stays off after a restart until the person turns it on),
+  a plain toast says why with a **Turn it on** button, and Preferences > Plugins shows the same sentence.
+
+`runaway-test` has a command for each case. The limits are in `WATCHDOG`, which `?debug` exposes as
+`window.__framelingPlugins.watchdog` so the e2e check can shorten them.
 
 ## Threat model
 
@@ -379,7 +443,11 @@ Web: the browser's IndexedDB (store `library`). On/off state and what was allowe
   compatibility, what is asked about), `runtime-v2` (events, tools, guides, shapes, files, exporter options and the limits,
   against the real prelude), `manager-v2` (the permission flow: ask, remember per version, refuse, revoke; a tool and a shape
   kind round trip through the real store; events), `drawlist`, `shapes` (placing, redrawing, a saved file opening and
-  saving without the plugin), `options`, `events`, `pipe`.
+  saving without the plugin, redrawing after a move, scale or turn), `options`, `events`, `pipe`. Later additions: `watchdog`, `manager-watchdog`
+  and `process-memory` (the heartbeat, the memory cap, which process is which plugin's), `shape-panel` (the Properties
+  section through React), `tools-growth` (handles, snapping and keys through the real registries) and the font and handle
+  parts of `drawlist`.
 - `scripts/e2e/plugins.cjs` (Electron): the sandbox page blocks fetch, XHR, WebSocket, remote scripts and storage,
   has no way into the app, the version 1 examples install, run, undo and export, and the version 2 examples run in the real
-  sandbox: powers start off in the dialog, a tool stamps a shape and fades a layer, an exporter gets its options, events flow.
+  sandbox: powers start off in the dialog, a tool stamps a shape and fades a layer, an exporter gets its options, events flow, and
+  the watchdog turns off a frozen plugin and a memory hog (with shortened limits).

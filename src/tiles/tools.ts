@@ -15,7 +15,7 @@ import { getHover, setLive } from '../canvas/controller';
 import { activeLayer, EDIT_HINTS, editActiveDrawing } from '../tools/edit';
 import { cellFlags, clampGrid, cellKey, cellLine, docToCell, fillCellRect, findTile, floodCells, getCell, makeCell, setCell, tileDrawingAt } from './model';
 import { setTileGrid } from './ops';
-import { getTileUi, setTileUi } from './state';
+import { getTileUi, gridHandleOn, setTileUi, subscribeTileUi } from './state';
 import { TileToolOptions } from './TileToolOptions';
 
 /** The tilemap layer being drawn on, or a hint about why not. */
@@ -358,12 +358,31 @@ function handleLayer(): { doc: Doc; layer: TilemapLayer } | null {
   return layer && layer.kind === 'tilemap' && doc.tileset ? { doc, layer } : null;
 }
 
+// The handle only shows (and only grabs) with Alt held or while the "Where the tile grid starts" form is open, so a
+// click at the stage corner paints. The overlay is redrawn when Alt goes down or up, and when the form opens.
+let altHeld = false;
+let overlayCtx: ToolContext | null = null;
+const handleOn = (): boolean => gridHandleOn(altHeld, getTileUi().sizeForm);
+const setAlt = (on: boolean): void => {
+  if (on === altHeld) return;
+  altHeld = on;
+  overlayCtx?.requestOverlay();
+};
+if (typeof window !== 'undefined') {
+  window.addEventListener('keydown', (ev) => ev.key === 'Alt' && setAlt(true));
+  window.addEventListener('keyup', (ev) => ev.key === 'Alt' && setAlt(false));
+  window.addEventListener('blur', () => setAlt(false));
+}
+subscribeTileUi(() => overlayCtx?.requestOverlay());
+
 /**
  * Gives a tile tool the grid handle: a round handle on the first tile corner that you drag to say where the tile
- * grid starts. Anything not on the handle goes to the tool as usual.
+ * grid starts. It is there with Alt held, or while the grid form is open. Anything not on the handle goes to the
+ * tool as usual.
  */
 function withGridHandle(tool: Tool): Tool {
   const near = (e: ToolPointer, ctx: ToolContext): boolean => {
+    if (!gridHandleOn(e.alt, getTileUi().sizeForm)) return false;
     const h = handleLayer();
     if (!h) return false;
     const p = gridHandleAt(h.doc, h.layer);
@@ -404,6 +423,8 @@ function withGridHandle(tool: Tool): Tool {
       tool.up?.(e, ctx);
     },
     hover(e, ctx) {
+      overlayCtx = ctx;
+      altHeld = e.alt;
       tool.hover?.(e, ctx);
       ctx.requestOverlay();
     },
@@ -413,12 +434,14 @@ function withGridHandle(tool: Tool): Tool {
     },
     leave(ctx) {
       gridDrag = null;
+      if (overlayCtx === ctx) overlayCtx = null;
       tool.leave?.(ctx);
     },
     overlay(g, ctx) {
       tool.overlay?.(g, ctx);
+      overlayCtx = ctx;
       const h = handleLayer();
-      if (!h) return;
+      if (!h || (!gridDrag && !handleOn())) return;
       const { doc, layer } = h;
       const ps = layer.pixelSize;
       const ts = doc.tileset!;

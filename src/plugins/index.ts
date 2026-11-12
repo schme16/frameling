@@ -2,6 +2,7 @@
 import './commands';
 import './help';
 import './PluginPanel';
+import './shapeSection';
 import './plugins.css';
 import { requestOverlay } from '../canvas/controller';
 import { loadPlugins, plugins, setApprover, setExporterOpener, setOverlayRequester } from './manager';

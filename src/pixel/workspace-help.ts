@@ -85,10 +85,25 @@ The sliders button at the end opens the Tool options panel, with everything else
 - The loop button switches between looping and playing once.
 - **Quill for scale**: a tiny Quill, 48 pixels tall, stands next to your sprite at the same scale so you can feel how big it really is. The heart button turns him off. He is not there when Quill is turned off in Preferences.
 - **All frames** or **This clip**: play everything, or just the clip the playhead is in (idle, run...).
+- **Frames on boards** and **sprites on a sheet** add a strip of boards under the picture. See [Preview on several boards](help:pixel-preview-boards).
 - It plays at your frames per second and holds each drawing as long as the timeline does, so timing looks right.
 - Every change shows straight away, so you can draw a frame and watch it move.
 - While the timeline itself is playing, the Preview follows it.
 
 It's in the Pixel workspace on the right. Anywhere else, open it from View > Panels > Preview. Pixel > Play or pause the Preview works from the command palette too.`,
+  },
+  {
+    id: 'pixel-preview-boards',
+    media: 'pixel-preview-boards.mp4',
+    title: 'Preview on several boards',
+    section: 'Pixel art',
+    summary: 'Frames on boards play in order with a strip of boards; sprites on a sheet get a picker.',
+    keywords: ['preview', 'boards', 'board strip', 'sprite picker', 'sheet', 'frames on boards', 'sprites on a sheet', 'artboards'],
+    body: `When a sprite has several boards, the [Preview](help:pixel-preview) adds a strip of small buttons under the picture. What the strip does depends on [how the sprite is built](help:pixel-ways).
+
+- **Frames on boards**: the Preview plays every board in order as one animation, each board a frame (or as many frames as its own timeline has). The strip shows which board is playing, with the playing one lit. Click a board to jump there. While paused, clicking a board opens it for drawing instead.
+- **Sprites on a sheet**: the Preview plays the sprite you have open. The strip lists your sprites by name (Idle, Run, Jump...): click one to watch it here without leaving the sprite you are drawing, and click it again to go back to the open one.
+
+Handy for checking a walk cycle while you draw an idle, or a whole film strip of frames end to end.`,
   },
 ]);

@@ -1149,10 +1149,7 @@ async function svgAnimCases() {
     }
     await runCase('bouncing-ball', 'svganim', 'defaults', half);
   }
-  await runCase('explosion-fx', 'svganim', 'defaults', (s) => ({ ...half(s), transparent: true }), {
-    // Smoke puffs are hard-edged circles in SVG and soft in the app, so the later frames sit a little further off.
-    tol: 0.045,
-  });
+  await runCase('explosion-fx', 'svganim', 'defaults', (s) => ({ ...half(s), transparent: true }));
 }
 
 async function exportMatrix() {
@@ -1888,7 +1885,7 @@ func _init():
       const at = (file) => (/\((\d+),(\d+),(\d+)\)/.exec(sh('convert', [file, '-background', '#ff00ff', '-alpha', 'remove', '-alpha', 'off', '-format', `%[pixel:p{${pr.x},${pr.y}}]`, 'info:']).out) ?? []).slice(1).map(Number);
       const g = at(path.join(proj, `shot-${f}.png`));
       const fr = at(ref);
-      check(g.length === 3 && fr.length === 3 && g.every((v, i) => Math.abs(v - fr[i]) <= 6), `frame ${f} at ${pr.x},${pr.y}: Godot ${g} but Frameling ${fr} (${pr.what})`);
+      check(g.length === 3 && fr.length === 3 && g.every((v, i) => Math.abs(v - fr[i]) <= (pr.tol ?? 6)), `frame ${f} at ${pr.x},${pr.y}: Godot ${g} but Frameling ${fr} (${pr.what})`);
     }
   }
   note(`godot bones ok, worst rmse ${worst.toFixed(4)}`);
@@ -1901,7 +1898,15 @@ const FADE_PROBES = [6, 8, 11].flatMap((frame) => [
   { frame, x: 75, y: 180, what: 'the arm over the torso, inside the faded Body' },
   { frame, x: 55, y: 190, what: 'the torso alone' },
 ]);
+// Where the lower arm lies under the big hand of the faded arm inside the faded Body: one picture, so the arm does not show through.
+const NESTED_PROBES = [
+  // Looser than the others: a fade inside a tinted fade comes out a few levels darker in Godot than in Frameling (before this change too); showing through is 30 levels.
+  { frame: 6, x: 200, y: 172, tol: 12, what: 'the lower arm under the hand, both inside the faded arm inside the faded Body' },
+  { frame: 8, x: 200, y: 178, tol: 12, what: 'the lower arm under the hand, both inside the faded arm inside the faded Body' },
+];
 async function godotBonesExtrasSection(name = 'bones-extras', extra = {}, more, probes = []) {
+  // --section=bones-nested-fade runs just that one of the extras (the rest of the Godot bones checks still run).
+  if (flag('section') && !flag('section').includes(name)) return;
   const r = begin(name, 'sheet godot-bones');
   try {
     const dir = setAutomationDir(path.join(outDir, name, 'sheet-godot-bones'));
@@ -1918,7 +1923,8 @@ async function godotBonesExtrasSection(name = 'bones-extras', extra = {}, more, 
     if (!check(scene, 'no .tscn')) return;
     const tscn = fs.readFileSync(path.join(dir, scene), 'utf8');
     check(tscn.includes('type="Camera2D"') && tscn.includes('type="Parallax2D"'), 'scene is missing the camera or the parallax layer');
-    check(/\[node name="Arm" type="(Node2D|CanvasGroup)"/.test(tscn) && /type="Skeleton2D" parent="([^"]*\/)?Arm"/.test(tscn), "scene is missing the symbol's own skeleton");
+    // (A faded arm inside a faded body is drawn into pictures instead of staying live.)
+    if (extra.armFade === undefined) check(/\[node name="Arm" type="(Node2D|CanvasGroup)"/.test(tscn) && /type="Skeleton2D" parent="([^"]*\/)?Arm"/.test(tscn), "scene is missing the symbol's own skeleton");
     check(!tscn.includes('name="Hero"'), 'the hero layer should hold only the live symbol copies');
     check(files.some((n) => n.endsWith('.gdshader')), 'no tint shader');
     check(files.some((n) => n.endsWith('-fit-window.gd')), 'no fit-window script for the camera');
@@ -1967,9 +1973,15 @@ async function godotBonesExtrasSection(name = 'bones-extras', extra = {}, more, 
     // the overlap is not brighter than the rest.
     if (!ONLY || ONLY.includes('godot-bones'))
       await godotBonesExtrasSection('bones-body-arm-fade', { bodyArm: true }, ({ tscn }) => check(/\[node name="Body" type="CanvasGroup"/.test(tscn) && /name="Arm" type="Node2D" parent="Body\/Body bones\/Spine"/.test(tscn) && !/name="Torso"[^\n]*\]\nz_index/.test(tscn), 'the faded Body should be a CanvasGroup holding the arm in tree order'), FADE_PROBES);
-    // A fade inside a fade: Godot can't nest one group in another (it draws a grey box), so the arm fades part by part inside the Body's group.
+    // A fade inside a fade: Godot can't nest one group in another (it draws a grey box), so the faded arm is drawn into
+    // pictures (one per frame) inside the faded Body's group and fades as one picture, the lower arm not showing through the hand.
     if (!ONLY || ONLY.includes('godot-bones'))
-      await godotBonesExtrasSection('bones-nested-fade', { bodyArm: true, armFade: 0.5 }, ({ tscn }) => check(/\[node name="Body" type="CanvasGroup"/.test(tscn) && /name="Arm" type="Node2D" parent="Body\/Body bones\/Spine"/.test(tscn) && /NodePath\("Body\/Body bones\/Spine\/Arm:modulate"\)/.test(tscn), 'the arm inside the faded Body should stay a plain node that fades by modulate'), FADE_PROBES);
+      await godotBonesExtrasSection(
+        'bones-nested-fade',
+        { bodyArm: true, armFade: 0.5, fade: true },
+        ({ tscn }) => check(/\[node name="Body" type="CanvasGroup"/.test(tscn) && !/name="Arm" type=/.test(tscn) && /name="Arm holder" type="Sprite2D"/.test(tscn), 'the faded arm inside the faded Body should be drawn into pictures, not a second group'),
+        [...FADE_PROBES, ...NESTED_PROBES],
+      );
     if (!SKIP.includes('files')) await filesSection();
   } catch (e) {
     begin('harness', 'startup').failures.push(String(e?.stack ?? e));

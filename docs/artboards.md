@@ -183,10 +183,15 @@ the panel shows: grouped by layer, a recolour across many keys on one line, each
 
 **Sound and palette** are overridable. Sound is a list override like layers (`overrides.audio`: a clip's volume, mute,
 start and name as patches, clips left out, clips added, with their bytes in the zip beside the others). The palette is
-a whole-palette override (`overrides.palette`, a colourway for pixel art): `docPalette(doc)` gives the open variation's,
-the palette panel and pixel commands write it through `setVariationPalette`, changing a palette colour recolours only
-the open variation's pixel drawings (`paletteScope`), and `artboardDoc` gives the variation its palette for export. The
-original's palette changes never reach a variation that has its own.
+overridden per colour (`overrides.palette`, `src/artboards/paletteOverride.ts`): a list of `{ from, to }`, `from` being
+the colour in the original's palette. `docPalette(doc)` gives the open variation's (the original's with the changes on),
+the palette panel and pixel commands write it through `setVariationPalette` (only colour edits; adding, removing and
+moving colours is the original's and is refused with a note), and `artboardDoc` gives the variation its palette for
+export. The pixels follow the same list: a variation shows the original's pixel drawings with the swaps made
+(`recolourDrawing`), so a recolour stores no pixels, a drawing only becomes `replaced` when painted in. Colours the
+original adds, removes or moves flow through; when the original recolours a colour the variation changed, the settler
+re-points the change to the new colour (`paletteRenames`), so it stays the variation's own. Files from before (a whole
+palette) are turned into changes when read (`migrateLegacy`).
 
 **Limits, on purpose.** Symbols, tiles, swatches and layer folders are shared with the original, and the shared palette
 can only be changed from the original. A change that writes any of them while a variation is open is **refused whole**

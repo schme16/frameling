@@ -37,9 +37,9 @@ const CONVERTED: Record<string, { importers: string[] }> = {
   flow: { importers: ['renderer/features.ts'] },
   interactives: { importers: ['renderer/features.ts'] },
   lipsync: { importers: ['renderer/features.ts', 'templates/lip-sync.ts'] },
-  // Templates that use its shapes, the lessons, and (for text) the canvas, which opens the editor on a double click.
+  // Templates that use its shapes, the lessons, and (for text) the canvas, which opens the editor on a double click, and plugins, whose text items become text shapes.
   particles: { importers: ['quests/library.ts', 'renderer/features.ts', 'templates/explosion.ts'] },
-  text: { importers: ['canvas/CanvasView.tsx', 'quests/library.ts', 'renderer/features.ts', 'templates/spinner.ts', 'templates/title-card.ts'] },
+  text: { importers: ['canvas/CanvasView.tsx', 'plugins/drawlist.ts', 'plugins/fonts.ts', 'quests/library.ts', 'renderer/features.ts', 'templates/spinner.ts', 'templates/title-card.ts'] },
 };
 const DESCRIPTORS: Record<string, FeatureDescriptor> = { audio: audioFeature, camera: cameraFeature, 'godot-export': godotFeature, flow: flowFeature, interactives: interactivesFeature, lipsync: lipsyncFeature, particles: particlesFeature, text: textFeature };
 
