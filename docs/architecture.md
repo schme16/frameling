@@ -129,8 +129,12 @@ each registration inside `withOwner(id, ...)` (`src/core/owners.ts`); every regi
 `ownedUndo`, so `setFeatureOn(id, false)` takes away exactly that feature's things and `true` puts them back, no restart.
 Choices live in `localStorage` `frameling.features.v1` (the ids turned off). A feature with `legacy: true` still registers
 when its folder is imported (`src/features/planned.ts`) and is not offered in Preferences > Features until it is converted.
-Converted so far: Lip sync, Audio, Clip flow and Interactives (`src/lipsync`, `src/audio`, `src/flow`, `src/interactives`
-`index.ts`, copy one). Audio shows its rows through timeline slots (`src/timeline/slots.ts`: `registerTimelinePart` for
+Converted so far: Lip sync, Audio, Clip flow, Interactives, Camera, Particles, Text and Godot exports (`src/lipsync`, `src/audio`, `src/flow`, `src/interactives`,
+`src/camera`, `src/particles`, `src/text` `index.ts`, and `src/export/godot.ts`; copy one). Only Tiles and Rig are still `legacy` (planned): their data is
+read by `core/tilemap.ts` and `core/symbols.ts` (layer kinds and bone binding), which needs layer-kind registries first. Godot exports has no document data, so it
+has no `usedBy`; its sprite sheet engine card is a registered engine (`registerEngine` in `src/export/types.ts`) and a saved Godot setting falls back while it is off.
+Camera, Particles and Text `usedBy` read the drawing (a camera layer, emitters, text shapes), so opening such a file with the feature off asks to turn it on; their
+lessons carry `features` tags and are hidden; their shape kinds stay registered so the drawing still draws and exports. Audio shows its rows through timeline slots (`src/timeline/slots.ts`: `registerTimelinePart` for
 the layer side, the grid and the header), so `timeline/` imports nothing from it. The data stays in the document
 (`doc.audio`, `doc.flow`); Interactives leaves a marker in `doc.ext.interactives` (written by the Interactives export
 for the drawing it embeds). A tool says which rail group it starts in with `group` and `groupAt` (`src/ui/toolArrange.ts`

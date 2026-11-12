@@ -709,3 +709,10 @@ CI runs vitest only. The Electron harnesses are run by hand, under xvfb, before 
 ## Variations edit cost (opt-in)
 
 `VARIATIONS_PERF=1 npx vitest run test/artboards/variationsPerf.test.ts` prints how long an edit takes on a 9,600-key document with one and four variations. It asserts nothing about time, so it's off in `npm test`.
+
+## Export formats and shape kinds in tests
+
+`vitest.config.ts` runs `test/setup-kinds.ts` before every test file: it registers the text and particles shape kinds, loads their export code
+(`loadShapeExports`) and registers the Godot engine, as the app has them at start. A test of the Interactives export card imports
+`test/export/withInteractives.ts`. `test/export/registry.test.ts` covers the export registry (order, plan rules, feature-owned formats, sound with Audio off),
+`test/core/shape-kinds.test.ts` the shape kinds, `test/features/stage3-features.test.ts` Camera, Particles, Text and Godot exports being switched off and on.
