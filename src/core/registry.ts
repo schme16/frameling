@@ -70,8 +70,12 @@ export interface HelpTopic {
   title: string;
   /** One or two plain sentences. Shown in tooltips' "Learn more" and search results. */
   summary: string;
-  /** Markdown. Can link to other topics with `[text](help:topic-id)`. */
-  body: string;
+  /**
+   * Markdown. Can link to other topics with `[text](help:topic-id)`. Left out on the built-in topics, whose words live
+   * in `*.bodies.ts` files and load when Help is first opened; read it with `helpBody()` (after `loadHelpBodies()`).
+   * A topic that brings its own (a plugin's) can still set it here.
+   */
+  body?: string;
   /** Where it sits in the help contents ("Getting started", "Drawing", "Animating", "Exporting"...). */
   section: string;
   keywords?: string[];
@@ -97,6 +101,34 @@ export function getHelp(id: string): HelpTopic | undefined {
 }
 export function allHelp(): HelpTopic[] {
   return [...topics.values()];
+}
+
+// The words of the built-in topics are a separate chunk (src/core/helpBodies.ts, from the `*.bodies.ts` files beside
+// each topic list). Titles, summaries, keywords and ids stay here, so menus, tooltips and the palette never wait.
+let bodies = new Map<string, string>();
+let bodiesIn = false;
+let bodiesLoading: Promise<void> | undefined;
+const bodyListeners = new Set<() => void>();
+
+/** A topic's words: the ones it carries itself, else the loaded ones, else '' while they are still on their way. */
+export function helpBody(t: HelpTopic): string {
+  return t.body ?? bodies.get(t.id) ?? '';
+}
+/** True once the words of the built-in topics are in (`helpBody` is then complete). */
+export const helpBodiesLoaded = (): boolean => bodiesIn;
+/** Fetches the words of the built-in topics, once. Anything that reads `helpBody` in bulk (search, the audit) waits for it. */
+export function loadHelpBodies(): Promise<void> {
+  bodiesLoading ??= import('./helpBodies').then((m) => {
+    bodies = new Map(Object.entries(m.allBodies));
+    bodiesIn = true;
+    for (const f of [...bodyListeners]) f();
+  });
+  return bodiesLoading;
+}
+/** Told when the words arrive (for a view that waited on them). Returns the way to stop listening. */
+export function onHelpBodies(fn: () => void): () => void {
+  bodyListeners.add(fn);
+  return () => bodyListeners.delete(fn);
 }
 
 // ---------------------------------------------------------------- panels

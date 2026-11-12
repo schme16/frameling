@@ -1,5 +1,5 @@
 // The headings the Quests panel sorts quests under. A quest can name its own group; otherwise it's looked up here.
-import type { Quest, QuestProgress } from './types';
+import type { QuestInfo, QuestProgress } from './types';
 
 export const QUEST_GROUPS = [
   { id: 'start', title: 'Getting started' },
@@ -28,19 +28,19 @@ const BY_QUEST: Record<string, QuestGroupId> = {
   'share-it': 'sharing',
 };
 
-export function questGroupOf(q: Quest): QuestGroupId {
+export function questGroupOf(q: QuestInfo): QuestGroupId {
   return q.group ?? BY_QUEST[q.id] ?? 'more';
 }
 
 export interface QuestGroupView {
   id: QuestGroupId;
   title: string;
-  quests: Quest[];
+  quests: QuestInfo[];
   done: number;
 }
 
 /** Quests sorted under their headings, in heading order, keeping each quest's own order. Empty headings are left out. */
-export function groupQuests(list: Quest[], p: Pick<QuestProgress, 'completed'>): QuestGroupView[] {
+export function groupQuests(list: QuestInfo[], p: Pick<QuestProgress, 'completed'>): QuestGroupView[] {
   return QUEST_GROUPS.map((g) => {
     const quests = list.filter((q) => questGroupOf(q) === g.id);
     return { id: g.id, title: g.title, quests, done: quests.filter((q) => p.completed.includes(q.id)).length };

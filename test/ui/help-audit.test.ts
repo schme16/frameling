@@ -5,9 +5,9 @@
 import { readdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import type { Command, HelpTopic } from '../../src/core/registry';
-import { allCommands, allHelp, allPanels, allTools } from '../../src/core/registry';
+import { allCommands, allHelp, allPanels, allTools, loadHelpBodies } from '../../src/core/registry';
 import { auditHelp, formatAudit, helpLinksIn, shortcutsIn } from '../../src/ui/help/audit';
 import '../../src/renderer/features';
 import { KEYMAP_SETS } from '../../src/ui/keymapSets';
@@ -21,8 +21,13 @@ const EXTRA_KEYS = ['Mod+W', 'Mod+T', 'F2', ...KEYMAP_SETS.flatMap((s) => Object
 const run = () => auditHelp({ topics: allHelp(), commands: allCommands(), panels: allPanels(), tools: allTools(), files: readdirSync(helpDir), extraKeys: EXTRA_KEYS });
 
 describe('help audit (the real app)', () => {
-  const a = run();
-  if (process.env.HELP_AUDIT || process.env.npm_lifecycle_event === 'help:audit') process.stdout.write(`\n${formatAudit(a)}\n`);
+  // The topics' words load on demand, so the audit waits for them.
+  let a: ReturnType<typeof run>;
+  beforeAll(async () => {
+    await loadHelpBodies();
+    a = run();
+    if (process.env.HELP_AUDIT || process.env.npm_lifecycle_event === 'help:audit') process.stdout.write(`\n${formatAudit(a)}\n`);
+  });
 
   it('every command has a help topic', () => expect(a.commandsWithoutHelp).toEqual([]));
   it('every topic has a picture or clip', () => expect(a.topicsWithoutMedia).toEqual([]));

@@ -10,7 +10,8 @@ import { celebrate, dismissCelebration, praise } from './feedback';
 import { playCue } from '../ui/sounds';
 import { watchCommands, type CommandWatch } from './hook';
 import { readProbe } from './probe';
-import { getQuest, questProgress, setStarter, setStopper } from './registry';
+import { localStorageOrNull } from './saved';
+import { getFullQuest, questProgress, setStarter, setStopper } from './registry';
 import { PIXEL_QUESTS } from '../pixel/quests-ways';
 
 const source: StateSource = {
@@ -20,21 +21,13 @@ const source: StateSource = {
   canRedo: () => store().canRedo(),
 };
 
-function storage(): Storage | null {
-  try {
-    return typeof localStorage === 'undefined' ? null : localStorage;
-  } catch {
-    return null;
-  }
-}
-
 export const engine = new QuestEngine({
   source,
   progress: questProgress,
-  getQuest,
+  getQuest: getFullQuest,
   runCommand: runCommandById,
   probe: readProbe,
-  storage: storage(),
+  storage: localStorageOrNull(),
 });
 
 // A lesson is not the moment for a settings question (Tapping Space lands just as it says "Press play").
@@ -77,7 +70,7 @@ engine.on((e) => {
 
 /** Gets the document ready (asking before anything is thrown away), then starts the quest. Returns false for an unknown quest. */
 export function playQuest(id: string): boolean {
-  const q = getQuest(id);
+  const q = getFullQuest(id);
   if (!q) return false;
   dismissCelebration();
   // A page that is ready already starts the quest straight away; one that needs swapping may wait on a dialog.
@@ -97,7 +90,7 @@ export function playQuest(id: string): boolean {
 /** Picks up the quest that was put down. When the open document no longer suits it, starts that quest again from the top. */
 export function resumeQuest(): boolean {
   const p = questProgress.get().paused;
-  const q = p && getQuest(p.id);
+  const q = p && getFullQuest(p.id);
   if (!p || !q) return false;
   dismissCelebration();
   if (!q.ready || q.ready(store().get())) return engine.resume();

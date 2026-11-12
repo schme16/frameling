@@ -86,7 +86,8 @@ npm run help:audit
 ```
 
 Runs `test/ui/help-audit.test.ts`, `help-media.test.ts` and `help-words.test.ts` (all three are part of `npm test`
-too) and prints the full report. Fails when:
+too) and prints the full report. The topics' words load on demand, so these tests `await loadHelpBodies()` first (do the
+same in any test or script that reads `helpBody()` or runs `searchHelp`). Fails when:
 
 - a command has no help topic;
 - a topic has no picture or clip, or names a file missing from `public/help/`: a topic names a base file (`select.png`)

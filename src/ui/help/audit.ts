@@ -1,7 +1,8 @@
 // Checks the in-app help against the rest of the app: commands with no topic, topics with no picture, pictures nobody
 // uses, links to nowhere, topics that ramble, and shortcuts a topic names that no command has any more.
-// Pure: the caller hands in the registries and the list of files in public/help/, so it runs in a test.
-import type { Command, HelpTopic, PanelDef, Tool } from '../../core/registry';
+// Pure: the caller hands in the registries and the list of files in public/help/, so it runs in a test. The topics'
+// words are read with helpBody, so the caller waits for loadHelpBodies() first.
+import { helpBody, type Command, type HelpTopic, type PanelDef, type Tool } from '../../core/registry';
 import { normaliseCombo } from '../keys';
 import { mediaFiles } from './media';
 import { slug } from './markdown';
@@ -70,7 +71,7 @@ export function auditHelp(input: HelpAuditInput): HelpAudit {
   const maxWords = input.maxWords ?? 400;
   const hidden = input.hiddenTopics ?? [];
   const byId = new Map([...topics, ...hidden].map((t) => [t.id, t]));
-  const slugs = new Map([...topics, ...hidden].map((t) => [t.id, headingSlugs(t.body)]));
+  const slugs = new Map([...topics, ...hidden].map((t) => [t.id, headingSlugs(helpBody(t))]));
 
   const brokenLinks: string[] = [];
   const checkLink = (where: string, target: string) => {
@@ -78,7 +79,7 @@ export function auditHelp(input: HelpAuditInput): HelpAudit {
     const t = byId.get(id);
     if (!t || (anchor && !slugs.get(id)!.has(anchor))) brokenLinks.push(`${where} -> help:${target}`);
   };
-  for (const t of topics) for (const l of helpLinksIn(t.body)) checkLink(t.id, l);
+  for (const t of topics) for (const l of helpLinksIn(helpBody(t))) checkLink(t.id, l);
   for (const c of commands) if (c.help) checkLink(`command ${c.id}`, c.help);
   for (const p of panels) if (p.help) checkLink(`panel ${p.id}`, p.help);
   for (const tool of tools) if (tool.help) checkLink(`tool ${tool.id}`, tool.help);
@@ -102,7 +103,7 @@ export function auditHelp(input: HelpAuditInput): HelpAudit {
   for (const k of input.extraKeys ?? []) known.add(normaliseCombo(k));
   const shortcutDrift: string[] = [];
   for (const t of topics) {
-    for (const k of new Set(shortcutsIn(t.body))) {
+    for (const k of new Set(shortcutsIn(helpBody(t)))) {
       const n = normaliseCombo(k.replace(/\bOption\b/, 'Alt'));
       if (n && !known.has(n)) shortcutDrift.push(`${t.id}: ${k}`);
     }
@@ -113,7 +114,7 @@ export function auditHelp(input: HelpAuditInput): HelpAudit {
     topicsWithoutMedia: topics.filter((t) => !t.media).map((t) => t.id).sort(),
     missingMedia,
     orphanFiles: files.filter((f) => !f.startsWith('.') && !used.has(f)).sort(),
-    longTopics: topics.map((t) => [t.id, wordCount(t.body)] as const).filter(([, n]) => n > maxWords).map(([id, n]) => `${id} (${n} words)`),
+    longTopics: topics.map((t) => [t.id, wordCount(helpBody(t))] as const).filter(([, n]) => n > maxWords).map(([id, n]) => `${id} (${n} words)`),
     shortcutDrift,
     brokenLinks,
   };

@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import type { HelpTopic } from '../../src/core/registry';
 import { Markdown, parseBlocks, parseHelpLink, parseInline, plain, slug } from '../../src/ui/help/markdown';
 import { searchHelp, sections } from '../../src/ui/help/search';
-import { allHelp } from '../../src/core/registry';
+import { allHelp, helpBody, loadHelpBodies } from '../../src/core/registry';
 // The shell's topics link out to every area (the overview does), so load them all.
 import '../../src/renderer/features';
 
@@ -96,9 +96,10 @@ describe('help search', () => {
 });
 
 describe('the shell own help', () => {
-  it('writes a topic for each feature, and every link inside points somewhere', () => {
+  it('writes a topic for each feature, and every link inside points somewhere', async () => {
+    await loadHelpBodies();
     const ids = new Set(allHelp().map((x) => x.id));
     for (const id of ['welcome', 'new-document', 'using-help', 'command-palette', 'keyboard-shortcuts', 'preferences', 'look-and-feel', 'workspaces', 'panels', 'tool-strip', 'menus', 'status-bar', 'document-name', 'messages', 'quests']) expect(ids.has(id), id).toBe(true);
-    for (const t of allHelp()) for (const m of t.body.matchAll(/\]\(help:([\w-]+)/g)) expect(ids.has(m[1]), `${t.id} links to ${m[1]}`).toBe(true);
+    for (const t of allHelp()) for (const m of helpBody(t).matchAll(/\]\(help:([\w-]+)/g)) expect(ids.has(m[1]), `${t.id} links to ${m[1]}`).toBe(true);
   });
 });

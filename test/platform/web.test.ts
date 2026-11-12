@@ -1,7 +1,7 @@
 import { IDBFactory } from 'fake-indexeddb';
 import { unzipSync } from 'fflate';
 import { describe, expect, it, vi } from 'vitest';
-import { getHelp } from '../../src/core/registry';
+import { getHelp, helpBody, loadHelpBodies } from '../../src/core/registry';
 import { can, describePlace, guessOs, platformKind } from '../../src/platform';
 import '../../src/platform/help';
 import type { Question } from '../../src/platform/ask';
@@ -109,8 +109,9 @@ describe('web paths', () => {
     expect(can('showInFolder')).toBe(false);
   });
 
-  it('has a help topic', () => {
-    expect(getHelp('web-browser')?.body).toContain('Firefox or Safari');
+  it('has a help topic', async () => {
+    await loadHelpBodies();
+    expect(helpBody(getHelp('web-browser')!)).toContain('Firefox or Safari');
   });
 });
 
