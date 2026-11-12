@@ -2,6 +2,7 @@
 // (commands, exports, panels) into the app's registries. The plugin code itself only ever runs in its sandbox.
 import type { ComponentType } from 'react';
 import { registerCommand, registerPanel, registerTool, unregisterCommand, unregisterPanel, type ToolPointer } from '../core/registry';
+import { setCursor } from '../canvas/controller';
 import { clearSnap, snapPt } from '../canvas/guides';
 import { removeOwned, withOwner } from '../core/owners';
 import { drawingAt, findLayer } from '../core/doc';
@@ -19,7 +20,7 @@ import { syncDynamicCommands } from '../ui/dynamic';
 import { ICON_NAMES } from '../ui/icons';
 import { createStore } from '../ui/mini';
 import { setEventSink } from './bus';
-import { drawDrawList, guideSnapLines, handleAt, type DrawList } from './drawlist';
+import { drawDrawList, guideSnapLines, handleAt, handleCursor, type DrawList } from './drawlist';
 import { summarize, type PluginEventName } from './events';
 import { PERMISSIONS, packPlugin, PluginProblem, readPluginFiles, readPluginZip, samePermissions, type Decision, type Permission, type PluginManifest, type PluginPackage } from './manifest';
 import { applyOps } from './ops';
@@ -295,6 +296,8 @@ function addPluginTool(m: PluginManifest, def: PluginToolDef): void {
     over = h;
     overlayRequester();
   };
+  // An open hand over a handle, a closed one while it is being dragged.
+  const showCursor = () => setCursor(handleCursor(over, dragging));
   const send = (type: 'down' | 'move' | 'up' | 'hover', e: ToolPointer, ctx: { zoom: number; hint(message: string): void }) => {
     const st = store().get();
     const layer = findLayer(st.doc, st.ui.activeLayerId);
@@ -313,13 +316,16 @@ function addPluginTool(m: PluginManifest, def: PluginToolDef): void {
     );
     if (type === 'up') {
       dragging = null;
+      setOver(under);
       if (def.snap) clearSnap();
     }
+    showCursor();
   };
   const plain = (type: 'cancel' | 'leave', ctx: { zoom: number }) => {
     const st = store().get();
     dragging = null;
     setOver(null);
+    showCursor();
     if (def.snap) clearSnap();
     pipe.push({ type, x: 0, y: 0, pressure: 0, shift: false, alt: false, mod: false, button: 0, frame: st.ui.frame, drawingId: null, zoom: ctx.zoom }, undefined);
   };

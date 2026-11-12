@@ -248,7 +248,7 @@ dropped. The answer is checked: `overlay` is a draw list shown while the tool is
 **Handles.** A `handle` item in the tool's overlay (see Draw lists) is a dot the person can drag. Frameling hit-tests the
 pointer against the handles of the tool's last overlay (as near as 8 screen pixels at any zoom). Over one, `hover` events
 carry `handle: '<id>'`; pressing on one starts a drag, and the `down`, `move` and `up` of that drag all carry its `handle`
-id, so the plugin moves whatever the handle stands for and answers with a new overlay. A press elsewhere has no `handle`.
+id, so the plugin moves whatever the handle stands for and answers with a new overlay. A press elsewhere has no `handle`. The mouse cursor is an open hand over a handle and a closed hand while it is dragged; the plugin does nothing for that.
 
 **Snapping.** With `snap: true` in the tool's definition, `x` and `y` come pulled onto Frameling's snap lines the way the
 built-in tools' points do (page, guides, grid, other shapes, the person's choices and distance from the Snap options;

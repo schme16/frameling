@@ -7,6 +7,7 @@ import { newDoc } from '../../src/core/doc';
 import type { ToolPointer } from '../../src/core/registry';
 import { getCommand, getTool } from '../../src/core/registry';
 import { resetStore, store } from '../../src/core/store';
+import { setSink } from '../../src/canvas/controller';
 import { setViewSettings } from '../../src/canvas/viewSettings';
 import { installFrom, resetPluginsForTests, setApprover, setSandboxStarterForTests } from '../../src/plugins/manager';
 import { decide } from '../../src/plugins/powers';
@@ -86,6 +87,31 @@ describe('handles', () => {
     tool().hover!(ptr(110, 100), { ...ctx, zoom: 0.5 });
     await settle();
     expect(events().at(-1)).toMatchObject({ handle: 'tip' });
+  });
+});
+
+describe('handle cursor', () => {
+  it('is an open hand over a handle, a closed one while it is dragged, and the tool\'s own away from it', async () => {
+    const seen: (string | null)[] = [];
+    setSink({ main: () => undefined, overlay: () => undefined, cursor: (c) => seen.push(c) });
+    try {
+      tool().hover!(ptr(5, 5), ctx);
+      await settle();
+      tool().hover!(ptr(102, 101), ctx);
+      expect(seen.at(-1)).toBe('grab');
+      tool().down!(ptr(102, 101), ctx);
+      expect(seen.at(-1)).toBe('grabbing');
+      tool().move!(ptr(150, 130), ctx);
+      expect(seen.at(-1)).toBe('grabbing');
+      tool().up!(ptr(150, 130), ctx);
+      expect(seen.at(-1)).toBeNull();
+      tool().hover!(ptr(102, 101), ctx);
+      expect(seen.at(-1)).toBe('grab');
+      tool().leave!(ctx);
+      expect(seen.at(-1)).toBeNull();
+    } finally {
+      setSink(null);
+    }
   });
 });
 

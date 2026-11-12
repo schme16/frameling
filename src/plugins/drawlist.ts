@@ -236,6 +236,11 @@ export function handleAt(list: DrawList, x: number, y: number, zoom: number): st
   return null;
 }
 
+/** The mouse cursor for a handle: open hand while the pointer is over one, closed hand while it is dragged, else the tool's own (null). */
+export function handleCursor(over: string | null, dragging: string | null): 'grab' | 'grabbing' | null {
+  return dragging ? 'grabbing' : over ? 'grab' : null;
+}
+
 /** Draws a checked draw list in stage coordinates. `zoom` keeps `screen` widths the same size on screen. `hot` is the handle under the pointer. */
 export function drawDrawList(g: CanvasRenderingContext2D, list: DrawList, zoom = 1, hot: string | null = null): void {
   const z = zoom > 0 ? zoom : 1;
