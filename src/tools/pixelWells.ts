@@ -9,7 +9,7 @@
  */
 import { useSyncExternalStore } from 'react';
 
-const state = { on: false, filled: () => false };
+const state = { on: false, filled: (): boolean | 'back' => false };
 const listeners = new Set<() => void>();
 
 /** Are the Paint and Back wells in use (the Pixel workspace)? */
@@ -22,12 +22,12 @@ export function setPaintWells(on: boolean): void {
 }
 
 /** Where the "fill the shape" option lives (pixel settings), so the wells don't depend on them. */
-export function setShapeFilledSource(fn: () => boolean): void {
+export function setShapeFilledSource(fn: () => boolean | 'back'): void {
   state.filled = fn;
 }
 
-/** In the Pixel workspace shapes are drawn in Paint, filled in Paint when "Filled" is on. */
-export const shapesFilled = (): boolean => state.filled();
+/** In the Pixel workspace shapes are drawn in Paint, filled in Paint when "Filled" is on ('back': filled in Back, the other way it could go; see brand/ab/pixel-build-shapes). */
+export const shapesFilled = (): boolean | 'back' => state.filled();
 
 export function usePaintWells(): boolean {
   return useSyncExternalStore(

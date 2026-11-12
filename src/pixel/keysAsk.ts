@@ -6,6 +6,7 @@ import { DEFAULT_KEYMAP_SET } from '../ui/keymapSets';
 import { line } from '../ui/mascot/lines';
 import { getPrefs, setPrefs } from '../ui/prefs';
 import { toast } from '../ui/toast';
+import { inHarness } from './harness';
 
 export const KEYS_CHOICE = 'pixel.keys';
 /** The id of the Aseprite set in src/ui/keymapSets.ts (kept as `pixel` so a saved choice keeps working). */
@@ -30,7 +31,7 @@ export const setFor = (answer: string): string => (answer === 'aseprite' ? ASEPR
 
 /** Asks once, the first time a pixel file opens (not if you already picked another key set yourself). */
 export function askAboutKeys(): void {
-  if (rememberedChoice(KEYS_CHOICE) !== undefined) return;
+  if (rememberedChoice(KEYS_CHOICE) !== undefined || inHarness()) return;
   if (getPrefs().keymapSet !== DEFAULT_KEYMAP_SET) return;
   withChoice(KEYS_CHOICE, (v) => {
     const next = setFor(v);

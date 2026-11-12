@@ -6,6 +6,7 @@ import { ActionButton, Choice, Slider, Tip, Toggle } from '../canvas/controls';
 import { PlaneOption } from '../tools/options/ShapeOptions';
 import { setToolSettings, useToolSettings } from '../tools/settings';
 import { setPrefs, usePrefs } from '../ui/prefs';
+import { usePaintWells } from '../tools/pixelWells';
 import { clampOutline, MAX_OUTLINE, MIN_OUTLINE } from './thick';
 import { DITHER_PATTERNS, type DitherPattern } from './dither';
 import { setPixelSettings, usePixelSettings, type SymmetryMode } from './settings';
@@ -102,12 +103,15 @@ export function PixelOutlineOptions({ show = true }: { show?: boolean }) {
 export function PixelShapeOptions() {
   const tool = useStore((s) => s.ui.tool);
   const strokeOn = useStore((s) => s.ui.strokeOn);
+  const paintWells = usePaintWells();
+  const filled = usePixelSettings((s) => s.shapeFilled);
   return (
     <div className="cv-options">
+      {paintWells && tool !== 'line' && <Toggle label="Filled" checked={filled} onChange={(v) => setPixelSettings({ shapeFilled: v })} hint="Fills the inside of the shape with Paint too. Off draws just the outline." />}
       <PlaneOption show={tool !== 'line'} />
       <PixelOutlineOptions show={tool === 'line' || strokeOn} />
       <MirrorOptions />
-      <Tip>On a pixel layer, shapes have a one pixel outline unless you turn on Thicker outline: the stroke colour round the edge and the fill colour inside (set either to none). Shift makes a square or a circle, and snaps lines to clean pixel steps. Alt draws from the middle.</Tip>
+      <Tip>{paintWells ? 'Shapes are drawn in Paint, as an outline, or filled when Filled is on.' : 'On a pixel layer, shapes have a one pixel outline unless you turn on Thicker outline: the stroke colour round the edge and the fill colour inside (set either to none).'} Shift makes a square or a circle, and snaps lines to clean pixel steps. Alt draws from the middle.</Tip>
     </div>
   );
 }

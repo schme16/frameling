@@ -86,6 +86,11 @@ describe('with Paint and Back on', () => {
     expect(hex(0, 0)).toBe('#00aa00');
     expect(hex(2, 2)).toBe('#00aa00');
   });
+  it('the other way a shape could be filled (inside in Back) is one switch away', () => {
+    setPaintWells(true);
+    setShapeFilledSource(() => 'back');
+    expect(shapeColors()).toEqual({ fill: '#ffcc00', stroke: '#00aa00' });
+  });
   it('the dither brush keeps using Back as its second colour', () => {
     setPaintWells(true);
     expect(store().get().ui.fillColor).toBe('#ffcc00');

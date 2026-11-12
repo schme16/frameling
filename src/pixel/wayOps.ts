@@ -1,7 +1,7 @@
 // Changing how a sprite is built (as one undo step), and the things that follow a sprite's way: the second-board
 // question, the layout that fits it, and Quill's moments. The conversions themselves are plain functions in way.ts.
 import { findLayer } from '../core/doc';
-import { registerChoice, withChoice } from '../core/choices';
+import { currentChoice, registerChoice, withChoice } from '../core/choices';
 import type { Doc, Id, SpriteWay } from '../core/format';
 import { getCommand } from '../core/registry';
 import { store } from '../core/store';
@@ -11,6 +11,7 @@ import { dock, inPixelWorkspace, showPanel, toggleCollapsed } from '../ui/dock';
 import { locate } from '../ui/dockModel';
 import { line } from '../ui/mascot/lines';
 import { toast } from '../ui/toast';
+import { inHarness } from './harness';
 import { moment } from './moments';
 import { boardCount, convertWay, isPixelDoc, totalFrames, wayOf, type Change } from './way';
 import { isBlankDocQuick } from './blank';
@@ -81,10 +82,12 @@ export function watchSecondThings(s: DocSource): () => void {
     if (doc.id !== was.id || !isPixelDoc(doc) || doc.editing?.length) return;
     const stored = doc.sprite?.way;
     if (was.boards <= 1 && prev.boards > 1 && (!stored || stored === 'picture' || stored === 'animation')) {
-      withChoice<'boards' | 'sheet'>('pixel.twoBoards', (v) => {
+      const say = (v: 'boards' | 'sheet') => {
         if (store().get().doc.id !== doc.id) return;
         store().update('Say how this sprite is built', (d) => void (d.sprite = { way: v }));
-      });
+      };
+      if (inHarness()) say(currentChoice<'boards' | 'sheet'>('pixel.twoBoards'));
+      else withChoice<'boards' | 'sheet'>('pixel.twoBoards', say);
     } else if (was.length <= 1 && prev.length > 1 && prev.boards <= 1 && wayOf(doc) === 'animation' && (!stored || stored === 'picture')) {
       moment('frame2', () => line('pixel.frame2'), { doc: doc.id });
     }

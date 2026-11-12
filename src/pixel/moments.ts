@@ -5,6 +5,7 @@ import { line } from '../ui/mascot/lines';
 import { getPrefs } from '../ui/prefs';
 import { toast } from '../ui/toast';
 import type { QuillAnim } from '../ui/mascot/timing';
+import { inHarness } from './harness';
 
 const KEY = 'frameling.pixelMoments';
 const seen = new Set<string>(load());
@@ -36,7 +37,7 @@ export type Once = 'ever' | 'session' | { doc: Id };
  * nothing is said and nothing is counted, so turning him back on brings the moments back.
  */
 export function moment(id: string, say: () => string, once: Once = 'ever', anim: QuillAnim = 'cheer'): boolean {
-  if (!getPrefs().showQuill) return false;
+  if (!getPrefs().showQuill || inHarness()) return false;
   const key = typeof once === 'object' ? `${id}@${once.doc}` : id;
   if (once === 'ever' ? seen.has(key) : thisSession.has(key)) return false;
   if (once === 'ever') remember(key);

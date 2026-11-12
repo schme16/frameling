@@ -5,6 +5,7 @@ import { getTool, registerCommand, registerPanel } from '../core/registry';
 import './commands';
 import './habits';
 import './help';
+import './help-ways';
 import { drawMirrorLines } from './tools';
 import './tools';
 import { activePixelLayer } from './tools';

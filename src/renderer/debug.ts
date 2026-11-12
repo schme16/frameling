@@ -8,6 +8,7 @@ import '../templates/debug';
 import '../plugins/debug';
 import '../features/debug';
 import '../artboards/debug';
+import '../pixel/debug';
 import { store } from '../core/store';
 import { findTemplate } from '../templates';
 import * as tiles from '../tiles/debug';

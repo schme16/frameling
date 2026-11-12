@@ -218,7 +218,34 @@
   color: var(--muted);
   font-size: var(--fs-small);
 }
-.px-picture-strip span {
+/* The message, not Quill's own span */
+.px-picture-strip > .px-picture-say {
   flex: 1;
   min-width: 0;
+}
+
+/* Export: Quill's sentence about the sheet */
+.px-sheet-says {
+  margin-bottom: 4px;
+}
+.px-sheet-says-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+.px-link {
+  padding: 0;
+  font: inherit;
+  font-weight: 700;
+  color: var(--link, var(--chosen-bg));
+  background: none;
+  border: 0;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.px-link:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
 }

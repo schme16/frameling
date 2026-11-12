@@ -104,7 +104,7 @@ Pick **One clip** in the Range row and the file follows how that clip plays ([cl
     section: 'Exporting',
     media: 'export-sheet.png',
     summary: 'Put every frame on one picture, with the files a game engine or web page needs to play it.',
-    keywords: ['sprite', 'atlas', 'sheet', 'texture', 'game', 'json', 'trim', 'padding', 'power of two', 'packed', 'extrude', 'bleed', 'icons', 'tiles', 'texture atlas', 'json hash', 'json array'],
+    keywords: ['sprite sheet', 'sprite sheets', 'sprite', 'atlas', 'sheet', 'texture', 'game', 'json', 'trim', 'padding', 'power of two', 'packed', 'extrude', 'bleed', 'icons', 'tiles', 'texture atlas', 'json hash', 'json array'],
     body: `A sprite sheet is one picture holding all your frames. Games load that one picture and cut the frames out.
 
 Press **Ctrl+E**, pick **Sprite sheet**, then pick **where it's going**. Frameling saves the picture plus whatever that place needs, into a folder you choose.

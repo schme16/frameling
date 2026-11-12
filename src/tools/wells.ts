@@ -65,7 +65,10 @@ export function activeColor(ui: UiState = store().get().ui): Color | null {
 /** The fill shapes and shapes should use (null = none). */
 export function shapeColors(ui: UiState = store().get().ui): { fill: Color | null; stroke: Color | null } {
   // Paint and Back: shapes are drawn in Paint, and filled in Paint when "Filled" is on.
-  if (paintWellsOn()) return { fill: shapesFilled() ? ui.color : null, stroke: ui.color };
+  if (paintWellsOn()) {
+    const f = shapesFilled();
+    return { fill: f === 'back' ? ui.fillColor : f ? ui.color : null, stroke: ui.color };
+  }
   return { fill: ui.fillColor, stroke: ui.strokeOn ? ui.color : null };
 }
 

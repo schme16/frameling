@@ -37,7 +37,9 @@ import { artboardExport, artboardSummary, planArtboards } from '../artboards/exp
 import { customPicture } from '../artboards/fit';
 import { pixelExportStart } from '../pixel/workspace';
 import { sheetExported } from '../pixel/moments';
+import { followWay, sheetFooter } from '../pixel/sheetMode';
 import { isPixelDoc } from '../pixel/way';
+import { SheetSays } from '../pixel/SheetSays';
 
 /** The ways an Illustrator file can hold an animation's frames. */
 const AI_FRAMES: { id: AiFrames; label: string; title: string; note: string }[] = [
@@ -219,7 +221,8 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
   const outDpi = Math.round(docDpi(doc) * s.scale);
   const printed = units === 'px' ? '' : `, ${formatSize(plan.width, plan.height, units, outDpi)} at ${outDpi} DPI`;
   const joinedPrinted = abPlan?.size && units !== 'px' ? `, ${formatSize(abPlan.size.width, abPlan.size.height, units, outDpi)} at ${outDpi} DPI` : '';
-  const summary = abPlan ? artboardSummary(abPlan, joinedPrinted) : `${frames} frame${frames === 1 ? '' : 's'}, ${plan.width} × ${plan.height} px${printed}`;
+  const sheetWords = s.format === 'sheet' && isPixelDoc(store().rootDoc()) && !separate;
+  const summary = sheetWords && !(abPlan ? abPlan.problem : plan.problem) ? sheetFooter(store().rootDoc(), abPlan?.mode ?? 'one', abPlan, plan) : abPlan ? artboardSummary(abPlan, joinedPrinted) : `${frames} frame${frames === 1 ? '' : 's'}, ${plan.width} × ${plan.height} px${printed}`;
   const problem = abPlan ? abPlan.problem : plan.problem;
   const noClips = doc.clips.length === 0;
   const io = inOutRange(doc);
@@ -291,6 +294,7 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
         </div>
 
         <div className="ex-options">
+          <SheetSays settings={s} />
           <ArtboardExportPicker settings={s} />
           {s.format === 'sheet' && (
             <fieldset>
@@ -645,6 +649,7 @@ export function openExportDialog(format?: FormatId): void {
   const fromTemplate = templateExport(docId, start, artSize);
   // No template choice: in the Pixel workspace, pixel art starts on a sprite sheet at art size.
   const initial = fromTemplate === start ? pixelExportStart(docId, start, artSize) : fromTemplate;
+  followWay(store().rootDoc());
   if (format && format !== initial.format && availableFormats().some((f) => f.id === format)) {
     const { doc } = store().get();
     const art = artScale(doc);

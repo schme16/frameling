@@ -166,3 +166,16 @@ its variations into plain artboards; duplicating a variation makes a plain copy.
 **Export.** Nothing special: an exporter asks `artboardDoc(root, id)`, which returns the resolved variation. "Each as
 its own file", "all in order, as one" and the atlas therefore work, and the Export dialog's **This artboard and its
 variations** ticks the family.
+
+## Pixel sprites: the four ways
+
+A pixel sprite is built one of four ways: **one picture**, **an animation** (frames on the timeline), **frames on
+boards** (one artboard per frame, played in order) or **sprites on a sheet** (one artboard per sprite). The file may say
+which in `doc.sprite.way`; when it does not, or no longer matches (a "picture" that now has two frames), `wayOf` works
+it out (`src/pixel/way.ts`). Conversions are plain functions on a document, one undo step each: `framesToBoards` (each
+frame of a one-board sprite becomes a board named Frame 1, Frame 2..., with its own copy of the drawings; clips are not
+kept), `boardsToFrames` (boards of one size, layers matched by name, end to end on one timeline, a clip per board for a
+sheet; variations, differing sizes and non-pixel layers are refused with the reason). Frames on boards and sprites on a
+sheet swap by changing the label only. Export starts on the way: frames on boards as "all in order, as one", a sheet as
+"packed onto one sheet" (`src/pixel/sheetMode.ts`), and Quill's sentence at the top of the Sprite sheet options follows
+the mode that is picked.

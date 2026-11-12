@@ -57,7 +57,7 @@ What's in `test/`, by folder:
 | `lipsync/` | Audio analysis, mouth charts, applying to a symbol. |
 | `particles/` | Emitter maths and determinism. |
 | `perf/` | Work counting against a fake canvas (`fakeCanvas.ts`): cache hits, bitmap builds, look-ahead depth. Never asserts on time. |
-| `pixel/` | Pixel tools, maths, paths, the pixel workspace. |
+| `pixel/` | Pixel tools, maths, paths, the pixel workspace. `way.test.ts` (the four ways, conversions both directions, the file's `sprite.way`), `wells.test.ts` (Paint and Back, the Spray), `ways-flow.test.tsx` (Quill's chooser and starter cards, the Aseprite keys ask, the change dialog, the layout that follows the way, moments), `sheet-mode.test.ts`, `quests-ways.test.ts`. Under `?debug` the "ask once" pixel questions and Quill's moments are skipped so scripts are not blocked; `__framelingPixel.ask(true)` turns them back on for a picture of them (`src/pixel/harness.ts`). |
 | `platform/` | The web bridge (IndexedDB through `fake-indexeddb`). |
 | `plugins/` | Manifest checks, manager, ops, runtime and sandbox (with `harness.ts`). |
 | `quests/` | Quest engine, groups, hooks, predicates, the library and the runtime. |
@@ -526,6 +526,7 @@ scripts/docs/encode.sh <outDir>/<clip> <name> [posterFrame] [width]
 Extra steps: `{"log": "js"}` prints a result; `{"drag": ..., "delay": 8, "mods": ["shift"]}` draws slowly with keys held;
 `{"wheel": [x, y], "dy": -100, "count": 4, "mods": ["shift"]}` turns the mouse wheel (page deltas, negative = up = zoom in) and
 `{"pinch": [x, y], "dy": -6, "count": 12}` does a trackpad pinch (Ctrl + small wheel steps, as Chromium delivers it);
+`{"rdrag": [[x, y], ...]}` and `{"rclick": [x, y]}` are the same with the right mouse button (a right-click paints with Back in the Pixel workspace);
 `{"shot": "name", "crop": [x, y, w, h]}` or `"el": "css selector", "pad": 12`; `{"type": "text"}` sets the focused
 input; `{"rec": "name", "crop": [...], "every": 60}` starts recording frames and `{"rec": "stop"}` writes them with a
 timing list into `<outDir>/<name>/`. `--renderer` points at a private `vite build --outDir` so a capture never races
