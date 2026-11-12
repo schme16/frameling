@@ -1,0 +1,3423 @@
+{
+ "label": "after",
+ "when": "2026-11-12T11:55:21.179Z",
+ "reps": 3,
+ "results": [
+  {
+   "doc": "bouncing-ball",
+   "action": "brush-stroke",
+   "busyMs": 20.2,
+   "runs": [
+    20.2,
+    20.2,
+    24.8
+   ],
+   "unit": "moves",
+   "units": 60,
+   "perUnitMs": 0.34,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     10.9
+    ],
+    [
+     "drawImage :0",
+     0.8
+    ],
+    [
+     "fill :0",
+     0.6
+    ]
+   ]
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "scrub",
+   "busyMs": 103,
+   "runs": [
+    111.2,
+    103,
+    101.4
+   ],
+   "unit": "moves",
+   "units": 80,
+   "perUnitMs": 1.29,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     60.1
+    ],
+    [
+     "i index-BX_gXm_x.js:1733",
+     7.9
+    ],
+    [
+     "Jl index-BX_gXm_x.js:17",
+     1.9
+    ]
+   ]
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "play",
+   "busyMs": 92.7,
+   "runs": [
+    92.7,
+    94,
+    76.6
+   ],
+   "unit": "seconds",
+   "units": 1.5,
+   "perUnitMs": 61.78,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     61.6
+    ],
+    [
+     "i index-BX_gXm_x.js:1733",
+     6.5
+    ],
+    [
+     "Hv index-BX_gXm_x.js:54",
+     1.1
+    ]
+   ]
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "select-click",
+   "busyMs": 36.5,
+   "runs": [
+    36.2,
+    36.5,
+    44.2
+   ],
+   "unit": "clicks",
+   "units": 4,
+   "perUnitMs": 9.11,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     26.2
+    ],
+    [
+     "(garbage collector) :0",
+     1.2
+    ],
+    [
+     "removeChild :0",
+     1.1
+    ]
+   ]
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "select-move",
+   "busyMs": 43.1,
+   "runs": [
+    47,
+    43.1,
+    40.6
+   ],
+   "unit": "moves",
+   "units": 30,
+   "perUnitMs": 1.44,
+   "note": "selected 1",
+   "topSelf": [
+    [
+     "(program) :0",
+     30.5
+    ],
+    [
+     "(garbage collector) :0",
+     1.4
+    ],
+    [
+     "setTransform :0",
+     0.7
+    ]
+   ]
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "add-layer",
+   "busyMs": 15.3,
+   "runs": [
+    15.3,
+    15.7,
+    14.8
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 5.09,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     10.4
+    ],
+    [
+     "i index-BX_gXm_x.js:1733",
+     0.7
+    ],
+    [
+     "setAttribute :0",
+     0.5
+    ]
+   ]
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "delete-layer",
+   "busyMs": 16.3,
+   "runs": [
+    16.7,
+    15.9,
+    16.3
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 5.43,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     10.5
+    ],
+    [
+     "i index-BX_gXm_x.js:1733",
+     1
+    ],
+    [
+     "setAttribute :0",
+     0.2
+    ]
+   ]
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "add-key",
+   "busyMs": 15.3,
+   "runs": [
+    19.5,
+    15.3,
+    12.7
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 5.11,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     6.4
+    ],
+    [
+     "i index-BX_gXm_x.js:1733",
+     2
+    ],
+    [
+     "setTransform :0",
+     1.5
+    ]
+   ]
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "delete-key",
+   "busyMs": 24.9,
+   "runs": [
+    24.9,
+    28.1,
+    23.8
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 8.3,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     15.2
+    ],
+    [
+     "i index-BX_gXm_x.js:1733",
+     1.4
+    ],
+    [
+     "(garbage collector) :0",
+     1.2
+    ]
+   ]
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "undo-redo",
+   "busyMs": 37.3,
+   "runs": [
+    36,
+    43.3,
+    37.3
+   ],
+   "unit": "steps",
+   "units": 12,
+   "perUnitMs": 3.11,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     27.8
+    ],
+    [
+     "setAttribute :0",
+     0.8
+    ],
+    [
+     "(anon) index-BX_gXm_x.js:1430",
+     0.6
+    ]
+   ]
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "switch-artboard",
+   "busyMs": 32.7,
+   "runs": [
+    31.2,
+    32.7,
+    36.7
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 5.44,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     15.6
+    ],
+    [
+     "i index-BX_gXm_x.js:1733",
+     5.8
+    ],
+    [
+     "removeChild :0",
+     1
+    ]
+   ]
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "export-dialog",
+   "busyMs": 8.7,
+   "runs": [
+    10.2,
+    8.7,
+    8.2
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 8.69,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     5.8
+    ],
+    [
+     "focus :0",
+     0.8
+    ],
+    [
+     "querySelector :0",
+     0.2
+    ]
+   ]
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "save-file",
+   "busyMs": 5.2,
+   "runs": [
+    5.2,
+    5.4,
+    4.9
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 5.17,
+   "note": "0.0 MB file",
+   "topSelf": [
+    [
+     "Ee index-BX_gXm_x.js:2",
+     2
+    ],
+    [
+     "Ae index-BX_gXm_x.js:2",
+     0.9
+    ],
+    [
+     "qE index-BX_gXm_x.js:683",
+     0.5
+    ]
+   ]
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "open-file",
+   "busyMs": 16,
+   "runs": [
+    33,
+    16,
+    7.9
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 15.97,
+   "note": "",
+   "topSelf": [
+    [
+     "(garbage collector) :0",
+     9.3
+    ],
+    [
+     "(program) :0",
+     3.7
+    ],
+    [
+     "setTransform :0",
+     1.4
+    ]
+   ]
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "autosave",
+   "busyMs": 4.4,
+   "runs": [
+    5.9,
+    4.4,
+    4.2
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 4.44,
+   "note": "",
+   "topSelf": [
+    [
+     "Ee index-BX_gXm_x.js:2",
+     2.4
+    ],
+    [
+     "(program) :0",
+     0.7
+    ],
+    [
+     "qE index-BX_gXm_x.js:683",
+     0.3
+    ]
+   ]
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "workspaces",
+   "busyMs": 170.6,
+   "runs": [
+    170.6,
+    162.7,
+    174.4
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 28.43,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     74.1
+    ],
+    [
+     "(garbage collector) :0",
+     20.4
+    ],
+    [
+     "setTransform :0",
+     19.2
+    ]
+   ]
+  },
+  {
+   "doc": "puppet",
+   "action": "brush-stroke",
+   "busyMs": 18.2,
+   "runs": [
+    17,
+    18.2,
+    25
+   ],
+   "unit": "moves",
+   "units": 60,
+   "perUnitMs": 0.3,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     10.2
+    ],
+    [
+     "(garbage collector) :0",
+     1.4
+    ],
+    [
+     "setTransform :0",
+     1.3
+    ]
+   ]
+  },
+  {
+   "doc": "puppet",
+   "action": "scrub",
+   "busyMs": 358.3,
+   "runs": [
+    348.4,
+    373,
+    358.3
+   ],
+   "unit": "moves",
+   "units": 80,
+   "perUnitMs": 4.48,
+   "note": "",
+   "topSelf": [
+    [
+     "setTransform :0",
+     145.6
+    ],
+    [
+     "(program) :0",
+     99.2
+    ],
+    [
+     "(garbage collector) :0",
+     44
+    ]
+   ]
+  },
+  {
+   "doc": "puppet",
+   "action": "play",
+   "busyMs": 267.4,
+   "runs": [
+    268.6,
+    265.7,
+    267.4
+   ],
+   "unit": "seconds",
+   "units": 1.5,
+   "perUnitMs": 178.3,
+   "note": "",
+   "topSelf": [
+    [
+     "setTransform :0",
+     101.6
+    ],
+    [
+     "(program) :0",
+     75.8
+    ],
+    [
+     "(garbage collector) :0",
+     45.9
+    ]
+   ]
+  },
+  {
+   "doc": "puppet",
+   "action": "select-click",
+   "busyMs": 5.6,
+   "runs": [
+    4.1,
+    5.7,
+    5.6
+   ],
+   "unit": "clicks",
+   "units": 4,
+   "perUnitMs": 1.41,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     2.7
+    ],
+    [
+     "Sh index-BX_gXm_x.js:11",
+     0.2
+    ],
+    [
+     "ln index-BX_gXm_x.js:2",
+     0.2
+    ]
+   ]
+  },
+  {
+   "doc": "puppet",
+   "action": "add-layer",
+   "busyMs": 18.1,
+   "runs": [
+    18.6,
+    18.1,
+    18.1
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 6.03,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     12.7
+    ],
+    [
+     "i index-BX_gXm_x.js:1733",
+     0.6
+    ],
+    [
+     "ip index-BX_gXm_x.js:11",
+     0.3
+    ]
+   ]
+  },
+  {
+   "doc": "puppet",
+   "action": "delete-layer",
+   "busyMs": 22.7,
+   "runs": [
+    21.3,
+    22.9,
+    22.7
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 7.58,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     12.3
+    ],
+    [
+     "i index-BX_gXm_x.js:1733",
+     3.4
+    ],
+    [
+     "appendChild :0",
+     0.3
+    ]
+   ]
+  },
+  {
+   "doc": "puppet",
+   "action": "add-key",
+   "busyMs": 19.7,
+   "runs": [
+    19.7,
+    25,
+    19.7
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 6.56,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     8.3
+    ],
+    [
+     "setTransform :0",
+     4.5
+    ],
+    [
+     "(garbage collector) :0",
+     2
+    ]
+   ]
+  },
+  {
+   "doc": "puppet",
+   "action": "undo-redo",
+   "busyMs": 47.8,
+   "runs": [
+    47.5,
+    47.8,
+    52.3
+   ],
+   "unit": "steps",
+   "units": 12,
+   "perUnitMs": 3.99,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     31.7
+    ],
+    [
+     "(garbage collector) :0",
+     2.4
+    ],
+    [
+     "(anon) index-BX_gXm_x.js:1430",
+     0.8
+    ]
+   ]
+  },
+  {
+   "doc": "puppet",
+   "action": "switch-artboard",
+   "busyMs": 51.9,
+   "runs": [
+    55.8,
+    50.9,
+    51.9
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 8.65,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     25.6
+    ],
+    [
+     "i index-BX_gXm_x.js:1733",
+     7.5
+    ],
+    [
+     "drawImage :0",
+     1.8
+    ]
+   ]
+  },
+  {
+   "doc": "puppet",
+   "action": "export-dialog",
+   "busyMs": 8.2,
+   "runs": [
+    9.9,
+    8.2,
+    8
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 8.23,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     5.9
+    ],
+    [
+     "focus :0",
+     0.9
+    ],
+    [
+     "removeChild :0",
+     0.2
+    ]
+   ]
+  },
+  {
+   "doc": "puppet",
+   "action": "save-file",
+   "busyMs": 1.6,
+   "runs": [
+    1.6,
+    1.8,
+    1.3
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 1.59,
+   "note": "0.0 MB file",
+   "topSelf": [
+    [
+     "(program) :0",
+     0.6
+    ],
+    [
+     "Ee index-BX_gXm_x.js:2",
+     0.5
+    ],
+    [
+     "encode :0",
+     0.2
+    ]
+   ]
+  },
+  {
+   "doc": "puppet",
+   "action": "open-file",
+   "busyMs": 17.7,
+   "runs": [
+    18.8,
+    17.7,
+    15.4
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 17.67,
+   "note": "",
+   "topSelf": [
+    [
+     "setTransform :0",
+     6.6
+    ],
+    [
+     "(program) :0",
+     3.5
+    ],
+    [
+     "(garbage collector) :0",
+     3.4
+    ]
+   ]
+  },
+  {
+   "doc": "puppet",
+   "action": "autosave",
+   "busyMs": 1.9,
+   "runs": [
+    2.1,
+    1.3,
+    1.9
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 1.91,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     0.7
+    ],
+    [
+     "Ee index-BX_gXm_x.js:2",
+     0.5
+    ],
+    [
+     "p index-BX_gXm_x.js:2",
+     0.3
+    ]
+   ]
+  },
+  {
+   "doc": "puppet",
+   "action": "workspaces",
+   "busyMs": 223.1,
+   "runs": [
+    223.1,
+    224.3,
+    218.4
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 37.18,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     88.8
+    ],
+    [
+     "setTransform :0",
+     45.8
+    ],
+    [
+     "(garbage collector) :0",
+     17.1
+    ]
+   ]
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "brush-stroke",
+   "busyMs": 36.9,
+   "runs": [
+    51.2,
+    36.9,
+    36.5
+   ],
+   "unit": "moves",
+   "units": 60,
+   "perUnitMs": 0.61,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     23.1
+    ],
+    [
+     "Dn index-BX_gXm_x.js:10",
+     1.5
+    ],
+    [
+     "update index-BX_gXm_x.js:3",
+     1.4
+    ]
+   ]
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "scrub",
+   "busyMs": 104.9,
+   "runs": [
+    228.6,
+    104.9,
+    94.7
+   ],
+   "unit": "moves",
+   "units": 80,
+   "perUnitMs": 1.31,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     83
+    ],
+    [
+     "i index-BX_gXm_x.js:1733",
+     10.4
+    ],
+    [
+     "drawImage :0",
+     4.7
+    ]
+   ]
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "play",
+   "busyMs": 67.6,
+   "runs": [
+    57.2,
+    75.9,
+    67.6
+   ],
+   "unit": "seconds",
+   "units": 1.5,
+   "perUnitMs": 45.06,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     44.2
+    ],
+    [
+     "i index-BX_gXm_x.js:1733",
+     6.3
+    ],
+    [
+     "KW index-BX_gXm_x.js:868",
+     0.9
+    ]
+   ]
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "select-click",
+   "busyMs": 44.4,
+   "runs": [
+    43,
+    63.7,
+    44.4
+   ],
+   "unit": "clicks",
+   "units": 4,
+   "perUnitMs": 11.11,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     36.3
+    ],
+    [
+     "(garbage collector) :0",
+     2.4
+    ],
+    [
+     "setAttribute :0",
+     0.8
+    ]
+   ]
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "select-move",
+   "busyMs": 40.2,
+   "runs": [
+    33.9,
+    40.2,
+    43.2
+   ],
+   "unit": "moves",
+   "units": 30,
+   "perUnitMs": 1.34,
+   "note": "selected 1",
+   "topSelf": [
+    [
+     "(program) :0",
+     25.9
+    ],
+    [
+     "(garbage collector) :0",
+     1.4
+    ],
+    [
+     "D index-BX_gXm_x.js:3",
+     0.5
+    ]
+   ]
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "add-layer",
+   "busyMs": 13,
+   "runs": [
+    13.4,
+    12.8,
+    13
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 4.32,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     8.4
+    ],
+    [
+     "i index-BX_gXm_x.js:1733",
+     0.5
+    ],
+    [
+     "cp index-BX_gXm_x.js:11",
+     0.3
+    ]
+   ]
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "delete-layer",
+   "busyMs": 13.7,
+   "runs": [
+    13,
+    15.1,
+    13.7
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 4.55,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     9.2
+    ],
+    [
+     "i index-BX_gXm_x.js:1733",
+     1.1
+    ],
+    [
+     "setAttribute :0",
+     0.3
+    ]
+   ]
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "add-key",
+   "busyMs": 21.2,
+   "runs": [
+    21.2,
+    14.7,
+    24.4
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 7.08,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     7.1
+    ],
+    [
+     "(garbage collector) :0",
+     2.8
+    ],
+    [
+     "drawImage :0",
+     2
+    ]
+   ]
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "delete-key",
+   "busyMs": 25.5,
+   "runs": [
+    25.5,
+    23.1,
+    28.9
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 8.49,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     13.2
+    ],
+    [
+     "i index-BX_gXm_x.js:1733",
+     1.9
+    ],
+    [
+     "(garbage collector) :0",
+     1.4
+    ]
+   ]
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "undo-redo",
+   "busyMs": 29.4,
+   "runs": [
+    31.5,
+    29.4,
+    27.5
+   ],
+   "unit": "steps",
+   "units": 12,
+   "perUnitMs": 2.45,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     20.3
+    ],
+    [
+     "(anon) index-BX_gXm_x.js:1430",
+     0.4
+    ],
+    [
+     "r index-BX_gXm_x.js:20",
+     0.4
+    ]
+   ]
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "switch-artboard",
+   "busyMs": 28.7,
+   "runs": [
+    26.8,
+    38.3,
+    28.7
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 4.79,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     14.2
+    ],
+    [
+     "i index-BX_gXm_x.js:1733",
+     4.9
+    ],
+    [
+     "(garbage collector) :0",
+     1.4
+    ]
+   ]
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "export-dialog",
+   "busyMs": 8.7,
+   "runs": [
+    8.7,
+    13.3,
+    8
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 8.7,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     5.2
+    ],
+    [
+     "(garbage collector) :0",
+     1.2
+    ],
+    [
+     "focus :0",
+     1
+    ]
+   ]
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "save-file",
+   "busyMs": 3.7,
+   "runs": [
+    3.9,
+    3.7,
+    2.6
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 3.69,
+   "note": "0.0 MB file",
+   "topSelf": [
+    [
+     "Ee index-BX_gXm_x.js:2",
+     0.8
+    ],
+    [
+     "Ae index-BX_gXm_x.js:2",
+     0.6
+    ],
+    [
+     "(program) :0",
+     0.5
+    ]
+   ]
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "open-file",
+   "busyMs": 4.2,
+   "runs": [
+    19.2,
+    4.2,
+    4
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 4.18,
+   "note": "",
+   "topSelf": [
+    [
+     "(garbage collector) :0",
+     4
+    ],
+    [
+     "(program) :0",
+     1.8
+    ],
+    [
+     "setTransform :0",
+     0.9
+    ]
+   ]
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "autosave",
+   "busyMs": 3.7,
+   "runs": [
+    7.9,
+    3.7,
+    2.9
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 3.69,
+   "note": "",
+   "topSelf": [
+    [
+     "(garbage collector) :0",
+     1.4
+    ],
+    [
+     "Ee index-BX_gXm_x.js:2",
+     1.1
+    ],
+    [
+     "(program) :0",
+     1
+    ]
+   ]
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "workspaces",
+   "busyMs": 150.7,
+   "runs": [
+    150.7,
+    153.1,
+    146.8
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 25.12,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     68.2
+    ],
+    [
+     "setTransform :0",
+     15.8
+    ],
+    [
+     "(garbage collector) :0",
+     14.6
+    ]
+   ]
+  },
+  {
+   "doc": "hero-sprites",
+   "action": "pixel-stroke",
+   "busyMs": 28.2,
+   "runs": [
+    28.2,
+    24,
+    28.8
+   ],
+   "unit": "moves",
+   "units": 60,
+   "perUnitMs": 0.47,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     18
+    ],
+    [
+     "putImageData :0",
+     0.5
+    ],
+    [
+     "onPointerMove index-BX_gXm_x.js:868",
+     0.4
+    ]
+   ]
+  },
+  {
+   "doc": "hero-sprites",
+   "action": "scrub",
+   "busyMs": 111,
+   "runs": [
+    111,
+    122.8,
+    106
+   ],
+   "unit": "moves",
+   "units": 80,
+   "perUnitMs": 1.39,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     62
+    ],
+    [
+     "i index-BX_gXm_x.js:1733",
+     9.2
+    ],
+    [
+     "Jl index-BX_gXm_x.js:17",
+     2.1
+    ]
+   ]
+  },
+  {
+   "doc": "hero-sprites",
+   "action": "play",
+   "busyMs": 59.2,
+   "runs": [
+    57.6,
+    59.2,
+    66.1
+   ],
+   "unit": "seconds",
+   "units": 1.5,
+   "perUnitMs": 39.48,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     40.5
+    ],
+    [
+     "i index-BX_gXm_x.js:1733",
+     5
+    ],
+    [
+     "Qve index-BX_gXm_x.js:1733",
+     0.7
+    ]
+   ]
+  },
+  {
+   "doc": "hero-sprites",
+   "action": "add-layer",
+   "busyMs": 16.3,
+   "runs": [
+    18.1,
+    16.3,
+    15.1
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 5.42,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     9.7
+    ],
+    [
+     "i index-BX_gXm_x.js:1733",
+     1
+    ],
+    [
+     "postMessage :0",
+     0.3
+    ]
+   ]
+  },
+  {
+   "doc": "hero-sprites",
+   "action": "delete-layer",
+   "busyMs": 16.7,
+   "runs": [
+    24.8,
+    16.7,
+    16.5
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 5.55,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     9.9
+    ],
+    [
+     "(garbage collector) :0",
+     1.9
+    ],
+    [
+     "i index-BX_gXm_x.js:1733",
+     1.4
+    ]
+   ]
+  },
+  {
+   "doc": "hero-sprites",
+   "action": "add-key",
+   "busyMs": 13.4,
+   "runs": [
+    13.4,
+    10.9,
+    15.8
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 4.47,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     6.7
+    ],
+    [
+     "i index-BX_gXm_x.js:1733",
+     1.9
+    ],
+    [
+     "setAttribute :0",
+     0.3
+    ]
+   ]
+  },
+  {
+   "doc": "hero-sprites",
+   "action": "delete-key",
+   "busyMs": 22.9,
+   "runs": [
+    21,
+    22.9,
+    23.8
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 7.63,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     12.9
+    ],
+    [
+     "i index-BX_gXm_x.js:1733",
+     1.4
+    ],
+    [
+     "cp index-BX_gXm_x.js:11",
+     0.6
+    ]
+   ]
+  },
+  {
+   "doc": "hero-sprites",
+   "action": "undo-redo",
+   "busyMs": 39.1,
+   "runs": [
+    39,
+    47.2,
+    39.1
+   ],
+   "unit": "steps",
+   "units": 12,
+   "perUnitMs": 3.26,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     28.7
+    ],
+    [
+     "(garbage collector) :0",
+     1.2
+    ],
+    [
+     "cp index-BX_gXm_x.js:11",
+     0.7
+    ]
+   ]
+  },
+  {
+   "doc": "hero-sprites",
+   "action": "switch-artboard",
+   "busyMs": 33.2,
+   "runs": [
+    32.1,
+    33.2,
+    33.8
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 5.54,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     15.4
+    ],
+    [
+     "i index-BX_gXm_x.js:1733",
+     6
+    ],
+    [
+     "removeChild :0",
+     1
+    ]
+   ]
+  },
+  {
+   "doc": "hero-sprites",
+   "action": "export-dialog",
+   "busyMs": 8.7,
+   "runs": [
+    8.7,
+    8.6,
+    9.1
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 8.7,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     5.4
+    ],
+    [
+     "focus :0",
+     0.9
+    ],
+    [
+     "tf index-BX_gXm_x.js:10",
+     0.3
+    ]
+   ]
+  },
+  {
+   "doc": "hero-sprites",
+   "action": "save-file",
+   "busyMs": 1.6,
+   "runs": [
+    2.4,
+    1.4,
+    1.6
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 1.61,
+   "note": "0.0 MB file",
+   "topSelf": [
+    [
+     "(program) :0",
+     0.6
+    ],
+    [
+     "Ae index-BX_gXm_x.js:2",
+     0.3
+    ],
+    [
+     "Ee index-BX_gXm_x.js:2",
+     0.3
+    ]
+   ]
+  },
+  {
+   "doc": "hero-sprites",
+   "action": "open-file",
+   "busyMs": 8.5,
+   "runs": [
+    2.9,
+    8.7,
+    8.5
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 8.54,
+   "note": "",
+   "topSelf": [
+    [
+     "(garbage collector) :0",
+     2.9
+    ],
+    [
+     "(program) :0",
+     1.8
+    ],
+    [
+     "he index-BX_gXm_x.js:2",
+     0.3
+    ]
+   ]
+  },
+  {
+   "doc": "hero-sprites",
+   "action": "autosave",
+   "busyMs": 1.4,
+   "runs": [
+    1.1,
+    2.1,
+    1.4
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 1.36,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     0.9
+    ],
+    [
+     "ve index-BX_gXm_x.js:2",
+     0.1
+    ],
+    [
+     "(anon) index-BX_gXm_x.js:2",
+     0.1
+    ]
+   ]
+  },
+  {
+   "doc": "hero-sprites",
+   "action": "workspaces",
+   "busyMs": 141.3,
+   "runs": [
+    146.2,
+    129.8,
+    141.3
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 23.55,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     73.4
+    ],
+    [
+     "setTransform :0",
+     12
+    ],
+    [
+     "(garbage collector) :0",
+     9
+    ]
+   ]
+  },
+  {
+   "doc": "stress-vector",
+   "action": "brush-stroke",
+   "busyMs": 37.2,
+   "runs": [
+    59.2,
+    36.2,
+    37.2
+   ],
+   "unit": "moves",
+   "units": 60,
+   "perUnitMs": 0.62,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     23.8
+    ],
+    [
+     "(garbage collector) :0",
+     5.2
+    ],
+    [
+     "Da index-BX_gXm_x.js:3",
+     1.9
+    ]
+   ]
+  },
+  {
+   "doc": "stress-vector",
+   "action": "scrub",
+   "busyMs": 1317.6,
+   "runs": [
+    1271.5,
+    1317.6,
+    1333
+   ],
+   "unit": "moves",
+   "units": 80,
+   "perUnitMs": 16.47,
+   "note": "",
+   "topSelf": [
+    [
+     "setTransform :0",
+     665.4
+    ],
+    [
+     "(program) :0",
+     266.9
+    ],
+    [
+     "(garbage collector) :0",
+     165.7
+    ]
+   ]
+  },
+  {
+   "doc": "stress-vector",
+   "action": "play",
+   "busyMs": 910.7,
+   "runs": [
+    847.1,
+    910.7,
+    1019.2
+   ],
+   "unit": "seconds",
+   "units": 1.5,
+   "perUnitMs": 607.14,
+   "note": "",
+   "topSelf": [
+    [
+     "setTransform :0",
+     398.6
+    ],
+    [
+     "(program) :0",
+     211.8
+    ],
+    [
+     "(garbage collector) :0",
+     169.6
+    ]
+   ]
+  },
+  {
+   "doc": "stress-vector",
+   "action": "select-click",
+   "busyMs": 120,
+   "runs": [
+    139.8,
+    120,
+    117
+   ],
+   "unit": "clicks",
+   "units": 4,
+   "perUnitMs": 29.99,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     103.9
+    ],
+    [
+     "restore :0",
+     5.9
+    ],
+    [
+     "setAttribute :0",
+     0.8
+    ]
+   ]
+  },
+  {
+   "doc": "stress-vector",
+   "action": "select-move",
+   "busyMs": 200.7,
+   "runs": [
+    155.9,
+    205.1,
+    200.7
+   ],
+   "unit": "moves",
+   "units": 30,
+   "perUnitMs": 6.69,
+   "note": "selected 1",
+   "topSelf": [
+    [
+     "(program) :0",
+     121.2
+    ],
+    [
+     "restore :0",
+     39.1
+    ],
+    [
+     "Da index-BX_gXm_x.js:3",
+     2
+    ]
+   ]
+  },
+  {
+   "doc": "stress-vector",
+   "action": "add-layer",
+   "busyMs": 80.9,
+   "runs": [
+    82.5,
+    80.9,
+    80.5
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 26.98,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     66.8
+    ],
+    [
+     "restore :0",
+     4.7
+    ],
+    [
+     "(anon) index-BX_gXm_x.js:1430",
+     1
+    ]
+   ]
+  },
+  {
+   "doc": "stress-vector",
+   "action": "delete-layer",
+   "busyMs": 103.9,
+   "runs": [
+    103.9,
+    112.5,
+    101.7
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 34.64,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     67.4
+    ],
+    [
+     "qo index-BX_gXm_x.js:3",
+     9.4
+    ],
+    [
+     "restore :0",
+     4.6
+    ]
+   ]
+  },
+  {
+   "doc": "stress-vector",
+   "action": "add-key",
+   "busyMs": 293.6,
+   "runs": [
+    261.2,
+    302.4,
+    293.6
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 97.86,
+   "note": "",
+   "topSelf": [
+    [
+     "setTransform :0",
+     114.2
+    ],
+    [
+     "(program) :0",
+     66
+    ],
+    [
+     "(garbage collector) :0",
+     34.8
+    ]
+   ]
+  },
+  {
+   "doc": "stress-vector",
+   "action": "delete-key",
+   "busyMs": 740.2,
+   "runs": [
+    809.9,
+    740.2,
+    655.1
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 246.72,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     286.5
+    ],
+    [
+     "setTransform :0",
+     137.4
+    ],
+    [
+     "(garbage collector) :0",
+     84.2
+    ]
+   ]
+  },
+  {
+   "doc": "stress-vector",
+   "action": "undo-redo",
+   "busyMs": 870.5,
+   "runs": [
+    778.8,
+    951.2,
+    870.5
+   ],
+   "unit": "steps",
+   "units": 12,
+   "perUnitMs": 72.54,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     344.1
+    ],
+    [
+     "setTransform :0",
+     281.8
+    ],
+    [
+     "(garbage collector) :0",
+     86.7
+    ]
+   ]
+  },
+  {
+   "doc": "stress-vector",
+   "action": "switch-artboard",
+   "busyMs": 416.2,
+   "runs": [
+    416.2,
+    383.7,
+    721.6
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 69.37,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     147.4
+    ],
+    [
+     "setTransform :0",
+     76.9
+    ],
+    [
+     "i index-BX_gXm_x.js:1733",
+     53.7
+    ]
+   ]
+  },
+  {
+   "doc": "stress-vector",
+   "action": "export-dialog",
+   "busyMs": 43.4,
+   "runs": [
+    41.6,
+    54.4,
+    43.4
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 43.37,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     39.2
+    ],
+    [
+     "o carries-CvEeWj-_.js:1",
+     2.3
+    ],
+    [
+     "focus :0",
+     1.3
+    ]
+   ]
+  },
+  {
+   "doc": "stress-vector",
+   "action": "save-file",
+   "busyMs": 381.8,
+   "runs": [
+    388.4,
+    372.6,
+    381.8
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 381.84,
+   "note": "7.1 MB file",
+   "topSelf": [
+    [
+     "qE index-BX_gXm_x.js:683",
+     160
+    ],
+    [
+     "encode :0",
+     92.7
+    ],
+    [
+     "p index-BX_gXm_x.js:2",
+     61.7
+    ]
+   ]
+  },
+  {
+   "doc": "stress-vector",
+   "action": "open-file",
+   "busyMs": 370.1,
+   "runs": [
+    370.1,
+    391.6,
+    306.2
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 370.12,
+   "note": "",
+   "topSelf": [
+    [
+     "he index-BX_gXm_x.js:2",
+     108.1
+    ],
+    [
+     "iD index-BX_gXm_x.js:683",
+     92.5
+    ],
+    [
+     "fe index-BX_gXm_x.js:2",
+     38.3
+    ]
+   ]
+  },
+  {
+   "doc": "stress-vector",
+   "action": "autosave",
+   "busyMs": 409.2,
+   "runs": [
+    381.3,
+    426.3,
+    409.2
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 409.21,
+   "note": "",
+   "topSelf": [
+    [
+     "YE index-BX_gXm_x.js:683",
+     113.8
+    ],
+    [
+     "encode :0",
+     92.9
+    ],
+    [
+     "qE index-BX_gXm_x.js:683",
+     61.8
+    ]
+   ]
+  },
+  {
+   "doc": "stress-vector",
+   "action": "workspaces",
+   "busyMs": 603.5,
+   "runs": [
+    685.7,
+    588.3,
+    603.5
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 100.58,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     335.6
+    ],
+    [
+     "setTransform :0",
+     104.4
+    ],
+    [
+     "(garbage collector) :0",
+     46.9
+    ]
+   ]
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "pixel-stroke",
+   "busyMs": 46.7,
+   "runs": [
+    46.7,
+    41.8,
+    54
+   ],
+   "unit": "moves",
+   "units": 60,
+   "perUnitMs": 0.78,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     28.2
+    ],
+    [
+     "drawImage :0",
+     3.3
+    ],
+    [
+     "(garbage collector) :0",
+     2.3
+    ]
+   ]
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "scrub",
+   "busyMs": 237.6,
+   "runs": [
+    203.4,
+    237.6,
+    238.3
+   ],
+   "unit": "moves",
+   "units": 80,
+   "perUnitMs": 2.97,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     92.9
+    ],
+    [
+     "qA index-BX_gXm_x.js:699",
+     50.6
+    ],
+    [
+     "i index-BX_gXm_x.js:1733",
+     14.4
+    ]
+   ]
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "play",
+   "busyMs": 81.9,
+   "runs": [
+    81.9,
+    81.3,
+    86.5
+   ],
+   "unit": "seconds",
+   "units": 1.5,
+   "perUnitMs": 54.61,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     42.6
+    ],
+    [
+     "qA index-BX_gXm_x.js:699",
+     13.4
+    ],
+    [
+     "i index-BX_gXm_x.js:1733",
+     5.1
+    ]
+   ]
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "add-layer",
+   "busyMs": 17.3,
+   "runs": [
+    20,
+    17.3,
+    15.5
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 5.78,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     9.9
+    ],
+    [
+     "i index-BX_gXm_x.js:1733",
+     1.2
+    ],
+    [
+     "Afe index-BX_gXm_x.js:868",
+     1
+    ]
+   ]
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "delete-layer",
+   "busyMs": 16.9,
+   "runs": [
+    17.8,
+    16.7,
+    16.9
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 5.64,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     9.3
+    ],
+    [
+     "i index-BX_gXm_x.js:1733",
+     1.6
+    ],
+    [
+     "qA index-BX_gXm_x.js:699",
+     0.7
+    ]
+   ]
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "add-key",
+   "busyMs": 25.8,
+   "runs": [
+    38.1,
+    25.8,
+    23.5
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 8.59,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     8.1
+    ],
+    [
+     "jS index-BX_gXm_x.js:666",
+     3.4
+    ],
+    [
+     "putImageData :0",
+     3.1
+    ]
+   ]
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "delete-key",
+   "busyMs": 26.9,
+   "runs": [
+    26.3,
+    27.2,
+    26.9
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 8.96,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     12.3
+    ],
+    [
+     "qA index-BX_gXm_x.js:699",
+     3.8
+    ],
+    [
+     "i index-BX_gXm_x.js:1733",
+     1.5
+    ]
+   ]
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "undo-redo",
+   "busyMs": 34,
+   "runs": [
+    43.1,
+    31.8,
+    34
+   ],
+   "unit": "steps",
+   "units": 12,
+   "perUnitMs": 2.83,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     26.2
+    ],
+    [
+     "setAttribute :0",
+     0.7
+    ],
+    [
+     "cp index-BX_gXm_x.js:11",
+     0.5
+    ]
+   ]
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "switch-artboard",
+   "busyMs": 35.1,
+   "runs": [
+    34.7,
+    35.1,
+    37.8
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 5.85,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     16.1
+    ],
+    [
+     "i index-BX_gXm_x.js:1733",
+     5.2
+    ],
+    [
+     "qA index-BX_gXm_x.js:699",
+     2.3
+    ]
+   ]
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "export-dialog",
+   "busyMs": 13.1,
+   "runs": [
+    19.5,
+    13.1,
+    7.7
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 13.12,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     7.3
+    ],
+    [
+     "(garbage collector) :0",
+     2.5
+    ],
+    [
+     "focus :0",
+     1.4
+    ]
+   ]
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "save-file",
+   "busyMs": 5.1,
+   "runs": [
+    4.4,
+    7.2,
+    5.1
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 5.09,
+   "note": "1.0 MB file",
+   "topSelf": [
+    [
+     "p index-BX_gXm_x.js:2",
+     2
+    ],
+    [
+     "(garbage collector) :0",
+     0.9
+    ],
+    [
+     "oS index-BX_gXm_x.js:666",
+     0.9
+    ]
+   ]
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "open-file",
+   "busyMs": 1001.4,
+   "runs": [
+    1001.4,
+    1021.4,
+    999.1
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 1001.38,
+   "note": "",
+   "topSelf": [
+    [
+     "he index-BX_gXm_x.js:2",
+     493.6
+    ],
+    [
+     "tT index-BX_gXm_x.js:683",
+     384.9
+    ],
+    [
+     "nT index-BX_gXm_x.js:683",
+     92.7
+    ]
+   ]
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "autosave",
+   "busyMs": 6.7,
+   "runs": [
+    6.6,
+    6.9,
+    6.7
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 6.7,
+   "note": "",
+   "topSelf": [
+    [
+     "p index-BX_gXm_x.js:2",
+     2.3
+    ],
+    [
+     "call preload.cjs:5",
+     1.1
+    ],
+    [
+     "oS index-BX_gXm_x.js:666",
+     0.9
+    ]
+   ]
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "workspaces",
+   "busyMs": 202.3,
+   "runs": [
+    182.1,
+    202.3,
+    216.5
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 33.71,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     78.6
+    ],
+    [
+     "scale :0",
+     35.9
+    ],
+    [
+     "(garbage collector) :0",
+     18.6
+    ]
+   ]
+  },
+  {
+   "doc": "variations",
+   "action": "brush-stroke",
+   "busyMs": 20.3,
+   "runs": [
+    20.3,
+    21.6,
+    17.8
+   ],
+   "unit": "moves",
+   "units": 60,
+   "perUnitMs": 0.34,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     11.2
+    ],
+    [
+     "drawImage :0",
+     0.7
+    ],
+    [
+     "tee index-BX_gXm_x.js:54",
+     0.5
+    ]
+   ]
+  },
+  {
+   "doc": "variations",
+   "action": "scrub",
+   "busyMs": 102.5,
+   "runs": [
+    102.5,
+    100.2,
+    103.4
+   ],
+   "unit": "moves",
+   "units": 80,
+   "perUnitMs": 1.28,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     52.8
+    ],
+    [
+     "i index-BX_gXm_x.js:1733",
+     7.4
+    ],
+    [
+     "drawImage :0",
+     3.8
+    ]
+   ]
+  },
+  {
+   "doc": "variations",
+   "action": "play",
+   "busyMs": 57.7,
+   "runs": [
+    57.7,
+    59.2,
+    51.7
+   ],
+   "unit": "seconds",
+   "units": 1.5,
+   "perUnitMs": 38.46,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     37.8
+    ],
+    [
+     "i index-BX_gXm_x.js:1733",
+     5.3
+    ],
+    [
+     "Hv index-BX_gXm_x.js:54",
+     0.7
+    ]
+   ]
+  },
+  {
+   "doc": "variations",
+   "action": "select-click",
+   "busyMs": 34,
+   "runs": [
+    34,
+    32.8,
+    45
+   ],
+   "unit": "clicks",
+   "units": 4,
+   "perUnitMs": 8.5,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     24.6
+    ],
+    [
+     "(garbage collector) :0",
+     1.2
+    ],
+    [
+     "setAttribute :0",
+     0.8
+    ]
+   ]
+  },
+  {
+   "doc": "variations",
+   "action": "select-move",
+   "busyMs": 29.5,
+   "runs": [
+    30.5,
+    29.5,
+    28.3
+   ],
+   "unit": "moves",
+   "units": 30,
+   "perUnitMs": 0.98,
+   "note": "selected 1",
+   "topSelf": [
+    [
+     "(program) :0",
+     19.8
+    ],
+    [
+     "drawImage :0",
+     0.4
+    ],
+    [
+     "setTransform :0",
+     0.4
+    ]
+   ]
+  },
+  {
+   "doc": "variations",
+   "action": "add-layer",
+   "busyMs": 14.2,
+   "runs": [
+    14.2,
+    14.4,
+    13.7
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 4.75,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     8
+    ],
+    [
+     "drawImage :0",
+     0.8
+    ],
+    [
+     "i index-BX_gXm_x.js:1733",
+     0.7
+    ]
+   ]
+  },
+  {
+   "doc": "variations",
+   "action": "delete-layer",
+   "busyMs": 17.8,
+   "runs": [
+    16.9,
+    19.2,
+    17.8
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 5.95,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     10.2
+    ],
+    [
+     "i index-BX_gXm_x.js:1733",
+     1.3
+    ],
+    [
+     "drawImage :0",
+     0.9
+    ]
+   ]
+  },
+  {
+   "doc": "variations",
+   "action": "add-key",
+   "busyMs": 24.2,
+   "runs": [
+    18.2,
+    24.8,
+    24.2
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 8.05,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     7.6
+    ],
+    [
+     "drawImage :0",
+     2.8
+    ],
+    [
+     "(garbage collector) :0",
+     2.6
+    ]
+   ]
+  },
+  {
+   "doc": "variations",
+   "action": "delete-key",
+   "busyMs": 26.2,
+   "runs": [
+    26.2,
+    29.4,
+    24.6
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 8.72,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     12.8
+    ],
+    [
+     "i index-BX_gXm_x.js:1733",
+     1.9
+    ],
+    [
+     "drawImage :0",
+     1.5
+    ]
+   ]
+  },
+  {
+   "doc": "variations",
+   "action": "undo-redo",
+   "busyMs": 43.2,
+   "runs": [
+    32.5,
+    82,
+    43.2
+   ],
+   "unit": "steps",
+   "units": 12,
+   "perUnitMs": 3.6,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     36
+    ],
+    [
+     "drawImage :0",
+     3
+    ],
+    [
+     "(garbage collector) :0",
+     1.9
+    ]
+   ]
+  },
+  {
+   "doc": "variations",
+   "action": "switch-artboard",
+   "busyMs": 55.9,
+   "runs": [
+    56.2,
+    39.8,
+    55.9
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 9.31,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     20.8
+    ],
+    [
+     "i index-BX_gXm_x.js:1733",
+     6.9
+    ],
+    [
+     "(garbage collector) :0",
+     3
+    ]
+   ]
+  },
+  {
+   "doc": "variations",
+   "action": "export-dialog",
+   "busyMs": 9,
+   "runs": [
+    9,
+    16.4,
+    7.8
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 8.97,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     6.6
+    ],
+    [
+     "(garbage collector) :0",
+     1.6
+    ],
+    [
+     "focus :0",
+     0.6
+    ]
+   ]
+  },
+  {
+   "doc": "variations",
+   "action": "save-file",
+   "busyMs": 3.4,
+   "runs": [
+    3.9,
+    3.4,
+    3.1
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 3.41,
+   "note": "0.0 MB file",
+   "topSelf": [
+    [
+     "Ee index-BX_gXm_x.js:2",
+     1
+    ],
+    [
+     "Ae index-BX_gXm_x.js:2",
+     0.5
+    ],
+    [
+     "qE index-BX_gXm_x.js:683",
+     0.5
+    ]
+   ]
+  },
+  {
+   "doc": "variations",
+   "action": "open-file",
+   "busyMs": 4.7,
+   "runs": [
+    6.1,
+    4.7,
+    3.6
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 4.73,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     1.6
+    ],
+    [
+     "drawImage :0",
+     0.5
+    ],
+    [
+     "iD index-BX_gXm_x.js:683",
+     0.3
+    ]
+   ]
+  },
+  {
+   "doc": "variations",
+   "action": "autosave",
+   "busyMs": 2.9,
+   "runs": [
+    2.7,
+    2.9,
+    2.9
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 2.9,
+   "note": "",
+   "topSelf": [
+    [
+     "Ee index-BX_gXm_x.js:2",
+     1.3
+    ],
+    [
+     "(program) :0",
+     0.5
+    ],
+    [
+     "qE index-BX_gXm_x.js:683",
+     0.3
+    ]
+   ]
+  },
+  {
+   "doc": "variations",
+   "action": "workspaces",
+   "busyMs": 154.8,
+   "runs": [
+    154.8,
+    152.1,
+    171.5
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 25.8,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     77.9
+    ],
+    [
+     "setTransform :0",
+     13.4
+    ],
+    [
+     "(garbage collector) :0",
+     11.7
+    ]
+   ]
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "brush-stroke",
+   "busyMs": 50.9,
+   "runs": [
+    79.9,
+    50.9,
+    32.4
+   ],
+   "unit": "moves",
+   "units": 60,
+   "perUnitMs": 0.85,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     18.2
+    ],
+    [
+     "drawImage :0",
+     12.1
+    ],
+    [
+     "rg index-BX_gXm_x.js:54",
+     3.4
+    ]
+   ]
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "scrub",
+   "busyMs": 261.4,
+   "runs": [
+    252.1,
+    261.4,
+    266.7
+   ],
+   "unit": "moves",
+   "units": 80,
+   "perUnitMs": 3.27,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     179.2
+    ],
+    [
+     "i index-BX_gXm_x.js:1733",
+     15.3
+    ],
+    [
+     "getBoundingClientRect :0",
+     5.3
+    ]
+   ]
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "play",
+   "busyMs": 140.8,
+   "runs": [
+    144.6,
+    140.8,
+    71.1
+   ],
+   "unit": "seconds",
+   "units": 1.5,
+   "perUnitMs": 93.9,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     78.7
+    ],
+    [
+     "i index-BX_gXm_x.js:1733",
+     7.3
+    ],
+    [
+     "gs index-BX_gXm_x.js:10",
+     4
+    ]
+   ]
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "select-click",
+   "busyMs": 47.1,
+   "runs": [
+    47.1,
+    50.2,
+    41.7
+   ],
+   "unit": "clicks",
+   "units": 4,
+   "perUnitMs": 11.77,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     31.6
+    ],
+    [
+     "removeChild :0",
+     1
+    ],
+    [
+     "PK index-BX_gXm_x.js:868",
+     1
+    ]
+   ]
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "select-move",
+   "busyMs": 260.7,
+   "runs": [
+    310.1,
+    246.9,
+    260.7
+   ],
+   "unit": "moves",
+   "units": 30,
+   "perUnitMs": 8.69,
+   "note": "selected 1",
+   "topSelf": [
+    [
+     "(program) :0",
+     225.1
+    ],
+    [
+     "drawImage :0",
+     8.4
+    ],
+    [
+     "(garbage collector) :0",
+     7.6
+    ]
+   ]
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "add-layer",
+   "busyMs": 13.1,
+   "runs": [
+    12.9,
+    13.1,
+    14.8
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 4.35,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     8.8
+    ],
+    [
+     "i index-BX_gXm_x.js:1733",
+     0.5
+    ],
+    [
+     "Jl index-BX_gXm_x.js:17",
+     0.3
+    ]
+   ]
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "delete-layer",
+   "busyMs": 36.5,
+   "runs": [
+    36.5,
+    41.4,
+    36.3
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 12.16,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     14.3
+    ],
+    [
+     "qo index-BX_gXm_x.js:3",
+     4.9
+    ],
+    [
+     "i index-BX_gXm_x.js:1733",
+     3.1
+    ]
+   ]
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "add-key",
+   "busyMs": 160.4,
+   "runs": [
+    142,
+    198.2,
+    160.4
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 53.45,
+   "note": "",
+   "topSelf": [
+    [
+     "drawImage :0",
+     47.7
+    ],
+    [
+     "(program) :0",
+     25
+    ],
+    [
+     "(garbage collector) :0",
+     16.4
+    ]
+   ]
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "delete-key",
+   "busyMs": 274.9,
+   "runs": [
+    325.8,
+    274.9,
+    203.8
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 91.64,
+   "note": "",
+   "topSelf": [
+    [
+     "drawImage :0",
+     102.2
+    ],
+    [
+     "(program) :0",
+     42.1
+    ],
+    [
+     "(garbage collector) :0",
+     32.5
+    ]
+   ]
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "undo-redo",
+   "busyMs": 146,
+   "runs": [
+    146,
+    167.7,
+    102.4
+   ],
+   "unit": "steps",
+   "units": 12,
+   "perUnitMs": 12.17,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     61.4
+    ],
+    [
+     "(anon) index-BX_gXm_x.js:1430",
+     23.6
+    ],
+    [
+     "(anon) index-BX_gXm_x.js:54",
+     18.2
+    ]
+   ]
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "switch-artboard",
+   "busyMs": 77.5,
+   "runs": [
+    64.1,
+    77.5,
+    93.1
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 12.92,
+   "note": "",
+   "topSelf": [
+    [
+     "drawImage :0",
+     32.7
+    ],
+    [
+     "(program) :0",
+     20.8
+    ],
+    [
+     "i index-BX_gXm_x.js:1733",
+     6.3
+    ]
+   ]
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "export-dialog",
+   "busyMs": 37.4,
+   "runs": [
+    28.3,
+    132.3,
+    37.4
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 37.42,
+   "note": "",
+   "topSelf": [
+    [
+     "(program) :0",
+     18.4
+    ],
+    [
+     "qE index-BX_gXm_x.js:683",
+     16.1
+    ],
+    [
+     "encode :0",
+     7.4
+    ]
+   ]
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "save-file",
+   "busyMs": 91.3,
+   "runs": [
+    91.3,
+    121.3,
+    81.1
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 91.26,
+   "note": "0.6 MB file",
+   "topSelf": [
+    [
+     "qE index-BX_gXm_x.js:683",
+     42.1
+    ],
+    [
+     "encode :0",
+     22.2
+    ],
+    [
+     "(garbage collector) :0",
+     10.4
+    ]
+   ]
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "open-file",
+   "busyMs": 70.4,
+   "runs": [
+    136,
+    70.4,
+    59.5
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 70.42,
+   "note": "",
+   "topSelf": [
+    [
+     "iD index-BX_gXm_x.js:683",
+     21.1
+    ],
+    [
+     "he index-BX_gXm_x.js:2",
+     16.5
+    ],
+    [
+     "drawImage :0",
+     11.1
+    ]
+   ]
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "autosave",
+   "busyMs": 50.2,
+   "runs": [
+    50.1,
+    50.2,
+    59.4
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 50.24,
+   "note": "",
+   "topSelf": [
+    [
+     "qE index-BX_gXm_x.js:683",
+     17
+    ],
+    [
+     "encode :0",
+     13
+    ],
+    [
+     "p index-BX_gXm_x.js:2",
+     8.8
+    ]
+   ]
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "workspaces",
+   "busyMs": 691.1,
+   "runs": [
+    577.3,
+    754.8,
+    691.1
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 115.18,
+   "note": "",
+   "topSelf": [
+    [
+     "drawImage :0",
+     228.5
+    ],
+    [
+     "(program) :0",
+     202.3
+    ],
+    [
+     "(garbage collector) :0",
+     55.8
+    ]
+   ]
+  }
+ ]
+}
