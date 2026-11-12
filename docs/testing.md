@@ -509,6 +509,8 @@ scripts/docs/encode.sh <outDir>/<clip> <name> [posterFrame] [width]
 ```
 
 Extra steps: `{"log": "js"}` prints a result; `{"drag": ..., "delay": 8, "mods": ["shift"]}` draws slowly with keys held;
+`{"wheel": [x, y], "dy": -100, "count": 4, "mods": ["shift"]}` turns the mouse wheel (page deltas, negative = up = zoom in) and
+`{"pinch": [x, y], "dy": -6, "count": 12}` does a trackpad pinch (Ctrl + small wheel steps, as Chromium delivers it);
 `{"shot": "name", "crop": [x, y, w, h]}` or `"el": "css selector", "pad": 12`; `{"type": "text"}` sets the focused
 input; `{"rec": "name", "crop": [...], "every": 60}` starts recording frames and `{"rec": "stop"}` writes them with a
 timing list into `<outDir>/<name>/`. `--renderer` points at a private `vite build --outDir` so a capture never races
