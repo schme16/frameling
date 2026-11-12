@@ -4,10 +4,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { strToU8 } from 'fflate';
 import { newDoc } from '../../src/core/doc';
 import { resetStore } from '../../src/core/store';
-import { installFrom, loadPlugins, plugins, resetPluginsForTests, setApprover, setSandboxStarterForTests } from '../../src/plugins/manager';
+import { installFrom, loadPlugins, pluginDiag, plugins, refreshDiag, resetPluginsForTests, setApprover, setSandboxStarterForTests } from '../../src/plugins/manager';
 import { WATCHDOG } from '../../src/plugins/watchdog';
 import { memoryLibrary, setLibraryForTests } from '../../src/platform/library';
 import * as desk from '../../src/io/desktop';
+import { DEFAULT_PREFS, setPrefs } from '../../src/ui/prefs';
 import { closeAll, exampleFiles, runPlugin } from './harness';
 
 const toasts: { message: string; kind: string; action?: { label: string; run(): void } }[] = [];
@@ -36,6 +37,7 @@ afterEach(async () => {
   resetPluginsForTests();
   setApprover(null);
   Object.assign(WATCHDOG, saved);
+  setPrefs({ pluginDiagnostics: DEFAULT_PREFS.pluginDiagnostics });
   vi.restoreAllMocks();
   for (const e of await memoryLibrary.list('plugins')) await memoryLibrary.remove('plugins', e.id);
   setLibraryForTests(null);
@@ -72,7 +74,18 @@ describe('turning off a plugin that is in trouble', () => {
     expect(plugins.get()[0]).toMatchObject({ enabled: true, status: 'on' });
   });
 
-  it('a greedy one is turned off when the desktop reports its sandbox is over the cap', async () => {
+  it('a greedy one is left alone while measuring is off, however big it is', async () => {
+    WATCHDOG.memoryCapBytes = 1000;
+    const memory = vi.fn(async () => ({ slowpoke: 5000 }));
+    vi.spyOn(desk, 'desktop').mockReturnValue({ plugins: { memory } } as never);
+    await installFrom(pack());
+    await wait(400);
+    expect(plugins.get()[0]).toMatchObject({ enabled: true, status: 'on' });
+    expect(memory).not.toHaveBeenCalled();
+  });
+
+  it('a greedy one is turned off when measuring is on and the desktop reports its sandbox is over the cap', async () => {
+    setPrefs({ pluginDiagnostics: true });
     WATCHDOG.memoryCapBytes = 1000;
     vi.spyOn(desk, 'desktop').mockReturnValue({ plugins: { memory: async () => ({ slowpoke: 5000, other: 1 }) } } as never);
     await installFrom(pack());
@@ -81,6 +94,20 @@ describe('turning off a plugin that is in trouble', () => {
     expect(p).toMatchObject({ enabled: false, status: 'off' });
     expect(p.problem).toMatch(/was using a lot of memory/);
     expect(toasts.at(-1)!.message).toMatch(/Slowpoke/);
+  });
+
+  it('with measuring on, each running plugin gets its numbers, and none are kept when it is off', async () => {
+    setPrefs({ pluginDiagnostics: true });
+    vi.spyOn(desk, 'desktop').mockReturnValue({ plugins: { memory: async () => ({ slowpoke: 5 * 2 ** 20 }) } } as never);
+    await installFrom(pack());
+    await wait(200);
+    await refreshDiag();
+    const d = pluginDiag.get().slowpoke;
+    expect(d.memoryBytes).toBe(5 * 2 ** 20);
+    expect(d.latencyMs).not.toBeNull();
+    setPrefs({ pluginDiagnostics: false });
+    await refreshDiag();
+    expect(pluginDiag.get()).toEqual({});
   });
 
   it('the runaway example installs (it is only a test for the watchdog)', async () => {

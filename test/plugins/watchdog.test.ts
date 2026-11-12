@@ -91,6 +91,23 @@ describe('the heartbeat', () => {
   });
 });
 
+describe('the heartbeat round trip', () => {
+  it('tells how long each answer took', () => {
+    const times: number[] = [];
+    let now = 1000;
+    const wd = new Watchdog({ ping: () => undefined, trip: () => undefined, onPong: (ms) => times.push(ms) }, () => now);
+    wd.start();
+    now = 1042;
+    wd.pong(1);
+    expect(times).toEqual([42]);
+    // A wrong or repeated number is not an answer.
+    wd.pong(1);
+    wd.pong(7);
+    expect(times).toEqual([42]);
+    wd.stop();
+  });
+});
+
 describe('the memory cap', () => {
   it('trips when the plugin holds more than the cap, and says how much', async () => {
     WATCHDOG.memoryCapBytes = 500 * 2 ** 20;
@@ -216,16 +233,43 @@ describe('with the real prelude', () => {
     WATCHDOG.memoryEveryMs = 40;
     WATCHDOG.memoryCapBytes = 100;
     const greedy = runPlugin('');
-    const g = hooks({ memory: async () => 5000 });
+    const g = hooks({ memory: async () => 5000, diagnostics: () => true });
     const rtG = new PluginRuntime(manifest, [], greedy.transport, g);
     const blind = runPlugin('');
-    const b = hooks({ memory: async () => null });
+    const b = hooks({ memory: async () => null, diagnostics: () => true });
     const rtB = new PluginRuntime(manifest, [], blind.transport, b);
+    // With measuring off there is no cap, however big the plugin: its memory is never even asked for.
+    const off = runPlugin('');
+    let asked = 0;
+    const o = hooks({ memory: async () => (asked++, 5000), diagnostics: () => false });
+    const rtO = new PluginRuntime(manifest, [], off.transport, o);
     await new Promise((r) => setTimeout(r, 400));
     expect(g.trips).toEqual([{ kind: 'memory', bytes: 5000 }]);
     expect(b.trips).toEqual([]);
+    expect(o.trips).toEqual([]);
+    expect(asked).toBe(0);
     rtG.stop();
     rtB.stop();
+    rtO.stop();
+  });
+
+  it('measures how fast the worker answers and what it asks for, only while measuring is on', async () => {
+    vi.useRealTimers();
+    WATCHDOG.pingEveryMs = 20;
+    const code = 'frameling.commands.register({ id: "x", label: "X" }, () => {}); const h = frameling.panels.register({ id: "p", title: "P" }, { type: "text", text: "a" }); setTimeout(() => { for (let i = 0; i < 4; i++) h.update({ type: "text", text: "hi " + i }); }, 50);';
+    const on = runPlugin(code);
+    const off = runPlugin(code);
+    const rtOn = new PluginRuntime(manifest, [], on.transport, hooks({ diagnostics: () => true }));
+    const rtOff = new PluginRuntime(manifest, [], off.transport, hooks({ diagnostics: () => false }));
+    await new Promise((r) => setTimeout(r, 400));
+    const d = rtOn.diag(1234);
+    expect(d.latencyMs).not.toBeNull();
+    expect(d.latencyMaxMs).toBeGreaterThanOrEqual(0);
+    expect(d.opsPerMin).toBeGreaterThanOrEqual(2);
+    expect(d.memoryBytes).toBe(1234);
+    expect(rtOff.diag()).toMatchObject({ latencyMs: null, opsPerMin: 0, drawItemsPerMin: 0 });
+    rtOn.stop();
+    rtOff.stop();
   });
 
   it('nobody watches when the host gives no watchdog hook (older callers keep working)', async () => {

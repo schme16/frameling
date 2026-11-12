@@ -51,6 +51,8 @@ export interface Prefs {
   pixelThickOutlines: boolean;
   /** How thick that outline is, in art pixels (1 to 16). */
   pixelOutlineWidth: number;
+  /** Measure each plugin's memory and speed (shown in Preferences > Plugins). Off by default: the memory part needs each plugin in its own process, which costs memory and a restart. */
+  pluginDiagnostics: boolean;
 }
 
 export const PREFS_KEY = 'frameling.prefs.v1';
@@ -77,6 +79,7 @@ export const DEFAULT_PREFS: Prefs = {
   cleanTimeline: false,
   pixelThickOutlines: false,
   pixelOutlineWidth: DEFAULT_OUTLINE,
+  pluginDiagnostics: false,
 };
 
 /**
@@ -114,6 +117,7 @@ export function migratePrefs(raw: unknown): Prefs {
     keymapSet: isKeymapSet(r.keymapSet) ? r.keymapSet : DEFAULT_PREFS.keymapSet,
     cleanTimeline: bool(r.cleanTimeline, DEFAULT_PREFS.cleanTimeline),
     pixelThickOutlines: bool(r.pixelThickOutlines, DEFAULT_PREFS.pixelThickOutlines),
+    pluginDiagnostics: bool(r.pluginDiagnostics, DEFAULT_PREFS.pluginDiagnostics),
     pixelOutlineWidth: clampOutline(r.pixelOutlineWidth),
   };
 }

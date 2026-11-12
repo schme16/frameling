@@ -29,6 +29,8 @@ import { EventPipe } from './pipe';
 import { PluginRuntime, type HostHooks, type PluginExporterDef, type PluginToolDef, type Transport } from './runtime';
 import { startSandbox } from './sandbox';
 import { tripMessage, type Trip } from './watchdog';
+import type { PluginDiag } from './diagnostics';
+import { getPrefs } from '../ui/prefs';
 import { addPluginShape, redrawPluginShape, ShapeProblem } from './shapes';
 import type { UiNode } from './ui-schema';
 
@@ -225,7 +227,44 @@ function hooksFor(m: PluginManifest, onExporter: (def: PluginExporterDef) => voi
     loaded: () => patch(pid, { status: 'on', problem: undefined }),
     watchdog: (trip) => void turnOffForTrouble(m, trip),
     memory: () => memoryOf(pid),
+    diagnostics: diagnosticsOn,
   };
+}
+
+/** "Measure plugins' memory and speed" (Preferences > Plugins). Off by default: nothing is counted and no memory is looked at. */
+export const diagnosticsOn = (): boolean => getPrefs().pluginDiagnostics;
+
+/** What the heartbeat and the process metrics say about each running plugin, by id (empty while measuring is off). */
+export const pluginDiag = createStore<Record<string, PluginDiag>>({});
+
+/** Looks at every running plugin once (the Plugins page does this every second or two while it is open). */
+export async function refreshDiag(): Promise<void> {
+  if (!diagnosticsOn()) {
+    if (Object.keys(pluginDiag.get()).length) pluginDiag.set({});
+    return;
+  }
+  const next: Record<string, PluginDiag> = {};
+  for (const [id, rt] of runtimes) next[id] = rt.diag(await memoryOf(id));
+  pluginDiag.set(next);
+}
+
+/** Whether each plugin's sandbox has a process of its own in this run, which is what makes its memory measurable. */
+export async function memoryMeasurable(): Promise<boolean> {
+  return (await desktop()?.plugins?.isolated?.().catch(() => false)) ?? false;
+}
+
+/** The sentence under the switch: what is true right now, in plain words. */
+export function diagnosticsAvailableNote(on: boolean, desktopApp: boolean, isolated: boolean): string {
+  if (!desktopApp) return on ? 'Speed is measured here. Memory can only be measured in the desktop app.' : 'Off. Frameling still turns off a plugin that stops responding.';
+  if (on && isolated) return 'On. Each plugin runs in its own process, so its memory is measured too. A plugin using more than 1 GB is turned off.';
+  if (on) return 'On: speed is measured now. Restart Frameling to measure memory too (each plugin then runs in its own process, about 90 MB more each).';
+  if (isolated) return 'Off. Restart Frameling to give back the memory the separate processes use.';
+  return 'Off. Plugins share one process. Frameling still turns off a plugin that stops responding.';
+}
+
+/** Remembers the preference for the next start, when the desktop app decides how to run sandboxes (needs a restart). */
+export function syncDiagnosticsFlag(on: boolean): void {
+  void desktop()?.plugins?.setDiagnostics?.(on).catch(() => undefined);
 }
 
 let memorySeen: { at: number; sizes: Record<string, number> } | null = null;
@@ -470,6 +509,8 @@ export const whenPluginsLoaded = (): Promise<void> => loadedOnce;
 
 /** Reads every installed plugin and starts the ones that are on. */
 export async function loadPlugins(): Promise<void> {
+  // Keeps the next start's choice (a file the desktop app reads before it begins) in step with the preference.
+  syncDiagnosticsFlag(diagnosticsOn());
   const saved = loadSaved();
   const list: InstalledPlugin[] = [];
   for (const e of await library.list('plugins')) {
@@ -665,4 +706,6 @@ export function resetPluginsForTests(): void {
   packages.clear();
   plugins.set([]);
   panelTrees.set({});
+  pluginDiag.set({});
+  memorySeen = null;
 }
