@@ -421,7 +421,7 @@ Open **Preferences, Themes**, and press **Make a copy to customise** on a theme 
 
 ## Change colours
 
-The colours are in friendly groups: **Background**, **Panels**, **Text**, **Accent (gold)**, **Timeline**, **Canvas surround** and **Messages**. Press a square to pick a colour, or type a colour code like \`#ffc94a\`.
+The colours are in friendly groups: **Background**, **Panels**, **Text**, **Accent (gold)**, **Timeline**, **Canvas surround**, **Messages** and **Snapping** (the colour of each snap line and its dot in the "Snapped to" note). Press a square to pick a colour, or type a colour code like \`#ffc94a\`.
 
 Changes show straight away on the picture in the editor and on the app behind it. Hold **Hold to peek** to see the whole app without the dialog in the way.
 

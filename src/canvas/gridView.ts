@@ -4,11 +4,26 @@ import type { Pt } from './view';
 import { registerCommands } from '../core/registry';
 import { store } from '../core/store';
 import { addCanvasGrab, addStageOverlay, hint, requestOverlay } from './controller';
-import { defaultVanishing, gridStep, isoLines, isoRatio, moveVanishing, rayTargets } from './grid';
+import { defaultVanishing, gridStep, isoLinesIn, isoRatio, moveVanishing, rayTargets, type Box } from './grid';
 import { cssVar } from './theme';
 import { getViewSettings, setViewSettings } from './viewSettings';
 
 const nudge = () => store().setUi({});
+
+/** The box around the page's corners (in the space being drawn in). */
+function boxOf(page: Pt[]): Box {
+  const xs = page.map((p) => p.x);
+  const ys = page.map((p) => p.y);
+  return { x0: Math.min(...xs), y0: Math.min(...ys), x1: Math.max(...xs), y1: Math.max(...ys) };
+}
+
+/** Cuts drawing to the page as it falls in this space: the whole picture, however the picked layer's camera has moved it. */
+function clipToPage(g: CanvasRenderingContext2D, page: Pt[]): void {
+  g.beginPath();
+  page.forEach((p, i) => (i ? g.lineTo(p.x, p.y) : g.moveTo(p.x, p.y)));
+  g.closePath();
+  g.clip();
+}
 
 // ---------------------------------------------------------------- drawing
 
@@ -19,21 +34,21 @@ export function setGridLook(l: 'lines' | 'dots'): void {
   requestOverlay();
 }
 
-function drawGridDots(g: CanvasRenderingContext2D, zoom: number, w: number, h: number): void {
+function drawGridDots(g: CanvasRenderingContext2D, zoom: number, b: Box): void {
   const v = getViewSettings();
   const r = 1.4 / zoom;
   const step = gridStep(v.gridSize, zoom, 8);
   g.beginPath();
   if (v.grid === 'square') {
     const s = v.gridSize * step;
-    for (let x = 0; x <= w; x += s) for (let y = 0; y <= h; y += s) {
+    for (let x = Math.floor(b.x0 / s) * s; x <= b.x1; x += s) for (let y = Math.floor(b.y0 / s) * s; y <= b.y1; y += s) {
       g.moveTo(x + r, y);
       g.arc(x, y, r, 0, Math.PI * 2);
     }
   } else {
     const hx = (v.gridSize * step) / 2;
     const hy = hx * isoRatio(v.isoStyle);
-    for (let j = 0; j * hy <= h; j++) for (let i = j % 2; i * hx <= w; i += 2) {
+    for (let j = Math.floor(b.y0 / hy); j * hy <= b.y1; j++) for (let i = Math.floor(b.x0 / hx) + ((((Math.floor(b.x0 / hx) - j) % 2) + 2) % 2); i * hx <= b.x1; i += 2) {
       g.moveTo(i * hx + r, j * hy);
       g.arc(i * hx, j * hy, r, 0, Math.PI * 2);
     }
@@ -41,41 +56,39 @@ function drawGridDots(g: CanvasRenderingContext2D, zoom: number, w: number, h: n
   g.fill();
 }
 
-function drawGrid(g: CanvasRenderingContext2D, zoom: number): void {
+/** The grid across the whole picture. On a layer behind a moving camera that is more (or less) than the layer's own page, so it covers whatever falls in view. */
+export function drawGrid(g: CanvasRenderingContext2D, zoom: number, page: Pt[]): void {
   const v = getViewSettings();
   if (v.grid === 'off') return;
-  const { doc } = store().get();
-  const w = doc.width;
-  const h = doc.height;
+  const box = boxOf(page);
   const px = 1 / zoom;
   g.save();
-  g.beginPath();
-  g.rect(0, 0, w, h);
-  g.clip();
+  clipToPage(g, page);
   g.lineWidth = px;
   g.strokeStyle = cssVar('--faint', '#7d7591');
   g.globalAlpha = 0.55;
   if (gridLook === 'dots') {
     g.fillStyle = g.strokeStyle;
     g.globalAlpha = 0.9;
-    drawGridDots(g, zoom, w, h);
+    drawGridDots(g, zoom, box);
     g.restore();
     return;
   }
   g.beginPath();
   if (v.grid === 'square') {
     const step = v.gridSize * gridStep(v.gridSize, zoom);
-    for (let x = step; x < w; x += step) {
-      g.moveTo(x, 0);
-      g.lineTo(x, h);
+    // Lines strictly inside the box: the page's own edges are not grid lines.
+    for (let x = (Math.floor(box.x0 / step) + 1) * step; x < box.x1; x += step) {
+      g.moveTo(x, box.y0);
+      g.lineTo(x, box.y1);
     }
-    for (let y = step; y < h; y += step) {
-      g.moveTo(0, y);
-      g.lineTo(w, y);
+    for (let y = (Math.floor(box.y0 / step) + 1) * step; y < box.y1; y += step) {
+      g.moveTo(box.x0, y);
+      g.lineTo(box.x1, y);
     }
   } else {
     const k = gridStep(v.gridSize / 2, zoom, 5);
-    for (const [a, b] of isoLines(v.gridSize * k, isoRatio(v.isoStyle), w, h)) {
+    for (const [a, b] of isoLinesIn(v.gridSize * k, isoRatio(v.isoStyle), box)) {
       g.moveTo(a.x, a.y);
       g.lineTo(b.x, b.y);
     }
@@ -94,7 +107,7 @@ function vanishing(): Pt[] {
 const RAYS = 28;
 const HANDLE_PX = 7;
 
-function drawPerspective(g: CanvasRenderingContext2D, zoom: number): void {
+function drawPerspective(g: CanvasRenderingContext2D, zoom: number, page: Pt[]): void {
   if (!getViewSettings().perspective) return;
   const pts = vanishing();
   if (!pts.length) return;
@@ -106,9 +119,7 @@ function drawPerspective(g: CanvasRenderingContext2D, zoom: number): void {
   g.save();
   // The rays, inside the page only.
   g.save();
-  g.beginPath();
-  g.rect(0, 0, w, h);
-  g.clip();
+  clipToPage(g, page);
   g.lineWidth = px;
   pts.forEach((vp, i) => {
     g.strokeStyle = colors[i % 2];
@@ -158,9 +169,9 @@ function drawPerspective(g: CanvasRenderingContext2D, zoom: number): void {
   g.restore();
 }
 
-addStageOverlay((g, zoom) => {
-  drawGrid(g, zoom);
-  drawPerspective(g, zoom);
+addStageOverlay((g, zoom, page) => {
+  drawGrid(g, zoom, page);
+  drawPerspective(g, zoom, page);
 });
 
 // ---------------------------------------------------------------- dragging vanishing points

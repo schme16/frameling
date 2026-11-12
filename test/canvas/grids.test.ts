@@ -1,10 +1,11 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { defaultVanishing, gridStep, isoLines, isoRatio, moveVanishing, rayTargets, snapIso, snapSquare, squareLines } from '../../src/canvas/grid';
+import { defaultVanishing, gridStep, isoLines, isoLinesIn, isoRatio, moveVanishing, rayTargets, snapIso, snapSquare, squareLines } from '../../src/canvas/grid';
 import { lightTableItems, pinLightTable, clearLightTable } from '../../src/canvas/lightTable';
-import { setPerspective } from '../../src/canvas/gridView';
+import { drawGrid, setPerspective } from '../../src/canvas/gridView';
 import { snapPt } from '../../src/canvas/guides';
 import { setViewSettings } from '../../src/canvas/viewSettings';
-import { resetStore } from '../../src/core/store';
+import { resetStore, store } from '../../src/core/store';
+import { newDoc } from '../../src/core/doc';
 import { loadFile, saveFile } from '../../src/io/file';
 import { addCel, docWith } from '../timeline/helpers';
 
@@ -130,5 +131,59 @@ describe('light table', () => {
     expect(s.get().ui.lightTable?.layerId).toBe('x');
     clearLightTable();
     expect(s.get().ui.lightTable).toBeNull();
+  });
+});
+
+describe('the grid on a layer behind a moving camera', () => {
+  it('isoLinesIn over the page matches isoLines, and over a bigger box stays inside it on the same lines', () => {
+    expect(isoLinesIn(32, 0.5, { x0: 0, y0: 0, x1: 128, y1: 64 })).toEqual(isoLines(32, 0.5, 128, 64));
+    const box = { x0: -100, y0: -50, x1: 300, y1: 200 };
+    const lines = isoLinesIn(32, 0.5, box);
+    expect(lines.length).toBeGreaterThan(isoLines(32, 0.5, 128, 64).length);
+    for (const [a, b] of lines) for (const p of [a, b]) {
+      expect(p.x).toBeGreaterThanOrEqual(box.x0 - 1e-6);
+      expect(p.x).toBeLessThanOrEqual(box.x1 + 1e-6);
+      expect(p.y).toBeGreaterThanOrEqual(box.y0 - 1e-6);
+      expect(p.y).toBeLessThanOrEqual(box.y1 + 1e-6);
+    }
+    const on = (x: number, y: number) => lines.filter(([a, b]) => Math.abs((b.y - a.y) * (x - a.x) - (b.x - a.x) * (y - a.y)) < 1e-6).length;
+    expect(on(-16, 8)).toBe(2);
+  });
+
+  const recorder = () => {
+    const segs: { x: number; y: number }[][] = [];
+    let cur: { x: number; y: number }[] = [];
+    const g = {
+      save() {}, restore() {}, clip() {}, stroke() {},
+      beginPath() {}, closePath() {},
+      moveTo(x: number, y: number) { cur = [{ x, y }]; segs.push(cur); },
+      lineTo(x: number, y: number) { cur.push({ x, y }); },
+      lineWidth: 1, strokeStyle: '', globalAlpha: 1, fillStyle: '',
+    } as unknown as CanvasRenderingContext2D;
+    return { g, segs };
+  };
+
+  it('with no camera the square grid stays on the page, without a line on its edges', () => {
+    resetStore(newDoc({ width: 200, height: 100 }));
+    setViewSettings({ grid: 'square', gridSize: 50 });
+    const { g, segs } = recorder();
+    drawGrid(g, 1, [{ x: 0, y: 0 }, { x: 200, y: 0 }, { x: 200, y: 100 }, { x: 0, y: 100 }]);
+    const xs = segs.slice(1).filter((s) => s[0].x === s[1].x).map((s) => s[0].x);
+    expect(xs).toEqual([50, 100, 150]);
+    const ys = segs.slice(1).filter((s) => s[0].y === s[1].y).map((s) => s[0].y);
+    expect(ys).toEqual([50]);
+  });
+  it('on a far layer the grid covers the whole picture, which falls beyond the layer\'s own page', () => {
+    resetStore(newDoc({ width: 200, height: 100 }));
+    setViewSettings({ grid: 'square', gridSize: 50 });
+    const { g, segs } = recorder();
+    // The camera has the picture falling on layer space -120..320 across and -40..160 down.
+    drawGrid(g, 1, [{ x: -120, y: -40 }, { x: 320, y: -40 }, { x: 320, y: 160 }, { x: -120, y: 160 }]);
+    const xs = segs.slice(1).filter((s) => s[0].x === s[1].x).map((s) => s[0].x);
+    expect(xs).toEqual([-100, -50, 0, 50, 100, 150, 200, 250, 300]);
+    const ys = segs.slice(1).filter((s) => s[0].y === s[1].y).map((s) => s[0].y);
+    expect(ys).toEqual([0, 50, 100, 150].filter((y) => y > -40 && y < 160));
+    // Every line runs the full height (or width) of the picture's box.
+    for (const s of segs.slice(1).filter((s) => s[0].x === s[1].x)) expect([s[0].y, s[1].y]).toEqual([-40, 160]);
   });
 });

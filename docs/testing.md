@@ -157,6 +157,16 @@ Every Electron harness except `vector-check.cjs` loads `dist/`, so build first:
 npm run build      # build:mascot, typecheck, vite build (dist/renderer), main and preload (dist/main, dist/preload)
 ```
 
+## Artboard drags: scripts/e2e/artboard-drag.cjs
+
+Real mouse events with the Artboard tool (move, resize from a corner, drag out a new artboard) on the demo documents,
+checking mid-drag and after the drop that nothing but the artboards, their names and the tool's own ghost box is painted on
+the pasteboard (no stale stage-coloured rectangle). Needs `npm run build` first.
+
+```
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/artboard-drag.cjs
+```
+
 ## Export end to end: scripts/e2e/export.cjs
 
 Starts the real main process (`dist/main/main.cjs`) with `FRAMELING_AUTOMATION_DIR` set, so save dialogs answer

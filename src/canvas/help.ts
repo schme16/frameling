@@ -109,7 +109,7 @@ Shapes jump onto guides, the page's edges and middle, the grid and more when the
 - **Guides**: the lines you drag out of the rulers ([Rulers and guides](help:rulers-guides)).
 - **Grid**: the square or isometric [grid](help:grids-perspective), while it shows.
 - **Other shapes**: the edges, middles and corner points of the other shapes, so a new shape lines up with what is there. **All layers, not just this one** picks every visible layer (the usual) or only the layer you are on.
-- **Equal gaps**: next to other shapes, it settles where the space matches a space already there, or sits in the middle of one, and little bars show the sizes. Off to begin with.
+- **Equal gaps**: next to other shapes, it settles where the space matches a space already there, or sits in the middle of one, and little bars show the exact sizes. It works while you drag a shape and while you draw one, on the corner you are dragging and the far end of a line.
 - **Perspective lines**: lines and boxes follow the vanishing points, while the perspective guides show.
 - **Pixel cells** (pixel layers): drawing stays on whole pixels, and guides, the grid and the page stay out of the way. Untick it to snap pixel layers to those too.
 - **Angle steps**: with **Shift**, a line turns to the nearest 45 degrees (or toward a vanishing point) and a rotation moves in steps. Shift is something you ask for, so the big switch and Ctrl don't stop it.
@@ -118,7 +118,7 @@ Shapes jump onto guides, the page's edges and middle, the grid and more when the
 **What snapped**
 A line shows what a shape landed on, and each kind has its own colour, in every theme. A note at the bottom of the canvas says it in words, with a dot in the same colour, like "Snapped to guide and page edge".
 
-By default vector layers snap to the page, guides, the grid, perspective lines and other shapes, artboards line up with each other, and pixel layers stick to their cells. Ticks you already changed are kept.`,
+By default vector layers snap to the page, guides, the grid, perspective lines, other shapes and equal gaps, artboards line up with each other, and pixel layers stick to their cells. Ticks you already changed are kept.`,
   },
   {
     id: 'pixel-grid',

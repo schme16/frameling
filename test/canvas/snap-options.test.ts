@@ -14,8 +14,8 @@ const SHOWING: SnapScene = { guides: true, grid: 'square', perspective: true };
 const set = (ctx: 'vector' | 'pixel' | 'artboard', over?: Partial<SnapScene>, bypass = false, on = true, picks = defaultPicks()) => [...activeTargets(on, picks, ctx, bypass, { ...SHOWING, ...over })].sort();
 
 describe('which targets are in force', () => {
-  it('vector work starts with the page, middle, guides, grid, other shapes, perspective and angle steps', () => {
-    expect(set('vector')).toEqual(['angles', 'centre', 'grid', 'guides', 'page', 'perspective', 'shapes']);
+  it('vector work starts with the page, middle, guides, grid, other shapes, equal gaps, perspective and angle steps', () => {
+    expect(set('vector')).toEqual(['angles', 'centre', 'grid', 'guides', 'page', 'perspective', 'shapes', 'spacing']);
   });
   it('pixel layers start with cells, perspective and angle steps only', () => {
     expect(set('pixel')).toEqual(['angles', 'cells', 'perspective']);

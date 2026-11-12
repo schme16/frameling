@@ -1,7 +1,7 @@
 // Contrast checks for the pairs that matter for reading, in plain words. Ratios are WCAG ones: 4.5 is the usual bar
 // for words, 3 is the bar for big or non-essential things.
 import { contrast, ensureContrast } from './color';
-import { tokenLabel, type ThemeTokens } from './tokens';
+import { SNAP_CONTROLS, tokenLabel, type ThemeTokens } from './tokens';
 
 export interface ContrastCheck {
   id: string;
@@ -32,6 +32,11 @@ export const CHECKS: ContrastCheck[] = [
   { id: 'cel', fg: 'cel-key', bg: 'panel-2', min: 3, what: 'Frames on the timeline', words: false },
   { id: 'playhead', fg: 'playhead', bg: 'panel-2', min: 3, what: 'The playhead on the timeline', words: false },
   { id: 'focus', fg: 'focus', bg: 'bg', min: 3, what: 'The keyboard focus ring', words: false },
+  // Each snap colour is a line on the canvas surround and a dot in the note over the panels.
+  ...SNAP_CONTROLS.flatMap((c): ContrastCheck[] => [
+    { id: `${c.token}-canvas`, fg: c.token, bg: 'canvas-bg', min: 3, what: `The ${c.label.toLowerCase()} snap line on the canvas`, words: false },
+    { id: `${c.token}-panel`, fg: c.token, bg: 'panel', min: 3, what: `The ${c.label.toLowerCase()} snap dot on panels`, words: false },
+  ]),
 ];
 
 export type ContrastLevel = 'good' | 'warn' | 'bad';

@@ -9,7 +9,7 @@ import { addLines, bumpSnap, getSnapGaps, getSnapLines, noTargets, setSnapGaps, 
 import { activeTargets, snapColourVar, type SnapContext, type SnapTarget } from './snapModel';
 import { currentSnapContext } from './snapOps';
 import { otherShapes } from './snapShapes';
-import { spacingFor, type Gap, type SpacingHit } from './snapSpacing';
+import { spacingAxis, spacingFor, type Gap, type SpacingHit } from './snapSpacing';
 import { cssVar } from './theme';
 import { contrast, isHex } from '../ui/themes/color';
 import { constrainWithVanishing, isoRatio, snapIso, snapToVanishing, squareLines } from './grid';
@@ -137,8 +137,25 @@ function withSpacing(lines: SnapLine[], nudge: { x: number; y: number }, sp: { x
   return { ...res, lines: out, gaps };
 }
 
-/** A point pulled onto the lines that are on (shape corners, line ends). `moving`: the selection is what is dragged. */
-export function snapPt(p: Pt, zoom: number, bypass: boolean, moving = false): Pt {
+/**
+ * Equal gaps for a dragged corner `p` of a shape drawn from `from`: along each axis the shape's span on the other axis
+ * decides which neighbours count (a point would only see the ones level with the pointer).
+ */
+export function cornerSpacing(from: Pt, p: Pt, rects: readonly Rect[], tol: number): { x: SpacingHit | null; y: SpacingHit | null } {
+  if (!rects.length) return { x: null, y: null };
+  const w = Math.abs(p.x - from.x);
+  const h = Math.abs(p.y - from.y);
+  return {
+    x: spacingAxis({ x: p.x, y: Math.min(from.y, p.y), w: 0, h }, 'x', rects, tol),
+    y: spacingAxis({ x: Math.min(from.x, p.x), y: p.y, w, h: 0 }, 'y', rects, tol),
+  };
+}
+
+/**
+ * A point pulled onto the lines that are on (shape corners, line ends). `moving`: the selection is what is dragged.
+ * `from`: the point is the far corner of a shape drawn from there, so equal gaps look at the whole span.
+ */
+export function snapPt(p: Pt, zoom: number, bypass: boolean, moving = false, from?: Pt): Pt {
   const set = active(bypass);
   const v = getViewSettings();
   const tol = snapPx() / zoom;
@@ -150,7 +167,7 @@ export function snapPt(p: Pt, zoom: number, bypass: boolean, moving = false): Pt
   const { t, rects } = pulls(set, moving);
   if (!t && !rects.length) return showSnap([]), p;
   const s = t ? snapPoint(p, t, tol) : { x: p.x, y: p.y, lines: [] as SnapLine[] };
-  const sp = spacingFor({ x: p.x, y: p.y, w: 0, h: 0 }, rects, tol);
+  const sp = from ? cornerSpacing(from, p, rects, tol) : spacingFor({ x: p.x, y: p.y, w: 0, h: 0 }, rects, tol);
   if (!sp.x && !sp.y) return showSnap(s.lines), { x: s.x, y: s.y };
   const m = withSpacing(s.lines, { x: s.x - p.x, y: s.y - p.y }, sp);
   showSnap(m.lines, [], m.gaps);
@@ -198,7 +215,7 @@ export function snapLineEnd(a: Pt, b: Pt, zoom: number, bypass: boolean, shift: 
   }
   showRay(null);
   if (steps) return showSnap([], ['angles']), { pt: b, constrained: false };
-  return { pt: snapPt(b, zoom, bypass), constrained: shift };
+  return { pt: snapPt(b, zoom, bypass, false, a), constrained: shift };
 }
 
 /** A box being dragged by (dx, dy) pulled onto the nearest lines and equal gaps (the selection itself is never a target). */
