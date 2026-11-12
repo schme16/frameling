@@ -85,6 +85,8 @@ The sliders button at the end opens the Tool options panel, with everything else
 - The loop button switches between looping and playing once.
 - **Quill for scale**: a tiny Quill, 48 pixels tall, stands next to your sprite at the same scale so you can feel how big it really is. The heart button turns him off. He is not there when Quill is turned off in Preferences.
 - **All frames** or **This clip**: play everything, or just the clip the playhead is in (idle, run...).
+- **Frames on boards**: the Preview plays every board in order as one animation, each board a frame (or as many frames as its own timeline has). A strip of boards under the picture shows which one is playing. Click a board to jump there. While paused, clicking a board opens it instead.
+- **Sprites on a sheet**: the Preview plays the sprite you have open. The strip under the picture lists your sprites: click one to watch it here without leaving the sprite you are drawing, and click it again to go back to the open one.
 - It plays at your frames per second and holds each drawing as long as the timeline does, so timing looks right.
 - Every change shows straight away, so you can draw a frame and watch it move.
 - While the timeline itself is playing, the Preview follows it.

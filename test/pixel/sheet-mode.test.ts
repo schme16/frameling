@@ -43,7 +43,7 @@ describe('the sentence and the footer agree', () => {
     expect(mode).toBe('atlas');
     expect(sheetSentence(root, mode)).toBe('This sheet has 3 sprites, one per board, 12 frames in all.');
     const ab = planArtboards(root, s, 0)!;
-    expect(sheetFooter(root, mode, ab, { count: 4, width: 16, height: 16 })).toBe('12 frames on 3 sprites, one sheet');
+    expect(sheetFooter(root, mode, ab, { count: 4, width: 16, height: 16 })).toBe('12 frames on 3 sprites, one sheet, 512 × 512 px each');
   });
   it('frames on boards', () => {
     const doc = newSpriteDoc({ way: 'boards', width: 16, height: 16 });
@@ -55,6 +55,16 @@ describe('the sentence and the footer agree', () => {
     const ab = planArtboards(root, s, 0)!;
     expect(sheetSentence(root, mode)).toBe('This sheet is 4 boards played as frames of one sprite, 4 frames in all.');
     expect(sheetFooter(root, mode, ab, { count: 4, width: 16, height: 16 })).toMatch(/^4 frames, one sprite, \d+ × \d+ px each$/);
+  });
+  it('one file each: the whole export, not the open board', () => {
+    const doc = newSpriteDoc({ way: 'sheet', width: 16, height: 16 });
+    resetStore(doc);
+    setArtboardExport({ mode: 'each' });
+    const root = store().rootDoc();
+    const s = sheet(root);
+    expect(effectiveMode(root, s)).toBe('each');
+    const ab = planArtboards(root, s, 0)!;
+    expect(sheetFooter(root, 'each', ab, { count: 4, width: 16, height: 16 })).toBe('3 files, 12 frames in all, 512 × 512 px each');
   });
   it('an animation', () => {
     const doc = newSpriteDoc({ way: 'animation', width: 16, height: 16 });
@@ -73,6 +83,6 @@ describe('the sentence and the footer agree', () => {
     const s = sheet(root);
     const mode = effectiveMode(root, s);
     expect(sheetSentence(root, mode, ids)).toBe('This sheet has 2 sprites, one per board, 8 frames in all.');
-    expect(sheetFooter(root, mode, planArtboards(root, s, 0), { count: 4, width: 16, height: 16 })).toBe('8 frames on 2 sprites, one sheet');
+    expect(sheetFooter(root, mode, planArtboards(root, s, 0), { count: 4, width: 16, height: 16 })).toBe('8 frames on 2 sprites, one sheet, 512 × 512 px each');
   });
 });

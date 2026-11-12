@@ -1,7 +1,7 @@
 // Export starts the way the sprite is built: frames on boards go out as one sprite, sprites on a sheet are packed
 // together. Decided once for each document, so a choice made in the dialog sticks.
 import type { Doc, Id } from '../core/format';
-import { currentArtboardExport, setArtboardExport, type ArtboardExportMode } from '../artboards/export';
+import { artboardSummary, currentArtboardExport, setArtboardExport, sizeWords, type ArtboardExportMode, type ArtboardPlan } from '../artboards/export';
 import { hasArtboards } from '../artboards/model';
 import { isPixelDoc, wayOf } from './way';
 
@@ -28,9 +28,11 @@ const n = (k: number, one: string) => `${k} ${one}${k === 1 ? '' : 's'}`;
  * The footer line for a pixel sprite sheet, in the words of the sheet: how many frames, on how many sprites, and how
  * big each frame is. `plan` is what the dialog plans for the open board (or the joined film), `ab` the artboard plan.
  */
-export function sheetFooter(doc: Doc, mode: ArtboardExportMode, ab: { frames: number; size: { width: number; height: number } | null } | null, plan: { count: number; width: number; height: number }): string {
+export function sheetFooter(doc: Doc, mode: ArtboardExportMode, ab: (Pick<ArtboardPlan, 'frames' | 'size'> & Partial<ArtboardPlan>) | null, plan: { count: number; width: number; height: number }): string {
   const sprites = currentArtboardExport(doc).ids?.length ?? doc.artboards?.length ?? 1;
-  if (mode === 'atlas' && ab) return `${n(ab.frames, 'frame')} on ${n(sprites, 'sprite')}, one sheet`;
+  if (mode === 'atlas' && ab) return `${n(ab.frames, 'frame')} on ${n(sprites, 'sprite')}, one sheet${sizeWords(ab)}`;
+  // One file each: every board is its own sheet, so say how many files and frames in all, not the open board's.
+  if (mode === 'each' && ab?.files !== undefined) return artboardSummary(ab as ArtboardPlan);
   if (mode === 'joined' && ab?.size) return `${n(ab.frames, 'frame')}, one sprite, ${ab.size.width} × ${ab.size.height} px each`;
   return `${n(plan.count, 'frame')}, one sprite, ${plan.width} × ${plan.height} px each`;
 }
