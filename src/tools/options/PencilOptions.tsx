@@ -1,4 +1,5 @@
 import { Choice, Slider, Tip } from '../../canvas/controls';
+import { PenOptions } from '../../tablet/PenOptions';
 import { useStore } from '../../core/store';
 import { BrushPreview } from './BrushOptions';
 import { pencilBrush } from '../pencil';
@@ -24,6 +25,7 @@ export function PencilOptions() {
       {!clean && <BrushPreview brush={{ ...pencilBrush(), size }} color={color} />}
       <Slider label="Thickness" value={size} min={1} max={clean ? 40 : 16} step={0.5} format={(v) => `${v}px`} onChange={(v) => setToolSettings({ pencilSize: v })} />
       <Tip>{clean ? 'Clean lines come out smooth and even. Bend them later with Edit points (A).' : 'The pencil keeps an even, thin line. For lines that swell with pressure, use the brush.'}</Tip>
+      <PenOptions tool="pencil" size opacity />
     </div>
   );
 }
