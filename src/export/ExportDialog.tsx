@@ -33,7 +33,7 @@ import { isFeatureOn } from '../features/host';
 import { useFeaturesVersion } from '../features/use';
 import { templateExport } from '../templates/setup';
 import { ArtboardExportPicker } from '../artboards/ExportPicker';
-import { artboardExport, artboardSummary, planArtboards } from '../artboards/export';
+import { artboardExport, artboardSummary, planArtboards, singleFrameNote } from '../artboards/export';
 import { customPicture } from '../artboards/fit';
 import { pixelExportStart } from '../pixel/workspace';
 import { sheetExported } from '../pixel/moments';
@@ -321,7 +321,7 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
               </p>
               {(sheet.engine === 'godot' || sheet.engine === 'phaser') && !separate && doc.clips.some((c) => c.direction === 'pingpong' || c.direction === 'pingpong-reverse') && (
                 <p className="ex-note">
-                  Back and forth clips: {bounceMode === 'engine' ? (sheet.engine === 'godot' ? "Godot's own ping-pong is used for clips that loop (smaller files, but the two end frames show twice)." : "Phaser's own yoyo is used where it can (smaller files, plays the same).") : 'every frame is listed in order, so the ends show once, just like here.'}{' '}
+                  Back and forth clips: {bounceMode === 'engine' ? (sheet.engine === 'godot' ? "Godot's own ping-pong is used for clips that loop (smaller files, but the two end frames show twice). It needs Godot 4.7 or newer: older Godot plays those clips forward only." : "Phaser's own yoyo is used where it can (smaller files, plays the same).") : 'every frame is listed in order, so the ends show once, just like here.'}{' '}
                   <button type="button" className="ex-link" onClick={() => openPrefs('behaviour')}>
                     Change in Preferences
                   </button>
@@ -447,7 +447,7 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
               )}
             </fieldset>
           ) : (
-            <p className="ex-note">Exports frame {plan.range.start + 1}, the one you are looking at.</p>
+            <p className="ex-note">{singleFrameNote(abPlan, plan.range.start)}</p>
           )}
 
           {s.format === 'lottie' ? (
