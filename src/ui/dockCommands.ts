@@ -1,8 +1,9 @@
 // Commands for the dock: float and move panels, move the tool rail, hide all panels, step between workspaces, share one.
 // "This panel" is the one you last clicked in or tabbed into.
 import { getPanel, registerCommand, registerCommands } from '../core/registry';
-import { dock, dockEverythingBack, floatPanel, isVisible, panelsAway, panelTitle, placeOf, placePanel, placeTools, togglePanelsAway } from './dock';
-import { ZONES, type DockZone, type ToolsPlace } from './dockModel';
+import { dock, dockEverythingBack, floatPanel, isVisible, joinGroups, panelsAway, panelTitle, placeOf, placePanel, placeTools, togglePanelsAway } from './dock';
+import { SPLIT_WORDS } from './dockDrag';
+import { groupCount, groupTabs, MAX_GROUPS, ZONES, type DockZone, type ToolsPlace } from './dockModel';
 import { askRename } from './dockMenus';
 import { lastPanel } from './dockShared';
 import { openPrefs } from './overlays';
@@ -48,6 +49,40 @@ registerCommands([
     run: () => {
       const id = thisPanel();
       if (id) askRename('panel', id, Math.round(window.innerWidth / 2 - 130), 120);
+    },
+  },
+  {
+    id: 'view.splitPanelGroup',
+    label: 'Put this panel in its own group',
+    category: 'View',
+    description: 'Give the panel you are working in a group of its own on the same side, stacked under the others with its own tabs.',
+    help: 'panels',
+    keywords: ['stack', 'split', 'group', 'tabs', 'below', 'beside', 'panel', 'layers', 'colours'],
+    run: () => {
+      const id = thisPanel();
+      if (!id) return;
+      const at = placeOf(id);
+      const l = dock.get().layout;
+      if (!at || !('zone' in at)) return void toast('Dock the panel on a side first. Windows have no groups.');
+      if (groupTabs(l, at).length === 1) return void toast('That panel is already a group of its own.');
+      if (groupCount(l.zones[at.zone]) >= MAX_GROUPS) return void toast(`A side holds up to ${MAX_GROUPS} groups.`);
+      placePanel(id, { zone: at.zone, group: at.group ?? 0, split: 'after' });
+      toast(`${panelTitle(id)} has its own group, ${SPLIT_WORDS[at.zone].after}.`, { duration: 1800 });
+    },
+  },
+  {
+    id: 'view.joinPanelGroups',
+    label: 'Join this side into one group',
+    category: 'View',
+    description: 'Put every stacked group on the side of the panel you are working in back into one set of tabs.',
+    help: 'panels',
+    keywords: ['stack', 'merge', 'group', 'tabs', 'unstack', 'panel'],
+    run: () => {
+      const id = thisPanel();
+      if (!id) return;
+      const at = placeOf(id);
+      if (!at || !('zone' in at) || groupCount(dock.get().layout.zones[at.zone]) < 2) return void toast('That side is already one group.');
+      joinGroups(at.zone);
     },
   },
   {

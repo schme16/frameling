@@ -14,6 +14,7 @@ import { Icon } from './icons';
 import { openHelp } from './overlays';
 import { infoFor, railGroups, sectionsNow, shortName, splitZone, PANEL_INFO } from './panelInfo';
 import { PanelPicker } from './PanelPicker';
+import { TabGroupView, ZoneStack } from './DockGroup';
 import { folded, foldAll, onlyOpen, panelPicker, setFolded, togglePicker, type RightStyle } from './rightStyle';
 import './rightDock.css';
 
@@ -25,7 +26,21 @@ let lastSection: string | null = null;
 /** The section Properties last scrolled to. */
 let lastShown: string | null = null;
 
+/**
+ * The right side. Its first group is the Properties and rail presentation below; any groups stacked under it (see
+ * dockModel.ts) are ordinary tab groups across the full width of the side, each with its own tab bar.
+ */
 export function RightDock({ zone, style }: { zone: DockZone; style: RightStyle }) {
+  const z = dock.use((d) => d.layout.zones[zone]);
+  const width = z.collapsed ? RAIL_W : z.size + RAIL_W;
+  return (
+    <section className={`ui-zone ui-zone-${zone} rd${z.collapsed ? ' is-collapsed' : ''}`} style={{ width }} aria-label={`${zone} side`}>
+      <ZoneStack zone={zone} render={(gi) => (gi === 0 ? <RailGroup zone={zone} style={style} /> : <TabGroupView zone={zone} group={gi} />)} />
+    </section>
+  );
+}
+
+function RailGroup({ zone, style }: { zone: DockZone; style: RightStyle }) {
   const z = dock.use((d) => d.layout.zones[zone]);
   const drag = dragging.use((v) => v);
   const names = dock.use((d) => d.layout.names);
@@ -127,10 +142,9 @@ export function RightDock({ zone, style }: { zone: DockZone; style: RightStyle }
   };
 
   const panel = !onProps && active ? getPanel(active) : undefined;
-  const width = z.collapsed ? RAIL_W : z.size + RAIL_W;
 
   return (
-    <section className={`ui-zone ui-zone-${zone} rd${z.collapsed ? ' is-collapsed' : ''}${drag ? ' is-target' : ''}`} style={{ width }} aria-label={`${zone} side`} data-dock-area="" data-dock-zone={zone}>
+    <div className="rd-top">
       {!z.collapsed && (onProps || panel) && (
         <div className="rd-body" role="tabpanel" id="rd-body" aria-labelledby={`rd-tab-${onProps ? PROPS : active}`} data-panel-id={onProps ? undefined : (active ?? undefined)}>
           {onProps ? (
@@ -159,7 +173,7 @@ export function RightDock({ zone, style }: { zone: DockZone; style: RightStyle }
           )}
         </div>
       )}
-      <div className="rd-rail" data-dock-strip="" data-dock-zone={zone} data-dock-tabs={z.tabs.join(',')} data-dock-axis="y">
+      <div className="rd-rail" data-dock-strip="" data-dock-zone={zone} data-dock-group={0} data-dock-tabs={z.tabs.join(',')} data-dock-axis="y">
         <div className="rd-rail-items" role="tablist" aria-label="Right side" aria-orientation="vertical">
           {merge && sections.length > 0 && tabFor(PROPS)}
           {groups.map((g, gi) => (
@@ -198,7 +212,7 @@ export function RightDock({ zone, style }: { zone: DockZone; style: RightStyle }
         </button>
       </div>
       {picker && <PanelPicker at={picker} side="left" onClose={() => panelPicker.set(null)} />}
-    </section>
+    </div>
   );
 }
 

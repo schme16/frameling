@@ -1,9 +1,9 @@
 // The right-click menus of the dock (a panel's tab, a floating window's title, the tool rail) and the little name box,
 // as plain data, so the same lists serve the mouse and the keyboard (the menu key) and the commands.
 import { getPanel } from '../core/registry';
-import { closeFloatWindow, dock, dockEverythingBack, dockFloatBack, floatPanel, hidePanel, moveFloatTo, panelTitle, placeOf, placePanel, placeTools, renameFloat, renamePanel } from './dock';
-import { floatTitle, ZONES, type DockZone, type ToolsPlace } from './dockModel';
-import { ZONE_NAMES } from './dockDrag';
+import { closeFloatWindow, dock, dockEverythingBack, dockFloatBack, floatPanel, hidePanel, joinGroups, moveFloatTo, panelTitle, placeOf, placePanel, placeTools, renameFloat, renamePanel, resetFloatSize, resizeFloatBy } from './dock';
+import { floatTitle, groupCount, groupTabs, MAX_GROUPS, ZONES, type DockZone, type ToolsPlace } from './dockModel';
+import { SPLIT_WORDS, ZONE_NAMES } from './dockDrag';
 import { createStore } from './mini';
 import { openHelp } from './overlays';
 import { getPrefs, setPrefs } from './prefs';
@@ -34,7 +34,18 @@ export function panelMenu(id: string, at: { x: number; y: number }): DockMenuIte
   const here = placeOf(id, l);
   const zone = here && 'zone' in here ? here.zone : null;
   const items: DockMenuItem[] = [{ heading: panelTitle(id, l) }];
-  for (const z of ZONES) items.push({ label: `Move to ${WHERE[z]}`, disabled: zone === z, onClick: () => placePanel(id, { zone: z }) });
+  const group = here && 'zone' in here ? (here.group ?? 0) : 0;
+  for (const z of ZONES) items.push({ label: `Move to ${WHERE[z]}`, disabled: zone === z && group === 0, onClick: () => placePanel(id, { zone: z }) });
+  if (zone) {
+    // Groups stack inside a side: each with its own tabs.
+    const words = SPLIT_WORDS[zone];
+    const count = groupCount(l.zones[zone]);
+    const alone = groupTabs(l, here!).length === 1;
+    for (const edge of ['before', 'after'] as const) items.push({ label: `Move to a new group ${words[edge]}`, disabled: alone || count >= MAX_GROUPS, onClick: () => placePanel(id, { zone, group, split: edge }) });
+    if (group > 0) items.push({ label: `Move into the group ${words.before}`, onClick: () => placePanel(id, { zone, group: group - 1 }) });
+    if (group < count - 1) items.push({ label: `Move into the group ${words.after}`, onClick: () => placePanel(id, { zone, group: group + 1 }) });
+    if (count > 1) items.push({ label: 'Join this side into one group', onClick: () => joinGroups(zone) });
+  }
   items.push({ label: 'Move to its own window', disabled: !!here && 'float' in here && l.floats.find((f) => f.id === here.float)!.tabs.length === 1, onClick: () => floatPanel(id) });
   const others = l.floats.filter((f) => !f.tabs.includes(id));
   if (others.length) {
@@ -54,6 +65,7 @@ export function floatMenu(floatId: string, at: { x: number; y: number }): DockMe
   if (!f) return [];
   const items: DockMenuItem[] = [{ heading: floatTitle(l, f, (x) => panelTitle(x, l)) }, { label: 'Rename window...', onClick: () => askRename('float', floatId, at.x, at.y) }];
   if (f.name) items.push({ label: 'Name it after its panel again', onClick: () => renameFloat(floatId, '') });
+  items.push({ separator: true }, { label: 'Make it bigger', onClick: () => resizeFloatBy(floatId, 64, 48) }, { label: 'Make it smaller', onClick: () => resizeFloatBy(floatId, -64, -48) }, { label: 'Back to the usual size', onClick: () => resetFloatSize(floatId) });
   items.push({ separator: true }, { label: 'Dock back where it started', onClick: () => dockFloatBack(floatId) });
   for (const z of ZONES) items.push({ label: `Dock all of it on ${WHERE[z]}`, onClick: () => moveFloatTo(floatId, { zone: z }) });
   items.push({ separator: true }, { label: 'Close window', onClick: () => closeFloatWindow(floatId) }, { label: 'Dock every window back', disabled: l.floats.length < 2, onClick: () => dockEverythingBack() });

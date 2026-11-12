@@ -3,7 +3,7 @@
 // DockFloats.tsx and RightDock.tsx. This file is plain state so it can be tested.
 import { allPanels, allTools, getPanel, type DockZone, type PanelDef } from '../core/registry';
 import type { LayerKind } from '../core/format';
-import { cleanName, clone, closeFloat, closePanel, clampSize, dockAllFloats, dockFloat, emptyLayout, frontPanel, locate, MAX_SAVED, moveGroupTo, movePanelTo, nameOf, normaliseLayout, placeToolsIn, placedIds, raiseFloat, renameFloatIn, renamePanelIn, sanitizeWorkspace, sanitizeWorkspaces, setFloatBox, ZONES, type DropTarget, type Layout, type Place, type ToolsPlace, type Workspace } from './dockModel';
+import { activeOfGroup, cleanName, clone, closeFloat, closePanel, clampSize, dockAllFloats, dockFloat, emptyLayout, evenSplit, frontPanel, groupTabs, isFront, joinAllGroups, joinGroupUp, locate, FLOAT_DEFAULT, MAX_SAVED, moveGroupTo, movePanelTo, nameOf, normaliseLayout, nudgeSplit, placeToolsIn, placedIds, raiseFloat, renameFloatIn, renamePanelIn, resizeBox, retainTabs, sanitizeWorkspace, sanitizeWorkspaces, setFloatBox, splitGroupsAt, ZONES, type DropTarget, type Layout, type Place, type ToolsPlace, type Workspace } from './dockModel';
 import { createStore, readRaw, writeJson } from './mini';
 import { BUILTIN_RAILS, resolveGroups, sanitizeGroups, type ToolGroup } from './toolArrange';
 import { parseWorkspaceText, uniqueWorkspaceName, workspaceToText } from './workspaceFile';
@@ -118,11 +118,7 @@ export function inPixelWorkspace(): boolean {
 export function reconcile(layout: Layout, panels: PanelDef[] = allPanels()): Layout {
   const l = normaliseLayout(layout);
   const ids = new Set(panels.map((p) => p.id));
-  for (const z of ZONES) {
-    const zs = l.zones[z];
-    zs.tabs = zs.tabs.filter((id) => ids.has(id));
-    if (!zs.active || !zs.tabs.includes(zs.active)) zs.active = zs.tabs[0] ?? null;
-  }
+  for (const z of ZONES) retainTabs(l.zones[z], (id) => ids.has(id));
   for (const f of l.floats) {
     f.tabs = f.tabs.filter((id) => ids.has(id));
     if (!f.active || !f.tabs.includes(f.active)) f.active = f.tabs[0] ?? null;
@@ -234,6 +230,8 @@ const PARKED_OLD_KEY = 'frameling.dock.parked.v1';
 interface Parked {
   /** The zone it was in, or the window (with its box) when it floated. */
   zone?: DockZone;
+  /** Which stacked group of the zone (missing = the first). */
+  group?: number;
   float?: { id: string; x: number; y: number; w: number; h: number };
   index?: number;
   /** It was the front tab there. */
@@ -264,7 +262,7 @@ const writeAllParked = (all: ParkedByWorkspace): void => {
 /** Where a panel is in a layout, as something that can be put back. Null when the layout does not hold it. */
 function placeInLayout(l: Layout, id: string): Parked | null {
   const at = locate(l, id);
-  if (at && 'zone' in at) return { zone: at.zone, index: l.zones[at.zone].tabs.indexOf(id), front: l.zones[at.zone].active === id };
+  if (at && 'zone' in at) return { zone: at.zone, ...(at.group ? { group: at.group } : {}), index: groupTabs(l, at).indexOf(id), front: activeOfGroup(l, at.zone, at.group) === id };
   if (at) {
     const f = l.floats.find((x) => x.id === at.float)!;
     return { float: { id: f.id, x: f.x, y: f.y, w: f.w, h: f.h }, index: f.tabs.indexOf(id), front: f.active === id };
@@ -317,17 +315,18 @@ export function replacePanels(ids: string[]): void {
           if (!next.hidden.includes(id)) next = { ...next, hidden: [...next.hidden, id], known: next.known.includes(id) ? next.known : [...next.known, id] };
           continue;
         }
-        const before = p.zone ? next.zones[p.zone].active : null;
-        if (p.zone) next = movePanelTo(next, id, { zone: p.zone, index: p.index }, screen());
+        const before = p.zone ? activeOfGroup(next, p.zone, p.group) : null;
+        if (p.zone) next = movePanelTo(next, id, { zone: p.zone, index: p.index, ...(p.group ? { group: p.group } : {}) }, screen());
         else if (p.float) {
           const have = made.get(p.float.id) ?? (next.floats.some((f) => f.id === p.float!.id) ? p.float.id : undefined);
           next = movePanelTo(next, id, have ? { float: have, index: p.index } : { newFloat: p.float }, screen());
           if (!have) made.set(p.float.id, next.floats[next.floats.length - 1].id);
         } else continue;
         // Joining a group does not take the front from the tab that was there.
-        if (!p.front && p.zone && before && next.zones[p.zone].tabs.includes(before)) {
-          next = clone(next);
-          next.zones[p.zone].active = before;
+        if (!p.front && p.zone && before && locate(next, before)) {
+          const keep = next.zones[p.zone].collapsed;
+          next = frontPanel(next, before);
+          next.zones[p.zone].collapsed = keep;
         }
       }
       Object.assign(l, next);
@@ -366,10 +365,9 @@ export function panelTitle(id: string, l: Layout = dock.get().layout): string {
 }
 
 export function setActive(zone: DockZone, id: string): void {
-  change((l) => {
-    if (!l.zones[zone].tabs.includes(id)) return;
-    l.zones[zone].active = id;
-    l.zones[zone].collapsed = false;
+  apply((l) => {
+    const at = locate(l, id);
+    return at && 'zone' in at && at.zone === zone ? frontPanel(l, id) : l;
   });
 }
 
@@ -439,6 +437,44 @@ export function setFloatWindowBox(floatId: string, box: Parameters<typeof setFlo
   apply((l) => setFloatBox(l, floatId, box), persist);
 }
 
+/** Makes a window bigger or smaller by a step (negative = smaller) from the keyboard, kept on screen. */
+export function resizeFloatBy(floatId: string, dw: number, dh: number): { w: number; h: number } | null {
+  const f = dock.get().layout.floats.find((x) => x.id === floatId);
+  if (!f) return null;
+  const box = resizeBox(f, dw, dh, screen());
+  apply((l) => setFloatBox(l, floatId, box));
+  return box;
+}
+
+/** Puts a window back to the size new windows start with. */
+export function resetFloatSize(floatId: string): { w: number; h: number } | null {
+  const f = dock.get().layout.floats.find((x) => x.id === floatId);
+  return f ? resizeFloatBy(floatId, FLOAT_DEFAULT.w - f.w, FLOAT_DEFAULT.h - f.h) : null;
+}
+
+/** The line between stacked groups moved (`first` is the first group's share of the zone). `persist` false while dragging; call flushDock() after. */
+export function setGroupSplit(zone: DockZone, boundary: number, first: number, persist = true): void {
+  apply((l) => splitGroupsAt(l, zone, boundary, first), persist);
+}
+
+export function nudgeGroupSplit(zone: DockZone, boundary: number, by: number): void {
+  apply((l) => nudgeSplit(l, zone, boundary, by));
+}
+
+export function evenGroupSplit(zone: DockZone, boundary: number): void {
+  apply((l) => evenSplit(l, zone, boundary));
+}
+
+/** A group joined into the one before it. */
+export function joinGroup(zone: DockZone, group: number): void {
+  apply((l) => joinGroupUp(l, zone, group));
+}
+
+/** Every group of a zone made one. */
+export function joinGroups(zone: DockZone): void {
+  apply((l) => joinAllGroups(l, zone));
+}
+
 export function renamePanel(id: string, name: string): void {
   apply((l) => renamePanelIn(l, id, name));
 }
@@ -496,8 +532,7 @@ export function togglePanel(id: string): void {
   const l = dock.get().layout;
   const at = locate(l, id);
   if (!at) return showPanel(id);
-  const front = 'zone' in at ? !l.zones[at.zone].collapsed && l.zones[at.zone].active === id : l.floats.find((f) => f.id === at.float)!.active === id;
-  if (!front) return showPanel(id);
+  if (!isFront(l, id)) return showPanel(id);
   hidePanel(id);
 }
 

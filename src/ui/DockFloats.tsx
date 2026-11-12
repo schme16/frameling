@@ -2,7 +2,7 @@
 // new window, or onto a zone to dock it), edges to resize by. Also the floating tool rail.
 import { memo, useEffect, useState, type ReactNode } from 'react';
 import { getPanel } from '../core/registry';
-import { closeFloatWindow, dock, dockFloatBack, hidePanel, panelsAway, panelTitle, raiseFloatWindow, setFloatActive, setFloatWindowBox } from './dock';
+import { closeFloatWindow, dock, dockFloatBack, hidePanel, panelsAway, panelTitle, raiseFloatWindow, resetFloatSize, resizeFloatBy, setFloatActive, setFloatWindowBox } from './dock';
 import { clampBox, floatTitle, type FloatWin } from './dockModel';
 import { dragState, dropIndexFor, startFloatDrag, startFloatResize, startPanelDrag } from './dockDrag';
 import { askRename, menuPoint, floatMenu, openDockMenu, panelMenu } from './dockMenus';
@@ -61,6 +61,13 @@ const FloatWindow = memo(function FloatWindow({ f, z, win }: { f: FloatWin; z: n
   const lay = dock.get().layout;
   const title = floatTitle({ ...lay, names }, f, (id) => getPanel(id)?.title ?? id);
   const several = f.tabs.length > 1;
+  // Said to a screen reader after a resize from the keyboard ("420 wide, 340 tall").
+  const [sized, setSized] = useState('');
+  useEffect(() => {
+    if (!sized) return;
+    const t = setTimeout(() => setSized(''), 2500);
+    return () => clearTimeout(t);
+  }, [sized]);
 
   const tabs = (
     <div className="ui-float-tabs" role="tablist" aria-label={`${title} tabs`}>
@@ -127,12 +134,22 @@ const FloatWindow = memo(function FloatWindow({ f, z, win }: { f: FloatWin; z: n
     <button
       type="button"
       className="ui-float-grip"
-      aria-label={`Move ${title}. Arrow keys nudge it.`}
+      aria-label={`Move ${title}. Arrow keys nudge it. Alt and the arrow keys resize it.`}
+      aria-keyshortcuts="ArrowLeft ArrowRight ArrowUp ArrowDown Alt+ArrowLeft Alt+ArrowRight Alt+ArrowUp Alt+ArrowDown Alt+Enter"
       data-tip="Move window"
-      data-tip-desc="Drag the title bar to move it. Drop it on a side of the canvas to dock it. Double-click the name to rename it."
+      data-tip-desc="Drag the title bar to move it. Drop it on a side of the canvas to dock it. From the keyboard, arrow keys move it and Alt with the arrows resizes it (Shift for bigger steps, Alt+Enter for the usual size)."
       data-help="floating-windows"
       onKeyDown={(e) => {
         const step = e.shiftKey ? 64 : 16;
+        if (e.altKey && !e.ctrlKey && !e.metaKey) {
+          const r = e.key === 'ArrowLeft' ? [-step, 0] : e.key === 'ArrowRight' ? [step, 0] : e.key === 'ArrowUp' ? [0, -step] : e.key === 'ArrowDown' ? [0, step] : null;
+          const made = r ? resizeFloatBy(f.id, r[0], r[1]) : e.key === 'Enter' ? resetFloatSize(f.id) : null;
+          if (!r && e.key !== 'Enter') return;
+          e.preventDefault();
+          e.stopPropagation();
+          if (made) setSized(`${made.w} wide, ${made.h} tall`);
+          return;
+        }
         const d = e.key === 'ArrowLeft' ? [-step, 0] : e.key === 'ArrowRight' ? [step, 0] : e.key === 'ArrowUp' ? [0, -step] : e.key === 'ArrowDown' ? [0, step] : null;
         if (e.key === 'ContextMenu' || (e.shiftKey && e.key === 'F10')) {
           e.preventDefault();
@@ -194,6 +211,9 @@ const FloatWindow = memo(function FloatWindow({ f, z, win }: { f: FloatWin; z: n
         </div>
         {chrome === 'titled' && several && <div className="ui-float-row">{tabs}</div>}
       </div>
+      <span className="ui-sr-only" role="status" aria-live="polite">
+        {sized}
+      </span>
       {panel && (
         <div className="ui-panel ui-float-body" role="tabpanel" aria-labelledby={`ui-ftab-${active}`} data-panel-id={active}>
           <h2 className="ui-sr-only">{names?.[active] ?? panel.title}</h2>
