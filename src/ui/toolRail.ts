@@ -9,7 +9,7 @@ import { groupName, moveTool, placeWords, resolveGroups, shiftTool, type ToolDro
 
 /** The whole arrangement for the tools that exist (the saved one, or the default), whatever shows right now. */
 export function currentGroups(): ToolGroup[] {
-  return resolveGroups(dock.get().layout.tools.groups, allTools().map((t) => t.id));
+  return resolveGroups(dock.get().layout.tools.groups, allTools());
 }
 
 /** True when the person has changed the arrangement from the default. */

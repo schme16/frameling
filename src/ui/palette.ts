@@ -4,6 +4,8 @@ import { store } from '../core/store';
 import { scoreWord, wordsOf } from './match';
 import { readRaw, writeJson } from './mini';
 import { toast } from './toast';
+import type { FeatureDescriptor } from '../features/feature';
+import { offFeatures, setFeatureOn } from '../features/host';
 
 export type PaletteItem =
   | { kind: 'command'; id: string; label: string; category: string; description: string; command: Command }
@@ -14,7 +16,26 @@ export interface PaletteHit {
   score: number;
 }
 
-export function paletteItems(commands: Command[] = allCommands(), topics: HelpTopic[] = allHelp()): PaletteItem[] {
+/** Id prefix of the "Turn on <feature>" entries, which only show once someone types. */
+export const TURN_ON_PREFIX = 'features.turnOn.';
+
+/** One entry per feature that is turned off, found by its name or anything its commands and help are called. */
+export function turnOnCommands(off: FeatureDescriptor[] = offFeatures()): Command[] {
+  return off.map((f) => ({
+    id: `${TURN_ON_PREFIX}${f.id}`,
+    label: `Turn on ${f.name}`,
+    category: 'Features',
+    description: f.about,
+    keywords: [...new Set([...(f.commands ?? []).flatMap((c) => [c.label, ...(c.keywords ?? [])]), ...(f.help ?? []).flatMap((h) => [h.title, ...(h.keywords ?? [])]), ...Object.values(f.sections ?? {}).flatMap((s) => s.keywords ?? [])])],
+    run: () => {
+      if (!setFeatureOn(f.id, true).ok) return;
+      toast(`${f.name} is on. Its commands are in the command palette now.`, { kind: 'success' });
+    },
+  }));
+}
+
+export function paletteItems(commands: Command[] = allCommands(), topics: HelpTopic[] = allHelp(), off: Command[] = turnOnCommands()): PaletteItem[] {
+  commands = [...commands, ...off];
   const items: PaletteItem[] = commands.map((c) => ({ kind: 'command', id: c.id, label: c.label, category: c.category, description: c.description ?? '', command: c }));
   for (const t of topics) items.push({ kind: 'help', id: t.id, label: t.title, category: 'Help', description: t.summary, topic: t });
   return items;
@@ -69,7 +90,7 @@ export function rankPalette(query: string, items: PaletteItem[] = paletteItems()
         seen.add(`command:${id}`);
       }
     });
-    const rest = items.filter((i) => i.kind === 'command' && !seen.has(`command:${i.id}`)).sort((a, b) => a.category.localeCompare(b.category) || a.label.localeCompare(b.label));
+    const rest = items.filter((i) => i.kind === 'command' && !i.id.startsWith(TURN_ON_PREFIX) && !seen.has(`command:${i.id}`)).sort((a, b) => a.category.localeCompare(b.category) || a.label.localeCompare(b.label));
     for (const it of rest) out.push({ item: it, score: 0 });
     return out.slice(0, limit);
   }

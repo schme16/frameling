@@ -49,6 +49,8 @@ function pick(e: ToolPointer, ctx: ToolContext, speak: boolean): void {
 
 export const eyedropperTool: Tool = {
   id: 'eyedropper',
+  group: 'extras',
+  groupAt: 3,
   label: 'Eyedropper',
   icon: 'eyedropper',
   key: 'i',

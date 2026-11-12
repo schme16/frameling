@@ -276,6 +276,8 @@ function fillPixels(e: ToolPointer, ctx: ToolContext) {
 
 export const fillTool: Tool = {
   id: 'fill',
+  group: 'draw',
+  groupAt: 3,
   label: 'Paint bucket',
   icon: 'fill',
   key: 'g',

@@ -253,6 +253,8 @@ function overlay(gx: CanvasRenderingContext2D, ctx: ToolContext): void {
 
 export const pixelSelectTool: Tool = {
   id: PIXEL_SELECT_TOOL,
+  group: 'select',
+  groupAt: 1,
   label: 'Select',
   icon: 'select',
   key: 'v',

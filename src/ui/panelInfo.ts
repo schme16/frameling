@@ -160,11 +160,6 @@ export const PANEL_INFO: Record<string, PanelInfo> = {
     group: 'animate',
     keywords: ['real size', 'actual size', 'play', 'sprite'],
   },
-  'clip-flow': {
-    blurb: 'How your clips (idle, walk, jump) lead into each other, for games.',
-    group: 'animate',
-    keywords: ['state machine', 'clips', 'game', 'transitions'],
-  },
   quests: {
     blurb: 'Short guided lessons that teach a skill step by step.',
     group: 'learn',

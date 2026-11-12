@@ -68,6 +68,8 @@ function write(id: Id, which: Which, g: Gradient, key: string): void {
 
 export const gradientTool: Tool = {
   id: 'gradient',
+  group: 'extras',
+  groupAt: 2,
   label: 'Gradient',
   icon: 'gradient',
   key: 'f',

@@ -1,5 +1,6 @@
 // Opening, saving and the "unsaved changes?" question, on the page side. The bytes are made and read by file.ts; the
 // desktop side (src/main) does the dialogs and the disk.
+import { ownedUndo } from '../core/owners';
 import { rootDoc } from '../core/symbols';
 import { uid } from '../core/doc';
 import { store } from '../core/store';
@@ -105,7 +106,12 @@ export async function openDocument(): Promise<void> {
 const openers: { test: (path: string) => boolean; open: (bytes: Uint8Array, path: string) => Promise<boolean> }[] = [];
 
 export function registerOpener(test: (path: string) => boolean, open: (bytes: Uint8Array, path: string) => Promise<boolean>): void {
-  openers.push({ test, open });
+  const o = { test, open };
+  openers.push(o);
+  ownedUndo(() => {
+    const i = openers.indexOf(o);
+    if (i >= 0) openers.splice(i, 1);
+  });
 }
 
 /** Ways to take over Save: `instead` runs when the drawing has no file yet (resolve null to carry on as usual); `after` runs once a save worked. */
@@ -117,6 +123,10 @@ const saveHooks: SaveHook[] = [];
 
 export function registerSaveHook(h: SaveHook): void {
   saveHooks.push(h);
+  ownedUndo(() => {
+    const i = saveHooks.indexOf(h);
+    if (i >= 0) saveHooks.splice(i, 1);
+  });
 }
 
 /** Opens a file we already know the path of (recent files, double-click, command line). */
@@ -129,7 +139,13 @@ export async function openPath(path: string): Promise<boolean> {
     void api.recent.remove(path);
     return false;
   }
-  const other = openers.find((o) => o.test(r.path));
+  let other = openers.find((o) => o.test(r.path));
+  if (!other) {
+    // A kind of file that needs a feature that is turned off: offer to turn it on, then open it.
+    const [{ offFeatureOpening }, { offerTurnOnForFile }] = await Promise.all([import('../features/host'), import('../features/prompt')]);
+    const feature = offFeatureOpening(r.path);
+    if (feature && (await offerTurnOnForFile(feature, baseName(r.path)))) other = openers.find((o) => o.test(r.path));
+  }
   if (other) return other.open(r.bytes, r.path);
   const ok = await loadBytes(r.bytes, r.path);
   if (ok) void api.recent.add(r.path);

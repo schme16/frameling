@@ -1,6 +1,7 @@
 // Registers feature descriptors and keeps which optional ones are on. A feature that is off has nothing registered:
 // its things are taken away by owner (core/owners.ts) and put back when it is turned on again.
 import type { Doc } from '../core/format';
+import { registerChoice } from '../core/choices';
 import { registerCommand, registerHelp, registerPanel, registerTool, type HelpTopic } from '../core/registry';
 import { removeOwned, withOwner } from '../core/owners';
 import { registerQuest } from '../quests/registry';
@@ -47,6 +48,7 @@ function activate(d: FeatureDescriptor): void {
     for (const t of d.tools ?? []) registerTool(t);
     for (const h of d.help ?? []) registerHelp(h);
     for (const q of d.quests ?? []) registerQuest(q);
+    for (const c of d.choices ?? []) registerChoice(c);
     for (const m of d.menus ?? []) registerMenuItems(m.menu, m.items);
     for (const [id, info] of Object.entries(d.sections ?? {})) registerPanelInfo(id, info);
     d.activate?.();
@@ -159,6 +161,9 @@ export function offFeaturesUsedBy(doc: Doc): FeatureDescriptor[] {
     }
   });
 }
+
+/** The feature that is off and opens this kind of file, if any. */
+export const offFeatureOpening = (path: string): FeatureDescriptor | undefined => offFeatures().find((d) => d.opens?.(path));
 
 /** Help topics of features that are off, each with its feature: for finding them in a search and offering to turn them on. */
 export function hiddenHelp(): { topic: HelpTopic; feature: FeatureDescriptor }[] {

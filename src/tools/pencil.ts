@@ -26,6 +26,8 @@ export function pencilBrush(): BrushSettings {
 
 export const pencilTool: Tool = {
   id: 'pencil',
+  group: 'draw',
+  groupAt: 0,
   label: 'Pencil',
   icon: 'pencil',
   key: 'p',

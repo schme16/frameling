@@ -225,7 +225,8 @@ export async function runExport(ctx: RunContext): Promise<RunResult> {
         background: bg === 'none' ? null : bg === 'doc' ? doc.background : '#ffffff',
         maxSide: MAX_SHEET_SIDE,
         appVersion: ctx.appVersion,
-        source: settings.includeSource === false ? null : saveFile(doc, ctx.appVersion ?? ''),
+        // The drawing inside carries a marker so Frameling knows it came from Interactives (feature id under `ext`).
+        source: settings.includeSource === false ? null : saveFile({ ...doc, ext: { ...doc.ext, interactives: { used: true } } }, ctx.appVersion ?? ''),
       });
       return { kind: 'file', name: `${plan.name}.flplay`, bytes };
     }

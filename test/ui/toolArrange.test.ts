@@ -4,20 +4,36 @@ import { applyWorkspace, dock, resetDock, saveWorkspace, setToolGroups, workspac
 import { normaliseLayout, sanitizeWorkspace, emptyLayout } from '../../src/ui/dockModel';
 import { DEFAULT_GROUPS, groupName, moveTool, placeWords, resolveGroups, sanitizeGroups, shiftTool, visibleGroups, type ToolGroup } from '../../src/ui/toolArrange';
 
+// Where the built-in tools start in the rail (each registers its own `group` and `groupAt`; the last test checks they agree).
+const PLACES: Record<string, string[]> = {
+  draw: ['pencil', 'brush', 'eraser', 'fill', 'tile-brush', 'tile-eraser', 'tile-fill'],
+  extras: ['shade', 'dither', 'gradient', 'eyedropper', 'tile-picker'],
+  shapes: ['line', 'rect', 'ellipse', 'polygon', 'star', 'tile-rect', 'text'],
+  select: ['select', 'pixel-select', 'points', 'pen'],
+  rig: ['bone', 'pose', 'weights', 'motion-path', 'shape-hints'],
+  view: ['hand', 'zoom', 'camera', 'artboard'],
+};
+const refs = (ids: string[]) =>
+  ids.map((id) => {
+    const group = Object.keys(PLACES).find((g) => PLACES[g].includes(id));
+    return group ? { id, group, groupAt: PLACES[group].indexOf(id) } : { id };
+  });
+const resolve = (saved: ToolGroup[] | undefined, ids: string[]) => resolveGroups(saved, refs(ids));
+
 const VECTOR = ['pencil', 'brush', 'eraser', 'fill', 'gradient', 'eyedropper', 'line', 'rect', 'ellipse', 'polygon', 'star', 'text', 'select', 'points', 'pen', 'bone', 'pose', 'hand', 'zoom'];
 const flat = (g: ToolGroup[]) => g.flatMap((x) => x.tools);
 const names = (g: ToolGroup[]) => g.map((x) => x.id);
 
 describe('the default arrangement', () => {
   it('groups the real tools: drawing, extras, shapes, select and pen, rig, view', () => {
-    const g = resolveGroups(undefined, VECTOR);
+    const g = resolve(undefined, VECTOR);
     expect(names(g)).toEqual(['draw', 'extras', 'shapes', 'select', 'rig', 'view']);
     expect(g[0].tools).toEqual(['pencil', 'brush', 'eraser', 'fill']);
     expect(g[2].tools).toEqual(['line', 'rect', 'ellipse', 'polygon', 'star', 'text']);
     expect(g[5].tools).toEqual(['hand', 'zoom']);
   });
   it('puts every tool exactly once, wherever it was registered from', () => {
-    const g = resolveGroups(undefined, [...VECTOR].reverse());
+    const g = resolve(undefined, [...VECTOR].reverse());
     expect([...flat(g)].sort()).toEqual([...VECTOR].sort());
   });
   it('names every default group in the list', () => {
@@ -25,34 +41,44 @@ describe('the default arrangement', () => {
   });
 });
 
+describe('the tools the app registers', () => {
+  it('start in the groups and places the rail always had', async () => {
+    await import('../../src/renderer/features');
+    const { allTools } = await import('../../src/core/registry');
+    const g = resolveGroups(undefined, allTools());
+    expect(names(g)).toEqual(['draw', 'extras', 'shapes', 'select', 'rig', 'view']);
+    for (const group of g) expect(group.tools).toEqual(PLACES[group.id]);
+  });
+});
+
 describe('plugin tools', () => {
   it('unknown tools go in Other at the end and are never dropped', () => {
-    const g = resolveGroups(undefined, [...VECTOR, 'plugin-laser', 'plugin-stamp']);
+    const g = resolve(undefined, [...VECTOR, 'plugin-laser', 'plugin-stamp']);
     expect(names(g).at(-1)).toBe('other');
     expect(g.at(-1)!.tools).toEqual(['plugin-laser', 'plugin-stamp']);
     expect(groupName(g.at(-1)!, g)).toBe('Other');
   });
   it('a tool added after the arrangement was saved joins its default group, and keeps the saved order', () => {
     const saved: ToolGroup[] = [{ id: 'draw', tools: ['brush', 'pencil'] }, { id: 'view', tools: ['zoom', 'hand'] }];
-    const g = resolveGroups(saved, ['pencil', 'brush', 'eraser', 'hand', 'zoom', 'plugin-x']);
+    const g = resolve(saved, ['pencil', 'brush', 'eraser', 'hand', 'zoom', 'plugin-x']);
     expect(g[0].tools).toEqual(['brush', 'pencil', 'eraser']);
     expect(g[1].tools).toEqual(['zoom', 'hand']);
     expect(g[2]).toMatchObject({ id: 'other', tools: ['plugin-x'] });
   });
   it('a default group the person emptied away comes back in its place when a tool of it is new', () => {
     const saved: ToolGroup[] = [{ id: 'draw', tools: ['pencil'] }, { id: 'view', tools: ['hand'] }];
-    const g = resolveGroups(saved, ['pencil', 'hand', 'line']);
+    const g = resolve(saved, ['pencil', 'hand', 'line']);
     expect(names(g)).toEqual(['draw', 'shapes', 'view']);
   });
   it('tools that no longer exist are dropped from the saved arrangement, and empty groups with them', () => {
     const saved: ToolGroup[] = [{ id: 'g1', tools: ['gone'] }, { id: 'draw', tools: ['pencil', 'gone2'] }];
-    const g = resolveGroups(saved, ['pencil']);
+    const g = resolve(saved, ['pencil']);
     expect(g).toEqual([{ id: 'draw', tools: ['pencil'] }]);
   });
 });
 
 describe('moving tools', () => {
-  const base = () => resolveGroups(undefined, VECTOR);
+  const base = () => resolve(undefined, VECTOR);
   it('within a group: before another tool, or to the end', () => {
     const a = moveTool(base(), 'fill', { group: 'draw', before: 'pencil' });
     expect(a[0].tools).toEqual(['fill', 'pencil', 'brush', 'eraser']);
@@ -75,7 +101,7 @@ describe('moving tools', () => {
   it('a group left empty goes away', () => {
     const a = moveTool(base(), 'zoom', { group: 'view', before: null });
     expect(a).toEqual(base());
-    const lone = resolveGroups([{ id: 'g1', tools: ['hand'] }, { id: 'draw', tools: ['pencil'] }], ['hand', 'pencil']);
+    const lone = resolve([{ id: 'g1', tools: ['hand'] }, { id: 'draw', tools: ['pencil'] }], ['hand', 'pencil']);
     const b = moveTool(lone, 'hand', { group: 'draw' });
     expect(names(b)).toEqual(['draw']);
     expect(b[0].tools).toEqual(['pencil', 'hand']);
@@ -86,7 +112,7 @@ describe('moving tools', () => {
     expect(moveTool(g, 'brush', { group: 'draw', before: 'eraser' })).toBe(g);
     expect(moveTool(g, 'unknown', { group: 'draw' })).toBe(g);
     expect(moveTool(g, 'pencil', { group: 'nope' })).toBe(g);
-    const lone = resolveGroups([{ id: 'g1', tools: ['hand'] }, { id: 'draw', tools: ['pencil'] }], ['hand', 'pencil']);
+    const lone = resolve([{ id: 'g1', tools: ['hand'] }, { id: 'draw', tools: ['pencil'] }], ['hand', 'pencil']);
     expect(moveTool(lone, 'hand', { newGroupAt: 0 })).toBe(lone);
     expect(moveTool(lone, 'hand', { newGroupAt: 1 })).toBe(lone);
   });
@@ -99,7 +125,7 @@ describe('moving tools', () => {
 });
 
 describe('keyboard steps', () => {
-  const base = () => resolveGroups(undefined, VECTOR);
+  const base = () => resolve(undefined, VECTOR);
   it('one place later or earlier in the group', () => {
     expect(shiftTool(base(), 'pencil', 1)[0].tools).toEqual(['brush', 'pencil', 'eraser', 'fill']);
     expect(shiftTool(base(), 'fill', -2)[0].tools).toEqual(['pencil', 'fill', 'brush', 'eraser']);
@@ -128,7 +154,7 @@ describe('keyboard steps', () => {
 
 describe('what shows', () => {
   it('hides tools that do not work here and groups that end up empty', () => {
-    const g = visibleGroups(resolveGroups(undefined, VECTOR), (id) => ['hand', 'zoom', 'pencil'].includes(id));
+    const g = visibleGroups(resolve(undefined, VECTOR), (id) => ['hand', 'zoom', 'pencil'].includes(id));
     expect(g.map((x) => x.tools)).toEqual([['pencil'], ['hand', 'zoom']]);
   });
 });

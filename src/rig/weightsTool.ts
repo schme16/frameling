@@ -135,6 +135,8 @@ function strokeTo(p: Pt, alt: boolean): void {
 
 export const weightsTool: Tool = {
   id: 'weights',
+  group: 'rig',
+  groupAt: 2,
   label: 'Paint how much it bends',
   icon: 'weights',
   layers: ['vector', 'pixel'],

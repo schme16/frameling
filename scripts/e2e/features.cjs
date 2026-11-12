@@ -1,6 +1,7 @@
 // Features in the real app: turning Lip sync off removes its panel, commands, menu entries and help from the running
 // app, a drawing that used it still opens and keeps its data, the question appears on open, and turning it on brings
-// everything back without a restart.
+// everything back without a restart. The same for Audio (timeline rows and the Sound button), Clip flow (panel kept in
+// its place) and Interactives, plus the command palette's Turn on entry and Lip sync needing Audio.
 //
 //   npm run build
 //   xvfb-run -a npx electron scripts/e2e/features.cjs
@@ -34,7 +35,7 @@ app.whenReady().then(async () => {
 
   const list = await js(`${F}.list()`);
   check('Lip sync is on the list and on', list.some((f) => f.id === 'lipsync' && f.on), list);
-  check('only features that can really be switched are listed', list.every((f) => f.id === 'lipsync'), list);
+  check('the switchable features are listed, and on', ['audio', 'flow', 'interactives', 'lipsync'].every((id) => list.some((f) => f.id === id && f.on)) && list.every((f) => ['audio', 'flow', 'interactives', 'lipsync'].includes(f.id)), list);
   check('Lip sync command and panel are there', (await js(`${F}.has('lipsync.auto')`)) && (await js(`${F}.hasPanel('lipsync')`)) && (await js(`${F}.has('view.panel.lipsync')`)));
 
   // A drawing that used Lip sync.
@@ -69,10 +70,10 @@ app.whenReady().then(async () => {
   await sleep(600);
   const page = await js(`document.querySelector('.features-page')?.innerText ?? ''`);
   check('Preferences > Features lists Lip sync with a switch', /Lip sync/.test(page) && (await js(`!!document.querySelector('.features-page [role=switch][aria-label="Lip sync on or off"]')`)), page);
-  await js(`document.querySelector('.features-page [role=switch]').click()`);
+  await js(`document.querySelector('.features-page [role=switch][aria-label="Lip sync on or off"]').click()`);
   await sleep(400);
   check('the switch turns it off', !(await js(`${F}.has('lipsync.auto')`)));
-  await js(`document.querySelector('.features-page [role=switch]').click()`);
+  await js(`document.querySelector('.features-page [role=switch][aria-label="Lip sync on or off"]').click()`);
   await sleep(400);
   check('and on again', await js(`${F}.has('lipsync.auto')`));
   await js(`__frameling.overlays.openPrefs('features')`);
@@ -86,6 +87,67 @@ app.whenReady().then(async () => {
   await js(`[...document.querySelectorAll('.ui-help-results button')].find((b) => /Turn on Lip sync/.test(b.textContent))?.click()`);
   await sleep(400);
   check('the link turns it on', await js(`${F}.has('lipsync.auto')`));
+
+  // ---- Audio: sound rows and the Sound button in the timeline, Lip sync needing it.
+  const soundButton = `!!document.querySelector('.tl-header [aria-label="Add a sound"]')`;
+  check('Audio: the Sound button is in the timeline header', await js(soundButton));
+  await js(`__frameling.template('bouncing-ball')`);
+  await sleep(500);
+  await js(`(() => {
+    const n = 8000, b = new Uint8Array(44 + n * 2), v = new DataView(b.buffer);
+    const s = (o, t) => [...t].forEach((c, i) => v.setUint8(o + i, c.charCodeAt(0)));
+    s(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); s(8, 'WAVE'); s(12, 'fmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+    v.setUint32(24, 8000, true); v.setUint32(28, 16000, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); s(36, 'data'); v.setUint32(40, n * 2, true);
+    for (let i = 0; i < n; i++) v.setInt16(44 + i * 2, Math.sin(i / 8) * 8000, true);
+    return __framelingAudio.addSound([...b], 'Beep', 'audio/wav');
+  })()`);
+  await sleep(800);
+  const soundRows = `!!document.querySelector('.au-side [role=listitem], .au-side .au-row, .au-side > *')`;
+  check('Audio: a sound shows its row in the timeline', await js(soundRows));
+  check('Audio: turning it off is refused while Lip sync needs it', (await js(`${F}.set('audio', false)`)).ok === false && (await js(`${F}.has('audio.import')`)));
+  await js(`${F}.set('lipsync', false)`);
+  await js(`${F}.set('audio', false)`);
+  await sleep(400);
+  check('Audio off: no Import sound command, no Sound button, no sound rows', !(await js(`${F}.has('audio.import')`)) && !(await js(soundButton)) && !(await js(soundRows)));
+  await js(`${F}.reopen()`);
+  await sleep(600);
+  check('Audio off: opening a drawing with sound asks to turn Audio on', /This drawing uses Audio, which is turned off\. Turn it on\?/.test(await js(`document.body.innerText`)));
+  await js(`[...document.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Turn on')?.click()`);
+  await sleep(600);
+  check('Audio on again: command, button and the sound row are back', (await js(`${F}.has('audio.import')`)) && (await js(soundButton)) && (await js(soundRows)));
+  await js(`${F}.set('lipsync', true)`);
+  await js(`${F}.set('audio', false)`);
+  check('turning Lip sync on kept Audio on (it needs it)', (await js(`${F}.has('audio.import')`)) && (await js(`${F}.has('lipsync.auto')`)));
+
+  // ---- Clip flow: its panel goes and comes back in the same place.
+  await js(`__frameling.dock.movePanel('clip-flow', 'bottom', 0)`);
+  await sleep(200);
+  check('Clip flow: moved to the bottom zone', (await js(`__frameling.dock.zoneOf('clip-flow')`)) === 'bottom');
+  await js(`${F}.set('flow', false)`);
+  await sleep(300);
+  check('Clip flow off: command and panel are gone', !(await js(`${F}.has('flow.open')`)) && !(await js(`${F}.hasPanel('clip-flow')`)));
+  await js(`${F}.set('flow', true)`);
+  await sleep(300);
+  check('Clip flow on: the panel is back in the bottom zone', (await js(`__frameling.dock.zoneOf('clip-flow')`)) === 'bottom');
+  await js(`__frameling.dock.movePanel('clip-flow', 'right')`);
+
+  // ---- Interactives: commands and file hooks go; a .flplay offers to turn it on.
+  check('Interactives: its commands are there', await js(`${F}.has('file.openPlayable')`));
+  await js(`${F}.set('interactives', false)`);
+  check('Interactives off: Open Interactives file is gone', !(await js(`${F}.has('file.openPlayable')`)));
+  await js(`${F}.set('interactives', true)`);
+
+  // ---- The command palette offers to turn a feature on.
+  await js(`${F}.set('flow', false)`);
+  await js(`__frameling.overlays.state.set((o) => ({ ...o, palette: true }))`);
+  await sleep(400);
+  await js(`(() => { const i = document.querySelector('.ui-palette-input'); const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set; set.call(i, 'clip flow'); i.dispatchEvent(new Event('input', { bubbles: true })); })()`);
+  await sleep(300);
+  const palette = await js(`document.querySelector('.ui-palette-list')?.innerText ?? ''`);
+  check('the palette offers Turn on Clip flow', /Turn on Clip flow/.test(palette), palette);
+  await js(`document.querySelector('.ui-palette-input').dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))`);
+  await sleep(600);
+  check('choosing it turns the feature on', await js(`${F}.has('flow.open')`));
 
   check('no console errors', errors.length === 0, errors.slice(0, 5));
   console.log(failures.length ? `\n${failures.length} failed` : '\nall passed');

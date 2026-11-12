@@ -79,6 +79,8 @@ export interface Quest {
   /** Said when the last step is done. */
   finish?: string;
   badge?: Badge;
+  /** Feature ids (src/features) it needs. Turning one off puts the quest down politely if it is being played. */
+  features?: string[];
   /** Quests to do first. The panel shows the quest as locked until they're done (with a way round it). */
   requires?: string[];
   /** The Quests panel heading it sits under (src/quests/groups.ts). Looked up by id when left out. */

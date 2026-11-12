@@ -86,6 +86,8 @@ function polyStarTool(kind: 'polygon' | 'star', label: string, key: string, orde
   const pix = makePixelPathShape(label, (a, e) => makePolyStar(kind, a, e, e, shapeColors()));
   return {
     id: kind,
+    group: 'shapes',
+    groupAt: kind === 'polygon' ? 3 : 4,
     label,
     icon: kind === 'star' ? 'pointy' : 'polygon',
     key,

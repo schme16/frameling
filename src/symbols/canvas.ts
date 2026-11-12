@@ -15,6 +15,8 @@ let drawing: { x: number; y: number }[] | null = null;
 
 export const motionPathTool: Tool = {
   id: 'motion-path',
+  group: 'rig',
+  groupAt: 3,
   label: 'Path to follow',
   icon: 'path',
   layers: ['vector'],

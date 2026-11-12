@@ -1,6 +1,6 @@
-import { registerHelpTopics } from '../core/registry';
+import type { HelpTopic } from '../core/registry';
 
-registerHelpTopics([
+export const audioHelp: HelpTopic[] = [
   {
     id: 'sound',
     order: 1,
@@ -51,4 +51,4 @@ Sounds are saved inside your .frameling file, so they travel with it.
 
 Want a character to talk? See [Lip sync](help:lip-sync).`,
   },
-]);
+];

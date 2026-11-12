@@ -5,6 +5,7 @@
  * without a restart. This is the trusted tier: it runs in the app like any other code. The sandboxed plugins in
  * src/plugins are the other tier.
  */
+import type { ChoiceDef } from '../core/choices';
 import type { Doc } from '../core/format';
 import type { Command, HelpTopic, PanelDef, Tool } from '../core/registry';
 import type { Quest } from '../quests/types';
@@ -32,6 +33,9 @@ export interface FeatureDescriptor {
   tools?: Tool[];
   help?: HelpTopic[];
   quests?: Quest[];
+  /** Remembered choices (Preferences > Behaviour) that only make sense with the feature. */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  choices?: ChoiceDef<any>[];
   /** Ids of built-in templates this feature owns (hidden from the New dialog while it is off). */
   templates?: string[];
   /** Command ids to add at the end of a menu, by the menu's label. */
@@ -39,6 +43,8 @@ export interface FeatureDescriptor {
   /** Rail name, blurb and Properties placement for its panels, by panel id. */
   sections?: Record<string, PanelInfo>;
 
+  /** Says which file paths it opens (an Interactives package, say), so opening one while it is off can offer to turn it on. */
+  opens?(path: string): boolean;
   /** True when a document holds data this feature made, so opening it with the feature off can offer to turn it on. */
   usedBy?(doc: Doc): boolean;
   /** Anything else it registers. Runs while the feature is registered as its owner, so what it adds is taken away again with it. */

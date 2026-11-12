@@ -181,6 +181,8 @@ function paintTool(erase: boolean): Tool {
   };
   return {
     id: erase ? 'tile-eraser' : 'tile-brush',
+    group: 'draw',
+    groupAt: erase ? 5 : 4,
     label: erase ? 'Tile eraser' : 'Tile brush',
     icon: erase ? 'eraser' : 'brush',
     key: erase ? 'e' : 'b',
@@ -240,6 +242,8 @@ let rect: { s: MapSession; from: { x: number; y: number }; value: number } | nul
 
 export const tileRectTool: Tool = {
   id: 'tile-rect',
+  group: 'shapes',
+  groupAt: 5,
   label: 'Tile rectangle',
   icon: 'rect',
   key: 'r',
@@ -280,6 +284,8 @@ export const tileRectTool: Tool = {
 
 export const tileFillTool: Tool = {
   id: 'tile-fill',
+  group: 'draw',
+  groupAt: 6,
   label: 'Tile fill',
   icon: 'fill',
   key: 'g',
@@ -310,6 +316,8 @@ export const tileFillTool: Tool = {
 
 export const tilePickerTool: Tool = {
   id: 'tile-picker',
+  group: 'extras',
+  groupAt: 4,
   label: 'Pick tile',
   icon: 'eyedropper',
   key: 'i',

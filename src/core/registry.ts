@@ -176,6 +176,13 @@ export interface Tool {
   layers: LayerKind[];
   /** Toolbar order (lower first). */
   order?: number;
+  /**
+   * Which group of the tool rail it starts in: 'draw', 'extras', 'shapes', 'select', 'rig' or 'view' (src/ui/toolArrange.ts
+   * names them). Missing means Other. People can still move it.
+   */
+  group?: string;
+  /** Its place in that group, lower first (tools with none come after, in registration order). */
+  groupAt?: number;
   help?: string;
   cursor?: string;
   /** Tool options shown in the Tool options panel. */

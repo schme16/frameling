@@ -198,6 +198,8 @@ function overlay(g: CanvasRenderingContext2D, zoom: number): void {
 
 export const artboardTool: Tool = {
   id: 'artboard',
+  group: 'view',
+  groupAt: 3,
   label: 'Artboard',
   icon: 'artboard',
   key: 'Shift+W',

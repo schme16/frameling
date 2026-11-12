@@ -159,6 +159,8 @@ function placed(e: ToolPointer, ctx: ToolContext): P {
 
 export const penTool: Tool = {
   id: 'pen',
+  group: 'select',
+  groupAt: 3,
   label: 'Pen',
   icon: 'pen',
   key: 'Shift+P',

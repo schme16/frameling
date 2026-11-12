@@ -11,12 +11,12 @@ import { applyMouths, mouthLayers } from '../../src/lipsync/apply';
 import { lipsyncFeature } from '../../src/lipsync';
 import { CHART } from '../../src/lipsync/chart';
 import { makeLipSync } from '../../src/templates/lip-sync';
-import { audioFeatureStub } from './stub';
+import { audioFeature } from '../../src/audio';
 
 beforeEach(() => {
   localStorage.clear();
   _resetFeaturesForTests();
-  registerFeatures([audioFeatureStub, lipsyncFeature]);
+  registerFeatures([audioFeature, lipsyncFeature]);
 });
 afterEach(() => {
   vi.restoreAllMocks();
