@@ -31,7 +31,7 @@ import { startSandbox } from './sandbox';
 import { tripMessage, type Trip } from './watchdog';
 import type { PluginDiag } from './diagnostics';
 import { getPrefs } from '../ui/prefs';
-import { addPluginShape, redrawPluginShape, ShapeProblem } from './shapes';
+import { addPluginShape, findInst, redrawPluginShape, ShapeProblem } from './shapes';
 import type { UiNode } from './ui-schema';
 
 export type PluginStatus = 'off' | 'starting' | 'on' | 'problem';
@@ -186,7 +186,9 @@ function hooksFor(m: PluginManifest, onExporter: (def: PluginExporterDef) => voi
         const layer = findLayer(s.doc, s.ui.activeLayerId);
         return layer ? (drawingAt(s.doc, layer, s.ui.frame)?.id ?? null) : null;
       })();
-      const layer = findLayer(s.doc, s.ui.activeLayerId);
+      // The lock that counts is the one on the layer the shape goes into (or is already in), not on whatever layer is active.
+      const target = p.inst ? (findInst(s.doc, p.pluginId, p.inst, drawingId)?.drawingId ?? drawingId) : drawingId;
+      const layer = (target ? s.doc.layers.find((l) => l.cels.some((c) => c.drawingId === target)) : undefined) ?? findLayer(s.doc, s.ui.activeLayerId);
       if (layer?.locked) throw new Error('That layer is locked.');
       const label = `${m.name}: ${p.inst ? 'Redraw' : 'Add'} ${p.kind}`;
       let result: { inst: string; ids: string[]; replaced?: string[] } | undefined;
