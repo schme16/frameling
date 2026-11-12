@@ -107,3 +107,48 @@ describe('the file picker', () => {
     expect(windows).toBe(3);
   });
 });
+
+// A plugin can put anything it likes on its port. With no power granted, none of it may reach a hook that acts.
+describe('raw messages from a plugin with nothing granted (seeded)', () => {
+  const rng = (seed: number) => () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 2 ** 32);
+  const TYPES = ['register', 'panel', 'call', 'reply', 'error', 'loaded', 'subscribe', 'unsubscribe', 'pong', 'evAck', 'overlay', 'progress', 'event', '__proto__', 'constructor'];
+  const METHODS = ['document.get', 'ui.state', 'document.edit', 'ui.notify', 'files.pick', 'shapes.place', 'shapes.update', 'permissions', '__proto__', 'constructor', 'toString', 'hasOwnProperty', 'valueOf', 'nope'];
+  const KINDS = ['command', 'exporter', 'panel', 'tool', 'shape', '__proto__', 'x'];
+  const EVENTS = ['document.changed', 'selection.changed', 'frame.changed', 'export.started', 'export.finished', '__proto__', 'x'];
+
+  it('never reaches an acting hook, never throws, over 3000 random messages', async () => {
+    const r = rng(20260501);
+    const pick = <T,>(a: T[]) => a[Math.floor(r() * a.length)];
+    const junk = (d = 0): unknown => {
+      const k = Math.floor(r() * 9);
+      if (d > 3 || k < 3) return pick([null, undefined, 0, -1, 1e308, NaN, Infinity, '', 'x', 'a'.repeat(500), true, false, '__proto__', '../../x']);
+      if (k < 5) return Array.from({ length: Math.floor(r() * 4) }, () => junk(d + 1));
+      return Object.fromEntries(Array.from({ length: Math.floor(r() * 5) }, () => [pick(['id', 'label', 'title', 'kind', 'name', 'x', 'y', 'ops', 'list', 'props', 'drawingId', 'inst', 'extensions', 'def', 'ui', 'type', 'message', 'event', '__proto__', 'constructor']), junk(d + 1)]));
+    };
+    const acted: string[] = [];
+    let handler: (m: unknown) => void = () => undefined;
+    const sent: unknown[] = [];
+    const h = hooks({
+      getDoc: () => (acted.push('getDoc'), newDoc({})),
+      getState: () => (acted.push('getState'), { frame: 0, activeLayerId: null, selection: [], drawingId: null }),
+      edit: () => void acted.push('edit'),
+      addTool: () => void acted.push('addTool'),
+      addShapeKind: () => void acted.push('addShapeKind'),
+      setOverlay: () => void acted.push('setOverlay'),
+      placeShape: () => (acted.push('placeShape'), 'x'),
+      pickFile: async () => (acted.push('pickFile'), null),
+      addExporter: () => void acted.push('addExporter'),
+      addPanel: () => void acted.push('addPanel'),
+    });
+    const rt = new PluginRuntime(parseManifest({ id: 'tst', name: 'T', version: '1', apiVersion: 2, permissions: [], events: ['frame.changed'] }), [], { post: (m) => void sent.push(m), onMessage: (fn) => void (handler = fn), close: () => undefined }, h);
+    for (let i = 0; i < 3000; i++) {
+      const m: Record<string, unknown> = { t: pick(TYPES), id: pick([1, 2, 3, 'x', null]), method: pick(METHODS), kind: pick(KINDS), event: pick(EVENTS), args: junk(), def: junk(), ui: junk(), list: junk(), ops: junk(), done: junk(), total: junk(), message: junk() };
+      handler(m);
+    }
+    await settle(20);
+    expect(acted).toEqual([]);
+    // Only listening for what the manifest lists, even when it asked for the others.
+    expect([...rt.subscribed].every((e) => e === 'frame.changed')).toBe(true);
+    rt.stop();
+  });
+});
