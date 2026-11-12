@@ -9,6 +9,7 @@
 // Exits non-zero when anything fails.
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('node:path');
+const { installIpcStubs } = require('../ipc-stubs.cjs');
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const root = path.join(__dirname, '../..');
@@ -19,10 +20,7 @@ const check = (name, ok, got) => {
 };
 
 app.whenReady().then(async () => {
-  for (const ch of ['app:launchFile', 'autosave:read', 'autosave:readKept', 'library:read']) ipcMain.handle(ch, () => null);
-  for (const ch of ['recent:list', 'autosave:listKept', 'library:list']) ipcMain.handle(ch, () => []);
-  for (const ch of ['autosave:write', 'autosave:clear', 'autosave:keep', 'autosave:removeKept', 'recent:add', 'recent:remove', 'recent:clear', 'library:write', 'library:remove']) ipcMain.handle(ch, () => true);
-  for (const ch of ['app:documentState', 'app:keepUnsavedDone', 'app:saveBeforeCloseDone']) ipcMain.on(ch, () => {});
+  installIpcStubs(ipcMain);
   const win = new BrowserWindow({ show: true, width: 1400, height: 900, webPreferences: { preload: path.join(root, 'dist/preload/preload.cjs'), contextIsolation: true, sandbox: true, backgroundThrottling: false } });
   const errors = [];
   win.webContents.on('console-message', (e) => {
@@ -70,11 +68,11 @@ app.whenReady().then(async () => {
   await js(`__frameling.overlays.openPrefs('features')`);
   await sleep(600);
   const page = await js(`document.querySelector('.features-page')?.innerText ?? ''`);
-  check('Preferences > Features lists Lip sync with a switch', /Lip sync/.test(page) && (await js(`!!document.querySelector('.features-page [role=switch][aria-label="Lip sync on or off"]')`)), page);
-  await js(`document.querySelector('.features-page [role=switch][aria-label="Lip sync on or off"]').click()`);
+  check('Preferences > Features lists Lip sync with a switch', /Lip sync/.test(page) && (await js(`!!document.querySelector('.features-page [data-testid="feature-switch-lipsync"]')`)), page);
+  await js(`document.querySelector('.features-page [data-testid="feature-switch-lipsync"]').click()`);
   await sleep(400);
   check('the switch turns it off', !(await js(`${F}.has('lipsync.auto')`)));
-  await js(`document.querySelector('.features-page [role=switch][aria-label="Lip sync on or off"]').click()`);
+  await js(`document.querySelector('.features-page [data-testid="feature-switch-lipsync"]').click()`);
   await sleep(400);
   check('and on again', await js(`${F}.has('lipsync.auto')`));
   await js(`__frameling.overlays.openPrefs('features')`);
@@ -90,7 +88,7 @@ app.whenReady().then(async () => {
   check('the link turns it on', await js(`${F}.has('lipsync.auto')`));
 
   // ---- Audio: sound rows and the Sound button in the timeline, Lip sync needing it.
-  const soundButton = `!!document.querySelector('.tl-header [aria-label="Add a sound"]')`;
+  const soundButton = `!!document.querySelector('.tl-header [data-testid="audio.import"]')`;
   check('Audio: the Sound button is in the timeline header', await js(soundButton));
   await js(`__frameling.template('bouncing-ball')`);
   await sleep(500);

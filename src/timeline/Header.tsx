@@ -27,6 +27,7 @@ function Btn({ id, icon, text, title, pressed, disabled, onClick, className = ''
       aria-label={typeof text === 'string' && !title.toLowerCase().includes(text.toLowerCase()) ? `${text}: ${title}` : title}
       aria-pressed={pressed}
       data-step={step}
+      data-testid={id}
       disabled={disabled}
       onClick={onClick ?? (() => id && runCmd(id))}
     >
@@ -62,6 +63,7 @@ function FpsField() {
         type="text"
         inputMode="numeric"
         aria-label="Frames per second"
+        data-testid="timeline.fps"
         value={text ?? String(fps)}
         onChange={(e) => setText(e.target.value.replace(/[^0-9]/g, ''))}
         onFocus={(e) => e.currentTarget.select()}
@@ -150,18 +152,18 @@ function OnionPopup({ pos, onClose }: { pos: { x: number; y: number }; onClose: 
       <div className="tl-pop-row">
         <span>Frames before</span>
         <span className="tl-stepper">
-          <button type="button" className="tl-btn tl-btn-mini" aria-label="Fewer frames before" onClick={() => step('before', -1)}><Icon name="minus" size={12} /></button>
+          <button type="button" className="tl-btn tl-btn-mini" aria-label="Fewer frames before" data-testid="onion.beforeLess" onClick={() => step('before', -1)}><Icon name="minus" size={12} /></button>
           <output>{onion.before}</output>
-          <button type="button" className="tl-btn tl-btn-mini" aria-label="More frames before" onClick={() => step('before', 1)}><Icon name="plus" size={12} /></button>
+          <button type="button" className="tl-btn tl-btn-mini" aria-label="More frames before" data-testid="onion.beforeMore" onClick={() => step('before', 1)}><Icon name="plus" size={12} /></button>
         </span>
         <input type="color" aria-label="Colour of frames before" value={onion.beforeColor.slice(0, 7)} onChange={(e) => set({ beforeColor: e.target.value })} />
       </div>
       <div className="tl-pop-row">
         <span>Frames after</span>
         <span className="tl-stepper">
-          <button type="button" className="tl-btn tl-btn-mini" aria-label="Fewer frames after" onClick={() => step('after', -1)}><Icon name="minus" size={12} /></button>
+          <button type="button" className="tl-btn tl-btn-mini" aria-label="Fewer frames after" data-testid="onion.afterLess" onClick={() => step('after', -1)}><Icon name="minus" size={12} /></button>
           <output>{onion.after}</output>
-          <button type="button" className="tl-btn tl-btn-mini" aria-label="More frames after" onClick={() => step('after', 1)}><Icon name="plus" size={12} /></button>
+          <button type="button" className="tl-btn tl-btn-mini" aria-label="More frames after" data-testid="onion.afterMore" onClick={() => step('after', 1)}><Icon name="plus" size={12} /></button>
         </span>
         <input type="color" aria-label="Colour of frames after" value={onion.afterColor.slice(0, 7)} onChange={(e) => set({ afterColor: e.target.value })} />
       </div>
@@ -193,6 +195,7 @@ function OnionControls() {
         className="tl-btn tl-btn-mini"
         title="Onion skin settings"
         aria-label="Onion skin settings"
+        data-testid="timeline.onionSettings"
         aria-haspopup="dialog"
         aria-expanded={!!pos}
         onClick={(e) => {
@@ -308,8 +311,8 @@ function OverflowMenu({ folded }: { folded: FoldStep[] }) {
   list.forEach((o) => {
     // Hold is a choice of one: a named group of its four, found like the folded hold buttons.
     if (o.id === 'timeline.hold1') items.push({ heading: 'Hold for', aria: 'How long to hold this drawing' });
-    items.push({ label: o.cmd.label, aria: o.cmd.label, hint: keyHint(o.id), checked: o.cmd.checked ? o.cmd.checked(store().get()) : undefined, onClick: () => runCmd(o.id) });
-    if (o.id === 'timeline.toggleOnion') items.push({ label: 'Onion skin settings...', aria: 'Onion skin settings', onClick: () => setOnionPos(below()) });
+    items.push({ label: o.cmd.label, aria: o.cmd.label, testId: o.id, hint: keyHint(o.id), checked: o.cmd.checked ? o.cmd.checked(store().get()) : undefined, onClick: () => runCmd(o.id) });
+    if (o.id === 'timeline.toggleOnion') items.push({ label: 'Onion skin settings...', aria: 'Onion skin settings', testId: 'timeline.onionSettings', onClick: () => setOnionPos(below()) });
   });
   return (
     <>
@@ -319,6 +322,7 @@ function OverflowMenu({ folded }: { folded: FoldStep[] }) {
         className="tl-btn tl-overflow"
         title="More timeline buttons"
         aria-label={switchLabel(on)}
+        data-testid="timeline.more"
         aria-haspopup="menu"
         aria-expanded={!!pos}
         onClick={() => setPos(pos ? null : below())}
@@ -395,7 +399,7 @@ export function Header() {
       <span className="tl-group" role="group" aria-label="Playback">
         <Btn id="timeline.firstFrame" icon="first" title="Go to the first frame" />
         <Btn id="timeline.prevFrame" icon="prev" title="Back one frame" />
-        <button type="button" className={`tl-btn tl-play${playing ? ' is-on' : ''}`} title={tip('timeline.play', playing ? 'Pause' : 'Play your animation')} aria-label={playing ? 'Pause' : 'Play'} aria-pressed={playing} onClick={() => runCmd('timeline.play')}>
+        <button type="button" className={`tl-btn tl-play${playing ? ' is-on' : ''}`} title={tip('timeline.play', playing ? 'Pause' : 'Play your animation')} aria-label={playing ? 'Pause' : 'Play'} aria-pressed={playing} data-testid="timeline.play" onClick={() => runCmd('timeline.play')}>
           <Icon name={playing ? 'pause' : 'play'} size={18} />
         </button>
         <Btn id="timeline.nextFrame" icon="next" title="Forward one frame" />
@@ -426,10 +430,10 @@ export function Header() {
       <OverflowMenu folded={foldedAt(level)} />
       <Btn id="view.cleanTimeline" icon="sliders" title="Clean timeline: plain blocks, no property rows" pressed={clean} className="tl-btn-mini tl-look-toggle" step="clean" />
       <label className="tl-zoom" title="Zoom the timeline (or hold Ctrl and scroll)">
-        <button type="button" className="tl-btn tl-btn-mini" data-step="fit" title={tip('timeline.zoomFit', 'Fit the whole animation in view')} aria-label="Fit the whole animation in view" onClick={() => runCmd('timeline.zoomFit')}>
+        <button type="button" className="tl-btn tl-btn-mini" data-step="fit" title={tip('timeline.zoomFit', 'Fit the whole animation in view')} aria-label="Fit the whole animation in view" data-testid="timeline.zoomFit" onClick={() => runCmd('timeline.zoomFit')}>
           <Icon name="zoom" size={14} />
         </button>
-        <input type="range" data-step="zoom" aria-label="Timeline zoom" min={MIN_CW} max={MAX_CW} value={cw} onChange={(e) => setTl({ cw: Number(e.target.value) })} />
+        <input type="range" data-step="zoom" data-testid="timeline.zoom" aria-label="Timeline zoom" min={MIN_CW} max={MAX_CW} value={cw} onChange={(e) => setTl({ cw: Number(e.target.value) })} />
       </label>
     </div>
   );

@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { usePopover } from '../ui/popover';
 
 export type MenuItem =
-  | { label: string; onClick: () => void; hint?: string; danger?: boolean; disabled?: boolean; checked?: boolean; swatch?: string; /** An accessible name that matches the button this item stands in for. */ aria?: string }
+  | { label: string; onClick: () => void; hint?: string; danger?: boolean; disabled?: boolean; checked?: boolean; swatch?: string; /** An accessible name that matches the button this item stands in for. */ aria?: string; /** A stable hook for tests: the command id the item runs. */ testId?: string }
   | { separator: true }
   | { heading: string; /** Makes the heading a named group, so it can be found like the thing it stands for. */ aria?: string }
   | { node: ReactNode };
@@ -57,6 +57,7 @@ export function ContextMenu({ x, y, items, onClose, className = '' }: { x: numbe
               type="button"
               role={plain ? undefined : 'menuitem'}
               aria-label={it.aria}
+              data-testid={it.testId}
               className={`tl-menu-item${it.danger ? ' is-danger' : ''}`}
               disabled={it.disabled}
               onClick={() => {

@@ -10,6 +10,7 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const fs = require('node:fs');
 const path = require('node:path');
+const { installIpcStubs } = require('../ipc-stubs.cjs');
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 let failed = 0;
@@ -18,21 +19,22 @@ const check = (ok, what) => {
   if (!ok) failed++;
 };
 
+// Controls are found by stable hooks (data-testid, which is the command id for command buttons, and data-step), never by
+// their visible words, so a rename in the UI does not break this check.
 // What a person reaches for all the time: it has to stay on the header at both sizes, in every state.
-const ALWAYS = ['Go to the first frame', 'Back one frame', 'Play', 'Forward one frame', 'Go to the last frame', 'Loop', 'Frames per second'];
-// Fold order (src/timeline/headerFold.ts), with a label that names each step's button on the header.
-const STEPS = [
-  ['pingpong', 'back and forth'],
-  ['sound', 'Add a sound'],
-  ['clean', 'Clean timeline'],
-  ['fit', 'Fit the whole animation'],
-  ['edit', 'Start a new blank drawing'],
-  ['hold', 'Hold'],
-  ['onion', 'See the frames around this one'],
-  ['zoom', 'Timeline zoom'],
+const ALWAYS = [
+  ['timeline.firstFrame', 'Go to the first frame'],
+  ['timeline.prevFrame', 'Back one frame'],
+  ['timeline.play', 'Play'],
+  ['timeline.nextFrame', 'Forward one frame'],
+  ['timeline.lastFrame', 'Go to the last frame'],
+  ['timeline.toggleLoop', 'Loop'],
+  ['timeline.fps', 'Frames per second'],
 ];
-// What the menu names for each step.
-const MENU_WORDS = { pingpong: /ping-pong|back and forth/i, sound: /sound/i, clean: /clean timeline/i, fit: /fit the whole/i, edit: /new (blank )?drawing/i, hold: /hold drawing for/i, onion: /frames around this one|onion/i };
+// Fold order (src/timeline/headerFold.ts); each step is the data-step on its buttons on the header.
+const STEPS = ['pingpong', 'sound', 'clean', 'fit', 'edit', 'hold', 'onion', 'zoom'];
+// The command each folded step shows in the "more" menu (the item's data-testid).
+const MENU_ITEM = { pingpong: 'timeline.togglePingPong', sound: 'audio.import', clean: 'view.cleanTimeline', fit: 'timeline.zoomFit', edit: 'timeline.newKey', hold: 'timeline.hold1', onion: 'timeline.toggleOnion' };
 
 // Measured in the page: is each button on the header, and is the header one clean row?
 const MEASURE = `(() => {
@@ -47,7 +49,7 @@ const MEASURE = `(() => {
     let hidden = false;
     for (let p = el; p && p !== h; p = p.parentElement) if (getComputedStyle(p).display === 'none') hidden = true;
     if (hidden) continue;
-    seen.push({ name: (el.getAttribute('aria-label') || el.title || el.textContent || '').trim(), right: r.right, top: r.top, bottom: r.bottom, left: r.left });
+    seen.push({ id: el.getAttribute('data-testid'), step: (el.closest('[data-step]') || {}).dataset?.step || null, name: (el.getAttribute('aria-label') || el.title || el.textContent || '').trim(), right: r.right, top: r.top, bottom: r.bottom, left: r.left });
   }
   return {
     container: Math.round(root.getBoundingClientRect().width),
@@ -57,7 +59,8 @@ const MEASURE = `(() => {
     // A wrapped header would put buttons at different heights; one row keeps them all inside the first row's band.
     spread: seen.length ? Math.round(Math.max(...seen.map((s) => s.bottom)) - Math.min(...seen.map((s) => s.top))) : 0,
     beyond: seen.filter((s) => s.right > hb.right + 1 || s.left < hb.left - 1).map((s) => s.name),
-    names: seen.map((s) => s.name),
+    ids: seen.map((s) => s.id).filter(Boolean),
+    steps: [...new Set(seen.map((s) => s.step).filter(Boolean))],
     folded: (h.getAttribute('data-folded') || '').split(' ').filter(Boolean),
     more: (() => { const o = h.querySelector('.tl-overflow'); return !!o && getComputedStyle(o).display !== 'none'; })(),
     slider: (() => { const i = h.querySelector('input[aria-label="Timeline zoom"]'); if (!i || getComputedStyle(i).display === 'none') return null; const r = i.getBoundingClientRect(); return { width: Math.round(r.width), inside: r.right <= hb.right && r.left >= hb.left }; })(),
@@ -109,31 +112,32 @@ async function run(width) {
     await sleep(350);
     const m = await js(MEASURE);
     const label = `${width} wide, ${st.name} (timeline ${m.container}px)`;
-    const has = (want) => m.names.some((n) => n.toLowerCase().includes(want.toLowerCase()));
+    const hasId = (id) => m.ids.includes(id);
     check(!m.clipped, `${label}: nothing clipped (${m.scroll} of ${m.client})`);
     check(m.spread <= 40 && m.height <= 44, `${label}: one row (${m.height}px tall)`);
     check(!m.beyond.length, `${label}: every button inside the header${m.beyond.length ? ' (outside: ' + m.beyond.join(', ') + ')' : ''}`);
-    for (const want of ALWAYS) check(has(want), `${label}: "${want}" stays on the header`);
+    for (const [id, what] of ALWAYS) check(hasId(id), `${label}: ${id} (${what}) stays on the header`);
     check(m.slider && m.slider.inside && m.slider.width >= 40, `${label}: the zoom slider shows whole (${m.slider ? m.slider.width + 'px' : 'missing'})`);
     // Each step is either on the header or folded, and nothing is both.
-    for (const [step, name] of STEPS) {
+    for (const step of STEPS) {
       const isFolded = m.folded.includes(step);
-      check(isFolded ? !has(name) : has(name), `${label}: ${step} is ${isFolded ? 'folded away' : 'on the header'}`);
+      const shown = m.steps.includes(step);
+      check(isFolded ? !shown : shown, `${label}: ${step} is ${isFolded ? 'folded away' : 'on the header'}`);
     }
     // Folding runs in order, rarest first.
-    check(m.folded.every((f, i) => f === STEPS[i][0]), `${label}: folded in order (${m.folded.join(', ') || 'nothing'})`);
+    check(m.folded.every((f, i) => f === STEPS[i]), `${label}: folded in order (${m.folded.join(', ') || 'nothing'})`);
     check(m.more === m.folded.length > 0, `${label}: the more button shows only when something is folded`);
     // Everything that fits is shown: one more unfolded would overflow, or leave less than the spare room that stops flicker.
     const probe = await js(PROBE);
     if (probe) check(probe.overflow || probe.grow < 28, `${label}: nothing that fits is folded (next to unfold: ${probe.step}, spare ${probe.grow}px)`);
     seenFolds.add(m.folded.join(','));
     // The more button lists only what is folded; a switch that is on shows a dot and says so.
-    const menu = await js(`(() => { const o = document.querySelector('.tl-overflow'); if (!o || getComputedStyle(o).display === 'none') return null; const label = o.getAttribute('aria-label'); const dot = !!o.querySelector('.tl-overflow-dot'); o.click(); return new Promise((r) => setTimeout(() => { const t = [...document.querySelectorAll('.tl-menu-item')].map((b) => b.textContent); document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); document.body.click(); r({ items: t, label, dot }); }, 150)); })()`);
+    const menu = await js(`(() => { const o = document.querySelector('.tl-overflow'); if (!o || getComputedStyle(o).display === 'none') return null; const label = o.getAttribute('aria-label'); const dot = !!o.querySelector('.tl-overflow-dot'); o.click(); return new Promise((r) => setTimeout(() => { const t = [...document.querySelectorAll('.tl-menu-item')].map((b) => b.getAttribute('data-testid') || b.textContent); document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); document.body.click(); r({ items: t, label, dot }); }, 150)); })()`);
     if (menu) {
       console.log(`     "more" menu: ${menu.items.join(' | ')}`);
-      for (const [step] of STEPS) {
-        if (!MENU_WORDS[step]) continue;
-        const inMenu = menu.items.some((t) => MENU_WORDS[step].test(t));
+      for (const step of STEPS) {
+        if (!MENU_ITEM[step]) continue;
+        const inMenu = menu.items.includes(MENU_ITEM[step]);
         check(inMenu === m.folded.includes(step), `${label}: the menu ${m.folded.includes(step) ? 'lists' : 'does not repeat'} ${step}`);
       }
       const on = (st.name === 'ping-pong on' && m.folded.includes('pingpong')) || (st.name === 'clean timeline on' && m.folded.includes('clean'));
@@ -184,7 +188,7 @@ async function run(width) {
     check(!!pop && pop.inside && Math.abs(pop.top - (opened.bottom + 4)) < 3 && pop.left <= opened.left + 3 || (!!pop && pop.inside && pop.right >= opened.left), `${label}: the settings sit under the more button and on screen`);
     // The settings really work from here: one more frame before.
     const before = await js(`__frameling.store().get().ui.onion.before`);
-    await js(`document.querySelector('.tl-pop [aria-label="More frames before"]').click(); true`);
+    await js(`document.querySelector('.tl-pop [data-testid="onion.beforeMore"]').click(); true`);
     await sleep(100);
     check((await js(`__frameling.store().get().ui.onion.before`)) === before + 1, `${label}: "More frames before" works from the menu's box`);
     await js(`document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); document.body.click(); true`);
@@ -203,11 +207,7 @@ async function run(width) {
 if (process.env.HEADER_SCALE) app.commandLine.appendSwitch('force-device-scale-factor', process.env.HEADER_SCALE);
 app.on('window-all-closed', () => {});
 app.whenReady().then(async () => {
-  for (const ch of ['app:launchFile', 'autosave:read', 'autosave:readKept']) ipcMain.handle(ch, () => null);
-  for (const ch of ['recent:list', 'autosave:listKept', 'library:list']) ipcMain.handle(ch, () => []);
-  for (const ch of ['autosave:write', 'autosave:clear', 'autosave:keep', 'autosave:removeKept', 'recent:add', 'recent:remove', 'recent:clear', 'app:documentState', 'library:write', 'library:remove', 'plugins:setDiagnostics']) ipcMain.handle(ch, () => true);
-  ipcMain.handle('library:read', () => null);
-  for (const ch of ['app:documentState', 'app:keepUnsavedDone', 'app:saveBeforeCloseDone']) ipcMain.on(ch, () => {});
+  installIpcStubs(ipcMain);
   for (const w of [1280, 1400]) await run(w);
   console.log(failed ? `\n${failed} check(s) failed` : '\nall checks passed');
   app.exit(failed ? 1 : 0);
