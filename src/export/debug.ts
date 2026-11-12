@@ -1,4 +1,5 @@
 // With ?debug in the page address, expose the export machinery so scripts/e2e/export.cjs can drive it in the real app.
+import { trimmedDrawing } from '../core/pixelBounds';
 // exportDocument is the very function the dialog's Export button calls, so this runs the same path a person does.
 // Never on in normal use.
 import { rootDoc } from '../core/symbols';
@@ -45,7 +46,8 @@ function stressDoc(): Doc {
   const px = newPixelDrawing(20, 16);
   for (let i = 0; i < 20; i++) px.pixels.set([155, 123, 255, 255], (8 * 20 + i) * 4);
   px.pixels.set([255, 201, 74, 255], (3 * 20 + 3) * 4);
-  doc.drawings[px.id] = px;
+  // Stored trimmed, the way painting and saving leave pixel drawings, so a save and open gives back the same object.
+  doc.drawings[px.id] = trimmedDrawing(px);
   lp.cels = [{ id: 'c2', start: 0, length: 3, drawingId: px.id }];
   doc.layers = [lv, lp];
   return doc;
