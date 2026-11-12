@@ -1,12 +1,13 @@
 // The help reader, used both in the Help panel (compact) and the big help window.
 import { line } from './mascot/lines';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { allHelp, getHelp } from '../core/registry';
+import { allHelp, getHelp, helpBody } from '../core/registry';
 import { Icon } from './icons';
 import { QuillEmpty } from './mascot';
 import { Markdown } from './help/markdown';
 import { HelpMedia } from './help/media';
 import { searchHelp, sections } from './help/search';
+import { useHelpBodies } from './help/useBodies';
 import { closeHelp, overlays, openHelp } from './overlays';
 import { Modal } from './Modal';
 import { hiddenHelp, setFeatureOn } from '../features/host';
@@ -18,18 +19,29 @@ interface Nav {
   anchor?: string;
 }
 
+/** Stands in for the words while their chunk loads. Blank at first, so a quick load doesn't flash. */
+function Loading({ slow }: { slow: boolean }) {
+  return (
+    <p className="ui-help-loading" role="status" aria-live="polite" data-slow={slow || undefined}>
+      {slow ? 'Loading help…' : ''}
+    </p>
+  );
+}
+
 export function HelpBrowser({ compact = false, initial, onExpand }: { compact?: boolean; initial?: { topic?: string; anchor?: string; query?: string }; onExpand?: (topic: string | null) => void }) {
   const [nav, setNav] = useState<Nav>({ topic: initial?.topic && getHelp(initial.topic) ? initial.topic : null, anchor: initial?.anchor });
   const [history, setHistory] = useState<Nav[]>([]);
   const [query, setQuery] = useState(initial?.query ?? '');
   const article = useRef<HTMLDivElement>(null);
   const featuresVersion = useFeaturesVersion();
+  // Titles and the contents are known at once; the words (for reading and for search) arrive as a chunk of their own.
+  const words = useHelpBodies();
   const topics = allHelp();
-  const hits = useMemo(() => (query.trim() ? searchHelp(query, 14) : []), [query, featuresVersion]);
+  const hits = useMemo(() => (query.trim() && words.ready ? searchHelp(query, 14) : []), [query, featuresVersion, words.ready]);
   // Topics of features that are turned off are hidden; a search that would have found one offers to turn its feature on.
   const [asked, setAsked] = useState<string | null>(null);
   const offers = useMemo(() => {
-    if (!query.trim()) return [];
+    if (!query.trim() || !words.ready) return [];
     const hidden = hiddenHelp();
     if (!hidden.length) return [];
     const found = searchHelp(query, 6, hidden.map((h) => h.topic));
@@ -39,7 +51,7 @@ export function HelpBrowser({ compact = false, initial, onExpand }: { compact?: 
       if (h) features.set(h.feature.id, h.feature.name);
     }
     return [...features].slice(0, 3).map(([id, name]) => ({ id, name }));
-  }, [query, featuresVersion]);
+  }, [query, featuresVersion, words.ready]);
   const turnOn = (id: string) => {
     const r = setFeatureOn(id, true);
     if (!r.ok) toast(r.reason, { kind: 'warn' });
@@ -71,7 +83,7 @@ export function HelpBrowser({ compact = false, initial, onExpand }: { compact?: 
     if (!el) return;
     if (nav.anchor) el.querySelector(`#md-${CSS.escape(nav.anchor)}`)?.scrollIntoView({ block: 'start' });
     else el.scrollTop = 0;
-  }, [nav]);
+  }, [nav, words.ready]);
 
   const search = (
     <div className="ui-help-search">
@@ -118,7 +130,8 @@ export function HelpBrowser({ compact = false, initial, onExpand }: { compact?: 
           </button>
         </div>
       ))}
-      {!hits.length && !offers.length && (
+      {!words.ready && <Loading slow={words.slow} />}
+      {words.ready && !hits.length && !offers.length && (
         <QuillEmpty anim={[{ anim: 'think', hold: 2400 }, { anim: 'idle' }]} className="ui-help-empty">
           {line('empty.help')}
         </QuillEmpty>
@@ -148,7 +161,7 @@ export function HelpBrowser({ compact = false, initial, onExpand }: { compact?: 
       <h2>{topic.title}</h2>
       <p className="ui-help-summary">{topic.summary}</p>
       {topic.media && <HelpMedia key={topic.id} media={topic.media} title={topic.title} />}
-      <Markdown text={topic.body} onHelp={go} />
+      {words.ready ? <Markdown text={helpBody(topic)} onHelp={go} /> : <Loading slow={words.slow} />}
     </article>
   ) : null;
 

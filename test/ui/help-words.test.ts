@@ -2,6 +2,7 @@
 // Help search finds the plain words people type, not just the names Frameling uses. Each word should bring up the
 // topic it means in the top three. Add a pair here when someone can't find something.
 import { describe, expect, it } from 'vitest';
+import { loadHelpBodies } from '../../src/core/registry';
 import { searchHelp } from '../../src/ui/help/search';
 import '../../src/renderer/features';
 
@@ -27,7 +28,8 @@ const Q: [string, string][] = [
 
 
 describe('help search in plain words', () => {
-  it('finds the topic people mean in the top three', () => {
+  it('finds the topic people mean in the top three', async () => {
+    await loadHelpBodies();
     const missed = Q.filter(([q, id]) => {
       const at = searchHelp(q, 12).map((h) => h.topic.id).indexOf(id);
       return at < 0 || at > 2;

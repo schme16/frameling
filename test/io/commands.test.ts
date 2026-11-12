@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getCommand, getHelp } from '../../src/core/registry';
+import { getCommand, getHelp, helpBody, loadHelpBodies } from '../../src/core/registry';
 import '../../src/io/commands';
 import '../../src/io/help';
 import '../../src/export/commands';
@@ -20,13 +20,14 @@ describe('files and export commands', () => {
     expect(getCommand('file.new')).toBeUndefined();
   });
 
-  it('gives every command a help topic that exists', () => {
+  it('gives every command a help topic that exists', async () => {
+    await loadHelpBodies();
     for (const id of ['file.open', 'file.openRecent', 'file.recover', 'file.save', 'file.saveAs', 'file.export', 'file.exportAgain']) {
       const help = getCommand(id)!.help!;
       expect(getHelp(help), id).toBeDefined();
     }
     for (const t of ['saving-and-opening', 'autosave', 'exporting', 'export-video-gif-apng', 'export-sprite-sheets', 'export-godot', 'export-svg']) {
-      expect((getHelp(t) ?? godotHelp.find((h) => h.id === t))?.body.length, t).toBeGreaterThan(100);
+      expect(helpBody((getHelp(t) ?? godotHelp.find((h) => h.id === t))!).length, t).toBeGreaterThan(100);
     }
   });
 });

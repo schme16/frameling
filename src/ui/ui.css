@@ -2100,6 +2100,12 @@ body.ui-resizing * {
   padding: 16px;
   color: var(--muted);
 }
+.ui-help-loading {
+  margin: 0;
+  padding: 16px;
+  min-height: 3em;
+  color: var(--muted);
+}
 .ui-help-home {
   flex: 1;
   display: flex;

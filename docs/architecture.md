@@ -109,8 +109,13 @@ Save, autosave and versions always save `rootDoc(store().rootDoc())`: tile nesti
 
 - **Commands** (`registerCommand`): `{id 'area.verb', label, category, keys?, help?, keywords?, enabled?, checked?,
   run, global?, layers?}`. Menus, the command palette, the keyboard, tooltips and the help audit all read them.
-- **Help topics** (`registerHelp`, `registerHelpTopics`): `{id, title, summary, body (Markdown, help:id links),
-  section, keywords?, media?, order?}`.
+- **Help topics** (`registerHelp`, `registerHelpTopics`): `{id, title, summary, body? (Markdown, help:id links),
+  section, keywords?, media?, order?}`. The words of the built-in topics are not in the topic: they sit in a
+  `*.bodies.ts` file beside the topic list (`export const bodies = { 'topic-id': \`...\` }`) and load as one chunk
+  (`src/core/helpBodies.ts`) when Help opens, so the start-up bundle only carries ids, titles, summaries and keywords.
+  Read the words with `helpBody(topic)` after `await loadHelpBodies()` (the help browser does this and shows a short
+  loading state; tests and scripts that search or audit the text await it first). A topic that sets `body` itself (a
+  plugin's) needs neither.
 - **Panels** (`registerPanel`): `{id, title, icon, component, zone: left|right|bottom, order?, help?}`.
 - **Tools** (`registerTool`): `{id, label, icon, key?, layers, options?, down, move, up, hover, cancel, overlay, onKey,
   leave, ...}`.

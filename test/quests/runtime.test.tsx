@@ -6,7 +6,7 @@ import '../../src/core/commands';
 import '../../src/tools';
 import '../../src/timeline';
 import '../../src/quests';
-import { allHelp, getCommand, getPanel, registerCommand } from '../../src/core/registry';
+import { allHelp, getCommand, getPanel, helpBody, loadHelpBodies, registerCommand } from '../../src/core/registry';
 import { resetStore, store } from '../../src/core/store';
 import { celebrate, dismissCelebration, feedback } from '../../src/quests/feedback';
 import { Celebration } from '../../src/quests/Celebration';
@@ -69,13 +69,14 @@ const text = () => host.textContent ?? '';
 const button = (label: string) => [...host.querySelectorAll('button')].find((b) => b.textContent?.includes(label)) as HTMLButtonElement;
 
 describe('how quests are wired in', () => {
-  it('registers the panel, the commands and the help topic', () => {
+  it('registers the panel, the commands and the help topic', async () => {
+    await loadHelpBodies();
     expect(getPanel('quests')).toMatchObject({ zone: 'right', title: 'Quests' });
     for (const id of ['quests.open', 'quests.resume']) expect(getCommand(id)).toBeTruthy();
     const topic = allHelp().filter((t) => t.id === 'quests');
     expect(topic).toHaveLength(1);
-    expect(topic[0].body).toContain('Show me');
-    expect(topic[0].body).not.toMatch(/—/);
+    expect(helpBody(topic[0])).toContain('Show me');
+    expect(helpBody(topic[0])).not.toMatch(/—/);
   });
 
   it('keeps the names the UI shell and welcome sheet import', async () => {
