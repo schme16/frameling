@@ -360,7 +360,8 @@ export function duplicateArtboard(d: Doc, id: Id): Id | null {
   const i = list.findIndex((a) => a.id === id);
   if (i < 0) return null;
   const src = list[i];
-  const content = cloneContent(d, src.content ?? takeContent(d));
+  // The open artboard's content is the document's own fields: in a draft they are proxies, which cannot be cloned as they are.
+  const content = cloneContent(d, src.content ?? takeContent(isDraft(d) ? (current(d) as Doc) : d));
   const nid = uid('ab');
   const copy: Artboard = { id: nid, name: freshName(d, src.name), x: 0, y: src.y, content };
   // Beside the original when there's room, else after everything.
