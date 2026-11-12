@@ -17,6 +17,8 @@ import { animatedSvg } from '../../src/export/svg-anim';
 import { makeBouncingLogo } from '../../src/templates/bouncing-logo';
 import { makeBouncingBall } from '../../src/templates/bouncing-ball';
 import { makeMorph } from '../../src/templates/morph';
+import { TEMPLATES } from '../../src/templates';
+import { lottieSizes } from '../../src/export/lottie-size';
 import { makeCameraPan } from '../../src/templates/camera-pan';
 import { addPixelLayer, addVectorLayer, ellipsePath, fill, hold, pathShape, rectPath, vectorDrawing } from '../../src/templates/build';
 
@@ -261,7 +263,68 @@ function symbolLooksDoc(): Doc {
   return doc;
 }
 
+/** Faded groups: a layer, a folder and a symbol copy with overlapping shapes, each faded as a whole. */
+function overlapDoc(): Doc {
+  const doc = newDoc({ name: 'Overlap fades', width: 400, height: 300, length: 12, fps: 12 });
+  doc.layers = [];
+  const back = addVectorLayer(doc, 'Back');
+  hold(back, vectorDrawing(doc, [fill([rectPath(0, 0, 400, 300)], '#f4efe6')]).id, 0, 12);
+  const lay = addVectorLayer(doc, 'Faded layer');
+  lay.opacity = 0.5;
+  hold(lay, vectorDrawing(doc, [fill([ellipsePath(70, 70, 50, 50)], '#ff6f91'), fill([ellipsePath(110, 90, 50, 50)], '#5ab8ff'), fill([rectPath(60, 100, 80, 40)], '#4fd1a5')]).id, 0, 12);
+  doc.folders = { f1: { id: 'f1', name: 'Faded folder', visible: true, opacity: 0.5 } };
+  const a = addVectorLayer(doc, 'In A');
+  a.folder = 'f1';
+  hold(a, vectorDrawing(doc, [fill([ellipsePath(250, 70, 50, 50)], '#ff6f91')]).id, 0, 12);
+  const b = addVectorLayer(doc, 'In B');
+  b.folder = 'f1';
+  hold(b, vectorDrawing(doc, [fill([ellipsePath(290, 90, 50, 50)], '#5ab8ff')]).id, 0, 12);
+  const sym = vectorDrawing(doc, [fill([ellipsePath(0, 0, 40, 40)], '#9b7bff'), fill([ellipsePath(30, 20, 40, 40)], '#ffc94a')]);
+  doc.symbols = { sy: { id: 'sy', name: 'Pair', layers: [], length: 1, origin: { x: 0, y: 0 } } };
+  const sl = addVectorLayer(doc, 'Pair inner');
+  hold(sl, sym.id, 0, 1);
+  doc.symbols.sy.layers = [sl];
+  doc.layers = doc.layers.filter((l) => l.id !== sl.id);
+  const copies = addVectorLayer(doc, 'Copies');
+  const k = vectorDrawing(doc, []);
+  const mk = (x: number, y: number, opacity: number): InstanceShape => ({ id: uid('s'), type: 'instance', symbolId: 'sy', transform: { x, y, scaleX: 1, scaleY: 1, rotation: 0, skew: 0 }, opacity }) as InstanceShape;
+  k.shapes = [mk(100, 220, 0.5), mk(280, 220, 0.4)];
+  hold(copies, k.id, 0, 12);
+  const fadeIn = addVectorLayer(doc, 'Fade in');
+  const fk = [vectorDrawing(doc, [fill([ellipsePath(200, 160, 30, 30)], '#1d1b26'), fill([ellipsePath(215, 160, 30, 30)], '#ff6f91')])];
+  hold(fadeIn, fk[0].id, 0, 12);
+  fadeIn.opacity = 0.35;
+  return doc;
+}
+
+/** Big baked effects: moving things with Glow and Outline over many frames, a still one, a Pixelate layer, a folder. */
+function heavyEffectsDoc(): Doc {
+  const doc = newDoc({ name: 'Heavy effects', width: 480, height: 270, length: 36, fps: 12 });
+  doc.layers = [];
+  const fx = (kind: LayerEffect['kind'], values: Record<string, number | string>): LayerEffect => ({ id: uid('e'), kind, values: { ...defaultValues(kind), ...values } });
+  const back = addVectorLayer(doc, 'Back');
+  hold(back, vectorDrawing(doc, [fill([rectPath(0, 0, 480, 270)], '#1d1b26')]).id, 0, 36);
+  const glow = addVectorLayer(doc, 'Moving glow');
+  glow.effects = [fx('glow', { size: 18 })];
+  for (let f = 0; f < 36; f++) hold(glow, vectorDrawing(doc, [fill([ellipsePath(60 + f * 10, 80 + Math.sin(f / 4) * 30, 24, 24)], '#ffc94a')]).id, f, 1);
+  const still = addVectorLayer(doc, 'Still glow');
+  still.effects = [fx('glow', { size: 14 })];
+  hold(still, vectorDrawing(doc, [fill([ellipsePath(120, 200, 30, 30)], '#5ab8ff')]).id, 0, 36);
+  const out = addVectorLayer(doc, 'Outlined');
+  out.effects = [fx('outline', { width: 5 })];
+  for (let f = 0; f < 36; f++) hold(out, vectorDrawing(doc, [fill([rectPath(300 + Math.cos(f / 5) * 40, 170, 50, 50)], '#ff6f91')]).id, f, 1);
+  doc.folders = { f1: { id: 'f1', name: 'Tinted group', visible: true, opacity: 1, effects: [fx('adjust', { hue: 60 })] } };
+  for (const [i, c] of ['#9b7bff', '#4fd1a5'].entries()) {
+    const l = addVectorLayer(doc, 'Grouped ' + i);
+    l.folder = 'f1';
+    hold(l, vectorDrawing(doc, [fill([ellipsePath(240 + i * 30, 200, 35, 35)], c)]).id, 0, 36);
+  }
+  return doc;
+}
+
 const DOCS: Record<string, () => Doc> = {
+  overlap: overlapDoc,
+  'heavy-effects': heavyEffectsDoc,
   text: textDoc,
   particles: particlesDoc,
   'symbol-particles': symbolParticlesDoc,
@@ -280,6 +343,7 @@ const DOCS: Record<string, () => Doc> = {
   'camera-pan-template': makeCameraPan,
   'puppet-template': makePuppet,
 };
+for (const t of TEMPLATES) DOCS['tpl:' + t.id] = t.make;
 
 let doc: Doc;
 let anim: ReturnType<typeof lottie.loadAnimation> | null = null;
@@ -301,19 +365,23 @@ function frameling(frame: number): Uint8ClampedArray {
   return pixelsOf(c);
 }
 
-export function compare(a: Uint8ClampedArray, b: Uint8ClampedArray, tol = 48): { mean: number; off: number } {
+export function compare(a: Uint8ClampedArray, b: Uint8ClampedArray, tol = 48): { mean: number; off: number; rmse: number } {
   let sum = 0;
+  let sq2 = 0;
   let off = 0;
+  // Both over white, so a see-through stage compares the same whether a player paints a white page behind it or not.
+  const over = (p: Uint8ClampedArray, i: number, k: number) => (p[i + k] * p[i + 3]) / 255 + 255 - p[i + 3];
   for (let i = 0; i < a.length; i += 4) {
     let m = 0;
     for (let k = 0; k < 3; k++) {
-      const d = Math.abs(a[i + k] - b[i + k]);
+      const d = Math.abs(over(a, i, k) - over(b, i, k));
       sum += d;
+      sq2 += d * d;
       m = Math.max(m, d);
     }
     if (m > tol) off++;
   }
-  return { mean: sum / ((a.length / 4) * 3), off: (off / (a.length / 4)) * 100 };
+  return { mean: sum / ((a.length / 4) * 3), off: (off / (a.length / 4)) * 100, rmse: Math.sqrt(sq2 / ((a.length / 4) * 3)) };
 }
 
 const api = {
@@ -341,6 +409,49 @@ const api = {
     await new Promise((r) => setTimeout(r, 300));
     svgHolder.innerHTML = animatedSvg(doc);
     return { length: doc.length, width: doc.width, height: doc.height, lottieBytes: JSON.stringify(data).length, svgBytes: svgHolder.innerHTML.length };
+  },
+  /** Where the bytes of this document's Lottie file go. */
+  sizes() {
+    return lottieSizes(docToLottie(doc));
+  },
+  /** Bakes the loaded document several ways: file size and the mean RMSE against Frameling over some frames (lottie-web canvas). */
+  async variants(list: { label: string; opts: Record<string, unknown> }[]) {
+    const out: { label: string; bytes: number; baked: number; rmse: number; ms: number }[] = [];
+    const frames = [...new Set([0, 1, 2, 3].map((k) => Math.floor((doc.length - 1) * (k / 3))))];
+    for (const v of list) {
+      const t0 = performance.now();
+      const data = docToLottie(doc, v.opts);
+      const ms = performance.now() - t0;
+      const canvas = document.createElement('canvas');
+      canvas.width = doc.width;
+      canvas.height = doc.height;
+      const holder2 = document.createElement('div');
+      holder2.appendChild(canvas);
+      const a = lottie.loadAnimation({ renderer: 'canvas', loop: false, autoplay: false, animationData: data, rendererSettings: { context: canvas.getContext('2d')!, clearCanvas: true, preserveAspectRatio: 'none' } as never });
+      await new Promise<void>((r) => (a.isLoaded ? r() : a.addEventListener('DOMLoaded', () => r())));
+      await new Promise((r) => setTimeout(r, 400));
+      let sum = 0;
+      for (const f of frames) {
+        a.goToAndStop(f, true);
+        sum += compare(frameling(f), pixelsOf(canvas)).rmse;
+      }
+      a.destroy();
+      out.push({ label: v.label, bytes: JSON.stringify(data).length, baked: lottieSizes(data).baked, rmse: sum / frames.length, ms });
+    }
+    return out;
+  },
+  /** One frame of the loaded document baked with `opts`, drawn by lottie-web's canvas player at `zoom` times the stage size. */
+  async pictureAt(opts: Record<string, unknown>, frame: number, zoom: number) {
+    const canvas = document.createElement('canvas');
+    canvas.width = doc.width * zoom;
+    canvas.height = doc.height * zoom;
+    const a = lottie.loadAnimation({ renderer: 'canvas', loop: false, autoplay: false, animationData: docToLottie(doc, opts), rendererSettings: { context: canvas.getContext('2d')!, clearCanvas: true, preserveAspectRatio: 'xMidYMid meet' } as never });
+    await new Promise<void>((r) => (a.isLoaded ? r() : a.addEventListener('DOMLoaded', () => r())));
+    await new Promise((r) => setTimeout(r, 400));
+    a.goToAndStop(frame, true);
+    const url = canvas.toDataURL('image/png');
+    a.destroy();
+    return url;
   },
   lottieAt(frame: number) {
     try {

@@ -96,18 +96,31 @@ app.whenReady().then(async () => {
         const bad = lotBad || svg.mean > MAX_MEAN || svg.off > MAX_OFF;
         if (f === frames[2] || lsvg.mean > MAX_MEAN) fs.writeFileSync(path.join(outDir, `${name}-lottiesvg-${f}.png`), lsized.toPNG());
 
-        failed ||= bad;
+        failed ||= bad && !name.startsWith('tpl:');
         if (bad) {
           // Keep the pictures of a frame that's off, to look at.
           fs.writeFileSync(path.join(outDir, `${name}-svg-${f}.png`), sized.toPNG());
           const pics = await ev(`check.lottiePictures(${f})`);
           for (const [k, url] of Object.entries(pics)) fs.writeFileSync(path.join(outDir, `${name}-${k}-${f}.png`), Buffer.from(url.split(',')[1], 'base64'));
         }
-        report.push({ doc: name, frame: f, lottieMean: +lot.mean.toFixed(2), lottieOff: +lot.off.toFixed(2), svgMean: +svg.mean.toFixed(2), svgOff: +svg.off.toFixed(2), lottieSvgMean: +lsvg.mean.toFixed(2), lottieSvgOff: +lsvg.off.toFixed(2), bad });
+        report.push({ doc: name, frame: f, lottieMean: +lot.mean.toFixed(2), lottieRmse: +lot.rmse.toFixed(2), lottieSvgRmse: +lsvg.rmse.toFixed(2), lottieOff: +lot.off.toFixed(2), svgMean: +svg.mean.toFixed(2), svgOff: +svg.off.toFixed(2), lottieSvgMean: +lsvg.mean.toFixed(2), lottieSvgOff: +lsvg.off.toFixed(2), bad });
       }
-      report.push({ doc: name, lottieBytes: info.lottieBytes, svgBytes: info.svgBytes });
+      report.push({ doc: name, lottieBytes: info.lottieBytes, svgBytes: info.svgBytes, sizes: await ev('check.sizes()') });
     }
-    for (const r of report) console.log(JSON.stringify(r));
+    if (!process.env.QUIET) for (const r of report) console.log(JSON.stringify(r));
+    // One line per document: mean RMSE over the sampled frames for lottie-web's canvas and SVG players, and the size split.
+    const rows = new Map();
+    for (const r of report) {
+      const row = rows.get(r.doc) ?? { n: 0, c: 0, s: 0 };
+      if (r.lottieRmse !== undefined) {
+        row.n++;
+        row.c += r.lottieRmse;
+        row.s += r.lottieSvgRmse;
+      } else Object.assign(row, { sizes: r.sizes, bytes: r.lottieBytes });
+      rows.set(r.doc, row);
+    }
+    console.log('doc | rmse canvas | rmse svg | bytes | baked | pixels | keyframes | shapes | other');
+    for (const [d, w] of rows) console.log([d, (w.c / w.n).toFixed(2), (w.s / w.n).toFixed(2), w.bytes, w.sizes.baked, w.sizes.pixels, w.sizes.keyframes, w.sizes.shapes, w.sizes.other].join(' | '));
     for (const e of errors) console.log('page error:', e);
     fs.writeFileSync(path.join(outDir, 'report.json'), JSON.stringify(report, null, 2));
     console.log(failed ? 'SOME FRAMES DIFFER' : 'ALL FRAMES MATCH', '->', outDir);

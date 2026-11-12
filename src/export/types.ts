@@ -96,6 +96,8 @@ export interface ExportSettings {
   sheet: SheetSettings;
   /** Interactives package: carry the editable .frameling file inside it (missing = yes). */
   includeSource?: boolean;
+  /** Lottie only: how pictures made from effects are stored (missing = balanced). */
+  lottiePictures?: 'balanced' | 'sharp' | 'small';
 }
 
 export interface FormatInfo {

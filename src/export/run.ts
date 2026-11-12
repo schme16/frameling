@@ -86,7 +86,7 @@ export async function runExport(ctx: RunContext): Promise<RunResult> {
     }
     case 'lottie': {
       step(0, 'Writing the animation');
-      const json = lottieJson(doc, { range: plan.range, transparent: bg === 'none' });
+      const json = lottieJson(doc, { range: plan.range, transparent: bg === 'none', pictures: settings.lottiePictures });
       return { kind: 'file', name: `${plan.name}.json`, bytes: strToU8(json) };
     }
     case 'svganim': {

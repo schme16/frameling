@@ -20,7 +20,9 @@
  *   canvas does (see docs/effects.md, "Vector exports"). Soften and Shadow are Lottie effects, other effects are baked.
  * - Text is traced letters, particles a group per particle, tint a recoloured precomp (sprites.ts).
  *
- * In lottie-web's canvas renderer a layer fade still blends shape by shape, and effects don't play there.
+ * A fade that covers overlapping shapes goes under a see-through matte, so lottie-web's canvas renderer (which
+ * multiplies opacity into each shape) fades the group as one too. Effects don't play in that renderer.
+ * Pictures made from effects are cropped, shared when they repeat and stored as WebP or PNG (see PICTURE_LOOKS).
  */
 import type { Cel, Doc, Easing, Gradient, InstanceShape, Layer, LayerEffect, ParticlesShape, PathShape, PixelDrawing, Shape, StrokeShape, SubPath, TextShape, Tween } from '../core/format';
 import { celAt } from '../core/doc';
@@ -40,6 +42,21 @@ export interface LottieOptions {
   range?: { start: number; end: number };
   /** Leave the stage colour out. */
   transparent?: boolean;
+  /**
+   * How pictures made from effects are stored (see PICTURE_LOOKS). Default 'balanced'. `bake` overrides the details
+   * (tests, size checks).
+   */
+  pictures?: PictureLook;
+  bake?: Partial<BakeSpec>;
+}
+
+export type PictureLook = 'balanced' | 'sharp' | 'small';
+
+/** How one baked picture is made: pixels per stage pixel, the file type and the lossy quality (0 to 1). */
+export interface BakeSpec {
+  scale: number;
+  format: 'png' | 'webp';
+  quality: number;
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -575,6 +592,10 @@ interface Ctx {
   comps: number;
   /** Building a symbol's precomp with looks inside: its layers (no camera, pictures baked in symbol space). */
   symbolLayers?: Layer[];
+  /** How baked pictures are made. */
+  pictures: PictureLook;
+  bake?: Partial<BakeSpec>;
+  bank?: PictureBank;
 }
 
 /** Instance transform to Lottie's (anchor at the registration point; Lottie's skew turns the other way). */
@@ -638,7 +659,7 @@ function symbolAsset(ctx: Ctx, symbolId: string, tints: Tint[] = ctx.tints): str
   ctx.tints = outer;
   // Everything inside hangs off one null that moves it into the precomp's padded box (precomps clip to their box).
   const shift = { ty: 3, ind: 1, nm: 'Offset', ip: 0, op: c.length, st: 0, sr: 1, ks: { a: stat([0, 0]), p: stat([ctx.pad, ctx.pad]), s: stat([100, 100]), r: stat(0), o: stat(100) } };
-  asset.layers = [...numbered(layers, 2, 1), shift];
+  asset.layers = [...numbered(fadeAsWhole(ctx, layers), 2, 1), shift];
   return id;
 }
 
@@ -981,6 +1002,66 @@ function wrap(ctx: Ctx, content: Json[], name: string, r: Range): Json {
   return { ty: 0, refId: id, nm: name, w: ctx.doc.width + ctx.pad * 2, h: ctx.doc.height + ctx.pad * 2, ip: 0, op: r.to - r.from + 1, st: 0, sr: 1, ks: { a: stat([ctx.pad, ctx.pad]), p: stat([0, 0]), s: stat([100, 100]), r: stat(0), o: stat(100) }, frameling: { noCam: true } };
 }
 
+/** The most layers in one list that get a fade matte. */
+const MAX_FADE_MATTES = 16;
+
+/** How many fills and strokes a layer paints (precomps count what's inside, matte sources excluded). */
+function paintCount(ctx: Ctx, l: Json, seen = new Set<string>()): number {
+  if (l.ty === 2) return 1;
+  if (l.ty === 0) {
+    if (seen.has(l.refId)) return 0;
+    const asset = ctx.assets.find((a) => a.id === l.refId);
+    const inner = new Set(seen).add(l.refId);
+    return ((asset?.layers ?? []) as Json[]).reduce((n, x) => n + (x.td ? 0 : paintCount(ctx, x, inner)), 0);
+  }
+  if (l.ty !== 4) return 0;
+  const walk = (items: Json[]): number => items.reduce((n, it) => n + (it.ty === 'gr' ? walk(it.it ?? []) : ['fl', 'st', 'gf', 'gs'].includes(it.ty) ? 1 : 0), 0);
+  return walk(l.shapes ?? []);
+}
+
+/**
+ * Fades a layer as a whole in every player. A layer's opacity is multiplied into each shape it draws by lottie-web's
+ * canvas player, so overlaps show through; a track matte is drawn from a picture of the whole layer, so the layer goes
+ * in at full strength and a see-through matte the size of the stage carries the fade. Only layers that paint two or
+ * more things and have no blend mode, matte or effect of their own are done (the rest look the same either way).
+ * Bottom first, like the content it takes.
+ */
+function fadeAsWhole(ctx: Ctx, content: Json[]): Json[] {
+  const out: Json[] = [];
+  const size = ctx.pad * 3 + Math.max(ctx.doc.width, ctx.doc.height);
+  const wants = (l: Json): boolean => {
+    const o = l.ks?.o;
+    const fading = o && (o.a === 1 || (typeof o.k === 'number' && o.k < 100));
+    return !!fading && !l.tt && !l.td && !l.bm && !l.ef?.length && [0, 2, 4].includes(l.ty) && paintCount(ctx, l) >= 2;
+  };
+  // Each matte makes a canvas player copy the whole picture twice a frame, so a crowd of small fading things (a
+  // particle burst) keeps its per-shape fade: overlaps inside one tiny particle are hardly seen.
+  const some = content.filter(wants).length <= MAX_FADE_MATTES;
+  for (const l of content) {
+    if (!some || !wants(l)) {
+      out.push(l);
+      continue;
+    }
+    const o = l.ks.o;
+    const matte: Json = {
+      ty: 4,
+      nm: (l.nm ?? 'Layer') + ' (fade)',
+      td: 1,
+      ip: l.ip,
+      op: l.op,
+      st: 0,
+      sr: 1,
+      ks: { a: stat([0, 0]), p: stat([0, 0]), s: stat([100, 100]), r: stat(0), o: JSON.parse(JSON.stringify(o)) },
+      shapes: [{ ty: 'gr', nm: 'Stage', it: [{ ty: 'rc', p: stat([ctx.doc.width / 2, ctx.doc.height / 2]), s: stat([size * 2, size * 2]), r: stat(0) }, { ty: 'fl', c: stat([1, 1, 1, 1]), o: stat(100) }, noTr()] }],
+      frameling: { noCam: true },
+    };
+    l.ks.o = stat(100);
+    l.tt = 1;
+    out.push(l, matte);
+  }
+  return out;
+}
+
 /** Numbers layers and hangs them off the camera (and, in a precomp, the null that moves them into its box). */
 function assemble(ctx: Ctx, content: Json[], r: Range, shifted: boolean): Json[] {
   const { doc } = ctx;
@@ -990,7 +1071,7 @@ function assemble(ctx: Ctx, content: Json[], r: Range, shifted: boolean): Json[]
   const cam = ctx.symbolLayers ? { nulls: [] as Json[], parentOf: new Map<number, number>() } : cameraNulls(doc, r.from, r.to, content.filter((l) => !l.frameling?.noCam).map(depthOf), first);
   const shiftInd = shifted ? 1 : undefined;
   if (shifted) for (const nl of cam.nulls) nl.parent = 1;
-  const layers = numbered(content, first + cam.nulls.length, (l) => (l.frameling?.noCam ? shiftInd : cam.parentOf.get(depthOf(l)) ?? shiftInd));
+  const layers = numbered(fadeAsWhole(ctx, content), first + cam.nulls.length, (l) => (l.frameling?.noCam ? shiftInd : cam.parentOf.get(depthOf(l)) ?? shiftInd));
   for (const l of layers) delete l.frameling;
   const all = [...layers, ...cam.nulls];
   if (shifted) all.push({ ty: 3, ind: 1, nm: 'Offset', ip: 0, op: r.to - r.from + 1, st: 0, sr: 1, ks: { a: stat([0, 0]), p: stat([ctx.pad, ctx.pad]), s: stat([100, 100]), r: stat(0), o: stat(100) } });
@@ -1104,23 +1185,97 @@ function levelContent(ctx: Ctx, steps: PlanStep[], r: Range): Json[] {
 
 // ---------------------------------------------------------------- baked pictures
 
-/** Bakes are drawn at twice the stage size, so they stay sharp on high density screens. */
-const BAKE_SCALE = 2;
+/** The ways to store baked pictures. Balanced is the default; Sharp keeps every pixel, Small trades some for size. */
+export const PICTURE_LOOKS: Record<PictureLook, BakeSpec> = {
+  sharp: { scale: 2, format: 'png', quality: 1 },
+  balanced: { scale: 2, format: 'webp', quality: 0.9 },
+  small: { scale: 1, format: 'webp', quality: 0.8 },
+};
 
-function hashPixels(px: Uint8ClampedArray): number {
+/** Pixels this close (in every channel) count as the same picture, so a slow wobble reuses one image. */
+const NEAR = 3;
+
+export const hashPixels = (px: Uint8ClampedArray): number => {
   let h = 2166136261;
   for (let i = 0; i < px.length; i += 1) h = Math.imul(h ^ px[i], 16777619);
   return h >>> 0;
+};
+
+export const nearlySame = (a: Uint8ClampedArray, b: Uint8ClampedArray): boolean => {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) if (Math.abs(a[i] - b[i]) > NEAR) return false;
+  return true;
+};
+
+/** The box of pixels that show (alpha above 2 of 255: a fainter tail of a soft effect isn't worth the bytes), or null when none do. */
+export function visibleBox(px: Uint8ClampedArray, W: number, H: number): { x0: number; y0: number; x1: number; y1: number } | null {
+  let x0 = W;
+  let y0 = H;
+  let x1 = -1;
+  let y1 = -1;
+  for (let y = 0; y < H; y++)
+    for (let x = 0; x < W; x++)
+      if (px[(y * W + x) * 4 + 3] > 2) {
+        if (x < x0) x0 = x;
+        if (x > x1) x1 = x;
+        if (y < y0) y0 = y;
+        if (y > y1) y1 = y;
+      }
+  return x1 < 0 ? null : { x0, y0, x1, y1 };
+}
+
+/** Hands out one image id per different picture: the same pixels (or nearly) anywhere come back as the same id. */
+export class PictureBank {
+  private exact = new Map<string, string>();
+  private recent = new Map<string, { px: Uint8ClampedArray; id: string }[]>();
+  constructor(private next: () => string) {}
+  /** The id for these pixels, and whether it's new (so the caller stores the picture). */
+  idFor(w: number, h: number, px: Uint8ClampedArray): { id: string; fresh: boolean } {
+    const key = `${hashPixels(px)}:${w}x${h}`;
+    const known = this.exact.get(key);
+    if (known) return { id: known, fresh: false };
+    const size = `${w}x${h}`;
+    const near = this.recent.get(size)?.find((p) => nearlySame(p.px, px));
+    if (near) {
+      this.exact.set(key, near.id);
+      return { id: near.id, fresh: false };
+    }
+    const id = this.next();
+    this.exact.set(key, id);
+    this.recent.set(size, [...(this.recent.get(size) ?? []).slice(-11), { px, id }]);
+    return { id, fresh: true };
+  }
+}
+
+/** A picture as a data URL: WebP when asked for and the page can make it (and it's smaller), else PNG. */
+function pictureUrl(w: number, h: number, px: Uint8ClampedArray, spec: BakeSpec): string {
+  const png = pngDataUrl(w, h, px);
+  if (spec.format !== 'webp' || typeof document === 'undefined') return png;
+  try {
+    const c = document.createElement('canvas');
+    c.width = w;
+    c.height = h;
+    const g = c.getContext('2d');
+    if (!g) return png;
+    g.putImageData(new ImageData(new Uint8ClampedArray(px), w, h), 0, 0);
+    const webp = c.toDataURL('image/webp', spec.quality);
+    return webp.startsWith('data:image/webp') && webp.length < png.length ? webp : png;
+  } catch {
+    return png;
+  }
 }
 
 /**
  * A layer or folder drawn by the canvas renderer (with its effects, masks and clipping inside, but without its own
  * blend mode and opacity, which stay on the Lottie layer), a picture per different frame, cropped to what's drawn.
+ * Frames that come out the same (or nearly) share one picture, and a picture held across frames is one layer.
  * Null when there's no canvas to draw with.
  */
 function bakeNode(ctx: Ctx, node: PlanNode, frames: number[], r: Range): Json[] | null {
   if (typeof OffscreenCanvas === 'undefined') return null;
   const { doc } = ctx;
+  const spec: BakeSpec = { ...PICTURE_LOOKS[ctx.pictures], ...ctx.bake };
+  const SCALE = spec.scale;
   const ids = new Set(node.type === 'layer' ? [node.layer.id] : planLayers(node.steps).map((l) => l.id));
   const solo: Doc = {
     ...doc,
@@ -1130,57 +1285,49 @@ function bakeNode(ctx: Ctx, node: PlanNode, frames: number[], r: Range): Json[] 
   // On the stage the picture is the stage. Inside a symbol it's the box the drawings (and effects) cover, in symbol space.
   const area = ctx.symbolLayers ? symbolArea(solo, ids, frames) : { x: 0, y: 0, w: doc.width, h: doc.height };
   if (!area) return [];
-  const W = Math.round(area.w * BAKE_SCALE);
-  const H = Math.round(area.h * BAKE_SCALE);
+  const W = Math.round(area.w * SCALE);
+  const H = Math.round(area.h * SCALE);
   const c = new OffscreenCanvas(W, H);
   const g = c.getContext('2d', { willReadFrequently: true });
   if (!g) return null;
   const out: Json[] = [];
-  let prev: { hash: number; layer: Json } | null = null;
+  // One bank for the whole file, so a layer baked twice (a clipping base and its copy) stores its pictures once.
+  const bank = (ctx.bank ??= new PictureBank(() => {
+    const id = `image_${ctx.images.size}`;
+    ctx.images.set('bake:' + id, id);
+    return id;
+  }));
+  let prev: { id: string; x: number; y: number; layer: Json } | null = null;
   for (const f of frames) {
     g.setTransform(1, 0, 0, 1, 0, 0);
     g.clearRect(0, 0, W, H);
-    g.setTransform(BAKE_SCALE, 0, 0, BAKE_SCALE, -area.x * BAKE_SCALE, -area.y * BAKE_SCALE);
+    g.setTransform(SCALE, 0, 0, SCALE, -area.x * SCALE, -area.y * SCALE);
     renderFrame(g, solo, f, { background: false, layerFilter: (l) => ids.has(l.id) });
     const px = g.getImageData(0, 0, W, H).data;
-    let x0 = W;
-    let y0 = H;
-    let x1 = -1;
-    let y1 = -1;
-    for (let y = 0; y < H; y++)
-      for (let x = 0; x < W; x++)
-        if (px[(y * W + x) * 4 + 3]) {
-          if (x < x0) x0 = x;
-          if (x > x1) x1 = x;
-          if (y < y0) y0 = y;
-          if (y > y1) y1 = y;
-        }
-    if (x1 < 0) {
+    const box = visibleBox(px, W, H);
+    if (!box) {
       prev = null;
       continue;
     }
-    const w = x1 - x0 + 1;
-    const h = y1 - y0 + 1;
+    const { x0, y0 } = box;
+    const w = box.x1 - x0 + 1;
+    const h = box.y1 - y0 + 1;
     const crop = g.getImageData(x0, y0, w, h).data;
-    const hash = (hashPixels(crop) ^ Math.imul(x0 + 1, 73856093) ^ Math.imul(y0 + 1, 19349663)) >>> 0;
-    if (prev && prev.hash === hash) {
+    // The same picture anywhere on the stage is one image, shown at each place.
+    const { id, fresh } = bank.idFor(w, h, crop);
+    if (fresh) ctx.assets.push({ id, w, h, u: '', p: pictureUrl(w, h, crop, spec), e: 1 });
+    const x = r3(area.x + x0 / SCALE);
+    const y = r3(area.y + y0 / SCALE);
+    if (prev && prev.id === id && prev.x === x && prev.y === y) {
       prev.layer.op = f + 1 - r.offset;
       continue;
     }
-    const key = `bake:${hash}:${w}x${h}`;
-    let id = ctx.images.get(key);
-    if (!id) {
-      id = `image_${ctx.images.size}`;
-      ctx.images.set(key, id);
-      ctx.assets.push({ id, w, h, u: '', p: pngDataUrl(w, h, crop), e: 1 });
-    }
-    const layer = { ty: 2, refId: id, nm: 'Baked', ip: f - r.offset, op: f + 1 - r.offset, st: 0, sr: 1, ks: { a: stat([0, 0]), p: stat([r3(area.x + x0 / BAKE_SCALE), r3(area.y + y0 / BAKE_SCALE)]), s: stat([100 / BAKE_SCALE, 100 / BAKE_SCALE]), r: stat(0), o: stat(100) }, frameling: { noCam: true } };
+    const layer: Json = { ty: 2, refId: id, nm: 'Baked', ip: f - r.offset, op: f + 1 - r.offset, st: 0, sr: 1, ks: { a: stat([0, 0]), p: stat([x, y]), s: stat([100 / SCALE, 100 / SCALE]), r: stat(0), o: stat(100) }, frameling: { noCam: true } };
     out.push(layer);
-    prev = { hash, layer };
+    prev = { id, x, y, layer };
   }
   return out;
 }
-
 
 /** The box some of a symbol's layers cover over these frames, effects included (null when empty). */
 function symbolArea(solo: Doc, ids: Set<string>, frames: number[]): { x: number; y: number; w: number; h: number } | null {
@@ -1250,7 +1397,7 @@ export function lottieExport(doc: Doc, opts: LottieOptions = {}): { data: Json; 
   const from = Math.max(0, opts.range?.start ?? 0);
   const to = Math.min(doc.length - 1, opts.range?.end ?? doc.length - 1);
   const count = to - from + 1;
-  const ctx: Ctx = { doc, assets: [], symbolAssets: new Map(), images: new Map(), pad: Math.max(doc.width, doc.height) * 2, tints: [], notes: new Set(), comps: 0 };
+  const ctx: Ctx = { doc, assets: [], symbolAssets: new Map(), images: new Map(), pad: Math.max(doc.width, doc.height) * 2, tints: [], notes: new Set(), comps: 0, pictures: opts.pictures ?? 'balanced', bake: opts.bake };
   const include = (l: Layer) => l.visible && !l.reference && l.kind !== 'camera';
   const r: Range = { from, to, offset: from };
   const content = levelContent(ctx, buildPlan(doc, include), r);
