@@ -14,10 +14,10 @@
  * Resolving and diffing keep the unchanged parts as the very same objects, so both are cheap.
  */
 import { current, isDraft, produce, type Draft, type Patch as ImmerPatch } from 'immer';
-import type { Artboard, ArtboardContent, Cel, Doc, Drawing, DrawingOverride, Id, Layer, ListOverride, Patch, Shape, VariationOverrides } from '../core/format';
+import type { Artboard, ArtboardContent, AudioClip, Cel, Doc, DocPalette, Drawing, DrawingOverride, Id, Layer, ListOverride, Patch, Shape, VariationOverrides } from '../core/format';
 import { uid } from '../core/doc';
 import { registerChoice } from '../core/choices';
-import { registerSettler } from '../core/store';
+import { registerGuard, registerSettler, type SettleContext } from '../core/store';
 import { activeId, artboardsOf, boxes, ensureArtboards, findArtboard, gapFor, nextSpot, putContent, switchArtboard, takeContent } from './model';
 import { fitPlacement, type FitMode } from './fit';
 
@@ -293,6 +293,8 @@ export function diffContent(base: ArtboardContent, baseDrawings: Record<Id, Draw
   if (stage) out.stage = stage;
   const layers = diffList<Layer, ListOverride<Cel>>(base.layers, cur.layers, { item: (b, c) => diffLayer(b, c, vid), mapAdded: (l) => unaliasLayer(l, vid) });
   if (layers) out.layers = layers;
+  const audio = diffList<AudioClip>(base.audio ?? [], cur.audio ?? [], { skip: ['data', 'mime', 'duration'] });
+  if (audio) out.audio = audio;
   const drawings: Record<Id, DrawingOverride> = inc ? { ...inc.prev } : {};
   if (inc) {
     // Only the drawings that were touched are looked at again; the rest keep what they had.
@@ -397,6 +399,20 @@ export interface Resolved {
   drawings: Record<Id, Drawing>;
 }
 
+const NO_SOUND: AudioClip[] = [];
+const audioMemo = new WeakMap<AudioClip[], WeakMap<ListOverride<AudioClip>, AudioClip[]>>();
+
+/** The original's sound clips with a variation's changes (volume, mute, start, left out, added). The same array for the same input. */
+function resolveAudio(base: AudioClip[] | undefined, o: ListOverride<AudioClip> | undefined): AudioClip[] | undefined {
+  if (!o) return base;
+  const b = base ?? NO_SOUND;
+  let m = audioMemo.get(b);
+  if (!m) audioMemo.set(b, (m = new WeakMap()));
+  let hit = m.get(o);
+  if (!hit) m.set(o, (hit = applyList(b, o, (c, it) => applyPatch(c, it?.patch))));
+  return hit;
+}
+
 /** A variation's own object for one of its original's drawings (the redrawn copy when it has one). */
 function aliasDrawing(baseDrawings: Record<Id, Drawing>, ov: VariationOverrides, orig: Id, alias: Id, have: Record<Id, Drawing>): Drawing | undefined {
   const b = baseDrawings[orig];
@@ -431,6 +447,9 @@ export function resolveContent(base: ArtboardContent, baseDrawings: Record<Id, D
     (b, it) => resolveLayer(b, it, vid, baseDrawings),
     (l) => resolveAdded(l, vid, baseDrawings),
   );
+  const sound = resolveAudio(base.audio, o.audio);
+  if (sound?.length) content.audio = sound;
+  else delete content.audio;
   const drawings: Record<Id, Drawing> = {};
   const scan = (l: Layer) => {
     for (const [alias, orig] of aliasesOf(l, vid)) {
@@ -598,6 +617,74 @@ function touchedOriginals(ids: Set<Id>, vid: Id): Set<Id> {
 
 registerSettler((doc, ctx) => settleVariations(doc, ctx));
 
+// ---------------------------------------------------------------- what a variation shares
+
+/** What stays shared with the original (not overridable), and the plain sentence for when someone tries to change it from a variation. */
+const SHARED: Record<string, string> = {
+  symbols: 'Symbols are shared with the original. Change them there, or detach this variation.',
+  swatches: 'Swatches are shared with the original. Change them there, or detach this variation.',
+  folders: 'Layer folders are shared with the original. Change them there, or detach this variation.',
+  tileset: 'Tiles are shared with the original. Change them there, or detach this variation.',
+  palette: 'The palette is shared with the original. Change it there, or detach this variation.',
+};
+
+/** The open artboard when it is a variation. */
+function openVariation(doc: Doc): Artboard | undefined {
+  if (!doc.artboards?.some((a) => a.variationOf)) return undefined;
+  const a = findArtboard(doc, activeId(doc));
+  return a?.variationOf ? a : undefined;
+}
+
+/** The sentence to say when the open artboard is a variation and something it shares is about to be changed, else null. */
+export function sharedEditNote(doc: Doc, what: 'symbols' | 'swatches' | 'folders' | 'tileset' | 'palette'): string | null {
+  return openVariation(doc) ? SHARED[what] : null;
+}
+
+// A change that writes what a variation shares is refused whole, with the sentence, so no edit is lost or leaks into the original.
+registerGuard((_before, next, patches) => {
+  if (!openVariation(next)) return null;
+  for (const p of patches) {
+    const note = SHARED[p.path[0] as string];
+    if (note) return note;
+  }
+  return null;
+});
+
+/** The palette the open artboard has of its own (a variation with a colourway), or undefined for the shared one. */
+export function variationPalette(doc: Doc): DocPalette | undefined {
+  return openVariation(doc)?.overrides?.palette;
+}
+
+/** Gives the open variation its own palette (null = the original's again). False when the open artboard is not a variation. */
+export function setVariationPalette(d: Doc, p: DocPalette | null): boolean {
+  const a = openVariation(snap(d));
+  if (!a) return false;
+  const t = findArtboard(d, a.id)!;
+  const ov = { ...(t.overrides ?? {}) };
+  if (p) ov.palette = p;
+  else delete ov.palette;
+  t.overrides = ov as never;
+  return true;
+}
+
+/**
+ * Which drawings a palette colour change recolours. In an open variation: the ones its keys show (its colourway is its
+ * own). Anywhere else: every drawing but the copies of variations that have a palette of their own.
+ */
+export function paletteScope(doc: Doc): (id: Id) => boolean {
+  const open = openVariation(doc);
+  if (open) {
+    const used = new Set<Id>();
+    for (const l of doc.layers) for (const c of l.cels) used.add(c.drawingId);
+    return (id) => used.has(id);
+  }
+  if (!doc.artboards?.some((a) => a.overrides?.palette)) return () => true;
+  return (id) => {
+    const sp = splitAlias(id);
+    return !(sp && findArtboard(doc, sp.vid)?.overrides?.palette);
+  };
+}
+
 // ---------------------------------------------------------------- actions on a document (call them inside store.update)
 
 /** The document as plain data (a recipe's draft is read through this, so memoising never sees proxies). */
@@ -648,6 +735,9 @@ export function normalize(ov: VariationOverrides): VariationOverrides {
     if (Object.keys(lo).length) out.layers = lo;
   }
   if (ov.drawings && Object.keys(ov.drawings).length) out.drawings = ov.drawings;
+  const au = ov.audio;
+  if (au && (Object.keys(au.items ?? {}).length || au.removed?.length || au.added?.length || au.order)) out.audio = au;
+  if (ov.palette) out.palette = ov.palette;
   return out;
 }
 
@@ -794,6 +884,11 @@ export type ResetKey =
   | { t: 'celGone'; layer: Id; id: Id }
   | { t: 'celNew'; layer: Id; id: Id }
   | { t: 'drawing'; id: Id }
+  | { t: 'sound'; id: Id }
+  | { t: 'soundGone'; id: Id }
+  | { t: 'soundNew'; id: Id }
+  | { t: 'soundOrder' }
+  | { t: 'palette' }
   /** Several drawings at once (a recolour that ran across a layer's keys). */
   | { t: 'drawings'; ids: Id[] };
 
@@ -838,6 +933,22 @@ export function withoutOverride(ov: VariationOverrides, k: ResetKey): VariationO
       if (s?.added) s.added = s.added.filter((x) => x.id !== k.id);
       break;
     }
+    case 'sound':
+      if (o.audio?.items) delete o.audio.items[k.id];
+      break;
+    case 'soundGone':
+      if (o.audio?.removed) o.audio.removed = o.audio.removed.filter((x) => x !== k.id);
+      break;
+    case 'soundNew':
+      if (o.audio?.added) o.audio.added = o.audio.added.filter((x) => x.id !== k.id);
+      if (o.audio?.order) o.audio.order = o.audio.order.filter((x) => x !== k.id);
+      break;
+    case 'soundOrder':
+      if (o.audio) delete o.audio.order;
+      break;
+    case 'palette':
+      delete o.palette;
+      break;
     case 'drawing':
       if (o.drawings) delete o.drawings[k.id];
       break;
@@ -996,6 +1107,17 @@ export function listDifferences(doc: Doc, vid: Id): DiffItem[] {
     }
     for (const c of it.sub?.added ?? []) add({ reset: { t: 'celNew', layer: lid, id: c.id }, group: name, label: `New key at frame ${c.start + 1}`, layer: lid, frame: c.start });
   }
+
+  // Sound and palette.
+  const A = ov.audio;
+  const sound = 'Sound';
+  const clipName = (id: Id) => cur.audio?.find((c) => c.id === id)?.name ?? base.audio?.find((c) => c.id === id)?.name ?? 'Sound';
+  const SOUND_WORDS: Record<string, string> = { volume: 'volume', muted: 'muted', start: 'moved', name: 'name' };
+  for (const id of A?.removed ?? []) add({ reset: { t: 'soundGone', id }, group: sound, label: `${clipName(id)}: left out of this variation` });
+  for (const c of A?.added ?? []) add({ reset: { t: 'soundNew', id: c.id }, group: sound, label: `${c.name}: a sound only this variation has` });
+  for (const [id, it] of Object.entries(A?.items ?? {})) add({ reset: { t: 'sound', id }, group: sound, label: `${clipName(id)}: ${list(keysOf(it.patch).map((k) => SOUND_WORDS[k] ?? k))} changed` });
+  if (A?.order) add({ reset: { t: 'soundOrder' }, group: sound, label: 'Sounds in a different order' });
+  if (ov.palette) add({ reset: { t: 'palette' }, group: whole, label: `Palette: its own colours (${ov.palette.colors.length}), the original's stay as they are` });
 
   // Drawings: found through the first key that shows them, and joined up per layer (a recolour across 24 keys is one line).
   interface Tally {

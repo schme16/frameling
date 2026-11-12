@@ -17,6 +17,7 @@ import './pixel.css';
 import { usePopover } from '../ui/popover';
 import { dock, inPixelWorkspace } from '../ui/dock';
 import { paletteIndexOf } from './bar';
+import { variationPalette } from '../artboards/variations';
 
 interface Menu {
   index: number;
@@ -275,7 +276,7 @@ export function PalettePanel() {
       ) : (
         <p className="cv-tip">The palette lock and shading work on pixel layers. Pick or add a pixel layer to use them.</p>
       )}
-      {!doc.palette && <p className="cv-tip">This is the starter palette. Change anything and it's saved with your document.</p>}
+      {!doc.palette && !variationPalette(doc) && <p className="cv-tip">This is the starter palette. Change anything and it's saved with your document.</p>}
 
       {menu && <ChipMenu menu={menu} palette={palette} onClose={() => setMenu(null)} />}
     </div>

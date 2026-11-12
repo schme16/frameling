@@ -299,7 +299,7 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
     const points = raw.perspective.points.filter((p: any) => isObj(p) && Number.isFinite(p.x) && Number.isFinite(p.y)).slice(0, 2).map((p: any) => ({ x: p.x as number, y: p.y as number }));
     if (points.length) doc.perspective = { points };
   }
-  Object.assign(doc, readArtboards(raw, entries, warnings, { readLayers, readFlow, readGuides, top: layers }));
+  Object.assign(doc, readArtboards(raw, entries, warnings, { readLayers, readFlow, readGuides, readPalette, top: layers }));
   resolveAfterLoad(doc, warnings);
   upgradeLineage(doc);
   return typeof raw.variationOpen === 'string' ? switchOpenVariation(doc, raw.variationOpen) : doc;
@@ -507,7 +507,7 @@ function readTileset(raw: any, drawings: Record<string, Drawing>, warnings: stri
 }
 
 /** The pixel palette, if the file has a usable one. */
-function readPalette(p: unknown): { palette?: Doc['palette'] } {
+export function readPalette(p: unknown): { palette?: Doc['palette'] } {
   if (!isObj(p) || !Array.isArray(p.colors)) return {};
   const colors = p.colors.filter((c: unknown) => typeof c === 'string' && /^#[0-9a-f]{6}([0-9a-f]{2})?$/i.test(c)).slice(0, 256);
   const ramps = Array.isArray(p.ramps) ? [...new Set<number>(p.ramps.filter((n: unknown) => Number.isInteger(n) && (n as number) > 0 && (n as number) < colors.length))].sort((a, b) => a - b) : [];

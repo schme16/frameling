@@ -169,6 +169,8 @@ export function artboardDoc(doc: Doc, id: Id): Doc {
   delete out.activeArtboard;
   delete out.editing;
   if (a.content) putContent(out, a.content);
+  // A variation with a colourway of its own.
+  if (a.overrides?.palette) out.palette = a.overrides.palette;
   if (hasArtboards(root)) {
     out.name = exportNameOf(root, a.id);
     const used = usedDrawings(out);

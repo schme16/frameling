@@ -8,6 +8,8 @@ import { produce, type Draft } from 'immer';
 import { newPixelDrawing, newPixelLayer, uid } from '../core/doc';
 import type { Doc, Drawing, TileFrame } from '../core/format';
 import { store } from '../core/store';
+import { toast } from '../ui/toast';
+import { sharedEditNote } from '../artboards/variations';
 import { findTile } from './model';
 import { getTileUi, setTileUi } from './state';
 
@@ -94,6 +96,11 @@ export function applyTileDoc(doc: Doc | Draft<Doc>, key: number, sub: Doc): void
 /** Opens a tile on the canvas. */
 export function editTile(key: number): boolean {
   if (editingTileKey() === key) return true;
+  const shared = sharedEditNote(store().get().doc, 'tileset');
+  if (shared) {
+    toast(shared, { kind: 'warn' });
+    return false;
+  }
   if (editingTileKey()) finishTileEdit();
   const parent = store().get().doc;
   const sub = tileDocument(parent, key);

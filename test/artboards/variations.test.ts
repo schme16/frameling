@@ -1,12 +1,14 @@
 import { unzipSync, strFromU8, zipSync } from 'fflate';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { newDoc, newPixelDrawing, newPixelLayer, newVectorLayer } from '../../src/core/doc';
-import type { CameraDrawing, Doc, Layer, PathShape, PixelDrawing, VectorDrawing } from '../../src/core/format';
-import { resetStore, store } from '../../src/core/store';
+import type { AudioClip, CameraDrawing, Doc, Layer, PathShape, PixelDrawing, VectorDrawing } from '../../src/core/format';
+import { onBlocked, resetStore, store } from '../../src/core/store';
 import { loadFile, saveFile } from '../../src/io/file';
 import { defaultSettings } from '../../src/export/plan';
 import { artboardExport, planArtboards, setArtboardExport } from '../../src/artboards/export';
 import { followSelection } from '../../src/core/followSelection';
+import { changePaletteColor } from '../../src/pixel/commands';
+import { docPalette } from '../../src/pixel/palette';
 import { resizeArtboard, setArtboardBackgroundById } from '../../src/artboards/ops';
 import { activeId, artboardDoc, artboardsOf, deleteArtboard, duplicateArtboard, exportNames, findArtboard, joinShots, switchArtboard, takeContent } from '../../src/artboards/model';
 import {
@@ -20,6 +22,7 @@ import {
   resetDifference,
   resetVariation,
   resolveContent,
+  setVariationPalette,
   setVariationSize,
   settleVariations,
   touchOf,
@@ -683,5 +686,175 @@ describe('variations: settling only what an edit touched', () => {
     expect([...t.own]).toEqual([2]);
     expect(touchOf([{ op: 'replace', path: ['drawings'], value: {} }]).full).toBe(true);
     expect(touchOf([{ op: 'replace', path: ['layers', 1, 'opacity'], value: 1 }]).cels).toBe(false);
+  });
+});
+
+describe('variations: sound, palette and what stays shared', () => {
+  const clip = (id: string, start: number, volume?: number): AudioClip => ({ id, name: `Sound ${id}`, start, data: new Uint8Array([1, 2, 3, id.length]), mime: 'audio/wav', ...(volume === undefined ? {} : { volume }) });
+  const withSound = () => {
+    const d0 = sample();
+    d0.audio = [clip('a1', 0), clip('a2', 4)];
+    resetStore(d0);
+  };
+  const blocked: string[] = [];
+  beforeEach(() => {
+    blocked.length = 0;
+    onBlocked((m) => void blocked.push(m));
+  });
+
+  it('a variation can change the volume, mute and start of a sound without touching the original', () => {
+    withSound();
+    const v = make();
+    open(v);
+    update('Sound', (d) => {
+      d.audio![0].volume = 0.3;
+      d.audio![1].muted = true;
+      d.audio![1].start = 6;
+    });
+    const ov = findArtboard(doc(), v)!.overrides!;
+    expect(ov.audio!.items).toEqual({ a1: { patch: { set: { volume: 0.3 } } }, a2: { patch: { set: { muted: true, start: 6 } } } });
+    // It is the same bytes, not a copy.
+    expect(ov.audio!.items!.a1).not.toHaveProperty('data');
+    open(root());
+    expect(doc().audio![0].volume).toBeUndefined();
+    expect(artboardDoc(doc(), v).audio![0].volume).toBe(0.3);
+    expect(artboardDoc(doc(), v).audio![1]).toMatchObject({ muted: true, start: 6 });
+    expect(artboardDoc(doc(), v).audio![0].data).toBe(doc().audio![0].data);
+    inStepNow();
+  });
+
+  const inStepNow = () => expect(settleVariations(doc())).toBeNull();
+
+  it('a sound change is not lost on the next edit, and the original still flows in', () => {
+    withSound();
+    const v = make();
+    open(v);
+    update('Sound', (d) => void (d.audio![0].volume = 0.3));
+    update('Something else', (d) => void (d.layers[0].opacity = 0.8));
+    expect(doc().audio![0].volume).toBe(0.3);
+    open(root());
+    update('Original sound', (d) => {
+      d.audio![1].volume = 0.5;
+      d.audio![0].name = 'Renamed';
+    });
+    const a = findArtboard(doc(), v)!.content!.audio!;
+    expect(a[0]).toMatchObject({ volume: 0.3, name: 'Renamed' });
+    expect(a[1].volume).toBe(0.5);
+  });
+
+  it('leaving a sound out and adding one are overrides too', () => {
+    withSound();
+    const v = make();
+    open(v);
+    update('Remove and add', (d) => {
+      d.audio = [d.audio![0], clip('a9', 2)];
+    });
+    const ov = findArtboard(doc(), v)!.overrides!;
+    expect(ov.audio!.removed).toEqual(['a2']);
+    expect(ov.audio!.added!.map((c) => c.id)).toEqual(['a9']);
+    open(root());
+    expect(doc().audio!.map((c) => c.id)).toEqual(['a1', 'a2']);
+    expect(findArtboard(doc(), v)!.content!.audio!.map((c) => c.id)).toEqual(['a1', 'a9']);
+    const list = listDifferences(doc(), v);
+    expect(list.map((i) => i.label)).toEqual(['Sound a2: left out of this variation', 'Sound a9: a sound only this variation has']);
+    update('Reset one', (d) => void resetDifference(d, v, list[0].reset));
+    expect(findArtboard(doc(), v)!.content!.audio!.map((c) => c.id)).toEqual(['a1', 'a2', 'a9']);
+  });
+
+  it('the sound changes are saved and opened again, new sounds with their bytes', () => {
+    withSound();
+    const v = make();
+    open(v);
+    update('Sound', (d) => {
+      d.audio![0].volume = 0.25;
+      d.audio!.push(clip('a7', 1, 0.5));
+    });
+    open(root());
+    const bytes = saveFile(doc());
+    const files = unzipSync(bytes);
+    expect(Object.keys(files).filter((n) => n.startsWith('audio/')).sort()).toEqual(['audio/a1.wav', 'audio/a2.wav', 'audio/a7.wav']);
+    const raw = JSON.parse(strFromU8(files['doc.json']));
+    expect(raw.artboards.find((a: { id: string }) => a.id === v).overrides.audio.added[0].data).toBe('audio/a7.wav');
+    const loaded = loadFile(bytes);
+    expect(loaded.warnings).toEqual([]);
+    const a = findArtboard(loaded.doc, v)!;
+    expect(a.overrides!.audio!.items!.a1.patch).toEqual({ set: { volume: 0.25 } });
+    expect(a.overrides!.audio!.added![0].data).toEqual(new Uint8Array([1, 2, 3, 2]));
+    expect(a.content!.audio!.map((c) => [c.id, c.volume])).toEqual([['a1', 0.25], ['a2', undefined], ['a7', 0.5]]);
+  });
+
+  it('a variation gets its own palette; the original and the other variations keep theirs', () => {
+    const d0 = sample();
+    d0.palette = { name: 'Mine', colors: ['#ff0000', '#00ff00', '#0000ff'] };
+    resetStore(d0);
+    const v = make();
+    const w = make();
+    open(v);
+    expect(docPalette(doc()).colors).toEqual(['#ff0000', '#00ff00', '#0000ff']);
+    update('Palette', (d) => void setVariationPalette(d, { name: 'Night', colors: ['#220000', '#002200', '#000022'] }));
+    expect(docPalette(doc()).name).toBe('Night');
+    expect(doc().palette!.name).toBe('Mine');
+    expect(findArtboard(doc(), v)!.overrides!.palette!.name).toBe('Night');
+    // Edits after it do not drop it.
+    update('Look', (d) => void (d.layers[0].opacity = 0.5));
+    expect(findArtboard(doc(), v)!.overrides!.palette!.name).toBe('Night');
+    expect(artboardDoc(doc(), v).palette!.name).toBe('Night');
+    expect(artboardDoc(doc(), w).palette!.name).toBe('Mine');
+    open(w);
+    expect(docPalette(doc()).name).toBe('Mine');
+    open(root());
+    expect(listDifferences(doc(), v).map((i) => i.label)).toContain('Palette: its own colours (3), the original\'s stay as they are');
+    update('Reset', (d) => void resetDifference(d, v, { t: 'palette' }));
+    expect(findArtboard(doc(), v)!.overrides!.palette).toBeUndefined();
+  });
+
+  it('a colourway: changing a palette colour in a variation recolours only its pixels', () => {
+    const d0 = newDoc({ name: 'Px', width: 4, height: 4, length: 2, pixel: { pixelSize: 1 } });
+    const p = newPixelDrawing(4, 4);
+    p.pixels.set([255, 0, 0, 255], 0);
+    d0.drawings[p.id] = p;
+    d0.layers[0].cels.push({ id: 'pc', start: 0, length: 2, drawingId: p.id });
+    d0.palette = { name: 'P', colors: ['#ff0000', '#00ff00'] };
+    resetStore(d0);
+    const v = make();
+    open(v);
+    changePaletteColor(0, '#0000ff');
+    expect(findArtboard(doc(), v)!.overrides!.palette!.colors[0]).toBe('#0000ff');
+    expect(doc().palette!.colors[0]).toBe('#ff0000');
+    const mine = doc().drawings[aliasId(p.id, v)] as PixelDrawing;
+    expect([...mine.pixels.slice(0, 4)]).toEqual([0, 0, 255, 255]);
+    expect([...(doc().drawings[p.id] as PixelDrawing).pixels.slice(0, 4)]).toEqual([255, 0, 0, 255]);
+    open(root());
+    // Changing the original's palette later does not reach the variation's own colours.
+    changePaletteColor(1, '#ffff00');
+    expect([...(doc().drawings[aliasId(p.id, v)] as PixelDrawing).pixels.slice(0, 4)]).toEqual([0, 0, 255, 255]);
+    expect(findArtboard(doc(), v)!.overrides!.palette!.colors).toEqual(['#0000ff', '#00ff00']);
+    // The palette is saved with the variation and opens again.
+    const loaded = loadFile(saveFile(doc())).doc;
+    expect(findArtboard(loaded, v)!.overrides!.palette!.colors).toEqual(['#0000ff', '#00ff00']);
+  });
+
+  it('shared things are not edited from a variation: the change is refused with a plain note and nothing is recorded', () => {
+    const v = make();
+    open(v);
+    const steps = store().canUndo();
+    update('Swatch', (d) => void d.swatches.push({ id: 'sw', name: 'x', color: '#123456' } as never));
+    update('Folder', (d) => void (d.folders = { f1: { id: 'f1', name: 'F' } as never }));
+    update('Palette', (d) => void (d.palette = { name: 'x', colors: ['#000000'] }));
+    update('Symbol', (d) => void (d.symbols = { s1: { id: 's1', name: 'S', layers: [], length: 1 } as never }));
+    expect(blocked).toEqual([
+      'Swatches are shared with the original. Change them there, or detach this variation.',
+      'Layer folders are shared with the original. Change them there, or detach this variation.',
+      'The palette is shared with the original. Change it there, or detach this variation.',
+      'Symbols are shared with the original. Change them there, or detach this variation.',
+    ]);
+    expect(store().canUndo()).toBe(steps);
+    expect(doc().swatches.some((x) => x.id === 'sw')).toBe(false);
+    expect(doc().folders).toBeUndefined();
+    // On the original they are plain edits, shared by everyone.
+    open(root());
+    update('Swatch', (d) => void d.swatches.push({ id: 'sw', name: 'x', color: '#123456' } as never));
+    expect(doc().swatches.some((x) => x.id === 'sw')).toBe(true);
+    expect(blocked).toHaveLength(4);
   });
 });

@@ -6,8 +6,10 @@
  * variation made are ordinary entries in `drawings`; the ones it redrew (pixels, tiles) are saved as `<id>~<variation>`.
  * Everything else about it is worked out from its original when the file opens.
  */
-import { LAYER_LABELS, type Artboard, type Cel, type Doc, type Drawing, type DrawingOverride, type Id, type Layer, type ListOverride, type Patch, type Shape, type VariationOverrides } from '../core/format';
+import { LAYER_LABELS, type Artboard, type AudioClip, type Cel, type Doc, type Drawing, type DrawingOverride, type Id, type Layer, type ListOverride, type Patch, type Shape, type VariationOverrides } from '../core/format';
 import { readClip } from '../core/clipPlay';
+import { packAudio, unpackAudio } from '../io/audio-file';
+import type { Zippable } from 'fflate';
 import { activeId, findArtboard, switchArtboard, takeContent } from './model';
 import { normalize, resolveContent, sourceOf, splitAlias, STAGE_KEYS } from './variations';
 import type { ArtboardReaders } from './io';
@@ -45,6 +47,7 @@ const LAYER_KEYS: Record<string, Check> = {
   rig: obj,
   ext: obj,
 };
+const SOUND_KEYS: Record<string, Check> = { name: str, start: (v) => num(v), volume: (v) => num(v) && v >= 0 && v <= 1, muted: bool };
 const CEL_KEYS: Record<string, Check> = { start: (v) => int(v, 0), length: (v) => int(v, 1), tween: obj, autoHold: bool, drawingId: str };
 const VIEW_KEYS: Record<string, Check> = { x: num, y: num, zoom: (v) => num(v) && v > 0, rotation: num };
 const STAGE_CHECKS: Record<string, Check> = {
@@ -102,7 +105,7 @@ const SHAPE_TYPES = new Set(['stroke', 'fill', 'path', 'instance', 'text', 'part
  * The overrides in a file, checked. `layerKind` says what kind of layer an original layer id is (to read the keys
  * added to it); `readLayers` is the file reader's, so layers made in the variation get the same repairs as any.
  */
-export function readOverrides(raw: unknown, r: Pick<ArtboardReaders, 'readLayers' | 'readGuides'>, layerKind: (id: Id) => Layer['kind'] | undefined): VariationOverrides {
+export function readOverrides(raw: unknown, r: Pick<ArtboardReaders, 'readLayers' | 'readGuides' | 'readPalette'>, layerKind: (id: Id) => Layer['kind'] | undefined, io?: { entries: Record<string, Uint8Array>; warnings: string[] }): VariationOverrides {
   if (!isObj(raw)) return {};
   const out: VariationOverrides = {};
   const stage = readPatch(raw.stage, STAGE_CHECKS);
@@ -174,6 +177,18 @@ export function readOverrides(raw: unknown, r: Pick<ArtboardReaders, 'readLayers
     }
     if (Object.keys(drawings).length) out.drawings = drawings;
   }
+  if (isObj(raw.audio)) {
+    const audio = readList<AudioClip>(raw.audio, {
+      item: (c) => {
+        const p = readPatch(c.patch, SOUND_KEYS);
+        return p ? { patch: p } : undefined;
+      },
+      added: (list) => (io ? (unpackAudio(list, io.entries, io.warnings) ?? []) : []),
+    });
+    if (audio) out.audio = audio;
+  }
+  const pal = r.readPalette?.(raw.palette)?.palette;
+  if (pal?.colors.length) out.palette = pal;
   return normalize(out);
 }
 
@@ -196,10 +211,16 @@ export function isDerivedDrawing(doc: Doc, id: Id): boolean {
 }
 
 /** The artboard entries for doc.json: a variation without its content. */
-export function variationForSave(a: Artboard): Artboard {
+export function variationForSave(a: Artboard, files?: Zippable): Artboard {
   if (!a.variationOf) return a;
   const { content: _c, ...rest } = a;
-  return { ...rest, overrides: a.overrides ?? {} };
+  const ov = a.overrides ?? {};
+  // Sounds the variation added carry their bytes in the zip, like any sound.
+  if (files && ov.audio?.added?.length) {
+    const added = packAudio({ audio: ov.audio.added } as Doc, files);
+    return { ...rest, overrides: { ...ov, audio: { ...ov.audio, added } } } as unknown as Artboard;
+  }
+  return { ...rest, overrides: ov };
 }
 
 /**
