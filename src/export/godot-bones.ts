@@ -15,7 +15,7 @@ import { celAt } from '../core/doc';
 import { nextKey } from '../core/symbols';
 import { poseKeyAt, rigPoseAt, type RigLayer } from '../rig/pose';
 import { minv, mmul, restMatrix, stretchOf, type Mat } from '../rig/math';
-import type { Animation } from './sheet';
+import { withNativeBounce, type Animation } from './sheet';
 import { bonesRigs, groupLayout, type GroupItem, type BonesPart, type BonesScope, type BonesTexture, type NativeBlend, type NestedInstance } from './godot-bones-scope';
 
 export { groupLayout, groupBlocker, maskLinks, carriedMasks, bakeScales, maxStretch, MAX_BAKE, bonesParts, bonesRigs, bonesScope, bonesStage, bonesNotes, allScopes, hasBonesToExport, restPicture, riggedSymbols, partLook, nativeBlend, BonesNotes } from './godot-bones-scope';
@@ -220,6 +220,8 @@ export interface BonesSceneInput {
   nested?: NestedInstance[];
   /** The Godot folder the included shader files go in (res://...). */
   shaderDir?: string;
+  /** Let a looping back and forth clip bounce with the AnimationPlayer's own ping-pong loop (one direction is keyed, the ends show twice). */
+  nativeBounce?: boolean;
 }
 
 /** A bone's place under its parent at rest (output pixels). */
@@ -304,7 +306,9 @@ interface Frames {
 }
 
 function build(o: BonesSceneInput): { text: string; shaders: Set<NativeBlend> } {
-  const { doc, animations } = o;
+  const { doc } = o;
+  const chosen = o.animations.map((a) => withNativeBounce(a, o.nativeBounce));
+  const animations = chosen.map((c) => c.anim);
   const k = o.scale;
   const name = nodeNamer();
   const ext: string[] = [];
@@ -592,11 +596,12 @@ function build(o: BonesSceneInput): { text: string; shaders: Set<NativeBlend> } 
   // Animations.
   const animIds: [string, string][] = [];
   animations.forEach((a, ai) => {
+    const bounces = chosen[ai].bounces;
     const id = `Animation_${ai + 1}`;
     animIds.push([a.name, id]);
     const frames = a.frames.map((f) => o.range.start + f);
     const len = frames.length / a.fps;
-    const lines: string[] = [`[sub_resource type="Animation" id="${id}"]`, `resource_name = ${gdString(a.name)}`, `length = ${gdNum(len)}`, ...(a.loop ? ['loop_mode = 1'] : []), `step = ${gdNum(1 / a.fps)}`];
+    const lines: string[] = [`[sub_resource type="Animation" id="${id}"]`, `resource_name = ${gdString(a.name)}`, `length = ${gdNum(len)}`, ...(bounces ? ['loop_mode = 2'] : a.loop ? ['loop_mode = 1'] : []), `step = ${gdNum(1 / a.fps)}`];
     let ti = 0;
     const track = (path: string, update: 0 | 1, keys: { t: number; trans: number; value: string }[]) => {
       lines.push(

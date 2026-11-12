@@ -3,6 +3,8 @@
 import { strToU8, zipSync, type Zippable } from 'fflate';
 import { BufferTarget, CanvasSource, Mp4OutputFormat, Output, QUALITY_HIGH, VideoSample, VideoSampleSource, WebMOutputFormat, type VideoCodec } from 'mediabunny';
 import type { Doc } from '../core/format';
+import { currentChoice } from '../core/choices';
+import './choices';
 import { encodePng, type RawImage } from '../io/png';
 import { ApngWriter } from './apng';
 import { backgroundFor, drawFrame, makeCanvas, readPixels } from './draw';
@@ -266,6 +268,7 @@ async function runSheet(ctx: RunContext, plan: Plan, rgbaAt: (i: number) => RawI
       scale: settings.scale,
       godotPath: sheet.godotPath,
       pixelArt: doc.layers.length > 0 && doc.layers.every((l) => l.kind !== 'vector' || !!l.rig),
+      nativeBounce: currentChoice('export.clipEngineBounce') === 'engine',
       signal,
       onStep: (done, total, label) => ctx.onProgress({ done, total, label }),
     });
@@ -292,6 +295,7 @@ async function runSheet(ctx: RunContext, plan: Plan, rgbaAt: (i: number) => RawI
     name: plan.name,
     pixelArt: crisp,
     maxSide: MAX_SHEET_SIDE,
+    nativeBounce: currentChoice('export.clipEngineBounce') === 'engine',
   });
   return { kind: 'files', folderName: out.main.replace(/\.png$/, ''), files: out.files, main: out.main };
 }

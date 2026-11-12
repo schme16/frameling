@@ -57,7 +57,7 @@ export interface ExportClip {
   loop: boolean;
   /** Which way it plays: 'forward', 'reverse', 'pingpong' (0 to n-1 and back) or 'pingpong-reverse'. */
   direction: ClipDirection;
-  /** How many times it plays when `loop` is false (1 = once). Not used when `loop` is true. */
+  /** How many times it plays when `loop` is false (1 = once; back and forth counts each direction: 2 is there and back). Not used when `loop` is true. */
   repeat: number;
 }
 
