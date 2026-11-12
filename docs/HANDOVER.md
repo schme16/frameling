@@ -120,9 +120,9 @@ light table, version history, shortcut sets, sounds (on by default), a Godot imp
   - At 1280 wide several header buttons live in a ⋯ menu.
   - Retiming a symbol property key inside a tween cuts out a drawing key; other rows then show a diamond there and the easing of that span changes shape (bones and camera rows still move the whole drawing).
 - **Canvas**
-  - Rectangles and ellipses don't snap to perspective.
-  - Onion skin hides when looking through the camera.
-  - Tool sizes don't follow camera zoom.
+  - Pixel-layer shapes ignore perspective and camera size.
+  - Onion through the camera draws vectors each repaint (no cached bitmaps); light table and empty-frame ghost still hide there.
+  - Rounded rectangle corners are approximate on a perspective plane.
 - **Platforms**
   - Not tried on real Windows or macOS (only CI builds).
   - Safari/WebKit untested for the web build.
