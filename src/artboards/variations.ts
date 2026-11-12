@@ -1218,7 +1218,67 @@ export function setVariationSize(d: Doc, vid: Id, w: number, h: number, mode: Fi
     if (sp?.vid === vid && ov.drawings?.[sp.orig] && p.s.drawings[key] !== v) d.drawings[key] = v as never;
   }
   install(d, vid, ov);
+  const t = findArtboard(d, vid);
+  if (t) {
+    if (same) delete t.framing;
+    else {
+      const q = parts(d, vid);
+      if (q) t.framing = { mode, sig: framingSig(q, vid) };
+    }
+  }
   return true;
+}
+
+/**
+ * What the framing of a variation looks like: its framing camera, the keys of the original's camera that it changed,
+ * and any camera layer or key made in the variation. Same for a variation that is open and one that is not.
+ */
+function framingSig(p: { s: Doc; a: Artboard; base: ArtboardContent; open: boolean }, vid: Id): string {
+  const content = p.open ? takeContent(p.s) : p.a.content;
+  const fid = framingLayerId(vid);
+  const out: unknown[] = [];
+  for (const l of content?.layers ?? []) {
+    if (l.kind !== 'camera') continue;
+    const bl = p.base.layers.find((x) => x.id === l.id);
+    const baseCels = new Set(bl?.cels.map((c) => c.id));
+    const own = l.id === fid || !bl;
+    const cels: unknown[] = [];
+    for (const c of l.cels) {
+      const sp = splitAlias(c.drawingId);
+      const dr = p.s.drawings[c.drawingId];
+      const view = dr?.kind === 'camera' ? dr.view : undefined;
+      const orig = sp?.vid === vid ? p.s.drawings[sp.orig] : undefined;
+      const mine = own || !baseCels.has(c.id);
+      if (!mine && (!orig || orig.kind !== 'camera' || deepEqual(orig.view, view))) continue;
+      cels.push([c.id, mine ? c.start : 0, mine ? c.length : 0, view]);
+    }
+    if (own || cels.length) out.push([l.id, own ? l.visible : 1, cels]);
+  }
+  return JSON.stringify(out);
+}
+
+/**
+ * The variations of an original whose framing Frameling made and the person has not touched (their camera still
+ * looks as it did). Read before the original is resized, then given to `reframeVariations`.
+ */
+export function untouchedFramings(d: Doc, orig: Id): Id[] {
+  const out: Id[] = [];
+  for (const a of snap(d).artboards ?? []) {
+    if (a.variationOf !== orig || !a.framing) continue;
+    const p = parts(d, a.id);
+    if (p && framingSig(p, a.id) === a.framing.sig) out.push(a.id);
+  }
+  return out;
+}
+
+/** Frames the original again in each of these variations, keeping their own sizes and how they were framed. Call after the original changed. */
+export function reframeVariations(d: Doc, ids: readonly Id[]): void {
+  for (const vid of ids) {
+    const p = parts(d, vid);
+    if (!p?.a.framing) continue;
+    const c = p.open ? takeContent(p.s) : p.a.content;
+    if (c) setVariationSize(d, vid, c.width, c.height, p.a.framing.mode);
+  }
 }
 
 // ---------------------------------------------------------------- the list of differences
