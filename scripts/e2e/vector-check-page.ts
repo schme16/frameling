@@ -115,8 +115,11 @@ function particlesDoc(): Doc {
   const star = { ...newParticles(uid('s'), 'sparkle', { x: 120, y: 120 }), burst: 24 };
   const conf = { ...newParticles(uid('s'), 'confetti', { x: 280, y: 200 }), burst: 30 };
   const smoke = { ...newParticles(uid('s'), 'smoke', { x: 200, y: 280 }), rate: 6 };
+  // Rain is drawn as streaks, snow as flakes.
+  const rain = { ...newParticles(uid('s'), 'rain', { x: 200, y: 10 }), width: 400, rate: 40 };
+  const snow = { ...newParticles(uid('s'), 'snow', { x: 200, y: 10 }), width: 400, rate: 12 };
   const d = vectorDrawing(doc, []);
-  d.shapes = [smoke, star, conf];
+  d.shapes = [smoke, star, conf, rain, snow];
   hold(l, d.id, 0, 24);
   return doc;
 }

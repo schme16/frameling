@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { newDoc } from '../../src/core/doc';
+import { newDoc, uid } from '../../src/core/doc';
 import type { Doc } from '../../src/core/format';
 import { strokeOutline } from '../../src/core/render';
-import { docToLottie } from '../../src/export/lottie';
+import { docToLottie, smoothTrack } from '../../src/export/lottie';
+import { newParticles } from '../../src/particles/model';
 import { fitClosed, sampleMidpointSpline, type Cubic, type Pt } from '../../src/export/curve-fit';
 import { addVectorLayer, fill, hold, rectPath, stroke, vectorDrawing } from '../../src/templates/build';
 
@@ -110,5 +111,62 @@ describe('Lottie export, smaller files', () => {
     expect(shapes).toHaveLength(1);
     expect([shapes[0].ip, shapes[0].op]).toEqual([0, 12]);
     expect(shapes[0].shapes[0].it[0].ks.a).toBe(0);
+  });
+
+  /** What a player makes of a track at frame `t`: the key before it and its easing (x handles at a third and two thirds). */
+  function playAt(track: { k: { t: number; s: number[]; h?: number; o?: { y: number[] }; i?: { y: number[] } }[] }, t: number): number[] {
+    const ks = track.k;
+    let n = 0;
+    while (n < ks.length - 2 && ks[n + 1].t <= t) n++;
+    const a = ks[n];
+    const b = ks[n + 1];
+    if (!b || a.h) return a.s;
+    const u = (t - a.t) / (b.t - a.t);
+    const [y1, y2] = [a.o!.y[0], a.i!.y[0]];
+    // x is a third and two thirds, so the bezier's parameter is time itself.
+    const g = 3 * (1 - u) * (1 - u) * u * y1 + 3 * (1 - u) * u * u * y2 + u ** 3;
+    return a.s.map((v, c) => v + (b.s[c] - v) * g);
+  }
+
+  it('a motion that slows down needs a few eased keys instead of one per frame, within the tolerance', () => {
+    const times = Array.from({ length: 24 }, (_, i) => i);
+    // Drag: fast at first, then easing to a stop. x and y share one timing.
+    const values = times.map((t) => [256 + 180 * (1 - Math.exp(-t / 6)), 300 - 90 * (1 - Math.exp(-t / 6))]);
+    const tr = smoothTrack(values, times, 0.25);
+    expect(tr.k.length).toBeLessThanOrEqual(4);
+    for (const t of times) {
+      const v = playAt(tr, t);
+      expect(Math.abs(v[0] - values[t][0])).toBeLessThanOrEqual(0.26);
+      expect(Math.abs(v[1] - values[t][1])).toBeLessThanOrEqual(0.26);
+    }
+  });
+
+  it('an eased key never overshoots its neighbours, so an opacity cannot go below zero between frames', () => {
+    const times = [0, 1, 2, 3, 4, 5, 6, 7];
+    const values = [0.748, 0.55, 0.31, 0.12, 0.02, 0, 0, 0];
+    const tr = smoothTrack(values, times, 0.5);
+    for (let t = 0; t <= 7; t += 0.25) for (const v of playAt(tr, t)) expect(v).toBeGreaterThanOrEqual(-1e-9);
+    // A track that never changes is not animated at all.
+    expect(smoothTrack([5, 5, 5], [0, 1, 2], 0.5)).toEqual({ a: 0, k: 5 });
+  });
+
+  it('rain streaks are drawn along their own axis and the group carries the position', () => {
+    const doc = newDoc({ width: 400, height: 300, length: 8, fps: 12 });
+    doc.layers = [];
+    const l = addVectorLayer(doc, 'Rain');
+    const d = vectorDrawing(doc, []);
+    d.shapes = [{ ...newParticles(uid('s'), 'rain', { x: 200, y: 10 }), width: 400, rate: 40 }] as never;
+    hold(l, d.id, 0, 8);
+    const groups = docToLottie(doc).layers[0].shapes;
+    expect(groups.length).toBeGreaterThan(5);
+    for (const g of groups) {
+      const path = g.it[0].ks.k;
+      const first = Array.isArray(path) ? path[0].s[0] : path;
+      // Every streak starts at its origin and runs back along x; the position and angle live in the transform.
+      expect(first.v[0]).toEqual([0, 0]);
+      expect(first.v[1][1]).toBe(0);
+      expect(first.v[1][0]).toBeLessThan(0);
+      expect(g.it.find((x: { ty: string }) => x.ty === 'tr').p).toBeDefined();
+    }
   });
 });
