@@ -148,9 +148,11 @@ const nearLast = (p: P, zoom: number) => !!path && path.length >= 2 && Math.hypo
 
 function placed(e: ToolPointer, ctx: ToolContext): P {
   const last = path?.anchors[path.length - 1];
-  if (!last) return snapPt(e, ctx.zoom, e.mod);
+  // On a pixel layer the cells are the snapping, so a point lands on the cell clicked, never pulled onto guides or the page.
+  const cells = !!activePixelLayer();
+  if (!last) return cells ? { x: e.x, y: e.y } : snapPt(e, ctx.zoom, e.mod);
   // From the last point: perspective directions when the guides show, Shift for 45 degree steps (or those directions).
-  const s = snapLineEnd(last, e, ctx.zoom, e.mod, e.shift);
+  const s = snapLineEnd(last, e, ctx.zoom, e.mod, e.shift, cells);
   if (e.shift && !s.constrained) return constrain45(last, e);
   return s.pt;
 }

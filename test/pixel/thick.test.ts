@@ -17,7 +17,6 @@ import { plotEllipse, plotLine, plotRect, plotRectInside } from '../../src/pixel
 import { DEFAULT_PREFS, migratePrefs, setPrefs } from '../../src/ui/prefs';
 import '../../src/pixel';
 import { ctx, drag, pixelStore, ptr } from '../tools/helpers';
-import { perspectivePixelShape } from '../../src/pixel/perspective';
 
 const cells = (run: (plot: (x: number, y: number) => void) => void): Set<string> => {
   const out = new Set<string>();
@@ -498,14 +497,13 @@ describe('thick shapes on a perspective plane', () => {
     expect(count()).toBe(floor);
   });
 
-  it('a thickness the shape cannot hold makes it solid, and the edge is none', () => {
-    const persp = { vps: [{ x: 300, y: 20 }], plane: 'wall' as const };
-    const t = { size: 9, shape: 'square' as const };
-    expect(perspectivePixelShape('rect', { x: 10, y: 20 }, { x: 14, y: 24 }, 1, persp, t)?.edge).toBeNull();
-    expect(perspectivePixelShape('rect', { x: 10, y: 20 }, { x: 30, y: 40 }, 1, persp, t)?.edge).not.toBeNull();
+  it('a thickness the shape cannot hold makes it solid', () => {
     setup('wall', 9);
     drag(rectTool, ctx(), [at(10, 20), at(14, 24)]);
     expect(count()).toBeGreaterThanOrEqual(25);
+    // And a roomy shape stays hollow at the same thickness.
+    drag(rectTool, ctx(), [at(10, 20), at(40, 50)]);
+    expect(hexAt(25, 35)).toBeNull();
   });
 
   it('the fill stays inside the thick outline', () => {
