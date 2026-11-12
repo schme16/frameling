@@ -52,8 +52,8 @@ const SMALL = [215, 109, 560, 320];
 const BRUSH = (size) => UI({ brush: { size, thinning: 0.1, smoothing: 0.5, streamline: 0.5, taperStart: 0, taperEnd: 0, capStart: true, capEnd: true } });
 /** Points along a curve f(t), t from 0 to 1. */
 const along = (n, f) => Array.from({ length: n + 1 }, (_, i) => f(i / n));
-// The pixel art sheet that asks about the Pixel workspace: keep the layout and carry on.
-const keepLayout = [dom("[...document.querySelectorAll('.ui-modal [role=radio], .ui-modal label, .io-modal [role=radio], .io-modal label')].find((e) => /Keep my layout/.test(e.textContent))?.click()"), { wait: 200 }, dom("[...document.querySelectorAll('.ui-modal button')].find((b) => b.textContent.trim() === 'OK')?.click()"), { wait: 700 }];
+// The pixel art sheet that asks whether the workspace follows the drawing: Never, and carry on.
+const keepLayout = [dom("[...document.querySelectorAll('.ui-modal [role=radio], .ui-modal label, .io-modal [role=radio], .io-modal label')].find((e) => /^Never/.test(e.textContent.trim()))?.click()"), { wait: 200 }, dom("[...document.querySelectorAll('.ui-modal button')].find((b) => b.textContent.trim() === 'OK')?.click()"), { wait: 700 }];
 module.exports = [
   { name: 'fill-and-stroke-boxes', steps: [T('blank-vector'), UI({ fillColor: '#9b7bff' }), fold('tool-options'), { wait: 600 }, dom("document.querySelector('.cv-well-fill').click()"), { wait: 300 }, away, { wait: 300 }, { shot: '@', el: '.cv-wells', pad: 14 }] },
   { name: 'colours', steps: [T('blank-vector'), UI({ fillColor: '#9b7bff', activeWell: 'fill' }), fold('tool-options'), { wait: 600 }, away, { wait: 300 }, { shot: '@', crop: [879, 116, 305, 540] }] },

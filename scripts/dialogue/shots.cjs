@@ -139,6 +139,8 @@ const GROUPS = {
     const closeExport = [{ key: 'Escape' }, { wait: 500 }];
     return [
       { js: `${P}.ask(true)` },
+      // New pixel art from Draw would ask whether the workspace follows: answered already, so the shots below stay on their own question.
+      { js: `${A}.setChoice('workspace.follow', 'always')` },
       // The chooser
       { js: `${P}.openChooser()` },
       { wait: 1200 },
