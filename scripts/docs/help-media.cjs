@@ -90,7 +90,7 @@ async function capture(win, e, mode, tmp, lib) {
   } else {
     const src = path.join(work, `${e.name}.png`);
     if (!fs.existsSync(src)) throw new Error('no {"shot": "@"} step ran');
-    execFileSync('convert', [src, '-resize', `${width}x>`, '-strip', '-define', 'png:compression-level=9', path.join(outDir, `${out}.png`)]);
+    execFileSync('convert', [src, '-resize', `${width}x>`, '-colors', '256', '-dither', 'None', '-strip', '-define', 'png:compression-level=9', `PNG8:${path.join(outDir, `${out}.png`)}`]);
   }
   return out;
 }

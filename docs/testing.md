@@ -324,7 +324,7 @@ It runs the steps in `scripts/docs/help/*.cjs` (one file per area; files startin
 `record.cjs` steps (`{"shot": "@"}` saves the picture, `{"rec": "@", "crop": [...], "every": 60}` ... `{"rec": "stop"}`
 records the clip; `@` means the entry's name). The same steps run once per theme in a fresh page, with that mode's default
 theme (Midnight sketchbook for dark, Paper and honey for light), the welcome sheet off, and everything else as a new
-person has it, so the pair differs only in colour. Pictures are scaled to 800 px wide at most (`width` changes it),
+person has it, so the pair differs only in colour. Pictures and posters are scaled to 800 px wide at most (`width` changes it) and saved as 256 colour PNGs (a third the size, no visible loss on UI),
 clips go through `encode.sh` (H.264, yuv420p, under 1 MB each). Run the script under xvfb like everything else: the npm
 script already does. `--renderer <dir>` uses a private `vite build --outDir`; `--out <dir>` writes elsewhere.
 

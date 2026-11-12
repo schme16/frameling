@@ -10,5 +10,5 @@ ffmpeg -y -loglevel error -f concat -safe 0 -i "$dir/list.txt" \
   -vf "fps=30,scale='min($width,iw)':-2:flags=lanczos,format=yuv420p" \
   -c:v libx264 -preset slow -crf 26 -movflags +faststart -an "$out/$name.mp4"
 if [ "$poster" = last ]; then pf=$(ls "$dir"/f*.png | tail -1); else pf=$(printf "%s/f%04d.png" "$dir" "$poster"); fi
-convert "$pf" -resize "${width}x>" -strip -define png:compression-level=9 "$out/$name-poster.png"
+convert "$pf" -resize "${width}x>" -colors 256 -dither None -strip -define png:compression-level=9 "PNG8:$out/$name-poster.png"
 ls -l "$out/$name.mp4" "$out/$name-poster.png"
