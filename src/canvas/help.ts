@@ -151,6 +151,8 @@ While snapping is on (**View > Snap to guides, grid and page**), shapes and corn
 
 The horizon is the yellow line. Drag a round handle to move its vanishing point (it works with any tool). With two, the horizon stays level, so moving one up moves the other with it. Hold **Shift** to tilt it. Points can go off the page: zoom out to reach them. **Lock guides** stops them moving by accident.
 
+**Rectangles and ellipses** follow them too. Drag a rectangle across the floor and it becomes a four-sided floor tile whose edges run to the vanishing points. Drag it on a wall and the upright edges stay upright. An ellipse comes out as the ellipse a circle makes on that plane. Choose the plane in the tool's options (**Auto**, **Flat**, **Floor**, **Wall**), or leave **Auto** to guess from where you drag. **Flat** draws an ordinary rectangle.
+
 **Drawing along them.** While the guides show and snapping is on, the **Line** tool and the **Pen** follow them: draw near the direction of a vanishing point and the line lines up with it exactly, with a dashed pink line to show which one. Hold **Shift** to pick from the vanishing point directions as well as the usual straight and diagonal angles. Hold **Ctrl** to draw freely.
 
 The perspective guides are saved with your drawing. Hide them with **View > Show perspective guides**, or take them away with **Remove perspective guides**.

@@ -16,6 +16,7 @@ import { canEdit, reportEdit } from './util';
 import { drawPixelFootprint, drawRing } from './cursors';
 import { VectorStroke } from './vectorStroke';
 import { docToPixel } from '../canvas/pixels';
+import { viewSizeFactor } from './view-size';
 
 let vec: VectorStroke | null = null;
 let pix: PixelStroke | null = null;
@@ -28,7 +29,7 @@ function down(e: ToolPointer, ctx: ToolContext): void {
   const { doc, ui } = store().get();
   if (layer.kind === 'vector') {
     if (!canEdit(ctx, 'vector', 'The brush')) return;
-    vec = new VectorStroke({ ...ui.brush }, ui.color);
+    vec = new VectorStroke({ ...ui.brush, size: ui.brush.size * viewSizeFactor() }, ui.color);
     vec.add(e, ctx.zoom);
     return;
   }
@@ -83,7 +84,7 @@ function overlay(g: CanvasRenderingContext2D, ctx: ToolContext): void {
     const s = getToolSettings();
     drawPixelFootprint(g, ctx, docToPixel(h.x, h.y, layer.pixelSize), layer.pixelSize, s.pixelBrushSize, s.pixelBrushShape, ui.color);
   } else {
-    drawRing(g, ctx, h.x, h.y, ui.brush.size / 2);
+    drawRing(g, ctx, h.x, h.y, (ui.brush.size * viewSizeFactor()) / 2);
   }
 }
 

@@ -159,6 +159,8 @@ Click the little arrow beside the onion for:
 
 On the ruler, the frames being ghosted are softly shaded in the same colours.
 
+Looking through the [camera](help:camera)? The ghosts go through it too, so they sit where you see the drawing.
+
 > Ghosts are only for you. They never show up when you play or export.`,
   },
   {

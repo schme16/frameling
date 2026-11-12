@@ -65,14 +65,15 @@ Using a drawing pen? Flip it over and use the eraser end.`,
     id: 'tool-rect',
     title: 'Rectangle',
     section: 'Drawing',
-    media: 'shapes.png',
-    summary: 'Drag to draw a rectangle, with an outline, a fill, or both.',
+    media: 'perspective-shapes.png',
+    summary: 'Drag to draw a rectangle, with an outline, a fill, or both. On perspective guides it becomes a floor or a wall.',
     keywords: ['box', 'square', 'shape', 'rounded'],
     body: `Press **R**, then drag from one corner to the opposite one.
 
 - Hold **Shift** to keep it a perfect square.
 - Hold **Alt** to draw from the middle instead of a corner.
 - In the options, set how thick the outline is and how round the corners are.
+- With [perspective guides](help:grids-perspective) showing and snapping on, the rectangle follows them: drag across a floor or a wall and it comes out as the matching four-sided shape, its edges running to the vanishing points. **On a plane** in the options picks **Floor**, **Wall** (or **Left wall** and **Right wall** with two points), or **Flat** for a plain rectangle. **Auto** guesses from where you drag. Hold **Ctrl** to ignore the guides for one shape.
 
 The inside uses your **fill** colour and the edge uses your **stroke** colour, so a new rectangle starts soft yellow with a black outline. Set either one to none for just an outline or just a solid shape. See [Fill and stroke colours](help:fill-and-stroke).
 
@@ -82,14 +83,15 @@ On a **pixel layer** the rectangle is painted as clean pixels: a one pixel edge 
     id: 'tool-ellipse',
     title: 'Ellipse',
     section: 'Drawing',
-    media: 'shapes.png',
-    summary: 'Drag to draw an oval or a circle.',
+    media: 'perspective-shapes.png',
+    summary: 'Drag to draw an oval or a circle. On perspective guides it becomes the ellipse a circle makes on that floor or wall.',
     keywords: ['circle', 'oval', 'round', 'shape'],
     body: `Press **O**, then drag across the shape you want.
 
 - Hold **Shift** for a perfect circle.
 - Hold **Alt** to draw from the middle.
 - The inside uses your **fill** colour and the edge your **stroke** colour. See [Fill and stroke colours](help:fill-and-stroke).
+- With [perspective guides](help:grids-perspective) showing and snapping on, the ellipse is the one a circle makes when it lies on that floor or wall, so a plate on a table or a clock on a wall sits right. Pick the plane in the options, or leave it on **Auto**.
 
 On a vector layer, ellipses are made of smooth curves, so they stay sharp however far you zoom in. On a **pixel layer** they're painted as clean, even pixel circles and ovals, with no doubled pixels.`,
   },

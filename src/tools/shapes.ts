@@ -10,7 +10,9 @@ import { drawShape } from '../core/render';
 import { store } from '../core/store';
 import type { Pt, Rect } from '../canvas/geometry';
 import { addShapes } from './merge-mode';
-import { clearSnap, snapLineEnd, snapPt } from '../canvas/guides';
+import { clearSnap, snapLineEnd, snapPt, vanishingPoints } from '../canvas/guides';
+import { choosePlane, planeMap, projectedEllipse, projectSubPath } from '../canvas/perspectivePlane';
+import { viewSizeFactor } from './view-size';
 import { ShapeOptions } from './options/ShapeOptions';
 import { noteColorUsed } from './recent';
 import { withWellGradients } from './gradient-wells';
@@ -22,8 +24,8 @@ import { byLayerKind, PixelShapeOptions } from '../pixel/ToolOptions';
 /** The control point distance that makes a quarter of a circle out of a cubic bezier. */
 const KAPPA = 0.5522847498307936;
 
-/** The box a drag makes. Shift makes it square, Alt grows it from the starting point. */
-export function dragRect(a: Pt, b: Pt, shift: boolean, alt: boolean): Rect {
+/** The two opposite corners a drag makes. Shift makes the box square, Alt grows it from the starting point. */
+export function dragCorners(a: Pt, b: Pt, shift: boolean, alt: boolean): [Pt, Pt] {
   let dx = b.x - a.x;
   let dy = b.y - a.y;
   if (shift) {
@@ -31,11 +33,13 @@ export function dragRect(a: Pt, b: Pt, shift: boolean, alt: boolean): Rect {
     dx = (dx < 0 ? -1 : 1) * m;
     dy = (dy < 0 ? -1 : 1) * m;
   }
-  const x0 = alt ? a.x - dx : a.x;
-  const y0 = alt ? a.y - dy : a.y;
-  const x1 = a.x + dx;
-  const y1 = a.y + dy;
-  return { x: Math.min(x0, x1), y: Math.min(y0, y1), w: Math.abs(x1 - x0), h: Math.abs(y1 - y0) };
+  return [alt ? { x: a.x - dx, y: a.y - dy } : { x: a.x, y: a.y }, { x: a.x + dx, y: a.y + dy }];
+}
+
+/** The box a drag makes. Shift makes it square, Alt grows it from the starting point. */
+export function dragRect(a: Pt, b: Pt, shift: boolean, alt: boolean): Rect {
+  const [p, q] = dragCorners(a, b, shift, alt);
+  return { x: Math.min(p.x, q.x), y: Math.min(p.y, q.y), w: Math.abs(q.x - p.x), h: Math.abs(q.y - p.y) };
 }
 
 /** The two ends of a line drag. Shift snaps to 45 degree steps, Alt makes the start the middle. */
@@ -108,6 +112,7 @@ export function makeShape(
   mod: { shift: boolean; alt: boolean },
   colors: { fill: string | null; stroke: string | null; line: string },
   s: ToolSettings,
+  persp?: { vps: Pt[] },
 ): PathShape | null {
   const color = colors.line;
   if (kind === 'line') {
@@ -125,10 +130,19 @@ export function makeShape(
   const r = dragRect(a, b, mod.shift, mod.alt);
   if (r.w < 1 || r.h < 1) return null;
   if (!colors.fill && !colors.stroke) return null;
+  // With perspective guides showing, a rectangle or ellipse follows the plane it's drawn on.
+  let path = kind === 'rect' ? rectSubPath(r, s.cornerRadius) : ellipseSubPath(r);
+  const plane = persp && choosePlane(s.perspectivePlane, persp.vps, r);
+  if (plane) {
+    const [p, q] = dragCorners(a, b, mod.shift, mod.alt);
+    const m = planeMap(p, q, plane);
+    const warped = m && (kind === 'rect' ? projectSubPath(path, m.map) : projectedEllipse(r, m.map));
+    if (warped) path = warped;
+  }
   return {
     id: uid('sh'),
     type: 'path',
-    paths: [kind === 'rect' ? rectSubPath(r, s.cornerRadius) : ellipseSubPath(r)],
+    paths: [path],
     fill: colors.fill,
     stroke: colors.stroke ? { color: colors.stroke, width: s.shapeStroke, join: s.cornerRadius > 0 || kind === 'ellipse' ? 'round' : 'miter', cap: 'round' } : null,
     opacity: 1,
@@ -147,7 +161,10 @@ function shapeTool(kind: 'rect' | 'ellipse' | 'line', label: string, icon: strin
   const build = (): PathShape | null => {
     if (!drag) return null;
     const ui = store().get().ui;
-    const s = makeShape(kind, drag.start, drag.cur, { shift: drag.cur.shift, alt: drag.cur.alt }, { ...shapeColors(ui), line: ui.color }, getToolSettings());
+    // Sizes are in what-you-see terms, so through a zoomed camera they're smaller on the stage.
+    const f = viewSizeFactor();
+    const t = getToolSettings();
+    const s = makeShape(kind, drag.start, drag.cur, { shift: drag.cur.shift, alt: drag.cur.alt }, { ...shapeColors(ui), line: ui.color }, f === 1 ? t : { ...t, shapeStroke: t.shapeStroke * f, cornerRadius: t.cornerRadius * f }, { vps: vanishingPoints(drag.cur.mod) });
     return s && withWellGradients(s);
   };
   // Where the drag ends: a line's end can follow the perspective guides (and Shift picks from their directions too).
