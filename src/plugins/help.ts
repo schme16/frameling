@@ -135,9 +135,16 @@ A plugin tool sits in the toolbox with the others (look for the puzzle piece or 
 
 A tool that stops answering is left alone after a few tries, and Frameling says so.
 
+A tool can also use a few extras:
+
+- **Handles.** Round or square dots in its preview that you can drag, to stretch a star or move a point. Frameling draws them at the same size at any zoom.
+- **Snapping.** A tool can ask for its points to **snap** like the built-in tools do: to guides, the page edge, the grid and other shapes, following your choices in **Snap** on the status bar. Hold **Ctrl** (Cmd on Mac) to leave a point where you put it.
+- **Keys.** A tool can offer named actions such as "Finish the line". They show up in **Preferences > Keyboard** with no key to start with, so a plugin never takes a key you use. Give one a key and it works while that tool is picked.
+- **Fonts.** A tool's preview can show text in a font you have installed.
+
 ## Shapes
 
-A plugin can add a **kind of shape**, a star, a gear or a speech bubble, that remembers its settings. Frameling draws it as ordinary shapes you can move, colour and delete like any others. To change its settings, use the plugin (often a panel with sliders). Frameling redraws it where it was, as one Undo step.
+A plugin can add a **kind of shape**, a star, a gear or a speech bubble, that remembers its settings. Frameling draws it as ordinary shapes you can move, colour and delete like any others. To change its settings, pick it and use **Change settings** in Properties (see [Shapes made by a plugin](help:plugin-shapes)). Frameling redraws it, as one Undo step, and keeps the size, turn and place you gave it.
 
 ## Guides
 

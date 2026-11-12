@@ -45,7 +45,18 @@ export interface PluginToolDef {
   icon: string;
   /** The layer kinds it works on. */
   layers: ('vector' | 'pixel')[];
+  /** Points come to it pulled onto Frameling's snap lines (the person's snapping choices; Ctrl or Cmd bypasses them). Off unless asked for. */
+  snap: boolean;
+  /** Named keys it listens for. Each is a command in Keyboard settings with no key to start with; pressing it while the tool is picked sends a `key` event. */
+  keys: PluginToolKey[];
 }
+
+export interface PluginToolKey {
+  id: string;
+  label: string;
+}
+
+export const MAX_TOOL_KEYS = 8;
 
 /** A kind of shape a plugin draws (version 2, needs the `shapes` power). */
 export interface PluginShapeDef {
@@ -57,9 +68,16 @@ export interface PluginShapeDef {
 
 /** What a tool hears: where the pointer is, in stage coordinates, and what it was doing. */
 export interface ToolEvent {
-  type: 'down' | 'move' | 'up' | 'hover' | 'cancel' | 'leave';
+  type: 'down' | 'move' | 'up' | 'hover' | 'cancel' | 'leave' | 'key';
+  /** Stage coordinates; pulled onto the snap lines when the tool asked for `snap` (`rawX`, `rawY` are where the pointer really is). */
   x: number;
   y: number;
+  rawX?: number;
+  rawY?: number;
+  /** The handle of the tool's last picture that the pointer is over, or is dragging (a drag keeps this id from the press to the release). */
+  handle?: string;
+  /** For `type: 'key'`: which of the tool's named keys was pressed. */
+  key?: string;
   pressure: number;
   shift: boolean;
   alt: boolean;
@@ -404,7 +422,12 @@ export class PluginRuntime {
       if (!this.allow('tools', 'add a tool')) return;
       if (this.tools.size >= LIMITS.tools && !this.tools.has(id)) return;
       const layers = (Array.isArray(d.layers) ? d.layers : ['vector']).filter((l: unknown): l is 'vector' | 'pixel' => l === 'vector' || l === 'pixel');
-      const def: PluginToolDef = { id, label: cleanText(d.label, 40) || id, icon: typeof d.icon === 'string' ? d.icon.slice(0, 40) : 'plugin', layers: layers.length ? layers : ['vector'] };
+      const keys: PluginToolKey[] = [];
+      for (const k of Array.isArray(d.keys) ? d.keys : []) {
+        const kid = isObj(k) ? cleanId(k.id) : null;
+        if (kid && !keys.some((x) => x.id === kid) && keys.length < MAX_TOOL_KEYS) keys.push({ id: kid, label: cleanText(k.label, 40) || kid });
+      }
+      const def: PluginToolDef = { id, label: cleanText(d.label, 40) || id, icon: typeof d.icon === 'string' ? d.icon.slice(0, 40) : 'plugin', layers: layers.length ? layers : ['vector'], snap: d.snap === true, keys };
       this.tools.set(id, def);
       this.hooks.addTool?.(def);
     } else if (m.kind === 'shape') {

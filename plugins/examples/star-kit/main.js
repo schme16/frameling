@@ -42,22 +42,47 @@ frameling.shapes.register(
   (props) => starList({ ...settings, ...props }),
 );
 
-// The Star stamp tool: a faint preview follows the pointer, a click adds a star there.
-frameling.tools.register({ id: 'stamp', label: 'Star stamp', icon: 'polygon', layers: ['vector'] }, async (e) => {
-  if (e.type === 'hover' || e.type === 'move') {
-    const preview = starList(settings).map((item) => ({ ...item, points: item.points.map(([x, y]) => [x + e.x, y + e.y]), fill: undefined, stroke: '#8a5a00', dash: [4, 3], screen: true, width: 1 }));
-    return { overlay: preview };
-  }
-  if (e.type === 'down') {
+// The Star stamp tool. A faint preview follows the pointer and a click adds a star there. The star just added shows a
+// round handle: drag it to make that star bigger or smaller. The tool asks for `snap`, so clicks land on Frameling's snap
+// lines (guides, the page edge, other shapes), and it names two keys ("Bigger", "Smaller") that people can give a shortcut
+// in Preferences > Keyboard (they have none to start with).
+let last = null; // The star just added: { inst, x, y } (x, y is its middle).
+
+const handle = () => (last ? [{ type: 'handle', id: 'size', x: last.x + settings.size, y: last.y, shape: 'circle', fill: '#ffffff', stroke: '#8a5a00' }] : []);
+const label = () => (last ? [{ type: 'text', x: last.x, y: last.y + settings.size + 22, text: 'Size ' + Math.round(settings.size), size: 16, font: 'Nunito', weight: 700, align: 'center', fill: '#8a5a00' }] : []);
+
+async function resize(size) {
+  settings.size = Math.max(8, Math.min(200, size));
+  if (last) await frameling.shapes.update(last.inst, 'star', settings);
+}
+
+frameling.tools.register(
+  { id: 'stamp', label: 'Star stamp', icon: 'polygon', layers: ['vector'], snap: true, keys: [{ id: 'bigger', label: 'Bigger stars' }, { id: 'smaller', label: 'Smaller stars' }] },
+  async (e) => {
     try {
-      await frameling.shapes.place('star', settings, { x: e.x, y: e.y });
+      if (e.type === 'key') {
+        await resize(settings.size * (e.key === 'bigger' ? 1.2 : 1 / 1.2));
+        return { overlay: [...handle(), ...label()], hint: 'Size ' + Math.round(settings.size) };
+      }
+      // Dragging the handle: the star follows the pointer's distance from its middle.
+      if (e.handle === 'size') {
+        if (e.type === 'move') await resize(Math.hypot(e.x - last.x, e.y - last.y));
+        return { overlay: [...handle(), ...label()] };
+      }
+      if (e.type === 'hover' || e.type === 'move') {
+        const preview = starList(settings).map((item) => ({ ...item, points: item.points.map(([x, y]) => [x + e.x, y + e.y]), fill: undefined, stroke: '#8a5a00', dash: [4, 3], screen: true, width: 1 }));
+        return { overlay: [...preview, ...handle(), ...label()] };
+      }
+      if (e.type === 'down') {
+        last = { inst: await frameling.shapes.place('star', settings, { x: e.x, y: e.y }), x: e.x, y: e.y };
+        return { overlay: [...handle(), ...label()], hint: 'Drag the round handle to resize it' };
+      }
+      if (e.type === 'leave' || e.type === 'cancel') return { overlay: [...handle(), ...label()] };
     } catch (err) {
       return { hint: err.message };
     }
-    return { overlay: [] };
-  }
-  if (e.type === 'leave' || e.type === 'cancel') return { overlay: [] };
-});
+  },
+);
 
 const ui = () => ({
   type: 'column',

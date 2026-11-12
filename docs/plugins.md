@@ -233,8 +233,8 @@ description (wrong kinds and out of range fall back to the default) and passed a
 ### Tools (version 2, `tools`)
 
 ```js
-frameling.tools.register({ id: 'stamp', label: 'Star stamp', icon: 'polygon', layers: ['vector'] }, async (e) => {
-  // e = { type: 'down' | 'move' | 'up' | 'hover' | 'cancel' | 'leave', x, y, pressure, shift, alt, mod, button, frame, drawingId, zoom }
+frameling.tools.register({ id: 'stamp', label: 'Star stamp', icon: 'polygon', layers: ['vector'], snap: true, keys: [{ id: 'bigger', label: 'Bigger stars' }] }, async (e) => {
+  // e = { type: 'down' | 'move' | 'up' | 'hover' | 'cancel' | 'leave' | 'key', x, y, rawX, rawY, handle?, key?, pressure, shift, alt, mod, button, frame, drawingId, zoom }
   return { overlay: [...], ops: [...], label: 'Stamp', hint: 'Short message' };   // everything optional
 });
 ```
@@ -244,6 +244,21 @@ one at a time: while the plugin is still answering, pointer moves pile up into t
 dropped. The answer is checked: `overlay` is a draw list shown while the tool is picked, `ops` are the same edit ops as
 `document.edit()` (applied as one undo step called `<plugin>: <label>`, and only if it was allowed `document.write`), and
 `hint` is shown near the cursor. A tool that fails to answer within 2 seconds three times in a row is left alone.
+
+**Handles.** A `handle` item in the tool's overlay (see Draw lists) is a dot the person can drag. Frameling hit-tests the
+pointer against the handles of the tool's last overlay (as near as 8 screen pixels at any zoom). Over one, `hover` events
+carry `handle: '<id>'`; pressing on one starts a drag, and the `down`, `move` and `up` of that drag all carry its `handle`
+id, so the plugin moves whatever the handle stands for and answers with a new overlay. A press elsewhere has no `handle`.
+
+**Snapping.** With `snap: true` in the tool's definition, `x` and `y` come pulled onto Frameling's snap lines the way the
+built-in tools' points do (page, guides, grid, other shapes, the person's choices and distance from the Snap options;
+Ctrl or Cmd, or snapping switched off, leaves the point alone), and Frameling shows the snap lines. `rawX` and `rawY` are
+where the pointer really is, and are always sent. Without `snap`, `x` and `y` are raw, as before.
+
+**Keys.** `keys: [{ id, label }]` (at most 8) names actions a tool listens for. Each becomes a command `plugin.<plugin id>.tool.<tool id>.key.<key id>`
+("<Tool label>: <label>") in the command palette and Preferences > Keyboard, with **no key to start with**, so a plugin can
+never take a key. It only runs while the tool is picked, and the plugin hears `{ type: 'key', key: '<id>', x, y, rawX, rawY }`
+with the last pointer place. The commands go when the plugin is turned off.
 
 ### Canvas guides (version 2, `canvas`)
 
@@ -257,7 +272,7 @@ most 30 updates a second.
 ### Draw lists
 
 Pictures a plugin sends (tool previews, guides, the drawing of a shape) are **draw lists**: plain data that Frameling checks
-and draws itself. The plugin never gets a canvas. At most 1000 items and 20000 points; colours are `#rrggbb` or `#rrggbbaa`.
+and draws itself. The plugin never gets a canvas. At most 1000 items and 20000 points; colours are `#rrggbb` or `#rrggbbaa`. At most 100 `text` items.
 
 | Item | Fields |
 |---|---|
@@ -266,7 +281,13 @@ and draws itself. The plugin never gets a canvas. At most 1000 items and 20000 p
 | `ellipse` | `cx`, `cy`, `rx`, `ry` |
 | `polygon`, `polyline` | `points: [[x, y], ...]` |
 | `path` | `d: [['M', x, y], ['L', x, y], ['Q', cx, cy, x, y], ['C', c1x, c1y, c2x, c2y, x, y], ['Z']]` |
-| `text` | `x`, `y`, `text`, `size`, `align` (guides and previews only; left out of shapes) |
+| `text` | `x`, `y` (the left, middle or right of the first line's baseline, by `align`), `text`, `size`, `align`, `font`, `weight` (100 to 900), `italic` |
+| `handle` | `id`, `x`, `y`, `size` (screen pixels, 4 to 40, default 10), `shape` (`square`, `circle` or `diamond`); in tool overlays only, at most 50 (see Tools) |
+
+`font` is a family name: the fonts Frameling ships (Nunito, Inter) or one the text tools found on this computer (desktop). A
+name that is not available, or is not a plain name (letters, numbers, spaces, dots and dashes), is drawn in plain sans-serif; a
+plugin can never load a font from anywhere. In a shape's draw list a `text` item becomes an ordinary text shape in that font
+(Nunito when it is not available), in the stage colour `fill`; a `handle` is left out.
 
 Every item may have `stroke`, `fill`, `width`, `opacity`, `join`, `cap`; on guides also `dash: [on, off]` and `screen: true`
 (widths and dashes in screen pixels, so they keep their size at any zoom). A line with no colour is a thin black line.
@@ -422,7 +443,10 @@ Web: the browser's IndexedDB (store `library`). On/off state and what was allowe
   compatibility, what is asked about), `runtime-v2` (events, tools, guides, shapes, files, exporter options and the limits,
   against the real prelude), `manager-v2` (the permission flow: ask, remember per version, refuse, revoke; a tool and a shape
   kind round trip through the real store; events), `drawlist`, `shapes` (placing, redrawing, a saved file opening and
-  saving without the plugin), `options`, `events`, `pipe`.
+  saving without the plugin, redrawing after a move, scale or turn), `options`, `events`, `pipe`. Later additions: `watchdog`, `manager-watchdog`
+  and `process-memory` (the heartbeat, the memory cap, which process is which plugin's), `shape-panel` (the Properties
+  section through React), `tools-growth` (handles, snapping and keys through the real registries) and the font and handle
+  parts of `drawlist`.
 - `scripts/e2e/plugins.cjs` (Electron): the sandbox page blocks fetch, XHR, WebSocket, remote scripts and storage,
   has no way into the app, the version 1 examples install, run, undo and export, and the version 2 examples run in the real
   sandbox: powers start off in the dialog, a tool stamps a shape and fades a layer, an exporter gets its options, events flow, and

@@ -178,6 +178,33 @@ app.whenReady().then(async () => {
     return { hint, count: mine.length, kind: mine[0] && mine[0].ext['plugin.star-kit'].kind, props: mine[0] && mine[0].ext['plugin.star-kit'].props, undo: s.undoLabel() };
   })()`);
   check('a tool placed a star in the real sandbox', stamped.count === 1 && stamped.kind === 'star' && stamped.props?.points === 5 && /Star/.test(stamped.undo || ''), stamped);
+  // The star the tool just stamped shows a round handle; dragging it (the tool hears a move with the handle's id) resizes that star.
+  const resized = await js(`(async () => {
+    const f = window.__frameling;
+    const rt = window.__framelingPlugins.runtime('star-kit');
+    const s = f.store();
+    const layer = s.get().doc.layers.find((l) => l.kind === 'vector');
+    const ev = (type, x, extra) => ({ type, x, y: 200, pressure: 0.5, shift: false, alt: false, mod: false, button: 0, frame: 0, drawingId: null, zoom: 1, ...extra });
+    await rt.toolEvent('stamp', ev('move', 380, { handle: 'size' }));
+    await rt.toolEvent('stamp', ev('key', 0, { key: 'bigger' }));
+    const d = s.get().doc.drawings[layer.cels[0].drawingId];
+    const mine = d.shapes.filter((x) => x.ext && x.ext['plugin.star-kit']);
+    return { count: mine.length, size: mine[0] && mine[0].ext['plugin.star-kit'].props.size, insts: new Set(mine.map((x) => x.ext['plugin.star-kit'].inst)).size };
+  })()`);
+  check('dragging the handle then a named key resize the stamped star (80, then 20% bigger)', resized.insts === 1 && Math.abs(resized.size - 96) < 0.01, resized);
+  // The Plugin shape section shows its form when that star is picked.
+  const section = await js(`(async () => {
+    const f = window.__frameling;
+    const s = f.store();
+    const layer = s.get().doc.layers.find((l) => l.kind === 'vector');
+    const d = s.get().doc.drawings[layer.cels[0].drawingId];
+    s.setUi({ activeLayerId: layer.id, frame: 0, selection: d.shapes.filter((x) => x.ext && x.ext['plugin.star-kit']).map((x) => x.id) });
+    f.showPanel('plugin-shape');
+    await new Promise((r) => setTimeout(r, 600));
+    const el = document.querySelector('.plugin-shape');
+    return el ? el.innerText : null;
+  })()`);
+  check('Properties shows the Plugin shape section with Change settings', !!section && /made by Star kit/.test(section) && /Change settings/.test(section) && /Points/.test(section), section);
   const faded = await js(`(async () => {
     const f = window.__frameling;
     const rt = window.__framelingPlugins.runtime('layer-fader');

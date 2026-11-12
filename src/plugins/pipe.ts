@@ -1,7 +1,7 @@
 // Sends a tool's pointer events to its plugin one at a time. While the plugin is busy with one, moves that pile up are
 // folded into the newest, so a slow plugin never builds a backlog; presses, releases and cancels are never dropped.
 
-export type PipeKind = 'down' | 'move' | 'up' | 'hover' | 'cancel' | 'leave';
+export type PipeKind = 'down' | 'move' | 'up' | 'hover' | 'cancel' | 'leave' | 'key';
 
 const isMove = (k: PipeKind): boolean => k === 'move' || k === 'hover';
 

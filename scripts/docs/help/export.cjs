@@ -168,7 +168,7 @@ module.exports = [
       js(`${F}.run('tools.plugin.star-kit.tool.stamp')`),
       wait(500),
       { click: [420, 330], after: 600 },
-      { click: [640, 480], after: 600 },
+      { click: [640, 300], after: 600 },
       { move: [800, 380], after: 700 },
       { shot: '@' },
     ],

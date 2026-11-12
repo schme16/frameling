@@ -206,7 +206,7 @@ var api = {
       needId(def, 'A tool');
       if (typeof onEvent !== 'function') throw new Error('A tool needs a function that hears the pointer.');
       tools.set(def.id, onEvent);
-      send({ t: 'register', kind: 'tool', def: { id: def.id, label: def.label, icon: def.icon, layers: def.layers } });
+      send({ t: 'register', kind: 'tool', def: { id: def.id, label: def.label, icon: def.icon, layers: def.layers, snap: def.snap, keys: def.keys } });
     },
   },
   canvas: {
