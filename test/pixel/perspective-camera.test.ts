@@ -129,13 +129,13 @@ describe('pixel shapes on a perspective plane', () => {
   });
 
   it('a rectangle on a wall paints a slanted block of crisp pixels, not a box', () => {
-    withPerspective([{ x: 300, y: 20 }]);
+    withPerspective([{ x: 80, y: 20 }]);
     setToolSettings({ perspectivePlane: 'wall' });
-    drag(rectTool, ctx(), [at(1, 3), at(4, 5)]);
+    drag(rectTool, ctx(), [at(1, 3), at(5, 5)]);
     const n = count();
-    // The plain rectangle would be 4 x 3 = 12 cells; on the wall its far edge shrinks towards the horizon.
+    // The plain rectangle would be 5 x 3 = 15 cells; on the wall its sides slope towards the horizon.
     expect(n).toBeGreaterThan(0);
-    expect(n).not.toBe(12);
+    expect(n).not.toBe(15);
     // Every painted pixel is the fill colour exactly (no anti-aliasing, no half-transparent edge).
     const d = drawing();
     for (let y = 0; y < d.height; y++) for (let x = 0; x < d.width; x++) if (on(x, y)) expect(getPx(d.pixels, d.width, x, y)).toEqual([255, 0, 0, 255]);

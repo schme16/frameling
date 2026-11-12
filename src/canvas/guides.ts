@@ -114,9 +114,10 @@ export function vanishingPoints(bypass: boolean): Pt[] {
 /**
  * The end of a line drawn from `a` (Line tool, pen segments). With perspective guides showing, it follows a vanishing
  * point's direction when it comes close; with Shift it takes the nearest of the 45 degree steps and those directions.
- * `constrained` says Shift was handled here, so the caller shouldn't snap to 45 degrees again.
+ * `constrained` says Shift was handled here, so the caller shouldn't snap to 45 degrees again. `cells` is for pixel
+ * layers, where the cells are the snapping: the end is never pulled onto guides or the page (only along perspective directions).
  */
-export function snapLineEnd(a: Pt, b: Pt, zoom: number, bypass: boolean, shift: boolean): { pt: Pt; constrained: boolean } {
+export function snapLineEnd(a: Pt, b: Pt, zoom: number, bypass: boolean, shift: boolean, cells = false): { pt: Pt; constrained: boolean } {
   const vps = vanishingPoints(bypass);
   if (vps.length) {
     if (shift) {
@@ -133,7 +134,7 @@ export function snapLineEnd(a: Pt, b: Pt, zoom: number, bypass: boolean, shift: 
     }
   }
   showRay(null);
-  if (shift) return { pt: b, constrained: false };
+  if (shift || cells) return { pt: b, constrained: false };
   return { pt: snapPt(b, zoom, bypass), constrained: false };
 }
 

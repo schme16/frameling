@@ -207,3 +207,49 @@ export function plotPolygon(pts: { x: number; y: number }[], closed: boolean, ed
     plotLine(a.x, a.y, b.x, b.y, edge);
   }
 }
+
+/** The cells a closed outline (in pixel units) covers: every cell whose middle is inside. Rows run top to bottom. */
+export function coveredCells(pts: { x: number; y: number }[]): PxPt[] {
+  const out: PxPt[] = [];
+  plotPolygon(pts, true, null, (x, y) => void out.push({ x, y }));
+  return out;
+}
+
+/**
+ * The cells of a covered area that lie within `depth` cells of its edge: a cell is in the ring when it is that many
+ * steps (up, down, left or right) from a cell outside the area. Flat edges get exactly `depth` rows, a slanted edge
+ * stays one clean 8-connected line at depth 1, and an area too small for the ring is all ring.
+ */
+export function edgeRing(cells: PxPt[], depth: number): PxPt[] {
+  if (!cells.length) return [];
+  let x0 = Infinity;
+  let y0 = Infinity;
+  let x1 = -Infinity;
+  let y1 = -Infinity;
+  for (const c of cells) {
+    x0 = Math.min(x0, c.x);
+    y0 = Math.min(y0, c.y);
+    x1 = Math.max(x1, c.x);
+    y1 = Math.max(y1, c.y);
+  }
+  // One empty cell all round, so the outside is always next to the edge.
+  const w = x1 - x0 + 3;
+  const h = y1 - y0 + 3;
+  const far = w + h + 1;
+  const d = new Int32Array(w * h);
+  d.fill(0);
+  for (const c of cells) d[(c.y - y0 + 1) * w + (c.x - x0 + 1)] = far;
+  for (let y = 1; y < h - 1; y++) {
+    for (let x = 1; x < w - 1; x++) {
+      const i = y * w + x;
+      if (d[i]) d[i] = Math.min(d[i], d[i - 1] + 1, d[i - w] + 1);
+    }
+  }
+  for (let y = h - 2; y >= 1; y--) {
+    for (let x = w - 2; x >= 1; x--) {
+      const i = y * w + x;
+      if (d[i]) d[i] = Math.min(d[i], d[i + 1] + 1, d[i + w] + 1);
+    }
+  }
+  return cells.filter((c) => d[(c.y - y0 + 1) * w + (c.x - x0 + 1)] <= depth);
+}

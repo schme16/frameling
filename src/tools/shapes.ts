@@ -172,7 +172,7 @@ function shapeTool(kind: 'rect' | 'ellipse' | 'line', label: string, icon: strin
   // Where the drag ends: a line's end can follow the perspective guides (and Shift picks from their directions too).
   const endAt = (start: Pt, e: ToolPointer, ctx: ToolContext): ToolPointer => {
     if (kind !== 'line') return { ...e, ...snapPt(e, ctx.zoom, e.mod) };
-    const s = snapLineEnd(start, e, ctx.zoom, e.mod, e.shift);
+    const s = snapLineEnd(start, e, ctx.zoom, e.mod, e.shift, !!activePixelLayer());
     return { ...e, ...s.pt, shift: s.constrained ? false : e.shift };
   };
   // A pixel line follows the perspective directions too. Cells already are the snapping, so nothing else is pulled.
