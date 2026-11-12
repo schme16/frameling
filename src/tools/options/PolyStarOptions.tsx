@@ -2,6 +2,7 @@ import { useStore } from '../../core/store';
 import { Slider, Tip } from '../../canvas/controls';
 import { Wells } from '../../canvas/panels/Wells';
 import { setToolSettings, useToolSettings } from '../settings';
+import { PixelOutlineOptions, useLayerKind } from '../../pixel/ToolOptions';
 import { DrawModeToggle } from './DrawModeToggle';
 
 export function PolyStarOptions() {
@@ -9,6 +10,7 @@ export function PolyStarOptions() {
   const strokeOn = useStore((s) => s.ui.strokeOn);
   const t = useToolSettings((s) => s);
   const star = tool === 'star';
+  const pixel = useLayerKind() === 'pixel';
   return (
     <div className="cv-options">
       <DrawModeToggle />
@@ -21,7 +23,7 @@ export function PolyStarOptions() {
       ) : (
         <Slider label="Sides" value={t.polygonSides} min={3} max={24} onChange={(v) => setToolSettings({ polygonSides: v })} />
       )}
-      {strokeOn && <Slider label="Outline thickness" value={t.shapeStroke} min={1} max={60} format={(v) => `${v}px`} onChange={(v) => setToolSettings({ shapeStroke: v })} />}
+      {pixel ? <PixelOutlineOptions show={strokeOn} /> : strokeOn && <Slider label="Outline thickness" value={t.shapeStroke} min={1} max={60} format={(v) => `${v}px`} onChange={(v) => setToolSettings({ shapeStroke: v })} />}
       <Tip>{`Hold Shift to keep it even${star ? ' (equal arms)' : ' (all sides the same)'}. Hold Alt to draw from the middle.`}</Tip>
     </div>
   );

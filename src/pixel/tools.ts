@@ -23,7 +23,9 @@ import { viewPixelSize } from '../tools/view-size';
 import { ditherInk, shadeInk, solidInk, type Ink } from './ink';
 import { docPalette } from './palette';
 import { perspectivePixelOutline, type PixelPerspective } from './perspective';
-import { dragBox, plotEllipse, plotLine, plotPolygon, plotRect, plotRectInside, snapCleanLine } from './raster';
+import { dragBox, snapCleanLine } from './raster';
+import { outlineThickness, plotThickEllipse, plotThickLine, plotThickPolygon, plotThickRect, type Thickness } from './thick';
+import { getPrefs } from '../ui/prefs';
 import { flattenSubPath } from '../geometry/hit';
 import { getPixelSettings } from './settings';
 import { DitherOptions, PixelPencilOptions, ShadeOptions } from './ToolOptions';
@@ -259,11 +261,17 @@ export function makePixelPencil() {
 
 export type PixelShapeKind = 'rect' | 'ellipse' | 'line';
 
+/** The outline thickness to draw with right now (the preference, as it comes out through the camera), or none. */
+export function currentOutline(): Thickness | undefined {
+  const p = getPrefs();
+  return p.pixelThickOutlines ? outlineThickness(true, viewPixelSize(p.pixelOutlineWidth), getToolSettings().pixelBrushShape) : undefined;
+}
+
 /**
  * Paints a pixel shape between two cells into a session (after a reset, so it can be called on every move).
  * Rectangles and ellipses take the fill colour inside and the stroke colour round the edge (either can be none); a
  * line always uses the stroke colour. Shift squares the box, or snaps a line to a clean pixel slope. `persp` puts a
- * rectangle or ellipse on a perspective plane.
+ * rectangle or ellipse on a perspective plane. `thick` stamps the pixel brush along the outline (the fill is untouched).
  */
 export function paintPixelShape(
   session: PixelSession,
@@ -273,6 +281,7 @@ export function paintPixelShape(
   mod: { shift: boolean; alt: boolean },
   colors: { fill: string | null; stroke: string | null; line: string },
   persp?: PixelPerspective,
+  thick?: Thickness,
 ): void {
   session.reset();
   if (kind === 'line') {
@@ -283,13 +292,13 @@ export function paintPixelShape(
     let start = a;
     if (mod.shift) end = snapCleanLine(a, b);
     if (mod.alt) start = { x: 2 * a.x - end.x, y: 2 * a.y - end.y };
-    plotLine(start.x, start.y, end.x, end.y, (x, y) => session.paint(x, y, ink));
+    plotThickLine(start.x, start.y, end.x, end.y, thick, (x, y) => session.paint(x, y, ink));
     return;
   }
   const [p, q] = dragBox(a, b, mod.shift, mod.alt);
   // With perspective guides showing, it follows the plane it's drawn on, rasterised as crisply as a flat one.
   const outline = persp && perspectivePixelOutline(kind, p, q, session.pixelSize, persp);
-  if (outline) return paintPixelPaths(session, [outline], { fill: colors.fill, stroke: colors.stroke });
+  if (outline) return paintPixelPaths(session, [outline], { fill: colors.fill, stroke: colors.stroke }, thick);
   const fill = colors.fill ? parseHex(colors.fill) : null;
   const stroke = colors.stroke ? parseHex(colors.stroke) : null;
   const fi = fill ? session.lock(solidInk(fill)) : null;
@@ -297,12 +306,12 @@ export function paintPixelShape(
   // With no outline the fill covers the whole shape, edge included.
   const edge = si ?? fi;
   if (!edge) return;
-  if (kind === 'rect') {
-    if (fi) plotRectInside(p.x, p.y, q.x, q.y, (x, y) => session.paint(x, y, fi));
-    plotRect(p.x, p.y, q.x, q.y, false, (x, y) => session.paint(x, y, edge));
-  } else {
-    plotEllipse(p.x, p.y, q.x, q.y, (x, y) => session.paint(x, y, edge), fi ? (x, y) => session.paint(x, y, fi) : undefined);
-  }
+  // Thickness is for the outline only: a shape with no outline keeps the one pixel edge of its fill.
+  const t = si ? thick : undefined;
+  const paintFill = fi ? (x: number, y: number) => session.paint(x, y, fi) : undefined;
+  const paintEdge = (x: number, y: number) => session.paint(x, y, edge);
+  if (kind === 'rect') plotThickRect(p.x, p.y, q.x, q.y, t, paintEdge, paintFill);
+  else plotThickEllipse(p.x, p.y, q.x, q.y, t, paintEdge, paintFill);
 }
 
 /** The handlers the shape tools use on a pixel layer. */
@@ -315,7 +324,7 @@ export function makePixelShape(kind: PixelShapeKind, label: string) {
     const ui = store().get().ui;
     const here = docToPixel(e.x, e.y, size);
     const persp = kind === 'line' ? undefined : { vps: vanishingPoints(e.mod), plane: getToolSettings().perspectivePlane };
-    paintPixelShape(session, kind, start, here, { shift: e.shift, alt: e.alt }, { fill: ui.fillColor, stroke: ui.strokeOn ? ui.color : null, line: ui.color }, persp);
+    paintPixelShape(session, kind, start, here, { shift: e.shift, alt: e.alt }, { fill: ui.fillColor, stroke: ui.strokeOn ? ui.color : null, line: ui.color }, persp, currentOutline());
     session.flush();
   };
   return {
@@ -363,7 +372,7 @@ export function makePixelShape(kind: PixelShapeKind, label: string) {
  * Paints outlines (in document units) as clean pixels: the fill colour inside closed ones, the stroke colour round
  * the edge. With no stroke the fill covers the edge too, like the pixel rectangle. Curves are cut into short lines.
  */
-export function paintPixelPaths(session: PixelSession, paths: SubPath[], colors: { fill: string | null; stroke: string | null }): void {
+export function paintPixelPaths(session: PixelSession, paths: SubPath[], colors: { fill: string | null; stroke: string | null }, thick?: Thickness): void {
   const fill = colors.fill ? parseHex(colors.fill) : null;
   const stroke = colors.stroke ? parseHex(colors.stroke) : null;
   const fi = fill ? session.lock(solidInk(fill)) : null;
@@ -375,7 +384,7 @@ export function paintPixelPaths(session: PixelSession, paths: SubPath[], colors:
     const flat = flattenSubPath(sp);
     const pts: { x: number; y: number }[] = [];
     for (let i = 0; i < flat.length; i += 2) pts.push({ x: flat[i] / ps, y: flat[i + 1] / ps });
-    plotPolygon(pts, sp.closed, (x, y) => session.paint(x, y, edge), fi && sp.closed ? (x, y) => session.paint(x, y, fi) : undefined);
+    plotThickPolygon(pts, sp.closed, si ? thick : undefined, (x, y) => session.paint(x, y, edge), fi && sp.closed ? (x, y) => session.paint(x, y, fi) : undefined);
   }
 }
 
@@ -401,7 +410,7 @@ export function makePixelPathShape(label: string, build: (a: { x: number; y: num
     if (!session || !start) return;
     session.reset();
     const shape = build(start, e);
-    if (shape) paintPixelPaths(session, shape.paths, { fill: shape.fill, stroke: shape.stroke?.color ?? null });
+    if (shape) paintPixelPaths(session, shape.paths, { fill: shape.fill, stroke: shape.stroke?.color ?? null }, currentOutline());
     session.flush();
   };
   return {

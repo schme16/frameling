@@ -128,6 +128,31 @@ module.exports = [
     ],
   },
   {
+    // Shapes with a 2 pixel outline: a filled box, an oval, a line and a star, and the thickness option beside them.
+    name: 'pixel-shapes',
+    prefs: { showTips: false, pixelThickOutlines: true, pixelOutlineWidth: 2 },
+    steps: (() => {
+      const g = grid(28, 24, 12, false);
+      return [
+        ...pixelDoc(null, ['r'], { background: '#fdf6e8' }),
+        ...properties,
+        center,
+        setUi({ color: '#1d1b26', fillColor: '#8fd0ff', strokeOn: true, tool: 'rect' }),
+        stroke(g, [[2, 2], [13, 11]], { steps: 4 }),
+        setUi({ fillColor: '#ffd36b', tool: 'ellipse' }),
+        stroke(g, [[15, 2], [26, 11]], { steps: 4 }),
+        setUi({ color: '#c2410c', tool: 'line' }),
+        stroke(g, [[2, 14], [13, 21]], { steps: 4 }),
+        setUi({ color: '#1d1b26', fillColor: '#ff9db8', tool: 'star' }),
+        stroke(g, [[15, 13], [26, 22]], { steps: 4 }),
+        setUi({ tool: 'rect' }),
+        away,
+        wait(500),
+        { shot: '@', crop: [359, 47, 835, 418] },
+      ];
+    })(),
+  },
+  {
     name: 'pixel-outline',
     steps: [
       ...pixelDoc(slimeRows(), ['p']),

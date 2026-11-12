@@ -77,7 +77,7 @@ Using a drawing pen? Flip it over and use the eraser end.`,
 
 The inside uses your **fill** colour and the edge uses your **stroke** colour, so a new rectangle starts soft yellow with a black outline. Set either one to none for just an outline or just a solid shape. See [Fill and stroke colours](help:fill-and-stroke).
 
-On a **pixel layer** the rectangle is painted as clean pixels: a one pixel edge in the stroke colour, filled with the fill colour. It follows the perspective guides and **On a plane** too, painted as crisp pixels with no soft edges, and it keeps to the palette when the layer's palette is locked.`,
+On a **pixel layer** the rectangle is painted as clean pixels: an edge in the stroke colour (one pixel, or thicker: see [Pixel shapes](help:pixel-shapes)), filled with the fill colour. It follows the perspective guides and **On a plane** too, painted as crisp pixels with no soft edges, and it keeps to the palette when the layer's palette is locked.`,
   },
   {
     id: 'tool-ellipse',
@@ -93,7 +93,7 @@ On a **pixel layer** the rectangle is painted as clean pixels: a one pixel edge 
 - The inside uses your **fill** colour and the edge your **stroke** colour. See [Fill and stroke colours](help:fill-and-stroke).
 - With [perspective guides](help:grids-perspective) showing and snapping on, the ellipse is the one a circle makes when it lies on that floor or wall, so a plate on a table or a clock on a wall sits right. Pick the plane in the options, or leave it on **Auto**.
 
-On a vector layer, ellipses are made of smooth curves, so they stay sharp however far you zoom in. On a **pixel layer** they're painted as clean, even pixel circles and ovals, with no doubled pixels. On the perspective guides they follow the plane the same way, as crisp pixels.`,
+On a vector layer, ellipses are made of smooth curves, so they stay sharp however far you zoom in. On a **pixel layer** they're painted as clean, even pixel circles and ovals, with no doubled pixels, and the outline can be thicker (see [Pixel shapes](help:pixel-shapes)). On the perspective guides they follow the plane the same way, as crisp pixels.`,
   },
   {
     id: 'tool-line',
@@ -110,7 +110,7 @@ On a vector layer, ellipses are made of smooth curves, so they stay sharp howeve
 
 Set how thick it is in the options.
 
-On a **pixel layer** the line is one pixel wide, lines up with a vanishing point the same way, and **Shift** snaps it to the clean pixel art slopes (1 across for 1 down, 2 for 1, 3 for 1, 4 for 1 and their upright twins), so every step in the line is the same length.`,
+On a **pixel layer** the line is one pixel wide (or as thick as you set in [Pixel shapes](help:pixel-shapes)), lines up with a vanishing point the same way, and **Shift** snaps it to the clean pixel art slopes (1 across for 1 down, 2 for 1, 3 for 1, 4 for 1 and their upright twins), so every step in the line is the same length.`,
   },
   {
     id: 'tool-select',
