@@ -92,6 +92,8 @@ export interface NestedInstance {
   at: (InstState | null)[];
   scope: BonesScope;
   look: PartLook;
+  /** The bone the host layer follows: the instance sits under it. */
+  bind?: { rig: RigLayer; bone: Id };
 }
 
 export interface BonesScope {
@@ -211,6 +213,13 @@ export function riggedSymbols(doc: Doc): Set<Id> {
   };
   for (const id of Object.keys(doc.symbols ?? {})) visit(id);
   return out;
+}
+
+/** The bone a layer follows when a symbol on it can sit under that bone (not a bent layer, and the bone is there). */
+export function nestableBind(layers: Layer[], layer: Layer): { rig: RigLayer; bone: Id } | undefined {
+  if (!layer.bind || layer.bind.mesh?.points.length) return undefined;
+  const r = layers.find((l) => l.id === layer.bind!.rig);
+  return isRigLayer(r) && r.rig.bones.some((b) => b.id === layer.bind!.bone) ? { rig: r, bone: layer.bind.bone } : undefined;
 }
 
 function holdsInstanceOf(doc: Doc, layer: Layer, set: Set<Id>): boolean {
@@ -414,7 +423,7 @@ function without(d: Drawing, cut: Set<Id>): { d: Drawing; same: boolean } {
 /**
  * The parts of one scope, and its nested rigs. Visible layers that aren't reference, bones or camera layers, with the
  * pictures each shows over the range. Instances of symbols with bones are taken out of their layer's pictures when
- * they can stay live (the layer has no effects and isn't attached to a bone): they become nested rigs instead.
+ * they can stay live (the layer has no effects or masks, and isn't bent on a bone): they become nested rigs instead.
  */
 export function bonesScope(
   doc: Doc,
@@ -445,8 +454,9 @@ export function bonesScope(
     if (clipBase) look = { ...look, opacity: look.opacity * clipBase.opacity, blend: look.blend === 'mix' ? nativeBlend(clipBase.blend).blend : look.blend };
     // Symbols with bones stay live only on layers that move on their own and have no effects or masks to bake.
     const holds = live.size > 0 && holdsInstanceOf(doc, layer, live);
-    const cut = holds && !layer.bind && !look.effects.length && !masks.length ? live : undefined;
-    if (holds && !cut) notes?.skip('Symbols with bones are drawn into the pictures (the layer has effects or masks, or is attached to a bone)', layer.name);
+    const bind = layer.bind ? nestableBind(layers, layer) : undefined;
+    const cut = holds && (!layer.bind || bind) && !look.effects.length && !masks.length ? live : undefined;
+    if (holds && !cut) notes?.skip('Symbols with bones are drawn into the pictures (the layer has effects or masks, or follows a bone that can not carry it)', layer.name);
     const animatedFx = look.effects.some((e) => e.keys?.length);
     const maskFx = masks.some((m) => m.layer.effects?.some((e) => e.keys?.length));
     const pictures: Drawing[] = [];
@@ -501,7 +511,7 @@ export function bonesScope(
         scopes.set(t.symbolId, scope);
       }
       void key;
-      nested.push({ layer, z, name: doc.symbols?.[t.symbolId]?.name ?? 'Symbol', symbolId: t.symbolId, at: t.at, scope, look });
+      nested.push({ layer, z, name: doc.symbols?.[t.symbolId]?.name ?? 'Symbol', symbolId: t.symbolId, at: t.at, scope, look, ...(bind ? { bind } : {}) });
     }
     if (tracks.size) notes?.native.add('Symbols with bones: nested Skeleton2D and Bone2D nodes');
     if (!pictures.length) return;
@@ -591,7 +601,7 @@ export function bonesNotes(doc: Doc): { native: string[]; baked: string[]; skipp
           if (d?.kind !== 'vector') continue;
           for (const s of d.shapes)
             if (isInstance(s) && rigged.has(s.symbolId)) {
-              if (layer.bind || look.effects.length || carriedMasks(links, layer).carried.length) notes.skip('Symbols with bones are drawn into the pictures (the layer has effects or masks, or is attached to a bone)', layer.name);
+              if ((layer.bind && !nestableBind(layers, layer)) || look.effects.length || carriedMasks(links, layer).carried.length) notes.skip('Symbols with bones are drawn into the pictures (the layer has effects or masks, or follows a bone that can not carry it)', layer.name);
               else {
                 notes.native.add('Symbols with bones: nested Skeleton2D and Bone2D nodes');
                 if (!seen.has(s.symbolId)) {

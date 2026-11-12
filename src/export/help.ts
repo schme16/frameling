@@ -185,7 +185,7 @@ $AnimationPlayer.play("walk")
 
 ## Symbols, camera and looks
 
-- A [symbol](help:symbols) with its own bones comes as a node for each copy, with its own Skeleton2D and parts. Its place, fade and [timeline](help:symbol-properties) are keys. A symbol on a layer with effects or masks, or one that follows a bone, is drawn into the pictures.
+- A [symbol](help:symbols) with its own bones comes as a node for each copy, with its own Skeleton2D and parts. Its place, fade and [timeline](help:symbol-properties) are keys. On a layer that follows a bone, the copy sits under that bone. On a layer with effects or masks, or a bent one, it is drawn into the pictures.
 - A symbol that fades is a **CanvasGroup**: it fades as one picture, so overlapping parts don't show through. If its parts can't be ordered by the scene tree, or use Add or Multiply, each part fades alone.
 - A symbol copied large gets bigger pictures, up to 4 times your export size (less on a huge stage), so it stays sharp.
 - The [camera](help:camera) becomes a **Camera2D** with position, zoom and turn keys. Layers with a depth go under a **Parallax2D**.

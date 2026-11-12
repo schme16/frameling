@@ -313,3 +313,35 @@ describe('Godot bones: the fit-window script', () => {
     expect(bonesNotes(bonesExtrasDoc()).native.join('|')).not.toContain('fit-window');
   });
 });
+
+// ---------------------------------------------------------------- symbols with bones on a layer that follows a bone
+
+describe('Godot bones: symbols with bones on a bone', () => {
+  it('nests the copies under the bone instead of drawing them into the pictures', () => {
+    const doc = bonesExtrasDoc({ onBone: true });
+    const top = bonesStage(doc, { start: 0, end: 11 });
+    expect(top.nested.length).toBe(2);
+    expect(top.nested.every((n) => n.bind?.bone === 'sb')).toBe(true);
+    const { tscn } = sceneOf(doc, 1);
+    expect(tscn).toMatch(/\[node name="Arm" type="(Node2D|CanvasGroup)" parent="Body bones\/Root"\]/);
+    expect(tscn).toContain('NodePath("Body bones/Root/Arm:transform")');
+    expect(bonesNotes(doc).skipped.join('|')).not.toContain('Symbols with bones are drawn into the pictures');
+  });
+
+  it('writes the copy relative to the bone, so at rest it sits where it does on the stage', () => {
+    const doc = bonesExtrasDoc({ onBone: true });
+    const { tscn } = sceneOf(doc, 1);
+    // The bone rests at (150, 60), so the copy at (90, 150) is (-60, 90) from it.
+    const arm = tscn.split('[node name="Arm" type=')[1].split('\n\n')[0];
+    expect(arm).toContain('transform = Transform2D(1, 0, 0, 1, -60, 90)');
+  });
+
+  it('still draws them into the pictures when the layer is bent on the bone', () => {
+    const doc = bonesExtrasDoc({ onBone: true });
+    const hero = doc.layers.find((l) => l.name === 'Hero')!;
+    hero.bind = { ...hero.bind!, mesh: { points: [0, 0, 10, 0, 0, 10], triangles: [0, 1, 2], weights: [[0, 1], [0, 1], [0, 1]], bones: ['sb'] } as never };
+    expect(bonesStage(doc, { start: 0, end: 11 }).nested.length).toBe(0);
+    expect(bonesNotes(doc).skipped.join('|')).toContain('Symbols with bones are drawn into the pictures');
+  });
+});
+

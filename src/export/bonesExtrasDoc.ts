@@ -17,6 +17,8 @@ export interface ExtrasOptions {
   masked?: boolean;
   /** Fade the first arm copy to half, with a big hand overlapping the arm (parts that overlap show through when faded one by one). */
   fade?: boolean;
+  /** The hero layer (with the arm copies) follows a swinging bone on the stage. */
+  onBone?: boolean;
 }
 
 /**
@@ -99,6 +101,21 @@ export function bonesExtrasDoc(o: ExtrasOptions = {}): Doc {
     }
   if (o.fade) for (const d of [h0, h1]) (d.shapes[0] as InstanceShape).opacity = 0.5;
   if (o.fxOnHero) hero.effects = [{ id: uid('e'), kind: 'blur', values: { radius: 2 } }];
+  if (o.onBone) {
+    const body = newVectorLayer('Body bones') as VectorLayer;
+    const root: Bone = boneBetween('sb', 'Root', { x: 150, y: 60 }, { x: 190, y: 60 }, null);
+    body.rig = { bones: [root] };
+    const b0 = vectorDrawing(doc, []);
+    b0.pose = { sb: { r: 0 } };
+    const b1 = vectorDrawing(doc, []);
+    b1.pose = { sb: { r: 25 } };
+    body.cels = [
+      { id: uid('c'), start: 0, length: 6, drawingId: b0.id, tween: { ease: 'easeInOut' } },
+      { id: uid('c'), start: 6, length: 6, drawingId: b1.id },
+    ];
+    doc.layers.push(body);
+    hero.bind = { rig: body.id, bone: 'sb' };
+  }
   doc.layers.push(hero);
 
   const glow = newVectorLayer('Glow') as VectorLayer;

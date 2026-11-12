@@ -254,7 +254,7 @@ interface ScopeNodes {
   sc: BonesScope;
   rigs: { rig: RigLayer; bonePath: Map<Id, string> }[];
   partPath: string[];
-  nested: { inst: NestedInstance; path: string; nodes: ScopeNodes; tint?: Tint; group?: boolean }[];
+  nested: { inst: NestedInstance; path: string; nodes: ScopeNodes; tint?: Tint; group?: boolean; toBone: (m: readonly number[]) => number[] }[];
 }
 
 /** One animation frame by frame: the frame of the scope it shows, and whether the scope is there at all. */
@@ -497,12 +497,20 @@ function build(o: BonesSceneInput): { text: string; shaders: Set<NativeBlend> } 
 
     // Symbols with skeletons of their own: a node moved by the instance, holding its own rig and parts.
     for (const inst of sc.nested) {
-      const host = parentOf(inst.layer);
+      // On a layer that follows a bone the copy sits under that bone: its matrix is taken from the bone's rest place.
+      const boneHost = inst.bind ? bonePath.get(inst.bind.bone) : undefined;
+      const host = boneHost ?? parentOf(inst.layer);
       const n = name(at(host), inst.name);
       const path = under(host, n);
       const firstAt = inst.at.findIndex((s) => !!s);
       const s0 = inst.at[firstAt] ?? undefined;
-      const m = s0 ? [s0.matrix[0], s0.matrix[1], s0.matrix[2], s0.matrix[3], s0.matrix[4] * k, s0.matrix[5] * k] : [1, 0, 0, 1, 0, 0];
+      const toBone = (q: readonly number[]): number[] => {
+        const m6s = [q[0], q[1], q[2], q[3], q[4] * k, q[5] * k];
+        if (!boneHost || !inst.bind) return m6s;
+        const r = restMatrix(inst.bind.rig.rig.bones.find((b) => b.id === inst.bind!.bone)!);
+        return mmul(minv([r[0], r[1], r[2], r[3], r[4] * k, r[5] * k]), m6s as Mat);
+      };
+      const m = s0 ? toBone(s0.matrix) : [1, 0, 0, 1, 0, 0];
       const op = inst.look.opacity * (s0?.opacity ?? 1);
       // A symbol that fades is a CanvasGroup when it can be, so it fades as one picture and overlapping parts don't show
       // through each other (see groupLayout for when it can't).
@@ -523,7 +531,7 @@ function build(o: BonesSceneInput): { text: string; shaders: Set<NativeBlend> } 
         '',
       );
       const nodesOf = emit(inst.scope, path, zUnit(inst.scope), { blend: inst.look.blend, tint }, () => path, group ? layout : undefined);
-      res.nested.push({ inst, path, nodes: nodesOf, tint, group });
+      res.nested.push({ inst, path, nodes: nodesOf, tint, group, toBone });
     }
     return res;
   };
@@ -636,7 +644,7 @@ function build(o: BonesSceneInput): { text: string; shaders: Set<NativeBlend> } 
         const st = fr.f.map((f, j) => (fr.on[j] ? (inst.at[f - sc.range.start] ?? null) : null));
         const n = st.length;
         const glide = (j: number) => !!st[j]?.glide;
-        vtrack(`${nn.path}:transform`, sampledKeys(n, a.fps, glide, (j) => (st[j] ? [st[j]!.matrix[0], st[j]!.matrix[1], st[j]!.matrix[2], st[j]!.matrix[3], st[j]!.matrix[4] * k, st[j]!.matrix[5] * k] : null)), (v) => xf(v));
+        vtrack(`${nn.path}:transform`, sampledKeys(n, a.fps, glide, (j) => (st[j] ? nn.toBone(st[j]!.matrix) : null)), (v) => xf(v));
         const opKeys = sampledKeys(n, a.fps, glide, (j) => (st[j] ? [inst.look.opacity * st[j]!.opacity] : null));
         if (opKeys.some((q) => Math.abs(q.v[0] - 1) > 1e-6)) vtrack(`${nn.path}:${nn.group ? 'self_modulate' : 'modulate'}`, opKeys, (v) => `Color(1, 1, 1, ${gdNum(v[0])})`);
         if (st.some((s) => !s)) track(`${nn.path}:visible`, 1, st.reduce<{ t: number; trans: number; value: string }[]>((acc, s, j) => (acc.length && acc[acc.length - 1].value === String(!!s) ? acc : [...acc, { t: j / a.fps, trans: 1, value: String(!!s) }]), []));

@@ -1363,7 +1363,7 @@ async function godotBonesExtrasSection(name = 'bones-extras', extra = {}, more) 
     if (!check(scene, 'no .tscn')) return;
     const tscn = fs.readFileSync(path.join(dir, scene), 'utf8');
     check(tscn.includes('type="Camera2D"') && tscn.includes('type="Parallax2D"'), 'scene is missing the camera or the parallax layer');
-    check(/\[node name="Arm" type="(Node2D|CanvasGroup)"/.test(tscn) && tscn.includes('type="Skeleton2D" parent="Arm"'), "scene is missing the symbol's own skeleton");
+    check(/\[node name="Arm" type="(Node2D|CanvasGroup)"/.test(tscn) && /type="Skeleton2D" parent="([^"]*\/)?Arm"/.test(tscn), "scene is missing the symbol's own skeleton");
     check(!tscn.includes('name="Hero"'), 'the hero layer should hold only the live symbol copies');
     check(files.some((n) => n.endsWith('.gdshader')), 'no tint shader');
     check(files.some((n) => n.endsWith('-fit-window.gd')), 'no fit-window script for the camera');
@@ -1393,6 +1393,9 @@ async function godotBonesExtrasSection(name = 'bones-extras', extra = {}, more) 
     // A faded symbol with overlapping parts: it fades as one picture (a CanvasGroup), not part by part.
     if (!ONLY || ONLY.includes('godot-bones'))
       await godotBonesExtrasSection('bones-group-fade', { fade: true }, ({ tscn }) => check(/\[node name="Arm" type="CanvasGroup"/.test(tscn), 'the faded symbol should be a CanvasGroup'));
+    // Symbols with bones on a layer that follows a bone: the copies sit under that bone and swing with it.
+    if (!ONLY || ONLY.includes('godot-bones'))
+      await godotBonesExtrasSection('bones-on-bone', { onBone: true }, ({ tscn }) => check(tscn.includes('type="CanvasGroup" parent="Body bones/Root"') || tscn.includes('type="Node2D" parent="Body bones/Root"'), 'the symbol copies should sit under the bone'));
     if (!SKIP.includes('files')) await filesSection();
   } catch (e) {
     begin('harness', 'startup').failures.push(String(e?.stack ?? e));
