@@ -463,7 +463,7 @@ export function bonesScope(
   doc: Doc,
   layers: Layer[],
   range: { start: number; end: number },
-  opts: { depth?: number; notes?: BonesNotes; rigged?: Set<Id>; scopes?: Map<Id, BonesScope> } = {},
+  opts: { depth?: number; notes?: BonesNotes; rigged?: Set<Id>; scopes?: Map<Id, BonesScope>; bake?: boolean } = {},
 ): BonesScope {
   const depth = opts.depth ?? 0;
   const notes = opts.notes;
@@ -489,8 +489,12 @@ export function bonesScope(
     // Symbols with bones stay live only on layers that move on their own and have no effects or masks to bake.
     const holds = live.size > 0 && holdsInstanceOf(doc, layer, live);
     const bind = layer.bind ? nestableBind(layers, layer) : undefined;
-    const cut = holds && (!layer.bind || bind) && !look.effects.length && !masks.length ? live : undefined;
-    if (holds && !cut) notes?.skip('Symbols with bones are drawn into the pictures (the layer has effects or masks, or follows a bone that can not carry it)', layer.name);
+    // Inside a faded group a faded symbol is drawn into this layer's pictures, one per frame: Godot draws a group inside a
+    // group grey, and fading its parts one by one shows the overlaps through.
+    const drawnIn = !!opts.bake && holds && layerFadesInstances(doc, layer, live, look.opacity);
+    const cut = holds && !drawnIn && (!layer.bind || bind) && !look.effects.length && !masks.length ? live : undefined;
+    if (drawnIn) notes?.bake(DRAWN_IN, layer.name);
+    else if (holds && !cut) notes?.skip('Symbols with bones are drawn into the pictures (the layer has effects or masks, or follows a bone that can not carry it)', layer.name);
     const animatedFx = look.effects.some((e) => e.keys?.length);
     const maskFx = masks.some((m) => m.layer.effects?.some((e) => e.keys?.length));
     const pictures: Drawing[] = [];
@@ -538,12 +542,10 @@ export function bonesScope(
       frameOf.push(i);
     }
     for (const [key, t] of tracks) {
-      let scope = scopes.get(t.symbolId);
-      if (!scope) {
-        const c = symbolContent(doc, t.symbolId)!;
-        scope = bonesScope(doc, c.layers, { start: 0, end: Math.max(1, c.length) - 1 }, { depth: depth + 1, notes, rigged, scopes });
-        scopes.set(t.symbolId, scope);
-      }
+      const inner = (bake: boolean, n = notes) => symbolScope(doc, t.symbolId, { depth: depth + 1, notes: n, rigged, scopes, bake });
+      let scope = inner(!!opts.bake);
+      // A fading copy that will be a group: if a faded symbol sits inside it, that one is drawn into pictures instead.
+      if (!opts.bake && t.at.some((s) => s && look.opacity * s.opacity < 1 - 1e-6) && look.blend === 'mix') scope = fadeScope(scope, () => inner(true, undefined), () => inner(true));
       void key;
       nested.push({ layer, z, name: doc.symbols?.[t.symbolId]?.name ?? 'Symbol', symbolId: t.symbolId, at: t.at, scope, look, ...(bind ? { bind } : {}) });
     }
@@ -556,6 +558,44 @@ export function bonesScope(
     parts.push({ layer, z, kind, ...(rig && kind !== 'free' ? { rig, bone: layer.bind!.bone } : {}), ...(kind === 'mesh' ? { mesh: layer.bind!.mesh } : {}), pictures, frameOf, look, ...(masks.length ? { masks } : {}) });
   });
   return { layers, range, parts, rigs: layers.filter((l): l is RigLayer => isRigLayer(l) && l.rig.bones.length > 0), nested };
+}
+
+const DRAWN_IN = 'A faded symbol inside a faded symbol (drawn as one picture)';
+
+/** True when an instance of one of the symbols on this layer is faded (by the layer or by itself) at any key. */
+function layerFadesInstances(doc: Doc, layer: Layer, set: Set<Id>, layerOpacity: number): boolean {
+  for (const cel of layer.cels) {
+    const d = doc.drawings[cel.drawingId];
+    if (d?.kind === 'vector' && d.shapes.some((s) => isInstance(s) && set.has(s.symbolId) && layerOpacity * s.opacity < 1 - 1e-6)) return true;
+  }
+  return false;
+}
+
+/** The scope of a symbol's layers (made once per symbol and mode). `bake`: faded symbols in it are drawn into pictures. */
+function symbolScope(doc: Doc, id: Id, o: { depth: number; notes?: BonesNotes; rigged: Set<Id>; scopes: Map<Id, BonesScope>; bake: boolean }): BonesScope {
+  const key = `${id}${o.bake ? '~drawn' : ''}${o.notes ? '~noted' : ''}`;
+  let sc = o.scopes.get(key);
+  if (!sc) {
+    const c = symbolContent(doc, id)!;
+    sc = bonesScope(doc, c.layers, { start: 0, end: Math.max(1, c.length) - 1 }, o);
+    o.scopes.set(key, sc);
+  }
+  return sc;
+}
+
+/** True when a symbol holds a faded symbol copy (at any depth) that stays live, which a group cannot hold. */
+function holdsFadedCopy(sc: BonesScope): boolean {
+  return sc.nested.some((n) => n.at.some((s) => s && n.look.opacity * s.opacity < 1 - 1e-6) || holdsFadedCopy(n.scope));
+}
+
+/**
+ * The scope a fading copy (a CanvasGroup) should use: its own when no faded symbol is inside it, else the one that
+ * draws the faded symbols into pictures, when that can still sit in a group. `drawn` makes it (without notes, to look
+ * at); `noted` makes it again with notes once it is chosen.
+ */
+export function fadeScope(own: BonesScope, drawn: () => BonesScope, noted: () => BonesScope): BonesScope {
+  if (!holdsFadedCopy(own)) return own;
+  return groupLayout(drawn()).ok ? noted() : own;
 }
 
 /** The layers that make the scene (visible, not reference, not bones or camera), with their pictures per frame. */
@@ -620,8 +660,9 @@ export function bonesNotes(doc: Doc): { native: string[]; baked: string[]; skipp
   const rigged = riggedSymbols(doc);
   const seen = new Set<Id>();
   const scopes = new Map<Id, BonesScope>();
-  // `under`: this symbol sits inside a faded one that is a CanvasGroup, and Godot cannot nest a group in a group.
-  const scan = (layers: Layer[], depth: number, inherit: NativeBlend = 'mix', under = false) => {
+  // `under`: this symbol sits inside a faded one that is a CanvasGroup, and Godot cannot nest a group in a group: its
+  // faded symbols are drawn into pictures ('drawn'), or fade part by part when that cannot be ('plain').
+  const scan = (layers: Layer[], depth: number, inherit: NativeBlend = 'mix', under: false | 'plain' | 'drawn' = false) => {
     const links = maskLinks(doc, layers);
     noteMasks(doc, layers, notes, links);
     for (const layer of layers) {
@@ -630,6 +671,10 @@ export function bonesNotes(doc: Doc): { native: string[]; baked: string[]; skipp
       const look = partLook(doc, layer, notes);
       if (symbolsOnLayer(doc, layer).some((id) => symbolDropsHiddenLayers(doc, id))) notes.skip('Hidden or reference layers inside symbols with effects are left out of the pictures', layer.name);
       if (layer.mask || !links.cuts.has(layer)) continue;
+      if (under === 'drawn' && depth < MAX_NEST && rigged.size && holdsInstanceOf(doc, layer, rigged) && layerFadesInstances(doc, layer, rigged, look.opacity)) {
+        notes.bake(DRAWN_IN, layer.name);
+        continue;
+      }
       if (depth < MAX_NEST && rigged.size) {
         for (const cel of layer.cels) {
           const d = doc.drawings[cel.drawingId];
@@ -640,18 +685,24 @@ export function bonesNotes(doc: Doc): { native: string[]; baked: string[]; skipp
               else {
                 notes.native.add('Symbols with bones: nested Skeleton2D and Bone2D nodes');
                 let group = false;
+                let drawn = false;
                 if (look.opacity * s.opacity < 1 - 1e-6) {
                   const c = symbolContent(doc, s.symbolId);
                   if (c) {
-                    let sc = scopes.get(s.symbolId);
-                    if (!sc) scopes.set(s.symbolId, (sc = bonesScope(doc, c.layers, { start: 0, end: Math.max(1, c.length) - 1 }, { depth: depth + 1, rigged, scopes })));
+                    const o = { depth: depth + 1, rigged, scopes, bake: false };
+                    let sc = symbolScope(doc, s.symbolId, o);
+                    if (!under) {
+                      const chosen = fadeScope(sc, () => symbolScope(doc, s.symbolId, { ...o, bake: true }), () => symbolScope(doc, s.symbolId, { ...o, bake: true }));
+                      drawn = chosen !== sc;
+                      sc = chosen;
+                    }
                     const why = under ? 'Godot cannot put one fading group inside another, so it fades part by part inside the faded symbol around it' : groupBlocker(sc, look.blend, inherit);
                     if (why) notes.fadeFallback(doc.symbols?.[s.symbolId]?.name ?? 'Symbol', layer.name, why);
                     else group = true;
                   }
                 }
-                const inside = under || group;
-                const key = inside ? `${s.symbolId}:group` : s.symbolId;
+                const inside = under || (group ? (drawn ? 'drawn' : 'plain') : false);
+                const key = inside ? `${s.symbolId}:${inside}` : s.symbolId;
                 if (!seen.has(key)) {
                   seen.add(key);
                   scan(symbolContent(doc, s.symbolId)?.layers ?? [], depth + 1, look.blend, inside);
