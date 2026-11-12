@@ -78,7 +78,8 @@
       "synopsis": "Draw and animate 2D art",
       "syncDesktopName": true,
       "mimeTypes": [
-        "x-scheme-handler/frameling"
+        "x-scheme-handler/frameling",
+        "application/x-aseprite"
       ]
     },
     "win": {
@@ -106,7 +107,19 @@
       "category": "public.app-category.graphics-design",
       "identity": null,
       "hardenedRuntime": false,
-      "gatekeeperAssess": false
+      "gatekeeperAssess": false,
+      "fileAssociations": [
+        {
+          "ext": [
+            "aseprite",
+            "ase"
+          ],
+          "name": "Aseprite sprite",
+          "description": "Aseprite sprite",
+          "role": "Viewer",
+          "rank": "Alternate"
+        }
+      ]
     },
     "fileAssociations": [
       {

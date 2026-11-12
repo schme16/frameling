@@ -1,7 +1,7 @@
 import { app, BrowserWindow, dialog, shell } from 'electron';
 import path from 'node:path';
 import { grantFile, registerIpc } from './ipc';
-import { fileFromUrl, PROTOCOL } from './library';
+import { fileFromArgs, fileFromUrl, PROTOCOL } from './library';
 import { setupMenu } from './menu';
 import { clearAutosave, keepAutosave, pruneKept } from './store';
 import type { DocumentState } from '../preload/api';
@@ -17,18 +17,6 @@ let launchFile: string | null = null;
 let closeApproved = false;
 let askingClose = false;
 let keepDone: (() => void) | null = null;
-
-/** The first `.frameling` or `.flplay` (or `frameling://open?path=` link) in a list of command line arguments, as an absolute path. */
-function fileFromArgs(args: string[], cwd = process.cwd()): string | null {
-  for (const x of args) {
-    if (x.toLowerCase().startsWith(`${PROTOCOL}:`)) {
-      const f = fileFromUrl(x);
-      if (f) return f;
-    }
-  }
-  const a = args.find((x) => !x.startsWith('-') && /\.(frameling|flplay|aseprite|ase)$/i.test(x));
-  return a ? path.resolve(cwd, a) : null;
-}
 
 // frameling://open?path=... opens a file, so other apps (Interactives' "Edit in Frameling") can hand one over. Only the
 // installed app claims it (the macOS app, the Linux .desktop file and the Windows installer register it too, see
