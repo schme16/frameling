@@ -182,8 +182,19 @@ this document will become pictures or be left out. The Export window shows both 
   that isolate as precomps. Every precomp over the stage carries its own camera nulls under an offset null. Soften and
   Shadow are Lottie's Gaussian Blur (blurriness = radius / 0.3) and Drop Shadow (softness x2, direction from x/y), which
   lottie-web's SVG renderer, the mobile players and Skottie play; lottie-web's canvas renderer ignores effects. Other
-  effects bake the layer or folder (drawn by `renderFrame` without its own blend and opacity) into a PNG per different
-  frame, cropped, at 2x. Symbol tint recolours the precomp (a precomp per symbol and tint; the sum is linear, so
+  effects bake the layer or folder (drawn by `renderFrame` without its own blend and opacity) into a picture per
+  different frame, cropped to alpha above 2, at 2x. Frames that come out the same, or within 3 of 255 in every channel,
+  share one image (`PictureBank`), wherever it sits, and a picture held over frames is one layer. `PICTURE_LOOKS`
+  (export option "Pictures from effects"): balanced (default) WebP q0.9 at 2x, sharp PNG at 2x, small WebP q0.8 at 1x;
+  WebP comes from `canvas.toDataURL` and falls back to PNG when the page can't make it or it isn't smaller. lottie-web
+  registers only Tint, Fill, Stroke, Tritone, Levels, Drop Shadow, Matte3, Gaussian Blur and Transform effects, so
+  Glow, Adjust, Outline and Pixelate have no native Lottie form and stay pictures. A layer, folder or symbol copy that
+  fades and paints two or more things goes in at full opacity under an alpha matte (a see-through stage-sized rectangle
+  carrying the fade, `fadeAsWhole`), because lottie-web's canvas player multiplies opacity into every shape it draws but
+  draws a matted layer into its own buffer first; the SVG renderer and the native players fade the group either way.
+  Skipped when the layer has a blend mode (a matte drops it in the canvas player), a matte, an effect, or when a list has
+  more than 16 candidates (a particle burst). `lottieSizes` (`lottie-size.ts`) splits a file into pictures, keyframes,
+  shapes and the rest. Symbol tint recolours the precomp (a precomp per symbol and tint; the sum is linear, so
   recolouring each shape equals washing the group). Text is traced once per letter, font and size (`sprites.ts`
   `glyphOutline`, the Convert to shapes tracer) and each letter is a group with its own transform, so text animators
   are transform keys. Picked over Lottie text layers because those need the font in every player and players differ a
@@ -205,7 +216,9 @@ this document will become pictures or be left out. The Export window shows both 
   makes the layer a picture for effects, clipping and masks (`drawingHasLook`). PDF recolours shapes and pixels for a
   copy's tint, innermost wash first.
 - `scripts/e2e/vector-check.cjs` checks all of it against `renderFrame` in Chromium, now also through lottie-web's SVG
-  renderer (effects only play there; a Lottie frame passes when either renderer matches).
+  renderer (effects only play there; a Lottie frame passes when either renderer matches). It prints RMSE per document
+  for both lottie-web players and the size split; every built-in template runs as `tpl:<id>` (reported, not gated).
+  `scripts/e2e/lottie-bake.cjs` compares the picture looks (size and RMSE).
 
 ## Later, and how it fits
 

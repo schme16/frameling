@@ -21,6 +21,7 @@ import { GIF_MAX_FPS } from './gif';
 import { proresSupport, type ProresSupport } from './prores';
 import { LayeredNotes } from './LayeredNotes';
 import { CarryNotes } from './CarryNotes';
+import { bakesEffects } from './carries';
 import { DEFAULT_SHEET, engineInfo, FORMATS, formatInfo, normalizeSheet, splitFormats, type EngineId, type ExportSettings, type FormatId, type FormatInfo } from './types';
 import './export.css';
 import { leaveTileEdit } from '../tiles/tileEdit';
@@ -47,8 +48,16 @@ function startingSettings(): ExportSettings {
   }
   if (s.range === 'inOut' && !inOutRange(doc)) s.range = 'all';
   if (!scaleAllowed(doc, s.scale)) s.scale = base.scale;
+  if (s.lottiePictures && !PICTURE_CHOICES.some((c) => c.id === s.lottiePictures)) delete s.lottiePictures;
   return s;
 }
+
+/** How a Lottie file stores pictures made from effects (see PICTURE_LOOKS in lottie.ts). */
+const PICTURE_CHOICES: { id: NonNullable<ExportSettings['lottiePictures']>; label: string; note: string }[] = [
+  { id: 'balanced', label: 'Balanced', note: 'Sharp on high density screens and about half the size of Sharpest. Saved as WebP, which every current browser and phone plays.' },
+  { id: 'sharp', label: 'Sharpest', note: 'Every pixel kept, saved as PNG. The biggest file, and it plays in the oldest players too.' },
+  { id: 'small', label: 'Smallest', note: 'Half the detail, so the smallest file. Edges look a little soft on high density screens.' },
+];
 
 function Check({ checked, onChange, disabled, children, hint }: { checked: boolean; onChange: (v: boolean) => void; disabled?: boolean; children: React.ReactNode; hint?: string }) {
   return (
@@ -356,7 +365,22 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
           )}
 
           {s.format === 'lottie' ? (
-            <p className="ex-note">No size to pick: shapes stay shapes, so a Lottie player draws it sharp at whatever size it's shown.</p>
+            <>
+              <p className="ex-note">No size to pick: shapes stay shapes, so a Lottie player draws it sharp at whatever size it's shown.</p>
+              {bakesEffects(doc, 'lottie') && (
+                <fieldset>
+                  <legend>Pictures from effects</legend>
+                  <div className="ex-seg">
+                    {PICTURE_CHOICES.map((c) => (
+                      <button key={c.id} type="button" className={(s.lottiePictures ?? 'balanced') === c.id ? 'ex-on' : ''} aria-pressed={(s.lottiePictures ?? 'balanced') === c.id} onClick={() => set({ lottiePictures: c.id })}>
+                        {c.label}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="ex-note">{PICTURE_CHOICES.find((c) => c.id === (s.lottiePictures ?? 'balanced'))!.note}</p>
+                </fieldset>
+              )}
+            </>
           ) : (
           <fieldset>
             <legend>Size</legend>

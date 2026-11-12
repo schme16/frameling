@@ -225,6 +225,22 @@ difference and the share of pixels off by more than 48, and fails when a frame i
 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/vector-check.cjs [outDir]
 ```
 
+It also prints one summary line per document: RMSE (0 to 255, both over white) against `renderFrame` for lottie-web's canvas
+and SVG players, the Lottie file size and where the bytes go (baked effect pictures, pixel-layer pictures, keyframes,
+shapes, other; see `src/export/lottie-size.ts`). Every built-in template is included as `tpl:<id>` (reported, but a
+mismatch there doesn't fail the run), plus `overlap` (faded layer, folder and symbol copy with overlapping shapes) and
+`heavy-effects` (moving Glow and Outline over 36 frames). `QUIET=1` leaves out the per-frame lines.
+
+### Lottie picture looks: scripts/e2e/lottie-bake.cjs
+
+Bakes a document with each "Pictures from effects" look and some single settings, and prints the file size, the part that is
+pictures and the RMSE against Frameling's own frames (lottie-web canvas), so the size and quality trade-off can be read off.
+`AB=<dir>` also writes one frame per look at twice the stage size, to compare by eye (used for brand/ab/lottie-size/).
+
+```bash
+ONLY=heavy-effects,tpl:explosion-fx xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/lottie-bake.cjs [outDir]
+```
+
 ## Artboards end to end: scripts/e2e/artboards.cjs
 
 Builds a two-artboard document of different sizes (320 x 180 red and 200 x 200 green, with a shape hanging off the

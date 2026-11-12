@@ -123,6 +123,12 @@ export function docFeatures(doc: Doc): DocFeatures {
   return { features, effectKinds };
 }
 
+/** Does this document have effects a format has no version of, so they'd become pictures there? */
+export function bakesEffects(doc: Doc, format: FormatId, found: DocFeatures = docFeatures(doc)): boolean {
+  const native = new Set(CARRY[format].nativeEffects ?? []);
+  return CARRY[format].rows?.effects === 'picture' && [...found.effectKinds].some((k) => !native.has(k));
+}
+
 /** Plain-words lines about what in this document won't come across as it is, for this format. Empty = all of it. */
 export function carryWarnings(doc: Doc, format: FormatId, found: DocFeatures = docFeatures(doc)): string[] {
   const c = CARRY[format];

@@ -399,22 +399,30 @@ The second class picks the clip. Loops keep going; clips that don't loop stop on
 
 - **Drawings** become shapes: fills, outlines and line widths as they are. Brush strokes become their finished outline.
 - **Frame by frame:** each drawing shows for exactly the frames it's held.
-- **Symbols** become Lottie *precomps*, so a symbol used ten times is stored once. Each copy keeps its place, size, turn, slant and fade, and plays its own animation (loop, play once or one frame).
-- **In-betweens (tweens)** become keyframes with their easing. *Springy*, *Bouncy* and paths to follow get a key on every frame.
-- **Morphs (shape tweens)** become path keyframes, one per frame, so the outline changes smoothly.
+- **Symbols** become Lottie *precomps*, so a symbol used ten times is stored once. Each copy keeps its place, size, turn, slant and fade, and plays its own animation.
+- **In-betweens (tweens)** become keyframes with their easing. *Springy*, *Bouncy* and paths to follow get a key on every frame. **Morphs** get a path key on every frame.
 - **The camera** pans, zooms and turns, and layers with depth move at their own speed.
 - **Pixel and tile layers** become pictures inside the file, made big enough to stay crisp.
 - **Clips** become named markers, so a player can play one clip by name. Markers come along too.
-- **Text** becomes letter shapes, traced from the font you picked, so it looks the same in every player and no font files are needed. Text animators move each letter.
-- **Particles** become one small shape per particle, moving frame by frame. Particles that draw a symbol use the symbol.
-- **Colour wash (tint)** on a symbol copy recolours that copy's shapes, so it looks the same everywhere.
-- **Blend modes** stay blend modes, and **masks** and **clipping** become Lottie *track mattes*, on the stage and inside symbols alike.
-- **Effects:** Soften and Shadow become Lottie's own Gaussian blur and drop shadow. Glow, Colour adjust, Outline and Pixelate have no Lottie version, so those layers become pictures (the Export window lists them before you export).
+- **Text** becomes letter shapes, so no font files are needed. **Particles** become one small shape each. **Colour wash** recolours the copy's shapes.
+- **Blend modes** stay blend modes, and **masks** and **clipping** become Lottie *track mattes*.
+- **Fades:** a layer, folder or symbol copy you fade is faded as one picture, so shapes that overlap inside it don't show through each other. In the file that's a see-through matte, which lottie-web's canvas player needs.
+- **Effects:** Soften and Shadow become Lottie's own blur and drop shadow. Glow, Colour adjust, Outline and Pixelate have no Lottie version, so those layers become pictures (the Export window lists them first).
+
+## Pictures from effects
+
+Only the part an effect touches is saved, and a picture that comes out the same again is stored once. Under **Pictures from effects** in the Export window:
+
+- **Balanced** (the default): WebP at twice the stage size. Looks like Sharpest at about half the size. Every current browser and phone plays WebP.
+- **Sharpest**: PNG at twice the stage size. Biggest, and plays in the oldest players too.
+- **Smallest**: WebP at the stage size. Smallest, with edges a little soft on high density screens.
+
+A glow on something that moves is a new picture every frame, so it adds up. Put effects on layers that hold still, or use Soften and Shadow, which cost almost nothing.
 
 ## Good to know
 
 - lottie-web's *canvas* player leaves effects out (its SVG player, the default, shows them, as do the iOS and Android players).
-- A faded layer fades each shape on its own, so where shapes on that layer overlap they can look a touch darker than in Frameling.
+- A crowd of small faded things (a particle burst) fades each shape on its own, to keep canvas players quick.
 - A Lottie player scales the animation to fit wherever it's shown, so size doesn't matter.`,
   },
   {
