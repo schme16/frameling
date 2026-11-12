@@ -180,7 +180,8 @@ export function instanceLists(doc: Doc, layer: Layer): (InstanceShape[] | undefi
     if (!list.length) return (prev = undefined);
     const paired = prev ? pairInstances(prev, list).map((x, i) => x ?? list[i]).filter((x): x is InstanceShape => !!x) : list;
     // Instances that are new on this key go on the end, so the lists line up.
-    for (const x of list) if (!paired.includes(x)) paired.push(x);
+    const have = new Set(paired);
+    for (const x of list) if (!have.has(x)) paired.push(x);
     return (prev = paired);
   });
 }
