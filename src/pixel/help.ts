@@ -90,20 +90,18 @@ Each is one undo step. Run it twice for a thicker outline, or with a different s
     title: 'Pixel shapes and thick outlines',
     section: 'Pixel art',
     media: 'pixel-shapes.png',
-    summary: 'Rectangles, ellipses, lines, polygons and stars on a pixel layer, with an outline as thick as you like.',
-    keywords: ['thick', 'outline', 'thickness', 'line width', 'stroke width', 'rectangle', 'ellipse', 'circle', 'line', 'polygon', 'star', 'shape', 'pixel'],
-    body: `On a pixel layer the shape tools ([Rectangle](help:tool-rect), [Ellipse](help:tool-ellipse), [Line](help:tool-line), [Polygon and Star](help:tool-polygon-star)) paint clean, hard pixels with no soft edges. Out of the box the outline is one pixel thick.
+    summary: 'Rectangles, ellipses, lines, polygons, stars and the pen on a pixel layer, with an outline as thick as you like.',
+    keywords: ['thick', 'outline', 'thickness', 'line width', 'stroke width', 'rectangle', 'ellipse', 'circle', 'line', 'polygon', 'star', 'pen', 'shape', 'pixel'],
+    body: `On a pixel layer the shape tools ([Rectangle](help:tool-rect), [Ellipse](help:tool-ellipse), [Line](help:tool-line), [Polygon and Star](help:tool-polygon-star)) and the [Pen](help:tool-pen) paint clean, hard pixels with no soft edges. Out of the box the outline is one pixel thick.
 
 **Thicker outlines.** Turn on **Thicker outline** in the tool options (or in Preferences > General, where it is called *Thicker pixel outlines*). Then set **Outline thickness**, from 1 to 16 pixels. Both places change the same setting, so use whichever is closer. It stays as you left it the next time you open Frameling, and it starts off, so shapes keep the classic one pixel look until you ask.
 
 - **A rectangle or an ellipse** keeps the size you drag. The outline grows inwards, so a 20 pixel wide box is still 20 pixels wide. If the outline is thicker than the shape can hold, the shape comes out solid in the stroke colour.
-- **A line, a polygon or a star** has its outline centred on the path, a little like a brush walking along it.
+- **A line, a polygon, a star or a pen path** has its outline centred on the path, a little like a brush walking along it. The pen paints when you finish the path, and shows the thickness in its options too.
 - **The fill stays the fill.** Thickness only changes the outline. With the stroke set to none there is no outline, so the fill covers the shape as before.
 - It paints with the same brush shape as the pixel Brush, so pick a round brush for rounder corners.
-- Everything stays crisp: whole pixels, never blended. It follows the [palette lock](help:palette-lock), [mirror drawing](help:pixel-mirror), and the perspective guides.
-- Looking through a zoomed [camera](help:camera), the thickness is what you see, like the brush: 4 pixels through a camera zoomed in 2x paints 2 (whole pixels, never less than 1).
-
-The pen is not affected: it keeps drawing one pixel outlines.`,
+- Everything stays crisp: whole pixels, never blended. It follows the [palette lock](help:palette-lock), [mirror drawing](help:pixel-mirror), and the perspective guides (a thick rectangle or ellipse on a perspective plane keeps the size you dragged too).
+- Looking through a zoomed [camera](help:camera), the thickness is what you see, like the brush: 4 pixels through a camera zoomed in 2x paints 2 (whole pixels, never less than 1).`,
   },
   {
     id: 'pixel-flip-rotate',

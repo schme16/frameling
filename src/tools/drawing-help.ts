@@ -25,7 +25,7 @@ registerHelpTopics([
 
 Got a point slightly wrong? Finish, then fix it with [Edit points](help:tool-points) (**A**).
 
-The pen works on vector layers, in both drawing modes. On a **pixel layer** it works too: when you finish, the path is painted as clean pixels, the fill inside a closed shape and a one pixel edge in the stroke colour. On a layer set to merge, the new shape joins or cuts what it lands on, like any other. See [Merge shapes or keep them separate](help:merge-drawing).`,
+The pen works on vector layers, in both drawing modes. On a **pixel layer** it works too: when you finish, the path is painted as clean pixels, the fill inside a closed shape and an edge in the stroke colour. The edge is one pixel, or as thick as you like: turn on **Thicker outline** in the pen's options (see [Pixel shapes](help:pixel-shapes)). On a layer set to merge, the new shape joins or cuts what it lands on, like any other. See [Merge shapes or keep them separate](help:merge-drawing).`,
   },
   {
     id: 'tool-points',

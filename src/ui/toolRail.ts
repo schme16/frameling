@@ -27,6 +27,9 @@ export function arrange(fn: (g: ToolGroup[]) => ToolGroup[]): boolean {
 /** The tool each group shows on its button in the stacked style: the last one used from it. */
 export const frontTools = createStore<Record<string, string>>({});
 
+/** A group (by id) to open the flyout of, asked for from outside the rail (a quest pointing at a tool inside it). The rail answers and clears it. */
+export const flyRequest = createStore<string | null>(null);
+
 export const resetToolArrangement = (): void => setToolGroups(undefined);
 
 /** A line for a screen reader after a move ("Pencil moved. Draw, place 2 of 4."). */

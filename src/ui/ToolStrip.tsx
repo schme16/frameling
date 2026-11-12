@@ -14,7 +14,7 @@ import type { DockZone } from './dockModel';
 import { usePrefs } from './prefs';
 import { usePopover } from './popover';
 import { groupName, resolveGroups, visibleGroups, type ToolGroup } from './toolArrange';
-import { currentGroups, frontTools, railNote, startToolDrag, stepTool, toolDrag, toolMenu } from './toolRail';
+import { currentGroups, flyRequest, frontTools, railNote, startToolDrag, stepTool, toolDrag, toolMenu } from './toolRail';
 
 /** The kind of layer being drawn on (the last one when none is picked), or null with no layers. */
 function useActiveKind(): LayerKind | null {
@@ -177,6 +177,14 @@ export function ToolStrip({ place = 'left' }: { place?: DockZone | 'float' }) {
   useEffect(() => {
     if (!stacked) setFly(null);
   }, [stacked]);
+  // Something outside (a quest) asked for a group's flyout.
+  const asked = flyRequest.use((r) => r);
+  useEffect(() => {
+    if (!asked) return;
+    flyRequest.set(null);
+    const btn = navRef.current?.querySelector<HTMLElement>(`.ui-tool.is-stack[data-tool-group="${asked}"]`);
+    if (stacked && btn) setFly({ group: asked, rect: btn.getBoundingClientRect() });
+  }, [asked, stacked]);
 
   const frontOf = (g: ToolGroup): string => {
     if (g.tools.includes(current)) return current;
