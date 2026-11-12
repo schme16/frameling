@@ -4,9 +4,10 @@
  * original that are in a changed colour are shown in the new one, so recoloured pixels need no copy of their own.
  * Pure functions, no DOM.
  */
-import type { Color, DocPalette, Drawing, PaletteColourChange, PaletteOverride, PixelDrawing } from '../core/format';
+import type { Color, DocPalette, Drawing, PaletteColourChange, PaletteOverride, PixelDrawing, Shape } from '../core/format';
 import { parseHex } from '../canvas/colors';
 import { STARTER_PALETTES } from '../pixel/builtin';
+import { recolourShape, shapeColours } from '../tools/shapeColour';
 
 /** A colour as one number (the same colour written differently gives the same number), or -1 when it is not a colour. */
 export function rgbKey(c: Color): number {
@@ -161,9 +162,45 @@ export function recolourPixels(pixels: Uint8ClampedArray, ov: PaletteOverride): 
 
 const recoloured = new WeakMap<PaletteOverride, WeakMap<Drawing, Drawing>>();
 
-/** A drawing as the variation shows it: pixel drawings with the swaps made (the same object when nothing changes, and the same one for the same input). */
+/** A colour as `#rrggbb` (lower case, see-through part dropped), or null when it is not a colour. */
+export function plainHex(c: Color): string | null {
+  const v = parseHex(c);
+  return v ? '#' + ((v[0] << 16) | (v[1] << 8) | v[2]).toString(16).padStart(6, '0') : null;
+}
+
+/** The swaps of an override as a colour-to-colour function for vector shapes (the see-through part of a colour stays). */
+function shapeMapper(ov: PaletteOverride): (c: Color) => Color {
+  const map = new Map(ov.changes.map((c) => [rgbKey(c.from), plainHex(c.to)] as const));
+  return (c) => {
+    const to = map.get(rgbKey(c));
+    if (!to) return c;
+    const t = c.trim().replace(/^#/, '');
+    const alpha = t.length === 8 ? t.slice(6) : t.length === 4 ? t[3] + t[3] : '';
+    return alpha ? to + alpha : to;
+  };
+}
+
+/** A drawing as the variation shows it: pixels and vector shapes with the swaps made (the same object when nothing changes, and the same one for the same input). */
 export function recolourDrawing(d: Drawing, ov: PaletteOverride | undefined): Drawing {
-  if (!ov || d.kind !== 'pixel' || !ov.changes.length || !(d.pixels instanceof Uint8ClampedArray)) return d;
+  if (!ov || !ov.changes.length) return d;
+  if (d.kind === 'vector') {
+    let m = recoloured.get(ov);
+    if (!m) recoloured.set(ov, (m = new WeakMap()));
+    let hit = m.get(d);
+    if (!hit) {
+      const f = shapeMapper(ov);
+      let changed = false;
+      const shapes = d.shapes.map((s) => {
+        const n = recolourShape(s, f);
+        if (n !== s) changed = true;
+        return n;
+      });
+      hit = changed ? { ...d, shapes } : d;
+      m.set(d, hit);
+    }
+    return hit;
+  }
+  if (d.kind !== 'pixel' || !(d.pixels instanceof Uint8ClampedArray)) return d;
   let m = recoloured.get(ov);
   if (!m) recoloured.set(ov, (m = new WeakMap()));
   let hit = m.get(d);
@@ -173,4 +210,27 @@ export function recolourDrawing(d: Drawing, ov: PaletteOverride | undefined): Dr
     m.set(d, hit);
   }
   return hit;
+}
+
+/** The colours a drawing is made of, as `#rrggbb` by colour key (pixels that show, and the colours of vector shapes, gradients included). */
+export function drawingColours(d: Drawing, into: Map<number, string> = new Map()): Map<number, string> {
+  if (d.kind === 'vector') {
+    for (const s of d.shapes as Shape[]) for (const c of shapeColours(s)) noteColour(into, c);
+  } else if (d.kind === 'pixel' && d.pixels instanceof Uint8ClampedArray) {
+    const px = d.pixels;
+    let last = -1;
+    for (let i = 0; i < px.length; i += 4) {
+      if (px[i + 3] === 0) continue;
+      const k = (px[i] << 16) | (px[i + 1] << 8) | px[i + 2];
+      if (k === last) continue;
+      last = k;
+      if (!into.has(k)) into.set(k, '#' + k.toString(16).padStart(6, '0'));
+    }
+  }
+  return into;
+}
+
+function noteColour(into: Map<number, string>, c: Color): void {
+  const k = rgbKey(c);
+  if (k >= 0 && !into.has(k)) into.set(k, plainHex(c)!);
 }

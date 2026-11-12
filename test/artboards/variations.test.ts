@@ -230,12 +230,12 @@ describe('variations: edits to the original flow in', () => {
     update('Recolour', (d) => void (((d.drawings[aliasId('d1', v)] as VectorDrawing).shapes[0] as PathShape).fill = '#ff00ff'));
     open(root());
     const view = artboardDoc(doc(), v);
-    expect(view.name).toBe('Artboard 1, variation 1');
+    expect(view.name).toBe('Artboard 1 - variation 1');
     const cel = layerOf(view, 'L1').cels[0];
     expect(((view.drawings[cel.drawingId] as VectorDrawing).shapes[0] as PathShape).fill).toBe('#ff00ff');
     // The original is exported as itself.
     expect(shape(artboardDoc(doc(), root()), 'd1', 's1').fill).toBe('#ff0000');
-    expect(exportNames(doc()).get(v)).toBe('Artboard 1, variation 1');
+    expect(exportNames(doc()).get(v)).toBe('Artboard 1 - variation 1');
     // And joins with the others like any shot.
     const j = joinShots(doc(), [root(), v]);
     expect('doc' in j && j.doc.length).toBe(16);
@@ -303,7 +303,7 @@ describe('variations: differences and resets', () => {
     const v = messy();
     const list = listDifferences(doc(), v);
     expect(list.map((x) => x.label)).toEqual(
-      expect.arrayContaining(['Background colour', 'Layer: opacity changed', 'Key at frame 6: moved', 'Drawing at frame 1: 1 shape recoloured']),
+      expect.arrayContaining(['Background colour', 'Layer: opacity changed', 'Key at frame 6: moved', 'Frame 1: a shape changed colour']),
     );
     const drawing = list.find((x) => x.reset.t === 'drawing')!;
     expect(drawing).toMatchObject({ layer: 'L1', frame: 0, group: 'Body', shapes: ['s1'] });
@@ -566,7 +566,7 @@ describe('variations: more', () => {
     });
     const list = listDifferences(doc(), v);
     expect(list).toHaveLength(1);
-    expect(list[0].label).toBe('Drawings on 4 keys: 4 shapes recoloured');
+    expect(list[0].label).toBe('On 4 keys: 4 shapes changed colour');
     expect(list[0]).toMatchObject({ group: 'Hero', layer: 'H', frame: 0 });
     update('Reset', (d) => void resetDifference(d, v, list[0].reset));
     expect(listDifferences(doc(), v)).toEqual([]);

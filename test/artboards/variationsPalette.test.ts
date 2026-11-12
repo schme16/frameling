@@ -191,7 +191,7 @@ describe('palette overrides: in a document', () => {
     changePaletteColor(2, '#eeeeee');
     const items = listDifferences(doc(), v).filter((i) => i.reset.t === 'paletteColour');
     expect(items.map((i) => i.colors)).toEqual([['#ff0000', '#0000ff'], ['#ffffff', '#eeeeee']]);
-    expect(items[0].label).toBe('Colour #ff0000 is #0000ff here');
+    expect(items[0].label).toBe('Colour #ff0000 becomes #0000ff on every frame');
     update('Reset', (d) => void resetDifference(d, v, items[0].reset));
     expect(ovOf(v).palette!.changes).toEqual([{ from: '#ffffff', to: '#eeeeee' }]);
     expect(docPalette(doc()).colors).toEqual(['#ff0000', '#00ff00', '#eeeeee']);

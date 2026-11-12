@@ -145,6 +145,9 @@ export function VariationSection() {
         </div>
       )}
       <div className="cv-row cv-wrap">
+        <ActionButton onClick={() => void import('./RecolourVariationDialog').then((m) => m.openRecolourVariation())} title="Pick colours and change them on every frame of this variation, and only here">
+          Recolour this variation
+        </ActionButton>
         <ActionButton onClick={() => void makeVariationOf(open.id)} title="Another linked copy, starting with the same changes">
           Make a variation
         </ActionButton>
