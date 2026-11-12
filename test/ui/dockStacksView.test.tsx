@@ -234,7 +234,7 @@ describe('stacked groups share one rail on the Properties and rail style', () =>
     expect(host.querySelectorAll('.rd-rail')).toHaveLength(1);
     const lists = rail().querySelectorAll('[role="tablist"]');
     expect(lists).toHaveLength(2);
-    expect([...rail().querySelectorAll('.rd-ghead')].map((h) => h.textContent)).toEqual(['Top', 'Bottom']);
+    expect([...rail().querySelectorAll('.rd-ghead')].map((h) => h.textContent)).toEqual(['Top group', 'Bottom group']);
     // Places sit in their kinds (Preview is a Make place), the group's own order inside each.
     expect(tabsIn(lists[0]).sort()).toEqual(['Layers', 'Preview']);
     expect(tabsIn(lists[1])).toEqual(['Colours']);
