@@ -8,7 +8,6 @@ import { closeDockMenu, dockMenu, renaming } from './dockMenus';
 import { installPanelFocus } from './dockShared';
 import type { DockZone } from './dockModel';
 import { Icon } from './icons';
-import { usePopover } from './popover';
 
 export function DockOverlays() {
   useEffect(() => installPanelFocus(), []);
@@ -69,7 +68,18 @@ function DockMenuView() {
   const m = dockMenu.use((v) => v);
   const ref = useRef<HTMLDivElement>(null);
   const [at, setAt] = useState({ x: 0, y: 0 });
-  usePopover(ref, closeDockMenu);
+  useEscape(!!m, closeDockMenu);
+  // Focus goes to the first item when it opens, and back to where it was when it shuts.
+  useEffect(() => {
+    if (!m) return;
+    const before = document.activeElement as HTMLElement | null;
+    const raf = requestAnimationFrame(() => ref.current?.querySelector<HTMLElement>('button:not(:disabled)')?.focus());
+    return () => {
+      cancelAnimationFrame(raf);
+      const now = document.activeElement;
+      if (before && document.contains(before) && (!now || now === document.body || ref.current?.contains(now) || !document.contains(now))) before.focus();
+    };
+  }, [m]);
   useLayoutEffect(() => {
     if (!m) return;
     const r = ref.current?.getBoundingClientRect();
@@ -141,7 +151,15 @@ function RenameBox() {
     setDraft(kind === 'panel' ? panelTitle(id, cur) : (cur.floats.find((f) => f.id === id)?.name ?? ''));
   }, [kind, id]);
   const close = () => renaming.set(null);
-  usePopover(ref, close);
+  useEscape(!!r, close);
+  useEffect(() => {
+    if (!r) return;
+    const before = document.activeElement as HTMLElement | null;
+    return () => {
+      const now = document.activeElement;
+      if (before && document.contains(before) && (!now || now === document.body || !document.contains(now))) before.focus();
+    };
+  }, [r]);
   useEffect(() => {
     if (!r) return;
     const down = (e: PointerEvent) => {
@@ -170,7 +188,7 @@ function RenameBox() {
     >
       <label>
         <span>{r.kind === 'panel' ? 'Name this panel' : 'Name this window'}</span>
-        <input type="text" value={draft} maxLength={40} placeholder={r.kind === 'panel' ? '' : 'Named after its front panel'} onChange={(e) => setDraft(e.target.value)} onFocus={(e) => e.target.select()} />
+        <input type="text" autoFocus value={draft} maxLength={40} placeholder={r.kind === 'panel' ? '' : 'Named after its front panel'} onChange={(e) => setDraft(e.target.value)} onFocus={(e) => e.target.select()} />
       </label>
       <div className="ui-dock-rename-row">
         <button type="submit" className="ui-btn ui-btn-primary ui-btn-small">
@@ -185,3 +203,18 @@ function RenameBox() {
 }
 
 const panelTitleOriginal = (id: string): string => getPanel(id)?.title ?? id;
+
+/** Escape closes a popup that is open, without also reaching the canvas (where it would deselect). */
+function useEscape(open: boolean, close: () => void): void {
+  useEffect(() => {
+    if (!open) return;
+    const key = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      e.preventDefault();
+      e.stopPropagation();
+      close();
+    };
+    window.addEventListener('keydown', key, true);
+    return () => window.removeEventListener('keydown', key, true);
+  }, [open, close]);
+}
