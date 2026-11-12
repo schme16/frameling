@@ -504,6 +504,10 @@ timing, tags and notes. Reference layers are checked by value, since Aseprite le
 `test/aseprite/import.test.ts` runs without Aseprite, on files made by the test writer. The help picture sample
 `scripts/docs/help/assets/slime-bounce.aseprite` is made by `make-slime.lua` next to it.
 
+`xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/aseprite.cjs [file.aseprite ...]` opens real files in the real app through
+`openPath` (the double-click and recent-files path), adds one to the open drawing, undoes it, and fails on any page error. With no
+files it uses the sample. It only reads the files you give it.
+
 ## Quill's dialogue
 
 ```bash
