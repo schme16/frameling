@@ -2,7 +2,7 @@
 // compares frames with Frameling's own renderer and with each other. The player isn't a dependency of the app: unpack a
 // pinned copy somewhere and point DOTLOTTIE_DIR at its package folder.
 //
-//   npm pack @lottiefiles/dotlottie-web@0.81.0 && mkdir pkg && tar xzf lottiefiles-dotlottie-web-0.81.0.tgz -C pkg
+//   npm pack @lottiefiles/dotlottie-web@0.83.1 && mkdir pkg && tar xzf lottiefiles-dotlottie-web-0.83.1.tgz -C pkg
 //   DOTLOTTIE_DIR=$PWD/pkg/package ONLY=tpl:hero-sprites,tpl:bouncing-ball xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/dotlottie-check.cjs [outDir]
 //
 // Prints per document: the sizes, RMSE (0 to 255) of each player against Frameling over some frames, and how far the two

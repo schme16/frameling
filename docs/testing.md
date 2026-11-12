@@ -335,12 +335,13 @@ mismatch there doesn't fail the run), plus `overlap` (faded layer, folder and sy
 `heavy-effects` (moving Glow and Outline over 36 frames). `QUIET=1` leaves out the per-frame lines. The size is taken before lottie-web plays the file (it adds fields to the data it is given). Small RMSE changes
 between runs of a size or tolerance change (a few hundredths) are pixel rounding; the tolerances in `lottie.ts` (`FIT_TOLERANCE`, `*_TOL`) were chosen so
 they stay at that level, so re-run this and compare the table before and after changing one.
+`symbol-gravity` (symbol sprites with drag and gravity: separated x/y position on layers) and `puppet-skin` (the puppet with a squashed chest, a stretched thigh and a skinned body: parts that bend, not only turn) are in the list for the motion code (`positionTrack`, the nested move groups and `rigidMoves` in `lottie.ts`). Group transforms can't use Lottie's separated position (lottie-web ignores it there), so particles use two nested groups instead. For a before and after run, add a worktree at the old commit, copy `vector-check-page.ts` into it and run the same command in both.
 
 ### dotLottie in the dotLottie player: scripts/e2e/dotlottie-check.cjs
 
-Plays a document as plain JSON and as a `.lottie` in the dotLottie web player (ThorVG, run in Chromium) and prints the sizes, the RMSE of each
+Plays a document as plain JSON and as a `.lottie` (layout 2, then layout 1; `DOTLOTTIE_VERSION=2` or `1` picks one) in the dotLottie web player (ThorVG, run in Chromium) and prints the sizes, the RMSE of each
 against Frameling's frames and how far the two players are from each other (0 means the zip carries everything, pictures included). The
-player isn't a dependency: unpack a pinned copy (`npm pack @lottiefiles/dotlottie-web@0.81.0`) and point `DOTLOTTIE_DIR` at its `package` folder.
+player isn't a dependency: unpack a pinned copy (`npm pack @lottiefiles/dotlottie-web@0.83.1`) and point `DOTLOTTIE_DIR` at its `package` folder.
 
 ```bash
 DOTLOTTIE_DIR=$PWD/pkg/package ONLY=tpl:hero-sprites,heavy-effects xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/dotlottie-check.cjs
