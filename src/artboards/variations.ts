@@ -690,7 +690,9 @@ export function settleVariations(doc: Doc, ctx?: { patches: readonly ImmerPatch[
     const srcTouched = everything || (src.id === open ? t!.content : t!.closed.has(list.indexOf(src)));
     const mine = everything ? null : aliasesTouched(t!.drawings, a.id);
     if (a.id === open) {
-      if (!everything && !srcTouched && !t!.content && !mine!.size) continue;
+      // Its overrides were written directly (a colourway changed): every drawing is checked again, as an override can have become redundant.
+      const direct = !everything && t!.own.has(ai);
+      if (!everything && !srcTouched && !t!.content && !mine!.size && !direct) continue;
       // Opened (or keys added): every key gets its own drawing, so no tool can write to the original's.
       const own = everything || srcTouched || t!.cels ? openAliasing(doc, a) : null;
       const cur = own ? { ...takeContent(doc), layers: own.layers } : takeContent(doc);
@@ -700,7 +702,7 @@ export function settleVariations(doc: Doc, ctx?: { patches: readonly ImmerPatch[
         curDrawings = Object.create(doc.drawings) as Record<Id, Drawing>;
         for (const [k, v] of own.drawings) curDrawings[k] = v;
       }
-      const inc: IncrementalDiff | undefined = everything || srcTouched || t!.cels ? undefined : { prev: a.overrides?.drawings, check: mine! };
+      const inc: IncrementalDiff | undefined = everything || srcTouched || t!.cels || direct ? undefined : { prev: a.overrides?.drawings, check: mine! };
       const ov = diffContent(base, doc.drawings, cur, curDrawings, a.id, inc, a.overrides?.palette);
       const changed = !deepEqual(ov, a.overrides ?? {});
       if (changed || own) {
@@ -728,12 +730,20 @@ export function settleVariations(doc: Doc, ctx?: { patches: readonly ImmerPatch[
       const touched = everything ? undefined : touchedOriginals(t!.drawings, a.id);
       // Only drawings the variation overrides or recolours have a copy of its own; the others are the original's and follow it by themselves.
       const own = ownCopies(ovNow, doc.drawings);
-      if (touched) for (const o of [...touched]) if (!own[o]) touched.delete(o);
-      if (!everything && !srcTouched && !t!.own.has(ai) && !touched!.size && !rekeyed) continue;
+      // Copies of drawings that are gone or no longer need one (the original's key was deleted or changed): dropped with the rest.
+      const stray: Id[] = [];
+      if (touched)
+        for (const o of [...touched])
+          if (!own[o]) {
+            touched.delete(o);
+            const copy = aliasId(o, a.id);
+            if (doc.drawings[copy]) stray.push(copy);
+          }
+      if (!everything && !srcTouched && !t!.own.has(ai) && !touched!.size && !rekeyed && !stray.length) continue;
       const inc: IncrementalResolve | undefined = everything || !a.content || rekeyed ? undefined : { prev: a.content, touched: touched! };
       const r = resolveContent(base, doc.drawings, ovNow, a.id, doc.drawings, inc);
       const stale = Object.entries(r.drawings).filter(([k, v]) => doc.drawings[k] !== v);
-      const unused = everything || rekeyed ? copiesOf(a.id).filter((k) => !own[splitAlias(k)!.orig]) : [];
+      const unused = everything || rekeyed || t!.own.has(ai) ? copiesOf(a.id).filter((k) => !own[splitAlias(k)!.orig]) : stray;
       if (!sameContent(a.content, r.content) || stale.length || unused.length || rekeyed) {
         ids.push(a.id);
         const same = sameContent(a.content, r.content);
