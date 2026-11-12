@@ -14,10 +14,13 @@
 //   --only=gif,mp4       only these formats (mp4 webm gif apng png pngseq svg sheet interactives psd pdf ai prores
 //                        godot-bones)
 //   --templates=a,b      only these templates (bouncing-ball hero-sprites blank-vector blank-pixel bouncing-logo stress kitchen-sink)
-//   --skip=files         skip a part: files (save/open/autosave/close), godot, unity
+//   --cases=phaser,css   only cases with these labels (the word after the format in the report)
+//   --skip=files         skip a part: files (save/open/autosave/close), godot, unity, web
 //   --show               leave the window visible (needs a real display)
 //   GODOT_BIN=/path/to/godot-4-editor    also loads the sprite sheet files in Godot
 //   UNITY_BIN=/path/to/Unity/Editor/Unity  also compiles the Unity importer and imports the Unity sprite sheet in a throwaway project
+//   WEB_ENGINES=1                        also loads the Phaser, PixiJS and CSS sprite sheet exports in the real engines
+//                                        (pinned builds fetched once into ~/.cache/frameling-web-engines, see web-engines/)
 //
 // It uses a throwaway user-data folder inside outDir, so it never touches your real settings, recent files or autosave.
 // Needs on PATH: ffprobe, ffmpeg, convert and compare (ImageMagick), rsvg-convert, xmllint, unzip. A missing tool skips
@@ -36,9 +39,13 @@ const outDir = path.resolve(argv.find((a) => !a.startsWith('--')) ?? fs.mkdtempS
 const ONLY = flag('only');
 const TEMPLATES = flag('templates') ?? ['bouncing-ball', 'hero-sprites', 'blank-vector', 'blank-pixel', 'bouncing-logo', 'stress', 'kitchen-sink'];
 const SKIP = flag('skip') ?? [];
+const CASES = flag('cases');
 const GODOT = process.env.GODOT_BIN;
 const UNITY = process.env.UNITY_BIN;
+const WEB = process.env.WEB_ENGINES === '1' && !SKIP.includes('web');
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+// Phaser and PixiJS need WebGL, which Chromium blocklists on a virtual display unless the software renderer is allowed.
+if (WEB) for (const sw of [['ignore-gpu-blocklist'], ['use-gl', 'angle'], ['use-angle', 'swiftshader'], ['enable-unsafe-swiftshader']]) app.commandLine.appendSwitch(...sw);
 
 fs.rmSync(outDir, { recursive: true, force: true });
 fs.mkdirSync(outDir, { recursive: true });
@@ -135,7 +142,7 @@ async function startApp() {
   require(path.join(root, 'dist/main/main.cjs'));
   app.on('browser-window-created', (_e, w) => {
     w.webContents.setBackgroundThrottling(false);
-    if (!argv.includes('--show')) w.on('show', () => w.hide());
+    if (!argv.includes('--show')) w.on('show', () => { if (!w.keepShown) w.hide(); });
   });
   await app.whenReady();
   for (let i = 0; i < 100 && !BrowserWindow.getAllWindows().length; i++) await sleep(100);
@@ -506,6 +513,7 @@ async function vSheet(files, dir, s, exp, caseCtx) {
   note(`sheet ${sw}x${sh_}`);
   if (s.sheet.pot) check((sw & (sw - 1)) === 0 && (sh_ & (sh_ - 1)) === 0, `sheet is ${sw}x${sh_}, not a power of two`);
   if (UNITY && !SKIP.includes('unity') && engine === 'unity' && UNITY_TEMPLATES.includes(caseCtx.tpl)) await unityCheck(dir, names);
+  if (WEB && (engine === 'phaser' || engine === 'pixi' || engine === 'css')) await webCheck(engine, dir, names, s, exp, caseCtx);
   if (!json) return;
   const atlas = JSON.parse(fs.readFileSync(path.join(dir, json), 'utf8'));
   check(atlas.meta.size.w === sw && atlas.meta.size.h === sh_, `json says ${atlas.meta.size.w}x${atlas.meta.size.h}, the picture is ${sw}x${sh_}`);
@@ -554,6 +562,91 @@ async function vSheet(files, dir, s, exp, caseCtx) {
     check(/\[gd_resource type="SpriteFrames"/.test(t), 'tres header');
   }
   if (GODOT && !SKIP.includes('godot') && tres && s.sheet.godotScene) await godotCheck(dir, names, atlas, s, exp);
+}
+
+// ---------------------------------------------------------------- web engines (Phaser, PixiJS, CSS)
+
+let webChecker;
+
+/** What the sheet's animations should be, worked out from the document alone (the same rules as buildAnimations). */
+function expectedAnimations(doc, s, range) {
+  const n = range.end - range.start + 1;
+  const used = new Set();
+  const unique = (name) => {
+    let t = name.trim() || 'clip';
+    while (used.has(t)) t += '_';
+    used.add(t);
+    return t;
+  };
+  const all = Array.from({ length: n }, (_, i) => i);
+  if (s.range !== 'all') {
+    const clip = doc.clips.find((c) => c.id === s.clipId);
+    return [{ name: unique(clip?.name ?? 'default'), fps: doc.fps, loop: clip?.loop ?? true, frames: all }];
+  }
+  const out = doc.clips
+    .map((c) => {
+      const a = Math.max(range.start, Math.min(c.start, c.end));
+      const b = Math.min(range.end, Math.max(c.start, c.end));
+      return { name: unique(c.name), fps: doc.fps, loop: c.loop, frames: a > b ? [] : Array.from({ length: b - a + 1 }, (_, i) => a - range.start + i) };
+    })
+    .filter((a) => a.frames.length);
+  return out.length ? out : [{ name: unique('default'), fps: doc.fps, loop: true, frames: all }];
+}
+
+/** Which frames of an animation to compare pixel by pixel: all of a short one, else the ends and an even spread. */
+function pickFrames(n, max = 8) {
+  if (n <= max) return Array.from({ length: n }, (_, i) => i);
+  return [...new Set(Array.from({ length: max }, (_, k) => Math.round((k * (n - 1)) / (max - 1))))];
+}
+
+/** Loads the exported files in the real engine (Phaser, PixiJS) or Chromium (CSS) and compares frames with the app's PNG export. */
+async function webCheck(engine, dir, names, s, exp, caseCtx) {
+  if (!need('convert')) return;
+  try {
+    webChecker ??= await require('./web-engines/check.cjs').createWebChecker();
+  } catch (e) {
+    fail(`could not set up the web engines: ${e?.message ?? e}`);
+    return;
+  }
+  const doc = exp.doc;
+  const range = exp.plan.range;
+  const separate = s.sheet.content === 'separate';
+  const image = names.find((n) => n.endsWith('.png') && !n.startsWith('_'));
+  const jsonName = names.find((n) => n.endsWith('.json') && !n.endsWith('-anims.json') && !n.endsWith('-flow.json'));
+  const animsName = names.find((n) => n.endsWith('-anims.json'));
+  const animations = separate ? [{ name: 'sprites', fps: doc.fps, loop: false, frames: Array.from({ length: range.end - range.start + 1 }, (_, i) => i) }] : expectedAnimations(doc, s, range);
+  // The pictures to compare with: the app's own PNG of each document frame, copied next to the exports so the page can load them.
+  const refs = new Map();
+  const refOf = async (docFrame) => {
+    if (!refs.has(docFrame)) {
+      const f = await reference(s, docFrame, caseCtx.transparent);
+      const dest = path.join(dir, `_ref-${docFrame}.png`);
+      if (f) fs.copyFileSync(f, dest);
+      refs.set(docFrame, f ? dest : null);
+    }
+    return refs.get(docFrame);
+  };
+  const job = { engine, dir, image, json: jsonName, anims: animsName, css: names.find((n) => n.endsWith('.css')), html: names.find((n) => n.endsWith('.html')), separate, width: exp.width, height: exp.height };
+  job.animations = [];
+  for (const a of animations) {
+    const checks = [];
+    for (const i of pickFrames(a.frames.length)) {
+      const ref = await refOf(range.start + a.frames[i]);
+      if (ref) checks.push({ i, ref });
+    }
+    job.animations.push({ name: a.name, fps: a.fps, loop: a.loop, count: a.frames.length, checks });
+  }
+  if (engine !== 'css') {
+    const data = JSON.parse(fs.readFileSync(path.join(dir, jsonName), 'utf8'));
+    job.key = image.replace(/\.png$/, '');
+    job.frameNames = Object.keys(data.frames);
+    job.meta = data.meta.frameling ?? null;
+    // Separate sprites have no animations, and Phaser with no anims file is just an atlas.
+    if (separate || (engine === 'phaser' && !animsName)) job.animations = [];
+  }
+  const r = await webChecker.run(job);
+  for (const p of r.problems) fail(p);
+  for (const n of r.notes) note(n);
 }
 
 // Unity is slow to start, so only these templates go through it (the hero has several clips and is pixel art).
@@ -718,6 +811,7 @@ function listFiles(dir) {
 }
 
 async function runCase(tpl, fmt, label, edit, opts = {}) {
+  if (CASES && !CASES.includes(label)) return;
   const r = begin(tpl, `${fmt} ${label}`);
   const dir = setAutomationDir(path.join(outDir, tpl, `${fmt}-${label}`));
   try {
@@ -818,6 +912,21 @@ async function exportMatrix() {
         await runCase(tpl, fmt, 'nodedupe-godotpath', (s) => ({ ...s, sheet: { ...s.sheet, dedupe: false, json: true, godot: true, godotScene: true, godotPath: 'art/chars/hero.png' } }));
         await runCase(tpl, fmt, 'packed-extrude', (s) => ({ ...s, sheet: { ...s.sheet, engine: 'json', layout: 'packed', trim: true, padding: 2, extrude: 1, json: true } }));
         for (const engine of ['phaser', 'pixi', 'unity', 'css']) await runCase(tpl, fmt, engine, (s) => ({ ...s, sheet: { ...s.sheet, engine, layout: 'packed', trim: true, padding: 1, json: false } }));
+        // The web engines, with more clips, a clip that stops, a plain grid with see-through frames, and separate sprites in CSS.
+        if (WEB && (tpl === 'bouncing-ball' || tpl === 'hero-sprites')) {
+          const clips = tpl === 'hero-sprites' ? '' : `__framelingExport.addClip('mid', 2, 5); __framelingExport.addClip('once', 0, 1, false)`;
+          for (const engine of ['phaser', 'pixi', 'css']) {
+            await runCase(tpl, fmt, `${engine}-grid`, (s) => ({ ...s, transparent: true, sheet: { ...s.sheet, engine, layout: 'grid', trim: false, dedupe: false, pot: true, padding: 2, json: false } }), { prepare: clips });
+            if (tpl === 'bouncing-ball') await runCase(tpl, fmt, `${engine}-clips`, (s) => ({ ...s, sheet: { ...s.sheet, engine, layout: 'packed', trim: true, dedupe: true, padding: 1, json: false } }), { prepare: clips });
+          }
+          // Awkward clip names: spaces, punctuation, letters CSS names cannot hold, and names that only differ in case.
+          if (tpl === 'bouncing-ball') {
+            const odd = [['Run Fast!', 0, 1], ['\u65e5\u672c', 2, 3], ['\u65e5\u672c\u8a9e', 4, 5], ['Idle', 6, 7], ['idle', 8, 9], ['a.b #1', 10, 11], ['frame', 12, 13]];
+            const prepare = `__framelingExport.rename('2D Hero! v1');` + odd.map(([n, a, b]) => `__framelingExport.addClip(${JSON.stringify(n)}, ${a}, ${b})`).join(';');
+            for (const engine of ['phaser', 'pixi', 'css']) await runCase(tpl, fmt, `${engine}-names`, (s) => ({ ...s, sheet: { ...s.sheet, engine, layout: 'packed', trim: true, padding: 1, json: false } }), { prepare });
+          }
+          await runCase(tpl, fmt, 'css-separate', (s) => ({ ...s, sheet: { ...s.sheet, engine: 'css', content: 'separate', separateFiles: false, trim: false, layout: 'packed', padding: 1, json: false } }), { prepare: clips });
+        }
         // No clips: separate sprites make a json with no animations, so Unity must cut the sprites and make no .anim files.
         if (tpl === 'bouncing-ball') await runCase(tpl, fmt, 'unity-noclips', (s) => ({ ...s, sheet: { ...s.sheet, engine: 'unity', content: 'separate', separateFiles: false, layout: 'packed', trim: true, padding: 1, json: false } }));
         // The phase 2 test: the hero at art size, packed, straight into Godot.

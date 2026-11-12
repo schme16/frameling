@@ -1,0 +1,93 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>PixiJS check</title>
+<style>html,body{margin:0;background:#808080}</style></head>
+<body><div id="stage"></div>
+<script src="/engines/pixi.min.js"></script>
+<script src="/harness/common.js"></script>
+<script>
+// Loads Frameling's spritesheet json the way the PixiJS help topic says, builds an AnimatedSprite per animation from
+// the speed and loop the json carries, and checks names, counts, timing and the pixels against Frameling's own PNGs.
+window.runCheck = async function (cfg) {
+  const r = WE.report();
+  const app = new PIXI.Application();
+  await app.init({ width: cfg.width, height: cfg.height, backgroundAlpha: 0, antialias: false, resolution: 1, autoDensity: false, preference: 'webgl', autoStart: false, preserveDrawingBuffer: true });
+  document.getElementById('stage').appendChild(app.canvas);
+  r.notes.push(`PixiJS ${PIXI.VERSION}, ${app.renderer.name}`);
+  const sheet = await PIXI.Assets.load(cfg.json);
+  if (!r.expect(sheet && sheet.animations, 'Assets.load gave no spritesheet with animations')) return WE.plain(r);
+  // The help topic's way for pixel art (the sheet has one picture, so one texture's source is all of them).
+  Object.values(sheet.textures)[0].source.scaleMode = 'nearest';
+  const textureNames = Object.keys(sheet.textures);
+  r.expect(textureNames.length === cfg.frameNames.length && cfg.frameNames.every((n) => textureNames.includes(n)),
+    `texture names in PixiJS (${textureNames.length}) are not the json's (${cfg.frameNames.length})`);
+  const names = Object.keys(sheet.animations);
+  r.expect(names.length === cfg.animations.length, `PixiJS has ${names.length} animations, wanted ${cfg.animations.length}`);
+
+  for (const exp of cfg.animations) {
+    const textures = sheet.animations[exp.name];
+    if (!r.expect(!!textures, `animation "${exp.name}" is not in the spritesheet`)) continue;
+    r.expect(textures.length === exp.count, `${exp.name}: ${textures.length} frames, wanted ${exp.count}`);
+    // The speed and loop the json carries, as the help topic says to read them.
+    const meta = cfg.meta && cfg.meta.animations && cfg.meta.animations[exp.name];
+    if (r.expect(!!meta, `${exp.name}: no entry in meta.frameling.animations`)) {
+      r.expect(meta.fps === exp.fps && !!meta.loop === exp.loop, `${exp.name}: json says fps ${meta.fps}, loop ${meta.loop}; wanted ${exp.fps}, ${exp.loop}`);
+      r.expect(WE.near(meta.animationSpeed * 60, exp.fps, 0.01), `${exp.name}: animationSpeed ${meta.animationSpeed} is not ${exp.fps} / 60`);
+    }
+    const speed = meta ? meta.animationSpeed : exp.fps / 60;
+    const sprite = new PIXI.AnimatedSprite(textures, false);
+    sprite.animationSpeed = speed;
+    sprite.loop = exp.loop;
+    app.stage.addChild(sprite);
+    for (const c of exp.checks) {
+      sprite.gotoAndStop(c.i);
+      app.render();
+      await r.pixel(`${exp.name}[${c.i}]`, app.canvas, cfg.width, cfg.height, c.ref);
+    }
+    app.stage.removeChild(sprite);
+
+    // Really play it and watch which frames come and when. A hiccup on a slow machine can spoil one go, so it gets three.
+    if (exp.count >= 2 && exp.count / exp.fps <= 6) {
+      let probs = [];
+      for (let attempt = 0; attempt < 3; attempt++) {
+        probs = [];
+        const ex = (cond, t) => { if (!cond) probs.push(t); };
+        // As the help topic does it: the sprite updates itself from PixiJS's shared ticker.
+        const s2 = new PIXI.AnimatedSprite(textures);
+        s2.animationSpeed = speed;
+        s2.loop = exp.loop;
+        const seen = [0];
+        let t0 = 0;
+        let tLoop = 0;
+        let tEnd = 0;
+        s2.onFrameChange = (n) => { if (!tLoop || n > 0) seen.push(n); };
+        s2.onLoop = () => { if (!tLoop) tLoop = performance.now(); };
+        s2.onComplete = () => { if (!tEnd) tEnd = performance.now(); };
+        app.stage.addChild(s2);
+        s2.gotoAndStop(0);
+        t0 = performance.now();
+        s2.play();
+        const total = exp.count * 1000 / exp.fps;
+        await WE.sleep(exp.loop ? total * 1.6 + 300 : total + 600);
+        const first = seen.slice(0, exp.count);
+        ex(first.length === exp.count && first.every((v, k) => v === k), `${exp.name}: frames played in the order ${first.join(',')}`);
+        if (exp.loop) {
+          ex(tLoop > 0, `${exp.name}: a looping animation never looped`);
+          if (tLoop) ex(WE.near(tLoop - t0, total, Math.max(80, total * 0.1)), `${exp.name}: one pass took ${Math.round(tLoop - t0)} ms, wanted ${Math.round(total)}`);
+        } else {
+          ex(tEnd > 0, `${exp.name}: a clip that does not loop never finished`);
+          if (tEnd) ex(WE.near(tEnd - t0, total, Math.max(80, total * 0.1)), `${exp.name}: it took ${Math.round(tEnd - t0)} ms, wanted ${Math.round(total)}`);
+          ex(s2.currentFrame === exp.count - 1 && !s2.playing, `${exp.name}: did not stop on its last frame (${s2.currentFrame})`);
+        }
+        s2.stop();
+        app.stage.removeChild(s2);
+        if (!probs.length) break;
+      }
+      probs.forEach((t) => r.problem(t));
+    } else {
+      r.notes.push(`${exp.name}: timing not played (${exp.count} frames)`);
+    }
+  }
+  app.destroy(true);
+  return WE.plain(r);
+};
+</script></body></html>

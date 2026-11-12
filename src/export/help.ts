@@ -358,7 +358,8 @@ The second class picks the clip. Loops keep going; clips that don't loop stop on
 
 - Animations keep every frame whole, so **Trim** is off for them.
 - Pixel art gets \`image-rendering: pixelated\`, so you can make it bigger with \`zoom\` or \`transform: scale()\` and it stays sharp.
-- With **Separate sprites**, each frame gets a class named after its marker (\`hero-heart\`), which makes icon sets easy.`,
+- With **Separate sprites**, each frame gets a class named after its marker (\`hero-heart\`), which makes icon sets easy.
+- Two clips whose names would make the same class ("Idle" and "idle") get a number on the second one (\`hero-idle-2\`). A document name that starts with a digit gets \`sprite-\` in front, so "2D Hero" gives \`sprite-2d-hero\`.`,
   },
   {
     id: 'export-svg',
