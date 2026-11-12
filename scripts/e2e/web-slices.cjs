@@ -21,7 +21,12 @@ window.run = () => new Promise((resolve) => {
         const t = this.textures.get('hero');
         const out = {};
         for (const n of t.getFrameNames()) { const f = t.get(n); out[n] = { x: f.cutX, y: f.cutY, w: f.cutWidth, h: f.cutHeight, pivot: f.customPivot ? [f.pivotX, f.pivotY] : null }; }
-        resolve({ version: Phaser.VERSION, frames: out });
+        // The animations file (a slice that moves has one): what the engine makes of it.
+        const anims = {};
+        fetch('/phaser/hero-anims.json').then((r) => (r.ok ? r.json() : null)).catch(() => null).then((j) => {
+          if (j) { this.anims.fromJSON(j); for (const a of this.anims.anims.values()) anims[a.key] = { frameRate: a.frameRate, frames: a.frames.map((f) => f.textureFrame) }; }
+          resolve({ version: Phaser.VERSION, frames: out, anims });
+        });
       } } });
 });</script></body>`,
   pixi: () => `<!doctype html><body><script src="/engines/pixi.min.js"></script><script>
@@ -31,7 +36,10 @@ window.run = async () => {
   const sheet = await PIXI.Assets.load('/pixi/hero.json');
   const out = {};
   for (const [n, t] of Object.entries(sheet.textures)) out[n] = { x: t.frame.x, y: t.frame.y, w: t.frame.width, h: t.frame.height, anchor: t.defaultAnchor ? [t.defaultAnchor.x, t.defaultAnchor.y] : null };
-  return { version: PIXI.VERSION, frames: out };
+  // The animations: the frame region of each texture in each.
+  const anims = {};
+  for (const [n, list] of Object.entries(sheet.animations || {})) anims[n] = list.map((t) => [t.frame.x, t.frame.y]);
+  return { version: PIXI.VERSION, frames: out, anims };
 };</script></body>`,
   css: () => `<!doctype html><html><head><link rel="stylesheet" href="/css/hero.css"><style>html,body{margin:0;background:#fff}
 #nine{position:absolute;left:10px;top:10px;width:60px;height:40px}#plain{position:absolute;left:100px;top:10px}</style></head>

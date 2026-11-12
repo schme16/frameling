@@ -661,10 +661,17 @@ WEB_ENGINES=1 xvfb-run -a -s "-screen 0 1600x1000x24" npx vitest run test/export
   delays and tags, and its slices must equal both Aseprite's JSON and the slices read from the .aseprite file.
 - `slices-godot-e2e`: the `-slices.tscn` loads in Godot 4: a NinePatchRect with its margins and region, a Sprite2D on an
   AtlasTexture with the pivot as its origin, and the pixels of each region.
+  A second test plays a slice that moves: the AnimationPlayer is sought to several times and the region, offset,
+  borders and the colour in each region are read back.
 - `slices-unity-e2e`: a throwaway Unity project, with and without the 2D Sprite package, imports the sheet through the
   importer script; each sprite's rect, pivot and border are read back (`scripts/e2e/unity/FramelingSliceCheck.cs`).
+  A moving slice is checked too: a sprite per key with its own pivot and the colour in its middle, and the clip the
+  importer makes for it.
 - `slices-web-e2e`: Phaser 3 and 4, PixiJS 8 load the atlas (frame regions, pivot, anchor) and Chromium draws the CSS
   9-patch stretched (`scripts/e2e/web-slices.cjs`).
+  The moving slice is loaded there as well: a frame with its own pivot or anchor per key, and the animation that plays them.
+- `test/export/slices-moving.test.ts` (no engine needed) checks the same exports as text and reads the sheet picture to
+  prove each key's region holds the colour that frame drew there.
 
 ## Aseprite import against the real Aseprite
 

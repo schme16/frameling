@@ -72,4 +72,77 @@ describe.skipIf(!process.env.WEB_ENGINES)('Phaser, PixiJS and CSS read the slice
     expect(res.css.bottomRight).toBe('#0000ff');
     expect(res.css.plainTopLeft).toBe('#00ff00');
   }, 300000);
+
+  it('a slice that moves: each key has its own region and pivot or anchor, and plays as an animation', () => {
+    // Six 32 x 20 frames, each with a 6 x 6 block of its own colour that moves right and down; "hand" has keys on frames 0, 2 and 4.
+    const W = 32;
+    const H = 20;
+    const frames: RawImage[] = [0, 1, 2, 3, 4, 5].map((f) => {
+      const px = new Uint8ClampedArray(W * H * 4);
+      for (let y = 0; y < 6; y++) for (let x = 0; x < 6; x++) px.set([40 * f, 255 - 40 * f, 128, 255], ((3 + f + y) * W + 2 + 4 * f + x) * 4);
+      return { width: W, height: H, pixels: px };
+    });
+    const layer = newPixelLayer('Sprite', 1);
+    layer.slices = [
+      { id: 'h', name: 'hand', x: 2, y: 3, w: 6, h: 6, pivot: { x: 4, y: 9 }, keys: [
+        { frame: 0, x: 2, y: 3, w: 6, h: 6, pivot: { x: 4, y: 9 } },
+        { frame: 2, x: 10, y: 5, w: 6, h: 6, pivot: { x: 13, y: 8 } },
+        { frame: 4, x: 18, y: 7, w: 6, h: 6 },
+      ] },
+    ];
+    const make = (engine: string) =>
+      buildSheetFiles({
+        doc: { name: 'Hero', clips: [], markers: [], fps: 10 },
+        sheet: { ...DEFAULT_SHEET, engine, trim: true, dedupe: false, json: false } as never,
+        frames,
+        range: { start: 0, end: 5 },
+        whole: true,
+        clipId: null,
+        scale: 1,
+        name: 'Hero',
+        pixelArt: true,
+        maxSide: 4096,
+        slices: slicesForExport([layer], 1, { start: 0, end: 5 }),
+      });
+    const dir = mkdtempSync(path.join(tmpdir(), 'frameling-web-moving-'));
+    const sheets: Record<string, ReturnType<typeof make>> = {};
+    for (const e of ['phaser', 'pixi', 'css']) {
+      sheets[e] = make(e);
+      mkdirSync(path.join(dir, e));
+      for (const f of sheets[e].files) writeFileSync(path.join(dir, e, f.name), f.bytes);
+    }
+    const r = spawnSync('npx', ['electron', 'scripts/e2e/web-slices.cjs', dir], { cwd: path.resolve(__dirname, '../..'), encoding: 'utf8', timeout: 240000 });
+    const line = (r.stdout + r.stderr).split('\n').find((l) => l.startsWith('RESULT '));
+    expect(line, r.stdout + r.stderr).toBeDefined();
+    const res = JSON.parse(line!.slice(7));
+    const held = ['hand', 'hand', 'hand_f3', 'hand_f3', 'hand_f5', 'hand_f5'];
+    for (const k of ['phaser3', 'phaser4']) {
+      expect(res[k].error, k).toBeUndefined();
+      // Each key is a frame of the atlas: its place on the sheet is inside the whole frame the key starts on, so the three differ.
+      const f = res[k].frames;
+      for (const [n, w, h] of [['hand', 6, 6], ['hand_f3', 6, 6], ['hand_f5', 6, 6]] as const) expect(f[n], `${k} ${n}`).toMatchObject({ w, h });
+      expect(f.hand.pivot[0], k).toBeCloseTo(2 / 6, 3);
+      expect(f.hand.pivot[1], k).toBe(1);
+      expect(f.hand_f3.pivot, k).toEqual([0.5, 0.5]);
+      expect(f.hand_f5.pivot, k).toBeNull();
+      // The engine reads the animation: one entry per exported frame, held keys repeated.
+      expect(res[k].anims.slice_hand, k).toEqual({ frameRate: 10, frames: held });
+    }
+    expect(res.pixi.error).toBeUndefined();
+    expect(res.pixi.frames.hand_f3).toMatchObject({ w: 6, h: 6, anchor: [0.5, 0.5] });
+    expect(res.pixi.frames.hand).toMatchObject({ w: 6, h: 6 });
+    expect(res.pixi.frames.hand.anchor[0]).toBeCloseTo(2 / 6, 3);
+    expect(res.pixi.frames.hand_f5.anchor).toBeNull();
+    // The animation lists the region of each exported frame's key.
+    const a = res.pixi.anims.slice_hand as number[][];
+    expect(a).toHaveLength(6);
+    expect(a[0]).toEqual([res.pixi.frames.hand.x, res.pixi.frames.hand.y]);
+    expect(a[2]).toEqual([res.pixi.frames.hand_f3.x, res.pixi.frames.hand_f3.y]);
+    expect(a[5]).toEqual([res.pixi.frames.hand_f5.x, res.pixi.frames.hand_f5.y]);
+    // The same regions as the files say.
+    const atlas = JSON.parse(new TextDecoder().decode(sheets.phaser.files.find((x) => x.name === 'hero.json')!.bytes));
+    expect(res.phaser3.frames.hand_f3).toMatchObject({ x: atlas.frames.hand_f3.frame.x, y: atlas.frames.hand_f3.frame.y });
+    // CSS can only show the first place of a slice that moves, and says so.
+    expect(new TextDecoder().decode(sheets.css.files.find((x) => x.name === 'hero.css')!.bytes)).toContain('moves between frames');
+  }, 300000);
 });
