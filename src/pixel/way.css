@@ -222,6 +222,17 @@
 .px-picture-strip > .px-picture-say {
   flex: 1;
   min-width: 0;
+  /* Quill's line and the button stay on one line; a long line is trimmed rather than wrapped */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.px-picture-strip > .io-btn {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
 }
 
 /* Export: Quill's sentence about the sheet */

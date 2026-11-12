@@ -60,7 +60,7 @@ export const KEYMAP_SETS: KeymapSet[] = [
     // The id stays `pixel` so a saved choice keeps working; the name people see is Aseprite keys.
     id: 'pixel',
     label: 'Aseprite keys',
-    blurb: 'The keys Aseprite artists know: B pencil, U rectangle, M and Q select, X swaps colours, + and - change the brush, [ and ] step the palette, 1 to 6 zoom, Tab hides the panels, Alt+N adds a frame.',
+    blurb: 'The keys Aseprite artists know: B pencil, U rectangle, M and Q select, X swaps colours, + and - change the brush, [ and ] step the palette, 1 to 6 zoom, Tab hides the panels, Alt+N adds a frame, Alt+arrows step frames.',
     keys: {
       // Tools (Aseprite's own letters; ours stay as a second key where they are free)
       'tools.pencil': ['b'],
@@ -91,19 +91,14 @@ export const KEYMAP_SETS: KeymapSet[] = [
       'pixel.zoom4': ['4'],
       'pixel.zoom5': ['5'],
       'pixel.zoom6': ['6'],
-      // Frames: arrows step, Alt+N adds one (a copy), Alt+B an empty one, Alt+M a linked one, Alt+C removes one
-      'timeline.prevFrame': ['ArrowLeft', ','],
-      'timeline.nextFrame': ['ArrowRight', '.'],
+      // Frames: Alt+arrows step (plain arrows nudge a selection, as in Frameling), Alt+N adds one (a copy), Alt+B an empty one, Alt+M a linked one, Alt+C removes one
+      'timeline.prevFrame': ['Alt+ArrowLeft', ','],
+      'timeline.nextFrame': ['Alt+ArrowRight', '.'],
       'timeline.duplicateKey': ['Alt+N', 'Alt+D', 'd'],
       'timeline.newKey': ['Alt+B', 'n'],
       'timeline.insertFrame': ['Alt+M'],
       'timeline.removeFrame': ['Alt+C'],
       'timeline.toggleOnion': ['F3', 'Shift+O'],
-      // The arrows step frames, so nudging a selection moves to Alt+arrows (Shift for ten)
-      'select.nudgeLeft': ['Alt+ArrowLeft'],
-      'select.nudgeRight': ['Alt+ArrowRight'],
-      'select.nudgeUp': ['Alt+ArrowUp'],
-      'select.nudgeDown': ['Alt+ArrowDown'],
       // Layers
       'layers.addPixel': ['Shift+N'],
       'layers.duplicate': ['Mod+J'],
