@@ -14,10 +14,30 @@ describe('dotLottie export', () => {
     expect(dotLottieId('')).toBe('animation');
   });
 
-  it('is a zip with a manifest, the animation and the pictures as files', () => {
+  it('is a zip with a manifest, the animation and the pictures as files (layout 2, the default)', () => {
+    const data = docToLottie(make('hero-sprites'));
+    const bytes = dotLottieBytes(data, { generator: 'Frameling test', loop: false });
+    const names = Object.keys(unzipSync(bytes));
+    expect(names[0]).toBe('manifest.json');
+    expect(names.some((n) => n.startsWith('a/') && n.endsWith('.json'))).toBe(true);
+    expect(names.some((n) => n.startsWith('i/'))).toBe(true);
+    expect(names.some((n) => n.startsWith('animations/') || n.startsWith('images/'))).toBe(false);
+    const file = readDotLottie(bytes, unzipSync);
+    expect(file.manifest).toEqual({ version: '2', generator: 'Frameling test', initial: { animation: 'game-hero-sprite-set' }, animations: [{ id: 'game-hero-sprite-set' }] });
+    const anim = file.animations['game-hero-sprite-set'];
+    const pics = anim.assets.filter((a: { p?: string }) => a.p !== undefined);
+    expect(pics.length).toBeGreaterThan(0);
+    for (const a of pics) {
+      expect(a.u).toBe('/i/');
+      expect([...file.images[a.p].slice(0, 4)]).toEqual([0x89, 0x50, 0x4e, 0x47]);
+    }
+    expect(JSON.stringify(anim)).not.toContain('data:image');
+  });
+
+  it('can be written in the older layout 1: animations/, images/ and loop in the manifest', () => {
     const data = docToLottie(make('hero-sprites'));
     expect(data.assets.some((a: { p?: string }) => a.p?.startsWith('data:image/png;base64,'))).toBe(true);
-    const file = readDotLottie(dotLottieBytes(data, { generator: 'Frameling test', loop: false }), unzipSync);
+    const file = readDotLottie(dotLottieBytes(data, { generator: 'Frameling test', loop: false, version: 1 }), unzipSync);
     expect(file.manifest.version).toBe('1.0');
     expect(file.manifest.generator).toBe('Frameling test');
     expect(file.manifest.animations).toEqual([{ id: 'game-hero-sprite-set', autoplay: true, loop: false, speed: 1, direction: 1, playMode: 'normal' }]);
@@ -39,14 +59,15 @@ describe('dotLottie export', () => {
   it('keeps the first entry the manifest and stores a picture that repeats once', () => {
     const png = 'data:image/png;base64,iVBORw0KGgo=';
     const data = { nm: 'Two', assets: [{ id: 'a', w: 1, h: 1, p: png, u: '', e: 1 }, { id: 'b', w: 1, h: 1, p: png, u: '', e: 1 }, { id: 'c', layers: [] }], layers: [] };
-    const { animation, images } = splitPictures(data);
+    const { animation, images } = splitPictures(data, 1);
     expect([...images.keys()]).toEqual(['image_0.png']);
     expect(animation.assets[0].p).toBe('image_0.png');
     expect(animation.assets[1].p).toBe('image_0.png');
     expect(animation.assets[2]).toEqual({ id: 'c', layers: [] });
+    expect(Object.keys(unzipSync(dotLottieBytes(data, { version: 1 }))).sort()).toEqual(['animations/two.json', 'images/image_0.png', 'manifest.json']);
     const names = Object.keys(unzipSync(dotLottieBytes(data)));
     expect(names[0]).toBe('manifest.json');
-    expect(names.sort()).toEqual(['animations/two.json', 'images/image_0.png', 'manifest.json']);
+    expect(names.sort()).toEqual(['a/two.json', 'i/image_0.png', 'manifest.json']);
   });
 
   it('is much smaller than the plain file when the animation has many keys', () => {

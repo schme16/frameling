@@ -53,18 +53,22 @@ app.whenReady().then(async () => {
     await win.loadURL(origin + '/index.html');
     const ev = (js) => win.webContents.executeJavaScript(js);
     const names = (process.env.ONLY ?? 'frame-by-frame,tpl:hero-sprites,tpl:walk-cycle,heavy-effects,tpl:explosion-fx,tpl:puppet').split(',');
-    console.log('doc | json bytes | .lottie bytes | frames | rmse json player | rmse .lottie player | json vs .lottie | drawn pixels');
+    // DOTLOTTIE_VERSION=1, 2 or 1,2 (default): which layouts to write and play.
+    const versions = (process.env.DOTLOTTIE_VERSION ?? '2,1').split(',').map(Number);
+    console.log('doc | layout | json bytes | .lottie bytes | frames | rmse json player | rmse .lottie player | json vs .lottie | drawn pixels');
     let bad = 0;
     for (const name of names) {
       const info = await ev(`check.load(${JSON.stringify(name)})`);
-      const frames = [...new Set([0, 1, 2, 3].map((k) => Math.floor((info.length - 1) * (k / 3))))];
-      try {
-        const r = await ev(`check.dotLottie(${JSON.stringify(origin + '/dl')}, ${JSON.stringify(frames)})`);
-        console.log([name, r.jsonBytes, r.lottieBytes, r.total, r.rJson.toFixed(2), r.rLottie.toFixed(2), r.between.toFixed(3), r.ink].join(' | '));
-        if (r.between > 0.5 || !r.ink) bad++;
-      } catch (e) {
-        console.log(name, 'FAILED', e.message);
-        bad++;
+      const frames = [...new Set([0, 1, 2, 3, 4, 5, 6].map((k) => Math.floor((info.length - 1) * (k / 6))))];
+      for (const v of versions) {
+        try {
+          const r = await ev(`check.dotLottie(${JSON.stringify(origin + '/dl')}, ${JSON.stringify(frames)}, ${v})`);
+          console.log([name, 'v' + v, r.jsonBytes, r.lottieBytes, r.total, r.rJson.toFixed(2), r.rLottie.toFixed(2), r.between.toFixed(3), r.ink].join(' | '));
+          if (r.between > 0.5 || !r.ink) bad++;
+        } catch (e) {
+          console.log(name, 'v' + v, 'FAILED', e.message);
+          bad++;
+        }
       }
     }
     console.log(bad ? `${bad} PROBLEM(S)` : 'dotLottie plays like the JSON');

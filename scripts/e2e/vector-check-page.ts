@@ -508,11 +508,11 @@ const api = {
    * Plays the loaded document as plain JSON and as a .lottie in the dotLottie web player (ThorVG, from `base`/index.js)
    * and compares frames with Frameling's own and with each other. Pictures and everything else go through the zip.
    */
-  async dotLottie(base: string, frames: number[]) {
+  async dotLottie(base: string, frames: number[], version: 1 | 2 = 2) {
     const mod = await import(/* @vite-ignore */ base + '/index.js');
     mod.DotLottie.setWasmUrl(base + '/dotlottie-player.wasm');
     const data = docToLottie(doc);
-    const lottie = dotLottieBytes(docToLottie(doc));
+    const lottie = dotLottieBytes(docToLottie(doc), { version });
     const play = async (src: string | ArrayBuffer) => {
       const canvas = document.createElement('canvas');
       canvas.width = doc.width;
