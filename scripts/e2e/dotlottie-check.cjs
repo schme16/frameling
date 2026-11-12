@@ -82,6 +82,15 @@ app.whenReady().then(async () => {
         if (!good) bad++;
       }
     }
+    // A clip that plays backward, back and forth or N times is baked in play order with a time remap: every moment shows the
+    // frame it should, in lottie-web and in the dotLottie player (JSON and .lottie).
+    for (const order of [[2, 1, 0], [0, 1, 2, 1, 0], [0, 1, 2, 0, 1, 2]]) {
+      const r = await ev(`check.clipPasses(${JSON.stringify(origin + '/dl')}, ${JSON.stringify(order)})`);
+      const worst = Math.max(...r.web, ...r.json, ...r.zip);
+      const good = worst < 6 && r.total === order.length;
+      console.log(['order ' + order.join(' '), 'frames=' + r.total, 'worst rmse=' + worst.toFixed(2), good ? 'ok' : 'WRONG'].join(' | '));
+      if (!good) bad++;
+    }
     console.log(bad ? `${bad} PROBLEM(S)` : 'dotLottie plays like the JSON');
     server.close();
     app.exit(bad ? 1 : 0);

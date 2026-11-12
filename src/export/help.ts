@@ -332,7 +332,7 @@ Under **File type** in the Export window:
 - **Puppets:** a bone part that only turns is one still shape with a few turn keys.
 - **The camera** pans, zooms and turns (a few eased keys, not one per frame), and layers with depth move at their own speed.
 - **Pixel and tile layers** become pictures inside the file, big enough to stay crisp.
-- **Clips** become named markers, so a player can play one clip by name. Lottie has no clip direction or repeat count.
+- **Clips** become named markers, so a player can play one clip by name. Export one clip and it plays the way you set it: backward, back and forth or a number of times are baked in play order. The drawing is stored once and the file steps through it, so the file does not grow. A clip that loops repeats for ever in a dotLottie file, and one that plays a number of times stops after them; the **Playback** tick under dotLottie lets you choose.
 - **Text** becomes letter shapes, so no font files are needed. **Particles** become one small shape each. **Colour wash** recolours the copy's shapes.
 - **Blend modes** stay as they are; **masks** and **clipping** become *track mattes*.
 - **Fades:** a layer, folder or symbol copy you fade is faded as one picture, so overlapping shapes don't show through each other.

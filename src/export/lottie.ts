@@ -16,7 +16,9 @@
  * - Brush outlines are refitted with far fewer points (curve-fit.ts) and a drawing shown in several keys is one precomp.
  * - Pixel and tile layers become PNG image assets, scaled up to stage size with hard edges so they stay crisp.
  * - The camera is a null layer per depth that every stage layer hangs from (one key per frame when it moves).
- * - Clips become named markers (lottie-web's playSegments takes their names), markers become markers.
+ * - Clips become named markers (lottie-web's playSegments takes their names), markers become markers. A clip played in
+ *   another order (`order`: backward, back and forth, N times) is one precomp of the whole animation with a time remap that
+ *   steps through that order, so nothing is drawn twice and every player plays it.
  *
  * - Blend modes, opacity, clipping, masks (track mattes), folders and effects follow the compositing plan, as the
  *   canvas does (see docs/effects.md, "Vector exports"). Soften and Shadow are Lottie effects, other effects are baked.
@@ -57,6 +59,12 @@ export interface LottieOptions {
    * ('pictures'), which players that leave Lottie's effects out (lottie-web's canvas player) show too.
    */
   softAndShadow?: 'effects' | 'pictures';
+  /**
+   * The order the range plays in (see clipPlayOrder): for each moment, which frame of the range (counted from its first)
+   * shows. The passes are baked with a time remap over the whole animation, so a clip that plays N times, backward or
+   * back and forth plays that way in every player. Missing, or plain forward order, leaves the animation as it is.
+   */
+  order?: number[];
 }
 
 export type PictureLook = 'balanced' | 'sharp' | 'small';
@@ -1673,6 +1681,26 @@ function cameraNulls(doc: Doc, from: number, to: number, depths: number[], first
   return { nulls, parentOf };
 }
 
+/** The order to play in when it is not just the range once, forward (and fits the range), else undefined. */
+export function playOrder(order: number[] | undefined, count: number): number[] | undefined {
+  if (!order?.length || !order.every((p) => Number.isInteger(p) && p >= 0 && p < count)) return undefined;
+  return order.length === count && order.every((p, i) => p === i) ? undefined : order;
+}
+
+/**
+ * The animation as one precomp whose time remap steps through `order` (one moment per picture of the order), so the same
+ * layers play forward, backward, back and forth or again, with nothing drawn twice. Time is held on each frame (a hair
+ * past its start, so a player that rounds down still lands inside it).
+ */
+function passes(ctx: Ctx, content: Json[], order: number[], r: Range): Json {
+  const layer = wrap(ctx, content, 'Clip', r);
+  const secs = (p: number) => Math.round(((p + 0.01) / ctx.doc.fps) * 1e5) / 1e5;
+  layer.ip = 0;
+  layer.op = order.length;
+  layer.tm = { a: 1, k: order.map((p, i) => ({ t: i, s: [secs(p)], ...(i < order.length - 1 ? { h: 1 } : {}) })) };
+  return layer;
+}
+
 /** The whole Lottie animation, and plain words about anything that didn't come across exactly. */
 export function lottieExport(doc: Doc, opts: LottieOptions = {}): { data: Json; notes: string[] } {
   const from = Math.max(0, opts.range?.start ?? 0);
@@ -1682,26 +1710,36 @@ export function lottieExport(doc: Doc, opts: LottieOptions = {}): { data: Json; 
   const include = (l: Layer) => l.visible && !l.reference && l.kind !== 'camera';
   const r: Range = { from, to, offset: from };
   const content = levelContent(ctx, buildPlan(doc, include), r);
-  const all: Json[] = assemble(ctx, content, r, false);
+  const order = playOrder(opts.order, count);
+  const moments = order ? order.length : count;
+  const all: Json[] = order ? assemble(ctx, [passes(ctx, content, order, r)], { from: 0, to: moments - 1, offset: 0 }, false) : assemble(ctx, content, r, false);
   if (doc.background && !opts.transparent) {
     const { rgb } = lottieColor(doc.background);
     const hex = '#' + rgb.map((v) => Math.round(v * 255).toString(16).padStart(2, '0')).join('');
-    all.push({ ty: 1, ind: Math.max(0, ...all.map((l) => l.ind)) + 1, nm: 'Stage colour', sc: hex, sw: doc.width, sh: doc.height, ip: 0, op: count, st: 0, sr: 1, ks: { a: stat([0, 0]), p: stat([0, 0]), s: stat([100, 100]), r: stat(0), o: stat(100) } });
+    all.push({ ty: 1, ind: Math.max(0, ...all.map((l) => l.ind)) + 1, nm: 'Stage colour', sc: hex, sw: doc.width, sh: doc.height, ip: 0, op: moments, st: 0, sr: 1, ks: { a: stat([0, 0]), p: stat([0, 0]), s: stat([100, 100]), r: stat(0), o: stat(100) } });
   }
   for (const a of ctx.assets) for (const l of a.layers ?? []) delete l.frameling;
   const markers: Json[] = [];
   for (const c of doc.clips) {
     const a = Math.max(from, Math.min(c.start, c.end));
     const b = Math.min(to, Math.max(c.start, c.end));
-    if (a <= b) markers.push({ tm: a - from, cm: c.name, dr: b - a + 1 });
+    if (a > b) continue;
+    // Played in another order, only the clip that is the whole range has a place of its own: all of it.
+    if (!order) markers.push({ tm: a - from, cm: c.name, dr: b - a + 1 });
+    else if (a === from && b === to) markers.push({ tm: 0, cm: c.name, dr: moments });
   }
-  for (const m of doc.markers) if (m.frame >= from && m.frame <= to) markers.push({ tm: m.frame - from, cm: m.name, dr: 0 });
+  for (const m of doc.markers) {
+    if (m.frame < from || m.frame > to) continue;
+    // Where the order first shows that frame.
+    const at = order ? order.indexOf(m.frame - from) : m.frame - from;
+    if (at >= 0) markers.push({ tm: at, cm: m.name, dr: 0 });
+  }
   const data = {
     v: '5.7.4',
     nm: doc.name,
     fr: doc.fps,
     ip: 0,
-    op: count,
+    op: moments,
     w: doc.width,
     h: doc.height,
     ddd: 0,

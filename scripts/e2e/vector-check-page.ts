@@ -628,6 +628,65 @@ const api = {
     canvas.remove();
     return out;
   },
+  /**
+   * A clip that plays in another order (backward, back and forth, twice) as the baked Lottie: each moment's picture in
+   * lottie-web, in the dotLottie web player from the JSON and from the .lottie, against Frameling's own frame for that
+   * moment. `order` is the positions of the clip (frames 3 to 5 of 12) in the order they play.
+   */
+  async clipPasses(base: string, order: number[]) {
+    const mod = await import(/* @vite-ignore */ base + '/index.js');
+    mod.DotLottie.setWasmUrl(base + '/dotlottie-player.wasm');
+    const d = newDoc({ name: 'Passes', width: 120, height: 80, length: 12, fps: 24 });
+    d.layers = [];
+    const l = addVectorLayer(d, 'Dot');
+    for (let k = 0; k < 12; k++) hold(l, vectorDrawing(d, [fill([ellipsePath(15 + k * 8, 40, 9, 9)], k % 2 ? '#ff6f91' : '#5ab8ff')]).id, k, 1);
+    doc = d;
+    const start = 3;
+    const data = docToLottie(d, { range: { start, end: start + 2 }, order });
+    const bytes = dotLottieBytes(docToLottie(d, { range: { start, end: start + 2 }, order }), { version: 2, loop: false });
+    const mk = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = d.width;
+      canvas.height = d.height;
+      document.body.appendChild(canvas);
+      return canvas;
+    };
+    const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+    const rmse = (m: number, px: Uint8ClampedArray) => compare(frameling(start + order[m]), px).rmse;
+    // lottie-web
+    const cw = mk();
+    const web = lottie.loadAnimation({ renderer: 'canvas', loop: false, autoplay: false, animationData: JSON.parse(JSON.stringify(data)), rendererSettings: { context: cw.getContext('2d')!, clearCanvas: true, preserveAspectRatio: 'none' } as never });
+    await new Promise<void>((r) => (web.isLoaded ? r() : web.addEventListener('DOMLoaded', () => r())));
+    const inWeb: number[] = [];
+    for (let m = 0; m < order.length; m++) {
+      web.goToAndStop(m, true);
+      await wait(30);
+      inWeb.push(rmse(m, pixelsOf(cw)));
+    }
+    // the dotLottie player, from the JSON and from the zip
+    const inPlayer = async (src: string | ArrayBuffer) => {
+      const canvas = mk();
+      const player = new mod.DotLottie({ canvas, data: src, autoplay: false, renderConfig: { devicePixelRatio: 1, autoResize: false }, layout: { fit: 'fill', align: [0.5, 0.5] } });
+      await new Promise<void>((res, rej) => {
+        player.addEventListener('load', () => res());
+        player.addEventListener('loadError', () => rej(new Error('load error')));
+        setTimeout(() => rej(new Error('player did not load')), 15000);
+      });
+      await wait(300);
+      const out: number[] = [];
+      for (let m = 0; m < order.length; m++) {
+        player.setFrame(m);
+        await wait(120);
+        out.push(rmse(m, pixelsOf(canvas)));
+      }
+      const total = player.totalFrames;
+      player.destroy();
+      return { out, total };
+    };
+    const json = await inPlayer(JSON.stringify(data));
+    const zip = await inPlayer(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer);
+    return { web: inWeb, json: json.out, zip: zip.out, total: json.total };
+  },
   svgCompare(frame: number, rgba: number[]) {
     return compare(frameling(frame), new Uint8ClampedArray(rgba));
   },

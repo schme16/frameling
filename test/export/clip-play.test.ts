@@ -8,6 +8,9 @@ import { buildSheetFiles } from '../../src/export/engines';
 import { DEFAULT_SHEET, type SheetSettings } from '../../src/export/types';
 import { planExport } from '../../src/export/plan';
 import { carryWarnings } from '../../src/export/carries';
+import { dotLottieBytes, readDotLottie } from '../../src/export/dotlottie';
+import { docToLottie, playOrder } from '../../src/export/lottie';
+import { unzipSync } from 'fflate';
 import './withInteractives';
 import { buildPlayable } from '../../src/export/playable';
 import { flowManifest } from '../../src/core/flow';
@@ -183,14 +186,72 @@ describe('GIF, APNG and video of a clip', () => {
   });
 });
 
-describe('Interactives and Lottie', () => {
+describe('Lottie and dotLottie of a clip', () => {
+  const doc = docWith([[0, 5]], 6);
+  doc.clips.push({ id: 'k', name: 'swing', start: 1, end: 3, loop: false, direction: 'pingpong', repeat: 2 });
+  doc.clips.push({ id: 'l', name: 'spin', start: 2, end: 4, loop: true, direction: 'pingpong' });
+  doc.clips.push({ id: 'q', name: 'plain', start: 0, end: 2, loop: true });
+  doc.markers = [{ id: 'm', name: 'mid', frame: 2 }] as never;
+  const s = (clipId: string) => ({ ...defaultSettings(doc), format: 'lottie' as const, range: 'clip' as const, clipId });
+  /** The source frame each moment shows, read back from the time remap the way a player does. */
+  const shown = (data: any) => {
+    const top = data.layers.find((l: any) => l.tm);
+    return top.tm.k.map((k: any) => Math.floor(k.s[0] * data.fr));
+  };
+
+  it('bakes the passes with a time remap over one copy of the animation, so nothing is drawn twice', () => {
+    const p = planExport(doc, s('k'), 0);
+    const data = docToLottie(doc, { range: p.range, order: p.order });
+    expect(p.order).toEqual([0, 1, 2, 1, 0]);
+    expect(data.op).toBe(5);
+    // Frame 1 of the document is the clip's first frame; the remap's time is counted from it.
+    expect(shown(data)).toEqual([0, 1, 2, 1, 0]);
+    expect(data.layers.filter((l: any) => l.ty === 0).length).toBe(1);
+    expect(data.assets.find((a: any) => a.id === data.layers.find((l: any) => l.tm).refId).layers.length).toBeGreaterThan(0);
+  });
+
+  it('a looping back and forth clip bakes one cycle, and the loop follows the clip', () => {
+    const p = planExport(doc, s('l'), 0);
+    expect(p.order).toEqual([0, 1, 2, 1]);
+    expect(p.loop).toBe(true);
+    expect(planExport(doc, s('k'), 0).loop).toBe(false);
+  });
+
+  it('a plain clip is left exactly as it was', () => {
+    const p = planExport(doc, s('q'), 0);
+    expect(p.order).toBeUndefined();
+    const data = docToLottie(doc, { range: p.range, order: p.order });
+    expect(data.layers.some((l: any) => l.tm)).toBe(false);
+    expect(data.op).toBe(3);
+  });
+
+  it('keeps the clip as one marker over the baked length, and a marker where it is first shown', () => {
+    const data = docToLottie(doc, { range: { start: 1, end: 3 }, order: [0, 1, 2, 1, 0] });
+    expect(data.markers).toEqual([{ tm: 0, cm: 'swing', dr: 5 }, { tm: 1, cm: 'mid', dr: 0 }]);
+  });
+
+  it('ignores an order that does not fit the range', () => {
+    expect(playOrder([0, 5], 3)).toBeUndefined();
+    expect(playOrder([0, 1, 2], 3)).toBeUndefined();
+    expect(playOrder([2, 1, 0], 3)).toEqual([2, 1, 0]);
+  });
+
+  it('puts the baked animation in a dotLottie file the same way, loop included', () => {
+    const p = planExport(doc, s('k'), 0);
+    const zip = readDotLottie(dotLottieBytes(docToLottie(doc, { range: p.range, order: p.order }), { loop: p.loop }), unzipSync);
+    expect(zip.manifest.initial.stateMachine).toBe('once');
+    expect(shown(Object.values(zip.animations)[0])).toEqual([0, 1, 2, 1, 0]);
+  });
+});
+
+describe('Interactives', () => {
   const doc = docWith([[0, 5]], 6);
   it('say what is not carried, only when a clip plays another way', () => {
     doc.clips = [{ id: 'q', name: 'q', start: 0, end: 2, loop: true }];
     expect(carryWarnings(doc, 'interactives')).toEqual([]);
     doc.clips = [bounce];
     expect(carryWarnings(doc, 'interactives')[0]).toMatch(/forward, looping or once/);
-    expect(carryWarnings(doc, 'lottie')[0]).toMatch(/no clip direction/);
+    expect(carryWarnings(doc, 'lottie')).toEqual([]);
     expect(carryWarnings(doc, 'gif')).toEqual([]);
   });
   it('the package carries only what the Interactives player reads (name, start, end, loop)', () => {
