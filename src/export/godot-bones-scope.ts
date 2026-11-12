@@ -337,6 +337,38 @@ export function allScopes(top: BonesScope): BonesScope[] {
   return out;
 }
 
+const layerHasEffects = (doc: Doc, l: Layer) => {
+  const folder = l.folder ? doc.folders?.[l.folder] : undefined;
+  return [...(l.effects ?? []), ...(folder?.effects ?? [])].some((e) => e.on !== false && (e.keys?.length || !isNoop(e.kind, valuesAt(e, 0))));
+};
+
+/** The symbols a layer shows copies of, and the symbols inside those, each once. */
+export function symbolsOnLayer(doc: Doc, layer: Layer): Id[] {
+  const out: Id[] = [];
+  const seen = new Set<Id>();
+  const visit = (l: Layer) => {
+    for (const cel of l.cels) {
+      const d = doc.drawings[cel.drawingId];
+      if (d?.kind !== 'vector') continue;
+      for (const s of d.shapes)
+        if (isInstance(s) && !seen.has(s.symbolId)) {
+          seen.add(s.symbolId);
+          out.push(s.symbolId);
+          for (const inner of symbolContent(doc, s.symbolId)?.layers ?? []) visit(inner);
+        }
+    }
+  };
+  visit(layer);
+  return out;
+}
+
+/** True when a symbol has effects on its layers (or their folders) and also hidden or reference layers, which every picture of it leaves out. */
+export function symbolDropsHiddenLayers(doc: Doc, id: Id): boolean {
+  const layers = symbolContent(doc, id)?.layers ?? [];
+  const dropped = (l: Layer) => !l.visible || l.reference || (!!l.folder && doc.folders?.[l.folder]?.visible === false);
+  return layers.some((l) => layerHasEffects(doc, l)) && layers.some(dropped);
+}
+
 /**
  * What the export dialog says about the look of the layers, without building any pictures: the effects that get baked,
  * what Godot does itself and what can't go. Cheap enough to run on every render of the dialog.
@@ -350,6 +382,7 @@ export function bonesNotes(doc: Doc): { native: string[]; baked: string[]; skipp
       if (!layer.visible || layer.reference || isRigLayer(layer) || layer.kind === 'camera') continue;
       if (layer.folder && doc.folders?.[layer.folder]?.visible === false) continue;
       const look = partLook(doc, layer, notes);
+      if (symbolsOnLayer(doc, layer).some((id) => symbolDropsHiddenLayers(doc, id))) notes.skip('Hidden or reference layers inside symbols with effects are left out of the pictures', layer.name);
       if (layer.mask) continue;
       if (depth < MAX_NEST && rigged.size) {
         for (const cel of layer.cels) {
