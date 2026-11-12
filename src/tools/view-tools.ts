@@ -11,6 +11,8 @@ import { HandOptions, ZoomOptions } from './options/ViewOptions';
 
 export const handTool: Tool = {
   id: 'hand',
+  group: 'view',
+  groupAt: 0,
   label: 'Hand',
   icon: 'hand',
   key: 'h',
@@ -30,6 +32,8 @@ let startAlt = false;
 
 export const zoomTool: Tool = {
   id: 'zoom',
+  group: 'view',
+  groupAt: 1,
   label: 'Zoom',
   icon: 'zoom',
   key: 'z',

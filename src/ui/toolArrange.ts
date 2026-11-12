@@ -9,16 +9,23 @@ export interface ToolGroup {
   tools: string[];
 }
 
-/** The groups the rail starts with, and the tools that belong in each (in this order). Tools not named go to Other. */
-export const DEFAULT_GROUPS: { id: string; name: string; tools: string[] }[] = [
-  { id: 'draw', name: 'Draw', tools: ['pencil', 'brush', 'eraser', 'fill', 'tile-brush', 'tile-eraser', 'tile-fill'] },
-  { id: 'extras', name: 'Colour and pixel extras', tools: ['shade', 'dither', 'gradient', 'eyedropper', 'tile-picker'] },
-  { id: 'shapes', name: 'Shapes', tools: ['line', 'rect', 'ellipse', 'polygon', 'star', 'tile-rect', 'text'] },
-  { id: 'select', name: 'Select and pen', tools: ['select', 'pixel-select', 'points', 'pen'] },
-  { id: 'rig', name: 'Rig and motion', tools: ['bone', 'pose', 'weights', 'motion-path', 'shape-hints'] },
-  { id: 'view', name: 'View', tools: ['hand', 'zoom', 'camera', 'artboard'] },
+/** The groups the rail starts with. A tool says which one it starts in (`group`) and where (`groupAt`) when it is registered. */
+export const DEFAULT_GROUPS: { id: string; name: string }[] = [
+  { id: 'draw', name: 'Draw' },
+  { id: 'extras', name: 'Colour and pixel extras' },
+  { id: 'shapes', name: 'Shapes' },
+  { id: 'select', name: 'Select and pen' },
+  { id: 'rig', name: 'Rig and motion' },
+  { id: 'view', name: 'View' },
 ];
 export const OTHER_GROUP = { id: 'other', name: 'Other' };
+
+/** What the rail needs to know of a tool to place it: its id and where it asked to start (a registered `Tool` fits). */
+export interface ToolRef {
+  id: string;
+  group?: string;
+  groupAt?: number;
+}
 
 const MAX_GROUPS = 24;
 const MAX_TOOLS = 120;
@@ -31,9 +38,9 @@ const rankOfGroup = (id: string): number => {
   return id === OTHER_GROUP.id ? DEFAULT_GROUPS.length : i < 0 ? DEFAULT_GROUPS.length + 1 : i;
 };
 
-/** Which default group a tool belongs to (Other when none names it). */
-export function defaultGroupOf(tool: string): string {
-  return DEFAULT_GROUPS.find((g) => g.tools.includes(tool))?.id ?? OTHER_GROUP.id;
+/** Which default group a tool starts in (Other when it names none, or one that is not a default group). */
+export function defaultGroupOf(tool: ToolRef): string {
+  return tool.group && DEFAULT_GROUPS.some((g) => g.id === tool.group) ? tool.group : OTHER_GROUP.id;
 }
 
 /** A saved arrangement made safe: bad ids and repeats dropped, sizes capped. Undefined when there is nothing to keep. */
@@ -75,7 +82,9 @@ export function groupName(g: ToolGroup, groups: ToolGroup[]): string {
  * place yet put in their default group (which comes back if it was emptied away), unknown ones in Other.
  * With nothing saved this is the default arrangement. Empty groups are dropped.
  */
-export function resolveGroups(saved: ToolGroup[] | undefined, ids: string[]): ToolGroup[] {
+export function resolveGroups(saved: ToolGroup[] | undefined, tools: ToolRef[]): ToolGroup[] {
+  const ids = tools.map((t) => t.id);
+  const ref = new Map(tools.map((t) => [t.id, t]));
   const have = new Set(ids);
   const groups: ToolGroup[] = [];
   const placed = new Set<string>();
@@ -86,12 +95,12 @@ export function resolveGroups(saved: ToolGroup[] | undefined, ids: string[]): To
   }
   // The unplaced, in the order a default rail would show them.
   const order = (t: string) => {
-    const g = DEFAULT_GROUPS.find((x) => x.tools.includes(t));
-    return g ? g.tools.indexOf(t) : 1000 + ids.indexOf(t);
+    const r = ref.get(t)!;
+    return defaultGroupOf(r) !== OTHER_GROUP.id && r.groupAt !== undefined ? r.groupAt : 1000 + ids.indexOf(t);
   };
   const loose = ids.filter((t) => !placed.has(t)).sort((a, b) => order(a) - order(b));
   for (const t of loose) {
-    const gid = defaultGroupOf(t);
+    const gid = defaultGroupOf(ref.get(t)!);
     let g = groups.find((x) => x.id === gid);
     if (!g) {
       const meta = gid === OTHER_GROUP.id ? OTHER_GROUP : DEFAULT_GROUPS.find((x) => x.id === gid)!;

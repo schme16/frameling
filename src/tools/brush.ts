@@ -90,6 +90,8 @@ function overlay(g: CanvasRenderingContext2D, ctx: ToolContext): void {
 
 export const brushTool: Tool = {
   id: 'brush',
+  group: 'draw',
+  groupAt: 1,
   label: 'Brush',
   icon: 'brush',
   key: 'b',

@@ -153,6 +153,8 @@ function angleDeg(a: P, b: P): number {
 
 export const cameraTool: Tool = {
   id: 'camera',
+  group: 'view',
+  groupAt: 2,
   label: 'Camera',
   icon: 'camera',
   layers: ['camera'],

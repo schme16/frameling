@@ -152,6 +152,8 @@ function overlay(g: CanvasRenderingContext2D, ctx: ToolContext): void {
 
 export const eraserTool: Tool = {
   id: 'eraser',
+  group: 'draw',
+  groupAt: 2,
   label: 'Eraser',
   icon: 'eraser',
   key: 'e',

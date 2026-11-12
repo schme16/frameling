@@ -84,6 +84,8 @@ function hoverFootprint(g: CanvasRenderingContext2D, ctx: ToolContext, size: num
 
 interface InkToolSpec {
   id: string;
+  group: string;
+  groupAt: number;
   label: string;
   icon: string;
   key?: string;
@@ -106,6 +108,8 @@ function inkTool(spec: InkToolSpec): Tool {
   let stroke: PixelStroke | null = null;
   return {
     id: spec.id,
+    group: spec.group,
+    groupAt: spec.groupAt,
     label: spec.label,
     icon: spec.icon,
     key: spec.key,
@@ -158,6 +162,8 @@ const rgbaOf = (hex: string | null) => (hex ? parseHex(hex) : null);
 
 export const shadeTool = inkTool({
   id: 'shade',
+  group: 'extras',
+  groupAt: 0,
   label: 'Shade',
   icon: 'shade',
   key: 's',
@@ -178,6 +184,8 @@ export const shadeTool = inkTool({
 
 export const ditherTool = inkTool({
   id: 'dither',
+  group: 'extras',
+  groupAt: 1,
   label: 'Dither',
   icon: 'dither',
   order: 24,

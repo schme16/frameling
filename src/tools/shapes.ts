@@ -179,6 +179,8 @@ function shapeTool(kind: 'rect' | 'ellipse' | 'line', label: string, icon: strin
   const pixEnd = (e: ToolPointer, ctx: ToolContext): ToolPointer => (kind === 'line' && pixStart && vanishingPoints(e.mod).length ? endAt(pixStart, e, ctx) : e);
   return {
     id: kind,
+    group: 'shapes',
+    groupAt: kind === 'line' ? 0 : kind === 'rect' ? 1 : 2,
     label,
     icon,
     key,

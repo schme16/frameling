@@ -9,6 +9,8 @@ import { editingText, editText, startNewText, stopEditingText } from './TextEdit
 
 export const textTool: Tool = {
   id: 'text',
+  group: 'shapes',
+  groupAt: 6,
   label: 'Text',
   icon: 'text',
   key: 't',

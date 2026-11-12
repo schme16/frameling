@@ -174,6 +174,8 @@ function startBone(e: ToolPointer, ctx: ToolContext): void {
 
 export const boneTool: Tool = {
   id: 'bone',
+  group: 'rig',
+  groupAt: 0,
   label: 'Bone',
   icon: 'bone',
   key: 'k',
@@ -291,6 +293,8 @@ export function dragPose(rig: RigLayer, d: PoseDrag, p: Pt): Pose {
 
 export const poseTool: Tool = {
   id: 'pose',
+  group: 'rig',
+  groupAt: 1,
   label: 'Pose',
   icon: 'pose',
   key: 'Shift+K',

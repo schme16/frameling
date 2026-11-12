@@ -484,6 +484,8 @@ function polygon(gx: CanvasRenderingContext2D, pts: Pt[]): void {
 
 export const selectTool: Tool = {
   id: 'select',
+  group: 'select',
+  groupAt: 0,
   label: 'Select',
   icon: 'select',
   key: 'v',

@@ -11,6 +11,7 @@ import { currentWorkspace, dock, stripTools } from './dock';
 import { startToolsDrag, nudgeTools } from './dockDrag';
 import { menuPoint, openDockMenu, toolsMenu } from './dockMenus';
 import type { DockZone } from './dockModel';
+import { useFeaturesVersion } from '../features/use';
 import { usePrefs } from './prefs';
 import { usePopover } from './popover';
 import { groupName, resolveGroups, visibleGroups, type ToolGroup } from './toolArrange';
@@ -137,6 +138,8 @@ function Flyout({ group, groups, anchor, place, visible, current, onPick, onClos
 }
 
 export function ToolStrip({ place = 'left' }: { place?: DockZone | 'float' }) {
+  // A feature turned on or off adds or takes away tools.
+  useFeaturesVersion();
   syncDynamicCommands();
   const sideways = place === 'top' || place === 'bottom';
   const style = usePrefs((p) => p.toolRail);
@@ -149,10 +152,24 @@ export function ToolStrip({ place = 'left' }: { place?: DockZone | 'float' }) {
   const tools = stripTools(usable, kind, wsId ? currentWorkspace() : undefined);
   const ids = tools.map((t) => t.id).join(',');
   const saved = dock.use((d) => d.layout.tools.groups);
-  const allIds = allTools().map((t) => t.id).join(',');
+  // Each tool with where it asked to start in the rail, as text so the memo below only reruns when that changes.
+  const allKey = allTools().map((t) => `${t.id}|${t.group ?? ''}|${t.groupAt ?? ''}`).join(',');
   const shown = useMemo(() => new Set(ids ? ids.split(',') : []), [ids]);
   const visible = (id: string) => shown.has(id);
-  const groups = useMemo(() => visibleGroups(resolveGroups(saved, allIds ? allIds.split(',') : []), (id) => shown.has(id)), [saved, allIds, shown]);
+  const groups = useMemo(
+    () =>
+      visibleGroups(
+        resolveGroups(
+          saved,
+          allKey.split(',').filter(Boolean).map((k) => {
+            const [id, group, at] = k.split('|');
+            return { id, group: group || undefined, groupAt: at === '' ? undefined : Number(at) };
+          }),
+        ),
+        (id) => shown.has(id),
+      ),
+    [saved, allKey, shown],
+  );
   const drag = toolDrag.use((d) => d);
   const note = railNote.use((n) => n);
   const front = frontTools.use((f) => f);
