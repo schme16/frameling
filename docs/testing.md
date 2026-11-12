@@ -303,6 +303,19 @@ npm run build
 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/selection.cjs [outDir]
 ```
 
+## Pixel drawing through a turned camera: scripts/e2e/pixel-camera.cjs
+
+Looks through a zoomed and turned camera (30 degrees, 90 degrees, and a layer at another depth) and draws a rectangle,
+ellipse, line, star and pencil stroke on a pixel layer with real mouse events, aimed at the middle of art pixels as the
+picture shows them. The cells that land in the layer must be exactly the ones the same drag makes with no camera, and the
+screen is read back at those cells to prove the picture and the pointer agree. Also shoots the pixel grid turned with the
+picture.
+
+```bash
+npm run build
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/pixel-camera.cjs [outDir]
+```
+
 ## Plugin sandbox: scripts/e2e/plugins.cjs
 
 Checks the sandbox page blocks network and storage, the frame can't reach the app, and both example plugins in

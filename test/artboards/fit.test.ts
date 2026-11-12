@@ -21,6 +21,7 @@ const join = (doc: Doc, ids: string[], opts = {}) => {
   return r;
 };
 
+const FIT = { k: 0.5, w: 64, h: 32 };
 const camOf = (d: Doc) => d.layers.find((l) => l.kind === 'camera') as CameraLayer;
 
 describe('fitting a shot into a picture', () => {
@@ -98,7 +99,7 @@ describe('joining shots of different sizes', () => {
     ab.content!.layers.push(layer);
     const { doc: out } = join(doc, ids, { fit: 'bars' });
     const view = cameraViewOn(out, camOf(out), 4)!;
-    expect(view).toEqual({ x: 40, y: 10, zoom: 1, rotation: 0 });
+    expect(view).toEqual({ x: 40, y: 10, zoom: 1, rotation: 0, fit: { k: 0.5, w: 64, h: 32 } });
     // The shot's own drawing is untouched.
     expect(k.view.zoom).toBe(2);
   });
@@ -120,9 +121,9 @@ describe('joining shots of different sizes', () => {
     artboardsOf(doc)[1].content!.layers.push({ id: 'cam', name: 'Camera', kind: 'camera', visible: true, locked: false, opacity: 1, cels: [{ id: 'kc', start: 1, length: 1, drawingId: k.id }] } as CameraLayer);
     const { doc: out } = join(doc, ids, { fit: 'bars' });
     const cam = camOf(out);
-    expect(cameraViewOn(out, cam, 4)).toEqual({ x: 32, y: 16, zoom: 0.5, rotation: 0 });
-    expect(cameraViewOn(out, cam, 5)).toEqual({ x: 40, y: 10, zoom: 1, rotation: 0 });
-    expect(cameraViewOn(out, cam, 6)).toEqual({ x: 32, y: 16, zoom: 0.5, rotation: 0 });
+    expect(cameraViewOn(out, cam, 4)).toEqual({ x: 32, y: 16, zoom: 0.5, rotation: 0, fit: FIT });
+    expect(cameraViewOn(out, cam, 5)).toEqual({ x: 40, y: 10, zoom: 1, rotation: 0, fit: FIT });
+    expect(cameraViewOn(out, cam, 6)).toEqual({ x: 32, y: 16, zoom: 0.5, rotation: 0, fit: FIT });
   });
 
   it('one bar colour for all when asked, none when same size', () => {

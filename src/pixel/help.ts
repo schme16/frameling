@@ -100,8 +100,25 @@ Each is one undo step. Run it twice for a thicker outline, or with a different s
 - **A line, a polygon, a star or a pen path** has its outline centred on the path, a little like a brush walking along it. The pen paints when you finish the path, and shows the thickness in its options too.
 - **The fill stays the fill.** Thickness only changes the outline. With the stroke set to none there is no outline, so the fill covers the shape as before.
 - It paints with the same brush shape as the pixel Brush, so pick a round brush for rounder corners.
-- Everything stays crisp: whole pixels, never blended. It follows the [palette lock](help:palette-lock), [mirror drawing](help:pixel-mirror), and the perspective guides (a thick rectangle or ellipse on a perspective plane keeps the size you dragged too).
+- Everything stays crisp: whole pixels, never blended. It follows the [palette lock](help:palette-lock), [mirror drawing](help:pixel-mirror), and the perspective guides (a thick rectangle or ellipse on a perspective plane keeps the size you dragged too; see [Pixel shapes on perspective guides](help:pixel-perspective)).
 - Looking through a zoomed [camera](help:camera), the thickness is what you see, like the brush: 4 pixels through a camera zoomed in 2x paints 2 (whole pixels, never less than 1).`,
+  },
+  {
+    id: 'pixel-perspective',
+    title: 'Pixel shapes on perspective guides',
+    section: 'Pixel art',
+    media: 'perspective-shapes-pixel.png',
+    summary: 'Turn on perspective guides and a rectangle or an ellipse on a pixel layer becomes a wall, a floor or a round window, in crisp pixels.',
+    keywords: ['perspective', 'vanishing point', 'wall', 'floor', 'horizon', 'guides', 'building', 'isometric', 'pixel', 'rectangle', 'ellipse', 'plane'],
+    body: `The picture shows a pink wall and a blue wall drawn with the [Rectangle](help:tool-rect) on a pixel layer, each with a window on it (a box on one, an oval on the other), all with perspective guides on.
+
+1. Turn on [perspective guides](help:grids-perspective) in View, one point or two, make sure snapping is on, and drag the vanishing points where you want them.
+2. Pick **Rectangle** or **Ellipse** and drag across the wall or floor, the way you would on a plain canvas.
+3. The shape follows the guides: its edges run to the vanishing points, and a window drawn inside a wall keeps the same slant. **On a plane** in the tool options picks **Floor**, **Left wall** or **Right wall**, or leave it on **Auto**.
+
+Everything is painted as whole pixels, never blended. The shape snaps to the pixel under the pointer, so even with a turned or zoomed [camera](help:camera) it lands where you aim. It keeps to the palette when the layer's [palette lock](help:palette-lock) is on, and a thicker outline works too (see [Pixel shapes](help:pixel-shapes)).
+
+Want a flat box on a perspective picture? Set **On a plane** to **Flat**, or hold **Ctrl** to ignore the guides for one shape.`,
   },
   {
     id: 'pixel-flip-rotate',

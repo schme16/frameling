@@ -10,7 +10,7 @@
  * only, so scaling just scales their moves.
  */
 import type { Cel, Doc, Easing, Id, Layer } from '../core/format';
-import { activeCamera, cameraViewAt, parallaxFactor, plainView, clampZoom } from '../core/camera';
+import { activeCamera, cameraViewAt, depthAnchor, depthScale, parallaxFactor, plainView, clampZoom } from '../core/camera';
 import { celAt } from '../core/doc';
 import { nextKey } from '../core/symbols';
 import { poseKeyAt, rigPoseAt, type RigLayer } from '../rig/pose';
@@ -248,6 +248,46 @@ function zUnit(sc: BonesScope): number {
 interface Tint {
   inst: NestedInstance;
   mats: Map<NativeBlend, { id: string; path: string }>;
+  /** The wash of the symbol this one sits in, when that is washed too: the two stack. */
+  parent?: Tint;
+}
+
+/** A colour wash: every colour mixes toward `color` by `amount`. */
+export interface Wash {
+  color: string;
+  amount: number;
+}
+
+/** How strongly a wash mixes in: its amount (never over 1) times the colour's own see-through, as the canvas paints it. */
+function washAmount(w: Wash): number {
+  const c = rgbaOf(w.color);
+  return Math.max(0, Math.min(1, w.amount)) * c[3];
+}
+
+/**
+ * One wash that does what two do when the outer one is laid over the inner (the canvas fills the colour over the copy
+ * twice, inner copy first): mix(mix(c, inner, a), outer, b) is mix(c, T, 1 - (1 - a)(1 - b)) for one colour T.
+ */
+export function stackWash(inner: Wash | null | undefined, outer: Wash | null | undefined): Wash | null {
+  const a = inner ? washAmount(inner) : 0;
+  const b = outer ? washAmount(outer) : 0;
+  if (a <= 0 && b <= 0) return null;
+  if (a <= 0) return outer!;
+  if (b <= 0) return inner!;
+  const amount = 1 - (1 - a) * (1 - b);
+  const ci = rgbaOf(inner!.color);
+  const co = rgbaOf(outer!.color);
+  const hex = (i: number) =>
+    Math.round(Math.max(0, Math.min(1, (ci[i] * a * (1 - b) + co[i] * b) / amount)) * 255)
+      .toString(16)
+      .padStart(2, '0');
+  return { color: `#${hex(0)}${hex(1)}${hex(2)}`, amount };
+}
+
+/** The wash a tint chain makes on its first frame (a symbol's own, with the ones around it stacked on top). */
+function firstWash(t: Tint): Wash | null {
+  const own = t.inst.at.find((s) => s?.tint)?.tint ?? null;
+  return stackWash(own, t.parent ? firstWash(t.parent) : null);
 }
 
 interface ScopeNodes {
@@ -382,9 +422,8 @@ function build(o: BonesSceneInput): { text: string; shaders: Set<NativeBlend> } 
         const id = `Tint_${tints.indexOf(tint) + 1}_${b}`;
         m = { id, path: nodePath };
         tint.mats.set(b, m);
-        const at0 = tint.inst.at.find((s) => !!s);
-        const color = tint.inst.at.find((s) => s?.tint)?.tint?.color ?? '#ffffff';
-        sub.push(`[sub_resource type="ShaderMaterial" id="${id}"]`, `shader = ${shaderRes(b)}`, `shader_parameter/tint_color = ${gdColor(color)}`, `shader_parameter/tint_amount = ${gdNum(at0?.tint?.amount ?? 0)}`, '');
+        const w = firstWash(tint);
+        sub.push(`[sub_resource type="ShaderMaterial" id="${id}"]`, `shader = ${shaderRes(b)}`, `shader_parameter/tint_color = ${gdColor(w?.color ?? '#ffffff')}`, `shader_parameter/tint_amount = ${gdNum(w ? washAmount(w) : 0)}`, '');
       }
       return [`material = SubResource("${m.id}")`];
     };
@@ -520,7 +559,7 @@ function build(o: BonesSceneInput): { text: string; shaders: Set<NativeBlend> } 
       // A group's own fade is self_modulate: plain modulate would fade every part again.
       const fadeProp = group ? 'self_modulate' : 'modulate';
       const tinted = inst.at.some((s) => s?.tint);
-      const tint: Tint | undefined = tinted ? { inst, mats: new Map() } : undefined;
+      const tint: Tint | undefined = tinted ? { inst, mats: new Map(), parent: inherit?.tint } : undefined;
       if (tint) tints.push(tint);
       nodes.push(
         `[node name=${gdString(n)} type=${gdString(group ? 'CanvasGroup' : 'Node2D')} parent=${gdString(at(host))}]`,
@@ -574,7 +613,8 @@ function build(o: BonesSceneInput): { text: string; shaders: Set<NativeBlend> } 
     type Keys = { t: number; trans: number; v: number[] }[];
     const vtrack = (path: string, keys: Keys, show: (v: number[]) => string) => track(path, 0, reduceKeys(keys).map((q) => ({ t: q.t, trans: q.trans, value: show(q.v) })));
 
-    const scopeTracks = (nd: ScopeNodes, fr: Frames, textures: BonesTexture[][]) => {
+    // `outerWash` is the wash of the symbol around this scope at each step, when it has one (stacked with its own).
+    const scopeTracks = (nd: ScopeNodes, fr: Frames, textures: BonesTexture[][], outerWash?: (Wash | null)[]) => {
       const sc = nd.sc;
       for (const { rig, bonePath } of nd.rigs) {
         const rk = rigKeys(rig, fr.f, a.fps);
@@ -648,13 +688,16 @@ function build(o: BonesSceneInput): { text: string; shaders: Set<NativeBlend> } 
         const opKeys = sampledKeys(n, a.fps, glide, (j) => (st[j] ? [inst.look.opacity * st[j]!.opacity] : null));
         if (opKeys.some((q) => Math.abs(q.v[0] - 1) > 1e-6)) vtrack(`${nn.path}:${nn.group ? 'self_modulate' : 'modulate'}`, opKeys, (v) => `Color(1, 1, 1, ${gdNum(v[0])})`);
         if (st.some((s) => !s)) track(`${nn.path}:visible`, 1, st.reduce<{ t: number; trans: number; value: string }[]>((acc, s, j) => (acc.length && acc[acc.length - 1].value === String(!!s) ? acc : [...acc, { t: j / a.fps, trans: 1, value: String(!!s) }]), []));
+        // This copy's wash with the ones around it stacked on top, step by step (the next level down sees it too).
+        let wash = outerWash;
         if (nn.tint) {
-          let lastColor = st.find((s) => s?.tint)?.tint?.color ?? '#ffffff';
-          const colors = st.map((s) => {
-            if (s?.tint) lastColor = s.tint.color;
+          wash = st.map((s, j) => stackWash(s?.tint, nn.tint!.parent ? outerWash?.[j] : null));
+          let lastColor = wash.find((w) => w)?.color ?? '#ffffff';
+          const colors = wash.map((w) => {
+            if (w) lastColor = w.color;
             return lastColor;
           });
-          const amounts = sampledKeys(n, a.fps, glide, (j) => (st[j] ? [st[j]!.tint?.amount ?? 0] : null));
+          const amounts = sampledKeys(n, a.fps, glide, (j) => (st[j] ? [wash![j] ? washAmount(wash![j]!) : 0] : null));
           const cols = sampledKeys(n, a.fps, glide, (j) => (st[j] ? rgbaOf(colors[j]) : null));
           for (const m of nn.tint.mats.values()) {
             vtrack(`${m.path}:material:shader_parameter/tint_amount`, amounts, (v) => gdFloat(v[0]));
@@ -669,7 +712,7 @@ function build(o: BonesSceneInput): { text: string; shaders: Set<NativeBlend> } 
           inner.f.push(lastF);
           inner.on.push(!!s);
         });
-        scopeTracks(nn.nodes, inner, nn.inst.scope.textures ?? nn.inst.scope.parts.map((p) => p.pictures.map(() => ({ path: 'res://missing.png', x: 0, y: 0, w: 1, h: 1 }))));
+        scopeTracks(nn.nodes, inner, nn.inst.scope.textures ?? nn.inst.scope.parts.map((p) => p.pictures.map(() => ({ path: 'res://missing.png', x: 0, y: 0, w: 1, h: 1 }))), wash);
       }
     };
     scopeTracks(rootNodes, { f: frames, on: frames.map(() => true) }, o.textures);
@@ -685,9 +728,8 @@ function build(o: BonesSceneInput): { text: string; shaders: Set<NativeBlend> } 
       for (const g of depthGroups) {
         // Scale about the camera's own centre of the layer, by how much less the far layer zooms.
         const grow = (v: ReturnType<typeof view>) => {
-          const sc = Math.pow(clampZoom(v.zoom), g.factor - 1);
-          const px = doc.width / 2 + (v.x - doc.width / 2) * g.factor;
-          const py = doc.height / 2 + (v.y - doc.height / 2) * g.factor;
+          const sc = depthScale(v, g.factor) / clampZoom(v.zoom);
+          const { x: px, y: py } = depthAnchor(doc, v, g.factor);
           return [sc, 0, 0, sc, px * (1 - sc) * k, py * (1 - sc) * k];
         };
         vtrack(`${g.path}:transform`, keys(grow), (v) => xf(v));

@@ -2,8 +2,10 @@
 import type { Id } from '../core/format';
 import { useStore } from '../core/store';
 import { setChoice, useChoice } from '../core/choices';
-import type { FitMode } from './fit';
+import { currentPictureSize, type FitMode } from './fit';
+import { PictureSizeControl } from './PictureSize';
 import type { ExportSettings } from '../export/types';
+import { customPicture } from './fit';
 import { artboardsOf, hasArtboards, activeArtboard, sizeOf } from './model';
 import { artboardExport, currentArtboardExport, modeOff, setArtboardExport, type ArtboardExportMode } from './export';
 
@@ -11,6 +13,8 @@ export function ArtboardExportPicker({ settings }: { settings: ExportSettings })
   const doc = useStore((s) => s.doc);
   artboardExport.use((c) => c);
   const fit = useChoice<FitMode>('artboards.fit');
+  useChoice('artboards.pictureSize');
+  customPicture.use((c) => c);
   if (!hasArtboards(doc) || doc.editing?.length) return null;
   const c = currentArtboardExport(doc);
   const list = artboardsOf(doc);
@@ -27,9 +31,10 @@ export function ArtboardExportPicker({ settings }: { settings: ExportSettings })
   };
   const mode = modes.find((m) => m.id === c.mode && !m.off) ? c.mode : 'one';
   const total = list.filter((a) => chosen.has(a.id)).reduce((t, a) => t + (a.content ? a.content.length : doc.length), 0);
-  const firstPick = list.find((a) => chosen.has(a.id));
-  const firstSize = firstPick ? `${sizeOf(doc, firstPick).w} x ${sizeOf(doc, firstPick).h}` : '';
-  const sizes = new Set(list.filter((a) => chosen.has(a.id)).map((a) => Object.values(sizeOf(doc, a)).join('x')));
+  const picked = list.filter((a) => chosen.has(a.id)).map((a) => ({ width: sizeOf(doc, a).w, height: sizeOf(doc, a).h }));
+  const pic = currentPictureSize(picked);
+  const picText = `${pic.width} x ${pic.height}`;
+  const sizes = new Set([...picked.map((p) => `${p.width}x${p.height}`), `${pic.width}x${pic.height}`]);
   return (
     <fieldset className="ab-export">
       <legend>Which artboards</legend>
@@ -50,6 +55,11 @@ export function ArtboardExportPicker({ settings }: { settings: ExportSettings })
           ))}
         </div>
       )}
+      {mode === 'joined' && (
+        <div className="ab-export-fit">
+          <PictureSizeControl sizes={picked} />
+        </div>
+      )}
       {mode === 'joined' && sizes.size > 1 && (
         <div className="ab-export-fit">
           <div className="ex-seg" role="group" aria-label="Shots of different sizes">
@@ -61,7 +71,7 @@ export function ArtboardExportPicker({ settings }: { settings: ExportSettings })
             </button>
           </div>
           <p className="ex-note">
-            These artboards are different sizes, so the picture is the first one's size ({firstSize}). {fit === 'bars' ? 'Each shot is shown whole, with bars where it does not fill the picture.' : 'Each shot covers the picture and what hangs over is cropped.'} {total} frames in all.
+            These artboards are not all the picture's size ({picText}). {fit === 'bars' ? 'Each shot is shown whole, with bars where it does not fill the picture.' : 'Each shot covers the picture and what hangs over is cropped.'} {total} frames in all.
           </p>
         </div>
       )}

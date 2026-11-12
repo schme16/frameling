@@ -58,6 +58,7 @@ export function mixViews(a: CameraView, b: CameraView, t: number, spin = 0): Cam
     y: lerp(a.y, b.y, t),
     zoom: za * Math.pow(zb / za, t),
     rotation: lerp(a.rotation, b.rotation, t) + spin * 360 * t,
+    ...(a.fit ? { fit: a.fit } : {}),
   };
 }
 
@@ -104,14 +105,32 @@ export function parallaxFactor(depth: number | undefined): number {
 export function cameraMatrix(doc: Pick<Doc, 'width' | 'height'>, view: CameraView, factor = 1): Mat {
   const cx = doc.width / 2;
   const cy = doc.height / 2;
-  const z = Math.pow(clampZoom(view.zoom), factor);
-  const px = cx + (view.x - cx) * factor;
-  const py = cy + (view.y - cy) * factor;
+  const z = depthScale(view, factor);
+  const a = depthAnchor(doc, view, factor);
   const r = -view.rotation * RAD;
   const c = Math.cos(r) * z;
   const s = Math.sin(r) * z;
   // translate(cx, cy) * scale(z) * rotate(r) * translate(-px, -py)
-  return [c, s, -s, c, cx - (c * px - s * py), cy - (s * px + c * py)];
+  return [c, s, -s, c, cx - (c * a.x - s * a.y), cy - (s * a.x + c * a.y)];
+}
+
+/**
+ * How much a layer `factor` along zooms (the whole view's zoom, as a scale). A view made by fitting a shot into a
+ * picture (view.fit) zooms the shot's own zoom by the factor and applies the fit after, so a far layer is the same
+ * size as the plain fit makes it.
+ */
+export function depthScale(view: CameraView, factor = 1): number {
+  const zoom = clampZoom(view.zoom);
+  const k = view.fit?.k;
+  return k && k > 0 ? k * Math.pow(zoom / k, factor) : Math.pow(zoom, factor);
+}
+
+/** The stage point a layer `factor` along keeps in the middle of the picture (pan scales with the factor). */
+export function depthAnchor(doc: Pick<Doc, 'width' | 'height'>, view: CameraView, factor = 1): { x: number; y: number } {
+  // A fitted view pans within the shot's own frame, whose middle is what the fit puts in the middle of the picture.
+  const cx = (view.fit ? view.fit.w : doc.width) / 2;
+  const cy = (view.fit ? view.fit.h : doc.height) / 2;
+  return { x: cx + (view.x - cx) * factor, y: cy + (view.y - cy) * factor };
 }
 
 /** Camera space back to stage space. */

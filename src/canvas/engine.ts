@@ -25,11 +25,11 @@ import { cssVar, subscribeTheme } from './theme';
 import { getViewSettings, subscribeViewSettings } from './viewSettings';
 import { ghostItems } from './ghost';
 import { drawDecorations } from './decorations';
-import { canvasCamera, currentView, lookingThrough, stageCamera } from '../camera/ops';
-import { cameraFrameCorners } from '../core/camera';
-import { invert, applyMat } from '../core/symbols';
+import { canvasCamera, canvasLayerCamera, currentView, lookingThrough, stageCamera } from '../camera/ops';
+import { cameraFrameCorners, matrixScale } from '../core/camera';
+import { invert, applyMat, type Mat } from '../core/symbols';
 import { screenToDoc, stageDeviceRect, wheelZoomFactor, zoomAbout, type Pt } from './view';
-import { overlayMatrix, toLayerSpace } from '../rig/pose';
+import { overlayMatrix, STAGE_TOOLS, toLayerSpace } from '../rig/pose';
 
 export interface EngineElements {
   root: HTMLElement;
@@ -373,6 +373,13 @@ export class CanvasEngine {
     if (tool?.overlay && !(this.gesture?.kind === 'pan')) {
       g.save();
       stageSpace();
+      // The tool's own marks sit on the picked layer, which may move at another camera speed.
+      const lc = cam && !STAGE_TOOLS.has(tool.id) ? canvasLayerCamera() : null;
+      if (cam && lc) {
+        const back = invert(cam);
+        g.transform(back[0], back[1], back[2], back[3], back[4], back[5]);
+        g.transform(lc[0], lc[1], lc[2], lc[3], lc[4], lc[5]);
+      }
       const bm = overlayMatrix(doc, ui.activeLayerId, ui.frame, tool.id);
       if (bm) g.transform(bm[0], bm[1], bm[2], bm[3], bm[4], bm[5]);
       tool.overlay(g, this.ctx);
@@ -392,9 +399,14 @@ export class CanvasEngine {
     const { layer } = activeLayer();
     if (!layer || layer.kind !== 'pixel' || layer.pixelSize * zoom < GRID_MIN_CELL) return;
     const { doc } = store().get();
-    const cell = layer.pixelSize * zoom * dpr;
     const cols = Math.ceil(doc.width / layer.pixelSize);
     const rows = Math.ceil(doc.height / layer.pixelSize);
+    const lc = canvasLayerCamera();
+    if (lc) {
+      this.drawPixelGridThroughCamera(g, rect, layer.pixelSize, cols, rows, lc, zoom);
+      return;
+    }
+    const cell = layer.pixelSize * zoom * dpr;
     const W = this.els.overlay.width;
     const H = this.els.overlay.height;
     const i0 = Math.max(0, Math.floor(-rect.x / cell));
@@ -420,6 +432,34 @@ export class CanvasEngine {
     g.globalAlpha = 0.4;
     g.strokeStyle = cssVar('--faint', '#7d7591');
     g.lineWidth = 1;
+    g.stroke();
+    g.restore();
+  }
+
+  /** The pixel grid when looking through the camera: its lines turn and scale with the picture, so they sit on the cells. */
+  private drawPixelGridThroughCamera(g: CanvasRenderingContext2D, rect: { x: number; y: number; w: number; h: number }, ps: number, cols: number, rows: number, m: Mat, zoom: number): void {
+    const scale = matrixScale(m);
+    if (ps * zoom * scale < GRID_MIN_CELL) return;
+    const { doc } = store().get();
+    g.save();
+    g.beginPath();
+    g.rect(rect.x, rect.y, rect.w, rect.h);
+    g.clip();
+    g.setTransform(rect.w / doc.width, 0, 0, rect.h / doc.height, rect.x, rect.y);
+    g.transform(m[0], m[1], m[2], m[3], m[4], m[5]);
+    g.beginPath();
+    for (let i = 0; i <= cols; i++) {
+      g.moveTo(i * ps, 0);
+      g.lineTo(i * ps, rows * ps);
+    }
+    for (let j = 0; j <= rows; j++) {
+      g.moveTo(0, j * ps);
+      g.lineTo(cols * ps, j * ps);
+    }
+    g.globalAlpha = 0.4;
+    g.strokeStyle = cssVar('--faint', '#7d7591');
+    // One device pixel wide whatever the zoom.
+    g.lineWidth = 1 / ((rect.w / doc.width) * scale);
     g.stroke();
     g.restore();
   }
@@ -454,12 +494,18 @@ export class CanvasEngine {
     this.bounds.top = r.top;
   }
 
-  private toDocPoint(e: { clientX: number; clientY: number }): Pt {
+  /** The screen point in stage space. `forTool`: through the picked layer's own camera speed (a layer at another depth). */
+  private toDocPoint(e: { clientX: number; clientY: number }, forTool = false): Pt {
     const { zoom, panX, panY } = store().get().ui;
     const p = screenToDoc({ zoom, panX, panY }, e.clientX - this.bounds.left, e.clientY - this.bounds.top);
     // Through the camera, the screen shows camera space: tools still work in stage space.
-    const cam = canvasCamera()?.matrix;
+    const cam = forTool && !this.stageToolNow() ? canvasLayerCamera() : canvasCamera()?.matrix;
     return cam ? applyMat(invert(cam), p.x, p.y) : p;
+  }
+
+  /** Bone, pose, hand and the like work on the stage as a whole, not on the picked layer's art. */
+  private stageToolNow(): boolean {
+    return STAGE_TOOLS.has(this.gesture?.kind === 'tool' ? this.gesture.tool.id : store().get().ui.tool);
   }
 
   /** On a layer attached to a bone, tools work on the part's own art where it is at rest. */
@@ -469,7 +515,7 @@ export class CanvasEngine {
   }
 
   private toPointer(e: PointerEvent): ToolPointer {
-    const p = this.toLayerPoint(this.toDocPoint(e));
+    const p = this.toLayerPoint(this.toDocPoint(e, true));
     const pen = e.pointerType === 'pen';
     return {
       x: p.x,
@@ -588,7 +634,7 @@ export class CanvasEngine {
     }
     this.lastPtr = ptr;
     const pred = typeof e.getPredictedEvents === 'function' ? e.getPredictedEvents() : [];
-    ctl.setPredicted(pred.map((pe) => this.toLayerPoint(this.toDocPoint(pe))));
+    ctl.setPredicted(pred.map((pe) => this.toLayerPoint(this.toDocPoint(pe, true))));
     this.invalidate(false, true);
   };
 

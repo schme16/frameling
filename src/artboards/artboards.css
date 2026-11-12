@@ -148,3 +148,36 @@
 .ab-item:not(:hover):not(:focus-within) .ab-move {
   display: none;
 }
+.ab-pic {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+}
+.ab-pic-label {
+  font-weight: 700;
+  color: var(--muted);
+}
+.ab-pic-custom {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ab-pic-side {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ab-pic-side input {
+  width: 5.5em;
+  font: inherit;
+  color: var(--text);
+  background: var(--raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  padding: 5px 8px;
+}
+.ab-pic-side input:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}

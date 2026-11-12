@@ -184,7 +184,7 @@ export function layerMatrix(doc: Doc, layer: Layer, frame: number, outer: Mat = 
 // ---------------------------------------------------------------- drawing on an attached layer
 
 // Tools that work on the canvas as a whole rather than on the active layer's art.
-const STAGE_TOOLS = new Set(['bone', 'pose', 'weights', 'hand', 'zoom', 'eyedropper']);
+export const STAGE_TOOLS = new Set(['bone', 'pose', 'weights', 'hand', 'zoom', 'eyedropper']);
 
 /**
  * Where a point on screen (stage space) is on an attached layer's own art at rest, so drawing on a turned arm lands

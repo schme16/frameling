@@ -153,6 +153,35 @@ module.exports = [
     })(),
   },
   {
+    // Shapes on perspective guides in pixels: a wall on each side, a window and a round window drawn on them.
+    name: 'perspective-shapes-pixel',
+    prefs: { showTips: false },
+    steps: (() => {
+      const g = grid(28, 24, 12, false);
+      return [
+        ...pixelDoc(null, ['r'], { background: '#fdf6e8' }),
+        ...properties,
+        center,
+        js(`${F}.run('view.perspective2')`),
+        wait(600),
+        // Two vanishing points on a horizon a third of the way down, off to each side of the picture.
+        js(`${F}.store().update('Perspective', (d) => { d.perspective = { points: [{ x: -90, y: 64 }, { x: 314, y: 64 }] }; })`),
+        wait(300),
+        setUi({ color: '#1d1b26', fillColor: '#8fd0ff', strokeOn: true, tool: 'rect' }),
+        stroke(g, [[1, 4], [12, 20]], { steps: 6 }),
+        setUi({ fillColor: '#ff9db8' }),
+        stroke(g, [[15, 4], [26, 20]], { steps: 6 }),
+        setUi({ fillColor: '#fff2c8' }),
+        stroke(g, [[4, 8], [8, 14]], { steps: 6 }),
+        setUi({ fillColor: '#ffffff', tool: 'ellipse' }),
+        stroke(g, [[19, 9], [24, 15]], { steps: 6 }),
+        away,
+        wait(5400),
+        { shot: '@', crop: [359, 47, 835, 418] },
+      ];
+    })(),
+  },
+  {
     name: 'pixel-outline',
     steps: [
       ...pixelDoc(slimeRows(), ['p']),

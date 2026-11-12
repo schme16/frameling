@@ -31,7 +31,7 @@ import { drawingBox, effectReach, renderFrame, strokeOutline } from '../core/ren
 import { buildPlan, planLayers, type PlanNode, type PlanStep } from '../effects/plan';
 import { activeEffects, effectInfo, isNoop, valuesAt } from '../effects/model';
 import { canTraceText, glyphSprites, particleSprites, SPRITE_UNIT, type ParticleSprite } from './sprites';
-import { cameraViewAt, cameraViewOn, activeCamera, parallaxFactor } from '../core/camera';
+import { cameraViewAt, cameraViewOn, activeCamera, depthAnchor, depthScale, parallaxFactor } from '../core/camera';
 import { encodePng } from '../io/png';
 import { flattenTilemap } from '../tiles/model';
 import { sortedStops } from '../core/gradient';
@@ -1380,9 +1380,9 @@ function cameraNulls(doc: Doc, from: number, to: number, depths: number[], first
       st: 0,
       sr: 1,
       ks: {
-        a: track(views.map((v) => [r3(cx + (v.x - cx) * fac), r3(cy + (v.y - cy) * fac)]), times, true),
+        a: track(views.map((v) => { const an = depthAnchor(doc, v, fac); return [r3(an.x), r3(an.y)]; }), times, true),
         p: stat([r3(cx), r3(cy)]),
-        s: track(views.map((v) => r3(Math.pow(v.zoom, fac) * 100)).map((z) => [z, z]), times, true),
+        s: track(views.map((v) => r3(depthScale(v, fac) * 100)).map((z) => [z, z]), times, true),
         r: track(views.map((v) => r3(-v.rotation)), times, true),
         o: stat(100),
       },

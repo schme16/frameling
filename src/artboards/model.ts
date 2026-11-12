@@ -11,7 +11,7 @@ import { cameraInverse, cameraViewOn } from '../core/camera';
 import { newPixelLayer, newVectorLayer, pruneDrawings, uid } from '../core/doc';
 import { rootDoc } from '../core/symbols';
 import { fileSafe } from '../export/plan';
-import { barColorFor, currentFit, fitPlacement, sameSize, type FitMode, type Placement } from './fit';
+import { barColorFor, currentFit, currentPictureSize, fitPlacement, sameSize, type FitMode, type Placement } from './fit';
 
 /** The id of the artboard a document without any has. */
 export const FIRST_ID = 'artboard-1';
@@ -429,7 +429,7 @@ export function arrangeArtboards(d: Doc, columns = 0): void {
 export interface JoinOptions {
   /** How a shot of another size fits the picture (default: whatever Preferences says, Fit). */
   fit?: FitMode;
-  /** The picture's size (default: the first shot's). */
+  /** The picture's size (default: what Preferences says, the first shot's). */
   size?: { width: number; height: number };
   /** The colour of the bars (default: the picture's background, or what Preferences says). */
   barColor?: string | null;
@@ -437,7 +437,7 @@ export interface JoinOptions {
 
 /**
  * Several artboards one after another as one document, for playing or exporting them as a single film. The picture
- * is the first shot's size (or `size`); a shot of another size is fitted into it, with bars (the picture's background colour) or
+ * is the first shot's size by default (or the largest, or a custom size: see fit.ts, or `size`); a shot of another size is fitted into it, with bars (the picture's background colour) or
  * cropped to fill (see fit.ts), by a camera key set for each of its frames. Each shot becomes a clip named after it,
  * its markers and sounds move along with it, and the stage colour of a shot that has its own goes in as a filled
  * layer underneath.
@@ -447,8 +447,9 @@ export function joinShots(doc: Doc, ids: Id[], opts: JoinOptions = {}): { doc: D
   const shots = ids.map((id) => findArtboard(root, id)).filter((a): a is Artboard => !!a);
   if (!shots.length) return { problem: 'Pick at least one artboard.' };
   const views = shots.map((a) => artboardDoc(root, a.id));
-  const w = Math.max(1, Math.round(opts.size?.width ?? views[0].width));
-  const h = Math.max(1, Math.round(opts.size?.height ?? views[0].height));
+  const pic = opts.size ?? currentPictureSize(views);
+  const w = Math.max(1, Math.round(pic.width));
+  const h = Math.max(1, Math.round(pic.height));
   const mode = opts.fit ?? currentFit();
   const bgs = new Set(views.map((v) => v.background));
   const oneBg = bgs.size === 1;
@@ -473,6 +474,8 @@ export function joinShots(doc: Doc, ids: Id[], opts: JoinOptions = {}): { doc: D
     const len = v.length;
     const tag = (s: string) => `${shot.id}:${s}`;
     const place = fitted[k] ? fitPlacement(v.width, v.height, w, h, mode) : null;
+    // Says the zoom includes the fit, so layers at another depth zoom the shot's own zoom and the fit comes after.
+    const fit = place ? { k: place.k, w: v.width, h: v.height } : undefined;
     if (!oneBg && v.background) {
       const dId = tag('bg');
       out.drawings[dId] = { id: dId, kind: 'vector', shapes: [{ id: dId, type: 'path', paths: [{ closed: true, points: [{ x: 0, y: 0 }, { x: v.width, y: 0 }, { x: v.width, y: v.height }, { x: 0, y: v.height }] }], fill: v.background, stroke: null, opacity: 1 }] };
@@ -499,7 +502,7 @@ export function joinShots(doc: Doc, ids: Id[], opts: JoinOptions = {}): { doc: D
             const src = v.drawings[c.drawingId];
             if (src?.kind !== 'camera') continue;
             const nd = `${c.drawingId}:fit${k}`;
-            out.drawings[nd] = { id: nd, kind: 'camera', view: { ...src.view, zoom: src.view.zoom * place.k } };
+            out.drawings[nd] = { id: nd, kind: 'camera', view: { ...src.view, zoom: src.view.zoom * place.k, fit } };
             c.drawingId = nd;
           }
         }
@@ -507,7 +510,7 @@ export function joinShots(doc: Doc, ids: Id[], opts: JoinOptions = {}): { doc: D
           // Frames where the shot's camera has no key show its plain view, which still needs the fit.
           const plain = (from: number, to: number, n: number) => {
             const dId = tag(`cam-gap${n}`);
-            out.drawings[dId] = { id: dId, kind: 'camera', view: { x: v.width / 2, y: v.height / 2, zoom: place.k, rotation: 0 } };
+            out.drawings[dId] = { id: dId, kind: 'camera', view: { x: v.width / 2, y: v.height / 2, zoom: place.k, rotation: 0, fit } };
             return { id: tag(`camc-gap${n}`), start: from, length: to - from, drawingId: dId };
           };
           const filled: typeof cels = [];
@@ -523,7 +526,7 @@ export function joinShots(doc: Doc, ids: Id[], opts: JoinOptions = {}): { doc: D
         camera.cels.push(...cels);
       } else {
         const dId = tag('cam');
-        out.drawings[dId] = { id: dId, kind: 'camera', view: place ? { x: v.width / 2, y: v.height / 2, zoom: place.k, rotation: 0 } : { x: w / 2, y: h / 2, zoom: 1, rotation: 0 } };
+        out.drawings[dId] = { id: dId, kind: 'camera', view: place ? { x: v.width / 2, y: v.height / 2, zoom: place.k, rotation: 0, fit } : { x: w / 2, y: h / 2, zoom: 1, rotation: 0 } };
         camera.cels.push({ id: tag('camc'), start: at, length: len, drawingId: dId });
       }
     }

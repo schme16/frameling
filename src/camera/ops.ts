@@ -4,7 +4,7 @@
 import type { CameraLayer, CameraView, Doc, Id } from '../core/format';
 import { celAt, findLayer } from '../core/doc';
 import { store, type State } from '../core/store';
-import { cameraLayerOf, cameraMatrix, cameraViewOn, clampZoom, newCameraLayer, plainView, setCameraKey } from '../core/camera';
+import { cameraLayerOf, cameraMatrix, layerCameraMatrix, cameraViewOn, clampZoom, newCameraLayer, plainView, setCameraKey } from '../core/camera';
 import { getViewSettings, setViewSettings } from '../canvas/viewSettings';
 import type { Mat } from '../core/symbols';
 import { toast } from '../ui/toast';
@@ -109,6 +109,18 @@ export function canvasCamera(s: State = store().get()): { view: CameraView; matr
   if (!lookingThrough(s)) return null;
   const view = currentView(s);
   return view ? { view, matrix: cameraMatrix(s.doc, view) } : null;
+}
+
+/**
+ * The same, for the picked layer: a layer at another depth moves at its own speed, so tools aimed at it (and the pixel
+ * grid over it) go through its own matrix. Falls back to the plain camera matrix for the camera layer or no pick.
+ */
+export function canvasLayerCamera(s: State = store().get()): Mat | null {
+  const cam = canvasCamera(s);
+  if (!cam) return null;
+  const layer = findLayer(s.doc, s.ui.activeLayerId);
+  if (!layer || layer.kind === 'camera') return cam.matrix;
+  return layerCameraMatrix(s.doc, layer, cam.view) ?? [1, 0, 0, 1, 0, 0];
 }
 
 /** True when the playhead is on a camera key's first frame (where changes go to that key, not a new one). */
