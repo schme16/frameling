@@ -3,7 +3,7 @@
 // Never on in normal use.
 import { rootDoc } from '../core/symbols';
 import { DEFAULT_BRUSH, newDoc, newPixelDrawing, newPixelLayer, newVectorDrawing, newVectorLayer } from '../core/doc';
-import type { Doc } from '../core/format';
+import type { ClipDirection, Doc } from '../core/format';
 import { store } from '../core/store';
 import { detectCapabilities } from './capabilities';
 import { exportDocument } from './exporter';
@@ -65,7 +65,9 @@ if (typeof window !== 'undefined' && new URLSearchParams(location.search).has('d
     defaults: () => defaultSettings(rootDoc(store().get().doc)),
     plan: (s: ExportSettings) => planExport(rootDoc(store().get().doc), s, store().get().ui.frame),
     caps: (w: number, h: number) => detectCapabilities(w, h),
-    addClip: (name: string, start: number, end: number, loop = true) => store().update('Add clip', (d) => void d.clips.push({ id: 'clip-' + name, name, start, end, loop })),
+    addClip: (name: string, start: number, end: number, loop = true, direction?: ClipDirection, repeat?: number) =>
+      store().update('Add clip', (d) => void d.clips.push({ id: 'clip-' + name, name, start, end, loop, ...(direction ? { direction } : {}), ...(repeat ? { repeat } : {}) })),
+    clearClips: () => store().update('Clear clips', (d) => void (d.clips = [])),
     rename: (name: string) => store().update('Rename', (d) => void (d.name = name)),
     setFrame: (n: number) => store().setUi({ frame: n }),
     /** Makes the export's bytes without saving them anywhere (the perf soak test). Returns the size and time. */

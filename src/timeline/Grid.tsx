@@ -32,6 +32,8 @@ import { celRef, layerTracks, type KeyRef } from './tracks';
 import { clampShift, deleteKeys, firstFrameOf, moveKeys, scaleKeys, scaleMap } from './keys';
 import { clearKeys, pickKeys } from './state';
 import { toast } from '../ui/toast';
+import { clipPlayItems } from './ClipPlay';
+import { playWords } from '../core/clipPlay';
 
 export const SIDE_W = 216;
 /** The detailed look's layer column is a little wider: it has a fold arrow and a solo switch too. */
@@ -237,7 +239,7 @@ function ClipsRow({ cw, from, to, h }: { cw: number; from: number; to: number; h
       {clips
         .filter((c) => c.end >= from && c.start <= to)
         .map((c) => (
-          <div key={c.id} className={`tl-clip${picked === c.id ? ' is-picked' : ''}`} data-clip={c.id} style={{ left: c.start * cw + 1, width: (c.end - c.start + 1) * cw - 2 }} title={`${c.name}: frames ${c.start + 1} to ${c.end + 1}${c.loop ? ', loops' : ''}. Click to play just this clip. Double-click to rename.`}>
+          <div key={c.id} className={`tl-clip${picked === c.id ? ' is-picked' : ''}`} data-clip={c.id} style={{ left: c.start * cw + 1, width: (c.end - c.start + 1) * cw - 2 }} title={`${c.name}: frames ${c.start + 1} to ${c.end + 1}${playWords(c) ? ', ' + playWords(c) : ''}. Click to play just this clip. Double-click to rename.`}>
             <span className="tl-clip-edge is-start" data-edge="start" />
             {editing === c.id ? (
               <InlineName
@@ -251,7 +253,9 @@ function ClipsRow({ cw, from, to, h }: { cw: number; from: number; to: number; h
             ) : (
               <span className="tl-clip-name">{c.name}</span>
             )}
-            {c.loop ? <Icon name="loop" size={11} className="tl-clip-loop" /> : null}
+            {c.direction === 'reverse' ? <Icon name="play" size={10} className="tl-clip-loop tl-clip-back" /> : null}
+            {c.direction === 'pingpong' || c.direction === 'pingpong-reverse' ? <Icon name="pingpong" size={11} className="tl-clip-loop" /> : null}
+            {c.loop ? <Icon name="loop" size={11} className="tl-clip-loop" /> : c.repeat && c.repeat > 1 ? <span className="tl-clip-times">{`x${c.repeat}`}</span> : null}
             <span className="tl-clip-edge is-end" data-edge="end" />
           </div>
         ))}
@@ -1044,7 +1048,8 @@ function clipMenu(c: Clip): MenuItem[] {
     { heading: `Clip: ${c.name} (frames ${c.start + 1} to ${c.end + 1})` },
     { label: tl().clipId === c.id ? 'Play everything again' : 'Play just this clip', onClick: () => setTl({ clipId: tl().clipId === c.id ? null : c.id }) },
     { label: 'Rename', onClick: () => setTl({ editing: { kind: 'clip', id: c.id } }) },
-    { label: 'Loops (repeats when it finishes)', checked: c.loop, onClick: () => void ops.setClipLoop(c.id, !c.loop) },
+    { separator: true },
+    ...clipPlayItems(c),
     { separator: true },
     {
       label: 'Delete clip',

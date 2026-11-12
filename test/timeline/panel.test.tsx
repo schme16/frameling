@@ -190,6 +190,52 @@ describe('timeline panel', () => {
     expect(host.querySelector('.tl-range')).toBeNull();
   });
 
+  it('the clip menu sets which way it plays and how often, and the clip shows a sign for it', () => {
+    const s = mount();
+    act(() => s.update('Clip', (d) => void d.clips.push({ id: 'k1', name: 'Bounce', start: 2, end: 6, loop: true })));
+    const open = () => act(() => void q('.tl-clip').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: CW * 3, clientY: 5 })));
+    const item = (label: string) => [...document.querySelectorAll<HTMLButtonElement>('.tl-menu-item')].find((b) => b.textContent!.includes(label))!;
+    open();
+    const words = [...document.querySelectorAll('.tl-menu-heading, .tl-menu-item')].map((e) => e.textContent!.replace('✓', '').trim());
+    expect(words).toEqual(expect.arrayContaining(['Plays', 'Forward', 'Backward (reverse)', 'Back and forth (ping-pong)', 'Back and forth, from the end', 'Repeat', 'Forever (loops)', 'Once (then holds the last frame)']));
+    expect(item('Forward').textContent).toContain('✓');
+    act(() => item('Back and forth (ping-pong)').click());
+    expect(s.get().doc.clips[0].direction).toBe('pingpong');
+    expect(host.querySelector('.tl-clip svg')).toBeTruthy();
+    open();
+    act(() => item('Once').click());
+    expect(s.get().doc.clips[0]).toMatchObject({ loop: false });
+    open();
+    const box = document.querySelector<HTMLInputElement>('.tl-menu-times input')!;
+    act(() => {
+      const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
+      set.call(box, '3');
+      box.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    act(() => void box.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })));
+    expect(s.get().doc.clips[0]).toMatchObject({ loop: false, repeat: 3, direction: 'pingpong' });
+    expect(q('.tl-clip-times').textContent).toBe('x3');
+  });
+
+  it('the palette commands change the picked clip', () => {
+    const s = mount();
+    s.update('Clip', (d) => void d.clips.push({ id: 'k1', name: 'Bounce', start: 2, end: 6, loop: true }));
+    const cmd = (id: string) => getCommand(id)!;
+    expect(cmd('timeline.clipBackAndForth').enabled?.(s.get())).toBe(false);
+    setTl({ clipId: 'k1' });
+    expect(cmd('timeline.clipBackAndForth').enabled?.(s.get())).toBe(true);
+    expect(cmd('timeline.clipForward').checked?.(s.get())).toBe(true);
+    act(() => void cmd('timeline.clipBackward').run());
+    expect(s.get().doc.clips[0].direction).toBe('reverse');
+    expect(cmd('timeline.clipBackward').checked?.(s.get())).toBe(true);
+    act(() => void cmd('timeline.clipOnce').run());
+    expect(s.get().doc.clips[0].loop).toBe(false);
+    act(() => void cmd('timeline.clipForever').run());
+    expect(s.get().doc.clips[0].loop).toBe(true);
+    act(() => void cmd('timeline.clipForward').run());
+    expect(s.get().doc.clips[0].direction).toBeUndefined();
+  });
+
   it('layer buttons: eye, lock, add vector and pixel, duplicate, delete', () => {
     const s = mount();
     const click = (el: Element) => act(() => (el as HTMLElement).click());

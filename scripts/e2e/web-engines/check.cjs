@@ -139,7 +139,8 @@ async function createWebChecker() {
             if (!t) out.problems.push(`css ${exp.name}: the class does not animate`);
             else {
               if (Math.abs(t.duration - total) > 0.6) out.problems.push(`css ${exp.name}: lasts ${t.duration} ms, wanted ${total}`);
-              if (t.iterations !== (exp.loop ? Infinity : 1)) out.problems.push(`css ${exp.name}: plays ${t.iterations} times, wanted ${exp.loop ? 'forever' : 'once'}`);
+              const times = exp.times || 1;
+              if (t.iterations !== (exp.loop ? Infinity : times)) out.problems.push(`css ${exp.name}: plays ${t.iterations} times, wanted ${exp.loop ? 'forever' : times}`);
               if (!exp.loop && t.fill !== 'forwards' && t.fill !== 'both') out.problems.push(`css ${exp.name}: does not stay on its last frame (fill ${t.fill})`);
             }
           }
@@ -149,7 +150,9 @@ async function createWebChecker() {
         const firstC = exp.checks.find((c) => c.i === 0);
         // Past the end: a loop starts over, anything else keeps its last frame.
         if (exp.loop && firstC) await shoot(`${exp.name} loops`, cls, total + 500 / exp.fps, null, firstC.ref);
-        if (!exp.loop && last) await shoot(`${exp.name} holds`, cls, total + 2000, null, last.ref);
+        if (!exp.loop && last) await shoot(`${exp.name} holds`, cls, total * (exp.times || 1) + 2000, null, last.ref);
+        // A clip that repeats: the start of the second go shows the first frame again.
+        if (!exp.loop && (exp.times || 1) > 1 && firstC) await shoot(`${exp.name} repeats`, cls, total + 500 / exp.fps, null, firstC.ref);
       }
       // The preview page the export makes: its animations are the same ones.
       await win.loadURL(`${srv.origin}/case/${job.html}`);
@@ -159,7 +162,7 @@ async function createWebChecker() {
       for (const [k, a] of live.entries()) {
         const exp = job.animations[k];
         if (exp && Math.abs(a.duration - (exp.count * 1000) / exp.fps) > 0.6) out.problems.push(`css: preview animation ${a.name} lasts ${a.duration} ms, wanted ${(exp.count * 1000) / exp.fps}`);
-        if (exp && a.iterations !== (exp.loop ? Infinity : 1)) out.problems.push(`css: preview animation ${a.name} plays ${a.iterations} times`);
+        if (exp && a.iterations !== (exp.loop ? Infinity : exp.times || 1)) out.problems.push(`css: preview animation ${a.name} plays ${a.iterations} times`);
       }
     }
     out.notes.push(`Chromium ${process.versions.chrome}: ${compared} CSS frames compared, worst mean ${worst.toFixed(3)}`);

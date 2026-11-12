@@ -12,6 +12,7 @@ import { buildSheetFiles } from './engines';
 import { playablePackage } from './playable';
 import { saveFile } from '../io/file';
 import { NO_SOUND_NOTE, prepareSound } from '../audio/export';
+import { audibleClips } from '../audio/clips';
 import { frameToSvg } from './svg';
 import { pdfFile, psdFile } from './layered-run';
 import { animatedSvg } from './svg-anim';
@@ -70,7 +71,7 @@ export async function runExport(ctx: RunContext): Promise<RunResult> {
   const crisp = doc.layers.length > 0 && doc.layers.every((l) => l.kind !== 'vector' || !!l.rig);
   const target = { width: plan.width, height: plan.height, scale: settings.scale, background: bg, crisp };
   const canvas = makeCanvas(plan.width, plan.height);
-  const frameAt = (i: number) => drawFrame(canvas, doc, plan.range.start + i, target);
+  const frameAt = (i: number) => drawFrame(canvas, doc, plan.range.start + (plan.order?.[i] ?? i), target);
   const rgbaAt = (i: number): RawImage => readPixels(frameAt(i));
   const step = (done: number, label: string) => onProgress({ done, total: plan.count, label });
 
@@ -149,7 +150,10 @@ export async function runExport(ctx: RunContext): Promise<RunResult> {
       const source = mp4 ? new VideoSampleSource(config) : new CanvasSource(canvas, config);
       output.addVideoTrack(source, { frameRate: doc.fps });
       // The timeline's sounds, mixed (a note comes back when there was sound but it could not go in).
-      const sound = await prepareSound(doc, mp4, plan.range.start, plan.count, output).catch(() => ({ track: null, note: NO_SOUND_NOTE }));
+      // A clip that plays backward or a set number of times no longer matches the timeline's sound, so that is left out.
+      const sound = plan.order
+        ? { track: null, note: audibleClips(doc.audio).length ? 'The video has no sound, because this clip plays in a different order than the timeline.' : undefined }
+        : await prepareSound(doc, mp4, plan.range.start, plan.count, output).catch(() => ({ track: null, note: NO_SOUND_NOTE }));
       try {
         await output.start();
         const dt = 1 / doc.fps;

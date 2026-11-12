@@ -38,7 +38,10 @@ window.runCheck = async function (cfg) {
     if (!r.expect(!!anim, `animation "${exp.name}" was not created`)) continue;
     r.expect(anim.frames.length === exp.count, `${exp.name}: ${anim.frames.length} frames, wanted ${exp.count}`);
     r.expect(anim.frameRate === exp.fps && WE.near(anim.msPerFrame, 1000 / exp.fps, 0.01), `${exp.name}: frame rate ${anim.frameRate} (${anim.msPerFrame} ms a frame), wanted ${exp.fps}`);
-    r.expect(anim.repeat === (exp.loop ? -1 : 0), `${exp.name}: repeat ${anim.repeat}, wanted ${exp.loop ? -1 : 0}`);
+    // A forward or backward clip that plays N times is one pass with Phaser's own repeat (N - 1); a loop is -1.
+    const times = exp.times || 1;
+    const wantRepeat = exp.loop ? -1 : times - 1;
+    r.expect(anim.repeat === wantRepeat, `${exp.name}: repeat ${anim.repeat}, wanted ${wantRepeat}`);
     r.expect(WE.near(anim.duration, exp.count * 1000 / exp.fps, 1), `${exp.name}: lasts ${anim.duration} ms, wanted ${exp.count * 1000 / exp.fps}`);
     r.expect(anim.frames.every((f) => f.textureKey === cfg.key && frameNames.includes(f.textureFrame)), `${exp.name}: a frame points at a missing texture frame`);
 
@@ -65,13 +68,14 @@ window.runCheck = async function (cfg) {
         let t0 = 0;
         let tRepeat = 0;
         let tEnd = 0;
+        let repeats = 0;
         s2.on(Phaser.Animations.Events.ANIMATION_START, () => { t0 = performance.now(); });
         s2.on(Phaser.Animations.Events.ANIMATION_UPDATE, (a, f) => seen.push(f.index));
-        s2.on(Phaser.Animations.Events.ANIMATION_REPEAT, () => { if (!tRepeat) tRepeat = performance.now(); });
+        s2.on(Phaser.Animations.Events.ANIMATION_REPEAT, () => { repeats++; if (!tRepeat) tRepeat = performance.now(); });
         s2.on(Phaser.Animations.Events.ANIMATION_COMPLETE, () => { tEnd = performance.now(); });
         s2.play(exp.name);
         const total = exp.count * 1000 / exp.fps;
-        await WE.sleep(exp.loop ? total * 1.6 + 300 : total + 600);
+        await WE.sleep(exp.loop ? total * 1.6 + 300 : total * times + 600);
         // The first frame starts the animation, then each change reports the new frame (1 is the first).
         const first = [1, ...seen].slice(0, exp.count);
         ex(first.length === exp.count && first.every((v, k) => v === k + 1), `${exp.name}: frames played in the order ${first.join(',')}`);
@@ -80,7 +84,8 @@ window.runCheck = async function (cfg) {
           if (tRepeat) ex(WE.near(tRepeat - t0, total, Math.max(60, total * 0.08)), `${exp.name}: one pass took ${Math.round(tRepeat - t0)} ms, wanted ${Math.round(total)}`);
         } else {
           ex(tEnd > 0, `${exp.name}: a clip that does not loop never finished`);
-          if (tEnd) ex(WE.near(tEnd - t0, total, Math.max(60, total * 0.08)), `${exp.name}: it took ${Math.round(tEnd - t0)} ms, wanted ${Math.round(total)}`);
+          if (tEnd) ex(WE.near(tEnd - t0, total * times, Math.max(60, total * times * 0.08)), `${exp.name}: it took ${Math.round(tEnd - t0)} ms, wanted ${Math.round(total * times)}`);
+          ex(repeats === times - 1, `${exp.name}: repeated ${repeats} times, wanted ${times - 1}`);
           ex(s2.frame.name === anim.frames[anim.frames.length - 1].textureFrame, `${exp.name}: did not stop on its last frame (${s2.frame.name})`);
         }
         s2.destroy();

@@ -31,7 +31,7 @@ Search for **Use palette from an Aseprite file** in the command palette (Ctrl+K)
 - **Linked cels** share one drawing, so a hold stays a hold.
 - **Each cel's position and opacity**, in every colour mode: full colour, grayscale and indexed.
 - **The palette**, as your drawing's palette. The original index details are kept in the drawing's notes.
-- **Tags** become named clips, so they work in exports and game engines.
+- **Tags** become named clips, so they work in exports and game engines. A tag's direction (forward, backward, back and forth) and how many times it repeats come across too, and Frameling's clips play and export that way.
 - **Tilemaps** become real tiles in your tileset, flips included, when they line up with the tile grid. Otherwise that layer comes across as flat pixels and the dialog says why.
 
 ## What gets approximated
@@ -39,7 +39,6 @@ Search for **Use palette from an Aseprite file** in the command palette (Ctrl+K)
 After an import, a message says **See what changed** whenever something couldn't be matched exactly. Typical cases:
 
 - **Subtract and Divide** blend modes don't exist in Frameling, so those layers blend normally.
-- **Tags that play backwards or ping-pong**, or repeat a number of times, play forward here. The direction is kept in the drawing's notes.
 - **Slices** (including 9-patch and pivots) are kept in the notes but not shown.
 - **Groups inside groups** become one folder. Hiding, fading and names carry over.
 - Anything drawn **outside the canvas** is cropped.

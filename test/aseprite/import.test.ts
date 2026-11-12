@@ -337,11 +337,14 @@ describe('tags, slices and user data', () => {
     ]);
   });
 
-  it('says which tags play another way', () => {
-    expect(notes.join(' ')).toContain('back (reverse)');
-    expect(notes.join(' ')).toContain('bounce (ping-pong)');
-    expect(notes.join(' ')).toContain('both (ping-pong reverse)');
-    expect(notes.join(' ')).toContain('bounce (3 times)');
+  it('maps tag direction and repeat count to the clips, with nothing left to approximate', () => {
+    expect(doc.clips.map((c) => [c.name, c.direction, c.repeat])).toEqual([
+      ['idle', undefined, undefined],
+      ['back', 'reverse', undefined],
+      ['bounce', 'pingpong', 3],
+      ['both', 'pingpong-reverse', undefined],
+    ]);
+    expect(notes.join(' ')).not.toMatch(/play forward in Frameling|direction is kept|repeat a set number/);
   });
 
   it('keeps direction, repeat, colours and user data in the notes', () => {

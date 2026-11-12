@@ -167,7 +167,7 @@ describe('the Preview', () => {
     const d = pixelDoc();
     d.clips = [{ id: 'c', name: 'run', start: 2, end: 4, loop: true }];
     expect(previewFrames(d, 'all', 3)).toEqual({ start: 0, end: 5, clip: null });
-    expect(previewFrames(d, 'clip', 3)).toEqual({ start: 2, end: 4, clip: 'run' });
+    expect(previewFrames(d, 'clip', 3)).toMatchObject({ start: 2, end: 4, clip: 'run' });
     expect(previewFrames(d, 'clip', 0)).toEqual({ start: 0, end: 5, clip: null });
   });
 

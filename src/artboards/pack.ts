@@ -4,7 +4,7 @@
  */
 import type { Clip } from '../core/format';
 import type { RawImage } from '../io/png';
-import { buildAtlas, buildCells, composeSheet, layoutCells, layoutPacked, type Animation, type Cell } from '../export/sheet';
+import { buildAtlas, buildCells, composeSheet, layoutCells, playing, layoutPacked, type Animation, type Cell } from '../export/sheet';
 
 export interface ArtboardFrames {
   name: string;
@@ -46,7 +46,7 @@ export function packArtboardAtlas(sets: ArtboardFrames[], o: PackOptions): { ima
       const a = Math.max(0, Math.min(c.start, c.end));
       const b = Math.min(n - 1, Math.max(c.start, c.end));
       if (a > b) continue;
-      animations.push({ name: `${set.name}/${c.name}`, fps: o.fps, loop: c.loop, frames: Array.from({ length: b - a + 1 }, (_, i) => first + a + i) });
+      animations.push({ name: `${set.name}/${c.name}`, fps: o.fps, loop: c.loop, ...playing(Array.from({ length: b - a + 1 }, (_, i) => first + a + i), c) });
     }
   }
   const layout = trim ? layoutPacked(cells, { padding: o.padding ?? 1, pot: o.pot, maxSide: o.maxSide }) : layoutCells(cells, { padding: o.padding ?? 1, pot: o.pot });

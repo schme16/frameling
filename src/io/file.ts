@@ -16,6 +16,7 @@ import { packAudio, unpackAudio } from './audio-file';
 import { keepUnknownShape, readExt, shapesForSave, withExt } from './ext';
 import { packArtboards, readArtboards } from '../artboards/io';
 import { upgradeLineage } from '../core/upgradeLineage';
+import { readClip } from '../core/clipPlay';
 
 export const FILE_EXTENSION = 'frameling';
 
@@ -269,7 +270,7 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
     background: typeof raw.background === 'string' ? raw.background : null,
     layers,
     drawings,
-    clips: Array.isArray(raw.clips) ? raw.clips.filter((c: any) => isObj(c) && typeof c.id === 'string') : [],
+    clips: Array.isArray(raw.clips) ? raw.clips.filter((c: any) => isObj(c) && typeof c.id === 'string').map(readClip) : [],
     markers: Array.isArray(raw.markers) ? raw.markers.filter((m: any) => isObj(m) && typeof m.id === 'string') : [],
     swatches: Array.isArray(raw.swatches) ? raw.swatches.filter((s: any) => isObj(s) && typeof s.id === 'string' && typeof s.color === 'string') : [],
     ...readPalette(raw.palette),

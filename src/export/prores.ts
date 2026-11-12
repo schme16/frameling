@@ -38,7 +38,7 @@ export async function runProres(doc: Doc, settings: ExportSettings, currentFrame
     for (let i = 0; i < plan.count; i++) {
       if (signal.aborted) throw cancelled();
       onProgress({ done: i, total: plan.count, label: `Drawing frame ${i + 1} of ${plan.count}` });
-      drawFrame(canvas, doc, plan.range.start + i, { width: plan.width, height: plan.height, scale: settings.scale, background: bg, crisp });
+      drawFrame(canvas, doc, plan.range.start + (plan.order?.[i] ?? i), { width: plan.width, height: plan.height, scale: settings.scale, background: bg, crisp });
       const img = readPixels(canvas);
       const r = await api.video.frame(started.id, new Uint8Array(img.pixels.buffer, img.pixels.byteOffset, img.pixels.byteLength));
       if ('error' in r) throw new Error(r.error);

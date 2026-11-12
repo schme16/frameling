@@ -402,6 +402,27 @@ describe('document, clips and markers', () => {
     expect(core.removeClip(d, id)).toBe(false);
     expect(d.clips).toHaveLength(1);
   });
+  it('sets how a clip plays: direction, forever, N times, once', () => {
+    const d = docWith([], 24);
+    const id = core.addClip(d, 2, 6);
+    expect(core.setClipDirection(d, id, 'forward')).toBe(false);
+    expect(core.setClipDirection(d, id, 'pingpong')).toBe(true);
+    expect(d.clips[0].direction).toBe('pingpong');
+    expect(core.setClipDirection(d, id, 'pingpong')).toBe(false);
+    expect(core.setClipDirection(d, id, 'forward')).toBe(true);
+    expect('direction' in d.clips[0]).toBe(false);
+    expect(core.setClipRepeat(d, id, 'forever')).toBe(false);
+    expect(core.setClipRepeat(d, id, 3)).toBe(true);
+    expect(d.clips[0]).toMatchObject({ loop: false, repeat: 3 });
+    expect(core.setClipRepeat(d, id, 3)).toBe(false);
+    expect(core.setClipRepeat(d, id, 1)).toBe(true);
+    expect(d.clips[0]).toMatchObject({ loop: false });
+    expect('repeat' in d.clips[0]).toBe(false);
+    expect(core.setClipRepeat(d, id, 0)).toBe(false);
+    expect(core.setClipRepeat(d, id, 'forever')).toBe(true);
+    expect(d.clips[0].loop).toBe(true);
+    expect(core.setClipDirection(d, 'nope', 'reverse')).toBe(false);
+  });
   it('adds, renames, moves and removes markers', () => {
     const d = docWith([], 24);
     const id = core.addMarker(d, 40);

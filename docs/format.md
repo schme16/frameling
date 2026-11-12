@@ -92,6 +92,8 @@ Repaired quietly (defaults filled, values clamped):
 - Tweens: unknown easing becomes `'linear'`, `spin` is rounded, a motion path needs two good points, shape hints
   are kept only on shape tweens, at most 26.
 - Clip flow: transitions between clips that don't exist are dropped; triggers are cut to 60 characters.
+- Clips: `direction` is kept only when it is one of the four known words (and not `'forward'`); `repeat` only when it
+  rounds to a whole number from 2 to 999 (`readClip` in `src/core/clipPlay.ts`, also used for artboards).
 - Gradients that don't parse are removed from the shape (`cleanGradients` in `src/core/gradient.ts`).
 - Text and particles are read field by field with clamps and defaults (`src/io/shapes-extra.ts`); particle defaults
   come from the shape's `preset`.
@@ -282,8 +284,13 @@ See `docs/effects.md`.
 
 ### Clips, markers, swatches, palette, tiles
 
-- `Clip`: `{id, name, start, end, loop}`, frames inclusive. `Marker`: `{id, name, frame}`. `Swatch`: `{id, name,
-  color}`.
+- `Clip`: `{id, name, start, end, loop, direction?, repeat?}`, frames inclusive. `loop` repeats forever. When it is
+  false the clip plays `repeat` times (a whole number from 1 to 999, missing = once) and holds the frame it ends on.
+  `direction` is `'forward'` (missing), `'reverse'`, `'pingpong'` or `'pingpong-reverse'`. One pass of back and forth
+  is 0..n-1 and back down to 0 with each end shown once per turn (a pass shows 2n-2 frames), so a clip that plays
+  it once ends where it started. Old files have neither field and play forward, exactly as before. The rules and the
+  maths are in `src/core/clipPlay.ts` (`directedPosition` for playback, `bakedPositions` for exports).
+  `Marker`: `{id, name, frame}`. `Swatch`: `{id, name, color}`.
 - `DocPalette`: `{name, colors, ramps?}`; `ramps` lists where each ramp starts.
 - `Tileset`: `{tileWidth, tileHeight, tiles, nextKey}`. `Tile`: `{key, name, frames: {drawingId, duration}[]}`. Keys
   are never reused, so maps keep pointing at the right tile.
@@ -333,7 +340,9 @@ Written by `src/export/playable.ts` (`playablePackage`), a zip with media type `
 - `layers`: `{name, kind, visible, opacity, pixelSize?}`, reference layers left out. Information only; frames are
   already flattened.
 - `source`: `'source.frameling'` or `null`.
-- `flow?`: when the document has a clip flow, `{start, states: {name, loop, frames}[], transitions: {from, to, on:
+- Clip `direction` and `repeat` are not in the package: the Interactives player's clips are `{name, start, end,
+  loop}` and play forward, looping or once, so nothing it ignores is written. The `.frameling` source inside has them.
+- `flow?`: when the document has a clip flow, `{start, states: {name, loop, frames, direction?, repeat?}[], transitions: {from, to, on:
   'end' | 'trigger', trigger?}[]}` by clip name (`flowManifest` in `src/core/flow.ts`). Older readers ignore it.
 
 Changes stay additive: a new field is optional, and anything that would break an older player bumps `version`.

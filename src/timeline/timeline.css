@@ -596,6 +596,24 @@
   flex: none;
   opacity: 0.8;
 }
+.tl-clip-back {
+  transform: scaleX(-1);
+}
+.tl-clip-times {
+  flex: none;
+  font-size: 10px;
+  font-weight: 700;
+  opacity: 0.85;
+}
+.tl-menu-times {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+.tl-menu-times input {
+  width: 4.5em;
+}
 .tl-clip-edge {
   position: absolute;
   top: 0;

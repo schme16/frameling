@@ -86,7 +86,7 @@ describe('play range (in and out)', () => {
     off = pb.installPlayback(s);
     setInOut(4, 6);
     expect(s.get().doc.inOut).toEqual({ start: 4, end: 6 });
-    expect(pb.playRange(s.get().doc, null)).toEqual({ start: 4, end: 6, clipLoops: true });
+    expect(pb.playRange(s.get().doc, null)).toMatchObject({ start: 4, end: 6, clipLoops: true });
     const clock = manual();
     pb.play();
     expect(s.get().ui.frame).toBe(4);

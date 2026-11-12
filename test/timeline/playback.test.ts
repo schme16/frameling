@@ -266,3 +266,116 @@ describe('with the real timer fallback', () => {
     expect(s.get().ui.frame).toBe(at);
   });
 });
+
+describe('a clip with a direction and a repeat count', () => {
+  /** The frames shown at each of `n` ticks after pressing play, one frame per tick (fps 10, 100 ms steps). */
+  function shown(s: ReturnType<typeof start>, n: number) {
+    const clock = manual();
+    const out = [s.get().ui.frame];
+    pb.play();
+    out[0] = s.get().ui.frame;
+    for (let i = 1; i < n; i++) {
+      clock.advance(100);
+      out.push(s.get().ui.frame);
+    }
+    return out;
+  }
+  it('plays backward from its last frame', () => {
+    const s = start(12, 10);
+    const id = ops.addClip(2, 5, 'Back').id!;
+    ops.setClipDirection(id, 'reverse');
+    setTl({ clipId: id });
+    expect(shown(s, 5)).toEqual([5, 4, 3, 2, 5]);
+  });
+  it('plays back and forth, each end once per turn', () => {
+    const s = start(12, 10);
+    const id = ops.addClip(2, 5, 'Bounce').id!;
+    ops.setClipDirection(id, 'pingpong');
+    setTl({ clipId: id });
+    expect(shown(s, 9)).toEqual([2, 3, 4, 5, 4, 3, 2, 3, 4]);
+  });
+  it('plays from the end first when it goes back and forth from the end', () => {
+    const s = start(12, 10);
+    const id = ops.addClip(2, 5, 'Bounce').id!;
+    ops.setClipDirection(id, 'pingpong-reverse');
+    setTl({ clipId: id });
+    expect(shown(s, 8)).toEqual([5, 4, 3, 2, 3, 4, 5, 4]);
+  });
+  it('plays N times and holds the last frame', () => {
+    const s = start(12, 10);
+    const id = ops.addClip(2, 3, 'Thrice').id!;
+    ops.setClipRepeat(id, 3);
+    setTl({ clipId: id });
+    const clock = manual();
+    pb.play();
+    const out = [s.get().ui.frame];
+    for (let i = 0; i < 5; i++) {
+      clock.advance(100);
+      out.push(s.get().ui.frame);
+    }
+    expect(out).toEqual([2, 3, 2, 3, 2, 3]);
+    expect(s.get().ui.playing).toBe(true);
+    clock.advance(100);
+    expect(s.get().ui.frame).toBe(3);
+    expect(s.get().ui.playing).toBe(false);
+  });
+  it('a backward clip that plays once holds its first frame and starts again from its end', () => {
+    const s = start(12, 10);
+    const id = ops.addClip(2, 4, 'Back').id!;
+    ops.setClipDirection(id, 'reverse');
+    ops.setClipRepeat(id, 1);
+    setTl({ clipId: id });
+    const clock = manual();
+    pb.play();
+    clock.run(1000);
+    expect(s.get().ui.frame).toBe(2);
+    expect(s.get().ui.playing).toBe(false);
+    pb.play();
+    expect(s.get().ui.frame).toBe(4);
+  });
+  it('the clip repeat count wins over the loop switch, and forever follows it', () => {
+    const s = start(12, 10);
+    s.setUi({ loopPlayback: false });
+    const id = ops.addClip(2, 3, 'Twice').id!;
+    ops.setClipRepeat(id, 2);
+    setTl({ clipId: id });
+    const clock = manual();
+    pb.play();
+    clock.run(300);
+    expect(s.get().ui.playing).toBe(true);
+    clock.run(300);
+    expect(s.get().ui.playing).toBe(false);
+    ops.setClipRepeat(id, 'forever');
+    pb.play();
+    clock.run(1000);
+    expect(s.get().ui.playing).toBe(false);
+  });
+  it('the toolbar switch plays a clip with no direction back and forth; a clip with its own direction goes its own way', () => {
+    const s = start(12, 10);
+    s.setUi({ pingPong: true });
+    const id = ops.addClip(2, 4, 'Plain').id!;
+    setTl({ clipId: id });
+    expect(pb.upcomingFrames(s.get().doc, 4, 2, true, id, true)).toEqual([3, 2]);
+    ops.setClipDirection(id, 'reverse');
+    expect(pb.upcomingFrames(s.get().doc, 4, 2, true, id, true)).toEqual([3, 2]);
+  });
+  it('tells listeners each time a loop comes round', () => {
+    const s = start(12, 10);
+    const id = ops.addClip(2, 4, 'Loop').id!;
+    ops.setClipDirection(id, 'reverse');
+    setTl({ clipId: id });
+    let rounds = 0;
+    const off2 = pb.onPlayPass(() => rounds++);
+    const clock = manual();
+    pb.play();
+    clock.run(1000);
+    off2();
+    expect(rounds).toBe(3);
+  });
+  it('looks ahead the way it plays', () => {
+    const s = start(12, 10);
+    const id = ops.addClip(2, 5, 'Bounce').id!;
+    ops.setClipDirection(id, 'reverse');
+    expect(pb.upcomingFrames(s.get().doc, 4, 3, true, id)).toEqual([3, 2, 5]);
+  });
+});

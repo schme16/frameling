@@ -88,6 +88,9 @@ Like a GIF with none of the limits: full colour and soft see-through edges. It w
 
 GIF and APNG can **loop forever**, or play once and stop. Videos have no loop setting. Players decide that themselves.
 
+## Exporting a clip
+
+Pick **One clip** in the Range row and the file follows how that clip plays ([clip direction and repeat](help:timeline-clip-play)). A clip that plays **backward** comes out backward. **Back and forth** comes out as one trip there and back, and a clip that plays **3 times** is in the file 3 times, so it looks the same everywhere. A video made this way has no sound, because the timeline's sound doesn't match the new order.
 ## Good to know
 
 - Pixel art exports at big whole-number sizes with sharp edges, never blurry.
@@ -122,7 +125,7 @@ For pixel art, **Art size** (in the Size row) makes one art pixel one pixel, so 
 
 ## An animation, or separate sprites
 
-- **An animation:** each **clip** (idle, run, jump...) becomes an animation with its own loop and speed. No clips? The whole timeline is one called **default**.
+- **An animation:** each **clip** (idle, run, jump...) becomes an animation with its own loop and speed. A clip that plays [backward, back and forth or a set number of times](help:timeline-clip-play) is saved that way. No clips? The whole timeline is one called **default**.
 - **Separate sprites:** each frame is its own sprite, for icons, items or tiles. A **marker** on a frame names it ("coin"). Choose **All on one sheet** or **One PNG each**.
 
 ## Sheet options
@@ -146,6 +149,8 @@ For pixel art, **Art size** (in the Size row) makes one art pixel one pixel, so 
   "meta": { "image": "hero.png", "size": { "w": 256, "h": 128 }, "fps": 12 },
   "animations": { "run": { "fps": 12, "loop": true, "frames": [0, 1, 2] } } }
 \`\`\`
+
+\`frames\` is already in the order the clip plays: a clip that plays backward or back and forth lists its frames that way, and one that plays 3 times lists them 3 times (with \`"loop": false\`). A clip that doesn't play plain forward also says what it was set to, as \`"direction": "reverse"\`, \`"pingpong"\` or \`"pingpong-reverse"\`, and \`"repeat": 3\`. They are there to read; don't apply them again.
 
 Leave a layer out of every export by making it a [reference layer](help:reference-layers).`,
   },
@@ -221,7 +226,7 @@ The export window lists what was baked or left out for your drawing.`,
 $AnimatedSprite2D.play("run")
 \`\`\`
 
-Every clip is there with its speed and loop setting, and held frames last as long as they do in Frameling. Got a character with bones? You can also send it as a [skeleton you can keep editing](help:export-godot-bones). Pixel art scenes are set to sharp (nearest) filtering, so nothing looks blurry.
+Every clip is there with its speed and loop setting, and held frames last as long as they do in Frameling. A clip that plays backward or back and forth has its frames listed in that order (Godot's animations have no direction of their own), and one that plays a number of times lists them that many times and doesn't loop. Got a character with bones? You can also send it as a [skeleton you can keep editing](help:export-godot-bones). Pixel art scenes are set to sharp (nearest) filtering, so nothing looks blurry.
 
 ## Using the .tres yourself
 
@@ -256,7 +261,7 @@ With the 2D Sprite package (2D projects have it) the importer cuts the sprites t
 ## In Unity
 
 1. Switch to Unity. The small script reads the \`.json\` beside your picture and cuts it into sprites. Pixel art is set to sharp (point) filtering with no compression.
-2. Next to the picture you'll find an animation clip for each of your clips (\`hero_run.anim\`...), with your loop settings.
+2. Next to the picture you'll find an animation clip for each of your clips (\`hero_run.anim\`...), with your loop settings. Looping clips use Unity's *Loop* wrap mode and the others hold their last frame (*Clamp Forever*). Backward and back and forth clips have their sprites in that order, so they play right in an Animator, and one that plays 3 times has the sprites 3 times.
 3. Drag a clip onto a sprite in your scene, and Unity sets up the Animator for you. Or open the picture's arrow to see every sprite.
 
 Export again any time: sprites keep their identity, so scenes that use them don't break.
@@ -281,7 +286,7 @@ Press **Ctrl+E**, pick **Sprite sheet**, then the **Phaser** card, and export in
 
 - \`hero.png\`: the sheet,
 - \`hero.json\`: where every frame is (a JSON hash atlas),
-- \`hero-anims.json\`: one animation per clip, with speed and looping.
+- \`hero-anims.json\`: one animation per clip, with speed and looping. A clip that plays a number of times uses Phaser's own **repeat**. Backward and back and forth clips list their frames in that order (Phaser's *yoyo* shows each end twice, so it isn't used).
 
 ## In your game
 
@@ -324,7 +329,7 @@ hero.play();
 app.stage.addChild(hero);
 \`\`\`
 
-Frames you held for longer are listed more than once, so they play for the right time. Each clip's speed and loop setting are also in the JSON under \`meta.frameling.animations\`, if you'd rather read them than type them.
+Frames you held for longer are listed more than once, so they play for the right time. Each clip's speed and loop setting are also in the JSON under \`meta.frameling.animations\`, if you'd rather read them than type them. A clip that plays backward or back and forth is listed in that order, and one that plays 3 times is listed 3 times with \`loop\` off (PixiJS has no repeat count).
 
 ## Pixel art
 
@@ -352,7 +357,7 @@ Press **Ctrl+E**, pick **Sprite sheet**, then **Web page (CSS)**. You get:
 <div class="hero hero-run"></div>
 \`\`\`
 
-The second class picks the clip. Loops keep going; clips that don't loop stop on their last frame. Swap the class to change clip.
+The second class picks the clip. Loops keep going; clips that don't loop stop on their last frame. A clip that plays 3 times uses CSS's own \`animation-iteration-count\`. Backward and back and forth clips list their frames in that order (CSS's \`animation-direction\` would show each end twice, or a step late). Swap the class to change clip.
 
 ## Good to know
 
@@ -409,7 +414,7 @@ Under **File type** in the Export window:
 - **In-betweens (tweens)** become keyframes with their easing. *Springy*, *Bouncy*, paths to follow and **morphs** get keys fitted to the motion, so a few stand in for every frame.
 - **The camera** pans, zooms and turns, and layers with depth move at their own speed.
 - **Pixel and tile layers** become pictures inside the file, made big enough to stay crisp.
-- **Clips** become named markers, so a player can play one clip by name. Markers come along too.
+- **Clips** become named markers, so a player can play one clip by name. Markers come along too. A Lottie file has no clip direction or repeat count, so those aren't carried.
 - **Text** becomes letter shapes, so no font files are needed. **Particles** become one small shape each. **Colour wash** recolours the copy's shapes.
 - **Blend modes** stay as they are; **masks** and **clipping** become *track mattes*.
 - **Fades:** a layer, folder or symbol copy you fade is faded as one picture, so overlapping shapes don't show through each other (a see-through matte in the file).
@@ -482,7 +487,7 @@ It uses **CSS animations** inside the SVG rather than SVG's own animation tags (
 ## What's in the file
 
 - Every frame, with frames that look the same stored only once (a drawing held for 6 frames is one picture held for 6 frames).
-- Your clips, with their loop settings, and your markers.
+- Your clips, with their loop settings, and your markers. Interactives plays a clip forward, looping or once, so a clip that plays backward, back and forth or a set number of times plays forward there. Those settings stay in the editable drawing inside the package.
 - The frame rate, size, and whether it is pixel art.
 - Your editable drawing too, unless you untick **Include the editable drawing**. Leave it in if you might change the animation later; take it out for the smallest file.
 

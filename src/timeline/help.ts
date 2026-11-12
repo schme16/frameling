@@ -344,12 +344,46 @@ Click the **x** beside the range in the top bar, or use **Timeline > Play everyt
 ## Using a clip
 
 - **Click** a clip to play just that part. Playback and the first and last frame buttons stay inside it. Click it again to go back to the whole animation.
-- **Double-click** to rename it. Right-click for more: loop on or off, delete.
-- The **loop** flag is saved with the clip. A game engine uses it to know whether to repeat it, like a run cycle (loops) or a jump (doesn't).
+- **Double-click** to rename it. Right-click for more: which way it plays, how often it repeats, delete.
+- **Plays** and **Repeat** are saved with the clip: forward, backward or [back and forth](help:timeline-clip-play), and forever (a run cycle), once (a jump) or a number of times. A game engine reads them too.
 
 > Frames in your animation that are not in any clip still play and still export. Clips just give them names.
 
 When you export a sprite sheet or a game animation file, each clip becomes its own animation.`,
+  },
+  {
+    id: 'timeline-clip-play',
+    title: 'Clip direction and repeat (back and forth)',
+    section: 'Animating',
+    media: 'clip-play.mp4',
+    summary: 'Make a clip play backward, back and forth, or a set number of times. Playing and every export follow it.',
+    keywords: ['clip', 'direction', 'reverse', 'backward', 'ping pong', 'pingpong', 'back and forth', 'boomerang', 'yoyo', 'repeat', 'loop', 'once', 'times', 'play'],
+    body: `A [clip](help:timeline-clips) can play three ways, and repeat as often as you like. Say it once on the clip and the timeline, your sprite sheets and your game animations all follow.
+
+## Setting it
+
+Right-click the clip in the clips row (or pick it and use the command palette, **Ctrl+K**).
+
+- **Plays:** **Forward**, **Backward** (reverse), **Back and forth** (ping-pong) or **Back and forth, from the end**.
+- **Repeat:** **Forever** (it loops), **Once** (it stops and holds its last frame) or a number of **times**. Type the number in the box and press Enter.
+
+The clip shows a small sign for what it does: the loop arrows, back and forth arrows, or a backward arrow with the count.
+
+## Back and forth
+
+It plays to the end and then back again. Each end shows once per turn, so nothing stutters. A clip that plays back and forth **once** ends where it started. Great for breathing, swinging and floating.
+
+## Playing it
+
+Pick the clip and press play. It plays the way you set it, so you see exactly what a game will. The **Play back and forth** button in the timeline bar still works for any clip that has no direction of its own.
+
+## In exports
+
+- **Sprite sheets** (Godot, Unity, Phaser, PixiJS, CSS, JSON): each clip lists its frames in the order it plays. Phaser and CSS use their own repeat count for a forward clip that plays several times. Looping clips loop; the others hold their last frame.
+- **GIF, APNG and video:** exporting one clip bakes the order in.
+- **Interactives** and **Lottie** have no clip direction or repeat count, so those clips play forward there. The Export window says so.
+
+Old files open exactly as before: a clip with nothing set plays forward.`,
   },
   {
     id: 'timeline-markers',

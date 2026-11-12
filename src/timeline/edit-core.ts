@@ -7,8 +7,9 @@
  * Frames are 0-based in the data. The panel shows them 1-based.
  */
 import { current, isDraft } from 'immer';
-import type { Cel, Clip, Doc, Drawing, Id, Layer, Marker, Shape } from '../core/format';
+import type { Cel, Clip, ClipDirection, Doc, Drawing, Id, Layer, Marker, Shape } from '../core/format';
 import { currentChoice } from '../core/choices';
+import { cleanRepeat, clipDirection } from '../core/clipPlay';
 import { celAt, findLayer, newDrawingFor, newPixelLayer, newVectorLayer, pruneDrawings, uid } from '../core/doc';
 import { stepLayerThroughFolders, tidyFolders } from '../effects/edit';
 
@@ -525,6 +526,33 @@ export function setClipLoop(doc: Doc, id: Id, loop: boolean): boolean {
   const c = doc.clips.find((x) => x.id === id);
   if (!c || c.loop === loop) return false;
   c.loop = loop;
+  return true;
+}
+
+/** Sets which way a clip plays. Forward is the default, so it is stored as no value. */
+export function setClipDirection(doc: Doc, id: Id, direction: ClipDirection): boolean {
+  const c = doc.clips.find((x) => x.id === id);
+  if (!c || clipDirection(c) === direction) return false;
+  if (direction === 'forward') delete c.direction;
+  else c.direction = direction;
+  return true;
+}
+
+/** Sets how often a clip plays: 'forever', or a number of times (1 = once, then it holds its last frame). */
+export function setClipRepeat(doc: Doc, id: Id, repeat: 'forever' | number): boolean {
+  const c = doc.clips.find((x) => x.id === id);
+  if (!c) return false;
+  if (repeat === 'forever') {
+    if (c.loop) return false;
+    c.loop = true;
+    return true;
+  }
+  const n = cleanRepeat(repeat);
+  if (n === undefined) return false;
+  if (!c.loop && (c.repeat ?? 1) === n) return false;
+  c.loop = false;
+  if (n === 1) delete c.repeat;
+  else c.repeat = n;
   return true;
 }
 
