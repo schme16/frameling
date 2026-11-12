@@ -518,6 +518,46 @@ npm run build
 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/pixel-live.cjs [outDir]
 ```
 
+## The web build in a real browser: scripts/e2e/web.cjs
+
+Loads `dist/web` in Electron's Chromium over a small static server on 127.0.0.1 (a secure context, so the service worker,
+IndexedDB and the browser's private file system all work) with no desktop bridge, so the page builds its own browser
+bridge exactly as it does on the web. The flows are in `scripts/e2e/web-flows.cjs`, one `flow(name, fn)` each:
+
+```bash
+npm run build:web
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/web.cjs [--only=export-picker,offline] [--skip=audio] [--shots=<dir>]
+```
+
+| Flow | What it checks |
+|---|---|
+| `launch` | First visit without `?debug`: Quill's hello walks through its six pages, the choice is kept on the next visit. |
+| `pixel` | The Welcome sheet's Pixel art card, Quill's pixel chooser (An animation, 16 x 16), real-mouse drawing with the Pencil, undo and redo. |
+| `workspaces` | A tab dragged out over the canvas floats, stacked groups, saving a workspace, the workspace file (download, then back in through the upload picker), kept across a reload. |
+| `files-picker`, `files-plain` | Save (once asks, then in place / downloads each time), Open, cancelled pickers, recents. |
+| `recent-*`, `open-with`, `drop-*` | Open recent after a reload, a file handed over by the installed app, a file dropped on the page (a drawing opens, anything else is turned away politely). |
+| `recovery` | Autosave in IndexedDB, the next visit puts the work aside (with a picture), Recover unsaved work lists it. |
+| `import-*` | A sprite sheet picture (gaps, and its JSON), an Aseprite file and a GIF through the web's pickers. |
+| `export-*`, `sheet-*`, `export-dialog` | PNG, SVG, APNG, GIF, MP4, WebM, PNG sequence, Lottie, dotLottie, moving SVG, PSD, PDF, .ai, Interactives as one file; sprite sheets with every engine's data as a folder or one zip; the dialog shows ProRes disabled with its reason; the Export button. |
+| `audio` | A WAV from the upload picker, MP4 and WebM exports that carry it (Quill asks once when this browser can't make AAC). |
+| `model-*` | Nested folders, clip direction and repeat, and variations saved, opened again and compared; a ping-pong clip's play order. |
+| `snapping`, `prefs`, `features`, `pen` | Snapping ticks and a real drag onto the page edge, every Preferences page, Features switches kept across a reload, Chromium pen events on the Pen and tablet pad and the Brush. |
+| `offline` | The service worker caches the whole app, the app opens with the server stopped (lazy dialogs, Help, Save still work) and again when it is back. |
+| `plugins` | The sandbox page policy, an example plugin installs, runs and is kept across a reload, and what a plugin does offline. |
+| `sweep` | The app served from a sub-folder (`/tools/frameling/`), every panel and tool, every help picture and clip served, a help clip decodes. |
+| `web-only` | Install as an app, the browser help topic, About, the tab title, "Leave site?". |
+
+The browser's own file pickers can't be clicked from outside, so a preload shim stands in for them. In **picker** mode
+(Chrome and Edge) `showOpenFilePicker`, `showSaveFilePicker` and `showDirectoryPicker` hand out real file handles from the
+browser's private file system (OPFS), so saving, reading back and keeping handles in IndexedDB are the real code. In
+**plain** mode (Firefox and Safari) the pickers are removed, downloads are caught and the upload picker is answered from a
+queue. Open the app with `?shim=plain` or `?shim=picker` in a flow's `w.load(mode)`. Use `w.files.collect()` to read what
+the page wrote or downloaded, `w.files.stage(...)` / `w.files.upload(...)` to give it a file, `w.run(id)` to start a
+command without waiting for its dialog, and `w.answerChoice()` for Quill's "Remember my choice" questions.
+
+The harness finds the Chromium it ships in, so what it proves is Chromium's behaviour. Safari and Firefox are covered by
+reading the code (see the WebKit notes on the board), not by this run.
+
 ## Plugin sandbox: scripts/e2e/plugins.cjs
 
 Checks the sandbox page blocks network and storage, the frame can't reach the app, and both example plugins in

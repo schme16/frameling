@@ -70,6 +70,18 @@ flow('workspaces', async () => {
   await D(`stackPanelsIn('colors', 'preview', 'right', 0.5)`);
   await sleep(300);
   const arranged = await L();
+  // A real drag: the Timeline tab carried out over the canvas becomes a floating window.
+  const tab = await w.js(`(() => { const t = document.querySelector('[data-dock-tab="timeline"]'); if (!t) return null; const r = t.getBoundingClientRect(); return [r.left + 30, r.top + r.height / 2]; })()`);
+  check('the Timeline tab is there to drag', !!tab, tab);
+  if (tab) {
+    await w.input.drag([tab, [tab[0] + 20, tab[1] - 30], [700, 300], [710, 310]], 8);
+    await sleep(500);
+    const dragged = await L();
+    check('dragging a tab out over the canvas makes a floating window', dragged.floats.some((f) => f.tabs.includes('timeline')), dragged.floats);
+    await w.shot('workspaces-dragged');
+    await D(`dockFloatBack(__frameling.dock.dock.get().layout.floats.find((f) => f.tabs.includes('timeline')).id)`);
+    await sleep(300);
+  }
   check('a panel floats in a window', arranged.floats.length === 1 && arranged.floats[0].tabs.includes('help'), arranged);
   check('two panels stack in the right zone', arranged.groups === 2, arranged);
   check('the floating window and both groups are drawn', await w.js(`document.querySelectorAll('.ui-float').length >= 1 && document.querySelectorAll('.ui-dock-right .ui-group, .ui-group').length >= 1`), await w.js(`[...new Set([...document.querySelectorAll('[class*=float]')].map((e) => e.className))].slice(0, 5)`));
@@ -847,4 +859,36 @@ flow('features', async () => {
   check('a reload keeps it off', (await w.js(`${F}.list()`)).find((f) => f.id === 'particles').on === false);
   await w.js(`${F}.set('particles', true)`);
   check('and it comes back on without a reload', (await w.js(`${F}.list()`)).find((f) => f.id === 'particles').on === true);
+});
+
+// What belongs only to the browser is there, and nothing that needs the desktop app is offered.
+flow('web-only', async () => {
+  const w = makeWindow('persist:web-only');
+  await w.load('picker');
+  await w.js(`__frameling.overlays.closeSheet()`);
+  const cmds = await w.js(`__frameling.commands()`);
+  check('Install as an app and the browser help topic are commands', cmds.includes('app.installWeb') && cmds.includes('help.webBrowser'), cmds.filter((c) => /web|install/i.test(c)));
+  await w.run('app.installWeb');
+  check('Install as an app explains itself when the browser has nothing to install', await w.waitFor(`/nothing to install|already be installed/i.test(document.body.innerText)`, 3000));
+  await w.run('help.webBrowser');
+  check('the browser help topic opens', await w.waitFor(`/Frameling in a web browser/.test(document.querySelector('[role=dialog]')?.innerText ?? '')`, 4000));
+  await w.shot('web-help-topic');
+  await w.input.key('Escape');
+  // The About box has no Electron line; the title carries the drawing's name.
+  await w.run('help.about');
+  await sleep(500);
+  const about = await w.js(`document.querySelector('.ui-about')?.innerText ?? ''`);
+  check('About shows no Electron or Chrome versions in the browser', about !== '' && !/Electron/.test(about), about.slice(0, 120));
+  await w.input.key('Escape');
+  await w.js(`__frameling.store().update('Rename', (d) => { d.name = 'Titled'; })`);
+  await sleep(600);
+  check('the tab title follows the drawing', /^● Titled - Frameling$/.test(await w.js(`document.title`)), await w.js(`document.title`));
+  // Things a browser cannot do are absent: no "Show in folder" after exporting.
+  const defaults = await w.js(`__framelingExport.defaults()`);
+  await w.js(`__framelingExport.run(${JSON.stringify({ ...defaults, format: 'png', range: 'frame' })})`);
+  await sleep(500);
+  check('an export says it is done, without a Show in folder button', /Exported/.test(await w.body()) && !/Show in folder/.test(await w.body()));
+  // Page events: leaving with unsaved work asks the browser's own question and puts the work aside.
+  const beforeunload = await w.js(`(() => { const e = new Event('beforeunload', { cancelable: true }); window.dispatchEvent(e); return e.defaultPrevented; })()`);
+  check('leaving with unsaved work asks "Leave site?"', beforeunload === true);
 });
