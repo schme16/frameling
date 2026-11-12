@@ -1,7 +1,7 @@
 // Installed plugins: which are on, what each was allowed, starting and stopping them, and wiring what they add
 // (commands, exports, panels) into the app's registries. The plugin code itself only ever runs in its sandbox.
 import type { ComponentType } from 'react';
-import { registerCommand, registerPanel, registerTool, unregisterCommand, unregisterPanel, type ToolPointer } from '../core/registry';
+import { allCommands, registerCommand, registerPanel, registerTool, unregisterCommand, unregisterPanel, type ToolPointer } from '../core/registry';
 import { setCursor } from '../canvas/controller';
 import { clearSnap, snapPt } from '../canvas/guides';
 import { removeOwned, withOwner } from '../core/owners';
@@ -18,6 +18,7 @@ import { registerSnapSource } from '../canvas/snapSources';
 import { syncPanels } from '../ui/dock';
 import { syncDynamicCommands } from '../ui/dynamic';
 import { ICON_NAMES } from '../ui/icons';
+import { effectiveKeys, normaliseCombo } from '../ui/keys';
 import { createStore } from '../ui/mini';
 import { setEventSink } from './bus';
 import { drawDrawList, guideSnapLines, handleAt, handleCursor, type DrawList } from './drawlist';
@@ -135,12 +136,15 @@ function hooksFor(m: PluginManifest, onExporter: (def: PluginExporterDef) => voi
     notify: (message, kind) => notify(`${m.name}: ${message}`, kind),
     addCommand: (def) => {
       const id = commandId(pid, def.id);
+      // A plugin may suggest keys, but never one that something else already uses: it must not take Frameling's own keys (or another plugin's).
+      const taken = new Set(allCommands().filter((c) => c.id !== id).flatMap((c) => effectiveKeys(c)));
+      const keys = def.keys?.map(normaliseCombo).filter((k) => k && !taken.has(k));
       registerCommand({
         id,
         label: def.label,
         category: 'Plugins',
         description: def.description ?? `From the ${m.name} plugin.`,
-        keys: def.keys,
+        keys: keys?.length ? keys : undefined,
         help: 'plugins',
         keywords: ['plugin', m.name],
         run: () => runtimes.get(pid)?.runCommand(def.id),

@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { strToU8 } from 'fflate';
 import { newDoc, newVectorDrawing, newVectorLayer } from '../../src/core/doc';
 import type { Doc } from '../../src/core/format';
-import { getCommand, getTool } from '../../src/core/registry';
+import { getCommand, getTool, registerCommand, unregisterCommand } from '../../src/core/registry';
 import { resetStore, store } from '../../src/core/store';
 import { installFrom, plugins, resetPluginsForTests, setApprover, setEnabled, setPower, setSandboxStarterForTests } from '../../src/plugins/manager';
 import { decide } from '../../src/plugins/powers';
@@ -139,5 +139,17 @@ describe('shapes and locked layers', () => {
     await settle();
     expect(JSON.stringify(store().get().doc.drawings.dv)).not.toBe(before);
     expect(shapeCount('d2')).toBe(0);
+  });
+});
+
+describe('keys a plugin suggests for a command', () => {
+  it('never include one that Frameling or another command already uses', async () => {
+    registerCommand({ id: 'test.builtin.save', label: 'Save', category: 'File', keys: ['Mod+S'], run: () => undefined });
+    await installFrom(pkg({ permissions: [] }, `frameling.commands.register({ id: 'go', label: 'Go', keys: ['ctrl+s', 'Mod+Alt+Shift+9'] }, () => undefined);
+      frameling.commands.register({ id: 'only', label: 'Only', keys: ['Mod+S'] }, () => undefined);`));
+    await settle();
+    expect(getCommand('plugin.bh-plug.go')?.keys).toEqual(['Mod+Alt+Shift+9']);
+    expect(getCommand('plugin.bh-plug.only')?.keys).toBeUndefined();
+    unregisterCommand('test.builtin.save');
   });
 });
