@@ -6,6 +6,7 @@ import { MAX_FRAMES, planTiming } from '../../aseprite/convert';
 import { newDoc, newPixelLayer, uid } from '../../core/doc';
 import type { Clip, Doc, DocPalette, PixelDrawing, PixelLayer, Slice, SpriteWay } from '../../core/format';
 import { addArtboard, artboardsOf, ensureArtboards } from '../../artboards/model';
+import { trimPixels } from '../../core/pixelBounds';
 import type { RawImage } from '../../io/png';
 import { paletteFromPixels } from '../palette-io';
 import { docPalette } from '../palette';
@@ -222,8 +223,12 @@ export interface BuildOptions {
   palette: boolean;
 }
 
-const drawingOf = (doc: Doc, img: RawImage): PixelDrawing => {
-  const d: PixelDrawing = { id: uid('p'), kind: 'pixel', width: img.width, height: img.height, pixels: img.pixels };
+/** A drawing holding only the painted block of a whole-grid picture (what the app keeps in memory and saves). */
+export const drawingOf = (doc: Doc, img: RawImage): PixelDrawing => {
+  const t = trimPixels(img.pixels, img.width, img.height);
+  const d: PixelDrawing = { id: uid('p'), kind: 'pixel', width: t.width, height: t.height, pixels: t.pixels };
+  if (t.x) d.x = t.x;
+  if (t.y) d.y = t.y;
   doc.drawings[d.id] = d;
   return d;
 };

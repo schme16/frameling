@@ -1,5 +1,6 @@
 // Sprite sheet slicing, the JSON that can come with a sheet, and building sprites from the cut frames. Sheets are
 // generated here, so every pixel's origin is known.
+import { asGrid } from '../helpers/grid';
 import { describe, expect, it } from 'vitest';
 import { drawingAt } from '../../src/core/doc';
 import type { Doc, PixelDrawing, PixelLayer } from '../../src/core/format';
@@ -277,7 +278,10 @@ describe('adding to an open drawing', () => {
     const layer = d.layers[d.layers.length - 1] as PixelLayer;
     expect(layer.name).toBe('Hero');
     expect(d.length).toBe(5);
-    const dr = drawingAt(d, layer, 3) as PixelDrawing;
+    const held = drawingAt(d, layer, 3) as PixelDrawing;
+    // Only the painted 6x4 block is kept, at (5, 4).
+    expect([held.x, held.y, held.width, held.height]).toEqual([5, 4, 6, 4]);
+    const dr = asGrid(held, d) as PixelDrawing;
     expect([dr.width, dr.height]).toEqual([16, 12]);
     // Centred: the 6x4 cell on 16x12 starts at (5, 4); cell pixel (0,0) has red 1.
     expect(dr.pixels[(4 * 16 + 5) * 4]).toBe(1);
