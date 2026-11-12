@@ -22,8 +22,8 @@ import { reportEdit } from '../tools/util';
 import { viewPixelSize } from '../tools/view-size';
 import { ditherInk, shadeInk, solidInk, type Ink } from './ink';
 import { docPalette } from './palette';
-import { perspectivePixelOutline, type PixelPerspective } from './perspective';
-import { dragBox, snapCleanLine } from './raster';
+import { perspectivePixelShape, type PixelPerspective } from './perspective';
+import { dragBox, plotPolygon, snapCleanLine } from './raster';
 import { outlineThickness, plotThickEllipse, plotThickLine, plotThickPolygon, plotThickRect, type Thickness } from './thick';
 import { getPrefs } from '../ui/prefs';
 import { flattenSubPath } from '../geometry/hit';
@@ -297,8 +297,9 @@ export function paintPixelShape(
   }
   const [p, q] = dragBox(a, b, mod.shift, mod.alt);
   // With perspective guides showing, it follows the plane it's drawn on, rasterised as crisply as a flat one.
-  const outline = persp && perspectivePixelOutline(kind, p, q, session.pixelSize, persp);
-  if (outline) return paintPixelPaths(session, [outline], { fill: colors.fill, stroke: colors.stroke }, thick);
+  // The stroke is traced along the shape pulled in by the brush, so it keeps the dragged size. A fill with no stroke covers the shape whole.
+  const onPlane = persp && perspectivePixelShape(kind, p, q, session.pixelSize, persp, colors.stroke ? thick : undefined);
+  if (onPlane) return paintPixelPaths(session, [onPlane.outline], { fill: colors.fill, stroke: colors.stroke }, thick, colors.stroke ? [onPlane.edge] : undefined);
   const fill = colors.fill ? parseHex(colors.fill) : null;
   const stroke = colors.stroke ? parseHex(colors.stroke) : null;
   const fi = fill ? session.lock(solidInk(fill)) : null;
@@ -372,7 +373,7 @@ export function makePixelShape(kind: PixelShapeKind, label: string) {
  * Paints outlines (in document units) as clean pixels: the fill colour inside closed ones, the stroke colour round
  * the edge. With no stroke the fill covers the edge too, like the pixel rectangle. Curves are cut into short lines.
  */
-export function paintPixelPaths(session: PixelSession, paths: SubPath[], colors: { fill: string | null; stroke: string | null }, thick?: Thickness): void {
+export function paintPixelPaths(session: PixelSession, paths: SubPath[], colors: { fill: string | null; stroke: string | null }, thick?: Thickness, edges?: (SubPath | null)[]): void {
   const fill = colors.fill ? parseHex(colors.fill) : null;
   const stroke = colors.stroke ? parseHex(colors.stroke) : null;
   const fi = fill ? session.lock(solidInk(fill)) : null;
@@ -380,21 +381,33 @@ export function paintPixelPaths(session: PixelSession, paths: SubPath[], colors:
   const edge = si ?? fi;
   if (!edge) return;
   const ps = session.pixelSize;
-  for (const sp of paths) {
+  const toPts = (sp: SubPath) => {
     const flat = flattenSubPath(sp);
     const pts: { x: number; y: number }[] = [];
     for (let i = 0; i < flat.length; i += 2) pts.push({ x: flat[i] / ps, y: flat[i + 1] / ps });
-    plotThickPolygon(pts, sp.closed, si ? thick : undefined, (x, y) => session.paint(x, y, edge), fi && sp.closed ? (x, y) => session.paint(x, y, fi) : undefined);
-  }
+    return pts;
+  };
+  const paintEdge = (x: number, y: number) => session.paint(x, y, edge);
+  paths.forEach((sp, i) => {
+    const pts = toPts(sp);
+    const t = si ? thick : undefined;
+    const paintFill = fi && sp.closed ? (x: number, y: number) => session.paint(x, y, fi) : undefined;
+    if (!edges) return plotThickPolygon(pts, sp.closed, t, paintEdge, paintFill);
+    // The edge runs along its own path (pulled in so the stamped outline ends on the shape), or the brush fills the shape.
+    const e = edges[i];
+    if (!e) return plotPolygon(pts, sp.closed, null, paintEdge);
+    plotPolygon(pts, sp.closed, null, paintFill);
+    plotThickPolygon(toPts(e), e.closed, t, paintEdge);
+  });
 }
 
-/** Puts a finished vector shape onto the pixel layer as pixels, one undo step. Used by the pen. */
+/** Puts a finished vector shape onto the pixel layer as pixels, one undo step. Used by the pen, with the outline thickness preference. */
 export function commitPixelPath(shape: PathShape, label: string, ctx: ToolContext): void {
   const layer = activePixelLayer();
   if (!layer) return;
   const { doc, ui } = store().get();
   const session = new PixelSession(doc, layer, ui.frame, { adds: true });
-  paintPixelPaths(session, shape.paths, { fill: shape.fill, stroke: shape.stroke?.color ?? null });
+  paintPixelPaths(session, shape.paths, { fill: shape.fill, stroke: shape.stroke?.color ?? null }, currentOutline());
   const r = session.commit(label);
   if (r === 'ok') {
     if (shape.fill) noteColorUsed(shape.fill);

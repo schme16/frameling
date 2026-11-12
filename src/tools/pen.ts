@@ -11,7 +11,7 @@ import { registerTool, type Tool, type ToolContext, type ToolPointer } from '../
 import { drawShape, subPathsToPath2D } from '../core/render';
 import { store } from '../core/store';
 import { clearSnap, snapLineEnd, snapPt } from '../canvas/guides';
-import { activePixelLayer, commitPixelPath } from '../pixel/tools';
+import { activePixelLayer, commitPixelPath, currentOutline } from '../pixel/tools';
 import { dragHandles, fromAnchors, type Anchor, type P } from '../geometry/pen';
 import { addShapes } from './merge-mode';
 import { noteColorUsed } from './recent';
@@ -104,10 +104,17 @@ function colors() {
   return { ...shapeColors(ui), line: ui.color };
 }
 
+/** The line width to draw with: the vector thickness, or on a pixel layer the outline thickness in whole art pixels. */
+function lineWidth(): number {
+  const layer = activePixelLayer();
+  if (!layer) return getToolSettings().shapeStroke * viewSizeFactor();
+  return (currentOutline()?.size ?? 1) * layer.pixelSize;
+}
+
 function preview(closed: boolean): PathShape | null {
   const sp = path?.subPath(closed);
   if (!sp) return null;
-  const s = penShape(sp, colors(), getToolSettings().shapeStroke * viewSizeFactor());
+  const s = penShape(sp, colors(), lineWidth());
   return s && withWellGradients(s);
 }
 
@@ -121,7 +128,7 @@ function finish(ctx: ToolContext, closed: boolean): void {
   const sp = p.subPath(closed);
   if (!sp) return;
   if (closed) closedAt = performance.now();
-  const shape = penShape(sp, colors(), getToolSettings().shapeStroke * viewSizeFactor());
+  const shape = penShape(sp, colors(), lineWidth());
   if (!shape) {
     ctx.hint('Fill and stroke are both set to none, so the shape would be invisible. Pick a colour for one of them.');
     return;

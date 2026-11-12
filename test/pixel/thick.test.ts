@@ -7,6 +7,7 @@ import { setViewSettings } from '../../src/canvas/viewSettings';
 import { addCamera, setView, toggleThroughCamera } from '../../src/camera/ops';
 import { ellipseTool, lineTool, rectTool } from '../../src/tools/shapes';
 import { polygonTool } from '../../src/tools/polystar';
+import { penTool } from '../../src/tools/pen';
 import { DEFAULT_TOOL_SETTINGS, setToolSettings } from '../../src/tools/settings';
 import { forgetLastPixelEnd } from '../../src/tools/pixelStroke';
 import { setDocPalette } from '../../src/pixel/commands';
@@ -15,7 +16,8 @@ import { brushReach, clampOutline, insetBox, outlineThickness, plotThickEllipse,
 import { plotEllipse, plotLine, plotRect, plotRectInside } from '../../src/pixel/raster';
 import { DEFAULT_PREFS, migratePrefs, setPrefs } from '../../src/ui/prefs';
 import '../../src/pixel';
-import { ctx, drag, pixelStore } from '../tools/helpers';
+import { ctx, drag, pixelStore, ptr } from '../tools/helpers';
+import { perspectivePixelShape } from '../../src/pixel/perspective';
 
 const cells = (run: (plot: (x: number, y: number) => void) => void): Set<string> => {
   const out = new Set<string>();
@@ -335,5 +337,183 @@ describe('pixel shape tools with a thick outline', () => {
     drag(lineTool, ctx(), [at(2, 4), at(12, 4)]);
     // A 2 pixel brush on a line 11 long: 12 across.
     expect(count()).toBe(12 * 2);
+  });
+});
+
+// ---------------------------------------------------------------- the pen
+
+describe('the pen on a pixel layer with a thick outline', () => {
+  const penPath = (pts: [number, number][], closeIt = false) => {
+    const c = ctx();
+    let t = 200_000;
+    const click = (x: number, y: number) => {
+      t += 1000;
+      penTool.down!(ptr(x, y, { time: t }), c);
+      penTool.up!(ptr(x, y, { time: t }), c);
+    };
+    for (const [x, y] of pts) click(x, y);
+    if (closeIt) click(pts[0][0], pts[0][1]);
+    else penTool.onKey!({ key: 'Enter' } as KeyboardEvent, c);
+    return c;
+  };
+
+  it('keeps drawing one pixel by default', () => {
+    pixelStore(1);
+    store().setUi({ color: '#ff0000', strokeOn: true, fillColor: null });
+    penPath([[10.5, 10.5], [30.5, 10.5]]);
+    const n = count();
+    expect(n).toBeGreaterThan(19);
+    // One row of cells.
+    expect(hexAt(20, 10)).toBe('#ff0000');
+    expect(hexAt(20, 9)).toBeNull();
+    expect(hexAt(20, 11)).toBeNull();
+    expect(n).toBeLessThan(26);
+  });
+
+  it('stamps the outline thickness along the path, centred on it', () => {
+    pixelStore(1);
+    setPrefs({ pixelThickOutlines: true, pixelOutlineWidth: 3 });
+    store().setUi({ color: '#ff0000', strokeOn: true, fillColor: null });
+    penPath([[10.5, 10.5], [30.5, 10.5]]);
+    // Three rows (9 to 11), each the one pixel line's length plus the brush's reach on both ends.
+    const len = count() / 3;
+    expect(Number.isInteger(len)).toBe(true);
+    expect(len).toBeGreaterThan(21);
+    expect(hexAt(20, 9)).toBe('#ff0000');
+    expect(hexAt(20, 11)).toBe('#ff0000');
+    expect(hexAt(20, 8)).toBeNull();
+    expect(hexAt(20, 12)).toBeNull();
+  });
+
+  it('a closed shape gets a thicker edge and keeps the fill colour inside', () => {
+    pixelStore(1);
+    setPrefs({ pixelThickOutlines: true, pixelOutlineWidth: 3 });
+    store().setUi({ color: '#ff0000', strokeOn: true, fillColor: '#0000ff' });
+    penPath([[10.5, 10.5], [40.5, 10.5], [40.5, 40.5], [10.5, 40.5]], true);
+    expect(hexAt(25, 25)).toBe('#0000ff');
+    expect(hexAt(10, 25)).toBe('#ff0000');
+    expect(hexAt(11, 25)).toBe('#ff0000');
+    expect(hexAt(9, 25)).toBe('#ff0000');
+    expect(hexAt(12, 25)).toBe('#0000ff');
+  });
+
+  it('with the stroke off there is no outline to thicken', () => {
+    pixelStore(1);
+    setPrefs({ pixelThickOutlines: true, pixelOutlineWidth: 5 });
+    store().setUi({ color: '#ff0000', strokeOn: false, fillColor: '#0000ff' });
+    penPath([[10.5, 10.5], [40.5, 10.5], [40.5, 40.5], [10.5, 40.5]], true);
+    expect(count('#ff0000')).toBe(0);
+    expect(count('#0000ff')).toBeGreaterThan(800);
+  });
+
+  it('mirrors, and snaps to the palette, like the other tools', () => {
+    pixelStore(1);
+    setDocPalette({ name: 'Test', colors: ['#000000', '#ff0000'], ramps: [2] });
+    store().update('lock', (d) => void ((d.layers[0] as PixelLayer).paletteLock = true));
+    setPixelSettings({ symmetry: 'h' });
+    setPrefs({ pixelThickOutlines: true, pixelOutlineWidth: 3 });
+    store().setUi({ color: '#ee1111', strokeOn: true, fillColor: null });
+    penPath([[5.5, 10.5], [20.5, 14.5]]);
+    const d = drawing();
+    for (let y = 0; y < d.height; y++) {
+      for (let x = 0; x < d.width; x++) {
+        const px = getPx(d.pixels, d.width, x, y);
+        expect(px[3]).toBe(getPx(d.pixels, d.width, d.width - 1 - x, y)[3]);
+        if (px[3]) expect(px).toEqual([255, 0, 0, 255]);
+      }
+    }
+    expect(count()).toBeGreaterThan(40);
+  });
+
+  it('follows the camera size rule', () => {
+    const s = pixelStore(1);
+    const layerId = s.get().doc.layers[0].id;
+    addCamera();
+    setView({ x: 32, y: 32, zoom: 2 });
+    s.setUi({ activeLayerId: layerId, color: '#ff0000', strokeOn: true, fillColor: null });
+    toggleThroughCamera(true);
+    setPrefs({ pixelThickOutlines: true, pixelOutlineWidth: 4 });
+    penPath([[10.5, 10.5], [20.5, 10.5]]);
+    // 4 pixels through a camera at 2x paints 2: two rows.
+    expect(hexAt(15, 10)).toBe('#ff0000');
+    expect(hexAt(15, 9) !== null || hexAt(15, 11) !== null).toBe(true);
+    expect(hexAt(15, 8)).toBeNull();
+    expect(hexAt(15, 12)).toBeNull();
+    expect(count() % 2).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------- perspective planes keep the dragged size
+
+describe('thick shapes on a perspective plane', () => {
+  const bbox = () => {
+    const d = drawing();
+    let x0 = 999, y0 = 999, x1 = -1, y1 = -1;
+    for (let y = 0; y < d.height; y++) for (let x = 0; x < d.width; x++) if (getPx(d.pixels, d.width, x, y)[3]) (x0 = Math.min(x0, x)), (y0 = Math.min(y0, y)), (x1 = Math.max(x1, x)), (y1 = Math.max(y1, y));
+    return [x0, y0, x1, y1];
+  };
+  const setup = (plane: 'wall' | 'floor', width: number) => {
+    setToolSettings({ perspectivePlane: plane });
+    setPrefs({ pixelThickOutlines: width > 0, pixelOutlineWidth: width || 2 });
+    const s = pixelStore(1);
+    s.update('Perspective', (d) => void (d.perspective = { points: [{ x: 300, y: 20 }] }));
+    s.setUi({ color: '#ff0000', fillColor: null, strokeOn: true });
+  };
+
+  it.each([2, 3, 4, 7])('a rectangle on a wall keeps its left, right and top edges at thickness %i', (w) => {
+    setup('wall', w);
+    drag(rectTool, ctx(), [at(10, 20), at(30, 40)]);
+    const [x0, y0, x1] = bbox();
+    expect([x0, y0, x1]).toEqual([10, 20, 30]);
+  });
+
+  it.each([2, 3, 4, 7])('an ellipse on a wall keeps its sides at thickness %i', (w) => {
+    setup('wall', w);
+    drag(ellipseTool, ctx(), [at(10, 20), at(30, 40)]);
+    const [x0, y0, x1] = bbox();
+    expect([x0, y0, x1]).toEqual([10, 20, 30]);
+  });
+
+  it('thickness never makes the shape grow: thick and thin reach the same sides', () => {
+    setup('wall', 0);
+    drag(rectTool, ctx(), [at(10, 20), at(30, 40)]);
+    const thin = bbox();
+    setup('wall', 5);
+    drag(rectTool, ctx(), [at(10, 20), at(30, 40)]);
+    const thick = bbox();
+    expect(thick[0]).toBe(thin[0]);
+    expect(thick[1]).toBe(thin[1]);
+    expect(thick[2]).toBe(thin[2]);
+    expect(thick[3]).toBeLessThanOrEqual(thin[3]);
+  });
+
+  it('a floor plane (no slant) matches the flat shape exactly', () => {
+    setup('floor', 3);
+    drag(rectTool, ctx(), [at(10, 20), at(30, 40)]);
+    const floor = count();
+    expect(bbox()).toEqual([10, 20, 30, 40]);
+    setToolSettings({ perspectivePlane: 'flat' });
+    pixelStore(1).setUi({ color: '#ff0000', fillColor: null, strokeOn: true });
+    drag(rectTool, ctx(), [at(10, 20), at(30, 40)]);
+    expect(count()).toBe(floor);
+  });
+
+  it('a thickness the shape cannot hold makes it solid, and the edge is none', () => {
+    const persp = { vps: [{ x: 300, y: 20 }], plane: 'wall' as const };
+    const t = { size: 9, shape: 'square' as const };
+    expect(perspectivePixelShape('rect', { x: 10, y: 20 }, { x: 14, y: 24 }, 1, persp, t)?.edge).toBeNull();
+    expect(perspectivePixelShape('rect', { x: 10, y: 20 }, { x: 30, y: 40 }, 1, persp, t)?.edge).not.toBeNull();
+    setup('wall', 9);
+    drag(rectTool, ctx(), [at(10, 20), at(14, 24)]);
+    expect(count()).toBeGreaterThanOrEqual(25);
+  });
+
+  it('the fill stays inside the thick outline', () => {
+    setup('wall', 3);
+    store().setUi({ fillColor: '#0000ff' });
+    drag(rectTool, ctx(), [at(10, 20), at(30, 40)]);
+    expect(hexAt(20, 30)).toBe('#0000ff');
+    expect(hexAt(10, 30)).toBe('#ff0000');
+    expect(count('#0000ff')).toBeGreaterThan(100);
   });
 });
