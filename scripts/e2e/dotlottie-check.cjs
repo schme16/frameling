@@ -71,6 +71,17 @@ app.whenReady().then(async () => {
         }
       }
     }
+    // Loop setting (layout 2 keeps it in a small state machine; the web player starts it by name): a looping file keeps
+    // playing and wraps around, one set to play once ends on its last frame. Layout 1 keeps it in the manifest, which the web
+    // player ignores (see test/export/dotlottie.test.ts).
+    if (versions.includes(2)) {
+      for (const loop of [true, false]) {
+        const r = await ev(`check.dotLottieLoop(${JSON.stringify(origin + '/dl')}, ${loop})`);
+        const good = r.started && (loop ? r.playing && r.wraps >= 2 : !r.playing && r.wraps === 0 && r.frame >= r.total - 2);
+        console.log(['loop', 'v2', loop ? 'on' : 'off', 'playing=' + r.playing, 'wraps=' + r.wraps, 'frame=' + r.frame + '/' + r.total, good ? 'ok' : 'WRONG'].join(' | '));
+        if (!good) bad++;
+      }
+    }
     console.log(bad ? `${bad} PROBLEM(S)` : 'dotLottie plays like the JSON');
     server.close();
     app.exit(bad ? 1 : 0);
