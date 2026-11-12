@@ -102,6 +102,40 @@ describe('retiming a symbol key inside a tween', () => {
     // Size 20 to 30 is untouched; no span claims a part of a curve for it.
     expect(rot.spans.find((s) => s.from === 20)?.slice).toBeUndefined();
   });
+  it('shows a diamond at the cut only on the row that was edited', () => {
+    for (const e of ['easeInOut', 'elasticOut', [0.1, 0.9, 0.3, 1.2]] as Easing[]) {
+      const d = tpl('bouncing-logo');
+      for (const c of logo(d).cels) if (c.tween) c.tween.ease = e;
+      const rows = (doc: Doc) => layerTracks(structuredClone(doc), logo(doc)).map((t) => [t.id, t.keys.map((k) => k.frame)] as const);
+      const was = new Map(rows(d));
+      retimeKeys(d, [keyAt(d, 'Logo', 'position', 30)], (f) => f + 3);
+      const now = new Map(rows(d));
+      // Position has its key at 33; no other row gets one there, and the other rows keep the keys they had.
+      expect(now.get('position')).toContain(33);
+      for (const [id, frames] of now) {
+        if (id === 'position') continue;
+        expect(frames, id).not.toContain(33);
+        expect(frames, id).toEqual(was.get(id));
+      }
+      // The two halves still show as one span from key to key on the quiet rows.
+      const scale = layerTracks(structuredClone(d), logo(d)).find((t) => t.id === 'scale');
+      if (scale) expect(scale.spans.some((s) => s.from <= 30 && s.to >= 36)).toBe(true);
+    }
+  });
+  it('keeps a diamond where the value was set at the cut, or the easing differs', () => {
+    const d = tpl('bouncing-logo');
+    retimeKeys(d, [keyAt(d, 'Logo', 'position', 30)], (f) => f + 3);
+    const cel = logo(d).cels.find((c) => c.start === 33)!;
+    // Change the size on the cut key by hand: it is now a real key of the size row.
+    const dr = d.drawings[cel.drawingId];
+    if (dr.kind === 'vector') for (const sh of dr.shapes) if (sh.type === 'instance') sh.transform.scaleX += 0.5;
+    expect(layerTracks(structuredClone(d), logo(d)).find((t) => t.id === 'scale')!.keys.map((k) => k.frame)).toContain(33);
+    // A different easing on the second half means the halves are not one curve: show everything that differs.
+    const e = tpl('bouncing-logo');
+    retimeKeys(e, [keyAt(e, 'Logo', 'position', 30)], (f) => f + 3);
+    logo(e).cels.find((c) => c.start === 33)!.tween!.ease = 'bounceOut';
+    expect(layerTracks(structuredClone(e), logo(e)).some((t) => t.id !== 'position' && t.keys.some((k) => k.frame === 33))).toBe(true);
+  });
 });
 
 // ---------------------------------------------------------------- bones

@@ -9,6 +9,7 @@
  * moves only that row (see propKeys.ts).
  */
 import type { Cel, CameraView, Doc, Easing, Id, InstanceShape, Layer, LayerEffect, VectorDrawing } from '../core/format';
+import { tweenEase } from '../core/ease';
 import { isInstance, nextKey, pairInstances } from '../core/symbols';
 import { bonePose } from '../rig/math';
 import { effectInfo, isAnimated } from '../effects/model';
@@ -87,12 +88,36 @@ function celTrack<T>(layer: Layer, values: (T | undefined)[], prop: Prop<T>, ref
     }
     const differs = !prev || !same(prev, v);
     if (prev && differs) changes++;
-    if (differs) keys.push({ frame: cel.start, ref: refOf(cel), value: prop.words(v) });
+    // A key a cut left on the way along an unbroken tween is not a key of this row: nothing was set here.
+    if (differs && !(prev && passesThrough(layer, i, prev, v, values[i + 1] === undefined ? null : prop.read(values[i + 1] as T)))) keys.push({ frame: cel.start, ref: refOf(cel), value: prop.words(v) });
     prev = v;
   });
   if (!changes) return null;
   addTweenSpans(layer, keys, spans);
   return { id: prop.id, label: prop.label, icon: prop.icon, keys, spans };
+}
+
+/**
+ * Is the drawing key `i` only a place a property key cut a tween, as far as this row goes? That is so when the key before
+ * and this one are the two halves of one cut span (same classic easing, their slices meeting), and this row's value here
+ * is exactly what the one uncut span gives at that point of its curve, between the values on the key before and the key
+ * after. The motion of the row is then the same with or without the key, so it gets no diamond. A row the user set
+ * a value on at the cut differs from the curve and keeps its diamond.
+ */
+export function passesThrough(layer: Layer, i: number, before: number[], here: number[], after: number[] | null): boolean {
+  const p = layer.cels[i - 1];
+  const c = layer.cels[i];
+  if (!p || !c || !after || !p.tween || !c.tween || after.length !== here.length || before.length !== here.length) return false;
+  if (!nextKey(layer, p) || !nextKey(layer, c)) return false;
+  const a = p.tween;
+  const b = c.tween;
+  if (a.kind === 'shape' || b.kind === 'shape' || a.spin || b.spin || a.path || b.path) return false;
+  if (JSON.stringify(a.ease) !== JSON.stringify(b.ease)) return false;
+  const [s0, s1] = a.slice ?? [0, 1];
+  const [t1, s2] = b.slice ?? [0, 1];
+  if (s1 !== t1) return false;
+  const e = tweenEase({ ease: a.ease, slice: [s0, s2] }, (s1 - s0) / (s2 - s0));
+  return here.every((v, k) => Math.abs(v - (before[k] + (after[k] - before[k]) * e)) < 1e-6);
 }
 
 /** A span from each key to the next one on the row, when in-betweens run all the way between them. */
