@@ -87,20 +87,33 @@ export function splitPath(points: PathPoint[], e: number): [PathPoint[], PathPoi
   return [first, second];
 }
 
-/** The two halves of a tween cut `at` (0..1 along the span). Callers check `cutProblem` first. */
-export function cutTween(tw: Tween, at: number): TweenCut {
+/** Gives a tween `x` turns: the whole ones as its spin (what the user sees and edits), the fraction as its facing. */
+function keepSpin(tw: Tween, x: number): void {
+  const whole = Math.round(x);
+  const frac = tidy(x - whole);
+  if (whole) tw.spin = whole;
+  if (frac) tw.facing = frac;
+}
+
+/**
+ * The two halves of a tween cut `at` (0..1 along the span). Callers check `cutProblem` first. `faces` is false for
+ * things that don't turn to face along a path (the camera).
+ */
+export function cutTween(tw: Tween, at: number, faces = true): TweenCut {
   const [s1, s2] = cutSlice(tw, at);
   // How far through the motion it is at the cut: the span's own eased progress (so with easing it is what shows).
   const e = tweenEase(tw, at);
   const base: Tween = { ...tw };
   delete base.slice;
   delete base.spin;
+  delete base.facing;
   delete base.path;
   const first: Tween = { ...base };
   const second: Tween = { ...base };
   if (s1) first.slice = s1;
   if (s2) second.slice = s2;
-  const spin = tw.spin ?? 0;
+  // The whole turns the user asked for and the path's facing fraction travel together; they are split apart again below.
+  const spin = (tw.spin ?? 0) + (tw.facing ?? 0);
   // Turns the heading has gone through by the cut when the object turns to face along its path.
   let heading = 0;
   if (tw.path) {
@@ -108,15 +121,15 @@ export function cutTween(tw: Tween, at: number): TweenCut {
     const [p1, p2] = pts.length > 1 ? splitPath(pts, e) : [pts.map(copyPoint), pts.map(copyPoint)];
     first.path = { ...tw.path, points: p1 } as MotionPath;
     second.path = { ...tw.path, points: p2 } as MotionPath;
-    if (tw.path.orient && pts.length > 1) heading = (pointOnPath(tw.path, e).angle - pointOnPath(tw.path, 0).angle) / 360;
+    if (faces && tw.path.orient && pts.length > 1) heading = (pointOnPath(tw.path, e).angle - pointOnPath(tw.path, 0).angle) / 360;
   }
   // The new key shows spin*e turns (and the heading) already done. Take whole turns off it and give them to the first
   // half; the rest of the spin, and the heading it can't show, are carried as small spins so both halves line up.
   const turns = Math.trunc(spin * e);
   const s1n = tidy(turns - heading);
   const s2n = tidy(spin - turns + heading);
-  if (s1n) first.spin = s1n;
-  if (s2n) second.spin = s2n;
+  keepSpin(first, s1n);
+  keepSpin(second, s2n);
   return { first, second, turns };
 }
 

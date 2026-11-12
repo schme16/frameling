@@ -111,7 +111,7 @@ export function passesThrough(layer: Layer, i: number, before: number[], here: n
   if (!nextKey(layer, p) || !nextKey(layer, c)) return false;
   const a = p.tween;
   const b = c.tween;
-  if (a.kind === 'shape' || b.kind === 'shape' || a.spin || b.spin || a.path || b.path) return false;
+  if (a.kind === 'shape' || b.kind === 'shape' || a.spin || b.spin || a.facing || b.facing || a.path || b.path) return false;
   if (JSON.stringify(a.ease) !== JSON.stringify(b.ease)) return false;
   const [s0, s1] = a.slice ?? [0, 1];
   const [t1, s2] = b.slice ?? [0, 1];

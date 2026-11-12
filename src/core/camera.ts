@@ -76,7 +76,7 @@ export function cameraViewOn(doc: Doc, layer: Layer, frame: number): CameraView 
   const nd = next && next.start === cel.start + cel.length ? doc.drawings[next.drawingId] : undefined;
   if (nd?.kind !== 'camera') return d.view;
   const t = tweenEase(tw, (frame - cel.start) / cel.length);
-  const v = mixViews(d.view, nd.view, t, tw.spin ?? 0);
+  const v = mixViews(d.view, nd.view, t, (tw.spin ?? 0) + (tw.facing ?? 0));
   if (tw.path && tw.path.points.length > 1) {
     // Same as a symbol's motion path: follow the line, bent so it still starts and ends on the two keys.
     const p0 = pointOnPath(tw.path, 0);
@@ -212,7 +212,7 @@ export function setCameraKey(doc: Doc, layer: CameraLayer, frame: number, view: 
     if (tw && nextView?.kind === 'camera' && !cutProblem(tw, at, length)) {
       // Cut the glide at this frame: each half plays its part of the easing and takes its share of the spin and its
       // piece of the motion path, so the motion before and after stays as it was. The new key then takes the view.
-      const halves = cutTween(tw, at);
+      const halves = cutTween(tw, at, false);
       // Whole turns of spin already done are taken off the key (they look the same), as the halves share them.
       nd.view.rotation -= halves.turns * 360;
       cel.tween = halves.first;

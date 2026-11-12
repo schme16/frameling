@@ -348,7 +348,7 @@ export function tweenTransform(ta: Transform2D, tb: Transform2D, tw: Tween, t: n
     y: lerp(ta.y, tb.y, t),
     scaleX: lerp(ta.scaleX, tb.scaleX, t),
     scaleY: lerp(ta.scaleY, tb.scaleY, t),
-    rotation: lerp(ta.rotation, tb.rotation, t) + (tw.spin ?? 0) * 360 * t,
+    rotation: lerp(ta.rotation, tb.rotation, t) + ((tw.spin ?? 0) + (tw.facing ?? 0)) * 360 * t,
     skew: lerp(ta.skew, tb.skew, t),
   };
   if (tw.path && tw.path.points.length > 1) {

@@ -8,6 +8,8 @@ import { celAt } from '../../src/core/doc';
 import { isInstance, shownDrawing } from '../../src/core/symbols';
 import { cutProblem, cutTween, splitPath } from '../../src/core/tweenCut';
 import { tweenEase } from '../../src/core/ease';
+import { clearMotionPath, setMotionPath, updateTween } from '../../src/symbols/ops';
+import { loadFile, saveFile } from '../../src/io/file';
 import { setView } from '../../src/camera/ops';
 import { editActiveDrawing } from '../../src/tools/edit';
 import { retimeKeys } from '../../src/timeline/keys';
@@ -186,6 +188,71 @@ describe('cutting a tween by time keeps the motion', () => {
     store().setUi({ activeLayerId: doc.layers[0].id, frame: 4 });
     expect(editActiveDrawing('Draw', 'vector', () => {})).toBe('morph');
     expect(store().get().doc.layers[0].cels).toHaveLength(2);
+  });
+
+  describe('the path facing is kept apart from the spins the user sets', () => {
+    const cutOnce = (tween: Tween, at = 4) => {
+      const doc = symbolDoc(tween);
+      resetStore(doc);
+      store().setUi({ activeLayerId: doc.layers[0].id, frame: at });
+      expect(editActiveDrawing('Draw', 'vector', () => {})).toBe('ok');
+      return { before: sample(symbolDoc(tween)), doc: store().get().doc };
+    };
+
+    it('both halves have whole Extra spins; the fraction rides in facing', () => {
+      const { doc } = cutOnce({ ease: 'linear', path: structuredClone(ARC) });
+      const [a, b] = doc.layers[0].cels;
+      expect(Number.isInteger(a.tween!.spin ?? 0)).toBe(true);
+      expect(Number.isInteger(b.tween!.spin ?? 0)).toBe(true);
+      expect(Math.abs(b.tween!.facing ?? 0)).toBeGreaterThan(0.01);
+      expect(Math.abs(b.tween!.facing ?? 0)).toBeLessThan(0.5);
+    });
+
+    it('changing the whole spins leaves the facing and the way it faces', () => {
+      const { doc, before } = cutOnce({ ease: 'linear', path: structuredClone(ARC) });
+      const facing = doc.layers[0].cels[1].tween!.facing;
+      store().setUi({ frame: 6 });
+      updateTween('Extra spins', (t) => void (t.spin = 2));
+      const after = store().get().doc;
+      const t2 = after.layers[0].cels[1].tween!;
+      expect(t2.facing).toBe(facing);
+      expect(t2.spin).toBe(2);
+      // Setting it back puts the motion exactly where it was: the fraction was never touched.
+      updateTween('Extra spins', (t) => void delete t.spin);
+      const back = store().get().doc;
+      expect(back.layers[0].cels[1].tween!.facing).toBe(facing);
+      const g = gap(before, sample(back));
+      expect(g.px).toBeLessThan(PX);
+      expect(g.deg).toBeLessThan(stepDeg);
+    });
+
+    it('survives saving and opening', () => {
+      const { doc } = cutOnce({ ease: 'linear', path: structuredClone(ARC) });
+      const back = loadFile(saveFile(doc, '1.2.3')).doc;
+      expect(back.layers[0].cels[1].tween?.facing).toBe(doc.layers[0].cels[1].tween?.facing);
+      expect(back.layers[0].cels[0].tween?.facing).toBe(doc.layers[0].cels[0].tween?.facing);
+      expect(gap(sample(doc), sample(back)).deg).toBeLessThan(1e-9);
+    });
+
+    it('a file from before (a fractional spin) keeps its fraction as facing', () => {
+      const doc = symbolDoc({ ease: 'linear', path: structuredClone(ARC) });
+      doc.layers[0].cels[0].tween!.spin = -0.109;
+      const t = loadFile(saveFile(doc, '1.2.3')).doc.layers[0].cels[0].tween!;
+      expect(t.spin).toBeUndefined();
+      expect(t.facing).toBeCloseTo(-0.109, 6);
+    });
+
+    it('drawing a new path, straightening it or turning off facing clears the facing', () => {
+      for (const act of [() => setMotionPath([{ x: 0, y: 0 }, { x: 80, y: 20 }]), () => clearMotionPath(), () => updateTween('o', (t) => void (t.path && (t.path.orient = false)))]) {
+        cutOnce({ ease: 'linear', path: structuredClone(ARC) });
+        store().setUi({ frame: 6 });
+        expect(store().get().doc.layers[0].cels[1].tween?.facing).toBeDefined();
+        act();
+        // Turning off facing through the Properties toggle also clears it (that handler lives with the toggle).
+        const t = store().get().doc.layers[0].cels[1].tween!;
+        if (!t.path || t.path.orient) expect(t.facing).toBeUndefined();
+      }
+    });
   });
 
   describe('moving a key of another row into the span', () => {

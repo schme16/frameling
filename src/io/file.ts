@@ -396,11 +396,16 @@ function readTween(t: unknown): { tween?: Tween } {
   if (!isObj(t)) return {};
   const tween: Tween = { ...(t.kind === 'shape' ? { kind: 'shape' as const } : {}), ease: isEasing(t.ease) ? t.ease : 'linear' };
   if (Array.isArray(t.slice) && t.slice.length === 2 && t.slice.every((n: unknown) => typeof n === 'number' && Number.isFinite(n)) && t.slice[0] >= 0 && t.slice[1] <= 1 && t.slice[0] < t.slice[1]) tween.slice = [t.slice[0], t.slice[1]];
-  if (typeof t.spin === 'number' && Number.isFinite(t.spin) && t.spin) tween.spin = Math.round(t.spin);
+  // Whole turns are the user's spin; a fraction (a cut path's facing) is kept apart, so it survives and the field never shows it.
+  const spin = typeof t.spin === 'number' && Number.isFinite(t.spin) ? t.spin : 0;
+  const facing = (typeof t.facing === 'number' && Number.isFinite(t.facing) ? t.facing : 0) + (spin - Math.round(spin));
+  if (Math.round(spin)) tween.spin = Math.round(spin);
+  if (Math.abs(facing) > 1e-9) tween.facing = Math.round(facing * 1e6) / 1e6;
   if (isObj(t.path) && Array.isArray(t.path.points)) {
     const points = t.path.points.filter((p: any) => isObj(p) && Number.isFinite(p.x) && Number.isFinite(p.y)).map((p: any) => ({ x: p.x, y: p.y, ...(isObj(p.c1) && isObj(p.c2) ? { c1: { x: num(p.c1.x, p.x), y: num(p.c1.y, p.y) }, c2: { x: num(p.c2.x, p.x), y: num(p.c2.y, p.y) } } : {}) }));
     if (points.length > 1) tween.path = { points, orient: bool(t.path.orient, false) };
   }
+  if (!tween.path) delete tween.facing;
   if (tween.kind === 'shape' && Array.isArray(t.hints)) {
     const pt = (p: any) => (isObj(p) && Number.isFinite(p.x) && Number.isFinite(p.y) ? { x: p.x as number, y: p.y as number } : null);
     const hints = t.hints
