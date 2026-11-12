@@ -1290,7 +1290,7 @@ function paintCount(ctx: Ctx, l: Json, seen = new Set<string>()): number {
     return ((asset?.layers ?? []) as Json[]).reduce((n, x) => n + (x.td ? 0 : paintCount(ctx, x, inner)), 0);
   }
   if (l.ty !== 4) return 0;
-  const walk = (items: Json[]): number => items.reduce((n, it) => n + (it.ty === 'gr' ? walk(it.it ?? []) : ['fl', 'st', 'gf', 'gs'].includes(it.ty) ? 1 : 0), 0);
+  const walk = (items: Json[]): number => items.reduce((n, it) => n + (it.ty === 'gr' && it.nm === ROOM ? 0 : it.ty === 'gr' ? walk(it.it ?? []) : ['fl', 'st', 'gf', 'gs'].includes(it.ty) ? 1 : 0), 0);
   return walk(l.shapes ?? []);
 }
 
@@ -1359,21 +1359,47 @@ function oneAtATime(pieces: Json[]): boolean {
   return spans.every((s, i) => i === 0 || s[0] >= spans[i - 1][1]);
 }
 
+type Room = { x: number; y: number; w: number; h: number };
+
+/** Names the invisible shape that gives a Drop Shadow room (so the fade check can leave it out). */
+const ROOM = 'Shadow room';
+
+/**
+ * lottie-web's SVG player cuts a Drop Shadow off at the layer's own box (its filter region is the box of what the layer
+ * draws), so a shadow thrown past a small drawing vanishes. An invisible rectangle the size of the drawing's box plus the
+ * shadow's reach makes the layer that big; it paints nothing, and the other players don't mind it.
+ */
+const roomShape = (a: Room): Json => ({ ty: 'gr', nm: ROOM, it: [{ ty: 'rc', p: stat([a.x + a.w / 2, a.y + a.h / 2]), s: stat([a.w, a.h]), r: stat(0) }, { ty: 'fl', c: stat([0, 0, 0, 1]), o: stat(0) }, noTr()] });
+
+/** Is this a shape layer with no transform of its own (so a shape in it sits in stage or symbol space)? */
+const plainShapeLayer = (l: Json): boolean => l.ty === 4 && same(l.ks.p, stat([0, 0])) && same(l.ks.a, stat([0, 0])) && same(l.ks.s, stat([100, 100])) && same(l.ks.r, stat(0)) && !l.ks.sk;
+
 /** Puts a blend mode, opacity and effects on pieces: straight on them when that's the same, else on a precomp. */
-function withLook(ctx: Ctx, pieces: Json[], look: { bm?: number; o?: number; ef?: Json[] }, name: string, r: Range): Json[] {
+function withLook(ctx: Ctx, pieces: Json[], look: { bm?: number; o?: number; ef?: Json[]; room?: Room }, name: string, r: Range): Json[] {
   const bm = look.bm ?? 0;
   const o = look.o ?? 1;
   const ef = look.ef ?? [];
   if (!pieces.length || (!bm && o >= 1 && !ef.length)) return pieces;
-  // Effects on a shape layer act on all of it, so one piece at a time can take everything directly.
-  const direct = oneAtATime(pieces) && pieces.every((p) => !p.tt && !p.td);
-  const targets = direct ? pieces : [wrap(ctx, pieces, name, r)];
+  // Effects on a shape layer act on all of it, so one piece at a time can take everything directly. A shadow needs room
+  // in the layer: shape layers get it in themselves, anything else goes in a precomp with a layer that has it.
+  const room = ef.some((e) => e.ty === 25) ? look.room : undefined;
+  const direct = oneAtATime(pieces) && pieces.every((p) => !p.tt && !p.td && (!room || plainShapeLayer(p)));
+  const targets = direct ? pieces : [wrap(ctx, room ? [...pieces, ...roomLayers(ctx, pieces, room, r)] : pieces, name, r)];
   for (const t of targets) {
     if (bm) t.bm = bm;
     if (o < 1) t.ks.o = scaleO(t.ks.o, o);
     if (ef.length) t.ef = JSON.parse(JSON.stringify(ef));
+    if (room && direct) t.shapes.push(roomShape(room));
   }
   return targets;
+}
+
+/** The invisible shape layers that give a precomp's shadow room, one for each camera depth the pieces hang off (so they move with them). */
+function roomLayers(ctx: Ctx, pieces: Json[], room: Room, r: Range): Json[] {
+  const depthOf = (l: Json) => ctx.doc.layers.find((x) => x.id === l.frameling?.layer)?.depth ?? 0;
+  const kinds = new Map<string, Json>();
+  for (const p of pieces) kinds.set(p.frameling?.noCam ? 'fixed' : String(depthOf(p)), p);
+  return [...kinds.values()].map((p) => ({ ty: 4, nm: ROOM, ip: r.from - r.offset, op: r.to + 1 - r.offset, st: 0, sr: 1, ks: { a: stat([0, 0]), p: stat([0, 0]), s: stat([100, 100]), r: stat(0), o: stat(100) }, shapes: [roomShape(room)], frameling: { ...p.frameling } }));
 }
 
 /** What a step looks like when painted (blend, opacity, effects), and whether its effects need baking. */
@@ -1388,7 +1414,7 @@ function nodeContent(ctx: Ctx, node: PlanNode, r: Range): Json[] {
 }
 
 /** A layer or folder with its effects: native ones as Lottie effects, the rest baked into pictures. */
-function nodePicture(ctx: Ctx, node: PlanNode, r: Range): { pieces: Json[]; ef: Json[] } {
+function nodePicture(ctx: Ctx, node: PlanNode, r: Range): { pieces: Json[]; ef: Json[]; room?: Room } {
   const look = lookOfNode(node);
   const frames: number[] = [];
   for (let f = r.from; f <= r.to; f++) frames.push(f);
@@ -1396,16 +1422,24 @@ function nodePicture(ctx: Ctx, node: PlanNode, r: Range): { pieces: Json[]; ef: 
   const active = (look.effects ?? []).filter((e) => e.on !== false);
   const native = nativeEffects(active, frames, times);
   const chosen = !!native && !!ctx.bakeSoft && active.length > 0;
-  if (native && !chosen) return { pieces: nodeContent(ctx, node, r), ef: native };
+  if (native && !chosen) return { pieces: nodeContent(ctx, node, r), ef: native, room: shadowRoom(ctx, node, native, frames) };
   const name = node.type === 'layer' ? node.layer.name : node.folder.name;
   const baked = bakeNode(ctx, node, frames, r);
   if (baked) {
     ctx.notes.add(chosen ? `"${name}" became pictures, as chosen, so players without Lottie's blur and shadow show it too.` : `"${name}" became pictures, since Lottie has no ${active.map((e) => effectInfo(e.kind).label.toLowerCase()).filter((v, i, a) => a.indexOf(v) === i).join(' or ')} effect.`);
     return { pieces: baked, ef: [] };
   }
-  if (native) return { pieces: nodeContent(ctx, node, r), ef: native };
+  if (native) return { pieces: nodeContent(ctx, node, r), ef: native, room: shadowRoom(ctx, node, native, frames) };
   ctx.notes.add(`The effects on "${name}" were left out (they need the app to draw them).`);
-  return { pieces: nodeContent(ctx, node, r), ef: nativeEffects(active.filter((e) => e.kind === 'blur' || e.kind === 'shadow'), frames, times) ?? [] };
+  const left = nativeEffects(active.filter((e) => e.kind === 'blur' || e.kind === 'shadow'), frames, times) ?? [];
+  return { pieces: nodeContent(ctx, node, r), ef: left, room: shadowRoom(ctx, node, left, frames) };
+}
+
+/** The box a layer or folder's shadow needs room for (what it draws over these frames, and the shadow's reach), or none. */
+function shadowRoom(ctx: Ctx, node: PlanNode, ef: Json[], frames: number[]): Room | undefined {
+  if (!ef.some((e) => e.ty === 25)) return undefined;
+  const ids = new Set(node.type === 'layer' ? [node.layer.id] : planLayers(node.steps).map((l) => l.id));
+  return layersBox({ ...ctx.doc, layers: ctx.symbolLayers ?? ctx.doc.layers }, ids, frames) ?? undefined;
 }
 
 /** One draw step: the layer or folder, its clipped layers kept inside it, then its blend mode and opacity. */
@@ -1419,16 +1453,16 @@ function drawStep(ctx: Ctx, node: PlanNode, clips: Layer[], r: Range): Json[] {
   // A pass-through folder's layers go straight onto the stage.
   if (node.type === 'folder' && !node.isolate && !clips.length) return levelContent(ctx, node.steps, r);
   const pic = nodePicture(ctx, node, r);
-  if (!clips.length) return withLook(ctx, pic.pieces, { bm, o: look.opacity, ef: pic.ef }, name, r);
+  if (!clips.length) return withLook(ctx, pic.pieces, { bm, o: look.opacity, ef: pic.ef, room: pic.room }, name, r);
   // Clipped layers: each shows only where the base's picture has something (a matte made from a second copy of it).
-  const group: Json[] = withLook(ctx, pic.pieces, { ef: pic.ef }, name, r);
+  const group: Json[] = withLook(ctx, pic.pieces, { ef: pic.ef, room: pic.room }, name, r);
   for (const cl of clips) {
     if (cl.opacity <= 0) continue;
     const clipPic = drawStep(ctx, { type: 'layer', layer: cl }, [], r);
     if (!clipPic.length) continue;
     const clipped = wrap(ctx, clipPic, cl.name, r);
     const again = nodePicture(ctx, node, r);
-    const matte = wrap(ctx, withLook(ctx, again.pieces, { ef: again.ef }, name, r), `${name} (clip shape)`, r);
+    const matte = wrap(ctx, withLook(ctx, again.pieces, { ef: again.ef, room: again.room }, name, r), `${name} (clip shape)`, r);
     matte.td = 1;
     clipped.tt = 1;
     group.push(clipped, matte);
@@ -1450,7 +1484,7 @@ function levelContent(ctx: Ctx, steps: PlanStep[], r: Range): Json[] {
         continue;
       }
       const under = wrap(ctx, acc, `Under ${s.layer.name}`, r);
-      const matte = wrap(ctx, withLook(ctx, pic.pieces, { ef: pic.ef }, s.layer.name, r), s.layer.name, r);
+      const matte = wrap(ctx, withLook(ctx, pic.pieces, { ef: pic.ef, room: pic.room }, s.layer.name, r), s.layer.name, r);
       matte.td = 1;
       under.tt = hide ? 2 : 1;
       acc = [under, matte];
@@ -1616,8 +1650,8 @@ function bakeNode(ctx: Ctx, node: PlanNode, frames: number[], r: Range): Json[] 
   return out;
 }
 
-/** The box some of a symbol's layers cover over these frames, effects included (null when empty). */
-function symbolArea(solo: Doc, ids: Set<string>, frames: number[]): { x: number; y: number; w: number; h: number } | null {
+/** The box some layers cover over these frames, effects' reach included, in whole pixels (null when empty). */
+function layersBox(solo: Doc, ids: Set<string>, frames: number[]): { x: number; y: number; w: number; h: number } | null {
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
   let reach = 0;
   for (const l of solo.layers) {
@@ -1639,8 +1673,14 @@ function symbolArea(solo: Doc, ids: Set<string>, frames: number[]): { x: number;
   if (!(x1 > x0 && y1 > y0)) return null;
   const x = Math.floor(x0 - reach - 2);
   const y = Math.floor(y0 - reach - 2);
+  return { x, y, w: Math.ceil(x1 + reach + 2 - x), h: Math.ceil(y1 + reach + 2 - y) };
+}
+
+/** The box some of a symbol's layers cover over these frames, effects included (null when empty). */
+function symbolArea(solo: Doc, ids: Set<string>, frames: number[]): { x: number; y: number; w: number; h: number } | null {
+  const a = layersBox(solo, ids, frames);
   // Kept under 4096 pixels a side at the bake scale.
-  return { x, y, w: Math.min(2048, Math.ceil(x1 + reach + 2 - x)), h: Math.min(2048, Math.ceil(y1 + reach + 2 - y)) };
+  return a && { ...a, w: Math.min(2048, a.w), h: Math.min(2048, a.h) };
 }
 
 /** The camera as null layers (one per depth), one value per frame. */

@@ -398,6 +398,23 @@ own renderer.
 DOTLOTTIE_DIR=$PWD/pkg/package AMOUNTS=4,8,12,16 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/shadow-sigma.cjs [outDir]
 ```
 
+## Shadow room in Lottie players: scripts/e2e/shadow-clip.cjs
+
+lottie-web's SVG player cuts a Drop Shadow off at the layer's own box (its filter region is the bounding box of what the layer
+draws), so a shadow thrown past a small drawing used to vanish; the dotLottie player (ThorVG) never had the problem. The writer
+now gives a shadowed layer an invisible rectangle (`Shadow room`, fill opacity 0) the size of what the layer draws over the
+frames plus the shadow's reach (`effectReach`, in `layersBox` and `shadowRoom` in `lottie.ts`); shape layers carry it inside,
+pictures and symbol copies go in a precomp with a room layer (one per camera depth, so it moves with them). Pinned in
+`test/export/lottie-shadow-room.test.ts`. The script plays small documents (a box, a dot, held drawings, a folder, a symbol copy, a pixel
+layer, shadow with soften both ways round, a panning camera) in the editor, lottie-web's SVG and canvas players and (with
+`DOTLOTTIE_DIR`) the dotLottie player, saves a PNG of each, and prints the share of the editor's shadow ink each shows and the
+RMSE against it. It fails when the SVG or dotLottie player shows under 85 percent or is more than 6 away. lottie-web's canvas
+player ignores effects, so a shadow never shows there (reported only; "Draw Soften and Shadow as pictures" is the way).
+
+```bash
+DOTLOTTIE_DIR=$PWD/pkg/package xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/shadow-clip.cjs [outDir]
+```
+
 ## Vector exports against the renderer: scripts/e2e/vector-check.cjs
 
 Renders test documents (Bouncing logo, a shape tween with hints, a camera move with parallax, the Bouncing ball, a pixel
