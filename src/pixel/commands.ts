@@ -7,7 +7,7 @@ import { registerChoice, withChoice } from '../core/choices';
 import type { Doc, DocPalette, PixelDrawing } from '../core/format';
 import { registerCommands } from '../core/registry';
 import { store } from '../core/store';
-import { paletteScope, setVariationPalette, sharedEditNote } from '../artboards/variations';
+import { paletteScope, recolourOpenVariation, setVariationPalette, sharedEditNote } from '../artboards/variations';
 import { parseHex } from '../canvas/colors';
 import { hint } from '../canvas/controller';
 import { activeDrawing, activeGrid, activeLayer, EDIT_HINTS, setActivePixels } from '../tools/edit';
@@ -74,15 +74,17 @@ export function changePaletteColor(index: number, color: string): void {
   const next: DocPalette = { ...p, colors: p.colors.map((c, i) => (i === index ? color : c)) };
   const [r, g, b] = rgb3(old);
   const scope = paletteScope(doc, old);
+  const inVariation = !!sharedEditNote(doc, 'palette');
   const usesOld = Object.values(doc.drawings).some((d) => d.kind === 'pixel' && scope(d.id) && usesColor(d.pixels, r, g, b));
   const apply = (recolour: boolean) =>
     store().update('Change palette colour', (d) => {
       if (!setVariationPalette(d as Doc, next)) d.palette = next as Draft<DocPalette>;
+      // In a variation the new colour is its colourway: pixels and vector shapes of that colour on the stage follow.
+      if (recolourOpenVariation(d as Doc, [{ from: old, to: color }])) return;
       if (recolour) recolourDoc(d, old, color, scope);
     });
+  if (inVariation) return apply(true);
   if (!usesOld) return apply(false);
-  // In a variation the new colour is its colourway: its pixels follow without asking.
-  if (sharedEditNote(doc, 'palette')) return apply(true);
   withChoice<RecolourChoice>('palette.recolour', (v) => apply(v === 'recolour'));
 }
 

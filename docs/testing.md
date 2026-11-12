@@ -117,6 +117,22 @@ the letter case on disk. Windows and macOS don't care, Linux does, so this catch
 `test/ui/quill-lines.test.ts` checks every line in `src/ui/mascot/lines.json` is used, every id the code uses exists,
 and placeholders match.
 
+### Random operations (fuzz): test/artboards/fuzz.test.ts
+
+Runs seeded random lists of 22 operations (variations made, opened, detached, resized and recoloured, artboards
+duplicated and deleted, keys added, moved and painted, palette colours changed, timeline edits, undo and redo) and
+checks three things after each list: undo and redo round-trip back to the start and the end, saving and reopening
+gives the same pictures on every artboard, and editing a variation never changes its original (the variations are
+also checked to be in step after every operation). The seeds are fixed, so a failure repeats; the message names the
+seed and a shrunk list of operations. `npm test` runs 1000 lists (about 3 seconds). The big run:
+
+```sh
+FUZZ_RUNS=25000 npx vitest run test/artboards/fuzz.test.ts   # about a minute
+FUZZ_SEED=2211 npx vitest run test/artboards/fuzz.test.ts    # repeat just one seed
+```
+
+The shrunk list reads `name(n,m)`, one step each: `apply` in the same file shows what each does.
+
 ## Lip sync accuracy: scripts/lipsync/
 
 Measures the mouth guesser against speech with known phoneme timing, offline. Nothing here is part of `npm test` (the

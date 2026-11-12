@@ -1030,7 +1030,9 @@ function layerPieces(ctx: Ctx, layer: Layer, from: number, to: number, offset: n
       const d = doc.drawings[cel.drawingId];
       const px = d?.kind === 'pixel' ? d : d?.kind === 'tilemap' ? flattenDrawing(doc, d, cel.start) : undefined;
       if (!px || px.width < 1 || px.height < 1) continue;
-      const id = imageAsset(ctx, px.id + ':' + layer.pixelSize, px, layer.pixelSize);
+      // A flattened tilemap with animated tiles looks different on each key, so the key's frame is part of what it is cached by.
+      const moving = d?.kind === 'tilemap' && !!doc.tileset?.tiles.some((t) => t.frames.length > 1);
+      const id = imageAsset(ctx, px.id + ':' + layer.pixelSize + (moving ? ':f' + cel.start : ''), px, layer.pixelSize);
       // A pixel drawing holds only its painted block, which sits (x, y) art pixels in from the corner.
       const at = [(px.x ?? 0) * layer.pixelSize, (px.y ?? 0) * layer.pixelSize];
       out.push(tag({ ty: 2, refId: id, ip: a - offset, op: b + 1 - offset, st: 0, sr: 1, ks: { a: stat([0, 0]), p: stat(at), s: stat([100, 100]), r: stat(0), o: stat(100) } }));

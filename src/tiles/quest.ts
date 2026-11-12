@@ -1,14 +1,15 @@
 // "Tiles": make a tile, draw it with tile mode on, paint across its edge so it repeats without a seam, then stamp it
 // on a tilemap layer. Listed in src/quests/library.ts after Shade and shine.
-import { celAt, drawingAt } from '../core/doc';
-import type { Doc, PixelDrawing } from '../core/format';
+import { celAt, drawingAt, pixelGrid } from '../core/doc';
+import type { Doc, PixelDrawing, PixelLayer } from '../core/format';
+import { gridPixels, setGridPixels } from '../core/pixelBounds';
 import { store, type State } from '../core/store';
 import type { Quest } from '../quests/types';
 import { freshPage } from '../quests/actions';
 import { hasPixelLayer } from '../quests/predicates';
 import { PRESETS, docFromPreset } from '../ui/presets';
 import { showPanel } from '../ui/dock';
-import { editActiveDrawing } from '../tools/edit';
+import { activeGrid, editActiveDrawing } from '../tools/edit';
 import { cellKey, makeCell } from './model';
 import * as ops from './ops';
 import { getTileUi, setTileUi, tileModeOn } from './state';
@@ -33,12 +34,18 @@ export function ensureTilePage(): boolean | Promise<boolean> {
   return freshPage(() => docFromPreset(p));
 }
 
-/** The tile being drawn (on the canvas, while a tile is open). */
+/** A pixel drawing as a whole-grid one (it holds only its painted block), so edges are the grid's edges. */
+export function onWholeGrid(doc: Doc, layer: PixelLayer, d: PixelDrawing): PixelDrawing {
+  const g = pixelGrid(doc, layer);
+  return { ...d, x: 0, y: 0, width: g.width, height: g.height, pixels: gridPixels(d, g.width, g.height) };
+}
+
+/** The tile being drawn (on the canvas, while a tile is open), as the whole tile. */
 function openTileDrawing(doc: Doc, frame: number): PixelDrawing | null {
   if (!ops.editingTileKey()) return null;
   const layer = doc.layers.find((l) => l.kind === 'pixel');
   const d = layer ? drawingAt(doc, layer, frame) : undefined;
-  return d && d.kind === 'pixel' ? d : null;
+  return layer?.kind === 'pixel' && d && d.kind === 'pixel' ? onWholeGrid(doc, layer, d) : null;
 }
 
 /**
@@ -69,18 +76,21 @@ export function stampedTiles(s: State): number {
 }
 
 /** "Show me how" for the edge: a wave right across the tile that lines up with itself where it wraps. */
-function drawDemoWave(): boolean {
+export function drawDemoWave(): boolean {
   const c = /^#([0-9a-f]{6})/i.exec(store().get().ui.color)?.[1] ?? '2f7d4a';
   const rgb = [0, 2, 4].map((i) => parseInt(c.slice(i, i + 2), 16));
+  const g = activeGrid();
+  if (!g) return false;
   return (
     editActiveDrawing('Draw pixels', 'pixel', (d) => {
-      const px = new Uint8ClampedArray(d.pixels);
-      const amp = Math.max(1, Math.floor(d.height / 8));
-      for (let x = 0; x < d.width; x++) {
-        const y = Math.floor(d.height / 2) + Math.round(Math.sin((2 * Math.PI * x) / d.width) * amp);
-        px.set([rgb[0], rgb[1], rgb[2], 255], (y * d.width + x) * 4);
+      // The drawing holds only its painted block, so the wave is laid on the whole tile and trimmed again.
+      const px = new Uint8ClampedArray(gridPixels(d, g.width, g.height));
+      const amp = Math.max(1, Math.floor(g.height / 8));
+      for (let x = 0; x < g.width; x++) {
+        const y = Math.floor(g.height / 2) + Math.round(Math.sin((2 * Math.PI * x) / g.width) * amp);
+        px.set([rgb[0], rgb[1], rgb[2], 255], (y * g.width + x) * 4);
       }
-      d.pixels = px;
+      setGridPixels(d, px, g.width, g.height);
     }) === 'ok'
   );
 }

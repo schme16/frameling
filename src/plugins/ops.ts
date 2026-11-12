@@ -4,7 +4,7 @@ import type { Draft } from 'immer';
 import type { ClipDirection, Doc, Drawing, Layer, Shape } from '../core/format';
 import { CLIP_DIRECTIONS, MAX_REPEAT, cleanRepeat, isDirection } from '../core/clipPlay';
 import { pixelGrid, uid } from '../core/doc';
-import { gridPixels, setGridPixels, setPlaced, trimPixels } from '../core/pixelBounds';
+import { gridPixels, placeOnGrid, setGridPixels, setPlaced, trimPixels } from '../core/pixelBounds';
 import { scaleAbout, transformShapes, type Matrix } from '../canvas/geometry';
 import { flipH, flipV } from '../pixel/transform';
 
@@ -97,7 +97,14 @@ export function applyOp(doc: Draft<Doc>, raw: unknown): void {
       if (!(p instanceof Uint8ClampedArray || p instanceof Uint8Array || Array.isArray(p)) || p.length !== len) throw new OpProblem(`pixels must be ${len} bytes (RGBA, ${w} x ${h}).`);
       // Always a fresh array: edits never share memory with what the plugin holds.
       const fresh = Uint8ClampedArray.from(p as ArrayLike<number>);
-      if (w === 0 || h === 0) setPlaced(d, { x: 0, y: 0, width: 0, height: 0, pixels: fresh });
+      if (w === 0 || h === 0) {
+        setPlaced(d, { x: 0, y: 0, width: 0, height: 0, pixels: fresh });
+        return;
+      }
+      // What lies outside the art grid is cut (the drawing is on a pixel layer), as everything else that places pixels does.
+      const l = doc.layers.find((q) => q.kind === 'pixel' && q.cels.some((c) => c.drawingId === d.id));
+      const g = l && l.kind === 'pixel' ? pixelGrid(doc as Doc, l) : null;
+      if (g && (x + w > g.width || y + h > g.height)) setGridPixels(d, placeOnGrid({ x, y, width: w, height: h, pixels: fresh }, g.width, g.height), g.width, g.height);
       else setPlaced(d, trimPixels(fresh, w, h, x, y));
       return;
     }

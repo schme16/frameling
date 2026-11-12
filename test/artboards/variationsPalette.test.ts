@@ -88,6 +88,47 @@ describe('palette overrides: the pure parts', () => {
   });
 });
 
+describe('palette overrides: vector shapes', () => {
+  it('a colour changed in an open variation recolours its vector shapes at once, like closing and reopening does', () => {
+    update('Vector', (d) => {
+      const vd = { id: 'vd1', kind: 'vector', shapes: [{ id: 's1', type: 'path', paths: [{ closed: true, points: [{ x: 0, y: 0 }, { x: 2, y: 0 }, { x: 2, y: 2 }] }], fill: '#ff0000', stroke: null, opacity: 1 }] } as never;
+      d.drawings['vd1'] = vd;
+      d.layers.push({ id: 'LV', name: 'V', kind: 'vector', visible: true, locked: false, opacity: 1, cels: [{ id: 'vc', start: 0, length: 2, drawingId: 'vd1' }] } as never);
+    });
+    const v = make();
+    open(v);
+    const fillOnStage = () => {
+      const l = doc().layers.find((x) => x.id === 'LV')!;
+      const dr = doc().drawings[l.cels[0].drawingId] as { shapes: { fill: string }[] };
+      return dr.shapes[0].fill;
+    };
+    changePaletteColor(0, '#0000ff');
+    expect(fillOnStage()).toBe('#0000ff');
+    expect(px(aliasId(pid, v))).toEqual(BLUE);
+    // The original is untouched, and closing then reopening shows the same.
+    expect((doc().drawings['vd1'] as { shapes: { fill: string }[] }).shapes[0].fill).toBe('#ff0000');
+    open(root());
+    expect((doc().drawings['vd1'] as { shapes: { fill: string }[] }).shapes[0].fill).toBe('#ff0000');
+    open(v);
+    expect(fillOnStage()).toBe('#0000ff');
+    expect(ovOf(v).palette).toEqual({ changes: [{ from: '#ff0000', to: '#0000ff' }] });
+  });
+
+  it('a palette colour only vector shapes use still follows in a variation', () => {
+    update('Vector', (d) => {
+      const vd = { id: 'vd1', kind: 'vector', shapes: [{ id: 's1', type: 'path', paths: [{ closed: true, points: [{ x: 0, y: 0 }, { x: 2, y: 0 }, { x: 2, y: 2 }] }], fill: '#ffffff', stroke: null, opacity: 1 }] } as never;
+      d.drawings['vd1'] = vd;
+      d.layers.push({ id: 'LV', name: 'V', kind: 'vector', visible: true, locked: false, opacity: 1, cels: [{ id: 'vc', start: 0, length: 2, drawingId: 'vd1' }] } as never);
+    });
+    const v = make();
+    open(v);
+    changePaletteColor(2, '#222222');
+    const l = doc().layers.find((x) => x.id === 'LV')!;
+    expect((doc().drawings[l.cels[0].drawingId] as { shapes: { fill: string }[] }).shapes[0].fill).toBe('#222222');
+    expect(ovOf(v).palette?.changes).toEqual([{ from: '#ffffff', to: '#222222' }]);
+  });
+});
+
 describe('palette overrides: in a document', () => {
   it('a colour changed in a variation is the only thing it stores, and its pixels need no copy', () => {
     const v = make();
