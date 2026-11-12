@@ -71,7 +71,7 @@ export interface HelpTopic {
   /** Where it sits in the help contents ("Getting started", "Drawing", "Animating", "Exporting"...). */
   section: string;
   keywords?: string[];
-  /** Optional picture or video shown at the top (path under public/help/). */
+  /** Optional picture or video shown at the top: the base name under public/help/, like `select.png`. The files are `select-dark.png` and `select-light.png`, and the help browser picks the one for the current mode. */
   media?: string;
   /** Place in its section's list, lower first (missing = 50, then by title). Lets a section open with its overview. */
   order?: number;
