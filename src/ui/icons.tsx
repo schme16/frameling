@@ -391,6 +391,13 @@ const ICONS: Record<string, ReactNode> = {
       <path d="M4 4l2 2M20 20l-2-2" />
     </>
   ),
+  // snapping: a horseshoe magnet with striped tips
+  magnet: (
+    <>
+      <path d="M6 4v8a6 6 0 0 0 12 0V4h-4v8a2 2 0 0 1-4 0V4z" />
+      <path d="M6 8h4M14 8h4" />
+    </>
+  ),
   ruler: (
     <>
       <rect x="3" y="7.5" width="18" height="9" rx="2" />

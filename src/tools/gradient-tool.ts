@@ -14,6 +14,7 @@ import type { P } from '../geometry/pen';
 import { activeDrawing, editActiveDrawing } from './edit';
 import { canEdit } from './util';
 import { constrain45 } from './pen';
+import { angleSteps } from '../canvas/guides';
 import { drawPoint, GRAB_PX, ink } from './point-handles';
 import { wellGradient } from './gradient-wells';
 import { GradientToolOptions } from './options/GradientToolOptions';
@@ -122,13 +123,13 @@ export const gradientTool: Tool = {
     if (drag.mode === 'new') {
       // A tiny drag is just a click on the shape: leave the gradient as it was.
       if (Math.hypot(e.x - drag.start.x, e.y - drag.start.y) * ctx.zoom < 4) return;
-      next = { ...g, from: { ...drag.start }, to: e.shift ? constrain45(drag.start, e) : { x: e.x, y: e.y } };
-    } else if (drag.mode === 'to') next = { ...g, to: e.shift ? constrain45(g.from, e) : { x: e.x, y: e.y } };
+      next = { ...g, from: { ...drag.start }, to: e.shift && angleSteps() ? constrain45(drag.start, e) : { x: e.x, y: e.y } };
+    } else if (drag.mode === 'to') next = { ...g, to: e.shift && angleSteps() ? constrain45(g.from, e) : { x: e.x, y: e.y } };
     else {
       // Moving the start carries the end along on a radial gradient (it's the middle); on a linear one only the start moves.
       const dx = e.x - g.from.x;
       const dy = e.y - g.from.y;
-      next = g.kind === 'radial' ? { ...g, from: { x: e.x, y: e.y }, to: { x: g.to.x + dx, y: g.to.y + dy } } : { ...g, from: e.shift ? constrain45(g.to, e) : { x: e.x, y: e.y } };
+      next = g.kind === 'radial' ? { ...g, from: { x: e.x, y: e.y }, to: { x: g.to.x + dx, y: g.to.y + dy } } : { ...g, from: e.shift && angleSteps() ? constrain45(g.to, e) : { x: e.x, y: e.y } };
     }
     write(t.id, drag.which, next, drag.key);
     ctx.requestOverlay();

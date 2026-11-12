@@ -53,6 +53,7 @@ const DIALOGS = [
   ['prefs-themes', `__frameling.overlays.openPrefs('themes')`],
   ['prefs-behaviour', `__frameling.overlays.openPrefs('behaviour')`],
   ['prefs-keyboard', `__frameling.overlays.openPrefs('keyboard')`],
+  ['prefs-snapping', `__frameling.overlays.openPrefs('snapping')`],
   ['prefs-workspaces', `__frameling.overlays.openPrefs('workspaces')`],
   ['prefs-plugins', `__frameling.overlays.openPrefs('plugins')`],
   ['prefs-features', `__frameling.overlays.openPrefs('features')`],
@@ -365,6 +366,7 @@ app.whenReady().then(async () => {
     { n: 'all panels', panel: null, doc: 'bouncing-ball', opener: '[data-panels-button]', pop: '.rd-picker', open: 'enter' },
     { n: 'tool group', panel: null, doc: 'bouncing-ball', prefs: { toolRail: 'stacked' }, opener: 'button[data-tool-group]', pop: '.ui-tool-fly', open: 'menu' },
     { n: 'swatch menu', panel: 'colors', doc: 'bouncing-ball', opener: '.cv-swatch:not(.cv-swatch-add)', pop: '.cv-menu', open: 'context' },
+    { n: 'snapping options', panel: null, doc: 'bouncing-ball', opener: '[data-snap-button]', pop: '.sn-pop', open: 'enter' },
     { n: 'palette colour', panel: 'palette', doc: 'blank-pixel', opener: '.px-chip', pop: '.px-menu', open: 'context' },
   ];
   const popOpen = (pop) => js(win, `const p = document.querySelector(${JSON.stringify(pop)}); return { open: !!p, inside: !!p && p.contains(document.activeElement) }`);

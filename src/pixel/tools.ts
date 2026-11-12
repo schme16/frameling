@@ -10,7 +10,7 @@ import { registerCommand, registerTool, type Tool, type ToolContext, type ToolPo
 import { store } from '../core/store';
 import { parseHex } from '../canvas/colors';
 import { getHover } from '../canvas/controller';
-import { vanishingPoints } from '../canvas/guides';
+import { angleSteps, vanishingPoints } from '../canvas/guides';
 import { docToPixel, type PxPt } from '../canvas/pixels';
 import { activeLayer, EDIT_HINTS } from '../tools/edit';
 import { drawPixelFootprint } from '../tools/cursors';
@@ -298,7 +298,7 @@ export function paintPixelShape(
     const ink = session.lock(solidInk(c));
     let end = b;
     let start = a;
-    if (mod.shift) end = snapCleanLine(a, b);
+    if (mod.shift && angleSteps()) end = snapCleanLine(a, b);
     if (mod.alt) start = { x: 2 * a.x - end.x, y: 2 * a.y - end.y };
     plotThickLine(start.x, start.y, end.x, end.y, thick, (x, y) => session.paint(x, y, ink));
     return;

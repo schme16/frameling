@@ -6,6 +6,7 @@ import './canvas.css';
 import './choices';
 import './commands';
 import './guides';
+import './snapCommands';
 import './gridView';
 import './lightTable';
 import './help';

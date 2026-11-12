@@ -9,6 +9,7 @@ import { TIPS, tipText } from './tips';
 import { docDpi, formatSize } from '../core/units';
 import { drawingAt } from '../core/doc';
 import { shapesBounds } from '../canvas/geometry';
+import { SnapButton } from '../canvas/SnapOptions';
 
 export function StatusBar() {
   const zoom = useStore((s) => s.ui.zoom);
@@ -80,6 +81,7 @@ export function StatusBar() {
         <Icon name="timeline" size={14} />
         Frame {frame + 1} of {length}
       </span>
+      <SnapButton />
       <span className="ui-status-spacer" />
       {showTips && (
         <button type="button" className={`ui-status-tip${fade ? ' is-fading' : ''}`} onClick={next} data-tip="Show another tip" aria-label={`Tip: ${tipText(TIPS[tip])}. Press for another.`}>

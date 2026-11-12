@@ -8,6 +8,7 @@ import { Rulers } from './Rulers';
 import { useViewSettings } from './viewSettings';
 import { onTextDoubleClick, TextEditor } from '../text/TextEditor';
 import { ArtboardsUnderlay } from '../artboards/Underlay';
+import { SnapChip } from './SnapOptions';
 
 export function CanvasView() {
   const rootRef = useRef<HTMLDivElement>(null);
@@ -43,6 +44,7 @@ export function CanvasView() {
       <EditBar />
       <TileEditBanner />
       {rulers && <Rulers root={rootRef} />}
+      <SnapChip />
       {hint && (
         <div className="cv-hint" key={hint.id} role="status" aria-live="polite">
           {hint.text}

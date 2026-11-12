@@ -7,6 +7,8 @@ import type { Doc, Id } from '../core/format';
 import { registerTool, type Tool, type ToolPointer } from '../core/registry';
 import { store } from '../core/store';
 import { setCursor } from '../canvas/controller';
+import { artboardTargets, clearSnap, showSnap } from '../canvas/guides';
+import { nearest, SNAP_PX, snapBox, snapPoint, type SnapLine, type SnapTargets } from '../canvas/snap';
 import type { Anchor } from '../canvas/resize';
 import { activeArtboard, activeId, artboardAt, boxes } from './model';
 import { duplicateArtboardById, goToArtboard, installArtboards, moveArtboardTo, newArtboard, resizeArtboard } from './ops';
@@ -64,16 +66,29 @@ export function hitTest(doc: Doc, p: Pt, zoom: number): { id: Id; handle: Handle
 }
 
 /** The box a resize drag makes: the dragged side follows the pointer, the other stays, never smaller than a step. */
-export function resizedBox(b: Box, h: Handle, dx: number, dy: number, step: number): Box {
+export function resizedBox(b: Box, h: Handle, dx: number, dy: number, step: number, pull?: (v: number, axis: 'x' | 'y') => number | null): Box {
   let x0 = b.x;
   let y0 = b.y;
   let x1 = b.x + b.w;
   let y1 = b.y + b.h;
-  if (h.includes('w')) x0 = Math.min(x1 - step, snap(b.x + dx, step));
-  if (h.includes('e')) x1 = Math.max(x0 + step, snap(b.x + b.w + dx, step));
-  if (h.includes('n')) y0 = Math.min(y1 - step, snap(b.y + dy, step));
-  if (h.includes('s')) y1 = Math.max(y0 + step, snap(b.y + b.h + dy, step));
+  // An edge takes its snapped place (another artboard's edge) when it has one, else the nearest art pixel.
+  const at = (v: number, axis: 'x' | 'y') => pull?.(v, axis) ?? snap(v, step);
+  if (h.includes('w')) x0 = Math.min(x1 - step, at(b.x + dx, 'x'));
+  if (h.includes('e')) x1 = Math.max(x0 + step, at(b.x + b.w + dx, 'x'));
+  if (h.includes('n')) y0 = Math.min(y1 - step, at(b.y + dy, 'y'));
+  if (h.includes('s')) y1 = Math.max(y0 + step, at(b.y + b.h + dy, 'y'));
   return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+}
+
+/** Shows the lines that just snapped (pasteboard places) in the open artboard's own space, where the canvas draws them. */
+function showLines(lines: SnapLine[]): void {
+  const a = activeArtboard(store().get().doc);
+  showSnap(lines.map((l) => ({ ...l, at: l.at - (l.axis === 'x' ? a.x : a.y) })));
+}
+
+/** What the other artboards offer to snap to, for a drag of `id` (null: snapping to artboards is off). */
+function offers(doc: Doc, id: Id | null, bypass: boolean): SnapTargets | null {
+  return artboardTargets(boxes(doc).filter((b) => b.id !== id), bypass);
 }
 
 function down(e: ToolPointer): void {
@@ -83,7 +98,9 @@ function down(e: ToolPointer): void {
   const p = onBoard(e, doc);
   const hit = hitTest(doc, p, ui.zoom);
   if (!hit) {
-    drag = { kind: 'new', start: p, now: p };
+    const t = offers(doc, null, e.mod);
+    const q = t ? snapPoint(p, t, SNAP_PX / ui.zoom) : p;
+    drag = { kind: 'new', start: { x: q.x, y: q.y }, now: { x: q.x, y: q.y } };
     return;
   }
   let id = hit.id;
@@ -103,9 +120,27 @@ function move(e: ToolPointer): void {
   const { doc, ui } = store().get();
   const p = onBoard(e, doc);
   const step = artStep(doc);
-  if (drag.kind === 'new') drag.now = p;
-  else if (drag.kind === 'resize') drag.now = resizedBox(drag.box, drag.handle, p.x - drag.start.x, p.y - drag.start.y, step);
-  else {
+  const tol = SNAP_PX / ui.zoom;
+  const t = offers(doc, drag.kind === 'new' ? null : drag.id, e.mod);
+  if (!t) clearSnap();
+  if (drag.kind === 'new') {
+    if (t) {
+      const s = snapPoint(p, t, tol);
+      showLines(s.lines);
+      drag.now = { x: s.x, y: s.y };
+    } else drag.now = p;
+  } else if (drag.kind === 'resize') {
+    const lines: SnapLine[] = [];
+    const pull = t
+      ? (v: number, axis: 'x' | 'y') => {
+          const hit = nearest(v, axis === 'x' ? t.x : t.y, tol);
+          if (hit !== null) lines.push({ axis, at: hit, kind: 'artboards' });
+          return hit;
+        }
+      : undefined;
+    drag.now = resizedBox(drag.box, drag.handle, p.x - drag.start.x, p.y - drag.start.y, step, pull);
+    if (t) showLines(lines);
+  } else {
     let dx = p.x - drag.start.x;
     let dy = p.y - drag.start.y;
     if (Math.hypot(dx, dy) * ui.zoom < DRAG_PX) return;
@@ -113,7 +148,14 @@ function move(e: ToolPointer): void {
       if (Math.abs(dx) > Math.abs(dy)) dy = 0;
       else dx = 0;
     }
-    moveArtboardTo(drag.id, snap(drag.from.x + dx, step), snap(drag.from.y + dy, step), drag.key);
+    // Its edges and middle pull onto the other artboards' (when that is on), else it keeps to whole art pixels.
+    const movingId = drag.id;
+    const here = boxes(doc).find((b) => b.id === movingId);
+    const s = t && here ? snapBox({ x: drag.from.x, y: drag.from.y, w: here.w, h: here.h }, dx, dy, t, tol) : null;
+    const hitX = !!s?.lines.some((l) => l.axis === 'x');
+    const hitY = !!s?.lines.some((l) => l.axis === 'y');
+    moveArtboardTo(drag.id, hitX ? drag.from.x + s!.dx : snap(drag.from.x + dx, step), hitY ? drag.from.y + s!.dy : snap(drag.from.y + dy, step), drag.key);
+    if (t) showLines(s?.lines ?? []);
   }
 }
 
@@ -123,8 +165,11 @@ function up(e: ToolPointer): void {
   if (!d) return;
   const { doc, ui } = store().get();
   const step = artStep(doc);
+  clearSnap();
   if (d.kind === 'new') {
-    const p = onBoard(e, doc);
+    const t = offers(doc, null, e.mod);
+    const q = onBoard(e, doc);
+    const p = t ? snapPoint(q, t, SNAP_PX / ui.zoom) : q;
     const x0 = snap(Math.min(d.start.x, p.x), step);
     const y0 = snap(Math.min(d.start.y, p.y), step);
     const w = snap(Math.abs(p.x - d.start.x), step);
@@ -223,6 +268,7 @@ export const artboardTool: Tool = {
   },
   cancel: (ctx) => {
     drag = null;
+    clearSnap();
     ctx.requestOverlay();
   },
   overlay: (g, ctx) => overlay(g, ctx.zoom),

@@ -221,6 +221,13 @@ an edit misses the old entry and the old one is garbage collected. The main ones
   passed to `tool.down/move/up`. Tools preview with `setLive` and the overlay, then commit with one `store().update`.
 - Pure helpers: `view.ts` (zoom and pan maths), `input.ts` (wheel intent, Space tap), `onion.ts`, `lightTable.ts`,
   `snap.ts`, `grid.ts`, `guides.ts`. `perf.ts` records timings only with `?perf`.
+- **Snapping choices**: `snapModel.ts` (pure) lists the targets (page, centre, guides, grid, other shapes, perspective,
+  cells, angles, artboards) and `activeTargets` says which are in force for one gesture, from the master switch, the
+  per-kind ticks (`viewSettings.snapPicks`: vector, pixel, artboard), Ctrl and what is showing. `guides.ts` asks it before
+  every pull (`snapPt`, `snapMove`, `snapLineEnd`, `vanishingPoints`, `angleSteps`, `artboardTargets`), `snapShapes.ts`
+  supplies other shapes' lines, `snapOps.ts` changes the ticks, `SnapOptions.tsx` is the popover, Preferences page and
+  the "Snapped to" note. Pixel cells wins on a pixel layer (only cells, perspective and angles apply). Angle steps are
+  a Shift choice, so the master switch and Ctrl do not stop them.
 
 ## The shell, dock and right side
 

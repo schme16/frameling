@@ -5,7 +5,10 @@ import { uid } from '../core/doc';
 import { registerCommands } from '../core/registry';
 import { store } from '../core/store';
 import { addStageOverlay, hint, requestOverlay } from './controller';
-import { getSnapLines, setSnapLines, SNAP_PX, snapBox, snapPoint, snapTargets, withGuide, type SnapLine } from './snap';
+import { addLines, bumpSnap, getSnapLines, noTargets, setSnapLines, setSnapNotes, SNAP_PX, snapBox, snappedKinds, snapPoint, withGuide, type SnapLine, type SnapTargets } from './snap';
+import { activeTargets, type SnapContext, type SnapTarget } from './snapModel';
+import { currentSnapContext } from './snapOps';
+import { otherShapeLines } from './snapShapes';
 import { cssVar } from './theme';
 import { constrainWithVanishing, isoRatio, snapIso, snapToVanishing, squareLines } from './grid';
 import { getViewSettings, setViewSettings } from './viewSettings';
@@ -65,31 +68,53 @@ export function cancelGuideDrag(): void {
 
 // ---------------------------------------------------------------- snapping for tools
 
-/** Snapping for the gesture in hand: off when the setting is off or Ctrl (Cmd) is held. */
-function targets(bypass: boolean) {
+/** The snap targets in force for the gesture in hand: none when snapping is off or Ctrl (Cmd) is held (see snapModel.ts). */
+function active(bypass: boolean, ctx: SnapContext = currentSnapContext()): Set<SnapTarget> {
   const v = getViewSettings();
-  if (bypass || !v.snap) return null;
-  const doc = store().get().doc;
-  const t = snapTargets(doc, v.guides);
-  // A square grid that's showing is more lines to snap to.
-  if (v.grid === 'square') {
-    const g = squareLines(v.gridSize, doc.width, doc.height);
-    t.x.push(...g.x);
-    t.y.push(...g.y);
-  }
-  return t;
+  return activeTargets(v.snap, v.snapPicks, ctx, bypass, { guides: v.guides, grid: v.grid, perspective: v.perspective });
 }
 
-/** A point pulled onto guides and the page's edges and middle (shape corners, line ends). */
-export function snapPt(p: Pt, zoom: number, bypass: boolean): Pt {
-  const t = targets(bypass);
-  if (!t) return showSnap([]), p;
+/** Are Shift angle steps on (for lines, rotations and the pixel line)? Not stopped by Ctrl or the master switch. */
+export function angleSteps(): boolean {
+  return active(false).has('angles');
+}
+
+/**
+ * The lines to pull onto: the page's edges and middle, guides, a showing square grid and other shapes, each if its tick
+ * says so. `moving` leaves the selected shapes out of "other shapes" (they are what's being dragged).
+ */
+function targets(set: Set<SnapTarget>, moving: boolean): SnapTargets | null {
+  const t = noTargets();
+  const { doc, ui } = store().get();
+  const v = getViewSettings();
+  if (set.has('page')) addLines(t, 'page', [0, doc.width], [0, doc.height]);
+  if (set.has('centre')) addLines(t, 'centre', [doc.width / 2], [doc.height / 2]);
+  if (set.has('guides')) {
+    const gs = doc.guides ?? [];
+    addLines(t, 'guides', gs.filter((g) => g.axis === 'x').map((g) => g.at), gs.filter((g) => g.axis === 'y').map((g) => g.at));
+  }
+  if (set.has('grid') && v.grid === 'square') {
+    const g = squareLines(v.gridSize, doc.width, doc.height);
+    addLines(t, 'grid', g.x, g.y);
+  }
+  if (set.has('shapes')) {
+    const o = otherShapeLines(doc, ui.frame, moving ? ui.selection : []);
+    addLines(t, 'shapes', o.x, o.y);
+  }
+  return t.x.length || t.y.length ? t : null;
+}
+
+/** A point pulled onto the lines that are on (shape corners, line ends). `moving`: the selection is what is dragged. */
+export function snapPt(p: Pt, zoom: number, bypass: boolean, moving = false): Pt {
+  const set = active(bypass);
   const v = getViewSettings();
   // An isometric grid pulls points onto its corners.
-  if (v.grid === 'iso') {
+  if (set.has('grid') && v.grid === 'iso') {
     const q = snapIso(p, v.gridSize, isoRatio(v.isoStyle));
-    if (Math.hypot(q.x - p.x, q.y - p.y) <= SNAP_PX / zoom) return showSnap([]), q;
+    if (Math.hypot(q.x - p.x, q.y - p.y) <= SNAP_PX / zoom) return showSnap([], ['grid']), q;
   }
+  const t = targets(set, moving);
+  if (!t) return showSnap([]), p;
   const s = snapPoint(p, t, SNAP_PX / zoom);
   showSnap(s.lines);
   return { x: s.x, y: s.y };
@@ -104,47 +129,56 @@ function showRay(next: { from: Pt; vp: Pt } | null): void {
   requestOverlay();
 }
 
-/** The vanishing points lines can follow: only while the perspective guides show and snapping is on. */
+/** The vanishing points lines can follow: only while the perspective guides show and that target is on. */
 export function vanishingPoints(bypass: boolean): Pt[] {
-  const v = getViewSettings();
-  if (bypass || !v.snap || !v.perspective) return [];
+  if (!active(bypass).has('perspective')) return [];
   return store().get().doc.perspective?.points ?? [];
 }
 
 /**
- * The end of a line drawn from `a` (Line tool, pen segments). With perspective guides showing, it follows a vanishing
+ * The end of a line drawn from `a` (Line tool, pen segments). With perspective lines on, it follows a vanishing
  * point's direction when it comes close; with Shift it takes the nearest of the 45 degree steps and those directions.
- * `constrained` says Shift was handled here, so the caller shouldn't snap to 45 degrees again. `cells` is for pixel
- * layers, where the cells are the snapping: the end is never pulled onto guides or the page (only along perspective directions).
+ * `constrained` says Shift was dealt with here (so the caller shouldn't snap to 45 degrees again): that includes
+ * Shift doing nothing because Angle steps is off.
  */
-export function snapLineEnd(a: Pt, b: Pt, zoom: number, bypass: boolean, shift: boolean, cells = false): { pt: Pt; constrained: boolean } {
-  const vps = vanishingPoints(bypass);
+export function snapLineEnd(a: Pt, b: Pt, zoom: number, bypass: boolean, shift: boolean): { pt: Pt; constrained: boolean } {
+  const set = active(bypass);
+  const vps = set.has('perspective') ? store().get().doc.perspective?.points ?? [] : [];
+  const steps = shift && set.has('angles');
   if (vps.length) {
-    if (shift) {
+    if (steps) {
       const c = constrainWithVanishing(a, b, vps);
-      showSnap([]);
+      showSnap([], [c.index === null ? 'angles' : 'perspective']);
       showRay(c.index === null ? null : { from: a, vp: vps[c.index] });
       return { pt: c.pt, constrained: true };
     }
     const hit = snapToVanishing(a, b, vps, (SNAP_PX * 1.5) / zoom);
     if (hit) {
-      showSnap([]);
+      showSnap([], ['perspective']);
       showRay({ from: a, vp: vps[hit.index] });
-      return { pt: hit.pt, constrained: false };
+      return { pt: hit.pt, constrained: shift };
     }
   }
   showRay(null);
-  if (shift || cells) return { pt: b, constrained: false };
-  return { pt: snapPt(b, zoom, bypass), constrained: false };
+  if (steps) return showSnap([], ['angles']), { pt: b, constrained: false };
+  return { pt: snapPt(b, zoom, bypass), constrained: shift };
 }
 
-/** A box being dragged by (dx, dy) pulled onto the nearest lines. */
+/** A box being dragged by (dx, dy) pulled onto the nearest lines (the selection itself is never a target). */
 export function snapMove(box: Rect | null, dx: number, dy: number, zoom: number, bypass: boolean): { dx: number; dy: number } {
-  const t = box && targets(bypass);
+  const t = box && targets(active(bypass), true);
   if (!t || !box) return showSnap([]), { dx, dy };
   const s = snapBox(box, dx, dy, t, SNAP_PX / zoom);
   showSnap(s.lines);
   return { dx: s.dx, dy: s.dy };
+}
+
+/** The lines other artboards offer (edges and middles, on the pasteboard), or null when that target is off. */
+export function artboardTargets(others: readonly Rect[], bypass: boolean): SnapTargets | null {
+  if (!active(bypass, 'artboard').has('artboards') || !others.length) return null;
+  const t = noTargets();
+  for (const b of others) addLines(t, 'artboards', [b.x, b.x + b.w / 2, b.x + b.w], [b.y, b.y + b.h / 2, b.y + b.h]);
+  return t;
 }
 
 /** Lets go of the snap lines (the gesture is over). */
@@ -153,11 +187,17 @@ export function clearSnap(): void {
   showRay(null);
 }
 
-function showSnap(lines: SnapLine[]): void {
+/** Records what just snapped, for the overlay and the "Snapped to" note. `extra`: kinds with no line to draw. */
+export function showSnap(lines: SnapLine[], extra: SnapTarget[] = []): void {
   const old = getSnapLines();
-  if (old.length === lines.length && old.every((l, i) => l.axis === lines[i].axis && l.at === lines[i].at)) return;
-  setSnapLines(lines);
-  requestOverlay();
+  const same = old.length === lines.length && old.every((l, i) => l.axis === lines[i].axis && l.at === lines[i].at && l.kind === lines[i].kind);
+  const before = snappedKinds().join();
+  if (!same) {
+    setSnapLines(lines);
+    requestOverlay();
+  }
+  setSnapNotes(extra);
+  if (!same || snappedKinds().join() !== before) bumpSnap();
 }
 
 // ---------------------------------------------------------------- drawing
@@ -253,12 +293,12 @@ registerCommands([
   },
   {
     id: 'view.snap',
-    label: 'Snap to guides, grid and page',
+    label: 'Snapping',
     category: 'View',
     keys: ['Mod+Shift+;'],
-    description: 'Shapes and selections jump onto guides, the grid (when it shows) and the page edges and middle when they get close. Hold Ctrl while dragging to stop it for a moment.',
-    help: 'rulers-guides',
-    keywords: ['snap', 'snapping', 'magnet', 'align'],
+    description: 'The master switch: shapes and selections jump onto what you picked (guides, grid, page, other shapes...) when they get close. Hold Ctrl while dragging to stop it for a moment.',
+    help: 'snapping',
+    keywords: ['snap', 'snapping', 'magnet', 'align', 'snap to guides', 'snap to grid', 'snap to page'],
     checked: () => getViewSettings().snap,
     run: toggle('snap'),
   },

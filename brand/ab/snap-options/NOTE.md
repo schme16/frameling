@@ -1,0 +1,3 @@
+A (built, the default): one table with a column for vector layers and one for pixel layers, so each kind of layer has its own ticks (pixel layers start with Pixel cells, Perspective and Angle steps). The column for the layer you are on is shaded.
+B: one list of ticks for everything, with pixel-specific rows under "On pixel layers" (Pixel cells, and "Also use the ticks above"). Shorter, but pixel layers cannot pick guides, grid or the page separately from vector layers.
+Interactives uses one set for everything (it has no pixel layers); A keeps that "tick what you want" feel while letting pixel art differ.

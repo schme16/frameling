@@ -1,9 +1,10 @@
 /**
- * Snapping: shapes, selections and new shapes pull onto guide lines and onto the page's edges and middle when they
- * come within a few screen pixels. The maths is pure; the little bit of state is which lines just snapped, so the
- * overlay can flash them.
+ * Snapping: shapes, selections and new shapes pull onto guide lines, the page's edges and middle, the grid and other
+ * shapes when they come within a few screen pixels. The maths is pure; the little bit of state is which lines just
+ * snapped (and to what kind of thing), so the overlay can flash them and say what they snapped to.
  */
 import type { Doc, Guide } from '../core/format';
+import type { SnapTarget } from './snapModel';
 import type { Pt, Rect } from './view';
 
 /** How close (screen pixels) something has to come before it snaps. */
@@ -14,11 +15,15 @@ export interface SnapTargets {
   x: number[];
   /** Sideways lines, by y. */
   y: number[];
+  /** What each line is (same order as x and y), so a snap can say what it landed on. Missing = not tracked. */
+  kx?: SnapTarget[];
+  ky?: SnapTarget[];
 }
 
 export interface SnapLine {
   axis: 'x' | 'y';
   at: number;
+  kind?: SnapTarget;
 }
 
 /** What things snap to: the guides (when shown) and the page's edges and middle. */
@@ -29,18 +34,35 @@ export function snapTargets(doc: Pick<Doc, 'width' | 'height' | 'guides'>, useGu
   return { x, y };
 }
 
-/** The nearest target within `tol`, or null. */
-export function nearest(v: number, targets: number[], tol: number): number | null {
-  let best: number | null = null;
+/** An empty set of lines to add to. */
+export const noTargets = (): SnapTargets => ({ x: [], y: [], kx: [], ky: [] });
+
+/** Adds lines of one kind (to a set made by `noTargets`). */
+export function addLines(t: SnapTargets, kind: SnapTarget, x: readonly number[], y: readonly number[]): void {
+  t.x.push(...x);
+  t.y.push(...y);
+  t.kx?.push(...x.map(() => kind));
+  t.ky?.push(...y.map(() => kind));
+}
+
+/** Index of the nearest target within `tol`, or -1. */
+function nearestAt(v: number, targets: readonly number[], tol: number): number {
+  let best = -1;
   let bd = tol;
-  for (const t of targets) {
-    const d = Math.abs(t - v);
+  for (let i = 0; i < targets.length; i++) {
+    const d = Math.abs(targets[i] - v);
     if (d <= bd) {
       bd = d;
-      best = t;
+      best = i;
     }
   }
   return best;
+}
+
+/** The nearest target within `tol`, or null. */
+export function nearest(v: number, targets: number[], tol: number): number | null {
+  const i = nearestAt(v, targets, tol);
+  return i < 0 ? null : targets[i];
 }
 
 /** One value pulled onto the nearest target. */
@@ -49,24 +71,26 @@ export function snapValue(v: number, targets: number[], tol: number): { v: numbe
   return { v: hit ?? v, hit };
 }
 
+const lineOf = (axis: 'x' | 'y', at: number, kinds: readonly SnapTarget[] | undefined, i: number): SnapLine => (kinds ? { axis, at, kind: kinds[i] } : { axis, at });
+
 /** A point pulled onto the nearest lines, each way on its own. */
 export function snapPoint(p: Pt, t: SnapTargets, tol: number): { x: number; y: number; lines: SnapLine[] } {
-  const sx = snapValue(p.x, t.x, tol);
-  const sy = snapValue(p.y, t.y, tol);
+  const ix = nearestAt(p.x, t.x, tol);
+  const iy = nearestAt(p.y, t.y, tol);
   const lines: SnapLine[] = [];
-  if (sx.hit !== null) lines.push({ axis: 'x', at: sx.hit });
-  if (sy.hit !== null) lines.push({ axis: 'y', at: sy.hit });
-  return { x: sx.v, y: sy.v, lines };
+  if (ix >= 0) lines.push(lineOf('x', t.x[ix], t.kx, ix));
+  if (iy >= 0) lines.push(lineOf('y', t.y[iy], t.ky, iy));
+  return { x: ix >= 0 ? t.x[ix] : p.x, y: iy >= 0 ? t.y[iy] : p.y, lines };
 }
 
 /** The best nudge (smallest) that puts one of `edges` on a target, or null. */
-function bestNudge(edges: number[], targets: number[], tol: number): { d: number; at: number } | null {
-  let best: { d: number; at: number } | null = null;
+function bestNudge(edges: number[], targets: number[], tol: number): { d: number; i: number } | null {
+  let best: { d: number; i: number } | null = null;
   for (const e of edges) {
-    const hit = nearest(e, targets, tol);
-    if (hit === null) continue;
-    const d = hit - e;
-    if (!best || Math.abs(d) < Math.abs(best.d)) best = { d, at: hit };
+    const i = nearestAt(e, targets, tol);
+    if (i < 0) continue;
+    const d = targets[i] - e;
+    if (!best || Math.abs(d) < Math.abs(best.d)) best = { d, i };
   }
   return best;
 }
@@ -81,11 +105,11 @@ export function snapBox(box: Rect, dx: number, dy: number, t: SnapTargets, tol: 
   const ny = bestNudge([box.y + dy, box.y + box.h / 2 + dy, box.y + box.h + dy], t.y, tol);
   if (nx) {
     dx += nx.d;
-    lines.push({ axis: 'x', at: nx.at });
+    lines.push(lineOf('x', t.x[nx.i], t.kx, nx.i));
   }
   if (ny) {
     dy += ny.d;
-    lines.push({ axis: 'y', at: ny.at });
+    lines.push(lineOf('y', t.y[ny.i], t.ky, ny.i));
   }
   return { dx, dy, lines };
 }
@@ -93,6 +117,9 @@ export function snapBox(box: Rect, dx: number, dy: number, t: SnapTargets, tol: 
 // ---------------------------------------------------------------- the lines that just snapped
 
 let shown: SnapLine[] = [];
+let notes: SnapTarget[] = [];
+let version = 0;
+const listeners = new Set<() => void>();
 
 export function setSnapLines(lines: SnapLine[]): void {
   shown = lines;
@@ -100,6 +127,29 @@ export function setSnapLines(lines: SnapLine[]): void {
 export function getSnapLines(): readonly SnapLine[] {
   return shown;
 }
+
+/** What else just snapped without a line to draw (a perspective direction, an angle step). */
+export function setSnapNotes(next: SnapTarget[]): void {
+  if (next.length === notes.length && next.every((k, i) => k === notes[i])) return;
+  notes = next;
+}
+
+/** What the last snap landed on, in order, without repeats (empty when nothing snapped). */
+export function snappedKinds(): SnapTarget[] {
+  const kinds = [...shown.map((l) => l.kind).filter((k): k is SnapTarget => !!k), ...notes];
+  return [...new Set(kinds)];
+}
+
+/** Tells the little "Snapped to" note something changed. */
+export function bumpSnap(): void {
+  version++;
+  for (const fn of listeners) fn();
+}
+export const subscribeSnap = (fn: () => void): (() => void) => {
+  listeners.add(fn);
+  return () => void listeners.delete(fn);
+};
+export const snapVersion = (): number => version;
 
 // ---------------------------------------------------------------- guide edits (pure)
 
