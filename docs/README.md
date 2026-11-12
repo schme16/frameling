@@ -1,11 +1,9 @@
 # Frameling docs
 
-Start with `HANDOVER.md`, then `architecture.md`. The product plan and task list are on the project board (project
-`frameling`).
+Start with `architecture.md`. Tasks, questions, looks and known gaps are on the project board (project `frameling`).
 
 | Doc | What it is |
 |---|---|
-| [HANDOVER.md](HANDOVER.md) | Where things stand at the end of the first build session, and what to read first. |
 | [agent-brief.md](agent-brief.md) | The shared brief given to every build agent. |
 | [architecture.md](architecture.md) | How the pieces fit: main process, bridge, store, registries, renderer, canvas, dock, timeline, exports, io, plugins and the rest, with file paths. |
 | [format.md](format.md) | The `.frameling` document format, every type and field, how files are checked and repaired, compatibility rules, the `.flplay` package and the plugin manifest. |
