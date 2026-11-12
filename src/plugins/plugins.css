@@ -250,3 +250,56 @@
   color: var(--faint);
   font-size: var(--fs-small);
 }
+
+/* Warning above the powers a plugin must be allowed one by one, and each of those powers. */
+.plugin-approve-warn {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  margin: 0;
+  padding: 10px;
+  border-radius: var(--radius);
+  background: var(--peach-soft, var(--chosen-bg));
+  font-size: var(--fs-small);
+}
+.plugin-approve-warn > svg {
+  flex: none;
+  margin-top: 2px;
+}
+.plugin-approve-net.is-on {
+  border-color: var(--ok);
+}
+.plugin-export-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius);
+}
+.plugin-export-options legend {
+  padding: 0 6px;
+  color: var(--muted);
+  font-size: var(--fs-small);
+  font-weight: 700;
+}
+.plugin-ui-check .plugin-item-by {
+  display: block;
+}
+/* Switches for each power in Preferences, Plugins. */
+.plugin-power {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--fs-small);
+}
+.plugin-power > span {
+  flex: 1;
+}
+.plugin-powers {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+}

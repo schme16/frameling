@@ -4,7 +4,8 @@ import { openHelp } from '../ui/overlays';
 import { QuillEmpty } from '../ui/mascot';
 import { library } from '../platform/library';
 import { PERMISSIONS } from './manifest';
-import { plugins, removePlugin, setEnabled } from './manager';
+import { plugins, removePlugin, setEnabled, setPower } from './manager';
+import { elevatedIn } from './powers';
 import { installFromFile, installFromFolder, canInstallFolder } from './install';
 
 const STATUS: Record<string, string> = { starting: 'Starting', on: 'On', problem: 'Problem', off: 'Off' };
@@ -61,9 +62,21 @@ export function PluginsPage() {
               </div>
               {m.description && <p className="plugin-item-desc">{m.description}</p>}
               {m.author && <p className="plugin-item-by">By {m.author}</p>}
+              {m.permissions.includes('network') && (
+                <div className="plugin-powers">
+                  <div className="plugin-power">
+                    <button type="button" role="switch" aria-checked={p.granted.includes('network')} aria-label={`${m.name}: use the internet`} className={`ui-switch${p.granted.includes('network') ? ' is-on' : ''}`} onClick={() => void setPower(m.id, 'network', !p.granted.includes('network'))}>
+                      <span className="ui-switch-knob" />
+                    </button>
+                    <span>
+                      <strong>{PERMISSIONS.network.label}</strong> <span className="plugin-item-by">{p.granted.includes('network') ? `Allowed: ${m.network.join(', ')}` : 'Off'}</span>
+                    </span>
+                  </div>
+                </div>
+              )}
               <div className="plugin-perms" aria-label="What it may do">
                 {m.permissions.length === 0 && <span className="plugin-perm">Commands only</span>}
-                {m.permissions.map((perm) => {
+                {m.permissions.filter((perm) => perm !== 'network' && !elevatedIn(m).includes(perm)).map((perm) => {
                   const allowed = p.granted.includes(perm);
                   return (
                     <span key={perm} className={`plugin-perm${perm === 'network' ? ' is-network' : ''}${allowed ? '' : ' is-denied'}`} data-tip={PERMISSIONS[perm].label} data-tip-desc={`${PERMISSIONS[perm].detail}${perm === 'network' ? ` Sites: ${m.network.join(', ')}.` : ''}${allowed ? '' : ' You said no to this.'}`}>
@@ -73,6 +86,24 @@ export function PluginsPage() {
                   );
                 })}
               </div>
+              {elevatedIn(m).length > 0 && (
+                <div className="plugin-powers" role="group" aria-label={`What ${m.name} may do`}>
+                  {elevatedIn(m).map((perm) => {
+                    const allowed = p.granted.includes(perm);
+                    return (
+                      <div key={perm} className="plugin-power">
+                        <button type="button" role="switch" aria-checked={allowed} aria-label={`${m.name}: ${PERMISSIONS[perm].label}`} className={`ui-switch${allowed ? ' is-on' : ''}`} onClick={() => void setPower(m.id, perm, !allowed)}>
+                          <span className="ui-switch-knob" />
+                        </button>
+                        <span>
+                          <strong>{PERMISSIONS[perm].label}</strong> <span className="plugin-item-by">{allowed ? 'Allowed' : 'Off: the parts that need it do not run'}</span>
+                        </span>
+                      </div>
+                    );
+                  })}
+                  {p.grantedFor && <span className="plugin-item-by">Allowed for version {p.grantedFor}. A newer version that asks for more will ask again.</span>}
+                </div>
+              )}
               {p.problem && (
                 <p className="plugin-item-problem" role="status">
                   <Icon name="warning" size={14} /> {p.problem}

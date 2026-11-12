@@ -1,0 +1,10 @@
+{
+  "id": "layer-fader",
+  "name": "Layer fader",
+  "version": "1.0.0",
+  "description": "A tool: drag up or down on the canvas to fade the layer you are on in or out.",
+  "author": "Frameling examples",
+  "main": "main.js",
+  "permissions": ["document.read", "document.write", "tools"],
+  "apiVersion": 2
+}

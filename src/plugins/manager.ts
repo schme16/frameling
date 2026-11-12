@@ -1,20 +1,31 @@
 // Installed plugins: which are on, what each was allowed, starting and stopping them, and wiring what they add
 // (commands, exports, panels) into the app's registries. The plugin code itself only ever runs in its sandbox.
 import type { ComponentType } from 'react';
-import { registerCommand, registerPanel, unregisterCommand, unregisterPanel } from '../core/registry';
+import { registerCommand, registerPanel, registerTool, unregisterCommand, unregisterPanel, type ToolPointer } from '../core/registry';
+import { removeOwned, withOwner } from '../core/owners';
 import { drawingAt, findLayer } from '../core/doc';
 import { store } from '../core/store';
 import { rootDoc } from '../core/symbols';
+import { announceUiChange } from '../features/host';
+import { baseName, desktop } from '../io/desktop';
 import { notify } from '../io/notify';
 import { ask } from '../platform/ask';
 import { library } from '../platform/library';
+import { registerDecoration } from '../canvas/decorations';
 import { syncPanels } from '../ui/dock';
 import { syncDynamicCommands } from '../ui/dynamic';
+import { ICON_NAMES } from '../ui/icons';
 import { createStore } from '../ui/mini';
-import { PERMISSIONS, packPlugin, PluginProblem, readPluginFiles, readPluginZip, samePermissions, type Permission, type PluginManifest, type PluginPackage } from './manifest';
+import { setEventSink } from './bus';
+import { drawDrawList, type DrawList } from './drawlist';
+import { summarize, type PluginEventName } from './events';
+import { PERMISSIONS, packPlugin, PluginProblem, readPluginFiles, readPluginZip, samePermissions, type Decision, type Permission, type PluginManifest, type PluginPackage } from './manifest';
 import { applyOps } from './ops';
-import { PluginRuntime, type HostHooks, type PluginExporterDef, type Transport } from './runtime';
+import { decide, elevatedIn, needsChoices, powerName, RISKS } from './powers';
+import { EventPipe } from './pipe';
+import { PluginRuntime, type HostHooks, type PluginExporterDef, type PluginToolDef, type Transport } from './runtime';
 import { startSandbox } from './sandbox';
+import { addPluginShape, redrawPluginShape, ShapeProblem } from './shapes';
 import type { UiNode } from './ui-schema';
 
 export type PluginStatus = 'off' | 'starting' | 'on' | 'problem';
@@ -22,9 +33,11 @@ export type PluginStatus = 'off' | 'starting' | 'on' | 'problem';
 export interface InstalledPlugin {
   manifest: PluginManifest;
   enabled: boolean;
-  /** What the person allowed when installing (may be less than asked: network can be declined). */
+  /** What the person allowed (may be less than asked: the internet and version 2's powers can be refused one by one). */
   granted: Permission[];
   network: string[];
+  /** The version of the plugin that the decision was made for. */
+  grantedFor?: string;
   status: PluginStatus;
   problem?: string;
 }
@@ -33,6 +46,11 @@ interface Saved {
   enabled: boolean;
   permissions: Permission[];
   network: string[];
+  /** The version the person decided about. A newer version that asks for nothing new keeps the decision. */
+  version?: string;
+  /** Everything the manifest listed when they decided (so a power they refused is not asked again). */
+  asked?: Permission[];
+  askedNetwork?: string[];
 }
 
 const KEY = 'frameling.plugins.v1';
@@ -62,6 +80,15 @@ const packages = new Map<string, PluginPackage>();
 const runtimes = new Map<string, PluginRuntime>();
 /** What each running plugin added, so turning it off takes it all away again. */
 const added = new Map<string, { commands: string[]; panels: string[] }>();
+/** What each plugin shows on the canvas: `canvas` for its guide, `tool:<id>` for one of its tools. Replaced whole by each update. */
+const overlays = new Map<string, Map<string, DrawList>>();
+const ownerOf = (pid: string) => `plugin:${pid}`;
+
+let overlayRequester: () => void = () => undefined;
+/** The canvas hands over how to redraw its overlay (so this file does not need the canvas). */
+export function setOverlayRequester(fn: () => void): void {
+  overlayRequester = fn;
+}
 
 /** Swapped in tests, where there's no sandbox to start. */
 let starter: (pkg: PluginPackage, network: string[]) => Promise<Transport> = (pkg, network) =>
@@ -137,6 +164,56 @@ function hooksFor(m: PluginManifest, onExporter: (def: PluginExporterDef) => voi
       syncDynamicCommands();
     },
     updatePanel: (id, ui) => panelTrees.set((t) => ({ ...t, [panelId(pid, id)]: ui })),
+    addTool: (def) => addPluginTool(m, def),
+    addShapeKind: () => undefined,
+    setOverlay: (target, list) => {
+      const mineOverlays = overlays.get(pid) ?? (overlays.set(pid, new Map()), overlays.get(pid)!);
+      if (list.length) mineOverlays.set(target, list);
+      else mineOverlays.delete(target);
+      ensureCanvasDecoration(pid);
+      overlayRequester();
+    },
+    placeShape: (p) => {
+      const s = store().get();
+      if (store().nestedTag() || s.doc.editing?.length) throw new Error('Close the symbol or tile being edited first, then try again.');
+      const drawingId = p.drawingId ?? (() => {
+        const layer = findLayer(s.doc, s.ui.activeLayerId);
+        return layer ? (drawingAt(s.doc, layer, s.ui.frame)?.id ?? null) : null;
+      })();
+      const layer = findLayer(s.doc, s.ui.activeLayerId);
+      if (layer?.locked) throw new Error('That layer is locked.');
+      const label = `${m.name}: ${p.inst ? 'Redraw' : 'Add'} ${p.kind}`;
+      let result: { inst: string; ids: string[]; replaced?: string[] } | undefined;
+      try {
+        store().update(label, (d) => {
+          result = p.inst
+            ? redrawPluginShape(d, { drawingId, pluginId: p.pluginId, kind: p.kind, props: p.props, list: p.drawn, inst: p.inst })
+            : addPluginShape(d, { drawingId, pluginId: p.pluginId, kind: p.kind, props: p.props, list: p.drawn, at: { x: p.at.x ?? d.width / 2, y: p.at.y ?? d.height / 2 } });
+        });
+      } catch (e) {
+        throw e instanceof ShapeProblem ? e : new Error('That shape could not be added.');
+      }
+      if (!result) throw new Error('Nothing was added.');
+      // The new shape is picked, so it can be moved or changed straight away.
+      const sel = store().get().ui.selection;
+      if (!result.replaced || result.replaced.every((id) => sel.includes(id)) || !sel.length) store().setUi({ selection: result.ids });
+      return result.inst;
+    },
+    pickFile: async ({ extensions, title }) => {
+      const api = desktop();
+      if (!api?.files.openOther) {
+        notify('Picking a file needs the Frameling app.', 'info');
+        return null;
+      }
+      const r = await api.files.openOther({ filters: [{ name: extensions.length ? extensions.join(', ') : 'All files', extensions: extensions.length ? extensions : ['*'] }], title });
+      if (!r) return null;
+      if ('error' in r) {
+        notify(r.error, 'error');
+        return null;
+      }
+      return { name: baseName(r.path), bytes: r.bytes };
+    },
+    subscriptionsChanged: () => syncEventPump(),
     problem: (message, loading) => {
       if (loading) patch(pid, { status: 'problem', problem: message });
       notify(`The "${m.name}" plugin hit a problem: ${message}`, 'error', { label: 'Turn it off', run: () => void setEnabled(pid, false) }, 9000);
@@ -144,6 +221,106 @@ function hooksFor(m: PluginManifest, onExporter: (def: PluginExporterDef) => voi
     loaded: () => patch(pid, { status: 'on', problem: undefined }),
   };
 }
+
+/** The one decoration a plugin with the canvas power gets: it draws whatever the plugin last sent. Taken away with the plugin. */
+function ensureCanvasDecoration(pid: string): void {
+  const key = `deco:${pid}`;
+  if (decorated.has(key)) return;
+  decorated.add(key);
+  withOwner(ownerOf(pid), () =>
+    registerDecoration((g, ctx) => {
+      const list = overlays.get(pid)?.get('canvas');
+      if (list?.length && !store().get().ui.playing) drawDrawList(g, list, ctx.zoom);
+    }),
+  );
+}
+const decorated = new Set<string>();
+
+const toolId = (pid: string, id: string) => `plugin.${pid}.tool.${id}`;
+
+/** Puts one of its tools in the toolbox. Pointer events go to the plugin; what comes back is drawn and applied by Frameling. */
+function addPluginTool(m: PluginManifest, def: PluginToolDef): void {
+  const pid = m.id;
+  const id = toolId(pid, def.id);
+  const rtOf = () => runtimes.get(pid);
+  const pipe = new EventPipe<{ type: 'down' | 'move' | 'up' | 'hover' | 'cancel' | 'leave' } & Record<string, unknown>, { hint(message: string): void } | undefined>(async (ev, ctx) => {
+    const hint = await rtOf()?.toolEvent(def.id, ev as never);
+    if (hint) {
+      ctx?.hint(`${m.name}: ${hint}`);
+    }
+  });
+  const send = (type: 'down' | 'move' | 'up' | 'hover', e: ToolPointer, ctx: { zoom: number; hint(message: string): void }) => {
+    const st = store().get();
+    const layer = findLayer(st.doc, st.ui.activeLayerId);
+    pipe.push(
+      { type, x: e.x, y: e.y, pressure: e.pressure, shift: e.shift, alt: e.alt, mod: e.mod, button: e.button, frame: st.ui.frame, drawingId: layer ? (drawingAt(st.doc, layer, st.ui.frame)?.id ?? null) : null, zoom: ctx.zoom },
+      ctx,
+    );
+  };
+  const plain = (type: 'cancel' | 'leave', ctx: { zoom: number }) => {
+    const st = store().get();
+    pipe.push({ type, x: 0, y: 0, pressure: 0, shift: false, alt: false, mod: false, button: 0, frame: st.ui.frame, drawingId: null, zoom: ctx.zoom }, undefined);
+  };
+  withOwner(ownerOf(pid), () =>
+    registerTool({
+      id,
+      label: def.label,
+      icon: ICON_NAMES.includes(def.icon) ? def.icon : 'plugin',
+      key: def.key,
+      layers: def.layers,
+      group: 'extras',
+      help: 'plugin-tools',
+      cursor: 'crosshair',
+      down: (e, ctx) => send('down', e, ctx),
+      move: (e, ctx) => send('move', e, ctx),
+      up: (e, ctx) => send('up', e, ctx),
+      hover: (e, ctx) => send('hover', e, ctx),
+      cancel: (ctx) => plain('cancel', ctx),
+      leave: (ctx) => plain('leave', ctx),
+      overlay: (g, ctx) => {
+        const list = overlays.get(pid)?.get(`tool:${def.id}`);
+        if (list?.length) drawDrawList(g, list, ctx.zoom);
+      },
+    }),
+  );
+  syncDynamicCommands();
+  announceUiChange();
+}
+
+// ---------------------------------------------------------------- events
+
+let eventUnsub: (() => void) | null = null;
+let seen: { doc: unknown; frame: number; selection: unknown } | null = null;
+
+/** Listens to the app only while some plugin wants to hear about it. */
+function syncEventPump(): void {
+  const wanted = [...runtimes.values()].some((rt) => rt.subscribed.size > 0);
+  if (wanted && !eventUnsub) {
+    const s = store();
+    const st = s.get();
+    seen = { doc: st.doc, frame: st.ui.frame, selection: st.ui.selection };
+    eventUnsub = s.subscribe(() => {
+      const now = store().get();
+      const before = seen!;
+      if (now.doc !== before.doc) emitToPlugins('document.changed', () => summarize(store().rootDoc(), store().get().ui.frame, store().undoLabel()) as unknown as Record<string, unknown>);
+      if (now.ui.frame !== before.frame) emitToPlugins('frame.changed', { frame: now.ui.frame });
+      if (now.ui.selection !== before.selection) {
+        const ids = now.ui.selection;
+        emitToPlugins('selection.changed', { count: ids.length, ids: ids.slice(0, 200) });
+      }
+      seen = { doc: now.doc, frame: now.ui.frame, selection: now.ui.selection };
+    });
+  } else if (!wanted && eventUnsub) {
+    eventUnsub();
+    eventUnsub = null;
+  }
+}
+
+/** Tells every running plugin that listens for it. */
+export function emitToPlugins(name: PluginEventName, payload: Record<string, unknown> | (() => Record<string, unknown>)): void {
+  for (const rt of runtimes.values()) rt.emit(name, payload);
+}
+setEventSink(emitToPlugins);
 
 // The panel component is made in PluginPanel.tsx and handed over here, so this file doesn't need React.
 let makePanel: ((fullId: string, pid: string, localId: string) => ComponentType) | null = null;
@@ -179,6 +356,16 @@ async function start(p: InstalledPlugin): Promise<void> {
 function stop(id: string): void {
   runtimes.get(id)?.stop();
   runtimes.delete(id);
+  // Its tools and canvas guide go with it, and the person is taken off a tool that is gone.
+  overlays.delete(id);
+  decorated.delete(`deco:${id}`);
+  if (removeOwned(ownerOf(id))) {
+    if (store().get().ui.tool.startsWith(`plugin.${id}.tool.`)) store().setUi({ tool: 'select' });
+    syncDynamicCommands();
+    announceUiChange();
+    overlayRequester();
+  }
+  syncEventPump();
   const a = added.get(id);
   if (a) {
     for (const c of a.commands) unregisterCommand(c);
@@ -193,6 +380,11 @@ function stop(id: string): void {
   patch(id, { status: 'off' });
 }
 
+let markLoaded: () => void = () => undefined;
+const loadedOnce = new Promise<void>((r) => (markLoaded = r));
+/** Resolves once the installed plugins have been read at start-up. */
+export const whenPluginsLoaded = (): Promise<void> => loadedOnce;
+
 /** Reads every installed plugin and starts the ones that are on. */
 export async function loadPlugins(): Promise<void> {
   const saved = loadSaved();
@@ -205,8 +397,8 @@ export async function loadPlugins(): Promise<void> {
       packages.set(pkg.manifest.id, pkg);
       const s = saved[pkg.manifest.id];
       // Permissions it now asks for that nobody allowed: it stays off until someone does.
-      const ok = !!s && samePermissions(pkg.manifest, { permissions: s.permissions, network: s.network });
-      list.push({ manifest: pkg.manifest, enabled: !!s?.enabled && ok, granted: s?.permissions ?? [], network: s?.network ?? [], status: 'off', ...(s && !ok ? { problem: 'It asks for more than before. Turn it on to look and allow it.' } : {}) });
+      const ok = !!s && samePermissions(pkg.manifest, s);
+      list.push({ manifest: pkg.manifest, enabled: !!s?.enabled && ok, granted: s?.permissions ?? [], network: s?.network ?? [], grantedFor: s?.version, status: 'off', ...(s && !ok ? { problem: 'It asks for more than before. Turn it on to look and allow it.' } : {}) });
     } catch (err) {
       // A broken file in the folder: leave it, say nothing at start-up.
       void err;
@@ -214,9 +406,11 @@ export async function loadPlugins(): Promise<void> {
   }
   list.sort((a, b) => a.manifest.name.localeCompare(b.manifest.name));
   plugins.set(list);
+  markLoaded();
   for (const p of list) if (p.enabled) await start(p);
 }
 
+/** Frameling asks; what comes back is what the person allowed, or null for "no, leave it". */
 type Approver = (m: PluginManifest, verb: 'Install' | 'Turn on' | 'Update') => Promise<{ permissions: Permission[]; network: string[] } | null>;
 let approver: Approver | null = null;
 
@@ -225,36 +419,40 @@ export function setApprover(fn: Approver | null): void {
   approver = fn;
 }
 
-function approve(m: PluginManifest, verb: 'Install' | 'Turn on' | 'Update') {
-  return approver ? approver(m, verb) : plainApprove(m, verb);
+/** Asks, and resolves the decision to remember (what was allowed and everything that was asked), or null. */
+async function approve(m: PluginManifest, verb: 'Install' | 'Turn on' | 'Update'): Promise<Decision | null> {
+  const a = await (approver ? approver(m, verb) : plainApprove(m, verb));
+  return a ? { permissions: a.permissions, network: a.network, asked: [...m.permissions], askedNetwork: [...m.network] } : null;
 }
 
-/** The "Install this plugin?" question, with what it asks for. Resolves what they allowed, or null. */
+/** The "Install this plugin?" question, with what it asks for, in plain words. Resolves what they allowed, or null. */
 async function plainApprove(m: PluginManifest, verb: 'Install' | 'Turn on' | 'Update'): Promise<{ permissions: Permission[]; network: string[] } | null> {
-  const lines = m.permissions.map((p) => `- ${PERMISSIONS[p].label}${p === 'network' ? ` (${m.network.join(', ')})` : ''}`);
+  const elevated = elevatedIn(m);
+  const net = m.permissions.includes('network');
+  const lines = m.permissions.map((p) => `- ${PERMISSIONS[p].label}${p === 'network' ? ` (${m.network.join(', ')})` : ''}${RISKS[p] && (elevated.includes(p) || p === 'network') ? `. Careful: ${RISKS[p]}` : ''}`);
   const detail = [m.description, m.author ? `By ${m.author}.` : '', lines.length ? `It asks to:\n${lines.join('\n')}` : 'It asks for nothing beyond adding commands.', 'Plugins run in a sandbox, away from your files.']
     .filter(Boolean)
     .join('\n\n');
-  const net = m.permissions.includes('network');
   const answer = await ask({
     title: `${verb} plugin`,
     message: `${verb} "${m.name}" ${m.version}?`,
     detail,
-    buttons: net
-      ? [
-          { value: 'all', label: `${verb}, with the internet`, primary: true },
-          { value: 'offline', label: `${verb} without the internet` },
-          { value: 'cancel', label: 'Cancel' },
-        ]
-      : [
-          { value: 'all', label: verb, primary: true },
-          { value: 'cancel', label: 'Cancel' },
-        ],
+    buttons:
+      net || elevated.length
+        ? [
+            { value: 'all', label: `${verb}, allow everything it asks`, primary: true },
+            { value: 'safe', label: `${verb} without ${elevated.length && net ? 'those powers or the internet' : net ? 'the internet' : 'those powers'}` },
+            { value: 'cancel', label: 'Cancel' },
+          ]
+        : [
+            { value: 'all', label: verb, primary: true },
+            { value: 'cancel', label: 'Cancel' },
+          ],
     cancel: 'cancel',
   });
   if (answer === 'cancel') return null;
-  const permissions = answer === 'offline' ? m.permissions.filter((p) => p !== 'network') : [...m.permissions];
-  return { permissions, network: answer === 'offline' ? [] : [...m.network] };
+  const d = decide(m, answer === 'safe' ? [] : elevated, answer !== 'safe');
+  return { permissions: d.permissions, network: d.network };
 }
 
 /** Installs (or updates) a plugin from a package, after asking. Resolves true when it's installed. */
@@ -267,9 +465,9 @@ export async function installPackage(pkg: PluginPackage): Promise<boolean> {
   await library.write('plugins', m.id, packPlugin(pkg));
   packages.set(m.id, pkg);
   const saved = loadSaved();
-  saved[m.id] = { enabled: true, permissions: allowed.permissions, network: allowed.network };
+  saved[m.id] = { enabled: true, permissions: allowed.permissions, network: allowed.network, version: m.version, asked: allowed.asked, askedNetwork: allowed.askedNetwork };
   writeSaved(saved);
-  const entry: InstalledPlugin = { manifest: m, enabled: true, granted: allowed.permissions, network: allowed.network, status: 'off' };
+  const entry: InstalledPlugin = { manifest: m, enabled: true, granted: allowed.permissions, network: allowed.network, grantedFor: m.version, status: 'off' };
   plugins.set((list) => [...list.filter((x) => x.manifest.id !== m.id), entry].sort((a, b) => a.manifest.name.localeCompare(b.manifest.name)));
   await start(entry);
   notify(`"${m.name}" is installed. Find it in the Plugins menu.`, 'success', undefined, 5000, 'cheer');
@@ -295,22 +493,59 @@ export async function setEnabled(id: string, on: boolean): Promise<void> {
   if (on) {
     let granted = p.granted;
     let network = p.network;
-    // Never allowed, or it asks for more now: ask first.
-    if (!saved[id] || !samePermissions(p.manifest, { permissions: granted, network })) {
+    let entry: Saved = saved[id] ?? { enabled: true, permissions: granted, network };
+    // Never decided about, or it asks for more now: ask first.
+    if (!saved[id] || !samePermissions(p.manifest, saved[id])) {
       const a = await approve(p.manifest, 'Turn on');
       if (!a) return;
       granted = a.permissions;
       network = a.network;
+      entry = { ...entry, version: p.manifest.version, asked: a.asked, askedNetwork: a.askedNetwork };
     }
-    saved[id] = { enabled: true, permissions: granted, network };
+    saved[id] = { ...entry, enabled: true, permissions: granted, network };
     writeSaved(saved);
-    patch(id, { enabled: true, granted, network, problem: undefined });
+    patch(id, { enabled: true, granted, network, grantedFor: saved[id].version, problem: undefined });
     await start({ ...p, enabled: true, granted, network });
   } else {
     if (saved[id]) saved[id] = { ...saved[id], enabled: false };
     writeSaved(saved);
     patch(id, { enabled: false });
     stop(id);
+  }
+}
+
+/**
+ * Turns one power of a plugin on or off from Preferences. Turning one off needs no question; turning one on shows what it
+ * could do and asks. The plugin restarts with the new set, so what that power added goes away or comes back.
+ */
+export async function setPower(id: string, power: Permission, on: boolean): Promise<void> {
+  const p = plugins.get().find((x) => x.manifest.id === id);
+  if (!p || !p.manifest.permissions.includes(power) || on === p.granted.includes(power)) return;
+  if (on) {
+    const risk = RISKS[power];
+    if (risk) {
+      const answer = await ask({
+        title: 'Allow this?',
+        message: `Let "${p.manifest.name}" ${powerName(power).toLowerCase()}?`,
+        detail: `${risk}\n\nYou can turn this off again any time in Preferences, Plugins.`,
+        buttons: [
+          { value: 'allow', label: 'Allow', primary: true },
+          { value: 'cancel', label: 'Cancel' },
+        ],
+        cancel: 'cancel',
+      });
+      if (answer !== 'allow') return;
+    }
+  }
+  const granted = on ? [...p.granted, power] : p.granted.filter((x) => x !== power);
+  const network = power === 'network' ? (on ? [...p.manifest.network] : []) : p.network;
+  const saved = loadSaved();
+  saved[id] = { ...(saved[id] ?? { enabled: p.enabled, permissions: [], network: [] }), permissions: granted, network, version: p.manifest.version, asked: saved[id]?.asked ?? [...p.manifest.permissions], askedNetwork: saved[id]?.askedNetwork ?? [...p.manifest.network] };
+  writeSaved(saved);
+  patch(id, { granted, network, grantedFor: p.manifest.version });
+  if (p.enabled) {
+    stop(id);
+    await start({ ...p, granted, network });
   }
 }
 
