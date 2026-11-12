@@ -197,6 +197,8 @@ export interface Tool {
   up?(e: ToolPointer, ctx: ToolContext): void;
   /** Hover without a button pressed. */
   hover?(e: ToolPointer, ctx: ToolContext): void;
+  /** A stroke carries on with the pen hovering (no button, no pressure); otherwise a lifted pen ends the stroke. */
+  hoverDrag?: boolean;
   /** Escape pressed or tool switched mid-gesture. */
   cancel?(ctx: ToolContext): void;
   /** Draw the live preview on top of the stage, in document coordinates (the canvas sets up the transform). */

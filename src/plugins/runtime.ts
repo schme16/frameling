@@ -190,7 +190,7 @@ export interface HostHooks {
   diagnostics?(): boolean;
 }
 
-const LIMITS = { commands: 50, exporters: 10, panels: 5, files: 1000, bytes: 1024 * 1024 * 1024, tools: 5, shapeKinds: 10, overlaysPerSecond: 30, shapesPerSecond: 20, pickBytes: 50 * 1024 * 1024, notifiesPerTenSeconds: 10, pickCooldownMs: 10_000, pickCooldownMaxMs: 60_000 };
+const LIMITS = { commands: 50, exporters: 10, panels: 5, files: 1000, bytes: 1024 * 1024 * 1024, tools: 5, shapeKinds: 10, overlaysPerSecond: 30, shapesPerSecond: 20, pickBytes: 50 * 1024 * 1024, notifiesPerTenSeconds: 10, pickCooldownMs: 10_000, pickCooldownMaxMs: 60_000, messagesPerSecond: 600, messageBytesPerSecond: 24 * 1024 * 1024, progressStep: 0.005 };
 /** How long the host waits for a plugin to answer, so one that hangs cannot hold things up. */
 export const TIMEOUTS = { toolEvent: 2000, shapeDraw: 5000, tooSlowInARow: 3 };
 const NEEDS: Record<string, Permission | null> = {
@@ -203,6 +203,34 @@ const NEEDS: Record<string, Permission | null> = {
   'shapes.update': 'shapes',
   permissions: null,
 };
+
+/** What a message from a plugin costs to handle, roughly and cheaply: strings, numbers and binary data, looking at only so many parts. */
+export function approxBytes(v: unknown, budget = { nodes: 2000 }): number {
+  if (typeof v === 'string') return v.length * 2;
+  if (typeof v !== 'object' || v === null) return 8;
+  if (ArrayBuffer.isView(v)) return v.byteLength;
+  if (v instanceof ArrayBuffer) return v.byteLength;
+  if (--budget.nodes < 0) return 0;
+  if (Array.isArray(v)) {
+    // A long list of numbers (pixels, points) is counted by its length rather than walked.
+    if (v.length > 16 && typeof v[0] === 'number') return v.length * 8;
+    let n = 16;
+    for (const x of v) {
+      n += approxBytes(x, budget);
+      if (budget.nodes < 0) break;
+    }
+    return n;
+  }
+  let n = 16;
+  for (const k of Object.keys(v)) {
+    n += k.length * 2 + approxBytes((v as Record<string, unknown>)[k], budget);
+    if (budget.nodes < 0) break;
+  }
+  return n;
+}
+
+/** The kinds of message that ask the host to do work. Answers to the host's own requests, heartbeats and error reports are not counted. */
+const COSTLY = new Set(['register', 'panel', 'call', 'subscribe', 'unsubscribe', 'overlay', 'progress']);
 
 const isObj = (v: unknown): v is Record<string, any> => typeof v === 'object' && v !== null && !Array.isArray(v);
 const cleanId = (v: unknown) => (typeof v === 'string' && /^[A-Za-z0-9_-]{1,40}$/.test(v) ? v : null);
@@ -280,6 +308,12 @@ export class PluginRuntime {
   private heavy = 0;
   /** The furthest progress reported in the job running now (a report must beat it to count), and who wants to see it. */
   private lastDone = -1;
+  /** The job's own size (the first one reported: a plugin cannot keep making the goal bigger), and how far a report last bought it more time. */
+  private jobTotal = 0;
+  private creditedDone = -1;
+  /** What this second's messages from the plugin have cost so far, and whether it has been told off for it. */
+  private inbound = { start: 0, count: 0, bytes: 0 };
+  private flooded = false;
   private onProgress: ((done: number, total: number) => void) | null = null;
 
   constructor(
@@ -335,6 +369,7 @@ export class PluginRuntime {
 
   private async receive(m: unknown): Promise<void> {
     if (this.stopped || !isObj(m)) return;
+    if (COSTLY.has(m.t as string) && !this.admit(m)) return;
     if (this.hooks.diagnostics?.() && (m.t === 'call' || m.t === 'panel' || m.t === 'overlay')) this.measured.op(Date.now(), m.t === 'overlay' && Array.isArray(m.list) ? m.list.length : 0);
     switch (m.t) {
       case 'register':
@@ -377,6 +412,21 @@ export class PluginRuntime {
     }
   }
 
+  /** Keeps what a plugin can ask of the host in one second bounded, in how many messages and how big they are. Over it, the message is dropped (a call is answered with a refusal). */
+  private admit(m: Record<string, any>): boolean {
+    const now = Date.now();
+    if (now - this.inbound.start >= 1000) this.inbound = { start: now, count: 0, bytes: 0 };
+    this.inbound.count++;
+    this.inbound.bytes += this.inbound.count > LIMITS.messagesPerSecond ? 0 : approxBytes(m);
+    if (this.inbound.count <= LIMITS.messagesPerSecond && this.inbound.bytes <= LIMITS.messageBytesPerSecond) return true;
+    if (!this.flooded) {
+      this.flooded = true;
+      this.problem('It is sending messages faster than Frameling can deal with, so some were skipped.');
+    }
+    if (m.t === 'call' && typeof m.id === 'number') this.send({ t: 'reply', id: m.id, ok: false, error: 'Too many requests at once. Slow down.' });
+    return false;
+  }
+
   private subscribe(event: unknown): void {
     if (typeof event !== 'string') return;
     if (!this.manifest.events.includes(event as PluginEventName)) return this.problem(`It tried to listen for "${event.slice(0, 40)}", but its manifest does not list that event.`);
@@ -388,11 +438,16 @@ export class PluginRuntime {
   /** Progress from a long command or export: it only counts while one is running, and only when it moves forward. */
   private reportProgress(done: unknown, total: unknown): void {
     if (this.heavy <= 0 || typeof done !== 'number' || typeof total !== 'number' || !Number.isFinite(done) || !Number.isFinite(total) || total <= 0 || done < 0) return;
-    const d = Math.min(done, total);
+    if (!this.jobTotal) this.jobTotal = total;
+    const d = Math.min(done, this.jobTotal);
     if (d <= this.lastDone) return;
     this.lastDone = d;
-    this.watch?.progress();
-    this.onProgress?.(d, total);
+    // Only a real step forward (half a percent of the job) buys more time: a plugin cannot keep itself alive with tiny increases.
+    if (d - this.creditedDone >= this.jobTotal * LIMITS.progressStep) {
+      this.creditedDone = d;
+      this.watch?.progress();
+    }
+    this.onProgress?.(d, this.jobTotal);
   }
 
   private canvasOverlay(list: unknown): void {
@@ -475,7 +530,7 @@ export class PluginRuntime {
   private async answer(m: Record<string, any>): Promise<void> {
     const reply = (ok: boolean, value?: unknown, error?: string, transfer?: Transferable[]) => this.send({ t: 'reply', id: m.id, ok, value, error }, transfer);
     const method = typeof m.method === 'string' ? m.method : '';
-    if (!(method in NEEDS)) return reply(false, undefined, `Frameling has no "${method.slice(0, 40)}".`);
+    if (!Object.hasOwn(NEEDS, method)) return reply(false, undefined, `Frameling has no "${method.slice(0, 40)}".`);
     const need = NEEDS[method];
     if (need && !this.can(need)) return reply(false, undefined, `This plugin did not ask for permission to ${need === 'document.edit' ? 'change' : 'see'} the drawing.`);
     try {
@@ -621,7 +676,11 @@ export class PluginRuntime {
   }
 
   private begin(): void {
-    if (this.heavy++ === 0) this.lastDone = -1;
+    if (this.heavy++ === 0) {
+      this.lastDone = -1;
+      this.creditedDone = -1;
+      this.jobTotal = 0;
+    }
   }
 
   private end(): void {

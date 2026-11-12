@@ -94,6 +94,12 @@ export class CanvasEngine {
   private touches = new Map<number, { x: number; y: number }>();
   /** Whether a pen is near the screen, so fingers and palms can be ignored. */
   private pen = new PenTracker();
+  /** The time of the last pen event (the pen tracker's clock), for when a lost release has no event to take it from. */
+  private penTime = 0;
+  /** The open gesture's pen has reported real pressure: from then on a pressure of 0 means the tip has lifted. */
+  private penPressed = false;
+  /** Where a handle drag last was, for ending it when its release never came. */
+  private grabPt: Pt | null = null;
   /** The pen's eraser end is the one hovering, so the eraser's ring shows. */
   private hoverEraser = false;
   /** Steadies the stroke in progress (pull string or average), when the tool has the stabilizer on. */
@@ -147,6 +153,7 @@ export class CanvasEngine {
     this.listen(root, 'pointermove', this.onPointerMove as EventListener);
     this.listen(root, 'pointerup', this.onPointerUp as EventListener);
     this.listen(root, 'pointercancel', this.onPointerCancel as EventListener);
+    this.listen(root, 'lostpointercapture', this.onLostCapture as EventListener);
     this.listen(root, 'pointerenter', () => ((this.inside = true), this.updateCursor()));
     this.listen(root, 'pointerleave', ((e: PointerEvent) => {
       if (e.pointerType === 'pen') {
@@ -164,6 +171,7 @@ export class CanvasEngine {
     this.listen(window, 'keydown', this.onKeyDown as EventListener, { capture: true });
     this.listen(window, 'keyup', this.onKeyUp as EventListener, { capture: true });
     this.listen(window, 'blur', () => {
+      this.endLostPointers();
       this.spaceDown = false;
       this.spaceTap.reset();
       this.altDown = false;
@@ -614,6 +622,7 @@ export class CanvasEngine {
   private onPointerDown = (e: PointerEvent): void => {
     if (e.pointerType === 'pen') {
       markPenSeen();
+      this.penTime = e.timeStamp;
       this.pen.down(e.timeStamp);
     }
     // Buttons floating over the canvas (the tile banner's Done, the edit bar) get their own click: capturing the
@@ -621,6 +630,7 @@ export class CanvasEngine {
     if (pressesControl(e.target)) return;
     if (e.pointerType === 'touch' && this.touchDown(e)) return;
     if (this.gesture) return;
+    this.penPressed = e.pointerType === 'pen' && e.pressure > 0;
     this.spaceTap.spoil();
     this.refreshBounds();
     const active = document.activeElement as HTMLElement | null;
@@ -652,7 +662,8 @@ export class CanvasEngine {
       e.preventDefault();
       this.capture(e.pointerId);
       this.gesture = { kind: 'grab', pointerId: e.pointerId, grab };
-      grab.down(this.toDocPoint(e, true));
+      this.grabPt = this.toDocPoint(e, true);
+      grab.down(this.grabPt);
       this.updateCursor();
       this.invalidate(false, true);
       return;
@@ -701,10 +712,22 @@ export class CanvasEngine {
 
   private onPointerMove = (e: PointerEvent): void => {
     if (e.pointerType === 'touch' && this.touches.has(e.pointerId)) this.touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    if (e.pointerType === 'pen') this.pen.seen(e.timeStamp);
+    if (e.pointerType === 'pen') {
+      this.penTime = e.timeStamp;
+      this.pen.seen(e.timeStamp);
+      // A pen that is only hovering is not touching, whatever happened to its last release.
+      if (e.buttons === 0) this.pen.up(e.timeStamp);
+    }
     const g = this.gesture;
     if (g?.kind === 'pinch') {
       this.pinchMove(g);
+      return;
+    }
+    if (g && e.pointerId === g.pointerId && this.releaseWentMissing(g, e)) {
+      // The release never came (a button let go outside the window, a tip lifted with a barrel button held): end the
+      // stroke where it last was, as a normal release would, then take this move as a hover.
+      this.finishGesture(g, null);
+      this.onPointerMove(e);
       return;
     }
     if (!g) {
@@ -729,7 +752,8 @@ export class CanvasEngine {
     }
     if (e.pointerId !== g.pointerId) return;
     if (g.kind === 'grab') {
-      g.grab.move(this.toDocPoint(e, true), e.shiftKey);
+      this.grabPt = this.toDocPoint(e, true);
+      g.grab.move(this.grabPt, e.shiftKey);
       this.invalidate(false, true);
       return;
     }
@@ -764,6 +788,7 @@ export class CanvasEngine {
 
   private onPointerUp = (e: PointerEvent): void => {
     if (e.pointerType === 'pen') {
+      this.penTime = e.timeStamp;
       this.pen.up(e.timeStamp);
       noticePen();
     }
@@ -773,28 +798,77 @@ export class CanvasEngine {
       this.endPinch(g);
       return;
     }
-    if (!g || e.pointerId !== g.pointerId) return;
-    if (this.els.root.hasPointerCapture(e.pointerId)) this.els.root.releasePointerCapture(e.pointerId);
+    if (!g || g.kind === 'pinch' || e.pointerId !== g.pointerId) return;
+    this.finishGesture(g, e);
+  };
+
+  /**
+   * Ends the open gesture the way a release does, so what was drawn is kept. `e` is the release; without one (the
+   * release never came) the stroke ends where the last sample was.
+   */
+  private finishGesture(g: Exclude<Gesture, { kind: 'pinch' }>, e: PointerEvent | null): void {
+    if (this.els.root.hasPointerCapture?.(g.pointerId)) this.els.root.releasePointerCapture(g.pointerId);
     this.gesture = null;
     if (g.kind === 'tool') {
       ctl.setPredicted([]);
       // A lifted pen reports no pressure, so the last real sample's pen fields stand for it.
       const last = this.lastPtr;
-      const raw = this.toPointer(e);
-      const up = e.pointerType === 'pen' && last ? { ...raw, pressure: last.pressure, hasPressure: last.hasPressure, tiltX: last.tiltX, tiltY: last.tiltY, twist: last.twist } : raw;
-      if (this.stab) {
-        // The brush walks the rest of the way to where the pen lifted.
-        const steps = this.stab.finish({ x: up.x, y: up.y, pressure: up.pressure });
-        for (const s of steps.slice(0, -1)) g.tool.move?.({ ...up, x: s.x, y: s.y, pressure: s.pressure }, this.ctx);
-        this.stab = null;
-      }
-      g.tool.up?.(up, this.ctx);
+      const raw = e ? this.toPointer(e) : last;
+      const up = raw && last && (!e || e.pointerType === 'pen') ? { ...raw, pressure: last.pressure, hasPressure: last.hasPressure, tiltX: last.tiltX, tiltY: last.tiltY, twist: last.twist } : raw;
+      if (up) {
+        if (this.stab) {
+          // The brush walks the rest of the way to where the pen lifted.
+          const steps = this.stab.finish({ x: up.x, y: up.y, pressure: up.pressure });
+          for (const s of steps.slice(0, -1)) g.tool.move?.({ ...up, x: s.x, y: s.y, pressure: s.pressure }, this.ctx);
+        }
+        g.tool.up?.(up, this.ctx);
+      } else g.tool.cancel?.(this.ctx);
+      this.stab = null;
       this.restoreTool(g);
-    } else if (g.kind === 'grab') g.grab.up(this.toDocPoint(e, true));
+    } else if (g.kind === 'grab') {
+      const at = e ? this.toDocPoint(e, true) : this.grabPt;
+      if (at) g.grab.up(at);
+      else g.grab.cancel?.();
+    }
     this.lastPtr = null;
+    this.grabPt = null;
     this.updateCursor();
     this.invalidate(false, true);
+  }
+
+  /** A move with no release before it: the button is no longer down, or a pen's tip has lifted but a barrel button is held. */
+  private releaseWentMissing(g: Exclude<Gesture, { kind: 'pinch' }>, e: PointerEvent): boolean {
+    if (e.pointerType === 'pen' && e.pressure > 0) this.penPressed = true;
+    if (e.pointerType !== 'pen' && e.pointerType !== 'mouse') return false;
+    // A tool that is drawn by hovering carries on with no button and no pressure.
+    if (g.kind === 'tool' && g.tool.hoverDrag) return false;
+    if (e.buttons === 0) return true;
+    // Pressure 0 only counts once this stroke has had some (the first sample of a press may read 0).
+    return e.pointerType === 'pen' && e.pressure === 0 && this.penPressed;
+  }
+
+  /** The pointer's capture went away with no release (the page lost it): the gesture it held is over. */
+  private onLostCapture = (e: PointerEvent): void => {
+    const g = this.gesture;
+    if (!g) return;
+    if (g.kind === 'pinch') {
+      if (g.ids.includes(e.pointerId)) this.endPinch(g);
+      return;
+    }
+    if (e.pointerId !== g.pointerId) return;
+    if (e.pointerType === 'pen') this.pen.up(this.penTime);
+    this.finishGesture(g, null);
   };
+
+  /** The window lost focus mid-gesture: a release may never be seen, so end whatever is held and forget fingers and the pen. */
+  private endLostPointers(): void {
+    const g = this.gesture;
+    this.touches.clear();
+    this.pen.up(this.penTime);
+    if (!g) return;
+    if (g.kind === 'pinch') this.endPinch(g);
+    else this.finishGesture(g, null);
+  }
 
   private endPinch(g: Extract<Gesture, { kind: 'pinch' }>): void {
     for (const id of g.ids) if (this.els.root.hasPointerCapture?.(id)) this.els.root.releasePointerCapture(id);
@@ -804,7 +878,10 @@ export class CanvasEngine {
 
   private onPointerCancel = (e: PointerEvent): void => {
     if (e.pointerType === 'touch') this.touches.delete(e.pointerId);
-    if (e.pointerType === 'pen') this.pen.up(e.timeStamp);
+    if (e.pointerType === 'pen') {
+      this.penTime = e.timeStamp;
+      this.pen.up(e.timeStamp);
+    }
     const g = this.gesture;
     if (g?.kind === 'pinch' && g.ids.includes(e.pointerId)) this.endPinch(g);
     else if (g && e.pointerId === g.pointerId) this.cancelGesture();

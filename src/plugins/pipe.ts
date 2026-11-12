@@ -1,5 +1,5 @@
 // Sends a tool's pointer events to its plugin one at a time. While the plugin is busy with one, moves that pile up are
-// folded into the newest, so a slow plugin never builds a backlog; presses, releases and cancels are never dropped.
+// folded into the newest, so a slow plugin never builds a backlog; presses, releases and cancels are never dropped (nor is anything else but moves and, last of all, key presses).
 
 export type PipeKind = 'down' | 'move' | 'up' | 'hover' | 'cancel' | 'leave' | 'key';
 
@@ -17,9 +17,13 @@ export class EventPipe<E extends { type: PipeKind }, C = void> {
     const last = this.queue[this.queue.length - 1];
     if (isMove(ev.type) && last && isMove(last.ev.type)) this.queue[this.queue.length - 1] = { ev, ctx };
     else this.queue.push({ ev, ctx });
+    // Over the limit only moves go (the oldest first), then key presses. A press, a release or a cancel is never dropped, so a plugin
+    // never misses the start or the end of a stroke; those come from the person one at a time and cannot pile up.
     while (this.queue.length > EventPipe.MAX_WAITING) {
-      const i = this.queue.findIndex((q) => isMove(q.ev.type));
-      this.queue.splice(i < 0 ? 0 : i, 1);
+      let i = this.queue.findIndex((q) => isMove(q.ev.type));
+      if (i < 0) i = this.queue.findIndex((q) => q.ev.type === 'key');
+      if (i < 0) break;
+      this.queue.splice(i, 1);
     }
     void this.run();
   }

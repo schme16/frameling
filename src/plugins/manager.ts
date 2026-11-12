@@ -26,6 +26,8 @@ import { summarize, type PluginEventName } from './events';
 import { PERMISSIONS, packPlugin, PluginProblem, readPluginFiles, readPluginZip, samePermissions, type Decision, type Permission, type PluginManifest, type PluginPackage } from './manifest';
 import { applyOps } from './ops';
 import { decide, elevatedIn, needsChoices, powerName, RISKS } from './powers';
+import { codeFingerprint } from './fingerprint';
+import { forgetValues } from './options';
 import { EventPipe } from './pipe';
 import { PluginRuntime, type HostHooks, type PluginExporterDef, type PluginToolDef, type Transport } from './runtime';
 import { startSandbox } from './sandbox';
@@ -58,17 +60,24 @@ interface Saved {
   /** Everything the manifest listed when they decided (so a power they refused is not asked again). */
   asked?: Permission[];
   askedNetwork?: string[];
+  /** The fingerprint (SHA-256) of the plugin's code when the person decided. A different fingerprint from another place asks again. */
+  fingerprint?: string;
+  /** Where the plugin was picked from when they decided (a .zip's or folder's path). Updates from the same place are trusted to be the same author. */
+  source?: string;
 }
 
 const KEY = 'frameling.plugins.v1';
 
+/** What was saved, by plugin id. No prototype, so an id like "constructor" never finds something that was not saved. */
 function loadSaved(): Record<string, Saved> {
+  const out: Record<string, Saved> = Object.create(null);
   try {
     const v = JSON.parse(localStorage.getItem(KEY) ?? '{}');
-    return v && typeof v === 'object' ? v : {};
+    if (v && typeof v === 'object' && !Array.isArray(v)) for (const k of Object.keys(v)) if (v[k] && typeof v[k] === 'object') out[k] = v[k];
   } catch {
-    return {};
+    // Nothing saved that can be read.
   }
+  return out;
 }
 
 function writeSaved(next: Record<string, Saved>): void {
@@ -249,7 +258,7 @@ export async function refreshDiag(): Promise<void> {
     if (Object.keys(pluginDiag.get()).length) pluginDiag.set({});
     return;
   }
-  const next: Record<string, PluginDiag> = {};
+  const next: Record<string, PluginDiag> = Object.create(null);
   for (const [id, rt] of runtimes) next[id] = rt.diag(await memoryOf(id));
   pluginDiag.set(next);
 }
@@ -282,7 +291,7 @@ async function memoryOf(pid: string): Promise<number | null> {
     const sizes = await ask().catch(() => ({}) as Record<string, number>);
     memorySeen = { at: Date.now(), sizes };
   }
-  return memorySeen.sizes[pid] ?? null;
+  return Object.hasOwn(memorySeen.sizes, pid) ? memorySeen.sizes[pid] : null;
 }
 
 /** A plugin got stuck or grew too big: turn it off, remember that, and say so plainly with a way back. */
@@ -596,20 +605,33 @@ async function plainApprove(m: PluginManifest, verb: 'Install' | 'Turn on' | 'Up
   return { permissions: d.permissions, network: d.network };
 }
 
+/**
+ * Whether an update's code may keep what was allowed to the plugin before. The same code always does. Different code does
+ * only when it comes from the very place the earlier one came from (the same .zip or folder, being worked on); the same id
+ * from anywhere else is not known to be the same author, so it is asked about again.
+ */
+function sameCode(prior: Saved, stored: PluginPackage | undefined, fingerprint: string, source: string | undefined): boolean {
+  // A decision saved before fingerprints: what was stored then is what was decided about.
+  const before = prior.fingerprint ?? (stored ? codeFingerprint(stored.code) : undefined);
+  if (before === fingerprint) return true;
+  return !!source && !!prior.source && source === prior.source;
+}
+
 /** Installs (or updates) a plugin from a package, after asking. Resolves true when it's installed. */
 export async function installPackage(pkg: PluginPackage): Promise<boolean> {
   const m = pkg.manifest;
   const had = plugins.get().find((x) => x.manifest.id === m.id);
   // A new version that asks for nothing it was not already asked about keeps what the person decided before.
   const prior = had ? loadSaved()[m.id] : undefined;
-  const kept: Decision | null = prior && samePermissions(m, prior) ? { permissions: prior.permissions, network: prior.network, asked: [...new Set([...(prior.asked ?? prior.permissions), ...m.permissions])], askedNetwork: [...new Set([...(prior.askedNetwork ?? prior.network), ...m.network])] } : null;
+  const fingerprint = codeFingerprint(pkg.code);
+  const kept: Decision | null = prior && samePermissions(m, prior) && sameCode(prior, packages.get(m.id), fingerprint, pkg.source) ? { permissions: prior.permissions, network: prior.network, asked: [...new Set([...(prior.asked ?? prior.permissions), ...m.permissions])], askedNetwork: [...new Set([...(prior.askedNetwork ?? prior.network), ...m.network])] } : null;
   const allowed = kept ?? (await approve(m, had ? 'Update' : 'Install'));
   if (!allowed) return false;
   if (had) stop(m.id);
   await library.write('plugins', m.id, packPlugin(pkg));
   packages.set(m.id, pkg);
   const saved = loadSaved();
-  saved[m.id] = { enabled: true, permissions: allowed.permissions, network: allowed.network, version: m.version, asked: allowed.asked, askedNetwork: allowed.askedNetwork };
+  saved[m.id] = { enabled: true, permissions: allowed.permissions, network: allowed.network, version: m.version, asked: allowed.asked, askedNetwork: allowed.askedNetwork, fingerprint, ...(pkg.source ? { source: pkg.source } : {}) };
   writeSaved(saved);
   const entry: InstalledPlugin = { manifest: m, enabled: true, granted: allowed.permissions, network: allowed.network, grantedFor: m.version, status: 'off' };
   plugins.set((list) => [...list.filter((x) => x.manifest.id !== m.id), entry].sort((a, b) => a.manifest.name.localeCompare(b.manifest.name)));
@@ -619,10 +641,11 @@ export async function installPackage(pkg: PluginPackage): Promise<boolean> {
 }
 
 /** Installs from a zip's bytes, or a folder's files. Says what went wrong in plain words. */
-export async function installFrom(input: Uint8Array | Record<string, Uint8Array>): Promise<boolean> {
+export async function installFrom(input: Uint8Array | Record<string, Uint8Array>, source?: string): Promise<boolean> {
   let pkg: PluginPackage;
   try {
     pkg = input instanceof Uint8Array ? readPluginZip(input) : readPluginFiles(input);
+    if (source) pkg = { ...pkg, source };
   } catch (e) {
     notify(e instanceof PluginProblem ? e.message : "That plugin couldn't be read.", 'error');
     return false;
@@ -713,6 +736,7 @@ export async function removePlugin(id: string): Promise<void> {
   const saved = loadSaved();
   delete saved[id];
   writeSaved(saved);
+  forgetValues(id);
   plugins.set((list) => list.filter((x) => x.manifest.id !== id));
   notify(`"${p.manifest.name}" is removed.`, 'info', undefined, 3000);
 }

@@ -17,7 +17,7 @@ export async function installFromFile(): Promise<boolean> {
     notify(r.error, 'error');
     return false;
   }
-  return installFrom(r.bytes);
+  return installFrom(r.bytes, r.path);
 }
 
 export const canInstallFolder = (): boolean => !!desktop()?.files.readFolder;
@@ -31,5 +31,5 @@ export async function installFromFolder(): Promise<boolean> {
     notify(r.error, 'error');
     return false;
   }
-  return installFrom(Object.fromEntries(r.files.map((f) => [f.name, f.bytes])));
+  return installFrom(Object.fromEntries(r.files.map((f) => [f.name, f.bytes])), r.path);
 }
