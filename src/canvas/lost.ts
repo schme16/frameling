@@ -6,6 +6,7 @@
  */
 import type { Doc, Drawing, Id, Layer, PixelDrawing, Shape } from '../core/format';
 import { celAt } from '../core/doc';
+import { folderChain } from '../core/folders';
 import { isInstance, nextKey, poseAt } from '../core/symbols';
 import { instanceBounds, shapeBounds, unionRects } from './geometry';
 import type { Rect } from './view';
@@ -124,13 +125,16 @@ export function findLost(doc: Doc, frame: number): LostCause[] | null {
     const c = contentOf(doc, layer, d);
     if (!c.all) return;
     const base = { layerId: layer.id, layerName: layer.name, bounds: c.all };
-    const folder = layer.folder ? doc.folders?.[layer.folder] : undefined;
+    const around = folderChain(doc.folders, layer.folder);
+    // The outermost folder that hides it, or fades it right out, is the one to point at.
+    const hiddenIn = around.find((f) => !f.visible);
+    const clearIn = around.find((f) => f.opacity <= FAINT);
     if (!layer.visible) return void causes.push({ kind: 'hidden-layer', ...base });
-    if (folder && !folder.visible) return void causes.push({ kind: 'hidden-folder', folderId: folder.id, ...base });
+    if (hiddenIn) return void causes.push({ kind: 'hidden-folder', folderId: hiddenIn.id, ...base });
     if (layer.opacity <= FAINT) return void causes.push({ kind: 'clear-layer', ...base });
-    if (folder && folder.opacity <= FAINT) return void causes.push({ kind: 'clear-folder', folderId: folder.id, ...base });
-    // A 'show' mask above it in the same folder, with nothing drawn where this is, cuts it all away.
-    const mask = doc.layers.slice(i + 1).find((m) => m.mask && m.visible && (m.folder ?? null) === (layer.folder ?? null));
+    if (clearIn) return void causes.push({ kind: 'clear-folder', folderId: clearIn.id, ...base });
+    // A 'show' mask above it, on the stage or in a folder around it, with nothing drawn where this is, cuts it all away.
+    const mask = doc.layers.slice(i + 1).find((m) => m.mask && m.visible && (!m.folder || around.some((f) => f.id === m.folder)));
     if (mask?.mask === 'show') {
       const mc = contentOf(doc, mask, poseAt(doc, mask, frame));
       const area = c.seen ?? c.all;

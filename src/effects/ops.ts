@@ -58,3 +58,9 @@ export const renameFolder = (folderId: Id, name: string) => run('Rename folder',
 export const setFolderVisible = (folderId: Id, visible: boolean) => run(visible ? 'Show folder' : 'Hide folder', (d) => edit.setFolderProps(d, folderId, { visible }));
 export const setFolderOpacity = (folderId: Id, opacity: number) => run('Change folder opacity', (d) => edit.setFolderProps(d, folderId, { opacity }), `folder-opacity:${folderId}`);
 export const moveLayerInto = (layerId: Id, to: number, folder: Id | null) => run('Move layer', (d) => edit.moveLayerInto(d, layerId, to, folder));
+
+const nodeWord = (n: edit.Node) => ('layer' in n ? 'layer' : 'folder');
+export const moveNode = (drag: edit.Node, target: edit.Node, where: edit.Drop) => run(`Move ${nodeWord(drag)}`, (d) => edit.moveNode(d, drag, target, where));
+export const stepNode = (n: edit.Node, dir: 'up' | 'down') => run(dir === 'up' ? `Move ${nodeWord(n)} up` : `Move ${nodeWord(n)} down`, (d) => edit.stepNode(d, n, dir));
+export const nestNode = (n: edit.Node) => run(`Put ${nodeWord(n)} in the folder next to it`, (d) => edit.nestNode(d, n));
+export const outdentNode = (n: edit.Node) => run(`Take ${nodeWord(n)} out of its folder`, (d) => edit.outdentNode(d, n));

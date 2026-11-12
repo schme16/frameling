@@ -9,11 +9,22 @@ import { ContextMenu, InlineName, type MenuItem } from '../timeline/Menu';
 import { blendInfo, lookSummary } from './model';
 import * as ops from './ops';
 import { toggleClip, toggleMask } from './commands';
+import type { Drop } from './edit';
+import { rowKey } from './rowKeys';
 import { toggleFolderCollapsed, type TimelineRow } from './rows';
 import './effects.css';
 
-/** A folder's header row in the layer list: fold, name, show or hide, more. */
-export function FolderRow({ row, height }: { row: Extract<TimelineRow, { type: 'folder' }>; height: number }) {
+/** What the layer list needs to run a drag on a folder's header: it can be dragged, and things can be dropped on it. */
+export interface FolderDragProps {
+  dropMark: Drop | null;
+  onDragStart: (folderId: string) => void;
+  onDragOver: (folderId: string, where: Drop) => void;
+  onDrop: (folderId: string) => void;
+  onDragEnd: () => void;
+}
+
+/** A folder's header row in the layer list: fold, name, show or hide, more. Drag it to move the folder and all in it. */
+export function FolderRow({ row, height, drag }: { row: Extract<TimelineRow, { type: 'folder' }>; height: number; drag: FolderDragProps }) {
   const f = row.folder;
   const [editing, setEditing] = useState(false);
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
@@ -23,14 +34,48 @@ export function FolderRow({ row, height }: { row: Extract<TimelineRow, { type: '
   const n = row.layerIds.length;
   return (
     <div
-      className={`tl-folder${f.visible ? '' : ' is-hidden'}`}
-      style={{ height }}
-      role="listitem"
-      aria-label={`Folder ${f.name}, ${n} layer${n === 1 ? '' : 's'}${row.collapsed ? ', folded' : ''}`}
+      className={`tl-folder${f.visible ? '' : ' is-hidden'}${row.depth ? ' in-folder' : ''}${drag.dropMark ? ` drop-${drag.dropMark}` : ''}`}
+      style={{ height, ['--depth' as string]: row.depth }}
+      role="treeitem"
+      data-row=""
+      data-folder={f.id}
+      tabIndex={0}
+      aria-level={row.depth + 1}
+      aria-expanded={!row.collapsed}
+      aria-label={`Folder ${f.name}, ${n} layer${n === 1 ? '' : 's'}${row.depth ? `, inside another folder` : ''}${f.visible ? '' : ', hidden'}`}
+      draggable={!editing}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          if (e.target === e.currentTarget) {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleFolderCollapsed(f.id);
+          }
+          return;
+        }
+        rowKey(e, { folder: f.id }, `[data-folder="${f.id}"]`, { id: f.id, collapsed: row.collapsed });
+      }}
       onContextMenu={(e) => {
         e.preventDefault();
         setMenu({ x: e.clientX, y: e.clientY });
       }}
+      onDragStart={(e) => {
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', f.id);
+        drag.onDragStart(f.id);
+      }}
+      onDragOver={(e) => {
+        e.preventDefault();
+        const r = e.currentTarget.getBoundingClientRect();
+        const y = (e.clientY - r.top) / r.height;
+        // Top edge: above the folder. Middle: inside it. Bottom edge: inside when open, below it when folded.
+        drag.onDragOver(f.id, y < 0.3 ? 'above' : y > 0.7 && row.collapsed ? 'below' : 'into');
+      }}
+      onDrop={(e) => {
+        e.preventDefault();
+        drag.onDrop(f.id);
+      }}
+      onDragEnd={drag.onDragEnd}
     >
       <button type="button" className="tl-folder-twisty" aria-expanded={!row.collapsed} title={row.collapsed ? 'Unfold: show this folder\'s layers' : 'Fold: hide this folder\'s layers in the timeline (they still show on the canvas)'} onClick={() => toggleFolderCollapsed(f.id)}>
         <Icon name={row.collapsed ? 'chevron-right' : 'chevron-down'} size={14} />
@@ -62,7 +107,7 @@ export function FolderRow({ row, height }: { row: Extract<TimelineRow, { type: '
       <button
         type="button"
         className="tl-icon-btn tl-more"
-        title="More: rename, effects, take the layers out"
+        title="More: rename, effects, move into or out of folders, take the layers out"
         aria-label="More folder options"
         aria-haspopup="menu"
         onClick={(e) => {
@@ -88,6 +133,9 @@ export function FolderRow({ row, height }: { row: Extract<TimelineRow, { type: '
               },
             },
             { label: row.collapsed ? 'Unfold' : 'Fold (hide its layers here)', onClick: () => toggleFolderCollapsed(f.id) },
+            { separator: true },
+            { label: 'Put in the folder next to it', onClick: () => void ops.nestNode({ folder: f.id }) },
+            { label: 'Take out of its folder', disabled: !row.parent, onClick: () => void ops.outdentNode({ folder: f.id }) },
             { separator: true },
             { label: 'Take the layers out (remove folder)', onClick: () => void ops.ungroupFolder(f.id) },
           ]}
@@ -116,6 +164,7 @@ export function lookMenu(layer: Layer): MenuItem[] {
     { label: 'Effects and blend...', onClick: () => showPanel('effects') },
     { label: 'Clip to the layer below', checked: !!layer.clipToBelow, onClick: () => toggleClip(layer) },
     { label: 'Use as a mask', checked: !!layer.mask, onClick: () => toggleMask(layer) },
+    { label: 'Put in the folder next to it', onClick: () => void ops.nestNode({ layer: layer.id }) },
     layer.folder ? { label: 'Take out of its folder', onClick: () => void ops.moveLayerInto(layer.id, store().get().doc.layers.findIndex((l) => l.id === layer.id), null) } : { label: 'Put in a new folder', onClick: () => void ops.makeFolder([layer.id]) },
   ];
 }
