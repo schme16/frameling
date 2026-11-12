@@ -388,10 +388,10 @@ Pick the clip and press play. It plays the way you set it, so you see exactly wh
 ## In exports
 
 - **Sprite sheets** (Godot, Unity, Phaser, PixiJS, CSS, JSON): each clip lists its frames in the order it plays. Phaser and CSS use their own repeat count for a forward clip that plays several times. Looping clips loop; the others hold their last frame.
-- **GIF, APNG and video:** exporting one clip bakes the order in.
+- **GIF, APNG, video, Lottie and dotLottie:** exporting one clip bakes the order in.
 - **PNG sequence, PDF and Illustrator pages:** these show each frame once, in the order the clip starts (a back and forth clip comes out 1 2 3 4, not 1 2 3 4 3 2 1), however often it repeats.
 - **Back and forth in Godot and Phaser:** a back and forth clip that loops can use the game engine's own ping-pong instead of listing every frame, which makes smaller files. In Godot the two end frames then show twice; Phaser plays it the same. Change it in **Preferences > Behaviour**, under *Back-and-forth clips in game engines*. Everything else always lists the frames.
-- **Interactives** and **Lottie** have no clip direction or repeat count, so those clips play forward there. The Export window says so.
+- **Interactives** has its own forward, loop or once, so a clip that plays another way is written out in order there.
 
 Old files open exactly as before: a clip with nothing set plays forward.`,
   },

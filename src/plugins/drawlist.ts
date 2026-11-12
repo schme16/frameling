@@ -236,6 +236,11 @@ export function handleAt(list: DrawList, x: number, y: number, zoom: number): st
   return null;
 }
 
+/** The mouse cursor for a handle: open hand while the pointer is over one, closed hand while it is dragged, else the tool's own (null). */
+export function handleCursor(over: string | null, dragging: string | null): 'grab' | 'grabbing' | null {
+  return dragging ? 'grabbing' : over ? 'grab' : null;
+}
+
 /** Draws a checked draw list in stage coordinates. `zoom` keeps `screen` widths the same size on screen. `hot` is the handle under the pointer. */
 export function drawDrawList(g: CanvasRenderingContext2D, list: DrawList, zoom = 1, hot: string | null = null): void {
   const z = zoom > 0 ? zoom : 1;
@@ -410,4 +415,60 @@ export function placeholderShapes(box: { x: number; y: number; w: number; h: num
     { id: newId(), type: 'path', paths: [rectPath(x, y, w, h, 0)], fill: null, stroke, opacity: 0.8 },
     { id: newId(), type: 'path', paths: [{ closed: false, points: [{ x, y }, { x: x + w, y: y + h }] }, { closed: false, points: [{ x: x + w, y }, { x, y: y + h }] }], fill: null, stroke, opacity: 0.8 },
   ];
+}
+
+// ---------------------------------------------------------------- snap lines from a guide
+
+/** Most snap lines one guide may offer, so a busy guide cannot slow every drag. */
+export const GUIDE_SNAP_LIMIT = 400;
+
+/**
+ * The straight lines a canvas guide offers to snap to: sideways and up-and-down lines (and polygon edges), the edges
+ * and middles of boxes, and the sides and middle of ellipses. Slanted lines, paths, text and handles offer none.
+ */
+export function guideSnapLines(list: DrawList): { x: number[]; y: number[] } {
+  const cached = guideLinesCache.get(list);
+  if (cached) return cached;
+  const out = computeGuideSnapLines(list);
+  guideLinesCache.set(list, out);
+  return out;
+}
+
+/** Each draw list is checked once, however many drag moves ask. */
+const guideLinesCache = new WeakMap<DrawList, { x: number[]; y: number[] }>();
+
+function computeGuideSnapLines(list: DrawList): { x: number[]; y: number[] } {
+  const xs = new Set<number>();
+  const ys = new Set<number>();
+  const round = (n: number) => Math.round(n * 100) / 100;
+  const seg = (x1: number, y1: number, x2: number, y2: number) => {
+    if (Math.abs(x1 - x2) < 0.01) xs.add(round(x1));
+    else if (Math.abs(y1 - y2) < 0.01) ys.add(round(y1));
+  };
+  for (const item of list) {
+    if (xs.size + ys.size >= GUIDE_SNAP_LIMIT) break;
+    switch (item.type) {
+      case 'line':
+        seg(item.x1, item.y1, item.x2, item.y2);
+        break;
+      case 'polygon':
+      case 'polyline': {
+        const p = item.points;
+        for (let i = 1; i < p.length; i++) seg(p[i - 1][0], p[i - 1][1], p[i][0], p[i][1]);
+        if (item.type === 'polygon' && p.length > 2) seg(p[p.length - 1][0], p[p.length - 1][1], p[0][0], p[0][1]);
+        break;
+      }
+      case 'rect':
+        xs.add(round(item.x)).add(round(item.x + item.w / 2)).add(round(item.x + item.w));
+        ys.add(round(item.y)).add(round(item.y + item.h / 2)).add(round(item.y + item.h));
+        break;
+      case 'ellipse':
+        xs.add(round(item.cx - item.rx)).add(round(item.cx)).add(round(item.cx + item.rx));
+        ys.add(round(item.cy - item.ry)).add(round(item.cy)).add(round(item.cy + item.ry));
+        break;
+      default:
+        break;
+    }
+  }
+  return { x: [...xs].slice(0, GUIDE_SNAP_LIMIT), y: [...ys].slice(0, GUIDE_SNAP_LIMIT) };
 }

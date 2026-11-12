@@ -95,7 +95,9 @@ const defs: ExporterDef[] = [
       rows: { text: 'shapes', particles: 'shapes', effects: 'picture', bones: 'kept' },
       nativeEffects: ['blur', 'shadow'],
     },
-    clipPlayNote: 'A Lottie file has no clip direction or repeat count: clips become markers with their names only.',
+    // A clip that plays backward, back and forth or N times is baked in play order with a time remap (nothing is drawn twice).
+    baked: true,
+    loops: true,
     extension: (s) => (s.lottieFile === 'dotlottie' ? 'lottie' : 'json'),
     fileKind: (s) => ({ name: s.lottieFile === 'dotlottie' ? 'dotLottie animation' : 'Lottie animation' }),
     repair: repairLottieSettings,

@@ -18,6 +18,7 @@ var tools = new Map();
 var shapeKinds = new Map();
 var listeners = new Map();
 var info = null;
+var lastProgress = 0;
 
 function send(msg, transfer) {
   if (port) port.postMessage(msg, transfer || []);
@@ -167,6 +168,17 @@ var api = {
         },
       };
     },
+  },
+  // Tells Frameling how far a long command or export has got, so it is not mistaken for a plugin that is stuck. It is
+  // posted straight away, so it works from inside a long loop too. Calls come through at most ten times a second.
+  progress: function (done, total) {
+    var now = Date.now();
+    done = Number(done);
+    total = Number(total);
+    if (!isFinite(done) || !isFinite(total)) return;
+    if (now - lastProgress < 100 && done < total) return;
+    lastProgress = now;
+    send({ t: 'progress', done: done, total: total });
   },
   ui: {
     notify: function (message, kind) {

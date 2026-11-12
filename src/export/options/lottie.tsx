@@ -3,8 +3,10 @@ import type { ExportUiProps } from '../registry';
 import { bakesEffects, docFeatures, hasSoftOrShadow } from '../carries';
 import { FILE_CHOICES, LAYOUT_CHOICES, PICTURE_CHOICES } from '../lottie-choices';
 import { Check } from './controls';
+import { Loop } from './playback';
 
-export function LottieOptions({ s, set, doc }: ExportUiProps) {
+export function LottieOptions(p: ExportUiProps) {
+  const { s, set, doc } = p;
   return (
     <>
       <p className="ex-note">No size to pick: shapes stay shapes, so a Lottie player draws it sharp at whatever size it's shown.</p>
@@ -30,6 +32,12 @@ export function LottieOptions({ s, set, doc }: ExportUiProps) {
             ))}
           </div>
           <p className="ex-note">{LAYOUT_CHOICES.find((c) => c.id === (s.dotLottieVersion ?? 2))!.note}</p>
+        </fieldset>
+      )}
+      {s.lottieFile === 'dotlottie' && (
+        <fieldset>
+          <legend>Playback</legend>
+          <Loop {...p} />
         </fieldset>
       )}
       {hasSoftOrShadow(docFeatures(doc)) && (

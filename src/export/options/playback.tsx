@@ -4,7 +4,7 @@ import { GIF_MAX_FPS } from '../gif';
 import type { ExportUiProps } from '../registry';
 import { Check, LoopNote } from './controls';
 
-const Loop = ({ s, set, doc, plan }: ExportUiProps) => (
+export const Loop = ({ s, set, doc, plan }: ExportUiProps) => (
   <>
     <Check checked={plan.loop} onChange={(v) => set({ loop: v, loopTouched: true })}>
       Loop forever

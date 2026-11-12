@@ -195,6 +195,19 @@ frameling.ui.notify('Done!', 'success'); // 'info', 'success', 'warn' or 'error'
 
 Shown as a toast starting with the plugin's name.
 
+### Progress (long commands and exports)
+
+```js
+frameling.progress(done, total);   // e.g. frameling.progress(i + 1, frames.length)
+```
+
+Frameling turns a plugin off when it stays silent too long (see The watchdog): 10 seconds normally, 60 seconds while a command
+or an export runs. A job that is long but moving should say so. Each report whose `done` is higher than the last one (and
+`total` above 0) gives the job a fresh 60 seconds, and an exporter's reports also fill the progress bar in the Export dialog.
+The call posts straight away, so it works from inside a long loop that never yields, and calls beyond ten a second are
+dropped (the last one, `done === total`, always goes through). Reports that stand still or go backwards, are not numbers, or
+come when no command or export is running count for nothing, so a loop that keeps calling `progress(1, 10)` is still stuck.
+
 ### Events (version 2)
 
 ```js
@@ -248,7 +261,7 @@ dropped. The answer is checked: `overlay` is a draw list shown while the tool is
 **Handles.** A `handle` item in the tool's overlay (see Draw lists) is a dot the person can drag. Frameling hit-tests the
 pointer against the handles of the tool's last overlay (as near as 8 screen pixels at any zoom). Over one, `hover` events
 carry `handle: '<id>'`; pressing on one starts a drag, and the `down`, `move` and `up` of that drag all carry its `handle`
-id, so the plugin moves whatever the handle stands for and answers with a new overlay. A press elsewhere has no `handle`.
+id, so the plugin moves whatever the handle stands for and answers with a new overlay. A press elsewhere has no `handle`. The mouse cursor is an open hand over a handle and a closed hand while it is dragged; the plugin does nothing for that.
 
 **Snapping.** With `snap: true` in the tool's definition, `x` and `y` come pulled onto Frameling's snap lines the way the
 built-in tools' points do (page, guides, grid, other shapes, the person's choices and distance from the Snap options;
@@ -268,6 +281,12 @@ frameling.canvas.overlay([{ type: 'line', x1: 0, y1: 0, x2: 100, y2: 100, stroke
 
 A guide drawn on top of the canvas in stage coordinates, never part of the drawing or an export, hidden while playing. At
 most 30 updates a second.
+
+The straight lines of a guide also count as snap lines: horizontal and vertical `line` items and `polygon` or `polyline`
+sides, the edges and middle of each `rect`, and the sides and middle of each `ellipse` (at most 400 lines per guide). Frameling
+snaps to them under **Plugin guides** in the Snap options (on for vector layers by default, off for pixel layers), with the
+same distance, Ctrl and master switch as the other targets. They stop counting when the plugin is turned off or its
+`canvas` power is switched off. The plugin does nothing to ask for this.
 
 ### Draw lists
 
@@ -367,6 +386,8 @@ person can always turn it off.
 - **Heartbeat.** Every second the host sends `{ t: 'ping' }` and the prelude answers `{ t: 'pong' }` from the worker's
   own event loop, so a worker stuck in a loop cannot answer. A ping unanswered for 10 seconds (60 seconds while a command or an
   export is running, which may think for a while) means stuck. A tick that comes very late (the computer slept) is not blamed on the plugin.
+  `frameling.progress(done, total)` (see Progress) starts that count again while a command or export is running, when `done` has
+  moved forward; the runtime hands it to the watchdog (`Watchdog.progress`) and, for an export, to the dialog's progress bar.
 - **Memory.** The desktop app starts Chromium with `IsolateSandboxedIframes:grouping/per-document` (`PLUGIN_PROCESS_FEATURE`,
   `src/main/main.ts`; without it every plugin's frame shares one process), so each plugin has a process of its own (about 90 MB
   to begin with), and the frame's address carries `?plugin=<id>` (the page ignores it). The main process (`plugins:memory`, `src/main/pluginMemory.ts`)

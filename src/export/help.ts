@@ -333,7 +333,7 @@ Under **File type** in the Export window:
 - **Puppets:** a bone part that only turns is one still shape with a few turn keys.
 - **The camera** pans, zooms and turns (a few eased keys, not one per frame), and layers with depth move at their own speed.
 - **Pixel and tile layers** become pictures inside the file, big enough to stay crisp.
-- **Clips** become named markers, so a player can play one clip by name. Lottie has no clip direction or repeat count.
+- **Clips** become named markers, so a player can play one clip by name. Export one clip and it plays the way you set it, even backward, back and forth or a number of times, and the file does not grow. In a dotLottie file a clip that loops repeats, and the **Playback** tick lets you choose.
 - **Text** becomes letter shapes, so no font files are needed. **Particles** become one small shape each. **Colour wash** recolours the copy's shapes.
 - **Blend modes** stay as they are; **masks** and **clipping** become *track mattes*.
 - **Fades:** a layer, folder or symbol copy you fade is faded as one picture, so overlapping shapes don't show through each other.
@@ -405,7 +405,7 @@ It uses **CSS animations** inside the SVG rather than SVG's own animation tags (
 ## What's in the file
 
 - Every frame, with frames that look the same stored only once (a drawing held for 6 frames is one picture held for 6 frames).
-- Your clips, with their loop settings, and your markers. Interactives plays a clip forward, looping or once, so a clip that plays backward, back and forth or a set number of times plays forward there. Those settings stay in the editable drawing inside the package.
+- Your clips, with their loop settings, and your markers. Interactives plays a clip forward, looping or once, so a clip that plays [backward, back and forth or a set number of times](help:timeline-clip-play) is written out frame by frame in the order it plays, after the animation's own frames, and the clip points at that. It plays right in any Interactives. (An animation layer with no clip chosen plays every frame, written-out clips included, until Interactives learns to skip them; pick a clip to avoid that. A clip that would come to more than 5000 frames stays forward.) The settings also stay in the editable drawing inside the package.
 - The frame rate, size, and whether it is pixel art.
 - Your editable drawing too, unless you untick **Include the editable drawing**. Leave it in if you might change the animation later; take it out for the smallest file.
 

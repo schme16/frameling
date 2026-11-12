@@ -9,6 +9,7 @@ import { addLines, bumpSnap, getSnapGaps, getSnapLines, noTargets, setSnapGaps, 
 import { activeTargets, snapColourVar, type SnapContext, type SnapTarget } from './snapModel';
 import { currentSnapContext } from './snapOps';
 import { otherShapes } from './snapShapes';
+import { sourceLines } from './snapSources';
 import { spacingAxis, spacingFor, type Gap, type SpacingHit } from './snapSpacing';
 import { cssVar } from './theme';
 import { contrast, isHex } from '../ui/themes/color';
@@ -105,6 +106,10 @@ function pulls(set: Set<SnapTarget>, moving: boolean): Pulls {
   if (set.has('grid') && v.grid === 'square') {
     const g = squareLines(v.gridSize, doc.width, doc.height);
     addLines(t, 'grid', g.x, g.y);
+  }
+  if (set.has('plugins')) {
+    const p = sourceLines();
+    addLines(t, 'plugins', p.x, p.y);
   }
   let rects: Rect[] = [];
   if (set.has('shapes') || set.has('spacing')) {

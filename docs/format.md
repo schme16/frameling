@@ -414,7 +414,7 @@ Written by `src/export/playable.ts` (`playablePackage`), a zip with media type `
 
 - `app` (`'Frameling'`), `appVersion`, `name`.
 - `width`, `height`: stage size in document pixels. `scale`: atlas pixels per document pixel.
-- `fps`, `frameCount`: frames 0 to `frameCount - 1`.
+- `fps`, `frameCount`: frames 0 to `frameCount - 1`. `documentFrames?`: see Clip `direction` below.
 - `pixelArt`: draw with nearest-neighbour scaling. `background`: colour baked in, or `null` when see-through.
 - `atlas`: `{image: 'atlas.png', width, height}`.
 - `cells`: `{x, y, w, h, ox, oy}` per picture, in atlas pixels; `ox, oy` is where the trimmed picture sits in the
@@ -427,7 +427,12 @@ Written by `src/export/playable.ts` (`playablePackage`), a zip with media type `
   already flattened.
 - `source`: `'source.frameling'` or `null`.
 - Clip `direction` and `repeat` are not in the package: the Interactives player's clips are `{name, start, end,
-  loop}` and play forward, looping or once, so nothing it ignores is written. The `.frameling` source inside has them.
+  loop}` and play forward, looping or once. A clip that plays another way is baked: its frames in play order (once
+  through for a loop, all the passes for N times, up to 5000 frames) are added to the end of `frames`, and the clip's
+  `start`, `end` and `runs` point at them. Markers inside it are repeated where those frames are. `documentFrames` is
+  then the number of frames the document itself has (the rest are baked passes), for a player that wants the whole
+  animation without them. The flow's `frames` is the baked length and its `direction`/`repeat` are left out for such
+  a clip. The `.frameling` source inside has the settings.
 - `flow?`: when the document has a clip flow, `{start, states: {name, loop, frames, direction?, repeat?}[], transitions: {from, to, on:
   'end' | 'trigger', trigger?}[]}` by clip name (`flowManifest` in `src/core/flow.ts`). Older readers ignore it.
 

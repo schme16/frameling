@@ -67,6 +67,19 @@ describe('the heartbeat', () => {
     void wd;
   });
 
+  it('starts the count again at each progress report, so a long job that keeps reporting is never stuck', () => {
+    const { wd, trips } = make({ answer: false, busy: () => true });
+    wd.start();
+    for (let i = 0; i < 5; i++) {
+      vi.advanceTimersByTime(WATCHDOG.busyStuckMs - 5000);
+      wd.progress();
+    }
+    expect(trips).toEqual([]);
+    // The reports stop: the usual limit applies from the last one.
+    vi.advanceTimersByTime(WATCHDOG.busyStuckMs + 1500);
+    expect(trips).toHaveLength(1);
+  });
+
   it('does not blame the plugin when the whole computer was asleep', () => {
     const { wd, trips } = make({ answer: false });
     wd.start();
@@ -151,6 +164,50 @@ describe('with the real prelude', () => {
     expect(h.trips).toHaveLength(1);
     expect(h.trips[0].kind).toBe('stuck');
     rt.stop();
+  });
+
+  describe('progress from a long command', () => {
+    const LONG = (reports: string) => `frameling.commands.register({ id: "x", label: "X" }, async () => {
+      for (let i = 1; i <= 12; i++) {
+        await new Promise((r) => setTimeout(r, 50));
+        ${reports}
+      }
+    });`;
+    async function run(code: string) {
+      vi.useRealTimers();
+      WATCHDOG.pingEveryMs = 20;
+      WATCHDOG.busyStuckMs = 300;
+      const w = runPlugin(code);
+      const h = hooks();
+      // The worker can't answer the host's pings (like one in a long loop), but it still hears the rest and its own messages arrive.
+      const deaf = { ...w.transport, post: (m: unknown, t?: Transferable[]) => (m as { t?: string }).t === 'ping' || w.transport.post(m, t) };
+      const rt = new PluginRuntime(manifest, [], deaf, h);
+      await settle();
+      void rt.runCommand('x');
+      await new Promise((r) => setTimeout(r, 900));
+      rt.stop();
+      return { trips: h.trips };
+    }
+
+    it('a job of 600 ms against a 300 ms limit is fine while it keeps reporting', async () => {
+      const r = await run(LONG('frameling.progress(i, 12);'));
+      expect(r.trips).toEqual([]);
+    });
+
+    it('the same job that never reports is turned off', async () => {
+      const r = await run(LONG(''));
+      expect(r.trips).toHaveLength(1);
+    });
+
+    it('a plugin that repeats the same number, or goes backwards, gets no extra time', async () => {
+      const r = await run(LONG('frameling.progress(1, 12);'));
+      expect(r.trips).toHaveLength(1);
+    });
+
+    it('reports with nonsense numbers are ignored', async () => {
+      const r = await run(LONG('frameling.progress("a", 12); frameling.progress(NaN, 12); frameling.progress(5, 0);'));
+      expect(r.trips).toHaveLength(1);
+    });
   });
 
   it('a plugin that grows past the cap is caught, and only when the host can see its memory', async () => {

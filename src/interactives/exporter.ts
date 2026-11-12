@@ -10,7 +10,6 @@ export const interactivesExporter: ExporterDef = {
     summary: 'Everything looks exactly as it does on the canvas: each frame is a finished picture. Clips, markers and the clip flow come along for Interactives to play.',
     help: 'export-interactives',
   },
-  clipPlayNote: 'Interactives plays a clip forward, looping or once. Clips that play backward, back and forth or a set number of times are not carried (the drawing inside the package still has them).',
   // Sprites for games nearly always want a see-through background, and Interactives scales pixel art up itself, crisply,
   // so the art's own size keeps the file small.
   picked: (prev, { art }) => (prev.format !== 'interactives' ? { transparent: true, ...(art ? { scale: art } : {}) } : {}),

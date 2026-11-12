@@ -242,7 +242,9 @@ playable form of the animation, which Interactives drops onto a page as a "Frame
 - `atlas`: `{image, width, height}`.
 - `cells`: one per picture, `{x, y, w, h}` on the atlas and `{ox, oy}`, where its top left sits in the whole frame
   (atlas pixels; the whole frame is `width * scale` by `height * scale`).
-- `frames`: the cell for each frame. A held drawing is the same cell several times, so it is stored once.
+- `frames`: the cell for each frame. A held drawing is the same cell several times, so it is stored once. A clip that
+  plays backward, back and forth or a set number of times has its frames in play order added at the end (its `start`
+  and `end` point there), and `documentFrames` says how many frames are the document's own.
 - `clips`: `{name, start, end, loop, runs}`, frames inclusive and counted from the package's first frame. `runs`
   is the clip as `{cell, frames, ms}`, for players that step picture by picture. Names are unique.
 - `markers`: `{name, frame}`, sorted by frame. Several can share a name (two footsteps).

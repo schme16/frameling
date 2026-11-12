@@ -7,7 +7,7 @@
  * pulling points off them; vector work wants guides and the page).
  */
 
-export type SnapTarget = 'page' | 'centre' | 'guides' | 'grid' | 'shapes' | 'spacing' | 'perspective' | 'cells' | 'angles' | 'artboards';
+export type SnapTarget = 'page' | 'centre' | 'guides' | 'grid' | 'shapes' | 'spacing' | 'perspective' | 'plugins' | 'cells' | 'angles' | 'artboards';
 export type SnapContext = 'vector' | 'pixel' | 'artboard';
 
 export interface SnapTargetInfo {
@@ -33,6 +33,7 @@ export const SNAP_TARGETS: SnapTargetInfo[] = [
   { id: 'shapes', label: 'Other shapes', term: 'edges and points', tip: "The edges, middles and corner points of the other shapes in this drawing.", contexts: ['vector'], note: 'another shape' },
   { id: 'spacing', label: 'Equal gaps', term: 'spacing', tip: 'Shapes settle where the gap to a neighbour matches a gap already there, and the distance shows.', contexts: ['vector'], note: 'equal gap' },
   { id: 'perspective', label: 'Perspective lines', term: 'vanishing points', tip: 'Lines and boxes follow the perspective guides, while they show.', contexts: ['vector', 'pixel'], note: 'perspective line' },
+  { id: 'plugins', label: 'Plugin guides', term: 'from plugins', tip: 'The straight lines and boxes a plugin draws on your canvas as a guide, while that plugin is on and allowed to draw there.', contexts: ['vector', 'pixel'], note: 'plugin guide' },
   { id: 'cells', label: 'Pixel cells', term: 'pixel-perfect', tip: 'Drawing stays on whole pixels, so guides, the grid and the page stay out of the way. Untick it to let pixel layers snap to those too.', contexts: ['pixel'], note: 'pixel cell' },
   { id: 'angles', label: 'Angle steps', term: 'hold Shift', tip: 'Holding Shift turns lines and rotations to neat angles (45 degree steps for lines).', contexts: ['vector', 'pixel'], note: 'angle step' },
   { id: 'artboards', label: 'Other artboards', term: 'edges and middles', tip: "Artboards line up with each other's edges and middles when you move or size them.", contexts: ['artboard'], note: 'artboard edge' },
@@ -53,8 +54,8 @@ export type SnapPicks = Record<SnapContext, Partial<Record<SnapTarget, boolean>>
  */
 export function defaultPicks(): SnapPicks {
   return {
-    vector: { page: true, centre: true, guides: true, grid: true, shapes: true, spacing: true, perspective: true, angles: true },
-    pixel: { page: false, centre: false, guides: false, grid: false, cells: true, perspective: true, angles: true },
+    vector: { page: true, centre: true, guides: true, grid: true, shapes: true, spacing: true, perspective: true, plugins: true, angles: true },
+    pixel: { page: false, centre: false, guides: false, grid: false, cells: true, perspective: true, plugins: false, angles: true },
     artboard: { artboards: true },
   };
 }
