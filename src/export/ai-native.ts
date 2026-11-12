@@ -18,6 +18,7 @@ import type { Color, Gradient } from '../core/format';
 import { sortedStops } from '../core/gradient';
 import type { RawImage } from '../io/png';
 import type { PdfWriter } from './pdf';
+import { psFontName, textItem, textSetupLines, type AiTextFrame } from './ai-text';
 
 type Mat = [number, number, number, number, number, number];
 const ident: Mat = [1, 0, 0, 1, 0, 0];
@@ -132,6 +133,10 @@ interface GState {
 /** What Illustrator needs written once for the whole file. */
 interface Resources {
   gradients: Map<string, { name: string; gradient: Gradient }>;
+  /** The live text frames, in the order their art items name them. */
+  texts: AiTextFrame[];
+  /** Where the text space (y down, centred on 8191) has the first artboard's corner. */
+  origin: [number, number];
 }
 
 /** The artboards, and the drawing of each page read into layers. */
@@ -150,6 +155,9 @@ interface Run {
   y0: number;
 }
 
+const CAP_NUM: Record<string, number> = { butt: 0, round: 1, square: 2 };
+const JOIN_NUM: Record<string, number> = { miter: 0, round: 1, bevel: 2 };
+
 const gsOf = (): GState => ({ ctm: ident, fill: [0, 0, 0], stroke: [0, 0, 0], lw: 1, cap: 1, join: 1, ca: 1, CA: 1, blend: 'Normal', fade: false });
 
 /** Reads one page's content stream into layers. */
@@ -160,6 +168,9 @@ function translate(run: Run, content: string, rootName: string): AiLayer[] {
   type Box = { layer: AiLayer } | { group: AiGroup };
   const boxes: Box[] = [];
   const layerStack: AiLayer[] = [];
+  // What each open `BDC` is: a layer, or a marked piece (live text, a gradient line) whose drawing is only the PDF part's outlines.
+  type Mark = { kind: 'oc' } | { kind: 'text' | 'stroke'; id: number; sink: AiGroup };
+  const marks: Mark[] = [];
 
   const items = (): AiItem[] => {
     const b = boxes[boxes.length - 1];
@@ -213,9 +224,25 @@ function translate(run: Run, content: string, rootName: string): AiLayer[] {
   /** Writes the paths as Illustrator items: a path, or a compound path for several. */
   function paintPath(
     list: Sub[],
-    p: { fill?: Rgb; fillA?: number; stroke?: Rgb; strokeA?: number; width?: number; cap?: number; join?: number; rule?: boolean; blend: number; gradient?: { g: Gradient; ctm: Mat } },
+    p: { fill?: Rgb; fillA?: number; stroke?: Rgb; strokeA?: number; width?: number; cap?: number; join?: number; rule?: boolean; blend: number; gradient?: { g: Gradient; ctm: Mat }; strokeGradient?: { g: Gradient; ctm: Mat } },
   ): void {
     const out: string[] = [];
+    if (p.strokeGradient) {
+      // A line painted with a gradient: no fill, and each path takes the gradient across itself.
+      const live = list.filter((s) => s.segs.length > 1);
+      if (!live.length) return;
+      out.push('0 O', '0 R', `${p.blend} ${r4(p.strokeA ?? 1)} 0 0 0 Xy`, `${p.cap ?? 0} J ${p.join ?? 0} j ${r4(p.width ?? 1)} w 10 M []0 d`, '0 XR');
+      if (live.length > 1) out.push('*u');
+      for (const s of live) {
+        out.push(...subText(s));
+        out.push(...gradientBlock(run, p.strokeGradient.g, p.strokeGradient.ctm, run.x0, s, { stroke: s.closed ? 's' : 'S', width: p.width ?? 1 }));
+        out.push('2 BB');
+      }
+      if (live.length > 1) out.push('*U');
+      out.push('0 1 0 0 0 Xy');
+      items().push(out.join('\n'));
+      return;
+    }
     const opacity = p.gradient ? (p.fillA ?? 1) : Math.max(p.fill ? (p.fillA ?? 1) : 0, p.stroke ? (p.strokeA ?? 1) : 0);
     // A fill and stroke at different strengths are two items, so each keeps its own.
     if (p.fill && p.stroke && Math.abs((p.fillA ?? 1) - (p.strokeA ?? 1)) > 0.002) {
@@ -314,6 +341,61 @@ function translate(run: Run, content: string, rootName: string): AiLayer[] {
     subs = [];
     cur = null;
     paintPath(list, { fillA: gs.ca, blend: BLEND_INDEX[gs.blend] ?? 0, rule: false, gradient: { g, ctm: gs.ctm }, fill: [0, 0, 0] });
+  };
+
+  /** A text the PDF part drew as outlines becomes a live Illustrator text frame. */
+  const liveText = (id: number) => {
+    const info = run.w.liveInfo.get(id);
+    if (!info || info.kind !== 'text') return;
+    // The text's own space to the page (points, y up), then to the file's art space.
+    const mp = mul(info.matrix as Mat, gs.ctm);
+    let [a, b, c, d, tx, ty] = [mp[0], -mp[1], mp[2], -mp[3], mp[4] + run.x0, mp[5] - run.y0];
+    // A turned, evenly scaled text keeps its size as the font size; anything else keeps the scale in the matrix.
+    const k = Math.hypot(a, b);
+    const similar = k > 1e-6 && Math.abs(Math.hypot(c, d) - k) < k * 1e-3 && Math.abs(a * c + b * d) < k * k * 1e-3 && a * d - b * c > 0;
+    const size = similar ? info.size * k : info.size;
+    if (similar) [a, b, c, d] = [a / k, b / k, c / k, d / k];
+    const [ox, oy] = run.res.origin;
+    // The frame's own origin sits at the text space's origin: the matrix has to carry that to where the text goes.
+    const fx = ox + tx;
+    const fy = oy - ty;
+    const m: Mat = [a, b, c, d, fx - (a * ox + c * oy), fy - (b * ox + d * oy)];
+    const col = parseHex(info.color);
+    const index = run.res.texts.length;
+    run.res.texts.push({
+      text: info.text,
+      font: psFontName(info.font, info.weight, info.italic),
+      size,
+      rgb: col.rgb,
+      align: info.align === 'center' ? 2 : info.align === 'right' ? 1 : 0,
+      leading: info.lineHeight * size,
+      tracking: (info.letterSpacing / Math.max(1e-6, info.size)) * 1000,
+      m,
+    });
+    items().push(textItem(index, 0, info.opacity * col.a));
+  };
+
+  /** A gradient line the PDF part drew as an outline becomes a path with a real gradient stroke. */
+  const liveStroke = (id: number) => {
+    const info = run.w.liveInfo.get(id);
+    if (!info || info.kind !== 'stroke') return;
+    const list: Sub[] = [];
+    for (const sp of info.paths) {
+      const pts = sp.points;
+      if (!pts.length) continue;
+      const sub: Sub = { segs: [{ op: 'm', p: pt(pts[0].x, pts[0].y) }], closed: !!sp.closed };
+      const seg = (i: number) => {
+        const q = pts[i];
+        if (q.c1 && q.c2) sub.segs.push({ op: 'c', p: [...pt(q.c1.x, q.c1.y), ...pt(q.c2.x, q.c2.y), ...pt(q.x, q.y)] });
+        else sub.segs.push({ op: 'l', p: pt(q.x, q.y) });
+      };
+      for (let i = 1; i < pts.length; i++) seg(i);
+      if (sp.closed && pts[0].c1 && pts[0].c2) seg(0);
+      list.push(sub);
+    }
+    if (!list.length) return;
+    flushFill();
+    paintPath(list, { stroke: [0, 0, 0], strokeA: info.opacity, width: info.width * scale(), cap: CAP_NUM[info.cap] ?? 1, join: JOIN_NUM[info.join] ?? 1, blend: BLEND_INDEX[gs.blend] ?? 0, strokeGradient: { g: info.gradient, ctm: gs.ctm } });
   };
 
   function exec(text: string): void {
@@ -415,10 +497,21 @@ function translate(run: Run, content: string, rootName: string): AiLayer[] {
           else drawImage(n);
           break;
         }
+        case '<<':
+        case '>>':
+          continue;
         case 'BDC': {
+          flushFill();
+          if (st[0] === '/FrText' || st[0] === '/FrStroke') {
+            // A marked piece: what the PDF part draws inside it goes nowhere; the data gets the live version at its end.
+            const sink: AiGroup = { kind: 'group', items: [], opacity: 1, blend: 0 };
+            marks.push({ kind: st[0] === '/FrText' ? 'text' : 'stroke', id: Number(st[st.length - 1]), sink });
+            boxes.push({ group: sink });
+            break;
+          }
+          marks.push({ kind: 'oc' });
           // `/OC /OCn BDC`: a layer, inside the layer or folder being drawn into.
           const o = run.w.ocgs[Number(String(st[st.length - 1]).replace('/OC', '')) - 1];
-          flushFill();
           const l = mk(o?.name ?? 'Layer');
           if (o?.hidden) l.hidden = true;
           const parent = layerStack[layerStack.length - 1];
@@ -429,6 +522,13 @@ function translate(run: Run, content: string, rootName: string): AiLayer[] {
         }
         case 'EMC': {
           flushFill();
+          const mark = marks.pop();
+          if (mark && mark.kind !== 'oc') {
+            boxes.pop();
+            if (mark.kind === 'text') liveText(mark.id);
+            else liveStroke(mark.id);
+            break;
+          }
           const l = layerStack.pop();
           boxes.pop();
           if (l) hoist(l);
@@ -472,8 +572,10 @@ function gradientName(run: Run, g: Gradient): string {
 }
 
 /** The lines that turn the path just written into a gradient filled one (up to and including `f`). */
-function gradientBlock(run: Run, g: Gradient, ctm: Mat, x0: number, s: Sub): string[] {
-  const out: string[] = ['Bb'];
+function gradientBlock(run: Run, g: Gradient, ctm: Mat, x0: number, s: Sub, line?: { stroke: 's' | 'S'; width: number }): string[] {
+  // A gradient line starts "1 Bb" and ends with the stroke operator; a filled one starts "Bb" and ends with "f".
+  const out: string[] = [line ? '1 Bb' : 'Bb'];
+  const end = line ? line.stroke : 'f';
   const name = gradientName(run, g);
   const P = (x: number, y: number): [number, number] => {
     const [px, py] = apply(ctm, x, y);
@@ -486,7 +588,7 @@ function gradientBlock(run: Run, g: Gradient, ctm: Mat, x0: number, s: Sub): str
     const r = Math.hypot(g.to.x - g.from.x, g.to.y - g.from.y);
     const [ex, ey] = P(g.from.x + r, g.from.y);
     const [fx, fy] = P(g.from.x, g.from.y + r);
-    out.push('0 0 0 0 Bh', bg, `${r4(ex - cx)} ${r4(ey - cy)} ${r4(fx - cx)} ${r4(fy - cy)} ${r4(cx)} ${r4(cy)} Bm`, 'f');
+    out.push('0 0 0 0 Bh', bg, `${r4(ex - cx)} ${r4(ey - cy)} ${r4(fx - cx)} ${r4(fy - cy)} ${r4(cx)} ${r4(cy)} Bm`, end);
     return out;
   }
   const [x1, y1] = P(g.from.x, g.from.y);
@@ -496,7 +598,7 @@ function gradientBlock(run: Run, g: Gradient, ctm: Mat, x0: number, s: Sub): str
   const uy = (y2 - y1) / L;
   // The gradient's own width across the path: anything wider than the shape works.
   const ys = s.segs.flatMap((q) => q.p.filter((_, i) => i % 2 === 1));
-  const h = Math.max(1, Math.max(...ys) - Math.min(...ys)) + 4;
+  const h = Math.max(1, Math.max(...ys) - Math.min(...ys)) + 4 + (line ? line.width * 2 : 0);
   const cc = h * uy;
   const dd = -h * ux;
   const mat = (ax: number, ay: number, bx: number, by: number) => `${r4(bx - ax)} ${r4(by - ay)} ${r4(cc)} ${r4(dd)} ${r4(ax - cc / 2)} ${r4(ay - dd / 2)}`;
@@ -507,7 +609,7 @@ function gradientBlock(run: Run, g: Gradient, ctm: Mat, x0: number, s: Sub): str
     const b = stops[i + 1].at;
     out.push(`${mat(x1 + (x2 - x1) * a, y1 + (y2 - y1) * a, x1 + (x2 - x1) * b, y1 + (y2 - y1) * b)} Bm`);
   }
-  out.push(`${mat(x2, y2, x2 + ux * BIG, y2 + uy * BIG)} Bc`, 'f');
+  out.push(`${mat(x2, y2, x2 + ux * BIG, y2 + uy * BIG)} Bc`, end);
   return out;
 }
 
@@ -675,8 +777,9 @@ export interface AiNative {
  * `contents` are the page content streams, in order.
  */
 export function nativeData(writer: PdfWriter, pages: AiPageInput[], title: string): AiNative {
-  const res: Resources = { gradients: new Map() };
   const gap = 24;
+  // The text space's origin: where the file's (0, 0) sits in the text space (the ruler origin below, with the half point Illustrator keeps it off by).
+  const res: Resources = { gradients: new Map(), texts: [], origin: [8191 - pages[0].width / 2 + 0.5, 8191 + pages[0].height / 2 + 0.5] };
   let layers: AiLayer[] = [];
   const boards: { x: number; w: number; h: number }[] = [];
   let x = 0;
@@ -747,6 +850,7 @@ export function nativeData(writer: PdfWriter, pages: AiPageInput[], title: strin
   o.ln('%AI9_BeginDocumentData');
   for (const l of documentData(boards)) o.ln('%_' + l);
   o.ln('%AI9_EndDocumentData');
+  for (const l of textSetupLines(res.texts, res.origin)) o.ln(l);
   o.ln('%%EndSetup');
   o.raw(body.bytes());
   o.ln('%%PageTrailer');
