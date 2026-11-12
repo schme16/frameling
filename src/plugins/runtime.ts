@@ -10,6 +10,7 @@ import type { Permission, PluginManifest } from './manifest';
 import { cleanValues, sanitizeOptions, type ExportOption, type OptionValues } from './options';
 import { sanitizeUi, type UiNode } from './ui-schema';
 import { Watchdog, type Trip } from './watchdog';
+import { Diagnostics, type PluginDiag } from './diagnostics';
 
 export interface Transport {
   post(msg: unknown, transfer?: Transferable[]): void;
@@ -185,6 +186,8 @@ export interface HostHooks {
   watchdog?(trip: Trip): void;
   /** How much memory the plugin's sandbox holds right now, or null where that can't be seen (the web version). */
   memory?(): Promise<number | null>;
+  /** Whether "Measure plugins' memory and speed" is on. Off (or missing), nothing is counted and no memory is looked at. */
+  diagnostics?(): boolean;
 }
 
 const LIMITS = { commands: 50, exporters: 10, panels: 5, files: 1000, bytes: 1024 * 1024 * 1024, tools: 5, shapeKinds: 10, overlaysPerSecond: 30, shapesPerSecond: 20, pickBytes: 50 * 1024 * 1024 };
@@ -267,6 +270,7 @@ export class PluginRuntime {
   private stopped = false;
   private problems = 0;
   private watch: Watchdog | null = null;
+  private measured = new Diagnostics();
   /** Commands and exports being waited for: honest work that may keep the worker busy for a while. */
   private heavy = 0;
   /** The furthest progress reported in the job running now (a report must beat it to count), and who wants to see it. */
@@ -286,10 +290,18 @@ export class PluginRuntime {
         ping: (n) => this.send({ t: 'ping', n }),
         trip: (t) => hooks.watchdog!(t),
         busy: () => this.heavy > 0,
-        memory: hooks.memory ? () => hooks.memory!() : undefined,
+        memory: hooks.memory ? () => (hooks.diagnostics?.() ? hooks.memory!() : Promise.resolve(null)) : undefined,
+        onPong: (ms) => {
+          if (hooks.diagnostics?.()) this.measured.latency(Date.now(), ms);
+        },
       });
       this.watch.start();
     }
+  }
+
+  /** What the heartbeat has seen of this plugin over the last minute (memory is added by the caller). */
+  diag(memoryBytes: number | null = null): PluginDiag {
+    return this.measured.snapshot(Date.now(), memoryBytes);
   }
 
   private can(p: Permission): boolean {
@@ -318,6 +330,7 @@ export class PluginRuntime {
 
   private async receive(m: unknown): Promise<void> {
     if (this.stopped || !isObj(m)) return;
+    if (this.hooks.diagnostics?.() && (m.t === 'call' || m.t === 'panel' || m.t === 'overlay')) this.measured.op(Date.now(), m.t === 'overlay' && Array.isArray(m.list) ? m.list.length : 0);
     switch (m.t) {
       case 'register':
         return this.register(m);

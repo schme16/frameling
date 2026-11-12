@@ -10,7 +10,7 @@ import { registerVideoIpc } from './video';
 import { addLinked, canOpenOther, cleanFilters, isLibraryKind, isLinked, libraryId, listLibrary, pickFolder, readLibrary, readSmallFolder, removeLibrary, showLibraryFolder, writeLibrary } from './library';
 import { addRecent, clearAutosave, clearRecent, keepAutosave, lastDir, listKept, listRecent, readAutosave, readKept, rememberDir, removeKept, removeRecent, writeAutosave, writeFileAtomic } from './store';
 import { pathKey, safeFileName } from './paths';
-import { pluginMemory } from './pluginMemory';
+import { PLUGIN_PROCESS_FEATURE, pluginMemory, wantIsolation } from './pluginMemory';
 
 const FILTERS: FileFilter[] = [{ name: 'Frameling drawings', extensions: ['frameling'] }];
 // File > Open also takes Aseprite files and pictures (PNG, GIF, sprite sheets), which open as a new drawing.
@@ -313,6 +313,9 @@ export function registerIpc(hooks: IpcHooks): void {
     const procs = app.getAppMetrics().map((p) => ({ pid: p.pid, workingSetKb: p.memory.workingSetSize }));
     return pluginMemory(frames, procs, process.pid);
   });
+  // Whether this run has a process per plugin sandbox, and the choice for the next start ("Measure plugins' memory and speed").
+  handle('plugins:isolated', () => app.commandLine.getSwitchValue('enable-features').split(',').includes(PLUGIN_PROCESS_FEATURE));
+  handle('plugins:setDiagnostics', (_e, on: unknown) => wantIsolation(app.getPath('userData'), on === true));
 
   app.on('will-quit', () => {
     granted.clear();

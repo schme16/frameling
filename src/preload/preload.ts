@@ -35,6 +35,8 @@ const api: FramelingApi = {
   },
   plugins: {
     memory: () => call('plugins:memory'),
+    isolated: () => call('plugins:isolated'),
+    setDiagnostics: (on) => call('plugins:setDiagnostics', on),
   },
   fonts: {
     psNames: (wants) => call('fonts:psNames', wants),

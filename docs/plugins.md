@@ -388,13 +388,28 @@ person can always turn it off.
   export is running, which may think for a while) means stuck. A tick that comes very late (the computer slept) is not blamed on the plugin.
   `frameling.progress(done, total)` (see Progress) starts that count again while a command or export is running, when `done` has
   moved forward; the runtime hands it to the watchdog (`Watchdog.progress`) and, for an export, to the dialog's progress bar.
-- **Memory.** The desktop app starts Chromium with `IsolateSandboxedIframes:grouping/per-document` (`PLUGIN_PROCESS_FEATURE`,
-  `src/main/main.ts`; without it every plugin's frame shares one process), so each plugin has a process of its own (about 90 MB
-  to begin with), and the frame's address carries `?plugin=<id>` (the page ignores it). The main process (`plugins:memory`, `src/main/pluginMemory.ts`)
-  matches each plugin frame's process id to Electron's process metrics and reports bytes held per plugin, every 4 seconds
-  at most. A process shared with another plugin or the app is left out. Over 1 GB turns the plugin off. The web build
-  cannot see this (`performance.memory` and `measureUserAgentSpecificMemory` do not exist in a sandboxed worker, which is
-  not cross-origin isolated), so only the heartbeat runs there.
+- **Measuring (off by default).** Preferences > Plugins has a switch, "Measure plugins' memory and speed (uses more memory)"
+  (`pluginDiagnostics`, off). Off: the heartbeat above still runs, plugins share one process, nothing is counted and there is
+  no memory cap. On, two things happen:
+  - *Heartbeat numbers, straight away, nothing extra running* (`src/plugins/diagnostics.ts`): the round trip of each ping
+    (last, average and worst over a minute), and what the plugin asks of the app over the last minute (requests: calls,
+    panel updates and canvas drawings, and the number of items in the drawings it sent). `PluginRuntime.diag()` hands them over;
+    Preferences > Plugins shows a line per running plugin, refreshed while the page is open (`refreshDiag`, `pluginDiag` in `manager.ts`).
+  - *Memory, after a restart.* The choice is written as an empty file `plugin-diagnostics.flag` in the app's data folder
+    (`plugins:setDiagnostics`, `wantIsolation` in `src/main/pluginMemory.ts`). At start `src/main/main.ts` sees it and starts
+    Chromium with `IsolateSandboxedIframes:grouping/per-document` (`PLUGIN_PROCESS_FEATURE`), which gives each plugin's sandbox
+    a process of its own (about 80 to 100 MB each). The frame's address carries `?plugin=<id>` (the page ignores it); the main
+    process (`plugins:memory`) matches each plugin frame's process id to Electron's process metrics and reports bytes held per
+    plugin, every 4 seconds at most. A process shared with another plugin or the app is left out. Over 1 GB turns the plugin off.
+    The switch says when a restart is needed (`plugins:isolated` tells whether this run has the separate processes), both ways.
+  The memory cap only runs where memory could be measured (measuring on, desktop, restarted): a limit nobody can measure is not kept.
+  Measured with the six example plugins running (`scripts/e2e/plugins.cjs`): off, 2 renderer processes and about 380 MB; on,
+  7 processes and about 860 MB.
+  Options looked at and left out: *measuring inside the worker* (`performance.measureUserAgentSpecificMemory`) needs the page to be
+  cross-origin isolated, and neither the sandbox page nor the worker is (the e2e check asserts `crossOriginIsolated` is false and
+  the call does not exist); isolating the app page would also need COOP/COEP headers on every file it loads and does not make
+  an opaque-origin sandbox frame measurable. *Counting bytes sent* would only say what a plugin sends, not what it holds.
+  The web build cannot see memory at all, so there only the speed numbers are shown.
 - **What happens.** The plugin is turned off the ordinary way (so it stays off after a restart until the person turns it on),
   a plain toast says why with a **Turn it on** button, and Preferences > Plugins shows the same sentence.
 
@@ -439,7 +454,7 @@ treated as hostile input.
   canvas area (it cannot reach outside it). The dialog says so; Preferences > Plugins can turn it off at once.
 - **A plugin you allowed to edit can still spoil your drawing.** Undo takes it back, but a plugin that makes a lot of
   changes over time can make that tedious. Save before trying a new plugin.
-- **A plugin can use CPU and memory** in its worker (there is no memory limit on a worker, only on what it sends back). It can't freeze the app (it runs on another thread), and turning
+- **A plugin can use CPU and memory** in its worker (there is no memory limit on a worker, only on what it sends back; the 1 GB cap runs only while "Measure plugins' memory and speed" is on). It can't freeze the app (it runs on another thread), and turning
   it off stops it.
 - **Data you let it see can be shown back to you** in its panel or messages. Without the network permission it has no
   way to send it anywhere.
@@ -465,10 +480,10 @@ Web: the browser's IndexedDB (store `library`). On/off state and what was allowe
   against the real prelude), `manager-v2` (the permission flow: ask, remember per version, refuse, revoke; a tool and a shape
   kind round trip through the real store; events), `drawlist`, `shapes` (placing, redrawing, a saved file opening and
   saving without the plugin, redrawing after a move, scale or turn), `options`, `events`, `pipe`. Later additions: `watchdog`, `manager-watchdog`
-  and `process-memory` (the heartbeat, the memory cap, which process is which plugin's), `shape-panel` (the Properties
+  `diagnostics` (the per-minute counts and round trip times) and `process-memory` (the heartbeat, the memory cap only while measuring, which process is which plugin's, the remembered choice for the next start), `shape-panel` (the Properties
   section through React), `tools-growth` (handles, snapping and keys through the real registries) and the font and handle
   parts of `drawlist`.
 - `scripts/e2e/plugins.cjs` (Electron): the sandbox page blocks fetch, XHR, WebSocket, remote scripts and storage,
   has no way into the app, the version 1 examples install, run, undo and export, and the version 2 examples run in the real
   sandbox: powers start off in the dialog, a tool stamps a shape and fades a layer, an exporter gets its options, events flow, and
-  the watchdog turns off a frozen plugin and a memory hog (with shortened limits).
+  the watchdog turns off a frozen plugin; a memory hog is left alone with measuring off, and turned off with measuring on (`PLUGINS_DIAG=1`, a process per plugin, with its speed and memory numbers). Run it both ways.
