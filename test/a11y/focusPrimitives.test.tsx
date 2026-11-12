@@ -2,6 +2,7 @@
 // The shared keyboard behaviour every dialog, popup and splitter gets: focus moves in when it opens, Escape closes it
 // and focus goes back to what opened it, Tab stays inside a modal dialog, and splitters resize with the arrow keys.
 import { act, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { registerPanel } from '../../src/core/registry';
@@ -200,6 +201,73 @@ describe('usePopover leaving by keyboard', () => {
     const onClose = vi.fn();
     openIt(onClose);
     act(() => $('second').focus());
+    expect(onClose).not.toHaveBeenCalled();
+  });
+});
+
+// A popup that opens a child popup in a portal elsewhere on the page (a menu with a colour picker, say).
+function Parent({ onClose, child, onChildClose }: { onClose: () => void; child: boolean; onChildClose: () => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  usePopover(ref, onClose);
+  return (
+    <div ref={ref} id="parent">
+      <button id="pfirst">open child</button>
+      <button id="plast">last</button>
+      {child ? createPortal(<Child onClose={onChildClose} />, document.body) : null}
+    </div>
+  );
+}
+function Child({ onClose }: { onClose: () => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  usePopover(ref, onClose);
+  return (
+    <div ref={ref} id="child">
+      <button id="cfirst">c1</button>
+      <button id="clast">c2</button>
+    </div>
+  );
+}
+
+describe('usePopover with a child popup', () => {
+  const $ = (id: string) => document.querySelector<HTMLElement>('#' + id)!;
+  const page = (child: boolean, onClose: () => void, onChildClose: () => void) => <Parent onClose={onClose} child={child} onChildClose={onChildClose} />;
+  const openBoth = (onClose: () => void, onChildClose: () => void) => {
+    act(() => root.render(page(false, onClose, onChildClose)));
+    act(() => $('pfirst').focus());
+    act(() => root.render(page(true, onClose, onChildClose)));
+  };
+
+  it('stays open while focus is inside the child popup', () => {
+    const onClose = vi.fn();
+    openBoth(onClose, vi.fn());
+    expect(document.activeElement?.id).toBe('cfirst');
+    act(() => $('clast').focus());
+    expect(onClose).not.toHaveBeenCalled();
+  });
+  it('still closes when focus goes somewhere else entirely', () => {
+    const onClose = vi.fn();
+    openBoth(onClose, vi.fn());
+    act(() => $('pfirst').focus());
+    expect(onClose).not.toHaveBeenCalled();
+    act(() => opener.focus());
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+  it('Escape closes only the child first', () => {
+    const onClose = vi.fn();
+    const onChildClose = vi.fn();
+    openBoth(onClose, onChildClose);
+    key(document.activeElement!, 'Escape');
+    expect(onChildClose).toHaveBeenCalledTimes(1);
+    expect(onClose).not.toHaveBeenCalled();
+    act(() => root.render(page(false, onClose, onChildClose)));
+    key(document.activeElement!, 'Escape');
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+  it('focus goes back into the parent when the child closes, and the parent stays open', () => {
+    const onClose = vi.fn();
+    openBoth(onClose, vi.fn());
+    act(() => root.render(page(false, onClose, vi.fn())));
+    expect(document.activeElement?.id).toBe('pfirst');
     expect(onClose).not.toHaveBeenCalled();
   });
 });
