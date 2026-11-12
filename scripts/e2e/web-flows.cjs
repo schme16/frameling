@@ -800,3 +800,30 @@ flow('audio', async () => {
     }
   }
 });
+
+// Open recent after a reload, through the real dialog, in both kinds of browser.
+for (const mode of ['picker', 'plain']) {
+  flow(`recent-${mode}`, async () => {
+    const w = makeWindow(`persist:recent-${mode}`);
+    await w.load(mode);
+    await w.js(`__frameling.overlays.closeSheet()`);
+    await w.js(`__frameling.template('blink')`);
+    await w.js(`__frameling.store().update('Rename', (d) => { d.name = 'Recent one'; })`);
+    await w.js(`__framelingIo.saveDocument()`);
+    await sleep(500);
+    await w.load(mode);
+    await w.js(`__frameling.overlays.closeSheet()`);
+    await w.js(`__frameling.template('bouncing-ball')`);
+    await w.js(`__frameling.store().setUi({ dirty: false })`);
+    await w.run('file.openRecent');
+    check('Open recent lists the file after a reload, with a plain-words place', await w.waitFor(`/Recent one/.test(document.body.innerText)`), (await w.body()).slice(0, 100));
+    const row = await w.js(`(document.querySelector('[role=dialog]')?.innerText ?? '').replace(/\\n/g, ' | ')`);
+    console.log('   ', row.slice(0, 200));
+    check('the place is described without paths or "in /"', /this (browser|computer)|in the browser|your computer/i.test(row) || !/ in \/|blob:|frameling-web/.test(row), row);
+    await w.shot(`recent-${mode}`);
+    await w.js(`document.querySelector('.io-recent button')?.click()`);
+    await sleep(1200);
+    if (!/Recent one/.test(await w.js(`__frameling.store().get().doc.name`))) console.log('   page says:', (await w.js(`[...document.querySelectorAll('[role=status], [role=alert], .ui-toast')].map((e) => e.innerText).join(' / ')`)).slice(0, 300));
+    check('clicking it opens the drawing', /Recent one/.test(await w.js(`__frameling.store().get().doc.name`)), await w.js(`__frameling.store().get().doc.name`));
+  });
+}
