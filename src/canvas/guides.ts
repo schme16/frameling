@@ -5,13 +5,15 @@ import { uid } from '../core/doc';
 import { registerCommands } from '../core/registry';
 import { store } from '../core/store';
 import { addStageOverlay, hint, requestOverlay } from './controller';
-import { addLines, bumpSnap, getSnapLines, noTargets, setSnapLines, setSnapNotes, SNAP_PX, snapBox, snappedKinds, snapPoint, withGuide, type SnapLine, type SnapTargets } from './snap';
-import { activeTargets, type SnapContext, type SnapTarget } from './snapModel';
+import { addLines, bumpSnap, getSnapGaps, getSnapLines, noTargets, setSnapGaps, setSnapLines, setSnapNotes, snapBox, snappedKinds, snapPoint, withGuide, type SnapLine, type SnapTargets } from './snap';
+import { activeTargets, snapColourVar, type SnapContext, type SnapTarget } from './snapModel';
 import { currentSnapContext } from './snapOps';
-import { otherShapeLines } from './snapShapes';
+import { otherShapes } from './snapShapes';
+import { spacingFor, type Gap, type SpacingHit } from './snapSpacing';
 import { cssVar } from './theme';
+import { contrast, isHex } from '../ui/themes/color';
 import { constrainWithVanishing, isoRatio, snapIso, snapToVanishing, squareLines } from './grid';
-import { getViewSettings, setViewSettings } from './viewSettings';
+import { getViewSettings, setViewSettings, snapPx } from './viewSettings';
 import type { Pt, Rect } from './view';
 
 // ---------------------------------------------------------------- the guide being dragged
@@ -79,11 +81,18 @@ export function angleSteps(): boolean {
   return active(false).has('angles');
 }
 
+/** What to pull onto: lines, and the boxes of the other shapes for equal gaps. */
+interface Pulls {
+  t: SnapTargets | null;
+  rects: Rect[];
+}
+
 /**
  * The lines to pull onto: the page's edges and middle, guides, a showing square grid and other shapes, each if its tick
- * says so. `moving` leaves the selected shapes out of "other shapes" (they are what's being dragged).
+ * says so, and the other shapes' boxes for equal gaps. `moving` leaves the selected shapes out (they are what's being
+ * dragged). With "All layers" off, other shapes are the ones on the open layer only.
  */
-function targets(set: Set<SnapTarget>, moving: boolean): SnapTargets | null {
+function pulls(set: Set<SnapTarget>, moving: boolean): Pulls {
   const t = noTargets();
   const { doc, ui } = store().get();
   const v = getViewSettings();
@@ -97,27 +106,55 @@ function targets(set: Set<SnapTarget>, moving: boolean): SnapTargets | null {
     const g = squareLines(v.gridSize, doc.width, doc.height);
     addLines(t, 'grid', g.x, g.y);
   }
-  if (set.has('shapes')) {
-    const o = otherShapeLines(doc, ui.frame, moving ? ui.selection : []);
-    addLines(t, 'shapes', o.x, o.y);
+  let rects: Rect[] = [];
+  if (set.has('shapes') || set.has('spacing')) {
+    const o = otherShapes(doc, ui.frame, moving ? ui.selection : [], v.snapAllLayers ? null : ui.activeLayerId);
+    if (set.has('shapes')) addLines(t, 'shapes', o.lines.x, o.lines.y);
+    if (set.has('spacing')) rects = o.boxes;
   }
-  return t.x.length || t.y.length ? t : null;
+  return { t: t.x.length || t.y.length ? t : null, rects };
+}
+
+/** The line a snap result landed on for one axis, if any. */
+const lineOn = (lines: SnapLine[], axis: 'x' | 'y') => lines.find((l) => l.axis === axis);
+
+/**
+ * Equal gaps against what line snapping found: a gap wins an axis when no line took it, or when it needs a smaller move.
+ * `nudge` is how far the lines already moved the box on that axis. Returns the final moves, the lines left, and the gaps.
+ */
+function withSpacing(lines: SnapLine[], nudge: { x: number; y: number }, sp: { x: SpacingHit | null; y: SpacingHit | null }): { x: number; y: number; lines: SnapLine[]; gaps: Gap[] } {
+  let out = lines;
+  const gaps: Gap[] = [];
+  const res = { x: nudge.x, y: nudge.y };
+  for (const axis of ['x', 'y'] as const) {
+    const hit = sp[axis];
+    if (!hit) continue;
+    if (lineOn(lines, axis) && Math.abs(hit.d) >= Math.abs(nudge[axis])) continue;
+    res[axis] = hit.d;
+    out = out.filter((l) => l.axis !== axis);
+    gaps.push(...hit.gaps);
+  }
+  return { ...res, lines: out, gaps };
 }
 
 /** A point pulled onto the lines that are on (shape corners, line ends). `moving`: the selection is what is dragged. */
 export function snapPt(p: Pt, zoom: number, bypass: boolean, moving = false): Pt {
   const set = active(bypass);
   const v = getViewSettings();
+  const tol = snapPx() / zoom;
   // An isometric grid pulls points onto its corners.
   if (set.has('grid') && v.grid === 'iso') {
     const q = snapIso(p, v.gridSize, isoRatio(v.isoStyle));
-    if (Math.hypot(q.x - p.x, q.y - p.y) <= SNAP_PX / zoom) return showSnap([], ['grid']), q;
+    if (Math.hypot(q.x - p.x, q.y - p.y) <= tol) return showSnap([], ['grid']), q;
   }
-  const t = targets(set, moving);
-  if (!t) return showSnap([]), p;
-  const s = snapPoint(p, t, SNAP_PX / zoom);
-  showSnap(s.lines);
-  return { x: s.x, y: s.y };
+  const { t, rects } = pulls(set, moving);
+  if (!t && !rects.length) return showSnap([]), p;
+  const s = t ? snapPoint(p, t, tol) : { x: p.x, y: p.y, lines: [] as SnapLine[] };
+  const sp = spacingFor({ x: p.x, y: p.y, w: 0, h: 0 }, rects, tol);
+  if (!sp.x && !sp.y) return showSnap(s.lines), { x: s.x, y: s.y };
+  const m = withSpacing(s.lines, { x: s.x - p.x, y: s.y - p.y }, sp);
+  showSnap(m.lines, [], m.gaps);
+  return { x: p.x + m.x, y: p.y + m.y };
 }
 
 // The perspective direction a line end just snapped to (from the line's start towards a vanishing point), so it can flash.
@@ -152,7 +189,7 @@ export function snapLineEnd(a: Pt, b: Pt, zoom: number, bypass: boolean, shift: 
       showRay(c.index === null ? null : { from: a, vp: vps[c.index] });
       return { pt: c.pt, constrained: true };
     }
-    const hit = snapToVanishing(a, b, vps, (SNAP_PX * 1.5) / zoom);
+    const hit = snapToVanishing(a, b, vps, (snapPx() * 1.5) / zoom);
     if (hit) {
       showSnap([], ['perspective']);
       showRay({ from: a, vp: vps[hit.index] });
@@ -164,13 +201,17 @@ export function snapLineEnd(a: Pt, b: Pt, zoom: number, bypass: boolean, shift: 
   return { pt: snapPt(b, zoom, bypass), constrained: shift };
 }
 
-/** A box being dragged by (dx, dy) pulled onto the nearest lines (the selection itself is never a target). */
+/** A box being dragged by (dx, dy) pulled onto the nearest lines and equal gaps (the selection itself is never a target). */
 export function snapMove(box: Rect | null, dx: number, dy: number, zoom: number, bypass: boolean): { dx: number; dy: number } {
-  const t = box && targets(active(bypass), true);
-  if (!t || !box) return showSnap([]), { dx, dy };
-  const s = snapBox(box, dx, dy, t, SNAP_PX / zoom);
-  showSnap(s.lines);
-  return { dx: s.dx, dy: s.dy };
+  const { t, rects } = box ? pulls(active(bypass), true) : { t: null, rects: [] as Rect[] };
+  if (!box || (!t && !rects.length)) return showSnap([]), { dx, dy };
+  const tol = snapPx() / zoom;
+  const s = t ? snapBox(box, dx, dy, t, tol) : { dx, dy, lines: [] as SnapLine[] };
+  const sp = spacingFor({ x: box.x + dx, y: box.y + dy, w: box.w, h: box.h }, rects, tol);
+  if (!sp.x && !sp.y) return showSnap(s.lines), { dx: s.dx, dy: s.dy };
+  const m = withSpacing(s.lines, { x: s.dx - dx, y: s.dy - dy }, sp);
+  showSnap(m.lines, [], m.gaps);
+  return { dx: dx + m.x, dy: dy + m.y };
 }
 
 /** The lines other artboards offer (edges and middles, on the pasteboard), or null when that target is off. */
@@ -187,17 +228,18 @@ export function clearSnap(): void {
   showRay(null);
 }
 
-/** Records what just snapped, for the overlay and the "Snapped to" note. `extra`: kinds with no line to draw. */
-export function showSnap(lines: SnapLine[], extra: SnapTarget[] = []): void {
+/** Records what just snapped, for the overlay and the "Snapped to" note. `extra`: kinds with no line to draw. `gaps`: equal gaps to mark. */
+export function showSnap(lines: SnapLine[], extra: SnapTarget[] = [], gaps: Gap[] = []): void {
   const old = getSnapLines();
-  const same = old.length === lines.length && old.every((l, i) => l.axis === lines[i].axis && l.at === lines[i].at && l.kind === lines[i].kind);
+  const oldGaps = getSnapGaps();
+  const sameLines = old.length === lines.length && old.every((l, i) => l.axis === lines[i].axis && l.at === lines[i].at && l.kind === lines[i].kind);
+  const sameGaps = oldGaps.length === gaps.length && oldGaps.every((g, i) => g.axis === gaps[i].axis && g.from === gaps[i].from && g.to === gaps[i].to && g.at === gaps[i].at);
   const before = snappedKinds().join();
-  if (!same) {
-    setSnapLines(lines);
-    requestOverlay();
-  }
+  if (!sameLines) setSnapLines(lines);
+  if (!sameGaps) setSnapGaps(gaps);
+  if (!sameLines || !sameGaps) requestOverlay();
   setSnapNotes(extra);
-  if (!same || snappedKinds().join() !== before) bumpSnap();
+  if (!sameLines || !sameGaps || snappedKinds().join() !== before) bumpSnap();
 }
 
 // ---------------------------------------------------------------- drawing
@@ -214,6 +256,49 @@ function line(g: CanvasRenderingContext2D, axis: 'x' | 'y', at: number, w: numbe
     g.lineTo(reach, at);
   }
   g.stroke();
+}
+
+/** The colour a kind of snap draws in (a theme variable, see canvas.css); the rose of old when a line has no kind. */
+function kindColour(kind: SnapTarget | undefined): string {
+  return kind ? cssVar(snapColourVar(kind), '#e0455f') : cssVar('--rose', '#ff6f91');
+}
+
+/** Black or white, whichever reads better on `bg`. */
+const inkOn = (bg: string): string => (isHex(bg) && contrast('#000000', bg) >= contrast('#ffffff', bg) ? '#000000' : '#ffffff');
+
+/** An equal gap: a bar with end ticks across the gap and its size on a small tab in the spacing colour. */
+function drawGap(g: CanvasRenderingContext2D, gap: Gap, px: number): void {
+  const colour = kindColour('spacing');
+  const horizontal = gap.axis === 'x';
+  const a = horizontal ? { x: gap.from, y: gap.at } : { x: gap.at, y: gap.from };
+  const b = horizontal ? { x: gap.to, y: gap.at } : { x: gap.at, y: gap.to };
+  const tick = 4 * px;
+  g.save();
+  g.strokeStyle = colour;
+  g.lineWidth = 1.25 * px;
+  g.beginPath();
+  g.moveTo(a.x, a.y);
+  g.lineTo(b.x, b.y);
+  for (const e of [a, b]) {
+    g.moveTo(horizontal ? e.x : e.x - tick, horizontal ? e.y - tick : e.y);
+    g.lineTo(horizontal ? e.x : e.x + tick, horizontal ? e.y + tick : e.y);
+  }
+  g.stroke();
+  const text = String(gap.label);
+  g.font = `600 ${11 * px}px Nunito, Inter, system-ui, sans-serif`;
+  const w = g.measureText(text).width + 8 * px;
+  const h = 15 * px;
+  const cx = (a.x + b.x) / 2 + (horizontal ? 0 : 12 * px + w / 2);
+  const cy = (a.y + b.y) / 2 - (horizontal ? 12 * px : 0);
+  g.fillStyle = colour;
+  g.beginPath();
+  g.roundRect(cx - w / 2, cy - h / 2, w, h, 4 * px);
+  g.fill();
+  g.fillStyle = inkOn(colour);
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  g.fillText(text, cx, cy + px * 0.5);
+  g.restore();
 }
 
 addStageOverlay((g, zoom) => {
@@ -235,12 +320,13 @@ addStageOverlay((g, zoom) => {
     g.setLineDash([]);
   }
   const snapped = getSnapLines();
-  if (snapped.length) {
-    g.globalAlpha = 1;
-    g.strokeStyle = cssVar('--rose', '#ff6f91');
-    g.lineWidth = 1.25 * px;
-    for (const s of snapped) line(g, s.axis, s.at, doc.width, doc.height);
+  g.globalAlpha = 1;
+  g.lineWidth = 1.25 * px;
+  for (const s of snapped) {
+    g.strokeStyle = kindColour(s.kind);
+    line(g, s.axis, s.at, doc.width, doc.height);
   }
+  for (const gap of getSnapGaps()) drawGap(g, gap, px);
   if (ray) {
     // The perspective line being followed, from the vanishing point out past the line's start.
     const dx = ray.from.x - ray.vp.x;
@@ -248,7 +334,7 @@ addStageOverlay((g, zoom) => {
     const len = Math.hypot(dx, dy) || 1;
     const reach = (doc.width + doc.height) * 4;
     g.globalAlpha = 1;
-    g.strokeStyle = cssVar('--rose', '#ff6f91');
+    g.strokeStyle = kindColour('perspective');
     g.lineWidth = 1.25 * px;
     g.setLineDash([5 * px, 3 * px]);
     g.beginPath();

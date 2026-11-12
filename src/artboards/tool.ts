@@ -8,7 +8,8 @@ import { registerTool, type Tool, type ToolPointer } from '../core/registry';
 import { store } from '../core/store';
 import { setCursor } from '../canvas/controller';
 import { artboardTargets, clearSnap, showSnap } from '../canvas/guides';
-import { nearest, SNAP_PX, snapBox, snapPoint, type SnapLine, type SnapTargets } from '../canvas/snap';
+import { nearest, snapBox, snapPoint, type SnapLine, type SnapTargets } from '../canvas/snap';
+import { snapPx } from '../canvas/viewSettings';
 import type { Anchor } from '../canvas/resize';
 import { activeArtboard, activeId, artboardAt, boxes } from './model';
 import { duplicateArtboardById, goToArtboard, installArtboards, moveArtboardTo, newArtboard, resizeArtboard } from './ops';
@@ -99,7 +100,7 @@ function down(e: ToolPointer): void {
   const hit = hitTest(doc, p, ui.zoom);
   if (!hit) {
     const t = offers(doc, null, e.mod);
-    const q = t ? snapPoint(p, t, SNAP_PX / ui.zoom) : p;
+    const q = t ? snapPoint(p, t, snapPx() / ui.zoom) : p;
     drag = { kind: 'new', start: { x: q.x, y: q.y }, now: { x: q.x, y: q.y } };
     return;
   }
@@ -120,7 +121,7 @@ function move(e: ToolPointer): void {
   const { doc, ui } = store().get();
   const p = onBoard(e, doc);
   const step = artStep(doc);
-  const tol = SNAP_PX / ui.zoom;
+  const tol = snapPx() / ui.zoom;
   const t = offers(doc, drag.kind === 'new' ? null : drag.id, e.mod);
   if (!t) clearSnap();
   if (drag.kind === 'new') {
@@ -169,7 +170,7 @@ function up(e: ToolPointer): void {
   if (d.kind === 'new') {
     const t = offers(doc, null, e.mod);
     const q = onBoard(e, doc);
-    const p = t ? snapPoint(q, t, SNAP_PX / ui.zoom) : q;
+    const p = t ? snapPoint(q, t, snapPx() / ui.zoom) : q;
     const x0 = snap(Math.min(d.start.x, p.x), step);
     const y0 = snap(Math.min(d.start.y, p.y), step);
     const w = snap(Math.abs(p.x - d.start.x), step);

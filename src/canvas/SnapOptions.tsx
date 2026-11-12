@@ -5,8 +5,8 @@ import { createPortal } from 'react-dom';
 import { useStore } from '../core/store';
 import { Icon } from '../ui/icons';
 import { usePopover } from '../ui/popover';
-import { describeSnap, SNAP_TARGETS, type SnapContext, type SnapTargetInfo } from './snapModel';
-import { closeSnapOptions, currentSnapContext, resetSnapPicks, setSnapOn, setSnapPick, snapPopover, toggleSnapOptions } from './snapOps';
+import { describeSnap, SNAP_DISTANCE, snapColourVar, snapNoteParts, SNAP_TARGETS, type SnapContext, type SnapTargetInfo } from './snapModel';
+import { closeSnapOptions, currentSnapContext, resetSnapPicks, setSnapAllLayers, setSnapDistance, setSnapOn, setSnapPick, snapPopover, toggleSnapOptions } from './snapOps';
 import { snappedKinds, snapVersion, subscribeSnap } from './snap';
 import { useViewSettings } from './viewSettings';
 
@@ -16,10 +16,14 @@ function Tick({ label, on, disabled, onChange, tip }: { label: string; on: boole
   );
 }
 
+function Dot({ kind }: { kind: SnapTargetInfo['id'] }) {
+  return <span className="sn-dot" aria-hidden="true" style={{ '--snap-colour': `var(${snapColourVar(kind)})` } as React.CSSProperties} />;
+}
+
 function Name({ t }: { t: SnapTargetInfo }) {
   return (
     <span className="sn-name" data-tip={t.label} data-tip-desc={t.tip}>
-      {t.label}
+      <Dot kind={t.id} /> {t.label}
       {t.term && <i> {t.term}</i>}
     </span>
   );
@@ -29,6 +33,8 @@ function Name({ t }: { t: SnapTargetInfo }) {
 export function SnapPanel({ wide = false }: { wide?: boolean }) {
   const on = useViewSettings((v) => v.snap);
   const picks = useViewSettings((v) => v.snapPicks);
+  const distance = useViewSettings((v) => v.snapDistance);
+  const allLayers = useViewSettings((v) => v.snapAllLayers);
   const here = useStore(() => currentSnapContext());
   const cellsOn = !!picks.pixel.cells;
   const layerRows = SNAP_TARGETS.filter((t) => t.contexts.includes('vector') || t.contexts.includes('pixel'));
@@ -69,6 +75,15 @@ export function SnapPanel({ wide = false }: { wide?: boolean }) {
             })}
           </Fragment>
         ))}
+      </div>
+      <label className="sn-row sn-all-layers" data-tip="All layers, not just this one" data-tip-desc="Other shapes and equal gaps look at every visible layer. Untick it to look at the open layer only.">
+        <Tick label="All layers, not just this one" on={allLayers} onChange={setSnapAllLayers} />
+        <span className="sn-name">All layers, not just this one</span>
+      </label>
+      <div className="sn-distance" data-tip="Snap distance" data-tip-desc="How close, in screen pixels, something has to come before it snaps.">
+        <span className="sn-name">Snap distance</span>
+        <input type="range" className="cv-slider" min={SNAP_DISTANCE.min} max={SNAP_DISTANCE.max} step={1} value={distance} aria-label="Snap distance in pixels" aria-valuetext={`${distance} pixels`} onChange={(e) => setSnapDistance(Number(e.target.value))} />
+        <span className="sn-distance-value">{distance} px</span>
       </div>
       <div className="sn-extra">
         {SNAP_TARGETS.filter((t) => t.contexts.includes('artboard')).map((t) => (
@@ -137,12 +152,19 @@ function SnapPopover({ anchor }: { anchor: React.RefObject<HTMLButtonElement | n
 /** "Snapped to guide and page edge", on the canvas while something snaps. */
 export function SnapChip() {
   useSyncExternalStore(subscribeSnap, snapVersion);
-  const text = describeSnap(snappedKinds());
-  if (!text) return null;
+  const parts = snapNoteParts(snappedKinds());
+  if (!parts.length) return null;
   return (
-    <div className="sn-chip" role="status" aria-live="off">
+    <div className="sn-chip" role="status" aria-live="off" aria-label={describeSnap(snappedKinds())}>
       <Icon name="magnet" size={13} />
-      {text}
+      Snapped to
+      {parts.map((p, i) => (
+        <span key={p.kind} className="sn-chip-item">
+          {i > 0 && <span className="sn-chip-sep">{i === parts.length - 1 ? 'and' : ','}</span>}
+          <Dot kind={p.kind} />
+          {p.word}
+        </span>
+      ))}
     </div>
   );
 }
