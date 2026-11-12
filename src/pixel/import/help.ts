@@ -7,15 +7,15 @@ registerHelpTopics([
     media: 'pixel-import.png',
     title: 'Bringing in pictures and sprite sheets',
     section: 'Pixel art',
-    summary: 'Open a PNG, an animated GIF or a sprite sheet, cut it into frames and choose how the sprite is built.',
-    keywords: ['import', 'png', 'gif', 'animated gif', 'open image', 'drop', 'colours', 'palette', 'picture'],
-    body: `Frameling opens **PNG** and **GIF** pictures, and sprite sheets, as pixel art. Pick **File > Open** (Ctrl+O) and choose the picture, or **drag it onto the window**. **File > Import > Picture or sprite sheet** (Ctrl+I) adds one to the drawing you already have open.
+    summary: 'Open a PNG, an animated GIF, PNG or WebP, or a sprite sheet, cut it into frames and choose how the sprite is built.',
+    keywords: ['import', 'png', 'gif', 'animated gif', 'apng', 'animated png', 'webp', 'animated webp', 'open image', 'drop', 'colours', 'palette', 'picture'],
+    body: `Frameling opens **PNG**, **GIF** and **WebP** pictures, and sprite sheets, as pixel art. Pick **File > Open** (Ctrl+O) and choose the picture, or **drag it onto the window**. **File > Import > Picture or sprite sheet** (Ctrl+I) adds one to the drawing you already have open.
 
 A dialog shows the picture and how it will be cut. Nothing happens until you press **Bring it in**, and Cancel leaves everything as it was.
 
-## An animated GIF
+## An animated GIF, PNG or WebP
 
-Every frame comes in with its own delay, and each frame looks the way it does when the GIF plays (the frames that clear or restore the picture before the next one are handled). Frameling picks the frame rate that fits every delay and holds frames to match. Play and the slider in the dialog show the GIF first.
+Every frame comes in with its own delay, and each frame looks the way it does when the animation plays (the frames that clear or restore the picture before the next one are handled). Frameling picks the frame rate that fits every delay and holds frames to match. Play and the slider in the dialog show the animation first. This works for animated PNG (APNG) and animated WebP as it does for GIF.
 
 ## A sprite sheet
 

@@ -14,7 +14,7 @@ import { ImportDialog, type ImportMode, type ImportRequest } from './ImportDialo
 import { decodePicture, PICTURE_ACCEPT, PICTURE_EXT, PictureProblem } from './picture';
 import { readSheetJson, type SheetData } from './sheetJson';
 
-export const PICTURE_FILTERS = [{ name: 'Pictures and sprite sheets', extensions: ['png', 'gif', 'webp', 'jpg', 'jpeg', 'bmp'] }];
+export const PICTURE_FILTERS = [{ name: 'Pictures and sprite sheets', extensions: ['png', 'apng', 'gif', 'webp', 'jpg', 'jpeg', 'bmp'] }];
 const JSON_FILTERS = [{ name: 'Sprite sheet data', extensions: ['json'] }];
 
 const plural = (n: number, one: string, many = one + 's') => `${n} ${n === 1 ? one : many}`;
@@ -144,7 +144,7 @@ export const pickAndOpenPicture = () => pick(openPictureBytes, 'Bring in a pictu
 export const pickAndAddPicture = () => pick(addPictureBytes, 'Add a picture or sprite sheet to this drawing');
 export const pickPictureForPalette = () => pick(paletteFromPictureBytes, 'Take the colours of a picture');
 
-const IMAGE_TYPE = /^image\/(png|gif|webp|jpeg|bmp)$/;
+const IMAGE_TYPE = /^image\/(png|apng|gif|webp|jpeg|bmp)$/;
 
 /** Dropping a picture on the window opens the dialog. A .json dropped with it is the sheet's data. */
 export function installPictureDrop(target: Window = window): () => void {
