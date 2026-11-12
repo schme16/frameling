@@ -357,3 +357,84 @@ for (const mode of ['picker', 'plain']) {
     }
   });
 }
+
+flow('export-dialog', async () => {
+  const w = makeWindow('persist:export-dialog');
+  await w.load('picker');
+  await w.js(`__frameling.overlays.closeSheet()`);
+  await w.js(`__framelingExport.load('bouncing-ball')`);
+  await w.run('file.export');
+  check('the Export dialog opens', await w.waitFor(`/Export/.test(document.querySelector('[role=dialog]')?.innerText ?? '')`));
+  await sleep(1200);
+  await w.shot('export-dialog');
+  const text = await w.js(`document.querySelector('[role=dialog]').innerText`);
+  await w.js(`[...document.querySelectorAll('[role=dialog] button, [role=dialog] summary')].find((b) => /More formats/.test(b.textContent))?.click()`);
+  await sleep(500);
+  await w.shot('export-dialog-more');
+  const more = await w.js(`document.querySelector('[role=dialog]').innerText`);
+  const prores = await w.js(`(() => { const b = [...document.querySelectorAll('[role=dialog] button, [role=dialog] [role=radio]')].find((x) => /ProRes/.test(x.textContent)); return b ? { text: b.textContent.slice(0, 200), disabled: b.disabled || b.getAttribute('aria-disabled') } : null; })()`);
+  check('ProRes is shown disabled with the reason (needs the desktop app)', prores?.disabled && /desktop app/.test(prores.text), prores);
+  check('every other format card is on offer', ['GIF', 'MP4', 'WebM', 'APNG', 'SVG', 'Lottie', 'PSD', 'PDF', 'Illustrator', 'Interactives', 'Sprite sheet', 'PNG sequence'].every((n) => new RegExp(n).test(more)), more.slice(0, 200));
+  check('no Show in folder or desktop-only wording in the dialog', !/Show in folder/.test(more));
+  // The real Export button, on the default format (a GIF): the picker asks where, the file lands there.
+  await w.clickText('Fewer formats');
+  await w.clickText('Export', '[role=dialog] .ui-btn-primary, [role=dialog] button');
+  await sleep(2500);
+  const got = await w.files.collect();
+  check('the Export button saves a file through the Save picker', got.length === 1 && got[0].bytes.length > 500, got.map((g) => g.name));
+  await w.shot('export-dialog-done');
+});
+
+flow('prefs', async () => {
+  const w = makeWindow('persist:prefs');
+  await w.load('picker');
+  await w.js(`__frameling.overlays.closeSheet()`);
+  for (const page of ['general', 'themes', 'behaviour', 'keyboard', 'workspaces', 'plugins', 'features', 'snapping', 'pen', 'diagnostics']) {
+    await w.js(`__frameling.overlays.openPrefs('${page}')`);
+    await sleep(900);
+    await w.shot(`prefs-${page}`);
+    const t = await w.js(`(document.querySelector('[role=dialog] .ui-prefs-body, [role=dialog] main, [role=dialog] section') ?? document.querySelector('[role=dialog]'))?.innerText ?? ''`);
+    console.log(`== ${page}:`, t.replace(/\n/g, ' | ').slice(130, 1100));
+    await w.input.key('Escape');
+    await sleep(300);
+  }
+});
+
+// A pen (made by Chromium's own pen pointer events) on the Pen and tablet page's pad, and on the canvas.
+flow('pen', async () => {
+  const w = makeWindow('persist:pen');
+  await w.load('picker');
+  await w.js(`__frameling.overlays.closeSheet()`);
+  const dbg = w.wc.debugger;
+  dbg.attach('1.3');
+  const pen = (type, x, y, o = {}) =>
+    dbg.sendCommand('Input.dispatchMouseEvent', { type, x, y, button: type !== 'mouseMoved' ? 'left' : 'none', buttons: type === 'mouseReleased' ? 0 : type === 'mouseMoved' && !o.down ? 0 : 1, clickCount: type === 'mouseMoved' ? 0 : 1, pointerType: 'pen', force: o.force ?? 0, tiltX: o.tiltX ?? 0, tiltY: o.tiltY ?? 0 });
+  const stroke = async (x0, y0, x1, y1, n = 14) => {
+    await pen('mouseMoved', x0, y0);
+    await sleep(30);
+    await pen('mousePressed', x0, y0, { force: 0.2, down: true });
+    for (let i = 1; i <= n; i++) {
+      await pen('mouseMoved', Math.round(x0 + ((x1 - x0) * i) / n), Math.round(y0 + ((y1 - y0) * i) / n), { down: true, force: 0.2 + (0.7 * i) / n, tiltX: 20 });
+      await sleep(8);
+    }
+    await pen('mouseReleased', x1, y1, { force: 0 });
+    await sleep(150);
+  };
+  await w.js(`__frameling.openPrefs?.('pen'); __frameling.overlays.openPrefs('pen')`);
+  await sleep(900);
+  const box = await w.js(`(() => { const r = document.querySelector('.tb-pad').getBoundingClientRect(); return [r.left, r.top, r.width, r.height]; })()`);
+  await stroke(box[0] + 30, box[1] + 30, box[0] + box[2] - 40, box[1] + box[3] - 40);
+  const read = await w.js(`document.querySelector('[data-testid=pen-readout]').innerText`);
+  check('the pad hears a pen with its pressure', /Using a pen/.test(read) && /Pressure/.test(read), read);
+  await w.shot('pen-pad');
+  await w.input.key('Escape');
+  await sleep(300);
+  // On the canvas with the Brush.
+  await w.js(`__frameling.template('blank-vector'); __frameling.store().setUi({ tool: 'brush' })`);
+  await sleep(500);
+  const before = await w.js(`JSON.stringify(__frameling.store().get().doc.drawings).length`);
+  await stroke(400, 300, 800, 420, 20);
+  const after = await w.js(`JSON.stringify(__frameling.store().get().doc.drawings).length`);
+  check('a pen stroke with the Brush adds a shape', after > before + 50, [before, after]);
+  dbg.detach();
+});
