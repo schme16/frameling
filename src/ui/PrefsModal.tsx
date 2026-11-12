@@ -173,7 +173,7 @@ function GeneralPage({ onThemes }: { onThemes: () => void }) {
       <Row label="Units" hint="How sizes are shown. Pixels suit screens and games; mm, cm, inches and points suit print.">
         <Segmented<Unit> label="Units" value={p.units} onChange={(units) => setPrefs({ units })} options={UNITS.map((u) => ({ id: u.id, label: u.id }))} />
       </Row>
-      <Row label="Sounds" hint="Soft little sounds: a quest step done, an export finished, a no. Off unless you turn them on.">
+      <Row label="Sounds" hint="Soft little sounds: a quest step done, an export finished, a no. Turn them off here if you like it quiet.">
         <Switch
           label="Sounds"
           on={p.sounds}

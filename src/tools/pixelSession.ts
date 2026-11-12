@@ -1,11 +1,16 @@
 /**
  * A pixel edit in progress. Nothing is copied when it starts: the drawing's own block is read as it is, and a square
  * tile (128 x 128) is copied only when a stroke first touches it. The live preview (through the canvas's live preview,
- * so nothing touches the document) is a canvas that covers the drawing's block and whatever has been painted outside
- * it, made on the first painted pixel. At the end it commits a brand new pixel array as one undo step.
+ * so nothing touches the document) is sparse: a canvas that covers the drawing's block and whatever has been painted
+ * outside it, made on the first painted pixel, which holds only the tiles the stroke has touched (each put on it whole
+ * the first time, then only what changed). The canvas draws the rest from the drawing's own cached picture, so a stroke
+ * on a big drawing uploads nothing big. Where that cannot be drawn exactly like the finished picture (see
+ * canvas/livePixels.ts) the canvas asks for `fill`, which makes it the whole picture. At the end the session commits a
+ * brand new pixel array as one undo step.
  */
-import type { Doc, PixelLayer } from '../core/format';
+import type { Doc, PixelDrawing, PixelLayer } from '../core/format';
 import { pixelGrid } from '../core/doc';
+import { pixelCanvas } from '../core/render';
 import { drawingAt } from '../core/doc';
 import { setLive } from '../canvas/controller';
 import type { PxPt, RGBA } from '../canvas/pixels';
@@ -53,6 +58,13 @@ export class PixelSession {
   /** Tiles copied from the block on first touch, in reading order over the grid. */
   private readonly tiles: (Uint8ClampedArray | undefined)[];
   private readonly images: (ImageData | undefined)[];
+  /** Tiles already on the live canvas (whole), and where they are on the grid. */
+  private readonly onCanvas: Uint8Array;
+  private readonly liveTiles: { x: number; y: number; w: number; h: number }[] = [];
+  /** The drawing as it was, shown outside the live tiles. */
+  private readonly baseDrawing: PixelDrawing | null;
+  /** The live canvas holds the whole picture (the old drawing under the tiles), not only the tiles. */
+  private filled = false;
   private readonly tilesAcross: number;
   private canvas: LiveCanvas | null = null;
   /** Where the live canvas sits on the grid. */
@@ -95,6 +107,8 @@ export class PixelSession {
     const n = this.tilesAcross * Math.ceil(g.height / TS);
     this.tiles = new Array(n);
     this.images = new Array(n);
+    this.onCanvas = new Uint8Array(n);
+    this.baseDrawing = old;
     this.layerId = layer.id;
     this.pixelSize = layer.pixelSize;
     const ps = getPixelSettings();
@@ -255,16 +269,14 @@ export class PixelSession {
     else this.dirty = d ?? w;
   }
 
-  /** Makes the live canvas, or grows it, so it covers the grid rectangle (and, the first time, the drawing's block). */
+  /**
+   * Makes the live canvas, or grows it, so it covers the grid rectangle: the tiles of the stroke, with room to grow (a big
+   * canvas costs time to make even when nothing is put on it, so it is no bigger than the stroke needs).
+   */
   private cover(x0: number, y0: number, x1: number, y1: number): boolean {
     if (this.canvas && x0 >= this.cx && y0 >= this.cy && x1 < this.cx + this.cw && y1 < this.cy + this.ch) return true;
     const s = this.src;
-    // What is covered now: the canvas, or the old block that the first canvas starts from (maybe nothing).
-    const o = this.canvas
-      ? { x0: this.cx, y0: this.cy, x1: this.cx + this.cw - 1, y1: this.cy + this.ch - 1 }
-      : s.width
-        ? { x0: s.x, y0: s.y, x1: s.x + s.width - 1, y1: s.y + s.height - 1 }
-        : null;
+    const o = this.canvas ? { x0: this.cx, y0: this.cy, x1: this.cx + this.cw - 1, y1: this.cy + this.ch - 1 } : null;
     const m = Math.min(MARGIN, Math.max(MARGIN >> 2, o ? (o.x1 - o.x0 + 1) >> 1 : 0));
     // A side the request pushes past gets a margin, so a long stroke does not rebuild the canvas for every tile.
     const nx0 = !o || x0 < o.x0 ? Math.max(0, x0 - m) : o.x0;
@@ -276,8 +288,17 @@ export class PixelSession {
     const next = makeLiveCanvas(nw, nh);
     if (!next) return false;
     const g = next.getContext('2d') as CanvasRenderingContext2D;
-    if (this.canvas) g.drawImage(this.canvas as CanvasImageSource, this.cx - nx0, this.cy - ny0);
-    else if (s.width) g.putImageData(new ImageData(s.pixels as Uint8ClampedArray<ArrayBuffer>, s.width, s.height), s.x - nx0, s.y - ny0);
+    if (this.canvas && this.filled) {
+      // A canvas that holds the whole picture shows the old drawing in the part it grows into, and keeps what it has (erased pixels included).
+      this.paintBase(g, s.x - nx0, s.y - ny0);
+      g.save();
+      g.beginPath();
+      g.rect(this.cx - nx0, this.cy - ny0, this.cw, this.ch);
+      g.clip();
+      g.globalCompositeOperation = 'copy';
+      g.drawImage(this.canvas as CanvasImageSource, this.cx - nx0, this.cy - ny0);
+      g.restore();
+    } else if (this.canvas) g.drawImage(this.canvas as CanvasImageSource, this.cx - nx0, this.cy - ny0);
     this.canvas = next;
     this.cx = nx0;
     this.cy = ny0;
@@ -286,15 +307,81 @@ export class PixelSession {
     return true;
   }
 
+  /** Puts the old drawing's picture on a canvas at (x, y) of it: from its cached picture (a canvas to canvas copy, not an upload of the pixels). */
+  private paintBase(g: CanvasRenderingContext2D, x: number, y: number): void {
+    const d = this.baseDrawing;
+    if (d && this.src.width) g.drawImage(pixelCanvas(d) as CanvasImageSource, x, y);
+  }
+
+  /**
+   * Makes the live canvas the whole picture (the old drawing with the live tiles on it), for a screen where the sparse
+   * preview cannot be drawn exactly like the finished picture. From then on it stays whole.
+   */
+  private fill = (): void => {
+    if (this.filled || !this.canvas) return;
+    const s = this.src;
+    let x0 = this.cx;
+    let y0 = this.cy;
+    let x1 = this.cx + this.cw - 1;
+    let y1 = this.cy + this.ch - 1;
+    if (s.width) {
+      x0 = Math.min(x0, s.x);
+      y0 = Math.min(y0, s.y);
+      x1 = Math.max(x1, s.x + s.width - 1);
+      y1 = Math.max(y1, s.y + s.height - 1);
+    }
+    const next = makeLiveCanvas(x1 - x0 + 1, y1 - y0 + 1);
+    if (!next) return;
+    const g = next.getContext('2d') as CanvasRenderingContext2D;
+    // The old picture, then each live tile on it whole (the tiles hold the new picture, erased pixels included).
+    this.paintBase(g, s.x - x0, s.y - y0);
+    for (const t of this.liveTiles) {
+      const img = this.images[(t.y >> SHIFT) * this.tilesAcross + (t.x >> SHIFT)];
+      if (img) g.putImageData(img, t.x - x0, t.y - y0, 0, 0, t.w, t.h);
+    }
+    this.canvas = next;
+    this.cx = x0;
+    this.cy = y0;
+    this.cw = x1 - x0 + 1;
+    this.ch = y1 - y0 + 1;
+    this.filled = true;
+    setLive(this.liveState());
+  };
+
+  private liveState() {
+    const c = this.canvas as CanvasImageSource;
+    return { layerId: this.layerId, kind: 'pixel' as const, canvas: c, x: this.cx, y: this.cy, width: this.cw, height: this.ch, ...(this.filled ? {} : { sparse: { base: this.baseDrawing, tiles: this.liveTiles, fill: this.fill } }) };
+  }
+
   /** Sends what changed to the screen. */
   flush(): void {
     const d = this.dirty;
     if (!d) return;
     if (typeof OffscreenCanvas === 'undefined' && typeof document === 'undefined') return;
-    if (!this.cover(d.x0, d.y0, d.x1, d.y1)) return;
+    const tx0 = d.x0 >> SHIFT;
+    const tx1 = d.x1 >> SHIFT;
+    const ty0 = d.y0 >> SHIFT;
+    const ty1 = d.y1 >> SHIFT;
+    // A tile that reaches the canvas for the first time goes up whole (the old picture's part of it too), so the canvas
+    // must cover all of it.
+    let ux0 = d.x0;
+    let uy0 = d.y0;
+    let ux1 = d.x1;
+    let uy1 = d.y1;
+    for (let ty = ty0; ty <= ty1; ty++) {
+      for (let tx = tx0; tx <= tx1; tx++) {
+        const ti = ty * this.tilesAcross + tx;
+        if (!this.tiles[ti] || this.onCanvas[ti]) continue;
+        ux0 = Math.min(ux0, tx << SHIFT);
+        uy0 = Math.min(uy0, ty << SHIFT);
+        ux1 = Math.max(ux1, Math.min(((tx + 1) << SHIFT) - 1, this.width - 1));
+        uy1 = Math.max(uy1, Math.min(((ty + 1) << SHIFT) - 1, this.height - 1));
+      }
+    }
+    if (!this.cover(ux0, uy0, ux1, uy1)) return;
     const g = (this.canvas as LiveCanvas).getContext('2d') as CanvasRenderingContext2D;
-    for (let ty = d.y0 >> SHIFT; ty <= d.y1 >> SHIFT; ty++) {
-      for (let tx = d.x0 >> SHIFT; tx <= d.x1 >> SHIFT; tx++) {
+    for (let ty = ty0; ty <= ty1; ty++) {
+      for (let tx = tx0; tx <= tx1; tx++) {
         const ti = ty * this.tilesAcross + tx;
         const t = this.tiles[ti];
         if (!t) continue;
@@ -302,15 +389,26 @@ export class PixelSession {
         if (!img) img = this.images[ti] = new ImageData(t as Uint8ClampedArray<ArrayBuffer>, TS, TS);
         const gx = tx << SHIFT;
         const gy = ty << SHIFT;
-        const sx = Math.max(d.x0, gx) - gx;
-        const sy = Math.max(d.y0, gy) - gy;
-        const ex = Math.min(d.x1, gx + TS - 1) - gx;
-        const ey = Math.min(d.y1, gy + TS - 1) - gy;
-        g.putImageData(img, gx - this.cx, gy - this.cy, sx, sy, ex - sx + 1, ey - sy + 1);
+        const ex = Math.min(gx + TS, this.width) - 1 - gx;
+        const ey = Math.min(gy + TS, this.height) - 1 - gy;
+        let sx = 0;
+        let sy = 0;
+        let fx = ex;
+        let fy = ey;
+        if (this.onCanvas[ti]) {
+          sx = Math.max(d.x0, gx) - gx;
+          sy = Math.max(d.y0, gy) - gy;
+          fx = Math.min(d.x1, gx + TS - 1) - gx;
+          fy = Math.min(d.y1, gy + TS - 1) - gy;
+        } else {
+          this.onCanvas[ti] = 1;
+          this.liveTiles.push({ x: gx, y: gy, w: ex + 1, h: ey + 1 });
+        }
+        g.putImageData(img, gx - this.cx, gy - this.cy, sx, sy, fx - sx + 1, fy - sy + 1);
       }
     }
     this.dirty = null;
-    setLive({ layerId: this.layerId, kind: 'pixel', canvas: this.canvas as CanvasImageSource, x: this.cx, y: this.cy, width: this.cw, height: this.ch });
+    setLive(this.liveState());
   }
 
   /** Ends the preview without changing the document. */

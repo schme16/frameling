@@ -73,6 +73,9 @@ describe('names and runs of a slice that moves', () => {
     expect(sliceTrack(slices[0], ['a', 'b', 'c'], 6)).toEqual(['a', 'a', 'b', 'b', 'c', 'c']);
     expect(sliceTrack(slices[2], ['still'], 6)).toEqual([]);
     expect(sliceRuns(slices[1], ['p', 'q'], 6)).toEqual({ frames: ['p', 'q'], holds: [3, 3] });
+    // Along a clip's own order: backward from frame 5 to 1, then a frame twice.
+    expect(sliceTrack(slices[0], ['a', 'b', 'c'], 6, [5, 4, 3, 2, 1, 1])).toEqual(['c', 'c', 'b', 'b', 'a', 'a']);
+    expect(sliceRuns(slices[0], ['a', 'b', 'c'], 6, [5, 4, 3, 2, 1, 1])).toEqual({ frames: ['c', 'b', 'a'], holds: [2, 2, 2] });
   });
 });
 
@@ -106,16 +109,16 @@ describe('Phaser and PixiJS get a frame, pivot and anchor for each key', () => {
   it('Phaser lists a slice that moves as an animation of its own, a frame per exported frame', () => {
     const out = buildSheetFiles(job('phaser'));
     const anims = jsonOf(out, 'hero-anims.json').anims;
-    const a = anims.find((x: { key: string }) => x.key === 'slice_hand');
+    const a = anims.find((x: { key: string }) => x.key === 'slice_hand_default');
     expect(a.frames.map((x: { frame: string }) => x.frame)).toEqual(['hand', 'hand', 'hand_f3', 'hand_f3', 'hand_f5', 'hand_f5']);
     expect(a.frameRate).toBe(10);
-    expect(anims.find((x: { key: string }) => x.key === 'slice_still')).toBeUndefined();
+    expect(anims.find((x: { key: string }) => x.key.startsWith('slice_still'))).toBeUndefined();
   });
 
   it('PixiJS lists the same as an animation', () => {
     const out = buildSheetFiles(job('pixi'));
     const atlas = jsonOf(out, 'hero.json');
-    expect(atlas.animations.slice_panel).toEqual(['panel', 'panel', 'panel', 'panel_f4', 'panel_f4', 'panel_f4']);
+    expect(atlas.animations.slice_panel_default).toEqual(['panel', 'panel', 'panel', 'panel_f4', 'panel_f4', 'panel_f4']);
   });
 });
 
@@ -134,7 +137,7 @@ describe('Unity gets a sprite for each key, and a clip that plays them', () => {
     expect([by.hand_f5.pivotX, by.hand_f5.pivotY]).toEqual([0.5, 0.5]);
     expect(by.panel_f4).toMatchObject({ borderL: 1, borderT: 2, borderR: 2, borderB: 2 });
     expect(by.panel).toMatchObject({ borderL: 1, borderT: 1, borderR: 1, borderB: 1 });
-    const clip = u.animations.find((a: { name: string }) => a.name === 'slice_hand');
+    const clip = u.animations.find((a: { name: string }) => a.name === 'slice_hand_default');
     expect(clip).toMatchObject({ fps: 10, loop: true, frames: ['hand', 'hand_f3', 'hand_f5'], holds: [2, 2, 2] });
   });
 });
@@ -146,7 +149,7 @@ describe('Godot gets an AnimationPlayer that sets the region and offset at each 
     expect(t).toContain('[node name="hand" type="Sprite2D" parent="."]');
     expect(t).toContain('region_enabled = true');
     expect(t).toContain('[node name="SlicePlayer" type="AnimationPlayer" parent="."]');
-    expect(t).toContain('autoplay = "slices"');
+    expect(t).toContain('autoplay = "default"');
     expect(t).toContain('loop_mode = 1');
     expect(t).toContain('length = 0.6');
     expect(t).toContain('tracks/0/path = NodePath("hand:region_rect")');
@@ -168,6 +171,109 @@ describe('Godot gets an AnimationPlayer that sets the region and offset at each 
     const r = [...rects.matchAll(/Rect2\(([\d.]+), ([\d.]+), ([\d.]+), ([\d.]+)\)/g)].map((m) => m.slice(1).map(Number));
     expect(r).toHaveLength(3);
     [0, 2, 4].forEach((frame, i) => expect(sheetPixel(out, r[i][0] + 3, r[i][1] + 3)).toEqual(COLORS[frame]));
+  });
+});
+
+const CLIPS = [
+  { id: 'c1', name: 'run', start: 0, end: 5, loop: true },
+  { id: 'c2', name: 'drop', start: 1, end: 5, loop: false, direction: 'reverse' as const },
+  { id: 'c3', name: 'twice', start: 2, end: 4, loop: false, repeat: 2 },
+  { id: 'c4', name: 'bounce', start: 0, end: 3, loop: true, direction: 'pingpong' as const },
+];
+const clipJob = (engine: string, extra: Partial<SheetJob> = {}) => job(engine, { doc: { name: 'Hero', clips: CLIPS, markers: [], fps: 10 }, ...extra });
+
+describe('a slice that moves follows each clip: its order, direction and repeat', () => {
+  // hand keys sit on frames 0, 2 and 4 (hand, hand_f3, hand_f5); panel keys on 0 and 3 (panel, panel_f4).
+  const hand = {
+    run: ['hand', 'hand', 'hand_f3', 'hand_f3', 'hand_f5', 'hand_f5'],
+    twice: ['hand_f3', 'hand_f3', 'hand_f5', 'hand_f3', 'hand_f3', 'hand_f5'],
+  };
+  it('Phaser: one animation per clip, with the clip\'s repeat and baked back and forth', () => {
+    const anims = jsonOf(buildSheetFiles(clipJob('phaser')), 'hero-anims.json').anims;
+    const get = (k: string) => anims.find((x: { key: string }) => x.key === k);
+    const names = (k: string) => get(k).frames.map((x: { frame: string }) => x.frame);
+    expect(names('slice_hand_run')).toEqual(hand.run);
+    expect(get('slice_hand_run').repeat).toBe(-1);
+    // Backward: frames 5 to 1.
+    expect(names('slice_hand_drop')).toEqual(['hand_f5', 'hand_f5', 'hand_f3', 'hand_f3', 'hand']);
+    expect(get('slice_hand_drop').repeat).toBe(0);
+    // Played twice: Phaser repeats one pass itself (the key in force on frames 2, 3, 4 is f3, f3, f5).
+    expect(names('slice_hand_twice')).toEqual(['hand_f3', 'hand_f3', 'hand_f5']);
+    expect(get('slice_hand_twice').repeat).toBe(1);
+    // Back and forth over frames 0 to 3 as one loop: 0 1 2 3 2 1.
+    expect(names('slice_hand_bounce')).toEqual(['hand', 'hand', 'hand_f3', 'hand_f3', 'hand_f3', 'hand']);
+    expect(get('slice_panel_bounce').frames.map((x: { frame: string }) => x.frame)).toEqual(['panel', 'panel', 'panel', 'panel_f4', 'panel', 'panel']);
+    expect(get('slice_still_run')).toBeUndefined();
+  });
+
+  it('PixiJS: one animation per clip, in play order, with fps and loop beside the clip\'s own', () => {
+    const atlas = jsonOf(buildSheetFiles(clipJob('pixi')), 'hero.json');
+    expect(atlas.animations.slice_hand_run).toEqual(hand.run);
+    expect(atlas.animations.slice_hand_drop).toEqual(['hand_f5', 'hand_f5', 'hand_f3', 'hand_f3', 'hand']);
+    expect(atlas.animations.slice_hand_twice).toEqual(hand.twice);
+    expect(atlas.animations.slice_panel_twice).toEqual(['panel', 'panel_f4', 'panel_f4', 'panel', 'panel_f4', 'panel_f4']);
+    expect(atlas.meta.frameling.animations.slice_hand_drop).toMatchObject({ fps: 10, loop: false, direction: 'reverse' });
+    expect(atlas.meta.frameling.animations.run).toMatchObject({ loop: true });
+  });
+
+  it('Unity: a clip per clip, held runs in play order', () => {
+    const u = jsonOf(buildSheetFiles(clipJob('unity')), 'hero.json');
+    const get = (n: string) => u.animations.find((a: { name: string }) => a.name === n);
+    expect(get('slice_hand_run')).toMatchObject({ loop: true, frames: ['hand', 'hand_f3', 'hand_f5'], holds: [2, 2, 2] });
+    expect(get('slice_hand_drop')).toMatchObject({ loop: false, direction: 'reverse', frames: ['hand_f5', 'hand_f3', 'hand'], holds: [2, 2, 1] });
+    expect(get('slice_hand_twice')).toMatchObject({ loop: false, repeat: 2, frames: ['hand_f3', 'hand_f5', 'hand_f3', 'hand_f5'], holds: [2, 1, 2, 1] });
+    expect(get('slice_hand_bounce')).toMatchObject({ loop: true, frames: ['hand', 'hand_f3', 'hand'], holds: [2, 3, 1] });
+    expect(get('slice_still_run')).toBeUndefined();
+  });
+
+  it('Godot: an animation per clip on the SlicePlayer, named after the clip, the first playing on its own', () => {
+    const t = new TextDecoder().decode(file(buildSheetFiles(clipJob('godot')), 'hero-slices.tscn').bytes);
+    expect(t).toContain('autoplay = "run"');
+    for (const n of ['run', 'drop', 'twice', 'bounce']) expect(t).toContain(`resource_name = "${n}"`);
+    const anim = (n: string) => t.split('[sub_resource type="Animation"').find((b) => b.includes(`resource_name = "${n}"`))!;
+    // Looping clips loop, the others hold their last picture; one second is 10 frames.
+    expect(anim('run')).toContain('loop_mode = 1');
+    expect(anim('run')).toContain('length = 0.6');
+    expect(anim('drop')).toContain('loop_mode = 0');
+    expect(anim('drop')).toContain('length = 0.5');
+    // Played twice: 3 frames x 2 passes.
+    expect(anim('twice')).toContain('length = 0.6');
+    const times = (b: string, node: string) => b.match(new RegExp(`NodePath\\("${node}:region_rect"\\)[\\s\\S]*?"times": PackedFloat32Array\\((.*?)\\)`))![1];
+    // Backward over frames 5 to 1: key 3 for two steps, key 2 for two, key 1 on the last. Twice over 2 to 4: key 2, key 3, key 2, key 3.
+    expect(times(anim('drop'), 'hand')).toBe('0, 0.2, 0.4');
+    expect(times(anim('twice'), 'hand')).toBe('0, 0.2, 0.3, 0.5');
+    expect(times(anim('bounce'), 'hand')).toBe('0, 0.2, 0.5');
+    // A clip that keeps a slice in one key still sets it, so switching clips never leaves it where the last one put it.
+    expect(anim('twice')).toContain('NodePath("panel:region_rect")');
+  });
+});
+
+describe('Godot picks the node from every key of a moving slice', () => {
+  const badge = () => {
+    const l = newPixelLayer('Sprite', 1);
+    l.slices = [
+      // No middle on the first key, one on the second; and the other way round.
+      { id: 'a', name: 'late', x: 2, y: 3, w: 6, h: 6, keys: [{ frame: 0, x: 2, y: 3, w: 6, h: 6 }, { frame: 3, x: 14, y: 6, w: 6, h: 6, center: { x: 15, y: 8, w: 3, h: 2 } }] },
+      { id: 'b', name: 'early', x: 2, y: 3, w: 6, h: 6, center: { x: 3, y: 4, w: 4, h: 4 }, keys: [{ frame: 0, x: 2, y: 3, w: 6, h: 6, center: { x: 3, y: 4, w: 4, h: 4 } }, { frame: 3, x: 14, y: 6, w: 6, h: 6 }] },
+      { id: 'c', name: 'none', x: 2, y: 3, w: 6, h: 6, keys: [{ frame: 0, x: 2, y: 3, w: 6, h: 6 }, { frame: 3, x: 14, y: 6, w: 6, h: 6 }] },
+    ];
+    return l;
+  };
+  const scene = () => new TextDecoder().decode(file(buildSheetFiles(job('godot', { slices: slicesForExport([badge()], 1, { start: 0, end: 5 }) })), 'hero-slices.tscn').bytes);
+  it('any key with a middle makes it a NinePatchRect, and a key without one has borders of 0', () => {
+    const t = scene();
+    expect(t).toContain('[node name="late" type="NinePatchRect" parent="."]');
+    expect(t).toContain('[node name="early" type="NinePatchRect" parent="."]');
+    expect(t).toContain('[node name="none" type="Sprite2D" parent="."]');
+    const node = (n: string) => t.split('[node name=').find((b) => b.startsWith(`"${n}"`))!;
+    expect(node('late')).toContain('patch_margin_left = 0');
+    expect(node('late')).toContain('patch_margin_bottom = 0');
+    expect(node('late')).toContain('region_rect = Rect2(2, 3, 6, 6)');
+    // The key with the middle sets its borders; the first key's explicit zeros are the starting values.
+    expect(t).toMatch(/NodePath\("late:patch_margin_top"\)[\s\S]*?"values": \[0, 2\]/);
+    expect(t).toMatch(/NodePath\("early:patch_margin_top"\)[\s\S]*?"values": \[1, 0\]/);
+    expect(t).toContain('NodePath("none:region_rect")');
+    expect(t).not.toContain('NodePath("none:patch_margin');
   });
 });
 

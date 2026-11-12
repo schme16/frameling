@@ -11,7 +11,7 @@ import {
 } from './sheet';
 import { normalizeSheet, type SheetSettings } from './types';
 import type { ExportSlice } from '../pixel/slices/model';
-import { cssNineFile, cssSliceRules, godotSlicesScene, moves, sliceFrames, sliceKeyNames, sliceKeys, sliceMeta, sliceNames, sliceRuns, sliceTrack, unitySlices, type At } from './slices';
+import { cssNineFile, cssSliceRules, godotSlicesScene, moves, keyIndexPerFrame, sliceFrames, sliceKeyNames, sliceKeys, sliceMeta, sliceAnimationName, sliceNames, sliceRuns, sliceTrack, unitySlices, type At } from './slices';
 
 // ---------------------------------------------------------------- names
 
@@ -80,8 +80,8 @@ export function hashAtlas(d: SheetData, extraMeta: Record<string, unknown> = {})
 }
 
 /** Each animation's frame names, a held frame repeated once per document frame (players with no per-frame time need that). */
-export function expandedNames(a: Animation, d: Pick<SheetData, 'cellOfFrame' | 'names'>): string[] {
-  return a.frames.map((f) => d.names[d.cellOfFrame[f]]);
+export function expandedNames(a: Animation, d: Pick<SheetData, 'cellOfFrame' | 'names'>, frameName?: (frame: number) => string): string[] {
+  return a.frames.map((f) => frameName?.(f) ?? d.names[d.cellOfFrame[f]]);
 }
 
 /**
@@ -90,15 +90,15 @@ export function expandedNames(a: Animation, d: Pick<SheetData, 'cellOfFrame' | '
  * should. Back and forth lists every frame (the ends once per turn), unless `nativeBounce` is on: then a clip that
  * goes there and back an even number of times uses Phaser's `yoyo`, which lists one direction (Phaser 3.90 shows each end once, so it looks the same as listing every frame).
  */
-export function phaserAnimations(d: SheetData, textureKey: string, nativeBounce = false) {
+export function phaserAnimations(d: SheetData, textureKey: string, nativeBounce = false, as?: { key: (a: Animation) => string; frameName: (frame: number) => string }) {
   return {
     anims: d.animations.map((a) => {
       const bounce = nativeBounce && a.bounce && (a.loop || !!a.repeat) ? a.bounce : null;
       const native = !bounce && !a.loop && a.repeat && a.pass && !a.direction?.startsWith('pingpong');
       return {
-        key: a.name,
+        key: as ? as.key(a) : a.name,
         type: 'frame',
-        frames: expandedNames(bounce ? { ...a, frames: bounce.leg } : native ? { ...a, frames: a.pass! } : a, d).map((frame) => ({ key: textureKey, frame })),
+        frames: expandedNames(bounce ? { ...a, frames: bounce.leg } : native ? { ...a, frames: a.pass! } : a, d, as?.frameName).map((frame) => ({ key: textureKey, frame })),
         frameRate: a.fps,
         repeat: a.loop ? -1 : bounce ? bounce.trips - 1 : native ? a.repeat! - 1 : 0,
         delay: 0,
@@ -621,7 +621,7 @@ export function buildSheetFiles(job: SheetJob): SheetFiles {
           files.push({ name: `${base}-flow.json`, bytes: json(flow) });
           files.push({ name: `${base}_flow.gd`, bytes: text(godotFlowScript(flow, `${base}.tres`)) });
         }
-        if (slices.length) files.push({ name: `${base}-slices.tscn`, bytes: text(godotSlicesScene(texturePath, slices, sNames, atFrame, job.pixelArt, { fps: doc.fps, frames: frameCount })) });
+        if (slices.length) files.push({ name: `${base}-slices.tscn`, bytes: text(godotSlicesScene(texturePath, slices, sNames, atFrame, job.pixelArt, { fps: doc.fps, frames: frameCount, clips: animations.map((a) => ({ name: a.name, frames: a.frames, loop: a.loop })) })) });
         if (sheet.godotScene) {
           const node = doc.name.replace(/[^A-Za-z0-9]+/g, ' ').trim().split(' ').filter(Boolean).map((w) => w[0].toUpperCase() + w.slice(1)).join('') || 'Sprite';
           files.push({ name: `${base}.tscn`, bytes: text(godotScene({ resourcePath: godotResourcePath(texturePath), nodeName: node, animation: animations[0].name, pixelArt: job.pixelArt })) });
@@ -631,27 +631,39 @@ export function buildSheetFiles(job: SheetJob): SheetFiles {
     case 'phaser':
       files.push({ name: `${base}.json`, bytes: json(withSlices(hashAtlas(d), slices, sNames, atFrame, 'pivot', keyNames)) });
       {
-        // A slice that moves is an animation of its own: its sprite on each exported frame.
+        // A slice that moves has an animation for each clip: its sprite on each frame of the clip, in the clip's order.
         const anims = phaserAnimations(d, base, job.nativeBounce);
         slices.forEach((s, i) => {
-          const track = sliceTrack(s, keyNames[i], frameCount);
-          if (track.length) anims.anims.push({ key: `slice_${sNames[i]}`, type: 'frame', frames: track.map((frame) => ({ key: base, frame })), frameRate: doc.fps, repeat: -1, delay: 0, yoyo: false });
+          if (!moves(s)) return;
+          const idx = keyIndexPerFrame(s, frameCount);
+          anims.anims.push(...phaserAnimations(d, base, job.nativeBounce, { key: (a) => sliceAnimationName(sNames[i], a.name), frameName: (f) => keyNames[i][idx[f]] }).anims);
         });
         if (anims.anims.length) files.push({ name: `${base}-anims.json`, bytes: json(anims) });
       }
       break;
     case 'pixi': {
       const sheetJson = withSlices(pixiSheet(d), slices, sNames, atFrame, 'anchor', keyNames);
-      const tracks = Object.fromEntries(slices.map((s, i) => [`slice_${sNames[i]}`, sliceTrack(s, keyNames[i], frameCount)] as const).filter(([, t]) => t.length));
-      files.push({ name: `${base}.json`, bytes: json(Object.keys(tracks).length ? { ...sheetJson, animations: { ...sheetJson.animations, ...tracks } } : sheetJson) });
+      // A slice that moves has an animation for each clip: its sprite on each frame of the clip, in the clip's order.
+      const tracks: Record<string, string[]> = {};
+      const info: Record<string, unknown> = {};
+      slices.forEach((s, i) => {
+        if (!moves(s)) return;
+        for (const a of animations) {
+          const key = sliceAnimationName(sNames[i], a.name);
+          tracks[key] = sliceTrack(s, keyNames[i], frameCount, a.frames);
+          info[key] = { fps: a.fps, loop: a.loop, animationSpeed: Math.round((a.fps / 60) * 10000) / 10000, ...playExtras(a) };
+        }
+      });
+      const meta = Object.keys(info).length ? { ...sheetJson.meta, frameling: { animations: { ...(sheetJson.meta as unknown as { frameling: { animations: object } }).frameling.animations, ...info } } } : sheetJson.meta;
+      files.push({ name: `${base}.json`, bytes: json(Object.keys(tracks).length ? { ...sheetJson, animations: { ...sheetJson.animations, ...tracks }, meta } : sheetJson) });
       break;
     }
     case 'unity':
       {
         const u = unitySheet(d, { pixelArt: job.pixelArt });
         // Slices are sprites too: their own rect, pivot and border.
-        // A slice that moves gets a clip of its own: each key's sprite, held for as many frames as the key lasts.
-        const sliceClips = slices.flatMap((s, i) => (moves(s) ? [{ name: `slice_${sNames[i]}`, fps: doc.fps, loop: true, ...sliceRuns(s, keyNames[i], frameCount) }] : []));
+        // A slice that moves gets a clip for each of your clips: its sprite on each step of the clip, in the clip's order, held as long as the key lasts.
+        const sliceClips = slices.flatMap((s, i) => (moves(s) ? animations.map((a) => ({ name: sliceAnimationName(sNames[i], a.name), fps: a.fps, loop: a.loop, ...playExtras(a), ...sliceRuns(s, keyNames[i], frameCount, a.frames) })) : []));
         files.push({ name: `${base}.json`, bytes: json(slices.length ? { ...u, frames: [...u.frames, ...unitySlices(slices, sNames, atFrame, layout.height, keyNames)], animations: [...u.animations, ...sliceClips] } : u) });
       }
       if (sheet.unityScript) files.push({ name: UNITY_SCRIPT_NAME, bytes: text(UNITY_SCRIPT) }, { name: UNITY_ASMDEF_NAME, bytes: text(UNITY_ASMDEF) });

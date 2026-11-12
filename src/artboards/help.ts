@@ -78,25 +78,47 @@ See [artboards as shots](help:artboards-shots) and [exporting artboards](help:ar
 
 **Make one:** press **Make a variation** in the Artboards panel, or **View > Make a variation (linked copy)**, or press **Ctrl+K** and type "variation". It opens beside the original with a **Variation** tag. Then just work in it as usual: recolour shapes, move keys to change the timing, hide a layer, add one of its own.
 
-**Colourways:** open the variation and recolour. Only those shapes stop following the original; the rest keeps following.
+**Colourways:** press **Recolour this variation** and pick new colours: every frame changes, only in the variation. See [recolour a variation](help:variations-recolour).
 
 **Sizes:** in the variation's panel pick **Square**, **Wide** or **Tall** (or type any **W** and **H** under **This artboard**). The same animation is framed in the new size by a camera that Frameling adds for you, and you can move it like any camera. Resize the original and the cut is framed again by itself, unless you have moved its camera. **Fill (crop)** covers the picture and crops what hangs over; **Fit (show it all)** shows the whole original. Frameling asks which you prefer the first time.
 
 **A/B timing:** move or stretch keys in the variation. Keys you did not touch still follow the original.
 
-**Differences:** the panel lists everything this variation changes, grouped by layer. Click one to jump to that layer, frame and shape. Press **Reset** next to one to take just that change back, or **Reset all to original** to start again. Both can be undone.
+**Differences:** the panel lists everything this variation changes in plain words, grouped by layer ("Frame 1: the Ball is drawn over the Hat"). Click one to jump to that layer, frame and shape. Press **Reset** next to one to take just that change back, or **Reset all to original** to start again. Both can be undone.
 
 **Detach:** **Detach (plain copy)** makes it an ordinary artboard that stops following.
 
-**Export:** in the Export dialog, **This artboard and its variations** ticks the original and every variation. Then export each as its own file, all in order as one, or packed onto one sheet.
+**Export:** in the Export dialog, **This artboard and its variations** ticks the original and every variation. Then export each as its own file (named after the variation, like "Hero - pink"), all in order as one, or packed onto one sheet.
 
 **Good to know:**
 - A variation of a variation starts with the same changes and follows the same original.
-- **Sound** can differ: turn a sound down, mute it, move it or leave it out in the variation, and the original keeps its own. **Pixel palette** can differ colour by colour (a colourway): change one in the variation and only its pixels change. The rest still follows the original, and the Differences list has a Reset for each.
+- **Sound** can differ: turn a sound down, mute it, move it or leave it out in the variation, and the original keeps its own.
 - Symbols, tiles, swatches and layer folders are shared with the original. You can add a new swatch from a variation (the original gets it too). Changing or removing the rest is refused with a note and left as it is: change them in the original, or detach the variation.
-- Looking through the camera is remembered for each artboard, even after you close and reopen Frameling, so a square variation can look through its camera while the original shows the whole stage.
 - Deleting the original turns its variations into plain artboards.
 - Saving keeps only the changes, so a file with many variations stays small.`,
+  },
+  {
+    id: 'variations-recolour',
+    title: 'Recolour a variation (colourways)',
+    section: 'Animating',
+    media: 'variations-recolour.png',
+    summary: 'Make a colourway: pick new colours for a variation, on every frame at once, without touching the original.',
+    keywords: ['colourway', 'colorway', 'recolour variation', 'recolor variation', 'change colours', 'palette swap', 'skin', 'team colours', 'variation colours'],
+    body: `Want a blue version of your pink hero? Make a [variation](help:variations), open it, and press **Recolour this variation** in the Artboards panel (or press **Ctrl+K** and type "recolour variation").
+
+1. The window lists every colour the variation uses.
+2. Click the colour box beside one and pick what it becomes. Do it for as many colours as you like. **Keep** puts one back.
+3. Check the **Now** and **After** pictures, then press **Recolour**.
+
+Every frame changes at once, and it is one step: **Undo** takes it all back. The original and the other variations keep their colours.
+
+**Differences:** each colour you changed is one line, like "Colour #ff6f91 becomes #4f9bd1 on every frame", with its own **Reset**.
+
+**Good to know:**
+- **Recolour the whole animation** also works inside a variation, and changes only that variation.
+- Change a colour in the original later and the variation follows, except for the colours it changed itself.
+- Swatches are shared with the original, so they stay as they are.
+- Exporting names the file after the variation, like "Hero - pink.png".`,
   },
   {
     id: 'artboards-export',

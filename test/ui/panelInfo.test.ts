@@ -60,9 +60,9 @@ describe('right side: which panel goes where', () => {
 
   it('names stacked groups by where they sit', () => {
     expect(groupWord(0, 1)).toBe('Right side');
-    expect([0, 1].map((i) => groupWord(i, 2))).toEqual(['Top', 'Bottom']);
-    expect([0, 1, 2].map((i) => groupWord(i, 3))).toEqual(['Top', 'Middle', 'Bottom']);
-    expect([0, 1, 2, 3].map((i) => groupWord(i, 4))).toEqual(['Top', 'Upper', 'Lower', 'Bottom']);
+    expect([0, 1].map((i) => groupWord(i, 2))).toEqual(['Top group', 'Bottom group']);
+    expect([0, 1, 2].map((i) => groupWord(i, 3))).toEqual(['Top group', 'Middle group', 'Bottom group']);
+    expect([0, 1, 2, 3].map((i) => groupWord(i, 4))).toEqual(['Top group', 'Upper group', 'Lower group', 'Bottom group']);
   });
 
   it('knows every built-in right panel, with a sentence each', () => {

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { store, useStore } from '../core/store';
 import { resolveMenus, type MenuItem } from './menus';
 import { commandEnabled, runCommand } from './palette';
@@ -62,6 +62,9 @@ export function MenuBar() {
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
       list[(at - 1 + list.length) % list.length]?.focus();
+    } else if (jumpKey(e.key)) {
+      e.preventDefault();
+      list[jumpTo(e.key, at, list.length)]?.focus();
     } else if (e.key === 'Escape') {
       e.preventDefault();
       e.stopPropagation();
@@ -84,6 +87,10 @@ export function MenuBar() {
       e.preventDefault();
       e.stopPropagation();
       list[(at + (e.key === 'ArrowDown' ? 1 : -1) + list.length) % list.length]?.focus();
+    } else if (jumpKey(e.key)) {
+      e.preventDefault();
+      e.stopPropagation();
+      list[jumpTo(e.key, at, list.length)]?.focus();
     } else if (e.key === 'ArrowLeft' || e.key === 'Escape') {
       e.preventDefault();
       e.stopPropagation();
@@ -95,6 +102,7 @@ export function MenuBar() {
 
   const row = (it: MenuItem, i: number, menu: number, inSub = false): React.ReactNode => {
     if (it.kind === 'separator') return <div key={`s${i}`} className="ui-menu-sep" role="separator" />;
+    if (it.kind === 'heading') return <div key={`h${i}`} className="ui-menu-heading" role="presentation">{it.label}</div>;
     if (it.kind === 'submenu') {
       const shown = sub === it.label;
       return (
@@ -121,9 +129,7 @@ export function MenuBar() {
             <Icon name="chevron-right" size={14} />
           </button>
           {shown && (
-            <div className="ui-menu ui-submenu" role="menu" aria-label={it.label}>
-              {it.items.map((x, j) => row(x, j, menu, true))}
-            </div>
+            <SubmenuBox label={it.label}>{it.items.map((x, j) => row(x, j, menu, true))}</SubmenuBox>
           )}
         </div>
       );
@@ -181,6 +187,40 @@ export function MenuBar() {
         </div>
       ))}
     </nav>
+  );
+}
+
+const PAGE = 8;
+const jumpKey = (k: string): boolean => k === 'Home' || k === 'End' || k === 'PageUp' || k === 'PageDown';
+/** Where Home, End, PageUp and PageDown land in a list of `n` items from item `at`. */
+export function jumpTo(key: string, at: number, n: number): number {
+  if (key === 'Home') return 0;
+  if (key === 'End') return n - 1;
+  return Math.max(0, Math.min(n - 1, at + (key === 'PageDown' ? PAGE : -PAGE)));
+}
+
+/**
+ * A submenu opens beside its row. It is fixed to the window (so the menu it belongs to can scroll without clipping it),
+ * kept inside the window, and scrolls itself when it is taller than the window.
+ */
+function SubmenuBox({ label, children }: { label: string; children: React.ReactNode }) {
+  const box = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const el = box.current;
+    const row = el?.parentElement?.getBoundingClientRect();
+    if (!el || !row) return;
+    const gap = 8;
+    el.style.maxHeight = `${window.innerHeight - gap * 2}px`;
+    const w = el.offsetWidth;
+    const h = el.offsetHeight;
+    const left = row.right + 2 + w <= window.innerWidth - gap ? row.right + 2 : Math.max(gap, row.left - w - 2);
+    el.style.left = `${left}px`;
+    el.style.top = `${Math.max(gap, Math.min(row.top - 7, window.innerHeight - gap - h))}px`;
+  }, []);
+  return (
+    <div ref={box} className="ui-menu ui-submenu" role="menu" aria-label={label}>
+      {children}
+    </div>
   );
 }
 

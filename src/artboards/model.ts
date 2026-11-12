@@ -188,11 +188,28 @@ export function exportNameOf(doc: Doc, id: Id): string {
   return exportNames(doc).get(id) ?? fileSafe(doc.name);
 }
 
+/**
+ * A variation's file name starts with its original's: "Hero - pink" for a variation named "pink", and "Hero - variation 1"
+ * for "Hero, variation 1". Its own export name (set in the panel) is used as typed.
+ */
+export function variationFileName(doc: Doc, a: Artboard): string {
+  const src = a.variationOf ? artboardsOf(doc).find((x) => x.id === a.variationOf && !x.variationOf) : undefined;
+  const own = a.name.trim();
+  if (!src) return own;
+  const root = src.name.trim();
+  if (!root) return own;
+  if (own.toLowerCase().startsWith(root.toLowerCase())) {
+    const rest = own.slice(root.length).replace(/^[\s,:;\-\u2013\u2014]+/, '');
+    return rest ? `${root} - ${rest}` : own;
+  }
+  return `${root} - ${own}`;
+}
+
 export function exportNames(doc: Doc): Map<Id, string> {
   const out = new Map<Id, string>();
   const seen = new Set<string>();
   for (const a of artboardsOf(doc)) {
-    const base = fileSafe(a.exportName?.trim() || a.name, 'Artboard');
+    const base = fileSafe(a.exportName?.trim() || variationFileName(doc, a), 'Artboard');
     let n = base;
     for (let k = 2; seen.has(n.toLowerCase()); k++) n = `${base}-${k}`;
     seen.add(n.toLowerCase());

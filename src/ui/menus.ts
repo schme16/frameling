@@ -29,8 +29,13 @@ export const MENUS: MenuDef[] = [
   },
   {
     label: 'View',
-    categories: ['View', 'Artboards'],
-    items: ['view.zoomIn', 'view.zoomOut', 'view.fit', 'view.zoom100', 'view.center', 'view.pixelGrid', 'view.emptyGhost', 'view.whereDidItGo', '-', 'view.rulers', 'view.guides', 'view.snap', 'view.snapOptions', 'view.lockGuides', 'view.clearGuides', '-', 'view.gridSquare', 'view.gridIso', 'view.perspective1', 'view.perspective2', 'view.showPerspective', 'view.removePerspective', 'view.gridSettings', '-', 'view.lightTable', 'view.lightTableDrawing', 'view.clearLightTable', '-', 'group:panels', 'view.allPanels', 'sub:panelwin', '-', 'group:workspaces', 'view.saveWorkspace', 'view.manageWorkspaces', 'sub:wsshare', 'view.resetLayout', '-', 'view.toggleTheme', 'view.nextTheme', 'view.themes', 'view.toggleLook', 'view.toggleSounds', '-', 'view.commandPalette'],
+    categories: ['View'],
+    items: ['view.zoomIn', 'view.zoomOut', 'view.fit', 'view.zoom100', 'view.center', '-', 'group:workspaces', 'view.saveWorkspace', 'view.manageWorkspaces', 'sub:wsshare', 'view.resetLayout', '-', 'sub:panels', 'sub:panelwin', '-', 'view.pixelGrid', 'tiles.tileMode', 'view.emptyGhost', 'camera.lookThrough', 'camera.whilePlaying', 'view.whereDidItGo', '-', 'view.rulers', 'view.guides', 'sub:snapping', 'sub:grids', 'sub:lighttable', '-', 'sub:look', '-', 'view.features', 'view.commandPalette'],
+  },
+  {
+    label: 'Artboards',
+    categories: ['Artboards'],
+    items: ['artboards.new', 'artboards.duplicate', 'artboards.delete', '-', 'artboards.previous', 'artboards.next', 'artboards.zoomTo', 'artboards.fitAll', 'artboards.lineUp', 'artboards.playAll', '-', 'sub:variations', 'sub:joined', '-', 'artboards.export', 'artboards.exportVariations', 'artboards.exportAtlas', '-', 'view.panel.artboards'],
   },
   {
     label: 'Draw',
@@ -78,6 +83,10 @@ export interface SubmenuDef {
 }
 
 export const SUBMENUS: Record<string, SubmenuDef> = {
+  panels: {
+    label: 'Panels',
+    items: ['view.allPanels', 'view.properties', '-', 'group:panels'],
+  },
   panelwin: {
     label: 'Panel windows and tools',
     items: ['view.floatPanel', 'view.renamePanel', 'view.movePanel.left', 'view.movePanel.right', 'view.movePanel.bottom', 'view.movePanel.top', 'view.splitPanelGroup', 'view.joinPanelGroups', 'view.dockAllWindows', 'view.hidePanels', '-', 'view.toolsPlace.left', 'view.toolsPlace.right', 'view.toolsPlace.top', 'view.toolsPlace.bottom', 'view.toolsPlace.float', '-', 'view.toolGroupRename', 'view.toolsReset', 'view.toolRail.two', 'view.toolRail.stacked'],
@@ -87,6 +96,33 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
     label: 'Share a workspace',
     items: ['view.exportWorkspace', 'view.importWorkspace', 'view.copyWorkspace', 'view.pasteWorkspace', '-', 'view.previousWorkspace', 'view.nextWorkspace'],
   },
+  snapping: {
+    label: 'Snapping',
+    items: ['view.snap', 'view.snapOptions', '-', 'view.snap.grid', 'view.snap.guides', 'view.snap.page', 'view.snap.centre', 'view.snap.shapes', 'view.snap.allLayers', 'view.snap.artboards', 'view.snap.spacing', 'view.snap.angles', 'view.snap.perspective', 'view.snap.cells', 'view.snap.plugins'],
+    prefixes: ['view.snap.'],
+  },
+  grids: {
+    label: 'Guides, grids and perspective',
+    items: ['view.lockGuides', 'view.clearGuides', '-', 'view.gridSquare', 'view.gridIso', 'view.gridSettings', '-', 'view.perspective1', 'view.perspective2', 'view.showPerspective', 'view.removePerspective'],
+  },
+  lighttable: {
+    label: 'Light table',
+    items: ['view.lightTable', 'view.lightTableDrawing', 'view.clearLightTable'],
+  },
+  look: {
+    label: 'Look and sound',
+    items: ['view.toggleTheme', 'view.nextTheme', 'view.themes', 'view.toggleLook', 'view.toggleSounds', '-', 'view.cleanTimeline'],
+  },
+  variations: {
+    label: 'Variations',
+    items: ['artboards.makeVariation', 'artboards.variation.wide', 'artboards.variation.tall', 'artboards.variation.square', '-', 'artboards.goToOriginal', 'artboards.resetVariation', 'artboards.detachVariation'],
+    prefixes: ['artboards.variation.'],
+  },
+  joined: {
+    label: 'Joined shots',
+    items: ['heading:Picture size of the joined film', 'artboards.pictureFirst', 'artboards.pictureLargest', 'artboards.pictureCustom', 'heading:Shots of different sizes', 'artboards.fitFill', 'artboards.fitBars'],
+    prefixes: ['artboards.picture'],
+  },
   motions: {
     label: 'One-click motions',
     items: ['motion.bounce', 'motion.wobble', 'motion.float', 'motion.popIn', 'motion.shake', 'motion.fadeIn'],
@@ -94,11 +130,17 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
   },
   import: {
     label: 'Import',
-    items: ['file.importPicture', 'file.importAseprite', 'palette.import', 'palette.fromPicture'],
+    items: ['heading:Add to this drawing', 'file.importPicture', 'file.importAseprite', 'heading:Open as a new drawing', 'file.openPicture', 'file.openAseprite', 'heading:Colours', 'palette.import', 'palette.fromPicture'],
   },
   export: {
     label: 'Export',
-    items: ['file.export', 'file.exportAgain', '-', 'file.exportInteractives', 'file.exportLottie', 'file.exportSvgAnimated', 'file.exportProres', 'file.exportPsd', 'file.exportPdf', 'file.exportIllustrator', 'tiles.export', 'file.exportGodotAddon', '-', 'file.toggleUpdatePlayable'],
+    items: [
+      'file.export', 'file.exportAgain',
+      'heading:Popular', 'file.exportLottie', 'file.exportSvgAnimated', 'file.exportPdf',
+      'heading:Game engines', 'file.exportGodotAddon', 'tiles.export',
+      'heading:Artboards', 'artboards.export', 'artboards.exportVariations', 'artboards.exportAtlas',
+      'heading:Other', 'file.exportInteractives', 'file.exportProres', 'file.exportPsd', 'file.exportIllustrator', 'file.toggleUpdatePlayable',
+    ],
     prefixes: ['file.export'],
   },
 };
@@ -120,9 +162,10 @@ export function registerMenuItems(menu: string, items: string[]): void {
 }
 const contributedFor = (menu: string): string[] => (contributed.get(menu) ?? []).flat();
 
-export type MenuItem = { kind: 'command'; command: Command } | { kind: 'separator' } | { kind: 'submenu'; label: string; items: MenuItem[] };
+export type MenuItem = { kind: 'command'; command: Command } | { kind: 'separator' } | { kind: 'heading'; label: string } | { kind: 'submenu'; label: string; items: MenuItem[] };
 
 function expand(entry: string, subs: Record<string, SubmenuDef> = SUBMENUS): string[] {
+  if (entry.startsWith('heading:')) return [];
   if (entry.startsWith('sub:')) return (subs[entry.slice(4)]?.items ?? []).filter((e) => e !== '-').flatMap((e) => expand(e, subs));
   if (entry === 'group:tools') return allTools().map((t) => `tools.${t.id}`);
   if (entry === 'group:panels') return allPanels().map((p) => `view.panel.${p.id}`);
@@ -150,6 +193,10 @@ export function resolveMenu(menu: MenuDef, menus: MenuDef[] = MENUS, lookup: (id
   for (const e of [...menu.items, ...contributedFor(menu.label)]) {
     if (e === '-') {
       out.push({ kind: 'separator' });
+      continue;
+    }
+    if (e.startsWith('heading:')) {
+      out.push({ kind: 'heading', label: e.slice(8) });
       continue;
     }
     if (e.startsWith('sub:')) {
@@ -180,10 +227,16 @@ export function resolveMenu(menu: MenuDef, menus: MenuDef[] = MENUS, lookup: (id
   return tidy(out);
 }
 
+const isBreak = (it: MenuItem | undefined): boolean => !!it && (it.kind === 'separator' || it.kind === 'heading');
+
+/** No separator at either end or two in a row, and a heading only when something follows it under it. */
 function tidy(list: MenuItem[]): MenuItem[] {
+  const kept = list.filter((it, i) => it.kind !== 'heading' || (list[i + 1] && !isBreak(list[i + 1])));
   const out: MenuItem[] = [];
-  for (const it of list) {
-    if (it.kind === 'separator' && (!out.length || out[out.length - 1].kind === 'separator')) continue;
+  for (const it of kept) {
+    // A separator right before a heading is redundant: the heading draws its own gap.
+    if (it.kind === 'separator' && (!out.length || isBreak(out[out.length - 1]))) continue;
+    if (it.kind === 'heading' && out[out.length - 1]?.kind === 'separator') out.pop();
     out.push(it);
   }
   while (out.length && out[out.length - 1].kind === 'separator') out.pop();

@@ -1,5 +1,6 @@
 // Wires one engine to the real app: the store, the command registry, the clock and the DOM. This is the only place
 // that knows quests are playing in a window.
+import { setChoiceDeferral } from '../core/choices';
 import { allCommands } from '../core/registry';
 import { store } from '../core/store';
 import { getPrefs, reducedMotion } from '../ui/prefs';
@@ -35,6 +36,9 @@ export const engine = new QuestEngine({
   probe: readProbe,
   storage: storage(),
 });
+
+// A lesson is not the moment for a settings question (Tapping Space lands just as it says "Press play").
+setChoiceDeferral(() => questProgress.get().active !== null);
 
 let timer: ReturnType<typeof setInterval> | null = null;
 let watch: CommandWatch | null = null;

@@ -317,3 +317,35 @@
   border-radius: 3px;
   border: 1px solid var(--line-soft);
 }
+
+/* Recolour this variation: one row per colour. */
+.ab-recolour-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+  max-height: 240px;
+  overflow: auto;
+}
+.ab-recolour-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 4px;
+  border-radius: 6px;
+}
+.ab-recolour-row[data-changed='true'] {
+  background: var(--bg-hover, rgba(127, 127, 127, 0.12));
+}
+.ab-recolour-chip {
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  border: 1px solid var(--line-soft);
+  flex: none;
+}
+.ab-recolour-code {
+  font-variant-numeric: tabular-nums;
+  min-width: 64px;
+}

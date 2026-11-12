@@ -125,18 +125,29 @@ export function sliceFrames(slices: readonly ExportSlice[], names: readonly stri
 }
 
 /**
- * For a slice that moves: the name of its sprite for each exported frame (the key in force), so a player can show the
- * slice as an animation of its own. Empty for one that stays put.
+ * For a slice that moves: the name of its sprite on each step of an animation, so a player can show the slice as an
+ * animation of its own. `frames` are the exported frames in the order the animation plays them (a clip's direction and
+ * repeat already in it); missing, every exported frame in order. Empty for a slice that stays put.
  */
-export function sliceTrack(s: ExportSlice, keyNames: readonly string[], count: number): string[] {
-  return moves(s) ? keyIndexPerFrame(s, count).map((j) => keyNames[j]) : [];
+export function sliceTrack(s: ExportSlice, keyNames: readonly string[], count: number, frames?: readonly number[]): string[] {
+  if (!moves(s)) return [];
+  const idx = keyIndexPerFrame(s, count);
+  const order = frames ?? idx.map((_, f) => f);
+  return order.map((f) => keyNames[idx[Math.max(0, Math.min(f, count - 1))]]);
 }
 
-/** The same motion as runs, for players that hold a frame by time (Unity): each key's sprite and how many exported frames it stays. */
-export function sliceRuns(s: ExportSlice, keyNames: readonly string[], count: number): { frames: string[]; holds: number[] } {
-  const ks = sliceKeys(s);
-  return { frames: ks.map((_, j) => keyNames[j]), holds: ks.map((k, j) => Math.max(1, (j + 1 < ks.length ? ks[j + 1].frame : count) - k.frame)) };
+/** The same motion as runs, for players that hold a frame by time (Unity): each sprite and how many steps it stays. */
+export function sliceRuns(s: ExportSlice, keyNames: readonly string[], count: number, frames?: readonly number[]): { frames: string[]; holds: number[] } {
+  const out = { frames: [] as string[], holds: [] as number[] };
+  for (const n of sliceTrack(s, keyNames, count, frames)) {
+    if (out.frames[out.frames.length - 1] === n) out.holds[out.holds.length - 1]++;
+    else out.frames.push(n), out.holds.push(1);
+  }
+  return out;
 }
+
+/** A name for the animation that plays a slice along a clip: `slice_hand_run`. */
+export const sliceAnimationName = (slice: string, clip: string): string => `slice_${slice}_${clip}`;
 
 /** Unity: sprites counted from the sheet's bottom, a normalised pivot, and the border as left, bottom, right, top. A key after the first is a sprite of its own. */
 export function unitySlices(slices: readonly ExportSlice[], names: readonly string[], at: At, sheetHeight: number, keyNames?: readonly (readonly string[])[]) {
@@ -171,9 +182,23 @@ const gdFloat = (n: number) => (Number.isInteger(n) ? n.toFixed(1) : String(roun
 export interface SliceTrack {
   fps: number;
   frames: number;
+  /**
+   * The animations to make, one per clip: the exported frames in the order the clip plays them (direction and repeat
+   * already in it) and whether it loops. Missing: one animation, "slices", through every frame and looping.
+   */
+  clips?: { name: string; frames: number[]; loop: boolean }[];
 }
 
 const sec = (frame: number, fps: number): string => String(Math.round((frame / Math.max(1, fps)) * 1e6) / 1e6);
+
+/** A name an AnimationPlayer accepts (no / : , [ ]), and unique among `used`. */
+function gdAnimName(name: string, used: Set<string>): string {
+  const base = name.replace(/[/:,[\]]/g, '_').trim() || 'clip';
+  let n = base;
+  for (let k = 2; used.has(n); k++) n = `${base}_${k}`;
+  used.add(n);
+  return n;
+}
 
 /** One value track of an Animation resource: a property changing at the times of the keys, with no blending between them. */
 function gdTrack(n: number, path: string, times: string[], values: string[]): string[] {
@@ -198,28 +223,34 @@ function gdTrack(n: number, path: string, times: string[], values: string[]): st
  * AtlasTexture of the region for any other, positioned so the node's origin is the slice's pivot (its top left when
  * there is none).
  *
- * A slice that moves between frames is the same node with the first key's look, plus an AnimationPlayer ("SlicePlayer",
- * playing "slices" on its own) that sets, at each key's time, the region (Sprite2D: `region_rect`, with the pivot as
- * `offset`; NinePatchRect: `region_rect`, `offset_*` and `patch_margin_*`), cut from the sheet frame the key starts on.
+ * A slice that moves between frames is the same node with the first key's look, plus an AnimationPlayer ("SlicePlayer")
+ * with one animation per clip (named after the clip, the first playing on its own), each following the clip's play order,
+ * direction and repeat. At each step where the key in force changes it sets the region (Sprite2D: `region_rect`, with the
+ * pivot as `offset`; NinePatchRect: `region_rect`, `offset_*` and `patch_margin_*`), cut from the sheet frame the key
+ * starts on. A slice is a NinePatchRect when any of its keys has a 9-patch middle; a key without one has borders of 0.
  */
 export function godotSlicesScene(texturePath: string, slices: readonly ExportSlice[], names: readonly string[], at: At, pixelArt: boolean, track?: SliceTrack): string {
   const first = placeOf(at, 0);
-  const plain = slices.map((s, i) => ({ s, i })).filter((x) => !x.s.center && !moves(x.s));
+  const nine = (s: ExportSlice) => !!s.center || sliceKeys(s).some((k) => k.center);
+  const plain = slices.map((s, i) => ({ s, i })).filter((x) => !nine(x.s) && !moves(x.s));
   const moving = slices.map((s, i) => ({ s, i })).filter((x) => moves(x.s));
+  const fps = track?.fps ?? 12;
+  const lastFrame = Math.max(0, ...slices.flatMap((s) => sliceKeys(s).map((key) => key.frame)));
+  const count = Math.max(track?.frames ?? 0, lastFrame + 1);
+  const clips = track?.clips?.length ? track.clips : [{ name: 'slices', frames: Array.from({ length: count }, (_, f) => f), loop: true }];
   const body: string[] = [];
   const subs: string[] = [];
   plain.forEach((x, k) => subs.push(`[sub_resource type="AtlasTexture" id="Atlas_${k + 1}"]`, 'atlas = ExtResource("1_sheet")', `region = Rect2(${first.x + x.s.x}, ${first.y + x.s.y}, ${x.s.w}, ${x.s.h})`, ''));
   body.push('[node name="Slices" type="Node2D"]', ...(pixelArt ? ['texture_filter = 1'] : []), '');
   let k = 0;
-  const tracks: string[] = [];
-  let nTracks = 0;
-  const addTrack = (path: string, ks: readonly SliceKey[], value: (key: SliceKey) => string) => {
+  // A property a moving slice changes: its path, and the value on each key. One track per clip animation follows it.
+  const props: { path: string; ks: readonly SliceKey[]; values: string[] }[] = [];
+  const addProp = (path: string, ks: readonly SliceKey[], value: (key: SliceKey) => string) => {
     const values = ks.map(value);
     // A property that is the same on every key needs no track.
     if (values.every((v) => v === values[0])) return;
-    tracks.push(...gdTrack(nTracks++, path, ks.map((key) => sec(key.frame, track?.fps ?? 12)), values));
+    props.push({ path, ks, values });
   };
-  const lastFrame = Math.max(0, ...slices.flatMap((s) => sliceKeys(s).map((key) => key.frame)));
   slices.forEach((s, i) => {
     const node = gdNode(names[i]);
     const ks = sliceKeys(s);
@@ -227,17 +258,20 @@ export function godotSlicesScene(texturePath: string, slices: readonly ExportSli
       const p = placeOf(at, key.frame);
       return `Rect2(${p.x + key.x}, ${p.y + key.y}, ${key.w}, ${key.h})`;
     };
-    if (s.center) {
-      const b = nineBorders(s)!;
+    if (nine(s)) {
+      // Any key with a middle makes it a NinePatchRect; the others have borders of 0, said outright.
+      const bord = (key: SliceKey) => nineBorders(key) ?? { left: 0, top: 0, right: 0, bottom: 0 };
       const off = (key: SliceKey) => ({ l: key.pivot ? -(key.pivot.x - key.x) : 0, t: key.pivot ? -(key.pivot.y - key.y) : 0 });
+      const k0 = ks[0];
+      const b = bord(k0);
       body.push(
         `[node name=${gd(node)} type="NinePatchRect" parent="."]`,
-        `offset_left = ${off(ks[0]).l}`,
-        `offset_top = ${off(ks[0]).t}`,
-        `offset_right = ${off(ks[0]).l + s.w}`,
-        `offset_bottom = ${off(ks[0]).t + s.h}`,
+        `offset_left = ${off(k0).l}`,
+        `offset_top = ${off(k0).t}`,
+        `offset_right = ${off(k0).l + k0.w}`,
+        `offset_bottom = ${off(k0).t + k0.h}`,
         'texture = ExtResource("1_sheet")',
-        `region_rect = Rect2(${first.x + s.x}, ${first.y + s.y}, ${s.w}, ${s.h})`,
+        `region_rect = Rect2(${first.x + k0.x}, ${first.y + k0.y}, ${k0.w}, ${k0.h})`,
         `patch_margin_left = ${b.left}`,
         `patch_margin_top = ${b.top}`,
         `patch_margin_right = ${b.right}`,
@@ -245,16 +279,15 @@ export function godotSlicesScene(texturePath: string, slices: readonly ExportSli
         '',
       );
       if (moves(s)) {
-        const bord = (key: SliceKey) => nineBorders(key) ?? { left: 0, top: 0, right: 0, bottom: 0 };
-        addTrack(`${node}:region_rect`, ks, regionOf);
-        addTrack(`${node}:offset_left`, ks, (key) => gdFloat(off(key).l));
-        addTrack(`${node}:offset_top`, ks, (key) => gdFloat(off(key).t));
-        addTrack(`${node}:offset_right`, ks, (key) => gdFloat(off(key).l + key.w));
-        addTrack(`${node}:offset_bottom`, ks, (key) => gdFloat(off(key).t + key.h));
-        addTrack(`${node}:patch_margin_left`, ks, (key) => String(bord(key).left));
-        addTrack(`${node}:patch_margin_top`, ks, (key) => String(bord(key).top));
-        addTrack(`${node}:patch_margin_right`, ks, (key) => String(bord(key).right));
-        addTrack(`${node}:patch_margin_bottom`, ks, (key) => String(bord(key).bottom));
+        addProp(`${node}:region_rect`, ks, regionOf);
+        addProp(`${node}:offset_left`, ks, (key) => gdFloat(off(key).l));
+        addProp(`${node}:offset_top`, ks, (key) => gdFloat(off(key).t));
+        addProp(`${node}:offset_right`, ks, (key) => gdFloat(off(key).l + key.w));
+        addProp(`${node}:offset_bottom`, ks, (key) => gdFloat(off(key).t + key.h));
+        addProp(`${node}:patch_margin_left`, ks, (key) => String(bord(key).left));
+        addProp(`${node}:patch_margin_top`, ks, (key) => String(bord(key).top));
+        addProp(`${node}:patch_margin_right`, ks, (key) => String(bord(key).right));
+        addProp(`${node}:patch_margin_bottom`, ks, (key) => String(bord(key).bottom));
       }
     } else if (moves(s)) {
       // The sheet itself with a region, so the region can change from key to key.
@@ -262,8 +295,8 @@ export function godotSlicesScene(texturePath: string, slices: readonly ExportSli
       body.push(`[node name=${gd(node)} type="Sprite2D" parent="."]`, 'texture = ExtResource("1_sheet")', 'centered = false', 'region_enabled = true', `region_rect = ${regionOf(ks[0])}`);
       if (ks[0].pivot) body.push(`offset = ${off(ks[0])}`);
       body.push('');
-      addTrack(`${node}:region_rect`, ks, regionOf);
-      addTrack(`${node}:offset`, ks, off);
+      addProp(`${node}:region_rect`, ks, regionOf);
+      addProp(`${node}:offset`, ks, off);
     } else {
       k++;
       body.push(`[node name=${gd(node)} type="Sprite2D" parent="."]`, `texture = SubResource("Atlas_${k}")`, 'centered = false');
@@ -271,15 +304,43 @@ export function godotSlicesScene(texturePath: string, slices: readonly ExportSli
       body.push('');
     }
   });
+  let steps = 2 + plain.length;
   if (moving.length) {
-    const frames = Math.max(track?.frames ?? 0, lastFrame + 1);
-    const len = sec(frames, track?.fps ?? 12);
-    // Every moving slice is on the same clock, so one animation (and one player) moves them all.
-    subs.push('[sub_resource type="Animation" id="Animation_slices"]', 'resource_name = "slices"', `length = ${len}`, 'loop_mode = 1', `step = ${sec(1, track?.fps ?? 12)}`, ...tracks, '');
-    subs.push('[sub_resource type="AnimationLibrary" id="AnimationLibrary_slices"]', '_data = {', '&"slices": SubResource("Animation_slices")', '}', '');
-    body.push('[node name="SlicePlayer" type="AnimationPlayer" parent="."]', 'libraries = {', '&"": SubResource("AnimationLibrary_slices")', '}', 'autoplay = "slices"', '');
+    // One animation per clip on one player. Every property that changes gets a track in each, set from the first step, so
+    // switching clips never leaves a slice where the last clip put it.
+    const keyAt = new Map<string, number[]>(moving.map((m) => [names[m.i], keyIndexPerFrame(m.s, count)]));
+    const used = new Set<string>();
+    const lib: string[] = [];
+    const animNames: string[] = [];
+    clips.forEach((c, n) => {
+      const name = gdAnimName(c.name, used);
+      const tracks: string[] = [];
+      let nTracks = 0;
+      for (const p of props) {
+        const owner = moving.find((m) => p.path.startsWith(gdNode(names[m.i]) + ':'))!;
+        const idx = keyAt.get(names[owner.i])!;
+        // The key in force on each step of the clip, kept only where it changes.
+        const times: string[] = [];
+        const values: string[] = [];
+        let prev = -1;
+        c.frames.forEach((f, step) => {
+          const j = idx[Math.max(0, Math.min(f, count - 1))];
+          if (j === prev) return;
+          prev = j;
+          times.push(sec(step, fps));
+          values.push(p.values[j]);
+        });
+        tracks.push(...gdTrack(nTracks++, p.path, times, values));
+      }
+      const length = sec(Math.max(1, c.frames.length), fps);
+      subs.push(`[sub_resource type="Animation" id="Animation_${n + 1}"]`, `resource_name = ${gd(name)}`, `length = ${length}`, `loop_mode = ${c.loop ? 1 : 0}`, `step = ${sec(1, fps)}`, ...tracks, '');
+      lib.push(`&${gd(name)}: SubResource("Animation_${n + 1}")`);
+      animNames.push(name);
+    });
+    subs.push('[sub_resource type="AnimationLibrary" id="AnimationLibrary_slices"]', '_data = {', lib.join(',\n'), '}', '');
+    body.push('[node name="SlicePlayer" type="AnimationPlayer" parent="."]', 'libraries = {', '&"": SubResource("AnimationLibrary_slices")', '}', `autoplay = ${gd(animNames[0])}`, '');
+    steps += 1 + clips.length;
   }
-  const steps = 2 + plain.length + (moving.length ? 2 : 0);
   return [`[gd_scene load_steps=${steps} format=3]`, '', `[ext_resource type="Texture2D" path=${gd(texturePath)} id="1_sheet"]`, '', ...subs, ...body].join('\n');
 }
 

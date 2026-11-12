@@ -11,7 +11,7 @@ import { noteColorUsed } from './recent';
 
 const PREVIEW = 220;
 
-function Preview({ doc, frame, label }: { doc: Doc; frame: number; label: string }) {
+export function Preview({ doc, frame, label }: { doc: Doc; frame: number; label: string }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     const c = ref.current;
@@ -47,6 +47,7 @@ function RecolourDialog({ close }: { close: () => void }) {
   const [stage, setStage] = useState(false);
   const result = useMemo(() => recolourDoc(doc, from, to, { closeness: close_, background: stage }), [doc, from, to, close_, stage]);
   const nothing = result.colours === 0 && result.pixels === 0;
+  const hasVariations = !result.inVariation && !!doc.artboards?.some((a) => a.variationOf);
 
   const apply = () => {
     if (!nothing) {
@@ -58,13 +59,20 @@ function RecolourDialog({ close }: { close: () => void }) {
   };
 
   const parts: string[] = [];
-  if (result.colours) parts.push(`${result.colours} colour${result.colours === 1 ? '' : 's'} in shapes and swatches`);
+  if (result.colours) parts.push(`${result.colours} colour${result.colours === 1 ? '' : 's'} in shapes${result.inVariation ? '' : ' and swatches'}`);
   if (result.pixels) parts.push(`${result.pixels.toLocaleString()} pixel${result.pixels === 1 ? '' : 's'}`);
 
   return (
     <Modal title="Recolour the whole animation" onClose={close} wide>
       <div className="io-body cv-recolour">
         <p className="io-muted">Swap one colour for another on every frame and every layer, vector and pixel alike. This is sometimes called a palette swap.</p>
+        {(result.inVariation || hasVariations) && (
+          <p className="io-muted" data-testid="recolour-where">
+            {result.inVariation
+              ? 'This is a variation: only this variation changes. The original and the other variations keep their colours.'
+              : 'This changes the original, and every variation that follows it (a colour a variation changed on its own stays as it is there).'}
+          </p>
+        )}
         <div className="cv-field-head">
           <span className="cv-field-label">1. Pick a colour to change</span>
         </div>

@@ -206,6 +206,21 @@ const entries = [
     ],
   },
   {
+    // Recolour this variation: the dialog open on the square cut, with the ball's pink and the ground's green on their way to new colours.
+    name: 'variations-recolour',
+    steps: [
+      L.js(`__framelingArtboards.load('variations')`),
+      L.wait(400),
+      L.js(`__framelingArtboards.ops.goToArtboard(__frameling.store().get().doc.artboards[1].id, true)`),
+      L.wait(600),
+      L.cmd('artboards.recolourVariation'),
+      L.wait(900),
+      L.js(`(() => { const set = (label, v) => { const i = document.querySelector('input[aria-label="' + label + '"]'); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(i, v); i.dispatchEvent(new Event('input', { bubbles: true })); }; set('New colour for #ff9e1f', '#4f9bd1'); set('New colour for #6abf4b', '#c9a227'); return true; })()`),
+      L.wait(900),
+      { shot: '@', el: '.io-modal', pad: 0 },
+    ],
+  },
+  {
     name: 'clip-flow',
     steps: [L.template('hero-sprites'), L.panel('clip-flow'), L.cmd('flow.try'), L.wait(800), { click: [987, 149] }, { move: [150, 250] }, L.wait(1000), { shot: '@', crop: [0, 0, 1280, 765] }],
   },

@@ -1,4 +1,4 @@
-// Artboard commands: palette, menus (View, and File > Export) and keys, plus the Artboards panel.
+// Artboard commands: palette, menus (Artboards, and File > Export) and keys, plus the Artboards panel.
 import { lazyPanel } from '../core/lazy';
 import { registerCommands, registerPanel } from '../core/registry';
 import type { State } from '../core/store';
@@ -46,6 +46,16 @@ const variationCommands: Parameters<typeof registerCommands>[0] = [
     enabled: top,
     run: () => void import('./variationOps').then((m) => m.makeVariationOf(undefined, preset)),
   })),
+  {
+    id: 'artboards.recolourVariation',
+    label: 'Recolour this variation...',
+    category: 'Artboards',
+    description: 'Pick colours and change them on every frame of this variation, and only here. Each is one line in its Differences, with a Reset.',
+    keywords: ['colourway', 'colorway', 'recolour variation', 'recolor variation', 'change colours', 'palette swap', 'variation colours'],
+    help: 'variations',
+    enabled: onVariation,
+    run: () => void import('./RecolourVariationDialog').then((m) => m.openRecolourVariation()),
+  },
   {
     id: 'artboards.resetVariation',
     label: 'Reset variation to the original',

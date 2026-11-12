@@ -19,7 +19,7 @@ The **Slices** panel (a tab next to Tool options in the Pixel workspace) lists t
 
 ## A slice that moves between frames
 
-For a hitbox that goes somewhere else on each frame, pick the slice and press **Move between frames**. Then go to another frame and move or resize the slice: that frame gets a key, and the slice keeps that place until the next key. **Remove this key** takes one away and **Keep in one place** makes it stay put again. Slices from Aseprite that move come in this way.
+For a hitbox that goes somewhere else on each frame, pick the slice and press **Move between frames**. Then go to another frame and move or resize the slice: that frame gets a key, and the slice keeps that place until the next key. **Remove this key** takes one away and **Keep in one place** makes it stay put again.
 
 ## 9-patch
 
@@ -31,9 +31,9 @@ Tick **Pivot** and a small cross appears at the bottom middle of the slice. Drag
 
 ## What the engines get
 
-The sprite sheet export (File > Export, Sprite sheet) writes slices next to the frames: a Godot scene with a NinePatchRect or a cut sprite for each, Unity sprites with borders and pivots, Phaser and PixiJS atlas frames with a pivot or anchor, a CSS rule for each, and a list in the JSON (Aseprite's shape) that keeps every key of a moving slice.
+The sprite sheet export (File > Export, Sprite sheet) writes slices next to the frames: a Godot scene with a NinePatchRect or a cut sprite each, Unity sprites with borders and pivots, Phaser and PixiJS atlas frames with a pivot or anchor, a CSS rule each, and a list in the JSON (Aseprite's shape) keeping every key.
 
-Regions are measured on whole frames, so the first frame you export, and each frame where a moving slice has a key, stay whole on the sheet. Each engine follows a moving slice, key by key. CSS shows the first place only.
+Regions are measured on whole frames, so the first frame you export, and each frame where a moving slice has a key, stay whole on the sheet. A moving slice gets an animation for each of your clips, in that clip's order, direction and repeat (named like the clip in Godot, "slice_hand_run" elsewhere). CSS shows the first place only.
 
 ## From Aseprite
 

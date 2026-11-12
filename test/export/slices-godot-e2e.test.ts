@@ -103,9 +103,15 @@ func _init():
         { frame: 0, x: 2, y: 3, w: 6, h: 6, center: { x: 3, y: 4, w: 4, h: 4 } },
         { frame: 3, x: 14, y: 6, w: 6, h: 6, center: { x: 15, y: 8, w: 3, h: 2 } },
       ] },
+      // No middle on the first key, one on the second: still a NinePatchRect, with borders of 0 until the key that has a middle.
+      { id: 'b', name: 'badge', x: 2, y: 3, w: 6, h: 6, keys: [
+        { frame: 0, x: 2, y: 3, w: 6, h: 6 },
+        { frame: 3, x: 14, y: 6, w: 6, h: 6, center: { x: 15, y: 8, w: 3, h: 2 } },
+      ] },
     ];
     const out = buildSheetFiles({
-      doc: { name: 'Hero', clips: [], markers: [], fps: 10 },
+      // Two clips: "run" through every frame, and "drop" backward from frame 5 to 1 (it holds the last picture).
+      doc: { name: 'Hero', clips: [{ id: 'c1', name: 'run', start: 0, end: 5, loop: true }, { id: 'c2', name: 'drop', start: 1, end: 5, loop: false, direction: 'reverse' }], markers: [], fps: 10 },
       sheet: { ...DEFAULT_SHEET, engine: 'godot', trim: true, dedupe: false, json: false, godotPath: 'res://sprites/hero.png' },
       frames,
       range: { start: 0, end: 5 },
@@ -130,7 +136,13 @@ func _initialize():
 	await process_frame
 	await process_frame
 	var p: AnimationPlayer = root_node.get_node("SlicePlayer")
-	var res := ["anim:%s:%s:%s" % [p.current_animation, p.get_animation("slices").length, p.get_animation("slices").loop_mode]]
+	var res := ["anim:%s:%s:%s" % [p.current_animation, p.get_animation("run").length, p.get_animation("run").loop_mode]]
+	var b = root_node.get_node("badge")
+	for t in [0.0, 0.25, 0.3, 0.5]:
+		p.play("run")
+		p.seek(t, true)
+		res.append("b=%s|%s|%d,%d,%d,%d|%s" % [t, b.get_class(), b.patch_margin_left, b.patch_margin_top, b.patch_margin_right, b.patch_margin_bottom, b.size])
+	res.append("drop:%s:%s" % [p.get_animation("drop").length, p.get_animation("drop").loop_mode])
 	for t in [0.0, 0.1, 0.2, 0.35, 0.4, 0.5]:
 		p.seek(t, true)
 		var h: Sprite2D = root_node.get_node("hand")
@@ -138,6 +150,15 @@ func _initialize():
 		var hc: Color = h.texture.get_image().get_pixel(int(h.region_rect.position.x) + 3, int(h.region_rect.position.y) + 3)
 		var nc: Color = n.texture.get_image().get_pixel(int(n.region_rect.position.x) + 3, int(n.region_rect.position.y) + 3)
 		res.append("t=%s|hand %s %s %s|panel %s %s %d,%d,%d,%d %s" % [t, h.region_rect, h.offset, hc.to_html(false), n.region_rect, n.size, n.patch_margin_left, n.patch_margin_top, n.patch_margin_right, n.patch_margin_bottom, nc.to_html(false)])
+	# The clip that plays backward: frames 5, 4, 3, 2, 1 at 0.1 s each.
+	p.play("drop")
+	for t in [0.0, 0.1, 0.2, 0.3, 0.4]:
+		p.seek(t, true)
+		var h2: Sprite2D = root_node.get_node("hand")
+		var n2: NinePatchRect = root_node.get_node("panel")
+		var hc2: Color = h2.texture.get_image().get_pixel(int(h2.region_rect.position.x) + 3, int(h2.region_rect.position.y) + 3)
+		var nc2: Color = n2.texture.get_image().get_pixel(int(n2.region_rect.position.x) + 3, int(n2.region_rect.position.y) + 3)
+		res.append("d=%s|%s|%s" % [t, hc2.to_html(false), nc2.to_html(false)])
 	print("RESULT " + "#".join(res))
 	quit()
 `,
@@ -146,7 +167,18 @@ func _initialize():
     const res = execFileSync(GODOT!, ['--headless', '--path', dir, '--script', 'check.gd'], { encoding: 'utf8', timeout: 120000 });
     const line = res.split('\n').find((l) => l.startsWith('RESULT ')) ?? res;
     const rows = line.slice(7).split('#');
-    expect(rows[0]).toBe('anim:slices:0.6:1');
+    // The first clip plays on its own; each clip is an animation of its own name.
+    expect(rows[0]).toBe('anim:run:0.6:1');
+    expect(rows.find((r) => r.startsWith('drop:'))).toBe('drop:0.5:0');
+    // The badge is a NinePatchRect, its borders 0 until the key that has a middle.
+    const bd = (t: string) => rows.find((r) => r.startsWith(`b=${t}|`))!;
+    expect(bd('0.0')).toBe('b=0.0|NinePatchRect|0,0,0,0|(6.0, 6.0)');
+    expect(bd('0.25')).toBe('b=0.25|NinePatchRect|0,0,0,0|(6.0, 6.0)');
+    expect(bd('0.3')).toBe('b=0.3|NinePatchRect|1,2,2,2|(6.0, 6.0)');
+    expect(bd('0.5')).toBe('b=0.5|NinePatchRect|1,2,2,2|(6.0, 6.0)');
+    // Backward over frames 5 to 1: the hand and panel keys in force are cyan/yellow, cyan/yellow, blue/yellow, blue/red, red/red.
+    const d = (t: string) => rows.find((r) => r.startsWith(`d=${t}|`))!;
+    for (const [t, hand, panel] of [['0.0', '00ffff', 'ffff00'], ['0.1', '00ffff', 'ffff00'], ['0.2', '0000ff', 'ffff00'], ['0.3', '0000ff', 'ff0000'], ['0.4', 'ff0000', 'ff0000']]) expect(d(t), t).toBe(`d=${t}|${hand}|${panel}`);
     const at = (t: string) => rows.find((r) => r.startsWith(`t=${t}|`))!;
     // The key in force at each time: hand keys at 0, 0.2, 0.4 s (frames 0, 2, 4: red, blue, cyan); panel keys at 0 and 0.3 s (frames 0, 3: red, yellow).
     for (const [t, hand, panel] of [['0.0', 'ff0000', 'ff0000'], ['0.1', 'ff0000', 'ff0000'], ['0.2', '0000ff', 'ff0000'], ['0.35', '0000ff', 'ffff00'], ['0.4', '00ffff', 'ffff00'], ['0.5', '00ffff', 'ffff00']]) {

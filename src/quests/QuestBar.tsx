@@ -6,6 +6,7 @@ import { openHelp } from '../ui/overlays';
 import { engine, putDownQuest } from './runtime';
 import { feedback } from './feedback';
 import { getQuest, questProgress } from './registry';
+import { placeBar, type Spot } from './place';
 import { resolveTarget } from './target';
 
 /** The small guide bar, bottom-left above the status bar: what to do now, how far along, Skip and Show me. */
@@ -15,7 +16,7 @@ export function QuestBar() {
   const quest = p.active ? getQuest(p.active) : undefined;
   const step = quest?.steps[p.step];
   const ref = useRef<HTMLElement>(null);
-  const [side, setSide] = useState<'left' | 'right'>('left');
+  const [spot, setSpot] = useState<Spot>('bl');
 
   // Quill presents the step: a cheer when the last one was just done, talk, point at the ring, then idle.
   const [cheerKey, setCheerKey] = useState(0);
@@ -27,26 +28,30 @@ export function QuestBar() {
     [quest?.id, step?.id, cheerKey, p.hint],
   );
 
-  // If the thing being pointed at sits where the bar is, hop to the other corner.
+  // Keep the thing being pointed at in view: move to a corner that leaves it clear, and look again when the window changes.
   useEffect(() => {
     if (!step) return;
     const look = () => {
-      const bar = ref.current?.getBoundingClientRect();
+      const bar = ref.current;
       const el = resolveTarget(step.target);
-      if (!bar || !el) return;
-      const t = el.getBoundingClientRect();
-      const hit = t.left < bar.right && t.right > bar.left && t.top < bar.bottom && t.bottom > bar.top;
-      if (hit) setSide((s) => (s === 'left' ? 'right' : 'left'));
+      if (!bar) return;
+      const t = el?.getBoundingClientRect();
+      const box = t && t.width > 0 ? { left: t.left, top: t.top, right: t.right, bottom: t.bottom } : null;
+      setSpot((s) => placeBar(s, { w: bar.offsetWidth, h: bar.offsetHeight }, { w: window.innerWidth, h: window.innerHeight }, box));
     };
     look();
     const every = setInterval(look, 600);
-    return () => clearInterval(every);
+    window.addEventListener('resize', look);
+    return () => {
+      clearInterval(every);
+      window.removeEventListener('resize', look);
+    };
   }, [quest?.id, step?.id]);
 
   if (!quest || !step) return null;
   const last = p.step === quest.steps.length - 1;
   return (
-    <section ref={ref} className={`qb qb-${side}`} role="region" aria-label={`Quest: ${quest.title}`} data-quest="bar">
+    <section ref={ref} className={`qb qb-${spot}`} role="region" aria-label={`Quest: ${quest.title}`} data-quest="bar">
       {praise && (
         <span className="qb-praise" key={praise.key} role="status">
           <Icon name="check" size={14} /> {praise.text}

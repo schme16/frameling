@@ -92,7 +92,8 @@ describe.skipIf(!process.env.WEB_ENGINES)('Phaser, PixiJS and CSS read the slice
     ];
     const make = (engine: string) =>
       buildSheetFiles({
-        doc: { name: 'Hero', clips: [], markers: [], fps: 10 },
+        // Two clips: "run" through every frame, and "drop" backward from frame 5 to 1.
+        doc: { name: 'Hero', clips: [{ id: 'c1', name: 'run', start: 0, end: 5, loop: true }, { id: 'c2', name: 'drop', start: 1, end: 5, loop: false, direction: 'reverse' }], markers: [], fps: 10 },
         sheet: { ...DEFAULT_SHEET, engine, trim: true, dedupe: false, json: false } as never,
         frames,
         range: { start: 0, end: 5 },
@@ -126,7 +127,9 @@ describe.skipIf(!process.env.WEB_ENGINES)('Phaser, PixiJS and CSS read the slice
       expect(f.hand_f3.pivot, k).toEqual([0.5, 0.5]);
       expect(f.hand_f5.pivot, k).toBeNull();
       // The engine reads the animation: one entry per exported frame, held keys repeated.
-      expect(res[k].anims.slice_hand, k).toEqual({ frameRate: 10, frames: held });
+      expect(res[k].anims.slice_hand_run, k).toEqual({ frameRate: 10, frames: held });
+      // The clip that plays backward (frames 5 to 1) shows the keys the other way round.
+      expect(res[k].anims.slice_hand_drop, k).toEqual({ frameRate: 10, frames: ['hand_f5', 'hand_f5', 'hand_f3', 'hand_f3', 'hand'] });
     }
     expect(res.pixi.error).toBeUndefined();
     expect(res.pixi.frames.hand_f3).toMatchObject({ w: 6, h: 6, anchor: [0.5, 0.5] });
@@ -134,11 +137,13 @@ describe.skipIf(!process.env.WEB_ENGINES)('Phaser, PixiJS and CSS read the slice
     expect(res.pixi.frames.hand.anchor[0]).toBeCloseTo(2 / 6, 3);
     expect(res.pixi.frames.hand_f5.anchor).toBeNull();
     // The animation lists the region of each exported frame's key.
-    const a = res.pixi.anims.slice_hand as number[][];
+    const a = res.pixi.anims.slice_hand_run as number[][];
     expect(a).toHaveLength(6);
     expect(a[0]).toEqual([res.pixi.frames.hand.x, res.pixi.frames.hand.y]);
     expect(a[2]).toEqual([res.pixi.frames.hand_f3.x, res.pixi.frames.hand_f3.y]);
     expect(a[5]).toEqual([res.pixi.frames.hand_f5.x, res.pixi.frames.hand_f5.y]);
+    const back = res.pixi.anims.slice_hand_drop as number[][];
+    expect(back.map((r) => r.join())).toEqual([res.pixi.frames.hand_f5, res.pixi.frames.hand_f5, res.pixi.frames.hand_f3, res.pixi.frames.hand_f3, res.pixi.frames.hand].map((f) => [f.x, f.y].join()));
     // The same regions as the files say.
     const atlas = JSON.parse(new TextDecoder().decode(sheets.phaser.files.find((x) => x.name === 'hero.json')!.bytes));
     expect(res.phaser3.frames.hand_f3).toMatchObject({ x: atlas.frames.hand_f3.frame.x, y: atlas.frames.hand_f3.frame.y });
