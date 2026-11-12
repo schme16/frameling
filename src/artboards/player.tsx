@@ -141,21 +141,29 @@ function ShotsPlayer({ close }: { close: () => void }) {
             </button>
           ))}
         </div>
+        {/* Two rows: how the picture looks (size, Fit or Fill), then what is playing and the buttons. */}
+        <div className="ab-player-look">
+          <PictureSizeControl sizes={sizes} />
+          {mixed && (
+            <div className="ab-pic">
+              <span className="ab-pic-label" id="ab-fit-label">
+                Other sizes
+              </span>
+              <div className="ex-seg" role="group" aria-labelledby="ab-fit-label">
+                <button type="button" className={fit === 'bars' ? 'ex-on' : ''} aria-pressed={fit === 'bars'} title="Show the whole shot, with bars" onClick={() => setChoice('artboards.fit', 'bars')}>
+                  Fit (bars)
+                </button>
+                <button type="button" className={fit === 'fill' ? 'ex-on' : ''} aria-pressed={fit === 'fill'} title="Cover the picture and crop what hangs over" onClick={() => setChoice('artboards.fit', 'fill')}>
+                  Fill (crop)
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
         <div className="io-foot ab-player-foot">
           <span className="io-muted">
             {shot.name}, frame {at.frame + 1} of {shot.doc.length}
           </span>
-          <PictureSizeControl sizes={sizes} />
-          {mixed && (
-            <div className="ex-seg" role="group" aria-label="Shots of different sizes">
-              <button type="button" className={fit === 'bars' ? 'ex-on' : ''} aria-pressed={fit === 'bars'} title="Show the whole shot, with bars" onClick={() => setChoice('artboards.fit', 'bars')}>
-                Fit (bars)
-              </button>
-              <button type="button" className={fit === 'fill' ? 'ex-on' : ''} aria-pressed={fit === 'fill'} title="Cover the picture and crop what hangs over" onClick={() => setChoice('artboards.fit', 'fill')}>
-                Fill (crop)
-              </button>
-            </div>
-          )}
           <label className="ex-check">
             <input type="checkbox" checked={loop} onChange={(e) => setLoop(e.target.checked)} />
             <span>Loop</span>
