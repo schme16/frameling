@@ -204,7 +204,24 @@ function folderUnit(doc: Doc, n: Extract<TreeNode, { type: 'folder' }>, frame: n
   const extra = { ...(inside.length ? { inside } : {}), ...(off ? { hidden: true } : {}), ...(hide ? { inHidden: true } : {}) };
   // A folder with effects, or a mask inside it, is one picture; otherwise it stays vector, faded and blended as a group.
   if (activeEffects(f.effects, frame).length || direct.some((m) => m.mask && m.visible)) {
-    return [{ kind: 'picture', layers: n.children.flatMap(nodeLayers).filter((m) => m.visible), ...extra }];
+    // The picture shows the members that are on. Switched off ones (the layer, or a folder inside) would be lost in it, so
+    // plans that keep hidden layers also hold them, hidden, in a folder of their own next to the picture.
+    const on: Layer[] = [];
+    const off: Layer[] = [];
+    const sort = (nodes: TreeNode[], hid: boolean) => {
+      for (const c of nodes) {
+        if (c.type === 'folder') sort(c.children, hid || !c.folder.visible);
+        else (hid || !c.layer.visible ? off : on).push(c.layer);
+      }
+    };
+    sort(n.children, false);
+    const out: FlatUnit[] = [];
+    if (includeHidden && off.length) {
+      const held: LayerFolder = { ...f, id: `${f.id}-hidden-layers`, name: `${f.name} (hidden layers)`, visible: false, opacity: 1, blend: undefined, effects: undefined };
+      out.push({ kind: 'folder', folder: held, units: off.map((l) => hiddenUnit(doc, l, frame)), hidden: true, inHidden: true, ...(inside.length ? { inside } : {}) });
+    }
+    out.push({ kind: 'picture', layers: on, ...extra });
+    return out;
   }
   return [{ kind: 'folder', folder: f, units: levelUnits(doc, n.children, frame, includeHidden, [...inside, f.id], hide), ...(inside.length ? { inside } : {}), ...(off ? { hidden: true } : {}), ...(inHidden ? { inHidden: true } : {}) }];
 }
@@ -217,6 +234,11 @@ function folderUnit(doc: Doc, n: Extract<TreeNode, { type: 'folder' }>, frame: n
 export function flatPlan(doc: Doc, frame = 0, includeHidden = false): FlatUnit[] {
   const tree = layerTree({ folders: doc.folders, layers: doc.layers.filter(exported) });
   return levelUnits(doc, tree, frame, includeHidden, [], false).filter(nonEmpty);
+}
+
+/** How many units come in as a picture, looking inside folders (and hidden layers when the plan kept them). */
+export function pictureCount(units: FlatUnit[]): number {
+  return units.reduce((n, u) => n + (u.kind === 'picture' ? 1 : u.kind === 'folder' ? pictureCount(u.units) : 0), 0);
 }
 
 function nonEmpty(u: FlatUnit): boolean {

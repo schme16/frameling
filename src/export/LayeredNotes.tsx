@@ -1,7 +1,7 @@
 // What the PSD, PDF, Illustrator and ProRes exports keep, in a sentence or two, with a link to the full help.
 import type { Doc } from '../core/format';
 import { openHelp } from '../ui/overlays';
-import { flatPlan } from './layered';
+import { flatPlan, pictureCount } from './layered';
 import type { FormatId } from './types';
 
 const NOTES: Partial<Record<FormatId, { legend: string; text: string; help: string; link: string }>> = {
@@ -34,7 +34,7 @@ const NOTES: Partial<Record<FormatId, { legend: string; text: string; help: stri
 export function LayeredNotes({ format, doc }: { format: FormatId; doc: Doc }) {
   const n = NOTES[format];
   if (!n) return null;
-  const pictures = format === 'pdf' || format === 'ai' ? flatPlan(doc).filter((u) => u.kind === 'picture').length : 0;
+  const pictures = format === 'pdf' || format === 'ai' ? pictureCount(flatPlan(doc, 0, format === 'ai')) : 0;
   return (
     <fieldset>
       <legend>{n.legend}</legend>
