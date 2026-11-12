@@ -1,7 +1,9 @@
-// Every test that draws or exports gets the kinds of shape the app registers (text, particles), and their export code
+// Every test that draws or exports gets the kinds of shape the app registers (text, particles, tilemaps, bone-attached layers), and their export code
 // loaded, as the app has them at start. A test of what happens without a kind registers none itself.
 import '../src/text/kind';
 import '../src/particles/kind';
+import '../src/tiles/kind';
+import '../src/rig/kind';
 import { loadShapeExports } from '../src/export/shapeExport';
 import { godotEngine } from '../src/export/godot';
 import { registerEngine } from '../src/export/types';

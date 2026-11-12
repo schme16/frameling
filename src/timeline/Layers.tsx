@@ -5,6 +5,7 @@ import { Icon } from '../ui/icons';
 import { say } from './commands';
 import { runCmd, tip } from './cmd';
 import { ContextMenu, InlineName, type MenuItem } from './Menu';
+import { isFeatureOn } from '../features/host';
 import { addTilemapLayer } from '../tiles/ops';
 import * as ops from './ops';
 import { pickKeys, setTl, toggleOpen, useTl } from './state';
@@ -82,7 +83,8 @@ export function layerMenu(layer: Layer, onRename: () => void): MenuItem[] {
     { separator: true },
     { label: 'Add a vector layer above', onClick: () => void ops.addVectorLayer(layer.id) },
     { label: 'Add a pixel layer above', onClick: () => void ops.addPixelLayer(layer.id) },
-    { label: 'Add a tilemap layer above', onClick: () => void addTilemapLayer(layer.id) },
+    // Tilemap layers belong to the Tiles feature.
+    ...(isFeatureOn('tiles') ? [{ label: 'Add a tilemap layer above', onClick: () => void addTilemapLayer(layer.id) }] : []),
     ...lookMenu(layer),
   ];
 }

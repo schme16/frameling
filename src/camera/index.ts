@@ -2,6 +2,7 @@
 // feature that can be turned off (Preferences > Features). The camera layer itself stays in the document, and exports
 // and playback keep following it whether or not the feature is on; what goes is the Camera tool, panel and commands.
 import { defineFeature } from '../features/feature';
+import { layerOf, toolIs } from '../ui/panelInfo';
 import { cameraTool, registerCameraFrame } from './canvas';
 import { cameraCommands, cameraPanel } from './commands';
 import { cameraHelp } from './help';
@@ -16,6 +17,16 @@ export const cameraFeature = defineFeature({
   tools: [cameraTool],
   help: cameraHelp,
   templates: ['camera-parallax'],
+  sections: {
+    camera: {
+      blurb: 'The camera: pan, zoom and turn the view of the scene, and depth for parallax.',
+      group: 'properties',
+      section: true,
+      relevant: (s) => layerOf(s)?.kind === 'camera' || toolIs('camera', 'camera-move')(s),
+      idle: 'Pick the camera layer',
+      keywords: ['pan', 'zoom', 'parallax', 'view'],
+    },
+  },
   // A drawing with a camera layer (its keys and the depth of other layers stay in the file).
   usedBy: (doc) => doc.layers.some((l) => l.kind === 'camera'),
   activate: registerCameraFrame,

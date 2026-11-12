@@ -5,6 +5,7 @@
  */
 import type { Cel, Doc, Drawing, Id, Layer, Pose, Rig, VectorDrawing, VectorLayer } from '../core/format';
 import { tweenEase } from '../core/ease';
+import type { PosedMesh } from '../core/layerKinds';
 import { deformMesh, lerpPose, mapply, minv, mmul, rigState, unposeOnMesh, type Mat, type RigState } from './math';
 
 export type RigLayer = VectorLayer & { rig: Rig };
@@ -144,12 +145,6 @@ const isIdentity = (m: Mat) => Math.abs(m[0] - 1) < 1e-9 && Math.abs(m[1]) < 1e-
 type Bind = NonNullable<Layer['bind']>;
 const wrapCache = new WeakMap<Bind, WeakMap<Drawing, WeakMap<RigState, Map<number, Drawing>>>>();
 
-/** The mesh a posed layer is drawn through: rest points, posed points and triangles. Runtime only. */
-export interface PosedMesh {
-  src: number[];
-  dst: number[];
-  triangles: number[];
-}
 
 /**
  * What an attached layer shows: its drawing moved by its bone (or bent by its mesh), as a drawing holding one posed

@@ -4,7 +4,8 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import '../../src/core/commands';
 import '../../src/tools';
 import { defineFeature } from '../../src/features/feature';
-import { PLANNED_FEATURES } from '../../src/features/planned';
+import { rigFeature } from '../../src/rig';
+import { tilesFeature } from '../../src/tiles';
 import { _resetFeaturesForTests, registerFeatures, setFeatureOn } from '../../src/features/host';
 import { questFeaturesOn } from '../../src/features/sync';
 import { allQuests, registerQuest, setStarter, startQuest } from '../../src/quests/registry';
@@ -51,7 +52,7 @@ describe('quests of a feature that is off', () => {
 });
 
 describe('the built-in quests', () => {
-  const known = new Set([...PLANNED_FEATURES, lipsyncFeature, audioFeature, cameraFeature, flowFeature, interactivesFeature, particlesFeature, textFeature].map((f) => f.id));
+  const known = new Set([rigFeature, tilesFeature, lipsyncFeature, audioFeature, cameraFeature, flowFeature, interactivesFeature, particlesFeature, textFeature].map((f) => f.id));
 
   it('only name features that exist', () => {
     for (const q of QUESTS) for (const f of q.features ?? []) expect(known.has(f), `${q.id} names ${f}`).toBe(true);
@@ -66,8 +67,8 @@ describe('the built-in quests', () => {
     expect(by['camera-move']).toEqual(['camera']);
   });
 
-  it('stay available while their legacy features cannot be switched', () => {
-    registerFeatures(PLANNED_FEATURES);
+  it('are all offered while every feature is on', () => {
+    registerFeatures([rigFeature, tilesFeature, cameraFeature, particlesFeature, textFeature]);
     expect(QUESTS.every(questFeaturesOn)).toBe(true);
   });
 });

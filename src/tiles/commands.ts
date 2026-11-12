@@ -1,5 +1,5 @@
 import { findLayer } from '../core/doc';
-import { registerCommands, type Command } from '../core/registry';
+import type { Command } from '../core/registry';
 import { store, type State } from '../core/store';
 import { fit, isAutoFit } from '../canvas/controller';
 import { showPanel } from '../ui/dock';
@@ -25,7 +25,7 @@ function square(): boolean {
   return !!ts && ts.tileWidth === ts.tileHeight;
 }
 
-export const TILE_COMMANDS: Command[] = [
+export const tileCommands: Command[] = [
   {
     id: 'tiles.tileMode',
     label: 'Tile mode (repeat around the edges)',
@@ -192,4 +192,3 @@ export const TILE_COMMANDS: Command[] = [
   },
 ];
 
-registerCommands(TILE_COMMANDS);

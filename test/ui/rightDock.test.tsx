@@ -3,6 +3,8 @@ import { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { registerPanel } from '../../src/core/registry';
+import { particlesFeature } from '../../src/particles';
+import { registerPanelInfo } from '../../src/ui/panelInfo';
 import { dock, resetDock, setActive } from '../../src/ui/dock';
 import { DockZoneView } from '../../src/ui/DockView';
 import { folded, panelPicker, rightStyle } from '../../src/ui/rightStyle';
@@ -18,6 +20,7 @@ Element.prototype.scrollIntoView ??= () => {};
 
 const body = (text: string) => () => <p>{text}</p>;
 beforeAll(() => {
+  for (const [id, info] of Object.entries(particlesFeature.sections ?? {})) registerPanelInfo(id, info);
   registerPanel({ id: 'tool-options', title: 'Tool options', icon: 'sliders', component: body('tool body'), zone: 'right', order: 10, help: 'tool-options' });
   registerPanel({ id: 'colors', title: 'Colours', icon: 'palette', component: body('colour body'), zone: 'right', order: 20 });
   registerPanel({ id: 'particles', title: 'Particles', icon: 'particles', component: body('particle body'), zone: 'right', order: 36 });

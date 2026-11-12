@@ -39,9 +39,9 @@ import { shapeExportOf } from './shapeExport';
 import { cameraViewAt, cameraViewOn, activeCamera, depthAnchor, depthScale, parallaxFactor } from '../core/camera';
 import { encodePng } from '../io/png';
 import { fitClosed, sampleMidpointSpline } from './curve-fit';
-import { flattenTilemap } from '../tiles/model';
+import { flattenDrawing } from '../core/layerKinds';
 import { sortedStops } from '../core/gradient';
-import type { PosedMesh } from '../rig/pose';
+import type { PosedMesh } from '../core/layerKinds';
 
 export interface LottieOptions {
   /** Frames to include (inclusive, document frame numbers). Default: the whole animation. */
@@ -1028,7 +1028,7 @@ function layerPieces(ctx: Ctx, layer: Layer, from: number, to: number, offset: n
     };
     if (layer.kind === 'pixel' || layer.kind === 'tilemap') {
       const d = doc.drawings[cel.drawingId];
-      const px = d?.kind === 'pixel' ? d : d?.kind === 'tilemap' ? flattenTilemap(doc, d, cel.start) : undefined;
+      const px = d?.kind === 'pixel' ? d : d?.kind === 'tilemap' ? flattenDrawing(doc, d, cel.start) : undefined;
       if (!px || px.width < 1 || px.height < 1) continue;
       const id = imageAsset(ctx, px.id + ':' + layer.pixelSize, px, layer.pixelSize);
       // A pixel drawing holds only its painted block, which sits (x, y) art pixels in from the corner.

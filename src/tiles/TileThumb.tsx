@@ -2,7 +2,7 @@
 import { useEffect, useRef } from 'react';
 import type { PixelDrawing } from '../core/format';
 import { pixelCanvas } from '../core/render';
-import { drawTileAt } from '../core/tilemap';
+import { drawTileAt } from './map';
 
 export function TileThumb({ drawing, size, flags = 0, label }: { drawing: PixelDrawing | undefined; size: number; flags?: number; label?: string }) {
   const ref = useRef<HTMLCanvasElement>(null);

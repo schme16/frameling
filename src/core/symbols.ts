@@ -15,7 +15,7 @@ import { locate, tableOf } from './motionPath';
 import { celAt, uid } from './doc';
 import { kindOf, type PoseEnv } from './shapeKinds';
 import { morphShapes } from './shape-tween';
-import { boundDrawing, type PosedMesh } from '../rig/pose';
+import { bindLayer, type PosedMesh } from './layerKinds';
 
 // ---------------------------------------------------------------- matrices
 
@@ -477,7 +477,7 @@ export const poseStats = { built: 0 };
  */
 export function poseAt(doc: Doc, layer: Layer, frame: number, depth = 0): Drawing | undefined {
   const d = poseCel(doc, layer, frame, depth);
-  return d && layer.bind ? boundDrawing(doc, layer, frame, d) : d;
+  return d && layer.bind ? bindLayer(doc, layer, frame, d) : d;
 }
 
 function poseCel(doc: Doc, layer: Layer, frame: number, depth: number): Drawing | undefined {
@@ -642,7 +642,7 @@ export function isInBetween(doc: Doc, layer: Layer, frame: number): boolean {
 /** A drawing being changed right now (a stroke in progress), with its instances posed like the stored one's. */
 export function poseLive(doc: Doc, layer: Layer, frame: number, live: Drawing): Drawing {
   const d = poseLiveCel(doc, layer, frame, live);
-  return layer.bind ? boundDrawing(doc, layer, frame, d) : d;
+  return layer.bind ? bindLayer(doc, layer, frame, d) : d;
 }
 
 function poseLiveCel(doc: Doc, layer: Layer, frame: number, live: Drawing): Drawing {

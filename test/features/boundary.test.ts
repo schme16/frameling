@@ -1,13 +1,12 @@
 // @vitest-environment jsdom
 // The import boundary: core must not reach into feature folders, and a feature that has moved onto a descriptor is
 // only imported by the places that are meant to. Today's back-imports are listed on purpose; the list may only
-// shrink (a stale entry fails too), until stage 4 of the plugin plan empties it.
+// shrink (a stale entry fails too). Only core/render.ts -> effects is left: the effects stay core by nature.
 import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { allFeatures, registerFeatures } from '../../src/features/host';
-import { PLANNED_FEATURES } from '../../src/features/planned';
 import type { FeatureDescriptor } from '../../src/features/feature';
 import { audioFeature } from '../../src/audio';
 import { cameraFeature } from '../../src/camera';
@@ -16,7 +15,9 @@ import { flowFeature } from '../../src/flow';
 import { interactivesFeature } from '../../src/interactives';
 import { lipsyncFeature } from '../../src/lipsync';
 import { particlesFeature } from '../../src/particles';
+import { rigFeature } from '../../src/rig';
 import { textFeature } from '../../src/text';
+import { tilesFeature } from '../../src/tiles';
 
 const SRC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../src');
 
@@ -24,7 +25,7 @@ const SRC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../sr
 const FEATURE_FOLDERS = ['audio', 'particles', 'text', 'tiles', 'rig', 'flow', 'interactives', 'lipsync', 'effects'];
 
 /** Core files that still import a feature folder (to burn down: core should call a registry instead). */
-const CORE_BACK_IMPORTS = ['core/render.ts -> effects', 'core/symbols.ts -> rig', 'core/tilemap.ts -> tiles'];
+const CORE_BACK_IMPORTS = ['core/render.ts -> effects'];
 
 /** Who may import a folder whose feature has moved onto a descriptor. */
 const CONVERTED: Record<string, { importers: string[] }> = {
@@ -39,9 +40,13 @@ const CONVERTED: Record<string, { importers: string[] }> = {
   lipsync: { importers: ['renderer/features.ts', 'templates/lip-sync.ts'] },
   // Templates that use its shapes, the lessons, and (for text) the canvas, which opens the editor on a double click, and plugins, whose text items become text shapes.
   particles: { importers: ['quests/library.ts', 'renderer/features.ts', 'templates/explosion.ts'] },
+  // Pure bone maths and posing, which the canvas, the timeline, the exporters, the templates and the Godot/Lottie/PDF writers use on any puppet (it keeps working with the feature off); plus the lesson and the debug hook.
+  rig: { importers: ['canvas/engine.ts', 'canvas/pipeline.ts', 'export/bonesExtrasDoc.ts', 'export/godot-bones-scope.ts', 'export/godot-bones.ts', 'export/kitchenSink.ts', 'quests/library.ts', 'renderer/debug.ts', 'renderer/features.ts', 'templates/puppet.ts', 'timeline/propKeys.ts', 'timeline/tracks.ts'] },
+  // Tile mode and tile editing are read by the canvas, the pixel tools, artboards and symbols (a level keeps drawing and editing with the feature off); the templates that build levels; the lesson and the debug hook.
+  tiles: { importers: ['artboards/Underlay.tsx', 'artboards/ops.ts', 'artboards/player.tsx', 'artboards/variationOps.ts', 'canvas/CanvasView.tsx', 'canvas/controller.ts', 'canvas/engine.ts', 'export/ExportDialog.tsx', 'export/kitchenSink.ts', 'pixel/PixelBar.tsx', 'quests/library.ts', 'renderer/debug.ts', 'renderer/features.ts', 'symbols/ops.ts', 'templates/blank.ts', 'templates/tileset.ts', 'timeline/Layers.tsx', 'tools/fill.ts', 'tools/pixelSession.ts'] },
   text: { importers: ['canvas/CanvasView.tsx', 'plugins/drawlist.ts', 'plugins/fonts.ts', 'quests/library.ts', 'renderer/features.ts', 'templates/spinner.ts', 'templates/title-card.ts'] },
 };
-const DESCRIPTORS: Record<string, FeatureDescriptor> = { audio: audioFeature, camera: cameraFeature, 'godot-export': godotFeature, flow: flowFeature, interactives: interactivesFeature, lipsync: lipsyncFeature, particles: particlesFeature, text: textFeature };
+const DESCRIPTORS: Record<string, FeatureDescriptor> = { audio: audioFeature, camera: cameraFeature, 'godot-export': godotFeature, flow: flowFeature, interactives: interactivesFeature, lipsync: lipsyncFeature, particles: particlesFeature, rig: rigFeature, text: textFeature, tiles: tilesFeature };
 
 const walk = (dir: string): string[] => readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(dir, e.name)) : /\.(ts|tsx)$/.test(e.name) ? [path.join(dir, e.name)] : []));
 const IMPORT = /(?:from\s+|import\s*\(\s*|import\s+)['"](\.[^'"]+)['"]/g;
@@ -85,7 +90,7 @@ describe('a feature that has a descriptor', () => {
   const converted = Object.keys(CONVERTED);
 
   it('the list here matches what the app has converted', () => {
-    registerFeatures([...PLANNED_FEATURES, ...Object.values(DESCRIPTORS)]);
+    registerFeatures(Object.values(DESCRIPTORS));
     const real = allFeatures().filter((d) => d.optional && !d.legacy).map((d) => d.id);
     expect(real.sort()).toEqual([...converted].sort());
   });

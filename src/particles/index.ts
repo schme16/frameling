@@ -4,6 +4,7 @@
 // panel, the commands and the choice about where new particles go.
 import { lazyPanel } from '../core/lazy';
 import { defineFeature } from '../features/feature';
+import { picked } from '../ui/panelInfo';
 import './kind';
 import { particlesCommands } from './commands';
 import { particlesHelp } from './help';
@@ -19,5 +20,16 @@ export const particlesFeature = defineFeature({
   help: particlesHelp,
   choices: [particlesWhere],
   templates: ['explosion-fx'],
+  sections: {
+    particles: {
+      blurb: 'Sparkles, smoke, rain, confetti and other effects made of many small bits.',
+      group: 'properties',
+      section: true,
+      selection: true,
+      relevant: (s) => picked(s).some((x) => x.type === 'particles'),
+      idle: 'Select particles on the canvas',
+      keywords: ['emitter', 'smoke', 'rain', 'confetti', 'sparkle', 'snow'],
+    },
+  },
   usedBy: (doc) => Object.values(doc.drawings).some((d) => d.kind === 'vector' && d.shapes.some((s) => s.type === 'particles')),
 });

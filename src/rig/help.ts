@@ -1,6 +1,6 @@
-import { registerHelpTopics } from '../core/registry';
+import type { HelpTopic } from '../core/registry';
 
-registerHelpTopics([
+export const rigHelp: HelpTopic[] = [
   {
     id: 'rig',
     order: 1,
@@ -162,4 +162,4 @@ Mirroring pairs bones by name, so name them with *left* and *right* (or *L* and 
 
 A walk is two poses and their mirrors: contact, passing, then the same two mirrored. See the **Paper doll puppet** template for one built that way.`,
   },
-]);
+];

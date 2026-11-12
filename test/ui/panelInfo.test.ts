@@ -2,14 +2,18 @@
 import { describe, expect, it } from 'vitest';
 import { newDoc } from '../../src/core/doc';
 import { Store, type State } from '../../src/core/store';
+import { cameraFeature } from '../../src/camera';
 import { flowFeature } from '../../src/flow';
 import { lipsyncFeature } from '../../src/lipsync';
+import { particlesFeature } from '../../src/particles';
+import { rigFeature } from '../../src/rig';
+import { textFeature } from '../../src/text';
+import { tilesFeature } from '../../src/tiles';
 import { infoFor, isSection, registerPanelInfo, matchPanel, PANEL_INFO, railGroups, sectionsNow, splitZone } from '../../src/ui/panelInfo';
 import { folded, foldAll, onlyOpen, setFolded } from '../../src/ui/rightStyle';
 
-// Lip sync adds its own entry when its feature is on.
-registerPanelInfo('lipsync', lipsyncFeature.sections!.lipsync);
-registerPanelInfo('clip-flow', flowFeature.sections!['clip-flow']);
+// A feature adds its own entry when it is on.
+for (const f of [lipsyncFeature, flowFeature, cameraFeature, particlesFeature, rigFeature, textFeature, tilesFeature]) for (const [id, info] of Object.entries(f.sections ?? {})) registerPanelInfo(id, info);
 
 const SECTIONS = ['tool-options', 'colors', 'palette', 'tileset', 'symbol-props', 'effects', 'text', 'particles', 'camera', 'rig'];
 

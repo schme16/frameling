@@ -7,14 +7,14 @@ import type { Draft } from 'immer';
 import type { Bone, Cel, Doc, Id, Layer, Pose, Rig, SavedPose, VectorDrawing } from '../core/format';
 import { celAt, findLayer, newVectorDrawing, uid } from '../core/doc';
 import { store } from '../core/store';
-import { currentChoice, registerChoice } from '../core/choices';
+import { currentChoice, type ChoiceDef } from '../core/choices';
 import { shapesBounds } from '../canvas/geometry';
 import { boneBetween, boneForBox, gridMesh, mapply, minv, mirrorPose, nearestBone, rigState, skinMesh, swapSides, tidyPose, wrapAngle, type Pt } from './math';
 import { isRigLayer, rigPoseAt, type RigLayer } from './pose';
 
 export type NewPoseChoice = 'glide' | 'hold';
 
-registerChoice<NewPoseChoice>({
+export const newPoseChoice: ChoiceDef<NewPoseChoice> = {
   id: 'rig.newPose',
   title: 'Posing on a new frame',
   question: "You're posing bones on a frame that has no pose of its own yet. How should the frames in between move?",
@@ -25,7 +25,7 @@ registerChoice<NewPoseChoice>({
   default: 'glide',
   category: 'Animating',
   help: 'rig-posing',
-});
+};
 
 // ---------------------------------------------------------------- finding the rig
 
@@ -197,7 +197,7 @@ export function needsNewPoseKey(rig: RigLayer, frame: number): boolean {
  * Writes a pose on a bones layer at `frame` (on a draft). If no key starts there, one is made: a held key is split,
  * or the key before is stretched to reach it, and the frames between glide or jump (the `rig.newPose` choice).
  */
-export function writePose(doc: Draft<Doc>, rigId: Id, frame: number, pose: Pose, glide = currentChoice<NewPoseChoice>('rig.newPose') === 'glide'): void {
+export function writePose(doc: Draft<Doc>, rigId: Id, frame: number, pose: Pose, glide = currentChoice<NewPoseChoice>('rig.newPose') !== 'hold'): void {
   const l = doc.layers.find((x) => x.id === rigId);
   if (!l || l.kind !== 'vector' || !l.rig) return;
   let cel = l.cels.find((c) => c.start === frame);

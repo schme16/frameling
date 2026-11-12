@@ -6,7 +6,7 @@ import type { Doc, VectorDrawing, VectorLayer } from '../../src/core/format';
 import { renderFrame } from '../../src/core/render';
 import { resetStore, store } from '../../src/core/store';
 import { rootDoc } from '../../src/core/symbols';
-import { clearTilemapCache, tilemapStats } from '../../src/core/tilemap';
+import { clearTilemapCache, tilemapStats } from '../../src/tiles/map';
 import { kitchenSinkDoc } from '../../src/export/kitchenSink';
 import { frameToSvg } from '../../src/export/svg';
 import { loadFile, saveFile } from '../../src/io/file';

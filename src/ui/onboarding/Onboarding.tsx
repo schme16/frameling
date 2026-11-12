@@ -20,6 +20,7 @@ import { getQuest, questProgress, startQuest } from '../quests';
 import { BUILT_IN_THEMES, type Theme } from '../themes/builtIn';
 import { ThemePreview } from '../themes/ThemePreview';
 import { toast } from '../toast';
+import { isFeatureOn } from '../../features/host';
 import { DOZE_MS, INTERESTS, isStrawberry, makeReaction, planFor, reduceFlow, sillyName, startFlow, STEPS, stepIndex, strawberryFor, type FlowState, type StepId } from './flow';
 import './onboarding.css';
 
@@ -51,7 +52,7 @@ function Flow() {
   const [beat, setBeat] = useState(0);
   const p = usePrefs((x) => x);
   const themes = useMemo(() => [...BUILT_IN_THEMES, ...p.customThemes], [p.customThemes]);
-  const plan = planFor(s.interests, questProgress.get().completed);
+  const plan = planFor(s.interests.filter(interestAvailable), questProgress.get().completed);
 
   // Quill nods off when a step sits untouched, and wakes up a bit embarrassed.
   const lastPoke = useRef(Date.now());
@@ -316,12 +317,15 @@ function Hello() {
   );
 }
 
+/** Making tile levels needs the Tiles feature; without it the card and the plan for it are left out. */
+const interestAvailable = (id: string): boolean => id !== 'tiles' || isFeatureOn('tiles');
+
 function Make({ s, toggle }: { s: FlowState; toggle: (i: (typeof INTERESTS)[number]['id']) => void }) {
   return (
     <>
       <p className="ob-lead">{line('onboarding.make.lead')}</p>
       <div className="ob-cards" role="group" aria-label="What would you like to make?">
-        {INTERESTS.map((x, n) => {
+        {INTERESTS.filter((x) => interestAvailable(x.id)).map((x, n) => {
           const on = s.interests.includes(x.id);
           return (
             <button key={x.id} type="button" aria-pressed={on} className={`ob-card${on ? ' is-chosen' : ''}`} style={{ animationDelay: `${n * 60}ms` }} onClick={() => toggle(x.id)}>

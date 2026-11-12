@@ -18,9 +18,10 @@ import { loadFile, saveFile } from '../../src/io/file';
 import { resolveMenus, type MenuItem } from '../../src/ui/menus';
 import { paletteItems } from '../../src/ui/palette';
 import { timelineParts } from '../../src/timeline/slots';
-import { PLANNED_FEATURES } from '../../src/features/planned';
+import { rigFeature } from '../../src/rig';
+import { tilesFeature } from '../../src/tiles';
 
-const all = () => registerFeatures([...PLANNED_FEATURES, audioFeature, flowFeature, interactivesFeature, lipsyncFeature]);
+const all = () => registerFeatures([rigFeature, tilesFeature, audioFeature, flowFeature, interactivesFeature, lipsyncFeature]);
 const clip = (): AudioClip => ({ id: 'a1', name: 'Voice', start: 0, data: new Uint8Array([1, 2, 3]), mime: 'audio/wav', duration: 1 });
 const withSound = () => Object.assign(newDoc(), { audio: [clip()] });
 
@@ -171,7 +172,7 @@ describe('Interactives', () => {
 
 describe('defaults', () => {
   it('every feature, switchable or planned, is on when nothing was ever chosen', () => {
-    for (const f of [...PLANNED_FEATURES, audioFeature, flowFeature, interactivesFeature, lipsyncFeature]) expect(isFeatureOn(f.id), f.id).toBe(true);
+    for (const f of [rigFeature, tilesFeature, audioFeature, flowFeature, interactivesFeature, lipsyncFeature]) expect(isFeatureOn(f.id), f.id).toBe(true);
   });
 });
 

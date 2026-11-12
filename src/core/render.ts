@@ -11,7 +11,7 @@ import { isPosed, poseAt, type PosedInstance, type PosedLayer, type PosedLook } 
 import { DEFAULT_TILE_SIZE, tileOrigin } from './doc';
 import { folderChain } from './folders';
 import { shapeKind } from './shapeKinds';
-import { drawTilemap } from './tilemap';
+import { drawingKindOf } from './layerKinds';
 import { cameraViewAt, layerCameraMatrix } from './camera';
 import { compositePlan, EffectCache } from '../effects/composite';
 import { buildPlan } from '../effects/plan';
@@ -187,7 +187,7 @@ export function drawDrawing(g: Ctx2D, d: Drawing, pixelSize = 1, at?: DrawContex
   if (d.kind === 'vector') {
     for (const s of d.shapes) drawShape(g, s, at);
   } else if (d.kind === 'tilemap') {
-    if (at) drawTilemap(g, at.doc, d, pixelSize, at.frame, pixelCanvas);
+    if (at) drawingKindOf(d)?.draw(g, at.doc, d, pixelSize, at.frame, pixelCanvas);
   } else if (d.kind === 'pixel') {
     if (d.width < 1 || d.height < 1) return;
     const prev = g.imageSmoothingEnabled;

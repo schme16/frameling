@@ -2,13 +2,16 @@
 // The tile grid start handle only shows and grabs with Alt held, or while the "Where the tile grid starts" form is open,
 // so a click at the stage corner paints.
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import '../../src/tiles';
+import { tilesFeature } from '../../src/tiles';
+import { registerFeatures } from '../../src/features/host';
 import type { TilemapLayer } from '../../src/core/format';
 import { getTool, type ToolContext, type ToolPointer } from '../../src/core/registry';
 import { resetStore, store } from '../../src/core/store';
 import { getTileUi, gridHandleOn, setTileUi } from '../../src/tiles/state';
 import { getCell } from '../../src/tiles/model';
 import { sampleTileDoc } from './helpers';
+
+registerFeatures([tilesFeature]);
 
 const ptr = (x: number, y: number, alt = false): ToolPointer => ({ x, y, pressure: 0.5, hasPressure: false, shift: false, alt, mod: false, button: 0, pointerType: 'mouse', time: 0 });
 const ctx = (): ToolContext => ({ zoom: 4, requestOverlay: vi.fn(), hint: vi.fn() });

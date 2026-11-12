@@ -5,6 +5,7 @@
 import { lazyPanel } from '../core/lazy';
 import { store } from '../core/store';
 import { defineFeature } from '../features/feature';
+import { picked } from '../ui/panelInfo';
 import './kind';
 import { textCommands } from './commands';
 import { preloadFonts } from './fonts';
@@ -24,5 +25,16 @@ export const textFeature = defineFeature({
   tools: [textTool],
   help: textHelp,
   templates: ['title-card', 'loading-spinner'],
+  sections: {
+    text: {
+      blurb: 'Font, size, alignment and text animations for the selected text.',
+      group: 'properties',
+      section: true,
+      selection: true,
+      relevant: (s) => s.ui.tool === 'text' || picked(s).some((x) => x.type === 'text'),
+      idle: 'Pick the Text tool or select text',
+      keywords: ['font', 'type', 'words', 'typewriter'],
+    },
+  },
   usedBy: (doc) => Object.values(doc.drawings).some((d) => d.kind === 'vector' && d.shapes.some((s) => s.type === 'text')),
 });
