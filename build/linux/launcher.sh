@@ -85,8 +85,13 @@ fi
 # AppRun could not make a user namespace. A profile for Frameling, if there is one, still lets the program do it
 # itself, so try the safety layer first and watch the first few seconds.
 log="$(mktemp "${TMPDIR:-/tmp}/frameling-launch.XXXXXX")"
-(exec -a frameling "$REAL" "${kept[@]}") 2> >(tee "$log" >&2) &
+# The program's errors go to the terminal and to the log through tee. Keep tee's id so the log can be read only once
+# tee has written all of it (otherwise, on a busy computer, the check below can read the log before the error is in it).
+exec 3> >(tee "$log" >&2)
+teepid=$!
+(exec -a frameling "$REAL" "${kept[@]}") 2>&3 3>&- &
 pid=$!
+exec 3>&-
 trap 'kill -TERM "$pid" 2>/dev/null' TERM INT HUP
 for _ in $(seq 1 40); do
   kill -0 "$pid" 2>/dev/null || break
@@ -101,6 +106,7 @@ if kill -0 "$pid" 2>/dev/null; then
 fi
 wait "$pid"
 code=$?
+wait "$teepid" 2>/dev/null
 if ! grep -qiE 'sandbox|namespace' "$log"; then
   # Stopped for some other reason (a second Frameling asking the first to open a file, a clean close).
   rm -f "$log"
