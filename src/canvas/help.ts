@@ -111,7 +111,7 @@ Shapes jump onto guides, the page's edges and middle, the grid and more when the
 - **Other shapes**: the edges, middles and corner points of the other shapes, so a new shape lines up with what is there. **All layers, not just this one** picks every visible layer (the usual) or only the layer you are on.
 - **Equal gaps**: next to other shapes, it settles where the space matches a space already there, or sits in the middle of one, and little bars show the exact sizes. It works while you drag a shape and while you draw one, on the corner you are dragging and the far end of a line.
 - **Perspective lines**: lines and boxes follow the vanishing points, while the perspective guides show.
-- **Plugin guides**: the straight lines and boxes a [plugin](help:plugins) draws on your canvas as a guide. They only count while that plugin is on and allowed to draw on the canvas, and pixel layers leave this untick until you tick it.
+- **Plugin guides**: the straight lines and boxes a [plugin](help:plugins) draws on your canvas, while it is on and allowed to draw there.
 - **Pixel cells** (pixel layers): drawing stays on whole pixels, and guides, the grid and the page stay out of the way. Untick it to snap pixel layers to those too.
 - **Angle steps**: with **Shift**, a line turns to the nearest 45 degrees (or toward a vanishing point) and a rotation moves in steps. Shift is something you ask for, so the big switch and Ctrl don't stop it.
 - **Other artboards**: moving or sizing an [artboard](help:artboards), its edges and middle line up with the other artboards'.
