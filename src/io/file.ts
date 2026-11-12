@@ -127,7 +127,13 @@ function doubleBounceRepeats(clips: unknown): void {
 export const MIGRATIONS: Record<number, (raw: any) => any> = {
   1: (raw) => {
     doubleBounceRepeats(raw.clips);
-    if (Array.isArray(raw.artboards)) for (const a of raw.artboards) if (isObj(a) && isObj(a.content)) doubleBounceRepeats(a.content.clips);
+    if (Array.isArray(raw.artboards))
+      for (const a of raw.artboards) {
+        if (!isObj(a)) continue;
+        if (isObj(a.content)) doubleBounceRepeats(a.content.clips);
+        // A variation's own clip list (it replaces the original's whole list).
+        if (isObj(a.overrides) && isObj(a.overrides.stage) && isObj(a.overrides.stage.set)) doubleBounceRepeats(a.overrides.stage.set.clips);
+      }
     return raw;
   },
   // Version 2 to 3: pixel drawings may hold only their painted part (`x`, `y`, a smaller `width` and `height`). Nothing to change in older files.

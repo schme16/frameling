@@ -253,4 +253,10 @@ describe('old files: a back and forth repeat counted whole trips, now it counts 
     expect(out.artboards[0].content.clips[0].repeat).toBe(4);
     expect(out.version).toBe(FORMAT_VERSION);
   });
+
+  it('migrates the clips a variation overrides too', () => {
+    const raw = { clips: [], artboards: [{ id: 'v', variationOf: 'x', overrides: { stage: { set: { clips: [{ id: 'k', loop: false, direction: 'pingpong', repeat: 3 }, { id: 'j', loop: false, direction: 'pingpong-reverse' }, { id: 'f', loop: false, direction: 'forward', repeat: 3 }] } } } }] };
+    const c = migrate(raw, 1).artboards[0].overrides.stage.set.clips;
+    expect(c.map((x: { repeat?: number }) => x.repeat)).toEqual([6, 2, 3]);
+  });
 });
