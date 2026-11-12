@@ -10,6 +10,7 @@
 import type { Doc, Drawing, Id, Layer, LayerEffect, SkinMesh, VectorDrawing } from '../core/format';
 import { activeCamera } from '../core/camera';
 import { celAt } from '../core/doc';
+import { folderChain } from '../core/folders';
 import { activeEffects, effectInfo, isNoop, valuesAt } from '../effects/model';
 import { isInstance, isPosed, nextKey, poseAt, symbolContent, symbolFrame } from '../core/symbols';
 import { buildPlan, type PlanStep } from '../effects/plan';
@@ -267,19 +268,25 @@ export function nativeBlend(mode: Layer['blend']): { blend: NativeBlend; exact: 
   return { blend: 'mix', exact: false };
 }
 
-/** The look of a layer (with its folder's), noting in `notes` what Godot does itself, what gets baked and what can't go. */
+/** True when the layer sits in a folder that is switched off, or in one inside such a folder. */
+function inHiddenFolder(doc: Doc, l: Layer): boolean {
+  return folderChain(doc.folders, l.folder).some((f) => !f.visible);
+}
+
+/** The look of a layer (with its folders'), noting in `notes` what Godot does itself, what gets baked and what can't go. */
 export function partLook(doc: Doc, layer: Layer, notes?: BonesNotes): PartLook {
-  const folder = layer.folder ? doc.folders?.[layer.folder] : undefined;
-  const opacity = layer.opacity * (folder?.opacity ?? 1);
-  const mode = layer.blend && layer.blend !== 'normal' ? layer.blend : folder?.blend;
+  // Every folder around the layer, the nearest first: their fades multiply, the nearest blend mode wins, effects stack.
+  const around = folderChain(doc.folders, layer.folder).reverse();
+  const opacity = layer.opacity * around.reduce((n, f) => n * f.opacity, 1);
+  const mode = layer.blend && layer.blend !== 'normal' ? layer.blend : around.find((f) => f.blend && f.blend !== 'normal')?.blend;
   const nb = nativeBlend(mode);
-  const effects = [...(layer.effects ?? []), ...(folder?.effects ?? [])].filter((e) => e.on !== false && (e.keys?.length || !isNoop(e.kind, valuesAt(e, 0))));
+  const effects = [...(layer.effects ?? []), ...around.flatMap((f) => f.effects ?? [])].filter((e) => e.on !== false && (e.keys?.length || !isNoop(e.kind, valuesAt(e, 0))));
   if (notes) {
     if (opacity < 1) notes.native.add('Fade: the node’s modulate');
     if (nb.blend !== 'mix') notes.native.add('Add and Multiply blend modes: a CanvasItemMaterial');
     if (!nb.exact && mode) notes.skip(`${mode === 'screen' ? 'Screen drawn as Add' : `${blendWord(mode)} drawn as normal`}`, layer.name);
     for (const e of effects) notes.bake(effectInfo(e.kind).label, layer.name);
-    if (folder?.effects?.length) notes.skip('Folder effects go on each layer separately', layer.name);
+    if (around.some((f) => f.effects?.length)) notes.skip('Folder effects go on each layer separately', layer.name);
   }
   return { opacity, blend: nb.blend, effects };
 }
@@ -409,7 +416,7 @@ export function carriedMasks(links: MaskLinks, layer: Layer): { carried: PartMas
 export function noteMasks(doc: Doc, layers: Layer[], notes: BonesNotes, links = maskLinks(doc, layers)): void {
   for (const layer of layers) {
     if (!layer.visible || layer.reference || isRigLayer(layer) || layer.kind === 'camera' || layer.mask) continue;
-    if (layer.folder && doc.folders?.[layer.folder]?.visible === false) continue;
+    if (inHiddenFolder(doc, layer)) continue;
     const { carried, lost } = carriedMasks(links, layer);
     for (const m of carried) notes.bake(m.clip ? 'Clip to the layer below' : m.op === 'out' ? 'Hide mask' : 'Show mask', layer.name);
     if (lost.length) notes.skip('Masks and clipping are not applied (the part or the mask moves with a bone, or sits at another depth)', layer.name);
@@ -457,7 +464,7 @@ export function bonesScope(
   if (notes) noteMasks(doc, layers, notes, links);
   layers.forEach((layer, z) => {
     if (!layer.visible || layer.reference || isRigLayer(layer) || layer.kind === 'camera') return;
-    if (layer.folder && doc.folders?.[layer.folder]?.visible === false) return;
+    if (inHiddenFolder(doc, layer)) return;
     let look = partLook(doc, layer, notes);
     if (layer.mask) return;
     // A layer whose base is hidden is hidden with it (the compositor's rule).
@@ -561,8 +568,7 @@ export function allScopes(top: BonesScope): BonesScope[] {
 }
 
 const layerHasEffects = (doc: Doc, l: Layer) => {
-  const folder = l.folder ? doc.folders?.[l.folder] : undefined;
-  return [...(l.effects ?? []), ...(folder?.effects ?? [])].some((e) => e.on !== false && (e.keys?.length || !isNoop(e.kind, valuesAt(e, 0))));
+  return [...(l.effects ?? []), ...folderChain(doc.folders, l.folder).flatMap((f) => f.effects ?? [])].some((e) => e.on !== false && (e.keys?.length || !isNoop(e.kind, valuesAt(e, 0))));
 };
 
 /** The symbols a layer shows copies of, and the symbols inside those, each once. */
@@ -588,7 +594,7 @@ export function symbolsOnLayer(doc: Doc, layer: Layer): Id[] {
 /** True when a symbol has effects on its layers (or their folders) and also hidden or reference layers, which every picture of it leaves out. */
 export function symbolDropsHiddenLayers(doc: Doc, id: Id): boolean {
   const layers = symbolContent(doc, id)?.layers ?? [];
-  const dropped = (l: Layer) => !l.visible || l.reference || (!!l.folder && doc.folders?.[l.folder]?.visible === false);
+  const dropped = (l: Layer) => !l.visible || l.reference || inHiddenFolder(doc, l);
   return layers.some((l) => layerHasEffects(doc, l)) && layers.some(dropped);
 }
 
@@ -606,7 +612,7 @@ export function bonesNotes(doc: Doc): { native: string[]; baked: string[]; skipp
     noteMasks(doc, layers, notes, links);
     for (const layer of layers) {
       if (!layer.visible || layer.reference || isRigLayer(layer) || layer.kind === 'camera') continue;
-      if (layer.folder && doc.folders?.[layer.folder]?.visible === false) continue;
+      if (inHiddenFolder(doc, layer)) continue;
       const look = partLook(doc, layer, notes);
       if (symbolsOnLayer(doc, layer).some((id) => symbolDropsHiddenLayers(doc, id))) notes.skip('Hidden or reference layers inside symbols with effects are left out of the pictures', layer.name);
       if (layer.mask || !links.cuts.has(layer)) continue;
