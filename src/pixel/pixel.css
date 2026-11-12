@@ -409,6 +409,33 @@
   font-weight: 700;
   pointer-events: none;
 }
+/* The board strip under the Preview: which board is playing. */
+.px-preview-boards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  max-height: 66px;
+  overflow-y: auto;
+}
+.px-preview-board {
+  min-width: 26px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: var(--radius-small);
+  border: 1px solid var(--line);
+  background: var(--raised);
+  color: var(--text);
+  font-size: var(--fs-small);
+  cursor: pointer;
+}
+.px-preview-board[data-on='true'] {
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+  border-color: transparent;
+}
+.px-preview-board[data-open='true']:not([data-on='true']) {
+  border-style: dashed;
+}
 .px-preview-bar {
   display: flex;
   align-items: center;

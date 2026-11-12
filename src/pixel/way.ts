@@ -52,7 +52,7 @@ const GENERIC_NAME = /^(frame|board|artboard)\s*\d+$/i;
 export const boardCount = (doc: Doc): number => Math.max(1, doc.artboards?.length ?? 1);
 
 /** The length of every board, in order. */
-function boardLengths(doc: Doc): number[] {
+export function boardLengths(doc: Doc): number[] {
   return artboardsOf(doc).map((a) => (a.content ? a.content.length : doc.length));
 }
 
