@@ -7,6 +7,7 @@ import { getCommand } from '../core/registry';
 import { store, useStore } from '../core/store';
 import { useViewSettings } from '../canvas/viewSettings';
 import { setSelectSettings, useSelectSettings, type SelectMode } from '../select/settings';
+import { useFeaturesVersion } from '../features/use';
 import { useTileUi } from '../tiles/state';
 import { setToolSettings, useToolSettings } from '../tools/settings';
 import { activeColor } from '../tools/wells';
@@ -171,6 +172,9 @@ export function PixelBar() {
   const perfect = useToolSettings((s) => s.pixelPerfect);
   const onion = useStore((s) => s.ui.onion.enabled);
   const tiles = useTileUi((s) => s.tileMode);
+  // Tile mode belongs to the Tiles feature: its button goes when the command does.
+  useFeaturesVersion();
+  const hasTileMode = !!getCommand('tiles.tileMode');
   const grid = useViewSettings((v) => v.pixelGrid);
   const pixelDoc = useStore((s) => isPixelDoc(s.doc));
   if (!wsId || !inPixelWorkspace() || !pixelLayer) return null;
@@ -195,9 +199,11 @@ export function PixelBar() {
       <Btn on={onion} title="Onion skin: see the frames before and after (Shift+O)" label="Onion skin" command="timeline.toggleOnion" onClick={() => run('timeline.toggleOnion')}>
         <Icon name="onion" size={16} />
       </Btn>
-      <Btn on={tiles} title="Tile mode: repeat the drawing round the edges, for seamless tiles (Shift+T)" label="Tile mode" command="tiles.tileMode" onClick={() => run('tiles.tileMode')}>
-        <Icon name="tile-mode" size={16} />
-      </Btn>
+      {hasTileMode && (
+        <Btn on={tiles} title="Tile mode: repeat the drawing round the edges, for seamless tiles (Shift+T)" label="Tile mode" command="tiles.tileMode" onClick={() => run('tiles.tileMode')}>
+          <Icon name="tile-mode" size={16} />
+        </Btn>
+      )}
       <Btn on={grid} title="Pixel grid: lines between pixels when you zoom in" label="Pixel grid" command="view.pixelGrid" onClick={() => run('view.pixelGrid')}>
         <Icon name="grid" size={16} />
       </Btn>

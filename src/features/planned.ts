@@ -1,11 +1,5 @@
-// The optional features that still register themselves when their folder is imported, so they cannot be switched
-// yet. Each one moves onto its own descriptor (and drops `legacy`) as it is converted; until then this keeps the list
-// of what will be switchable in one place.
-import { defineFeature, type FeatureDescriptor } from './feature';
+// Optional features that are listed here before they move onto their own descriptor (and drop `legacy`) so they cannot
+// be switched yet. Every optional feature has its descriptor now, so the list is empty; it stays for the next one.
+import type { FeatureDescriptor } from './feature';
 
-const planned = (id: string, name: string, about: string): FeatureDescriptor => defineFeature({ id, name, about, optional: true, legacy: true });
-
-export const PLANNED_FEATURES: FeatureDescriptor[] = [
-  planned('tiles', 'Tiles', 'Tilemaps and tilesets for building game levels.'),
-  planned('rig', 'Rig', 'Bones and skins to pose a character like a puppet.'),
-];
+export const PLANNED_FEATURES: FeatureDescriptor[] = [];

@@ -3,7 +3,7 @@
  * move the whole skeleton, pin bones), plus how bones look on the canvas.
  */
 import type { Id } from '../core/format';
-import { registerTool, type Tool, type ToolContext, type ToolPointer } from '../core/registry';
+import { type Tool, type ToolContext, type ToolPointer } from '../core/registry';
 import { store } from '../core/store';
 import { rememberedChoice, withChoice } from '../core/choices';
 import { cssVar } from '../canvas/theme';
@@ -369,8 +369,6 @@ export const poseTool: Tool = {
   },
 };
 
-registerTool(boneTool);
-registerTool(poseTool);
 
 /** Deletes the selected bone (the Delete key, while the Bone tool is out). */
 export function deleteSelectedBone(): boolean {

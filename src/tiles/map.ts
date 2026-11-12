@@ -4,9 +4,9 @@
  * and an animated tile repaints its slots when its frame changes. Maps too big to keep as a bitmap are drawn slot by
  * slot, only where the canvas can see.
  */
-import type { Doc, PixelDrawing, TilemapDrawing } from './format';
-import { DEFAULT_TILE_SIZE, tileOrigin } from './doc';
-import { cellFlags, cellKey, flagMatrix, findTile, tileDrawingAt } from '../tiles/model';
+import type { Doc, PixelDrawing, TilemapDrawing } from '../core/format';
+import { DEFAULT_TILE_SIZE, tileOrigin } from '../core/doc';
+import { cellFlags, cellKey, flagMatrix, findTile, tileDrawingAt } from './model';
 
 type Ctx = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 type Canvas2 = OffscreenCanvas | HTMLCanvasElement;

@@ -1,6 +1,6 @@
 // Bone commands: palette, the Rig menu and keys.
 import { lazyPanel } from '../core/lazy';
-import { getCommand, registerCommand, registerCommands, registerPanel } from '../core/registry';
+import { getCommand, registerCommand, type Command, type PanelDef } from '../core/registry';
 import { store, type State } from '../core/store';
 import { findLayer } from '../core/doc';
 import { toast } from '../ui/toast';
@@ -12,7 +12,7 @@ import { artCoverage } from './coverage';
 import { isRigLayer } from './pose';
 import { normaliseActive, paintTarget, smoothActive } from './weightsTool';
 
-registerPanel({ id: 'rig', title: 'Rig', icon: 'rig', component: lazyPanel(() => import('./RigPanel').then((m) => m.RigPanel)), zone: 'right', order: 38, help: 'rig' });
+export const rigPanel: PanelDef = { id: 'rig', title: 'Rig', icon: 'rig', component: lazyPanel(() => import('./RigPanel').then((m) => m.RigPanel)), zone: 'right', order: 38, help: 'rig' };
 
 const hasBones = (s: State) => !!currentRig(s.doc, s.ui.activeLayerId)?.rig.bones.length;
 const say = (r: string | undefined, ok?: string) => {
@@ -25,7 +25,7 @@ const selectedBone = (s: State) => {
   return rig && id ? rig.rig.bones.find((b) => b.id === id) : undefined;
 };
 
-registerCommands([
+export const rigCommands: Command[] = [
   {
     id: 'rig.addBones',
     label: 'Add bones',
@@ -190,15 +190,26 @@ registerCommands([
       requestOverlay();
     },
   },
-]);
+];
+
+/** The command Delete was before the rig changed it, for putting it back when the feature goes. */
+let originalDelete: Command | undefined;
 
 // While the Bone or Pose tool is out with a bone picked, Delete removes the bone (not shapes on the layer).
-const del = getCommand('edit.delete');
-if (del) {
+export function takeOverDelete(): void {
+  const del = getCommand('edit.delete');
+  if (!del) return;
+  originalDelete = del;
   const boneOut = (s: State) => (s.ui.tool === 'bone' || s.ui.tool === 'pose') && !!selectedBone(s);
   registerCommand({
     ...del,
     enabled: (s) => boneOut(s) || (del.enabled ? del.enabled(s) : true),
     run: () => (boneOut(store().get()) ? void deleteSelectedBone() : del.run()),
   });
+}
+
+/** Gives Delete back as it was. */
+export function giveBackDelete(): void {
+  if (originalDelete) registerCommand(originalDelete);
+  originalDelete = undefined;
 }

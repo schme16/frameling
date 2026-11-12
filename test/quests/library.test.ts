@@ -4,7 +4,8 @@ import '../../src/core/commands';
 import '../../src/tools';
 import '../../src/timeline';
 import '../../src/export';
-import '../../src/tiles';
+import { rigFeature } from '../../src/rig';
+import { tilesFeature } from '../../src/tiles';
 import '../../src/artboards';
 import '../../src/pixel';
 import { cameraFeature } from '../../src/camera';
@@ -13,7 +14,7 @@ import { textFeature } from '../../src/text';
 import { registerFeatures } from '../../src/features/host';
 
 // The lessons run commands that the optional features add.
-registerFeatures([cameraFeature, particlesFeature, textFeature]);
+registerFeatures([cameraFeature, particlesFeature, rigFeature, textFeature, tilesFeature]);
 import { PIXEL_WAY_QUESTS } from '../../src/pixel/quests-ways';
 import { getCommand } from '../../src/core/registry';
 import { syncDynamicCommands } from '../../src/ui/dynamic';

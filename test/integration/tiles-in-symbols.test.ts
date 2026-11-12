@@ -3,7 +3,7 @@ import { newVectorDrawing, newVectorLayer } from '../../src/core/doc';
 import type { Doc } from '../../src/core/format';
 import { renderFrame } from '../../src/core/render';
 import { isPosed, newInstance, poseAt } from '../../src/core/symbols';
-import { clearTilemapCache, tilemapStats } from '../../src/core/tilemap';
+import { clearTilemapCache, tilemapStats } from '../../src/tiles/map';
 import { frameToSvg } from '../../src/export/svg';
 import { installFakeCanvas, mainCtx, removeFakeCanvas } from '../perf/fakeCanvas';
 import { sampleTileDoc } from '../tiles/helpers';

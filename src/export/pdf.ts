@@ -12,7 +12,7 @@ import { cameraViewAt, layerCameraMatrix } from '../core/camera';
 import type { BlendMode, CameraView, Color, Doc, Drawing, Gradient, Layer, PixelDrawing, Shape, SubPath } from '../core/format';
 import { strokeOutline } from '../core/render';
 import { isPosed, poseAt, type PosedInstance } from '../core/symbols';
-import { flattenTilemap } from '../tiles/model';
+import { flattenDrawing } from '../core/layerKinds';
 import type { RawImage } from '../io/png';
 import { shapeExportOf } from './shapeExport';
 import { flatPlan, type FlatUnit } from './layered';
@@ -549,8 +549,8 @@ function drawShape(cx: Content, ctx: PdfFrameContext, s: Shape): void {
   cx.push('Q');
 }
 
-function drawPixels(cx: Content, ctx: PdfFrameContext, d: PixelDrawing, pixelSize: number): void {
-  if (d.width < 1 || d.height < 1) return;
+function drawPixels(cx: Content, ctx: PdfFrameContext, d: PixelDrawing | undefined, pixelSize: number): void {
+  if (!d || d.width < 1 || d.height < 1) return;
   const name = ctx.writer.image(washPixels({ width: d.width, height: d.height, pixels: d.pixels }), false);
   // Images fill the unit square; the page is flipped, so flip the picture back. The block sits (x, y) art pixels in.
   cx.push(`q ${num(d.width * pixelSize)} 0 0 ${num(-d.height * pixelSize)} ${num((d.x ?? 0) * pixelSize)} ${num((d.y ?? 0) * pixelSize + d.height * pixelSize)} cm /${name} Do Q`);
@@ -590,7 +590,7 @@ export function drawInstance(cx: Content, ctx: PdfFrameContext, s: PosedInstance
         for (const { pl: l, blend } of layers)
           grouped(c2, ctx, l.opacity, blend, (cc) =>
             // A tilemap inside a symbol goes in as its pixels, on the symbol's own frame.
-            l.drawing.kind === 'tilemap' ? drawPixels(cc, ctx, flattenTilemap(ctx.doc, l.drawing, l.frame ?? ctx.frame), l.pixelSize) : drawDrawing(cc, ctx, l.drawing, l.pixelSize),
+            l.drawing.kind === 'tilemap' ? drawPixels(cc, ctx, flattenDrawing(ctx.doc, l.drawing, l.frame ?? ctx.frame), l.pixelSize) : drawDrawing(cc, ctx, l.drawing, l.pixelSize),
           );
       };
       // Blends mix with the symbol's own layers only, as on the canvas.

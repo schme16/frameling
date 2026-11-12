@@ -6,7 +6,7 @@
 import { useSyncExternalStore } from 'react';
 import type { Doc, Id, Layer, SkinMesh } from '../core/format';
 import { findLayer } from '../core/doc';
-import { registerTool, type Tool, type ToolContext } from '../core/registry';
+import { type Tool, type ToolContext } from '../core/registry';
 import { store } from '../core/store';
 import { requestOverlay } from '../canvas/controller';
 import { cssVar } from '../canvas/theme';
@@ -254,4 +254,3 @@ export function drawWeightsOverlay(g: CanvasRenderingContext2D, ctx: Pick<ToolCo
   }
 }
 
-registerTool(weightsTool);

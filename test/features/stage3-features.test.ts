@@ -25,11 +25,12 @@ import { questFeaturesOn } from '../../src/features/sync';
 import { loadFile, saveFile } from '../../src/io/file';
 import { newParticles } from '../../src/particles/model';
 import { QUESTS } from '../../src/quests/library';
-import { PLANNED_FEATURES } from '../../src/features/planned';
+import { rigFeature } from '../../src/rig';
+import { tilesFeature } from '../../src/tiles';
 import { newTextShape } from '../../src/text/model';
 import { frameToSvg } from '../../src/export/svg';
 
-const ALL = [...PLANNED_FEATURES, audioFeature, cameraFeature, flowFeature, godotFeature, interactivesFeature, lipsyncFeature, particlesFeature, textFeature];
+const ALL = [rigFeature, tilesFeature, audioFeature, cameraFeature, flowFeature, godotFeature, interactivesFeature, lipsyncFeature, particlesFeature, textFeature];
 const off = (id: string) => expect(setFeatureOn(id, false, { remember: false }).ok, id).toBe(true);
 const on = (id: string) => expect(setFeatureOn(id, true, { remember: false }).ok, id).toBe(true);
 
@@ -57,13 +58,12 @@ const docWithEmitter = () => {
   return doc;
 };
 
-describe('every optional feature is switchable now except Tiles and Rig', () => {
-  it('lists Godot exports, Camera, Particles and Text as switchable, on to begin with', () => {
-    for (const f of [godotFeature, cameraFeature, particlesFeature, textFeature]) {
+describe('every optional feature is switchable now', () => {
+  it('lists Godot exports, Camera, Particles, Text, Tiles and Rig as switchable, on to begin with', () => {
+    for (const f of [godotFeature, cameraFeature, particlesFeature, textFeature, tilesFeature, rigFeature]) {
       expect(f.optional && !f.legacy, f.id).toBe(true);
       expect(isFeatureOn(f.id), f.id).toBe(true);
     }
-    expect(PLANNED_FEATURES.map((f) => f.id)).toEqual(['tiles', 'rig']);
   });
 });
 

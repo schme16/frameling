@@ -65,7 +65,7 @@ The status bar and the [Artboards](help:artboards) panel use pixel units in the 
 - With **Select**, pick a box, a lasso or the magic wand.
 - **Mirror**: left and right, top and bottom, or both. Click the lit one again to turn it off. Shift+M cycles. See [Mirror drawing](help:pixel-mirror).
 - **Onion skin** (Shift+O) shows the frames either side. See [Onion skin](help:timeline-onion).
-- **Tile mode** (Shift+T) repeats the drawing round the edges for seamless tiles. See [Tile mode](help:tile-mode).
+- **Tile mode** repeats the drawing round the edges for seamless tiles (it comes with the Tiles feature). See [Tile mode](help:tile-mode).
 - **Grid** shows the lines between pixels when you zoom in.
 - On a layer [locked to the palette](help:palette-lock), the bar says which palette colour you're painting with: **Colour 5/16** is the fifth of sixteen. A colour that isn't in the palette shows the one it will snap to.
 

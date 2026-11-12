@@ -7,9 +7,9 @@
  */
 import { drawingAt, findLayer, tileOrigin, tilemapGrid } from '../core/doc';
 import type { Doc, TilemapDrawing, TilemapLayer } from '../core/format';
-import { registerTool, type Tool, type ToolContext, type ToolPointer } from '../core/registry';
+import { type Tool, type ToolContext, type ToolPointer } from '../core/registry';
 import { pixelCanvas } from '../core/render';
-import { drawTileAt } from '../core/tilemap';
+import { drawTileAt } from './map';
 import { store } from '../core/store';
 import { getHover, setLive } from '../canvas/controller';
 import { activeLayer, EDIT_HINTS, editActiveDrawing } from '../tools/edit';
@@ -473,4 +473,4 @@ function withGridHandle(tool: Tool): Tool {
   };
 }
 
-for (const t of [tileBrushTool, tileRectTool, tileFillTool, tileEraserTool, tilePickerTool]) registerTool(withGridHandle(t));
+export const tileTools: Tool[] = [tileBrushTool, tileRectTool, tileFillTool, tileEraserTool, tilePickerTool].map(withGridHandle);

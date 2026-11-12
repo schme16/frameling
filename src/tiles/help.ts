@@ -1,6 +1,6 @@
-import { registerHelpTopics } from '../core/registry';
+import type { HelpTopic } from '../core/registry';
 
-registerHelpTopics([
+export const tilesHelp: HelpTopic[] = [
   {
     id: 'tileset',
     title: 'Tiles and the Tileset panel',
@@ -155,4 +155,4 @@ The files point at **res://tiles/name.png** unless you type another place. Put t
 
 Maps are saved as they are on the frame you're looking at.`,
   },
-]);
+];

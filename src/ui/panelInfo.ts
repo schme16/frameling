@@ -32,10 +32,10 @@ export interface PanelInfo {
   keywords?: string[];
 }
 
-const layerOf = (s: State): Layer | undefined => findLayer(s.doc, s.ui.activeLayerId);
+export const layerOf = (s: State): Layer | undefined => findLayer(s.doc, s.ui.activeLayerId);
 
 /** The selected shapes on the active layer's drawing at this frame. */
-function picked(s: State): Shape[] {
+export function picked(s: State): Shape[] {
   const l = layerOf(s);
   const cel = l ? celAt(l, s.ui.frame) : undefined;
   const d = cel ? s.doc.drawings[cel.drawingId] : undefined;
@@ -44,7 +44,7 @@ function picked(s: State): Shape[] {
   return d.shapes.filter((x) => sel.has(x.id));
 }
 
-const toolIs = (...ids: string[]) => (s: State) => ids.includes(s.ui.tool);
+export const toolIs = (...ids: string[]) => (s: State) => ids.includes(s.ui.tool);
 
 export const PANEL_INFO: Record<string, PanelInfo> = {
   'tool-options': {
@@ -79,14 +79,6 @@ export const PANEL_INFO: Record<string, PanelInfo> = {
     idle: 'Pick a pixel layer',
     keywords: ['slice', 'slices', '9-patch', 'nine patch', 'pivot', 'hitbox', 'region'],
   },
-  tileset: {
-    blurb: 'The tiles you paint tile maps with, and making new ones.',
-    group: 'properties',
-    section: true,
-    relevant: (s) => layerOf(s)?.kind === 'tilemap' || s.ui.tool.startsWith('tile'),
-    idle: 'Pick a tile map layer',
-    keywords: ['tiles', 'tile map', 'level'],
-  },
   'symbol-props': {
     short: 'Motion',
     blurb: 'The selected symbol: size, turn, fade and colour wash, and the in-betweens (tweens) that move it.',
@@ -113,40 +105,6 @@ export const PANEL_INFO: Record<string, PanelInfo> = {
     idle: 'Select something, or open it for this layer',
     detail: (s) => layerOf(s)?.name,
     keywords: ['glow', 'shadow', 'blur', 'blend', 'filter', 'fx'],
-  },
-  text: {
-    blurb: 'Font, size, alignment and text animations for the selected text.',
-    group: 'properties',
-    section: true,
-    selection: true,
-    relevant: (s) => s.ui.tool === 'text' || picked(s).some((x) => x.type === 'text'),
-    idle: 'Pick the Text tool or select text',
-    keywords: ['font', 'type', 'words', 'typewriter'],
-  },
-  particles: {
-    blurb: 'Sparkles, smoke, rain, confetti and other effects made of many small bits.',
-    group: 'properties',
-    section: true,
-    selection: true,
-    relevant: (s) => picked(s).some((x) => x.type === 'particles'),
-    idle: 'Select particles on the canvas',
-    keywords: ['emitter', 'smoke', 'rain', 'confetti', 'sparkle', 'snow'],
-  },
-  camera: {
-    blurb: 'The camera: pan, zoom and turn the view of the scene, and depth for parallax.',
-    group: 'properties',
-    section: true,
-    relevant: (s) => layerOf(s)?.kind === 'camera' || toolIs('camera', 'camera-move')(s),
-    idle: 'Pick the camera layer',
-    keywords: ['pan', 'zoom', 'parallax', 'view'],
-  },
-  rig: {
-    blurb: 'Bones for puppet animation: build a skeleton, attach drawings and pose it.',
-    group: 'properties',
-    section: true,
-    relevant: (s) => toolIs('bone', 'pose', 'weights')(s) || !!(layerOf(s) as { rig?: unknown } | undefined)?.rig,
-    idle: 'Pick the Bone tool',
-    keywords: ['bones', 'skeleton', 'puppet', 'pose'],
   },
   library: {
     blurb: 'Your symbols: reusable drawings and animations to place again and again.',

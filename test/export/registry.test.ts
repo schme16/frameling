@@ -7,7 +7,6 @@ import { audioFeature } from '../../src/audio';
 import { getChoiceDef, setChoice } from '../../src/core/choices';
 import { newDoc } from '../../src/core/doc';
 import { _resetFeaturesForTests, registerFeatures, setFeatureOn } from '../../src/features/host';
-import { PLANNED_FEATURES } from '../../src/features/planned';
 import { interactivesFeature } from '../../src/interactives';
 import { settleMp4Sound } from '../../src/export/formats/video-prep';
 import { extensionFor, filtersFor } from '../../src/export/plan';
@@ -23,7 +22,7 @@ const BUILT_IN = ['mp4', 'webm', 'gif', 'apng', 'png', 'pngseq', 'svg', 'sheet',
 beforeEach(() => {
   localStorage.clear();
   _resetFeaturesForTests();
-  registerFeatures([...PLANNED_FEATURES, audioFeature, interactivesFeature]);
+  registerFeatures([audioFeature, interactivesFeature]);
 });
 afterEach(() => _resetFeaturesForTests());
 

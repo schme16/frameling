@@ -195,7 +195,7 @@ Used Flash / Animate or a pixel tool before? Pick a [shortcut set](help:shortcut
 - **Space** is for moving the canvas around. Holding it pauses every other shortcut.
 - Each tool has a single-letter key. Change those here too.
 - Tools for different kinds of layer can share a letter: **B** is the Brush on a drawing layer and the Tile brush on a tile layer. That's not a clash, because only one of them works at a time.
-- A few keys moved so nothing clashes: **Lasso** is **Shift+L** (the Line tool keeps **L**), and the **Pose** tool is **Shift+K** (next to the Bone tool's **K**; the Ellipse keeps **O**).
+- A few keys moved so nothing clashes: **Lasso** is **Shift+L** (the Line tool keeps **L**), and the Rig feature's Pose tool sits next to its Bone tool on a **Shift** key (the Ellipse keeps **O**).
 
 ## Without a mouse
 

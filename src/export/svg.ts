@@ -4,7 +4,7 @@ import type { Doc, Drawing, Gradient, Layer, PathShape, PixelDrawing, Shape, Str
 import { isPosed, poseAt, type PosedInstance, type PosedLayer } from '../core/symbols';
 import { drawMeshed, strokeOutline } from '../core/render';
 import { encodePng } from '../io/png';
-import { flattenTilemap } from '../tiles/model';
+import { flattenDrawing } from '../core/layerKinds';
 import { shapeExportOf } from './shapeExport';
 import { withSprites } from './svg-extra';
 import { composeSvg, composeSymbol, tintAttr, tintDefs } from './svg-look';
@@ -143,7 +143,7 @@ export function posedLayerSvg(l: PosedLayer, doc?: Doc): string {
       : dr.kind === 'vector'
         ? dr.shapes.map((x) => shapeToSvg(x, doc)).filter(Boolean)
         : dr.kind === 'tilemap' && doc && l.frame !== undefined
-          ? pixelRects(flattenTilemap(doc, dr, l.frame), l.pixelSize)
+          ? tileRects(doc, dr, l.frame, l.pixelSize)
           : [];
   return parts.join('');
 }
@@ -250,10 +250,16 @@ export function pixelRects(d: PixelDrawing, size: number): string[] {
   return out;
 }
 
+/** A tile map as rectangles (nothing when the tiles code that flattens it is not loaded). */
+function tileRects(doc: Doc, d: Drawing, frame: number, pixelSize: number): string[] {
+  const px = flattenDrawing(doc, d, frame);
+  return px ? pixelRects(px, pixelSize) : [];
+}
+
 /** The SVG elements for a drawing as a layer shows it (pixel and tile drawings as rectangles). */
 export function drawingToSvg(doc: Doc, layer: Layer, d: Drawing, frame: number): string[] {
   if (d.kind === 'pixel') return pixelRects(d, layer.kind === 'pixel' ? layer.pixelSize : 1);
-  if (d.kind === 'tilemap') return pixelRects(flattenTilemap(doc, d, frame), layer.kind === 'tilemap' ? layer.pixelSize : 1);
+  if (d.kind === 'tilemap') return tileRects(doc, d, frame, layer.kind === 'tilemap' ? layer.pixelSize : 1);
   if (d.kind === 'vector') return d.shapes.map((x) => shapeToSvg(x, doc)).filter(Boolean);
   return [];
 }
