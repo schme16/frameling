@@ -1,7 +1,7 @@
 // The docked zones (left, right, bottom, top): tabs you can drag, splitters you can pull, zones that fold away.
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { getPanel, type DockZone } from '../core/registry';
-import { clampSize, DEFAULT_SIZE, dock, hidePanel, panelsAway, resizeZone, setActive, toggleCollapsed } from './dock';
+import { clampSize, DEFAULT_SIZE, dock, MAX_SIZE, MIN_SIZE, hidePanel, panelsAway, resizeZone, setActive, toggleCollapsed } from './dock';
 import { dragState, dropIndexFor, startPanelDrag } from './dockDrag';
 import { menuPoint, openDockMenu, panelMenu } from './dockMenus';
 import { Icon } from './icons';
@@ -310,6 +310,9 @@ export function Splitter({ zone }: { zone: DockZone }) {
       aria-orientation={horizontal ? 'horizontal' : 'vertical'}
       aria-label={`Resize the ${zone} panels`}
       aria-valuenow={z.size}
+      aria-valuemin={MIN_SIZE[zone]}
+      aria-valuemax={MAX_SIZE[zone]}
+      aria-valuetext={`${z.size} pixels`}
       tabIndex={0}
       data-help="panels"
       onPointerDown={(e) => {
@@ -332,11 +335,20 @@ export function Splitter({ zone }: { zone: DockZone }) {
       }}
       onDoubleClick={() => resizeZone(zone, DEFAULT_SIZE[zone])}
       onKeyDown={(e) => {
+        // Arrows resize (Shift for bigger steps), Home and End go to the smallest and largest, Enter resets.
+        if (e.altKey || e.ctrlKey || e.metaKey) return;
         const grow = zone === 'top' ? 'ArrowDown' : horizontal ? 'ArrowUp' : zone === 'left' ? 'ArrowRight' : 'ArrowLeft';
         const shrink = zone === 'top' ? 'ArrowUp' : horizontal ? 'ArrowDown' : zone === 'left' ? 'ArrowLeft' : 'ArrowRight';
-        if (e.key !== grow && e.key !== shrink) return;
+        const step = e.shiftKey ? 64 : 16;
+        let next: number | null = null;
+        if (e.key === grow) next = z.size + step;
+        else if (e.key === shrink) next = z.size - step;
+        else if (e.key === 'Home') next = MIN_SIZE[zone];
+        else if (e.key === 'End') next = MAX_SIZE[zone];
+        else if (e.key === 'Enter') next = DEFAULT_SIZE[zone];
+        if (next === null) return;
         e.preventDefault();
-        resizeZone(zone, clampSize(zone, z.size + (e.key === grow ? 16 : -16)));
+        resizeZone(zone, clampSize(zone, next));
       }}
     />
   );

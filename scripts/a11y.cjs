@@ -57,9 +57,9 @@ const DIALOGS = [
   ['prefs-plugins', `__frameling.overlays.openPrefs('plugins')`],
   ['canvas-size', run('document.settings')],
   ['export', run('file.export')],
-  ['export-tileset', tpl('tileset') + run('tiles.export')],
-  ['rotate', tpl('hero-sprites') + run('pixel.rotate')],
-  ['lipsync-name', tpl('lip-sync') + run('lipsync.nameFrames')],
+  ['export-tileset', [tpl('tileset'), run('tiles.export')]],
+  ['rotate', [tpl('hero-sprites'), run('pixel.rotate')]],
+  ['lipsync-name', [tpl('lip-sync'), run('lipsync.nameFrames')]],
   ['save-template', run('file.saveAsTemplate')],
   ['recent', run('file.openRecent')],
   ['recover', run('file.recover')],
@@ -124,6 +124,17 @@ async function reset(win, doc = 'bouncing-ball') {
     document.activeElement?.blur?.();
   `);
   await sleep(150);
+  // A question left over from the last scenario (a pixel template asks one) must not land on top of this one.
+  await dismissChoice(win);
+}
+
+// Some templates ask a first-time question ("Opening pixel art"). That is the app working, not the dialog under
+// test, so answer it (Escape takes the suggested answer) before the real scenario is judged.
+async function dismissChoice(win) {
+  if (!(await js(win, `return !!document.querySelector('.ui-choice')`))) return;
+  await js(win, `document.querySelector('.ui-choice')?.focus()`);
+  await key(win, 'Escape');
+  await sleep(200);
 }
 
 // Things axe can't know: a button that looks chosen (data-on, is-on, is-chosen) but doesn't say so to a screen reader.
@@ -172,7 +183,13 @@ const FOCUS_PROBE = `
   const after = getComputedStyle(el, '::after').backgroundColor;
   // In a drawing (SVG), the ring is the shape's outline turning the focus colour.
   const strokes = el instanceof SVGElement ? [el, ...el.querySelectorAll('rect, circle, path, line')].map((x) => getComputedStyle(x).stroke) : [];
-  const ring = has(cs) || (el.parentElement && has(getComputedStyle(el.parentElement))) || after === focusColour || after === sunny || strokes.includes(focusColour);
+  // A wide area (the timeline grid) can be ringed on the scroller round it: an outline on an ancestor close by.
+  let outer = false;
+  for (let a = el.parentElement, n = 0; a && n < 3; a = a.parentElement, n++) {
+    const c = getComputedStyle(a);
+    if (c.outlineStyle !== 'none' && parseFloat(c.outlineWidth) > 0) outer = true;
+  }
+  const ring = has(cs) || outer || (el.parentElement && has(getComputedStyle(el.parentElement))) || after === focusColour || after === sunny || strokes.includes(focusColour);
   const name = el.getAttribute('aria-label') || el.getAttribute('title') || (el.textContent || '').trim().slice(0, 30) || el.tagName;
   const r = el.getBoundingClientRect();
   if (!el.dataset.a11yStop) el.dataset.a11yStop = String((window.__a11yN = (window.__a11yN || 0) + 1));
@@ -303,7 +320,12 @@ app.whenReady().then(async () => {
     await reset(win);
     // Start from a real button, so we can see focus come back to it.
     await js(win, `const b = document.querySelector('.ui-topbar button, header button, button'); b?.focus(); window.__a11yFrom = b;`);
-    await js(win, setup);
+    // A list of steps runs one at a time, answering a first-time question between them.
+    for (const step of Array.isArray(setup) ? setup : [setup]) {
+      await js(win, step);
+      await sleep(300);
+      await dismissChoice(win);
+    }
     // Long enough for the pop-in animations, so axe doesn't judge half-faded words.
     await sleep(1200);
     const has = await js(win, `return !!document.querySelector('[role=dialog]')`);
@@ -334,7 +356,7 @@ app.whenReady().then(async () => {
     if (!want(name)) continue;
     await reset(win, doc);
     await js(win, `__frameling.showPanel(${JSON.stringify(panel)}); __frameling.run('select.all')`);
-    await sleep(250);
+    for (let i = 0; i < 20 && !(await js(win, `return !!document.querySelector(${JSON.stringify(opener)})`)); i++) await sleep(150);
     const found = await js(win, `const b = document.querySelector(${JSON.stringify(opener)}); b?.focus(); window.__a11yFrom = b; return !!b`);
     if (!found) {
       report.keyboard.push({ name, problems: [], stops: 0, missing: true });
@@ -351,7 +373,7 @@ app.whenReady().then(async () => {
     const open = await js(win, `const p = document.querySelector(${JSON.stringify(pop)}); return { open: !!p, inside: !!p && p.contains(document.activeElement) }`);
     if (!open.open) problems.push('Enter did not open it');
     else {
-      if (!open.inside) problems.push('focus did not move into it');
+      if (!open.inside) problems.push('focus did not move into it ' + (await js(win, `return (document.activeElement?.outerHTML || '').slice(0,150) + ' ## ' + (document.querySelector('.tl-floating')?.outerHTML || '').slice(0,300)`)));
       add(name, await axe(win, pop));
       await key(win, 'Escape');
       await sleep(200);

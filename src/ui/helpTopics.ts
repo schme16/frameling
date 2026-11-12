@@ -528,7 +528,7 @@ On the left and bottom, when a zone gets narrow, the other tabs shrink to just t
 
 ## Resize
 
-Drag the thin line between a zone and the canvas. Arrow keys work too when the line has focus.
+Drag the thin line between a zone and the canvas. Arrow keys work too when the line has focus: **Shift** makes bigger steps, **Home** and **End** go to the smallest and largest, **Enter** puts it back to the usual size.
 
 ## Collapse
 

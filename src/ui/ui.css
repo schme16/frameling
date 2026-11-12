@@ -718,12 +718,17 @@ kbd {
   border-radius: 0;
 }
 .ui-splitter:hover::after,
-.ui-splitter:focus-visible::after,
 body.ui-resizing .ui-splitter:active::after {
   background: var(--sunny);
 }
+/* Keyboard focus: the whole strip is ringed in the focus colour and the grip fills with it, in every theme and both looks. */
 .ui-splitter:focus-visible {
-  outline: none;
+  outline: 2px solid var(--focus);
+  outline-offset: -1px;
+  border-radius: 3px;
+}
+.ui-splitter:focus-visible::after {
+  background: var(--focus);
 }
 body.ui-resizing {
   cursor: grabbing;
