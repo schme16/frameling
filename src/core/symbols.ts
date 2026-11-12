@@ -9,7 +9,7 @@
  *   tweens have moved them. Plain drawings come back as themselves, so the canvas's bitmap cache keeps working.
  */
 import type { Cel, Doc, Drawing, EditFrame, Id, InstanceShape, Layer, MotionPath, PathPoint, Shape, SymbolDef, Transform2D, Tween, VectorDrawing } from './format';
-import { ease } from './ease';
+import { tweenEase } from './ease';
 import { celAt, uid } from './doc';
 import { isAnimatedText } from '../text/model';
 import { poseParticles } from '../particles/draw';
@@ -430,7 +430,7 @@ export function tweenProgress(layer: Layer, cel: Cel, frame: number): { t: numbe
   const next = nextKey(layer, cel);
   if (!next) return undefined;
   const raw = (frame - cel.start) / cel.length;
-  return { t: ease(cel.tween.ease, raw), next };
+  return { t: tweenEase(cel.tween, raw), next };
 }
 
 // ---------------------------------------------------------------- posing

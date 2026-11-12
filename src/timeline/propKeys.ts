@@ -1,20 +1,25 @@
 /**
- * Editing one property's keys on a symbol row (position, size, turn, slant, see-through, tint) without touching the
- * drawing or the other rows. A property key is a drawing key where that property's value differs from the key before,
+ * Editing one row's keys on their own, without touching the drawing or the other rows: a symbol's position, size, turn,
+ * slant, see-through and tint, one bone's pose, or the camera's place, zoom and turn. A property key is a drawing key
+ * where that row's value differs from the key before,
  * so moving it means: the key it leaves takes the earlier value, and the frame it lands on (a drawing key already
  * there, or a new one cut out of the hold or tween it lands in) takes its value. Everything else stays as it was.
  *
  * Pure on a draft or plain doc. `planPropEdits` only looks (so a refusal leaves the doc alone); `applyPropEdits` does it.
  */
-import type { Cel, Doc, Id, InstanceShape, Layer } from '../core/format';
+import type { Cel, Doc, Id, Layer } from '../core/format';
 import { allLayerLists, isInstance, nextKey, pairInstances, symbolContent, tweenInstance, tweenProgress } from '../core/symbols';
+import { cameraViewOn } from '../core/camera';
+import { cutSlice } from '../core/ease';
+import { rigPoseAt } from '../rig/pose';
+import { tidyPose } from '../rig/math';
 import { uid } from '../core/doc';
 import { cloneDrawing, MAX_LENGTH } from './edit-core';
-import { INSTANCE_PROPS, instanceLists, propRef, same, type InstProp, type KeyRef } from './tracks';
+import { propRef, rowOf, same, type KeyRef, type RowDef } from './tracks';
 
 const end = (c: { start: number; length: number }) => c.start + c.length;
 
-/** Picked property keys: layer, then property id, then the drawing keys they sit on. */
+/** Picked property keys: layer, then row id, then the drawing keys they sit on. */
 export type PropPicks = Map<Id, Map<string, Set<Id>>>;
 
 interface Snap {
@@ -24,7 +29,7 @@ interface Snap {
 }
 
 interface PropPlan {
-  prop: InstProp;
+  prop: RowDef;
   /** The row's keys after the edit, earliest first. */
   keys: Snap[];
   /** The drawing keys that are moved targets: their frames. */
@@ -63,12 +68,12 @@ export function planPropEdits(doc: Doc, picks: PropPicks, map: ((frame: number) 
   let changed = false;
   for (const [layerId, byProp] of picks) {
     const layer = doc.layers.find((l) => l.id === layerId);
-    if (!layer || layer.kind !== 'vector') continue;
-    const lists = instanceLists(doc, layer);
+    if (!layer) continue;
     const lp: LayerPlan = { layer, props: [], splits: [], changed: false };
     for (const [propId, celIds] of byProp) {
-      const prop = INSTANCE_PROPS.find((p) => p.id === propId);
+      const prop = rowOf(layer, propId);
       if (!prop) continue;
+      const lists = prop.holders(doc, layer);
       const values = lists.map((l) => (l ? l.map((s) => prop.get(s)) : null));
       // The row's keys, worked out the way the row draws them.
       const old: { i: number; first: boolean }[] = [];
@@ -89,7 +94,7 @@ export function planPropEdits(doc: Doc, picks: PropPicks, map: ((frame: number) 
         const g = map(cel.start);
         if (!Number.isInteger(g) || g < 0 || g >= MAX_LENGTH) return no('That is outside the animation.');
         const holder = layer.cels.findIndex((c) => c.start <= g && g < end(c));
-        if (holder < 0 || !lists[holder]) return no('A property key needs a symbol drawing on that frame.');
+        if (holder < 0 || !lists[holder]) return no(`A key on this row needs ${prop.noun} on that frame. Pick a frame that has one.`);
         const c = layer.cels[holder];
         if (c.start !== g && c.tween && (c.tween.kind === 'shape' || c.tween.path || c.tween.spin) && nextKey(layer, c)) return no('That frame is inside a morph, a motion path or a spin. Move the key onto a drawing key instead.');
         if (c.start !== g && !lp.splits.includes(g)) lp.splits.push(g);
@@ -113,7 +118,7 @@ export function planPropEdits(doc: Doc, picks: PropPicks, map: ((frame: number) 
 }
 
 /** The frames where a row would show a key, if each cel took the value of the last key at or before it. */
-function simulate(layer: Layer, lists: (InstanceShape[] | undefined)[], keys: Snap[], splits: number[]): Set<number> {
+function simulate(layer: Layer, lists: (unknown[] | undefined)[], keys: Snap[], splits: number[]): Set<number> {
   const starts: { start: number; listed: boolean }[] = layer.cels.map((c, i) => ({ start: c.start, listed: !!lists[i] }));
   for (const g of splits) {
     const holder = layer.cels.findIndex((c) => c.start <= g && g < end(c));
@@ -135,36 +140,56 @@ function simulate(layer: Layer, lists: (InstanceShape[] | undefined)[], keys: Sn
   return out;
 }
 
-/** A new drawing key at `frame`, cut out of the key holding it: the same picture, so only the edited row will change. */
+/**
+ * A new drawing key at `frame`, cut out of the key holding it: the same picture, so only the edited row will change.
+ * On a tween the two halves each play their own part of the one easing curve (`Tween.slice`), so the motion of every
+ * row over the span is exactly what it was.
+ */
 function splitCel(doc: Doc, layer: Layer, frame: number): Cel | undefined {
   const cel = layer.cels.find((c) => c.start < frame && frame < end(c));
   const d = cel && doc.drawings[cel.drawingId];
-  if (!cel || !d || d.kind !== 'vector') return undefined;
-  const nd = cloneDrawing(d);
-  if (nd.kind !== 'vector') return undefined;
+  if (!cel || !d) return undefined;
   const local = frame - cel.start;
   const tp = tweenProgress(layer, cel, frame);
-  const from = d.shapes.filter(isInstance);
-  const to = tp ? doc.drawings[tp.next.drawingId] : undefined;
-  const pairs = tp && cel.tween ? pairInstances(from, to?.kind === 'vector' ? to.shapes.filter(isInstance) : []) : [];
-  const copies = nd.shapes.filter(isInstance);
-  copies.forEach((s, i) => {
-    // Hold the in-between the tween had here, and the symbol's own playback where it had got to.
-    const at = tp && cel.tween ? tweenInstance(from[i], pairs[i], cel.tween, tp.t) : from[i];
-    s.transform = { ...at.transform };
-    s.opacity = at.opacity;
-    if (at.tint) s.tint = { ...at.tint };
-    else delete s.tint;
-    const n = Math.max(1, symbolContent(doc, s.symbolId)?.length ?? 1);
-    const first = Math.max(0, Math.min(n - 1, Math.round(s.firstFrame) || 0));
-    if (s.play === 'once') s.firstFrame = Math.min(n - 1, first + local);
-    else if (s.play !== 'single') s.firstFrame = (((first + local) % n) + n) % n;
-  });
+  let nd;
+  if (d.kind === 'camera') {
+    nd = cloneDrawing(d);
+    if (nd.kind === 'camera') nd.view = { ...(cameraViewOn(doc, layer, frame) ?? d.view) };
+  } else if (d.kind === 'vector') {
+    nd = cloneDrawing(d);
+    if (nd.kind !== 'vector') return undefined;
+    const from = d.shapes.filter(isInstance);
+    const to = tp ? doc.drawings[tp.next.drawingId] : undefined;
+    const pairs = tp && cel.tween ? pairInstances(from, to?.kind === 'vector' ? to.shapes.filter(isInstance) : []) : [];
+    nd.shapes.filter(isInstance).forEach((s, i) => {
+      // Hold the in-between the tween had here, and the symbol's own playback where it had got to.
+      const at = tp && cel.tween ? tweenInstance(from[i], pairs[i], cel.tween, tp.t) : from[i];
+      s.transform = { ...at.transform };
+      s.opacity = at.opacity;
+      if (at.tint) s.tint = { ...at.tint };
+      else delete s.tint;
+      const n = Math.max(1, symbolContent(doc, s.symbolId)?.length ?? 1);
+      const first = Math.max(0, Math.min(n - 1, Math.round(s.firstFrame) || 0));
+      if (s.play === 'once') s.firstFrame = Math.min(n - 1, first + local);
+      else if (s.play !== 'single') s.firstFrame = (((first + local) % n) + n) % n;
+    });
+    // A bones key holds the pose the glide had reached.
+    if (layer.kind === 'vector' && layer.rig) {
+      const pose = tidyPose(rigPoseAt(doc, layer, frame));
+      if (Object.keys(pose).length) nd.pose = JSON.parse(JSON.stringify(pose));
+      else delete nd.pose;
+    }
+  } else return undefined;
   doc.drawings[nd.id] = nd;
   const cut: Cel = { id: uid('c'), start: frame, length: end(cel) - frame, drawingId: nd.id };
-  if (cel.tween && tp) cut.tween = { ease: cel.tween.ease };
+  if (cel.tween && tp) {
+    const [first, second] = cutSlice(cel.tween, local / cel.length);
+    cut.tween = { ease: cel.tween.ease, ...(second ? { slice: second } : {}) };
+    if (first) cel.tween.slice = first;
+    else delete cel.tween.slice;
+  }
   if (cel.autoHold) cut.autoHold = true;
-  cel.length = frame - cel.start;
+  cel.length = local;
   delete cel.autoHold;
   layer.cels.splice(layer.cels.indexOf(cel) + 1, 0, cut);
   return cut;
@@ -192,7 +217,7 @@ export function applyPropEdits(doc: Doc, plan: PropEditPlan): KeyRef[] {
       if (c) fresh.add(c);
     }
     for (const pp of lp.props) {
-      let lists = instanceLists(doc, layer);
+      let lists = pp.prop.holders(doc, layer);
       for (let i = 0; i < layer.cels.length; i++) {
         const cel = layer.cels[i];
         const isTarget = pp.targets.includes(cel.start);
@@ -202,7 +227,7 @@ export function applyPropEdits(doc: Doc, plan: PropEditPlan): KeyRef[] {
           const list = lists[i];
           if (list && list.some((s, j) => !!want[j] && !same(pp.prop.get(s), want[j]))) {
             ownDrawing(doc, cel);
-            lists = instanceLists(doc, layer);
+            lists = pp.prop.holders(doc, layer);
             lists[i]!.forEach((s, j) => {
               if (want[j]) pp.prop.set(s, want[j].slice());
             });

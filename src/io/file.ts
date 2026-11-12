@@ -373,6 +373,7 @@ function readBind(b: unknown): { bind?: LayerBind } {
 function readTween(t: unknown): { tween?: Tween } {
   if (!isObj(t)) return {};
   const tween: Tween = { ...(t.kind === 'shape' ? { kind: 'shape' as const } : {}), ease: isEasing(t.ease) ? t.ease : 'linear' };
+  if (Array.isArray(t.slice) && t.slice.length === 2 && t.slice.every((n: unknown) => typeof n === 'number' && Number.isFinite(n)) && t.slice[0] >= 0 && t.slice[1] <= 1 && t.slice[0] < t.slice[1]) tween.slice = [t.slice[0], t.slice[1]];
   if (typeof t.spin === 'number' && Number.isFinite(t.spin) && t.spin) tween.spin = Math.round(t.spin);
   if (isObj(t.path) && Array.isArray(t.path.points)) {
     const points = t.path.points.filter((p: any) => isObj(p) && Number.isFinite(p.x) && Number.isFinite(p.y)).map((p: any) => ({ x: p.x, y: p.y, ...(isObj(p.c1) && isObj(p.c2) ? { c1: { x: num(p.c1.x, p.x), y: num(p.c1.y, p.y) }, c2: { x: num(p.c2.x, p.x), y: num(p.c2.y, p.y) } } : {}) }));

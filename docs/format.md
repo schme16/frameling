@@ -231,8 +231,10 @@ when comparing two drawings for "same look" (as `id` is ignored).
 
 - `SymbolDef`: `{id, name, layers, length, origin: {x, y}, frameLabels?}`. Its layers use `doc.drawings`. Content is in
   symbol space (stage space when the symbol was made). `frameLabels` (`0b554d4`) names frames, for mouth charts.
-- `Tween`: `{kind?: 'classic' | 'shape', ease, spin?, path?, hints?}`. Missing kind = classic (instances move between
-  the two keys' transforms, opacity and tint). `'shape'` morphs one key's drawing into the next.
+- `Tween`: `{kind?: 'classic' | 'shape', ease, slice?, spin?, path?, hints?}`. Missing kind = classic (instances move
+  between the two keys' transforms, opacity and tint). `'shape'` morphs one key's drawing into the next. `slice`
+  (`[from, to]` within 0..1, optional) is the part of the easing curve the span plays; it is set when a span is cut in
+  two by a property key so both halves together move exactly as the one span did (`tweenEase` in `src/core/ease.ts`).
 - `Easing`: `linear, easeIn, easeOut, easeInOut, backIn, backOut, elasticOut, bounceOut` (the names Interactives uses),
   or a cubic bezier `[x1, y1, x2, y2]`.
 - `MotionPath`: `{points: PathPoint[], orient}`. `ShapeHint`: `{id, from, to}`.

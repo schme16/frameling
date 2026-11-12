@@ -41,6 +41,15 @@ function sampleDoc(): Doc {
 }
 
 describe('.frameling file', () => {
+  it('keeps the part of the easing curve a cut tween plays, and ignores a nonsense one', () => {
+    const doc = sampleDoc();
+    doc.layers[0].cels[0].tween = { ease: 'easeInOut', slice: [0.25, 0.5] };
+    const back = loadFile(saveFile(doc, '1.2.3')).doc;
+    expect(back.layers[0].cels[0].tween).toEqual({ ease: 'easeInOut', slice: [0.25, 0.5] });
+    doc.layers[0].cels[0].tween = { ease: 'easeInOut', slice: [0.9, 0.2] };
+    expect(loadFile(saveFile(doc, '1.2.3')).doc.layers[0].cels[0].tween).toEqual({ ease: 'easeInOut' });
+  });
+
   it('saves and loads back to an identical document', () => {
     const doc = sampleDoc();
     const { doc: back, warnings } = loadFile(saveFile(doc, '1.2.3'));

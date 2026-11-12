@@ -561,6 +561,11 @@ export interface Tween {
   /** 'shape' morphs the outlines, colours and strokes of one key's drawing into the next one's (shape tween). */
   kind?: 'classic' | 'shape';
   ease: Easing;
+  /**
+   * Which part of the easing curve this span plays, as [from, to] within 0..1 (missing = all of it). A span cut in two
+   * keeps the motion exactly as it was: each half plays its own part of the one curve.
+   */
+  slice?: [number, number];
   /** Extra whole turns on the way (positive clockwise). */
   spin?: number;
   /** Follow this line on the way (stage coordinates of the layer). */
