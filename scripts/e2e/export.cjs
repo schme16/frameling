@@ -1898,6 +1898,9 @@ const FADE_PROBES = [6, 8, 11].flatMap((frame) => [
   { frame, x: 75, y: 180, what: 'the arm over the torso, inside the faded Body' },
   { frame, x: 55, y: 190, what: 'the torso alone' },
 ]);
+// The glow layer (a round and a square patch at 0.7 fade) over the sky and over the sun, frame 0 before the camera moves.
+const blendAt = (what) => [{ frame: 0, x: 180, y: 60, what: `${what} over the sky` }, { frame: 0, x: 240, y: 40, what: `${what} square over the sky` }, { frame: 0, x: 260, y: 60, what: `${what} square over the sun` }];
+const BLEND_PROBES = { 'linear-dodge': blendAt('linear dodge'), subtract: blendAt('subtract'), divide: blendAt('divide') };
 // Where the lower arm lies under the big hand of the faded arm inside the faded Body: one picture, so the arm does not show through.
 const NESTED_PROBES = [
   // Looser than the others: a fade inside a tinted fade comes out a few levels darker in Godot than in Frameling (before this change too); showing through is 30 levels.
@@ -1905,7 +1908,7 @@ const NESTED_PROBES = [
   { frame: 8, x: 200, y: 178, tol: 12, what: 'the lower arm under the hand, both inside the faded arm inside the faded Body' },
 ];
 async function godotBonesExtrasSection(name = 'bones-extras', extra = {}, more, probes = []) {
-  // --section=bones-nested-fade runs just that one of the extras (the rest of the Godot bones checks still run).
+  // --section=bones-nested-fade[,more] runs just those extras (and not the other Godot bones checks).
   if (flag('section') && !flag('section').includes(name)) return;
   const r = begin(name, 'sheet godot-bones');
   try {
@@ -1944,8 +1947,8 @@ async function godotBonesExtrasSection(name = 'bones-extras', extra = {}, more, 
     await startApp();
     await exportMatrix();
     await svgAnimCases();
-    if (!ONLY || ONLY.includes('godot-bones')) await godotBonesSection();
-    if (!ONLY || ONLY.includes('godot-bones') || ONLY.includes('godot-bones-bounce')) for (const native of [false, true]) await godotBonesBounceSection(native);
+    if ((!ONLY || ONLY.includes('godot-bones')) && !flag('section')) await godotBonesSection();
+    if ((!ONLY || ONLY.includes('godot-bones') || ONLY.includes('godot-bones-bounce')) && !flag('section')) for (const native of [false, true]) await godotBonesBounceSection(native);
     if (!ONLY || ONLY.includes('godot-bones')) await godotBonesExtrasSection();
     // A symbol copied three times its size: its pictures are baked bigger and scaled back down in the scene.
     if (!ONLY || ONLY.includes('godot-bones'))
@@ -1982,6 +1985,14 @@ async function godotBonesExtrasSection(name = 'bones-extras', extra = {}, more, 
         ({ tscn }) => check(/\[node name="Body" type="CanvasGroup"/.test(tscn) && !/name="Arm" type=/.test(tscn) && /name="Arm holder" type="Sprite2D"/.test(tscn), 'the faded arm inside the faded Body should be drawn into pictures, not a second group'),
         [...FADE_PROBES, ...NESTED_PROBES],
       );
+    // The blend modes Godot has no setting for (linear dodge, subtract, divide): a small shader reads the picture behind.
+    for (const [mode, probes] of [
+      ['linear-dodge', BLEND_PROBES['linear-dodge']],
+      ['subtract', BLEND_PROBES.subtract],
+      ['divide', BLEND_PROBES.divide],
+    ])
+      if (!ONLY || ONLY.includes('godot-bones'))
+        await godotBonesExtrasSection(`bones-blend-${mode}`, { glowBlend: mode }, ({ tscn, files }) => check(/ShaderMaterial/.test(tscn) && files.some((n) => n === `frameling-blend-${{ 'linear-dodge': 'dodge', subtract: 'sub', divide: 'div' }[mode]}.gdshader`), `the ${mode} layer should have its blend shader`), probes);
     if (!SKIP.includes('files')) await filesSection();
   } catch (e) {
     begin('harness', 'startup').failures.push(String(e?.stack ?? e));

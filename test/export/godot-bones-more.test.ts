@@ -302,11 +302,11 @@ describe('Godot bones: a faded symbol is a CanvasGroup', () => {
     // Add on the layer.
     const add = bonesExtrasDoc({ fade: true });
     add.layers.find((l) => l.name === 'Hero')!.blend = 'add';
-    expect(bonesNotes(add).fades.join('|')).toContain('uses Add or Multiply');
+    expect(bonesNotes(add).fades.join('|')).toContain('uses a blend mode other than normal');
     // A part with Multiply inside the symbol.
     const mul = bonesExtrasDoc({ fade: true });
     Object.values(mul.symbols!)[0].layers.find((l) => l.name === 'Hand')!.blend = 'multiply';
-    expect(bonesNotes(mul).fades.join('|')).toContain('some of its parts use Add or Multiply');
+    expect(bonesNotes(mul).fades.join('|')).toContain('some of its parts use a blend mode other than normal');
     // A symbol holding a symbol with bones fades as one picture too (see the nested group tests).
     const body = bonesExtrasDoc({ bodyArm: true });
     body.layers.find((l) => l.name === 'Hero')!.opacity = 0.5;

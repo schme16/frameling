@@ -153,6 +153,27 @@ describe('Godot bones: looks', () => {
     expect(nativeBlend(undefined)).toEqual({ blend: 'mix', exact: true });
     expect(nativeBlend('screen').exact).toBe(false);
     expect(nativeBlend('overlay')).toEqual({ blend: 'mix', exact: false });
+    expect(nativeBlend('linear-dodge')).toEqual({ blend: 'dodge', exact: true });
+    expect(nativeBlend('subtract')).toEqual({ blend: 'sub', exact: true });
+    expect(nativeBlend('divide')).toEqual({ blend: 'div', exact: true });
+  });
+
+  it('writes a shader for linear dodge, subtract and divide that reads what is behind', () => {
+    for (const b of ['dodge', 'sub', 'div'] as const) {
+      const t = tintShader(b);
+      expect(t).toContain('hint_screen_texture');
+      expect(t).toContain('render_mode blend_mix;');
+      expect(t).toContain('uniform float tint_amount');
+    }
+    expect(tintShader('dodge')).toContain('min(cb + cs');
+    expect(tintShader('sub')).toContain('max(cb - cs');
+    const doc = bonesExtrasDoc({ glowBlend: 'divide' });
+    const { input } = scene(doc);
+    const tscn = godotBonesScene(input);
+    expect(tscn).toContain('type="ShaderMaterial"');
+    expect(tscn).toContain('frameling-blend-div.gdshader');
+    expect(godotBonesShaders(input).map((s) => s.name)).toContain('frameling-blend-div.gdshader');
+    expect(bonesNotes(doc).skipped.join('|')).not.toContain('Divide');
   });
 
   it('gives an Add layer a CanvasItemMaterial and a fade a modulate, and keeps the effects for baking', () => {

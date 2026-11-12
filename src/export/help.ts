@@ -192,11 +192,11 @@ $AnimationPlayer.play("walk")
 ## Symbols, camera and looks
 
 - A [symbol](help:symbols) with its own bones comes as a node for each copy, with its own Skeleton2D and parts. Its place, fade and [timeline](help:symbol-properties) are keys. On a layer that follows a bone, the copy sits under that bone, inside symbols too. On a layer with effects or masks, or a bent one, it is drawn into the pictures.
-- A symbol that fades is a **CanvasGroup**: it fades as one picture, so overlaps don't show through, bones symbols inside too (a faded one inside is drawn into pictures, with no live skeleton). Parts that can't be ordered by the scene tree, or use Add or Multiply, fade alone; the export window says why.
+- A symbol that fades is a **CanvasGroup**: it fades as one picture, so overlaps don't show through, bones symbols inside too (a faded one inside is drawn into pictures, with no live skeleton). Parts that can't be ordered by the scene tree, or use a blend mode, fade alone; the export window says why.
 - A symbol copied large gets bigger pictures, up to 4 times your export size (less on a huge stage), so it stays sharp.
 - The [camera](help:camera) becomes a **Camera2D** with position, zoom and turn keys. Layers with a depth go under a **Parallax2D**.
 - Camera and depth layers line up when your Godot window is the stage size times the export scale. For other sizes, attach the saved \`-fit-window.gd\` to the scene's root, or set Project Settings > Display > Window to that size with Stretch Mode **canvas_items** and Aspect **keep**.
-- A layer's fade is the node's modulate. **Add** and **Multiply** use a CanvasItemMaterial (Screen becomes Add, other modes draw normal). A symbol's colour wash uses a tiny shader saved beside the scene.
+- A layer's fade is the node's modulate. **Add** and **Multiply** use a CanvasItemMaterial (Screen becomes Add). **Glow brighter, plain**, **Take away** and **Brighten by dividing** use a small shader saved beside the scene that reads what is behind them, so they match Frameling over a solid background (other modes draw normal). A symbol's colour wash uses a tiny shader saved beside the scene.
 - [Effects](help:effects) are baked into the part's picture, since Godot has none built in. So are **masks** and "clip to the layer below", when the part and the mask move together. One that follows a bone, or sits at another depth, is left out.
 - Hidden or reference layers inside a symbol with effects are left out.
 
