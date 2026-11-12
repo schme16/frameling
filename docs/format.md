@@ -60,8 +60,9 @@ Refused outright:
 
 Repaired, with a warning:
 
-- A drawing that isn't an object or has an unknown kind is left out. Shapes of unknown type, or instances, text and
-  particles that fail their reader, are left out.
+- A drawing that isn't an object or has an unknown kind is left out. Instances, text and particles that fail their
+  reader, and anything in a shape list that is not an object with a `type`, are left out. Shapes of an unknown `type`
+  are not repaired away: they are kept (see "Data the reader does not know" below).
 - A cel pointing at a missing drawing, or at a drawing of the wrong kind for its layer, is dropped (the frames go
   empty). Cels are sorted by `start`; `start` is clamped to 0 or more and `length` to 1 or more.
 - A symbol that can't be read is dropped (its instances then draw nothing).
@@ -90,6 +91,21 @@ Repaired quietly (defaults filled, values clamped):
   `inOut` is clamped to the length and put in order; `perspective` keeps at most two points.
 
 Stroke, fill and path shapes are otherwise passed through as stored.
+
+## Data the reader does not know
+
+Nothing a file holds is dropped because the app that opens it lacks the feature (a built-in feature turned off, a plugin,
+a newer minor version). `src/io/ext.ts`:
+
+- `ext` (`Record<featureId, plain JSON>`) is allowed on the document, every layer, every drawing and every shape.
+  It is copied on load and written back unchanged on save. Each feature's entry is checked: keys named `__proto__`,
+  `constructor` or `prototype` are skipped, nesting over 24 deep, over 1,000,000 values or over 8 MB as JSON drops that
+  entry (with a plain warning), entry names must match `[A-Za-z0-9][A-Za-z0-9._:-]{0,79}`. The owning feature validates
+  its own entry when it is active. Lip sync writes `ext.lipsync = { used: true }` on the document.
+- A shape of an unknown `type` goes to `VectorDrawing.kept` as `{ at, shape }` (`at` = how many known shapes came before
+  it) and is written back in that place. It is never drawn or edited.
+
+Layers of an unknown `kind` are still refused as a damaged file, and unknown plain fields outside `ext` are not kept.
 
 ## Types
 

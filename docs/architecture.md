@@ -122,8 +122,22 @@ Save, autosave and versions always save `rootDoc(store().rootDoc())`: tile nesti
 the choice dialog), `withChoice`, `currentChoice`. Answers in `localStorage` `frameling.choices.v1`, changeable in
 Preferences > Behaviour.
 
-**How a feature plugs in.** `src/renderer/features.ts` imports every area for its side effects, in order. A feature
-folder's `index.ts` imports its `commands.ts` and `help.ts` and registers its panel, usually with `lazyPanel`. See
+**Features (the trusted tier).** `src/features/feature.ts` defines `FeatureDescriptor`: id, name, a one-line `about`,
+`optional`, `requires`, and what it registers (`commands`, `panels`, `tools`, `help`, `quests`, `templates` ids, `menus`,
+`sections` (panel info), plus `activate`/`deactivate` and `usedBy(doc)`). `src/features/host.ts` `registerFeatures` runs
+each registration inside `withOwner(id, ...)` (`src/core/owners.ts`); every registry that adds something calls
+`ownedUndo`, so `setFeatureOn(id, false)` takes away exactly that feature's things and `true` puts them back, no restart.
+Choices live in `localStorage` `frameling.features.v1` (the ids turned off). A feature with `legacy: true` still registers
+when its folder is imported (`src/features/planned.ts`) and is not offered in Preferences > Features until it is converted.
+Lip sync (`src/lipsync/index.ts`) is the first converted one, copy it. Opening a drawing whose `usedBy` says it holds data
+of a feature that is off asks "Turn it on?" (`src/features/prompt.ts`, called from `io/document.ts`); help topics of an off
+feature are hidden and a help search offers "Turn on X" (`hiddenHelp()`). `test/features/boundary.test.ts` keeps `core/`
+from importing feature folders (a short list of today's back-imports may only shrink). `test/features/all-off.test.ts`
+runs the help audit and the shortcut check with every optional feature off. Not yet owner-tagged: canvas hooks, openers,
+save hooks, choices, template sources.
+
+**How a core area plugs in.** `src/renderer/features.ts` imports every area for its side effects, in order. A folder's
+`index.ts` imports its `commands.ts` and `help.ts` and registers its panel, usually with `lazyPanel`. See
 `src/particles/index.ts` for a small one. Canvas hooks for features: `registerDecoration` (`src/canvas/decorations.ts`),
 `addStageOverlay`, `addCanvasGrab`, `addPointerDownHook` (`src/canvas/controller.ts`). Drawing a new kind of shape is
 wired into `src/core/render.ts` and `src/core/symbols.ts` directly, not through a registry.
