@@ -40,6 +40,7 @@ import { sheetExported } from '../pixel/moments';
 import { followWay, sheetFooter } from '../pixel/sheetMode';
 import { isPixelDoc } from '../pixel/way';
 import { SheetSays } from '../pixel/SheetSays';
+import { emitPluginEvent } from '../plugins/bus';
 
 /** The ways an Illustrator file can hold an animation's frames. */
 const AI_FRAMES: { id: AiFrames; label: string; title: string; note: string }[] = [
@@ -196,11 +197,15 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
     const ac = new AbortController();
     abort.current = ac;
     setProgress({ done: 0, total: abPlan?.frames ?? plan.count, label: 'Getting ready' });
+    const heard = { format: s.format, name: doc.name };
+    emitPluginEvent('export.started', heard);
     try {
       const outcome = await exportDocument(s, ac.signal, setProgress);
       if (outcome === 'done' && s.format === 'sheet' && isPixelDoc(store().rootDoc())) sheetExported(sheet.engine, abPlan?.frames ?? plan.count);
+      emitPluginEvent('export.finished', { ...heard, ok: outcome === 'done', cancelled: outcome !== 'done' });
       if (outcome === 'done' || autoStart) return close();
     } catch (e) {
+      emitPluginEvent('export.finished', { ...heard, ok: false, error: describeError(e).slice(0, 200) });
       setError(describeError(e));
     }
     setProgress(null);

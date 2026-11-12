@@ -1,0 +1,21 @@
+{
+  "id": "export-report",
+  "name": "Frame report",
+  "version": "1.0.0",
+  "description": "Exports a plain text report about your frames. Shows how a plugin's own options appear in the Export dialog.",
+  "author": "Frameling examples",
+  "main": "main.js",
+  "permissions": ["export"],
+  "events": ["export.started", "export.finished"],
+  "exporters": {
+    "report": {
+      "options": [
+        { "id": "title", "type": "text", "label": "Title", "default": "Frame report", "maxLength": 60 },
+        { "id": "style", "type": "choice", "label": "List frames as", "choices": [{ "value": "numbers", "label": "Numbers" }, { "value": "times", "label": "Times in seconds" }], "default": "numbers" },
+        { "id": "every", "type": "number", "label": "Show every Nth frame", "min": 1, "max": 100, "step": 1, "default": 1 },
+        { "id": "markers", "type": "switch", "label": "Include markers", "default": true }
+      ]
+    }
+  },
+  "apiVersion": 2
+}

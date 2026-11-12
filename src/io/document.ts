@@ -71,6 +71,8 @@ export async function loadBytes(bytes: Uint8Array, filePath: string | null, opts
   if (loaded.warnings.length) notify(`Opened, with a few small repairs: ${[...new Set(loaded.warnings)].join(' ')}`, 'warn', undefined, 8000);
   // A drawing that uses a feature that is turned off offers to turn it on (it opens and keeps its data either way).
   void import('../features/prompt').then((m) => m.offerTurnOn(loaded.doc)).catch(() => {});
+  // Shapes from a plugin that is off or not installed still show; say so, and offer to turn the plugin on.
+  void import('../plugins/docPrompt').then((m) => m.offerPluginsForDoc(loaded.doc)).catch(() => {});
   return true;
 }
 

@@ -8,6 +8,7 @@ import { Modal } from '../ui/Modal';
 import { Icon } from '../ui/icons';
 import { openHelp } from '../ui/overlays';
 import { mountModal } from '../io/mount';
+import { rememberedValues, type ExportOption, type OptionValue } from './options';
 import { runPluginExport, type PluginExportChoice, type PluginExportJob, type Progress } from './export';
 
 export function openPluginExport(job: PluginExportJob): void {
@@ -17,7 +18,8 @@ export function openPluginExport(job: PluginExportJob): void {
 function Dialog({ job, done }: { job: PluginExportJob; done: () => void }) {
   const doc = useMemo(() => sceneOf(store().get().doc, store().get().ui.frame).doc, []);
   const scales = useMemo(() => scaleChoices(doc), [doc]);
-  const [choice, setChoice] = useState<PluginExportChoice>({ range: doc.length > 1 ? 'all' : 'frame', clipId: doc.clips[0]?.id ?? null, scale: scales.includes(1) ? 1 : scales[0] });
+  const [choice, setChoice] = useState<PluginExportChoice>({ range: doc.length > 1 ? 'all' : 'frame', clipId: doc.clips[0]?.id ?? null, scale: scales.includes(1) ? 1 : scales[0], options: rememberedValues(job.pluginId, job.def.id, job.def.options) });
+  const setOption = (id: string, v: OptionValue) => setChoice((c) => ({ ...c, options: { ...c.options, [id]: v } }));
   const [progress, setProgress] = useState<Progress | null>(null);
   const [error, setError] = useState<string | null>(null);
   const abort = useRef<AbortController | null>(null);
@@ -70,6 +72,14 @@ function Dialog({ job, done }: { job: PluginExportJob; done: () => void }) {
             ))}
           </select>
         </label>
+        {job.def.options.length > 0 && (
+          <fieldset className="plugin-export-options" disabled={!!progress}>
+            <legend>{job.pluginName} options</legend>
+            {job.def.options.map((o) => (
+              <OptionField key={o.id} option={o} value={choice.options?.[o.id] ?? o.default} set={(v) => setOption(o.id, v)} />
+            ))}
+          </fieldset>
+        )}
         {progress && (
           <div className="plugin-export-progress" role="status">
             <span>{progress.label}...</span>
@@ -92,4 +102,49 @@ function Dialog({ job, done }: { job: PluginExportJob; done: () => void }) {
       </div>
     </Modal>
   );
+}
+
+/** One control for one option the plugin described: a number, a choice, a switch or a text box. */
+function OptionField({ option: o, value, set }: { option: ExportOption; value: OptionValue; set: (v: OptionValue) => void }) {
+  const hint = o.hint ? <span className="plugin-item-by">{o.hint}</span> : null;
+  switch (o.type) {
+    case 'number':
+      return (
+        <label className="plugin-ui-field">
+          <span>{o.label}</span>
+          <input type="number" min={o.min} max={o.max} step={o.step} value={Number(value)} onChange={(e) => e.target.value !== '' && set(Number(e.target.value))} />
+          {hint}
+        </label>
+      );
+    case 'choice':
+      return (
+        <label className="plugin-ui-field">
+          <span>{o.label}</span>
+          <select value={String(value)} onChange={(e) => set(e.target.value)}>
+            {o.choices.map((c) => (
+              <option key={c.value} value={c.value}>
+                {c.label}
+              </option>
+            ))}
+          </select>
+          {hint}
+        </label>
+      );
+    case 'switch':
+      return (
+        <label className="ui-check plugin-ui-check">
+          <input type="checkbox" checked={!!value} onChange={(e) => set(e.target.checked)} />
+          <span>{o.label}</span>
+          {hint}
+        </label>
+      );
+    case 'text':
+      return (
+        <label className="plugin-ui-field">
+          <span>{o.label}</span>
+          <input type="text" maxLength={o.maxLength} value={String(value)} onChange={(e) => set(e.target.value)} />
+          {hint}
+        </label>
+      );
+  }
 }

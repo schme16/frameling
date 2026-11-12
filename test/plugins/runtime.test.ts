@@ -26,7 +26,7 @@ function hooks(over: Partial<HostHooks> = {}): HostHooks & { log: string[] } {
   };
 }
 
-const manifest = (permissions: Permission[]) => ({ id: 't', name: 'T', version: '1', description: '', author: '', main: 'main.js', permissions, network: [], apiVersion: 1 });
+const manifest = (permissions: Permission[]) => ({ id: 't', name: 'T', version: '1', description: '', author: '', main: 'main.js', permissions, network: [], apiVersion: 1, events: [], exporterOptions: {} });
 
 function start(code: string, permissions: Permission[], h = hooks()) {
   const w = runPlugin(code);

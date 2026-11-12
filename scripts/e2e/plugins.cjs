@@ -129,6 +129,65 @@ app.whenReady().then(async () => {
   })()`);
   check('contact sheet PNG made in the sandbox', out.png[0][2] === 'PNG' && out.png[0][1] > 500, out);
   check('contact sheet PDF made in the sandbox', out.pdf[2] === '%PDF-1.4' && out.pdf[1] > 300, out);
+  // ------------------------------------------------ version 2: powers in the real sandbox
+  // The dialog starts every power off; switch them all on, as a person who trusts the plugin would.
+  const installAll = async (name) => {
+    await js(`window.__framelingPlugins.install(${JSON.stringify(example(name))}); true`);
+    await sleep(300);
+    const switches = await js(`[...document.querySelectorAll('.plugin-approve [role=switch]')].map((b) => b.getAttribute('aria-checked'))`);
+    check(`${name}: every power in the dialog starts off`, switches.every((v) => v === 'false'), switches);
+    await js(`document.querySelectorAll('.plugin-approve [role=switch]').forEach((b) => b.click()); true`);
+    await sleep(100);
+    await js(`document.querySelector('.plugin-approve .ui-btn-primary')?.click(); true`);
+    await sleep(1500);
+  };
+  await installAll('star-kit');
+  await installAll('drawing-guides');
+  await installAll('layer-fader');
+  await install('export-report');
+  const v2 = await js(`window.__framelingPlugins.list()`);
+  check('version 2 examples installed and on', ['star-kit', 'drawing-guides', 'layer-fader', 'export-report'].every((id) => v2.find((p) => p.id === id)?.status === 'on'), v2);
+  check('plugin tools are in the toolbox', await js(`['plugin.star-kit.tool.stamp', 'plugin.layer-fader.tool.fade'].every((id) => window.__frameling.tools().includes(id))`), await js(`window.__frameling.tools()`));
+  const stamped = await js(`(async () => {
+    const f = window.__frameling;
+    const rt = window.__framelingPlugins.runtime('star-kit');
+    const s = f.store();
+    const layer = s.get().doc.layers.find((l) => l.kind === 'vector');
+    s.setUi({ activeLayerId: layer.id, frame: 0 });
+    const ev = { type: 'down', x: 300, y: 200, pressure: 0.5, shift: false, alt: false, mod: false, button: 0, frame: 0, drawingId: null, zoom: 1 };
+    const hint = await rt.toolEvent('stamp', ev);
+    const d = s.get().doc.drawings[layer.cels[0].drawingId];
+    const mine = d.shapes.filter((x) => x.ext && x.ext['plugin.star-kit']);
+    return { hint, count: mine.length, kind: mine[0] && mine[0].ext['plugin.star-kit'].kind, props: mine[0] && mine[0].ext['plugin.star-kit'].props, undo: s.undoLabel() };
+  })()`);
+  check('a tool placed a star in the real sandbox', stamped.count === 1 && stamped.kind === 'star' && stamped.props?.points === 5 && /Star/.test(stamped.undo || ''), stamped);
+  const faded = await js(`(async () => {
+    const f = window.__frameling;
+    const rt = window.__framelingPlugins.runtime('layer-fader');
+    const s = f.store();
+    const layer = s.get().doc.layers.find((l) => l.kind === 'vector');
+    s.setUi({ activeLayerId: layer.id });
+    const ev = (type, y) => ({ type, x: 100, y, pressure: 0.5, shift: false, alt: false, mod: false, button: 0, frame: 0, drawingId: null, zoom: 1 });
+    await rt.toolEvent('fade', ev('down', 300));
+    await rt.toolEvent('fade', ev('move', 360));
+    await rt.toolEvent('fade', ev('up', 360));
+    return { opacity: s.get().doc.layers.find((l) => l.id === layer.id).opacity, undo: s.undoLabel() };
+  })()`);
+  check('a tool changed the layer in one undo step', Math.abs(faded.opacity - 0.8) < 0.01 && faded.undo === 'Layer fader: Fade layer', faded);
+  const report = await js(`(async () => {
+    const rt = window.__framelingPlugins.runtime('export-report');
+    const info = { name: 'Probe', fps: 12, width: 8, height: 8, scale: 1, frameNumbers: [0, 1, 2, 3], clips: [], markers: [{ name: 'Hit', frame: 2 }] };
+    const frames = () => [0, 1, 2, 3].map(() => ({ width: 8, height: 8, data: new Uint8ClampedArray(8 * 8 * 4) }));
+    const files = await rt.runExport('report', frames(), info, undefined, { title: 'Hello', every: 2, style: 'times', markers: true, evil: 1 });
+    return new TextDecoder().decode(files[0].bytes);
+  })()`);
+  check('an exporter got its options in the real sandbox', report.startsWith('Hello\n=====') && report.includes('0.000 s') && report.includes('0.167 s') && report.includes('- Hit (frame 3)'), report);
+  const evented = await js(`(async () => {
+    window.__frameling.store().setUi({ frame: 5 });
+    await new Promise((r) => setTimeout(r, 400));
+    return window.__framelingPlugins.list().filter((p) => p.problem).length;
+  })()`);
+  check('events reach plugins without trouble', evented === 0, evented);
   const pluginErrors = errors.filter((e) => /plugin/i.test(e));
   check('no plugin errors in the console', pluginErrors.length === 0, pluginErrors);
 

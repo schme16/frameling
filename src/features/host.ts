@@ -119,6 +119,11 @@ const notify = (e: FeatureChange) => {
   for (const fn of [...listeners]) fn(e);
 };
 
+/** Tells the tool rail, menus and help that something outside the descriptors added or took away a tool (a plugin's). */
+export function announceUiChange(): void {
+  notify({ id: 'plugins', on: true });
+}
+
 /** The feature that is on and needs this one, if any (so this one cannot be turned off yet). */
 export const needsIt = (id: string): FeatureDescriptor | undefined => [...features.values()].find((x) => live.has(x.id) && (x.requires ?? []).includes(id));
 
