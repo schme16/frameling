@@ -201,6 +201,7 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
                 role="radio"
                 aria-checked={s.format === f.id}
                 className={`ex-card${s.format === f.id ? ' ex-chosen' : ''}`}
+                data-testid={`export.format.${f.id}`}
                 disabled={!!why}
                 data-autofocus={s.format === f.id ? '' : undefined}
                 onClick={() => set({ format: f.id, ...exporterOf(f.id)?.picked?.(s, { art }) })}
@@ -214,7 +215,7 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
             );
           })}
           {!moreChosen && (
-            <button type="button" className="ex-more" aria-expanded={showMore} onClick={() => setMore((m) => !m)}>
+            <button type="button" className="ex-more" data-testid="export.more" aria-expanded={showMore} onClick={() => setMore((m) => !m)}>
               <Icon name={showMore ? 'chevron-up' : 'chevron-down'} size={16} />
               {showMore ? 'Fewer formats' : `More formats (${groups.more.length})`}
               {!showMore && <small>WebM, PNG picture, SVG, Lottie, PSD, PDF and more</small>}
@@ -322,7 +323,7 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
         <button type="button" className="io-btn" onClick={close}>
           Cancel
         </button>
-        <button type="button" className="io-btn io-primary ex-go" disabled={!!problem || !desktop()} title={!desktop() ? 'Exporting works in the Frameling desktop app.' : undefined} onClick={() => void start()}>
+        <button type="button" className="io-btn io-primary ex-go" data-testid="export.go" disabled={!!problem || !desktop()} title={!desktop() ? 'Exporting works in the Frameling desktop app.' : undefined} onClick={() => void start()}>
           <Icon name="export" size={16} /> Export
         </button>
       </div>

@@ -89,8 +89,11 @@ export const waitingFiles = (): number => offers.pending();
 export function download(name: string, bytes: Uint8Array): void {
   const since = lastGestureAt ? performance.now() - lastGestureAt : Infinity;
   if (typeof navigator !== 'undefined' && needsFreshClick(isSafariLike(navigator.userAgent), since)) offers.offer(name, bytes);
-  else saveNow(name, bytes);
+  else offers.direct(name, bytes);
 }
+
+/** Runs `run` once the file just written is really with the browser (at once, or after Save is pressed in a held case). */
+export const whenSaved = (run: () => void): void => offers.whenSaved(run);
 
 export function pickUpload(accept: string): Promise<File | null> {
   return new Promise((resolve) => {

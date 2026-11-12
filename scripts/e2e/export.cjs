@@ -1561,7 +1561,7 @@ async function filesSection() {
       await X(`load('blank-vector')`);
       await IO('offerRecovery()');
       await sleep(300);
-      const btn = await ev(`(() => { const b = [...document.querySelectorAll('button')].find((x) => /^Restore$/.test(x.textContent.trim())); if (!b) return false; b.click(); return true; })()`);
+      const btn = await ev(`(() => { const b = document.querySelector('[data-testid="toast.restore"]'); if (!b) return false; b.click(); return true; })()`);
       if (check(btn, 'no Restore offer appeared')) {
         await sleep(400);
         const got = await ev(`(${plain})(__frameling.store().get().doc)`);
@@ -1661,7 +1661,7 @@ async function filesSection() {
       const text = await ev(`(${dlg})?.innerText ?? 'no dialog'`);
       check(/Recover unsaved work/.test(text) && /Dropped/.test(text), `the dialog says: ${text.slice(0, 120)}`);
       check(await ev(`!!(${dlg})?.querySelector('img[src^="data:image/png"]')`), 'no thumbnail in the list');
-      await ev(`[...(${dlg}).querySelectorAll('button')].find((b) => b.textContent.trim() === 'Open').click()`);
+      await ev(`(${dlg}).querySelector('[data-testid^="recover.open."]').click()`);
       await sleep(600);
       const st = await ev(`({ name: __frameling.store().get().doc.name, dirty: __frameling.store().get().ui.dirty, filePath: __frameling.store().get().ui.filePath })`);
       check(st.name === 'Dropped' && st.dirty === true && st.filePath === null, `after Open: ${JSON.stringify(st)}`);

@@ -46,16 +46,38 @@ export interface OfferDeps {
 export function createSaveOffers(deps: OfferDeps) {
   let held: Held[] = [];
   let shown: number | null = null;
+  /** Whether the latest file went to the waiting list (true) or straight to the browser (false). */
+  let latestHeld = false;
+  /** Things to say once the waiting files have really been handed to the browser. */
+  let afterSave: (() => void)[] = [];
   const saveAll = (): number => {
     const list = held;
     held = [];
+    latestHeld = false;
     if (shown !== null) deps.hide(shown);
     shown = null;
     for (const f of list) deps.save(f.name, f.bytes);
+    const later = afterSave;
+    afterSave = [];
+    for (const run of later) run();
     return list.length;
   };
   return {
+    /** A file went straight to the browser. */
+    direct(name: string, bytes: Uint8Array): void {
+      latestHeld = false;
+      deps.save(name, bytes);
+    },
+    /**
+     * Runs `run` once the file just written has been handed to the browser: now when it was, after Save is pressed when
+     * it is being held back. So "Exported X." is never said before the file is really saved.
+     */
+    whenSaved(run: () => void): void {
+      if (latestHeld && held.length) afterSave.push(run);
+      else run();
+    },
     offer(name: string, bytes: Uint8Array): void {
+      latestHeld = true;
       held.push({ name, bytes });
       if (shown !== null) deps.hide(shown);
       shown = deps.show(readyMessage(held.map((f) => f.name)), saveAll);

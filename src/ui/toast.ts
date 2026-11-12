@@ -8,6 +8,13 @@ export type ToastKind = 'info' | 'success' | 'warn' | 'error';
 export interface ToastAction {
   label: string;
   run: () => void;
+  /** A stable name for tests (`toast.<id>`). Default: the label in lower case with dashes. */
+  id?: string;
+}
+
+/** The test id of a toast button: stays put when the wording changes, if the action has an `id`. */
+export function toastTestId(a: ToastAction): string {
+  return `toast.${a.id ?? (a.label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'action')}`;
 }
 
 export interface ToastOptions {

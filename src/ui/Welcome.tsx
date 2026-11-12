@@ -83,7 +83,7 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
               {found.name} was still open when Frameling closed. We kept a copy.
             </span>
           </div>
-          <button type="button" className="ui-btn ui-btn-primary" onClick={restorePending}>
+          <button type="button" className="ui-btn ui-btn-primary" data-testid="toast.restore" onClick={restorePending}>
             Restore
           </button>
           <button type="button" className="ui-btn" data-tip="It stays in File > Recover unsaved work for 7 days." onClick={dismissPending}>
@@ -141,7 +141,7 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
 
       <div className="ui-presets" data-help="new-document">
         {PRESETS.filter((p) => !p.pixelSize).map((p, i) => (
-          <button key={p.id} type="button" className="ui-preset" style={{ animationDelay: `${i * 50}ms` }} onClick={() => void make(docFromPreset(p), p.title.toLowerCase())}>
+          <button key={p.id} type="button" className="ui-preset" data-testid={`welcome.preset.${p.id}`} style={{ animationDelay: `${i * 50}ms` }} onClick={() => void make(docFromPreset(p), p.title.toLowerCase())}>
             <span className={`ui-preset-art ${p.pixelSize ? 'is-pixel' : ''}`}>
               <span className="ui-preset-shape" style={{ aspectRatio: `${p.width} / ${p.height}` }} />
               <Icon name={p.icon} size={22} />
@@ -157,6 +157,7 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
             className="ui-preset"
             style={{ animationDelay: '100ms' }}
             data-help="pixel-new"
+            data-testid="welcome.preset.pixel"
             onClick={() => {
               closeSheet();
               window.setTimeout(openPixelChooser, 0);
@@ -234,7 +235,7 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
             <span className="ui-custom-sum">
               Makes a {dims.w} x {dims.h} drawing{!spec.pixel && units !== 'px' ? ` (${formatSize(dims.w, dims.h, units, cleanDpi(spec.dpi))})` : ''}.
             </span>
-            <button type="submit" className="ui-btn ui-btn-primary">
+            <button type="submit" className="ui-btn ui-btn-primary" data-testid="welcome.custom.start">
               Start
             </button>
           </div>

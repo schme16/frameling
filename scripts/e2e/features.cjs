@@ -53,14 +53,14 @@ app.whenReady().then(async () => {
   const asked = await js(`document.body.innerText`);
   check('off: opening it asks to turn Lip sync on', /This drawing uses Lip sync, which is turned off\. Turn it on\?/.test(asked));
   // Say no: nothing changes.
-  await js(`[...document.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Not now')?.click()`);
+  await js(`document.querySelector('[data-testid="ask.feature-off.off"]')?.click()`);
   await sleep(300);
   check('no: it stays off', !(await js(`${F}.has('lipsync.auto')`)));
   check('no: the data is still there', JSON.stringify(await js(`${F}.roundTrip()`)) === JSON.stringify({ lipsync: { used: true } }));
   // Open again and say yes.
   await js(`${F}.reopen()`);
   await sleep(600);
-  await js(`[...document.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Turn on')?.click()`);
+  await js(`document.querySelector('[data-testid="ask.feature-off.on"]')?.click()`);
   await sleep(500);
   check('yes: Lip sync is back with its command and panel, no restart', (await js(`${F}.has('lipsync.auto')`)) && (await js(`${F}.hasPanel('lipsync')`)) && (await js(`${F}.has('view.panel.lipsync')`)));
 
@@ -111,7 +111,7 @@ app.whenReady().then(async () => {
   await js(`${F}.reopen()`);
   await sleep(600);
   check('Audio off: opening a drawing with sound asks to turn Audio on', /This drawing uses Audio, which is turned off\. Turn it on\?/.test(await js(`document.body.innerText`)));
-  await js(`[...document.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Turn on')?.click()`);
+  await js(`document.querySelector('[data-testid="ask.feature-off.on"]')?.click()`);
   await sleep(600);
   check('Audio on again: command, button and the sound row are back', (await js(`${F}.has('audio.import')`)) && (await js(soundButton)) && (await js(soundRows)));
   await js(`${F}.set('lipsync', true)`);
@@ -151,7 +151,7 @@ app.whenReady().then(async () => {
   await js(`${F}.reopen()`);
   await sleep(600);
   check('Tiles off: opening the level asks to turn Tiles on', /Tiles, which is turned off\. Turn it on\?/.test(await js(`document.body.innerText`)));
-  await js(`[...document.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Not now')?.click()`);
+  await js(`document.querySelector('[data-testid="ask.feature-off.off"]')?.click()`);
   await sleep(300);
   const levelReopenedOff = await painted();
   await js(`${F}.set('tiles', true)`);

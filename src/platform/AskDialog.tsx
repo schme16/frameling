@@ -18,7 +18,7 @@ export function AskDialog() {
       <div className="ui-choice-foot">
         <span className="ui-spacer" />
         {q.buttons.map((b) => (
-          <button key={b.value} type="button" className={`ui-btn${b.primary ? ' ui-btn-primary' : ''}`} onClick={() => answer(b.value)}>
+          <button key={b.value} type="button" className={`ui-btn${b.primary ? ' ui-btn-primary' : ''}`} data-testid={`ask.${q.id ? `${q.id}.` : ''}${b.value}`} onClick={() => answer(b.value)}>
             {b.label}
           </button>
         ))}

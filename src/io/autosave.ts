@@ -45,6 +45,7 @@ export async function offerRecovery(): Promise<void> {
     'info',
     {
       label: 'Restore',
+      id: 'restore',
       run: restorePending,
     },
     30_000,

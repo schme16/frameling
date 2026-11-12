@@ -108,10 +108,10 @@ function RecolourDialog({ close }: { close: () => void }) {
         </p>
       </div>
       <div className="io-foot">
-        <button type="button" className="io-btn" onClick={close}>
+        <button type="button" className="io-btn" data-testid="recolour.cancel" onClick={close}>
           Cancel
         </button>
-        <button type="button" className="io-btn io-primary" onClick={apply} disabled={nothing}>
+        <button type="button" className="io-btn io-primary" data-testid="recolour.apply" onClick={apply} disabled={nothing}>
           Recolour
         </button>
       </div>

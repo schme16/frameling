@@ -13,7 +13,7 @@ flow('launch', async () => {
   const seen = [];
   for (let i = 0; i < 8; i++) {
     seen.push(await w.js(`document.querySelector('.ob-title')?.textContent ?? ''`));
-    if (!(await w.clickText("Let's go!")) && !(await w.clickText('Next'))) break;
+    if (!(await w.clickId('onboarding.next'))) break;
     await sleep(350);
   }
   check('Quill walks through hello, make, themes, settings, name, done', seen.join('|') === 'Hello from Quill|What would you like to make?|Pick your colours|A few handy settings|Name your first animation|All set!', seen);
@@ -32,16 +32,19 @@ flow('pixel', async () => {
   const w = makeWindow('persist:pixel');
   await w.load();
   check('welcome sheet is there', await w.waitFor(`/What are we cooking up today/.test(document.body.innerText)`));
-  await w.js(`[...document.querySelectorAll('[role=dialog] button')].find((b) => /^Pixel art/.test(b.textContent.trim()))?.click()`);
+  await w.clickId('welcome.preset.pixel');
   check("Quill's pixel chooser opens", await w.waitFor(`/Pixel time! What are we making/.test(document.body.innerText)`));
-  await w.js(`document.querySelector('.px-way-card[data-way="animation"]').click()`);
+  await w.clickId('pixel.way.animation');
   await sleep(200);
   check('picking a card makes Quill say something', await w.js(`/Aseprite|animation/i.test(document.querySelector('.ui-modal, [role=dialog]').innerText)`));
-  await w.clickText('16 x 16');
-  await w.clickText('Start');
+  await w.clickId('pixel.size.16x16');
+  await w.clickId('pixel.start');
   // New pixel art from Draw asks once whether the workspace should follow: answer Always.
   check('the workspace question comes up', await w.waitFor(`!!document.querySelector('.ui-choice')`));
-  await w.js(`[...document.querySelectorAll('.ui-choice-opt')].find((o) => /^Always/.test(o.textContent.trim()))?.click(); document.querySelector('.ui-choice-foot .ui-btn-primary')?.click()`);
+  // Pick the option, give React a moment, then OK (both in one call would answer with the default).
+  await w.clickId('choice.workspace.follow.always');
+  await sleep(150);
+  await w.clickId('choice.workspace.follow.ok');
   await sleep(1200);
   const st = await w.js(`(() => { const d = __frameling.store().get().doc; return { w: d.width, h: d.height, way: __framelingPixel.way(), layers: d.layers.length, tool: __frameling.store().get().ui.tool, ws: __frameling.dock.dock.get().workspaceId }; })()`);
   check('a 16 x 16 animation was made', st.w === st.h && st.w % 16 === 0 && st.way === 'animation' && /16 x 16 pixels/.test(await w.body()), st);
@@ -95,7 +98,7 @@ flow('workspaces', async () => {
   check('the arrangement is saved as a workspace', saved.user.includes('Web check'), saved);
   await w.js(`__frameling.overlays.openPrefs('workspaces')`);
   check('Preferences > Workspaces shows it', await w.waitFor(`/Web check/.test(document.body.innerText)`));
-  await w.clickText('Save this layout as a file');
+  await w.clickId('workspaces.save-file');
   await sleep(600);
   const dl = await w.files.downloads();
   check('Save as a file downloads one .json workspace file', dl.length === 1 && /web-check.*\.json$/i.test(dl[0].name), dl.map((d) => d.name));
@@ -107,7 +110,7 @@ flow('workspaces', async () => {
   await D(`deleteWorkspace(${JSON.stringify(await w.js(`__frameling.dock.dock.get().user[0].id`))})`);
   check('deleted', (await L()).user.length === 0);
   await w.files.upload(dl[0].name, dl[0].bytes, 'application/json');
-  await w.clickText('Add a workspace file...');
+  await w.clickId('workspaces.add-file');
   await sleep(800);
   const back = await L();
   check('Add a workspace file brings it back through the upload picker', back.user.length === 1, back);
@@ -215,7 +218,7 @@ flow('recovery', async () => {
   await w.js(`__frameling.run('file.recover')`);
   check('File > Recover unsaved work lists it', await w.waitFor(`/Lost work/.test(document.body.innerText)`), (await w.body()).slice(0, 200));
   await w.shot('recovery');
-  await w.clickText('Open');
+  await w.clickId('recover.open.*');
   await sleep(300);
 });
 
@@ -235,12 +238,12 @@ for (const mode of ['picker', 'plain']) {
     await give('slime-sheet.png', 'image/png');
     await w.run('file.openPicture');
     check('the Bring in a picture dialog opens', await w.waitFor(`/Bring in a picture/.test(document.body.innerText)`), (await w.body()).slice(0, 120));
-    await w.clickText('Find the gaps');
+    await w.clickId('import.how.auto');
     await sleep(400);
-    await w.clickText('An animation', 'button');
+    await w.clickId('import.way.animation');
     await sleep(200);
     await w.shot(`import-${mode}-sheet`);
-    await w.clickText('Bring it in');
+    await w.clickId('import.go');
     await sleep(1500);
     await w.answerChoice();
     const s1 = await state();
@@ -251,10 +254,10 @@ for (const mode of ['picker', 'plain']) {
     await w.run('file.openPicture');
     await w.waitFor(`/Bring in a picture/.test(document.body.innerText)`);
     await give('slime-sheet.json', 'application/json');
-    await w.clickText('From a JSON');
+    await w.clickId('import.how.json');
     await sleep(800);
-    await w.clickText('An animation', 'button');
-    await w.clickText('Bring it in');
+    await w.clickId('import.way.animation');
+    await w.clickId('import.go');
     await sleep(1500);
     await w.answerChoice();
     const s2 = await state();
@@ -276,7 +279,7 @@ for (const mode of ['picker', 'plain']) {
     check('a GIF shows the same dialog', await w.waitFor(`/Bring in a picture/.test(document.body.innerText)`), (await w.body()).slice(0, 100));
     await sleep(500);
     await w.shot(`import-${mode}-gif`);
-    await w.clickText('Bring it in');
+    await w.clickId('import.go');
     await sleep(1500);
     await w.answerChoice();
     const s4 = await state();
@@ -385,7 +388,7 @@ flow('export-dialog', async () => {
   await sleep(1200);
   await w.shot('export-dialog');
   const text = await w.js(`document.querySelector('[role=dialog]').innerText`);
-  await w.js(`[...document.querySelectorAll('[role=dialog] button, [role=dialog] summary')].find((b) => /More formats/.test(b.textContent))?.click()`);
+  await w.clickId('export.more');
   await sleep(500);
   await w.shot('export-dialog-more');
   const more = await w.js(`document.querySelector('[role=dialog]').innerText`);
@@ -394,8 +397,8 @@ flow('export-dialog', async () => {
   check('every other format card is on offer', ['GIF', 'MP4', 'WebM', 'APNG', 'SVG', 'Lottie', 'PSD', 'PDF', 'Illustrator', 'Interactives', 'Sprite sheet', 'PNG sequence'].every((n) => new RegExp(n).test(more)), more.slice(0, 200));
   check('no Show in folder or desktop-only wording in the dialog', !/Show in folder/.test(more));
   // The real Export button, on the default format (a GIF): the picker asks where, the file lands there.
-  await w.clickText('Fewer formats');
-  await w.clickText('Export', '[role=dialog] .ui-btn-primary, [role=dialog] button');
+  await w.clickId('export.more');
+  await w.clickId('export.go');
   await sleep(2500);
   const got = await w.files.collect();
   check('the Export button saves a file through the Save picker', got.length === 1 && got[0].bytes.length > 500, got.map((g) => g.name));
@@ -941,28 +944,31 @@ flow('safari', async () => {
   await w.js(`__shim.downloads.length = 0`);
   const defaults = await w.js(`__framelingExport.defaults()`);
   await w.js(`__framelingExport.run(${JSON.stringify({ ...defaults, format: 'png', range: 'frame' })})`);
-  check('a late export in Safari shows "Your file is ready" with Save', await w.waitFor(`/Your file .* is ready/.test(document.body.innerText) && !!document.querySelector('.ui-toast-action')`, 6000), (await w.body()).slice(-200));
+  check('a late export in Safari shows "Your file is ready" with Save', await w.waitFor(`/Your file .* is ready/.test(document.body.innerText) && !!document.querySelector('[data-testid="toast.save"]')`, 6000), (await w.body()).slice(-200));
   await sleep(400);
   check('and has not downloaded anything yet', (await w.js(`__shim.downloads.length`)) === 0);
+  check('and does not say "Exported" before anything is saved', !(await w.js(`/Exported /.test(document.body.innerText)`)));
   await w.shot('safari-save-toast');
-  check('Save is a real button a keyboard can reach', await w.js(`(() => { const b = [...document.querySelectorAll('.ui-toast-action')].find((x) => x.textContent === 'Save'); b.focus(); return document.activeElement === b && b.tabIndex >= 0 && b.tagName === 'BUTTON'; })()`));
+  check('Save is a real button a keyboard can reach', await w.js(`(() => { const b = document.querySelector('[data-testid="toast.save"]'); b.focus(); return document.activeElement === b && b.tabIndex >= 0 && b.tagName === 'BUTTON'; })()`));
   w.wc.focus();
   w.wc.sendInputEvent({ type: 'keyDown', keyCode: 'Enter' });
   w.wc.sendInputEvent({ type: 'char', keyCode: '\r' });
   w.wc.sendInputEvent({ type: 'keyUp', keyCode: 'Enter' });
   const got = await w.waitFor(`__shim.downloads.length > 0 && __shim.downloads[0].name`, 4000);
   check('pressing Save downloads the file', /\.png$/.test(got || ''), got);
-  check('and the message goes away', !(await w.js(`!!document.querySelector('.ui-toast-action')`)));
+  check('and the message goes away', !(await w.js(`/is ready\\. Press Save/.test(document.body.innerText)`)));
+  check('and then says "Exported" once the file is with the browser', await w.waitFor(`/Exported .*\\.png\\./.test(document.body.innerText)`, 3000), (await w.body()).slice(-200));
   // The command does the same for people who live on the keyboard.
   await w.js(`__shim.downloads.length = 0`);
   await w.js(`__framelingExport.run(${JSON.stringify({ ...defaults, format: 'png', range: 'frame' })})`);
-  await w.waitFor(`!!document.querySelector('.ui-toast-action')`, 6000);
+  await w.waitFor(`!!document.querySelector('[data-testid="toast.save"]')`, 6000);
   await w.js(`__frameling.run('file.saveWaiting'); 0`);
   check('the "Save the finished file" command downloads it too', !!(await w.waitFor(`__shim.downloads.length > 0`, 4000)));
   // Right after a click, a download goes straight through.
   await w.js(`__shim.downloads.length = 0`);
   await w.js(`document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true })); __framelingExport.run(${JSON.stringify({ ...defaults, format: 'png', range: 'frame' })}); 0`);
-  check('an export started by a click just downloads', !!(await w.waitFor(`__shim.downloads.length > 0`, 4000)) && !(await w.js(`!!document.querySelector('.ui-toast-action')`)));
+  check('an export started by a click just downloads', !!(await w.waitFor(`__shim.downloads.length > 0`, 4000)) && !(await w.js(`/is ready\\. Press Save/.test(document.body.innerText)`)));
+  check('and says "Exported" straight away', await w.waitFor(`/Exported .*\\.png\\./.test(document.body.innerText)`, 3000), (await w.body()).slice(-200));
 
   // Storage: the first autosave asks the browser to keep it; told no, one gentle notice, once.
   check('nothing asked before the first save', (await w.js(`__shim.persistCalls`)) === 0);
@@ -974,7 +980,7 @@ flow('safari', async () => {
   await w.js(`__framelingIo.autosaveNow()`);
   await sleep(500);
   check('later saves do not ask again', (await w.js(`__shim.persistCalls`)) === 1);
-  await w.clickText('Okay', '.ui-toast-action');
+  await w.clickId('toast.okay');
   await w.load('plain', '&ua=safari&persist=deny');
   await w.js(`__frameling.overlays.closeSheet()`);
   await w.js(`__frameling.template('bouncing-ball')`);

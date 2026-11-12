@@ -163,15 +163,15 @@ export function WorkspacesPage() {
       <h4 className="ui-ws-head">Share</h4>
       <p className="ui-pref-intro">Save any workspace as a small file, or copy it as text, and send it to a friend. Add one you were sent here.</p>
       <div className="ui-ws-share">
-        <button type="button" className="ui-btn" onClick={() => exportWorkspaceFile()}>
+        <button type="button" className="ui-btn" data-testid="workspaces.save-file" onClick={() => exportWorkspaceFile()}>
           <Icon name="export" size={14} />
           Save this layout as a file
         </button>
-        <button type="button" className="ui-btn" onClick={() => void copyWorkspaceText()}>
+        <button type="button" className="ui-btn" data-testid="workspaces.copy-text" onClick={() => void copyWorkspaceText()}>
           <Icon name="duplicate" size={14} />
           Copy this layout as text
         </button>
-        <button type="button" className="ui-btn" onClick={() => void importWorkspaceFile()} disabled={workspacesFull()}>
+        <button type="button" className="ui-btn" data-testid="workspaces.add-file" onClick={() => void importWorkspaceFile()} disabled={workspacesFull()}>
           <Icon name="open" size={14} />
           Add a workspace file...
         </button>

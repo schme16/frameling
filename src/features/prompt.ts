@@ -20,6 +20,7 @@ export function promptText(names: string[]): { title: string; message: string; d
 /** A file this app can only open with a feature that is off (a .flplay without Interactives): asks, and says whether it was turned on. */
 export async function offerTurnOnForFile(feature: FeatureDescriptor, fileName: string): Promise<boolean> {
   const answer = await ask({
+    id: 'feature-off',
     title: 'A feature is turned off',
     message: `"${fileName}" needs ${feature.name}, which is turned off. Turn it on?`,
     detail: `You can turn it on or off any time in Preferences, Features.`,
@@ -32,6 +33,7 @@ export async function offerTurnOnForFile(feature: FeatureDescriptor, fileName: s
 /** Something a person asked for needs a feature that is off (a Tiles pick in the hello): asks, and says whether it was turned on. */
 export async function offerTurnOnForWish(feature: FeatureDescriptor, why: string): Promise<boolean> {
   const answer = await ask({
+    id: 'feature-off',
     title: 'A feature is turned off',
     message: `${why} Turn ${feature.name} on?`,
     detail: `You can turn it on or off any time in Preferences, Features.`,
@@ -45,7 +47,7 @@ export async function offerTurnOnForWish(feature: FeatureDescriptor, why: string
 export async function offerTurnOn(doc: Doc): Promise<string[]> {
   const used = offFeaturesUsedBy(doc);
   if (!used.length) return [];
-  const answer = await ask({ ...promptText(used.map((f) => f.name)), buttons: [{ value: 'on', label: 'Turn on', primary: true }, { value: 'off', label: 'Not now' }], cancel: 'off' });
+  const answer = await ask({ id: 'feature-off', ...promptText(used.map((f) => f.name)), buttons: [{ value: 'on', label: 'Turn on', primary: true }, { value: 'off', label: 'Not now' }], cancel: 'off' });
   if (answer !== 'on') return [];
   return used.filter((f) => setFeatureOn(f.id, true).ok).map((f) => f.id);
 }

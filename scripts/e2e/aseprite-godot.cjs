@@ -39,17 +39,17 @@ async function main() {
   const size = await ev(`(() => { const d = __frameling.store().get().doc; return [d.width, d.height, d.length]; })()`);
   check(size[0] === 28 && size[1] === 24, `unexpected sprite size ${size}`);
 
-  const click = (sel, text) => ev(`(() => { const el = [...document.querySelectorAll(${JSON.stringify(sel)})].find((e) => e.textContent.includes(${JSON.stringify(text)})); if (!el) return false; el.click(); return true; })()`);
+  const clickId = (id) => ev(`(() => { const el = document.querySelector('[data-testid=${JSON.stringify(id)}]'); if (!el) return false; el.click(); return true; })()`);
   await ev(`__frameling.run('file.export')`);
   await sleep(800);
-  check(await click('.ex-card', 'Sprite sheet'), 'no Sprite sheet card');
+  check(await clickId('export.format.sheet'), 'no Sprite sheet card');
   await sleep(200);
-  check(await click('.ex-engine', 'Godot'), 'no Godot button');
+  check(await clickId('export.engine.godot'), 'no Godot button');
   await sleep(300);
   const notes = await ev(`[...document.querySelectorAll('.ex-note')].map((n) => n.textContent).join(' | ')`);
   check(/Real size: one art pixel is one pixel \(28 × 24/.test(notes), `no Real size note: ${notes}`);
   check(!(await ev(`/Export this pixel art at its real size/i.test(document.body.textContent)`)), 'a question was asked');
-  check(await click('.ex-go', 'Export'), 'no Export button');
+  check(await clickId('export.go'), 'no Export button');
   await sleep(3000);
 
   const files = fs.readdirSync(process.env.FRAMELING_AUTOMATION_DIR);

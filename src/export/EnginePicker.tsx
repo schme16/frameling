@@ -50,7 +50,7 @@ export function EnginePicker({ value, onPick }: { value: EngineId; onPick: (id: 
   const games = engines.filter((e) => e.game);
   const others = engines.filter((e) => !e.game);
   const item = (e: (typeof engines)[number]) => (
-    <button key={e.id} type="button" role="radio" aria-checked={value === e.id} className={`ex-engine${value === e.id ? ' ex-chosen' : ''}`} title={e.files} onClick={() => onPick(e.id)}>
+    <button key={e.id} type="button" role="radio" aria-checked={value === e.id} className={`ex-engine${value === e.id ? ' ex-chosen' : ''}`} data-testid={`export.engine.${e.id}`} title={e.files} onClick={() => onPick(e.id)}>
       <EngineIcon id={e.id} size={20} />
       <span>{e.title}</span>
     </button>

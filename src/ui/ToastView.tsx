@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Icon } from './icons';
 import { Quill, useQuillShown } from './mascot';
-import { dismissToast, toasts, type ToastItem } from './toast';
+import { dismissToast, toasts, toastTestId, type ToastItem } from './toast';
 
 const KIND_ICON = { info: 'info', success: 'check', warn: 'warning', error: 'warning' } as const;
 
@@ -24,6 +24,7 @@ function ToastCard({ t }: { t: ToastItem }) {
         <button
           type="button"
           className="ui-toast-action"
+          data-testid={toastTestId(t.action)}
           onClick={() => {
             const run = t.action!.run;
             dismissToast(t.id);
@@ -37,6 +38,7 @@ function ToastCard({ t }: { t: ToastItem }) {
         <button
           type="button"
           className="ui-toast-action"
+          data-testid={toastTestId(t.decline)}
           onClick={() => {
             const run = t.decline!.run;
             dismissToast(t.id);
