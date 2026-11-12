@@ -163,7 +163,7 @@ export interface HostHooks {
   subscriptionsChanged?(): void;
 }
 
-const LIMITS = { commands: 50, exporters: 10, panels: 5, files: 1000, bytes: 1024 * 1024 * 1024, tools: 5, shapeKinds: 10, overlaysPerSecond: 30, pickBytes: 50 * 1024 * 1024 };
+const LIMITS = { commands: 50, exporters: 10, panels: 5, files: 1000, bytes: 1024 * 1024 * 1024, tools: 5, shapeKinds: 10, overlaysPerSecond: 30, shapesPerSecond: 20, pickBytes: 50 * 1024 * 1024 };
 /** How long the host waits for a plugin to answer, so one that hangs cannot hold things up. */
 export const TIMEOUTS = { toolEvent: 2000, shapeDraw: 5000, tooSlowInARow: 3 };
 const NEEDS: Record<string, Permission | null> = {
@@ -237,6 +237,7 @@ export class PluginRuntime {
   private unanswered = 0;
   private slowInARow = 0;
   private overlayWindow = { start: 0, count: 0 };
+  private shapeWindow = { start: 0, count: 0 };
   private waiting = new Map<number, Waiting>();
   private nextId = 1;
   private stopped = false;
@@ -440,6 +441,10 @@ export class PluginRuntime {
     const kind = typeof a.kind === 'string' ? a.kind : '';
     if (!this.shapeKinds.has(kind)) throw new Error(`This plugin has no kind of shape called "${kind.slice(0, 40)}".`);
     if (!this.hooks.placeShape) throw new Error('Shapes are not available here.');
+    // Each one is an undo step and a drawing job: a plugin cannot add them faster than this.
+    const now = Date.now();
+    if (now - this.shapeWindow.start >= 1000) this.shapeWindow = { start: now, count: 0 };
+    if (++this.shapeWindow.count > LIMITS.shapesPerSecond) throw new Error('That is too many shapes at once. Slow down.');
     const props = plainProps(a.props);
     if (!props) throw new Error('The shape\'s settings must be plain data (text, numbers, true or false, lists and objects) and not too big.');
     const inst = redraw ? (typeof a.inst === 'string' ? a.inst.slice(0, 60) : '') : undefined;

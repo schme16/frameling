@@ -226,6 +226,20 @@ describe('shapes', () => {
     expect(h.log.some((l) => l.startsWith('problem:'))).toBe(true);
   });
 
+  it('does not let a plugin add shapes faster than a person could use them', async () => {
+    const { rt, h } = start(`frameling.shapes.register({ kind: 'dot' }, () => [{ type: 'rect', x: 0, y: 0, w: 1, h: 1 }]);
+      frameling.commands.register({ id: 'flood', label: 'Flood' }, async () => {
+        let refused = 0;
+        for (let i = 0; i < 60; i++) { try { await frameling.shapes.place('dot', {}); } catch (e) { refused++; } }
+        await frameling.ui.notify('refused ' + refused);
+      });`, ['shapes']);
+    await settle();
+    await rt.runCommand('flood');
+    await settle();
+    expect(h.log.placed).toHaveLength(20);
+    expect(h.log).toContain('notify:info:refused 40');
+  });
+
   it('gives up on a shape that takes too long to draw', async () => {
     const old = TIMEOUTS.shapeDraw;
     TIMEOUTS.shapeDraw = 25;
