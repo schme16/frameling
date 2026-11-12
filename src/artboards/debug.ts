@@ -5,6 +5,7 @@ import type { Doc, PixelLayer, VectorDrawing } from '../core/format';
 import { store } from '../core/store';
 import * as model from './model';
 import * as ops from './ops';
+import { makeVariation } from './variations';
 
 /** Paints a filled box of art pixels. */
 function box(px: Uint8ClampedArray, w: number, x0: number, y0: number, bw: number, bh: number, hex: string): void {
@@ -109,11 +110,48 @@ export function demoShots(mixed = false): Doc {
   return doc;
 }
 
+/**
+ * A ball rolling over a hill (24 frames, 320 x 180) with two variations made through the real actions: "Orange ball"
+ * (a recolour and a fainter ground) and "Square cut" (180 x 180, framed on the middle of the original by a camera). The original is open.
+ */
+export function loadVariationsDemo(): void {
+  const doc = newDoc({ name: 'Ball', width: 320, height: 180, length: 24, background: '#5ab8ff', fps: 12 });
+  const ground = newVectorLayer('Ground');
+  const ball = newVectorLayer('Ball');
+  const gd: VectorDrawing = { id: uid('v'), kind: 'vector', shapes: [rect(0, 130, 320, 50, '#6abf4b'), rect(0, 128, 320, 4, '#4a9a34')] };
+  doc.drawings[gd.id] = gd;
+  ground.cels.push({ id: uid('c'), start: 0, length: 24, drawingId: gd.id });
+  for (let f = 0; f < 24; f++) {
+    const d: VectorDrawing = { id: uid('v'), kind: 'vector', shapes: [circle(40 + (240 * f) / 23, 115 - Math.abs(Math.sin((f / 23) * Math.PI * 2)) * 60, 14, '#ff6f91')] };
+    doc.drawings[d.id] = d;
+    ball.cels.push({ id: uid('c'), start: f, length: 1, drawingId: d.id });
+  }
+  doc.layers = [ground, ball];
+  const s = store();
+  s.load(doc);
+  const root = model.activeId(s.get().doc);
+  s.update('Name', (d) => void model.renameArtboard(d, root, 'Ball'));
+  let orange = '';
+  let square = '';
+  s.update('Make a variation', (d) => void (orange = makeVariation(d, root, { name: 'Orange ball' }) ?? ''));
+  s.update('Go', (d) => void model.switchArtboard(d, orange));
+  s.update('Recolour', (d) => {
+    for (const c of d.layers.find((l) => l.name === 'Ball')!.cels) {
+      const dr = d.drawings[c.drawingId] as VectorDrawing;
+      for (const sh of dr.shapes) if (sh.type === 'path') sh.fill = '#ff9e1f';
+    }
+    d.layers.find((l) => l.name === 'Ground')!.opacity = 0.85;
+  });
+  s.update('Go', (d) => void model.switchArtboard(d, root));
+  s.update('Make a variation', (d) => void (square = makeVariation(d, root, { name: 'Square cut', size: { width: 180, height: 180 }, frame: 'fill' }) ?? ''));
+  void square;
+}
+
 if (typeof window !== 'undefined' && new URLSearchParams(location.search).has('debug')) {
   (window as unknown as { __framelingArtboards: unknown }).__framelingArtboards = {
     model,
     ops,
-    load: (which: 'sprites' | 'shots' | 'mixed') => store().load(which === 'mixed' ? demoShots(true) : which === 'shots' ? demoShots() : demoSprites()),
+    load: (which: 'sprites' | 'shots' | 'mixed' | 'variations') => (which === 'variations' ? loadVariationsDemo() : store().load(which === 'mixed' ? demoShots(true) : which === 'shots' ? demoShots() : demoSprites())),
     /** What the Export dialog's artboard row is set to, as if clicked. */
     setExport: (p: Partial<{ mode: 'one' | 'each' | 'joined' | 'atlas'; ids: string[] | null }>) => import('./export').then((m) => m.setArtboardExport(p)),
     setChoice: (id: string, v: string | undefined) => import('../core/choices').then((m) => m.setChoice(id, v)),

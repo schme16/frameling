@@ -13,6 +13,8 @@ import { activeId, artboardDoc, artboardsOf, findArtboard, hasArtboards, sizeOf 
 import { arrangeAll, deleteArtboardById, duplicateArtboardById, fitAllArtboards, goToArtboard, newArtboard, renameArtboardById, reorderArtboardById, zoomToArtboard } from './ops';
 import { openShotsPlayer } from './player';
 import { openArtboardExport } from './exportDialog';
+import { VariationBadge, VariationSection } from './VariationPanel';
+import { sourceOf } from './variations';
 import { paintThumbBackdrop } from '../canvas/thumbBackdrop';
 import '../symbols/symbols.css';
 import './artboards.css';
@@ -38,7 +40,7 @@ function Thumb({ doc, id, size = 40 }: { doc: Doc; id: Id; size?: number }) {
     const oy = (cv.height - ad.height * k) / 2;
     g.setTransform(k, 0, 0, k, ox, oy);
     g.imageSmoothingEnabled = false;
-    renderFrame(g, ad, 0, { camera: false });
+    renderFrame(g, ad, 0, { camera: !!a?.variationOf });
     g.setTransform(1, 0, 0, 1, 0, 0);
     paintThumbBackdrop(cv, { x: ox, y: oy, w: ad.width * k, h: ad.height * k });
     g.strokeStyle = 'rgba(128,128,128,0.5)';
@@ -78,7 +80,7 @@ export function ArtboardsPanel() {
           return (
             <li
               key={a.id}
-              className={`sy-item ab-item${a.id === open ? ' ab-open' : ''}${over === i ? ' ab-over' : ''}`}
+              className={`sy-item ab-item${a.id === open ? ' ab-open' : ''}${over === i ? ' ab-over' : ''}${a.variationOf ? ' ab-var' : ''}`}
               draggable={renaming !== a.id}
               aria-current={a.id === open ? 'true' : undefined}
               onDragStart={(e) => {
@@ -112,8 +114,11 @@ export function ArtboardsPanel() {
                     }}
                   />
                 ) : (
-                  <span className="sy-item-name ab-name" onDoubleClick={(e) => (e.stopPropagation(), setRenaming(a.id))}>
-                    {a.name}
+                  <span className="ab-name-row">
+                    <span className="sy-item-name ab-name" onDoubleClick={(e) => (e.stopPropagation(), setRenaming(a.id))}>
+                      {a.name}
+                    </span>
+                    {a.variationOf && <VariationBadge of={sourceOf(doc, a)?.name ?? 'its original'} />}
                   </span>
                 )}
                 <span className="sy-item-meta">
@@ -160,6 +165,7 @@ export function ArtboardsPanel() {
           </>
         )}
       </div>
+      <VariationSection />
       <Section title="This artboard">
         <ArtboardFields id={open} />
       </Section>

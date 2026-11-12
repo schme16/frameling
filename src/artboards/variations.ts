@@ -16,9 +16,23 @@
 import { current, isDraft, produce, type Draft } from 'immer';
 import type { Artboard, ArtboardContent, Cel, Doc, Drawing, DrawingOverride, Id, Layer, ListOverride, Patch, Shape, VariationOverrides } from '../core/format';
 import { uid } from '../core/doc';
+import { registerChoice } from '../core/choices';
 import { registerSettler } from '../core/store';
 import { activeId, artboardsOf, boxes, ensureArtboards, findArtboard, gapFor, nextSpot, putContent, switchArtboard, takeContent } from './model';
 import { fitPlacement, type FitMode } from './fit';
+
+registerChoice<FitMode>({
+  id: 'variations.frame',
+  title: 'A variation of a different size',
+  question: 'When a variation has a different size, how should it frame the original?',
+  category: 'Artboards',
+  default: 'fill',
+  help: 'A camera is added to the variation to frame the original. You can move it like any camera.',
+  options: [
+    { value: 'fill', label: 'Fill (crop)', detail: 'The picture is filled, and what hangs over the edges is cropped. Good for a square or tall cut of a wide shot.' },
+    { value: 'bars', label: 'Fit (show it all)', detail: 'The whole original shows, with the stage colour round it where it does not fill the picture.' },
+  ],
+});
 
 // ---------------------------------------------------------------- names
 
@@ -638,7 +652,9 @@ export type ResetKey =
   | { t: 'cel'; layer: Id; id: Id }
   | { t: 'celGone'; layer: Id; id: Id }
   | { t: 'celNew'; layer: Id; id: Id }
-  | { t: 'drawing'; id: Id };
+  | { t: 'drawing'; id: Id }
+  /** Several drawings at once (a recolour that ran across a layer's keys). */
+  | { t: 'drawings'; ids: Id[] };
 
 /** The overrides without one thing: that item follows the original again. Pure. */
 export function withoutOverride(ov: VariationOverrides, k: ResetKey): VariationOverrides {
@@ -684,6 +700,9 @@ export function withoutOverride(ov: VariationOverrides, k: ResetKey): VariationO
     case 'drawing':
       if (o.drawings) delete o.drawings[k.id];
       break;
+    case 'drawings':
+      for (const id of k.ids) if (o.drawings) delete o.drawings[id];
+      break;
   }
   return normalize(o);
 }
@@ -698,7 +717,8 @@ export function resetDifference(d: Doc, vid: Id, k: ResetKey): boolean {
   const p = parts(d, vid);
   if (!p) return false;
   const next = withoutOverride(p.a.overrides ?? {}, k);
-  install(d, vid, next, k.t === 'drawing' && p.a.overrides?.drawings?.[k.id]?.replaced ? [aliasId(k.id, vid)] : []);
+  const ids = k.t === 'drawing' ? [k.id] : k.t === 'drawings' ? k.ids : [];
+  install(d, vid, next, ids.filter((id) => p.a.overrides?.drawings?.[id]?.replaced).map((id) => aliasId(id, vid)));
   return true;
 }
 
@@ -836,7 +856,18 @@ export function listDifferences(doc: Doc, vid: Id): DiffItem[] {
     for (const c of it.sub?.added ?? []) add({ reset: { t: 'celNew', layer: lid, id: c.id }, group: name, label: `New key at frame ${c.start + 1}`, layer: lid, frame: c.start });
   }
 
-  // Drawings: found through the first key that shows them.
+  // Drawings: found through the first key that shows them, and joined up per layer (a recolour across 24 keys is one line).
+  interface Tally {
+    ids: Id[];
+    recoloured: number;
+    changed: number;
+    removed: number;
+    added: number;
+    flags: Set<string>;
+    shapes: Id[];
+    first: { layer: Layer; cel: Cel } | null;
+  }
+  const tallies = new Map<string, Tally>();
   for (const [orig, d] of Object.entries(ov.drawings ?? {})) {
     const alias = aliasId(orig, vid);
     let where: { layer: Layer; cel: Cel } | null = null;
@@ -847,29 +878,41 @@ export function listDifferences(doc: Doc, vid: Id): DiffItem[] {
         break;
       }
     }
-    const words: string[] = [];
-    const shapes: Id[] = [];
-    if (d.replaced) words.push('redrawn');
-    if (d.view) words.push('camera view');
-    if (d.patch) words.push('drawing settings');
+    const key = where?.layer.id ?? '';
+    let t = tallies.get(key);
+    if (!t) tallies.set(key, (t = { ids: [], recoloured: 0, changed: 0, removed: 0, added: 0, flags: new Set(), shapes: [], first: null }));
+    t.ids.push(orig);
+    if (where && (!t.first || where.cel.start < t.first.cel.start)) {
+      t.first = where;
+      t.shapes = [];
+    }
+    if (d.replaced) t.flags.add('redrawn');
+    if (d.view) t.flags.add('camera view');
+    if (d.patch) t.flags.add('drawing settings');
     const items = Object.entries(d.shapes?.items ?? {});
-    const colour = items.filter(([, it]) => keysOf(it.patch).some((k) => COLOUR_KEYS.has(k)));
-    const other = items.filter(([, it]) => keysOf(it.patch).some((k) => !COLOUR_KEYS.has(k)));
-    const n = (c: number, w: string) => `${c} ${w}${c === 1 ? '' : 's'}`;
-    if (colour.length) words.push(`${n(colour.length, 'shape')} recoloured`);
-    if (other.length) words.push(`${n(other.length, 'shape')} changed`);
-    if (d.shapes?.removed?.length) words.push(`${n(d.shapes.removed.length, 'shape')} left out`);
-    if (d.shapes?.added?.length) words.push(`${n(d.shapes.added.length, 'shape')} added`);
-    if (d.shapes?.order) words.push('shapes in a different order');
-    for (const [sid] of items) shapes.push(sid);
-    for (const s of d.shapes?.added ?? []) shapes.push(s.id);
+    t.recoloured += items.filter(([, it]) => keysOf(it.patch).some((k) => COLOUR_KEYS.has(k))).length;
+    t.changed += items.filter(([, it]) => keysOf(it.patch).some((k) => !COLOUR_KEYS.has(k))).length;
+    t.removed += d.shapes?.removed?.length ?? 0;
+    t.added += d.shapes?.added?.length ?? 0;
+    if (d.shapes?.order) t.flags.add('shapes in a different order');
+    if (t.first === where) t.shapes = [...items.map(([sid]) => sid), ...(d.shapes?.added ?? []).map((x) => x.id)];
+  }
+  const n = (c: number, w: string) => `${c} ${w}${c === 1 ? '' : 's'}`;
+  for (const [, t] of tallies) {
+    const words = [...t.flags];
+    if (t.recoloured) words.push(`${n(t.recoloured, 'shape')} recoloured`);
+    if (t.changed) words.push(`${n(t.changed, 'shape')} changed`);
+    if (t.removed) words.push(`${n(t.removed, 'shape')} left out`);
+    if (t.added) words.push(`${n(t.added, 'shape')} added`);
+    const where = t.first;
+    const many = t.ids.length > 1;
     add({
-      reset: { t: 'drawing', id: orig },
+      reset: many ? { t: 'drawings', ids: t.ids } : { t: 'drawing', id: t.ids[0] },
       group: where ? where.layer.name : whole,
-      label: `Drawing${where ? ` at frame ${where.cel.start + 1}` : ''}: ${list(words) || 'changed'}`,
+      label: `${many ? `Drawings on ${t.ids.length} keys` : `Drawing${where ? ` at frame ${where.cel.start + 1}` : ''}`}: ${list(words) || 'changed'}`,
       layer: where?.layer.id,
       frame: where?.cel.start,
-      shapes,
+      shapes: t.shapes,
     });
   }
   return out;

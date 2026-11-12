@@ -7,6 +7,7 @@ import { PictureSizeControl } from './PictureSize';
 import type { ExportSettings } from '../export/types';
 import { customPicture } from './fit';
 import { artboardsOf, hasArtboards, activeArtboard, sizeOf } from './model';
+import { familyIds } from './variations';
 import { artboardExport, currentArtboardExport, modeOff, setArtboardExport, type ArtboardExportMode } from './export';
 
 export function ArtboardExportPicker({ settings }: { settings: ExportSettings }) {
@@ -30,6 +31,9 @@ export function ArtboardExportPicker({ settings }: { settings: ExportSettings })
     setArtboardExport({ ids: next.length === list.length ? null : next });
   };
   const mode = modes.find((m) => m.id === c.mode && !m.off) ? c.mode : 'one';
+  // "All variations of this artboard": the open artboard and every variation linked to it (or its original's family).
+  const family = familyIds(doc, activeArtboard(doc).id);
+  const familyOn = family.length > 1 && mode !== 'one' && chosen.size === family.length && family.every((id) => chosen.has(id));
   const total = list.filter((a) => chosen.has(a.id)).reduce((t, a) => t + (a.content ? a.content.length : doc.length), 0);
   const picked = list.filter((a) => chosen.has(a.id)).map((a) => ({ width: sizeOf(doc, a).w, height: sizeOf(doc, a).h }));
   const pic = currentPictureSize(picked);
@@ -45,6 +49,13 @@ export function ArtboardExportPicker({ settings }: { settings: ExportSettings })
           </button>
         ))}
       </div>
+      {family.length > 1 && (
+        <div className="ab-export-family">
+          <button type="button" className={`cv-action${familyOn ? ' ex-on' : ''}`} aria-pressed={familyOn} title="Tick this artboard and all its variations (linked copies), each as its own file" onClick={() => setArtboardExport({ ids: family, mode: mode === 'one' ? 'each' : mode })}>
+            This artboard and its variations ({family.length})
+          </button>
+        </div>
+      )}
       {mode !== 'one' && (
         <div className="ab-export-list" role="group" aria-label="Artboards to export">
           {list.map((a) => (

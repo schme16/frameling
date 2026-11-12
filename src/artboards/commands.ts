@@ -5,7 +5,8 @@ import type { State } from '../core/store';
 import { store } from '../core/store';
 import { setChoice } from '../core/choices';
 import './fit';
-import { activeId, artboardsOf, hasArtboards } from './model';
+import { activeArtboard, activeId, artboardsOf, hasArtboards } from './model';
+import { familyOf, isVariation, sourceOf } from './variations';
 import { arrangeAll, deleteArtboardById, duplicateArtboardById, fitAllArtboards, goToArtboard, newArtboard, zoomToArtboard } from './ops';
 
 registerPanel({ id: 'artboards', title: 'Artboards', icon: 'artboard', component: lazyPanel(() => import('./ArtboardsPanel').then((m) => m.ArtboardsPanel)), zone: 'right', order: 39, help: 'artboards' });
@@ -21,7 +22,78 @@ function step(by: number): void {
   goToArtboard(list[(i + by + list.length) % list.length].id, true);
 }
 
+const onVariation = (s: State) => top(s) && isVariation(activeArtboard(s.doc));
+const hasFamily = (s: State) => top(s) && familyOf(s.doc, activeId(s.doc)).length > 1;
+
+const variationCommands: Parameters<typeof registerCommands>[0] = [
+  {
+    id: 'artboards.makeVariation',
+    label: 'Make a variation (linked copy)',
+    category: 'Artboards',
+    description: 'A copy of this artboard that follows it: edit the original and the variation follows along, except for the things you changed in the variation.',
+    keywords: ['variation', 'linked copy', 'alternate take', 'colourway', 'colorway', 'recolour', 'recolor', 'versions', 'linked artboard', 'a/b', 'override'],
+    help: 'variations',
+    enabled: top,
+    run: () => void import('./variationOps').then((m) => m.makeVariationOf()),
+  },
+  ...(['square', 'wide', 'tall'] as const).map((preset) => ({
+    id: `artboards.variation.${preset}`,
+    label: `Make a ${preset} variation`,
+    category: 'Artboards',
+    description: `A linked copy cut ${preset === 'square' ? 'square (1:1)' : preset === 'wide' ? 'wide (16:9)' : 'tall (9:16)'}, with the same animation framed in it by a camera.`,
+    keywords: ['variation', 'size', 'aspect ratio', 'crop', 'social', 'cut', preset],
+    help: 'variations',
+    enabled: top,
+    run: () => void import('./variationOps').then((m) => m.makeVariationOf(undefined, preset)),
+  })),
+  {
+    id: 'artboards.resetVariation',
+    label: 'Reset variation to the original',
+    category: 'Artboards',
+    description: 'Takes every change this variation made back, so it shows the original again and follows it.',
+    keywords: ['revert variation', 'undo overrides', 'follow original'],
+    help: 'variations',
+    enabled: onVariation,
+    run: () => void import('./variationOps').then((m) => m.resetVariationById()),
+  },
+  {
+    id: 'artboards.detachVariation',
+    label: 'Detach variation (make it a plain artboard)',
+    category: 'Artboards',
+    description: 'The variation keeps what it shows now and stops following its original.',
+    keywords: ['unlink', 'break link', 'make independent'],
+    help: 'variations',
+    enabled: onVariation,
+    run: () => void import('./variationOps').then((m) => m.detachVariationById()),
+  },
+  {
+    id: 'artboards.goToOriginal',
+    label: 'Go to the original of this variation',
+    category: 'Artboards',
+    description: 'Opens the artboard this variation follows.',
+    keywords: ['source', 'parent'],
+    help: 'variations',
+    enabled: onVariation,
+    run: () => {
+      const doc = store().get().doc;
+      const src = sourceOf(doc, activeArtboard(doc));
+      if (src) goToArtboard(src.id, true);
+    },
+  },
+  {
+    id: 'artboards.exportVariations',
+    label: 'Export this artboard and its variations...',
+    category: 'Export',
+    description: 'Exports the artboard and every variation linked to it, each as its own file.',
+    keywords: ['export all variations', 'colourways', 'sizes', 'batch'],
+    help: 'variations',
+    enabled: hasFamily,
+    run: () => void import('./VariationPanel').then((m) => m.exportFamily(activeId(store().get().doc))),
+  },
+];
+
 registerCommands([
+  ...variationCommands,
   {
     id: 'artboards.fitBars',
     label: 'Shots of different sizes: Fit (bars)',

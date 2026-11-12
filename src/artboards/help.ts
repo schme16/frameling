@@ -24,7 +24,7 @@ registerHelpTopics([
 
 **Getting around:** **Alt+PageDown** and **Alt+PageUp** go to the next and previous artboard. **Ctrl+Alt+0** fits them all in the window. **View > Zoom to artboard** fills the window with the open one. **Line up** puts them in a tidy row.
 
-To export them, see [exporting artboards](help:artboards-export). For animation, see [artboards as shots](help:artboards-shots).`,
+To export them, see [exporting artboards](help:artboards-export). For animation, see [artboards as shots](help:artboards-shots). For copies that follow an original, see [variations](help:variations).`,
   },
   {
     id: 'artboards-shots',
@@ -66,6 +66,35 @@ To export them, see [exporting artboards](help:artboards-export). For animation,
 - Exporting **each as its own file** never fits anything: every shot keeps its own size.
 
 See [artboards as shots](help:artboards-shots) and [exporting artboards](help:artboards-export).`,
+  },
+  {
+    id: 'variations',
+    title: 'Variations: linked copies of an artboard',
+    section: 'Animating',
+    media: 'variations.mp4',
+    summary: 'A variation follows its original and keeps only what you change in it: another colour scheme, another size, another take. Edit the original and every variation follows along.',
+    keywords: ['variation', 'variations', 'linked copy', 'linked copies', 'overrides', 'colourway', 'colorway', 'recolour', 'recolor', 'alternate take', 'versions', 'square', 'wide', 'tall', 'sizes', 'social', 'a/b timing', 'differences', 'detach', 'reset to original'],
+    body: `A **variation (linked copy)** is an [artboard](help:artboards) that follows another one. It shows everything its **original** shows, except for the things you change in it. Change the hero's drawing in the original and the variation changes too. Change the hero's colour in the variation and only the variation turns that colour.
+
+**Make one:** press **Make a variation** in the Artboards panel, or **View > Make a variation (linked copy)**, or press **Ctrl+K** and type "variation". It opens beside the original with a **Variation** tag. Then just work in it as usual: recolour shapes, move keys to change the timing, hide a layer, add one of its own.
+
+**Colourways:** open the variation and recolour. Only those shapes stop following the original; the rest keeps following.
+
+**Sizes:** in the variation's panel pick **Square**, **Wide** or **Tall** (or type any **W** and **H** under **This artboard**). The same animation is framed in the new size by a camera that Frameling adds for you, and you can move it like any camera. **Fill (crop)** covers the picture and crops what hangs over; **Fit (show it all)** shows the whole original. Frameling asks which you prefer the first time and remembers.
+
+**A/B timing:** move or stretch keys in the variation. Keys you did not touch still follow the original.
+
+**Differences:** the panel lists everything this variation changes, grouped by layer. Click one to jump to that layer, frame and shape. Press **Reset** next to one to take just that change back, or **Reset all to original** to start again. Both can be undone.
+
+**Detach:** **Detach (plain copy)** makes it an ordinary artboard that keeps what it shows and stops following.
+
+**Export:** in the Export dialog, **This artboard and its variations** ticks the original and every variation. Then export **each as its own file**, **all in order, as one**, or **packed onto one sheet**, like any artboards. Variations export exactly as they look.
+
+**Good to know:**
+- A variation of a variation starts with the same changes and follows the same original.
+- Sound, symbols, palette, swatches and layer folders are shared with the original, so a variation does not change them.
+- Deleting the original turns its variations into plain artboards.
+- Saving keeps only the changes, so a file with many variations stays small.`,
   },
   {
     id: 'artboards-export',

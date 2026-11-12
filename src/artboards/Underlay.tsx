@@ -68,7 +68,7 @@ export function paintUnderlay(g: CanvasRenderingContext2D, doc: Doc, view: { zoo
         cg.clearRect(0, 0, rw, rh);
         cg.setTransform(rw / ad.width, 0, 0, rh / ad.height, 0, 0);
         cg.imageSmoothingEnabled = false;
-        renderFrame(cg, ad, frame, { background: false, camera: false });
+        renderFrame(cg, ad, frame, { background: false, camera: !!a.variationOf });
         hit = { key, canvas: c };
         bitmaps.set(a.id, hit);
       }
