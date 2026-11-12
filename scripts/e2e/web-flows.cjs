@@ -39,9 +39,13 @@ flow('pixel', async () => {
   check('picking a card makes Quill say something', await w.js(`/Aseprite|animation/i.test(document.querySelector('.ui-modal, [role=dialog]').innerText)`));
   await w.clickText('16 x 16');
   await w.clickText('Start');
+  // New pixel art from Draw asks once whether the workspace should follow: answer Always.
+  check('the workspace question comes up', await w.waitFor(`!!document.querySelector('.ui-choice')`));
+  await w.js(`[...document.querySelectorAll('.ui-choice-opt')].find((o) => /^Always/.test(o.textContent.trim()))?.click(); document.querySelector('.ui-choice-foot .ui-btn-primary')?.click()`);
   await sleep(1200);
-  const st = await w.js(`(() => { const d = __frameling.store().get().doc; return { w: d.width, h: d.height, way: __framelingPixel.way(), layers: d.layers.length, tool: __frameling.store().get().ui.tool, ws: __frameling.dock.activeWorkspace?.() }; })()`);
+  const st = await w.js(`(() => { const d = __frameling.store().get().doc; return { w: d.width, h: d.height, way: __framelingPixel.way(), layers: d.layers.length, tool: __frameling.store().get().ui.tool, ws: __frameling.dock.dock.get().workspaceId }; })()`);
   check('a 16 x 16 animation was made', st.w === st.h && st.w % 16 === 0 && st.way === 'animation' && /16 x 16 pixels/.test(await w.body()), st);
+  check('Always switched to the Pixel workspace', st.ws === 'pixel', st.ws);
   await w.shot('pixel-new');
   // Draw with real mouse events, as a person does, on the 16 x 16 grid.
   const px = () => w.js(`(() => { let n = 0; for (const d of Object.values(__frameling.store().get().doc.drawings)) if (d.kind === 'pixel') for (let i = 3; i < d.pixels.length; i += 4) if (d.pixels[i]) n++; return n; })()`);

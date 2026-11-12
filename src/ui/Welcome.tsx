@@ -23,7 +23,6 @@ import { paintThumbBackdrop } from '../canvas/thumbBackdrop';
 import { dismissPending, recovery, restorePending, whenSaved } from '../io/recovery';
 import { hiddenTemplateIds } from '../features/host';
 import { openPixelChooser, PixelStarters } from '../pixel/Chooser';
-import { madeOnPurpose } from '../pixel/workspace';
 
 export function WelcomeSheet() {
   const mode = overlays.use((o) => o.sheet);
@@ -53,7 +52,7 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
   // A new drawing replaces the open one, so the files area asks about unsaved changes first (and may save them).
   const make = async (doc: Doc, label: string) => {
     if (!(await askAboutUnsavedChanges())) return;
-    store().load(madeOnPurpose(doc));
+    store().load(doc);
     closeSheet();
     toast(line('welcome.ready', { kind: label }), { kind: 'success' });
   };

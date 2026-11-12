@@ -32,8 +32,8 @@ const answerAsk = (n = 0) => [
   js(`(() => { const d = document.querySelector('.ui-choice'); if (!d) return false; d.querySelectorAll('.ui-choice-opt')[${n}]?.click(); setTimeout(() => d.querySelector('.ui-btn-primary')?.click(), 100); return true; })()`),
   wait(700),
 ];
-/** Loads a template; pixel art offers the Pixel workspace first, which we decline so the window stays as it is. */
-const load = (id) => [template(id), wait(1200), ...answerAsk(1)];
+/** Loads a template; pixel art offers the Pixel workspace first, which we decline (Never, the third answer) so the window stays as it is. */
+const load = (id) => [template(id), wait(1200), ...answerAsk(2)];
 
 const sheetEntry = (name, template_, engine, extra = []) => ({
   name,

@@ -467,7 +467,7 @@ Each workspace brings its own tools, and you can change them (see below).
 
 ## Switching
 
-Use **View, Draw workspace** (and friends), or the command search. **Next workspace** and **Previous workspace** step through the list.
+Use **View, Draw workspace** (and friends), or the command search. **Next workspace** and **Previous workspace** step through the list. Pixel art and drawings can pick their workspace for you: the first time it matters, Frameling asks, and you can answer **Always**, **Not now** or **Never** (change it in Preferences, Behaviour). The Animate workspace is never switched.
 
 ## Your own
 

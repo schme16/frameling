@@ -41,7 +41,7 @@ async function startApp() {
   for (let i = 0; i < 200; i++) {
     try {
       if (await ev('!!window.__frameling')) {
-        await ev(`localStorage.setItem('frameling.prefs.v1', JSON.stringify({ showWelcome: false, showTips: false })); localStorage.setItem('frameling.choices.v1', JSON.stringify({ 'workspace.pixelDocs': 'stay' })); true`);
+        await ev(`localStorage.setItem('frameling.prefs.v1', JSON.stringify({ showWelcome: false, showTips: false })); localStorage.setItem('frameling.choices.v1', JSON.stringify({ 'workspace.follow': 'never' })); true`);
         await win.loadURL(process.env.FRAMELING_DEV_URL);
         await sleep(2500);
         return;

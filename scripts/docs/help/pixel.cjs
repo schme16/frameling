@@ -546,9 +546,9 @@ module.exports = [
       wait(400),
       js(`document.querySelectorAll('.tz-tile')[0]?.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))`),
       wait(1200),
-      // Editing a tile is a pixel drawing, so Frameling asks about the Pixel workspace: keep this layout.
-      { click: [475, 445], after: 300 },
-      { click: [805, 560], after: 1200 },
+      // Editing a tile is a pixel drawing, so Frameling asks whether the workspace follows: Never, to keep this layout.
+      js(`(() => { const d = document.querySelector('.ui-choice'); if (!d) return false; d.querySelectorAll('.ui-choice-opt')[2]?.click(); setTimeout(() => d.querySelector('.ui-btn-primary')?.click(), 100); return true; })()`),
+      wait(1200),
       key('p'),
       away,
       wait(500),

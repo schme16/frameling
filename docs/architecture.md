@@ -312,8 +312,8 @@ keyboard, the roving keys and hover tracking, then onboarding or the welcome she
 `src/ui/dock.ts` `builtinWorkspaces()` makes Draw, Animate and Pixel from the registered panels, each with a one-line `about`. Pixel puts colours and
 the palette on the left, closes panels pixel art rarely needs (`PIXEL_HIDDEN`) and narrows the tool strip
 (`PIXEL_TOOLS`). People can keep up to 12 of their own (`saveWorkspace`, `renameWorkspace`, `moveWorkspace`, `deleteWorkspace`; floating windows, the tool rail place and panel names go with a workspace). They share as a file or as text: `src/ui/workspaceFile.ts` writes and reads `{ format: 'frameling-workspace', version, name, layout... }` and trusts nothing in it (the same tidying as a saved layout, size and count caps), `importWorkspace` adds one with a free name, `workspaceActions.ts` has the file picker, clipboard and toasts. `applyWorkspace(id)` switches,
-called from `view.workspace.<id>`, Preferences > Workspaces and onboarding. `src/pixel/workspace.ts` offers to switch
-to Pixel when a pixel document opens (a remembered choice). `src/ui/presets.ts` is new-document size presets, not
+called from `view.workspace.<id>`, Preferences > Workspaces and onboarding. `src/pixel/workspace.ts` makes the workspace follow
+the kind of document (one remembered choice, `workspace.follow`: Always / Not now / Never; Draw and Pixel only, Animate is left alone). `src/ui/presets.ts` is new-document size presets, not
 workspaces.
 
 ## Lazy loading
