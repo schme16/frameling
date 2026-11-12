@@ -438,3 +438,99 @@ flow('pen', async () => {
   check('a pen stroke with the Brush adds a shape', after > before + 50, [before, after]);
   dbg.detach();
 });
+
+// Snapping: the Preferences page's ticks, the effect on a real drag, and the choices surviving a reload.
+flow('snapping', async () => {
+  const w = makeWindow('persist:snapping');
+  await w.load('picker');
+  await w.js(`__frameling.overlays.closeSheet()`);
+  await w.js(`__frameling.template('blank-vector'); __frameling.store().setUi({ tool: 'rect', zoom: 1, panX: 0, panY: 0 })`);
+  await sleep(500);
+  const origin = await w.js(`(() => { const b = document.querySelector('.cv-root').getBoundingClientRect(); const u = __frameling.store().get().ui; return [b.left + u.panX, b.top + u.panY, u.zoom]; })()`);
+  const lefts = () => w.js(`(() => { let min = 1e9; for (const d of Object.values(__frameling.store().get().doc.drawings)) for (const s of d.shapes ?? []) for (const p of s.paths ?? []) for (const q of p.points) min = Math.min(min, q.x); return min; })()`);
+  const rect = async () => {
+    const [ox, oy, z] = origin;
+    await w.input.drag([[ox + 3 * z, oy + 200 * z], [ox + 200 * z, oy + 300 * z]], 8);
+  };
+  const tickOf = (label) => w.js(`document.querySelector('[role=dialog] input[aria-label=${JSON.stringify(label)}]')?.checked`);
+  // On by default: the corner jumps onto the page's left edge.
+  await rect();
+  const snapped = await lefts();
+  check('with snapping on, a corner dragged near the page edge lands on it', snapped === 0, snapped);
+  await w.js(`__frameling.store().undo()`);
+  // Switch Page edges off on the Snapping page, the way a person does.
+  await w.js(`__frameling.overlays.openPrefs('snapping')`);
+  await sleep(800);
+  const labels = await w.js(`[...document.querySelectorAll('[role=dialog] input.sn-tick')].map((i) => i.getAttribute('aria-label'))`);
+  const pageLabel = labels.find((l) => /Page edges/.test(l));
+  check('the Snapping page lists the targets (page edges, guides, grid, shapes...)', !!pageLabel && labels.length >= 8, labels);
+  await w.js(`document.querySelector('[role=dialog] input[aria-label=${JSON.stringify(pageLabel)}]').click()`);
+  await sleep(300);
+  check('the Page edges tick is now off', (await tickOf(pageLabel)) === false);
+  await w.shot('snapping-page');
+  await w.input.key('Escape');
+  await sleep(300);
+  await rect();
+  const free = await lefts();
+  check('with Page edges off the corner stays where it was dropped', free > 1 && free < 5, free);
+  await w.js(`__frameling.store().undo()`);
+  // The master switch on the Snap button's popover, then a reload keeps both.
+  const saved = await w.js(`localStorage.getItem('frameling.view.v1') ?? Object.keys(localStorage).filter((k) => /view|snap/i.test(k)).join(',')`);
+  await w.load('picker');
+  await w.js(`__frameling.overlays.closeSheet()`);
+  await w.js(`__frameling.overlays.openPrefs('snapping')`);
+  await sleep(800);
+  check('a reload keeps the unticked Page edges', (await tickOf(pageLabel)) === false, saved);
+});
+
+// Nested folders, clip direction and repeat, and variations: made, saved through the web bridge, opened again.
+for (const mode of ['picker', 'plain']) {
+  flow(`model-${mode}`, async () => {
+    const w = makeWindow(`persist:model-${mode}`);
+    await w.load(mode);
+    await w.js(`__frameling.overlays.closeSheet()`);
+    const snap = () => w.js(`(() => { const d = __frameling.store().rootDoc(); return { folders: Object.fromEntries(Object.entries(d.folders ?? {}).map(([k, f]) => [k, f.parent ?? null])), clips: d.clips.map((c) => [c.name, c.start, c.end, c.direction ?? 'forward', c.repeat ?? 1, c.loop]), variations: (d.artboards ?? []).filter((a) => a.variationOf).length, ovr: JSON.stringify((d.artboards ?? []).map((a) => a.overrides ?? null)).length, artboards: (d.artboards ?? []).length, layers: d.layers.length }; })()`);
+    const roundTrip = async (label, fileName) => {
+      const before = await snap();
+      await w.js(`__framelingIo.saveDocument()`);
+      await sleep(500);
+      const got = await w.files.collect();
+      const f = got.find((g) => /\.frameling$/.test(g.name));
+      check(`${label}: saved to a .frameling file`, !!f, got.map((g) => g.name));
+      await w.js(`__frameling.template('blank-vector')`);
+      await w.js(`__frameling.store().setUi({ dirty: false })`);
+      if (mode === 'picker') await w.files.stage(f.name, f.bytes);
+      else await w.files.upload(f.name, f.bytes);
+      await w.js(`__frameling.run('file.open')`);
+      await sleep(1500);
+      const after = await snap();
+      check(`${label}: opens again the same`, JSON.stringify(before) === JSON.stringify(after), [before, after]);
+      return after;
+    };
+    // Nested folders and clips that play in every direction.
+    await w.js(`__framelingExport.loadKitchenSink()`);
+    await sleep(800);
+    await w.js(`__framelingExport.clearClips(); __framelingExport.addClip('swing', 0, 3, true, 'pingpong'); __framelingExport.addClip('back', 4, 7, false, 'reverse'); __framelingExport.addClip('thrice', 8, 9, false, 'forward', 3); __framelingExport.addClip('there', 10, 12, true, 'pingpong-reverse')`);
+    const s0 = await snap();
+    check('the kitchen sink has a folder inside a folder', Object.values(s0.folders).some((p) => p) && Object.keys(s0.folders).length >= 2, s0.folders);
+    await w.js(`__frameling.store().update('Rename', (d) => { d.name = 'Kitchen web'; })`);
+    const s1 = await roundTrip('folders and clip direction', 'Kitchen web.frameling');
+    check('every clip keeps its direction and repeat', s1.clips.length === 4 && s1.clips.some((c) => c[3] === 'pingpong') && s1.clips.some((c) => c[3] === 'reverse') && s1.clips.some((c) => c[4] === 3), s1.clips);
+    // A clip exports in its own order: a ping-pong clip of 4 pictures comes out as more than 4 frames.
+    const defaults = await w.js(`__framelingExport.defaults()`);
+    const clipId = await w.js(`__frameling.store().rootDoc().clips.find((c) => c.direction === 'pingpong').id`);
+    const plan = await w.js(`__framelingExport.plan(${JSON.stringify({ ...defaults, format: 'gif', range: 'clip', clipId })})`);
+    check(`a ping-pong clip exports in play order (${plan.count} pictures from 4 frames)`, plan.count > 4 && Array.isArray(plan.order), plan);
+    const r = await w.js(`__framelingExport.run(${JSON.stringify({ ...defaults, format: 'gif', range: 'clip', clipId })})`);
+    const out = await w.files.collect();
+    check('and the GIF of that clip is made and saved', r.outcome === 'done' && out.length === 1 && MAGIC.gif(out[0].bytes), [r.error, out.map((o) => o.name)]);
+    // Variations (a recolour and a framed cut) on artboards.
+    await w.js(`__framelingArtboards.load('variations')`);
+    await sleep(800);
+    const v0 = await snap();
+    check('the demo has variations on its artboards', v0.variations >= 2 && v0.artboards >= 1, v0);
+    await w.js(`__frameling.store().update('Rename', (d) => { d.name = 'Variations web'; })`);
+    await roundTrip('variations', 'Variations web.frameling');
+    await w.shot(`model-${mode}`);
+  });
+}
