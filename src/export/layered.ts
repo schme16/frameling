@@ -98,6 +98,8 @@ export type FlatUnit = (
   hidden?: boolean;
   /** Inside a folder that is switched off, so a picture of it has to show the folder. */
   inHidden?: boolean;
+  /** The folders (ids, outermost first) this unit is drawn inside as folder units, which do their own fading and blending. */
+  inside?: string[];
 };
 
 /** True when a drawing has art bent on a mesh somewhere in it (a rigged layer, or one inside a symbol instance). */
@@ -138,62 +140,89 @@ function hiddenUnit(doc: Doc, l: Layer, frame: number): FlatUnit {
   return needsPicture(l, frame, doc) ? { kind: 'picture', layers: [l], own: l, hidden: true } : { kind: 'vector', layer: l, hidden: true };
 }
 
-function stageUnits(doc: Doc, layers: Layer[], frame: number, includeHidden = false): FlatUnit[] {
-  // A mask cuts everything under it at its level, and clipped layers sit on the one under them: both flatten.
+/** Every layer a node holds (a layer, or all the layers under a folder), in list order. */
+function nodeLayers(n: TreeNode): Layer[] {
+  return n.type === 'layer' ? [n.layer] : n.children.flatMap(nodeLayers);
+}
+
+/**
+ * One level of the layer tree (the stage, or the insides of one folder) as units. A mask cuts everything under it at
+ * its level, folders under it included, and clipped layers sit on the one under them: both flatten into a picture.
+ * Folders become folder units holding their own level, unless they need a picture. `inside`: the folders the units
+ * end up in, outermost first, so a picture can leave out how those fade and blend it (they do that themselves).
+ */
+function levelUnits(doc: Doc, nodes: TreeNode[], frame: number, includeHidden: boolean, inside: string[], inHidden: boolean): FlatUnit[] {
   const units: FlatUnit[] = [];
-  const lastMask = layers.map((l) => !!l.mask && l.visible).lastIndexOf(true);
+  const mark = (u: FlatUnit): FlatUnit => ({ ...u, ...(inside.length ? { inside } : {}), ...(inHidden ? { inHidden: true } : {}) }) as FlatUnit;
+  const lastMask = nodes.map((n) => n.type === 'layer' && !!n.layer.mask && n.layer.visible).lastIndexOf(true);
   let i = 0;
   if (lastMask >= 0) {
-    if (includeHidden) for (const l of layers.slice(0, lastMask + 1)) if (!l.visible) units.push(hiddenUnit(doc, l, frame));
-    units.push({ kind: 'picture', layers: layers.slice(0, lastMask + 1) });
+    const under = nodes.slice(0, lastMask + 1);
+    if (includeHidden) {
+      for (const n of under) {
+        if (n.type === 'layer' && !n.layer.visible) units.push(mark(hiddenUnit(doc, n.layer, frame)));
+        // A folder that is switched off keeps its own hidden layer for Illustrator, with what is in it.
+        else if (n.type === 'folder' && !n.folder.visible) units.push(...levelUnits(doc, [n], frame, includeHidden, inside, inHidden));
+      }
+    }
+    units.push(mark({ kind: 'picture', layers: under.flatMap((n) => (n.type === 'folder' && !n.folder.visible ? [] : nodeLayers(n))) }));
     i = lastMask + 1;
   }
-  for (; i < layers.length; i++) {
-    const l = layers[i];
+  for (; i < nodes.length; i++) {
+    const n = nodes[i];
+    if (n.type === 'folder') {
+      units.push(...folderUnit(doc, n, frame, includeHidden, inside, inHidden));
+      continue;
+    }
+    const l = n.layer;
     if (!l.visible) {
-      if (includeHidden) units.push(hiddenUnit(doc, l, frame));
+      if (includeHidden) units.push(mark(hiddenUnit(doc, l, frame)));
       continue;
     }
     // Gather a base and the clipped layers above it.
-    if (i + 1 < layers.length && layers[i + 1].clipToBelow) {
+    const clipped = (k: number) => {
+      const x = nodes[k];
+      return !!x && x.type === 'layer' && !!x.layer.clipToBelow;
+    };
+    if (clipped(i + 1)) {
       const set = [l];
-      while (i + 1 < layers.length && layers[i + 1].clipToBelow) set.push(layers[++i]);
-      units.push({ kind: 'picture', layers: set });
+      while (clipped(i + 1)) set.push((nodes[++i] as Extract<TreeNode, { type: 'layer' }>).layer);
+      units.push(mark({ kind: 'picture', layers: set }));
       continue;
     }
-    units.push(needsPicture(l, frame, doc) ? { kind: 'picture', layers: [l], own: l } : { kind: 'vector', layer: l });
+    units.push(mark(needsPicture(l, frame, doc) ? { kind: 'picture', layers: [l], own: l } : { kind: 'vector', layer: l }));
   }
   return units;
+}
+
+function folderUnit(doc: Doc, n: Extract<TreeNode, { type: 'folder' }>, frame: number, includeHidden: boolean, inside: string[], inHidden: boolean): FlatUnit[] {
+  const f = n.folder;
+  if (!f.visible && !includeHidden) return [];
+  const off = !f.visible;
+  const hide = inHidden || off;
+  const direct = n.children.flatMap((c) => (c.type === 'layer' ? [c.layer] : []));
+  const extra = { ...(inside.length ? { inside } : {}), ...(off ? { hidden: true } : {}), ...(hide ? { inHidden: true } : {}) };
+  // A folder with effects, or a mask inside it, is one picture; otherwise it stays vector, faded and blended as a group.
+  if (activeEffects(f.effects, frame).length || direct.some((m) => m.mask && m.visible)) {
+    return [{ kind: 'picture', layers: n.children.flatMap(nodeLayers).filter((m) => m.visible), ...extra }];
+  }
+  return [{ kind: 'folder', folder: f, units: levelUnits(doc, n.children, frame, includeHidden, [...inside, f.id], hide), ...(inside.length ? { inside } : {}), ...(off ? { hidden: true } : {}), ...(inHidden ? { inHidden: true } : {}) }];
 }
 
 /**
  * Layers bottom first as PDF units. Hidden layers and folders are left out (like every other export), unless
  * `includeHidden`: then they are there, marked `hidden`, for the Illustrator data of a .ai (the PDF part keeps them off).
+ * Folders inside folders are folder units inside folder units.
  */
 export function flatPlan(doc: Doc, frame = 0, includeHidden = false): FlatUnit[] {
-  const out: FlatUnit[] = [];
-  const layers = doc.layers.filter(exported);
-  let i = 0;
-  while (i < layers.length) {
-    const l = layers[i];
-    const f = l.folder ? doc.folders?.[l.folder] : undefined;
-    if (!f) {
-      let j = i;
-      while (j < layers.length && !(layers[j].folder && doc.folders?.[layers[j].folder!])) j++;
-      out.push(...stageUnits(doc, layers.slice(i, j), frame, includeHidden));
-      i = j;
-      continue;
-    }
-    const members: Layer[] = [];
-    while (i < layers.length && layers[i].folder === l.folder) members.push(layers[i++]);
-    if (!f.visible && !includeHidden) continue;
-    const off = !f.visible;
-    // A folder with effects or masks inside is one picture; otherwise it stays vector, faded and blended as a group.
-    if (activeEffects(f.effects, frame).length || members.some((m) => m.mask && m.visible)) out.push({ kind: 'picture', layers: members.filter((m) => m.visible), ...(off ? { hidden: true, inHidden: true } : {}) });
-    else {
-      const units = stageUnits(doc, members, frame, includeHidden);
-      out.push({ kind: 'folder', folder: f, units: off ? units.map((u) => ({ ...u, inHidden: true })) : units, ...(off ? { hidden: true } : {}) });
-    }
+  const tree = layerTree({ folders: doc.folders, layers: doc.layers.filter(exported) });
+  return levelUnits(doc, tree, frame, includeHidden, [], false).filter(nonEmpty);
+}
+
+function nonEmpty(u: FlatUnit): boolean {
+  if (u.kind === 'folder') {
+    u.units = u.units.filter(nonEmpty);
+    return true;
   }
-  return out.filter((u) => u.kind !== 'picture' || u.layers.length);
+  return u.kind !== 'picture' || u.layers.length > 0;
 }

@@ -10,8 +10,14 @@ import { writePdf } from './pdf';
 import { writePsd, type PsdLayer } from './psd';
 
 /** A picture of some layers on their own, at `scale`. `plain` takes the layer's blend and opacity off (PSD keeps them itself). */
-export function layersPicture(doc: Doc, frame: number, layers: Layer[], scale: number, plain: boolean, crisp: boolean, reveal = false): RawImage {
+export function layersPicture(doc: Doc, frame: number, layers: Layer[], scale: number, plain: boolean, crisp: boolean, reveal = false, inside?: string[]): RawImage {
   const ids = new Set(layers.map((l) => l.id));
+  // `inside`: folders the picture sits in as a group of its own (they fade and blend it themselves), so it leaves them out.
+  if (inside?.length && doc.folders) {
+    const folders = { ...doc.folders };
+    for (const id of inside) if (folders[id]) folders[id] = { ...folders[id], visible: true, opacity: 1, blend: undefined, effects: undefined };
+    doc = { ...doc, folders };
+  }
   // `reveal`: the layers sit in a folder that is switched off, and the picture is of what is in it.
   if (reveal && doc.folders) doc = { ...doc, folders: Object.fromEntries(Object.entries(doc.folders).map(([k, f]) => [k, { ...f, visible: true }])) };
   // The camera layer stays, so a picture sees what the camera sees, like the merged frame does.
@@ -68,7 +74,7 @@ export function pdfFile(doc: Doc, frames: number[], scale: number, transparent: 
     background: transparent ? null : (doc.background ?? '#ffffff'),
     title: doc.name || 'Untitled',
     creator: ai ? 'Frameling (PDF compatible Illustrator file)' : 'Frameling',
-    picture: (frame, layers, own, reveal) => layersPicture(doc, frame, layers, pictureScale, own, crisp, reveal),
+    picture: (frame, layers, own, reveal, inside) => layersPicture(doc, frame, layers, pictureScale, own, crisp, reveal, inside),
     pictureScale,
     crisp,
     onPage,
