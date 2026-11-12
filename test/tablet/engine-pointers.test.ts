@@ -79,7 +79,7 @@ function fire(type: string, o: { id: number; kind: 'pen' | 'mouse' | 'touch'; x?
   Object.defineProperties(e, { pointerId: { value: o.id }, pointerType: { value: o.kind }, pressure: { value: o.pressure ?? 0.5 }, timeStamp: { value: (clock += 8) }, tiltX: { value: 0 }, tiltY: { value: 0 }, twist: { value: 0 } });
   (o.target ?? root).dispatchEvent(e);
   // A browser lets go of the pointer's capture itself once it lifts.
-  if (type === 'pointerup' || type === 'pointercancel') captured.delete(o.id);
+  if (type === 'pointerup' || type === 'pointercancel' || type === 'lostpointercapture') captured.delete(o.id);
 }
 const gestureOf = () => (engine as unknown as { gesture: unknown }).gesture;
 const touchesOf = () => (engine as unknown as { touches: Map<number, unknown> }).touches.size;
@@ -126,6 +126,98 @@ describe('the pen', () => {
   });
 });
 
+describe('a release that never comes', () => {
+  const strokeOpen = () => (gestureOf() as { kind?: string } | null)?.kind === 'tool';
+
+  it('lost pointer capture ends the stroke and keeps what was drawn', () => {
+    fire('pointerdown', { id: 7, kind: 'pen', buttons: 1 });
+    fire('pointermove', { id: 7, kind: 'pen', x: 60, buttons: 1 });
+    fire('lostpointercapture', { id: 7, kind: 'pen' });
+    expect(calls).toEqual(['brush.down', 'brush.move', 'brush.up']);
+    expect(gestureOf()).toBeNull();
+    expect(captured.size).toBe(0);
+    // Moves that follow draw nothing, and the pen no longer counts as touching: a finger works once it has gone.
+    fire('pointermove', { id: 7, kind: 'pen', x: 80, buttons: 0 });
+    expect(calls).toHaveLength(3);
+    fire('pointerleave', { id: 7, kind: 'pen' });
+    clock += 1000;
+    fire('pointerdown', { id: 2, kind: 'touch', buttons: 1 });
+    expect(calls.at(-1)).toBe('brush.down');
+    fire('pointerup', { id: 2, kind: 'touch' });
+  });
+
+  it('a lost capture after a normal release changes nothing', () => {
+    fire('pointerdown', { id: 1, kind: 'mouse', buttons: 1 });
+    fire('pointerup', { id: 1, kind: 'mouse' });
+    fire('lostpointercapture', { id: 1, kind: 'mouse' });
+    expect(calls).toEqual(['brush.down', 'brush.up']);
+  });
+
+  it('the window losing focus mid-stroke ends it, and forgets fingers', () => {
+    fire('pointerdown', { id: 1, kind: 'mouse', buttons: 1 });
+    fire('pointermove', { id: 1, kind: 'mouse', x: 90, buttons: 1 });
+    window.dispatchEvent(new Event('blur'));
+    expect(calls).toEqual(['brush.down', 'brush.move', 'brush.up']);
+    expect(gestureOf()).toBeNull();
+    expect(brushOpen).toBe(0);
+    fire('pointerdown', { id: 21, kind: 'touch', buttons: 1 });
+    expect(touchesOf()).toBe(1);
+    window.dispatchEvent(new Event('blur'));
+    expect(touchesOf()).toBe(0);
+  });
+
+  it('a mouse move with no button down ends the stroke where it was', () => {
+    fire('pointerdown', { id: 1, kind: 'mouse', buttons: 1 });
+    fire('pointermove', { id: 1, kind: 'mouse', x: 90, buttons: 1 });
+    fire('pointermove', { id: 1, kind: 'mouse', x: 150, buttons: 0 });
+    expect(calls).toEqual(['brush.down', 'brush.move', 'brush.up']);
+    expect(strokeOpen()).toBe(false);
+    fire('pointermove', { id: 1, kind: 'mouse', x: 160, buttons: 0 });
+    expect(calls).toHaveLength(3);
+  });
+
+  it('a pen move with no button down ends the stroke too', () => {
+    fire('pointerdown', { id: 7, kind: 'pen', buttons: 1 });
+    fire('pointermove', { id: 7, kind: 'pen', x: 90, buttons: 0 });
+    expect(calls).toEqual(['brush.down', 'brush.up']);
+    expect(brushOpen).toBe(0);
+  });
+
+  it('a tip lifted with the barrel button still held ends the stroke instead of drawing on hover', () => {
+    fire('pointerdown', { id: 7, kind: 'pen', buttons: 1, pressure: 0.6 });
+    fire('pointermove', { id: 7, kind: 'pen', x: 70, buttons: 1, pressure: 0.6 });
+    fire('pointermove', { id: 7, kind: 'pen', x: 80, buttons: 2, pressure: 0 });
+    expect(calls).toEqual(['brush.down', 'brush.move', 'brush.up']);
+    fire('pointermove', { id: 7, kind: 'pen', x: 90, buttons: 2, pressure: 0 });
+    fire('pointermove', { id: 7, kind: 'pen', x: 100, buttons: 2, pressure: 0 });
+    expect(calls).toHaveLength(3);
+    expect(gestureOf()).toBeNull();
+  });
+
+  it('a first sample of 0 pressure does not end a stroke that has not had any yet', () => {
+    fire('pointerdown', { id: 7, kind: 'pen', buttons: 1, pressure: 0 });
+    fire('pointermove', { id: 7, kind: 'pen', x: 70, buttons: 1, pressure: 0 });
+    expect(strokeOpen()).toBe(true);
+    fire('pointermove', { id: 7, kind: 'pen', x: 75, buttons: 1, pressure: 0.4 });
+    fire('pointermove', { id: 7, kind: 'pen', x: 80, buttons: 1, pressure: 0 });
+    expect(strokeOpen()).toBe(false);
+  });
+
+  it('a tool drawn by hovering keeps going with no button and no pressure', () => {
+    registerTool({ ...probe('floater', () => brushOpen++, () => brushOpen--), hoverDrag: true });
+    try {
+      store().setUi({ tool: 'floater' });
+      fire('pointerdown', { id: 7, kind: 'pen', buttons: 1, pressure: 0.5 });
+      fire('pointermove', { id: 7, kind: 'pen', x: 70, buttons: 0, pressure: 0 });
+      expect(strokeOpen()).toBe(true);
+      fire('pointerup', { id: 7, kind: 'pen' });
+      expect(calls).toEqual(['floater.down', 'floater.move', 'floater.up']);
+    } finally {
+      unregisterTool('floater');
+    }
+  });
+});
+
 describe('fingers and palms', () => {
   it('a finger is ignored while the pen is near and counts again after it has gone', () => {
     fire('pointermove', { id: 7, kind: 'pen', x: 20 });
@@ -159,7 +251,7 @@ describe('random pointer sequences (seeded)', () => {
       for (let step = 0; step < 120; step++) {
         const d = pick(devs);
         const x = 10 + Math.floor(r() * 180);
-        const op = pick(['down', 'down', 'move', 'move', 'move', 'up', 'up', 'cancel', 'esc', 'hover', 'eraser', 'barrel', 'leave', 'wait']);
+        const op = pick(['down', 'down', 'move', 'move', 'move', 'up', 'up', 'cancel', 'esc', 'hover', 'eraser', 'barrel', 'leave', 'wait', 'lost', 'blur']);
         log.push(`${op}:${d.kind}${d.id}`);
         if (op === 'down' && !down.has(d.id)) {
           const buttons = d.kind === 'pen' ? pick([1, 1, 1, 2, 4, 32]) : 1;
@@ -172,7 +264,9 @@ describe('random pointer sequences (seeded)', () => {
         } else if (op === 'barrel' && d.kind === 'pen' && !down.has(d.id)) {
           down.set(d.id, { buttons: 2 });
           fire('pointerdown', { ...d, x, buttons: 2, button: 2 });
-        } else if (op === 'move') fire('pointermove', { ...d, x, buttons: down.get(d.id)?.buttons ?? 0 });
+        } else if (op === 'move') fire('pointermove', { ...d, x, buttons: down.get(d.id)?.buttons ?? 0, pressure: d.kind === 'pen' ? pick([0.5, 0.5, 0.5, 0]) : 0.5 });
+        else if (op === 'lost') fire('lostpointercapture', { ...d });
+        else if (op === 'blur') window.dispatchEvent(new Event('blur'));
         else if (op === 'hover') fire('pointermove', { ...d, x, buttons: 0 });
         else if (op === 'up' && down.has(d.id)) {
           down.delete(d.id);
