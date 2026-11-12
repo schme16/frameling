@@ -5,11 +5,13 @@ import { useStore } from '../core/store';
 import { ActionButton, Choice, Slider, Tip, Toggle } from '../canvas/controls';
 import { PlaneOption } from '../tools/options/ShapeOptions';
 import { setToolSettings, useToolSettings } from '../tools/settings';
+import { setPrefs, usePrefs } from '../ui/prefs';
+import { clampOutline, MAX_OUTLINE, MIN_OUTLINE } from './thick';
 import { DITHER_PATTERNS, type DitherPattern } from './dither';
 import { setPixelSettings, usePixelSettings, type SymmetryMode } from './settings';
 import './pixel.css';
 
-function useLayerKind(): 'vector' | 'pixel' {
+export function useLayerKind(): 'vector' | 'pixel' {
   return useStore((s) => (findLayer(s.doc, s.ui.activeLayerId) ?? s.doc.layers[s.doc.layers.length - 1])?.kind === 'pixel' ? 'pixel' : 'vector');
 }
 
@@ -80,13 +82,31 @@ export function PixelPencilOptions() {
   );
 }
 
+/**
+ * Outline thickness for pixel shapes. These change the same preferences as Preferences > General, so the choice is
+ * reachable right where you draw. `show` is false when a shape has no outline to thicken.
+ */
+export function PixelOutlineOptions({ show = true }: { show?: boolean }) {
+  const on = usePrefs((p) => p.pixelThickOutlines);
+  const width = usePrefs((p) => p.pixelOutlineWidth);
+  if (!show) return null;
+  return (
+    <>
+      <Toggle label="Thicker outline" checked={on} onChange={(v) => setPrefs({ pixelThickOutlines: v })} hint="Gives the outline more than one pixel. Also in Preferences." />
+      {on && <Slider label="Outline thickness" value={width} min={MIN_OUTLINE} max={MAX_OUTLINE} format={(v) => `${v} pixel${v === 1 ? '' : 's'}`} onChange={(v) => setPrefs({ pixelOutlineWidth: clampOutline(v) })} />}
+    </>
+  );
+}
+
 export function PixelShapeOptions() {
   const tool = useStore((s) => s.ui.tool);
+  const strokeOn = useStore((s) => s.ui.strokeOn);
   return (
     <div className="cv-options">
       <PlaneOption show={tool !== 'line'} />
+      <PixelOutlineOptions show={tool === 'line' || strokeOn} />
       <MirrorOptions />
-      <Tip>On a pixel layer, shapes are one pixel thick: the stroke colour round the edge and the fill colour inside (set either to none). Shift makes a square or a circle, and snaps lines to clean pixel steps. Alt draws from the middle.</Tip>
+      <Tip>On a pixel layer, shapes have a one pixel outline unless you turn on Thicker outline: the stroke colour round the edge and the fill colour inside (set either to none). Shift makes a square or a circle, and snaps lines to clean pixel steps. Alt draws from the middle.</Tip>
     </div>
   );
 }

@@ -8,6 +8,7 @@ import { QuillEmpty, setShowQuill } from './mascot';
 import { addBinding, allConflicts, comboFromEvent, comboToString, conflictsFor, effectiveKeys, layeredOverrides, removeBinding, resetBindings, setBindings } from './keys';
 import { KEYMAP_SETS, keymapSet } from './keymapSets';
 import { previewCue, type SoundCue } from './sounds';
+import { clampOutline, MAX_OUTLINE, MIN_OUTLINE } from '../pixel/thick';
 
 // The Try button: every sound once, a moment apart.
 const TRY: SoundCue[] = ['step', 'exported', 'refused', 'nothingToUndo', 'tick', 'goodbye', 'celebrate'];
@@ -195,6 +196,17 @@ function GeneralPage({ onThemes }: { onThemes: () => void }) {
       <Row label="Fade tile copies" hint="In tile mode, fade the copies round the tile you're drawing so it stands out. Off shows them exactly as a game would.">
         <Switch label="Fade tile copies" on={p.fadeTileCopies} onChange={(fadeTileCopies) => setPrefs({ fadeTileCopies })} />
       </Row>
+      <Row label="Thicker pixel outlines" hint="Pixel shapes (rectangle, ellipse, line, polygon, star) get an outline thicker than one pixel. Off keeps the classic one pixel line.">
+        <Switch label="Thicker pixel outlines" on={p.pixelThickOutlines} onChange={(pixelThickOutlines) => setPrefs({ pixelThickOutlines })} />
+      </Row>
+      {p.pixelThickOutlines && (
+        <Row label="Outline thickness" hint="How many pixels thick the outline is. A filled shape keeps its fill; only the outline gets thicker.">
+          <div className="ui-pref-volume">
+            <input type="range" className="cv-slider" min={MIN_OUTLINE} max={MAX_OUTLINE} step={1} value={p.pixelOutlineWidth} aria-label="Outline thickness" onChange={(e) => setPrefs({ pixelOutlineWidth: clampOutline(Number(e.target.value)) })} />
+            <span>{p.pixelOutlineWidth} px</span>
+          </div>
+        </Row>
+      )}
     </>
   );
 }

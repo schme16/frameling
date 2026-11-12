@@ -4,6 +4,7 @@ import { DEFAULT_DARK, DEFAULT_LIGHT, surroundFor, type Theme } from './themes/b
 import { sanitizeCustomThemes, themeForMode, writeTheme } from './themes/model';
 import { DEFAULT_UNIT, isUnit, type Unit } from '../core/units';
 import { DEFAULT_KEYMAP_SET, isKeymapSet } from './keymapSets';
+import { clampOutline, DEFAULT_OUTLINE } from '../pixel/thick';
 
 export type ThemePref = 'system' | 'dark' | 'light';
 export type LookPref = 'cosy' | 'crisp';
@@ -43,6 +44,10 @@ export interface Prefs {
   keymapSet: string;
   /** The plain timeline (one block per drawing, no property rows). Off shows the detailed one. */
   cleanTimeline: boolean;
+  /** Pixel shapes (rectangle, ellipse, line, polygon, star) get a thicker outline. Off keeps the classic one pixel. */
+  pixelThickOutlines: boolean;
+  /** How thick that outline is, in art pixels (1 to 16). */
+  pixelOutlineWidth: number;
 }
 
 export const PREFS_KEY = 'frameling.prefs.v1';
@@ -66,6 +71,8 @@ export const DEFAULT_PREFS: Prefs = {
   keymap: {},
   keymapSet: DEFAULT_KEYMAP_SET,
   cleanTimeline: false,
+  pixelThickOutlines: false,
+  pixelOutlineWidth: DEFAULT_OUTLINE,
 };
 
 /**
@@ -101,6 +108,8 @@ export function migratePrefs(raw: unknown): Prefs {
     keymap,
     keymapSet: isKeymapSet(r.keymapSet) ? r.keymapSet : DEFAULT_PREFS.keymapSet,
     cleanTimeline: bool(r.cleanTimeline, DEFAULT_PREFS.cleanTimeline),
+    pixelThickOutlines: bool(r.pixelThickOutlines, DEFAULT_PREFS.pixelThickOutlines),
+    pixelOutlineWidth: clampOutline(r.pixelOutlineWidth),
   };
 }
 

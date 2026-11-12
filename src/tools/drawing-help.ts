@@ -64,6 +64,6 @@ Each drag is one step to undo.`,
 
 The inside uses the **fill** colour and the edge the **stroke** colour, like the [Rectangle](help:tool-rect). Gradients work too. To reshape one afterwards, use [Edit points](help:tool-points) (**A**).
 
-On a **pixel layer** they're painted as clean pixels: solid colour inside, a one pixel edge in the stroke colour, no blurry edges. With the stroke set to none the fill covers the edge too.`,
+On a **pixel layer** they're painted as clean pixels: solid colour inside, an edge in the stroke colour (one pixel, or thicker: see [Pixel shapes](help:pixel-shapes)), no blurry edges. With the stroke set to none the fill covers the edge too.`,
   },
 ]);
