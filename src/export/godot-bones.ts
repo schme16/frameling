@@ -16,10 +16,10 @@ import { nextKey } from '../core/symbols';
 import { poseKeyAt, rigPoseAt, type RigLayer } from '../rig/pose';
 import { minv, mmul, restMatrix, stretchOf, type Mat } from '../rig/math';
 import type { Animation } from './sheet';
-import { bonesRigs, type BonesPart, type BonesScope, type BonesTexture, type NativeBlend, type NestedInstance } from './godot-bones-scope';
+import { bonesRigs, groupLayout, type GroupItem, type BonesPart, type BonesScope, type BonesTexture, type NativeBlend, type NestedInstance } from './godot-bones-scope';
 
-export { bonesParts, bonesRigs, bonesScope, bonesStage, bonesNotes, allScopes, hasBonesToExport, restPicture, riggedSymbols, partLook, nativeBlend, BonesNotes } from './godot-bones-scope';
-export type { BonesPart, BonesScope, BonesTexture, InstState, NativeBlend, NestedInstance, PartKind, PartLook } from './godot-bones-scope';
+export { groupLayout, maskLinks, carriedMasks, bakeScales, maxStretch, MAX_BAKE, bonesParts, bonesRigs, bonesScope, bonesStage, bonesNotes, allScopes, hasBonesToExport, restPicture, riggedSymbols, partLook, nativeBlend, BonesNotes } from './godot-bones-scope';
+export type { PartMask, BonesPart, BonesScope, BonesTexture, InstState, NativeBlend, NestedInstance, PartKind, PartLook } from './godot-bones-scope';
 
 // ---------------------------------------------------------------- writing Godot text
 
@@ -233,6 +233,11 @@ function localRest(rig: RigLayer, id: Id, k: number): Mat {
 
 const angle = (m: readonly number[]) => Math.atan2(m[1], m[0]);
 
+/** How many times bigger a picture's pixels are than the scene's (a symbol copied large is baked bigger to stay sharp). */
+const bk = (t: BonesTexture) => t.bake ?? 1;
+/** The Sprite2D lines that shrink a baked-bigger picture back to scene size. */
+const shrink = (t: BonesTexture) => (bk(t) === 1 ? [] : [`scale = ${v2(1 / bk(t), 1 / bk(t))}`]);
+
 /** How many z steps a scope needs for each of its layers, so a symbol's own layers stay between its neighbours'. */
 function zUnit(sc: BonesScope): number {
   let u = 1;
@@ -249,7 +254,7 @@ interface ScopeNodes {
   sc: BonesScope;
   rigs: { rig: RigLayer; bonePath: Map<Id, string> }[];
   partPath: string[];
-  nested: { inst: NestedInstance; path: string; nodes: ScopeNodes; tint?: Tint }[];
+  nested: { inst: NestedInstance; path: string; nodes: ScopeNodes; tint?: Tint; group?: boolean; toBone: (m: readonly number[]) => number[] }[];
 }
 
 /** One animation frame by frame: the frame of the scope it shows, and whether the scope is there at all. */
@@ -330,7 +335,9 @@ function build(o: BonesSceneInput): { text: string; shaders: Set<NativeBlend> } 
 
   const top: BonesScope = { layers: doc.layers, range: o.range, parts: o.parts, rigs: bonesRigs(doc), nested: o.nested ?? [], textures: o.textures };
 
-  const emit = (sc: BonesScope, parentPath: string, unit: number, inherit: { blend: NativeBlend; tint?: Tint } | undefined, parentOf: (l: Layer) => string): ScopeNodes => {
+  const emit = (sc: BonesScope, parentPath: string, unit: number, inherit: { blend: NativeBlend; tint?: Tint } | undefined, parentOf: (l: Layer) => string, grouped?: ReturnType<typeof groupLayout>): ScopeNodes => {
+    // A grouped symbol's nodes are written in the order its layout says, so each kind is held back until then.
+    const held = grouped ? { skel: new Map<Id, string[]>(), bone: new Map<Id, string[]>(), part: new Map<BonesPart, string[]>() } : undefined;
     const textures = sc.textures ?? sc.parts.map((p) => p.pictures.map(() => ({ path: 'res://missing.png', x: 0, y: 0, w: 1, h: 1 })));
     const at = (p: string) => p || '.';
     const under = (p: string, n: string) => (p ? `${p}/${n}` : n);
@@ -341,13 +348,15 @@ function build(o: BonesSceneInput): { text: string; shaders: Set<NativeBlend> } 
       const sk = name(at(parentPath), rig.name);
       const skp = under(parentPath, sk);
       skelPath.set(rig.id, skp);
-      nodes.push(`[node name=${gdString(sk)} type="Skeleton2D" parent=${gdString(at(parentPath))}]`, '');
+      const skelLines = [`[node name=${gdString(sk)} type="Skeleton2D" parent=${gdString(at(parentPath))}]`, ''];
+      if (held) held.skel.set(rig.id, skelLines);
+      else nodes.push(...skelLines);
       for (const b of rig.rig.bones) {
         const parent = b.parent && bonePath.has(b.parent) ? bonePath.get(b.parent)! : skp;
         const n = name(parent, b.name);
         bonePath.set(b.id, `${parent}/${n}`);
         const m = localRest(rig, b.id, k);
-        nodes.push(
+        const boneLines = [
           `[node name=${gdString(n)} type="Bone2D" parent=${gdString(parent)}]`,
           `position = ${v2(m[4], m[5])}`,
           `rotation = ${gdNum(angle(m))}`,
@@ -356,7 +365,9 @@ function build(o: BonesSceneInput): { text: string; shaders: Set<NativeBlend> } 
           `length = ${gdNum(b.length * k)}`,
           'bone_angle = 0.0',
           '',
-        );
+        ];
+        if (held) held.bone.set(b.id, boneLines);
+        else nodes.push(...boneLines);
       }
       res.rigs.push({ rig, bonePath });
     }
@@ -383,7 +394,9 @@ function build(o: BonesSceneInput): { text: string; shaders: Set<NativeBlend> } 
       const texs = textures[i];
       const first = p.frameOf.find((x) => x >= 0) ?? 0;
       const t0 = texs[first];
-      const z = Math.max(-4096, Math.min(4096, p.z * unit));
+      // Inside a CanvasGroup the order is the scene tree's (Godot leaves children on other z out of the group).
+      const zl = grouped ? [] : [`z_index = ${Math.max(-4096, Math.min(4096, p.z * unit))}`];
+      const put = (...lines: string[]) => (held ? void held.part.set(p, lines) : void nodes.push(...lines));
       const op = p.look?.opacity ?? p.layer.opacity;
       const fade = op < 1 ? [`modulate = Color(1, 1, 1, ${gdNum(op)})`] : [];
       const hidden = p.frameOf[0] < 0 ? ['visible = false'] : [];
@@ -398,7 +411,7 @@ function build(o: BonesSceneInput): { text: string; shaders: Set<NativeBlend> } 
         const uv: string[] = [];
         for (let j = 0; j < mesh.points.length; j += 2) {
           pts.push(gdNum(mesh.points[j] * k), gdNum(mesh.points[j + 1] * k));
-          uv.push(gdNum(mesh.points[j] * k - t0.x), gdNum(mesh.points[j + 1] * k - t0.y));
+          uv.push(gdNum(mesh.points[j] * k * bk(t0) - t0.x), gdNum(mesh.points[j + 1] * k * bk(t0) - t0.y));
         }
         const tris: string[] = [];
         for (let j = 0; j < mesh.triangles.length; j += 3) tris.push(`PackedInt32Array(${mesh.triangles[j]}, ${mesh.triangles[j + 1]}, ${mesh.triangles[j + 2]})`);
@@ -423,9 +436,9 @@ function build(o: BonesSceneInput): { text: string; shaders: Set<NativeBlend> } 
           });
           if (any) bones.push(`NodePath(${gdString(bp.slice(sk.length + 1))})`, `PackedFloat32Array(${ws.map(gdNum).join(', ')})`);
         });
-        nodes.push(
+        put(
           `[node name=${gdString(n)} type="Polygon2D" parent=${gdString(at(parentPath))}]`,
-          `z_index = ${z}`,
+          ...zl,
           ...hidden,
           ...fade,
           ...materialFor(blend, path),
@@ -446,15 +459,16 @@ function build(o: BonesSceneInput): { text: string; shaders: Set<NativeBlend> } 
         // Under the bone: undo its rest place, then sit where the picture was drawn.
         const b = p.rig.rig.bones.find((x) => x.id === p.bone)!;
         const r = restMatrix(b);
-        const m = mmul(minv([r[0], r[1], r[2], r[3], r[4] * k, r[5] * k]), [1, 0, 0, 1, t0.x, t0.y]);
-        nodes.push(
+        const m = mmul(minv([r[0], r[1], r[2], r[3], r[4] * k, r[5] * k]), [1, 0, 0, 1, t0.x / bk(t0), t0.y / bk(t0)]);
+        put(
           `[node name=${gdString(n)} type="Sprite2D" parent=${gdString(parent)}]`,
-          `z_index = ${z}`,
+          ...zl,
           ...hidden,
           ...fade,
           ...materialFor(blend, `${parent}/${n}`),
           `position = ${v2(m[4], m[5])}`,
           `rotation = ${gdNum(angle(m))}`,
+          ...shrink(t0),
           `texture = ${tex(t0.path)}`,
           'centered = false',
           '',
@@ -464,31 +478,60 @@ function build(o: BonesSceneInput): { text: string; shaders: Set<NativeBlend> } 
       const host = parentOf(p.layer);
       const n = name(at(host), p.layer.name);
       res.partPath.push(under(host, n));
-      nodes.push(`[node name=${gdString(n)} type="Sprite2D" parent=${gdString(at(host))}]`, `z_index = ${z}`, ...hidden, ...fade, ...materialFor(blend, under(host, n)), `position = ${v2(t0.x, t0.y)}`, `texture = ${tex(t0.path)}`, 'centered = false', '');
+      put(`[node name=${gdString(n)} type="Sprite2D" parent=${gdString(at(host))}]`, ...zl, ...hidden, ...fade, ...materialFor(blend, under(host, n)), `position = ${v2(t0.x / bk(t0), t0.y / bk(t0))}`, ...shrink(t0), `texture = ${tex(t0.path)}`, 'centered = false', '');
     });
+
+    if (held && grouped) {
+      const write = (item: GroupItem) => {
+        if ('part' in item) nodes.push(...(held.part.get(item.part) ?? []));
+        else if ('bone' in item) {
+          nodes.push(...(held.bone.get(item.bone) ?? []));
+          for (const c of grouped.kids.get(item.bone) ?? []) write(c);
+        } else {
+          nodes.push(...(held.skel.get(item.rig) ?? []));
+          for (const c of grouped.kids.get(item.rig) ?? []) write(c);
+        }
+      };
+      for (const item of grouped.top) write(item);
+    }
 
     // Symbols with skeletons of their own: a node moved by the instance, holding its own rig and parts.
     for (const inst of sc.nested) {
-      const host = parentOf(inst.layer);
+      // On a layer that follows a bone the copy sits under that bone: its matrix is taken from the bone's rest place.
+      const boneHost = inst.bind ? bonePath.get(inst.bind.bone) : undefined;
+      const host = boneHost ?? parentOf(inst.layer);
       const n = name(at(host), inst.name);
       const path = under(host, n);
       const firstAt = inst.at.findIndex((s) => !!s);
       const s0 = inst.at[firstAt] ?? undefined;
-      const m = s0 ? [s0.matrix[0], s0.matrix[1], s0.matrix[2], s0.matrix[3], s0.matrix[4] * k, s0.matrix[5] * k] : [1, 0, 0, 1, 0, 0];
+      const toBone = (q: readonly number[]): number[] => {
+        const m6s = [q[0], q[1], q[2], q[3], q[4] * k, q[5] * k];
+        if (!boneHost || !inst.bind) return m6s;
+        const r = restMatrix(inst.bind.rig.rig.bones.find((b) => b.id === inst.bind!.bone)!);
+        return mmul(minv([r[0], r[1], r[2], r[3], r[4] * k, r[5] * k]), m6s as Mat);
+      };
+      const m = s0 ? toBone(s0.matrix) : [1, 0, 0, 1, 0, 0];
       const op = inst.look.opacity * (s0?.opacity ?? 1);
+      // A symbol that fades is a CanvasGroup when it can be, so it fades as one picture and overlapping parts don't show
+      // through each other (see groupLayout for when it can't).
+      const fades = inst.at.some((s) => s && inst.look.opacity * s.opacity < 1 - 1e-6);
+      const layout = fades && inst.look.blend === 'mix' && (inherit?.blend ?? 'mix') === 'mix' ? groupLayout(inst.scope) : undefined;
+      const group = !!layout?.ok;
+      // A group's own fade is self_modulate: plain modulate would fade every part again.
+      const fadeProp = group ? 'self_modulate' : 'modulate';
       const tinted = inst.at.some((s) => s?.tint);
       const tint: Tint | undefined = tinted ? { inst, mats: new Map() } : undefined;
       if (tint) tints.push(tint);
       nodes.push(
-        `[node name=${gdString(n)} type="Node2D" parent=${gdString(at(host))}]`,
+        `[node name=${gdString(n)} type=${gdString(group ? 'CanvasGroup' : 'Node2D')} parent=${gdString(at(host))}]`,
         `z_index = ${Math.max(-4096, Math.min(4096, inst.z * unit))}`,
         ...(inst.at[0] ? [] : ['visible = false']),
-        ...(op < 1 ? [`modulate = Color(1, 1, 1, ${gdNum(op)})`] : []),
+        ...(op < 1 ? [`${fadeProp} = Color(1, 1, 1, ${gdNum(op)})`] : []),
         `transform = ${xf(m)}`,
         '',
       );
-      const nodesOf = emit(inst.scope, path, zUnit(inst.scope), { blend: inst.look.blend, tint }, () => path);
-      res.nested.push({ inst, path, nodes: nodesOf, tint });
+      const nodesOf = emit(inst.scope, path, zUnit(inst.scope), { blend: inst.look.blend, tint }, () => path, group ? layout : undefined);
+      res.nested.push({ inst, path, nodes: nodesOf, tint, group, toBone });
     }
     return res;
   };
@@ -580,11 +623,11 @@ function build(o: BonesSceneInput): { text: string; shaders: Set<NativeBlend> } 
           seq.forEach((x, j) => {
             if (x < 0) return;
             const tx = textures[i][x];
-            let at = v2(tx.x, tx.y);
+            let at = v2(tx.x / bk(tx), tx.y / bk(tx));
             if (p.kind === 'cut' && p.rig && p.bone) {
               const b = p.rig.rig.bones.find((q) => q.id === p.bone)!;
               const r = restMatrix(b);
-              const m = mmul(minv([r[0], r[1], r[2], r[3], r[4] * k, r[5] * k]), [1, 0, 0, 1, tx.x, tx.y]);
+              const m = mmul(minv([r[0], r[1], r[2], r[3], r[4] * k, r[5] * k]), [1, 0, 0, 1, tx.x / bk(tx), tx.y / bk(tx)]);
               at = v2(m[4], m[5]);
             }
             if (at !== last) {
@@ -601,9 +644,9 @@ function build(o: BonesSceneInput): { text: string; shaders: Set<NativeBlend> } 
         const st = fr.f.map((f, j) => (fr.on[j] ? (inst.at[f - sc.range.start] ?? null) : null));
         const n = st.length;
         const glide = (j: number) => !!st[j]?.glide;
-        vtrack(`${nn.path}:transform`, sampledKeys(n, a.fps, glide, (j) => (st[j] ? [st[j]!.matrix[0], st[j]!.matrix[1], st[j]!.matrix[2], st[j]!.matrix[3], st[j]!.matrix[4] * k, st[j]!.matrix[5] * k] : null)), (v) => xf(v));
+        vtrack(`${nn.path}:transform`, sampledKeys(n, a.fps, glide, (j) => (st[j] ? nn.toBone(st[j]!.matrix) : null)), (v) => xf(v));
         const opKeys = sampledKeys(n, a.fps, glide, (j) => (st[j] ? [inst.look.opacity * st[j]!.opacity] : null));
-        if (opKeys.some((q) => Math.abs(q.v[0] - 1) > 1e-6)) vtrack(`${nn.path}:modulate`, opKeys, (v) => `Color(1, 1, 1, ${gdNum(v[0])})`);
+        if (opKeys.some((q) => Math.abs(q.v[0] - 1) > 1e-6)) vtrack(`${nn.path}:${nn.group ? 'self_modulate' : 'modulate'}`, opKeys, (v) => `Color(1, 1, 1, ${gdNum(v[0])})`);
         if (st.some((s) => !s)) track(`${nn.path}:visible`, 1, st.reduce<{ t: number; trans: number; value: string }[]>((acc, s, j) => (acc.length && acc[acc.length - 1].value === String(!!s) ? acc : [...acc, { t: j / a.fps, trans: 1, value: String(!!s) }]), []));
         if (nn.tint) {
           let lastColor = st.find((s) => s?.tint)?.tint?.color ?? '#ffffff';
@@ -664,6 +707,35 @@ function rgbaOf(hex: string): number[] {
   const ch = (i: number) => (parseInt(h.slice(i, i + 2), 16) || 0) / 255;
   return [ch(0), ch(2), ch(4), h.length >= 8 ? ch(6) : 1];
 }
+
+/** The helper script's file name, next to the scene. */
+export const fitScriptName = (base: string) => `${base}-fit-window.gd`;
+
+/**
+ * A small optional script that makes the camera and the layers with depth line up at any window size. Godot's Camera2D
+ * and Parallax2D work from the window's size, which only matches Frameling when the window is the stage times the export
+ * scale; this stretches the window from that size instead (the picture keeps its shape).
+ */
+export function fitWindowScript(width: number, height: number): string {
+  return `# Made by Frameling. Keeps the camera and the layers with depth lined up at any window size.
+# Attach it to any node of the exported scene (the root is fine), or add it as an autoload.
+# Without it they line up only when the window is exactly ${width} x ${height} (the stage times the export scale).
+# The same thing without a script: Project Settings > Display > Window, set Viewport Width and Height to
+# ${width} and ${height}, Stretch Mode to canvas_items and Aspect to keep.
+extends Node
+
+@export var design_size := Vector2i(${width}, ${height})
+
+func _ready() -> void:
+	var window := get_window()
+	window.content_scale_size = design_size
+	window.content_scale_mode = Window.CONTENT_SCALE_MODE_CANVAS_ITEMS
+	window.content_scale_aspect = Window.CONTENT_SCALE_ASPECT_KEEP
+`;
+}
+
+/** True when the scene has a camera, so its window size matters (layers with depth only move with a camera). */
+export const needsFitScript = (doc: Doc) => !!activeCamera(doc);
 
 /** A Godot 4 scene (.tscn) for a rigged character. */
 export function godotBonesScene(o: BonesSceneInput): string {

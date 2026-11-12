@@ -11,6 +11,14 @@ export interface ExtrasOptions {
   camera?: { a: { x: number; y: number; zoom: number; rotation: number }; b: { x: number; y: number; zoom: number; rotation: number } };
   /** Put effects on the layer with the arm instance, which keeps it from staying live. */
   fxOnHero?: boolean;
+  /** Scale the second arm copy on the stage by this much (a big copy of a symbol). */
+  bigCopy?: number;
+  /** A Show mask over the backdrop (a round window) and a stripe clipped to the backdrop. */
+  masked?: boolean;
+  /** Fade the first arm copy to half, with a big hand overlapping the arm (parts that overlap show through when faded one by one). */
+  fade?: boolean;
+  /** The hero layer (with the arm copies) follows a swinging bone on the stage. */
+  onBone?: boolean;
 }
 
 /**
@@ -43,7 +51,7 @@ export function bonesExtrasDoc(o: ExtrasOptions = {}): Doc {
   const upperPart = part('Upper arm', 'bu', 0, -8, 60, 16, '#ff9e6d');
   const lowerPart = part('Lower arm', 'bl', 60, -6, 50, 12, '#ffc94a');
   const hand = newVectorLayer('Hand') as VectorLayer;
-  hold(hand, vectorDrawing(doc, [pathShape([ellipsePath(115, 0, 9, 9)], '#ff6f91', null)]).id, 0, 12);
+  hold(hand, vectorDrawing(doc, [pathShape([ellipsePath(o.fade ? 100 : 115, 0, o.fade ? 20 : 9, o.fade ? 20 : 9)], '#ff6f91', null)]).id, 0, 12);
   const symId = uid('sym');
   (doc.symbols ??= {})[symId] = { id: symId, name: 'Arm', layers: [rig, upperPart, lowerPart, hand], length: 12, origin: { x: 0, y: 0 } };
 
@@ -64,6 +72,19 @@ export function bonesExtrasDoc(o: ExtrasOptions = {}): Doc {
   hold(sky, vectorDrawing(doc, [pathShape([rectPath(-40, 0, 440, 150)], '#4a6a8a', null), pathShape([ellipsePath(260, 60, 30, 30)], '#ffe9a0', null)]).id, 0, 12);
   doc.layers.push(sky);
 
+  if (o.masked) {
+    const stripe = newVectorLayer('Stripe') as VectorLayer;
+    stripe.clipToBelow = true;
+    stripe.depth = 1;
+    hold(stripe, vectorDrawing(doc, [pathShape([rectPath(-40, 40, 440, 30)], '#ff4fa0', null)]).id, 0, 12);
+    doc.layers.push(stripe);
+    const win = newVectorLayer('Window') as VectorLayer;
+    win.mask = 'show';
+    win.depth = 1;
+    hold(win, vectorDrawing(doc, [pathShape([ellipsePath(200, 70, 120, 60)], '#ffffff', null)]).id, 0, 12);
+    doc.layers.push(win);
+  }
+
   const hero = newVectorLayer('Hero') as VectorLayer;
   const h0 = vectorDrawing(doc, []);
   h0.shapes = [inst(90, 150), inst(250, 190, { transform: { x: 250, y: 190, scaleX: 0.8, scaleY: 0.8, rotation: -15, skew: 0 } })];
@@ -73,7 +94,28 @@ export function bonesExtrasDoc(o: ExtrasOptions = {}): Doc {
     { id: uid('c'), start: 0, length: 6, drawingId: h0.id, tween: { ease: 'easeInOut' } },
     { id: uid('c'), start: 6, length: 6, drawingId: h1.id },
   ];
+  if (o.bigCopy)
+    for (const d of [h0, h1]) {
+      const t = (d.shapes[1] as InstanceShape).transform;
+      Object.assign(t, { x: 20, y: 215, scaleX: o.bigCopy, scaleY: o.bigCopy, rotation: -20 });
+    }
+  if (o.fade) for (const d of [h0, h1]) (d.shapes[0] as InstanceShape).opacity = 0.5;
   if (o.fxOnHero) hero.effects = [{ id: uid('e'), kind: 'blur', values: { radius: 2 } }];
+  if (o.onBone) {
+    const body = newVectorLayer('Body bones') as VectorLayer;
+    const root: Bone = boneBetween('sb', 'Root', { x: 150, y: 60 }, { x: 190, y: 60 }, null);
+    body.rig = { bones: [root] };
+    const b0 = vectorDrawing(doc, []);
+    b0.pose = { sb: { r: 0 } };
+    const b1 = vectorDrawing(doc, []);
+    b1.pose = { sb: { r: 25 } };
+    body.cels = [
+      { id: uid('c'), start: 0, length: 6, drawingId: b0.id, tween: { ease: 'easeInOut' } },
+      { id: uid('c'), start: 6, length: 6, drawingId: b1.id },
+    ];
+    doc.layers.push(body);
+    hero.bind = { rig: body.id, bone: 'sb' };
+  }
   doc.layers.push(hero);
 
   const glow = newVectorLayer('Glow') as VectorLayer;
