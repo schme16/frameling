@@ -172,7 +172,14 @@ export function pruneDrawings(doc: Doc): void {
     const ls = a.overrides?.layers;
     if (!ls) continue;
     for (const l of ls.added ?? []) for (const c of l.cels) used.add(c.drawingId);
-    for (const it of Object.values(ls.items ?? {})) for (const c of it.sub?.added ?? []) used.add(c.drawingId);
+    for (const it of Object.values(ls.items ?? {})) {
+      for (const c of it.sub?.added ?? []) used.add(c.drawingId);
+      // A key of the original that now shows another drawing is a patch of its drawingId.
+      for (const c of Object.values(it.sub?.items ?? {})) {
+        const id = c.patch?.set?.drawingId;
+        if (typeof id === 'string') used.add(id);
+      }
+    }
   }
   for (const list of lists) for (const l of list) for (const c of l.cels) used.add(c.drawingId);
   for (const t of doc.tileset?.tiles ?? []) for (const f of t.frames) used.add(f.drawingId);

@@ -47,4 +47,28 @@ describe('a key added inside a variation', () => {
     expect(shows(doc(), v)).toBe('#00ff00');
     expect(findArtboard(doc(), v)).toBeTruthy();
   });
+
+  it('keeps the drawing a variation swapped one of the original keys to', () => {
+    const d0 = newDoc({ name: 'F', width: 16, height: 16, length: 8 });
+    const l = { ...newVectorLayer('V'), id: 'LV' };
+    l.cels = [{ id: 'c1', start: 0, length: 4, drawingId: 'd1' }];
+    d0.drawings = { d1: { id: 'd1', kind: 'vector', shapes: [rect('s1', '#ff0000')] } as VectorDrawing };
+    d0.layers = [l];
+    resetStore(d0);
+    const root = artboardsOf(doc())[0].id;
+    let v = '';
+    update('make', (d) => void (v = makeVariation(d, root)!));
+    update('open', (d) => void switchArtboard(d, v));
+    update('swap', (d) => {
+      d.drawings['dn'] = { id: 'dn', kind: 'vector', shapes: [rect('sn', '#00ff00')] } as VectorDrawing;
+      d.layers[0].cels[0].drawingId = 'dn';
+    });
+    let other = '';
+    update('add', (d) => void (other = addArtboard(d)));
+    update('delete', (d) => void deleteArtboard(d, other));
+    const loaded = loadFile(saveFile(doc())).doc;
+    const c = artboardDoc(loaded, v);
+    const dr = loaded.drawings[c.layers[0].cels[0].drawingId] as VectorDrawing | undefined;
+    expect(dr && (dr.shapes[0] as PathShape).fill).toBe('#00ff00');
+  });
 });
