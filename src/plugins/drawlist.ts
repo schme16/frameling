@@ -241,6 +241,62 @@ export function handleCursor(over: string | null, dragging: string | null): 'gra
   return dragging ? 'grabbing' : over ? 'grab' : null;
 }
 
+/** Smallest dash or gap that is drawn (in screen pixels) and most dashes one line may be cut into. Past either it is drawn solid. */
+export const DASH_LIMITS = { minScreenPx: 0.5, maxDashes: 4000 };
+
+/** About how long an item's outline is, in stage units (an upper bound is fine: it only guards the dash count). */
+export function outlineLength(item: DrawItem): number {
+  const along = (pts: number[][], close: boolean) => {
+    let n = 0;
+    for (let i = 1; i < pts.length; i++) n += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]);
+    if (close && pts.length > 1) n += Math.hypot(pts[0][0] - pts[pts.length - 1][0], pts[0][1] - pts[pts.length - 1][1]);
+    return n;
+  };
+  switch (item.type) {
+    case 'line':
+      return Math.hypot(item.x2 - item.x1, item.y2 - item.y1);
+    case 'rect':
+      return 2 * (Math.abs(item.w) + Math.abs(item.h));
+    case 'ellipse':
+      return 2 * Math.PI * Math.max(Math.abs(item.rx), Math.abs(item.ry));
+    case 'polygon':
+    case 'polyline':
+      return along(item.points, item.type === 'polygon');
+    case 'path': {
+      let n = 0;
+      let at: number[] | null = null;
+      for (const c of item.d) {
+        if (c[0] === 'Z') continue;
+        // Control points count too: the curve is never longer than the line through them.
+        const pts = [] as number[][];
+        for (let i = 1; i < c.length; i += 2) pts.push([c[i] as number, c[i + 1] as number]);
+        if (c[0] === 'M') at = pts[0];
+        else {
+          n += along(at ? [at, ...pts] : pts, false);
+          at = pts[pts.length - 1];
+        }
+      }
+      return n;
+    }
+    default:
+      return 0;
+  }
+}
+
+/**
+ * The dash pattern to draw an item with, in stage units, or null for a solid line. Every dash and gap is at least half a
+ * screen pixel, and a line that would be cut into too many dashes is drawn solid, so a pattern like [1e-9, 1e-9] cannot stall the canvas.
+ */
+export function safeDash(dash: number[], unit: number, zoom: number, length: number): number[] | null {
+  const min = DASH_LIMITS.minScreenPx / (zoom > 0 ? zoom : 1);
+  const seg = dash.map((n) => (n * unit > 0 ? Math.max(n * unit, min) : 0));
+  const sum = seg.reduce((a, b) => a + b, 0);
+  if (!(sum > 0)) return null;
+  const period = sum * (seg.length % 2 ? 2 : 1);
+  const perPeriod = seg.length % 2 ? seg.length * 2 : seg.length;
+  return (length / period) * perPeriod > DASH_LIMITS.maxDashes ? null : seg;
+}
+
 /** Draws a checked draw list in stage coordinates. `zoom` keeps `screen` widths the same size on screen. `hot` is the handle under the pointer. */
 export function drawDrawList(g: CanvasRenderingContext2D, list: DrawList, zoom = 1, hot: string | null = null): void {
   const z = zoom > 0 ? zoom : 1;
@@ -278,7 +334,8 @@ export function drawDrawList(g: CanvasRenderingContext2D, list: DrawList, zoom =
       g.lineWidth = (item.width ?? 1) * unit;
       g.lineJoin = item.join ?? 'round';
       g.lineCap = item.cap ?? 'round';
-      if (item.dash) g.setLineDash(item.dash.map((n) => n * unit));
+      const dash = item.dash ? safeDash(item.dash, unit, z, outlineLength(item)) : null;
+      if (dash) g.setLineDash(dash);
       g.stroke();
     }
     g.restore();

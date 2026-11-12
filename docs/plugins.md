@@ -92,6 +92,23 @@ for. A newer version that asks for nothing it was not already asked about keeps 
 off until it is turned on and the person says yes (`samePermissions` in `src/plugins/manifest.ts`). **Preferences >
 Plugins** has a switch for each power: turning one off restarts the plugin without it at once; turning one on asks again.
 
+**Who an update is trusted to be (the trust model).** An id is only a name: anyone can make a package with the same id. So the
+decision is also tied to the plugin's code. When the person decides, Frameling saves a fingerprint (the SHA-256 of the script,
+`src/plugins/fingerprint.ts`) and where the package was picked from (the .zip's or folder's path). Installing the same id again:
+
+- with the **same code** (same fingerprint): keeps what was allowed, wherever it came from;
+- with **different code from the same place** (the same .zip path or folder, the usual "I rebuilt my plugin" case) and nothing
+  new asked for: keeps what was allowed and records the new fingerprint;
+- with **different code from another place, or from a place that is not known** (for example installed from a page that gave no
+  path): asks again as an **Update**, with everything it asks for, and the old plugin stays as it was if the answer is no;
+- that asks for **more** than it was asked about: asks again, as before.
+
+A decision saved before fingerprints existed counts the stored copy's code as what was decided about. The fingerprint is
+checked only when installing; the stored copy in the library is trusted as it always was (anyone who can change the app's
+data folder can already do worse). Removing a plugin also forgets its saved decision and the export options it remembered.
+Plugin ids may not be `constructor` or `prototype`, and what is saved is read into objects with no prototype, so an id or a
+name from a plugin never finds something on `Object`.
+
 ## The API
 
 The script runs in a Web Worker with a global `frameling` object. Everything that talks to Frameling returns a promise.
@@ -207,6 +224,9 @@ or an export runs. A job that is long but moving should say so. Each report whos
 The call posts straight away, so it works from inside a long loop that never yields, and calls beyond ten a second are
 dropped (the last one, `done === total`, always goes through). Reports that stand still or go backwards, are not numbers, or
 come when no command or export is running count for nothing, so a loop that keeps calling `progress(1, 10)` is still stuck.
+Only a real step buys more time: `done` must be at least half a percent of the job further than the last report that bought
+time (at most 200 fresh starts for one job), and the job's size is the `total` of its first report, so tiny increases or a
+`total` that keeps growing cannot hold the watchdog off. The progress bar still follows every forward report.
 
 ### Events (version 2)
 
@@ -310,6 +330,7 @@ plugin can never load a font from anywhere. In a shape's draw list a `text` item
 
 Every item may have `stroke`, `fill`, `width`, `opacity`, `join`, `cap`; on guides also `dash: [on, off]` and `screen: true`
 (widths and dashes in screen pixels, so they keep their size at any zoom). A line with no colour is a thin black line.
+Every dash and gap is drawn at least half a screen pixel long (a pattern like `[1e-9, 1e-9]` is raised to that), and an outline that would be cut into more than 4000 dashes is drawn solid, so a dash pattern cannot stall the canvas.
 
 ### Shapes (version 2, `shapes`)
 
@@ -410,6 +431,10 @@ person can always turn it off.
   the call does not exist); isolating the app page would also need COOP/COEP headers on every file it loads and does not make
   an opaque-origin sandbox frame measurable. *Counting bytes sent* would only say what a plugin sends, not what it holds.
   The web build cannot see memory at all, so there only the speed numbers are shown.
+- **Messages from the plugin are budgeted** (`admit` in `src/plugins/runtime.ts`). Each second at most 600 requests (calls,
+  registrations, panel updates, canvas drawings, subscriptions, progress) and about 24 MB of them (`approxBytes`, a cheap
+  estimate) are taken; the rest are dropped, a dropped call is answered with a refusal so the plugin's promise ends, and the
+  person is told once. Answers to the host's own requests, heartbeats and error reports are never counted, so they cannot be starved.
 - **What happens.** The plugin is turned off the ordinary way (so it stays off after a restart until the person turns it on),
   a plain toast says why with a **Turn it on** button, and Preferences > Plugins shows the same sentence.
 
@@ -439,10 +464,10 @@ treated as hostile input.
 | Changing the drawing in ways the app can't handle | Edits are a short list of ops, each checked (ids exist, numbers are finite and in range, arrays the right size). A batch is applied in one `store.update`, so it is one undo step, and a bad op leaves the drawing untouched. Without `document.edit` the call is refused. |
 | Escaping through what Frameling draws | Panels are a small set of parts drawn by React from checked data; text is text. Export file names are cut down to plain names, and the files are written by Frameling to the place the person picked. |
 | Flooding the app | At most 50 commands, 10 exports, 5 panels, 200 panel parts nested at most 6 deep, 5000 ops a batch, and 1000 export files and 1 GB per export. Problems are shown at most three times. Exports can be cancelled; turning the plugin off kills it. |
-| Doing more after an update | What was asked about is compared with the new manifest; anything new turns it off until approved again. |
+| Doing more after an update | What was asked about is compared with the new manifest; anything new turns it off until approved again. A package with the same id but different code from somewhere else is asked about again too (see How the person is asked). |
 | Elevated powers without a yes | Each of `document.write`, `tools`, `canvas`, `shapes` and `network` has its own switch, off to start with. The host checks the grant on every message (`can()` needs it both listed in the manifest and granted), so a plugin cannot use a power it was refused or never asked for. |
 | Drawing on the canvas or over Frameling's own screen | Plugins never get a canvas. Tools, guides and shapes send **draw lists**: plain data, checked (known items, finite numbers, hex colours only, at most 1000 items and 20000 points) and drawn by Frameling, inside the canvas, never in the page. Text is drawn with a fixed font. |
-| A tool or shape that hangs | Tool answers must come within 2 s (three misses in a row and it is left alone); a shape's draw function within 5 s. Pointer moves are folded while it is busy, so nothing queues up. |
+| A tool or shape that hangs | Tool answers must come within 2 s (three misses in a row and it is left alone); a shape's draw function within 5 s. Pointer moves are folded while it is busy, so nothing queues up; a press, release or cancel is never dropped. |
 | A tool or shape flooding the drawing | Tool ops are the same checked ops (at most 5000 a batch, one undo step); at most 20 shapes a second; each shape's settings at most 64 KB. Events: at most 40 a second, and a plugin that does not finish them stops getting them. |
 | Reading files | `files.read` shows the system's Open dialog; the plugin gets one file the person picked, never a path. |
 | Reading the drawing through events | Events are counts and a label. Selection ids need `document.read`. |
@@ -469,7 +494,7 @@ treated as hostile input.
 
 Desktop: `library/plugins/<id>.zip` in Frameling's user data folder (Preferences > Plugins > Show plugins folder).
 Web: the browser's IndexedDB (store `library`). On/off state and what was allowed are in `localStorage`
-(`frameling.plugins.v1`): whether it is on, which powers were allowed, which it was asked about and the version it was decided for. Export options are remembered in `frameling.plugins.exportOptions.v1`. `frameling.apiVersion` is 2 in the sandbox; a plugin that must run on an older Frameling checks it.
+(`frameling.plugins.v1`): whether it is on, which powers were allowed, which it was asked about and the version it was decided for. Export options are remembered in `frameling.plugins.exportOptions.v1` (forgotten when the plugin is removed). The saved decision also holds the code fingerprint and the source path it came from. `frameling.apiVersion` is 2 in the sandbox; a plugin that must run on an older Frameling checks it.
 
 ## Tests
 
@@ -479,7 +504,7 @@ Web: the browser's IndexedDB (store `library`). On/off state and what was allowe
   compatibility, what is asked about), `runtime-v2` (events, tools, guides, shapes, files, exporter options and the limits,
   against the real prelude), `manager-v2` (the permission flow: ask, remember per version, refuse, revoke; a tool and a shape
   kind round trip through the real store; events), `drawlist`, `shapes` (placing, redrawing, a saved file opening and
-  saving without the plugin, redrawing after a move, scale or turn), `options`, `events`, `pipe`. Later additions: `watchdog`, `manager-watchdog`
+  saving without the plugin, redrawing after a move, scale or turn), `options`, `events`, `pipe`, `hardening3` (message budget, progress credit, update trust, dashes, reserved names). Later additions: `watchdog`, `manager-watchdog`
   `diagnostics` (the per-minute counts and round trip times) and `process-memory` (the heartbeat, the memory cap only while measuring, which process is which plugin's, the remembered choice for the next start), `shape-panel` (the Properties
   section through React), `tools-growth` (handles, snapping and keys through the real registries) and the font and handle
   parts of `drawlist`.

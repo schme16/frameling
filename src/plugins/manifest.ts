@@ -48,6 +48,8 @@ export interface PluginManifest {
 export interface PluginPackage {
   manifest: PluginManifest;
   code: string;
+  /** Where it was picked from on this computer (the .zip's or folder's path), when known. Not kept in the stored copy. */
+  source?: string;
 }
 
 export class PluginProblem extends Error {}
@@ -75,6 +77,8 @@ export function parseManifest(raw: unknown): PluginManifest {
   if (!isObj(raw)) throw new PluginProblem("The plugin's manifest.json isn't readable.");
   const id = text(raw.id, 60).toLowerCase();
   if (!/^[a-z0-9][a-z0-9-]{1,58}[a-z0-9]$/.test(id)) throw new PluginProblem('The plugin needs an id made of lower case letters, numbers and dashes (3 to 60 long).');
+  // Names that are already on every plain object: a plugin may not use them as an id.
+  if (id === 'constructor' || id === 'prototype') throw new PluginProblem('That id is reserved. Pick another id for the plugin.');
   const name = text(raw.name, 60);
   if (!name) throw new PluginProblem('The plugin needs a name.');
   const version = text(raw.version, 20) || '0.0.0';
@@ -84,8 +88,8 @@ export function parseManifest(raw: unknown): PluginManifest {
   const perms = Array.isArray(raw.permissions) ? raw.permissions : [];
   const permissions: Permission[] = [];
   for (const raw of perms) {
-    const p = typeof raw === 'string' ? (apiVersion >= 2 ? (PERMISSION_ALIASES[raw] ?? raw) : raw) : raw;
-    if (typeof p !== 'string' || !(p in PERMISSIONS)) throw new PluginProblem(`"${name}" asks for a permission Frameling doesn't know ("${String(raw).slice(0, 40)}").`);
+    const p = typeof raw === 'string' ? (apiVersion >= 2 ? (Object.hasOwn(PERMISSION_ALIASES, raw) ? PERMISSION_ALIASES[raw] : raw) : raw) : raw;
+    if (typeof p !== 'string' || !Object.hasOwn(PERMISSIONS, p)) throw new PluginProblem(`"${name}" asks for a permission Frameling doesn't know ("${String(raw).slice(0, 40)}").`);
     if (apiVersion < 2 && V2_PERMISSIONS.includes(p as Permission)) throw new PluginProblem(`"${name}" asks to ${PERMISSIONS[p as Permission].label.toLowerCase()}, which needs "apiVersion": 2 in its manifest.`);
     if (!permissions.includes(p as Permission)) permissions.push(p as Permission);
   }
