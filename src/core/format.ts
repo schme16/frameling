@@ -85,8 +85,21 @@ export interface Doc {
   artboards?: Artboard[];
   /** The id of the open artboard (missing = the first). */
   activeArtboard?: Id;
+  /** How a pixel sprite is built (missing = worked out from the document, see src/pixel/way.ts). */
+  sprite?: SpriteInfo;
   /** Data kept for features and plugins, by feature id. See `Ext`. */
   ext?: Ext;
+}
+
+/**
+ * The four ways to build a sprite: one picture, an animation (frames on the timeline), frames on boards (one artboard per
+ * frame) or sprites on a sheet (one artboard per sprite).
+ */
+export type SpriteWay = 'picture' | 'animation' | 'boards' | 'sheet';
+
+/** What a document says about the sprite in it. */
+export interface SpriteInfo {
+  way: SpriteWay;
 }
 
 /** One artboard (see Doc.artboards). */

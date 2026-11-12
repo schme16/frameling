@@ -157,6 +157,7 @@ feature brought it rather than a date that means much. Fields without a note wer
 | `perspective?` | `{points: {x, y}[]}` | One or two vanishing points, never exported (`4dfae46`). |
 | `artboards?` | `Artboard[]` | (`d7cd660`) |
 | `activeArtboard?` | Id | Missing = the first (`d7cd660`). |
+| `sprite?` | `{way}` | How a pixel sprite is built: `picture`, `animation`, `boards` (artboards are the frames) or `sheet` (artboards are separate sprites). Missing = worked out from the document (`inferWay` in `src/pixel/way.ts`), so old files open unchanged. Never added to a file that does not say it. |
 
 ### Artboards
 

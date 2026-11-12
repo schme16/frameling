@@ -5,6 +5,7 @@ import type { Doc, Id } from '../core/format';
 import type { ExportSettings } from '../export/types';
 import { applyWorkspace, dock, hidePanel, inPixelWorkspace, showPanel } from '../ui/dock';
 import { isPlaced } from '../ui/dockModel';
+import { isPixelDoc } from './way';
 
 export const PIXEL_DOC_CHOICE = 'workspace.pixelDocs';
 
@@ -21,15 +22,7 @@ registerChoice({
   ],
 });
 
-/** Pixel art: at least one pixel layer and no vector drawing layers (reference layers and rigs don't count). */
-export function isPixelDoc(doc: Doc): boolean {
-  let pixel = 0;
-  for (const l of doc.layers) {
-    if (l.kind === 'pixel') pixel++;
-    else if (l.kind === 'vector' && !l.reference && !l.rig) return false;
-  }
-  return pixel > 0;
-}
+export { isPixelDoc };
 
 interface DocSource {
   get(): { doc: Doc };
