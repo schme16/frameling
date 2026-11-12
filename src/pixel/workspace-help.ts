@@ -16,7 +16,8 @@ What changes:
 
 - **The tool strip shows only pixel tools** on a pixel layer: pencil, brush, eraser, bucket, shade, dither, line, rectangle, ellipse, select, eyedropper, hand and zoom. Other tools still work from their keys.
 - **The [Palette](help:palette) is on the left, with bigger colours**, laid out in its ramps.
-- **The [Preview](help:pixel-preview) panel** leads the right side, playing your animation at real size.
+- **The [Preview](help:pixel-preview) panel** leads the right side, playing your animation at real size. A one-picture file (one frame) starts with it put away, and it comes forward by itself when you add a second frame.
+- **The status bar speaks in pixels**: the zoom is a percentage of screen pixels per pixel of your sprite (800%) and the size is the sprite's own, like 32 x 32. See [Aseprite habits](help:pixel-aseprite-habits) for the zoom keys.
 - **The [pixel bar](help:pixel-bar)** sits over the canvas with brush size and shape, pixel perfect, mirror drawing, onion skin, tile mode and the grid.
 - **The timeline** shows your clips (idle, run, jump) along the top.
 - **Export starts on a sprite sheet at art size**, one art pixel to one pixel, the first time you open it on a drawing. See [Sprite sheets](help:export-sprite-sheets).

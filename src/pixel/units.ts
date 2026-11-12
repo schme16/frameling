@@ -33,3 +33,6 @@ export function zoomForArtPercent(percent: number, pixel: number): number {
 
 /** The zoom presets of keys 1 to 6, as Aseprite has them. */
 export const ART_ZOOM_PRESETS = [100, 200, 400, 800, 1600, 3200] as const;
+
+/** How many frames a new pixel file starts with: one picture is a single frame, an animation gets four to play with. */
+export const START_FRAMES = { picture: 1, animation: 4 } as const;
