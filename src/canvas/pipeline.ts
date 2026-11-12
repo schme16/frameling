@@ -202,6 +202,11 @@ export class BitmapCache {
   }
 }
 
+/** Ghost bitmaps kept: a few onion frames each way, the empty frame ghost and the light table, at a couple of cameras. */
+const ONION_CACHE_MAX = 12;
+
+const sameMat = (a: Mat | undefined, b: Mat | undefined): boolean => a === b || (!!a && !!b && a.every((v, i) => v === b[i]));
+
 interface OnionItem {
   drawing: Drawing;
   pixelSize: number;
@@ -311,11 +316,11 @@ export class FramePainter {
     // Inside a symbol: the scene around it, dimmed, in the symbol's own space.
     if (doc.editing?.length) paintEditBackdrop(g, doc, rect);
 
-    // The light table sits under the onion skin and the ghost: it's the page you trace on.
-    if (p.lightTable?.items.length && !p.playing && !p.camera && !copy) this.paintGhost(g, p, p.lightTable.items, cacheable, p.lightTable.alpha, p.lightTable.tint);
-    // Through the camera the onion frames go through it too (each layer by its own depth), so they sit where you see them.
+    // The light table sits under the onion skin and the ghost: it's the page you trace on. Through the camera they go
+    // through it too (each layer by its own depth), so they sit where you see them.
+    if (p.lightTable?.items.length && !p.playing && !copy) this.paintGhost(g, p, p.lightTable.items, cacheable, p.lightTable.alpha, p.lightTable.tint);
     if (p.onion.enabled && !p.playing) this.paintOnion(g, p, cacheable);
-    else if (p.ghost?.length && !p.playing && !p.camera && !copy) this.paintGhost(g, p, p.ghost, cacheable);
+    else if (p.ghost?.length && !p.playing && !copy) this.paintGhost(g, p, p.ghost, cacheable);
 
     if (composited) settled = paintComposited(this, g, p, cacheable) && settled;
     else for (const layer of doc.layers) {
@@ -507,7 +512,8 @@ export class FramePainter {
       const color = side === 'before' ? onion.beforeColor : onion.afterColor;
       const alpha = onion.opacity * Math.pow(0.65, dist - 1);
       g.globalAlpha = alpha;
-      if (cacheable && !items.some((it) => it.cam)) {
+      // Through the camera too: the bitmap is keyed by the camera matrix and the size, so a still camera hits it.
+      if (cacheable) {
         const c = this.onionBitmap(doc, items, color, onion.tint, rect.w, rect.h);
         g.drawImage(c, rect.x, rect.y);
       } else {
@@ -523,8 +529,12 @@ export class FramePainter {
     }
   }
 
-  private paintGhost(g: CanvasRenderingContext2D, p: FrameParams, items: GhostItem[], cacheable: boolean, alpha = GHOST_ALPHA, tint: string | null = null): void {
+  private paintGhost(g: CanvasRenderingContext2D, p: FrameParams, ghosts: GhostItem[], cacheable: boolean, alpha = GHOST_ALPHA, tint: string | null = null): void {
     const { doc, rect } = p;
+    const items: OnionItem[] = ghosts.map((it) => {
+      const layer = it.layerId ? doc.layers.find((l) => l.id === it.layerId) : undefined;
+      return { drawing: it.drawing, pixelSize: it.pixelSize, cam: layer ? layerCameraMatrix(doc, layer, p.camera) : undefined };
+    });
     g.globalAlpha = alpha;
     if (cacheable) g.drawImage(this.onionBitmap(doc, items, tint ?? '', !!tint, rect.w, rect.h), rect.x, rect.y);
     else {
@@ -543,15 +553,17 @@ export class FramePainter {
    * With `doc` (the stage-sized bitmap path) a vector drawing is blitted from its cached layer bitmap, the same one
    * the frame uses when it's the current one, instead of rasterising every stroke again. Without it, drawn directly.
    */
-  private drawOnionItems(g: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, items: (OnionItem | GhostItem)[], color: string, tint: boolean, w: number, h: number, doc?: Doc): void {
+  private drawOnionItems(g: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, items: OnionItem[], color: string, tint: boolean, w: number, h: number, doc?: Doc): void {
     for (const it of items) {
-      if (doc && it.drawing.kind === 'vector') {
+      // A layer moved by the camera can't use its stage-sized layer bitmap: it's drawn through the matrix (once, into
+      // the ghost bitmap, which is what gets cached).
+      if (doc && !it.cam && it.drawing.kind === 'vector') {
         const e = this.cache.find(it.drawing, it.pixelSize, w, h) ?? this.cache.build(doc, it.drawing, it.pixelSize, w, h);
         g.save();
         g.setTransform(1, 0, 0, 1, 0, 0);
         g.drawImage(e.canvas, 0, 0);
         g.restore();
-      } else if ('cam' in it && it.cam) {
+      } else if (it.cam) {
         g.save();
         g.transform(it.cam[0], it.cam[1], it.cam[2], it.cam[3], it.cam[4], it.cam[5]);
         drawDrawing(g, it.drawing, it.pixelSize);
@@ -570,7 +582,7 @@ export class FramePainter {
 
   private onionBitmap(doc: Doc, items: OnionItem[], color: string, tint: boolean, w: number, h: number): Canvas2 {
     const same = (e: OnionEntry) =>
-      e.w === w && e.h === h && e.color === color && e.tint === tint && e.items.length === items.length && e.items.every((x, i) => x.drawing === items[i].drawing && x.pixelSize === items[i].pixelSize);
+      e.w === w && e.h === h && e.color === color && e.tint === tint && e.items.length === items.length && e.items.every((x, i) => x.drawing === items[i].drawing && x.pixelSize === items[i].pixelSize && sameMat(x.cam, items[i].cam));
     const hit = this.onionCache.find(same);
     if (hit) {
       // Most recent last.
@@ -583,7 +595,7 @@ export class FramePainter {
     g.setTransform(w / doc.width, 0, 0, h / doc.height, 0, 0);
     this.drawOnionItems(g, items, color, tint, w, h, doc);
     this.onionCache.push({ items, color, tint, w, h, canvas });
-    if (this.onionCache.length > 8) this.onionCache.shift();
+    if (this.onionCache.length > ONION_CACHE_MAX) this.onionCache.shift();
     return canvas;
   }
 

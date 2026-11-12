@@ -156,6 +156,8 @@ interface Drag {
 
 function shapeTool(kind: 'rect' | 'ellipse' | 'line', label: string, icon: string, key: string, order: number, help: string, what: string): Tool {
   let drag: Drag | null = null;
+  // Where a pixel shape drag started, for pulling a line's end onto the perspective directions.
+  let pixStart: Pt | null = null;
   // On a pixel layer the shape is painted as clean pixels instead (src/pixel/tools.ts).
   const pix = makePixelShape(kind, label);
   const build = (): PathShape | null => {
@@ -168,11 +170,13 @@ function shapeTool(kind: 'rect' | 'ellipse' | 'line', label: string, icon: strin
     return s && withWellGradients(s);
   };
   // Where the drag ends: a line's end can follow the perspective guides (and Shift picks from their directions too).
-  const endAt = (d: Drag, e: ToolPointer, ctx: ToolContext): ToolPointer => {
+  const endAt = (start: Pt, e: ToolPointer, ctx: ToolContext): ToolPointer => {
     if (kind !== 'line') return { ...e, ...snapPt(e, ctx.zoom, e.mod) };
-    const s = snapLineEnd(d.start, e, ctx.zoom, e.mod, e.shift);
+    const s = snapLineEnd(start, e, ctx.zoom, e.mod, e.shift);
     return { ...e, ...s.pt, shift: s.constrained ? false : e.shift };
   };
+  // A pixel line follows the perspective directions too. Cells already are the snapping, so nothing else is pulled.
+  const pixEnd = (e: ToolPointer, ctx: ToolContext): ToolPointer => (kind === 'line' && pixStart && vanishingPoints(e.mod).length ? endAt(pixStart, e, ctx) : e);
   return {
     id: kind,
     label,
@@ -186,7 +190,9 @@ function shapeTool(kind: 'rect' | 'ellipse' | 'line', label: string, icon: strin
     down(e: ToolPointer, ctx: ToolContext) {
       const px = activePixelLayer();
       if (px) {
-        if (canEdit(ctx, 'pixel', what)) pix.down(e, ctx, px);
+        if (!canEdit(ctx, 'pixel', what)) return;
+        pixStart = { x: e.x, y: e.y };
+        pix.down(e, ctx, px);
         return;
       }
       if (!canEdit(ctx, 'vector', what)) return;
@@ -199,13 +205,18 @@ function shapeTool(kind: 'rect' | 'ellipse' | 'line', label: string, icon: strin
       clearSnap();
     },
     move(e, ctx) {
-      if (pix.active()) return pix.move(e);
-      if (drag) drag.cur = endAt(drag, e, ctx);
+      if (pix.active()) return pix.move(pixEnd(e, ctx));
+      if (drag) drag.cur = endAt(drag.start, e, ctx);
     },
     up(e, ctx) {
-      if (pix.active()) return pix.up(e, ctx);
+      if (pix.active()) {
+        const end = pixEnd(e, ctx);
+        pixStart = null;
+        clearSnap();
+        return pix.up(end, ctx);
+      }
       if (!drag) return;
-      drag.cur = endAt(drag, e, ctx);
+      drag.cur = endAt(drag.start, e, ctx);
       clearSnap();
       const shape = build();
       drag = null;
@@ -220,6 +231,7 @@ function shapeTool(kind: 'rect' | 'ellipse' | 'line', label: string, icon: strin
     },
     cancel(ctx) {
       drag = null;
+      pixStart = null;
       clearSnap();
       pix.cancel();
       ctx.requestOverlay();

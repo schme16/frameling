@@ -4,6 +4,7 @@
 import { layerCameraMatrix, sizeThroughCamera } from '../core/camera';
 import { store } from '../core/store';
 import { canvasCamera } from '../camera/ops';
+import { pixelSizeThroughCamera } from '../canvas/pixels';
 import { activeLayer } from './edit';
 
 /** Stage length per unit of tool size right now (1 unless the canvas is looking through the camera). */
@@ -14,4 +15,9 @@ export function viewSizeFactor(): number {
   // A layer at another depth moves at another speed, so it's scaled by its own camera matrix.
   const m = layer ? layerCameraMatrix(store().get().doc, layer, cam.view) : cam.matrix;
   return sizeThroughCamera(m);
+}
+
+/** A pixel brush size (art pixels) as it comes out through the camera: whole pixels, never below one. */
+export function viewPixelSize(size: number): number {
+  return pixelSizeThroughCamera(size, viewSizeFactor());
 }

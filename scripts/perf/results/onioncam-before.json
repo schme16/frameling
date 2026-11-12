@@ -1,0 +1,102 @@
+{
+  "env": {
+    "label": "before",
+    "cpuSlowdown": 1,
+    "electron": "45.3.0",
+    "chrome": "156.0.8078.96",
+    "cpu": "AMD Ryzen 9 7900X 12-Core Processor",
+    "window": [
+      1400,
+      900
+    ],
+    "gpu2dCanvas": "disabled_software",
+    "gpuFeatures": {
+      "canvas": "disabled_software",
+      "gpu_compositing": "disabled_software"
+    },
+    "gpuDevice": null,
+    "dpr": 1,
+    "idleRafMs": 16.66410256410256,
+    "renderer": "/tmp/claude-1000/-mnt-109313D2109313D2-projects-frameling/e4576db3-42bc-4520-b49b-dab039996e0b/scratchpad/renderer-before",
+    "when": "2026-11-12T02:09:10.246Z"
+  },
+  "onioncam": {
+    "strokes300x2_pan": {
+      "rafDelta": {
+        "n": 240,
+        "mean": 25,
+        "p50": 33.2,
+        "p95": 33.4,
+        "p99": 33.4,
+        "max": 33.5
+      },
+      "mainDrawMs": {
+        "n": 120,
+        "mean": 29.47,
+        "p50": 29.3,
+        "p95": 30.9,
+        "p99": 32.7,
+        "max": 34.2
+      },
+      "longTasks": 0
+    },
+    "strokes300x2_scrub": {
+      "rafDelta": {
+        "n": 161,
+        "mean": 23.6,
+        "p50": 16.7,
+        "p95": 33.4,
+        "p99": 33.4,
+        "max": 49.9
+      },
+      "mainDrawMs": {
+        "n": 80,
+        "mean": 29.06,
+        "p50": 29.4,
+        "p95": 37.6,
+        "p99": 46.8,
+        "max": 46.8
+      },
+      "longTasks": 1
+    },
+    "strokes1000x2_pan": {
+      "rafDelta": {
+        "n": 241,
+        "mean": 58.09,
+        "p50": 33.4,
+        "p95": 100.1,
+        "p99": 100.1,
+        "max": 100.1
+      },
+      "mainDrawMs": {
+        "n": 120,
+        "mean": 83.71,
+        "p50": 83.8,
+        "p95": 86.1,
+        "p99": 87.5,
+        "max": 87.7
+      },
+      "longTasks": 120
+    },
+    "strokes1000x2_scrub": {
+      "rafDelta": {
+        "n": 160,
+        "mean": 55.41,
+        "p50": 66.6,
+        "p95": 100.1,
+        "p99": 116.7,
+        "max": 150
+      },
+      "mainDrawMs": {
+        "n": 80,
+        "mean": 79.68,
+        "p50": 82.6,
+        "p95": 86.3,
+        "p99": 140.9,
+        "max": 140.9
+      },
+      "longTasks": 80
+    }
+  },
+  "consoleErrors": []
+}

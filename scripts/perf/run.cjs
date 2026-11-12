@@ -462,6 +462,50 @@ async function main() {
     return out;
   }
 
+  // ------------------------------------------------------------------ onion skin through the camera
+  // A heavy drawing on every frame, a camera that is not the plain view, the canvas looking through it, onion skin on.
+  // Panning the view repaints without changing a ghost (cached ghost frames are only blitted); scrubbing changes them.
+  async function onionCamera() {
+    const out = {};
+    for (const [name, spec] of [
+      ['strokes300x2', { frames: 8, layers: 2, strokesPer: 300, pts: 30 }],
+      ['strokes1000x2', { frames: 8, layers: 2, strokesPer: 1000, pts: 30 }],
+    ]) {
+      await setDoc(spec);
+      await js(`(() => {
+        const f = window.__frameling;
+        const doc = JSON.parse(JSON.stringify(f.store().get().doc));
+        const view = { x: doc.width / 2 + 40, y: doc.height / 2, zoom: 1.25, rotation: 0 };
+        doc.drawings.camdr = { id: 'camdr', kind: 'camera', view };
+        doc.layers.push({ id: 'camlayer', name: 'Camera', kind: 'camera', visible: true, locked: false, opacity: 1, onion: false, cels: [{ id: 'camcel', start: 0, length: doc.length, drawingId: 'camdr' }] });
+        f.store().load(doc);
+        f.anim.view({ throughCamera: true });
+        f.store().setUi({ tool: 'brush', playing: false, frame: 4, onion: { ...f.store().get().ui.onion, enabled: true, before: 2, after: 2 } });
+      })()`);
+      await js('window.__h.raf2()');
+      await sleep(400);
+      // Pan: 120 repaints with the same ghosts.
+      await js('window.__framelingPerf.reset(); window.__h.takeLongs(); window.__h.startRaf()');
+      for (let i = 0; i < 120; i++) {
+        await js(`window.__frameling.store().setUi({ panX: ${Math.round(Math.sin(i / 10) * 60)}, panY: ${Math.round(Math.cos(i / 10) * 40)} })`);
+        await js('window.__h.raf2()');
+      }
+      let raf = await js('window.__h.stopRaf()');
+      let bag = await readBag();
+      out[name + '_pan'] = { rafDelta: stats(deltas(raf)), mainDrawMs: stats(bag.mainMs), longTasks: (await js('window.__h.takeLongs()')).length };
+      // Scrub: step through the frames (each new frame brings new ghosts, then the cache serves the way back).
+      await js('window.__framelingPerf.reset(); window.__h.takeLongs(); window.__h.startRaf()');
+      for (let i = 0; i < 80; i++) {
+        await js(`window.__frameling.store().setUi({ frame: ${2 + (i % 5)} })`);
+        await js('window.__h.raf2()');
+      }
+      raf = await js('window.__h.stopRaf()');
+      bag = await readBag();
+      out[name + '_scrub'] = { rafDelta: stats(deltas(raf)), mainDrawMs: stats(bag.mainMs), longTasks: (await js('window.__h.takeLongs()')).length };
+    }
+    return out;
+  }
+
   // ------------------------------------------------------------------ memory
   async function memory() {
     await setDoc({ frames: 1, layers: 1, strokesPer: 0 });
@@ -614,7 +658,7 @@ async function main() {
     return out;
   }
 
-  const tests = { draw: drawLong, playback, rigfx, templates, zoompan: zoomPan, memory, soak };
+  const tests = { draw: drawLong, playback, rigfx, templates, zoompan: zoomPan, onioncam: onionCamera, memory, soak };
   await load();
   const gpu = await app.getGPUInfo('basic').catch(() => null);
   const feat = app.getGPUFeatureStatus();

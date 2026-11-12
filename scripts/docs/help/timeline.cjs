@@ -88,8 +88,11 @@ module.exports = [
       { rec: '@', crop: CROP, every: 80 },
       { wait: 800 },
       { key: 'O', mods: ['shift'], after: 1500 },
-      { key: '.', after: 700 }, { key: '.', after: 700 }, { key: '.', after: 700 }, { key: '.', after: 700 },
-      { key: '.', after: 700 }, { key: '.', after: 700 }, { key: '.', after: 700 }, { key: '.', after: 1200 },
+      { key: '.', after: 700 }, { key: '.', after: 700 }, { key: '.', after: 700 }, { key: '.', after: 1000 },
+      // Then through a zoomed camera: the ghosts go through it too.
+      js(`(() => { const d0 = ${F}.store().get().doc; ${F}.store().update('Camera', (d) => { d.drawings.camdr = { id: 'camdr', kind: 'camera', view: { x: d0.width / 2, y: d0.height / 2 + 30, zoom: 1.5, rotation: 0 } }; d.layers.push({ id: 'camlayer', name: 'Camera', kind: 'camera', visible: true, locked: false, opacity: 1, onion: false, cels: [{ id: 'camcel', start: 0, length: d.length, drawingId: 'camdr' }] }); }); ${F}.run('camera.lookThrough'); })()`),
+      { wait: 1500 },
+      { key: '.', after: 700 }, { key: '.', after: 700 }, { key: '.', after: 700 }, { key: '.', after: 700 }, { key: '.', after: 1400 },
       { rec: 'stop' },
     ],
   },

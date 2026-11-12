@@ -178,6 +178,6 @@ Now go to any other frame and draw over it. The timeline's top bar shows what's 
 - The [onion skin](help:timeline-onion) shows the frames next to the one you're on, so it moves as you move. The light table stays put on the frame you chose. You can have both at once.
 - The [ghost on empty frames](help:empty-frame-ghost) only shows the last drawing, and only on an empty frame. The light table shows whatever you pinned, everywhere.
 
-It's only for you: it never shows when you play or export.`,
+It's only for you: it never shows when you play or export. Looking through the [camera](help:camera), it goes through it too, so it sits where you see the drawing.`,
   },
 ]);

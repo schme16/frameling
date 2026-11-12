@@ -63,4 +63,78 @@ describe('onion skin through the camera', () => {
     new FramePainter().paint(mainCtx(), params(doc, { camera: { x: 200, y: 150, zoom: 1, rotation: 0 } }));
     expect(counts.fills).toBe(3);
   });
+
+  it('keeps the ghost frames as bitmaps: a repaint with the same camera redraws only the current frame', () => {
+    const doc = makeDoc(3);
+    const p = new FramePainter();
+    const cam = { x: 200, y: 150, zoom: 2, rotation: 0 };
+    p.paint(mainCtx(), params(doc, { camera: cam }));
+    expect(counts.fills).toBe(3);
+    resetCounts();
+    p.paint(mainCtx(), params(doc, { camera: { ...cam } }));
+    expect(counts.fills).toBe(1);
+  });
+
+  it('builds the ghosts again when the camera, the zoom or the frame changes', () => {
+    const doc = makeDoc(4);
+    const p = new FramePainter();
+    const cam = { x: 200, y: 150, zoom: 2, rotation: 0 };
+    p.paint(mainCtx(), params(doc, { camera: cam }));
+    resetCounts();
+    p.paint(mainCtx(), params(doc, { camera: { ...cam, x: 260 } }));
+    expect(counts.fills).toBe(3);
+    resetCounts();
+    p.paint(mainCtx(), params(doc, { camera: { ...cam, x: 260 }, rect: { x: 10, y: 10, w: 300, h: 225 } }));
+    expect(counts.fills).toBe(3);
+    resetCounts();
+    // One frame on, the neighbours are other drawings (the frame ahead is new; the one behind was the current one).
+    p.paint(mainCtx(), params(doc, { camera: { ...cam, x: 260 }, rect: { x: 10, y: 10, w: 300, h: 225 }, frame: 2 }));
+    expect(counts.fills).toBe(3);
+  });
+});
+
+describe('the light table and the empty frame ghost through the camera', () => {
+  const cam = { x: 200, y: 150, zoom: 2, rotation: 0 };
+  const off = (doc: Doc) => ({ ...params(doc).onion, enabled: false });
+
+  it('show faintly through the camera instead of hiding', () => {
+    const doc = makeDoc(3);
+    const layer = doc.layers[0];
+    const pinned = doc.drawings[layer.cels[0].drawingId];
+    const items = [{ drawing: pinned, pixelSize: 1, layerId: layer.id }];
+    new FramePainter().paint(mainCtx(), params(doc, { camera: cam, onion: off(doc), lightTable: { items, alpha: 0.3, tint: null } }));
+    expect(counts.fills).toBe(2);
+    resetCounts();
+    new FramePainter().paint(mainCtx(), params(doc, { camera: cam, onion: off(doc), ghost: items }));
+    expect(counts.fills).toBe(2);
+  });
+
+  it('are cached too, and follow a camera change', () => {
+    const doc = makeDoc(3);
+    const layer = doc.layers[0];
+    const items = [{ drawing: doc.drawings[layer.cels[0].drawingId], pixelSize: 1, layerId: layer.id }];
+    const p = new FramePainter();
+    const at = (c: typeof cam) => params(doc, { camera: c, onion: off(doc), lightTable: { items, alpha: 0.3, tint: null } });
+    p.paint(mainCtx(), at(cam));
+    resetCounts();
+    p.paint(mainCtx(), at({ ...cam }));
+    expect(counts.fills).toBe(1);
+    resetCounts();
+    p.paint(mainCtx(), at({ ...cam, zoom: 3 }));
+    expect(counts.fills).toBe(2);
+  });
+
+  it('go through the camera by their own layer depth', () => {
+    const doc = makeDoc(3);
+    const layer = doc.layers[0];
+    layer.depth = 1;
+    const items = [{ drawing: doc.drawings[layer.cels[0].drawingId], pixelSize: 1, layerId: layer.id }];
+    const p = new FramePainter();
+    p.paint(mainCtx(), params(doc, { camera: cam, onion: off(doc), ghost: items }));
+    resetCounts();
+    layer.depth = 2;
+    p.paint(mainCtx(), params(doc, { camera: cam, onion: off(doc), ghost: items }));
+    // A different depth is a different matrix, so the ghost is built again.
+    expect(counts.fills).toBe(2);
+  });
 });
