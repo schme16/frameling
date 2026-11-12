@@ -208,6 +208,12 @@ describe('random pointer sequences (seeded)', () => {
       fire('pointerdown', { id: 7, kind: 'pen', buttons: 1 });
       fire('pointerup', { id: 7, kind: 'pen' });
       expect(calls.filter((c) => c !== 'brush.move'), where).toEqual(['brush.down', 'brush.up']);
+      // Palm rejection lets go too: with the pen gone for a while, a finger draws again.
+      clock += 20000;
+      calls.length = 0;
+      fire('pointerdown', { id: 30, kind: 'touch', buttons: 1 });
+      fire('pointerup', { id: 30, kind: 'touch' });
+      expect(calls.filter((c) => c !== 'brush.move'), where).toEqual(['brush.down', 'brush.up']);
     });
   }
 });
