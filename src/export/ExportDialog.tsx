@@ -333,6 +333,8 @@ export async function openExportDialog(format?: FormatId): Promise<void> {
   const fromTemplate = templateExport(docId, start, artSize);
   // No template choice: in the Pixel workspace, pixel art starts on a sprite sheet at art size.
   const initial = fromTemplate === start ? pixelExportStart(docId, start, artSize) : fromTemplate;
+  // A format whose feature is off is not on offer: start from the usual one instead.
+  if (!hasExporter(initial.format)) initial.format = defaultSettings(sceneOf(store().get().doc, 0).doc).format;
   followWay(store().rootDoc());
   if (format && format !== initial.format && hasExporter(format)) {
     const { doc } = store().get();
