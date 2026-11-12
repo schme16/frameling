@@ -38,7 +38,7 @@ import { penFields } from '../tablet/input';
 import { getPen, markPenSeen, PEN_TOOLS, type PenTool } from '../tablet/settings';
 import { Stabilizer } from '../tablet/stabilizer';
 import { PenTracker, pinchView, type PinchStart } from '../tablet/touch';
-import { noticePen } from '../tablet/check/state';
+import { noticePen, setStrokeProbe } from '../tablet/check/state';
 
 export interface EngineElements {
   root: HTMLElement;
@@ -181,12 +181,14 @@ export class CanvasEngine {
     this.cleanups.push(subscribeTheme(() => this.invalidate(true, true)));
     this.resize();
     ctl.fit(true);
+    setStrokeProbe(() => !!this.gesture);
     return () => this.destroy();
   }
 
   destroy(): void {
     this.cancelGesture();
     for (const c of this.cleanups.splice(0)) c();
+    setStrokeProbe(null);
     ctl.setSink(null);
     ctl.setLive(null);
     cancelAnimationFrame(this.raf);

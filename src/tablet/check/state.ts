@@ -41,6 +41,12 @@ export function resetOffer(): void {
   timer = 0;
 }
 
+let strokeOn: () => boolean = () => false;
+/** The canvas says whether a stroke (or any drag) is on, so the offer never lands in the middle of one. */
+export function setStrokeProbe(fn: (() => boolean) | null): void {
+  strokeOn = fn ?? (() => false);
+}
+
 /** Quill's offer is wanted: a pen has been seen, the check was never finished or turned down, and nothing else is open. */
 export function shouldOffer(): boolean {
   const m = checkMemory.get();
@@ -56,7 +62,8 @@ export function noticePen(): void {
   if (offered || timer || !shouldOffer()) return;
   timer = setTimeout(() => {
     timer = 0;
-    if (!shouldOffer()) return;
+    // A pen hovered, then pressed, and the stroke is still going: the next lift asks again.
+    if (strokeOn() || !shouldOffer()) return;
     offered = true;
     overlays.set((o) => ({ ...o, penCheck: 'offer' }));
   }, OFFER_DELAY_MS);

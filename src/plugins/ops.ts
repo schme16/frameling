@@ -155,8 +155,9 @@ export function applyOp(doc: Draft<Doc>, raw: unknown): void {
       return;
     }
     case 'addMarker': {
-      if (!fin(o.frame) || o.frame < 0 || o.frame >= doc.length) throw new OpProblem(`frame must be from 0 to ${doc.length - 1}.`);
-      doc.markers.push({ id: uid('m'), name: str(o.name ?? 'Marker', 'name') || 'Marker', frame: Math.round(o.frame) });
+      // Rounded first, so 9.6 in a 10 frame drawing is the (missing) frame 10, not a pass.
+      if (!fin(o.frame) || Math.round(o.frame) < 0 || Math.round(o.frame) >= doc.length) throw new OpProblem(`frame must be from 0 to ${doc.length - 1}.`);
+      doc.markers.push({ id: uid('m'), name: str(o.name ?? 'Marker', 'name') || 'Marker', frame: Math.round(o.frame) || 0 });
       return;
     }
     case 'removeMarker': {
@@ -166,7 +167,7 @@ export function applyOp(doc: Draft<Doc>, raw: unknown): void {
       return;
     }
     case 'addClip': {
-      if (!fin(o.start) || !fin(o.end) || o.start < 0 || o.end < o.start || o.end >= doc.length) throw new OpProblem(`start and end must be frames from 0 to ${doc.length - 1}, start first.`);
+      if (!fin(o.start) || !fin(o.end) || Math.round(o.start) < 0 || Math.round(o.end) < Math.round(o.start) || Math.round(o.end) >= doc.length) throw new OpProblem(`start and end must be frames from 0 to ${doc.length - 1}, start first.`);
       // How it plays: `direction` (forward when missing) and `repeat` (how many times, whole 1 to 999). Giving a repeat
       // without saying `loop` means it plays that many times instead of for ever; a looping clip ignores its repeat.
       if (o.direction !== undefined && !isDirection(o.direction)) throw new OpProblem(`direction must be one of ${CLIP_DIRECTIONS.map((x) => `"${x}"`).join(', ')}.`);
@@ -176,7 +177,7 @@ export function applyOp(doc: Draft<Doc>, raw: unknown): void {
       doc.clips.push({
         id: uid('c'),
         name: str(o.name ?? 'Clip', 'name') || 'Clip',
-        start: Math.round(o.start),
+        start: Math.round(o.start) || 0,
         end: Math.round(o.end),
         loop,
         ...(isDirection(o.direction) && o.direction !== 'forward' ? { direction: o.direction } : {}),

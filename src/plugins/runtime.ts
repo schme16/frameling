@@ -190,7 +190,7 @@ export interface HostHooks {
   diagnostics?(): boolean;
 }
 
-const LIMITS = { commands: 50, exporters: 10, panels: 5, files: 1000, bytes: 1024 * 1024 * 1024, tools: 5, shapeKinds: 10, overlaysPerSecond: 30, shapesPerSecond: 20, pickBytes: 50 * 1024 * 1024 };
+const LIMITS = { commands: 50, exporters: 10, panels: 5, files: 1000, bytes: 1024 * 1024 * 1024, tools: 5, shapeKinds: 10, overlaysPerSecond: 30, shapesPerSecond: 20, pickBytes: 50 * 1024 * 1024, notifiesPerTenSeconds: 10, pickCooldownMs: 10_000, pickCooldownMaxMs: 60_000 };
 /** How long the host waits for a plugin to answer, so one that hangs cannot hold things up. */
 export const TIMEOUTS = { toolEvent: 2000, shapeDraw: 5000, tooSlowInARow: 3 };
 const NEEDS: Record<string, Permission | null> = {
@@ -265,6 +265,11 @@ export class PluginRuntime {
   private slowInARow = 0;
   private overlayWindow = { start: 0, count: 0 };
   private shapeWindow = { start: 0, count: 0 };
+  private notifyWindow = { start: 0, count: 0 };
+  /** The file picker is a window the person must answer: one at a time, and a plugin that keeps asking after a cancel is made to wait. */
+  private picking = false;
+  private pickCancels = 0;
+  private pickBlockedUntil = 0;
   private waiting = new Map<number, Waiting>();
   private nextId = 1;
   private stopped = false;
@@ -487,8 +492,20 @@ export class PluginRuntime {
           return reply(true, { granted: this.manifest.permissions.filter((p) => this.granted.includes(p)) });
         case 'files.pick': {
           const exts = (Array.isArray(a.extensions) ? a.extensions : []).filter((e: unknown): e is string => typeof e === 'string' && /^[A-Za-z0-9]{1,10}$/.test(e)).slice(0, 10);
-          const file = (await this.hooks.pickFile?.({ extensions: exts, title: cleanText(a.title, 80) || 'Pick a file' })) ?? null;
-          if (!file) return reply(true, null);
+          if (this.picking) return reply(false, undefined, 'It is already asking for a file.');
+          if (Date.now() < this.pickBlockedUntil) return reply(false, undefined, 'The person just said no to a file. Wait a while before asking again.');
+          this.picking = true;
+          let file: PickedFile | null;
+          try {
+            file = (await this.hooks.pickFile?.({ extensions: exts, title: cleanText(a.title, 80) || 'Pick a file' })) ?? null;
+          } finally {
+            this.picking = false;
+          }
+          if (!file) {
+            this.pickBlockedUntil = Date.now() + Math.min(LIMITS.pickCooldownMaxMs, LIMITS.pickCooldownMs * ++this.pickCancels);
+            return reply(true, null);
+          }
+          this.pickCancels = 0;
           if (file.bytes.length > LIMITS.pickBytes) return reply(false, undefined, 'That file is too big for a plugin to read.');
           const copy = file.bytes.slice();
           return reply(true, { name: safeName(file.name, 'file'), bytes: copy }, undefined, [copy.buffer as ArrayBuffer]);
@@ -497,6 +514,10 @@ export class PluginRuntime {
         case 'shapes.update':
           return reply(true, await this.placeShape(a, method === 'shapes.update'));
         case 'ui.notify': {
+          // A message on screen (and a sound for the sad ones) is the person's attention: a plugin cannot take it over.
+          const now = Date.now();
+          if (now - this.notifyWindow.start >= 10_000) this.notifyWindow = { start: now, count: 0 };
+          if (++this.notifyWindow.count > LIMITS.notifiesPerTenSeconds) return reply(true, null);
           const kind = a.kind === 'success' || a.kind === 'warn' || a.kind === 'error' ? a.kind : 'info';
           this.hooks.notify(cleanText(a.message, 200), kind);
           return reply(true, null);

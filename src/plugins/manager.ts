@@ -1,7 +1,7 @@
 // Installed plugins: which are on, what each was allowed, starting and stopping them, and wiring what they add
 // (commands, exports, panels) into the app's registries. The plugin code itself only ever runs in its sandbox.
 import type { ComponentType } from 'react';
-import { registerCommand, registerPanel, registerTool, unregisterCommand, unregisterPanel, type ToolPointer } from '../core/registry';
+import { allCommands, registerCommand, registerPanel, registerTool, unregisterCommand, unregisterPanel, type ToolPointer } from '../core/registry';
 import { setCursor } from '../canvas/controller';
 import { clearSnap, snapPt } from '../canvas/guides';
 import { removeOwned, withOwner } from '../core/owners';
@@ -18,6 +18,7 @@ import { registerSnapSource } from '../canvas/snapSources';
 import { syncPanels } from '../ui/dock';
 import { syncDynamicCommands } from '../ui/dynamic';
 import { ICON_NAMES } from '../ui/icons';
+import { effectiveKeys, normaliseCombo } from '../ui/keys';
 import { createStore } from '../ui/mini';
 import { setEventSink } from './bus';
 import { drawDrawList, guideSnapLines, handleAt, handleCursor, type DrawList } from './drawlist';
@@ -31,7 +32,7 @@ import { startSandbox } from './sandbox';
 import { tripMessage, type Trip } from './watchdog';
 import type { PluginDiag } from './diagnostics';
 import { getPrefs } from '../ui/prefs';
-import { addPluginShape, redrawPluginShape, ShapeProblem } from './shapes';
+import { addPluginShape, findInst, redrawPluginShape, ShapeProblem } from './shapes';
 import type { UiNode } from './ui-schema';
 
 export type PluginStatus = 'off' | 'starting' | 'on' | 'problem';
@@ -135,12 +136,15 @@ function hooksFor(m: PluginManifest, onExporter: (def: PluginExporterDef) => voi
     notify: (message, kind) => notify(`${m.name}: ${message}`, kind),
     addCommand: (def) => {
       const id = commandId(pid, def.id);
+      // A plugin may suggest keys, but never one that something else already uses: it must not take Frameling's own keys (or another plugin's).
+      const taken = new Set(allCommands().filter((c) => c.id !== id).flatMap((c) => effectiveKeys(c)));
+      const keys = def.keys?.map(normaliseCombo).filter((k) => k && !taken.has(k));
       registerCommand({
         id,
         label: def.label,
         category: 'Plugins',
         description: def.description ?? `From the ${m.name} plugin.`,
-        keys: def.keys,
+        keys: keys?.length ? keys : undefined,
         help: 'plugins',
         keywords: ['plugin', m.name],
         run: () => runtimes.get(pid)?.runCommand(def.id),
@@ -186,7 +190,9 @@ function hooksFor(m: PluginManifest, onExporter: (def: PluginExporterDef) => voi
         const layer = findLayer(s.doc, s.ui.activeLayerId);
         return layer ? (drawingAt(s.doc, layer, s.ui.frame)?.id ?? null) : null;
       })();
-      const layer = findLayer(s.doc, s.ui.activeLayerId);
+      // The lock that counts is the one on the layer the shape goes into (or is already in), not on whatever layer is active.
+      const target = p.inst ? (findInst(s.doc, p.pluginId, p.inst, drawingId)?.drawingId ?? drawingId) : drawingId;
+      const layer = (target ? s.doc.layers.find((l) => l.cels.some((c) => c.drawingId === target)) : undefined) ?? findLayer(s.doc, s.ui.activeLayerId);
       if (layer?.locked) throw new Error('That layer is locked.');
       const label = `${m.name}: ${p.inst ? 'Redraw' : 'Add'} ${p.kind}`;
       let result: { inst: string; ids: string[]; replaced?: string[] } | undefined;
@@ -458,24 +464,35 @@ export function setExporterOpener(fn: typeof exporterOpener): void {
   exporterOpener = fn;
 }
 
+/** Bumped by every stop, so a start that was still waiting for its sandbox can tell it was overtaken (turned off, or restarted with other powers). */
+const epochs = new Map<string, number>();
+const starting = new Set<string>();
+
 async function start(p: InstalledPlugin): Promise<void> {
   const id = p.manifest.id;
   const pkg = packages.get(id);
-  if (!pkg || runtimes.has(id)) return;
+  if (!pkg || runtimes.has(id) || starting.has(id)) return;
+  const epoch = epochs.get(id) ?? 0;
+  const current = () => (epochs.get(id) ?? 0) === epoch;
+  starting.add(id);
   patch(id, { status: 'starting', problem: undefined });
   const network = p.granted.includes('network') ? p.network : [];
   try {
     const transport = await starter(pkg, network);
-    // Turned off while it was starting.
-    if (!plugins.get().find((x) => x.manifest.id === id)?.enabled) return transport.close();
+    // Turned off, or restarted with other powers, while it was starting: this one must not run (with the old powers).
+    if (!current() || !plugins.get().find((x) => x.manifest.id === id)?.enabled) return transport.close();
     const rt = new PluginRuntime(pkg.manifest, p.granted, transport, hooksFor(pkg.manifest, (def) => exporterOpener(id, def)));
     runtimes.set(id, rt);
   } catch (e) {
-    patch(id, { status: 'problem', problem: e instanceof Error ? e.message : 'It could not start.' });
+    if (current()) patch(id, { status: 'problem', problem: e instanceof Error ? e.message : 'It could not start.' });
+  } finally {
+    if (current()) starting.delete(id);
   }
 }
 
 function stop(id: string): void {
+  epochs.set(id, (epochs.get(id) ?? 0) + 1);
+  starting.delete(id);
   runtimes.get(id)?.stop();
   runtimes.delete(id);
   // Its tools and canvas guide go with it, and the person is taken off a tool that is gone.
@@ -702,7 +719,7 @@ export async function removePlugin(id: string): Promise<void> {
 
 /** Turns plugins off and forgets them (tests). */
 export function resetPluginsForTests(): void {
-  for (const id of [...runtimes.keys()]) stop(id);
+  for (const id of new Set([...runtimes.keys(), ...starting])) stop(id);
   packages.clear();
   plugins.set([]);
   panelTrees.set({});
