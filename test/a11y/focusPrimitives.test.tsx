@@ -128,3 +128,78 @@ describe('a splitter', () => {
     expect(sep().getAttribute('aria-valuenow')).toBe(String(dock.get().layout.zones.right.size));
   });
 });
+
+function Menu({ onClose, menu }: { onClose: () => void; menu: boolean }) {
+  const ref = useRef<HTMLDivElement>(null);
+  usePopover(ref, onClose);
+  const role = menu ? 'menuitem' : undefined;
+  return (
+    <div ref={ref} role={menu ? 'menu' : 'group'}>
+      <button id="first" role={role}>first</button>
+      <button id="second" role={role}>second</button>
+    </div>
+  );
+}
+
+describe('usePopover leaving by keyboard', () => {
+  const $ = (id: string) => host.querySelector<HTMLElement>('#' + id)!;
+  // Four buttons in page order: before, opener, (the popup, once open), after. Focus starts on the opener.
+  const page = (open: boolean, onClose: () => void, menu = false) => (
+    <div>
+      <button id="before">before</button>
+      <button id="opener">opener</button>
+      {open ? <Menu onClose={onClose} menu={menu} /> : null}
+      <button id="after">after</button>
+    </div>
+  );
+  const openIt = (onClose: () => void, menu = false) => {
+    act(() => root.render(page(false, onClose, menu)));
+    $('opener').focus();
+    act(() => root.render(page(true, onClose, menu)));
+  };
+
+  it('Tab from the last control closes it and goes to the control after the opener', () => {
+    const onClose = vi.fn();
+    openIt(onClose);
+    $('second').focus();
+    key($('second'), 'Tab');
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(document.activeElement).toBe($('after'));
+  });
+  it('Tab between its own controls leaves it open', () => {
+    const onClose = vi.fn();
+    openIt(onClose);
+    $('first').focus();
+    key($('first'), 'Tab');
+    expect(onClose).not.toHaveBeenCalled();
+  });
+  it('Shift+Tab from the first control goes to the control before the opener, not the opener', () => {
+    const onClose = vi.fn();
+    openIt(onClose);
+    $('first').focus();
+    key($('first'), 'Tab', { shiftKey: true });
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(document.activeElement).toBe($('before'));
+  });
+  it('a menu closes on any Tab', () => {
+    const onClose = vi.fn();
+    openIt(onClose, true);
+    $('first').focus();
+    key($('first'), 'Tab');
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(document.activeElement).toBe($('after'));
+  });
+  it('closes when focus moves to something else', () => {
+    const onClose = vi.fn();
+    openIt(onClose);
+    act(() => $('before').focus());
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(document.activeElement).toBe($('before'));
+  });
+  it('does not close when focus only moves inside it', () => {
+    const onClose = vi.fn();
+    openIt(onClose);
+    act(() => $('second').focus());
+    expect(onClose).not.toHaveBeenCalled();
+  });
+});

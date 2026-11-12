@@ -264,6 +264,10 @@ npm run build
 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/a11y.cjs [--json out.json] [--themes] [--only name,name]
 ```
 
+Popups (`popup ...`) also check that Tab and Shift+Tab out of one close it and land on another control, and so does
+focus moving elsewhere. Every scenario sets up its own state, so any `--only` subset works on its own;
+`npm run a11y:selftest` (under xvfb, after a build) runs two scenarios alone to prove it.
+
 `--themes` also runs axe's colour contrast rule in every built-in theme. `A11Y_SHOW=1` puts the window on screen
 (the virtual one, under xvfb). `AXE_CORE=<folder>` points at an axe-core install elsewhere.
 

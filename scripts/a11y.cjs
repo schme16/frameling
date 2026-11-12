@@ -103,7 +103,12 @@ async function load(win) {
   await win.webContents.executeJavaScript(axeSource + ';true');
 }
 
-const js = (win, code) => win.webContents.executeJavaScript(`(async () => { ${code} })()`);
+// A page call that never answers fails after 20 seconds instead of hanging the whole run.
+const js = (win, code) =>
+  Promise.race([
+    win.webContents.executeJavaScript(`(async () => { ${code} })()`),
+    new Promise((_, no) => setTimeout(() => no(new Error('page call timed out: ' + code.trim().slice(0, 120))), 20000)),
+  ]);
 
 async function key(win, keyCode, modifiers = []) {
   if (!win.webContents.isFocused()) win.webContents.focus();
@@ -346,41 +351,77 @@ app.whenReady().then(async () => {
     console.log(`   keys ${k.problems.length ? 'x ' + k.problems.join('; ') : 'ok'} (${k.stops} tab stops)`);
   }
 
-  // Little popups opened from a button with the keyboard: focus goes in, Escape closes, focus comes back.
+  // Little popups opened from a button with the keyboard: focus goes in, Escape closes, focus comes back, and Tab
+  // (or Shift+Tab) out of one closes it and lands on another control, not back on the opener. Every one sets up
+  // its own state (panel, document, preference), so `--only "popup name"` works alone.
+  //   open: 'enter' presses Enter on the opener, 'menu' presses Shift+F10 on it, 'context' sends a context menu event
+  //   to it (what a right-click does).
   const POPUPS = [
-    ['blend modes', 'effects', 'bouncing-logo', '.fx-blend-btn', '.tl-floating'],
-    ['layer options', 'timeline', 'bouncing-ball', '.tl-more', '.tl-floating'],
+    { n: 'blend modes', panel: 'effects', doc: 'bouncing-logo', opener: '.fx-blend-btn', pop: '.tl-floating', open: 'enter' },
+    { n: 'layer options', panel: 'timeline', doc: 'bouncing-ball', opener: '.tl-more', pop: '.tl-floating', open: 'enter' },
+    { n: 'hold for', panel: 'timeline', doc: 'bouncing-ball', opener: '.tl-hold-menu', pop: '.tl-floating', open: 'enter' },
+    { n: 'onion skin', panel: 'timeline', doc: 'bouncing-ball', opener: 'button[aria-label="Onion skin settings"]', pop: '.tl-floating', open: 'enter' },
+    { n: 'all panels', panel: null, doc: 'bouncing-ball', opener: '[data-panels-button]', pop: '.rd-picker', open: 'enter' },
+    { n: 'tool group', panel: null, doc: 'bouncing-ball', prefs: { toolRail: 'stacked' }, opener: 'button[data-tool-group]', pop: '.ui-tool-fly', open: 'menu' },
+    { n: 'swatch menu', panel: 'colors', doc: 'bouncing-ball', opener: '.cv-swatch:not(.cv-swatch-add)', pop: '.cv-menu', open: 'context' },
+    { n: 'palette colour', panel: 'palette', doc: 'blank-pixel', opener: '.px-chip', pop: '.px-menu', open: 'context' },
   ];
-  for (const [n, panel, doc, opener, pop] of POPUPS) {
-    const name = `popup ${n}`;
+  const popOpen = (pop) => js(win, `const p = document.querySelector(${JSON.stringify(pop)}); return { open: !!p, inside: !!p && p.contains(document.activeElement) }`);
+  // Open it from the opener the way a person at the keyboard would. Returns false when it did not open.
+  const openPopup = async (o) => {
+    await js(win, `const b = document.querySelector(${JSON.stringify(o.opener)}); b?.focus(); window.__a11yFrom = b; return !!b`);
+    if (o.open === 'enter') {
+      // Step off and back with the keyboard, so it has keyboard focus the way a person reaching it with Tab would.
+      await key(win, 'Tab', ['shift']);
+      await key(win, 'Tab');
+      await js(win, `if (document.activeElement !== window.__a11yFrom) window.__a11yFrom?.focus()`);
+      await key(win, 'Return');
+    } else if (o.open === 'menu') await key(win, 'F10', ['shift']);
+    else await js(win, `const b = window.__a11yFrom; const r = b.getBoundingClientRect(); b.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: r.left + 4, clientY: r.bottom - 4 }))`);
+    await sleep(300);
+    return (await popOpen(o.pop)).open;
+  };
+  for (const o of POPUPS) {
+    const name = `popup ${o.n}`;
     if (!want(name)) continue;
-    await reset(win, doc);
-    await js(win, `__frameling.showPanel(${JSON.stringify(panel)}); __frameling.run('select.all')`);
-    for (let i = 0; i < 20 && !(await js(win, `return !!document.querySelector(${JSON.stringify(opener)})`)); i++) await sleep(150);
-    const found = await js(win, `const b = document.querySelector(${JSON.stringify(opener)}); b?.focus(); window.__a11yFrom = b; return !!b`);
-    if (!found) {
+    await reset(win, o.doc);
+    await js(win, `__frameling.prefs.set(${JSON.stringify(o.prefs ?? { toolRail: 'two' })}); ${o.panel ? `__frameling.showPanel(${JSON.stringify(o.panel)});` : ''} __frameling.run('select.all')`);
+    for (let i = 0; i < 20 && !(await js(win, `return !!document.querySelector(${JSON.stringify(o.opener)})`)); i++) await sleep(150);
+    if (!(await js(win, `return !!document.querySelector(${JSON.stringify(o.opener)})`))) {
       report.keyboard.push({ name, problems: [], stops: 0, missing: true });
       console.log(`${name}: opener not found`);
       continue;
     }
-    // Step off and back with the keyboard, so it has keyboard focus the way a person reaching it with Tab would.
-    await key(win, 'Tab', ['shift']);
-    await key(win, 'Tab');
-    await js(win, `if (document.activeElement !== window.__a11yFrom) window.__a11yFrom?.focus()`);
-    await key(win, 'Return');
-    await sleep(300);
     const problems = [];
-    const open = await js(win, `const p = document.querySelector(${JSON.stringify(pop)}); return { open: !!p, inside: !!p && p.contains(document.activeElement) }`);
-    if (!open.open) problems.push('Enter did not open it');
+    if (!(await openPopup(o))) problems.push('it did not open');
     else {
-      if (!open.inside) problems.push('focus did not move into it ' + (await js(win, `return (document.activeElement?.outerHTML || '').slice(0,150) + ' ## ' + (document.querySelector('.tl-floating')?.outerHTML || '').slice(0,300)`)));
-      add(name, await axe(win, pop));
+      const open = await popOpen(o.pop);
+      if (!open.inside) problems.push('focus did not move into it ' + (await js(win, `return (document.activeElement?.outerHTML || '').slice(0,150)`)));
+      add(name, await axe(win, o.pop));
       await key(win, 'Escape');
       await sleep(200);
-      const after = await js(win, `return { open: !!document.querySelector(${JSON.stringify(pop)}), back: document.activeElement === window.__a11yFrom }`);
+      const after = await js(win, `return { open: !!document.querySelector(${JSON.stringify(o.pop)}), back: document.activeElement === window.__a11yFrom }`);
       if (after.open) problems.push('Escape did not close it');
-      else if (!after.back) problems.push('focus did not come back');
+      else if (!after.back) problems.push('focus did not come back (now on ' + (await js(win, `return document.activeElement?.tagName + '.' + document.activeElement?.className`)) + ')');
+      // Tab forward from its last control, then Shift+Tab back from its first, then focus sent elsewhere: each closes it.
+      for (const how of ['Tab', 'Shift+Tab', 'focus elsewhere']) {
+        if (!(await openPopup(o))) {
+          problems.push(`it did not open again for ${how}`);
+          continue;
+        }
+        const end = how === 'Shift+Tab' ? 'first' : 'last';
+        await js(win, `const p = document.querySelector(${JSON.stringify(o.pop)}); const t = [...p.querySelectorAll('input, button, select, textarea, [href], [tabindex]')].filter((x) => x.tabIndex >= 0 && !x.disabled && x.getClientRects().length); t[${end === 'first' ? '0' : 't.length - 1'}]?.focus()`);
+        if (how === 'focus elsewhere') await js(win, `[...document.querySelectorAll('button')].find((b) => !document.querySelector(${JSON.stringify(o.pop)}).contains(b) && b !== window.__a11yFrom && b.tabIndex >= 0 && b.getClientRects().length)?.focus()`);
+        else await key(win, 'Tab', how === 'Shift+Tab' ? ['shift'] : []);
+        await sleep(200);
+        const now = await js(win, `const a = document.activeElement; return { open: !!document.querySelector(${JSON.stringify(o.pop)}), opener: a === window.__a11yFrom, none: !a || a === document.body, where: a?.tagName + '.' + (a?.className || '') }`);
+        if (now.open) problems.push(`${how} did not close it`);
+        else if (how !== 'focus elsewhere' && now.opener) problems.push(`${how} went back to the opener`);
+        else if (now.none) problems.push(`${how} lost focus`);
+        await js(win, `__frameling.overlays?.state; document.activeElement?.blur?.()`);
+      }
     }
+    await js(win, `__frameling.prefs.set({ toolRail: 'two' })`);
     report.keyboard.push({ name, problems, stops: 0 });
     console.log(`   keys ${problems.length ? 'x ' + problems.join('; ') : 'ok'}`);
   }

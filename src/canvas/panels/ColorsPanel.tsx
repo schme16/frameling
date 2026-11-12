@@ -162,7 +162,7 @@ function SwatchMenu({ menu, onClose }: { menu: MenuState; onClose: () => void })
     if (n && n !== sw.name) store().update('Rename swatch', (d) => void (d.swatches.find((x) => x.id === sw.id)!.name = n));
   };
   return (
-    <div className="cv-menu" ref={ref} style={{ left: Math.min(menu.x, window.innerWidth - 200), top: Math.min(menu.y, window.innerHeight - 130) }} role="menu">
+    <div className="cv-menu" ref={ref} style={{ left: Math.min(menu.x, window.innerWidth - 200), top: Math.min(menu.y, window.innerHeight - 130) }} role="group" aria-label="Swatch options">
       <label className="cv-menu-field">
         <span className="cv-field-label">Name</span>
         <input
@@ -181,7 +181,6 @@ function SwatchMenu({ menu, onClose }: { menu: MenuState; onClose: () => void })
       </label>
       <button
         type="button"
-        role="menuitem"
         className="cv-menu-item cv-danger"
         onClick={() => {
           store().update('Remove swatch', (d) => void (d.swatches = d.swatches.filter((x) => x.id !== sw.id)));
