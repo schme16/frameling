@@ -12,22 +12,22 @@ const only = (id) => [js(`${F}.showPanel(${JSON.stringify(id)})`), { wait: 600 }
 /** Types text one key at a time into whatever has focus (a newline is Enter). */
 const typing = (str) => [...str].map((c) => (c === '\n' ? { eval: `document.execCommand('insertText', false, '\\n')` } : { key: c, after: 70 }));
 // Frame f (1 based) of the timeline: the centre x of its cell, at the default zoom in the Animate workspace.
-const fx = (f) => 317 + 22 * (f - 1);
+const fx = (f) => 361 + 22 * (f - 1);
 const RULER_Y = 523;
 const BALL_Y = 595;
 const LINES_Y = 595;
-const ELLIPSE = [33, 291];
+const ELLIPSE = js(`${F}.run('tools.ellipse')`);
 // Where the mouse waits out of the way (the status bar), so no brush circle or tooltip is left in a shot.
 const PARK = [640, 785];
 // A pink fill and a dark outline, so what is drawn reads clearly in both themes.
 const PAINT = { eval: `${F}.store().setUi({ color: '#1d1b26', fillColor: '#ff6f91' })` };
-const CROP = [64, 40, 856, 640];
+const CROP = [108, 40, 812, 640];
 
 // A pink title typed on the canvas with the Text tool, 110 px, ready to be styled or animated.
 const textSetup = (len) => [
   ...open('blank-vector', [js(`${F}.store().update('Length', (d) => { d.length = ${len}; d.fps = 24; d.background = '#fff6e5'; })`), js(`${F}.store().setUi({ color: '#e0447a', fillColor: '#e0447a' })`)], ['text']),
   { eval: `${F}.run('tools.text')`, after: 500 },
-  { click: [300, 150], after: 600 },
+  { click: [340, 150], after: 600 },
   ...typing('Once upon\na time...'),
   { wait: 400 },
   { key: 'Escape', after: 800 },
@@ -54,11 +54,11 @@ module.exports = [
     steps: [
       ...open('bouncing-logo'),
       { move: [700, 700] },
-      { rec: '@', crop: [64, 430, 856, 336], every: 80 },
+      { rec: '@', crop: [108, 430, 812, 336], every: 80 },
       { wait: 700 },
-      { click: [84, 592], after: 1000 },
-      { click: [757, 642], after: 900 },
-      { drag: [[757, 642], [823, 642]], steps: 30, delay: 35, after: 600 },
+      { click: [128, 592], after: 1000 },
+      { click: [801, 642], after: 900 },
+      { drag: [[801, 642], [867, 642]], steps: 30, delay: 35, after: 600 },
       { move: [600, 760], after: 1200 },
       { rec: 'stop' },
     ],
@@ -118,33 +118,33 @@ module.exports = [
       { key: ']', mods: ['alt'], after: 500 },
       { click: [fx(8), BALL_Y], after: 400 },
       { move: PARK }, { move: [645, 785], after: 1500 },
-      { shot: '@', crop: [64, 430, 850, 240] },
+      { shot: '@', crop: [108, 430, 806, 240] },
     ],
   },
   {
     name: 'empty-frame-ghost',
     steps: [
       ...open('blank-vector', [PAINT]),
-      { click: ELLIPSE },
-      { drag: [[400, 180], [470, 250]], steps: 10, delay: 20, after: 500 },
+      ELLIPSE,
+      { drag: [[440, 180], [510, 250]], steps: 10, delay: 20, after: 500 },
       { click: [fx(5), LINES_Y], after: 500 },
       { move: PARK }, { move: [645, 785], after: 1500 },
-      { shot: '@', crop: [64, 40, 856, 570] },
+      { shot: '@', crop: [108, 40, 812, 570] },
     ],
   },
   {
     name: 'drawings-carry-on',
     steps: [
       ...open('blank-vector', [PAINT]),
-      { click: ELLIPSE },
+      ELLIPSE,
       { move: PARK },
-      { rec: '@', crop: [64, 40, 856, 570], every: 80 },
+      { rec: '@', crop: [108, 40, 812, 570], every: 80 },
       { wait: 700 },
-      { drag: [[390, 170], [450, 230]], steps: 10, delay: 30, after: 600 },
+      { drag: [[430, 170], [490, 230]], steps: 10, delay: 30, after: 600 },
       { click: [fx(5), LINES_Y], after: 450 },
-      { drag: [[520, 250], [580, 310]], steps: 10, delay: 30, after: 600 },
+      { drag: [[560, 250], [620, 310]], steps: 10, delay: 30, after: 600 },
       { click: [fx(9), LINES_Y], after: 450 },
-      { drag: [[640, 160], [700, 220]], steps: 10, delay: 30, after: 600 },
+      { drag: [[680, 160], [740, 220]], steps: 10, delay: 30, after: 600 },
       { click: [fx(1), LINES_Y], after: 600 },
       { move: PARK },
       { key: 'Enter', after: 3200 },
@@ -158,26 +158,26 @@ module.exports = [
       ...open('bouncing-ball'),
       js(`${F}.run('layers.addPixel')`), { wait: 800 },
       { move: PARK }, { move: [645, 785], after: 1200 },
-      { shot: '@', crop: [64, 505, 560, 190] },
+      { shot: '@', crop: [108, 505, 560, 190] },
     ],
   },
   {
     name: 'timeline-clips-markers',
     steps: [
       ...open('hero-sprites'),
-      { click: [460, 571], after: 500 },
+      { click: [504, 571], after: 500 },
       { move: PARK }, { move: [645, 785], after: 1200 },
-      { shot: '@', crop: [64, 430, 850, 240] },
+      { shot: '@', crop: [108, 430, 806, 240] },
     ],
   },
   {
     name: 'reference-layers',
     steps: [
       ...open('bouncing-ball'),
-      { click: [140, 649], after: 500 },
+      { click: [184, 649], after: 500 },
       js(`${F}.run('layers.toggleReference')`), { wait: 600 },
       { move: PARK }, { move: [645, 785], after: 1200 },
-      { shot: '@', crop: [64, 515, 560, 160] },
+      { shot: '@', crop: [108, 515, 560, 160] },
     ],
   },
   {
@@ -185,7 +185,7 @@ module.exports = [
     steps: [
       ...open('bouncing-ball', only('effects')),
       { move: PARK },
-      { rec: '@', crop: [64, 40, 1176, 680], every: 90 },
+      { rec: '@', crop: [108, 40, 1164, 680], every: 90 },
       { wait: 800 },
       { click: [1053, 694], after: 1000 },
       { click: [1134, 751], after: 1000 },
@@ -204,7 +204,7 @@ module.exports = [
       { click: [1000, 350], after: 700 },
       { click: [1053, 321], after: 700 },
       { move: [1000, 350], after: 600 },
-      { shot: '@', crop: [64, 40, 1176, 680] },
+      { shot: '@', crop: [108, 40, 1164, 680] },
     ],
   },
   {
@@ -213,26 +213,26 @@ module.exports = [
       ...open('bouncing-ball', [], [], { 'effects.maskScope': 'all' }),
       js(`${F}.run('layers.addVector')`), { wait: 600 },
       js(`${F}.store().update('Name the mask layer', (d) => { const l = d.layers.find((x) => x.name === 'Layer 4'); if (l) l.name = 'Window'; })`),
-      { click: ELLIPSE },
-      { drag: [[430, 190], [550, 310]], steps: 12, delay: 20, after: 600 },
+      ELLIPSE,
+      { drag: [[470, 190], [590, 310]], steps: 12, delay: 20, after: 600 },
       js(`${F}.run('layers.useAsMask')`), { wait: 1000 },
       { click: [fx(8), 621], after: 500 },
       { move: PARK }, { move: [645, 785], after: 1200 },
-      { shot: '@', crop: [64, 40, 856, 700] },
+      { shot: '@', crop: [108, 40, 812, 700] },
     ],
   },
   {
     name: 'layer-folders',
     steps: [
-      ...open('bouncing-ball', [{ click: [140, 593], after: 400 }]),
+      ...open('bouncing-ball', [{ click: [184, 593], after: 400 }]),
       js(`${F}.run('layers.newFolder')`), { wait: 800 },
       js(`(() => { const s = ${F}.store(); const id = Object.keys(s.get().doc.folders || {})[0]; if (id) s.update('Name the folder', (d) => { d.folders[id].name = 'Bouncing ball'; }); return true; })()`), { wait: 500 },
-      { click: [140, 649], after: 400 },
+      { click: [184, 649], after: 400 },
       js(`${F}.run('layers.up')`), { wait: 800 },
-      { click: [140, 621], after: 500 },
+      { click: [184, 621], after: 500 },
       { log: `${F}.store().get().doc.layers.map((l) => l.name + ':' + (l.folder || '-')).join(' ')` },
       { move: PARK }, { move: [645, 785], after: 1200 },
-      { shot: '@', crop: [64, 505, 850, 230] },
+      { shot: '@', crop: [108, 505, 806, 230] },
     ],
   },
   {
@@ -240,7 +240,7 @@ module.exports = [
     steps: [
       ...open('blank-vector', [js(`${F}.store().update('Night sky', (d) => { d.background = '#1b2150'; d.length = 48; d.fps = 24; })`), ...only('particles')], ['particles']),
       { move: PARK },
-      { rec: '@', crop: [64, 40, 1176, 680], every: 90 },
+      { rec: '@', crop: [108, 40, 1164, 680], every: 90 },
       { wait: 900 },
       { click: [1114, 349], after: 900 },
       { move: PARK, after: 500 },
@@ -264,7 +264,7 @@ module.exports = [
       ...textSetup(26),
       js(`[...document.querySelectorAll('.rd-props *')].find((e) => e.children.length === 0 && e.textContent.trim() === 'Animate the letters')?.scrollIntoView({ block: 'center' })`), { wait: 600 },
       { move: PARK },
-      { rec: '@', crop: [64, 40, 1176, 680], every: 90 },
+      { rec: '@', crop: [108, 40, 1164, 680], every: 90 },
       { wait: 500 },
       { click: [960, 491], after: 700 },
       { click: [1054, 491], after: 700 },

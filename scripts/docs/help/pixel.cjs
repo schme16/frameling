@@ -86,12 +86,12 @@ const pixelWorkspace = () => js(`${F}.dock.applyWorkspace('pixel')`);
 /**
  * Screen positions on the stage once pixelDoc has fitted it (window 1280 x 800, Pixel workspace): `at(x, y)` is the
  * middle of art pixel (x, y). Tools whose bar wraps onto two rows (pencil, brush, shade, eraser, bucket) leave the
- * canvas area 20 px shorter (`tall`). The canvas area is 570 wide and reaches y = 491 in the 1280 x 800 window.
+ * canvas area 20 px shorter (`tall`). The canvas area is 526 wide and reaches y = 491 in the 1280 x 800 window.
  */
 function grid(w, h, cell, tall) {
   const top = tall ? 116 : 96;
   const height = tall ? 375 : 395;
-  const ox = 359 + (570 - w * cell) / 2;
+  const ox = 403 + (526 - w * cell) / 2;
   const oy = top + (height - h * cell) / 2;
   return { ox, oy, at: (x, y) => [Math.round(ox + (x + 0.5) * cell), Math.round(oy + (y + 0.5) * cell)] };
 }
@@ -102,7 +102,7 @@ const away = { move: [640, 762] };
 const properties = [{ click: [1232, 76] }, wait(300)];
 const center = js(`${F}.run('view.center')`);
 
-const canvasPane = [359, 47, 570, 418];
+const canvasPane = [403, 47, 526, 418];
 
 const measure = { log: `(() => { const b = (q) => { const r = document.querySelector(q)?.getBoundingClientRect(); return r && [r.x, r.y, r.width, r.height].map(Math.round); }; const u = ${F}.store().get().ui; return { cv: b('.cv-layer'), tool: u.tool, zoom: u.zoom, pan: [u.panX, u.panY] }; })()` };
 
@@ -124,7 +124,7 @@ module.exports = [
       stroke(grid(28, 24, 12, false), [[3, 17], [22, 17]], { steps: 8 }),
       away,
       wait(500),
-      { shot: '@', crop: [359, 47, 835, 418] },
+      { shot: '@', crop: [403, 47, 791, 418] },
     ],
   },
   {
@@ -189,7 +189,7 @@ module.exports = [
       js(`${F}.run('pixel.outline')`),
       away,
       wait(500),
-      { shot: '@', crop: [359, 116, 570, 375] },
+      { shot: '@', crop: [403, 116, 526, 375] },
     ],
   },
   {
@@ -238,7 +238,7 @@ module.exports = [
       center,
       away,
       wait(5000),
-      { shot: '@', crop: [120, 47, 1070, 420] },
+      { shot: '@', crop: [150, 47, 1044, 420] },
     ],
   },
   {
@@ -254,7 +254,7 @@ module.exports = [
       js(`document.querySelectorAll('.tz-tile')[3]?.click()`),
       away,
       wait(400),
-      { shot: '@', crop: [150, 47, 1044, 335] },
+      { shot: '@', crop: [194, 47, 1000, 335] },
     ],
   },
   {
@@ -360,7 +360,7 @@ module.exports = [
         wait(400),
         away,
         wait(500),
-        { rec: '@', crop: [359, 116, 570, 375], every: 70 },
+        { rec: '@', crop: [403, 116, 526, 375], every: 70 },
         wait(800),
         stroke(g, lightL, { steps: 3, delay: 40, after: 500 }),
         stroke(g, mirror(lightL), { steps: 3, delay: 40, after: 900 }),
@@ -383,7 +383,7 @@ module.exports = [
         ...pixelDoc(null, ['p']),
         away,
         wait(600),
-        { rec: '@', crop: [359, 116, 570, 375], every: 70 },
+        { rec: '@', crop: [403, 116, 526, 375], every: 70 },
         wait(900),
         key('m', ['shift']),
         wait(1300),
@@ -411,7 +411,7 @@ module.exports = [
         setUi({ color: '#ffe066' }),
         away,
         wait(700),
-        { rec: '@', crop: [359, 47, 835, 444], every: 70 },
+        { rec: '@', crop: [403, 47, 790, 444], every: 70 },
         wait(1500),
         { click: [1067, 330], after: 900 },
         away,
@@ -446,7 +446,7 @@ module.exports = [
         center,
         wait(500),
         away,
-        { rec: '@', crop: [359, 47, 835, 444], every: 70 },
+        { rec: '@', crop: [403, 47, 790, 444], every: 70 },
         wait(1000),
         stroke(g, [[7, 14], [24, 30]], { steps: 10, delay: 40, after: 1000 }),
         stroke(g, [[15, 22], [23, 22]], { steps: 8, delay: 45, after: 1000 }),
@@ -466,7 +466,7 @@ module.exports = [
     // Painting a level: a row of bricks, a block of bricks with the rectangle, and a wider pool.
     name: 'tilemaps',
     steps: (() => {
-      const at = (tx, ty) => [Math.round(183 + (tx + 0.5) * 29), Math.round(95 + (ty + 0.5) * 29)];
+      const at = (tx, ty) => [Math.round(205 + (tx + 0.5) * 29), Math.round(95 + (ty + 0.5) * 29)];
       const pick = (i) => js(`document.querySelectorAll('.tz-tile')[${i}]?.click()`);
       const drag = (pts, o = {}) => ({ drag: pts.map(([x, y]) => at(x, y)), steps: o.steps ?? 3, delay: o.delay ?? 30, after: o.after ?? 600 });
       return [
@@ -482,7 +482,7 @@ module.exports = [
         away,
         wait(800),
         { log: `(() => { const b = (q) => { const r = document.querySelector(q)?.getBoundingClientRect(); return r && [r.x, r.y, r.width, r.height].map(Math.round); }; const u = ${F}.store().get().ui; return { cv: b('.cv-layer'), pan: [u.panX, u.panY, u.zoom], tool: u.tool }; })()` },
-        { rec: '@', crop: [163, 85, 620, 368], every: 70 },
+        { rec: '@', crop: [185, 85, 620, 368], every: 70 },
         wait(1000),
         drag([[2, 5], [11, 5]], { steps: 4, delay: 35 }),
         key('r'),
@@ -513,7 +513,7 @@ module.exports = [
       wait(500),
       setUi({ color: '#ffc94a' }),
       wait(500),
-      { rec: '@', crop: [196, 50, 554, 400], every: 70 },
+      { rec: '@', crop: [218, 50, 554, 400], every: 70 },
       wait(1200),
       ...[
         [[3, 7], [5, 7]],
@@ -526,7 +526,7 @@ module.exports = [
       away,
       wait(2000),
       { rec: 'stop' },
-    ])((cx, cy) => [Math.round(417 + (cx + 0.5) * 7), Math.round(213 + (cy + 0.5) * 7)]),
+    ])((cx, cy) => [Math.round(439 + (cx + 0.5) * 7), Math.round(213 + (cy + 0.5) * 7)]),
   },
   {
     // The same renderer in a frame: a subframe has no desktop bridge, so it starts up as the browser version does.
