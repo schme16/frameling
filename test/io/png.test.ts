@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { crc32, decodePng, encodePng, makeChunk, PNG_SIGNATURE, readChunks } from '../../src/io/png';
+import { crc32, decodePng, encodePng, makeChunk, PNG_SIGNATURE, readChunks, unfilter } from '../../src/io/png';
 import { zlibSync } from 'fflate';
 
 function noise(w: number, h: number, seed = 1): Uint8ClampedArray {
@@ -108,5 +108,54 @@ describe('png', () => {
     // 8 bit RGB with a transparent colour.
     const key = decodePng(make(2, 1, 8, 2, [[1, 2, 3, 4, 5, 6]], [['tRNS', [0, 1, 0, 2, 0, 3]]]));
     expect([...key.pixels]).toEqual([1, 2, 3, 0, 4, 5, 6, 255]);
+  });
+});
+
+describe('unfilter (the fast row filter undoing)', () => {
+  // The plain version, one byte at a time, as the decoder first had it.
+  function reference(raw: Uint8Array, from: number, stride: number, bpp: number, h: number): Uint8Array {
+    const rows = new Uint8Array(stride * h);
+    const paeth = (a: number, b: number, c: number) => {
+      const p = a + b - c;
+      const pa = Math.abs(p - a), pb = Math.abs(p - b), pc = Math.abs(p - c);
+      return pa <= pb && pa <= pc ? a : pb <= pc ? b : c;
+    };
+    for (let y = 0; y < h; y++) {
+      const f = raw[from + y * (stride + 1)];
+      const src = from + y * (stride + 1) + 1;
+      const dst = y * stride;
+      const prev = dst - stride;
+      for (let i = 0; i < stride; i++) {
+        const x = raw[src + i];
+        const a = i >= bpp ? rows[dst + i - bpp] : 0;
+        const b = y > 0 ? rows[prev + i] : 0;
+        const c = y > 0 && i >= bpp ? rows[prev + i - bpp] : 0;
+        const v = f === 0 ? x : f === 1 ? x + a : f === 2 ? x + b : f === 3 ? x + ((a + b) >> 1) : x + paeth(a, b, c);
+        rows[dst + i] = v & 255;
+      }
+    }
+    return rows;
+  }
+
+  it('gives the same rows as the byte-by-byte version for every filter, pixel size and width', () => {
+    let seed = 12345;
+    const rnd = () => ((seed = (seed * 1103515245 + 12345) >>> 0) >>> 16) & 255;
+    for (const bpp of [1, 2, 3, 4, 6, 8]) {
+      for (const stride of [1, 2, 3, 4, 5, 8, 13, 64]) {
+        for (let trial = 0; trial < 6; trial++) {
+          const h = 7;
+          const offset = trial % 3;
+          const raw = new Uint8Array(offset + (stride + 1) * h);
+          for (let i = 0; i < raw.length; i++) raw[i] = rnd();
+          for (let y = 0; y < h; y++) raw[offset + y * (stride + 1)] = (y + trial) % 5;
+          expect(unfilter(raw, offset, stride, bpp, h)).toEqual(reference(raw, offset, stride, bpp, h));
+        }
+      }
+    }
+  });
+
+  it('still refuses a filter type that does not exist', () => {
+    const raw = new Uint8Array([9, 1, 2, 3, 4]);
+    expect(() => unfilter(raw, 0, 4, 4, 1)).toThrow(/damaged/);
   });
 });

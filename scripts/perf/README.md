@@ -48,6 +48,27 @@ npx vite build --config vite.web.config.ts && node scripts/perf/startup.cjs --we
 What loads later is in `src/core/lazy.ts`: the Export dialog and every exporter, the big sheets and dialogs, and most
 dock panels load on first use, and in idle time a moment after start-up so the first click doesn't wait either.
 
+## Where start-up time goes
+
+Three small tools, all for the built app (run them under xvfb, never on the desktop):
+
+- `node scripts/perf/bundle.mjs [--top 40] [--folder src/ui/]` builds the renderer into a temp folder and lists what the
+  initial chunk holds: by source folder, by module, and by "loads only because of one importer" (the bytes that would
+  leave the initial chunk if every static import of that module became a dynamic one). Start here when choosing what to make lazy.
+- `npx vite build --sourcemap --minify false && node scripts/build-main.mjs`, then
+  `xvfb-run -a -s "-screen 0 1600x1000x24" node scripts/perf/startprofile.cjs [--top 30] [--until 260]` profiles the first
+  load of a fresh launch (V8 CPU profile, mapped back to source files with the source map).
+- `STARTUP_TRACE=/tmp/st.json` in front of `electron scripts/perf/launch.cjs app` (with `STARTUP_USER_DATA=<folder>`) records a
+  Chromium trace of the first load; `node scripts/perf/tracesum.cjs /tmp/st.json` lists main-thread work from the
+  first request to the `frameling:interactive` mark (script eval, layout, style, frames). `PERF_DIST=<folder>` points
+  `launch.cjs` (and so `startup.cjs`) at another build's `dist/`, so two builds can be timed one after the other.
+
+Things that were found this way: the first layout of the page is cold (system font fallback lookups are slow on a
+machine with thousands of fonts), so a text glyph the page font lacks (the old "more" dots) cost about 20 ms until it
+became a drawn icon; the main thread waits for the whole entry script to be parsed in the background (about 20 ms per
+MB), so every 100 kB kept out of the initial chunk is worth about 2 ms. Moving to a custom scheme to get V8's code
+cache would change the page's origin and lose everyone's saved preferences (localStorage), so it is not done.
+
 ## The hidden window
 
 The window is parked off-screen (x = -4000) and can't take focus, so nothing appears on the desktop (`startup.cjs` keeps it on-screen under xvfb, where an off-screen window is never
@@ -107,3 +128,44 @@ stroke is added, look-ahead depth against the memory budget. They count work aga
 ## Pen-up cost
 
 `penup.cjs` draws a stroke on a big pixel drawing and times the release (mouse-up to the next task), with `--profile out.cpuprofile` printing the top functions of the release (self and inclusive). `xvfb-run -a -s "-screen 0 1600x1000x24" npx electron --no-sandbox scripts/perf/penup.cjs --size 4096 --laps 6`.
+
+## Everyday actions: sweep.cjs
+
+`sweep.cjs` measures what people do all day, on documents that are big enough to show hidden costs, with real mouse and
+key events and a Chrome DevTools CPU profile around each action. It prints a table of main-thread time and, under each
+result, the hottest functions. Use it when something feels slow, and after a change that touches the store, the
+timeline, a panel or file reading and writing.
+
+```bash
+npm run build
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/perf/sweep.cjs --reps 3 --top 6 --out scripts/perf/results/sweep.json
+node scripts/perf/compare-sweep.cjs before.json after.json
+```
+
+For readable function names in the profile, build an unminified renderer and point the sweep at it (the page's numbers
+barely change): `npx vite build --minify false --outDir /tmp/dev-renderer` then `PERF_RENDERER=/tmp/dev-renderer`.
+
+Documents (`--docs a,b`): `bouncing-ball`, `puppet`, `walk-cycle`, `hero-sprites` (built-in templates), `stress-vector`
+(40 layers in nested folders, 240 keys each, three shapes per key), `stress-pixel` (2000 x 2000 stage, 100 frames of an
+800 x 800 painted block), `variations` (a drawing with four variations), `stress-symbols` (60 symbols, 120 instances on the
+stage).
+
+Actions (`--actions x,y`): `brush-stroke`, `pixel-stroke`, `scrub` (drag along the timeline ruler), `play`,
+`select-click`, `select-move`, `add-layer`, `delete-layer`, `add-key`, `delete-key` (click the key, then Delete),
+`undo-redo`, `switch-artboard`, `export-dialog` (warm), `save-file` (the path Save uses), `open-file`, `autosave`,
+`workspaces`. An action only runs on a document it applies to (a pixel stroke needs a pixel layer). Each action
+leaves the document as it found it (the history is rewound), and an action that was meant to edit and did not
+fails loudly, so a harness that stopped driving the app never prints a good-looking number.
+
+Other options: `--reps N` (measured repeats, after one unmeasured warm-up; the table shows the median), `--top N`,
+`--out file.json`, `--profile-dir dir` (one `.cpuprofile` per document and action, to open in Chrome DevTools),
+`--trace` (also records a Chromium trace and prints the page's own time by kind: style recalculation, layout, paint),
+`--label`.
+
+Reading the table: `busy` is main-thread time with the page doing anything (script, layout, paint set-up, GC), idle time
+left out, summed over the whole action including the frames it makes and the work it queues for later (look-ahead
+frames). `per unit` divides by the action's units (mouse moves, undo steps, ...). Under xvfb the canvas is drawn in
+software, so `setTransform` and `drawImage` (where Chrome does the drawing) and `(program)` (native work no script
+called) are large and not the app's script; compare them between runs rather than chasing them, and look at the app's own functions.
+Numbers move 20 to 30 percent from run to run on small actions; run twice before believing a small difference.
+

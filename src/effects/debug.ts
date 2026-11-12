@@ -1,6 +1,7 @@
 // With ?debug, the renderer for scripts/e2e/effects.cjs, which checks compositing pixels in a real browser canvas.
 import { renderFrameToCanvas } from '../core/render';
 import { store } from '../core/store';
+import { nativeFilterWorks, setFilterOverride } from './filterSupport';
 import { gpuStats, setPixelBlendGpu } from './pixelBlendGL';
 import { setAddStyle } from './EffectsPanel';
 import { toggleFolderCollapsed } from './rows';
@@ -18,7 +19,7 @@ if (typeof location !== 'undefined' && new URLSearchParams(location.search).has(
       store().setUi({ frame });
       for (let i = 0; i < 6; i++) await new Promise((r) => requestAnimationFrame(() => r(null)));
       await new Promise((r) => setTimeout(r, 300));
-      const canvas = document.querySelector('canvas.cv-layer') as HTMLCanvasElement;
+      const canvas = document.querySelector('canvas.cv-layer:not(.cv-overlay):not(.ab-underlay)') as HTMLCanvasElement;
       const stage = (document.querySelector('.cv-stage') as HTMLElement).getBoundingClientRect();
       const box = canvas.getBoundingClientRect();
       const k = canvas.width / box.width;
@@ -43,6 +44,9 @@ if (typeof location !== 'undefined' && new URLSearchParams(location.search).has(
       }
       return (performance.now() - t0) / n;
     },
+    /** Forces the canvas filter path ('native'), the JS fallback ('fallback'), or detection (null); and what detection says. */
+    setFilterOverride,
+    nativeFilterWorks: () => nativeFilterWorks(document.createElement('canvas').getContext('2d')!),
     setAddStyle,
     toggleFolderCollapsed,
   };

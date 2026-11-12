@@ -6,7 +6,7 @@
  */
 import { cleanGradients } from '../core/gradient';
 import { readFolders, readLayerLook } from '../effects/io';
-import { strFromU8, strToU8, unzipSync, zipSync, type Zippable } from 'fflate';
+import { strFromU8, strToU8, unzipSync, zip, zipSync, type Zippable } from 'fflate';
 import { BONE_STRETCH, FORMAT_VERSION, LAYER_LABELS, type LayerLabel, type Cel, type Doc, type Drawing, type KeptShape, type Layer, type Shape, type Slice, type SliceKey, type SymbolDef, type Tween, type InstanceShape, type ClipFlow, type ClipTransition, type Tile, type Tileset, type Bone, type BonePose, type LayerBind, type Pose, type Rig, type SavedPose } from '../core/format';
 import { decodePng, encodePng } from './png';
 import { trimmedDrawing } from '../core/pixelBounds';
@@ -62,7 +62,8 @@ function pngFor(d: { width: number; height: number; pixels: Uint8ClampedArray })
 
 const safeName = (id: string) => id.replace(/[^A-Za-z0-9_-]/g, '_');
 
-export function saveFile(open: Doc, appVersion = '', now: Date = new Date()): Uint8Array {
+/** Everything that goes in the file, ready to be zipped (the part of saving that has to look at the document). */
+function filesToSave(open: Doc, appVersion: string, now: Date): Zippable {
   // Saved as if no symbol were open for editing.
   const closed = closedForSave(rootDoc(open));
   const doc = closed.doc;
@@ -103,7 +104,21 @@ export function saveFile(open: Doc, appVersion = '', now: Date = new Date()): Ui
   const audio = packAudio(doc, files);
   // Artboards that aren't open carry their own sounds the same way.
   files['doc.json'] = strToU8(JSON.stringify({ ...doc, drawings, audio, ...packArtboards(doc, files, diffs), ...(closed.reopen ? { variationOpen: closed.reopen } : {}) }));
-  return zipSync(files, { level: 6 });
+  return files;
+}
+
+export function saveFile(open: Doc, appVersion = '', now: Date = new Date()): Uint8Array {
+  return zipSync(filesToSave(open, appVersion, now), { level: 6 });
+}
+
+/**
+ * The same bytes as `saveFile`, with the compressing done on a worker thread so the page keeps drawing and answering
+ * the pen meanwhile (on a big drawing the sync version holds the page for a second or more). Autosave, Save and
+ * versions use this.
+ */
+export function saveFileAsync(open: Doc, appVersion = '', now: Date = new Date()): Promise<Uint8Array> {
+  const files = filesToSave(open, appVersion, now);
+  return new Promise((resolve, reject) => zip(files, { level: 6 }, (err, data) => (err ? reject(err) : resolve(data))));
 }
 
 // ---------------------------------------------------------------- migration

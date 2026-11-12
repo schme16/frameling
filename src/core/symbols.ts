@@ -310,9 +310,19 @@ export function nextKey(layer: Layer, cel: Cel): Cel | undefined {
 /** The instances of `to` that pair with those of `from`: same symbol in the same order, else just the same order. */
 export function pairInstances(from: InstanceShape[], to: InstanceShape[]): (InstanceShape | undefined)[] {
   const used = new Set<InstanceShape>();
+  // The instances of `to` by symbol, in order, and how many of each symbol `from` has used so far (one pass, not a
+  // rescan of both lists for every instance: a scene with a hundred instances made this the cost of every frame).
+  const bySymbol = new Map<string, InstanceShape[]>();
+  for (const x of to) {
+    const list = bySymbol.get(x.symbolId);
+    if (list) list.push(x);
+    else bySymbol.set(x.symbolId, [x]);
+  }
+  const seen = new Map<string, number>();
   return from.map((a, i) => {
-    const sameSym = from.slice(0, i).filter((x) => x.symbolId === a.symbolId).length;
-    const cand = to.filter((x) => x.symbolId === a.symbolId)[sameSym];
+    const sameSym = seen.get(a.symbolId) ?? 0;
+    seen.set(a.symbolId, sameSym + 1);
+    const cand = bySymbol.get(a.symbolId)?.[sameSym];
     const pick = cand && !used.has(cand) ? cand : to[i] && !used.has(to[i]) ? to[i] : undefined;
     if (pick) used.add(pick);
     return pick;

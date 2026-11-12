@@ -21,6 +21,7 @@ import { ICON_NAMES } from '../ui/icons';
 import { effectiveKeys, normaliseCombo } from '../ui/keys';
 import { createStore } from '../ui/mini';
 import { setEventSink } from './bus';
+import { plugins, type InstalledPlugin } from './state';
 import { drawDrawList, guideSnapLines, handleAt, handleCursor, type DrawList } from './drawlist';
 import { summarize, type PluginEventName } from './events';
 import { PERMISSIONS, packPlugin, PluginProblem, readPluginFiles, readPluginZip, samePermissions, type Decision, type Permission, type PluginManifest, type PluginPackage } from './manifest';
@@ -37,19 +38,7 @@ import { getPrefs } from '../ui/prefs';
 import { addPluginShape, findInst, redrawPluginShape, ShapeProblem } from './shapes';
 import type { UiNode } from './ui-schema';
 
-export type PluginStatus = 'off' | 'starting' | 'on' | 'problem';
-
-export interface InstalledPlugin {
-  manifest: PluginManifest;
-  enabled: boolean;
-  /** What the person allowed (may be less than asked: the internet and version 2's powers can be refused one by one). */
-  granted: Permission[];
-  network: string[];
-  /** The version of the plugin that the decision was made for. */
-  grantedFor?: string;
-  status: PluginStatus;
-  problem?: string;
-}
+export { plugins, type InstalledPlugin, type PluginStatus } from './state';
 
 interface Saved {
   enabled: boolean;
@@ -88,7 +77,6 @@ function writeSaved(next: Record<string, Saved>): void {
   }
 }
 
-export const plugins = createStore<InstalledPlugin[]>([]);
 /** Each plugin panel's latest tree, by full panel id. */
 export const panelTrees = createStore<Record<string, UiNode>>({});
 

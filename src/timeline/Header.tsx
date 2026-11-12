@@ -327,7 +327,7 @@ function OverflowMenu({ folded }: { folded: FoldStep[] }) {
         aria-expanded={!!pos}
         onClick={() => setPos(pos ? null : below())}
       >
-        <span aria-hidden="true">{'⋯'}</span>
+        <Icon name="more" size={16} />
         {on ? <i className="tl-overflow-dot" aria-hidden="true" /> : null}
       </button>
       {pos ? <ContextMenu x={pos.x} y={pos.y} items={items} onClose={() => setPos(null)} className="tl-more-menu" /> : null}

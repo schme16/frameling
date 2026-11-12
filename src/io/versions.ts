@@ -11,7 +11,7 @@ import { rootDoc } from '../core/symbols';
 import { library } from '../platform/library';
 import { desktop } from './desktop';
 import { askAboutUnsavedChanges } from './document';
-import { loadFile, saveFile } from './file';
+import { loadFile, saveFileAsync } from './file';
 import { notify } from './notify';
 import { thumbnailOf } from './thumb';
 import { createStore } from '../ui/mini';
@@ -81,7 +81,7 @@ export function takeVersion(opts: { name?: string; reason?: VersionMeta['reason'
   return serial(async () => {
     try {
       const doc = rootDoc(open);
-      const bytes = saveFile(doc, desktop()?.versions.app ?? '');
+      const bytes = await saveFileAsync(doc, desktop()?.versions.app ?? '');
       const id = versionFileId(doc.id, now, Math.random().toString(36).slice(2, 5));
       await library.write('versions', id, bytes);
       const meta: VersionMeta = {

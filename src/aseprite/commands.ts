@@ -1,5 +1,8 @@
 import { registerCommands } from '../core/registry';
-import { pickAndAdd, pickAndOpen, pickForPalette } from './run';
+import { lazyModule } from '../core/lazy';
+
+// The reader and the mapping are a download of their own, fetched the first time an Aseprite file is brought in.
+export const run = lazyModule(() => import('./run'));
 
 registerCommands([
   {
@@ -9,7 +12,7 @@ registerCommands([
     description: 'Open a pixel art animation made in Aseprite as a new drawing.',
     help: 'aseprite-import',
     keywords: ['aseprite', 'ase', 'sprite', 'pixel art', 'import', 'open'],
-    run: () => pickAndOpen(),
+    run: () => run().then((m) => m.pickAndOpen()),
   },
   {
     id: 'file.importAseprite',
@@ -18,7 +21,7 @@ registerCommands([
     description: 'Add an Aseprite animation to this drawing: its layers go on top.',
     help: 'aseprite-import',
     keywords: ['aseprite', 'ase', 'sprite', 'pixel art', 'import', 'add', 'bring in'],
-    run: () => pickAndAdd(),
+    run: () => run().then((m) => m.pickAndAdd()),
   },
   {
     id: 'palette.fromAseprite',
@@ -27,6 +30,6 @@ registerCommands([
     description: 'Take just the colours of an Aseprite file as this drawing\'s palette.',
     help: 'aseprite-import',
     keywords: ['aseprite', 'palette', 'colours', 'colors', 'swatches', 'import'],
-    run: () => pickForPalette(),
+    run: () => run().then((m) => m.pickForPalette()),
   },
 ]);
