@@ -44,3 +44,8 @@ export function tileModeOn(): boolean {
 export function wrap(n: number, size: number): number {
   return ((n % size) + size) % size;
 }
+
+/** The grid start handle is shown and grabs clicks only with Alt held or while the grid form is open. */
+export function gridHandleOn(alt: boolean, formOpen: boolean): boolean {
+  return alt || formOpen;
+}
