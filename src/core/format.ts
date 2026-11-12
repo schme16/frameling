@@ -502,6 +502,10 @@ export interface DocPalette {
   name: string;
   colors: Color[];
   ramps?: number[];
+  /** A name for each colour, in the same order as `colors` ('' = none). Missing = no names. */
+  names?: string[];
+  /** A name for a ramp, by the index of its first colour (0 for the first ramp), like the groups of a swatch file. */
+  rampNames?: Record<number, string>;
 }
 
 // ---------------------------------------------------------------- blend modes, effects and folders

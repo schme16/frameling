@@ -152,8 +152,10 @@ export function PalettePanel() {
       <div className="px-ramps" role="list" aria-label="Palette colours, in ramps">
         {ramps(palette).map(([s, e]) => (
           <div className="px-ramp" role="listitem" key={s}>
+            {palette.rampNames?.[s] && <span className="px-ramp-name">{palette.rampNames[s]}</span>}
             {palette.colors.slice(s, e).map((c, k) => {
               const i = s + k;
+              const nm = palette.names?.[i];
               return (
                 <button
                   key={i}
@@ -164,8 +166,8 @@ export function PalettePanel() {
                   data-on={same(c, front)}
                   aria-pressed={same(c, front)}
                   data-over={over === i}
-                  title={`${c}. Click to paint with it, double-click to change it, right-click for more.`}
-                  aria-label={`Palette colour ${i + 1}, ${c}${same(c, stroke) ? ', the stroke colour' : ''}${same(c, fill) ? ', the fill colour' : ''}`}
+                  title={`${nm ? `${nm}, ` : ''}${c}. Click to paint with it, double-click to change it, right-click for more.`}
+                  aria-label={`Palette colour ${i + 1}, ${nm ? `${nm}, ` : ''}${c}${same(c, stroke) ? ', the stroke colour' : ''}${same(c, fill) ? ', the fill colour' : ''}`}
                   onClick={() => {
                     setActiveColor(c);
                     noteColorUsed(c);
@@ -242,7 +244,7 @@ export function PalettePanel() {
             </option>
           ))}
         </select>
-        <ActionButton onClick={() => void importPalette()} title="Load a .gpl, .hex or .pal palette, or take the colours from a picture">
+        <ActionButton onClick={() => void importPalette()} title="Load a .gpl, .hex, .pal or Adobe .ase palette, or take the colours from a picture">
           Load...
         </ActionButton>
         <select

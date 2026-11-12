@@ -179,7 +179,8 @@ export function insertColor(p: DocPalette, color: string, at = p.colors.length -
   const i = Math.max(0, Math.min(p.colors.length, at + 1));
   const colors = [...p.colors.slice(0, i), color, ...p.colors.slice(i)];
   const r = (p.ramps ?? []).map((s) => (s >= i && s > 0 ? s + 1 : s));
-  return withRamps({ ...p, colors }, r);
+  const names = p.names ? [...p.names.slice(0, i), '', ...p.names.slice(i)] : undefined;
+  return withRamps(withNames(p, { colors }, names, (s) => (s >= i && s > 0 ? s + 1 : s)), r);
 }
 
 /** Removes the colour at `index`. */
@@ -187,7 +188,8 @@ export function removeColor(p: DocPalette, index: number): DocPalette {
   if (index < 0 || index >= p.colors.length) return p;
   const colors = p.colors.filter((_, i) => i !== index);
   const r = (p.ramps ?? []).map((s) => (s > index ? s - 1 : s));
-  return withRamps({ ...p, colors }, r);
+  const names = p.names?.filter((_, i) => i !== index);
+  return withRamps(withNames(p, { colors }, names, (s) => (s > index ? s - 1 : s)), r);
 }
 
 /** Moves a colour from one place to another. Ramp starts stay where they are (the colours flow through them). */
@@ -196,16 +198,26 @@ export function moveColor(p: DocPalette, from: number, to: number): DocPalette {
   const colors = [...p.colors];
   const [c] = colors.splice(from, 1);
   colors.splice(Math.max(0, Math.min(colors.length, to)), 0, c);
-  return { ...p, colors };
+  let names = p.names;
+  if (names) {
+    names = [...names];
+    while (names.length < p.colors.length) names.push('');
+    const [nm] = names.splice(from, 1);
+    names.splice(Math.max(0, Math.min(names.length, to)), 0, nm);
+  }
+  return { ...p, colors, ...(names ? { names } : {}) };
 }
 
 /** Starts a new ramp at `index` (or joins it to the ramp before, when one already starts there). */
 export function toggleRampStart(p: DocPalette, index: number): DocPalette {
   if (index <= 0 || index >= p.colors.length) return p;
   const r = new Set(p.ramps ?? []);
-  if (r.has(index)) r.delete(index);
+  const had = r.has(index);
+  if (had) r.delete(index);
   else r.add(index);
-  return withRamps(p, [...r]);
+  const out = withRamps(p, [...r]);
+  if (had && out.rampNames?.[index] !== undefined) return withRampNames(out, Object.fromEntries(Object.entries(out.rampNames).filter(([k]) => +k !== index)));
+  return out;
 }
 
 /** Builds a ramp of `steps` colours from dark to light through a base colour, for "Add ramp". */
@@ -223,6 +235,20 @@ export function makeRamp(base: string, steps = 5): string[] {
     out.push('#' + [r, g, b].map((v) => Math.max(0, Math.min(255, v)).toString(16).padStart(2, '0')).join(''));
   }
   return out;
+}
+
+/** `p` with new colours, and its names (a same-length list, or none) and ramp names moved to match. */
+function withNames(p: DocPalette, change: { colors: string[] }, names: string[] | undefined, move: (start: number) => number): DocPalette {
+  const { names: _n, rampNames: _r, ...rest } = p;
+  const out: DocPalette = { ...rest, colors: change.colors };
+  if (names?.some(Boolean)) out.names = names;
+  if (p.rampNames) out.rampNames = Object.fromEntries(Object.entries(p.rampNames).map(([k, v]) => [move(+k), v]));
+  return withRampNames(out, out.rampNames);
+}
+
+function withRampNames(p: DocPalette, names: Record<number, string> | undefined): DocPalette {
+  const { rampNames: _r, ...rest } = p;
+  return names && Object.keys(names).length ? { ...rest, rampNames: names } : rest;
 }
 
 function withRamps(p: DocPalette, r: number[]): DocPalette {

@@ -6,6 +6,8 @@ import { askAboutUnsavedChanges, registerOpener } from '../io/document';
 import { notify } from '../io/notify';
 import { pickUpload } from '../platform';
 import { setDocPalette } from '../pixel/commands';
+import { isAdobeSwatches } from '../pixel/ase-swatches';
+import { swatchesIntoPalette } from '../pixel/palette-files';
 import { asepriteDoc, asepritePieces, mergePieces, paletteColors } from './convert';
 import { AsepriteProblem, parseAseprite, paletteAt, type AseFile } from './parse';
 import { showWhatChanged } from './WhatChanged';
@@ -50,6 +52,8 @@ function report(headline: string, notes: string[]): void {
 
 /** Opens the file's bytes as a new drawing (asks about unsaved changes first). */
 export async function openAsepriteBytes(bytes: Uint8Array, path: string): Promise<boolean> {
+  // Adobe swatch files share the .ase ending: they are palettes, not drawings.
+  if (isAdobeSwatches(bytes)) return swatchesIntoPalette(bytes, path);
   const file = read(bytes);
   if (!file) return false;
   const name = stripExt(baseName(path)) || 'Aseprite drawing';
@@ -70,6 +74,7 @@ export async function openAsepriteBytes(bytes: Uint8Array, path: string): Promis
 
 /** Adds the file's layers, frames, tags and colours to the open drawing as one undo step. */
 export async function addAsepriteBytes(bytes: Uint8Array, path: string): Promise<boolean> {
+  if (isAdobeSwatches(bytes)) return swatchesIntoPalette(bytes, path);
   const file = read(bytes);
   if (!file) return false;
   if (store().nestedTag()) {
@@ -92,6 +97,7 @@ export async function addAsepriteBytes(bytes: Uint8Array, path: string): Promise
 
 /** Uses just the colours of the file's palette as the drawing's palette. */
 export async function paletteFromAsepriteBytes(bytes: Uint8Array, path: string): Promise<boolean> {
+  if (isAdobeSwatches(bytes)) return swatchesIntoPalette(bytes, path);
   const file = read(bytes);
   if (!file) return false;
   const p = paletteAt(file, 0);
@@ -140,9 +146,13 @@ export function installAsepriteDrop(target: Window = window): () => void {
     if (!files.length) return;
     e.preventDefault();
     void (async () => {
+      // Swatch files go to the palette without asking; drawings ask open or add.
+      const all = await Promise.all(files.map(async (f) => ({ f, bytes: new Uint8Array(await f.arrayBuffer()) })));
+      const drawings = all.filter((a) => !isAdobeSwatches(a.bytes));
+      for (const a of all) if (isAdobeSwatches(a.bytes)) swatchesIntoPalette(a.bytes, a.f.name);
+      if (!drawings.length) return;
       const how = await choose<DropChoice>('aseprite.drop');
-      for (const f of files) {
-        const bytes = new Uint8Array(await f.arrayBuffer());
+      for (const { f, bytes } of drawings) {
         if (how === 'add') await addAsepriteBytes(bytes, f.name);
         else if (!(await openAsepriteBytes(bytes, f.name))) break;
         // Only the first one can open as the drawing; the rest would replace it.
