@@ -228,7 +228,7 @@ describe('Godot bones: looks', () => {
   });
 
   it('says nothing for the plain puppet', () => {
-    expect(bonesNotes(makePuppet())).toEqual({ native: [], baked: [], skipped: [], fades: [] });
+    expect(bonesNotes(makePuppet())).toEqual({ native: [], baked: [], skipped: [], fades: [], tips: [] });
   });
 
   it('writes the tint shader only for a tinted symbol, one per blend', () => {
@@ -251,5 +251,26 @@ describe('Godot bones: looks', () => {
     const { top } = scene();
     const scopes: BonesScope[] = allScopes(top);
     expect(scopes.every((s) => s.textures?.length === s.parts.length)).toBe(true);
+  });
+});
+
+describe('Godot bones notes: the faded symbol renderer tip', () => {
+  it('shows only when a faded symbol is a CanvasGroup', () => {
+    const doc = bonesExtrasDoc();
+    expect(bonesNotes(doc).tips).toEqual(["Faded symbols look best with Godot's Forward+ or Mobile renderer. On Compatibility (web exports), they come out a little darker."]);
+    expect(bonesNotes(bonesExtrasDoc({ camera: CAM })).tips.length).toBe(1);
+    expect(bonesNotes(makePuppet()).tips).toEqual([]);
+  });
+
+  it('is gone when no copy fades', () => {
+    const doc = bonesExtrasDoc();
+    for (const l of doc.layers) {
+      l.opacity = 1;
+      for (const cel of l.cels) {
+        const d = doc.drawings[cel.drawingId];
+        if (d?.kind === 'vector') for (const s of d.shapes) if ('opacity' in s) (s as { opacity: number }).opacity = 1;
+      }
+    }
+    expect(bonesNotes(doc).tips).toEqual([]);
   });
 });
