@@ -239,15 +239,13 @@ module.exports = [
   {
     name: 'layer-folders',
     steps: [
-      ...open('bouncing-ball', [{ click: [184, 593], after: 400 }]),
-      js(`${F}.run('layers.newFolder')`), { wait: 800 },
-      js(`(() => { const s = ${F}.store(); const id = Object.keys(s.get().doc.folders || {})[0]; if (id) s.update('Name the folder', (d) => { d.folders[id].name = 'Bouncing ball'; }); return true; })()`), { wait: 500 },
-      { click: [184, 649], after: 400 },
-      js(`${F}.run('layers.up')`), { wait: 800 },
-      { click: [184, 621], after: 500 },
+      ...open('bouncing-ball', []),
+      // A folder inside a folder: Scene holds the ground and the Bouncing ball folder (ball and shadow).
+      js(`(() => { ${F}.store().update('Folders in folders', (d) => { d.folders = { fScene: { id: 'fScene', name: 'Scene', visible: true, opacity: 1 }, fBall: { id: 'fBall', name: 'Bouncing ball', visible: true, opacity: 1, parent: 'fScene' } }; for (const l of d.layers) l.folder = l.name === 'Ground' ? 'fScene' : 'fBall'; }); return true; })()`), { wait: 900 },
+      { click: [184, 649], after: 500 },
       { log: `${F}.store().get().doc.layers.map((l) => l.name + ':' + (l.folder || '-')).join(' ')` },
       { move: PARK }, { move: [645, 785], after: 1200 },
-      { shot: '@', crop: [108, 505, 806, 230] },
+      { shot: '@', crop: [108, 505, 806, 260] },
     ],
   },
   {

@@ -320,8 +320,11 @@
   /* One step in for each folder it sits inside. */
   padding-left: calc(var(--depth, 1) * 14px);
 }
-.tl-layer.in-folder::before,
-.tl-folder.in-folder::before {
+.tl-layer.is-detailed.in-folder {
+  padding-left: calc(7px + var(--depth, 1) * 14px);
+}
+.tl-layer.in-folder::after,
+.tl-folder.in-folder::after {
   content: '';
   position: absolute;
   left: 7px;
