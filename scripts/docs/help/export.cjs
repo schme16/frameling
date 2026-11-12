@@ -212,7 +212,8 @@ module.exports = [
   sheetEntry('export-pixi', 'hero-sprites', 'PixiJS'),
   sheetEntry('export-css', 'hero-sprites', 'Web page (CSS)', pickOption('Art size')),
   formatEntry('export-svg', 'bouncing-ball', 'file.export', 'SVG drawing', [], TALL),
-  formatEntry('export-lottie', 'bouncing-ball', 'file.exportLottie', undefined, [], TALL),
+  // dotLottie is picked so the Playback tick (Loop forever) the topic mentions is in the picture.
+  formatEntry('export-lottie', 'bouncing-ball', 'file.exportLottie', undefined, pickOption('dotLottie (.lottie)'), TALL),
   formatEntry('export-svg-animated', 'bouncing-ball', 'file.exportSvgAnimated', undefined, [], TALL),
   formatEntry('export-interactives', 'hero-sprites', 'file.exportInteractives'),
   formatEntry('export-psd', 'bouncing-ball', 'file.exportPsd', undefined, [], TALL),

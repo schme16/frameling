@@ -10,6 +10,8 @@ import { getPrefs } from '../ui/prefs';
 import { fit, hint } from './controller';
 import { ANCHORS, anchorOffset, clampSize, hasPixelArt, MAX_SIZE, NOTE_TEXT, pixelScaleStep, resizeCanvas, scaleArtwork, scaledSize, type Anchor } from './resize';
 import { Icon } from '../ui/icons';
+import { activeId, findArtboard } from '../artboards/model';
+import { reframeVariations, untouchedFramings } from '../artboards/variations';
 import './settings.css';
 
 type Mode = 'canvas' | 'scale';
@@ -123,6 +125,8 @@ function DocumentSettings({ close }: { close: () => void }) {
     const next = sizeChanged ? (mode === 'canvas' ? resizeCanvas(doc, w, h, anchor) : scaleArtwork(doc, w, h)).doc : doc;
     const label = sizeChanged ? (mode === 'canvas' ? 'Canvas size' : 'Scale artwork') : 'Page settings';
     store().update(label, (d) => {
+      const open = sizeChanged && d.artboards?.some((a) => a.variationOf) ? activeId(d as Doc) : '';
+      const keep = open && !findArtboard(d as Doc, open)?.variationOf ? untouchedFramings(d as Doc, open) : [];
       if (sizeChanged) {
         d.width = next.width;
         d.height = next.height;
@@ -135,6 +139,7 @@ function DocumentSettings({ close }: { close: () => void }) {
       d.background = background;
       if (dpiOk === 96) delete d.dpi;
       else d.dpi = dpiOk;
+      if (keep.length) reframeVariations(d as Doc, keep);
     });
     close();
     if (sizeChanged) {

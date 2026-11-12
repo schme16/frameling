@@ -1,5 +1,6 @@
-// Keeps an eye on one running plugin: a heartbeat to notice a worker stuck in a loop, and (on the desktop) a look at how
-// much memory its sandbox process holds. It is a safety net for careless plugins, not a security boundary: a plugin set on
+// Keeps an eye on one running plugin: a heartbeat to notice a worker stuck in a loop, and, only while the "Measure plugins'
+// memory and speed" preference is on and the sandbox has a process to itself, a look at how much memory it holds. The
+// heartbeat's round trip time is also reported (onPong) for the Plugins page. It is a safety net for careless plugins, not a security boundary: a plugin set on
 // mischief has other ways to be a nuisance, and the person can always turn it off. See docs/plugins.md.
 
 /** Limits, in one place so tests and the e2e check can shorten them. */
@@ -25,14 +26,16 @@ export interface WatchdogHooks {
   trip(t: Trip): void;
   /** Whether a long, honest job is running (the stuck limit is longer then). */
   busy?(): boolean;
-  /** The plugin's memory in bytes, or null where it can't be seen. */
+  /** The plugin's memory in bytes, or null where it can't be seen (then there is no cap: a limit nobody can measure is not kept). */
   memory?(): Promise<number | null>;
+  /** The worker answered a ping after `ms` milliseconds. */
+  onPong?(ms: number): void;
 }
 
 export class Watchdog {
   private timer: ReturnType<typeof setInterval> | null = null;
   private n = 0;
-  private out: { n: number; at: number } | null = null;
+  private out: { n: number; at: number; sentAt: number } | null = null;
   private lastTick = 0;
   private lastMemory = 0;
   private done = false;
@@ -56,7 +59,11 @@ export class Watchdog {
 
   /** The worker answered ping `n`. */
   pong(n: unknown): void {
-    if (this.out && n === this.out.n) this.out = null;
+    if (this.out && n === this.out.n) {
+      const ms = Math.max(0, this.now() - this.out.sentAt);
+      this.out = null;
+      this.hooks.onPong?.(ms);
+    }
   }
 
   stop(): void {
@@ -79,7 +86,7 @@ export class Watchdog {
       const limit = this.hooks.busy?.() ? WATCHDOG.busyStuckMs : WATCHDOG.stuckMs;
       if (t - this.out.at >= limit) return this.finish({ kind: 'stuck', seconds: Math.round((t - this.out.at) / 1000) });
     } else {
-      this.out = { n: ++this.n, at: t };
+      this.out = { n: ++this.n, at: t, sentAt: t };
       this.hooks.ping(this.n);
     }
     if (this.hooks.memory && t - this.lastMemory >= WATCHDOG.memoryEveryMs) {

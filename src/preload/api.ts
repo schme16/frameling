@@ -117,6 +117,10 @@ export interface FramelingApi {
   plugins?: {
     /** Bytes of memory held by each running plugin's sandbox, by plugin id (a plugin without a process of its own is left out). */
     memory(): Promise<Record<string, number>>;
+    /** Whether this run gives each plugin's sandbox its own process (only after a restart with "Measure plugins' memory and speed" on). */
+    isolated?(): Promise<boolean>;
+    /** Remembers the "Measure plugins' memory and speed" choice for the next start. */
+    setDiagnostics?(on: boolean): Promise<void>;
   };
   /** Desktop only: the fonts installed on this computer. */
   fonts?: {

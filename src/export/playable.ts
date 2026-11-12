@@ -4,7 +4,8 @@
 // README (The Interactives package).
 import { exportClipNames, flowManifest, type FlowManifest } from '../core/flow';
 import { strToU8, zipSync, type Zippable } from 'fflate';
-import { bakedPositions, clipDirection, clipPlays, hasPlaySettings } from '../core/clipPlay';
+import { bakedPositions, clipDirection, clipPlays } from '../core/clipPlay';
+import { clipRows, MAX_BAKED } from './playableClips';
 import type { Doc } from '../core/format';
 import { encodePng, type RawImage } from '../io/png';
 import { buildCells, composeSheet, layoutPacked, type Cell } from './sheet';
@@ -14,6 +15,7 @@ export const PLAYABLE_MIME = 'application/vnd.frameling.playable+zip';
 import { PLAYABLE_FORMAT } from './types';
 export { PLAYABLE_FORMAT };
 export const PLAYABLE_VERSION = 1;
+export { clipsTooLong, MAX_BAKED } from './playableClips';
 
 export interface PlayableCell {
   /** Where the picture is on the atlas, in atlas pixels. */
@@ -101,27 +103,15 @@ export function playableClips(doc: Pick<Doc, 'clips'>, range: { start: number; e
   return clipsInRange(doc, range).map(({ order: _order, ...c }) => c);
 }
 
-/** A clip that would come to more frames than this when played out stays as it is (forward), so the file stays small. */
-export const MAX_BAKED = 5000;
-
 /** The same, each with the frames it plays in (positions from its first frame) when that is not once, forward. */
 function clipsInRange(doc: Pick<Doc, 'clips'>, range: { start: number; end: number }): (Omit<PlayableClip, 'runs'> & { order?: number[] })[] {
-  const out: (Omit<PlayableClip, 'runs'> & { order?: number[] })[] = [];
-  const names = new Set<string>();
-  for (const c of doc.clips) {
-    const a = Math.max(range.start, Math.min(c.start, c.end));
-    const b = Math.min(range.end, Math.max(c.start, c.end));
-    if (a > b) continue;
-    let name = c.name.trim() || 'clip';
-    while (names.has(name)) name += '_';
-    names.add(name);
+  return clipRows(doc, range).map(({ name, c, a, b, played }) => {
     // Forever for a clip that loops: one trip round the loop, which the player then repeats.
     const len = b - a + 1;
-    const order = hasPlaySettings(c) ? bakedPositions(len, clipDirection(c), clipPlays(c)) : undefined;
-    const plain = !order || order.length > MAX_BAKED || (order.length === len && order.every((p, i) => p === i));
-    out.push({ name, start: a - range.start, end: b - range.start, loop: c.loop, ...(plain ? {} : { order }) });
-  }
-  return out;
+    const order = played !== undefined && played <= MAX_BAKED ? bakedPositions(len, clipDirection(c), clipPlays(c)) : undefined;
+    const plain = !order || (order.length === len && order.every((p, i) => p === i));
+    return { name, start: a - range.start, end: b - range.start, loop: c.loop, ...(plain ? {} : { order }) };
+  });
 }
 
 /**

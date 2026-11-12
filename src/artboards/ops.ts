@@ -14,7 +14,7 @@ import { lookingThrough } from '../camera/ops';
 import { resizeCanvas, type Anchor } from '../canvas/resize';
 import { toast } from '../ui/toast';
 import { currentChoice } from '../core/choices';
-import { changeVariation, setVariationSize } from './variations';
+import { changeVariation, reframeVariations, setVariationSize, untouchedFramings } from './variations';
 import type { FitMode } from './fit';
 import {
   activeArtboard,
@@ -298,9 +298,12 @@ export function resizeArtboard(id: Id, w: number, h: number, anchor: Anchor = 'n
     return;
   }
   const view = artboardDoc(doc, id);
+  const reframe = !!doc.artboards?.some((b) => b.variationOf === id);
   const out = w2 === size.w && h2 === size.h ? view : resizeCanvas({ ...view, drawings: doc.drawings }, w2, h2, anchor).doc;
   s.update('Artboard size', (d) => {
     ensureArtboards(d as Doc);
+    // Cuts of this one that Frameling framed (and nobody has moved the camera of) are framed again, in this same step.
+    const keep = reframe ? untouchedFramings(d as Doc, id) : [];
     const c = takeContent(out);
     const t = (d as Doc).artboards?.find((b) => b.id === id);
     if (open || !t?.content) putContent(d as Doc, c);
@@ -310,6 +313,7 @@ export function resizeArtboard(id: Id, w: number, h: number, anchor: Anchor = 'n
       t.x = nx;
       t.y = ny;
     }
+    if (keep.length) reframeVariations(d as Doc, keep);
   });
   moveView();
 }

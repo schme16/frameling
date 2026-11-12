@@ -36,7 +36,7 @@ The pixel grid shows whenever you're zoomed in far enough to see it. Turn it off
     body: `If you know Aseprite, your fingers already know most of this.
 
 - **Hold Alt and click** with the pencil, brush, eraser, bucket, shade or dither to pick up the colour you click, then let go and carry on with the same tool. Alt picks from everything you see. The line, rectangle and ellipse keep Alt for drawing from the middle.
-- **+** makes the pencil, eraser, dither or spray one pixel bigger. With **Aseprite keys**, **=** does too and **-** makes it one pixel smaller. (In Frameling's own keys **=** adds a frame and **-** removes one.)
+- **+** makes the pencil, eraser, dither or spray one pixel bigger and **_** (Shift and minus) one pixel smaller. With **Aseprite keys**, **=** and **-** do too. (In Frameling's own keys **=** adds a frame and **-** removes one.)
 - **[ and ]** paint with the colour before or after this one in the [palette](help:palette). After the last it starts again at the first.
 - **1 to 6** zoom to 100%, 200%, 400%, 800%, 1600% and 3200%. Zoom is how many screen pixels each pixel of your sprite takes, so 800% shows every art pixel 8 screen pixels wide. The number is in the status bar.
 - **Tab** puts the panels away, and brings them back. It works while the mouse is over the canvas and nothing else has the keyboard, so Tab still moves round the panels everywhere else.
@@ -45,7 +45,7 @@ The pixel grid shows whenever you're zoomed in far enough to see it. Turn it off
 
 The first time a pixel file opens, Quill asks once **"Coming from Aseprite?"** with two answers: **Use Aseprite keys** or **Use Frameling keys**. Your answer is remembered, and you can change it any time in Preferences, Behaviour (or pick a set in Keyboard).
 
-**+**, **[**, **]** and **1 to 6** work in Frameling's own keys too. **Tab** (hide the panels), **-** (a smaller brush) and Aseprite's tool letters come with **Aseprite keys**, a [shortcut set](help:shortcut-sets): Preferences, Keyboard, Shortcut set. With them the arrow keys still nudge a selection, and **Alt+Left** and **Alt+Right** step between frames. The same commands are in the [command palette](help:command-palette) (type "brush size" or "zoom"), and you can give them any key you like. **Alt** works for everyone.
+**+**, **_**, **[**, **]** and **1 to 6** work in Frameling's own keys too. **Tab** (hide the panels), **-** (a smaller brush in that set) and Aseprite's tool letters come with **Aseprite keys**, a [shortcut set](help:shortcut-sets): Preferences, Keyboard, Shortcut set. With them the arrow keys still nudge a selection, and **Alt+Left** and **Alt+Right** step between frames. The same commands are in the [command palette](help:command-palette) (type "brush size" or "zoom"), and you can give them any key you like. **Alt** works for everyone.
 
 The status bar and the [Artboards](help:artboards) panel use pixel units in the Pixel workspace: your sprite is **32 x 32**, not the size of the page it sits on.`,
   },

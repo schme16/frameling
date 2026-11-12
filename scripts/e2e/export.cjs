@@ -1805,6 +1805,9 @@ async function godotBonesBounceSection(native) {
 var ap: AnimationPlayer
 var times := []
 var n := 0
+var steady := 0
+var since := 0
+var started := false
 func _initialize():
 	var s = load("res://sprites/${scene}").instantiate()
 	root.add_child(s)
@@ -1813,8 +1816,20 @@ func _initialize():
 	for a in ["swing", "twice"]:
 		var an = ap.get_animation(a)
 		print("INFO " + a + " " + str(an.loop_mode) + " " + str(an.length))
-	ap.play("swing")
-func _process(_d):
+func _process(d):
+	# Two engine ticks per picture, looked at in the middle of each one. The first ticks of an engine run can come with other
+	# time steps than --fixed-fps asks for (4.8 beta shows 1/30, 1/20, 1/30 first), so playing starts once the step has been
+	# right a few ticks in a row, and the position is read on every second tick, never on a picture's edge.
+	if steady < 4:
+		steady = steady + 1 if absf(d - 1.0 / 24.0) < 0.0000001 else 0
+		return false
+	if not started:
+		started = true
+		ap.play("swing")
+		return false
+	since += 1
+	if since % 2 == 0:
+		return false
 	times.append(snappedf(ap.current_animation_position, 0.0001))
 	n += 1
 	if n == 40:
@@ -1824,7 +1839,7 @@ func _process(_d):
 `,
     );
     sh(GODOT, ['--headless', '--path', proj, '--import'], { timeout: 120000 });
-    const play = sh(GODOT, ['--headless', '--fixed-fps', String(12), '--path', proj, '--script', 'bounce.gd'], { timeout: 120000 });
+    const play = sh(GODOT, ['--headless', '--fixed-fps', String(24), '--path', proj, '--script', 'bounce.gd'], { timeout: 120000 });
     const info = Object.fromEntries(play.out.split('\n').filter((l) => l.startsWith('INFO ')).map((l) => l.split(' ').slice(1)).map(([a, m, len]) => [a, { mode: Number(m), length: Number(len) }]));
     const timesLine = play.out.split('\n').find((l) => l.startsWith('TIMES '));
     if (!check(info.swing && timesLine, `Godot did not report the animations: ${(play.out + play.err).slice(0, 300)}`)) return;
@@ -1867,7 +1882,8 @@ func _init():
 	var s = load("res://sprites/${scene}").instantiate()
 	root.add_child(s)
 	var ap: AnimationPlayer = s.get_node("AnimationPlayer")
-	# Autoplay starts on the first frame; let it, so it doesn't restart the clip after we seek.
+	# Autoplay starts on the first frame; let it, so it doesn't restart the clip after we seek. Every picture is reached by
+	# seeking to an exact time, not by waiting for ticks, so the steady-tick wait the play scripts use is not needed here.
 	await process_frame
 	print("ANIMS " + ",".join(ap.get_animation_list()))
 	# The scene tree as Godot loaded it: path, class, own visibility, whether it shows, and its fade.

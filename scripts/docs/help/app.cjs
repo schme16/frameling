@@ -127,7 +127,8 @@ const entries = [
   // Preferences, Features.
   {
     name: 'features',
-    steps: [template('bouncing-ball'), prefsPage('features'), wait(1800), ...shotOf('.ui-prefs', null, 10)],
+    size: [1280, 1000], // the list now has Camera, Particles, Text and Godot exports
+    steps: [template('bouncing-ball'), prefsPage('features'), wait(1800), js(`document.querySelector('.ui-prefs').style.height = '880px'; true`), wait(300), ...shotOf('.ui-prefs', null, 10)],
   },
 
   // The "Holding a drawing longer" question (the first time a hold is asked for).

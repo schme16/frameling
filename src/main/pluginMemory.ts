@@ -1,9 +1,35 @@
-// How much memory each plugin's sandbox holds. Every plugin runs in a hidden frame whose address carries `?plugin=<id>`,
-// and Chromium gives a sandboxed frame like that its own process, so the process's size is the plugin's size. Where
+// How much memory each plugin's sandbox holds, when it is being measured. Every plugin runs in a hidden frame whose
+// address carries `?plugin=<id>`. Normally all of them share one process (cheap). With "Measure plugins' memory and
+// speed" on, the next start gives each its own (about 90 MB each), so the process's size is the plugin's size. Where
 // two frames (or a frame and the app itself) share a process, nothing is said, since the number would not be one plugin's.
+import fs from 'node:fs';
+import path from 'node:path';
 
-/** Chromium's switch that gives every sandboxed frame its own process (by default they all share one). Set before the app is ready. */
+/** Chromium's switch that gives every sandboxed frame its own process (by default they all share one). Set before the app is ready, and only while measuring is on. */
 export const PLUGIN_PROCESS_FEATURE = 'IsolateSandboxedIframes:grouping/per-document';
+
+/** An empty file in the app's data folder. Its presence at start means "Measure plugins' memory and speed" was on, so sandboxes get processes of their own. */
+export const DIAGNOSTICS_FLAG = 'plugin-diagnostics.flag';
+
+export function isolationWanted(dir: string): boolean {
+  try {
+    return fs.existsSync(path.join(dir, DIAGNOSTICS_FLAG));
+  } catch {
+    return false;
+  }
+}
+
+export function wantIsolation(dir: string, on: boolean): void {
+  try {
+    const file = path.join(dir, DIAGNOSTICS_FLAG);
+    if (on) {
+      fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(file, '');
+    } else fs.rmSync(file, { force: true });
+  } catch {
+    // Then the choice lasts only until the next start; measuring still works without the memory part.
+  }
+}
 
 export interface FrameInfo {
   url: string;

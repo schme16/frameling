@@ -205,10 +205,12 @@ module.exports = [
   },
   {
     name: 'palette-panel',
+    size: [1280, 1000], // the panel grew a From a picture button
     steps: [...pixelDoc(slimeRows(), ['p']), away, wait(300), { shot: '@', el: '.px-palette', pad: 0 }],
   },
   {
     name: 'palette-lock',
+    size: [1280, 1000],
     steps: [...pixelDoc(slimeRows(), ['p']), js(`${F}.run('pixel.paletteLock')`), away, wait(500), { shot: '@', el: '.px-palette', pad: 0 }],
   },
   {
@@ -311,6 +313,8 @@ module.exports = [
       { click: [161, 22], after: 600 },
       away,
       wait(500),
+      { shot: 'kick', crop: [0, 0, 8, 8] }, // the hidden window only paints on a shot, so let the menu's pop-in finish
+      wait(600),
       { shot: '@', el: '[role=menu]', pad: 6 },
     ],
   },

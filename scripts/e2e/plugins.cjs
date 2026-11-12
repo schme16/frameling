@@ -2,7 +2,8 @@
 // storage, the frame has no way into the app, and both example plugins install, run, edit with undo, and export.
 //
 //   npm run build
-//   xvfb-run -a npx electron scripts/e2e/plugins.cjs
+//   xvfb-run -a npx electron scripts/e2e/plugins.cjs                    (measuring off: the default; plugins share a process)
+//   PLUGINS_DIAG=1 xvfb-run -a npx electron scripts/e2e/plugins.cjs     (measuring on: a process per plugin, memory and speed shown)
 //
 // The web build: `npm run build:web && npm run preview:web`, then PLUGINS_URL=http://localhost:5198/ the same command
 // (no desktop bridge: the page builds its own, and plugins are kept in IndexedDB).
@@ -35,6 +36,8 @@ onmessage = async (e) => {
   try { await new Promise((ok, bad) => { const q = indexedDB.open('x'); q.onsuccess = ok; q.onerror = () => bad(q.error); }); r.indexedDB = 'opened'; } catch (err) { r.indexedDB = 'blocked'; }
   r.document = typeof document;
   r.parent = typeof parent;
+  r.crossOriginIsolated = self.crossOriginIsolated;
+  r.uaMemory = typeof performance.measureUserAgentSpecificMemory;
   await new Promise((ok) => setTimeout(ok, 300));
   r.violations = violations;
   port.postMessage(r);
@@ -43,7 +46,7 @@ onmessage = async (e) => {
 const bundled = require('esbuild').buildSync({ entryPoints: [path.join(root, 'src/main/pluginMemory.ts')], bundle: true, format: 'cjs', platform: 'node', write: false }).outputFiles[0].text;
 const { pluginMemory, PLUGIN_PROCESS_FEATURE } = (() => {
   const m = { exports: {} };
-  new Function('module', 'exports', bundled)(m, m.exports);
+  new Function('module', 'exports', 'require', bundled)(m, m.exports, require);
   return m.exports;
 })();
 
@@ -53,8 +56,11 @@ const check = (name, ok, got) => {
   if (!ok) failures.push(name);
 };
 
-// The same switch the real app sets (src/main/main.ts), so each plugin's sandbox has a process of its own.
-app.commandLine.appendSwitch('enable-features', PLUGIN_PROCESS_FEATURE);
+// "Measure plugins' memory and speed": on, the real app starts with this switch (src/main/main.ts) so each plugin's sandbox
+// has a process of its own. Off (the default), nothing is set and the plugins share one.
+const DIAG = !!process.env.PLUGINS_DIAG;
+if (DIAG) app.commandLine.appendSwitch('enable-features', PLUGIN_PROCESS_FEATURE);
+console.log(`measuring ${DIAG ? 'on' : 'off'}`);
 
 app.whenReady().then(async () => {
   for (const ch of ['app:launchFile', 'autosave:read', 'autosave:readKept', 'library:read']) ipcMain.handle(ch, () => null);
@@ -66,6 +72,8 @@ app.whenReady().then(async () => {
     const frames = theWindow.webContents.mainFrame.framesInSubtree.map((f) => ({ url: f.url, pid: f.osProcessId }));
     return pluginMemory(frames, app.getAppMetrics().map((p) => ({ pid: p.pid, workingSetKb: p.memory.workingSetSize })), process.pid);
   });
+  ipcMain.handle('plugins:isolated', () => DIAG);
+  ipcMain.handle('plugins:setDiagnostics', () => undefined);
   for (const ch of ['app:documentState', 'app:keepUnsavedDone', 'app:saveBeforeCloseDone']) ipcMain.on(ch, () => {});
   const web = process.env.PLUGINS_URL;
   const win = new BrowserWindow({ show: false, width: 1200, height: 800, webPreferences: { ...(web ? {} : { preload: path.join(root, 'dist/preload/preload.cjs') }), contextIsolation: true, sandbox: true, backgroundThrottling: false } });
@@ -78,6 +86,13 @@ app.whenReady().then(async () => {
   else await win.loadFile(path.join(root, 'dist/renderer/index.html'), { query: { debug: '1' } });
   await sleep(800);
   const js = (code) => win.webContents.executeJavaScript(code);
+  {
+    // The preference is saved in the page (and kept between runs); set it for this mode and reload so the app starts with it.
+    await js(`localStorage.setItem('frameling.prefs.v1', JSON.stringify({ pluginDiagnostics: ${DIAG} })); true`);
+    if (web) await win.loadURL(`${web}${web.includes('?') ? '&' : '?'}debug=1`);
+    else await win.loadFile(path.join(root, 'dist/renderer/index.html'), { query: { debug: '1' } });
+    await sleep(800);
+  }
 
   // ------------------------------------------------ the sandbox page itself
   for (const [page, net] of [['plugin-host.html', []], ['plugin-host-net.html', ['https://allowed.example.com']]]) {
@@ -105,6 +120,8 @@ app.whenReady().then(async () => {
     check(`${tag}: importScripts from the web blocked`, r.importScripts === 'blocked', r.importScripts);
     check(`${tag}: no storage`, r.indexedDB === 'blocked', r.indexedDB);
     check(`${tag}: no DOM, no parent in the worker`, r.document === 'undefined' && r.parent === 'undefined', r);
+    // Why memory is not measured inside the worker: the sandbox page cannot be cross-origin isolated, so the browser's own measuring call is not there.
+    check(`${tag}: not cross-origin isolated, no in-worker memory measuring`, r.crossOriginIsolated === false && r.uaMemory === 'undefined', { coi: r.crossOriginIsolated, uaMemory: r.uaMemory });
     check(`${tag}: the policy reported the blocked requests`, Array.isArray(r.violations) && r.violations.some((v) => String(v).includes('example.com')), r.violations);
     if (net.length) check(`${tag}: the listed site is not blocked by the policy`, !r.violations.some((v) => String(v).includes('allowed.example.com')), r.violations);
     else check(`${tag}: even the listed site is blocked`, r.violations.some((v) => String(v).includes('allowed.example.com')), r.violations);
@@ -232,6 +249,10 @@ app.whenReady().then(async () => {
     return window.__framelingPlugins.list().filter((p) => p.problem).length;
   })()`);
   check('events reach plugins without trouble', evented === 0, evented);
+  {
+    const m = app.getAppMetrics().filter((p) => p.type === 'Tab' || p.type === 'Renderer');
+    console.log(`info: ${m.length} renderer processes, ${Math.round(m.reduce((a, p) => a + p.memory.workingSetSize, 0) / 1024)} MB held, with all the example plugins running`);
+  }
   // ------------------------------------------------ the watchdog: a frozen plugin and a memory hog, with short limits
   await install('runaway-test');
   await js(`Object.assign(window.__framelingPlugins.watchdog, { pingEveryMs: 200, stuckMs: 2500, busyStuckMs: 3000, memoryEveryMs: 300, memoryCapBytes: 450 * 1024 * 1024 }); true`);
@@ -250,11 +271,30 @@ app.whenReady().then(async () => {
   check('turning it back on works', (await status()).status === 'on', await status());
   await js(`window.__frameling.run('plugin.runaway-test.hog'); true`);
   st = await status();
-  for (let i = 0; i < 60 && st.status !== 'off'; i++) {
-    await sleep(250);
+  if (DIAG) {
+    for (let i = 0; i < 60 && st.status !== 'off'; i++) {
+      await sleep(250);
+      st = await status();
+    }
+    check('measuring on: a plugin using lots of memory is turned off', st.status === 'off' && /lot of memory/.test(st.problem || ''), st);
+  } else {
+    // Nobody can measure a plugin's own memory without its own process, so there is no cap: it keeps running.
+    await sleep(6000);
     st = await status();
+    check('measuring off: no memory cap, the plugin is left on', st.status === 'on' && st.enabled === true, st);
+    check('measuring off: nothing is measured', (await js(`window.__framelingPlugins.diag().then((d) => Object.keys(d).length)`)) === 0);
+    const mem = await js(`window.frameling.plugins.memory()`);
+    check('measuring off: no plugin has a process to itself', Object.keys(mem).length === 0, mem);
   }
-  check('a plugin using lots of memory is turned off', st.status === 'off' && /lot of memory/.test(st.problem || ''), st);
+  if (DIAG) {
+    // The numbers the Plugins page shows, for a plugin that behaves.
+    const d = await js(`window.__framelingPlugins.diag()`);
+    const mine = d['flip-every-other-frame'];
+    check('measuring on: a plugin has numbers (speed and memory)', !!mine && mine.latencyMs !== null && typeof mine.memoryBytes === 'number' && mine.memoryBytes > 20 * 1024 * 1024, d);
+    const mem = await js(`window.frameling.plugins.memory()`);
+    check('measuring on: a plugin has a process to itself', typeof mem['flip-every-other-frame'] === 'number', mem);
+    console.log('numbers', JSON.stringify(d));
+  }
   const pluginErrors = errors.filter((e) => /plugin/i.test(e));
   check('no plugin errors in the console', pluginErrors.length === 0, pluginErrors);
 
