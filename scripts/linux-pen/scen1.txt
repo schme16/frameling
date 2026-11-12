@@ -1,0 +1,47 @@
+prox pen
+move 8000 5000
+sleep 0.2
+move 8500 5200
+sleep 0.2
+p 3000
+touch 1
+move 9000 5400
+sleep 0.2
+p 6000
+move 9500 5600
+sleep 0.2
+p 0
+touch 0
+sleep 0.2
+s1 1
+sleep 0.2
+move 9600 5600
+sleep 0.2
+s1 0
+sleep 0.2
+s2 1
+sleep 0.2
+move 9700 5600
+sleep 0.2
+s2 0
+sleep 0.2
+prox off
+sleep 0.5
+prox rubber
+move 12000 8000
+sleep 0.2
+move 12400 8100
+sleep 0.2
+p 3000
+touch 1
+move 12800 8200
+sleep 0.2
+move 13000 8300
+sleep 0.2
+p 0
+touch 0
+sleep 0.2
+move 13100 8300
+sleep 0.2
+prox off
+sleep 0.5

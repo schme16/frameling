@@ -21,6 +21,7 @@ import { setWeightsLook } from '../rig/weightsTool';
 import { setShowQuill } from '../ui/mascot/goodbye';
 import { closeSheet, openHelp, openPrefs, overlays } from '../ui/overlays';
 import { getPen, resetPen, setPenDevice, setToolPen, setTouch } from '../tablet/settings';
+import { penTools } from '../tablet/tool';
 import { showPanel } from '../ui/dock';
 import * as dockApi from '../ui/dock';
 import * as dockFloats from '../ui/DockFloats';
@@ -82,7 +83,7 @@ if (new URLSearchParams(location.search).has('debug')) {
     recovery,
     overlays: { openHelp, openPrefs, closeSheet, state: overlays },
     // Pen and tablet settings, for the pen check (scripts/e2e/pen.cjs).
-    pen: { get: getPen, setTool: setToolPen, setDevice: setPenDevice, setTouch, reset: resetPen },
+    pen: { get: getPen, setTool: setToolPen, setDevice: setPenDevice, setTouch, reset: resetPen, forgetTools: () => penTools.reset() },
     // The accessibility check (scripts/a11y.cjs) opens every panel and picks every tool.
     panels: () => allPanels().map((p) => p.id),
     tools: () => allTools().map((t) => t.id),

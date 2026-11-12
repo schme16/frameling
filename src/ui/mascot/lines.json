@@ -294,6 +294,11 @@
     "where": "Pen check, step 4 (twist or barrel rotation): Quill's instruction."
   },
   "pen.check.step.eraser": { "text": "Flip it over! Touch the pad with the eraser end and drag. No eraser end? Skip this one.", "where": "Pen check, step 5 (eraser end): Quill's instruction." },
+  "pen.check.eraser.hidden": {
+    "text": "Hmm, I can't tell the eraser end from the tip here. Some Linux setups hand it over as a normal pen. If yours has one, tap the button below, and you can still make a barrel button erase in Pen and tablet.",
+    "where": "Pen check, eraser step on X11: after a few seconds with no eraser seen."
+  },
+  "pen.check.eraser.noted": { "text": "Noted, I'll put that in the report!", "where": "Pen check: after My pen's eraser end doesn't show up here." },
   "pen.check.step.barrel1": { "text": "Hold the button nearest the tip, and draw a little line with it held down.", "where": "Pen check, step 6 (first barrel button): Quill's instruction." },
   "pen.check.step.barrel2": { "text": "Now the other button, if there is one. Hold it down and draw a little line.", "where": "Pen check, step 7 (second barrel button): Quill's instruction." },
   "pen.check.step.scribble": {
