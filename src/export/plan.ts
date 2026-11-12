@@ -2,7 +2,7 @@
 // Pure functions on the document, so they are easy to test.
 import type { Doc } from '../core/format';
 import { inOutRange } from '../timeline/inout';
-import { bakedPositions, clipDirection, clipPlays, hasPlaySettings } from '../core/clipPlay';
+import { bakedPositions, clipDirection, clipPlays, hasPlaySettings, isBackAndForth, stillPositions } from '../core/clipPlay';
 import { aiFramesOf, DEFAULT_SHEET, formatInfo, oneFrameOnly, type ExportSettings, type FormatId } from './types';
 
 export const MAX_SIDE = 8192;
@@ -137,12 +137,23 @@ export function slug(name: string, fallback = 'sprites'): string {
 /** Formats that show the pictures one after another (or page after page) with no direction or repeat count of their own. */
 const BAKED_FORMATS: FormatId[] = ['gif', 'apng', 'mp4', 'webm', 'prores', 'svganim', 'pngseq', 'pdf', 'ai'];
 
-/** The order a clip's frames go in for such a format, or undefined when it just plays through once, forward. */
+/** Formats that are pictures to look at, not to play: each frame once, in the order the clip starts, whatever its repeat. */
+export const STILLS_FORMATS: FormatId[] = ['pngseq', 'pdf', 'ai'];
+
+/**
+ * The order a clip's frames go in for such a format, or undefined when it just plays through once, forward. Stills
+ * (PNG sequence, PDF, Illustrator pages) keep the direction but hold each frame once, however often the clip repeats.
+ */
 export function clipPlayOrder(doc: Doc, s: Pick<ExportSettings, 'range' | 'clipId' | 'format' | 'aiFrames'>, range: FrameRange): number[] | undefined {
   if (s.range !== 'clip' || !BAKED_FORMATS.includes(s.format) || oneFrameOnly(s, formatInfo(s.format).animated)) return undefined;
   const clip = doc.clips.find((c) => c.id === s.clipId);
   if (!clip || !hasPlaySettings(clip)) return undefined;
-  return bakedPositions(range.end - range.start + 1, clipDirection(clip), clipPlays(clip));
+  const len = range.end - range.start + 1;
+  if (STILLS_FORMATS.includes(s.format)) {
+    const once = stillPositions(len, clipDirection(clip));
+    return once.every((p, i) => p === i) ? undefined : once;
+  }
+  return bakedPositions(len, clipDirection(clip), clipPlays(clip));
 }
 
 /** Formats with a loop setting of their own. */
@@ -163,7 +174,7 @@ export function clipLoopWords(doc: Doc, s: Pick<ExportSettings, 'range' | 'clipI
   const clip = s.range === 'clip' && LOOP_FORMATS.includes(s.format) ? doc.clips.find((c) => c.id === s.clipId) : undefined;
   if (!clip) return null;
   const n = clipPlays(clip);
-  return { name: clip.name, plays: clip.loop ? 'loops for ever' : n > 1 ? `plays ${n} times` : 'plays once' };
+  return { name: clip.name, plays: clip.loop ? 'loops for ever' : n > 1 ? `plays ${n} ${isBackAndForth(clipDirection(clip)) ? 'ways' : 'times'}` : 'plays once' };
 }
 
 /** The document frame each picture (or page) of the export shows, in the order the file has them. */
