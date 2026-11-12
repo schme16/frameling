@@ -252,27 +252,40 @@ function LightTableChip() {
   );
 }
 
-// On a narrow timeline the buttons that don't fit fold into this menu (CSS decides which show).
-const OVERFLOW: { id: string; fold: 1 | 2 }[] = [
-  { id: 'timeline.togglePingPong', fold: 1 },
-  { id: 'timeline.newKey', fold: 1 },
-  { id: 'timeline.duplicateKey', fold: 1 },
-  { id: 'timeline.insertFrame', fold: 1 },
-  { id: 'timeline.removeFrame', fold: 1 },
-  { id: 'timeline.hold1', fold: 2 },
-  { id: 'timeline.hold2', fold: 2 },
-  { id: 'timeline.hold3', fold: 2 },
-  { id: 'timeline.hold4', fold: 2 },
-  { id: 'audio.import', fold: 1 },
-  { id: 'timeline.toggleOnion', fold: 2 },
-  { id: 'view.cleanTimeline', fold: 1 },
-  { id: 'timeline.zoomFit', fold: 1 },
+// On a narrow timeline the buttons that don't fit fold into this menu, the rarely used ones first (CSS decides which
+// show; each tier has a class on the header: tl-rare, tl-fold-1 and tl-fold-2).
+type Fold = 'rare' | 'edit' | 'hold';
+const OVERFLOW: { id: string; fold: Fold }[] = [
+  { id: 'timeline.togglePingPong', fold: 'rare' },
+  { id: 'audio.import', fold: 'rare' },
+  { id: 'view.cleanTimeline', fold: 'rare' },
+  { id: 'timeline.zoomFit', fold: 'rare' },
+  { id: 'timeline.newKey', fold: 'edit' },
+  { id: 'timeline.duplicateKey', fold: 'edit' },
+  { id: 'timeline.insertFrame', fold: 'edit' },
+  { id: 'timeline.removeFrame', fold: 'edit' },
+  { id: 'timeline.hold1', fold: 'hold' },
+  { id: 'timeline.hold2', fold: 'hold' },
+  { id: 'timeline.hold3', fold: 'hold' },
+  { id: 'timeline.hold4', fold: 'hold' },
+  { id: 'timeline.toggleOnion', fold: 'hold' },
 ];
+const FOLD_CLASS: Record<Fold, string> = { rare: '.tl-rare', edit: '.tl-fold-1', hold: '.tl-fold-2' };
+
+/** The tiers whose buttons are folded away right now. */
+function foldedTiers(header: Element): Set<Fold> {
+  const out = new Set<Fold>();
+  for (const f of Object.keys(FOLD_CLASS) as Fold[]) {
+    const el = header.querySelector(FOLD_CLASS[f]);
+    if (el && getComputedStyle(el).display === 'none') out.add(f);
+  }
+  return out;
+}
 
 function OverflowMenu() {
-  const [pos, setPos] = useState<{ x: number; y: number; deep: boolean } | null>(null);
+  const [pos, setPos] = useState<{ x: number; y: number; folded: Set<Fold> } | null>(null);
   const items = (): MenuItem[] =>
-    OVERFLOW.filter((o) => o.fold === 1 || pos?.deep)
+    OVERFLOW.filter((o) => pos?.folded.has(o.fold))
       .map((o) => getCommand(o.id))
       .filter((c): c is NonNullable<typeof c> => !!c)
       .map((c) => ({ label: c.label, hint: keyHint(c.id), checked: c.checked ? c.checked(store().get()) : undefined, onClick: () => runCmd(c.id) }));
@@ -287,9 +300,8 @@ function OverflowMenu() {
       aria-expanded={!!pos}
       onClick={(e) => {
         const r = e.currentTarget.getBoundingClientRect();
-        // When the hold and onion buttons are folded away too, they join the menu.
-        const deep = getComputedStyle(e.currentTarget.parentElement!.querySelector('.tl-fold-2') ?? e.currentTarget).display === 'none';
-        setPos(pos ? null : { x: r.left, y: r.bottom + 4, deep });
+        // Only what is folded away right now is in the menu: what still shows on the header isn't listed twice.
+        setPos(pos ? null : { x: r.left, y: r.bottom + 4, folded: foldedTiers(e.currentTarget.parentElement!) });
       }}
     >
       <span aria-hidden="true">{'⋯'}</span>
@@ -316,7 +328,7 @@ export function Header() {
         <Btn id="timeline.nextFrame" icon="next" title="Forward one frame" />
         <Btn id="timeline.lastFrame" icon="last" title="Go to the last frame" />
         <Btn id="timeline.toggleLoop" icon="loop" title="Loop: start again at the end" pressed={loop} />
-        <Btn id="timeline.togglePingPong" icon="pingpong" title="Play back and forth (ping-pong)" pressed={pingPong} className="tl-fold-1" />
+        <Btn id="timeline.togglePingPong" icon="pingpong" title="Play back and forth (ping-pong)" pressed={pingPong} className="tl-rare" />
       </span>
       <Counter />
       <FpsField />
@@ -332,7 +344,7 @@ export function Header() {
       <span className="tl-fold-2">
         <HoldButtons />
       </span>
-      <span className="tl-fold-1">
+      <span className="tl-rare">
         <SoundButton />
       </span>
       <span className="tl-sep" aria-hidden="true" />
@@ -341,7 +353,7 @@ export function Header() {
       </span>
       <span className="tl-grow" />
       <OverflowMenu />
-      <Btn id="view.cleanTimeline" icon="sliders" title="Clean timeline: plain blocks, no property rows" pressed={clean} className="tl-btn-mini tl-look-toggle tl-fold-1" />
+      <Btn id="view.cleanTimeline" icon="sliders" title="Clean timeline: plain blocks, no property rows" pressed={clean} className="tl-btn-mini tl-look-toggle tl-rare" />
       <label className="tl-zoom" title="Zoom the timeline (or hold Ctrl and scroll)">
         <button type="button" className="tl-btn tl-btn-mini" title={tip('timeline.zoomFit', 'Fit the whole animation in view')} aria-label="Fit the whole animation in view" onClick={() => runCmd('timeline.zoomFit')}>
           <Icon name="zoom" size={14} />
