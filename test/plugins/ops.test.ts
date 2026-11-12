@@ -112,3 +112,15 @@ describe('plugin ops', () => {
     expect(s.get().doc.clips.length).toBe(before);
   });
 });
+
+describe('plugin ops: frame numbers are checked after rounding', () => {
+  it('refuses a marker or a clip that would round to a frame past the end', () => {
+    const s = setup();
+    const n = s.get().doc.length;
+    expect(() => edit(s, [{ op: 'addMarker', frame: n - 0.4, name: 'x' }])).toThrow(OpProblem);
+    expect(() => edit(s, [{ op: 'addClip', name: 'x', start: 0, end: n - 0.4 }])).toThrow(OpProblem);
+    expect(() => edit(s, [{ op: 'addMarker', frame: -0.4, name: 'x' }])).not.toThrow();
+    expect(s.get().doc.markers.at(-1)?.frame).toBe(0);
+    expect(s.get().doc.markers.every((m) => m.frame < n)).toBe(true);
+  });
+});
