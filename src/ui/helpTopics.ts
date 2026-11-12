@@ -442,7 +442,7 @@ Use **View, Draw workspace** (and friends), or the command search. **Next worksp
 
 ## Your own
 
-Arrange the panels how you like: dock them on any side, float some in windows (see [Floating windows](help:floating-windows)), name them. Then open **Preferences, Workspaces**, type a name and press **Save**. You can keep up to 12. It shows up in the View menu next to the others.
+Arrange the panels how you like: dock them on any side, float some in windows (see [Floating windows](help:floating-windows)), name them, and arrange the tools into the groups you like (see [Arrange your tools](help:tool-arrange)). Then open **Preferences, Workspaces**, type a name and press **Save**. You can keep up to 12. It shows up in the View menu next to the others.
 
 On that page you can also:
 
@@ -576,7 +576,7 @@ Right-click a tab and choose **Rename** to call a panel what you like. Double-cl
 
 ## The tools
 
-The tool strip has a small grip at its top. Drag it to float the tools, or onto a side of the canvas to put them there, even along the top or bottom. Right-click the strip for the same as a list.
+The tool strip has a small grip at its top. Drag it to float the tools, or onto a side of the canvas to put them there, even along the top or bottom. Right-click the strip for the same as a list. You can also drag tools into other groups, see [Arrange your tools](help:tool-arrange).
 
 ## Room to draw
 
@@ -593,9 +593,13 @@ See also [Panels](help:panels) and [Workspaces](help:workspaces).`,
     title: 'The tool strip',
     section: 'Basics',
     media: 'tool-strip.png',
-    summary: 'The tools down the left side. Pick one to draw with.',
-    keywords: ['tools', 'toolbar', 'brush', 'shortcut', 'layer kind'],
-    body: `The strip down the left holds your tools. The one with the gold glow is the one you're using.
+    summary: 'Your tools, two across, in groups. Pick one to draw with.',
+    keywords: ['tools', 'toolbar', 'tool rail', 'brush', 'shortcut', 'layer kind', 'groups', 'two wide', 'stacked', 'flyout'],
+    body: `The strip down the left holds your tools, two across. The one with the gold glow is the one you're using.
+
+## Groups
+
+Tools that belong together sit together, with a thin gap between groups: drawing tools, colour and pixel extras, shapes, select and pen, rig and motion, and the view tools (hand and zoom). A tool that came from a plugin and has no group yet goes in **Other**.
 
 ## Choose a tool
 
@@ -605,7 +609,48 @@ Press its button, or press its key. Rest on a button to see the key.
 
 Pixel layers and vector layers need different tools. The strip shows the ones that work on the layer you're drawing on, so you never pick one that can't help.
 
+## Your way
+
+Drag tools into the order you like, or into other groups. See [Arrange your tools](help:tool-arrange). Right-click the strip to move it to another side, or to put the tools back the way they came.
+
+## One button per group
+
+If you would rather have a thinner strip, open **Preferences, General** and set **Tool rail style** to **Stacked**. Each group becomes one button, with a small corner mark. Press and hold it, or right-click it, to see the rest of the group and pick from there.
+
 Tool keys can be changed in [keyboard shortcuts](help:keyboard-shortcuts).`,
+  },
+  {
+    id: 'tool-arrange',
+    title: 'Arrange your tools',
+    section: 'Basics',
+    media: 'tool-arrange.mp4',
+    summary: 'Drag tools into the order you like, into other groups, or into a group of your own.',
+    keywords: ['tools', 'toolbar', 'tool strip', 'groups', 'group', 'order', 'reorder', 'rearrange', 'arrange', 'move', 'drag', 'reset', 'default', 'new group', 'stacked'],
+    body: `Your tools, your order. Everything on the [tool strip](help:tool-strip) can be moved.
+
+## With the mouse
+
+Press a tool and drag it. A gold bar shows where it will land: beside another tool to put it there, or on a group to add it to the end. Drop it on a gap between two groups to make a **new group** of its own. Press Escape while dragging to put it back.
+
+## With the keyboard
+
+Click or Tab to a tool, then hold **Alt** and press an arrow key. The tool moves one place along the strip, and crosses into the next group at the end of its own. The new place is read out.
+
+## With a menu
+
+Right-click a tool, or press the menu key on it. **Move to** lists every group. **Move to a new group** gives the tool a group by itself. A group that ends up with no tools goes away.
+
+## Put them back
+
+Right-click the strip and choose **Reset tools to default**. It is also in the command search.
+
+## Saved with your layout
+
+The arrangement is kept with the rest of your layout, so a [workspace](help:workspaces) you save keeps it, and a workspace you share carries it along. The built-in workspaces leave your arrangement alone. An older workspace without one simply uses the default groups.
+
+## In the stacked style
+
+With **Tool rail style** set to **Stacked** in Preferences, press and hold a group's button, or right-click it, and drag a tool from the list onto another group's button, or onto a gap to start a new group.`,
   },
   {
     id: 'menus',

@@ -182,7 +182,26 @@ const entries = [
   {
     name: 'tool-strip',
     prefs: CALM,
-    steps: [template('bouncing-ball'), wait(800), { move: [34, 202] }, { move: [35, 203] }, wait(1500), ...settle, { shot: '@', crop: [0, 40, 340, 440] }],
+    steps: [template('bouncing-ball'), wait(800), { move: [76, 133] }, { move: [77, 134] }, wait(1500), ...settle, { shot: '@', crop: [0, 40, 380, 640] }],
+  },
+  // Two tools dragged: the eyedropper into the drawing group, then the pen into a group of its own between two others.
+  {
+    name: 'tool-arrange',
+    prefs: CALM,
+    steps: [
+      template('bouncing-ball'),
+      wait(1000),
+      ...settle,
+      { rec: '@', crop: [0, 40, 400, 640], every: 70 },
+      wait(1200),
+      ...dragSlow([[77, 183], [80, 160], [86, 134]], { n: 8, after: 70, hold: 1200 }),
+      { move: [300, 500] },
+      wait(1400),
+      ...dragSlow([[35, 453], [46, 420], [56, 387]], { n: 8, after: 70, hold: 1200 }),
+      { move: [300, 500] },
+      wait(1800),
+      { rec: 'stop' },
+    ],
   },
   // The View menu open under the menu bar.
   {

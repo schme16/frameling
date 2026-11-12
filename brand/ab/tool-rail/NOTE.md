@@ -1,0 +1,1 @@
+Tool rail style, light and dark. A (the default): every tool two across, in groups with a thin gap between them, dragged to rearrange. B: stacked, one button per group with a corner mark, press and hold or right-click for the rest of the group in a flyout (shown open on the Draw group). Switch in Preferences, General, "Tool rail style", or View, Panel windows and tools.

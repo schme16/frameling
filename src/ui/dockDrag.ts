@@ -95,7 +95,7 @@ function swallowClick(): void {
 }
 
 /** Runs a pointer drag: `move` for each move once it has gone past a few pixels, `end` when it lets go (or Escape: ok false). */
-function run(e: React.PointerEvent, move: (ev: PointerEvent) => void, end: (ev: PointerEvent, ok: boolean) => void, start?: () => void): void {
+export function run(e: React.PointerEvent, move: (ev: PointerEvent) => void, end: (ev: PointerEvent, ok: boolean) => void, start?: () => void): void {
   if (e.button !== 0) return;
   const x0 = e.clientX;
   const y0 = e.clientY;

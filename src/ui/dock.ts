@@ -5,6 +5,7 @@ import { allPanels, getPanel, type DockZone, type PanelDef } from '../core/regis
 import type { LayerKind } from '../core/format';
 import { cleanName, clone, closeFloat, closePanel, clampSize, dockAllFloats, dockFloat, emptyLayout, frontPanel, locate, MAX_SAVED, moveGroupTo, movePanelTo, nameOf, normaliseLayout, placeToolsIn, placedIds, raiseFloat, renameFloatIn, renamePanelIn, sanitizeWorkspace, sanitizeWorkspaces, setFloatBox, ZONES, type DropTarget, type Layout, type Place, type ToolsPlace, type Workspace } from './dockModel';
 import { createStore, readRaw, writeJson } from './mini';
+import type { ToolGroup } from './toolArrange';
 import { parseWorkspaceText, uniqueWorkspaceName, workspaceToText } from './workspaceFile';
 
 export * from './dockModel';
@@ -290,6 +291,14 @@ export function renameFloat(floatId: string, name: string): void {
 
 export function placeTools(place: ToolsPlace, at?: { x: number; y: number }, persist = true): void {
   apply((l) => placeToolsIn(l, place, at), persist);
+}
+
+/** Saves how the tool rail's tools are grouped (undefined goes back to the default arrangement). */
+export function setToolGroups(groups: ToolGroup[] | undefined): void {
+  apply((l) => {
+    const { groups: _old, ...rest } = l.tools;
+    return { ...l, tools: groups ? { ...rest, groups } : rest };
+  });
 }
 
 export function hidePanel(id: string): void {
