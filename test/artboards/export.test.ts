@@ -206,18 +206,25 @@ describe('the Export footer for several artboards', () => {
     expect(planArtboards(store().rootDoc(), { ...s, scale: 2 }, 0)!.size).toEqual({ width: 32, height: 32 });
   });
 
-  it('each as its own file: files and frames in all, no single size', () => {
+  it('each as its own file: files and frames in all, and "sizes vary" when they differ', () => {
     const { s } = setup('gif');
     setArtboardExport({ mode: 'each' });
     const a = planArtboards(store().rootDoc(), s, 0)!;
     expect([a.files, a.frames, a.size]).toEqual([2, 5, null]);
-    expect(artboardSummary(a)).toBe('2 files, 5 frames in all');
+    expect(a.sizesVary).toBe(true);
+    expect(artboardSummary(a)).toBe('2 files, 5 frames in all, sizes vary');
+    // Only one ticked: its own size, not the open board's.
+    const [, run] = artboardsOf(store().rootDoc());
+    setArtboardExport({ ids: [run.id] });
+    expect(artboardSummary(planArtboards(store().rootDoc(), s, 0)!)).toBe('1 file, 3 frames in all, 32 × 16 px each');
+    // A bigger scale changes the size it says.
+    expect(artboardSummary(planArtboards(store().rootDoc(), { ...s, scale: 2 }, 0)!)).toBe('1 file, 3 frames in all, 64 × 32 px each');
   });
 
   it('packed onto one sheet: every frame on one sheet', () => {
     const { s } = setup('sheet');
     setArtboardExport({ mode: 'atlas' });
     const a = planArtboards(store().rootDoc(), s, 0)!;
-    expect(artboardSummary(a)).toBe('5 frames on one sheet');
+    expect(artboardSummary(a)).toBe('5 frames on one sheet, sizes vary');
   });
 });

@@ -106,7 +106,18 @@ export interface ArtboardPlan {
   frames: number;
   /** The picture's size in pixels: only for "all in order, as one" (the first shot's size, at the chosen scale). */
   size: { width: number; height: number } | null;
+  /** For one file each, or all packed on one sheet: the size every frame comes out at when they all match, else null. */
+  frameSize?: { width: number; height: number } | null;
+  /** True when the boards would come out at different sizes (so the footer cannot give one size). */
+  sizesVary?: boolean;
   problem: string | null;
+}
+
+/** The one size all of these are, or null (and `vary`) when they differ. */
+function commonSize(sizes: { width: number; height: number }[]): { frameSize: { width: number; height: number } | null; sizesVary: boolean } {
+  const first = sizes[0];
+  if (first && sizes.every((z) => z.width === first.width && z.height === first.height)) return { frameSize: first, sizesVary: false };
+  return { frameSize: null, sizesVary: sizes.length > 1 };
 }
 
 /**
@@ -124,24 +135,38 @@ export function planArtboards(root: Doc, settings: ExportSettings, currentFrame:
     const p = planExport(r.doc, r.settings, currentFrame);
     return { mode, files: 1, frames: p.count, size: { width: p.width, height: p.height }, problem: p.problem };
   }
-  if (mode === 'atlas') return { mode, files: 1, frames: ids.reduce((t, id) => t + artboardDoc(root, id).length, 0), size: null, problem: null };
+  if (mode === 'atlas') {
+    const sizes = ids.map((id) => {
+      const p = planExport(artboardDoc(root, id), settings, 0);
+      return { width: p.width, height: p.height };
+    });
+    return { mode, files: 1, frames: ids.reduce((t, id) => t + artboardDoc(root, id).length, 0), size: null, ...commonSize(sizes), problem: null };
+  }
   let frames = 0;
   let problem: string | null = null;
+  const sizes: { width: number; height: number }[] = [];
   for (const id of ids) {
     const doc = artboardDoc(root, id);
     const p = planExport(doc, settings, rememberedFrame(id, doc.length));
     frames += p.count;
+    sizes.push({ width: p.width, height: p.height });
     if (p.problem && !problem) problem = `${exportNameOf(root, id)}: ${p.problem}`;
   }
-  return { mode, files: ids.length, frames, size: null, problem };
+  return { mode, files: ids.length, frames, size: null, ...commonSize(sizes), problem };
 }
 
-/** The footer line for an artboard export (no size for several different files; `printed` is appended to a size). */
+/** What the footer says about size: one size when every frame matches, else "sizes vary" (nothing when unknown). */
+export function sizeWords(a: Pick<ArtboardPlan, 'frameSize' | 'sizesVary'>, each = ' each'): string {
+  if (a.frameSize) return `, ${a.frameSize.width} × ${a.frameSize.height} px${each}`;
+  return a.sizesVary ? ', sizes vary' : '';
+}
+
+/** The footer line for an artboard export: counts, frames in all and the size (`printed` is appended to a joined size). */
 export function artboardSummary(a: ArtboardPlan, printed = ''): string {
   const n = (k: number, one: string) => `${k} ${one}${k === 1 ? '' : 's'}`;
   if (a.mode === 'joined' && a.size) return `${n(a.frames, 'frame')} in all, ${a.size.width} × ${a.size.height} px${printed}`;
-  if (a.mode === 'atlas') return `${n(a.frames, 'frame')} on one sheet`;
-  return `${n(a.files, 'file')}, ${n(a.frames, 'frame')} in all`;
+  if (a.mode === 'atlas') return `${n(a.frames, 'frame')} on one sheet${sizeWords(a)}`;
+  return `${n(a.files, 'file')}, ${n(a.frames, 'frame')} in all${sizeWords(a)}`;
 }
 
 /**
