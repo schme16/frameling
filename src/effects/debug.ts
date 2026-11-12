@@ -1,6 +1,7 @@
 // With ?debug, the renderer for scripts/e2e/effects.cjs, which checks compositing pixels in a real browser canvas.
 import { renderFrameToCanvas } from '../core/render';
 import { store } from '../core/store';
+import { nativeFilterWorks, setFilterOverride } from './filterSupport';
 import { gpuStats, setPixelBlendGpu } from './pixelBlendGL';
 import { setAddStyle } from './EffectsPanel';
 import { toggleFolderCollapsed } from './rows';
@@ -43,6 +44,9 @@ if (typeof location !== 'undefined' && new URLSearchParams(location.search).has(
       }
       return (performance.now() - t0) / n;
     },
+    /** Forces the canvas filter path ('native'), the JS fallback ('fallback'), or detection (null); and what detection says. */
+    setFilterOverride,
+    nativeFilterWorks: () => nativeFilterWorks(document.createElement('canvas').getContext('2d')!),
     setAddStyle,
     toggleFolderCollapsed,
   };
