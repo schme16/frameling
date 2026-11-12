@@ -195,6 +195,19 @@ frameling.ui.notify('Done!', 'success'); // 'info', 'success', 'warn' or 'error'
 
 Shown as a toast starting with the plugin's name.
 
+### Progress (long commands and exports)
+
+```js
+frameling.progress(done, total);   // e.g. frameling.progress(i + 1, frames.length)
+```
+
+Frameling turns a plugin off when it stays silent too long (see The watchdog): 10 seconds normally, 60 seconds while a command
+or an export runs. A job that is long but moving should say so. Each report whose `done` is higher than the last one (and
+`total` above 0) gives the job a fresh 60 seconds, and an exporter's reports also fill the progress bar in the Export dialog.
+The call posts straight away, so it works from inside a long loop that never yields, and calls beyond ten a second are
+dropped (the last one, `done === total`, always goes through). Reports that stand still or go backwards, are not numbers, or
+come when no command or export is running count for nothing, so a loop that keeps calling `progress(1, 10)` is still stuck.
+
 ### Events (version 2)
 
 ```js
@@ -373,6 +386,8 @@ person can always turn it off.
 - **Heartbeat.** Every second the host sends `{ t: 'ping' }` and the prelude answers `{ t: 'pong' }` from the worker's
   own event loop, so a worker stuck in a loop cannot answer. A ping unanswered for 10 seconds (60 seconds while a command or an
   export is running, which may think for a while) means stuck. A tick that comes very late (the computer slept) is not blamed on the plugin.
+  `frameling.progress(done, total)` (see Progress) starts that count again while a command or export is running, when `done` has
+  moved forward; the runtime hands it to the watchdog (`Watchdog.progress`) and, for an export, to the dialog's progress bar.
 - **Memory.** The desktop app starts Chromium with `IsolateSandboxedIframes:grouping/per-document` (`PLUGIN_PROCESS_FEATURE`,
   `src/main/main.ts`; without it every plugin's frame shares one process), so each plugin has a process of its own (about 90 MB
   to begin with), and the frame's address carries `?plugin=<id>` (the page ignores it). The main process (`plugins:memory`, `src/main/pluginMemory.ts`)

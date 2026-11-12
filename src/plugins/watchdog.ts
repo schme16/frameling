@@ -6,7 +6,7 @@
 export const WATCHDOG = {
   /** How often the host asks "still there?". */
   pingEveryMs: 1000,
-  /** A ping unanswered for this long means the worker is stuck. */
+  /** A ping unanswered for this long means the worker is stuck. Each progress report (frameling.progress) starts the count again. */
   stuckMs: 10_000,
   /** The same, while a command or an export is running (they may legitimately think for a while). */
   busyStuckMs: 60_000,
@@ -47,6 +47,11 @@ export class Watchdog {
     this.lastTick = this.lastMemory = this.now();
     this.timer = setInterval(() => this.tick(), WATCHDOG.pingEveryMs);
     this.tick();
+  }
+
+  /** The worker reported honest progress: the silence it is allowed starts again from now. */
+  progress(): void {
+    if (this.out) this.out.at = this.now();
   }
 
   /** The worker answered ping `n`. */

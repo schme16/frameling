@@ -129,6 +129,30 @@ describe('plugin runtime', () => {
     expect(h.log).toContain('notify:info:This plugin did not ask to use the internet.');
   });
 
+  it('hands an exporter\'s progress to whoever is watching, forward only, and ignores it outside a job', async () => {
+    const { rt } = start(
+      `frameling.exporters.register({ id: 'slow', label: 'Slow', extension: 'bin' }, async () => {
+        const gap = () => new Promise((r) => setTimeout(r, 120));
+        frameling.progress(1, 4);
+        await gap();
+        frameling.progress(1, 4);
+        await gap();
+        frameling.progress(3, 4);
+        await gap();
+        frameling.progress(2, 4);
+        await gap();
+        frameling.progress(9, 4);
+        return [{ text: 'x' }];
+      });
+      frameling.progress(1, 2);`,
+      ['export'],
+    );
+    await settle();
+    const seen: string[] = [];
+    await rt.runExport('slow', [], { name: 'n', fps: 1, width: 1, height: 1, scale: 1, frameNumbers: [], clips: [], markers: [] }, undefined, undefined, (d, t) => seen.push(`${d}/${t}`));
+    expect(seen).toEqual(['1/4', '3/4', '4/4']);
+  });
+
   it('says when a plugin fails to load, and stops answering once stopped', async () => {
     const { rt, h } = start(`throw new Error('Oops at start')`, []);
     await settle();

@@ -86,7 +86,7 @@ async function exportWithPlugin(job: PluginExportJob, choice: PluginExportChoice
   try {
     const options = cleanValues(job.def.options, choice.options);
     rememberValues(job.pluginId, job.def.id, options);
-    files = await rt.runExport(job.def.id, frames, info, signal, options);
+    files = await rt.runExport(job.def.id, frames, info, signal, options, (done, total) => onProgress({ done, total, label: `${job.pluginName} is making the files` }));
   } catch (e) {
     if (e instanceof DOMException && e.name === 'AbortError') return 'cancelled';
     throw e;

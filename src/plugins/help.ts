@@ -36,7 +36,7 @@ Every plugin runs in its own **sandbox**, a closed box inside Frameling. It can'
 
 If a plugin goes wrong, Frameling says so and offers to turn it off. Your drawing is safe either way.
 
-Frameling also keeps an eye on each plugin. If one **stops responding** (stuck in a loop) or **uses a lot of memory**, Frameling turns it off for you and says so. It stays off, even next time you open Frameling, until you press **Turn it on** in the message or switch it on in **Preferences > Plugins**. Your drawing isn't touched. (Watching memory works in the desktop app.)
+Frameling also keeps an eye on each plugin. If one **stops responding** (stuck in a loop, or silent for a minute in the middle of a long job that never says how far it has got) or **uses a lot of memory**, Frameling turns it off for you and says so. It stays off, even next time you open Frameling, until you press **Turn it on** in the message or switch it on in **Preferences > Plugins**. Your drawing isn't touched. (Watching memory works in the desktop app.)
 
 ## Make your own
 
@@ -191,6 +191,7 @@ Add \`"apiVersion": 2\` for the newer powers: **tools**, **canvas**, **shapes** 
 - \`frameling.exporters.register({ id, label, extension }, (frames, info) => files)\` adds an export. Frames are RGBA pictures. Hand back \`[{ name, bytes }]\`, \`{ name, text }\` or \`{ name, image }\` (Frameling makes the PNG).
 - \`frameling.panels.register({ id, title }, ui, onEvent)\` adds a panel described as a tree of parts.
 - \`frameling.ui.notify('Done!')\` shows a message.
+- \`frameling.progress(done, total)\` says how far a long command or export has got. Frameling turns off a plugin that goes quiet for 60 seconds during a job (10 seconds otherwise), and every report that moves forward gives it a fresh 60 seconds. An export's reports also show in the Export dialog.
 - Version 2: \`frameling.events.on('frame.changed', fn)\` hears about the document, selection and frame changing and exports starting and finishing. \`frameling.tools.register(def, onPointer)\` adds a tool (it answers with \`{ overlay, ops }\`). \`frameling.canvas.overlay(list)\` shows a guide. \`frameling.shapes.register({ kind }, draw)\` adds a kind of shape, with \`shapes.place\` and \`shapes.update\`. \`frameling.files.pick()\` reads one file the person picks. Frameling draws every picture the plugin sends; the plugin never gets a canvas.
 
 While you work on it, **Preferences > Plugins > Install from folder...** installs straight from your folder; install again to update. The full guide, with every op and part, is **docs/plugins.md** in Frameling's source, and examples of each power are in **plugins/examples**.`,

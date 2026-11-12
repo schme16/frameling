@@ -269,6 +269,9 @@ export class PluginRuntime {
   private watch: Watchdog | null = null;
   /** Commands and exports being waited for: honest work that may keep the worker busy for a while. */
   private heavy = 0;
+  /** The furthest progress reported in the job running now (a report must beat it to count), and who wants to see it. */
+  private lastDone = -1;
+  private onProgress: ((done: number, total: number) => void) | null = null;
 
   constructor(
     readonly manifest: PluginManifest,
@@ -351,6 +354,8 @@ export class PluginRuntime {
         return;
       case 'overlay':
         return this.canvasOverlay(m.list);
+      case 'progress':
+        return this.reportProgress(m.done, m.total);
     }
   }
 
@@ -360,6 +365,16 @@ export class PluginRuntime {
     if (this.subscribed.has(event as PluginEventName)) return;
     this.subscribed.add(event as PluginEventName);
     this.hooks.subscriptionsChanged?.();
+  }
+
+  /** Progress from a long command or export: it only counts while one is running, and only when it moves forward. */
+  private reportProgress(done: unknown, total: unknown): void {
+    if (this.heavy <= 0 || typeof done !== 'number' || typeof total !== 'number' || !Number.isFinite(done) || !Number.isFinite(total) || total <= 0 || done < 0) return;
+    const d = Math.min(done, total);
+    if (d <= this.lastDone) return;
+    this.lastDone = d;
+    this.watch?.progress();
+    this.onProgress?.(d, total);
   }
 
   private canvasOverlay(list: unknown): void {
@@ -561,29 +576,39 @@ export class PluginRuntime {
   }
 
   async runCommand(id: string): Promise<void> {
-    this.heavy++;
+    this.begin();
     try {
       await this.request('command', { id });
     } catch (e) {
       this.problem(e instanceof Error ? e.message : String(e));
     } finally {
-      this.heavy--;
+      this.end();
     }
   }
 
+  private begin(): void {
+    if (this.heavy++ === 0) this.lastDone = -1;
+  }
+
+  private end(): void {
+    this.heavy--;
+  }
+
   /** Hands frames to an exporter (they move over, so the caller must not use them after) and gets its files back. */
-  async runExport(id: string, frames: ExportFrame[], info: ExportInfo, signal?: AbortSignal, options?: unknown): Promise<OutFile[]> {
+  async runExport(id: string, frames: ExportFrame[], info: ExportInfo, signal?: AbortSignal, options?: unknown, onProgress?: (done: number, total: number) => void): Promise<OutFile[]> {
     const ex = this.exporters.get(id);
     if (!ex) throw new Error('That export is not there any more.');
     const transfer = frames.map((f) => f.data.buffer as ArrayBuffer);
     // Whatever the dialog sent, the plugin only gets values that fit the options it described.
     const values: OptionValues = cleanValues(ex.options, options);
-    this.heavy++;
+    this.begin();
+    this.onProgress = onProgress ?? null;
     let raw: unknown;
     try {
       raw = await this.request('export', { id, frames, info, options: values }, transfer, signal);
     } finally {
-      this.heavy--;
+      this.onProgress = null;
+      this.end();
     }
     return normalizeFiles(raw, `${safeName(info.name, 'export')}.${ex.extension}`);
   }

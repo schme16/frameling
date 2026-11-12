@@ -5,6 +5,7 @@
 frameling.exporters.register({ id: 'report', label: 'Frame report (text)', extension: 'txt', multiple: false, transparent: false }, async (frames, info, options) => {
   const lines = [options.title, '='.repeat(options.title.length), `${info.name}: ${frames.length} frames at ${info.fps} fps, ${info.width} x ${info.height}`, ''];
   frames.forEach((f, i) => {
+    frameling.progress(i + 1, frames.length); // a long export says how far it has got, so it is never mistaken for stuck
     if (i % options.every !== 0) return;
     const n = info.frameNumbers[i];
     lines.push(options.style === 'times' ? `${(n / info.fps).toFixed(3)} s` : `Frame ${n + 1}`);
