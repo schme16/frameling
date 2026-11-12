@@ -156,14 +156,18 @@ UNITY_BIN=/mnt/109313D2109313D2/unity-editors/6000.6.4f1/Editor/Unity \
   xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/export.cjs --only=sheet --templates=hero-sprites,bouncing-ball --skip=files
 ```
 
-For the `unity` sheet case of `hero-sprites` and `bouncing-ball`, it makes a throwaway project in the output folder
-(`_unity-project`, with the 2D Sprite package added), drops the exported picture, json and `FramelingSheetImporter.cs`
-into its Assets plus the test script `scripts/e2e/unity/FramelingSheetCheck.cs`, and runs Unity in batch mode. Unity
-compiles the importer and imports the sheet, then the test script checks the texture settings (sprite mode, pixels per
-unit, no resize), every sprite's rect and pivot, and every animation clip (key count, key times, frame rate, loop, length).
+For the `unity` sheet case of `hero-sprites` and `bouncing-ball` (and a `unity-noclips` case, separate sprites with no
+animations, on `bouncing-ball`), it makes two throwaway projects in the output folder: `_unity-project-older`, the default
+3D template as Unity makes it (no 2D Sprite package), and `_unity-project`, a copy with the 2D Sprite package added.
+In each it drops the exported picture and json in `Assets/Frameling`, and `FramelingSheetImporter.cs`, its `.asmdef` and the
+test script `scripts/e2e/unity/FramelingSheetCheck.cs` in `Assets/Importer`, and runs Unity in batch mode. Unity
+compiles the importer (which must work with and without the package, and the test checks which cutting path it took)
+and imports the sheet, then the test script checks the texture settings (sprite mode, pixels per
+unit, no resize), every sprite's rect and pivot, and every animation clip (key count, key times, frame rate, loop, length);
+a sheet with no animations must leave no `.anim` files.
 It also plays each clip on a real Animator and checks which sprite shows on every tick, then changes the json, imports the
 picture again and checks the clips follow and the sprite ids stay the same. Logs and reports are in the case's folder
-(`unity-*.log`, `unity-report-*.txt`). Takes a few minutes, mostly Unity starting up. The Unity editor must be
+(`unity-*.log`, `unity-report-*.txt`). Takes several minutes, mostly Unity starting up. The Unity editor must be
 installed and licensed for the user running the check.
 
 ## Illustrator end to end: scripts/e2e/illustrator.cjs

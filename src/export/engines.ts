@@ -139,17 +139,45 @@ export function unitySheet(d: SheetData, o: { pixelArt: boolean }) {
 const round4 = (n: number) => Math.round(n * 10000) / 10000;
 
 export const UNITY_SCRIPT_NAME = 'FramelingSheetImporter.cs';
+export const UNITY_ASMDEF_NAME = 'FramelingSheetImporter.asmdef';
+
+/**
+ * Keeps the importer in its own assembly, so it can tell whether the 2D Sprite package is there (FRAMELING_2D_SPRITE) and
+ * a project without it still compiles. Only references the package's editor assembly when it is installed.
+ */
+export const UNITY_ASMDEF = JSON.stringify(
+  {
+    name: 'Frameling.SheetImporter',
+    rootNamespace: '',
+    references: ['Unity.2D.Sprite.Editor'],
+    includePlatforms: ['Editor'],
+    excludePlatforms: [],
+    allowUnsafeCode: false,
+    overrideReferences: false,
+    precompiledReferences: [],
+    autoReferenced: true,
+    defineConstraints: [],
+    versionDefines: [{ name: 'com.unity.2d.sprite', expression: '1.0.0', define: 'FRAMELING_2D_SPRITE' }],
+    noEngineReferences: false,
+  },
+  null,
+  2,
+) + '\n';
 
 /** The small editor script that slices a sheet and makes the animation clips. Wrapped in UNITY_EDITOR, so it can live in any folder. */
-export const UNITY_SCRIPT = `// Frameling sprite sheet importer for Unity 2021.2 or newer (needs the 2D Sprite package, which 2D projects have).
-// Keep one copy anywhere under Assets. When a PNG has a Frameling .json beside it, this cuts the PNG into sprites
-// and makes an animation clip (.anim) for each of your clips, next to the PNG. Re-export to update them.
+export const UNITY_SCRIPT = `// Frameling sprite sheet importer for Unity (checked in Unity 6.6).
+// Keep one copy anywhere under Assets, with FramelingSheetImporter.asmdef beside it. When a PNG has a Frameling .json
+// beside it, this cuts the PNG into sprites and makes an animation clip (.anim) for each of your clips, next to the PNG.
+// Re-export to update them. With the 2D Sprite package (2D projects have it) the sprites keep their ids when you re-export;
+// without it the older cutting API is used, so the project still compiles.
 #if UNITY_EDITOR
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEditor;
+#if FRAMELING_2D_SPRITE
 using UnityEditor.U2D.Sprites;
+#endif
 using UnityEngine;
 
 public class FramelingSheetImporter : AssetPostprocessor
@@ -187,6 +215,12 @@ public class FramelingSheetImporter : AssetPostprocessor
             importer.textureCompression = TextureImporterCompression.Uncompressed;
         }
 
+        Cut(importer, data);
+    }
+
+#if FRAMELING_2D_SPRITE
+    static void Cut(TextureImporter importer, SheetData data)
+    {
         var factory = new SpriteDataProviderFactories();
         factory.Init();
         var provider = factory.GetSpriteEditorDataProviderFromObject(importer);
@@ -207,6 +241,21 @@ public class FramelingSheetImporter : AssetPostprocessor
         if (ids != null) ids.SetNameFileIdPairs(rects.Select(r => new SpriteNameFileIdPair(r.name, r.spriteID)).ToList());
         provider.Apply();
     }
+#else
+    // No 2D Sprite package in this project: cut with the older API every Unity has.
+    static void Cut(TextureImporter importer, SheetData data)
+    {
+#pragma warning disable 618
+        importer.spritesheet = data.frames.Select(f => new SpriteMetaData
+        {
+            name = f.name,
+            rect = new Rect(f.x, f.y, f.w, f.h),
+            alignment = (int)SpriteAlignment.Custom,
+            pivot = new Vector2(f.pivotX, f.pivotY),
+        }).ToArray();
+#pragma warning restore 618
+    }
+#endif
 
     static void OnPostprocessAllAssets(string[] imported, string[] deleted, string[] moved, string[] movedFrom)
     {
@@ -482,7 +531,7 @@ export function buildSheetFiles(job: SheetJob): SheetFiles {
       break;
     case 'unity':
       files.push({ name: `${base}.json`, bytes: json(unitySheet(d, { pixelArt: job.pixelArt })) });
-      if (sheet.unityScript) files.push({ name: UNITY_SCRIPT_NAME, bytes: text(UNITY_SCRIPT) });
+      if (sheet.unityScript) files.push({ name: UNITY_SCRIPT_NAME, bytes: text(UNITY_SCRIPT) }, { name: UNITY_ASMDEF_NAME, bytes: text(UNITY_ASMDEF) });
       break;
     case 'css': {
       const css = cssSprites(d, { prefix: base, pixelArt: job.pixelArt, separate });

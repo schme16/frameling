@@ -3,6 +3,8 @@
 // Arguments: -sheet <Assets/path/to/sheet.png>  -report <file to write the result lines to>  -ids <file>.
 // -reimport forces the picture through the importer again (after its json changed). -ids compares the sprites' ids with
 // the ones an earlier run saved there (so re-exporting must keep them), or saves them when the file isn't there yet.
+// -expect package|older says which cutting path the importer must have taken (2D Sprite package present or not).
+// A sheet with no animations must leave no .anim files next to it.
 // Exit code 0 means every check passed; 1 means some failed (listed in the report); 2 means the clips never appeared.
 #if UNITY_EDITOR
 using System;
@@ -53,6 +55,8 @@ public static class FramelingSheetCheck
                 return c == null || !Near(c.length, a.holds.Sum() / a.fps, 0.002f);
             }).ToList();
             if (missing.Count > 0 && EditorApplication.timeSinceStartup - started < 60) return;
+            // With no clips there is nothing to wait for, so give a late delayCall a few seconds to (wrongly) make one.
+            if (data.animations.Length == 0 && EditorApplication.timeSinceStartup - started < 4) return;
             EditorApplication.update -= tick;
             Finish(sheet, data, report, missing.Count > 0);
         };
@@ -79,6 +83,20 @@ public static class FramelingSheetCheck
                 Check(Near(importer.spritePixelsPerUnit, data.pixelsPerUnit), "pixels per unit " + importer.spritePixelsPerUnit + " != " + data.pixelsPerUnit);
                 Check(importer.filterMode == (data.pixelArt ? FilterMode.Point : importer.filterMode), "filter mode is " + importer.filterMode);
                 Check(!importer.mipmapEnabled, "mipmaps are on");
+            }
+#if FRAMELING_2D_SPRITE
+            var cutWith = "package";
+#else
+            var cutWith = "older";
+#endif
+            lines.Add("cut with the " + cutWith + " API");
+            var expect = Arg("-expect");
+            if (expect != null) Check(expect == cutWith, "the importer cut with the " + cutWith + " API, wanted " + expect);
+            if (data.animations.Length == 0)
+            {
+                var anims = AssetDatabase.FindAssets("t:AnimationClip", new[] { folder });
+                Check(anims.Length == 0, anims.Length + " animation clips were made for a sheet with no animations");
+                lines.Add("no animations, " + anims.Length + " clips made");
             }
             var sprites = AssetDatabase.LoadAllAssetsAtPath(sheet).OfType<Sprite>().ToDictionary(s => s.name, s => s);
             lines.Add("sprites " + sprites.Count + " of " + data.frames.Length);
