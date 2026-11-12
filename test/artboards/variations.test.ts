@@ -1,7 +1,7 @@
 import { unzipSync, strFromU8, zipSync } from 'fflate';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { newDoc, newPixelDrawing, newPixelLayer, newVectorLayer } from '../../src/core/doc';
-import type { AudioClip, CameraDrawing, Doc, Layer, PathShape, PixelDrawing, VectorDrawing } from '../../src/core/format';
+import { newDoc, newPixelDrawing, newPixelLayer, newTilemapDrawing, newVectorLayer } from '../../src/core/doc';
+import type { AudioClip, CameraDrawing, Doc, Layer, PathShape, PixelDrawing, TilemapDrawing, VectorDrawing } from '../../src/core/format';
 import { onBlocked, resetStore, store } from '../../src/core/store';
 import { loadFile, saveFile } from '../../src/io/file';
 import { defaultSettings } from '../../src/export/plan';
@@ -856,5 +856,115 @@ describe('variations: sound, palette and what stays shared', () => {
     update('Swatch', (d) => void d.swatches.push({ id: 'sw', name: 'x', color: '#123456' } as never));
     expect(doc().swatches.some((x) => x.id === 'sw')).toBe(true);
     expect(blocked).toHaveLength(4);
+  });
+});
+
+describe('variations: redrawn pictures are stored as what changed', () => {
+  /** A pixel animation: `frames` keys of 64 x 64 noise (so each one costs real bytes in a file). */
+  function animation(frames: number): Doc {
+    const d0 = newDoc({ name: 'Walk', width: 64, height: 64, length: frames, pixel: { pixelSize: 1 } });
+    let seed = 7;
+    const rnd = () => (seed = (seed * 1103515245 + 12345) & 0x7fffffff) >>> 8;
+    for (let f = 0; f < frames; f++) {
+      const p = newPixelDrawing(64, 64);
+      for (let i = 0; i < p.pixels.length; i++) p.pixels[i] = rnd() & 255;
+      d0.drawings[p.id] = p;
+      d0.layers[0].cels.push({ id: `k${f}`, start: f, length: 1, drawingId: p.id });
+    }
+    return d0;
+  }
+
+  it('a few pixels painted on every key of a long animation add a few bytes, not another animation', () => {
+    const d0 = animation(60);
+    resetStore(d0);
+    const alone = saveFile(doc()).length;
+    const v = make();
+    open(v);
+    update('Paint a scar on every key', (d) => {
+      for (const c of d.layers[0].cels) {
+        const a = d.drawings[c.drawingId] as PixelDrawing;
+        const px = new Uint8ClampedArray(a.pixels);
+        for (let y = 10; y < 13; y++) for (let x = 20; x < 23; x++) px.set([255, 0, 0, 255], (y * 64 + x) * 4);
+        a.pixels = px;
+      }
+    });
+    open(root());
+    const bytes = saveFile(doc());
+    const grown = bytes.length - alone;
+    expect(grown).toBeLessThan(alone * 0.05);
+    // Each key's change is a small rectangle in the zip.
+    const files = unzipSync(bytes);
+    const diffs = Object.keys(files).filter((n) => n.startsWith('pixels/diff_'));
+    expect(diffs).toHaveLength(60);
+    expect(files[diffs[0]].length).toBeLessThan(200);
+    // It opens to exactly the same pictures.
+    const loaded = loadFile(bytes);
+    expect(loaded.warnings).toEqual([]);
+    for (const c of findArtboard(loaded.doc, v)!.content!.layers[0].cels) {
+      const mine = loaded.doc.drawings[c.drawingId] as PixelDrawing;
+      const was = doc().drawings[aliasId(c.drawingId.split('~')[0], v)] as PixelDrawing;
+      expect(mine.pixels).toEqual(was.pixels);
+    }
+    expect((loaded.doc.drawings[d0.layers[0].cels[0].drawingId] as PixelDrawing).pixels[(10 * 64 + 20) * 4]).not.toBe(255);
+  });
+
+  it('a drawing changed nearly everywhere is stored whole, and the file still round trips', () => {
+    resetStore(animation(2));
+    const v = make();
+    open(v);
+    update('Repaint', (d) => {
+      const c = d.layers[0].cels[0];
+      const a = d.drawings[c.drawingId] as PixelDrawing;
+      a.pixels = new Uint8ClampedArray(a.pixels.map((n) => 255 - n));
+    });
+    open(root());
+    const files = unzipSync(saveFile(doc()));
+    expect(Object.keys(files).filter((n) => n.startsWith('pixels/diff_'))).toHaveLength(0);
+    const loaded = loadFile(saveFile(doc())).doc;
+    const k = findArtboard(loaded, v)!.content!.layers[0].cels[0].drawingId;
+    expect((loaded.drawings[k] as PixelDrawing).pixels).toEqual((doc().drawings[k] as PixelDrawing).pixels);
+  });
+
+  it('a pixel key the variation redrew but left the same costs nothing extra', () => {
+    resetStore(animation(2));
+    const v = make();
+    open(v);
+    update('Same again', (d) => {
+      const a = d.drawings[d.layers[0].cels[0].drawingId] as PixelDrawing;
+      a.pixels = new Uint8ClampedArray(a.pixels);
+    });
+    open(root());
+    const loaded = loadFile(saveFile(doc())).doc;
+    const k = findArtboard(loaded, v)!.content!.layers[0].cels[0].drawingId;
+    expect((loaded.drawings[k] as PixelDrawing).pixels).toEqual((doc().drawings[k] as PixelDrawing).pixels);
+  });
+
+  it('a tile map a variation changed is stored as the slots that changed', () => {
+    const d0 = newDoc({ name: 'Map', width: 64, height: 64, length: 2 });
+    const t: TilemapDrawing = newTilemapDrawing(20, 20);
+    t.cells.fill(5);
+    d0.drawings[t.id] = t;
+    d0.layers = [{ id: 'T', name: 'Tiles', kind: 'tilemap', pixelSize: 1, visible: true, locked: false, opacity: 1, cels: [{ id: 'tc', start: 0, length: 2, drawingId: t.id }] } as Layer];
+    resetStore(d0);
+    const v = make();
+    open(v);
+    update('Paint tiles', (d) => {
+      const a = d.drawings[aliasId(t.id, v)] as TilemapDrawing;
+      const cells = new Uint32Array(a.cells);
+      cells[3] = 9;
+      cells[41] = 7;
+      a.cells = cells;
+    });
+    expect(findArtboard(doc(), v)!.overrides!.drawings![t.id]).toEqual({ replaced: true });
+    open(root());
+    const bytes = saveFile(doc());
+    const raw = JSON.parse(strFromU8(unzipSync(bytes)['doc.json']));
+    expect(raw.artboards.find((a: { id: string }) => a.id === v).overrides.drawings[t.id].diff).toEqual({ cells: [3, 9, 41, 7] });
+    expect(Object.keys(raw.drawings).some((k) => k.includes('~'))).toBe(false);
+    const loaded = loadFile(bytes).doc;
+    const mine = loaded.drawings[aliasId(t.id, v)] as TilemapDrawing;
+    expect([mine.cells[3], mine.cells[41], mine.cells[4]]).toEqual([9, 7, 5]);
+    expect((loaded.drawings[t.id] as TilemapDrawing).cells[3]).toBe(5);
+    expect(findArtboard(loaded, v)!.overrides!.drawings![t.id]).toEqual({ replaced: true });
   });
 });

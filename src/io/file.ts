@@ -15,7 +15,7 @@ import { readOrigin, readParticlesShape, readTextShape } from './shapes-extra';
 import { packAudio, unpackAudio } from './audio-file';
 import { keepUnknownShape, readExt, shapesForSave, withExt } from './ext';
 import { packArtboards, readArtboards } from '../artboards/io';
-import { closedForSave, isDerivedDrawing, resolveAfterLoad } from '../artboards/variationsIo';
+import { closedForSave, isDerivedDrawing, resolveAfterLoad, variationDiffs } from '../artboards/variationsIo';
 import { switchOpenVariation } from '../artboards/variations';
 import { upgradeLineage } from '../core/upgradeLineage';
 import { readClip } from '../core/clipPlay';
@@ -67,9 +67,11 @@ export function saveFile(open: Doc, appVersion = '', now: Date = new Date()): Ui
   const files: Zippable = {};
   const drawings: Record<string, unknown> = {};
   const used = new Set<string>();
+  // A drawing a variation redrew is stored as what differs from its original's, when that is smaller.
+  const diffs = variationDiffs(doc, files, pngFor);
   for (const [id, d] of Object.entries(doc.drawings)) {
     // A variation's drawings that are worked out from its original are not stored.
-    if (isDerivedDrawing(doc, id)) continue;
+    if (isDerivedDrawing(doc, id) || diffs.has(id)) continue;
     if (d.kind === 'pixel') {
       let name = `pixels/${safeName(id)}.png`;
       while (used.has(name)) name = name.replace(/\.png$/, '_.png');
@@ -90,7 +92,7 @@ export function saveFile(open: Doc, appVersion = '', now: Date = new Date()): Ui
   // Sound bytes go in their own entries; `audio` in doc.json then names them (undefined leaves the key out).
   const audio = packAudio(doc, files);
   // Artboards that aren't open carry their own sounds the same way.
-  files['doc.json'] = strToU8(JSON.stringify({ ...doc, drawings, audio, ...packArtboards(doc, files), ...(closed.reopen ? { variationOpen: closed.reopen } : {}) }));
+  files['doc.json'] = strToU8(JSON.stringify({ ...doc, drawings, audio, ...packArtboards(doc, files, diffs), ...(closed.reopen ? { variationOpen: closed.reopen } : {}) }));
   return zipSync(files, { level: 6 });
 }
 
