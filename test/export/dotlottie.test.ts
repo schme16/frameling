@@ -23,7 +23,7 @@ describe('dotLottie export', () => {
     expect(names.some((n) => n.startsWith('i/'))).toBe(true);
     expect(names.some((n) => n.startsWith('animations/') || n.startsWith('images/'))).toBe(false);
     const file = readDotLottie(bytes, unzipSync);
-    expect(file.manifest).toEqual({ version: '2', generator: 'Frameling test', initial: { animation: 'game-hero-sprite-set' }, animations: [{ id: 'game-hero-sprite-set' }] });
+    expect(file.manifest).toEqual({ version: '2', generator: 'Frameling test', initial: { animation: 'game-hero-sprite-set', stateMachine: 'once' }, animations: [{ id: 'game-hero-sprite-set' }], stateMachines: [{ id: 'once' }] });
     const anim = file.animations['game-hero-sprite-set'];
     const pics = anim.assets.filter((a: { p?: string }) => a.p !== undefined);
     expect(pics.length).toBeGreaterThan(0);
@@ -56,6 +56,34 @@ describe('dotLottie export', () => {
     expect(JSON.stringify(anim)).not.toContain('data:image');
   });
 
+  it('layout 2 keeps the loop setting in a small state machine that plays at once, and says what the setting is', () => {
+    const data = docToLottie(make('bouncing-ball'));
+    for (const loop of [true, false]) {
+      const file = readDotLottie(dotLottieBytes(data, { loop }), unzipSync);
+      const id = loop ? 'loop' : 'once';
+      expect(file.manifest.stateMachines).toEqual([{ id }]);
+      expect(file.manifest.initial.stateMachine).toBe(id);
+      const anim = Object.keys(file.animations)[0];
+      expect(file.manifest.initial.animation).toBe(anim);
+      const [state] = file.machines[id].states;
+      expect(file.machines[id].initial).toBe(state.name);
+      expect(state).toMatchObject({ type: 'PlaybackState', animation: anim, loop, autoplay: true });
+      expect(state.transitions).toEqual([]);
+    }
+    // Loops unless told otherwise, as layout 1 does.
+    expect(readDotLottie(dotLottieBytes(data), unzipSync).manifest.stateMachines).toEqual([{ id: 'loop' }]);
+  });
+
+  it('layout 1 keeps the loop in the manifest and has no state machine', () => {
+    const data = docToLottie(make('bouncing-ball'));
+    for (const loop of [true, false]) {
+      const file = readDotLottie(dotLottieBytes(data, { loop, version: 1 }), unzipSync);
+      expect(file.manifest.animations[0]).toMatchObject({ autoplay: true, loop });
+      expect(file.manifest.stateMachines).toBeUndefined();
+      expect(file.machines).toEqual({});
+    }
+  });
+
   it('keeps the first entry the manifest and stores a picture that repeats once', () => {
     const png = 'data:image/png;base64,iVBORw0KGgo=';
     const data = { nm: 'Two', assets: [{ id: 'a', w: 1, h: 1, p: png, u: '', e: 1 }, { id: 'b', w: 1, h: 1, p: png, u: '', e: 1 }, { id: 'c', layers: [] }], layers: [] };
@@ -67,7 +95,7 @@ describe('dotLottie export', () => {
     expect(Object.keys(unzipSync(dotLottieBytes(data, { version: 1 }))).sort()).toEqual(['animations/two.json', 'images/image_0.png', 'manifest.json']);
     const names = Object.keys(unzipSync(dotLottieBytes(data)));
     expect(names[0]).toBe('manifest.json');
-    expect(names.sort()).toEqual(['a/two.json', 'i/image_0.png', 'manifest.json']);
+    expect(names.sort()).toEqual(['a/two.json', 'i/image_0.png', 'manifest.json', 's/loop.json']);
   });
 
   it('is much smaller than the plain file when the animation has many keys', () => {

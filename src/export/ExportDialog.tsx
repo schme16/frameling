@@ -89,7 +89,7 @@ const FILE_CHOICES: { id: NonNullable<ExportSettings['lottieFile']>; label: stri
 
 /** The two layouts of a dotLottie file. */
 const LAYOUT_CHOICES: { id: 1 | 2; label: string; note: string }[] = [
-  { id: 2, label: 'Current', note: 'The layout the dotLottie players and LottieFiles use today. It has no place for "loop", so the player decides whether it repeats.' },
+  { id: 2, label: 'Current', note: 'The layout the dotLottie players and LottieFiles use today. It keeps the loop setting in a tiny play script that players start with, so the repeat is kept (the web player needs to be told to run it).' },
   { id: 1, label: 'Older', note: 'The first layout, for older dotLottie players. It also carries the loop setting.' },
 ];
 

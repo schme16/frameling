@@ -108,7 +108,7 @@ export interface ExportSettings {
   lottiePictures?: 'balanced' | 'sharp' | 'small';
   /** Lottie only: one `.json`, or a dotLottie `.lottie` that carries its pictures as files (missing = json). */
   lottieFile?: 'json' | 'dotlottie';
-  /** dotLottie only: the layout, 2 (missing, the current spec) or 1 (older players; it can also carry the loop setting). */
+  /** dotLottie only: the layout, 2 (missing, the current spec: the loop setting is a small state machine) or 1 (older players: the loop setting is in the manifest). */
   dotLottieVersion?: 1 | 2;
   /** Lottie only: Soften and Shadow as Lottie's own effects (missing) or as pictures every player shows. */
   lottieSoft?: 'effects' | 'pictures';

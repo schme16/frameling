@@ -1,7 +1,7 @@
 /**
  * A dotLottie file (`.lottie`): the Lottie animation and its pictures in one small zip, the way the dotLottie players
  * (LottieFiles, the web, iOS, Android and Flutter players) take it. Format 2 (the current one, spec at dotlottie.io):
- * `manifest.json` (version "2"), `a/<id>.json` and `i/<file>`. Format 1 (older players): `manifest.json` (version "1.0"),
+ * `manifest.json` (version "2"), `a/<id>.json`, `i/<file>` and `s/<id>.json` (a state machine that holds the loop setting). Format 1 (older players): `manifest.json` (version "1.0"),
  * `animations/<id>.json` and `images/<file>`. Pure: Lottie data in, zip bytes out.
  */
 import { strFromU8, strToU8, zipSync, type Zippable } from 'fflate';
@@ -12,7 +12,7 @@ type Json = any;
 export interface DotLottieOptions {
   /** Written into the manifest. */
   generator?: string;
-  /** Should it play again when it ends? Format 1 stores it in the manifest; format 2 has no field for it (see `looping`). */
+  /** Should it play again when it ends? Format 1 stores it in the manifest; format 2 has no field for it, so it writes a small state machine (see `playMachine`). */
   loop?: boolean;
   /** The layout: 2 (default, the current spec) or 1 (older players). */
   version?: 1 | 2;
@@ -67,6 +67,15 @@ export function splitPictures(data: Json, version: 1 | 2 = 1): { animation: Json
   return { animation: { ...data, assets }, images };
 }
 
+/**
+ * The smallest dotLottie state machine (format 2, in `s/`): one state that plays the animation straight away and repeats
+ * or not. Format 2's manifest has no loop or autoplay field, so this is where the export's loop setting lives. Players
+ * that run the file's state machine start with it; the others play the animation as they would any other.
+ */
+export function playMachine(animation: string, loop: boolean): Json {
+  return { initial: 'Play', states: [{ type: 'PlaybackState', name: 'Play', animation, loop, autoplay: true, mode: 'Forward', speed: 1, transitions: [] }] };
+}
+
 /** The zip: manifest first, then the animation, then the pictures (already compressed, so stored as they are). */
 export function dotLottieBytes(data: Json, opts: DotLottieOptions = {}): Uint8Array {
   const version = opts.version ?? 2;
@@ -74,28 +83,33 @@ export function dotLottieBytes(data: Json, opts: DotLottieOptions = {}): Uint8Ar
   const id = dotLottieId(String(data.nm ?? ''));
   const { animation, images } = splitPictures(data, version);
   const generator = opts.generator ?? 'Frameling';
+  const loop = opts.loop ?? true;
+  const machine = loop ? 'loop' : 'once';
   const manifest =
     version === 1
-      ? { version: '1.0', generator, animations: [{ id, autoplay: true, loop: opts.loop ?? true, speed: 1, direction: 1, playMode: 'normal' }] }
-      : { version: '2', generator, initial: { animation: id }, animations: [{ id }] };
+      ? { version: '1.0', generator, animations: [{ id, autoplay: true, loop, speed: 1, direction: 1, playMode: 'normal' }] }
+      : { version: '2', generator, initial: { animation: id, stateMachine: machine }, animations: [{ id }], stateMachines: [{ id: machine }] };
   const files: Zippable = {
     'manifest.json': [strToU8(JSON.stringify(manifest)), { level: 6 }],
     [`${lay.animations}${id}.json`]: [strToU8(JSON.stringify(animation)), { level: 9 }],
   };
+  if (version === 2) files[`s/${machine}.json`] = [strToU8(JSON.stringify(playMachine(id, loop))), { level: 9 }];
   for (const [name, bytes] of images) files[`${lay.images}${name}`] = [bytes, { level: 0 }];
   return zipSync(files);
 }
 
 /** What a dotLottie file holds, for checking: the manifest, each animation and the pictures by name. */
-export function readDotLottie(bytes: Uint8Array, unzip: (b: Uint8Array) => Record<string, Uint8Array>): { manifest: Json; animations: Record<string, Json>; images: Record<string, Uint8Array> } {
+export function readDotLottie(bytes: Uint8Array, unzip: (b: Uint8Array) => Record<string, Uint8Array>): { manifest: Json; animations: Record<string, Json>; images: Record<string, Uint8Array>; machines: Record<string, Json> } {
   const entries = unzip(bytes);
   const animations: Record<string, Json> = {};
   const images: Record<string, Uint8Array> = {};
+  const machines: Record<string, Json> = {};
   for (const [name, data] of Object.entries(entries)) {
     const dir = /^(animations|a)\//.exec(name)?.[0];
     if (dir && name.endsWith('.json')) animations[name.slice(dir.length, -'.json'.length)] = JSON.parse(strFromU8(data));
+    else if (name.startsWith('s/') && name.endsWith('.json')) machines[name.slice(2, -'.json'.length)] = JSON.parse(strFromU8(data));
     else if (name.startsWith('images/')) images[name.slice('images/'.length)] = data;
     else if (name.startsWith('i/')) images[name.slice('i/'.length)] = data;
   }
-  return { manifest: JSON.parse(strFromU8(entries['manifest.json'])), animations, images };
+  return { manifest: JSON.parse(strFromU8(entries['manifest.json'])), animations, images, machines };
 }
