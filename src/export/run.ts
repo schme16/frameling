@@ -15,7 +15,8 @@ import { NO_SOUND_NOTE, prepareSound } from '../audio/export';
 import { frameToSvg } from './svg';
 import { pdfFile, psdFile } from './layered-run';
 import { animatedSvg } from './svg-anim';
-import { lottieJson } from './lottie';
+import { docToLottie, lottieJson } from './lottie';
+import { dotLottieBytes } from './dotlottie';
 import { formatInfo, normalizeSheet, type ExportSettings } from './types';
 import { godotBonesFiles } from './godot-bones-run';
 import { BT709_LIMITED, rgbaToI420 } from './yuv';
@@ -86,8 +87,9 @@ export async function runExport(ctx: RunContext): Promise<RunResult> {
     }
     case 'lottie': {
       step(0, 'Writing the animation');
-      const json = lottieJson(doc, { range: plan.range, transparent: bg === 'none', pictures: settings.lottiePictures });
-      return { kind: 'file', name: `${plan.name}.json`, bytes: strToU8(json) };
+      const lottie = { range: plan.range, transparent: bg === 'none', pictures: settings.lottiePictures };
+      if (settings.lottieFile === 'dotlottie') return { kind: 'file', name: `${plan.name}.lottie`, bytes: dotLottieBytes(docToLottie(doc, lottie), { generator: ctx.appVersion ? `Frameling ${ctx.appVersion}` : 'Frameling', loop: settings.loop }) };
+      return { kind: 'file', name: `${plan.name}.json`, bytes: strToU8(lottieJson(doc, lottie)) };
     }
     case 'svganim': {
       step(0, 'Writing the animation');

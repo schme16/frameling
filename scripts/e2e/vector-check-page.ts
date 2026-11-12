@@ -18,6 +18,7 @@ import { makeBouncingLogo } from '../../src/templates/bouncing-logo';
 import { makeBouncingBall } from '../../src/templates/bouncing-ball';
 import { makeMorph } from '../../src/templates/morph';
 import { TEMPLATES } from '../../src/templates';
+import { dotLottieBytes } from '../../src/export/dotlottie';
 import { lottieSizes } from '../../src/export/lottie-size';
 import { makeCameraPan } from '../../src/templates/camera-pan';
 import { addPixelLayer, addVectorLayer, ellipsePath, fill, hold, pathShape, rectPath, vectorDrawing } from '../../src/templates/build';
@@ -502,6 +503,56 @@ const api = {
     }
     const r = svgHolder.querySelector('svg')!.getBoundingClientRect();
     return { x: r.x, y: r.y, w: r.width, h: r.height };
+  },
+  /**
+   * Plays the loaded document as plain JSON and as a .lottie in the dotLottie web player (ThorVG, from `base`/index.js)
+   * and compares frames with Frameling's own and with each other. Pictures and everything else go through the zip.
+   */
+  async dotLottie(base: string, frames: number[]) {
+    const mod = await import(/* @vite-ignore */ base + '/index.js');
+    mod.DotLottie.setWasmUrl(base + '/dotlottie-player.wasm');
+    const data = docToLottie(doc);
+    const lottie = dotLottieBytes(docToLottie(doc));
+    const play = async (src: string | ArrayBuffer) => {
+      const canvas = document.createElement('canvas');
+      canvas.width = doc.width;
+      canvas.height = doc.height;
+      document.body.appendChild(canvas);
+      const player = new mod.DotLottie({ canvas, data: src, autoplay: false, renderConfig: { devicePixelRatio: 1, autoResize: false }, layout: { fit: 'fill', align: [0.5, 0.5] } });
+      await new Promise<void>((res, rej) => {
+        player.addEventListener('load', () => res());
+        player.addEventListener('loadError', (e: unknown) => rej(new Error('load error ' + JSON.stringify(e))));
+        setTimeout(() => rej(new Error('player did not load')), 15000);
+      });
+      // Pictures decode on their own time.
+      await new Promise((r) => setTimeout(r, 500));
+      const out: Uint8ClampedArray[] = [];
+      for (const f of frames) {
+        player.setFrame(f);
+        await new Promise((r) => setTimeout(r, 150));
+        out.push(new Uint8ClampedArray(pixelsOf(canvas)));
+      }
+      const total = player.totalFrames;
+      player.destroy();
+      canvas.remove();
+      return { out, total };
+    };
+    const a = await play(JSON.stringify(data));
+    const b = await play(lottie.buffer.slice(lottie.byteOffset, lottie.byteOffset + lottie.byteLength) as ArrayBuffer);
+    let rJson = 0;
+    let rLottie = 0;
+    let between = 0;
+    let ink = 0;
+    frames.forEach((f, i) => {
+      const fl = frameling(f);
+      rJson += compare(fl, a.out[i]).rmse;
+      rLottie += compare(fl, b.out[i]).rmse;
+      between += compare(a.out[i], b.out[i]).rmse;
+      // Something was drawn: not all one colour.
+      const px = b.out[i];
+      for (let k = 4; k < px.length; k += 4) if (px[k] !== px[0] || px[k + 1] !== px[1] || px[k + 2] !== px[2]) ink++;
+    });
+    return { jsonBytes: JSON.stringify(data).length, lottieBytes: lottie.length, total: a.total, rJson: rJson / frames.length, rLottie: rLottie / frames.length, between: between / frames.length, ink };
   },
   svgCompare(frame: number, rgba: number[]) {
     return compare(frameling(frame), new Uint8ClampedArray(rgba));
