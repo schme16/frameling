@@ -97,7 +97,8 @@ function TestPad({ onRaw }: { onRaw: (raw: number | null) => void }) {
           sample(e, true);
         }}
         onPointerMove={(e) => {
-          for (const ce of typeof e.nativeEvent.getCoalescedEvents === 'function' && e.buttons ? e.nativeEvent.getCoalescedEvents() : [e.nativeEvent]) sample(ce, e.buttons !== 0);
+          const list = typeof e.nativeEvent.getCoalescedEvents === 'function' && e.buttons ? e.nativeEvent.getCoalescedEvents() : [];
+          for (const ce of list.length ? list : [e.nativeEvent]) sample(ce, e.buttons !== 0);
         }}
         onPointerUp={() => (last.current = null)}
         onPointerLeave={() => onRaw(null)}

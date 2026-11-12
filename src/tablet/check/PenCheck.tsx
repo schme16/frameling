@@ -9,7 +9,7 @@ import { toast } from '../../ui/toast';
 import { overlays } from '../../ui/overlays';
 import { getPen } from '../settings';
 import { CHECK_STEPS, CheckRecorder, type CheckStepId, type PenSample } from './recorder';
-import { checkMemory, closePenCheck, gatherEnv, reduceCheck, saveReport, setCheckMemory, startFlow, type CheckFlow } from './state';
+import { checkMemory, closePenCheck, gatherEnv, reduceCheck, saveReport, setCheckMemory, startFlow } from './state';
 import '../tablet.css';
 
 const STEP_TITLE: Record<CheckStepId, string> = {
@@ -83,13 +83,16 @@ export function PenCheck() {
 function Check({ start }: { start: 'offer' | 'run' }) {
   const [flow, dispatch] = useReducer(reduceCheck, start, (m) => startFlow(m));
   const rec = useRef<CheckRecorder>(null as unknown as CheckRecorder);
-  if (!rec.current) rec.current = new CheckRecorder(getPen().pen);
+  // Which step is on, kept in step with the notebook right away: events can come faster than React redraws.
+  const stepRef = useRef(start === 'run' ? 0 : -1);
+  if (!rec.current) {
+    rec.current = new CheckRecorder(getPen().pen);
+    if (start === 'run') rec.current.start(CHECK_STEPS[0]);
+  }
   const finished = useRef(false);
   const [says, setSays] = useState(() => (start === 'offer' ? line('pen.check.offer') : `${line('pen.check.hello')} ${stepSays('hover')}`));
   const [mood, setMood] = useState<QuillAnim>('talk');
   const [live, setLive] = useState('');
-  const flowRef = useRef<CheckFlow>(flow);
-  flowRef.current = flow;
   const cheers = useMemo(() => lines('pen.check.got'), []);
   const cheerN = useRef(0);
   const padRef = useRef<HTMLCanvasElement>(null);
@@ -99,14 +102,12 @@ function Check({ start }: { start: 'offer' | 'run' }) {
 
   const stepId = flow.phase === 'run' ? CHECK_STEPS[flow.step] : null;
 
-  // A new step: the notebook starts counting for it and Quill asks for it.
+  // A new step: Quill points at the pad, and the clock for the "I can't hear a pen" hint starts over.
   useEffect(() => {
     if (!stepId) return;
-    rec.current.start(stepId);
     stepStarted.current = performance.now();
     nopenSaid.current = false;
     setMood('point');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stepId]);
 
   // Express keys and a touch ring talk to the page as keys and scrolls.
@@ -145,16 +146,17 @@ function Check({ start }: { start: 'offer' | 'run' }) {
   }, [stepId]);
 
   function afterEvent(): void {
-    const f = flowRef.current;
-    const id = f.phase === 'run' ? CHECK_STEPS[f.step] : null;
-    if (id && rec.current.currentDone()) {
-      rec.current.finish(id, 'done');
-      dispatch({ type: 'stepDone' });
-      cheerN.current++;
-      const next = CHECK_STEPS[f.step + 1];
-      setSays(`${pick(cheers, cheerN.current)} ${next ? stepSays(next) : line('pen.check.save')}`);
-      setMood('cheer');
-    }
+    const i = stepRef.current;
+    const id = CHECK_STEPS[i];
+    if (!id || !rec.current.currentDone()) return;
+    rec.current.finish(id, 'done');
+    dispatch({ type: 'stepDone', id });
+    stepRef.current = i + 1;
+    const next = CHECK_STEPS[i + 1];
+    if (next) rec.current.start(next);
+    cheerN.current++;
+    setSays(`${pick(cheers, cheerN.current)} ${next ? stepSays(next) : line('pen.check.save')}`);
+    setMood('cheer');
   }
 
   const draw = (e: PointerEvent, drawing: boolean) => {
@@ -201,11 +203,14 @@ function Check({ start }: { start: 'offer' | 'run' }) {
   };
 
   const skip = () => {
-    const id = stepId;
+    const i = stepRef.current;
+    const id = CHECK_STEPS[i];
     if (!id) return;
     rec.current.finish(id, 'skipped');
-    dispatch({ type: 'skip' });
-    const next = CHECK_STEPS[flow.step + 1];
+    dispatch({ type: 'skip', id });
+    stepRef.current = i + 1;
+    const next = CHECK_STEPS[i + 1];
+    if (next) rec.current.start(next);
     setSays(next ? `${line('pen.check.skipped')} ${stepSays(next)}` : line('pen.check.save'));
     setMood('think');
   };
@@ -250,6 +255,8 @@ function Check({ start }: { start: 'offer' | 'run' }) {
               data-autofocus
               onClick={() => {
                 dispatch({ type: 'accept' });
+                stepRef.current = 0;
+                rec.current.start(CHECK_STEPS[0]);
                 setSays(`${line('pen.check.hello')} ${stepSays('hover')}`);
               }}
             >

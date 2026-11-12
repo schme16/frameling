@@ -51,7 +51,7 @@ export interface Prefs {
   pixelThickOutlines: boolean;
   /** How thick that outline is, in art pixels (1 to 16). */
   pixelOutlineWidth: number;
-  /** Measure each plugin's memory and speed (shown in Preferences > Plugins). Off by default: the memory part needs each plugin in its own process, which costs memory and a restart. */
+  /** Measure each plugin's memory and speed (switch is in Preferences > Diagnostics, numbers in Preferences > Plugins). Off by default: the memory part needs each plugin in its own process, which costs memory and a restart. */
   pluginDiagnostics: boolean;
 }
 

@@ -88,8 +88,8 @@ export interface CheckFlow {
 
 export type CheckAction =
   | { type: 'accept' }
-  | { type: 'stepDone' }
-  | { type: 'skip' }
+  | { type: 'stepDone'; id?: CheckStepId }
+  | { type: 'skip'; id?: CheckStepId }
   | { type: 'saveFailed'; why: 'cancelled' | 'failed' }
   | { type: 'saved' };
 
@@ -101,10 +101,11 @@ export function reduceCheck(f: CheckFlow, a: CheckAction): CheckFlow {
   switch (a.type) {
     case 'accept':
       return f.phase === 'offer' ? { ...f, phase: 'run' } : f;
+    // An action for a step that is no longer the current one (a fast burst of events) changes nothing.
     case 'stepDone':
-      return f.phase === 'run' && id && !f.done.includes(id) ? advance({ done: [...f.done, id] }) : f;
+      return f.phase === 'run' && id && (!a.id || a.id === id) && !f.done.includes(id) ? advance({ done: [...f.done, id] }) : f;
     case 'skip':
-      return f.phase === 'run' && id ? advance({ skipped: [...f.skipped, id] }) : f;
+      return f.phase === 'run' && id && (!a.id || a.id === id) ? advance({ skipped: [...f.skipped, id] }) : f;
     case 'saveFailed':
       return f.phase === 'save' ? { ...f, saveProblem: a.why } : f;
     case 'saved':

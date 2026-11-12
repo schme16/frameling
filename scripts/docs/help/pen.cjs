@@ -40,7 +40,7 @@ module.exports = [
   {
     name: 'pen-tablet',
     prefs: CALM,
-    steps: [template('bouncing-ball'), js(`${F}.overlays.openPrefs('pen')`), wait(1500), penStroke('.tb-pad'), wait(300), ...shotOf('.ui-prefs', 10)],
+    steps: [template('bouncing-ball'), js(`${F}.overlays.openPrefs('pen')`), wait(1500), penStroke('.tb-pad'), wait(300), js("document.querySelector('.ui-prefs-page').scrollTop = 175"), wait(300), ...shotOf('.ui-prefs', 10)],
   },
   {
     name: 'pen-check',

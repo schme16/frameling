@@ -321,6 +321,19 @@ describe('the pen check dialog', () => {
     expect(localStorage.getItem('frameling.penCheck.v1')).toContain('"done":true');
   });
 
+  it('a fast burst of events (faster than React redraws) ticks off one step at a time, not several', async () => {
+    await act(async () => root.render(<PenCheck />));
+    act(() => startPenCheck());
+    act(() => {
+      const el = pad();
+      for (let i = 0; i < 12; i++) el.dispatchEvent(pointer({ x: 100 + i, t: next() }));
+      el.dispatchEvent(pointer({ type: 'pointerdown', buttons: 1, pressure: 0.05, t: next() }));
+      for (let i = 1; i <= 20; i++) el.dispatchEvent(pointer({ buttons: 1, pressure: i / 20, t: next() }));
+    });
+    expect(step()).toBe('Lean');
+    expect([...host.querySelectorAll('.tb-check-steps li[data-state=done]')].map((li) => li.querySelector('span')!.textContent)).toEqual(['Hover', 'Press']);
+  });
+
   it('skipping marks a step skipped, and closing half way is offered again next time', async () => {
     await act(async () => root.render(<PenCheck />));
     act(() => startPenCheck());
