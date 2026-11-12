@@ -88,7 +88,7 @@ describe('the renderer', () => {
 
   it('sizes the picture to the drawings plus how far the effects reach', () => {
     expect(effectReach('blur', { radius: 3 })).toBe(9);
-    expect(effectReach('shadow', { x: -4, y: 2, softness: 2 })).toBe(7);
+    expect(effectReach('shadow', { x: -4, y: 2, softness: 2 })).toBe(10);
     expect(effectReach('adjust', { hue: 30 })).toBe(0);
     const d = vectorDrawing(newDoc({}), [fill([rectPath(-10, 5, 20, 10)], '#000000')]);
     expect(drawingBox(d)).toEqual({ x0: -10, y0: 5, x1: 10, y1: 15 });

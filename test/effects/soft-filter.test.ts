@@ -332,6 +332,19 @@ describe('every filter effect on the forced fallback path', () => {
     expect(calls).not.toContain('getImageData');
   });
 
+  it('shadow softness is the blur sigma itself, glow size is twice its sigma (as Chromium draws them)', () => {
+    setFilterOverride('fallback');
+    const alphaAt = (c: Canvas2, x: number, y: number) => px(c, x, y)[3];
+    const pool = new BufferPool(W, H);
+    // Softness 4 is the same softness as a soften radius of 4, moved by the offset.
+    const ref = applyEffect(source(pool), 'blur', { radius: 4 }, 1, origin, pool);
+    const shadow = applyEffect(source(pool), 'shadow', { color: '#000000', opacity: 1, x: 6, y: 3, softness: 4 }, 1, origin, pool);
+    for (const [x, y] of [[26, 13], [27, 15], [24, 21], [25, 19]]) expect(Math.abs(alphaAt(shadow, x, y) - alphaAt(ref, x - 6, y - 3))).toBeLessThanOrEqual(2);
+    // Glow size 8 is a soften radius of 4.
+    const glow = applyEffect(source(pool), 'glow', { color: '#000000', size: 8, strength: 1 }, 1, origin, pool);
+    for (const [x, y] of [[11, 14], [12, 9], [23, 14], [18, 20]]) expect(Math.abs(alphaAt(glow, x, y) - alphaAt(ref, x, y))).toBeLessThanOrEqual(2);
+  });
+
   it('glow is a blurred tinted halo under the picture', () => {
     setFilterOverride('fallback');
     const pool = new BufferPool(W, H);

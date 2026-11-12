@@ -1251,8 +1251,8 @@ function nativeEffects(effects: LayerEffect[] | undefined, frames: number[], tim
           effectSlider('Opacity', 2, track(num('opacity').map((o) => r3(o * c.alpha * 255)), times, true), 'ADBE Drop Shadow-0002'),
           effectSlider('Direction', 3, track(x.map((v, i) => r3((Math.atan2(y[i], v) * 180) / Math.PI + 90)), times, true), 'ADBE Drop Shadow-0003'),
           effectSlider('Distance', 4, track(x.map((v, i) => r3(Math.hypot(v, y[i]))), times, true), 'ADBE Drop Shadow-0004'),
-          // lottie-web: sigma = softness / 4; the canvas's drop-shadow blur b is a sigma of b / 2.
-          effectSlider('Softness', 5, track(num('softness').map((s) => r3(s * 2)), times, true), 'ADBE Drop Shadow-0005'),
+          // lottie-web and ThorVG: sigma = softness / 4 (measured); the canvas's drop-shadow blur b is a sigma of b.
+          effectSlider('Softness', 5, track(num('softness').map((s) => r3(s * 4)), times, true), 'ADBE Drop Shadow-0005'),
           { ty: 7, nm: 'Shadow Only', mn: 'ADBE Drop Shadow-0006', ix: 6, v: stat(0) },
         ],
       });
