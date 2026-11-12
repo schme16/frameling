@@ -48,7 +48,25 @@ function measure(count: number): string {
     update('Open', (d) => void switchArtboard(d, ids[0]));
     update('Back', (d) => void switchArtboard(d, home));
   }, 5);
+  let openMs = 0;
+  let backMs = 0;
+  for (let i = 0; i < 6; i++) {
+    let t = performance.now();
+    update('Open', (d) => void switchArtboard(d, ids[0]));
+    const o = performance.now() - t;
+    t = performance.now();
+    update('Back', (d) => void switchArtboard(d, home));
+    if (i) {
+      openMs += o / 5;
+      backMs += (performance.now() - t) / 5;
+    }
+  }
+  const undoT = performance.now();
   update('Open', (d) => void switchArtboard(d, ids[0]));
+  store().undo();
+  store().redo();
+  const undoMs = performance.now() - undoT;
+  if (activeId(store().get().doc) !== ids[0]) throw new Error('redo did not reopen it');
   const v = aliasId('d5_7', ids[0]);
   let m = 0;
   const inVariation = time(() =>
@@ -63,7 +81,7 @@ function measure(count: number): string {
     }),
   );
   expect(findArtboard(store().get().doc, ids[0])!.overrides).toBeTruthy();
-  return `${count} variation(s), 9,600 keys: no variations ${plain.toFixed(2)} ms | edit a drawing of the original ${original.toFixed(2)} ms | edit a drawing in the open variation ${inVariation.toFixed(2)} ms | layer look in the open variation ${layerEdit.toFixed(2)} ms | open and close it ${switching.toFixed(2)} ms`;
+  return `${count} variation(s), 9,600 keys: no variations ${plain.toFixed(2)} ms | edit a drawing of the original ${original.toFixed(2)} ms | edit a drawing in the open variation ${inVariation.toFixed(2)} ms | layer look in the open variation ${layerEdit.toFixed(2)} ms | open and close it ${switching.toFixed(2)} ms (open ${openMs.toFixed(2)}, close ${backMs.toFixed(2)}; open + undo + redo ${undoMs.toFixed(2)})`;
 }
 
 // A benchmark, not a check: it only prints timings, and on a busy machine it can outlast the usual test timeout.
