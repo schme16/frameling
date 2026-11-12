@@ -174,7 +174,7 @@ const FloatWindow = memo(function FloatWindow({ f, z, win }: { f: FloatWin; z: n
         <div
           className="ui-float-bar"
           onPointerDown={(e) => {
-            if ((e.target as HTMLElement).closest('button, input, [data-dock-tab], .ui-float-name')) return;
+            if ((e.target as HTMLElement).closest('button, input, [data-dock-tab]')) return;
             startFloatDrag(e, { ...f, ...box });
           }}
           onDoubleClick={(e) => {

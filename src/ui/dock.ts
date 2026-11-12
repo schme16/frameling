@@ -328,7 +328,14 @@ export function currentWorkspace(): Workspace | undefined {
 export function applyWorkspace(id: string): boolean {
   const w = listWorkspaces().find((x) => x.id === id);
   if (!w) return false;
-  commit({ ...dock.get(), workspaceId: w.id, layout: reconcile(w.layout) });
+  const s = dock.get();
+  const layout = reconcile(w.layout);
+  // The ones that come with the app only say where panels go: the person's own panel names and tool rail stay.
+  if (w.builtin) {
+    layout.tools = s.layout.tools;
+    if (s.layout.names) layout.names = s.layout.names;
+  }
+  commit({ ...s, workspaceId: w.id, layout });
   return true;
 }
 

@@ -27,6 +27,7 @@ import {
   renamePanel,
   renameWorkspace,
   resetDock,
+  resetLayout,
   saveWorkspace,
   setActive,
   setFloatActive,
@@ -126,12 +127,22 @@ describe('names and the tool rail', () => {
     expect(l().floats[0].name).toBe('Reference');
   });
   it('names go with a saved workspace', () => {
+    const plain = saveWorkspace('Plain')!;
     renamePanel('layers', 'Pages');
     const ws = saveWorkspace('Named')!;
-    applyWorkspace('draw');
+    applyWorkspace(plain.id);
     expect(panelTitle('layers')).toBe('Layers');
     applyWorkspace(ws.id);
     expect(panelTitle('layers')).toBe('Pages');
+  });
+  it('the workspaces that come with the app leave your names and your tool rail alone', () => {
+    renamePanel('layers', 'Pages');
+    placeTools('top');
+    applyWorkspace('animate');
+    expect(panelTitle('layers')).toBe('Pages');
+    expect(l().tools.place).toBe('top');
+    resetLayout();
+    expect(l().tools.place).toBe('top');
   });
   it('the rail goes to any side or floats, and is kept with the layout', () => {
     placeTools('top');
