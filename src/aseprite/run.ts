@@ -36,7 +36,8 @@ const plural = (n: number, one: string, many = one + 's') => `${n} ${n === 1 ? o
 
 function read(bytes: Uint8Array): AseFile | null {
   try {
-    return parseAseprite(bytes);
+    // Lazy: each cel's picture is unpacked when it is turned into a drawing, one at a time, never all at once.
+    return parseAseprite(bytes, { lazy: true });
   } catch (e) {
     notify(e instanceof AsepriteProblem ? e.message : 'Frameling could not read that Aseprite file.', 'error', undefined, 8000);
     return null;
