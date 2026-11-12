@@ -1,5 +1,5 @@
 // Pixel drawings hold only their painted part: a block at (x, y) on the art grid, blank = 0 x 0.
-import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
+import { strFromU8, strToU8, unzipSync, zipSync, type Zippable } from 'fflate';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { newBlankPixelDrawing, newDoc, newPixelDrawing } from '../../src/core/doc';
 import type { PixelDrawing, PixelLayer } from '../../src/core/format';
@@ -196,8 +196,8 @@ describe('the file', () => {
     const doc = JSON.parse(strFromU8(files['doc.json']));
     expect(doc.drawings.p1.width).toBe(1);
     const old = docWith(full);
-    const oldFiles = unzipSync(saveFile(old));
-    oldFiles['pixels/p1.png'] = encodePng({ width: 32, height: 24, pixels: full.pixels }, { level: 0 });
+    const oldFiles: Zippable = { ...unzipSync(saveFile(old)) };
+    oldFiles['pixels/p1.png'] = [encodePng({ width: 32, height: 24, pixels: full.pixels }, { level: 1 }), { level: 6 }];
     doc.drawings.p1 = { id: 'p1', kind: 'pixel', width: 32, height: 24, pixels: 'pixels/p1.png' };
     oldFiles['doc.json'] = strToU8(JSON.stringify(doc));
     oldFiles['manifest.json'] = strToU8(JSON.stringify(manifest));
