@@ -32,7 +32,7 @@ Search for **Use palette from an Aseprite file** in the command palette (Ctrl+K)
 - **Each cel's position and opacity**, in every colour mode: full colour, grayscale and indexed.
 - **The palette**, as your drawing's palette. The original index details are kept in the drawing's notes.
 - **Tags** become named clips, so they work in exports and game engines. A tag's direction (forward, backward, back and forth) and how many times it repeats come across too, and Frameling's clips play and export that way.
-- **Tilemaps** become real tiles in your tileset, flips included, when they line up with the tile grid, including a grid that starts away from the corner. Otherwise that layer comes across as flat pixels and the dialog says why.
+- **Tilemaps** become real tiles in your tileset, flips included, when they line up with the tile grid. Otherwise that layer comes across as flat pixels and the dialog says why.
 
 ## What gets approximated
 
