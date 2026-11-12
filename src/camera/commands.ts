@@ -1,13 +1,13 @@
 // Camera commands: palette, menus (Animate and View) and keys, plus the Camera panel.
 import { lazyPanel } from '../core/lazy';
-import { registerCommands, registerPanel } from '../core/registry';
+import type { Command, PanelDef } from '../core/registry';
 import { store } from '../core/store';
 import { getViewSettings, setViewSettings } from '../canvas/viewSettings';
 import { addCamera, resetView, stageCamera, throughCameraOf, toggleThroughCamera } from './ops';
 
-registerPanel({ id: 'camera', title: 'Camera', icon: 'camera', component: lazyPanel(() => import('./CameraPanel').then((m) => m.CameraPanel)), zone: 'right', order: 37, help: 'camera' });
+export const cameraPanel: PanelDef = { id: 'camera', title: 'Camera', icon: 'camera', component: lazyPanel(() => import('./CameraPanel').then((m) => m.CameraPanel)), zone: 'right', order: 37, help: 'camera' };
 
-registerCommands([
+export const cameraCommands: Command[] = [
   {
     id: 'camera.add',
     label: 'Add a camera',
@@ -62,4 +62,4 @@ registerCommands([
       if (cam) store().setUi({ activeLayerId: cam.id, tool: 'camera' });
     },
   },
-]);
+];

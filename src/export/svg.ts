@@ -5,7 +5,8 @@ import { isPosed, poseAt, type PosedInstance, type PosedLayer } from '../core/sy
 import { drawMeshed, strokeOutline } from '../core/render';
 import { encodePng } from '../io/png';
 import { flattenTilemap } from '../tiles/model';
-import { particlesToSvg, textToSvg, withSprites } from './svg-extra';
+import { shapeExportOf } from './shapeExport';
+import { withSprites } from './svg-extra';
 import { composeSvg, composeSymbol, tintAttr, tintDefs } from './svg-look';
 import { cameraViewAt, layerCameraMatrix } from '../core/camera';
 import { gradientKey, sortedStops } from '../core/gradient';
@@ -116,8 +117,8 @@ export function subPathsToPathData(paths: SubPath[]): string {
 
 export function shapeToSvg(s: Shape, doc?: Doc): string {
   if (s.type === 'instance') return isPosed(s) ? instanceToSvg(s, doc) : '';
-  if (s.type === 'text') return textToSvg(s);
-  if (s.type === 'particles') return particlesToSvg(s);
+  // Text, particles and the like write themselves, through their registered export.
+  if (s.type !== 'stroke' && s.type !== 'fill' && s.type !== 'path') return shapeExportOf(s.type)?.svg?.(s) ?? '';
   if (s.type === 'stroke') {
     const d = strokeToPathData(s);
     return d ? `<path d="${d}"${paint('fill', s.color, s.opacity)}/>` : '';

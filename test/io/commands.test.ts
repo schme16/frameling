@@ -4,6 +4,7 @@ import '../../src/io/commands';
 import '../../src/io/help';
 import '../../src/export/commands';
 import '../../src/export/help';
+import { godotHelp } from '../../src/export/godot-help';
 
 describe('files and export commands', () => {
   it('registers the file commands with their shortcuts', () => {
@@ -25,7 +26,7 @@ describe('files and export commands', () => {
       expect(getHelp(help), id).toBeDefined();
     }
     for (const t of ['saving-and-opening', 'autosave', 'exporting', 'export-video-gif-apng', 'export-sprite-sheets', 'export-godot', 'export-svg']) {
-      expect(getHelp(t)?.body.length, t).toBeGreaterThan(100);
+      expect((getHelp(t) ?? godotHelp.find((h) => h.id === t))?.body.length, t).toBeGreaterThan(100);
     }
   });
 });

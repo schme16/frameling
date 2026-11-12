@@ -7,8 +7,8 @@ import { newParticles } from '../../src/particles/model';
 import { lottieExport, smoothTrack } from '../../src/export/lottie';
 import { animatedSvg, animatedSvgExport } from '../../src/export/svg-anim';
 import { frameToSvg } from '../../src/export/svg';
-import { carryWarnings, docFeatures, CARRY } from '../../src/export/carries';
-import { FORMATS } from '../../src/export/types';
+import { carryOf, carryWarnings, docFeatures } from '../../src/export/carries';
+import { allFormats } from '../../src/export/types';
 import { addVectorLayer, ellipsePath, fill, hold, rectPath, vectorDrawing } from '../../src/templates/build';
 
 const fx = (kind: LayerEffect['kind'], values: Record<string, number | string> = {}): LayerEffect => ({ id: uid('e'), kind, values: { ...defaultValues(kind), ...values } });
@@ -182,7 +182,7 @@ describe('SVG keeps the look', () => {
 
 describe('what carries over', () => {
   it('has a note for every format', () => {
-    for (const f of FORMATS) expect(CARRY[f.id].summary.length).toBeGreaterThan(20);
+    for (const f of allFormats()) expect(carryOf(f.id).summary.length).toBeGreaterThan(20);
   });
 
   it('lists what this document loses per format', () => {

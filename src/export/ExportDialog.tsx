@@ -6,56 +6,37 @@ import { desktop } from '../io/desktop';
 import { Modal, mountModal } from '../io/mount';
 import { Icon } from '../ui/icons';
 import { Quill, QuillSays } from '../ui/mascot';
-import { detectCapabilities, type Capabilities } from './capabilities';
 import { describeError, exportDocument, loadLastSettings, loadSheetExtras, saveSheetExtras } from './exporter';
-import { setChoice, useChoice, getChoiceDef, withChoice } from '../core/choices';
+import { useChoice } from '../core/choices';
 import './choices';
-import { artScale, clipLoopWords, defaultSettings, drawnFrames, hasPixelLayers, planExport, scaleAllowed, scaleChoices, type Plan } from './plan';
+import { artScale, defaultSettings, drawnFrames, hasPixelLayers, planExport, scaleAllowed, scaleChoices } from './plan';
 import { setDocLength } from '../timeline/ops';
-import { EnginePicker } from './EnginePicker';
-import { openHelp, openPrefs } from '../ui/overlays';
-import { godotTexturePath } from './sheet';
-import { hasBonesToExport } from './godot-bones-scope';
-import { BonesLookNotes } from './BonesLookNotes';
 import type { Progress } from './run';
-import { GIF_MAX_FPS } from './gif';
-import { proresSupport, type ProresSupport } from './prores';
-import { LayeredNotes } from './LayeredNotes';
 import { CarryNotes } from './CarryNotes';
-import { bakesEffects, docFeatures, hasSoftOrShadow } from './carries';
-import { aiFramesOf, DEFAULT_SHEET, engineInfo, FORMATS, formatInfo, normalizeSheet, splitFormats, type AiFrames, type EngineId, type ExportSettings, type FormatId, type FormatInfo } from './types';
+import { allExporters, exporterOf, exportUiOf, hasExporter, loadExportUis, type ExportUiProps, type FormatSupport } from './registry';
+import { Check } from './options/controls';
+import { DEFAULT_SHEET, formatInfo, splitFormats, type ExportSettings, type FormatId, type FormatInfo } from './types';
 import './export.css';
 import { leaveTileEdit } from '../tiles/tileEdit';
 import { inOutRange } from '../timeline/inout';
 import { docDpi, formatSize } from '../core/units';
 import { usePrefs } from '../ui/prefs';
-import { isFeatureOn } from '../features/host';
 import { useFeaturesVersion } from '../features/use';
 import { templateExport } from '../templates/setup';
 import { ArtboardExportPicker } from '../artboards/ExportPicker';
 import { artboardExport, artboardSummary, planArtboards, singleFrameNote } from '../artboards/export';
 import { customPicture } from '../artboards/fit';
 import { pixelExportStart } from '../pixel/workspace';
-import { sheetExported } from '../pixel/moments';
-import { followWay, sheetFooter } from '../pixel/sheetMode';
-import { isPixelDoc } from '../pixel/way';
+import { followWay } from '../pixel/sheetMode';
 import { SheetSays } from '../pixel/SheetSays';
 import { emitPluginEvent } from '../plugins/bus';
 
-/** The ways an Illustrator file can hold an animation's frames. */
-const AI_FRAMES: { id: AiFrames; label: string; title: string; note: string }[] = [
-  { id: 'one', label: 'This frame', title: 'Only the frame you are looking at', note: 'Illustrator opens the frame you are looking at, with your layers and folders as real Illustrator layers.' },
-  { id: 'files', label: 'One file per frame', title: 'A zip with a .ai file for every frame', note: 'A zip with a .ai file for every frame, each with real layers.' },
-  { id: 'artboards', label: 'One artboard per frame', title: 'Every frame side by side as an artboard in one file', note: 'Every frame sits side by side as an artboard in one Illustrator file, with the same layers all the way through.' },
-  { id: 'pages', label: 'Pages', title: 'One PDF page per frame', note: 'One PDF page per frame in a single file. Illustrator asks which page to open and brings it in as groups, without the layer names.' },
-];
-
-/** Last time's settings, repaired so they still make sense for this document. */
-/** The formats on offer: Export for Interactives goes while that feature is off (Preferences > Features). */
+/** The formats on offer: the built-in ones and those of the features that are on (Interactives goes while it is off, in Preferences > Features). */
 export function availableFormats(): FormatInfo[] {
-  return isFeatureOn('interactives') ? FORMATS : FORMATS.filter((f) => f.id !== 'interactives');
+  return allExporters().map((d) => d.info);
 }
 
+/** Last time's settings, repaired so they still make sense for this document. */
 function startingSettings(): ExportSettings {
   const { doc } = sceneOf(store().get().doc, 0);
   const base = defaultSettings(doc);
@@ -72,55 +53,8 @@ function startingSettings(): ExportSettings {
   if (!scaleAllowed(doc, s.scale)) s.scale = base.scale;
   // Whether the loop was chosen by hand is not remembered: a clip sets it again next time.
   delete s.loopTouched;
-  if (s.lottiePictures && !PICTURE_CHOICES.some((c) => c.id === s.lottiePictures)) delete s.lottiePictures;
-  if (s.lottieFile && !FILE_CHOICES.some((c) => c.id === s.lottieFile)) delete s.lottieFile;
-  if (s.lottieSoft && s.lottieSoft !== 'pictures') delete s.lottieSoft;
-  if (s.dotLottieVersion !== 1) delete s.dotLottieVersion;
+  for (const d of allExporters()) d.repair?.(s);
   return s;
-}
-
-/** How a Lottie file stores pictures made from effects (see PICTURE_LOOKS in lottie.ts). */
-const PICTURE_CHOICES: { id: NonNullable<ExportSettings['lottiePictures']>; label: string; note: string }[] = [
-  { id: 'balanced', label: 'Balanced', note: 'Sharp on high density screens and about half the size of Sharpest. Saved as WebP, which every current browser and phone plays.' },
-  { id: 'sharp', label: 'Sharpest', note: 'Every pixel kept, saved as PNG. The biggest file, and it plays in the oldest players too.' },
-  { id: 'small', label: 'Smallest', note: 'Half the detail, so the smallest file. Edges look a little soft on high density screens.' },
-];
-
-/** The two kinds of Lottie file. */
-const FILE_CHOICES: { id: NonNullable<ExportSettings['lottieFile']>; label: string; note: string }[] = [
-  { id: 'json', label: 'Lottie (.json)', note: 'One plain file that every Lottie player opens.' },
-  { id: 'dotlottie', label: 'dotLottie (.lottie)', note: 'One smaller file that holds the animation and its pictures. Plays in the dotLottie players (LottieFiles, web, iOS, Android), which not every older Lottie player is.' },
-];
-
-/** The two layouts of a dotLottie file. */
-const LAYOUT_CHOICES: { id: 1 | 2; label: string; note: string }[] = [
-  { id: 2, label: 'Current', note: 'The layout the dotLottie players and LottieFiles use today. It keeps the loop setting in a tiny play script that players start with, so the repeat is kept (the web player needs to be told to run it).' },
-  { id: 1, label: 'Older', note: 'The first layout, for older dotLottie players. It also carries the loop setting.' },
-];
-
-/** Says that the clip being exported sets the loop, and lets a hand-made choice go back to following it. */
-function LoopNote({ doc, s, plan, onFollow }: { doc: Doc; s: ExportSettings; plan: Plan; onFollow: () => void }) {
-  const clip = clipLoopWords(doc, s);
-  if (!clip) return null;
-  if (plan.loopFromClip) return <p className="ex-note">Set by the clip &ldquo;{clip.name}&rdquo;, which {clip.plays}. Tick or untick to choose another way.</p>;
-  return (
-    <p className="ex-note">
-      The clip &ldquo;{clip.name}&rdquo; {clip.plays}.{' '}
-      <button type="button" className="ex-link" onClick={onFollow}>
-        Follow the clip
-      </button>
-    </p>
-  );
-}
-
-function Check({ checked, onChange, disabled, children, hint }: { checked: boolean; onChange: (v: boolean) => void; disabled?: boolean; children: React.ReactNode; hint?: string }) {
-  return (
-    <label className={`ex-check${disabled ? ' ex-off' : ''}`} title={disabled ? hint : undefined}>
-      <input type="checkbox" checked={checked && !disabled} disabled={disabled} onChange={(e) => onChange(e.target.checked)} />
-      <span>{children}</span>
-      {disabled && hint && <small className="ex-why">{hint}</small>}
-    </label>
-  );
 }
 
 function ExportDialog({ close, initial, autoStart }: { close: () => void; initial: ExportSettings; autoStart: boolean }) {
@@ -131,7 +65,6 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
   const units = usePrefs((p) => p.units);
   const [progress, setProgress] = useState<Progress | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [caps, setCaps] = useState<Capabilities | null>(null);
   const abort = useRef<AbortController | null>(null);
   const running = progress !== null;
   const pixel = hasPixelLayers(doc);
@@ -144,7 +77,6 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
       return { ...x, sheet };
     });
   const webmPref = useChoice<string>('export.webmCodec');
-  const bounceMode = useChoice<string>('export.clipEngineBounce');
 
   // The popular formats first; the rest open under "More formats" (and stay open while one of them is chosen).
   const featuresVersion = useFeaturesVersion();
@@ -159,38 +91,39 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
   // The fit and the picture size change what comes out, so the footer follows them too.
   const abLook = [useChoice<string>('artboards.fit'), useChoice<string>('artboards.pictureSize'), customPicture.use((c) => c)];
   const abPlan = useMemo(() => planArtboards(store().rootDoc(), s, frame), [open, s, frame, abChoice, ...abLook]);
-  const video = s.format === 'mp4' || s.format === 'webm' || s.format === 'prores';
+  const def = exporterOf(s.format);
+  const video = !!def?.video;
+  const aiOne = !!def?.singleFrame?.(s);
   const videoSize = useMemo(() => planExport(doc, { ...s, format: 'mp4' }, frame), [doc, s, frame]);
 
-  // Ask what this computer can encode, at the size that matters.
+  // Ask what this computer can make, at the size that matters (a video is made at an even size, which is what the plan gives).
+  const [supports, setSupports] = useState<Record<string, FormatSupport>>({});
+  const firstAsk = useRef(true);
   useEffect(() => {
     let live = true;
-    void detectCapabilities(videoSize.width, videoSize.height).then((c) => live && setCaps(c));
+    const fresh = firstAsk.current;
+    firstAsk.current = false;
+    for (const d of allExporters()) {
+      if (!d.support) continue;
+      void d.support({ width: videoSize.width, height: videoSize.height }, fresh).then((r) => live && setSupports((x) => ({ ...x, [d.info.id]: r })));
+    }
     return () => void (live = false);
-  }, [videoSize.width, videoSize.height, webmPref]);
+  }, [videoSize.width, videoSize.height, webmPref, featuresVersion]);
+  const unavailable = (f: FormatId): string | null => supports[f]?.why ?? null;
 
-  const [prores, setProres] = useState<ProresSupport | null>(null);
+  // If the chosen format turns out to be unavailable, move to one that works.
   useEffect(() => {
-    let live = true;
-    void proresSupport(true).then((p) => live && setProres(p));
-    return () => void (live = false);
-  }, []);
-  const support = (f: FormatId) => (f === 'mp4' || f === 'webm') && caps ? caps[f] : null;
-  const unavailable = (f: FormatId): string | null => {
-    if (f === 'prores') return prores && !prores.ok ? (prores.reason ?? 'ProRes is not available here.') : null;
-    const sp = support(f);
-    return sp && !sp.ok ? sp.reason : null;
-  };
+    if (!unavailable(s.format)) return;
+    const next = allExporters().find((d) => !unavailable(d.info.id) && d.info.animated && !d.folderTitle);
+    if (next) set({ format: next.info.id });
+  }, [supports]);
 
-  // If the chosen video format turns out to be unavailable, move to one that works.
-  useEffect(() => {
-    if (!caps || !unavailable(s.format)) return;
-    const next = availableFormats().find((f) => !unavailable(f.id) && f.animated && f.id !== 'sheet');
-    if (next) set({ format: next.id });
-  }, [caps, prores]);
-
-  const alphaOk = s.format === 'webm' ? !!caps?.webm.alpha : info.alpha;
-  const alphaWhy = s.format === 'mp4' ? "MP4 videos can't be see-through. Try WebM, GIF or PNG." : s.format === 'webm' ? "This computer can't make see-through WebM. Try GIF, APNG or PNG sequence." : '';
+  const support = supports[s.format] ?? null;
+  const alphaOk = def?.support ? (support ? (support.alpha ?? info.alpha) : info.alpha) : info.alpha;
+  const alphaWhy = alphaOk ? '' : (def?.noAlphaWhy ?? '');
+  // What the format adds to the dialog (its options are loaded before the dialog opens).
+  const ui = exportUiOf(s.format);
+  const uiProps: ExportUiProps = { s, set, setSheet, doc, plan, support };
 
   const start = async () => {
     setError(null);
@@ -201,7 +134,7 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
     emitPluginEvent('export.started', heard);
     try {
       const outcome = await exportDocument(s, ac.signal, setProgress);
-      if (outcome === 'done' && s.format === 'sheet' && isPixelDoc(store().rootDoc())) sheetExported(sheet.engine, abPlan?.frames ?? plan.count);
+      if (outcome === 'done') ui?.exported?.({ ...uiProps, abPlan });
       emitPluginEvent('export.finished', { ...heard, ok: outcome === 'done', cancelled: outcome !== 'done' });
       if (outcome === 'done' || autoStart) return close();
     } catch (e) {
@@ -218,24 +151,13 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
 
   const scales = scaleChoices(doc);
   const art = artScale(doc);
-  const sheet = normalizeSheet(s.sheet);
-  const engine = engineInfo(sheet.engine);
-  const separate = sheet.content === 'separate';
-  const hasBones = hasBonesToExport(doc);
-  const godotBones = sheet.engine === 'godot' && hasBones && !separate && sheet.godotRig === 'bones';
   const artPx = art ? `${Math.round(doc.width * art)} × ${Math.round(doc.height * art)}` : '';
-  const pickEngine = (id: EngineId) => {
-    setSheet({ engine: id, ...(id === 'godot' ? { godot: true } : {}) });
-    // Pixel art for a game: offer the real size once, then remember the answer.
-    if (art && engineInfo(id).game && s.scale !== art) withChoice<string>('export.gameArtSize', (v) => v === 'art' && set({ scale: art }));
-  };
   const frames = plan.count;
   // With units other than pixels, also say how big it prints: the same size at any scale, just more dots per inch.
   const outDpi = Math.round(docDpi(doc) * s.scale);
   const printed = units === 'px' ? '' : `, ${formatSize(plan.width, plan.height, units, outDpi)} at ${outDpi} DPI`;
   const joinedPrinted = abPlan?.size && units !== 'px' ? `, ${formatSize(abPlan.size.width, abPlan.size.height, units, outDpi)} at ${outDpi} DPI` : '';
-  const sheetWords = s.format === 'sheet' && isPixelDoc(store().rootDoc()) && !separate;
-  const summary = sheetWords && !(abPlan ? abPlan.problem : plan.problem) ? sheetFooter(store().rootDoc(), abPlan?.mode ?? 'one', abPlan, plan) : abPlan ? artboardSummary(abPlan, joinedPrinted) : `${frames} frame${frames === 1 ? '' : 's'}, ${plan.width} × ${plan.height} px${printed}`;
+  const summary = ui?.summary?.({ ...uiProps, abPlan }) ?? (abPlan ? artboardSummary(abPlan, joinedPrinted) : `${frames} frame${frames === 1 ? '' : 's'}, ${plan.width} × ${plan.height} px${printed}`);
   const problem = abPlan ? abPlan.problem : plan.problem;
   const noClips = doc.clips.length === 0;
   const io = inOutRange(doc);
@@ -278,16 +200,7 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
                 className={`ex-card${s.format === f.id ? ' ex-chosen' : ''}`}
                 disabled={!!why}
                 data-autofocus={s.format === f.id ? '' : undefined}
-                onClick={() =>
-                  set({
-                    format: f.id,
-                    ...((f.id === 'mp4' || f.id === 'webm' || f.id === 'prores') && s.range === 'frame' ? { range: 'all' as const } : {}),
-                    // Sprites for games nearly always want a see-through background.
-                    ...((f.id === 'sheet' || f.id === 'interactives') && s.format !== f.id ? { transparent: true } : {}),
-                    // Interactives scales pixel art up itself, crisply, so the art's own size keeps the file small.
-                    ...(f.id === 'interactives' && s.format !== f.id && art ? { scale: art } : {}),
-                  })
-                }
+                onClick={() => set({ format: f.id, ...exporterOf(f.id)?.picked?.(s, { art }) })}
               >
                 <Icon name={f.icon} size={22} />
                 <span className="ex-card-title">
@@ -309,106 +222,8 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
         <div className="ex-options">
           <SheetSays settings={s} />
           <ArtboardExportPicker settings={s} />
-          {s.format === 'sheet' && (
-            <fieldset>
-              <legend>Where it's going</legend>
-              <EnginePicker value={sheet.engine} onPick={pickEngine} />
-              <p className="ex-note">
-                {engine.files}.{' '}
-                <button type="button" className="ex-link" onClick={() => openHelp(engine.help)}>
-                  {engine.game ? `How to use it in ${engine.title}` : 'How to use it'}
-                </button>
-              </p>
-              {(sheet.engine === 'godot' || sheet.engine === 'phaser') && !separate && doc.clips.some((c) => c.direction === 'pingpong' || c.direction === 'pingpong-reverse') && (
-                <p className="ex-note">
-                  Back and forth clips: {bounceMode === 'engine' ? (sheet.engine === 'godot' ? "Godot's own ping-pong is used for clips that loop (smaller files, but the two end frames show twice). It needs Godot 4.7 or newer: older Godot plays those clips forward only." : "Phaser's own yoyo is used where it can (smaller files, plays the same).") : 'every frame is listed in order, so the ends show once, just like here.'}{' '}
-                  <button type="button" className="ex-link" onClick={() => openPrefs('behaviour')}>
-                    Change in Preferences
-                  </button>
-                </p>
-              )}
-              {sheet.engine === 'godot' && hasBones && !separate && (
-                <div className="ex-seg" role="group" aria-label="What Godot gets">
-                  <button type="button" className={sheet.godotRig !== 'bones' ? 'ex-on' : ''} aria-pressed={sheet.godotRig !== 'bones'} title="Every frame drawn onto a sprite sheet. Plays exactly as it looks here." onClick={() => setSheet({ godotRig: 'frames' })}>
-                    Baked frames
-                  </button>
-                  <button type="button" className={sheet.godotRig === 'bones' ? 'ex-on' : ''} aria-pressed={sheet.godotRig === 'bones'} title="The skeleton, the parts and an AnimationPlayer with every clip, so you can change poses and timing in Godot (Skeleton2D)." onClick={() => setSheet({ godotRig: 'bones' })}>
-                    Bones (editable in Godot)
-                  </button>
-                </div>
-              )}
-              {sheet.engine === 'godot' && hasBones && !separate && sheet.godotRig === 'bones' && (
-                <p className="ex-note">
-                  A scene with the skeleton, a picture for each part and every clip as an animation.{' '}
-                  <button type="button" className="ex-link" onClick={() => openHelp('export-godot-bones')}>
-                    How it works
-                  </button>
-                </p>
-              )}
-              {godotBones && <BonesLookNotes doc={doc} />}
-              {sheet.engine === 'godot' && (
-                <>
-                  {!separate && !godotBones && (
-                    <Check checked={s.sheet.godotScene} onChange={(v) => setSheet({ godotScene: v })}>
-                      Also make a ready-to-play scene (.tscn)
-                    </Check>
-                  )}
-                  <label className="ex-path">
-                    Where the picture will live in your Godot project
-                    <input type="text" spellCheck={false} placeholder={godotTexturePath('', doc.name)} value={s.sheet.godotPath} onChange={(e) => setSheet({ godotPath: e.target.value })} />
-                  </label>
-                </>
-              )}
-              {sheet.engine === 'unity' && (
-                <Check checked={sheet.unityScript} onChange={(v) => setSheet({ unityScript: v })}>
-                  Include the importer script (only needed once per project)
-                </Check>
-              )}
-              {sheet.engine === 'json' && (
-                <div className="ex-seg" role="group" aria-label="JSON frames">
-                  <button type="button" className={sheet.jsonStyle === 'array' ? 'ex-on' : ''} aria-pressed={sheet.jsonStyle === 'array'} title="Frames in a list, in order (often called JSON array)" onClick={() => setSheet({ jsonStyle: 'array' })}>
-                    Frames as a list
-                  </button>
-                  <button type="button" className={sheet.jsonStyle === 'hash' ? 'ex-on' : ''} aria-pressed={sheet.jsonStyle === 'hash'} title="Frames looked up by name (often called JSON hash)" onClick={() => setSheet({ jsonStyle: 'hash' })}>
-                    Frames by name
-                  </button>
-                </div>
-              )}
-              {((sheet.engine === 'godot' && !godotBones) || sheet.engine === 'css') && (
-                <Check checked={s.sheet.json} onChange={(v) => setSheet({ json: v })}>
-                  Also save a JSON file with where every frame is
-                </Check>
-              )}
-            </fieldset>
-          )}
-          {s.format === 'interactives' && (
-            <fieldset>
-              <legend>For Interactives</legend>
-              <p className="ex-note">
-                One file to drop onto an Interactives page. Your clips and markers come with it, so a click can play "run" or wait for "hit".{' '}
-                <button type="button" className="ex-link" onClick={() => openHelp('export-interactives')}>
-                  How to use it in Interactives
-                </button>
-              </p>
-              <Check checked={s.includeSource !== false} onChange={(v) => set({ includeSource: v })}>
-                Include the editable drawing, so it can come back to Frameling
-              </Check>
-            </fieldset>
-          )}
-          {s.format === 'ai' && doc.length > 1 && (
-            <fieldset>
-              <legend>Several frames in Illustrator</legend>
-              <div className="ex-seg">
-                {AI_FRAMES.map((o) => (
-                  <button key={o.id} type="button" className={aiFramesOf(s) === o.id ? 'ex-on' : ''} aria-pressed={aiFramesOf(s) === o.id} title={o.title} onClick={() => set({ aiFrames: o.id })}>
-                    {o.label}
-                  </button>
-                ))}
-              </div>
-              <p className="ex-note">{AI_FRAMES.find((o) => o.id === aiFramesOf(s))?.note}</p>
-            </fieldset>
-          )}
-          {info.animated && !(s.format === 'ai' && aiFramesOf(s) === 'one') ? (
+          {ui?.Before && <ui.Before {...uiProps} />}
+          {info.animated && !aiOne ? (
             <fieldset>
               <legend>What to export</legend>
               <div className="ex-seg">
@@ -450,52 +265,8 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
             <p className="ex-note">{singleFrameNote(abPlan, plan.range.start)}</p>
           )}
 
-          {s.format === 'lottie' ? (
-            <>
-              <p className="ex-note">No size to pick: shapes stay shapes, so a Lottie player draws it sharp at whatever size it's shown.</p>
-              <fieldset>
-                <legend>File type</legend>
-                <div className="ex-seg">
-                  {FILE_CHOICES.map((c) => (
-                    <button key={c.id} type="button" className={(s.lottieFile ?? 'json') === c.id ? 'ex-on' : ''} aria-pressed={(s.lottieFile ?? 'json') === c.id} onClick={() => set({ lottieFile: c.id })}>
-                      {c.label}
-                    </button>
-                  ))}
-                </div>
-                <p className="ex-note">{FILE_CHOICES.find((c) => c.id === (s.lottieFile ?? 'json'))!.note}</p>
-              </fieldset>
-              {s.lottieFile === 'dotlottie' && (
-                <fieldset>
-                  <legend>dotLottie layout</legend>
-                  <div className="ex-seg">
-                    {LAYOUT_CHOICES.map((c) => (
-                      <button key={c.id} type="button" className={(s.dotLottieVersion ?? 2) === c.id ? 'ex-on' : ''} aria-pressed={(s.dotLottieVersion ?? 2) === c.id} onClick={() => set({ dotLottieVersion: c.id === 2 ? undefined : c.id })}>
-                        {c.label}
-                      </button>
-                    ))}
-                  </div>
-                  <p className="ex-note">{LAYOUT_CHOICES.find((c) => c.id === (s.dotLottieVersion ?? 2))!.note}</p>
-                </fieldset>
-              )}
-              {hasSoftOrShadow(docFeatures(doc)) && (
-                <Check checked={s.lottieSoft === 'pictures'} onChange={(v) => set({ lottieSoft: v ? 'pictures' : undefined })}>
-                  Draw Soften and Shadow as pictures, so every player shows them (a bigger file)
-                </Check>
-              )}
-              {(bakesEffects(doc, 'lottie') || (s.lottieSoft === 'pictures' && hasSoftOrShadow(docFeatures(doc)))) && (
-                <fieldset>
-                  <legend>Pictures from effects</legend>
-                  <div className="ex-seg">
-                    {PICTURE_CHOICES.map((c) => (
-                      <button key={c.id} type="button" className={(s.lottiePictures ?? 'balanced') === c.id ? 'ex-on' : ''} aria-pressed={(s.lottiePictures ?? 'balanced') === c.id} onClick={() => set({ lottiePictures: c.id })}>
-                        {c.label}
-                      </button>
-                    ))}
-                  </div>
-                  <p className="ex-note">{PICTURE_CHOICES.find((c) => c.id === (s.lottiePictures ?? 'balanced'))!.note}</p>
-                </fieldset>
-              )}
-            </>
+          {ui?.Size ? (
+            <ui.Size {...uiProps} />
           ) : (
           <fieldset>
             <legend>Size</legend>
@@ -522,132 +293,9 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
             </Check>
           </fieldset>
 
-          <LayeredNotes format={s.format} doc={doc} />
-          <CarryNotes format={s.format} doc={doc} />
-          {s.format === 'webm' && (
-            <fieldset>
-              <legend>Video codec</legend>
-              <div className="ex-seg">
-                {(getChoiceDef('export.webmCodec')?.options ?? []).map((o) => (
-                  <button key={o.value} type="button" className={webmPref === o.value ? 'ex-on' : ''} aria-pressed={webmPref === o.value} title={o.detail} onClick={() => setChoice('export.webmCodec', o.value)}>
-                    {o.label}
-                  </button>
-                ))}
-              </div>
-              <p className="ex-note">{caps?.webm.ok ? `Making this one with ${caps.webm.codec === 'av1' ? 'AV1' : caps.webm.codec === 'vp9' ? 'VP9' : 'VP8'}${s.transparent && caps.webm.alphaCodec && caps.webm.alphaCodec !== caps.webm.codec ? ` (${caps.webm.alphaCodec.toUpperCase()} for the see-through background)` : ''}.` : 'Also in Preferences > Behaviour.'}</p>
-            </fieldset>
-          )}
-
-          {s.format === 'svganim' && (
-            <fieldset>
-              <legend>Playback</legend>
-              <Check checked={plan.loop} onChange={(v) => set({ loop: v, loopTouched: true })}>
-                Loop forever
-              </Check>
-              <LoopNote doc={doc} s={s} plan={plan} onFollow={() => set({ loopTouched: false })} />
-              <p className="ex-note">
-                It plays by itself in any browser, also in an image tag.{' '}
-                <button type="button" className="ex-link" onClick={() => openHelp('export-svg-animated')}>
-                  How it works
-                </button>
-              </p>
-            </fieldset>
-          )}
-
-          {(s.format === 'gif' || s.format === 'apng') && (
-            <fieldset>
-              <legend>Playback</legend>
-              <Check checked={plan.loop} onChange={(v) => set({ loop: v, loopTouched: true })}>
-                Loop forever
-              </Check>
-              <LoopNote doc={doc} s={s} plan={plan} onFollow={() => set({ loopTouched: false })} />
-              {s.format === 'gif' && (
-                <Check checked={s.dither} onChange={(v) => set({ dither: v })}>
-                  Smooth colours (dither), for gradients and soft shading
-                </Check>
-              )}
-              {s.format === 'gif' && doc.fps > GIF_MAX_FPS && <p className="ex-note">GIFs can&apos;t go faster than {GIF_MAX_FPS} frames per second, so this one will play a little slower.</p>}
-              {s.format === 'gif' && <p className="ex-note">GIFs use up to 256 colours, chosen from your whole animation.</p>}
-            </fieldset>
-          )}
-
-          {s.format === 'sheet' && (
-            <>
-              <fieldset>
-                <legend>What's on it</legend>
-                <div className="ex-seg">
-                  <button type="button" className={!separate ? 'ex-on' : ''} aria-pressed={!separate} title="Your clips become animations that play" onClick={() => setSheet({ content: 'animation' })}>
-                    An animation
-                  </button>
-                  <button type="button" className={separate ? 'ex-on' : ''} aria-pressed={separate} title="Each frame is its own sprite: icons, tiles, items" onClick={() => setSheet({ content: 'separate' })}>
-                    Separate sprites
-                  </button>
-                </div>
-                {separate && (
-                  <>
-                    <div className="ex-seg">
-                      <button type="button" className={!sheet.separateFiles ? 'ex-on' : ''} aria-pressed={!sheet.separateFiles} onClick={() => setSheet({ separateFiles: false })}>
-                        All on one sheet
-                      </button>
-                      <button type="button" className={sheet.separateFiles ? 'ex-on' : ''} aria-pressed={sheet.separateFiles} onClick={() => setSheet({ separateFiles: true })}>
-                        One PNG each
-                      </button>
-                    </div>
-                    <p className="ex-note">Each frame is one sprite. Put a marker on a frame to name it, or it is named after its clip.</p>
-                  </>
-                )}
-              </fieldset>
-
-              {!(separate && sheet.separateFiles) && !godotBones && (
-                <fieldset>
-                  <legend>Sheet</legend>
-                  <div className="ex-seg">
-                    <button type="button" className={sheet.layout === 'grid' ? 'ex-on' : ''} aria-pressed={sheet.layout === 'grid'} title="Every frame in a slot of the same size" onClick={() => setSheet({ layout: 'grid' })}>
-                      Tidy grid
-                    </button>
-                    <button type="button" className={sheet.layout === 'packed' ? 'ex-on' : ''} aria-pressed={sheet.layout === 'packed'} title="Frames fitted together as tightly as possible (packed atlas). Smallest picture, best with trimming." onClick={() => setSheet({ layout: 'packed' })}>
-                      Packed tight
-                    </button>
-                  </div>
-                  <div className="ex-grid3">
-                    {sheet.layout === 'grid' && (
-                      <label>
-                        Columns
-                        <input type="number" min={0} max={64} value={s.sheet.columns} onChange={(e) => setSheet({ columns: Math.max(0, Math.min(64, Math.round(+e.target.value || 0))) })} />
-                        <small>{s.sheet.columns === 0 ? 'Auto' : ' '}</small>
-                      </label>
-                    )}
-                    <label>
-                      Padding
-                      <input type="number" min={0} max={32} value={s.sheet.padding} onChange={(e) => setSheet({ padding: Math.max(0, Math.min(32, Math.round(+e.target.value || 0))) })} />
-                      <small>space between</small>
-                    </label>
-                    <label title="Repeats each frame's edge pixels outward, so scaled or moving sprites never show a thin seam (extrude)">
-                      Edge bleed
-                      <input type="number" min={0} max={8} value={sheet.extrude} onChange={(e) => setSheet({ extrude: Math.max(0, Math.min(8, Math.round(+e.target.value || 0))) })} />
-                      <small>extrude, pixels</small>
-                    </label>
-                  </div>
-                  <Check checked={s.sheet.trim} onChange={(v) => setSheet({ trim: v })} disabled={sheet.engine === 'css' && !separate} hint="CSS animations show every frame in the same box, so frames stay whole.">
-                    Trim empty space around each frame
-                  </Check>
-                  <Check checked={s.sheet.pot} onChange={(v) => setSheet({ pot: v })}>
-                    Make the sheet a power-of-two size (64, 128, 256...)
-                  </Check>
-                  {!separate && (
-                    <Check checked={s.sheet.dedupe} onChange={(v) => setSheet({ dedupe: v })}>
-                      Store repeated frames once
-                    </Check>
-                  )}
-                </fieldset>
-              )}
-              {separate && sheet.separateFiles && (
-                <Check checked={s.sheet.trim} onChange={(v) => setSheet({ trim: v })}>
-                  Trim empty space around each sprite
-                </Check>
-              )}
-            </>
-          )}
+          {ui?.Notes && <ui.Notes {...uiProps} />}
+          <CarryNotes format={s.format} doc={doc} own={!!ui?.Notes} />
+          {ui?.After && <ui.After {...uiProps} />}
         </div>
       </div>
 
@@ -673,7 +321,9 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
   );
 }
 
-export function openExportDialog(format?: FormatId): void {
+export async function openExportDialog(format?: FormatId): Promise<void> {
+  // The options of every format come in first, so the dialog opens complete.
+  await loadExportUis();
   // Exports are of the whole animation, so a tile open on the canvas goes back first.
   leaveTileEdit();
   // A template's own export choice (GIF for a spinner, separate sprites for icons) the first time it is exported.
@@ -683,21 +333,20 @@ export function openExportDialog(format?: FormatId): void {
   const fromTemplate = templateExport(docId, start, artSize);
   // No template choice: in the Pixel workspace, pixel art starts on a sprite sheet at art size.
   const initial = fromTemplate === start ? pixelExportStart(docId, start, artSize) : fromTemplate;
+  // A format whose feature is off is not on offer: start from the usual one instead.
+  if (!hasExporter(initial.format)) initial.format = defaultSettings(sceneOf(store().get().doc, 0).doc).format;
   followWay(store().rootDoc());
-  if (format && format !== initial.format && availableFormats().some((f) => f.id === format)) {
+  if (format && format !== initial.format && hasExporter(format)) {
     const { doc } = store().get();
-    const art = artScale(doc);
     initial.format = format;
-    if (format === 'interactives') {
-      initial.transparent = true;
-      if (art) initial.scale = art;
-    }
+    Object.assign(initial, exporterOf(format)?.opened?.({ art: artScale(doc) }));
   }
   mountModal((close) => <ExportDialog close={close} initial={initial} autoStart={false} />);
 }
 
 /** Runs the last export again with the same settings, showing progress. Opens the dialog instead when there is no last one. */
-export function exportAgain(): void {
+export async function exportAgain(): Promise<void> {
+  await loadExportUis();
   leaveTileEdit();
   const last = loadLastSettings();
   if (!last || !availableFormats().some((f) => f.id === last.format)) return openExportDialog();

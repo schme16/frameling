@@ -2,7 +2,7 @@
 import type { Shape } from '../core/format';
 import { uid } from '../core/doc';
 import { poseAt } from '../core/symbols';
-import { registerCommands, type Command } from '../core/registry';
+import type { Command } from '../core/registry';
 import { store } from '../core/store';
 import { currentKey } from '../symbols/ops';
 import { toast } from '../ui/toast';
@@ -35,7 +35,7 @@ export function convertSelectedText(): void {
 
 const hasText = () => selectedTexts().length > 0;
 
-registerCommands([
+export const textCommands: Command[] = [
   {
     id: 'text.toShapes',
     label: 'Convert text to shapes',
@@ -62,4 +62,4 @@ registerCommands([
       },
     }),
   ),
-]);
+];

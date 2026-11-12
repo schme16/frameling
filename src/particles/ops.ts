@@ -2,7 +2,7 @@
 import type { Draft } from 'immer';
 import type { Id, ParticlesShape, VectorDrawing } from '../core/format';
 import { findLayer, uid } from '../core/doc';
-import { registerChoice, withChoice } from '../core/choices';
+import { withChoice, type ChoiceDef } from '../core/choices';
 import { store } from '../core/store';
 import { currentKey } from '../symbols/ops';
 import { addVectorLayer } from '../timeline/edit-core';
@@ -12,7 +12,7 @@ import { newParticles, presetById, PARTICLE_PRESETS } from './model';
 
 export type ParticlesWhere = 'new-layer' | 'this-layer';
 
-registerChoice<ParticlesWhere>({
+export const particlesWhere: ChoiceDef<ParticlesWhere> = {
   id: 'particles.where',
   title: 'Where new particles go',
   question: 'Where should new particles go?',
@@ -23,7 +23,7 @@ registerChoice<ParticlesWhere>({
   default: 'new-layer',
   category: 'Drawing',
   help: 'particles',
-});
+};
 
 /** The selected emitters on the active drawing. */
 export function selectedParticles(): ParticlesShape[] {

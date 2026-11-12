@@ -1,9 +1,9 @@
 // The command and help for the Godot importer add-on. The add-on itself (and its zip) only loads when it's saved.
-import { registerCommands, registerHelpTopics } from '../core/registry';
+import type { Command, HelpTopic } from '../core/registry';
 
 const saveGodotAddon = () => import('./godot-addon').then((m) => m.saveGodotAddon());
 
-registerCommands([
+export const godotAddonCommands: Command[] = [
   {
     id: 'file.exportGodotAddon',
     label: 'Godot importer add-on...',
@@ -14,9 +14,9 @@ registerCommands([
     global: true,
     run: () => saveGodotAddon(),
   },
-]);
+];
 
-registerHelpTopics([
+export const godotAddonHelp: HelpTopic[] = [
   {
     id: 'godot-addon',
     title: 'Godot importer add-on',
@@ -57,4 +57,4 @@ Pick the file in Godot's **Import** dock to change how it comes in, then press *
 
 Markers and the [clip flow](help:clip-flow) travel along too, as metadata on the SpriteFrames.`,
   },
-]);
+];

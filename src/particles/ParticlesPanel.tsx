@@ -6,7 +6,8 @@ import { ActionButton, Choice, Slider, Tip, Toggle } from '../canvas/controls';
 import { Icon } from '../ui/icons';
 import { PARTICLE_PRESETS, SPRITES, presetById } from './model';
 import { addParticles, applyPreset, shuffleSeed, updateParticles } from './ops';
-import { ColorWell, Num, Section } from './fields';
+import { ColorWell, Num, Section } from '../ui/panelFields';
+import './particles.css';
 
 /** 'sliders' (the default) or 'numbers': the two looks compared in brand/ab/particles. */
 export type PanelLook = 'sliders' | 'numbers';

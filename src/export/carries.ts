@@ -15,11 +15,11 @@ import { hasPlaySettings } from '../core/clipPlay';
 import type { FormatId } from './types';
 import { effectInfo } from '../effects/model';
 
-/** Things a document can have that not every format can carry. */
-export type Feature = 'text' | 'particles' | 'tint' | 'blend' | 'effects' | 'clip' | 'mask' | 'folders' | 'bones' | 'gradientAlpha';
+import { shapeFeatureOf } from './shapeExport';
+import { exporterOf, type Carry, type Feature, type FormatCarry } from './registry';
+import './builtin';
 
-/** kept: as itself. shapes: kept, but as outlines or shapes rather than editable text. picture: baked into pictures. out: left out. */
-export type Carry = 'kept' | 'shapes' | 'picture' | 'out';
+export type { Carry, Feature };
 
 export const FEATURE_WORDS: Record<Feature, string> = {
   text: 'text',
@@ -34,60 +34,12 @@ export const FEATURE_WORDS: Record<Feature, string> = {
   gradientAlpha: 'see-through colours inside gradients',
 };
 
-interface FormatCarry {
-  /** One sentence for everything at once (used alone for pictures-of-frames formats). */
-  summary: string;
-  /** Per feature, when the summary isn't the whole story. Missing = kept. */
-  rows?: Partial<Record<Feature, Carry>>;
-  /** Effects this format has its own version of (the rest go by `rows.effects`). */
-  nativeEffects?: EffectKind[];
-  /** Help topic with the full story. */
-  help?: string;
+/** What a format keeps (it is in the format's registration, see builtin.ts). */
+export function carryOf(format: FormatId): FormatCarry {
+  const d = exporterOf(format);
+  if (!d) throw new Error(`Nothing exports as "${format}".`);
+  return d.carry;
 }
-
-const PICTURES = 'Everything looks exactly as it does on the canvas: each frame is a finished picture.';
-
-export const CARRY: Record<FormatId, FormatCarry> = {
-  mp4: { summary: PICTURES, help: 'export-video-gif-apng' },
-  webm: { summary: PICTURES, help: 'export-video-gif-apng' },
-  gif: { summary: PICTURES + ' GIF has only 256 colours and hard see-through edges.', help: 'export-video-gif-apng' },
-  apng: { summary: PICTURES, help: 'export-video-gif-apng' },
-  png: { summary: PICTURES },
-  pngseq: { summary: PICTURES },
-  sheet: { summary: PICTURES, help: 'export-sprite-sheets' },
-  prores: { summary: PICTURES },
-  interactives: { summary: PICTURES + ' Clips, markers and the clip flow come along for Interactives to play.', help: 'export-interactives' },
-  lottie: {
-    help: 'export-lottie',
-    summary: 'Shapes, symbols, tweens, the camera, blend modes, masks, clipping and colour wash stay vector, inside symbols too. Text becomes letter shapes (no fonts needed). Particles become little shapes, one per particle.',
-    rows: { text: 'shapes', particles: 'shapes', effects: 'picture', bones: 'kept' },
-    nativeEffects: ['blur', 'shadow'],
-  },
-  svganim: {
-    help: 'export-svg-animated',
-    summary: 'Shapes, symbols, tweens, the camera, text, particles, blend modes, masks, clipping, colour wash and most effects stay vector, inside symbols too.',
-    rows: { effects: 'kept', bones: 'picture' },
-    nativeEffects: ['blur', 'shadow', 'adjust', 'glow', 'outline'],
-  },
-  svg: {
-    help: 'export-svg',
-    summary: 'This frame as vector shapes, with text, blend modes, masks, clipping, colour wash and most effects kept, inside symbols too.',
-    rows: { effects: 'kept', bones: 'picture' },
-    nativeEffects: ['blur', 'shadow', 'adjust', 'glow', 'outline'],
-  },
-  psd: {
-    summary: 'This frame with every layer kept: names, blend modes, opacity, folders and clipping. Effects are baked into the layer pixels.',
-    rows: { text: 'picture', particles: 'picture', effects: 'picture', mask: 'kept', folders: 'kept' },
-  },
-  pdf: {
-    summary: 'Sharp vector shapes with your layers as PDF layers. Text becomes letter outlines and colour wash recolours the shapes. Layers with effects, clipping, masks or bending (or holding a symbol with them inside) become pictures.',
-    rows: { text: 'shapes', effects: 'picture', clip: 'picture', mask: 'picture', bones: 'picture', folders: 'kept' },
-  },
-  ai: {
-    summary: 'Opens in Illustrator as its own file: your layers and folders as real layers, shapes and gradients editable. Text becomes letter outlines. Layers with effects, clipping, masks or bending (or holding a symbol with them inside) become pictures.',
-    rows: { text: 'shapes', effects: 'picture', clip: 'picture', mask: 'picture', bones: 'picture', folders: 'kept' },
-  },
-};
 
 /** What a document uses that some formats can't carry exactly. Effects are listed by kind. */
 export interface DocFeatures {
@@ -112,8 +64,8 @@ export function docFeatures(doc: Doc): DocFeatures {
   for (const d of Object.values(doc.drawings)) {
     if (d.kind !== 'vector') continue;
     for (const s of d.shapes) {
-      if (s.type === 'text') features.add('text');
-      else if (s.type === 'particles') features.add('particles');
+      const kind = s.type !== 'stroke' && s.type !== 'fill' && s.type !== 'path' && s.type !== 'instance' ? shapeFeatureOf(s.type) : undefined;
+      if (kind) features.add(kind);
       else if (s.type === 'instance' && s.tint && s.tint.amount > 0) features.add('tint');
       else if (s.type === 'fill' || s.type === 'path') {
         const grads = s.type === 'fill' ? [s.gradient] : [s.fillGradient, s.strokeGradient];
@@ -126,8 +78,9 @@ export function docFeatures(doc: Doc): DocFeatures {
 
 /** Does this document have effects a format has no version of, so they'd become pictures there? */
 export function bakesEffects(doc: Doc, format: FormatId, found: DocFeatures = docFeatures(doc)): boolean {
-  const native = new Set(CARRY[format].nativeEffects ?? []);
-  return CARRY[format].rows?.effects === 'picture' && [...found.effectKinds].some((k) => !native.has(k));
+  const c = carryOf(format);
+  const native = new Set(c.nativeEffects ?? []);
+  return c.rows?.effects === 'picture' && [...found.effectKinds].some((k) => !native.has(k));
 }
 
 /** Does this document have Soften or Shadow, which Lottie can do itself but not every player draws? */
@@ -136,15 +89,9 @@ export function hasSoftOrShadow(found: DocFeatures): boolean {
 }
 
 /** Plain-words lines about what in this document won't come across as it is, for this format. Empty = all of it. */
-/** Formats that carry clips but not how they play (the player has no direction or repeat count). */
-const CLIP_PLAY_LEFT_OUT: Partial<Record<FormatId, string>> = {
-  interactives: 'Interactives plays a clip forward, looping or once. Clips that play backward, back and forth or a set number of times are not carried (the drawing inside the package still has them).',
-  lottie: 'A Lottie file has no clip direction or repeat count: clips become markers with their names only.',
-};
-
 export function carryWarnings(doc: Doc, format: FormatId, found: DocFeatures = docFeatures(doc)): string[] {
-  const c = CARRY[format];
-  const clipNote = CLIP_PLAY_LEFT_OUT[format];
+  const c = carryOf(format);
+  const clipNote = exporterOf(format)?.clipPlayNote;
   const clipWarn = clipNote && doc.clips.some((k) => hasPlaySettings(k)) ? [clipNote] : [];
   if (!c.rows) return clipWarn;
   const out: string[] = [...clipWarn];

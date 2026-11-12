@@ -8,6 +8,7 @@ import { buildSheetFiles } from '../../src/export/engines';
 import { DEFAULT_SHEET, type SheetSettings } from '../../src/export/types';
 import { planExport } from '../../src/export/plan';
 import { carryWarnings } from '../../src/export/carries';
+import './withInteractives';
 import { buildPlayable } from '../../src/export/playable';
 import { flowManifest } from '../../src/core/flow';
 import { docWith } from '../timeline/helpers';

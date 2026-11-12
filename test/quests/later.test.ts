@@ -22,9 +22,13 @@ import type { Quest } from '../../src/quests/types';
 import { rig, vectorDoc } from './helpers';
 import '../../src/rig';
 import '../../src/effects';
-import '../../src/particles';
-import '../../src/text';
-import '../../src/camera';
+import { particlesFeature } from '../../src/particles';
+import { textFeature } from '../../src/text';
+import { registerFeatures } from '../../src/features/host';
+import { cameraFeature } from '../../src/camera';
+
+// The lessons use commands and tools the optional features add, so they run with those on.
+registerFeatures([cameraFeature, particlesFeature, textFeature]);
 
 beforeEach(() => {
   setScheduler({ now: () => 0, request: () => 0, cancel: () => {} });

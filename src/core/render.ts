@@ -10,10 +10,8 @@ import type { CameraView, Color, Doc, Drawing, FillShape, Layer, PathShape, Pixe
 import { isPosed, poseAt, type PosedInstance, type PosedLayer, type PosedLook } from './symbols';
 import { DEFAULT_TILE_SIZE, tileOrigin } from './doc';
 import { folderChain } from './folders';
-import { drawText, textBounds } from '../text/draw';
-import { posedParticles } from '../particles/draw';
+import { shapeKind } from './shapeKinds';
 import { drawTilemap } from './tilemap';
-import { drawParticles } from '../particles/draw';
 import { cameraViewAt, layerCameraMatrix } from './camera';
 import { compositePlan, EffectCache } from '../effects/composite';
 import { buildPlan } from '../effects/plan';
@@ -136,8 +134,7 @@ export function drawShape(g: Ctx2D, s: Shape, at?: DrawContext): void {
     if (isPosed(s)) drawInstance(g, s, at);
     return;
   }
-  if (s.type === 'text') return drawText(g, s);
-  if (s.type === 'particles') return drawParticles(g, s, drawInstance);
+  if (s.type !== 'stroke' && s.type !== 'fill' && s.type !== 'path') return shapeKind(s.type)?.draw(g, s, drawInstance);
   g.globalAlpha = s.opacity;
   if (s.type === 'stroke') {
     g.fillStyle = s.color;
@@ -422,12 +419,8 @@ export function drawingBox(d: Drawing, pixelSize = 1, doc?: Doc): Box {
             if (p.c1) grow(b, p.c1.x, p.c1.y, r);
             if (p.c2) grow(b, p.c2.x, p.c2.y, r);
           }
-      } else if (s.type === 'text') {
-        const t = textBounds(s);
-        grow(b, t.x, t.y);
-        grow(b, t.x + t.w, t.y + t.h);
-      } else if (s.type === 'particles') {
-        for (const p of posedParticles(s)) grow(b, p.x, p.y, p.size * 2);
+      } else if (s.type !== 'instance') {
+        shapeKind(s.type)?.extend(s, (x, y, r) => grow(b, x, y, r));
       } else if (isPosed(s)) {
         const ib = instanceBox(s, doc);
         if (ib.x1 < ib.x0) continue;

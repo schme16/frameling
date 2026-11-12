@@ -11,7 +11,8 @@ import { BONE_STRETCH, FORMAT_VERSION, LAYER_LABELS, type LayerLabel, type Cel, 
 import { decodePng, encodePng } from './png';
 import { rootDoc } from '../core/symbols';
 import { isEasing } from '../core/ease';
-import { readOrigin, readParticlesShape, readTextShape } from './shapes-extra';
+import { readOrigin } from './shapes-extra';
+import { hasShapeKind, shapeKind } from '../core/shapeKinds';
 import { packAudio, unpackAudio } from './audio-file';
 import { keepUnknownShape, readExt, shapesForSave, withExt } from './ext';
 import { packArtboards, readArtboards } from '../artboards/io';
@@ -134,7 +135,8 @@ export function migrate(raw: any, from: number): any {
 
 // ---------------------------------------------------------------- loading
 
-const SHAPE_TYPES = new Set(['stroke', 'fill', 'path', 'instance', 'text', 'particles']);
+// The drawing basics; text, particles and the like are kinds that register themselves (core/shapeKinds.ts).
+const BASIC_SHAPES = new Set(['stroke', 'fill', 'path', 'instance']);
 const MAX_UNZIPPED = 1024 * 1024 * 1024;
 
 function isObj(v: unknown): v is Record<string, any> {
@@ -194,8 +196,8 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
       const kept: KeptShape[] = [];
       let lost = !Array.isArray(d.shapes);
       for (const s of Array.isArray(d.shapes) ? d.shapes : []) {
-        if (isObj(s) && SHAPE_TYPES.has(s.type)) {
-          const read: Shape | null = s.type === 'instance' ? readInstance(s) : s.type === 'text' ? readTextShape(s) : s.type === 'particles' ? readParticlesShape(s) : (cleanOrigin(cleanGradients(s)) as Shape);
+        if (isObj(s) && (BASIC_SHAPES.has(s.type) || hasShapeKind(s.type))) {
+          const read: Shape | null = s.type === 'instance' ? readInstance(s) : hasShapeKind(s.type) ? shapeKind(s.type)!.read(s) : (cleanOrigin(cleanGradients(s)) as Shape);
           if (read) shapes.push(withExt(read, s, warnings));
           else lost = true;
         } else {

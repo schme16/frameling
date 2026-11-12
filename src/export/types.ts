@@ -1,6 +1,11 @@
 // What the export dialog collects, and what the exporters take.
+import { ownedUndo } from '../core/owners';
+import { allExporters, exporterInfo, exporterOf, splitExporters } from './registry';
+// The built-in formats register themselves when this file is loaded, so a format can always be looked up by its id.
+import './builtin';
 
-export type FormatId = 'mp4' | 'webm' | 'gif' | 'apng' | 'png' | 'pngseq' | 'svg' | 'sheet' | 'interactives' | 'lottie' | 'svganim' | 'pdf' | 'ai' | 'psd' | 'prores';
+/** The id of a registered export format (see registry.ts). Saved in settings, so an id is never reused. */
+export type FormatId = string;
 /**
  * What a .ai export does with an animation: 'one' is the frame being looked at, 'files' one file per frame (in a zip),
  * 'pages' one PDF page per frame (Illustrator asks which page to open, and layers arrive as groups), 'artboards' every
@@ -58,8 +63,8 @@ export interface EngineInfo {
   game: boolean;
 }
 
-export const ENGINES: EngineInfo[] = [
-  { id: 'godot', title: 'Godot', files: 'Sprite frames and a ready scene', help: 'export-godot', game: true },
+/** Where a sprite sheet can go. Godot is registered by the Godot exports feature, so it goes with it. */
+const engines: EngineInfo[] = [
   { id: 'unity', title: 'Unity', files: 'Sliced sprites and animation clips', help: 'export-unity', game: true },
   { id: 'phaser', title: 'Phaser', files: 'Atlas and animations JSON', help: 'export-phaser', game: true },
   { id: 'pixi', title: 'PixiJS', files: 'Spritesheet JSON with animations', help: 'export-pixi', game: true },
@@ -68,13 +73,34 @@ export const ENGINES: EngineInfo[] = [
   { id: 'none', title: 'Just the picture', files: 'Only the PNG', help: 'export-sprite-sheets', game: false },
 ];
 
+/** Where the engine's card sits among the others (lower first). */
+const ENGINE_ORDER: Record<string, number> = { godot: 0, unity: 1, phaser: 2, pixi: 3, css: 4, json: 5, none: 6 };
+const engineRank = (id: string): number => ENGINE_ORDER[id] ?? 50;
+
+/** Every engine on offer, game engines first (in the order the picker shows them). */
+export const allEngines = (): EngineInfo[] => [...engines].sort((a, b) => engineRank(a.id) - engineRank(b.id));
+
+/** Adds an engine to the picker; taken away again with the feature that registered it. */
+export function registerEngine(info: EngineInfo): void {
+  const before = engines.findIndex((e) => e.id === info.id);
+  if (before >= 0) engines[before] = info;
+  else engines.push(info);
+  ownedUndo(() => {
+    const i = engines.indexOf(info);
+    if (i >= 0) engines.splice(i, 1);
+  });
+}
+
+export const hasEngine = (id: string): boolean => engines.some((e) => e.id === id);
+
 export function engineInfo(id: EngineId): EngineInfo {
-  return ENGINES.find((e) => e.id === id) ?? ENGINES[ENGINES.length - 1];
+  return engines.find((e) => e.id === id) ?? engines[engines.length - 1];
 }
 
 /** Fills in the newer sheet fields, working out the engine from the older ticks when it is missing. */
 export function normalizeSheet(s: SheetSettings): Required<SheetSettings> {
-  const engine: EngineId = s.engine && ENGINES.some((e) => e.id === s.engine) ? s.engine : s.godot || s.godotScene ? 'godot' : s.json ? 'json' : 'none';
+  // Settings made for an engine that is not on offer (Godot with its feature off) fall back to what they would have been without it.
+  const engine: EngineId = s.engine && hasEngine(s.engine) ? s.engine : (s.godot || s.godotScene) && hasEngine('godot') ? 'godot' : s.json ? 'json' : 'none';
   return {
     ...s,
     engine,
@@ -119,7 +145,7 @@ export interface ExportSettings {
 /** The way a .ai export packs frames (the frame being looked at unless asked otherwise). */
 export const aiFramesOf = (s: Pick<ExportSettings, 'format' | 'aiFrames'>): AiFrames => (s.format === 'ai' && s.aiFrames) || 'one';
 /** One frame comes out: the format is a still, or "This frame" is picked, or an Illustrator file is set to one frame. */
-export const oneFrameOnly = (s: Pick<ExportSettings, 'format' | 'range' | 'aiFrames'>, animated: boolean): boolean => !animated || s.range === 'frame' || (s.format === 'ai' && aiFramesOf(s) === 'one');
+export const oneFrameOnly = (s: Pick<ExportSettings, 'format' | 'range' | 'aiFrames'>, animated: boolean): boolean => !animated || s.range === 'frame' || !!exporterOf(s.format)?.singleFrame?.(s as ExportSettings);
 
 export interface FormatInfo {
   id: FormatId;
@@ -137,38 +163,19 @@ export interface FormatInfo {
   alpha: boolean;
 }
 
-export const FORMATS: FormatInfo[] = [
-  { id: 'mp4', title: 'MP4 video', tag: 'H.264', goodFor: 'Sharing and social media. Plays nearly everywhere.', icon: 'film', ext: 'mp4', animated: true, alpha: false },
-  { id: 'webm', title: 'WebM video', tag: 'VP9', goodFor: 'The web, and videos with a see-through background.', icon: 'film', ext: 'webm', animated: true, alpha: true },
-  { id: 'gif', title: 'Animated GIF', tag: 'GIF', goodFor: 'Chats, forums and anywhere a video will not play.', icon: 'image', ext: 'gif', animated: true, alpha: true },
-  { id: 'apng', title: 'Animated PNG', tag: 'APNG', goodFor: 'Sharper than a GIF, with soft see-through edges.', icon: 'image', ext: 'png', animated: true, alpha: true },
-  { id: 'png', title: 'PNG picture', tag: 'This frame', goodFor: 'A single still picture you can use anywhere.', icon: 'image', ext: 'png', animated: false, alpha: true },
-  { id: 'pngseq', title: 'PNG sequence', tag: '.zip', goodFor: 'Video editors and other tools that want one picture per frame.', icon: 'grid', ext: 'zip', animated: true, alpha: true },
-  { id: 'svg', title: 'SVG drawing', tag: 'This frame', goodFor: 'Vector art that stays sharp at any size.', icon: 'image', ext: 'svg', animated: false, alpha: true },
-  { id: 'sheet', title: 'Sprite sheet', tag: 'For games', goodFor: 'Godot, Unity, Phaser, PixiJS or a web page: every frame on one picture.', icon: 'grid', ext: 'png', animated: true, alpha: true },
-  { id: 'lottie', title: 'Lottie animation', tag: 'JSON', goodFor: 'Apps and websites: a small vector animation that plays at any size.', icon: 'play', ext: 'json', animated: true, alpha: true },
-  { id: 'svganim', title: 'Moving SVG', tag: 'Animated SVG', goodFor: 'A web page or an <img> tag: one file that plays by itself, sharp at any size.', icon: 'image', ext: 'svg', animated: true, alpha: true },
-  { id: 'prores', title: 'ProRes video', tag: '.mov 4444', goodFor: 'Video editors (Premiere, Final Cut, Resolve), with a see-through background.', icon: 'film', ext: 'mov', animated: true, alpha: true },
-  { id: 'psd', title: 'Photoshop layers', tag: 'PSD', goodFor: 'This frame with every layer kept: names, blend modes, folders.', icon: 'layers', ext: 'psd', animated: false, alpha: true },
-  { id: 'pdf', title: 'PDF', tag: 'Vector', goodFor: 'Printing and sharing sharp vector art. A page per frame, layers kept.', icon: 'vector', ext: 'pdf', animated: true, alpha: true },
-  { id: 'ai', title: 'Illustrator', tag: '.ai', goodFor: 'Opens in Adobe Illustrator with real layers and every shape editable.', icon: 'vector', ext: 'ai', animated: true, alpha: true },
-  { id: 'interactives', title: 'Interactives', tag: '.flplay', goodFor: 'Drop it into an Interactives page, then play it with clicks, timelines and scripts.', icon: 'play', ext: 'flplay', animated: true, alpha: true },
-];
+/** The cards of every registered format, in order. */
+export const allFormats = (): FormatInfo[] => allExporters().map((d) => d.info);
 
-export function formatInfo(id: FormatId): FormatInfo {
-  return FORMATS.find((f) => f.id === id)!;
-}
+export const formatInfo = (id: FormatId): FormatInfo => exporterInfo(id);
 
 export const DEFAULT_SHEET: SheetSettings = { columns: 0, padding: 0, trim: false, pot: false, dedupe: true, json: true, godot: false, godotScene: false, godotPath: '' };
 
 /** The format name inside a .flplay's manifest (here so opening one doesn't load the exporter). */
 export const PLAYABLE_FORMAT = 'frameling-playable';
 
-/** The formats most people want, in the order the export dialog shows them. The rest sit under "More formats". */
-export const POPULAR_FORMATS: FormatId[] = ['gif', 'mp4', 'pngseq', 'sheet', 'interactives'];
-
-/** The format cards split into the popular ones and the rest (each in FORMATS order, popular in POPULAR order). */
-export function splitFormats(formats: FormatInfo[] = FORMATS): { popular: FormatInfo[]; more: FormatInfo[] } {
-  const popular = POPULAR_FORMATS.map((id) => formats.find((f) => f.id === id)).filter((f): f is FormatInfo => !!f);
-  return { popular, more: formats.filter((f) => !POPULAR_FORMATS.includes(f.id)) };
+/** The format cards split into the popular ones (the formats most people want, in the order the dialog shows them) and the rest, under "More formats". */
+export function splitFormats(formats?: FormatInfo[]): { popular: FormatInfo[]; more: FormatInfo[] } {
+  if (!formats) return splitExporters();
+  const split = splitExporters();
+  return { popular: split.popular.filter((f) => formats.some((x) => x.id === f.id)), more: formats.filter((f) => !split.popular.some((p) => p.id === f.id)) };
 }

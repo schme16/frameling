@@ -1,0 +1,63 @@
+/* The section and colour field the Particles and Text panels share (see panelFields.tsx). */
+.pt-section {
+  border-top: 1px solid var(--line-soft);
+  padding-top: 8px;
+}
+.pt-section > summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0 6px;
+}
+.pt-section > summary::-webkit-details-marker {
+  display: none;
+}
+.pt-section > summary::before {
+  content: '';
+  width: 0;
+  height: 0;
+  border-left: 5px solid currentColor;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  transition: transform 0.15s;
+  opacity: 0.6;
+}
+.pt-section[open] > summary::before {
+  transform: rotate(90deg);
+}
+.pt-section-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.pt-color {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--fs-small);
+  font-weight: 700;
+  color: var(--muted);
+}
+.pt-color input {
+  width: 30px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  background: var(--bg);
+  cursor: pointer;
+}
+.pt-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--fs-small);
+  font-weight: 700;
+  color: var(--muted);
+}
+.pt-row > :last-child {
+  flex: 1;
+  min-width: 0;
+}

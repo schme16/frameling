@@ -13,8 +13,7 @@ import { folderChain } from './folders';
 import { tweenEase } from './ease';
 import { locate, tableOf } from './motionPath';
 import { celAt, uid } from './doc';
-import { isAnimatedText } from '../text/model';
-import { poseParticles } from '../particles/draw';
+import { kindOf, type PoseEnv } from './shapeKinds';
 import { morphShapes } from './shape-tween';
 import { boundDrawing, type PosedMesh } from '../rig/pose';
 
@@ -650,12 +649,12 @@ function poseLiveCel(doc: Doc, layer: Layer, frame: number, live: Drawing): Draw
   if (live.kind !== 'vector' || (!hasInstances(live) && !hasMoving(live))) return live;
   const posed = poseCel(doc, layer, frame, 0);
   const byId = new Map<Id, Shape>();
-  if (posed?.kind === 'vector') for (const s of posed.shapes) if (isPosed(s) || s.type === 'text' || s.type === 'particles') byId.set(s.id, s);
+  if (posed?.kind === 'vector') for (const s of posed.shapes) if (isPosed(s) || kindOf(s)) byId.set(s.id, s);
   const local = frame - (celAt(layer, frame)?.start ?? frame);
   return {
     ...live,
     shapes: live.shapes.map((s) => {
-      if (s.type === 'text' || s.type === 'particles') return poseMovingShape(doc, s, local);
+      if (kindOf(s)) return poseMovingShape(doc, s, local);
       if (!isInstance(s)) return s;
       const p = byId.get(s.id) as PosedInstance | undefined;
       if (!p || !isPosed(p)) return poseInstance(doc, s, 0);
@@ -674,20 +673,26 @@ export function sceneOf(doc: Doc, frame: number): { doc: Doc; frame: number } {
   return doc.editing?.length ? { doc: rootDoc(doc), frame: doc.editing[0].frame } : { doc, frame };
 }
 
-// ---------------------------------------------------------------- text and particles
+// ---------------------------------------------------------------- moving shapes (text, particles)
 
 /** Whether a drawing has shapes that change by themselves from frame to frame (animated text, particles). */
 export function hasMoving(d: Drawing | undefined): boolean {
-  return !!d && d.kind === 'vector' && d.shapes.some((s) => s.type === 'particles' || (s.type === 'text' && isAnimatedText(s)));
+  return !!d && d.kind === 'vector' && d.shapes.some((s) => !!kindOf(s)?.moving?.(s));
 }
 
-/** A text or particle shape posed `local` frames after its key began; anything else as it is. */
+/** A shape of a registered kind (text, particles) posed `local` frames after its key began; anything else as it is. */
 export function poseMovingShape(doc: Doc, s: Shape, local: number, depth = 0): Shape {
-  if (s.type === 'text') return isAnimatedText(s) ? ({ ...s, posedFrame: local } as Shape) : s;
-  if (s.type !== 'particles') return s;
-  const c = s.sprite === 'symbol' && s.symbolId && depth < MAX_DEPTH ? symbolContent(doc, s.symbolId) : undefined;
-  const at: InstanceShape | null = c ? { id: `${s.id}-sprite`, type: 'instance', symbolId: s.symbolId!, transform: identityTransform(0, 0), opacity: 1, play: 'loop', firstFrame: 0 } : null;
-  return poseParticles(doc, s, local, (f) => (at ? poseInstance(doc, at, f, depth + 1) : null), c?.length ?? 1);
+  const kind = kindOf(s);
+  if (!kind?.pose) return s;
+  const env: PoseEnv = {
+    symbol(id) {
+      const c = depth < MAX_DEPTH ? symbolContent(doc, id) : undefined;
+      if (!c) return null;
+      const at: InstanceShape = { id: `${s.id}-sprite`, type: 'instance', symbolId: id, transform: identityTransform(0, 0), opacity: 1, play: 'loop', firstFrame: 0 };
+      return { length: c.length, at: (f) => poseInstance(doc, at, f, depth + 1) };
+    },
+  };
+  return kind.pose(doc, s, local, env);
 }
 
 /** A drawing with moving shapes but no instances, posed and cached per frame like instances are. */

@@ -1,6 +1,6 @@
-import { registerHelpTopics } from '../core/registry';
+import type { HelpTopic } from '../core/registry';
 
-registerHelpTopics([
+export const particlesHelp: HelpTopic[] = [
   {
     id: 'particles',
     title: 'Particles: sparkles, smoke, rain, snow and confetti',
@@ -51,4 +51,4 @@ They start when their key starts on the timeline and keep going for as long as t
 
 Particles on their own layer get everything a layer has. Try the blend mode **Glow brighter** (Add) for fire and magic, or a **Glow** effect from the [Effects panel](help:effects).`,
   },
-]);
+];

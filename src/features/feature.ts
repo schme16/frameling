@@ -7,6 +7,7 @@
  */
 import type { ChoiceDef } from '../core/choices';
 import type { Doc } from '../core/format';
+import type { ExporterDef } from '../export/registry';
 import type { Command, HelpTopic, PanelDef, Tool } from '../core/registry';
 import type { Quest } from '../quests/types';
 import type { PanelInfo } from '../ui/panelInfo';
@@ -33,6 +34,8 @@ export interface FeatureDescriptor {
   tools?: Tool[];
   help?: HelpTopic[];
   quests?: Quest[];
+  /** Ways to export (the cards in the Export dialog) that only make sense with the feature. */
+  exporters?: ExporterDef[];
   /** Remembered choices (Preferences > Behaviour) that only make sense with the feature. */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   choices?: ChoiceDef<any>[];

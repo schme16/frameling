@@ -2,14 +2,13 @@
  * Shape geometry for selecting and editing: bounds, hit testing and moving shapes about with a matrix.
  * All pure functions on the document types (no DOM), in document pixels unless a name says screen.
  */
-import type { Doc, FillShape, Gradient, InstanceShape, Layer, PathPoint, PathShape, Shape, StrokeShape, SubPath } from '../core/format';
+import type { Doc, FillShape, Gradient, InstanceShape, Layer, PathPoint, PathShape, Shape, StrokeShape, SubPath, Transform2D } from '../core/format';
 import { strokeOutline } from '../core/render';
 import { mapGradient } from '../core/gradient';
 import { store } from '../core/store';
 import { decompose, invert, symbolContent, transformMatrix } from '../core/symbols';
 import type { Pt, Rect } from './view';
-import { hitText, textBounds } from '../text/draw';
-import { emitterBox } from '../particles/model';
+import { kindOf } from '../core/shapeKinds';
 
 export type { Pt, Rect } from './view';
 
@@ -232,8 +231,7 @@ function rings(s: FillShape | PathShape): { pts: Pt[]; closed: boolean }[] {
 export function shapeBounds(s: Shape): Rect {
   // Not cached: the symbol behind an instance can change while the instance stays the same object.
   if (s.type === 'instance') return instanceBounds(s);
-  if (s.type === 'text') return textBounds(s);
-  if (s.type === 'particles') return emitterBox(s);
+  if (s.type !== 'stroke' && s.type !== 'fill' && s.type !== 'path') return kindOf(s)?.bounds(s) ?? { x: 0, y: 0, w: 0, h: 0 };
   let b = boundsCache.get(s);
   if (b) return b;
   if (s.type === 'stroke') {
@@ -312,8 +310,7 @@ export function pointInRings(ringList: ArrayLike<ArrayLike<number> | Pt>[], x: n
 export function hitShape(s: Shape, x: number, y: number, tol: number): boolean {
   if (!rectContainsPoint(inflateRect(shapeBounds(s), tol), x, y)) return false;
   if (s.type === 'instance') return hitInstance(s, x, y, tol);
-  if (s.type === 'text') return hitText(s, x, y, tol);
-  if (s.type === 'particles') return true;
+  if (s.type !== 'stroke' && s.type !== 'fill' && s.type !== 'path') return kindOf(s)?.hit(s, x, y, tol) ?? false;
   if (s.type === 'stroke') {
     const o = strokeOutline(s);
     if (o.length > 2 && pointInRings([o], x, y)) return true;
@@ -347,10 +344,15 @@ function mapPaths(m: Matrix, paths: SubPath[]): SubPath[] {
   return paths.map((sp) => ({ closed: sp.closed, points: sp.points.map((p) => mapPoint(m, p)) }));
 }
 
+/** A shape that sits by a transform of its own (text, an emitter) moved about by the matrix: the transform takes it. */
+export function transformPlaced<S extends { transform: Transform2D }>(s: S, m: Matrix): S {
+  return { ...s, transform: decompose(multiply(m, transformMatrix(s.transform, { x: 0, y: 0 })), { x: 0, y: 0 }) };
+}
+
 /** A new shape moved about by the matrix (same id). Widths and brush sizes scale with it. */
 export function transformShape<S extends Shape>(s: S, m: Matrix): S {
   if (s.type === 'instance') return transformInstance(s, m) as S;
-  if (s.type === 'text' || s.type === 'particles') return { ...s, transform: decompose(multiply(m, transformMatrix(s.transform, { x: 0, y: 0 })), { x: 0, y: 0 }) } as S;
+  if (s.type !== 'stroke' && s.type !== 'fill' && s.type !== 'path') return (kindOf(s)?.transform(s, m) ?? s) as S;
   const k = matrixScale(m);
   if (s.type === 'stroke') {
     const st = s as StrokeShape;
