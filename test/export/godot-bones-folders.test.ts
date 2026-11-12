@@ -2,7 +2,7 @@
 // node when nothing in the folder overlaps (else on each layer), names clean and unique among siblings.
 import { describe, expect, it } from 'vitest';
 import { bonesExtrasDoc } from '../../src/export/bonesExtrasDoc';
-import { allScopes, bonesNotes, bonesStage, godotBonesScene, nativeFolderFades } from '../../src/export/godot-bones';
+import { allScopes, bonesNotes, bonesRigs, bonesStage, godotBonesScene, nativeFolderFades } from '../../src/export/godot-bones';
 import { buildAnimations } from '../../src/export/sheet';
 import { makePuppet } from '../../src/templates/puppet';
 import type { Doc } from '../../src/core/format';
@@ -134,15 +134,16 @@ describe('Godot bones: folders as nodes', () => {
   it('leaves out a layer on a bone in a hidden folder (it cannot sit in the folder node) and says so', () => {
     const doc = makePuppet();
     doc.folders = { f: { id: 'f', name: 'Gear', visible: false, opacity: 1 } };
-    const rigId = doc.layers.find((l) => l.rig?.bones.length)!.id;
+    const rigId = bonesRigs(doc)[0].id;
     const onBone = doc.layers.find((l) => l.bind?.rig === rigId)!;
     onBone.folder = 'f';
     const range = { start: 0, end: doc.length - 1 };
     expect(bonesStage(doc, range).parts.some((p) => p.layer === onBone)).toBe(false);
     expect(bonesNotes(doc).skipped.join('|')).toContain(`on ${onBone.name}`);
-    // Visible, it stays.
+    // Visible, it stays, and the notes say it stays under its bone instead of in the folder.
     doc.folders.f.visible = true;
     expect(bonesStage(doc, range).parts.some((p) => p.layer === onBone)).toBe(true);
+    expect(bonesNotes(doc).folded.join('|')).toContain(`Layers on a bone in Gear (${onBone.name}`);
   });
 
   it('says what folders become, and warns about a faded folder with several layers', () => {

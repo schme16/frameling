@@ -26,7 +26,7 @@ export function BonesLookNotes({ doc }: { doc: Doc }) {
       )}
       {n.folded.length > 0 && (
         <p className="ex-note">
-          <b>Folder looks put on each layer:</b> {n.folded.join('; ')}. Godot cannot fade or blend a node's children as one picture without a group, which would break their order, so those looks go on the layers. Where overlapping layers are faded one by one, the overlap shows through.
+          <b>Folders:</b> {n.folded.join('; ')}. A fade, blend mode or effect that goes on each layer instead of the folder's node is applied layer by layer, so where faded layers overlap, the overlap shows through (Godot cannot fade a node's children as one picture without a group, which would break their order).
         </p>
       )}
       {n.tips.map((t) => (

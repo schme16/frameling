@@ -755,13 +755,15 @@ interface Box {
 }
 
 /** Says in `notes` what the stage's folders become, and which of their looks go on each layer instead of the folder's node. */
-function noteFolders(doc: Doc, drawnUnder: Map<Id, number>, notes: BonesNotes): void {
+function noteFolders(doc: Doc, drawnUnder: Map<Id, number>, ridingUnder: Map<Id, string[]>, notes: BonesNotes): void {
   const used = Object.values(doc.folders ?? {}).filter((f) => drawnUnder.get(f.id));
   if (!used.length) return;
   notes.native.add('Layer folders: a Node2D each, nested the same way, so a whole folder can be hidden or scripted');
   for (const f of used) {
     if (f.opacity < 1 - 1e-6 && (drawnUnder.get(f.id) ?? 0) > 1) notes.folded.set(`Fade on ${f.name}`, 'goes on the folder’s node when its layers do not overlap, else on each layer');
     if (f.blend && f.blend !== 'normal') notes.folded.set(`Blend mode on ${f.name}`, 'on each layer');
+    const riding = ridingUnder.get(f.id);
+    if (riding?.length) notes.folded.set(`Layers on a bone in ${f.name} (${riding.join(', ')})`, 'they stay under their bone, so hiding or fading the folder does not reach them');
   }
 }
 
@@ -776,6 +778,7 @@ export function bonesNotes(doc: Doc): BonesNoteLines {
   const scopes = new Map<Id, BonesScope>();
   // How many layers each folder holds that get exported (stage only: every folder there is a node of its own).
   const drawnUnder = new Map<Id, number>();
+  const ridingUnder = new Map<Id, string[]>();
   // `under`: this symbol sits inside a faded one that is a CanvasGroup, and Godot cannot nest a group in a group: its
   // faded symbols are drawn into pictures ('drawn'), or fade part by part when that cannot be ('plain').
   const scan = (layers: Layer[], depth: number, inherit: NativeBlend = 'mix', under: false | 'plain' | 'drawn' = false) => {
@@ -789,7 +792,11 @@ export function bonesNotes(doc: Doc): BonesNoteLines {
         continue;
       }
       const look = partLook(doc, layer, notes);
-      if (stage && !layer.mask && links.cuts.has(layer)) for (const f of folderChain(doc.folders, layer.folder)) drawnUnder.set(f.id, (drawnUnder.get(f.id) ?? 0) + 1);
+      if (stage && !layer.mask && links.cuts.has(layer))
+        for (const f of folderChain(doc.folders, layer.folder)) {
+          drawnUnder.set(f.id, (drawnUnder.get(f.id) ?? 0) + 1);
+          if (ridesBone(layers, layer)) ridingUnder.set(f.id, [...(ridingUnder.get(f.id) ?? []), layer.name]);
+        }
       if (symbolsOnLayer(doc, layer).some((id) => symbolDropsHiddenLayers(doc, id))) notes.skip('Hidden or reference layers inside symbols with effects are left out of the pictures', layer.name);
       if (layer.mask || !links.cuts.has(layer)) continue;
       if (under === 'drawn' && depth < MAX_NEST && rigged.size && holdsInstanceOf(doc, layer, rigged) && layerFadesInstances(doc, layer, rigged, look.opacity)) {
@@ -838,7 +845,7 @@ export function bonesNotes(doc: Doc): BonesNoteLines {
     }
   };
   scan(doc.layers, 0);
-  noteFolders(doc, drawnUnder, notes);
+  noteFolders(doc, drawnUnder, ridingUnder, notes);
   if (doc.layers.some((l) => l.kind === 'camera' && l.visible)) {
     notes.native.add('Camera: a Camera2D that moves and zooms like the stage camera');
     notes.native.add('Window size: attach the included fit-window script so the camera and depth layers line up at any window size');
