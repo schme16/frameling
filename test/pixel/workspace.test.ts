@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { _resetChoicesForTests, registerChoice, setChoice } from '../../src/core/choices';
+import { _resetChoicesForTests, migrateChoices, registerChoice, rememberedChoice, setChoice, setChoiceAsker } from '../../src/core/choices';
 import { newDoc, newVectorLayer } from '../../src/core/doc';
 import type { Doc, DocPalette } from '../../src/core/format';
 import { registerPanel } from '../../src/core/registry';
@@ -8,7 +8,7 @@ import { DEFAULT_SHEET, type ExportSettings } from '../../src/export/types';
 import { applyWorkspace, builtinWorkspaces, currentWorkspace, inPixelWorkspace, PIXEL_TOOLS, resetDock, saveWorkspace, stripTools } from '../../src/ui/dock';
 import { BAR_SIZES, hasMirror, hasPerfect, hasShape, paletteIndexOf, sizeSettingFor } from '../../src/pixel/bar';
 import { framesDue, nextPreviewFrame, previewBase, previewFrames, previewScale, setPreview, previewSettings } from '../../src/pixel/preview';
-import { isPixelDoc, madeOnPurpose, PIXEL_DOC_CHOICE, pixelExportStart, pixelStartTool, VECTOR_DOC_CHOICE, watchPixelDocs, watchPixelTool } from '../../src/pixel/workspace';
+import { isPixelDoc, madeOnPurpose, FOLLOW_CHOICE, pixelExportStart, pixelStartTool, watchPixelDocs, watchPixelTool } from '../../src/pixel/workspace';
 
 const Nothing = () => null;
 beforeAll(() => {
@@ -111,78 +111,147 @@ describe('opening pixel art', () => {
 
   const reRegister = () => {
     _resetChoicesForTests();
-    for (const id of [PIXEL_DOC_CHOICE, VECTOR_DOC_CHOICE]) registerChoice({ id, title: 't', question: 'q', category: 'Workspace', default: 'switch', options: [{ value: 'switch', label: 'a' }, { value: 'stay', label: 'b' }] });
+    registerChoice({
+      id: FOLLOW_CHOICE,
+      title: 't',
+      question: 'q',
+      category: 'Workspace',
+      default: 'always',
+      dismiss: 'later',
+      options: [{ value: 'always', label: 'a' }, { value: 'later', label: 'n', once: true }, { value: 'never', label: 'b' }],
+    });
   };
 
-  it('switches without asking for a document just made on purpose, either way', () => {
+  function watch(doc: Doc) {
+    const s = fakeStore(doc);
+    const seen = { toPixel: 0, toDraw: 0, keys: 0 };
+    const off = watchPixelDocs(s, () => void seen.toPixel++, () => void seen.keys++, () => void seen.toDraw++);
+    return { s, seen, off };
+  }
+
+  it('new pixel art in Draw switches to Pixel once the answer is Always', () => {
     reRegister();
-    const s = fakeStore(newDoc());
-    let toPixel = 0;
-    let toDraw = 0;
-    const off = watchPixelDocs(s, () => toPixel++, undefined, () => toDraw++);
-    // No remembered answer, and nothing asked: made on purpose goes straight over.
-    s.load(madeOnPurpose(pixelDoc()));
-    expect(toPixel).toBe(1);
+    applyWorkspace('draw');
+    setChoice(FOLLOW_CHOICE, 'always');
+    const { s, seen, off } = watch(newDoc());
+    s.load(pixelDoc());
+    expect(seen.toPixel).toBe(1);
+    expect(seen.keys).toBe(1);
+    off();
+  });
+
+  it('opening pixel art in Draw switches without a question once Always is remembered, never when Never', () => {
+    reRegister();
+    applyWorkspace('draw');
+    const { s, seen, off } = watch(newDoc());
+    setChoice(FOLLOW_CHOICE, 'never');
+    s.load(pixelDoc());
+    expect(seen.toPixel).toBe(0);
+    setChoice(FOLLOW_CHOICE, 'always');
+    s.load(pixelDoc());
+    expect(seen.toPixel).toBe(1);
+    off();
+  });
+
+  it('opening a drawing in Pixel goes back to Draw, with the same answer', () => {
+    reRegister();
     applyWorkspace('pixel');
+    const { s, seen, off } = watch(pixelDoc());
+    setChoice(FOLLOW_CHOICE, 'never');
+    s.load(newDoc());
+    expect(seen.toDraw).toBe(0);
+    setChoice(FOLLOW_CHOICE, 'always');
+    s.load(newDoc());
+    expect(seen.toDraw).toBe(1);
+    // Pixel art in Pixel, and a drawing in Draw: nothing to do.
+    s.load(pixelDoc());
+    applyWorkspace('draw');
+    s.load(newDoc());
+    expect(seen.toDraw).toBe(1);
+    expect(seen.toPixel).toBe(0);
+    off();
+  });
+
+  it('leaves the Animate workspace alone, for pixel art and for drawings', () => {
+    reRegister();
+    setChoice(FOLLOW_CHOICE, 'always');
+    applyWorkspace('animate');
+    const { s, seen, off } = watch(newDoc());
+    s.load(pixelDoc());
+    s.load(newDoc());
+    expect(seen.toPixel + seen.toDraw).toBe(0);
+    off();
+  });
+
+  it('asks the first time when there is a way to ask, and Not now is not remembered', async () => {
+    reRegister();
+    applyWorkspace('draw');
+    const asked: string[] = [];
+    let answer: { value: string; remember: boolean } | null = { value: 'later', remember: true };
+    setChoiceAsker(async (def) => (asked.push(def.id), answer));
+    const { s, seen, off } = watch(newDoc());
+    s.load(pixelDoc());
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(asked).toEqual([FOLLOW_CHOICE]);
+    expect(seen.toPixel).toBe(0);
+    expect(rememberedChoice(FOLLOW_CHOICE)).toBeUndefined();
+    // Closing the question counts as Not now too.
+    answer = null;
+    s.load(pixelDoc());
+    await new Promise((r) => setTimeout(r, 0));
+    expect(asked.length).toBe(2);
+    expect(seen.toPixel).toBe(0);
+    // Always is remembered, switches, and is not asked again.
+    answer = { value: 'always', remember: true };
+    s.load(pixelDoc());
+    await new Promise((r) => setTimeout(r, 0));
+    expect(seen.toPixel).toBe(1);
+    expect(rememberedChoice(FOLLOW_CHOICE)).toBe('always');
+    s.load(pixelDoc());
+    expect(asked.length).toBe(3);
+    expect(seen.toPixel).toBe(2);
+    off();
+  });
+
+  it('a lesson page switches without asking, whatever the answer', () => {
+    reRegister();
+    applyWorkspace('pixel');
+    setChoice(FOLLOW_CHOICE, 'never');
+    const { s, seen, off } = watch(pixelDoc());
     s.load(madeOnPurpose(newDoc()));
-    expect(toDraw).toBe(1);
-    // A file that is opened still goes through the question (here answered: switch).
-    applyWorkspace('draw');
-    setChoice(PIXEL_DOC_CHOICE, 'stay');
-    s.load(pixelDoc());
-    expect(toPixel).toBe(1);
+    expect(seen.toDraw).toBe(1);
     off();
   });
 
-  it('offers Draw once when a drawing opens in the Pixel workspace, remembered, and leaves pixel art there alone', () => {
+  it('does not treat the document already there as opening', () => {
     reRegister();
-    const s = fakeStore(pixelDoc());
-    let toDraw = 0;
-    const off = watchPixelDocs(s, () => {}, undefined, () => toDraw++);
-    applyWorkspace('pixel');
-    setChoice(VECTOR_DOC_CHOICE, 'switch');
-    s.load(pixelDoc());
-    expect(toDraw).toBe(0);
-    s.load(newDoc());
-    expect(toDraw).toBe(1);
-    setChoice(VECTOR_DOC_CHOICE, 'stay');
-    s.load(newDoc());
-    expect(toDraw).toBe(1);
-    // Not in the Pixel workspace: nothing to offer.
     applyWorkspace('draw');
-    setChoice(VECTOR_DOC_CHOICE, 'switch');
-    s.load(newDoc());
-    expect(toDraw).toBe(1);
-    off();
-  });
-
-  it('offers the Pixel workspace when pixel art opens, not for the document already there or for vector', () => {
-    reRegister();
-    const s = fakeStore(pixelDoc());
-    let switched = 0;
-    const off = watchPixelDocs(s, () => switched++);
+    setChoice(FOLLOW_CHOICE, 'always');
+    const { s, seen, off } = watch(pixelDoc());
     s.load(s.get().doc);
-    expect(switched).toBe(0);
-    s.load(newDoc());
-    expect(switched).toBe(0);
-    s.load(pixelDoc());
-    expect(switched).toBe(1);
+    expect(seen.toPixel).toBe(0);
     off();
   });
 
-  it('stays put when you are already in a pixel workspace, or said to keep your layout', () => {
-    reRegister();
-    const s = fakeStore(newDoc());
-    let switched = 0;
-    const off = watchPixelDocs(s, () => switched++);
-    applyWorkspace('pixel');
-    s.load(pixelDoc());
-    expect(switched).toBe(0);
-    applyWorkspace('draw');
-    setChoice(PIXEL_DOC_CHOICE, 'stay');
-    s.load(pixelDoc());
-    expect(switched).toBe(0);
-    off();
+  it('folds the two older answers into the one: any keep-my-layout is Never, otherwise a switch is Always', () => {
+    const run = (old: Record<string, string>) => {
+      _resetChoicesForTests();
+      for (const [k, v] of Object.entries(old)) setChoice(k, v);
+      migrateChoices(FOLLOW_CHOICE, ['workspace.pixelDocs', 'workspace.vectorDocs'], (a) => (a.includes('stay') ? 'never' : a.includes('switch') ? 'always' : undefined));
+      return [rememberedChoice(FOLLOW_CHOICE), rememberedChoice('workspace.pixelDocs'), rememberedChoice('workspace.vectorDocs')];
+    };
+    expect(run({ 'workspace.pixelDocs': 'stay' })).toEqual(['never', undefined, undefined]);
+    expect(run({ 'workspace.pixelDocs': 'switch', 'workspace.vectorDocs': 'stay' })).toEqual(['never', undefined, undefined]);
+    expect(run({ 'workspace.vectorDocs': 'switch' })).toEqual(['always', undefined, undefined]);
+    expect(run({})).toEqual([undefined, undefined, undefined]);
+    // An answer to the new question wins.
+    _resetChoicesForTests();
+    setChoice(FOLLOW_CHOICE, 'always');
+    setChoice('workspace.pixelDocs', 'stay');
+    migrateChoices(FOLLOW_CHOICE, ['workspace.pixelDocs'], () => 'never');
+    expect(rememberedChoice(FOLLOW_CHOICE)).toBe('always');
+    expect(rememberedChoice('workspace.pixelDocs')).toBeUndefined();
   });
 });
 

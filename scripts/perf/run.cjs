@@ -415,7 +415,7 @@ async function main() {
     for (const size of [2048, 4096]) {
       await setDoc({ frames: 1, layers: 1, strokesPer: 0 });
       // Opening a pixel document asks about the workspace the first time: answer it in advance.
-      await js(`localStorage.setItem('frameling.choices.v1', JSON.stringify({ 'workspace.pixelDocs': 'stay' })); true`);
+      await js(`localStorage.setItem('frameling.choices.v1', JSON.stringify({ 'workspace.follow': 'never' })); true`);
       await js(`(() => {
         const F = window.__frameling;
         const doc = window.__h.mkDoc({ width: ${size}, height: ${size}, frames: 1, layers: 1, strokesPer: 0 });

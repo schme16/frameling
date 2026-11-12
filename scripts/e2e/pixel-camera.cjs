@@ -57,7 +57,7 @@ async function startApp() {
     try {
       if (await ev('!!window.__frameling')) {
         // No welcome sheet and no workspace question.
-        await ev(`localStorage.setItem('frameling.prefs.v1', JSON.stringify({ showWelcome: false, showTips: false })); localStorage.setItem('frameling.choices.v1', JSON.stringify({ 'workspace.pixelDocs': 'stay' })); true`);
+        await ev(`localStorage.setItem('frameling.prefs.v1', JSON.stringify({ showWelcome: false, showTips: false })); localStorage.setItem('frameling.choices.v1', JSON.stringify({ 'workspace.follow': 'never' })); true`);
         await win.loadURL(process.env.FRAMELING_DEV_URL);
         await sleep(2500);
         return;

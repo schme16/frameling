@@ -13,6 +13,8 @@ export interface ChoiceOption<V extends string = string> {
   value: V;
   label: string;
   detail?: string;
+  /** An answer for this time only ("Not now"): never remembered, and not offered in Preferences. */
+  once?: boolean;
 }
 
 export interface ChoiceDef<V extends string = string> {
@@ -24,6 +26,8 @@ export interface ChoiceDef<V extends string = string> {
   options: ChoiceOption<V>[];
   /** Used when nobody has answered yet and there's no way to ask (and highlighted in the dialog). */
   default: V;
+  /** Used instead of the default when the dialog is closed without picking (when closing should not mean the default). */
+  dismiss?: V;
   /** Groups it in Preferences > Behaviour. */
   category: string;
   help?: string;
@@ -103,6 +107,21 @@ export function setChoice(id: string, value: string | undefined): void {
   emit();
 }
 
+/**
+ * Folds the remembered answers of retired choices into a new one: `pick` gets the old answers (in the order of `olds`,
+ * undefined where there was none) and returns the new answer, or undefined for none. Does nothing once the new choice
+ * has an answer. The old answers are always dropped.
+ */
+export function migrateChoices(newId: string, olds: string[], pick: (answers: (string | undefined)[]) => string | undefined): void {
+  if (!olds.some((o) => answers[o] !== undefined)) return;
+  const next = answers[newId] === undefined ? pick(olds.map((o) => answers[o])) : undefined;
+  const rest = { ...answers };
+  for (const o of olds) delete rest[o];
+  answers = next === undefined ? rest : { ...rest, [newId]: next };
+  save();
+  emit();
+}
+
 /** Forgets every answer, so each will be asked again. */
 export function resetChoices(): void {
   answers = {};
@@ -140,8 +159,8 @@ export function choose<V extends string = string>(id: string): Promise<V> {
   if (waiting) return waiting as Promise<V>;
   const p = asker(def)
     .then((r) => {
-      if (!r) return def.default;
-      if (r.remember) setChoice(id, r.value);
+      if (!r) return def.dismiss ?? def.default;
+      if (r.remember && !def.options.find((o) => o.value === r.value)?.once) setChoice(id, r.value);
       return r.value;
     })
     .finally(() => pending.delete(id));

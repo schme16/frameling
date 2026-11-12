@@ -384,7 +384,7 @@ const entries = [
 ];
 
 // Questions Frameling would ask the first time are answered up front, so no sheet gets in the shot.
-const ANSWERS = { 'tween.plainDrawing': 'symbol', 'draw.tweenFrame': 'new-key', 'rig.newPose': 'glide', 'motion.room': 'squeeze', 'workspace.pixelDocs': 'stay' };
+const ANSWERS = { 'tween.plainDrawing': 'symbol', 'draw.tweenFrame': 'new-key', 'rig.newPose': 'glide', 'motion.room': 'squeeze', 'workspace.follow': 'never' };
 const answer = L.js(Object.entries(ANSWERS).map(([k, v]) => `__framelingArtboards.setChoice(${JSON.stringify(k)}, ${JSON.stringify(v)})`).join(';') + ';true');
 
 // No status bar tips either: they change from run to run.

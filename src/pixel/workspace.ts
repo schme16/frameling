@@ -1,48 +1,45 @@
-// The Pixel workspace's own behaviour: offering to switch to it when pixel art opens (asked once, then remembered),
+// The Pixel workspace's own behaviour: the workspace following the kind of drawing (asked once, then remembered),
 // and starting Export on a sprite sheet at art size while you're in it.
-import { registerChoice, withChoice } from '../core/choices';
+import { migrateChoices, registerChoice, withChoice } from '../core/choices';
 import type { Doc, Id } from '../core/format';
 import type { ExportSettings } from '../export/types';
 import { applyWorkspace, dock, hidePanel, inPixelWorkspace, PIXEL_TOOLS, showPanel } from '../ui/dock';
 import { isPlaced } from '../ui/dockModel';
 import { isPixelDoc } from './way';
 
-export const PIXEL_DOC_CHOICE = 'workspace.pixelDocs';
-
-registerChoice({
-  id: PIXEL_DOC_CHOICE,
-  title: 'Opening pixel art',
-  question: 'This is pixel art. Switch to the Pixel workspace? It has the pixel tools, a big palette and a real-size preview.',
-  category: 'Workspace',
-  help: 'pixel-workspace',
-  default: 'switch',
-  options: [
-    { value: 'switch', label: 'Switch to Pixel', detail: 'Pixel tools only, the palette up front, and the Preview panel playing your sprite.' },
-    { value: 'stay', label: 'Keep my layout', detail: 'Stay as you are. View > Workspaces switches any time.' },
-  ],
-});
-
 export { isPixelDoc };
 
-export const VECTOR_DOC_CHOICE = 'workspace.vectorDocs';
+/** The one question: should the workspace follow the kind of drawing (Pixel for pixel art, Draw for drawings)? */
+export const FOLLOW_CHOICE = 'workspace.follow';
 
 registerChoice({
-  id: VECTOR_DOC_CHOICE,
-  title: 'Opening a drawing in the Pixel workspace',
-  question: 'This is a drawing, not pixel art. Switch to the Draw workspace? It has the colours and the brush tools close at hand.',
+  id: FOLLOW_CHOICE,
+  title: 'Workspace follows the drawing',
+  question: 'Switch workspaces to match the kind of drawing? (Pixel for pixel art, Draw for drawings)',
   category: 'Workspace',
-  help: 'workspaces',
-  default: 'switch',
+  help: 'pixel-workspace',
+  default: 'always',
+  // Closing the question without answering switches nothing.
+  dismiss: 'later',
+  quill: true,
   options: [
-    { value: 'switch', label: 'Switch to Draw', detail: 'The usual tools and colours for drawing.' },
-    { value: 'stay', label: 'Keep the Pixel workspace', detail: 'Stay as you are. View > Workspaces switches any time.' },
+    { value: 'always', label: 'Always', detail: 'Pixel art opens in the Pixel workspace, and drawings in Draw. After this it happens by itself, no more questions.' },
+    { value: 'later', label: 'Not now', detail: 'Stay as you are this time. Frameling asks again next time it matters.', once: true },
+    { value: 'never', label: 'Never', detail: 'Always keep my layout. View > Workspaces switches any time.' },
   ],
 });
 
-// Documents the person just made on purpose (New pixel art, a template, a preset): the workspace follows them without asking.
+// The two older questions (pixel art in another workspace, a drawing in Pixel) became this one. Saying "keep my layout"
+// to either means never; otherwise a "switch" means always.
+migrateChoices(FOLLOW_CHOICE, ['workspace.pixelDocs', 'workspace.vectorDocs'], (old) => (old.includes('stay') ? 'never' : old.includes('switch') ? 'always' : undefined));
+
+/** The built-in Draw workspace (the Animate workspace and ones you made are left alone). */
+const inDrawWorkspace = (): boolean => dock.get().workspaceId === 'draw';
+
+// Pages a lesson makes: the workspace follows them without asking.
 const madeHere = new Set<Id>();
 
-/** Say that this document was just made on purpose, so the matching workspace is picked without a question. Call before loading it. */
+/** Say that this page was just made for a lesson, so the matching workspace is picked without a question. Call before loading it. */
 export function madeOnPurpose(doc: Doc): Doc {
   madeHere.add(doc.id);
   return doc;
@@ -54,10 +51,11 @@ interface DocSource {
 }
 
 /**
- * Watches for documents opening, and makes the workspace follow the kind of document: pixel art opening outside the
- * Pixel workspace offers it, a drawing opening inside it offers Draw (each asked once, then remembered). A document the
- * person just made on purpose (see madeOnPurpose) switches without asking. `then` runs after the pixel question (or at
- * once when you're in it already): the "Coming from Aseprite?" question.
+ * Watches for documents opening, and makes the workspace follow the kind of document: pixel art opening in Draw goes
+ * to Pixel, a drawing opening in Pixel goes to Draw. The first time it matters Frameling asks (Always, Not now, Never,
+ * remembered); after Always it just follows. The Animate workspace and ones you made yourself are left alone. A lesson's
+ * page (see madeOnPurpose) switches without asking. `then` runs for pixel art once that is settled: the "Coming from
+ * Aseprite?" question.
  */
 export function watchPixelDocs(
   s: DocSource,
@@ -72,22 +70,24 @@ export function watchPixelDocs(
     if (doc.id === last) return;
     last = doc.id;
     const mine = madeHere.delete(doc.id);
-    if (!isPixelDoc(doc)) {
-      if (!inPixelWorkspace()) return;
-      if (mine) return toDraw();
-      return withChoice(VECTOR_DOC_CHOICE, (v) => {
-        if (v === 'switch' && s.get().doc.id === doc.id && inPixelWorkspace()) toDraw();
-      });
+    const pixel = isPixelDoc(doc);
+    const mismatch = () => (pixel ? inDrawWorkspace() : inPixelWorkspace());
+    if (!mismatch()) {
+      if (pixel) then();
+      return;
     }
-    if (inPixelWorkspace()) return then();
+    const follow = () => {
+      // Still the same document, and still in the wrong workspace, by the time they answer.
+      if (s.get().doc.id === doc.id && mismatch()) (pixel ? switchTo : toDraw)();
+    };
     if (mine) {
-      switchTo();
-      return then();
+      follow();
+      if (pixel) then();
+      return;
     }
-    withChoice(PIXEL_DOC_CHOICE, (v) => {
-      // Still the same document, and still not in a pixel workspace, by the time they answer.
-      if (v === 'switch' && s.get().doc.id === doc.id && !inPixelWorkspace()) switchTo();
-      then();
+    withChoice(FOLLOW_CHOICE, (v) => {
+      if (v === 'always') follow();
+      if (pixel) then();
     });
   });
 }

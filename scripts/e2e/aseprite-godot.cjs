@@ -32,7 +32,7 @@ async function main() {
   await sleep(500);
 
   // No "switch to Pixel?" question in the way, and the sample sprite (28 x 24 frames, art pixel 1) opened like a double-click.
-  await ev(`__framelingExport.setChoice('workspace.pixelDocs', 'stay'); __framelingExport.setChoice('pixel.keys', 'frameling'); __frameling.overlays.closeSheet()`);
+  await ev(`__framelingExport.setChoice('workspace.follow', 'never'); __framelingExport.setChoice('pixel.keys', 'frameling'); __frameling.overlays.closeSheet()`);
   const file = path.join(root, 'scripts/docs/help/assets/slime-bounce.aseprite');
   check(await ev(`window.__framelingIo.openPath(${JSON.stringify(file)})`), 'the Aseprite file did not open');
   await sleep(500);

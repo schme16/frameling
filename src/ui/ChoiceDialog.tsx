@@ -110,7 +110,7 @@ export function BehaviourPage() {
                 <select value={answers[c.id] ?? ''} onChange={(e) => setChoice(c.id, e.target.value || undefined)} aria-label={c.title}>
                   {!c.silent && <option value="">Ask me</option>}
                   {c.silent && !answers[c.id] && <option value="">{c.options.find((o) => o.value === c.default)?.label} (default)</option>}
-                  {c.options.map((o) => (
+                  {c.options.filter((o) => !o.once).map((o) => (
                     <option key={o.value} value={o.value}>
                       {o.label}
                     </option>

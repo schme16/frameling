@@ -70,7 +70,7 @@ async function bareCheck(win, label, drag) {
   console.log(`${bad === 0 ? 'ok' : 'FAIL'} ${label}`);
 }
 
-const LOAD = (which, extra = '') => ({ eval: `__framelingArtboards.setChoice('workspace.pixelDocs', 'stay'); true` });
+const LOAD = (which, extra = '') => ({ eval: `__framelingArtboards.setChoice('workspace.follow', 'never'); true` });
 
 async function main() {
   mockMain(ipcMain);
@@ -93,7 +93,7 @@ async function main() {
   // Where things are, so the drags land on the artboards whatever the layout.
   const where = async () => JSON.parse(await win.webContents.executeJavaScript(SCENE)).boxes;
 
-  await run([ev(`__framelingArtboards.setChoice('workspace.pixelDocs', 'stay'); true`), { wait: 400 }]);
+  await run([ev(`__framelingArtboards.setChoice('workspace.follow', 'never'); true`), { wait: 400 }]);
   const variants = [
     ['shots', ''],
     ['mixed', ''],
