@@ -491,7 +491,13 @@ function readTileset(raw: any, drawings: Record<string, Drawing>, warnings: stri
     tiles.push({ key, name: str(t.name, 'Tile ' + (tiles.length + 1)), frames: frames.map((f: any) => ({ drawingId: f.drawingId, duration: Math.max(1, Math.round(num(f.duration, 1))) })) });
   }
   const top = Math.max(0, ...keys);
-  return { tileWidth, tileHeight, tiles, nextKey: Math.max(top + 1, Math.round(num(raw.nextKey, 1))) };
+  const edge = (v: unknown, size: number): number => {
+    const n = Math.round(num(v, 0));
+    return n > 0 && n < size ? n : 0;
+  };
+  const gridX = edge(raw.gridX, tileWidth);
+  const gridY = edge(raw.gridY, tileHeight);
+  return { tileWidth, tileHeight, tiles, nextKey: Math.max(top + 1, Math.round(num(raw.nextKey, 1))), ...(gridX ? { gridX } : {}), ...(gridY ? { gridY } : {}) };
 }
 
 /** The pixel palette, if the file has a usable one. */

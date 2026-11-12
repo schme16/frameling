@@ -5,7 +5,7 @@
  * slot, only where the canvas can see.
  */
 import type { Doc, PixelDrawing, TilemapDrawing } from './format';
-import { DEFAULT_TILE_SIZE } from './doc';
+import { DEFAULT_TILE_SIZE, tileOrigin } from './doc';
 import { cellFlags, cellKey, flagMatrix, findTile, tileDrawingAt } from '../tiles/model';
 
 type Ctx = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
@@ -123,11 +123,12 @@ export function tilemapBitmap(doc: Doc, d: TilemapDrawing, frame: number, tileCa
 export function drawTilemap(g: Ctx, doc: Doc, d: TilemapDrawing, pixelSize: number, frame: number, tileCanvas: TileCanvas): void {
   const tw = doc.tileset?.tileWidth ?? DEFAULT_TILE_SIZE;
   const th = doc.tileset?.tileHeight ?? DEFAULT_TILE_SIZE;
+  const o = tileOrigin(doc, pixelSize);
   const prev = g.imageSmoothingEnabled;
   g.imageSmoothingEnabled = false;
   const bmp = tilemapBitmap(doc, d, frame, tileCanvas);
   if (bmp) {
-    g.drawImage(bmp, 0, 0, d.columns * tw * pixelSize, d.rows * th * pixelSize);
+    g.drawImage(bmp, o.x, o.y, d.columns * tw * pixelSize, d.rows * th * pixelSize);
     g.imageSmoothingEnabled = prev;
     return;
   }
@@ -139,17 +140,17 @@ export function drawTilemap(g: Ctx, doc: Doc, d: TilemapDrawing, pixelSize: numb
   const corners = [inv.transformPoint({ x: 0, y: 0 }), inv.transformPoint({ x: cw, y: 0 }), inv.transformPoint({ x: 0, y: ch }), inv.transformPoint({ x: cw, y: ch })];
   const sw = tw * pixelSize;
   const sh = th * pixelSize;
-  const x0 = Math.max(0, Math.floor(Math.min(...corners.map((p) => p.x)) / sw));
-  const x1 = Math.min(d.columns - 1, Math.floor(Math.max(...corners.map((p) => p.x)) / sw));
-  const y0 = Math.max(0, Math.floor(Math.min(...corners.map((p) => p.y)) / sh));
-  const y1 = Math.min(d.rows - 1, Math.floor(Math.max(...corners.map((p) => p.y)) / sh));
+  const x0 = Math.max(0, Math.floor((Math.min(...corners.map((p) => p.x)) - o.x) / sw));
+  const x1 = Math.min(d.columns - 1, Math.floor((Math.max(...corners.map((p) => p.x)) - o.x) / sw));
+  const y0 = Math.max(0, Math.floor((Math.min(...corners.map((p) => p.y)) - o.y) / sh));
+  const y1 = Math.min(d.rows - 1, Math.floor((Math.max(...corners.map((p) => p.y)) - o.y) / sh));
   const resolve = resolver(doc, frame);
   for (let y = y0; y <= y1; y++) {
     for (let x = x0; x <= x1; x++) {
       const v = d.cells[y * d.columns + x];
       if (!v) continue;
       const src = resolve(cellKey(v));
-      if (src) drawTileAt(g, tileCanvas(src), cellFlags(v), x * sw, y * sh, sw, sh);
+      if (src) drawTileAt(g, tileCanvas(src), cellFlags(v), o.x + x * sw, o.y + y * sh, sw, sh);
     }
   }
   g.imageSmoothingEnabled = prev;

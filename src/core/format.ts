@@ -323,6 +323,13 @@ export interface Tileset {
   /** Tile size in art pixels. */
   tileWidth: number;
   tileHeight: number;
+  /**
+   * Where a tile edge sits across and down the stage, in art pixels from its top-left corner (0 up to the tile size
+   * minus 1; missing = 0, the tiles start at the corner). Opening an Aseprite drawing whose tile grid does not start at
+   * the corner sets it.
+   */
+  gridX?: number;
+  gridY?: number;
   /** In the order the Tileset panel and exports show them. */
   tiles: Tile[];
   /** The key the next new tile gets. Keys are never reused, so maps keep pointing at the right tile. */

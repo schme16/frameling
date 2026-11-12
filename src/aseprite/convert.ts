@@ -232,7 +232,7 @@ export interface Target {
   /** A fixed frame rate (adding to an open drawing). */
   fps?: number;
   /** The open drawing's tiles, when adding: new tiles get keys after its own, and must be the same size. */
-  tileset?: Pick<Tileset, 'tileWidth' | 'tileHeight' | 'nextKey'>;
+  tileset?: Pick<Tileset, 'tileWidth' | 'tileHeight' | 'nextKey' | 'gridX' | 'gridY'>;
 }
 
 export interface Pieces {
@@ -246,7 +246,7 @@ export interface Pieces {
   clips: Clip[];
   palette?: DocPalette;
   /** Tiles to add (with the size they are, and the next free key after them). */
-  tiles?: { tileWidth: number; tileHeight: number; tiles: Tile[]; nextKey: number };
+  tiles?: { tileWidth: number; tileHeight: number; tiles: Tile[]; nextKey: number; gridX?: number; gridY?: number };
   ext: Ext;
   notes: string[];
 }
@@ -315,6 +315,31 @@ export function asepritePieces(file: AseFile, name: string, target?: Target): Pi
       }
     }
   }
+  // Where tiles start: Aseprite draws a tilemap cel's tiles from the cel's own position, and its tile grid starts at the
+  // header's grid x and y. Cels on that grid come across as tiles whether or not it starts at the corner.
+  const mod = (v: number, n: number): number => ((v % n) + n) % n;
+  const fits = (l: AseLayer, ox: number, oy: number): boolean => {
+    const ts = tilesetOf(l);
+    if (!ts || ts.tileWidth !== tileW || ts.tileHeight !== tileH) return false;
+    const cels = file.frames.map((f) => f.cels.find((c) => c.layer === l.index)).filter((c): c is AseCel => !!c).map(source);
+    return cels.every((c) => !!c.tilemap && mod(c.x - ox, tileW) === 0 && mod(c.y - oy, tileH) === 0);
+  };
+  let gridX = target?.tileset ? target.tileset.gridX ?? 0 : 0;
+  let gridY = target?.tileset ? target.tileset.gridY ?? 0 : 0;
+  if (!target?.tileset && tileW && file.grid) {
+    const gx = mod(file.grid.x, tileW);
+    const gy = mod(file.grid.y, tileH);
+    if (gx || gy) {
+      const maps = file.layers.filter((l) => l.type === LAYER_TILEMAP && layerHasCels(file, l.index));
+      if (maps.filter((l) => fits(l, gx, gy)).length > maps.filter((l) => fits(l, 0, 0)).length) {
+        gridX = gx;
+        gridY = gy;
+      }
+    }
+  }
+  // The first slot starts at the corner, or a little before it when the grid starts after.
+  const startX = gridX > 0 ? gridX - tileW : 0;
+  const startY = gridY > 0 ? gridY - tileH : 0;
   const tileBase = new Map<AseTileset, number>();
   const newTiles: Tile[] = [];
   let nextKey = target?.tileset?.nextKey ?? 1;
@@ -411,7 +436,7 @@ export function asepritePieces(file: AseFile, name: string, target?: Target): Pi
       let why = '';
       if (!ts) why = 'its tileset is missing';
       else if (!tileW || ts.tileWidth !== tileW || ts.tileHeight !== tileH) why = `its tiles are ${ts.tileWidth} x ${ts.tileHeight} and the drawing's tiles are ${tileW} x ${tileH}`;
-      else if (cels.some((c) => !c.tilemap || c.x % tileW !== 0 || c.y % tileH !== 0)) why = "its tiles don't line up with the tile grid";
+      else if (cels.some((c) => !c.tilemap || mod(c.x - gridX, tileW) !== 0 || mod(c.y - gridY, tileH) !== 0)) why = "its tiles don't line up with the tile grid";
       else if (cels.some((c) => c.opacity !== 255)) why = 'a tile cel is partly see-through';
       else if (ts.external) why = 'its tileset is in another file';
       if (why) flattened.push(`${label} (${why})`);
@@ -425,11 +450,11 @@ export function asepritePieces(file: AseFile, name: string, target?: Target): Pi
       if (asTiles && c.tilemap && ts) {
         const tm = c.tilemap;
         const baseKey = useTileset(ts);
-        const columns = Math.max(1, Math.ceil(W / tileW));
-        const rows = Math.max(1, Math.ceil(H / tileH));
+        const columns = Math.max(1, Math.ceil((W - startX) / tileW));
+        const rows = Math.max(1, Math.ceil((H - startY) / tileH));
         const cells = new Uint32Array(columns * rows);
-        const ox = c.x / tileW;
-        const oy = c.y / tileH;
+        const ox = (c.x - startX) / tileW;
+        const oy = (c.y - startY) / tileH;
         for (let j = 0; j < tm.height; j++) {
           for (let i = 0; i < tm.width; i++) {
             const col = ox + i;
@@ -573,7 +598,7 @@ export function asepritePieces(file: AseFile, name: string, target?: Target): Pi
     drawings,
     clips,
     ...(palette ? { palette } : {}),
-    ...(newTiles.length ? { tiles: { tileWidth: tileW, tileHeight: tileH, tiles: newTiles, nextKey } } : {}),
+    ...(newTiles.length ? { tiles: { tileWidth: tileW, tileHeight: tileH, tiles: newTiles, nextKey, ...(gridX ? { gridX } : {}), ...(gridY ? { gridY } : {}) } } : {}),
     ext,
     notes,
   };
@@ -604,7 +629,7 @@ export function asepriteDoc(file: AseFile, name: string): { doc: Doc; notes: str
   doc.clips = p.clips;
   if (Object.keys(p.folders).length) doc.folders = p.folders;
   if (p.palette) doc.palette = p.palette;
-  if (p.tiles) doc.tileset = { tileWidth: p.tiles.tileWidth, tileHeight: p.tiles.tileHeight, tiles: p.tiles.tiles, nextKey: p.tiles.nextKey };
+  if (p.tiles) doc.tileset = { tileWidth: p.tiles.tileWidth, tileHeight: p.tiles.tileHeight, tiles: p.tiles.tiles, nextKey: p.tiles.nextKey, ...(p.tiles.gridX ? { gridX: p.tiles.gridX } : {}), ...(p.tiles.gridY ? { gridY: p.tiles.gridY } : {}) };
   doc.ext = { ...doc.ext, ...p.ext };
   return { doc, notes: p.notes };
 }
@@ -617,7 +642,7 @@ export function mergePieces(doc: Doc, p: Pieces, name: string): void {
   doc.clips.push(...p.clips);
   doc.length = Math.max(doc.length, Math.min(MAX_FRAMES, p.length));
   if (p.tiles) {
-    if (!doc.tileset) doc.tileset = { tileWidth: p.tiles.tileWidth, tileHeight: p.tiles.tileHeight, tiles: [], nextKey: 1 };
+    if (!doc.tileset) doc.tileset = { tileWidth: p.tiles.tileWidth, tileHeight: p.tiles.tileHeight, tiles: [], nextKey: 1, ...(p.tiles.gridX ? { gridX: p.tiles.gridX } : {}), ...(p.tiles.gridY ? { gridY: p.tiles.gridY } : {}) };
     doc.tileset.tiles.push(...p.tiles.tiles);
     doc.tileset.nextKey = Math.max(doc.tileset.nextKey, p.tiles.nextKey);
   }

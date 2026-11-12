@@ -77,7 +77,20 @@ export const DEFAULT_TILE_SIZE = 16;
 export function tilemapGrid(doc: Doc, layer: TilemapLayer): { columns: number; rows: number } {
   const tw = (doc.tileset?.tileWidth ?? DEFAULT_TILE_SIZE) * layer.pixelSize;
   const th = (doc.tileset?.tileHeight ?? DEFAULT_TILE_SIZE) * layer.pixelSize;
-  return { columns: Math.max(1, Math.ceil(doc.width / tw)), rows: Math.max(1, Math.ceil(doc.height / th)) };
+  const o = tileOrigin(doc, layer.pixelSize);
+  return { columns: Math.max(1, Math.ceil((doc.width - o.x) / tw)), rows: Math.max(1, Math.ceil((doc.height - o.y) / th)) };
+}
+
+/**
+ * Where the first slot of a map starts, in document pixels: 0 or a little left of and above the stage, so the slots
+ * still cover its top-left corner when the tile grid does not start there (Tileset.gridX / gridY).
+ */
+export function tileOrigin(doc: Doc, pixelSize = 1): { x: number; y: number } {
+  const ts = doc.tileset;
+  if (!ts) return { x: 0, y: 0 };
+  const gx = ts.gridX ?? 0;
+  const gy = ts.gridY ?? 0;
+  return { x: (gx > 0 ? gx - ts.tileWidth : 0) * pixelSize, y: (gy > 0 ? gy - ts.tileHeight : 0) * pixelSize };
 }
 
 export function newTilemapDrawing(columns: number, rows: number): TilemapDrawing {

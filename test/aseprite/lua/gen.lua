@@ -105,6 +105,17 @@ local function done(spr, name)
   spr:close()
 end
 
+-- Like done, but the reference comes from the saved file opened again: Aseprite adds a tile grid's start to the tiles it
+-- draws until the file is saved, and the file does not keep it.
+local function done_reloaded(spr, name)
+  save(spr, name)
+  spr:close()
+  local again = app.open(out .. "/" .. name .. ".aseprite")
+  app.sprite = again
+  reference(again, name)
+  again:close()
+end
+
 -- 1. RGBA: layers, offsets, cel opacity, opacity, blend, hidden, linked cels, durations, tags with every direction.
 do
   local spr = Sprite(12, 10, ColorMode.RGB)
@@ -247,6 +258,42 @@ do
   off.name = "Off"
   spr:newCel(off, 1, img, Point(1, 2))
   done(spr, "tilemap")
+end
+
+-- 6b. A tile grid that starts off the corner (the header's grid x and y): a map on it, a map off it.
+do
+  local spr = Sprite(16, 12, ColorMode.RGB)
+  spr.gridBounds = Rectangle(2, 3, 4, 4)
+  spr.layers[1].name = "Art"
+  spr:newCel(spr.layers[1], 1, pic(spr.spec, 4, 4, rgb(1, 2, 3)), Point(0, 0))
+  app.command.NewLayer{ tilemap = true }
+  local map = spr.layers[2]
+  map.name = "Map"
+  local ts = map.tileset
+  local t1 = spr:newTile(ts, 1)
+  local i1 = Image(sized(spr.spec, 4, 4))
+  i1:putPixel(0, 0, rgb(255, 0, 0))
+  i1:putPixel(1, 0, rgb(255, 0, 0))
+  i1:putPixel(3, 3, rgb(0, 0, 255))
+  t1.image = i1
+  local t2 = spr:newTile(ts, 2)
+  t2.image = gradient(4, 4, spr)
+  local pc = app.pixelColor
+  local ts_spec = sized(spr.spec, 3, 2)
+  ts_spec.colorMode = ColorMode.TILEMAP
+  local img = Image(ts_spec)
+  img:putPixel(0, 0, pc.tile(1, 0))
+  img:putPixel(1, 0, pc.tile(2, pc.TILE_XFLIP))
+  img:putPixel(2, 0, pc.tile(1, pc.TILE_YFLIP))
+  img:putPixel(0, 1, pc.tile(2, 0))
+  spr:newCel(map, 1, img, Point(2, 3))
+  spr:newFrame()
+  spr:newCel(map, 2, img, Point(6, -1))
+  app.command.NewLayer{ tilemap = true }
+  local off = spr.layers[#spr.layers]
+  off.name = "Off"
+  spr:newCel(off, 1, img, Point(3, 3))
+  done_reloaded(spr, "tilegrid")
 end
 
 -- 7. Slices, user data, a reference layer.
