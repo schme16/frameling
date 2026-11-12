@@ -63,20 +63,21 @@ function reference(doc: Doc, bytesOf: Uint8Array): string {
 
 const docJson = (bytes: Uint8Array) => strFromU8(unzipSync(bytes)['doc.json']);
 const NOW = new Date('2026-01-01T00:00:00Z');
+const REUSE = { reuse: true };
 
 describe('saving with kept drawing text', () => {
   it('writes doc.json exactly as one whole stringify would, first time and again', () => {
     const doc = sample();
-    const first = saveFile(doc, 't', NOW);
+    const first = saveFile(doc, 't', NOW, REUSE);
     expect(docJson(first)).toBe(reference(doc, first));
-    const second = saveFile(doc, 't', NOW);
+    const second = saveFile(doc, 't', NOW, REUSE);
     expect(docJson(second)).toBe(docJson(first));
     expect(second).toEqual(first);
   });
 
   it('after an edit, only the edited drawing changes and the file is still exact', () => {
     const doc = sample();
-    saveFile(doc, 't', NOW);
+    saveFile(doc, 't', NOW, REUSE);
     const next = produce(doc, (d) => {
       const v = d.drawings.v5;
       if (v.kind === 'vector') v.shapes.push(stroke('extra') as any);
@@ -85,26 +86,41 @@ describe('saving with kept drawing text', () => {
       const k = d.drawings.v3;
       if (k.kind === 'vector') k.kept = [];
     });
-    const bytes = saveFile(next, 't', NOW);
+    const bytes = saveFile(next, 't', NOW, REUSE);
     expect(docJson(bytes)).toBe(reference(next, bytes));
     // A save of a copy the cache never saw gives the same file.
-    const cold = saveFile(structuredClone(next), 't', NOW);
+    const cold = saveFile(structuredClone(next), 't', NOW, REUSE);
     expect(docJson(cold)).toBe(docJson(bytes));
   });
 
-  it('a drawing changed in place under the same object is not served stale', () => {
+  it('a drawing whose text is kept is frozen under test, so a write in place throws where it happens', () => {
     const doc = sample(4);
-    saveFile(doc, 't', NOW);
+    saveFile(doc, 't', NOW, REUSE);
     const v = doc.drawings.v1;
     if (v.kind !== 'vector') throw new Error('x');
-    v.shapes = [...v.shapes, stroke('late') as any];
-    expect(docJson(saveFile(doc, 't', NOW))).toContain('"late"');
+    expect(() => v.shapes.push(stroke('late') as any)).toThrow(TypeError);
+    expect(() => ((v.shapes[0] as any).points[0].x = 99)).toThrow(TypeError);
+  });
+
+  it('Save and Save As write every drawing afresh: even a change made in place shows in the file', () => {
+    const doc = sample(4);
+    saveFile(doc, 't', NOW, REUSE);
+    // A drawing the cache never saw (so it is not frozen) changed in place after a plain save.
+    const v = doc.drawings.v2;
+    if (v.kind !== 'vector') throw new Error('x');
+    const cold = structuredClone(v);
+    doc.drawings.v2 = cold;
+    expect(docJson(saveFile(doc, 't', NOW))).toBe(reference(doc, saveFile(doc, 't', NOW)));
+    (cold.shapes[0] as any).points[0].x = 77;
+    expect(JSON.parse(docJson(saveFile(doc, 't', NOW))).drawings.v2.shapes[0].points[0].x).toBe(77);
+    // And a plain save left nothing behind for a later reusing save to serve.
+    expect(JSON.parse(docJson(saveFile(doc, 't', NOW, REUSE))).drawings.v2.shapes[0].points[0].x).toBe(77);
   });
 
   it('opens back to the same document', () => {
     const doc = sample();
-    saveFile(doc, 't', NOW);
-    const back = loadFile(saveFile(doc, 't', NOW)).doc;
+    saveFile(doc, 't', NOW, REUSE);
+    const back = loadFile(saveFile(doc, 't', NOW, REUSE)).doc;
     expect(Object.keys(back.drawings).sort()).toEqual(Object.keys(doc.drawings).sort());
     const v = back.drawings.v3;
     expect(v.kind === 'vector' && v.kept?.length).toBe(1);
@@ -113,13 +129,13 @@ describe('saving with kept drawing text', () => {
 
   it('the async save writes the same bytes of doc.json', async () => {
     const doc = sample(5);
-    expect(docJson(await saveFileAsync(doc, 't', NOW))).toBe(docJson(saveFile(doc, 't', NOW)));
+    expect(docJson(await saveFileAsync(doc, 't', NOW, REUSE))).toBe(docJson(saveFile(doc, 't', NOW)));
   });
 
   it('a document whose name holds the marker text still saves correctly', () => {
     const doc = sample(3);
     doc.name = '\u0000frameling-drawings\u0000';
-    const bytes = saveFile(doc, 't', NOW);
+    const bytes = saveFile(doc, 't', NOW, REUSE);
     expect(docJson(bytes)).toBe(reference(doc, bytes));
   });
 });

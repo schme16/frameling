@@ -413,9 +413,11 @@ Writers:
 - `ioClient.ts`, `ioWorker.ts`, `ioJobs.ts`, `workerPool.ts`: worker threads (a bundled module worker, up to 4, let go after 20 s idle)
   that zip a save (`saveFileAsync`) and decode the pictures of a big pixel document in parallel (`loadFileAsync`, used
   by `loadBytes`). Without a worker (Node tests, a page that cannot start one) or when one fails, the same code runs
-  on the calling thread, so nothing depends on them. Saving also keeps each vector or tile drawing's `doc.json` text,
-  already UTF-8 encoded, in a `WeakMap` by drawing object (`file.ts`): a drawing is never changed in place after it is
-  in the document (edits replace it), so an unchanged drawing is copied, not written again.
+  on the calling thread, so nothing depends on them. Autosave and versions (`saveFileAsync(..., { reuse: true })`) also keep
+  each vector drawing's `doc.json` text, already UTF-8 encoded, in a `WeakMap` by drawing object (`file.ts`), relying on
+  a drawing never being changed in place once it is in the document (edits replace it). Save and Save As never reuse.
+  Under test and with `?debug` (not `&nofreeze`) immer auto-freezes committed documents and the kept drawings are frozen,
+  so a write in place throws where it happens.
 - `png.ts` (own PNG codec), `thumb.ts`, `RecentDialog.tsx`, `notify.ts` (toasts from io and export).
 
 **The user library** (desktop: `library/<kind>/` in the user data folder, `src/main/library.ts`; web: IndexedDB):

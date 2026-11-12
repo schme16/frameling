@@ -11,3 +11,8 @@ import { registerEngine } from '../src/export/types';
 // Godot is a sprite sheet engine its feature adds in the app; a test has it unless it turns the feature off.
 registerEngine(godotEngine);
 await loadShapeExports();
+
+// A vector drawing whose saved text is kept is frozen under test, so a test that changes one in place after saving fails
+// where it writes (see src/io/file.ts).
+import { guard } from '../src/io/file';
+guard.freeze = true;

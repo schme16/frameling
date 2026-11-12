@@ -55,7 +55,7 @@ app.commandLine.appendSwitch('disable-background-timer-throttling');
 
 async function start() {
   app.setPath('userData', path.join(outDir, 'userdata'));
-  process.env.FRAMELING_DEV_URL = pathToFileURL(path.join(rendererDir, 'index.html')).href + '?debug=1';
+  process.env.FRAMELING_DEV_URL = pathToFileURL(path.join(rendererDir, 'index.html')).href + '?debug=1&nofreeze';
   process.env.FRAMELING_AUTOMATION_DIR = path.join(outDir, 'misc');
   fs.mkdirSync(process.env.FRAMELING_AUTOMATION_DIR, { recursive: true });
   require(path.join(root, 'dist/main/main.cjs'));

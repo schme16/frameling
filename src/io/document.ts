@@ -33,7 +33,7 @@ export async function autosaveNow(): Promise<void> {
   const doc = store().rootDoc();
   if (!api || !ui.dirty || doc === lastDoc) return;
   try {
-    const bytes = await saveFileAsync(doc, api.versions.app);
+    const bytes = await saveFileAsync(doc, api.versions.app, new Date(), { reuse: true });
     const thumb = api.kind === 'web' ? await thumbnailOf(rootDoc(doc)) : undefined;
     await api.autosave.write(bytes, { name: doc.name, filePath: ui.filePath, docId: doc.id, ...(thumb ? { thumb } : {}) });
     lastDoc = doc;

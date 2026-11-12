@@ -64,7 +64,7 @@ function pngFor(d: { width: number; height: number; pixels: Uint8ClampedArray })
 const safeName = (id: string) => id.replace(/[^A-Za-z0-9_-]/g, '_');
 
 // doc.json is mostly drawings, and most of them are the same object from one save to the next (an edit replaces the
-// drawing it touches). So a vector or tile drawing's text is kept, already UTF-8 encoded, by drawing: saving again only
+// drawing it touches). So a vector drawing's text is kept, already UTF-8 encoded, by drawing: saving again only
 // has to write out what changed. A hit needs the very same object with the very same shapes array and length.
 interface DrawingText {
   /** `"id":{...}` as UTF-8. */
@@ -75,6 +75,17 @@ interface DrawingText {
   count: number;
 }
 const drawingText = new WeakMap<object, DrawingText>();
+
+/** `freeze`: see cachedEntry. Turned on by the test setup and by the debug hooks (`?debug`), never in normal use. */
+export const guard = { freeze: false };
+
+/** Freezes an object and everything under it (typed arrays are left, they cannot be frozen). */
+export function deepFreeze<T>(v: T): T {
+  if (typeof v !== 'object' || v === null || Object.isFrozen(v) || ArrayBuffer.isView(v)) return v;
+  Object.freeze(v);
+  for (const k of Object.keys(v)) deepFreeze((v as Record<string, unknown>)[k]);
+  return v;
+}
 const enc = new TextEncoder();
 
 /** One entry of the saved `drawings` object: what to write, as a value or (when it was kept) as ready `"id":value` bytes. */
@@ -84,11 +95,14 @@ type DrawingEntry = { id: string; value: () => unknown; bytes?: Uint8Array };
 function cachedEntry(id: string, d: Drawing, value: () => unknown): DrawingEntry {
   const shapes = d.kind === 'vector' ? d.shapes : undefined;
   const kept = d.kind === 'vector' ? d.kept : undefined;
-  const count = d.kind === 'vector' ? d.shapes.length : d.kind === 'tilemap' ? d.cells.length : 0;
+  const count = d.kind === 'vector' ? d.shapes.length : 0;
   const hit = drawingText.get(d);
   if (hit && hit.id === id && hit.shapes === shapes && hit.kept === kept && hit.count === count) return { id, value, bytes: hit.bytes };
   const bytes = enc.encode(`${JSON.stringify(id)}:${JSON.stringify(value())}`);
   drawingText.set(d, { bytes, id, shapes, kept, count });
+  // Under test and in the harnesses a drawing whose text is kept is frozen, so a write in place throws right where it
+  // happens instead of saving stale text later.
+  if (guard.freeze) deepFreeze(d);
   return { id, value, bytes };
 }
 
@@ -139,12 +153,14 @@ function docJsonBytes(rest: Record<string, unknown>, entries: DrawingEntry[]): U
 }
 
 /** Everything that goes in the file, ready to be zipped (the part of saving that has to look at the document). */
-function filesToSave(open: Doc, appVersion: string, now: Date): Zippable {
+function filesToSave(open: Doc, appVersion: string, now: Date, reuse = false): Zippable {
   // Saved as if no symbol were open for editing.
   const closed = closedForSave(rootDoc(open));
   const doc = closed.doc;
   const files: Zippable = {};
   const entries: DrawingEntry[] = [];
+  // Only an autosave or a version (`reuse`) may copy a drawing's kept text; Save and Save As always write every drawing out.
+  const keep = (id: string, d: Drawing, value: () => unknown): DrawingEntry => (reuse ? cachedEntry(id, d, value) : { id, value });
   const used = new Set<string>();
   // A drawing a variation redrew is stored as what differs from its original's, when that is smaller.
   const diffs = variationDiffs(doc, files, pngFor);
@@ -168,16 +184,17 @@ function filesToSave(open: Doc, appVersion: string, now: Date): Zippable {
       const saved = { ...t, pixels: name };
       entries.push({ id, value: () => saved });
     } else if (d.kind === 'tilemap') {
-      entries.push(cachedEntry(id, d, () => ({ ...d, cells: Array.from(d.cells) })));
+      // Not cached: its cells are a typed array, which nothing stops from being written in place.
+      entries.push({ id, value: () => ({ ...d, cells: Array.from(d.cells) }) });
     } else if (d.kind === 'vector' && d.kept?.length) {
       entries.push(
-        cachedEntry(id, d, () => {
+        keep(id, d, () => {
           const { kept: _kept, ...rest } = d;
           return { ...rest, shapes: shapesForSave(d) };
         }),
       );
     } else {
-      entries.push(d.kind === 'vector' ? cachedEntry(id, d, () => d) : { id, value: () => d });
+      entries.push(d.kind === 'vector' ? keep(id, d, () => d) : { id, value: () => d });
     }
   }
   const manifest: Manifest = { format: 'frameling', version: FORMAT_VERSION, app: appVersion, created: now.toISOString(), name: doc.name };
@@ -189,8 +206,17 @@ function filesToSave(open: Doc, appVersion: string, now: Date): Zippable {
   return files;
 }
 
-export function saveFile(open: Doc, appVersion = '', now: Date = new Date()): Uint8Array {
-  return zipSync(filesToSave(open, appVersion, now), { level: 6 });
+export function saveFile(open: Doc, appVersion = '', now: Date = new Date(), opts: SaveOptions = {}): Uint8Array {
+  return zipSync(filesToSave(open, appVersion, now, opts.reuse), { level: 6 });
+}
+
+export interface SaveOptions {
+  /**
+   * Copy each vector drawing's text from the last save when the drawing is the very same object (autosave and versions,
+   * which run all the time). Left off, every drawing is written out afresh, so a file the person saved is exact even if
+   * something ever changed a drawing in place. See `cachedEntry`.
+   */
+  reuse?: boolean;
 }
 
 /**
@@ -198,8 +224,8 @@ export function saveFile(open: Doc, appVersion = '', now: Date = new Date()): Ui
  * the pen meanwhile (on a big drawing the sync version holds the page for a second or more). Autosave, Save and
  * versions use this.
  */
-export async function saveFileAsync(open: Doc, appVersion = '', now: Date = new Date()): Promise<Uint8Array> {
-  let files = filesToSave(open, appVersion, now);
+export async function saveFileAsync(open: Doc, appVersion = '', now: Date = new Date(), opts: SaveOptions = {}): Promise<Uint8Array> {
+  let files = filesToSave(open, appVersion, now, opts.reuse);
   // One worker does all the zipping (checksums included, which fflate's own async zip would do on this thread).
   // doc.json is the big one and is made fresh for each save, so its buffer is handed over rather than copied.
   const doc = files['doc.json'];
@@ -207,7 +233,7 @@ export async function saveFileAsync(open: Doc, appVersion = '', now: Date = new 
   const made = await zipInWorker(files, 6, doc instanceof Uint8Array ? [doc] : []);
   if (made) return made;
   // No worker (or it failed): the handed over buffer is gone, so make the files again.
-  if (doc instanceof Uint8Array && doc.length !== size) files = filesToSave(open, appVersion, now);
+  if (doc instanceof Uint8Array && doc.length !== size) files = filesToSave(open, appVersion, now, opts.reuse);
   return new Promise((resolve, reject) => zip(files, { level: 6 }, (err, data) => (err ? reject(err) : resolve(data))));
 }
 
