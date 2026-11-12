@@ -42,7 +42,7 @@ export function switchSnapMode(tokens: ThemeTokens, from: ThemeMode, to: ThemeMo
   return out;
 }
 
-export const DERIVED_TOKENS = ['line-soft', 'hover-bg', 'cel', 'cel-hold', 'sunny', 'sunny-deep', 'stage-shadow', 'shadow', 'shadow-small'] as const;
+export const DERIVED_TOKENS = ['line-soft', 'hover-bg', 'peach-soft', 'cel', 'cel-hold', 'sunny', 'sunny-deep', 'stage-shadow', 'shadow', 'shadow-small'] as const;
 
 /** Every token a theme has a value for. */
 export const ALL_TOKENS: readonly string[] = [...CORE_TOKENS, ...BRAND_TOKENS, ...SNAP_TOKENS, ...DERIVED_TOKENS];
@@ -71,6 +71,8 @@ export const DERIVED: Record<string, { deps: string[]; make: Deriver }> = {
     deps: ['raised', 'line', 'panel-2'],
     make: (t, m) => (m === 'dark' ? mix(t.raised, t.line, 0.7) : mix(t['panel-2'], t.line, 0.5)),
   },
+  // A faint warm tint of the panel, behind a warning. Text stays the theme's own text colour on it.
+  'peach-soft': { deps: ['peach', 'panel'], make: (t) => mix(t.peach, t.panel, 0.14) },
   cel: { deps: ['cel-key', 'panel-2'], make: (t, m) => mix(t['cel-key'], t['panel-2'], m === 'dark' ? 0.55 : 0.45) },
   'cel-hold': { deps: ['cel-key', 'panel-2'], make: (t, m) => mix(t['cel-key'], t['panel-2'], m === 'dark' ? 0.3 : 0.22) },
   sunny: { deps: ['chosen-bg'], make: (t) => t['chosen-bg'] },
