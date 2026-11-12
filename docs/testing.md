@@ -846,6 +846,31 @@ npm run install-local -- --no-build   # copy the last build
 Copies the newest `release/*.AppImage` to `/mnt/109313D2109313D2/lutris-applications/frameling/frameling.AppImage`
 (`FRAMELING_INSTALL_DIR` overrides), closing a running copy first if the file is busy. Linux only.
 
+## The Linux launcher and a stock Ubuntu 24.04
+
+The AppImage starts through `build/linux/launcher.sh` (put in front of the program by `build/after-pack.cjs`; the program
+is `frameling.bin`). It keeps the browser sandbox on, asks before dropping it, and has `FRAMELING_OZONE` for forcing
+Wayland or X11. `test/platform/linux-launcher.test.ts` runs it against a stand-in program.
+
+The sandbox behaviour only shows on a kernel with `kernel.apparmor_restrict_unprivileged_userns = 1` (stock Ubuntu 24.04;
+Zorin OS turns it off). A container shares the host's kernel, so it cannot show it. A throwaway virtual machine can:
+`qemu-system-x86_64 -enable-kvm` with the Ubuntu 24.04 cloud image and a cloud-init seed, `xvfb` and Electron's libraries
+installed, the AppImage copied in. Things worth running there: the AppImage with no `libfuse2`; the same with an AppArmor
+profile loaded (`sudo apparmor_parser -r`, see `--show-linux-fix`); with the sysctl at 0; under `weston --backend=headless`
+for Wayland. `window.frameling.session` (also in the pen report) says which window system Chromium used.
+`brand/pen-check-demo/LINUX-BETA.md` lists what was found. A pretend tablet (a `uinput` device read by Xorg's dummy driver
+and libinput) sends real pen events to Chromium on X11.
+
+## The pen check on video: scripts/docs/pen-check-demo.cjs
+
+Records a dummy run of Quill's whole pen check with a pen made up from DevTools protocol events and a drawn pen cursor, into
+`brand/pen-check-demo/` (see its `NOTE.md`):
+
+```bash
+npm run build
+SHOT_SHOW=1 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/docs/pen-check-demo.cjs <outDir> --theme dark
+```
+
 ## CI
 
 `.github/workflows/build.yml`, on every pull request into `main` and on demand:

@@ -37,7 +37,7 @@ Every pull request into `main` builds the app for all three systems. Open the pu
 |---|---|
 | Windows | `Frameling-<version>-setup-x64.exe` (installer) or `...-portable-x64.exe` (runs without installing) |
 | macOS | `Frameling-<version>-mac-arm64.dmg` (Apple silicon) or `...-mac-x64.dmg` (Intel) |
-| Linux | `Frameling-<version>-linux-x86_64.AppImage` (make it executable, then run it) |
+| Linux | `Frameling-<version>-linux-x86_64.AppImage` (make it executable, then run it; see Help, Installing on Linux) |
 
 The builds are only self-signed (Windows) and ad-hoc signed (macOS), so on Windows click **More info → Run anyway**, and on macOS right-click the app and choose **Open** the first time (see Signing, below).
 
