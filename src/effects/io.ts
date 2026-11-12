@@ -2,6 +2,7 @@
  * Reading blend modes, effects, masks and folders back from a file, checked. Anything odd is dropped rather than
  * failing the whole file: a layer that loses a glow is better than a document that won't open.
  */
+import { MAX_FOLDER_DEPTH, folderChain } from '../core/folders';
 import type { EffectKey, Layer, LayerEffect, LayerFolder } from '../core/format';
 import { defaultValues, effectInfo, isBlendMode, isEffectKind } from './model';
 
@@ -70,9 +71,29 @@ export function readFolders(raw: unknown, layers: Layer[]): { folders?: Record<s
       };
     }
   }
+  // Which folder each one sits in: only a folder that's there, never itself, no loops, no deeper than the cap.
+  if (isObj(raw)) {
+    for (const [id, f] of Object.entries(raw)) {
+      if (folders[id] && typeof (f as any).parent === 'string' && (f as any).parent !== id && folders[(f as any).parent]) folders[id].parent = (f as any).parent;
+    }
+    for (const id of Object.keys(folders)) {
+      const seen = new Set<string>([id]);
+      let cur = folders[id];
+      for (let level = 1; cur.parent; level++) {
+        if (seen.has(cur.parent) || level >= MAX_FOLDER_DEPTH) {
+          delete cur.parent;
+          break;
+        }
+        seen.add(cur.parent);
+        cur = folders[cur.parent];
+      }
+    }
+  }
   for (const l of layers) if (l.folder && !folders[l.folder]) delete l.folder;
-  // Folders nobody uses are dropped.
-  const used = new Set(layers.map((l) => l.folder).filter(Boolean));
+  // Folders nobody uses are dropped (a folder holding only folders is used).
+  const used = new Set<string>();
+  for (const l of layers) for (const f of folderChain(folders, l.folder)) used.add(f.id);
   for (const id of Object.keys(folders)) if (!used.has(id)) delete folders[id];
+  for (const f of Object.values(folders)) if (f.parent && !folders[f.parent]) delete f.parent;
   return Object.keys(folders).length ? { folders } : {};
 }

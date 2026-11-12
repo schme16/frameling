@@ -60,6 +60,39 @@ const fixtures = [
     expect: { size: [320, 180], layers: ['Sky', 'Hills', 'Hero body', 'Hero eyes', 'Characters', 'Scenery', 'Multiply yellow', 'Ünï 日本 half see-through'], tree: [['Scenery', ['Hills', 'Sky']], ['Characters', ['Hero eyes', 'Hero body']]], opacity: { Scenery: 70, 'Ünï 日本 half see-through': 50 }, hidden: ["Hidden red"], hiddenWithArt: ["Hidden red"], minPaths: 8, minGroups: 5, maxRmse: 0.03 },
   },
   {
+    id: 'nested-folders',
+    title: 'Folders inside folders',
+    code: `(async () => { ${HEAD}
+  return setup('Nested', 320, 180, (d) => {
+    const dr = (id, shapes) => (d.drawings[id] = { id, kind: 'vector', shapes });
+    d.folders = {
+      fOut: { id: 'fOut', name: 'Outer', visible: true, opacity: 0.8 },
+      fMid: { id: 'fMid', name: 'Middle', visible: true, opacity: 0.6, parent: 'fOut' },
+      fIn: { id: 'fIn', name: 'Inner', visible: true, opacity: 1, parent: 'fMid' },
+      fQ: { id: 'fQ', name: 'Quiet', visible: false, opacity: 1, parent: 'fOut' },
+    };
+    dr('dBack', [R('b1', 0, 0, 320, 180, '#bfe6ff')]);
+    dr('dOuter', [R('o1', 10, 10, 90, 60, '#ff7a59')]);
+    dr('dQuiet', [R('q1', 110, 10, 90, 60, '#ff0000')]);
+    dr('dMid', [ELL('m1', 80, 120, 50, 40, '#5fbf6a')]);
+    dr('dA', [R('a1', 150, 90, 60, 60, '#9b59ff')]);
+    dr('dB', [ELL('b1', 190, 120, 35, 35, '#ffd23f')]);
+    dr('dFront', [R('f1', 250, 20, 50, 50, '#1d1b26')]);
+    d.layers = [
+      layer('l1', 'Back', 'dBack'),
+      layer('l2', 'Outer solo', 'dOuter', { folder: 'fOut' }),
+      layer('l3', 'Quiet layer', 'dQuiet', { folder: 'fQ' }),
+      layer('l4', 'Middle solo', 'dMid', { folder: 'fMid' }),
+      layer('l5', 'Inner a', 'dA', { folder: 'fIn' }),
+      layer('l6', 'Inner b', 'dB', { folder: 'fIn' }),
+      layer('l7', 'Front', 'dFront'),
+    ];
+  });
+})()`,
+    // Each folder holds its own level, three deep, with its own opacity; the hidden inner folder is there, switched off, with its art.
+    expect: { size: [320, 180], layers: ['Back', 'Outer', 'Middle', 'Inner', 'Quiet', 'Inner a', 'Front'], tree: [['Outer', ['Middle', 'Quiet', 'Outer solo']], ['Middle', ['Inner', 'Middle solo']], ['Inner', ['Inner b', 'Inner a']]], opacity: { Outer: 80, Middle: 60 }, shown: ['Outer', 'Middle', 'Inner', 'Inner a'], hiddenWithArt: ['Quiet'], minPaths: 6, maxRmse: 0.03 },
+  },
+  {
     id: 'hidden-layers',
     title: 'Hidden layers and folders',
     code: `(async () => { ${HEAD}

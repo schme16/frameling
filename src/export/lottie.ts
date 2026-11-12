@@ -30,6 +30,7 @@ import type { Cel, Doc, Easing, Gradient, InstanceShape, Layer, LayerEffect, Par
 import { celAt } from '../core/doc';
 import { decompose, isInstance, isPosed, layersHaveLook, pairInstances, poseAt, symbolContent, symbolFrame, tweenInstance, type Mat, type PosedInstance } from '../core/symbols';
 import { drawingBox, effectReach, renderFrame, strokeOutline } from '../core/render';
+import { folderChain } from '../core/folders';
 import { buildPlan, planLayers, type PlanNode, type PlanStep } from '../effects/plan';
 import { activeEffects, effectInfo, isNoop, valuesAt } from '../effects/model';
 import { canTraceText, glyphSprites, particleSprites, SPRITE_UNIT, type ParticleSprite } from './sprites';
@@ -929,7 +930,7 @@ function buildLayers(ctx: Ctx, layers: Layer[], from: number, to: number, offset
   const out: Json[] = [];
   const { doc } = ctx;
   for (const layer of layers) {
-    if (!layer.visible || layer.reference || layer.kind === 'camera' || layer.mask || (layer.folder && doc.folders?.[layer.folder]?.visible === false)) continue;
+    if (!layer.visible || layer.reference || layer.kind === 'camera' || layer.mask || (layer.folder && folderChain(doc.folders, layer.folder).some((f) => !f.visible))) continue;
     out.push(...layerPieces(ctx, layer, from, to, offset, true));
   }
   return out;
@@ -1476,10 +1477,19 @@ function bakeNode(ctx: Ctx, node: PlanNode, frames: number[], r: Range): Json[] 
   const spec: BakeSpec = { ...PICTURE_LOOKS[ctx.pictures], ...ctx.bake };
   const SCALE = spec.scale;
   const ids = new Set(node.type === 'layer' ? [node.layer.id] : planLayers(node.steps).map((l) => l.id));
+  const layers = ctx.symbolLayers ?? doc.layers;
+  // The folders around what is baked fade, blend and take effects on their own Lottie layers, so the picture leaves
+  // them out. A baked folder keeps its own effects, but not its blend or opacity.
+  const folders = doc.folders ? { ...doc.folders } : undefined;
+  if (folders) {
+    const home = node.type === 'layer' ? layers.find((l) => l.id === node.layer.id)?.folder : node.folder.parent;
+    for (const f of folderChain(doc.folders, home)) folders[f.id] = { ...f, visible: true, opacity: 1, blend: undefined, effects: undefined };
+    if (node.type === 'folder') folders[node.folder.id] = { ...node.folder, blend: undefined, opacity: 1 };
+  }
   const solo: Doc = {
     ...doc,
-    layers: (ctx.symbolLayers ?? doc.layers).map((l) => (node.type === 'layer' && l.id === node.layer.id ? { ...l, blend: undefined, opacity: 1, clipToBelow: false } : l)),
-    folders: node.type === 'folder' && doc.folders ? { ...doc.folders, [node.folder.id]: { ...node.folder, blend: undefined, opacity: 1 } } : doc.folders,
+    layers: layers.map((l) => (node.type === 'layer' && l.id === node.layer.id ? { ...l, blend: undefined, opacity: 1, clipToBelow: false } : l)),
+    folders,
   };
   // On the stage the picture is the stage. Inside a symbol it's the box the drawings (and effects) cover, in symbol space.
   const area = ctx.symbolLayers ? symbolArea(solo, ids, frames) : { x: 0, y: 0, w: doc.width, h: doc.height };
@@ -1534,10 +1544,10 @@ function symbolArea(solo: Doc, ids: Set<string>, frames: number[]): { x: number;
   let reach = 0;
   for (const l of solo.layers) {
     if (!ids.has(l.id)) continue;
-    const f0 = l.folder ? solo.folders?.[l.folder] : undefined;
+    const around = folderChain(solo.folders, l.folder);
     for (const f of frames) {
       let r = 0;
-      for (const e of [...activeEffects(l.effects, f), ...activeEffects(f0?.effects, f)]) r += effectReach(e.kind, e.v);
+      for (const e of [...activeEffects(l.effects, f), ...around.flatMap((o) => activeEffects(o.effects, f))]) r += effectReach(e.kind, e.v);
       reach = Math.max(reach, r);
       const d = poseAt(solo, l, f);
       if (!d) continue;

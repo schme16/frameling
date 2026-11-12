@@ -37,7 +37,9 @@ Within a level (the stage, or one folder), bottom to top (`src/effects/plan.ts`)
   the base hides them. With no base under them they draw as usual.
 - A mask layer cuts out everything under it in the same level. At the stage level that's every layer under it, never
   the stage colour.
-- Folders are one level deep. A folder with normal blend, full opacity, no effects and no masks inside is "pass
+- Folders can hold folders, up to 8 levels deep (`src/core/folders.ts`). Each level is composed on its own: the inner
+  folder is drawn into the outer one with its own opacity, blend and effects, then the outer folder's look applies to the
+  lot. A folder with normal blend, full opacity, no effects and no masks inside is "pass
   through" (its layers draw straight onto the stage); otherwise it's drawn as one picture first.
 
 Making a mask from the Effects menu or panel puts the mask and the layer under it (or every layer under it, asked the

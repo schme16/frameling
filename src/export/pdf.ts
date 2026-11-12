@@ -488,7 +488,7 @@ export interface PdfFrameContext {
   doc: Doc;
   frame: number;
   /** A picture of these layers alone (with their effects, clipping and masks), the stage's size at `pictureScale`. */
-  picture?: (layers: Layer[], own: boolean, reveal?: boolean) => RawImage | null;
+  picture?: (layers: Layer[], own: boolean, reveal?: boolean, inside?: string[]) => RawImage | null;
   pictureScale: number;
   /** Keep hidden layers and folders, as layers that are off (for the Illustrator data of a .ai). */
   includeHidden?: boolean;
@@ -734,7 +734,7 @@ function drawUnit(cx: Content, ctx: PdfFrameContext, u: FlatUnit): void {
         if (cam) c.push('Q');
       });
   } else if (ctx.picture) {
-    const img = ctx.picture(u.layers, !!u.own, u.inHidden);
+    const img = ctx.picture(u.layers, !!u.own, u.inHidden, u.inside);
     // Pixel and tile layers stay blocky when the picture is scaled.
     const crisp = !!ctx.crisp || u.layers.every((l) => l.kind !== 'vector');
     if (img) {
@@ -771,7 +771,7 @@ export interface PdfOptions {
   background: Color | null;
   title: string;
   /** Pictures of layers PDF can't draw as vector (from the renderer). */
-  picture?: (frame: number, layers: Layer[], own: boolean, reveal?: boolean) => RawImage | null;
+  picture?: (frame: number, layers: Layer[], own: boolean, reveal?: boolean, inside?: string[]) => RawImage | null;
   pictureScale?: number;
   crisp?: boolean;
   creator?: string;
@@ -782,7 +782,7 @@ export interface PdfOptions {
 export function writePdf(doc: Doc, opts: PdfOptions & { native?: boolean }): Uint8Array {
   const writer = new PdfWriter();
   const pages = opts.frames.map((frame, i) => {
-    const content = pdfFrameContent({ writer, doc, frame, picture: opts.picture ? (ls, own, reveal) => opts.picture!(frame, ls, own, reveal) : undefined, pictureScale: opts.pictureScale ?? 1, crisp: opts.crisp, includeHidden: !!opts.native }, opts.scale, opts.background);
+    const content = pdfFrameContent({ writer, doc, frame, picture: opts.picture ? (ls, own, reveal, inside) => opts.picture!(frame, ls, own, reveal, inside) : undefined, pictureScale: opts.pictureScale ?? 1, crisp: opts.crisp, includeHidden: !!opts.native }, opts.scale, opts.background);
     opts.onPage?.(i);
     return { content, width: doc.width * opts.scale, height: doc.height * opts.scale };
   });

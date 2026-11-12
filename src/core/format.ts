@@ -557,7 +557,10 @@ export interface EffectKey {
   values: Record<string, number>;
 }
 
-/** A layer folder (group): its layers fade, blend and take effects together, and masks inside stay inside. */
+/**
+ * A layer folder (group): its layers fade, blend and take effects together, and masks inside stay inside. Folders
+ * can sit in folders (`parent`); a folder's layers, and those of the folders inside it, sit next to each other.
+ */
 export interface LayerFolder {
   id: Id;
   name: string;
@@ -566,6 +569,8 @@ export interface LayerFolder {
   opacity: number;
   blend?: BlendMode;
   effects?: LayerEffect[];
+  /** The folder this one sits in (a key of `doc.folders`), up to 8 levels deep. Missing = on the stage. */
+  parent?: Id;
 }
 
 // ---------------------------------------------------------------- symbols and tweens

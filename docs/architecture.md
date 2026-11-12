@@ -181,7 +181,9 @@ wired into `src/core/render.ts` and `src/core/symbols.ts` directly, not through 
 **Tilemaps** (`src/core/tilemap.ts`): one bitmap per map, repainting only changed slots; maps over 16 megapixels are
 drawn slot by slot. `src/tiles/look.ts` is editor-only (faded tile copies).
 
-**Effects compositor** (`src/effects/`): `plan.ts` turns the layer list into steps (clips, masks, folders);
+**Effects compositor** (`src/effects/`): `plan.ts` turns the layer list into steps (clips, masks, folders; folders can hold
+folders, see `src/core/folders.ts`, which reads the flat layer list as a tree and is what the timeline rows and every
+exporter walk);
 `composite.ts` runs them with a buffer pool per depth and caches effect results; `apply.ts` does each effect;
 `stage.ts` is the editor's way in, reusing the canvas's bitmaps. Symbols with a look inside are composited in their
 own space. See `docs/effects.md`.
@@ -342,7 +344,7 @@ Writers:
 - **SVG** (`svg.ts`, `svg-extra.ts`, `svg-look.ts`) and **animated SVG** (`svg-anim.ts`, CSS keyframes).
 - **Lottie** (`lottie.ts`, symbols as precomps; `sprites.ts` for text and particles).
 - **PDF and .ai** (`pdf.ts`, one page per frame, layers as optional content).
-- **PSD** (`psd.ts`, `psd-layers.ts`, `layered.ts`, `layered-run.ts`): one layer per Frameling layer, folders as groups.
+- **PSD** (`psd.ts`, `psd-layers.ts`, `layered.ts`, `layered-run.ts`): one layer per Frameling layer, folders as groups (nested folders as nested groups).
 - **ProRes** (`prores.ts`): desktop only, streams frames to FFmpeg (`src/main/video.ts`).
 - **Interactives `.flplay`** (`playable.ts`), described in `docs/format.md`.
 - **Godot add-on** (`godot-addon.ts`, zips `godot/addons/frameling_importer`) and **Godot bones** (`godot-bones-scope.ts` the parts,

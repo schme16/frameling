@@ -106,18 +106,22 @@ A mask only reaches the layers under it in its own folder, so it never cuts into
     title: 'Layer folders',
     section: 'Effects',
     media: 'layer-folders.png',
-    summary: 'Put layers in a folder to fade, blend, mask and add effects to them together. Fold it shut to tidy the timeline.',
+    summary: 'Put layers in a folder to fade, blend, mask and add effects to them together. Folders can sit inside folders. Fold one shut to tidy the timeline.',
     keywords: ['folder', 'group', 'layer group', 'collapse', 'tidy'],
-    body: `A **folder** (layer group) holds layers that belong together, like the parts of a character.
+    body: `A **folder** (layer group) holds layers that belong together, like the parts of a character. Folders can hold other folders, up to 8 levels deep: a **Scene** folder can hold a **Character** folder, which holds an **Arm** folder.
 
-- **Make one:** pick a layer, then **Effects menu > Put layer in a new folder**.
-- **Add layers:** drag a layer onto a layer inside the folder, or use **Move layer up** / **Move layer down** to step it in at the folder's edge. Drag it onto a layer outside, or step it past the folder's edge, to take it out.
-- **Fold it:** click the arrow on the folder's row to hide its layers in the timeline. They still show on the canvas.
-- **Hide it:** the eye on the folder's row hides every layer in it.
-- **Remove it:** **Effects menu > Take layers out of this folder**. The layers stay where they are.
+- **Make one:** pick a layer, then **Effects menu > Put layer in a new folder**. On a layer that is already in a folder, this makes a folder inside that folder.
+- **Add layers:** drag a layer onto a layer inside the folder, or onto the folder's row to put it at the top. You can also use **Move layer up** / **Move layer down** to step it in at the folder's edge.
+- **Take layers out:** drag a layer onto a layer outside, or step it past the folder's edge. **Effects menu > Take layer out of its folder** moves it just above the folder.
+- **Folder in a folder:** drag the folder's row onto another folder's row (the middle of the row puts it inside; the top edge puts it above). Dragging a folder moves everything in it. **Put this folder in the folder next to it** does the same from the keyboard or the command palette.
+- **Fold it:** click the arrow on the folder's row to hide what is in it in the timeline. It still shows on the canvas.
+- **Hide it:** the eye on the folder's row hides everything in it, folders inside it too.
+- **Remove it:** **Effects menu > Take layers out of this folder**. Its layers and folders move up a level and stay where they are.
 
-In the Effects panel, pick **Folder** at the top to set a see-through amount, a [blend mode](help:blend-modes) or [effects](help:effects) for the whole folder at once. A folder that fades fades as one picture, so overlapping parts don't show through each other.
+**Keyboard:** with a layer or folder row picked in the list, the up and down arrows walk the rows, left folds a folder (or jumps to the folder it is in) and right unfolds it. Hold **Alt** and press an arrow to move the row itself: up and down step it through the list (into and out of folders as they come), left takes it out of its folder, right puts it into the folder next to it.
 
-Masks in a folder only mask that folder's layers (see [Masks and clipping](help:masks)). Folders can't hold other folders yet.`,
+In the Effects panel, pick a **Folder** at the top (any folder around the layer) to set a see-through amount, a [blend mode](help:blend-modes) or [effects](help:effects) for the whole folder at once. A folder that fades fades as one picture, so overlapping parts don't show through each other. Inside a faded folder, a folder with its own fade is faded first and then fades with the rest, so the amounts multiply.
+
+Masks in a folder only mask that folder's layers, folders inside it included (see [Masks and clipping](help:masks)). Layered exports keep the folders nested: Photoshop groups and Illustrator layers inside each other, and the same in PDF layers. Game exports that have no folders fold each folder's fade into its layers.`,
   },
 ]);

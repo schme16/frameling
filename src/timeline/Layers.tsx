@@ -9,7 +9,9 @@ import { addTilemapLayer } from '../tiles/ops';
 import * as ops from './ops';
 import { pickKeys, setTl, toggleOpen, useTl } from './state';
 import { FolderRow, LookTags, lookMenu } from '../effects/TimelineBits';
-import { moveLayerInto } from '../effects/ops';
+import { moveNode } from '../effects/ops';
+import type { Drop, Node } from '../effects/edit';
+import { rowKey } from '../effects/rowKeys';
 import { LAYER_LABELS, type LayerLabel } from '../core/format';
 import { CLEAN_ROW_H, type LayoutRow } from './layout';
 import { useLayout } from './view';
@@ -93,6 +95,8 @@ interface RowProps {
   tracks: Track[];
   open: boolean;
   inFolder?: boolean;
+  /** How many folders it sits in. */
+  depth: number;
   active: boolean;
   editing: boolean;
   dropMark: 'above' | 'below' | null;
@@ -103,18 +107,22 @@ interface RowProps {
   onMenu: (layer: Layer, x: number, y: number) => void;
 }
 
-const LayerRow = memo(function LayerRow({ layer, h, detailed, tracks, open, inFolder, active, editing, dropMark, onDragStart, onDragOver, onDrop, onDragEnd, onMenu }: RowProps) {
+const LayerRow = memo(function LayerRow({ layer, h, detailed, tracks, open, inFolder, depth, active, editing, dropMark, onDragStart, onDragOver, onDrop, onDragEnd, onMenu }: RowProps) {
   const select = () => store().setUi({ activeLayerId: layer.id });
   const kind = layer.kind === 'pixel' ? 'Pixel layer (pixel art)' : layer.kind === 'tilemap' ? 'Tilemap layer (painted with tiles)' : layer.kind === 'camera' ? 'Camera (frames the scene)' : 'Vector layer (smooth drawing)';
   return (
     <div
       className={`tl-layer${detailed ? ` is-detailed ${layerColorClass(layer)}` : ''}${active ? ' is-active' : ''}${!layer.visible ? ' is-hidden' : ''}${layer.locked ? ' is-locked' : ''}${layer.reference ? ' is-reference' : ''}${inFolder ? ' in-folder' : ''}${layer.mask ? ' is-mask' : ''}${layer.clipToBelow ? ' is-clipped' : ''}${dropMark ? ` drop-${dropMark}` : ''}`}
-      style={{ height: h }}
+      style={{ height: h, ['--depth' as string]: depth }}
       draggable={!editing}
       data-layer={layer.id}
-      role="listitem"
+      data-row=""
+      role="treeitem"
       tabIndex={0}
-      aria-label={`${layer.name}, ${kind}`}
+      aria-level={depth + 1}
+      aria-selected={active}
+      aria-expanded={tracks.length ? open : undefined}
+      aria-label={`${layer.name}, ${kind}${layer.reference ? ', reference layer' : ''}`}
       aria-current={active ? 'true' : undefined}
       onClick={select}
       onKeyDown={(e) => {
@@ -122,7 +130,9 @@ const LayerRow = memo(function LayerRow({ layer, h, detailed, tracks, open, inFo
           e.preventDefault();
           e.stopPropagation();
           select();
+          return;
         }
+        rowKey(e, { layer: layer.id }, `[data-layer="${layer.id}"]`);
       }}
       onContextMenu={(e) => {
         e.preventDefault();
@@ -183,9 +193,7 @@ const LayerRow = memo(function LayerRow({ layer, h, detailed, tracks, open, inFo
             </small>
           )}
           {layer.reference && (
-            <small className="tl-ref-tag" title="Reference layer: you see it while drawing, exports leave it out">
-              ref
-            </small>
+            <small className="tl-ref-tag tl-glyph" data-glyph="ref" aria-hidden="true" title="Reference layer: you see it while drawing, exports leave it out" />
           )}
         </span>
       )}
@@ -226,6 +234,13 @@ const LayerRow = memo(function LayerRow({ layer, h, detailed, tracks, open, inFo
   );
 });
 
+interface DragState {
+  node: Node | null;
+  over: string | null;
+  where: Drop;
+}
+const NO_DRAG: DragState = { node: null, over: null, where: 'above' };
+
 /** The layer list, top layer first. */
 export function LayerList() {
   const layers = useStore((s) => s.doc.layers);
@@ -233,29 +248,42 @@ export function LayerList() {
   const detailed = layout.style === 'detailed';
   const activeId = useStore((s) => s.ui.activeLayerId) ?? layers[layers.length - 1]?.id;
   const editing = useTl((t) => (t.editing?.kind === 'layer' ? t.editing.id : null));
-  const [drag, setDrag] = useState<{ id: Id | null; over: Id | null; where: 'above' | 'below' }>({ id: null, over: null, where: 'above' });
+  // What is being dragged (a layer, or a folder with all in it), and the row it is over: a layer's id, or `f:` and a folder's.
+  const [drag, setDrag] = useState<DragState>(NO_DRAG);
   const [menu, setMenu] = useState<{ layer: Layer; x: number; y: number } | null>(null);
 
-  const drop = (targetId: Id) => {
-    const { id, where } = drag;
-    setDrag({ id: null, over: null, where: 'above' });
-    if (!id || id === targetId) return;
-    const from = layers.findIndex((l) => l.id === id);
-    const ti = layers.findIndex((l) => l.id === targetId);
-    if (from < 0 || ti < 0) return;
-    // "above" in the list means a higher array index
-    const to = where === 'above' ? (from < ti ? ti : ti + 1) : from < ti ? ti - 1 : ti;
-    // Dropped next to a layer in a folder, it joins that folder; next to one outside, it leaves its own.
-    const folder = layers[ti].folder ?? null;
-    if ((layers[from].folder ?? null) !== folder) moveLayerInto(id, to, folder);
-    else ops.reorderLayer(id, to);
+  const drop = (over: string) => {
+    const { node } = drag;
+    const where = drag.where;
+    setDrag(NO_DRAG);
+    if (!node) return;
+    // Next to a layer it joins that layer's folder; next to a folder it sits beside it, or goes in (the middle of its row).
+    void moveNode(node, over.startsWith('f:') ? { folder: over.slice(2) } : { layer: over }, where);
   };
+  const over = (key: string, where: Drop) => setDrag((d) => (d.over === key && d.where === where ? d : { ...d, over: key, where }));
+  const mark = (key: string, own: boolean) => (drag.over === key && !own ? drag.where : null);
 
   return (
-    <div className={`tl-layers${detailed ? ' is-detailed' : ''}`} role="list" aria-label="Layers, top layer first">
+    <div className={`tl-layers${detailed ? ' is-detailed' : ''}`} role="tree" aria-label="Layers, top layer first">
       {layout.rows.map((r: LayoutRow) => {
-        if (r.kind === 'folder') return <FolderRow key={r.key} row={r.row} height={r.h} />;
-        if (r.kind === 'prop') return <PropLabel key={r.key} layer={r.layer} track={r.track} h={r.h} last={r.last} />;
+        if (r.kind === 'folder') {
+          const id = r.row.folder.id;
+          return (
+            <FolderRow
+              key={r.key}
+              row={r.row}
+              height={r.h}
+              drag={{
+                dropMark: mark(`f:${id}`, !!drag.node && 'folder' in drag.node && drag.node.folder === id),
+                onDragStart: (fid) => setDrag({ node: { folder: fid }, over: null, where: 'above' }),
+                onDragOver: (fid, where) => over(`f:${fid}`, where),
+                onDrop: (fid) => drop(`f:${fid}`),
+                onDragEnd: () => setDrag(NO_DRAG),
+              }}
+            />
+          );
+        }
+        if (r.kind === 'prop') return <PropLabel key={r.key} layer={r.layer} track={r.track} h={r.h} last={r.last} depth={r.depth} />;
         const l = r.layer;
         return (
         <LayerRow
@@ -266,13 +294,14 @@ export function LayerList() {
           tracks={r.tracks}
           open={r.open}
           inFolder={r.inFolder}
+          depth={r.depth}
           active={l.id === activeId}
           editing={editing === l.id}
-          dropMark={drag.over === l.id && drag.id !== l.id ? drag.where : null}
-          onDragStart={(id) => setDrag({ id, over: null, where: 'above' })}
-          onDragOver={(id, where) => setDrag((d) => (d.over === id && d.where === where ? d : { ...d, over: id, where }))}
+          dropMark={(mark(l.id, !!drag.node && 'layer' in drag.node && drag.node.layer === l.id) as 'above' | 'below' | null)}
+          onDragStart={(id) => setDrag({ node: { layer: id }, over: null, where: 'above' })}
+          onDragOver={(id, where) => over(id, where)}
           onDrop={drop}
-          onDragEnd={() => setDrag({ id: null, over: null, where: 'above' })}
+          onDragEnd={() => setDrag(NO_DRAG)}
           onMenu={(layer, x, y) => setMenu({ layer, x, y })}
         />
         );
@@ -301,18 +330,19 @@ function SoloButton({ layer }: { layer: Layer }) {
       aria-pressed={on}
       onClick={(e) => (e.stopPropagation(), toggleSolo(layer.id))}
     >
-      <span aria-hidden="true">S</span>
+      <span aria-hidden="true" className="tl-glyph" data-glyph="S" />
     </button>
   );
 }
 
 /** A property row's name under an opened layer. */
-const PropLabel = memo(function PropLabel({ layer, track, h, last }: { layer: Layer; track: Track; h: number; last: boolean }) {
+const PropLabel = memo(function PropLabel({ layer, track, h, last, depth }: { layer: Layer; track: Track; h: number; last: boolean; depth: number }) {
   return (
     <div
       className={`tl-prop ${layerColorClass(layer)}${last ? ' is-last' : ''}`}
       style={{ height: h }}
-      role="listitem"
+      role="treeitem"
+      aria-level={depth + 2}
       aria-label={`${layer.name}: ${track.label}, ${track.keys.length} key${track.keys.length === 1 ? '' : 's'}`}
       title={`${track.label}: ${track.keys.length} key${track.keys.length === 1 ? '' : 's'}. Click to pick them all.`}
       onClick={(e) => {

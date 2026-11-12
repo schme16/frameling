@@ -285,18 +285,21 @@ function cloneContent(d: Doc, c: ArtboardContent): ArtboardContent {
   const layerIds = new Map<Id, Id>();
   const folderIds = new Map<Id, Id>();
   for (const l of out.layers) layerIds.set(l.id, uid('l'));
+  // A copy of a folder, and of the folders around it.
+  const copyFolder = (old: Id): Id => {
+    let f = folderIds.get(old);
+    if (f) return f;
+    f = uid('f');
+    folderIds.set(old, f);
+    const src = d.folders![old];
+    d.folders![f] = { ...plain(src), id: f };
+    if (src.parent && d.folders![src.parent]) d.folders![f].parent = copyFolder(src.parent);
+    return f;
+  };
   for (const l of out.layers) {
     l.id = layerIds.get(l.id)!;
     if (l.bind) l.bind.rig = layerIds.get(l.bind.rig) ?? l.bind.rig;
-    if (l.folder && d.folders?.[l.folder]) {
-      let f = folderIds.get(l.folder);
-      if (!f) {
-        f = uid('f');
-        folderIds.set(l.folder, f);
-        d.folders[f] = { ...plain(d.folders[l.folder]), id: f };
-      }
-      l.folder = f;
-    }
+    if (l.folder && d.folders?.[l.folder]) l.folder = copyFolder(l.folder);
     for (const cel of l.cels) {
       cel.id = uid('c');
       let nd = drawingIds.get(cel.drawingId);
@@ -487,9 +490,17 @@ export function joinShots(doc: Doc, ids: Id[], opts: JoinOptions = {}): { doc: D
       const nl: Layer = { ...l, id: tag(l.id), cels: shiftCels(l, at, len, tag) };
       if (nl.bind) nl.bind = { ...nl.bind, rig: tag(nl.bind.rig) };
       if (nl.folder && out.folders?.[nl.folder]) {
-        const f = tag(nl.folder);
-        if (!out.folders[f]) out.folders[f] = { ...out.folders[nl.folder], id: f };
-        nl.folder = f;
+        // Each folder around it is copied under a new name too.
+        const copy = (old: string): string => {
+          const f = tag(old);
+          if (!out.folders![f]) {
+            const src = out.folders![old];
+            out.folders![f] = { ...src, id: f };
+            if (src.parent && out.folders![src.parent]) out.folders![f].parent = copy(src.parent);
+          }
+          return f;
+        };
+        nl.folder = copy(nl.folder);
       }
       out.layers.push(nl);
     }

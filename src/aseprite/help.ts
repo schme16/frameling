@@ -26,7 +26,7 @@ Search for **Use palette from an Aseprite file** in the command palette (Ctrl+K)
 
 ## What comes across
 
-- **Layers**, in order, with their opacity, blend mode, hidden and locked state, and groups as folders. Reference layers stay reference layers.
+- **Layers**, in order, with their opacity, blend mode, hidden and locked state, and groups as folders (a group inside a group becomes a folder inside a folder). Reference layers stay reference layers.
 - **Frames with their timing.** Frameling counts frames at one rate, so it picks the rate that fits every frame's time exactly (a 100 ms frame next to a 150 ms one becomes 20 fps, held 2 and 3 frames) and holds the frames to match. If the times can't fit exactly, it tells you.
 - **Linked cels** share one drawing, so a hold stays a hold.
 - **Each cel's position and opacity**, in every colour mode: full colour, grayscale and indexed.
@@ -39,7 +39,6 @@ Search for **Use palette from an Aseprite file** in the command palette (Ctrl+K)
 After an import, a message says **See what changed** whenever something couldn't be matched exactly. Typical cases:
 
 - **Slices** (including 9-patch and pivots) are kept in the notes but not shown.
-- **Groups inside groups** become one folder. Hiding, fading and names carry over.
 - Anything drawn **outside the canvas** is cropped.
 - A **back and forth** tag that repeats an odd number of times rounds up to whole trips there and back.
 

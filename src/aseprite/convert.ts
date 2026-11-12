@@ -5,6 +5,7 @@
  */
 import { CLIP_DIRECTIONS, MAX_REPEAT } from '../core/clipPlay';
 import { newDoc, uid } from '../core/doc';
+import { MAX_FOLDER_DEPTH, folderChain } from '../core/folders';
 import {
   TILE_FLIP_D,
   TILE_FLIP_X,
@@ -286,7 +287,7 @@ export function asepritePieces(file: AseFile, name: string, target?: Target): Pi
   const flattened: string[] = [];
   let zIndexed = 0;
   let scaledRefs = 0;
-  let nested = 0;
+  let deep = 0;
   let pixelBytes = 0;
 
   const celOf = new Map<string, AseCel>();
@@ -371,7 +372,8 @@ export function asepritePieces(file: AseFile, name: string, target?: Target): Pi
   };
   if (file.tilesets.some((t) => t.external)) notes.push('A tileset is stored in another file that was not found, so its tiles are blank.');
 
-  // Folders: the top-level groups. Deeper groups fold into their top-level one.
+  // Folders: every group, inside its parent group's folder. Groups deeper than the folder limit fold into the folder
+  // at the limit (hiding, fading and the name carry over).
   const stack: AseLayer[] = [];
   const folderOf = new Map<AseLayer, Id>();
   const grab = (n: number) => {
@@ -381,20 +383,22 @@ export function asepritePieces(file: AseFile, name: string, target?: Target): Pi
 
   for (const l of file.layers) {
     while (stack.length && stack[stack.length - 1].level >= l.level) stack.pop();
-    const inner = stack.slice(1);
+    // The groups around this one that have folders, and the ones too deep to.
+    const held = stack.filter((g) => folderOf.has(g));
+    const inner = stack.filter((g) => !folderOf.has(g));
     if (l.type === LAYER_GROUP) {
-      if (stack.length === 0) {
+      if (held.length < MAX_FOLDER_DEPTH) {
         const id = uid('f');
         const mode = blendFor(l.blend);
         if (l.blend && !mode) noteBlend(blendMissing, l.blend, plain(l.name));
-        folders[id] = { id, name: plain(l.name) || 'Group', visible: l.visible, opacity: l.opacity / 255, ...(mode && mode !== 'normal' ? { blend: mode } : {}) };
+        const parent = held.length ? folderOf.get(held[held.length - 1]) : undefined;
+        folders[id] = { id, name: plain(l.name) || 'Group', visible: l.visible, opacity: l.opacity / 255, ...(mode && mode !== 'normal' ? { blend: mode } : {}), ...(parent ? { parent } : {}) };
         folderOf.set(l, id);
-      } else nested++;
+      } else deep++;
       stack.push(l);
       continue;
     }
-    const top = stack[0];
-    // A layer hides, fades and is named by the groups inside the top one.
+    // A layer hides, fades and is named by the groups too deep to be folders.
     let visible = l.visible;
     let opacity = l.opacity / 255;
     let label = plain(l.name) || 'Layer';
@@ -404,7 +408,7 @@ export function asepritePieces(file: AseFile, name: string, target?: Target): Pi
       if (g.blend) noteBlend(blendMissing, g.blend, plain(g.name), true);
     }
     if (inner.length) label = `${inner.map((g) => plain(g.name)).join(' / ')} / ${label}`;
-    const folder = top ? folderOf.get(top) : undefined;
+    const folder = held.length ? folderOf.get(held[held.length - 1]) : undefined;
 
     const base = {
       id: uid('l'),
@@ -568,7 +572,7 @@ export function asepritePieces(file: AseFile, name: string, target?: Target): Pi
   for (const [mode, names] of blendMissing) notes.push(`Frameling has no "${blendName(mode)}" blend mode, so ${listOf(names)} blend${names.length === 1 ? 's' : ''} normally.`);
   if (flattened.length) notes.push(`Tilemap layers drawn as flat pixels instead of tiles: ${flattened.join('; ')}.`);
   if (croppedLayers.length) notes.push(`Drawing outside the canvas was cropped on: ${listOf(croppedLayers)}.`);
-  if (nested) notes.push(`Frameling folders go one level deep, so ${nested} group${nested === 1 ? '' : 's'} inside another group became part of the outer one (hiding, fading and the name carry over).`);
+  if (deep) notes.push(`Frameling folders go ${MAX_FOLDER_DEPTH} levels deep, so ${deep} group${deep === 1 ? '' : 's'} nested deeper became part of the folder around ${deep === 1 ? 'it' : 'them'} (hiding, fading and the name carry over).`);
   if (zIndexed) notes.push(`${zIndexed} cel${zIndexed === 1 ? ' has' : 's have'} a custom stacking order, which is ignored.`);
   if (scaledRefs) notes.push(`${scaledRefs} scaled reference picture${scaledRefs === 1 ? ' was' : 's were'} resized to the size shown in Aseprite.`);
   if (file.slices.length) notes.push(`${file.slices.length} slice${file.slices.length === 1 ? '' : 's'} (${file.slices.slice(0, 4).map((s) => plain(s.name)).join(', ')}${file.slices.length > 4 ? ', ...' : ''}) are kept in the drawing's notes but not shown.`);
@@ -594,7 +598,7 @@ export function asepritePieces(file: AseFile, name: string, target?: Target): Pi
     fps: timing.fps,
     length: timing.length,
     layers,
-    folders: Object.fromEntries(Object.entries(folders).filter(([id]) => layers.some((l) => l.folder === id))),
+    folders: Object.fromEntries(Object.entries(folders).filter(([id]) => layers.some((l) => folderChain(folders, l.folder).some((f) => f.id === id)))),
     drawings,
     clips,
     ...(palette ? { palette } : {}),

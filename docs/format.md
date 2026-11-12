@@ -85,7 +85,8 @@ Repaired quietly (defaults filled, values clamped):
 - Layer `name`, `visible`, `locked` default; `opacity` is clamped to 0..1; `depth` to -0.9..100; `pixelSize` rounded,
   at least 1; unknown `label` dropped.
 - Effects: unknown kinds dropped, values filled from the effect's defaults (`src/effects/io.ts`), keys deduplicated by
-  frame and sorted. Layers naming a missing folder leave it; folders no layer uses are dropped.
+  frame and sorted. Layers naming a missing folder leave it; folders no layer is in or under are dropped. A folder's `parent` is kept
+  only when that folder exists; loops and self-parents are cut, and a chain deeper than 8 is cut at the top.
 - Bones: a bone whose parent doesn't come before it becomes a root; duplicate ids are skipped; `length` at least 1;
   `s` clamped to `BONE_STRETCH` (0.25 to 3). A skin mesh with bad indices or weight counts is dropped (the layer
   keeps its plain bone bind).
@@ -278,7 +279,10 @@ when comparing two drawings for "same look" (as `id` is ignored).
 - `BlendMode`: the canvas modes plus `'add'`.
 - `LayerEffect`: `{id, kind: blur|glow|shadow|adjust|outline|pixelate, on?, values, keys?}`. `values` holds numbers
   and hex colours; `keys: {frame, values}[]` animate the numbers (linear between keys, held outside).
-- `LayerFolder`: `{id, name, visible, opacity, blend?, effects?}`.
+- `LayerFolder`: `{id, name, visible, opacity, blend?, effects?, parent?}`. `parent` is the id of the folder it sits in
+  (missing = on the stage), up to 8 levels deep. A layer's `folder` is the folder it sits in directly; every layer under
+  a folder, in folders inside it too, sits next to the others in `layers`, so the flat list reads like the tree walked in
+  order. Files from before folders could nest have no `parent` and open unchanged.
 
 See `docs/effects.md`.
 

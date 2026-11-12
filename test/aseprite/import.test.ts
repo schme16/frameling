@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { drawingAt } from '../../src/core/doc';
+import { MAX_FOLDER_DEPTH, folderChain } from '../../src/core/folders';
 import { TILE_FLIP_D, TILE_FLIP_X, TILE_FLIP_Y, type Doc, type Layer, type PixelDrawing, type TilemapDrawing } from '../../src/core/format';
 import { loadFile, saveFile } from '../../src/io/file';
 import { flattenTilemap } from '../../src/tiles/model';
@@ -222,27 +223,47 @@ describe('layers and groups', () => {
   const byName = (n: string) => doc.layers.find((l) => l.name.endsWith(n))!;
 
   it('turns a group into a folder with its opacity and blend', () => {
-    const f = Object.values(doc.folders!);
-    expect(f).toHaveLength(1);
-    expect(f[0]).toMatchObject({ name: 'Outer', visible: true, blend: 'multiply' });
-    expect(f[0].opacity).toBeCloseTo(128 / 255);
-    expect(byName('A').folder).toBe(f[0].id);
-    expect(byName('B').folder).toBe(f[0].id);
+    const outer = Object.values(doc.folders!).find((f) => f.name === 'Outer')!;
+    expect(outer).toMatchObject({ name: 'Outer', visible: true, blend: 'multiply' });
+    expect(outer.parent).toBeUndefined();
+    expect(outer.opacity).toBeCloseTo(128 / 255);
+    expect(byName('A').folder).toBe(outer.id);
     expect(byName('Solo').folder).toBeUndefined();
   });
 
-  it('folds a group inside a group into the outer one, keeping hiding and fading', () => {
-    expect(byName('B').name).toBe('Inner / B');
-    expect(byName('B').visible).toBe(false);
-    expect(byName('B').opacity).toBeCloseTo(128 / 255);
-    expect(notes.join(' ')).toContain('one level deep');
+  it('keeps a group inside a group as a folder inside a folder, with its own hiding and fading', () => {
+    const outer = Object.values(doc.folders!).find((f) => f.name === 'Outer')!;
+    const inner = Object.values(doc.folders!).find((f) => f.name === 'Inner')!;
+    expect(Object.keys(doc.folders!)).toHaveLength(2);
+    expect(inner.parent).toBe(outer.id);
+    expect(inner.visible).toBe(false);
+    expect(inner.opacity).toBeCloseTo(128 / 255);
+    expect(byName('B').name).toBe('B');
+    expect(byName('B').folder).toBe(inner.id);
+    expect(byName('B').visible).toBe(true);
+    expect(byName('B').opacity).toBe(1);
+    // Nothing is approximated any more.
+    expect(notes.join(' ')).not.toContain('level');
   });
 
   it('keeps reference, locked and layer order', () => {
     expect(byName('Ref').reference).toBe(true);
     expect(byName('Locked').locked).toBe(true);
     expect(byName('Solo').locked).toBe(false);
-    expect(doc.layers.map((l) => l.name)).toEqual(['Solo', 'A', 'Inner / B', 'Ref', 'Locked', 'Sub', 'Div']);
+    expect(doc.layers.map((l) => l.name)).toEqual(['Solo', 'A', 'B', 'Ref', 'Locked', 'Sub', 'Div']);
+  });
+
+  it('keeps groups to the folder depth limit and folds the deeper ones into the folder at the limit', () => {
+    const chunks = [];
+    for (let i = 0; i < 10; i++) chunks.push(layerChunk({ name: `G${i}`, type: 1, level: i, opacity: i === 9 ? 128 : 255 }));
+    chunks.push(layerChunk({ name: 'Leaf', level: 10 }));
+    const deep = open(aseFile({ width: 1, height: 1, depth: 32, flags: 3, frames: [{ duration: 100, chunks: [...chunks, celChunk({ layer: 10, kind: 'image', width: 1, height: 1, data: [1, 1, 1, 255] })] }] }));
+    const fs = Object.values(deep.doc.folders!);
+    expect(fs).toHaveLength(MAX_FOLDER_DEPTH);
+    expect(folderChain(deep.doc.folders, deep.doc.layers[0].folder).length).toBe(MAX_FOLDER_DEPTH);
+    expect(deep.doc.layers[0].name).toBe('G8 / G9 / Leaf');
+    expect(deep.doc.layers[0].opacity).toBeCloseTo(128 / 255);
+    expect(deep.notes.join(' ')).toContain('2 groups nested deeper');
   });
 
   it('maps every blend mode to its equal, and says so for one it does not know', () => {

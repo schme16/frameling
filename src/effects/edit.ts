@@ -4,6 +4,7 @@
  */
 import type { BlendMode, Doc, EffectKind, Id, Layer, LayerEffect, LayerFolder } from '../core/format';
 import { uid } from '../core/doc';
+import { MAX_FOLDER_DEPTH, folderAndDescendants, folderHeight, folderLevel, layerFolders, layerIsUnder } from '../core/folders';
 import { clampParam, defaultValues, effectInfo, valuesAt, withKey } from './model';
 
 /** What an edit applies to: a layer, or a folder. */
@@ -184,7 +185,8 @@ export function useAsMask(doc: Doc, layerId: Id, scope: 'below' | 'all', mode: '
 
 /**
  * Puts layers in a new folder. They're gathered next to each other, just under the topmost of them, keeping their
- * order. Layers already in another folder leave it.
+ * order. Layers already in another folder leave it, and the new folder sits in the folder they all share (so a layer
+ * inside a folder gets a folder of its own inside that one).
  */
 export function makeFolder(doc: Doc, layerIds: Id[], name?: string): Id | null {
   const set = new Set(layerIds);
@@ -192,22 +194,37 @@ export function makeFolder(doc: Doc, layerIds: Id[], name?: string): Id | null {
   if (!picked.length) return null;
   const id = uid('f');
   const n = Object.keys(doc.folders ?? {}).length + 1;
-  (doc.folders ??= {})[id] = { id, name: name ?? `Folder ${n}`, visible: true, opacity: 1 };
+  // The folder every picked layer is in, as deep as they all agree.
+  const chains = picked.map((l) => layerFolders(doc, l));
+  let common = chains[0];
+  for (const c of chains) {
+    let k = 0;
+    while (k < common.length && k < c.length && common[k].id === c[k].id) k++;
+    common = common.slice(0, k);
+  }
+  // Keep within the depth cap: a layer too deep to get a folder of its own makes it beside its folder instead.
+  if (common.length >= MAX_FOLDER_DEPTH) common = common.slice(0, MAX_FOLDER_DEPTH - 1);
+  (doc.folders ??= {})[id] = { id, name: name ?? `Folder ${n}`, visible: true, opacity: 1, ...(common.length ? { parent: common[common.length - 1].id } : {}) };
   const top = Math.max(...picked.map((l) => doc.layers.indexOf(l)));
   const rest = doc.layers.filter((l) => !set.has(l.id));
   const before = doc.layers.slice(0, top + 1).filter((l) => !set.has(l.id)).length;
   for (const l of picked) l.folder = id;
   doc.layers.splice(0, doc.layers.length, ...rest.slice(0, before), ...picked, ...rest.slice(before));
-  pruneFolders(doc);
+  tidyFolders(doc);
   return id;
 }
 
-/** Takes the layers out of a folder and removes it. The layers stay where they are and look the same where they can. */
+/**
+ * Takes the layers out of a folder and removes it. The layers, and any folders inside it, move up into the folder it
+ * was in (or the stage). They stay where they are and look the same where they can.
+ */
 export function ungroupFolder(doc: Doc, folderId: Id): boolean {
-  if (!doc.folders?.[folderId]) return false;
-  for (const l of doc.layers) if (l.folder === folderId) delete l.folder;
-  delete doc.folders[folderId];
-  if (!Object.keys(doc.folders).length) delete doc.folders;
+  const f = doc.folders?.[folderId];
+  if (!f) return false;
+  for (const l of doc.layers) if (l.folder === folderId) (f.parent ? (l.folder = f.parent) : delete l.folder);
+  for (const o of Object.values(doc.folders!)) if (o.parent === folderId) (f.parent ? (o.parent = f.parent) : delete o.parent);
+  delete doc.folders![folderId];
+  if (!Object.keys(doc.folders!).length) delete doc.folders;
   return true;
 }
 
@@ -242,18 +259,122 @@ export function moveLayerInto(doc: Doc, layerId: Id, to: number, folder: Id | nu
   return true;
 }
 
-/** Drops folders no layer is in. */
+// ---------------------------------------------------------------- moving layers and folders about
+
+/** A layer or a folder (with everything in it), as something to move. */
+export type Node = { layer: Id } | { folder: Id };
+
+/** Where a drop lands next to its target: above or below it, inside a folder at its top, or inside at its bottom. */
+export type Drop = 'above' | 'below' | 'into' | 'into-bottom';
+
+function nodeLayerIds(doc: Doc, n: Node): Id[] {
+  return 'layer' in n ? [n.layer] : doc.layers.filter((l) => layerIsUnder(doc, l, n.folder)).map((l) => l.id);
+}
+
+/**
+ * Moves a layer, or a folder with everything in it, next to another layer or folder: above or below it (at its level),
+ * or into a folder. One undo step for a drag. False when it can't (onto itself, into its own insides, too deep).
+ */
+export function moveNode(doc: Doc, drag: Node, target: Node, where: Drop): boolean {
+  const ids = new Set(nodeLayerIds(doc, drag));
+  if (!ids.size) return false;
+  const tids = nodeLayerIds(doc, target);
+  if (!tids.length) return false;
+  if ('layer' in target && ids.has(target.layer)) return false;
+  if ('folder' in drag && 'folder' in target && folderAndDescendants(doc.folders, drag.folder).has(target.folder)) return false;
+  const tparent: Id | undefined = 'layer' in target ? doc.layers.find((l) => l.id === target.layer)?.folder : doc.folders?.[target.folder]?.parent;
+  const into = where === 'into' || where === 'into-bottom';
+  if (into && !('folder' in target)) return false;
+  const parent = into ? (target as { folder: Id }).folder : tparent && doc.folders?.[tparent] ? tparent : undefined;
+  if ('folder' in drag && parent && folderLevel(doc, parent) + 1 + folderHeight(doc.folders, drag.folder) > MAX_FOLDER_DEPTH) return false;
+  const block = doc.layers.filter((l) => ids.has(l.id));
+  const rest = doc.layers.filter((l) => !ids.has(l.id));
+  // Where the target sits in the list as it is now (a folder holding the dragged thing includes it), then how many
+  // of the other layers end up below the dropped block.
+  const where0 = doc.layers.map((l, i) => (tids.includes(l.id) ? i : -1)).filter((i) => i >= 0);
+  const lo = Math.min(...where0);
+  const hi = Math.max(...where0);
+  const index = rest.filter((l) => doc.layers.indexOf(l) <= (where === 'above' || where === 'into' ? hi : lo - 1)).length;
+  const next = [...rest.slice(0, index), ...block, ...rest.slice(index)];
+  const was = 'layer' in drag ? block[0].folder : doc.folders?.[drag.folder]?.parent;
+  const moved = next.some((l, i) => l !== doc.layers[i]);
+  if (!moved && (was ?? null) === (parent ?? null)) return false;
+  doc.layers.splice(0, doc.layers.length, ...next);
+  if ('layer' in drag) {
+    if (parent) block[0].folder = parent;
+    else delete block[0].folder;
+  } else {
+    const f = doc.folders![drag.folder];
+    if (parent) f.parent = parent;
+    else delete f.parent;
+  }
+  tidyFolders(doc);
+  return true;
+}
+
+/** The node next to a layer or folder, one step up or down the list, at the same level (null at the edge of its folder). */
+export function siblingOf(doc: Doc, n: Node, dir: 'up' | 'down'): Node | null {
+  const ids = new Set(nodeLayerIds(doc, n));
+  if (!ids.size) return null;
+  const idx = doc.layers.map((l, i) => (ids.has(l.id) ? i : -1)).filter((i) => i >= 0);
+  const nb = doc.layers[dir === 'up' ? Math.max(...idx) + 1 : Math.min(...idx) - 1];
+  if (!nb) return null;
+  const parent = 'layer' in n ? doc.layers.find((l) => l.id === n.layer)?.folder : doc.folders?.[n.folder]?.parent;
+  const level = parent ? folderLevel(doc, parent) : 0;
+  const chain = layerFolders(doc, nb);
+  // The neighbour has to be inside the same folder (or on the stage with it).
+  if (parent && !chain.some((f) => f.id === parent)) return null;
+  return chain[level] ? { folder: chain[level].id } : { layer: nb.id };
+}
+
+/**
+ * Moves a layer or folder one place with the arrow keys, like the list shows it: past the layer or folder next to it,
+ * and out of its folder when it is at the edge. A layer next to a folder steps into it first (a folder does not: use
+ * `nestNode` for that).
+ */
+export function stepNode(doc: Doc, n: Node, dir: 'up' | 'down'): boolean {
+  if ('layer' in n) return stepLayerThroughFolders(doc, n.layer, dir);
+  const sib = siblingOf(doc, n, dir);
+  if (sib) return moveNode(doc, n, sib, dir === 'up' ? 'above' : 'below');
+  const f = doc.folders?.[n.folder];
+  if (!f?.parent) return false;
+  return moveNode(doc, n, { folder: f.parent }, dir === 'up' ? 'above' : 'below');
+}
+
+/** Takes a layer or folder out of the folder it is in, to just above that folder. False on the stage. */
+export function outdentNode(doc: Doc, n: Node): boolean {
+  const parent = 'layer' in n ? doc.layers.find((l) => l.id === n.layer)?.folder : doc.folders?.[n.folder]?.parent;
+  if (!parent || !doc.folders?.[parent]) return false;
+  return moveNode(doc, n, { folder: parent }, 'above');
+}
+
+/**
+ * Puts a layer or folder into the folder next to it: the one just above (at its bottom edge, so it stays put), else
+ * the one just below (at its top). False when no folder is next to it.
+ */
+export function nestNode(doc: Doc, n: Node): boolean {
+  for (const dir of ['up', 'down'] as const) {
+    const sib = siblingOf(doc, n, dir);
+    if (sib && 'folder' in sib && moveNode(doc, n, sib, dir === 'up' ? 'into-bottom' : 'into')) return true;
+  }
+  return false;
+}
+
+
+/** Drops folders no layer is in or under. */
 export function pruneFolders(doc: Doc): void {
   if (!doc.folders) return;
-  const used = new Set(doc.layers.map((l) => l.folder));
+  const used = new Set<Id>();
+  for (const l of doc.layers) for (const f of layerFolders(doc, l)) used.add(f.id);
   for (const id of Object.keys(doc.folders)) if (!used.has(id)) delete doc.folders[id];
+  for (const f of Object.values(doc.folders)) if (f.parent && !doc.folders[f.parent]) delete f.parent;
   if (!Object.keys(doc.folders).length) delete doc.folders;
 }
 
 /**
  * One step up or down, folder by folder like the timeline shows it. A layer at the edge of its folder steps out of
- * it (staying put, now just outside); a layer next to a folder steps into it at that edge; anything else swaps with
- * its neighbour.
+ * it (staying put, now just outside); a layer next to a folder steps into it at that edge, one folder at a time when
+ * folders are inside folders; anything else swaps with its neighbour.
  */
 export function stepLayerThroughFolders(doc: Doc, layerId: Id, dir: 'up' | 'down'): boolean {
   const i = doc.layers.findIndex((l) => l.id === layerId);
@@ -261,18 +382,22 @@ export function stepLayerThroughFolders(doc: Doc, layerId: Id, dir: 'up' | 'down
   const l = doc.layers[i];
   const j = i + (dir === 'up' ? 1 : -1);
   const nb = doc.layers[j];
-  if (l.folder) {
-    if (!nb || nb.folder !== l.folder) {
-      delete l.folder;
+  const mine = layerFolders(doc, l);
+  if (l.folder && mine.length) {
+    const f = mine[mine.length - 1];
+    if (!nb || !layerIsUnder(doc, nb, f.id)) {
+      if (f.parent && doc.folders?.[f.parent]) l.folder = f.parent;
+      else delete l.folder;
       pruneFolders(doc);
       return true;
     }
-  } else {
-    if (!nb) return false;
-    if (nb.folder && doc.folders?.[nb.folder]) {
-      l.folder = nb.folder;
-      return true;
-    }
+  }
+  if (!nb) return false;
+  const theirs = layerFolders(doc, nb);
+  const into = theirs[mine.length];
+  if (into && theirs.slice(0, mine.length).every((f, k) => f.id === mine[k].id)) {
+    l.folder = into.id;
+    return true;
   }
   doc.layers[i] = nb;
   doc.layers[j] = l;
@@ -280,9 +405,9 @@ export function stepLayerThroughFolders(doc: Doc, layerId: Id, dir: 'up' | 'down
 }
 
 /**
- * Keeps every folder in one piece after layers move. The moved layer joins a folder it lands in the middle of, and
- * leaves its own when it lands away from it; if a folder still ends up in more than one run, the layers outside its
- * longest run leave it.
+ * Keeps every folder in one piece after layers move. The moved layer joins the folder it lands in the middle of, and
+ * leaves its own when it lands away from it; if a folder (with the folders inside it) still ends up in more than one
+ * run, what sits outside its longest run steps out to the folder it is in.
  */
 export function tidyFolders(doc: Doc, movedId?: Id): void {
   if (!doc.folders) return;
@@ -290,26 +415,44 @@ export function tidyFolders(doc: Doc, movedId?: Id): void {
   const i = movedId ? ls.findIndex((l) => l.id === movedId) : -1;
   if (i > 0 && i < ls.length - 1) {
     const m = ls[i];
-    const f = ls[i - 1].folder;
-    if (f && ls[i + 1].folder === f) m.folder = f;
-    else if (m.folder && ls[i - 1].folder !== m.folder && ls[i + 1].folder !== m.folder) delete m.folder;
+    const a = layerFolders(doc, ls[i - 1]);
+    const b = layerFolders(doc, ls[i + 1]);
+    let k = 0;
+    while (k < a.length && k < b.length && a[k].id === b[k].id) k++;
+    if (k > 0) m.folder = a[k - 1].id;
+    else if (m.folder && !a.some((f) => f.id === m.folder) && !b.some((f) => f.id === m.folder)) delete m.folder;
   }
-  const runs = new Map<Id, { start: number; len: number }[]>();
-  for (let i = 0; i < ls.length; ) {
-    const f = ls[i].folder;
-    let j = i;
-    while (j < ls.length && ls[j].folder === f) j++;
-    if (f) {
-      const list = runs.get(f) ?? [];
-      list.push({ start: i, len: j - i });
-      runs.set(f, list);
+  // Deepest folders first, so the ones inside are whole before the ones around them are looked at.
+  const ids = Object.keys(doc.folders).sort((x, y) => folderLevel(doc, y) - folderLevel(doc, x));
+  for (const id of ids) {
+    const f = doc.folders[id];
+    if (!f) continue;
+    const runs: { start: number; len: number }[] = [];
+    let start = -1;
+    for (let k = 0; k <= ls.length; k++) {
+      const inside = k < ls.length && layerIsUnder(doc, ls[k], id);
+      if (inside && start < 0) start = k;
+      if (!inside && start >= 0) {
+        runs.push({ start, len: k - start });
+        start = -1;
+      }
     }
-    i = j;
-  }
-  for (const list of runs.values()) {
-    if (list.length < 2) continue;
-    const keep = list.reduce((a, b) => (b.len > a.len ? b : a));
-    for (const r of list) if (r !== keep) for (let k = r.start; k < r.start + r.len; k++) delete ls[k].folder;
+    if (runs.length < 2) continue;
+    const keep = runs.reduce((x, y) => (y.len > x.len ? y : x));
+    for (const r of runs) {
+      if (r === keep) continue;
+      for (let k = r.start; k < r.start + r.len; k++) {
+        const chain = layerFolders(doc, ls[k]);
+        const at = chain.findIndex((x) => x.id === id);
+        if (at < 0) continue;
+        const holder = chain[at + 1];
+        if (holder) {
+          if (f.parent) holder.parent = f.parent;
+          else delete holder.parent;
+        } else if (f.parent) ls[k].folder = f.parent;
+        else delete ls[k].folder;
+      }
+    }
   }
   pruneFolders(doc);
 }

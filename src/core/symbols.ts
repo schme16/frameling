@@ -9,6 +9,7 @@
  *   tweens have moved them. Plain drawings come back as themselves, so the canvas's bitmap cache keeps working.
  */
 import type { Cel, Doc, Drawing, EditFrame, Id, InstanceShape, Layer, MotionPath, Shape, SymbolDef, Transform2D, Tween, VectorDrawing } from './format';
+import { folderChain } from './folders';
 import { tweenEase } from './ease';
 import { locate, tableOf } from './motionPath';
 import { celAt, uid } from './doc';
@@ -572,7 +573,7 @@ export function poseInstance(doc: Doc, s: InstanceShape, inner: number, depth = 
   const look = layersHaveLook(c.layers) ? { frame: inner, layers: c.layers, folders: doc.folders, drawings: new Map<Id, PosedLayer>() } : undefined;
   for (const l of c.layers) {
     // Reference layers and hidden folders never show. Masks only cut (through `look`), so `layers` leaves them out.
-    if (!l.visible || l.reference || (l.folder && doc.folders?.[l.folder]?.visible === false)) continue;
+    if (!l.visible || l.reference || (l.folder && folderChain(doc.folders, l.folder).some((f) => !f.visible))) continue;
     if (l.mask && !look) continue;
     const dr = poseAt(doc, l, inner, depth + 1);
     if (!dr) continue;

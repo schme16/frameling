@@ -3,6 +3,7 @@
 import { useState, useSyncExternalStore } from 'react';
 import { findLayer } from '../core/doc';
 import type { BlendMode, EffectKind, Layer, LayerEffect, LayerFolder } from '../core/format';
+import { folderChain } from '../core/folders';
 import { useStore } from '../core/store';
 import { ActionButton, Choice, Field, Slider, Tip, Toggle } from '../canvas/controls';
 import { Icon } from '../ui/icons';
@@ -36,23 +37,26 @@ function useAddStyle(): AddStyle {
 
 export function EffectsPanel() {
   const layer = useStore((s) => findLayer(s.doc, s.ui.activeLayerId) ?? s.doc.layers[s.doc.layers.length - 1]);
-  const folder = useStore((s) => (layer?.folder ? s.doc.folders?.[layer.folder] : undefined));
-  const [onFolder, setOnFolder] = useState(false);
+  const folders = useStore((s) => s.doc.folders);
+  // The folders around the layer, the nearest first: any of them can be changed as a whole.
+  const around = layer ? folderChain(folders, layer.folder).reverse() : [];
+  const [pick, setPick] = useState<string>('layer');
   if (!layer) return <div className="cv-panel-empty">Add a layer to give it effects.</div>;
-  const useFolder = onFolder && !!folder;
+  const folder = around.find((f) => f.id === pick) ?? (pick === 'folder' ? around[0] : undefined);
+  const useFolder = !!folder;
   const target: Target = useFolder ? { folder: folder!.id } : { layer: layer.id };
   const look: Layer | LayerFolder = useFolder ? folder! : layer;
   return (
     <div className="cv-panel fx-panel" aria-label="Effects">
-      {folder ? (
+      {around.length ? (
         <Choice
           label="Change"
-          value={useFolder ? 'folder' : 'layer'}
+          value={folder ? folder.id : 'layer'}
           options={[
             { value: 'layer', label: `Layer: ${layer.name}`, title: 'Change this layer on its own' },
-            { value: 'folder', label: `Folder: ${folder.name}`, title: 'Change the whole folder: its layers fade, blend and take effects together' },
+            ...around.map((f) => ({ value: f.id, label: `Folder: ${f.name}`, title: 'Change the whole folder: everything in it fades, blends and takes effects together' })),
           ]}
-          onChange={(v) => setOnFolder(v === 'folder')}
+          onChange={(v) => setPick(v)}
         />
       ) : (
         <div className="fx-target">
