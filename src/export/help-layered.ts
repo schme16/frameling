@@ -60,26 +60,35 @@ Some things PDF can't draw as shapes come in as pictures at twice the page size:
     title: 'Illustrator (.ai)',
     section: 'Exporting',
     media: 'export-pdf.png',
-    summary: 'A PDF-compatible .ai file that Adobe Illustrator opens with every shape editable.',
-    keywords: ['ai', 'illustrator', 'adobe', 'vector', 'affinity designer', 'inkscape', 'coreldraw'],
-    body: `**Illustrator** saves an \`.ai\` file. Since Illustrator 9, an \`.ai\` file is a PDF inside, and Illustrator opens one like this as plain artwork: every shape is a real path you can select, reshape and recolour.
+    summary: 'A .ai file that Adobe Illustrator opens as its own, with your layers and folders as real Illustrator layers and every shape editable.',
+    keywords: ['ai', 'illustrator', 'adobe', 'vector', 'layers', 'artboards', 'gradients', 'affinity designer', 'inkscape', 'coreldraw'],
+    body: `**Illustrator** saves an \`.ai\` file that opens in Adobe Illustrator as a real Illustrator document: your layers and folders arrive as Illustrator layers with their names, every shape is a path you can select, reshape and recolour, and gradients are gradients.
 
 ## How to open it
 
-- **Illustrator:** File > Open, and pick the file. Illustrator opens it as a PDF import, so it asks "PDF Import Options" when the file has more than one frame: pick the page you want, a range, or All (All makes one Illustrator document per frame).
-- **Affinity Designer, Inkscape, CorelDRAW:** open it the same way; they read it as a PDF.
+- **Illustrator:** File > Open, and pick the file. Nothing is asked, and the Layers panel shows your layers and folders.
+- **Affinity Designer, Inkscape, CorelDRAW, Acrobat:** open it the same way. They read the PDF inside the file, with your layers as PDF layers.
 
-It's the same picture as the [PDF export](help:export-pdf): one page per frame, opacity and blend modes kept, text as shapes, and pixel layers, effects and masks as pictures.
+## Several frames
 
-## What to expect in Illustrator
+When the animation has more than one frame, the export window asks how to put them into Illustrator:
 
-- Every shape comes in as a path you can edit, with its fill, line, joins, caps and gradients (including see-through gradient colours).
-- Each Frameling layer or folder becomes a group, with its opacity and blend mode, all inside one Illustrator layer. The layer names don't come across; Illustrator only reads layer names from files it saved itself.
-- Text is letter outlines, not live text, and a symbol copy is plain shapes.
+- **This frame** (the usual choice): the frame you are looking at, as one document.
+- **One file per frame:** a zip with a \`.ai\` file for every frame, each with real layers.
+- **One artboard per frame:** one file with every frame side by side as an artboard (Frame 1, Frame 2 and so on). The layers are the same all the way through, and each layer holds the drawing of every frame.
+- **Pages:** one PDF page per frame in a single file. This one is a plain PDF: Illustrator asks "PDF Import Options" for the page, and the layers arrive as groups without their names. Use it when the file also goes to programs that read pages.
+
+## What comes across
+
+- **Layers and folders:** names (accents and other scripts too), folders holding their layers, each layer's opacity and blend mode, and the folder's.
+- **Shapes:** fills, lines with their width, joins and caps, see-through colours, and linear and radial gradients with see-through stops. A shape with a fill and a line is one path, and shapes with holes are compound paths.
+- **Text** comes as letter outlines, not live text, and a symbol copy is plain shapes.
+- **Pictures:** pixel layers, effects, clipping, masks and bending on bones come in as pictures, with their see-through parts.
+- Hidden layers and folders are left out, like in every export.
 
 ## Good to know
 
-Illustrator keeps its own extra editing data (layer names among it) in files it saves itself; this file doesn't have that, so Save As from Illustrator to make a full Illustrator file.`,
+The layer data is written for Illustrator 2026 (version 30) and read back there. If a file ever opens with the PDF Import window, Illustrator is reading only the PDF part, and the layers come in as groups.`,
   },
   {
     id: 'export-prores',

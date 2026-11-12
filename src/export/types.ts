@@ -141,7 +141,7 @@ export const FORMATS: FormatInfo[] = [
   { id: 'prores', title: 'ProRes video', tag: '.mov 4444', goodFor: 'Video editors (Premiere, Final Cut, Resolve), with a see-through background.', icon: 'film', ext: 'mov', animated: true, alpha: true },
   { id: 'psd', title: 'Photoshop layers', tag: 'PSD', goodFor: 'This frame with every layer kept: names, blend modes, folders.', icon: 'layers', ext: 'psd', animated: false, alpha: true },
   { id: 'pdf', title: 'PDF', tag: 'Vector', goodFor: 'Printing and sharing sharp vector art. A page per frame, layers kept.', icon: 'vector', ext: 'pdf', animated: true, alpha: true },
-  { id: 'ai', title: 'Illustrator', tag: '.ai', goodFor: 'Opens in Adobe Illustrator with every shape editable.', icon: 'vector', ext: 'ai', animated: true, alpha: true },
+  { id: 'ai', title: 'Illustrator', tag: '.ai', goodFor: 'Opens in Adobe Illustrator with real layers and every shape editable.', icon: 'vector', ext: 'ai', animated: true, alpha: true },
   { id: 'interactives', title: 'Interactives', tag: '.flplay', goodFor: 'Drop it into an Interactives page, then play it with clicks, timelines and scripts.', icon: 'play', ext: 'flplay', animated: true, alpha: true },
 ];
 

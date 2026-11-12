@@ -283,6 +283,24 @@ function findLayer(list, name) {
   return null;
 }
 
+/** The layers Illustrator found, indented, top first (the way its Layers panel lists them), as a picture. */
+function layerTreePicture(t, found) {
+  const lines = [{ text: `${t.label}: the layers Illustrator found`, depth: 0 }, { text: ' ', depth: 0 }];
+  const walk = (list, depth) => {
+    for (const l of list) {
+      lines.push({ text: `${depth ? '> ' : ''}${l.name}${l.opacity < 99.5 ? `   ${Math.round(l.opacity)}%` : ''}${l.visible ? '' : '   (hidden)'}`, depth });
+      walk(l.sub ?? [], depth + 1);
+    }
+  };
+  walk(found.layers, 0);
+  const dir = path.join(outDir, 'side-by-side');
+  fs.mkdirSync(dir, { recursive: true });
+  const w = Math.max(280, ...lines.map((l) => l.text.length * 9 + 30 + l.depth * 28));
+  const args = ['-size', `${w}x${lines.length * 21 + 16}`, 'xc:#2b2b2b', '-fill', 'white', '-pointsize', '15'];
+  lines.forEach((l, i) => args.push('-annotate', `+${12 + l.depth * 28}+${22 + i * 21}`, l.text));
+  sh('convert', [...args, path.join(dir, `${t.id.replace(/\W+/g, '-')}-layers.png`)]);
+}
+
 function judge(t, got, entry) {
   const label = t.id + (t.pdfOnly ? ` page ${t.page}` : t.artboard !== undefined ? ` artboard ${t.artboard + 1}` : t.frameIndex ? ` frame ${t.frameIndex + 1}` : '');
   begin(`illustrator ${label}`);
@@ -290,6 +308,7 @@ function judge(t, got, entry) {
   const f = got.found;
   const ex = t.expect;
   note(`artboards ${f.artboards.map((a) => `${a.w}x${a.h}`).join(',')}, layers ${f.layers.map((l) => l.name).join(' | ')}, paths ${f.counts.paths}, compound ${f.counts.compound}, groups ${f.counts.groups}, text ${f.counts.texts}, rasters ${f.counts.rasters}, fills ${JSON.stringify(f.fills)}`);
+  if (!t.pdfOnly && (t.caseId === 'layers-folders' || t.caseId === 'frames-artboards')) layerTreePicture(t, f);
   const boards = t.artboards ?? 1;
   check(f.artboards.length === boards, `expected ${boards} artboard${boards === 1 ? '' : 's'}, found ${f.artboards.length}`);
   const sizeWanted = ex.size ?? null;

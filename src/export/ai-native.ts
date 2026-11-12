@@ -228,7 +228,7 @@ function translate(run: Run, content: string, rootName: string): AiLayer[] {
     out.push(`${p.blend} ${r4(opacity)} 0 0 0 Xy`);
     out.push(`${p.cap ?? 0} J ${p.join ?? 0} j ${r4(p.width ?? 1)} w 10 M []0 d`);
     out.push(`${p.rule ? 1 : 0} XR`);
-    const live = list.filter((s) => s.segs.length > 0);
+    const live = list.filter((s) => s.segs.length > 1);
     if (!live.length) return;
     const paint = (s: Sub): string => (p.fill && p.stroke ? (s.closed ? 'b' : 'B') : p.fill ? (s.closed ? 'f' : 'F') : s.closed ? 's' : 'S');
     const several = live.length > 1;
@@ -597,7 +597,7 @@ function mergeLayers(into: AiLayer[], from: AiLayer[]): void {
 class Out {
   private parts: (string | Uint8Array)[] = [];
   private enc = new TextEncoder();
-  line(s: string) {
+  ln(s: string) {
     this.parts.push(s + '\r\n');
   }
   raw(b: Uint8Array) {
@@ -621,39 +621,39 @@ class Out {
 
 function writeItems(o: Out, items: AiItem[]): void {
   for (const it of items) {
-    if (typeof it === 'string') o.line(it);
+    if (typeof it === 'string') o.ln(it);
     else if (it.kind === 'raster') {
       o.text(it.head.replace(/\n/g, '\r\n'));
       o.raw(it.body);
-      o.line(it.tail.replace(/\n/g, '\r\n'));
+      o.ln(it.tail.replace(/\n/g, '\r\n'));
     } else {
-      o.line('u');
+      o.ln('u');
       writeItems(o, it.items);
-      o.line('U');
-      o.line(`${it.blend} ${r4(it.opacity)} 0 2 0 Xy`);
-      o.line('0 0 Xd');
-      o.line('6 () XW');
+      o.ln('U');
+      o.ln(`${it.blend} ${r4(it.opacity)} 0 2 0 Xy`);
+      o.ln('0 0 Xd');
+      o.ln('6 () XW');
     }
   }
 }
 
 function writeLayer(o: Out, l: AiLayer, index: { n: number }): void {
   const [r, g, b] = LAYER_COLORS[index.n % LAYER_COLORS.length];
-  o.line('%AI5_BeginLayer');
-  o.line(`1 1 1 1 0 0 1 ${index.n++} ${r} ${g} ${b} 0 50 0 Lb`);
-  o.line(`${aiString(l.name)} Ln`);
-  o.line(`${l.children.length ? 1 : 0} AE`);
-  o.line('0 A');
-  o.line('0 Xw');
+  o.ln('%AI5_BeginLayer');
+  o.ln(`1 1 1 1 0 0 1 ${index.n++} ${r} ${g} ${b} 0 50 0 Lb`);
+  o.ln(`${aiString(l.name)} Ln`);
+  o.ln(`${l.children.length ? 1 : 0} AE`);
+  o.ln('0 A');
+  o.ln('0 Xw');
   writeItems(o, l.items);
   for (const c of l.children) writeLayer(o, c, index);
   if (l.opacity < 0.999 || l.blend !== 0) {
-    o.line(`${l.blend} ${r4(l.opacity)} 0 2 0 Xy`);
-    o.line('0 0 Xd');
-    o.line('7 () XW');
+    o.ln(`${l.blend} ${r4(l.opacity)} 0 2 0 Xy`);
+    o.ln('0 0 Xd');
+    o.ln('7 () XW');
   }
-  o.line('LB');
-  o.line('%AI5_EndLayer--');
+  o.ln('LB');
+  o.ln('%AI5_EndLayer--');
 }
 
 function countLayers(l: AiLayer[]): number {
@@ -684,11 +684,15 @@ export function nativeData(writer: PdfWriter, pages: AiPageInput[], title: strin
     else mergeLayers(layers, l);
     x += p.width + gap;
   });
+  // Illustrator wants at least one layer.
+  if (!layers.length) layers = [{ name: 'Layer 1', items: [], children: [], opacity: 1, blend: 0 }];
   const W = Math.max(1, boards[boards.length - 1].x + boards[boards.length - 1].w);
   const H = Math.max(1, ...boards.map((b) => b.h));
   const o = new Out();
   const headLines = [
     '%!PS-Adobe-3.0 ',
+    // The file format version we write. Illustrator only reads the extended lines (the "%_" ones, which hold gradient stops and
+    // artboards) when the header says Illustrator 17 or newer, the way other programs that write .ai files do.
     '%%Creator: Adobe Illustrator(R) 17.0',
     '%%AI8_CreatorVersion: 30.1.0',
     `%%For: (Frameling) ()`,
@@ -720,31 +724,31 @@ export function nativeData(writer: PdfWriter, pages: AiPageInput[], title: strin
     '%AI12_CMSettings: 00.MS',
     '%%EndComments',
   ];
-  for (const l of headLines) o.line(l);
+  for (const l of headLines) o.ln(l);
   const header = new TextEncoder().encode(headLines.join('\r\n') + '\r\n');
-  o.line('%%BeginProlog');
-  o.line('%%EndProlog');
-  o.line('%%BeginSetup');
+  o.ln('%%BeginProlog');
+  o.ln('%%EndProlog');
+  o.ln('%%BeginSetup');
   // The layers are written first so the gradients they use are known.
   const body = new Out();
   const idx = { n: 0 };
   for (const l of layers) writeLayer(body, l, idx);
   if (res.gradients.size) {
-    o.line('%AI5_Begin_NonPrinting');
-    o.line('Np');
-    o.line(`${res.gradients.size} Bn`);
-    for (const e of res.gradients.values()) for (const l of gradientDef(e.name, e.gradient)) o.line(l);
-    o.line('%AI5_End_NonPrinting--');
+    o.ln('%AI5_Begin_NonPrinting');
+    o.ln('Np');
+    o.ln(`${res.gradients.size} Bn`);
+    for (const e of res.gradients.values()) for (const l of gradientDef(e.name, e.gradient)) o.ln(l);
+    o.ln('%AI5_End_NonPrinting--');
   }
-  o.line('%AI9_BeginDocumentData');
-  for (const l of documentData(boards)) o.line('%_' + l);
-  o.line('%AI9_EndDocumentData');
-  o.line('%%EndSetup');
+  o.ln('%AI9_BeginDocumentData');
+  for (const l of documentData(boards)) o.ln('%_' + l);
+  o.ln('%AI9_EndDocumentData');
+  o.ln('%%EndSetup');
   o.raw(body.bytes());
-  o.line('%%PageTrailer');
-  o.line('gsave annotatepage grestore showpage');
-  o.line('%%Trailer');
-  o.line('%%EOF');
+  o.ln('%%PageTrailer');
+  o.ln('gsave annotatepage grestore showpage');
+  o.ln('%%Trailer');
+  o.ln('%%EOF');
   const all = o.bytes();
   const preview = new TextEncoder().encode(`%%BoundingBox: 0 0 ${Math.ceil(W)} ${Math.ceil(H)}\r\n%%HiResBoundingBox: 0 0 ${r4(W)} ${r4(H)}\r\n%%EndData\r\n`);
   const blocks: Uint8Array[] = [preview];

@@ -185,24 +185,33 @@ ILLUSTRATOR_PREFIX=/path/to/wine/prefix xvfb-run -a -s "-screen 0 1600x1000x24" 
 |---|---|
 | `ILLUSTRATOR_PREFIX` | The Wine prefix Illustrator is installed in (the folder with `drive_c`). |
 | `WINE_RUNNER` | The Wine build to run it with (a folder with `bin/wine`). Found from the Lutris game file for the prefix when not set. |
-| `ILLUSTRATOR_STRICT_LAYERS=1` | Count the layer names Illustrator drops as failures (a known gap, see below). |
-| `--only=a,b` | Cases: `layers-folders paths gradients masks text symbols frames scale2-transparent artboards stress kitchen-sink bouncing-ball bouncing-logo`. |
+| `--only=a,b` | Cases: `layers-folders paths gradients gradients-pdf masks text text-big symbols frames frames-files frames-artboards frames-one scale2-transparent artboards stress kitchen-sink bouncing-ball bouncing-logo`. |
 | `--keep-going` | Run even if something already runs in the prefix (never when someone may be using Illustrator). |
 
 It refuses to start when any process has the prefix as its `WINEPREFIX`. Illustrator runs in a Wine virtual desktop
 inside the xvfb screen, started the way Lutris starts it (DXVK in the prefix, `dxgi` native then builtin), with an
 ExtendScript (`illustrator-check.jsx`) passed as the file to open. A screenshot loop presses the two boxes that would
 block it (the "quit unexpectedly" box after an unclean exit, and "You are about to run the script": Continue). The
-script opens each file (a page at a time, through Illustrator's PDF import settings, which it puts back afterwards),
-records artboards, layers, groups, item counts, fills and strokes, exports a PNG and quits. Outputs in `outDir`: the
-`.ai` and PNG files per case, Illustrator's PNGs, `side-by-side/*.png` (Frameling left, Illustrator right) and
-`report.json`. A case fails when the artboard size is wrong, a hidden layer shows, too few paths or groups arrive, or the
-picture is further from Frameling's than the case allows (RMSE). It takes a few minutes; Illustrator takes about 20
-seconds to start.
+script opens each file (through Illustrator's PDF import settings for the page, which it puts back afterwards),
+records artboards, layers (with sublayers and opacity), groups, item counts, fills and strokes, exports a PNG of the
+artboard asked for and quits. Outputs in `outDir`: the `.ai` and PNG files per case, Illustrator's PNGs,
+`side-by-side/*.png` (Frameling left, Illustrator right) and `report.json`. A case fails when the artboard count or size
+is wrong, a layer name, a folder's layers or a layer opacity is not there, a hidden layer shows, too few paths arrive, or
+the picture is further from Frameling's than the case allows (RMSE). It takes about 10 minutes for every case;
+Illustrator takes about 20 seconds to start.
 
-What Illustrator does with the file today: a `.ai` without Illustrator's own private data is read as a PDF import, so
-layer names are dropped (one "Layer 1", with a group per Frameling layer or folder keeping opacity and blend), a file with
-several frames asks "PDF Import Options" for the page, text is outlines and symbols are plain shapes.
+The cases cover the four ways an animation goes into `.ai` (`aiFrames` in the export settings): `frames-one` (this frame),
+`frames-files` (a zip of one file per frame, each opened), `frames-artboards` (one file with an artboard per frame, each
+artboard exported and compared), and `frames` / `gradients-pdf` (pages: a plain PDF, which Illustrator imports as groups
+without layer names, so only the pictures are compared). `text-big` draws text at 4 times the size to show the outlines.
+
+What Illustrator does with the file: it holds Illustrator's own data (the page's `/PieceInfo /Illustrator /Private`
+streams, written by `src/export/ai-native.ts`), so Illustrator opens it as its own document, with layers, sublayers,
+artboards, gradients and opacity as real ones. Without that data (the "Pages" way) Illustrator reads it as a PDF import:
+layer names are dropped (one "Layer 1", with a group per Frameling layer or folder keeping opacity and blend) and a file
+with several pages asks "PDF Import Options". Probing the format: save a small file from Illustrator itself with an
+ExtendScript (`doc.saveAs` with `Compatibility.ILLUSTRATOR17` and `compressed = false`) and read its `AIPrivateData`
+streams; the layer, path, gradient and raster operators in `ai-native.ts` were worked out that way.
 
 ## Effects pixels: scripts/e2e/effects.cjs
 

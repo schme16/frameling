@@ -1,6 +1,7 @@
 /**
  * A small PDF writer for vector frames. Shapes stay vector (fills, strokes, curves), layers become PDF layers
- * (optional content, which Acrobat shows as layers; Illustrator keeps them as groups and drops the names), layer opacity and blend modes become transparency
+ * (optional content, which Acrobat shows as layers, folders holding their layers; Illustrator imports a plain PDF as groups
+ * and drops the names, so the .ai also carries Illustrator's own data, see ai-native.ts), layer opacity and blend modes become transparency
  * groups, and anything PDF can't draw as vector (pixel layers, effects, masks) comes in as a picture with its alpha.
  * One page per frame. Streams are Flate compressed.
  *

@@ -131,3 +131,61 @@ describe('simplify and curve fitting', () => {
     expect(tri).not.toBeNull();
   });
 });
+
+describe('soft edges and dense fitting (text outlines opened large in another program)', () => {
+  // A rounded block 40 wide and 120 tall with soft (anti-aliased) edges, as a canvas draws a letter stem.
+  const W = 70;
+  const H = 150;
+  const inside = (x: number, y: number) => {
+    const cx = Math.max(10.3 + 9, Math.min(50.7 - 9, x));
+    const cy = Math.max(10.2 + 9, Math.min(130.4 - 9, y));
+    return Math.hypot(x - cx, y - cy) <= 9 && x >= 10.3 && x <= 50.7 && y >= 10.2 && y <= 130.4;
+  };
+  const alpha = new Uint8Array(W * H);
+  for (let y = 0; y < H; y++)
+    for (let x = 0; x < W; x++) {
+      let c = 0;
+      for (let j = 0; j < 8; j++) for (let i = 0; i < 8; i++) if (inside(x + (i + 0.5) / 8, y + (j + 0.5) / 8)) c++;
+      alpha[y * W + x] = Math.round((c / 64) * 255);
+    }
+  const mask = alpha.map((a) => (a >= 128 ? 1 : 0));
+  const worst = (loops: number[][], fit: Parameters<typeof fitClosedLoop>[1]) => {
+    let w = 0;
+    for (const l of loops) {
+      const sp = fitClosedLoop(toPts(l), fit)!;
+      for (const p of sampleSubPath(sp, 12)) {
+        // distance to the true edge: nearest of the four straight sides or the corner arcs, found by probing
+        let best = Infinity;
+        for (let a = 0; a < 90; a++) {
+          const dx = Math.cos((a * Math.PI) / 45);
+          const dy = Math.sin((a * Math.PI) / 45);
+          const s0 = inside(p.x, p.y);
+          if (inside(p.x + dx * 4, p.y + dy * 4) === s0) continue;
+          let lo = 0;
+          let hi = 4;
+          for (let k = 0; k < 18; k++) {
+            const m = (lo + hi) / 2;
+            if (inside(p.x + dx * m, p.y + dy * m) === s0) lo = m;
+            else hi = m;
+          }
+          best = Math.min(best, lo);
+        }
+        if (best < Infinity) w = Math.max(w, best);
+      }
+    }
+    return w;
+  };
+
+  it('follows the soft edge to a fraction of a pixel where a hard mask is a half pixel off', () => {
+    const hard = traceMask(mask, W, H, { x0: 0, y0: 0, x1: W - 1, y1: H - 1 });
+    const soft = traceMask(mask, W, H, { x0: 0, y0: 0, x1: W - 1, y1: H - 1 }, { field: alpha, level: 128 });
+    const fine = { simplify: 0.05, tolerance: 0.05, cornerAngle: 58, dense: true };
+    expect(worst(soft, fine)).toBeLessThan(0.25);
+    expect(worst(soft, fine)).toBeLessThan(worst(hard, fine));
+  });
+
+  it('does not bow a long straight edge between two kept points', () => {
+    const soft = traceMask(mask, W, H, { x0: 0, y0: 0, x1: W - 1, y1: H - 1 }, { field: alpha, level: 128 });
+    expect(worst(soft, { simplify: 0.12, tolerance: 0.1, cornerAngle: 58, dense: true })).toBeLessThan(0.35);
+  });
+});
