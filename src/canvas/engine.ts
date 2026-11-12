@@ -25,7 +25,7 @@ import { cssVar, subscribeTheme } from './theme';
 import { getViewSettings, subscribeViewSettings } from './viewSettings';
 import { ghostItems } from './ghost';
 import { drawDecorations } from './decorations';
-import { canvasCamera, canvasLayerCamera, currentView, lookingThrough, stageCamera } from '../camera/ops';
+import { canvasCamera, canvasLayerCamera, currentView, lookingThrough, overlayCamera, stageCamera } from '../camera/ops';
 import { cameraFrameCorners, matrixScale } from '../core/camera';
 import { invert, applyMat, type Mat } from '../core/symbols';
 import { screenToDoc, stageDeviceRect, wheelZoomFactor, zoomAbout, type Pt } from './view';
@@ -370,16 +370,16 @@ export class CanvasEngine {
     drawDecorations(g, this.ctx);
     g.restore();
     const tool = this.gesture?.kind === 'tool' ? this.gesture.tool : getTool(ui.tool);
+    // What is aimed at, and drawn over, the picked layer goes through that layer's own camera speed (a layer at another
+    // depth): the tool's marks, guides, grid, the selection edge and the handles. The page frame stays with the plain camera.
+    const lc = cam ? overlayCamera(STAGE_TOOLS.has(tool?.id ?? ui.tool)) : null;
+    const layerSpace = () => {
+      g.setTransform(rect.w / doc.width, 0, 0, rect.h / doc.height, rect.x, rect.y);
+      if (lc) g.transform(lc[0], lc[1], lc[2], lc[3], lc[4], lc[5]);
+    };
     if (tool?.overlay && !(this.gesture?.kind === 'pan')) {
       g.save();
-      stageSpace();
-      // The tool's own marks sit on the picked layer, which may move at another camera speed.
-      const lc = cam && !STAGE_TOOLS.has(tool.id) ? canvasLayerCamera() : null;
-      if (cam && lc) {
-        const back = invert(cam);
-        g.transform(back[0], back[1], back[2], back[3], back[4], back[5]);
-        g.transform(lc[0], lc[1], lc[2], lc[3], lc[4], lc[5]);
-      }
+      layerSpace();
       const bm = overlayMatrix(doc, ui.activeLayerId, ui.frame, tool.id);
       if (bm) g.transform(bm[0], bm[1], bm[2], bm[3], bm[4], bm[5]);
       tool.overlay(g, this.ctx);
@@ -388,7 +388,7 @@ export class CanvasEngine {
     const extra = ctl.getStageOverlays();
     if (extra.length) {
       g.save();
-      stageSpace();
+      layerSpace();
       for (const fn of extra) fn(g, ui.zoom);
       g.restore();
     }
@@ -499,7 +499,7 @@ export class CanvasEngine {
     const { zoom, panX, panY } = store().get().ui;
     const p = screenToDoc({ zoom, panX, panY }, e.clientX - this.bounds.left, e.clientY - this.bounds.top);
     // Through the camera, the screen shows camera space: tools still work in stage space.
-    const cam = forTool && !this.stageToolNow() ? canvasLayerCamera() : canvasCamera()?.matrix;
+    const cam = forTool ? overlayCamera(this.stageToolNow()) : canvasCamera()?.matrix;
     return cam ? applyMat(invert(cam), p.x, p.y) : p;
   }
 
@@ -556,12 +556,12 @@ export class CanvasEngine {
     ctl.runPointerDownHooks(this.toDocPoint(e), penEraser ? 'eraser' : ui.tool);
 
     // Handles that work with any tool (vanishing points) come before the tool.
-    const grab = !penEraser && !ui.playing ? ctl.grabAt(this.toDocPoint(e), ui.zoom) : null;
+    const grab = !penEraser && !ui.playing ? ctl.grabAt(this.toDocPoint(e, true), ui.zoom) : null;
     if (grab) {
       e.preventDefault();
       this.els.root.setPointerCapture(e.pointerId);
       this.gesture = { kind: 'grab', pointerId: e.pointerId, grab };
-      grab.down(this.toDocPoint(e));
+      grab.down(this.toDocPoint(e, true));
       this.updateCursor();
       this.invalidate(false, true);
       return;
@@ -603,7 +603,7 @@ export class CanvasEngine {
       if (ui.playing) return;
       const ptr = this.toPointer(e);
       ctl.setHover({ x: ptr.x, y: ptr.y });
-      const hg = ctl.grabAt(this.toDocPoint(e), ui.zoom);
+      const hg = ctl.grabAt(this.toDocPoint(e, true), ui.zoom);
       this.grabHover = hg ? (hg.cursor ?? 'move') : null;
       const tool = this.currentTool();
       tool?.hover?.(ptr, this.ctx);
@@ -613,7 +613,7 @@ export class CanvasEngine {
     }
     if (e.pointerId !== g.pointerId) return;
     if (g.kind === 'grab') {
-      g.grab.move(this.toDocPoint(e), e.shiftKey);
+      g.grab.move(this.toDocPoint(e, true), e.shiftKey);
       this.invalidate(false, true);
       return;
     }
@@ -647,7 +647,7 @@ export class CanvasEngine {
       ctl.setPredicted([]);
       g.tool.up?.(this.toPointer(e), this.ctx);
       this.restoreTool(g);
-    } else if (g.kind === 'grab') g.grab.up(this.toDocPoint(e));
+    } else if (g.kind === 'grab') g.grab.up(this.toDocPoint(e, true));
     this.lastPtr = null;
     this.updateCursor();
     this.invalidate(false, true);

@@ -1,11 +1,11 @@
 // Preferences > Workspaces: switch between the workspaces that come with Frameling and your own, save the layout you
 // have, rename, reorder and delete yours, and share them as files or text.
 import { useState } from 'react';
-import { applyWorkspace, currentWorkspace, deleteWorkspace, dock, dockEverythingBack, listWorkspaces, MAX_SAVED, moveWorkspace, renameWorkspace, resetLayout, saveWorkspace, workspacesFull } from './dock';
+import { applyWorkspace, currentWorkspace, deleteWorkspace, dock, dockEverythingBack, listWorkspaces, MAX_SAVED, moveWorkspace, renameWorkspace, saveWorkspace, workspacesFull } from './dock';
 import { floatChrome, setFloatChrome, type FloatChrome } from './DockFloats';
 import { Icon } from './icons';
 import { toast } from './toast';
-import { copyWorkspaceText, exportWorkspaceFile, importWorkspaceFile, importWorkspaceFromText } from './workspaceActions';
+import { copyWorkspaceText, exportWorkspaceFile, importWorkspaceFile, importWorkspaceFromText, resetLayoutAndAsk } from './workspaceActions';
 
 export function WorkspacesPage() {
   dock.use((d) => d);
@@ -195,7 +195,7 @@ export function WorkspacesPage() {
       </div>
 
       <div className="ui-pref-foot">
-        <button type="button" className="ui-btn" onClick={() => (resetLayout(), toast('Panels are back where they started.', { kind: 'success' }))}>
+        <button type="button" className="ui-btn" onClick={() => resetLayoutAndAsk()}>
           Reset layout
         </button>
         <button type="button" className="ui-btn" disabled={!dock.get().layout.floats.length} onClick={() => dockEverythingBack()}>

@@ -15,6 +15,8 @@ import { resetStore, store } from '../../src/core/store';
 import { _resetFeaturesForTests, isFeatureOn, offFeatureOpening, offFeaturesUsedBy, registerFeatures, setFeatureOn } from '../../src/features/host';
 import { offerTurnOn, offerTurnOnForFile } from '../../src/features/prompt';
 import { loadFile, saveFile } from '../../src/io/file';
+import { resolveMenus, type MenuItem } from '../../src/ui/menus';
+import { paletteItems } from '../../src/ui/palette';
 import { timelineParts } from '../../src/timeline/slots';
 import { PLANNED_FEATURES } from '../../src/features/planned';
 
@@ -171,5 +173,32 @@ describe('defaults', () => {
   it('every feature, switchable or planned, is on when nothing was ever chosen', () => {
     for (const f of [...PLANNED_FEATURES, audioFeature, flowFeature, interactivesFeature, lipsyncFeature]) expect(isFeatureOn(f.id), f.id).toBe(true);
     expect(PLANNED_FEATURES.map((f) => f.id)).toEqual(expect.arrayContaining(['camera', 'godot-export']));
+  });
+});
+
+describe('Export for Interactives goes with the feature', () => {
+  const flat = (items: MenuItem[]): string[] => items.flatMap((i) => (i.kind === 'command' ? [i.command.id] : i.kind === 'submenu' ? flat(i.items) : []));
+  const inMenus = () => resolveMenus().flatMap((m) => flat(m.items)).includes('file.exportInteractives');
+
+  it('is a command of the feature, so the menu and the palette lose it while it is off', () => {
+    expect(getCommand('file.exportInteractives')).toBeTruthy();
+    expect(inMenus()).toBe(true);
+    expect(paletteItems().some((i) => i.kind === 'command' && i.id === 'file.exportInteractives')).toBe(true);
+    setFeatureOn('interactives', false, { remember: false });
+    expect(getCommand('file.exportInteractives')).toBeUndefined();
+    expect(inMenus()).toBe(false);
+    expect(paletteItems().some((i) => i.kind === 'command' && i.id === 'file.exportInteractives')).toBe(false);
+    setFeatureOn('interactives', true, { remember: false });
+    expect(getCommand('file.exportInteractives')).toBeTruthy();
+    expect(inMenus()).toBe(true);
+  });
+
+  it('is left out of the formats in the Export dialog while it is off', async () => {
+    const { availableFormats } = await import('../../src/export/ExportDialog');
+    expect(availableFormats().some((f) => f.id === 'interactives')).toBe(true);
+    setFeatureOn('interactives', false, { remember: false });
+    expect(availableFormats().some((f) => f.id === 'interactives')).toBe(false);
+    expect(availableFormats().length).toBeGreaterThan(5);
+    setFeatureOn('interactives', true, { remember: false });
   });
 });

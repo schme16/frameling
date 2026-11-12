@@ -1,7 +1,8 @@
 // End-to-end check of pixel drawing through a turned and zoomed camera, in the real app with real mouse events.
 // Every shape and stroke is aimed at the middle of art pixels (worked out through the camera), and the pixels that
 // land in the layer must be exactly the cells the same drawing makes with no camera. It also reads the screen back
-// at those cells to prove the picture and the pointer agree, and does the same on a layer at another depth.
+// at those cells to prove the picture and the pointer agree, and does the same on a layer at another depth. It also
+// checks the selection edge, the vanishing point handle and the eyedropper through the same camera.
 //
 //   npm run build
 //   xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/pixel-camera.cjs [outDir]
@@ -210,6 +211,74 @@ async function scenario(name, view, depth) {
   fs.writeFileSync(path.join(outDir, `${name.replace(/\W+/g, '-')}.png`), (await win.webContents.capturePage()).toPNG());
 }
 
+// What is drawn over the picked layer and what is read from it follows the layer's own camera speed: the selection
+// edge (marching ants), the vanishing point handle and the eyedropper. Each is aimed at through the same matrix the
+// picture uses, so on a far layer they land on the art and not on the plain camera's idea of it.
+async function overlays(name, view, depth) {
+  begin(name + ' (overlays, handles, eyedropper)');
+  const layerName = await camera(view, depth);
+  await ev(PAGE);
+  await sleep(400);
+  const slug = name.replace(/\W+/g, '-');
+  // Some art to look at and pick from: a filled rectangle covering cells 11..18 by 11..16.
+  await drag('rect', [[11, 11], [18, 16]]);
+  // Eyedropper: click the middle of a cell inside the rectangle. Both wells start white, so whichever it fills must change.
+  await ev(`window.__frameling.store().setUi({ color: '#ffffff', fillColor: '#ffffff', strokeOn: true })`);
+  await drag('eyedropper', [[14, 13], [14, 13]]);
+  const ui = await ev(`(() => { const u = window.__frameling.store().get().ui; return [u.color, u.fillColor]; })()`);
+  check(ui.includes('#2060e0'), 'eyedropper: picked ' + ui.join(' / ') + ' from the middle of a blue cell');
+  note('eyedropper: ' + ui.join(' / '));
+  // Just outside the rectangle there is nothing to pick, and the wells stay as they are.
+  for (const c of [[8, 13], [21, 13], [14, 9], [14, 19]]) {
+    await ev(`window.__frameling.store().setUi({ color: '#ffffff', fillColor: '#ffffff', strokeOn: true })`);
+    await drag('eyedropper', [c, c]);
+    const w = await ev(`(() => { const u = window.__frameling.store().get().ui; return [u.color, u.fillColor]; })()`);
+    check(w[0] === '#ffffff' && w[1] === '#ffffff', 'eyedropper: picked ' + w.join(' / ') + ' from empty cell ' + c);
+  }
+  // Selection edge: marquee the same cells, then look for the black dashes of the ants where the edge is on screen.
+  await drag('pixel-select', [[11, 11], [18, 16]]);
+  await sleep(500);
+  const edge = [[88, 108], [88, 124], [152, 116], [100, 88], [140, 88], [100, 136]];
+  const png = await win.webContents.capturePage();
+  const bmp = png.toBitmap();
+  const size = png.getSize();
+  const scale = size.width / (await ev('window.innerWidth'));
+  const dark = (x, y) => {
+    const i = (Math.round(y * scale) * size.width + Math.round(x * scale)) * 4;
+    return bmp[i] < 14 && bmp[i + 1] < 14 && bmp[i + 2] < 14;
+  };
+  let hit = 0;
+  for (const [sx, sy] of edge) {
+    const [wx, wy] = await ev(`window.__px.toWindow(${sx}, ${sy})`);
+    let found = false;
+    for (let dy = -4; dy <= 4 && !found; dy++) for (let dx = -4; dx <= 4 && !found; dx++) found = dark(wx + dx, wy + dy);
+    if (found) hit++;
+  }
+  check(hit >= 5, 'selection edge: black dashes at ' + hit + ' of ' + edge.length + ' edge points through the layer camera');
+  fs.writeFileSync(path.join(outDir, slug + '-ants.png'), png.toPNG());
+  await ev(`window.__frameling.run('select.none')`);
+  // Vanishing point handle: grab it where the picture shows it and move it to another spot.
+  await ev(`(() => { const F = window.__frameling; F.store().update('persp', (d) => { d.perspective = { points: [{ x: 20, y: 20 }] }; }); F.anim.view({ perspective: true }); F.store().setUi({ tool: 'rect' }); })()`);
+  await sleep(300);
+  const [fx, fy] = await ev('window.__px.toWindow(20, 20)');
+  const [tx, ty] = await ev('window.__px.toWindow(34, 28)');
+  send({ type: 'mouseMove', x: fx, y: fy });
+  await sleep(50);
+  const cursor = await ev(`document.querySelector('.cv-root').style.cursor`);
+  check(cursor === 'move', 'handle: the pointer over the vanishing point shows the move cursor, got ' + cursor);
+  send({ type: 'mouseDown', x: fx, y: fy, button: 'left', clickCount: 1 });
+  for (let k = 1; k <= 6; k++) {
+    send({ type: 'mouseMove', x: Math.round(fx + ((tx - fx) * k) / 6), y: Math.round(fy + ((ty - fy) * k) / 6), modifiers: ['leftButtonDown'] });
+    await sleep(15);
+  }
+  send({ type: 'mouseUp', x: tx, y: ty, button: 'left', clickCount: 1 });
+  await sleep(200);
+  const pt = await ev(`window.__frameling.store().get().doc.perspective.points[0]`);
+  check(Math.abs(pt.x - 34) <= 1.5 && Math.abs(pt.y - 28) <= 1.5, 'handle: vanishing point moved to ' + pt.x + ',' + pt.y + ', wanted about 34,28');
+  note('vanishing point now ' + pt.x + ',' + pt.y);
+  void layerName;
+}
+
 // The reference: the same drag with the camera off (plain pixel grid, same cells).
 async function refShape(layerName, tool, pts) {
   const before = new Set(await ev(`window.__px.cells(${JSON.stringify(layerName)})`));
@@ -247,6 +316,8 @@ async function refShape(layerName, tool, pts) {
     await scenario('turned 30 degrees and zoomed 1.5', { x: 128, y: 128, zoom: 1.5, rotation: 30 }, 0);
     await scenario('turned 90 degrees', { x: 128, y: 128, zoom: 1, rotation: 90 }, 0);
     await scenario('turned 25 degrees on a far layer (depth 1)', { x: 140, y: 120, zoom: 2, rotation: 25 }, 1);
+    await overlays('turned 30 degrees and zoomed 1.5', { x: 128, y: 128, zoom: 1.5, rotation: 30 }, 0);
+    await overlays('turned 25 degrees on a far layer (depth 1)', { x: 140, y: 120, zoom: 2, rotation: 25 }, 1);
   } catch (e) {
     begin('harness').failures.push(String(e?.stack ?? e));
   }

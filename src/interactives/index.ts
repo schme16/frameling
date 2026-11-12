@@ -1,10 +1,21 @@
 // Edit in Frameling: open the drawing inside an Interactives package, and save it back there. A feature that can be
-// turned off (Preferences > Features). Exporting for Interactives stays with the other exports.
+// turned off (Preferences > Features). Its export sits with the other exports in the dialog, and goes away with the feature.
 import type { Command, HelpTopic } from '../core/registry';
+import { openExportDialog } from '../export/open';
 import { defineFeature } from '../features/feature';
 import { currentLink, interactivesChoices, isPlayablePath, openPlayable, registerRoundTrip, toggleUpdate, updatePlayable } from './roundtrip';
 
 const commands: Command[] = [
+  {
+    id: 'file.exportInteractives',
+    label: 'Export for Interactives...',
+    category: 'File',
+    description: 'Make one file to drop onto an Interactives page, with your clips and markers in it.',
+    help: 'export-interactives',
+    keywords: ['interactives', 'flplay', 'package', 'playable', 'web', 'course', 'layer'],
+    global: true,
+    run: () => openExportDialog('interactives'),
+  },
   {
     id: 'file.openPlayable',
     label: 'Open Interactives file...',
@@ -77,7 +88,7 @@ Other apps on your computer can ask Frameling to open a file with a **frameling:
 export const interactivesFeature = defineFeature({
   id: 'interactives',
   name: 'Interactives',
-  about: 'Open an Interactives file (.flplay) to change the drawing inside it, and save your changes back into it.',
+  about: 'Export for Interactives (.flplay), open one to change the drawing inside it, and save your changes back into it.',
   optional: true,
   commands,
   help,

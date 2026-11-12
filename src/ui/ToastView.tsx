@@ -33,6 +33,19 @@ function ToastCard({ t }: { t: ToastItem }) {
           {t.action.label}
         </button>
       )}
+      {t.decline && (
+        <button
+          type="button"
+          className="ui-toast-action"
+          onClick={() => {
+            const run = t.decline!.run;
+            dismissToast(t.id);
+            run();
+          }}
+        >
+          {t.decline.label}
+        </button>
+      )}
       <button type="button" className="ui-icon-btn ui-toast-x" aria-label="Dismiss message" onClick={() => dismissToast(t.id)}>
         <Icon name="close" size={14} />
       </button>

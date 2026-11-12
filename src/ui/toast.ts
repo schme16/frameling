@@ -14,6 +14,8 @@ export interface ToastOptions {
   kind?: ToastKind;
   /** A button on the toast, usually "Undo". Pressing it dismisses the toast. */
   action?: ToastAction;
+  /** A second button beside `action`, for a question ("Yes" / "No"). Pressing it dismisses the toast. */
+  decline?: ToastAction;
   /** How long it stays, in ms. Default 4000, or 7000 when there's an action. 0 keeps it until dismissed. */
   duration?: number;
   /** A tiny Quill on the toast doing this. Refusals and errors get `oops` unless this says otherwise; null means none. */
@@ -29,6 +31,7 @@ export interface ToastItem {
   message: string;
   kind: ToastKind;
   action?: ToastAction;
+  decline?: ToastAction;
   duration: number;
   quill: Script | null;
   farewell?: boolean;
@@ -41,7 +44,7 @@ const MAX_VISIBLE = 4;
 
 export function toast(message: string, opts: ToastOptions = {}): number {
   const id = nextId++;
-  const item: ToastItem = { id, message, kind: opts.kind ?? 'info', action: opts.action, duration: opts.duration ?? (opts.action ? 7000 : 4000), quill: opts.quill !== undefined ? opts.quill : quillFor(opts.kind ?? 'info'), farewell: opts.farewell };
+  const item: ToastItem = { id, message, kind: opts.kind ?? 'info', action: opts.action, decline: opts.decline, duration: opts.duration ?? (opts.action ? 7000 : 4000), quill: opts.quill !== undefined ? opts.quill : quillFor(opts.kind ?? 'info'), farewell: opts.farewell };
   toasts.set((list) => [...list, item].slice(-MAX_VISIBLE));
   const sound = opts.sound !== undefined ? opts.sound : opts.farewell ? 'goodbye' : item.kind === 'warn' || item.kind === 'error' ? 'refused' : null;
   if (sound) playCue(sound);

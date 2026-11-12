@@ -312,6 +312,8 @@ Open **Preferences** (**Ctrl+,**) and choose **Behaviour**. Every choice is list
 
 Open **Preferences** (**Ctrl+,**) and choose **Features**, or search the command palette (**Ctrl+K**) for **Features**. Each feature has a switch and a line about what it does. Changes happen at once. You never need to restart.
 
+For example, turning **Interactives** off also takes **Export for Interactives** out of the Export window, the File menu and the command palette. Turn it back on and it returns.
+
 ## Your drawings are safe
 
 Turning a feature off never changes a file. If a drawing uses a feature that is off, Frameling asks when you open it: **Turn it on?** Say yes and everything works as before. Say no and the drawing still opens, still draws the same, and keeps all of its data, so you can turn the feature on later and carry on.

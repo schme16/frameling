@@ -123,6 +123,15 @@ export function canvasLayerCamera(s: State = store().get()): Mat | null {
   return layerCameraMatrix(s.doc, layer, cam.view) ?? [1, 0, 0, 1, 0, 0];
 }
 
+/**
+ * The camera for things aimed at, or drawn over, the picked layer: its own matrix (a layer at another depth moves at
+ * its own speed), or the plain camera for the stage tools, which work on the stage as a whole. Null with no camera.
+ * Pointer aiming, the tool overlay, the stage overlays (guides, grid, selection edge) and the grab handles all use it.
+ */
+export function overlayCamera(stageTool: boolean, s: State = store().get()): Mat | null {
+  return stageTool ? (canvasCamera(s)?.matrix ?? null) : canvasLayerCamera(s);
+}
+
 /** True when the playhead is on a camera key's first frame (where changes go to that key, not a new one). */
 export function onCameraKey(s: State = store().get()): boolean {
   const cam = stageCamera(s.doc);
