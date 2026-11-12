@@ -1,8 +1,7 @@
 // Bringing an Aseprite file in: as a new drawing, or added to the open one. Each says what it could not carry over.
-import { choose, registerChoice } from '../core/choices';
 import { store } from '../core/store';
 import { baseName, desktop, stripExt } from '../io/desktop';
-import { askAboutUnsavedChanges, registerOpener } from '../io/document';
+import { askAboutUnsavedChanges } from '../io/document';
 import { notify } from '../io/notify';
 import { pickUpload } from '../platform';
 import { setDocPalette } from '../pixel/commands';
@@ -14,23 +13,8 @@ import { showWhatChanged } from './WhatChanged';
 import { moment } from '../pixel/moments';
 import { line } from '../ui/mascot/lines';
 
-export const ASE_EXT = /\.(aseprite|ase)$/i;
-export const ASE_FILTERS = [{ name: 'Aseprite files', extensions: ['aseprite', 'ase'] }];
-
-export type DropChoice = 'open' | 'add';
-
-registerChoice<DropChoice>({
-  id: 'aseprite.drop',
-  title: 'An Aseprite file dropped on the window',
-  question: 'You dropped an Aseprite file. What should Frameling do with it?',
-  category: 'Files',
-  default: 'open',
-  help: 'Open it as a new drawing, or add its layers and frames to the drawing you have open. File > Import > Aseprite file does the adding any time.',
-  options: [
-    { value: 'open', label: 'Open it as a new drawing', detail: 'Asks to save changes to the open drawing first.' },
-    { value: 'add', label: 'Add it to this drawing', detail: 'Its layers go on top, its tiles and colours join yours.' },
-  ],
-});
+import { choose } from '../core/choices';
+import { ASE_FILTERS, type DropChoice } from './drop';
 
 const plural = (n: number, one: string, many = one + 's') => `${n} ${n === 1 ? one : many}`;
 
@@ -135,44 +119,18 @@ export const pickAndOpen = () => pick(openAsepriteBytes, 'Open an Aseprite file'
 export const pickAndAdd = () => pick(addAsepriteBytes, 'Add an Aseprite file to this drawing');
 export const pickForPalette = () => pick(paletteFromAsepriteBytes, 'Use the palette from an Aseprite file');
 
-/** Dropping Aseprite files on the window: open or add, as remembered. */
-export function installAsepriteDrop(target: Window = window): () => void {
-  const over = (e: DragEvent) => {
-    if (e.defaultPrevented) return;
-    const items = e.dataTransfer?.items;
-    if (!items || ![...items].some((i) => i.kind === 'file' && (i.type === '' || i.type === 'application/x-aseprite'))) return;
-    e.preventDefault();
-    if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
-  };
-  const drop = (e: DragEvent) => {
-    if (e.defaultPrevented) return;
-    const files = [...(e.dataTransfer?.files ?? [])].filter((f) => ASE_EXT.test(f.name));
-    if (!files.length) return;
-    e.preventDefault();
-    void (async () => {
-      // Swatch files go to the palette without asking; drawings ask open or add.
-      const all = await Promise.all(files.map(async (f) => ({ f, bytes: new Uint8Array(await f.arrayBuffer()) })));
-      const drawings = all.filter((a) => !isAdobeSwatches(a.bytes));
-      for (const a of all) if (isAdobeSwatches(a.bytes)) swatchesIntoPalette(a.bytes, a.f.name);
-      if (!drawings.length) return;
-      const how = await choose<DropChoice>('aseprite.drop');
-      for (const { f, bytes } of drawings) {
-        if (how === 'add') await addAsepriteBytes(bytes, f.name);
-        else if (!(await openAsepriteBytes(bytes, f.name))) break;
-        // Only the first one can open as the drawing; the rest would replace it.
-        if (how === 'open') break;
-      }
-    })();
-  };
-  target.addEventListener('dragover', over);
-  target.addEventListener('drop', drop);
-  return () => {
-    target.removeEventListener('dragover', over);
-    target.removeEventListener('drop', drop);
-  };
-}
-
-/** Double-clicked files, File > Open and Open recent hand Aseprite files over by path. */
-export function registerAsepriteOpener(): void {
-  registerOpener((p) => ASE_EXT.test(p), openAsepriteBytes);
+/** Aseprite files dropped on the window (src/aseprite/index.ts listens): open or add, as remembered. */
+export async function dropAseprite(files: File[]): Promise<void> {
+  // Swatch files go to the palette without asking; drawings ask open or add.
+  const all = await Promise.all(files.map(async (f) => ({ f, bytes: new Uint8Array(await f.arrayBuffer()) })));
+  const drawings = all.filter((a) => !isAdobeSwatches(a.bytes));
+  for (const a of all) if (isAdobeSwatches(a.bytes)) swatchesIntoPalette(a.bytes, a.f.name);
+  if (!drawings.length) return;
+  const how = await choose<DropChoice>('aseprite.drop');
+  for (const { f, bytes } of drawings) {
+    if (how === 'add') await addAsepriteBytes(bytes, f.name);
+    else if (!(await openAsepriteBytes(bytes, f.name))) break;
+    // Only the first one can open as the drawing; the rest would replace it.
+    if (how === 'open') break;
+  }
 }
