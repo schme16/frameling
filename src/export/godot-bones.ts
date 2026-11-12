@@ -520,22 +520,8 @@ function build(o: BonesSceneInput): { text: string; shaders: Set<NativeBlend> } 
       put(`[node name=${gdString(n)} type="Sprite2D" parent=${gdString(at(host))}]`, ...zl, ...hidden, ...fade, ...materialFor(blend, under(host, n)), `position = ${v2(t0.x / bk(t0), t0.y / bk(t0))}`, ...shrink(t0), `texture = ${tex(t0.path)}`, 'centered = false', '');
     });
 
-    if (held && grouped) {
-      const write = (item: GroupItem) => {
-        if ('part' in item) nodes.push(...(held.part.get(item.part) ?? []));
-        else if ('bone' in item) {
-          nodes.push(...(held.bone.get(item.bone) ?? []));
-          for (const c of grouped.kids.get(item.bone) ?? []) write(c);
-        } else {
-          nodes.push(...(held.skel.get(item.rig) ?? []));
-          for (const c of grouped.kids.get(item.rig) ?? []) write(c);
-        }
-      };
-      for (const item of grouped.top) write(item);
-    }
-
     // Symbols with skeletons of their own: a node moved by the instance, holding its own rig and parts.
-    for (const inst of sc.nested) {
+    const emitNested = (inst: NestedInstance) => {
       // On a layer that follows a bone the copy sits under that bone: its matrix is taken from the bone's rest place.
       const boneHost = inst.bind ? bonePath.get(inst.bind.bone) : undefined;
       const host = boneHost ?? parentOf(inst.layer);
@@ -554,8 +540,11 @@ function build(o: BonesSceneInput): { text: string; shaders: Set<NativeBlend> } 
       // A symbol that fades is a CanvasGroup when it can be, so it fades as one picture and overlapping parts don't show
       // through each other (see groupLayout for when it can't).
       const fades = inst.at.some((s) => s && inst.look.opacity * s.opacity < 1 - 1e-6);
-      const layout = fades && inst.look.blend === 'mix' && (inherit?.blend ?? 'mix') === 'mix' ? groupLayout(inst.scope) : undefined;
-      const group = !!layout?.ok;
+      // Inside a group its symbols are written in tree order too (no z_index), so a symbol holding symbols fades as one.
+      // Godot draws a group nested in a group wrong (a grey box), so a fade inside a group stays plain and fades part by part.
+      const wantGroup = fades && !grouped && inst.look.blend === 'mix' && (inherit?.blend ?? 'mix') === 'mix';
+      const layout = wantGroup || grouped ? groupLayout(inst.scope) : undefined;
+      const group = wantGroup && !!layout?.ok;
       // A group's own fade is self_modulate: plain modulate would fade every part again.
       const fadeProp = group ? 'self_modulate' : 'modulate';
       const tinted = inst.at.some((s) => s?.tint);
@@ -563,15 +552,31 @@ function build(o: BonesSceneInput): { text: string; shaders: Set<NativeBlend> } 
       if (tint) tints.push(tint);
       nodes.push(
         `[node name=${gdString(n)} type=${gdString(group ? 'CanvasGroup' : 'Node2D')} parent=${gdString(at(host))}]`,
-        `z_index = ${Math.max(-4096, Math.min(4096, inst.z * unit))}`,
+        ...(grouped ? [] : [`z_index = ${Math.max(-4096, Math.min(4096, inst.z * unit))}`]),
         ...(inst.at[0] ? [] : ['visible = false']),
         ...(op < 1 ? [`${fadeProp} = Color(1, 1, 1, ${gdNum(op)})`] : []),
         `transform = ${xf(m)}`,
         '',
       );
-      const nodesOf = emit(inst.scope, path, zUnit(inst.scope), { blend: inst.look.blend !== 'mix' ? inst.look.blend : (inherit?.blend ?? 'mix'), tint: tint ?? inherit?.tint }, () => path, group ? layout : undefined);
+      const nodesOf = emit(inst.scope, path, zUnit(inst.scope), { blend: inst.look.blend !== 'mix' ? inst.look.blend : (inherit?.blend ?? 'mix'), tint: tint ?? inherit?.tint }, () => path, layout?.ok ? layout : undefined);
       res.nested.push({ inst, path, nodes: nodesOf, tint, group, toBone });
+    };
+    if (!grouped) sc.nested.forEach(emitNested);
+    if (held && grouped) {
+      const write = (item: GroupItem) => {
+        if ('nested' in item) emitNested(item.nested);
+        else if ('part' in item) nodes.push(...(held.part.get(item.part) ?? []));
+        else if ('bone' in item) {
+          nodes.push(...(held.bone.get(item.bone) ?? []));
+          for (const c of grouped.kids.get(item.bone) ?? []) write(c);
+        } else {
+          nodes.push(...(held.skel.get(item.rig) ?? []));
+          for (const c of grouped.kids.get(item.rig) ?? []) write(c);
+        }
+      };
+      for (const item of grouped.top) write(item);
     }
+
     return res;
   };
 
