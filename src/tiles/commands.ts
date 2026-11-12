@@ -37,7 +37,7 @@ export const tileCommands: Command[] = [
     checked: () => getTileUi().tileMode,
     run: () => {
       setTileUi({ tileMode: !getTileUi().tileMode });
-      if (isAutoFit()) fit();
+      if (isAutoFit()) fit(true);
     },
   },
   {
