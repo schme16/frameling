@@ -163,12 +163,19 @@ export function bakeScales(top: BonesScope, doc: { width: number; height: number
 // ---------------------------------------------------------------- notes
 
 /** What happened to the look of the layers, in plain words, for the export dialog and the help topic. */
+export type BonesNoteLines = { native: string[]; baked: string[]; skipped: string[]; fades: string[]; tips: string[] };
+
+/** Said once when the scene has a faded symbol drawn as a CanvasGroup. */
+export const FADE_TIP = "Faded symbols look best with Godot's Forward+ or Mobile renderer. On Compatibility (web exports), they come out a little darker.";
+
 export class BonesNotes {
   native = new Set<string>();
   baked = new Map<string, Set<string>>();
   skipped = new Map<string, Set<string>>();
   /** Faded symbols that fade part by part instead of as one picture: "Symbol on Layer" -> why. */
   fades = new Map<string, string>();
+  /** A faded symbol became a CanvasGroup (Godot's Compatibility renderer draws those a little darker). */
+  groups = false;
 
   fadeFallback(symbol: string, layer: string, why: string): void {
     this.fades.set(`${symbol} on ${layer}`, why);
@@ -187,9 +194,9 @@ export class BonesNotes {
   }
 
   /** Short lines: [what, ...] each with the layer names. */
-  lines(): { native: string[]; baked: string[]; skipped: string[]; fades: string[] } {
+  lines(): BonesNoteLines {
     const list = (m: Map<string, Set<string>>) => [...m].map(([what, layers]) => `${what} on ${[...layers].join(', ')}`);
-    return { native: [...this.native], baked: list(this.baked), skipped: list(this.skipped), fades: [...this.fades].map(([what, why]) => `${what} (${why})`) };
+    return { native: [...this.native], baked: list(this.baked), skipped: list(this.skipped), fades: [...this.fades].map(([what, why]) => `${what} (${why})`), tips: this.groups ? [FADE_TIP] : [] };
   }
 }
 
@@ -662,7 +669,7 @@ export function symbolDropsHiddenLayers(doc: Doc, id: Id): boolean {
  * What the export dialog says about the look of the layers, without building any pictures: the effects that get baked,
  * what Godot does itself and what can't go. Cheap enough to run on every render of the dialog.
  */
-export function bonesNotes(doc: Doc): { native: string[]; baked: string[]; skipped: string[]; fades: string[] } {
+export function bonesNotes(doc: Doc): BonesNoteLines {
   const notes = new BonesNotes();
   const rigged = riggedSymbols(doc);
   const seen = new Set<Id>();
@@ -705,7 +712,10 @@ export function bonesNotes(doc: Doc): { native: string[]; baked: string[]; skipp
                     }
                     const why = under ? 'Godot cannot put one fading group inside another, so it fades part by part inside the faded symbol around it' : groupBlocker(sc, look.blend, inherit);
                     if (why) notes.fadeFallback(doc.symbols?.[s.symbolId]?.name ?? 'Symbol', layer.name, why);
-                    else group = true;
+                    else {
+                      group = true;
+                      notes.groups = true;
+                    }
                   }
                 }
                 const inside = under || (group ? (drawn ? 'drawn' : 'plain') : false);
