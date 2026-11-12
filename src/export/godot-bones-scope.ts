@@ -163,6 +163,12 @@ export class BonesNotes {
   native = new Set<string>();
   baked = new Map<string, Set<string>>();
   skipped = new Map<string, Set<string>>();
+  /** Faded symbols that fade part by part instead of as one picture: "Symbol on Layer" -> why. */
+  fades = new Map<string, string>();
+
+  fadeFallback(symbol: string, layer: string, why: string): void {
+    this.fades.set(`${symbol} on ${layer}`, why);
+  }
 
   bake(effect: string, layer: string): void {
     const s = this.baked.get(effect) ?? new Set<string>();
@@ -177,9 +183,9 @@ export class BonesNotes {
   }
 
   /** Short lines: [what, ...] each with the layer names. */
-  lines(): { native: string[]; baked: string[]; skipped: string[] } {
+  lines(): { native: string[]; baked: string[]; skipped: string[]; fades: string[] } {
     const list = (m: Map<string, Set<string>>) => [...m].map(([what, layers]) => `${what} on ${[...layers].join(', ')}`);
-    return { native: [...this.native], baked: list(this.baked), skipped: list(this.skipped) };
+    return { native: [...this.native], baked: list(this.baked), skipped: list(this.skipped), fades: [...this.fades].map(([what, why]) => `${what} (${why})`) };
   }
 }
 
@@ -293,9 +299,11 @@ export type GroupItem = { rig: Id } | { bone: Id } | { part: BonesPart };
  * instance; `kids` the order under each bone (and under a skeleton, by rig id). Not for symbols holding symbols with
  * bones, or parts with Add or Multiply (a group blends inside itself, not with the stage).
  */
-export function groupLayout(sc: BonesScope): { ok: boolean; top: GroupItem[]; kids: Map<Id, GroupItem[]> } {
-  const fail = { ok: false, top: [] as GroupItem[], kids: new Map<Id, GroupItem[]>() };
-  if (sc.nested.length || sc.parts.some((p) => (p.look?.blend ?? 'mix') !== 'mix')) return fail;
+export function groupLayout(sc: BonesScope): { ok: boolean; top: GroupItem[]; kids: Map<Id, GroupItem[]>; why?: string } {
+  const failed = (why: string) => ({ ok: false, top: [] as GroupItem[], kids: new Map<Id, GroupItem[]>(), why });
+  const fail = failed('its parts are mixed up in the layer stack, so the scene tree cannot draw them in the right order inside one group');
+  if (sc.nested.length) return failed('it holds symbols with bones of their own');
+  if (sc.parts.some((p) => (p.look?.blend ?? 'mix') !== 'mix')) return failed('some of its parts use Add or Multiply, which a group would blend inside itself instead of with the stage');
   const kids = new Map<Id, GroupItem[]>();
   type Ranged = { item: GroupItem; lo: number; hi: number };
   // Sorts back to front and checks nothing interleaves. Items without parts in them go last.
@@ -341,6 +349,12 @@ export function groupLayout(sc: BonesScope): { ok: boolean; top: GroupItem[]; ki
   const loose: Ranged[] = sc.parts.filter((p) => !taken.has(p)).map((p) => ({ item: { part: p }, lo: p.z, hi: p.z }));
   const top = sorted([...rigRanges, ...loose]);
   return top ? { ok: true, top: top.map((r) => r.item), kids } : fail;
+}
+
+/** Why a faded copy can't be a CanvasGroup (undefined when it can), given the blend of its layer and of the copy it sits in. */
+export function groupBlocker(sc: BonesScope, blend: NativeBlend, inherit: NativeBlend = 'mix'): string | undefined {
+  if (blend !== 'mix' || inherit !== 'mix') return 'its layer uses Add or Multiply, which a group would blend inside itself instead of with the stage';
+  return groupLayout(sc).why;
 }
 
 // ---------------------------------------------------------------- masks and clipping
@@ -582,11 +596,12 @@ export function symbolDropsHiddenLayers(doc: Doc, id: Id): boolean {
  * What the export dialog says about the look of the layers, without building any pictures: the effects that get baked,
  * what Godot does itself and what can't go. Cheap enough to run on every render of the dialog.
  */
-export function bonesNotes(doc: Doc): { native: string[]; baked: string[]; skipped: string[] } {
+export function bonesNotes(doc: Doc): { native: string[]; baked: string[]; skipped: string[]; fades: string[] } {
   const notes = new BonesNotes();
   const rigged = riggedSymbols(doc);
   const seen = new Set<Id>();
-  const scan = (layers: Layer[], depth: number) => {
+  const scopes = new Map<Id, BonesScope>();
+  const scan = (layers: Layer[], depth: number, inherit: NativeBlend = 'mix') => {
     const links = maskLinks(doc, layers);
     noteMasks(doc, layers, notes, links);
     for (const layer of layers) {
@@ -604,9 +619,18 @@ export function bonesNotes(doc: Doc): { native: string[]; baked: string[]; skipp
               if ((layer.bind && !nestableBind(layers, layer)) || look.effects.length || carriedMasks(links, layer).carried.length) notes.skip('Symbols with bones are drawn into the pictures (the layer has effects or masks, or follows a bone that can not carry it)', layer.name);
               else {
                 notes.native.add('Symbols with bones: nested Skeleton2D and Bone2D nodes');
+                if (look.opacity * s.opacity < 1 - 1e-6) {
+                  const c = symbolContent(doc, s.symbolId);
+                  if (c) {
+                    let sc = scopes.get(s.symbolId);
+                    if (!sc) scopes.set(s.symbolId, (sc = bonesScope(doc, c.layers, { start: 0, end: Math.max(1, c.length) - 1 }, { depth: depth + 1, rigged, scopes })));
+                    const why = groupBlocker(sc, look.blend, inherit);
+                    if (why) notes.fadeFallback(doc.symbols?.[s.symbolId]?.name ?? 'Symbol', layer.name, why);
+                  }
+                }
                 if (!seen.has(s.symbolId)) {
                   seen.add(s.symbolId);
-                  scan(symbolContent(doc, s.symbolId)?.layers ?? [], depth + 1);
+                  scan(symbolContent(doc, s.symbolId)?.layers ?? [], depth + 1, look.blend);
                 }
               }
             }

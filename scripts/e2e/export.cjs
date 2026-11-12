@@ -1421,6 +1421,9 @@ async function godotBonesExtrasSection(name = 'bones-extras', extra = {}, more) 
     // Symbols with bones on a layer that follows a bone: the copies sit under that bone and swing with it.
     if (!ONLY || ONLY.includes('godot-bones'))
       await godotBonesExtrasSection('bones-on-bone', { onBone: true }, ({ tscn }) => check(tscn.includes('type="CanvasGroup" parent="Body bones/Root"') || tscn.includes('type="Node2D" parent="Body bones/Root"'), 'the symbol copies should sit under the bone'));
+    // A symbol with bones inside a symbol with bones, on a layer that follows the outer symbol's bone: it nests under that Bone2D.
+    if (!ONLY || ONLY.includes('godot-bones'))
+      await godotBonesExtrasSection('bones-body-arm', { bodyArm: true }, ({ tscn }) => check(/type="Node2D" parent="Body\/Body bones\/Spine"/.test(tscn) && /name="Arm" type="Node2D" parent="Body\/Body bones\/Spine"/.test(tscn), 'the arm should sit under the body symbol\'s bone'));
     if (!SKIP.includes('files')) await filesSection();
   } catch (e) {
     begin('harness', 'startup').failures.push(String(e?.stack ?? e));

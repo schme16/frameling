@@ -6,7 +6,7 @@ import { bonesNotes } from './godot-bones-scope';
 
 export function BonesLookNotes({ doc }: { doc: Doc }) {
   const n = useMemo(() => bonesNotes(doc), [doc]);
-  if (!n.native.length && !n.baked.length && !n.skipped.length) return null;
+  if (!n.native.length && !n.baked.length && !n.skipped.length && !n.fades.length) return null;
   return (
     <div className="ex-bones-look">
       {n.native.length > 0 && (
@@ -17,6 +17,11 @@ export function BonesLookNotes({ doc }: { doc: Doc }) {
       {n.baked.length > 0 && (
         <p className="ex-note">
           <b>Baked into the part pictures:</b> {n.baked.join('; ')}. Godot has no blur, glow or shadow of its own, and an effect that changes over time gets a picture for each step.
+        </p>
+      )}
+      {n.fades.length > 0 && (
+        <p className="ex-note">
+          <b>Faded part by part:</b> {n.fades.join('; ')}. Where parts overlap, the overlap shows through. Godot can only fade a symbol as one picture when its parts sit in order and none use Add or Multiply.
         </p>
       )}
       {n.skipped.length > 0 && (
