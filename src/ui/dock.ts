@@ -184,11 +184,81 @@ export function syncPanels(): void {
   if (JSON.stringify(layout) !== JSON.stringify(s.layout)) commit({ ...s, layout });
 }
 
-/** Lets panels that came back (their feature was turned on) be placed in their home zone again. */
+// Where panels were when their feature was turned off, so they come back to the same place. Kept apart from the layout
+// (and across restarts), because the layout forgets a panel that is not registered.
+const PARKED_KEY = 'frameling.dock.parked.v1';
+interface Parked {
+  /** The zone it was in, or the window (with its box) when it floated. */
+  zone?: DockZone;
+  float?: { id: string; x: number; y: number; w: number; h: number };
+  index?: number;
+  /** It was the front tab there. */
+  front?: boolean;
+  /** The person had closed it. */
+  hidden?: boolean;
+}
+const readParked = (): Record<string, Parked> => {
+  const v = readRaw<unknown>(PARKED_KEY, {});
+  return v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, Parked>) : {};
+};
+
+/** Remembers where these panels are, just before their feature is turned off and they leave the layout. */
+export function parkPanels(ids: string[]): void {
+  const l = dock.get().layout;
+  const parked = readParked();
+  for (const id of ids) {
+    const at = locate(l, id);
+    if (at && 'zone' in at) parked[id] = { zone: at.zone, index: l.zones[at.zone].tabs.indexOf(id), front: l.zones[at.zone].active === id };
+    else if (at) {
+      const f = l.floats.find((x) => x.id === at.float)!;
+      parked[id] = { float: { id: f.id, x: f.x, y: f.y, w: f.w, h: f.h }, index: f.tabs.indexOf(id), front: f.active === id };
+    } else if (l.hidden.includes(id)) parked[id] = { hidden: true };
+    else delete parked[id];
+  }
+  writeJson(PARKED_KEY, parked);
+}
+
+/**
+ * Panels that came back (their feature was turned on) go where they were when it was turned off: the same zone or
+ * window and place among its tabs, or closed if they were closed. Panels with no memory of a place are placed in their
+ * home zone if this layout has never seen them, and otherwise stay closed.
+ */
 export function replacePanels(ids: string[]): void {
   const s = dock.get();
-  const drop = new Set(ids);
-  if (!s.fresh && s.layout.known.some((id) => drop.has(id))) commit({ ...s, layout: { ...s.layout, known: s.layout.known.filter((id) => !drop.has(id)) } });
+  const parked = readParked();
+  const mine = ids.filter((id) => parked[id] && getPanel(id));
+  if (!s.fresh && mine.length) {
+    const made = new Map<string, string>();
+    change((l) => {
+      let next = l;
+      for (const id of mine) {
+        const p = parked[id];
+        if (locate(next, id)) continue;
+        if (p.hidden) {
+          if (!next.hidden.includes(id)) next = { ...next, hidden: [...next.hidden, id], known: next.known.includes(id) ? next.known : [...next.known, id] };
+          continue;
+        }
+        const before = p.zone ? next.zones[p.zone].active : null;
+        if (p.zone) next = movePanelTo(next, id, { zone: p.zone, index: p.index }, screen());
+        else if (p.float) {
+          const have = made.get(p.float.id) ?? (next.floats.some((f) => f.id === p.float!.id) ? p.float.id : undefined);
+          next = movePanelTo(next, id, have ? { float: have, index: p.index } : { newFloat: p.float }, screen());
+          if (!have) made.set(p.float.id, next.floats[next.floats.length - 1].id);
+        } else continue;
+        // Joining a group does not take the front from the tab that was there.
+        if (!p.front && p.zone && before && next.zones[p.zone].tabs.includes(before)) {
+          next = clone(next);
+          next.zones[p.zone].active = before;
+        }
+      }
+      Object.assign(l, next);
+    });
+  }
+  if (mine.length) {
+    const left = readParked();
+    for (const id of mine) delete left[id];
+    writeJson(PARKED_KEY, left);
+  }
   syncPanels();
 }
 
