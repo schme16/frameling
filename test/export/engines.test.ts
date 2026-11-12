@@ -164,6 +164,16 @@ describe('engine data files', () => {
     expect(UNITY_SCRIPT_NAME).toBe('FramelingSheetImporter.cs');
   });
 
+  it('Unity script: fits the texture size to the sheet and ends clips where Unity does (verified in Unity 6.6 by scripts/e2e)', () => {
+    // Unity shrinks sheets bigger than the max texture size, so the script raises it to cover the sheet.
+    expect(UNITY_SCRIPT).toContain('importer.maxTextureSize = size');
+    expect(UNITY_SCRIPT).toContain('size < 16384');
+    // Unity ends a clip one frame after its last key, so no key goes at the very end, and only a last frame held
+    // for several frames gets a key on its final tick.
+    expect(UNITY_SCRIPT).toContain('if (lastHold > 1) keys.Add(new ObjectReferenceKeyframe { time = t - 1f / a.fps');
+    expect(UNITY_SCRIPT).not.toContain('time = t, value = keys[');
+  });
+
   it('CSS: a class per frame and keyframes where held frames last their full time', () => {
     const d = sampleData();
     const css = cssSprites(d, { prefix: 'Hero Run', pixelArt: true, separate: false });

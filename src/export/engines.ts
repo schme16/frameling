@@ -176,6 +176,11 @@ public class FramelingSheetImporter : AssetPostprocessor
         importer.spritePixelsPerUnit = data.pixelsPerUnit;
         importer.mipmapEnabled = false;
         importer.alphaIsTransparency = true;
+        // Unity shrinks pictures bigger than the max size (2048 unless told), which would put every cut in the wrong place.
+        var biggest = Mathf.Max(data.width, data.height);
+        var size = 32;
+        while (size < biggest && size < 16384) size *= 2;
+        importer.maxTextureSize = size;
         if (data.pixelArt)
         {
             importer.filterMode = FilterMode.Point;
@@ -226,15 +231,18 @@ public class FramelingSheetImporter : AssetPostprocessor
         {
             var keys = new List<ObjectReferenceKeyframe>();
             float t = 0;
+            int lastHold = 1;
             for (int i = 0; i < a.frames.Length; i++)
             {
                 if (!sprites.TryGetValue(a.frames[i], out var sprite)) continue;
                 keys.Add(new ObjectReferenceKeyframe { time = t, value = sprite });
                 t += a.holds[i] / a.fps;
+                lastHold = a.holds[i];
             }
             if (keys.Count == 0) continue;
-            // One more key at the very end, so the last frame is shown for its full time.
-            keys.Add(new ObjectReferenceKeyframe { time = t, value = keys[keys.Count - 1].value });
+            // Unity ends a clip one frame after its last key, so a last frame held for more than one frame
+            // needs a key on its own final tick (and none at all when it is held for one).
+            if (lastHold > 1) keys.Add(new ObjectReferenceKeyframe { time = t - 1f / a.fps, value = keys[keys.Count - 1].value });
             var clip = new AnimationClip { frameRate = a.fps };
             AnimationUtility.SetObjectReferenceCurve(clip, EditorCurveBinding.PPtrCurve("", typeof(SpriteRenderer), "m_Sprite"), keys.ToArray());
             var settings = AnimationUtility.GetAnimationClipSettings(clip);
