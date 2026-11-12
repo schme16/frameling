@@ -6,7 +6,7 @@ import { uid } from '../core/doc';
 import { store } from '../core/store';
 import type { RecentFile } from '../preload/api';
 import { baseName, desktop, stripExt } from './desktop';
-import { FileProblem, loadFile, saveFile } from './file';
+import { FileProblem, loadFile, saveFileAsync } from './file';
 import { notify } from './notify';
 import { thumbnailOf } from './thumb';
 
@@ -33,7 +33,7 @@ export async function autosaveNow(): Promise<void> {
   const doc = store().rootDoc();
   if (!api || !ui.dirty || doc === lastDoc) return;
   try {
-    const bytes = saveFile(doc, api.versions.app);
+    const bytes = await saveFileAsync(doc, api.versions.app);
     const thumb = api.kind === 'web' ? await thumbnailOf(rootDoc(doc)) : undefined;
     await api.autosave.write(bytes, { name: doc.name, filePath: ui.filePath, docId: doc.id, ...(thumb ? { thumb } : {}) });
     lastDoc = doc;
@@ -196,7 +196,7 @@ async function saveTo(path: string | null): Promise<boolean> {
     const copyId = path === null && oldPath ? uid('d') : null;
     let bytes: Uint8Array;
     try {
-      bytes = saveFile(copyId ? { ...doc, id: copyId } : doc, api.versions.app);
+      bytes = await saveFileAsync(copyId ? { ...doc, id: copyId } : doc, api.versions.app);
     } catch {
       notify("Something went wrong while packing up your drawing, so it wasn't saved. Please try again.", 'error');
       return false;
@@ -204,7 +204,7 @@ async function saveTo(path: string | null): Promise<boolean> {
     let r = await api.files.save({ bytes, path, suggestedName: path ? stripExt(baseName(path)) : doc.name });
     if (!r) return false;
     // Saved as over the same file after all: that's a plain save, so it keeps the drawing's own id.
-    if (copyId && !('error' in r) && r.path === oldPath) r = await api.files.save({ bytes: saveFile(doc, api.versions.app), path: r.path, suggestedName: doc.name });
+    if (copyId && !('error' in r) && r.path === oldPath) r = await api.files.save({ bytes: await saveFileAsync(doc, api.versions.app), path: r.path, suggestedName: doc.name });
     if (!r) return false;
     if ('error' in r) {
       notify(r.error, 'error');
