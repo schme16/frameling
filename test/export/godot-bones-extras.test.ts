@@ -196,7 +196,8 @@ describe('Godot bones: looks', () => {
     expect(n.native.join('|')).toContain('nested Skeleton2D');
     expect(n.native.join('|')).toContain('CanvasItemMaterial');
     expect(n.skipped.join('|')).toContain('Overlay drawn as normal on Sky');
-    expect(n.skipped.join('|')).toContain('Clip to the layer below is not applied on Sky');
+    // Clipped with nothing under it, so it is just drawn.
+    expect(n.skipped.join('|')).not.toContain('Clip');
   });
 
   it('says nothing for the plain puppet', () => {

@@ -18,8 +18,8 @@ import { minv, mmul, restMatrix, stretchOf, type Mat } from '../rig/math';
 import type { Animation } from './sheet';
 import { bonesRigs, type BonesPart, type BonesScope, type BonesTexture, type NativeBlend, type NestedInstance } from './godot-bones-scope';
 
-export { bakeScales, maxStretch, MAX_BAKE, bonesParts, bonesRigs, bonesScope, bonesStage, bonesNotes, allScopes, hasBonesToExport, restPicture, riggedSymbols, partLook, nativeBlend, BonesNotes } from './godot-bones-scope';
-export type { BonesPart, BonesScope, BonesTexture, InstState, NativeBlend, NestedInstance, PartKind, PartLook } from './godot-bones-scope';
+export { maskLinks, carriedMasks, bakeScales, maxStretch, MAX_BAKE, bonesParts, bonesRigs, bonesScope, bonesStage, bonesNotes, allScopes, hasBonesToExport, restPicture, riggedSymbols, partLook, nativeBlend, BonesNotes } from './godot-bones-scope';
+export type { PartMask, BonesPart, BonesScope, BonesTexture, InstState, NativeBlend, NestedInstance, PartKind, PartLook } from './godot-bones-scope';
 
 // ---------------------------------------------------------------- writing Godot text
 

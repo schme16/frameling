@@ -8,9 +8,11 @@
  * timeline. A symbol that has bones (or holds symbols that do) becomes a nested rig under its instance.
  */
 import type { Doc, Drawing, Id, Layer, LayerEffect, SkinMesh, VectorDrawing } from '../core/format';
+import { activeCamera } from '../core/camera';
 import { celAt } from '../core/doc';
 import { activeEffects, effectInfo, isNoop, valuesAt } from '../effects/model';
 import { isInstance, isPosed, nextKey, poseAt, symbolContent, symbolFrame } from '../core/symbols';
+import { buildPlan, type PlanStep } from '../effects/plan';
 import { isRigLayer, type RigLayer } from '../rig/pose';
 import type { Mat } from '../rig/math';
 
@@ -28,6 +30,14 @@ export interface PartLook {
   effects: LayerEffect[];
 }
 
+/** A layer that cuts a part's pictures: a mask layer above it, or the layer below it when the part is clipped to it. */
+export interface PartMask {
+  layer: Layer;
+  /** 'in' keeps what's inside the drawing, 'out' removes it. */
+  op: 'in' | 'out';
+  clip?: boolean;
+}
+
 export interface BonesPart {
   layer: Layer;
   /** Draw order, back to front (the layer's place in the stack). */
@@ -41,6 +51,8 @@ export interface BonesPart {
   /** For each frame of the range: which picture shows, or -1 for nothing. */
   frameOf: number[];
   look?: PartLook;
+  /** Masks and clipping baked into every picture (the part and the masks stay put together). */
+  masks?: PartMask[];
 }
 
 /**
@@ -253,13 +265,71 @@ export function partLook(doc: Doc, layer: Layer, notes?: BonesNotes): PartLook {
     if (!nb.exact && mode) notes.skip(`${mode === 'screen' ? 'Screen drawn as Add' : `${blendWord(mode)} drawn as normal`}`, layer.name);
     for (const e of effects) notes.bake(effectInfo(e.kind).label, layer.name);
     if (folder?.effects?.length) notes.skip('Folder effects go on each layer separately', layer.name);
-    if (layer.mask) notes.skip('Mask layers are left out', layer.name);
-    if (layer.clipToBelow) notes.skip('Clip to the layer below is not applied', layer.name);
   }
   return { opacity, blend: nb.blend, effects };
 }
 
 const blendWord = (m: string) => m.replace(/-/g, ' ').replace(/^./, (c) => c.toUpperCase());
+
+// ---------------------------------------------------------------- masks and clipping
+
+/** What cuts each layer of a list: the masks above it and the layer it is clipped to, the way the compositor plans them. */
+export interface MaskLinks {
+  /** Layers drawn at all, with the masks that cut them. */
+  cuts: Map<Layer, PartMask[]>;
+  /** Layers clipped to a folder (the base is a group of layers). */
+  folderClipped: Set<Layer>;
+  /** Depth only moves layers apart when there is a camera. */
+  camera: boolean;
+}
+
+export function maskLinks(doc: Doc, layers: Layer[]): MaskLinks {
+  const cuts = new Map<Layer, PartMask[]>();
+  const folderClipped = new Set<Layer>();
+  const lookDoc = { ...doc, layers } as Doc;
+  const plan = buildPlan(lookDoc, (l) => l.visible, false, (l) => !l.reference);
+  const walk = (steps: PlanStep[], outer: PartMask[]) => {
+    steps.forEach((st, i) => {
+      if (st.type === 'mask') return;
+      const above: PartMask[] = [...steps.slice(i + 1).flatMap((x) => (x.type === 'mask' ? [{ layer: x.layer, op: x.layer.mask === 'hide' ? ('out' as const) : ('in' as const) }] : [])), ...outer];
+      if (st.node.type === 'layer') {
+        cuts.set(st.node.layer, above);
+        for (const c of st.clips) cuts.set(c, [{ layer: st.node.layer, op: 'in', clip: true }, ...above]);
+      } else {
+        walk(st.node.steps, above);
+        for (const c of st.clips) {
+          cuts.set(c, above);
+          folderClipped.add(c);
+        }
+      }
+    });
+  };
+  walk(plan, []);
+  return { cuts, folderClipped, camera: !!activeCamera(doc) };
+}
+
+/** True when a cutting layer stays put next to the part: neither moves with a bone and both sit at the same depth. */
+function staysPut(part: Layer, cut: Layer, camera: boolean): boolean {
+  return !part.bind && !cut.bind && (!camera || (part.depth ?? 0) === (cut.depth ?? 0));
+}
+
+/** The masks a part can have baked in, and whether some can't be carried. */
+export function carriedMasks(links: MaskLinks, layer: Layer): { carried: PartMask[]; lost: PartMask[] } {
+  const all = links.cuts.get(layer) ?? [];
+  return { carried: all.filter((m) => staysPut(layer, m.layer, links.camera)), lost: all.filter((m) => !staysPut(layer, m.layer, links.camera)) };
+}
+
+/** Says in `notes` what happens to the masks and clipping among these layers. */
+export function noteMasks(doc: Doc, layers: Layer[], notes: BonesNotes, links = maskLinks(doc, layers)): void {
+  for (const layer of layers) {
+    if (!layer.visible || layer.reference || isRigLayer(layer) || layer.kind === 'camera' || layer.mask) continue;
+    if (layer.folder && doc.folders?.[layer.folder]?.visible === false) continue;
+    const { carried, lost } = carriedMasks(links, layer);
+    for (const m of carried) notes.bake(m.clip ? 'Clip to the layer below' : m.op === 'out' ? 'Hide mask' : 'Show mask', layer.name);
+    if (lost.length) notes.skip('Masks and clipping are not applied (the part or the mask moves with a bone, or sits at another depth)', layer.name);
+    if (links.folderClipped.has(layer)) notes.skip('Clip to a folder is not applied', layer.name);
+  }
+}
 
 // ---------------------------------------------------------------- parts and nested rigs
 
@@ -297,16 +367,25 @@ export function bonesScope(
   const parts: BonesPart[] = [];
   const nested: NestedInstance[] = [];
   const n = range.end - range.start + 1;
+  const links = maskLinks(doc, layers);
+  if (notes) noteMasks(doc, layers, notes, links);
   layers.forEach((layer, z) => {
     if (!layer.visible || layer.reference || isRigLayer(layer) || layer.kind === 'camera') return;
     if (layer.folder && doc.folders?.[layer.folder]?.visible === false) return;
-    const look = partLook(doc, layer, notes);
+    let look = partLook(doc, layer, notes);
     if (layer.mask) return;
-    // Symbols with bones stay live only on layers that move on their own and have no effects to bake.
+    // A layer whose base is hidden is hidden with it (the compositor's rule).
+    if (!links.cuts.has(layer)) return;
+    const masks = carriedMasks(links, layer).carried;
+    // A clipped layer is drawn into its base's group, so it fades and blends with the base too.
+    const clipBase = masks.find((m) => m.clip)?.layer;
+    if (clipBase) look = { ...look, opacity: look.opacity * clipBase.opacity, blend: look.blend === 'mix' ? nativeBlend(clipBase.blend).blend : look.blend };
+    // Symbols with bones stay live only on layers that move on their own and have no effects or masks to bake.
     const holds = live.size > 0 && holdsInstanceOf(doc, layer, live);
-    const cut = holds && !layer.bind && !look.effects.length ? live : undefined;
-    if (holds && !cut) notes?.skip('Symbols with bones are drawn into the pictures (the layer has effects or is attached to a bone)', layer.name);
+    const cut = holds && !layer.bind && !look.effects.length && !masks.length ? live : undefined;
+    if (holds && !cut) notes?.skip('Symbols with bones are drawn into the pictures (the layer has effects or masks, or is attached to a bone)', layer.name);
     const animatedFx = look.effects.some((e) => e.keys?.length);
+    const maskFx = masks.some((m) => m.layer.effects?.some((e) => e.keys?.length));
     const pictures: Drawing[] = [];
     const frameOf: number[] = [];
     const byKey = new Map<string, number>();
@@ -341,7 +420,9 @@ export function bonesScope(
       }
       const fx = animatedFx ? JSON.stringify(activeEffects(look.effects, f)) : '';
       const base = shown === d ? `d${token(d)}` : `s${(shown as VectorDrawing).shapes.map((s) => token(s)).join(',')}`;
-      const key = `${base}|${fx}`;
+      // A picture is the same only while its masks are too.
+      const cutKey = masks.map((m) => `${token(restPicture(doc, m.layer, f) ?? m.layer)}${maskFx ? JSON.stringify(activeEffects(m.layer.effects ?? [], f)) : ''}`).join(',');
+      const key = `${base}|${fx}|${cutKey}`;
       let i = byKey.get(key);
       if (i === undefined) {
         i = pictures.push(shown) - 1;
@@ -365,7 +446,7 @@ export function bonesScope(
     const rig = isRigLayer(r) ? r : undefined;
     const hasBone = !!rig && rig.rig.bones.some((b) => b.id === layer.bind!.bone);
     const kind: PartKind = rig && layer.bind!.mesh?.points.length ? 'mesh' : hasBone ? 'cut' : 'free';
-    parts.push({ layer, z, kind, ...(rig && kind !== 'free' ? { rig, bone: layer.bind!.bone } : {}), ...(kind === 'mesh' ? { mesh: layer.bind!.mesh } : {}), pictures, frameOf, look });
+    parts.push({ layer, z, kind, ...(rig && kind !== 'free' ? { rig, bone: layer.bind!.bone } : {}), ...(kind === 'mesh' ? { mesh: layer.bind!.mesh } : {}), pictures, frameOf, look, ...(masks.length ? { masks } : {}) });
   });
   return { layers, range, parts, rigs: layers.filter((l): l is RigLayer => isRigLayer(l) && l.rig.bones.length > 0), nested };
 }
@@ -433,19 +514,21 @@ export function bonesNotes(doc: Doc): { native: string[]; baked: string[]; skipp
   const rigged = riggedSymbols(doc);
   const seen = new Set<Id>();
   const scan = (layers: Layer[], depth: number) => {
+    const links = maskLinks(doc, layers);
+    noteMasks(doc, layers, notes, links);
     for (const layer of layers) {
       if (!layer.visible || layer.reference || isRigLayer(layer) || layer.kind === 'camera') continue;
       if (layer.folder && doc.folders?.[layer.folder]?.visible === false) continue;
       const look = partLook(doc, layer, notes);
       if (symbolsOnLayer(doc, layer).some((id) => symbolDropsHiddenLayers(doc, id))) notes.skip('Hidden or reference layers inside symbols with effects are left out of the pictures', layer.name);
-      if (layer.mask) continue;
+      if (layer.mask || !links.cuts.has(layer)) continue;
       if (depth < MAX_NEST && rigged.size) {
         for (const cel of layer.cels) {
           const d = doc.drawings[cel.drawingId];
           if (d?.kind !== 'vector') continue;
           for (const s of d.shapes)
             if (isInstance(s) && rigged.has(s.symbolId)) {
-              if (layer.bind || look.effects.length) notes.skip('Symbols with bones are drawn into the pictures (the layer has effects or is attached to a bone)', layer.name);
+              if (layer.bind || look.effects.length || carriedMasks(links, layer).carried.length) notes.skip('Symbols with bones are drawn into the pictures (the layer has effects or masks, or is attached to a bone)', layer.name);
               else {
                 notes.native.add('Symbols with bones: nested Skeleton2D and Bone2D nodes');
                 if (!seen.has(s.symbolId)) {

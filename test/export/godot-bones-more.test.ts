@@ -4,6 +4,11 @@ import { bonesExtrasDoc } from '../../src/export/bonesExtrasDoc';
 import { allScopes, bakeScales, bonesNotes, bonesStage, godotBonesScene, MAX_BAKE, maxStretch } from '../../src/export/godot-bones';
 import { buildAnimations } from '../../src/export/sheet';
 import type { Doc, InstanceShape } from '../../src/core/format';
+import { newVectorLayer } from '../../src/core/doc';
+import { newCameraLayer } from '../../src/core/camera';
+import type { VectorLayer } from '../../src/core/format';
+import { bonesParts } from '../../src/export/godot-bones';
+import { ellipsePath, hold, pathShape, rectPath, vectorDrawing } from '../../src/templates/build';
 
 describe('Godot bones notes: hidden layers inside symbols with effects', () => {
   it('says so only when the symbol has effects and a hidden or reference layer', () => {
@@ -105,5 +110,124 @@ describe('Godot bones: symbol copies scaled up stay sharp', () => {
   it('leaves the scene as it was when nothing is scaled up', () => {
     const { tscn } = sceneOf(bonesExtrasDoc(), 1);
     expect(tscn).not.toContain('scale = Vector2(0.');
+  });
+});
+
+// ---------------------------------------------------------------- masks and clipping
+
+
+function maskLayer(doc: Doc, name: string, mode: 'show' | 'hide' | undefined, at: number): VectorLayer {
+  const l = newVectorLayer(name) as VectorLayer;
+  if (mode) l.mask = mode;
+  hold(l, vectorDrawing(doc, [pathShape([ellipsePath(120, 70, 40, 40)], '#ffffff', null)]).id, 0, 12);
+  doc.layers.splice(at, 0, l);
+  return l;
+}
+
+const names = (doc: Doc) => bonesParts(doc, { start: 0, end: 11 }).map((p) => p.layer.name);
+const partOf = (doc: Doc, name: string) => bonesParts(doc, { start: 0, end: 11 }).find((p) => p.layer.name === name)!;
+
+describe('Godot bones: masks and clip to the layer below', () => {
+  it('bakes a mask into the parts under it and not the parts above it', () => {
+    const doc = bonesExtrasDoc();
+    const cut = maskLayer(doc, 'Cut', 'show', 1);
+    expect(names(doc)).toEqual(['Sky', 'Glow']);
+    expect(partOf(doc, 'Sky').masks).toEqual([{ layer: cut, op: 'in' }]);
+    expect(partOf(doc, 'Glow').masks).toBeUndefined();
+    const n = bonesNotes(doc);
+    expect(n.baked).toContain('Show mask on Sky');
+    expect(n.skipped.join('|')).not.toContain('Mask');
+  });
+
+  it('a Hide mask removes instead of keeps', () => {
+    const doc = bonesExtrasDoc();
+    maskLayer(doc, 'Cut', 'hide', 1);
+    expect(partOf(doc, 'Sky').masks![0].op).toBe('out');
+    expect(bonesNotes(doc).baked).toContain('Hide mask on Sky');
+  });
+
+  it('clips a layer to the one below it', () => {
+    const doc = bonesExtrasDoc();
+    const paint = maskLayer(doc, 'Paint', undefined, 1);
+    paint.clipToBelow = true;
+    const sky = doc.layers[0];
+    expect(partOf(doc, 'Paint').masks).toEqual([{ layer: sky, op: 'in', clip: true }]);
+    expect(bonesNotes(doc).baked).toContain('Clip to the layer below on Paint');
+    // The base hidden hides what is clipped to it.
+    sky.visible = false;
+    expect(names(doc)).not.toContain('Paint');
+  });
+
+  it('makes a picture for each step of an animated mask', () => {
+    const doc = bonesExtrasDoc();
+    const cut = maskLayer(doc, 'Cut', 'show', 1);
+    expect(partOf(doc, 'Sky').pictures.length).toBe(1);
+    const second = vectorDrawing(doc, [pathShape([rectPath(0, 0, 50, 50)], '#ffffff', null)]);
+    cut.cels = [{ ...cut.cels[0], length: 6 }, { id: uid('c'), start: 6, length: 6, drawingId: second.id }];
+    const sky = partOf(doc, 'Sky');
+    expect(sky.pictures.length).toBe(2);
+    expect(sky.frameOf).toEqual([0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1]);
+  });
+
+  it('does not carry a mask that moves with a bone or sits at another depth, and says so', () => {
+    const doc = bonesExtrasDoc();
+    const cut = maskLayer(doc, 'Cut', 'show', 1);
+    cut.depth = 2;
+    // Depth means nothing without a camera.
+    expect(partOf(doc, 'Sky').masks?.length).toBe(1);
+    const { layer: cam } = newCameraLayer(doc);
+    doc.layers.push(cam);
+    expect(partOf(doc, 'Sky').masks).toBeUndefined();
+    expect(bonesNotes(doc).skipped.join('|')).toContain('Masks and clipping are not applied');
+    cut.depth = undefined;
+    doc.layers[0].depth = undefined;
+    doc.layers.pop();
+    cut.bind = { rig: 'nope', bone: 'nope' };
+    expect(partOf(doc, 'Sky').masks).toBeUndefined();
+    expect(bonesNotes(doc).skipped.join('|')).toContain('on Sky');
+  });
+
+  it('keeps a mask inside its folder', () => {
+    const doc = bonesExtrasDoc();
+    doc.folders = { f1: { id: 'f1', name: 'Group', visible: true, opacity: 1 } };
+    const cut = maskLayer(doc, 'Cut', 'show', 2);
+    cut.folder = 'f1';
+    const hero = doc.layers.find((l) => l.name === 'Hero')!;
+    hero.folder = 'f1';
+    // Sky is outside the folder, so the mask never reaches it.
+    expect(partOf(doc, 'Sky').masks).toBeUndefined();
+    expect(partOf(doc, 'Glow').masks).toBeUndefined();
+  });
+
+  it('draws symbols with bones into a masked layer instead of keeping them live', () => {
+    const doc = bonesExtrasDoc();
+    const stage = bonesStage(doc, { start: 0, end: 11 });
+    expect(stage.nested.length).toBe(2);
+    maskLayer(doc, 'Cut', 'show', doc.layers.length - 1);
+    const masked = bonesStage(doc, { start: 0, end: 11 });
+    expect(masked.nested.length).toBe(0);
+    expect(masked.parts.map((p) => p.layer.name)).toContain('Hero');
+    expect(bonesNotes(doc).skipped.join('|')).toContain('Symbols with bones are drawn into the pictures');
+  });
+
+  it('a clipped layer fades and blends with its base', () => {
+    const doc = bonesExtrasDoc();
+    const paint = maskLayer(doc, 'Paint', undefined, 1);
+    paint.clipToBelow = true;
+    paint.opacity = 0.5;
+    doc.layers[0].opacity = 0.6;
+    doc.layers[0].blend = 'add';
+    expect(partOf(doc, 'Paint').look).toMatchObject({ opacity: 0.3, blend: 'add' });
+  });
+
+  it('writes the masked scene: the mask layer is no node, the clipped one is', () => {
+    const doc = bonesExtrasDoc({ masked: true });
+    expect(names(doc)).toEqual(['Sky', 'Stripe', 'Glow']);
+    expect(partOf(doc, 'Sky').masks!.map((m) => m.layer.name)).toEqual(['Window']);
+    expect(partOf(doc, 'Stripe').masks!.map((m) => m.layer.name)).toEqual(['Sky', 'Window']);
+    expect(bonesNotes(doc).baked).toEqual(expect.arrayContaining(['Show mask on Sky, Stripe', 'Clip to the layer below on Stripe']));
+    const { tscn } = sceneOf(doc, 1);
+    expect(tscn).toContain('name="Stripe" type="Sprite2D"');
+    expect(tscn).not.toContain('name="Window"');
   });
 });

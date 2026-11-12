@@ -1386,6 +1386,9 @@ async function godotBonesExtrasSection(name = 'bones-extras', extra = {}, more) 
     // A symbol copied three times its size: its pictures are baked bigger and scaled back down in the scene.
     if (!ONLY || ONLY.includes('godot-bones'))
       await godotBonesExtrasSection('bones-big-copy', { bigCopy: 3 }, ({ tscn }) => check(/scale = Vector2\(0\.33/.test(tscn), 'the big symbol copy should have its pictures scaled back down'));
+    // A round window mask over the backdrop and a stripe clipped to it, baked into the backdrop's pictures.
+    if (!ONLY || ONLY.includes('godot-bones'))
+      await godotBonesExtrasSection('bones-masks', { masked: true }, ({ tscn }) => check(!tscn.includes('name="Window"') && tscn.includes('name="Stripe"'), 'the mask layer should not be a node, the clipped stripe should'));
     if (!SKIP.includes('files')) await filesSection();
   } catch (e) {
     begin('harness', 'startup').failures.push(String(e?.stack ?? e));

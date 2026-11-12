@@ -13,6 +13,8 @@ export interface ExtrasOptions {
   fxOnHero?: boolean;
   /** Scale the second arm copy on the stage by this much (a big copy of a symbol). */
   bigCopy?: number;
+  /** A Show mask over the backdrop (a round window) and a stripe clipped to the backdrop. */
+  masked?: boolean;
 }
 
 /**
@@ -65,6 +67,19 @@ export function bonesExtrasDoc(o: ExtrasOptions = {}): Doc {
   sky.depth = 1;
   hold(sky, vectorDrawing(doc, [pathShape([rectPath(-40, 0, 440, 150)], '#4a6a8a', null), pathShape([ellipsePath(260, 60, 30, 30)], '#ffe9a0', null)]).id, 0, 12);
   doc.layers.push(sky);
+
+  if (o.masked) {
+    const stripe = newVectorLayer('Stripe') as VectorLayer;
+    stripe.clipToBelow = true;
+    stripe.depth = 1;
+    hold(stripe, vectorDrawing(doc, [pathShape([rectPath(-40, 40, 440, 30)], '#ff4fa0', null)]).id, 0, 12);
+    doc.layers.push(stripe);
+    const win = newVectorLayer('Window') as VectorLayer;
+    win.mask = 'show';
+    win.depth = 1;
+    hold(win, vectorDrawing(doc, [pathShape([ellipsePath(200, 70, 120, 60)], '#ffffff', null)]).id, 0, 12);
+    doc.layers.push(win);
+  }
 
   const hero = newVectorLayer('Hero') as VectorLayer;
   const h0 = vectorDrawing(doc, []);

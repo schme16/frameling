@@ -1,14 +1,14 @@
 // Runs the Godot bones export: draws each part's pictures at rest, cut to what's drawn, and writes them with the scene.
 // Needs a canvas, so it only runs in the app. The scene itself comes from godot-bones.ts.
 import { strToU8 } from 'fflate';
-import type { Doc, Drawing, Layer } from '../core/format';
+import type { Doc, Drawing, Layer, LayerEffect } from '../core/format';
 import { drawDrawing } from '../core/render';
 import { encodePng, type RawImage } from '../io/png';
 import { slug } from './plan';
 import { buildAnimations, godotTexturePath } from './sheet';
 import { buildPlan } from '../effects/plan';
 import { compositePlan } from '../effects/composite';
-import { allScopes, bakeScales, bonesStage, godotBonesScene, godotBonesShaders, hasBonesToExport, type BonesScope, type BonesTexture, type PartLook } from './godot-bones';
+import { allScopes, bakeScales, bonesStage, godotBonesScene, godotBonesShaders, hasBonesToExport, restPicture, type BonesScope, type BonesTexture, type PartLook, type PartMask } from './godot-bones';
 import { SheetProblem } from './engines';
 
 export interface BonesRun {
@@ -30,20 +30,13 @@ interface Box {
   h: number;
 }
 
-/** Draws one picture at rest onto a canvas covering the stage and a margin round it, in output pixels. Effects the layer
- * (or its folder) has are baked in here: Godot has no blur, glow or shadow of its own. */
-function drawRest(doc: Doc, layer: Layer, d: Drawing, frame: number, k: number, look?: PartLook): { canvas: OffscreenCanvas; ox: number; oy: number } {
-  const m = Math.round(Math.max(doc.width, doc.height) * 0.5);
-  const w = Math.max(1, Math.ceil((doc.width + m * 2) * k));
-  const h = Math.max(1, Math.ceil((doc.height + m * 2) * k));
-  const canvas = new OffscreenCanvas(w, h);
-  const g = canvas.getContext('2d', { willReadFrequently: true })!;
-  g.setTransform(k, 0, 0, k, m * k, m * k);
+/** Paints one layer's drawing onto `g` (set up for output pixels), with the given effects at full strength. */
+function paintLayer(g: OffscreenCanvasRenderingContext2D, doc: Doc, layer: Layer, d: Drawing, frame: number, effects: LayerEffect[]): void {
   if (layer.kind === 'pixel') g.imageSmoothingEnabled = false;
   const ps = layer.kind === 'vector' || layer.kind === 'camera' ? 1 : layer.pixelSize;
-  if (look?.effects.length) {
-    // Only the effects, at full strength: the fade and the blend mode are Godot's own.
-    const plain = { ...layer, effects: look.effects, opacity: 1, blend: undefined, folder: undefined, clipToBelow: false, mask: undefined, bind: undefined } as Layer;
+  if (effects.length) {
+    // Only the effects: the fade and the blend mode are Godot's own.
+    const plain = { ...layer, effects, opacity: 1, blend: undefined, folder: undefined, clipToBelow: false, mask: undefined, bind: undefined } as Layer;
     const one = { ...doc, layers: [plain], folders: undefined } as Doc;
     compositePlan(g, one, frame, buildPlan(one, () => true), {
       paint: (lg) => {
@@ -52,6 +45,32 @@ function drawRest(doc: Doc, layer: Layer, d: Drawing, frame: number, k: number, 
       },
     });
   } else drawDrawing(g, d, ps, { doc, frame });
+}
+
+/** Draws one picture at rest onto a canvas covering the stage and a margin round it, in output pixels. Effects the layer
+ * (or its folder) has are baked in here: Godot has no blur, glow or shadow of its own. So are masks and clipping. */
+function drawRest(doc: Doc, layer: Layer, d: Drawing, frame: number, k: number, look?: PartLook, masks: PartMask[] = []): { canvas: OffscreenCanvas; ox: number; oy: number } {
+  const m = Math.round(Math.max(doc.width, doc.height) * 0.5);
+  const w = Math.max(1, Math.ceil((doc.width + m * 2) * k));
+  const h = Math.max(1, Math.ceil((doc.height + m * 2) * k));
+  const canvas = new OffscreenCanvas(w, h);
+  const g = canvas.getContext('2d', { willReadFrequently: true })!;
+  g.setTransform(k, 0, 0, k, m * k, m * k);
+  paintLayer(g, doc, layer, d, frame, look?.effects ?? []);
+  for (const mk of masks) {
+    // The mask's own picture (with its effects), cutting what's drawn. Nothing drawn: a Show mask removes everything.
+    const mc = new OffscreenCanvas(w, h);
+    const mg = mc.getContext('2d')!;
+    mg.setTransform(k, 0, 0, k, m * k, m * k);
+    const md = restPicture(doc, mk.layer, frame);
+    if (md) paintLayer(mg, doc, mk.layer, md, frame, mk.layer.effects ?? []);
+    g.save();
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.globalAlpha = 1;
+    g.globalCompositeOperation = mk.op === 'out' ? 'destination-out' : 'destination-in';
+    g.drawImage(mc, 0, 0);
+    g.restore();
+  }
   return { canvas, ox: -m * k, oy: -m * k };
 }
 
@@ -154,7 +173,7 @@ export async function godotBonesFiles(o: BonesRun): Promise<{ files: { name: str
       for (let i = 0; i < p.pictures.length; i++) {
         if (o.signal?.aborted) throw new DOMException('Export cancelled', 'AbortError');
         o.onStep?.(done++, total, `Drawing ${p.layer.name}`);
-        const r = drawRest(doc, p.layer, p.pictures[i], firstFrame(i), ks, p.look);
+        const r = drawRest(doc, p.layer, p.pictures[i], firstFrame(i), ks, p.look, p.masks);
         const img = r.canvas.getContext('2d', { willReadFrequently: true })!.getImageData(0, 0, r.canvas.width, r.canvas.height);
         const a = alphaBox(img);
         const box = a ? { x: a.x + r.ox, y: a.y + r.oy, w: a.w, h: a.h } : null;
