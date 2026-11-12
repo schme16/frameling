@@ -36,9 +36,34 @@ Every plugin runs in its own **sandbox**, a closed box inside Frameling. It can'
 
 If a plugin goes wrong, Frameling says so and offers to turn it off. Your drawing is safe either way.
 
+Frameling also keeps an eye on each plugin. If one **stops responding** (stuck in a loop) or **uses a lot of memory**, Frameling turns it off for you and says so. It stays off, even next time you open Frameling, until you press **Turn it on** in the message or switch it on in **Preferences > Plugins**. Your drawing isn't touched. (Watching memory works in the desktop app.)
+
 ## Make your own
 
 A plugin is a folder with a **manifest.json** and one script. See [Making a plugin](help:making-plugins).`,
+  },
+  {
+    id: 'plugin-shapes',
+    media: 'plugin-shapes.png',
+    title: 'Shapes made by a plugin',
+    section: 'Plugins',
+    summary: 'A shape a plugin drew keeps its settings. Pick it and change them in Properties, or turn the plugin on if it is off.',
+    keywords: ['plugin', 'shape', 'settings', 'properties', 'star', 'change settings', 'turn it on'],
+    body: `Some plugins add their own **kinds of shape**, like a star with a number of points. Frameling keeps them as ordinary shapes, so you can move, colour, scale and turn them with the usual tools, and they export like anything else.
+
+## Change its settings
+
+Pick the shape with the **Select** tool. **Properties** shows a **Plugin shape** section with a **Change settings** form: numbers, choices, switches or text, whatever the plugin offers. Change one and the shape is drawn again with it. One **Undo** (Ctrl+Z) takes it back.
+
+If you had scaled, turned or moved the shape, it **stays that way**: the new drawing is moved, scaled and turned the same. (If you edited its points one by one, it is redrawn where it was instead.)
+
+## If the plugin is off
+
+The section says so and shows **Turn it on**. Until then the shape still works like any other, you just can't change its settings. Frameling may ask you to allow the plugin again.
+
+## If you don't have the plugin
+
+A file made with a plugin you don't have still opens and looks right. The shape is plain shapes; install the plugin to change its settings. See [Plugins](help:plugins).`,
   },
   {
     id: 'plugin-exports',
@@ -110,9 +135,16 @@ A plugin tool sits in the toolbox with the others (look for the puzzle piece or 
 
 A tool that stops answering is left alone after a few tries, and Frameling says so.
 
+A tool can also use a few extras:
+
+- **Handles.** Round or square dots in its preview that you can drag, to stretch a star or move a point. Frameling draws them at the same size at any zoom.
+- **Snapping.** A tool can ask for its points to **snap** like the built-in tools do: to guides, the page edge, the grid and other shapes, following your choices in **Snap** on the status bar. Hold **Ctrl** (Cmd on Mac) to leave a point where you put it.
+- **Keys.** A tool can offer named actions such as "Finish the line". They show up in **Preferences > Keyboard** with no key to start with, so a plugin never takes a key you use. Give one a key and it works while that tool is picked.
+- **Fonts.** A tool's preview can show text in a font you have installed.
+
 ## Shapes
 
-A plugin can add a **kind of shape**, a star, a gear or a speech bubble, that remembers its settings. Frameling draws it as ordinary shapes you can move, colour and delete like any others. To change its settings, use the plugin (often a panel with sliders). Frameling redraws it where it was, as one Undo step.
+A plugin can add a **kind of shape**, a star, a gear or a speech bubble, that remembers its settings. Frameling draws it as ordinary shapes you can move, colour and delete like any others. To change its settings, pick it and use **Change settings** in Properties (see [Shapes made by a plugin](help:plugin-shapes)). Frameling redraws it, as one Undo step, and keeps the size, turn and place you gave it.
 
 ## Guides
 

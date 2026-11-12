@@ -40,19 +40,36 @@ onmessage = async (e) => {
   port.postMessage(r);
 };`;
 
+const bundled = require('esbuild').buildSync({ entryPoints: [path.join(root, 'src/main/pluginMemory.ts')], bundle: true, format: 'cjs', platform: 'node', write: false }).outputFiles[0].text;
+const { pluginMemory, PLUGIN_PROCESS_FEATURE } = (() => {
+  const m = { exports: {} };
+  new Function('module', 'exports', bundled)(m, m.exports);
+  return m.exports;
+})();
+
 const failures = [];
 const check = (name, ok, got) => {
   console.log(`${ok ? 'ok  ' : 'FAIL'} ${name}${ok ? '' : `  (got ${JSON.stringify(got)})`}`);
   if (!ok) failures.push(name);
 };
 
+// The same switch the real app sets (src/main/main.ts), so each plugin's sandbox has a process of its own.
+app.commandLine.appendSwitch('enable-features', PLUGIN_PROCESS_FEATURE);
+
 app.whenReady().then(async () => {
   for (const ch of ['app:launchFile', 'autosave:read', 'autosave:readKept', 'library:read']) ipcMain.handle(ch, () => null);
   for (const ch of ['recent:list', 'autosave:listKept', 'library:list']) ipcMain.handle(ch, () => []);
   for (const ch of ['autosave:write', 'autosave:clear', 'autosave:keep', 'autosave:removeKept', 'recent:add', 'recent:remove', 'recent:clear', 'library:write', 'library:remove']) ipcMain.handle(ch, () => true);
+  // The real memory lookup (src/main/pluginMemory.ts) over the real window's frames and process metrics.
+  let theWindow = null;
+  ipcMain.handle('plugins:memory', () => {
+    const frames = theWindow.webContents.mainFrame.framesInSubtree.map((f) => ({ url: f.url, pid: f.osProcessId }));
+    return pluginMemory(frames, app.getAppMetrics().map((p) => ({ pid: p.pid, workingSetKb: p.memory.workingSetSize })), process.pid);
+  });
   for (const ch of ['app:documentState', 'app:keepUnsavedDone', 'app:saveBeforeCloseDone']) ipcMain.on(ch, () => {});
   const web = process.env.PLUGINS_URL;
   const win = new BrowserWindow({ show: false, width: 1200, height: 800, webPreferences: { ...(web ? {} : { preload: path.join(root, 'dist/preload/preload.cjs') }), contextIsolation: true, sandbox: true, backgroundThrottling: false } });
+  theWindow = win;
   const errors = [];
   win.webContents.on('console-message', (e) => {
     if (e.level === 'error' || e.level === 3) errors.push(String(e.message ?? e));
@@ -161,6 +178,33 @@ app.whenReady().then(async () => {
     return { hint, count: mine.length, kind: mine[0] && mine[0].ext['plugin.star-kit'].kind, props: mine[0] && mine[0].ext['plugin.star-kit'].props, undo: s.undoLabel() };
   })()`);
   check('a tool placed a star in the real sandbox', stamped.count === 1 && stamped.kind === 'star' && stamped.props?.points === 5 && /Star/.test(stamped.undo || ''), stamped);
+  // The star the tool just stamped shows a round handle; dragging it (the tool hears a move with the handle's id) resizes that star.
+  const resized = await js(`(async () => {
+    const f = window.__frameling;
+    const rt = window.__framelingPlugins.runtime('star-kit');
+    const s = f.store();
+    const layer = s.get().doc.layers.find((l) => l.kind === 'vector');
+    const ev = (type, x, extra) => ({ type, x, y: 200, pressure: 0.5, shift: false, alt: false, mod: false, button: 0, frame: 0, drawingId: null, zoom: 1, ...extra });
+    await rt.toolEvent('stamp', ev('move', 380, { handle: 'size' }));
+    await rt.toolEvent('stamp', ev('key', 0, { key: 'bigger' }));
+    const d = s.get().doc.drawings[layer.cels[0].drawingId];
+    const mine = d.shapes.filter((x) => x.ext && x.ext['plugin.star-kit']);
+    return { count: mine.length, size: mine[0] && mine[0].ext['plugin.star-kit'].props.size, insts: new Set(mine.map((x) => x.ext['plugin.star-kit'].inst)).size };
+  })()`);
+  check('dragging the handle then a named key resize the stamped star (80, then 20% bigger)', resized.insts === 1 && Math.abs(resized.size - 96) < 0.01, resized);
+  // The Plugin shape section shows its form when that star is picked.
+  const section = await js(`(async () => {
+    const f = window.__frameling;
+    const s = f.store();
+    const layer = s.get().doc.layers.find((l) => l.kind === 'vector');
+    const d = s.get().doc.drawings[layer.cels[0].drawingId];
+    s.setUi({ activeLayerId: layer.id, frame: 0, selection: d.shapes.filter((x) => x.ext && x.ext['plugin.star-kit']).map((x) => x.id) });
+    f.showPanel('plugin-shape');
+    await new Promise((r) => setTimeout(r, 600));
+    const el = document.querySelector('.plugin-shape');
+    return el ? el.innerText : null;
+  })()`);
+  check('Properties shows the Plugin shape section with Change settings', !!section && /made by Star kit/.test(section) && /Change settings/.test(section) && /Points/.test(section), section);
   const faded = await js(`(async () => {
     const f = window.__frameling;
     const rt = window.__framelingPlugins.runtime('layer-fader');
@@ -188,6 +232,29 @@ app.whenReady().then(async () => {
     return window.__framelingPlugins.list().filter((p) => p.problem).length;
   })()`);
   check('events reach plugins without trouble', evented === 0, evented);
+  // ------------------------------------------------ the watchdog: a frozen plugin and a memory hog, with short limits
+  await install('runaway-test');
+  await js(`Object.assign(window.__framelingPlugins.watchdog, { pingEveryMs: 200, stuckMs: 2500, busyStuckMs: 3000, memoryEveryMs: 300, memoryCapBytes: 450 * 1024 * 1024 }); true`);
+  const status = () => js(`window.__framelingPlugins.list().find((p) => p.id === 'runaway-test')`);
+  check('runaway test is on to begin with', (await status()).status === 'on', await status());
+  await js(`window.__frameling.run('plugin.runaway-test.freeze'); true`);
+  let st = await status();
+  for (let i = 0; i < 40 && st.status !== 'off'; i++) {
+    await sleep(250);
+    st = await status();
+  }
+  check('a frozen plugin is turned off by the heartbeat', st.status === 'off' && st.enabled === false && /stopped responding/.test(st.problem || ''), st);
+  check('the toast says so, with a way back', await js(`[...document.querySelectorAll('[role=status], [role=alert], .toast')].some((e) => /stopped responding/.test(e.textContent) && /Turn it on/.test(e.textContent))`), await js(`document.body.innerText.slice(-300)`));
+  await js(`window.__framelingPlugins.setEnabled('runaway-test', true); true`);
+  await sleep(1500);
+  check('turning it back on works', (await status()).status === 'on', await status());
+  await js(`window.__frameling.run('plugin.runaway-test.hog'); true`);
+  st = await status();
+  for (let i = 0; i < 60 && st.status !== 'off'; i++) {
+    await sleep(250);
+    st = await status();
+  }
+  check('a plugin using lots of memory is turned off', st.status === 'off' && /lot of memory/.test(st.problem || ''), st);
   const pluginErrors = errors.filter((e) => /plugin/i.test(e));
   check('no plugin errors in the console', pluginErrors.length === 0, pluginErrors);
 

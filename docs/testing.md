@@ -275,8 +275,8 @@ back and forth and looping, `thrice` forward 3 times, `back` backward once, `pla
   are paused and set to the middle of each moment with the Web Animations API, and the window is photographed. Each picture
   must match the app's PNG of the document frame that moment shows (so the clip is checked in play order, rmse under 0.02,
   and nearer its own frame than the ones next to it); after the end a loop starts over and anything else holds its last
-  frame; durations and iteration counts are read back. The Explosion has a looser limit because smoke puffs are hard-edged
-  circles in SVG and soft in the app.
+  frame; durations and iteration counts are read back. Smoke puffs are radial gradients in SVG, matching the app's soft falloff,
+  so the Explosion uses the same limit.
 
 The expected order is written out again in `export.cjs` (`oracleOrder`, from `docs/format.md`), not taken from the
 app's code, and the app's own export plan has to agree with it.

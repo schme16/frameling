@@ -17,7 +17,7 @@ describe('svg', () => {
     doc.drawings[v.id] = v;
     doc.layers[0].cels.push({ id: 'c', start: 0, length: 1, drawingId: v.id });
     const svg = frameToSvg(doc, 0);
-    expect(svg.startsWith('<svg xmlns="http://www.w3.org/2000/svg" width="100" height="50" viewBox="0 0 100 50">')).toBe(true);
+    expect(svg.startsWith('<svg xmlns="http://www.w3.org/2000/svg" width="100" height="50" viewBox="0 0 100 50" style="isolation:isolate">')).toBe(true);
     const m = /<path d="(M[^"]+Z)" fill="#ff0000" fill-opacity="0.5"\/>/.exec(svg);
     expect(m).not.toBeNull();
     // A smoothed outline: a start point, then curves through midpoints, then closed.

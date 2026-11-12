@@ -1149,10 +1149,7 @@ async function svgAnimCases() {
     }
     await runCase('bouncing-ball', 'svganim', 'defaults', half);
   }
-  await runCase('explosion-fx', 'svganim', 'defaults', (s) => ({ ...half(s), transparent: true }), {
-    // Smoke puffs are hard-edged circles in SVG and soft in the app, so the later frames sit a little further off.
-    tol: 0.045,
-  });
+  await runCase('explosion-fx', 'svganim', 'defaults', (s) => ({ ...half(s), transparent: true }));
 }
 
 async function exportMatrix() {

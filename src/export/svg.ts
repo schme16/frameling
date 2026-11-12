@@ -305,7 +305,8 @@ export function frameSvgExport(doc: Doc, frame: number, opts: SvgOptions = {}): 
       },
     }),
   );
-  const lines = [`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${n2(doc.width)} ${n2(doc.height)}">`];
+  // isolation: layers blend with each other only, not with the web page behind the picture (same as the animated SVG).
+  const lines = [`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${n2(doc.width)} ${n2(doc.height)}" style="isolation:isolate">`];
   const d = defsBlock([...defs, ...sprites], body);
   if (d) lines.push(d.trimEnd());
   if (doc.background && !opts.transparent) lines.push(`<rect width="${n2(doc.width)}" height="${n2(doc.height)}"${paint('fill', doc.background, 1)}/>`);

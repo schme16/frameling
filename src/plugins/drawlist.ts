@@ -1,7 +1,9 @@
 // A draw list: how a plugin shows something without ever touching a canvas. It sends a plain list of shapes (lines,
 // boxes, ellipses, polygons, paths, text); Frameling checks it and draws it itself, on the canvas as a guide, or
 // turns it into ordinary shapes in the drawing. Pure apart from `drawDrawList`, which needs a 2D context.
-import type { PathShape, SubPath } from '../core/format';
+import type { PathShape, SubPath, TextShape } from '../core/format';
+import { newTextShape } from '../text/model';
+import { cssFontFor, knownFont } from './fonts';
 
 export type Style = {
   /** Outline colour, `#rrggbb` or `#rrggbbaa`. */
@@ -26,14 +28,19 @@ export type DrawItem =
   | ({ type: 'ellipse'; cx: number; cy: number; rx: number; ry: number } & Style)
   | ({ type: 'polygon' | 'polyline'; points: [number, number][] } & Style)
   | ({ type: 'path'; d: PathCommand[] } & Style)
-  | ({ type: 'text'; x: number; y: number; text: string; size?: number; align?: 'left' | 'center' | 'right' } & Style);
+  | ({ type: 'text'; x: number; y: number; text: string; size?: number; align?: 'left' | 'center' | 'right'; font?: string; weight?: number; italic?: boolean } & Style)
+  /** A dot the person can drag (tool previews only): Frameling draws it at a fixed size on screen and tells the tool when it is grabbed. */
+  | ({ type: 'handle'; id: string; x: number; y: number; size?: number; shape?: 'square' | 'circle' | 'diamond' } & Style);
 
 export type DrawList = DrawItem[];
 
-export const DRAW_LIMITS = { items: 1000, points: 20000, text: 100, coord: 1_000_000 };
+export const DRAW_LIMITS = { items: 1000, points: 20000, text: 100, handles: 50, coord: 1_000_000 };
 
 const isObj = (v: unknown): v is Record<string, any> => typeof v === 'object' && v !== null && !Array.isArray(v);
 const COLOR = /^#[0-9a-f]{6}([0-9a-f]{2})?$/i;
+const HANDLE_ID = /^[A-Za-z0-9_-]{1,40}$/;
+/** A font family name: letters, numbers, spaces, dots and dashes only (no quotes or punctuation that could break out of a CSS list). */
+const FONT_NAME = /^[\p{L}\p{N} ._-]{1,60}$/u;
 const fin = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v) && Math.abs(v) <= DRAW_LIMITS.coord;
 
 function cleanStyle(o: Record<string, any>): Style {
@@ -55,6 +62,7 @@ export function sanitizeDrawList(raw: unknown): DrawList {
   if (!Array.isArray(raw)) return out;
   let points = 0;
   let texts = 0;
+  let handles = 0;
   for (const o of raw) {
     if (out.length >= DRAW_LIMITS.items) break;
     if (!isObj(o)) continue;
@@ -105,7 +113,25 @@ export function sanitizeDrawList(raw: unknown): DrawList {
       case 'text':
         if (fin(o.x) && fin(o.y) && typeof o.text === 'string' && texts < DRAW_LIMITS.text) {
           texts++;
-          out.push({ type: 'text', x: o.x, y: o.y, text: o.text.replace(/[\u0000-\u001f]/g, ' ').slice(0, 200), ...(fin(o.size) && o.size > 0 ? { size: Math.min(500, o.size) } : {}), ...(o.align === 'center' || o.align === 'right' ? { align: o.align } : {}), ...st });
+          const font = typeof o.font === 'string' && FONT_NAME.test(o.font.trim()) ? o.font.trim() : null;
+          out.push({
+            type: 'text',
+            x: o.x,
+            y: o.y,
+            text: o.text.replace(/[\u0000-\u001f]/g, ' ').slice(0, 200),
+            ...(fin(o.size) && o.size > 0 ? { size: Math.min(500, o.size) } : {}),
+            ...(o.align === 'center' || o.align === 'right' ? { align: o.align } : {}),
+            ...(font ? { font } : {}),
+            ...(fin(o.weight) ? { weight: Math.round(Math.min(900, Math.max(100, o.weight)) / 100) * 100 } : {}),
+            ...(o.italic === true ? { italic: true } : {}),
+            ...st,
+          });
+        }
+        break;
+      case 'handle':
+        if (fin(o.x) && fin(o.y) && typeof o.id === 'string' && HANDLE_ID.test(o.id) && handles < DRAW_LIMITS.handles && !out.some((h) => h.type === 'handle' && h.id === o.id)) {
+          handles++;
+          out.push({ type: 'handle', id: o.id, x: o.x, y: o.y, ...(fin(o.size) && o.size > 0 ? { size: Math.min(40, Math.max(4, o.size)) } : {}), ...(o.shape === 'circle' || o.shape === 'diamond' ? { shape: o.shape } : {}), ...st });
         }
         break;
     }
@@ -176,15 +202,54 @@ function tracePath(g: CanvasRenderingContext2D, item: DrawItem): void {
   }
 }
 
-/** Draws a checked draw list in stage coordinates. `zoom` keeps `screen` widths the same size on screen. */
-export function drawDrawList(g: CanvasRenderingContext2D, list: DrawList, zoom = 1): void {
+/** How big a handle is on screen, and how close the pointer must come to grab one. */
+export const HANDLE_SIZE = 10;
+
+function drawHandle(g: CanvasRenderingContext2D, h: Extract<DrawItem, { type: 'handle' }>, unit: number, hot: boolean): void {
+  const r = ((h.size ?? HANDLE_SIZE) / 2) * unit * (hot ? 1.25 : 1);
+  g.beginPath();
+  if (h.shape === 'circle') g.arc(h.x, h.y, r, 0, Math.PI * 2);
+  else if (h.shape === 'diamond') {
+    g.moveTo(h.x, h.y - r * 1.2);
+    g.lineTo(h.x + r * 1.2, h.y);
+    g.lineTo(h.x, h.y + r * 1.2);
+    g.lineTo(h.x - r * 1.2, h.y);
+    g.closePath();
+  } else g.rect(h.x - r, h.y - r, r * 2, r * 2);
+  g.fillStyle = h.fill ?? '#ffffff';
+  g.fill();
+  g.strokeStyle = h.stroke ?? '#1a73e8';
+  g.lineWidth = 2 * unit;
+  g.lineJoin = 'round';
+  g.stroke();
+}
+
+/** The handle under a point (the topmost), or null. `zoom` turns screen pixels into stage pixels, so a handle is as easy to grab at any zoom. */
+export function handleAt(list: DrawList, x: number, y: number, zoom: number): string | null {
+  const z = zoom > 0 ? zoom : 1;
+  for (let i = list.length - 1; i >= 0; i--) {
+    const h = list[i];
+    if (h.type !== 'handle') continue;
+    const reach = Math.max(HANDLE_SIZE, h.size ?? HANDLE_SIZE) / 2 + 3;
+    if (Math.hypot(h.x - x, h.y - y) * z <= reach) return h.id;
+  }
+  return null;
+}
+
+/** Draws a checked draw list in stage coordinates. `zoom` keeps `screen` widths the same size on screen. `hot` is the handle under the pointer. */
+export function drawDrawList(g: CanvasRenderingContext2D, list: DrawList, zoom = 1, hot: string | null = null): void {
   const z = zoom > 0 ? zoom : 1;
   for (const item of list) {
     g.save();
     g.globalAlpha = item.opacity ?? 1;
     const unit = item.screen ? 1 / z : 1;
+    if (item.type === 'handle') {
+      drawHandle(g, item, 1 / z, hot === item.id);
+      g.restore();
+      continue;
+    }
     if (item.type === 'text') {
-      g.font = `${(item.size ?? 12) * unit}px sans-serif`;
+      g.font = `${item.italic ? 'italic ' : ''}${item.weight ?? 400} ${(item.size ?? 12) * unit}px ${cssFontFor(item.font)}`;
       g.textAlign = item.align ?? 'left';
       g.textBaseline = 'alphabetic';
       if (item.stroke) {
@@ -301,14 +366,25 @@ function subPathsOf(item: DrawItem): SubPath[] {
     case 'path':
       return commandsToSubPaths(item.d);
     case 'text':
+    case 'handle':
       return [];
   }
 }
 
-/** The draw list as ordinary path shapes, one for each item that has an outline or an inside. Text is left out. */
-export function drawListToShapes(list: DrawList, newId: () => string): PathShape[] {
-  const shapes: PathShape[] = [];
+/**
+ * The draw list as ordinary shapes: a path for each item that has an outline or an inside, and a text shape for each
+ * text item (in the font asked for when it is installed here, else Nunito). Handles are for tool previews and are left out.
+ */
+export function drawListToShapes(list: DrawList, newId: () => string): (PathShape | TextShape)[] {
+  const shapes: (PathShape | TextShape)[] = [];
   for (const item of list) {
+    if (item.type === 'text') {
+      if (!item.text.trim()) continue;
+      shapes.push(
+        newTextShape(newId(), { x: item.x, y: item.y }, { text: item.text, font: knownFont(item.font) ?? 'Nunito', size: item.size ?? 16, weight: item.weight ?? 400, ...(item.italic ? { italic: true } : {}), color: item.fill ?? item.stroke ?? '#000000', align: item.align ?? 'left', opacity: item.opacity ?? 1 }),
+      );
+      continue;
+    }
     const paths = subPathsOf(item);
     if (!paths.length) continue;
     const open = item.type === 'line' || item.type === 'polyline';
