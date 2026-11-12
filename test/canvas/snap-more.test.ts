@@ -1,7 +1,7 @@
 // Snap distance, equal gaps, per-target colours and the all-layers choice.
 import { beforeEach, describe, expect, it } from 'vitest';
 import { getSnapGaps, snappedKinds } from '../../src/canvas/snap';
-import { snapMove, snapPt } from '../../src/canvas/guides';
+import { cornerSpacing, snapLineEnd, snapMove, snapPt } from '../../src/canvas/guides';
 import { clampDistance, defaultPicks, describeSnap, SNAP_DISTANCE, snapColourVar, snapNoteParts, SNAP_TARGETS } from '../../src/canvas/snapModel';
 import { resetSnapPicks, setSnapAllLayers, setSnapDistance, setSnapPick } from '../../src/canvas/snapOps';
 import { spacingAxis, spacingFor } from '../../src/canvas/snapSpacing';
@@ -11,7 +11,8 @@ import { newVectorLayer } from '../../src/core/doc';
 import { getCommand } from '../../src/core/registry';
 import { store } from '../../src/core/store';
 import '../../src/canvas';
-import { addShapes, box, vectorStore } from '../tools/helpers';
+import { addShapes, box, ctx, ptr, shapesNow, vectorStore } from '../tools/helpers';
+import { rectTool } from '../../src/tools/shapes';
 
 const R = (x: number, y: number, w: number, h: number) => ({ x, y, w, h });
 
@@ -110,6 +111,43 @@ describe('equal gaps while moving and drawing', () => {
     const p = snapPt({ x: 183, y: 120 }, 1, false);
     expect(p.x).toBe(180);
     expect(getSnapGaps().length).toBeGreaterThan(0);
+  });
+  it('a dragged corner looks at the whole span of the shape, not only the pointer row', () => {
+    setSnapPick('vector', 'spacing', true);
+    // The pointer is below a and b (they are at 100 to 140), but the shape drawn from y 60 reaches down past them.
+    expect(snapPt({ x: 183, y: 170 }, 1, false).x).toBe(183);
+    const p = snapPt({ x: 183, y: 170 }, 1, false, false, { x: 300, y: 60 });
+    expect(p.x).toBe(180);
+    expect(getSnapGaps().map((g) => g.label)).toEqual([40, 40]);
+    expect(getSnapGaps()[0].at).toBe(115);
+    expect(snappedKinds()).toEqual(['spacing']);
+  });
+  it('a shape whose span misses the neighbours finds no gap', () => {
+    setSnapPick('vector', 'spacing', true);
+    expect(snapPt({ x: 183, y: 300 }, 1, false, false, { x: 300, y: 200 }).x).toBe(183);
+    expect(cornerSpacing({ x: 300, y: 200 }, { x: 183, y: 300 }, [], 4)).toEqual({ x: null, y: null });
+  });
+  it('works down the page for the far corner, and the far end of a line', () => {
+    setSnapPick('vector', 'spacing', true);
+    const q = cornerSpacing({ x: 40, y: 300 }, { x: 0, y: 262 }, [R(20, 100, 40, 40), R(20, 180, 40, 40)], 4);
+    expect(q.y!.d).toBe(-2);
+    expect(q.y!.gaps.map((g) => g.label)).toEqual([40, 40]);
+    const e = snapLineEnd({ x: 300, y: 60 }, { x: 183, y: 170 }, 1, false, false);
+    expect(e.pt.x).toBe(180);
+    expect(getSnapGaps().length).toBeGreaterThan(0);
+  });
+  it('the rectangle tool shows the gap bars while its far corner is dragged, and keeps the equal gap', () => {
+    setSnapPick('vector', 'spacing', true);
+    const c = ctx();
+    const before = shapesNow().length;
+    rectTool.down?.(ptr(300, 60), c);
+    rectTool.move?.(ptr(183, 170), c);
+    expect(getSnapGaps().map((g) => g.label)).toEqual([40, 40]);
+    expect(snappedKinds()).toContain('spacing');
+    rectTool.up?.(ptr(183, 170), c);
+    expect(getSnapGaps()).toHaveLength(0);
+    const made = shapesNow();
+    expect(made).toHaveLength(before + 1);
   });
   it('a nearer line wins over a gap', () => {
     setSnapPick('vector', 'spacing', true);
