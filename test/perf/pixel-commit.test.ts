@@ -22,9 +22,11 @@ describe(`a stroke commit on a ${SIZE} x ${SIZE} canvas`, () => {
     newBlankKey(doc0, doc0.layers[0].id, 0);
     const s = resetStore(doc0);
     paintBlock(s.get(), 1000, 1000, 40).commit('First');
-    const sess = paintBlock(s.get(), 1500, 2500, 30);
-    const work = new Uint8ClampedArray(sess.work);
     let t = performance.now();
+    const sess = paintBlock(s.get(), 1500, 2500, 30);
+    const startMs = performance.now() - t;
+    const work = new Uint8ClampedArray(sess.work);
+    t = performance.now();
     expect(sess.commit('Second')).toBe('ok');
     const rectMs = performance.now() - t;
     const doc = store().get().doc;
@@ -45,6 +47,6 @@ describe(`a stroke commit on a ${SIZE} x ${SIZE} canvas`, () => {
     sess2.commit('Third');
     const smallMs = performance.now() - t;
     // eslint-disable-next-line no-console
-    console.log(`PIXEL-COMMIT ${SIZE}x${SIZE}: stroke commit ${rectMs.toFixed(1)} ms (touched rectangle + old block), whole-grid copy and trim ${wholeMs.toFixed(1)} ms, one-pixel commit ${smallMs.toFixed(1)} ms`);
+    console.log(`PIXEL-COMMIT ${SIZE}x${SIZE}: stroke commit ${rectMs.toFixed(1)} ms (touched rectangle + old block), whole-grid copy and trim ${wholeMs.toFixed(1)} ms, one-pixel commit ${smallMs.toFixed(1)} ms, session start (whole-grid copy, not changed) ${startMs.toFixed(1)} ms`);
   }, 120_000);
 });
