@@ -1,7 +1,9 @@
 // The things a person does with a workspace file or text: save one, add one from a file or pasted text, copy one,
 // step to the next. The model is in dock.ts and workspaceFile.ts; this adds the file picker, the clipboard and the toasts.
 import { download, pickUpload } from '../platform';
-import { applyWorkspace, currentWorkspace, dock, importWorkspace, listWorkspaces, workspaceText } from './dock';
+import { applyWorkspace, currentWorkspace, dock, importWorkspace, listWorkspaces, resetLayout, workspaceText } from './dock';
+import { line } from './mascot/lines';
+import { isCustomArrangement, resetToolArrangement } from './toolRail';
 import { MAX_WORKSPACE_BYTES, workspaceFileName } from './workspaceFile';
 import { toast } from './toast';
 
@@ -82,4 +84,31 @@ export function stepWorkspace(by: 1 | -1): void {
   if (!to) return;
   applyWorkspace(to.id);
   toast(`${to.name} workspace`, { duration: 1800 });
+}
+
+/**
+ * Reset layout, then Quill asks about the tools. A workspace that comes with the app keeps its tools apart from its
+ * panels, so a rearranged tool strip survives the reset; only then is there anything to ask. Yes puts that workspace's
+ * tools back the way it comes. One of your own workspaces already takes its tools back with the panels.
+ */
+export function resetLayoutAndAsk(): void {
+  resetLayout();
+  const w = currentWorkspace();
+  if (!w?.builtin || !isCustomArrangement()) return void toast('Panels are back where they started.', { kind: 'success' });
+  const id = w.id;
+  toast(line('workspaces.resetTools', { workspace: w.name }), {
+    kind: 'info',
+    quill: 'think',
+    duration: 15000,
+    action: {
+      label: 'Yes',
+      run: () => {
+        // Only this workspace's tools: if you moved to another one since, leave it alone.
+        if (dock.get().workspaceId !== id) return;
+        resetToolArrangement();
+        toast('Tools are back the way this workspace has them.', { duration: 1800 });
+      },
+    },
+    decline: { label: 'No', run: () => {} },
+  });
 }

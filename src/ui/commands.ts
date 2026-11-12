@@ -1,7 +1,7 @@
 // The commands the shell owns: new document, view (panels, workspaces, theme, palette, preferences) and help.
 import { getHelp, registerCommands } from '../core/registry';
 import { contextualHelpId } from './help/context';
-import { resetLayout } from './dock';
+import { resetLayoutAndAsk } from './workspaceActions';
 import { openAbout, openHelp, openPrefs, openSheet, togglePalette } from './overlays';
 import { effectiveTheme, getPrefs, setPrefs } from './prefs';
 import { toast } from './toast';
@@ -124,10 +124,7 @@ registerCommands([
     description: 'Put the panels back where this workspace started.',
     help: 'workspaces',
     keywords: ['panels', 'restore', 'default'],
-    run: () => {
-      resetLayout();
-      toast('Panels are back where they started.', { kind: 'success' });
-    },
+    run: () => resetLayoutAndAsk(),
   },
   {
     id: 'view.saveWorkspace',
