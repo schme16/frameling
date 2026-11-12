@@ -20,7 +20,7 @@ export const MENUS: MenuDef[] = [
   {
     label: 'File',
     categories: ['File', 'Export'],
-    items: ['file.new', 'file.open', 'file.openRecent', 'file.openPlayable', 'file.recover', '-', 'file.save', 'file.saveAs', 'file.saveVersion', 'file.versions', 'file.saveAsTemplate', 'file.importTemplate', '-', 'sub:export', 'sub:import', 'audio.import'],
+    items: ['file.new', 'pixel.new', 'file.open', 'file.openRecent', 'file.openPlayable', 'file.recover', '-', 'file.save', 'file.saveAs', 'file.saveVersion', 'file.versions', 'file.saveAsTemplate', 'file.importTemplate', '-', 'sub:export', 'sub:import', 'audio.import'],
   },
   {
     label: 'Edit',
@@ -40,7 +40,7 @@ export const MENUS: MenuDef[] = [
   {
     label: 'Pixel',
     categories: ['Pixel'],
-    items: ['tools.pencil', 'tools.shade', 'tools.dither', 'pixel.mirror', '-', 'pixel.flipH', 'pixel.flipV', 'pixel.rotateRight', 'pixel.rotateLeft', 'pixel.rotate180', 'pixel.rotate', '-', 'pixel.outline', 'pixel.outlineInside', '-', 'view.panel.palette', 'view.panel.preview', 'pixel.previewPlay', 'pixel.previewSize', 'view.workspace.pixel', '-', 'pixel.paletteLock', 'pixel.reduceToPalette', 'palette.fromDrawing', 'palette.import', 'palette.fromAseprite', 'palette.exportGpl', 'palette.exportHex', 'palette.exportPal'],
+    items: ['pixel.changeWay', 'pixel.makeItMove', '-', 'tools.pencil', 'tools.shade', 'tools.dither', 'tools.spray', 'pixel.mirror', '-', 'pixel.flipH', 'pixel.flipV', 'pixel.rotateRight', 'pixel.rotateLeft', 'pixel.rotate180', 'pixel.rotate', '-', 'pixel.outline', 'pixel.outlineInside', '-', 'view.panel.palette', 'view.panel.preview', 'pixel.previewPlay', 'pixel.previewSize', 'view.workspace.pixel', '-', 'pixel.paletteLock', 'pixel.reduceToPalette', 'palette.fromDrawing', 'palette.import', 'palette.fromPicture', 'palette.fromAseprite', 'palette.exportGpl', 'palette.exportHex', 'palette.exportPal'],
   },
   {
     label: 'Animate',
@@ -80,7 +80,7 @@ export interface SubmenuDef {
 export const SUBMENUS: Record<string, SubmenuDef> = {
   panelwin: {
     label: 'Panel windows and tools',
-    items: ['view.floatPanel', 'view.renamePanel', 'view.movePanel.left', 'view.movePanel.right', 'view.movePanel.bottom', 'view.movePanel.top', 'view.dockAllWindows', 'view.hidePanels', '-', 'view.toolsPlace.left', 'view.toolsPlace.right', 'view.toolsPlace.top', 'view.toolsPlace.bottom', 'view.toolsPlace.float', '-', 'view.toolsReset', 'view.toolRail.two', 'view.toolRail.stacked'],
+    items: ['view.floatPanel', 'view.renamePanel', 'view.movePanel.left', 'view.movePanel.right', 'view.movePanel.bottom', 'view.movePanel.top', 'view.splitPanelGroup', 'view.joinPanelGroups', 'view.dockAllWindows', 'view.hidePanels', '-', 'view.toolsPlace.left', 'view.toolsPlace.right', 'view.toolsPlace.top', 'view.toolsPlace.bottom', 'view.toolsPlace.float', '-', 'view.toolGroupRename', 'view.toolsReset', 'view.toolRail.two', 'view.toolRail.stacked'],
     prefixes: ['view.movePanel.', 'view.toolsPlace.', 'view.toolRail.'],
   },
   wsshare: {
@@ -94,7 +94,7 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
   },
   import: {
     label: 'Import',
-    items: ['file.importAseprite', 'palette.import'],
+    items: ['file.importPicture', 'file.importAseprite', 'palette.import', 'palette.fromPicture'],
   },
   export: {
     label: 'Export',

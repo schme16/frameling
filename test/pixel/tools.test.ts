@@ -1,3 +1,4 @@
+import { asGrid } from '../helpers/grid';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { PixelDrawing, PixelLayer } from '../../src/core/format';
 import { store } from '../../src/core/store';
@@ -19,7 +20,7 @@ import { ctx, drag, pixelStore } from '../tools/helpers';
 
 // 64x64 document at 8 per pixel: an 8x8 grid. at(px, py) is the middle of an art pixel.
 const at = (px: number, py: number): [number, number] => [px * 8 + 4, py * 8 + 4];
-const drawing = () => Object.values(store().get().doc.drawings)[0] as PixelDrawing;
+const drawing = () => asGrid(Object.values(store().get().doc.drawings)[0] as PixelDrawing);
 const px = (x: number, y: number) => {
   const d = drawing();
   return getPx(d.pixels, d.width, x, y);

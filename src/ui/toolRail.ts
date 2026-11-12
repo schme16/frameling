@@ -3,9 +3,9 @@
 import { allTools, getTool } from '../core/registry';
 import { dock, railOf, resetToolGroups, setToolGroups } from './dock';
 import { run } from './dockDrag';
-import type { DockMenuItem } from './dockMenus';
+import { askRename, type DockMenuItem } from './dockMenus';
 import { createStore } from './mini';
-import { groupName, moveTool, placeWords, resolveGroups, shiftTool, type ToolDrop, type ToolGroup } from './toolArrange';
+import { groupName, hasOwnName, moveTool, placeWords, renameGroup, resolveGroups, shiftTool, type ToolDrop, type ToolGroup } from './toolArrange';
 
 /** The whole arrangement for the tools that exist in this workspace (the person's own, or what it brings), whatever shows right now. */
 export function currentGroups(): ToolGroup[] {
@@ -49,6 +49,38 @@ export function stepTool(id: string, by: number, visible: (id: string) => boolea
   return moved;
 }
 
+/** Names a group of this workspace's rail (empty = its usual name). The names are kept with the rest of the arrangement. */
+export function renameToolGroup(groupId: string, name: string): void {
+  const before = currentGroups().find((g) => g.id === groupId);
+  if (!before) return;
+  if (arrange((g) => renameGroup(g, groupId, name))) {
+    const now = currentGroups();
+    const after = now.find((g) => g.id === groupId);
+    railNote.set(after ? `Group named ${groupName(after, now)}.` : '');
+  }
+}
+
+/** Opens the name box for a group, hanging under the group's place on the rail (or where `at` says). */
+export function askGroupRename(groupId: string, at?: { x: number; y: number }): void {
+  const el = document.querySelector<HTMLElement>(`[data-tool-group="${groupId}"]`);
+  const r = el?.getBoundingClientRect();
+  const x = at?.x ?? (r ? r.right + 6 : 120);
+  const y = at?.y ?? (r ? r.top : 120);
+  askRename('group', groupId, x, y);
+}
+
+/** The menu for a group of the rail: its name, and any other things to do to the group as a whole. */
+export function groupMenu(groupId: string, at?: { x: number; y: number }): DockMenuItem[] {
+  const groups = currentGroups();
+  const g = groups.find((x) => x.id === groupId);
+  if (!g) return [];
+  return [
+    { heading: groupName(g, groups) },
+    { label: 'Rename group...', onClick: () => askGroupRename(groupId, at) },
+    ...(hasOwnName(g, groups) ? [{ label: 'Use the usual name again', onClick: () => renameToolGroup(groupId, '') } satisfies DockMenuItem] : []),
+  ];
+}
+
 /** The menu for one tool: where to move it, and putting the rail back. */
 export function toolMenu(id: string, visible: (id: string) => boolean): DockMenuItem[] {
   const groups = currentGroups();
@@ -56,6 +88,7 @@ export function toolMenu(id: string, visible: (id: string) => boolean): DockMenu
   const items: DockMenuItem[] = [{ heading: label(id) }];
   for (const g of groups) items.push({ label: `Move to ${groupName(g, groups)}`, disabled: g === here, onClick: () => moveToolTo(id, { group: g.id }, visible) });
   items.push({ label: 'Move to a new group', disabled: here?.tools.length === 1, onClick: () => moveToolTo(id, { newGroupAt: groups.length }, visible) });
+  if (here) items.push({ separator: true }, { label: `Rename ${groupName(here, groups)}...`, onClick: () => askGroupRename(here.id) });
   items.push({ separator: true }, { label: 'Reset tools to default', disabled: !isCustomArrangement(), onClick: resetToolArrangement });
   return items;
 }

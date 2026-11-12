@@ -8,7 +8,7 @@
  * `fps`; frame 0 is the first frame.
  */
 
-export const FORMAT_VERSION = 1;
+export const FORMAT_VERSION = 3;
 export type Id = string;
 
 /** A colour as CSS hex (`#rrggbb` or `#rrggbbaa`). */
@@ -85,8 +85,21 @@ export interface Doc {
   artboards?: Artboard[];
   /** The id of the open artboard (missing = the first). */
   activeArtboard?: Id;
+  /** How a pixel sprite is built (missing = worked out from the document, see src/pixel/way.ts). */
+  sprite?: SpriteInfo;
   /** Data kept for features and plugins, by feature id. See `Ext`. */
   ext?: Ext;
+}
+
+/**
+ * The four ways to build a sprite: one picture, an animation (frames on the timeline), frames on boards (one artboard per
+ * frame) or sprites on a sheet (one artboard per sprite).
+ */
+export type SpriteWay = 'picture' | 'animation' | 'boards' | 'sheet';
+
+/** What a document says about the sprite in it. */
+export interface SpriteInfo {
+  way: SpriteWay;
 }
 
 /** One artboard (see Doc.artboards). */
@@ -138,6 +151,29 @@ export interface DrawingOverride {
   shapes?: ListOverride<Shape>;
   /** Changes to a camera key's view. */
   view?: Patch;
+  /** Only while a file is being read: what a redrawn drawing changes from the original's (see `DrawingDiff`). Applied, then dropped. */
+  diff?: DrawingDiff;
+}
+
+/**
+ * A redrawn pixel or tile drawing as a file stores it: only the part that differs from the original's drawing.
+ * In memory the variation has the whole drawing (in `doc.drawings`), so tools work on it unchanged.
+ */
+export interface DiffRect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  pixels: string | Uint8ClampedArray;
+}
+
+export interface DrawingDiff {
+  /** Pixels: the changed rectangle. In a file `pixels` names a PNG entry of just that rectangle; once read it holds its RGBA bytes. */
+  rect?: DiffRect;
+  /** Pixels, when the change is in several places far apart: one small rectangle each (a file with one change uses `rect`). */
+  rects?: DiffRect[];
+  /** Tiles: the changed slots as pairs of slot number and new value. */
+  cells?: number[];
 }
 
 /** Everything a variation changes. Anything not named here follows the original. */
@@ -148,6 +184,26 @@ export interface VariationOverrides {
   layers?: ListOverride<Layer, ListOverride<Cel>>;
   /** Drawings of the original that changed, by the original's drawing id. */
   drawings?: Record<Id, DrawingOverride>;
+  /** Sound clips by id: volume, mute, start and name changes, clips left out, clips added. */
+  audio?: ListOverride<AudioClip>;
+  /** The palette colours this variation changed (a colourway for pixel art). Every other colour follows the original. */
+  palette?: PaletteOverride;
+}
+
+/** One palette colour a variation made its own: `from` is the colour in the original's palette, `to` what this variation has instead. */
+export interface PaletteColourChange {
+  from: Color;
+  to: Color;
+}
+
+/**
+ * A variation's colourway: only the colours it changed. Colours the original adds, removes or moves flow through; the
+ * pixels of the original that have a changed colour are shown in the new one. `legacy` is an older file's whole palette,
+ * turned into changes once the original's palette is known (it is never written).
+ */
+export interface PaletteOverride {
+  changes: PaletteColourChange[];
+  legacy?: DocPalette;
 }
 
 /** The part of a document each artboard has its own copy of. */
@@ -238,6 +294,28 @@ export interface PixelLayer extends BaseLayer {
   pixelSize: number;
   /** Palette lock: everything painted on this layer snaps to the nearest palette colour (missing = off). */
   paletteLock?: boolean;
+  /** Named rectangles cut out of the sprite (a button, a tile, a frame with a pivot). Missing = none. See `Slice`. */
+  slices?: Slice[];
+}
+
+/**
+ * A named rectangle on a pixel layer, in the layer's art pixels (0, 0 is the top left of the layer). Engines get it as
+ * a region (Godot AtlasTexture, Unity sprite rect, Phaser and Pixi frames); with a `center` it is a 9-patch (the border
+ * is what stays the same size when the picture is stretched); with a `pivot` it is where the sprite turns and sits.
+ */
+export interface Slice {
+  id: Id;
+  name: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  /** The stretchy middle of a 9-patch, in the same coordinates (inside the slice). Missing = not a 9-patch. */
+  center?: { x: number; y: number; w: number; h: number };
+  /** The pivot, a point on the pixel grid in the same coordinates (it may sit outside the rectangle; 0, 0 is the layer's top left corner). Missing = the engine's default. */
+  pivot?: { x: number; y: number };
+  /** The colour it is drawn in on the canvas (missing = a colour picked from its name). */
+  color?: Color;
 }
 
 /**
@@ -328,8 +406,11 @@ export interface KeptShape {
 }
 
 /**
- * A pixel drawing: an RGBA grid the size of the layer's art grid (`ceil(doc.width / pixelSize)` by
- * `ceil(doc.height / pixelSize)`). In memory `pixels` is the raw RGBA bytes. In a saved file it is stored as a PNG.
+ * A pixel drawing: RGBA pixels placed on the layer's art grid (`ceil(doc.width / pixelSize)` by
+ * `ceil(doc.height / pixelSize)`). `width` x `height` is the block that is held, at (`x`, `y`) art pixels from the
+ * grid's top-left (missing = 0). Older drawings (and tile frames) are the whole grid at (0, 0); newer ones hold only
+ * the painted part, and a blank one is 0 x 0. Use `gridPixels` (core/pixelBounds.ts) for the whole grid.
+ * In memory `pixels` is the raw RGBA bytes. In a saved file it is stored as a PNG.
  * Edits replace the array (never mutate it in place), so undo and caches can compare by reference.
  */
 export interface PixelDrawing {
@@ -337,6 +418,9 @@ export interface PixelDrawing {
   kind: 'pixel';
   /** Data kept for features and plugins, by feature id. See `Ext`. */
   ext?: Ext;
+  /** Where the held block starts on the art grid (missing = 0). */
+  x?: number;
+  y?: number;
   width: number;
   height: number;
   pixels: Uint8ClampedArray;

@@ -83,6 +83,26 @@ async function runSteps(win, steps, { outDir, width, height, name }) {
       const [lx, ly] = pts[pts.length - 1];
       send({ type: 'mouseUp', x: lx, y: ly, button: 'left', clickCount: 1, modifiers: mods });
       await sleep(s.after ?? 80);
+    } else if (s.rdrag || s.rclick) {
+      // The same with the right mouse button: "rdrag": [[x, y], ...] paints with Back in the Pixel workspace, "rclick": [x, y].
+      const pts = s.rdrag || [s.rclick, s.rclick];
+      const n = s.steps ?? 6;
+      const d = s.delay ?? 8;
+      send({ type: 'mouseMove', x: pts[0][0], y: pts[0][1] });
+      send({ type: 'mouseDown', x: pts[0][0], y: pts[0][1], button: 'right', clickCount: 1 });
+      await sleep(16);
+      for (let i = 1; i < pts.length; i++) {
+        const [ax, ay] = pts[i - 1];
+        const [bx, by] = pts[i];
+        for (let k = 1; k <= n; k++) {
+          const t = k / n;
+          send({ type: 'mouseMove', x: Math.round(ax + (bx - ax) * t), y: Math.round(ay + (by - ay) * t), modifiers: ['rightButtonDown'] });
+          await sleep(d);
+        }
+      }
+      const [lx, ly] = pts[pts.length - 1];
+      send({ type: 'mouseUp', x: lx, y: ly, button: 'right', clickCount: 1 });
+      await sleep(s.after ?? 80);
     } else if (s.wheel || s.pinch) {
       // The mouse wheel at a point: "wheel": [x, y], "dy": -120 (negative = up, which zooms in), "dx", "count" notches
       // sent "delay" ms apart, "mods": ["shift"]. "pinch" is a trackpad pinch, which Chromium delivers as Ctrl + wheel
@@ -146,6 +166,7 @@ function mockMain(ipcMain) {
   ipcMain.handle('autosave:listKept', () => []);
   // Plugins and templates live in memory for the run.
   const lib = new Map();
+  ipcMain.handle('plugins:memory', () => ({}));
   ipcMain.handle('library:list', (_e, kind) => [...lib.keys()].filter((k) => k.startsWith(kind + '/')).map((k) => ({ id: k.slice(kind.length + 1), size: lib.get(k).length, modified: 0 })));
   ipcMain.handle('library:read', (_e, kind, id) => lib.get(`${kind}/${id}`) ?? null);
   ipcMain.handle('library:write', (_e, kind, id, bytes) => void lib.set(`${kind}/${id}`, bytes));

@@ -3,9 +3,9 @@ import { newDoc, newVectorLayer } from '../../src/core/doc';
 import { poseAt } from '../../src/core/symbols';
 import { emitterBox, maxLife, mixHex, newParticles, PARTICLE_PRESETS, particlesAt, rand } from '../../src/particles/model';
 import { posedParticles } from '../../src/particles/draw';
-import { readParticlesShape } from '../../src/io/shapes-extra';
+import { readParticlesShape } from '../../src/particles/read';
 import { loadFile, saveFile } from '../../src/io/file';
-import { particlesToSvg } from '../../src/export/svg-extra';
+import { particlesToSvg } from '../../src/particles/exports';
 
 const emitter = (preset = 'sparkle', patch = {}) => ({ ...newParticles('p1', preset, { x: 100, y: 100 }, { width: 400, height: 300 }, 7), ...patch });
 

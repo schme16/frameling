@@ -3,14 +3,15 @@
 import type { Draft } from 'immer';
 import type { ClipDirection, Doc, Drawing, Layer, Shape } from '../core/format';
 import { CLIP_DIRECTIONS, MAX_REPEAT, cleanRepeat, isDirection } from '../core/clipPlay';
-import { uid } from '../core/doc';
+import { pixelGrid, uid } from '../core/doc';
+import { gridPixels, setGridPixels, setPlaced, trimPixels } from '../core/pixelBounds';
 import { scaleAbout, transformShapes, type Matrix } from '../canvas/geometry';
 import { flipH, flipV } from '../pixel/transform';
 
 export type PluginOp =
   | { op: 'flipDrawing'; drawingId: string; axis: 'horizontal' | 'vertical' }
   | { op: 'transformDrawing'; drawingId: string; matrix: number[] }
-  | { op: 'setPixels'; drawingId: string; pixels: Uint8ClampedArray | Uint8Array | number[] }
+  | { op: 'setPixels'; drawingId: string; pixels: Uint8ClampedArray | Uint8Array | number[]; x?: number; y?: number; width?: number; height?: number }
   | { op: 'setLayer'; layerId: string; name?: string; visible?: boolean; locked?: boolean; opacity?: number }
   | { op: 'setDocument'; name?: string; fps?: number; background?: string | null }
   | { op: 'setShapeStyle'; drawingId: string; shapeId: string; color?: string; fill?: string | null; opacity?: number }
@@ -65,8 +66,11 @@ export function applyOp(doc: Draft<Doc>, raw: unknown): void {
         const m = o.axis === 'horizontal' ? scaleAbout(-1, 1, doc.width / 2, doc.height / 2) : scaleAbout(1, -1, doc.width / 2, doc.height / 2);
         d.shapes = transformShapes(d.shapes as Shape[], m) as Draft<Shape>[];
       } else if (d.kind === 'pixel') {
-        const img = { width: d.width, height: d.height, pixels: d.pixels as Uint8ClampedArray };
-        d.pixels = o.axis === 'horizontal' ? flipH(img, 'canvas') : flipV(img, 'canvas');
+        // Flipped across the whole art grid (the drawing only holds its painted part).
+        const l = doc.layers.find((x) => x.kind === 'pixel' && x.cels.some((c) => c.drawingId === d.id));
+        const g = l && l.kind === 'pixel' ? pixelGrid(doc as Doc, l) : { width: d.width + (d.x ?? 0), height: d.height + (d.y ?? 0) };
+        const img = { width: g.width, height: g.height, pixels: gridPixels(d as never, g.width, g.height) };
+        setGridPixels(d, o.axis === 'horizontal' ? flipH(img, 'canvas') : flipV(img, 'canvas'), g.width, g.height);
       } else throw new OpProblem('Tilemap drawings cannot be flipped by a plugin.');
       return;
     }
@@ -82,10 +86,19 @@ export function applyOp(doc: Draft<Doc>, raw: unknown): void {
       const d = drawingOf(doc, o.drawingId);
       if (d.kind !== 'pixel') throw new OpProblem('setPixels works on pixel drawings only.');
       const p = o.pixels;
-      const len = d.width * d.height * 4;
-      if (!(p instanceof Uint8ClampedArray || p instanceof Uint8Array || Array.isArray(p)) || p.length !== len) throw new OpProblem(`pixels must be ${len} bytes (RGBA, ${d.width} x ${d.height}).`);
+      // The block the drawing holds, unless the plugin says where a different one goes (x, y, width, height in art pixels).
+      const sized = o.width !== undefined || o.height !== undefined || o.x !== undefined || o.y !== undefined;
+      const w = sized ? o.width : d.width;
+      const h = sized ? o.height : d.height;
+      const x = sized ? o.x ?? 0 : d.x ?? 0;
+      const y = sized ? o.y ?? 0 : d.y ?? 0;
+      if (![w, h, x, y].every(Number.isInteger) || w < 0 || h < 0 || w > 16384 || h > 16384 || x < 0 || y < 0 || x > 16384 || y > 16384) throw new OpProblem('x, y, width and height must be whole numbers from 0 to 16384.');
+      const len = w * h * 4;
+      if (!(p instanceof Uint8ClampedArray || p instanceof Uint8Array || Array.isArray(p)) || p.length !== len) throw new OpProblem(`pixels must be ${len} bytes (RGBA, ${w} x ${h}).`);
       // Always a fresh array: edits never share memory with what the plugin holds.
-      d.pixels = Uint8ClampedArray.from(p as ArrayLike<number>);
+      const fresh = Uint8ClampedArray.from(p as ArrayLike<number>);
+      if (w === 0 || h === 0) setPlaced(d, { x: 0, y: 0, width: 0, height: 0, pixels: fresh });
+      else setPlaced(d, trimPixels(fresh, w, h, x, y));
       return;
     }
     case 'setLayer': {

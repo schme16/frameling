@@ -5,6 +5,8 @@ import { getPanel } from '../core/registry';
 import { dock, panelTitle, renameFloat, renamePanel } from './dock';
 import { dragState, dropNote, type DragState } from './dockDrag';
 import { closeDockMenu, dockMenu, renaming } from './dockMenus';
+import { currentGroups, renameToolGroup } from './toolRail';
+import { groupName } from './toolArrange';
 import { installPanelFocus } from './dockShared';
 import type { DockZone } from './dockModel';
 import { Icon } from './icons';
@@ -138,6 +140,13 @@ function DockMenuView() {
 
 // ---------------------------------------------------------------- the name box
 
+/** The name a tool group has without one of its own (so typing that back clears the custom name). */
+function usualGroupName(id: string): string {
+  const groups = currentGroups();
+  const g = groups.find((x) => x.id === id);
+  return g ? groupName({ ...g, name: undefined }, groups) : '';
+}
+
 function RenameBox() {
   const r = renaming.use((v) => v);
   const l = dock.use((d) => d.layout);
@@ -148,7 +157,11 @@ function RenameBox() {
   useEffect(() => {
     if (!kind || !id) return;
     const cur = dock.get().layout;
-    setDraft(kind === 'panel' ? panelTitle(id, cur) : (cur.floats.find((f) => f.id === id)?.name ?? ''));
+    if (kind === 'group') {
+      const groups = currentGroups();
+      const g = groups.find((x) => x.id === id);
+      setDraft(g ? groupName(g, groups) : '');
+    } else setDraft(kind === 'panel' ? panelTitle(id, cur) : (cur.floats.find((f) => f.id === id)?.name ?? ''));
   }, [kind, id]);
   const close = () => renaming.set(null);
   useEscape(!!r, close);
@@ -169,10 +182,11 @@ function RenameBox() {
     return () => window.removeEventListener('pointerdown', down, true);
   }, [r]);
   if (!r) return null;
-  const exists = r.kind === 'panel' ? true : l.floats.some((f) => f.id === r.id);
+  const exists = r.kind === 'panel' ? true : r.kind === 'group' ? currentGroups().some((g) => g.id === r.id) : l.floats.some((f) => f.id === r.id);
   if (!exists) return null;
   const commit = () => {
-    if (r.kind === 'panel') renamePanel(r.id, draft.trim() === panelTitleOriginal(r.id) ? '' : draft);
+    if (r.kind === 'group') renameToolGroup(r.id, draft.trim() === usualGroupName(r.id) ? '' : draft);
+    else if (r.kind === 'panel') renamePanel(r.id, draft.trim() === panelTitleOriginal(r.id) ? '' : draft);
     else renameFloat(r.id, draft);
     close();
   };
@@ -187,8 +201,8 @@ function RenameBox() {
       }}
     >
       <label>
-        <span>{r.kind === 'panel' ? 'Name this panel' : 'Name this window'}</span>
-        <input type="text" autoFocus value={draft} maxLength={40} placeholder={r.kind === 'panel' ? '' : 'Named after its front panel'} onChange={(e) => setDraft(e.target.value)} onFocus={(e) => e.target.select()} />
+        <span>{r.kind === 'panel' ? 'Name this panel' : r.kind === 'group' ? 'Name this group of tools' : 'Name this window'}</span>
+        <input type="text" autoFocus value={draft} maxLength={40} placeholder={r.kind === 'panel' ? '' : r.kind === 'group' ? 'Group name' : 'Named after its front panel'} onChange={(e) => setDraft(e.target.value)} onFocus={(e) => e.target.select()} />
       </label>
       <div className="ui-dock-rename-row">
         <button type="submit" className="ui-btn ui-btn-primary ui-btn-small">

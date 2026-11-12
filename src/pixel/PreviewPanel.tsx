@@ -1,16 +1,21 @@
 // The Preview panel: the animation playing at real size (1x, 2x, 3x or the biggest that fits), crisp, in a loop,
 // while you draw. Each frame is drawn once at art size and kept until the document changes, then scaled up with
 // nearest neighbour, so playing costs almost nothing.
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Doc } from '../core/format';
 import { renderFrame } from '../core/render';
 import { store, useStore } from '../core/store';
-import { sceneOf } from '../core/symbols';
+import { rootDoc, sceneOf } from '../core/symbols';
+import { activeId, artboardDoc, artboardsOf } from '../artboards/model';
+import { goToBoard } from './boards';
 import { Icon } from '../ui/icons';
-import { framesDue, previewIndex, previewPosition, notePreviewFrame, previewBase, previewFrames, previewScale, previewSettings, setPreview, type PreviewZoom } from './preview';
+import { Quill, useQuillShown } from '../ui/mascot';
+import { line } from '../ui/mascot/lines';
+import { QUILL_ART_HEIGHT, quillFits, framesDue, previewIndex, previewPosition, notePreviewFrame, previewBase, previewFrames, previewScale, previewSettings, setPreview, type PreviewZoom } from './preview';
+import { boardSlots, boardsBox, pickSprite, pinnedBoard, previewKind, previewPin, slotAt, slotsLength } from './previewBoards';
 import './pixel.css';
 
-type Frames = Map<number, OffscreenCanvas>;
+type Frames = Map<string, OffscreenCanvas>;
 
 /** The frame drawn at art size (one canvas pixel per art pixel), crisp, without reference layers. */
 function artFrame(doc: Doc, frame: number, base: number): OffscreenCanvas {
@@ -20,6 +25,13 @@ function artFrame(doc: Doc, frame: number, base: number): OffscreenCanvas {
   g.scale(base, base);
   renderFrame(g, doc, frame, { layerFilter: (l) => !l.reference });
   return c;
+}
+
+const artboardsList = (d: Doc) => artboardsOf(d).map((a) => ({ id: a.id, name: a.name, label: a.name }));
+
+function boardTitle(kind: string, name: string, open: boolean, own: boolean): string {
+  if (kind === 'sprites') return open ? `${name}: the open sprite. Click another sprite to play it here.` : `Play ${name} here. Click again to follow the open sprite.`;
+  return own ? `${name}: jump the preview here` : `${name}: open this board`;
 }
 
 const ZOOMS: { value: PreviewZoom; label: string; title: string }[] = [
@@ -37,16 +49,34 @@ export function PreviewPanel() {
   const doc = useStore((s) => s.doc);
   const mainFrame = useStore((s) => s.ui.frame);
   const mainPlaying = useStore((s) => s.ui.playing);
+  const quillOn = useQuillShown();
   const [shown, setShown] = useState(0);
   const [boxSize, setBoxSize] = useState({ w: 240, h: 200 });
+  const [jump, setJump] = useState(0);
 
+  // Frames on boards play in order as one animation; on a sheet the picker chooses which sprite plays.
+  const root = rootDoc(doc);
+  const kind = previewKind(root);
+  const slots = useMemo(() => (kind === 'boards' ? boardSlots(root) : []), [root, kind]);
+  const total = slotsLength(slots);
+  const openId = activeId(root);
+  const pin = previewPin.use((p) => p);
+  const pinned = kind === 'sprites' ? pinnedBoard(root, pin) : null;
+  const playId = pinned && pinned !== openId ? pinned : null;
   const scene = sceneOf(doc, mainFrame);
-  const sdoc = scene.doc;
-  const range = previewFrames(sdoc, settings.range, scene.frame);
+  const sdoc = playId ? artboardDoc(root, playId) : scene.doc;
+  const openSlot = slots.find((b) => b.id === openId);
+  // Where the timeline is, in the long animation (boards) or on the sprite being played.
+  const atFrame = kind === 'boards' ? (openSlot?.start ?? 0) + Math.min(scene.frame, (openSlot?.length ?? 1) - 1) : playId ? 0 : scene.frame;
+  const range = kind === 'boards' ? { start: 0, end: Math.max(0, total - 1), clip: null } : previewFrames(sdoc, settings.range, atFrame);
   const base = previewBase(sdoc);
-  const artW = Math.max(1, Math.round(sdoc.width * base));
-  const artH = Math.max(1, Math.round(sdoc.height * base));
+  const box0 = kind === 'boards' ? boardsBox(root) : { w: sdoc.width, h: sdoc.height };
+  const artW = Math.max(1, Math.round(box0.w * base));
+  const artH = Math.max(1, Math.round(box0.h * base));
+  const source = kind === 'boards' ? root : sdoc;
+  const fps = root.fps;
   const scale = previewScale(settings.zoom, artW, artH, boxSize.w - 16, boxSize.h - 16);
+  const showQuill = quillOn && settings.quillForScale && quillFits(scale, artW, artH, boxSize.w, boxSize.h);
 
   // The panel's size, for Fit.
   useEffect(() => {
@@ -59,12 +89,26 @@ export function PreviewPanel() {
 
   // Frames drawn at art size, thrown away when the document changes.
   const cache = useRef<{ doc: Doc | null; frames: Frames }>({ doc: null, frames: new Map() });
-  const frameCanvas = (d: Doc, f: number): OffscreenCanvas => {
-    if (cache.current.doc !== d) cache.current = { doc: d, frames: new Map() };
-    let c = cache.current.frames.get(f);
+  /** The drawing behind frame `f` of what the preview plays, read fresh from the store. */
+  const resolve = (f: number): { owner: Doc; d: Doc; local: number; key: string } => {
+    const st = store().get();
+    const r = rootDoc(st.doc);
+    if (kind === 'boards') {
+      const sl = boardSlots(r);
+      const at = slotAt(sl, f);
+      const id = sl[at.index].id;
+      return { owner: r, d: artboardDoc(r, id), local: at.local, key: `${id}:${at.local}` };
+    }
+    const d = playId ? artboardDoc(r, playId) : sceneOf(st.doc, st.ui.frame).doc;
+    const local = Math.max(0, Math.min(d.length - 1, f));
+    return { owner: d, d, local, key: String(local) };
+  };
+  const frameCanvas = (r: { owner: Doc; d: Doc; local: number; key: string }): OffscreenCanvas => {
+    if (cache.current.doc !== r.owner) cache.current = { doc: r.owner, frames: new Map() };
+    let c = cache.current.frames.get(r.key);
     if (!c) {
-      c = artFrame(d, f, previewBase(d));
-      cache.current.frames.set(f, c);
+      c = artFrame(r.d, r.local, previewBase(r.d));
+      cache.current.frames.set(r.key, c);
     }
     return c;
   };
@@ -73,8 +117,7 @@ export function PreviewPanel() {
   const paint = (f: number) => {
     const el = canvas.current;
     if (!el) return;
-    const s = sceneOf(store().get().doc, store().get().ui.frame).doc;
-    const art = frameCanvas(s, Math.max(0, Math.min(s.length - 1, f)));
+    const art = frameCanvas(resolve(f));
     const dpr = window.devicePixelRatio || 1;
     const cssW = Math.max(1, Math.round(art.width * scale));
     const cssH = Math.max(1, Math.round(art.height * scale));
@@ -116,9 +159,9 @@ export function PreviewPanel() {
   const frameRef = useRef(range.start);
   useEffect(() => {
     if (!own) {
-      frameRef.current = scene.frame;
-      paint(scene.frame);
-      setShown(scene.frame);
+      frameRef.current = atFrame;
+      paint(atFrame);
+      setShown(atFrame);
       return;
     }
     if (frameRef.current < range.start || frameRef.current > range.end) frameRef.current = previewPosition(0, range, settings.loop).frame;
@@ -130,7 +173,7 @@ export function PreviewPanel() {
     let last = performance.now();
     let carry = 0;
     const tick = (now: number) => {
-      const { steps, rest } = framesDue(carry + (now - last), sdoc.fps);
+      const { steps, rest } = framesDue(carry + (now - last), fps);
       carry = rest;
       last = now;
       if (steps) {
@@ -152,10 +195,28 @@ export function PreviewPanel() {
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [own, sdoc, scene.frame, range.start, range.end, range.direction, range.plays, settings.loop, scale]);
+  }, [own, source, atFrame, jump, range.start, range.end, range.direction, range.plays, settings.loop, scale]);
 
   const togglePlay = () => setPreview({ playing: !settings.playing });
   const clipNote = range.clip ? `${range.clip}, ` : '';
+
+  // The board strip: which board is playing. Boards: click to jump there (or open it, when paused). Sheet: pick the sprite.
+  const playing = kind === 'boards' ? slots[slotAt(slots, shown).index] : undefined;
+  const strip = kind === 'boards' ? slots.map((b) => ({ id: b.id, label: b.name.match(/\d+\s*$/)?.[0].trim() ?? '', name: b.name })) : kind === 'sprites' ? artboardsList(root) : [];
+  const stripOn = kind === 'boards' ? playing?.id : playId ?? openId;
+  const pickBoard = (id: string) => {
+    if (kind === 'sprites') {
+      frameRef.current = 0;
+      pickSprite(root, openId, id);
+    } else if (own) {
+      frameRef.current = slots.find((b) => b.id === id)?.start ?? 0;
+      setJump((j) => j + 1);
+    } else {
+      goToBoard(id);
+    }
+  };
+  const nameNow = kind === 'boards' ? (slots.every((b) => b.length === 1) ? '' : playing?.name) : kind === 'sprites' ? (artboardsList(root).find((b) => b.id === stripOn)?.name ?? '') : '';
+  const lengthNow = kind === 'boards' ? total : sdoc.length;
 
   return (
     <div className="cv-panel px-preview" data-help="pixel-preview">
@@ -174,7 +235,14 @@ export function PreviewPanel() {
           }
         }}
       >
-        <canvas ref={canvas} className="px-preview-canvas" aria-hidden="true" />
+        <div className="px-preview-row">
+          <canvas ref={canvas} className="px-preview-canvas" aria-hidden="true" />
+          {showQuill && (
+            <span className="px-preview-quill" title={line('pixel.scale.hover')} style={{ height: QUILL_ART_HEIGHT * scale }}>
+              <Quill anim="idle" size={QUILL_ART_HEIGHT * scale} />
+            </span>
+          )}
+        </div>
         {scale !== 1 && artW <= 256 && artH <= 256 && (
           <span className="px-preview-inset" title="Real size: one art pixel is one screen pixel">
             <canvas ref={inset} className="px-preview-canvas" aria-hidden="true" />
@@ -182,6 +250,15 @@ export function PreviewPanel() {
           </span>
         )}
       </div>
+      {strip.length > 1 && (
+        <div className="px-preview-boards" role="group" aria-label={kind === 'boards' ? 'Boards in the preview' : 'Sprite to preview'} data-kind={kind}>
+          {strip.map((b, i) => (
+            <button key={b.id} type="button" className="px-preview-board" aria-pressed={b.id === stripOn} data-on={b.id === stripOn} data-open={kind === 'sprites' && b.id === openId} title={boardTitle(kind, b.name, b.id === openId, own)} aria-label={b.name} onClick={() => pickBoard(b.id)}>
+              {kind === 'boards' ? b.label || i + 1 : b.name}
+            </button>
+          ))}
+        </div>
+      )}
       <div className="px-preview-bar">
         <button type="button" className="px-preview-play" aria-pressed={settings.playing} title={settings.playing ? 'Pause the preview' : 'Play the preview'} aria-label={settings.playing ? 'Pause the preview' : 'Play the preview'} data-command="pixel.previewPlay" onClick={togglePlay}>
           <Icon name={settings.playing ? 'pause' : 'play'} size={16} />
@@ -193,10 +270,16 @@ export function PreviewPanel() {
             </button>
           ))}
         </div>
+        {quillOn && (
+          <button type="button" className="px-preview-loop px-preview-scale" aria-pressed={settings.quillForScale} data-on={settings.quillForScale} title="Quill for scale: a tiny Quill stands next to your sprite at the same scale, so you can feel how big it is" aria-label="Quill for scale" onClick={() => setPreview({ quillForScale: !settings.quillForScale })}>
+            <Icon name="heart" size={16} />
+          </button>
+        )}
         <button type="button" className="px-preview-loop" aria-pressed={settings.loop} data-on={settings.loop} title={settings.loop ? 'Looping. Click to play once and stop.' : 'Playing once. Click to loop.'} aria-label="Loop the preview" onClick={() => setPreview({ loop: !settings.loop, playing: true })}>
           <Icon name="loop" size={16} />
         </button>
       </div>
+      {kind !== 'boards' && (
       <div className="cv-choice" role="radiogroup" aria-label="What the preview plays">
         <button type="button" role="radio" aria-checked={settings.range === 'all'} data-on={settings.range === 'all'} className="cv-choice-btn" title="Play every frame" onClick={() => setPreview({ range: 'all' })}>
           All frames
@@ -205,8 +288,9 @@ export function PreviewPanel() {
           This clip
         </button>
       </div>
+      )}
       <p className="px-preview-info" aria-live="off">
-        {clipNote}frame {shown + 1} of {sdoc.length}, {sdoc.fps} fps, {artW} x {artH} {base !== 1 ? 'art pixels' : 'pixels'}
+        {nameNow ? `${nameNow}, ` : ''}{clipNote}frame {shown + 1} of {lengthNow}, {fps} fps, {artW} x {artH} {base !== 1 ? 'art pixels' : 'pixels'}
         {mainPlaying ? '. Following the timeline.' : ''}
       </p>
     </div>

@@ -7,7 +7,9 @@ import { notify } from '../io/notify';
 import { can } from '../platform';
 import { backgroundFor, drawFrame, makeCanvas, readPixels } from '../export/draw';
 import { defaultSettings, planExport } from '../export/plan';
+import { emitPluginEvent } from './bus';
 import { runtimeOf } from './manager';
+import { cleanValues, rememberValues, type OptionValues } from './options';
 import { exportClips, type ExportFrame, type PluginExporterDef } from './runtime';
 
 export interface PluginExportJob {
@@ -20,11 +22,26 @@ export interface PluginExportChoice {
   range: 'all' | 'clip' | 'frame';
   clipId: string | null;
   scale: number;
+  /** What the exporter's own options were set to (checked against what it described; remembered for next time). */
+  options?: OptionValues;
 }
 
 export type Progress = { done: number; total: number; label: string };
 
 export async function runPluginExport(job: PluginExportJob, choice: PluginExportChoice, signal: AbortSignal, onProgress: (p: Progress) => void): Promise<'done' | 'cancelled'> {
+  const event = { format: `plugin:${job.pluginId}:${job.def.id}`, name: job.def.label };
+  emitPluginEvent('export.started', event);
+  try {
+    const r = await exportWithPlugin(job, choice, signal, onProgress);
+    emitPluginEvent('export.finished', { ...event, ok: r === 'done', cancelled: r === 'cancelled' });
+    return r;
+  } catch (e) {
+    emitPluginEvent('export.finished', { ...event, ok: false, error: e instanceof Error ? e.message.slice(0, 200) : 'It did not work.' });
+    throw e;
+  }
+}
+
+async function exportWithPlugin(job: PluginExportJob, choice: PluginExportChoice, signal: AbortSignal, onProgress: (p: Progress) => void): Promise<'done' | 'cancelled'> {
   const api = desktop();
   if (!api) throw new Error('Exporting needs the Frameling app.');
   const rt = runtimeOf(job.pluginId);
@@ -67,7 +84,9 @@ export async function runPluginExport(job: PluginExportJob, choice: PluginExport
   };
   let files;
   try {
-    files = await rt.runExport(job.def.id, frames, info, signal);
+    const options = cleanValues(job.def.options, choice.options);
+    rememberValues(job.pluginId, job.def.id, options);
+    files = await rt.runExport(job.def.id, frames, info, signal, options);
   } catch (e) {
     if (e instanceof DOMException && e.name === 'AbortError') return 'cancelled';
     throw e;

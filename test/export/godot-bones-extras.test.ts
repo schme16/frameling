@@ -153,6 +153,27 @@ describe('Godot bones: looks', () => {
     expect(nativeBlend(undefined)).toEqual({ blend: 'mix', exact: true });
     expect(nativeBlend('screen').exact).toBe(false);
     expect(nativeBlend('overlay')).toEqual({ blend: 'mix', exact: false });
+    expect(nativeBlend('linear-dodge')).toEqual({ blend: 'dodge', exact: true });
+    expect(nativeBlend('subtract')).toEqual({ blend: 'sub', exact: true });
+    expect(nativeBlend('divide')).toEqual({ blend: 'div', exact: true });
+  });
+
+  it('writes a shader for linear dodge, subtract and divide that reads what is behind', () => {
+    for (const b of ['dodge', 'sub', 'div'] as const) {
+      const t = tintShader(b);
+      expect(t).toContain('hint_screen_texture');
+      expect(t).toContain('render_mode blend_mix;');
+      expect(t).toContain('uniform float tint_amount');
+    }
+    expect(tintShader('dodge')).toContain('min(cb + cs');
+    expect(tintShader('sub')).toContain('max(cb - cs');
+    const doc = bonesExtrasDoc({ glowBlend: 'divide' });
+    const { input } = scene(doc);
+    const tscn = godotBonesScene(input);
+    expect(tscn).toContain('type="ShaderMaterial"');
+    expect(tscn).toContain('frameling-blend-div.gdshader');
+    expect(godotBonesShaders(input).map((s) => s.name)).toContain('frameling-blend-div.gdshader');
+    expect(bonesNotes(doc).skipped.join('|')).not.toContain('Divide');
   });
 
   it('gives an Add layer a CanvasItemMaterial and a fade a modulate, and keeps the effects for baking', () => {
@@ -207,7 +228,7 @@ describe('Godot bones: looks', () => {
   });
 
   it('says nothing for the plain puppet', () => {
-    expect(bonesNotes(makePuppet())).toEqual({ native: [], baked: [], skipped: [], fades: [] });
+    expect(bonesNotes(makePuppet())).toEqual({ native: [], baked: [], skipped: [], fades: [], tips: [] });
   });
 
   it('writes the tint shader only for a tinted symbol, one per blend', () => {
@@ -230,5 +251,26 @@ describe('Godot bones: looks', () => {
     const { top } = scene();
     const scopes: BonesScope[] = allScopes(top);
     expect(scopes.every((s) => s.textures?.length === s.parts.length)).toBe(true);
+  });
+});
+
+describe('Godot bones notes: the faded symbol renderer tip', () => {
+  it('shows only when a faded symbol is a CanvasGroup', () => {
+    const doc = bonesExtrasDoc();
+    expect(bonesNotes(doc).tips).toEqual(["Faded symbols look best with Godot's Forward+ or Mobile renderer. On Compatibility (web exports), they come out a little darker."]);
+    expect(bonesNotes(bonesExtrasDoc({ camera: CAM })).tips.length).toBe(1);
+    expect(bonesNotes(makePuppet()).tips).toEqual([]);
+  });
+
+  it('is gone when no copy fades', () => {
+    const doc = bonesExtrasDoc();
+    for (const l of doc.layers) {
+      l.opacity = 1;
+      for (const cel of l.cels) {
+        const d = doc.drawings[cel.drawingId];
+        if (d?.kind === 'vector') for (const s of d.shapes) if ('opacity' in s) (s as { opacity: number }).opacity = 1;
+      }
+    }
+    expect(bonesNotes(doc).tips).toEqual([]);
   });
 });

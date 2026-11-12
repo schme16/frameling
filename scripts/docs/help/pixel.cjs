@@ -242,6 +242,20 @@ module.exports = [
     ],
   },
   {
+    // The Aseprite keys picked: the sprite at 800% (key 4), with the pixel units in the status bar.
+    name: 'pixel-aseprite-habits',
+    prefs: { showTips: false, keymapSet: 'pixel' },
+    steps: [
+      ...pixelDoc(slimeRows(), ['b']),
+      js(`${F}.run('pixel.zoom4')`),
+      js(`${F}.run('view.center')`),
+      setUi({ dirty: false }),
+      away,
+      wait(800),
+      { shot: '@' },
+    ],
+  },
+  {
     name: 'tileset',
     prefs: { showTips: false },
     steps: [
@@ -430,6 +444,8 @@ module.exports = [
         js(`${F}.run('view.zoom100')`),
         center,
         setUi({ color: '#ffe066' }),
+        // 2x, so Quill for scale has room to stand next to Pip.
+        js(`document.querySelectorAll('.px-preview-zoom [role="radio"]')[1]?.click()`),
         away,
         wait(700),
         { rec: '@', crop: [403, 47, 790, 444], every: 70 },

@@ -3,7 +3,7 @@ import { uid } from '../../src/core/doc';
 import { bonesExtrasDoc } from '../../src/export/bonesExtrasDoc';
 import { allScopes, bakeScales, fitScriptName, fitWindowScript, groupLayout, needsFitScript, bonesNotes, bonesStage, godotBonesScene, MAX_BAKE, maxStretch } from '../../src/export/godot-bones';
 import { buildAnimations } from '../../src/export/sheet';
-import type { Doc, InstanceShape } from '../../src/core/format';
+import type { Doc, InstanceShape, VectorDrawing } from '../../src/core/format';
 import { newVectorLayer } from '../../src/core/doc';
 import { newCameraLayer } from '../../src/core/camera';
 import type { VectorLayer } from '../../src/core/format';
@@ -302,11 +302,11 @@ describe('Godot bones: a faded symbol is a CanvasGroup', () => {
     // Add on the layer.
     const add = bonesExtrasDoc({ fade: true });
     add.layers.find((l) => l.name === 'Hero')!.blend = 'add';
-    expect(bonesNotes(add).fades.join('|')).toContain('uses Add or Multiply');
+    expect(bonesNotes(add).fades.join('|')).toContain('uses a blend mode other than normal');
     // A part with Multiply inside the symbol.
     const mul = bonesExtrasDoc({ fade: true });
     Object.values(mul.symbols!)[0].layers.find((l) => l.name === 'Hand')!.blend = 'multiply';
-    expect(bonesNotes(mul).fades.join('|')).toContain('some of its parts use Add or Multiply');
+    expect(bonesNotes(mul).fades.join('|')).toContain('some of its parts use a blend mode other than normal');
     // A symbol holding a symbol with bones fades as one picture too (see the nested group tests).
     const body = bonesExtrasDoc({ bodyArm: true });
     body.layers.find((l) => l.name === 'Hero')!.opacity = 0.5;
@@ -375,15 +375,35 @@ describe('Godot bones: a faded symbol holding a symbol with bones fades as one',
     expect(tscn.indexOf('name="Arm" type="Node2D"')).toBeLessThan(tscn.indexOf('name="Torso"'));
   });
 
-  it('keeps the arm plain and fades it part by part inside the body group, with a note', () => {
+  it('draws a faded arm inside the faded body into pictures, so it fades as one and Godot gets no group inside a group', () => {
     const doc = fadedBody({ armFade: 0.5 });
     const { tscn } = sceneOf(doc, 1);
     expect(tscn).toContain('[node name="Body" type="CanvasGroup" parent="."]');
-    expect(tscn).toContain('[node name="Arm" type="Node2D" parent="Body/Body bones/Spine"]');
-    expect(block(tscn, 'Arm')).toContain('modulate = Color(1, 1, 1, 0.5)');
-    expect(block(tscn, 'Arm')).not.toContain('self_modulate');
-    expect(tscn).toContain('NodePath("Body/Body bones/Spine/Arm:modulate")');
-    expect(bonesNotes(doc).fades.join('|')).toContain('Arm on Arm holder (Godot cannot put one fading group inside another');
+    // The arm is no live node any more: its layer is a picture per frame, under the body's bone, fading by modulate.
+    expect(tscn).not.toContain('name="Arm" type=');
+    expect(tscn).not.toContain('type="Skeleton2D" parent="Body/Body bones/Spine/Arm"');
+    expect(tscn).toContain('[node name="Arm holder" type="Sprite2D" parent="Body/Body bones/Spine"]');
+    expect(block(tscn, 'Arm holder')).not.toContain('z_index');
+    expect(tscn.match(/CanvasGroup/g)).toHaveLength(1);
+    expect(tscn.indexOf('name="Torso"')).toBeLessThan(tscn.indexOf('name="Arm holder"'));
+    const n = bonesNotes(doc);
+    expect(n.fades).toEqual([]);
+    expect(n.baked.join('|')).toContain('A faded symbol inside a faded symbol (drawn as one picture)');
+    // The pictures: one per frame the arm looks different in.
+    const body = bonesStage(doc, { start: 0, end: 11 }).nested[0].scope;
+    expect(body.nested).toHaveLength(0);
+    expect(body.parts.map((p) => p.layer.name)).toEqual(['Torso', 'Arm holder']);
+    expect(body.parts[1].pictures.length).toBeGreaterThan(1);
+  });
+
+  it('keeps the arm live when nothing around it fades, and when the body fades but the arm does not', () => {
+    const plain = bonesExtrasDoc({ bodyArm: true, armFade: 0.5 });
+    for (const cel of plain.layers.find((l) => l.name === 'Hero')!.cels) for (const sh of (plain.drawings[cel.drawingId] as VectorDrawing).shapes) sh.opacity = 1;
+    const { tscn } = sceneOf(plain, 1);
+    expect(tscn).toContain('[node name="Arm" type="CanvasGroup" parent="Body/Body bones/Spine"]');
+    expect(tscn).toContain('type="Skeleton2D" parent="Body/Body bones/Spine/Arm"');
+    expect(bonesNotes(plain).baked.join('|')).not.toContain('A faded symbol inside');
+    expect(sceneOf(fadedBody(), 1).tscn).toContain('[node name="Arm" type="Node2D" parent="Body/Body bones/Spine"]');
   });
 
   it('keeps the old part by part fade when what is inside cannot be ordered, with the reason', () => {

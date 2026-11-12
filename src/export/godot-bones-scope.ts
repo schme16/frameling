@@ -19,8 +19,11 @@ import type { Mat } from '../rig/math';
 
 export type PartKind = 'cut' | 'mesh' | 'free';
 
-/** The blend modes Godot has natively (a CanvasItemMaterial): normal, Add and Multiply. */
-export type NativeBlend = 'mix' | 'add' | 'mul';
+/** The blend modes Godot has natively (a CanvasItemMaterial): normal, Add and Multiply. The last three are a small included shader that reads what is behind. */
+export type NativeBlend = 'mix' | 'add' | 'mul' | 'dodge' | 'sub' | 'div';
+
+/** True for the blends that are a shader (they read the picture behind), not a CanvasItemMaterial. */
+export const isShaderBlend = (b: NativeBlend): boolean => b === 'dodge' || b === 'sub' || b === 'div';
 
 /** How a layer looks in Godot: its fade, its blend mode and the effects that get baked into its pictures. */
 export interface PartLook {
@@ -160,12 +163,19 @@ export function bakeScales(top: BonesScope, doc: { width: number; height: number
 // ---------------------------------------------------------------- notes
 
 /** What happened to the look of the layers, in plain words, for the export dialog and the help topic. */
+export type BonesNoteLines = { native: string[]; baked: string[]; skipped: string[]; fades: string[]; tips: string[] };
+
+/** Said once when the scene has a faded symbol drawn as a CanvasGroup. */
+export const FADE_TIP = "Faded symbols look best with Godot's Forward+ or Mobile renderer. On Compatibility (web exports), they come out a little darker.";
+
 export class BonesNotes {
   native = new Set<string>();
   baked = new Map<string, Set<string>>();
   skipped = new Map<string, Set<string>>();
   /** Faded symbols that fade part by part instead of as one picture: "Symbol on Layer" -> why. */
   fades = new Map<string, string>();
+  /** A faded symbol became a CanvasGroup (Godot's Compatibility renderer draws those a little darker). */
+  groups = false;
 
   fadeFallback(symbol: string, layer: string, why: string): void {
     this.fades.set(`${symbol} on ${layer}`, why);
@@ -184,9 +194,9 @@ export class BonesNotes {
   }
 
   /** Short lines: [what, ...] each with the layer names. */
-  lines(): { native: string[]; baked: string[]; skipped: string[]; fades: string[] } {
+  lines(): BonesNoteLines {
     const list = (m: Map<string, Set<string>>) => [...m].map(([what, layers]) => `${what} on ${[...layers].join(', ')}`);
-    return { native: [...this.native], baked: list(this.baked), skipped: list(this.skipped), fades: [...this.fades].map(([what, why]) => `${what} (${why})`) };
+    return { native: [...this.native], baked: list(this.baked), skipped: list(this.skipped), fades: [...this.fades].map(([what, why]) => `${what} (${why})`), tips: this.groups ? [FADE_TIP] : [] };
   }
 }
 
@@ -263,6 +273,9 @@ export function nativeBlend(mode: Layer['blend']): { blend: NativeBlend; exact: 
   if (!mode || mode === 'normal') return { blend: 'mix', exact: true };
   if (mode === 'add') return { blend: 'add', exact: true };
   if (mode === 'multiply') return { blend: 'mul', exact: true };
+  if (mode === 'linear-dodge') return { blend: 'dodge', exact: true };
+  if (mode === 'subtract') return { blend: 'sub', exact: true };
+  if (mode === 'divide') return { blend: 'div', exact: true };
   // Godot has no Screen, but Add is the nearest thing (both only lighten).
   if (mode === 'screen') return { blend: 'add', exact: false };
   return { blend: 'mix', exact: false };
@@ -283,7 +296,8 @@ export function partLook(doc: Doc, layer: Layer, notes?: BonesNotes): PartLook {
   const effects = [...(layer.effects ?? []), ...around.flatMap((f) => f.effects ?? [])].filter((e) => e.on !== false && (e.keys?.length || !isNoop(e.kind, valuesAt(e, 0))));
   if (notes) {
     if (opacity < 1) notes.native.add('Fade: the node’s modulate');
-    if (nb.blend !== 'mix') notes.native.add('Add and Multiply blend modes: a CanvasItemMaterial');
+    if (nb.blend !== 'mix' && !isShaderBlend(nb.blend)) notes.native.add('Add and Multiply blend modes: a CanvasItemMaterial');
+    if (isShaderBlend(nb.blend)) notes.native.add('Glow brighter (plain), Take away and Brighten by dividing blend modes: a small included shader that reads what is behind, so they mix with the stage but not inside a faded group');
     if (!nb.exact && mode) notes.skip(`${mode === 'screen' ? 'Screen drawn as Add' : `${blendWord(mode)} drawn as normal`}`, layer.name);
     for (const e of effects) notes.bake(effectInfo(e.kind).label, layer.name);
     if (around.some((f) => f.effects?.length)) notes.skip('Folder effects go on each layer separately', layer.name);
@@ -311,11 +325,11 @@ export function groupLayout(sc: BonesScope): { ok: boolean; top: GroupItem[]; ki
   const failed = (why: string) => ({ ok: false, top: [] as GroupItem[], kids: new Map<Id, GroupItem[]>(), why });
   const fail = failed('its parts are mixed up in the layer stack, so the scene tree cannot draw them in the right order inside one group');
   for (const n of sc.nested) {
-    if (n.look.blend !== 'mix') return failed('a symbol inside it uses Add or Multiply, which a group would blend inside itself instead of with the stage');
+    if (n.look.blend !== 'mix') return failed('a symbol inside it uses a blend mode other than normal, which a group would blend inside itself instead of with the stage');
     const inner = groupLayout(n.scope);
     if (!inner.ok) return failed(`a symbol with bones inside it cannot be grouped (${inner.why})`);
   }
-  if (sc.parts.some((p) => (p.look?.blend ?? 'mix') !== 'mix')) return failed('some of its parts use Add or Multiply, which a group would blend inside itself instead of with the stage');
+  if (sc.parts.some((p) => (p.look?.blend ?? 'mix') !== 'mix')) return failed('some of its parts use a blend mode other than normal, which a group would blend inside itself instead of with the stage');
   const kids = new Map<Id, GroupItem[]>();
   type Ranged = { item: GroupItem; lo: number; hi: number };
   // Sorts back to front and checks nothing interleaves. Items without parts in them go last.
@@ -373,7 +387,7 @@ export function groupLayout(sc: BonesScope): { ok: boolean; top: GroupItem[]; ki
 
 /** Why a faded copy can't be a CanvasGroup (undefined when it can), given the blend of its layer and of the copy it sits in. */
 export function groupBlocker(sc: BonesScope, blend: NativeBlend, inherit: NativeBlend = 'mix'): string | undefined {
-  if (blend !== 'mix' || inherit !== 'mix') return 'its layer uses Add or Multiply, which a group would blend inside itself instead of with the stage';
+  if (blend !== 'mix' || inherit !== 'mix') return 'its layer uses a blend mode other than normal, which a group would blend inside itself instead of with the stage';
   return groupLayout(sc).why;
 }
 
@@ -463,7 +477,7 @@ export function bonesScope(
   doc: Doc,
   layers: Layer[],
   range: { start: number; end: number },
-  opts: { depth?: number; notes?: BonesNotes; rigged?: Set<Id>; scopes?: Map<Id, BonesScope> } = {},
+  opts: { depth?: number; notes?: BonesNotes; rigged?: Set<Id>; scopes?: Map<Id, BonesScope>; bake?: boolean } = {},
 ): BonesScope {
   const depth = opts.depth ?? 0;
   const notes = opts.notes;
@@ -489,8 +503,12 @@ export function bonesScope(
     // Symbols with bones stay live only on layers that move on their own and have no effects or masks to bake.
     const holds = live.size > 0 && holdsInstanceOf(doc, layer, live);
     const bind = layer.bind ? nestableBind(layers, layer) : undefined;
-    const cut = holds && (!layer.bind || bind) && !look.effects.length && !masks.length ? live : undefined;
-    if (holds && !cut) notes?.skip('Symbols with bones are drawn into the pictures (the layer has effects or masks, or follows a bone that can not carry it)', layer.name);
+    // Inside a faded group a faded symbol is drawn into this layer's pictures, one per frame: Godot draws a group inside a
+    // group grey, and fading its parts one by one shows the overlaps through.
+    const drawnIn = !!opts.bake && holds && layerFadesInstances(doc, layer, live, look.opacity);
+    const cut = holds && !drawnIn && (!layer.bind || bind) && !look.effects.length && !masks.length ? live : undefined;
+    if (drawnIn) notes?.bake(DRAWN_IN, layer.name);
+    else if (holds && !cut) notes?.skip('Symbols with bones are drawn into the pictures (the layer has effects or masks, or follows a bone that can not carry it)', layer.name);
     const animatedFx = look.effects.some((e) => e.keys?.length);
     const maskFx = masks.some((m) => m.layer.effects?.some((e) => e.keys?.length));
     const pictures: Drawing[] = [];
@@ -538,12 +556,10 @@ export function bonesScope(
       frameOf.push(i);
     }
     for (const [key, t] of tracks) {
-      let scope = scopes.get(t.symbolId);
-      if (!scope) {
-        const c = symbolContent(doc, t.symbolId)!;
-        scope = bonesScope(doc, c.layers, { start: 0, end: Math.max(1, c.length) - 1 }, { depth: depth + 1, notes, rigged, scopes });
-        scopes.set(t.symbolId, scope);
-      }
+      const inner = (bake: boolean, n = notes) => symbolScope(doc, t.symbolId, { depth: depth + 1, notes: n, rigged, scopes, bake });
+      let scope = inner(!!opts.bake);
+      // A fading copy that will be a group: if a faded symbol sits inside it, that one is drawn into pictures instead.
+      if (!opts.bake && t.at.some((s) => s && look.opacity * s.opacity < 1 - 1e-6) && look.blend === 'mix') scope = fadeScope(scope, () => inner(true, undefined), () => inner(true));
       void key;
       nested.push({ layer, z, name: doc.symbols?.[t.symbolId]?.name ?? 'Symbol', symbolId: t.symbolId, at: t.at, scope, look, ...(bind ? { bind } : {}) });
     }
@@ -556,6 +572,44 @@ export function bonesScope(
     parts.push({ layer, z, kind, ...(rig && kind !== 'free' ? { rig, bone: layer.bind!.bone } : {}), ...(kind === 'mesh' ? { mesh: layer.bind!.mesh } : {}), pictures, frameOf, look, ...(masks.length ? { masks } : {}) });
   });
   return { layers, range, parts, rigs: layers.filter((l): l is RigLayer => isRigLayer(l) && l.rig.bones.length > 0), nested };
+}
+
+const DRAWN_IN = 'A faded symbol inside a faded symbol (drawn as one picture)';
+
+/** True when an instance of one of the symbols on this layer is faded (by the layer or by itself) at any key. */
+function layerFadesInstances(doc: Doc, layer: Layer, set: Set<Id>, layerOpacity: number): boolean {
+  for (const cel of layer.cels) {
+    const d = doc.drawings[cel.drawingId];
+    if (d?.kind === 'vector' && d.shapes.some((s) => isInstance(s) && set.has(s.symbolId) && layerOpacity * s.opacity < 1 - 1e-6)) return true;
+  }
+  return false;
+}
+
+/** The scope of a symbol's layers (made once per symbol and mode). `bake`: faded symbols in it are drawn into pictures. */
+function symbolScope(doc: Doc, id: Id, o: { depth: number; notes?: BonesNotes; rigged: Set<Id>; scopes: Map<Id, BonesScope>; bake: boolean }): BonesScope {
+  const key = `${id}${o.bake ? '~drawn' : ''}${o.notes ? '~noted' : ''}`;
+  let sc = o.scopes.get(key);
+  if (!sc) {
+    const c = symbolContent(doc, id)!;
+    sc = bonesScope(doc, c.layers, { start: 0, end: Math.max(1, c.length) - 1 }, o);
+    o.scopes.set(key, sc);
+  }
+  return sc;
+}
+
+/** True when a symbol holds a faded symbol copy (at any depth) that stays live, which a group cannot hold. */
+function holdsFadedCopy(sc: BonesScope): boolean {
+  return sc.nested.some((n) => n.at.some((s) => s && n.look.opacity * s.opacity < 1 - 1e-6) || holdsFadedCopy(n.scope));
+}
+
+/**
+ * The scope a fading copy (a CanvasGroup) should use: its own when no faded symbol is inside it, else the one that
+ * draws the faded symbols into pictures, when that can still sit in a group. `drawn` makes it (without notes, to look
+ * at); `noted` makes it again with notes once it is chosen.
+ */
+export function fadeScope(own: BonesScope, drawn: () => BonesScope, noted: () => BonesScope): BonesScope {
+  if (!holdsFadedCopy(own)) return own;
+  return groupLayout(drawn()).ok ? noted() : own;
 }
 
 /** The layers that make the scene (visible, not reference, not bones or camera), with their pictures per frame. */
@@ -615,13 +669,14 @@ export function symbolDropsHiddenLayers(doc: Doc, id: Id): boolean {
  * What the export dialog says about the look of the layers, without building any pictures: the effects that get baked,
  * what Godot does itself and what can't go. Cheap enough to run on every render of the dialog.
  */
-export function bonesNotes(doc: Doc): { native: string[]; baked: string[]; skipped: string[]; fades: string[] } {
+export function bonesNotes(doc: Doc): BonesNoteLines {
   const notes = new BonesNotes();
   const rigged = riggedSymbols(doc);
   const seen = new Set<Id>();
   const scopes = new Map<Id, BonesScope>();
-  // `under`: this symbol sits inside a faded one that is a CanvasGroup, and Godot cannot nest a group in a group.
-  const scan = (layers: Layer[], depth: number, inherit: NativeBlend = 'mix', under = false) => {
+  // `under`: this symbol sits inside a faded one that is a CanvasGroup, and Godot cannot nest a group in a group: its
+  // faded symbols are drawn into pictures ('drawn'), or fade part by part when that cannot be ('plain').
+  const scan = (layers: Layer[], depth: number, inherit: NativeBlend = 'mix', under: false | 'plain' | 'drawn' = false) => {
     const links = maskLinks(doc, layers);
     noteMasks(doc, layers, notes, links);
     for (const layer of layers) {
@@ -630,6 +685,10 @@ export function bonesNotes(doc: Doc): { native: string[]; baked: string[]; skipp
       const look = partLook(doc, layer, notes);
       if (symbolsOnLayer(doc, layer).some((id) => symbolDropsHiddenLayers(doc, id))) notes.skip('Hidden or reference layers inside symbols with effects are left out of the pictures', layer.name);
       if (layer.mask || !links.cuts.has(layer)) continue;
+      if (under === 'drawn' && depth < MAX_NEST && rigged.size && holdsInstanceOf(doc, layer, rigged) && layerFadesInstances(doc, layer, rigged, look.opacity)) {
+        notes.bake(DRAWN_IN, layer.name);
+        continue;
+      }
       if (depth < MAX_NEST && rigged.size) {
         for (const cel of layer.cels) {
           const d = doc.drawings[cel.drawingId];
@@ -640,18 +699,27 @@ export function bonesNotes(doc: Doc): { native: string[]; baked: string[]; skipp
               else {
                 notes.native.add('Symbols with bones: nested Skeleton2D and Bone2D nodes');
                 let group = false;
+                let drawn = false;
                 if (look.opacity * s.opacity < 1 - 1e-6) {
                   const c = symbolContent(doc, s.symbolId);
                   if (c) {
-                    let sc = scopes.get(s.symbolId);
-                    if (!sc) scopes.set(s.symbolId, (sc = bonesScope(doc, c.layers, { start: 0, end: Math.max(1, c.length) - 1 }, { depth: depth + 1, rigged, scopes })));
+                    const o = { depth: depth + 1, rigged, scopes, bake: false };
+                    let sc = symbolScope(doc, s.symbolId, o);
+                    if (!under) {
+                      const chosen = fadeScope(sc, () => symbolScope(doc, s.symbolId, { ...o, bake: true }), () => symbolScope(doc, s.symbolId, { ...o, bake: true }));
+                      drawn = chosen !== sc;
+                      sc = chosen;
+                    }
                     const why = under ? 'Godot cannot put one fading group inside another, so it fades part by part inside the faded symbol around it' : groupBlocker(sc, look.blend, inherit);
                     if (why) notes.fadeFallback(doc.symbols?.[s.symbolId]?.name ?? 'Symbol', layer.name, why);
-                    else group = true;
+                    else {
+                      group = true;
+                      notes.groups = true;
+                    }
                   }
                 }
-                const inside = under || group;
-                const key = inside ? `${s.symbolId}:group` : s.symbolId;
+                const inside = under || (group ? (drawn ? 'drawn' : 'plain') : false);
+                const key = inside ? `${s.symbolId}:${inside}` : s.symbolId;
                 if (!seen.has(key)) {
                   seen.add(key);
                   scan(symbolContent(doc, s.symbolId)?.layers ?? [], depth + 1, look.blend, inside);

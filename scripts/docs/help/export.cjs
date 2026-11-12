@@ -146,7 +146,53 @@ module.exports = [
   },
   {
     name: 'plugin-exports',
-    steps: [template('bouncing-ball'), wait(500), ...installPlugin('contact-sheet'), cmd('plugin.contact-sheet.export.png'), wait(1000), { shot: '@', el: '.plugin-export', pad: 0 }],
+    steps: [template('bouncing-ball'), wait(500), ...installPlugin('export-report'), cmd('plugin.export-report.export.report'), wait(1000), { shot: '@', el: '.plugin-export', pad: 0 }],
+  },
+  {
+    // The question a version 2 plugin asks before it gets any power: each one off to start with.
+    name: 'plugin-permissions',
+    steps: [template('bouncing-ball'), wait(500), js(`window.__framelingPlugins.install(${JSON.stringify(example('star-kit'))}); true`), wait(1200), { shot: '@', el: '.plugin-approve', pad: 0 }],
+  },
+  {
+    // The star kit with every power switched on: its tool is in the toolbox, picked, with a preview following the pointer.
+    name: 'plugin-tools',
+    steps: [
+      template('bouncing-ball'),
+      wait(500),
+      js(`window.__framelingPlugins.install(${JSON.stringify(example('star-kit'))}); true`),
+      wait(900),
+      js(`document.querySelectorAll('.plugin-approve [role=switch]').forEach((b) => b.click()); true`),
+      wait(300),
+      js(`document.querySelector('.plugin-approve .ui-btn-primary')?.click(); true`),
+      wait(2500),
+      js(`${F}.run('tools.plugin.star-kit.tool.stamp')`),
+      wait(500),
+      { click: [420, 330], after: 600 },
+      { click: [640, 300], after: 600 },
+      { move: [800, 380], after: 700 },
+      { shot: '@' },
+    ],
+  },
+  {
+    // A star the plugin made, picked: Properties shows its Plugin shape section with the Change settings form.
+    name: 'plugin-shapes',
+    steps: [
+      template('bouncing-ball'),
+      wait(500),
+      js(`window.__framelingPlugins.install(${JSON.stringify(example('star-kit'))}); true`),
+      wait(900),
+      js(`document.querySelectorAll('.plugin-approve [role=switch]').forEach((b) => b.click()); true`),
+      wait(300),
+      js(`document.querySelector('.plugin-approve .ui-btn-primary')?.click(); true`),
+      wait(2500),
+      js(`(async () => { const f = window.__frameling; const s = f.store(); const l = s.get().doc.layers.find((x) => x.kind === 'vector'); s.setUi({ activeLayerId: l.id, frame: 0 }); await window.__framelingPlugins.runtime('star-kit').toolEvent('stamp', { type: 'down', x: 300, y: 220, pressure: 0.5, shift: false, alt: false, mod: false, button: 0, frame: 0, drawingId: null, zoom: 1 }); })()`),
+      wait(700),
+      js(`__frameling.showPanel('plugin-shape')`),
+      wait(1200),
+      { move: [640, 790] },
+      wait(300),
+      { shot: '@', crop: [880, 330, 330, 400] },
+    ],
   },
   {
     name: 'plugin-panel',

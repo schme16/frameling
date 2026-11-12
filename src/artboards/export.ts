@@ -63,7 +63,7 @@ class ArtboardExportProblem extends Error {}
 
 /** Why a way of exporting doesn't go with this format (or null when it does). */
 export function modeOff(mode: ArtboardExportMode, settings: ExportSettings): string | null {
-  if (mode === 'joined' && (!formatInfo(settings.format).animated || settings.format === 'sheet')) return 'Pick a video or animation format for this';
+  if (mode === 'joined' && !formatInfo(settings.format).animated) return 'Pick a video, an animation or a sprite sheet for this';
   if (mode === 'atlas' && settings.format !== 'sheet') return 'Pick Sprite sheet for this';
   return null;
 }
@@ -77,6 +77,18 @@ export function effectiveMode(doc: Doc, settings: ExportSettings): ArtboardExpor
 /** True when this export is about more than the open artboard. */
 export function exportsSeveral(doc: Doc, settings: ExportSettings): boolean {
   return effectiveMode(doc, settings) !== 'one';
+}
+
+/**
+ * The artboards one after another as one film, and the settings to export it with. A sprite sheet turns it into one
+ * sprite: every frame of every artboard in order, as a single animation (the boards' own clips are left out, they
+ * would split it), always the whole of it.
+ */
+export function filmOf(root: Doc, ids: Id[], settings: ExportSettings): { doc: Doc; starts: number[]; settings: ExportSettings } | { problem: string } {
+  const r = joinShots(root, ids);
+  if ('problem' in r) return r;
+  if (settings.format !== 'sheet') return { ...r, settings };
+  return { doc: { ...r.doc, clips: [] }, starts: r.starts, settings: { ...settings, range: 'all', clipId: null } };
 }
 
 /** Which artboards, in list order. */
@@ -94,7 +106,18 @@ export interface ArtboardPlan {
   frames: number;
   /** The picture's size in pixels: only for "all in order, as one" (the first shot's size, at the chosen scale). */
   size: { width: number; height: number } | null;
+  /** For one file each, or all packed on one sheet: the size every frame comes out at when they all match, else null. */
+  frameSize?: { width: number; height: number } | null;
+  /** True when the boards would come out at different sizes (so the footer cannot give one size). */
+  sizesVary?: boolean;
   problem: string | null;
+}
+
+/** The one size all of these are, or null (and `vary`) when they differ. */
+function commonSize(sizes: { width: number; height: number }[]): { frameSize: { width: number; height: number } | null; sizesVary: boolean } {
+  const first = sizes[0];
+  if (first && sizes.every((z) => z.width === first.width && z.height === first.height)) return { frameSize: first, sizesVary: false };
+  return { frameSize: null, sizesVary: sizes.length > 1 };
 }
 
 /**
@@ -107,29 +130,53 @@ export function planArtboards(root: Doc, settings: ExportSettings, currentFrame:
   const ids = chosenIds(root, currentArtboardExport(root));
   if (!ids.length) return { mode, files: 0, frames: 0, size: null, problem: 'Pick at least one artboard to export.' };
   if (mode === 'joined') {
-    const r = joinShots(root, ids);
+    const r = filmOf(root, ids, settings);
     if ('problem' in r) return { mode, files: 1, frames: 0, size: null, problem: r.problem };
-    const p = planExport(r.doc, settings, currentFrame);
+    const p = planExport(r.doc, r.settings, currentFrame);
     return { mode, files: 1, frames: p.count, size: { width: p.width, height: p.height }, problem: p.problem };
   }
-  if (mode === 'atlas') return { mode, files: 1, frames: ids.reduce((t, id) => t + artboardDoc(root, id).length, 0), size: null, problem: null };
+  if (mode === 'atlas') {
+    const sizes = ids.map((id) => {
+      const p = planExport(artboardDoc(root, id), settings, 0);
+      return { width: p.width, height: p.height };
+    });
+    return { mode, files: 1, frames: ids.reduce((t, id) => t + artboardDoc(root, id).length, 0), size: null, ...commonSize(sizes), problem: null };
+  }
   let frames = 0;
   let problem: string | null = null;
+  const sizes: { width: number; height: number }[] = [];
   for (const id of ids) {
     const doc = artboardDoc(root, id);
     const p = planExport(doc, settings, rememberedFrame(id, doc.length));
     frames += p.count;
+    sizes.push({ width: p.width, height: p.height });
     if (p.problem && !problem) problem = `${exportNameOf(root, id)}: ${p.problem}`;
   }
-  return { mode, files: ids.length, frames, size: null, problem };
+  return { mode, files: ids.length, frames, size: null, ...commonSize(sizes), problem };
 }
 
-/** The footer line for an artboard export (no size for several different files; `printed` is appended to a size). */
+/** What the footer says about size: one size when every frame matches, else "sizes vary" (nothing when unknown). */
+export function sizeWords(a: Pick<ArtboardPlan, 'frameSize' | 'sizesVary'>, each = ' each'): string {
+  if (a.frameSize) return `, ${a.frameSize.width} × ${a.frameSize.height} px${each}`;
+  return a.sizesVary ? ', sizes vary' : '';
+}
+
+/** The footer line for an artboard export: counts, frames in all and the size (`printed` is appended to a joined size). */
 export function artboardSummary(a: ArtboardPlan, printed = ''): string {
   const n = (k: number, one: string) => `${k} ${one}${k === 1 ? '' : 's'}`;
   if (a.mode === 'joined' && a.size) return `${n(a.frames, 'frame')} in all, ${a.size.width} × ${a.size.height} px${printed}`;
-  if (a.mode === 'atlas') return `${n(a.frames, 'frame')} on one sheet`;
-  return `${n(a.files, 'file')}, ${n(a.frames, 'frame')} in all`;
+  if (a.mode === 'atlas') return `${n(a.frames, 'frame')} on one sheet${sizeWords(a)}`;
+  return `${n(a.files, 'file')}, ${n(a.frames, 'frame')} in all${sizeWords(a)}`;
+}
+
+/**
+ * The Export dialog's note for a format that makes one frame: with several boards it is one frame from each board
+ * (the one it was last showing), not the frame of the open board. `frame` is the open board's frame, from 0.
+ */
+export function singleFrameNote(a: ArtboardPlan | null, frame: number): string {
+  if (!a || a.mode !== 'each' || a.files < 1) return `Exports frame ${frame + 1}, the one you are looking at.`;
+  if (a.files === 1) return 'Exports one frame, the one that board was last showing.';
+  return `Exports one frame from each of the ${a.files} boards, the one each was last showing.`;
 }
 
 /**
@@ -140,7 +187,7 @@ export async function exportArtboards(
   settings: ExportSettings,
   signal: AbortSignal,
   onProgress: (p: Progress) => void,
-  exportOne: (doc: Doc) => Promise<'done' | 'cancelled' | 'stopped'>,
+  exportOne: (doc: Doc, settings: ExportSettings) => Promise<'done' | 'cancelled' | 'stopped'>,
 ): Promise<'done' | 'cancelled' | 'stopped'> {
   const api = desktop();
   if (!api) throw new ArtboardExportProblem('Exporting works in the Frameling desktop app.');
@@ -150,9 +197,9 @@ export async function exportArtboards(
   if (!ids.length) throw new ArtboardExportProblem('Pick at least one artboard to export.');
 
   if (c.mode === 'joined') {
-    const r = joinShots(root, ids);
+    const r = filmOf(root, ids, settings);
     if ('problem' in r) throw new ArtboardExportProblem(r.problem);
-    return exportOne(r.doc);
+    return exportOne(r.doc, r.settings);
   }
 
   const info = formatInfo(settings.format);

@@ -92,7 +92,7 @@ When you export a clip, the loop box follows the clip: a clip that loops repeats
 
 ## Exporting a clip
 
-Pick **One clip** in the Range row and the file follows how that clip plays ([clip direction and repeat](help:timeline-clip-play)). A clip that plays **backward** comes out backward. **Back and forth** comes out as one trip there and back, and a clip that plays **3 times** is in the file 3 times, so it looks the same everywhere. The same goes for a moving SVG (its timing follows the order), a PNG sequence (the numbers count in play order) and a PDF (the pages come in play order). A video made this way has no sound, because the timeline's sound doesn't match the new order.
+Pick **One clip** in the Range row and the file follows how that clip plays ([clip direction and repeat](help:timeline-clip-play)). A clip that plays **backward** comes out backward. **Back and forth** comes out there and back as the clip says (repeat 3 is there, back, there), and a clip that plays **3 times** is in the file 3 times, so it looks the same everywhere. The same goes for a moving SVG (its timing follows the order). A **PNG sequence, PDF and Illustrator pages** are for looking at, so each frame comes out **once**, in the order the clip starts, however often it repeats. A video made this way has no sound, because the timeline's sound doesn't match the new order.
 ## Good to know
 
 - Pixel art exports at big whole-number sizes with sharp edges, never blurry.
@@ -104,7 +104,7 @@ Pick **One clip** in the Range row and the file follows how that clip plays ([cl
     section: 'Exporting',
     media: 'export-sheet.png',
     summary: 'Put every frame on one picture, with the files a game engine or web page needs to play it.',
-    keywords: ['sprite', 'atlas', 'sheet', 'texture', 'game', 'json', 'trim', 'padding', 'power of two', 'packed', 'extrude', 'bleed', 'icons', 'tiles', 'texture atlas', 'json hash', 'json array'],
+    keywords: ['sprite sheet', 'sprite sheets', 'sprite', 'atlas', 'sheet', 'texture', 'game', 'json', 'trim', 'padding', 'power of two', 'packed', 'extrude', 'bleed', 'icons', 'tiles', 'texture atlas', 'json hash', 'json array'],
     body: `A sprite sheet is one picture holding all your frames. Games load that one picture and cut the frames out.
 
 Press **Ctrl+E**, pick **Sprite sheet**, then pick **where it's going**. Frameling saves the picture plus whatever that place needs, into a folder you choose.
@@ -129,6 +129,7 @@ For pixel art, **Art size** (in the Size row) makes one art pixel one pixel, so 
 
 - **An animation:** each **clip** (idle, run, jump...) becomes an animation with its own loop and speed. A clip that plays [backward, back and forth or a set number of times](help:timeline-clip-play) is saved that way. No clips? The whole timeline is one called **default**.
 - **Separate sprites:** each frame is its own sprite, for icons, items or tiles. A **marker** on a frame names it ("coin"). Choose **All on one sheet** or **One PNG each**.
+- **A frame on each artboard?** See [Exporting artboards](help:artboards-export).
 
 ## Sheet options
 
@@ -155,92 +156,6 @@ For pixel art, **Art size** (in the Size row) makes one art pixel one pixel, so 
 \`frames\` is already in the order the clip plays: a clip that plays backward or back and forth lists its frames that way, and one that plays 3 times lists them 3 times (with \`"loop": false\`). A clip that doesn't play plain forward also says what it was set to, as \`"direction": "reverse"\`, \`"pingpong"\` or \`"pingpong-reverse"\`, and \`"repeat": 3\`. They are there to read; don't apply them again.
 
 Leave a layer out of every export by making it a [reference layer](help:reference-layers).`,
-  },
-  {
-    id: 'export-godot-bones',
-    title: 'Bones in Godot: a character you can keep animating',
-    section: 'Exporting',
-    media: 'export-godot-bones.png',
-    summary: 'Send a character with bones to Godot as a skeleton, its parts and every clip (with symbols, camera and looks), so you can change poses and timing in Godot.',
-    keywords: ['godot', 'skeleton2d', 'bone2d', 'animationplayer', 'polygon2d', 'rig', 'bones', 'cut-out', 'tscn', 'editable', 'camera2d', 'parallax2d', 'symbol', 'effects', 'blend'],
-    body: `A sprite sheet bakes every frame into a picture. For a character with [bones](help:rig) you can send the skeleton itself, and keep animating it in Godot.
-
-## In Frameling
-
-1. Press **Ctrl+E**, pick **Sprite sheet**, then the **Godot** card.
-2. Under it, pick **Bones (editable in Godot)**. (Only shown when your drawing has bones.)
-3. Check **Where the picture will live in your Godot project**. The parts go in the same folder.
-4. Press **Export** and choose that folder inside your Godot project.
-
-## What you get
-
-- A scene (\`.tscn\`) with a **Skeleton2D** and a **Bone2D** for every bone.
-- A picture for every part. Parts that follow one bone are **Sprite2D** nodes on that bone. Layers that [bend](help:rig-bend) are **Polygon2D** meshes with your [painted weights](help:rig-weights).
-- An **AnimationPlayer** with every clip, at your frame rate. It plays the first one straight away.
-
-Drag the \`.tscn\` into your scene. Change any key in the AnimationPlayer, or play another clip from a script:
-
-\`\`\`
-$AnimationPlayer.play("walk")
-\`\`\`
-
-## Good to know
-
-- **Steady** and **Gentle** glides use Godot's own easing. Other easings get a key on every frame. Held poses snap. [Squash and stretch](help:rig-stretch) becomes each bone's scale. Swapped drawings (mouths, hands) swap the part's picture.
-
-## Symbols, camera and looks
-
-- A [symbol](help:symbols) with its own bones comes as a node for each copy, with its own Skeleton2D and parts. Its place, fade and [timeline](help:symbol-properties) are keys. On a layer that follows a bone, the copy sits under that bone, inside symbols too. On a layer with effects or masks, or a bent one, it is drawn into the pictures.
-- A symbol that fades is a **CanvasGroup**: it fades as one picture, so overlapping parts don't show through, even with a bones symbol inside. If its parts can't be ordered by the scene tree, or use Add or Multiply, each part fades alone, and the export window says which and why.
-- A symbol copied large gets bigger pictures, up to 4 times your export size (less on a huge stage), so it stays sharp.
-- The [camera](help:camera) becomes a **Camera2D** with position, zoom and turn keys. Layers with a depth go under a **Parallax2D**.
-- The camera and depth layers line up when your Godot window is the stage size times the export scale. For other sizes, attach the saved \`-fit-window.gd\` to the scene's root, or set Project Settings > Display > Window to that size with Stretch Mode **canvas_items** and Aspect **keep**.
-- A layer's fade is the node's modulate. **Add** and **Multiply** use a CanvasItemMaterial (Screen becomes Add, other modes draw normal). A symbol's colour wash uses a tiny shader saved beside the scene.
-- [Effects](help:effects) are baked into the part's picture, since Godot has none built in. So are **masks** and "clip to the layer below", when the part and the mask move together. One that follows a bone, or sits at another depth, is left out.
-- Hidden or reference layers inside a symbol with effects are left out.
-
-The export window lists what was baked or left out for your drawing.`,
-  },
-  {
-    id: 'export-godot',
-    title: 'Using sprites in Godot',
-    section: 'Exporting',
-    media: 'export-godot.png',
-    summary: 'Step by step: from Frameling to an animated sprite in your Godot 4 project.',
-    keywords: ['godot', 'animatedsprite2d', 'spriteframes', 'tres', 'tscn', 'game engine', 'res://', 'atlastexture'],
-    body: `This takes about a minute. It's written for Godot 4.
-
-## In Frameling
-
-1. Press **Ctrl+E**, pick **Sprite sheet**, then the **Godot** card.
-2. For pixel art, pick **Art size**.
-3. Leave **Also make a ready-to-play scene** ticked.
-4. Check **Where the picture will live in your Godot project**. The default is \`res://sprites/<your name>.png\`. Change it if your project keeps pictures somewhere else, for example \`res://art/hero.png\`.
-5. Press **Export** and choose the folder **inside your Godot project** that matches that path. For \`res://sprites/\`, that's the \`sprites\` folder in your project (make it if it doesn't exist).
-
-## In Godot
-
-1. Switch to Godot. It notices the new files and imports them.
-2. Drag the \`.tscn\` file into your scene. That's it: it plays your first clip straight away.
-3. To play another clip from a script:
-
-\`\`\`
-$AnimatedSprite2D.play("run")
-\`\`\`
-
-Every clip is there with its speed and loop setting, and held frames last as long as they do in Frameling. A clip that plays backward or back and forth has its frames listed in that order (Godot's animations have no direction of their own), and one that plays a number of times lists them that many times and doesn't loop. Got a character with bones? You can also send it as a [skeleton you can keep editing](help:export-godot-bones). Pixel art scenes are set to sharp (nearest) filtering, so nothing looks blurry.
-
-## Using the .tres yourself
-
-Add an **AnimatedSprite2D** node, click **Sprite Frames** in the Inspector, then **Load**, and pick the \`.tres\` file. If pixel art looks blurry there, set the node's **Texture > Filter** to **Nearest**.
-
-## Separate sprites
-
-With **Separate sprites**, each sprite gets its own small \`.tres\` (an *AtlasTexture*). Use them anywhere Godot takes a texture: a Sprite2D, a button icon, a TextureRect.
-
-## If Godot says a file is missing
-
-The path you typed in Frameling has to match where the picture really is in your Godot project. Fix the path in the export dialog and export again, replacing the old files.`,
   },
   {
     id: 'export-unity',
@@ -288,7 +203,7 @@ Press **Ctrl+E**, pick **Sprite sheet**, then the **Phaser** card, and export in
 
 - \`hero.png\`: the sheet,
 - \`hero.json\`: where every frame is (a JSON hash atlas),
-- \`hero-anims.json\`: one animation per clip, with speed and looping. A clip that plays a number of times uses Phaser's own **repeat**. Backward and back and forth clips list their frames in that order (Phaser's *yoyo* shows each end twice, so it isn't used).
+- \`hero-anims.json\`: one animation per clip, with speed and looping. A clip that plays a number of times uses Phaser's own **repeat**. Backward and back and forth clips list their frames in that order, so each end shows once. If you would rather have Phaser's own **yoyo** (smaller data, and it plays the same) for a back and forth clip that loops or goes there and back a whole number of times, choose it in **Preferences > Behaviour**, *Back-and-forth clips in game engines*.
 
 ## In your game
 
@@ -307,7 +222,7 @@ The atlas key must be the file's name (\`hero\` here), because the animations po
 
 ## Pixel art
 
-Export at **Art size**, and add \`pixelArt: true\` to your game config so Phaser keeps it sharp when scaled.`,
+Export at **Art size**, and add \`pixelArt: true\` to your game config so Phaser keeps it sharp when scaled. Use Phaser's **WebGL** renderer for pixel art (the default, \`type: Phaser.AUTO\`): it draws every frame exactly as Frameling does. Phaser's Canvas renderer can make a scaled sprite one pixel too big at the edges, and no game setting fixes that.`,
   },
   {
     id: 'export-pixi',
@@ -407,36 +322,36 @@ The second class picks the clip. Loops keep going; clips that don't loop stop on
 Under **File type** in the Export window:
 
 - **Lottie (.json)**: one plain file that every Lottie player opens.
-- **dotLottie (.lottie)**: a much smaller zip holding the animation and its pictures as files. Plays in the dotLottie players (LottieFiles, web, iOS, Android), not every older Lottie player.
+- **dotLottie (.lottie)**: a much smaller zip holding the animation and its pictures as files. Plays in the dotLottie players (LottieFiles, web, iOS, Android). Its **layout** is *Current* (default) or *Older*, for old players. Both keep the loop setting: *Current* as a tiny play script (the web player runs it when given a stateMachineId).
 
 ## What carries over
 
-- **Drawings** become shapes: fills, outlines and line widths as they are. Brush strokes become their finished outline, with far fewer points.
+- **Drawings** become shapes: fills, outlines and line widths as they are.
 - **Frame by frame:** each drawing shows for exactly the frames it's held, and one used again is stored once.
-- **Symbols** become Lottie *precomps*, stored once however often they're used. Each copy keeps its place, size, turn, slant and fade, and plays its own animation.
-- **In-betweens (tweens)** become keyframes with their easing. *Springy*, *Bouncy*, paths to follow and **morphs** get keys fitted to the motion, so a few stand in for every frame.
-- **The camera** pans, zooms and turns, and layers with depth move at their own speed.
-- **Pixel and tile layers** become pictures inside the file, made big enough to stay crisp.
-- **Clips** become named markers, so a player can play one clip by name. Markers come along too. A Lottie file has no clip direction or repeat count, so those aren't carried.
+- **Symbols** become Lottie *precomps*, stored once however often they're used. Each copy keeps its place, size, turn, slant and fade.
+- **In-betweens (tweens)** become keyframes with their easing. *Springy*, *Bouncy*, paths to follow and **morphs** get a few keys fitted to the motion. Sideways and falling motion is timed separately.
+- **Puppets:** a bone part that only turns is one still shape with a few turn keys.
+- **The camera** pans, zooms and turns (a few eased keys, not one per frame), and layers with depth move at their own speed.
+- **Pixel and tile layers** become pictures inside the file, big enough to stay crisp.
+- **Clips** become named markers, so a player can play one clip by name. Lottie has no clip direction or repeat count.
 - **Text** becomes letter shapes, so no font files are needed. **Particles** become one small shape each. **Colour wash** recolours the copy's shapes.
 - **Blend modes** stay as they are; **masks** and **clipping** become *track mattes*.
-- **Fades:** a layer, folder or symbol copy you fade is faded as one picture, so overlapping shapes don't show through each other (a see-through matte in the file).
-- **Effects:** Soften and Shadow become Lottie's own blur and drop shadow. Glow, Colour adjust, Outline and Pixelate have no Lottie version, so those layers become pictures (the Export window lists them first). Tick **Draw Soften and Shadow as pictures** to make those pictures too, for players that skip Lottie's effects.
+- **Fades:** a layer, folder or symbol copy you fade is faded as one picture, so overlapping shapes don't show through each other.
+- **Effects:** Soften and Shadow become Lottie's own blur and drop shadow. Glow, Colour adjust, Outline and Pixelate have no Lottie version, so those layers become pictures. Tick **Draw Soften and Shadow as pictures** for players that skip Lottie's effects.
 
 ## Pictures from effects
 
-Only the part an effect touches is saved, and a picture that comes out the same again is stored once. Under **Pictures from effects** in the Export window:
+Only the part an effect touches is saved. Under **Pictures from effects** in the Export window:
 
-- **Balanced** (the default): WebP at twice the stage size. Looks like Sharpest at about half the size. Every current browser and phone plays WebP.
-- **Sharpest**: PNG at twice the stage size. Biggest, and plays in the oldest players too.
-- **Smallest**: WebP at the stage size. Smallest, with edges a little soft on high density screens.
+- **Balanced** (the default): WebP at twice the stage size. Looks like Sharpest at about half the size.
+- **Sharpest**: PNG at twice the stage size. Biggest, plays everywhere.
+- **Smallest**: WebP at the stage size, with edges a little soft on sharp screens.
 
-A glow on something that moves is a new picture every frame, so it adds up. Put effects on layers that hold still.
+A glow on something that moves is a new picture every frame, so put effects on layers that hold still.
 
 ## Good to know
 
-- lottie-web's *canvas* player leaves effects out (its SVG player, the default, shows them, as do the dotLottie, iOS and Android players).
-- A crowd of small faded things (a particle burst) fades each shape on its own, to keep canvas players quick.`,
+- lottie-web's *canvas* player leaves effects out (its SVG player, the default, shows them, as do the dotLottie, iOS and Android players).`,
   },
   {
     id: 'export-svg-animated',

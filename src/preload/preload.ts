@@ -33,6 +33,9 @@ const api: FramelingApi = {
     remove: (kind, id) => call('library:remove', kind, id),
     showFolder: (kind) => call('library:showFolder', kind),
   },
+  plugins: {
+    memory: () => call('plugins:memory'),
+  },
   media: {
     aacAvailable: () => call('media:aacAvailable'),
     toAac: (bytes) => call('media:toAac', bytes),

@@ -13,19 +13,39 @@ export function isRigLayer(l: Layer | undefined): l is RigLayer {
   return !!l && l.kind === 'vector' && !!l.rig;
 }
 
-// Layer lookup by id across the stage, open symbols and every symbol, cached per document object.
-const layerIndex = new WeakMap<Doc, Map<Id, Layer>>();
+// Layer lookup by id across the stage, open symbols and every symbol, cached per document object. Ids repeat across
+// artboards (a variation keeps its original's layer ids), so a layer looks for its bones in its own list first.
+interface LayerIndex {
+  first: Map<Id, Layer>;
+  /** For each layer, the ids of the list it sits in. */
+  home: Map<Layer, Map<Id, Layer>>;
+}
+const layerIndex = new WeakMap<Doc, LayerIndex>();
 
-export function anyLayer(doc: Doc, id: Id): Layer | undefined {
-  let m = layerIndex.get(doc);
-  if (!m) {
-    m = new Map();
+function indexOf(doc: Doc): LayerIndex {
+  let ix = layerIndex.get(doc);
+  if (!ix) {
+    ix = { first: new Map(), home: new Map() };
     const lists: Layer[][] = [doc.layers, ...(doc.editing ?? []).map((f) => f.layers), ...Object.values(doc.symbols ?? {}).map((s) => s.layers)];
     for (const a of doc.artboards ?? []) if (a.content) lists.push(a.content.layers);
-    for (const list of lists) for (const l of list) if (!m.has(l.id)) m.set(l.id, l);
-    layerIndex.set(doc, m);
+    for (const list of lists) {
+      const ids = new Map<Id, Layer>();
+      for (const l of list) if (!ids.has(l.id)) ids.set(l.id, l);
+      for (const l of list) {
+        if (!ix.first.has(l.id)) ix.first.set(l.id, l);
+        if (!ix.home.has(l)) ix.home.set(l, ids);
+      }
+    }
+    layerIndex.set(doc, ix);
   }
-  return m.get(id);
+  return ix;
+}
+
+/** A layer by id. With `near` (a layer to look beside), only the list that layer is in is searched, when it is in one. */
+export function anyLayer(doc: Doc, id: Id, near?: Layer): Layer | undefined {
+  const ix = indexOf(doc);
+  const own = near && ix.home.get(near);
+  return own ? own.get(id) : ix.first.get(id);
 }
 
 /** The key on a bones layer that rules `frame`: the one covering it, else the last one before it, else the first. */
@@ -84,7 +104,7 @@ export function rigStateAt(doc: Doc, layer: RigLayer, frame: number): RigState {
 export function bindRig(doc: Doc, layer: Layer): RigLayer | undefined {
   const b = layer.bind;
   if (!b) return undefined;
-  const r = anyLayer(doc, b.rig);
+  const r = anyLayer(doc, b.rig, layer);
   return isRigLayer(r) && r !== layer ? r : undefined;
 }
 

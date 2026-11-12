@@ -3,6 +3,7 @@
 import type { Command, HelpTopic } from '../core/registry';
 import { openExportDialog } from '../export/open';
 import { defineFeature } from '../features/feature';
+import { interactivesExporter } from './exporter';
 import { currentLink, interactivesChoices, isPlayablePath, openPlayable, registerRoundTrip, toggleUpdate, updatePlayable } from './roundtrip';
 
 const commands: Command[] = [
@@ -92,6 +93,7 @@ export const interactivesFeature = defineFeature({
   optional: true,
   commands,
   help,
+  exporters: [interactivesExporter],
   choices: interactivesChoices,
   opens: isPlayablePath,
   // A drawing that came out of an Interactives file carries a small marker (see export/run.ts).

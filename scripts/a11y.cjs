@@ -39,6 +39,13 @@ app.setPath('userData', fs.mkdtempSync(path.join(os.tmpdir(), 'frameling-a11y-')
 // the whole page). `dialog: true` also checks focus moved in, Tab stays in, Escape closes and focus comes back.
 const tpl = (id) => `__frameling.template(${JSON.stringify(id)});`;
 const run = (id) => `__frameling.run(${JSON.stringify(id)});`;
+// Version 2 plugins from the repo, for the dialogs that need one installed first.
+const pluginFiles = (n) => Object.fromEntries(['manifest.json', 'main.js'].map((f) => [f, fs.readFileSync(path.join(__dirname, '../plugins/examples', n, f), 'utf8')]));
+const installPlugin = (n) => `window.__framelingPlugins.install(${JSON.stringify(pluginFiles(n))}); true`;
+const waitMs = (ms) => `await new Promise((r) => setTimeout(r, ${ms})); true`;
+const approve = (all) => `${all ? `document.querySelectorAll('.plugin-approve [role=switch]').forEach((b) => b.click());` : ''} document.querySelector('.plugin-approve .ui-btn-primary')?.click(); true`;
+// The picture import dialog, on a sprite sheet and on an animated GIF (the help pictures' samples).
+const picture = (file) => `void __framelingPicture.open(${JSON.stringify(Array.from(fs.readFileSync(path.join(__dirname, 'docs/help/assets', file))))}, ${JSON.stringify(file)}); true`;
 const DIALOGS = [
   ['palette', run('view.commandPalette')],
   ['help', run('help.contents')],
@@ -56,11 +63,18 @@ const DIALOGS = [
   ['prefs-snapping', `__frameling.overlays.openPrefs('snapping')`],
   ['prefs-workspaces', `__frameling.overlays.openPrefs('workspaces')`],
   ['prefs-plugins', `__frameling.overlays.openPrefs('plugins')`],
+  // The question a version 2 plugin asks (each power off to start with), the Export dialog with a plugin's own options, and
+  // Preferences with a plugin that has its powers switched on and off.
+  ['plugin-permissions', installPlugin('star-kit')],
+  ['plugin-export-options', [installPlugin('export-report'), approve(false), waitMs(1500), run('plugin.export-report.export.report')]],
+  ['prefs-plugins-powers', [installPlugin('star-kit'), approve(true), waitMs(1500), `__frameling.overlays.openPrefs('plugins')`]],
   ['prefs-features', `__frameling.overlays.openPrefs('features')`],
   ['canvas-size', run('document.settings')],
   ['export', run('file.export')],
   ['export-tileset', [tpl('tileset'), run('tiles.export')]],
   ['rotate', [tpl('hero-sprites'), run('pixel.rotate')]],
+  ['import-picture', [tpl('hero-sprites'), picture('slime-sheet.png')]],
+  ['import-picture-gif', [tpl('hero-sprites'), picture('slime-bounce.gif')]],
   ['lipsync-name', [tpl('lip-sync'), run('lipsync.nameFrames')]],
   ['save-template', run('file.saveAsTemplate')],
   ['recent', run('file.openRecent')],
@@ -274,6 +288,7 @@ app.whenReady().then(async () => {
   for (const ch of ['autosave:write', 'autosave:clear', 'autosave:keep', 'autosave:removeKept', 'recent:add', 'recent:remove', 'recent:clear', 'app:documentState']) ipcMain.handle(ch, () => true);
   for (const ch of ['app:keepUnsavedDone', 'app:saveBeforeCloseDone']) ipcMain.on(ch, () => {});
   const lib = new Map();
+  ipcMain.handle('plugins:memory', () => ({}));
   ipcMain.handle('library:list', (_e, kind) => [...lib.keys()].filter((k) => k.startsWith(kind + '/')).map((k) => ({ id: k.slice(kind.length + 1), size: lib.get(k).length, modified: 0 })));
   ipcMain.handle('library:read', (_e, kind, id) => lib.get(`${kind}/${id}`) ?? null);
   ipcMain.handle('library:write', (_e, kind, id, bytes) => void lib.set(`${kind}/${id}`, bytes));
@@ -287,6 +302,15 @@ app.whenReady().then(async () => {
   await reset(win);
 
   if (want('main')) add('main window', await axe(win));
+
+  // Panels stacked in groups on the right (under the Properties rail) and along the bottom, and a window over the canvas.
+  if (want('stacked groups')) {
+    await js(win, `__frameling.dock.placePanel('preview', { zone: 'right', group: 0, split: 'after' }); __frameling.dock.placePanel('library', { zone: 'bottom', group: 0, split: 'after' }); __frameling.dock.floatPanel('help', { x: 300, y: 200 })`);
+    await sleep(500);
+    add('stacked groups and a window', await axe(win));
+    await js(win, `__frameling.dock.resetLayout()`);
+    await sleep(300);
+  }
 
   // Every panel, in a document that gives it something to show.
   const panels = await js(win, `return __frameling.panels()`);

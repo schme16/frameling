@@ -125,6 +125,12 @@ export function VariationSection() {
               <ul>
                 {items.map((d) => (
                   <li key={d.key} className="ab-diff">
+                    {d.colors && (
+                      <span className="ab-diff-chips" aria-hidden="true">
+                        <i style={{ background: d.colors[0] }} />
+                        <i style={{ background: d.colors[1] }} />
+                      </span>
+                    )}
                     <button type="button" className="ab-diff-go" title={d.layer ? 'Go to it' : undefined} disabled={!d.layer} onClick={() => jumpToDifference(open.id, d)}>
                       {d.label}
                     </button>

@@ -5,8 +5,10 @@ import { clampDistance, defaultPicks, SNAP_DISTANCE, migrateSavedPicks, sanitize
 interface ViewSettings {
   /** Show the pixel grid on pixel layers when zoomed in far enough. */
   pixelGrid: boolean;
-  /** Look through the camera (when the document has one) instead of at the whole stage. */
+  /** Look through the camera (when the document has one) instead of at the whole stage: what an artboard does until it has been told otherwise. */
   throughCamera: boolean;
+  /** Each artboard's own choice of that, by document and artboard (remembered between sessions, the last few hundred). */
+  throughBy: Record<string, boolean>;
   /** Look through the camera while playing, even when not looking through it otherwise. */
   cameraWhilePlaying: boolean;
   /** Rulers along the top and left of the canvas. */
@@ -38,7 +40,24 @@ interface ViewSettings {
 }
 
 const KEY = 'frameling.view';
-let state: ViewSettings = { pixelGrid: true, throughCamera: false, cameraWhilePlaying: true, rulers: false, guides: true, snap: true, snapPicks: defaultPicks(), snapChosen: {}, snapDistance: SNAP_DISTANCE.usual, snapAllLayers: true, lockGuides: false, emptyGhost: true, grid: 'off', gridSize: 32, isoStyle: '2:1', perspective: true };
+/** How many artboards' camera choices are kept (the newest). */
+const KEEP_THROUGH = 300;
+
+/** The saved choices, checked: only true or false per name, at most `KEEP_THROUGH`. */
+function readThrough(raw: unknown): Record<string, boolean> {
+  const out: Record<string, boolean> = {};
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return out;
+  for (const [k, v] of Object.entries(raw)) if (typeof v === 'boolean' && k !== '__proto__') out[k] = v;
+  return keepNewest(out);
+}
+
+/** Drops the oldest entries (the first set) past the limit. */
+function keepNewest(by: Record<string, boolean>): Record<string, boolean> {
+  const keys = Object.keys(by);
+  if (keys.length <= KEEP_THROUGH) return by;
+  return Object.fromEntries(keys.slice(keys.length - KEEP_THROUGH).map((k) => [k, by[k]]));
+}
+let state: ViewSettings = { pixelGrid: true, throughCamera: false, throughBy: {}, cameraWhilePlaying: true, rulers: false, guides: true, snap: true, snapPicks: defaultPicks(), snapChosen: {}, snapDistance: SNAP_DISTANCE.usual, snapAllLayers: true, lockGuides: false, emptyGhost: true, grid: 'off', gridSize: 32, isoStyle: '2:1', perspective: true };
 const listeners = new Set<() => void>();
 
 try {
@@ -46,6 +65,7 @@ try {
     const saved = JSON.parse(localStorage.getItem(KEY) ?? 'null');
     if (saved && typeof saved.pixelGrid === 'boolean') state = { ...state, pixelGrid: saved.pixelGrid };
     if (saved && typeof saved.throughCamera === 'boolean') state = { ...state, throughCamera: saved.throughCamera };
+    if (saved && saved.throughBy) state = { ...state, throughBy: readThrough(saved.throughBy) };
     if (saved && typeof saved.cameraWhilePlaying === 'boolean') state = { ...state, cameraWhilePlaying: saved.cameraWhilePlaying };
     for (const k of ['rulers', 'guides', 'snap', 'snapAllLayers', 'lockGuides', 'emptyGhost'] as const) if (saved && typeof saved[k] === 'boolean') state = { ...state, [k]: saved[k] };
     // Newer saves hold only what was chosen; older ones held every tick, so the ones still at their old default are dropped.
@@ -74,6 +94,7 @@ export function setViewSettings(patch: Partial<ViewSettings>): void {
   state = { ...state, ...patch };
   if (patch.snapDistance !== undefined) state.snapDistance = clampDistance(patch.snapDistance);
   if (patch.snapChosen) state.snapPicks = sanitizePicks(state.snapChosen);
+  if (patch.throughBy) state.throughBy = keepNewest(state.throughBy);
   try {
     // The ticks are saved as what was chosen only (snapPicks is worked out from it).
     const { snapPicks: _derived, ...saved } = state;

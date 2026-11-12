@@ -15,10 +15,12 @@ export interface PreviewSettings {
   /** The whole animation, or just the clip the playhead is in. */
   range: PreviewRange;
   loop: boolean;
+  /** A tiny Quill stands next to the sprite at the same scale, to feel the size (only while Quill is on). */
+  quillForScale: boolean;
 }
 
 // Fit by default: big enough to judge, with a real-size copy in the corner.
-export const DEFAULT_PREVIEW: PreviewSettings = { playing: true, zoom: 'fit', range: 'all', loop: true };
+export const DEFAULT_PREVIEW: PreviewSettings = { playing: true, zoom: 'fit', range: 'all', loop: true, quillForScale: true };
 const KEY = 'frameling.preview';
 
 function cleanSettings(v: Partial<PreviewSettings>): PreviewSettings {
@@ -27,6 +29,7 @@ function cleanSettings(v: Partial<PreviewSettings>): PreviewSettings {
     zoom: v.zoom === 1 || v.zoom === 2 || v.zoom === 3 || v.zoom === 'fit' ? v.zoom : DEFAULT_PREVIEW.zoom,
     range: v.range === 'clip' ? 'clip' : 'all',
     loop: typeof v.loop === 'boolean' ? v.loop : DEFAULT_PREVIEW.loop,
+    quillForScale: typeof v.quillForScale === 'boolean' ? v.quillForScale : DEFAULT_PREVIEW.quillForScale,
   };
 }
 
@@ -111,3 +114,15 @@ let played = 0;
 export const notePreviewFrame = (): void => void played++;
 export const previewFramesPlayed = (): number => played;
 export const resetPreviewFramesPlayed = (): void => void (played = 0);
+
+/** Quill's height in art pixels: his sprite is 48 pixels tall, so next to a sprite he shows how big it really is. */
+export const QUILL_ART_HEIGHT = 48;
+
+/**
+ * Does Quill fit beside the sprite in the stage at this scale? He needs his own width (48 art pixels) beside the
+ * sprite, a little gap, and his height in the stage. Otherwise he stays out of the way.
+ */
+export function quillFits(scale: number, artW: number, artH: number, stageW: number, stageH: number): boolean {
+  const q = QUILL_ART_HEIGHT * scale;
+  return artW * scale + q + 12 <= stageW - 16 && Math.max(q, artH * scale) <= stageH - 16;
+}

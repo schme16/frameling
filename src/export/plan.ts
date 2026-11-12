@@ -2,8 +2,9 @@
 // Pure functions on the document, so they are easy to test.
 import type { Doc } from '../core/format';
 import { inOutRange } from '../timeline/inout';
-import { bakedPositions, clipDirection, clipPlays, hasPlaySettings } from '../core/clipPlay';
-import { aiFramesOf, DEFAULT_SHEET, formatInfo, oneFrameOnly, type ExportSettings, type FormatId } from './types';
+import { bakedPositions, clipDirection, clipPlays, hasPlaySettings, isBackAndForth, stillPositions } from '../core/clipPlay';
+import { exporterOf } from './registry';
+import { DEFAULT_SHEET, formatInfo, oneFrameOnly, type ExportSettings, type FormatId } from './types';
 
 export const MAX_SIDE = 8192;
 export const MAX_FRAMES = 5000;
@@ -135,35 +136,46 @@ export function slug(name: string, fallback = 'sprites'): string {
 }
 
 /** Formats that show the pictures one after another (or page after page) with no direction or repeat count of their own. */
-const BAKED_FORMATS: FormatId[] = ['gif', 'apng', 'mp4', 'webm', 'prores', 'svganim', 'pngseq', 'pdf', 'ai'];
+const isBaked = (f: FormatId): boolean => !!exporterOf(f)?.baked;
 
-/** The order a clip's frames go in for such a format, or undefined when it just plays through once, forward. */
+/** Formats that are pictures to look at, not to play: each frame once, in the order the clip starts, whatever its repeat. */
+export const isStillsFormat = (f: FormatId): boolean => !!exporterOf(f)?.stills;
+
+/**
+ * The order a clip's frames go in for such a format, or undefined when it just plays through once, forward. Stills
+ * (PNG sequence, PDF, Illustrator pages) keep the direction but hold each frame once, however often the clip repeats.
+ */
 export function clipPlayOrder(doc: Doc, s: Pick<ExportSettings, 'range' | 'clipId' | 'format' | 'aiFrames'>, range: FrameRange): number[] | undefined {
-  if (s.range !== 'clip' || !BAKED_FORMATS.includes(s.format) || oneFrameOnly(s, formatInfo(s.format).animated)) return undefined;
+  if (s.range !== 'clip' || !isBaked(s.format) || oneFrameOnly(s, formatInfo(s.format).animated)) return undefined;
   const clip = doc.clips.find((c) => c.id === s.clipId);
   if (!clip || !hasPlaySettings(clip)) return undefined;
-  return bakedPositions(range.end - range.start + 1, clipDirection(clip), clipPlays(clip));
+  const len = range.end - range.start + 1;
+  if (isStillsFormat(s.format)) {
+    const once = stillPositions(len, clipDirection(clip));
+    return once.every((p, i) => p === i) ? undefined : once;
+  }
+  return bakedPositions(len, clipDirection(clip), clipPlays(clip));
 }
 
 /** Formats with a loop setting of their own. */
-const LOOP_FORMATS: FormatId[] = ['gif', 'apng', 'svganim'];
+const hasLoop = (f: FormatId): boolean => !!exporterOf(f)?.loops;
 
 /**
  * Whether the file repeats for ever. An exported clip sets this itself: one that loops repeats for ever, one that plays
  * N times or once stops after the passes baked into the file. Choosing by hand (`loopTouched`) wins over the clip.
  */
 export function exportLoop(doc: Doc, s: Pick<ExportSettings, 'range' | 'clipId' | 'format' | 'loop' | 'loopTouched'>): { loop: boolean; fromClip: boolean } {
-  const clip = s.range === 'clip' && LOOP_FORMATS.includes(s.format) ? doc.clips.find((c) => c.id === s.clipId) : undefined;
+  const clip = s.range === 'clip' && hasLoop(s.format) ? doc.clips.find((c) => c.id === s.clipId) : undefined;
   if (!clip || s.loopTouched) return { loop: s.loop, fromClip: false };
   return { loop: clip.loop, fromClip: true };
 }
 
 /** What the clip being exported does when it plays, in plain words ("plays 3 times"), or null when no clip sets the loop. */
 export function clipLoopWords(doc: Doc, s: Pick<ExportSettings, 'range' | 'clipId' | 'format'>): { name: string; plays: string } | null {
-  const clip = s.range === 'clip' && LOOP_FORMATS.includes(s.format) ? doc.clips.find((c) => c.id === s.clipId) : undefined;
+  const clip = s.range === 'clip' && hasLoop(s.format) ? doc.clips.find((c) => c.id === s.clipId) : undefined;
   if (!clip) return null;
   const n = clipPlays(clip);
-  return { name: clip.name, plays: clip.loop ? 'loops for ever' : n > 1 ? `plays ${n} times` : 'plays once' };
+  return { name: clip.name, plays: clip.loop ? 'loops for ever' : n > 1 ? `plays ${n} ${isBackAndForth(clipDirection(clip)) ? 'ways' : 'times'}` : 'plays once' };
 }
 
 /** The document frame each picture (or page) of the export shows, in the order the file has them. */
@@ -175,7 +187,7 @@ export function planExport(doc: Doc, s: ExportSettings, currentFrame: number, op
   const range = resolveRange(doc, s, currentFrame);
   const order = opts.bake === false ? undefined : clipPlayOrder(doc, s, range);
   const count = order ? order.length : range.end - range.start + 1;
-  const video = s.format === 'mp4' || s.format === 'webm' || s.format === 'prores';
+  const video = !!exporterOf(s.format)?.video;
   const { width, height } = outputSize(doc, s.scale, video);
   let name = fileSafe(doc.name);
   const one = oneFrameOnly(s, info.animated);
@@ -197,11 +209,9 @@ export function planExport(doc: Doc, s: ExportSettings, currentFrame: number, op
 }
 
 /** The file extension this export is saved with: a dotLottie `.lottie`, or a zip when each frame is its own
- * Illustrator file. */
+ * Illustrator file (the format says, see registry.ts). */
 export function extensionFor(s: Pick<ExportSettings, 'format' | 'lottieFile' | 'aiFrames'>): string {
-  if (s.format === 'lottie' && s.lottieFile === 'dotlottie') return 'lottie';
-  if (s.format === 'ai' && aiFramesOf(s) === 'files') return 'zip';
-  return formatInfo(s.format).ext;
+  return exporterOf(s.format)?.extension?.(s as ExportSettings) ?? formatInfo(s.format).ext;
 }
 
 /** Same as extensionFor (the Illustrator export's name for it). */
@@ -212,9 +222,8 @@ type FilterOpts = Pick<ExportSettings, 'lottieFile' | 'aiFrames'>;
 export function filtersFor(format: FormatId, opts?: FilterOpts | ExportSettings['lottieFile']): { name: string; extensions: string[] }[] {
   const s: FilterOpts = typeof opts === 'string' ? { lottieFile: opts } : (opts ?? {});
   const ext = extensionFor({ format, ...s });
-  if (format === 'ai' && ext === 'zip') return [{ name: 'Zip file', extensions: ['zip'] }];
-  const names: Record<FormatId, string> = { mp4: 'MP4 video', webm: 'WebM video', gif: 'Animated GIF', apng: 'Animated PNG', png: 'PNG picture', pngseq: 'Zip file', svg: 'SVG drawing', sheet: 'PNG picture', interactives: 'Interactives package', lottie: 'Lottie animation', svganim: 'Animated SVG', pdf: 'PDF document', ai: 'Adobe Illustrator', psd: 'Photoshop document', prores: 'QuickTime movie' };
-  return [{ name: format === 'lottie' && s.lottieFile === 'dotlottie' ? 'dotLottie animation' : names[format], extensions: [ext] }];
+  const kind = exporterOf(format)?.fileKind?.({ format, ...s } as ExportSettings);
+  return [{ name: kind?.name ?? formatInfo(format).title, extensions: kind?.extensions ?? [ext] }];
 }
 
 /** Zero-padded frame numbers: 0001, 0002... with enough digits for the count. */

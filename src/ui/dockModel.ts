@@ -7,12 +7,23 @@ import { sanitizeGroups, type ToolGroup } from './toolArrange';
 
 export type { DockZone };
 
+/** One group of tabs: a zone holds one, or several stacked. */
+export interface DockGroup {
+  tabs: string[];
+  active: string | null;
+}
+
 export interface ZoneState {
+  /** The first group's tabs (the top one on the left and right, the left one on the bottom and top). */
   tabs: string[];
   active: string | null;
   /** Width (left, right) or height (bottom, top) in px when open. */
   size: number;
   collapsed: boolean;
+  /** More groups after the first, in order. Missing = the zone is one group (every layout from before stacks). */
+  more?: DockGroup[];
+  /** The share of the zone each group takes (first group, then `more`), adding up to 1. Missing = even. */
+  shares?: number[];
 }
 
 /** A floating window: a group of tabs over the canvas. Later in `Layout.floats` means nearer the front. */
@@ -73,6 +84,10 @@ export const MAX_SAVED = 12;
 const MAX_TABS = 200;
 const MAX_FLOATS = 12;
 const MAX_NAME = 40;
+/** The most tab groups one zone can hold. */
+export const MAX_GROUPS = 4;
+/** The smallest share of a zone a group can be squeezed to. */
+export const MIN_SHARE = 0.12;
 
 export const clampSize = (zone: DockZone, n: number): number => Math.max(MIN_SIZE[zone], Math.min(MAX_SIZE[zone], Math.round(n)));
 
@@ -115,7 +130,17 @@ export function normaliseLayout(raw: unknown): Layout {
   for (const z of ZONES) {
     const s = isObj(zr[z]) ? (zr[z] as Record<string, unknown>) : {};
     const tabs = ids(s.tabs);
-    l.zones[z] = { tabs, active: typeof s.active === 'string' && tabs.includes(s.active) ? s.active : (tabs[0] ?? null), size: clampSize(z, num(s.size, DEFAULT_SIZE[z])), collapsed: s.collapsed === true };
+    const zs: ZoneState = { tabs, active: typeof s.active === 'string' && tabs.includes(s.active) ? s.active : (tabs[0] ?? null), size: clampSize(z, num(s.size, DEFAULT_SIZE[z])), collapsed: s.collapsed === true };
+    // Stacked groups (older saves have none): each tidied like the first, empty ones dropped, shares made to add up.
+    const groups: DockGroup[] = [{ tabs: zs.tabs, active: zs.active }];
+    for (const m of (Array.isArray(s.more) ? s.more : []).slice(0, MAX_GROUPS - 1)) {
+      const g = isObj(m) ? m : {};
+      const gt = ids(g.tabs);
+      groups.push({ tabs: gt, active: typeof g.active === 'string' && gt.includes(g.active) ? g.active : (gt[0] ?? null) });
+    }
+    const raw = Array.isArray(s.shares) ? s.shares.slice(0, groups.length).map((v) => (typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : 0)) : [];
+    setGroups(zs, groups, raw.length === groups.length && raw.every((v) => v > 0) ? raw : evenShares(groups.length));
+    l.zones[z] = zs;
   }
   const usedIds = new Set<string>();
   for (const f of (Array.isArray(r.floats) ? r.floats : []).slice(0, MAX_FLOATS * 4)) {
@@ -194,26 +219,101 @@ export function sanitizeWorkspaces(raw: unknown): Workspace[] {
 
 // ---------------------------------------------------------------- where things are
 
-export type Place = { zone: DockZone } | { float: string };
-/** Where a dragged panel can land: a zone or a floating window (at a tab position), or a window of its own. */
-export type DropTarget = { zone: DockZone; index?: number } | { float: string; index?: number } | { newFloat: { x: number; y: number; w?: number; h?: number } };
+/** A panel's place: a zone (`group` is which of its stacked groups, missing for the first), or a floating window. */
+export type Place = { zone: DockZone; group?: number } | { float: string };
+/**
+ * Where a dragged panel can land: a zone (in group `group`, the first when missing, at a tab position), or a floating
+ * window, or a window of its own. `split` makes a new group before or after `group` for it instead of joining it.
+ */
+export type DropTarget = { zone: DockZone; index?: number; group?: number; split?: 'before' | 'after' } | { float: string; index?: number } | { newFloat: { x: number; y: number; w?: number; h?: number } };
+
+// ---------------------------------------------------------------- stacked groups in a zone
+
+export const evenShares = (n: number): number[] => Array.from({ length: n }, () => 1 / n);
+
+/** Every group of a zone, first to last (the first group's arrays are the zone's own: copy before changing). */
+export const groupsOf = (z: ZoneState): DockGroup[] => [{ tabs: z.tabs, active: z.active }, ...(z.more ?? [])];
+
+/** How many groups a zone has (an empty zone counts as one). */
+export const groupCount = (z: ZoneState): number => 1 + (z.more?.length ?? 0);
+
+/** Every tab in a zone, group by group. */
+export const zoneTabs = (z: ZoneState): string[] => groupsOf(z).flatMap((g) => g.tabs);
+
+/** The share of the zone each group takes, adding up to 1. */
+export function sharesOf(z: ZoneState): number[] {
+  const n = groupCount(z);
+  const s = z.shares;
+  return s && s.length === n && s.every((v) => v > 0) ? s : evenShares(n);
+}
+
+/**
+ * Writes groups back into a zone (in place). Empty groups go, so the zone never holds one; the rest take the room, in
+ * the same proportions. `shares` runs along with `groups`. One group left means a plain zone again.
+ */
+export function setGroups(z: ZoneState, groups: DockGroup[], shares: number[]): void {
+  const keep = groups.map((g, i) => ({ g, s: shares[i] ?? 1 / groups.length })).filter((x) => x.g.tabs.length);
+  for (const x of keep) if (!x.g.active || !x.g.tabs.includes(x.g.active)) x.g.active = x.g.tabs[0];
+  if (!keep.length) {
+    z.tabs = [];
+    z.active = null;
+    delete z.more;
+    delete z.shares;
+    return;
+  }
+  z.tabs = keep[0].g.tabs;
+  z.active = keep[0].g.active;
+  if (keep.length === 1) {
+    delete z.more;
+    delete z.shares;
+    return;
+  }
+  const total = keep.reduce((n, x) => n + x.s, 0);
+  z.more = keep.slice(1).map((x) => ({ tabs: x.g.tabs, active: x.g.active }));
+  z.shares = keep.map((x) => x.s / total);
+}
+
+/** The group index a place or target names, kept within the groups the zone has (missing = the first). */
+const groupIndex = (z: ZoneState, group: number | undefined): number => Math.max(0, Math.min(group ?? 0, groupCount(z) - 1));
 
 export function locate(l: Layout, id: string): Place | null {
-  for (const z of ZONES) if (l.zones[z].tabs.includes(id)) return { zone: z };
+  for (const z of ZONES) {
+    const gs = groupsOf(l.zones[z]);
+    const g = gs.findIndex((x) => x.tabs.includes(id));
+    if (g >= 0) return g === 0 ? { zone: z } : { zone: z, group: g };
+  }
   const f = l.floats.find((x) => x.tabs.includes(id));
   return f ? { float: f.id } : null;
+}
+
+/** The front tab of a group in a zone. */
+export const activeOfGroup = (l: Layout, zone: DockZone, group = 0): string | null => groupsOf(l.zones[zone])[groupIndex(l.zones[zone], group)]?.active ?? null;
+
+/** True when the panel is the front tab of its place and that place is open (a folded zone shows none). */
+export function isFront(l: Layout, id: string): boolean {
+  const at = locate(l, id);
+  if (!at) return false;
+  if ('zone' in at) return !l.zones[at.zone].collapsed && activeOfGroup(l, at.zone, at.group) === id;
+  return l.floats.find((f) => f.id === at.float)?.active === id;
+}
+
+/** Drops the tabs `keep` says no to from every group of a zone, fixing each group's front tab. Empty groups go. */
+export function retainTabs(z: ZoneState, keep: (id: string) => boolean): void {
+  const sh = sharesOf(z);
+  const gs = groupsOf(z).map((g) => ({ tabs: g.tabs.filter(keep), active: g.active }));
+  setGroups(z, gs, sh);
 }
 
 export const isPlaced = (l: Layout, id: string): boolean => locate(l, id) !== null;
 
 /** Every panel that is on screen somewhere (in a zone or a window), hidden ones not counted. */
 export function placedIds(l: Layout): string[] {
-  return [...ZONES.flatMap((z) => l.zones[z].tabs), ...l.floats.flatMap((f) => f.tabs)];
+  return [...ZONES.flatMap((z) => zoneTabs(l.zones[z])), ...l.floats.flatMap((f) => f.tabs)];
 }
 
 /** The tabs of a zone or window. */
 export function groupTabs(l: Layout, at: Place): string[] {
-  return 'zone' in at ? l.zones[at.zone].tabs : (l.floats.find((f) => f.id === at.float)?.tabs ?? []);
+  return 'zone' in at ? (groupsOf(l.zones[at.zone])[groupIndex(l.zones[at.zone], at.group)]?.tabs ?? []) : (l.floats.find((f) => f.id === at.float)?.tabs ?? []);
 }
 
 /** What a panel is called: the name the person gave it, else its own title. */
@@ -231,7 +331,9 @@ export function floatTitle(l: Layout, f: FloatWin, titleOf: (id: string) => stri
 /** Takes the panel out of wherever it is (empty windows close). Returns the same layout when it wasn't placed. */
 function take(l: Layout, id: string): { next: Layout; from: Place | null; at: number } {
   const from = locate(l, id);
-  if (!from) return { next: l, from, at: -1 };
+  // A copy even when the panel isn't placed (a hidden one being brought back): the callers change `next`, and the
+  // layout in the store must stay untouched so the change is seen.
+  if (!from) return { next: clone(l), from, at: -1 };
   const next = clone(l);
   let at = -1;
   const pull = (g: { tabs: string[]; active: string | null }) => {
@@ -240,8 +342,12 @@ function take(l: Layout, id: string): { next: Layout; from: Place | null; at: nu
     // The tab beside it takes over when the front one leaves.
     if (g.active === id) g.active = g.tabs[Math.min(at, g.tabs.length - 1)] ?? null;
   };
-  if ('zone' in from) pull(next.zones[from.zone]);
-  else {
+  if ('zone' in from) {
+    const z = next.zones[from.zone];
+    const gs = groupsOf(z).map((g) => ({ tabs: [...g.tabs], active: g.active }));
+    pull(gs[from.group ?? 0]);
+    setGroups(z, gs, sharesOf(z));
+  } else {
     const f = next.floats.find((x) => x.id === from.float)!;
     pull(f);
     if (!f.tabs.length) next.floats = next.floats.filter((x) => x !== f);
@@ -271,18 +377,61 @@ export function clampBox(b: { x: number; y: number; w: number; h: number }, win:
   return { w, h, x: Math.max(0, Math.min(Math.round(b.x), win.w - Math.min(w, 120))), y: Math.max(0, Math.min(Math.round(b.y), win.h - 36)) };
 }
 
+/**
+ * Puts panels into a zone's group (or a new group beside it), after they were taken out of wherever they were. `anchor` is
+ * a tab that was in the target group before anything moved, so the group is still found when a group before it went away.
+ */
+function dropInZone(next: Layout, zone: DockZone, anchor: string | undefined, to: { index?: number; split?: 'before' | 'after' }, ids: string[], active: string): void {
+  const z = next.zones[zone];
+  const gs = groupsOf(z).map((g) => ({ tabs: [...g.tabs], active: g.active }));
+  const sh = sharesOf(z);
+  const found = anchor ? gs.findIndex((g) => g.tabs.includes(anchor)) : -1;
+  const gi = found >= 0 ? found : 0;
+  if (to.split && gs.length < MAX_GROUPS && gs[gi].tabs.length) {
+    const at = to.split === 'before' ? gi : gi + 1;
+    gs.splice(at, 0, { tabs: [...ids], active });
+    // The new group takes half of the room the one beside it had.
+    const half = sh[gi] / 2;
+    sh[gi] = half;
+    sh.splice(at, 0, half);
+  } else {
+    const g = gs[gi];
+    g.tabs.splice(to.index === undefined ? g.tabs.length : Math.max(0, Math.min(to.index, g.tabs.length)), 0, ...ids);
+    g.active = active;
+  }
+  setGroups(z, gs, sh);
+  z.collapsed = false;
+}
+
+/** A tab of the group a drop names, other than the ones in `not`: what finds that group again after panels move. */
+function anchorOf(l: Layout, zone: DockZone, group: number | undefined, not: string[]): string | undefined {
+  const z = l.zones[zone];
+  return groupsOf(z)[groupIndex(z, group)]?.tabs.find((t) => !not.includes(t));
+}
+
 /** Moves a panel to a target and makes it the front tab there. Windows left empty close; a closed panel opens. */
 export function movePanelTo(l: Layout, id: string, to: DropTarget, win?: { w: number; h: number }): Layout {
-  const { next, from, at } = take(l, id);
+  const from = locate(l, id);
+  // A zone drop names a group by position: find it by a tab that stays, since taking the panel out can remove a group.
+  const anchor = 'zone' in to ? anchorOf(l, to.zone, to.group, [id]) : undefined;
+  if ('zone' in to && !anchor) {
+    // The group holds nothing but this panel: dropping it on itself changes nothing (a folded zone opens).
+    if (from && 'zone' in from && from.zone === to.zone && (from.group ?? 0) === groupIndex(l.zones[to.zone], to.group)) {
+      if (!l.zones[to.zone].collapsed) return l;
+      const open = clone(l);
+      open.zones[to.zone].collapsed = false;
+      return open;
+    }
+  }
+  const { next, at } = take(l, id);
   let index = 'index' in to ? to.index : undefined;
   // Dropped in the group it came from: removing it shifted everything after it left by one.
-  const same = from && (('zone' in to && 'zone' in from && to.zone === from.zone) || ('float' in to && 'float' in from && to.float === from.float));
+  const same = from && (('zone' in to && 'zone' in from && to.zone === from.zone && groupIndex(l.zones[to.zone], to.group) === (from.group ?? 0)) || ('float' in to && 'float' in from && to.float === from.float));
   if (same && index !== undefined && index > at) index -= 1;
   next.hidden = next.hidden.filter((x) => x !== id);
   if (!next.known.includes(id)) next.known.push(id);
   if ('zone' in to) {
-    insert(next.zones[to.zone], id, index);
-    next.zones[to.zone].collapsed = false;
+    dropInZone(next, to.zone, anchor, { index, split: to.split }, [id], id);
     return next;
   }
   if ('float' in to) {
@@ -308,11 +457,7 @@ export function moveGroupTo(l: Layout, floatId: string, to: DropTarget): Layout 
   const next = clone(l);
   next.floats = next.floats.filter((x) => x.id !== floatId);
   if ('zone' in to) {
-    const z = next.zones[to.zone];
-    const at = to.index === undefined ? z.tabs.length : Math.max(0, Math.min(to.index, z.tabs.length));
-    z.tabs.splice(at, 0, ...f.tabs);
-    z.active = f.active ?? f.tabs[0];
-    z.collapsed = false;
+    dropInZone(next, to.zone, anchorOf(l, to.zone, to.group, []), { index: to.index, split: to.split }, f.tabs, f.active ?? f.tabs[0]);
     return next;
   }
   const dest = next.floats.find((x) => x.id === to.float);
@@ -352,9 +497,16 @@ export function closeFloat(l: Layout, floatId: string): Layout {
 
 /** Closes a panel (it stays in `known`, so it doesn't come back by itself). */
 export function closePanel(l: Layout, id: string): Layout {
+  if (!locate(l, id) && l.hidden.includes(id)) return l;
   const { next } = take(l, id);
   if (!next.hidden.includes(id)) next.hidden.push(id);
   return next;
+}
+
+/** Makes a tab the front one of a group (in place). */
+function setGroupActive(z: ZoneState, group: number, id: string): void {
+  if (group === 0) z.active = id;
+  else if (z.more?.[group - 1]) z.more[group - 1].active = id;
 }
 
 /** Makes a panel the front tab of its place, opens a folded zone, brings a window to the front. Not placed: nothing happens. */
@@ -363,7 +515,7 @@ export function frontPanel(l: Layout, id: string): Layout {
   if (!at) return l;
   const next = clone(l);
   if ('zone' in at) {
-    next.zones[at.zone].active = id;
+    setGroupActive(next.zones[at.zone], at.group ?? 0, id);
     next.zones[at.zone].collapsed = false;
   } else {
     const f = next.floats.find((x) => x.id === at.float)!;
@@ -383,6 +535,67 @@ export function raiseFloat(l: Layout, floatId: string): Layout {
 /** A window's box changed (moved or resized). Only that window is replaced. */
 export function setFloatBox(l: Layout, floatId: string, box: Partial<Pick<FloatWin, 'x' | 'y' | 'w' | 'h'>>): Layout {
   return { ...l, floats: l.floats.map((f) => (f.id === floatId ? { ...f, ...box } : f)) };
+}
+
+/** Moves the line between group `boundary` and the next so the first takes `first` of the zone (kept so neither gets too small). */
+export function splitGroupsAt(l: Layout, zone: DockZone, boundary: number, first: number): Layout {
+  const z = l.zones[zone];
+  const sh = sharesOf(z);
+  if (boundary < 0 || boundary >= sh.length - 1) return l;
+  const pair = sh[boundary] + sh[boundary + 1];
+  const to = Math.max(MIN_SHARE, Math.min(pair - MIN_SHARE, first));
+  if (Math.abs(to - sh[boundary]) < 1e-6 && z.shares) return l;
+  const next = clone(l);
+  const out = [...sh];
+  out[boundary] = to;
+  out[boundary + 1] = pair - to;
+  next.zones[zone].shares = out;
+  return next;
+}
+
+/** The first group's share of a zone once the line after it has been moved by `by` (a fraction of the zone). */
+export function nudgeSplit(l: Layout, zone: DockZone, boundary: number, by: number): Layout {
+  return splitGroupsAt(l, zone, boundary, (sharesOf(l.zones[zone])[boundary] ?? 0) + by);
+}
+
+/** The line between two groups goes back to even (the two share what they had between them). */
+export function evenSplit(l: Layout, zone: DockZone, boundary: number): Layout {
+  const sh = sharesOf(l.zones[zone]);
+  return splitGroupsAt(l, zone, boundary, ((sh[boundary] ?? 0) + (sh[boundary + 1] ?? 0)) / 2);
+}
+
+/** A group joined into the one before it (its tabs go on the end). Nothing happens for the first group. */
+export function joinGroupUp(l: Layout, zone: DockZone, group: number): Layout {
+  const z = l.zones[zone];
+  if (group < 1 || group >= groupCount(z)) return l;
+  const next = clone(l);
+  const nz = next.zones[zone];
+  const gs = groupsOf(nz);
+  const sh = sharesOf(nz);
+  gs[group - 1].tabs.push(...gs[group].tabs);
+  sh[group - 1] += sh[group];
+  gs[group].tabs = [];
+  setGroups(nz, gs, sh);
+  return next;
+}
+
+/** Every group of a zone made one (tabs in order). */
+export function joinAllGroups(l: Layout, zone: DockZone): Layout {
+  const z = l.zones[zone];
+  if (groupCount(z) < 2) return l;
+  const next = clone(l);
+  const nz = next.zones[zone];
+  nz.tabs = zoneTabs(nz);
+  delete nz.more;
+  delete nz.shares;
+  return next;
+}
+
+/** A window box changed by a step from the keyboard: bigger or smaller (top left stays put), never below the least or off the screen. */
+export function resizeBox(b: { x: number; y: number; w: number; h: number }, dw: number, dh: number, win?: { w: number; h: number }): { w: number; h: number } {
+  const maxW = win ? Math.max(FLOAT_MIN.w, win.w - Math.max(0, b.x)) : Infinity;
+  const maxH = win ? Math.max(FLOAT_MIN.h, win.h - Math.max(0, b.y)) : Infinity;
+  return { w: Math.round(Math.max(FLOAT_MIN.w, Math.min(maxW, b.w + dw))), h: Math.round(Math.max(FLOAT_MIN.h, Math.min(maxH, b.h + dh))) };
 }
 
 /** Names a panel (empty = back to its own title). */

@@ -20,14 +20,16 @@ export interface Feedback {
 export const feedback = createStore<Feedback>({ praise: null, celebration: null });
 
 const WORDS = lines('quests.praise');
+const PIXEL_WORDS = lines('pixel.quest.praise');
 let key = 0;
 let praiseTimer: ReturnType<typeof setTimeout> | null = null;
 let partyTimer: ReturnType<typeof setTimeout> | null = null;
 
-export function praise(): void {
+/** `pixel`: the cheers for pixel quests (Chunky! Crisp!). */
+export function praise(pixel = false): void {
   if (praiseTimer) clearTimeout(praiseTimer);
   const k = ++key;
-  feedback.set((f) => ({ ...f, praise: { key: k, text: WORDS[k % WORDS.length] } }));
+  feedback.set((f) => ({ ...f, praise: { key: k, text: (pixel ? PIXEL_WORDS : WORDS)[k % (pixel ? PIXEL_WORDS : WORDS).length] } }));
   praiseTimer = setTimeout(() => feedback.set((f) => ({ ...f, praise: null })), 1800);
 }
 

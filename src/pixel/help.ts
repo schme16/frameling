@@ -10,12 +10,12 @@ registerHelpTopics([
     section: 'Pixel art',
     summary: 'The tools for a game sprite made entirely of pixels, and the order most people use them in.',
     keywords: ['pixel art', 'sprite', 'game', 'retro', '8-bit', 'workflow'],
-    body: `Start a **Game sprite** or **Tiny sprite** from File > New, or add a pixel layer to any page. Then switch to the [Pixel workspace](help:pixel-workspace) (View > Workspaces): only the pixel tools, the Palette right beside you, and a [Preview](help:pixel-preview) playing your sprite at real size.
+    body: `Pick **Pixel art** on the New sheet (File > New): Quill asks whether you are making [one picture, an animation, frames on boards or sprites on a sheet](help:pixel-new), or add a pixel layer to any page. Then switch to the [Pixel workspace](help:pixel-workspace) (View > Workspaces): only the pixel tools, the Palette right beside you, and a [Preview](help:pixel-preview) playing your sprite at real size.
 
 A sprite usually goes like this:
 
 1. **Pick a palette.** The [Palette](help:palette) panel has starter palettes, or load your own.
-2. **Draw the outline** with the [Pencil](help:tool-pencil) (P). Turn on [Mirror drawing](help:pixel-mirror) (Shift+M) for faces and front-on characters.
+2. **Draw the outline** with the [Pencil](help:tool-pencil) (P). Size 1 is the plain pencil and bigger sizes are the same tool. Turn on [Mirror drawing](help:pixel-mirror) (Shift+M) for faces and front-on characters.
 3. **Fill it in** with the paint bucket (G).
 4. **Shade it** with the [Shade](help:tool-shade) tool (S): each pass moves a pixel one step darker or lighter along its colour ramp.
 5. **Add texture** with the [Dither](help:tool-dither) brush (Shift+B).
@@ -39,6 +39,21 @@ Every pixel you pass over moves **one step along its ramp** in the [Palette](hel
 - Size, Pixel perfect and Mirror drawing work as they do for the pencil.
 
 This is sometimes called a *shading ink*. It works best with palettes laid out in ramps, dark to light.`,
+  },
+  {
+    id: 'tool-spray',
+    title: 'Spray',
+    section: 'Pixel art',
+    media: 'pixel-spray.png',
+    summary: 'A sprinkle of Paint pixels round the pointer, for grit, stars, snow and soft edges.',
+    keywords: ['airbrush', 'sprinkle', 'scatter', 'grain', 'texture', 'noise', 'spray can'],
+    body: `Pick **Spray** from the Pixel tools, then drag. It scatters a few pixels of your **Paint** colour round the pointer each step, so a slow drag builds up thick and a quick one stays light.
+
+- **Size** is how many pixels across the sprinkle is.
+- It follows [Mirror drawing](help:pixel-mirror) and the [palette lock](help:palette-lock) like the other pixel tools.
+- It has no key of its own, so it never takes one from another tool. Give it one in Preferences > Keyboard, or find it with **Ctrl+K**.
+
+For a tidy, even pattern use the [Dither](help:tool-dither) brush instead.`,
   },
   {
     id: 'tool-dither',
@@ -97,7 +112,7 @@ Each is one undo step. Run it twice for a thicker outline, or with a different s
 **Thicker outlines.** Turn on **Thicker outline** in the tool options (or in Preferences > General, where it is called *Thicker pixel outlines*). Then set **Outline thickness**, from 1 to 16 pixels. Both places change the same setting, so use whichever is closer. It stays as you left it the next time you open Frameling, and it starts off, so shapes keep the classic one pixel look until you ask.
 
 - **A rectangle or an ellipse** keeps the size you drag. The outline grows inwards, so a 20 pixel wide box is still 20 pixels wide. If the outline is thicker than the shape can hold, the shape comes out solid in the stroke colour.
-- **A line, a polygon, a star or a pen path** has its outline centred on the path, a little like a brush walking along it. The pen paints when you finish the path, and shows the thickness in its options too.
+- **A line** has its outline centred on the path, a little like a brush walking along it. **A polygon, a star or a pen path** has an outline of the same width all the way round, with pointed corners (the brush shape does not matter there). The pen paints when you finish the path, and shows the thickness in its options too.
 - **The fill stays the fill.** Thickness only changes the outline. With the stroke set to none there is no outline, so the fill covers the shape as before.
 - It paints with the same brush shape as the pixel Brush, so pick a round brush for rounder corners.
 - Everything stays crisp: whole pixels, never blended. It follows the [palette lock](help:palette-lock), [mirror drawing](help:pixel-mirror), and the perspective guides (a thick rectangle or ellipse on a perspective plane keeps the size you dragged too; see [Pixel shapes on perspective guides](help:pixel-perspective)).

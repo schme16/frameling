@@ -14,6 +14,7 @@ import { store, type UiState } from '../core/store';
 import { activeDrawing, editActiveDrawing } from './edit';
 import { cssVar, subscribeTheme } from '../canvas/theme';
 import { applyGradientToSelection, getGradientWells, swapGradientWells } from './gradient-wells';
+import { paintWellsOn, shapesFilled } from './pixelWells';
 
 // A soft yellow that reads on white paper, so the first shape and the first bucket click show up (see themeFill).
 /** The fill used when there's no theme to ask (tests, before the page styles load). */
@@ -56,11 +57,18 @@ export const DEFAULT_STROKE: Color = '#1d1b26';
 
 /** The colour in the box that's in front, or null when it's set to none. */
 export function activeColor(ui: UiState = store().get().ui): Color | null {
+  // Paint and Back (the Pixel workspace): the colour you set and pick is always Paint.
+  if (paintWellsOn()) return ui.color;
   return ui.activeWell === 'fill' ? ui.fillColor : ui.strokeOn ? ui.color : null;
 }
 
 /** The fill shapes and shapes should use (null = none). */
 export function shapeColors(ui: UiState = store().get().ui): { fill: Color | null; stroke: Color | null } {
+  // Paint and Back: shapes are drawn in Paint, and filled in Paint when "Filled" is on.
+  if (paintWellsOn()) {
+    const f = shapesFilled();
+    return { fill: f === 'back' ? ui.fillColor : f ? ui.color : null, stroke: ui.color };
+  }
   return { fill: ui.fillColor, stroke: ui.strokeOn ? ui.color : null };
 }
 
@@ -99,6 +107,10 @@ function applyToSelection(which: 'fill' | 'stroke'): void {
 /** Sets the colour of the box in front (and turns "none" off for it). */
 export function setActiveColor(c: Color): void {
   const ui = store().get().ui;
+  if (paintWellsOn()) {
+    if (ui.color !== c || !ui.strokeOn) store().setUi({ color: c, strokeOn: true });
+    return;
+  }
   if (ui.activeWell === 'fill') {
     if (ui.fillColor === c) return;
     store().setUi({ fillColor: c });
@@ -115,11 +127,19 @@ export function setActiveWell(w: 'fill' | 'stroke'): void {
 
 /** X: bring the other box to the front. */
 export function toggleWell(): void {
+  if (paintWellsOn()) {
+    swapPaintBack();
+    return;
+  }
   setActiveWell(store().get().ui.activeWell === 'fill' ? 'stroke' : 'fill');
 }
 
 /** Shift+X: swap the fill and stroke colours, gradients included. */
 export function swapColors(): void {
+  if (paintWellsOn()) {
+    swapPaintBack();
+    return;
+  }
   const ui = store().get().ui;
   const fill = ui.strokeOn ? ui.color : null;
   const stroke = ui.fillColor;
@@ -133,6 +153,14 @@ export function swapColors(): void {
     applyGradientToSelection('fill');
     applyGradientToSelection('stroke');
   }
+}
+
+/** Paint and Back trade places (X in the Pixel workspace). With no Back colour there is nothing to swap with. */
+export function swapPaintBack(): boolean {
+  const ui = store().get().ui;
+  if (!ui.fillColor) return false;
+  store().setUi({ color: ui.fillColor, fillColor: ui.color, strokeOn: true });
+  return true;
 }
 
 /** Shift+D: the theme's fill colour and a black stroke. */

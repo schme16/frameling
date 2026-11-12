@@ -19,6 +19,8 @@ export interface BonesRun {
   scale: number;
   godotPath: string;
   pixelArt: boolean;
+  /** Use Godot's own ping-pong for looping back and forth clips (the preference). */
+  nativeBounce?: boolean;
   signal?: AbortSignal;
   onStep?: (done: number, total: number, label: string) => void;
 }
@@ -190,7 +192,7 @@ export async function godotBonesFiles(o: BonesRun): Promise<{ files: { name: str
   }
   const animations = buildAnimations({ clips: doc.clips, rangeStart: range.start, rangeEnd: range.end, fps: doc.fps, whole: o.whole, onlyClipId: o.clipId });
   const rootName = doc.name.replace(/[^A-Za-z0-9]+/g, ' ').trim().split(' ').filter(Boolean).map((w) => w[0].toUpperCase() + w.slice(1)).join('') || 'Character';
-  const input = { doc, range, parts: top.parts, textures: top.textures!, scale: k, animations, rootName, pixelArt: o.pixelArt, nested: top.nested, shaderDir: dir };
+  const input = { doc, range, parts: top.parts, textures: top.textures!, scale: k, animations, rootName, pixelArt: o.pixelArt, nativeBounce: o.nativeBounce, nested: top.nested, shaderDir: dir };
   const main = `${base}.tscn`;
   files.push({ name: main, bytes: strToU8(godotBonesScene(input)) });
   // A camera (and the depth layers it moves) works from the window's size: a small script makes it match at any size.

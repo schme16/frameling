@@ -208,7 +208,7 @@ export const TEMPLATES: Template[] = [
   {
     id: 'blank-pixel',
     name: 'Blank pixel',
-    blurb: 'A 32x32 pixel grid at 12 fps, each pixel 8 screen pixels wide. Try it: draw a 2-frame blink, then press play.',
+    blurb: 'A 32x32 pixel grid at 12 fps with 4 frames to animate, each pixel 8 screen pixels wide. Try it: draw a 2-frame blink, then press play.',
     kind: 'pixel',
     make: makeBlankPixel,
   },

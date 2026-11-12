@@ -7,15 +7,17 @@
 import { cleanGradients } from '../core/gradient';
 import { readFolders, readLayerLook } from '../effects/io';
 import { strFromU8, strToU8, unzipSync, zipSync, type Zippable } from 'fflate';
-import { BONE_STRETCH, FORMAT_VERSION, LAYER_LABELS, type LayerLabel, type Cel, type Doc, type Drawing, type KeptShape, type Layer, type Shape, type SymbolDef, type Tween, type InstanceShape, type ClipFlow, type ClipTransition, type Tile, type Tileset, type Bone, type BonePose, type LayerBind, type Pose, type Rig, type SavedPose } from '../core/format';
+import { BONE_STRETCH, FORMAT_VERSION, LAYER_LABELS, type LayerLabel, type Cel, type Doc, type Drawing, type KeptShape, type Layer, type Shape, type Slice, type SymbolDef, type Tween, type InstanceShape, type ClipFlow, type ClipTransition, type Tile, type Tileset, type Bone, type BonePose, type LayerBind, type Pose, type Rig, type SavedPose } from '../core/format';
 import { decodePng, encodePng } from './png';
+import { trimmedDrawing } from '../core/pixelBounds';
 import { rootDoc } from '../core/symbols';
 import { isEasing } from '../core/ease';
-import { readOrigin, readParticlesShape, readTextShape } from './shapes-extra';
+import { readOrigin } from './shapes-extra';
+import { hasShapeKind, shapeKind } from '../core/shapeKinds';
 import { packAudio, unpackAudio } from './audio-file';
 import { keepUnknownShape, readExt, shapesForSave, withExt } from './ext';
 import { packArtboards, readArtboards } from '../artboards/io';
-import { closedForSave, isDerivedDrawing, resolveAfterLoad } from '../artboards/variationsIo';
+import { closedForSave, isDerivedDrawing, resolveAfterLoad, variationDiffs } from '../artboards/variationsIo';
 import { switchOpenVariation } from '../artboards/variations';
 import { upgradeLineage } from '../core/upgradeLineage';
 import { readClip } from '../core/clipPlay';
@@ -67,15 +69,25 @@ export function saveFile(open: Doc, appVersion = '', now: Date = new Date()): Ui
   const files: Zippable = {};
   const drawings: Record<string, unknown> = {};
   const used = new Set<string>();
+  // A drawing a variation redrew is stored as what differs from its original's, when that is smaller.
+  const diffs = variationDiffs(doc, files, pngFor);
+  const tileFrames = new Set((doc.tileset?.tiles ?? []).flatMap((t) => t.frames.map((f) => f.drawingId)));
   for (const [id, d] of Object.entries(doc.drawings)) {
     // A variation's drawings that are worked out from its original are not stored.
-    if (isDerivedDrawing(doc, id)) continue;
+    if (isDerivedDrawing(doc, id) || diffs.has(id)) continue;
     if (d.kind === 'pixel') {
+      // Only the painted part is stored (tile frames are always whole tiles).
+      const t = tileFrames.has(id) ? d : trimmedDrawing(d);
+      if (t.width < 1 || t.height < 1) {
+        // Nothing painted: no picture entry at all.
+        drawings[id] = { ...t, width: 0, height: 0, pixels: '' };
+        continue;
+      }
       let name = `pixels/${safeName(id)}.png`;
       while (used.has(name)) name = name.replace(/\.png$/, '_.png');
       used.add(name);
-      files[name] = [pngFor(d), { level: 0 }];
-      drawings[id] = { ...d, pixels: name };
+      files[name] = [pngFor(t), { level: 0 }];
+      drawings[id] = { ...t, pixels: name };
     } else if (d.kind === 'tilemap') {
       drawings[id] = { ...d, cells: Array.from(d.cells) };
     } else if (d.kind === 'vector' && d.kept?.length) {
@@ -90,17 +102,37 @@ export function saveFile(open: Doc, appVersion = '', now: Date = new Date()): Ui
   // Sound bytes go in their own entries; `audio` in doc.json then names them (undefined leaves the key out).
   const audio = packAudio(doc, files);
   // Artboards that aren't open carry their own sounds the same way.
-  files['doc.json'] = strToU8(JSON.stringify({ ...doc, drawings, audio, ...packArtboards(doc, files), ...(closed.reopen ? { variationOpen: closed.reopen } : {}) }));
+  files['doc.json'] = strToU8(JSON.stringify({ ...doc, drawings, audio, ...packArtboards(doc, files, diffs), ...(closed.reopen ? { variationOpen: closed.reopen } : {}) }));
   return zipSync(files, { level: 6 });
 }
 
 // ---------------------------------------------------------------- migration
 
+/** Version 1 counted a back and forth clip's repeat in full trips; version 2 counts each direction (2 per trip). */
+function doubleBounceRepeats(clips: unknown): void {
+  if (!Array.isArray(clips)) return;
+  for (const c of clips) {
+    if (!isObj(c) || (c.direction !== 'pingpong' && c.direction !== 'pingpong-reverse')) continue;
+    // A clip that stops after one trip had no repeat written; it is now there and back (2).
+    if (typeof c.repeat === 'number' && Number.isFinite(c.repeat)) c.repeat = Math.round(c.repeat) * 2;
+    else if (c.loop !== true) c.repeat = 2;
+  }
+}
+
 /**
- * One step per format version: `MIGRATIONS[n]` turns a version n document into version n + 1. Version 1 is the only
- * one so far, so the list is empty. When the format changes, bump FORMAT_VERSION and add the step here.
+ * One step per format version: `MIGRATIONS[n]` turns a version n document into version n + 1. When the format changes,
+ * bump FORMAT_VERSION and add the step here. Version 1 to 2: back and forth clips count each direction as one repeat.
+ * Version 2 to 3: pixel drawings can hold just the painted part of the grid.
  */
-export const MIGRATIONS: Record<number, (raw: any) => any> = {};
+export const MIGRATIONS: Record<number, (raw: any) => any> = {
+  1: (raw) => {
+    doubleBounceRepeats(raw.clips);
+    if (Array.isArray(raw.artboards)) for (const a of raw.artboards) if (isObj(a) && isObj(a.content)) doubleBounceRepeats(a.content.clips);
+    return raw;
+  },
+  // Version 2 to 3: pixel drawings may hold only their painted part (`x`, `y`, a smaller `width` and `height`). Nothing to change in older files.
+  2: (raw) => raw,
+};
 
 export function migrate(raw: any, from: number): any {
   let doc = raw;
@@ -115,7 +147,8 @@ export function migrate(raw: any, from: number): any {
 
 // ---------------------------------------------------------------- loading
 
-const SHAPE_TYPES = new Set(['stroke', 'fill', 'path', 'instance', 'text', 'particles']);
+// The drawing basics; text, particles and the like are kinds that register themselves (core/shapeKinds.ts).
+const BASIC_SHAPES = new Set(['stroke', 'fill', 'path', 'instance']);
 const MAX_UNZIPPED = 1024 * 1024 * 1024;
 
 function isObj(v: unknown): v is Record<string, any> {
@@ -175,8 +208,8 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
       const kept: KeptShape[] = [];
       let lost = !Array.isArray(d.shapes);
       for (const s of Array.isArray(d.shapes) ? d.shapes : []) {
-        if (isObj(s) && SHAPE_TYPES.has(s.type)) {
-          const read: Shape | null = s.type === 'instance' ? readInstance(s) : s.type === 'text' ? readTextShape(s) : s.type === 'particles' ? readParticlesShape(s) : (cleanOrigin(cleanGradients(s)) as Shape);
+        if (isObj(s) && (BASIC_SHAPES.has(s.type) || hasShapeKind(s.type))) {
+          const read: Shape | null = s.type === 'instance' ? readInstance(s) : hasShapeKind(s.type) ? shapeKind(s.type)!.read(s) : (cleanOrigin(cleanGradients(s)) as Shape);
           if (read) shapes.push(withExt(read, s, warnings));
           else lost = true;
         } else {
@@ -190,6 +223,11 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
       drawings[id] = { id: str(d.id, id), kind: 'vector', shapes, ...(kept.length ? { kept } : {}), ...readPose(d.pose), ...readExt(d.ext, warnings) };
     } else if (d.kind === 'pixel') {
       const name = d.pixels;
+      if (name === '' && d.width === 0 && d.height === 0) {
+        // A drawing with nothing painted has no picture.
+        drawings[id] = { id: str(d.id, id), kind: 'pixel', width: 0, height: 0, pixels: new Uint8ClampedArray(0), ...readExt(d.ext, warnings) };
+        continue;
+      }
       if (typeof name !== 'string' || !/^pixels\/[A-Za-z0-9_-]+\.png$/.test(name) || !entries[name]) throw damaged();
       let img;
       try {
@@ -198,7 +236,10 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
         throw damaged();
       }
       if (img.width !== d.width || img.height !== d.height) throw damaged();
-      drawings[id] = { id: str(d.id, id), kind: 'pixel', width: img.width, height: img.height, pixels: img.pixels, ...readExt(d.ext, warnings) };
+      // Where the picture sits on the art grid (missing = the corner, as in files made before drawings were trimmed).
+      const gx = Math.max(0, Math.min(1 << 20, Math.round(num(d.x, 0))));
+      const gy = Math.max(0, Math.min(1 << 20, Math.round(num(d.y, 0))));
+      drawings[id] = { id: str(d.id, id), kind: 'pixel', ...(gx ? { x: gx } : {}), ...(gy ? { y: gy } : {}), width: img.width, height: img.height, pixels: img.pixels, ...readExt(d.ext, warnings) };
     } else if (d.kind === 'tilemap') {
       const columns = Math.round(num(d.columns, 0));
       const rows = Math.round(num(d.rows, 0));
@@ -249,7 +290,7 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
         ...readExt(l.ext, warnings),
         cels,
       };
-      if (l.kind === 'pixel') layers.push({ ...base, kind: 'pixel', pixelSize: Math.max(1, Math.round(num(l.pixelSize, 1))), ...(l.paletteLock === true ? { paletteLock: true } : {}) });
+      if (l.kind === 'pixel') layers.push({ ...base, kind: 'pixel', pixelSize: Math.max(1, Math.round(num(l.pixelSize, 1))), ...(l.paletteLock === true ? { paletteLock: true } : {}), ...readSlices(l.slices) });
       else if (l.kind === 'tilemap') layers.push({ ...base, kind: 'tilemap', pixelSize: Math.max(1, Math.round(num(l.pixelSize, 1))) });
       else if (l.kind === 'camera') layers.push({ ...base, kind: 'camera' });
       else layers.push({ ...base, kind: 'vector', ...(l.drawMode === 'merge' ? { drawMode: 'merge' as const } : {}), ...readRig(l.rig) });
@@ -261,6 +302,9 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
   if (unique.size !== layers.length) throw damaged();
 
   const tileset = readTileset(raw.tileset, drawings, warnings);
+  // Older files hold whole-grid drawings: keep only the painted part of each (tile frames stay whole tiles).
+  const frames = new Set((tileset?.tiles ?? []).flatMap((t) => t.frames.map((f) => f.drawingId)));
+  for (const [id, d] of Object.entries(drawings)) if (d.kind === 'pixel' && !frames.has(id)) drawings[id] = trimmedDrawing(d);
   const doc: Doc = {
     format: 'frameling',
     version: FORMAT_VERSION,
@@ -299,7 +343,8 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
     const points = raw.perspective.points.filter((p: any) => isObj(p) && Number.isFinite(p.x) && Number.isFinite(p.y)).slice(0, 2).map((p: any) => ({ x: p.x as number, y: p.y as number }));
     if (points.length) doc.perspective = { points };
   }
-  Object.assign(doc, readArtboards(raw, entries, warnings, { readLayers, readFlow, readGuides, top: layers }));
+  if (isObj(raw.sprite) && ['picture', 'animation', 'boards', 'sheet'].includes(raw.sprite.way)) doc.sprite = { way: raw.sprite.way };
+  Object.assign(doc, readArtboards(raw, entries, warnings, { readLayers, readFlow, readGuides, readPalette, top: layers }));
   resolveAfterLoad(doc, warnings);
   upgradeLineage(doc);
   return typeof raw.variationOpen === 'string' ? switchOpenVariation(doc, raw.variationOpen) : doc;
@@ -379,6 +424,32 @@ function readRig(r: unknown): { rig?: Rig } {
     if (poses.length) rig.poses = poses;
   }
   return { rig };
+}
+
+/** A layer's slices (named rectangles): kept when they have a name and a real size, repaired when a part is off. */
+function readSlices(v: unknown): { slices?: Slice[] } {
+  if (!Array.isArray(v)) return {};
+  const whole = (n: unknown, fallback = 0) => Math.round(num(n, fallback));
+  const point = (p: unknown) => (isObj(p) && Number.isFinite(p.x) && Number.isFinite(p.y) ? { x: whole(p.x), y: whole(p.y) } : undefined);
+  const slices: Slice[] = [];
+  const seen = new Set<string>();
+  for (const s of v) {
+    if (!isObj(s) || typeof s.name !== 'string') continue;
+    const w = whole(s.w);
+    const h = whole(s.h);
+    if (w < 1 || h < 1) continue;
+    let id = str(s.id, 'slice' + slices.length);
+    while (seen.has(id)) id += '_';
+    seen.add(id);
+    const slice: Slice = { id, name: s.name, x: whole(s.x), y: whole(s.y), w, h };
+    const c = s.center;
+    if (isObj(c) && whole(c.w) >= 1 && whole(c.h) >= 1) slice.center = { x: whole(c.x), y: whole(c.y), w: whole(c.w), h: whole(c.h) };
+    const pivot = point(s.pivot);
+    if (pivot) slice.pivot = pivot;
+    if (typeof s.color === 'string') slice.color = s.color;
+    slices.push(slice);
+  }
+  return slices.length ? { slices } : {};
 }
 
 function readBind(b: unknown): { bind?: LayerBind } {
@@ -507,7 +578,7 @@ function readTileset(raw: any, drawings: Record<string, Drawing>, warnings: stri
 }
 
 /** The pixel palette, if the file has a usable one. */
-function readPalette(p: unknown): { palette?: Doc['palette'] } {
+export function readPalette(p: unknown): { palette?: Doc['palette'] } {
   if (!isObj(p) || !Array.isArray(p.colors)) return {};
   const colors = p.colors.filter((c: unknown) => typeof c === 'string' && /^#[0-9a-f]{6}([0-9a-f]{2})?$/i.test(c)).slice(0, 256);
   const ramps = Array.isArray(p.ramps) ? [...new Set<number>(p.ramps.filter((n: unknown) => Number.isInteger(n) && (n as number) > 0 && (n as number) < colors.length))].sort((a, b) => a - b) : [];

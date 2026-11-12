@@ -267,7 +267,7 @@ class Reader {
 
 const PIXEL_BYTES: Record<Depth, number> = { 8: 1, 16: 2, 32: 4 };
 /** Far beyond any real sprite; stops a made-up size from asking for gigabytes. */
-const MAX_IMAGE_BYTES = 512 * 1024 * 1024;
+const MAX_IMAGE_BYTES = 2 * 1024 * 1024 * 1024;
 
 function inflate(data: Uint8Array, expected: number): Uint8Array {
   if (expected > MAX_IMAGE_BYTES) throw new AsepriteProblem('An image inside this Aseprite file is too big to open.');

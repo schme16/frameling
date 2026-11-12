@@ -2,6 +2,7 @@
  * Small helpers the templates are built from. Everything is generated in code (no saved drawings), so the
  * templates stay tiny and follow the format as it grows.
  */
+import { trimmedDrawing } from '../core/pixelBounds';
 import { DEFAULT_BRUSH, newPixelDrawing, newPixelLayer, newVectorLayer, uid } from '../core/doc';
 import type { Color, Doc, FillShape, Layer, PathShape, PixelDrawing, PixelLayer, StrokeShape, SubPath, VectorDrawing, VectorLayer } from '../core/format';
 
@@ -201,8 +202,10 @@ export function pixelDrawing(doc: Doc, grid: string[][] | readonly string[], pal
       d.pixels.set(hexToRgba(col), (y * w + x) * 4);
     });
   });
-  doc.drawings[d.id] = d;
-  return d;
+  // Only the painted part is held.
+  const t = trimmedDrawing(d);
+  doc.drawings[t.id] = t;
+  return t;
 }
 
 /** True if a grid has any visible pixel for the keys. */

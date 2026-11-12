@@ -60,19 +60,21 @@ export function playRange(doc: Doc, clipId: string | null = tl().clipId): { star
 
 /** How the picked range plays right now: which way, and how many times (the Loop switch only matters when the clip says forever). */
 function playing(r: ReturnType<typeof playRange>, ui: { loopPlayback: boolean; pingPong?: boolean }): { dir: ClipDirection; plays: number } {
+  // The toolbar's back and forth switch plays there and back (two directions) each time, so a plain "once" is a full trip.
+  const bounceSwitch = r.direction === null && !!ui.pingPong;
   return {
     dir: r.direction ?? (ui.pingPong ? 'pingpong' : 'forward'),
-    plays: Number.isFinite(r.plays) ? r.plays : ui.loopPlayback ? Infinity : 1,
+    plays: Number.isFinite(r.plays) ? (bounceSwitch ? r.plays * 2 : r.plays) : ui.loopPlayback ? Infinity : bounceSwitch ? 2 : 1,
   };
 }
 
 /**
  * Where playback is after `idx` steps through a range `len` frames long: the position in the range (0 = its first
  * frame), or done when it has reached the end and doesn't loop. Ping-pong goes forward then back (the ends show once
- * per turn), and without looping it stops when it's back at the start.
+ * per turn), and without looping it stops when it's back at the start (there and back is two directions).
  */
 export function stepPosition(idx: number, len: number, loops: boolean, pingPong: boolean): { pos: number; done: boolean } {
-  return directedPosition(idx, len, pingPong ? 'pingpong' : 'forward', loops ? Infinity : 1);
+  return directedPosition(idx, len, pingPong ? 'pingpong' : 'forward', loops ? Infinity : pingPong ? 2 : 1);
 }
 
 /** The next `count` frames playback will show after `from`, in order, following the loop (or stopping at the end). */
@@ -135,7 +137,7 @@ function begin(): void {
   const { dir, plays } = playing(r, ui);
   let f = ui.frame;
   // Pressed on a frame outside the range, or on the frame a finished clip holds: start from the beginning.
-  const hold = r.start + holdPosition(len, dir);
+  const hold = r.start + holdPosition(len, dir, plays);
   if (f < r.start || f > r.end || (Number.isFinite(plays) && f === hold && r.end > r.start)) f = r.start + entryPosition(len, dir);
   const t = scheduler.now();
   // Set up before moving the playhead: that change comes straight back through the store subscription.

@@ -4,16 +4,16 @@
  * in the zip beside the rest. Pure bytes in and out, like file.ts (which passes its readers in).
  */
 import type { Zippable } from 'fflate';
-import type { Artboard, ArtboardContent, ClipFlow, Doc, Guide, Layer } from '../core/format';
+import type { Artboard, ArtboardContent, ClipFlow, Doc, DocPalette, DrawingDiff, Guide, Layer } from '../core/format';
 import { packAudio, unpackAudio } from '../io/audio-file';
 import { readClip } from '../core/clipPlay';
 import { readOverrides, variationForSave } from './variationsIo';
 
 /** The artboards for doc.json, with each set-aside artboard's sound bytes added to the zip. Empty when there are none. */
-export function packArtboards(doc: Doc, files: Zippable): { artboards?: unknown[]; activeArtboard?: string } {
+export function packArtboards(doc: Doc, files: Zippable, diffs?: Map<string, DrawingDiff>): { artboards?: unknown[]; activeArtboard?: string } {
   if (!doc.artboards?.length) return {};
   const artboards = doc.artboards.map((a) => {
-    if (a.variationOf) return variationForSave(a);
+    if (a.variationOf) return variationForSave(a, files, diffs);
     if (!a.content?.audio?.length) return a;
     return { ...a, content: { ...a.content, audio: packAudio({ audio: a.content.audio } as Doc, files) } };
   });
@@ -24,6 +24,7 @@ export interface ArtboardReaders {
   readLayers: (raw: any[]) => Layer[];
   readFlow: (raw: unknown, clips: { id: string }[]) => ClipFlow | undefined;
   readGuides: (raw: unknown) => Guide[] | undefined;
+  readPalette?: (raw: unknown) => { palette?: DocPalette };
   /** The layers of the open artboard (the file's own), for reading what a variation of it adds. */
   top?: Layer[];
 }
@@ -83,7 +84,7 @@ export function readArtboards(raw: any, entries: Record<string, Uint8Array>, war
   for (const { v, raw: rawOv } of pending) {
     const src = out.find((x) => x.id === v.variationOf && !x.variationOf);
     const layers = src ? (src.content?.layers ?? r.top ?? []) : [];
-    v.overrides = readOverrides(rawOv, r, (id) => layers.find((l) => l.id === id)?.kind);
+    v.overrides = readOverrides(rawOv, r, (id) => layers.find((l) => l.id === id)?.kind, { entries, warnings });
   }
   return { artboards: out, activeArtboard: active };
 }

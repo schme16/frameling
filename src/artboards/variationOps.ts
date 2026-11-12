@@ -2,7 +2,7 @@
  * Variation actions on the app's store: each is one undo step. (The maths is in variations.ts.)
  */
 import type { Doc, Id } from '../core/format';
-import { store } from '../core/store';
+import { onBlocked, store } from '../core/store';
 import { choose } from '../core/choices';
 import { findLayer } from '../core/doc';
 import { toast } from '../ui/toast';
@@ -13,6 +13,9 @@ import type { FitMode } from './fit';
 import { activeId, findArtboard, sizeOf } from './model';
 import { goToArtboard, installArtboards } from './ops';
 import { detachVariation, listDifferences, makeVariation, resetDifference, resetVariation, setVariationSize, sourceOf, variationsOf, type DiffItem, type ResetKey } from './variations';
+
+// A change to what a variation shares with its original is refused with a plain note.
+onBlocked((message) => void toast(message, { kind: 'warn' }));
 
 export type SizePreset = 'same' | 'square' | 'wide' | 'tall';
 
@@ -91,8 +94,9 @@ export function detachVariationById(id: Id = activeId(store().get().doc)): boole
   const a = findArtboard(store().get().doc, id);
   if (!a?.variationOf) return false;
   const name = a.name;
+  const colourway = !!a.overrides?.palette;
   store().update(`Detach "${name}"`, (d) => void detachVariation(d as Doc, id));
-  toast(`"${name}" is a plain artboard now. It keeps what it shows, and no longer follows the original.`);
+  toast(`"${name}" is a plain artboard now. It keeps what it shows, and no longer follows the original.${colourway ? ' Its pixels keep their colours, and the palette list goes back to the shared one.' : ''}`);
   return true;
 }
 

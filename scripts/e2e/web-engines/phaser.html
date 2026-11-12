@@ -2,7 +2,10 @@
 <html><head><meta charset="utf-8"><title>Phaser check</title>
 <style>html,body{margin:0;background:#808080}</style></head>
 <body><div id="stage"></div>
-<script src="/engines/phaser.min.js"></script>
+<script>
+// ?v=4 loads the pinned Phaser 4 build instead of Phaser 3.
+document.write('<script src="/engines/phaser' + (new URLSearchParams(location.search).get('v') === '4' ? '4' : '') + '.min.js"><\/script>');
+</script>
 <script src="/harness/common.js"></script>
 <script>
 // Loads Frameling's atlas and animations json the way the Phaser help topic says, plays every animation, and checks
@@ -11,9 +14,9 @@ window.runCheck = async function (cfg) {
   const r = WE.report();
   const game = await new Promise((resolve, reject) => {
     const g = new Phaser.Game({
-      type: Phaser.WEBGL, width: cfg.width, height: cfg.height, parent: 'stage', transparent: true,
+      type: cfg.renderer === 'canvas' ? Phaser.CANVAS : Phaser.WEBGL, width: cfg.width, height: cfg.height, parent: 'stage', transparent: true,
       audio: { noAudio: true }, banner: false,
-      render: { pixelArt: true, antialias: false, preserveDrawingBuffer: true },
+      render: { pixelArt: true, antialias: false, preserveDrawingBuffer: true, ...(cfg.extraRender || {}) },
       scene: {
         preload() {
           this.load.atlas(cfg.key, cfg.image, cfg.json);
@@ -26,7 +29,9 @@ window.runCheck = async function (cfg) {
     setTimeout(() => reject(new Error('Phaser never got to create()')), 20000);
   });
   const scene = game.scene.scenes[0];
-  r.notes.push(`Phaser ${Phaser.VERSION}, ${game.renderer.type === Phaser.WEBGL ? 'WebGL' : 'canvas'}`);
+  const gotCanvas = game.renderer.type === Phaser.CANVAS;
+  r.notes.push(`Phaser ${Phaser.VERSION}, ${gotCanvas ? 'canvas' : 'WebGL'}${cfg.display !== 1 ? `, shown at ${cfg.display}x` : ''}`);
+  r.expect(gotCanvas === (cfg.renderer === 'canvas'), `asked for the ${cfg.renderer} renderer, got ${gotCanvas ? 'canvas' : 'WebGL'}`);
   const tex = scene.textures.get(cfg.key);
   const frameNames = tex.getFrameNames();
   r.expect(frameNames.length === cfg.frameNames.length && cfg.frameNames.every((n) => frameNames.includes(n)),
@@ -39,23 +44,58 @@ window.runCheck = async function (cfg) {
     r.expect(anim.frames.length === exp.count, `${exp.name}: ${anim.frames.length} frames, wanted ${exp.count}`);
     r.expect(anim.frameRate === exp.fps && WE.near(anim.msPerFrame, 1000 / exp.fps, 0.01), `${exp.name}: frame rate ${anim.frameRate} (${anim.msPerFrame} ms a frame), wanted ${exp.fps}`);
     // A forward or backward clip that plays N times is one pass with Phaser's own repeat (N - 1); a loop is -1.
+    // With the engine's own ping-pong (yoyo), `times` is the number of round trips and the list is one direction.
     const times = exp.times || 1;
     const wantRepeat = exp.loop ? -1 : times - 1;
     r.expect(anim.repeat === wantRepeat, `${exp.name}: repeat ${anim.repeat}, wanted ${wantRepeat}`);
+    r.expect(!!anim.yoyo === !!exp.yoyo, `${exp.name}: yoyo is ${anim.yoyo}, wanted ${!!exp.yoyo}`);
     r.expect(WE.near(anim.duration, exp.count * 1000 / exp.fps, 1), `${exp.name}: lasts ${anim.duration} ms, wanted ${exp.count * 1000 / exp.fps}`);
     r.expect(anim.frames.every((f) => f.textureKey === cfg.key && frameNames.includes(f.textureFrame)), `${exp.name}: a frame points at a missing texture frame`);
 
     // Pixels: show frame i of the animation on a sprite and compare with Frameling's picture of that document frame.
-    const sprite = scene.add.sprite(0, 0, cfg.key).setOrigin(0, 0);
+    const sprite = scene.add.sprite(0, 0, cfg.key).setOrigin(0, 0).setScale(cfg.display);
     sprite.play(exp.name);
     sprite.anims.pause();
     for (const c of exp.checks) {
       sprite.anims.setCurrentFrame(anim.frames[c.i]);
       await nextRender();
       await nextRender();
-      await r.pixel(`${exp.name}[${c.i}]`, game.canvas, cfg.width, cfg.height, c.ref);
+      await r.pixel(`${exp.name}[${c.i}]`, game.canvas, cfg.width, cfg.height, c.ref, gotCanvas && !cfg.strict);
     }
     sprite.destroy();
+
+    // The engine's own ping-pong: really play it and record which picture shows when. The sequence is reported (the
+    // ends of a yoyo show once in Phaser 3.90) and has to be one direction, then back, every round trip.
+    if (exp.yoyo) {
+      const s3 = scene.add.sprite(0, 0, cfg.key).setOrigin(0, 0);
+      const seq = [];
+      let done = false;
+      s3.on(Phaser.Animations.Events.ANIMATION_START, () => seq.push(s3.frame.name));
+      s3.on(Phaser.Animations.Events.ANIMATION_UPDATE, () => seq.push(s3.frame.name));
+      s3.on(Phaser.Animations.Events.ANIMATION_COMPLETE, () => { done = true; });
+      s3.play(exp.name);
+      const trip = exp.count * 2;
+      await WE.sleep(exp.loop ? (trip * 2 + 3) * 1000 / exp.fps + 300 : (trip * times + 3) * 1000 / exp.fps + 600);
+      const names = anim.frames.map((f) => f.textureFrame);
+      const there = names, back = names.slice().reverse();
+      r.notes.push(`${exp.name}: yoyo played ${seq.slice(0, trip + 2).map((n) => names.indexOf(n)).join(' ')} (the ends show once)`);
+      // Phaser's yoyo shows each end once (pinned build, 3.90), so it plays exactly the baked order: there, back, there...
+      let want;
+      if (exp.loop) want = there.concat(back.slice(1), there.slice(1), back.slice(1));
+      else {
+        want = there.slice();
+        for (let t = 0; t < times; t++) want = want.concat(back.slice(1), t + 1 < times ? there.slice(1) : []);
+      }
+      const got = seq.slice(0, want.length);
+      r.expect(got.length === want.length && want.every((n, k) => got[k] === n), `${exp.name}: yoyo played ${got.map((n) => names.indexOf(n)).join(' ')}, wanted ${want.map((n) => names.indexOf(n)).join(' ')}`);
+      if (!exp.loop) {
+        r.expect(done, `${exp.name}: a yoyo clip that does not loop never finished`);
+        r.expect(seq.length === want.length, `${exp.name}: ${seq.length} pictures shown, wanted ${want.length}`);
+        r.expect(s3.frame.name === want[want.length - 1], `${exp.name}: did not stop on its last picture`);
+      }
+      s3.destroy();
+      continue;
+    }
 
     // Time: really play it and watch which frames come and when. A hiccup on a slow machine can spoil one go, so it gets three.
     if (exp.count >= 2 && exp.count / exp.fps <= 6) {

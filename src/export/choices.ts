@@ -32,18 +32,18 @@ registerChoice<GameArtSize>({
   ],
 });
 
-export type Mp4SoundChoice = 'mp4' | 'webm';
+export type ClipEngineBounce = 'bake' | 'engine';
 
-registerChoice<Mp4SoundChoice>({
-  id: 'export.mp4Sound',
-  title: 'MP4 videos with sound',
-  question:
-    "This computer can't make the usual kind of sound for MP4 (AAC), so the sound would be Opus. Opus plays in Chrome, Edge, Firefox, VLC and Windows, but Apple's QuickTime, Safari and iPhones play the video silent. What would you like?",
+registerChoice<ClipEngineBounce>({
+  id: 'export.clipEngineBounce',
+  title: 'Back-and-forth clips in game engines',
+  question: 'How should a back and forth clip go into Godot and Phaser?',
   category: 'Export',
-  default: 'mp4',
-  help: 'Installing ffmpeg fixes this for good: Frameling finds it and makes the sound AAC, which plays everywhere.',
+  silent: true,
+  default: 'bake',
+  help: 'Only Godot and Phaser can bounce a clip themselves; every other format always lists the frames. The engine\'s own ping-pong works for clips that loop (and in Phaser, for an even number of directions); other back and forth clips are always listed frame by frame.',
   options: [
-    { value: 'mp4', label: 'Keep it MP4', detail: 'Sound plays almost everywhere, but not in QuickTime, Safari or on iPhones.' },
-    { value: 'webm', label: 'Make a WebM instead', detail: 'Made for the web: plays with sound in every browser, though not in QuickTime.' },
+    { value: 'bake', label: 'Baked, ends show once', detail: 'Every frame is listed in the order it plays, so the ends show once and it looks exactly like Frameling. A little more data.' },
+    { value: 'engine', label: "Engine's own ping-pong", detail: 'Smaller data: only one direction is listed and the engine bounces it. In Godot the two end frames show twice, and it needs Godot 4.7 or newer (older Godot plays it forward only); Phaser plays it the same as baked.' },
   ],
 });

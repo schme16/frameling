@@ -2,9 +2,11 @@
 // lottie-web from the Lottie export, and lays the animated SVG out so the driver can capture it at any frame.
 // Bundled by esbuild into one script (see vector-check.cjs).
 import { makePuppet } from '../../src/templates/puppet';
+import { bonesRigs } from '../../src/export/godot-bones';
+import { gridMesh, skinMesh } from '../../src/rig/math';
 import lottie from 'lottie-web/build/player/lottie_canvas';
 import lottieSvg from 'lottie-web/build/player/lottie_svg';
-import type { Doc, InstanceShape, LayerEffect } from '../../src/core/format';
+import type { Doc, InstanceShape, LayerEffect, VectorDrawing } from '../../src/core/format';
 import { newTextShape, newAnimator } from '../../src/text/model';
 import { newParticles } from '../../src/particles/model';
 import { defaultValues } from '../../src/effects/model';
@@ -19,6 +21,7 @@ import { makeBouncingBall } from '../../src/templates/bouncing-ball';
 import { makeMorph } from '../../src/templates/morph';
 import { TEMPLATES } from '../../src/templates';
 import { dotLottieBytes } from '../../src/export/dotlottie';
+import { strToU8, zipSync } from 'fflate';
 import { lottieSizes } from '../../src/export/lottie-size';
 import { makeCameraPan } from '../../src/templates/camera-pan';
 import { addPixelLayer, addVectorLayer, ellipsePath, fill, hold, pathShape, rectPath, vectorDrawing } from '../../src/templates/build';
@@ -135,6 +138,33 @@ function symbolParticlesDoc(): Doc {
   const d = vectorDrawing(doc, []);
   d.shapes = [p];
   hold(l, d.id, 0, 18);
+  return doc;
+}
+
+/** Symbol sprites with drag sideways and gravity down: x and y keep different timing (separated position on layers). */
+function symbolGravityDoc(): Doc {
+  const doc = newDoc({ name: 'Symbol gravity', width: 400, height: 300, length: 36, fps: 12 });
+  doc.layers = [];
+  const l = addVectorLayer(doc, 'Coins');
+  const k = vectorDrawing(doc, [fill([ellipsePath(20, 20, 10, 10)], '#ffc94a'), fill([rectPath(16, 16, 8, 8)], '#ff6f91')]);
+  const sym = makeSymbol(doc, k.id, k.shapes.map((s) => s.id), { x: 20, y: 20 }, 'Coin');
+  const p = { ...newParticles(uid('s'), 'sparkle', { x: 60, y: 60 }), burst: 12, life: 3, speed: 260, direction: -20, spread: 30, drag: 2.5, gravity: 420, variance: 0.2, sprite: 'symbol' as const, symbolId: sym!.symbolId };
+  const d = vectorDrawing(doc, []);
+  d.shapes = [p];
+  hold(l, d.id, 0, 36);
+  return doc;
+}
+
+/** The puppet with a squashed chest, a stretched thigh and a skinned body: parts that bend, not only turn. */
+function puppetSkinDoc(): Doc {
+  const doc = makePuppet();
+  const rig = bonesRigs(doc)[0];
+  const chest = rig.rig.bones.find((b) => b.name === 'Chest')!.id;
+  const thigh = rig.rig.bones.find((b) => b.name === 'Left thigh')!.id;
+  const d1 = doc.drawings[rig.cels[1].drawingId] as VectorDrawing;
+  d1.pose = { ...d1.pose!, [chest]: { ...d1.pose![chest], s: 0.8 }, [thigh]: { ...d1.pose![thigh], s: 1.25 } };
+  const body = doc.layers.find((l) => l.name === 'Body')!;
+  body.bind = { rig: rig.id, bone: chest, mesh: skinMesh(rig.rig, gridMesh({ x: 320, y: 178, w: 80, h: 150 }, 6)) };
   return doc;
 }
 
@@ -332,6 +362,7 @@ const DOCS: Record<string, () => Doc> = {
   text: textDoc,
   particles: particlesDoc,
   'symbol-particles': symbolParticlesDoc,
+  'symbol-gravity': symbolGravityDoc,
   tint: tintDoc,
   blend: blendDoc,
   masks: maskDoc,
@@ -346,6 +377,7 @@ const DOCS: Record<string, () => Doc> = {
   'morph-template': makeMorph,
   'camera-pan-template': makeCameraPan,
   'puppet-template': makePuppet,
+  'puppet-skin': puppetSkinDoc,
 };
 for (const t of TEMPLATES) DOCS['tpl:' + t.id] = t.make;
 
@@ -415,6 +447,10 @@ const api = {
     await new Promise((r) => setTimeout(r, 300));
     svgHolder.innerHTML = animatedSvg(doc);
     return { length: doc.length, width: doc.width, height: doc.height, lottieBytes, svgBytes: svgHolder.innerHTML.length };
+  },
+  /** The Lottie file of the loaded document, to look at. */
+  json() {
+    return JSON.stringify(docToLottie(doc));
   },
   /** Where the bytes of this document's Lottie file go. */
   sizes() {
@@ -508,11 +544,11 @@ const api = {
    * Plays the loaded document as plain JSON and as a .lottie in the dotLottie web player (ThorVG, from `base`/index.js)
    * and compares frames with Frameling's own and with each other. Pictures and everything else go through the zip.
    */
-  async dotLottie(base: string, frames: number[]) {
+  async dotLottie(base: string, frames: number[], version: 1 | 2 = 2) {
     const mod = await import(/* @vite-ignore */ base + '/index.js');
     mod.DotLottie.setWasmUrl(base + '/dotlottie-player.wasm');
     const data = docToLottie(doc);
-    const lottie = dotLottieBytes(docToLottie(doc));
+    const lottie = dotLottieBytes(docToLottie(doc), { version });
     const play = async (src: string | ArrayBuffer) => {
       const canvas = document.createElement('canvas');
       canvas.width = doc.width;
@@ -553,6 +589,44 @@ const api = {
       for (let k = 4; k < px.length; k += 4) if (px[k] !== px[0] || px[k + 1] !== px[1] || px[k + 2] !== px[2]) ink++;
     });
     return { jsonBytes: JSON.stringify(data).length, lottieBytes: lottie.length, total: a.total, rJson: rJson / frames.length, rLottie: rLottie / frames.length, between: between / frames.length, ink };
+  },
+  /**
+   * Plays a half-second dotLottie (layout 2) the way a site starts a file's state machine, and says whether it kept
+   * playing (looped) or stopped on its last frame. (The web player ignores layout 1's manifest fields: the page decides.)
+   */
+  async dotLottieLoop(base: string, loop: boolean) {
+    const mod = await import(/* @vite-ignore */ base + '/index.js');
+    mod.DotLottie.setWasmUrl(base + '/dotlottie-player.wasm');
+    const d = newDoc({ name: 'Loop', width: 100, height: 100, length: 12, fps: 24 });
+    d.layers = [];
+    const l = addVectorLayer(d, 'Dot');
+    // Something moves, or the player has nothing to advance.
+    for (let k = 0; k < 12; k++) hold(l, vectorDrawing(d, [fill([ellipsePath(20 + k * 5, 50, 10, 10)], '#ff6f91')]).id, k, 1);
+    const bytes = dotLottieBytes(docToLottie(d), { version: 2, loop });
+    const canvas = document.createElement('canvas');
+    canvas.width = 100;
+    canvas.height = 100;
+    document.body.appendChild(canvas);
+    const player = new mod.DotLottie({ canvas, data: bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) });
+    await new Promise<void>((res, rej) => {
+      player.addEventListener('load', () => res());
+      player.addEventListener('loadError', () => rej(new Error('load error')));
+      setTimeout(() => rej(new Error('player did not load')), 15000);
+    });
+    await new Promise((r) => setTimeout(r, 600));
+    const ok = player.stateMachineLoad(loop ? 'loop' : 'once') && player.stateMachineStart();
+    let wraps = 0;
+    let last = -1;
+    const t0 = performance.now();
+    while (performance.now() - t0 < 2500) {
+      await new Promise((r) => setTimeout(r, 25));
+      if (player.currentFrame < last - 3) wraps++;
+      last = player.currentFrame;
+    }
+    const out = { started: !!ok, playing: player.isPlaying, wraps, frame: player.currentFrame, total: player.totalFrames };
+    player.destroy();
+    canvas.remove();
+    return out;
   },
   svgCompare(frame: number, rgba: number[]) {
     return compare(frameling(frame), new Uint8ClampedArray(rgba));

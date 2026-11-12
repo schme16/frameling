@@ -1,10 +1,18 @@
 // A plugin package: a folder or zip with manifest.json and one script. This reads and checks it. Pure, no DOM.
 import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
+import { EVENT_NAMES, type PluginEventName } from './events';
+import { sanitizeOptions, type ExportOption } from './options';
 
-export const PLUGIN_API_VERSION = 1;
+/** The newest plugin API this Frameling knows. Version 1 plugins keep working unchanged. */
+export const PLUGIN_API_VERSION = 2;
 
-/** What a plugin may ask for. Commands and short messages need nothing. */
-export type Permission = 'document.read' | 'document.edit' | 'export' | 'panels' | 'network';
+/** What a plugin may ask for. Commands and short messages need nothing. The last four are version 2 only. */
+export type Permission = 'document.read' | 'document.edit' | 'export' | 'panels' | 'network' | 'tools' | 'canvas' | 'shapes' | 'files.read';
+
+/** Version 2 spells "change the drawing" as `document.write`. It is the same power as `document.edit`. */
+const PERMISSION_ALIASES: Record<string, Permission> = { 'document.write': 'document.edit' };
+/** Only a version 2 manifest may ask for these. */
+export const V2_PERMISSIONS: Permission[] = ['tools', 'canvas', 'shapes', 'files.read'];
 
 export const PERMISSIONS: Record<Permission, { label: string; detail: string }> = {
   'document.read': { label: 'See your drawing', detail: 'Read the open drawing: its layers, frames, shapes and pixels.' },
@@ -12,6 +20,10 @@ export const PERMISSIONS: Record<Permission, { label: string; detail: string }> 
   export: { label: 'Add a way to export', detail: 'Turn your frames into files, when you choose to export with it.' },
   panels: { label: 'Show a panel', detail: 'Add a panel with buttons, sliders and text (no web pages).' },
   network: { label: 'Use the internet', detail: 'Send and receive data over the internet. Only allow this if you trust where it comes from.' },
+  tools: { label: 'Add its own tools', detail: 'Put new tools in your toolbox. A tool sees where you click and drag on the canvas while it is chosen.' },
+  canvas: { label: 'Draw on the canvas', detail: 'Show lines, shapes and text on top of your canvas. They are only a guide on screen and never end up in your files.' },
+  shapes: { label: 'Add its own kinds of shape', detail: 'Add new kinds of shape to your drawing. They are saved as ordinary shapes, so the file still opens without the plugin.' },
+  'files.read': { label: 'Read a file you pick', detail: 'Ask you to pick a file, then read just that file. It can never look at your other files.' },
 };
 
 export interface PluginManifest {
@@ -27,6 +39,10 @@ export interface PluginManifest {
   /** With the network permission: the https sites it talks to (origins, like https://api.example.com). */
   network: string[];
   apiVersion: number;
+  /** Version 2: the events it wants to hear about (it hears nothing it did not list). */
+  events: PluginEventName[];
+  /** Version 2: the options each of its exporters shows in the Export dialog, by exporter id. */
+  exporterOptions: Record<string, ExportOption[]>;
 }
 
 export interface PluginPackage {
@@ -62,12 +78,15 @@ export function parseManifest(raw: unknown): PluginManifest {
   const name = text(raw.name, 60);
   if (!name) throw new PluginProblem('The plugin needs a name.');
   const version = text(raw.version, 20) || '0.0.0';
-  const apiVersion = typeof raw.apiVersion === 'number' ? raw.apiVersion : PLUGIN_API_VERSION;
+  // A manifest that does not say is version 1: it was written before version 2 existed.
+  const apiVersion = typeof raw.apiVersion === 'number' && Number.isInteger(raw.apiVersion) && raw.apiVersion >= 1 ? raw.apiVersion : 1;
   if (apiVersion > PLUGIN_API_VERSION) throw new PluginProblem(`"${name}" needs a newer Frameling. Update Frameling and try again.`);
   const perms = Array.isArray(raw.permissions) ? raw.permissions : [];
   const permissions: Permission[] = [];
-  for (const p of perms) {
-    if (typeof p !== 'string' || !(p in PERMISSIONS)) throw new PluginProblem(`"${name}" asks for a permission Frameling doesn't know ("${String(p).slice(0, 40)}").`);
+  for (const raw of perms) {
+    const p = typeof raw === 'string' ? (apiVersion >= 2 ? (PERMISSION_ALIASES[raw] ?? raw) : raw) : raw;
+    if (typeof p !== 'string' || !(p in PERMISSIONS)) throw new PluginProblem(`"${name}" asks for a permission Frameling doesn't know ("${String(raw).slice(0, 40)}").`);
+    if (apiVersion < 2 && V2_PERMISSIONS.includes(p as Permission)) throw new PluginProblem(`"${name}" asks to ${PERMISSIONS[p as Permission].label.toLowerCase()}, which needs "apiVersion": 2 in its manifest.`);
     if (!permissions.includes(p as Permission)) permissions.push(p as Permission);
   }
   const network: string[] = [];
@@ -81,7 +100,25 @@ export function parseManifest(raw: unknown): PluginManifest {
   }
   const main = text(raw.main, 120) || 'main.js';
   if (!/^[A-Za-z0-9_./-]+\.js$/.test(main) || main.includes('..')) throw new PluginProblem('The plugin\'s "main" must be a .js file inside the package.');
-  return { id, name, version, description: text(raw.description, 300), author: text(raw.author, 80), main, permissions, network, apiVersion };
+  const events: PluginEventName[] = [];
+  if (raw.events !== undefined && !(Array.isArray(raw.events) && !raw.events.length)) {
+    if (apiVersion < 2) throw new PluginProblem(`"${name}" lists events, which needs "apiVersion": 2 in its manifest.`);
+    for (const e of Array.isArray(raw.events) ? raw.events : []) {
+      if (typeof e !== 'string' || !(EVENT_NAMES as readonly string[]).includes(e)) throw new PluginProblem(`"${name}" asks to hear about an event Frameling doesn't have ("${String(e).slice(0, 40)}").`);
+      if (!events.includes(e as PluginEventName)) events.push(e as PluginEventName);
+    }
+  }
+  const exporterOptions: Record<string, ExportOption[]> = {};
+  if (raw.exporters !== undefined && !(isObj(raw.exporters) && !Object.keys(raw.exporters).length)) {
+    if (apiVersion < 2) throw new PluginProblem(`"${name}" describes export options, which needs "apiVersion": 2 in its manifest.`);
+    if (!isObj(raw.exporters)) throw new PluginProblem(`"${name}" has "exporters" that isn't readable.`);
+    for (const [eid, def] of Object.entries(raw.exporters).slice(0, 10)) {
+      if (!/^[A-Za-z0-9_-]{1,40}$/.test(eid) || !isObj(def)) continue;
+      const opts = sanitizeOptions(def.options);
+      if (opts.length) exporterOptions[eid] = opts;
+    }
+  }
+  return { id, name, version, description: text(raw.description, 300), author: text(raw.author, 80), main, permissions, network, apiVersion, events, exporterOptions };
 }
 
 /** Drops one shared top folder (zips made by "compress folder" wrap everything in one). */
@@ -134,10 +171,24 @@ export function readPluginZip(bytes: Uint8Array): PluginPackage {
 
 /** The package as Frameling keeps it: a small zip with the manifest and the script. */
 export function packPlugin(pkg: PluginPackage): Uint8Array {
-  return zipSync({ 'manifest.json': strToU8(JSON.stringify(pkg.manifest, null, 2)), [pkg.manifest.main]: strToU8(pkg.code) }, { level: 6 });
+  // What it never said stays out of the stored copy, so a version 1 manifest is stored as it was written.
+  const { events, exporterOptions, ...rest } = pkg.manifest;
+  const manifest = { ...rest, ...(events.length ? { events } : {}), ...(Object.keys(exporterOptions).length ? { exporters: Object.fromEntries(Object.entries(exporterOptions).map(([k, options]) => [k, { options }])) } : {}) };
+  return zipSync({ 'manifest.json': strToU8(JSON.stringify(manifest, null, 2)), [pkg.manifest.main]: strToU8(pkg.code) }, { level: 6 });
 }
 
-/** Two manifests ask for the same things (an update that needs no new approval). */
-export function samePermissions(a: Pick<PluginManifest, 'permissions' | 'network'>, approved: { permissions: Permission[]; network: string[] }): boolean {
-  return a.permissions.every((p) => approved.permissions.includes(p)) && a.network.every((o) => approved.network.includes(o));
+/** What was decided about a plugin: what it may do now, and everything it was asked about (so a denied power is not asked again). */
+export interface Decision {
+  permissions: Permission[];
+  network: string[];
+  /** Everything the manifest listed at the time (missing in what was saved before version 2: the allowed ones count). */
+  asked?: Permission[];
+  askedNetwork?: string[];
+}
+
+/** The manifest asks for nothing the person has not already been asked about (an update that needs no new approval). */
+export function samePermissions(a: Pick<PluginManifest, 'permissions' | 'network'>, approved: Decision): boolean {
+  const asked = approved.asked ?? approved.permissions;
+  const askedNet = approved.askedNetwork ?? approved.network;
+  return a.permissions.every((p) => asked.includes(p)) && a.network.every((o) => askedNet.includes(o));
 }

@@ -579,6 +579,23 @@ const ICONS: Record<string, ReactNode> = {
       <rect x="14" y="14" width="3" height="3" fill="currentColor" stroke="none" />
     </>
   ),
+  slice: (
+    <>
+      <path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2" />
+      <path d="M9 4v16M15 4v16M4 9h16M4 15h16" strokeDasharray="1.6 2.2" />
+      <rect x="9.5" y="9.5" width="5" height="5" fill="currentColor" stroke="none" />
+    </>
+  ),
+  spray: (
+    <>
+      <rect x="4" y="4" width="16" height="16" rx="3" />
+      <rect x="6.5" y="9" width="2.5" height="2.5" fill="currentColor" stroke="none" />
+      <rect x="11" y="6.5" width="2.5" height="2.5" fill="currentColor" stroke="none" />
+      <rect x="14.5" y="10.5" width="2.5" height="2.5" fill="currentColor" stroke="none" />
+      <rect x="9.5" y="13.5" width="2.5" height="2.5" fill="currentColor" stroke="none" />
+      <rect x="15" y="15" width="2.5" height="2.5" fill="currentColor" stroke="none" />
+    </>
+  ),
   mirror: (
     <>
       <path d="M12 3v18" strokeDasharray="2 2.6" />

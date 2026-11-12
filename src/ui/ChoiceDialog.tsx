@@ -5,6 +5,7 @@ import { allChoices, setChoice, setChoiceAsker, useChoices, type ChoiceDef } fro
 import { Icon } from './icons';
 import { Modal } from './Modal';
 import { openHelp } from './overlays';
+import { Quill, useQuillShown } from './mascot';
 import { createStore } from './mini';
 
 interface Pending {
@@ -31,13 +32,21 @@ function Ask({ pending }: { pending: Pending }) {
   const { def, resolve } = pending;
   const [value, setValue] = useState(def.default);
   const [remember, setRemember] = useState(true);
+  const quill = useQuillShown();
   const finish = (r: { value: string; remember: boolean } | null) => {
     asking.set(() => null);
     resolve(r);
   };
   return (
     <Modal title={def.title} size="sm" className="ui-choice" onClose={() => finish(null)} initialFocus=".ui-choice-opt.is-chosen">
-      <p className="ui-choice-q">{def.question}</p>
+      {def.quill && quill ? (
+        <div className="ui-choice-quill">
+          <Quill anim={[{ anim: 'wave', hold: 1400 }, { anim: 'idle' }]} size={64} />
+          <p className="ui-choice-q">{def.question}</p>
+        </div>
+      ) : (
+        <p className="ui-choice-q">{def.question}</p>
+      )}
       <div className="ui-choice-opts" role="radiogroup" aria-label={def.title}>
         {def.options.map((o) => (
           <button

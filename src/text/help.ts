@@ -1,6 +1,6 @@
-import { registerHelpTopics } from '../core/registry';
+import type { HelpTopic } from '../core/registry';
 
-registerHelpTopics([
+export const textHelp: HelpTopic[] = [
   {
     id: 'text',
     title: 'Text: titles, captions and speech',
@@ -67,4 +67,4 @@ Add more than one and they add together: a Fade and a Slide make letters drift i
 
 Animations are worked out from the frame, so scrubbing and every export show exactly the same thing.`,
   },
-]);
+];

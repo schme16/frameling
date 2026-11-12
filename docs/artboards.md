@@ -84,10 +84,14 @@ by artboards. A/B: `brand/ab/artboards/ab.png` and `ab.mp4` (A built, B mocked).
 - Switching is the same as for pixel art.
 - **Play all in order** opens a player window: each shot at its own size, fitted, for its own length, with a strip of
   shots to jump between and a loop switch. It never changes the document.
-- **Export "All in order, as one"** (video and animation formats) builds one document with `joinShots`: the shots end
+- **Export "All in order, as one"** (video, animation and Sprite sheet formats) builds one document with `joinShots`: the shots end
   to end, each a clip named after it, markers and sounds moved along, a shot's own stage colour as a filled layer
   underneath when they differ, one merged camera layer (the plain view where a shot has none), and in-betweens cut at
-  each shot's end. Shots of different sizes are fitted (below).
+  each shot's end. Shots of different sizes are fitted (below). With Sprite sheet the boards are the frames of ONE sprite
+  (`filmOf` in `export.ts`): the clips are dropped so the engine data has a single animation, `default`, with every
+  frame of every ticked board in list order, and the range is always the whole film. Tested per engine format in
+  `test/artboards/frames-sheet.test.ts`; `frames-sheet-e2e.test.ts` (GODOT_BIN) and `scripts/e2e/artboards.cjs`
+  (also WEB_ENGINES=1) load the files in the real engines.
 - **Export "Each as its own file"** gives a file per shot.
 
 ### Shots of different sizes
@@ -139,13 +143,36 @@ store runs after every change, **inside the same undo step** (`registerSettler` 
   original therefore flows into it, except where it overrides.
 
 Both are cheap: resolving and diffing keep unchanged layers, keys and shapes as the very same objects (memoised), and
-the store skips it entirely in a document with no variations.
+the store skips it entirely in a document with no variations. The settler is also **incremental**: the store hands it
+the change's immer patches (`SettleContext`), and `touchOf` reads from them which drawings were written, whether the open
+artboard's own fields or key lists changed, and which set-aside artboards' content changed. A variation whose original
+did not change and that nobody wrote a drawing of is not looked at; a drawing-only edit re-diffs just the touched
+drawings (`IncrementalDiff`) or re-resolves just the touched ones (`IncrementalResolve`); an edit that touches key lists
+or anything unclear (the whole `drawings` table, the artboard list) does the full pass. On a 9,600-key document
+(40 layers x 240 keys, one drawing per key) the settling now costs about 0.03 ms. What is left per edit is immer
+copying the `drawings` table (see `test/artboards/variationsPerf.test.ts`, which prints the numbers; run it with
+`VARIATIONS_PERF=1`). A variation that is **not open** keeps a copy only of the drawings it overrides, so the table is
+at most twice the original's however many variations there are: editing a drawing of the original went from 16 ms
+(one variation) and 55 ms (four) to 2 ms in both.
 
-**Own drawings.** A variation's keys point at its own drawings in `doc.drawings`, `<original id>~<artboard id>`, which
-are the original's object with a different `id` until an edit replaces it (immer copies on write, so the original is
-never touched, and a tool that writes `doc.drawings[drawing.id]` lands on the right one). A vector recolour is stored
-as shape property patches (so geometry edits to the original still arrive); a pixel or tile edit stores the whole
-drawing for that key (`replaced`).
+**Own drawings.** The **open** variation's keys all point at its own drawings in `doc.drawings`,
+`<original id>~<artboard id>`, which are the original's object with a different `id` until an edit replaces it (immer
+copies on write, so the original is never touched, and a tool that writes `doc.drawings[drawing.id]` lands on the
+right one). A variation that is **closed** points a key at its own copy only when it overrides that drawing; every other
+key points straight at the original's drawing, so the original's edits reach it with no work and no table entry
+(`resolveContent` with `all` false, the default). Opening one (any `switchArtboard`, or a file that was saved on a
+variation) makes the settler give every key its copy (`openAliasing`; a few tens of milliseconds for 9,600 keys, one
+immer patch per copy), and closing it drops the copies nobody overrides. A vector recolour is stored
+as shape property patches (so geometry edits to the original still arrive); a pixel or tile edit makes the variation's
+drawing for that key its own (`replaced`) and tools work on the whole drawing in memory. **In a file** such a drawing is
+saved as what changed (`variationDiffs` in `variationsIo.ts`): the changed pixels as a few small PNG rectangles
+(`pixels/diff_<id>.png`; `changedRects` finds them: changes close together share a rectangle, far apart ones get their
+own, joined while that is cheaper than another zip entry and capped at 8; one rectangle is `DrawingOverride.diff.rect`,
+several are `diff.rects`), or the changed tile slots as pairs (`diff.cells`); when the changes cover most of the
+drawing it is stored whole as before. Two scars in opposite corners of a 64 x 64 key are two tiny PNGs, where one
+bounding rectangle would have covered most of the picture and been stored whole. On opening, `applyDiffs` rebuilds the whole drawing
+from the original's. A 60-frame 64 x 64 pixel animation with a small scar painted on every key adds about 15 KB to a
+600 KB file (it added 606 KB before).
 
 **Actions** (`variations.ts`, each one undo step): `makeVariation` (also from a variation: same changes, same
 original), `setVariationSize` (square, wide, tall or any size; the original is framed by a camera: its own camera keys
@@ -154,11 +181,53 @@ item), `resetVariation` (all), `detachVariation` (a plain artboard keeping what 
 that edits a set-aside variation, which would otherwise be overwritten by the next resolve). `listDifferences` is what
 the panel shows: grouped by layer, a recolour across many keys on one line, each with where to jump and how to reset.
 
-**Limits, on purpose.** Sound, symbols, palette, swatches, tiles and layer folders are shared with the original, so a
-variation does not override them. A size override frames the picture with a camera at the moment it is set; if the
+**Sound and palette** are overridable. Sound is a list override like layers (`overrides.audio`: a clip's volume, mute,
+start and name as patches, clips left out, clips added, with their bytes in the zip beside the others). The palette is
+overridden per colour (`overrides.palette`, `src/artboards/paletteOverride.ts`): a list of `{ from, to }`, `from` being
+the colour in the original's palette. `docPalette(doc)` gives the open variation's (the original's with the changes on),
+the palette panel and pixel commands write it through `setVariationPalette` (only colour edits; adding, removing and
+moving colours is the original's and is refused with a note), and `artboardDoc` gives the variation its palette for
+export. The pixels follow the same list: a variation shows the original's pixel drawings with the swaps made
+(`recolourDrawing`), so a recolour stores no pixels, a drawing only becomes `replaced` when painted in. Colours the
+original adds, removes or moves flow through; when the original recolours a colour the variation changed, the settler
+re-points the change to the new colour (`paletteRenames`), so it stays the variation's own. Files from before (a whole
+palette) are turned into changes when read (`migrateLegacy`).
+
+**Limits, on purpose.** Symbols, tiles, swatches and layer folders are shared with the original, and the shared palette
+can only be changed from the original. A change that writes any of them while a variation is open is **refused whole**
+by a store guard (`registerGuard` in `src/core/store.ts`, with the sentence "Swatches are shared with the original.
+Change them there, or detach this variation."), so nothing is lost or leaks into the original. The one exception is
+**adding** swatches: they are shared and harmless, so a change whose swatches are the old ones with more at the end
+goes through (renaming, recolouring, removing or reordering one is still refused). Opening a symbol or a
+tile for editing is refused up front the same way (`sharedEditNote`). Detaching a variation with its own palette
+keeps its pixels' colours, but the palette list goes back to the shared one. A size override frames the picture with a camera at the moment it is set; if the
 original is resized later, the variation's zoom is not recomputed (it is an override). Deleting an original turns
 its variations into plain artboards; duplicating a variation makes a plain copy.
+
+**Bones.** Layer ids repeat across an original and its variations, so `anyLayer` in `src/rig/pose.ts` looks for the
+bones layer a layer is attached to in that layer's own list first (`bindRig` passes the layer); without that, a closed
+variation read through the whole document found the original's skeleton. Poses, bones, attachments and weights made in a
+variation are overrides like any layer or drawing property (`test/artboards/variationsRig.test.ts`).
+
+**Looking through the camera** is remembered per artboard (`throughCameraOf`, `toggleThroughCamera` in
+`src/camera/ops.ts`), so making a square variation turns it on for that variation only. The choices are kept in the
+view settings (`throughBy` in `src/canvas/viewSettings.ts`, saved with the other view settings under document id and
+artboard id, so they survive a restart on this machine; the newest 300 are kept, older saves without it open with none
+chosen). They are not stored in the `.frameling` file.
 
 **Export.** Nothing special: an exporter asks `artboardDoc(root, id)`, which returns the resolved variation. "Each as
 its own file", "all in order, as one" and the atlas therefore work, and the Export dialog's **This artboard and its
 variations** ticks the family.
+
+## Pixel sprites: the four ways
+
+A pixel sprite is built one of four ways: **one picture**, **an animation** (frames on the timeline), **frames on
+boards** (one artboard per frame, played in order) or **sprites on a sheet** (one artboard per sprite). The file may say
+which in `doc.sprite.way`; when it does not, or no longer matches (a "picture" that now has two frames), `wayOf` works
+it out (`src/pixel/way.ts`). Conversions are plain functions on a document, one undo step each: `framesToBoards` (each
+frame of a one-board sprite becomes a board named Frame 1, Frame 2..., with its own copy of the drawings; clips are not
+kept), `boardsToFrames` (boards of one size, layers matched by name, end to end on one timeline, a clip per board for a
+sheet; variations, differing sizes and non-pixel layers are refused with the reason). Frames on boards and sprites on a
+sheet swap by changing the label only. Export starts on the way: frames on boards as "all in order, as one", a sheet as
+"packed onto one sheet" (`src/pixel/sheetMode.ts`), and Quill's sentence at the top of the Sprite sheet options follows
+the mode that is picked.

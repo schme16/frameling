@@ -8,7 +8,7 @@ import { addArtboard, activeId, artboardDoc, artboardsOf, findArtboard } from '.
 import { packArtboardAtlas } from '../../src/artboards/pack';
 import { buildReel, reelAt } from '../../src/artboards/player';
 import { goToArtboard, installArtboards, moveArtboardTo, openArtboardUnder, resetArtboardView, resizeArtboard } from '../../src/artboards/ops';
-import { artboardExport, artboardSummary, planArtboards, setArtboardExport } from '../../src/artboards/export';
+import { artboardExport, artboardSummary, planArtboards, setArtboardExport, singleFrameNote } from '../../src/artboards/export';
 import { setViewport } from '../../src/canvas/controller';
 
 function img(w: number, h: number, fill: number): RawImage {
@@ -167,7 +167,7 @@ describe('the timeline follows the artboard you press on', () => {
 });
 
 describe('the Export footer for several artboards', () => {
-  const setup = (format: 'gif' | 'sheet') => {
+  const setup = (format: 'gif' | 'sheet' | 'png') => {
     resetArtboardView();
     const doc = sprites();
     resetStore(doc);
@@ -206,18 +206,36 @@ describe('the Export footer for several artboards', () => {
     expect(planArtboards(store().rootDoc(), { ...s, scale: 2 }, 0)!.size).toEqual({ width: 32, height: 32 });
   });
 
-  it('each as its own file: files and frames in all, no single size', () => {
+  it('each as its own file: files and frames in all, and "sizes vary" when they differ', () => {
     const { s } = setup('gif');
     setArtboardExport({ mode: 'each' });
     const a = planArtboards(store().rootDoc(), s, 0)!;
     expect([a.files, a.frames, a.size]).toEqual([2, 5, null]);
-    expect(artboardSummary(a)).toBe('2 files, 5 frames in all');
+    expect(a.sizesVary).toBe(true);
+    expect(artboardSummary(a)).toBe('2 files, 5 frames in all, sizes vary');
+    // Only one ticked: its own size, not the open board's.
+    const [, run] = artboardsOf(store().rootDoc());
+    setArtboardExport({ ids: [run.id] });
+    expect(artboardSummary(planArtboards(store().rootDoc(), s, 0)!)).toBe('1 file, 3 frames in all, 32 × 16 px each');
+    // A bigger scale changes the size it says.
+    expect(artboardSummary(planArtboards(store().rootDoc(), { ...s, scale: 2 }, 0)!)).toBe('1 file, 3 frames in all, 64 × 32 px each');
   });
 
   it('packed onto one sheet: every frame on one sheet', () => {
     const { s } = setup('sheet');
     setArtboardExport({ mode: 'atlas' });
     const a = planArtboards(store().rootDoc(), s, 0)!;
-    expect(artboardSummary(a)).toBe('5 frames on one sheet');
+    expect(artboardSummary(a)).toBe('5 frames on one sheet, sizes vary');
+  });
+
+  it('a still format says one frame from each board, not the open board\'s frame', () => {
+    const { s } = setup('png');
+    expect(singleFrameNote(null, 3)).toBe('Exports frame 4, the one you are looking at.');
+    setArtboardExport({ mode: 'each' });
+    const a = planArtboards(store().rootDoc(), s, 3)!;
+    expect(singleFrameNote(a, 3)).toBe('Exports one frame from each of the 2 boards, the one each was last showing.');
+    const [, run] = artboardsOf(store().rootDoc());
+    setArtboardExport({ ids: [run.id] });
+    expect(singleFrameNote(planArtboards(store().rootDoc(), s, 3)!, 3)).toBe('Exports one frame, the one that board was last showing.');
   });
 });

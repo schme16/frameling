@@ -15,6 +15,8 @@ describe('plugin sandbox', () => {
     const f = makeFrame(document, []);
     expect(f.getAttribute('sandbox')).toBe('allow-scripts');
     expect(f.src).toMatch(/plugin-host\.html$/);
+    expect(makeFrame(document, [], 'my-plugin').src).toMatch(/plugin-host\.html\?plugin=my-plugin$/);
+    expect(makeFrame(document, [], 'Bad Id/..').src).toMatch(/plugin-host\.html$/);
     expect(makeFrame(document, ['https://a.example.com']).src).toMatch(/plugin-host-net\.html$/);
     expect(hostPage([])).toBe('plugin-host.html');
   });

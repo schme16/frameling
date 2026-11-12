@@ -11,6 +11,9 @@ import { allQuests, registerQuest, setStarter, startQuest } from '../../src/ques
 import { QUESTS } from '../../src/quests/library';
 import { lipsyncFeature } from '../../src/lipsync';
 import { audioFeature } from '../../src/audio';
+import { cameraFeature } from '../../src/camera';
+import { particlesFeature } from '../../src/particles';
+import { textFeature } from '../../src/text';
 import { flowFeature } from '../../src/flow';
 import { interactivesFeature } from '../../src/interactives';
 import type { Quest } from '../../src/quests/types';
@@ -48,7 +51,7 @@ describe('quests of a feature that is off', () => {
 });
 
 describe('the built-in quests', () => {
-  const known = new Set([...PLANNED_FEATURES, lipsyncFeature, audioFeature, flowFeature, interactivesFeature].map((f) => f.id));
+  const known = new Set([...PLANNED_FEATURES, lipsyncFeature, audioFeature, cameraFeature, flowFeature, interactivesFeature, particlesFeature, textFeature].map((f) => f.id));
 
   it('only name features that exist', () => {
     for (const q of QUESTS) for (const f of q.features ?? []) expect(known.has(f), `${q.id} names ${f}`).toBe(true);

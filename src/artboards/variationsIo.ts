@@ -6,10 +6,15 @@
  * variation made are ordinary entries in `drawings`; the ones it redrew (pixels, tiles) are saved as `<id>~<variation>`.
  * Everything else about it is worked out from its original when the file opens.
  */
-import { LAYER_LABELS, type Artboard, type Cel, type Doc, type Drawing, type DrawingOverride, type Id, type Layer, type ListOverride, type Patch, type Shape, type VariationOverrides } from '../core/format';
+import { LAYER_LABELS, type Artboard, type AudioClip, type DiffRect, type DrawingDiff, type PixelDrawing, type Cel, type Doc, type Drawing, type DrawingOverride, type Id, type Layer, type ListOverride, type Patch, type PaletteOverride, type Shape, type VariationOverrides } from '../core/format';
+import { drawingRect, pixelsOver, trimmedDrawing, unionRect } from '../core/pixelBounds';
 import { readClip } from '../core/clipPlay';
+import { packAudio, unpackAudio } from '../io/audio-file';
+import { decodePng } from '../io/png';
+import type { Zippable } from 'fflate';
 import { activeId, findArtboard, switchArtboard, takeContent } from './model';
-import { normalize, resolveContent, sourceOf, splitAlias, STAGE_KEYS } from './variations';
+import { basePalette, migrateLegacy, recolourDrawing, rgbKey, tidyChanges } from './paletteOverride';
+import { aliasId, normalize, resolveContent, sourceOf, splitAlias, STAGE_KEYS } from './variations';
 import type { ArtboardReaders } from './io';
 import { produce } from 'immer';
 
@@ -45,6 +50,7 @@ const LAYER_KEYS: Record<string, Check> = {
   rig: obj,
   ext: obj,
 };
+const SOUND_KEYS: Record<string, Check> = { name: str, start: (v) => num(v), volume: (v) => num(v) && v >= 0 && v <= 1, muted: bool };
 const CEL_KEYS: Record<string, Check> = { start: (v) => int(v, 0), length: (v) => int(v, 1), tween: obj, autoHold: bool, drawingId: str };
 const VIEW_KEYS: Record<string, Check> = { x: num, y: num, zoom: (v) => num(v) && v > 0, rotation: num };
 const STAGE_CHECKS: Record<string, Check> = {
@@ -102,7 +108,7 @@ const SHAPE_TYPES = new Set(['stroke', 'fill', 'path', 'instance', 'text', 'part
  * The overrides in a file, checked. `layerKind` says what kind of layer an original layer id is (to read the keys
  * added to it); `readLayers` is the file reader's, so layers made in the variation get the same repairs as any.
  */
-export function readOverrides(raw: unknown, r: Pick<ArtboardReaders, 'readLayers' | 'readGuides'>, layerKind: (id: Id) => Layer['kind'] | undefined): VariationOverrides {
+export function readOverrides(raw: unknown, r: Pick<ArtboardReaders, 'readLayers' | 'readGuides' | 'readPalette'>, layerKind: (id: Id) => Layer['kind'] | undefined, io?: { entries: Record<string, Uint8Array>; warnings: string[] }): VariationOverrides {
   if (!isObj(raw)) return {};
   const out: VariationOverrides = {};
   const stage = readPatch(raw.stage, STAGE_CHECKS);
@@ -158,6 +164,8 @@ export function readOverrides(raw: unknown, r: Pick<ArtboardReaders, 'readLayers
       if (BAD.has(k) || !isObj(v)) continue;
       const d: DrawingOverride = {};
       if (v.replaced === true) d.replaced = true;
+      const diff = d.replaced && io ? readDiff(v.diff, io) : undefined;
+      if (diff) d.diff = diff;
       const patch = readPatch(v.patch, null, ['shapes', 'view']);
       if (patch) d.patch = patch;
       const view = readPatch(v.view, VIEW_KEYS);
@@ -174,7 +182,273 @@ export function readOverrides(raw: unknown, r: Pick<ArtboardReaders, 'readLayers
     }
     if (Object.keys(drawings).length) out.drawings = drawings;
   }
+  if (isObj(raw.audio)) {
+    const audio = readList<AudioClip>(raw.audio, {
+      item: (c) => {
+        const p = readPatch(c.patch, SOUND_KEYS);
+        return p ? { patch: p } : undefined;
+      },
+      added: (list) => (io ? (unpackAudio(list, io.entries, io.warnings) ?? []) : []),
+    });
+    if (audio) out.audio = audio;
+  }
+  if (isObj(raw.palette)) {
+    if (Array.isArray(raw.palette.changes)) {
+      const changes = tidyChanges(raw.palette.changes.filter((c: unknown) => isObj(c) && typeof c.from === 'string' && typeof c.to === 'string' && rgbKey(c.from) >= 0 && rgbKey(c.to) >= 0).map((c: any) => ({ from: c.from as string, to: c.to as string })));
+      if (changes.length) out.palette = { changes };
+    } else {
+      // A file from before colourways were per colour: the whole palette, turned into changes once the original's is known.
+      const legacy = r.readPalette?.(raw.palette)?.palette;
+      if (legacy?.colors.length) out.palette = { changes: [], legacy };
+    }
+  }
   return normalize(out);
+}
+
+const BIG = 1 << 24;
+/** The most art pixels a grid can have a side (stage size limit, one stage pixel per art pixel). */
+const MAX_GRID = 16384;
+
+/** Most rectangles one stored change can have (a file asking for more is cut there). */
+const MAX_READ_RECTS = 64;
+
+/** One stored rectangle, checked: its PNG decoded. Null when it cannot be read. */
+function readRect(r: unknown, io: { entries: Record<string, Uint8Array> }): DiffRect | null {
+  if (!(isObj(r) && int(r.x, 0) && int(r.y, 0) && int(r.w, 0) && int(r.h, 0) && r.x < BIG && r.y < BIG && r.w < BIG && r.h < BIG)) return null;
+  if (r.w === 0 || r.h === 0) return { x: r.x, y: r.y, w: 0, h: 0, pixels: new Uint8ClampedArray(0) };
+  if (typeof r.pixels === 'string' && /^pixels\/[A-Za-z0-9_-]+\.png$/.test(r.pixels) && io.entries[r.pixels]) {
+    try {
+      const img = decodePng(io.entries[r.pixels]);
+      if (img.width === r.w && img.height === r.h) return { x: r.x, y: r.y, w: r.w, h: r.h, pixels: img.pixels };
+    } catch {
+      // Left out, with a warning from the caller.
+    }
+  }
+  return null;
+}
+
+/** A redrawn drawing's stored changes, checked: the rectangles' PNGs decoded, the tile pairs as whole numbers. */
+function readDiff(raw: unknown, io: { entries: Record<string, Uint8Array>; warnings: string[] }): DrawingDiff | undefined {
+  if (!isObj(raw)) return undefined;
+  const out: DrawingDiff = {};
+  if (raw.rect !== undefined) {
+    const r = readRect(raw.rect, io);
+    if (r) out.rect = r;
+    else io.warnings.push('A variation has a changed picture that could not be read, so it shows the original there.');
+  }
+  if (Array.isArray(raw.rects)) {
+    const rects = raw.rects.slice(0, MAX_READ_RECTS).map((r) => readRect(r, io));
+    const good = rects.filter((r): r is DiffRect => !!r);
+    if (good.length) out.rects = good;
+    if (good.length < raw.rects.length) io.warnings.push('A variation has a changed picture that could not be read, so it shows the original there.');
+  }
+  if (Array.isArray(raw.cells) && raw.cells.length % 2 === 0 && raw.cells.every((n) => typeof n === 'number' && Number.isInteger(n) && n >= 0)) out.cells = raw.cells as number[];
+  return out.rect || out.rects || out.cells ? out : undefined;
+}
+
+/** The part of a pixel drawing that differs from another of the same size: its bounding rectangle, or null when they are the same. */
+export function changedRect(a: PixelDrawing, b: PixelDrawing): { x: number; y: number; w: number; h: number } | null {
+  const U = unionRect(a, b);
+  if (!U) return { x: 0, y: 0, w: 0, h: 0 };
+  const { w: W, h: H } = U;
+  const p = pixelsOver(a, U);
+  const q = pixelsOver(b, U);
+  let x0 = W;
+  let y0 = H;
+  let x1 = -1;
+  let y1 = -1;
+  for (let y = 0; y < H; y++) {
+    const row = y * W * 4;
+    for (let x = 0; x < W; x++) {
+      const i = row + x * 4;
+      if (p[i] !== q[i] || p[i + 1] !== q[i + 1] || p[i + 2] !== q[i + 2] || p[i + 3] !== q[i + 3]) {
+        if (x < x0) x0 = x;
+        if (x > x1) x1 = x;
+        if (y < y0) y0 = y;
+        y1 = y;
+      }
+    }
+  }
+  return x1 < 0 ? { x: 0, y: 0, w: 0, h: 0 } : { x: U.x + x0, y: U.y + y0, w: x1 - x0 + 1, h: y1 - y0 + 1 };
+}
+
+/** Most rectangles one drawing's change is split into. */
+export const MAX_DIFF_RECTS = 8;
+/** What one more rectangle costs in a file (a zip entry and PNG headers), in pixels of RGBA data: nearer ones are joined. */
+const RECT_COST = 400;
+const BLOCK = 8;
+/** Beyond this many separate spots the change is scattered like noise, and one rectangle is as good as any. */
+const MAX_SPOTS = 200;
+
+interface Box {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+}
+const boxArea = (b: Box) => (b.x1 - b.x0) * (b.y1 - b.y0);
+const joined = (a: Box, b: Box): Box => ({ x0: Math.min(a.x0, b.x0), y0: Math.min(a.y0, b.y0), x1: Math.max(a.x1, b.x1), y1: Math.max(a.y1, b.y1) });
+
+/**
+ * The parts of a pixel drawing that differ from another of the same size, as a few rectangles: changes close together
+ * share one, far apart ones get their own (two distant edits stay small instead of spanning everything between them).
+ * Rectangles are joined while that costs less than another entry in a file, and until there are at most `max`.
+ * Empty when they are the same. Drawings hold only their painted block, so they are compared over both blocks together.
+ */
+export function changedRects(a: PixelDrawing, b: PixelDrawing, max = MAX_DIFF_RECTS): { x: number; y: number; w: number; h: number }[] | null {
+  const U = unionRect(a, b);
+  if (!U) return [];
+  const { w: W, h: H } = U;
+  const p = pixelsOver(a, U);
+  const q = pixelsOver(b, U);
+  const bw = Math.ceil(W / BLOCK);
+  const bh = Math.ceil(H / BLOCK);
+  // The tight box of the changes in each block of the picture.
+  const cell: (Box | undefined)[] = new Array(bw * bh);
+  for (let y = 0; y < H; y++) {
+    const row = y * W * 4;
+    for (let x = 0; x < W; x++) {
+      const i = row + x * 4;
+      if (p[i] === q[i] && p[i + 1] === q[i + 1] && p[i + 2] === q[i + 2] && p[i + 3] === q[i + 3]) continue;
+      const k = ((y / BLOCK) | 0) * bw + ((x / BLOCK) | 0);
+      const c = cell[k];
+      if (!c) cell[k] = { x0: x, y0: y, x1: x + 1, y1: y + 1 };
+      else {
+        if (x < c.x0) c.x0 = x;
+        if (x + 1 > c.x1) c.x1 = x + 1;
+        if (y + 1 > c.y1) c.y1 = y + 1;
+      }
+    }
+  }
+  // Blocks that touch (corners too) are one spot.
+  const spot = new Int32Array(bw * bh).fill(-1);
+  const boxes: Box[] = [];
+  for (let k0 = 0; k0 < cell.length; k0++) {
+    if (!cell[k0] || spot[k0] >= 0) continue;
+    const id = boxes.length;
+    let box = cell[k0]!;
+    spot[k0] = id;
+    const stack = [k0];
+    while (stack.length) {
+      const k = stack.pop()!;
+      const bx = k % bw;
+      const by = (k / bw) | 0;
+      for (let dy = -1; dy <= 1; dy++)
+        for (let dx = -1; dx <= 1; dx++) {
+          const nx = bx + dx;
+          const ny = by + dy;
+          if (nx < 0 || ny < 0 || nx >= bw || ny >= bh) continue;
+          const n = ny * bw + nx;
+          if (!cell[n] || spot[n] >= 0) continue;
+          spot[n] = id;
+          box = joined(box, cell[n]!);
+          stack.push(n);
+        }
+    }
+    boxes.push(box);
+  }
+  if (!boxes.length) return [];
+  let list = boxes;
+  if (list.length > MAX_SPOTS) list = [list.reduce(joined)];
+  // Join the pair that wastes least, while that is cheaper than a rectangle of its own, or while there are too many.
+  for (;;) {
+    if (list.length < 2) break;
+    let bi = 0;
+    let bj = 1;
+    let best = Infinity;
+    for (let i = 0; i < list.length; i++)
+      for (let j = i + 1; j < list.length; j++) {
+        const waste = boxArea(joined(list[i], list[j])) - boxArea(list[i]) - boxArea(list[j]);
+        if (waste < best) {
+          best = waste;
+          bi = i;
+          bj = j;
+        }
+      }
+    if (best >= RECT_COST && list.length <= max) break;
+    const m = joined(list[bi], list[bj]);
+    list = list.filter((_, k) => k !== bi && k !== bj);
+    list.push(m);
+  }
+  return list.map((c) => ({ x: U.x + c.x0, y: U.y + c.y0, w: c.x1 - c.x0, h: c.y1 - c.y0 })).sort((u, v) => u.y - v.y || u.x - v.x);
+}
+
+const safe = (id: string) => id.replace(/[^A-Za-z0-9_-]/g, '_');
+
+/**
+ * For saving: the drawings variations redrew (pixels, tiles) that are cheaper to store as what changed. Their PNG
+ * rectangles go in the zip; the result says, by the drawing's own id (`<original>~<variation>`), what to write in the
+ * override instead of the whole drawing. Drawings that changed nearly everywhere are left to be stored whole.
+ */
+export function variationDiffs(doc: Doc, files: Zippable, png: (d: { width: number; height: number; pixels: Uint8ClampedArray }) => Uint8Array): Map<Id, DrawingDiff> {
+  const out = new Map<Id, DrawingDiff>();
+  const used = new Set<string>();
+  for (const a of doc.artboards ?? []) {
+    if (!a.variationOf) continue;
+    for (const [orig, o] of Object.entries(a.overrides?.drawings ?? {})) {
+      if (!o.replaced) continue;
+      const alias = aliasId(orig, a.id);
+      const mine = doc.drawings[alias];
+      const base = doc.drawings[orig] && recolourDrawing(doc.drawings[orig], a.overrides?.palette);
+      if (!mine || !base || mine.kind !== base.kind) continue;
+      if (mine.kind === 'pixel' && base.kind === 'pixel') {
+        const rs = changedRects(base, mine);
+        const U = unionRect(base, mine);
+        if (!rs || (U && rs.reduce((n, r) => n + r.w * r.h, 0) > U.w * U.h * 0.8)) continue;
+        if (!rs.length) {
+          out.set(alias, { rect: { x: 0, y: 0, w: 0, h: 0, pixels: '' } });
+          continue;
+        }
+        const stored = rs.map((r): DiffRect => {
+          const crop = pixelsOver(mine, r);
+          let name = `pixels/diff_${safe(alias)}.png`;
+          while (used.has(name) || files[name]) name = name.replace(/\.png$/, '_.png');
+          used.add(name);
+          files[name] = [png({ width: r.w, height: r.h, pixels: crop }), { level: 0 }];
+          return { ...r, pixels: name };
+        });
+        out.set(alias, stored.length === 1 ? { rect: stored[0] } : { rects: stored });
+      } else if (mine.kind === 'tilemap' && base.kind === 'tilemap' && mine.cells.length === base.cells.length) {
+        const cells: number[] = [];
+        for (let i = 0; i < mine.cells.length; i++) if (mine.cells[i] !== base.cells[i]) cells.push(i, mine.cells[i]);
+        if (cells.length <= mine.cells.length) out.set(alias, { cells });
+      }
+    }
+  }
+  return out;
+}
+
+/** After reading: the whole redrawn drawings made from the original's and each stored change, which are then dropped. */
+function applyDiffs(doc: Doc, a: Artboard, pal?: PaletteOverride): void {
+  for (const [orig, o] of Object.entries(a.overrides?.drawings ?? {})) {
+    const diff = o.diff;
+    if (!diff) continue;
+    delete o.diff;
+    const base = doc.drawings[orig] && recolourDrawing(doc.drawings[orig], pal);
+    const alias = aliasId(orig, a.id);
+    const rects = [...(diff.rect ? [diff.rect] : []), ...(diff.rects ?? [])].filter((r) => r.pixels instanceof Uint8ClampedArray);
+    if (base?.kind === 'pixel' && rects.length) {
+      // The original's block and every stored rectangle, laid over one area (a grid is never more than 16384 a side).
+      let U = base.width > 0 && base.height > 0 ? drawingRect(base) : null;
+      const good = rects.filter((r) => r.w > 0 && r.h > 0 && r.x + r.w <= MAX_GRID && r.y + r.h <= MAX_GRID);
+      for (const r of good) {
+        const u = unionRect({ x: U?.x ?? r.x, y: U?.y ?? r.y, width: U?.w ?? r.w, height: U?.h ?? r.h }, { x: r.x, y: r.y, width: r.w, height: r.h });
+        U = u;
+      }
+      if (!U || U.w * U.h > MAX_GRID * MAX_GRID / 4) continue;
+      const px = pixelsOver(base, U).slice();
+      for (const r of good) {
+        const pixels = r.pixels as Uint8ClampedArray;
+        for (let row = 0; row < r.h; row++) px.set(pixels.subarray(row * r.w * 4, (row + 1) * r.w * 4), ((r.y - U.y + row) * U.w + (r.x - U.x)) * 4);
+      }
+      const { x: _x, y: _y, ...rest } = base;
+      doc.drawings[alias] = trimmedDrawing({ ...rest, id: alias, ...(U.x ? { x: U.x } : {}), ...(U.y ? { y: U.y } : {}), width: U.w, height: U.h, pixels: px });
+    } else if (base?.kind === 'tilemap' && diff.cells) {
+      const cells = new Uint32Array(base.cells);
+      for (let i = 0; i + 1 < diff.cells.length; i += 2) if (diff.cells[i] < cells.length) cells[diff.cells[i]] = diff.cells[i + 1] >>> 0;
+      doc.drawings[alias] = { ...base, id: alias, cells };
+    }
+  }
 }
 
 /** For saving: the document with a variation that is open closed first, so the file's own fields are a real artboard. */
@@ -196,10 +470,25 @@ export function isDerivedDrawing(doc: Doc, id: Id): boolean {
 }
 
 /** The artboard entries for doc.json: a variation without its content. */
-export function variationForSave(a: Artboard): Artboard {
+export function variationForSave(a: Artboard, files?: Zippable, diffs?: Map<Id, DrawingDiff>): Artboard {
   if (!a.variationOf) return a;
   const { content: _c, ...rest } = a;
-  return { ...rest, overrides: a.overrides ?? {} };
+  let ov = a.overrides ?? {};
+  if (ov.palette?.legacy) ov = { ...ov, palette: { changes: ov.palette.changes } };
+  if (diffs?.size && ov.drawings) {
+    const drawings = { ...ov.drawings };
+    for (const [orig, o] of Object.entries(drawings)) {
+      const diff = diffs.get(aliasId(orig, a.id));
+      if (diff) drawings[orig] = { ...o, diff };
+    }
+    ov = { ...ov, drawings };
+  }
+  // Sounds the variation added carry their bytes in the zip, like any sound.
+  if (files && ov.audio?.added?.length) {
+    const added = packAudio({ audio: ov.audio.added } as Doc, files);
+    return { ...rest, overrides: { ...ov, audio: { ...ov.audio, added } } } as unknown as Artboard;
+  }
+  return { ...rest, overrides: ov };
 }
 
 /**
@@ -219,6 +508,14 @@ export function resolveAfterLoad(doc: Doc, warnings: string[]): void {
       warnings.push(`The variation "${a.name}" lost the artboard it followed and was left out.`);
       list.splice(i, 1);
       continue;
+    }
+    // Stored changes of a drawing are on top of the original's, with the colourway on (an older file: without it).
+    const legacy = a.overrides?.palette?.legacy;
+    applyDiffs(doc, a, legacy ? undefined : a.overrides?.palette);
+    if (legacy && a.overrides) {
+      const changes = migrateLegacy(basePalette(doc), legacy);
+      if (changes.length) a.overrides.palette = { changes };
+      else delete a.overrides.palette;
     }
     const r = resolveContent(base, doc.drawings, a.overrides, a.id);
     Object.assign(doc.drawings, r.drawings);

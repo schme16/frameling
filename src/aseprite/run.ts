@@ -11,6 +11,8 @@ import { swatchesIntoPalette } from '../pixel/palette-files';
 import { asepriteDoc, asepritePieces, mergePieces, paletteColors } from './convert';
 import { AsepriteProblem, parseAseprite, paletteAt, type AseFile } from './parse';
 import { showWhatChanged } from './WhatChanged';
+import { moment } from '../pixel/moments';
+import { line } from '../ui/mascot/lines';
 
 export const ASE_EXT = /\.(aseprite|ase)$/i;
 export const ASE_FILTERS = [{ name: 'Aseprite files', extensions: ['aseprite', 'ase'] }];
@@ -68,6 +70,7 @@ export async function openAsepriteBytes(bytes: Uint8Array, path: string): Promis
   // It is a new drawing with no file yet, so Save asks where to put it.
   store().load(made.doc, null);
   store().setUi({ dirty: true });
+  moment('ase.open', () => line('pixel.ase.open'), 'session', 'wave');
   report(`Opened "${baseName(path)}": ${plural(made.doc.layers.length, 'layer')}, ${plural(file.frames.length, 'frame')} at ${made.doc.fps} fps.`, made.notes);
   return true;
 }

@@ -23,7 +23,8 @@ the project board (project `frameling`, doc `evaluation`). Developer docs are in
 - **Export**: MP4, WebM, GIF, APNG, PNG and PNG sequences, sprite sheets with data for Godot, Unity, Phaser, PixiJS,
   CSS and JSON, SVG and animated SVG, Lottie, PDF, `.ai`, PSD, ProRes 4444, Godot bones scenes and a Godot importer
   add-on, and `.flplay` for Interactives (with a round trip back into Frameling).
-- **Aseprite files** (`.aseprite`, `.ase`) open as a drawing or add to the open one: layers, groups, exact frame timing, linked cels, tags as clips, palettes, tilemaps as tiles (`src/aseprite`).
+- **Aseprite files** (`.aseprite`, `.ase`) open as a drawing or add to the open one: layers, groups, exact frame timing, linked cels, tags as clips, palettes, tilemaps as tiles, slices (`src/aseprite`).
+- **Pictures and sprite sheets** (PNG, animated GIF, sprite sheets) open as pixel art or add to the open drawing, cut by a grid, by the gaps or by a JSON (`src/pixel/import`). **Slices** (named rectangles with a 9-patch middle and a pivot) go to Godot, Unity, Phaser, PixiJS, CSS and JSON with the sprite sheet export (`src/pixel/slices`).
 - **Around it**: autosave, recovery and version history, templates (built in and your own), sandboxed plugins, quests
   and onboarding with Quill the mascot, in-app help with pictures and clips, themes and a theme editor, shortcut sets,
   workspaces.
@@ -74,6 +75,17 @@ What each computer can build:
 
 Only a Mac can build the macOS app. Builds made this way are unsigned on Windows; macOS ones are ad-hoc signed (see
 Signing, below).
+
+## Changes
+
+- **Files are now format version 3.** Every `.frameling` file saved by this build is version 3 (back and forth clip
+  repeat counts changed meaning in version 2; pixel drawings keep only the painted part in version 3, so small
+  pictures on big canvases take a fraction of the memory and file size). This build opens older files and upgrades
+  them as it opens them, but earlier builds can't open a version 3 file: they say it was made with a newer Frameling.
+  Keep a copy of anything you still need to open in an older build, and update every machine you share files with.
+  Details in `docs/format.md`.
+- **Aseprite files can be far bigger.** Only each cel's own bounds are kept, so the old 1 GB limit now counts what
+  is held, not whole canvases.
 
 ## Work on it
 

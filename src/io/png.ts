@@ -185,11 +185,14 @@ export function decodePng(bytes: Uint8Array): RawImage {
   const depth = head[8];
   const ctype = head[9];
   if (head[12] !== 0) throw new Error('Interlaced PNG pictures are not supported');
-  if (depth !== 8 || !CHANNELS[ctype]) throw new Error('This kind of PNG picture is not supported');
+  const okDepth = ctype === 3 ? [1, 2, 4, 8].includes(depth) : ctype === 0 ? [1, 2, 4, 8, 16].includes(depth) : depth === 8 || depth === 16;
+  if (!okDepth || !CHANNELS[ctype]) throw new Error('This kind of PNG picture is not supported');
   if (width < 1 || height < 1 || width * height > 1 << 28) throw new Error('The PNG picture has an odd size');
   const idat = join(chunks.filter((c) => c.type === 'IDAT').map((c) => c.data));
-  const bpp = CHANNELS[ctype];
-  const stride = width * bpp;
+  const channels = CHANNELS[ctype];
+  // Bytes in a row, and the distance back to "the pixel to the left" for the row filters (a whole byte at least).
+  const stride = Math.ceil((width * channels * depth) / 8);
+  const bpp = Math.max(1, (channels * depth) >> 3);
   const raw = unzlibSync(idat);
   if (raw.length < (stride + 1) * height) throw new Error('The PNG picture is cut short');
 
@@ -219,32 +222,47 @@ export function decodePng(bytes: Uint8Array): RawImage {
   }
 
   const pixels = new Uint8ClampedArray(width * height * 4);
-  if (ctype === 6) {
+  if (ctype === 6 && depth === 8) {
     pixels.set(rows);
     return { width, height, pixels };
   }
   const plte = chunks.find((c) => c.type === 'PLTE')?.data;
   const trns = chunks.find((c) => c.type === 'tRNS')?.data;
-  for (let i = 0, n = width * height; i < n; i++) {
-    const o = i * 4;
-    if (ctype === 2) {
-      pixels[o] = rows[i * 3];
-      pixels[o + 1] = rows[i * 3 + 1];
-      pixels[o + 2] = rows[i * 3 + 2];
-      pixels[o + 3] = 255;
-    } else if (ctype === 0) {
-      pixels[o] = pixels[o + 1] = pixels[o + 2] = rows[i];
-      pixels[o + 3] = 255;
-    } else if (ctype === 4) {
-      pixels[o] = pixels[o + 1] = pixels[o + 2] = rows[i * 2];
-      pixels[o + 3] = rows[i * 2 + 1];
-    } else {
-      if (!plte) throw new Error('The PNG picture has no colours');
-      const p = rows[i];
-      pixels[o] = plte[p * 3];
-      pixels[o + 1] = plte[p * 3 + 1];
-      pixels[o + 2] = plte[p * 3 + 2];
-      pixels[o + 3] = trns && p < trns.length ? trns[p] : 255;
+  if (ctype === 3 && !plte) throw new Error('The PNG picture has no colours');
+  // The sample at `i` of a row, as its full value (up to 16 bits).
+  const sample = (y: number, i: number): number => {
+    const row = y * stride;
+    if (depth === 8) return rows[row + i];
+    if (depth === 16) return (rows[row + i * 2] << 8) | rows[row + i * 2 + 1];
+    const bit = i * depth;
+    return (rows[row + (bit >> 3)] >> (8 - depth - (bit & 7))) & ((1 << depth) - 1);
+  };
+  const to8 = (v: number): number => (depth === 16 ? v >> 8 : depth === 8 ? v : Math.round((v * 255) / ((1 << depth) - 1)));
+  // A "transparent colour" from tRNS for grey and RGB pictures.
+  const key = trns && (ctype === 0 || ctype === 2) ? Array.from({ length: channels }, (_, k) => (trns[k * 2] << 8) | trns[k * 2 + 1]) : null;
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const o = (y * width + x) * 4;
+      const at = x * channels;
+      if (ctype === 3) {
+        const p = sample(y, x);
+        pixels[o] = plte![p * 3];
+        pixels[o + 1] = plte![p * 3 + 1];
+        pixels[o + 2] = plte![p * 3 + 2];
+        pixels[o + 3] = trns && p < trns.length ? trns[p] : 255;
+      } else if (ctype === 0 || ctype === 4) {
+        const g = sample(y, at);
+        pixels[o] = pixels[o + 1] = pixels[o + 2] = to8(g);
+        pixels[o + 3] = ctype === 4 ? to8(sample(y, at + 1)) : key && g === key[0] ? 0 : 255;
+      } else {
+        const r = sample(y, at);
+        const g = sample(y, at + 1);
+        const b = sample(y, at + 2);
+        pixels[o] = to8(r);
+        pixels[o + 1] = to8(g);
+        pixels[o + 2] = to8(b);
+        pixels[o + 3] = ctype === 6 ? to8(sample(y, at + 3)) : key && r === key[0] && g === key[1] && b === key[2] ? 0 : 255;
+      }
     }
   }
   return { width, height, pixels };

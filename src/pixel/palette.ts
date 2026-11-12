@@ -9,10 +9,11 @@
 import type { Doc, DocPalette } from '../core/format';
 import { parseHex } from '../canvas/colors';
 import { STARTER_PALETTES } from './builtin';
+import { variationPalette } from '../artboards/variations';
 
-/** The palette a document uses: its own, or the first starter palette when it has none yet. */
+/** The palette a document uses: its own (an open variation's colourway first), or the first starter palette when it has none yet. */
 export function docPalette(doc: Doc): DocPalette {
-  return doc.palette ?? STARTER_PALETTES[0].palette;
+  return variationPalette(doc) ?? doc.palette ?? STARTER_PALETTES[0].palette;
 }
 
 /** A palette as packed RGB bytes (three per colour) for fast lookups. Cached per colour list. */

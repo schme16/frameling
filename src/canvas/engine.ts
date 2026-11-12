@@ -7,6 +7,9 @@ import { currentChoice, withChoice } from '../core/choices';
 import { getCommand, getTool, type Tool, type ToolContext, type ToolPointer } from '../core/registry';
 import { store, type State } from '../core/store';
 import { activeLayer } from '../tools/edit';
+import { altPicks, tempEyedropperTool } from '../tools/eyedropper';
+import { paintWellsOn, rightPaints } from '../tools/pixelWells';
+import { swapPaintBack } from '../tools/wells';
 import './choices';
 import type { SpaceTapMode, WheelMode } from './choices';
 import * as ctl from './controller';
@@ -40,7 +43,7 @@ export interface EngineElements {
 
 type Gesture =
   | { kind: 'pan'; pointerId: number; startX: number; startY: number; panX: number; panY: number }
-  | { kind: 'tool'; pointerId: number; tool: Tool; restoreTool: string | null }
+  | { kind: 'tool'; pointerId: number; tool: Tool; restoreTool: string | null; swapped?: boolean }
   | { kind: 'grab'; pointerId: number; grab: ctl.CanvasGrab };
 
 /** Spare time per tick that playback may spend rasterising upcoming frames, in ms. */
@@ -552,7 +555,9 @@ export class CanvasEngine {
       this.updateCursor();
       return;
     }
-    if (e.button !== 0 && !penEraser) return;
+    // A right-click paints with Back in the Pixel workspace (the press below checks the tool and the layer).
+    const rightClick = e.button === 2 && !penEraser && paintWellsOn();
+    if (e.button !== 0 && !penEraser && !rightClick) return;
     // A press on another artboard opens it first, so the tool works there.
     ctl.runPointerDownHooks(this.toDocPoint(e), penEraser ? 'eraser' : ui.tool);
 
@@ -568,12 +573,19 @@ export class CanvasEngine {
       return;
     }
 
-    const tool = penEraser ? getTool('eraser') : getTool(ui.tool);
+    let tool = penEraser ? getTool('eraser') : getTool(ui.tool);
     if (!tool) return;
     const layer = activeLayer().layer;
+    // Alt held over a painting tool on a pixel layer: this press picks a colour (the tool comes back by itself).
+    if (!penEraser && altPicks(tool.id, layer?.kind, e.altKey)) tool = tempEyedropperTool;
+    if (rightClick && (tool === tempEyedropperTool || !rightPaints(tool.id, layer?.kind, 2))) return;
     if (layer && !tool.layers.includes(layer.kind)) {
       const kinds = tool.layers.join(' or ');
       this.ctx.hint(`${tool.label} works on ${kinds} layers. Pick one in the timeline first.`);
+      return;
+    }
+    if (rightClick && !store().get().ui.fillColor) {
+      this.ctx.hint('Back is set to none, so there is nothing to right-click paint with. Pick a Back colour first.');
       return;
     }
     e.preventDefault();
@@ -585,7 +597,9 @@ export class CanvasEngine {
       store().setUi({ tool: 'eraser' });
       this.selfSwitch = false;
     }
-    this.gesture = { kind: 'tool', pointerId: e.pointerId, tool, restoreTool };
+    // Back stands in for Paint for this one stroke, and goes back when it ends.
+    const swapped = rightClick ? swapPaintBack() : false;
+    this.gesture = { kind: 'tool', pointerId: e.pointerId, tool, restoreTool, swapped };
     const ptr = this.toPointer(e);
     this.lastPtr = ptr;
     ctl.setHover(null);
@@ -659,6 +673,7 @@ export class CanvasEngine {
   };
 
   private restoreTool(g: Gesture): void {
+    if (g.kind === 'tool' && g.swapped) swapPaintBack();
     if (g.kind === 'tool' && g.restoreTool) {
       this.selfSwitch = true;
       store().setUi({ tool: g.restoreTool });

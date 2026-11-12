@@ -1,6 +1,6 @@
-import { registerHelpTopics } from '../core/registry';
+import type { HelpTopic } from '../core/registry';
 
-registerHelpTopics([
+export const cameraHelp: HelpTopic[] = [
   {
     id: 'camera',
     title: 'The camera: pan, zoom, turn and parallax',
@@ -27,4 +27,4 @@ Or type exact numbers in the **Camera** panel: **X** and **Y** (where the middle
 
 Hide the camera layer (its eye in the timeline) to switch the camera off: exports then show the whole stage. The camera belongs to the main scene, not to symbols.`,
   },
-]);
+];

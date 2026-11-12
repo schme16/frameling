@@ -9,16 +9,12 @@
  */
 import { zlibSync } from 'fflate';
 import { cameraViewAt, layerCameraMatrix } from '../core/camera';
-import type { BlendMode, CameraView, Color, Doc, Drawing, Gradient, Layer, ParticlesShape, PixelDrawing, Shape, SubPath } from '../core/format';
+import type { BlendMode, CameraView, Color, Doc, Drawing, Gradient, Layer, PixelDrawing, Shape, SubPath } from '../core/format';
 import { strokeOutline } from '../core/render';
 import { isPosed, poseAt, type PosedInstance } from '../core/symbols';
 import { flattenTilemap } from '../tiles/model';
 import type { RawImage } from '../io/png';
-import { posedParticles } from '../particles/draw';
-import type { Particle } from '../particles/model';
-import { textOutlines } from '../text/convert';
-import { textMatrix } from '../text/draw';
-import { isAnimatedText } from '../text/model';
+import { shapeExportOf } from './shapeExport';
 import { flatPlan, type FlatUnit } from './layered';
 import { nativeData } from './ai-native';
 import { gradientKey, sortedStops } from '../core/gradient';
@@ -54,7 +50,7 @@ export function pdfBlend(b: BlendMode | undefined): string {
 }
 
 const enc = new TextEncoder();
-const num = (v: number) => {
+export const num = (v: number) => {
   if (!Number.isFinite(v)) return '0';
   const r = Math.round(v * 1000) / 1000;
   return Object.is(r, -0) ? '0' : String(r);
@@ -90,7 +86,7 @@ export function washColor(c: { r: number; g: number; b: number; a: number }, lis
   return { r, g, b, a: c.a };
 }
 
-function parseColor(c: Color): { r: number; g: number; b: number; a: number } {
+export function parseColor(c: Color): { r: number; g: number; b: number; a: number } {
   const p = rawColor(c);
   return washes.length ? washColor(p) : p;
 }
@@ -389,7 +385,7 @@ export class PdfWriter {
 // ---------------------------------------------------------------- drawing operators
 
 /** Builds one content stream in document coordinates (the page flips y once at the start). */
-class Content {
+export class Content {
   ops: string[] = [];
   constructor(private w: PdfWriter) {}
 
@@ -519,22 +515,8 @@ function drawShape(cx: Content, ctx: PdfFrameContext, s: Shape): void {
     if (isPosed(s)) drawInstance(cx, ctx, s);
     return;
   }
-  if (s.type === 'text') {
-    // The Illustrator data gets live text (when the text stays put); the PDF part keeps outlines either way.
-    const live = ctx.includeHidden && !isAnimatedText(s) && s.text.trim() && s.opacity > 0;
-    const paths = textOutlines(s);
-    if (!paths.length && !live) return;
-    if (live) cx.push(`/FrText << /I ${ctx.writer.live({ kind: 'text', text: s.text, font: s.font, weight: s.weight, italic: !!s.italic, size: s.size, color: s.color, align: s.align, lineHeight: s.lineHeight ?? 1.2, letterSpacing: s.letterSpacing ?? 0, opacity: s.opacity, matrix: [...textMatrix(s)] })} >> BDC`);
-    cx.push('q');
-    if (paths.length && cx.fillColor(s.color, s.opacity)) {
-      cx.subPaths(paths);
-      cx.push('f*');
-    }
-    cx.push('Q');
-    if (live) cx.push('EMC');
-    return;
-  }
-  if (s.type === 'particles') return drawParticles(cx, ctx, s);
+  // Text, particles and the like draw themselves, through their registered export.
+  if (s.type !== 'stroke' && s.type !== 'fill' && s.type !== 'path') return shapeExportOf(s.type)?.pdf?.(cx, ctx, s);
   cx.push('q');
   if (s.type === 'stroke') {
     if (cx.fillColor(s.color, s.opacity)) {
@@ -584,9 +566,10 @@ function drawShape(cx: Content, ctx: PdfFrameContext, s: Shape): void {
 }
 
 function drawPixels(cx: Content, ctx: PdfFrameContext, d: PixelDrawing, pixelSize: number): void {
+  if (d.width < 1 || d.height < 1) return;
   const name = ctx.writer.image(washPixels({ width: d.width, height: d.height, pixels: d.pixels }), false);
-  // Images fill the unit square; the page is flipped, so flip the picture back.
-  cx.push(`q ${num(d.width * pixelSize)} 0 0 ${num(-d.height * pixelSize)} 0 ${num(d.height * pixelSize)} cm /${name} Do Q`);
+  // Images fill the unit square; the page is flipped, so flip the picture back. The block sits (x, y) art pixels in.
+  cx.push(`q ${num(d.width * pixelSize)} 0 0 ${num(-d.height * pixelSize)} ${num((d.x ?? 0) * pixelSize)} ${num((d.y ?? 0) * pixelSize + d.height * pixelSize)} cm /${name} Do Q`);
 }
 
 function drawDrawing(cx: Content, ctx: PdfFrameContext, d: Drawing, pixelSize: number): void {
@@ -595,7 +578,7 @@ function drawDrawing(cx: Content, ctx: PdfFrameContext, d: Drawing, pixelSize: n
 }
 
 /** Draws `inner` as one faded and blended group (or straight in when there's nothing to do). */
-function grouped(cx: Content, ctx: PdfFrameContext, opacity: number, blend: BlendMode | undefined, inner: (c: Content) => void): void {
+export function grouped(cx: Content, ctx: PdfFrameContext, opacity: number, blend: BlendMode | undefined, inner: (c: Content) => void): void {
   if (opacity >= 1 && (blend ?? 'normal') === 'normal') return inner(cx);
   if (opacity <= 0) return;
   const c = new Content(ctx.writer);
@@ -604,7 +587,7 @@ function grouped(cx: Content, ctx: PdfFrameContext, opacity: number, blend: Blen
   cx.push(`q /${ctx.writer.state(opacity, opacity, pdfBlend(blend))} gs /${name} Do Q`);
 }
 
-function drawInstance(cx: Content, ctx: PdfFrameContext, s: PosedInstance): void {
+export function drawInstance(cx: Content, ctx: PdfFrameContext, s: PosedInstance): void {
   if (s.opacity <= 0 || !s.posed.layers.length) return;
   const m = s.posed.matrix;
   const look = s.posed.look;
@@ -642,86 +625,6 @@ function isolated(cx: Content, ctx: PdfFrameContext, inner: (c: Content) => void
   inner(c);
   const name = ctx.writer.group(c.toString(), [-1e5, -1e5, 1e5, 1e5], true);
   cx.push(`q /${name} Do Q`);
-}
-
-function particleShape(cx: Content, s: ParticlesShape, p: Particle): void {
-  const r = p.size / 2;
-  const rot = (p.rotation * Math.PI) / 180;
-  const cos = Math.cos(rot);
-  const sin = Math.sin(rot);
-  const at = `${num(cos)} ${num(sin)} ${num(-sin)} ${num(cos)} ${num(p.x)} ${num(p.y)} cm`;
-  switch (s.sprite) {
-    case 'streak': {
-      const len = Math.max(p.size * 2, Math.hypot(p.vx, p.vy) * 0.05);
-      const ang = Math.atan2(p.vy, p.vx);
-      cx.push(`${num(p.size)} w 1 J ${num(p.x)} ${num(p.y)} m ${num(p.x - Math.cos(ang) * len)} ${num(p.y - Math.sin(ang) * len)} l S`);
-      return;
-    }
-    case 'square':
-      cx.push(`q ${at} ${num(-r)} ${num(-r)} ${num(p.size)} ${num(p.size)} re f Q`);
-      return;
-    case 'confetti': {
-      const flip = Math.cos((p.rotation * Math.PI) / 90) || 0.01;
-      cx.push(`q ${at} 1 0 0 ${num(flip)} 0 0 cm ${num(-r)} ${num(-r * 0.5)} ${num(p.size)} ${num(p.size * 0.5)} re f Q`);
-      return;
-    }
-    case 'star':
-    case 'spark': {
-      const points = s.sprite === 'star' ? 5 : 4;
-      const inner = s.sprite === 'star' ? 0.45 : 0.22;
-      cx.push(`q ${at}`);
-      for (let i = 0; i < points * 2; i++) {
-        const a = (i * Math.PI) / points - Math.PI / 2;
-        const rr = i % 2 ? r * inner : r;
-        cx.push(`${num(Math.cos(a) * rr)} ${num(Math.sin(a) * rr)} ${i ? 'l' : 'm'}`);
-      }
-      cx.push('h f Q');
-      return;
-    }
-    case 'flake': {
-      cx.push(`q ${at} ${num(Math.max(0.6, p.size / 9))} w 1 J`);
-      for (let i = 0; i < 3; i++) {
-        const a = (i * Math.PI) / 3;
-        cx.push(`${num(Math.cos(a) * r)} ${num(Math.sin(a) * r)} m ${num(-Math.cos(a) * r)} ${num(-Math.sin(a) * r)} l`);
-      }
-      cx.push('S Q');
-      return;
-    }
-    case 'soft':
-      cx.circle(p.x, p.y, r * 0.7);
-      cx.push('f');
-      return;
-    default:
-      cx.circle(p.x, p.y, r);
-      cx.push('f');
-  }
-}
-
-function drawParticles(cx: Content, ctx: PdfFrameContext, s: ParticlesShape): void {
-  if (s.opacity <= 0) return;
-  const posed = s as ParticlesShape & { posedSprites?: PosedInstance[]; posedSpriteSize?: number; posedFps?: number };
-  for (const p of posedParticles(s)) {
-    const a = p.alpha * s.opacity * (s.sprite === 'soft' ? 0.6 : 1);
-    if (a <= 0.003 || p.size <= 0.01) continue;
-    if (s.sprite === 'symbol' && posed.posedSprites?.length) {
-      const k = p.size / Math.max(1, posed.posedSpriteSize ?? 1);
-      const rot = (p.rotation * Math.PI) / 180;
-      const sprite = posed.posedSprites[Math.floor(p.age * (posed.posedFps ?? 24)) % posed.posedSprites.length];
-      grouped(cx, ctx, a, undefined, (c) => {
-        c.push(`q ${num(Math.cos(rot) * k)} ${num(Math.sin(rot) * k)} ${num(-Math.sin(rot) * k)} ${num(Math.cos(rot) * k)} ${num(p.x)} ${num(p.y)} cm`);
-        drawInstance(c, ctx, sprite);
-        c.push('Q');
-      });
-      continue;
-    }
-    cx.push('q');
-    const c = parseColor(p.color);
-    const alpha = a * c.a;
-    cx.push(`${num(c.r)} ${num(c.g)} ${num(c.b)} rg ${num(c.r)} ${num(c.g)} ${num(c.b)} RG`);
-    if (alpha < 0.999) cx.push(`/${ctx.writer.state(alpha, alpha)} gs`);
-    particleShape(cx, s, p);
-    cx.push('Q');
-  }
 }
 
 function drawPicture(cx: Content, ctx: PdfFrameContext, img: RawImage, crisp: boolean): void {

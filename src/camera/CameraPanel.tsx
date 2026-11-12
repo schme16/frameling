@@ -6,7 +6,7 @@ import { cameraViewOn, parallaxFactor } from '../core/camera';
 import { ActionButton, Tip, Toggle } from '../canvas/controls';
 import { setViewSettings, useViewSettings } from '../canvas/viewSettings';
 import { LengthNum, Num, Section, TweenSection } from '../symbols/PropertiesPanel';
-import { addCamera, resetView, setDepth, setView, stageCamera, toggleThroughCamera } from './ops';
+import { addCamera, resetView, setDepth, setView, stageCamera, throughCameraOf, toggleThroughCamera } from './ops';
 import './camera.css';
 
 function DepthList() {
@@ -37,7 +37,7 @@ export function CameraPanel() {
   const doc = useStore((s) => s.doc);
   const frame = useStore((s) => s.ui.frame);
   const activeLayerId = useStore((s) => s.ui.activeLayerId);
-  const through = useViewSettings((v) => v.throughCamera);
+  const through = useViewSettings((v) => throughCameraOf(doc, v));
   const whilePlaying = useViewSettings((v) => v.cameraWhilePlaying);
   if (doc.editing?.length) {
     return (

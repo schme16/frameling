@@ -14,7 +14,8 @@ import { floodFillPoints, parseColor, type Rgba } from '../geometry/pixel-fill';
 import { makeMirror, mirrorPoints, snapToPalette } from '../pixel/ink';
 import { getPixelSettings } from '../pixel/settings';
 import { docPalette } from '../pixel/palette';
-import { activeDrawing, activeLayer, EDIT_HINTS, editActiveDrawing } from './edit';
+import { activeDrawing, activeLayer, EDIT_HINTS, editActiveDrawing, setActivePixels } from './edit';
+import { gridPixels } from '../core/pixelBounds';
 import { FillOptionsPanel, gapWidth, getFillOptions } from './fill-options';
 import './fill-help';
 import { activeIsMerge, editShapes } from './merge-mode';
@@ -23,6 +24,7 @@ import { mergeShapes } from '../geometry/merge';
 import { pixelSelection } from '../select/pixel-state';
 import { clipToMask } from '../select/mask';
 import { reducedMotion } from '../ui/prefs';
+import { paintWellsOn } from './pixelWells';
 
 export const FILL_HINTS = {
   'no-fill': 'The fill colour is set to none. Pick a fill colour in the Colours panel (the solid box), then fill.',
@@ -124,8 +126,8 @@ export function barrierShapes(doc: Doc, frame: number, own: readonly Shape[], al
 
 function fillVector(e: ToolPointer, ctx: ToolContext) {
   const { doc } = store().get();
-  // The bucket pours the fill colour (the stroke colour is for lines), as in Illustrator.
-  const ui = { ...store().get().ui, color: store().get().ui.fillColor ?? '' };
+  // The bucket pours the fill colour (the stroke colour is for lines), as in Illustrator. With Paint and Back, it pours Paint.
+  const ui = { ...store().get().ui, color: (paintWellsOn() ? store().get().ui.color : store().get().ui.fillColor) ?? '' };
   if (!ui.color) {
     ctx.hint(FILL_HINTS['no-fill']);
     return;
@@ -227,7 +229,8 @@ export function fillPoints(x: number, y: number, width: number, height: number, 
 }
 
 function fillPixels(e: ToolPointer, ctx: ToolContext) {
-  const ui = { ...store().get().ui, color: store().get().ui.fillColor ?? '' };
+  // The bucket pours Paint in the Pixel workspace, the fill colour elsewhere.
+  const ui = { ...store().get().ui, color: (paintWellsOn() ? store().get().ui.color : store().get().ui.fillColor) ?? '' };
   if (!ui.color) {
     ctx.hint(FILL_HINTS['no-fill']);
     return;
@@ -246,30 +249,33 @@ function fillPixels(e: ToolPointer, ctx: ToolContext) {
   const color = layer.paletteLock ? ([...snapToPalette(parseColor(ui.color), docPalette(store().get().doc))] as Rgba) : parseColor(ui.color);
   const mode = getFillOptions().allOfColour ? 'all' : 'contiguous';
   const existing = activeDrawing();
+  const grid = pixelGrid(store().get().doc, layer);
+  const gw = grid.width;
+  const gh = grid.height;
   if (existing && existing.kind === 'pixel') {
-    if (px < 0 || py < 0 || px >= existing.width || py >= existing.height) {
+    if (px < 0 || py < 0 || px >= gw || py >= gh) {
       ctx.hint(FILL_HINTS.outside);
       return;
     }
-    const r = floodFillPoints(existing.pixels, existing.width, existing.height, fillPoints(px, py, existing.width, existing.height, wrapOn), color, { mode, wrap: wrapOn });
+    const base = gridPixels(existing, gw, gh);
+    const r = floodFillPoints(base, gw, gh, fillPoints(px, py, gw, gh, wrapOn), color, { mode, wrap: wrapOn });
     if (!r.changed) {
       ctx.hint(FILL_HINTS.same);
       return;
     }
     const sel = pixelSelection();
-    const filled = sel && sel.width === existing.width && sel.height === existing.height ? clipToMask(existing.pixels, r.pixels, sel) : r.pixels;
-    const res = editActiveDrawing('Fill', 'pixel', (d) => void (d.pixels = filled));
+    const filled = sel && sel.width === gw && sel.height === gh ? clipToMask(base, r.pixels, sel) : r.pixels;
+    const res = setActivePixels('Fill', filled);
     if (res !== 'ok') ctx.hint(EDIT_HINTS[res]);
     else startPop(px * layer.pixelSize + layer.pixelSize / 2, py * layer.pixelSize + layer.pixelSize / 2, ui.color, ctx);
     return;
   }
   // An empty frame gets a fresh drawing, which the fill then covers (it is all one clear colour).
-  const res = editActiveDrawing('Fill', 'pixel', (d) => {
-    if (px < 0 || py < 0 || px >= d.width || py >= d.height) return;
-    const filled = floodFillPoints(d.pixels, d.width, d.height, fillPoints(px, py, d.width, d.height, wrapOn), color, { mode, wrap: wrapOn }).pixels;
-    const sel = pixelSelection();
-    d.pixels = sel && sel.width === d.width && sel.height === d.height ? clipToMask(d.pixels, filled, sel) : filled;
-  });
+  if (px < 0 || py < 0 || px >= gw || py >= gh) return;
+  const blank = new Uint8ClampedArray(gw * gh * 4);
+  const filled = floodFillPoints(blank, gw, gh, fillPoints(px, py, gw, gh, wrapOn), color, { mode, wrap: wrapOn }).pixels;
+  const sel = pixelSelection();
+  const res = setActivePixels('Fill', sel && sel.width === gw && sel.height === gh ? clipToMask(blank, filled, sel) : filled);
   if (res !== 'ok') ctx.hint(EDIT_HINTS[res]);
   else startPop(px * layer.pixelSize + layer.pixelSize / 2, py * layer.pixelSize + layer.pixelSize / 2, ui.color, ctx);
 }

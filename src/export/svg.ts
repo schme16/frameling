@@ -5,7 +5,8 @@ import { isPosed, poseAt, type PosedInstance, type PosedLayer } from '../core/sy
 import { drawMeshed, strokeOutline } from '../core/render';
 import { encodePng } from '../io/png';
 import { flattenTilemap } from '../tiles/model';
-import { particlesToSvg, textToSvg, withSprites } from './svg-extra';
+import { shapeExportOf } from './shapeExport';
+import { withSprites } from './svg-extra';
 import { composeSvg, composeSymbol, tintAttr, tintDefs } from './svg-look';
 import { cameraViewAt, layerCameraMatrix } from '../core/camera';
 import { gradientKey, sortedStops } from '../core/gradient';
@@ -116,8 +117,8 @@ export function subPathsToPathData(paths: SubPath[]): string {
 
 export function shapeToSvg(s: Shape, doc?: Doc): string {
   if (s.type === 'instance') return isPosed(s) ? instanceToSvg(s, doc) : '';
-  if (s.type === 'text') return textToSvg(s);
-  if (s.type === 'particles') return particlesToSvg(s);
+  // Text, particles and the like write themselves, through their registered export.
+  if (s.type !== 'stroke' && s.type !== 'fill' && s.type !== 'path') return shapeExportOf(s.type)?.svg?.(s) ?? '';
   if (s.type === 'stroke') {
     const d = strokeToPathData(s);
     return d ? `<path d="${d}"${paint('fill', s.color, s.opacity)}/>` : '';
@@ -206,6 +207,8 @@ const hex2 = (v: number) => v.toString(16).padStart(2, '0');
 export function pixelRects(d: PixelDrawing, size: number): string[] {
   const out: string[] = [];
   const px = d.pixels;
+  const ox = d.x ?? 0;
+  const oy = d.y ?? 0;
   type Open = { y: number; h: number; x: number; w: number; fill: string };
   let prev = new Map<string, Open>();
   const rects: Open[] = [];
@@ -242,7 +245,7 @@ export function pixelRects(d: PixelDrawing, size: number): string[] {
   }
   for (const r of rects) {
     const [hex, alpha] = r.fill.split(':');
-    out.push(`<rect x="${n2(r.x * size)}" y="${n2(r.y * size)}" width="${n2(r.w * size)}" height="${n2(r.h * size)}" fill="#${hex}"${alpha ? ` fill-opacity="${alpha}"` : ''}/>`);
+    out.push(`<rect x="${n2((r.x + ox) * size)}" y="${n2((r.y + oy) * size)}" width="${n2(r.w * size)}" height="${n2(r.h * size)}" fill="#${hex}"${alpha ? ` fill-opacity="${alpha}"` : ''}/>`);
   }
   return out;
 }
@@ -309,7 +312,8 @@ export function frameSvgExport(doc: Doc, frame: number, opts: SvgOptions = {}): 
       },
     }),
   );
-  const lines = [`<svg xmlns="http://www.w3.org/2000/svg"${inkscapeNs(body)} width="${w}" height="${h}" viewBox="0 0 ${n2(doc.width)} ${n2(doc.height)}">`];
+  // isolation: layers blend with each other only, not with the web page behind the picture (same as the animated SVG).
+  const lines = [`<svg xmlns="http://www.w3.org/2000/svg"${inkscapeNs(body)} width="${w}" height="${h}" viewBox="0 0 ${n2(doc.width)} ${n2(doc.height)}" style="isolation:isolate">`];
   const d = defsBlock([...defs, ...sprites], body);
   if (d) lines.push(d.trimEnd());
   if (doc.background && !opts.transparent) lines.push(`<rect width="${n2(doc.width)}" height="${n2(doc.height)}"${paint('fill', doc.background, 1)}/>`);

@@ -1,3 +1,5 @@
+import { gridPixels } from '../../src/core/pixelBounds';
+import type { PixelDrawing } from '../../src/core/format';
 import { describe, expect, it } from 'vitest';
 import { newDoc, newPixelDrawing, newVectorDrawing } from '../../src/core/doc';
 import type { Doc, StrokeShape } from '../../src/core/format';
@@ -27,9 +29,10 @@ describe('plugin ops', () => {
     ]);
     const v = s.get().doc.drawings.dv as { shapes: StrokeShape[] };
     expect(v.shapes[0].points.map((q) => q.x)).toEqual([90, 80]);
-    const p = s.get().doc.drawings.dp as { pixels: Uint8ClampedArray };
-    expect(p.pixels[0]).toBe(0);
-    expect(p.pixels[12]).toBe(255);
+    // The drawing is on no layer here, so it is flipped across the block it holds (4 x 2).
+    const p = gridPixels(s.get().doc.drawings.dp as PixelDrawing, 4, 2);
+    expect(p[0]).toBe(0);
+    expect(p[12]).toBe(255);
     expect(s.undoLabel()).toBe('Plugin');
     s.undo();
     expect((s.get().doc.drawings.dv as { shapes: StrokeShape[] }).shapes[0].points[0].x).toBe(10);

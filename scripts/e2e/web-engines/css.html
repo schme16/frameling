@@ -18,11 +18,12 @@
     await loaded;
   };
   /** Shows a div with these classes and, if it animates, stops it `ms` into its run. Returns its size and how it is set to play. */
-  window.cssShow = async function (classes, ms) {
+  window.cssShow = async function (classes, ms, zoom) {
     const box = document.getElementById('box');
     box.textContent = '';
     el = document.createElement('div');
     el.className = classes;
+    if (zoom && zoom !== 1) el.style.zoom = String(zoom);
     box.appendChild(el);
     // Make sure the picture has arrived before anyone takes a screenshot.
     const bg = getComputedStyle(el).backgroundImage;

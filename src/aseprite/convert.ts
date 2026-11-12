@@ -4,6 +4,7 @@
  * a draft of an open one. Everything that could not be carried over exactly is said in `notes`, in plain words.
  */
 import { CLIP_DIRECTIONS, MAX_REPEAT } from '../core/clipPlay';
+import { trimPixels, type Placed } from '../core/pixelBounds';
 import { newDoc, uid } from '../core/doc';
 import { MAX_FOLDER_DEPTH, folderChain } from '../core/folders';
 import {
@@ -22,14 +23,17 @@ import {
   type Layer,
   type LayerFolder,
   type PixelDrawing,
+  type PixelLayer,
+  type Slice,
   type Tile,
   type Tileset,
 } from '../core/format';
-import { LAYER_GROUP, LAYER_TILEMAP, AsepriteProblem, imageRgba, paletteAt, type AseCel, type AseColor, type AseFile, type AseImage, type AseLayer, type AseTileset } from './parse';
+import { LAYER_GROUP, LAYER_TILEMAP, AsepriteProblem, imageRgba, paletteAt, type AseCel, type AseColor, type AseFile, type AseImage, type AseLayer, type AseSlice, type AseTileset } from './parse';
 
 export const MAX_FRAMES = 10000;
 /** The most pixel memory an import may ask for. */
-const MAX_PIXEL_BYTES = 1024 * 1024 * 1024;
+/** All the pictures of one file together, as Frameling holds them (only each cel's painted part). */
+const MAX_PIXEL_BYTES = 16 * 1024 * 1024 * 1024;
 
 const BLEND_NAMES = ['Normal', 'Multiply', 'Screen', 'Overlay', 'Darken', 'Lighten', 'Color Dodge', 'Color Burn', 'Hard Light', 'Soft Light', 'Difference', 'Exclusion', 'Hue', 'Saturation', 'Color', 'Luminosity', 'Addition', 'Subtract', 'Divide'];
 const BLEND_MODES: (BlendMode | null)[] = ['normal', 'multiply', 'screen', 'overlay', 'darken', 'lighten', 'color-dodge', 'color-burn', 'hard-light', 'soft-light', 'difference', 'exclusion', 'hue', 'saturation', 'color', 'luminosity', 'linear-dodge', 'subtract', 'divide'];
@@ -42,22 +46,16 @@ export function blendFor(n: number): BlendMode | null {
 export const blendName = (n: number): string => BLEND_NAMES[n] ?? `mode ${n}`;
 
 /**
- * A tag's direction and repeat count as a clip's. Aseprite counts a ping-pong tag's repeats by direction: each way
- * through the frames is one repeat, so 2 is one trip there and back and 1 is a single way (checked against Aseprite's
- * own playback, see test/aseprite/import.test.ts). Frameling counts whole trips, so the repeat is halved. An odd count
- * has a half trip left over that a clip cannot hold: 1 becomes a plain forward (or backward) clip, which is exact, and
- * 3 or more is rounded up to the next whole trip (`roundedUp`). 0 repeats means forever, as it does in Frameling.
- * Other directions count whole passes in both programs.
+ * A tag's direction and repeat count as a clip's. Both count a ping-pong tag's repeats by direction: each way through
+ * the frames is one repeat (1 is there only, 2 is there and back), the turn frames show once, so the numbers carry
+ * over as they are (checked against Aseprite's own playback, see test/aseprite/import.test.ts). 0 repeats means
+ * forever. Forward and reverse count whole passes in both programs.
  */
-export function tagPlay(dir: number, repeat: number): { loop: boolean; direction?: ClipDirection; repeat: number; roundedUp: boolean } {
+export function tagPlay(dir: number, repeat: number): { loop: boolean; direction?: ClipDirection; repeat: number } {
   const direction = CLIP_DIRECTIONS[dir];
   const loop = repeat === 0;
   const kept = direction && direction !== 'forward' ? direction : undefined;
-  if (loop || (direction !== 'pingpong' && direction !== 'pingpong-reverse')) {
-    return { loop, ...(kept ? { direction: kept } : {}), repeat: loop ? 1 : Math.min(repeat, MAX_REPEAT), roundedUp: false };
-  }
-  if (repeat === 1) return { loop, ...(direction === 'pingpong-reverse' ? { direction: 'reverse' as const } : {}), repeat: 1, roundedUp: false };
-  return { loop, direction, repeat: Math.min(Math.ceil(repeat / 2), MAX_REPEAT), roundedUp: repeat % 2 === 1 };
+  return { loop, ...(kept ? { direction: kept } : {}), repeat: loop ? 1 : Math.min(repeat, MAX_REPEAT) };
 }
 
 // ---------------------------------------------------------------- timing
@@ -174,28 +172,40 @@ export function scaleRgba(src: Uint8ClampedArray, sw: number, sh: number, dw: nu
   return out;
 }
 
-/** Draws one cel's RGBA into a canvas-sized drawing at (x, y), with its opacity baked into the alpha. Returns true when something was cropped. */
-function place(dst: Uint8ClampedArray, dw: number, dh: number, src: Uint8ClampedArray, sw: number, sh: number, x: number, y: number, opacity: number): boolean {
+/**
+ * A cel's RGBA as the block of the canvas it covers, with its opacity baked into the alpha and trimmed to what is
+ * painted. Only the cel's own bounds are held, never a canvas-sized picture. `cropped` is true when painted pixels fall
+ * off the canvas.
+ */
+function placeCel(src: Uint8ClampedArray, sw: number, sh: number, x: number, y: number, opacity: number, dw: number, dh: number): { block: Placed; cropped: boolean } {
+  const x0 = Math.max(0, x);
+  const y0 = Math.max(0, y);
+  const x1 = Math.min(dw, x + sw);
+  const y1 = Math.min(dh, y + sh);
+  const bw = Math.max(0, x1 - x0);
+  const bh = Math.max(0, y1 - y0);
   let cropped = false;
+  const out = new Uint8ClampedArray(bw * bh * 4);
   for (let j = 0; j < sh; j++) {
     const ty = y + j;
+    const rowIn = ty >= y0 && ty < y1;
     for (let i = 0; i < sw; i++) {
       const s = (j * sw + i) * 4;
       const a = src[s + 3];
       if (!a) continue;
       const tx = x + i;
-      if (tx < 0 || ty < 0 || tx >= dw || ty >= dh) {
+      if (!rowIn || tx < x0 || tx >= x1) {
         cropped = true;
         continue;
       }
-      const o = (ty * dw + tx) * 4;
-      dst[o] = src[s];
-      dst[o + 1] = src[s + 1];
-      dst[o + 2] = src[s + 2];
-      dst[o + 3] = opacity === 255 ? a : Math.round((a * opacity) / 255);
+      const o = ((ty - y0) * bw + (tx - x0)) * 4;
+      out[o] = src[s];
+      out[o + 1] = src[s + 1];
+      out[o + 2] = src[s + 2];
+      out[o + 3] = opacity === 255 ? a : Math.round((a * opacity) / 255);
     }
   }
-  return cropped;
+  return { block: bw && bh ? trimPixels(out, bw, bh, x0, y0) : { x: 0, y: 0, width: 0, height: 0, pixels: out }, cropped };
 }
 
 /** Turns a tile's flags into Frameling's. */
@@ -253,6 +263,24 @@ export interface Pieces {
 }
 
 const plain = (s: string): string => s.replace(/[\r\n]+/g, ' ').trim();
+
+const hexOf = (c?: [number, number, number, number]): string | undefined => (c && (c[0] || c[1] || c[2]) ? '#' + c.slice(0, 3).map((v) => hex2(v)).join('') : undefined);
+
+/** An Aseprite slice as a Frameling one: its first key's rectangle, with the middle and pivot made absolute. */
+export function sliceFrom(s: AseSlice): { slice: Slice; moves: boolean } {
+  const keys = [...s.keys].sort((a, b) => a.frame - b.frame);
+  const k = keys[0] ?? { frame: 0, x: 0, y: 0, width: 1, height: 1 };
+  const w = Math.max(1, k.width);
+  const h = Math.max(1, k.height);
+  const slice: Slice = { id: uid('sl'), name: plain(s.name) || 'Slice', x: k.x, y: k.y, w, h };
+  // In the file the middle and the pivot are measured from the slice's own top left corner.
+  if (k.center) slice.center = { x: k.x + k.center.x, y: k.y + k.center.y, w: Math.max(1, k.center.width), h: Math.max(1, k.center.height) };
+  if (k.pivot) slice.pivot = { x: k.x + k.pivot.x, y: k.y + k.pivot.y };
+  const color = hexOf(s.userData?.color);
+  if (color) slice.color = color;
+  const moves = keys.some((o) => o.x !== k.x || o.y !== k.y || o.width !== k.width || o.height !== k.height);
+  return { slice, moves };
+}
 
 export function asepritePieces(file: AseFile, name: string, target?: Target): Pieces {
   const notes: string[] = [];
@@ -528,9 +556,12 @@ export function asepritePieces(file: AseFile, name: string, target?: Target): Pi
           scaledRefs++;
         }
       }
-      grab(W * H * 4);
-      const d: PixelDrawing = { id: uid('p'), kind: 'pixel', width: W, height: H, pixels: new Uint8ClampedArray(W * H * 4) };
-      if (place(d.pixels, W, H, px, w, h, x, y, c.opacity) && !croppedLayers.includes(label)) croppedLayers.push(label);
+      // The drawing holds just the cel's own bounds (cut to the canvas and to what is painted).
+      const placed = placeCel(px, w, h, x, y, c.opacity, W, H);
+      grab(placed.block.pixels.byteLength);
+      const bk = placed.block;
+      const d: PixelDrawing = { id: uid('p'), kind: 'pixel', ...(bk.x ? { x: bk.x } : {}), ...(bk.y ? { y: bk.y } : {}), width: bk.width, height: bk.height, pixels: bk.pixels };
+      if (placed.cropped && !croppedLayers.includes(label)) croppedLayers.push(label);
       drawings[d.id] = d;
       made.set(c, d.id);
       return d.id;
@@ -557,7 +588,6 @@ export function asepritePieces(file: AseFile, name: string, target?: Target): Pi
     const from = Math.min(Math.max(0, t.from), file.frames.length - 1);
     const to = Math.min(Math.max(from, t.to), file.frames.length - 1);
     const play = tagPlay(t.direction, t.repeat);
-    if (play.roundedUp) notes.push(`Tag "${plain(t.name) || 'Tag'}" repeats ${t.repeat} times going one way and then the other, and Aseprite counts each direction as one. Frameling counts whole trips there and back, so it plays ${play.repeat} times, which ends back at the start.`);
     clips.push({
       id: uid('k'),
       name: plain(t.name) || 'Tag',
@@ -575,7 +605,16 @@ export function asepritePieces(file: AseFile, name: string, target?: Target): Pi
   if (deep) notes.push(`Frameling folders go ${MAX_FOLDER_DEPTH} levels deep, so ${deep} group${deep === 1 ? '' : 's'} nested deeper became part of the folder around ${deep === 1 ? 'it' : 'them'} (hiding, fading and the name carry over).`);
   if (zIndexed) notes.push(`${zIndexed} cel${zIndexed === 1 ? ' has' : 's have'} a custom stacking order, which is ignored.`);
   if (scaledRefs) notes.push(`${scaledRefs} scaled reference picture${scaledRefs === 1 ? ' was' : 's were'} resized to the size shown in Aseprite.`);
-  if (file.slices.length) notes.push(`${file.slices.length} slice${file.slices.length === 1 ? '' : 's'} (${file.slices.slice(0, 4).map((s) => plain(s.name)).join(', ')}${file.slices.length > 4 ? ', ...' : ''}) are kept in the drawing's notes but not shown.`);
+  // Slices become Frameling slices on the top pixel layer (a slice that moves between frames keeps its first position).
+  if (file.slices.length) {
+    const top = [...layers].reverse().find((l): l is PixelLayer => l.kind === 'pixel' && !l.reference);
+    const made = file.slices.map(sliceFrom);
+    if (top) {
+      top.slices = made.map((m) => m.slice);
+      const moving = made.filter((m) => m.moves).map((m) => `"${plain(m.slice.name)}"`);
+      if (moving.length) notes.push(`${listOf(moving)} ${moving.length === 1 ? 'moves' : 'move'} between frames in Aseprite; Frameling slices stay put, so ${moving.length === 1 ? 'it keeps' : 'they keep'} the first position.`);
+    } else notes.push(`${file.slices.length} slice${file.slices.length === 1 ? '' : 's'} could not be shown because the file has no pixel layer; ${file.slices.length === 1 ? 'it is' : 'they are'} kept in the drawing's notes.`);
+  }
   if (file.pixelWidth !== file.pixelHeight) notes.push(`The pixels are ${file.pixelWidth}:${file.pixelHeight} in Aseprite and show square here.`);
 
   const ext: Ext = {

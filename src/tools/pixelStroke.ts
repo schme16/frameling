@@ -6,6 +6,7 @@ import type { Doc, PixelLayer } from '../core/format';
 import { PixelPerfect, bresenham, brushOffsets, docToPixel, type PixelShape, type PxPt, type RGBA } from '../canvas/pixels';
 import { PixelSession } from './pixelSession';
 import { solidInk, type Ink } from '../pixel/ink';
+import { toolEvent } from './toolEvents';
 
 /** Where the last pixel stroke ended, per layer, for Shift+click lines. */
 let lastEnd: { docId: string; layerId: string; x: number; y: number } | null = null;
@@ -98,6 +99,7 @@ export class PixelStroke {
     this.session.paint(p.x, p.y, this.ink);
     const dropped = this.perfect.add(p);
     if (dropped) {
+      toolEvent('perfectFix');
       const k = this.key(dropped);
       const n = (this.counts.get(k) ?? 1) - 1;
       this.counts.set(k, n);

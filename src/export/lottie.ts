@@ -26,14 +26,14 @@
  * multiplies opacity into each shape) fades the group as one too. Effects don't play in that renderer.
  * Pictures made from effects are cropped, shared when they repeat and stored as WebP or PNG (see PICTURE_LOOKS).
  */
-import type { Cel, Doc, Easing, Gradient, InstanceShape, Layer, LayerEffect, ParticlesShape, PathShape, PixelDrawing, Shape, StrokeShape, SubPath, TextShape, Tween } from '../core/format';
+import type { Cel, Doc, Easing, Gradient, InstanceShape, Layer, LayerEffect, PathShape, PixelDrawing, Shape, StrokeShape, SubPath, Tween } from '../core/format';
 import { celAt } from '../core/doc';
 import { decompose, isInstance, isPosed, layersHaveLook, pairInstances, poseAt, symbolContent, symbolFrame, tweenInstance, type Mat, type PosedInstance } from '../core/symbols';
 import { drawingBox, effectReach, renderFrame, strokeOutline } from '../core/render';
 import { folderChain } from '../core/folders';
 import { buildPlan, planLayers, type PlanNode, type PlanStep } from '../effects/plan';
 import { activeEffects, effectInfo, isNoop, valuesAt } from '../effects/model';
-import { canTraceText, glyphSprites, particleSprites, SPRITE_UNIT, type ParticleSprite } from './sprites';
+import { shapeExportOf } from './shapeExport';
 import { cameraViewAt, cameraViewOn, activeCamera, depthAnchor, depthScale, parallaxFactor } from '../core/camera';
 import { encodePng } from '../io/png';
 import { fitClosed, sampleMidpointSpline } from './curve-fit';
@@ -87,7 +87,7 @@ const FIT_TOLERANCE = 0.05;
 // How far a value may stray from the straight line between kept keys (see smoothTrack): what no one can see.
 /** Stage pixels (positions, path points, gradient ends). */
 const POS_TOL = 0.25;
-const PATH_TOL = 0.05;
+const PATH_TOL = 0.25;
 /** Colour channels and gradient stops, 0..1: half a step of 8-bit colour. */
 const COLOUR_TOL = 0.004;
 /** Opacity in percent. */
@@ -98,8 +98,14 @@ const SCALE_TOL = 0.25;
 const ANGLE_TOL = 0.5;
 // A symbol copy can be as big as the stage, so a hair of scale or turn is many pixels at its edge: tighter.
 const COPY_POS_TOL = 0.05;
+/** How far a moving shape's points may stray from a pure move of its first frame (see rigidMoves). */
+const RIGID_TOL = 0.05;
+/** Separate x and y tracks may each stray this share of the position tolerance (their errors add up). */
+const SPLIT_TOL = 0.4;
 const COPY_SCALE_TOL = 0.02;
 const COPY_ANGLE_TOL = 0.02;
+/** How far (stage pixels, on screen) the camera's anchor, zoom and turn may stray: it moves every layer, so it is held tighter than a position. */
+const CAMERA_PX = 0.1;
 
 /** `#rgb[a]` / `#rrggbb[aa]` as Lottie's 0..1 rgb and an alpha. */
 export function lottieColor(c: string): { rgb: [number, number, number]; alpha: number } {
@@ -224,7 +230,7 @@ export function strokeOutlinePath(s: StrokeShape, fit = false): Json | null {
 const LC = { butt: 1, round: 2, square: 3 } as const;
 const LJ = { miter: 1, round: 2, bevel: 3 } as const;
 
-type Tint = { color: string; amount: number };
+export type Tint = { color: string; amount: number };
 
 /** How strongly a tint mixes in: its amount (never over 1) times the colour's own see-through, as the canvas paints it. */
 function tintStrength(t: Tint): { a: number; rgb: [number, number, number] } {
@@ -244,7 +250,9 @@ function tinted(c: string, tints: Tint[]): { rgb: [number, number, number]; alph
 }
 
 /** A group transform for one frame (sprites: letters and particles). */
-interface Tr {
+export interface Tr {
+  /** Where the group turns and scales about (the origin when missing). */
+  a?: number[];
   p: number[];
   s: number[];
   r: number;
@@ -280,20 +288,25 @@ export function lottieGradient(gr: Gradient, tints: Tint[]): LottieGrad {
 }
 
 /** The parts of a plain shape that can change from frame to frame. */
-interface ShapeLook {
+/** The radius of a soft sprite's fade: half of what particles draw their sprites at before scaling. */
+const SOFT_RADIUS = 5;
+
+export interface ShapeLook {
   paths: Json[];
   fill: { rgb: number[]; o: number; grad?: LottieGrad } | null;
   stroke: { rgb: number[]; o: number; w: number; lc: number; lj: number; grad?: LottieGrad } | null;
-  /** A soft round sprite: a radial fade of this colour (SPRITE_UNIT across). */
+  /** A soft round sprite: a radial fade of this colour (SOFT_RADIUS wide, the size particle sprites are drawn at). */
   soft?: { rgb: number[] };
   /** Sprites move as a group; plain shapes have their points in stage space and no transform. */
   tr?: Tr;
+  /** Tolerances for the group's tracks, when they are tighter than the sprites' (see rigidMoves). */
+  trTol?: { p: number; s: number; r: number };
 }
 
 /** `still`: the shape doesn't change over the run, so a brush outline may be refitted with fewer points. */
 function lookOf(s: Exclude<Shape, InstanceShape>, tints: Tint[], still = false): ShapeLook {
   // Text and particles are turned into sprites before this (expandSprites).
-  if (s.type === 'text' || s.type === 'particles') return { paths: [], fill: null, stroke: null };
+  if (s.type !== 'stroke' && s.type !== 'fill' && s.type !== 'path') return { paths: [], fill: null, stroke: null };
   if (s.type === 'stroke') {
     const c = tinted(s.color, tints);
     const p = strokeOutlinePath(s, still);
@@ -350,6 +363,38 @@ export function smoothTrack(values: (number | number[])[], times: number[], tol:
   const vs = values.map((v) => (Array.isArray(v) ? v : [v]));
   if (vs.every((v) => same(v, vs[0]))) return stat(values[0]);
   return { a: 1, k: fitKeys(vs, times, tol).map(({ i, ease }, n, all) => keyOf(vs[i], times[i], n < all.length - 1 ? vs[all[n + 1].i] : undefined, ease)) };
+}
+
+/**
+ * A position from one `[x, y]` per frame, as x and y tracks of their own (and how many bytes that saves over one
+ * track), when x and y keep different timing (drag sideways, gravity down): one shared easing needs a key wherever
+ * either of them bends. Null when the shared track is as small or the position doesn't move.
+ */
+export function splitPosition(values: number[][], times: number[], tol: number): { x: Json; y: Json; saved: number } | null {
+  const joint = smoothTrack(values, times, tol);
+  if (joint.a === 0 || values.length < 4) return null;
+  const x = smoothTrack(values.map((v) => v[0]), times, tol * SPLIT_TOL);
+  const y = smoothTrack(values.map((v) => v[1]), times, tol * SPLIT_TOL);
+  return { x, y, saved: JSON.stringify(joint).length - JSON.stringify([x, y]).length };
+}
+
+/**
+ * A layer's position from one `[x, y]` per frame: Lottie's separated position (`s: true`, an x and a y track) when
+ * that is clearly smaller than one track with a shared easing. Players read the easing of each separated track on its
+ * own, so ThorVG (which reads only the first easing value of a multi-dimensional key) follows it best. Shape groups
+ * can't use this (lottie-web ignores it there): see `shapeGroup`.
+ */
+export function positionTrack(values: number[][], times: number[], tol: number): Json {
+  const joint = smoothTrack(values, times, tol);
+  const sp = splitPosition(values, times, tol);
+  return sp && sp.saved > 0.15 * JSON.stringify(joint).length ? { s: true, x: sp.x, y: sp.y } : joint;
+}
+
+/** A one-number track as a position track along one axis (the other stays 0). */
+export function along(track: Json, axis: 0 | 1): Json {
+  const at = (v: number) => (axis === 0 ? [v, 0] : [0, v]);
+  if (!track.a) return stat(at(track.k[0] ?? track.k));
+  return { a: 1, k: track.k.map((key: Json) => ({ ...key, s: at(key.s[0]) })) };
 }
 
 /** A key: the value, and how it moves to the next key's (held when they are the same). */
@@ -412,6 +457,63 @@ function fitSegment(vs: number[][], times: number[], a: number, j: number, tol: 
     if (g < 0 || g > 1) return null;
   }
   return off(r) <= tol ? r : null;
+}
+
+/**
+ * Moving shapes whose points are the same on every frame but carried along by a turn, a shift and maybe a uniform
+ * scale (a posed bone part, a spinning logo) are written as one path with an animated group transform: a few eased
+ * keys instead of a whole path per frame, and the turn is exact where blending the points frame to frame would cut the
+ * corner. Null when the paths aren't such a move to within `RIGID_TOL` stage pixels on every frame.
+ */
+export function rigidMoves(looks: ShapeLook[]): ShapeLook[] | null {
+  const first = looks[0];
+  if (looks.length < 3 || !first.paths.length || looks.some((l) => l.tr || l.soft || l.fill?.grad || l.stroke?.grad)) return null;
+  const same0 = (l: ShapeLook) => l.paths.length === first.paths.length && l.paths.every((p, k) => p.v.length === first.paths[k].v.length && p.c === first.paths[k].c);
+  if (!looks.every(same0) || looks.every((l) => same(l.paths, first.paths))) return null;
+  const pts = (l: ShapeLook) => l.paths.flatMap((p) => p.v as number[][]);
+  const hands = (l: ShapeLook) => l.paths.flatMap((p) => [...(p.i as number[][]), ...(p.o as number[][])]);
+  const u0 = pts(first);
+  const h0 = hands(first);
+  const n = u0.length;
+  const cx = u0.reduce((s, q) => s + q[0], 0) / n;
+  const cy = u0.reduce((s, q) => s + q[1], 0) / n;
+  const uu = u0.reduce((s, q) => s + (q[0] - cx) ** 2 + (q[1] - cy) ** 2, 0);
+  if (uu < 1e-6) return null;
+  const radius = Math.max(1, ...u0.map((q) => Math.hypot(q[0] - cx, q[1] - cy)), ...h0.map((q) => Math.hypot(q[0], q[1])));
+  const trs: Tr[] = [];
+  for (const l of looks) {
+    const w = pts(l);
+    const wx = w.reduce((s, q) => s + q[0], 0) / n;
+    const wy = w.reduce((s, q) => s + q[1], 0) / n;
+    let dot = 0;
+    let crs = 0;
+    for (let j = 0; j < n; j++) {
+      const ax = u0[j][0] - cx;
+      const ay = u0[j][1] - cy;
+      const bx = w[j][0] - wx;
+      const by = w[j][1] - wy;
+      dot += ax * bx + ay * by;
+      crs += ax * by - ay * bx;
+    }
+    const a = dot / uu;
+    const b = crs / uu;
+    // Where the centre of the first frame's points ends up, and the move as a matrix: x' = a x - b y + e.
+    const e = wx - (a * cx - b * cy);
+    const f = wy - (b * cx + a * cy);
+    for (let j = 0; j < n; j++) if (Math.hypot(a * u0[j][0] - b * u0[j][1] + e - w[j][0], b * u0[j][0] + a * u0[j][1] + f - w[j][1]) > RIGID_TOL) return null;
+    const h = hands(l);
+    for (let j = 0; j < h.length; j++) if (Math.hypot(a * h0[j][0] - b * h0[j][1] - h[j][0], b * h0[j][0] + a * h0[j][1] - h[j][1]) > RIGID_TOL) return null;
+    // A line's width is scaled with the group, so with a line the scale must stay 1.
+    if ((first.stroke || l.stroke) && Math.abs(Math.hypot(a, b) - 1) > 0.001) return null;
+    // A scale that is one to within a hair of a pixel at the far edge is one.
+    const k = Math.hypot(a, b);
+    const snap = Math.abs(k - 1) * radius < RIGID_TOL / 2 ? k : 1;
+    const t = decompose([a / snap, b / snap, -b / snap, a / snap, e, f], { x: cx, y: cy });
+    trs.push({ a: [r3(cx), r3(cy)], p: [r3(t.x), r3(t.y)], s: [r3(t.scaleX * 100), r3(t.scaleY * 100)], r: r3(t.rotation), sk: 0, o: 100 });
+  }
+  // Tolerances as stage pixels at the shape's far edge.
+  const trTol = { p: RIGID_TOL, s: Math.max(0.005, ((RIGID_TOL) / radius) * 100), r: Math.max(0.01, ((RIGID_TOL) / radius) * (180 / Math.PI)) };
+  return looks.map((l, k) => ({ ...l, paths: first.paths, tr: trs[k], trTol }));
 }
 
 /** The frames that still need a key, each with the easing to the next one. Frames in between lie within `tol`. */
@@ -492,7 +594,15 @@ function gradProps(first: LottieGrad, per: (LottieGrad | undefined)[], times: nu
 }
 
 /** A group for one shape over a run of frames. */
-function shapeGroup(looks: ShapeLook[], times: number[], name: string): Json | null {
+function shapeGroup(raw: ShapeLook[], times: number[], name: string): Json | null {
+  const plain = shapeGroupOf(raw, times, name);
+  const rigid = plain && rigidMoves(raw);
+  if (!rigid) return plain;
+  const moved = shapeGroupOf(rigid, times, name);
+  return moved && JSON.stringify(moved).length < JSON.stringify(plain).length ? moved : plain;
+}
+
+function shapeGroupOf(looks: ShapeLook[], times: number[], name: string): Json | null {
   const it: Json[] = [];
   const nPaths = Math.max(...looks.map((l) => l.paths.length));
   if (!nPaths) return null;
@@ -534,21 +644,37 @@ function shapeGroup(looks: ShapeLook[], times: number[], name: string): Json | n
     // The canvas's soft puff: full colour in the middle, two thirds at 45%, gone at the edge.
     const f = looks.find((l) => l.soft)!.soft!;
     const stops = (c: number[]) => [0, ...c, 0.45, ...c, 1, ...c, 0, 1, 0.45, r3(0xaa / 255), 1, 0];
-    it.push({ ty: 'gf', nm: 'Soft', o: stat(100), r: 1, t: 2, s: stat([0, 0]), e: stat([SPRITE_UNIT / 2, 0]), h: stat(0), a: stat(0), g: { p: 3, k: smoothTrack(looks.map((l) => stops((l.soft ?? f).rgb)), times, COLOUR_TOL) } });
+    it.push({ ty: 'gf', nm: 'Soft', o: stat(100), r: 1, t: 2, s: stat([0, 0]), e: stat([SOFT_RADIUS, 0]), h: stat(0), a: stat(0), g: { p: 3, k: smoothTrack(looks.map((l) => stops((l.soft ?? f).rgb)), times, COLOUR_TOL) } });
   }
+  let outer: Json | null = null;
   if (looks[0].tr) {
     const trs = looks.map((l) => l.tr!);
+    const tol = looks[0].trTol ?? { p: POS_TOL, s: SCALE_TOL, r: ANGLE_TOL };
+    // x and y with their own timing go in two nested groups (an outer one that only moves sideways, an inner one that
+    // moves up and down and does the rest): a whole transform per axis is not needed, and lottie-web and ThorVG both
+    // play nested groups.
+    const sp = splitPosition(trs.map((t) => t.p), times, tol.p);
+    const nested = !!sp && sp.x.a === 1 && sp.y.a === 1;
+    if (nested) outer = { ...noTr(), p: along(sp!.x, 0) };
     it.push({
       ty: 'tr',
-      a: stat([0, 0]),
-      p: smoothTrack(trs.map((t) => t.p), times, POS_TOL),
-      s: smoothTrack(trs.map((t) => t.s), times, SCALE_TOL),
-      r: smoothTrack(unwrap(trs.map((t) => t.r)), times, ANGLE_TOL),
+      a: stat(trs[0].a ?? [0, 0]),
+      p: nested ? along(sp!.y, 1) : smoothTrack(trs.map((t) => t.p), times, tol.p),
+      s: smoothTrack(trs.map((t) => t.s), times, tol.s),
+      r: smoothTrack(unwrap(trs.map((t) => t.r)), times, tol.r),
       o: smoothTrack(trs.map((t) => t.o), times, OPACITY_TOL),
-      sk: smoothTrack(trs.map((t) => t.sk), times, ANGLE_TOL),
+      sk: smoothTrack(trs.map((t) => t.sk), times, tol.r),
       sa: stat(0),
     });
   } else it.push(noTr());
+  if (outer) {
+    // Only when the two groups together are clearly smaller than one.
+    const joint = it.map((x) => (x.ty === 'tr' ? { ...x, p: smoothTrack(looks.map((l) => l.tr!.p), times, looks[0].trTol?.p ?? POS_TOL) } : x));
+    const two = { ty: 'gr', nm: name, it: [{ ty: 'gr', nm: 'Move', it }, outer] };
+    const one = { ty: 'gr', nm: name, it: joint };
+    if (JSON.stringify(two).length < JSON.stringify(one).length * 0.9) return two;
+    return one;
+  }
   return { ty: 'gr', nm: name, it };
 }
 
@@ -581,46 +707,8 @@ function starSub(r: number, points: number, inner: number): SubPath {
   return { closed: true, points: pts };
 }
 
-/** One particle as a sprite look (symbol sprites are handled as precomp layers instead). */
-function particleLook(s: ParticlesShape, sp: ParticleSprite, tints: Tint[]): ShapeLook {
-  const c = tinted(sp.p.color, tints);
-  const R = SPRITE_UNIT / 2;
-  const fillOf = { rgb: c.rgb, o: r3(c.alpha * 100) };
-  const p = sp.p;
-  switch (s.sprite) {
-    case 'streak': {
-      const len = Math.max(p.size * 2, Math.hypot(p.vx, p.vy) * 0.05);
-      const ang = Math.atan2(p.vy, p.vx);
-      // Drawn along its own axis and moved by the group, so only the length changes the path and the position keys thin out.
-      const line: SubPath = { closed: false, points: [{ x: 0, y: 0 }, { x: -len, y: 0 }] };
-      const cos = Math.cos(ang);
-      const sin = Math.sin(ang);
-      return { paths: [lottiePath(line)], fill: null, stroke: { rgb: c.rgb, o: r3(c.alpha * 100), w: r3(p.size), lc: 2, lj: 2 }, tr: trOf([cos, sin, -sin, cos, p.x, p.y], sp.alpha) };
-    }
-    case 'flake': {
-      const lines: SubPath[] = [0, 1, 2].map((i) => {
-        const a = (i * Math.PI) / 3;
-        return { closed: false, points: [{ x: Math.cos(a) * R, y: Math.sin(a) * R }, { x: -Math.cos(a) * R, y: -Math.sin(a) * R }] };
-      });
-      const k = Math.max(1e-4, p.size / SPRITE_UNIT);
-      return { paths: lines.map(lottiePath), fill: null, stroke: { rgb: c.rgb, o: r3(c.alpha * 100), w: r3(Math.max(0.6, p.size / 9) / k), lc: 2, lj: 2 }, tr: trOf(sp.m, sp.alpha) };
-    }
-    case 'soft':
-      return { paths: [lottiePath(circleSub(R))], fill: null, stroke: null, soft: { rgb: c.rgb }, tr: trOf(sp.m, sp.alpha) };
-    case 'square':
-      return { paths: [lottiePath(rectSub(-R, -R, SPRITE_UNIT, SPRITE_UNIT))], fill: fillOf, stroke: null, tr: trOf(sp.m, sp.alpha) };
-    case 'confetti':
-      return { paths: [lottiePath(rectSub(-R, -R * 0.5, SPRITE_UNIT, SPRITE_UNIT * 0.5))], fill: fillOf, stroke: null, tr: trOf(sp.m, sp.alpha) };
-    case 'star':
-    case 'spark':
-      return { paths: [lottiePath(starSub(R, s.sprite === 'star' ? 5 : 4, s.sprite === 'star' ? 0.45 : 0.22))], fill: fillOf, stroke: null, tr: trOf(sp.m, sp.alpha) };
-    default:
-      return { paths: [lottiePath(circleSub(R))], fill: fillOf, stroke: null, tr: trOf(sp.m, sp.alpha) };
-  }
-}
-
 /** A symbol used as a particle sprite, on one frame. */
-interface SymbolSprite {
+export interface SymbolSprite {
   type: 'psym';
   symbolId: string;
   m: Mat;
@@ -629,11 +717,11 @@ interface SymbolSprite {
   inner: number;
 }
 /** A sprite look standing in for a shape. */
-interface LookItem {
+export interface LookItem {
   type: 'look';
   look: ShapeLook;
 }
-type Item = Shape | LookItem | SymbolSprite;
+export type Item = Shape | LookItem | SymbolSprite;
 
 /** Copies the nearest shown frame's sprite into frames where it's missing, faded right out. */
 function fillGaps<T extends LookItem | SymbolSprite>(col: (T | null)[], hide: (t: T) => T): T[] | null {
@@ -655,63 +743,41 @@ const hideLook = (l: LookItem): LookItem => ({ type: 'look', look: { ...l.look, 
 const hideSym = (s: SymbolSprite): SymbolSprite => ({ ...s, alpha: 0 });
 
 /**
+ * What a kind of shape that Lottie cannot hold as it is (text, particles) uses to turn itself into sprites: the
+ * number formatting, path and transform makers and gap filling the writer itself uses, so the sprites come out the same.
+ */
+export interface LottieKit {
+  /** Plain words about what did not come across exactly. */
+  note(message: string): void;
+  /** Colour washes in force where the shape sits, innermost first. */
+  tints: Tint[];
+  tinted(c: string, tints: Tint[]): { rgb: [number, number, number]; alpha: number };
+  r3(v: number): number;
+  lottiePath(sp: SubPath): Json;
+  trOf(m: readonly number[], alpha: number): Tr;
+  circleSub(r: number): SubPath;
+  rectSub(x: number, y: number, w: number, h: number): SubPath;
+  starSub(r: number, points: number, inner: number): SubPath;
+  fillGaps<T extends LookItem | SymbolSprite>(col: (T | null)[], hide: (t: T) => T): T[] | null;
+  hideLook(l: LookItem): LookItem;
+  hideSym(s: SymbolSprite): SymbolSprite;
+}
+
+/**
  * Text and particles turned into sprites, frame by frame, with the same number of items on every frame: a letter per
  * letter, and a slot per particle that's alive on any of the frames (faded out where it isn't).
  */
 function expandSprites(ctx: Ctx, shapes: Shape[][]): Item[][] {
+  const kit: LottieKit = { note: (m) => void ctx.notes.add(m), tints: ctx.tints, tinted, r3, lottiePath, trOf, circleSub, rectSub, starSub, fillGaps, hideLook, hideSym };
   const n = shapes[0].length;
   const frames = shapes.length;
   const cols: Item[][][] = [];
   for (let k = 0; k < n; k++) {
     const s0 = shapes[0][k];
-    if (s0.type === 'text') {
-      if (!canTraceText()) {
-        ctx.notes.add('Text was left out (it needs the app to trace the letters).');
-        cols.push(shapes.map(() => []));
-        continue;
-      }
-      const per = shapes.map((list) => glyphSprites(list[k] as TextShape));
-      const most = Math.max(...per.map((g) => g.length));
-      const items: LookItem[][] = [];
-      for (let g = 0; g < most; g++) {
-        const col = per.map((gs, f): LookItem | null => {
-          const gl = gs[g];
-          if (!gl) return null;
-          const t = shapes[f][k] as TextShape;
-          const c = tinted(t.color, ctx.tints);
-          return { type: 'look', look: { paths: gl.paths.map(lottiePath), fill: { rgb: c.rgb, o: r3(c.alpha * 100) }, stroke: null, tr: trOf(gl.m, gl.alpha) } };
-        });
-        const full = fillGaps(col, hideLook);
-        if (full) items.push(full);
-      }
-      cols.push(shapes.map((_, f) => items.map((c) => c[f])));
-      continue;
-    }
-    if (s0.type === 'particles') {
-      const per = shapes.map((list) => particleSprites(list[k] as ParticlesShape));
-      const keys: number[] = [];
-      const seen = new Set<number>();
-      for (const list of per)
-        for (const sp of list)
-          if (!seen.has(sp.key)) {
-            seen.add(sp.key);
-            keys.push(sp.key);
-          }
-      const byKey = per.map((list) => new Map(list.map((sp) => [sp.key, sp])));
-      const slots: Item[][] = [];
-      for (const key of keys) {
-        const col = byKey.map((m, f): LookItem | SymbolSprite | null => {
-          const sp = m.get(key);
-          if (!sp) return null;
-          const s = shapes[f][k] as ParticlesShape;
-          if (sp.sprite) return { type: 'psym', symbolId: s.symbolId!, m: sp.m, alpha: sp.alpha, inner: sp.inner ?? 0 };
-          return { type: 'look', look: particleLook(s, sp, ctx.tints) };
-        });
-        const first = col.find((x) => x);
-        const full = first?.type === 'psym' ? fillGaps(col as (SymbolSprite | null)[], hideSym) : fillGaps(col as (LookItem | null)[], hideLook);
-        if (full) slots.push(full);
-      }
-      cols.push(shapes.map((_, f) => slots.map((c) => c[f])));
+    // Text and particles (and any kind like them) turn themselves into sprites, through their registered export.
+    const make = s0.type !== 'stroke' && s0.type !== 'fill' && s0.type !== 'path' && s0.type !== 'instance' ? shapeExportOf(s0.type)?.lottie : undefined;
+    if (make) {
+      cols.push(make(kit, shapes.map((list) => list[k])));
       continue;
     }
     cols.push(shapes.map((list) => [list[k]]));
@@ -770,7 +836,7 @@ function instanceKs(insts: InstanceShape[], times: number[], origin: { x: number
     ks.o = keyed((s) => [r3(s.opacity * 100)]);
     return ks;
   }
-  ks.p = smoothTrack(insts.map((s) => [r3(s.transform.x), r3(s.transform.y)]), times, COPY_POS_TOL);
+  ks.p = positionTrack(insts.map((s) => [r3(s.transform.x), r3(s.transform.y)]), times, COPY_POS_TOL);
   ks.s = smoothTrack(insts.map((s) => [r3(s.transform.scaleX * 100), r3(s.transform.scaleY * 100)]), times, COPY_SCALE_TOL);
   ks.r = smoothTrack(insts.map((s) => r3(s.transform.rotation)), times, COPY_ANGLE_TOL);
   ks.sk = smoothTrack(insts.map((s) => r3(-s.transform.skew)), times, COPY_ANGLE_TOL);
@@ -886,7 +952,7 @@ function meshPoint(mesh: PosedMesh, x: number, y: number): XY {
 }
 
 function mapShape(s: Exclude<Shape, InstanceShape>, f: (p: XY) => XY, alpha: number): Shape {
-  if (s.type === 'text' || s.type === 'particles') return s;
+  if (s.type !== 'stroke' && s.type !== 'fill' && s.type !== 'path') return s;
   const sub = (paths: SubPath[]) => paths.map((sp) => ({ closed: sp.closed, points: sp.points.map((q) => ({ ...f(q), ...(q.c1 && q.c2 ? { c1: f(q.c1), c2: f(q.c2) } : {}) })) }));
   if (s.type === 'stroke') {
     // A brush stroke goes as its outline, so its width bends with the part too.
@@ -955,9 +1021,11 @@ function layerPieces(ctx: Ctx, layer: Layer, from: number, to: number, offset: n
     if (layer.kind === 'pixel' || layer.kind === 'tilemap') {
       const d = doc.drawings[cel.drawingId];
       const px = d?.kind === 'pixel' ? d : d?.kind === 'tilemap' ? flattenTilemap(doc, d, cel.start) : undefined;
-      if (!px) continue;
+      if (!px || px.width < 1 || px.height < 1) continue;
       const id = imageAsset(ctx, px.id + ':' + layer.pixelSize, px, layer.pixelSize);
-      out.push(tag({ ty: 2, refId: id, ip: a - offset, op: b + 1 - offset, st: 0, sr: 1, ks: { a: stat([0, 0]), p: stat([0, 0]), s: stat([100, 100]), r: stat(0), o: stat(100) } }));
+      // A pixel drawing holds only its painted block, which sits (x, y) art pixels in from the corner.
+      const at = [(px.x ?? 0) * layer.pixelSize, (px.y ?? 0) * layer.pixelSize];
+      out.push(tag({ ty: 2, refId: id, ip: a - offset, op: b + 1 - offset, st: 0, sr: 1, ks: { a: stat([0, 0]), p: stat(at), s: stat([100, 100]), r: stat(0), o: stat(100) } }));
       continue;
     }
     const shared = (uses.get(cel.drawingId) ?? 0) > 1 ? sharedDrawing(ctx, layer, cel, uses.get(cel.drawingId)!) : undefined;
@@ -1083,7 +1151,7 @@ function vectorRuns(ctx: Ctx, layer: Layer, cel: Cel, frames: number[], rawShape
       const ts = sps.map((s) => decompose(s.m, c.def.origin));
       const ks: Json = {
         a: stat([r3(c.def.origin.x + ctx.pad), r3(c.def.origin.y + ctx.pad)]),
-        p: smoothTrack(ts.map((t) => [r3(t.x), r3(t.y)]), times, POS_TOL),
+        p: positionTrack(ts.map((t) => [r3(t.x), r3(t.y)]), times, POS_TOL),
         s: smoothTrack(ts.map((t) => [r3(t.scaleX * 100), r3(t.scaleY * 100)]), times, SCALE_TOL),
         r: smoothTrack(unwrap(ts.map((t) => r3(t.rotation))), times, ANGLE_TOL),
         sk: smoothTrack(ts.map((t) => r3(-t.skew)), times, ANGLE_TOL),
@@ -1577,9 +1645,12 @@ function cameraNulls(doc: Doc, from: number, to: number, depths: number[], first
   const times = frames.map((f) => f - from);
   const cx = doc.width / 2;
   const cy = doc.height / 2;
+  const reach = Math.hypot(doc.width, doc.height) / 2;
   for (const depth of [...new Set(depths)]) {
     const fac = parallaxFactor(depth);
     const ind = firstInd + nulls.length;
+    // An anchor off by a little shows that much times the zoom; a zoom or turn off by a little shows more the further out it is.
+    const topScale = Math.max(1, ...views.map((v) => depthScale(v, fac)));
     nulls.push({
       ty: 3,
       ind,
@@ -1589,10 +1660,11 @@ function cameraNulls(doc: Doc, from: number, to: number, depths: number[], first
       st: 0,
       sr: 1,
       ks: {
-        a: track(views.map((v) => { const an = depthAnchor(doc, v, fac); return [r3(an.x), r3(an.y)]; }), times, true),
+        // Eased keys instead of one per frame: x and y (and the two scale axes) share an easing, as a camera move does.
+        a: smoothTrack(views.map((v) => { const an = depthAnchor(doc, v, fac); return [r3(an.x), r3(an.y)]; }), times, CAMERA_PX / topScale),
         p: stat([r3(cx), r3(cy)]),
-        s: track(views.map((v) => r3(depthScale(v, fac) * 100)).map((z) => [z, z]), times, true),
-        r: track(views.map((v) => r3(-v.rotation)), times, true),
+        s: smoothTrack(views.map((v) => r3(depthScale(v, fac) * 100)).map((z) => [z, z]), times, (CAMERA_PX / reach) * 100),
+        r: smoothTrack(unwrap(views.map((v) => -v.rotation)), times, (CAMERA_PX / reach) * (180 / Math.PI)),
         o: stat(100),
       },
     });

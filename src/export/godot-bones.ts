@@ -15,8 +15,8 @@ import { celAt } from '../core/doc';
 import { nextKey } from '../core/symbols';
 import { poseKeyAt, rigPoseAt, type RigLayer } from '../rig/pose';
 import { minv, mmul, restMatrix, stretchOf, type Mat } from '../rig/math';
-import type { Animation } from './sheet';
-import { bonesRigs, groupLayout, type GroupItem, type BonesPart, type BonesScope, type BonesTexture, type NativeBlend, type NestedInstance } from './godot-bones-scope';
+import { withNativeBounce, type Animation } from './sheet';
+import { bonesRigs, groupLayout, isShaderBlend, type GroupItem, type BonesPart, type BonesScope, type BonesTexture, type NativeBlend, type NestedInstance } from './godot-bones-scope';
 
 export { groupLayout, groupBlocker, maskLinks, carriedMasks, bakeScales, maxStretch, MAX_BAKE, bonesParts, bonesRigs, bonesScope, bonesStage, bonesNotes, allScopes, hasBonesToExport, restPicture, riggedSymbols, partLook, nativeBlend, BonesNotes } from './godot-bones-scope';
 export type { PartMask, BonesPart, BonesScope, BonesTexture, InstState, NativeBlend, NestedInstance, PartKind, PartLook } from './godot-bones-scope';
@@ -152,11 +152,37 @@ function same(a: number[], b: number[], eps: number): boolean {
 // ---------------------------------------------------------------- shaders
 
 /** The file a symbol's colour wash needs for a blend (mixing colours is the one thing Godot's modulate can't do). */
-export const tintShaderName = (b: NativeBlend) => `frameling-tint-${b}.gdshader`;
+export const tintShaderName = (b: NativeBlend) => (isShaderBlend(b) ? `frameling-blend-${b}.gdshader` : `frameling-tint-${b}.gdshader`);
+
+/** The colour a blend gives against what is behind (cb) for the layer's own colour (cs), the W3C formulas (see src/effects/pixelBlend.ts). */
+const blendExpr: Partial<Record<NativeBlend, string>> = {
+  dodge: 'min(cb + cs, vec3(1.0))',
+  sub: 'max(cb - cs, vec3(0.0))',
+  // Divide: nothing behind stays black, a colour at least as bright as the layer's goes to full, else cb / cs.
+  div: 'mix(min(cb / max(cs, vec3(0.0001)), vec3(1.0)), vec3(0.0), step(cb, vec3(0.0)))',
+};
 
 /** A tiny canvas shader: each colour mixes toward `tint_color` by `tint_amount`, like Frameling's colour wash. */
 export function tintShader(blend: NativeBlend): string {
-  const mode = { mix: 'blend_mix', add: 'blend_add', mul: 'blend_mul' }[blend];
+  if (isShaderBlend(blend))
+    return `// Made by Frameling. A blend mode Godot has no setting for (${{ dodge: 'Glow brighter, plain (linear dodge)', sub: 'Take away (subtract)', div: 'Brighten by dividing (divide)' }[blend as 'dodge']}), done like Frameling does it:
+// the colour behind and the layer's colour go through the formula, and the layer's see-through amount decides how much shows.
+// It also carries the colour wash (tint_color mixed in by tint_amount, 0 to 1) when a symbol is tinted.
+shader_type canvas_item;
+render_mode blend_mix;
+
+uniform sampler2D behind : hint_screen_texture, filter_nearest, repeat_disable;
+uniform vec4 tint_color = vec4(1.0);
+uniform float tint_amount = 0.0;
+
+void fragment() {
+	// COLOR already holds the picture times the node's modulate (straight colour and alpha).
+	vec3 cs = mix(COLOR.rgb, tint_color.rgb, tint_amount);
+	vec3 cb = texture(behind, SCREEN_UV).rgb;
+	COLOR.rgb = ${blendExpr[blend]};
+}
+`;
+  const mode = ({ mix: 'blend_mix', add: 'blend_add', mul: 'blend_mul' } as Record<string, string>)[blend];
   return `// Made by Frameling. A colour wash over a symbol: every colour mixes toward tint_color by tint_amount (0 to 1).
 shader_type canvas_item;
 render_mode ${mode};
@@ -220,6 +246,8 @@ export interface BonesSceneInput {
   nested?: NestedInstance[];
   /** The Godot folder the included shader files go in (res://...). */
   shaderDir?: string;
+  /** Let a looping back and forth clip bounce with the AnimationPlayer's own ping-pong loop (one direction is keyed, the ends show twice). */
+  nativeBounce?: boolean;
 }
 
 /** A bone's place under its parent at rest (output pixels). */
@@ -304,7 +332,9 @@ interface Frames {
 }
 
 function build(o: BonesSceneInput): { text: string; shaders: Set<NativeBlend> } {
-  const { doc, animations } = o;
+  const { doc } = o;
+  const chosen = o.animations.map((a) => withNativeBounce(a, o.nativeBounce));
+  const animations = chosen.map((c) => c.anim);
   const k = o.scale;
   const name = nodeNamer();
   const ext: string[] = [];
@@ -329,7 +359,8 @@ function build(o: BonesSceneInput): { text: string; shaders: Set<NativeBlend> } 
     if (!id) {
       id = `Blend_${b}`;
       blendMats.set(b, id);
-      sub.push(`[sub_resource type="CanvasItemMaterial" id="${id}"]`, `blend_mode = ${b === 'add' ? 1 : 3}`, '');
+      if (isShaderBlend(b)) sub.push(`[sub_resource type="ShaderMaterial" id="${id}"]`, `shader = ${shaderRes(b)}`, '');
+      else sub.push(`[sub_resource type="CanvasItemMaterial" id="${id}"]`, `blend_mode = ${b === 'add' ? 1 : 3}`, '');
     }
     return [`material = SubResource("${id}")`];
   };
@@ -592,11 +623,12 @@ function build(o: BonesSceneInput): { text: string; shaders: Set<NativeBlend> } 
   // Animations.
   const animIds: [string, string][] = [];
   animations.forEach((a, ai) => {
+    const bounces = chosen[ai].bounces;
     const id = `Animation_${ai + 1}`;
     animIds.push([a.name, id]);
     const frames = a.frames.map((f) => o.range.start + f);
     const len = frames.length / a.fps;
-    const lines: string[] = [`[sub_resource type="Animation" id="${id}"]`, `resource_name = ${gdString(a.name)}`, `length = ${gdNum(len)}`, ...(a.loop ? ['loop_mode = 1'] : []), `step = ${gdNum(1 / a.fps)}`];
+    const lines: string[] = [`[sub_resource type="Animation" id="${id}"]`, `resource_name = ${gdString(a.name)}`, `length = ${gdNum(len)}`, ...(bounces ? ['loop_mode = 2'] : a.loop ? ['loop_mode = 1'] : []), `step = ${gdNum(1 / a.fps)}`];
     let ti = 0;
     const track = (path: string, update: 0 | 1, keys: { t: number; trans: number; value: string }[]) => {
       lines.push(

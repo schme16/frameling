@@ -29,13 +29,17 @@ changing them, so an unchanged drawing is never encoded twice, which matters for
 
 ## Version and compatibility rules
 
-- `FORMAT_VERSION` is 1. Every field added since the first commit is optional, so the version has never been bumped
-  and every older file opens unchanged.
+- `FORMAT_VERSION` is 3. Every field added since the first commit is optional, so the version was not bumped until
+  clip repeat counts changed meaning (see the clips note below): `MIGRATIONS[1]` in `file.ts` turns a version 1 file's
+  back and forth repeat counts into the new ones, so every older file still opens and plays as it did. Version 3 is
+  trimmed pixel drawings (see `PixelDrawing`): `MIGRATIONS[2]` changes nothing, because a whole-grid drawing is still
+  a valid drawing. The bump is there because an older build would take a trimmed drawing for the whole grid and
+  misplace it, so it refuses the file instead.
 - A new field must be optional, and missing must mean "the old behaviour". Write it only when it isn't the default
   (the readers drop `onion: true`, `blend: 'normal'`, `s: 1` and so on), so files stay small and diffable.
 - If a change can't be made optional, bump `FORMAT_VERSION` and add a step to `MIGRATIONS` in `file.ts`:
   `MIGRATIONS[n]` turns a version n document into version n + 1, and `migrate()` runs them in order. A missing step
-  means "this file is too old" (`FileProblem`). The list is empty today.
+  means "this file is too old" (`FileProblem`). The list has two steps today (1 to 2, clips; 2 to 3, nothing to change).
 - A file whose manifest version is higher than `FORMAT_VERSION` is refused with "made with a newer Frameling".
 - Older readers drop fields they don't know without a warning (the tween reader builds a new `Tween` from the fields it
   knows). Consequence for `Tween.slice` (added in `9611002`, after which no release was cut when this was checked): a
@@ -64,7 +68,7 @@ Refused outright:
 - A pixel drawing whose PNG entry is missing, misnamed, undecodable or the wrong size. A tilemap drawing with a
   bad size (over 4,000,000 cells, or `cells` the wrong length).
 - A layer of an unknown kind, or two layers with the same id.
-- Entries over 1 GB unzipped are skipped, and only `manifest.json`, `doc.json`, `pixels/` and `audio/` are unzipped.
+- Entries over 1 GB unzipped are skipped, and only `manifest.json`, `doc.json`, `pixels/` and `audio/` are unzipped. A pixel drawing's `x` and `y` are clamped to 0 or more (and at most 1048576).
 
 Repaired, with a warning:
 
@@ -157,6 +161,7 @@ feature brought it rather than a date that means much. Fields without a note wer
 | `perspective?` | `{points: {x, y}[]}` | One or two vanishing points, never exported (`4dfae46`). |
 | `artboards?` | `Artboard[]` | (`d7cd660`) |
 | `activeArtboard?` | Id | Missing = the first (`d7cd660`). |
+| `sprite?` | `{way}` | How a pixel sprite is built: `picture`, `animation`, `boards` (artboards are the frames) or `sheet` (artboards are separate sprites). Missing = worked out from the document (`inferWay` in `src/pixel/way.ts`), so old files open unchanged. Never added to a file that does not say it. |
 
 ### Artboards
 
@@ -174,20 +179,31 @@ are optional, so older files open unchanged. An older Frameling, which doesn't k
 artboard it can't read and leaves it out with a warning (the original is untouched).
 
 ```
-VariationOverrides = { stage?: Patch, layers?: ListOverride<Layer, ListOverride<Cel>>, drawings?: { [originalDrawingId]: DrawingOverride } }
+VariationOverrides = { stage?: Patch, layers?: ListOverride<Layer, ListOverride<Cel>>, drawings?: { [originalDrawingId]: DrawingOverride },
+                       audio?: ListOverride<AudioClip>, palette?: DocPalette }
 Patch              = { set?: { [property]: value }, del?: property[] }       // only what changed
 ListOverride<T,S>  = { items?: { [id]: { patch?: Patch, sub?: S } }, removed?: id[], added?: T[], order?: id[] }
-DrawingOverride    = { replaced?: true, patch?: Patch, shapes?: ListOverride<Shape>, view?: Patch }
+DrawingOverride    = { replaced?: true, patch?: Patch, shapes?: ListOverride<Shape>, view?: Patch, diff?: DrawingDiff }
+DrawingDiff        = { rect?: Rect, rects?: Rect[], cells?: [slot, value, slot, value, ...] }   // file only
+Rect               = { x, y, w, h, pixels: "pixels/diff_<id>.png" }
 ```
 
 - `stage` patches `width`, `height`, `background`, `length`, `clips`, `markers`, `flow`, `guides`, `inOut`,
-  `perspective`. Sound is not overridable (it follows the original).
+  `perspective`.
+- `audio` is by sound clip id: `items[id].patch` changes `volume`, `muted`, `start` or `name`; `removed` are the
+  original's clips this variation leaves out; `added` are clips made in it (their bytes in `audio/<id>.<ext>`, `data` names
+  the entry, as for any sound). `palette` is `{ changes: [{ from, to }] }`: the pixel palette colours this variation changed, `from` the original's colour and `to` its own. Pixels of the original in a changed colour show in the new one; everything else follows the original. An older file's whole palette (`{ name, colors }`) is read as changes.
 - `layers` is by layer id. `items[id].patch` changes layer properties (`visible`, `opacity`, `name`, `blend`, ...);
   `items[id].sub` is the same shape for that layer's cels (`start`, `length`, `tween`, ...; a cel's `drawingId`
   names the original's drawing or one the variation made). `added` are layers (and cels, shapes) made in the
   variation; `order` is only written when the order is not "the original's, then the added ones".
 - `drawings` is by the *original's* drawing id: a recolour is `shapes.items[shapeId].patch.set.fill`, a changed camera
-  key is `view`, a drawing the variation redrew whole (pixels, tiles) is `replaced: true`.
+  key is `view`, a drawing the variation redrew whole (pixels, tiles) is `replaced: true`. In a file a redrawn
+  drawing also has `diff` when the change is smaller than the drawing: `rect` is the changed rectangle (a PNG of just
+  that rectangle in `pixels/diff_<id>.png`), `rects` is up to 8 of them when the changes are far apart (a file with one
+  change keeps writing `rect`; readers take both, at most 64 rects) and `cells` the changed tile slots. Such a drawing is not in `drawings`;
+  reading builds it from the original's drawing and drops `diff`. Without `diff`, the whole drawing is stored in
+  `drawings` as `<original id>~<artboard id>`.
 - **Which drawings are in `doc.drawings`.** Drawings made in the variation are ordinary entries. A drawing it redrew
   whole is stored as `<original id>~<artboard id>`. Every other `<id>~<artboard id>` entry in memory is worked out
   from the original and never written.
@@ -228,10 +244,20 @@ Per kind:
 - `VectorLayer` (`kind: 'vector'`): `drawMode?: 'object' | 'merge'` (merge drawing, `e2de242`), `rig?: Rig` (makes it a
   bones layer, `0b554d4`).
 - `PixelLayer` (`kind: 'pixel'`): `pixelSize` (document pixels per art pixel, whole, 1 or more), `paletteLock?`
-  (`6f256d0`).
+  (`6f256d0`), `slices?: Slice[]` (named rectangles on the sprite, see below; optional, no version bump).
 - `TilemapLayer` (`kind: 'tilemap'`, `cd7bd81`): `pixelSize`.
 - `CameraLayer` (`kind: 'camera'`, `f587827`): draws nothing; the first visible camera layer frames playback and
   every export.
+
+### Slices (pixel layers)
+
+`PixelLayer.slices` is an optional list of named rectangles on the sprite, in the layer's art pixels (0, 0 is the layer's
+top left): `{ id, name, x, y, w, h, center?, pivot?, color? }`. `center` (`{ x, y, w, h }`, inside the slice) makes it a
+9-patch: the border around it keeps its size when the picture is stretched. `pivot` (`{ x, y }`, may sit outside) is where
+the sprite turns and sits. The reader keeps a slice with a name and a size of 1 or more, rounds its numbers, drops a
+damaged centre or pivot, and renames a repeated id. A slice does not change over time; Aseprite slices that move between
+frames import at their first position (the full list stays in `ext.aseprite`). Exports gather the slices of every visible
+pixel layer of the board and write them into the engine data (see the sprite sheet export).
 
 ### Cels
 
@@ -245,9 +271,17 @@ means the hold reaches the next key and gives way when someone draws on a later 
 
 - `VectorDrawing`: `{id, kind: 'vector', shapes, pose?}`. Shapes paint in order, index 0 at the back. `pose` is the
   bone pose at this key on a bones layer (`0b554d4`).
-- `PixelDrawing`: `{id, kind: 'pixel', width, height, pixels: Uint8ClampedArray}`. RGBA the size of the layer's art
-  grid (`ceil(doc.width / pixelSize)` by `ceil(doc.height / pixelSize)`), or of the tile for tile frames. A PNG in the
-  file. Edits replace the array, never mutate it.
+- `PixelDrawing`: `{id, kind: 'pixel', x?, y?, width, height, pixels: Uint8ClampedArray}`. RGBA of the block that is
+  held: `width` x `height` art pixels at (`x`, `y`) from the top left of the layer's art grid (`ceil(doc.width /
+  pixelSize)` by `ceil(doc.height / pixelSize)`); missing `x` and `y` are 0. A drawing holds only the painted part
+  (every pixel that is not fully see-through is inside the block), so a 24 x 24 sprite on a 2000 x 2000 page is 2 KB,
+  not 16 MB. A blank drawing is 0 x 0 with no bytes. Older files, and tile frames (always exactly one tile), are the
+  whole grid at (0, 0), which is still valid. A PNG in the file holds the block, and `doc.json` has `x` and `y` beside
+  it (left out when 0). A blank drawing has `width: 0, height: 0, pixels: ""` and no PNG entry. Edits replace the
+  array, never mutate it. Code that wants the whole grid (fills, selections, filters) calls `gridPixels(d, gridW,
+  gridH)` and writes a grid-sized result with `setGridPixels` (`src/core/pixelBounds.ts`), which trims it. The block is
+  trimmed after every edit, when a file is opened (older files too) and when one is saved; tile frames are never
+  trimmed. Variation changes (`DiffRect`) stay in grid coordinates and are worked out over both drawings' blocks.
 - `TilemapDrawing` (`cd7bd81`): `{id, kind: 'tilemap', columns, rows, cells: Uint32Array}`. Row by row; 0 is empty,
   otherwise a tile key in the low 28 bits (`TILE_KEY_MASK`) plus `TILE_FLIP_X`, `TILE_FLIP_Y`, `TILE_FLIP_D` (the
   same bits Tiled uses). Edits replace the array.
@@ -327,10 +361,21 @@ See `docs/effects.md`.
 
 - `Clip`: `{id, name, start, end, loop, direction?, repeat?}`, frames inclusive. `loop` repeats forever. When it is
   false the clip plays `repeat` times (a whole number from 1 to 999, missing = once) and holds the frame it ends on.
-  `direction` is `'forward'` (missing), `'reverse'`, `'pingpong'` or `'pingpong-reverse'`. One pass of back and forth
-  is 0..n-1 and back down to 0 with each end shown once per turn (a pass shows 2n-2 frames), so a clip that plays
-  it once ends where it started. Old files have neither field and play forward, exactly as before. The rules and the
-  maths are in `src/core/clipPlay.ts` (`directedPosition` for playback, `bakedPositions` for exports).
+  `direction` is `'forward'` (missing), `'reverse'`, `'pingpong'` or `'pingpong-reverse'`. Forward and backward count
+  whole passes. Back and forth counts **each direction as one**, like Aseprite: with 4 frames, repeat 1 is there only
+  (1 2 3 4), 2 is there and back (1 2 3 4 3 2 1), 3 is there, back, there (1 2 3 4 3 2 1 2 3 4); the turn frames show
+  once, and it holds the frame its last direction ends on. Forever goes round 0..n-1, n-2..1 without end.
+  **Format 1** counted whole trips there and back (repeat N = 2N directions, and no repeat = one trip), so opening a
+  version 1 file doubles the repeat of every back and forth clip (a clip with `loop: false` and no repeat gets 2); loops,
+  forward and backward clips are untouched, and artboards' clips are migrated too (test/clips/clipPlay.test.ts). Old
+  files have neither field on plain clips and play forward, exactly as before. The rules and the maths are in
+  `src/core/clipPlay.ts` (`directedPosition` for playback, `bakedPositions` for exports, `stillPositions` for stills).
+  Exports: GIF, APNG, video, animated SVG and sheet frame lists bake the order and the repeats; a PNG sequence, PDF and
+  Illustrator pages hold each frame once, in the order the clip starts (`stillPositions`). Godot and Phaser can use their
+  own ping-pong for back and forth clips (preference `export.clipEngineBounce`, default baked): Godot's SpriteFrames
+  `"loop": 2` (LOOP_PINGPONG) and the AnimationPlayer's `loop_mode = 2` for a clip that loops, Phaser's `yoyo` for a loop
+  or an even number of directions. In Godot those show each end twice (checked in 4.8), so the default bakes; Phaser 3.90's yoyo plays
+  the same as the baked list (each end once, checked in the real engine).
   `Marker`: `{id, name, frame}`. `Swatch`: `{id, name, color}`.
 - `DocPalette`: `{name, colors, ramps?}`; `ramps` lists where each ramp starts.
 - `Tileset`: `{tileWidth, tileHeight, tiles, nextKey, gridX?, gridY?}`. `Tile`: `{key, name, frames: {drawingId, duration}[]}`. Keys

@@ -57,7 +57,7 @@ What's in `test/`, by folder:
 | `lipsync/` | Audio analysis, mouth charts, applying to a symbol. |
 | `particles/` | Emitter maths and determinism. |
 | `perf/` | Work counting against a fake canvas (`fakeCanvas.ts`): cache hits, bitmap builds, look-ahead depth. Never asserts on time. |
-| `pixel/` | Pixel tools, maths, paths, the pixel workspace. |
+| `pixel/` | Pixel tools, maths, paths, the pixel workspace. Picture import: `import-gif.test.ts` (the GIF reader against real GIFs in `test/fixtures/gif`, made by `scripts/fixtures/make-gif-fixtures.py` with Pillow, ImageMagick and ffmpeg, next to what Pillow says each frame is), `import-sheet.test.ts` (grid and gap slicing, sheet JSON, the four ways, adding to a drawing), `import-dialog.test.tsx`; slices: `slices.test.ts` (maths, file, Aseprite, the export text), `slices-ui.test.tsx` (tool and panel); `import-aseprite-bin.test.ts` needs `ASEPRITE_BIN`. `way.test.ts` (the four ways, conversions both directions, the file's `sprite.way`), `wells.test.ts` (Paint and Back, the Spray), `ways-flow.test.tsx` (Quill's chooser and starter cards, the Aseprite keys ask, the change dialog, the layout that follows the way, moments), `sheet-mode.test.ts`, `quests-ways.test.ts`. Under `?debug` the "ask once" pixel questions and Quill's moments are skipped so scripts are not blocked; `__framelingPixel.ask(true)` turns them back on for a picture of them (`src/pixel/harness.ts`). |
 | `platform/` | The web bridge (IndexedDB through `fake-indexeddb`). |
 | `plugins/` | Manifest checks, manager, ops, runtime and sandbox (with `harness.ts`). |
 | `quests/` | Quest engine, groups, hooks, predicates, the library and the runtime. |
@@ -70,7 +70,7 @@ What's in `test/`, by folder:
 | `tiles/` | Tile model, copy with alpha, export and edit. `godot-tiles-e2e` needs `GODOT_BIN`. |
 | `timeline/` | Timeline ops, geometry, playback, play range, hold until next, tween offer, the detailed timeline and both panels. |
 | `tools/` | Brush, selection, shapes, merge mode, wells, hold drawing, drawing gaps, follow-ups. |
-| `ui/` | Dock (model, live state and workspaces, floating windows and dragging), right dock, panelInfo, tab fitting, menus, keyboard and keys, palette, themes, sounds, onboarding, Quill (runtime, view, goodbye, lines), starters, example cards, and the help checks. |
+| `ui/` | Dock (model, live state and workspaces, stacked tab groups, floating windows and dragging, tool group names), right dock, panelInfo, tab fitting, menus, keyboard and keys, palette, themes, sounds, onboarding, Quill (runtime, view, goodbye, lines), starters, example cards, and the help checks. |
 | top level | `smoke.test.ts` (package targets), `core.test.ts` (store, undo, registries), `case-sensitive-imports.test.ts`. |
 
 Godot checks inside vitest:
@@ -183,7 +183,7 @@ xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/export.cjs [out
 | Option | |
 |---|---|
 | `outDir` | Where outputs and `report.json` go (default: a new folder in the system temp dir). |
-| `--only=gif,mp4` | Only these formats: `png svg pngseq apng gif mp4 webm sheet interactives psd pdf ai prores godot-bones`. |
+| `--only=gif,mp4` | Only these formats: `png svg pngseq apng gif mp4 webm sheet interactives psd pdf ai prores godot-bones svganim`. |
 | `--templates=a,b` | Only these templates: `bouncing-ball hero-sprites blank-vector blank-pixel bouncing-logo stress kitchen-sink`. |
 | `--skip=files` | Skip save/open/autosave/close. `--skip=godot` skips the Godot checks. |
 | `--show` | Leave the window visible. |
@@ -206,12 +206,23 @@ WEB_ENGINES=1 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/e
 ```
 
 Loads the exported sheets in the real thing, in a window on the virtual display (it has to be shown: a hidden window stops
-WebGL animation frames). Phaser 3.90.0 and PixiJS 8.23.0 are pinned in `scripts/e2e/web-engines/engines.cjs`. The first run
+WebGL animation frames). Phaser 3.90.0, Phaser 4.2.1 and PixiJS 8.23.0 are pinned in `scripts/e2e/web-engines/engines.cjs`. The first run
 downloads each package from the npm registry, checks it against the pinned sha512, and unpacks its browser build into
 `~/.cache/frameling-web-engines` (override with `WEB_ENGINES_DIR`), so nothing goes into `package.json`. The check
 serves the export folder over http on 127.0.0.1 and loads it the way a web page would, with the code from the help topics.
-Chromium needs the software GL switches the harness sets (`ignore-gpu-blocklist`, SwiftShader), or WebGL is refused on a
-virtual display.
+Chromium needs `ignore-gpu-blocklist` (the harness sets it), or WebGL is refused on a virtual display; `enable-unsafe-webgpu`
+adds WebGPU, which Electron 45 (Chromium 156) then has on the software Vulkan driver. Do not add `use-angle swiftshader` or
+`use-gl angle`: with them the GPU process drops the WebGPU device.
+
+Cases that set `allRenderers` (`play-*`, `hero-sprites` `*-grid`, `scaled*`, the plain `phaser` and `pixi` cases) load the sheet in
+every renderer: Phaser 3.90 and 4.2.1, each in WebGL and canvas, and PixiJS 8 in WebGL and WebGPU. WebGPU is probed in the
+page first; with no adapter the run says "PixiJS WebGPU skipped: ..." and goes on. Phaser's canvas renderer is checked with a
+looser limit (mean under 10 of 255) and the report says how many frames were not pixel-exact: a plain `drawImage` of the same
+atlas is exact, so the difference is in the engine's canvas drawing (scaled and trimmed sprites). Looked into (`scaled2x-phaser`, Phaser 3.90 and 4.2.1): the canvas picture of a trimmed sprite shown at 2x is one pixel wider and taller
+than Frameling's (about 260 of 4096 pixels per frame, 0.5x is within 25 levels). `roundPixels`, `pixelArt` off and `antialias` off change
+nothing, so there is no game setting for it and the Phaser help recommends WebGL for pixel art. To try a setting on the harness:
+`PHASER_RENDER='{"roundPixels":true}' PHASER_STRICT=1` (adds to the game's `render` config and holds the canvas renderer to the exact limit,
+saving the failing pictures as `_web-fail-*.png`).
 
 | Engine | What is checked |
 |---|---|
@@ -227,6 +238,16 @@ file the export did not write is a failure too. On failure the picture the engin
 two, see-through), `-clips` and `-names` (extra clips, one that does not loop, awkward names), and `css-separate`. Timing is
 real time, so each animation gets three goes and passes if one is within the limits.
 
+Two more groups of cases (hero and bouncing ball, in all three engines):
+
+- `scaled2x-<engine>` (art-size sheet) and `scaled0.5x-<engine>` (full-size sheet): the sprite is drawn at 2x and 0.5x with
+  nearest-neighbour filtering (Phaser `pixelArt`, PixiJS `scaleMode = 'nearest'`, CSS `image-rendering: pixelated` with
+  `zoom`) and compared with the frame scaled by ImageMagick's point filter. Packed, trimmed, padding 2, extrude 1.
+- `fps12.5-<engine>` and `fps23.976-<engine>` (with the play clips): the document's frame rate is not a whole number (the
+  Settings box only takes whole ones; a file or a plugin can carry any). Phaser's `frameRate`, PixiJS's `animationSpeed` and
+  the CSS durations must still give frames / fps. `gif`, `apng`, `mp4` and `webm` have `fps12.5` and `fps23.976` cases too
+  (GIF keeps the total time with whole 1/100 s delays, APNG with whole milliseconds, video stores the rate).
+
 ### Clips that play another way (direction and repeat)
 
 `export.cjs` adds these cases for `bouncing-ball` (its own clips are cleared first; the clips are `PLAY_CLIPS`: `swing`
@@ -237,8 +258,34 @@ back and forth and looping, `thrice` forward 3 times, `back` backward once, `pla
   `FramelingSheetCheck.cs` also checks the wrap mode), and with `WEB_ENGINES=1` `play-phaser`, `play-pixi`, `play-css`.
   Phaser must read `repeat` 2 for `thrice` (one pass, N - 1), CSS `iteration-count` 3, and every frame of every
   animation is compared with the app's own PNG of the document frame the rules say it shows.
-- `gif`, `apng`, `mp4`, `webm`: `clip-pingpong`, `clip-repeat3`, `clip-backward` export one clip and check that picture k
-  is the document frame the order rules give.
+  `play-godot` also plays every animation on an AnimatedSprite2D in real Godot (`--fixed-fps`, one run per animation) and
+  compares the picture at each tick with the order the clip should play.
+- Back and forth counts each direction as one repeat, so `BOUNCE_CLIPS` (16 frames, one clip each, no overlap) has `swing`
+  (loops), `swingback` (loops from the end), `bounce2` (there and back) and `bounce3` (there, back, there): cases
+  `bounce-godot`, `bounce-unity`, `bounce-phaser`, `bounce-pixi`, `bounce-css`, and with the preference "Back-and-forth
+  clips in game engines" set to the engine's own ping-pong (`setChoice('export.clipEngineBounce', 'engine')`)
+  `bounce-godot-native` (SpriteFrames `"loop": 2`: one direction listed, and real Godot shows the end frames twice) and
+  `bounce-phaser-native` (`yoyo`: one direction listed, `repeat` N - 1 round trips, and real Phaser 3.90 plays the same
+  order as the baked list). `--only=godot-bones-bounce` loads the skeleton export in Godot and reads the
+  AnimationPlayer: baked is a loop of 2n - 2 frames (mode 1), native is `loop_mode = 2` over n frames and the animation
+  time goes up and back down; a clip with a set number of directions stays baked.
+- `godot-bones`: loads each Godot bones case in real Godot and compares five frames with Frameling's PNG (rmse) plus single-pixel
+  probes. `--section=bones-nested-fade,bones-blend-subtract` runs just those cases (`bones-blend-linear-dodge`, `-subtract` and
+  `-divide` check the blend shader; `bones-nested-fade` the fade inside a tinted fade). Probes with `compatTol` run twice: on the
+  Compatibility renderer (OpenGL) with that looser tolerance, because its CanvasGroup buffer keeps alpha in 4 steps (RGB10_A2) while
+  the window is opaque, and on the Mobile renderer (Vulkan, skipped with a note when it cannot start) with `tol`.
+- `gif`, `apng`, `mp4`, `webm`: `clip-pingpong`, `clip-pingpong-reverse`, `clip-bounce2`, `clip-bounce3`, `clip-repeat3`,
+  `clip-backward` export one clip and check that picture k is the document frame the order rules give. `pngseq` runs the
+  same cases and holds each frame once, in the order the clip starts (`stillOrder`), whatever the repeat. The loop flag of a
+  GIF or APNG follows the clip unless the box was changed by hand.
+
+- `svganim` (the Moving SVG): `clip-pingpong`, `clip-repeat3`, `clip-backward`, `defaults` for bouncing-ball, and `defaults`
+  for the Explosion template, played for real. The SVG is put in a web page over white in a Chromium window, its CSS animations
+  are paused and set to the middle of each moment with the Web Animations API, and the window is photographed. Each picture
+  must match the app's PNG of the document frame that moment shows (so the clip is checked in play order, rmse under 0.02,
+  and nearer its own frame than the ones next to it); after the end a loop starts over and anything else holds its last
+  frame; durations and iteration counts are read back. Smoke puffs are radial gradients in SVG, matching the app's soft falloff,
+  so the Explosion uses the same limit.
 
 The expected order is written out again in `export.cjs` (`oracleOrder`, from `docs/format.md`), not taken from the
 app's code, and the app's own export plan has to agree with it.
@@ -337,12 +384,15 @@ mismatch there doesn't fail the run), plus `overlap` (faded layer, folder and sy
 `heavy-effects` (moving Glow and Outline over 36 frames). `QUIET=1` leaves out the per-frame lines. The size is taken before lottie-web plays the file (it adds fields to the data it is given). Small RMSE changes
 between runs of a size or tolerance change (a few hundredths) are pixel rounding; the tolerances in `lottie.ts` (`FIT_TOLERANCE`, `*_TOL`) were chosen so
 they stay at that level, so re-run this and compare the table before and after changing one.
+The camera's anchor, zoom and turn are fitted with eased keys (`cameraNulls` in `lottie.ts`: one shared ease per segment, within 0.1 px on screen at the far corner; check `camera`, `tpl:camera-parallax` and `tpl:title-card`: a few hundredths of RMSE more than one key per frame, because lottie-web's own easing is only approximate, and the keyframes drop from 33 KB to 4 KB in the camera template). `symbol-gravity` (symbol sprites with drag and gravity: separated x/y position on layers) and `puppet-skin` (the puppet with a squashed chest, a stretched thigh and a skinned body: parts that bend, not only turn) are in the list for the motion code (`positionTrack`, the nested move groups and `rigidMoves` in `lottie.ts`). Group transforms can't use Lottie's separated position (lottie-web ignores it there), so particles use two nested groups instead. For a before and after run, add a worktree at the old commit, copy `vector-check-page.ts` into it and run the same command in both.
 
 ### dotLottie in the dotLottie player: scripts/e2e/dotlottie-check.cjs
 
-Plays a document as plain JSON and as a `.lottie` in the dotLottie web player (ThorVG, run in Chromium) and prints the sizes, the RMSE of each
+Plays a document as plain JSON and as a `.lottie` (layout 2, then layout 1; `DOTLOTTIE_VERSION=2` or `1` picks one) in the dotLottie web player (ThorVG, run in Chromium) and prints the sizes, the RMSE of each
 against Frameling's frames and how far the two players are from each other (0 means the zip carries everything, pictures included). The
-player isn't a dependency: unpack a pinned copy (`npm pack @lottiefiles/dotlottie-web@0.81.0`) and point `DOTLOTTIE_DIR` at its `package` folder.
+player isn't a dependency: unpack a pinned copy (`npm pack @lottiefiles/dotlottie-web@0.83.1`) and point `DOTLOTTIE_DIR` at its `package` folder.
+
+With layout 2 it also checks the loop setting: a half-second animation is written with loop on and off, started the way a site starts a file's state machine (`stateMachineLoad` and `stateMachineStart`, or the `stateMachineId` option), and must keep playing and wrap around (on) or end on its last frame (off). Layout 2's manifest has no loop field, so `dotlottie.ts` writes a one-state state machine (`s/loop.json` or `s/once.json`, a `PlaybackState` with `loop` and `autoplay`). The web player does not start a state machine by itself from the manifest's `initial`, and it ignores layout 1's manifest `loop` and `autoplay` (the page's own options decide), so the unit tests (`test/export/dotlottie.test.ts`) check what is written and this script checks that dotlottie-web plays it. Repeating a clip N times isn't carried: a Lottie file has no repeat count and the exporter doesn't bake the passes in.
 
 ```bash
 DOTLOTTIE_DIR=$PWD/pkg/package ONLY=tpl:hero-sprites,heavy-effects xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/dotlottie-check.cjs
@@ -365,7 +415,10 @@ stage) and runs every artboard export through the real app: this artboard, each 
 subset, the sprite sheet atlas, and all in order as one with Fit and with Fill (PNG sequence, GIF, MP4, WebM). Outputs
 are read back with ImageMagick, ffprobe and unzip: sizes, zip contents, atlas JSON, and pixel colours (the bars, the
 crop, what is hidden off the stage). Then it clicks with real mouse events (Select and Brush, and a name label) to
-check the open artboard, the stage and the Timeline panel follow, and that Undo goes back.
+check the open artboard, the stage and the Timeline panel follow, and that Undo goes back. Last it exports four pixel boards as the
+frames of one sprite, as a sprite sheet for every engine, and reads each engine's files back to one animation with the
+frames in board order. `GODOT_BIN` also loads it in Godot and `WEB_ENGINES=1` in Phaser, PixiJS and CSS; `--only=frames-sheet`
+runs just this part.
 
 ```bash
 npm run build
@@ -397,6 +450,28 @@ slow (2000 frames in order over 2 s, or a painted step p95 over 100 ms) or a sha
 ```bash
 npm run build
 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/selection.cjs [outDir]
+```
+
+## Layers panel end to end: scripts/e2e/layers-panel.cjs
+
+Opens a document of five layers and two folders (shown top first: e, folder Q holding d, c, folder P holding b, a) and
+drives the nested Layers panel in the real window. Each move is checked in the panel (the row order and every row's
+`aria-level`) and in the document (which folder each layer is in), then undone with a real Ctrl+Z (exactly one undo step,
+back to the same layers and rows) and redone. Drags: a layer into a folder (the middle of the folder row), into a folder inside
+a folder, above and below a layer (the edges of its row), onto a layer inside a folder (it joins that folder), a folder into a
+folder, above a folder, below a layer, a folder dropped inside itself and a layer dropped on itself (both do nothing and make no undo
+step). Keys: Alt+Up, Down, Left and Right on layers and on folders (the keyboard focus stays on the row; moves that cannot happen do
+nothing). Fold and unfold with the twisty button and with Left and Right (the rows leave and return, `aria-expanded` follows, the
+document and the undo history are untouched), Left on a layer goes to its folder, a drop on a folded folder's bottom edge goes below
+it. Last, the three-level `aria-level` values and that levels never jump by more than one.
+
+Keys, clicks and undo are real input events. A drag is not: Chromium starts a drag through the operating system, which does not
+finish when the mouse is synthesised, so the script dispatches the same DragEvents (dragstart, dragover at a real point inside the
+row, drop, dragend) on the real rows; the panel's own handlers and the Move command run as for a person's drag.
+
+```bash
+npm run build
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/layers-panel.cjs [outDir]
 ```
 
 ## Pixel drawing through a turned camera: scripts/e2e/pixel-camera.cjs
@@ -525,6 +600,7 @@ scripts/docs/encode.sh <outDir>/<clip> <name> [posterFrame] [width]
 Extra steps: `{"log": "js"}` prints a result; `{"drag": ..., "delay": 8, "mods": ["shift"]}` draws slowly with keys held;
 `{"wheel": [x, y], "dy": -100, "count": 4, "mods": ["shift"]}` turns the mouse wheel (page deltas, negative = up = zoom in) and
 `{"pinch": [x, y], "dy": -6, "count": 12}` does a trackpad pinch (Ctrl + small wheel steps, as Chromium delivers it);
+`{"rdrag": [[x, y], ...]}` and `{"rclick": [x, y]}` are the same with the right mouse button (a right-click paints with Back in the Pixel workspace);
 `{"shot": "name", "crop": [x, y, w, h]}` or `"el": "css selector", "pad": 12`; `{"type": "text"}` sets the focused
 input; `{"rec": "name", "crop": [...], "every": 60}` starts recording frames and `{"rec": "stop"}` writes them with a
 timing list into `<outDir>/<name>/`. `--renderer` points at a private `vite build --outDir` so a capture never races
@@ -568,6 +644,27 @@ script already does. `--renderer <dir>` uses a private `vite build --outDir`; `-
 `test/ui/help-media.test.ts` fails when a topic's media has no entry (so it can't be shot again), when an entry is for no
 topic, or when a file is missing, unused or too big. To add help media for a new topic: write the entry, run
 `npm run help:media -- --only <name>`, look at both files, then set `media: '<name>.png'` on the topic.
+
+## Picture import and slices against the real tools
+
+All opt-in; run what you touch, under xvfb.
+
+```bash
+ASEPRITE_BIN=/path/to/aseprite npx vitest run test/pixel/import-aseprite-bin
+GODOT_BIN=/path/to/godot xvfb-run -a -s "-screen 0 1600x1000x24" npx vitest run test/export/slices-godot-e2e
+UNITY_BIN=/path/to/Unity/Editor/Unity xvfb-run -a -s "-screen 0 1600x1000x24" npx vitest run test/export/slices-unity-e2e   # about 90 seconds
+WEB_ENGINES=1 xvfb-run -a -s "-screen 0 1600x1000x24" npx vitest run test/export/slices-web-e2e
+```
+
+- `import-aseprite-bin`: Aseprite (batch mode) makes a sprite with delays, tags and slices (`test/pixel/lua/sheet.lua`),
+  exports a trimmed sheet with JSON and every frame as a picture. Frameling's sheet import must give the same frames,
+  delays and tags, and its slices must equal both Aseprite's JSON and the slices read from the .aseprite file.
+- `slices-godot-e2e`: the `-slices.tscn` loads in Godot 4: a NinePatchRect with its margins and region, a Sprite2D on an
+  AtlasTexture with the pivot as its origin, and the pixels of each region.
+- `slices-unity-e2e`: a throwaway Unity project, with and without the 2D Sprite package, imports the sheet through the
+  importer script; each sprite's rect, pivot and border are read back (`scripts/e2e/unity/FramelingSliceCheck.cs`).
+- `slices-web-e2e`: Phaser 3 and 4, PixiJS 8 load the atlas (frame regions, pivot, anchor) and Chromium draws the CSS
+  9-patch stretched (`scripts/e2e/web-slices.cjs`).
 
 ## Aseprite import against the real Aseprite
 
@@ -662,3 +759,14 @@ Copies the newest `release/*.AppImage` to `/mnt/109313D2109313D2/lutris-applicat
 - `web`: `npm ci`, `npm test`, `npm run build:web`, uploads `frameling-web`.
 
 CI runs vitest only. The Electron harnesses are run by hand, under xvfb, before merging work they cover.
+
+## Variations edit cost (opt-in)
+
+`VARIATIONS_PERF=1 npx vitest run test/artboards/variationsPerf.test.ts` prints how long an edit takes on a 9,600-key document with one and four variations. It asserts nothing about time, so it's off in `npm test`.
+
+## Export formats and shape kinds in tests
+
+`vitest.config.ts` runs `test/setup-kinds.ts` before every test file: it registers the text and particles shape kinds, loads their export code
+(`loadShapeExports`) and registers the Godot engine, as the app has them at start. A test of the Interactives export card imports
+`test/export/withInteractives.ts`. `test/export/registry.test.ts` covers the export registry (order, plan rules, feature-owned formats, sound with Audio off),
+`test/core/shape-kinds.test.ts` the shape kinds, `test/features/stage3-features.test.ts` Camera, Particles, Text and Godot exports being switched off and on.

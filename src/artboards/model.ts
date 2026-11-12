@@ -11,6 +11,7 @@ import { cameraInverse, cameraViewOn } from '../core/camera';
 import { newPixelLayer, newVectorLayer, pruneDrawings, uid } from '../core/doc';
 import { rootDoc } from '../core/symbols';
 import { fileSafe } from '../export/plan';
+import { basePalette, resolvePalette } from './paletteOverride';
 import { barColorFor, currentFit, currentPictureSize, fitPlacement, sameSize, type FitMode, type Placement } from './fit';
 
 /** The id of the artboard a document without any has. */
@@ -169,6 +170,8 @@ export function artboardDoc(doc: Doc, id: Id): Doc {
   delete out.activeArtboard;
   delete out.editing;
   if (a.content) putContent(out, a.content);
+  // A variation with a colourway of its own.
+  if (a.overrides?.palette) out.palette = resolvePalette(basePalette(root), a.overrides.palette);
   if (hasArtboards(root)) {
     out.name = exportNameOf(root, a.id);
     const used = usedDrawings(out);

@@ -129,8 +129,12 @@ each registration inside `withOwner(id, ...)` (`src/core/owners.ts`); every regi
 `ownedUndo`, so `setFeatureOn(id, false)` takes away exactly that feature's things and `true` puts them back, no restart.
 Choices live in `localStorage` `frameling.features.v1` (the ids turned off). A feature with `legacy: true` still registers
 when its folder is imported (`src/features/planned.ts`) and is not offered in Preferences > Features until it is converted.
-Converted so far: Lip sync, Audio, Clip flow and Interactives (`src/lipsync`, `src/audio`, `src/flow`, `src/interactives`
-`index.ts`, copy one). Audio shows its rows through timeline slots (`src/timeline/slots.ts`: `registerTimelinePart` for
+Converted so far: Lip sync, Audio, Clip flow, Interactives, Camera, Particles, Text and Godot exports (`src/lipsync`, `src/audio`, `src/flow`, `src/interactives`,
+`src/camera`, `src/particles`, `src/text` `index.ts`, and `src/export/godot.ts`; copy one). Only Tiles and Rig are still `legacy` (planned): their data is
+read by `core/tilemap.ts` and `core/symbols.ts` (layer kinds and bone binding), which needs layer-kind registries first. Godot exports has no document data, so it
+has no `usedBy`; its sprite sheet engine card is a registered engine (`registerEngine` in `src/export/types.ts`) and a saved Godot setting falls back while it is off.
+Camera, Particles and Text `usedBy` read the drawing (a camera layer, emitters, text shapes), so opening such a file with the feature off asks to turn it on; their
+lessons carry `features` tags and are hidden; their shape kinds stay registered so the drawing still draws and exports. Audio shows its rows through timeline slots (`src/timeline/slots.ts`: `registerTimelinePart` for
 the layer side, the grid and the header), so `timeline/` imports nothing from it. The data stays in the document
 (`doc.audio`, `doc.flow`); Interactives leaves a marker in `doc.ext.interactives` (written by the Interactives export
 for the drawing it embeds). A tool says which rail group it starts in with `group` and `groupAt` (`src/ui/toolArrange.ts`
@@ -144,11 +148,29 @@ from importing feature folders (a short list of today's back-imports may only sh
 runs the help audit and the shortcut check with every optional feature off. Owner-tagged registrations also include canvas
 hooks, file openers, save hooks, choices and template sources: call them from `activate()`.
 
+**Export formats (a registry).** `src/export/registry.ts` holds `ExporterDef`s: the card (`info`), whether it is `popular`, plan rules
+(`video`, `baked`, `stills`, `loops`, `singleFrame`, `extension`, `fileKind`, `folderTitle`), what it keeps (`carry`, `clipPlayNote`),
+`prepare` (checks this computer, e.g. the video codec), `settle` (asks before saving), `support` (greys the card out with a reason),
+`picked`/`opened` (settings to change when chosen), `repair` (remembered settings), `load()` (the making, `src/export/formats/*.ts`, loaded on
+first use) and `ui()` (the options the dialog shows: `Before`, `Size`, `Notes`, `After`, `summary`, `exported`, in `src/export/options/*.tsx`).
+`FormatId` is a plain string. The built-in formats register in `src/export/builtin.ts` (cards and rules only, so start-up stays light);
+`src/export/types.ts` loads it, so `formatInfo(id)` always works. A feature adds a format through its descriptor
+(`exporters: [...]`), which the host registers as that owner: the Interactives card is in `src/interactives/exporter.ts` and goes with
+the feature. File > Export entries are ordinary commands, so a format's commands ride on the feature's `commands`. `runExport` and
+`exportDocument` find the format through the registry and never name one. **Sound with Audio off:** exports always keep the sound
+(it is in `doc.audio`, so a video mixes it in); Audio owns the sound-related export options, today the `export.mp4Sound` choice (what to do
+when the sound would not play everywhere), so with Audio off nothing is asked and an MP4 stays an MP4.
+
 **How a core area plugs in.** `src/renderer/features.ts` imports every area for its side effects, in order. A folder's
 `index.ts` imports its `commands.ts` and `help.ts` and registers its panel, usually with `lazyPanel`. See
 `src/particles/index.ts` for a small one. Canvas hooks for features: `registerDecoration` (`src/canvas/decorations.ts`),
-`addStageOverlay`, `addCanvasGrab`, `addPointerDownHook` (`src/canvas/controller.ts`). Drawing a new kind of shape is
-wired into `src/core/render.ts` and `src/core/symbols.ts` directly, not through a registry.
+`addStageOverlay`, `addCanvasGrab`, `addPointerDownHook` (`src/canvas/controller.ts`). A new kind of shape (beyond strokes, fills, paths and symbol instances) registers a
+`ShapeKind` (`src/core/shapeKinds.ts`: `draw`, `extend` (box), `bounds`, `hit`, `transform`, `moving`, `pose`, `read`), and the export side registers a
+`ShapeExport` (`src/export/shapeExport.ts`: `svg`, `pdf`, `lottie`, and the `feature` name "What carries over" uses). Text (`src/text/kind.ts`) and particles
+(`src/particles/kind.ts`) do; `render.ts`, `symbols.ts`, `canvas/geometry.ts`, `io/file.ts` and the SVG, PDF/Illustrator and Lottie writers ask the registry and
+import neither. A kind stays registered for good, also while its feature is off, so a drawing that holds one still draws, exports and saves; the export code
+(`text/exports.ts`, `particles/exports.ts`) is loaded on first use (`loadShapeExports`, awaited by the formats that write shapes), and
+`test/setup-kinds.ts` registers and loads them for every test. Lottie hands a kind a `LottieKit` (the writer's own helpers) so its sprites come out the same.
 
 ## The renderer and posing
 
@@ -159,8 +181,8 @@ wired into `src/core/render.ts` and `src/core/symbols.ts` directly, not through 
   `renderFrameToCanvas` returns an `OffscreenCanvas` for exports and thumbnails.
 - `drawLayerAt` poses the layer (`poseAt`), then `drawDrawing`: vector shapes one by one (`drawShape`), pixel drawings
   as a cached canvas, tilemaps through `drawTilemap`. A faded layer reuses one scratch buffer.
-- `drawShape` handles strokes, fills and paths (gradients from `src/core/gradient.ts`), instances, text
-  (`src/text/draw.ts`) and particles (`src/particles/draw.ts`).
+- `drawShape` handles strokes, fills and paths (gradients from `src/core/gradient.ts`) and instances; text
+  (`src/text/draw.ts`) and particles (`src/particles/draw.ts`) draw through their registered shape kinds.
 
 **Posing** (`src/core/symbols.ts`): `poseAt(doc, layer, frame)` returns the drawing as it looks on that frame.
 
@@ -168,7 +190,7 @@ wired into `src/core/render.ts` and `src/core/symbols.ts` directly, not through 
 - A shape tween morphs the two keys (`morphShapes`, `src/core/shape-tween.ts`, with hints).
 - Instances are tweened between keys (easing from `src/core/ease.ts`, spin, motion paths) and posed recursively into
   their symbol's timeline, at most 12 deep.
-- Moving shapes (animated text, particles) get their frame or time stamped on (`poseParticles`). Particles are worked
+- Moving shapes (animated text, particles) get their frame or time stamped on by their kind's `pose` (`poseParticles`). Particles are worked
   out from the seed for each frame (`src/particles/model.ts`), with no step simulation.
 - A layer bound to a bone is wrapped by `boundDrawing` (`src/rig/pose.ts`): moved by the bone, or bent through a skin
   mesh. Bone maths is `src/rig/math.ts`; weights are `src/rig/weights.ts`.
@@ -187,6 +209,15 @@ exporter walk);
 `composite.ts` runs them with a buffer pool per depth and caches effect results; `apply.ts` does each effect;
 `stage.ts` is the editor's way in, reusing the canvas's bitmaps. Symbols with a look inside are composited in their
 own space. See `docs/effects.md`.
+
+**Pixel drawings hold only what is painted** (`src/core/pixelBounds.ts`). A `PixelDrawing` is a block (`x`, `y`, `width`,
+`height`, `pixels`) on the layer's art grid, trimmed after every edit, so `d.pixels` is NOT grid sized and `d.width` is NOT
+the grid width. Code that thinks in grid positions (fills, selections, filters, tests) asks for `gridPixels(d, gw, gh)`
+(read only, a short list of recent copies is kept) and writes back with `setGridPixels`, or through the tool helpers in
+`tools/edit.ts`: `setActivePixels` (a whole-grid array) and `paintActiveGrid` (a copy to change in place). Code that
+only walks pixels one by one (colour counts, recolouring, exports that draw the block) works on the block directly and
+adds `x`, `y` where position matters (`render.ts`, `svg.ts`, `lottie.ts`, `pdf.ts`, `canvas/geometry.ts`). The pixel
+session (`tools/pixelSession.ts`) still paints on a whole grid copy while a stroke is going, and trims on commit.
 
 **Caches and invalidation.** Almost every cache is a `WeakMap` keyed on an object (a shape, a drawing, a pixel array,
 a cel, a doc). Immer makes new objects for anything edited and pixel and tile arrays are replaced, never changed, so

@@ -16,6 +16,7 @@ import { openArtboardExport } from './exportDialog';
 import { VariationBadge, VariationSection } from './VariationPanel';
 import { sourceOf } from './variations';
 import { paintThumbBackdrop } from '../canvas/thumbBackdrop';
+import { artPixelOf, artSizeOf } from '../pixel/units';
 import '../symbols/symbols.css';
 import './artboards.css';
 
@@ -81,7 +82,9 @@ export function ArtboardsPanel() {
       {!many && <Tip>Artboards are separate canvases in one file: a sprite each, or a shot each. They share your palette, swatches and symbols. Add one, or drag on the empty space round the page with the Artboard tool (Shift+W).</Tip>}
       <ul className="sy-list ab-list" aria-label="Artboards">
         {list.map((a, i) => {
-          const { w, h } = sizeOf(doc, a);
+          const px = artPixelOf(artboardDoc(doc, a.id));
+          const doc0 = sizeOf(doc, a);
+          const { w, h } = artSizeOf(doc0.w, doc0.h, px);
           const len = a.content ? a.content.length : doc.length;
           return (
             <li
