@@ -10,6 +10,7 @@ import '../features/debug';
 import '../artboards/debug';
 import '../pixel/debug';
 import { store } from '../core/store';
+import { guard as saveGuard } from '../io/file';
 import { findTemplate } from '../templates';
 import * as tiles from '../tiles/debug';
 import { allCommands, allHelp, allPanels, allTools, getCommand } from '../core/registry';
@@ -35,6 +36,9 @@ import { setLightTableTint } from '../canvas/lightTable';
 import { offerTweenAt } from '../timeline/tweenOffer';
 
 if (new URLSearchParams(location.search).has('debug')) {
+  // Saving keeps each vector drawing's text; in the harnesses such a drawing is frozen so a write in place throws.
+  // Perf runs add &nofreeze to measure the normal path.
+  saveGuard.freeze = !new URLSearchParams(location.search).has('nofreeze');
   (window as unknown as { __frameling: unknown }).__frameling = {
     store,
     run: (id: string) => getCommand(id)?.run(),

@@ -160,28 +160,54 @@ export function contentLength(doc: Doc): number {
   return n;
 }
 
-/** Removes drawings no cel (and no tile) points at. */
+// immer keeps its bookkeeping on a draft under this well-known symbol: the untouched `base_` and, once something under
+// it was read or changed, a `copy_`. Reading those directly gives the current values without a proxy per object.
+const IMMER_STATE = Symbol.for('immer-state');
+
+/**
+ * The plain object or array a draft stands for right now, read without drafting anything under it. Anything that is
+ * not a draft (or whose immer bookkeeping looks different from what we expect) comes back as it is. Read only.
+ */
+export function peek<T>(x: T): T {
+  if (typeof x !== 'object' || x === null) return x;
+  const s = (x as any)[IMMER_STATE];
+  if (!s || typeof s !== 'object') return x;
+  const v = s.copy_ ?? s.base_;
+  return v && typeof v === 'object' ? (v as T) : x;
+}
+
+/**
+ * Removes drawings no cel (and no tile) points at. Works on a plain document or an immer draft; on a draft it reads
+ * through `peek`, so a big document does not get a proxy for every cel just to be searched.
+ */
 export function pruneDrawings(doc: Doc): void {
   const used = new Set<string>();
+  const useLayers = (layers: readonly Layer[] | undefined) => {
+    for (const l of peek(layers) ?? []) for (const c of peek(peek(l).cels)) used.add(peek(c).drawingId);
+  };
   // Symbols' layers (and layers set aside while one is open) use the same drawings.
-  const lists: Layer[][] = [doc.layers, ...(doc.editing ?? []).map((f) => f.layers), ...Object.values(doc.symbols ?? {}).map((s) => s.layers)];
-  // Artboards that aren't open keep their layers aside.
-  for (const a of doc.artboards ?? []) if (a.content) lists.push(a.content.layers);
-  // A variation that is open has its added keys' drawings only in its overrides (its stage points at its own copies).
-  for (const a of doc.artboards ?? []) {
-    const ls = a.overrides?.layers;
+  for (const f of peek(doc.editing) ?? []) useLayers(peek(f).layers);
+  useLayers(doc.layers);
+  for (const s of Object.values(peek(doc.symbols) ?? {})) useLayers(peek(s).layers);
+  for (const a0 of peek(doc.artboards) ?? []) {
+    const a = peek(a0);
+    // Artboards that aren't open keep their layers aside.
+    if (a.content) useLayers(peek(a.content).layers);
+    // A variation that is open has its added keys' drawings only in its overrides (its stage points at its own copies).
+    const ls = peek(peek(a.overrides)?.layers);
     if (!ls) continue;
-    for (const l of ls.added ?? []) for (const c of l.cels) used.add(c.drawingId);
-    for (const it of Object.values(ls.items ?? {})) {
-      for (const c of it.sub?.added ?? []) used.add(c.drawingId);
+    for (const l of peek(ls.added) ?? []) for (const c of peek(peek(l).cels)) used.add(peek(c).drawingId);
+    for (const it0 of Object.values(peek(ls.items) ?? {})) {
+      const it = peek(it0);
+      const sub = peek(it.sub);
+      for (const c of peek(sub?.added) ?? []) used.add(peek(c).drawingId);
       // A key of the original that now shows another drawing is a patch of its drawingId.
-      for (const c of Object.values(it.sub?.items ?? {})) {
-        const id = c.patch?.set?.drawingId;
+      for (const c of Object.values(peek(sub?.items) ?? {})) {
+        const id = peek(peek(peek(c).patch)?.set)?.drawingId;
         if (typeof id === 'string') used.add(id);
       }
     }
   }
-  for (const list of lists) for (const l of list) for (const c of l.cels) used.add(c.drawingId);
-  for (const t of doc.tileset?.tiles ?? []) for (const f of t.frames) used.add(f.drawingId);
-  for (const id of Object.keys(doc.drawings)) if (!used.has(id)) delete doc.drawings[id];
+  for (const t of peek(doc.tileset)?.tiles ?? []) for (const f of peek(peek(t).frames)) used.add(peek(f).drawingId);
+  for (const id of Object.keys(peek(doc.drawings))) if (!used.has(id)) delete doc.drawings[id];
 }

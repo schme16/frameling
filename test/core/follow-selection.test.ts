@@ -357,9 +357,11 @@ describe('the file keeps lineage', () => {
     expect((back.drawings[a.id] as VectorDrawing).shapes.map((s) => s.origin)).toEqual([undefined, undefined, undefined, undefined]);
     expect(back).toEqual(doc);
     // Junk is dropped; the shape is still read.
-    (b.shapes[0] as unknown as { origin: unknown }).origin = 7;
-    (b.shapes[2] as unknown as { origin: unknown }).origin = '';
-    const bad = loadFile(saveFile(doc, '1.0.0')).doc.drawings[b.id] as VectorDrawing;
+    // A drawing is never changed in place once it has been saved (saving keeps its text), so this is a new one.
+    const b2: VectorDrawing = { ...b, shapes: b.shapes.map((s) => ({ ...s })) };
+    (b2.shapes[0] as unknown as { origin: unknown }).origin = 7;
+    (b2.shapes[2] as unknown as { origin: unknown }).origin = '';
+    const bad = loadFile(saveFile({ ...doc, drawings: { ...doc.drawings, [b.id]: b2 } }, '1.0.0')).doc.drawings[b.id] as VectorDrawing;
     expect(bad.shapes).toHaveLength(4);
     expect(bad.shapes.map((s) => s.origin)).toEqual([undefined, 's', undefined, 't']);
   });

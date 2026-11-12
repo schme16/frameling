@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FOLD_STEPS, chooseFold, foldedAt, foldSlack, switchLabel } from '../../src/timeline/headerFold';
+import { FOLD_STEPS, chooseFold, foldedAt, foldSlack, headerChange, switchLabel } from '../../src/timeline/headerFold';
 
 const MAX = FOLD_STEPS.length;
 // Each fold level frees 40px, starting from 1000 needed.
@@ -47,5 +47,24 @@ describe('the more button name', () => {
     expect(switchLabel(0)).toBe('More timeline buttons');
     expect(switchLabel(1)).toBe('More, 1 switch on');
     expect(switchLabel(2)).toBe('More, 2 switches on');
+  });
+});
+
+describe('headerChange', () => {
+  const el = { nodeType: 1 };
+  const text = { nodeType: 3 };
+  const rec = (type: string, added: { nodeType: number }[] = [], removed: { nodeType: number }[] = []) => ({ type, addedNodes: added, removedNodes: removed });
+  it('measures when a button or chip comes or goes', () => {
+    expect(headerChange([rec('childList', [el])], false)).toBe('structure');
+    expect(headerChange([rec('characterData'), rec('childList', [], [el])], false)).toBe('structure');
+  });
+  it('a number changing in place needs no measuring unless the text got longer', () => {
+    // React swaps a counter's text node (a childList record with text nodes only), or edits it in place.
+    expect(headerChange([rec('childList', [text], [text])], false)).toBe('none');
+    expect(headerChange([rec('characterData')], false)).toBe('none');
+    expect(headerChange([rec('characterData')], true)).toBe('grow');
+  });
+  it('a structure change wins over text growth', () => {
+    expect(headerChange([rec('characterData'), rec('childList', [el])], true)).toBe('structure');
   });
 });

@@ -6,7 +6,7 @@ import { uid } from '../core/doc';
 import { store } from '../core/store';
 import type { RecentFile } from '../preload/api';
 import { baseName, desktop, stripExt } from './desktop';
-import { FileProblem, loadFile, saveFileAsync } from './file';
+import { FileProblem, loadFileAsync, saveFileAsync } from './file';
 import { notify } from './notify';
 import { thumbnailOf } from './thumb';
 
@@ -33,7 +33,7 @@ export async function autosaveNow(): Promise<void> {
   const doc = store().rootDoc();
   if (!api || !ui.dirty || doc === lastDoc) return;
   try {
-    const bytes = await saveFileAsync(doc, api.versions.app);
+    const bytes = await saveFileAsync(doc, api.versions.app, new Date(), { reuse: true });
     const thumb = api.kind === 'web' ? await thumbnailOf(rootDoc(doc)) : undefined;
     await api.autosave.write(bytes, { name: doc.name, filePath: ui.filePath, docId: doc.id, ...(thumb ? { thumb } : {}) });
     lastDoc = doc;
@@ -61,7 +61,7 @@ export async function keepUnsavedWork(): Promise<void> {
 export async function loadBytes(bytes: Uint8Array, filePath: string | null, opts: { dirty?: boolean; confirm?: boolean } = {}): Promise<boolean> {
   let loaded;
   try {
-    loaded = loadFile(bytes);
+    loaded = await loadFileAsync(bytes);
   } catch (e) {
     notify(e instanceof FileProblem ? e.message : 'Frameling could not open that file.', 'error');
     return false;
