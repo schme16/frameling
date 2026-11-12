@@ -313,7 +313,7 @@ app.whenReady().then(async () => {
     await reset(win);
     await js(win, `__framelingArtboards.load('variations'); __frameling.showPanel('artboards'); __framelingArtboards.ops.goToArtboard(__frameling.store().get().doc.artboards[1].id, true)`);
     await sleep(400);
-    add('panel artboards (variation open)', await axe(win, '#ui-panel-artboards'));
+    add('panel artboards (variation open)', await axe(win, '.ab-panel'));
   }
 
   // Every tool's options.

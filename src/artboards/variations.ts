@@ -247,6 +247,34 @@ function diffDrawing(b: Drawing, c: Drawing): DrawingOverride | undefined {
   return { replaced: true };
 }
 
+const aliasMemoByLayer = new WeakMap<Layer, { vid: Id; pairs: [Id, Id][] }>();
+
+/** The distinct own drawings (alias id, original id) a layer's keys point at, worked out once per layer object. */
+function aliasesOf(l: Layer, vid: Id): [Id, Id][] {
+  const hit = aliasMemoByLayer.get(l);
+  if (hit && hit.vid === vid) return hit.pairs;
+  const seen = new Set<Id>();
+  const pairs: [Id, Id][] = [];
+  for (const c of l.cels) {
+    if (seen.has(c.drawingId)) continue;
+    seen.add(c.drawingId);
+    const sp = splitAlias(c.drawingId);
+    if (sp && sp.vid === vid) pairs.push([c.drawingId, sp.orig]);
+  }
+  aliasMemoByLayer.set(l, { vid, pairs });
+  return pairs;
+}
+
+const drawingDiffMemo = new WeakMap<Drawing, { base: Drawing; out: DrawingOverride | undefined }>();
+
+function diffDrawingMemo(b: Drawing, c: Drawing): DrawingOverride | undefined {
+  const hit = drawingDiffMemo.get(c);
+  if (hit && hit.base === b) return hit.out;
+  const out = diffDrawing(b, c);
+  drawingDiffMemo.set(c, { base: b, out });
+  return out;
+}
+
 const clean = <T extends object>(o: T): T | undefined => (Object.keys(o).length ? o : undefined);
 
 /**
@@ -262,16 +290,14 @@ export function diffContent(base: ArtboardContent, baseDrawings: Record<Id, Draw
   const drawings: Record<Id, DrawingOverride> = {};
   const seen = new Set<Id>();
   for (const l of cur.layers)
-    for (const c of l.cels) {
-      if (seen.has(c.drawingId)) continue;
-      seen.add(c.drawingId);
-      const sp = splitAlias(c.drawingId);
-      if (!sp || sp.vid !== vid) continue;
-      const b = baseDrawings[sp.orig];
-      const d = curDrawings[c.drawingId];
+    for (const [alias, orig] of aliasesOf(l, vid)) {
+      if (seen.has(alias)) continue;
+      seen.add(alias);
+      const b = baseDrawings[orig];
+      const d = curDrawings[alias];
       if (!b || !d) continue;
-      const o = diffDrawing(b, d);
-      if (o) drawings[sp.orig] = o;
+      const o = diffDrawingMemo(b, d);
+      if (o) drawings[orig] = o;
     }
   const dr = clean(drawings);
   if (dr) out.drawings = dr;
@@ -373,14 +399,13 @@ export function resolveContent(base: ArtboardContent, baseDrawings: Record<Id, D
   );
   const drawings: Record<Id, Drawing> = {};
   for (const l of content.layers)
-    for (const c of l.cels) {
-      const sp = splitAlias(c.drawingId);
-      if (!sp || sp.vid !== vid || drawings[c.drawingId]) continue;
-      const b = baseDrawings[sp.orig];
+    for (const [alias, orig] of aliasesOf(l, vid)) {
+      if (drawings[alias]) continue;
+      const b = baseDrawings[orig];
       if (!b) continue;
-      const dov = o.drawings?.[sp.orig];
-      const mine = have[c.drawingId];
-      drawings[c.drawingId] = dov?.replaced && mine && mine.kind === b.kind ? mine : aliasObject(dov && !dov.replaced ? applyDrawing(b, dov) : b, c.drawingId);
+      const dov = o.drawings?.[orig];
+      const mine = have[alias];
+      drawings[alias] = dov?.replaced && mine && mine.kind === b.kind ? mine : aliasObject(dov && !dov.replaced ? applyDrawing(b, dov) : b, alias);
     }
   return { content, drawings };
 }
