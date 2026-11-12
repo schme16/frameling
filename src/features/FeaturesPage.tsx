@@ -3,7 +3,7 @@
 import { Icon } from '../ui/icons';
 import { openHelp } from '../ui/overlays';
 import { toast } from '../ui/toast';
-import { isFeatureOn, setFeatureOn, switchableFeatures } from './host';
+import { isFeatureOn, needsIt, setFeatureOn, switchableFeatures } from './host';
 import { useFeaturesVersion } from './use';
 
 export function FeaturesPage() {
@@ -20,14 +20,22 @@ export function FeaturesPage() {
       <div>
         {list.map((f) => {
           const on = isFeatureOn(f.id);
+          // One that is on needs this feature: the switch stays, disabled, with the reason under it.
+          const user = on ? needsIt(f.id) : undefined;
+          const noteId = `feature-note-${f.id}`;
           return (
             <div key={f.id} className="ui-pref-row">
               <div className="ui-pref-text">
                 <strong>{f.name}</strong>
                 <span>{f.about}</span>
+                {user && (
+                  <span id={noteId} className="ui-pref-note">
+                    {user.name} needs this. Turn off {user.name} first.
+                  </span>
+                )}
               </div>
               <div className="ui-pref-control">
-                <button type="button" role="switch" aria-checked={on} aria-label={`${f.name} on or off`} className={`ui-switch${on ? ' is-on' : ''}`} onClick={() => change(f.id, !on)}>
+                <button type="button" role="switch" aria-checked={on} aria-label={`${f.name} on or off`} aria-disabled={user ? true : undefined} aria-describedby={user ? noteId : undefined} className={`ui-switch${on ? ' is-on' : ''}${user ? ' is-disabled' : ''}`} onClick={() => !user && change(f.id, !on)}>
                   <span className="ui-switch-knob" />
                 </button>
               </div>

@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { defineFeature } from '../../src/features/feature';
 import { _resetFeaturesForTests, onFeaturesChange, registerFeatures, setFeatureOn } from '../../src/features/host';
 import { activeQuestOf, handleFeatureChange } from '../../src/features/sync';
-import { dock, hidePanel, isVisible, movePanel, placeOf, placePanel, resetDock, resetLayout, zoneOf } from '../../src/ui/dock';
+import { applyWorkspace, dock, deleteWorkspace, hidePanel, isVisible, movePanel, placeOf, placePanel, resetDock, resetLayout, saveWorkspace, zoneOf } from '../../src/ui/dock';
 import { paletteItems, rankPalette, TURN_ON_PREFIX, turnOnCommands } from '../../src/ui/palette';
 import { questProgress, setStopper } from '../../src/quests/registry';
 import { FRESH_PROGRESS, type Quest } from '../../src/quests/types';
@@ -90,10 +90,73 @@ describe('panels of a feature that is turned off and on', () => {
     movePanel('mini-a', 'bottom', 0);
     setFeatureOn('mini', false, { remember: false });
     // The parked place is in storage, not only in memory.
-    expect(localStorage.getItem('frameling.dock.parked.v1')).toContain('mini-a');
+    expect(localStorage.getItem('frameling.dock.parked.v2')).toContain('mini-a');
     setFeatureOn('mini', true, { remember: false });
     expect(zoneOf('mini-a')).toBe('bottom');
-    expect(localStorage.getItem('frameling.dock.parked.v1') ?? '{}').not.toContain('mini-a');
+    expect(localStorage.getItem('frameling.dock.parked.v2') ?? '{}').not.toContain('mini-a');
+  });
+});
+
+describe('panels of a feature that is off, and workspaces', () => {
+  const parkedRaw = () => localStorage.getItem('frameling.dock.parked.v2') ?? '{}';
+
+  it('come back in the workspace they were taken from, not in another one switched to meanwhile', () => {
+    applyWorkspace('draw');
+    movePanel('mini-a', 'bottom', 0);
+    setFeatureOn('mini', false, { remember: false });
+    applyWorkspace('animate');
+    setFeatureOn('mini', true, { remember: false });
+    // Animate never saw the panel: it starts in its home zone, not where Draw had it.
+    expect(zoneOf('mini-a')).toBe('right');
+    expect(parkedRaw()).not.toContain('mini-a');
+  });
+
+  it('wait for their workspace when it is opened again while the feature is still off', () => {
+    applyWorkspace('draw');
+    movePanel('mini-a', 'bottom', 0);
+    setFeatureOn('mini', false, { remember: false });
+    applyWorkspace('animate');
+    applyWorkspace('draw');
+    setFeatureOn('mini', true, { remember: false });
+    expect(zoneOf('mini-a')).toBe('bottom');
+  });
+
+  it('keep each workspace its own place', () => {
+    applyWorkspace('draw');
+    movePanel('mini-a', 'bottom', 0);
+    setFeatureOn('mini', false, { remember: false });
+    applyWorkspace('animate');
+    setFeatureOn('mini', true, { remember: false });
+    movePanel('mini-a', 'left');
+    setFeatureOn('mini', false, { remember: false });
+    expect(JSON.parse(parkedRaw())).toMatchObject({ animate: { 'mini-a': { zone: 'left' } } });
+    expect(JSON.parse(parkedRaw()).draw).toBeUndefined();
+    setFeatureOn('mini', true, { remember: false });
+    expect(zoneOf('mini-a')).toBe('left');
+  });
+
+  it('land in the right place of a saved workspace opened while the feature is off', () => {
+    movePanel('mini-a', 'bottom', 0);
+    const mine = saveWorkspace('Mine')!;
+    applyWorkspace('draw');
+    setFeatureOn('mini', false, { remember: false });
+    applyWorkspace(mine.id);
+    expect(isVisible('mini-a')).toBe(false);
+    setFeatureOn('mini', true, { remember: false });
+    expect(zoneOf('mini-a')).toBe('bottom');
+    deleteWorkspace(mine.id);
+    expect(parkedRaw()).not.toContain(mine.id);
+  });
+
+  it('a list kept by the first version moves to the workspace that is open', () => {
+    applyWorkspace('draw');
+    movePanel('mini-a', 'bottom', 0);
+    setFeatureOn('mini', false, { remember: false });
+    localStorage.setItem('frameling.dock.parked.v1', JSON.stringify({ 'mini-a': { zone: 'left', index: 0, front: true } }));
+    localStorage.removeItem('frameling.dock.parked.v2');
+    setFeatureOn('mini', true, { remember: false });
+    expect(zoneOf('mini-a')).toBe('left');
+    expect(localStorage.getItem('frameling.dock.parked.v1')).toBeNull();
   });
 });
 

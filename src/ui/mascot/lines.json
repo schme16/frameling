@@ -85,6 +85,11 @@
   },
   "onboarding.skipped": { "text": "No problem! Say hi again any time from Help > Meet Quill again.", "where": "A toast after 'Skip for now' in the first-run hello." },
   "onboarding.ready": { "text": "{name} is ready. Have fun!", "where": "A toast after finishing the first-run hello with an example or a blank page.", "vars": ["name"] },
+  "workspaces.railKept": {
+    "text": "Your tool arrangement stays in {workspace}. Other workspaces now start from their own.",
+    "where": "A toast once, on the first start after the update that gave each workspace its own tool arrangement, for someone who had changed the single arrangement before.",
+    "vars": ["workspace"]
+  },
   "sillyNames.pattern": {
     "text": "The {adjective} {noun}",
     "where": "First-run hello, 'Name your first animation': how a silly name is put together (and what Roll makes).",

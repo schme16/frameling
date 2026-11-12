@@ -1,15 +1,19 @@
 // Electron entry used by startup.cjs. Opens either the real built app (dist/main/main.cjs) or a URL (the web build),
-// with every window parked off-screen and unfocusable so nothing pops up on the desktop while it is measured.
+// with every window unfocusable, and parked off-screen on a real desktop so nothing pops up while it is measured
+// (in xvfb it stays on-screen: nobody sees it, and an off-screen window is never drawn there).
 //
 //   electron scripts/perf/launch.cjs app            the real app, main process and all
 //   electron scripts/perf/launch.cjs url <address>  a plain browser window on that address
 const electron = require('electron');
 const path = require('node:path');
+const { keepOnScreen } = require('./display.cjs');
 
+// Off-screen on a real desktop; on-screen in a virtual display (see display.cjs).
+const onScreen = keepOnScreen();
 const Orig = electron.BrowserWindow;
 class OffScreen extends Orig {
   constructor(o = {}) {
-    super({ ...o, x: process.env.PERF_ONSCREEN ? 0 : -4000, y: 0, focusable: false, skipTaskbar: true });
+    super({ ...o, x: onScreen ? 0 : -4000, y: 0, focusable: false, skipTaskbar: true });
     if (o.show !== false) this.showInactive();
     // The real app shows its window on ready-to-show; showInactive keeps it from taking focus.
     this.show = () => this.showInactive();

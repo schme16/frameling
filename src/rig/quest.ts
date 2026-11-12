@@ -76,6 +76,7 @@ export const BONES_QUEST: Quest = {
   minutes: 3,
   icon: 'rig',
   badge: { id: 'puppeteer', name: 'Puppeteer', icon: 'rig', color: '--peach' },
+  features: ['rig'],
   requires: ['first-animation'],
   finish: 'Two poses and Frameling moved the arm between them. The Paper doll puppet example has a whole body to play with.',
   prepare: () => (isArmScene(store().get()) ? true : freshPage(makeArmScene)),

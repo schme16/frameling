@@ -320,7 +320,7 @@ Turning a feature off never changes a file. If a drawing uses a feature that is 
 
 Help topics for a feature that is off are hidden. If you search for one, Frameling says so and gives you a **Turn on** button.
 
-Some features need others. If you try to turn one off while another needs it, Frameling tells you which to turn off first.`,
+Some features need others. If another feature needs one, its switch is greyed out and a note under it says which to turn off first.`,
   },
   {
     id: 'look-and-feel',

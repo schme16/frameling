@@ -1554,6 +1554,13 @@ body.ui-resizing * {
   font-size: var(--fs-small);
   line-height: 1.35;
 }
+.ui-pref-text .ui-pref-note {
+  color: var(--text);
+}
+.ui-switch.is-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 .ui-segmented {
   display: inline-flex;
   padding: 3px;

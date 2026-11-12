@@ -3,13 +3,14 @@
 // a lesson that needed the feature is put down politely.
 import { getTool } from '../core/registry';
 import { store } from '../core/store';
-import { getQuest, questProgress, stopQuest } from '../quests/registry';
+import { getQuest, questProgress, setQuestAvailability, stopQuest } from '../quests/registry';
 import { pickTool } from '../tools/pick';
 import { parkPanels, replacePanels, syncPanels } from '../ui/dock';
 import { syncDynamicCommands } from '../ui/dynamic';
 import { toast } from '../ui/toast';
+import type { Quest } from '../quests/types';
 import type { FeatureDescriptor } from './feature';
-import { getFeature, onFeaturesChange, type FeatureChange } from './host';
+import { getFeature, isFeatureOn, onFeaturesChange, type FeatureChange } from './host';
 
 /** The quest being played, when it belongs to this feature or lists it as needed. */
 export function activeQuestOf(d: FeatureDescriptor): { id: string; title: string } | null {
@@ -39,3 +40,7 @@ export function handleFeatureChange({ id, on }: FeatureChange): void {
 }
 
 onFeaturesChange(handleFeatureChange);
+
+/** A lesson that needs a feature that is off is not offered (it comes back with the feature). */
+export const questFeaturesOn = (q: Quest): boolean => (q.features ?? []).every(isFeatureOn);
+setQuestAvailability(questFeaturesOn);

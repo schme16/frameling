@@ -56,6 +56,7 @@ export const CAMERA_QUEST: Quest = {
   minutes: 3,
   icon: 'camera',
   badge: { id: 'director', name: 'Director', icon: 'camera', color: '--sky' },
+  features: ['camera'],
   requires: ['first-animation'],
   finish: "That's a real camera move with parallax. Exports always see what the camera sees.",
   prepare: () => (isValley(store().get()) && !camOf(store().get()) ? true : freshPage(makeValleyScene)),

@@ -15,8 +15,14 @@ export function registerQuest(q: Quest): void {
 export function getQuest(id: string): Quest | undefined {
   return quests.get(id);
 }
+/** Says whether a quest can be offered. The features code sets it: a quest that needs a feature that is off is left out. */
+let available: (q: Quest) => boolean = () => true;
+export function setQuestAvailability(fn: ((q: Quest) => boolean) | null): void {
+  available = fn ?? (() => true);
+}
+/** Every quest that can be offered now. */
 export function allQuests(): Quest[] {
-  return [...quests.values()];
+  return [...quests.values()].filter(available);
 }
 
 export const questProgress = createStore<QuestProgress>({ ...FRESH_PROGRESS });
@@ -30,7 +36,8 @@ export function setStarter(fn: Starter | null): void {
 
 /** Starts (or restarts) a quest. False when there's no such quest. */
 export function startQuest(id: string): boolean {
-  if (!quests.has(id)) return false;
+  const q = quests.get(id);
+  if (!q || !available(q)) return false;
   return starter ? starter(id) : false;
 }
 

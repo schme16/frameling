@@ -5,7 +5,9 @@ import { CanvasView } from '../canvas/CanvasView';
 import { PixelBar } from '../pixel/PixelBar';
 import { CommandPalette } from '../ui/CommandPalette';
 import { DockZoneView, Splitter } from '../ui/DockView';
-import { syncPanels } from '../ui/dock';
+import { syncPanels, takeRailMigrationNote } from '../ui/dock';
+import { line } from '../ui/mascot/lines';
+import { toast } from '../ui/toast';
 import { syncDynamicCommands } from '../ui/dynamic';
 import { trackHover } from '../ui/help/context';
 import { installKeyboard } from '../ui/keyboard';
@@ -54,6 +56,9 @@ export function App() {
     // The first time, Quill's hello comes instead of the welcome sheet.
     if (!welcomed && !maybeOnboard() && getPrefs().showWelcome) openSheet('welcome');
     welcomed = true;
+    // Someone who changed the one tool arrangement before workspaces had their own is told where it went, once.
+    const kept = takeRailMigrationNote();
+    if (kept) toast(line('workspaces.railKept', { workspace: kept }), { kind: 'info', duration: 9000 });
     // The first frame with the canvas drawn and the page free to take input. scripts/perf/startup.cjs reads it.
     requestAnimationFrame(() =>
       requestAnimationFrame(() => {
