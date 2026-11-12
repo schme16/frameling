@@ -4,8 +4,9 @@
  * swatches, and the colours in layer and folder effects (glow, shadow, outline). With "close colours too", colours near the one picked shift by the same amount, so shading made from
  * nearby colours comes along. Pure: works on a document and returns a new one.
  */
-import type { Color, Doc, Drawing, Layer, LayerEffect, LayerFolder, Shape } from '../core/format';
-import { recolourGradient } from '../core/gradient';
+import type { Color, Doc, Drawing, Layer, LayerEffect, LayerFolder, PaletteColourChange } from '../core/format';
+import { paletteScope, isEditingVariation, recolourOpenVariation } from '../artboards/variations';
+import { recolourShape, shapeColours } from './shapeColour';
 
 type RGB = [number, number, number];
 
@@ -47,60 +48,23 @@ export function colourMapper(from: Color, to: Color, closeness = 0): (rgb: RGB) 
 }
 
 /** A colour-string version of the mapper, counting what it changes. */
-function stringMapper(map: (rgb: RGB) => RGB | null, count: { n: number }): (c: Color) => Color {
+function stringMapper(map: (rgb: RGB) => RGB | null, count: { n: number }, swaps?: Map<string, string>): (c: Color) => Color {
   return (c) => {
     const p = parse(c);
     if (!p) return c;
     const m = map(p.rgb);
     if (!m) return c;
     const out = hex(m, p.alpha);
-    if (out.toLowerCase() !== c.toLowerCase()) count.n++;
+    if (out.toLowerCase() !== c.toLowerCase()) {
+      count.n++;
+      swaps?.set(hex(p.rgb), hex(m));
+    }
     return out;
   };
 }
 
-function recolourShape(s: Shape, f: (c: Color) => Color): Shape {
-  switch (s.type) {
-    case 'stroke': {
-      const color = f(s.color);
-      return color === s.color ? s : { ...s, color };
-    }
-    case 'fill': {
-      const color = f(s.color);
-      const gradient = s.gradient && recolourGradient(s.gradient, f);
-      if (color === s.color && gradient === s.gradient) return s;
-      return { ...s, color, ...(gradient ? { gradient } : {}) };
-    }
-    case 'path': {
-      const fill = s.fill && f(s.fill);
-      const sc = s.stroke && f(s.stroke.color);
-      const fg = s.fillGradient && recolourGradient(s.fillGradient, f);
-      const sg = s.strokeGradient && recolourGradient(s.strokeGradient, f);
-      if (fill === s.fill && sc === (s.stroke?.color ?? null) && fg === s.fillGradient && sg === s.strokeGradient) return s;
-      const out = { ...s, fill, stroke: s.stroke && sc ? { ...s.stroke, color: sc } : s.stroke };
-      if (fg) out.fillGradient = fg;
-      if (sg) out.strokeGradient = sg;
-      return out;
-    }
-    case 'text': {
-      const color = f(s.color);
-      return color === s.color ? s : { ...s, color };
-    }
-    case 'particles': {
-      const colorStart = f(s.colorStart);
-      const colorEnd = f(s.colorEnd);
-      return colorStart === s.colorStart && colorEnd === s.colorEnd ? s : { ...s, colorStart, colorEnd };
-    }
-    case 'instance': {
-      if (!s.tint) return s;
-      const color = f(s.tint.color);
-      return color === s.tint.color ? s : { ...s, tint: { ...s.tint, color } };
-    }
-  }
-}
-
 /** A drawing with the colour swapped, the same object when nothing in it changed, and how many pixels changed. */
-function recolourDrawing(d: Drawing, map: (rgb: RGB) => RGB | null, f: (c: Color) => Color): { d: Drawing; pixels: number } {
+function recolourDrawing(d: Drawing, map: (rgb: RGB) => RGB | null, f: (c: Color) => Color, swaps?: Map<string, string>): { d: Drawing; pixels: number } {
   if (d.kind === 'vector') {
     let changed = false;
     const shapes = d.shapes.map((s) => {
@@ -126,6 +90,7 @@ function recolourDrawing(d: Drawing, map: (rgb: RGB) => RGB | null, f: (c: Color
         memo.set(key, m);
       }
       if (!m) continue;
+      swaps?.set(hex([src[i], src[i + 1], src[i + 2]]), hex(m));
       out ??= new Uint8ClampedArray(src);
       out[i] = m[0];
       out[i + 1] = m[1];
@@ -175,57 +140,78 @@ export interface RecolourResult {
   pixels: number;
   /** Drawings that changed. */
   drawings: string[];
+  /** Inside a variation: the colours as they show there, and what each became (the variation keeps these as its colourway). */
+  swaps: PaletteColourChange[];
+  /** The open artboard is a variation: only it changes, and what it shares with the original (swatches, folders, symbols) is left alone. */
+  inVariation: boolean;
 }
 
-/** The document with `from` swapped for `to` everywhere. Unchanged parts keep their objects. */
+/** The document with `from` swapped for `to` everywhere (inside a variation: in its own drawings only). Unchanged parts keep their objects. */
 export function recolourDoc(doc: Doc, from: Color, to: Color, opts: RecolourOptions = {}): RecolourResult {
   const map = colourMapper(from, to, opts.closeness ?? 0);
+  const inVariation = isEditingVariation(doc);
+  const scope = inVariation ? paletteScope(doc) : () => true;
   const count = { n: 0 };
-  const f = stringMapper(map, count);
+  const swaps = new Map<string, string>();
+  // Colours in drawings are noted as swaps (a variation keeps them); the rest are only counted.
+  const f = stringMapper(map, count, swaps);
+  const fx = stringMapper(map, count);
   let pixels = 0;
   const drawings: Record<string, Drawing> = {};
   const changed: string[] = [];
   for (const [id, d] of Object.entries(doc.drawings)) {
-    const r = recolourDrawing(d, map, f);
+    if (!scope(id)) {
+      drawings[id] = d;
+      continue;
+    }
+    const r = recolourDrawing(d, map, f, swaps);
     drawings[id] = r.d;
     pixels += r.pixels;
     if (r.d !== d) changed.push(id);
   }
-  const swatches = doc.swatches.map((s) => {
-    const color = f(s.color);
-    return color === s.color ? s : { ...s, color };
-  });
-  const background = opts.background && doc.background ? f(doc.background) : doc.background;
-  const out: Doc = { ...doc, drawings: changed.length ? drawings : doc.drawings, swatches, background };
+  // Swatches belong to the original: a variation leaves them.
+  let swatchesChanged = false;
+  const swatches = inVariation
+    ? doc.swatches
+    : doc.swatches.map((s) => {
+        const color = fx(s.color);
+        if (color === s.color) return s;
+        swatchesChanged = true;
+        return { ...s, color };
+      });
+  const background = opts.background && doc.background ? fx(doc.background) : doc.background;
+  const out: Doc = { ...doc, drawings: changed.length ? drawings : doc.drawings, swatches: swatchesChanged ? swatches : doc.swatches, background };
   // Effects on layers, folders and the layers inside symbols.
-  out.layers = recolourLayers(doc.layers, f);
-  if (doc.folders) {
+  out.layers = recolourLayers(doc.layers, fx);
+  if (doc.folders && !inVariation) {
     let any = false;
     const folders: Record<string, LayerFolder> = {};
     for (const [id, fo] of Object.entries(doc.folders)) {
-      const effects = recolourEffects(fo.effects, f);
+      const effects = recolourEffects(fo.effects, fx);
       folders[id] = effects === fo.effects ? fo : { ...fo, effects };
       if (effects !== fo.effects) any = true;
     }
     if (any) out.folders = folders;
   }
-  if (doc.symbols) {
+  if (doc.symbols && !inVariation) {
     let any = false;
     const symbols: NonNullable<Doc['symbols']> = {};
     for (const [id, sy] of Object.entries(doc.symbols)) {
-      const layers = recolourLayers(sy.layers, f);
+      const layers = recolourLayers(sy.layers, fx);
       symbols[id] = layers === sy.layers ? sy : { ...sy, layers };
       if (layers !== sy.layers) any = true;
     }
     if (any) out.symbols = symbols;
   }
-  return { doc: out, colours: count.n, pixels, drawings: changed };
+  return { doc: out, colours: count.n, pixels, drawings: changed, swaps: [...swaps].map(([a, b]) => ({ from: a, to: b })), inVariation };
 }
 
-/** Puts a recolour into the document being edited: changed drawings, swatches, stage colour and effects. */
+/** Puts a recolour into the document being edited: changed drawings, swatches, stage colour and effects. In a variation the drawings become its colourway. */
 export function applyRecolour(d: Doc, r: RecolourResult): void {
-  for (const id of r.drawings) d.drawings[id] = r.doc.drawings[id];
-  d.swatches = r.doc.swatches;
+  if (r.inVariation) recolourOpenVariation(d, r.swaps);
+  else for (const id of r.drawings) d.drawings[id] = r.doc.drawings[id];
+  // Only when a swatch really changes (writing the same ones again would count as a change to what a variation shares).
+  if (r.doc.swatches.some((s, i) => s.color !== d.swatches[i]?.color)) d.swatches = r.doc.swatches;
   d.background = r.doc.background;
   r.doc.layers.forEach((l, i) => {
     if (d.layers[i] && d.layers[i].id === l.id && l.effects) d.layers[i].effects = l.effects;
@@ -249,20 +235,12 @@ export function usedColours(doc: Doc, limit = 32): Color[] {
     const k = hex(p.rgb);
     counts.set(k, (counts.get(k) ?? 0) + n);
   };
-  for (const d of Object.values(doc.drawings)) {
+  // Inside a variation, only what it shows (not the original's own drawings behind it).
+  const scope = isEditingVariation(doc) ? paletteScope(doc) : () => true;
+  for (const [id, d] of Object.entries(doc.drawings)) {
+    if (!scope(id)) continue;
     if (d.kind === 'vector') {
-      for (const s of d.shapes) {
-        if (s.type === 'stroke' || s.type === 'fill' || s.type === 'text') note(s.color);
-        if (s.type === 'path') {
-          note(s.fill);
-          note(s.stroke?.color);
-        }
-        if (s.type === 'particles') {
-          note(s.colorStart);
-          note(s.colorEnd);
-        }
-        for (const g of s.type === 'fill' ? [s.gradient] : s.type === 'path' ? [s.fillGradient, s.strokeGradient] : []) for (const st of g?.stops ?? []) note(st.color);
-      }
+      for (const s of d.shapes) for (const c of shapeColours(s)) note(c);
     } else if (d.kind === 'pixel') {
       const px = d.pixels;
       const local = new Map<number, number>();

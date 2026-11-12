@@ -17,11 +17,11 @@
  * Resolving and diffing keep the unchanged parts as the very same objects, so both are cheap.
  */
 import { current, isDraft, produce, type Draft, type Patch as ImmerPatch } from 'immer';
-import type { Artboard, ArtboardContent, AudioClip, Cel, Color, Doc, DocPalette, Drawing, DrawingOverride, Id, Layer, ListOverride, Patch, PaletteOverride, Shape, VariationOverrides } from '../core/format';
+import type { Artboard, ArtboardContent, AudioClip, Cel, Color, Doc, DocPalette, Drawing, DrawingOverride, Id, Layer, ListOverride, Patch, PaletteColourChange, PaletteOverride, Shape, VariationOverrides } from '../core/format';
 import { uid } from '../core/doc';
 import { registerChoice } from '../core/choices';
 import { registerGuard, registerSettler, reportBlocked, type SettleContext } from '../core/store';
-import { basePalette, changesBetween, changesOf, followRenames, isColourEdit, makeOverride, paletteRenames, recolourDrawing, resolvePalette, rgbKey, tidyChanges } from './paletteOverride';
+import { basePalette, changesBetween, changesOf, drawingColours, followRenames, isColourEdit, makeOverride, paletteRenames, plainHex, recolourDrawing, resolvePalette, rgbKey, tidyChanges } from './paletteOverride';
 import { activeId, artboardsOf, boxes, ensureArtboards, findArtboard, gapFor, nextSpot, putContent, switchArtboard, takeContent } from './model';
 import { fitPlacement, type FitMode } from './fit';
 
@@ -389,7 +389,7 @@ const MAPPED: DrawingOverride = {};
 const ownMemo = new WeakMap<PaletteOverride, Record<Id, DrawingOverride>>();
 
 /**
- * The original's drawings a closed variation has a copy of: the ones it overrides, and the pixel drawings its colourway
+ * The original's drawings a closed variation has a copy of: the ones it overrides, and the pixel and vector drawings its colourway
  * recolours. The same object while nothing about it changes.
  */
 export function ownCopies(ov: VariationOverrides | undefined, baseDrawings: Record<Id, Drawing>): Record<Id, DrawingOverride> {
@@ -399,7 +399,7 @@ export function ownCopies(ov: VariationOverrides | undefined, baseDrawings: Reco
   const out: Record<Id, DrawingOverride> = { ...own };
   for (const k in baseDrawings) {
     const b = baseDrawings[k];
-    if (!out[k] && b.kind === 'pixel' && recolourDrawing(b, pal) !== b) out[k] = MAPPED;
+    if (!out[k] && (b.kind === 'pixel' || b.kind === 'vector') && recolourDrawing(b, pal) !== b) out[k] = MAPPED;
   }
   const prev = ownMemo.get(pal);
   const keys = Object.keys(out);
@@ -780,6 +780,9 @@ const SHARED: Record<string, string> = {
   palette: 'The palette is shared with the original. Change it there, or detach this variation.',
 };
 
+/** True when the open artboard is a variation (what it shares with the original is then not to be written). */
+export const isEditingVariation = (doc: Doc): boolean => !!openVariation(snap(doc));
+
 /** The open artboard when it is a variation. */
 function openVariation(doc: Doc): Artboard | undefined {
   if (!doc.artboards?.some((a) => a.variationOf)) return undefined;
@@ -865,6 +868,59 @@ export function paletteScope(doc: Doc, from?: Color): (id: Id) => boolean {
     if (!v.overrides?.drawings?.[sp.orig]?.replaced) return false;
     return !v.overrides.palette?.changes.some((c) => rgbKey(c.from) === fk);
   };
+}
+
+/**
+ * "Recolour this variation": changes colours across every frame of the open variation, and only there. `swaps` are
+ * colours as they show in the variation (`from`) and what they become (`to`). The variation keeps each as one colour
+ * of its colourway (by the original's colour, so a colour recoloured twice stays one line, and going back to the
+ * original's colour takes the line away). The pictures on stage are recoloured the same way, so no frame is missed.
+ * False when the open artboard is not a variation. Call inside store.update (one undo step).
+ */
+export function recolourOpenVariation(d: Doc, swaps: readonly PaletteColourChange[]): boolean {
+  const s = snap(d);
+  const a = openVariation(s);
+  if (!a) return false;
+  const now = new Map<number, string>();
+  for (const c of swaps) {
+    const from = rgbKey(c.from);
+    const to = plainHex(c.to);
+    if (from >= 0 && to) now.set(from, to);
+  }
+  if (!now.size) return true;
+  const mine = { changes: [...now].map(([k, to]) => ({ from: '#' + k.toString(16).padStart(6, '0'), to })) };
+  // The original's colours the variation's keys show, and what its colourway makes of each now.
+  const pal = changesOf(a.overrides?.palette, basePalette(s));
+  const have = new Map(pal.map((c) => [rgbKey(c.from), c] as const));
+  const orig = new Map<number, string>();
+  const used = new Set<Id>();
+  for (const l of s.layers)
+    for (const c of l.cels) {
+      const sp = splitAlias(c.drawingId);
+      if (sp?.vid === a.id) used.add(sp.orig);
+    }
+  for (const id of used) if (s.drawings[id]) drawingColours(s.drawings[id], orig);
+  const next = new Map(have);
+  for (const [k, hexv] of orig) {
+    const shows = have.get(k)?.to ?? hexv;
+    const to = now.get(rgbKey(shows));
+    if (to !== undefined) next.set(k, { from: have.get(k)?.from ?? hexv, to });
+  }
+  const t = findArtboard(d, a.id)!;
+  const ov = { ...(t.overrides ?? {}) };
+  const made = makeOverride([...next.values()]);
+  if (made) ov.palette = made;
+  else delete ov.palette;
+  t.overrides = ov as never;
+  // The stage's own drawings change the same way.
+  for (const id of used) {
+    const alias = aliasId(id, a.id);
+    const cur = s.drawings[alias];
+    if (!cur) continue;
+    const out = recolourDrawing(cur, mine);
+    if (out !== cur) d.drawings[alias] = out as never;
+  }
+  return true;
 }
 
 // ---------------------------------------------------------------- actions on a document (call them inside store.update)
