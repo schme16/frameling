@@ -19,7 +19,7 @@ if (typeof location !== 'undefined' && new URLSearchParams(location.search).has(
       store().setUi({ frame });
       for (let i = 0; i < 6; i++) await new Promise((r) => requestAnimationFrame(() => r(null)));
       await new Promise((r) => setTimeout(r, 300));
-      const canvas = document.querySelector('canvas.cv-layer') as HTMLCanvasElement;
+      const canvas = document.querySelector('canvas.cv-layer:not(.cv-overlay):not(.ab-underlay)') as HTMLCanvasElement;
       const stage = (document.querySelector('.cv-stage') as HTMLElement).getBoundingClientRect();
       const box = canvas.getBoundingClientRect();
       const k = canvas.width / box.width;

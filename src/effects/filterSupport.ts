@@ -8,6 +8,8 @@ export type FilterOverride = 'native' | 'fallback' | null;
 
 let override: FilterOverride = null;
 let cached: boolean | null = null;
+// The probe couldn't read pixels back (a test stand-in canvas), so the JS fallback can't run either.
+let noReadback = false;
 
 /** Test hook: force the native path or the JS fallback (null goes back to detecting). */
 export function setFilterOverride(mode: FilterOverride): void {
@@ -17,6 +19,7 @@ export function setFilterOverride(mode: FilterOverride): void {
 /** Forget the detected answer (for tests). */
 export function resetFilterDetection(): void {
   cached = null;
+  noReadback = false;
 }
 
 type AnyCtx = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
@@ -30,7 +33,6 @@ function probe(): boolean {
   src.g.fillStyle = '#000';
   src.g.fillRect(4, 4, 1, 1);
   const dst = make();
-  if (!('filter' in dst.g)) return false;
   dst.g.filter = 'blur(2px)';
   dst.g.drawImage(src.c as CanvasImageSource, 0, 0);
   dst.g.filter = 'none';
@@ -48,11 +50,12 @@ export function nativeFilterWorks(g: AnyCtx): boolean {
     return (cached = probe());
   } catch {
     // No canvas to read back from (a test stand-in): trust the property, and don't remember it.
+    noReadback = true;
     return 'filter' in g;
   }
 }
 
 /** True when the JS fallback can run on this canvas (it needs pixel read and write). */
 export function canFallback(g: AnyCtx): boolean {
-  return typeof g.getImageData === 'function' && typeof g.createImageData === 'function' && typeof g.putImageData === 'function';
+  return !noReadback && typeof g.getImageData === 'function' && typeof g.createImageData === 'function' && typeof g.putImageData === 'function';
 }

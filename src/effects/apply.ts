@@ -150,7 +150,8 @@ export function applyEffect(src: Canvas2, kind: EffectKind, v: Record<string, nu
       return out;
     }
     if (kind === 'shadow') {
-      const sil = softSilhouette(src, (n('softness') * scale) / 2, hexToRgba(String(v.color), n('opacity')), pool);
+      // Chromium's canvas drop-shadow uses the softness itself as the blur's sigma (measured), unlike the glow's size / 2.
+      const sil = softSilhouette(src, n('softness') * scale, hexToRgba(String(v.color), n('opacity')), pool);
       const out = pool.get();
       const g = ctx2(out);
       g.drawImage(sil as CanvasImageSource, n('x') * scale, n('y') * scale);
