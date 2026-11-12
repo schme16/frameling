@@ -1,6 +1,7 @@
 // Your templates: kept in the app's library (desktop: a templates folder in the user data dir, where .frameling files
 // can be dropped by hand; web: IndexedDB). Template sources are a list, so an online gallery can join later as one
 // more source with its own section, without the welcome sheet changing.
+import { ownedUndo } from '../core/owners';
 import type { Doc } from '../core/format';
 import { uid } from '../core/doc';
 import { FileProblem } from '../io/file';
@@ -37,8 +38,15 @@ const sources: TemplateSource[] = [];
 /** Adds a section of templates to the welcome sheet (Yours, and one day an online gallery). */
 export function registerTemplateSource(s: TemplateSource): void {
   const i = sources.findIndex((x) => x.id === s.id);
+  const before = i >= 0 ? sources[i] : null;
   if (i >= 0) sources[i] = s;
   else sources.push(s);
+  ownedUndo(() => {
+    const at = sources.indexOf(s);
+    if (at < 0) return;
+    if (before) sources[at] = before;
+    else sources.splice(at, 1);
+  });
 }
 
 export function templateSources(): TemplateSource[] {

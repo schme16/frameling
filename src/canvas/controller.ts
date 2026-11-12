@@ -3,6 +3,7 @@
  * position, hints, and the commands that move the view. Tools and commands import this instead of reaching into the
  * canvas component, so they work (and test) without any DOM.
  */
+import { ownedUndo } from '../core/owners';
 import type { Drawing, Id } from '../core/format';
 import { store } from '../core/store';
 import { toast } from '../ui/toast';
@@ -178,7 +179,12 @@ export type StageOverlay = (g: CanvasRenderingContext2D, zoom: number) => void;
 const stageOverlays: StageOverlay[] = [];
 
 export function addStageOverlay(fn: StageOverlay): void {
-  if (!stageOverlays.includes(fn)) stageOverlays.push(fn);
+  if (stageOverlays.includes(fn)) return;
+  stageOverlays.push(fn);
+  ownedUndo(() => {
+    const i = stageOverlays.indexOf(fn);
+    if (i >= 0) stageOverlays.splice(i, 1);
+  });
 }
 export function getStageOverlays(): readonly StageOverlay[] {
   return stageOverlays;
@@ -201,7 +207,12 @@ export interface CanvasGrab {
 const grabs: CanvasGrab[] = [];
 
 export function addCanvasGrab(g: CanvasGrab): void {
-  if (!grabs.includes(g)) grabs.push(g);
+  if (grabs.includes(g)) return;
+  grabs.push(g);
+  ownedUndo(() => {
+    const i = grabs.indexOf(g);
+    if (i >= 0) grabs.splice(i, 1);
+  });
 }
 export function grabAt(p: Pt, zoom: number): CanvasGrab | null {
   return grabs.find((g) => g.hit(p, zoom)) ?? null;
@@ -235,7 +246,12 @@ export type PointerDownHook = (p: Pt, tool: string) => void;
 const downHooks: PointerDownHook[] = [];
 
 export function addPointerDownHook(fn: PointerDownHook): void {
-  if (!downHooks.includes(fn)) downHooks.push(fn);
+  if (downHooks.includes(fn)) return;
+  downHooks.push(fn);
+  ownedUndo(() => {
+    const i = downHooks.indexOf(fn);
+    if (i >= 0) downHooks.splice(i, 1);
+  });
 }
 export function runPointerDownHooks(p: Pt, tool: string): void {
   for (const fn of downHooks) fn(p, tool);

@@ -6,6 +6,7 @@
  * Any area can register a choice and call `choose(id)`. The UI provides the dialog through `setChoiceAsker`; without
  * one (tests, or before the UI loads) `choose` returns the default without remembering it.
  */
+import { ownedUndo } from './owners';
 import { useSyncExternalStore } from 'react';
 
 export interface ChoiceOption<V extends string = string> {
@@ -62,7 +63,15 @@ function emit(): void {
 }
 
 export function registerChoice<V extends string>(def: ChoiceDef<V>): void {
-  defs.set(def.id, def as unknown as ChoiceDef);
+  const before = defs.get(def.id);
+  const mine = def as unknown as ChoiceDef;
+  defs.set(def.id, mine);
+  ownedUndo(() => {
+    if (defs.get(def.id) !== mine) return;
+    if (before) defs.set(def.id, before);
+    else defs.delete(def.id);
+    emit();
+  });
 }
 
 export function getChoiceDef(id: string): ChoiceDef | undefined {

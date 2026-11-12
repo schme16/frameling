@@ -5,6 +5,7 @@
  * without a restart. This is the trusted tier: it runs in the app like any other code. The sandboxed plugins in
  * src/plugins are the other tier.
  */
+import type { ChoiceDef } from '../core/choices';
 import type { Doc } from '../core/format';
 import type { Command, HelpTopic, PanelDef, Tool } from '../core/registry';
 import type { Quest } from '../quests/types';
@@ -32,6 +33,9 @@ export interface FeatureDescriptor {
   tools?: Tool[];
   help?: HelpTopic[];
   quests?: Quest[];
+  /** Remembered choices (Preferences > Behaviour) that only make sense with the feature. */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  choices?: ChoiceDef<any>[];
   /** Ids of built-in templates this feature owns (hidden from the New dialog while it is off). */
   templates?: string[];
   /** Command ids to add at the end of a menu, by the menu's label. */
