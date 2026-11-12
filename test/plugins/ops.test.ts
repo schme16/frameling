@@ -1,7 +1,7 @@
 import { gridPixels } from '../../src/core/pixelBounds';
 import type { PixelDrawing } from '../../src/core/format';
 import { describe, expect, it } from 'vitest';
-import { newDoc, newPixelDrawing, newVectorDrawing } from '../../src/core/doc';
+import { newDoc, newPixelDrawing, newPixelLayer, newVectorDrawing } from '../../src/core/doc';
 import type { Doc, StrokeShape } from '../../src/core/format';
 import { Store } from '../../src/core/store';
 import { applyOps, OpProblem } from '../../src/plugins/ops';
@@ -84,6 +84,25 @@ describe('plugin ops', () => {
     expect(d.clips.at(-1)).not.toHaveProperty('direction');
     expect(d.clips.at(-1)).not.toHaveProperty('repeat');
     expect((d.drawings.dv as { shapes: StrokeShape[] }).shapes[0]).toMatchObject({ color: '#00ff00', opacity: 0.5 });
+  });
+
+  it('cuts a pixel block that reaches past the art grid, and keeps one that fits', () => {
+    const s = setup();
+    // A 100 x 50 stage with 10-pixel art cells is a 10 x 5 grid.
+    s.update('Layer', (d) => {
+      const l = newPixelLayer('P', 10);
+      l.cels = [{ id: 'cp', start: 0, length: 1, drawingId: 'dp' }];
+      d.layers.push(l as never);
+    });
+    const red = [255, 0, 0, 255];
+    // 4 x 3 block at (8, 3): only columns 8 and 9 and rows 3 and 4 are on the grid.
+    edit(s, [{ op: 'setPixels', drawingId: 'dp', x: 8, y: 3, width: 4, height: 3, pixels: Array.from({ length: 12 }, () => red).flat() }]);
+    const d = s.get().doc.drawings.dp as PixelDrawing;
+    expect([d.x, d.y, d.width, d.height]).toEqual([8, 3, 2, 2]);
+    expect(d.pixels.length).toBe(2 * 2 * 4);
+    edit(s, [{ op: 'setPixels', drawingId: 'dp', x: 1, y: 1, width: 2, height: 2, pixels: new Array(16).fill(9) }]);
+    const e = s.get().doc.drawings.dp as PixelDrawing;
+    expect([e.x, e.y, e.width, e.height]).toEqual([1, 1, 2, 2]);
   });
 
   it('addClip sets how the clip plays: direction and repeat, checked, and older calls stay as they were', () => {

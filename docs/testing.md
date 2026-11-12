@@ -131,7 +131,7 @@ FUZZ_RUNS=25000 npx vitest run test/artboards/fuzz.test.ts   # about a minute
 FUZZ_SEED=2211 npx vitest run test/artboards/fuzz.test.ts    # repeat just one seed
 ```
 
-To follow a shrunk list by hand, add its steps to `apply` in the same file (each is `name(n,m)`).
+The shrunk list reads `name(n,m)`, one step each: `apply` in the same file shows what each does.
 
 ## Lip sync accuracy: scripts/lipsync/
 

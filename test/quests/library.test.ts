@@ -29,7 +29,7 @@ import { readProbe } from '../../src/quests/probe';
 import { allQuests, isUnlocked } from '../../src/quests/registry';
 import { FRESH_PROGRESS, NO_PROBE, type Quest, type StepCtx } from '../../src/quests/types';
 import { PRESETS, docFromPreset } from '../../src/ui/presets';
-import { TILES_QUEST, ensureTilePage, paintsAcrossEdge, stampedTiles } from '../../src/tiles/quest';
+import { TILES_QUEST, drawDemoWave, ensureTilePage, onWholeGrid, paintsAcrossEdge, stampedTiles } from '../../src/tiles/quest';
 import { editingTileKey, finishTileEdit } from '../../src/tiles/tileEdit';
 import { newDoc, newPixelDrawing, newTilemapDrawing, newTilemapLayer } from '../../src/core/doc';
 import { makeCell } from '../../src/tiles/model';
@@ -358,6 +358,45 @@ describe('Tiles', () => {
     expect(paintsAcrossEdge(v)).toBe(true);
     v.pixels.fill(255);
     expect(paintsAcrossEdge(v)).toBe(false);
+  });
+
+  it('edge: a drawing holding only its painted block is judged on the whole tile', () => {
+    const doc = newDoc({ width: 16, height: 16, pixel: { pixelSize: 1 } });
+    const layer = doc.layers.find((l) => l.kind === 'pixel')!;
+    if (layer.kind !== 'pixel') throw new Error('pixel layer needed');
+    // Paint at both ends of a 6 x 1 block that sits well inside the tile: it never reaches either edge.
+    const d = newPixelDrawing(6, 1);
+    d.x = 5;
+    d.y = 8;
+    d.pixels.set([0, 0, 0, 255], 0);
+    d.pixels.set([0, 0, 0, 255], 5 * 4);
+    expect(paintsAcrossEdge(d)).toBe(true);
+    expect(paintsAcrossEdge(onWholeGrid(doc, layer, d))).toBe(false);
+    // Paint on both edges of the tile does count.
+    const across = newPixelDrawing(16, 1);
+    across.y = 8;
+    across.pixels.set([0, 0, 0, 255], 0);
+    across.pixels.set([0, 0, 0, 255], 15 * 4);
+    expect(paintsAcrossEdge(onWholeGrid(doc, layer, across))).toBe(true);
+  });
+
+  it('show me the wave: paints right across the tile even when the drawing holds only a small block', () => {
+    const doc = newDoc({ width: 16, height: 16, pixel: { pixelSize: 1 } });
+    const layer = doc.layers.find((l) => l.kind === 'pixel')!;
+    if (layer.kind !== 'pixel') throw new Error('pixel layer needed');
+    const id = putPixels(doc, layer, 0, [[5, 5]]);
+    const st = resetStore(doc);
+    const small = st.get().doc.drawings[id] as ReturnType<typeof newPixelDrawing>;
+    small.x = 5;
+    small.y = 5;
+    small.width = 1;
+    small.height = 1;
+    small.pixels = small.pixels.slice(0, 4);
+    st.setUi({ activeLayerId: layer.id });
+    expect(drawDemoWave()).toBe(true);
+    const out = st.get().doc.drawings[id] as ReturnType<typeof newPixelDrawing>;
+    expect(out.width).toBe(16);
+    expect(paintsAcrossEdge(onWholeGrid(st.get().doc, layer, out))).toBe(true);
   });
 
   it('stamp: counts tiles on the tilemap layer', () => {
