@@ -43,13 +43,18 @@ export interface BonesPart {
   look?: PartLook;
 }
 
-/** A rendered picture: where its top-left sits in output pixels, its size, and its res:// path. */
+/**
+ * A rendered picture: where its top-left sits, its size, and its res:// path. Positions and sizes are in the picture's
+ * own pixels, which are `bake` times the scene's output pixels (1 when left out). A symbol copied large is baked bigger
+ * so it stays sharp, and its Sprite2D is scaled back down by 1 / bake.
+ */
 export interface BonesTexture {
   path: string;
   x: number;
   y: number;
   w: number;
   h: number;
+  bake?: number;
 }
 
 /** How a symbol instance sits at one frame of its host. */
@@ -85,6 +90,56 @@ export interface BonesScope {
   nested: NestedInstance[];
   /** Per part, per picture. Filled in once the pictures are drawn. */
   textures?: BonesTexture[][];
+}
+
+// ---------------------------------------------------------------- baking sharp symbol copies
+
+/** The most a symbol's pictures are baked larger than the export scale, however big its copies get. */
+export const MAX_BAKE = 4;
+/** The biggest side (and pixel count) of a part canvas the runner draws, so a big stage doesn't run out of memory. */
+export const BAKE_MAX_SIDE = 8192;
+export const BAKE_MAX_PIXELS = 40_000_000;
+
+/** How much a matrix stretches the most, in any direction. */
+export function maxStretch(m: readonly number[]): number {
+  const [a, c, b, d] = [m[0], m[1], m[2], m[3]];
+  const sum = a * a + b * b + c * c + d * d;
+  const det = a * d - b * c;
+  const disc = Math.sqrt(Math.max(0, sum * sum - 4 * det * det));
+  return Math.sqrt((sum + disc) / 2);
+}
+
+/**
+ * How much bigger than the export scale each scope's pictures are drawn, so copies scaled up on the stage stay sharp:
+ * the largest scale any copy of the symbol is shown at (with the copies it sits in), at least 1, at most MAX_BAKE and
+ * the most a canvas for the stage can take. The stage itself is always 1.
+ */
+export function bakeScales(top: BonesScope, doc: { width: number; height: number }, k: number): Map<BonesScope, number> {
+  const use = new Map<BonesScope, number>([[top, 1]]);
+  const walk = (sc: BonesScope, mul: number, depth: number) => {
+    if (depth > MAX_NEST + 1) return;
+    for (const n of sc.nested) {
+      let worst = 0;
+      for (const st of n.at) if (st) worst = Math.max(worst, maxStretch(st.matrix));
+      const m = mul * (worst || 1);
+      if ((use.get(n.scope) ?? 0) < m) {
+        use.set(n.scope, m);
+        walk(n.scope, m, depth + 1);
+      }
+    }
+  };
+  walk(top, 1, 0);
+  const side = Math.max(doc.width, doc.height);
+  const w = (doc.width + side) * k;
+  const h = (doc.height + side) * k;
+  const room = Math.min(BAKE_MAX_SIDE / Math.max(w, h), Math.sqrt(BAKE_MAX_PIXELS / (w * h)));
+  const out = new Map<BonesScope, number>();
+  for (const [sc, u] of use) {
+    // Quarter steps, and not worth a bigger picture until the copy is clearly larger.
+    const q = Math.ceil(u * 4 - 1e-6) / 4;
+    out.set(sc, sc === top || u < 1.1 ? 1 : Math.max(1, Math.min(q, MAX_BAKE, room)));
+  }
+  return out;
 }
 
 // ---------------------------------------------------------------- notes

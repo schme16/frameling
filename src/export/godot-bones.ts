@@ -18,7 +18,7 @@ import { minv, mmul, restMatrix, stretchOf, type Mat } from '../rig/math';
 import type { Animation } from './sheet';
 import { bonesRigs, type BonesPart, type BonesScope, type BonesTexture, type NativeBlend, type NestedInstance } from './godot-bones-scope';
 
-export { bonesParts, bonesRigs, bonesScope, bonesStage, bonesNotes, allScopes, hasBonesToExport, restPicture, riggedSymbols, partLook, nativeBlend, BonesNotes } from './godot-bones-scope';
+export { bakeScales, maxStretch, MAX_BAKE, bonesParts, bonesRigs, bonesScope, bonesStage, bonesNotes, allScopes, hasBonesToExport, restPicture, riggedSymbols, partLook, nativeBlend, BonesNotes } from './godot-bones-scope';
 export type { BonesPart, BonesScope, BonesTexture, InstState, NativeBlend, NestedInstance, PartKind, PartLook } from './godot-bones-scope';
 
 // ---------------------------------------------------------------- writing Godot text
@@ -233,6 +233,11 @@ function localRest(rig: RigLayer, id: Id, k: number): Mat {
 
 const angle = (m: readonly number[]) => Math.atan2(m[1], m[0]);
 
+/** How many times bigger a picture's pixels are than the scene's (a symbol copied large is baked bigger to stay sharp). */
+const bk = (t: BonesTexture) => t.bake ?? 1;
+/** The Sprite2D lines that shrink a baked-bigger picture back to scene size. */
+const shrink = (t: BonesTexture) => (bk(t) === 1 ? [] : [`scale = ${v2(1 / bk(t), 1 / bk(t))}`]);
+
 /** How many z steps a scope needs for each of its layers, so a symbol's own layers stay between its neighbours'. */
 function zUnit(sc: BonesScope): number {
   let u = 1;
@@ -398,7 +403,7 @@ function build(o: BonesSceneInput): { text: string; shaders: Set<NativeBlend> } 
         const uv: string[] = [];
         for (let j = 0; j < mesh.points.length; j += 2) {
           pts.push(gdNum(mesh.points[j] * k), gdNum(mesh.points[j + 1] * k));
-          uv.push(gdNum(mesh.points[j] * k - t0.x), gdNum(mesh.points[j + 1] * k - t0.y));
+          uv.push(gdNum(mesh.points[j] * k * bk(t0) - t0.x), gdNum(mesh.points[j + 1] * k * bk(t0) - t0.y));
         }
         const tris: string[] = [];
         for (let j = 0; j < mesh.triangles.length; j += 3) tris.push(`PackedInt32Array(${mesh.triangles[j]}, ${mesh.triangles[j + 1]}, ${mesh.triangles[j + 2]})`);
@@ -446,7 +451,7 @@ function build(o: BonesSceneInput): { text: string; shaders: Set<NativeBlend> } 
         // Under the bone: undo its rest place, then sit where the picture was drawn.
         const b = p.rig.rig.bones.find((x) => x.id === p.bone)!;
         const r = restMatrix(b);
-        const m = mmul(minv([r[0], r[1], r[2], r[3], r[4] * k, r[5] * k]), [1, 0, 0, 1, t0.x, t0.y]);
+        const m = mmul(minv([r[0], r[1], r[2], r[3], r[4] * k, r[5] * k]), [1, 0, 0, 1, t0.x / bk(t0), t0.y / bk(t0)]);
         nodes.push(
           `[node name=${gdString(n)} type="Sprite2D" parent=${gdString(parent)}]`,
           `z_index = ${z}`,
@@ -455,6 +460,7 @@ function build(o: BonesSceneInput): { text: string; shaders: Set<NativeBlend> } 
           ...materialFor(blend, `${parent}/${n}`),
           `position = ${v2(m[4], m[5])}`,
           `rotation = ${gdNum(angle(m))}`,
+          ...shrink(t0),
           `texture = ${tex(t0.path)}`,
           'centered = false',
           '',
@@ -464,7 +470,7 @@ function build(o: BonesSceneInput): { text: string; shaders: Set<NativeBlend> } 
       const host = parentOf(p.layer);
       const n = name(at(host), p.layer.name);
       res.partPath.push(under(host, n));
-      nodes.push(`[node name=${gdString(n)} type="Sprite2D" parent=${gdString(at(host))}]`, `z_index = ${z}`, ...hidden, ...fade, ...materialFor(blend, under(host, n)), `position = ${v2(t0.x, t0.y)}`, `texture = ${tex(t0.path)}`, 'centered = false', '');
+      nodes.push(`[node name=${gdString(n)} type="Sprite2D" parent=${gdString(at(host))}]`, `z_index = ${z}`, ...hidden, ...fade, ...materialFor(blend, under(host, n)), `position = ${v2(t0.x / bk(t0), t0.y / bk(t0))}`, ...shrink(t0), `texture = ${tex(t0.path)}`, 'centered = false', '');
     });
 
     // Symbols with skeletons of their own: a node moved by the instance, holding its own rig and parts.
@@ -580,11 +586,11 @@ function build(o: BonesSceneInput): { text: string; shaders: Set<NativeBlend> } 
           seq.forEach((x, j) => {
             if (x < 0) return;
             const tx = textures[i][x];
-            let at = v2(tx.x, tx.y);
+            let at = v2(tx.x / bk(tx), tx.y / bk(tx));
             if (p.kind === 'cut' && p.rig && p.bone) {
               const b = p.rig.rig.bones.find((q) => q.id === p.bone)!;
               const r = restMatrix(b);
-              const m = mmul(minv([r[0], r[1], r[2], r[3], r[4] * k, r[5] * k]), [1, 0, 0, 1, tx.x, tx.y]);
+              const m = mmul(minv([r[0], r[1], r[2], r[3], r[4] * k, r[5] * k]), [1, 0, 0, 1, tx.x / bk(tx), tx.y / bk(tx)]);
               at = v2(m[4], m[5]);
             }
             if (at !== last) {

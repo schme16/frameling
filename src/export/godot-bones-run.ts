@@ -8,7 +8,7 @@ import { slug } from './plan';
 import { buildAnimations, godotTexturePath } from './sheet';
 import { buildPlan } from '../effects/plan';
 import { compositePlan } from '../effects/composite';
-import { allScopes, bonesStage, godotBonesScene, godotBonesShaders, hasBonesToExport, type BonesScope, type BonesTexture, type PartLook } from './godot-bones';
+import { allScopes, bakeScales, bonesStage, godotBonesScene, godotBonesShaders, hasBonesToExport, type BonesScope, type BonesTexture, type PartLook } from './godot-bones';
 import { SheetProblem } from './engines';
 
 export interface BonesRun {
@@ -114,7 +114,11 @@ export async function godotBonesFiles(o: BonesRun): Promise<{ files: { name: str
   const scopes = allScopes(top);
   const total = scopes.reduce((a, s) => a + s.parts.reduce((b, p) => b + p.pictures.length, 0), 0);
   let done = 0;
+  // Symbols copied large are drawn bigger so they stay sharp (the scene scales them back down).
+  const bakes = bakeScales(top, doc, k);
   for (const sc of scopes) {
+    const bake = bakes.get(sc) ?? 1;
+    const ks = k * bake;
     const who = owner.get(sc);
     const fileName = (layer: Layer, i: number, count: number) => {
       const stem = `${base}${who ? `-${slug(who, 'symbol')}` : ''}-${slug(layer.name, 'part')}`;
@@ -132,10 +136,10 @@ export async function godotBonesFiles(o: BonesRun): Promise<{ files: { name: str
         const pts = p.mesh.points;
         let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
         for (let j = 0; j < pts.length; j += 2) {
-          x0 = Math.min(x0, pts[j] * k);
-          x1 = Math.max(x1, pts[j] * k);
-          y0 = Math.min(y0, pts[j + 1] * k);
-          y1 = Math.max(y1, pts[j + 1] * k);
+          x0 = Math.min(x0, pts[j] * ks);
+          x1 = Math.max(x1, pts[j] * ks);
+          y0 = Math.min(y0, pts[j + 1] * ks);
+          y1 = Math.max(y1, pts[j + 1] * ks);
         }
         meshBox = { x: Math.floor(x0), y: Math.floor(y0), w: Math.ceil(x1) - Math.floor(x0) + 1, h: Math.ceil(y1) - Math.floor(y0) + 1 };
       }
@@ -145,12 +149,12 @@ export async function godotBonesFiles(o: BonesRun): Promise<{ files: { name: str
       const write = (img: ImageData, ox: number, oy: number, box: Box, i: number) => {
         const name = fileName(p.layer, i, p.pictures.length);
         files.push({ name, bytes: encodePng(crop(img, { x: box.x - ox, y: box.y - oy, w: box.w, h: box.h })) });
-        list.push({ path: `${dir}/${name}`, x: box.x, y: box.y, w: box.w, h: box.h });
+        list.push({ path: `${dir}/${name}`, x: box.x, y: box.y, w: box.w, h: box.h, ...(bake !== 1 ? { bake } : {}) });
       };
       for (let i = 0; i < p.pictures.length; i++) {
         if (o.signal?.aborted) throw new DOMException('Export cancelled', 'AbortError');
         o.onStep?.(done++, total, `Drawing ${p.layer.name}`);
-        const r = drawRest(doc, p.layer, p.pictures[i], firstFrame(i), k, p.look);
+        const r = drawRest(doc, p.layer, p.pictures[i], firstFrame(i), ks, p.look);
         const img = r.canvas.getContext('2d', { willReadFrequently: true })!.getImageData(0, 0, r.canvas.width, r.canvas.height);
         const a = alphaBox(img);
         const box = a ? { x: a.x + r.ox, y: a.y + r.oy, w: a.w, h: a.h } : null;

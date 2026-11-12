@@ -11,6 +11,8 @@ export interface ExtrasOptions {
   camera?: { a: { x: number; y: number; zoom: number; rotation: number }; b: { x: number; y: number; zoom: number; rotation: number } };
   /** Put effects on the layer with the arm instance, which keeps it from staying live. */
   fxOnHero?: boolean;
+  /** Scale the second arm copy on the stage by this much (a big copy of a symbol). */
+  bigCopy?: number;
 }
 
 /**
@@ -73,6 +75,11 @@ export function bonesExtrasDoc(o: ExtrasOptions = {}): Doc {
     { id: uid('c'), start: 0, length: 6, drawingId: h0.id, tween: { ease: 'easeInOut' } },
     { id: uid('c'), start: 6, length: 6, drawingId: h1.id },
   ];
+  if (o.bigCopy)
+    for (const d of [h0, h1]) {
+      const t = (d.shapes[1] as InstanceShape).transform;
+      Object.assign(t, { x: 20, y: 215, scaleX: o.bigCopy, scaleY: o.bigCopy, rotation: -20 });
+    }
   if (o.fxOnHero) hero.effects = [{ id: uid('e'), kind: 'blur', values: { radius: 2 } }];
   doc.layers.push(hero);
 

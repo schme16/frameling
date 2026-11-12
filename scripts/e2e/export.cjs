@@ -1346,11 +1346,11 @@ func _init():
 
 // A symbol with its own bones (moving, faded and tinted), a camera that pans, turns and zooms, a far layer with depth
 // and an Add glow with an effect, exported as bones and compared in Godot with Frameling's own frames.
-async function godotBonesExtrasSection() {
-  const r = begin('bones-extras', 'sheet godot-bones');
+async function godotBonesExtrasSection(name = 'bones-extras', extra = {}, more) {
+  const r = begin(name, 'sheet godot-bones');
   try {
-    const dir = setAutomationDir(path.join(outDir, 'bones-extras', 'sheet-godot-bones'));
-    await X('loadBonesExtras(true)');
+    const dir = setAutomationDir(path.join(outDir, name, 'sheet-godot-bones'));
+    await X(`loadBonesExtras(true, ${JSON.stringify(extra)})`);
     const defaults = await X('defaults()');
     const settings = { ...defaults, format: 'sheet', range: 'all', clipId: null, scale: 1, transparent: false, sheet: { ...defaults.sheet, engine: 'godot', godot: true, godotScene: true, json: false, godotRig: 'bones', godotPath: '' } };
     r.settings = settings;
@@ -1366,6 +1366,7 @@ async function godotBonesExtrasSection() {
     check(/\[node name="Arm" type="Node2D"/.test(tscn) && tscn.includes('type="Skeleton2D" parent="Arm"'), "scene is missing the symbol's own skeleton");
     check(!tscn.includes('name="Hero"'), 'the hero layer should hold only the live symbol copies');
     check(files.some((n) => n.endsWith('.gdshader')), 'no tint shader');
+    if (more) await more({ tscn, files, dir });
     await renderBonesInGodot({ dir, files, scene, settings, shots: [0, 3, 6, 8, 11], anim: 'default', tolerance: 0.03 });
   } catch (e) {
     fail(`harness error: ${e?.stack ?? e}`);
@@ -1382,6 +1383,9 @@ async function godotBonesExtrasSection() {
     await exportMatrix();
     if (!ONLY || ONLY.includes('godot-bones')) await godotBonesSection();
     if (!ONLY || ONLY.includes('godot-bones')) await godotBonesExtrasSection();
+    // A symbol copied three times its size: its pictures are baked bigger and scaled back down in the scene.
+    if (!ONLY || ONLY.includes('godot-bones'))
+      await godotBonesExtrasSection('bones-big-copy', { bigCopy: 3 }, ({ tscn }) => check(/scale = Vector2\(0\.33/.test(tscn), 'the big symbol copy should have its pictures scaled back down'));
     if (!SKIP.includes('files')) await filesSection();
   } catch (e) {
     begin('harness', 'startup').failures.push(String(e?.stack ?? e));
