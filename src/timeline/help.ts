@@ -55,7 +55,9 @@ Learn more: [Frames, keys and holds](help:timeline-frames), [Keys, tweens and pr
 
 Click the **arrow** beside a layer's name to open it. You get a row for each thing that changes on it: position, size or turn of a symbol, where a camera looks, each bone of a puppet, each animated effect. Every key is a diamond on its row. A line joins two keys where the value glides between them.
 
-On a symbol, each row's keys move on their own: drag a **Position** diamond and only the position moves. Drop one between drawing keys and Frameling cuts a drawing key there. Bones, cameras and morphs belong to the drawing, so they move it whole.
+Each row's keys move on their own. On a symbol, drag a **Position** diamond and only the position moves. On a puppet, drag one bone's diamond and only that bone's pose moves. On a camera, **Where it looks**, **Zoom** and **Turn** each have their own keys. Drop a diamond between drawing keys and Frameling cuts a drawing key there, and the in-betweens on both sides keep the same easing they had, so nothing else on the layer changes speed. The **Shape (morph)** row is different: its keys are the drawings themselves, so they move the drawing whole.
+
+Frameling says why when a move can't happen, for example if it would land on another key of the same row, or the layer is locked. It's one step in Undo either way.
 
 ## Picking and moving keys
 
@@ -63,7 +65,7 @@ On a symbol, each row's keys move on their own: drag a **Position** diamond and 
 - **Drag** across the empty part of a property row (or **Shift** and drag anywhere empty) to pick every key in a box.
 - **Drag** a picked diamond to retime all the picked keys. A hold that ran up to the next key still does, so tweens stay joined.
 - Hold **Alt** while you drag to **stretch or squeeze** the picked keys from the first one: slower or faster.
-- **Delete** takes picked keys away. The drawing before carries on over the gap. A symbol row's key goes alone.
+- **Delete** takes picked keys away. The drawing before carries on over the gap. A key on a property row goes alone: the row just goes back to the value it had before.
 
 Right-click a key for **Spread out** and **Squeeze together** too.
 
@@ -83,7 +85,7 @@ Click the frames once so the timeline has the keys, then:
 ## Around the edges
 
 - The ruler shows **seconds** along the top and **frames** underneath. Markers draw a faint line down through the rows.
-- **Ctrl + scroll** zooms; the magnifier button **fits** the whole animation in view.
+- **Ctrl + scroll** zooms; the magnifier button **fits** the whole animation in view. In a narrow window it moves, with ping-pong, add a sound and clean timeline, into the **...** menu at the end of the buttons. New drawing, copy, add and remove a frame, hold and onion skin stay on the buttons as icons: hover one for its name.
 - **S** on a layer shows only that layer (solo). Click it again to bring the others back as they were.
 - Give a layer a **colour label** from its **...** menu, to tell layers apart at a glance.
 
