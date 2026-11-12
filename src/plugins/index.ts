@@ -5,10 +5,11 @@ import './shapeSection';
 import './plugins.css';
 import { requestOverlay } from '../canvas/controller';
 import { lazyModule } from '../core/lazy';
+import { plugins } from './state';
 
 // The plugin runner (manager, sandbox, panel) loads after the first frame, not before it, so the start-up chunk stays small.
 const loadRunner = lazyModule(async () => {
-  const [m, { plugins }, { approveWithDialog }] = await Promise.all([import('./manager'), import('./state'), import('./ApproveDialog'), import('./PluginPanel')]);
+  const [m, { approveWithDialog }] = await Promise.all([import('./manager'), import('./ApproveDialog'), import('./PluginPanel')]);
   const loadPluginExport = lazyModule(() => import('./PluginExportDialog'));
   m.setApprover(approveWithDialog);
   m.setOverlayRequester(requestOverlay);
