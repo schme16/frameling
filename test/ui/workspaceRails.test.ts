@@ -2,6 +2,7 @@
 // Each workspace has its own tool rail: defaults that come with it, changes kept per workspace, reset to its default.
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { allTools } from '../../src/core/registry';
+import { line } from '../../src/ui/mascot/lines';
 import { applyWorkspace, defaultRailOf, DOCK_KEY, dock, importWorkspace, railOf, resetDock, resetLayout, saveWorkspace, setToolGroups, workspaceText, deleteWorkspace } from '../../src/ui/dock';
 import { BUILTIN_RAILS, resolveGroups, sanitizeGroups, type ToolGroup } from '../../src/ui/toolArrange';
 import { currentGroups, isCustomArrangement, moveToolTo, resetToolArrangement } from '../../src/ui/toolRail';
@@ -203,6 +204,29 @@ describe('loading what an older version saved', () => {
     old('draw', [{ id: 'g1', tools: ['hand'] }], { rails: { draw: [{ id: 'g9', tools: ['zoom'] }], '__proto__': [{ id: 'x', tools: ['pencil'] }], bad: 'x' } });
     const s = (await load()).dock.get();
     expect(s.rails).toEqual({ draw: [{ id: 'g9', tools: ['zoom'] }] });
+  });
+  it('tells the person once, by workspace name, that the arrangement stayed where they were', async () => {
+    localStorage.removeItem('frameling.dock.railNote.v1');
+    old('animate', [{ id: 'g1', tools: ['hand', 'zoom'] }]);
+    const m = await load();
+    expect(m.takeRailMigrationNote()).toBe('Animate');
+    expect(m.takeRailMigrationNote()).toBeNull();
+    // Remembered across restarts, even though the old arrangement was never written back.
+    old('animate', [{ id: 'g1', tools: ['hand', 'zoom'] }]);
+    expect((await load()).takeRailMigrationNote()).toBeNull();
+  });
+  it('names one of your own workspaces, and says nothing when there was nothing to move', async () => {
+    localStorage.removeItem('frameling.dock.railNote.v1');
+    old('u-1', [{ id: 'g1', tools: ['hand'] }], { user: [{ id: 'u-1', name: 'Mine', layout: { zones: {}, hidden: [], known: [], tools: { place: 'left', x: 1, y: 2 } } }] });
+    expect((await load()).takeRailMigrationNote()).toBe('Mine');
+    localStorage.removeItem('frameling.dock.railNote.v1');
+    old('draw', undefined);
+    expect((await load()).takeRailMigrationNote()).toBeNull();
+    old('draw', [{ id: 'g1', tools: ['hand'] }], { rails: { draw: [{ id: 'g9', tools: ['zoom'] }] } });
+    expect((await load()).takeRailMigrationNote()).toBeNull();
+  });
+  it('the note is a Quill line with the workspace filled in', () => {
+    expect(line('workspaces.railKept', { workspace: 'Animate' })).toBe('Your tool arrangement stays in Animate. Other workspaces now start from their own.');
   });
   it('the arrangement is written out with the workspace id and read back', async () => {
     moveToolTo('hand', { newGroupAt: 0 });

@@ -21,6 +21,10 @@ export interface DockState {
 }
 
 export const DOCK_KEY = 'frameling.dock.v1';
+/** Set once the person has been told their old tool arrangement moved to the workspace they were on. */
+export const RAIL_NOTE_KEY = 'frameling.dock.railNote.v1';
+/** The workspace a customised single arrangement moved to at start-up, until the person is told (see takeRailMigrationNote). */
+let railMoved: string | null = null;
 /** Saved state is version 2 from the top zone, floating windows, the movable tool rail and panel names. Version 1 loads as it was. */
 const DOCK_VERSION = 2;
 
@@ -152,13 +156,29 @@ function initial(): DockState {
   // Before each workspace had its own rail there was one arrangement, in the layout: it is now the person's own
   // arrangement for the workspace they are on.
   if (layout.tools.groups) {
-    if (!rails[workspaceId]) rails[workspaceId] = layout.tools.groups;
+    if (!rails[workspaceId]) {
+      rails[workspaceId] = layout.tools.groups;
+      railMoved = workspaceId;
+    }
     delete layout.tools.groups;
   }
   return { layout, workspaceId, user, ...(Object.keys(rails).length ? { rails } : {}) };
 }
 
 export const dock = createStore<DockState>(initial());
+
+/**
+ * The name of the workspace that took over a tool arrangement the person had changed before each workspace had its own,
+ * once, the first time it is asked after that update. Null when there is nothing to say, or it has been said.
+ */
+export function takeRailMigrationNote(): string | null {
+  const id = railMoved;
+  railMoved = null;
+  if (!id) return null;
+  if (readRaw<unknown>(RAIL_NOTE_KEY, null)) return null;
+  writeJson(RAIL_NOTE_KEY, 'told');
+  return listWorkspaces().find((w) => w.id === id)?.name ?? null;
+}
 
 /** True while the panels are put away for room to draw (Hide all panels). Not kept: a new session starts with them back. */
 export const panelsAway = createStore(false);
