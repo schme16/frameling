@@ -69,6 +69,10 @@ const SHIM = `
   S.b64 = b64;
   const unb64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
   S.unb64 = unb64;
+  // The browser's own confirm and alert would block the run: answer them and keep a note.
+  S.confirms = []; S.confirmAnswer = true;
+  window.confirm = (m) => { S.confirms.push(String(m)); return S.confirmAnswer; };
+  window.alert = (m) => { S.confirms.push('alert: ' + String(m)); };
   const abort = () => new DOMException('The user aborted a request.', 'AbortError');
   // Downloads and the upload picker work the same in both modes (workspace files and so on use them everywhere).
   {
@@ -154,6 +158,8 @@ function makeWindow(partition) {
     }
   });
   const wc = win.webContents;
+  // Leaving with unsaved work asks "Leave site?" in a browser; the test says yes (the page puts the work aside first).
+  wc.on('will-prevent-unload', (e) => e.preventDefault());
   const js = (code) => wc.executeJavaScript(code);
   const input = {
     click: async (x, y, o = {}) => {
@@ -224,7 +230,19 @@ function makeWindow(partition) {
     list: (sub) => js(`__shim.list(${JSON.stringify(sub)})`),
     picks: () => js(`__shim.picks.splice(0)`),
   };
-  return { win, wc, js, input, shot, load, clickText, body, waitFor, files };
+  /** Answers a "Remember my choice" question (Quill asks the first time) with its first option. Returns whether one was there. */
+  const answerChoice = async () => {
+    const t0 = Date.now();
+    while (Date.now() - t0 < 1500) {
+      const done = await js(`(() => { const d = [...document.querySelectorAll('[role=dialog]')].find((x) => /Remember my choice/.test(x.innerText)); if (!d) return false; [...d.querySelectorAll('button')].find((b) => b.textContent.trim() === 'OK')?.click(); return true; })()`);
+      if (done) { await sleep(500); return true; }
+      await sleep(150);
+    }
+    return false;
+  };
+  /** Runs a command without waiting for it to finish (a command that opens a dialog finishes when it closes). */
+  const run = (id) => js(`void __frameling.run(${JSON.stringify(id)}); 0`);
+  return { win, wc, js, input, shot, load, clickText, body, waitFor, files, run, answerChoice };
 }
 
 // ---------------------------------------------------------------- flows
@@ -232,13 +250,14 @@ function makeWindow(partition) {
 const flows = {};
 const flow = (name, fn) => (flows[name] = fn);
 module.exports = { flow, check, sleep, makeWindow, errors, tmp };
+process.on('uncaughtException', (e) => { console.error(e); app.exit(1); });
 require('./web-flows.cjs');
 
 app.commandLine.appendSwitch('ignore-gpu-blocklist');
 app.setPath('userData', path.join(tmp, 'user'));
 app.on('window-all-closed', () => {});
-process.on('uncaughtException', (e) => { console.error(e); app.exit(1); });
 
+process.on('unhandledRejection', (e) => { console.error(e); app.exit(1); });
 app.whenReady().then(async () => {
   await listen();
   const ctx = { listen, unlisten, get port() { return port; }, session, tmp, shotsDir, WEB, root, errors };
