@@ -70,6 +70,9 @@
       "package.json"
     ],
     "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
+    "toolsets": {
+      "appimage": "1.0.3"
+    },
     "linux": {
       "target": [
         "AppImage"
@@ -145,7 +148,7 @@
         ]
       }
     ],
-    "afterPack": "build/adhoc-sign.cjs"
+    "afterPack": "build/after-pack.cjs"
   },
   "desktopName": "frameling.desktop"
 }

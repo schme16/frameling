@@ -152,6 +152,13 @@ describe('the notebook', () => {
     expect(stepDone('keys', r.now()!)).toBe(false);
   });
 
+  it('puts the Linux session (Wayland or X11) in the report when it is known', () => {
+    const r = new CheckRecorder(DEFAULT_PEN.pen);
+    const session = { type: 'wayland', desktop: 'GNOME', wayland: true, x11: true, ozone: 'x11' };
+    const rep = r.report({ ...env(), platform: 'linux', session });
+    expect(rep.system.session).toEqual(session);
+  });
+
   it('writes a complete report with every range, code and rate', () => {
     const r = new CheckRecorder(DEFAULT_PEN.pen);
     for (const id of CHECK_STEPS) r.start(id);
@@ -167,6 +174,7 @@ describe('the notebook', () => {
     expect(rep).toMatchObject({ kind: 'frameling-tablet-report', version: 1, createdAt: '2026-11-12T10:00:00.000Z' });
     expect(rep.app).toEqual({ version: '1.0.0', electron: '45.0.0', chrome: '140.0.0.0' });
     expect(rep.system.platform).toBe('win32');
+    expect(rep.system.session).toBeUndefined();
     expect(rep.devices.pointerTypes.pen).toBeGreaterThan(50);
     expect(rep.pressure.min).toBe(0);
     expect(rep.pressure.max).toBeCloseTo(0.983, 2);

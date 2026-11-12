@@ -84,6 +84,8 @@ export interface FramelingApi {
   kind?: 'desktop' | 'web';
   platform: string;
   versions: { app: string; electron: string; chrome: string };
+  /** Linux only: which kind of desktop session this is, for the pen report (pens reach the app differently on Wayland and X11). */
+  session?: { type: string; desktop: string; wayland: boolean; x11: boolean; ozone: string };
   files: {
     /** Shows the Open dialog. null means they cancelled. */
     open(): Promise<OpenedFile | FileFailure | null>;
