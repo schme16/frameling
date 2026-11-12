@@ -5,6 +5,7 @@ import { loadFile, saveFile } from '../../src/io/file';
 import { buildPlayable, playableClips, playablePackage, playableRuns, PLAYABLE_FORMAT, type PlayableManifest } from '../../src/export/playable';
 import { defaultSettings, filtersFor, planExport } from '../../src/export/plan';
 import { formatInfo } from '../../src/export/types';
+import './withInteractives';
 import { makeHeroSprite } from '../../src/templates/hero-sprite';
 import { newDoc } from '../../src/core/doc';
 import { artFrames } from './helpers';

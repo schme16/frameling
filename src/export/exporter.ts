@@ -1,21 +1,17 @@
 // The part of exporting that talks to the desktop side: ask where to save, run the export, write the result, and say
 // how it went. The dialog and "Export again" both come through here.
 import { sceneOf } from '../core/symbols';
-import type { VideoCodec } from 'mediabunny';
 import { store } from '../core/store';
 import { baseName, desktop } from '../io/desktop';
 import { can } from '../platform';
 import { notify } from '../io/notify';
-import { detectCapabilities } from './capabilities';
 import { extensionFor, filtersFor, planExport } from './plan';
 import { isCancelled, runExport, type Progress } from './run';
 import { SheetProblem } from './engines';
-import { audibleClips } from '../audio/clips';
-import { canMakeAac } from '../audio/export';
-import { choose } from '../core/choices';
-import type { Mp4SoundChoice } from './choices';
 import './choices';
-import { runProres } from './prores';
+import { exporterOf } from './registry';
+import { ExportProblem } from './problem';
+import type { RunContext } from './runtime';
 import type { Doc } from '../core/format';
 import { ArtboardExportProblem, exportArtboards, exportsSeveral } from '../artboards/export';
 import { DEFAULT_SHEET, formatInfo, normalizeSheet, type ExportSettings, type SheetSettings } from './types';
@@ -75,7 +71,7 @@ export function saveSheetExtras(s: SheetSettings): void {
 
 export type ExportOutcome = 'done' | 'cancelled' | 'stopped';
 
-export class ExportProblem extends Error {}
+export { ExportProblem };
 
 /** Plain words for whatever went wrong. */
 export function describeError(e: unknown): string {
@@ -104,35 +100,27 @@ export async function exportDocument(settings: ExportSettings, signal: AbortSign
   // While a symbol is open, export the scene as it is saved.
   const { doc, frame } = only ? { doc: only, frame: 0 } : sceneOf(st.doc, st.ui.frame);
   const picked = settings;
-  // MP4 with sound, on a computer that can only make Opus sound and has no ffmpeg to fix it: ask (once) what to do.
-  if (settings.format === 'mp4' && audibleClips(doc.audio).length && !(await canMakeAac()) && !(await api.media?.aacAvailable().catch(() => false))) {
-    if ((await choose<Mp4SoundChoice>('export.mp4Sound')) === 'webm') settings = { ...settings, format: 'webm' };
-  }
+  const def = exporterOf(settings.format);
+  if (!def) throw new ExportProblem('That kind of export is turned off. Turn it on in Preferences > Features.');
+  // A format may need to settle something first (an MP4 whose sound would not play everywhere: ask what to do).
+  if (def.settle) settings = await def.settle(doc, settings);
   const plan = planExport(doc, settings, frame);
   if (plan.problem) throw new ExportProblem(plan.problem);
   const info = formatInfo(settings.format);
+  const made = exporterOf(settings.format) ?? def;
 
   // Ask where first, so nobody waits for a long render just to cancel at the end.
   let target: string | null;
-  if (settings.format === 'sheet') target = await api.files.pickExportFolder({ title: 'Choose a folder for your sprite sheet', suggestedName: plan.name });
+  if (made.folderTitle) target = await api.files.pickExportFolder({ title: made.folderTitle, suggestedName: plan.name });
   else target = await api.files.pickExportFile({ suggestedName: `${plan.name}.${extensionFor(settings)}`, filters: filtersFor(settings.format, settings), title: `Export ${info.title}` });
   if (!target) return 'cancelled';
 
-  let videoCodec: VideoCodec | null = null;
-  let videoAlpha = false;
-  if (settings.format === 'mp4' || settings.format === 'webm') {
-    const caps = await detectCapabilities(plan.width, plan.height);
-    const c = caps[settings.format];
-    if (!c.ok) throw new ExportProblem(c.reason ?? "This computer can't make that kind of video.");
-    videoCodec = c.codec;
-    videoAlpha = c.alpha;
-    // Asked for see-through and the usual codec cannot: use the one that can.
-    if (settings.format === 'webm' && settings.transparent && c.alphaCodec) videoCodec = c.alphaCodec;
-  }
+  // Whether this computer can make it, and what it needs (the video codec).
+  const prepared: Partial<RunContext> = made.prepare ? await made.prepare(plan, settings) : {};
 
-  if (settings.format === 'prores') {
+  if (made.direct) {
     try {
-      await runProres(doc, settings, frame, target, signal, onProgress);
+      await made.direct(doc, settings, frame, target, signal, onProgress);
     } catch (e) {
       if (isCancelled(e)) return 'cancelled';
       throw new ExportProblem(e instanceof Error ? e.message : String(e));
@@ -144,7 +132,7 @@ export async function exportDocument(settings: ExportSettings, signal: AbortSign
 
   let result;
   try {
-    result = await runExport({ doc, settings, currentFrame: frame, signal, onProgress, videoCodec, videoAlpha, appVersion: api.versions.app, toAac: api.media?.toAac });
+    result = await runExport({ doc, settings, currentFrame: frame, signal, onProgress, ...prepared, appVersion: api.versions.app, toAac: api.media?.toAac });
   } catch (e) {
     if (isCancelled(e)) return 'cancelled';
     throw e;

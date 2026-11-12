@@ -24,8 +24,8 @@ const CORE_BACK_IMPORTS = ['core/render.ts -> effects', 'core/render.ts -> parti
 
 /** Who may import a folder whose feature has moved onto a descriptor. */
 const CONVERTED: Record<string, { importers: string[] }> = {
-  // The export code reads sound data by name to mix and mux it (it stays in the file whether or not the feature is on).
-  audio: { importers: ['renderer/features.ts', 'lipsync/commands.tsx', 'lipsync/run.ts', 'export/exporter.ts', 'export/run.ts'] },
+  // The video exporters read sound data by name to mix and mux it (it stays in the file whether or not the feature is on).
+  audio: { importers: ['renderer/features.ts', 'lipsync/commands.tsx', 'lipsync/run.ts', 'export/formats/video-prep.ts', 'export/formats/video.ts'] },
   flow: { importers: ['renderer/features.ts'] },
   interactives: { importers: ['renderer/features.ts'] },
   lipsync: { importers: ['renderer/features.ts', 'templates/lip-sync.ts'] },

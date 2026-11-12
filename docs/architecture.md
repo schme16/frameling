@@ -144,6 +144,19 @@ from importing feature folders (a short list of today's back-imports may only sh
 runs the help audit and the shortcut check with every optional feature off. Owner-tagged registrations also include canvas
 hooks, file openers, save hooks, choices and template sources: call them from `activate()`.
 
+**Export formats (a registry).** `src/export/registry.ts` holds `ExporterDef`s: the card (`info`), whether it is `popular`, plan rules
+(`video`, `baked`, `stills`, `loops`, `singleFrame`, `extension`, `fileKind`, `folderTitle`), what it keeps (`carry`, `clipPlayNote`),
+`prepare` (checks this computer, e.g. the video codec), `settle` (asks before saving), `support` (greys the card out with a reason),
+`picked`/`opened` (settings to change when chosen), `repair` (remembered settings), `load()` (the making, `src/export/formats/*.ts`, loaded on
+first use) and `ui()` (the options the dialog shows: `Before`, `Size`, `Notes`, `After`, `summary`, `exported`, in `src/export/options/*.tsx`).
+`FormatId` is a plain string. The built-in formats register in `src/export/builtin.ts` (cards and rules only, so start-up stays light);
+`src/export/types.ts` loads it, so `formatInfo(id)` always works. A feature adds a format through its descriptor
+(`exporters: [...]`), which the host registers as that owner: the Interactives card is in `src/interactives/exporter.ts` and goes with
+the feature. File > Export entries are ordinary commands, so a format's commands ride on the feature's `commands`. `runExport` and
+`exportDocument` find the format through the registry and never name one. **Sound with Audio off:** exports always keep the sound
+(it is in `doc.audio`, so a video mixes it in); Audio owns the sound-related export options, today the `export.mp4Sound` choice (what to do
+when the sound would not play everywhere), so with Audio off nothing is asked and an MP4 stays an MP4.
+
 **How a core area plugs in.** `src/renderer/features.ts` imports every area for its side effects, in order. A folder's
 `index.ts` imports its `commands.ts` and `help.ts` and registers its panel, usually with `lazyPanel`. See
 `src/particles/index.ts` for a small one. Canvas hooks for features: `registerDecoration` (`src/canvas/decorations.ts`),

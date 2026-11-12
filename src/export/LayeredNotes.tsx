@@ -2,9 +2,8 @@
 import type { Doc } from '../core/format';
 import { openHelp } from '../ui/overlays';
 import { flatPlan } from './layered';
-import type { FormatId } from './types';
 
-const NOTES: Partial<Record<FormatId, { legend: string; text: string; help: string; link: string }>> = {
+const NOTES: Partial<Record<string, { legend: string; text: string; help: string; link: string }>> = {
   psd: {
     legend: 'For Photoshop',
     text: 'Every layer becomes a Photoshop layer with its name, blend mode, opacity and visibility. Folders become groups and clipped layers stay clipped. Effects are baked into the pixels.',
@@ -31,7 +30,7 @@ const NOTES: Partial<Record<FormatId, { legend: string; text: string; help: stri
   },
 };
 
-export function LayeredNotes({ format, doc }: { format: FormatId; doc: Doc }) {
+export function LayeredNotes({ format, doc }: { format: string; doc: Doc }) {
   const n = NOTES[format];
   if (!n) return null;
   const pictures = format === 'pdf' || format === 'ai' ? flatPlan(doc).filter((u) => u.kind === 'picture').length : 0;

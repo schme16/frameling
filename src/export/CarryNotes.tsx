@@ -3,27 +3,24 @@
 import { useMemo } from 'react';
 import { openHelp } from '../ui/overlays';
 import type { Doc } from '../core/format';
-import { CARRY, carryWarnings, docFeatures } from './carries';
-import type { FormatId } from './types';
+import { carryOf, carryWarnings, docFeatures } from './carries';
 
-// These formats already have their own note (LayeredNotes); only the warnings are added for them.
-const OWN_NOTE: FormatId[] = ['psd', 'pdf', 'ai', 'prores'];
-
-export function CarryNotes({ format, doc }: { format: FormatId; doc: Doc }) {
+// A format with a note of its own (LayeredNotes) only gets the warnings added here.
+export function CarryNotes({ format, doc, own }: { format: string; doc: Doc; own: boolean }) {
   const found = useMemo(() => docFeatures(doc), [doc]);
   const warnings = carryWarnings(doc, format, found);
-  const own = OWN_NOTE.includes(format);
+  const carry = carryOf(format);
   if (own && !warnings.length) return null;
   return (
     <fieldset className="ex-carry">
       <legend>What carries over</legend>
       {!own && (
         <p className="ex-note">
-          {CARRY[format].summary}
-          {CARRY[format].help && (
+          {carry.summary}
+          {carry.help && (
             <>
               {' '}
-              <button type="button" className="ex-link" onClick={() => openHelp(CARRY[format].help!)}>
+              <button type="button" className="ex-link" onClick={() => openHelp(carry.help!)}>
                 More
               </button>
             </>
