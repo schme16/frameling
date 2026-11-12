@@ -168,9 +168,12 @@ const pixelCanvasCache = new WeakMap<Uint8ClampedArray, OffscreenCanvas | HTMLCa
 export function pixelCanvas(d: PixelDrawing): OffscreenCanvas | HTMLCanvasElement {
   let c = pixelCanvasCache.get(d.pixels);
   if (!c) {
-    c = typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(d.width, d.height) : Object.assign(document.createElement('canvas'), { width: d.width, height: d.height });
+    // A blank drawing (nothing painted) gets a one pixel see-through picture, as a canvas cannot be 0 wide.
+    const w = Math.max(1, d.width);
+    const h = Math.max(1, d.height);
+    c = typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(w, h) : Object.assign(document.createElement('canvas'), { width: w, height: h });
     const g = c.getContext('2d') as Ctx2D;
-    g.putImageData(new ImageData(new Uint8ClampedArray(d.pixels), d.width, d.height), 0, 0);
+    if (d.width > 0 && d.height > 0) g.putImageData(new ImageData(new Uint8ClampedArray(d.pixels), d.width, d.height), 0, 0);
     pixelCanvasCache.set(d.pixels, c);
   }
   return c;
@@ -189,9 +192,10 @@ export function drawDrawing(g: Ctx2D, d: Drawing, pixelSize = 1, at?: DrawContex
   } else if (d.kind === 'tilemap') {
     if (at) drawTilemap(g, at.doc, d, pixelSize, at.frame, pixelCanvas);
   } else if (d.kind === 'pixel') {
+    if (d.width < 1 || d.height < 1) return;
     const prev = g.imageSmoothingEnabled;
     g.imageSmoothingEnabled = false;
-    g.drawImage(pixelCanvas(d), 0, 0, d.width * pixelSize, d.height * pixelSize);
+    g.drawImage(pixelCanvas(d), (d.x ?? 0) * pixelSize, (d.y ?? 0) * pixelSize, d.width * pixelSize, d.height * pixelSize);
     g.imageSmoothingEnabled = prev;
   }
 }
@@ -278,7 +282,7 @@ const meshTextures = new WeakMap<Drawing, MeshTexture[]>();
 export const meshStats = { textures: 0 };
 
 function meshTexture(d: Drawing, pixelSize: number, src: number[], scale: number): MeshTexture {
-  if (d.kind === 'pixel') return { k: 1 / pixelSize, src, x: 0, y: 0, canvas: pixelCanvas(d) };
+  if (d.kind === 'pixel') return { k: 1 / pixelSize, src, x: (d.x ?? 0) * pixelSize, y: (d.y ?? 0) * pixelSize, canvas: pixelCanvas(d) };
   // Scales snap to powers of two so zooming doesn't redraw the picture every step.
   const k = Math.pow(2, Math.max(-2, Math.min(3, Math.ceil(Math.log2(Math.max(0.01, scale))))));
   const list = meshTextures.get(d) ?? [];
@@ -405,8 +409,10 @@ export function drawingBox(d: Drawing, pixelSize = 1, doc?: Doc): Box {
   if (hit && hit.ps === pixelSize) return hit.box;
   const b = { ...EMPTY };
   if (d.kind === 'pixel') {
-    grow(b, 0, 0);
-    grow(b, d.width * pixelSize, d.height * pixelSize);
+    if (d.width > 0 && d.height > 0) {
+      grow(b, (d.x ?? 0) * pixelSize, (d.y ?? 0) * pixelSize);
+      grow(b, ((d.x ?? 0) + d.width) * pixelSize, ((d.y ?? 0) + d.height) * pixelSize);
+    }
   } else if (d.kind === 'tilemap') {
     const o = doc ? tileOrigin(doc, pixelSize) : { x: 0, y: 0 };
     grow(b, o.x, o.y);

@@ -1,3 +1,5 @@
+import { trimmedDrawing } from '../../src/core/pixelBounds';
+import type { PixelDrawing } from '../../src/core/format';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { strFromU8, unzipSync } from 'fflate';
 import { saveFile, loadFile } from '../../src/io/file';
@@ -27,7 +29,11 @@ describe('template files', () => {
     const doc = hero();
     const t = readTemplate(packTemplate(doc, { ...meta, kind: 'pixel' }));
     const id = Object.keys(doc.drawings).find((k) => doc.drawings[k].kind === 'pixel')!;
-    expect((t.doc.drawings[id] as { pixels: Uint8ClampedArray }).pixels).toEqual((doc.drawings[id] as { pixels: Uint8ClampedArray }).pixels);
+    // A file holds only the painted part of a drawing; that part is exactly what was there.
+    const was = trimmedDrawing(doc.drawings[id] as PixelDrawing);
+    const got = t.doc.drawings[id] as PixelDrawing;
+    expect([got.x ?? 0, got.y ?? 0, got.width, got.height]).toEqual([was.x ?? 0, was.y ?? 0, was.width, was.height]);
+    expect(got.pixels).toEqual(was.pixels);
   });
 
   it('describe a plain drawing from the drawing itself', () => {

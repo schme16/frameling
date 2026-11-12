@@ -3,6 +3,7 @@
  * Shift adds to the selection, Alt takes away (Alt+drag inside it copies the pixels instead). Once something
  * is selected, painting stays inside it, and the Pixel menu's flips, turns and outlines work on just that part.
  */
+import { gridPixels } from '../core/pixelBounds';
 import { registerTool, type Tool, type ToolContext, type ToolPointer } from '../core/registry';
 import { currentChoice, registerChoice } from '../core/choices';
 import { cssVar } from '../canvas/theme';
@@ -97,7 +98,7 @@ function down(e: ToolPointer, ctx: ToolContext): void {
   if (mode === 'wand') {
     if (isFloating()) dropFloating();
     const d = activePixelDrawing();
-    const pixels = d?.pixels ?? new Uint8ClampedArray(a.width * a.height * 4);
+    const pixels = d ? gridPixels(d, a.width, a.height) : new Uint8ClampedArray(a.width * a.height * 4);
     const s = getSelectSettings();
     apply(wandMask(pixels, a.width, a.height, cell.x, cell.y, { tolerance: (s.tolerance / 100) * 255, contiguous: s.contiguous }), op);
     ctx.requestOverlay();

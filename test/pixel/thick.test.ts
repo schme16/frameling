@@ -1,4 +1,5 @@
 // Thick pixel outlines: the pure rasterising, the preference, and the shape tools on a pixel layer.
+import { asGrid } from '../helpers/grid';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { PixelDrawing, PixelLayer } from '../../src/core/format';
 import { store } from '../../src/core/store';
@@ -189,7 +190,7 @@ describe('the preference', () => {
 
 // 64 x 64 document at 1 per pixel: a 64 x 64 grid. at(px, py) is the middle of an art pixel.
 const at = (px: number, py: number): [number, number] => [px + 0.5, py + 0.5];
-const drawing = () => Object.values(store().get().doc.drawings).find((d) => d.kind === 'pixel') as PixelDrawing;
+const drawing = () => asGrid(Object.values(store().get().doc.drawings).find((d) => d.kind === 'pixel') as PixelDrawing);
 const hexAt = (x: number, y: number) => {
   const [r, g, b, a] = getPx(drawing().pixels, drawing().width, x, y);
   return a ? '#' + [r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('') : null;

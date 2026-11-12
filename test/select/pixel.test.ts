@@ -1,3 +1,4 @@
+import { asGrid } from '../helpers/grid';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { PixelDrawing } from '../../src/core/format';
 import { store } from '../../src/core/store';
@@ -25,7 +26,7 @@ const drawing = () => {
   const { doc, ui } = store().get();
   const layer = doc.layers[0];
   const cel = layer.cels.find((c) => ui.frame >= c.start && ui.frame < c.start + c.length);
-  return cel ? (doc.drawings[cel.drawingId] as PixelDrawing) : undefined;
+  return cel ? asGrid(doc.drawings[cel.drawingId] as PixelDrawing) : undefined;
 };
 const hex = (x: number, y: number) => {
   const d = drawing();

@@ -562,9 +562,10 @@ function drawShape(cx: Content, ctx: PdfFrameContext, s: Shape): void {
 }
 
 function drawPixels(cx: Content, ctx: PdfFrameContext, d: PixelDrawing, pixelSize: number): void {
+  if (d.width < 1 || d.height < 1) return;
   const name = ctx.writer.image(washPixels({ width: d.width, height: d.height, pixels: d.pixels }), false);
-  // Images fill the unit square; the page is flipped, so flip the picture back.
-  cx.push(`q ${num(d.width * pixelSize)} 0 0 ${num(-d.height * pixelSize)} 0 ${num(d.height * pixelSize)} cm /${name} Do Q`);
+  // Images fill the unit square; the page is flipped, so flip the picture back. The block sits (x, y) art pixels in.
+  cx.push(`q ${num(d.width * pixelSize)} 0 0 ${num(-d.height * pixelSize)} ${num((d.x ?? 0) * pixelSize)} ${num((d.y ?? 0) * pixelSize + d.height * pixelSize)} cm /${name} Do Q`);
 }
 
 function drawDrawing(cx: Content, ctx: PdfFrameContext, d: Drawing, pixelSize: number): void {

@@ -1,3 +1,4 @@
+import { asGrid } from '../helpers/grid';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { PixelDrawing, StrokeShape } from '../../src/core/format';
 import { store } from '../../src/core/store';
@@ -108,7 +109,7 @@ describe('pencil', () => {
     drag(pencilTool, c, [[4, 4], [12, 4]]);
     expect(c.hint).not.toHaveBeenCalled();
     const { doc } = store().get();
-    const d = Object.values(doc.drawings)[0] as PixelDrawing;
+    const d = asGrid(Object.values(doc.drawings)[0] as PixelDrawing);
     // Size 5 round row 0: rows 1 and 2 are painted (as far as the edge goes), row 3 is not.
     expect(getPx(d.pixels, d.width, 0, 0)[3]).toBe(255);
     expect(getPx(d.pixels, d.width, 1, 1)[3]).toBe(255);
@@ -122,7 +123,7 @@ const at = (px: number, py: number): [number, number] => [px * 8 + 4, py * 8 + 4
 const pixelsNow = () => {
   const { doc } = store().get();
   const cel = doc.layers[0].cels[0];
-  return cel ? (doc.drawings[cel.drawingId] as PixelDrawing) : undefined;
+  return cel ? asGrid(doc.drawings[cel.drawingId] as PixelDrawing) : undefined;
 };
 
 describe('brush on a pixel layer', () => {

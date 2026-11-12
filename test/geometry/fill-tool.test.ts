@@ -1,3 +1,4 @@
+import { asGrid } from '../helpers/grid';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { newDoc, newVectorDrawing, newPixelDrawing, uid } from '../../src/core/doc';
 import type { Doc, FillShape, Shape, VectorDrawing, PixelDrawing } from '../../src/core/format';
@@ -144,7 +145,7 @@ describe('paint bucket tool', () => {
       const s = resetStore(doc);
       const hints: string[] = [];
       const ctx: ToolContext = { zoom: 1, requestOverlay: () => {}, hint: (m) => void hints.push(m) };
-      return { s, hints, ctx, drawing: () => store().get().doc.drawings[d.id] as PixelDrawing, before: d.pixels };
+      return { s, hints, ctx, drawing: () => asGrid(store().get().doc.drawings[d.id] as PixelDrawing), before: d.pixels };
     }
     it('fills the joined-up area only, with a new array', () => {
       const t = pixelSetup();

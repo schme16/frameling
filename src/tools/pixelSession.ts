@@ -7,7 +7,8 @@ import { pixelGrid } from '../core/doc';
 import { drawingAt } from '../core/doc';
 import { setLive } from '../canvas/controller';
 import { getPx, setPx, type PxPt, type RGBA } from '../canvas/pixels';
-import { editActiveDrawing } from './edit';
+import { setActivePixels, type EditResult } from './edit';
+import { gridPixels } from '../core/pixelBounds';
 import { autoHeldAt } from '../timeline/edit-core';
 import { markTracing } from '../canvas/ghost';
 import { tileModeOn, wrap } from '../tiles/state';
@@ -60,16 +61,11 @@ export class PixelSession {
     const d = drawingAt(doc, layer, frame);
     this.fresh = !!opts.adds && !!autoHeldAt(layer, frame);
     if (this.fresh) markTracing(layer.id, frame);
-    if (d && d.kind === 'pixel' && !this.fresh) {
-      this.width = d.width;
-      this.height = d.height;
-      this.base = d.pixels;
-    } else {
-      const g = pixelGrid(doc, layer);
-      this.width = g.width;
-      this.height = g.height;
-      this.base = new Uint8ClampedArray(g.width * g.height * 4);
-    }
+    const g = pixelGrid(doc, layer);
+    this.width = g.width;
+    this.height = g.height;
+    // The drawing holds only what is painted; the session works on the whole grid.
+    this.base = d && d.kind === 'pixel' && !this.fresh ? gridPixels(d, g.width, g.height) : new Uint8ClampedArray(g.width * g.height * 4);
     this.work = new Uint8ClampedArray(this.base);
     this.layerId = layer.id;
     this.pixelSize = layer.pixelSize;
@@ -174,20 +170,12 @@ export class PixelSession {
   }
 
   /** Ends the preview and writes the result into the document as one undo step. */
-  commit(label: string): ReturnType<typeof editActiveDrawing> | 'nothing' {
+  commit(label: string): EditResult | 'nothing' {
     if (!this.changed) {
       setLive(null);
       return 'nothing';
     }
-    const pixels = new Uint8ClampedArray(this.work);
-    const r = editActiveDrawing(
-      label,
-      'pixel',
-      (d) => {
-        d.pixels = pixels;
-      },
-      { adds: this.fresh },
-    );
+    const r = setActivePixels(label, new Uint8ClampedArray(this.work), { adds: this.fresh });
     setLive(null);
     return r;
   }

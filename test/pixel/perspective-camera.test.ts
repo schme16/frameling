@@ -1,4 +1,5 @@
 // Pixel layers follow the perspective planes (rasterised crisply) and the camera size rule.
+import { asGrid } from '../helpers/grid';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { PixelDrawing, PixelLayer } from '../../src/core/format';
 import { store } from '../../src/core/store';
@@ -18,7 +19,7 @@ import { ctx, drag, pixelStore } from '../tools/helpers';
 
 // 64 x 64 document at 8 per pixel: an 8 x 8 grid. at(px, py) is the middle of an art pixel.
 const at = (px: number, py: number): [number, number] => [px * 8 + 4, py * 8 + 4];
-const drawing = () => Object.values(store().get().doc.drawings).find((d) => d.kind === 'pixel') as PixelDrawing;
+const drawing = () => asGrid(Object.values(store().get().doc.drawings).find((d) => d.kind === 'pixel') as PixelDrawing);
 const on = (x: number, y: number) => getPx(drawing().pixels, drawing().width, x, y)[3] > 0;
 const hexAt = (x: number, y: number) => {
   const [r, g, b, a] = getPx(drawing().pixels, drawing().width, x, y);

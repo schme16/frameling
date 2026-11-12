@@ -8,7 +8,8 @@
  */
 import { current, type Draft } from 'immer';
 import type { Cel, Doc, Drawing, Layer, PixelDrawing, TilemapDrawing, VectorDrawing } from '../core/format';
-import { celAt, findLayer, newDrawingFor, uid } from '../core/doc';
+import { celAt, findLayer, newDrawingFor, pixelGrid, uid } from '../core/doc';
+import { gridPixels, setGridPixels } from '../core/pixelBounds';
 import { cutProblem, cutTween, takeTurns, OVERSHOOT_CUT_WHY } from '../core/tweenCut';
 import { isInBetween, nextKey, shownDrawing } from '../core/symbols';
 import { store } from '../core/store';
@@ -172,4 +173,37 @@ export function editActiveDrawing<K extends 'vector' | 'pixel' | 'tilemap'>(
   // Drawing on a held frame. Asked the first time, then remembered (Preferences > Behaviour).
   withChoice<HeldFrameChoice>('draw.heldFrame', (v) => apply(v === 'new-key'));
   return 'ok';
+}
+
+/** The art grid of the active pixel layer (null when the active layer is not a pixel layer). */
+export function activeGrid(): { width: number; height: number } | null {
+  const { doc } = store().get();
+  const layer = activeLayer().layer;
+  return layer && layer.kind === 'pixel' ? pixelGrid(doc, layer) : null;
+}
+
+/**
+ * Replaces the active pixel layer's picture with a whole-grid RGBA array. Only the painted part is kept in the
+ * drawing, so a small picture on a big canvas stays small.
+ */
+export function setActivePixels(label: string, pixels: Uint8ClampedArray, opts: { coalesce?: string; adds?: boolean } = {}): EditResult {
+  const g = activeGrid();
+  if (!g) return 'wrong-kind';
+  return editActiveDrawing(label, 'pixel', (d) => void setGridPixels(d, pixels, g.width, g.height), opts);
+}
+
+/** Changes the active pixel layer's picture as a whole grid: `paint` gets a private copy of it and changes it in place. */
+export function paintActiveGrid(label: string, paint: (grid: Uint8ClampedArray, g: { width: number; height: number }) => void, opts: { coalesce?: string; adds?: boolean } = {}): EditResult {
+  const g = activeGrid();
+  if (!g) return 'wrong-kind';
+  return editActiveDrawing(
+    label,
+    'pixel',
+    (d) => {
+      const px = new Uint8ClampedArray(gridPixels(d, g.width, g.height));
+      paint(px, g);
+      setGridPixels(d, px, g.width, g.height);
+    },
+    opts,
+  );
 }

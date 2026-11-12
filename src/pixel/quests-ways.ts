@@ -5,7 +5,7 @@ import { store } from '../core/store';
 import type { Doc, SpriteWay } from '../core/format';
 import { artboardsOf, contentOf, goToBoard } from './boards';
 import { applyWorkspace } from '../ui/dock';
-import { editActiveDrawing } from '../tools/edit';
+import { paintActiveGrid } from '../tools/edit';
 import { drawDemoPixelRing, freshPage } from '../quests/actions';
 import { formatCard, pickFormat } from '../quests/probe';
 import { paintedAt, paintedPixels } from '../quests/predicates';
@@ -69,10 +69,8 @@ function dabBack(): boolean {
   if (!back) return false;
   const rgb = [0, 2, 4].map((i) => parseInt(back.slice(i, i + 2), 16));
   return (
-    editActiveDrawing('Draw pixels', 'pixel', (d) => {
-      const px = new Uint8ClampedArray(d.pixels);
+    paintActiveGrid('Draw pixels', (px, d) => {
       for (const [x, y] of [[3, 3], [4, 3], [3, 4]]) px.set([rgb[0], rgb[1], rgb[2], 255], (y * d.width + x) * 4);
-      d.pixels = px;
     }) === 'ok'
   );
 }

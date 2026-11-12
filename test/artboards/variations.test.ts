@@ -1,3 +1,4 @@
+import { gridPixels } from '../../src/core/pixelBounds';
 import { unzipSync, strFromU8, zipSync } from 'fflate';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { newDoc, newPixelDrawing, newPixelLayer, newTilemapDrawing, newVectorLayer } from '../../src/core/doc';
@@ -491,8 +492,9 @@ describe('variations: round trip', () => {
     expect(Object.keys(files).filter((n) => n.startsWith('pixels/'))).toHaveLength(2);
     const loaded = loadFile(bytes).doc;
     const alias = aliasId(p.id, v);
-    expect((loaded.drawings[alias] as PixelDrawing).pixels[4]).toBe(255);
-    expect((loaded.drawings[p.id] as PixelDrawing).pixels[4]).toBe(0);
+    // Drawings hold only their painted part; look at them over the whole 16 x 16 grid.
+    expect(gridPixels(loaded.drawings[alias] as PixelDrawing, 16, 16)[4]).toBe(255);
+    expect(gridPixels(loaded.drawings[p.id] as PixelDrawing, 16, 16)[4]).toBe(0);
     // Reset puts the original's pixels back and drops the copy.
     resetStore(loaded);
     update('Reset', (d) => void resetVariation(d, v));
@@ -1132,9 +1134,12 @@ describe('variations: finding what changed in a picture', () => {
     return { ...p, pixels: px };
   };
 
-  it('is empty when nothing changed and null when the sizes differ', () => {
+  it('is empty when nothing changed, whatever block each drawing holds', () => {
     expect(changedRects(blank(32, 32), blank(32, 32))).toEqual([]);
-    expect(changedRects(blank(32, 32), blank(16, 32))).toBeNull();
+    expect(changedRects(blank(32, 32), blank(16, 32))).toEqual([]);
+    // A painted pixel that only one of them holds is a change, at its place on the grid.
+    const one = { id: 'one', kind: 'pixel' as const, x: 5, y: 7, width: 1, height: 1, pixels: new Uint8ClampedArray([9, 9, 9, 255]) };
+    expect(changedRects(newPixelDrawing(0, 0), one)).toEqual([{ x: 5, y: 7, w: 1, h: 1 }]);
   });
 
   it('keeps one change as the tight rectangle round it', () => {

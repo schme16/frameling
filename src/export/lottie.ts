@@ -1078,9 +1078,11 @@ function layerPieces(ctx: Ctx, layer: Layer, from: number, to: number, offset: n
     if (layer.kind === 'pixel' || layer.kind === 'tilemap') {
       const d = doc.drawings[cel.drawingId];
       const px = d?.kind === 'pixel' ? d : d?.kind === 'tilemap' ? flattenTilemap(doc, d, cel.start) : undefined;
-      if (!px) continue;
+      if (!px || px.width < 1 || px.height < 1) continue;
       const id = imageAsset(ctx, px.id + ':' + layer.pixelSize, px, layer.pixelSize);
-      out.push(tag({ ty: 2, refId: id, ip: a - offset, op: b + 1 - offset, st: 0, sr: 1, ks: { a: stat([0, 0]), p: stat([0, 0]), s: stat([100, 100]), r: stat(0), o: stat(100) } }));
+      // A pixel drawing holds only its painted block, which sits (x, y) art pixels in from the corner.
+      const at = [(px.x ?? 0) * layer.pixelSize, (px.y ?? 0) * layer.pixelSize];
+      out.push(tag({ ty: 2, refId: id, ip: a - offset, op: b + 1 - offset, st: 0, sr: 1, ks: { a: stat([0, 0]), p: stat(at), s: stat([100, 100]), r: stat(0), o: stat(100) } }));
       continue;
     }
     const shared = (uses.get(cel.drawingId) ?? 0) > 1 ? sharedDrawing(ctx, layer, cel, uses.get(cel.drawingId)!) : undefined;

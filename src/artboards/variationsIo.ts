@@ -7,6 +7,7 @@
  * Everything else about it is worked out from its original when the file opens.
  */
 import { LAYER_LABELS, type Artboard, type AudioClip, type DiffRect, type DrawingDiff, type PixelDrawing, type Cel, type Doc, type Drawing, type DrawingOverride, type Id, type Layer, type ListOverride, type Patch, type PaletteOverride, type Shape, type VariationOverrides } from '../core/format';
+import { drawingRect, pixelsOver, trimmedDrawing, unionRect } from '../core/pixelBounds';
 import { readClip } from '../core/clipPlay';
 import { packAudio, unpackAudio } from '../io/audio-file';
 import { decodePng } from '../io/png';
@@ -205,6 +206,8 @@ export function readOverrides(raw: unknown, r: Pick<ArtboardReaders, 'readLayers
 }
 
 const BIG = 1 << 24;
+/** The most art pixels a grid can have a side (stage size limit, one stage pixel per art pixel). */
+const MAX_GRID = 16384;
 
 /** Most rectangles one stored change can have (a file asking for more is cut there). */
 const MAX_READ_RECTS = 64;
@@ -245,10 +248,11 @@ function readDiff(raw: unknown, io: { entries: Record<string, Uint8Array>; warni
 
 /** The part of a pixel drawing that differs from another of the same size: its bounding rectangle, or null when they are the same. */
 export function changedRect(a: PixelDrawing, b: PixelDrawing): { x: number; y: number; w: number; h: number } | null {
-  if (a.width !== b.width || a.height !== b.height) return null;
-  const { width: W, height: H } = a;
-  const p = a.pixels;
-  const q = b.pixels;
+  const U = unionRect(a, b);
+  if (!U) return { x: 0, y: 0, w: 0, h: 0 };
+  const { w: W, h: H } = U;
+  const p = pixelsOver(a, U);
+  const q = pixelsOver(b, U);
   let x0 = W;
   let y0 = H;
   let x1 = -1;
@@ -265,7 +269,7 @@ export function changedRect(a: PixelDrawing, b: PixelDrawing): { x: number; y: n
       }
     }
   }
-  return x1 < 0 ? { x: 0, y: 0, w: 0, h: 0 } : { x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1 };
+  return x1 < 0 ? { x: 0, y: 0, w: 0, h: 0 } : { x: U.x + x0, y: U.y + y0, w: x1 - x0 + 1, h: y1 - y0 + 1 };
 }
 
 /** Most rectangles one drawing's change is split into. */
@@ -289,13 +293,14 @@ const joined = (a: Box, b: Box): Box => ({ x0: Math.min(a.x0, b.x0), y0: Math.mi
  * The parts of a pixel drawing that differ from another of the same size, as a few rectangles: changes close together
  * share one, far apart ones get their own (two distant edits stay small instead of spanning everything between them).
  * Rectangles are joined while that costs less than another entry in a file, and until there are at most `max`.
- * Empty when they are the same, null when the sizes differ.
+ * Empty when they are the same. Drawings hold only their painted block, so they are compared over both blocks together.
  */
 export function changedRects(a: PixelDrawing, b: PixelDrawing, max = MAX_DIFF_RECTS): { x: number; y: number; w: number; h: number }[] | null {
-  if (a.width !== b.width || a.height !== b.height) return null;
-  const { width: W, height: H } = a;
-  const p = a.pixels;
-  const q = b.pixels;
+  const U = unionRect(a, b);
+  if (!U) return [];
+  const { w: W, h: H } = U;
+  const p = pixelsOver(a, U);
+  const q = pixelsOver(b, U);
   const bw = Math.ceil(W / BLOCK);
   const bh = Math.ceil(H / BLOCK);
   // The tight box of the changes in each block of the picture.
@@ -365,7 +370,7 @@ export function changedRects(a: PixelDrawing, b: PixelDrawing, max = MAX_DIFF_RE
     list = list.filter((_, k) => k !== bi && k !== bj);
     list.push(m);
   }
-  return list.map((c) => ({ x: c.x0, y: c.y0, w: c.x1 - c.x0, h: c.y1 - c.y0 })).sort((u, v) => u.y - v.y || u.x - v.x);
+  return list.map((c) => ({ x: U.x + c.x0, y: U.y + c.y0, w: c.x1 - c.x0, h: c.y1 - c.y0 })).sort((u, v) => u.y - v.y || u.x - v.x);
 }
 
 const safe = (id: string) => id.replace(/[^A-Za-z0-9_-]/g, '_');
@@ -388,14 +393,14 @@ export function variationDiffs(doc: Doc, files: Zippable, png: (d: { width: numb
       if (!mine || !base || mine.kind !== base.kind) continue;
       if (mine.kind === 'pixel' && base.kind === 'pixel') {
         const rs = changedRects(base, mine);
-        if (!rs || rs.reduce((n, r) => n + r.w * r.h, 0) > mine.width * mine.height * 0.8) continue;
+        const U = unionRect(base, mine);
+        if (!rs || (U && rs.reduce((n, r) => n + r.w * r.h, 0) > U.w * U.h * 0.8)) continue;
         if (!rs.length) {
           out.set(alias, { rect: { x: 0, y: 0, w: 0, h: 0, pixels: '' } });
           continue;
         }
         const stored = rs.map((r): DiffRect => {
-          const crop = new Uint8ClampedArray(r.w * r.h * 4);
-          for (let y = 0; y < r.h; y++) crop.set(mine.pixels.subarray(((r.y + y) * mine.width + r.x) * 4, ((r.y + y) * mine.width + r.x + r.w) * 4), y * r.w * 4);
+          const crop = pixelsOver(mine, r);
           let name = `pixels/diff_${safe(alias)}.png`;
           while (used.has(name) || files[name]) name = name.replace(/\.png$/, '_.png');
           used.add(name);
@@ -423,14 +428,21 @@ function applyDiffs(doc: Doc, a: Artboard, pal?: PaletteOverride): void {
     const alias = aliasId(orig, a.id);
     const rects = [...(diff.rect ? [diff.rect] : []), ...(diff.rects ?? [])].filter((r) => r.pixels instanceof Uint8ClampedArray);
     if (base?.kind === 'pixel' && rects.length) {
-      const px = new Uint8ClampedArray(base.pixels);
-      for (const r of rects) {
-        const { x, y, w, h } = r;
-        const pixels = r.pixels as Uint8ClampedArray;
-        if (x + w > base.width || y + h > base.height) continue;
-        for (let row = 0; row < h; row++) px.set(pixels.subarray(row * w * 4, (row + 1) * w * 4), ((y + row) * base.width + x) * 4);
+      // The original's block and every stored rectangle, laid over one area (a grid is never more than 16384 a side).
+      let U = base.width > 0 && base.height > 0 ? drawingRect(base) : null;
+      const good = rects.filter((r) => r.w > 0 && r.h > 0 && r.x + r.w <= MAX_GRID && r.y + r.h <= MAX_GRID);
+      for (const r of good) {
+        const u = unionRect({ x: U?.x ?? r.x, y: U?.y ?? r.y, width: U?.w ?? r.w, height: U?.h ?? r.h }, { x: r.x, y: r.y, width: r.w, height: r.h });
+        U = u;
       }
-      doc.drawings[alias] = { ...base, id: alias, pixels: px };
+      if (!U || U.w * U.h > MAX_GRID * MAX_GRID / 4) continue;
+      const px = pixelsOver(base, U).slice();
+      for (const r of good) {
+        const pixels = r.pixels as Uint8ClampedArray;
+        for (let row = 0; row < r.h; row++) px.set(pixels.subarray(row * r.w * 4, (row + 1) * r.w * 4), ((r.y - U.y + row) * U.w + (r.x - U.x)) * 4);
+      }
+      const { x: _x, y: _y, ...rest } = base;
+      doc.drawings[alias] = trimmedDrawing({ ...rest, id: alias, ...(U.x ? { x: U.x } : {}), ...(U.y ? { y: U.y } : {}), width: U.w, height: U.h, pixels: px });
     } else if (base?.kind === 'tilemap' && diff.cells) {
       const cells = new Uint32Array(base.cells);
       for (let i = 0; i + 1 < diff.cells.length; i += 2) if (diff.cells[i] < cells.length) cells[diff.cells[i]] = diff.cells[i + 1] >>> 0;

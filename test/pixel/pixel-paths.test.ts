@@ -1,4 +1,5 @@
 // The pen, polygon and star on a pixel layer: clean pixel outlines and fills, like the pixel rectangle.
+import { asGrid } from '../helpers/grid';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { PixelDrawing } from '../../src/core/format';
 import { store } from '../../src/core/store';
@@ -11,7 +12,7 @@ import { DEFAULT_PIXEL_SETTINGS, setPixelSettings } from '../../src/pixel/settin
 import '../../src/pixel';
 import { ctx, drag, pixelStore, ptr } from '../tools/helpers';
 
-const drawing = () => Object.values(store().get().doc.drawings)[0] as PixelDrawing | undefined;
+const drawing = () => asGrid(Object.values(store().get().doc.drawings)[0] as PixelDrawing | undefined);
 const hex = (x: number, y: number) => {
   const d = drawing()!;
   const [r, g, b, a] = getPx(d.pixels, d.width, x, y);

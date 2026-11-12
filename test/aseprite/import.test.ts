@@ -1,3 +1,4 @@
+import { gridPixels } from '../../src/core/pixelBounds';
 import { describe, expect, it } from 'vitest';
 import { drawingAt } from '../../src/core/doc';
 import { MAX_FOLDER_DEPTH, folderChain } from '../../src/core/folders';
@@ -10,26 +11,35 @@ import { AsepriteProblem, parseAseprite } from '../../src/aseprite/parse';
 import { aseFile, celChunk, celExtraChunk, layerChunk, oldPaletteChunk, paletteChunk, profileChunk, rgbaImage, sliceChunk, tagsChunk, tilesetChunk, userChunk } from './writer';
 
 const open = (bytes: Uint8Array, name = 'test') => asepriteDoc(parseAseprite(bytes), name);
-const px = (d: PixelDrawing | undefined, x: number, y: number): number[] => (d ? [...d.pixels.slice((y * d.width + x) * 4, (y * d.width + x) * 4 + 4)] : []);
+// A drawing holds only its painted block, at (x, y) on the canvas: read a canvas pixel from it.
+const px = (d: PixelDrawing | undefined, x: number, y: number): number[] => {
+  if (!d) return [];
+  const bx = x - (d.x ?? 0);
+  const by = y - (d.y ?? 0);
+  if (bx < 0 || by < 0 || bx >= d.width || by >= d.height) return [0, 0, 0, 0];
+  return [...d.pixels.slice((by * d.width + bx) * 4, (by * d.width + bx) * 4 + 4)];
+};
 const pixelAt = (doc: Doc, layer: Layer, frame: number) => drawingAt(doc, layer, frame) as PixelDrawing | undefined;
 type RGBA = [number, number, number, number];
 const solid = (w: number, h: number, c: RGBA) => rgbaImage(w, h, () => c);
 
-/** Every pixel of a canvas-sized drawing equals the expected image placed at (ox, oy), and is clear elsewhere. */
-function expectPlaced(d: PixelDrawing | undefined, img: number[], iw: number, ox: number, oy: number, opacity = 255) {
+/** Every pixel of the drawing over the canvas equals the expected image placed at (ox, oy), and is clear elsewhere. */
+function expectPlaced(doc: Doc, d: PixelDrawing | undefined, img: number[], iw: number, ox: number, oy: number, opacity = 255) {
   expect(d).toBeDefined();
   const ih = img.length / 4 / iw;
-  const want = new Uint8ClampedArray(d!.width * d!.height * 4);
+  const cw = doc.width;
+  const ch = doc.height;
+  const want = new Uint8ClampedArray(cw * ch * 4);
   for (let y = 0; y < ih; y++)
     for (let x = 0; x < iw; x++) {
       const tx = x + ox;
       const ty = y + oy;
-      if (tx < 0 || ty < 0 || tx >= d!.width || ty >= d!.height) continue;
+      if (tx < 0 || ty < 0 || tx >= cw || ty >= ch) continue;
       const s = (y * iw + x) * 4;
       if (!img[s + 3]) continue;
-      want.set([img[s], img[s + 1], img[s + 2], Math.round((img[s + 3] * opacity) / 255)], (ty * d!.width + tx) * 4);
+      want.set([img[s], img[s + 1], img[s + 2], Math.round((img[s + 3] * opacity) / 255)], (ty * cw + tx) * 4);
     }
-  expect([...d!.pixels]).toEqual([...want]);
+  expect([...gridPixels(d!, cw, ch)]).toEqual([...want]);
 }
 
 const pal: [number, number, number, number?][] = [
@@ -81,10 +91,10 @@ describe('RGBA files', () => {
 
   it('keeps each cel pixel for pixel, with position, cropping and cel opacity', () => {
     const [back, front] = doc.layers;
-    expectPlaced(pixelAt(doc, back, 0), a, 3, 1, 2);
-    expectPlaced(pixelAt(doc, front, 0), b, 2, -1, 0, 100);
-    expectPlaced(pixelAt(doc, front, 1), b, 2, 3, 3);
-    expectPlaced(pixelAt(doc, back, 2), [1, 2, 3, 255], 1, 0, 0);
+    expectPlaced(doc, pixelAt(doc, back, 0), a, 3, 1, 2);
+    expectPlaced(doc, pixelAt(doc, front, 0), b, 2, -1, 0, 100);
+    expectPlaced(doc, pixelAt(doc, front, 1), b, 2, 3, 3);
+    expectPlaced(doc, pixelAt(doc, back, 2), [1, 2, 3, 255], 1, 0, 0);
   });
 
   it('holds frames to match the durations (100 ms, 100 ms, 200 ms is 10 fps and 1, 1, 2 frames)', () => {
@@ -645,7 +655,6 @@ describe('adding to an open drawing', () => {
     expect(map.cells[0]).toBe(6);
     expect(p.notes.join(' ')).toContain('top left');
     const pic = host.drawings[host.layers[2].cels[0].drawingId] as PixelDrawing;
-    expect(pic.width).toBe(4);
     expect(px(pic, 1, 1)).toEqual([7, 7, 7, 255]);
     expect(px(pic, 2, 2)).toEqual([0, 0, 0, 0]);
   });
