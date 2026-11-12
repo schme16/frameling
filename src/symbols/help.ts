@@ -107,10 +107,10 @@ What moves: position, size, turn, slant, see-through and colour wash. Choose how
 
 While you're between two keys, the canvas and the selection box show the in-between. If you **drag, resize or turn** it there, Frameling asks the first time what you'd like:
 
-- **Make a key here**: this frame becomes a key with your change, and the glide goes through it.
+- **Make a key here**: this frame becomes a key with your change, and the glide goes through it. The motion before the change stays just as it was: the easing, the extra spins and the path are shared out between the two halves, so nothing speeds up or jumps.
 - **Change the key before**: the same move goes to the key where the glide starts.
 
-Change your answer any time in **Preferences > Behaviour**. The numbers in the Properties panel always belong to the key where the glide starts (it says so while you're between keys).`,
+A [morph](help:shape-tweens) can't be cut in two, so there Frameling asks you to change one of its two keys instead. Change your answer any time in **Preferences > Behaviour**. The numbers in the Properties panel always belong to the key where the glide starts (it says so while you're between keys).`,
   },
   {
     id: 'easing',
@@ -188,7 +188,9 @@ Turn on **Turn to face along the path** for things that should point where they'
 
 Already drew the line with the brush or pencil? Select it and choose **Follow the selected line**. The line becomes the path and leaves the drawing.
 
-**Straight line again** removes the path.`,
+**Straight line again** removes the path.
+
+Make a key partway along (draw on an in-between, or drop a timeline diamond there) and the path is cut where the object is: each half gets its own piece and keeps turning to face along it.`,
   },
   {
     id: 'shape-tweens',

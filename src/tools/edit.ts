@@ -9,8 +9,8 @@
 import { current, type Draft } from 'immer';
 import type { Cel, Doc, Drawing, Layer, PixelDrawing, TilemapDrawing, VectorDrawing } from '../core/format';
 import { celAt, findLayer, newDrawingFor, uid } from '../core/doc';
-import { cutSlice } from '../core/ease';
-import { isInBetween, shownDrawing } from '../core/symbols';
+import { cutProblem, cutTween, takeTurns, OVERSHOOT_CUT_WHY } from '../core/tweenCut';
+import { isInBetween, nextKey, shownDrawing } from '../core/symbols';
 import { store } from '../core/store';
 import { registerChoice, withChoice } from '../core/choices';
 import { autoHeldAt, newKeySpan, splitAutoHold } from '../timeline/edit-core';
@@ -48,7 +48,7 @@ registerChoice<TweenFrameChoice>({
   help: 'tweens',
 });
 
-export type EditResult = 'ok' | 'no-layer' | 'locked' | 'hidden' | 'wrong-kind' | 'bones';
+export type EditResult = 'ok' | 'no-layer' | 'locked' | 'hidden' | 'wrong-kind' | 'bones' | 'morph' | 'overshoot';
 
 /** Friendly words for why an edit didn't happen, for `ctx.hint`. */
 export const EDIT_HINTS: Record<Exclude<EditResult, 'ok'>, string> = {
@@ -57,6 +57,8 @@ export const EDIT_HINTS: Record<Exclude<EditResult, 'ok'>, string> = {
   hidden: 'This layer is hidden. Show it in the timeline to draw on it.',
   'wrong-kind': "This tool doesn't work on this kind of layer.",
   bones: 'This is the Bones layer: it holds the skeleton. Pick another layer to draw on.',
+  morph: "This frame is inside a morph (one shape melting into the next), which can't be cut in two. Draw on one of its two keys instead.",
+  overshoot: OVERSHOOT_CUT_WHY,
 };
 
 /** The active layer, and whether it can be drawn on. */
@@ -119,14 +121,15 @@ export function editActiveDrawing<K extends 'vector' | 'pixel' | 'tilemap'>(
           copy.id = uid(src.kind === 'pixel' ? 'p' : src.kind === 'tilemap' ? 't' : 'v');
           doc.drawings[copy.id] = copy;
           const end = cel.start + cel.length;
-          // The glide carries on from the new key to the next one. Each half plays its part of the one easing curve,
-          // so the motion keeps its easing instead of starting the curve again.
-          const [firstSlice, secondSlice] = tweened && cel.tween ? cutSlice(current(cel).tween!, (frame - cel.start) / cel.length) : [undefined, undefined];
-          const tween = tweened && cel.tween ? { ...(cel.tween.kind ? { kind: cel.tween.kind } : {}), ease: current(cel).tween!.ease, ...(secondSlice ? { slice: secondSlice } : {}) } : undefined;
-          if (tweened && cel.tween) {
-            if (firstSlice) cel.tween.slice = firstSlice;
-            else delete cel.tween.slice;
+          // The glide carries on from the new key to the next one. Each half plays its part of the one easing curve and
+          // takes its share of the spin and its piece of the motion path, so the motion keeps looking the same.
+          const cut = tweened && cel.tween ? cutTween(current(cel).tween!, (frame - cel.start) / cel.length) : undefined;
+          if (cut) {
+            const next = nextKey(current(l) as Layer, current(cel) as Cel);
+            takeTurns(copy as never, src.kind === 'vector' ? (current(src) as Drawing) : undefined, next && (current(doc.drawings[next.drawingId]) as Drawing), cut.turns);
+            cel.tween = cut.first;
           }
+          const tween = cut?.second;
           cel.length = frame - cel.start;
           l.cels.push({ id: uid('c'), start: frame, length: end - frame, drawingId: copy.id, ...(tween ? { tween } : {}) });
           l.cels.sort((a, b) => a.start - b.start);
@@ -160,6 +163,8 @@ export function editActiveDrawing<K extends 'vector' | 'pixel' | 'tilemap'>(
     apply(false);
     return 'ok';
   }
+  if (held.tween?.kind === 'shape' && frame > held.start && nextKey(layer, held)) return 'morph';
+  if (tweened && cutProblem(held.tween, (frame - held.start) / held.length, held.length)) return 'overshoot';
   if (tweened) {
     withChoice<TweenFrameChoice>('draw.tweenFrame', (v) => apply(v === 'new-key'));
     return 'ok';

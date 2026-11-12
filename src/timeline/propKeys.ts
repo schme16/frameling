@@ -10,7 +10,7 @@
 import type { Cel, Doc, Id, Layer } from '../core/format';
 import { allLayerLists, isInstance, nextKey, pairInstances, symbolContent, tweenInstance, tweenProgress } from '../core/symbols';
 import { cameraViewOn } from '../core/camera';
-import { cutSlice } from '../core/ease';
+import { cutTween, cutProblem, takeTurns } from '../core/tweenCut';
 import { rigPoseAt } from '../rig/pose';
 import { tidyPose } from '../rig/math';
 import { uid } from '../core/doc';
@@ -96,7 +96,8 @@ export function planPropEdits(doc: Doc, picks: PropPicks, map: ((frame: number) 
         const holder = layer.cels.findIndex((c) => c.start <= g && g < end(c));
         if (holder < 0 || !lists[holder]) return no(`A key on this row needs ${prop.noun} on that frame. Pick a frame that has one.`);
         const c = layer.cels[holder];
-        if (c.start !== g && c.tween && (c.tween.kind === 'shape' || c.tween.path || c.tween.spin) && nextKey(layer, c)) return no('That frame is inside a morph, a motion path or a spin. Move the key onto a drawing key instead.');
+        const cutWhy = c.start !== g && c.tween && nextKey(layer, c) ? cutProblem(c.tween, (g - c.start) / c.length, c.length) : null;
+        if (cutWhy) return no(cutWhy);
         if (c.start !== g && !lp.splits.includes(g)) lp.splits.push(g);
         targets.push(g);
         keys.push({ frame: g, value: values[k.i]! });
@@ -183,10 +184,14 @@ function splitCel(doc: Doc, layer: Layer, frame: number): Cel | undefined {
   doc.drawings[nd.id] = nd;
   const cut: Cel = { id: uid('c'), start: frame, length: end(cel) - frame, drawingId: nd.id };
   if (cel.tween && tp) {
-    const [first, second] = cutSlice(cel.tween, local / cel.length);
-    cut.tween = { ease: cel.tween.ease, ...(second ? { slice: second } : {}) };
-    if (first) cel.tween.slice = first;
-    else delete cel.tween.slice;
+    // Each half takes its part of the easing, its share of the spin and its piece of the motion path.
+    const halves = cutTween(cel.tween, local / cel.length);
+    if (halves.turns) {
+      if (nd.kind === 'camera') nd.view.rotation -= halves.turns * 360;
+      else if (nd.kind === 'vector') takeTurns(nd, d, doc.drawings[tp.next.drawingId], halves.turns);
+    }
+    cut.tween = halves.second;
+    cel.tween = halves.first;
   }
   if (cel.autoHold) cut.autoHold = true;
   cel.length = local;
