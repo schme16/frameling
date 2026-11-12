@@ -104,7 +104,7 @@ describe('events', () => {
 });
 
 describe('tools', () => {
-  const tool = `frameling.tools.register({ id: 'pen2', label: 'Pen 2', icon: 'pen', layers: ['vector', 'bogus'], key: 'Q' }, async (e) => {
+  const tool = `frameling.tools.register({ id: 'pen2', label: 'Pen 2', icon: 'pen', layers: ['vector', 'bogus'] }, async (e) => {
     if (e.type === 'down') return { overlay: [{ type: 'line', x1: e.x, y1: e.y, x2: e.x + 5, y2: e.y, stroke: '#ff0000' }, { type: 'eval', code: 'x' }], hint: 'down at ' + e.x };
     if (e.type === 'up') return { label: 'Fade', ops: [{ op: 'setLayer', layerId: 'L', opacity: 0.5 }] };
   });`;

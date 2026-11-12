@@ -44,7 +44,6 @@ export interface PluginToolDef {
   icon: string;
   /** The layer kinds it works on. */
   layers: ('vector' | 'pixel')[];
-  key?: string;
 }
 
 /** A kind of shape a plugin draws (version 2, needs the `shapes` power). */
@@ -383,8 +382,7 @@ export class PluginRuntime {
       if (!this.allow('tools', 'add a tool')) return;
       if (this.tools.size >= LIMITS.tools && !this.tools.has(id)) return;
       const layers = (Array.isArray(d.layers) ? d.layers : ['vector']).filter((l: unknown): l is 'vector' | 'pixel' => l === 'vector' || l === 'pixel');
-      const key = typeof d.key === 'string' && /^(Shift\+)?[A-Za-z0-9]$/.test(d.key) ? d.key : undefined;
-      const def: PluginToolDef = { id, label: cleanText(d.label, 40) || id, icon: typeof d.icon === 'string' ? d.icon.slice(0, 40) : 'plugin', layers: layers.length ? layers : ['vector'], ...(key ? { key } : {}) };
+      const def: PluginToolDef = { id, label: cleanText(d.label, 40) || id, icon: typeof d.icon === 'string' ? d.icon.slice(0, 40) : 'plugin', layers: layers.length ? layers : ['vector'] };
       this.tools.set(id, def);
       this.hooks.addTool?.(def);
     } else if (m.kind === 'shape') {

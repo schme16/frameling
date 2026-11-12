@@ -134,6 +134,19 @@ describe('asking for powers', () => {
     expect(plugins.get()[0]).toMatchObject({ enabled: true, granted: ['tools', 'shapes'], grantedFor: '2.0.0' });
   });
 
+  it('installing a newer version that asks for the same keeps the answer without asking, and one that asks for more asks', async () => {
+    answer = () => ['tools'];
+    await installFrom(files({ permissions: ['tools', 'canvas'] }, POWERS));
+    await settle();
+    await installFrom(files({ version: '1.1.0', permissions: ['tools', 'canvas'] }, POWERS));
+    await settle();
+    expect(asked).toHaveLength(1);
+    expect(plugins.get()[0]).toMatchObject({ granted: ['tools'], grantedFor: '1.1.0', status: 'on' });
+    await installFrom(files({ version: '1.2.0', permissions: ['tools', 'canvas', 'shapes'] }, POWERS));
+    await settle();
+    expect(asked).toEqual([{ name: 'Power plug', verb: 'Install' }, { name: 'Power plug', verb: 'Update' }]);
+  });
+
   it('takes a power away from Preferences at once, and asks before giving it back', async () => {
     answer = () => ['tools', 'canvas'];
     await installFrom(files({ permissions: ['tools', 'canvas'] }, POWERS));

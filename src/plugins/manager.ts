@@ -266,7 +266,6 @@ function addPluginTool(m: PluginManifest, def: PluginToolDef): void {
       id,
       label: def.label,
       icon: ICON_NAMES.includes(def.icon) ? def.icon : 'plugin',
-      key: def.key,
       layers: def.layers,
       group: 'extras',
       help: 'plugin-tools',
@@ -459,7 +458,10 @@ async function plainApprove(m: PluginManifest, verb: 'Install' | 'Turn on' | 'Up
 export async function installPackage(pkg: PluginPackage): Promise<boolean> {
   const m = pkg.manifest;
   const had = plugins.get().find((x) => x.manifest.id === m.id);
-  const allowed = await approve(m, had ? 'Update' : 'Install');
+  // A new version that asks for nothing it was not already asked about keeps what the person decided before.
+  const prior = had ? loadSaved()[m.id] : undefined;
+  const kept: Decision | null = prior && samePermissions(m, prior) ? { permissions: prior.permissions, network: prior.network, asked: [...new Set([...(prior.asked ?? prior.permissions), ...m.permissions])], askedNetwork: [...new Set([...(prior.askedNetwork ?? prior.network), ...m.network])] } : null;
+  const allowed = kept ?? (await approve(m, had ? 'Update' : 'Install'));
   if (!allowed) return false;
   if (had) stop(m.id);
   await library.write('plugins', m.id, packPlugin(pkg));
