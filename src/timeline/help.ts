@@ -53,11 +53,7 @@ Learn more: [Frames, keys and holds](help:timeline-frames), [Keys, tweens and pr
 
 ## Property rows
 
-Click the **arrow** beside a layer's name to open it. You get a row for each thing that changes on it: position, size or turn of a symbol, where a camera looks, each bone of a puppet, each animated effect. Every key is a diamond on its row. A line joins two keys where the value glides between them.
-
-Each row's keys move on their own. On a symbol, drag a **Position** diamond and only the position moves. On a puppet, drag one bone's diamond and only that bone's pose moves. On a camera, **Where it looks**, **Zoom** and **Turn** each have their own keys. Drop a diamond between drawing keys and Frameling cuts a drawing key there, and the in-betweens on both sides keep the same easing they had, so nothing else on the layer changes speed. The **Shape (morph)** row is different: its keys are the drawings themselves, so they move the drawing whole.
-
-Frameling says why when a move can't happen, for example if it would land on another key of the same row, or the layer is locked. It's one step in Undo either way.
+Click the **arrow** beside a layer's name to open it. You get a row for each thing that changes on it: position, size or turn of a symbol, where a camera looks, each bone of a puppet, each animated effect. Every key is a diamond on its row, and a line joins two keys where the value glides between them. Each row's keys move on their own: see [Property rows](help:timeline-property-rows).
 
 ## Picking and moving keys
 
@@ -65,7 +61,7 @@ Frameling says why when a move can't happen, for example if it would land on ano
 - **Drag** across the empty part of a property row (or **Shift** and drag anywhere empty) to pick every key in a box.
 - **Drag** a picked diamond to retime all the picked keys. A hold that ran up to the next key still does, so tweens stay joined.
 - Hold **Alt** while you drag to **stretch or squeeze** the picked keys from the first one: slower or faster.
-- **Delete** takes picked keys away. The drawing before carries on over the gap. A key on a property row goes alone: the row just goes back to the value it had before.
+- **Delete** takes picked keys away. The drawing before carries on over the gap. A key on a property row goes alone.
 
 Right-click a key for **Spread out** and **Squeeze together** too.
 
@@ -92,6 +88,38 @@ Click the frames once so the timeline has the keys, then:
 ## Prefer it simpler?
 
 Turn on **Clean timeline** (the sliders button in the timeline, **View > Clean timeline**, or **Preferences > General**) for one plain block per drawing and no property rows. Everything else works the same.`,
+  },
+  {
+    id: 'timeline-property-rows',
+    order: 2.6,
+    title: 'Property rows: each key moves on its own',
+    section: 'Animating',
+    media: 'timeline-detailed.mp4',
+    summary: 'Drag one diamond on a position, bone or camera row and only that thing moves, with the easing kept.',
+    keywords: ['property', 'bone', 'camera', 'zoom', 'position', 'retime', 'keys', 'easing', 'morph', 'diamond', 'row'],
+    body: `Open a layer with the **arrow** beside its name and each thing that changes gets its own row of diamonds.
+
+## What moves on its own
+
+- A symbol's **Position**, **Size**, **Turn**, **Slant**, **See-through** and **Tint**.
+- Each **bone** of a puppet: one diamond is that bone's pose at that moment.
+- A camera's **Where it looks**, **Zoom** and **Turn**.
+
+Drag a diamond, stretch a few (**Alt** and drag) or press **Delete**, and only that row changes. A deleted key leaves the row at the value it had just before. Everything is one step in Undo.
+
+## Dropping a diamond between drawings
+
+Frameling makes a drawing key there to hold it. If the diamond lands inside in-betweens (a tween), the two halves play the same curve the one span did, so the other rows keep their easing and nothing speeds up or slows down. Other rows may show a small diamond at the new key, because their value has changed by then.
+
+## When it says no
+
+Frameling tells you in plain words. It can't land on another key of the same row, on a frame with nothing to hold a key (an empty frame, or no camera key), inside a morph, a motion path or a spin, or on a locked layer. The first key of a row stays: it's where the row starts.
+
+## The exception
+
+The **Shape (morph)** row is different. Its keys are the drawings themselves, so dragging one moves the whole drawing.
+
+Learn more: [Keys, tweens and property rows](help:timeline-detailed), [Tweens](help:tweens).`,
   },
   {
     id: 'timeline-frames',
