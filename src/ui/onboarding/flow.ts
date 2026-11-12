@@ -119,6 +119,14 @@ const PLANS: Record<Interest, Plan> = {
   play: { workspace: 'draw', template: 'blank-vector', quest: 'fill-it-in', help: ['tool-brush', 'command-palette', 'examples'] },
 };
 
+/** Interests that need a feature which is off, so the plan leaves them out. Each is a feature id. */
+export const INTEREST_FEATURE: Partial<Record<Interest, string>> = { tiles: 'tiles' };
+
+/** The picked interests whose feature is off (so `planFor` should not see them), in card order. */
+export function pickedButOff(interests: readonly Interest[], isOn: (feature: string) => boolean): Interest[] {
+  return interests.filter((i) => INTEREST_FEATURE[i] !== undefined && !isOn(INTEREST_FEATURE[i]!));
+}
+
 /** Everyone starts with this one: the others open up after it. */
 export const FIRST_QUEST = 'first-animation';
 
