@@ -51,8 +51,12 @@ describe('Aseprite keys', () => {
     ['Mod+0', 'view.fit'],
     ['Tab', 'view.hidePanels'],
     // frames
-    ['ArrowLeft', 'timeline.prevFrame'],
-    ['ArrowRight', 'timeline.nextFrame'],
+    ['Alt+ArrowLeft', 'timeline.prevFrame'],
+    ['Alt+ArrowRight', 'timeline.nextFrame'],
+    ['ArrowLeft', 'select.nudgeLeft'],
+    ['ArrowRight', 'select.nudgeRight'],
+    ['ArrowUp', 'select.nudgeUp'],
+    ['Shift+ArrowDown', 'select.nudgeDownMore'],
     ['Alt+N', 'timeline.duplicateKey'],
     ['Alt+B', 'timeline.newKey'],
     ['Alt+M', 'timeline.insertFrame'],
@@ -87,10 +91,17 @@ describe('Aseprite keys', () => {
     for (const id of Object.keys(keymapSet('pixel').keys)) expect(ids.has(id), id).toBe(true);
   });
 
-  it('the other sets and Frameling itself have none of the new habit keys', () => {
+  it('Frameling and Flash get the habit keys too, except = and - that already add and remove frames', () => {
     for (const set of ['frameling', 'flash']) {
       const km = buildKeymap(cmds(), layeredOverrides(set, cmds(), {}));
-      for (const k of ['+', '[', ']', '1', '2', 'Tab']) expect([...(km.get(normaliseCombo(k)) ?? [])].map((c) => c.id), `${set} ${k}`).toEqual([]);
+      const at = (k: string) => (km.get(normaliseCombo(k)) ?? []).map((c) => c.id);
+      expect(at('+'), set).toEqual(['pixel.sizeUp']);
+      expect(at('['), set).toEqual(['pixel.previousColor']);
+      expect(at(']'), set).toEqual(['pixel.nextColor']);
+      for (let i = 1; i <= 6; i++) expect(at(String(i)), `${set} ${i}`).toEqual([`pixel.zoom${i}`]);
+      expect(at('-'), set).not.toContain('pixel.sizeDown');
+      expect(at('ArrowLeft'), set).toEqual(['select.nudgeLeft']);
     }
+    expect(buildKeymap(cmds(), layeredOverrides('frameling', cmds(), {})).get('-')?.map((c) => c.id)).toEqual(['timeline.removeFrame']);
   });
 });

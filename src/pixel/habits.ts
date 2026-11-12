@@ -1,6 +1,6 @@
 // Habits from other pixel tools, as commands: a bigger or smaller brush, the next or previous palette colour, and
-// zoom levels at a key. The keys come with the "Aseprite keys" set (src/ui/keymapSets.ts); the commands are always in
-// the command palette. The maths is plain functions, so it can be tested.
+// zoom levels at a key. The keys are in Frameling's own set too, except where Add a frame and Remove frame already
+// hold `=` and `-` (the Aseprite keys set, src/ui/keymapSets.ts, takes those); the commands are always in the command palette. The maths is plain functions, so it can be tested.
 import { paletteIndexOf, sizeSettingFor } from './bar';
 import { docPalette } from './palette';
 import { getPixelSettings, setPixelSettings } from './settings';
@@ -90,6 +90,8 @@ registerCommands([
     id: 'pixel.sizeUp',
     label: 'Bigger brush',
     category: 'Pixel',
+    // `=` stays Add a frame in Frameling's own keys; the Aseprite set takes it too
+    keys: ['+'],
     description: 'Make the pencil, eraser, dither or spray one pixel bigger. The pencil at size 1 is the plain pencil.',
     help: 'pixel-aseprite-habits',
     keywords: ['brush size', 'bigger', 'larger', 'plus', 'size up', 'thicker'],
@@ -110,6 +112,7 @@ registerCommands([
     id: 'pixel.nextColor',
     label: 'Next palette colour',
     category: 'Pixel',
+    keys: [']'],
     description: 'Paint with the next colour in the palette. After the last one it starts again at the first.',
     help: 'pixel-aseprite-habits',
     keywords: ['palette', 'swatch', 'step colour', 'next swatch', 'cycle'],
@@ -120,6 +123,7 @@ registerCommands([
     id: 'pixel.previousColor',
     label: 'Previous palette colour',
     category: 'Pixel',
+    keys: ['['],
     description: 'Paint with the colour before this one in the palette. Before the first it goes to the last.',
     help: 'pixel-aseprite-habits',
     keywords: ['palette', 'swatch', 'step colour', 'previous swatch', 'cycle'],
@@ -140,6 +144,7 @@ registerCommands([
     id: `pixel.zoom${i + 1}`,
     label: `Zoom ${percent}%`,
     category: 'Pixel',
+    keys: [String(i + 1)],
     description: `Show each pixel of your sprite ${percent / 100} times as big on the screen.`,
     help: 'pixel-aseprite-habits',
     keywords: ['zoom', 'magnify', `${percent}%`, 'pixel zoom'],

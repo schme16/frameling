@@ -231,14 +231,14 @@ describe('change how it is built (command and dialog)', () => {
 describe('the layout follows the way', () => {
   const fake = () => {
     const calls: string[] = [];
-    const d: WayDock = { inPixelWorkspace: () => true, fold: (on) => calls.push(on ? 'fold' : 'open'), front: (p) => calls.push(`front ${p}`) };
+    const d: WayDock = { inPixelWorkspace: () => true, fold: (on) => calls.push(on ? 'fold' : 'open'), stack: (a, b) => calls.push(`stack ${a} over ${b}`) };
     return { d, calls };
   };
   it('what each way shows', () => {
-    expect(layoutFor(newSpriteDoc({ way: 'picture', width: 16, height: 16 }))).toEqual({ timeline: 'fold', front: null });
-    expect(layoutFor(newSpriteDoc({ way: 'animation', width: 16, height: 16 }))).toEqual({ timeline: 'open', front: null });
-    expect(layoutFor(newSpriteDoc({ way: 'boards', width: 16, height: 16 }))).toEqual({ timeline: 'fold', front: 'artboards' });
-    expect(layoutFor(newSpriteDoc({ way: 'sheet', width: 16, height: 16 }))).toEqual({ timeline: 'open', front: 'artboards' });
+    expect(layoutFor(newSpriteDoc({ way: 'picture', width: 16, height: 16 }))).toEqual({ timeline: 'fold', stack: null });
+    expect(layoutFor(newSpriteDoc({ way: 'animation', width: 16, height: 16 }))).toEqual({ timeline: 'open', stack: null });
+    expect(layoutFor(newSpriteDoc({ way: 'boards', width: 16, height: 16 }))).toEqual({ timeline: 'fold', stack: ['artboards', 'preview'] });
+    expect(layoutFor(newSpriteDoc({ way: 'sheet', width: 16, height: 16 }))).toEqual({ timeline: 'open', stack: ['artboards', 'preview'] });
   });
   it('folds for a picture, opens when it moves, and leaves a moved panel alone otherwise', () => {
     const { d, calls } = fake();
@@ -250,11 +250,11 @@ describe('the layout follows the way', () => {
     makeItMove();
     expect(calls).toEqual(['fold', 'open']);
   });
-  it('puts the Artboards panel up front for the board ways', () => {
+  it('stacks the Artboards panel over the Preview for the board ways', () => {
     const { d, calls } = fake();
     resetStore(newSpriteDoc({ way: 'sheet', width: 16, height: 16 }));
     watchWayLayout(store(), d);
-    expect(calls).toEqual(['open', 'front artboards']);
+    expect(calls).toEqual(['open', 'stack artboards over preview']);
   });
   it('does nothing outside the Pixel workspace or for other documents', () => {
     const { d, calls } = fake();

@@ -7,7 +7,7 @@ import { getCommand } from '../core/registry';
 import { store } from '../core/store';
 import { fitAllArtboards } from '../artboards/ops';
 import { onToolEvent } from '../tools/toolEvents';
-import { dock, inPixelWorkspace, showPanel, toggleCollapsed } from '../ui/dock';
+import { dock, inPixelWorkspace, stackPanelsIn, toggleCollapsed } from '../ui/dock';
 import { locate } from '../ui/dockModel';
 import { line } from '../ui/mascot/lines';
 import { toast } from '../ui/toast';
@@ -99,22 +99,22 @@ export function watchSecondThings(s: DocSource): () => void {
 export interface Fit {
   /** Fold the timeline away (nothing to scrub) or open it. */
   timeline: 'fold' | 'open';
-  /** A panel to bring to the front, if any. */
-  front: string | null;
+  /** Two panels to stack in the right zone, the first over the second (the second with its own tabs kept), if any. */
+  stack: [string, string] | null;
 }
 
-/** What the workspace shows for each way: a picture folds the timeline; the board ways put the Artboards panel up front. */
+/** What the workspace shows for each way: a picture folds the timeline; the board ways stack the Artboards panel over the Preview, so the Preview and its board strip stay in view. */
 export function layoutFor(doc: Doc): Fit {
   const way = wayOf(doc);
-  if (way === 'picture') return { timeline: 'fold', front: null };
-  if (way === 'animation') return { timeline: 'open', front: null };
-  return { timeline: totalFrames(doc) <= boardCount(doc) ? 'fold' : 'open', front: 'artboards' };
+  if (way === 'picture') return { timeline: 'fold', stack: null };
+  if (way === 'animation') return { timeline: 'open', stack: null };
+  return { timeline: totalFrames(doc) <= boardCount(doc) ? 'fold' : 'open', stack: ['artboards', 'preview'] };
 }
 
 export interface WayDock {
   inPixelWorkspace(): boolean;
   fold(timeline: boolean): void;
-  front(panel: string): void;
+  stack(top: string, bottom: string): void;
 }
 
 const realDock: WayDock = {
@@ -123,7 +123,7 @@ const realDock: WayDock = {
     const at = locate(dock.get().layout, 'timeline');
     if (at && 'zone' in at) toggleCollapsed(at.zone, on);
   },
-  front: (panel) => showPanel(panel),
+  stack: (top, bottom) => stackPanelsIn(top, bottom),
 };
 
 /**
@@ -140,7 +140,7 @@ export function watchWayLayout(s: DocSource, d: WayDock = realDock): () => void 
     seen = { id: doc.id, way };
     const fit = layoutFor(doc);
     d.fold(fit.timeline === 'fold');
-    if (fit.front) d.front(fit.front);
+    if (fit.stack) d.stack(...fit.stack);
   };
   check();
   return s.subscribe(check);

@@ -237,7 +237,7 @@
   },
   "pixel.sheet.many": { "text": "That is a lot of frames. Someone has been busy.", "where": "A toast after a sprite sheet of 100 frames or more is exported." },
   "pixel.makeItMove": { "text": "Let's make it move! I added a few frames to play with.", "where": "A toast after Make it move turns a one-picture sprite into an animation." },
-  "pixel.folded": { "text": "One picture, so no timeline. Want it to move?", "where": "The folded timeline bar of a one-picture sprite, beside the Make it move button." },
+  "pixel.folded": { "text": "One picture, no timeline. Want it to move?", "where": "The folded timeline bar of a one-picture sprite, beside the Make it move button." },
   "pixel.way.change": { "text": "Same sprite, built another way. Nothing is lost, and Undo brings it back.", "where": "The Change how this sprite is built dialog: Quill's bubble." },
   "pixel.scale.hover": { "text": "I am 48 pixels tall. How tall are you?", "where": "The Preview: hovering Quill for scale, the tiny Quill standing next to your sprite." },
   "pixel.sheet.picture": { "text": "This is one picture, so the sheet has a single frame.", "where": "Export, Sprite sheet: Quill's sentence for a one-picture sprite." },

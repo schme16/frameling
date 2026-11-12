@@ -25,6 +25,7 @@ import {
   setGroups,
   sharesOf,
   splitGroupsAt,
+  stackPanels,
   zoneTabs,
   type Layout,
 } from '../../src/ui/dockModel';
@@ -296,5 +297,39 @@ describe('keyboard window resize steps', () => {
   });
   it('a window mostly off screen still gets the least size', () => {
     expect(resizeBox({ x: 990, y: 0, w: 300, h: 300 }, 16, 0, { w: 1000, h: 700 }).w).toBe(220);
+  });
+});
+
+describe('stackPanels (one panel over another)', () => {
+  it('puts the top panel in its own group above the bottom one, from anywhere', () => {
+    const l = sample();
+    l.zones.right.tabs = ['preview', 'layers', 'artboards'];
+    l.zones.right.active = 'preview';
+    const n = stackPanels(l, 'artboards', 'preview', 'right', 0.4);
+    expect(rightTabs(n)).toEqual([['artboards'], ['preview', 'layers']]);
+    expect(activeOfGroup(n, 'right', 1)).toBe('preview');
+    expect(sharesOf(n.zones.right)[0]).toBeCloseTo(0.4);
+    expect(sum(sharesOf(n.zones.right))).toBeCloseTo(1);
+  });
+  it('opens panels that were closed or in another zone, and a folded zone', () => {
+    const l = sample();
+    l.zones.left = { tabs: ['preview'], active: 'preview', size: 200, collapsed: false };
+    l.zones.right.collapsed = true;
+    l.hidden = ['artboards'];
+    l.known.push('preview', 'artboards');
+    const n = stackPanels(l, 'artboards', 'preview', 'right');
+    expect(locate(n, 'preview')).toMatchObject({ zone: 'right' });
+    expect(locate(n, 'artboards')).toMatchObject({ zone: 'right' });
+    expect(n.zones.right.collapsed).toBe(false);
+    expect(groupCount(n.zones.right)).toBe(2);
+    expect(groupsOf(n.zones.right)[0].tabs).toEqual(['artboards']);
+  });
+  it('doing it twice changes nothing', () => {
+    const l = sample();
+    l.zones.right.tabs = ['preview', 'artboards', 'layers'];
+    const once = stackPanels(l, 'artboards', 'preview', 'right');
+    const twice = stackPanels(once, 'artboards', 'preview', 'right');
+    expect(rightTabs(twice)).toEqual(rightTabs(once));
+    expect(sharesOf(twice.zones.right)).toEqual(sharesOf(once.zones.right));
   });
 });

@@ -79,9 +79,9 @@ Open **Preferences** (**Ctrl+,**), choose **General** and switch **Sounds** off 
 
 Open **Preferences** (**Ctrl+,**), choose **Keyboard**, and pick a **Shortcut set** at the top. Or find "Shortcut set" in the [command palette](help:command-palette).
 
-- **Frameling**: the keys Frameling starts with. Good if you're new to animation tools.
+- **Frameling**: the keys Frameling starts with. Good if you're new to animation tools. On a pixel sprite it already has **+** for a bigger brush, **[** and **]** along the palette and **1** to **6** to zoom.
 - **Familiar from Flash / Animate**: **F5** adds a frame, **F6** a new drawing that copies this one, **F7** an empty one, **Shift+F5** removes a frame. **Ctrl+E** draws inside a symbol. Tools: **Y** pencil, **N** line, **K** paint bucket, **L** lasso, **M** bone. **Ctrl+J** is canvas size, and **Ctrl+Up** and **Ctrl+Down** move things forward and back.
-- **Aseprite keys**: **B** pencil, **U** rectangle, **Shift+U** ellipse, **M** select, **Q** lasso, **X** swaps the colours. **+** and **-** change the brush size, **[** and **]** step along the palette, **1** to **6** zoom from 100% to 3200%, **Tab** hides the panels. **Alt+N** adds a frame (a copy), **Alt+B** an empty one, **Alt+C** removes one, **F3** shows the onion skin. The arrow keys step through frames. See [Aseprite habits](help:pixel-aseprite-habits) for the whole list.
+- **Aseprite keys**: **B** pencil, **U** rectangle, **Shift+U** ellipse, **M** select, **Q** lasso, **X** swaps the colours. **+** and **-** change the brush size, **[** and **]** step along the palette, **1** to **6** zoom from 100% to 3200%, **Tab** hides the panels. **Alt+N** adds a frame (a copy), **Alt+B** an empty one, **Alt+C** removes one, **F3** shows the onion skin. **Alt+Left** and **Alt+Right** step through frames, and the plain arrow keys nudge a selection, as in Frameling. See [Aseprite habits](help:pixel-aseprite-habits) for the whole list.
 
 ## Your own changes stay
 

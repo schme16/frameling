@@ -171,7 +171,7 @@ describe('Tab as a shortcut', () => {
   });
 });
 
-describe('through the keyboard, with the Aseprite keys picked', () => {
+describe('through the keyboard, with the Aseprite keys picked and without', () => {
   const press = (key: string, init: KeyboardEventInit = {}) => dispatchKey(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...init }));
   beforeEach(() => {
     resetKeyboard();
@@ -212,10 +212,22 @@ describe('through the keyboard, with the Aseprite keys picked', () => {
     expect(dispatchKey(e)).toBe(false);
     expect(e.defaultPrevented).toBe(false);
   });
-  it('does nothing with the default keys', () => {
+  it('Frameling\'s own keys have + but leave - to Remove frame', () => {
     setPrefs({ keymapSet: 'frameling' });
     resetKeyboard();
-    expect(press('+')).toBe(false);
-    expect(getToolSettings().pixelBrushSize).toBe(1);
+    expect(press('+')).toBe(true);
+    expect(getToolSettings().pixelBrushSize).toBe(2);
+    press('-');
+    expect(getToolSettings().pixelBrushSize).toBe(2);
+  });
+  it('Frameling\'s own keys step the palette and zoom too', () => {
+    setPrefs({ keymapSet: 'frameling' });
+    resetKeyboard();
+    setDocPalette({ name: 'T', colors: ['#000000', '#444444', '#888888'] });
+    store().setUi({ activeWell: 'stroke', color: '#444444', strokeOn: true });
+    expect(press(']')).toBe(true);
+    expect(store().get().ui.color).toBe('#888888');
+    expect(press('4')).toBe(true);
+    expect(getView().zoom).toBeCloseTo(1, 5);
   });
 });

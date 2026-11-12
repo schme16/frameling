@@ -3,7 +3,7 @@
 // DockFloats.tsx and RightDock.tsx. This file is plain state so it can be tested.
 import { allPanels, allTools, getPanel, type DockZone, type PanelDef } from '../core/registry';
 import type { LayerKind } from '../core/format';
-import { activeOfGroup, cleanName, clone, closeFloat, closePanel, clampSize, dockAllFloats, dockFloat, emptyLayout, evenSplit, frontPanel, groupTabs, isFront, joinAllGroups, joinGroupUp, locate, FLOAT_DEFAULT, MAX_SAVED, moveGroupTo, movePanelTo, nameOf, normaliseLayout, nudgeSplit, placeToolsIn, placedIds, raiseFloat, renameFloatIn, renamePanelIn, resizeBox, retainTabs, sanitizeWorkspace, sanitizeWorkspaces, setFloatBox, splitGroupsAt, ZONES, type DropTarget, type Layout, type Place, type ToolsPlace, type Workspace } from './dockModel';
+import { activeOfGroup, cleanName, clone, closeFloat, closePanel, clampSize, dockAllFloats, dockFloat, emptyLayout, evenSplit, frontPanel, groupTabs, isFront, joinAllGroups, joinGroupUp, locate, FLOAT_DEFAULT, MAX_SAVED, moveGroupTo, movePanelTo, nameOf, normaliseLayout, nudgeSplit, placeToolsIn, placedIds, raiseFloat, renameFloatIn, renamePanelIn, resizeBox, retainTabs, sanitizeWorkspace, sanitizeWorkspaces, setFloatBox, splitGroupsAt, stackPanels, ZONES, type DropTarget, type Layout, type Place, type ToolsPlace, type Workspace } from './dockModel';
 import { createStore, readRaw, writeJson } from './mini';
 import { BUILTIN_RAILS, resolveGroups, sanitizeGroups, type ToolGroup } from './toolArrange';
 import { parseWorkspaceText, uniqueWorkspaceName, workspaceToText } from './workspaceFile';
@@ -531,6 +531,12 @@ export function showPanel(id: string): void {
   const l = dock.get().layout;
   if (locate(l, id)) apply((x) => frontPanel(x, id));
   else movePanel(id, p.zone);
+}
+
+/** Puts one panel over another in a zone (each front of its own group), opening whichever was hidden. A missing panel: the other just comes to the front. */
+export function stackPanelsIn(top: string, bottom: string, zone: DockZone = 'right', topShare = 0.4): void {
+  if (!getPanel(top) || !getPanel(bottom)) return showPanel(getPanel(top) ? top : bottom);
+  apply((l) => stackPanels(l, top, bottom, zone, topShare));
 }
 
 /** Opens a hidden panel, or closes a panel that's showing at the front. A panel hiding behind another tab comes forward. */

@@ -564,6 +564,22 @@ export function evenSplit(l: Layout, zone: DockZone, boundary: number): Layout {
   return splitGroupsAt(l, zone, boundary, ((sh[boundary] ?? 0) + (sh[boundary + 1] ?? 0)) / 2);
 }
 
+/**
+ * Two panels one over the other in a zone: `top` in a group of its own above the group `bottom` is the front tab of.
+ * `topShare` is how much of the zone the top group takes. Works whatever places the panels were in (or none).
+ */
+export function stackPanels(l: Layout, top: string, bottom: string, zone: DockZone, topShare = 0.4): Layout {
+  const was = locate(l, bottom);
+  let next = was && 'zone' in was && was.zone === zone ? frontPanel(l, bottom) : movePanelTo(l, bottom, { zone });
+  const at = locate(next, bottom);
+  if (!at || !('zone' in at)) return next;
+  next = movePanelTo(next, top, { zone, group: at.group ?? 0, split: 'before' });
+  const z = next.zones[zone];
+  const gi = groupsOf(z).findIndex((g) => g.tabs.includes(top));
+  if (gi < 0 || groupsOf(z)[gi].tabs.length > 1 || gi + 1 >= groupCount(z)) return next;
+  return splitGroupsAt(next, zone, gi, topShare);
+}
+
 /** A group joined into the one before it (its tabs go on the end). Nothing happens for the first group. */
 export function joinGroupUp(l: Layout, zone: DockZone, group: number): Layout {
   const z = l.zones[zone];
