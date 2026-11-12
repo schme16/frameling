@@ -80,4 +80,86 @@ func _init():
     expect(line).toContain('false');
     expect(line).toContain(':00ff00');
   }, 240000);
+
+  it('a slice that moves is played by an AnimationPlayer: the region, pivot and borders at each key are what that frame drew', () => {
+    // Six 32 x 20 frames, each with a 6 x 6 block of its own colour that moves right and down.
+    const W = 32;
+    const H = 20;
+    const COLORS = [[255, 0, 0], [0, 255, 0], [0, 0, 255], [255, 255, 0], [0, 255, 255], [255, 0, 255]];
+    const frames: RawImage[] = COLORS.map((c, f) => {
+      const px = new Uint8ClampedArray(W * H * 4);
+      for (let y = 0; y < 6; y++) for (let x = 0; x < 6; x++) px.set([...c, 255], ((3 + f + y) * W + 2 + 4 * f + x) * 4);
+      px.set([9, 9, 9, 255], (H - 1) * W * 4 + (W - 1) * 4);
+      return { width: W, height: H, pixels: px };
+    });
+    const layer = newPixelLayer('Sprite', 1);
+    layer.slices = [
+      { id: 'h', name: 'hand', x: 2, y: 3, w: 6, h: 6, pivot: { x: 4, y: 9 }, keys: [
+        { frame: 0, x: 2, y: 3, w: 6, h: 6, pivot: { x: 4, y: 9 } },
+        { frame: 2, x: 10, y: 5, w: 6, h: 6, pivot: { x: 13, y: 8 } },
+        { frame: 4, x: 18, y: 7, w: 6, h: 6 },
+      ] },
+      { id: 'p', name: 'panel', x: 2, y: 3, w: 6, h: 6, center: { x: 3, y: 4, w: 4, h: 4 }, keys: [
+        { frame: 0, x: 2, y: 3, w: 6, h: 6, center: { x: 3, y: 4, w: 4, h: 4 } },
+        { frame: 3, x: 14, y: 6, w: 6, h: 6, center: { x: 15, y: 8, w: 3, h: 2 } },
+      ] },
+    ];
+    const out = buildSheetFiles({
+      doc: { name: 'Hero', clips: [], markers: [], fps: 10 },
+      sheet: { ...DEFAULT_SHEET, engine: 'godot', trim: true, dedupe: false, json: false, godotPath: 'res://sprites/hero.png' },
+      frames,
+      range: { start: 0, end: 5 },
+      whole: true,
+      clipId: null,
+      scale: 1,
+      name: 'Hero',
+      pixelArt: true,
+      maxSide: 4096,
+      slices: slicesForExport([layer], 1, { start: 0, end: 5 }),
+    });
+    const dir = mkdtempSync(path.join(tmpdir(), 'frameling-godot-moving-'));
+    mkdirSync(path.join(dir, 'sprites'));
+    writeFileSync(path.join(dir, 'project.godot'), 'config_version=5\n\n[application]\nconfig/name="slices"\n');
+    for (const f of out.files) writeFileSync(path.join(dir, 'sprites', f.name), f.bytes);
+    writeFileSync(
+      path.join(dir, 'check.gd'),
+      `extends SceneTree
+func _initialize():
+	var root_node = load("res://sprites/hero-slices.tscn").instantiate()
+	root.add_child(root_node)
+	await process_frame
+	await process_frame
+	var p: AnimationPlayer = root_node.get_node("SlicePlayer")
+	var res := ["anim:%s:%s:%s" % [p.current_animation, p.get_animation("slices").length, p.get_animation("slices").loop_mode]]
+	for t in [0.0, 0.1, 0.2, 0.35, 0.4, 0.5]:
+		p.seek(t, true)
+		var h: Sprite2D = root_node.get_node("hand")
+		var n: NinePatchRect = root_node.get_node("panel")
+		var hc: Color = h.texture.get_image().get_pixel(int(h.region_rect.position.x) + 3, int(h.region_rect.position.y) + 3)
+		var nc: Color = n.texture.get_image().get_pixel(int(n.region_rect.position.x) + 3, int(n.region_rect.position.y) + 3)
+		res.append("t=%s|hand %s %s %s|panel %s %s %d,%d,%d,%d %s" % [t, h.region_rect, h.offset, hc.to_html(false), n.region_rect, n.size, n.patch_margin_left, n.patch_margin_top, n.patch_margin_right, n.patch_margin_bottom, nc.to_html(false)])
+	print("RESULT " + "#".join(res))
+	quit()
+`,
+    );
+    execFileSync(GODOT!, ['--headless', '--path', dir, '--import'], { stdio: 'pipe', timeout: 120000 });
+    const res = execFileSync(GODOT!, ['--headless', '--path', dir, '--script', 'check.gd'], { encoding: 'utf8', timeout: 120000 });
+    const line = res.split('\n').find((l) => l.startsWith('RESULT ')) ?? res;
+    const rows = line.slice(7).split('#');
+    expect(rows[0]).toBe('anim:slices:0.6:1');
+    const at = (t: string) => rows.find((r) => r.startsWith(`t=${t}|`))!;
+    // The key in force at each time: hand keys at 0, 0.2, 0.4 s (frames 0, 2, 4: red, blue, cyan); panel keys at 0 and 0.3 s (frames 0, 3: red, yellow).
+    for (const [t, hand, panel] of [['0.0', 'ff0000', 'ff0000'], ['0.1', 'ff0000', 'ff0000'], ['0.2', '0000ff', 'ff0000'], ['0.35', '0000ff', 'ffff00'], ['0.4', '00ffff', 'ffff00'], ['0.5', '00ffff', 'ffff00']]) {
+      const r = at(t);
+      expect(r, t).toContain(`${hand}|panel`);
+      expect(r.endsWith(panel), `${t}: ${r}`).toBe(true);
+    }
+    // The pivot is the node's offset: (2, 6) from the corner, then (3, 3), then none.
+    expect(at('0.0')).toContain('(-2.0, -6.0)');
+    expect(at('0.2')).toContain('(-3.0, -3.0)');
+    expect(at('0.4')).toContain('(0.0, 0.0)');
+    // The 9-patch's borders and size change with its key.
+    expect(at('0.0')).toContain(' 1,1,1,1 ');
+    expect(at('0.35')).toContain(' 1,2,2,2 ');
+  }, 240000);
 });

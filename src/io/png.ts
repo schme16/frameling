@@ -184,37 +184,40 @@ export function decodePng(bytes: Uint8Array): RawImage {
   const height = u32(head, 4);
   const depth = head[8];
   const ctype = head[9];
-  if (head[12] !== 0) throw new Error('Interlaced PNG pictures are not supported');
   const okDepth = ctype === 3 ? [1, 2, 4, 8].includes(depth) : ctype === 0 ? [1, 2, 4, 8, 16].includes(depth) : depth === 8 || depth === 16;
   if (!okDepth || !CHANNELS[ctype]) throw new Error('This kind of PNG picture is not supported');
   if (width < 1 || height < 1 || width * height > 1 << 28) throw new Error('The PNG picture has an odd size');
   const idat = join(chunks.filter((c) => c.type === 'IDAT').map((c) => c.data));
-  return decodePngData({ width, height, depth, ctype }, idat, chunks.find((c) => c.type === 'PLTE')?.data, chunks.find((c) => c.type === 'tRNS')?.data);
+  return decodePngData({ width, height, depth, ctype, interlaced: head[12] === 1 }, idat, chunks.find((c) => c.type === 'PLTE')?.data, chunks.find((c) => c.type === 'tRNS')?.data);
 }
 
-/** The picture kind of a PNG (its IHDR without interlacing), for reading picture data that is not in the IDAT chunks (APNG frames). */
+/** The picture kind of a PNG (its IHDR), for reading picture data that is not in the IDAT chunks (APNG frames). */
 export interface PngKind {
   width: number;
   height: number;
   depth: number;
   ctype: number;
+  /** Adam7 interlacing: the picture comes in seven smaller pictures that fill in over each other. */
+  interlaced?: boolean;
 }
 
-/** Turns the joined, still-compressed picture data of a width x height block of the given kind into RGBA. */
-export function decodePngData(kind: PngKind, idat: Uint8Array, plte?: Uint8Array, trns?: Uint8Array): RawImage {
-  const { width, height, depth, ctype } = kind;
-  const channels = CHANNELS[ctype];
-  // Bytes in a row, and the distance back to "the pixel to the left" for the row filters (a whole byte at least).
-  const stride = Math.ceil((width * channels * depth) / 8);
-  const bpp = Math.max(1, (channels * depth) >> 3);
-  const raw = unzlibSync(idat);
-  if (raw.length < (stride + 1) * height) throw new Error('The PNG picture is cut short');
+/** Adam7: the first column, first row, column step and row step of each of the seven passes. */
+const ADAM7 = [
+  [0, 0, 8, 8],
+  [4, 0, 8, 8],
+  [0, 4, 4, 8],
+  [2, 0, 4, 4],
+  [0, 2, 2, 4],
+  [1, 0, 2, 2],
+  [0, 1, 1, 2],
+] as const;
 
-  // Undo the row filters in place.
-  const rows = new Uint8Array(stride * height);
-  for (let y = 0; y < height; y++) {
-    const f = raw[y * (stride + 1)];
-    const src = y * (stride + 1) + 1;
+/** Undoes the row filters of `h` rows (each `stride` bytes after a filter byte) that start at `from` in `raw`. */
+function unfilter(raw: Uint8Array, from: number, stride: number, bpp: number, h: number): Uint8Array {
+  const rows = new Uint8Array(stride * h);
+  for (let y = 0; y < h; y++) {
+    const f = raw[from + y * (stride + 1)];
+    const src = from + y * (stride + 1) + 1;
     const dst = y * stride;
     const prev = dst - stride;
     for (let i = 0; i < stride; i++) {
@@ -233,6 +236,59 @@ export function decodePngData(kind: PngKind, idat: Uint8Array, plte?: Uint8Array
       }
       rows[dst + i] = v & 255;
     }
+  }
+  return rows;
+}
+
+/** The rows of an Adam7 picture laid out as one ordinary picture: every pass's pixels go to where they belong. */
+function deinterlace(raw: Uint8Array, width: number, height: number, depth: number, channels: number, bpp: number): Uint8Array {
+  const bits = depth * channels;
+  const stride = Math.ceil((width * bits) / 8);
+  const out = new Uint8Array(stride * height);
+  let at = 0;
+  for (const [x0, y0, dx, dy] of ADAM7) {
+    const pw = Math.ceil((width - x0) / dx);
+    const ph = Math.ceil((height - y0) / dy);
+    // A pass with no pixels has no rows at all, not even filter bytes.
+    if (pw <= 0 || ph <= 0) continue;
+    const pstride = Math.ceil((pw * bits) / 8);
+    if (raw.length < at + (pstride + 1) * ph) throw new Error('The PNG picture is cut short');
+    const rows = unfilter(raw, at, pstride, bpp, ph);
+    at += (pstride + 1) * ph;
+    for (let j = 0; j < ph; j++) {
+      const oy = (y0 + j * dy) * stride;
+      for (let i = 0; i < pw; i++) {
+        const ox = x0 + i * dx;
+        if (bits >= 8) {
+          const n = bits >> 3;
+          for (let k = 0; k < n; k++) out[oy + ox * n + k] = rows[j * pstride + i * n + k];
+        } else {
+          // Several pixels share a byte: copy one pixel's bits.
+          const from = i * bits;
+          const to = ox * bits;
+          const v = (rows[j * pstride + (from >> 3)] >> (8 - bits - (from & 7))) & ((1 << bits) - 1);
+          out[oy + (to >> 3)] |= v << (8 - bits - (to & 7));
+        }
+      }
+    }
+  }
+  return out;
+}
+
+/** Turns the joined, still-compressed picture data of a width x height block of the given kind into RGBA. */
+export function decodePngData(kind: PngKind, idat: Uint8Array, plte?: Uint8Array, trns?: Uint8Array): RawImage {
+  const { width, height, depth, ctype } = kind;
+  const channels = CHANNELS[ctype];
+  // Bytes in a row, and the distance back to "the pixel to the left" for the row filters (a whole byte at least).
+  const stride = Math.ceil((width * channels * depth) / 8);
+  const bpp = Math.max(1, (channels * depth) >> 3);
+  const raw = unzlibSync(idat);
+  // Undo the row filters (of each of the seven smaller pictures first, for an interlaced one).
+  let rows: Uint8Array;
+  if (kind.interlaced) rows = deinterlace(raw, width, height, depth, channels, bpp);
+  else {
+    if (raw.length < (stride + 1) * height) throw new Error('The PNG picture is cut short');
+    rows = unfilter(raw, 0, stride, bpp, height);
   }
 
   const pixels = new Uint8ClampedArray(width * height * 4);

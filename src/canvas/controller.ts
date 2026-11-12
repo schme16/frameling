@@ -125,7 +125,7 @@ export function stageRect(): Rect {
  */
 export type Live =
   | { layerId: Id; kind: 'vector'; drawing: Drawing }
-  | { layerId: Id; kind: 'pixel'; canvas: CanvasImageSource; width: number; height: number }
+  | { layerId: Id; kind: 'pixel'; canvas: CanvasImageSource; /** Where the canvas sits on the art grid (art pixels; 0 when it covers the grid). */ x?: number; y?: number; width: number; height: number }
   | { layerId: Id; kind: 'tilemap'; drawing: Drawing };
 
 let live: Live | null = null;

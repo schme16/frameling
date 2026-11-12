@@ -177,3 +177,56 @@ describe('APNG problems and the picture reader', () => {
     expect((drawingAt(doc, layer, 0) as PixelDrawing).kind).toBe('pixel');
   });
 });
+
+describe('interlaced (Adam7) pictures', () => {
+  const same = (name: string, got: { width: number; height: number; pixels: Uint8ClampedArray }, e: ReturnType<typeof want>, i = 0) => {
+    expect([got.width, got.height], name).toEqual([e.width, e.height]);
+    const a = hex(got.pixels);
+    const b = e.frames[i].rgba;
+    for (let p = 0; p < a.length; p += 8) {
+      const aa = parseInt(a.slice(p + 6, p + 8), 16);
+      expect(Math.abs(aa - parseInt(b.slice(p + 6, p + 8), 16)), `${name} pixel ${p / 8} alpha`).toBeLessThanOrEqual(1);
+      if (aa === 255) expect(a.slice(p, p + 8), `${name} pixel ${p / 8}`).toBe(b.slice(p, p + 8));
+    }
+  };
+
+  it('an interlaced animated PNG gives every frame, the same as the plain file', () => {
+    const bytes = load('interlaced');
+    expect(readChunks(bytes).find((c) => c.type === 'IHDR')!.data[12]).toBe(1);
+    expect(isApng(bytes)).toBe(true);
+    const g = decodeApng(bytes);
+    const e = want('interlaced');
+    expect(g.frames.length).toBe(e.frames.length);
+    g.frames.forEach((f, i) => {
+      same(`frame ${i}`, { width: g.width, height: g.height, pixels: f.pixels }, e, i);
+      expect(f.delay).toBe([20, 50, 100, 300].map((d) => apngDelayMs(d, 1000))[i]);
+    });
+    expect(g.notes).toEqual([]);
+  });
+
+  it('decodePicture takes all of an interlaced animated PNG, not only its first picture', async () => {
+    const p = await decodePicture(load('interlaced'));
+    expect(p.kind).toBe('apng');
+    expect(p.frames).toHaveLength(4);
+    expect(p.notes).toEqual([]);
+  });
+
+  it('interlaced 16-bit grey reads as the same picture without interlacing', async () => {
+    const a = await decodePicture(load('interlaced-gray16'));
+    const b = await decodePicture(load('plain-gray16'));
+    expect(readChunks(load('plain-gray16')).find((c) => c.type === 'IHDR')!.data[12]).toBe(0);
+    expect([a.width, a.height]).toEqual([b.width, b.height]);
+    expect(hex(a.frames[0].pixels)).toBe(hex(b.frames[0].pixels));
+  });
+
+  // Written by ImageMagick, judged by Pillow: RGBA, a 4-bit palette and 1-bit.
+  for (const name of ['rgba', 'pal', 'mono']) {
+    it(`interlaced-${name}.png is read as a still picture`, async () => {
+      const bytes = load('interlaced-' + name);
+      expect(readChunks(bytes).find((c) => c.type === 'IHDR')!.data[12]).toBe(1);
+      const p = await decodePicture(bytes);
+      expect(p.kind).toBe('png');
+      same(name, { width: p.width, height: p.height, pixels: p.frames[0].pixels }, want('interlaced-' + name));
+    });
+  }
+});

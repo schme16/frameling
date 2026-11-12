@@ -33,7 +33,7 @@ Tick **Pivot** and a small cross appears at the bottom middle of the slice. Drag
 
 The sprite sheet export (File > Export, Sprite sheet) writes slices next to the frames: a Godot scene with a NinePatchRect or a cut sprite for each, Unity sprites with borders and pivots, Phaser and PixiJS atlas frames with a pivot or anchor, a CSS rule for each, and a list in the JSON (Aseprite's shape) that keeps every key of a moving slice.
 
-Regions are measured on the first frame you export, so that frame stays whole on the sheet. A slice that moves has its first place there.
+Regions are measured on whole frames, so the first frame you export, and each frame where a moving slice has a key, stay whole on the sheet. Each engine follows a moving slice, key by key. CSS shows the first place only.
 
 ## From Aseprite
 

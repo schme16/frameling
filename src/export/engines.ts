@@ -11,7 +11,7 @@ import {
 } from './sheet';
 import { normalizeSheet, type SheetSettings } from './types';
 import type { ExportSlice } from '../pixel/slices/model';
-import { cssNineFile, cssSliceRules, godotSlicesScene, sliceFrames, sliceMeta, sliceNames, unitySlices } from './slices';
+import { cssNineFile, cssSliceRules, godotSlicesScene, moves, sliceFrames, sliceKeyNames, sliceKeys, sliceMeta, sliceNames, sliceRuns, sliceTrack, unitySlices, type At } from './slices';
 
 // ---------------------------------------------------------------- names
 
@@ -514,10 +514,10 @@ func _on_clip_end() -> void:
 `;
 }
 
-/** A hash atlas (Phaser, PixiJS) with the slices added as frames, and listed in the meta the way Aseprite lists them. */
-function withSlices<T extends { frames: Record<string, unknown>; meta: Record<string, unknown> }>(a: T, slices: readonly ExportSlice[], names: readonly string[], at: { x: number; y: number }, key: 'pivot' | 'anchor'): T {
+/** A hash atlas (Phaser, PixiJS) with the slices added as frames (one more for each later key of a slice that moves), and listed in the meta the way Aseprite lists them. */
+function withSlices<T extends { frames: Record<string, unknown>; meta: Record<string, unknown> }>(a: T, slices: readonly ExportSlice[], names: readonly string[], at: At, key: 'pivot' | 'anchor', keyNames?: readonly (readonly string[])[]): T {
   if (!slices.length) return a;
-  return { ...a, frames: { ...a.frames, ...sliceFrames(slices, names, at, key) }, meta: { ...a.meta, slices: sliceMeta(slices, names) } };
+  return { ...a, frames: { ...a.frames, ...sliceFrames(slices, names, at, key, keyNames) }, meta: { ...a.meta, slices: sliceMeta(slices, names) } };
 }
 
 // ---------------------------------------------------------------- the whole job
@@ -571,8 +571,13 @@ export function buildSheetFiles(job: SheetJob): SheetFiles {
   const trim = sheet.trim && !(engine === 'css' && !separate);
   const { cells, cellOfFrame } = buildCells(job.frames, { trim, dedupe: sheet.dedupe && !separate, cuts });
   const slices = job.slices ?? [];
-  // Slices are measured on the whole first frame, so that one stays whole on the sheet.
-  if (slices.length && cells[0] && job.frames[0]) cells[0] = { ...cells[0], image: job.frames[0], trim: { x: 0, y: 0, w: job.frames[0].width, h: job.frames[0].height } };
+  // Slices are measured on whole frames: the first, and each frame where a slice that moves has a key. Those stay whole on the sheet.
+  const wholeFrames = new Set<number>(slices.length ? [0] : []);
+  for (const s of slices) if (moves(s)) for (const k of sliceKeys(s)) wholeFrames.add(Math.min(k.frame, job.frames.length - 1));
+  for (const f of wholeFrames) {
+    const ci = cellOfFrame[f];
+    if (ci !== undefined && cells[ci] && job.frames[f]) cells[ci] = { ...cells[ci], image: job.frames[f], trim: { x: 0, y: 0, w: job.frames[f].width, h: job.frames[f].height } };
+  }
   const names = separate ? separateSpriteNames({ ...range, clips: doc.clips, markers: doc.markers }) : animationCellNames(animations, cellOfFrame, cells.length);
 
   const texturePath = godotTexturePath(sheet.godotPath, doc.name);
@@ -589,7 +594,11 @@ export function buildSheetFiles(job: SheetJob): SheetFiles {
   const files: { name: string; bytes: Uint8Array }[] = [{ name: image, bytes: encodePng(composeSheet(cells, layout)) }];
   const d: SheetData = { image, layout, cells, cellOfFrame, animations, names };
   const sNames = sliceNames(slices, names, (n) => safeName(n, 'slice'));
-  const at0 = layout.positions[0] ?? { x: 0, y: 0 };
+  const at0 = layout.positions[cellOfFrame[0] ?? 0] ?? { x: 0, y: 0 };
+  // Where an exported frame sits on the sheet (the one that holds a key of a moving slice).
+  const atFrame: At = (frame) => layout.positions[cellOfFrame[Math.max(0, Math.min(frame, job.frames.length - 1))] ?? 0] ?? at0;
+  const keyNames = sliceKeyNames(slices, sNames, names);
+  const frameCount = job.frames.length;
   const genericJson = () => {
     const a = buildAtlas({ image, layout, cells, cellOfFrame, animations, fps: doc.fps, scale: job.scale, frameCount: job.frames.length, names, style: sheet.jsonStyle });
     return slices.length ? { ...a, meta: { ...a.meta, slices: sliceMeta(slices, sNames) } } : a;
@@ -612,7 +621,7 @@ export function buildSheetFiles(job: SheetJob): SheetFiles {
           files.push({ name: `${base}-flow.json`, bytes: json(flow) });
           files.push({ name: `${base}_flow.gd`, bytes: text(godotFlowScript(flow, `${base}.tres`)) });
         }
-        if (slices.length) files.push({ name: `${base}-slices.tscn`, bytes: text(godotSlicesScene(texturePath, slices, sNames, at0, job.pixelArt)) });
+        if (slices.length) files.push({ name: `${base}-slices.tscn`, bytes: text(godotSlicesScene(texturePath, slices, sNames, atFrame, job.pixelArt, { fps: doc.fps, frames: frameCount })) });
         if (sheet.godotScene) {
           const node = doc.name.replace(/[^A-Za-z0-9]+/g, ' ').trim().split(' ').filter(Boolean).map((w) => w[0].toUpperCase() + w.slice(1)).join('') || 'Sprite';
           files.push({ name: `${base}.tscn`, bytes: text(godotScene({ resourcePath: godotResourcePath(texturePath), nodeName: node, animation: animations[0].name, pixelArt: job.pixelArt })) });
@@ -620,17 +629,30 @@ export function buildSheetFiles(job: SheetJob): SheetFiles {
       }
       break;
     case 'phaser':
-      files.push({ name: `${base}.json`, bytes: json(withSlices(hashAtlas(d), slices, sNames, at0, 'pivot')) });
-      if (animations.length) files.push({ name: `${base}-anims.json`, bytes: json(phaserAnimations(d, base, job.nativeBounce)) });
+      files.push({ name: `${base}.json`, bytes: json(withSlices(hashAtlas(d), slices, sNames, atFrame, 'pivot', keyNames)) });
+      {
+        // A slice that moves is an animation of its own: its sprite on each exported frame.
+        const anims = phaserAnimations(d, base, job.nativeBounce);
+        slices.forEach((s, i) => {
+          const track = sliceTrack(s, keyNames[i], frameCount);
+          if (track.length) anims.anims.push({ key: `slice_${sNames[i]}`, type: 'frame', frames: track.map((frame) => ({ key: base, frame })), frameRate: doc.fps, repeat: -1, delay: 0, yoyo: false });
+        });
+        if (anims.anims.length) files.push({ name: `${base}-anims.json`, bytes: json(anims) });
+      }
       break;
-    case 'pixi':
-      files.push({ name: `${base}.json`, bytes: json(withSlices(pixiSheet(d), slices, sNames, at0, 'anchor')) });
+    case 'pixi': {
+      const sheetJson = withSlices(pixiSheet(d), slices, sNames, atFrame, 'anchor', keyNames);
+      const tracks = Object.fromEntries(slices.map((s, i) => [`slice_${sNames[i]}`, sliceTrack(s, keyNames[i], frameCount)] as const).filter(([, t]) => t.length));
+      files.push({ name: `${base}.json`, bytes: json(Object.keys(tracks).length ? { ...sheetJson, animations: { ...sheetJson.animations, ...tracks } } : sheetJson) });
       break;
+    }
     case 'unity':
       {
         const u = unitySheet(d, { pixelArt: job.pixelArt });
         // Slices are sprites too: their own rect, pivot and border.
-        files.push({ name: `${base}.json`, bytes: json(slices.length ? { ...u, frames: [...u.frames, ...unitySlices(slices, sNames, at0, layout.height)] } : u) });
+        // A slice that moves gets a clip of its own: each key's sprite, held for as many frames as the key lasts.
+        const sliceClips = slices.flatMap((s, i) => (moves(s) ? [{ name: `slice_${sNames[i]}`, fps: doc.fps, loop: true, ...sliceRuns(s, keyNames[i], frameCount) }] : []));
+        files.push({ name: `${base}.json`, bytes: json(slices.length ? { ...u, frames: [...u.frames, ...unitySlices(slices, sNames, atFrame, layout.height, keyNames)], animations: [...u.animations, ...sliceClips] } : u) });
       }
       if (sheet.unityScript) files.push({ name: UNITY_SCRIPT_NAME, bytes: text(UNITY_SCRIPT) }, { name: UNITY_ASMDEF_NAME, bytes: text(UNITY_ASMDEF) });
       break;

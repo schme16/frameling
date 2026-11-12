@@ -39,26 +39,82 @@ function sheetFiles() {
   });
 }
 
+/** Six 32 x 20 frames, each with a 6 x 6 block of its own colour that moves; "hand" follows it with keys on frames 0, 2 and 4. */
+const COLORS = ['ff0000', '00ff00', '0000ff', 'ffff00', '00ffff', 'ff00ff'];
+function movingFiles() {
+  const W = 32;
+  const H = 20;
+  const frames: RawImage[] = COLORS.map((c, f) => {
+    const px = new Uint8ClampedArray(W * H * 4);
+    const rgb = [0, 2, 4].map((i) => parseInt(c.slice(i, i + 2), 16));
+    for (let y = 0; y < 6; y++) for (let x = 0; x < 6; x++) px.set([...rgb, 255], ((3 + f + y) * W + 2 + 4 * f + x) * 4);
+    return { width: W, height: H, pixels: px };
+  });
+  const layer = newPixelLayer('Sprite', 1);
+  layer.slices = [
+    { id: 'h', name: 'hand', x: 2, y: 3, w: 6, h: 6, pivot: { x: 4, y: 9 }, keys: [
+      { frame: 0, x: 2, y: 3, w: 6, h: 6, pivot: { x: 4, y: 9 } },
+      { frame: 2, x: 10, y: 5, w: 6, h: 6, pivot: { x: 13, y: 8 } },
+      { frame: 4, x: 18, y: 7, w: 6, h: 6 },
+    ] },
+  ];
+  return buildSheetFiles({
+    doc: { name: 'Mover', clips: [], markers: [], fps: 10 },
+    sheet: { ...DEFAULT_SHEET, engine: 'unity', trim: true, dedupe: false, json: false, unityScript: true },
+    frames,
+    range: { start: 0, end: 5 },
+    whole: true,
+    clipId: null,
+    scale: 1,
+    name: 'Mover',
+    pixelArt: true,
+    maxSide: 4096,
+    slices: slicesForExport([layer], 1, { start: 0, end: 5 }),
+  });
+}
+
 describe.skipIf(!UNITY)('Unity imports the slices of a sprite sheet export', () => {
   const root = mkdtempSync(path.join(tmpdir(), 'frameling-unity-slices-'));
   const plain = path.join(root, 'older');
 
-  const run = (proj: string, label: string) => {
+  const run = (proj: string, label: string, make: () => ReturnType<typeof sheetFiles> = sheetFiles, name = 'hero') => {
     const assets = path.join(proj, 'Assets');
     for (const d of ['Frameling', 'Importer', 'Editor']) rmSync(path.join(assets, d), { recursive: true, force: true });
     for (const d of ['Frameling', 'Importer', 'Editor']) mkdirSync(path.join(assets, d), { recursive: true });
-    const out = sheetFiles();
+    const out = make();
     for (const f of out.files) writeFileSync(path.join(assets, /\.(cs|asmdef)$/.test(f.name) ? 'Importer' : 'Frameling', f.name), f.bytes);
     copyFileSync(path.join(__dirname, '../../scripts/e2e/unity/FramelingSliceCheck.cs'), path.join(assets, 'Importer', 'FramelingSliceCheck.cs'));
     const report = path.join(root, `report-${label}.txt`);
     const log = path.join(root, `log-${label}.txt`);
-    spawnSync(UNITY!, ['-batchmode', '-nographics', '-projectPath', proj, '-executeMethod', 'FramelingSliceCheck.Run', '-sheet', 'Assets/Frameling/hero.png', '-report', report, '-logFile', log], { timeout: 600000 });
+    spawnSync(UNITY!, ['-batchmode', '-nographics', '-projectPath', proj, '-executeMethod', 'FramelingSliceCheck.Run', '-sheet', `Assets/Frameling/${name}.png`, '-report', report, '-logFile', log], { timeout: 600000 });
     expect(existsSync(report), `no report (see ${log})`).toBe(true);
-    const lines = readFileSync(report, 'utf8').split('\n').filter((l) => l.startsWith('SPRITE '));
-    return Object.fromEntries(lines.map((l) => { const p = l.split(' '); return [p[1], p.slice(2).map(Number)]; }));
+    const text = readFileSync(report, 'utf8');
+    expect(text, `Unity did not finish (see ${log})`).toContain('UNITY-DONE');
+    const lines = text.split('\n').filter((l) => l.startsWith('SPRITE '));
+    const sprites = Object.fromEntries(lines.map((l) => { const p = l.split(' '); return [p[1], p.slice(2).map(Number)]; }));
+    const colors = Object.fromEntries(text.split('\n').filter((l) => l.startsWith('COLOR ')).map((l) => l.split(' ').slice(1) as [string, string]));
+    const clips = Object.fromEntries(text.split('\n').filter((l) => l.startsWith('CLIP ')).map((l) => { const p = l.split(' '); return [p[1], { rate: Number(p[2]), keys: p[3] }]; }));
+    return { sprites, colors, clips };
   };
 
-  const expectSprites = (s: Record<string, number[]>) => {
+  const expectMoving = (got: ReturnType<typeof run>) => {
+    // The sprites sit where the export says, on the sheet frame each key starts on; the colour in the middle is that frame's block.
+    const s = got.sprites;
+    for (const [n, frame] of [['hand', 0], ['hand_f3', 2], ['hand_f5', 4]] as const) {
+      expect(s[n], n).toBeDefined();
+      expect(s[n].slice(2, 4), n).toEqual([6, 6]);
+      expect(got.colors[n], n).toBe(COLORS[frame]);
+    }
+    // Pivots in pixels from the sprite's bottom left: (2, 0) of 6 x 6, then the middle, then the middle (no pivot of its own).
+    expect(s.hand.slice(4, 6)).toEqual([2, 0]);
+    expect(s.hand_f3.slice(4, 6)).toEqual([3, 3]);
+    expect(s.hand_f5.slice(4, 6)).toEqual([3, 3]);
+    // The clip that plays them: each key's sprite for two frames of 0.1 s, and a last key on the clip's final tick.
+    expect(got.clips.mover_slice_hand, JSON.stringify(got.clips)).toEqual({ rate: 10, keys: '0=hand,0.2=hand_f3,0.4=hand_f5,0.5=hand_f5' });
+  };
+
+  const expectSprites = (got: ReturnType<typeof run>) => {
+    const s = got.sprites;
     // The sheet is 40 x 24; Unity counts rects from the bottom. Panel: x 8, y 24 - 4 - 16 = 4, 24 x 16, no pivot of its own so its middle (12, 8),
     // borders 4 left, 3 bottom (rect bottom 20 to centre bottom 15... centre is 7..15, so top 3, bottom 5), 4 right.
     expect(s.Panel.slice(0, 4)).toEqual([8, 4, 24, 16]);
@@ -81,9 +137,11 @@ describe.skipIf(!UNITY)('Unity imports the slices of a sprite sheet export', () 
     m.dependencies['com.unity.2d.sprite'] = '1.0.0';
     writeFileSync(mf, JSON.stringify(m, null, 2));
     expectSprites(run(withPkg, 'pkg'));
+    expectMoving(run(withPkg, 'pkg-moving', movingFiles, 'mover'));
   }, 1_800_000);
 
   it('without it (the older cutting path)', () => {
     expectSprites(run(plain, 'older'));
+    expectMoving(run(plain, 'older-moving', movingFiles, 'mover'));
   }, 1_800_000);
 });

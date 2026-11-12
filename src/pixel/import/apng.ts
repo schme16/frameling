@@ -61,8 +61,7 @@ export function decodeApng(bytes: Uint8Array): ApngPicture {
   }
   const head = chunks.find((c) => c.type === 'IHDR')?.data;
   if (!head || head.length < 13) throw new ApngProblem('The PNG picture has no header.');
-  const kind: PngKind = { width: u32(head, 0), height: u32(head, 4), depth: head[8], ctype: head[9] };
-  if (head[12] !== 0) throw new ApngProblem('Interlaced animated PNG pictures are not supported.');
+  const kind: PngKind = { width: u32(head, 0), height: u32(head, 4), depth: head[8], ctype: head[9], interlaced: head[12] === 1 };
   const { width: W, height: H } = kind;
   if (W < 1 || H < 1 || W * H > 1 << 28) throw new ApngProblem('The animated PNG has an odd size.');
   const actl = chunks.find((c) => c.type === 'acTL')?.data;
