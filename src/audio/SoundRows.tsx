@@ -1,5 +1,6 @@
 import { memo, useEffect, useRef, useState, type PointerEvent as RPointerEvent } from 'react';
 import type { AudioClip } from '../core/format';
+import { getCommand } from '../core/registry';
 import { store, useStore } from '../core/store';
 import { Icon } from '../ui/icons';
 import { ContextMenu, InlineName, type MenuItem } from '../timeline/Menu';
@@ -94,8 +95,8 @@ const ClipBar = memo(function ClipBar({ clip, cw, fps, from, to, picked, version
       { label: 'Start at the playhead', onClick: () => moveClip(clip.id, at) },
       { label: 'Start at the first frame', disabled: clip.start === 0, onClick: () => moveClip(clip.id, 0) },
       { separator: true },
-      { label: 'Lip sync with this sound...', onClick: () => (pickSound(clip.id), runCmd('lipsync.auto')) },
-      { separator: true },
+      // Only while the Lip sync feature is on.
+      ...(getCommand('lipsync.auto') ? [{ label: 'Lip sync with this sound...', onClick: () => (pickSound(clip.id), runCmd('lipsync.auto')) }, { separator: true as const }] : []),
       { label: 'Remove sound', danger: true, onClick: () => removeClip(clip.id) },
     ];
   };

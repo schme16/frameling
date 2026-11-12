@@ -14,6 +14,11 @@ import { frameForMouth, type Mouth } from './chart';
 
 const labelled = (def: SymbolDef | undefined): def is SymbolDef => !!def?.frameLabels?.some((l) => l.trim());
 
+/** Says in the document that Lip sync was used on it, so a Frameling with Lip sync turned off can offer to turn it on. */
+export function markUsed(doc: Doc): void {
+  if (!doc.ext?.lipsync) doc.ext = { ...doc.ext, lipsync: { used: true } };
+}
+
 /** The first instance in a drawing whose symbol has frame labels. */
 export function mouthInstance(doc: Doc, d: Drawing | undefined): InstanceShape | undefined {
   if (!d || d.kind !== 'vector') return undefined;
@@ -139,6 +144,7 @@ export function applyMouths(doc: Doc, layerId: Id, start: number, mouths: readon
   kept.sort((a, b) => a.start - b.start);
   layer.cels = kept;
   pruneDrawings(doc);
+  markUsed(doc);
   return mouthRuns(wanted).length;
 }
 
@@ -204,5 +210,6 @@ export function setMouthAt(doc: Doc, layerId: Id, frame: number, index: number):
   layer.cels.sort((a, b) => a.start - b.start);
   mergeAround(doc, layer, mid.id);
   pruneDrawings(doc);
+  markUsed(doc);
   return true;
 }

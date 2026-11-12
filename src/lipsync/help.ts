@@ -1,6 +1,6 @@
-import { registerHelpTopics } from '../core/registry';
+import type { HelpTopic } from '../core/registry';
 
-registerHelpTopics([
+export const lipsyncHelp: HelpTopic[] = [
   {
     id: 'lip-sync',
     title: 'Lip sync: making a character talk',
@@ -53,4 +53,4 @@ Keys are split and joined for you. Turn on **Go to the next frame after each pic
 - Running Auto lip sync again replaces only the frames under the sound.
 - Your own character? Draw each mouth on its own frame inside one symbol, then use **Name a symbol's frames** (Animate > Lip sync) to give them the chart names.`,
   },
-]);
+];

@@ -55,6 +55,7 @@ const DIALOGS = [
   ['prefs-keyboard', `__frameling.overlays.openPrefs('keyboard')`],
   ['prefs-workspaces', `__frameling.overlays.openPrefs('workspaces')`],
   ['prefs-plugins', `__frameling.overlays.openPrefs('plugins')`],
+  ['prefs-features', `__frameling.overlays.openPrefs('features')`],
   ['canvas-size', run('document.settings')],
   ['export', run('file.export')],
   ['export-tileset', [tpl('tileset'), run('tiles.export')]],

@@ -5,6 +5,7 @@ import { celAt, findLayer } from '../core/doc';
 import type { Layer, Shape } from '../core/format';
 import { getTool, type PanelDef } from '../core/registry';
 import type { State } from '../core/store';
+import { ownedUndo } from '../core/owners';
 
 /** Where a panel sits on the rail. Properties first, then the rest in this order with a line between groups. */
 export type RailGroup = 'properties' | 'make' | 'animate' | 'learn' | 'more';
@@ -164,11 +165,6 @@ export const PANEL_INFO: Record<string, PanelInfo> = {
     group: 'animate',
     keywords: ['state machine', 'clips', 'game', 'transitions'],
   },
-  lipsync: {
-    blurb: 'Match mouth shapes to a voice recording.',
-    group: 'animate',
-    keywords: ['mouth', 'voice', 'talking', 'phonemes'],
-  },
   quests: {
     blurb: 'Short guided lessons that teach a skill step by step.',
     group: 'learn',
@@ -180,6 +176,14 @@ export const PANEL_INFO: Record<string, PanelInfo> = {
     keywords: ['docs', 'manual', 'how to'],
   },
 };
+
+/** A feature adds the rail name, blurb and Properties placement of its panels (and takes them away when it is turned off). */
+export function registerPanelInfo(id: string, info: PanelInfo): void {
+  PANEL_INFO[id] = info;
+  ownedUndo(() => {
+    if (PANEL_INFO[id] === info) delete PANEL_INFO[id];
+  });
+}
 
 /** Info for any panel, with a fallback for ones this file doesn't know (plugins). */
 export function infoFor(p: Pick<PanelDef, 'id' | 'title'>): PanelInfo {

@@ -1,12 +1,16 @@
 // The list of quests, and the shared progress store the welcome sheet and the panel read. Nothing here touches the
 // app, so anything can import it without dragging the engine along.
 import { createStore } from '../ui/mini';
+import { ownedUndo } from '../core/owners';
 import { FRESH_PROGRESS, type Quest, type QuestProgress } from './types';
 
 const quests = new Map<string, Quest>();
 
 export function registerQuest(q: Quest): void {
   quests.set(q.id, q);
+  ownedUndo(() => {
+    if (quests.get(q.id) === q) quests.delete(q.id);
+  });
 }
 export function getQuest(id: string): Quest | undefined {
   return quests.get(id);

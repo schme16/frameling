@@ -184,6 +184,14 @@ export function syncPanels(): void {
   if (JSON.stringify(layout) !== JSON.stringify(s.layout)) commit({ ...s, layout });
 }
 
+/** Lets panels that came back (their feature was turned on) be placed in their home zone again. */
+export function replacePanels(ids: string[]): void {
+  const s = dock.get();
+  const drop = new Set(ids);
+  if (!s.fresh && s.layout.known.some((id) => drop.has(id))) commit({ ...s, layout: { ...s.layout, known: s.layout.known.filter((id) => !drop.has(id)) } });
+  syncPanels();
+}
+
 /** Where a panel was made to go: its own zone, or the right side when it isn't registered. */
 export const homeOf = (id: string): DockZone => getPanel(id)?.zone ?? 'right';
 

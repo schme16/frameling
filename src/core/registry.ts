@@ -11,6 +11,7 @@
 import type { ComponentType } from 'react';
 import type { LayerKind } from './format';
 import type { State } from './store';
+import { ownedUndo } from './owners';
 
 // ---------------------------------------------------------------- commands
 
@@ -44,6 +45,9 @@ const commands = new Map<string, Command>();
 
 export function registerCommand(c: Command): void {
   commands.set(c.id, c);
+  ownedUndo(() => {
+    if (commands.get(c.id) === c) commands.delete(c.id);
+  });
 }
 export function registerCommands(list: Command[]): void {
   for (const c of list) registerCommand(c);
@@ -81,6 +85,9 @@ const topics = new Map<string, HelpTopic>();
 
 export function registerHelp(t: HelpTopic): void {
   topics.set(t.id, t);
+  ownedUndo(() => {
+    if (topics.get(t.id) === t) topics.delete(t.id);
+  });
 }
 export function registerHelpTopics(list: HelpTopic[]): void {
   for (const t of list) registerHelp(t);
@@ -113,6 +120,9 @@ const panels = new Map<string, PanelDef>();
 
 export function registerPanel(p: PanelDef): void {
   panels.set(p.id, p);
+  ownedUndo(() => {
+    if (panels.get(p.id) === p) panels.delete(p.id);
+  });
 }
 export function getPanel(id: string): PanelDef | undefined {
   return panels.get(id);
@@ -189,6 +199,13 @@ const tools = new Map<string, Tool>();
 
 export function registerTool(t: Tool): void {
   tools.set(t.id, t);
+  ownedUndo(() => {
+    if (tools.get(t.id) === t) tools.delete(t.id);
+  });
+}
+/** Takes a tool away again (its feature turned off). */
+export function unregisterTool(id: string): void {
+  tools.delete(id);
 }
 export function getTool(id: string): Tool | undefined {
   return tools.get(id);

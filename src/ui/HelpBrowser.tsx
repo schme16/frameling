@@ -9,6 +9,9 @@ import { HelpMedia } from './help/media';
 import { searchHelp, sections } from './help/search';
 import { closeHelp, overlays, openHelp } from './overlays';
 import { Modal } from './Modal';
+import { hiddenHelp, setFeatureOn } from '../features/host';
+import { useFeaturesVersion } from '../features/use';
+import { toast } from './toast';
 
 interface Nav {
   topic: string | null;
@@ -20,13 +23,39 @@ export function HelpBrowser({ compact = false, initial, onExpand }: { compact?: 
   const [history, setHistory] = useState<Nav[]>([]);
   const [query, setQuery] = useState(initial?.query ?? '');
   const article = useRef<HTMLDivElement>(null);
+  const featuresVersion = useFeaturesVersion();
   const topics = allHelp();
-  const hits = useMemo(() => (query.trim() ? searchHelp(query, 14) : []), [query]);
-  const groups = useMemo(() => sections(topics), [topics.length]);
+  const hits = useMemo(() => (query.trim() ? searchHelp(query, 14) : []), [query, featuresVersion]);
+  // Topics of features that are turned off are hidden; a search that would have found one offers to turn its feature on.
+  const [asked, setAsked] = useState<string | null>(null);
+  const offers = useMemo(() => {
+    if (!query.trim()) return [];
+    const hidden = hiddenHelp();
+    if (!hidden.length) return [];
+    const found = searchHelp(query, 6, hidden.map((h) => h.topic));
+    const features = new Map<string, string>();
+    for (const f of found) {
+      const h = hidden.find((x) => x.topic.id === f.topic.id);
+      if (h) features.set(h.feature.id, h.feature.name);
+    }
+    return [...features].slice(0, 3).map(([id, name]) => ({ id, name }));
+  }, [query, featuresVersion]);
+  const turnOn = (id: string) => {
+    const r = setFeatureOn(id, true);
+    if (!r.ok) toast(r.reason, { kind: 'warn' });
+    setAsked(null);
+  };
+  const groups = useMemo(() => sections(topics), [topics.length, featuresVersion]);
   const topic = nav.topic ? getHelp(nav.topic) : undefined;
 
   const go = (id: string, anchor?: string) => {
-    if (!getHelp(id)) return;
+    if (!getHelp(id)) {
+      // A link into a feature that is turned off: say so, and offer it back.
+      const h = hiddenHelp().find((x) => x.topic.id === id);
+      if (h) setAsked(h.feature.id);
+      return;
+    }
+    setAsked(null);
     setHistory((h) => (nav.topic ? [...h, nav] : h).slice(-30));
     setNav({ topic: id, anchor });
     setQuery('');
@@ -81,13 +110,31 @@ export function HelpBrowser({ compact = false, initial, onExpand }: { compact?: 
           <span>{h.snippet}</span>
         </button>
       ))}
-      {!hits.length && (
+      {offers.map((o) => (
+        <div key={o.id} className="ui-help-off">
+          <span>{o.name} is turned off, so its help is hidden.</span>
+          <button type="button" className="ui-btn ui-btn-primary" onClick={() => turnOn(o.id)}>
+            Turn on {o.name}
+          </button>
+        </div>
+      ))}
+      {!hits.length && !offers.length && (
         <QuillEmpty anim={[{ anim: 'think', hold: 2400 }, { anim: 'idle' }]} className="ui-help-empty">
           {line('empty.help')}
         </QuillEmpty>
       )}
     </div>
   );
+
+  const askedFeature = asked ? hiddenHelp().find((h) => h.feature.id === asked)?.feature : undefined;
+  const banner = askedFeature ? (
+    <div className="ui-help-off" role="status">
+      <span>{askedFeature.name} is turned off, so that help is hidden.</span>
+      <button type="button" className="ui-btn ui-btn-primary" onClick={() => turnOn(askedFeature.id)}>
+        Turn on {askedFeature.name}
+      </button>
+    </div>
+  ) : null;
 
   const body = topic ? (
     <article className="ui-help-article" ref={article}>
@@ -116,7 +163,10 @@ export function HelpBrowser({ compact = false, initial, onExpand }: { compact?: 
             </button>
           )}
         </div>
-        <div className="ui-help-scroll">{query.trim() ? results : (body ?? contents)}</div>
+        <div className="ui-help-scroll">
+          {banner}
+          {query.trim() ? results : (body ?? contents)}
+        </div>
       </div>
     );
 
@@ -127,6 +177,7 @@ export function HelpBrowser({ compact = false, initial, onExpand }: { compact?: 
         <div className="ui-help-scroll">{contents}</div>
       </aside>
       <div className="ui-help-main">
+        {banner}
         {query.trim() ? (
           <div className="ui-help-scroll">{results}</div>
         ) : (

@@ -124,6 +124,12 @@ const entries = [
     steps: [template('bouncing-ball'), prefsPage('general'), wait(1800), ...shotOf('.ui-prefs', null, 10)],
   },
 
+  // Preferences, Features.
+  {
+    name: 'features',
+    steps: [template('bouncing-ball'), prefsPage('features'), wait(1800), ...shotOf('.ui-prefs', null, 10)],
+  },
+
   // The "Holding a drawing longer" question (the first time a hold is asked for).
   {
     name: 'behaviour-choice',

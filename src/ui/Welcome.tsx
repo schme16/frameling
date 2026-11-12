@@ -21,6 +21,7 @@ import { templateSources } from '../templates/user';
 import { fitThumb, tagChips } from './exampleCards';
 import { paintThumbBackdrop } from '../canvas/thumbBackdrop';
 import { dismissPending, recovery, restorePending, whenSaved } from '../io/recovery';
+import { hiddenTemplateIds } from '../features/host';
 
 export function WelcomeSheet() {
   const mode = overlays.use((o) => o.sheet);
@@ -286,8 +287,10 @@ function useTemplates(): TemplateLike[] {
   const [list, setList] = useState<TemplateLike[]>([]);
   useEffect(() => {
     let live = true;
+    // Templates that belong to a feature that is turned off are left out.
+    const hidden = hiddenTemplateIds();
     import('../templates')
-      .then((m) => live && setList(((m as { TEMPLATES?: TemplateLike[] }).TEMPLATES ?? []).filter((t) => t && typeof t.make === 'function')))
+      .then((m) => live && setList(((m as { TEMPLATES?: TemplateLike[] }).TEMPLATES ?? []).filter((t) => t && typeof t.make === 'function' && !hidden.has(t.id))))
       .catch(() => {});
     return () => void (live = false);
   }, []);

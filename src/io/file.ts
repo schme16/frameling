@@ -7,12 +7,13 @@
 import { cleanGradients } from '../core/gradient';
 import { readFolders, readLayerLook } from '../effects/io';
 import { strFromU8, strToU8, unzipSync, zipSync, type Zippable } from 'fflate';
-import { BONE_STRETCH, FORMAT_VERSION, LAYER_LABELS, type LayerLabel, type Cel, type Doc, type Drawing, type Layer, type Shape, type SymbolDef, type Tween, type InstanceShape, type ClipFlow, type ClipTransition, type Tile, type Tileset, type Bone, type BonePose, type LayerBind, type Pose, type Rig, type SavedPose } from '../core/format';
+import { BONE_STRETCH, FORMAT_VERSION, LAYER_LABELS, type LayerLabel, type Cel, type Doc, type Drawing, type KeptShape, type Layer, type Shape, type SymbolDef, type Tween, type InstanceShape, type ClipFlow, type ClipTransition, type Tile, type Tileset, type Bone, type BonePose, type LayerBind, type Pose, type Rig, type SavedPose } from '../core/format';
 import { decodePng, encodePng } from './png';
 import { rootDoc } from '../core/symbols';
 import { isEasing } from '../core/ease';
 import { readOrigin, readParticlesShape, readTextShape } from './shapes-extra';
 import { packAudio, unpackAudio } from './audio-file';
+import { keepUnknownShape, readExt, shapesForSave, withExt } from './ext';
 import { packArtboards, readArtboards } from '../artboards/io';
 
 export const FILE_EXTENSION = 'frameling';
@@ -70,6 +71,9 @@ export function saveFile(open: Doc, appVersion = '', now: Date = new Date()): Ui
       drawings[id] = { ...d, pixels: name };
     } else if (d.kind === 'tilemap') {
       drawings[id] = { ...d, cells: Array.from(d.cells) };
+    } else if (d.kind === 'vector' && d.kept?.length) {
+      const { kept: _kept, ...rest } = d;
+      drawings[id] = { ...rest, shapes: shapesForSave(d) };
     } else {
       drawings[id] = d;
     }
@@ -160,9 +164,23 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
       continue;
     }
     if (d.kind === 'vector') {
-      const shapes: Shape[] = Array.isArray(d.shapes) ? d.shapes.filter((s: any) => isObj(s) && SHAPE_TYPES.has(s.type)).map((s: any) => (s.type === 'instance' ? readInstance(s) : s.type === 'text' ? readTextShape(s) : s.type === 'particles' ? readParticlesShape(s) : cleanOrigin(cleanGradients(s)))).filter((s: Shape | null): s is Shape => !!s) : [];
-      if (!Array.isArray(d.shapes) || shapes.length !== d.shapes.length) warnings.push('Some shapes could not be read and were left out.');
-      drawings[id] = { id: str(d.id, id), kind: 'vector', shapes, ...readPose(d.pose) };
+      const shapes: Shape[] = [];
+      const kept: KeptShape[] = [];
+      let lost = !Array.isArray(d.shapes);
+      for (const s of Array.isArray(d.shapes) ? d.shapes : []) {
+        if (isObj(s) && SHAPE_TYPES.has(s.type)) {
+          const read: Shape | null = s.type === 'instance' ? readInstance(s) : s.type === 'text' ? readTextShape(s) : s.type === 'particles' ? readParticlesShape(s) : (cleanOrigin(cleanGradients(s)) as Shape);
+          if (read) shapes.push(withExt(read, s, warnings));
+          else lost = true;
+        } else {
+          // A kind of shape this version does not know: kept as it is, so saving never drops it.
+          const k = keepUnknownShape(s, shapes.length, warnings);
+          if (k) kept.push(k);
+          else lost = true;
+        }
+      }
+      if (lost) warnings.push('Some shapes could not be read and were left out.');
+      drawings[id] = { id: str(d.id, id), kind: 'vector', shapes, ...(kept.length ? { kept } : {}), ...readPose(d.pose), ...readExt(d.ext, warnings) };
     } else if (d.kind === 'pixel') {
       const name = d.pixels;
       if (typeof name !== 'string' || !/^pixels\/[A-Za-z0-9_-]+\.png$/.test(name) || !entries[name]) throw damaged();
@@ -173,18 +191,18 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
         throw damaged();
       }
       if (img.width !== d.width || img.height !== d.height) throw damaged();
-      drawings[id] = { id: str(d.id, id), kind: 'pixel', width: img.width, height: img.height, pixels: img.pixels };
+      drawings[id] = { id: str(d.id, id), kind: 'pixel', width: img.width, height: img.height, pixels: img.pixels, ...readExt(d.ext, warnings) };
     } else if (d.kind === 'tilemap') {
       const columns = Math.round(num(d.columns, 0));
       const rows = Math.round(num(d.rows, 0));
       if (columns < 1 || rows < 1 || columns * rows > 4_000_000 || !Array.isArray(d.cells) || d.cells.length !== columns * rows) throw damaged();
       const cells = new Uint32Array(columns * rows);
       for (let i = 0; i < cells.length; i++) cells[i] = num(d.cells[i], 0) >>> 0;
-      drawings[id] = { id: str(d.id, id), kind: 'tilemap', columns, rows, cells };
+      drawings[id] = { id: str(d.id, id), kind: 'tilemap', columns, rows, cells, ...readExt(d.ext, warnings) };
     } else if (d.kind === 'camera') {
       const v = isObj(d.view) ? d.view : {};
       const zoom = num(v.zoom, 1);
-      drawings[id] = { id: str(d.id, id), kind: 'camera', view: { x: num(v.x, width / 2), y: num(v.y, height / 2), zoom: zoom > 0 ? zoom : 1, rotation: num(v.rotation, 0) } };
+      drawings[id] = { id: str(d.id, id), kind: 'camera', view: { x: num(v.x, width / 2), y: num(v.y, height / 2), zoom: zoom > 0 ? zoom : 1, rotation: num(v.rotation, 0) }, ...readExt(d.ext, warnings) };
     } else {
       warnings.push('One drawing could not be read and was left out.');
     }
@@ -221,6 +239,7 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
         ...(typeof l.depth === 'number' && Number.isFinite(l.depth) && l.depth ? { depth: Math.max(-0.9, Math.min(100, l.depth)) } : {}),
         ...readBind(l.bind),
         ...readLayerLook(l),
+        ...readExt(l.ext, warnings),
         cels,
       };
       if (l.kind === 'pixel') layers.push({ ...base, kind: 'pixel', pixelSize: Math.max(1, Math.round(num(l.pixelSize, 1))), ...(l.paletteLock === true ? { paletteLock: true } : {}) });
@@ -255,6 +274,7 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
     ...readPalette(raw.palette),
     ...readFolders(raw.folders, layers),
     ...readSymbols(raw.symbols, readLayers, warnings),
+    ...readExt(raw.ext, warnings),
   };
   const flow = readFlow(raw.flow, doc.clips);
   if (flow) doc.flow = flow;

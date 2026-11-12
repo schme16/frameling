@@ -14,6 +14,13 @@ export type Id = string;
 /** A colour as CSS hex (`#rrggbb` or `#rrggbbaa`). */
 export type Color = string;
 
+/**
+ * Room for data that belongs to a feature or plugin Frameling does not know about (or has turned off): `ext[featureId]`
+ * holds that feature's own plain JSON. The file reader keeps it exactly as written and the writer puts it back, so
+ * nothing is lost when the owner is missing. Plain data only (no functions, no class instances); capped in size and depth on load.
+ */
+export type Ext = Record<string, unknown>;
+
 export interface Doc {
   format: 'frameling';
   version: number;
@@ -78,6 +85,8 @@ export interface Doc {
   artboards?: Artboard[];
   /** The id of the open artboard (missing = the first). */
   activeArtboard?: Id;
+  /** Data kept for features and plugins, by feature id. See `Ext`. */
+  ext?: Ext;
 }
 
 /** One artboard (see Doc.artboards). */
@@ -130,6 +139,8 @@ export interface BaseLayer {
   locked: boolean;
   /** 0 to 1. */
   opacity: number;
+  /** Data kept for features and plugins, by feature id. See `Ext`. */
+  ext?: Ext;
   /** Show this layer's frames around the current one in the onion skin (missing = yes). */
   onion?: boolean;
   /** A reference layer: shown while drawing, left out of every export (ground lines, sketches, guides). Missing = no. */
@@ -235,16 +246,31 @@ export interface CameraView {
 export interface CameraDrawing {
   id: Id;
   kind: 'camera';
+  /** Data kept for features and plugins, by feature id. See `Ext`. */
+  ext?: Ext;
   view: CameraView;
 }
 
 export interface VectorDrawing {
   id: Id;
   kind: 'vector';
+  /** Data kept for features and plugins, by feature id. See `Ext`. */
+  ext?: Ext;
   /** Painted in order: index 0 is at the back. */
   shapes: Shape[];
   /** On a bones layer: how each bone is turned and moved at this key (bones not listed are at rest). */
   pose?: Pose;
+  /**
+   * Shapes of a type this Frameling does not know (from a newer version or a plugin), kept as read so saving never drops
+   * them. `at` is how many known shapes came before it. Never drawn or edited.
+   */
+  kept?: KeptShape[];
+}
+
+/** A shape of an unknown type, held untouched. See `VectorDrawing.kept`. */
+export interface KeptShape {
+  at: number;
+  shape: Record<string, unknown>;
 }
 
 /**
@@ -255,6 +281,8 @@ export interface VectorDrawing {
 export interface PixelDrawing {
   id: Id;
   kind: 'pixel';
+  /** Data kept for features and plugins, by feature id. See `Ext`. */
+  ext?: Ext;
   width: number;
   height: number;
   pixels: Uint8ClampedArray;
@@ -268,6 +296,8 @@ export interface PixelDrawing {
 export interface TilemapDrawing {
   id: Id;
   kind: 'tilemap';
+  /** Data kept for features and plugins, by feature id. See `Ext`. */
+  ext?: Ext;
   columns: number;
   rows: number;
   cells: Uint32Array;
@@ -341,6 +371,8 @@ export interface StrokeShape {
   /** Shapes sharing a group id select and move together, and never merge (missing = not grouped). */
   group?: Id;
   type: 'stroke';
+  /** Data kept for features and plugins, by feature id. See `Ext`. */
+  ext?: Ext;
   points: StrokePoint[];
   brush: BrushSettings;
   color: Color;
@@ -371,6 +403,8 @@ export interface FillShape {
   /** Shapes sharing a group id select and move together, and never merge (missing = not grouped). */
   group?: Id;
   type: 'fill';
+  /** Data kept for features and plugins, by feature id. See `Ext`. */
+  ext?: Ext;
   paths: SubPath[];
   color: Color;
   opacity: number;
@@ -403,6 +437,8 @@ export interface PathShape {
   /** Shapes sharing a group id select and move together, and never merge (missing = not grouped). */
   group?: Id;
   type: 'path';
+  /** Data kept for features and plugins, by feature id. See `Ext`. */
+  ext?: Ext;
   paths: SubPath[];
   fill: Color | null;
   stroke: { color: Color; width: number; join: 'round' | 'miter' | 'bevel'; cap: 'round' | 'butt' | 'square' } | null;
@@ -538,6 +574,8 @@ export interface InstanceShape {
   origin?: Id;
   group?: Id;
   type: 'instance';
+  /** Data kept for features and plugins, by feature id. See `Ext`. */
+  ext?: Ext;
   symbolId: Id;
   transform: Transform2D;
   opacity: number;
@@ -646,6 +684,8 @@ export interface TextShape {
   origin?: Id;
   group?: Id;
   type: 'text';
+  /** Data kept for features and plugins, by feature id. See `Ext`. */
+  ext?: Ext;
   text: string;
   /** Font family name ('Nunito', 'Inter', or a font on this computer). */
   font: string;
@@ -678,6 +718,8 @@ export interface ParticlesShape {
   origin?: Id;
   group?: Id;
   type: 'particles';
+  /** Data kept for features and plugins, by feature id. See `Ext`. */
+  ext?: Ext;
   /** Where the emitter sits and how it is turned and stretched (origin = its centre). */
   transform: Transform2D;
   /** Where particles start: one point, along a line (`width` long) or inside a box (`width` x `height`). */

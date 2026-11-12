@@ -1931,6 +1931,19 @@ body.ui-resizing * {
   font-size: var(--fs-small);
   line-height: 1.4;
 }
+.ui-help-off {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 8px 0;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel-2);
+  color: var(--muted);
+  font-size: var(--fs-small);
+}
 .ui-help-empty {
   padding: 16px;
   color: var(--muted);
