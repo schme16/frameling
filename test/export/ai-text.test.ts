@@ -144,7 +144,7 @@ describe('live text in the Illustrator data', () => {
     expect(d).toContain('%AI3_BeginEncoding: _Arial-BoldMT Arial-BoldMT');
     const e = engine(bytes);
     for (const w of ['Hello Illustrator\r', 'Two lines\rof centred\r', 'Italic\r']) expect(e).toContain(utf16(w));
-    for (const f of ['Arial-BoldMT', 'ArialMT', 'Nunito-ExtraBoldItalic']) expect(e).toContain(utf16(f));
+    for (const f of ['Arial-BoldMT', 'ArialMT', 'NunitoItalic-ExtraBold']) expect(e).toContain(utf16(f));
     // Sizes are reals: the engine reads a whole number as something else.
     expect(e).toMatch(/\/1 36\.0 \/5 43\.2 \/8 0 /);
     expect(e).toContain('/53 << /99 /SimplePaint /0 << /0 1 /1 [ 1.0 1.0 0.2 0.4 ] >> >>');

@@ -118,6 +118,11 @@ export interface FramelingApi {
     /** Bytes of memory held by each running plugin's sandbox, by plugin id (a plugin without a process of its own is left out). */
     memory(): Promise<Record<string, number>>;
   };
+  /** Desktop only: the fonts installed on this computer. */
+  fonts?: {
+    /** The PostScript name of each font (family, weight 100 to 900, slant) as installed here, null where it is not installed. */
+    psNames(wants: { family: string; weight: number; italic: boolean }[]): Promise<(string | null)[]>;
+  };
   recent: {
     list(): Promise<RecentFile[]>;
     add(path: string): Promise<void>;
