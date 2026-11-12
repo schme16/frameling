@@ -21,6 +21,8 @@ export interface ExtrasOptions {
   onBone?: boolean;
   /** The hero layer holds a Body symbol (its own bone and a swinging body) with an arm copy on a layer that follows the body bone. */
   bodyArm?: boolean;
+  /** With bodyArm: the arm copy inside the Body symbol is washed too, so it has its own wash and the Body's on top. */
+  armTint?: { color: string; amount: number };
 }
 
 /**
@@ -136,7 +138,7 @@ export function bonesExtrasDoc(o: ExtrasOptions = {}): Doc {
     const holder = newVectorLayer('Arm holder') as VectorLayer;
     holder.bind = { rig: brig.id, bone: 'bb' };
     const hd = vectorDrawing(doc, []);
-    hd.shapes = [inst(0, -45)];
+    hd.shapes = [inst(0, -45, o.armTint ? { tint: o.armTint } : {})];
     hold(holder, hd.id, 0, 12);
     const bodyId = uid('sym');
     doc.symbols![bodyId] = { id: bodyId, name: 'Body', layers: [brig, torso, holder], length: 12, origin: { x: 0, y: 0 } };
