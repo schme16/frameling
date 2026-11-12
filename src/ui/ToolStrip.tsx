@@ -112,13 +112,8 @@ function Flyout({ group, groups, anchor, place, visible, current, onPick, onClos
   };
   return createPortal(
     <div ref={ref} className="ui-tool-fly" role="menu" aria-label={`${groupName(group, groups)} tools`} style={style} data-tool-axis="y" onKeyDown={onKey}>
-      <div className="ui-tool-fly-head" role="presentation">
-        <span className="ui-tool-fly-name" onDoubleClick={rename}>
-          {groupName(group, groups)}
-        </span>
-        <button type="button" role="menuitem" className="ui-icon-btn ui-tool-fly-rename" aria-label={`Rename ${groupName(group, groups)}`} data-tip="Rename this group" data-tip-desc="Give the group a name of your own." data-help="tool-strip" onClick={rename}>
-          <Icon name="pencil" size={13} />
-        </button>
+      <div className="ui-tool-fly-head" role="presentation" onDoubleClick={rename}>
+        {groupName(group, groups)}
       </div>
       {tools.map((id) => {
         const t = getTool(id);
@@ -145,6 +140,10 @@ function Flyout({ group, groups, anchor, place, visible, current, onPick, onClos
           </button>
         );
       })}
+      <button type="button" role="menuitem" className="ui-tool-fly-item ui-tool-fly-rename" aria-label={`Rename ${groupName(group, groups)}`} data-tip="Rename this group" data-tip-desc="Give the group a name of your own." data-help="tool-strip" onClick={rename}>
+        <Icon name="pencil" size={16} />
+        <span>Rename group...</span>
+      </button>
     </div>,
     document.body,
   );

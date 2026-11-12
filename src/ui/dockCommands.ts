@@ -9,7 +9,8 @@ import { lastPanel } from './dockShared';
 import { openPrefs } from './overlays';
 import { getPrefs, setPrefs } from './prefs';
 import { toast } from './toast';
-import { isCustomArrangement, resetToolArrangement } from './toolRail';
+import { store } from '../core/store';
+import { askGroupRename, currentGroups, isCustomArrangement, resetToolArrangement } from './toolRail';
 import { copyWorkspaceText, exportWorkspaceFile, importWorkspaceFile, pasteWorkspaceText, stepWorkspace } from './workspaceActions';
 
 /** The panel the "this panel" commands act on: the one last worked in, if it is still showing. */
@@ -205,6 +206,20 @@ for (const p of [...ZONES, 'float'] as ToolsPlace[]) {
     run: () => placeTools(p, p === 'float' ? { x: 90, y: 110 } : undefined),
   });
 }
+
+registerCommand({
+  id: 'view.toolGroupRename',
+  label: 'Rename the group of the tool in use...',
+  category: 'View',
+  description: 'Give the tool group the picked tool belongs to a name of your own. It is kept with this workspace.',
+  help: 'tool-arrange',
+  keywords: ['tools', 'toolbar', 'group', 'name', 'rename', 'label', 'rail'],
+  run: () => {
+    const tool = store().get().ui.tool;
+    const g = currentGroups().find((x) => x.tools.includes(tool));
+    if (g) askGroupRename(g.id);
+  },
+});
 
 registerCommand({
   id: 'view.toolsReset',

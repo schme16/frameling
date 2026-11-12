@@ -8,7 +8,9 @@ import '../../src/core/commands';
 import '../../src/tools';
 import '../../src/pixel';
 import { newDoc } from '../../src/core/doc';
-import { resetStore } from '../../src/core/store';
+import { getCommand } from '../../src/core/registry';
+import { resetStore, store } from '../../src/core/store';
+import '../../src/ui/dockCommands';
 import { applyWorkspace, dock, importWorkspace, railOf, resetDock, saveWorkspace, setToolGroups, workspaceText } from '../../src/ui/dock';
 import { DockOverlays } from '../../src/ui/DockOverlays';
 import { dockMenu, renaming } from '../../src/ui/dockMenus';
@@ -233,6 +235,20 @@ describe('renaming in the page', () => {
     expect(renaming.get()).toMatchObject({ kind: 'group', id: 'shapes' });
   });
 
+  it('the command opens the box for the group of the tool in use', () => {
+    mount('two');
+    store().setUi({ tool: 'rect' });
+    act(() => void getCommand('view.toolGroupRename')!.run());
+    expect(renaming.get()).toMatchObject({ kind: 'group', id: 'shapes' });
+  });
+
+  it('the stacked flyout puts the first tool, not the rename button, first', () => {
+    mount('stacked');
+    fire(host.querySelector('.ui-tool.is-stack[data-tool-group="draw"]')!, 'contextmenu');
+    expect(document.querySelector('.ui-tool-fly button')!.getAttribute('data-tool-id')).toBeTruthy();
+    expect(document.querySelector('.ui-tool-fly')!.lastElementChild!.classList.contains('ui-tool-fly-rename')).toBe(true);
+  });
+
   it('Escape closes the box without changing the name', () => {
     mount('two');
     fire(host.querySelector('[data-tool-gap="2"]')!, 'dblclick');
@@ -247,7 +263,7 @@ describe('renaming in the page', () => {
     expect(btn.getAttribute('data-tip')).toContain('in Shapes');
     fire(btn, 'contextmenu');
     const fly = document.querySelector('.ui-tool-fly')!;
-    expect(fly.querySelector('.ui-tool-fly-name')!.textContent).toBe('Shapes');
+    expect(fly.querySelector('.ui-tool-fly-head')!.textContent).toBe('Shapes');
     const rename = fly.querySelector<HTMLElement>('.ui-tool-fly-rename')!;
     expect(rename.getAttribute('aria-label')).toBe('Rename Shapes');
     fire(rename, 'click');
@@ -267,7 +283,7 @@ describe('renaming in the page', () => {
   it('a double-click on the flyout name opens the box too', () => {
     mount('stacked');
     fire(host.querySelector('.ui-tool.is-stack[data-tool-group="draw"]')!, 'contextmenu');
-    fire(document.querySelector('.ui-tool-fly-name')!, 'dblclick');
+    fire(document.querySelector('.ui-tool-fly-head')!, 'dblclick');
     expect(renaming.get()).toMatchObject({ kind: 'group', id: 'draw' });
   });
 });
