@@ -5,10 +5,12 @@
  * playback view: `cameraMatrix` turns stage space into what the camera sees (the output frame is the stage size).
  * Layers with a `depth` move less (further away) or more (closer) for parallax.
  */
-import type { CameraDrawing, CameraLayer, CameraView, Doc, Id, Layer } from './format';
+import type { CameraDrawing, CameraLayer, CameraView, Cel, Doc, Id, Layer } from './format';
 import { celAt, uid } from './doc';
 import { tweenEase } from './ease';
 import { invert, mul, pointOnPath, type Mat, IDENTITY_MAT } from './symbols';
+import { cutProblem, cutTween } from './tweenCut';
+import { current, isDraft } from 'immer';
 
 const RAD = Math.PI / 180;
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
@@ -199,10 +201,27 @@ export function setCameraKey(doc: Doc, layer: CameraLayer, frame: number, view: 
   doc.drawings[nd.id] = nd;
   if (cel) {
     const end = cel.start + cel.length;
+    const next = layer.cels.find((c) => c.start === end);
+    const nextView = next ? doc.drawings[next.drawingId] : undefined;
+    const length = cel.length;
     cel.length = frame - cel.start;
-    const c = { id: uid('c'), start: frame, length: end - frame, drawingId: nd.id, ...(cel.tween ? { tween: { ...structuredClone(stripPath(cel.tween)) } } : {}) };
-    // The path belonged to the whole old stretch; neither half can keep it sensibly.
-    if (cel.tween?.path) delete cel.tween.path;
+    const c: Cel = { id: uid('c'), start: frame, length: end - frame, drawingId: nd.id };
+    const at = cel.length / length;
+    // On a draft, work from a plain copy of the tween.
+    const tw = cel.tween && isDraft(cel.tween) ? current(cel.tween) : cel.tween;
+    if (tw && nextView?.kind === 'camera' && !cutProblem(tw, at, length)) {
+      // Cut the glide at this frame: each half plays its part of the easing and takes its share of the spin and its
+      // piece of the motion path, so the motion before and after stays as it was. The new key then takes the view.
+      const halves = cutTween(tw, at);
+      // Whole turns of spin already done are taken off the key (they look the same), as the halves share them.
+      nd.view.rotation -= halves.turns * 360;
+      cel.tween = halves.first;
+      c.tween = halves.second;
+    } else if (tw) {
+      // A glide that can't be cut here (easing runs back over the path): neither half can keep the path.
+      c.tween = structuredClone(stripPath(tw));
+      if (cel.tween?.path) delete cel.tween.path;
+    }
     layer.cels.push(c);
   } else {
     const after = layer.cels.find((c) => c.start > frame);

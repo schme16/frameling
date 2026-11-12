@@ -8,6 +8,7 @@ import { celAt } from '../../src/core/doc';
 import { isInstance, shownDrawing } from '../../src/core/symbols';
 import { cutProblem, cutTween, splitPath } from '../../src/core/tweenCut';
 import { tweenEase } from '../../src/core/ease';
+import { setView } from '../../src/camera/ops';
 import { editActiveDrawing } from '../../src/tools/edit';
 import { retimeKeys } from '../../src/timeline/keys';
 import { layerTracks } from '../../src/timeline/tracks';
@@ -233,6 +234,64 @@ describe('cutting a tween by time keeps the motion', () => {
       return doc;
     }
     const view = (doc: Doc, f: number) => cameraViewOn(doc, doc.layers.find((l) => l.kind === 'camera')!, f)!;
+    describe('putting a key on an in-between (setView)', () => {
+      const cases: [string, (e: Easing) => Tween][] = [
+        ['no extras', (e) => ({ ease: e })],
+        ['a spin', (e) => ({ ease: e, spin: 2 })],
+        ['a path', (e) => ({ ease: e, path: structuredClone(WAVY) })],
+      ];
+      for (const [name, make] of cases) {
+        for (const ease of ['linear', 'easeInOut', [0.2, 0.9, 0.3, 1]] as Easing[]) {
+          it(`same view on that frame, motion kept either side: ${name}, ${typeof ease === 'string' ? ease : 'custom curve'}`, () => {
+            for (const at of [3, 6]) {
+              const doc = cameraDoc(make(ease));
+              const cam = doc.layers.find((l) => l.kind === 'camera')!;
+              const before = Array.from({ length: 11 }, (_, f) => ({ ...view(doc, f) }));
+              resetStore(doc);
+              store().setUi({ frame: at });
+              // Setting the view it already has on that frame just makes the key: the motion must not change.
+              expect(setView({ x: before[at].x })).toBeUndefined();
+              const after = store().get().doc;
+              const c2 = after.layers.find((l) => l.kind === 'camera')!;
+              expect(c2.cels.map((c) => [c.start, c.length])).toEqual([[0, at], [at, 10 - at], [10, 2]]);
+              for (let f = 0; f <= 10; f++) {
+                const v = view(after, f);
+                expect(Math.hypot(v.x - before[f].x, v.y - before[f].y)).toBeLessThan(PX);
+                expect(turnBetween(v.rotation, before[f].rotation)).toBeLessThan(0.01);
+                expect(Math.abs(Math.log(v.zoom / before[f].zoom))).toBeLessThan(1e-6);
+              }
+              expect(cam).toBeDefined();
+            }
+          });
+        }
+      }
+
+      it('a changed view moves only that key: the halves still share the easing, the spin and the path', () => {
+        const doc = cameraDoc({ ease: 'linear', spin: 1, path: structuredClone(WAVY) });
+        resetStore(doc);
+        store().setUi({ frame: 5 });
+        setView({ zoom: 3 });
+        const cam = store().get().doc.layers.find((l) => l.kind === 'camera')!;
+        const [a, b] = cam.cels;
+        expect(a.tween?.path).toBeDefined();
+        expect(b.tween?.path).toBeDefined();
+        expect((a.tween?.spin ?? 0) + (b.tween?.spin ?? 0)).toBeCloseTo(1, 6);
+        expect(view(store().get().doc, 5).zoom).toBeCloseTo(3);
+        expect(view(store().get().doc, 5).zoom).not.toBeCloseTo(view(doc, 5).zoom);
+      });
+
+      it('an easing that bounces back over the path falls back to dropping the path', () => {
+        const doc = cameraDoc({ ease: 'bounceOut', path: structuredClone(WAVY) });
+        resetStore(doc);
+        store().setUi({ frame: 6 });
+        setView({ zoom: 1.5 });
+        const cam = store().get().doc.layers.find((l) => l.kind === 'camera')!;
+        expect(cam.cels.map((c) => c.start)).toEqual([0, 6, 10]);
+        expect(cam.cels[0].tween?.path).toBeUndefined();
+        expect(cam.cels[1].tween?.path).toBeUndefined();
+      });
+    });
+
     for (const [name, make] of [['a spin', (e: Easing): Tween => ({ ease: e, spin: 2 })], ['a path', (e: Easing): Tween => ({ ease: e, path: structuredClone(WAVY) })]] as const) {
       for (const ease of ['linear', 'easeInOut'] as Easing[]) {
         it(`${name}, ${ease}`, () => {
