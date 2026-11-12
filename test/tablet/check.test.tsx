@@ -5,7 +5,7 @@ import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PenCheck } from '../../src/tablet/check/PenCheck';
 import { DiagnosticsPage } from '../../src/tablet/check/DiagnosticsPage';
-import { CHECK_STEPS, CheckRecorder, stepDone, type PenSample, type ReportEnv, type TabletReport } from '../../src/tablet/check/recorder';
+import { CHECK_STEPS, CheckRecorder, REPORT_VERSION, stepDone, windowSystem, type PenSample, type ReportEnv, type TabletReport } from '../../src/tablet/check/recorder';
 import { OFFER_DELAY_MS, checkMemory, noticePen, reduceCheck, resetOffer, setCheckMemory, shouldOffer, startFlow, startPenCheck } from '../../src/tablet/check/state';
 import { overlays } from '../../src/ui/overlays';
 import { LINES, line } from '../../src/ui/mascot/lines';
@@ -62,6 +62,9 @@ interface Fire {
   t?: number;
   pointerType?: string;
   coalesced?: number;
+  /** persistentDeviceId (Chromium 134 and later). */
+  device?: number;
+  id?: number;
 }
 
 /** A pen event as the browser would send it, with every pen field set. */
@@ -70,7 +73,8 @@ function pointer(f: Fire): Event {
   const e = new Ctor(f.type ?? 'pointermove', { bubbles: true, cancelable: true, clientX: f.x ?? 100, clientY: f.y ?? 100, buttons: f.buttons ?? 0, button: f.button ?? 0 });
   const props: Record<string, unknown> = {
     pointerType: f.pointerType ?? 'pen',
-    pointerId: 3,
+    pointerId: f.id ?? 3,
+    persistentDeviceId: f.device ?? 0,
     pressure: f.pressure ?? 0,
     tiltX: f.tiltX ?? 0,
     tiltY: f.tiltY ?? 0,
@@ -152,6 +156,113 @@ describe('the notebook', () => {
     expect(stepDone('keys', r.now()!)).toBe(false);
   });
 
+  it('either barrel bit ticks the first button, and the second has to be the other bit (Linux sends the first as bit 4)', () => {
+    const r = new CheckRecorder(DEFAULT_PEN.pen);
+    r.start('barrel1');
+    r.push(s({ type: 'pointerdown', button: 1, buttons: 4 }));
+    expect(r.currentDone()).toBe(true);
+    r.finish('barrel1', 'done');
+    r.start('barrel2');
+    // The same button again does not count as the other one.
+    r.push(s({ type: 'pointermove', buttons: 4 }));
+    expect(r.currentDone()).toBe(false);
+    r.push(s({ type: 'pointerdown', button: 2, buttons: 2 }));
+    expect(r.currentDone()).toBe(true);
+    // Bit 2 first works too, then only bit 4 finishes the second.
+    const q = new CheckRecorder(DEFAULT_PEN.pen);
+    q.start('barrel1');
+    q.push(s({ buttons: 3 }));
+    expect(q.currentDone()).toBe(true);
+    q.finish('barrel1', 'done');
+    q.start('barrel2');
+    q.push(s({ buttons: 3 }));
+    expect(q.currentDone()).toBe(false);
+    q.push(s({ buttons: 5 }));
+    expect(q.currentDone()).toBe(true);
+    // A pen with one button skipped the first step, so the second takes any.
+    const z = new CheckRecorder(DEFAULT_PEN.pen);
+    z.finish('barrel1', 'skipped');
+    z.start('barrel2');
+    z.push(s({ buttons: 4 }));
+    expect(z.currentDone()).toBe(true);
+  });
+
+  it('records which raw bit arrived, the masks, and the pointer and device ids in each step', () => {
+    const r = new CheckRecorder(DEFAULT_PEN.pen);
+    r.start('barrel1');
+    r.push(s({ pointerId: 2, persistentDeviceId: 2, type: 'pointerdown', button: 1, buttons: 4 }));
+    r.push(s({ pointerId: 2, persistentDeviceId: 2, buttons: 4 }));
+    r.push(s({ pointerId: 3, persistentDeviceId: 3, type: 'pointerup', button: 1, buttons: 0 }));
+    const rep = r.report(env());
+    const seen = rep.steps.find((x) => x.id === 'barrel1')!.seen!;
+    expect(seen.rawBitCounts).toEqual({ bit2: 0, bit4: 3 });
+    expect(seen.buttonsMasks).toEqual({ '4': 2, '0': 1 });
+    expect(seen.eventCodes).toEqual({ 'pointerdown:1': 1, 'pointerup:1': 1 });
+    expect(seen.pointerIds).toEqual([2, 3]);
+    expect(seen.pointerIdChanges).toBe(1);
+    expect(seen.persistentDeviceIds).toEqual([2, 3]);
+    expect(rep.buttons.rawBarrelBits).toEqual([4]);
+    expect(rep.devices.persistentIds).toBe(2);
+  });
+
+  it('on X11 a flipped pen is a second device: the eraser step ticks without an eraser bit, and the report says how', () => {
+    const r = new CheckRecorder(DEFAULT_PEN.pen);
+    r.start('pressure');
+    // The tip first (device 2), as libinput under Xorg gives it.
+    for (const p of [0.1, 0.3, 0.7, 0.9, 0.5, 0.4, 0.6]) r.push(s({ buttons: 1, pressure: p, persistentDeviceId: 2, pointerId: 2 }));
+    r.finish('pressure', 'done');
+    r.start('eraser');
+    r.push(s({ buttons: 1, pressure: 0.3, persistentDeviceId: 2, pointerId: 2 }));
+    expect(r.currentDone()).toBe(false);
+    r.push(s({ buttons: 1, pressure: 0.3, persistentDeviceId: 3, pointerId: 2 }));
+    expect(r.currentDone()).toBe(true);
+    r.finish('eraser', 'done');
+    const rep = r.report({ ...env(), platform: 'linux', session: { type: 'x11', desktop: 'zorin:GNOME', wayland: false, x11: true, ozone: '' } });
+    expect(rep.buttons).toMatchObject({ eraserDetected: true, eraserBy: 'device' });
+    const e = rep.steps.find((x) => x.id === 'eraser')!;
+    expect(e.session).toEqual({ type: 'x11', window: 'x11' });
+    expect(e.seen).toMatchObject({ eraser: 0, eraserGuess: 1, persistentDeviceIds: [2, 3], persistentDeviceIdChanges: 1, pointerIds: [2], pointerIdChanges: 0 });
+    expect(rep.hints.join(' ')).toMatch(/second device/);
+  });
+
+  it('the real eraser bit wins, and without a second device nothing is guessed', () => {
+    const r = new CheckRecorder(DEFAULT_PEN.pen);
+    r.start('eraser');
+    r.push(s({ type: 'pointerdown', button: 5, buttons: 32, persistentDeviceId: 0, pointerId: 3 }));
+    expect(r.currentDone()).toBe(true);
+    expect(r.report(env()).buttons.eraserBy).toBe('bit');
+    const same = new CheckRecorder(DEFAULT_PEN.pen);
+    same.start('eraser');
+    for (let i = 0; i < 5; i++) same.push(s({ buttons: 1, pressure: 0.5, persistentDeviceId: 2 }));
+    expect(same.currentDone()).toBe(false);
+    expect(same.report(env()).buttons.eraserBy).toBeNull();
+  });
+
+  it('says "no eraser end here" in the report with the reason, and names the window system for each step', () => {
+    const r = new CheckRecorder(DEFAULT_PEN.pen);
+    r.start('pressure');
+    for (let i = 0; i < 6; i++) r.push(s({ buttons: 1, pressure: 0.5 }));
+    r.finish('eraser', 'skipped', 'no-eraser-end');
+    const rep = r.report({ ...env(), platform: 'linux', session: { type: 'wayland', desktop: 'GNOME', wayland: true, x11: true, ozone: 'x11' } });
+    const e = rep.steps.find((x) => x.id === 'eraser')!;
+    expect(e).toMatchObject({ status: 'skipped', reason: 'no-eraser-end', session: { type: 'wayland', window: 'x11' } });
+    expect(rep.steps.find((x) => x.id === 'hover')).not.toHaveProperty('reason');
+    expect(rep.hints.join(' ')).toMatch(/did not show up/);
+    expect(REPORT_VERSION).toBe(2);
+    expect(rep.version).toBe(2);
+  });
+
+  it('works out the window system from the launcher choice, then the session', () => {
+    const base = { desktop: 'GNOME', wayland: false, x11: false };
+    expect(windowSystem(undefined)).toBeNull();
+    expect(windowSystem({ ...base, type: 'wayland', ozone: 'x11' })).toBe('x11');
+    expect(windowSystem({ ...base, type: 'x11', ozone: '' })).toBe('x11');
+    expect(windowSystem({ ...base, type: 'wayland', ozone: '' })).toBe('wayland');
+    expect(windowSystem({ ...base, type: '', ozone: '', wayland: true })).toBe('wayland');
+    expect(windowSystem({ ...base, type: '', ozone: '', x11: true })).toBe('x11');
+    expect(windowSystem({ ...base, type: '', ozone: '', x11: true, wayland: true })).toBe('unknown');
+  });
+
   it('puts the Linux session (Wayland or X11) in the report when it is known', () => {
     const r = new CheckRecorder(DEFAULT_PEN.pen);
     const session = { type: 'wayland', desktop: 'GNOME', wayland: true, x11: true, ozone: 'x11' };
@@ -171,7 +282,7 @@ describe('the notebook', () => {
     r.wheel();
     r.finish('scribble', 'done');
     const rep = r.report(env());
-    expect(rep).toMatchObject({ kind: 'frameling-tablet-report', version: 1, createdAt: '2026-11-12T10:00:00.000Z' });
+    expect(rep).toMatchObject({ kind: 'frameling-tablet-report', version: 2, createdAt: '2026-11-12T10:00:00.000Z' });
     expect(rep.app).toEqual({ version: '1.0.0', electron: '45.0.0', chrome: '140.0.0.0' });
     expect(rep.system.platform).toBe('win32');
     expect(rep.system.session).toBeUndefined();
@@ -327,6 +438,65 @@ describe('the pen check dialog', () => {
     resetOffer();
     expect(shouldOffer()).toBe(false);
     expect(localStorage.getItem('frameling.penCheck.v1')).toContain('"done":true');
+  });
+
+  /** Gets the dialog to the eraser step the quick way: a pen with every step before it. */
+  function toEraserStep(device = 2): void {
+    for (let i = 0; i < 8; i++) fire({ x: 100 + i, t: next(), device });
+    fire({ type: 'pointerdown', buttons: 1, pressure: 0.05, t: next(), device });
+    for (let i = 1; i <= 20; i++) fire({ buttons: 1, pressure: i / 20, x: 100 + i * 5, t: next(), device });
+    fire({ type: 'pointerup', t: next(), device });
+    for (let i = 0; i < 6; i++) fire({ tiltX: -40, tiltY: 10, t: next(), device });
+    for (let i = 0; i < 6; i++) fire({ tiltX: 40, tiltY: -10, t: next(), device });
+    fire({ type: 'pointerdown', buttons: 1, pressure: 0.5, t: next(), device });
+    for (let i = 0; i < 8; i++) fire({ buttons: 1, pressure: 0.5, twist: i * 30, t: next(), device });
+    fire({ type: 'pointerup', t: next(), device });
+  }
+
+  it('on X11 the eraser step ticks when the flipped pen shows up as a second device, with no eraser bit', async () => {
+    (window as unknown as { frameling: { session: unknown } }).frameling.session = { type: 'x11', desktop: 'zorin:GNOME', wayland: false, x11: true, ozone: '' };
+    await act(async () => root.render(<PenCheck />));
+    act(() => startPenCheck());
+    toEraserStep(2);
+    expect(step()).toBe('Eraser end');
+    fire({ type: 'pointerdown', buttons: 1, pressure: 0.3, t: next(), device: 3 });
+    expect(step()).toBe('Button nearest the tip');
+  });
+
+  it('on X11 Quill offers "My pen\'s eraser end doesn\'t show up here" when nothing shows, and the report keeps the reason', async () => {
+    vi.useFakeTimers();
+    (window as unknown as { frameling: { session: unknown } }).frameling.session = { type: 'x11', desktop: 'zorin:GNOME', wayland: false, x11: true, ozone: '' };
+    await act(async () => root.render(<PenCheck />));
+    act(() => startPenCheck());
+    toEraserStep(2);
+    expect(step()).toBe('Eraser end');
+    const label = "My pen's eraser end doesn't show up here";
+    expect([...host.querySelectorAll('button')].some((b) => b.textContent === label)).toBe(false);
+    // The tip keeps touching and nothing else comes.
+    fire({ type: 'pointerdown', buttons: 1, pressure: 0.3, t: next(), device: 2 });
+    act(() => void vi.advanceTimersByTime(7000));
+    expect(says()).toBe(line('pen.check.eraser.hidden'));
+    expect(says()).toMatch(/barrel button erase/);
+    act(() => button(label).click());
+    expect(step()).toBe('Button nearest the tip');
+    expect(says()).toContain(line('pen.check.eraser.noted'));
+    expect([...host.querySelectorAll('.tb-check-steps li[data-state=skipped] span')].map((x) => x.textContent)).toContain('Eraser end');
+    for (let i = 0; i < 4; i++) act(() => button('Skip this one').click());
+    await act(async () => button('Save the report').click());
+    const rep = JSON.parse(new TextDecoder().decode(written[0].bytes)) as TabletReport;
+    expect(rep.version).toBe(2);
+    expect(rep.steps.find((x) => x.id === 'eraser')).toMatchObject({ status: 'skipped', reason: 'no-eraser-end', session: { type: 'x11', window: 'x11' } });
+  });
+
+  it('on Wayland, and off Linux, the offer does not appear (the eraser bit works there)', async () => {
+    vi.useFakeTimers();
+    (window as unknown as { frameling: { session: unknown } }).frameling.session = { type: 'wayland', desktop: 'GNOME', wayland: true, x11: false, ozone: '' };
+    await act(async () => root.render(<PenCheck />));
+    act(() => startPenCheck());
+    toEraserStep(0);
+    act(() => void vi.advanceTimersByTime(9000));
+    expect([...host.querySelectorAll('button')].some((b) => b.textContent === "My pen's eraser end doesn't show up here")).toBe(false);
+    expect(says()).not.toBe(line('pen.check.eraser.hidden'));
   });
 
   it('a fast burst of events (faster than React redraws) ticks off one step at a time, not several', async () => {

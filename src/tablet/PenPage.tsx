@@ -2,7 +2,8 @@
 // choose what fingers do, and see what each tool does with pressure, tilt and the stabilizer.
 import { useEffect, useRef, useState } from 'react';
 import { Row, Segmented, Switch } from '../ui/PrefsModal';
-import { BARREL_ACTIONS, penPress, type BarrelAction } from './buttons';
+import { BARREL_ACTIONS, barrelBits, getPenHost, penPress, type BarrelAction } from './buttons';
+import { penTools } from './tool';
 import { CurveEditor } from './CurveEditor';
 import { CURVE_PRESETS, PRESET_ORDER, presetOf, type CurvePreset } from './curve';
 import { penFields } from './input';
@@ -51,8 +52,14 @@ function TestPad({ onRaw }: { onRaw: (raw: number | null) => void }) {
     if (!c) return;
     const pen = penStore.get().pen;
     const f = penFields(e as PointerEvent, pen);
-    const press = penPress(e as PointerEvent);
-    const parts = [press.eraser ? 'eraser end' : '', press.barrel1 ? 'barrel button 1' : '', press.barrel2 ? 'barrel button 2' : ''].filter(Boolean).join(', ');
+    const pe = e as PointerEvent & { persistentDeviceId?: number };
+    penTools.observe(pe);
+    const guessed = penTools.isEraser(pe);
+    const press = penPress(pe, { eraser: guessed });
+    const raw = barrelBits(pe);
+    const first = getPenHost().swapBarrels ? 4 : 2;
+    const bit = (n: number) => (raw & n ? ` (raw bit ${n})` : '');
+    const parts = [press.eraser ? (guessed ? 'eraser end (from the second device)' : 'eraser end') : '', press.barrel1 ? `barrel button 1${bit(first)}` : '', press.barrel2 ? `barrel button 2${bit(6 - first)}` : ''].filter(Boolean).join(', ');
     setRead({ type: e.pointerType, raw: e.pressure, out: f.pressure, tiltX: f.tiltX, tiltY: f.tiltY, twist: f.twist, parts });
     onRaw(e.pointerType === 'pen' ? e.pressure : null);
     if (!draw) return;

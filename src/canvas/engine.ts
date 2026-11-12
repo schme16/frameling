@@ -36,6 +36,7 @@ import { screenToDoc, stageDeviceRect, wheelZoomFactor, zoomAbout, type Pt } fro
 import { overlayMatrix, STAGE_TOOLS, toLayerSpace } from '../rig/pose';
 import { meaningOfPress } from '../tablet/buttons';
 import { penFields } from '../tablet/input';
+import { penTools } from '../tablet/tool';
 import { getPen, markPenSeen, PEN_TOOLS, type PenTool } from '../tablet/settings';
 import { Stabilizer } from '../tablet/stabilizer';
 import { PenTracker, pinchView, type PinchStart } from '../tablet/touch';
@@ -626,6 +627,7 @@ export class CanvasEngine {
   private onPointerDown = (e: PointerEvent): void => {
     if (e.pointerType === 'pen') {
       markPenSeen();
+      penTools.observe(e);
       this.penTime = e.timeStamp;
       this.pen.down(e.timeStamp);
     }
@@ -642,7 +644,8 @@ export class CanvasEngine {
     const ui = store().get().ui;
 
     // A pen's presses are read through its settings: the eraser end, and what each barrel button does.
-    const meaning = e.pointerType === 'pen' ? meaningOfPress(e, getPen().pen) : null;
+    // (Under X11 the eraser end can arrive as a plain pen touch from a second device: see tablet/tool.ts.)
+    const meaning = e.pointerType === 'pen' ? meaningOfPress(e, getPen().pen, { eraser: penTools.isEraser(e) }) : null;
     const button = meaning ? meaning.button : e.button;
     const penEraser = !!meaning?.eraser;
     const pick = !!meaning?.pick;
@@ -717,6 +720,7 @@ export class CanvasEngine {
   private onPointerMove = (e: PointerEvent): void => {
     if (e.pointerType === 'touch' && this.touches.has(e.pointerId)) this.touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (e.pointerType === 'pen') {
+      penTools.observe(e);
       this.penTime = e.timeStamp;
       this.pen.seen(e.timeStamp);
       // A pen that is only hovering is not touching, whatever happened to its last release.
@@ -738,7 +742,7 @@ export class CanvasEngine {
       if (e.buttons !== 0 && e.pointerType !== 'pen') return;
       if (e.pointerType === 'touch') return;
       this.inside = true;
-      this.hoverEraser = e.pointerType === 'pen' && getPen().pen.eraserEnd && (e.buttons & 32) !== 0;
+      this.hoverEraser = e.pointerType === 'pen' && getPen().pen.eraserEnd && ((e.buttons & 32) !== 0 || penTools.isEraser(e));
       if (e.pointerType === 'pen') noticePen();
       this.refreshBounds();
       this.altDown = e.altKey;

@@ -7,8 +7,9 @@ import { line, lines } from '../../ui/mascot/lines';
 import { Modal } from '../../ui/Modal';
 import { toast } from '../../ui/toast';
 import { overlays } from '../../ui/overlays';
+import { desktop } from '../../io/desktop';
 import { getPen } from '../settings';
-import { CHECK_STEPS, CheckRecorder, type CheckStepId, type PenSample } from './recorder';
+import { CHECK_STEPS, CheckRecorder, windowSystem, type CheckStepId, type PenSample, type SkipReason } from './recorder';
 import { checkMemory, closePenCheck, gatherEnv, reduceCheck, saveReport, setCheckMemory, startFlow } from './state';
 import '../tablet.css';
 
@@ -50,11 +51,12 @@ function stepSays(id: CheckStepId): string {
 
 /** The parts of a pointer event the notebook reads. */
 export function sampleOf(e: PointerEvent): PenSample {
-  const x = e as PointerEvent & { altitudeAngle?: number; azimuthAngle?: number; tangentialPressure?: number };
+  const x = e as PointerEvent & { altitudeAngle?: number; azimuthAngle?: number; tangentialPressure?: number; persistentDeviceId?: number };
   return {
     type: e.type,
     pointerType: e.pointerType,
     pointerId: e.pointerId,
+    persistentDeviceId: x.persistentDeviceId,
     pressure: e.pressure,
     button: e.button,
     buttons: e.buttons,
@@ -73,6 +75,15 @@ export function sampleOf(e: PointerEvent): PenSample {
 }
 
 const pick = (xs: string[], n: number) => xs[n % xs.length];
+
+/** How long the eraser step waits before Quill offers "it doesn't show up here". */
+export const ERASER_HELP_MS = 6000;
+
+/** Linux with the pen coming in through X11 (or not known): the eraser end may not show up as one. Wayland marks it properly. */
+const eraserMayHide = (): boolean => {
+  const w = windowSystem(desktop()?.session);
+  return w === 'x11' || w === 'unknown';
+};
 
 export function PenCheck() {
   const mode = overlays.use((o) => o.penCheck);
@@ -99,6 +110,8 @@ function Check({ start }: { start: 'offer' | 'run' }) {
   const last = useRef<{ x: number; y: number } | null>(null);
   const stepStarted = useRef(0);
   const nopenSaid = useRef(false);
+  const [eraserHelp, setEraserHelp] = useState(false);
+  const eraserHelpSaid = useRef(false);
 
   const stepId = flow.phase === 'run' ? CHECK_STEPS[flow.step] : null;
 
@@ -107,6 +120,8 @@ function Check({ start }: { start: 'offer' | 'run' }) {
     if (!stepId) return;
     stepStarted.current = performance.now();
     nopenSaid.current = false;
+    setEraserHelp(false);
+    eraserHelpSaid.current = false;
     setMood('point');
   }, [stepId]);
 
@@ -141,6 +156,15 @@ function Check({ start }: { start: 'offer' | 'run' }) {
         setSays(line('pen.check.nopen'));
         setMood('oops');
       }
+      // The eraser end on X11 often comes as a normal pen: after a while, say so kindly and offer to move on.
+      if (stepId === 'eraser' && rec.current.sawPen() && performance.now() - stepStarted.current > ERASER_HELP_MS) {
+        if (!eraserHelpSaid.current && eraserMayHide()) {
+          eraserHelpSaid.current = true;
+          setEraserHelp(true);
+          setSays(line('pen.check.eraser.hidden'));
+          setMood('think');
+        }
+      }
     }, 1000);
     return () => clearInterval(t);
   }, [stepId]);
@@ -170,7 +194,7 @@ function Check({ start }: { start: 'offer' | 'run' }) {
     if (g && drawing) {
       g.lineCap = 'round';
       g.strokeStyle = getComputedStyle(c).getPropertyValue('--accent') || '#9b7bff';
-      g.globalCompositeOperation = (e.buttons & 32) !== 0 || e.button === 5 ? 'destination-out' : 'source-over';
+      g.globalCompositeOperation = rec.current.eraserEnd(sampleOf(e)) ? 'destination-out' : 'source-over';
       g.lineWidth = (2 + 14 * e.pressure) * k;
       g.beginPath();
       const from = last.current ?? { x, y };
@@ -202,16 +226,17 @@ function Check({ start }: { start: 'offer' | 'run' }) {
     afterEvent();
   };
 
-  const skip = () => {
+  const skip = (reason?: SkipReason) => {
     const i = stepRef.current;
     const id = CHECK_STEPS[i];
     if (!id) return;
-    rec.current.finish(id, 'skipped');
+    rec.current.finish(id, 'skipped', reason);
     dispatch({ type: 'skip', id });
     stepRef.current = i + 1;
     const next = CHECK_STEPS[i + 1];
     if (next) rec.current.start(next);
-    setSays(next ? `${line('pen.check.skipped')} ${stepSays(next)}` : line('pen.check.save'));
+    const ack = reason === 'no-eraser-end' ? line('pen.check.eraser.noted') : line('pen.check.skipped');
+    setSays(next ? `${ack} ${stepSays(next)}` : line('pen.check.save'));
     setMood('think');
   };
 
@@ -309,9 +334,14 @@ function Check({ start }: { start: 'offer' | 'run' }) {
         )}
         {flow.phase === 'run' && (
           <div className="tb-check-buttons">
-            <button type="button" className="tb-clear" data-autofocus onClick={skip}>
+            <button type="button" className="tb-clear" data-autofocus onClick={() => skip()}>
               Skip this one
             </button>
+            {stepId === 'eraser' && eraserHelp && (
+              <button type="button" className="tb-clear" onClick={() => skip('no-eraser-end')}>
+                {"My pen's eraser end doesn't show up here"}
+              </button>
+            )}
             <button type="button" className="tb-clear" onClick={close}>
               Stop for now
             </button>
