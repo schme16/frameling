@@ -1,6 +1,6 @@
 // Scores the lip sync guesser against reference speech with known phoneme timing (see make_refs.py).
-//   node scripts/lipsync/eval.mjs <refs_dir> [--src src/lipsync/analysis.ts] [--fps 24] [--text] [--json out.json]
-// --src can point at another copy of the analysis module (for before/after). --text hands the typed line to the guesser.
+//   node scripts/lipsync/eval.mjs <refs_dir> [--src src/lipsync/analysis.ts] [--fps 24] [--text] [--no-dict] [--json out.json]
+// --src can point at another copy of the analysis module (for before/after). --text hands the typed line to the guesser, with the pronunciation list (src/lipsync/dict-data.ts) unless --no-dict.
 import { build } from 'esbuild';
 import { readFileSync, readdirSync, writeFileSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -19,6 +19,16 @@ const RATE = Number(flag('--rate', 44100));
 const tmp = mkdtempSync(join(tmpdir(), 'lipeval-'));
 await build({ entryPoints: [src], bundle: true, format: 'esm', platform: 'node', outfile: join(tmp, 'a.mjs'), logLevel: 'error' });
 const mod = await import(pathToFileURL(join(tmp, 'a.mjs')).href);
+let dict;
+let wordsMod;
+if (useText && !args.includes('--no-dict')) {
+  const load = async (entry, name) => {
+    await build({ entryPoints: [resolve(entry)], bundle: true, format: 'esm', platform: 'node', outfile: join(tmp, name), logLevel: 'error' });
+    return import(pathToFileURL(join(tmp, name)).href);
+  };
+  wordsMod = await load('src/lipsync/words.ts', 'w.mjs');
+  dict = wordsMod.parseDictionary((await load('src/lipsync/dict-data.ts', 'data.mjs')).default);
+}
 
 const transitions = (a) => a.map((m, i) => (i > 0 && m !== a[i - 1] ? i : -1)).filter((i) => i >= 0);
 
@@ -84,14 +94,14 @@ for (const f of files) {
   const frames = Math.ceil((samples.length / rate) * fps);
   const truth = truthFrames(meta.phonemes, fps, frames);
   const variants = [['clean', samples]];
-  if (meta.split === 'held') variants.push(['noisy', addNoise(samples, 15)]);
+  if (meta.split === 'held' || meta.split === 'real') variants.push(['noisy', addNoise(samples, 15)]);
   for (const [vname, audio] of variants) {
     audioSeconds += audio.length / rate;
-    const guess = mod.guessMouths(audio, rate, fps, frames, { ...(useText ? { text: meta.text } : {}), tune, minHold });
+    const guess = mod.guessMouths(audio, rate, fps, frames, { ...(useText ? { text: meta.text, ...(dict ? { expected: wordsMod.lineExpected(meta.text, dict) } : {}) } : {}), tune, minHold });
     if (vname === 'clean' && meta.split === 'held') truth.forEach((t, i) => conf[t][guess[i]]++);
     const r = score(truth, guess);
     const keys = [];
-    keys.push(`${meta.split === 'held' ? 'held-out' : 'train lines'} ${vname}`.replace('dev noisy', 'dev noisy'));
+    keys.push(`${meta.split === 'held' ? 'held-out' : meta.split === 'real' ? 'real speech' : 'train lines'} ${vname}`);
     keys.push(`${meta.engine} ${vname}`);
     for (const k of keys) (groups[k] ??= []).push(r);
     (groups['ALL clean'] ??= []);

@@ -132,6 +132,22 @@ is to the true one, flicker (changes per true change) and lip-closure recall and
 held-out lines and a noisy copy of those. `--src` scores another copy of `analysis.ts` (for before and after).
 The model is trained only on the `train` split, so the `held` split stays honest; `--exclude-voices` on train.mjs plus
 `--voices` on eval.mjs measures voices it has never heard. `ab_data.mjs` and `ab_clip.py` make the before/after clip.
+`eval.mjs --text` hands over the typed words too, read with the pronunciation list (`--no-dict` for the spelling guide alone;
+`--tune textWeight=0.3` tries another blend weight). The synthetic references share their pronunciations with the list
+(flite's are the same CMU entries), so read the espeak rows for the fairest typed-words numbers.
+
+### Pronunciation list for typed words
+
+`src/lipsync/dict-data.ts` is generated, never edited: `python3 scripts/lipsync/make_dict.py /usr/share/dict/american-english /tmp/full.json`
+(CMU Pronouncing Dictionary as compiled into libflite, BSD-style licence, mapped to the ten mouths; lower-case words up to
+11 letters and capitalised names up to 6), then `node scripts/lipsync/pack_dict.mjs /tmp/full.json`, which keeps only the words the
+spelling guide plus the endings rules (`src/lipsync/words.ts`) get wrong (about 47%, 296 KB). Rerun both when the guide in
+`text.ts` or the rules in `words.ts` change. It is loaded with `import()` only when words are typed (`dict.ts`), so it is its own chunk.
+espeak-ng was not used for the list: its dictionary data is GPL-3 and whether generated tables are free of that is unclear.
+
+`real_refs.py <out> <recording.wav> "words" ...` builds reference timing for a real recording by warping an espeak
+reading of the transcript onto it (DTW on mel features; good to a few frames). Keep recordings out of the repository;
+`eval.mjs <out> --text` scores them under "real speech".
 
 ## Build first
 
