@@ -9,6 +9,7 @@ import { registerVideoIpc } from './video';
 import { addLinked, canOpenOther, cleanFilters, isLibraryKind, isLinked, libraryId, listLibrary, pickFolder, readLibrary, readSmallFolder, removeLibrary, showLibraryFolder, writeLibrary } from './library';
 import { addRecent, clearAutosave, clearRecent, keepAutosave, lastDir, listKept, listRecent, readAutosave, readKept, rememberDir, removeKept, removeRecent, writeAutosave, writeFileAtomic } from './store';
 import { pathKey, safeFileName } from './paths';
+import { pluginMemory } from './pluginMemory';
 
 const FILTERS: FileFilter[] = [{ name: 'Frameling drawings', extensions: ['frameling'] }];
 // File > Open also takes Aseprite files, which open as a new drawing.
@@ -300,6 +301,15 @@ export function registerIpc(hooks: IpcHooks): void {
   });
   handle('library:showFolder', (_e, kind: unknown) => {
     if (isLibraryKind(kind)) showLibraryFolder(kind);
+  });
+
+  // For the plugin watchdog: how much memory each plugin's sandbox holds (plugin id to bytes). Nothing about the plugins' contents.
+  handle('plugins:memory', () => {
+    const wc = hooks.window()?.webContents;
+    if (!wc) return {};
+    const frames = wc.mainFrame.framesInSubtree.map((f) => ({ url: f.url, pid: f.osProcessId }));
+    const procs = app.getAppMetrics().map((p) => ({ pid: p.pid, workingSetKb: p.memory.workingSetSize }));
+    return pluginMemory(frames, procs, process.pid);
   });
 
   app.on('will-quit', () => {

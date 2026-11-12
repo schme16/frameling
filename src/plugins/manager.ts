@@ -25,6 +25,7 @@ import { decide, elevatedIn, needsChoices, powerName, RISKS } from './powers';
 import { EventPipe } from './pipe';
 import { PluginRuntime, type HostHooks, type PluginExporterDef, type PluginToolDef, type Transport } from './runtime';
 import { startSandbox } from './sandbox';
+import { tripMessage, type Trip } from './watchdog';
 import { addPluginShape, redrawPluginShape, ShapeProblem } from './shapes';
 import type { UiNode } from './ui-schema';
 
@@ -219,7 +220,29 @@ function hooksFor(m: PluginManifest, onExporter: (def: PluginExporterDef) => voi
       notify(`The "${m.name}" plugin hit a problem: ${message}`, 'error', { label: 'Turn it off', run: () => void setEnabled(pid, false) }, 9000);
     },
     loaded: () => patch(pid, { status: 'on', problem: undefined }),
+    watchdog: (trip) => void turnOffForTrouble(m, trip),
+    memory: () => memoryOf(pid),
   };
+}
+
+let memorySeen: { at: number; sizes: Record<string, number> } | null = null;
+/** The plugin's memory in bytes (desktop only). One look at the whole app serves every plugin asking within a second. */
+async function memoryOf(pid: string): Promise<number | null> {
+  const ask = desktop()?.plugins?.memory;
+  if (!ask) return null;
+  if (!memorySeen || Date.now() - memorySeen.at > 1000) {
+    const sizes = await ask().catch(() => ({}) as Record<string, number>);
+    memorySeen = { at: Date.now(), sizes };
+  }
+  return memorySeen.sizes[pid] ?? null;
+}
+
+/** A plugin got stuck or grew too big: turn it off, remember that, and say so plainly with a way back. */
+async function turnOffForTrouble(m: PluginManifest, trip: Trip): Promise<void> {
+  const message = tripMessage(m.name, trip);
+  await setEnabled(m.id, false);
+  patch(m.id, { problem: message });
+  notify(message, 'warn', { label: 'Turn it on', run: () => void setEnabled(m.id, true) }, 12000);
 }
 
 /** The one decoration a plugin with the canvas power gets: it draws whatever the plugin last sent. Taken away with the plugin. */

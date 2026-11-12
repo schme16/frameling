@@ -36,6 +36,8 @@ Every plugin runs in its own **sandbox**, a closed box inside Frameling. It can'
 
 If a plugin goes wrong, Frameling says so and offers to turn it off. Your drawing is safe either way.
 
+Frameling also keeps an eye on each plugin. If one **stops responding** (stuck in a loop) or **uses a lot of memory**, Frameling turns it off for you and says so. It stays off, even next time you open Frameling, until you press **Turn it on** in the message or switch it on in **Preferences > Plugins**. Your drawing isn't touched. (Watching memory works in the desktop app.)
+
 ## Make your own
 
 A plugin is a folder with a **manifest.json** and one script. See [Making a plugin](help:making-plugins).`,

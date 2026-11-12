@@ -12,6 +12,8 @@ kinds of shape, guides on the canvas and options in the Export dialog. It is a f
   (`canvas`, `events`).
 - `layer-fader` (version 2): a tool that answers with a preview and an edit (`tools`, `document.write`).
 - `export-report` (version 2): an exporter with options (text, choice, number, switch) and export events.
+- `runaway-test` (version 2): a deliberately badly behaved plugin (one command freezes, one grabs memory) for seeing the
+  watchdog work. Not for everyday use.
 
 **Version 1 plugins keep working unchanged.** A manifest without `apiVersion` (or with 1) is a version 1 plugin: same
 API, same install question as before. Version 2 only adds.
@@ -316,6 +318,28 @@ app page ──MessagePort── sandboxed iframe (plugin-host.html) ── star
 
 Turning a plugin off removes the frame, which ends its worker even if it's stuck in a loop.
 
+### The watchdog
+
+`src/plugins/watchdog.ts`, started by each `PluginRuntime`. It is a safety net for careless plugins (a loop that never ends,
+a list that grows for ever), not a security boundary: a plugin set on mischief has other ways to be a nuisance and the
+person can always turn it off.
+
+- **Heartbeat.** Every second the host sends `{ t: 'ping' }` and the prelude answers `{ t: 'pong' }` from the worker's
+  own event loop, so a worker stuck in a loop cannot answer. A ping unanswered for 10 seconds (60 seconds while a command or an
+  export is running, which may think for a while) means stuck. A tick that comes very late (the computer slept) is not blamed on the plugin.
+- **Memory.** The desktop app starts Chromium with `IsolateSandboxedIframes:grouping/per-document` (`PLUGIN_PROCESS_FEATURE`,
+  `src/main/main.ts`; without it every plugin's frame shares one process), so each plugin has a process of its own (about 90 MB
+  to begin with), and the frame's address carries `?plugin=<id>` (the page ignores it). The main process (`plugins:memory`, `src/main/pluginMemory.ts`)
+  matches each plugin frame's process id to Electron's process metrics and reports bytes held per plugin, every 4 seconds
+  at most. A process shared with another plugin or the app is left out. Over 1 GB turns the plugin off. The web build
+  cannot see this (`performance.memory` and `measureUserAgentSpecificMemory` do not exist in a sandboxed worker, which is
+  not cross-origin isolated), so only the heartbeat runs there.
+- **What happens.** The plugin is turned off the ordinary way (so it stays off after a restart until the person turns it on),
+  a plain toast says why with a **Turn it on** button, and Preferences > Plugins shows the same sentence.
+
+`runaway-test` has a command for each case. The limits are in `WATCHDOG`, which `?debug` exposes as
+`window.__framelingPlugins.watchdog` so the e2e check can shorten them.
+
 ## Threat model
 
 **What we protect:** the person's files and computer, their other drawings, the app itself (its DOM, storage and the
@@ -382,4 +406,5 @@ Web: the browser's IndexedDB (store `library`). On/off state and what was allowe
   saving without the plugin), `options`, `events`, `pipe`.
 - `scripts/e2e/plugins.cjs` (Electron): the sandbox page blocks fetch, XHR, WebSocket, remote scripts and storage,
   has no way into the app, the version 1 examples install, run, undo and export, and the version 2 examples run in the real
-  sandbox: powers start off in the dialog, a tool stamps a shape and fades a layer, an exporter gets its options, events flow.
+  sandbox: powers start off in the dialog, a tool stamps a shape and fades a layer, an exporter gets its options, events flow, and
+  the watchdog turns off a frozen plugin and a memory hog (with shortened limits).

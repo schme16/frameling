@@ -83,6 +83,11 @@ async function serve(method, a) {
 }
 async function onMessage(m) {
   if (!m || typeof m !== 'object') return;
+  if (m.t === 'ping') {
+    // The host's heartbeat: a worker stuck in a loop can't answer it.
+    send({ t: 'pong', n: m.n });
+    return;
+  }
   if (m.t === 'event') {
     var fns = listeners.get(m.name);
     if (fns) {

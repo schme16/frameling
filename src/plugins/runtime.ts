@@ -9,6 +9,7 @@ import { EventGate, MAX_UNANSWERED, type PluginEventName } from './events';
 import type { Permission, PluginManifest } from './manifest';
 import { cleanValues, sanitizeOptions, type ExportOption, type OptionValues } from './options';
 import { sanitizeUi, type UiNode } from './ui-schema';
+import { Watchdog, type Trip } from './watchdog';
 
 export interface Transport {
   post(msg: unknown, transfer?: Transferable[]): void;
@@ -160,6 +161,10 @@ export interface HostHooks {
   pickFile?(opts: { extensions: string[]; title: string }): Promise<PickedFile | null>;
   /** The set of events the plugin listens to changed. */
   subscriptionsChanged?(): void;
+  /** The plugin got stuck or used too much memory (see watchdog.ts). Turning it off is the host's job. Without this, nobody watches. */
+  watchdog?(trip: Trip): void;
+  /** How much memory the plugin's sandbox holds right now, or null where that can't be seen (the web version). */
+  memory?(): Promise<number | null>;
 }
 
 const LIMITS = { commands: 50, exporters: 10, panels: 5, files: 1000, bytes: 1024 * 1024 * 1024, tools: 5, shapeKinds: 10, overlaysPerSecond: 30, shapesPerSecond: 20, pickBytes: 50 * 1024 * 1024 };
@@ -241,6 +246,9 @@ export class PluginRuntime {
   private nextId = 1;
   private stopped = false;
   private problems = 0;
+  private watch: Watchdog | null = null;
+  /** Commands and exports being waited for: honest work that may keep the worker busy for a while. */
+  private heavy = 0;
 
   constructor(
     readonly manifest: PluginManifest,
@@ -250,6 +258,15 @@ export class PluginRuntime {
   ) {
     this.gate = new EventGate((name, payload) => this.sendEvent(name, payload));
     transport.onMessage((m) => void this.receive(m));
+    if (hooks.watchdog) {
+      this.watch = new Watchdog({
+        ping: (n) => this.send({ t: 'ping', n }),
+        trip: (t) => hooks.watchdog!(t),
+        busy: () => this.heavy > 0,
+        memory: hooks.memory ? () => hooks.memory!() : undefined,
+      });
+      this.watch.start();
+    }
   }
 
   private can(p: Permission): boolean {
@@ -305,6 +322,9 @@ export class PluginRuntime {
         return this.subscribe(m.event);
       case 'unsubscribe':
         if (this.subscribed.delete(m.event as PluginEventName)) this.hooks.subscriptionsChanged?.();
+        return;
+      case 'pong':
+        this.watch?.pong(m.n);
         return;
       case 'evAck':
         this.unanswered = Math.max(0, this.unanswered - 1);
@@ -510,10 +530,13 @@ export class PluginRuntime {
   }
 
   async runCommand(id: string): Promise<void> {
+    this.heavy++;
     try {
       await this.request('command', { id });
     } catch (e) {
       this.problem(e instanceof Error ? e.message : String(e));
+    } finally {
+      this.heavy--;
     }
   }
 
@@ -524,7 +547,13 @@ export class PluginRuntime {
     const transfer = frames.map((f) => f.data.buffer as ArrayBuffer);
     // Whatever the dialog sent, the plugin only gets values that fit the options it described.
     const values: OptionValues = cleanValues(ex.options, options);
-    const raw = await this.request('export', { id, frames, info, options: values }, transfer, signal);
+    this.heavy++;
+    let raw: unknown;
+    try {
+      raw = await this.request('export', { id, frames, info, options: values }, transfer, signal);
+    } finally {
+      this.heavy--;
+    }
     return normalizeFiles(raw, `${safeName(info.name, 'export')}.${ex.extension}`);
   }
 
@@ -535,6 +564,7 @@ export class PluginRuntime {
   stop(): void {
     if (this.stopped) return;
     this.stopped = true;
+    this.watch?.stop();
     this.gate.stop();
     for (const w of this.waiting.values()) w.reject(new Error('The plugin was turned off.'));
     this.waiting.clear();

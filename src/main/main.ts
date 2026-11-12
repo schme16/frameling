@@ -5,6 +5,10 @@ import { fileFromArgs, fileFromUrl, PROTOCOL } from './library';
 import { setupMenu } from './menu';
 import { clearAutosave, keepAutosave, pruneKept } from './store';
 import type { DocumentState } from '../preload/api';
+import { PLUGIN_PROCESS_FEATURE } from './pluginMemory';
+
+// Each plugin's sandbox gets a process of its own, so its memory can be told apart (and one cannot disturb another).
+app.commandLine.appendSwitch('enable-features', PLUGIN_PROCESS_FEATURE);
 
 // Only one Frameling runs at a time; a second launch focuses the first window and hands it the file, if it has one.
 if (!app.requestSingleInstanceLock()) app.quit();
