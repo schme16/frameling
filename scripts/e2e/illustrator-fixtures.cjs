@@ -3,7 +3,7 @@
 // should find in the .ai file Frameling writes from it.
 //
 // expect.layers: layer names that must exist (anywhere in the layer tree). expect.tree: [folder, its layers] pairs. expect.opacity: layer name to percent.
-// expect.hidden: names that must be off. expect.minPaths: at least this many path items. expect.size: artboard size.
+// expect.hidden: names that must be off. expect.hiddenWithArt: names that must be there, switched off, with art in them. expect.shown: names that must be there and on. expect.minPaths: at least this many path items. expect.size: artboard size.
 // expect.minGroups: at least this many groups (one per layer or folder). expect.maxRmse: the largest difference to Frameling's own PNG.
 
 const HEAD = `
@@ -57,7 +57,43 @@ const fixtures = [
   });
 })()`,
     // tree: a folder's layers, top first (the way Illustrator lists them); opacity in percent.
-    expect: { size: [320, 180], layers: ['Sky', 'Hills', 'Hero body', 'Hero eyes', 'Characters', 'Scenery', 'Multiply yellow', 'Ünï 日本 half see-through'], tree: [['Scenery', ['Hills', 'Sky']], ['Characters', ['Hero eyes', 'Hero body']]], opacity: { Scenery: 70, 'Ünï 日本 half see-through': 50 }, hidden: ['Hidden red'], minPaths: 8, minGroups: 5, maxRmse: 0.03 },
+    expect: { size: [320, 180], layers: ['Sky', 'Hills', 'Hero body', 'Hero eyes', 'Characters', 'Scenery', 'Multiply yellow', 'Ünï 日本 half see-through'], tree: [['Scenery', ['Hills', 'Sky']], ['Characters', ['Hero eyes', 'Hero body']]], opacity: { Scenery: 70, 'Ünï 日本 half see-through': 50 }, hidden: ["Hidden red"], hiddenWithArt: ["Hidden red"], minPaths: 8, minGroups: 5, maxRmse: 0.03 },
+  },
+  {
+    id: 'hidden-layers',
+    title: 'Hidden layers and folders',
+    code: `(async () => { ${HEAD}
+  return setup('Hidden', 320, 180, (d) => {
+    const dr = (id, shapes) => (d.drawings[id] = { id, kind: 'vector', shapes });
+    d.folders = {
+      fH: { id: 'fH', name: 'Off folder', visible: false, opacity: 1 },
+      fS: { id: 'fS', name: 'On folder', visible: true, opacity: 1 },
+      fM: { id: 'fM', name: 'Off masked folder', visible: false, opacity: 1 },
+    };
+    dr('dBack', [R('b1', 0, 0, 320, 180, '#bfe6ff')]);
+    dr('dOff', [R('o1', 0, 0, 320, 180, '#ff0000')]);
+    dr('dIn', [ELL('i1', 80, 90, 60, 60, '#00aa44')]);
+    dr('dInOff', [R('i2', 150, 20, 100, 60, '#ffd200')]);
+    dr('dSOn', [R('s1', 20, 20, 70, 40, '#9b59ff')]);
+    dr('dSOff', [R('s2', 200, 110, 100, 60, '#ff00ff')]);
+    dr('dFront', [ELL('f1', 250, 50, 30, 30, '#ff7a59')]);
+    dr('dStripes', [R('t1', 0, 0, 160, 180, '#ff3366'), R('t2', 160, 0, 160, 180, '#3366ff')]);
+    dr('dMask', [ELL('m1', 160, 90, 70, 70, '#000000')]);
+    d.layers = [
+      layer('l1', 'Back', 'dBack'),
+      layer('l2', 'Off layer', 'dOff', { visible: false }),
+      layer('l3', 'In off folder', 'dIn', { folder: 'fH' }),
+      layer('l4', 'Off in off folder', 'dInOff', { folder: 'fH', visible: false }),
+      layer('l5', 'On in on folder', 'dSOn', { folder: 'fS' }),
+      layer('l6', 'Off in on folder', 'dSOff', { folder: 'fS', visible: false }),
+      layer('l7', 'Stripes in off masked', 'dStripes', { folder: 'fM' }),
+      layer('l8', 'Mask in off masked', 'dMask', { folder: 'fM', mask: 'show' }),
+      layer('l9', 'Front', 'dFront'),
+    ];
+  });
+})()`,
+    // The hidden art is in the file, switched off, and not in the picture (Frameling's picture leaves it out too).
+    expect: { size: [320, 180], layers: ['Back', 'Front', 'On folder', 'On in on folder'], shown: ['Back', 'Front', 'On folder', 'On in on folder', 'In off folder'], hiddenWithArt: ['Off layer', 'Off folder', 'Off in off folder', 'Off in on folder', 'Stripes in off masked + Mask in off masked'], minPaths: 8, maxRmse: 0.03, pdfReader: 0.03 },
   },
   {
     id: 'paths',

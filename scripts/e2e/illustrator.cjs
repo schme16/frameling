@@ -8,7 +8,7 @@
 //   ILLUSTRATOR_PREFIX   the Wine prefix Illustrator is installed in (the folder with drive_c)
 //   WINE_RUNNER          the Wine build to run it with (a folder with bin/wine). Found from the Lutris game file for the
 //                        prefix when not set.
-//   --only=a,b           only these cases (layers-folders paths gradients masks text symbols frames scale2-transparent
+//   --only=a,b           only these cases (layers-folders hidden-layers paths gradients masks text symbols frames scale2-transparent
 //                        text-big artboards stress kitchen-sink bouncing-ball bouncing-logo)
 //   --keep-going         do not refuse when Illustrator or Wine seems to be running for the prefix (never use this
 //                        when someone may be working in Illustrator)
@@ -188,6 +188,18 @@ async function exportCase(c) {
       const text = fs.readFileSync(path.join(aiDir, ai)).toString('latin1');
       if (how === 'pages') check(!text.includes('/AIPrivateData1'), `${ai} has Illustrator data, but pages should stay a plain PDF`);
       else check(text.includes('/AIPrivateData1') && text.includes('/RoundtripVersion'), `${ai} has no Illustrator data`);
+      // The PDF part read by a program that is not Illustrator (poppler's pdftoppm): hidden layers are off there, so its page matches Frameling's picture.
+      if (c.expect.pdfReader && how !== 'pages') {
+        const base = path.join(dir, `reader-${path.basename(ai, '.ai')}`);
+        const r = sh('pdftoppm', ['-r', '72', '-png', '-singlefile', path.join(aiDir, ai), base]);
+        if (check(r.status === 0 && fs.existsSync(`${base}.png`), `pdftoppm could not read ${ai}: ${r.stderr || r.error}`)) {
+          const d = rmse(path.join(dir, `png-${wantFrames[0]}`, files(path.join(dir, `png-${wantFrames[0]}`)).find((x) => x.endsWith('.png'))), `${base}.png`);
+          if (check(d.rmse !== null, `the PDF reader's picture differs in size: ${d.size}`)) {
+            note(`pdftoppm RMSE vs Frameling ${d.rmse.toFixed(4)}`);
+            check(d.rmse <= c.expect.pdfReader, `the PDF part drawn by pdftoppm is ${d.rmse.toFixed(3)} away from Frameling's (limit ${c.expect.pdfReader}): hidden art may show`);
+          }
+        }
+      }
     }
   } catch (e) {
     check(false, String(e?.stack ?? e));
@@ -330,6 +342,21 @@ function judge(t, got, entry) {
     for (const [name, pct] of Object.entries(ex.opacity ?? {})) {
       const l = findLayer(f.layers, name);
       check(!!l && Math.abs(l.opacity - pct) < 0.5, `layer "${name}" has opacity ${l?.opacity}, expected ${pct}`);
+    }
+  }
+  // Hidden layers come across as hidden layers that still hold their art; layers inside a hidden folder keep their own state.
+  const artOf = (l) => l.paths + l.groups + l.texts + l.rasters + l.compound + (l.sub ?? []).reduce((n, k) => n + artOf(k), 0);
+  if (!t.pdfOnly) {
+    for (const n of ex.hiddenWithArt ?? []) {
+      const l = findLayer(f.layers, n);
+      if (check(!!l, `hidden layer "${n}" is missing (found: ${names.map((x) => x.name).join(' | ')})`)) {
+        check(l.visible === false, `layer "${n}" should be hidden but is visible`);
+        check(artOf(l) > 0, `hidden layer "${n}" holds no art`);
+      }
+    }
+    for (const n of ex.shown ?? []) {
+      const l = findLayer(f.layers, n);
+      if (check(!!l, `layer "${n}" is missing`)) check(l.visible === true, `layer "${n}" should be on but is hidden`);
     }
   }
   for (const n of ex.hidden ?? []) check(!names.some((x) => x.name === n) || names.some((x) => x.name === n && !x.visible), `layer "${n}" should be hidden`);

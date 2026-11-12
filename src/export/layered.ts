@@ -94,10 +94,16 @@ export function soloDoc(doc: Doc, layer: Layer): Doc {
  * For formats without clipping, masks or effects (PDF, .ai): which layers stay vector and which sets of layers are
  * flattened into one picture. A picture unit keeps the layers' blend and opacity inside it.
  */
-export type FlatUnit =
+export type FlatUnit = (
   | { kind: 'vector'; layer: Layer }
   | { kind: 'picture'; layers: Layer[]; /** One layer with effects: its own blend and opacity go on the picture. */ own?: Layer }
-  | { kind: 'folder'; folder: LayerFolder; units: FlatUnit[] };
+  | { kind: 'folder'; folder: LayerFolder; units: FlatUnit[] }
+) & {
+  /** Switched off in the document: only there when the plan was asked to keep hidden layers (the .ai's Illustrator data). */
+  hidden?: boolean;
+  /** Inside a folder that is switched off, so a picture of it has to show the folder. */
+  inHidden?: boolean;
+};
 
 /** True when a drawing has art bent on a mesh somewhere in it (a rigged layer, or one inside a symbol instance). */
 export function drawingHasMesh(d: Drawing | undefined, depth = 0): boolean {
@@ -132,18 +138,27 @@ export function needsPicture(l: Layer, frame: number, doc?: Doc): boolean {
   return drawingHasMesh(d) || drawingHasLook(d);
 }
 
-function stageUnits(doc: Doc, layers: Layer[], frame: number): FlatUnit[] {
+/** A switched-off layer on its own, for the plans that keep hidden layers. */
+function hiddenUnit(doc: Doc, l: Layer, frame: number): FlatUnit {
+  return needsPicture(l, frame, doc) ? { kind: 'picture', layers: [l], own: l, hidden: true } : { kind: 'vector', layer: l, hidden: true };
+}
+
+function stageUnits(doc: Doc, layers: Layer[], frame: number, includeHidden = false): FlatUnit[] {
   // A mask cuts everything under it at its level, and clipped layers sit on the one under them: both flatten.
   const units: FlatUnit[] = [];
   const lastMask = layers.map((l) => !!l.mask && l.visible).lastIndexOf(true);
   let i = 0;
   if (lastMask >= 0) {
+    if (includeHidden) for (const l of layers.slice(0, lastMask + 1)) if (!l.visible) units.push(hiddenUnit(doc, l, frame));
     units.push({ kind: 'picture', layers: layers.slice(0, lastMask + 1) });
     i = lastMask + 1;
   }
   for (; i < layers.length; i++) {
     const l = layers[i];
-    if (!l.visible) continue;
+    if (!l.visible) {
+      if (includeHidden) units.push(hiddenUnit(doc, l, frame));
+      continue;
+    }
     // Gather a base and the clipped layers above it.
     if (i + 1 < layers.length && layers[i + 1].clipToBelow) {
       const set = [l];
@@ -156,8 +171,11 @@ function stageUnits(doc: Doc, layers: Layer[], frame: number): FlatUnit[] {
   return units;
 }
 
-/** Layers bottom first as PDF units. Hidden layers and folders are left out (like every other export). */
-export function flatPlan(doc: Doc, frame = 0): FlatUnit[] {
+/**
+ * Layers bottom first as PDF units. Hidden layers and folders are left out (like every other export), unless
+ * `includeHidden`: then they are there, marked `hidden`, for the Illustrator data of a .ai (the PDF part keeps them off).
+ */
+export function flatPlan(doc: Doc, frame = 0, includeHidden = false): FlatUnit[] {
   const out: FlatUnit[] = [];
   const layers = doc.layers.filter(exported);
   let i = 0;
@@ -167,16 +185,20 @@ export function flatPlan(doc: Doc, frame = 0): FlatUnit[] {
     if (!f) {
       let j = i;
       while (j < layers.length && !(layers[j].folder && doc.folders?.[layers[j].folder!])) j++;
-      out.push(...stageUnits(doc, layers.slice(i, j), frame));
+      out.push(...stageUnits(doc, layers.slice(i, j), frame, includeHidden));
       i = j;
       continue;
     }
     const members: Layer[] = [];
     while (i < layers.length && layers[i].folder === l.folder) members.push(layers[i++]);
-    if (!f.visible) continue;
+    if (!f.visible && !includeHidden) continue;
+    const off = !f.visible;
     // A folder with effects or masks inside is one picture; otherwise it stays vector, faded and blended as a group.
-    if (activeEffects(f.effects, frame).length || members.some((m) => m.mask && m.visible)) out.push({ kind: 'picture', layers: members.filter((m) => m.visible) });
-    else out.push({ kind: 'folder', folder: f, units: stageUnits(doc, members, frame) });
+    if (activeEffects(f.effects, frame).length || members.some((m) => m.mask && m.visible)) out.push({ kind: 'picture', layers: members.filter((m) => m.visible), ...(off ? { hidden: true, inHidden: true } : {}) });
+    else {
+      const units = stageUnits(doc, members, frame, includeHidden);
+      out.push({ kind: 'folder', folder: f, units: off ? units.map((u) => ({ ...u, inHidden: true })) : units, ...(off ? { hidden: true } : {}) });
+    }
   }
   return out.filter((u) => u.kind !== 'picture' || u.layers.length);
 }

@@ -84,7 +84,7 @@ When the animation has more than one frame, the export window asks how to put th
 - **Shapes:** fills, lines with their width, joins and caps, see-through colours, and linear and radial gradients with see-through stops. A shape with a fill and a line is one path, and shapes with holes are compound paths.
 - **Text** comes as letter outlines, not live text, and a symbol copy is plain shapes.
 - **Pictures:** pixel layers, effects, clipping, masks and bending on bones come in as pictures, with their see-through parts.
-- Hidden layers and folders are left out, like in every export.
+- **Hidden layers and folders** arrive as hidden Illustrator layers with their art inside, so you can switch them on there. A visible layer inside a hidden folder stays on its own. Programs that only read the PDF part don't show them, and the Pages way (a plain PDF) leaves them out.
 
 ## Good to know
 
