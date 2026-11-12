@@ -109,7 +109,7 @@ Drag a diamond, stretch a few (**Alt** and drag) or press **Delete**, and only t
 
 ## Dropping a diamond between drawings
 
-Frameling makes a drawing key there to hold it. If the diamond lands inside in-betweens (a tween), the two halves play the same curve the one span did, so the other rows keep their easing and nothing speeds up or slows down. Other rows may show a small diamond at the new key, because their value has changed by then.
+Frameling makes a drawing key there to hold it. If the diamond lands inside in-betweens (a tween), the two halves play the same curve the one span did, so the other rows keep their easing and nothing speeds up or slows down. Other rows show no diamond there, because nothing was set on them: they are on the curve exactly where they would have been. A row only gets a diamond at the new key if its value there is not what the curve gives.
 
 ## When it says no
 

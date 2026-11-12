@@ -37,6 +37,14 @@ changing them, so an unchanged drawing is never encoded twice, which matters for
   `MIGRATIONS[n]` turns a version n document into version n + 1, and `migrate()` runs them in order. A missing step
   means "this file is too old" (`FileProblem`). The list is empty today.
 - A file whose manifest version is higher than `FORMAT_VERSION` is refused with "made with a newer Frameling".
+- Older readers drop fields they don't know without a warning (the tween reader builds a new `Tween` from the fields it
+  knows). Consequence for `Tween.slice` (added in `9611002`, after which no release was cut when this was checked): a
+  file with cut tweens opens in an older Frameling, but each half of a cut span plays the whole easing curve over its
+  own frames, so with a non-linear easing the motion eases twice instead of once. Positions at every key are still
+  right; only the in-betweens of cut spans differ. Linear easing is unaffected. This is accepted: carrying the slice
+  in a custom bezier would be exact only for bezier easings (bounce, elastic and back have no bezier form), would lose
+  the named easing in the editor, and would make new readers read it back as a custom curve. Opening and saving in an
+  older Frameling also removes the slices for good.
 - Readers never trust the file. Anything odd is repaired or dropped with a plain-words warning, rather than failing
   the whole file. Only structural damage (below) refuses to open.
 
@@ -235,6 +243,11 @@ when comparing two drawings for "same look" (as `id` is ignored).
   between the two keys' transforms, opacity and tint). `'shape'` morphs one key's drawing into the next. `slice`
   (`[from, to]` within 0..1, optional) is the part of the easing curve the span plays; it is set when a span is cut in
   two by a property key so both halves together move exactly as the one span did (`tweenEase` in `src/core/ease.ts`).
+  Drawing on an in-between with "make a new key" (`src/tools/edit.ts`) cuts a tween the same way.
+  The timeline shows no diamond for a cut key on a row where nothing was set (`passesThrough` in
+  `src/timeline/tracks.ts`): the two halves are classic tweens with the same easing and slices that meet, and the
+  row's value there equals the key before plus the key after blended by the uncut curve at that point, to 1e-6. A row
+  whose value differs there keeps its diamond. This is display only; the document keeps the cut key.
 - `Easing`: `linear, easeIn, easeOut, easeInOut, backIn, backOut, elasticOut, bounceOut` (the names Interactives uses),
   or a cubic bezier `[x1, y1, x2, y2]`.
 - `MotionPath`: `{points: PathPoint[], orient}`. `ShapeHint`: `{id, from, to}`.
