@@ -77,6 +77,9 @@ Repaired, with a warning:
 - Tiles with a bad or duplicate key, or no frame whose drawing is a pixel drawing of exactly the tile size, are
   dropped. A tileset with a tile size outside 1 to 1024 is dropped. `nextKey` is raised past the highest key.
 - A sound whose bytes are missing, or with a duplicate id, is dropped.
+- A variation whose original is missing (or is itself a variation) is dropped with a warning. Inside its overrides,
+  anything malformed is left out: unknown or badly typed properties in a patch, `__proto__` style keys, layers
+  made in the variation go through the ordinary layer reader (so cels at missing drawings are dropped too).
 - An artboard that can't be read is dropped. If no artboard is the open one, the document's own content gets a new
   artboard (`artboard-open`) at 0, 0, so nothing is lost.
 
@@ -161,6 +164,40 @@ artboard's content is the document's own fields; the others hold theirs in `cont
 `{width, height, background, length, layers, clips, markers, flow?, audio?, guides?, inOut?, perspective?}`.
 Palette, swatches, symbols, tiles, drawings and fps are shared by all artboards. Missing `artboards` = one artboard.
 See `docs/artboards.md`.
+
+#### Variations (linked copies)
+
+An artboard may also carry `variationOf` (the id of another artboard, never itself a variation) and `overrides`.
+Such an artboard has **no `content` in the file**: it is the original's content with the overrides on. Both fields
+are optional, so older files open unchanged. An older Frameling, which doesn't know them, reads the variation as an
+artboard it can't read and leaves it out with a warning (the original is untouched).
+
+```
+VariationOverrides = { stage?: Patch, layers?: ListOverride<Layer, ListOverride<Cel>>, drawings?: { [originalDrawingId]: DrawingOverride } }
+Patch              = { set?: { [property]: value }, del?: property[] }       // only what changed
+ListOverride<T,S>  = { items?: { [id]: { patch?: Patch, sub?: S } }, removed?: id[], added?: T[], order?: id[] }
+DrawingOverride    = { replaced?: true, patch?: Patch, shapes?: ListOverride<Shape>, view?: Patch }
+```
+
+- `stage` patches `width`, `height`, `background`, `length`, `clips`, `markers`, `flow`, `guides`, `inOut`,
+  `perspective`. Sound is not overridable (it follows the original).
+- `layers` is by layer id. `items[id].patch` changes layer properties (`visible`, `opacity`, `name`, `blend`, ...);
+  `items[id].sub` is the same shape for that layer's cels (`start`, `length`, `tween`, ...; a cel's `drawingId`
+  names the original's drawing or one the variation made). `added` are layers (and cels, shapes) made in the
+  variation; `order` is only written when the order is not "the original's, then the added ones".
+- `drawings` is by the *original's* drawing id: a recolour is `shapes.items[shapeId].patch.set.fill`, a changed camera
+  key is `view`, a drawing the variation redrew whole (pixels, tiles) is `replaced: true`.
+- **Which drawings are in `doc.drawings`.** Drawings made in the variation are ordinary entries. A drawing it redrew
+  whole is stored as `<original id>~<artboard id>`. Every other `<id>~<artboard id>` entry in memory is worked out
+  from the original and never written.
+- **Resolution.** Things not named follow the original, including things added to it later (a layer the original
+  gains appears in the variation after the layer before it). Ids (layers, cels, shapes) are shared with the original
+  on purpose: an override is "that layer, there".
+- **Saving.** If the open artboard is a variation, the file is written as if its original were open and
+  `variationOpen` names the variation, so it opens on it again. Reading does the reverse and resolves every
+  variation (`resolveAfterLoad` in `src/artboards/variationsIo.ts`).
+
+See "Variations" in `docs/artboards.md` for how they are kept in step while editing.
 
 ### Guide
 

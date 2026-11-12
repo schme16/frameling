@@ -118,4 +118,47 @@ Checked end to end by `scripts/e2e/artboards.cjs` (pixel colours of the bars, th
   Which artboards row gives the joined total).
 - A picture size other than the first shot's (the code takes one; there is no control for it yet).
 - Transitions between shots, and a storyboard view of all shots as a strip.
-- Variations (B), if it turns out to be wanted: an optional `crops` list on an artboard, exported as extra files.
+
+## Variations (linked copies)
+
+Built (board task `variations-linked`). B above, done properly: a **variation** is an artboard that follows another
+artboard (its **original**) and stores only what it changes. The code is `src/artboards/variations.ts` (pure),
+`variationsIo.ts` (file reading, saving), `variationOps.ts` (store actions), `VariationPanel.tsx` (the panel part),
+tests in `test/artboards/variations.test.ts`, and a real-app export check in `scripts/e2e/variations.cjs`. The file
+format is in `docs/format.md` ("Variations").
+
+**How it fits the one decision above** (the open artboard's content is the document's own fields): a variation is
+edited like any artboard, and two directions of bookkeeping keep it linked, done by `settleVariations` which the
+store runs after every change, **inside the same undo step** (`registerSettler` in `src/core/store.ts`):
+
+- The **open** variation's overrides are worked out again from what is on the stage, against its original
+  (`diffContent`). Nothing in the tools knows about it: draw, recolour, move a key, hide a layer, and the overrides
+  follow.
+- A variation that is **not open** gets its `content` worked out from its original and its overrides
+  (`resolveContent`), so the pasteboard, thumbnails, Play all and every exporter read it like any artboard. Editing the
+  original therefore flows into it, except where it overrides.
+
+Both are cheap: resolving and diffing keep unchanged layers, keys and shapes as the very same objects (memoised), and
+the store skips it entirely in a document with no variations.
+
+**Own drawings.** A variation's keys point at its own drawings in `doc.drawings`, `<original id>~<artboard id>`, which
+are the original's object with a different `id` until an edit replaces it (immer copies on write, so the original is
+never touched, and a tool that writes `doc.drawings[drawing.id]` lands on the right one). A vector recolour is stored
+as shape property patches (so geometry edits to the original still arrive); a pixel or tile edit stores the whole
+drawing for that key (`replaced`).
+
+**Actions** (`variations.ts`, each one undo step): `makeVariation` (also from a variation: same changes, same
+original), `setVariationSize` (square, wide, tall or any size; the original is framed by a camera: its own camera keys
+are zoomed, or a "Framing" layer is added; Fill or Fit, the choice `variations.frame`), `resetDifference` (one
+item), `resetVariation` (all), `detachVariation` (a plain artboard keeping what it shows), `changeVariation` (for code
+that edits a set-aside variation, which would otherwise be overwritten by the next resolve). `listDifferences` is what
+the panel shows: grouped by layer, a recolour across many keys on one line, each with where to jump and how to reset.
+
+**Limits, on purpose.** Sound, symbols, palette, swatches, tiles and layer folders are shared with the original, so a
+variation does not override them. A size override frames the picture with a camera at the moment it is set; if the
+original is resized later, the variation's zoom is not recomputed (it is an override). Deleting an original turns
+its variations into plain artboards; duplicating a variation makes a plain copy.
+
+**Export.** Nothing special: an exporter asks `artboardDoc(root, id)`, which returns the resolved variation. "Each as
+its own file", "all in order, as one" and the atlas therefore work, and the Export dialog's **This artboard and its
+variations** ticks the family.
