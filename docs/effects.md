@@ -183,7 +183,7 @@ this document will become pictures or be left out. The Export window shows both 
   opacity, masks and clipping as alpha track mattes (the matte a precomp right above a precomp of what it cuts), folders
   that isolate as precomps. Every precomp over the stage carries its own camera nulls under an offset null. Soften and
   Shadow are Lottie's Gaussian Blur (blurriness = radius / 0.3) and Drop Shadow (softness x2, direction from x/y), which
-  lottie-web's SVG renderer, the mobile players and Skottie play; lottie-web's canvas renderer ignores effects. Other
+  lottie-web's SVG renderer, the mobile players and Skottie play; lottie-web's canvas renderer ignores effects. With a camera that zooms or turns, effects go on a precomp over the stage rather than on the layer hung off the camera, so a shadow's distance and softness stay in stage pixels (`cameraBendsEffects`). Other
   effects bake the layer or folder (drawn by `renderFrame` without its own blend and opacity) into a picture per
   different frame, cropped to alpha above 2, at 2x. Frames that come out the same, or within 3 of 255 in every channel,
   share one image (`PictureBank`), wherever it sits, and a picture held over frames is one layer. `PICTURE_LOOKS`

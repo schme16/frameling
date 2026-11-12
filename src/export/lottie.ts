@@ -36,7 +36,7 @@ import { folderChain } from '../core/folders';
 import { buildPlan, planLayers, type PlanNode, type PlanStep } from '../effects/plan';
 import { activeEffects, effectInfo, isNoop, valuesAt } from '../effects/model';
 import { shapeExportOf } from './shapeExport';
-import { cameraViewAt, cameraViewOn, activeCamera, depthAnchor, depthScale, parallaxFactor } from '../core/camera';
+import { clampZoom, cameraViewAt, cameraViewOn, activeCamera, depthAnchor, depthScale, parallaxFactor } from '../core/camera';
 import { encodePng } from '../io/png';
 import { fitClosed, sampleMidpointSpline } from './curve-fit';
 import { flattenDrawing } from '../core/layerKinds';
@@ -1383,7 +1383,11 @@ function withLook(ctx: Ctx, pieces: Json[], look: { bm?: number; o?: number; ef?
   // Effects on a shape layer act on all of it, so one piece at a time can take everything directly. A shadow needs room
   // in the layer: shape layers get it in themselves, anything else goes in a precomp with a layer that has it.
   const room = ef.some((e) => e.ty === 25) ? look.room : undefined;
-  const direct = oneAtATime(pieces) && pieces.every((p) => !p.tt && !p.td && (!room || plainShapeLayer(p)));
+  // A layer hangs off the camera, and the players scale and turn an effect with the layer (a shadow's distance and
+  // softness grow with the zoom, its direction turns with the camera) where the editor applies it to what the camera
+  // sees. A precomp over the stage isn't hung off the camera (its pieces are), so its effects stay in stage pixels.
+  const bent = ef.length > 0 && cameraBendsEffects(ctx, r);
+  const direct = !bent && oneAtATime(pieces) && pieces.every((p) => !p.tt && !p.td && (!room || plainShapeLayer(p)));
   const targets = direct ? pieces : [wrap(ctx, room ? [...pieces, ...roomLayers(ctx, pieces, room, r)] : pieces, name, r)];
   for (const t of targets) {
     if (bm) t.bm = bm;
@@ -1392,6 +1396,17 @@ function withLook(ctx: Ctx, pieces: Json[], look: { bm?: number; o?: number; ef?
     if (room && direct) t.shapes.push(roomShape(room));
   }
   return targets;
+}
+
+/** Does the camera zoom or turn at some frame of the range (so an effect on a layer hung off it would zoom or turn too)? */
+function cameraBendsEffects(ctx: Pick<Ctx, 'doc' | 'symbolLayers'>, r: Range): boolean {
+  const cam = ctx.symbolLayers ? undefined : activeCamera(ctx.doc);
+  if (!cam) return false;
+  for (let f = r.from; f <= r.to; f++) {
+    const v = cameraViewOn(ctx.doc, cam, f) ?? cameraViewAt(ctx.doc, f);
+    if (v && (v.rotation !== 0 || v.fit || Math.abs(clampZoom(v.zoom) - 1) > 1e-6)) return true;
+  }
+  return false;
 }
 
 /** The invisible shape layers that give a precomp's shadow room, one for each camera depth the pieces hang off (so they move with them). */
