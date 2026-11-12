@@ -241,10 +241,20 @@ Per kind:
 - `VectorLayer` (`kind: 'vector'`): `drawMode?: 'object' | 'merge'` (merge drawing, `e2de242`), `rig?: Rig` (makes it a
   bones layer, `0b554d4`).
 - `PixelLayer` (`kind: 'pixel'`): `pixelSize` (document pixels per art pixel, whole, 1 or more), `paletteLock?`
-  (`6f256d0`).
+  (`6f256d0`), `slices?: Slice[]` (named rectangles on the sprite, see below; optional, no version bump).
 - `TilemapLayer` (`kind: 'tilemap'`, `cd7bd81`): `pixelSize`.
 - `CameraLayer` (`kind: 'camera'`, `f587827`): draws nothing; the first visible camera layer frames playback and
   every export.
+
+### Slices (pixel layers)
+
+`PixelLayer.slices` is an optional list of named rectangles on the sprite, in the layer's art pixels (0, 0 is the layer's
+top left): `{ id, name, x, y, w, h, center?, pivot?, color? }`. `center` (`{ x, y, w, h }`, inside the slice) makes it a
+9-patch: the border around it keeps its size when the picture is stretched. `pivot` (`{ x, y }`, may sit outside) is where
+the sprite turns and sits. The reader keeps a slice with a name and a size of 1 or more, rounds its numbers, drops a
+damaged centre or pivot, and renames a repeated id. A slice does not change over time; Aseprite slices that move between
+frames import at their first position (the full list stays in `ext.aseprite`). Exports gather the slices of every visible
+pixel layer of the board and write them into the engine data (see the sprite sheet export).
 
 ### Cels
 

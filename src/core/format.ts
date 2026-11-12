@@ -278,6 +278,28 @@ export interface PixelLayer extends BaseLayer {
   pixelSize: number;
   /** Palette lock: everything painted on this layer snaps to the nearest palette colour (missing = off). */
   paletteLock?: boolean;
+  /** Named rectangles cut out of the sprite (a button, a tile, a frame with a pivot). Missing = none. See `Slice`. */
+  slices?: Slice[];
+}
+
+/**
+ * A named rectangle on a pixel layer, in the layer's art pixels (0, 0 is the top left of the layer). Engines get it as
+ * a region (Godot AtlasTexture, Unity sprite rect, Phaser and Pixi frames); with a `center` it is a 9-patch (the border
+ * is what stays the same size when the picture is stretched); with a `pivot` it is where the sprite turns and sits.
+ */
+export interface Slice {
+  id: Id;
+  name: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  /** The stretchy middle of a 9-patch, in the same coordinates (inside the slice). Missing = not a 9-patch. */
+  center?: { x: number; y: number; w: number; h: number };
+  /** The pivot, in the same coordinates (it may sit outside the rectangle). Missing = the engine's default. */
+  pivot?: { x: number; y: number };
+  /** The colour it is drawn in on the canvas (missing = a colour picked from its name). */
+  color?: Color;
 }
 
 /**

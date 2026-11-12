@@ -7,7 +7,7 @@
 import { cleanGradients } from '../core/gradient';
 import { readFolders, readLayerLook } from '../effects/io';
 import { strFromU8, strToU8, unzipSync, zipSync, type Zippable } from 'fflate';
-import { BONE_STRETCH, FORMAT_VERSION, LAYER_LABELS, type LayerLabel, type Cel, type Doc, type Drawing, type KeptShape, type Layer, type Shape, type SymbolDef, type Tween, type InstanceShape, type ClipFlow, type ClipTransition, type Tile, type Tileset, type Bone, type BonePose, type LayerBind, type Pose, type Rig, type SavedPose } from '../core/format';
+import { BONE_STRETCH, FORMAT_VERSION, LAYER_LABELS, type LayerLabel, type Cel, type Doc, type Drawing, type KeptShape, type Layer, type Shape, type Slice, type SymbolDef, type Tween, type InstanceShape, type ClipFlow, type ClipTransition, type Tile, type Tileset, type Bone, type BonePose, type LayerBind, type Pose, type Rig, type SavedPose } from '../core/format';
 import { decodePng, encodePng } from './png';
 import { rootDoc } from '../core/symbols';
 import { isEasing } from '../core/ease';
@@ -268,7 +268,7 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
         ...readExt(l.ext, warnings),
         cels,
       };
-      if (l.kind === 'pixel') layers.push({ ...base, kind: 'pixel', pixelSize: Math.max(1, Math.round(num(l.pixelSize, 1))), ...(l.paletteLock === true ? { paletteLock: true } : {}) });
+      if (l.kind === 'pixel') layers.push({ ...base, kind: 'pixel', pixelSize: Math.max(1, Math.round(num(l.pixelSize, 1))), ...(l.paletteLock === true ? { paletteLock: true } : {}), ...readSlices(l.slices) });
       else if (l.kind === 'tilemap') layers.push({ ...base, kind: 'tilemap', pixelSize: Math.max(1, Math.round(num(l.pixelSize, 1))) });
       else if (l.kind === 'camera') layers.push({ ...base, kind: 'camera' });
       else layers.push({ ...base, kind: 'vector', ...(l.drawMode === 'merge' ? { drawMode: 'merge' as const } : {}), ...readRig(l.rig) });
@@ -399,6 +399,32 @@ function readRig(r: unknown): { rig?: Rig } {
     if (poses.length) rig.poses = poses;
   }
   return { rig };
+}
+
+/** A layer's slices (named rectangles): kept when they have a name and a real size, repaired when a part is off. */
+function readSlices(v: unknown): { slices?: Slice[] } {
+  if (!Array.isArray(v)) return {};
+  const whole = (n: unknown, fallback = 0) => Math.round(num(n, fallback));
+  const point = (p: unknown) => (isObj(p) && Number.isFinite(p.x) && Number.isFinite(p.y) ? { x: whole(p.x), y: whole(p.y) } : undefined);
+  const slices: Slice[] = [];
+  const seen = new Set<string>();
+  for (const s of v) {
+    if (!isObj(s) || typeof s.name !== 'string') continue;
+    const w = whole(s.w);
+    const h = whole(s.h);
+    if (w < 1 || h < 1) continue;
+    let id = str(s.id, 'slice' + slices.length);
+    while (seen.has(id)) id += '_';
+    seen.add(id);
+    const slice: Slice = { id, name: s.name, x: whole(s.x), y: whole(s.y), w, h };
+    const c = s.center;
+    if (isObj(c) && whole(c.w) >= 1 && whole(c.h) >= 1) slice.center = { x: whole(c.x), y: whole(c.y), w: whole(c.w), h: whole(c.h) };
+    const pivot = point(s.pivot);
+    if (pivot) slice.pivot = pivot;
+    if (typeof s.color === 'string') slice.color = s.color;
+    slices.push(slice);
+  }
+  return slices.length ? { slices } : {};
 }
 
 function readBind(b: unknown): { bind?: LayerBind } {
