@@ -3,7 +3,7 @@ import { lazyPanel } from '../core/lazy';
 import { registerCommands, registerPanel } from '../core/registry';
 import { store } from '../core/store';
 import { getViewSettings, setViewSettings } from '../canvas/viewSettings';
-import { addCamera, resetView, stageCamera, toggleThroughCamera } from './ops';
+import { addCamera, resetView, stageCamera, throughCameraOf, toggleThroughCamera } from './ops';
 
 registerPanel({ id: 'camera', title: 'Camera', icon: 'camera', component: lazyPanel(() => import('./CameraPanel').then((m) => m.CameraPanel)), zone: 'right', order: 37, help: 'camera' });
 
@@ -27,7 +27,7 @@ registerCommands([
     keywords: ['camera view', 'preview', 'framing', 'viewport', 'through the lens'],
     help: 'camera',
     enabled: (s) => !!stageCamera(s.doc),
-    checked: () => getViewSettings().throughCamera,
+    checked: () => throughCameraOf(store().get().doc),
     run: () => toggleThroughCamera(),
   },
   {

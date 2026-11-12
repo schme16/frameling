@@ -13,11 +13,11 @@
  *     original flow into it except where it overrides them.
  * Resolving and diffing keep the unchanged parts as the very same objects, so both are cheap.
  */
-import { current, isDraft, produce, type Draft } from 'immer';
-import type { Artboard, ArtboardContent, Cel, Doc, Drawing, DrawingOverride, Id, Layer, ListOverride, Patch, Shape, VariationOverrides } from '../core/format';
+import { current, isDraft, produce, type Draft, type Patch as ImmerPatch } from 'immer';
+import type { Artboard, ArtboardContent, AudioClip, Cel, Doc, DocPalette, Drawing, DrawingOverride, Id, Layer, ListOverride, Patch, Shape, VariationOverrides } from '../core/format';
 import { uid } from '../core/doc';
 import { registerChoice } from '../core/choices';
-import { registerSettler } from '../core/store';
+import { registerGuard, registerSettler, type SettleContext } from '../core/store';
 import { activeId, artboardsOf, boxes, ensureArtboards, findArtboard, gapFor, nextSpot, putContent, switchArtboard, takeContent } from './model';
 import { fitPlacement, type FitMode } from './fit';
 
@@ -277,19 +277,39 @@ function diffDrawingMemo(b: Drawing, c: Drawing): DrawingOverride | undefined {
 
 const clean = <T extends object>(o: T): T | undefined => (Object.keys(o).length ? o : undefined);
 
+/** For `diffContent` when only some drawings can have changed: the overrides' drawings so far, and the aliases to look at again. */
+export interface IncrementalDiff {
+  prev: Record<Id, DrawingOverride> | undefined;
+  check: Set<Id>;
+}
+
 /**
  * What `cur` (a variation's content, its cels pointing at `<id>~<vid>` drawings) changes from `base` (its original).
  * The inverse of `resolveContent`: resolving the result against `base` gives `cur` back.
  */
-export function diffContent(base: ArtboardContent, baseDrawings: Record<Id, Drawing>, cur: ArtboardContent, curDrawings: Record<Id, Drawing>, vid: Id): VariationOverrides {
+export function diffContent(base: ArtboardContent, baseDrawings: Record<Id, Drawing>, cur: ArtboardContent, curDrawings: Record<Id, Drawing>, vid: Id, inc?: IncrementalDiff): VariationOverrides {
   const out: VariationOverrides = {};
   const stage = diffPatch(pick(base), pick(cur));
   if (stage) out.stage = stage;
   const layers = diffList<Layer, ListOverride<Cel>>(base.layers, cur.layers, { item: (b, c) => diffLayer(b, c, vid), mapAdded: (l) => unaliasLayer(l, vid) });
   if (layers) out.layers = layers;
-  const drawings: Record<Id, DrawingOverride> = {};
+  const audio = diffList<AudioClip>(base.audio ?? [], cur.audio ?? [], { skip: ['data', 'mime', 'duration'] });
+  if (audio) out.audio = audio;
+  const drawings: Record<Id, DrawingOverride> = inc ? { ...inc.prev } : {};
+  if (inc) {
+    // Only the drawings that were touched are looked at again; the rest keep what they had.
+    for (const alias of inc.check) {
+      const sp = splitAlias(alias);
+      if (!sp) continue;
+      const b = baseDrawings[sp.orig];
+      const d = curDrawings[alias];
+      const o = b && d ? diffDrawingMemo(b, d) : undefined;
+      if (o) drawings[sp.orig] = o;
+      else delete drawings[sp.orig];
+    }
+  }
   const seen = new Set<Id>();
-  for (const l of cur.layers)
+  for (const l of inc ? [] : cur.layers)
     for (const [alias, orig] of aliasesOf(l, vid)) {
       if (seen.has(alias)) continue;
       seen.add(alias);
@@ -379,11 +399,41 @@ export interface Resolved {
   drawings: Record<Id, Drawing>;
 }
 
+const NO_SOUND: AudioClip[] = [];
+const audioMemo = new WeakMap<AudioClip[], WeakMap<ListOverride<AudioClip>, AudioClip[]>>();
+
+/** The original's sound clips with a variation's changes (volume, mute, start, left out, added). The same array for the same input. */
+function resolveAudio(base: AudioClip[] | undefined, o: ListOverride<AudioClip> | undefined): AudioClip[] | undefined {
+  if (!o) return base;
+  const b = base ?? NO_SOUND;
+  let m = audioMemo.get(b);
+  if (!m) audioMemo.set(b, (m = new WeakMap()));
+  let hit = m.get(o);
+  if (!hit) m.set(o, (hit = applyList(b, o, (c, it) => applyPatch(c, it?.patch))));
+  return hit;
+}
+
+/** A variation's own object for one of its original's drawings (the redrawn copy when it has one). */
+function aliasDrawing(baseDrawings: Record<Id, Drawing>, ov: VariationOverrides, orig: Id, alias: Id, have: Record<Id, Drawing>): Drawing | undefined {
+  const b = baseDrawings[orig];
+  if (!b) return undefined;
+  const dov = ov.drawings?.[orig];
+  const mine = have[alias];
+  return dov?.replaced && mine && mine.kind === b.kind ? mine : aliasObject(dov && !dov.replaced ? applyDrawing(b, dov) : b, alias);
+}
+
+/** For `resolveContent` when most of it is known: the content it made last time and the original drawings that were touched. */
+export interface IncrementalResolve {
+  prev: ArtboardContent;
+  touched: Set<Id>;
+}
+
 /**
  * A variation's content: the original's with the overrides on. `have` is where the drawings that are the variation's
- * own copies (pixels, tiles) are looked up, normally `doc.drawings`.
+ * own copies (pixels, tiles) are looked up, normally `doc.drawings`. With `inc` only the drawings that can have changed
+ * are returned (the ones in layers that are new since `inc.prev`, and the touched ones the variation has already).
  */
-export function resolveContent(base: ArtboardContent, baseDrawings: Record<Id, Drawing>, ov: VariationOverrides | undefined, vid: Id, have: Record<Id, Drawing> = baseDrawings): Resolved {
+export function resolveContent(base: ArtboardContent, baseDrawings: Record<Id, Drawing>, ov: VariationOverrides | undefined, vid: Id, have: Record<Id, Drawing> = baseDrawings, inc?: IncrementalResolve): Resolved {
   const o = ov ?? {};
   const content: ArtboardContent = { ...base };
   if (o.stage) {
@@ -397,16 +447,27 @@ export function resolveContent(base: ArtboardContent, baseDrawings: Record<Id, D
     (b, it) => resolveLayer(b, it, vid, baseDrawings),
     (l) => resolveAdded(l, vid, baseDrawings),
   );
+  const sound = resolveAudio(base.audio, o.audio);
+  if (sound?.length) content.audio = sound;
+  else delete content.audio;
   const drawings: Record<Id, Drawing> = {};
-  for (const l of content.layers)
+  const scan = (l: Layer) => {
     for (const [alias, orig] of aliasesOf(l, vid)) {
       if (drawings[alias]) continue;
-      const b = baseDrawings[orig];
-      if (!b) continue;
-      const dov = o.drawings?.[orig];
-      const mine = have[alias];
-      drawings[alias] = dov?.replaced && mine && mine.kind === b.kind ? mine : aliasObject(dov && !dov.replaced ? applyDrawing(b, dov) : b, alias);
+      const d = aliasDrawing(baseDrawings, o, orig, alias, have);
+      if (d) drawings[alias] = d;
     }
+  };
+  if (!inc) content.layers.forEach(scan);
+  else {
+    const old = new Map(inc.prev.layers.map((l) => [l.id, l] as const));
+    for (const l of content.layers) if (old.get(l.id) !== l) scan(l);
+    for (const orig of inc.touched) {
+      const alias = aliasId(orig, vid);
+      const d = have[alias] && aliasDrawing(baseDrawings, o, orig, alias, have);
+      if (d) drawings[alias] = d;
+    }
+  }
   return { content, drawings };
 }
 
@@ -429,18 +490,74 @@ function baseOf(doc: Doc, src: Artboard): ArtboardContent | undefined {
   return src.id === activeId(doc) ? takeContent(doc) : src.content;
 }
 
+const CONTENT_KEYS = new Set<string>(['width', 'height', 'background', 'length', 'layers', 'clips', 'markers', 'flow', 'audio', 'guides', 'inOut', 'perspective']);
+
+/** What a change touched, read from its patches. Anything not clearly small counts as everything (`full`). */
+export interface Touch {
+  full: boolean;
+  /** Ids of the drawings written to. */
+  drawings: Set<Id>;
+  /** The open artboard's own fields (layers, size, clips, sound...) changed. */
+  content: boolean;
+  /** Key lists changed on the open artboard, or layers were added, removed or swapped. */
+  cels: boolean;
+  /** Set-aside artboards (list positions) whose content changed. */
+  closed: Set<number>;
+  /** Artboards (list positions) whose overrides were written directly. */
+  own: Set<number>;
+}
+
+export function touchOf(patches: readonly ImmerPatch[]): Touch {
+  const t: Touch = { full: false, drawings: new Set(), content: false, cels: false, closed: new Set(), own: new Set() };
+  for (const p of patches) {
+    const path = p.path;
+    const k = path[0] as string;
+    if (k === 'drawings') {
+      if (path.length === 1) t.full = true;
+      else t.drawings.add(String(path[1]));
+    } else if (k === 'layers') {
+      t.content = true;
+      if (path.length <= 2 || path[2] === 'cels') t.cels = true;
+    } else if (CONTENT_KEYS.has(k)) {
+      t.content = true;
+    } else if (k === 'artboards') {
+      if (path.length <= 2) t.full = true;
+      else if (path[2] === 'content') t.closed.add(path[1] as number);
+      else if (path[2] === 'overrides') t.own.add(path[1] as number);
+      else if (path[2] === 'variationOf') t.full = true;
+    } else if (k === 'activeArtboard') t.full = true;
+  }
+  return t;
+}
+
+/** The aliases of a variation among the touched drawing ids (its own, and its original's drawings it has a copy of). */
+function aliasesTouched(ids: Set<Id>, vid: Id): Set<Id> {
+  const out = new Set<Id>();
+  for (const id of ids) {
+    const sp = splitAlias(id);
+    if (!sp) out.add(aliasId(id, vid));
+    else if (sp.vid === vid) out.add(id);
+  }
+  return out;
+}
+
 /**
  * What to change in the document so that every variation is in step: the open variation's overrides follow what is on
  * the stage, and the others' content follows their original. Null when everything already is. The store runs this
- * after every change and keeps the result in the same undo step.
+ * after every change and keeps the result in the same undo step. Given the change's patches it looks only at what the
+ * change touched (a variation whose original did not change is left alone, and so are drawings nobody wrote to);
+ * without them it checks everything.
  */
-export function settleVariations(doc: Doc): ((d: Draft<Doc>) => void) | null {
+export function settleVariations(doc: Doc, ctx?: { patches: readonly ImmerPatch[] }): ((d: Draft<Doc>) => void) | null {
   const list = doc.artboards;
   if (!list?.some((a) => a.variationOf) || doc.editing?.length) return null;
+  const t = ctx ? touchOf(ctx.patches) : null;
+  const everything = !t || t.full;
   const open = activeId(doc);
   const jobs: ((d: Draft<Doc>, a: Draft<Artboard>) => void)[] = [];
   const ids: Id[] = [];
-  for (const a of list) {
+  for (let ai = 0; ai < list.length; ai++) {
+    const a = list[ai];
     if (!a.variationOf) continue;
     const src = sourceOf(doc, a);
     const base = src && baseOf(doc, src);
@@ -453,14 +570,21 @@ export function settleVariations(doc: Doc): ((d: Draft<Doc>) => void) | null {
       });
       continue;
     }
+    const srcTouched = everything || (src.id === open ? t!.content : t!.closed.has(list.indexOf(src)));
+    const mine = everything ? null : aliasesTouched(t!.drawings, a.id);
     if (a.id === open) {
-      const ov = diffContent(base, doc.drawings, takeContent(doc), doc.drawings, a.id);
+      if (!everything && !srcTouched && !t!.content && !mine!.size) continue;
+      const inc: IncrementalDiff | undefined = everything || srcTouched || t!.cels ? undefined : { prev: a.overrides?.drawings, check: mine! };
+      const ov = diffContent(base, doc.drawings, takeContent(doc), doc.drawings, a.id, inc);
+      if (a.overrides?.palette) ov.palette = a.overrides.palette;
       if (!deepEqual(ov, a.overrides ?? {})) {
         ids.push(a.id);
         jobs.push((_d, x) => void (x.overrides = ov));
       }
     } else {
-      const r = resolveContent(base, doc.drawings, a.overrides, a.id);
+      if (!everything && !srcTouched && !t!.own.has(ai) && !mine!.size) continue;
+      const inc: IncrementalResolve | undefined = everything || !a.content ? undefined : { prev: a.content, touched: touchedOriginals(t!.drawings, a.id) };
+      const r = resolveContent(base, doc.drawings, a.overrides, a.id, doc.drawings, inc);
       const stale = Object.entries(r.drawings).filter(([k, v]) => doc.drawings[k] !== v);
       if (!sameContent(a.content, r.content) || stale.length) {
         ids.push(a.id);
@@ -480,7 +604,86 @@ export function settleVariations(doc: Doc): ((d: Draft<Doc>) => void) | null {
   };
 }
 
-registerSettler(settleVariations);
+/** The original drawing ids behind the touched ids, for one variation. */
+function touchedOriginals(ids: Set<Id>, vid: Id): Set<Id> {
+  const out = new Set<Id>();
+  for (const id of ids) {
+    const sp = splitAlias(id);
+    if (!sp) out.add(id);
+    else if (sp.vid === vid) out.add(sp.orig);
+  }
+  return out;
+}
+
+registerSettler((doc, ctx) => settleVariations(doc, ctx));
+
+// ---------------------------------------------------------------- what a variation shares
+
+/** What stays shared with the original (not overridable), and the plain sentence for when someone tries to change it from a variation. */
+const SHARED: Record<string, string> = {
+  symbols: 'Symbols are shared with the original. Change them there, or detach this variation.',
+  swatches: 'Swatches are shared with the original. Change them there, or detach this variation.',
+  folders: 'Layer folders are shared with the original. Change them there, or detach this variation.',
+  tileset: 'Tiles are shared with the original. Change them there, or detach this variation.',
+  palette: 'The palette is shared with the original. Change it there, or detach this variation.',
+};
+
+/** The open artboard when it is a variation. */
+function openVariation(doc: Doc): Artboard | undefined {
+  if (!doc.artboards?.some((a) => a.variationOf)) return undefined;
+  const a = findArtboard(doc, activeId(doc));
+  return a?.variationOf ? a : undefined;
+}
+
+/** The sentence to say when the open artboard is a variation and something it shares is about to be changed, else null. */
+export function sharedEditNote(doc: Doc, what: 'symbols' | 'swatches' | 'folders' | 'tileset' | 'palette'): string | null {
+  return openVariation(doc) ? SHARED[what] : null;
+}
+
+// A change that writes what a variation shares is refused whole, with the sentence, so no edit is lost or leaks into the original.
+registerGuard((_before, next, patches) => {
+  if (!openVariation(next)) return null;
+  for (const p of patches) {
+    const note = SHARED[p.path[0] as string];
+    if (note) return note;
+  }
+  return null;
+});
+
+/** The palette the open artboard has of its own (a variation with a colourway), or undefined for the shared one. */
+export function variationPalette(doc: Doc): DocPalette | undefined {
+  return openVariation(doc)?.overrides?.palette;
+}
+
+/** Gives the open variation its own palette (null = the original's again). False when the open artboard is not a variation. */
+export function setVariationPalette(d: Doc, p: DocPalette | null): boolean {
+  const a = openVariation(snap(d));
+  if (!a) return false;
+  const t = findArtboard(d, a.id)!;
+  const ov = { ...(t.overrides ?? {}) };
+  if (p) ov.palette = p;
+  else delete ov.palette;
+  t.overrides = ov as never;
+  return true;
+}
+
+/**
+ * Which drawings a palette colour change recolours. In an open variation: the ones its keys show (its colourway is its
+ * own). Anywhere else: every drawing but the copies of variations that have a palette of their own.
+ */
+export function paletteScope(doc: Doc): (id: Id) => boolean {
+  const open = openVariation(doc);
+  if (open) {
+    const used = new Set<Id>();
+    for (const l of doc.layers) for (const c of l.cels) used.add(c.drawingId);
+    return (id) => used.has(id);
+  }
+  if (!doc.artboards?.some((a) => a.overrides?.palette)) return () => true;
+  return (id) => {
+    const sp = splitAlias(id);
+    return !(sp && findArtboard(doc, sp.vid)?.overrides?.palette);
+  };
+}
 
 // ---------------------------------------------------------------- actions on a document (call them inside store.update)
 
@@ -532,6 +735,9 @@ export function normalize(ov: VariationOverrides): VariationOverrides {
     if (Object.keys(lo).length) out.layers = lo;
   }
   if (ov.drawings && Object.keys(ov.drawings).length) out.drawings = ov.drawings;
+  const au = ov.audio;
+  if (au && (Object.keys(au.items ?? {}).length || au.removed?.length || au.added?.length || au.order)) out.audio = au;
+  if (ov.palette) out.palette = ov.palette;
   return out;
 }
 
@@ -678,6 +884,11 @@ export type ResetKey =
   | { t: 'celGone'; layer: Id; id: Id }
   | { t: 'celNew'; layer: Id; id: Id }
   | { t: 'drawing'; id: Id }
+  | { t: 'sound'; id: Id }
+  | { t: 'soundGone'; id: Id }
+  | { t: 'soundNew'; id: Id }
+  | { t: 'soundOrder' }
+  | { t: 'palette' }
   /** Several drawings at once (a recolour that ran across a layer's keys). */
   | { t: 'drawings'; ids: Id[] };
 
@@ -722,6 +933,22 @@ export function withoutOverride(ov: VariationOverrides, k: ResetKey): VariationO
       if (s?.added) s.added = s.added.filter((x) => x.id !== k.id);
       break;
     }
+    case 'sound':
+      if (o.audio?.items) delete o.audio.items[k.id];
+      break;
+    case 'soundGone':
+      if (o.audio?.removed) o.audio.removed = o.audio.removed.filter((x) => x !== k.id);
+      break;
+    case 'soundNew':
+      if (o.audio?.added) o.audio.added = o.audio.added.filter((x) => x.id !== k.id);
+      if (o.audio?.order) o.audio.order = o.audio.order.filter((x) => x !== k.id);
+      break;
+    case 'soundOrder':
+      if (o.audio) delete o.audio.order;
+      break;
+    case 'palette':
+      delete o.palette;
+      break;
     case 'drawing':
       if (o.drawings) delete o.drawings[k.id];
       break;
@@ -880,6 +1107,17 @@ export function listDifferences(doc: Doc, vid: Id): DiffItem[] {
     }
     for (const c of it.sub?.added ?? []) add({ reset: { t: 'celNew', layer: lid, id: c.id }, group: name, label: `New key at frame ${c.start + 1}`, layer: lid, frame: c.start });
   }
+
+  // Sound and palette.
+  const A = ov.audio;
+  const sound = 'Sound';
+  const clipName = (id: Id) => cur.audio?.find((c) => c.id === id)?.name ?? base.audio?.find((c) => c.id === id)?.name ?? 'Sound';
+  const SOUND_WORDS: Record<string, string> = { volume: 'volume', muted: 'muted', start: 'moved', name: 'name' };
+  for (const id of A?.removed ?? []) add({ reset: { t: 'soundGone', id }, group: sound, label: `${clipName(id)}: left out of this variation` });
+  for (const c of A?.added ?? []) add({ reset: { t: 'soundNew', id: c.id }, group: sound, label: `${c.name}: a sound only this variation has` });
+  for (const [id, it] of Object.entries(A?.items ?? {})) add({ reset: { t: 'sound', id }, group: sound, label: `${clipName(id)}: ${list(keysOf(it.patch).map((k) => SOUND_WORDS[k] ?? k))} changed` });
+  if (A?.order) add({ reset: { t: 'soundOrder' }, group: sound, label: 'Sounds in a different order' });
+  if (ov.palette) add({ reset: { t: 'palette' }, group: whole, label: `Palette: its own colours (${ov.palette.colors.length}), the original's stay as they are` });
 
   // Drawings: found through the first key that shows them, and joined up per layer (a recolour across 24 keys is one line).
   interface Tally {

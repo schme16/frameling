@@ -15,7 +15,7 @@ import { readOrigin, readParticlesShape, readTextShape } from './shapes-extra';
 import { packAudio, unpackAudio } from './audio-file';
 import { keepUnknownShape, readExt, shapesForSave, withExt } from './ext';
 import { packArtboards, readArtboards } from '../artboards/io';
-import { closedForSave, isDerivedDrawing, resolveAfterLoad } from '../artboards/variationsIo';
+import { closedForSave, isDerivedDrawing, resolveAfterLoad, variationDiffs } from '../artboards/variationsIo';
 import { switchOpenVariation } from '../artboards/variations';
 import { upgradeLineage } from '../core/upgradeLineage';
 import { readClip } from '../core/clipPlay';
@@ -67,9 +67,11 @@ export function saveFile(open: Doc, appVersion = '', now: Date = new Date()): Ui
   const files: Zippable = {};
   const drawings: Record<string, unknown> = {};
   const used = new Set<string>();
+  // A drawing a variation redrew is stored as what differs from its original's, when that is smaller.
+  const diffs = variationDiffs(doc, files, pngFor);
   for (const [id, d] of Object.entries(doc.drawings)) {
     // A variation's drawings that are worked out from its original are not stored.
-    if (isDerivedDrawing(doc, id)) continue;
+    if (isDerivedDrawing(doc, id) || diffs.has(id)) continue;
     if (d.kind === 'pixel') {
       let name = `pixels/${safeName(id)}.png`;
       while (used.has(name)) name = name.replace(/\.png$/, '_.png');
@@ -90,7 +92,7 @@ export function saveFile(open: Doc, appVersion = '', now: Date = new Date()): Ui
   // Sound bytes go in their own entries; `audio` in doc.json then names them (undefined leaves the key out).
   const audio = packAudio(doc, files);
   // Artboards that aren't open carry their own sounds the same way.
-  files['doc.json'] = strToU8(JSON.stringify({ ...doc, drawings, audio, ...packArtboards(doc, files), ...(closed.reopen ? { variationOpen: closed.reopen } : {}) }));
+  files['doc.json'] = strToU8(JSON.stringify({ ...doc, drawings, audio, ...packArtboards(doc, files, diffs), ...(closed.reopen ? { variationOpen: closed.reopen } : {}) }));
   return zipSync(files, { level: 6 });
 }
 
@@ -299,7 +301,7 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
     const points = raw.perspective.points.filter((p: any) => isObj(p) && Number.isFinite(p.x) && Number.isFinite(p.y)).slice(0, 2).map((p: any) => ({ x: p.x as number, y: p.y as number }));
     if (points.length) doc.perspective = { points };
   }
-  Object.assign(doc, readArtboards(raw, entries, warnings, { readLayers, readFlow, readGuides, top: layers }));
+  Object.assign(doc, readArtboards(raw, entries, warnings, { readLayers, readFlow, readGuides, readPalette, top: layers }));
   resolveAfterLoad(doc, warnings);
   upgradeLineage(doc);
   return typeof raw.variationOpen === 'string' ? switchOpenVariation(doc, raw.variationOpen) : doc;
@@ -507,7 +509,7 @@ function readTileset(raw: any, drawings: Record<string, Drawing>, warnings: stri
 }
 
 /** The pixel palette, if the file has a usable one. */
-function readPalette(p: unknown): { palette?: Doc['palette'] } {
+export function readPalette(p: unknown): { palette?: Doc['palette'] } {
   if (!isObj(p) || !Array.isArray(p.colors)) return {};
   const colors = p.colors.filter((c: unknown) => typeof c === 'string' && /^#[0-9a-f]{6}([0-9a-f]{2})?$/i.test(c)).slice(0, 256);
   const ramps = Array.isArray(p.ramps) ? [...new Set<number>(p.ramps.filter((n: unknown) => Number.isInteger(n) && (n as number) > 0 && (n as number) < colors.length))].sort((a, b) => a - b) : [];

@@ -8,6 +8,7 @@ import { cameraLayerOf, cameraMatrix, layerCameraMatrix, cameraViewOn, clampZoom
 import { getViewSettings, setViewSettings } from '../canvas/viewSettings';
 import type { Mat } from '../core/symbols';
 import { toast } from '../ui/toast';
+import { activeId } from '../artboards/model';
 
 export type Result = string | undefined;
 
@@ -91,8 +92,16 @@ export function setDepth(layerId: Id, depth: number, coalesce?: string): void {
   );
 }
 
+/** Is this artboard looking through its camera? Each artboard remembers its own choice (a variation sized for a post looks through its camera, the original does not). */
+export function throughCameraOf(doc: Doc, v = getViewSettings()): boolean {
+  return v.throughBy[`${doc.id}/${activeId(doc)}`] ?? v.throughCamera;
+}
+
+/** Turns looking through the camera on or off for the open artboard only. */
 export function toggleThroughCamera(on?: boolean): void {
-  setViewSettings({ throughCamera: on ?? !getViewSettings().throughCamera });
+  const doc = store().get().doc;
+  const v = getViewSettings();
+  setViewSettings({ throughBy: { ...v.throughBy, [`${doc.id}/${activeId(doc)}`]: on ?? !throughCameraOf(doc, v) } });
 }
 
 /** Is the canvas looking through the camera right now? */
@@ -101,7 +110,7 @@ export function lookingThrough(s: State = store().get()): boolean {
   const cam = stageCamera(s.doc);
   if (!cam || !cam.visible) return false;
   const v = getViewSettings();
-  return v.throughCamera || (s.ui.playing && v.cameraWhilePlaying);
+  return throughCameraOf(s.doc, v) || (s.ui.playing && v.cameraWhilePlaying);
 }
 
 /** The camera as the canvas should apply it now (stage to camera space, for layers on the stage), or null. */

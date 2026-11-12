@@ -5,8 +5,10 @@ import { clampDistance, defaultPicks, SNAP_DISTANCE, migrateSavedPicks, sanitize
 interface ViewSettings {
   /** Show the pixel grid on pixel layers when zoomed in far enough. */
   pixelGrid: boolean;
-  /** Look through the camera (when the document has one) instead of at the whole stage. */
+  /** Look through the camera (when the document has one) instead of at the whole stage: what an artboard does until it has been told otherwise. */
   throughCamera: boolean;
+  /** Each artboard's own choice of that, by document and artboard (for this session, not saved). */
+  throughBy: Record<string, boolean>;
   /** Look through the camera while playing, even when not looking through it otherwise. */
   cameraWhilePlaying: boolean;
   /** Rulers along the top and left of the canvas. */
@@ -38,7 +40,7 @@ interface ViewSettings {
 }
 
 const KEY = 'frameling.view';
-let state: ViewSettings = { pixelGrid: true, throughCamera: false, cameraWhilePlaying: true, rulers: false, guides: true, snap: true, snapPicks: defaultPicks(), snapChosen: {}, snapDistance: SNAP_DISTANCE.usual, snapAllLayers: true, lockGuides: false, emptyGhost: true, grid: 'off', gridSize: 32, isoStyle: '2:1', perspective: true };
+let state: ViewSettings = { pixelGrid: true, throughCamera: false, throughBy: {}, cameraWhilePlaying: true, rulers: false, guides: true, snap: true, snapPicks: defaultPicks(), snapChosen: {}, snapDistance: SNAP_DISTANCE.usual, snapAllLayers: true, lockGuides: false, emptyGhost: true, grid: 'off', gridSize: 32, isoStyle: '2:1', perspective: true };
 const listeners = new Set<() => void>();
 
 try {
@@ -76,7 +78,7 @@ export function setViewSettings(patch: Partial<ViewSettings>): void {
   if (patch.snapChosen) state.snapPicks = sanitizePicks(state.snapChosen);
   try {
     // The ticks are saved as what was chosen only (snapPicks is worked out from it).
-    const { snapPicks: _derived, ...saved } = state;
+    const { snapPicks: _derived, throughBy: _session, ...saved } = state;
     if (typeof localStorage !== 'undefined') localStorage.setItem(KEY, JSON.stringify(saved));
   } catch {
     // not saved this time

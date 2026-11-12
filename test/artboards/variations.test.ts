@@ -1,12 +1,14 @@
 import { unzipSync, strFromU8, zipSync } from 'fflate';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { newDoc, newPixelDrawing, newPixelLayer, newVectorLayer } from '../../src/core/doc';
-import type { CameraDrawing, Doc, Layer, PathShape, PixelDrawing, VectorDrawing } from '../../src/core/format';
-import { resetStore, store } from '../../src/core/store';
+import { newDoc, newPixelDrawing, newPixelLayer, newTilemapDrawing, newVectorLayer } from '../../src/core/doc';
+import type { AudioClip, CameraDrawing, Doc, Layer, PathShape, PixelDrawing, TilemapDrawing, VectorDrawing } from '../../src/core/format';
+import { onBlocked, resetStore, store } from '../../src/core/store';
 import { loadFile, saveFile } from '../../src/io/file';
 import { defaultSettings } from '../../src/export/plan';
 import { artboardExport, planArtboards, setArtboardExport } from '../../src/artboards/export';
 import { followSelection } from '../../src/core/followSelection';
+import { changePaletteColor } from '../../src/pixel/commands';
+import { docPalette } from '../../src/pixel/palette';
 import { resizeArtboard, setArtboardBackgroundById } from '../../src/artboards/ops';
 import { activeId, artboardDoc, artboardsOf, deleteArtboard, duplicateArtboard, exportNames, findArtboard, joinShots, switchArtboard, takeContent } from '../../src/artboards/model';
 import {
@@ -20,7 +22,10 @@ import {
   resetDifference,
   resetVariation,
   resolveContent,
+  setVariationPalette,
   setVariationSize,
+  settleVariations,
+  touchOf,
   splitAlias,
   variationsOf,
 } from '../../src/artboards/variations';
@@ -617,5 +622,349 @@ describe('variations: more', () => {
     expect(artboardDoc(doc(), w).width).toBe(200);
     setArtboardExport({ mode: 'one', ids: null });
     expect(artboardExport.get().mode).toBe('one');
+  });
+});
+
+describe('variations: settling only what an edit touched', () => {
+  /** Nothing is left for a full check to do: the incremental settle kept everything in step. */
+  const inStep = () => expect(settleVariations(doc())).toBeNull();
+
+  it('stays in step through a mix of edits to the original and to the open variation', () => {
+    const a = make();
+    const b = make();
+    open(a);
+    const A = (id: string) => aliasId(id, a);
+    update('recolour in the variation', (d) => void (shape(d, A('d1'), 's1').fill = '#abcdef'));
+    inStep();
+    update('layer look', (d) => void (d.layers.find((l) => l.id === 'L1')!.opacity = 0.4));
+    inStep();
+    update('length and background', (d) => {
+      d.length = 12;
+      d.background = '#111111';
+    });
+    inStep();
+    update('a key', (d) => void d.layers.find((l) => l.id === 'L2')!.cels.push({ id: 'c9', start: 8, length: 2, drawingId: A('d3') }));
+    inStep();
+    open(root());
+    update('original drawing', (d) => void (shape(d, 'd2', 's3').fill = '#222222'));
+    inStep();
+    expect(shape(doc(), aliasId('d2', b), 's3').fill).toBe('#222222');
+    expect(shape(doc(), aliasId('d2', a), 's3').fill).toBe('#222222');
+    update('original key', (d) => void d.layers.find((l) => l.id === 'L1')!.cels.push({ id: 'c8', start: 8, length: 1, drawingId: 'd1' }));
+    inStep();
+    expect(findArtboard(doc(), b)!.content!.layers.find((l) => l.id === 'L1')!.cels.some((c) => c.id === 'c8')).toBe(true);
+    update('original layer look', (d) => void (d.layers.find((l) => l.id === 'L2')!.opacity = 0.7));
+    inStep();
+    expect(findArtboard(doc(), b)!.content!.layers.find((l) => l.id === 'L2')!.opacity).toBe(0.7);
+    // The variation's recolour is still its own.
+    expect(shape(doc(), A('d1'), 's1').fill).toBe('#abcdef');
+    expect(shape(doc(), 'd1', 's1').fill).toBe('#ff0000');
+  });
+
+  it('leaves a variation alone when its original did not change', () => {
+    const a = make();
+    const b = make();
+    const before = findArtboard(doc(), b)!.content;
+    open(a);
+    update('recolour', (d) => void (shape(d, aliasId('d1', a), 's1').fill = '#00ffff'));
+    update('look', (d) => void (d.layers[0].opacity = 0.5));
+    expect(findArtboard(doc(), b)!.content).toBe(before);
+    expect(findArtboard(doc(), a)!.overrides!.drawings!.d1).toBeTruthy();
+  });
+
+  it('reads patches: drawings, layer keys and artboards', () => {
+    const t = touchOf([
+      { op: 'replace', path: ['drawings', 'd1', 'shapes', 0, 'fill'], value: 1 },
+      { op: 'replace', path: ['layers', 1, 'opacity'], value: 1 },
+      { op: 'add', path: ['layers', 1, 'cels', 2], value: 1 },
+      { op: 'replace', path: ['artboards', 0, 'content', 'background'], value: null },
+      { op: 'replace', path: ['artboards', 2, 'overrides'], value: {} },
+    ]);
+    expect(t).toMatchObject({ full: false, content: true, cels: true });
+    expect([...t.drawings]).toEqual(['d1']);
+    expect([...t.closed]).toEqual([0]);
+    expect([...t.own]).toEqual([2]);
+    expect(touchOf([{ op: 'replace', path: ['drawings'], value: {} }]).full).toBe(true);
+    expect(touchOf([{ op: 'replace', path: ['layers', 1, 'opacity'], value: 1 }]).cels).toBe(false);
+  });
+});
+
+describe('variations: sound, palette and what stays shared', () => {
+  const clip = (id: string, start: number, volume?: number): AudioClip => ({ id, name: `Sound ${id}`, start, data: new Uint8Array([1, 2, 3, id.length]), mime: 'audio/wav', ...(volume === undefined ? {} : { volume }) });
+  const withSound = () => {
+    const d0 = sample();
+    d0.audio = [clip('a1', 0), clip('a2', 4)];
+    resetStore(d0);
+  };
+  const blocked: string[] = [];
+  beforeEach(() => {
+    blocked.length = 0;
+    onBlocked((m) => void blocked.push(m));
+  });
+
+  it('a variation can change the volume, mute and start of a sound without touching the original', () => {
+    withSound();
+    const v = make();
+    open(v);
+    update('Sound', (d) => {
+      d.audio![0].volume = 0.3;
+      d.audio![1].muted = true;
+      d.audio![1].start = 6;
+    });
+    const ov = findArtboard(doc(), v)!.overrides!;
+    expect(ov.audio!.items).toEqual({ a1: { patch: { set: { volume: 0.3 } } }, a2: { patch: { set: { muted: true, start: 6 } } } });
+    // It is the same bytes, not a copy.
+    expect(ov.audio!.items!.a1).not.toHaveProperty('data');
+    open(root());
+    expect(doc().audio![0].volume).toBeUndefined();
+    expect(artboardDoc(doc(), v).audio![0].volume).toBe(0.3);
+    expect(artboardDoc(doc(), v).audio![1]).toMatchObject({ muted: true, start: 6 });
+    expect(artboardDoc(doc(), v).audio![0].data).toBe(doc().audio![0].data);
+    inStepNow();
+  });
+
+  const inStepNow = () => expect(settleVariations(doc())).toBeNull();
+
+  it('a sound change is not lost on the next edit, and the original still flows in', () => {
+    withSound();
+    const v = make();
+    open(v);
+    update('Sound', (d) => void (d.audio![0].volume = 0.3));
+    update('Something else', (d) => void (d.layers[0].opacity = 0.8));
+    expect(doc().audio![0].volume).toBe(0.3);
+    open(root());
+    update('Original sound', (d) => {
+      d.audio![1].volume = 0.5;
+      d.audio![0].name = 'Renamed';
+    });
+    const a = findArtboard(doc(), v)!.content!.audio!;
+    expect(a[0]).toMatchObject({ volume: 0.3, name: 'Renamed' });
+    expect(a[1].volume).toBe(0.5);
+  });
+
+  it('leaving a sound out and adding one are overrides too', () => {
+    withSound();
+    const v = make();
+    open(v);
+    update('Remove and add', (d) => {
+      d.audio = [d.audio![0], clip('a9', 2)];
+    });
+    const ov = findArtboard(doc(), v)!.overrides!;
+    expect(ov.audio!.removed).toEqual(['a2']);
+    expect(ov.audio!.added!.map((c) => c.id)).toEqual(['a9']);
+    open(root());
+    expect(doc().audio!.map((c) => c.id)).toEqual(['a1', 'a2']);
+    expect(findArtboard(doc(), v)!.content!.audio!.map((c) => c.id)).toEqual(['a1', 'a9']);
+    const list = listDifferences(doc(), v);
+    expect(list.map((i) => i.label)).toEqual(['Sound a2: left out of this variation', 'Sound a9: a sound only this variation has']);
+    update('Reset one', (d) => void resetDifference(d, v, list[0].reset));
+    expect(findArtboard(doc(), v)!.content!.audio!.map((c) => c.id)).toEqual(['a1', 'a2', 'a9']);
+  });
+
+  it('the sound changes are saved and opened again, new sounds with their bytes', () => {
+    withSound();
+    const v = make();
+    open(v);
+    update('Sound', (d) => {
+      d.audio![0].volume = 0.25;
+      d.audio!.push(clip('a7', 1, 0.5));
+    });
+    open(root());
+    const bytes = saveFile(doc());
+    const files = unzipSync(bytes);
+    expect(Object.keys(files).filter((n) => n.startsWith('audio/')).sort()).toEqual(['audio/a1.wav', 'audio/a2.wav', 'audio/a7.wav']);
+    const raw = JSON.parse(strFromU8(files['doc.json']));
+    expect(raw.artboards.find((a: { id: string }) => a.id === v).overrides.audio.added[0].data).toBe('audio/a7.wav');
+    const loaded = loadFile(bytes);
+    expect(loaded.warnings).toEqual([]);
+    const a = findArtboard(loaded.doc, v)!;
+    expect(a.overrides!.audio!.items!.a1.patch).toEqual({ set: { volume: 0.25 } });
+    expect(a.overrides!.audio!.added![0].data).toEqual(new Uint8Array([1, 2, 3, 2]));
+    expect(a.content!.audio!.map((c) => [c.id, c.volume])).toEqual([['a1', 0.25], ['a2', undefined], ['a7', 0.5]]);
+  });
+
+  it('a variation gets its own palette; the original and the other variations keep theirs', () => {
+    const d0 = sample();
+    d0.palette = { name: 'Mine', colors: ['#ff0000', '#00ff00', '#0000ff'] };
+    resetStore(d0);
+    const v = make();
+    const w = make();
+    open(v);
+    expect(docPalette(doc()).colors).toEqual(['#ff0000', '#00ff00', '#0000ff']);
+    update('Palette', (d) => void setVariationPalette(d, { name: 'Night', colors: ['#220000', '#002200', '#000022'] }));
+    expect(docPalette(doc()).name).toBe('Night');
+    expect(doc().palette!.name).toBe('Mine');
+    expect(findArtboard(doc(), v)!.overrides!.palette!.name).toBe('Night');
+    // Edits after it do not drop it.
+    update('Look', (d) => void (d.layers[0].opacity = 0.5));
+    expect(findArtboard(doc(), v)!.overrides!.palette!.name).toBe('Night');
+    expect(artboardDoc(doc(), v).palette!.name).toBe('Night');
+    expect(artboardDoc(doc(), w).palette!.name).toBe('Mine');
+    open(w);
+    expect(docPalette(doc()).name).toBe('Mine');
+    open(root());
+    expect(listDifferences(doc(), v).map((i) => i.label)).toContain('Palette: its own colours (3), the original\'s stay as they are');
+    update('Reset', (d) => void resetDifference(d, v, { t: 'palette' }));
+    expect(findArtboard(doc(), v)!.overrides!.palette).toBeUndefined();
+  });
+
+  it('a colourway: changing a palette colour in a variation recolours only its pixels', () => {
+    const d0 = newDoc({ name: 'Px', width: 4, height: 4, length: 2, pixel: { pixelSize: 1 } });
+    const p = newPixelDrawing(4, 4);
+    p.pixels.set([255, 0, 0, 255], 0);
+    d0.drawings[p.id] = p;
+    d0.layers[0].cels.push({ id: 'pc', start: 0, length: 2, drawingId: p.id });
+    d0.palette = { name: 'P', colors: ['#ff0000', '#00ff00'] };
+    resetStore(d0);
+    const v = make();
+    open(v);
+    changePaletteColor(0, '#0000ff');
+    expect(findArtboard(doc(), v)!.overrides!.palette!.colors[0]).toBe('#0000ff');
+    expect(doc().palette!.colors[0]).toBe('#ff0000');
+    const mine = doc().drawings[aliasId(p.id, v)] as PixelDrawing;
+    expect([...mine.pixels.slice(0, 4)]).toEqual([0, 0, 255, 255]);
+    expect([...(doc().drawings[p.id] as PixelDrawing).pixels.slice(0, 4)]).toEqual([255, 0, 0, 255]);
+    open(root());
+    // Changing the original's palette later does not reach the variation's own colours.
+    changePaletteColor(1, '#ffff00');
+    expect([...(doc().drawings[aliasId(p.id, v)] as PixelDrawing).pixels.slice(0, 4)]).toEqual([0, 0, 255, 255]);
+    expect(findArtboard(doc(), v)!.overrides!.palette!.colors).toEqual(['#0000ff', '#00ff00']);
+    // The palette is saved with the variation and opens again.
+    const loaded = loadFile(saveFile(doc())).doc;
+    expect(findArtboard(loaded, v)!.overrides!.palette!.colors).toEqual(['#0000ff', '#00ff00']);
+  });
+
+  it('shared things are not edited from a variation: the change is refused with a plain note and nothing is recorded', () => {
+    const v = make();
+    open(v);
+    const steps = store().canUndo();
+    update('Swatch', (d) => void d.swatches.push({ id: 'sw', name: 'x', color: '#123456' } as never));
+    update('Folder', (d) => void (d.folders = { f1: { id: 'f1', name: 'F' } as never }));
+    update('Palette', (d) => void (d.palette = { name: 'x', colors: ['#000000'] }));
+    update('Symbol', (d) => void (d.symbols = { s1: { id: 's1', name: 'S', layers: [], length: 1 } as never }));
+    expect(blocked).toEqual([
+      'Swatches are shared with the original. Change them there, or detach this variation.',
+      'Layer folders are shared with the original. Change them there, or detach this variation.',
+      'The palette is shared with the original. Change it there, or detach this variation.',
+      'Symbols are shared with the original. Change them there, or detach this variation.',
+    ]);
+    expect(store().canUndo()).toBe(steps);
+    expect(doc().swatches.some((x) => x.id === 'sw')).toBe(false);
+    expect(doc().folders).toBeUndefined();
+    // On the original they are plain edits, shared by everyone.
+    open(root());
+    update('Swatch', (d) => void d.swatches.push({ id: 'sw', name: 'x', color: '#123456' } as never));
+    expect(doc().swatches.some((x) => x.id === 'sw')).toBe(true);
+    expect(blocked).toHaveLength(4);
+  });
+});
+
+describe('variations: redrawn pictures are stored as what changed', () => {
+  /** A pixel animation: `frames` keys of 64 x 64 noise (so each one costs real bytes in a file). */
+  function animation(frames: number): Doc {
+    const d0 = newDoc({ name: 'Walk', width: 64, height: 64, length: frames, pixel: { pixelSize: 1 } });
+    let seed = 7;
+    const rnd = () => (seed = (seed * 1103515245 + 12345) & 0x7fffffff) >>> 8;
+    for (let f = 0; f < frames; f++) {
+      const p = newPixelDrawing(64, 64);
+      for (let i = 0; i < p.pixels.length; i++) p.pixels[i] = rnd() & 255;
+      d0.drawings[p.id] = p;
+      d0.layers[0].cels.push({ id: `k${f}`, start: f, length: 1, drawingId: p.id });
+    }
+    return d0;
+  }
+
+  it('a few pixels painted on every key of a long animation add a few bytes, not another animation', () => {
+    const d0 = animation(60);
+    resetStore(d0);
+    const alone = saveFile(doc()).length;
+    const v = make();
+    open(v);
+    update('Paint a scar on every key', (d) => {
+      for (const c of d.layers[0].cels) {
+        const a = d.drawings[c.drawingId] as PixelDrawing;
+        const px = new Uint8ClampedArray(a.pixels);
+        for (let y = 10; y < 13; y++) for (let x = 20; x < 23; x++) px.set([255, 0, 0, 255], (y * 64 + x) * 4);
+        a.pixels = px;
+      }
+    });
+    open(root());
+    const bytes = saveFile(doc());
+    const grown = bytes.length - alone;
+    expect(grown).toBeLessThan(alone * 0.05);
+    // Each key's change is a small rectangle in the zip.
+    const files = unzipSync(bytes);
+    const diffs = Object.keys(files).filter((n) => n.startsWith('pixels/diff_'));
+    expect(diffs).toHaveLength(60);
+    expect(files[diffs[0]].length).toBeLessThan(200);
+    // It opens to exactly the same pictures.
+    const loaded = loadFile(bytes);
+    expect(loaded.warnings).toEqual([]);
+    for (const c of findArtboard(loaded.doc, v)!.content!.layers[0].cels) {
+      const mine = loaded.doc.drawings[c.drawingId] as PixelDrawing;
+      const was = doc().drawings[aliasId(c.drawingId.split('~')[0], v)] as PixelDrawing;
+      expect(mine.pixels).toEqual(was.pixels);
+    }
+    expect((loaded.doc.drawings[d0.layers[0].cels[0].drawingId] as PixelDrawing).pixels[(10 * 64 + 20) * 4]).not.toBe(255);
+  });
+
+  it('a drawing changed nearly everywhere is stored whole, and the file still round trips', () => {
+    resetStore(animation(2));
+    const v = make();
+    open(v);
+    update('Repaint', (d) => {
+      const c = d.layers[0].cels[0];
+      const a = d.drawings[c.drawingId] as PixelDrawing;
+      a.pixels = new Uint8ClampedArray(a.pixels.map((n) => 255 - n));
+    });
+    open(root());
+    const files = unzipSync(saveFile(doc()));
+    expect(Object.keys(files).filter((n) => n.startsWith('pixels/diff_'))).toHaveLength(0);
+    const loaded = loadFile(saveFile(doc())).doc;
+    const k = findArtboard(loaded, v)!.content!.layers[0].cels[0].drawingId;
+    expect((loaded.drawings[k] as PixelDrawing).pixels).toEqual((doc().drawings[k] as PixelDrawing).pixels);
+  });
+
+  it('a pixel key the variation redrew but left the same costs nothing extra', () => {
+    resetStore(animation(2));
+    const v = make();
+    open(v);
+    update('Same again', (d) => {
+      const a = d.drawings[d.layers[0].cels[0].drawingId] as PixelDrawing;
+      a.pixels = new Uint8ClampedArray(a.pixels);
+    });
+    open(root());
+    const loaded = loadFile(saveFile(doc())).doc;
+    const k = findArtboard(loaded, v)!.content!.layers[0].cels[0].drawingId;
+    expect((loaded.drawings[k] as PixelDrawing).pixels).toEqual((doc().drawings[k] as PixelDrawing).pixels);
+  });
+
+  it('a tile map a variation changed is stored as the slots that changed', () => {
+    const d0 = newDoc({ name: 'Map', width: 64, height: 64, length: 2 });
+    const t: TilemapDrawing = newTilemapDrawing(20, 20);
+    t.cells.fill(5);
+    d0.drawings[t.id] = t;
+    d0.layers = [{ id: 'T', name: 'Tiles', kind: 'tilemap', pixelSize: 1, visible: true, locked: false, opacity: 1, cels: [{ id: 'tc', start: 0, length: 2, drawingId: t.id }] } as Layer];
+    resetStore(d0);
+    const v = make();
+    open(v);
+    update('Paint tiles', (d) => {
+      const a = d.drawings[aliasId(t.id, v)] as TilemapDrawing;
+      const cells = new Uint32Array(a.cells);
+      cells[3] = 9;
+      cells[41] = 7;
+      a.cells = cells;
+    });
+    expect(findArtboard(doc(), v)!.overrides!.drawings![t.id]).toEqual({ replaced: true });
+    open(root());
+    const bytes = saveFile(doc());
+    const raw = JSON.parse(strFromU8(unzipSync(bytes)['doc.json']));
+    expect(raw.artboards.find((a: { id: string }) => a.id === v).overrides.drawings[t.id].diff).toEqual({ cells: [3, 9, 41, 7] });
+    expect(Object.keys(raw.drawings).some((k) => k.includes('~'))).toBe(false);
+    const loaded = loadFile(bytes).doc;
+    const mine = loaded.drawings[aliasId(t.id, v)] as TilemapDrawing;
+    expect([mine.cells[3], mine.cells[41], mine.cells[4]]).toEqual([9, 7, 5]);
+    expect((loaded.drawings[t.id] as TilemapDrawing).cells[3]).toBe(5);
+    expect(findArtboard(loaded, v)!.overrides!.drawings![t.id]).toEqual({ replaced: true });
   });
 });

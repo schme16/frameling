@@ -138,6 +138,19 @@ export interface DrawingOverride {
   shapes?: ListOverride<Shape>;
   /** Changes to a camera key's view. */
   view?: Patch;
+  /** Only while a file is being read: what a redrawn drawing changes from the original's (see `DrawingDiff`). Applied, then dropped. */
+  diff?: DrawingDiff;
+}
+
+/**
+ * A redrawn pixel or tile drawing as a file stores it: only the part that differs from the original's drawing.
+ * In memory the variation has the whole drawing (in `doc.drawings`), so tools work on it unchanged.
+ */
+export interface DrawingDiff {
+  /** Pixels: the changed rectangle. In a file `pixels` names a PNG entry of just that rectangle; once read it holds its RGBA bytes. */
+  rect?: { x: number; y: number; w: number; h: number; pixels: string | Uint8ClampedArray };
+  /** Tiles: the changed slots as pairs of slot number and new value. */
+  cells?: number[];
 }
 
 /** Everything a variation changes. Anything not named here follows the original. */
@@ -148,6 +161,10 @@ export interface VariationOverrides {
   layers?: ListOverride<Layer, ListOverride<Cel>>;
   /** Drawings of the original that changed, by the original's drawing id. */
   drawings?: Record<Id, DrawingOverride>;
+  /** Sound clips by id: volume, mute, start and name changes, clips left out, clips added. */
+  audio?: ListOverride<AudioClip>;
+  /** This variation's own palette (a colourway for pixel art). Missing = the original's. */
+  palette?: DocPalette;
 }
 
 /** The part of a document each artboard has its own copy of. */

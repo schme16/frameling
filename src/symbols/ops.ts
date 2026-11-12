@@ -2,6 +2,7 @@
  * Symbol and tween actions, each one undo step. They read the store, refuse with a friendly line when they can't
  * (returned as a string so callers can toast or hint it), and otherwise change the document.
  */
+import { sharedEditNote } from '../artboards/variations';
 import type { Draft } from 'immer';
 import type { Cel, Doc, Easing, Id, InstanceShape, Layer, MotionPath, PathPoint, Shape, ShapeHint, Tween, VectorDrawing } from '../core/format';
 import { currentChoice, registerChoice, withChoice } from '../core/choices';
@@ -140,6 +141,8 @@ export function editSymbol(id: Id): Result {
 function open(symbolId: Id, at: { instanceId?: Id; matrix: [number, number, number, number, number, number] }, frame: number): Result {
   const { doc, ui } = store().get();
   if (doc.editing?.some((f) => f.symbolId === symbolId)) return say("You're already inside that symbol.");
+  const shared = sharedEditNote(doc, 'symbols');
+  if (shared) return say(shared);
   const name = doc.symbols?.[symbolId]?.name ?? 'symbol';
   let ok = false;
   store().update(`Edit "${name}"`, (d) => {

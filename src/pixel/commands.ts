@@ -7,6 +7,7 @@ import { registerChoice, withChoice } from '../core/choices';
 import type { Doc, DocPalette, PixelDrawing } from '../core/format';
 import { registerCommands } from '../core/registry';
 import { store } from '../core/store';
+import { paletteScope, setVariationPalette } from '../artboards/variations';
 import { parseHex } from '../canvas/colors';
 import { hint } from '../canvas/controller';
 import { activeDrawing, activeLayer, editActiveDrawing, EDIT_HINTS } from '../tools/edit';
@@ -21,7 +22,14 @@ import { applyInSelection, type PixelOp, type SelectionKind } from '../select/op
 
 /** Replaces the document palette (one undo step; `coalesce` merges a burst of edits). */
 export function setDocPalette(p: DocPalette, label = 'Change palette', coalesce?: string): void {
-  store().update(label, (d) => void (d.palette = p as Draft<DocPalette>), coalesce ? { coalesce } : {});
+  store().update(
+    label,
+    (d) => {
+      // A variation keeps its own colourway; anywhere else the palette is the document's.
+      if (!setVariationPalette(d as Doc, p)) d.palette = p as Draft<DocPalette>;
+    },
+    coalesce ? { coalesce } : {},
+  );
 }
 
 export type RecolourChoice = 'recolour' | 'palette-only';
@@ -40,13 +48,13 @@ registerChoice<RecolourChoice>({
 });
 
 /** Every pixel of `from` turned into `to`, on every pixel drawing in the document. Pure, for tests. */
-export function recolourDoc(doc: Draft<Doc>, from: string, to: string): number {
+export function recolourDoc(doc: Draft<Doc>, from: string, to: string, scope: (id: string) => boolean = () => true): number {
   const a = parseHex(from);
   const b = parseHex(to);
   if (!a || !b) return 0;
   let n = 0;
   for (const d of Object.values(doc.drawings)) {
-    if (d.kind !== 'pixel') continue;
+    if (d.kind !== 'pixel' || !scope(d.id)) continue;
     const out = remapColor(d.pixels as Uint8ClampedArray, [a[0], a[1], a[2]], [b[0], b[1], b[2]]);
     if (out) {
       (d as Draft<PixelDrawing>).pixels = out;
@@ -64,11 +72,12 @@ export function changePaletteColor(index: number, color: string): void {
   if (!old || old.toLowerCase() === color.toLowerCase()) return;
   const next: DocPalette = { ...p, colors: p.colors.map((c, i) => (i === index ? color : c)) };
   const [r, g, b] = rgb3(old);
-  const usesOld = Object.values(doc.drawings).some((d) => d.kind === 'pixel' && usesColor(d.pixels, r, g, b));
+  const scope = paletteScope(doc);
+  const usesOld = Object.values(doc.drawings).some((d) => d.kind === 'pixel' && scope(d.id) && usesColor(d.pixels, r, g, b));
   const apply = (recolour: boolean) =>
     store().update('Change palette colour', (d) => {
-      d.palette = next as Draft<DocPalette>;
-      if (recolour) recolourDoc(d, old, color);
+      if (!setVariationPalette(d as Doc, next)) d.palette = next as Draft<DocPalette>;
+      if (recolour) recolourDoc(d, old, color, scope);
     });
   if (!usesOld) return apply(false);
   withChoice<RecolourChoice>('palette.recolour', (v) => apply(v === 'recolour'));
