@@ -21,8 +21,11 @@ const step = (q: Quest, id: string) => q.steps.find((s) => s.id === id)!;
 function paint(doc: ReturnType<typeof newSpriteDoc>, board: number, rgb: [number, number, number], n = 12, frame = 0): void {
   const c = contentOf(doc, artboardsOf(doc)[board].id)!;
   const cel = (c.layers[0] as PixelLayer).cels.find((x) => frame >= x.start && frame < x.start + x.length)!;
-  const d = doc.drawings[cel.drawingId] as { pixels: Uint8ClampedArray };
-  for (let i = 0; i < n; i++) d.pixels.set([...rgb, 255], i * 4 + (rgb[0] % 2) * 0);
+  // The drawing holds only what is painted: a row of n pixels in the corner.
+  const d = doc.drawings[cel.drawingId] as { width: number; height: number; pixels: Uint8ClampedArray };
+  const row = new Uint8ClampedArray(n * 4);
+  for (let i = 0; i < n; i++) row.set([...rgb, 255], i * 4);
+  Object.assign(d, { width: n, height: 1, pixels: row });
 }
 
 describe('the pixel way quests', () => {
@@ -66,7 +69,7 @@ describe('One tiny picture', () => {
     paint(doc, 0, [255, 111, 145], 10);
     expect(coloursAt(doc, 0)).toBe(1);
     const d = doc.drawings[doc.layers[0].cels[0].drawingId] as { pixels: Uint8ClampedArray };
-    d.pixels.set([111, 184, 255, 255], 40 * 4);
+    d.pixels.set([111, 184, 255, 255], 9 * 4);
     expect(coloursAt(doc, 0)).toBe(2);
     expect(step(ONE_TINY_PICTURE, 'back').done!(ctxFor(resetStore(doc).get()))).toBe(true);
   });

@@ -29,14 +29,17 @@ changing them, so an unchanged drawing is never encoded twice, which matters for
 
 ## Version and compatibility rules
 
-- `FORMAT_VERSION` is 2. Every field added since the first commit is optional, so the version was not bumped until
+- `FORMAT_VERSION` is 3. Every field added since the first commit is optional, so the version was not bumped until
   clip repeat counts changed meaning (see the clips note below): `MIGRATIONS[1]` in `file.ts` turns a version 1 file's
-  back and forth repeat counts into the new ones, so every older file still opens and plays as it did.
+  back and forth repeat counts into the new ones, so every older file still opens and plays as it did. Version 3 is
+  trimmed pixel drawings (see `PixelDrawing`): `MIGRATIONS[2]` changes nothing, because a whole-grid drawing is still
+  a valid drawing. The bump is there because an older build would take a trimmed drawing for the whole grid and
+  misplace it, so it refuses the file instead.
 - A new field must be optional, and missing must mean "the old behaviour". Write it only when it isn't the default
   (the readers drop `onion: true`, `blend: 'normal'`, `s: 1` and so on), so files stay small and diffable.
 - If a change can't be made optional, bump `FORMAT_VERSION` and add a step to `MIGRATIONS` in `file.ts`:
   `MIGRATIONS[n]` turns a version n document into version n + 1, and `migrate()` runs them in order. A missing step
-  means "this file is too old" (`FileProblem`). The list has one step today (1 to 2, clips).
+  means "this file is too old" (`FileProblem`). The list has two steps today (1 to 2, clips; 2 to 3, nothing to change).
 - A file whose manifest version is higher than `FORMAT_VERSION` is refused with "made with a newer Frameling".
 - Older readers drop fields they don't know without a warning (the tween reader builds a new `Tween` from the fields it
   knows). Consequence for `Tween.slice` (added in `9611002`, after which no release was cut when this was checked): a
@@ -65,7 +68,7 @@ Refused outright:
 - A pixel drawing whose PNG entry is missing, misnamed, undecodable or the wrong size. A tilemap drawing with a
   bad size (over 4,000,000 cells, or `cells` the wrong length).
 - A layer of an unknown kind, or two layers with the same id.
-- Entries over 1 GB unzipped are skipped, and only `manifest.json`, `doc.json`, `pixels/` and `audio/` are unzipped.
+- Entries over 1 GB unzipped are skipped, and only `manifest.json`, `doc.json`, `pixels/` and `audio/` are unzipped. A pixel drawing's `x` and `y` are clamped to 0 or more (and at most 1048576).
 
 Repaired, with a warning:
 
@@ -258,9 +261,17 @@ means the hold reaches the next key and gives way when someone draws on a later 
 
 - `VectorDrawing`: `{id, kind: 'vector', shapes, pose?}`. Shapes paint in order, index 0 at the back. `pose` is the
   bone pose at this key on a bones layer (`0b554d4`).
-- `PixelDrawing`: `{id, kind: 'pixel', width, height, pixels: Uint8ClampedArray}`. RGBA the size of the layer's art
-  grid (`ceil(doc.width / pixelSize)` by `ceil(doc.height / pixelSize)`), or of the tile for tile frames. A PNG in the
-  file. Edits replace the array, never mutate it.
+- `PixelDrawing`: `{id, kind: 'pixel', x?, y?, width, height, pixels: Uint8ClampedArray}`. RGBA of the block that is
+  held: `width` x `height` art pixels at (`x`, `y`) from the top left of the layer's art grid (`ceil(doc.width /
+  pixelSize)` by `ceil(doc.height / pixelSize)`); missing `x` and `y` are 0. A drawing holds only the painted part
+  (every pixel that is not fully see-through is inside the block), so a 24 x 24 sprite on a 2000 x 2000 page is 2 KB,
+  not 16 MB. A blank drawing is 0 x 0 with no bytes. Older files, and tile frames (always exactly one tile), are the
+  whole grid at (0, 0), which is still valid. A PNG in the file holds the block, and `doc.json` has `x` and `y` beside
+  it (left out when 0). A blank drawing has `width: 0, height: 0, pixels: ""` and no PNG entry. Edits replace the
+  array, never mutate it. Code that wants the whole grid (fills, selections, filters) calls `gridPixels(d, gridW,
+  gridH)` and writes a grid-sized result with `setGridPixels` (`src/core/pixelBounds.ts`), which trims it. The block is
+  trimmed after every edit, when a file is opened (older files too) and when one is saved; tile frames are never
+  trimmed. Variation changes (`DiffRect`) stay in grid coordinates and are worked out over both drawings' blocks.
 - `TilemapDrawing` (`cd7bd81`): `{id, kind: 'tilemap', columns, rows, cells: Uint32Array}`. Row by row; 0 is empty,
   otherwise a tile key in the low 28 bits (`TILE_KEY_MASK`) plus `TILE_FLIP_X`, `TILE_FLIP_Y`, `TILE_FLIP_D` (the
   same bits Tiled uses). Edits replace the array.

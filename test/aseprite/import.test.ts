@@ -129,6 +129,29 @@ describe('RGBA files', () => {
   });
 });
 
+describe('big canvases', () => {
+  it('holds only each cel\'s own bounds, so small cels on a big canvas stay small', () => {
+    const frames = Array.from({ length: 20 }, (_, i) => ({
+      duration: 100,
+      chunks: i === 0 ? [profileChunk(), paletteChunk(pal), layerChunk({ name: 'Art' }), celChunk({ layer: 0, kind: 'image', x: 100 + i, y: 200, width: 4, height: 3, data: solid(4, 3, [9, 8, 7, 255]) })] : [celChunk({ layer: 0, kind: 'image', x: 100 + i, y: 200, width: 4, height: 3, data: solid(4, 3, [9, 8, 7, 255]) })],
+    }));
+    const { doc } = open(aseFile({ width: 4000, height: 4000, depth: 32, flags: 1, frames }), 'big');
+    const held = Object.values(doc.drawings).reduce((n, d) => n + (d.kind === 'pixel' ? d.pixels.byteLength : 0), 0);
+    // 20 canvases of 4000 x 4000 would be 1.2 GB (more than the old limit of 1 GB); this is 20 cels of 48 bytes.
+    expect(held).toBe(20 * 4 * 3 * 4);
+    const d = pixelAt(doc, doc.layers[0], 5)!;
+    expect([d.x, d.y, d.width, d.height]).toEqual([105, 200, 4, 3]);
+  });
+
+  it('trims transparent borders of a cel and still reports pixels cropped off the canvas', () => {
+    const img = rgbaImage(4, 4, (x, y) => (x === 1 && y === 1 ? [1, 2, 3, 255] : x === 3 && y === 3 ? [4, 5, 6, 255] : [0, 0, 0, 0]));
+    const { doc, notes } = open(aseFile({ width: 6, height: 6, depth: 32, flags: 1, frames: [{ duration: 100, chunks: [profileChunk(), paletteChunk(pal), layerChunk({ name: 'Art' }), celChunk({ layer: 0, kind: 'image', x: 3, y: 3, width: 4, height: 4, data: img })] }] }), 'edge');
+    const d = pixelAt(doc, doc.layers[0], 0)!;
+    expect([d.x, d.y, d.width, d.height]).toEqual([4, 4, 1, 1]);
+    expect(notes.join(' ')).toMatch(/cut|crop|edge/i);
+  });
+});
+
 describe('colour depths', () => {
   it('reads grayscale (value, alpha)', () => {
     const data = [10, 255, 200, 255, 50, 0, 90, 128];

@@ -77,10 +77,14 @@ Signing, below).
 
 ## Changes
 
-- **Files are now format version 2.** Every `.frameling` file saved by this build is version 2 (back and forth clip
-  repeat counts changed meaning). This build opens older files and upgrades them as it opens them, but earlier builds
-  can't open a version 2 file: they say it was made with a newer Frameling. Keep a copy of anything you still need to
-  open in an older build, and update every machine you share files with. Details in `docs/format.md`.
+- **Files are now format version 3.** Every `.frameling` file saved by this build is version 3 (back and forth clip
+  repeat counts changed meaning in version 2; pixel drawings keep only the painted part in version 3, so small
+  pictures on big canvases take a fraction of the memory and file size). This build opens older files and upgrades
+  them as it opens them, but earlier builds can't open a version 3 file: they say it was made with a newer Frameling.
+  Keep a copy of anything you still need to open in an older build, and update every machine you share files with.
+  Details in `docs/format.md`.
+- **Aseprite files can be far bigger.** Only each cel's own bounds are kept, so the old 1 GB limit now counts what
+  is held, not whole canvases.
 
 ## Work on it
 

@@ -188,6 +188,15 @@ exporter walk);
 `stage.ts` is the editor's way in, reusing the canvas's bitmaps. Symbols with a look inside are composited in their
 own space. See `docs/effects.md`.
 
+**Pixel drawings hold only what is painted** (`src/core/pixelBounds.ts`). A `PixelDrawing` is a block (`x`, `y`, `width`,
+`height`, `pixels`) on the layer's art grid, trimmed after every edit, so `d.pixels` is NOT grid sized and `d.width` is NOT
+the grid width. Code that thinks in grid positions (fills, selections, filters, tests) asks for `gridPixels(d, gw, gh)`
+(read only, a short list of recent copies is kept) and writes back with `setGridPixels`, or through the tool helpers in
+`tools/edit.ts`: `setActivePixels` (a whole-grid array) and `paintActiveGrid` (a copy to change in place). Code that
+only walks pixels one by one (colour counts, recolouring, exports that draw the block) works on the block directly and
+adds `x`, `y` where position matters (`render.ts`, `svg.ts`, `lottie.ts`, `pdf.ts`, `canvas/geometry.ts`). The pixel
+session (`tools/pixelSession.ts`) still paints on a whole grid copy while a stroke is going, and trims on commit.
+
 **Caches and invalidation.** Almost every cache is a `WeakMap` keyed on an object (a shape, a drawing, a pixel array,
 a cel, a doc). Immer makes new objects for anything edited and pixel and tile arrays are replaced, never changed, so
 an edit misses the old entry and the old one is garbage collected. The main ones:
