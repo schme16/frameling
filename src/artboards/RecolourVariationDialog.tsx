@@ -40,7 +40,7 @@ function RecolourVariationDialog({ close }: { close: () => void }) {
     <Modal title="Recolour this variation" onClose={close} wide>
       <div className="io-body cv-recolour">
         <p className="io-muted">
-          Change colours on every frame of this variation. {root ? `${root.name} and the other variations` : 'The original and the other variations'} keep theirs. Each colour you change is one line in the variation's Differences, with a Reset.
+          Change colours on every frame of this variation. {root ? `The original (${root.name}) and the other variations` : 'The original and the other variations'} keep theirs. Each colour you change is one line in the variation's Differences, with a Reset.
         </p>
         <div className="cv-field-head">
           <span className="cv-field-label">Pick a new colour for each one you want to change</span>

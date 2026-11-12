@@ -97,18 +97,19 @@ async function section() {
   await ev(`window.__framelingArtboards.setExport({ mode: 'each', ids: null })`);
   let res = await run(await settings({ format: 'png', range: 'frame' }));
   check(res.outcome === 'done', `did not finish: ${JSON.stringify(res)}`);
-  check(names(dir) === 'Ball-frame-1.png, Orange ball-frame-1.png, Square cut-frame-1.png', `files: ${names(dir)}`);
+  // Variation files start with the original's name.
+  check(names(dir) === 'Ball - Orange ball-frame-1.png, Ball - Square cut-frame-1.png, Ball-frame-1.png', `files: ${names(dir)}`);
   const f = (n) => path.join(dir, n);
   if (files(dir).length === 3) {
     check(size(f('Ball-frame-1.png')) === '320 x 180', `Ball is ${size(f('Ball-frame-1.png'))}`);
-    check(size(f('Orange ball-frame-1.png')) === '320 x 180', `Orange ball is ${size(f('Orange ball-frame-1.png'))}`);
-    check(size(f('Square cut-frame-1.png')) === '180 x 180', `Square cut is ${size(f('Square cut-frame-1.png'))}`);
+    check(size(f('Ball - Orange ball-frame-1.png')) === '320 x 180', `Orange ball is ${size(f('Ball - Orange ball-frame-1.png'))}`);
+    check(size(f('Ball - Square cut-frame-1.png')) === '180 x 180', `Square cut is ${size(f('Ball - Square cut-frame-1.png'))}`);
     // Frame 1: the ball is at x 40, y about 115. Pink in the original, orange in the recolour.
     check(hex(f('Ball-frame-1.png'), 40, 115) === 'FF6F91', `Ball ball is ${hex(f('Ball-frame-1.png'), 40, 115)}`);
-    check(hex(f('Orange ball-frame-1.png'), 40, 115) === 'FF9E1F', `Orange ball is ${hex(f('Orange ball-frame-1.png'), 40, 115)}`);
+    check(hex(f('Ball - Orange ball-frame-1.png'), 40, 115) === 'FF9E1F', `Orange ball is ${hex(f('Ball - Orange ball-frame-1.png'), 40, 115)}`);
     // The square cut frames the middle of the original (x 70 to 250), so the ball at x 40 is cropped away: sky there, ground low.
-    check(hex(f('Square cut-frame-1.png'), 90, 40) === '5AB8FF', `Square cut sky is ${hex(f('Square cut-frame-1.png'), 90, 40)}`);
-    check(hex(f('Square cut-frame-1.png'), 90, 170) === '6ABF4B', `Square cut ground is ${hex(f('Square cut-frame-1.png'), 90, 170)}`);
+    check(hex(f('Ball - Square cut-frame-1.png'), 90, 40) === '5AB8FF', `Square cut sky is ${hex(f('Ball - Square cut-frame-1.png'), 90, 40)}`);
+    check(hex(f('Ball - Square cut-frame-1.png'), 90, 170) === '6ABF4B', `Square cut ground is ${hex(f('Ball - Square cut-frame-1.png'), 90, 170)}`);
   }
 
   begin('the atlas has the three as animations, and all in order is one video');
@@ -119,7 +120,7 @@ async function section() {
   if (files(dir).includes('Ball-atlas.json')) {
     const json = JSON.parse(fs.readFileSync(path.join(dir, 'Ball-atlas.json'), 'utf8'));
     const a = Object.keys(json.animations ?? {});
-    check(['Ball', 'Orange ball', 'Square cut'].every((n) => a.includes(n)), `animations ${a}`);
+    check(['Ball', 'Ball - Orange ball', 'Ball - Square cut'].every((n) => a.includes(n)), `animations ${a}`);
   } else check(false, `atlas files: ${names(dir)}`);
   dir = setDir(path.join(outDir, 'joined'));
   await ev(`window.__framelingArtboards.setExport({ mode: 'joined', ids: null })`);
@@ -145,7 +146,7 @@ async function section() {
   await ev(`window.__framelingArtboards.setExport({ mode: 'each', ids: null })`);
   res = await run(await settings({ format: 'png', range: 'frame' }));
   check(res.outcome === 'done', `did not finish: ${JSON.stringify(res)}`);
-  check(hex(path.join(dir, 'Orange ball-frame-1.png'), 40, 115) === 'FF9E1F', 'the recolour did not survive saving');
+  check(hex(path.join(dir, 'Ball - Orange ball-frame-1.png'), 40, 115) === 'FF9E1F', 'the recolour did not survive saving');
 
   begin('opening a variation gives every key its own drawing, closing it keeps copies only of what it changed');
   const probe = await ev(`(() => {
@@ -193,6 +194,64 @@ async function section() {
   res = await run(await settings({ format: 'png', range: 'frame' }));
   check(res.outcome === 'done', `did not finish: ${JSON.stringify(res)}`);
   check(hex(path.join(dir, 'Ball-frame-1.png'), 40, 115) === 'FF6F91', 'the original changed colour');
+
+  begin('Recolour the whole animation inside a variation changes only the variation (the real dialog)');
+  const dlg = await ev(`(async () => {
+    const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+    const F = window.__frameling;
+    const s = F.store();
+    const doc0 = s.get().doc;
+    const square = doc0.artboards.find((a) => a.name === 'Square cut');
+    const home = doc0.artboards[0].id;
+    window.__framelingArtboards.ops.goToArtboard(square.id);
+    await wait(300);
+    const out = {};
+    const plain = (doc) => JSON.stringify(Object.entries(doc.drawings).filter(([k]) => !k.includes('~')).map(([k, d]) => [k, d.shapes?.map((x) => x.fill ?? x.color)]));
+    const before = plain(s.get().doc);
+    const swatches = JSON.stringify(s.get().doc.swatches);
+    F.run('colors.recolourAll');
+    await wait(400);
+    const sw = [...document.querySelectorAll('.cv-swatch')].find((b) => b.getAttribute('aria-label')?.toLowerCase() === '#ff6f91');
+    out.hasSwatch = !!sw;
+    out.where = document.querySelector('[data-testid=recolour-where]')?.textContent ?? '';
+    sw?.click();
+    await wait(100);
+    const input = document.querySelector('input[type=color][aria-label="New colour"]');
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+    setter.call(input, '#3366ff');
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+    await wait(300);
+    const btn = [...document.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Recolour');
+    out.canApply = !!btn && !btn.disabled;
+    btn?.click();
+    await wait(300);
+    out.refused = [...document.querySelectorAll('[role=status], [role=alert], .toast, [class*=toast]')].some((n) => n.textContent.includes('shared with the original'));
+    const d1 = s.get().doc;
+    out.originalKept = plain(d1) === before;
+    out.swatchesKept = JSON.stringify(d1.swatches) === swatches;
+    const mine = Object.entries(d1.drawings).filter(([k]) => k.endsWith('~' + square.id));
+    out.mineBlue = mine.length > 0 && mine.every(([, d]) => !JSON.stringify(d.shapes ?? []).includes('#ff6f91')) && mine.some(([, d]) => JSON.stringify(d.shapes ?? []).includes('#3366ff'));
+    out.undoable = s.canUndo();
+    out.line = JSON.stringify(d1.artboards.find((a) => a.id === square.id).overrides?.palette?.changes ?? null);
+    window.__framelingArtboards.ops.goToArtboard(home);
+    await wait(200);
+    return JSON.stringify(out);
+  })()`);
+  const rd = JSON.parse(dlg);
+  check(rd.hasSwatch, "the dialog did not list the variation's pink");
+  check(/only this variation/i.test(rd.where), `the dialog says: ${rd.where}`);
+  check(rd.canApply, 'the Recolour button was not ready');
+  check(!rd.refused, 'the recolour was refused with the "shared with the original" note');
+  check(rd.originalKept, "the original's drawings changed");
+  check(rd.swatchesKept, 'the swatches changed');
+  check(rd.mineBlue, 'the variation is not blue on every frame');
+  note(`colourway: ${rd.line}`);
+  dir = setDir(path.join(outDir, 'each-recoloured'));
+  res = await run(await settings({ format: 'png', range: 'frame' }));
+  check(res.outcome === 'done', `did not finish: ${JSON.stringify(res)}`);
+  check(hex(path.join(dir, 'Ball-frame-1.png'), 40, 115) === 'FF6F91', `the original is ${hex(path.join(dir, 'Ball-frame-1.png'), 40, 115)} after the recolour`);
+  check(hex(path.join(dir, 'Ball - Orange ball-frame-1.png'), 40, 115) === 'FF9E1F', 'the other variation changed');
   await setChoice('artboards.exportAs', undefined);
 }
 

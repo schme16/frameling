@@ -66,13 +66,13 @@ function RecolourDialog({ close }: { close: () => void }) {
     <Modal title="Recolour the whole animation" onClose={close} wide>
       <div className="io-body cv-recolour">
         <p className="io-muted">Swap one colour for another on every frame and every layer, vector and pixel alike. This is sometimes called a palette swap.</p>
-        <p className="io-muted" data-testid="recolour-where">
-          {result.inVariation
-            ? 'This is a variation: only this variation changes. The original and the other variations keep their colours.'
-            : hasVariations
-              ? 'This changes the original, and every variation that follows it (a colour a variation changed on its own stays as it is there).'
-              : ''}
-        </p>
+        {(result.inVariation || hasVariations) && (
+          <p className="io-muted" data-testid="recolour-where">
+            {result.inVariation
+              ? 'This is a variation: only this variation changes. The original and the other variations keep their colours.'
+              : 'This changes the original, and every variation that follows it (a colour a variation changed on its own stays as it is there).'}
+          </p>
+        )}
         <div className="cv-field-head">
           <span className="cv-field-label">1. Pick a colour to change</span>
         </div>
