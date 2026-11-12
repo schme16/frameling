@@ -8,7 +8,7 @@ import { pickTool } from '../tools/pick';
 import { parkPanels, replacePanels, syncPanels } from '../ui/dock';
 import { syncDynamicCommands } from '../ui/dynamic';
 import { toast } from '../ui/toast';
-import type { Quest } from '../quests/types';
+import type { QuestInfo } from '../quests/types';
 import type { FeatureDescriptor } from './feature';
 import { getFeature, isFeatureOn, onFeaturesChange, type FeatureChange } from './host';
 
@@ -42,5 +42,5 @@ export function handleFeatureChange({ id, on }: FeatureChange): void {
 onFeaturesChange(handleFeatureChange);
 
 /** A lesson that needs a feature that is off is not offered (it comes back with the feature). */
-export const questFeaturesOn = (q: Quest): boolean => (q.features ?? []).every(isFeatureOn);
+export const questFeaturesOn = (q: QuestInfo): boolean => (q.features ?? []).every(isFeatureOn);
 setQuestAvailability(questFeaturesOn);

@@ -2,8 +2,7 @@
 import { lazyPanel } from '../core/lazy';
 import { registerCommands, registerHelp, registerPanel } from '../core/registry';
 import { showPanel } from '../ui/dock';
-import { questProgress } from './registry';
-import { putDownQuest, resumeQuest } from './runtime';
+import { questProgress, stopQuest } from './registry';
 
 registerCommands([
   {
@@ -23,7 +22,7 @@ registerCommands([
     help: 'quests',
     keywords: ['tutorial', 'continue', 'resume'],
     enabled: () => !!questProgress.get().paused,
-    run: () => void resumeQuest(),
+    run: () => void import('./boot').then((b) => b.resumeQuest()),
   },
   {
     id: 'quests.stop',
@@ -32,7 +31,7 @@ registerCommands([
     description: 'Hide the guide. You can carry on later.',
     help: 'quests',
     enabled: () => !!questProgress.get().active,
-    run: () => putDownQuest(),
+    run: () => stopQuest(),
   },
 ]);
 

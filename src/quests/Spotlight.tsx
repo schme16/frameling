@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getQuest, questProgress } from './registry';
+import { getFullQuest, questProgress } from './registry';
 import { isCoveredByDialog, resolveTarget } from './target';
 
 interface Box {
@@ -14,7 +14,7 @@ const PAD = 5;
 /** The soft ring round whatever the current step points at. It never takes a click or the focus. */
 export function Spotlight() {
   const p = questProgress.use((x) => x);
-  const quest = p.active ? getQuest(p.active) : undefined;
+  const quest = p.active ? getFullQuest(p.active) : undefined;
   const step = quest?.steps[p.step];
   const [box, setBox] = useState<Box | null>(null);
 

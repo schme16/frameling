@@ -6,6 +6,7 @@ import '../../src/core/commands';
 import '../../src/tools';
 import '../../src/timeline';
 import '../../src/quests';
+import '../../src/quests/boot';
 import { allHelp, getCommand, getPanel, helpBody, loadHelpBodies, registerCommand } from '../../src/core/registry';
 import { resetStore, store } from '../../src/core/store';
 import { celebrate, dismissCelebration, feedback } from '../../src/quests/feedback';
@@ -13,7 +14,7 @@ import { Celebration } from '../../src/quests/Celebration';
 import { QuestBar } from '../../src/quests/QuestBar';
 import { QuestsPanel } from '../../src/quests/QuestsPanel';
 import { Spotlight } from '../../src/quests/Spotlight';
-import { allQuests, getQuest, questProgress, registerQuest, startQuest } from '../../src/quests/registry';
+import { allQuests, getFullQuest, getQuest, questProgress, registerQuest, startQuest } from '../../src/quests/registry';
 import { engine, playQuest, putDownQuest, resumeQuest } from '../../src/quests/runtime';
 import { QUESTS_KEY } from '../../src/quests/engine';
 import { resolveTarget } from '../../src/quests/target';
@@ -152,7 +153,7 @@ describe('finishing, celebrating and resuming', () => {
   });
 
   it('offers the next open quest on the card and Esc puts it away', () => {
-    const q = getQuest('first-animation')!;
+    const q = getFullQuest('first-animation')!;
     act(() => questProgress.set((p) => ({ ...p, completed: ['first-animation'] })));
     celebrate(q, q.badge!, true);
     mount(<Celebration />);
@@ -174,7 +175,7 @@ describe('finishing, celebrating and resuming', () => {
   });
 
   it('starts a quest that does not suit the open drawing again from the top', () => {
-    const bb = getQuest('bouncing-ball')!;
+    const bb = getFullQuest('bouncing-ball')!;
     engine.start('bouncing-ball', { step: 3 });
     putDownQuest();
     resetStore(vectorDoc());

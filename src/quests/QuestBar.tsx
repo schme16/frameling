@@ -5,7 +5,7 @@ import { stepScript } from '../ui/mascot/scripts';
 import { openHelp } from '../ui/overlays';
 import { engine, putDownQuest } from './runtime';
 import { feedback } from './feedback';
-import { getQuest, questProgress } from './registry';
+import { getFullQuest, questProgress } from './registry';
 import { placeBar, type Spot } from './place';
 import { resolveTarget } from './target';
 
@@ -13,7 +13,7 @@ import { resolveTarget } from './target';
 export function QuestBar() {
   const p = questProgress.use((x) => x);
   const praise = feedback.use((f) => f.praise);
-  const quest = p.active ? getQuest(p.active) : undefined;
+  const quest = p.active ? getFullQuest(p.active) : undefined;
   const step = quest?.steps[p.step];
   const ref = useRef<HTMLElement>(null);
   const [spot, setSpot] = useState<Spot>('bl');

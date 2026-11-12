@@ -457,6 +457,12 @@ API and threat model are in `docs/plugins.md`; the manifest is in `docs/format.m
   command runs while a quest is active. Quests are in `library.ts` and each feature's `quest.ts`; `predicates.ts`
   checks the document, `probe.ts` reads what isn't in the store, `actions.ts` does "Show me how" through normal
   commands. `QuestLayer.tsx` mounts the spotlight, quest bar and celebration in their own React root.
+  Start-up only has `registry.ts`, `catalog.ts` (a quest's id, title, summary, icon, badge, group and needs, the
+  `QuestInfo` the welcome card, onboarding and the panel list read) and the saved progress (`saved.ts`). The steps and
+  checks (`library.ts`), the engine, its runtime and the layer are one lazy chunk, `boot.ts`, brought in by
+  `startQuest` (and the resume command, and the Quests panel) through `loadQuests()`. Read a quest's steps with
+  `getFullQuest(id)` (undefined until then); `getQuest(id)` is the catalog entry or the whole quest.
+  `test/quests/catalog.test.ts` fails when the catalog and the library disagree, so change both together.
 
 ## Quill, the mascot
 
