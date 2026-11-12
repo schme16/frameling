@@ -1,1 +1,1 @@
-Floating window chrome. A: titled window, the name on a bar with the tabs on a row under it only when there are several panels (built, default; Preferences > Workspaces > Window style > Titled). B: compact window, one bar with the tabs in it (Window style > Compact).
+Floating window chrome. User picked B (compact) as the default, 2026-11-12. A: titled window, the name on a bar with the tabs on a row under it only when there are several panels (Preferences > Workspaces > Window style > Titled). B: compact window, one bar with the tabs in it (default; Window style > Compact).

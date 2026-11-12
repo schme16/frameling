@@ -16,7 +16,7 @@ import { createStore, readRaw, writeJson } from './mini';
  */
 export type FloatChrome = 'titled' | 'compact';
 const CHROME_KEY = 'frameling.dock.chrome';
-export const floatChrome = createStore<FloatChrome>(readRaw<string>(CHROME_KEY, 'titled') === 'compact' ? 'compact' : 'titled');
+export const floatChrome = createStore<FloatChrome>(readRaw<string>(CHROME_KEY, 'compact') === 'titled' ? 'titled' : 'compact');
 export function setFloatChrome(c: FloatChrome): void {
   floatChrome.set(c);
   writeJson(CHROME_KEY, c);
