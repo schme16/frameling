@@ -34,7 +34,8 @@ describe('kitchen sink document', () => {
     expect(d.symbols!.ball.layers.some((l) => l.kind === 'tilemap')).toBe(true);
     expect(d.tileset!.tiles.some((t) => t.frames.length > 1)).toBe(true);
     expect(d.audio).toHaveLength(1);
-    expect(Object.keys(d.folders ?? {})).toHaveLength(1);
+    expect(Object.keys(d.folders ?? {})).toHaveLength(2);
+    expect(d.folders!.f2.parent).toBe('f1');
   });
 
   it('saves and opens without losing anything', () => {

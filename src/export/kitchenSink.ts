@@ -74,8 +74,10 @@ export function kitchenSinkDoc(): Doc {
   rays.folder = 'f1';
   rays.clipToBelow = true;
   hold(rays, vectorDrawing(doc, [stroke([[230, 20], [290, 60]], PEACH, 8)]).id, 0, 24);
+  // ...with a folder inside it, holding the clouds
+  doc.folders.f2 = { id: 'f2', name: 'Cloud bank', visible: true, opacity: 0.85, parent: 'f1' };
   const clouds = addPixelLayer(doc, 'Clouds', 4);
-  clouds.folder = 'f1';
+  clouds.folder = 'f2';
   clouds.blend = 'multiply';
   clouds.effects = [fx('blur', { radius: 2 })];
   const cd = newPixelDrawing(80, 48);
