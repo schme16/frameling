@@ -315,6 +315,28 @@ public class FramelingSheetImporter : AssetPostprocessor
 // ---------------------------------------------------------------- CSS
 
 const cssId = (s: string) => slug(s.replace(/_/g, '-'), 'sprite');
+/** The class prefix: a CSS name cannot start with a digit, so "2D Hero" becomes "sprite-2d-hero". */
+const cssPrefix = (s: string) => {
+  const id = cssId(s);
+  return /^[0-9]/.test(id) ? `sprite-${id}` : id;
+};
+/** Class name pieces for each name, made different where two names would give the same one ("Idle" and "idle", or two names with no letters). */
+export function cssIds(names: string[], taken: Iterable<string> = []): string[] {
+  const used = new Set(taken);
+  return names.map((n) => {
+    const base = cssId(n);
+    let id = base;
+    for (let k = 2; used.has(id); k++) id = `${base}-${k}`;
+    used.add(id);
+    return id;
+  });
+}
+/** The class piece for each frame, for each animation, and the names the frames take (a frame class never matches an animation). */
+function cssNames(d: SheetData, separate: boolean) {
+  if (separate) return { frames: cssIds(d.names), animations: [] as string[] };
+  const frames = cssIds(d.names);
+  return { frames, animations: cssIds(d.animations.map((a) => a.name), frames.map((f) => `frame-${f}`)) };
+}
 const pct = (n: number) => `${Math.round(n * 1000) / 1000}%`;
 const pos = (at: { x: number; y: number }) => `${at.x ? -at.x + 'px' : '0'} ${at.y ? -at.y + 'px' : '0'}`;
 
@@ -323,23 +345,24 @@ const pos = (at: { x: number; y: number }) => `${at.x ? -at.x + 'px' : '0'} ${at
  * keyframes (held frames last their full time). Use as `<div class="hero hero-run"></div>`.
  */
 export function cssSprites(d: SheetData, o: { prefix: string; pixelArt: boolean; separate: boolean }): string {
-  const p = cssId(o.prefix);
+  const p = cssPrefix(o.prefix);
+  const ids = cssNames(d, o.separate);
   const out: string[] = [];
   const first = d.cells[0];
-  out.push(`/* Made with Frameling. Use: <div class="${p} ${p}-${d.animations[0] ? cssId(d.animations[0].name) : cssId(d.names[0] ?? 'frame')}"></div> */`);
+  out.push(`/* Made with Frameling. Use: <div class="${p} ${p}-${d.animations[0] ? ids.animations[0] : ids.frames[0] ?? 'frame'}"></div> */`);
   out.push(`.${p} {`, '  display: inline-block;', `  background: url("${d.image}") no-repeat;`);
   if (!o.separate && first) out.push(`  width: ${first.image.width}px;`, `  height: ${first.image.height}px;`);
   if (o.pixelArt) out.push('  image-rendering: pixelated;');
   out.push('}', '');
   d.cells.forEach((c, i) => {
-    const cls = o.separate ? `${p}-${cssId(d.names[i])}` : `${p}-frame-${cssId(d.names[i])}`;
+    const cls = o.separate ? `${p}-${ids.frames[i]}` : `${p}-frame-${ids.frames[i]}`;
     const size = o.separate ? ` width: ${c.image.width}px; height: ${c.image.height}px;` : '';
     out.push(`.${cls} { background-position: ${pos(d.layout.positions[i])};${size} }`);
   });
-  for (const a of d.animations) {
+  for (const [k, a] of d.animations.entries()) {
     const runs = animationRuns(a, d.cellOfFrame);
     const total = a.frames.length;
-    const name = `${p}-${cssId(a.name)}`;
+    const name = `${p}-${ids.animations[k]}`;
     const seconds = Math.round((total / a.fps) * 10000) / 10000;
     out.push('', `.${name} {`, `  background-position: ${pos(d.layout.positions[runs[0].cell])};`);
     out.push(`  animation: ${name} ${seconds}s step-end ${a.loop ? 'infinite' : '1 forwards'};`, '}');
@@ -356,10 +379,11 @@ export function cssSprites(d: SheetData, o: { prefix: string; pixelArt: boolean;
 
 /** A small page that shows every animation (or sprite) playing, to check it and copy from. */
 export function cssPreviewPage(d: SheetData, o: { prefix: string; css: string; title: string; pixelArt: boolean; separate: boolean }): string {
-  const p = cssId(o.prefix);
+  const p = cssPrefix(o.prefix);
+  const ids = cssNames(d, o.separate);
   const zoom = o.pixelArt ? 4 : 1;
   const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
-  const items = o.separate ? d.names.map((n) => `${p} ${p}-${cssId(n)}`) : d.animations.map((a) => `${p} ${p}-${cssId(a.name)}`);
+  const items = o.separate ? ids.frames.map((id) => `${p} ${p}-${id}`) : ids.animations.map((id) => `${p} ${p}-${id}`);
   const labels = o.separate ? d.names : d.animations.map((a) => a.name);
   return `<!doctype html>
 <html lang="en">

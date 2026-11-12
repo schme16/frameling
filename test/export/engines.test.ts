@@ -5,7 +5,7 @@ import { decodePng } from '../../src/io/png';
 import { packInto, packSheet, packShelves } from '../../src/export/pack';
 import { buildAnimations, buildCells, composeSheet, layoutCells, layoutPacked } from '../../src/export/sheet';
 import {
-  animationCellNames, buildSheetFiles, cssSprites, hashAtlas, phaserAnimations, pixiSheet, separateSpriteNames, unitySheet,
+  animationCellNames, buildSheetFiles, cssIds, cssPreviewPage, cssSprites, hashAtlas, phaserAnimations, pixiSheet, separateSpriteNames, unitySheet,
   UNITY_ASMDEF, UNITY_ASMDEF_NAME, UNITY_SCRIPT, UNITY_SCRIPT_NAME, type SheetData,
 } from '../../src/export/engines';
 import { artScale } from '../../src/export/plan';
@@ -229,6 +229,47 @@ describe('engine data files', () => {
     const run = css.slice(css.indexOf('@keyframes hero-run-run'));
     expect(run.match(/\d+(\.\d+)?%/g)).toEqual(['0%', '50%', '100%']);
     expect(run).toContain('50% { background-position: -16px 0; }');
+  });
+});
+
+describe('CSS class names', () => {
+  it('cssIds keeps names that would clash apart', () => {
+    expect(cssIds(['Idle', 'idle', 'Run Fast!', 'run-fast'])).toEqual(['idle', 'idle-2', 'run-fast', 'run-fast-2']);
+    // Names with no letters or digits all become "sprite", then get numbers.
+    expect(cssIds(['\u65e5\u672c', '\u65e5\u672c\u8a9e', '!!'])).toEqual(['sprite', 'sprite-2', 'sprite-3']);
+    expect(cssIds(['a'], ['a', 'a-2'])).toEqual(['a-3']);
+  });
+
+  it('gives two clips that differ only by case their own class and keyframes', () => {
+    const d = sampleData();
+    d.animations = [
+      { name: 'Idle', fps: 10, loop: true, frames: [0, 1] },
+      { name: 'idle', fps: 10, loop: true, frames: [2, 3] },
+    ];
+    const css = cssSprites(d, { prefix: 'hero', pixelArt: false, separate: false });
+    const names = [...css.matchAll(/@keyframes (\S+)/g)].map((m) => m[1]);
+    expect(names).toEqual(['hero-idle', 'hero-idle-2']);
+    expect(css).toContain('animation: hero-idle-2 ');
+    const page = cssPreviewPage(d, { prefix: 'hero', css: 'hero.css', title: 'Hero', pixelArt: false, separate: false });
+    expect(page).toContain('class="hero hero-idle"');
+    expect(page).toContain('class="hero hero-idle-2"');
+  });
+
+  it('an animation never takes the class of a frame', () => {
+    const d = sampleData();
+    // The first cell is "idle_0", whose class is hero-frame-idle-0; a clip called "frame idle 0" would match it.
+    d.animations = [{ name: 'frame idle 0', fps: 10, loop: true, frames: [0, 1] }];
+    const css = cssSprites(d, { prefix: 'hero', pixelArt: false, separate: false });
+    expect(css).toContain('@keyframes hero-frame-idle-0-2 ');
+  });
+
+  it('puts sprite- in front of a name that starts with a digit, which CSS cannot take', () => {
+    const d = sampleData();
+    const css = cssSprites(d, { prefix: '2D Hero!', pixelArt: false, separate: false });
+    expect(css).toContain('.sprite-2d-hero {');
+    expect(css).toContain('<div class="sprite-2d-hero sprite-2d-hero-idle">');
+    expect(css).not.toMatch(/^\.\d/m);
+    expect(css).toContain('@keyframes sprite-2d-hero-idle');
   });
 });
 

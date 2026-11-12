@@ -143,11 +143,44 @@ xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/export.cjs [out
 | `--skip=files` | Skip save/open/autosave/close. `--skip=godot` skips the Godot checks. |
 | `--show` | Leave the window visible. |
 | `GODOT_BIN=/path/to/godot-4-editor` | Also load the sprite sheet exports and the Godot bones export in Godot and compare frames. |
+| `WEB_ENGINES=1` | Also load the Phaser, PixiJS and CSS sprite sheet exports in the real engines (see below). `--skip=web` skips it. |
+| `--cases=phaser,css-grid` | Only cases with these labels (the word after the format in the report). |
 | `UNITY_BIN=/path/to/Unity/Editor/Unity` | Also compile the Unity importer script and import the Unity sprite sheet in a throwaway project (see below). `--skip=unity` skips it. |
 
 Each format runs with defaults, see-through, and (for animated ones) a clip range; PSD, PDF, `.ai` and ProRes also run
 their layered cases. Needs `ffprobe`, `ffmpeg`, ImageMagick (`convert`, `compare`), `rsvg-convert`, `xmllint` and
 `unzip` on PATH; a missing tool skips its checks and says so. Exits non-zero on any failure. Gives up after 55 minutes.
+
+### Web engines check (Phaser, PixiJS, CSS)
+
+```bash
+WEB_ENGINES=1 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/export.cjs --only=sheet --templates=hero-sprites,bouncing-ball --skip=files
+# or just the web cases:
+WEB_ENGINES=1 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/export.cjs --only=sheet --templates=hero-sprites,bouncing-ball --skip=files \
+  --cases=phaser,pixi,css,phaser-grid,pixi-grid,css-grid,phaser-clips,pixi-clips,css-clips,css-names,phaser-names,pixi-names,css-separate
+```
+
+Loads the exported sheets in the real thing, in a window on the virtual display (it has to be shown: a hidden window stops
+WebGL animation frames). Phaser 3.90.0 and PixiJS 8.23.0 are pinned in `scripts/e2e/web-engines/engines.cjs`. The first run
+downloads each package from the npm registry, checks it against the pinned sha512, and unpacks its browser build into
+`~/.cache/frameling-web-engines` (override with `WEB_ENGINES_DIR`), so nothing goes into `package.json`. The check
+serves the export folder over http on 127.0.0.1 and loads it the way a web page would, with the code from the help topics.
+Chromium needs the software GL switches the harness sets (`ignore-gpu-blocklist`, SwiftShader), or WebGL is refused on a
+virtual display.
+
+| Engine | What is checked |
+|---|---|
+| Phaser | `load.atlas` and `load.animation` finish with no missing file; the texture's frame names are the atlas's; every animation exists with the right frame count, `frameRate`, `repeat` (-1 or 0), and length; each frame's pixels (sprite at 0,0 in a canvas of the export size) equal Frameling's own PNG of that document frame; then each animation is really played: frames come in order, one pass takes frames / fps (within 60 ms or 8%), a loop repeats, a clip that does not loop completes and stays on its last frame. |
+| PixiJS | `Assets.load` of the json gives the same frame names and animations; `meta.frameling.animations` has the fps, loop and `animationSpeed` (fps / 60); the AnimatedSprite frames equal Frameling's PNGs; played from PixiJS's shared ticker for order, one-pass time, loop, and stopping on the last frame when it does not loop. |
+| CSS | The css loads, with the class and keyframes names the first line of the file promises; each animation is paused and set to the middle and the very start of every frame with the Web Animations API (`currentTime`), screenshotted and compared with the PNG; duration, iterations and `fill` are read back; past the end a loop starts again and a clip that does not loop holds its last frame; the exported html page runs the same animations. Separate sprites: each class is screenshotted. |
+
+Pixel samples are compared over mid grey, and pass with a mean difference under 0.3 of 255 and (almost) no pixel off by
+more than 8. All three engines are held to the same standard: a worst mean of 0.000 to 0.006 was measured. Every check reads
+back what it loaded, so a problem in the export shows as a named failure (`idle[2]: drew 512x512 ...`). A page asking for a
+file the export did not write is a failure too. On failure the picture the engine drew is saved next to the export as
+`_web-fail-*.png`. The cases per template are the engine defaults (`phaser`, `pixi`, `css`: packed, trimmed), `-grid` (no trim, no dedupe, power of
+two, see-through), `-clips` and `-names` (extra clips, one that does not loop, awkward names), and `css-separate`. Timing is
+real time, so each animation gets three goes and passes if one is within the limits.
 
 ### Unity check
 

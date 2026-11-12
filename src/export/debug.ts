@@ -65,7 +65,8 @@ if (typeof window !== 'undefined' && new URLSearchParams(location.search).has('d
     defaults: () => defaultSettings(rootDoc(store().get().doc)),
     plan: (s: ExportSettings) => planExport(rootDoc(store().get().doc), s, store().get().ui.frame),
     caps: (w: number, h: number) => detectCapabilities(w, h),
-    addClip: (name: string, start: number, end: number) => store().update('Add clip', (d) => void d.clips.push({ id: 'clip-' + name, name, start, end, loop: true })),
+    addClip: (name: string, start: number, end: number, loop = true) => store().update('Add clip', (d) => void d.clips.push({ id: 'clip-' + name, name, start, end, loop })),
+    rename: (name: string) => store().update('Rename', (d) => void (d.name = name)),
     setFrame: (n: number) => store().setUi({ frame: n }),
     /** Makes the export's bytes without saving them anywhere (the perf soak test). Returns the size and time. */
     encode: async (s: ExportSettings) => {
