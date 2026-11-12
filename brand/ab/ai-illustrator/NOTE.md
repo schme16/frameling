@@ -1,1 +1,7 @@
-Left: Frameling's own PNG of the frame. Right: the same .ai file opened in Adobe Illustrator 30.1 and exported to PNG (scripts/e2e/illustrator.cjs). gradients-before-fix.png: see-through gradient colours lost before the soft mask fix.
+Left: Frameling's own PNG of the frame. Right: the same .ai file opened in Adobe Illustrator 30.1 and exported to PNG (scripts/e2e/illustrator.cjs, all 44 checks pass).
+
+- gradients.png, gradients-pdf-p1.png: the see-through blue to clear gradient now starts where Frameling's does. gradients-before-softmask-fix.png is how it looked before (Illustrator applied the soft mask twice, so the colour faded as the square of the strength); gradients-before-fix.png is the older still, with the see-through colours lost.
+- text-big.png: text drawn at 4 times the size. text-big-before-fix.png is how the outlines looked before (stems bowed, edges wobbly); the outlines are now traced to a fraction of a pixel and fitted against every traced point.
+- layers-folders.png, layers-folders-layers.png: the .ai opens with real Illustrator layers. The second picture is the layer list Illustrator found (folders as layers holding their layers, opacity kept).
+- frames-one-f2.png: .ai as "This frame" (frame 2). frames-files*.png: "One file per frame" (a zip; frames 1 to 3 each opened). frames-artboards-a1..a3.png and frames-artboards-layers.png: "One artboard per frame", three artboards in one file, one set of layers. frames-p1..p3.png and gradients-pdf-p1.png: "Pages", a plain PDF that Illustrator imports as groups (no layer names, it asks for the page).
+- The rest (paths, masks, text, symbols, stress, kitchen-sink, bouncing-*, artboards-*, scale2-transparent) are the older cases, now through Illustrator's own layer data.

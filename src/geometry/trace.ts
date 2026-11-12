@@ -17,8 +17,18 @@ export interface MaskBox {
   y1: number;
 }
 
+/**
+ * Soft edges: with `field` (per pixel, the same size as the mask, for example alpha) each contour vertex slides along its
+ * edge to where the field crosses `level`, so a loop follows the picture's anti-aliased edge to a fraction of a pixel
+ * instead of hugging pixel edges. The mask still says which samples are inside (field at or above level).
+ */
+export interface SoftEdge {
+  field: ArrayLike<number>;
+  level: number;
+}
+
 /** The loops of the set pixels in `mask` inside `box`, as flat arrays of mask coordinates. */
-export function traceMask(mask: Uint8Array, w: number, h: number, box: MaskBox): number[][] {
+export function traceMask(mask: Uint8Array, w: number, h: number, box: MaskBox, soft?: SoftEdge): number[][] {
   const bw = box.x1 - box.x0 + 1;
   const bh = box.y1 - box.y0 + 1;
   if (bw <= 0 || bh <= 0) return [];
@@ -26,10 +36,21 @@ export function traceMask(mask: Uint8Array, w: number, h: number, box: MaskBox):
   const W = bw + 2;
   const H = bh + 2;
   const m = new Uint8Array(W * H);
+  const F = soft ? new Float32Array(W * H) : null;
   for (let y = 0; y < bh; y++) {
     const src = (box.y0 + y) * w + box.x0;
     m.set(mask.subarray(src, src + bw), (y + 1) * W + 1);
+    if (F && soft) for (let x = 0; x < bw; x++) F[(y + 1) * W + 1 + x] = soft.field[src + x];
   }
+  // Where between two samples the field crosses the level (0 to 1 from the first sample), or the midpoint.
+  const cross = (a: number, b: number): number => {
+    if (!F || !soft) return 0.5;
+    const fa = F[a] - soft.level;
+    const fb = F[b] - soft.level;
+    if (fa === fb) return 0.5;
+    const t = fa / (fa - fb);
+    return t < 0 ? 0 : t > 1 ? 1 : t;
+  };
   const next = new Int32Array(2 * W * H).fill(-1);
   let starts = new Int32Array(1024);
   let ns = 0;
@@ -85,8 +106,9 @@ export function traceMask(mask: Uint8Array, w: number, h: number, box: MaskBox):
       const ex = e % W;
       const ey = (e / W) | 0;
       //Edge ids are local sample coordinates, which sit one pixel in from the box because of the border
-      if (cur & 1) loop.push(ex + box.x0 - 0.5, ey + box.y0);
-      else loop.push(ex + box.x0, ey + box.y0 - 0.5);
+      // Odd ids run down from a sample, even ids run right from it.
+      if (cur & 1) loop.push(ex + box.x0 - 0.5, ey + box.y0 - 0.5 + cross(e, e + W));
+      else loop.push(ex + box.x0 - 0.5 + cross(e, e + 1), ey + box.y0 - 0.5);
       const n = next[cur];
       next[cur] = -2;
       if (n < 0) break;

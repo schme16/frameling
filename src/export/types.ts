@@ -1,6 +1,12 @@
 // What the export dialog collects, and what the exporters take.
 
 export type FormatId = 'mp4' | 'webm' | 'gif' | 'apng' | 'png' | 'pngseq' | 'svg' | 'sheet' | 'interactives' | 'lottie' | 'svganim' | 'pdf' | 'ai' | 'psd' | 'prores';
+/**
+ * What a .ai export does with an animation: 'one' is the frame being looked at, 'files' one file per frame (in a zip),
+ * 'pages' one PDF page per frame (Illustrator asks which page to open, and layers arrive as groups), 'artboards' every
+ * frame as an artboard of one file.
+ */
+export type AiFrames = 'one' | 'files' | 'pages' | 'artboards';
 /** 'inOut' is the play range set on the timeline (see Doc.inOut). */
 export type RangeKind = 'all' | 'clip' | 'frame' | 'inOut';
 
@@ -102,7 +108,14 @@ export interface ExportSettings {
   lottieFile?: 'json' | 'dotlottie';
   /** Lottie only: Soften and Shadow as Lottie's own effects (missing) or as pictures every player shows. */
   lottieSoft?: 'effects' | 'pictures';
+  /** Illustrator only: what to do with several frames (missing = 'one'). */
+  aiFrames?: AiFrames;
 }
+
+/** The way a .ai export packs frames (the frame being looked at unless asked otherwise). */
+export const aiFramesOf = (s: Pick<ExportSettings, 'format' | 'aiFrames'>): AiFrames => (s.format === 'ai' && s.aiFrames) || 'one';
+/** One frame comes out: the format is a still, or "This frame" is picked, or an Illustrator file is set to one frame. */
+export const oneFrameOnly = (s: Pick<ExportSettings, 'format' | 'range' | 'aiFrames'>, animated: boolean): boolean => !animated || s.range === 'frame' || (s.format === 'ai' && aiFramesOf(s) === 'one');
 
 export interface FormatInfo {
   id: FormatId;
@@ -134,7 +147,7 @@ export const FORMATS: FormatInfo[] = [
   { id: 'prores', title: 'ProRes video', tag: '.mov 4444', goodFor: 'Video editors (Premiere, Final Cut, Resolve), with a see-through background.', icon: 'film', ext: 'mov', animated: true, alpha: true },
   { id: 'psd', title: 'Photoshop layers', tag: 'PSD', goodFor: 'This frame with every layer kept: names, blend modes, folders.', icon: 'layers', ext: 'psd', animated: false, alpha: true },
   { id: 'pdf', title: 'PDF', tag: 'Vector', goodFor: 'Printing and sharing sharp vector art. A page per frame, layers kept.', icon: 'vector', ext: 'pdf', animated: true, alpha: true },
-  { id: 'ai', title: 'Illustrator', tag: '.ai', goodFor: 'Opens in Adobe Illustrator with every shape editable.', icon: 'vector', ext: 'ai', animated: true, alpha: true },
+  { id: 'ai', title: 'Illustrator', tag: '.ai', goodFor: 'Opens in Adobe Illustrator with real layers and every shape editable.', icon: 'vector', ext: 'ai', animated: true, alpha: true },
   { id: 'interactives', title: 'Interactives', tag: '.flplay', goodFor: 'Drop it into an Interactives page, then play it with clicks, timelines and scripts.', icon: 'play', ext: 'flplay', animated: true, alpha: true },
 ];
 

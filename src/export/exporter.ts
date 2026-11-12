@@ -115,7 +115,7 @@ export async function exportDocument(settings: ExportSettings, signal: AbortSign
   // Ask where first, so nobody waits for a long render just to cancel at the end.
   let target: string | null;
   if (settings.format === 'sheet') target = await api.files.pickExportFolder({ title: 'Choose a folder for your sprite sheet', suggestedName: plan.name });
-  else target = await api.files.pickExportFile({ suggestedName: `${plan.name}.${extensionFor(settings)}`, filters: filtersFor(settings.format, settings.lottieFile), title: `Export ${info.title}` });
+  else target = await api.files.pickExportFile({ suggestedName: `${plan.name}.${extensionFor(settings)}`, filters: filtersFor(settings.format, settings), title: `Export ${info.title}` });
   if (!target) return 'cancelled';
 
   let videoCodec: VideoCodec | null = null;

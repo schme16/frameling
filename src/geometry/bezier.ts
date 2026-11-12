@@ -216,6 +216,11 @@ export interface LoopOptions {
   tolerance: number;
   /** Turn sharper than this many degrees over a few samples counts as a corner. */
   cornerAngle: number;
+  /**
+   * Fit the curves to every traced point, not just the ones that survive simplifying. Slower, but a long edge can't
+   * bow between two kept points (what shows when the outline is opened large in another program).
+   */
+  dense?: boolean;
 }
 
 export const DEFAULT_LOOP: LoopOptions = { simplify: 0.7, tolerance: 1, cornerAngle: 58 };
@@ -273,12 +278,12 @@ export function fitClosedLoop(loop: V[], opts: LoopOptions = DEFAULT_LOOP): SubP
     // `count` points from index `from` going forward and wrapping
     const pts: V[] = [];
     for (let j = 0; j < count; j++) pts.push(p[(from + j) % n]);
-    const s = rdp(pts, opts.simplify);
-    if (s.length === 2) {
-      cubics.push([s[0], s[0], s[1], s[1]]);
+    const simple = rdp(pts, opts.simplify);
+    if (simple.length === 2) {
+      cubics.push([simple[0], simple[0], simple[1], simple[1]]);
       return;
     }
-    cubics.push(...fitCurve(s, opts.tolerance, t1, t2));
+    cubics.push(...fitCurve(opts.dense ? pts : simple, opts.tolerance, t1, t2));
   };
   if (corners.length === 0) {
     // A smooth loop: cut it at point 0 and half way round, with the same centred tangent either side of each cut.

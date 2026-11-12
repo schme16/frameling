@@ -19,7 +19,7 @@ const NOTES: Partial<Record<FormatId, { legend: string; text: string; help: stri
   },
   ai: {
     legend: 'For Illustrator',
-    text: 'A PDF-compatible Illustrator file. Illustrator opens it with every shape editable, each layer as a group. It asks which page to open when there is more than one frame.',
+    text: 'Illustrator opens it as its own file, with every shape editable, your layers and folders as real Illustrator layers, and gradients as gradients. Other programs read it as a PDF.',
     help: 'export-illustrator',
     link: 'How to open it',
   },
