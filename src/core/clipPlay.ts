@@ -125,8 +125,15 @@ export function indexOfPosition(pos: number, len: number, dir: ClipDirection): n
 export function bakedPositions(len: number, dir: ClipDirection, plays: number): number[] {
   if (!Number.isFinite(plays)) return cyclePositions(len, dir);
   const n = Math.max(1, len);
-  const steps = isBackAndForth(dir) && n > 1 ? plays * (n - 1) + 1 : plays * cycleLength(n, dir);
+  const steps = playedCount(n, dir, plays);
   return Array.from({ length: steps }, (_, i) => directedPosition(i, n, dir, plays).pos);
+}
+
+/** How many frames `bakedPositions` gives, without making them. */
+export function playedCount(len: number, dir: ClipDirection, plays: number): number {
+  const n = Math.max(1, len);
+  if (!Number.isFinite(plays)) return cycleLength(n, dir);
+  return isBackAndForth(dir) && n > 1 ? plays * (n - 1) + 1 : plays * cycleLength(n, dir);
 }
 
 /**

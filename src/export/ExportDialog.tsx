@@ -294,7 +294,7 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
           </fieldset>
 
           {ui?.Notes && <ui.Notes {...uiProps} />}
-          <CarryNotes format={s.format} doc={doc} own={!!ui?.Notes} />
+          <CarryNotes format={s.format} doc={doc} own={!!ui?.Notes} range={plan.range} />
           {ui?.After && <ui.After {...uiProps} />}
         </div>
       </div>
