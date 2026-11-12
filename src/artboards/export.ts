@@ -85,6 +85,53 @@ function chosenIds(doc: Doc, c: ArtboardExportChoice): Id[] {
   return c.ids ? all.filter((id) => c.ids!.includes(id)) : all;
 }
 
+/** What a several-artboards export will make, for the dialog's footer. */
+export interface ArtboardPlan {
+  mode: ArtboardExportMode;
+  /** How many files come out. */
+  files: number;
+  /** Frames in all across the ticked artboards. */
+  frames: number;
+  /** The picture's size in pixels: only for "all in order, as one" (the first shot's size, at the chosen scale). */
+  size: { width: number; height: number } | null;
+  problem: string | null;
+}
+
+/**
+ * The plan for the whole artboard export, or null when it is just the open artboard (then the dialog's own plan
+ * says it all). "As one" is planned on the joined film itself, so its size and frames are what comes out.
+ */
+export function planArtboards(root: Doc, settings: ExportSettings, currentFrame: number): ArtboardPlan | null {
+  const mode = effectiveMode(root, settings);
+  if (mode === 'one') return null;
+  const ids = chosenIds(root, currentArtboardExport(root));
+  if (!ids.length) return { mode, files: 0, frames: 0, size: null, problem: 'Pick at least one artboard to export.' };
+  if (mode === 'joined') {
+    const r = joinShots(root, ids);
+    if ('problem' in r) return { mode, files: 1, frames: 0, size: null, problem: r.problem };
+    const p = planExport(r.doc, settings, currentFrame);
+    return { mode, files: 1, frames: p.count, size: { width: p.width, height: p.height }, problem: p.problem };
+  }
+  if (mode === 'atlas') return { mode, files: 1, frames: ids.reduce((t, id) => t + artboardDoc(root, id).length, 0), size: null, problem: null };
+  let frames = 0;
+  let problem: string | null = null;
+  for (const id of ids) {
+    const doc = artboardDoc(root, id);
+    const p = planExport(doc, settings, rememberedFrame(id, doc.length));
+    frames += p.count;
+    if (p.problem && !problem) problem = `${exportNameOf(root, id)}: ${p.problem}`;
+  }
+  return { mode, files: ids.length, frames, size: null, problem };
+}
+
+/** The footer line for an artboard export (no size for several different files; `printed` is appended to a size). */
+export function artboardSummary(a: ArtboardPlan, printed = ''): string {
+  const n = (k: number, one: string) => `${k} ${one}${k === 1 ? '' : 's'}`;
+  if (a.mode === 'joined' && a.size) return `${n(a.frames, 'frame')} in all, ${a.size.width} × ${a.size.height} px${printed}`;
+  if (a.mode === 'atlas') return `${n(a.frames, 'frame')} on one sheet`;
+  return `${n(a.files, 'file')}, ${n(a.frames, 'frame')} in all`;
+}
+
 /**
  * Exports several artboards. `exportOne` is the Export dialog's ordinary export of a given document (it asks where
  * to save). Resolves like it: 'done', 'cancelled' or 'stopped'.
