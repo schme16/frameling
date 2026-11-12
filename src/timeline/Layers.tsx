@@ -230,7 +230,7 @@ const LayerRow = memo(function LayerRow({ layer, h, detailed, tracks, open, inFo
           onMenu(layer, r.left, r.bottom + 2);
         }}
       >
-        <span aria-hidden="true">{'⋯'}</span>
+        <Icon name="more" size={16} />
       </button>
     </div>
   );

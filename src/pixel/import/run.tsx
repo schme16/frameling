@@ -3,7 +3,7 @@
 import { store } from '../../core/store';
 import type { Doc, Id } from '../../core/format';
 import { baseName, desktop, stripExt } from '../../io/desktop';
-import { askAboutUnsavedChanges, registerOpener } from '../../io/document';
+import { askAboutUnsavedChanges } from '../../io/document';
 import { mountModal } from '../../io/mount';
 import { notify } from '../../io/notify';
 import { pickUpload } from '../../platform';
@@ -144,38 +144,11 @@ export const pickAndOpenPicture = () => pick(openPictureBytes, 'Bring in a pictu
 export const pickAndAddPicture = () => pick(addPictureBytes, 'Add a picture or sprite sheet to this drawing');
 export const pickPictureForPalette = () => pick(paletteFromPictureBytes, 'Take the colours of a picture');
 
-const IMAGE_TYPE = /^image\/(png|apng|gif|webp|jpeg|bmp)$/;
-
-/** Dropping a picture on the window opens the dialog. A .json dropped with it is the sheet's data. */
-export function installPictureDrop(target: Window = window): () => void {
-  const over = (e: DragEvent) => {
-    if (e.defaultPrevented) return;
-    const items = e.dataTransfer?.items;
-    if (!items || ![...items].some((i) => i.kind === 'file' && IMAGE_TYPE.test(i.type))) return;
-    e.preventDefault();
-    if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
-  };
-  const drop = (e: DragEvent) => {
-    if (e.defaultPrevented) return;
-    const files = [...(e.dataTransfer?.files ?? [])];
-    const image = files.find((f) => PICTURE_EXT.test(f.name));
-    if (!image) return;
-    e.preventDefault();
-    void (async () => {
-      const json = files.find((f) => /\.json$/i.test(f.name));
-      const companion = json ? readSheetJson(await json.text()) : null;
-      await importPicture(new Uint8Array(await image.arrayBuffer()), image.name, 'new', companion);
-    })();
-  };
-  target.addEventListener('dragover', over);
-  target.addEventListener('drop', drop);
-  return () => {
-    target.removeEventListener('dragover', over);
-    target.removeEventListener('drop', drop);
-  };
-}
-
-/** File > Open and Open recent hand pictures over by path. */
-export function registerPictureOpener(): void {
-  registerOpener((p) => PICTURE_EXT.test(p), openPictureBytes);
+/** Pictures dropped on the window (src/pixel/import/index.ts listens): the first picture opens the dialog; a .json dropped with it is the sheet's data. */
+export async function dropPictures(files: File[]): Promise<void> {
+  const image = files.find((f) => PICTURE_EXT.test(f.name));
+  if (!image) return;
+  const json = files.find((f) => /\.json$/i.test(f.name));
+  const companion = json ? readSheetJson(await json.text()) : null;
+  await importPicture(new Uint8Array(await image.arrayBuffer()), image.name, 'new', companion);
 }

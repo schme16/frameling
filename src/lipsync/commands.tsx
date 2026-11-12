@@ -8,7 +8,6 @@ import { openSheet } from '../ui/overlays';
 import { toast } from '../ui/toast';
 import { mouthLayers, pickMouthLayer } from './apply';
 import { openNameFrames } from './NameFrames';
-import { lipSync } from './run';
 import './lipsync.css';
 
 const inSymbol = () => !!store().get().doc.editing?.length;
@@ -76,6 +75,8 @@ function Picker({ close, onGo }: { close: () => void; onGo: (clipId: string, lay
 }
 
 async function go(clipId: string, layerId: string, text = ''): Promise<void> {
+  // The listening code and its model are a big download, only needed once someone lip syncs.
+  const { lipSync } = await import('./run');
   const r = await lipSync(clipId, layerId, text);
   if (!r.ok) {
     toast(r.why, { kind: 'warn' });

@@ -115,7 +115,7 @@ export function FolderRow({ row, height, drag }: { row: Extract<TimelineRow, { t
           setMenu({ x: r.left, y: r.bottom + 2 });
         }}
       >
-        <span aria-hidden="true">{'⋯'}</span>
+        <Icon name="more" size={16} />
       </button>
       {menu && (
         <ContextMenu

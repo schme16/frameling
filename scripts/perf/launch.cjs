@@ -17,8 +17,42 @@ class OffScreen extends Orig {
     if (o.show !== false) this.showInactive();
     // The real app shows its window on ready-to-show; showInactive keeps it from taking focus.
     this.show = () => this.showInactive();
+    if (process.env.STARTUP_TRACE) traceWindow(this, process.env.STARTUP_TRACE);
+    if (process.env.STARTUP_PROFILE) profileWindow(this, process.env.STARTUP_PROFILE);
   }
 }
+// STARTUP_TRACE=file.json records a Chromium trace of the window's first load (read by tracesum.cjs). The recording
+// starts before the page is asked to load.
+function traceWindow(win, file) {
+  const dbg = win.webContents.debugger;
+  const events = [];
+  if (!dbg.isAttached()) dbg.attach('1.3');
+  dbg.on('message', (_e, method, params) => {
+    if (method === 'Tracing.dataCollected') events.push(...params.value);
+  });
+  void dbg.sendCommand('Tracing.start', { traceConfig: { includedCategories: ['devtools.timeline', 'v8', 'blink.user_timing', 'loading', 'disabled-by-default-devtools.timeline'] }, transferMode: 'ReportEvents' });
+  setTimeout(() => {
+    dbg.on('message', (_e, method) => {
+      if (method !== 'Tracing.tracingComplete') return;
+      require('node:fs').writeFileSync(file, JSON.stringify(events));
+      electron.app.quit();
+    });
+    void dbg.sendCommand('Tracing.end');
+  }, 3000);
+}
+
+// STARTUP_PROFILE=file.cpuprofile records a V8 CPU profile of the window's first load (read by startprofile.cjs).
+function profileWindow(win, file) {
+  const dbg = win.webContents.debugger;
+  if (!dbg.isAttached()) dbg.attach('1.3');
+  void dbg.sendCommand('Profiler.enable').then(() => dbg.sendCommand('Profiler.setSamplingInterval', { interval: 50 })).then(() => dbg.sendCommand('Profiler.start'));
+  setTimeout(async () => {
+    const { profile } = await dbg.sendCommand('Profiler.stop');
+    require('node:fs').writeFileSync(file, JSON.stringify(profile));
+    electron.app.quit();
+  }, 2500);
+}
+
 // electron's exports can't be redefined, so the app's require('electron') gets a stand-in with this window class.
 const Module = require('node:module');
 const patched = new Proxy(electron, { get: (t, k) => (k === 'BrowserWindow' ? OffScreen : t[k]) });
@@ -41,5 +75,5 @@ if (mode === 'url') {
   });
   electron.app.on('window-all-closed', () => electron.app.quit());
 } else {
-  require(path.join(__dirname, '../../dist/main/main.cjs'));
+  require(path.join(process.env.PERF_DIST || path.join(__dirname, '../../dist'), 'main/main.cjs'));
 }
