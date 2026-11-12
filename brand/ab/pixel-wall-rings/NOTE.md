@@ -1,0 +1,1 @@
+A = development at a0a65cf, B = wip/pixel-fixes: wall shapes on a pixel layer now cover exactly the cells inside the projected shape (no overgrown far edge, bottom edge on the quad; round brush now rings like square), and the pixel pen ends on the clicked cell instead of snapping to the page middle; captured in the real app under xvfb.
