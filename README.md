@@ -41,6 +41,39 @@ The builds are only self-signed (Windows) and ad-hoc signed (macOS), so on Windo
 
 The same run also has **frameling-web**: the web version, for machines where installing isn't allowed (see below).
 
+### Build it yourself
+
+You need [Node.js](https://nodejs.org) 22 or newer and this repository. Then, in the repository folder:
+
+- **Windows:** double-click `build.cmd`, or run it in a terminal.
+- **macOS and Linux:** run `./build.sh`.
+
+A menu asks what to build:
+
+```
+  1. This computer (Linux)
+  2. Everything this computer can build
+  3. Windows
+  4. macOS  (not on this computer)
+  5. Linux
+  6. Web (runs in a browser)
+```
+
+Or skip the menu by naming it: `./build.sh this`, `all`, `windows`, `mac`, `linux` or `web` (the same words work with
+`build.cmd`). Add `--test` to run the tests first. The first run installs the packages (`npm ci`); the apps land in
+`release/` and the web version in `dist/web/`.
+
+What each computer can build:
+
+| On | Can build |
+|---|---|
+| Windows | Windows, web |
+| macOS | macOS, Linux, web (Windows too with [Wine](https://www.winehq.org)) |
+| Linux | Linux, web (Windows too with Wine) |
+
+Only a Mac can build the macOS app. Builds made this way are unsigned on Windows; macOS ones are ad-hoc signed (see
+Signing, below).
+
 ## Work on it
 
 Needs Node 22.
