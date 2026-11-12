@@ -256,9 +256,9 @@ export function drawingToSvg(doc: Doc, layer: Layer, d: Drawing, frame: number):
 }
 
 /** A layer name made safe as an id, unique among `used`. */
-export function layerId(name: string, used: Set<string>): string {
-  let id = name.trim().replace(/[^A-Za-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '') || 'layer';
-  if (/^[0-9-]/.test(id)) id = 'layer-' + id;
+export function layerId(name: string, used: Set<string>, fallback = 'layer'): string {
+  let id = name.trim().replace(/[^A-Za-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '') || fallback;
+  if (/^[0-9-]/.test(id)) id = fallback + '-' + id;
   while (used.has(id)) id += '_';
   used.add(id);
   return id;
@@ -279,6 +279,9 @@ export function defsBlock(defs: string[], body: string): string {
   return all.length ? `<defs>\n${all.join('\n')}\n</defs>\n` : '';
 }
 
+/** The Inkscape namespace for the root element, when the drawing names its groups for Inkscape (inkscape:label on folders). */
+export const inkscapeNs = (body: string): string => (body.includes('inkscape:label=') ? ' xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"' : '');
+
 /** One frame as SVG, and plain words about anything SVG couldn't keep. */
 export function frameSvgExport(doc: Doc, frame: number, opts: SvgOptions = {}): { svg: string; notes: string[] } {
   const scale = opts.scale ?? 1;
@@ -296,6 +299,7 @@ export function frameSvgExport(doc: Doc, frame: number, opts: SvgOptions = {}): 
       loop: false,
       defs,
       notes,
+      ids: used,
       body(layer) {
         const g = layerToSvg(doc, layer, frame, layerId(layer.name, used));
         if (!g) return '';
@@ -305,7 +309,7 @@ export function frameSvgExport(doc: Doc, frame: number, opts: SvgOptions = {}): 
       },
     }),
   );
-  const lines = [`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${n2(doc.width)} ${n2(doc.height)}">`];
+  const lines = [`<svg xmlns="http://www.w3.org/2000/svg"${inkscapeNs(body)} width="${w}" height="${h}" viewBox="0 0 ${n2(doc.width)} ${n2(doc.height)}">`];
   const d = defsBlock([...defs, ...sprites], body);
   if (d) lines.push(d.trimEnd());
   if (doc.background && !opts.transparent) lines.push(`<rect width="${n2(doc.width)}" height="${n2(doc.height)}"${paint('fill', doc.background, 1)}/>`);

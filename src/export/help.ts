@@ -382,6 +382,7 @@ The second class picks the clip. Loops keep going; clips that don't loop stop on
 - **Vector layers** become real paths: every brush stroke becomes one filled shape, and shapes keep their curves, fills and outlines.
 - **Pixel layers** become small rectangles: one for each run of pixels in the same colour. Nothing is lost, every pixel is still there, but a big pixel drawing makes a big file.
 - Each layer is its own group named after the layer, so it's easy to find in other programs. Layer opacity is kept. Hidden layers are left out.
+- **Folders** are groups too, named after the folder, with the folder's layers inside (and folders inside folders as groups inside groups), even a folder that changes nothing. Other programs read the name from the group's id (spaces and symbols become dashes, and a repeated name gets an underscore). Inkscape shows the folder's own name, spelled the way you wrote it.
 - **Blend modes, clipping, masks and colour wash** come across as SVG's own blend modes, masks and filters.
 - **Effects** become SVG filters: Soften, Shadow, Colour adjust, Glow and Outline. Pixelate has no SVG version, so it's left out (the Export window says so first).
 - **Inside symbols** the same goes for each symbol's own layers: their blend modes, effects, masks and clipping stay with every copy.

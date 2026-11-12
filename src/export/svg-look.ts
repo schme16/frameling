@@ -8,12 +8,12 @@
  * offsets the same way the canvas does it. Pixelate has no SVG equivalent and is left out (the export says so).
  * Effect settings that change over time are SMIL <animate>s switching once per frame.
  */
-import type { Doc, Layer, LayerEffect } from '../core/format';
+import type { Doc, Layer, LayerEffect, LayerFolder } from '../core/format';
 import { buildPlan, type PlanNode, type PlanStep } from '../effects/plan';
 import type { PosedLayer, PosedLook } from '../core/symbols';
 import { effectInfo, isNoop, valuesAt } from '../effects/model';
 import { outlineOffsets } from '../effects/apply';
-import { splitColor, esc } from './svg';
+import { splitColor, esc, layerId } from './svg';
 
 const n4 = (v: number) => {
   const r = Math.round(v * 10000) / 10000;
@@ -32,6 +32,8 @@ export interface SvgLookHost {
   body(layer: Layer): string;
   defs: string[];
   notes: Set<string>;
+  /** The ids already taken in the file: folders add theirs (the folder's name, made safe), so every group is named. */
+  ids?: Set<string>;
 }
 
 let uidN = 0;
@@ -180,7 +182,24 @@ function picture(host: SvgLookHost, node: PlanNode): string {
   return lookGroup(inner, { filter: effectsFilter(host, look.effects, nodeName(node)) });
 }
 
+/** A folder's own group, named for other programs: an id from its name and, for Inkscape, the name as it was written. */
+function named(host: SvgLookHost, folder: LayerFolder, inner: string): string {
+  if (!inner) return '';
+  const id = layerId(folder.name, host.ids ?? (host.ids = new Set()), 'folder');
+  return `<g id="${esc(id)}" inkscape:label="${esc(folder.name)}">${inner}</g>`;
+}
+
 function step(host: SvgLookHost, node: PlanNode, clips: Layer[]): string {
+  if (node.type === 'folder') {
+    // The folder's group goes round everything it draws (a folder that changes nothing is a plain group).
+    const id = node.folder;
+    const out = stepInner(host, node, clips);
+    return named(host, id, out);
+  }
+  return stepInner(host, node, clips);
+}
+
+function stepInner(host: SvgLookHost, node: PlanNode, clips: Layer[]): string {
   const look = node.type === 'layer' ? node.layer : node.folder;
   if (look.opacity <= 0) return '';
   if (node.type === 'folder' && !node.isolate && !clips.length) return level(host, node.steps);

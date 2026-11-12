@@ -18,7 +18,7 @@
 import type { Cel, Doc, Drawing, InstanceShape, Layer } from '../core/format';
 import { isInstance, isPosed, poseAt, symbolContent, symbolFrame, type Mat, type PosedInstance } from '../core/symbols';
 import { cameraViewAt, layerCameraMatrix } from '../core/camera';
-import { defsBlock, drawingToSvg, esc, layerId, n2, n4, paint, posedLayerSvg, shapeToSvg } from './svg';
+import { defsBlock, drawingToSvg, esc, inkscapeNs, layerId, n2, n4, paint, posedLayerSvg, shapeToSvg } from './svg';
 import { withSprites } from './svg-extra';
 import { composeSvg, composeSymbol, tintAttr } from './svg-look';
 
@@ -219,12 +219,12 @@ export function animatedSvgExport(doc: Doc, opts: AnimatedSvgOptions = {}): { sv
     }
     return g;
   };
-  const { value: content, defs: sprites } = withSprites(() => composeSvg({ doc, frames: allFrames, duration: count / doc.fps, loop, defs, notes, body }));
+  const { value: content, defs: sprites } = withSprites(() => composeSvg({ doc, frames: allFrames, duration: count / doc.fps, loop, defs, notes, ids: used, body }));
   const out: string[] = [];
   if (doc.background && !opts.transparent) out.push(`<rect width="${n2(doc.width)}" height="${n2(doc.height)}"${paint('fill', doc.background, 1)}/>`);
   if (content) out.push(content);
   const style = w.styles.length ? `<style>\n${w.styles.join('\n')}\n</style>\n` : '';
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${n2(doc.width)} ${n2(doc.height)}">\n${style}${defsBlock([...defs, ...sprites], content)}${out.join('\n')}\n</svg>\n`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg"${inkscapeNs(content)} width="${W}" height="${H}" viewBox="0 0 ${n2(doc.width)} ${n2(doc.height)}">\n${style}${defsBlock([...defs, ...sprites], content)}${out.join('\n')}\n</svg>\n`;
   return { svg, notes: [...notes] };
 }
 
