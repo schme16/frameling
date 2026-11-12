@@ -19,6 +19,7 @@ import { toast } from './toast';
 import { SourceCards } from '../templates/YoursSection';
 import { templateSources } from '../templates/user';
 import { fitThumb, tagChips } from './exampleCards';
+import { paintThumbBackdrop } from '../canvas/thumbBackdrop';
 import { dismissPending, recovery, restorePending, whenSaved } from '../io/recovery';
 
 export function WelcomeSheet() {
@@ -314,6 +315,7 @@ function Thumb({ template }: { template: TemplateLike }) {
         // Pixel art should stay chunky in the little picture.
         g.imageSmoothingEnabled = template.kind !== 'pixel';
         g.drawImage(img, 0, 0);
+        paintThumbBackdrop(el);
       }
     } catch {
       // No picture is fine, the card still works.

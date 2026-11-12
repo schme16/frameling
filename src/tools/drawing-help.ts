@@ -19,7 +19,7 @@ registerHelpTopics([
 
 ## Finishing
 
-- **Click the first point** (it shows a ring) to close the shape. It gets your fill and stroke colours.
+- **Click the first point** (it shows a ring) to close the shape. It gets your fill and stroke colours. An **Enter** pressed right after that is just "done": it won't start playing the animation.
 - **Press Enter or Escape**, double-click, or click the last point again to finish an open line. Open lines use the stroke colour.
 - **Backspace** takes back the last point.
 

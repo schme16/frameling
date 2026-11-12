@@ -26,6 +26,13 @@ import { PenOptions } from './options/PenOptions';
 /** Below this drag (screen pixels) a press is a click: a corner. */
 const DRAG_PX = 3;
 const DOUBLE_MS = 400;
+/** Enter this soon after a shape was closed still belongs to the pen (it means "done"), not to Play. */
+export const CLOSE_ENTER_MS = 2500;
+
+/** Whether an Enter now is the tail of closing a shape (closed at `closedAt`, or never). */
+export function enterEndsClosing(closedAt: number, now: number): boolean {
+  return now - closedAt >= 0 && now - closedAt < CLOSE_ENTER_MS;
+}
 
 /** A point at 45 degree steps from `from`. */
 export function constrain45(from: P, to: P): P {
@@ -88,6 +95,7 @@ let path: PenPath | null = null;
 let press: { at: P; dragged: boolean; time: number } | null = null;
 let lastUp = { time: -Infinity, x: 0, y: 0 };
 let hover: P | null = null;
+let closedAt = -Infinity;
 
 function colors() {
   const ui = store().get().ui;
@@ -110,6 +118,7 @@ function finish(ctx: ToolContext, closed: boolean): void {
   if (!p) return;
   const sp = p.subPath(closed);
   if (!sp) return;
+  if (closed) closedAt = performance.now();
   const shape = penShape(sp, colors(), getToolSettings().shapeStroke * viewSizeFactor());
   if (!shape) {
     ctx.hint('Fill and stroke are both set to none, so the shape would be invisible. Pick a colour for one of them.');
@@ -148,6 +157,7 @@ export const penTool: Tool = {
   cursor: 'crosshair',
   options: PenOptions,
   down(e, ctx) {
+    closedAt = -Infinity;
     if (!path && !canEdit(ctx, activePixelLayer() ? 'pixel' : 'vector', 'The pen')) return;
     const double = e.time - lastUp.time < DOUBLE_MS && Math.hypot(e.x - lastUp.x, e.y - lastUp.y) * ctx.zoom <= GRAB_PX;
     if (path && nearFirst(e, ctx.zoom)) {
@@ -192,7 +202,12 @@ export const penTool: Tool = {
     ctx.requestOverlay();
   },
   onKey(e, ctx) {
-    if (!path) return false;
+    // Enter right after closing a shape is the habit of finishing: take it, so it doesn't start Play and hide the shape.
+    if (!path) {
+      if (e.key !== 'Enter' || !enterEndsClosing(closedAt, performance.now())) return false;
+      closedAt = -Infinity;
+      return true;
+    }
     if (e.key === 'Enter' || e.key === 'Escape') {
       finish(ctx, false);
       return true;
@@ -205,6 +220,7 @@ export const penTool: Tool = {
     return false;
   },
   leave(ctx) {
+    closedAt = -Infinity;
     finish(ctx, false);
   },
   overlay(g, ctx) {

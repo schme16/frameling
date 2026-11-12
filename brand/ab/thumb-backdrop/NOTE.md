@@ -1,0 +1,1 @@
+ab.png: Library panel of the bouncing-logo template, light mode on top and dark mode below. A (left): thumbnails as before, the white Twinkle star vanishes on the light panel. B (right, the default): when most of a thumbnail's art blends into the panel, a soft checker of the opposite tone is painted behind it (dark mode with black art gets a light one).
