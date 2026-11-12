@@ -144,9 +144,14 @@ export function normaliseLayout(raw: unknown): Layout {
   }
   const usedIds = new Set<string>();
   for (const f of (Array.isArray(r.floats) ? r.floats : []).slice(0, MAX_FLOATS * 4)) {
-    if (!isObj(f) || l.floats.length >= MAX_FLOATS) continue;
+    if (!isObj(f)) continue;
     const tabs = ids(f.tabs);
     if (!tabs.length) continue;
+    // Past the most windows, the panels join the last one rather than vanishing from every place.
+    if (l.floats.length >= MAX_FLOATS) {
+      l.floats[l.floats.length - 1].tabs.push(...tabs);
+      continue;
+    }
     let id = isId(f.id) && !usedIds.has(f.id) ? f.id : '';
     if (!id) do id = newFloatId(); while (usedIds.has(id));
     usedIds.add(id);
@@ -409,6 +414,17 @@ function anchorOf(l: Layout, zone: DockZone, group: number | undefined, not: str
   return groupsOf(z)[groupIndex(z, group)]?.tabs.find((t) => !not.includes(t));
 }
 
+/** Adds a window. Past the most windows there can be, the panel joins the front-most one instead (a saved layout holds no more). */
+function withNewFloat(next: Layout, f: FloatWin): Layout {
+  const last = next.floats[next.floats.length - 1];
+  if (next.floats.length >= MAX_FLOATS && last) {
+    insert(last, f.tabs[0], undefined);
+    return next;
+  }
+  next.floats.push(f);
+  return next;
+}
+
 /** Moves a panel to a target and makes it the front tab there. Windows left empty close; a closed panel opens. */
 export function movePanelTo(l: Layout, id: string, to: DropTarget, win?: { w: number; h: number }): Layout {
   const from = locate(l, id);
@@ -443,11 +459,9 @@ export function movePanelTo(l: Layout, id: string, to: DropTarget, win?: { w: nu
     }
     // The window is gone (it only had this panel in it): give the panel a window of its own where it was.
     const old = l.floats.find((x) => x.id === to.float);
-    next.floats.push({ id: to.float, tabs: [id], active: id, ...newBox(old ?? { x: 120, y: 120 }, win) });
-    return next;
+    return withNewFloat(next, { id: to.float, tabs: [id], active: id, ...newBox(old ?? { x: 120, y: 120 }, win) });
   }
-  next.floats.push({ id: newFloatId(), tabs: [id], active: id, ...newBox(to.newFloat, win) });
-  return next;
+  return withNewFloat(next, { id: newFloatId(), tabs: [id], active: id, ...newBox(to.newFloat, win) });
 }
 
 /** Puts a whole window's panels into a zone or another window (the window closes). */
@@ -543,7 +557,9 @@ export function splitGroupsAt(l: Layout, zone: DockZone, boundary: number, first
   const sh = sharesOf(z);
   if (boundary < 0 || boundary >= sh.length - 1) return l;
   const pair = sh[boundary] + sh[boundary + 1];
-  const to = Math.max(MIN_SHARE, Math.min(pair - MIN_SHARE, first));
+  // Two groups that already share less than twice the least get half each at worst (never a group with nothing).
+  const least = Math.min(MIN_SHARE, pair / 2);
+  const to = Math.max(least, Math.min(pair - least, first));
   if (Math.abs(to - sh[boundary]) < 1e-6 && z.shares) return l;
   const next = clone(l);
   const out = [...sh];
