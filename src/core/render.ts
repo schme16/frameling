@@ -176,6 +176,21 @@ export function pixelCanvas(d: PixelDrawing): OffscreenCanvas | HTMLCanvasElemen
   return c;
 }
 
+/** The picture already made for a pixel array, if any (never makes one). */
+export function peekPixelCanvas(pixels: Uint8ClampedArray): OffscreenCanvas | HTMLCanvasElement | undefined {
+  return pixelCanvasCache.get(pixels);
+}
+
+/** Hands over the finished picture of a new pixel array, so drawing it does not rebuild it from the pixels. */
+export function seedPixelCanvas(pixels: Uint8ClampedArray, canvas: OffscreenCanvas | HTMLCanvasElement): void {
+  pixelCanvasCache.set(pixels, canvas);
+}
+
+/** Forgets the picture made for a pixel array (it is made again when asked for). */
+export function dropPixelCanvas(pixels: Uint8ClampedArray): void {
+  pixelCanvasCache.delete(pixels);
+}
+
 /** Where a drawing is shown, which tilemaps need for their tiles (and animated tiles for the frame). */
 export interface DrawContext {
   doc: Doc;

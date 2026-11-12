@@ -492,7 +492,10 @@ xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/pixel-camera.cj
 While a pixel stroke is held down the canvas shows the old drawing with only the touched 128 x 128 tiles drawn live
 (`src/canvas/livePixels.ts`, `src/tools/pixelSession.ts`). The script draws strokes (pencil and eraser) over a drawing that
 fills the grid, at ten zoom levels, takes the canvas while the stroke is held and again after it is let go, and the two
-must be pixel for pixel the same (at 33% and below the odd screen pixel may differ, and is only listed).
+must be pixel for pixel the same (at 33% and below the odd screen pixel may differ, and is only listed). At pen-up the
+finished drawing's cached picture is the old one with only the touched tiles put on it (`seedPicture` in
+`pixelSession.ts`, so pen-up uploads nothing big); the script also checks it against a picture rebuilt from the pixels,
+and that undo and redo (at 100% and up) give back the same screen.
 
 ```bash
 npm run build

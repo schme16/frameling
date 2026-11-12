@@ -86,6 +86,8 @@ function DocumentSettings({ close }: { close: () => void }) {
   const [fps, setFps] = useState(doc.fps);
   const [see, setSee] = useState(doc.background === null);
   const [bg, setBg] = useState(doc.background ?? '#ffffff');
+  // A variation's size is only its picture (a camera frames the art), so there is nothing to anchor.
+  const onVariation = !!doc.artboards?.some((a) => a.variationOf) && !!findArtboard(doc, activeId(doc))?.variationOf;
   const pixelArt = hasPixelArt(doc);
   const step = pixelScaleStep(doc);
 
@@ -105,7 +107,7 @@ function DocumentSettings({ close }: { close: () => void }) {
   const result = useMemo(() => (mode === 'scale' ? scaledSize(doc, w, h) : { w, h, k: null }), [doc, mode, w, h]);
   const sizeChanged = result.w !== doc.width || result.h !== doc.height;
   const notes: string[] = [];
-  if (sizeChanged && mode === 'canvas') {
+  if (sizeChanged && mode === 'canvas' && !onVariation) {
     if (result.w < doc.width || result.h < doc.height) notes.push(NOTE_TEXT.cropped);
     if (pixelArt) {
       const { dx, dy } = anchorOffset(doc.width, doc.height, w, h, anchor);
@@ -213,15 +215,16 @@ function DocumentSettings({ close }: { close: () => void }) {
             </p>
           </div>
           <div className="ds-place">
-            <Preview doc={doc} w={result.w} h={result.h} mode={mode} anchor={anchor} />
-            {mode === 'canvas' && (
+            <Preview doc={doc} w={result.w} h={result.h} mode={onVariation ? 'scale' : mode} anchor={anchor} />
+            {mode === 'canvas' && !onVariation && (
               <div className="ds-anchor" role="radiogroup" aria-label="Where your drawing stays (anchor)">
                 {ANCHORS.map((a) => (
                   <button key={a} type="button" role="radio" aria-checked={anchor === a} data-on={anchor === a} onClick={() => setAnchor(a)} title={`Keep the drawing at the ${ANCHOR_WORDS[a]}`} aria-label={ANCHOR_WORDS[a]} />
                 ))}
               </div>
             )}
-            {mode === 'canvas' && <span className="ds-anchor-note">Drawing stays at the {ANCHOR_WORDS[anchor]} (anchor)</span>}
+            {mode === 'canvas' && !onVariation && <span className="ds-anchor-note">Drawing stays at the {ANCHOR_WORDS[anchor]} (anchor)</span>}
+            {onVariation && <span className="ds-anchor-note">A variation keeps all the art, and its camera frames it for the new size.</span>}
           </div>
         </div>
 

@@ -10,7 +10,7 @@
  */
 import type { Doc, PixelDrawing, PixelLayer } from '../core/format';
 import { pixelGrid } from '../core/doc';
-import { pixelCanvas } from '../core/render';
+import { dropPixelCanvas, peekPixelCanvas, pixelCanvas, seedPixelCanvas } from '../core/render';
 import { drawingAt } from '../core/doc';
 import { setLive } from '../canvas/controller';
 import type { PxPt, RGBA } from '../canvas/pixels';
@@ -446,6 +446,45 @@ export class PixelSession {
     return out;
   }
 
+  /**
+   * Makes the finished drawing's cached picture from the old drawing's with only the touched tiles put on top, so the first
+   * draw after pen-up does not upload the whole block again. When the block is where it was, the old picture itself is
+   * updated and handed over (nothing big is copied; undo makes the old one again when asked for it); otherwise it is a
+   * canvas to canvas copy. Skipped when the old picture is not cached or most of the block changed (the plain rebuild is
+   * as cheap then).
+   */
+  private seedPicture(p: { x: number; y: number; width: number; height: number; pixels: Uint8ClampedArray }): void {
+    const old = this.baseDrawing;
+    const s = this.src;
+    const base = old && s.width ? peekPixelCanvas(old.pixels) : undefined;
+    if (old && s.width && !base) return;
+    const list: number[] = [];
+    for (let i = 0; i < this.tiles.length; i++) if (this.tiles[i]) list.push(i);
+    if (list.length * TS * TS * 2 > p.width * p.height) return;
+    const inPlace = !!base && p.x === s.x && p.y === s.y && p.width === s.width && p.height === s.height;
+    const c = inPlace ? base : makeLiveCanvas(p.width, p.height);
+    const g = c?.getContext('2d') as CanvasRenderingContext2D | null | undefined;
+    if (!c || !g) return;
+    if (base && !inPlace) {
+      g.globalCompositeOperation = 'copy';
+      g.drawImage(base as CanvasImageSource, s.x - p.x, s.y - p.y);
+      g.globalCompositeOperation = 'source-over';
+    }
+    for (const ti of list) {
+      const tx = ti % this.tilesAcross;
+      const ty = (ti - tx) / this.tilesAcross;
+      const gx = tx << SHIFT;
+      const gy = ty << SHIFT;
+      let img = this.images[ti];
+      if (!img) img = this.images[ti] = new ImageData(this.tiles[ti] as Uint8ClampedArray<ArrayBuffer>, TS, TS);
+      const w = Math.min(gx + TS, this.width) - gx;
+      const h = Math.min(gy + TS, this.height) - gy;
+      g.putImageData(img, gx - p.x, gy - p.y, 0, 0, w, h);
+    }
+    seedPixelCanvas(p.pixels, c);
+    if (inPlace && old) dropPixelCanvas(old.pixels);
+  }
+
   /** Writes the result into the drawing, copying and trimming only the touched rectangle and the old block. */
   private write(label: string): EditResult {
     const g = activeGrid();
@@ -454,6 +493,7 @@ export class PixelSession {
     const touched = t ? { width: t.x1 - t.x0 + 1, height: t.y1 - t.y0 + 1, x: t.x0, y: t.y0 } : { width: 0, height: 0 };
     const r = unionRect(this.was, touched);
     const placed = r ? trimPixels(this.crop(r), r.w, r.h, r.x, r.y) : null;
+    if (placed && placed.width > 0) this.seedPicture(placed);
     return editActiveDrawing(label, 'pixel', (d) => void setPlaced(d, placed ?? { x: 0, y: 0, width: 0, height: 0, pixels: new Uint8ClampedArray(0) }), { adds: this.fresh });
   }
 
