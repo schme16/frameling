@@ -3,18 +3,21 @@
 //   Properties: the sections for what you're doing now (tool options, colours, the selection's motion, effects, text...)
 //   in one scroll, each folding. Sections that don't apply yet wait at the bottom with what would make them apply.
 //   The rail: Properties, then every other panel here with its name, in groups. A Panels button lists everything.
+// Stacked groups (dockModel.ts) share this one rail: each group has a heading in it, and the content area beside it is
+// split the same way, a box per group with the keyboard splitter between.
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { getPanel, type DockZone } from '../core/registry';
 import { useStore } from '../core/store';
 import { dock, hidePanel, setActive, toggleCollapsed } from './dock';
 import { dragState, dropIndexFor, startPanelDrag } from './dockDrag';
 import { menuPoint, openDockMenu, panelMenu } from './dockMenus';
+import { groupsOf } from './dockModel';
 import { dragging, PanelBoundary } from './dockShared';
 import { Icon } from './icons';
 import { openHelp } from './overlays';
-import { infoFor, railGroups, sectionsNow, shortName, splitZone, PANEL_INFO } from './panelInfo';
+import { groupWord, infoFor, planRight, sectionsNow, shortName, PANEL_INFO, type RightGroupPlan } from './panelInfo';
 import { PanelPicker } from './PanelPicker';
-import { TabGroupView, ZoneStack } from './DockGroup';
+import { ZoneStack } from './DockGroup';
 import { folded, foldAll, onlyOpen, panelPicker, setFolded, togglePicker, type RightStyle } from './rightStyle';
 import './rightDock.css';
 
@@ -26,45 +29,99 @@ let lastSection: string | null = null;
 /** The section Properties last scrolled to. */
 let lastShown: string | null = null;
 
+/** The id of a group's content box: the first keeps the plain name. */
+const bodyId = (group: number): string => (group === 0 ? 'rd-body' : `rd-body-${group}`);
+
 /**
- * The right side. Its first group is the Properties and rail presentation below; any groups stacked under it (see
- * dockModel.ts) are ordinary tab groups across the full width of the side, each with its own tab bar.
+ * The right side: a content box per group (Properties or a panel, each with its heading) beside one rail that lists
+ * every group's panels under that group's heading.
  */
 export function RightDock({ zone, style }: { zone: DockZone; style: RightStyle }) {
   const z = dock.use((d) => d.layout.zones[zone]);
   const width = z.collapsed ? RAIL_W : z.size + RAIL_W;
+  const merge = style === 'inspector';
+  const plans = planRight(groupsOf(z), merge);
+  const first = plans[0];
+  const picker = panelPicker.use((v) => v);
+  // Remember the Properties section in front, so pressing Properties on the rail comes back to it.
+  if (first.onProps && first.active) lastSection = first.active;
   return (
     <section className={`ui-zone ui-zone-${zone} rd${z.collapsed ? ' is-collapsed' : ''}`} style={{ width }} aria-label={`${zone} side`}>
-      <ZoneStack zone={zone} render={(gi) => (gi === 0 ? <RailGroup zone={zone} style={style} /> : <TabGroupView zone={zone} group={gi} />)} />
+      <div className="rd-top">
+        {!z.collapsed && <ZoneStack zone={zone} render={(gi) => (plans[gi] ? <GroupBody zone={zone} plan={plans[gi]} /> : null)} />}
+        <Rail zone={zone} plans={plans} />
+        {picker && <PanelPicker at={picker} side="left" onClose={() => panelPicker.set(null)} />}
+      </div>
     </section>
   );
 }
 
-function RailGroup({ zone, style }: { zone: DockZone; style: RightStyle }) {
+/** One group's content: Properties, or its front panel under a heading with help and close. */
+function GroupBody({ zone, plan }: { zone: DockZone; plan: RightGroupPlan }) {
+  const names = dock.use((d) => d.layout.names);
+  const { active, onProps, sections } = plan;
+  const panel = !onProps && active ? getPanel(active) : undefined;
+  if (!onProps && !panel) return null;
+  return (
+    <div className="rd-body" role="tabpanel" id={bodyId(plan.index)} aria-labelledby={`rd-tab-${onProps ? PROPS : active}`} data-panel-id={onProps ? undefined : (active ?? undefined)}>
+      {onProps ? (
+        <Inspector sections={sections} active={active} />
+      ) : (
+        panel && (
+          <>
+            <header className="rd-head">
+              <Icon name={panel.icon} size={16} />
+              <h2 className="rd-head-title">{names?.[panel.id] ?? panel.title}</h2>
+              <button type="button" className="ui-icon-btn" aria-label={`Help on ${panel.title}`} data-tip="What's this?" onClick={() => openHelp(panel.help ?? 'panels')}>
+                <Icon name="help" size={14} />
+              </button>
+              <button type="button" className="ui-icon-btn" aria-label={`Close ${panel.title}`} data-tip={`Close ${panel.title}`} data-tip-desc="Bring it back from the Panels button or the View menu." onClick={() => hidePanel(panel.id)}>
+                <Icon name="close" size={13} />
+              </button>
+            </header>
+            <p className="rd-head-blurb">{infoFor(panel).blurb}</p>
+            <div className="rd-scroll">
+              <PanelBoundary name={panel.title} key={panel.id}>
+                <panel.component />
+              </PanelBoundary>
+            </div>
+          </>
+        )
+      )}
+    </div>
+  );
+}
+
+/** The one rail down the whole side. With stacked groups, each group's places sit under its own heading. */
+function Rail({ zone, plans }: { zone: DockZone; plans: RightGroupPlan[] }) {
   const z = dock.use((d) => d.layout.zones[zone]);
   const drag = dragging.use((v) => v);
   const names = dock.use((d) => d.layout.names);
-  const dropAt = dragState.use((d) => dropIndexFor(d, { zone }, z.tabs.length));
-  const merge = style === 'inspector';
-  const { sections, rail } = splitZone(z.tabs, merge);
-  const active = z.active && z.tabs.includes(z.active) ? z.active : (z.tabs[0] ?? null);
-  const onProps = merge && !!active && sections.includes(active);
-  if (onProps) lastSection = active;
+  const dropAts = dragState.use((d) => plans.map((p) => dropIndexFor(d, { zone, group: p.index }, p.tabs.length) ?? '').join(','));
   const picker = panelPicker.use((v) => v);
+  const stacked = plans.length > 1;
+  const dropAt = (g: number): number | null => {
+    const v = dropAts.split(',')[g];
+    return v ? Number(v) : null;
+  };
 
-  // The rail, top to bottom: Properties (when there are sections), then the groups.
-  const groups = railGroups(rail);
-  const items: string[] = [...(merge && sections.length ? [PROPS] : []), ...groups.flatMap((g) => g.ids)];
-  const chosen = z.collapsed ? null : onProps ? PROPS : active;
+  // The rail, top to bottom: each group's Properties (the first only, when it has sections), then its places.
+  const itemsOf = (p: RightGroupPlan): string[] => [...(p.sections.length ? [PROPS] : []), ...p.places.flatMap((g) => g.ids)];
+  const items: string[] = plans.flatMap(itemsOf);
+  const owner = (id: string): RightGroupPlan => plans.find((p) => p.tabs.includes(id)) ?? plans[0];
+  const first = plans[0];
+  const chosenOf = (p: RightGroupPlan): string | null => (z.collapsed ? null : p.onProps ? PROPS : p.active);
+  const tabStop = chosenOf(first) ?? items[0];
 
   const open = (id: string) => {
     if (id === PROPS) {
-      const to = lastSection && sections.includes(lastSection) ? lastSection : sections[0];
+      const to = lastSection && first.sections.includes(lastSection) ? lastSection : first.sections[0];
       if (to) setActive(zone, to);
       return;
     }
-    // Pressing the open one again folds the side away, like Illustrator's icon strip.
-    if (id === active && !z.collapsed && !onProps) return toggleCollapsed(zone, true);
+    const p = owner(id);
+    // Pressing the open one again folds the side away, like Illustrator's icon strip (a stacked side keeps its groups in view).
+    if (!stacked && id === p.active && !z.collapsed && !p.onProps) return toggleCollapsed(zone, true);
     setActive(zone, id);
   };
   const focusItem = (id: string) => requestAnimationFrame(() => document.getElementById(`rd-tab-${id}`)?.focus());
@@ -93,15 +150,16 @@ function RailGroup({ zone, style }: { zone: DockZone; style: RightStyle }) {
     focusItem(items[to]);
   };
 
-  const tabFor = (id: string) => {
+  const tabFor = (id: string, p: RightGroupPlan) => {
     const isProps = id === PROPS;
-    const p = isProps ? null : getPanel(id);
-    if (!isProps && !p) return null;
-    const title = isProps ? 'Properties' : (names?.[id] ?? p!.title);
-    const label = isProps ? 'Properties' : (names?.[id] ?? shortName(p!));
-    const on = chosen === id;
-    const blurb = isProps ? 'Settings for what you are doing now: the tool, colours and whatever you have selected.' : infoFor(p!).blurb;
-    const before = drag && dropAt !== null && dropAt === (isProps ? 0 : z.tabs.indexOf(id));
+    const pd = isProps ? null : getPanel(id);
+    if (!isProps && !pd) return null;
+    const title = isProps ? 'Properties' : (names?.[id] ?? pd!.title);
+    const label = isProps ? 'Properties' : (names?.[id] ?? shortName(pd!));
+    const on = chosenOf(p) === id;
+    const blurb = isProps ? 'Settings for what you are doing now: the tool, colours and whatever you have selected.' : infoFor(pd!).blurb;
+    const at = dropAt(p.index);
+    const before = drag && at !== null && at === (isProps ? 0 : p.tabs.indexOf(id));
     return (
       <button
         key={id}
@@ -111,11 +169,11 @@ function RailGroup({ zone, style }: { zone: DockZone; style: RightStyle }) {
         data-rail-id={id}
         className={`rd-item${on ? ' is-chosen' : ''}${before ? ' drop-before' : ''}${drag === id ? ' is-dragging' : ''}`}
         aria-selected={on}
-        aria-controls={on ? 'rd-body' : undefined}
+        aria-controls={on ? bodyId(p.index) : undefined}
         aria-label={title}
         aria-describedby={`rd-desc-${id}`}
-        tabIndex={(chosen ?? items[0]) === id ? 0 : -1}
-        data-help={isProps ? 'properties' : (p!.help ?? 'panels')}
+        tabIndex={tabStop === id ? 0 : -1}
+        data-help={isProps ? 'properties' : (pd!.help ?? 'panels')}
         data-tip={title}
         data-tip-desc={`${blurb}${isProps ? '' : ' Drag to move it. Right-click for more.'}`}
         data-dock-tab={id}
@@ -132,7 +190,7 @@ function RailGroup({ zone, style }: { zone: DockZone; style: RightStyle }) {
         onClick={() => open(id)}
         onKeyDown={(e) => onKey(e, id)}
       >
-        <Icon name={isProps ? 'sliders' : p!.icon} size={18} />
+        <Icon name={isProps ? 'sliders' : pd!.icon} size={18} />
         <span className="rd-item-label">{label}</span>
         <span className="ui-sr-only" id={`rd-desc-${id}`}>
           {blurb}
@@ -141,77 +199,71 @@ function RailGroup({ zone, style }: { zone: DockZone; style: RightStyle }) {
     );
   };
 
-  const panel = !onProps && active ? getPanel(active) : undefined;
+  /** A group's places: Properties first, then the places in their kinds, kinds split by a line. */
+  const places = (p: RightGroupPlan) => (
+    <>
+      {p.sections.length > 0 && tabFor(PROPS, p)}
+      {p.places.map((g, gi) => (
+        <div key={g.group} className="rd-group" role="presentation">
+          {(gi > 0 || p.sections.length > 0) && <span className="rd-sep" aria-hidden="true" />}
+          {g.ids.map((id) => tabFor(id, p))}
+        </div>
+      ))}
+    </>
+  );
+
+  // One group: the whole rail is the drop bar. Several: each group is its own bar, and the rail between them takes a drop at the end.
+  const railDrop = stacked
+    ? { 'data-dock-area': '', 'data-dock-zone': zone }
+    : { 'data-dock-strip': '', 'data-dock-zone': zone, 'data-dock-group': 0, 'data-dock-tabs': first.tabs.join(','), 'data-dock-axis': 'y' };
 
   return (
-    <div className="rd-top">
-      {!z.collapsed && (onProps || panel) && (
-        <div className="rd-body" role="tabpanel" id="rd-body" aria-labelledby={`rd-tab-${onProps ? PROPS : active}`} data-panel-id={onProps ? undefined : (active ?? undefined)}>
-          {onProps ? (
-            <Inspector sections={sections} active={active} />
-          ) : (
-            panel && (
-              <>
-                <header className="rd-head">
-                  <Icon name={panel.icon} size={16} />
-                  <h2 className="rd-head-title">{names?.[panel.id] ?? panel.title}</h2>
-                  <button type="button" className="ui-icon-btn" aria-label={`Help on ${panel.title}`} data-tip="What's this?" onClick={() => openHelp(panel.help ?? 'panels')}>
-                    <Icon name="help" size={14} />
-                  </button>
-                  <button type="button" className="ui-icon-btn" aria-label={`Close ${panel.title}`} data-tip={`Close ${panel.title}`} data-tip-desc="Bring it back from the Panels button or the View menu." onClick={() => hidePanel(panel.id)}>
-                    <Icon name="close" size={13} />
-                  </button>
-                </header>
-                <p className="rd-head-blurb">{infoFor(panel).blurb}</p>
-                <div className="rd-scroll">
-                  <PanelBoundary name={panel.title} key={panel.id}>
-                    <panel.component />
-                  </PanelBoundary>
-                </div>
-              </>
-            )
-          )}
-        </div>
-      )}
-      <div className="rd-rail" data-dock-strip="" data-dock-zone={zone} data-dock-group={0} data-dock-tabs={z.tabs.join(',')} data-dock-axis="y">
-        <div className="rd-rail-items" role="tablist" aria-label="Right side" aria-orientation="vertical">
-          {merge && sections.length > 0 && tabFor(PROPS)}
-          {groups.map((g, gi) => (
-            <div key={g.group} className="rd-group" role="presentation">
-              {(gi > 0 || (merge && sections.length > 0)) && <span className="rd-sep" aria-hidden="true" />}
-              {g.ids.map(tabFor)}
+    <div className={`rd-rail${stacked ? ' is-stacked' : ''}`} {...railDrop}>
+      <div className="rd-rail-items">
+        {stacked ? (
+          plans.map((p) => (
+            <div key={p.index} className="rd-rgroup" data-dock-strip="" data-dock-zone={zone} data-dock-group={p.index} data-dock-tabs={p.tabs.join(',')} data-dock-axis="y">
+              <h3 className="rd-ghead" id={`rd-gh-${p.index}`}>
+                {groupWord(p.index, plans.length)}
+              </h3>
+              <div className="rd-tablist" role="tablist" aria-labelledby={`rd-gh-${p.index}`} aria-orientation="vertical">
+                {places(p)}
+              </div>
             </div>
-          ))}
-        </div>
-        <span className="rd-fill" />
-        <button
-          type="button"
-          className={`rd-item rd-panels${picker ? ' is-open' : ''}`}
-          data-panels-button
-          aria-haspopup="dialog"
-          aria-expanded={!!picker}
-          aria-label="All panels"
-          data-tip="All panels"
-          data-tip-desc="Every panel with what it's for. Open one, or bring back one you closed."
-          data-help="panels"
-          onClick={(e) => togglePicker(e.currentTarget)}
-        >
-          <Icon name="workspace" size={18} />
-          <span className="rd-item-label">Panels</span>
-        </button>
-        <button
-          type="button"
-          className="ui-icon-btn rd-fold"
-          aria-label={z.collapsed ? 'Open the right side' : 'Fold the right side away'}
-          aria-expanded={!z.collapsed}
-          data-tip={z.collapsed ? 'Open the side' : 'Fold the side away'}
-          data-help="panels"
-          onClick={() => toggleCollapsed(zone)}
-        >
-          <Icon name={z.collapsed ? 'chevron-left' : 'chevron-right'} size={14} />
-        </button>
+          ))
+        ) : (
+          <div className="rd-tablist" role="tablist" aria-label="Right side" aria-orientation="vertical">
+            {places(first)}
+          </div>
+        )}
       </div>
-      {picker && <PanelPicker at={picker} side="left" onClose={() => panelPicker.set(null)} />}
+      <span className="rd-fill" />
+      <button
+        type="button"
+        className={`rd-item rd-panels${picker ? ' is-open' : ''}`}
+        data-panels-button
+        aria-haspopup="dialog"
+        aria-expanded={!!picker}
+        aria-label="All panels"
+        data-tip="All panels"
+        data-tip-desc="Every panel with what it's for. Open one, or bring back one you closed."
+        data-help="panels"
+        onClick={(e) => togglePicker(e.currentTarget)}
+      >
+        <Icon name="workspace" size={18} />
+        <span className="rd-item-label">Panels</span>
+      </button>
+      <button
+        type="button"
+        className="ui-icon-btn rd-fold"
+        aria-label={z.collapsed ? 'Open the right side' : 'Fold the right side away'}
+        aria-expanded={!z.collapsed}
+        data-tip={z.collapsed ? 'Open the side' : 'Fold the side away'}
+        data-help="panels"
+        onClick={() => toggleCollapsed(zone)}
+      >
+        <Icon name={z.collapsed ? 'chevron-left' : 'chevron-right'} size={14} />
+      </button>
     </div>
   );
 }
