@@ -1,6 +1,6 @@
 /**
  * A small PDF writer for vector frames. Shapes stay vector (fills, strokes, curves), layers become PDF layers
- * (optional content, which Acrobat and Illustrator show as layers), layer opacity and blend modes become transparency
+ * (optional content, which Acrobat shows as layers; Illustrator keeps them as groups and drops the names), layer opacity and blend modes become transparency
  * groups, and anything PDF can't draw as vector (pixel layers, effects, masks) comes in as a picture with its alpha.
  * One page per frame. Streams are Flate compressed.
  *
@@ -106,6 +106,32 @@ interface Obj {
   body: Uint8Array | string;
 }
 
+/** A gradient's stops in order, with the ends pushed out to 0 and 1 (PDF wants the colours to run the whole way). */
+function gradientStops(gr: Gradient): Gradient['stops'] {
+  const stops = sortedStops(gr.stops);
+  if (stops[0].at > 0) stops.unshift({ at: 0, color: stops[0].color });
+  if (stops[stops.length - 1].at < 1) stops.push({ at: 1, color: stops[stops.length - 1].color });
+  return stops;
+}
+
+function gradientCoords(gr: Gradient): string {
+  const { from: a, to: b } = gr;
+  return gr.kind === 'radial' ? `${num(a.x)} ${num(a.y)} 0 ${num(a.x)} ${num(a.y)} ${num(Math.hypot(b.x - a.x, b.y - a.y))}` : `${num(a.x)} ${num(a.y)} ${num(b.x)} ${num(b.y)}`;
+}
+
+/** A PDF function running through the stops; `comp` turns a stop's colour into the function's output values. */
+function stopsFunction(stops: Gradient['stops'], comp: (c: Color) => string): string {
+  const seg = (a: Color, b: Color) => `<< /FunctionType 2 /Domain [0 1] /C0 ${comp(a)} /C1 ${comp(b)} /N 1 >>`;
+  if (stops.length <= 2) return seg(stops[0].color, stops[stops.length - 1].color);
+  const fns: string[] = [];
+  const bounds: number[] = [];
+  for (let i = 0; i < stops.length - 1; i++) {
+    fns.push(seg(stops[i].color, stops[i + 1].color));
+    if (i > 0) bounds.push(Math.max(stops[i].at, (bounds[bounds.length - 1] ?? 0) + 1e-4));
+  }
+  return `<< /FunctionType 3 /Domain [0 1] /Functions [${fns.join(' ')}] /Bounds [${bounds.map(num).join(' ')}] /Encode [${fns.map(() => '0 1').join(' ')}] >>`;
+}
+
 /** Collects objects and writes the file with its cross-reference table. */
 export class PdfWriter {
   private objs: Obj[] = [];
@@ -165,32 +191,34 @@ export class PdfWriter {
     const key = gradientKey(gr);
     let name = this.shadingKeys.get(key);
     if (name) return name;
-    const stops = sortedStops(gr.stops);
-    // PDF wants the colours to run the whole way from 0 to 1.
-    if (stops[0].at > 0) stops.unshift({ at: 0, color: stops[0].color });
-    if (stops[stops.length - 1].at < 1) stops.push({ at: 1, color: stops[stops.length - 1].color });
+    const stops = gradientStops(gr);
     const rgb = (c: Color) => {
       const p = parseColor(c);
       return `[${num(p.r)} ${num(p.g)} ${num(p.b)}]`;
     };
-    const seg = (a: Color, b: Color) => `<< /FunctionType 2 /Domain [0 1] /C0 ${rgb(a)} /C1 ${rgb(b)} /N 1 >>`;
-    let fn: string;
-    if (stops.length <= 2) fn = seg(stops[0].color, stops[stops.length - 1].color);
-    else {
-      const fns: string[] = [];
-      const bounds: number[] = [];
-      for (let i = 0; i < stops.length - 1; i++) {
-        fns.push(seg(stops[i].color, stops[i + 1].color));
-        if (i > 0) bounds.push(Math.max(stops[i].at, (bounds[bounds.length - 1] ?? 0) + 1e-4));
-      }
-      fn = `<< /FunctionType 3 /Domain [0 1] /Functions [${fns.join(' ')}] /Bounds [${bounds.map(num).join(' ')}] /Encode [${fns.map(() => '0 1').join(' ')}] >>`;
-    }
-    const { from: a, to: b } = gr;
-    const coords = gr.kind === 'radial' ? `${num(a.x)} ${num(a.y)} 0 ${num(a.x)} ${num(a.y)} ${num(Math.hypot(b.x - a.x, b.y - a.y))}` : `${num(a.x)} ${num(a.y)} ${num(b.x)} ${num(b.y)}`;
-    const id = this.add(`<< /ShadingType ${gr.kind === 'radial' ? 3 : 2} /ColorSpace /DeviceRGB /Coords [${coords}] /Function ${fn} /Extend [true true] >>`);
+    const id = this.add(`<< /ShadingType ${gr.kind === 'radial' ? 3 : 2} /ColorSpace /DeviceRGB /Coords [${gradientCoords(gr)}] /Function ${stopsFunction(stops, rgb)} /Extend [true true] >>`);
     name = `Sh${this.shadingKeys.size + 1}`;
     this.shadingKeys.set(key, name);
     this.shadings.push(`/${name} ${id} 0 R`);
+    return name;
+  }
+
+  /**
+   * The graphics state that fades a gradient's colours by the alpha of its stops (PDF shadings have no alpha of their
+   * own): a luminosity soft mask holding the same gradient in grey, white where opaque. Null when every stop is opaque.
+   */
+  gradientAlpha(gr: Gradient): string | null {
+    const stops = gradientStops(gr);
+    if (stops.every((st) => parseColor(st.color).a >= 0.999)) return null;
+    const key = `a|${gradientKey(gr)}`;
+    let name = this.gsKeys.get(key);
+    if (name) return name;
+    const grey = (c: Color) => `[${num(parseColor(c).a)}]`;
+    const sh = this.add(`<< /ShadingType ${gr.kind === 'radial' ? 3 : 2} /ColorSpace /DeviceGray /Coords [${gradientCoords(gr)}] /Function ${stopsFunction(stops, grey)} /Extend [true true] >>`);
+    const form = this.stream(`/Type /XObject /Subtype /Form /BBox [-100000 -100000 100000 100000] /Group << /S /Transparency /CS /DeviceGray >> /Resources << /Shading << /ShA ${sh} 0 R >> >>`, enc.encode('/ShA sh'));
+    name = `GS${this.gsKeys.size + 1}`;
+    this.gsKeys.set(key, name);
+    this.gs.push(`/${name} << /Type /ExtGState /SMask << /Type /Mask /S /Luminosity /G ${form} 0 R >> >>`);
     return name;
   }
 
@@ -307,6 +335,8 @@ class Content {
   /** Paints a gradient through the current path as a clip (`W*` even-odd, `W` non-zero). Ends the path. */
   shade(gr: Gradient, opacity: number, rule: 'W*' | 'W'): void {
     if (opacity < 0.999) this.push(`/${this.w.state(opacity, 1)} gs`);
+    const fade = this.w.gradientAlpha(gr);
+    if (fade) this.push(`/${fade} gs`);
     this.push(`${rule} n /${this.w.shading(gr)} sh`);
   }
 

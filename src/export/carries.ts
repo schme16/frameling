@@ -80,11 +80,11 @@ export const CARRY: Record<FormatId, FormatCarry> = {
   },
   pdf: {
     summary: 'Sharp vector shapes with your layers as PDF layers. Text becomes letter outlines and colour wash recolours the shapes. Layers with effects, clipping, masks or bending (or holding a symbol with them inside) become pictures.',
-    rows: { text: 'shapes', effects: 'picture', clip: 'picture', mask: 'picture', bones: 'picture', folders: 'kept', gradientAlpha: 'out' },
+    rows: { text: 'shapes', effects: 'picture', clip: 'picture', mask: 'picture', bones: 'picture', folders: 'kept' },
   },
   ai: {
     summary: 'The same as PDF, opened by Illustrator with every shape editable. Layers with effects, clipping, masks or bending (or holding a symbol with them inside) become pictures.',
-    rows: { text: 'shapes', effects: 'picture', clip: 'picture', mask: 'picture', bones: 'picture', folders: 'kept', gradientAlpha: 'out' },
+    rows: { text: 'shapes', effects: 'picture', clip: 'picture', mask: 'picture', bones: 'picture', folders: 'kept' },
   },
 };
 

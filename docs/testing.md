@@ -166,6 +166,40 @@ picture again and checks the clips follow and the sprite ids stay the same. Logs
 (`unity-*.log`, `unity-report-*.txt`). Takes a few minutes, mostly Unity starting up. The Unity editor must be
 installed and licensed for the user running the check.
 
+## Illustrator end to end: scripts/e2e/illustrator.cjs
+
+Opens Frameling's `.ai` exports in a real Adobe Illustrator and compares what Illustrator finds with what Frameling
+wrote and with Frameling's own PNG of the same frame. Opt in: it needs Illustrator installed under Wine, so it only runs
+the Illustrator half when `ILLUSTRATOR_PREFIX` is set (without it, it writes the `.ai` files and PNGs and stops).
+
+```bash
+npm run build
+ILLUSTRATOR_PREFIX=/path/to/wine/prefix xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/illustrator.cjs [outDir] [--only=a,b]
+```
+
+| | |
+|---|---|
+| `ILLUSTRATOR_PREFIX` | The Wine prefix Illustrator is installed in (the folder with `drive_c`). |
+| `WINE_RUNNER` | The Wine build to run it with (a folder with `bin/wine`). Found from the Lutris game file for the prefix when not set. |
+| `ILLUSTRATOR_STRICT_LAYERS=1` | Count the layer names Illustrator drops as failures (a known gap, see below). |
+| `--only=a,b` | Cases: `layers-folders paths gradients masks text symbols frames scale2-transparent artboards stress kitchen-sink bouncing-ball bouncing-logo`. |
+| `--keep-going` | Run even if something already runs in the prefix (never when someone may be using Illustrator). |
+
+It refuses to start when any process has the prefix as its `WINEPREFIX`. Illustrator runs in a Wine virtual desktop
+inside the xvfb screen, started the way Lutris starts it (DXVK in the prefix, `dxgi` native then builtin), with an
+ExtendScript (`illustrator-check.jsx`) passed as the file to open. A screenshot loop presses the two boxes that would
+block it (the "quit unexpectedly" box after an unclean exit, and "You are about to run the script": Continue). The
+script opens each file (a page at a time, through Illustrator's PDF import settings, which it puts back afterwards),
+records artboards, layers, groups, item counts, fills and strokes, exports a PNG and quits. Outputs in `outDir`: the
+`.ai` and PNG files per case, Illustrator's PNGs, `side-by-side/*.png` (Frameling left, Illustrator right) and
+`report.json`. A case fails when the artboard size is wrong, a hidden layer shows, too few paths or groups arrive, or the
+picture is further from Frameling's than the case allows (RMSE). It takes a few minutes; Illustrator takes about 20
+seconds to start.
+
+What Illustrator does with the file today: a `.ai` without Illustrator's own private data is read as a PDF import, so
+layer names are dropped (one "Layer 1", with a group per Frameling layer or folder keeping opacity and blend), a file with
+several frames asks "PDF Import Options" for the page, text is outlines and symbols are plain shapes.
+
 ## Effects pixels: scripts/e2e/effects.cjs
 
 Renders tiny documents through the single renderer in a real Chromium canvas and compares pixels with values worked

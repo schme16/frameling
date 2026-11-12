@@ -66,14 +66,20 @@ Some things PDF can't draw as shapes come in as pictures at twice the page size:
 
 ## How to open it
 
-- **Illustrator:** File > Open, and pick the file. Your Frameling layers come in as layers (Illustrator reads the PDF's layers).
+- **Illustrator:** File > Open, and pick the file. Illustrator opens it as a PDF import, so it asks "PDF Import Options" when the file has more than one frame: pick the page you want, a range, or All (All makes one Illustrator document per frame).
 - **Affinity Designer, Inkscape, CorelDRAW:** open it the same way; they read it as a PDF.
 
-It's the same picture as the [PDF export](help:export-pdf): one artboard per frame, opacity and blend modes kept, text as shapes, and pixel layers, effects and masks as pictures.
+It's the same picture as the [PDF export](help:export-pdf): one page per frame, opacity and blend modes kept, text as shapes, and pixel layers, effects and masks as pictures.
+
+## What to expect in Illustrator
+
+- Every shape comes in as a path you can edit, with its fill, line, joins, caps and gradients (including see-through gradient colours).
+- Each Frameling layer or folder becomes a group, with its opacity and blend mode, all inside one Illustrator layer. The layer names don't come across; Illustrator only reads layer names from files it saved itself.
+- Text is letter outlines, not live text, and a symbol copy is plain shapes.
 
 ## Good to know
 
-Illustrator keeps its own extra editing data in files it saves itself; this file doesn't have that, so the first time you save from Illustrator it may ask to save as a full Illustrator file. That's fine: say yes.`,
+Illustrator keeps its own extra editing data (layer names among it) in files it saves itself; this file doesn't have that, so Save As from Illustrator to make a full Illustrator file.`,
   },
   {
     id: 'export-prores',

@@ -71,9 +71,16 @@ describe('gradients in exports', () => {
     expect(json).toMatch(/"g":\{"p":3/);
   });
 
-  it('PDF warns about see-through gradient colours only', () => {
-    expect(carryWarnings(docWith(rect(grad())), 'pdf')).toEqual([]);
-    expect(carryWarnings(docWith(rect(grad('linear', '#0000ff80'))), 'pdf').join(' ')).toContain('see-through colours inside gradients');
+  it('PDF and .ai keep see-through gradient colours with a soft mask, and plain gradients need none', () => {
+    const text = (g: Gradient) => Buffer.from(writePdf(docWith(rect(g)), { frames: [0], scale: 1, background: null, title: 't' })).toString('latin1');
+    expect(text(grad())).not.toContain('/SMask');
+    const faded = text(grad('linear', '#0000ff00'));
+    expect(faded).toContain('/SMask << /Type /Mask /S /Luminosity');
+    // The mask's own shading is grey, running from opaque to clear.
+    expect(faded).toContain('/ColorSpace /DeviceGray');
+    expect(faded).toMatch(/\/C0 \[1\] \/C1 \[0\]/);
+    expect(carryWarnings(docWith(rect(grad('linear', '#0000ff80'))), 'pdf')).toEqual([]);
+    expect(carryWarnings(docWith(rect(grad('linear', '#0000ff80'))), 'ai')).toEqual([]);
     expect(carryWarnings(docWith(rect(grad('linear', '#0000ff80'))), 'svg')).toEqual([]);
   });
 });
