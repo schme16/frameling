@@ -521,6 +521,7 @@
   --snap-cells: #798aa5;
   --snap-shapes: #e45b72;
   --snap-perspective: #9873ef;
+  --snap-plugins: #1a9cc8;
   --snap-artboards: #2f9d44;
   --snap-spacing: #d1700a;
   --snap-angles: #aa8400;
@@ -534,6 +535,7 @@
     --snap-cells: #4a5870;
     --snap-shapes: #b01f3e;
     --snap-perspective: #5a30b8;
+  --snap-plugins: #0b6a8c;
     --snap-artboards: #1a6b2a;
     --snap-spacing: #9a4a00;
     --snap-angles: #6b5000;
@@ -547,6 +549,7 @@
   --snap-cells: #4a5870;
   --snap-shapes: #b01f3e;
   --snap-perspective: #5a30b8;
+  --snap-plugins: #0b6a8c;
   --snap-artboards: #1a6b2a;
   --snap-spacing: #9a4a00;
   --snap-angles: #6b5000;

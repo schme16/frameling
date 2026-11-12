@@ -13,12 +13,13 @@ import { notify } from '../io/notify';
 import { ask } from '../platform/ask';
 import { library } from '../platform/library';
 import { registerDecoration } from '../canvas/decorations';
+import { registerSnapSource } from '../canvas/snapSources';
 import { syncPanels } from '../ui/dock';
 import { syncDynamicCommands } from '../ui/dynamic';
 import { ICON_NAMES } from '../ui/icons';
 import { createStore } from '../ui/mini';
 import { setEventSink } from './bus';
-import { drawDrawList, handleAt, type DrawList } from './drawlist';
+import { drawDrawList, guideSnapLines, handleAt, type DrawList } from './drawlist';
 import { summarize, type PluginEventName } from './events';
 import { PERMISSIONS, packPlugin, PluginProblem, readPluginFiles, readPluginZip, samePermissions, type Decision, type Permission, type PluginManifest, type PluginPackage } from './manifest';
 import { applyOps } from './ops';
@@ -255,6 +256,14 @@ function ensureCanvasDecoration(pid: string): void {
     registerDecoration((g, ctx) => {
       const list = overlays.get(pid)?.get('canvas');
       if (list?.length && !store().get().ui.playing) drawDrawList(g, list, ctx.zoom);
+    }),
+  );
+  // Its straight lines and boxes can be snapped to too, but only while the canvas power is still allowed.
+  withOwner(ownerOf(pid), () =>
+    registerSnapSource(() => {
+      const list = overlays.get(pid)?.get('canvas');
+      const allowed = plugins.get().find((x) => x.manifest.id === pid)?.granted.includes('canvas');
+      return list?.length && allowed ? guideSnapLines(list) : { x: [], y: [] };
     }),
   );
 }

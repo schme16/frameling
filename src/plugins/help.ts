@@ -150,6 +150,8 @@ A plugin can add a **kind of shape**, a star, a gear or a speech bubble, that re
 
 A plugin you allowed to **draw on the canvas** can show a grid, a ruler or a counter on top of your canvas. They are never part of your drawing or your exports, and they stay out of the way while you play the animation.
 
+Shapes and tools snap to the straight lines and boxes of a plugin's guide too. It is one tick, **Plugin guides**, in [Snapping](help:snapping), and it goes off with the plugin or when you switch off its power to draw.
+
 ## Turn them off
 
 **Plugins > Manage plugins...** has a switch for each power. Turning off **Add its own tools** takes the tool out of the toolbox straight away. See [What a plugin may ask for](help:plugin-permissions).`,

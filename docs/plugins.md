@@ -269,6 +269,12 @@ frameling.canvas.overlay([{ type: 'line', x1: 0, y1: 0, x2: 100, y2: 100, stroke
 A guide drawn on top of the canvas in stage coordinates, never part of the drawing or an export, hidden while playing. At
 most 30 updates a second.
 
+The straight lines of a guide also count as snap lines: horizontal and vertical `line` items and `polygon` or `polyline`
+sides, the edges and middle of each `rect`, and the sides and middle of each `ellipse` (at most 400 lines per guide). Frameling
+snaps to them under **Plugin guides** in the Snap options (on for vector layers by default, off for pixel layers), with the
+same distance, Ctrl and master switch as the other targets. They stop counting when the plugin is turned off or its
+`canvas` power is switched off. The plugin does nothing to ask for this.
+
 ### Draw lists
 
 Pictures a plugin sends (tool previews, guides, the drawing of a shape) are **draw lists**: plain data that Frameling checks

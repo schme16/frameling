@@ -17,7 +17,7 @@ export const CORE_TOKENS = [
 export const BRAND_TOKENS = ['peach', 'rose', 'grape', 'sky', 'mint'] as const;
 
 /** One colour per thing a snap can land on: the line on the canvas and the dot in the "Snapped to" note. Same order as the snapping options. */
-export const SNAP_TOKENS = ['snap-page', 'snap-centre', 'snap-guides', 'snap-grid', 'snap-shapes', 'snap-spacing', 'snap-perspective', 'snap-cells', 'snap-angles', 'snap-artboards'] as const;
+export const SNAP_TOKENS = ['snap-page', 'snap-centre', 'snap-guides', 'snap-grid', 'snap-shapes', 'snap-spacing', 'snap-perspective', 'snap-plugins', 'snap-cells', 'snap-angles', 'snap-artboards'] as const;
 
 /**
  * What the snap colours start as (the same values canvas.css holds as a fallback). The dark set reads 3:1 on white and
@@ -26,11 +26,11 @@ export const SNAP_TOKENS = ['snap-page', 'snap-centre', 'snap-guides', 'snap-gri
 export const SNAP_DEFAULTS: Record<ThemeMode, ThemeTokens> = {
   dark: {
     'snap-page': '#0e9a8c', 'snap-centre': '#4d88e8', 'snap-guides': '#d757c2', 'snap-grid': '#798aa5', 'snap-shapes': '#e45b72',
-    'snap-spacing': '#d1700a', 'snap-perspective': '#9873ef', 'snap-cells': '#798aa5', 'snap-angles': '#aa8400', 'snap-artboards': '#2f9d44',
+    'snap-spacing': '#d1700a', 'snap-perspective': '#9873ef', 'snap-plugins': '#1a9cc8', 'snap-cells': '#798aa5', 'snap-angles': '#aa8400', 'snap-artboards': '#2f9d44',
   },
   light: {
     'snap-page': '#00695f', 'snap-centre': '#1c4fb8', 'snap-guides': '#9c1488', 'snap-grid': '#4a5870', 'snap-shapes': '#b01f3e',
-    'snap-spacing': '#9a4a00', 'snap-perspective': '#5a30b8', 'snap-cells': '#4a5870', 'snap-angles': '#6b5000', 'snap-artboards': '#1a6b2a',
+    'snap-spacing': '#9a4a00', 'snap-perspective': '#5a30b8', 'snap-plugins': '#0b6a8c', 'snap-cells': '#4a5870', 'snap-angles': '#6b5000', 'snap-artboards': '#1a6b2a',
   },
 };
 
@@ -155,6 +155,7 @@ export const SNAP_CONTROLS: EditorControl[] = [
   { token: 'snap-shapes', label: 'Other shapes', hint: 'Edges and middles of other shapes.', group: 'snapping' },
   { token: 'snap-spacing', label: 'Equal gaps', hint: 'The bars and sizes of a gap. The number on them is black or white to suit.', group: 'snapping' },
   { token: 'snap-perspective', label: 'Perspective lines', hint: 'Lines that follow a vanishing point.', group: 'snapping' },
+  { token: 'snap-plugins', label: 'Plugin guides', hint: 'Lines and boxes a plugin draws as a guide.', group: 'snapping' },
   { token: 'snap-cells', label: 'Pixel cells', hint: 'Whole pixels on a pixel layer.', group: 'snapping' },
   { token: 'snap-angles', label: 'Angle steps', hint: 'Shift turns lines to neat angles.', group: 'snapping' },
   { token: 'snap-artboards', label: 'Other artboards', hint: 'The edges and middles of other artboards.', group: 'snapping' },
