@@ -1,0 +1,4 @@
+# Keyboard focus ring on the timeline grid and the panel splitters: A/B
+
+`ab.png`: top block is the right-panel splitter with keyboard focus, bottom block is the timeline grid with keyboard focus. Rows are dark then light theme, columns are A cosy, A crisp, B cosy, B crisp.
+A (built, the default): a 2px ring in the `--focus` token. On a splitter it goes round the whole strip and the grip fills with the focus colour; on the timeline it goes round the visible part of the grid (inside the scroller's edge), on top of the existing ring round the current frame cell. B: the old look plus a heavier grip for the splitter, and only the current frame cell ringed for the timeline (no ring round the grid). B is quieter but a viewer scanning for "where is focus" has to find a small cell or a short pill.

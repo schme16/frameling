@@ -1,0 +1,130 @@
+// @vitest-environment jsdom
+// The shared keyboard behaviour every dialog, popup and splitter gets: focus moves in when it opens, Escape closes it
+// and focus goes back to what opened it, Tab stays inside a modal dialog, and splitters resize with the arrow keys.
+import { act, useRef } from 'react';
+import { createRoot } from 'react-dom/client';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { registerPanel } from '../../src/core/registry';
+import { dock, resetDock } from '../../src/ui/dock';
+import { Splitter } from '../../src/ui/DockView';
+import { Modal as UiModal } from '../../src/ui/Modal';
+import { Modal as IoModal } from '../../src/io/mount';
+import { usePopover } from '../../src/ui/popover';
+
+vi.mock('../../src/io/io.css', () => ({}));
+(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+
+// jsdom has no layout, so nothing has an offsetParent; the dialogs use it to skip hidden controls.
+Object.defineProperty(HTMLElement.prototype, 'offsetParent', { configurable: true, get() { return this.parentNode; } });
+
+let host: HTMLDivElement;
+let root: ReturnType<typeof createRoot>;
+let opener: HTMLButtonElement;
+beforeEach(() => {
+  host = document.createElement('div');
+  document.body.appendChild(host);
+  opener = document.createElement('button');
+  document.body.appendChild(opener);
+  opener.focus();
+  root = createRoot(host);
+});
+afterEach(() => {
+  act(() => root.unmount());
+  host.remove();
+  opener.remove();
+});
+
+const key = (target: Element, k: string, init: KeyboardEventInit = {}) => act(() => void target.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true, ...init })));
+
+describe.each([
+  ['ui Modal', (onClose: () => void) => <UiModal title="T" onClose={onClose}><button>one</button><button>two</button></UiModal>],
+  ['io Modal', (onClose: () => void) => <IoModal title="T" onClose={onClose}><button>one</button><button>two</button></IoModal>],
+])('%s', (_name, make) => {
+  it('takes focus when it opens, and Escape asks to close', () => {
+    const onClose = vi.fn();
+    act(() => root.render(make(onClose)));
+    const dlg = host.querySelector<HTMLElement>('[role="dialog"]')!;
+    expect(dlg.contains(document.activeElement)).toBe(true);
+    key(document.activeElement!, 'Escape');
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+  it('keeps Tab inside, wrapping at both ends', () => {
+    act(() => root.render(make(() => {})));
+    const dlg = host.querySelector<HTMLElement>('[role="dialog"]')!;
+    const items = [...dlg.querySelectorAll<HTMLElement>('button')];
+    const last = items[items.length - 1];
+    last.focus();
+    key(last, 'Tab');
+    expect(document.activeElement).toBe(items[0]);
+    key(items[0], 'Tab', { shiftKey: true });
+    expect(document.activeElement).toBe(last);
+  });
+});
+
+it('the ui Modal gives focus back to what opened it', () => {
+  act(() => root.render(<UiModal title="T" onClose={() => {}}><button>one</button></UiModal>));
+  expect(document.activeElement).not.toBe(opener);
+  act(() => root.render(<div />));
+  expect(document.activeElement).toBe(opener);
+});
+
+function Pop({ onClose }: { onClose: () => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  usePopover(ref, onClose);
+  return (
+    <div ref={ref}>
+      <button id="first">first</button>
+      <button>second</button>
+    </div>
+  );
+}
+
+describe('usePopover', () => {
+  it('moves focus in at once, and Escape closes it without reaching anything else', () => {
+    const onClose = vi.fn();
+    const outer = vi.fn();
+    document.addEventListener('keydown', outer);
+    act(() => root.render(<Pop onClose={onClose} />));
+    expect(document.activeElement?.id).toBe('first');
+    key(document.activeElement!, 'Escape');
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(outer).not.toHaveBeenCalled();
+    document.removeEventListener('keydown', outer);
+  });
+  it('gives focus back to what opened it when it goes', () => {
+    act(() => root.render(<Pop onClose={() => {}} />));
+    act(() => root.render(<div />));
+    expect(document.activeElement).toBe(opener);
+  });
+});
+
+describe('a splitter', () => {
+  beforeAll(() => {
+    registerPanel({ id: 'preview', title: 'Preview', icon: 'play', component: () => null, zone: 'right', order: 30 });
+  });
+  const sep = () => host.querySelector<HTMLElement>('[role="separator"]')!;
+  beforeEach(() => {
+    resetDock();
+    act(() => root.render(<Splitter zone="right" />));
+  });
+  it('says what it is and where it stands', () => {
+    expect(sep().tabIndex).toBe(0);
+    const size = dock.get().layout.zones.right.size;
+    expect(sep().getAttribute('aria-valuenow')).toBe(String(size));
+    expect(Number(sep().getAttribute('aria-valuemin'))).toBeLessThan(size);
+    expect(Number(sep().getAttribute('aria-valuemax'))).toBeGreaterThan(size);
+  });
+  it('resizes with the arrow keys, Home and End', () => {
+    const size = dock.get().layout.zones.right.size;
+    // The right zone grows when the splitter moves left.
+    key(sep(), 'ArrowLeft');
+    expect(dock.get().layout.zones.right.size).toBe(size + 16);
+    key(sep(), 'ArrowRight', { shiftKey: true });
+    expect(dock.get().layout.zones.right.size).toBe(size + 16 - 64);
+    key(sep(), 'End');
+    expect(dock.get().layout.zones.right.size).toBe(Number(sep().getAttribute('aria-valuemax')));
+    key(sep(), 'Home');
+    expect(dock.get().layout.zones.right.size).toBe(Number(sep().getAttribute('aria-valuemin')));
+    expect(sep().getAttribute('aria-valuenow')).toBe(String(dock.get().layout.zones.right.size));
+  });
+});

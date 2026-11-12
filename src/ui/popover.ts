@@ -8,10 +8,16 @@ export function usePopover(ref: RefObject<HTMLElement | null>, onClose: () => vo
   useEffect(() => {
     const before = document.activeElement as HTMLElement | null;
     const el = ref.current;
-    // A frame later, so whatever opened it (a right-click, a key) has finished first.
-    const raf = requestAnimationFrame(() => {
+    const focusIn = () => {
       if (!el || el.contains(document.activeElement)) return;
       el.querySelector<HTMLElement>(FOCUSABLE)?.focus();
+    };
+    // Right away, then once more a frame later: whatever opened it (a right-click, a key press) may take focus back
+    // as it finishes.
+    focusIn();
+    const raf = requestAnimationFrame(() => {
+      const now = document.activeElement;
+      if (!now || now === document.body || now === before) focusIn();
     });
     return () => {
       cancelAnimationFrame(raf);
