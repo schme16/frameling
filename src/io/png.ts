@@ -312,7 +312,8 @@ export function decodePngData(kind: PngKind, idat: Uint8Array, plte?: Uint8Array
   // Bytes in a row, and the distance back to "the pixel to the left" for the row filters (a whole byte at least).
   const stride = Math.ceil((width * channels * depth) / 8);
   const bpp = Math.max(1, (channels * depth) >> 3);
-  const raw = unzlibSync(idat);
+  // The size of the unpacked rows is known, so the inflater gets a buffer that size and never has to grow its own.
+  const raw = unzlibSync(idat, kind.interlaced ? undefined : { out: new Uint8Array((stride + 1) * height) });
   // Undo the row filters (of each of the seven smaller pictures first, for an interlaced one).
   let rows: Uint8Array;
   if (kind.interlaced) rows = deinterlace(raw, width, height, depth, channels, bpp);
