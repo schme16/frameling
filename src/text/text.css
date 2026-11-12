@@ -1,0 +1,74 @@
+/* The Text panel and the box for typing on the canvas. Theme tokens only. */
+.tx-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.tx-content {
+  width: 100%;
+  min-height: 64px;
+  resize: vertical;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+}
+.tx-anim {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-small);
+}
+.tx-anim-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.tx-anim-head strong {
+  flex: 1;
+}
+.tx-icon-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: var(--radius-small);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+.tx-icon-btn:hover {
+  background: var(--hover-bg);
+}
+.tx-add {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* Typing straight onto the canvas. The canvas draws the text; this box only holds the caret and the selection. */
+.tx-editor {
+  position: absolute;
+  z-index: 5;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  outline: 1px dashed var(--accent);
+  outline-offset: 4px;
+  background: transparent;
+  color: transparent;
+  caret-color: var(--accent);
+  resize: none;
+  overflow: hidden;
+  white-space: pre;
+  transform-origin: 0 0;
+}
+.tx-editor::selection {
+  background: color-mix(in srgb, var(--accent) 35%, transparent);
+  color: transparent;
+}

@@ -10,9 +10,13 @@ import { allFeatures, registerFeatures } from '../../src/features/host';
 import { PLANNED_FEATURES } from '../../src/features/planned';
 import type { FeatureDescriptor } from '../../src/features/feature';
 import { audioFeature } from '../../src/audio';
+import { cameraFeature } from '../../src/camera';
+import { godotFeature } from '../../src/export/godot';
 import { flowFeature } from '../../src/flow';
 import { interactivesFeature } from '../../src/interactives';
 import { lipsyncFeature } from '../../src/lipsync';
+import { particlesFeature } from '../../src/particles';
+import { textFeature } from '../../src/text';
 
 const SRC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../src');
 
@@ -26,11 +30,18 @@ const CORE_BACK_IMPORTS = ['core/render.ts -> effects', 'core/symbols.ts -> rig'
 const CONVERTED: Record<string, { importers: string[] }> = {
   // The video exporters read sound data by name to mix and mux it (it stays in the file whether or not the feature is on).
   audio: { importers: ['renderer/features.ts', 'lipsync/commands.tsx', 'lipsync/run.ts', 'export/formats/video-prep.ts', 'export/formats/video.ts'] },
+  // The camera's helpers (is it looked through, where is it) are used by the canvas, the tools and artboards: it keeps working on a drawing that holds a camera.
+  camera: { importers: ['renderer/features.ts', 'artboards/Underlay.tsx', 'artboards/ops.ts', 'artboards/variationOps.ts', 'canvas/engine.ts', 'quests/library.ts', 'text/TextEditor.tsx', 'tools/eyedropper.ts', 'tools/view-size.ts'] },
+  // Sprite sheet engine, add-on and help: no folder of its own, and nothing imports it but the feature list.
+  'godot-export': { importers: [] },
   flow: { importers: ['renderer/features.ts'] },
   interactives: { importers: ['renderer/features.ts'] },
   lipsync: { importers: ['renderer/features.ts', 'templates/lip-sync.ts'] },
+  // Templates that use its shapes, the lessons, and (for text) the canvas, which opens the editor on a double click.
+  particles: { importers: ['quests/library.ts', 'renderer/features.ts', 'templates/explosion.ts'] },
+  text: { importers: ['canvas/CanvasView.tsx', 'quests/library.ts', 'renderer/features.ts', 'templates/spinner.ts', 'templates/title-card.ts'] },
 };
-const DESCRIPTORS: Record<string, FeatureDescriptor> = { audio: audioFeature, flow: flowFeature, interactives: interactivesFeature, lipsync: lipsyncFeature };
+const DESCRIPTORS: Record<string, FeatureDescriptor> = { audio: audioFeature, camera: cameraFeature, 'godot-export': godotFeature, flow: flowFeature, interactives: interactivesFeature, lipsync: lipsyncFeature, particles: particlesFeature, text: textFeature };
 
 const walk = (dir: string): string[] => readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(dir, e.name)) : /\.(ts|tsx)$/.test(e.name) ? [path.join(dir, e.name)] : []));
 const IMPORT = /(?:from\s+|import\s*\(\s*|import\s+)['"](\.[^'"]+)['"]/g;

@@ -3,5 +3,9 @@
 import '../src/text/kind';
 import '../src/particles/kind';
 import { loadShapeExports } from '../src/export/shapeExport';
+import { godotEngine } from '../src/export/godot';
+import { registerEngine } from '../src/export/types';
 
+// Godot is a sprite sheet engine its feature adds in the app; a test has it unless it turns the feature off.
+registerEngine(godotEngine);
 await loadShapeExports();

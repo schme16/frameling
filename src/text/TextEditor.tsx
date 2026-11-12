@@ -13,6 +13,8 @@ import { fontFamilyCss, lineHeightOf, newTextShape } from './model';
 import { textLayout, textMatrix } from './draw';
 import { textDefaults, updateTexts } from './ops';
 import { canvasCamera } from '../camera/ops';
+import './text.css';
+import { isFeatureOn } from '../features/host';
 import { applyMat, invert, mul } from '../core/symbols';
 
 interface Session {
@@ -108,6 +110,8 @@ function baselineInLine(s: TextShape): number {
 
 /** Double-click on text with the Select or Text tool: type into it. Returns true when it did. */
 export function onTextDoubleClick(e: MouseEvent<HTMLElement>): boolean {
+  // Typing on the canvas is the Text feature's: with it off, text in a drawing is drawn and kept but not edited.
+  if (!isFeatureOn('text')) return false;
   const { ui } = store().get();
   if (ui.tool !== 'select' && ui.tool !== 'text') return false;
   const r = e.currentTarget.getBoundingClientRect();

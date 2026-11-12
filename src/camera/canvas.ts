@@ -4,7 +4,7 @@
  */
 import { angleSteps } from '../canvas/guides';
 import type { CameraView } from '../core/format';
-import { registerTool, type Tool, type ToolPointer } from '../core/registry';
+import type { Tool, ToolPointer } from '../core/registry';
 import { store } from '../core/store';
 import { cameraFrameCorners, cameraMatrix } from '../core/camera';
 import { applyMat, invert, type Mat } from '../core/symbols';
@@ -123,7 +123,8 @@ export function drawCameraFrame(g: CanvasRenderingContext2D, doc: { width: numbe
   g.restore();
 }
 
-registerDecoration((g, ctx) => {
+/** The purple frame on the canvas that shows what the camera sees. Registered when the feature turns on (see index.ts). */
+export const registerCameraFrame = (): void => registerDecoration((g, ctx) => {
   const s = store().get();
   if (s.ui.playing || s.doc.editing?.length || lookingThrough(s)) return;
   const cam = stageCamera(s.doc);
@@ -231,8 +232,6 @@ function snap(deg: number, on: boolean): number {
   const r = Math.round(deg * 10) / 10;
   return on ? Math.round(deg / 15) * 15 : r;
 }
-
-registerTool(cameraTool);
 
 /** For the A/B pictures and tests: the frame's corners for a view. */
 export { cameraFrameCorners, cameraMatrix };

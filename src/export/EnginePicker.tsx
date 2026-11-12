@@ -1,6 +1,6 @@
 // The "where is it going" picker for sprite sheets: game engines first, then the other homes for a sheet.
 import { Icon } from '../ui/icons';
-import { ENGINES, type EngineId } from './types';
+import { allEngines, type EngineId } from './types';
 
 // Small plain pictures, not the engines' own logos.
 const ART: Record<EngineId, React.ReactNode> = {
@@ -46,9 +46,10 @@ export function EngineIcon({ id, size = 18 }: { id: EngineId; size?: number }) {
 }
 
 export function EnginePicker({ value, onPick }: { value: EngineId; onPick: (id: EngineId) => void }) {
-  const games = ENGINES.filter((e) => e.game);
-  const others = ENGINES.filter((e) => !e.game);
-  const item = (e: (typeof ENGINES)[number]) => (
+  const engines = allEngines();
+  const games = engines.filter((e) => e.game);
+  const others = engines.filter((e) => !e.game);
+  const item = (e: (typeof engines)[number]) => (
     <button key={e.id} type="button" role="radio" aria-checked={value === e.id} className={`ex-engine${value === e.id ? ' ex-chosen' : ''}`} title={e.files} onClick={() => onPick(e.id)}>
       <EngineIcon id={e.id} size={20} />
       <span>{e.title}</span>

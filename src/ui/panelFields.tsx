@@ -1,7 +1,7 @@
 // Small fields the Particles and Text panels share: a number box, a colour well and a titled section.
 import { useState, type ReactNode } from 'react';
 import '../symbols/symbols.css';
-import './particles.css';
+import './panelFields.css';
 
 export function Num({ label, value, onChange, step = 1, min, max, suffix, title }: { label: string; value: number; onChange: (v: number) => void; step?: number; min?: number; max?: number; suffix?: string; title?: string }) {
   const [draft, setDraft] = useState<string | null>(null);

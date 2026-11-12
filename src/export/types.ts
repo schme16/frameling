@@ -1,4 +1,5 @@
 // What the export dialog collects, and what the exporters take.
+import { ownedUndo } from '../core/owners';
 import { allExporters, exporterInfo, exporterOf, splitExporters } from './registry';
 // The built-in formats register themselves when this file is loaded, so a format can always be looked up by its id.
 import './builtin';
@@ -62,8 +63,8 @@ export interface EngineInfo {
   game: boolean;
 }
 
-export const ENGINES: EngineInfo[] = [
-  { id: 'godot', title: 'Godot', files: 'Sprite frames and a ready scene', help: 'export-godot', game: true },
+/** Where a sprite sheet can go. Godot is registered by the Godot exports feature, so it goes with it. */
+const engines: EngineInfo[] = [
   { id: 'unity', title: 'Unity', files: 'Sliced sprites and animation clips', help: 'export-unity', game: true },
   { id: 'phaser', title: 'Phaser', files: 'Atlas and animations JSON', help: 'export-phaser', game: true },
   { id: 'pixi', title: 'PixiJS', files: 'Spritesheet JSON with animations', help: 'export-pixi', game: true },
@@ -72,13 +73,34 @@ export const ENGINES: EngineInfo[] = [
   { id: 'none', title: 'Just the picture', files: 'Only the PNG', help: 'export-sprite-sheets', game: false },
 ];
 
+/** Where the engine's card sits among the others (lower first). */
+const ENGINE_ORDER: Record<string, number> = { godot: 0, unity: 1, phaser: 2, pixi: 3, css: 4, json: 5, none: 6 };
+const engineRank = (id: string): number => ENGINE_ORDER[id] ?? 50;
+
+/** Every engine on offer, game engines first (in the order the picker shows them). */
+export const allEngines = (): EngineInfo[] => [...engines].sort((a, b) => engineRank(a.id) - engineRank(b.id));
+
+/** Adds an engine to the picker; taken away again with the feature that registered it. */
+export function registerEngine(info: EngineInfo): void {
+  const before = engines.findIndex((e) => e.id === info.id);
+  if (before >= 0) engines[before] = info;
+  else engines.push(info);
+  ownedUndo(() => {
+    const i = engines.indexOf(info);
+    if (i >= 0) engines.splice(i, 1);
+  });
+}
+
+export const hasEngine = (id: string): boolean => engines.some((e) => e.id === id);
+
 export function engineInfo(id: EngineId): EngineInfo {
-  return ENGINES.find((e) => e.id === id) ?? ENGINES[ENGINES.length - 1];
+  return engines.find((e) => e.id === id) ?? engines[engines.length - 1];
 }
 
 /** Fills in the newer sheet fields, working out the engine from the older ticks when it is missing. */
 export function normalizeSheet(s: SheetSettings): Required<SheetSettings> {
-  const engine: EngineId = s.engine && ENGINES.some((e) => e.id === s.engine) ? s.engine : s.godot || s.godotScene ? 'godot' : s.json ? 'json' : 'none';
+  // Settings made for an engine that is not on offer (Godot with its feature off) fall back to what they would have been without it.
+  const engine: EngineId = s.engine && hasEngine(s.engine) ? s.engine : (s.godot || s.godotScene) && hasEngine('godot') ? 'godot' : s.json ? 'json' : 'none';
   return {
     ...s,
     engine,

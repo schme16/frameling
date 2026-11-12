@@ -8,8 +8,7 @@ import { freshPage } from '../quests/actions';
 import { showPanel } from '../ui/dock';
 import { makeCameraPan } from '../templates/camera-pan';
 import { lookingThrough, setDepth, setView, stageCamera } from './ops';
-// The steps run these commands, so they must be registered wherever the quest is.
-import './commands';
+// The steps run the camera commands, which are registered while the Camera feature is on (the lesson is hidden when it is off).
 import '../symbols/commands';
 
 /** The Camera and parallax example with its camera and distances taken out: the page the quest starts on. */

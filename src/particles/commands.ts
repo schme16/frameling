@@ -1,5 +1,5 @@
 // Particles as commands: one per preset in the palette and the Effects menu, plus shuffle.
-import { registerCommands, type Command } from '../core/registry';
+import type { Command } from '../core/registry';
 import { showPanel } from '../ui/dock';
 import { PARTICLE_PRESETS } from './model';
 import { addParticles, selectedParticles, shuffleSeed } from './ops';
@@ -9,7 +9,7 @@ const add = (id: string) => () => {
   showPanel('particles');
 };
 
-registerCommands([
+export const particlesCommands: Command[] = [
   ...PARTICLE_PRESETS.map(
     (p): Command => ({
       id: `particles.add.${p.id}`,
@@ -31,4 +31,4 @@ registerCommands([
     enabled: () => selectedParticles().length > 0,
     run: shuffleSeed,
   },
-]);
+];
