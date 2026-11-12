@@ -46,7 +46,7 @@ export function paintUnderlay(g: CanvasRenderingContext2D, doc: Doc, view: { zoo
     // The name sits above the top-left corner.
     g.fillStyle = open ? accent : muted;
     g.globalAlpha = 1;
-    g.fillText(a.name, x, y - 4 * dpr, Math.max(40 * dpr, rw));
+    g.fillText(a.variationOf ? `${a.name} (variation)` : a.name, x, y - 4 * dpr, Math.max(40 * dpr, rw));
     if (open) continue;
     if (x >= W || y >= H || x + rw <= 0 || y + rh <= 0) continue;
     const ad = artboardDoc(doc, a.id);
@@ -68,7 +68,7 @@ export function paintUnderlay(g: CanvasRenderingContext2D, doc: Doc, view: { zoo
         cg.clearRect(0, 0, rw, rh);
         cg.setTransform(rw / ad.width, 0, 0, rh / ad.height, 0, 0);
         cg.imageSmoothingEnabled = false;
-        renderFrame(cg, ad, frame, { background: false, camera: false });
+        renderFrame(cg, ad, frame, { background: false, camera: !!a.variationOf });
         hit = { key, canvas: c };
         bitmaps.set(a.id, hit);
       }

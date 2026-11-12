@@ -359,6 +359,11 @@ export function deleteArtboard(d: Doc, id: Id): boolean {
   if (list.length < 2) return false;
   const i = list.findIndex((a) => a.id === id);
   if (i < 0) return false;
+  // Its variations keep what they show and become plain artboards.
+  for (const a of list) if (a.variationOf === id) {
+    delete a.variationOf;
+    delete a.overrides;
+  }
   if (activeId(d) === id) switchArtboard(d, list[i + 1]?.id ?? list[i - 1].id);
   list.splice(i, 1);
   pruneDrawings(d);

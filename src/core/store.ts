@@ -18,6 +18,16 @@ setAutoFreeze(false);
 
 export type ToolId = string;
 
+/**
+ * Something that keeps the document consistent after a change (a variation following its original, say): given the
+ * document a change made, it returns a recipe for what else to change, or null. Its changes join the same undo step.
+ */
+export type Settler = (doc: Doc) => ((draft: Draft<Doc>) => void) | null;
+const settlers: Settler[] = [];
+export function registerSettler(fn: Settler): void {
+  if (!settlers.includes(fn)) settlers.push(fn);
+}
+
 export interface OnionSettings {
   enabled: boolean;
   before: number;
@@ -156,8 +166,17 @@ export class Store {
    * key within a moment of each other merge into one undo step.
    */
   update(label: string, recipe: (doc: Draft<Doc>) => void, opts: { coalesce?: string } = {}): void {
-    const [next, patches, inverse] = produceWithPatches(this.state.doc, recipe);
+    let [next, patches, inverse] = produceWithPatches(this.state.doc, recipe);
     if (!patches.length) return;
+    for (const settle of settlers) {
+      const fix = settle(next);
+      if (!fix) continue;
+      const [n2, p2, i2] = produceWithPatches(next, fix);
+      if (!p2.length) continue;
+      next = n2;
+      patches = [...patches, ...p2];
+      inverse = [...i2, ...inverse];
+    }
     const now = Date.now();
     const last = this.undoStack[this.undoStack.length - 1];
     if (opts.coalesce && last && last.coalesce === opts.coalesce && now - last.at < COALESCE_MS) {

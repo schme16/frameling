@@ -182,6 +182,29 @@ const entries = [
     steps: [L.js(`__framelingArtboards.load('shots')`), L.wait(400), L.js(`__framelingArtboards.exportDialog('joined')`), L.wait(1500), { shot: '@', el: '[role=dialog]', pad: 0 }],
   },
   {
+    // Variations: the original and two linked copies side by side; open one to see what it changes; then recolour the
+    // original's ground and watch both variations follow (the orange one keeps its own fainter ground).
+    name: 'variations',
+    steps: [
+      L.js(`__framelingArtboards.load('variations')`),
+      L.wait(400),
+      L.panel('artboards'),
+      L.cmd('artboards.fitAll'),
+      L.wait(1200),
+      { rec: '@', crop: [112, 44, 1168, 690], every: 80 },
+      L.wait(1200),
+      { click: [1050, 218], after: 1500 },
+      L.js(`document.querySelector('.ab-panel').closest('.rd-scroll').scrollTo(0, 330)`),
+      L.wait(1800),
+      L.js(`document.querySelector('.ab-panel').closest('.rd-scroll').scrollTo(0, 0)`),
+      L.wait(600),
+      { click: [1050, 162], after: 1500 },
+      L.js(`(() => { const s = __frameling.store(); s.update('Recolour the ground', (d) => { const l = d.layers.find((x) => x.name === 'Ground'); const dr = d.drawings[l.cels[0].drawingId]; dr.shapes[0].fill = '#e6c15a'; dr.shapes[1].fill = '#c9a227'; }); return true; })()`),
+      L.wait(2200),
+      { rec: 'stop' },
+    ],
+  },
+  {
     name: 'clip-flow',
     steps: [L.template('hero-sprites'), L.panel('clip-flow'), L.cmd('flow.try'), L.wait(800), { click: [987, 149] }, { move: [150, 250] }, L.wait(1000), { shot: '@', crop: [0, 0, 1280, 765] }],
   },

@@ -370,6 +370,18 @@ npm run build
 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/artboards.cjs [outDir]
 ```
 
+## Variations end to end: scripts/e2e/variations.cjs
+
+Loads the variations demo (a ball, a recoloured variation and a square cut framed by a camera) and exports the family
+through the real app: each as its own file (sizes, and pixel colours: the recolour, the crop), the atlas (an animation per
+artboard), all in order as one MP4 (frame count), then saves the document, opens it again and exports once more to check
+the variations are still linked and still resolve. Logic is covered by `test/artboards/variations.test.ts`.
+
+```bash
+npm run build
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/variations.cjs [outDir]
+```
+
 ## Selection end to end: scripts/e2e/selection.cjs
 
 Picks shapes with real mouse clicks (Select, and Shift for several) and scrubs the playhead across keys made by the real

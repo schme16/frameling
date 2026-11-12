@@ -310,6 +310,14 @@ app.whenReady().then(async () => {
     }
   }
 
+  // The Artboards panel with a variation open (size cuts, differences list, reset buttons).
+  if (want('panel artboards (variation open)')) {
+    await reset(win);
+    await js(win, `__framelingArtboards.load('variations'); __frameling.showPanel('artboards'); __framelingArtboards.ops.goToArtboard(__frameling.store().get().doc.artboards[1].id, true)`);
+    await sleep(400);
+    add('panel artboards (variation open)', await axe(win, '.ab-panel'));
+  }
+
   // Every tool's options.
   const tools = await js(win, `return __frameling.tools()`);
   for (const t of tools) {

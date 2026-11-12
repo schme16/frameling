@@ -13,9 +13,17 @@ import { activeId, artboardDoc, artboardsOf, findArtboard, hasArtboards, sizeOf 
 import { arrangeAll, deleteArtboardById, duplicateArtboardById, fitAllArtboards, goToArtboard, newArtboard, renameArtboardById, reorderArtboardById, zoomToArtboard } from './ops';
 import { openShotsPlayer } from './player';
 import { openArtboardExport } from './exportDialog';
+import { VariationBadge, VariationSection } from './VariationPanel';
+import { sourceOf } from './variations';
 import { paintThumbBackdrop } from '../canvas/thumbBackdrop';
 import '../symbols/symbols.css';
 import './artboards.css';
+
+/** The length of an artboard, open or not. */
+const sizeOfLength = (doc: Doc, id: Id): number => {
+  const a = findArtboard(doc, id);
+  return a?.content ? a.content.length : doc.length;
+};
 
 const DRAG_TYPE = 'application/x-frameling-artboard';
 
@@ -38,7 +46,7 @@ function Thumb({ doc, id, size = 40 }: { doc: Doc; id: Id; size?: number }) {
     const oy = (cv.height - ad.height * k) / 2;
     g.setTransform(k, 0, 0, k, ox, oy);
     g.imageSmoothingEnabled = false;
-    renderFrame(g, ad, 0, { camera: false });
+    renderFrame(g, ad, 0, { camera: !!a?.variationOf });
     g.setTransform(1, 0, 0, 1, 0, 0);
     paintThumbBackdrop(cv, { x: ox, y: oy, w: ad.width * k, h: ad.height * k });
     g.strokeStyle = 'rgba(128,128,128,0.5)';
@@ -78,7 +86,7 @@ export function ArtboardsPanel() {
           return (
             <li
               key={a.id}
-              className={`sy-item ab-item${a.id === open ? ' ab-open' : ''}${over === i ? ' ab-over' : ''}`}
+              className={`sy-item ab-item${a.id === open ? ' ab-open' : ''}${over === i ? ' ab-over' : ''}${a.variationOf ? ' ab-var' : ''}`}
               draggable={renaming !== a.id}
               aria-current={a.id === open ? 'true' : undefined}
               onDragStart={(e) => {
@@ -117,8 +125,11 @@ export function ArtboardsPanel() {
                   </span>
                 )}
                 <span className="sy-item-meta">
-                  {w} x {h}
-                  {len > 1 ? `, ${len} frames` : ''}
+                  {a.variationOf && <VariationBadge of={sourceOf(doc, a)?.name ?? 'its original'} />}
+                  <span className="ab-size">
+                    {w} x {h}
+                    {len > 1 && len !== (a.variationOf ? sizeOfLength(doc, a.variationOf) : -1) ? `, ${len} frames` : ''}
+                  </span>
                 </span>
               </div>
               <div className="sy-item-actions" onClick={(e) => e.stopPropagation()}>
@@ -160,6 +171,7 @@ export function ArtboardsPanel() {
           </>
         )}
       </div>
+      <VariationSection />
       <Section title="This artboard">
         <ArtboardFields id={open} />
       </Section>

@@ -7,11 +7,13 @@ import type { Zippable } from 'fflate';
 import type { Artboard, ArtboardContent, ClipFlow, Doc, Guide, Layer } from '../core/format';
 import { packAudio, unpackAudio } from '../io/audio-file';
 import { readClip } from '../core/clipPlay';
+import { readOverrides, variationForSave } from './variationsIo';
 
 /** The artboards for doc.json, with each set-aside artboard's sound bytes added to the zip. Empty when there are none. */
 export function packArtboards(doc: Doc, files: Zippable): { artboards?: unknown[]; activeArtboard?: string } {
   if (!doc.artboards?.length) return {};
   const artboards = doc.artboards.map((a) => {
+    if (a.variationOf) return variationForSave(a);
     if (!a.content?.audio?.length) return a;
     return { ...a, content: { ...a.content, audio: packAudio({ audio: a.content.audio } as Doc, files) } };
   });
@@ -22,6 +24,8 @@ export interface ArtboardReaders {
   readLayers: (raw: any[]) => Layer[];
   readFlow: (raw: unknown, clips: { id: string }[]) => ClipFlow | undefined;
   readGuides: (raw: unknown) => Guide[] | undefined;
+  /** The layers of the open artboard (the file's own), for reading what a variation of it adds. */
+  top?: Layer[];
 }
 
 const isObj = (v: unknown): v is Record<string, any> => typeof v === 'object' && v !== null && !Array.isArray(v);
@@ -37,6 +41,7 @@ export function readArtboards(raw: any, entries: Record<string, Uint8Array>, war
   const out: Artboard[] = [];
   const ids = new Set<string>();
   let active: string | null = null;
+  const pending: { v: Artboard; raw: unknown }[] = [];
   const wanted = typeof raw.activeArtboard === 'string' ? raw.activeArtboard : null;
   for (const a of raw.artboards) {
     if (!isObj(a) || typeof a.id !== 'string' || !a.id || ids.has(a.id)) {
@@ -45,6 +50,14 @@ export function readArtboards(raw: any, entries: Record<string, Uint8Array>, war
     }
     const base: Artboard = { id: a.id, name: str(a.name, 'Artboard').slice(0, 120) || 'Artboard', x: Math.round(num(a.x, 0)), y: Math.round(num(a.y, 0)) };
     if (typeof a.exportName === 'string' && a.exportName.trim()) base.exportName = a.exportName.trim().slice(0, 120);
+    if (typeof a.variationOf === 'string' && a.variationOf && a.variationOf !== a.id) {
+      // A variation: only its changes are stored. They are read once every original has been.
+      ids.add(a.id);
+      const v: Artboard = { ...base, variationOf: a.variationOf, overrides: {} };
+      out.push(v);
+      pending.push({ v, raw: a.overrides });
+      continue;
+    }
     const isActive = !isObj(a.content) && !active && (!wanted || wanted === a.id);
     if (isActive) {
       active = a.id;
@@ -66,6 +79,11 @@ export function readArtboards(raw: any, entries: Record<string, Uint8Array>, war
     while (ids.has(id)) id += '_';
     out.unshift({ id, name: 'Artboard', x: 0, y: 0 });
     active = id;
+  }
+  for (const { v, raw: rawOv } of pending) {
+    const src = out.find((x) => x.id === v.variationOf && !x.variationOf);
+    const layers = src ? (src.content?.layers ?? r.top ?? []) : [];
+    v.overrides = readOverrides(rawOv, r, (id) => layers.find((l) => l.id === id)?.kind);
   }
   return { artboards: out, activeArtboard: active };
 }

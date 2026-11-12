@@ -100,6 +100,54 @@ export interface Artboard {
   exportName?: string;
   /** What it holds while another artboard is open. Missing on the open one. */
   content?: ArtboardContent;
+  /**
+   * A variation (a linked copy): the id of the artboard it follows. It stores only `overrides`; everything else comes
+   * from that artboard. In memory `content` is its resolved copy while another artboard is open; in a file only the
+   * overrides are written. Never a variation itself. See src/artboards/variations.ts.
+   */
+  variationOf?: Id;
+  /** What a variation changes from its original (missing or empty = nothing yet). */
+  overrides?: VariationOverrides;
+}
+
+/** Changes to a plain object: `set` gives new values for properties, `del` names properties taken away. */
+export interface Patch {
+  set?: Record<string, unknown>;
+  del?: string[];
+}
+
+/** Changes to a list of things with ids (layers, keys, shapes). Items not named follow the original. */
+export interface ListOverride<T, S = never> {
+  /** Items of the original that changed: their own properties (`patch`) and anything inside them (`sub`). */
+  items?: Record<Id, { patch?: Patch; sub?: S }>;
+  /** Ids of original items this variation leaves out. */
+  removed?: Id[];
+  /** Items made in the variation, in order. */
+  added?: T[];
+  /** The whole order, only when it is not "the original's, then the added ones". */
+  order?: Id[];
+}
+
+/** What a variation changes in one drawing of its original (keyed by the original's drawing id). */
+export interface DrawingOverride {
+  /** The variation has its own copy (pixels, tiles): stored in `doc.drawings` as `<id>~<artboard id>`. */
+  replaced?: true;
+  /** Changes to the drawing's own properties (a bones pose, and so on). */
+  patch?: Patch;
+  /** Changes to its shapes, by shape id (a recolour is a patch of `fill` on each shape). */
+  shapes?: ListOverride<Shape>;
+  /** Changes to a camera key's view. */
+  view?: Patch;
+}
+
+/** Everything a variation changes. Anything not named here follows the original. */
+export interface VariationOverrides {
+  /** Size, stage colour, length, clips, markers, flow, guides, in and out points, perspective. */
+  stage?: Patch;
+  /** Layers by id; inside each, its keys by id. */
+  layers?: ListOverride<Layer, ListOverride<Cel>>;
+  /** Drawings of the original that changed, by the original's drawing id. */
+  drawings?: Record<Id, DrawingOverride>;
 }
 
 /** The part of a document each artboard has its own copy of. */
