@@ -3,6 +3,7 @@
 import { lazyPanel } from '../core/lazy';
 import { getTool, registerCommand, registerPanel } from '../core/registry';
 import './commands';
+import './habits';
 import './help';
 import { drawMirrorLines } from './tools';
 import './tools';

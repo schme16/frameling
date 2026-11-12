@@ -71,7 +71,7 @@ Open **Preferences** (**Ctrl+,**), choose **General** and switch **Sounds** off 
     title: 'Keys from other tools (shortcut sets)',
     section: 'Settings',
     media: 'shortcut-sets.png',
-    summary: 'Use the keys you already know: Frameling, familiar from Flash / Animate, or familiar from pixel tools.',
+    summary: 'Use the keys you already know: Frameling, familiar from Flash / Animate, or Aseprite keys.',
     keywords: ['keys', 'keymap', 'shortcuts', 'hotkeys', 'flash', 'animate', 'aseprite', 'pixel', 'familiar', 'set', 'preset'],
     body: `Coming from another tool? Pick a shortcut set and your fingers already know the way.
 
@@ -81,7 +81,7 @@ Open **Preferences** (**Ctrl+,**), choose **Keyboard**, and pick a **Shortcut se
 
 - **Frameling**: the keys Frameling starts with. Good if you're new to animation tools.
 - **Familiar from Flash / Animate**: **F5** adds a frame, **F6** a new drawing that copies this one, **F7** an empty one, **Shift+F5** removes a frame. **Ctrl+E** draws inside a symbol. Tools: **Y** pencil, **N** line, **K** paint bucket, **L** lasso, **M** bone. **Ctrl+J** is canvas size, and **Ctrl+Up** and **Ctrl+Down** move things forward and back.
-- **Familiar from pixel tools (Aseprite-like)**: **B** pencil, **U** rectangle, **Shift+U** ellipse, **M** select, **Q** lasso. **X** swaps the colours. **Alt+N** adds a frame (a copy), **Alt+C** removes one, **F3** shows the onion skin. **Shift+N** adds a pixel layer, **Ctrl+D** deselects.
+- **Aseprite keys**: **B** pencil, **U** rectangle, **Shift+U** ellipse, **M** select, **Q** lasso, **X** swaps the colours. **+** and **-** change the brush size, **[** and **]** step along the palette, **1** to **6** zoom from 100% to 3200%, **Tab** hides the panels. **Alt+N** adds a frame (a copy), **Alt+B** an empty one, **Alt+C** removes one, **F3** shows the onion skin. The arrow keys step through frames. See [Aseprite habits](help:pixel-aseprite-habits) for the whole list.
 
 ## Your own changes stay
 

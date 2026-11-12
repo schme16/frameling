@@ -7,6 +7,7 @@ import { currentChoice, withChoice } from '../core/choices';
 import { getCommand, getTool, type Tool, type ToolContext, type ToolPointer } from '../core/registry';
 import { store, type State } from '../core/store';
 import { activeLayer } from '../tools/edit';
+import { altPicks, tempEyedropperTool } from '../tools/eyedropper';
 import './choices';
 import type { SpaceTapMode, WheelMode } from './choices';
 import * as ctl from './controller';
@@ -568,9 +569,11 @@ export class CanvasEngine {
       return;
     }
 
-    const tool = penEraser ? getTool('eraser') : getTool(ui.tool);
+    let tool = penEraser ? getTool('eraser') : getTool(ui.tool);
     if (!tool) return;
     const layer = activeLayer().layer;
+    // Alt held over a painting tool on a pixel layer: this press picks a colour (the tool comes back by itself).
+    if (!penEraser && altPicks(tool.id, layer?.kind, e.altKey)) tool = tempEyedropperTool;
     if (layer && !tool.layers.includes(layer.kind)) {
       const kinds = tool.layers.join(' or ');
       this.ctx.hint(`${tool.label} works on ${kinds} layers. Pick one in the timeline first.`);

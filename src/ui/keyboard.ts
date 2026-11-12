@@ -75,6 +75,24 @@ export function controlWantsKey(t: EventTarget | null, e: Pick<KeyboardEvent, 'k
   return false;
 }
 
+/**
+ * A bare Tab moves focus round the app, so a shortcut on it only fires from the canvas: nothing focused (or the canvas),
+ * with the mouse over the drawing. Anywhere else Tab keeps doing what it always does.
+ */
+export function tabIsShortcut(target: EventTarget | null, pointerOverCanvas: boolean): boolean {
+  const t = target instanceof HTMLElement ? target : null;
+  const atRest = !t || t === document.body || t === document.documentElement || !!t.closest('.cv-root');
+  return atRest && pointerOverCanvas;
+}
+
+function overCanvas(): boolean {
+  try {
+    return !!document.querySelector('.cv-root:hover');
+  } catch {
+    return false;
+  }
+}
+
 /** Handles one keydown. Returns true when a command took it. */
 export function dispatchKey(e: KeyboardEvent): boolean {
   if (e.defaultPrevented || e.isComposing || capturing) return false;
@@ -87,6 +105,7 @@ export function dispatchKey(e: KeyboardEvent): boolean {
   if (!combo) return false;
   const found = currentKeymap().get(comboToString(combo));
   if (!found) return false;
+  if (combo.key === 'Tab' && !tabIsShortcut(e.target, overCanvas())) return false;
   if (controlWantsKey(e.target, e)) return false;
   const typing = isTypingTarget(e.target);
   const overlay = anyOverlayOpen();
