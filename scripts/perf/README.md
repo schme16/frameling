@@ -103,3 +103,7 @@ stroke is added, look-ahead depth against the memory budget. They count work aga
 - **Live stroke** (`overlayDrawMs`): still redrawn from all its points on every frame, on purpose, so the preview is
   exactly the outline the finished stroke gets. It stays well under a millisecond at 2,000 points on a fast CPU and
   about 1.3 ms with the CPU throttled 4x, so it was left alone.
+
+## Pen-up cost
+
+`penup.cjs` draws a stroke on a big pixel drawing and times the release (mouse-up to the next task), with `--profile out.cpuprofile` printing the top functions of the release (self and inclusive). `xvfb-run -a -s "-screen 0 1600x1000x24" npx electron --no-sandbox scripts/perf/penup.cjs --size 4096 --laps 6`.

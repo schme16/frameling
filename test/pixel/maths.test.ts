@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { DocPalette } from '../../src/core/format';
-import { colorUse, insertColor, makeRamp, moveColor, nearestIndex, paletteRgb, rampOf, ramps, reduceToPalette, remapColor, removeColor, shadeStep, toggleRampStart } from '../../src/pixel/palette';
+import { colorUse, colorUseRange, exactIndex, insertColor, makeRamp, moveColor, nearestIndex, paletteRgb, rampOf, ramps, reduceToPalette, remapColor, removeColor, shadeStep, toggleRampStart } from '../../src/pixel/palette';
 import { PaletteProblem, paletteFromPixels, parseGpl, parseHexList, parseJascPal, parsePaletteFile, toGpl, toHexList, toJascPal } from '../../src/pixel/palette-io';
 import { dragBox, plotEllipse, plotLine, plotRect, snapCleanLine } from '../../src/pixel/raster';
 import { DITHER_PATTERNS, ditherOn } from '../../src/pixel/dither';
@@ -66,6 +66,39 @@ describe('palette maths', () => {
     const counts = new Uint32Array(5);
     colorUse(red, rgb, counts);
     expect([...counts]).toEqual([1, 0, 0, 1, 0]);
+  });
+
+  it('counts colour use like a plain exact-match scan, whole or in slices, with duplicates and odd offsets', () => {
+    const colors = ['#000000', '#ff0000', '#00ff00', '#ff0000', '#0000ff', '#123456'];
+    const rgb = paletteRgb(colors);
+    const n = 5000;
+    const px = new Uint8ClampedArray(n * 4);
+    let seed = 7;
+    const rnd = () => ((seed = (seed * 1103515245 + 12345) & 0x7fffffff) >> 8) & 255;
+    for (let i = 0; i < n; i++) {
+      const c = rgb.subarray((rnd() % 7) * 3, (rnd() % 7) * 3 + 3);
+      px.set(c.length === 3 ? c : [rnd(), rnd(), rnd()], i * 4);
+      px[i * 4 + 3] = rnd() % 4 === 0 ? 0 : rnd() % 2 ? 255 : 90;
+    }
+    const want = new Uint32Array(colors.length);
+    for (let i = 0; i < n; i++) {
+      if (px[i * 4 + 3] === 0) continue;
+      const k = exactIndex(rgb, px[i * 4], px[i * 4 + 1], px[i * 4 + 2]);
+      if (k >= 0) want[k]++;
+    }
+    const whole = new Uint32Array(colors.length);
+    colorUse(px, rgb, whole);
+    expect([...whole]).toEqual([...want]);
+    const sliced = new Uint32Array(colors.length);
+    for (let at = 0; at < n; at += 777) colorUseRange(px, rgb, sliced, at, Math.min(n, at + 777));
+    expect([...sliced]).toEqual([...want]);
+    expect(whole[3]).toBe(0);
+    // A view that does not start on a 4-byte boundary takes the plain path and agrees.
+    const shifted = new Uint8ClampedArray(new ArrayBuffer(n * 4 + 1), 1, n * 4);
+    shifted.set(px);
+    const odd = new Uint32Array(colors.length);
+    colorUse(shifted, rgb, odd);
+    expect([...odd]).toEqual([...want]);
   });
 
   it('edits palettes and keeps ramps pointing at the same colours', () => {
