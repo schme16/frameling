@@ -267,6 +267,10 @@ kbd {
   box-shadow: var(--shadow);
   animation: ui-drop 0.14s var(--ui-pop);
   transform-origin: top left;
+  /* Never taller than the window: a long menu scrolls (wheel, arrows, Home, End, Page keys). */
+  max-height: calc(100vh - 56px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 .ui-menu-item {
   display: flex;
@@ -3137,9 +3141,20 @@ body.ui-resizing * {
   background: var(--hover-bg);
 }
 .ui-submenu {
-  top: -7px;
-  left: calc(100% + 2px);
+  position: fixed;
+  max-height: calc(100vh - 16px);
   transform-origin: top left;
+}
+.ui-menu-heading {
+  margin: 8px 6px 2px;
+  padding: 0 4px;
+  font-size: var(--fs-small);
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+}
+.ui-menu > .ui-menu-heading:first-child {
+  margin-top: 2px;
 }
 
 /* Preferences: the sound volume slider with its Try button. */
