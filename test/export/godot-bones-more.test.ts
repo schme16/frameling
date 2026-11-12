@@ -307,10 +307,22 @@ describe('Godot bones: a faded symbol is a CanvasGroup', () => {
     const mul = bonesExtrasDoc({ fade: true });
     Object.values(mul.symbols!)[0].layers.find((l) => l.name === 'Hand')!.blend = 'multiply';
     expect(bonesNotes(mul).fades.join('|')).toContain('some of its parts use Add or Multiply');
-    // A symbol holding a symbol with bones.
+    // A symbol holding a symbol with bones fades as one picture too (see the nested group tests).
     const body = bonesExtrasDoc({ bodyArm: true });
     body.layers.find((l) => l.name === 'Hero')!.opacity = 0.5;
-    expect(bonesNotes(body).fades.join('|')).toContain('Body on Hero (it holds symbols with bones of their own)');
+    expect(bonesNotes(body).fades).toEqual([]);
+    // ...unless what is inside it cannot be ordered by the tree, or blends with Add.
+    const inner = bonesExtrasDoc({ bodyArm: true });
+    inner.layers.find((l) => l.name === 'Hero')!.opacity = 0.5;
+    const arm = Object.values(inner.symbols!).find((sy) => sy.name === 'Arm')!;
+    const [r0, u0, l0, h0] = arm.layers;
+    arm.layers = [r0, u0, h0, l0];
+    expect(bonesNotes(inner).fades.join('|')).toContain('Body on Hero (a symbol with bones inside it cannot be grouped (');
+    const addArm = bonesExtrasDoc({ bodyArm: true });
+    addArm.layers.find((l) => l.name === 'Hero')!.opacity = 0.5;
+    const bodySym = Object.values(addArm.symbols!).find((sy) => sy.name === 'Body')!;
+    bodySym.layers.forEach((l) => l.name === 'Arm holder' && (l.blend = 'add'));
+    expect(bonesNotes(addArm).fades.join('|')).toContain('Body on Hero');
   });
 
   it('lays out the layers around a skeleton that sit wholly behind or in front of it', () => {
@@ -328,6 +340,71 @@ describe('Godot bones: a faded symbol is a CanvasGroup', () => {
 });
 
 // ---------------------------------------------------------------- symbols inside symbols
+
+describe('Godot bones: a faded symbol holding a symbol with bones fades as one', () => {
+  const fadedBody = (o: Parameters<typeof bonesExtrasDoc>[0] = {}) => {
+    const doc = bonesExtrasDoc({ bodyArm: true, ...o });
+    doc.layers.find((l) => l.name === 'Hero')!.opacity = 0.8;
+    return doc;
+  };
+  const block = (tscn: string, n: string) => tscn.split(`[node name="${n}" type=`)[1].split('\n\n')[0];
+
+  it('makes the body a CanvasGroup with the arm inside it in tree order, no z_index below the group', () => {
+    const { tscn } = sceneOf(fadedBody(), 1);
+    expect(tscn).toContain('[node name="Body" type="CanvasGroup" parent="."]');
+    expect(block(tscn, 'Body')).toContain('z_index');
+    expect(block(tscn, 'Body')).toContain('self_modulate = Color(1, 1, 1, 0.8)');
+    expect(block(tscn, 'Torso')).not.toContain('z_index');
+    expect(block(tscn, 'Torso')).not.toMatch(/\nmodulate = /);
+    // The arm sits under the bone after the torso, as a plain node with no z of its own.
+    const arm = '[node name="Arm" type="Node2D" parent="Body/Body bones/Spine"]';
+    expect(tscn).toContain(arm);
+    expect(block(tscn, 'Arm')).not.toContain('z_index');
+    expect(block(tscn, 'Upper arm')).not.toContain('z_index');
+    expect(tscn.indexOf('name="Torso"')).toBeLessThan(tscn.indexOf(arm));
+    expect(tscn).toContain('NodePath("Body:self_modulate")');
+    expect(bonesNotes(fadedBody()).fades).toEqual([]);
+  });
+
+  it('puts the arm before the torso when its layer is below it', () => {
+    const doc = fadedBody();
+    const body = Object.values(doc.symbols!).find((sy) => sy.name === 'Body')!;
+    const [rig, torso, holder] = body.layers;
+    body.layers = [rig, holder, torso];
+    const { tscn } = sceneOf(doc, 1);
+    expect(tscn.indexOf('name="Arm" type="Node2D"')).toBeLessThan(tscn.indexOf('name="Torso"'));
+  });
+
+  it('keeps the arm plain and fades it part by part inside the body group, with a note', () => {
+    const doc = fadedBody({ armFade: 0.5 });
+    const { tscn } = sceneOf(doc, 1);
+    expect(tscn).toContain('[node name="Body" type="CanvasGroup" parent="."]');
+    expect(tscn).toContain('[node name="Arm" type="Node2D" parent="Body/Body bones/Spine"]');
+    expect(block(tscn, 'Arm')).toContain('modulate = Color(1, 1, 1, 0.5)');
+    expect(block(tscn, 'Arm')).not.toContain('self_modulate');
+    expect(tscn).toContain('NodePath("Body/Body bones/Spine/Arm:modulate")');
+    expect(bonesNotes(doc).fades.join('|')).toContain('Arm on Arm holder (Godot cannot put one fading group inside another');
+  });
+
+  it('keeps the old part by part fade when what is inside cannot be ordered, with the reason', () => {
+    const doc = fadedBody();
+    const arm = Object.values(doc.symbols!).find((sy) => sy.name === 'Arm')!;
+    const [r0, u0, l0, h0] = arm.layers;
+    arm.layers = [r0, u0, h0, l0];
+    const { tscn } = sceneOf(doc, 1);
+    expect(tscn).toContain('[node name="Body" type="Node2D" parent="."]');
+    expect(block(tscn, 'Torso')).toContain('z_index');
+  });
+
+  it('lays out a symbol with bones as one step under its bone, or beside the skeleton when it has none', () => {
+    const top = bonesStage(fadedBody(), { start: 0, end: 11 });
+    const lay = groupLayout(top.nested[0].scope);
+    expect(lay.ok).toBe(true);
+    expect(lay.top.map((i) => Object.keys(i)[0])).toEqual(['rig']);
+    const spine = lay.kids.get('bb')!.map((i) => ('nested' in i ? 'nested' : 'part' in i ? i.part.layer.name : 'bone'));
+    expect(spine).toEqual(['Torso', 'nested']);
+  });
+});
 
 describe('Godot bones: a symbol with bones inside a symbol with bones', () => {
   it('sits under the right bone of the outer symbol', () => {
@@ -355,7 +432,7 @@ describe('Godot bones: a symbol with bones inside a symbol with bones', () => {
   it('stays under the bone when the outer symbol itself follows a bone on the stage', () => {
     const doc = bonesExtrasDoc({ bodyArm: true, onBone: true });
     const { tscn } = sceneOf(doc, 1);
-    expect(tscn).toContain('[node name="Body" type="Node2D" parent="Body bones/Root"]');
+    expect(tscn).toContain('[node name="Body" type="CanvasGroup" parent="Body bones/Root"]');
     expect(tscn).toContain('[node name="Arm" type="Node2D" parent="Body bones/Root/Body/Body bones/Spine"]');
   });
 });

@@ -1,7 +1,8 @@
 // Small floating menus and popovers (right-click menus, swatch menus): focus goes in when they open, Escape closes
 // them without also reaching the canvas (where it would deselect), and focus goes back where it was. Tab out of
 // one closes it and lands on the next control after what opened it (a menu closes on any Tab); focus moving
-// somewhere else closes it too.
+// somewhere else closes it too. A popup that opens another popup (a menu with a colour picker, say) counts focus
+// inside that child as its own, and Escape closes the innermost one first.
 import { useEffect, useRef, type RefObject } from 'react';
 
 const FOCUSABLE = 'input:not([disabled]), button:not([disabled]), select:not([disabled]), textarea:not([disabled]), [href], [tabindex]:not([tabindex="-1"])';
@@ -32,6 +33,25 @@ function leaves(el: HTMLElement, back: boolean): boolean {
   return back ? active === mine[0] : active === mine[mine.length - 1];
 }
 
+// Every open popup, so a parent can tell that focus inside a child popup (often portaled elsewhere) is still its own.
+interface Entry { el: HTMLElement; opener: HTMLElement | null }
+const open = new Set<Entry>();
+
+function childrenOf(e: Entry, seen = new Set<Entry>()): Entry[] {
+  const out: Entry[] = [];
+  for (const c of open) {
+    if (c === e || seen.has(c) || !c.opener || !e.el.contains(c.opener)) continue;
+    seen.add(c);
+    out.push(c, ...childrenOf(c, seen));
+  }
+  return out;
+}
+
+/** Whether a node is inside this popup or inside any popup opened from it. */
+function owns(e: Entry, node: Node | null): boolean {
+  return !!node && (e.el.contains(node) || childrenOf(e).some((c) => c.el.contains(node)));
+}
+
 export function usePopover(ref: RefObject<HTMLElement | null>, onClose: () => void): void {
   const close = useRef(onClose);
   close.current = onClose;
@@ -41,6 +61,9 @@ export function usePopover(ref: RefObject<HTMLElement | null>, onClose: () => vo
   useEffect(() => {
     const before = opener.current ?? null;
     const el = ref.current;
+    // Listed before focus moves in, so a parent already knows this is its child.
+    const entry: Entry | null = el ? { el, opener: before } : null;
+    if (entry) open.add(entry);
     const focusIn = () => {
       if (!el || el.contains(document.activeElement)) return;
       el.querySelector<HTMLElement>(FOCUSABLE)?.focus();
@@ -70,7 +93,7 @@ export function usePopover(ref: RefObject<HTMLElement | null>, onClose: () => vo
     };
     const out = (e: FocusEvent) => {
       const to = e.relatedTarget as Node | null;
-      if (!pointer && el && to && !el.contains(to)) shut();
+      if (!pointer && entry && to && !owns(entry, to)) shut();
     };
     const down = () => {
       pointer = true;
@@ -87,15 +110,19 @@ export function usePopover(ref: RefObject<HTMLElement | null>, onClose: () => vo
       window.removeEventListener('pointerup', up, true);
       window.removeEventListener('pointercancel', up, true);
       el?.removeEventListener('focusout', out);
+      if (entry) open.delete(entry);
       cancelAnimationFrame(raf);
       // Only take focus back if it was inside (or nowhere): clicking away onto something else keeps that.
       const now = document.activeElement;
-      if (before && document.contains(before) && (!now || now === document.body || el?.contains(now) || !document.contains(now))) before.focus();
+      if (before && document.contains(before) && (!now || now === document.body || (entry ? owns(entry, now) : false) || !document.contains(now))) before.focus();
     };
   }, []);
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return;
+      // A popup with an open child leaves Escape to the child.
+      const mine = ref.current && [...open].find((x) => x.el === ref.current);
+      if (mine && childrenOf(mine).length) return;
       e.preventDefault();
       e.stopPropagation();
       onClose();

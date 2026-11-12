@@ -289,20 +289,25 @@ const blendWord = (m: string) => m.replace(/-/g, ' ').replace(/^./, (c) => c.toU
 // ---------------------------------------------------------------- fading a symbol as one picture
 
 /** One step in the order a grouped symbol's nodes are written: a skeleton, a bone, or a part. */
-export type GroupItem = { rig: Id } | { bone: Id } | { part: BonesPart };
+export type GroupItem = { rig: Id } | { bone: Id } | { part: BonesPart } | { nested: NestedInstance };
 
 /**
  * Whether a symbol's scope can sit inside a CanvasGroup (so its copy fades as one picture), and the order its nodes
  * must be written in. Godot only groups children on the group's own z, so the parts can't use z_index: the scene tree
  * has to draw them back to front by itself. A bone's parts and child bones can be written in any order, so that works
- * when the parts of each bone (with its child bones') sit together in the layer stack. `top` is the order under the
- * instance; `kids` the order under each bone (and under a skeleton, by rig id). Not for symbols holding symbols with
- * bones, or parts with Add or Multiply (a group blends inside itself, not with the stage).
+ * when the parts of each bone (with its child bones') sit together in the layer stack. A symbol with bones of its own
+ * counts as one step at its layer's place (under its bone when the layer follows one), and needs the same of what is in it. `top` is the order under the
+ * instance; `kids` the order under each bone (and under a skeleton, by rig id). Not for parts or symbols with
+ * Add or Multiply (a group blends inside itself, not with the stage).
  */
 export function groupLayout(sc: BonesScope): { ok: boolean; top: GroupItem[]; kids: Map<Id, GroupItem[]>; why?: string } {
   const failed = (why: string) => ({ ok: false, top: [] as GroupItem[], kids: new Map<Id, GroupItem[]>(), why });
   const fail = failed('its parts are mixed up in the layer stack, so the scene tree cannot draw them in the right order inside one group');
-  if (sc.nested.length) return failed('it holds symbols with bones of their own');
+  for (const n of sc.nested) {
+    if (n.look.blend !== 'mix') return failed('a symbol inside it uses Add or Multiply, which a group would blend inside itself instead of with the stage');
+    const inner = groupLayout(n.scope);
+    if (!inner.ok) return failed(`a symbol with bones inside it cannot be grouped (${inner.why})`);
+  }
   if (sc.parts.some((p) => (p.look?.blend ?? 'mix') !== 'mix')) return failed('some of its parts use Add or Multiply, which a group would blend inside itself instead of with the stage');
   const kids = new Map<Id, GroupItem[]>();
   type Ranged = { item: GroupItem; lo: number; hi: number };
@@ -312,7 +317,7 @@ export function groupLayout(sc: BonesScope): { ok: boolean; top: GroupItem[]; ki
     for (let i = 1; i < drawn.length; i++) if (drawn[i].lo <= drawn[i - 1].hi) return null;
     return [...drawn, ...list.filter((r) => r.lo > r.hi)];
   };
-  const taken = new Set<BonesPart>();
+  const taken = new Set<BonesPart | NestedInstance>();
   const rigRanges: Ranged[] = [];
   for (const rig of sc.rigs) {
     const seen = new Set<Id>();
@@ -335,6 +340,11 @@ export function groupLayout(sc: BonesScope): { ok: boolean; top: GroupItem[]; ki
             taken.add(p);
             list.push({ item: { part: p }, lo: p.z, hi: p.z });
           }
+        for (const n of sc.nested)
+          if (n.bind?.rig.id === rig.id && n.bind.bone === id) {
+            taken.add(n);
+            list.push({ item: { nested: n }, lo: n.z, hi: n.z });
+          }
       }
       const out = sorted(list);
       if (!out) return null;
@@ -346,7 +356,10 @@ export function groupLayout(sc: BonesScope): { ok: boolean; top: GroupItem[]; ki
     rigRanges.push(r);
   }
   // Everything else sits beside the skeletons, wholly behind or in front of each.
-  const loose: Ranged[] = sc.parts.filter((p) => !taken.has(p)).map((p) => ({ item: { part: p }, lo: p.z, hi: p.z }));
+  const loose: Ranged[] = [
+    ...sc.parts.filter((p) => !taken.has(p)).map((p) => ({ item: { part: p } as GroupItem, lo: p.z, hi: p.z })),
+    ...sc.nested.filter((n) => !taken.has(n)).map((n) => ({ item: { nested: n } as GroupItem, lo: n.z, hi: n.z })),
+  ];
   const top = sorted([...rigRanges, ...loose]);
   return top ? { ok: true, top: top.map((r) => r.item), kids } : fail;
 }
@@ -601,7 +614,8 @@ export function bonesNotes(doc: Doc): { native: string[]; baked: string[]; skipp
   const rigged = riggedSymbols(doc);
   const seen = new Set<Id>();
   const scopes = new Map<Id, BonesScope>();
-  const scan = (layers: Layer[], depth: number, inherit: NativeBlend = 'mix') => {
+  // `under`: this symbol sits inside a faded one that is a CanvasGroup, and Godot cannot nest a group in a group.
+  const scan = (layers: Layer[], depth: number, inherit: NativeBlend = 'mix', under = false) => {
     const links = maskLinks(doc, layers);
     noteMasks(doc, layers, notes, links);
     for (const layer of layers) {
@@ -619,18 +633,22 @@ export function bonesNotes(doc: Doc): { native: string[]; baked: string[]; skipp
               if ((layer.bind && !nestableBind(layers, layer)) || look.effects.length || carriedMasks(links, layer).carried.length) notes.skip('Symbols with bones are drawn into the pictures (the layer has effects or masks, or follows a bone that can not carry it)', layer.name);
               else {
                 notes.native.add('Symbols with bones: nested Skeleton2D and Bone2D nodes');
+                let group = false;
                 if (look.opacity * s.opacity < 1 - 1e-6) {
                   const c = symbolContent(doc, s.symbolId);
                   if (c) {
                     let sc = scopes.get(s.symbolId);
                     if (!sc) scopes.set(s.symbolId, (sc = bonesScope(doc, c.layers, { start: 0, end: Math.max(1, c.length) - 1 }, { depth: depth + 1, rigged, scopes })));
-                    const why = groupBlocker(sc, look.blend, inherit);
+                    const why = under ? 'Godot cannot put one fading group inside another, so it fades part by part inside the faded symbol around it' : groupBlocker(sc, look.blend, inherit);
                     if (why) notes.fadeFallback(doc.symbols?.[s.symbolId]?.name ?? 'Symbol', layer.name, why);
+                    else group = true;
                   }
                 }
-                if (!seen.has(s.symbolId)) {
-                  seen.add(s.symbolId);
-                  scan(symbolContent(doc, s.symbolId)?.layers ?? [], depth + 1, look.blend);
+                const inside = under || group;
+                const key = inside ? `${s.symbolId}:group` : s.symbolId;
+                if (!seen.has(key)) {
+                  seen.add(key);
+                  scan(symbolContent(doc, s.symbolId)?.layers ?? [], depth + 1, look.blend, inside);
                 }
               }
             }

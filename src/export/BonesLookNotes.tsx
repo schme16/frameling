@@ -21,7 +21,7 @@ export function BonesLookNotes({ doc }: { doc: Doc }) {
       )}
       {n.fades.length > 0 && (
         <p className="ex-note">
-          <b>Faded part by part:</b> {n.fades.join('; ')}. Where parts overlap, the overlap shows through. Godot can only fade a symbol as one picture when its parts sit in order and none use Add or Multiply.
+          <b>Faded part by part:</b> {n.fades.join('; ')}. Where parts overlap, the overlap shows through. Godot can only fade a symbol as one picture when its parts (and any symbols with bones inside it) sit in order and none use Add or Multiply, and it cannot fade one group inside another.
         </p>
       )}
       {n.skipped.length > 0 && (

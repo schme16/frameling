@@ -191,7 +191,7 @@ $AnimationPlayer.play("walk")
 ## Symbols, camera and looks
 
 - A [symbol](help:symbols) with its own bones comes as a node for each copy, with its own Skeleton2D and parts. Its place, fade and [timeline](help:symbol-properties) are keys. On a layer that follows a bone, the copy sits under that bone, inside symbols too. On a layer with effects or masks, or a bent one, it is drawn into the pictures.
-- A symbol that fades is a **CanvasGroup**: it fades as one picture, so overlapping parts don't show through. If its parts can't be ordered by the scene tree, or use Add or Multiply, each part fades alone, and the export window says which symbols and why.
+- A symbol that fades is a **CanvasGroup**: it fades as one picture, so overlapping parts don't show through, even with a bones symbol inside. If its parts can't be ordered by the scene tree, or use Add or Multiply, each part fades alone, and the export window says which and why.
 - A symbol copied large gets bigger pictures, up to 4 times your export size (less on a huge stage), so it stays sharp.
 - The [camera](help:camera) becomes a **Camera2D** with position, zoom and turn keys. Layers with a depth go under a **Parallax2D**.
 - The camera and depth layers line up when your Godot window is the stage size times the export scale. For other sizes, attach the saved \`-fit-window.gd\` to the scene's root, or set Project Settings > Display > Window to that size with Stretch Mode **canvas_items** and Aspect **keep**.

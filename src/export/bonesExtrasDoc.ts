@@ -23,6 +23,8 @@ export interface ExtrasOptions {
   bodyArm?: boolean;
   /** With bodyArm: the arm copy inside the Body symbol is washed too, so it has its own wash and the Body's on top. */
   armTint?: { color: string; amount: number };
+  /** With bodyArm: the arm copy inside the Body symbol is faded to this much itself (a fade inside a fade). */
+  armFade?: number;
 }
 
 /**
@@ -138,7 +140,7 @@ export function bonesExtrasDoc(o: ExtrasOptions = {}): Doc {
     const holder = newVectorLayer('Arm holder') as VectorLayer;
     holder.bind = { rig: brig.id, bone: 'bb' };
     const hd = vectorDrawing(doc, []);
-    hd.shapes = [inst(0, -45, o.armTint ? { tint: o.armTint } : {})];
+    hd.shapes = [inst(0, -45, { ...(o.armTint ? { tint: o.armTint } : {}), ...(o.armFade !== undefined ? { opacity: o.armFade } : {}) })];
     hold(holder, hd.id, 0, 12);
     const bodyId = uid('sym');
     doc.symbols![bodyId] = { id: bodyId, name: 'Body', layers: [brig, torso, holder], length: 12, origin: { x: 0, y: 0 } };

@@ -1570,6 +1570,11 @@ func _init():
 
 // A symbol with its own bones (moving, faded and tinted), a camera that pans, turns and zooms, a far layer with depth
 // and an Add glow with an effect, exported as bones and compared in Godot with Frameling's own frames.
+// Where the arm lies over the torso of the faded Body: one picture, so the overlap is no brighter than the arm elsewhere.
+const FADE_PROBES = [6, 8, 11].flatMap((frame) => [
+  { frame, x: 75, y: 180, what: 'the arm over the torso, inside the faded Body' },
+  { frame, x: 55, y: 190, what: 'the torso alone' },
+]);
 async function godotBonesExtrasSection(name = 'bones-extras', extra = {}, more, probes = []) {
   const r = begin(name, 'sheet godot-bones');
   try {
@@ -1630,6 +1635,13 @@ async function godotBonesExtrasSection(name = 'bones-extras', extra = {}, more, 
         { frame: 3, x: 140, y: 185, what: 'the arm, outer red wash half in over its blue one' },
         { frame: 6, x: 100, y: 177, what: 'the arm, both washes in' },
       ]);
+    // A faded symbol holding a symbol with bones: the whole thing is one CanvasGroup, so where the arm overlaps the torso
+    // the overlap is not brighter than the rest.
+    if (!ONLY || ONLY.includes('godot-bones'))
+      await godotBonesExtrasSection('bones-body-arm-fade', { bodyArm: true }, ({ tscn }) => check(/\[node name="Body" type="CanvasGroup"/.test(tscn) && /name="Arm" type="Node2D" parent="Body\/Body bones\/Spine"/.test(tscn) && !/name="Torso"[^\n]*\]\nz_index/.test(tscn), 'the faded Body should be a CanvasGroup holding the arm in tree order'), FADE_PROBES);
+    // A fade inside a fade: Godot can't nest one group in another (it draws a grey box), so the arm fades part by part inside the Body's group.
+    if (!ONLY || ONLY.includes('godot-bones'))
+      await godotBonesExtrasSection('bones-nested-fade', { bodyArm: true, armFade: 0.5 }, ({ tscn }) => check(/\[node name="Body" type="CanvasGroup"/.test(tscn) && /name="Arm" type="Node2D" parent="Body\/Body bones\/Spine"/.test(tscn) && /NodePath\("Body\/Body bones\/Spine\/Arm:modulate"\)/.test(tscn), 'the arm inside the faded Body should stay a plain node that fades by modulate'), FADE_PROBES);
     if (!SKIP.includes('files')) await filesSection();
   } catch (e) {
     begin('harness', 'startup').failures.push(String(e?.stack ?? e));
