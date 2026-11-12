@@ -157,3 +157,26 @@ export function unionRect(a: Pick<PixelDrawing, 'x' | 'y' | 'width' | 'height'>,
 export function pixelsOver(d: Pick<PixelDrawing, 'x' | 'y' | 'width' | 'height' | 'pixels'>, r: { x: number; y: number; w: number; h: number }): Uint8ClampedArray {
   return placeOnGrid({ x: (d.x ?? 0) - r.x, y: (d.y ?? 0) - r.y, width: d.width, height: d.height, pixels: d.pixels }, r.w, r.h);
 }
+
+/** Copies a rectangle (grid art pixels) out of a gw-wide grid. */
+export function cropGrid(grid: Uint8ClampedArray, gw: number, r: { x: number; y: number; w: number; h: number }): Uint8ClampedArray {
+  const out = new Uint8ClampedArray(r.w * r.h * 4);
+  for (let y = 0; y < r.h; y++) out.set(grid.subarray(((r.y + y) * gw + r.x) * 4, ((r.y + y) * gw + r.x + r.w) * 4), y * r.w * 4);
+  return out;
+}
+
+/**
+ * Writes a finished gw-wide grid into a drawing when only the rectangle `touched` was changed since the drawing was
+ * `was`: copies and trims just the union of the two, not the whole grid. The grid must be blank outside that union.
+ */
+export function setGridRect(
+  d: { x?: number; y?: number; width: number; height: number; pixels: Uint8ClampedArray },
+  grid: Uint8ClampedArray,
+  gw: number,
+  was: Pick<PixelDrawing, 'x' | 'y' | 'width' | 'height'>,
+  touched: { x: number; y: number; w: number; h: number } | null,
+): void {
+  const r = touched ? unionRect(was, { x: touched.x, y: touched.y, width: touched.w, height: touched.h }) : unionRect(was, { width: 0, height: 0 });
+  if (!r) return setPlaced(d, { x: 0, y: 0, width: 0, height: 0, pixels: NONE });
+  setPlaced(d, trimPixels(cropGrid(grid, gw, r), r.w, r.h, r.x, r.y));
+}
