@@ -44,6 +44,8 @@ const pluginFiles = (n) => Object.fromEntries(['manifest.json', 'main.js'].map((
 const installPlugin = (n) => `window.__framelingPlugins.install(${JSON.stringify(pluginFiles(n))}); true`;
 const waitMs = (ms) => `await new Promise((r) => setTimeout(r, ${ms})); true`;
 const approve = (all) => `${all ? `document.querySelectorAll('.plugin-approve [role=switch]').forEach((b) => b.click());` : ''} document.querySelector('.plugin-approve .ui-btn-primary')?.click(); true`;
+// The picture import dialog, on a sprite sheet and on an animated GIF (the help pictures' samples).
+const picture = (file) => `void __framelingPicture.open(${JSON.stringify(Array.from(fs.readFileSync(path.join(__dirname, 'docs/help/assets', file))))}, ${JSON.stringify(file)}); true`;
 const DIALOGS = [
   ['palette', run('view.commandPalette')],
   ['help', run('help.contents')],
@@ -71,6 +73,8 @@ const DIALOGS = [
   ['export', run('file.export')],
   ['export-tileset', [tpl('tileset'), run('tiles.export')]],
   ['rotate', [tpl('hero-sprites'), run('pixel.rotate')]],
+  ['import-picture', [tpl('hero-sprites'), picture('slime-sheet.png')]],
+  ['import-picture-gif', [tpl('hero-sprites'), picture('slime-bounce.gif')]],
   ['lipsync-name', [tpl('lip-sync'), run('lipsync.nameFrames')]],
   ['save-template', run('file.saveAsTemplate')],
   ['recent', run('file.openRecent')],

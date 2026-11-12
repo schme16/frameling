@@ -35,6 +35,8 @@ The sprite sheet export (File > Export, Sprite sheet) writes slices when the spr
 - **CSS**: each 9-patch gets a small picture and a border-image rule.
 - **JSON**: a list of slices (Aseprite's shape) in the file's meta.
 
+Slices are measured on the first frame, so that frame stays whole on the sheet (not trimmed) and the regions line up.
+
 ## From Aseprite
 
 Slices in an Aseprite file come in as slices on the top pixel layer, with their 9-patch middle and pivot. Aseprite lets a slice move from frame to frame; Frameling's stay put, so it keeps the first position and says so. Slices in a sprite sheet's JSON come in too (see [Cutting a sprite sheet](help:pixel-sheets)).

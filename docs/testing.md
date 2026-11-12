@@ -57,7 +57,7 @@ What's in `test/`, by folder:
 | `lipsync/` | Audio analysis, mouth charts, applying to a symbol. |
 | `particles/` | Emitter maths and determinism. |
 | `perf/` | Work counting against a fake canvas (`fakeCanvas.ts`): cache hits, bitmap builds, look-ahead depth. Never asserts on time. |
-| `pixel/` | Pixel tools, maths, paths, the pixel workspace. `way.test.ts` (the four ways, conversions both directions, the file's `sprite.way`), `wells.test.ts` (Paint and Back, the Spray), `ways-flow.test.tsx` (Quill's chooser and starter cards, the Aseprite keys ask, the change dialog, the layout that follows the way, moments), `sheet-mode.test.ts`, `quests-ways.test.ts`. Under `?debug` the "ask once" pixel questions and Quill's moments are skipped so scripts are not blocked; `__framelingPixel.ask(true)` turns them back on for a picture of them (`src/pixel/harness.ts`). |
+| `pixel/` | Pixel tools, maths, paths, the pixel workspace. Picture import: `import-gif.test.ts` (the GIF reader against real GIFs in `test/fixtures/gif`, made by `scripts/fixtures/make-gif-fixtures.py` with Pillow, ImageMagick and ffmpeg, next to what Pillow says each frame is), `import-sheet.test.ts` (grid and gap slicing, sheet JSON, the four ways, adding to a drawing), `import-dialog.test.tsx`; slices: `slices.test.ts` (maths, file, Aseprite, the export text), `slices-ui.test.tsx` (tool and panel); `import-aseprite-bin.test.ts` needs `ASEPRITE_BIN`. `way.test.ts` (the four ways, conversions both directions, the file's `sprite.way`), `wells.test.ts` (Paint and Back, the Spray), `ways-flow.test.tsx` (Quill's chooser and starter cards, the Aseprite keys ask, the change dialog, the layout that follows the way, moments), `sheet-mode.test.ts`, `quests-ways.test.ts`. Under `?debug` the "ask once" pixel questions and Quill's moments are skipped so scripts are not blocked; `__framelingPixel.ask(true)` turns them back on for a picture of them (`src/pixel/harness.ts`). |
 | `platform/` | The web bridge (IndexedDB through `fake-indexeddb`). |
 | `plugins/` | Manifest checks, manager, ops, runtime and sandbox (with `harness.ts`). |
 | `quests/` | Quest engine, groups, hooks, predicates, the library and the runtime. |
@@ -611,6 +611,27 @@ script already does. `--renderer <dir>` uses a private `vite build --outDir`; `-
 `test/ui/help-media.test.ts` fails when a topic's media has no entry (so it can't be shot again), when an entry is for no
 topic, or when a file is missing, unused or too big. To add help media for a new topic: write the entry, run
 `npm run help:media -- --only <name>`, look at both files, then set `media: '<name>.png'` on the topic.
+
+## Picture import and slices against the real tools
+
+All opt-in; run what you touch, under xvfb.
+
+```bash
+ASEPRITE_BIN=/path/to/aseprite npx vitest run test/pixel/import-aseprite-bin
+GODOT_BIN=/path/to/godot xvfb-run -a -s "-screen 0 1600x1000x24" npx vitest run test/export/slices-godot-e2e
+UNITY_BIN=/path/to/Unity/Editor/Unity xvfb-run -a -s "-screen 0 1600x1000x24" npx vitest run test/export/slices-unity-e2e   # about 90 seconds
+WEB_ENGINES=1 xvfb-run -a -s "-screen 0 1600x1000x24" npx vitest run test/export/slices-web-e2e
+```
+
+- `import-aseprite-bin`: Aseprite (batch mode) makes a sprite with delays, tags and slices (`test/pixel/lua/sheet.lua`),
+  exports a trimmed sheet with JSON and every frame as a picture. Frameling's sheet import must give the same frames,
+  delays and tags, and its slices must equal both Aseprite's JSON and the slices read from the .aseprite file.
+- `slices-godot-e2e`: the `-slices.tscn` loads in Godot 4: a NinePatchRect with its margins and region, a Sprite2D on an
+  AtlasTexture with the pivot as its origin, and the pixels of each region.
+- `slices-unity-e2e`: a throwaway Unity project, with and without the 2D Sprite package, imports the sheet through the
+  importer script; each sprite's rect, pivot and border are read back (`scripts/e2e/unity/FramelingSliceCheck.cs`).
+- `slices-web-e2e`: Phaser 3 and 4, PixiJS 8 load the atlas (frame regions, pivot, anchor) and Chromium draws the CSS
+  9-patch stretched (`scripts/e2e/web-slices.cjs`).
 
 ## Aseprite import against the real Aseprite
 

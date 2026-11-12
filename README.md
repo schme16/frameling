@@ -23,7 +23,8 @@ the project board (project `frameling`, doc `evaluation`). Developer docs are in
 - **Export**: MP4, WebM, GIF, APNG, PNG and PNG sequences, sprite sheets with data for Godot, Unity, Phaser, PixiJS,
   CSS and JSON, SVG and animated SVG, Lottie, PDF, `.ai`, PSD, ProRes 4444, Godot bones scenes and a Godot importer
   add-on, and `.flplay` for Interactives (with a round trip back into Frameling).
-- **Aseprite files** (`.aseprite`, `.ase`) open as a drawing or add to the open one: layers, groups, exact frame timing, linked cels, tags as clips, palettes, tilemaps as tiles (`src/aseprite`).
+- **Aseprite files** (`.aseprite`, `.ase`) open as a drawing or add to the open one: layers, groups, exact frame timing, linked cels, tags as clips, palettes, tilemaps as tiles, slices (`src/aseprite`).
+- **Pictures and sprite sheets** (PNG, animated GIF, sprite sheets) open as pixel art or add to the open drawing, cut by a grid, by the gaps or by a JSON (`src/pixel/import`). **Slices** (named rectangles with a 9-patch middle and a pivot) go to Godot, Unity, Phaser, PixiJS, CSS and JSON with the sprite sheet export (`src/pixel/slices`).
 - **Around it**: autosave, recovery and version history, templates (built in and your own), sandboxed plugins, quests
   and onboarding with Quill the mascot, in-app help with pictures and clips, themes and a theme editor, shortcut sets,
   workspaces.
