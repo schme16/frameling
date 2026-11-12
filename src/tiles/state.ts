@@ -8,9 +8,11 @@ export interface TileUi {
   flags: number;
   /** Show the drawing repeated around itself, with edits wrapping across the edges (for seamless tiles). */
   tileMode: boolean;
+  /** The Tileset panel's size and grid form is open. */
+  sizeForm: boolean;
 }
 
-let state: TileUi = { brush: 0, flags: 0, tileMode: false };
+let state: TileUi = { brush: 0, flags: 0, tileMode: false, sizeForm: false };
 const listeners = new Set<() => void>();
 
 export function getTileUi(): TileUi {
@@ -19,7 +21,7 @@ export function getTileUi(): TileUi {
 
 export function setTileUi(patch: Partial<TileUi>): void {
   const next = { ...state, ...patch };
-  if (next.brush === state.brush && next.flags === state.flags && next.tileMode === state.tileMode) return;
+  if (next.brush === state.brush && next.flags === state.flags && next.tileMode === state.tileMode && next.sizeForm === state.sizeForm) return;
   state = next;
   for (const fn of listeners) fn();
 }

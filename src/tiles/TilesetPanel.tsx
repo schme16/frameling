@@ -6,7 +6,7 @@ import { getCommand } from '../core/registry';
 import { Icon } from '../ui/icons';
 import { findTile, tileDrawingAt } from './model';
 import * as ops from './ops';
-import { setTileUi, useTileUi } from './state';
+import { getTileUi, setTileUi, useTileUi } from './state';
 import { TileThumb } from './TileThumb';
 import './tiles.css';
 
@@ -65,8 +65,8 @@ export function TilesetPanel() {
   const frame = useStore((s) => s.ui.frame);
   const nested = useStore(() => store().nestedTag());
   const editing = nested ? ops.editingTileKey() : 0;
-  const { brush, tileMode } = useTileUi((s) => s);
-  const [sizing, setSizing] = useState(false);
+  const { brush, tileMode, sizeForm: sizing } = useTileUi((s) => s);
+  const setSizing = (v: boolean | ((x: boolean) => boolean)) => setTileUi({ sizeForm: typeof v === 'function' ? v(getTileUi().sizeForm) : v });
   const [renaming, setRenaming] = useState(0);
   const [drag, setDrag] = useState<{ key: number; over: number } | null>(null);
   const ts = doc.tileset;
