@@ -9,6 +9,9 @@ const num = (v: unknown, d: number) => (typeof v === 'number' && Number.isFinite
 const clamp = (v: unknown, d: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, num(v, d)));
 const color = (v: unknown, d: string) => (typeof v === 'string' && /^#[0-9a-f]{3,8}$/i.test(v) ? v : d);
 
+/** A shape's `origin` from a file: kept when it is a non-empty string, otherwise left out. */
+export const readOrigin = (s: any): { origin?: string } => (typeof s?.origin === 'string' && s.origin ? { origin: s.origin.slice(0, 200) } : {});
+
 function readTransform(t: unknown): Transform2D {
   const o = isObj(t) ? t : {};
   return { x: num(o.x, 0), y: num(o.y, 0), scaleX: num(o.scaleX, 1), scaleY: num(o.scaleY, 1), rotation: num(o.rotation, 0), skew: num(o.skew, 0) };
@@ -39,6 +42,7 @@ export function readTextShape(s: any): TextShape | null {
   const animators = Array.isArray(s.animators) ? s.animators.map(readAnimator).filter((a: TextAnimator | null): a is TextAnimator => !!a) : [];
   return {
     id: s.id,
+    ...readOrigin(s),
     ...(typeof s.group === 'string' ? { group: s.group } : {}),
     type: 'text',
     text: s.text.slice(0, 20000),
@@ -62,6 +66,7 @@ export function readParticlesShape(s: any): ParticlesShape | null {
   const sprite: ParticleSprite = SPRITES.some((x) => x.value === s.sprite) ? s.sprite : d.sprite;
   return {
     id: s.id,
+    ...readOrigin(s),
     ...(typeof s.group === 'string' ? { group: s.group } : {}),
     type: 'particles',
     transform: readTransform(s.transform),

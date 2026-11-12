@@ -24,14 +24,18 @@ function plain<T>(x: T): T {
   return isDraft(x) ? (current(x as never) as T) : x;
 }
 
-/** A deep copy of a drawing under a new id (shapes get new ids too, pixels get their own buffer). */
+/** A deep copy of a drawing under a new id (shapes get new ids too but keep their `origin`, pixels get their own buffer). */
 export function cloneDrawing(d: Drawing): Drawing {
   const src = plain(d);
   if (src.kind === 'pixel') return { ...src, id: uid('p'), pixels: new Uint8ClampedArray(src.pixels) };
   if (src.kind === 'tilemap') return { ...src, id: uid('t'), cells: new Uint32Array(src.cells) };
   if (src.kind === 'camera') return { id: uid('k'), kind: 'camera', view: { ...src.view } };
   const shapes = structuredClone(src.shapes) as Shape[];
-  for (const s of shapes) s.id = uid('s');
+  // Each copy remembers the shape it came from, so a selection can follow it from key to key.
+  for (const s of shapes) {
+    s.origin = s.origin ?? s.id;
+    s.id = uid('s');
+  }
   // A bones layer's key keeps its pose.
   return { id: uid('v'), kind: 'vector', shapes, ...(src.pose ? { pose: JSON.parse(JSON.stringify(src.pose)) } : {}) };
 }

@@ -330,6 +330,8 @@ export interface BrushSettings {
 /** A brush or pencil stroke, kept as its input points so it can be re-rendered or re-styled losslessly. */
 export interface StrokeShape {
   id: Id;
+  /** The id of the shape this one was copied from when a new key was made, kept through later copies (missing = the first of its line). Lets a selection follow the shape from key to key. */
+  origin?: Id;
   /** Shapes sharing a group id select and move together, and never merge (missing = not grouped). */
   group?: Id;
   type: 'stroke';
@@ -358,6 +360,8 @@ export interface SubPath {
  */
 export interface FillShape {
   id: Id;
+  /** The id of the shape this one was copied from when a new key was made, kept through later copies (missing = the first of its line). Lets a selection follow the shape from key to key. */
+  origin?: Id;
   /** Shapes sharing a group id select and move together, and never merge (missing = not grouped). */
   group?: Id;
   type: 'fill';
@@ -388,6 +392,8 @@ export interface Gradient {
 /** A geometric shape (rectangle, ellipse, line, polygon, pen path), with an optional fill and stroke. */
 export interface PathShape {
   id: Id;
+  /** The id of the shape this one was copied from when a new key was made, kept through later copies (missing = the first of its line). Lets a selection follow the shape from key to key. */
+  origin?: Id;
   /** Shapes sharing a group id select and move together, and never merge (missing = not grouped). */
   group?: Id;
   type: 'path';
@@ -522,6 +528,8 @@ export type PlayMode = 'loop' | 'once' | 'single';
 /** A placed copy of a symbol. Lives in a vector drawing like any shape, so select, move and arrange work on it. */
 export interface InstanceShape {
   id: Id;
+  /** The id of the shape this one was copied from when a new key was made, kept through later copies (missing = the first of its line). Lets a selection follow the shape from key to key. */
+  origin?: Id;
   group?: Id;
   type: 'instance';
   symbolId: Id;
@@ -623,6 +631,8 @@ export interface TextAnimator {
  */
 export interface TextShape {
   id: Id;
+  /** The id of the shape this one was copied from when a new key was made, kept through later copies (missing = the first of its line). Lets a selection follow the shape from key to key. */
+  origin?: Id;
   group?: Id;
   type: 'text';
   text: string;
@@ -653,6 +663,8 @@ export type ParticleSprite = 'dot' | 'soft' | 'square' | 'star' | 'spark' | 'str
  */
 export interface ParticlesShape {
   id: Id;
+  /** The id of the shape this one was copied from when a new key was made, kept through later copies (missing = the first of its line). Lets a selection follow the shape from key to key. */
+  origin?: Id;
   group?: Id;
   type: 'particles';
   /** Where the emitter sits and how it is turned and stretched (origin = its centre). */

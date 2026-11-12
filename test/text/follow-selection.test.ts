@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import type { PathShape, VectorDrawing } from '../../src/core/format';
 import { newDoc, newVectorDrawing } from '../../src/core/doc';
 import { resetStore, store } from '../../src/core/store';
-import { followTextSelection } from '../../src/core/followSelection';
 import { newTextShape } from '../../src/text/model';
 import { selectedTexts } from '../../src/text/ops';
 
@@ -57,21 +56,21 @@ describe('selected text stays selected while the playhead moves', () => {
     expect(sel()).toEqual(['a-text']);
   });
 
-  it('lets go of nothing it should not: no text on the new frame leaves the selection as it was', () => {
+  it('no text on the new frame leaves nothing selected there, and it comes back with the text', () => {
     setup();
     store().setUi({ frame: 12 });
     expect(selectedTexts()).toHaveLength(0);
-    expect(sel()).toEqual(['a-text']);
+    expect(sel()).toEqual([]);
     // Back where the text is, it is selected again.
     store().setUi({ frame: 2 });
     expect(selectedTexts().map((t) => t.id)).toEqual(['a-text']);
   });
 
-  it('leaves other selections alone', () => {
+  it('other shapes follow too (old documents match by place)', () => {
     setup();
     store().setUi({ selection: ['a-box'] });
     store().setUi({ frame: 6 });
-    expect(sel()).toEqual(['a-box']);
+    expect(sel()).toEqual(['b-box']);
   });
 
   it('respects a selection set together with the frame, and another layer', () => {

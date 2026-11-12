@@ -38,6 +38,8 @@ registerHelpTopics([
 
 Changed your mind? **Ctrl+Shift+Z** (or **Ctrl+Y**) puts the change back.
 
+Whatever you had selected stays selected after Undo or Redo, as long as it is still there.
+
 Frameling remembers your last 300 changes. Dragging something counts as one change, however long you drag for.`,
   },
 ]);

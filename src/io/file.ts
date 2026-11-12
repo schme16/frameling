@@ -11,7 +11,7 @@ import { BONE_STRETCH, FORMAT_VERSION, LAYER_LABELS, type LayerLabel, type Cel, 
 import { decodePng, encodePng } from './png';
 import { rootDoc } from '../core/symbols';
 import { isEasing } from '../core/ease';
-import { readParticlesShape, readTextShape } from './shapes-extra';
+import { readOrigin, readParticlesShape, readTextShape } from './shapes-extra';
 import { packAudio, unpackAudio } from './audio-file';
 import { packArtboards, readArtboards } from '../artboards/io';
 
@@ -160,7 +160,7 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
       continue;
     }
     if (d.kind === 'vector') {
-      const shapes: Shape[] = Array.isArray(d.shapes) ? d.shapes.filter((s: any) => isObj(s) && SHAPE_TYPES.has(s.type)).map((s: any) => (s.type === 'instance' ? readInstance(s) : s.type === 'text' ? readTextShape(s) : s.type === 'particles' ? readParticlesShape(s) : cleanGradients(s))).filter((s: Shape | null): s is Shape => !!s) : [];
+      const shapes: Shape[] = Array.isArray(d.shapes) ? d.shapes.filter((s: any) => isObj(s) && SHAPE_TYPES.has(s.type)).map((s: any) => (s.type === 'instance' ? readInstance(s) : s.type === 'text' ? readTextShape(s) : s.type === 'particles' ? readParticlesShape(s) : cleanOrigin(cleanGradients(s)))).filter((s: Shape | null): s is Shape => !!s) : [];
       if (!Array.isArray(d.shapes) || shapes.length !== d.shapes.length) warnings.push('Some shapes could not be read and were left out.');
       drawings[id] = { id: str(d.id, id), kind: 'vector', shapes, ...readPose(d.pose) };
     } else if (d.kind === 'pixel') {
@@ -402,6 +402,13 @@ export function readFlow(raw: unknown, clips: { id: string }[]): ClipFlow | unde
   return { ...(start ? { start } : {}), transitions, ...(Object.keys(positions).length ? { positions } : {}) };
 }
 
+/** A stroke, fill or path shape with a bad `origin` taken out. */
+function cleanOrigin<T extends Record<string, any>>(s: T): T {
+  if (!('origin' in s)) return s;
+  const { origin: _drop, ...rest } = s;
+  return { ...rest, ...readOrigin(s) } as unknown as T;
+}
+
 /** An instance shape with every field present and sane, or null. */
 function readInstance(s: any): InstanceShape | null {
   if (typeof s.symbolId !== 'string' || typeof s.id !== 'string') return null;
@@ -409,6 +416,7 @@ function readInstance(s: any): InstanceShape | null {
   const tint = isObj(s.tint) && typeof s.tint.color === 'string' ? { color: s.tint.color, amount: Math.min(1, Math.max(0, num(s.tint.amount, 0))) } : undefined;
   return {
     id: s.id,
+    ...readOrigin(s),
     ...(typeof s.group === 'string' ? { group: s.group } : {}),
     type: 'instance',
     symbolId: s.symbolId,

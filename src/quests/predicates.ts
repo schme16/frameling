@@ -51,7 +51,7 @@ export function ownDrawingAt(doc: Doc, frame: number): boolean {
   });
 }
 
-const dropIds = (k: string, v: unknown) => (k === 'id' ? undefined : v);
+const dropIds = (k: string, v: unknown) => (k === 'id' || k === 'origin' ? undefined : v);
 
 function sameShapes(a: Shape[], b: Shape[]): boolean {
   return a.length === b.length && JSON.stringify(a, dropIds) === JSON.stringify(b, dropIds);

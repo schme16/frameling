@@ -380,9 +380,11 @@ export function transformShapes(shapes: Shape[], m: Matrix): Shape[] {
   return shapes.map((s) => transformShape(s, m));
 }
 
-/** A deep copy under a new id. */
+/** A deep copy under a new id. A copy under a new id is a shape of its own, so it does not keep the `origin`. */
 export function cloneShape<S extends Shape>(s: S, id: string): S {
-  return { ...transformShape(s, IDENTITY), id } as S;
+  const out = { ...transformShape(s, IDENTITY), id } as S;
+  if (id !== s.id) delete out.origin;
+  return out;
 }
 
 // ---------------------------------------------------------------- selection handles

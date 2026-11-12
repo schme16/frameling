@@ -130,6 +130,8 @@ On a **pixel layer** the line is one pixel wide, and **Shift** snaps it to the c
 
 Everything you do in one drag is one undo step. Selecting picks from the frame you're on. On a pixel layer, Select picks pixels instead: see [Selecting pixels](help:pixel-select).
 
+**The selection follows your drawing from key to key.** Press Play or drag the playhead past a new drawing, and the same shapes, symbols and text stay selected there, so you can keep nudging or restyling them. Something you only drew in one key is left out of the selection on the other keys, and is selected again when you come back.
+
 See [Selecting and moving](help:selecting) for the keyboard shortcuts.`,
   },
   {

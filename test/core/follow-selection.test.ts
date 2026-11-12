@@ -1,0 +1,225 @@
+import { describe, expect, it } from 'vitest';
+import type { Doc, InstanceShape, PathShape, Shape, StrokeShape, VectorDrawing } from '../../src/core/format';
+import { newDoc, newVectorDrawing } from '../../src/core/doc';
+import { resetStore, store } from '../../src/core/store';
+import { existingSelection, followSelection, resolveFollowed, shapeLineage } from '../../src/core/followSelection';
+import { cloneShape } from '../../src/canvas/geometry';
+import { cloneDrawing } from '../../src/timeline/edit-core';
+import { loadFile, saveFile } from '../../src/io/file';
+import { newTextShape } from '../../src/text/model';
+import { drawingsDiffer } from '../../src/quests/predicates';
+
+const box = (id: string, x = 0): PathShape => ({ id, type: 'path', paths: [{ closed: true, points: [{ x, y: 0 }, { x: x + 5, y: 0 }, { x: x + 5, y: 5 }] }], fill: '#f00', stroke: null, opacity: 1 });
+const line = (id: string): StrokeShape => ({ id, type: 'stroke', points: [{ x: 0, y: 0, p: 0.5 }, { x: 9, y: 9, p: 0.5 }], brush: { size: 4, thinning: 0, smoothing: 0, streamline: 0, taperStart: 0, taperEnd: 0, capStart: true, capEnd: true }, color: '#000', opacity: 1 });
+const inst = (id: string): InstanceShape => ({ id, type: 'instance', symbolId: 'sym', transform: { x: 0, y: 0, scaleX: 1, scaleY: 1, rotation: 0, skew: 0 }, opacity: 1, play: 'loop', firstFrame: 0 });
+
+/** Puts drawings on the first layer, one key of 5 frames each. */
+function build(drawings: VectorDrawing[]): Doc {
+  const doc = newDoc({ width: 100, height: 100, length: drawings.length * 5 });
+  drawings.forEach((d, i) => {
+    doc.drawings[d.id] = d;
+    doc.layers[0].cels.push({ id: `k${i}`, start: i * 5, length: 5, drawingId: d.id });
+  });
+  return doc;
+}
+const drawing = (shapes: Shape[]): VectorDrawing => ({ ...newVectorDrawing(), shapes });
+const layerId = (d: Doc) => d.layers[0].id;
+
+describe('lineage: where a shape was copied from', () => {
+  it('cloneDrawing gives new ids but remembers the first shape, through later copies', () => {
+    const a = drawing([box('x'), line('y')]);
+    const b = cloneDrawing(a) as VectorDrawing;
+    const c = cloneDrawing(b) as VectorDrawing;
+    expect(b.shapes.map((s) => s.id)).not.toContain('x');
+    expect(b.shapes.map((s) => s.origin)).toEqual(['x', 'y']);
+    expect(c.shapes.map((s) => s.origin)).toEqual(['x', 'y']);
+    expect(c.shapes.map((s) => shapeLineage(s))).toEqual(['x', 'y']);
+    // The source is left alone.
+    expect(a.shapes.map((s) => s.origin)).toEqual([undefined, undefined]);
+  });
+
+  it('a copy still looks the same as its source (ids and lineage do not count)', () => {
+    const a = drawing([box('x')]);
+    expect(drawingsDiffer(a, cloneDrawing(a))).toBe(false);
+  });
+
+  it('a copy under a new id (Paste, Duplicate) is a shape of its own', () => {
+    const c = cloneDrawing(drawing([box('x')])) as VectorDrawing;
+    expect(cloneShape(c.shapes[0], 'new').origin).toBeUndefined();
+    expect(cloneShape(c.shapes[0], c.shapes[0].id).origin).toBe('x');
+  });
+});
+
+describe('following the selection from key to key', () => {
+  it('finds the same shape even when shapes were added or removed before it', () => {
+    const a = drawing([box('a1'), box('a2'), line('a3')]);
+    const b = cloneDrawing(a) as VectorDrawing;
+    b.shapes.shift(); // the first shape is gone from this key
+    b.shapes.unshift(box('fresh'), box('fresh2'));
+    const doc = build([a, b]);
+    const r = followSelection(doc, layerId(doc), ['a3'], 0, 5);
+    expect(r?.selection).toEqual([b.shapes[3].id]);
+    expect(b.shapes[3].origin).toBe('a3');
+  });
+
+  it('follows every kind: strokes, paths, symbol instances and text', () => {
+    const a = drawing([box('p'), line('s'), inst('i'), newTextShape('t', { x: 1, y: 2 }, { text: 'Hi' })]);
+    const b = cloneDrawing(a) as VectorDrawing;
+    const doc = build([a, b]);
+    const r = followSelection(doc, layerId(doc), ['p', 's', 'i', 't'], 0, 5);
+    expect(r?.selection).toEqual(b.shapes.map((s) => s.id));
+  });
+
+  it('keeps going over three keys, and back again', () => {
+    const a = drawing([box('p'), line('s')]);
+    const b = cloneDrawing(a) as VectorDrawing;
+    const c = cloneDrawing(b) as VectorDrawing;
+    const doc = build([a, b, c]);
+    const ab = followSelection(doc, layerId(doc), ['s'], 0, 5)!;
+    const bc = followSelection(doc, layerId(doc), ab.selection, 5, 10, ab.memory)!;
+    expect(bc.selection).toEqual([c.shapes[1].id]);
+    expect(followSelection(doc, layerId(doc), bc.selection, 10, 0, bc.memory)?.selection).toEqual(['s']);
+  });
+
+  it('drops shapes the new key has no copy of, and brings them back on return', () => {
+    const a = drawing([box('p'), line('s')]);
+    const b = cloneDrawing(a) as VectorDrawing;
+    b.shapes.shift();
+    const c = drawing([box('other')]);
+    const doc = build([a, b, c]);
+    const one = followSelection(doc, layerId(doc), ['p', 's'], 0, 5)!;
+    expect(one.selection).toEqual([b.shapes[0].id]);
+    // A key that has none of them: nothing selected there.
+    const two = followSelection(doc, layerId(doc), one.selection, 5, 10, one.memory)!;
+    expect(two.selection).toEqual([]);
+    // Back at the first key all of them are selected again.
+    const back = followSelection(doc, layerId(doc), two.selection, 10, 0, two.memory)!;
+    expect(back.selection).toEqual(['p', 's']);
+  });
+
+  it('a selection made by the user after a follow is not mixed up with the old memory', () => {
+    const a = drawing([box('p'), line('s')]);
+    const b = cloneDrawing(a) as VectorDrawing;
+    const doc = build([a, b]);
+    const r = followSelection(doc, layerId(doc), ['p', 's'], 0, 5)!;
+    // The user picks one shape in the second key.
+    const picked = [b.shapes[0].id];
+    expect(followSelection(doc, layerId(doc), picked, 5, 0, r.memory)?.selection).toEqual(['p']);
+  });
+
+  it('leaves the selection alone inside one key, and when nothing is selected', () => {
+    const a = drawing([box('p')]);
+    const doc = build([a, cloneDrawing(a) as VectorDrawing]);
+    expect(followSelection(doc, layerId(doc), ['p'], 0, 3)).toBeNull();
+    expect(followSelection(doc, layerId(doc), [], 0, 5)).toBeNull();
+    expect(followSelection(doc, 'nope', ['p'], 0, 5)).not.toBeUndefined();
+  });
+
+  it('old documents (no lineage): the shape at the same place, when the keys look alike', () => {
+    const a = drawing([box('a1'), line('a2')]);
+    const b = drawing([box('b1'), line('b2')]);
+    const doc = build([a, b]);
+    expect(followSelection(doc, layerId(doc), ['a2'], 0, 5)?.selection).toEqual(['b2']);
+    // Different kind at that place, or a different number of shapes: no guess.
+    const c = drawing([line('c1'), box('c2')]);
+    const d = drawing([box('d1')]);
+    const doc2 = build([a, c, d]);
+    expect(followSelection(doc2, layerId(doc2), ['a2'], 0, 5)?.selection).toEqual([]);
+    expect(followSelection(doc2, layerId(doc2), ['a2'], 0, 10)?.selection).toEqual([]);
+  });
+
+  it('lineage wins over position, and a key with lineage never falls back to position', () => {
+    const a = drawing([box('a1'), box('a2')]);
+    const b = cloneDrawing(a) as VectorDrawing;
+    b.shapes.reverse();
+    const doc = build([a, b]);
+    expect(followSelection(doc, layerId(doc), ['a1'], 0, 5)?.selection).toEqual([b.shapes[1].id]);
+    expect(resolveFollowed(b, [{ lineage: 'gone', at: 0, type: 'path', legacy: true, of: 2 }])).toEqual([]);
+  });
+
+  it('shapes that share a lineage are matched one by one, not all to the first', () => {
+    const a = drawing([box('x'), { ...box('y'), origin: 'x' }]);
+    const b = cloneDrawing(a) as VectorDrawing;
+    const doc = build([a, b]);
+    expect(followSelection(doc, layerId(doc), ['y'], 0, 5)?.selection).toEqual([b.shapes[0].id]);
+    const both = followSelection(doc, layerId(doc), ['x', 'y'], 0, 5)?.selection;
+    expect(both).toEqual([b.shapes[0].id, b.shapes[1].id]);
+  });
+});
+
+describe('the store keeps the selection on the same shapes while the playhead moves', () => {
+  function setup() {
+    const a = drawing([box('p'), line('s')]);
+    const b = cloneDrawing(a) as VectorDrawing;
+    b.shapes.shift();
+    const doc = build([a, b]);
+    resetStore(doc);
+    store().setUi({ activeLayerId: layerId(doc), frame: 1, selection: ['p', 's'] });
+    return { a, b };
+  }
+
+  it('follows into the next key, drops what is missing there, and gets it back', () => {
+    const { b } = setup();
+    store().setUi({ frame: 6 });
+    expect(store().get().ui.selection).toEqual([b.shapes[0].id]);
+    store().setUi({ frame: 2 });
+    expect(store().get().ui.selection).toEqual(['p', 's']);
+  });
+
+  it('a selection made in between starts fresh', () => {
+    const { b } = setup();
+    store().setUi({ frame: 6 });
+    store().setUi({ selection: [b.shapes[0].id] });
+    store().setUi({ frame: 0 });
+    expect(store().get().ui.selection).toEqual(['s']);
+  });
+});
+
+describe('Undo and Redo keep the selection where the shapes still exist', () => {
+  it('existingSelection keeps only shapes on the active key', () => {
+    const a = drawing([box('p'), line('s')]);
+    const doc = build([a]);
+    expect(existingSelection(doc, layerId(doc), 0, ['p', 'gone', 's'])).toEqual(['p', 's']);
+    expect(existingSelection(doc, layerId(doc), 0, ['gone'])).toEqual([]);
+    expect(existingSelection(doc, layerId(doc), 12, ['p'])).toEqual([]);
+  });
+
+  it('keeps the selection after undoing a move, and clears it after undoing the add', () => {
+    const a = drawing([box('p')]);
+    const doc = build([a]);
+    resetStore(doc);
+    store().setUi({ activeLayerId: layerId(doc), frame: 0 });
+    store().update('Move', (d) => void ((d.drawings[a.id] as VectorDrawing).shapes[0] as PathShape).paths[0].points.push({ x: 1, y: 1 }));
+    store().update('Add', (d) => void (d.drawings[a.id] as VectorDrawing).shapes.push(box('q')));
+    store().setUi({ selection: ['p', 'q'] });
+    store().undo();
+    expect(store().get().ui.selection).toEqual(['p']);
+    store().undo();
+    expect(store().get().ui.selection).toEqual(['p']);
+    store().redo();
+    expect(store().get().ui.selection).toEqual(['p']);
+    store().redo();
+    store().setUi({ selection: ['q'] });
+    store().redo();
+    expect(store().get().ui.selection).toEqual(['q']);
+  });
+});
+
+describe('the file keeps lineage', () => {
+  it('round-trips origin on every kind of shape and drops a bad one', () => {
+    const a = drawing([box('p'), line('s'), inst('i'), newTextShape('t', { x: 1, y: 2 }, { text: 'Hi' })]);
+    const b = cloneDrawing(a) as VectorDrawing;
+    const doc = build([a, b]);
+    const { doc: back, warnings } = loadFile(saveFile(doc, '1.0.0'));
+    expect(warnings).toEqual([]);
+    expect((back.drawings[b.id] as VectorDrawing).shapes.map((s) => s.origin)).toEqual(['p', 's', 'i', 't']);
+    expect((back.drawings[a.id] as VectorDrawing).shapes.map((s) => s.origin)).toEqual([undefined, undefined, undefined, undefined]);
+    expect(back).toEqual(doc);
+    // Junk is dropped; the shape is still read.
+    (b.shapes[0] as unknown as { origin: unknown }).origin = 7;
+    (b.shapes[2] as unknown as { origin: unknown }).origin = '';
+    const bad = loadFile(saveFile(doc, '1.0.0')).doc.drawings[b.id] as VectorDrawing;
+    expect(bad.shapes).toHaveLength(4);
+    expect(bad.shapes.map((s) => s.origin)).toEqual([undefined, 's', undefined, 't']);
+  });
+});

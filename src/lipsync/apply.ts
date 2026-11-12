@@ -144,7 +144,7 @@ export function applyMouths(doc: Doc, layerId: Id, start: number, mouths: readon
 
 /** What identifies a key's look, so two touching keys that look the same can become one. */
 function look(d: Drawing | undefined): string {
-  return d?.kind === 'vector' ? JSON.stringify(d.shapes, (k, v) => (k === 'id' ? undefined : v)) : '';
+  return d?.kind === 'vector' ? JSON.stringify(d.shapes, (k, v) => (k === 'id' || k === 'origin' ? undefined : v)) : '';
 }
 
 /** Joins touching keys around `index` that show the same thing (and have no in-betweens between them). */

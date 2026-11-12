@@ -10,7 +10,7 @@ import { applyPatches, enablePatches, produceWithPatches, setAutoFreeze, type Dr
 import { useSyncExternalStore } from 'react';
 import type { BrushSettings, Color, Doc, Id } from './format';
 import { DEFAULT_BRUSH, newDoc } from './doc';
-import { followTextSelection } from './followSelection';
+import { existingSelection, followSelection, type FollowMemory } from './followSelection';
 
 enablePatches();
 // Pixel drawings hold typed arrays, which immer can't freeze; we never mutate state outside update() anyway.
@@ -129,6 +129,8 @@ export class Store {
   private redoStack: HistoryEntry[] = [];
   private nested: Nested | null = null;
   private merged: { parent: Doc; child: Doc; out: Doc } | null = null;
+  /** What the selection stands for while it follows across keys (see followSelection). */
+  private follow: FollowMemory | null = null;
 
   constructor(doc: Doc = newDoc()) {
     this.state = { doc, ui: initialUi(doc) };
@@ -174,10 +176,13 @@ export class Store {
     const p = typeof patch === 'function' ? patch(this.state.ui) : patch;
     const was = this.state.ui;
     let ui = { ...was, ...p };
-    // Moving the playhead (or playing) keeps selected text selected on the next key.
+    // Moving the playhead (or playing) keeps the selection on the same shapes in the next key.
     if (p.frame !== undefined && p.frame !== was.frame && !('selection' in p) && ui.activeLayerId === was.activeLayerId) {
-      const kept = followTextSelection(this.state.doc, ui.activeLayerId, was.selection, was.frame, p.frame);
-      if (kept) ui = { ...ui, selection: kept };
+      const kept = followSelection(this.state.doc, ui.activeLayerId, was.selection, was.frame, p.frame, this.follow);
+      if (kept) {
+        ui = { ...ui, selection: kept.selection };
+        this.follow = kept.memory;
+      }
     }
     this.state = { ...this.state, ui };
     this.emit();
@@ -205,15 +210,21 @@ export class Store {
     const e = this.undoStack.pop();
     if (!e) return;
     this.redoStack.push(e);
-    this.state = { doc: applyPatches(this.state.doc, e.inverse), ui: { ...this.state.ui, dirty: true, selection: [] } };
-    this.emit();
+    this.afterHistory(applyPatches(this.state.doc, e.inverse));
   }
 
   redo(): void {
     const e = this.redoStack.pop();
     if (!e) return;
     this.undoStack.push({ ...e, coalesce: undefined });
-    this.state = { doc: applyPatches(this.state.doc, e.patches), ui: { ...this.state.ui, dirty: true, selection: [] } };
+    this.afterHistory(applyPatches(this.state.doc, e.patches));
+  }
+
+  /** Takes the document Undo or Redo made, keeping the selected shapes that are still there. */
+  private afterHistory(doc: Doc): void {
+    const ui = this.state.ui;
+    const keep = existingSelection(doc, ui.activeLayerId, ui.frame, ui.selection);
+    this.state = { doc, ui: { ...ui, dirty: true, selection: keep.length === ui.selection.length ? ui.selection : keep } };
     this.emit();
   }
 
