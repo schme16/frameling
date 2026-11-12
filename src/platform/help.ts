@@ -24,7 +24,7 @@ In any browser you can also **drop a .frameling file onto the page** to open it.
 
 ## Exporting
 
-Exports work the same. Where the browser can't pick a save spot, the file downloads. Exports of several files (a **sprite sheet** and its data, a tileset) go into a folder you choose in Chrome and Edge, and download as one **.zip** elsewhere.
+Exports work the same. Where the browser can't pick a save spot, the file downloads. Exports of several files (a **sprite sheet** and its data, a tileset) go into a folder you choose in Chrome and Edge, and download as one **.zip** elsewhere. In Safari, a long export shows a **Save** button when your file is ready. Press it to download.
 
 **ProRes video** needs the desktop app, and text can use Frameling's own fonts but not ones installed on your computer.
 
@@ -32,7 +32,7 @@ Exports work the same. Where the browser can't pick a save spot, the file downlo
 
 [Autosave](help:autosave) works the same, every minute and whenever you switch tabs. The next visit offers unsaved work back, and **File > Recover unsaved work...** keeps it for 7 days.
 
-These copies, your recent files and your preferences live in **this browser on this computer**. Another browser, a private window or clearing site data starts fresh, so always **Save** work you care about.
+These copies, your recent files and your preferences live in **this browser on this computer**. Another browser, a private window or clearing site data starts fresh, so always **Save** work you care about. Safari clears a site's storage after about a week away. Frameling asks the browser to keep it, and tells you once if it can't. Saved files, or **Add to Dock**, are safe.
 
 ## Closing the tab
 

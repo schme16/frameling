@@ -896,3 +896,102 @@ flow('web-only', async () => {
   const beforeunload = await w.js(`(() => { const e = new Event('beforeunload', { cancelable: true }); window.dispatchEvent(e); return e.defaultPrevented; })()`);
   check('leaving with unsaved work asks "Leave site?"', beforeunload === true);
 });
+
+// Safari's ways, checked in Chromium with stand-ins from the shim (?ua=safari, ?gesture=1, ?persist=deny|grant):
+// a pinch from gesture events, a late export held back for a Save button, and asking the browser to keep storage.
+flow('safari', async () => {
+  const w = makeWindow('persist:safari');
+  await w.load('plain', '&ua=safari&gesture=1&persist=deny');
+  await w.js(`__frameling.overlays.closeSheet()`);
+  await w.js(`__frameling.template('bouncing-ball')`);
+  await sleep(500);
+
+  // Pinch: gesture events zoom the canvas about the pointer and are cancelled (so Safari doesn't zoom the page).
+  const zoom = () => w.js(`__frameling.store().get().ui.zoom`);
+  const pinch = (sel, scales, x, y) => w.js(`(() => {
+    const el = document.querySelector(${JSON.stringify(sel)});
+    const mk = (t, scale) => { const e = new Event(t, { bubbles: true, cancelable: true }); Object.assign(e, { scale, clientX: ${x}, clientY: ${y} }); el.dispatchEvent(e); return e.defaultPrevented; };
+    return [mk('gesturestart', 1), ...${JSON.stringify(scales)}.map((s) => mk('gesturechange', s)), mk('gestureend', 1)];
+  })()`);
+  const r = await w.js(`(() => { const b = document.querySelector('.cv-root').getBoundingClientRect(); return [b.left + b.width / 2, b.top + b.height / 2]; })()`);
+  const z0 = await zoom();
+  const docAt = () => w.js(`(() => { const u = __frameling.store().get().ui; return [(${r[0]} - document.querySelector('.cv-root').getBoundingClientRect().left - u.panX) / u.zoom, (${r[1]} - document.querySelector('.cv-root').getBoundingClientRect().top - u.panY) / u.zoom]; })()`);
+  const at0 = await docAt();
+  const prevented = await pinch('.cv-root', [1.2, 1.6, 2], r[0], r[1]);
+  const z1 = await zoom();
+  check('a pinch (gesture events) zooms the canvas by the pinch scale', Math.abs(z1 / z0 - 2) < 0.02, [z0, z1]);
+  check('and cancels each gesture event so the page does not zoom', prevented.every(Boolean), prevented);
+  const at1 = await docAt();
+  check('the point under the fingers stays put', Math.abs(at1[0] - at0[0]) < 0.5 && Math.abs(at1[1] - at0[1]) < 0.5, [at0, at1]);
+  await pinch('.cv-root', [0.5], r[0], r[1]);
+  check('pinching in zooms back out', Math.abs((await zoom()) / z1 - 0.5) < 0.02, [z1, await zoom()]);
+  const cw0 = await w.js(`Number(document.querySelector('[data-testid="timeline.zoom"]').value)`);
+  await pinch('.tl-body', [1.5], 300, 400);
+  const cw1 = await w.js(`Number(document.querySelector('[data-testid="timeline.zoom"]').value)`);
+  check('a pinch on the timeline zooms its frames', cw1 > cw0 * 1.4, [cw0, cw1]);
+  // Without GestureEvent (Chromium as it is) nothing is attached: the same events do nothing.
+  const plain = makeWindow('persist:safari-plain');
+  await plain.load('plain');
+  await plain.js(`__frameling.overlays.closeSheet()`);
+  const pz0 = await plain.js(`__frameling.store().get().ui.zoom`);
+  const pe = await plain.js(`(() => { const e = new Event('gesturechange', { cancelable: true }); e.scale = 3; document.querySelector('.cv-root').dispatchEvent(e); return e.defaultPrevented; })()`);
+  check('without GestureEvent the handlers are not attached', !pe && (await plain.js(`__frameling.store().get().ui.zoom`)) === pz0, pe);
+
+  // A file that finishes long after the last click waits for a Save press.
+  await w.js(`__shim.downloads.length = 0`);
+  const defaults = await w.js(`__framelingExport.defaults()`);
+  await w.js(`__framelingExport.run(${JSON.stringify({ ...defaults, format: 'png', range: 'frame' })})`);
+  check('a late export in Safari shows "Your file is ready" with Save', await w.waitFor(`/Your file .* is ready/.test(document.body.innerText) && !!document.querySelector('.ui-toast-action')`, 6000), (await w.body()).slice(-200));
+  await sleep(400);
+  check('and has not downloaded anything yet', (await w.js(`__shim.downloads.length`)) === 0);
+  await w.shot('safari-save-toast');
+  check('Save is a real button a keyboard can reach', await w.js(`(() => { const b = [...document.querySelectorAll('.ui-toast-action')].find((x) => x.textContent === 'Save'); b.focus(); return document.activeElement === b && b.tabIndex >= 0 && b.tagName === 'BUTTON'; })()`));
+  w.wc.focus();
+  w.wc.sendInputEvent({ type: 'keyDown', keyCode: 'Enter' });
+  w.wc.sendInputEvent({ type: 'char', keyCode: '\r' });
+  w.wc.sendInputEvent({ type: 'keyUp', keyCode: 'Enter' });
+  const got = await w.waitFor(`__shim.downloads.length > 0 && __shim.downloads[0].name`, 4000);
+  check('pressing Save downloads the file', /\.png$/.test(got || ''), got);
+  check('and the message goes away', !(await w.js(`!!document.querySelector('.ui-toast-action')`)));
+  // The command does the same for people who live on the keyboard.
+  await w.js(`__shim.downloads.length = 0`);
+  await w.js(`__framelingExport.run(${JSON.stringify({ ...defaults, format: 'png', range: 'frame' })})`);
+  await w.waitFor(`!!document.querySelector('.ui-toast-action')`, 6000);
+  await w.js(`__frameling.run('file.saveWaiting'); 0`);
+  check('the "Save the finished file" command downloads it too', !!(await w.waitFor(`__shim.downloads.length > 0`, 4000)));
+  // Right after a click, a download goes straight through.
+  await w.js(`__shim.downloads.length = 0`);
+  await w.js(`document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true })); __framelingExport.run(${JSON.stringify({ ...defaults, format: 'png', range: 'frame' })}); 0`);
+  check('an export started by a click just downloads', !!(await w.waitFor(`__shim.downloads.length > 0`, 4000)) && !(await w.js(`!!document.querySelector('.ui-toast-action')`)));
+
+  // Storage: the first autosave asks the browser to keep it; told no, one gentle notice, once.
+  check('nothing asked before the first save', (await w.js(`__shim.persistCalls`)) === 0);
+  await w.js(`__frameling.store().update('Rename', (d) => { d.name = 'Unsaved'; })`);
+  await w.js(`__framelingIo.autosaveNow()`);
+  check('the first autosave asks the browser to keep storage', await w.waitFor(`__shim.persistCalls === 1`, 3000));
+  check('told no, a one-time notice explains the week-away clearing', await w.waitFor(`/may clear Frameling.s unsaved work.*about a week/.test(document.body.innerText)`, 3000), (await w.body()).slice(-300));
+  await w.shot('safari-storage-notice');
+  await w.js(`__framelingIo.autosaveNow()`);
+  await sleep(500);
+  check('later saves do not ask again', (await w.js(`__shim.persistCalls`)) === 1);
+  await w.clickText('Okay', '.ui-toast-action');
+  await w.load('plain', '&ua=safari&persist=deny');
+  await w.js(`__frameling.overlays.closeSheet()`);
+  await w.js(`__frameling.template('bouncing-ball')`);
+  await w.js(`__frameling.store().update('Rename', (d) => { d.name = 'Unsaved'; })`);
+  await w.js(`__framelingIo.autosaveNow()`);
+  await w.waitFor(`__shim.persistCalls === 1`, 3000);
+  await sleep(600);
+  check('the next visit asks again but does not repeat the notice', !/may clear Frameling.s unsaved work/.test(await w.body()));
+
+  // Granted: no notice at all.
+  const g = makeWindow('persist:safari-grant');
+  await g.load('plain', '&persist=grant');
+  await g.js(`__frameling.overlays.closeSheet()`);
+  await g.js(`__frameling.template('bouncing-ball')`);
+  await g.js(`__frameling.store().update('Rename', (d) => { d.name = 'Unsaved'; })`);
+  await g.js(`__framelingIo.autosaveNow()`);
+  await g.waitFor(`__shim.persistCalls === 1`, 3000);
+  await sleep(600);
+  check('when the browser agrees there is no notice', !/may clear Frameling.s unsaved work/.test(await g.body()));
+});

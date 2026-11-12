@@ -62,7 +62,7 @@ class FakeDir implements DirHandleLike {
 
 const abort = () => Object.assign(new Error('cancelled'), { name: 'AbortError' });
 
-function setup(opts: { pickers?: Pickers; factory?: IDBFactory; upload?: File | null; answer?: string; now?: () => number; events?: WebEnv['events'] } = {}) {
+function setup(opts: { pickers?: Pickers; factory?: IDBFactory; upload?: File | null; answer?: string; now?: () => number; events?: WebEnv['events']; onSaved?: () => void } = {}) {
   const factory = opts.factory ?? new IDBFactory();
   const downloads: { name: string; bytes: Uint8Array }[] = [];
   const asked: Question[] = [];
@@ -78,6 +78,7 @@ function setup(opts: { pickers?: Pickers; factory?: IDBFactory; upload?: File | 
     appVersion: '1.2.3',
     platform: 'linux',
     now: opts.now,
+    onSaved: opts.onSaved,
     events: opts.events,
   });
   return { api, factory, downloads, asked };
@@ -287,6 +288,13 @@ describe('autosave in the browser', () => {
     expect(r?.fileModifiedAt).toBeNull();
     await api.autosave.clear();
     expect(await api.autosave.read()).toBeNull();
+  });
+
+  it('tells the page after each safety copy is written', async () => {
+    const onSaved = vi.fn();
+    const { api } = setup({ onSaved });
+    await api.autosave.write(bytes(1), meta);
+    expect(onSaved).toHaveBeenCalledTimes(1);
   });
 
   it('puts aside what the last visit left unsaved, and drops it after 7 days', async () => {
