@@ -455,9 +455,11 @@ Gold stays gold for chosen things by default, with dark text on it. If you chang
     keywords: ['layout', 'panels', 'draw', 'animate', 'pixel', 'reset', 'save', 'arrange', 'share', 'export', 'import', 'rename', 'reorder', 'file', 'copy', 'paste'],
     body: `Different jobs want different rooms. Frameling comes with three, and each says what it is for:
 
-- **Draw** has the tools and colours close, and a small timeline.
-- **Animate** gives the timeline lots of room.
-- **Pixel** is made for pixel art: only the pixel tools, a big palette, a real-size Preview and the pixel bar. See [The Pixel workspace](help:pixel-workspace).
+- **Draw** has the tools and colours close, and a small timeline. The drawing tools lead the tool strip.
+- **Animate** gives the timeline lots of room. The tool strip puts drawing first, then the rig and motion tools.
+- **Pixel** is made for pixel art: only the pixel tools, a big palette, a real-size Preview and the pixel bar. Its tool strip starts with the pixel tools, with shade, dither and pixel select together, and the vector-only tools after. See [The Pixel workspace](help:pixel-workspace).
+
+Each workspace brings its own tools, and you can change them (see below).
 
 ## Switching
 
@@ -465,12 +467,12 @@ Use **View, Draw workspace** (and friends), or the command search. **Next worksp
 
 ## Your own
 
-Arrange the panels how you like: dock them on any side, float some in windows (see [Floating windows](help:floating-windows)), name them, and arrange the tools into the groups you like (see [Arrange your tools](help:tool-arrange)). Then open **Preferences, Workspaces**, type a name and press **Save**. You can keep up to 12. It shows up in the View menu next to the others.
+Arrange the panels how you like: dock them on any side, float some in windows (see [Floating windows](help:floating-windows)), name them, and arrange the tools into the groups you like (see [Arrange your tools](help:tool-arrange)). The tools you arranged become the starting tools of your new workspace. Then open **Preferences, Workspaces**, type a name and press **Save**. You can keep up to 12. It shows up in the View menu next to the others.
 
 On that page you can also:
 
 - **Rename** one, or move it **up** or **down** the list.
-- **Update** one to the layout you have now.
+- **Update** one to the layout and tool arrangement you have now.
 - **Delete** one (it asks once more, so a slip doesn't cost you anything).
 
 ## Share
@@ -479,11 +481,11 @@ Every workspace has a **Save as a file** button. Send the file to a friend. On t
 
 Prefer a message? **Copy as text** puts the whole workspace on your clipboard. Your friend pastes it into **Paste workspace text here** and presses **Add it to my workspaces**.
 
-A shared workspace only moves panels around. If it names a panel your Frameling doesn't have, that one is skipped, and a panel it doesn't mention goes where it normally lives.
+A shared workspace moves panels around and brings its tool arrangement. If it names a panel or tool your Frameling doesn't have, that one is skipped, and a panel or tool it doesn't mention goes where it normally lives.
 
 ## Reset
 
-**View, Reset layout** puts the panels back where the current workspace began. Handy if things get tangled.
+**View, Reset layout** puts the panels back where the current workspace began. Handy if things get tangled. Your tool arrangement is separate: **Reset tools to default** puts this workspace's tools back (see [Arrange your tools](help:tool-arrange)).
 
 See also [Panels](help:panels).`,
   },
@@ -665,11 +667,17 @@ Right-click a tool, or press the menu key on it. **Move to** lists every group. 
 
 ## Put them back
 
-Right-click the strip and choose **Reset tools to default**. It is also in the command search.
+Right-click the strip and choose **Reset tools to default**. It puts back the tools of the workspace you are in, the way that workspace comes. It is also in the command search.
 
-## Saved with your layout
+## One for each workspace
 
-The arrangement is kept with the rest of your layout, so a [workspace](help:workspaces) you save keeps it, and a workspace you share carries it along. The built-in workspaces leave your arrangement alone. An older workspace without one simply uses the default groups.
+Every [workspace](help:workspaces) has its own tools. **Draw** starts with drawing first. **Animate** puts the rig and motion tools right after drawing. **Pixel** starts with the pixel tools, then shade, dither and pixel select, and keeps the vector-only tools for later.
+
+Change the tools in one workspace and the others stay as they were. Switch to another workspace and its tools come with it. Switch back and yours are waiting. Reset only touches the workspace you are in.
+
+## Saved and shared
+
+When you save your own workspace, the tools as they are now become its starting tools, and the workspace you share carries them along. An older workspace without any simply uses the usual groups. If you had arranged your tools before workspaces had their own, that arrangement is now yours for the workspace you were in.
 
 ## In the stacked style
 

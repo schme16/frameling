@@ -7,7 +7,7 @@ import { store, useStore } from '../core/store';
 import { syncDynamicCommands } from './dynamic';
 import { pickTool } from '../tools/pick';
 import { Icon } from './icons';
-import { currentWorkspace, dock, stripTools } from './dock';
+import { currentWorkspace, dock, railOf, stripTools } from './dock';
 import { startToolsDrag, nudgeTools } from './dockDrag';
 import { menuPoint, openDockMenu, toolsMenu } from './dockMenus';
 import type { DockZone } from './dockModel';
@@ -151,7 +151,7 @@ export function ToolStrip({ place = 'left' }: { place?: DockZone | 'float' }) {
   const usable = allTools().filter((t) => !kind || t.layers.includes(kind));
   const tools = stripTools(usable, kind, wsId ? currentWorkspace() : undefined);
   const ids = tools.map((t) => t.id).join(',');
-  const saved = dock.use((d) => d.layout.tools.groups);
+  const saved = dock.use((d) => railOf(d));
   // Each tool with where it asked to start in the rail, as text so the memo below only reruns when that changes.
   const allKey = allTools().map((t) => `${t.id}|${t.group ?? ''}|${t.groupAt ?? ''}`).join(',');
   const shown = useMemo(() => new Set(ids ? ids.split(',') : []), [ids]);

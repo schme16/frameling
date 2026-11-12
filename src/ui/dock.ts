@@ -1,11 +1,11 @@
 // The dock's live state: where every panel is (the left, right, bottom and top zones, or a floating window), how big
 // each zone is, and the workspaces (saved layouts). The pure model is in dockModel.ts; the views are DockView.tsx,
 // DockFloats.tsx and RightDock.tsx. This file is plain state so it can be tested.
-import { allPanels, getPanel, type DockZone, type PanelDef } from '../core/registry';
+import { allPanels, allTools, getPanel, type DockZone, type PanelDef } from '../core/registry';
 import type { LayerKind } from '../core/format';
 import { cleanName, clone, closeFloat, closePanel, clampSize, dockAllFloats, dockFloat, emptyLayout, frontPanel, locate, MAX_SAVED, moveGroupTo, movePanelTo, nameOf, normaliseLayout, placeToolsIn, placedIds, raiseFloat, renameFloatIn, renamePanelIn, sanitizeWorkspace, sanitizeWorkspaces, setFloatBox, ZONES, type DropTarget, type Layout, type Place, type ToolsPlace, type Workspace } from './dockModel';
 import { createStore, readRaw, writeJson } from './mini';
-import type { ToolGroup } from './toolArrange';
+import { BUILTIN_RAILS, resolveGroups, sanitizeGroups, type ToolGroup } from './toolArrange';
 import { parseWorkspaceText, uniqueWorkspaceName, workspaceToText } from './workspaceFile';
 
 export * from './dockModel';
@@ -16,11 +16,24 @@ export interface DockState {
   fresh?: boolean;
   workspaceId: string;
   user: Workspace[];
+  /** What the person changed in each workspace's tool rail, by workspace id. A workspace missing here uses its own default. */
+  rails?: Record<string, ToolGroup[]>;
 }
 
 export const DOCK_KEY = 'frameling.dock.v1';
 /** Saved state is version 2 from the top zone, floating windows, the movable tool rail and panel names. Version 1 loads as it was. */
 const DOCK_VERSION = 2;
+
+/** The saved per-workspace arrangements made safe. */
+function sanitizeRails(raw: unknown): Record<string, ToolGroup[]> {
+  const out: Record<string, ToolGroup[]> = {};
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return out;
+  for (const [id, v] of Object.entries(raw).slice(0, 64)) {
+    const g = /^[\w-]{1,40}$/.test(id) && id !== '__proto__' ? sanitizeGroups(v) : undefined;
+    if (g) out[id] = g;
+  }
+  return out;
+}
 
 const isHelp = (p: PanelDef) => /help/.test(p.id);
 const isColour = (p: PanelDef) => /colou?r|palette|swatch/.test(p.id);
@@ -67,9 +80,9 @@ export function builtinWorkspaces(panels: PanelDef[] = allPanels()): Workspace[]
   pixel.zones.bottom.size = 260;
 
   return [
-    { id: 'draw', name: 'Draw', builtin: true, about: 'Tools and colours close at hand, with a small timeline underneath.', layout: draw },
-    { id: 'animate', name: 'Animate', builtin: true, about: 'A tall timeline across the bottom, with Layers leading the right side.', layout: animate },
-    { id: 'pixel', name: 'Pixel', builtin: true, about: 'For pixel art: only the pixel tools, a big palette on the left and a real-size Preview.', layout: pixel, pixel: true, tools: { pixel: [...PIXEL_TOOLS] } },
+    { id: 'draw', name: 'Draw', builtin: true, about: 'Tools and colours close at hand, with a small timeline underneath.', layout: draw, rail: BUILTIN_RAILS.draw },
+    { id: 'animate', name: 'Animate', builtin: true, about: 'A tall timeline across the bottom, with Layers leading the right side.', layout: animate, rail: BUILTIN_RAILS.animate },
+    { id: 'pixel', name: 'Pixel', builtin: true, about: 'For pixel art: only the pixel tools, a big palette on the left and a real-size Preview.', layout: pixel, pixel: true, tools: { pixel: [...PIXEL_TOOLS] }, rail: BUILTIN_RAILS.pixel },
   ];
 }
 
@@ -133,7 +146,16 @@ function initial(): DockState {
   const user = sanitizeWorkspaces(saved?.user);
   // Panels from other areas register after this file loads, so a first run waits for syncPanels() to build the layout.
   if (!saved?.layout || typeof saved.layout !== 'object') return { layout: emptyLayout(), workspaceId: 'draw', user, fresh: true };
-  return { layout: normaliseLayout(saved.layout), workspaceId: typeof saved.workspaceId === 'string' ? saved.workspaceId : 'draw', user };
+  const layout = normaliseLayout(saved.layout);
+  const workspaceId = typeof saved.workspaceId === 'string' ? saved.workspaceId : 'draw';
+  const rails = sanitizeRails(saved.rails);
+  // Before each workspace had its own rail there was one arrangement, in the layout: it is now the person's own
+  // arrangement for the workspace they are on.
+  if (layout.tools.groups) {
+    if (!rails[workspaceId]) rails[workspaceId] = layout.tools.groups;
+    delete layout.tools.groups;
+  }
+  return { layout, workspaceId, user, ...(Object.keys(rails).length ? { rails } : {}) };
 }
 
 export const dock = createStore<DockState>(initial());
@@ -371,12 +393,32 @@ export function placeTools(place: ToolsPlace, at?: { x: number; y: number }, per
   apply((l) => placeToolsIn(l, place, at), persist);
 }
 
-/** Saves how the tool rail's tools are grouped (undefined goes back to the default arrangement). */
+/** The default tool rail arrangement of a workspace: what it brings, before the person changes anything (undefined = the standard one). */
+export function defaultRailOf(s: Pick<DockState, 'user'>, workspaceId: string): ToolGroup[] | undefined {
+  return BUILTIN_RAILS[workspaceId] ?? s.user.find((w) => w.id === workspaceId)?.rail;
+}
+
+/** The arrangement to use in the current workspace: the person's own for it, or what it brings. */
+export function railOf(s: DockState): ToolGroup[] | undefined {
+  return s.rails?.[s.workspaceId] ?? defaultRailOf(s, s.workspaceId);
+}
+
+/** Saves how the current workspace's tool rail is grouped (undefined, or what the workspace brings, goes back to its default). */
 export function setToolGroups(groups: ToolGroup[] | undefined): void {
-  apply((l) => {
-    const { groups: _old, ...rest } = l.tools;
-    return { ...l, tools: groups ? { ...rest, groups } : rest };
-  });
+  const s = dock.get();
+  const id = s.workspaceId;
+  const rails = { ...s.rails };
+  const tools = allTools();
+  const same = groups && JSON.stringify(resolveGroups(groups, tools)) === JSON.stringify(resolveGroups(defaultRailOf(s, id), tools));
+  if (groups && !same) rails[id] = groups;
+  else delete rails[id];
+  if (JSON.stringify(rails) === JSON.stringify(s.rails ?? {})) return;
+  commit({ ...s, ...(Object.keys(rails).length ? { rails } : { rails: undefined }) });
+}
+
+/** Drops what the person changed in a workspace's tool rail, so it uses its own default again. */
+export function resetToolGroups(): void {
+  setToolGroups(undefined);
 }
 
 export function hidePanel(id: string): void {
@@ -417,18 +459,27 @@ export function applyWorkspace(id: string): boolean {
   if (!w) return false;
   const s = dock.get();
   const layout = reconcile(w.layout);
-  // The ones that come with the app only say where panels go: the person's own panel names and tool rail stay.
+  // The ones that come with the app only say where panels go: the person's own panel names and where the tool rail sits
+  // stay. Each workspace has its own tool arrangement (see railOf), so none is carried in the layout.
   if (w.builtin) {
-    layout.tools = s.layout.tools;
+    layout.tools = { ...s.layout.tools };
     if (s.layout.names) layout.names = s.layout.names;
   }
+  delete layout.tools.groups;
   commit({ ...s, workspaceId: w.id, layout });
   return true;
 }
 
 /** Back to the current workspace as it was saved (or as it came with the app). */
 export function resetLayout(): void {
-  if (!applyWorkspace(dock.get().workspaceId)) applyWorkspace('draw');
+  const id = dock.get().workspaceId;
+  if (!applyWorkspace(id)) return void applyWorkspace('draw');
+  // One of your own goes back to the arrangement it was saved with; the ones that come with the app keep yours, like the rail place.
+  const s = dock.get();
+  if (s.rails?.[id] && s.user.some((w) => w.id === id)) {
+    const { [id]: _gone, ...rest } = s.rails;
+    commit({ ...s, rails: Object.keys(rest).length ? rest : undefined });
+  }
 }
 
 let idSeq = 0;
@@ -446,16 +497,21 @@ export function saveWorkspace(name: string): Workspace | null {
   if (!existing && s.user.length >= MAX_SAVED) return null;
   // A layout saved from the Pixel workspace stays a pixel one (its tool list and pixel bar come along).
   const from = currentWorkspace();
-  const ws: Workspace = { id: existing?.id ?? newWorkspaceId(), name: clean, ...(existing?.about ? { about: existing.about } : {}), layout: clone(s.layout), ...(from?.pixel ? { pixel: true } : {}), ...(from?.tools ? { tools: clone(from.tools) } : {}) };
+  // The tool arrangement as it is now (yours, or the one the workspace brings) becomes this workspace's default.
+  const rail = railOf(s);
+  const ws: Workspace = { id: existing?.id ?? newWorkspaceId(), name: clean, ...(existing?.about ? { about: existing.about } : {}), layout: clone(s.layout), ...(from?.pixel ? { pixel: true } : {}), ...(from?.tools ? { tools: clone(from.tools) } : {}), ...(rail ? { rail: clone(rail) } : {}) };
   const user = existing ? s.user.map((w) => (w.id === ws.id ? ws : w)) : [...s.user, ws];
-  commit({ ...s, user, workspaceId: ws.id });
+  // A workspace saved again starts from what was just saved, so its own changes to the arrangement are folded in.
+  const { [ws.id]: _folded, ...rails } = s.rails ?? {};
+  commit({ ...s, user, workspaceId: ws.id, rails: Object.keys(rails).length ? rails : undefined });
   return ws;
 }
 
 export function deleteWorkspace(id: string): void {
   const s = dock.get();
   if (!s.user.some((w) => w.id === id)) return;
-  commit({ ...s, user: s.user.filter((w) => w.id !== id), workspaceId: s.workspaceId === id ? 'draw' : s.workspaceId });
+  const { [id]: _gone, ...rails } = s.rails ?? {};
+  commit({ ...s, user: s.user.filter((w) => w.id !== id), workspaceId: s.workspaceId === id ? 'draw' : s.workspaceId, rails: Object.keys(rails).length ? rails : undefined });
   if (s.workspaceId === id) applyWorkspace('draw');
 }
 
@@ -485,7 +541,11 @@ export function workspaceText(id?: string): string | null {
   if (id && !w) return null;
   const from = currentWorkspace();
   const ws: Workspace = w ?? { id: 'now', name: from?.name ?? 'My workspace', layout: dock.get().layout, ...(from?.pixel ? { pixel: true } : {}), ...(from?.tools ? { tools: from.tools } : {}) };
-  return workspaceToText({ ...ws, layout: reconcile(ws.layout) });
+  // The tool arrangement goes along: yours for that workspace, or the one it brings.
+  const s = dock.get();
+  const rail = s.rails?.[id ?? s.workspaceId] ?? (w ?? from)?.rail;
+  const { rail: _own, ...rest } = ws;
+  return workspaceToText({ ...rest, ...(rail ? { rail } : {}), layout: reconcile(ws.layout) });
 }
 
 export type AddResult = { ok: true; workspace: Workspace } | { ok: false; error: string };

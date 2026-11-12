@@ -1,5 +1,5 @@
 // End-to-end check of the selection in the real app: pick shapes with the mouse, scrub across keys (the selection follows
-// the same shapes by lineage), switch artboards with Undo and Redo (the selection is kept where it exists), open an old
+// the same shapes by lineage), switch artboards with Undo and Redo (each artboard remembers its selection), open an old
 // file (no lineage flag) and see it upgraded, and time a scrub over a 2000-frame timeline.
 //
 //   npm run build
@@ -230,29 +230,48 @@ async function artboardSection() {
   s = await sel();
   check(same(s.ids, pick), `redo the add: ${JSON.stringify(s)}`);
 
-  begin('switching artboards and Undo or Redo of the switch leave no stale selection');
+  begin('each artboard remembers its selection: switching back, and Undo or Redo of a switch, bring it back');
   await go(b);
   s = await sel();
   check(s.artboard === b, `open artboard ${s.artboard}`);
-  check(s.ids.length === 0, `the selection after opening the other artboard: ${JSON.stringify(s)}`);
+  check(s.ids.length === 0, `an artboard never visited starts with nothing selected: ${JSON.stringify(s)}`);
   await undo();
   s = await sel();
-  check(s.artboard === a && s.lines.every((l) => l !== '(not here)'), `undo: ${JSON.stringify(s)}`);
-  note(`selection after undoing the switch: ${JSON.stringify(s.lines)}`);
+  check(s.artboard === a && same(s.ids, pick), `undo the switch brings the first selection back: ${JSON.stringify(s)}`);
   await redo();
   s = await sel();
-  check(s.artboard === b && s.lines.every((l) => l !== '(not here)'), `redo: ${JSON.stringify(s)}`);
-  // Pick the other artboard's shape with the mouse, then undo and redo the switch.
+  check(s.artboard === b && s.ids.length === 0, `redo the switch: the second one is as it was left (nothing): ${JSON.stringify(s)}`);
+  // Pick the other artboard's shape with the mouse, then switch away, back, and undo and redo the switches.
   await ev(`window.__frameling.store().setUi({ tool: 'select', frame: 0, activeLayerId: 'LB' })`);
   await click(await at(110, 110));
   s = await sel();
   check(same(s.lines, ['t1']), `picked on the second artboard ${JSON.stringify(s)}`);
+  const pickB = s.ids;
+  await go(a);
+  s = await sel();
+  check(s.artboard === a && same(s.ids, pick) && s.lines.every((l) => l !== '(not here)'), `going back to the first: ${JSON.stringify(s)}`);
+  await go(b);
+  s = await sel();
+  check(s.artboard === b && same(s.ids, pickB), `going back to the second: ${JSON.stringify(s)}`);
   await undo();
   s = await sel();
-  check(s.artboard === a && s.lines.every((l) => l !== '(not here)'), `undo to the first artboard: ${JSON.stringify(s)}`);
+  check(s.artboard === a && same(s.ids, pick), `undo to the first artboard: ${JSON.stringify(s)}`);
   await redo();
   s = await sel();
-  check(s.artboard === b && s.lines.every((l) => l !== '(not here)'), `redo to the second: ${JSON.stringify(s)}`);
+  check(s.artboard === b && same(s.ids, pickB), `redo to the second: ${JSON.stringify(s)}`);
+  // A shape gone while its artboard was away does not come back as a stale id.
+  await go(a);
+  await go(b);
+  await ev(`(() => { const S = window.__frameling.store(); S.update('Remove a box', (d) => { const dr = d.drawings.dB; dr.shapes = dr.shapes.filter((x) => x.id !== 't1'); }); return true; })()`);
+  await go(a);
+  await go(b);
+  s = await sel();
+  check(s.artboard === b && s.ids.length === 0, `a removed shape is not selected when you come back: ${JSON.stringify(s)}`);
+  await undo();
+  await undo();
+  await undo();
+  s = await sel();
+  check(s.lines.every((l) => l !== '(not here)'), `no stale ids after undoing it all: ${JSON.stringify(s)}`);
 }
 
 // ---------------------------------------------------------------- a long timeline

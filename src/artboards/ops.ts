@@ -1,10 +1,11 @@
 /**
  * Artboard actions on the app's store: each is one undo step. Also keeps the view steady when the open artboard
- * changes (by a click, the panel, undo or redo), and remembers the frame and layer each artboard was left on.
+ * changes (by a click, the panel, undo or redo), and remembers the frame, layer and selection each artboard was left on.
  */
 import type { Doc, Id } from '../core/format';
 import { store, type Store } from '../core/store';
 import { findLayer } from '../core/doc';
+import { existingSelection } from '../core/followSelection';
 import { leaveSymbol } from '../symbols/ops';
 import { leaveTileEdit } from '../tiles/tileEdit';
 import { getViewport, setView, zoomToDocRect } from '../canvas/controller';
@@ -48,7 +49,7 @@ function toTopLevel(): void {
 
 // ---------------------------------------------------------------- keeping the view steady
 
-const memory = new Map<Id, { frame: number; layer: Id | null }>();
+const memory = new Map<Id, { frame: number; layer: Id | null; selection: Id[] }>();
 let seen: { docId: string; active: Id; x: number; y: number } | null = null;
 
 /** The frame an artboard that isn't open was left on (for drawing it on the pasteboard). */
@@ -75,7 +76,10 @@ function onStore(): void {
   const dy = (a.y - (old?.y ?? prev.y)) * ui.zoom;
   const m = memory.get(a.id);
   const layer = m?.layer && findLayer(doc, m.layer) ? m.layer : (doc.layers[doc.layers.length - 1]?.id ?? null);
-  s.setUi({ frame: Math.max(0, Math.min(doc.length - 1, m?.frame ?? 0)), activeLayerId: layer, selection: [], playing: false, panX: ui.panX + dx, panY: ui.panY + dy });
+  const frame = Math.max(0, Math.min(doc.length - 1, m?.frame ?? 0));
+  // What was selected here when it was left comes back, for the shapes that are still there (nothing for one never visited).
+  const selection = m?.selection.length ? existingSelection(doc, layer, frame, m.selection) : [];
+  s.setUi({ frame, activeLayerId: layer, selection, playing: false, panX: ui.panX + dx, panY: ui.panY + dy });
 }
 
 let installed: Store | null = null;
@@ -84,13 +88,13 @@ export function installArtboards(): void {
   if (installed === store()) return;
   installed = store();
   store().subscribe(onStore);
-  // The open artboard's frame and layer, kept up to date so going back finds them.
+  // The open artboard's frame, layer and selection, kept up to date so going back finds them.
   store().subscribe(() => {
     const s = store();
     if (s.nestedTag()) return;
     const { doc, ui } = s.get();
     if (doc.editing?.length || seen?.active !== activeId(doc)) return;
-    memory.set(seen.active, { frame: ui.frame, layer: ui.activeLayerId });
+    memory.set(seen.active, { frame: ui.frame, layer: ui.activeLayerId, selection: ui.selection });
   });
 }
 

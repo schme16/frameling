@@ -1,19 +1,19 @@
 // The tool rail's live side: the arrangement as it is now, moving tools (by pointer drag, keyboard, menu), and the
 // stacked style's "front tool" of each group. The pure model is toolArrange.ts; ToolStrip.tsx draws it.
 import { allTools, getTool } from '../core/registry';
-import { dock, setToolGroups } from './dock';
+import { dock, railOf, resetToolGroups, setToolGroups } from './dock';
 import { run } from './dockDrag';
 import type { DockMenuItem } from './dockMenus';
 import { createStore } from './mini';
 import { groupName, moveTool, placeWords, resolveGroups, shiftTool, type ToolDrop, type ToolGroup } from './toolArrange';
 
-/** The whole arrangement for the tools that exist (the saved one, or the default), whatever shows right now. */
+/** The whole arrangement for the tools that exist in this workspace (the person's own, or what it brings), whatever shows right now. */
 export function currentGroups(): ToolGroup[] {
-  return resolveGroups(dock.get().layout.tools.groups, allTools());
+  return resolveGroups(railOf(dock.get()), allTools());
 }
 
-/** True when the person has changed the arrangement from the default. */
-export const isCustomArrangement = (): boolean => !!dock.get().layout.tools.groups;
+/** True when the person has changed this workspace's arrangement from its default. */
+export const isCustomArrangement = (): boolean => !!dock.get().rails?.[dock.get().workspaceId];
 
 /** Saves what a pure move made of the arrangement. Nothing happens when it hands the same one back. */
 export function arrange(fn: (g: ToolGroup[]) => ToolGroup[]): boolean {
@@ -30,7 +30,8 @@ export const frontTools = createStore<Record<string, string>>({});
 /** A group (by id) to open the flyout of, asked for from outside the rail (a quest pointing at a tool inside it). The rail answers and clears it. */
 export const flyRequest = createStore<string | null>(null);
 
-export const resetToolArrangement = (): void => setToolGroups(undefined);
+/** Puts this workspace's tools back the way the workspace brings them. */
+export const resetToolArrangement = (): void => resetToolGroups();
 
 /** A line for a screen reader after a move ("Pencil moved. Draw, place 2 of 4."). */
 export const railNote = createStore('');

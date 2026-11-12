@@ -134,7 +134,9 @@ Converted so far: Lip sync, Audio, Clip flow and Interactives (`src/lipsync`, `s
 the layer side, the grid and the header), so `timeline/` imports nothing from it. The data stays in the document
 (`doc.audio`, `doc.flow`); Interactives leaves a marker in `doc.ext.interactives` (written by the Interactives export
 for the drawing it embeds). A tool says which rail group it starts in with `group` and `groupAt` (`src/ui/toolArrange.ts`
-names no tools). Turning a feature off parks where its panels were (`parkPanels` in `src/ui/dock.ts`) and turning it on
+only names tools in the Pixel workspace's default, `BUILTIN_RAILS`, and skips any that are not registered). Each workspace has its
+own rail arrangement: `Workspace.rail` is its default, `DockState.rails[workspaceId]` is what the person changed (`railOf`,
+`setToolGroups` in `src/ui/dock.ts`); the old single `layout.tools.groups` migrates into `rails` on load. Turning a feature off parks where its panels were (`parkPanels` in `src/ui/dock.ts`) and turning it on
 puts them back there; the palette offers "Turn on X" and a lesson of it (`quests` or `Quest.features`) is put down. Opening a drawing whose `usedBy` says it holds data
 of a feature that is off asks "Turn it on?" (`src/features/prompt.ts`, called from `io/document.ts`); help topics of an off
 feature are hidden and a help search offers "Turn on X" (`hiddenHelp()`). `test/features/boundary.test.ts` keeps `core/`
