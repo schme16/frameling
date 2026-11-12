@@ -31,7 +31,7 @@ Search for **Use palette from an Aseprite file** in the command palette (Ctrl+K)
 - **Linked cels** share one drawing, so a hold stays a hold.
 - **Each cel's position and opacity**, in every colour mode: full colour, grayscale and indexed.
 - **The palette**, as your drawing's palette. The original index details are kept in the drawing's notes.
-- **Tags** become named clips, so they work in exports and game engines. A tag's direction (forward, backward, back and forth) and how many times it repeats come across too, and Frameling's clips play and export that way.
+- **Tags** become named clips, so they work in exports and game engines. A tag's direction (forward, backward, back and forth) and how many times it repeats come across too (Aseprite counts each way of a back and forth tag as one repeat, so Frameling halves it, and says so when a half trip is left over), and Frameling's clips play and export that way.
 - **Tilemaps** become real tiles in your tileset, flips included, when they line up with the tile grid. Otherwise that layer comes across as flat pixels and the dialog says why.
 
 ## What gets approximated

@@ -12,6 +12,7 @@ import {
   type BlendMode,
   type Cel,
   type Clip,
+  type ClipDirection,
   type Doc,
   type DocPalette,
   type Drawing,
@@ -38,6 +39,25 @@ export function blendFor(n: number): BlendMode | null {
   return n >= 0 && n < BLEND_MODES.length ? BLEND_MODES[n] : null;
 }
 export const blendName = (n: number): string => BLEND_NAMES[n] ?? `mode ${n}`;
+
+/**
+ * A tag's direction and repeat count as a clip's. Aseprite counts a ping-pong tag's repeats by direction: each way
+ * through the frames is one repeat, so 2 is one trip there and back and 1 is a single way (checked against Aseprite's
+ * own playback, see test/aseprite/import.test.ts). Frameling counts whole trips, so the repeat is halved. An odd count
+ * has a half trip left over that a clip cannot hold: 1 becomes a plain forward (or backward) clip, which is exact, and
+ * 3 or more is rounded up to the next whole trip (`roundedUp`). 0 repeats means forever, as it does in Frameling.
+ * Other directions count whole passes in both programs.
+ */
+export function tagPlay(dir: number, repeat: number): { loop: boolean; direction?: ClipDirection; repeat: number; roundedUp: boolean } {
+  const direction = CLIP_DIRECTIONS[dir];
+  const loop = repeat === 0;
+  const kept = direction && direction !== 'forward' ? direction : undefined;
+  if (loop || (direction !== 'pingpong' && direction !== 'pingpong-reverse')) {
+    return { loop, ...(kept ? { direction: kept } : {}), repeat: loop ? 1 : Math.min(repeat, MAX_REPEAT), roundedUp: false };
+  }
+  if (repeat === 1) return { loop, ...(direction === 'pingpong-reverse' ? { direction: 'reverse' as const } : {}), repeat: 1, roundedUp: false };
+  return { loop, direction, repeat: Math.min(Math.ceil(repeat / 2), MAX_REPEAT), roundedUp: repeat % 2 === 1 };
+}
 
 // ---------------------------------------------------------------- timing
 
@@ -507,16 +527,16 @@ export function asepritePieces(file: AseFile, name: string, target?: Target): Pi
   for (const t of file.tags) {
     const from = Math.min(Math.max(0, t.from), file.frames.length - 1);
     const to = Math.min(Math.max(from, t.to), file.frames.length - 1);
-    // Direction and repeat count map straight across (Aseprite numbers its directions in the same order). 0 repeats means forever there.
-    const direction = CLIP_DIRECTIONS[t.direction];
+    const play = tagPlay(t.direction, t.repeat);
+    if (play.roundedUp) notes.push(`Tag "${plain(t.name) || 'Tag'}" repeats ${t.repeat} times going one way and then the other, and Aseprite counts each direction as one. Frameling counts whole trips there and back, so it plays ${play.repeat} times, which ends back at the start.`);
     clips.push({
       id: uid('k'),
       name: plain(t.name) || 'Tag',
       start: timing.starts[from],
       end: timing.starts[to] + timing.holds[to] - 1,
-      loop: t.repeat === 0,
-      ...(direction && direction !== 'forward' ? { direction } : {}),
-      ...(t.repeat > 1 ? { repeat: Math.min(t.repeat, MAX_REPEAT) } : {}),
+      loop: play.loop,
+      ...(play.direction ? { direction: play.direction } : {}),
+      ...(play.repeat > 1 ? { repeat: play.repeat } : {}),
     });
   }
 
