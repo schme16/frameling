@@ -80,7 +80,7 @@ export interface SubmenuDef {
 export const SUBMENUS: Record<string, SubmenuDef> = {
   panelwin: {
     label: 'Panel windows and tools',
-    items: ['view.floatPanel', 'view.renamePanel', 'view.movePanel.left', 'view.movePanel.right', 'view.movePanel.bottom', 'view.movePanel.top', 'view.dockAllWindows', 'view.hidePanels', '-', 'view.toolsPlace.left', 'view.toolsPlace.right', 'view.toolsPlace.top', 'view.toolsPlace.bottom', 'view.toolsPlace.float', '-', 'view.toolsReset', 'view.toolRail.two', 'view.toolRail.stacked'],
+    items: ['view.floatPanel', 'view.renamePanel', 'view.movePanel.left', 'view.movePanel.right', 'view.movePanel.bottom', 'view.movePanel.top', 'view.splitPanelGroup', 'view.joinPanelGroups', 'view.dockAllWindows', 'view.hidePanels', '-', 'view.toolsPlace.left', 'view.toolsPlace.right', 'view.toolsPlace.top', 'view.toolsPlace.bottom', 'view.toolsPlace.float', '-', 'view.toolGroupRename', 'view.toolsReset', 'view.toolRail.two', 'view.toolRail.stacked'],
     prefixes: ['view.movePanel.', 'view.toolsPlace.', 'view.toolRail.'],
   },
   wsshare: {

@@ -4,9 +4,11 @@
 //   data-dock-strip + data-dock-zone / data-dock-float   a tab bar (the rail too): drop between its tabs
 //   data-dock-tab, data-dock-tabs, data-dock-axis        its tabs, their order, and which way they run
 //   data-dock-area + data-dock-zone / data-dock-float    a whole zone or window: drop at the end of its tabs
+//   data-dock-group, data-dock-groups, data-dock-stack    which stacked group of a zone it is, how many there are, and
+//                                                         which way they stack: the edges of a group make a new one
 //   data-dock-edge                                        the drop bands over the canvas edges while dragging
 import { dock, flushDock, moveFloatTo, panelTitle, placePanel, placeTools, setFloatWindowBox } from './dock';
-import { floatTitle, type DockZone, type DropTarget, type FloatWin, type ToolsPlace } from './dockModel';
+import { floatTitle, MAX_GROUPS, type DockZone, type DropTarget, type FloatWin, type ToolsPlace } from './dockModel';
 import { dragging } from './dockShared';
 import { createStore } from './mini';
 
@@ -47,16 +49,38 @@ export function targetAt(x: number, y: number, hit: Hit = { edges: true, strips:
     const area = hit.areas ? (h.closest?.('[data-dock-area]') as HTMLElement | null) : null;
     if (area) {
       const t = placeOfEl(area);
-      if (t) return t;
+      if (t) return 'zone' in t ? splitHit(area, t, x, y) : t;
     }
   }
   return { newFloat: { x: x - 60, y: y - 14 } };
 }
 
-function placeOfEl(el: HTMLElement): { zone: DockZone } | { float: string } | null {
-  if (el.dataset.dockZone) return { zone: el.dataset.dockZone as DockZone };
+function placeOfEl(el: HTMLElement): { zone: DockZone; group?: number } | { float: string } | null {
+  if (el.dataset.dockZone) return { zone: el.dataset.dockZone as DockZone, ...(Number(el.dataset.dockGroup) > 0 ? { group: Number(el.dataset.dockGroup) } : {}) };
   if (el.dataset.dockFloat && dock.get().layout.floats.some((f) => f.id === el.dataset.dockFloat)) return { float: el.dataset.dockFloat };
   return null;
+}
+
+/**
+ * Over a group's body: the middle joins its tabs, and the edge toward the stack's ends (the top or bottom of a side
+ * zone's group, the left or right of a top or bottom zone's) would make a new group there instead.
+ */
+function splitHit(area: HTMLElement, t: { zone: DockZone; group?: number }, x: number, y: number): DropTarget {
+  if (area.dataset.dockGroup === undefined || Number(area.dataset.dockGroups ?? 1) >= MAX_GROUPS) return t;
+  const r = area.getBoundingClientRect();
+  const across = area.dataset.dockStack === 'x';
+  const strip = area.querySelector<HTMLElement>('[data-dock-strip]');
+  // A tab bar along the top sits outside the body: the band starts under it.
+  const sr = !across && strip && strip.dataset.dockAxis === 'x' ? strip.getBoundingClientRect() : null;
+  const from = across ? r.left : sr ? Math.max(r.top, sr.bottom) : r.top;
+  const to = across ? r.right : r.bottom;
+  const size = to - from;
+  if (size < 90) return t;
+  const band = Math.max(24, Math.min(56, size * 0.2));
+  const at = across ? x : y;
+  if (at < from + band) return { ...t, split: 'before' };
+  if (at > to - band) return { ...t, split: 'after' };
+  return t;
 }
 
 /** The place among a bar's tabs a drop at (x, y) would take, counting tabs that don't fit and so aren't drawn. */
@@ -77,12 +101,26 @@ function indexIn(strip: HTMLElement, x: number, y: number): number {
  * Where in a tab bar the current drop would land: its tab position, or null when the drag isn't headed for this zone or
  * window. A drop on the area rather than the tab bar goes to the end.
  */
-export function dropIndexFor(d: DragState | null, at: { zone: DockZone } | { float: string }, len: number): number | null {
+export function dropIndexFor(d: DragState | null, at: { zone: DockZone; group?: number } | { float: string }, len: number): number | null {
   const t = d?.target;
   if (!t || 'newFloat' in t) return null;
-  if ('zone' in at ? !('zone' in t && t.zone === at.zone) : !('float' in t && t.float === at.float)) return null;
+  if ('zone' in at ? !('zone' in t && t.zone === at.zone && (t.group ?? 0) === (at.group ?? 0) && !t.split) : !('float' in t && t.float === at.float)) return null;
   return t.index ?? len;
 }
+
+/** Which edge of a group the current drop would make a new group at, or null. */
+export function splitFor(d: DragState | null, at: { zone: DockZone; group?: number }): 'before' | 'after' | null {
+  const t = d?.target;
+  return t && 'zone' in t && t.split && t.zone === at.zone && (t.group ?? 0) === (at.group ?? 0) ? t.split : null;
+}
+
+/** Words for where a split drop puts the new group. */
+export const SPLIT_WORDS: Record<DockZone, { before: string; after: string }> = {
+  left: { before: 'above', after: 'below' },
+  right: { before: 'above', after: 'below' },
+  top: { before: 'to the left', after: 'to the right' },
+  bottom: { before: 'to the left', after: 'to the right' },
+};
 
 /** Stops the click that would follow a drag from also pressing the thing that was dragged. */
 function swallowClick(): void {
@@ -252,7 +290,7 @@ export function dropNote(d: DragState): string {
   const t = d.target;
   if (!t) return d.kind === 'group' ? 'drop on an edge or a tab bar to dock it' : '';
   if ('newFloat' in t) return 'new window';
-  if ('zone' in t) return `dock ${ZONE_WORDS[t.zone]}`;
+  if ('zone' in t) return t.split ? `new group ${SPLIT_WORDS[t.zone][t.split]}` : `dock ${ZONE_WORDS[t.zone]}`;
   const f = dock.get().layout.floats.find((x) => x.id === t.float);
   return f ? `into ${floatTitle(dock.get().layout, f, panelTitle)}` : 'into that window';
 }

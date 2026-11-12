@@ -15,7 +15,7 @@ import { useFeaturesVersion } from '../features/use';
 import { usePrefs } from './prefs';
 import { usePopover } from './popover';
 import { groupName, resolveGroups, visibleGroups, type ToolGroup } from './toolArrange';
-import { currentGroups, flyRequest, frontTools, railNote, startToolDrag, stepTool, toolDrag, toolMenu } from './toolRail';
+import { askGroupRename, currentGroups, flyRequest, frontTools, groupMenu, railNote, startToolDrag, stepTool, toolDrag, toolMenu } from './toolRail';
 
 /** The kind of layer being drawn on (the last one when none is picked), or null with no layers. */
 function useActiveKind(): LayerKind | null {
@@ -92,6 +92,11 @@ function Flyout({ group, groups, anchor, place, visible, current, onPick, onClos
   const style: React.CSSProperties =
     side === 'below' ? { top: anchor.bottom + 6, left: Math.max(8, anchor.left) } : side === 'above' ? { bottom: window.innerHeight - anchor.top + 6, left: Math.max(8, anchor.left) } : side === 'left' ? { top: Math.max(8, anchor.top), right: window.innerWidth - anchor.left + 6 } : { top: Math.max(8, anchor.top), left: anchor.right + 6 };
   const tools = group.tools.filter(visible);
+  // The name box hangs where the flyout is; the flyout closes so it has the screen to itself.
+  const rename = () => {
+    onClose();
+    askGroupRename(group.id, { x: anchor.right + 6, y: anchor.top });
+  };
   const onKey = (e: React.KeyboardEvent<HTMLElement>) => {
     const items = [...e.currentTarget.querySelectorAll<HTMLButtonElement>('button')];
     const at = items.indexOf(document.activeElement as HTMLButtonElement);
@@ -107,6 +112,9 @@ function Flyout({ group, groups, anchor, place, visible, current, onPick, onClos
   };
   return createPortal(
     <div ref={ref} className="ui-tool-fly" role="menu" aria-label={`${groupName(group, groups)} tools`} style={style} data-tool-axis="y" onKeyDown={onKey}>
+      <div className="ui-tool-fly-head" role="presentation" onDoubleClick={rename}>
+        {groupName(group, groups)}
+      </div>
       {tools.map((id) => {
         const t = getTool(id);
         if (!t) return null;
@@ -132,6 +140,10 @@ function Flyout({ group, groups, anchor, place, visible, current, onPick, onClos
           </button>
         );
       })}
+      <button type="button" role="menuitem" className="ui-tool-fly-item ui-tool-fly-rename" data-tip="Rename this group" data-tip-desc="Give the group a name of your own." data-help="tool-strip" onClick={rename}>
+        <Icon name="pencil" size={16} />
+        <span>Rename group...</span>
+      </button>
     </div>,
     document.body,
   );
@@ -293,7 +305,8 @@ export function ToolStrip({ place = 'left' }: { place?: DockZone | 'float' }) {
       onContextMenu={(e) => {
         e.preventDefault();
         const id = (e.target as HTMLElement).closest<HTMLElement>('[data-tool-id]')?.dataset.toolId;
-        openDockMenu(e.clientX, e.clientY, id ? [...toolMenu(id, visible), { separator: true }, ...toolsMenu()] : toolsMenu());
+        const gid = (e.target as HTMLElement).closest<HTMLElement>('[data-tool-group]')?.dataset.toolGroup;
+        openDockMenu(e.clientX, e.clientY, id ? [...toolMenu(id, visible), { separator: true }, ...toolsMenu()] : gid ? [...groupMenu(gid, { x: e.clientX, y: e.clientY }), { separator: true }, ...toolsMenu()] : toolsMenu());
       }}
     >
       <span id="tool-rail-hint" className="ui-sr-only">
@@ -306,7 +319,22 @@ export function ToolStrip({ place = 'left' }: { place?: DockZone | 'float' }) {
       <div className="ui-tool-groups">
         {groups.map((g, gi) => (
           <Fragment key={g.id}>
-            {gi > 0 && <div className={`ui-tool-gap${drag?.mark?.kind === 'gap' && drag.mark.at === gi ? ' is-drop' : ''}`} data-tool-gap={gi} aria-hidden="true" />}
+            {gi > 0 && (
+              <div
+                className={`ui-tool-gap${drag?.mark?.kind === 'gap' && drag.mark.at === gi ? ' is-drop' : ''}`}
+                data-tool-gap={gi}
+                aria-hidden="true"
+                data-tip={groupName(g, groups)}
+                data-tip-desc="Double-click to rename this group. Right-click for more."
+                data-help="tool-strip"
+                onDoubleClick={() => askGroupRename(g.id)}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  openDockMenu(e.clientX, e.clientY, [...groupMenu(g.id, { x: e.clientX, y: e.clientY }), { separator: true }, ...toolsMenu()]);
+                }}
+              />
+            )}
             {stacked ? (
               (() => {
                 const id = frontOf(g);
@@ -320,6 +348,7 @@ export function ToolStrip({ place = 'left' }: { place?: DockZone | 'float' }) {
                     aria-label={more ? `${t.label}. ${groupName(g, groups)} group, ${g.tools.length} tools.` : t.label}
                     aria-pressed={g.tools.includes(current)}
                     aria-haspopup={more ? 'menu' : undefined}
+                    data-tip={`${t.label}, in ${groupName(g, groups)}`}
                     data-command={`tools.${id}`}
                     data-help={t.help}
                     data-tool-group={g.id}

@@ -288,6 +288,15 @@ app.whenReady().then(async () => {
 
   if (want('main')) add('main window', await axe(win));
 
+  // Panels stacked in groups on the right (under the Properties rail) and along the bottom, and a window over the canvas.
+  if (want('stacked groups')) {
+    await js(win, `__frameling.dock.placePanel('preview', { zone: 'right', group: 0, split: 'after' }); __frameling.dock.placePanel('library', { zone: 'bottom', group: 0, split: 'after' }); __frameling.dock.floatPanel('help', { x: 300, y: 200 })`);
+    await sleep(500);
+    add('stacked groups and a window', await axe(win));
+    await js(win, `__frameling.dock.resetLayout()`);
+    await sleep(300);
+  }
+
   // Every panel, in a document that gives it something to show.
   const panels = await js(win, `return __frameling.panels()`);
   for (const id of panels) {

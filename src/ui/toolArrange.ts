@@ -88,20 +88,31 @@ export function sanitizeGroups(raw: unknown, anchors = false): ToolGroup[] | und
     }
     if (!tools.length && !anchors) continue;
     seenGroups.add(r.id);
-    // eslint-disable-next-line no-control-regex
-    const name = typeof r.name === 'string' ? r.name.replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 40) : '';
+    const name = cleanGroupName(r.name);
     out.push({ id: r.id, ...(name ? { name } : {}), tools });
   }
   return out.length ? out : undefined;
 }
 
+export const MAX_GROUP_NAME = 40;
+
+/** A group name from outside made safe: no control characters, spaces tidied, trimmed, not too long ('' when there is none). */
+export function cleanGroupName(v: unknown): string {
+  // eslint-disable-next-line no-control-regex
+  return typeof v === 'string' ? v.replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, MAX_GROUP_NAME) : '';
+}
+
 /** The name to show for a group. */
 export function groupName(g: ToolGroup, groups: ToolGroup[]): string {
-  if (g.name) return g.name;
+  return g.name || usualName(g, groups);
+}
+
+/** The name a group has without one of its own. */
+function usualName(g: ToolGroup, groups: ToolGroup[]): string {
   const d = DEFAULT_GROUPS.find((x) => x.id === g.id);
   if (d) return d.name;
   if (g.id === OTHER_GROUP.id) return OTHER_GROUP.name;
-  return `Group ${groups.indexOf(g) + 1}`;
+  return `Group ${groups.findIndex((x) => x.id === g.id) + 1}`;
 }
 
 /**
@@ -141,6 +152,26 @@ export function resolveGroups(saved: ToolGroup[] | undefined, tools: ToolRef[]):
     g.tools.push(t);
   }
   return groups.filter((g) => g.tools.length);
+}
+
+/** True when a group carries a name that is not the one it would have anyway (its usual name, or "Group N"). */
+export function hasOwnName(g: ToolGroup, groups: ToolGroup[]): boolean {
+  return !!g.name && g.name !== usualName(g, groups);
+}
+
+/**
+ * The arrangement with one group named. An empty name takes the name away (back to "Group N", or the usual name for the
+ * usual groups). The same arrangement comes back when nothing changes or the group is not there.
+ */
+export function renameGroup(groups: ToolGroup[], id: string, name: string): ToolGroup[] {
+  const i = groups.findIndex((g) => g.id === id);
+  if (i < 0) return groups;
+  const clean = cleanGroupName(name);
+  const g = groups[i];
+  if ((g.name ?? '') === clean) return groups;
+  const { name: _old, ...rest } = g;
+  // Back to the usual name for a usual group: the arrangement says nothing, so the usual name shows.
+  return groups.map((x, j) => (j === i ? { ...rest, tools: [...g.tools], ...(clean ? { name: clean } : {}) } : x));
 }
 
 /** The arrangement with only the tools that show now; groups left empty are dropped. */
