@@ -1,0 +1,27 @@
+// How the timeline header folds into its "more" menu: which buttons go first, and when to fold or unfold.
+
+/** In the order they fold as the header gets narrower: the rarely used ones first, then the edit group, then hold and onion skin. */
+export const FOLD_STEPS = ['pingpong', 'sound', 'clean', 'fit', 'edit', 'hold', 'onion', 'zoom'] as const;
+export type FoldStep = (typeof FOLD_STEPS)[number];
+
+/** The steps folded away at a level (0 folds nothing). The last step only hides the zoom slider, so it is never clipped. */
+export const foldedAt = (level: number): FoldStep[] => FOLD_STEPS.slice(0, Math.max(0, Math.min(FOLD_STEPS.length, level)));
+
+/** Spare room (px) needed before a folded button comes back. Folding happens the moment it doesn't fit; this stops flicker. */
+export const foldSlack = 28;
+
+/**
+ * Picks the fold level. Folds further as soon as the current level doesn't fit; unfolds only to a level that fits with
+ * `slack` to spare. `widthAt(level)` is the width that level needs; `probeDown` says whether room may have appeared.
+ */
+export function chooseFold(current: number, max: number, widthAt: (level: number) => number, available: number, slack: number, probeDown: boolean): number {
+  if (widthAt(current) > available) {
+    for (let l = current + 1; l < max; l++) if (widthAt(l) <= available) return l;
+    return max;
+  }
+  if (probeDown) for (let l = 0; l < current; l++) if (widthAt(l) + slack <= available) return l;
+  return current;
+}
+
+/** The accessible name of the "more" button: says when a switch folded inside it is on. */
+export const switchLabel = (on: number) => (on > 0 ? `More, ${on} switch${on === 1 ? '' : 'es'} on` : 'More timeline buttons');

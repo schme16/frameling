@@ -213,7 +213,6 @@
   .tl-zoom input {
     width: 48px;
   }
-  .tl-zoom svg,
   .tl-header > .tl-sep:nth-of-type(2) {
     display: none;
   }
@@ -1031,40 +1030,34 @@
   display: none;
 }
 /*
- * Folding, rarest first. The everyday buttons (the drawings and frames group, hold, onion skin) stay on the header as
- * icons down to narrow widths; the rarely used ones (ping-pong, add a sound, clean timeline) go into the "more" menu
- * first. Which tier is folded decides what the menu lists (Header.tsx).
+ * Folding: Header.tsx measures the real width and lists what it folded in data-folded (rarest first). The "more" button
+ * shows only while something is folded.
  */
-@container tl (max-width: 880px) {
-  .tl-header .tl-rare {
-    display: none;
-  }
-  .tl-header .tl-overflow {
-    display: inline-flex;
-  }
+.tl-overflow {
+  position: relative;
 }
-@container tl (max-width: 700px) {
-  .tl-header .tl-fold-1 {
-    display: none;
-  }
-  .tl-zoom input {
-    display: none;
-  }
+.tl-overflow-dot {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 2px var(--panel);
 }
-@container tl (max-width: 560px) {
-  .tl-header .tl-fold-2 {
-    display: none;
-  }
+.tl-header[data-folded]:not([data-folded='']) .tl-overflow {
+  display: inline-flex;
 }
-/* A play range or light table chip takes room, so the header folds sooner while one shows. */
-@container tl (max-width: 1100px) {
-  .tl-header:has(.tl-range) .tl-rare {
-    display: none;
-  }
-  .tl-header:has(.tl-range) .tl-overflow {
-    display: inline-flex;
-  }
-  .tl-header:has(.tl-range) .tl-zoom input {
-    display: none;
-  }
+.tl-header[data-folded~='pingpong'] [data-step='pingpong'],
+.tl-header[data-folded~='sound'] [data-step='sound'],
+.tl-header[data-folded~='clean'] [data-step='clean'],
+.tl-header[data-folded~='fit'] [data-step='fit'],
+.tl-header[data-folded~='edit'] [data-step='edit'],
+.tl-header[data-folded~='hold'] [data-step='hold'],
+.tl-header[data-folded~='onion'] [data-step='onion'],
+.tl-header[data-folded~='zoom'] [data-step='zoom'],
+.tl-header[data-folded~='onion'][data-folded~='hold'] [data-sep='2'],
+.tl-header[data-folded~='onion'][data-folded~='hold'][data-folded~='edit'] [data-sep='1'] {
+  display: none;
 }

@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { celAt, findLayer } from '../core/doc';
 import { store, useStore } from '../core/store';
 import { Icon } from '../ui/icons';
@@ -13,8 +13,9 @@ import { clearLightTable, lightTableLabel } from '../canvas/lightTable';
 import { MAX_CW, MIN_CW, setTl, tl, useTl } from './state';
 import { SoundButton } from '../audio/SoundButton';
 import { usePrefs } from '../ui/prefs';
+import { FOLD_STEPS, chooseFold, foldedAt, foldSlack, switchLabel, type FoldStep } from './headerFold';
 
-function Btn({ id, icon, text, title, pressed, disabled, onClick, className = '' }: { id?: string; icon?: string; text?: ReactNode; title: string; pressed?: boolean; disabled?: boolean; onClick?: () => void; className?: string }) {
+function Btn({ id, icon, text, title, pressed, disabled, onClick, className = '', step }: { id?: string; icon?: string; text?: ReactNode; title: string; pressed?: boolean; disabled?: boolean; onClick?: () => void; className?: string; step?: FoldStep }) {
   return (
     <button
       type="button"
@@ -23,6 +24,7 @@ function Btn({ id, icon, text, title, pressed, disabled, onClick, className = ''
       // Speech users say what they see, so the visible words have to be in the name.
       aria-label={typeof text === 'string' && !title.toLowerCase().includes(text.toLowerCase()) ? `${text}: ${title}` : title}
       aria-pressed={pressed}
+      data-step={step}
       disabled={disabled}
       onClick={onClick ?? (() => id && runCmd(id))}
     >
@@ -252,63 +254,108 @@ function LightTableChip() {
   );
 }
 
-// On a narrow timeline the buttons that don't fit fold into this menu, the rarely used ones first (CSS decides which
-// show; each tier has a class on the header: tl-rare, tl-fold-1 and tl-fold-2).
-type Fold = 'rare' | 'edit' | 'hold';
-const OVERFLOW: { id: string; fold: Fold }[] = [
-  { id: 'timeline.togglePingPong', fold: 'rare' },
-  { id: 'audio.import', fold: 'rare' },
-  { id: 'view.cleanTimeline', fold: 'rare' },
-  { id: 'timeline.zoomFit', fold: 'rare' },
-  { id: 'timeline.newKey', fold: 'edit' },
-  { id: 'timeline.duplicateKey', fold: 'edit' },
-  { id: 'timeline.insertFrame', fold: 'edit' },
-  { id: 'timeline.removeFrame', fold: 'edit' },
-  { id: 'timeline.hold1', fold: 'hold' },
-  { id: 'timeline.hold2', fold: 'hold' },
-  { id: 'timeline.hold3', fold: 'hold' },
-  { id: 'timeline.hold4', fold: 'hold' },
-  { id: 'timeline.toggleOnion', fold: 'hold' },
-];
-const FOLD_CLASS: Record<Fold, string> = { rare: '.tl-rare', edit: '.tl-fold-1', hold: '.tl-fold-2' };
+// What each folded step puts in the "more" menu. Hold is a choice of one (not a switch), the others toggle or act.
+const STEP_COMMANDS: Record<FoldStep, string[]> = {
+  pingpong: ['timeline.togglePingPong'],
+  sound: ['audio.import'],
+  clean: ['view.cleanTimeline'],
+  fit: ['timeline.zoomFit'],
+  edit: ['timeline.newKey', 'timeline.duplicateKey', 'timeline.insertFrame', 'timeline.removeFrame'],
+  hold: ['timeline.hold1', 'timeline.hold2', 'timeline.hold3', 'timeline.hold4'],
+  onion: ['timeline.toggleOnion'],
+  zoom: [],
+};
 
-/** The tiers whose buttons are folded away right now. */
-function foldedTiers(header: Element): Set<Fold> {
-  const out = new Set<Fold>();
-  for (const f of Object.keys(FOLD_CLASS) as Fold[]) {
-    const el = header.querySelector(FOLD_CLASS[f]);
-    if (el && getComputedStyle(el).display === 'none') out.add(f);
-  }
-  return out;
+/** The commands in the "more" menu for the steps folded at this level, and which of them are switches that are on. */
+function overflowCommands(folded: FoldStep[]) {
+  return folded
+    .flatMap((st) => STEP_COMMANDS[st].map((id) => ({ id, step: st })))
+    .map((o) => ({ ...o, cmd: getCommand(o.id) }))
+    .filter((o): o is typeof o & { cmd: NonNullable<typeof o.cmd> } => !!o.cmd);
 }
 
-function OverflowMenu() {
-  const [pos, setPos] = useState<{ x: number; y: number; folded: Set<Fold> } | null>(null);
-  const items = (): MenuItem[] =>
-    OVERFLOW.filter((o) => pos?.folded.has(o.fold))
-      .map((o) => getCommand(o.id))
-      .filter((c): c is NonNullable<typeof c> => !!c)
-      .map((c) => ({ label: c.label, hint: keyHint(c.id), checked: c.checked ? c.checked(store().get()) : undefined, onClick: () => runCmd(c.id) }));
+function OverflowMenu({ folded }: { folded: FoldStep[] }) {
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
+  const list = overflowCommands(folded);
+  // Which folded switches are on: the string only changes when one flips, so the header doesn't redraw on every edit.
+  usePrefs((p) => p.cleanTimeline);
+  const states = useStore((s) => list.map((o) => (o.cmd.checked?.(s) ? '1' : '0')).join(''));
+  const on = list.filter((o, i) => o.step !== 'hold' && states[i] === '1').length;
   return (
     <>
-    <button
-      type="button"
-      className="tl-btn tl-overflow"
-      title="More timeline buttons"
-      aria-label="More timeline buttons"
-      aria-haspopup="menu"
-      aria-expanded={!!pos}
-      onClick={(e) => {
-        const r = e.currentTarget.getBoundingClientRect();
-        // Only what is folded away right now is in the menu: what still shows on the header isn't listed twice.
-        setPos(pos ? null : { x: r.left, y: r.bottom + 4, folded: foldedTiers(e.currentTarget.parentElement!) });
-      }}
-    >
-      <span aria-hidden="true">{'⋯'}</span>
-    </button>
-    {pos ? <ContextMenu x={pos.x} y={pos.y} items={items()} onClose={() => setPos(null)} /> : null}
+      <button
+        type="button"
+        className="tl-btn tl-overflow"
+        title="More timeline buttons"
+        aria-label={switchLabel(on)}
+        aria-haspopup="menu"
+        aria-expanded={!!pos}
+        onClick={(e) => {
+          const r = e.currentTarget.getBoundingClientRect();
+          setPos(pos ? null : { x: r.left, y: r.bottom + 4 });
+        }}
+      >
+        <span aria-hidden="true">{'⋯'}</span>
+        {on ? <i className="tl-overflow-dot" aria-hidden="true" /> : null}
+      </button>
+      {pos ? (
+        <ContextMenu
+          x={pos.x}
+          y={pos.y}
+          items={list.map((o): MenuItem => ({ label: o.cmd.label, hint: keyHint(o.id), checked: o.cmd.checked ? o.cmd.checked(store().get()) : undefined, onClick: () => runCmd(o.id) }))}
+          onClose={() => setPos(null)}
+        />
+      ) : null}
     </>
   );
+}
+
+/** The width the header's visible items need on one row: padding, every shown item at its natural width, and the gaps. */
+function neededWidth(h: HTMLElement): number {
+  const cs = getComputedStyle(h);
+  let n = 0;
+  let sum = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
+  for (const c of Array.from(h.children)) {
+    if (getComputedStyle(c).display === 'none') continue;
+    n++;
+    if (!c.classList.contains('tl-grow')) sum += c.getBoundingClientRect().width;
+  }
+  return sum + (parseFloat(cs.columnGap) || 0) * Math.max(0, n - 1);
+}
+
+const setFolded = (h: HTMLElement, level: number) => h.setAttribute('data-folded', foldedAt(level).join(' '));
+
+/**
+ * Folds the header's buttons into the "more" menu only as far as the real width needs (the rarest first), and unfolds
+ * them only once there is a little spare room, so a chip appearing or the width hovering at a boundary doesn't flicker.
+ */
+function useFolding(ref: { current: HTMLElement | null }): number {
+  const [level, setLevel] = useState(0);
+  useLayoutEffect(() => {
+    const h = ref.current;
+    if (!h) return;
+    let cur = 0;
+    const fit = (probeDown: boolean) => {
+      const next = chooseFold(cur, FOLD_STEPS.length, (l) => (setFolded(h, l), neededWidth(h)), h.clientWidth, foldSlack, probeDown);
+      setFolded(h, next);
+      if (next !== cur) {
+        cur = next;
+        setLevel(next);
+      }
+    };
+    fit(true);
+    const ro = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(() => fit(true));
+    ro?.observe(h);
+    // Chips and buttons coming and going can free or need room; a changing number (the frame counter) can only need it.
+    const mo = new MutationObserver((rs) => fit(rs.some((r) => r.type === 'childList')));
+    mo.observe(h, { childList: true, subtree: true, characterData: true });
+    void document.fonts?.ready.then(() => fit(true));
+    return () => {
+      ro?.disconnect();
+      mo.disconnect();
+    };
+  }, [ref]);
+  return level;
 }
 
 export function Header() {
@@ -317,8 +364,10 @@ export function Header() {
   const pingPong = useStore((s) => !!s.ui.pingPong);
   const cw = useTl((t) => t.cw);
   const clean = usePrefs((p) => p.cleanTimeline);
+  const ref = useRef<HTMLDivElement>(null);
+  const level = useFolding(ref);
   return (
-    <div className="tl-header" role="toolbar" aria-label="Timeline controls">
+    <div ref={ref} className="tl-header" role="toolbar" aria-label="Timeline controls">
       <span className="tl-group" role="group" aria-label="Playback">
         <Btn id="timeline.firstFrame" icon="first" title="Go to the first frame" />
         <Btn id="timeline.prevFrame" icon="prev" title="Back one frame" />
@@ -328,37 +377,37 @@ export function Header() {
         <Btn id="timeline.nextFrame" icon="next" title="Forward one frame" />
         <Btn id="timeline.lastFrame" icon="last" title="Go to the last frame" />
         <Btn id="timeline.toggleLoop" icon="loop" title="Loop: start again at the end" pressed={loop} />
-        <Btn id="timeline.togglePingPong" icon="pingpong" title="Play back and forth (ping-pong)" pressed={pingPong} className="tl-rare" />
+        <Btn id="timeline.togglePingPong" icon="pingpong" title="Play back and forth (ping-pong)" pressed={pingPong} step="pingpong" />
       </span>
       <Counter />
       <FpsField />
       <PlayRange />
       <LightTableChip />
-      <span className="tl-sep" aria-hidden="true" />
-      <span className="tl-group tl-fold-1" role="group" aria-label="Drawings and frames">
+      <span className="tl-sep" data-sep="1" aria-hidden="true" />
+      <span className="tl-group" role="group" aria-label="Drawings and frames" data-step="edit">
         <Btn id="timeline.newKey" icon="key" text={<>New<span className="tl-long"> drawing</span></>} title="Start a new blank drawing on this frame (new key)" />
         <Btn id="timeline.duplicateKey" icon="duplicate" text="Copy" title="Copy this drawing to the next frame (duplicate key)" />
         <Btn id="timeline.insertFrame" icon="plus" text="Frame" title="Add a frame: hold this drawing one frame longer" className="tl-btn-frame" />
         <Btn id="timeline.removeFrame" icon="minus" text="Frame" title="Remove a frame" className="tl-btn-frame" />
       </span>
-      <span className="tl-fold-2">
+      <span data-step="hold">
         <HoldButtons />
       </span>
-      <span className="tl-rare">
+      <span data-step="sound">
         <SoundButton />
       </span>
-      <span className="tl-sep" aria-hidden="true" />
-      <span className="tl-fold-2">
+      <span className="tl-sep" data-sep="2" aria-hidden="true" />
+      <span data-step="onion">
         <OnionControls />
       </span>
       <span className="tl-grow" />
-      <OverflowMenu />
-      <Btn id="view.cleanTimeline" icon="sliders" title="Clean timeline: plain blocks, no property rows" pressed={clean} className="tl-btn-mini tl-look-toggle tl-rare" />
+      <OverflowMenu folded={foldedAt(level)} />
+      <Btn id="view.cleanTimeline" icon="sliders" title="Clean timeline: plain blocks, no property rows" pressed={clean} className="tl-btn-mini tl-look-toggle" step="clean" />
       <label className="tl-zoom" title="Zoom the timeline (or hold Ctrl and scroll)">
-        <button type="button" className="tl-btn tl-btn-mini" title={tip('timeline.zoomFit', 'Fit the whole animation in view')} aria-label="Fit the whole animation in view" onClick={() => runCmd('timeline.zoomFit')}>
+        <button type="button" className="tl-btn tl-btn-mini" data-step="fit" title={tip('timeline.zoomFit', 'Fit the whole animation in view')} aria-label="Fit the whole animation in view" onClick={() => runCmd('timeline.zoomFit')}>
           <Icon name="zoom" size={14} />
         </button>
-        <input type="range" aria-label="Timeline zoom" min={MIN_CW} max={MAX_CW} value={cw} onChange={(e) => setTl({ cw: Number(e.target.value) })} />
+        <input type="range" data-step="zoom" aria-label="Timeline zoom" min={MIN_CW} max={MAX_CW} value={cw} onChange={(e) => setTl({ cw: Number(e.target.value) })} />
       </label>
     </div>
   );
