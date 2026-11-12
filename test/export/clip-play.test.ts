@@ -246,11 +246,62 @@ describe('Lottie and dotLottie of a clip', () => {
 
 describe('Interactives', () => {
   const doc = docWith([[0, 5]], 6);
+  const build = (clips: Clip[], markers: { id: string; name: string; frame: number }[] = []) => {
+    const d = docWith([[0, 5]], 6);
+    d.clips = clips;
+    d.markers = markers as never;
+    return buildPlayable({ doc: d, frames: [1, 2, 3, 4, 5, 6].map(solid), range: { start: 0, end: 5 }, scale: 1, pixelArt: true, background: null, maxSide: 2048 }).manifest;
+  };
+
+  it('writes a back and forth clip, and one that plays N times, out in play order after the document frames', () => {
+    const m = build([bounce, thrice, back]);
+    const doc = build([]);
+    expect(doc.frameCount).toBe(6);
+    expect(m.documentFrames).toBe(6);
+    expect(m.frameCount).toBe(6 + 4 + 6 + 3);
+    // bounce is frames 1 to 3 (loop: one trip round), thrice 0 to 1 three times, back 2 to 4 backward.
+    const forward = (a: number, b: number) => m.frames.slice(a, b + 1);
+    expect(m.clips.map((c) => [c.name, c.start, c.end, c.loop])).toEqual([['bounce', 6, 9, true], ['thrice', 10, 15, false], ['back', 16, 18, false]]);
+    expect(forward(6, 9)).toEqual([1, 2, 3, 2].map((f) => m.frames[f]));
+    expect(forward(10, 15)).toEqual([0, 1, 0, 1, 0, 1].map((f) => m.frames[f]));
+    expect(forward(16, 18)).toEqual([4, 3, 2].map((f) => m.frames[f]));
+    expect(m.clips[1].runs.reduce((n, r) => n + r.frames, 0)).toBe(6);
+  });
+
+  it('leaves the document frames and a plain clip exactly where they were, and says nothing when nothing is baked', () => {
+    const m = build([plain]);
+    expect(m.documentFrames).toBeUndefined();
+    expect(m.clips.map((c) => [c.start, c.end])).toEqual([[0, 2]]);
+    const b = build([bounce]);
+    expect(b.frames.slice(0, 6)).toEqual(m.frames);
+  });
+
+  it('repeats the markers inside a baked clip where its frames are shown again', () => {
+    const m = build([bounce], [{ id: 'a', name: 'step', frame: 2 }, { id: 'b', name: 'outside', frame: 5 }]);
+    // bounce shows frames 1 2 3 2: the marker on frame 2 is at positions 1 and 3 of the baked stretch (frames 7 and 9).
+    expect(m.markers).toEqual([{ name: 'step', frame: 2 }, { name: 'outside', frame: 5 }, { name: 'step', frame: 7 }, { name: 'step', frame: 9 }]);
+  });
+
+  it('gives the flow the baked length and no direction or repeat for those clips', () => {
+    const d = docWith([[0, 5]], 6);
+    d.clips = [bounce, plain];
+    d.flow = { start: 'b', transitions: [{ id: 'x', from: 'p', to: 'b', when: 'end' }] };
+    const { manifest: m } = buildPlayable({ doc: d, frames: [1, 2, 3, 4, 5, 6].map(solid), range: { start: 0, end: 5 }, scale: 1, pixelArt: true, background: null, maxSide: 2048 });
+    expect(m.flow!.states.find((s) => s.name === 'bounce')).toEqual({ name: 'bounce', loop: true, frames: 4 });
+    expect(m.flow!.states.find((s) => s.name === 'plain')).toEqual({ name: 'plain', loop: true, frames: 3 });
+  });
+
+  it('keeps a clip forward when playing it out would be huge', () => {
+    const m = build([{ id: 'h', name: 'huge', start: 0, end: 5, loop: false, repeat: 999 }]);
+    expect(m.documentFrames).toBeUndefined();
+    expect(m.frameCount).toBe(6);
+  });
+
   it('say what is not carried, only when a clip plays another way', () => {
     doc.clips = [{ id: 'q', name: 'q', start: 0, end: 2, loop: true }];
     expect(carryWarnings(doc, 'interactives')).toEqual([]);
     doc.clips = [bounce];
-    expect(carryWarnings(doc, 'interactives')[0]).toMatch(/forward, looping or once/);
+    expect(carryWarnings(doc, 'interactives')).toEqual([]);
     expect(carryWarnings(doc, 'lottie')).toEqual([]);
     expect(carryWarnings(doc, 'gif')).toEqual([]);
   });
