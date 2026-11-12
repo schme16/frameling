@@ -63,7 +63,7 @@ export function drawingsDiffer(a: Drawing | undefined, b: Drawing | undefined): 
   if (a.kind !== b.kind) return true;
   if (a.kind === 'vector' && b.kind === 'vector') return !sameShapes(a.shapes, b.shapes);
   if (a.kind === 'pixel' && b.kind === 'pixel') {
-    if (a.pixels.length !== b.pixels.length) return true;
+    if (a.pixels.length !== b.pixels.length || a.width !== b.width || (a.x ?? 0) !== (b.x ?? 0) || (a.y ?? 0) !== (b.y ?? 0)) return true;
     for (let i = 0; i < a.pixels.length; i++) if (a.pixels[i] !== b.pixels[i]) return true;
   }
   return false;

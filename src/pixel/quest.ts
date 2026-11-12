@@ -5,7 +5,8 @@ import { getCommand } from '../core/registry';
 import type { Quest } from '../quests/types';
 import { demoFill, ensureTinySpritePage } from '../quests/actions';
 import { hasPixelLayer, paintedAt } from '../quests/predicates';
-import { activeDrawing, editActiveDrawing } from '../tools/edit';
+import { activeDrawing, activeGrid, paintActiveGrid, setActivePixels } from '../tools/edit';
+import { gridPixels } from '../core/pixelBounds';
 import { shadeInk } from './ink';
 import { docPalette } from './palette';
 import { getPixelSettings, setPixelSettings } from './settings';
@@ -27,8 +28,7 @@ function drawDemoBlob(): boolean {
   const c = /^#([0-9a-f]{6})/i.exec(store().get().ui.color)?.[1] ?? '1d1b26';
   const rgb = [0, 2, 4].map((i) => parseInt(c.slice(i, i + 2), 16));
   return (
-    editActiveDrawing('Draw pixels', 'pixel', (d) => {
-      const px = new Uint8ClampedArray(d.pixels);
+    paintActiveGrid('Draw pixels', (px, d) => {
       const cx = d.width / 2;
       const cy = d.height / 2;
       const rows = ['..####..', '.#....#.', '#......#', '#......#', '#......#', '.#....#.', '..####..'];
@@ -39,7 +39,6 @@ function drawDemoBlob(): boolean {
           px.set([rgb[0], rgb[1], rgb[2], 255], i);
         }),
       );
-      d.pixels = px;
     }) === 'ok'
   );
 }
@@ -47,16 +46,18 @@ function drawDemoBlob(): boolean {
 /** Shades the lower half of the drawing one step darker, for "Show me how". */
 function shadeDemo(): boolean {
   const d = activeDrawing();
-  if (!d || d.kind !== 'pixel') return false;
+  const g = activeGrid();
+  if (!d || d.kind !== 'pixel' || !g) return false;
   const ink = shadeInk(docPalette(store().get().doc), false);
-  const out = new Uint8ClampedArray(d.pixels);
+  const from = gridPixels(d, g.width, g.height);
+  const out = new Uint8ClampedArray(from);
   const c = new Uint8Array(4);
-  for (let y = Math.floor(d.height / 2) + 1; y < d.height; y++)
-    for (let x = 0; x < d.width; x++) {
-      const i = (y * d.width + x) * 4;
-      if (ink.color(x, y, d.pixels, i, c)) out.set(c, i);
+  for (let y = Math.floor(g.height / 2) + 1; y < g.height; y++)
+    for (let x = 0; x < g.width; x++) {
+      const i = (y * g.width + x) * 4;
+      if (ink.color(x, y, from, i, c)) out.set(c, i);
     }
-  return editActiveDrawing('Shade pixels', 'pixel', (dr) => void (dr.pixels = out)) === 'ok';
+  return setActivePixels('Shade pixels', out) === 'ok';
 }
 
 export const SHADE_AND_SHINE: Quest = {

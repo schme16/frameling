@@ -207,6 +207,8 @@ const hex2 = (v: number) => v.toString(16).padStart(2, '0');
 export function pixelRects(d: PixelDrawing, size: number): string[] {
   const out: string[] = [];
   const px = d.pixels;
+  const ox = d.x ?? 0;
+  const oy = d.y ?? 0;
   type Open = { y: number; h: number; x: number; w: number; fill: string };
   let prev = new Map<string, Open>();
   const rects: Open[] = [];
@@ -243,7 +245,7 @@ export function pixelRects(d: PixelDrawing, size: number): string[] {
   }
   for (const r of rects) {
     const [hex, alpha] = r.fill.split(':');
-    out.push(`<rect x="${n2(r.x * size)}" y="${n2(r.y * size)}" width="${n2(r.w * size)}" height="${n2(r.h * size)}" fill="#${hex}"${alpha ? ` fill-opacity="${alpha}"` : ''}/>`);
+    out.push(`<rect x="${n2((r.x + ox) * size)}" y="${n2((r.y + oy) * size)}" width="${n2(r.w * size)}" height="${n2(r.h * size)}" fill="#${hex}"${alpha ? ` fill-opacity="${alpha}"` : ''}/>`);
   }
   return out;
 }

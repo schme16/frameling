@@ -10,7 +10,7 @@
 // out from the document (`inferWay`), so old files open unchanged.
 import { current, isDraft } from 'immer';
 import type { Artboard, ArtboardContent, Clip, Doc, Id, Layer, PixelLayer, SpriteWay } from '../core/format';
-import { newDoc, newPixelDrawing, pruneDrawings, uid } from '../core/doc';
+import { newBlankPixelDrawing, newDoc, pruneDrawings, uid } from '../core/doc';
 import { addArtboard, artboardsOf, contentOf, ensureArtboards, gapFor, sizeOf } from '../artboards/model';
 import { line } from '../ui/mascot/lines';
 import { START_FRAMES } from './units';
@@ -148,7 +148,8 @@ export const FRAME_BOARDS = START_FRAMES.animation;
 
 const blankCels = (doc: Doc, layer: PixelLayer, w: number, h: number, n: number): void => {
   for (let i = 0; i < n; i++) {
-    const d = newPixelDrawing(w, h);
+    // A new picture has nothing painted yet, so it holds no pixels.
+    const d = newBlankPixelDrawing();
     doc.drawings[d.id] = d;
     layer.cels.push({ id: uid('c'), start: i, length: 1, drawingId: d.id });
   }

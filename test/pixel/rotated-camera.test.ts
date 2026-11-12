@@ -1,5 +1,6 @@
 // Pixel shapes and strokes through a turned camera: the pointer lands on the grid cell it is over, sizes stay in
 // what-you-see terms, and a layer at another depth is aimed at through its own camera speed.
+import { asGrid } from '../helpers/grid';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { PixelDrawing } from '../../src/core/format';
 import { store } from '../../src/core/store';
@@ -20,7 +21,7 @@ import { ctx, drag, pixelStore } from '../tools/helpers';
 
 // 64 x 64 document at 8 per pixel: an 8 x 8 grid.
 const PS = 8;
-const drawing = () => Object.values(store().get().doc.drawings).find((d) => d.kind === 'pixel') as PixelDrawing;
+const drawing = () => asGrid(Object.values(store().get().doc.drawings).find((d) => d.kind === 'pixel') as PixelDrawing);
 const cells = (): string[] => {
   const d = drawing();
   const out: string[] = [];

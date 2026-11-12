@@ -32,21 +32,38 @@ export const clampSize = (v: number): number => Math.max(MIN_SIZE, Math.min(MAX_
 
 // ---------------------------------------------------------------- pixel and tile grids
 
-/** A pixel drawing on a new grid, its old pixels moved by (ox, oy) art pixels. Anything off the grid is cut. */
+/**
+ * A pixel drawing on a new grid, its old pixels moved by (ox, oy) art pixels. Anything off the grid is cut. The
+ * drawing keeps only its painted block, so this moves and crops that block (a drawing never grows to the grid).
+ */
 export function regridPixels(d: PixelDrawing, w: number, h: number, ox: number, oy: number): PixelDrawing {
-  if (w === d.width && h === d.height && !ox && !oy) return d;
-  const out = new Uint8ClampedArray(w * h * 4);
-  const x0 = Math.max(0, ox);
-  const x1 = Math.min(w, d.width + ox);
-  if (x1 > x0) {
-    for (let y = 0; y < d.height; y++) {
-      const ny = y + oy;
-      if (ny < 0 || ny >= h) continue;
-      const src = (y * d.width + (x0 - ox)) * 4;
-      out.set(d.pixels.subarray(src, src + (x1 - x0) * 4), (ny * w + x0) * 4);
+  if (d.width < 1 || d.height < 1) return d;
+  const x = (d.x ?? 0) + ox;
+  const y = (d.y ?? 0) + oy;
+  const x0 = Math.max(0, x);
+  const y0 = Math.max(0, y);
+  const x1 = Math.min(w, x + d.width);
+  const y1 = Math.min(h, y + d.height);
+  let out: PixelDrawing;
+  if (x1 <= x0 || y1 <= y0) out = { ...d, width: 0, height: 0, pixels: new Uint8ClampedArray(0) };
+  else if (x0 === x && y0 === y && x1 === x + d.width && y1 === y + d.height) {
+    if (!ox && !oy) return d;
+    out = { ...d };
+  } else {
+    const bw = x1 - x0;
+    const bh = y1 - y0;
+    const px = new Uint8ClampedArray(bw * bh * 4);
+    for (let r = 0; r < bh; r++) {
+      const src = ((y0 - y + r) * d.width + (x0 - x)) * 4;
+      px.set(d.pixels.subarray(src, src + bw * 4), r * bw * 4);
     }
+    out = { ...d, width: bw, height: bh, pixels: px };
   }
-  return { ...d, width: w, height: h, pixels: out };
+  if (out.width && x0) out.x = x0;
+  else delete out.x;
+  if (out.width && y0) out.y = y0;
+  else delete out.y;
+  return out;
 }
 
 /** The same for a tilemap, moved by whole tiles. */

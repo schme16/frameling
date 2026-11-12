@@ -50,14 +50,14 @@ describe('new blank key', () => {
     core.newBlankKey(d, L(d).id, 9);
     expect(d.length).toBe(10);
   });
-  it('makes a pixel drawing of the right size on a pixel layer', () => {
+  it('makes a blank pixel drawing (nothing held until something is painted) on a pixel layer', () => {
     const d = docWith([]);
     const pid = core.addPixelLayer(d, null, 'P', 16);
     core.newBlankKey(d, pid, 0);
     const layer = d.layers.find((l) => l.id === pid)!;
     const dr = d.drawings[layer.cels[0].drawingId];
     expect(dr.kind).toBe('pixel');
-    if (dr.kind === 'pixel') expect([dr.width, dr.height]).toEqual([80, 45]);
+    if (dr.kind === 'pixel') expect([dr.width, dr.height, dr.pixels.length]).toEqual([0, 0, 0]);
   });
   it('refuses a missing layer or a negative frame', () => {
     const d = docWith([]);
@@ -106,7 +106,7 @@ describe('duplicate key', () => {
     core.newBlankKey(d, pid, 0);
     const layer = d.layers.find((l) => l.id === pid)!;
     const a = d.drawings[layer.cels[0].drawingId];
-    if (a.kind === 'pixel') a.pixels[0] = 255;
+    if (a.kind === 'pixel') Object.assign(a, { width: 1, height: 1, pixels: new Uint8ClampedArray([255, 0, 0, 255]) });
     core.duplicateKey(d, pid, 0);
     const b = d.drawings[layer.cels[1].drawingId];
     if (a.kind === 'pixel' && b.kind === 'pixel') {

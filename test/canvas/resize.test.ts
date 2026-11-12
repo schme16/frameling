@@ -36,8 +36,8 @@ function pixelDoc(pixelSize: number, w = 8, h = 8): Doc {
 }
 
 const firstShape = (doc: Doc) => (doc.drawings.v1 as VectorDrawing).shapes[0] as PathShape;
-const redAt = (d: { width: number; pixels: Uint8ClampedArray }) => {
-  for (let i = 0; i < d.pixels.length; i += 4) if (d.pixels[i] === 255 && d.pixels[i + 3] === 255) return { x: (i / 4) % d.width, y: Math.floor(i / 4 / d.width) };
+const redAt = (d: { x?: number; y?: number; width: number; pixels: Uint8ClampedArray }) => {
+  for (let i = 0; i < d.pixels.length; i += 4) if (d.pixels[i] === 255 && d.pixels[i + 3] === 255) return { x: ((i / 4) % d.width) + (d.x ?? 0), y: Math.floor(i / 4 / d.width) + (d.y ?? 0) };
   return null;
 };
 
@@ -112,9 +112,9 @@ describe('resize the canvas', () => {
     const doc = pixelDoc(4);
     // 32 x 32 page, 8 x 8 art; grow to 48 x 40 anchored bottom right: moves 16, 8 = 4, 2 art pixels.
     const r = resizeCanvas(doc, 48, 40, 'se');
-    const d = Object.values(r.doc.drawings)[0] as { width: number; height: number; pixels: Uint8ClampedArray };
-    expect(d.width).toBe(12);
-    expect(d.height).toBe(10);
+    const d = Object.values(r.doc.drawings)[0] as { x?: number; y?: number; width: number; height: number; pixels: Uint8ClampedArray };
+    // The drawing keeps its block and moves it on the bigger grid (it does not grow to 12 x 10).
+    expect([d.x, d.y, d.width, d.height]).toEqual([4, 2, 8, 8]);
     expect(redAt(d)).toEqual({ x: 5, y: 4 });
     expect(r.notes).not.toContain('pixel-shift');
   });

@@ -8,7 +8,7 @@
  * `fps`; frame 0 is the first frame.
  */
 
-export const FORMAT_VERSION = 2;
+export const FORMAT_VERSION = 3;
 export type Id = string;
 
 /** A colour as CSS hex (`#rrggbb` or `#rrggbbaa`). */
@@ -406,8 +406,11 @@ export interface KeptShape {
 }
 
 /**
- * A pixel drawing: an RGBA grid the size of the layer's art grid (`ceil(doc.width / pixelSize)` by
- * `ceil(doc.height / pixelSize)`). In memory `pixels` is the raw RGBA bytes. In a saved file it is stored as a PNG.
+ * A pixel drawing: RGBA pixels placed on the layer's art grid (`ceil(doc.width / pixelSize)` by
+ * `ceil(doc.height / pixelSize)`). `width` x `height` is the block that is held, at (`x`, `y`) art pixels from the
+ * grid's top-left (missing = 0). Older drawings (and tile frames) are the whole grid at (0, 0); newer ones hold only
+ * the painted part, and a blank one is 0 x 0. Use `gridPixels` (core/pixelBounds.ts) for the whole grid.
+ * In memory `pixels` is the raw RGBA bytes. In a saved file it is stored as a PNG.
  * Edits replace the array (never mutate it in place), so undo and caches can compare by reference.
  */
 export interface PixelDrawing {
@@ -415,6 +418,9 @@ export interface PixelDrawing {
   kind: 'pixel';
   /** Data kept for features and plugins, by feature id. See `Ext`. */
   ext?: Ext;
+  /** Where the held block starts on the art grid (missing = 0). */
+  x?: number;
+  y?: number;
   width: number;
   height: number;
   pixels: Uint8ClampedArray;

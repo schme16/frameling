@@ -110,11 +110,15 @@ export function newPixelDrawing(width: number, height: number): PixelDrawing {
   return { id: uid('p'), kind: 'pixel', width, height, pixels: new Uint8ClampedArray(width * height * 4) };
 }
 
+/** A pixel drawing with nothing painted: no block at all (0 x 0), so it costs no memory. */
+export function newBlankPixelDrawing(): PixelDrawing {
+  return { id: uid('p'), kind: 'pixel', width: 0, height: 0, pixels: new Uint8ClampedArray(0) };
+}
+
 /** A fresh, empty drawing of the right kind for a layer. */
 export function newDrawingFor(doc: Doc, layer: Layer): Drawing {
   if (layer.kind === 'pixel') {
-    const g = pixelGrid(doc, layer);
-    return newPixelDrawing(g.width, g.height);
+    return newBlankPixelDrawing();
   }
   if (layer.kind === 'tilemap') {
     const g = tilemapGrid(doc, layer);

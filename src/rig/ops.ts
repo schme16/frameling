@@ -333,7 +333,8 @@ export function layerArtBox(doc: Doc, layer: Layer, frame: number): { x: number;
           if (y < y0) y0 = y;
           if (y > y1) y1 = y;
         }
-    return x1 < 0 ? null : { x: x0 * ps, y: y0 * ps, w: (x1 - x0 + 1) * ps, h: (y1 - y0 + 1) * ps };
+    if (x1 < 0) return null;
+    return { x: (x0 + (d.x ?? 0)) * ps, y: (y0 + (d.y ?? 0)) * ps, w: (x1 - x0 + 1) * ps, h: (y1 - y0 + 1) * ps };
   }
   return null;
 }

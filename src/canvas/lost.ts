@@ -32,10 +32,10 @@ const FAINT = 0.02;
 
 const pixelBoundsCache = new WeakMap<Uint8ClampedArray, Rect | null>();
 
-/** The box of a pixel drawing's painted pixels in art pixels (null when it's empty). */
+/** The box of a pixel drawing's painted pixels in art pixels on the grid (null when it's empty). */
 export function pixelBounds(d: PixelDrawing): Rect | null {
   const hit = pixelBoundsCache.get(d.pixels);
-  if (hit !== undefined) return hit;
+  if (hit !== undefined) return hit && { x: hit.x + (d.x ?? 0), y: hit.y + (d.y ?? 0), w: hit.w, h: hit.h };
   let x0 = Infinity;
   let y0 = Infinity;
   let x1 = -1;
@@ -53,7 +53,7 @@ export function pixelBounds(d: PixelDrawing): Rect | null {
   }
   const r = x1 < 0 ? null : { x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1 };
   pixelBoundsCache.set(d.pixels, r);
-  return r;
+  return r && { x: r.x + (d.x ?? 0), y: r.y + (d.y ?? 0), w: r.w, h: r.h };
 }
 
 const boundsOf = (doc: Doc, s: Shape): Rect => (isInstance(s) ? instanceBounds(s, doc) : shapeBounds(s));

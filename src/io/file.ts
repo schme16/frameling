@@ -9,6 +9,7 @@ import { readFolders, readLayerLook } from '../effects/io';
 import { strFromU8, strToU8, unzipSync, zipSync, type Zippable } from 'fflate';
 import { BONE_STRETCH, FORMAT_VERSION, LAYER_LABELS, type LayerLabel, type Cel, type Doc, type Drawing, type KeptShape, type Layer, type Shape, type Slice, type SymbolDef, type Tween, type InstanceShape, type ClipFlow, type ClipTransition, type Tile, type Tileset, type Bone, type BonePose, type LayerBind, type Pose, type Rig, type SavedPose } from '../core/format';
 import { decodePng, encodePng } from './png';
+import { trimmedDrawing } from '../core/pixelBounds';
 import { rootDoc } from '../core/symbols';
 import { isEasing } from '../core/ease';
 import { readOrigin } from './shapes-extra';
@@ -70,15 +71,23 @@ export function saveFile(open: Doc, appVersion = '', now: Date = new Date()): Ui
   const used = new Set<string>();
   // A drawing a variation redrew is stored as what differs from its original's, when that is smaller.
   const diffs = variationDiffs(doc, files, pngFor);
+  const tileFrames = new Set((doc.tileset?.tiles ?? []).flatMap((t) => t.frames.map((f) => f.drawingId)));
   for (const [id, d] of Object.entries(doc.drawings)) {
     // A variation's drawings that are worked out from its original are not stored.
     if (isDerivedDrawing(doc, id) || diffs.has(id)) continue;
     if (d.kind === 'pixel') {
+      // Only the painted part is stored (tile frames are always whole tiles).
+      const t = tileFrames.has(id) ? d : trimmedDrawing(d);
+      if (t.width < 1 || t.height < 1) {
+        // Nothing painted: no picture entry at all.
+        drawings[id] = { ...t, width: 0, height: 0, pixels: '' };
+        continue;
+      }
       let name = `pixels/${safeName(id)}.png`;
       while (used.has(name)) name = name.replace(/\.png$/, '_.png');
       used.add(name);
-      files[name] = [pngFor(d), { level: 0 }];
-      drawings[id] = { ...d, pixels: name };
+      files[name] = [pngFor(t), { level: 0 }];
+      drawings[id] = { ...t, pixels: name };
     } else if (d.kind === 'tilemap') {
       drawings[id] = { ...d, cells: Array.from(d.cells) };
     } else if (d.kind === 'vector' && d.kept?.length) {
@@ -113,6 +122,7 @@ function doubleBounceRepeats(clips: unknown): void {
 /**
  * One step per format version: `MIGRATIONS[n]` turns a version n document into version n + 1. When the format changes,
  * bump FORMAT_VERSION and add the step here. Version 1 to 2: back and forth clips count each direction as one repeat.
+ * Version 2 to 3: pixel drawings can hold just the painted part of the grid.
  */
 export const MIGRATIONS: Record<number, (raw: any) => any> = {
   1: (raw) => {
@@ -120,6 +130,8 @@ export const MIGRATIONS: Record<number, (raw: any) => any> = {
     if (Array.isArray(raw.artboards)) for (const a of raw.artboards) if (isObj(a) && isObj(a.content)) doubleBounceRepeats(a.content.clips);
     return raw;
   },
+  // Version 2 to 3: pixel drawings may hold only their painted part (`x`, `y`, a smaller `width` and `height`). Nothing to change in older files.
+  2: (raw) => raw,
 };
 
 export function migrate(raw: any, from: number): any {
@@ -211,6 +223,11 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
       drawings[id] = { id: str(d.id, id), kind: 'vector', shapes, ...(kept.length ? { kept } : {}), ...readPose(d.pose), ...readExt(d.ext, warnings) };
     } else if (d.kind === 'pixel') {
       const name = d.pixels;
+      if (name === '' && d.width === 0 && d.height === 0) {
+        // A drawing with nothing painted has no picture.
+        drawings[id] = { id: str(d.id, id), kind: 'pixel', width: 0, height: 0, pixels: new Uint8ClampedArray(0), ...readExt(d.ext, warnings) };
+        continue;
+      }
       if (typeof name !== 'string' || !/^pixels\/[A-Za-z0-9_-]+\.png$/.test(name) || !entries[name]) throw damaged();
       let img;
       try {
@@ -219,7 +236,10 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
         throw damaged();
       }
       if (img.width !== d.width || img.height !== d.height) throw damaged();
-      drawings[id] = { id: str(d.id, id), kind: 'pixel', width: img.width, height: img.height, pixels: img.pixels, ...readExt(d.ext, warnings) };
+      // Where the picture sits on the art grid (missing = the corner, as in files made before drawings were trimmed).
+      const gx = Math.max(0, Math.min(1 << 20, Math.round(num(d.x, 0))));
+      const gy = Math.max(0, Math.min(1 << 20, Math.round(num(d.y, 0))));
+      drawings[id] = { id: str(d.id, id), kind: 'pixel', ...(gx ? { x: gx } : {}), ...(gy ? { y: gy } : {}), width: img.width, height: img.height, pixels: img.pixels, ...readExt(d.ext, warnings) };
     } else if (d.kind === 'tilemap') {
       const columns = Math.round(num(d.columns, 0));
       const rows = Math.round(num(d.rows, 0));
@@ -282,6 +302,9 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
   if (unique.size !== layers.length) throw damaged();
 
   const tileset = readTileset(raw.tileset, drawings, warnings);
+  // Older files hold whole-grid drawings: keep only the painted part of each (tile frames stay whole tiles).
+  const frames = new Set((tileset?.tiles ?? []).flatMap((t) => t.frames.map((f) => f.drawingId)));
+  for (const [id, d] of Object.entries(drawings)) if (d.kind === 'pixel' && !frames.has(id)) drawings[id] = trimmedDrawing(d);
   const doc: Doc = {
     format: 'frameling',
     version: FORMAT_VERSION,

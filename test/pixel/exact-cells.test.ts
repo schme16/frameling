@@ -1,5 +1,6 @@
 // Pixel shapes land on exactly the cells that were clicked or dragged: no snapping to the page or guides on a pixel
 // layer, and perspective walls cover exactly the cells whose middle is inside the projected shape.
+import { asGrid } from '../helpers/grid';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { PixelDrawing } from '../../src/core/format';
 import { store } from '../../src/core/store';
@@ -19,7 +20,7 @@ import '../../src/pixel';
 import { ctx, drag, pixelStore, ptr, shapesNow, vectorStore } from '../tools/helpers';
 
 const at = (px: number, py: number): [number, number] => [px + 0.5, py + 0.5];
-const drawing = () => Object.values(store().get().doc.drawings).find((d) => d.kind === 'pixel') as PixelDrawing;
+const drawing = () => asGrid(Object.values(store().get().doc.drawings).find((d) => d.kind === 'pixel') as PixelDrawing);
 const painted = (): Map<string, readonly number[]> => {
   const d = drawing();
   const out = new Map<string, readonly number[]>();

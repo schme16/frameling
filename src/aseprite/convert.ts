@@ -4,6 +4,7 @@
  * a draft of an open one. Everything that could not be carried over exactly is said in `notes`, in plain words.
  */
 import { CLIP_DIRECTIONS, MAX_REPEAT } from '../core/clipPlay';
+import { trimPixels, type Placed } from '../core/pixelBounds';
 import { newDoc, uid } from '../core/doc';
 import { MAX_FOLDER_DEPTH, folderChain } from '../core/folders';
 import {
@@ -31,7 +32,8 @@ import { LAYER_GROUP, LAYER_TILEMAP, AsepriteProblem, imageRgba, paletteAt, type
 
 export const MAX_FRAMES = 10000;
 /** The most pixel memory an import may ask for. */
-const MAX_PIXEL_BYTES = 1024 * 1024 * 1024;
+/** All the pictures of one file together, as Frameling holds them (only each cel's painted part). */
+const MAX_PIXEL_BYTES = 16 * 1024 * 1024 * 1024;
 
 const BLEND_NAMES = ['Normal', 'Multiply', 'Screen', 'Overlay', 'Darken', 'Lighten', 'Color Dodge', 'Color Burn', 'Hard Light', 'Soft Light', 'Difference', 'Exclusion', 'Hue', 'Saturation', 'Color', 'Luminosity', 'Addition', 'Subtract', 'Divide'];
 const BLEND_MODES: (BlendMode | null)[] = ['normal', 'multiply', 'screen', 'overlay', 'darken', 'lighten', 'color-dodge', 'color-burn', 'hard-light', 'soft-light', 'difference', 'exclusion', 'hue', 'saturation', 'color', 'luminosity', 'linear-dodge', 'subtract', 'divide'];
@@ -170,28 +172,40 @@ export function scaleRgba(src: Uint8ClampedArray, sw: number, sh: number, dw: nu
   return out;
 }
 
-/** Draws one cel's RGBA into a canvas-sized drawing at (x, y), with its opacity baked into the alpha. Returns true when something was cropped. */
-function place(dst: Uint8ClampedArray, dw: number, dh: number, src: Uint8ClampedArray, sw: number, sh: number, x: number, y: number, opacity: number): boolean {
+/**
+ * A cel's RGBA as the block of the canvas it covers, with its opacity baked into the alpha and trimmed to what is
+ * painted. Only the cel's own bounds are held, never a canvas-sized picture. `cropped` is true when painted pixels fall
+ * off the canvas.
+ */
+function placeCel(src: Uint8ClampedArray, sw: number, sh: number, x: number, y: number, opacity: number, dw: number, dh: number): { block: Placed; cropped: boolean } {
+  const x0 = Math.max(0, x);
+  const y0 = Math.max(0, y);
+  const x1 = Math.min(dw, x + sw);
+  const y1 = Math.min(dh, y + sh);
+  const bw = Math.max(0, x1 - x0);
+  const bh = Math.max(0, y1 - y0);
   let cropped = false;
+  const out = new Uint8ClampedArray(bw * bh * 4);
   for (let j = 0; j < sh; j++) {
     const ty = y + j;
+    const rowIn = ty >= y0 && ty < y1;
     for (let i = 0; i < sw; i++) {
       const s = (j * sw + i) * 4;
       const a = src[s + 3];
       if (!a) continue;
       const tx = x + i;
-      if (tx < 0 || ty < 0 || tx >= dw || ty >= dh) {
+      if (!rowIn || tx < x0 || tx >= x1) {
         cropped = true;
         continue;
       }
-      const o = (ty * dw + tx) * 4;
-      dst[o] = src[s];
-      dst[o + 1] = src[s + 1];
-      dst[o + 2] = src[s + 2];
-      dst[o + 3] = opacity === 255 ? a : Math.round((a * opacity) / 255);
+      const o = ((ty - y0) * bw + (tx - x0)) * 4;
+      out[o] = src[s];
+      out[o + 1] = src[s + 1];
+      out[o + 2] = src[s + 2];
+      out[o + 3] = opacity === 255 ? a : Math.round((a * opacity) / 255);
     }
   }
-  return cropped;
+  return { block: bw && bh ? trimPixels(out, bw, bh, x0, y0) : { x: 0, y: 0, width: 0, height: 0, pixels: out }, cropped };
 }
 
 /** Turns a tile's flags into Frameling's. */
@@ -542,9 +556,12 @@ export function asepritePieces(file: AseFile, name: string, target?: Target): Pi
           scaledRefs++;
         }
       }
-      grab(W * H * 4);
-      const d: PixelDrawing = { id: uid('p'), kind: 'pixel', width: W, height: H, pixels: new Uint8ClampedArray(W * H * 4) };
-      if (place(d.pixels, W, H, px, w, h, x, y, c.opacity) && !croppedLayers.includes(label)) croppedLayers.push(label);
+      // The drawing holds just the cel's own bounds (cut to the canvas and to what is painted).
+      const placed = placeCel(px, w, h, x, y, c.opacity, W, H);
+      grab(placed.block.pixels.byteLength);
+      const bk = placed.block;
+      const d: PixelDrawing = { id: uid('p'), kind: 'pixel', ...(bk.x ? { x: bk.x } : {}), ...(bk.y ? { y: bk.y } : {}), width: bk.width, height: bk.height, pixels: bk.pixels };
+      if (placed.cropped && !croppedLayers.includes(label)) croppedLayers.push(label);
       drawings[d.id] = d;
       made.set(c, d.id);
       return d.id;

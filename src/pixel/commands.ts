@@ -10,7 +10,8 @@ import { store } from '../core/store';
 import { paletteScope, setVariationPalette, sharedEditNote } from '../artboards/variations';
 import { parseHex } from '../canvas/colors';
 import { hint } from '../canvas/controller';
-import { activeDrawing, activeLayer, editActiveDrawing, EDIT_HINTS } from '../tools/edit';
+import { activeDrawing, activeGrid, activeLayer, EDIT_HINTS, setActivePixels } from '../tools/edit';
+import { gridPixels } from '../core/pixelBounds';
 import { docPalette, paletteRgb, reduceToPalette, remapColor, usesColor } from './palette';
 import { getPixelSettings, setPixelSettings, type SymmetryMode } from './settings';
 import { activePixelLayer } from './tools';
@@ -121,10 +122,10 @@ export function editPixels(label: string, op: PixelOp, kind: SelectionKind = 'cl
     hint('There is nothing drawn on this frame yet.');
     return false;
   }
-  const res = pixelsAfter(d, op, kind);
+  const g = activeGrid()!;
+  const res = pixelsAfter({ width: g.width, height: g.height, pixels: gridPixels(d, g.width, g.height) }, op, kind);
   if (!res) return false;
-  const out = res.pixels;
-  const r = editActiveDrawing(label, 'pixel', (dr) => void (dr.pixels = out));
+  const r = setActivePixels(label, res.pixels);
   if (r !== 'ok') hint(EDIT_HINTS[r]);
   else if (res.mask) setPixelSelection(res.mask);
   return r === 'ok';

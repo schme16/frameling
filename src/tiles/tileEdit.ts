@@ -4,6 +4,7 @@
  * the edges can be made seamless. "Done" puts the tile back into the open document as one undo step, and every map
  * that uses the tile shows the change.
  */
+import { coversGrid, gridPixels } from '../core/pixelBounds';
 import { produce, type Draft } from 'immer';
 import { newPixelDrawing, newPixelLayer, uid } from '../core/doc';
 import type { Doc, Drawing, TileFrame } from '../core/format';
@@ -69,10 +70,12 @@ export function framesFromTileDoc(sub: Doc, tileWidth: number, tileHeight: numbe
   const frames: TileFrame[] = [];
   const drawings: Drawing[] = [];
   for (const c of layer?.cels ?? []) {
-    const d = sub.drawings[c.drawingId];
-    if (!d || d.kind !== 'pixel' || d.width !== tileWidth || d.height !== tileHeight) continue;
+    const held = sub.drawings[c.drawingId];
+    if (!held || held.kind !== 'pixel') continue;
+    // Painting keeps only the painted part of a drawing; a tile frame is always the whole tile.
+    const d = coversGrid(held, tileWidth, tileHeight) ? held : { id: held.id, kind: 'pixel' as const, ...(held.ext ? { ext: held.ext } : {}), width: tileWidth, height: tileHeight, pixels: gridPixels(held, tileWidth, tileHeight) };
     frames.push({ drawingId: d.id, duration: Math.max(1, c.length) });
-    if (!drawings.includes(d)) drawings.push(d);
+    if (!drawings.some((x) => x.id === d.id)) drawings.push(d);
   }
   return { frames, drawings };
 }

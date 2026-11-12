@@ -3,6 +3,7 @@
  * Delete, Duplicate, the arrow key nudges, Undo) are taken over here so they do the pixel thing when a pixel layer is active,
  * and what they always did otherwise. Plus Invert selection and the Lasso and Magic wand shortcuts.
  */
+import { gridPixels } from '../core/pixelBounds';
 import { getCommand, registerCommand, registerCommands, type Command } from '../core/registry';
 import { store, type State } from '../core/store';
 import { hint } from '../canvas/controller';
@@ -58,7 +59,7 @@ export function copyPixels(): boolean {
   const m = pixelSelection();
   if (!m) return false;
   const d = activePixelDrawing();
-  const pixels = d ? extractPixels(d.pixels, m) : new Uint8ClampedArray(m.width * m.height * 4);
+  const pixels = d ? extractPixels(gridPixels(d, m.width, m.height), m) : new Uint8ClampedArray(m.width * m.height * 4);
   clip = { width: m.width, height: m.height, pixels, mask: m };
   return true;
 }

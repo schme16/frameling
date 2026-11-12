@@ -1,4 +1,5 @@
 // Thick pixel outlines: the pure rasterising, the preference, and the shape tools on a pixel layer.
+import { asGrid } from '../helpers/grid';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { PixelDrawing, PixelLayer } from '../../src/core/format';
 import { store } from '../../src/core/store';
@@ -12,7 +13,7 @@ import { DEFAULT_TOOL_SETTINGS, setToolSettings } from '../../src/tools/settings
 import { forgetLastPixelEnd } from '../../src/tools/pixelStroke';
 import { setDocPalette } from '../../src/pixel/commands';
 import { DEFAULT_PIXEL_SETTINGS, setPixelSettings } from '../../src/pixel/settings';
-import { brushReach, clampOutline, insetBox, outlineThickness, plotThickEllipse, plotThickLine, plotThickPolygon, plotThickRect, type Thickness } from '../../src/pixel/thick';
+import { brushReach, clampOutline, insetBox, outlineThickness, plotThickEllipse, plotThickLine, plotCornerStroke, plotThickPolygon, plotThickRect, type Thickness } from '../../src/pixel/thick';
 import { plotEllipse, plotLine, plotRect, plotRectInside } from '../../src/pixel/raster';
 import { DEFAULT_PREFS, migratePrefs, setPrefs } from '../../src/ui/prefs';
 import '../../src/pixel';
@@ -164,9 +165,56 @@ describe('thick lines and polygons', () => {
     expect(edge.size).toBeGreaterThan(thin.size * 2);
     for (const k of thin) expect(edge.has(k)).toBe(true);
   });
-  it('an open path keeps its ends open', () => {
+  it('an open path keeps its ends open, with round ends', () => {
     const s = cells((p) => plotThickPolygon([{ x: 2, y: 2 }, { x: 10, y: 2 }], false, sq(3), p));
-    expect(bounds(s)).toEqual([1, 1, 11, 3]);
+    expect(bounds(s)).toEqual([1, 1, 10, 3]);
+  });
+});
+
+describe('corner-aware strokes', () => {
+  const stroke = (pts: { x: number; y: number }[], closed: boolean, size: number, limit?: number) => cells((p) => plotCornerStroke(pts, closed, size, p, limit));
+  const rowsAt = (s: Set<string>, x: number) => [...s].filter((k) => k.startsWith(x + ',')).length;
+  const colsAt = (s: Set<string>, y: number) => [...s].filter((k) => k.endsWith(',' + y)).length;
+
+  it('keeps one steady width on a flat edge, wherever it sits between pixel lines', () => {
+    for (const size of [2, 3, 4]) {
+      for (const f of [0, 0.2, 0.5, 0.75, 0.99]) {
+        const s = stroke([{ x: 4, y: 10 + f }, { x: 24, y: 10 + f }], false, size);
+        expect(rowsAt(s, 14), `${size} wide at .${f}`).toBe(size);
+        const t = stroke([{ x: 10 + f, y: 4 }, { x: 10 + f, y: 24 }], false, size);
+        expect(colsAt(t, 14), `${size} wide upright at .${f}`).toBe(size);
+      }
+    }
+  });
+
+  it('gives a slanting edge about the same width as a flat one', () => {
+    const s = stroke([{ x: 4, y: 4 }, { x: 28, y: 28 }], false, 3);
+    // A 3 wide line at 45 degrees is 3 * sqrt(2) = 4.2 pixels across a row.
+    for (const y of [10, 14, 18]) expect(colsAt(s, y)).toBeGreaterThanOrEqual(4);
+    for (const y of [10, 14, 18]) expect(colsAt(s, y)).toBeLessThanOrEqual(5);
+  });
+
+  it('plots every pixel once', () => {
+    let n = 0;
+    const seen = new Set<string>();
+    plotCornerStroke([{ x: 3, y: 3 }, { x: 20, y: 5 }, { x: 8, y: 22 }], true, 3, (x, y) => {
+      n++;
+      seen.add(x + ',' + y);
+    });
+    expect(n).toBe(seen.size);
+  });
+
+  it('keeps a square corner square, and rounds it when the limit says so', () => {
+    const square = [{ x: 4, y: 4 }, { x: 24, y: 4 }, { x: 24, y: 24 }, { x: 4, y: 24 }];
+    // 4 wide: the outermost corner pixel's middle is 2.12 from the corner point, past the round join's 2.
+    expect(stroke(square, true, 4).has('2,2')).toBe(true);
+    expect(stroke(square, true, 4, 0).has('2,2')).toBe(false);
+  });
+
+  it('draws a dot for a single point', () => {
+    const s = stroke([{ x: 5.5, y: 5.5 }], false, 3);
+    expect(s.size).toBeGreaterThanOrEqual(5);
+    expect(s.has('5,5')).toBe(true);
   });
 });
 
@@ -189,7 +237,7 @@ describe('the preference', () => {
 
 // 64 x 64 document at 1 per pixel: a 64 x 64 grid. at(px, py) is the middle of an art pixel.
 const at = (px: number, py: number): [number, number] => [px + 0.5, py + 0.5];
-const drawing = () => Object.values(store().get().doc.drawings).find((d) => d.kind === 'pixel') as PixelDrawing;
+const drawing = () => asGrid(Object.values(store().get().doc.drawings).find((d) => d.kind === 'pixel') as PixelDrawing);
 const hexAt = (x: number, y: number) => {
   const [r, g, b, a] = getPx(drawing().pixels, drawing().width, x, y);
   return a ? '#' + [r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('') : null;
@@ -438,7 +486,8 @@ describe('the pen on a pixel layer with a thick outline', () => {
     expect(hexAt(15, 9) !== null || hexAt(15, 11) !== null).toBe(true);
     expect(hexAt(15, 8)).toBeNull();
     expect(hexAt(15, 12)).toBeNull();
-    expect(count() % 2).toBe(0);
+    expect(hexAt(15, 10)).toBe('#ff0000');
+    expect(hexAt(15, 11)).toBe('#ff0000');
   });
 });
 

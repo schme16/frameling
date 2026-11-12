@@ -113,7 +113,7 @@ const st = await frameling.document.state();     // { frame, activeLayerId, sele
 await frameling.document.edit('Label', [ops]);   // one undo step called "<plugin name>: Label"
 ```
 
-`get()` is a copy: changing it changes nothing. Pixel drawings hold `pixels` as a `Uint8ClampedArray` (RGBA).
+`get()` is a copy: changing it changes nothing. Pixel drawings hold `pixels` as a `Uint8ClampedArray` (RGBA) of just the painted part: `width` x `height` art pixels at (`x`, `y`) on the art grid (`x` and `y` are missing when 0).
 Changes go through `edit()`, and only these ops exist (`src/plugins/ops.ts`). A batch is all or nothing: one bad op
 and nothing changes, and the promise rejects with a message saying why.
 
@@ -121,7 +121,7 @@ and nothing changes, and the promise rejects with a message saying why.
 |---|---|
 | `flipDrawing` | `drawingId`, `axis: 'horizontal' \| 'vertical'` (vector: around the stage middle; pixel: the whole grid) |
 | `transformDrawing` | `drawingId`, `matrix: [a, b, c, d, e, f]` (vector only) |
-| `setPixels` | `drawingId`, `pixels` (width x height x 4 bytes, pixel only) |
+| `setPixels` | `drawingId`, `pixels` (width x height x 4 bytes, pixel only), and optionally `x`, `y`, `width`, `height` to put a different block (whole numbers, 0 to 16384; Frameling trims it to what is painted). Without them it replaces the block the drawing holds. |
 | `setLayer` | `layerId`, any of `name`, `visible`, `locked`, `opacity` |
 | `setDocument` | any of `name`, `fps` (1 to 120), `background` (`#rrggbb` or null) |
 | `setShapeStyle` | `drawingId`, `shapeId`, any of `color`, `fill`, `opacity` |
