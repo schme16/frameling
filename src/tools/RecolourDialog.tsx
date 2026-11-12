@@ -11,7 +11,7 @@ import { noteColorUsed } from './recent';
 
 const PREVIEW = 220;
 
-function Preview({ doc, frame, label }: { doc: Doc; frame: number; label: string }) {
+export function Preview({ doc, frame, label }: { doc: Doc; frame: number; label: string }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     const c = ref.current;

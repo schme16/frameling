@@ -1446,18 +1446,20 @@ export function listDifferences(doc: Doc, vid: Id): DiffItem[] {
     add({
       reset: { t: 'paletteColour', from: c.from },
       group: 'Palette',
-      label: `Colour ${c.from.toLowerCase()} is ${c.to.toLowerCase()} here${inPal.has(rgbKey(c.from)) ? '' : ' (the original no longer has it in its palette)'}`,
+      label: `Colour ${c.from.toLowerCase()} becomes ${c.to.toLowerCase()} on every frame${!doc.palette || inPal.has(rgbKey(c.from)) ? '' : ' (the original no longer has it in its palette)'}`,
       colors: [c.from, c.to],
     });
 
   // Drawings: found through the first key that shows them, and joined up per layer (a recolour across 24 keys is one line).
   interface Tally {
     ids: Id[];
-    recoloured: number;
-    changed: number;
-    removed: number;
-    added: number;
     flags: Set<string>;
+    /** What each kind of change touched, as words ("a star", "Ball"). */
+    recoloured: string[];
+    changed: string[];
+    removed: string[];
+    added: string[];
+    order: string[];
     shapes: Id[];
     first: { layer: Layer; cel: Cel } | null;
   }
@@ -1474,42 +1476,93 @@ export function listDifferences(doc: Doc, vid: Id): DiffItem[] {
     }
     const key = where?.layer.id ?? '';
     let t = tallies.get(key);
-    if (!t) tallies.set(key, (t = { ids: [], recoloured: 0, changed: 0, removed: 0, added: 0, flags: new Set(), shapes: [], first: null }));
+    if (!t) tallies.set(key, (t = { ids: [], flags: new Set(), recoloured: [], changed: [], removed: [], added: [], order: [], shapes: [], first: null }));
     t.ids.push(orig);
     if (where && (!t.first || where.cel.start < t.first.cel.start)) {
       t.first = where;
       t.shapes = [];
     }
-    if (d.replaced) t.flags.add('redrawn');
-    if (d.view) t.flags.add('camera view');
-    if (d.patch) t.flags.add('drawing settings');
+    if (d.replaced) t.flags.add('the picture was redrawn');
+    if (d.view) t.flags.add('the camera view changed');
+    if (d.patch) t.flags.add("the drawing's settings changed");
     const items = Object.entries(d.shapes?.items ?? {});
-    t.recoloured += items.filter(([, it]) => keysOf(it.patch).some((k) => COLOUR_KEYS.has(k))).length;
-    t.changed += items.filter(([, it]) => keysOf(it.patch).some((k) => !COLOUR_KEYS.has(k))).length;
-    t.removed += d.shapes?.removed?.length ?? 0;
-    t.added += d.shapes?.added?.length ?? 0;
-    if (d.shapes?.order) t.flags.add('shapes in a different order');
+    const baseShapes = (doc.drawings[orig] as { shapes?: Shape[] } | undefined)?.shapes ?? [];
+    const named = (id: Id): string => shapeWords(baseShapes.find((x) => x.id === id), doc);
+    for (const [sid, it] of items) {
+      const keys = keysOf(it.patch);
+      if (keys.some((k) => COLOUR_KEYS.has(k))) t.recoloured.push(named(sid));
+      if (keys.some((k) => !COLOUR_KEYS.has(k))) t.changed.push(named(sid));
+    }
+    for (const sid of d.shapes?.removed ?? []) t.removed.push(named(sid));
+    for (const s of d.shapes?.added ?? []) t.added.push(shapeWords(s, doc));
+    if (d.shapes?.order) t.order.push(orderWords(baseShapes, d.shapes, doc));
     if (t.first === where) t.shapes = [...items.map(([sid]) => sid), ...(d.shapes?.added ?? []).map((x) => x.id)];
   }
-  const n = (c: number, w: string) => `${c} ${w}${c === 1 ? '' : 's'}`;
   for (const [, t] of tallies) {
-    const words = [...t.flags];
-    if (t.recoloured) words.push(`${n(t.recoloured, 'shape')} recoloured`);
-    if (t.changed) words.push(`${n(t.changed, 'shape')} changed`);
-    if (t.removed) words.push(`${n(t.removed, 'shape')} left out`);
-    if (t.added) words.push(`${n(t.added, 'shape')} added`);
+    const out: string[] = [...t.flags];
+    const clause = (names: string[], one: string, many: string) => {
+      if (!names.length) return;
+      out.push(names.length === 1 ? `${names[0]} ${one}` : `${names.length} shapes ${many}`);
+    };
+    // A stacking change says who is over whom when it can; with many keys it is said once.
+    if (t.order.length) out.push(t.order.length === 1 ? t.order[0] : 'the shapes are stacked in a different order');
+    clause(t.recoloured, 'changed colour', 'changed colour');
+    clause(t.changed, 'was changed', 'were changed');
+    clause(t.removed, 'was taken out', 'were taken out');
+    clause(t.added, 'was added', 'were added');
     const where = t.first;
     const many = t.ids.length > 1;
     add({
       reset: many ? { t: 'drawings', ids: t.ids } : { t: 'drawing', id: t.ids[0] },
       group: where ? where.layer.name : whole,
-      label: `${many ? `Drawings on ${t.ids.length} keys` : `Drawing${where ? ` at frame ${where.cel.start + 1}` : ''}`}: ${list(words) || 'changed'}`,
+      label: `${many ? `On ${t.ids.length} keys` : where ? `Frame ${where.cel.start + 1}` : 'A drawing'}: ${list(out) || 'changed'}`,
       layer: where?.layer.id,
       frame: where?.cel.start,
       shapes: t.shapes,
     });
   }
   return out;
+}
+
+/** A shape in plain words: the symbol an instance shows, the text of a text, else what kind of shape it is. */
+function shapeWords(s: Shape | undefined, doc: Doc): string {
+  if (!s) return 'a shape';
+  switch (s.type) {
+    case 'instance':
+      return doc.symbols?.[s.symbolId]?.name || 'a symbol';
+    case 'text': {
+      const t = s.text.replace(/\s+/g, ' ').trim();
+      return t ? `the text "${t.length > 18 ? t.slice(0, 17) + '...' : t}"` : 'a text';
+    }
+    case 'stroke':
+      return 'a line';
+    case 'fill':
+      return 'a fill';
+    case 'particles':
+      return 'a particle effect';
+    default:
+      return 'a shape';
+  }
+}
+
+/** What a changed stacking order means: "Ball is drawn over Hat" when one shape moved, else a plain sentence. */
+function orderWords(base: readonly Shape[], o: ListOverride<Shape>, doc: Doc): string {
+  const generic = 'the shapes are stacked in a different order';
+  const order = o.order ?? [];
+  const byId = new Map<Id, Shape>([...base, ...(o.added ?? [])].map((s) => [s.id, s]));
+  const natural = [...base.filter((s) => order.includes(s.id)).map((s) => s.id), ...(o.added ?? []).map((s) => s.id)];
+  if (natural.length !== order.length) return generic;
+  // The one shape that moved: taking it out leaves the same order on both sides. Drawn later is drawn on top.
+  const movers = order.filter((id) => {
+    const a = natural.filter((x) => x !== id);
+    return order.filter((x) => x !== id).every((x, i) => x === a[i]);
+  });
+  const id = movers.find((m) => order.indexOf(m) > 0) ?? movers[0];
+  if (id === undefined) return generic;
+  const i = order.indexOf(id);
+  const mover = shapeWords(byId.get(id), doc);
+  if (i > 0) return `${mover} is drawn over ${shapeWords(byId.get(order[i - 1]), doc)}`;
+  return order[1] ? `${mover} is drawn under ${shapeWords(byId.get(order[1]), doc)}` : generic;
 }
 
 /** How many differences a variation has (for a badge). */

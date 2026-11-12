@@ -78,7 +78,7 @@ See [artboards as shots](help:artboards-shots) and [exporting artboards](help:ar
 
 **Make one:** press **Make a variation** in the Artboards panel, or **View > Make a variation (linked copy)**, or press **Ctrl+K** and type "variation". It opens beside the original with a **Variation** tag. Then just work in it as usual: recolour shapes, move keys to change the timing, hide a layer, add one of its own.
 
-**Colourways:** open the variation and recolour. Only those shapes stop following the original; the rest keeps following.
+**Colourways:** open the variation and press **Recolour this variation**. It shows the colours the variation uses: pick a new colour for any of them and press **Recolour**. Every frame changes, in one step, and only in the variation. Each colour you changed is one line in **Differences** with its own **Reset**. **Recolour the whole animation** and the paint bucket work here too, and change only the variation. A shape you recolour by hand stops following the original; the rest keeps following. Change a colour in the original and the variations follow, except for the colours they changed themselves.
 
 **Sizes:** in the variation's panel pick **Square**, **Wide** or **Tall** (or type any **W** and **H** under **This artboard**). The same animation is framed in the new size by a camera that Frameling adds for you, and you can move it like any camera. Resize the original and the cut is framed again by itself, unless you have moved its camera. **Fill (crop)** covers the picture and crops what hangs over; **Fit (show it all)** shows the whole original. Frameling asks which you prefer the first time.
 

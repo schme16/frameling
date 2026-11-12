@@ -193,3 +193,76 @@ describe('recolouring a pixel variation', () => {
 function fillOf2(d: Doc, drawing: string, i = 0) {
   return ((d.drawings[drawing] as VectorDrawing).shapes[i] as PathShape).fill;
 }
+
+describe('Differences in plain words', () => {
+  const instance = (id: string, symbolId: string) =>
+    ({ id, type: 'instance', symbolId, transform: { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1 }, opacity: 1, play: 'loop' }) as never;
+
+  function withNamedShapes() {
+    const d0 = newDoc({ name: 'Hero', width: 100, height: 100, length: 2 });
+    const layer = { ...newVectorLayer('Characters'), id: 'L' };
+    d0.symbols = {
+      ball: { id: 'ball', name: 'Ball', layers: [], length: 1 },
+      hat: { id: 'hat', name: 'Hat', layers: [], length: 1 },
+    } as never;
+    d0.drawings.k0 = { id: 'k0', kind: 'vector', shapes: [instance('i1', 'ball'), instance('i2', 'hat')] } as VectorDrawing;
+    layer.cels.push({ id: 'c0', start: 0, length: 2, drawingId: 'k0' });
+    d0.layers = [layer];
+    resetStore(d0);
+    const v = make();
+    open(v);
+    return v;
+  }
+
+  it('says who is drawn over whom, with the names the shapes have, and what was added', () => {
+    const v = withNamedShapes();
+    update('Reorder', (d) => {
+      const dr = d.drawings[aliasId('k0', v)] as VectorDrawing;
+      dr.shapes = [dr.shapes[1], dr.shapes[0], rect('star', '#ffff00')];
+    });
+    const item = listDifferences(doc(), v).find((x) => x.reset.t === 'drawing')!;
+    expect(item.label).toBe('Frame 1: Ball is drawn over Hat and a shape was added');
+    expect(item.label).not.toMatch(/Drawing at|different order|recoloured/);
+  });
+
+  it('names what was taken out and what was recoloured', () => {
+    const v = withNamedShapes();
+    update('Remove', (d) => {
+      const dr = d.drawings[aliasId('k0', v)] as VectorDrawing;
+      dr.shapes = [dr.shapes[1]];
+    });
+    expect(listDifferences(doc(), v)[0].label).toBe('Frame 1: Ball was taken out');
+  });
+
+  it('says text by what it reads', () => {
+    const d0 = newDoc({ name: 'Hero', width: 100, height: 100, length: 1 });
+    const layer = { ...newVectorLayer('Title'), id: 'L' };
+    d0.drawings.k0 = { id: 'k0', kind: 'vector', shapes: [{ id: 't', type: 'text', text: 'Hello', color: '#000000' }] } as never;
+    layer.cels.push({ id: 'c0', start: 0, length: 1, drawingId: 'k0' });
+    d0.layers = [layer];
+    resetStore(d0);
+    const v = make();
+    open(v);
+    update('Recolour', (d) => void recolourOpenVariation(d, [{ from: '#000000', to: '#ffffff' }]));
+    expect(listDifferences(doc(), v)[0].label).toBe('Colour #000000 becomes #ffffff on every frame');
+    update('Edit', (d) => {
+      ((d.drawings[aliasId('k0', v)] as VectorDrawing).shapes[0] as { x?: number }).x = 4;
+    });
+    expect(listDifferences(doc(), v).map((x) => x.label)).toContain('Frame 1: the text "Hello" was changed');
+  });
+});
+
+describe('Variation file names', () => {
+  it('start with the original, then what the variation is called', async () => {
+    const { exportNames, variationFileName } = await import('../../src/artboards/model');
+    const v = make();
+    expect(exportNames(doc()).get(v)).toBe('Artboard 1 - variation 1');
+    update('Rename', (d) => void (findArtboard(d, v)!.name = 'pink'));
+    expect(exportNames(doc()).get(v)).toBe('Artboard 1 - pink');
+    expect(variationFileName(doc(), findArtboard(doc(), v)!)).toBe('Artboard 1 - pink');
+    update('Export as', (d) => void (findArtboard(d, v)!.exportName = 'hero-pink'));
+    expect(exportNames(doc()).get(v)).toBe('hero-pink');
+    // The original keeps its own name.
+    expect(exportNames(doc()).get(artboardsOf(doc())[0].id)).toBe('Artboard 1');
+  });
+});
