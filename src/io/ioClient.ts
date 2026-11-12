@@ -79,3 +79,21 @@ export async function decodePngsInWorkers(entries: Record<string, Uint8Array>, p
   );
   return out;
 }
+
+/**
+ * `manifest.json` and `doc.json` of a file, unzipped and parsed on a worker (a big document's JSON takes the page a third
+ * of a second or more to inflate and parse; the parsed object costs about half as much to hand across). Null when there
+ * is no worker or anything went wrong (a damaged file too): the caller then reads the file itself and reports as it always did.
+ */
+export async function readDocJsonInWorker(bytes: Uint8Array): Promise<{ manifest: unknown; raw: unknown } | null> {
+  const p = getPool();
+  if (!p) return null;
+  try {
+    // A copy goes across: the caller still needs the bytes for the pictures.
+    const copy = bytes.slice();
+    const r = await p.run<IoReply>({ kind: 'doc', bytes: copy }, [copy.buffer]);
+    return r.ok && 'raw' in r ? { manifest: r.manifest, raw: r.raw } : null;
+  } catch {
+    return null;
+  }
+}
