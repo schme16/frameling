@@ -225,7 +225,9 @@ export function createWebApi(env: WebEnv): WebApi {
     const cur = await d.get<{ bytes: Uint8Array; note: Note }>('autosave', 'current');
     if (!cur) return;
     const id = keptId(cur.note.docId);
-    const goodThumb = typeof thumb === 'string' && thumb.startsWith('data:image/') && thumb.length < 200_000 ? thumb : undefined;
+    // The picture drawn with the last autosave stands in when the page is closing and has no time to draw a new one.
+    const given = thumb ?? cur.note.thumb;
+    const goodThumb = typeof given === 'string' && given.startsWith('data:image/') && given.length < 200_000 ? given : undefined;
     const had = await d.get<{ meta: KeptAutosave; bytes: Uint8Array }>('kept', id);
     // The same copy already put aside (kept at every start-up, say): leave its clock alone, only add a missing thumbnail.
     if (had && had.meta.savedAt === cur.note.savedAt) {

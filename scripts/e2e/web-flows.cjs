@@ -195,6 +195,7 @@ flow('recovery', async () => {
   await sleep(500);
   const kept = await w.js(`window.frameling.autosave.listKept()`);
   check('the next visit finds the unsaved work set aside', kept.some((k) => k.name === 'Lost work'), kept);
+  check('with a picture of it to recognise it by', /^data:image\/png;base64,/.test(kept.find((k) => k.name === 'Lost work')?.thumb ?? ''), kept.map((k) => k.thumb?.length));
   await w.js(`__frameling.run('file.recover')`);
   check('File > Recover unsaved work lists it', await w.waitFor(`/Lost work/.test(document.body.innerText)`), (await w.body()).slice(0, 200));
   await w.shot('recovery');
@@ -827,3 +828,23 @@ for (const mode of ['picker', 'plain']) {
     check('clicking it opens the drawing', /Recent one/.test(await w.js(`__frameling.store().get().doc.name`)), await w.js(`__frameling.store().get().doc.name`));
   });
 }
+
+// Preferences > Features through the real switches, kept across a reload.
+flow('features', async () => {
+  const w = makeWindow('persist:features');
+  await w.load('picker');
+  await w.js(`__frameling.overlays.closeSheet()`);
+  const F = '__framelingFeatures';
+  check('every switchable feature starts on', (await w.js(`${F}.list()`)).every((f) => f.on));
+  await w.js(`__frameling.overlays.openPrefs('features')`);
+  await sleep(800);
+  await w.js(`document.querySelector('.features-page [role=switch][aria-label="Particles on or off"]').click()`);
+  await sleep(400);
+  check('the switch turns Particles off', !(await w.js(`${F}.has('particles.add')`).catch(() => false)) && (await w.js(`${F}.list()`)).find((f) => f.id === 'particles').on === false);
+  await w.shot('features-page');
+  await w.load('picker');
+  await w.js(`__frameling.overlays.closeSheet()`);
+  check('a reload keeps it off', (await w.js(`${F}.list()`)).find((f) => f.id === 'particles').on === false);
+  await w.js(`${F}.set('particles', true)`);
+  check('and it comes back on without a reload', (await w.js(`${F}.list()`)).find((f) => f.id === 'particles').on === true);
+});

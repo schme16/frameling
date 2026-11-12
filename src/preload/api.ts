@@ -34,6 +34,8 @@ export interface AutosaveMeta {
   name: string;
   filePath: string | null;
   docId: string;
+  /** A small picture of the drawing. Only the web version sends one: a closing tab has no time to draw it when the work is put aside. */
+  thumb?: string;
 }
 
 export interface AutosaveInfo {
