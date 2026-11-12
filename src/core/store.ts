@@ -184,6 +184,14 @@ export class Store {
     return () => this.listeners.delete(fn);
   };
 
+  private loadListeners = new Set<() => void>();
+
+  /** Called whenever a whole document is loaded (new, opened, an example), but not for edits. */
+  onLoad = (fn: () => void): (() => void) => {
+    this.loadListeners.add(fn);
+    return () => this.loadListeners.delete(fn);
+  };
+
   private emit() {
     for (const fn of this.listeners) fn();
   }
@@ -346,6 +354,7 @@ export class Store {
     const u = this.state.ui;
     this.state = { doc, ui: { ...initialUi(doc), filePath, color: u.color, fillColor: u.fillColor, strokeOn: u.strokeOn, activeWell: u.activeWell, brush: u.brush, tool: u.tool } };
     this.emit();
+    for (const fn of this.loadListeners) fn();
   }
 
   /** Gives the open document a new id (no undo step), for a Save as copy that starts its own version history. */

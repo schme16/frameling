@@ -114,6 +114,18 @@ export function setChoiceAsker(fn: ChoiceAsker | null): void {
   asker = fn;
 }
 
+let deferral: (() => boolean) | null = null;
+
+/**
+ * While `fn` says true (a lesson is playing), a choice nobody has answered yet takes its default without a question and
+ * without remembering it, so it is asked the first time it matters after the lesson.
+ */
+export function setChoiceDeferral(fn: (() => boolean) | null): void {
+  deferral = fn;
+}
+
+const deferred = (): boolean => !!deferral?.();
+
 /**
  * The answer for a choice, asking the person the first time. Resolves with the default if they close the dialog
  * without picking, and doesn't remember that.
@@ -123,7 +135,7 @@ export function choose<V extends string = string>(id: string): Promise<V> {
   if (!def) throw new Error(`Unknown choice ${id}`);
   const known = answers[id];
   if (known !== undefined) return Promise.resolve(known as V);
-  if (def.silent || !asker) return Promise.resolve(def.default as V);
+  if (def.silent || !asker || deferred()) return Promise.resolve(def.default as V);
   const waiting = pending.get(id);
   if (waiting) return waiting as Promise<V>;
   const p = asker(def)
@@ -143,7 +155,7 @@ export function choose<V extends string = string>(id: string): Promise<V> {
  */
 export function withChoice<V extends string = string>(id: string, fn: (value: V) => void): void {
   const def = defs.get(id);
-  if (answers[id] !== undefined || !asker || def?.silent) {
+  if (answers[id] !== undefined || !asker || def?.silent || deferred()) {
     fn(currentChoice<V>(id));
     return;
   }
@@ -189,4 +201,5 @@ export function _resetChoicesForTests(): void {
   defs.clear();
   pending.clear();
   asker = null;
+  deferral = null;
 }

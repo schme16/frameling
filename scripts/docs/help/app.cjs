@@ -97,7 +97,7 @@ const entries = [
   // The welcome sheet: cards and the start of the examples.
   {
     name: 'welcome',
-    prefs: CALM,
+    prefs: { ...CALM, firstDrawn: false },
     steps: [template('bouncing-ball'), js(`${F}.overlays.state.set((o) => ({ ...o, sheet: 'welcome' }))`), wait(1500), ...shotOf('.ui-welcome', null, 10)],
   },
   // The help window on its contents page.
@@ -471,6 +471,7 @@ const entries = [
   // The first quest: start it from the welcome sheet, open the Quests panel, and let "Show me" do the steps.
   {
     name: 'quests-first-steps',
+    prefs: { firstDrawn: false },
     steps: [
       template('bouncing-ball'),
       js(`${F}.overlays.state.set((o) => ({ ...o, sheet: 'welcome' }))`),

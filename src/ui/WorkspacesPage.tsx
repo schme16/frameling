@@ -140,7 +140,19 @@ export function WorkspacesPage() {
       >
         <label className="ui-field ui-field-wide">
           <span>{sameName ? 'This name is taken. Saving replaces it with the layout you have now' : 'Save the layout you have now as'}</span>
-          <input type="text" placeholder="My cosy corner" value={name} maxLength={40} onChange={(e) => setName(e.target.value)} />
+          <input
+            type="text"
+            placeholder="My cosy corner"
+            value={name}
+            maxLength={40}
+            onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => {
+              // Enter saves, even where the browser would not submit the form by itself.
+              if (e.key !== 'Enter' || e.nativeEvent.isComposing) return;
+              e.preventDefault();
+              if (name.trim() && !full) save();
+            }}
+          />
         </label>
         <button type="submit" className="ui-btn ui-btn-primary" disabled={!name.trim() || full}>
           {sameName ? 'Replace' : 'Save'}

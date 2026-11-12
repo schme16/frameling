@@ -79,7 +79,7 @@ export function ArtboardsPanel() {
   const many = hasArtboards(doc);
   return (
     <div className="cv-panel cv-options ab-panel" data-help="artboards">
-      {!many && <Tip>Artboards are separate canvases in one file: a sprite each, or a shot each. They share your palette, swatches and symbols. Add one, or drag on the empty space round the page with the Artboard tool (Shift+W).</Tip>}
+      {!many && <Tip>Every artboard shares your palette, swatches and symbols. Add one, or drag on the empty space round the page with the Artboard tool (Shift+W).</Tip>}
       <ul className="sy-list ab-list" aria-label="Artboards">
         {list.map((a, i) => {
           const px = artPixelOf(artboardDoc(doc, a.id));

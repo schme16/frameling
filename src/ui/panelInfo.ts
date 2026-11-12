@@ -167,12 +167,12 @@ export function railGroups(ids: string[], groupOf: (id: string) => RailGroup = (
   return RAIL_GROUPS.map((group) => ({ group, ids: ids.filter((id) => groupOf(id) === group) })).filter((g) => g.ids.length > 0);
 }
 
-/** The plain word for a stacked group of the right side, by where it sits: Top, Upper, Lower, Bottom. */
+/** The plain name for a stacked group of the right side, by where it sits: Top group, Upper group, Lower group, Bottom group. */
 export function groupWord(index: number, count: number): string {
   if (count <= 1) return 'Right side';
-  if (index === 0) return 'Top';
-  if (index === count - 1) return 'Bottom';
-  return count === 3 ? 'Middle' : index === 1 ? 'Upper' : 'Lower';
+  if (index === 0) return 'Top group';
+  if (index === count - 1) return 'Bottom group';
+  return count === 3 ? 'Middle group' : index === 1 ? 'Upper group' : 'Lower group';
 }
 
 /** One stacked group of the right side, ready to draw: its Properties sections (the first group only), its rail places and its front panel. */

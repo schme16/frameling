@@ -41,6 +41,7 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
   const quest = getQuest('first-animation');
   const quill = useQuillShown();
   const found = recovery.use((r) => r);
+  const firstDrawn = usePrefs((p) => p.firstDrawn);
 
   useEffect(() => {
     let live = true;
@@ -87,6 +88,29 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
           </button>
           <button type="button" className="ui-btn" data-tip="It stays in File > Recover unsaved work for 7 days." onClick={dismissPending}>
             Not now
+          </button>
+        </div>
+      )}
+
+      {/* A newcomer's best first step sits at the top, and stays there while the sheet scrolls, until something has been drawn. */}
+      {quest && mode === 'welcome' && !firstDrawn && (
+        <div className="ui-quest ui-quest-pinned" data-help="quests">
+          <span className="ui-quest-icon">
+            <Icon name={quest.icon} size={18} />
+          </span>
+          <div>
+            <strong>{quest.title}</strong>
+            <p>{quest.summary}</p>
+          </div>
+          <button
+            type="button"
+            className="ui-btn ui-btn-primary"
+            onClick={() => {
+              startQuest(quest.id);
+              closeSheet();
+            }}
+          >
+            Show me
           </button>
         </div>
       )}
@@ -219,7 +243,7 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
 
       <Examples scrollTo={sheetMode === 'examples'} onPick={(doc, name) => void make(doc, name)} />
 
-      {quest && mode === 'welcome' && (
+      {quest && mode === 'welcome' && firstDrawn && (
         <div className="ui-quest">
           <span className="ui-quest-icon">
             <Icon name={quest.icon} size={22} />

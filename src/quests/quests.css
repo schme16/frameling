@@ -63,10 +63,21 @@
   box-shadow: var(--shadow);
   animation: qb-rise 0.3s var(--ease-bounce);
 }
-.qb-left {
+.qb-bl {
   left: 12px;
 }
-.qb-right {
+.qb-br {
+  right: 12px;
+}
+.qb-tl,
+.qb-tr {
+  top: 52px;
+  bottom: auto;
+}
+.qb-tl {
+  left: 12px;
+}
+.qb-tr {
   right: 12px;
 }
 @keyframes qb-rise {
