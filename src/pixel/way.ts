@@ -230,7 +230,8 @@ export function framesToBoards(d: Doc): Change {
     };
     const layers: Layer[] = d.layers.map((l) => {
       const c = celAt(l, f);
-      const copy: Layer = { ...plain({ ...l, cels: [] }), id: uid('l') };
+      // Cloned whole: a spread of a draft holds drafts of its arrays (effects, slices), which cannot be cloned.
+      const copy: Layer = { ...plain(l), cels: [], id: uid('l') };
       if (copy.folder) {
         if (d.folders?.[copy.folder]) copy.folder = folderCopy(copy.folder);
         else delete copy.folder;
@@ -301,7 +302,7 @@ export function boardsToFrames(d: Doc): Change {
       let target = byName.get(key);
       if (target && target.pixelSize !== l.pixelSize) return fail(`The layer "${l.name}" has a different pixel size on ${a.name}, so the frames would not line up.`);
       if (!target) {
-        target = { ...plain({ ...l, cels: [] }) } as PixelLayer;
+        target = { ...plain(l), cels: [] } as PixelLayer;
         byName.set(key, target);
         merged.push(target);
       }

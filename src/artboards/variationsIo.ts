@@ -135,7 +135,9 @@ export function readOverrides(raw: unknown, r: Pick<ArtboardReaders, 'readLayers
     item: (v) => {
       const patch = readPatch(v.patch, LAYER_KEYS);
       const sub = readList<Cel>(v.sub, { item: (c) => ({ patch: readPatch(c.patch, CEL_KEYS) }), added: () => [] });
-      return patch || sub ? { ...(patch ? { patch } : {}), ...(sub ? { sub } : {}) } : undefined;
+      // Keys only added (no key of the original changed) have no sub yet: keep the layer's entry, the keys are read below.
+      const addsKeys = isObj(v.sub) && Array.isArray(v.sub.added) && v.sub.added.length > 0;
+      return patch || sub || addsKeys ? { ...(patch ? { patch } : {}), ...(sub ? { sub } : addsKeys ? { sub: {} } : {}) } : undefined;
     },
     added: (rawLayers) => {
       const ok = rawLayers.filter((l) => isObj(l) && typeof l.id === 'string' && !BAD.has(l.id));
