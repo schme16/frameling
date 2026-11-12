@@ -35,7 +35,8 @@ app.whenReady().then(async () => {
 
   const list = await js(`${F}.list()`);
   check('Lip sync is on the list and on', list.some((f) => f.id === 'lipsync' && f.on), list);
-  check('the switchable features are listed, and on', ['audio', 'flow', 'interactives', 'lipsync'].every((id) => list.some((f) => f.id === id && f.on)) && list.every((f) => ['audio', 'flow', 'interactives', 'lipsync'].includes(f.id)), list);
+  const SWITCHABLE = ['audio', 'camera', 'flow', 'godot-export', 'interactives', 'lipsync', 'particles', 'rig', 'text', 'tiles'];
+  check('the switchable features are listed, and on', SWITCHABLE.every((id) => list.some((f) => f.id === id && f.on)) && list.every((f) => SWITCHABLE.includes(f.id)), list);
   check('Lip sync command and panel are there', (await js(`${F}.has('lipsync.auto')`)) && (await js(`${F}.hasPanel('lipsync')`)) && (await js(`${F}.has('view.panel.lipsync')`)));
 
   // A drawing that used Lip sync.
@@ -136,6 +137,46 @@ app.whenReady().then(async () => {
   await js(`${F}.set('interactives', false)`);
   check('Interactives off: Open Interactives file is gone', !(await js(`${F}.has('file.openPlayable')`)));
   await js(`${F}.set('interactives', true)`);
+
+  // ---- Tiles and Rig: a level and a puppet keep drawing and saving with the feature off; the tools and panels go.
+  // How many pixels on the canvas are not the first one's colour, summed over its layers (a drawn picture, not a blank page).
+  const painted = () => js(`(() => { let n = 0; for (const c of document.querySelectorAll('.cv-root canvas')) { const t = document.createElement('canvas'); t.width = c.width; t.height = c.height; const g = t.getContext('2d', { willReadFrequently: true }); g.drawImage(c, 0, 0); const d = g.getImageData(0, 0, t.width, t.height).data; for (let i = 4; i < d.length; i += 4) if (d[i] !== d[0] || d[i + 1] !== d[1] || d[i + 2] !== d[2] || d[i + 3] !== d[3]) n++; } return n; })()`);
+  await js(`__frameling.template('tileset')`);
+  await sleep(700);
+  const levelOn = await painted();
+  check('Tiles: the level is drawn, the Tileset panel and tile tools are there', levelOn > 100 && (await js(`${F}.hasPanel('tileset')`)) && (await js(`${F}.has('tiles.tileMode')`)) && (await js(`__frameling.tools().includes('tile-brush')`)), levelOn);
+  await js(`${F}.set('tiles', false)`);
+  await sleep(500);
+  check('Tiles off: panel, commands and tile tools are gone', !(await js(`${F}.hasPanel('tileset')`)) && !(await js(`${F}.has('tiles.tileMode')`)) && !(await js(`__frameling.tools().includes('tile-brush')`)));
+  const levelOff = await painted();
+  check('Tiles off: the level is still drawn the same', levelOff === levelOn, [levelOn, levelOff]);
+  await js(`${F}.reopen()`);
+  await sleep(600);
+  check('Tiles off: opening the level asks to turn Tiles on', /Tiles, which is turned off\. Turn it on\?/.test(await js(`document.body.innerText`)));
+  await js(`[...document.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Not now')?.click()`);
+  await sleep(300);
+  const levelReopenedOff = await painted();
+  await js(`${F}.set('tiles', true)`);
+  await sleep(300);
+  await js(`${F}.reopen()`);
+  await sleep(800);
+  const levelReopenedOn = await painted();
+  // Opening again fits the view again, so compare the two openings with each other, not with the first look.
+  check('Tiles off: the level opened and drawn the same as with Tiles on', levelReopenedOff > 100 && levelReopenedOff === levelReopenedOn, [levelReopenedOff, levelReopenedOn]);
+  check('Tiles on: the panel and tools are back', (await js(`${F}.hasPanel('tileset')`)) && (await js(`__frameling.tools().includes('tile-brush')`)));
+
+  await js(`__frameling.template('puppet')`);
+  await sleep(700);
+  const puppetOn = await painted();
+  check('Rig: the puppet is drawn, the Rig panel and Pose tool are there', puppetOn > 100 && (await js(`${F}.hasPanel('rig')`)) && (await js(`__frameling.tools().includes('pose')`)), puppetOn);
+  await js(`${F}.set('rig', false)`);
+  await sleep(500);
+  check('Rig off: panel, commands and bone tools are gone', !(await js(`${F}.hasPanel('rig')`)) && !(await js(`${F}.has('rig.addBones')`)) && !(await js(`__frameling.tools().includes('pose')`)) && !(await js(`__frameling.tools().includes('bone')`)));
+  check('Rig off: Delete is still there', await js(`${F}.has('edit.delete')`));
+  { const n = await painted(); check('Rig off: the puppet is still drawn the same', Math.abs(n - puppetOn) / puppetOn < 0.1, [puppetOn, n]); }
+  await js(`${F}.set('rig', true)`);
+  await sleep(300);
+  check('Rig on: the panel and tools are back', (await js(`${F}.hasPanel('rig')`)) && (await js(`__frameling.tools().includes('pose')`)));
 
   // ---- The command palette offers to turn a feature on.
   await js(`${F}.set('flow', false)`);

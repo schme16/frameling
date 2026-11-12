@@ -128,10 +128,14 @@ Preferences > Behaviour.
 each registration inside `withOwner(id, ...)` (`src/core/owners.ts`); every registry that adds something calls
 `ownedUndo`, so `setFeatureOn(id, false)` takes away exactly that feature's things and `true` puts them back, no restart.
 Choices live in `localStorage` `frameling.features.v1` (the ids turned off). A feature with `legacy: true` still registers
-when its folder is imported (`src/features/planned.ts`) and is not offered in Preferences > Features until it is converted.
-Converted so far: Lip sync, Audio, Clip flow, Interactives, Camera, Particles, Text and Godot exports (`src/lipsync`, `src/audio`, `src/flow`, `src/interactives`,
-`src/camera`, `src/particles`, `src/text` `index.ts`, and `src/export/godot.ts`; copy one). Only Tiles and Rig are still `legacy` (planned): their data is
-read by `core/tilemap.ts` and `core/symbols.ts` (layer kinds and bone binding), which needs layer-kind registries first. Godot exports has no document data, so it
+when its folder is imported (`src/features/planned.ts`, empty now) and is not offered in Preferences > Features until it is converted.
+Every optional feature is converted: Lip sync, Audio, Clip flow, Interactives, Camera, Particles, Text, Tiles, Rig and Godot exports (`src/lipsync`, `src/audio`, `src/flow`, `src/interactives`,
+`src/camera`, `src/particles`, `src/text`, `src/tiles`, `src/rig` `index.ts`, and `src/export/godot.ts`; copy one). A feature's Properties entry (`sections`, a `PanelInfo`) lives in
+its descriptor too (`layerOf`, `picked` and `toolIs` in `src/ui/panelInfo.ts` help write `relevant`). Tiles and Rig read the document through **layer kinds**
+(`src/core/layerKinds.ts`): `registerDrawingKind` (how a `tilemap` drawing is drawn, `draw`, and flattened to pixels, `flatten`, which the SVG, PDF and Lottie writers use) and
+`registerLayerBinder` (how a layer attached to a bone is moved or bent). `src/tiles/kind.ts` and `src/rig/kind.ts` register them for good when the folder loads, so a level
+or a puppet still draws, exports and saves with the feature off (that only takes away the panel, tools, commands, help, lesson, templates and, for Rig, the Delete-key takeover,
+which is put back as it was). `test/setup-kinds.ts` loads them for tests. Godot exports has no document data, so it
 has no `usedBy`; its sprite sheet engine card is a registered engine (`registerEngine` in `src/export/types.ts`) and a saved Godot setting falls back while it is off.
 Camera, Particles and Text `usedBy` read the drawing (a camera layer, emitters, text shapes), so opening such a file with the feature off asks to turn it on; their
 lessons carry `features` tags and are hidden; their shape kinds stay registered so the drawing still draws and exports. Audio shows its rows through timeline slots (`src/timeline/slots.ts`: `registerTimelinePart` for
@@ -144,7 +148,7 @@ own rail arrangement: `Workspace.rail` is its default, `DockState.rails[workspac
 puts them back there; the palette offers "Turn on X" and a lesson of it (`quests` or `Quest.features`) is put down. Opening a drawing whose `usedBy` says it holds data
 of a feature that is off asks "Turn it on?" (`src/features/prompt.ts`, called from `io/document.ts`); help topics of an off
 feature are hidden and a help search offers "Turn on X" (`hiddenHelp()`). `test/features/boundary.test.ts` keeps `core/`
-from importing feature folders (a short list of today's back-imports may only shrink). `test/features/all-off.test.ts`
+from importing feature folders (only `core/render.ts -> effects` is left, and it stays: effects are core by nature; the list may only shrink) and lists who may import each converted feature. `test/features/all-off.test.ts`
 runs the help audit and the shortcut check with every optional feature off. Owner-tagged registrations also include canvas
 hooks, file openers, save hooks, choices and template sources: call them from `activate()`.
 
@@ -200,7 +204,7 @@ import neither. A kind stays registered for good, also while its feature is off,
 `layerCameraMatrix` applies parallax by `depth`. The editor decides whether to look through the camera
 (`src/camera/ops.ts`); `src/camera/canvas.ts` draws the camera frame and registers the camera tool.
 
-**Tilemaps** (`src/core/tilemap.ts`): one bitmap per map, repainting only changed slots; maps over 16 megapixels are
+**Tilemaps** (`src/tiles/map.ts`, drawn through the `tilemap` drawing kind in `src/core/layerKinds.ts`): one bitmap per map, repainting only changed slots; maps over 16 megapixels are
 drawn slot by slot. `src/tiles/look.ts` is editor-only (faded tile copies).
 
 **Effects compositor** (`src/effects/`): `plan.ts` turns the layer list into steps (clips, masks, folders; folders can hold
@@ -231,7 +235,7 @@ an edit misses the old entry and the old one is garbage collected. The main ones
 | `rootDoc` | `core/symbols.ts` | Doc identity |
 | Shape tween plans | `core/shape-tween.ts` | 8 |
 | Pose blends, meshes, bound drawings | `rig/pose.ts` | 400, identity |
-| Tilemap bitmaps | `core/tilemap.ts` | 24 maps; slot diffs repaint |
+| Tilemap bitmaps | `tiles/map.ts` | 24 maps; slot diffs repaint |
 | Text widths and layouts | `text/draw.ts` | 5000 / 400; cleared when a font loads |
 | Canvas layer bitmaps | `canvas/pipeline.ts` | 40 megapixels LRU |
 
