@@ -13,6 +13,7 @@ import { activeId, artboardDoc, artboardsOf, findArtboard, hasArtboards, sizeOf 
 import { arrangeAll, deleteArtboardById, duplicateArtboardById, fitAllArtboards, goToArtboard, newArtboard, renameArtboardById, reorderArtboardById, zoomToArtboard } from './ops';
 import { openShotsPlayer } from './player';
 import { openArtboardExport } from './exportDialog';
+import { paintThumbBackdrop } from '../canvas/thumbBackdrop';
 import '../symbols/symbols.css';
 import './artboards.css';
 
@@ -39,6 +40,7 @@ function Thumb({ doc, id, size = 40 }: { doc: Doc; id: Id; size?: number }) {
     g.imageSmoothingEnabled = false;
     renderFrame(g, ad, 0, { camera: false });
     g.setTransform(1, 0, 0, 1, 0, 0);
+    paintThumbBackdrop(cv, { x: ox, y: oy, w: ad.width * k, h: ad.height * k });
     g.strokeStyle = 'rgba(128,128,128,0.5)';
     g.strokeRect(ox + 0.5, oy + 0.5, ad.width * k - 1, ad.height * k - 1);
     // Only redraw when this artboard's content (or the drawings, for the open one) changes.

@@ -1,9 +1,9 @@
 // The pen, polygon and star, clean pencil lines, gradients in the colour boxes and the recolour.
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Doc, FillShape, PathShape } from '../../src/core/format';
 import { newDoc, newPixelDrawing } from '../../src/core/doc';
 import { store } from '../../src/core/store';
-import { constrain45, PenPath, penShape, penTool } from '../../src/tools/pen';
+import { CLOSE_ENTER_MS, constrain45, enterEndsClosing, PenPath, penShape, penTool } from '../../src/tools/pen';
 import { fitPoints, makePolyStar, polyPoints, polygonTool, starTool } from '../../src/tools/polystar';
 import { cleanLineShape, fitCleanLine } from '../../src/tools/cleanLine';
 import { pointsTool, resetPointsTool } from '../../src/tools/points';
@@ -85,6 +85,71 @@ describe('pen', () => {
     expect(s.paths[0].points.length).toBe(2);
     // With nothing in progress the keys go to the rest of the app.
     expect(penTool.onKey!(key('Delete'), c)).toBe(false);
+  });
+});
+
+describe('pen: Enter after closing a shape', () => {
+  afterEach(() => vi.restoreAllMocks());
+  const closeShape = (c: ReturnType<typeof ctx>) => {
+    const click = (x: number, y: number, time: number) => {
+      penTool.down!(ptr(x, y, { time }), c);
+      penTool.up!(ptr(x, y, { time }), c);
+    };
+    click(10, 10, 0);
+    click(100, 10, 1000);
+    click(60, 90, 2000);
+    click(10, 10, 3000);
+  };
+
+  it('takes the Enter that follows a closed shape, so it never starts Play', () => {
+    const c = ctx();
+    let now = 10_000;
+    vi.spyOn(performance, 'now').mockImplementation(() => now);
+    closeShape(c);
+    expect(shapesNow().length).toBe(1);
+    now += 400;
+    expect(penTool.onKey!(key('Enter'), c)).toBe(true);
+    // The shape is untouched, and there is still exactly one.
+    expect(shapesNow().length).toBe(1);
+    expect((shapesNow()[0] as PathShape).paths[0].closed).toBe(true);
+    // Only the one Enter is taken; the next goes to Play as usual.
+    expect(penTool.onKey!(key('Enter'), c)).toBe(false);
+  });
+
+  it('leaves Enter to the rest of the app a while later, or after a new press', () => {
+    const c = ctx();
+    let now = 10_000;
+    vi.spyOn(performance, 'now').mockImplementation(() => now);
+    closeShape(c);
+    now += CLOSE_ENTER_MS + 1;
+    expect(penTool.onKey!(key('Enter'), c)).toBe(false);
+    closeShape(c);
+    penTool.down!(ptr(500, 500, { time: 9000 }), c);
+    penTool.up!(ptr(500, 500, { time: 9000 }), c);
+    penTool.onKey!(key('Escape'), c);
+    expect(penTool.onKey!(key('Enter'), c)).toBe(false);
+  });
+
+  it('does not take other keys, and an open line ended with Enter does not take the next one', () => {
+    const c = ctx();
+    vi.spyOn(performance, 'now').mockImplementation(() => 10_000);
+    closeShape(c);
+    expect(penTool.onKey!(key('Delete'), c)).toBe(false);
+    expect(penTool.onKey!(key('Escape'), c)).toBe(false);
+    penTool.leave!(c);
+    expect(penTool.onKey!(key('Enter'), c)).toBe(false);
+    for (const [x, t] of [[10, 0], [60, 1000]] as const) {
+      penTool.down!(ptr(x, 50, { time: t }), c);
+      penTool.up!(ptr(x, 50, { time: t }), c);
+    }
+    expect(penTool.onKey!(key('Enter'), c)).toBe(true);
+    expect(penTool.onKey!(key('Enter'), c)).toBe(false);
+  });
+
+  it('knows how soon is soon', () => {
+    expect(enterEndsClosing(-Infinity, 5)).toBe(false);
+    expect(enterEndsClosing(100, 100 + CLOSE_ENTER_MS - 1)).toBe(true);
+    expect(enterEndsClosing(100, 100 + CLOSE_ENTER_MS)).toBe(false);
   });
 });
 
