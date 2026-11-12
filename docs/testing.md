@@ -237,8 +237,21 @@ back and forth and looping, `thrice` forward 3 times, `back` backward once, `pla
   `FramelingSheetCheck.cs` also checks the wrap mode), and with `WEB_ENGINES=1` `play-phaser`, `play-pixi`, `play-css`.
   Phaser must read `repeat` 2 for `thrice` (one pass, N - 1), CSS `iteration-count` 3, and every frame of every
   animation is compared with the app's own PNG of the document frame the rules say it shows.
-- `gif`, `apng`, `mp4`, `webm`: `clip-pingpong`, `clip-repeat3`, `clip-backward` export one clip and check that picture k
-  is the document frame the order rules give.
+  `play-godot` also plays every animation on an AnimatedSprite2D in real Godot (`--fixed-fps`, one run per animation) and
+  compares the picture at each tick with the order the clip should play.
+- Back and forth counts each direction as one repeat, so `BOUNCE_CLIPS` (16 frames, one clip each, no overlap) has `swing`
+  (loops), `swingback` (loops from the end), `bounce2` (there and back) and `bounce3` (there, back, there): cases
+  `bounce-godot`, `bounce-unity`, `bounce-phaser`, `bounce-pixi`, `bounce-css`, and with the preference "Back-and-forth
+  clips in game engines" set to the engine's own ping-pong (`setChoice('export.clipEngineBounce', 'engine')`)
+  `bounce-godot-native` (SpriteFrames `"loop": 2`: one direction listed, and real Godot shows the end frames twice) and
+  `bounce-phaser-native` (`yoyo`: one direction listed, `repeat` N - 1 round trips, and real Phaser 3.90 plays the same
+  order as the baked list). `--only=godot-bones-bounce` loads the skeleton export in Godot and reads the
+  AnimationPlayer: baked is a loop of 2n - 2 frames (mode 1), native is `loop_mode = 2` over n frames and the animation
+  time goes up and back down; a clip with a set number of directions stays baked.
+- `gif`, `apng`, `mp4`, `webm`: `clip-pingpong`, `clip-pingpong-reverse`, `clip-bounce2`, `clip-bounce3`, `clip-repeat3`,
+  `clip-backward` export one clip and check that picture k is the document frame the order rules give. `pngseq` runs the
+  same cases and holds each frame once, in the order the clip starts (`stillOrder`), whatever the repeat. The loop flag of a
+  GIF or APNG follows the clip unless the box was changed by hand.
 
 The expected order is written out again in `export.cjs` (`oracleOrder`, from `docs/format.md`), not taken from the
 app's code, and the app's own export plan has to agree with it.

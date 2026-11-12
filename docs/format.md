@@ -304,7 +304,8 @@ See `docs/effects.md`.
   Illustrator pages hold each frame once, in the order the clip starts (`stillPositions`). Godot and Phaser can use their
   own ping-pong for back and forth clips (preference `export.clipEngineBounce`, default baked): Godot's SpriteFrames
   `"loop": 2` (LOOP_PINGPONG) and the AnimationPlayer's `loop_mode = 2` for a clip that loops, Phaser's `yoyo` for a loop
-  or an even number of directions. Those show each end twice, so the default bakes.
+  or an even number of directions. In Godot those show each end twice (checked in 4.8), so the default bakes; Phaser 3.90's yoyo plays
+  the same as the baked list (each end once, checked in the real engine).
   `Marker`: `{id, name, frame}`. `Swatch`: `{id, name, color}`.
 - `DocPalette`: `{name, colors, ramps?}`; `ramps` lists where each ramp starts.
 - `Tileset`: `{tileWidth, tileHeight, tiles, nextKey, gridX?, gridY?}`. `Tile`: `{key, name, frames: {drawingId, duration}[]}`. Keys

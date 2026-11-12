@@ -92,7 +92,7 @@ When you export a clip, the loop box follows the clip: a clip that loops repeats
 
 ## Exporting a clip
 
-Pick **One clip** in the Range row and the file follows how that clip plays ([clip direction and repeat](help:timeline-clip-play)). A clip that plays **backward** comes out backward. **Back and forth** comes out there and back as the clip says (each direction counts as one repeat, so repeat 3 is there, back, there), and a clip that plays **3 times** is in the file 3 times, so it looks the same everywhere. The same goes for a moving SVG (its timing follows the order). A **PNG sequence, PDF and Illustrator pages** are pictures to look at rather than to play, so each frame comes out **once**, in the order the clip starts (backward starts from the last frame), however often the clip repeats. A video made this way has no sound, because the timeline's sound doesn't match the new order.
+Pick **One clip** in the Range row and the file follows how that clip plays ([clip direction and repeat](help:timeline-clip-play)). A clip that plays **backward** comes out backward. **Back and forth** comes out there and back as the clip says (repeat 3 is there, back, there), and a clip that plays **3 times** is in the file 3 times, so it looks the same everywhere. The same goes for a moving SVG (its timing follows the order). A **PNG sequence, PDF and Illustrator pages** are for looking at, so each frame comes out **once**, in the order the clip starts, however often it repeats. A video made this way has no sound, because the timeline's sound doesn't match the new order.
 ## Good to know
 
 - Pixel art exports at big whole-number sizes with sharp edges, never blurry.
@@ -288,7 +288,7 @@ Press **Ctrl+E**, pick **Sprite sheet**, then the **Phaser** card, and export in
 
 - \`hero.png\`: the sheet,
 - \`hero.json\`: where every frame is (a JSON hash atlas),
-- \`hero-anims.json\`: one animation per clip, with speed and looping. A clip that plays a number of times uses Phaser's own **repeat**. Backward and back and forth clips list their frames in that order, so each end shows once. If you would rather have Phaser's own **yoyo** (smaller data, but each end shows twice) for a back and forth clip that loops or goes there and back a whole number of times, choose it in **Preferences > Behaviour**, *Back-and-forth clips in game engines*.
+- \`hero-anims.json\`: one animation per clip, with speed and looping. A clip that plays a number of times uses Phaser's own **repeat**. Backward and back and forth clips list their frames in that order, so each end shows once. If you would rather have Phaser's own **yoyo** (smaller data, and it plays the same) for a back and forth clip that loops or goes there and back a whole number of times, choose it in **Preferences > Behaviour**, *Back-and-forth clips in game engines*.
 
 ## In your game
 

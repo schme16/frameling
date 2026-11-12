@@ -86,7 +86,7 @@ export function expandedNames(a: Animation, d: Pick<SheetData, 'cellOfFrame' | '
  * Phaser 3 animations, the shape `this.anims.fromJSON` and `this.load.animation` read. Backward is the frames the
  * other way round, and a clip that plays N times uses Phaser's own `repeat` (N - 1) when one pass ends where it
  * should. Back and forth lists every frame (the ends once per turn), unless `nativeBounce` is on: then a clip that
- * goes there and back an even number of times uses Phaser's `yoyo`, which lists one direction and shows each end twice.
+ * goes there and back an even number of times uses Phaser's `yoyo`, which lists one direction (Phaser 3.90 shows each end once, so it looks the same as listing every frame).
  */
 export function phaserAnimations(d: SheetData, textureKey: string, nativeBounce = false) {
   return {

@@ -370,7 +370,7 @@ export interface GodotInput {
   cells: Cell[];
   cellOfFrame: number[];
   animations: Animation[];
-  /** Let Godot bounce a back and forth clip that loops itself (loop mode 2): one direction is listed and the ends show twice. */
+  /** Let Godot bounce a back and forth clip that loops itself (loop mode 2): one direction is listed and the ends show twice in Godot. */
   nativeBounce?: boolean;
 }
 

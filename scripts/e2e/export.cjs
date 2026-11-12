@@ -238,33 +238,45 @@ async function expectationFor(settings) {
   const clip = settings.range === 'clip' ? doc.clips.find((c) => c.id === settings.clipId) : null;
   const baked = clip && BAKED.has(settings.format) && (clip.direction && clip.direction !== 'forward' || (!clip.loop && clip.repeat > 1));
   const len = clip ? Math.abs(plan.range.end - plan.range.start) + 1 : 0;
-  const order = baked ? oracleOrder(len, clip.direction || 'forward', playsOf(clip)).all : null;
-  if (baked) check(JSON.stringify(order) === JSON.stringify(plan.order), `the plan's frame order ${JSON.stringify(plan.order)} is not ${JSON.stringify(order)}`);
+  // A PNG sequence holds each frame once, in the order the clip starts, whatever it repeats.
+  const still = clip && STILLS.has(settings.format) ? stillOrder(len, clip.direction || 'forward') : null;
+  const stillBaked = !!still && still.some((p, i) => p !== i);
+  const order = baked ? oracleOrder(len, clip.direction || 'forward', playsOf(clip)).all : stillBaked ? still : null;
+  if (baked || stillBaked) check(JSON.stringify(order) === JSON.stringify(plan.order), `the plan's frame order ${JSON.stringify(plan.order)} is not ${JSON.stringify(order)}`);
   else check(!plan.order, `the plan has a frame order for a plain export: ${JSON.stringify(plan.order)}`);
-  return { plan, doc, fps: doc.fps, count: plan.count, width: plan.width, height: plan.height, frameOf: (k) => plan.range.start + (order ? order[k] : k) };
+  // GIF and APNG: an exported clip sets the loop itself (loops, or plays its passes once), unless the box was changed by hand.
+  const loop = clip && ['gif', 'apng'].includes(settings.format) && !settings.loopTouched ? clip.loop : settings.loop;
+  return { plan, doc, fps: doc.fps, loop, count: plan.count, width: plan.width, height: plan.height, frameOf: (k) => plan.range.start + (order ? order[k] : k) };
 }
 
 const BAKED = new Set(['gif', 'apng', 'mp4', 'webm', 'prores']);
+const STILLS = new Set(['pngseq', 'pdf', 'ai']);
 
 /**
  * One pass and the whole order a clip plays, worked out here from the rules in docs/format.md, not from the app's
- * code: forward 0..n-1, backward n-1..0, back and forth 0..n-1 then down to 1 (the ends once per turn), and a clip that
- * plays N times does N passes and ends on the frame it holds (the start for back and forth, else the last one played).
+ * code: forward 0..n-1, backward n-1..0, and a clip that plays N times does N passes and holds the last frame. Back and
+ * forth counts each direction as one (like Aseprite): 1 is there only (0..n-1), 2 there and back (0..n-1, n-2..0),
+ * 3 there, back, there; the turn frames show once, and forever goes round 0..n-1, n-2..1.
  */
 function oracleOrder(len, dir, plays) {
   const up = [...Array(len).keys()];
   const down = up.slice().reverse();
-  let pass = up;
-  if (dir === 'reverse') pass = down;
-  else if (dir === 'pingpong') pass = len > 1 ? up.concat(down.slice(1, -1)) : [0];
-  else if (dir === 'pingpong-reverse') pass = len > 1 ? down.concat(up.slice(1, -1)) : [0];
-  if (plays === Infinity) return { pass, all: pass };
+  const first = dir === 'reverse' || dir === 'pingpong-reverse' ? down : up;
+  const other = first === up ? down : up;
+  if (dir === 'pingpong' || dir === 'pingpong-reverse') {
+    const cycle = len > 1 ? first.concat(other.slice(1, -1)) : [0];
+    if (plays === Infinity) return { pass: cycle, all: cycle };
+    let all = first.slice();
+    for (let k = 1; k < plays; k++) all = all.concat((k % 2 ? other : first).slice(1));
+    return { pass: cycle, all, legs: plays };
+  }
+  if (plays === Infinity) return { pass: first, all: first };
   let all = [];
-  for (let i = 0; i < plays; i++) all = all.concat(pass);
-  const hold = dir === 'reverse' || dir === 'pingpong' ? 0 : len - 1;
-  if (all[all.length - 1] !== hold) all.push(hold);
-  return { pass, all };
+  for (let i = 0; i < plays; i++) all = all.concat(first);
+  return { pass: first, all };
 }
+/** Stills (PNG sequence, PDF, Illustrator pages): every frame once, in the order the clip starts. */
+const stillOrder = (len, dir) => ([...Array(len).keys()][dir === 'reverse' || dir === 'pingpong-reverse' ? 'reverse' : 'slice']());
 const playsOf = (c) => (c.loop ? Infinity : c.repeat > 1 ? c.repeat : 1);
 
 /** A reference PNG of one frame at the same size and background, made by the app's own PNG export. */
@@ -349,8 +361,8 @@ async function vGif(file, s, exp, caseCtx) {
   const capFps = Math.min(exp.fps, 50);
   const total = g.delays.reduce((a, c) => a + c, 0);
   check(near(total, (exp.count * 1000) / capFps, 10 * exp.count * 0.5 + 20), `total time ${total}ms, wanted about ${((exp.count * 1000) / capFps).toFixed(0)}ms`);
-  check(s.loop ? g.loop === 0 : g.loop === null || g.loop === 1 || true, 'loop flag');
-  if (s.loop) check(g.loop === 0, `loop forever expected, NETSCAPE loop=${g.loop}`);
+  check(exp.loop ? g.loop === 0 : g.loop === null || g.loop === 1 || true, 'loop flag');
+  if (exp.loop) check(g.loop === 0, `loop forever expected, NETSCAPE loop=${g.loop}`);
   else check(g.loop === null, `play once expected (no NETSCAPE block), got loop=${g.loop}`);
   if (need('identify')) {
     const frames = identify(file);
@@ -384,7 +396,7 @@ async function vApng(file, s, exp, caseCtx) {
   check(a.sig, 'PNG signature');
   check(a.width === exp.width && a.height === exp.height, `size ${a.width}x${a.height}, wanted ${exp.width}x${exp.height}`);
   check(a.frames === exp.count && a.fctl.length === exp.count, `frame count acTL=${a.frames} fcTL=${a.fctl.length}, wanted ${exp.count}`);
-  check(s.loop ? a.plays === 0 : a.plays === 1, `plays=${a.plays}, wanted ${s.loop ? 0 : 1}`);
+  check(exp.loop ? a.plays === 0 : a.plays === 1, `plays=${a.plays}, wanted ${exp.loop ? 0 : 1}`);
   check(a.seqs.every((v, i) => v === i), 'sequence numbers are not 0,1,2...');
   check(a.order.indexOf('acTL') < a.order.indexOf('IDAT'), 'acTL must come before IDAT');
   check(a.order.indexOf('fcTL') < a.order.indexOf('IDAT'), 'first fcTL must come before IDAT (so the first frame is part of the animation)');
@@ -442,7 +454,7 @@ async function vPngSeq(file, s, exp, caseCtx) {
   const dims = names.slice(0, 3).concat(names.slice(-1)).map((n) => identify(path.join(dir, n))[0]);
   check(dims.every((d) => d[0] === exp.width && d[1] === exp.height), `a picture is the wrong size: ${JSON.stringify(dims)}`);
   for (const k of [0, exp.count - 1]) {
-    const ref = await reference(s, exp.plan.range.start + k, caseCtx.transparent);
+    const ref = await reference(s, exp.frameOf(k), caseCtx.transparent);
     const e = ref && rmse(path.join(dir, names[k]), ref);
     if (e !== null && e !== undefined) check(e < TOL.lossless, `picture ${k + 1} differs from the PNG export (rmse ${e.toFixed(5)})`);
   }
@@ -604,7 +616,7 @@ async function vSheet(files, dir, s, exp, caseCtx) {
     const t = fs.readFileSync(path.join(dir, tres), 'utf8');
     check(/\[gd_resource type="SpriteFrames"/.test(t), 'tres header');
   }
-  if (GODOT && !SKIP.includes('godot') && tres && s.sheet.godotScene) await godotCheck(dir, names, atlas, s, exp);
+  if (GODOT && !SKIP.includes('godot') && tres && s.sheet.godotScene) await godotCheck(dir, names, atlas, s, exp, caseCtx);
 }
 
 // ---------------------------------------------------------------- web engines (Phaser, PixiJS, CSS)
@@ -625,7 +637,12 @@ function expectedAnimations(doc, s, range) {
   // The frames in the order they play: the clip's own frames put through the order rules.
   const played = (frames, c) => {
     const o = oracleOrder(frames.length, c?.direction || 'forward', c ? playsOf(c) : Infinity);
-    return { frames: o.all.map((p) => frames[p]), pos: o.all, pass: o.pass.map((p) => frames[p]), plays: c ? playsOf(c) : Infinity, dir: c?.direction || 'forward' };
+    const dir = c?.direction || 'forward';
+    const plays = c ? playsOf(c) : Infinity;
+    // What an engine's own ping-pong could take: one direction, for a loop or an even number of directions.
+    const bounces = (dir === 'pingpong' || dir === 'pingpong-reverse') && frames.length > 1 && (plays === Infinity || (plays > 1 && plays % 2 === 0));
+    const leg = bounces ? (dir === 'pingpong' ? [...Array(frames.length).keys()] : [...Array(frames.length).keys()].reverse()).map((p) => frames[p]) : null;
+    return { frames: o.all.map((p) => frames[p]), pos: o.all, pass: o.pass.map((p) => frames[p]), plays, dir, leg, trips: plays === Infinity ? Infinity : plays / 2 };
   };
   if (s.range !== 'all') {
     const clip = doc.clips.find((c) => c.id === s.clipId);
@@ -678,14 +695,15 @@ async function webCheck(engine, dir, names, s, exp, caseCtx) {
   job.animations = [];
   for (const a of animations) {
     // Phaser and CSS repeat a forward or backward clip themselves (one pass, N times); everything else lists every frame.
-    const native = (engine === 'phaser' || engine === 'css') && !a.loop && a.plays > 1 && !a.dir.startsWith('pingpong');
-    const listed = native ? a.pass : a.frames;
+    const yoyo = engine === 'phaser' && caseCtx.native && !!a.leg;
+    const native = !yoyo && (engine === 'phaser' || engine === 'css') && !a.loop && a.plays > 1 && !a.dir.startsWith('pingpong');
+    const listed = yoyo ? a.leg : native ? a.pass : a.frames;
     const checks = [];
     for (const i of pickFrames(listed.length)) {
       const ref = await refOf(range.start + listed[i]);
       if (ref) checks.push({ i, ref });
     }
-    job.animations.push({ name: a.name, fps: a.fps, loop: a.loop, count: listed.length, times: native ? a.plays : 1, checks });
+    job.animations.push({ name: a.name, fps: a.fps, loop: a.loop, count: listed.length, times: yoyo ? a.trips : native ? a.plays : 1, yoyo, checks });
   }
   if (engine !== 'css') {
     const data = JSON.parse(fs.readFileSync(path.join(dir, jsonName), 'utf8'));
@@ -795,7 +813,7 @@ function runUnity(proj, dir, label, args) {
   fail(`unity ${label}: no pass (exit ${r.status}); ${errs.join(' | ') || 'see ' + path.basename(log)}`);
 }
 
-async function godotCheck(dir, names, atlas, s, exp) {
+async function godotCheck(dir, names, atlas, s, exp, caseCtx = {}) {
   const proj = path.join(dir, '_godot');
   fs.rmSync(proj, { recursive: true, force: true });
   const base = names.find((n) => n.endsWith('.png')).replace(/\.png$/, '');
@@ -824,6 +842,57 @@ func _init():
 	quit()
 `,
   );
+  // Real playback: every animation is played on an AnimatedSprite2D, one tick per frame (--fixed-fps), and the picture
+  // shown at each tick is recorded.
+  const ticks = {};
+  for (const [an, a] of Object.entries(atlas.animations)) ticks[an] = a.loop ? a.frames.length * 2 + 8 : a.frames.length + 8;
+  fs.writeFileSync(path.join(proj, 'ticks.json'), JSON.stringify(ticks));
+  fs.writeFileSync(
+    path.join(proj, 'play.gd'),
+    `extends SceneTree
+var sf: SpriteFrames
+var sp: AnimatedSprite2D
+var sprites := []
+var want := {}
+var names := []
+var ai := -1
+var go := true
+var seen := []
+var out := {}
+func _initialize():
+	sf = load("res://${sub}/${base}.tres")
+	want = JSON.parse_string(FileAccess.get_file_as_string("res://ticks.json"))
+	# One animation per run (its name follows the --): a sprite that starts later in a long run dwells a tick longer on the
+	# ends of a ping-pong in a headless run, so each one is played from the start of its own run.
+	names = [OS.get_cmdline_user_args()[0]]
+	for n in names:
+		var one := AnimatedSprite2D.new()
+		one.sprite_frames = sf
+		root.add_child(one)
+		sprites.append(one)
+func _process(_d):
+	if go:
+		# Each animation is started from a tick, on a sprite of its own, so the next ticks show it from its first picture.
+		ai += 1
+		if ai >= names.size():
+			print("PLAYED " + JSON.stringify(out))
+			quit()
+			return false
+		sp = sprites[ai]
+		sp.play(names[ai])
+		seen = []
+		go = false
+		return false
+	var a = names[ai]
+	var t = sf.get_frame_texture(a, sp.frame)
+	seen.append(str(int(t.region.position.x)) + "," + str(int(t.region.position.y)))
+	if seen.size() >= int(want[a]):
+		out[a] = {"mode": sf.get_animation_loop_mode(a), "seen": seen}
+		sp.stop()
+		go = true
+	return false
+`,
+  );
   const imp = sh(GODOT, ['--headless', '--path', proj, '--import'], { timeout: 120000 });
   const run = sh(GODOT, ['--headless', '--path', proj, '--script', 'check.gd'], { timeout: 120000 });
   const line = run.out.split('\n').find((l) => l.startsWith('RESULT '));
@@ -837,12 +906,17 @@ func _init():
     const want = atlas.animations[an];
     const got = g[an];
     const total = got.frames.reduce((x, f) => x + f[8], 0);
-    check(total === want.frames.length, `${an}: Godot plays ${total} frames' worth, json has ${want.frames.length}`);
-    check(got.fps === want.fps && got.loop === want.loop, `${an}: fps/loop differ in Godot`);
+    // With the engine's own ping-pong a looping back and forth clip lists one direction only (and loop reads false: it is mode 2).
+    const w0 = expectedAnimations(exp.doc, s, exp.plan.range).find((x) => x.name === an);
+    const nativeLoop = !!caseCtx.native && !!w0?.leg && want.loop;
+    if (nativeLoop) check(total === w0.leg.length, `${an}: Godot lists ${total} frames, the one direction is ${w0.leg.length}`);
+    else check(total === want.frames.length, `${an}: Godot plays ${total} frames' worth, json has ${want.frames.length}`);
+    check(got.fps === want.fps && (nativeLoop || got.loop === want.loop), `${an}: fps/loop differ in Godot`);
     // Every Godot texture must point at the json frame, with the margin the trim implies.
     let at = 0;
     got.frames.forEach((f) => {
       const cell = atlas.frames[want.frames[at]];
+      if (nativeLoop) return void (at += f[8]);
       at += f[8];
       const okRegion = f[0] === cell.frame.x && f[1] === cell.frame.y && f[2] === cell.frame.w && f[3] === cell.frame.h;
       check(okRegion, `${an}: Godot region ${f.slice(0, 4)} vs json ${JSON.stringify(cell.frame)}`);
@@ -850,6 +924,42 @@ func _init():
     });
   }
   note(`godot ok: ${gotNames.join(',')}`);
+  await godotPlayCheck(proj, atlas, s, exp, caseCtx);
+}
+
+/** Plays the sprite frames in real Godot and compares each tick's picture with the order the clip should play. */
+async function godotPlayCheck(proj, atlas, s, exp, caseCtx) {
+  const played = {};
+  for (const an of Object.keys(atlas.animations)) {
+    const play = sh(GODOT, ['--headless', '--fixed-fps', String(exp.fps), '--path', proj, '--script', 'play.gd', '--', an], { timeout: 120000 });
+    const line = play.out.split('\n').find((l) => l.startsWith('PLAYED '));
+    if (!check(line, `Godot did not play ${an}: ${(play.err + play.out).slice(0, 300)}`)) return;
+    Object.assign(played, JSON.parse(line.slice(7)));
+  }
+  const wantAnims = expectedAnimations(exp.doc, s, exp.plan.range);
+  const notes = [];
+  for (const [an, got] of Object.entries(played)) {
+    const a = atlas.animations[an];
+    const w = wantAnims.find((x) => x.name === an);
+    const key = (cell) => `${atlas.frames[cell].frame.x},${atlas.frames[cell].frame.y}`;
+    const cells = a.frames.map(key);
+    // The engine's own ping-pong (loop mode 2) is used for a looping back and forth clip when asked; the rest is baked.
+    const bounces = !!caseCtx.native && !!w?.leg && a.loop;
+    check(got.mode === (bounces ? 2 : a.loop ? 1 : 0), `${an}: Godot loop mode ${got.mode}, wanted ${bounces ? 2 : a.loop ? 1 : 0}`);
+    let expected;
+    if (bounces) {
+      const half = cells.length / 2 + 1;
+      const leg = cells.slice(0, half);
+      const cycle = leg.concat(leg.slice().reverse());
+      expected = (t) => cycle[t % cycle.length];
+    } else if (a.loop) expected = (t) => cells[t % cells.length];
+    else expected = (t) => cells[Math.min(t, cells.length - 1)];
+    const seen = got.seen;
+    const bad = seen.findIndex((k, t) => k !== expected(t));
+    check(bad < 0, `${an}: Godot showed ${seen.slice(0, 24).join(' ')}... which differs at tick ${bad} (wanted ${[...Array(Math.min(seen.length, 24)).keys()].map(expected).join(' ')})`);
+    if (w?.leg) notes.push(`${an}: ${bounces ? 'ping-pong loop, ends twice' : 'baked, ends once'}`);
+  }
+  if (notes.length) note(`godot played: ${notes.join('; ')}`);
 }
 
 // ---------------------------------------------------------------- the export matrix
@@ -882,6 +992,8 @@ async function runCase(tpl, fmt, label, edit, opts = {}) {
       sound: await ev('!!window.__framelingExport.doc().audio?.some((c) => !c.muted)'),
       // SVG leaves out effects, masks and clipping (see export help), so it only roughly matches a document using them.
       svgApprox: tpl === 'kitchen-sink',
+      // The preference "Back-and-forth clips in game engines" is set to the engine's own ping-pong for this case.
+      native: !!opts.native,
     };
     if (fmt === 'webm' && settings.transparent && !caps.webm.alpha) note('this computer cannot do see-through WebM, so the background is kept');
     r.settings = settings;
@@ -920,7 +1032,11 @@ async function runCase(tpl, fmt, label, edit, opts = {}) {
 
 // Clips for the play-order cases: back and forth that loops, a forward clip that plays 3 times, a backward clip that
 // plays once, and a plain loop. They do not overlap, so every picture belongs to one clip.
-const PLAY_CLIPS = `__framelingExport.clearClips(); __framelingExport.addClip('swing', 2, 5, true, 'pingpong'); __framelingExport.addClip('thrice', 6, 7, false, 'forward', 3); __framelingExport.addClip('back', 8, 11, false, 'reverse'); __framelingExport.addClip('plain', 12, 13)`;
+const PLAY_CLIPS = `__framelingExport.clearClips(); __framelingExport.addClip('swing', 2, 5, true, 'pingpong'); __framelingExport.addClip('thrice', 6, 7, false, 'forward', 3); __framelingExport.addClip('back', 8, 11, false, 'reverse'); __framelingExport.addClip('plain', 12, 13); __framelingExport.setChoice('export.clipEngineBounce', undefined)`;
+// Back and forth every way, one after another (the template is 16 frames): a loop, a loop from the end, there and back (2), there, back, there (3).
+const BOUNCE_CLIPS = `__framelingExport.clearClips(); __framelingExport.addClip('swing', 0, 3, true, 'pingpong'); __framelingExport.addClip('swingback', 4, 7, true, 'pingpong-reverse'); __framelingExport.addClip('bounce2', 8, 11, false, 'pingpong', 2); __framelingExport.addClip('bounce3', 12, 15, false, 'pingpong', 3); __framelingExport.setChoice('export.clipEngineBounce', undefined)`;
+// The same with the preference set to the engine's own ping-pong (Godot loop mode 2, Phaser yoyo).
+const BOUNCE_CLIPS_NATIVE = BOUNCE_CLIPS + `; __framelingExport.setChoice('export.clipEngineBounce', 'engine')`;
 
 const isPixelTpl = (t) => t === 'hero-sprites' || t === 'blank-pixel';
 
@@ -949,10 +1065,11 @@ async function exportMatrix() {
           { prepare: tpl === 'hero-sprites' ? '' : addClip(tpl) },
         );
       }
-      if (BAKED.has(fmt) && fmt !== 'prores' && tpl === 'bouncing-ball') {
-        // A clip exported as GIF, APNG or video comes out in the order it plays: back and forth, 3 times, backward.
-        for (const [label, name] of [['clip-pingpong', 'swing'], ['clip-repeat3', 'thrice'], ['clip-backward', 'back']]) {
-          await runCase(tpl, fmt, label, async (s) => ({ ...s, range: 'clip', clipId: 'clip-' + name }), { prepare: PLAY_CLIPS });
+      if (((BAKED.has(fmt) && fmt !== 'prores') || fmt === 'pngseq') && tpl === 'bouncing-ball') {
+        // A clip exported as GIF, APNG or video comes out in the order it plays: back and forth (looping, there and back, there back there),
+        // 3 times, backward. A PNG sequence holds each frame once in the order the clip starts, whatever it repeats.
+        for (const [label, name, prepare] of [['clip-pingpong', 'swing', PLAY_CLIPS], ['clip-pingpong-reverse', 'swingback', BOUNCE_CLIPS], ['clip-bounce2', 'bounce2', BOUNCE_CLIPS], ['clip-bounce3', 'bounce3', BOUNCE_CLIPS], ['clip-repeat3', 'thrice', PLAY_CLIPS], ['clip-backward', 'back', PLAY_CLIPS]]) {
+          await runCase(tpl, fmt, label, async (s) => ({ ...s, range: 'clip', clipId: 'clip-' + name }), { prepare });
         }
       }
       if (!isPixelTpl(tpl)) {
@@ -993,6 +1110,14 @@ async function exportMatrix() {
         if (tpl === 'bouncing-ball') {
           const play = PLAY_CLIPS;
           await runCase(tpl, fmt, 'play-godot', (s) => ({ ...s, sheet: { ...s.sheet, trim: true, dedupe: false, json: true, godot: true, godotScene: true, godotPath: '' } }), { prepare: play });
+          // Back and forth with the engine's own ping-pong: Godot's loop mode 2 for the looping clips, Phaser's yoyo for loops and even counts.
+          await runCase(tpl, fmt, 'bounce-godot', (s) => ({ ...s, sheet: { ...s.sheet, trim: true, dedupe: false, json: true, godot: true, godotScene: true, godotPath: '' } }), { prepare: BOUNCE_CLIPS });
+          await runCase(tpl, fmt, 'bounce-godot-native', (s) => ({ ...s, sheet: { ...s.sheet, trim: true, dedupe: false, json: true, godot: true, godotScene: true, godotPath: '' } }), { prepare: BOUNCE_CLIPS_NATIVE, native: true });
+          await runCase(tpl, fmt, 'bounce-unity', (s) => ({ ...s, sheet: { ...s.sheet, engine: 'unity', layout: 'packed', trim: true, dedupe: false, padding: 1, json: false } }), { prepare: BOUNCE_CLIPS });
+          if (WEB) {
+            for (const engine of ['phaser', 'pixi', 'css']) await runCase(tpl, fmt, `bounce-${engine}`, (s) => ({ ...s, sheet: { ...s.sheet, engine, layout: 'packed', trim: true, dedupe: false, padding: 1, json: false } }), { prepare: BOUNCE_CLIPS });
+            await runCase(tpl, fmt, 'bounce-phaser-native', (s) => ({ ...s, sheet: { ...s.sheet, engine: 'phaser', layout: 'packed', trim: true, dedupe: false, padding: 1, json: false } }), { prepare: BOUNCE_CLIPS_NATIVE, native: true });
+          }
           await runCase(tpl, fmt, 'play-json', (s) => ({ ...s, sheet: { ...s.sheet, engine: 'json', layout: 'packed', trim: true, dedupe: false, padding: 1, json: true } }), { prepare: play });
           await runCase(tpl, fmt, 'play-unity', (s) => ({ ...s, sheet: { ...s.sheet, engine: 'unity', layout: 'packed', trim: true, dedupe: false, padding: 1, json: false } }), { prepare: play });
           if (WEB) for (const engine of ['phaser', 'pixi', 'css']) await runCase(tpl, fmt, `play-${engine}`, (s) => ({ ...s, sheet: { ...s.sheet, engine, layout: 'packed', trim: true, dedupe: false, padding: 1, json: false } }), { prepare: play });
@@ -1510,6 +1635,78 @@ async function godotBonesSection() {
   }
 }
 
+// Back and forth clips in the skeleton export: baked (a longer loop, ends once) or with the preference on the AnimationPlayer's
+// own ping-pong loop (one direction keyed, loop mode 2). The scene is loaded and played in real Godot and the time the
+// player reports is followed: up to the end of the animation and back down, over and over.
+async function godotBonesBounceSection(native) {
+  const r = begin('puppet', `sheet godot-bones-bounce-${native ? 'native' : 'baked'}`);
+  try {
+    if (!GODOT || SKIP.includes('godot')) return note('Godot is not set up here, so nothing was played');
+    const dir = setAutomationDir(path.join(outDir, 'puppet', `sheet-godot-bones-bounce-${native ? 'native' : 'baked'}`));
+    await loadTpl('puppet');
+    await ev(`__framelingExport.clearClips(); __framelingExport.addClip('swing', 0, 11, true, 'pingpong'); __framelingExport.addClip('twice', 12, 17, false, 'pingpong', 2); __framelingExport.setChoice('export.clipEngineBounce', ${native ? "'engine'" : 'undefined'})`);
+    const defaults = await X('defaults()');
+    const settings = { ...defaults, format: 'sheet', range: 'all', clipId: null, scale: 1, transparent: false, sheet: { ...defaults.sheet, engine: 'godot', godot: true, godotScene: true, json: false, godotRig: 'bones', godotPath: '' } };
+    r.settings = settings;
+    const res = await X(`run(${JSON.stringify(settings)})`);
+    if (!check(res.outcome === 'done', `export did not finish: ${JSON.stringify(res)}`)) return;
+    const files = listFiles(dir);
+    const scene = files.find((n) => n.endsWith('.tscn'));
+    if (!check(scene, 'no .tscn')) return;
+    const proj = path.join(dir, '_godot');
+    fs.rmSync(proj, { recursive: true, force: true });
+    fs.mkdirSync(path.join(proj, 'sprites'), { recursive: true });
+    for (const n of files) fs.copyFileSync(path.join(dir, n), path.join(proj, 'sprites', n));
+    fs.writeFileSync(path.join(proj, 'project.godot'), 'config_version=5\n\n[application]\nconfig/name="bounce"\n');
+    fs.writeFileSync(
+      path.join(proj, 'bounce.gd'),
+      `extends SceneTree
+var ap: AnimationPlayer
+var times := []
+var n := 0
+func _initialize():
+	var s = load("res://sprites/${scene}").instantiate()
+	root.add_child(s)
+	ap = s.get_node("AnimationPlayer")
+	ap.stop()
+	for a in ["swing", "twice"]:
+		var an = ap.get_animation(a)
+		print("INFO " + a + " " + str(an.loop_mode) + " " + str(an.length))
+	ap.play("swing")
+func _process(_d):
+	times.append(snappedf(ap.current_animation_position, 0.0001))
+	n += 1
+	if n == 40:
+		print("TIMES " + JSON.stringify(times))
+		quit()
+	return false
+`,
+    );
+    sh(GODOT, ['--headless', '--path', proj, '--import'], { timeout: 120000 });
+    const play = sh(GODOT, ['--headless', '--fixed-fps', String(12), '--path', proj, '--script', 'bounce.gd'], { timeout: 120000 });
+    const info = Object.fromEntries(play.out.split('\n').filter((l) => l.startsWith('INFO ')).map((l) => l.split(' ').slice(1)).map(([a, m, len]) => [a, { mode: Number(m), length: Number(len) }]));
+    const timesLine = play.out.split('\n').find((l) => l.startsWith('TIMES '));
+    if (!check(info.swing && timesLine, `Godot did not report the animations: ${(play.out + play.err).slice(0, 300)}`)) return;
+    const fps = 12;
+    const n = 12;
+    // The loop is a ping-pong loop (mode 2) over one direction (n frames long), or a baked loop (mode 1) of there and back without the turn frames repeated (2n - 2).
+    check(info.swing.mode === (native ? 2 : 1), `swing loop mode ${info.swing.mode}, wanted ${native ? 2 : 1}`);
+    check(Math.abs(info.swing.length - (native ? n : 2 * n - 2) / fps) < 0.001, `swing is ${info.swing.length} s long, wanted ${(native ? n : 2 * n - 2) / fps}`);
+    // A clip that plays a set number of directions has no ping-pong loop to use: it stays baked and does not loop.
+    check(info.twice.mode === 0 && Math.abs(info.twice.length - (2 * 6 - 1) / fps) < 0.001, `twice: mode ${info.twice.mode}, ${info.twice.length} s, wanted baked 0 and ${(2 * 6 - 1) / fps}`);
+    if (native) {
+      const t = JSON.parse(timesLine.slice(6));
+      const top = Math.max(...t);
+      const peak = t.indexOf(top);
+      check(peak > 2 && peak < t.length - 2, `the animation time never turned back (peak at ${peak} of ${t.length})`);
+      check(t.slice(peak + 1).some((v, k, a) => k > 0 && v < a[k - 1]), 'the animation time did not come back down after the top');
+      note(`AnimationPlayer ping-pong: time goes up to ${top} s and back down (${t.slice(0, 16).join(' ')} ...)`);
+    }
+  } catch (e) {
+    fail(`harness error: ${e?.stack ?? e}`);
+  }
+}
+
 // Loads a bones export in real Godot (a project with the export's files in sprites/), plays an animation, saves a
 // picture of each wanted frame and compares it with Frameling's own PNG export of the same frame.
 async function renderBonesInGodot({ dir, files, scene, settings, shots, anim, tolerance, probes = [] }) {
@@ -1612,6 +1809,7 @@ async function godotBonesExtrasSection(name = 'bones-extras', extra = {}, more, 
     await startApp();
     await exportMatrix();
     if (!ONLY || ONLY.includes('godot-bones')) await godotBonesSection();
+    if (!ONLY || ONLY.includes('godot-bones') || ONLY.includes('godot-bones-bounce')) for (const native of [false, true]) await godotBonesBounceSection(native);
     if (!ONLY || ONLY.includes('godot-bones')) await godotBonesExtrasSection();
     // A symbol copied three times its size: its pictures are baked bigger and scaled back down in the scene.
     if (!ONLY || ONLY.includes('godot-bones'))

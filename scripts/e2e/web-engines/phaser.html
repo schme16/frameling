@@ -39,9 +39,11 @@ window.runCheck = async function (cfg) {
     r.expect(anim.frames.length === exp.count, `${exp.name}: ${anim.frames.length} frames, wanted ${exp.count}`);
     r.expect(anim.frameRate === exp.fps && WE.near(anim.msPerFrame, 1000 / exp.fps, 0.01), `${exp.name}: frame rate ${anim.frameRate} (${anim.msPerFrame} ms a frame), wanted ${exp.fps}`);
     // A forward or backward clip that plays N times is one pass with Phaser's own repeat (N - 1); a loop is -1.
+    // With the engine's own ping-pong (yoyo), `times` is the number of round trips and the list is one direction.
     const times = exp.times || 1;
     const wantRepeat = exp.loop ? -1 : times - 1;
     r.expect(anim.repeat === wantRepeat, `${exp.name}: repeat ${anim.repeat}, wanted ${wantRepeat}`);
+    r.expect(!!anim.yoyo === !!exp.yoyo, `${exp.name}: yoyo is ${anim.yoyo}, wanted ${!!exp.yoyo}`);
     r.expect(WE.near(anim.duration, exp.count * 1000 / exp.fps, 1), `${exp.name}: lasts ${anim.duration} ms, wanted ${exp.count * 1000 / exp.fps}`);
     r.expect(anim.frames.every((f) => f.textureKey === cfg.key && frameNames.includes(f.textureFrame)), `${exp.name}: a frame points at a missing texture frame`);
 
@@ -56,6 +58,39 @@ window.runCheck = async function (cfg) {
       await r.pixel(`${exp.name}[${c.i}]`, game.canvas, cfg.width, cfg.height, c.ref);
     }
     sprite.destroy();
+
+    // The engine's own ping-pong: really play it and record which picture shows when. The sequence is reported (the
+    // ends of a yoyo show once in Phaser 3.90) and has to be one direction, then back, every round trip.
+    if (exp.yoyo) {
+      const s3 = scene.add.sprite(0, 0, cfg.key).setOrigin(0, 0);
+      const seq = [];
+      let done = false;
+      s3.on(Phaser.Animations.Events.ANIMATION_START, () => seq.push(s3.frame.name));
+      s3.on(Phaser.Animations.Events.ANIMATION_UPDATE, () => seq.push(s3.frame.name));
+      s3.on(Phaser.Animations.Events.ANIMATION_COMPLETE, () => { done = true; });
+      s3.play(exp.name);
+      const trip = exp.count * 2;
+      await WE.sleep(exp.loop ? (trip * 2 + 3) * 1000 / exp.fps + 300 : (trip * times + 3) * 1000 / exp.fps + 600);
+      const names = anim.frames.map((f) => f.textureFrame);
+      const there = names, back = names.slice().reverse();
+      r.notes.push(`${exp.name}: yoyo played ${seq.slice(0, trip + 2).map((n) => names.indexOf(n)).join(' ')} (the ends show once)`);
+      // Phaser's yoyo shows each end once (pinned build, 3.90), so it plays exactly the baked order: there, back, there...
+      let want;
+      if (exp.loop) want = there.concat(back.slice(1), there.slice(1), back.slice(1));
+      else {
+        want = there.slice();
+        for (let t = 0; t < times; t++) want = want.concat(back.slice(1), t + 1 < times ? there.slice(1) : []);
+      }
+      const got = seq.slice(0, want.length);
+      r.expect(got.length === want.length && want.every((n, k) => got[k] === n), `${exp.name}: yoyo played ${got.map((n) => names.indexOf(n)).join(' ')}, wanted ${want.map((n) => names.indexOf(n)).join(' ')}`);
+      if (!exp.loop) {
+        r.expect(done, `${exp.name}: a yoyo clip that does not loop never finished`);
+        r.expect(seq.length === want.length, `${exp.name}: ${seq.length} pictures shown, wanted ${want.length}`);
+        r.expect(s3.frame.name === want[want.length - 1], `${exp.name}: did not stop on its last picture`);
+      }
+      s3.destroy();
+      continue;
+    }
 
     // Time: really play it and watch which frames come and when. A hiccup on a slow machine can spoil one go, so it gets three.
     if (exp.count >= 2 && exp.count / exp.fps <= 6) {
