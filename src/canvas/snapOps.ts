@@ -2,7 +2,7 @@
 import { store } from '../core/store';
 import { findLayer } from '../core/doc';
 import { createStore } from '../ui/mini';
-import { defaultPicks, targetInfo, withPick, type SnapContext, type SnapTarget } from './snapModel';
+import { SNAP_DISTANCE, targetInfo, withChosen, type SnapContext, type SnapTarget } from './snapModel';
 import { getViewSettings, setViewSettings } from './viewSettings';
 
 // Menus read their ticks from the store's state, so give them a nudge to look again.
@@ -14,12 +14,23 @@ export function setSnapOn(on: boolean): void {
 }
 
 export function setSnapPick(ctx: SnapContext, id: SnapTarget, on: boolean): void {
-  setViewSettings({ snapPicks: withPick(getViewSettings().snapPicks, ctx, id, on) });
+  setViewSettings({ snapChosen: withChosen(getViewSettings().snapChosen, ctx, id, on) });
+  nudge();
+}
+
+export function setSnapAllLayers(on: boolean): void {
+  setViewSettings({ snapAllLayers: on });
+  nudge();
+}
+
+/** How close (screen pixels) something has to come to snap, kept inside the range. */
+export function setSnapDistance(px: number): void {
+  setViewSettings({ snapDistance: px });
   nudge();
 }
 
 export function resetSnapPicks(): void {
-  setViewSettings({ snapPicks: defaultPicks() });
+  setViewSettings({ snapChosen: {}, snapDistance: SNAP_DISTANCE.usual, snapAllLayers: true });
   nudge();
 }
 

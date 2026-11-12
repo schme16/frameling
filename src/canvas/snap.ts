@@ -5,10 +5,10 @@
  */
 import type { Doc, Guide } from '../core/format';
 import type { SnapTarget } from './snapModel';
+import type { Gap } from './snapSpacing';
 import type { Pt, Rect } from './view';
 
-/** How close (screen pixels) something has to come before it snaps. */
-export const SNAP_PX = 6;
+
 
 export interface SnapTargets {
   /** Up-and-down lines, by x. */
@@ -118,6 +118,7 @@ export function snapBox(box: Rect, dx: number, dy: number, t: SnapTargets, tol: 
 
 let shown: SnapLine[] = [];
 let notes: SnapTarget[] = [];
+let shownGaps: Gap[] = [];
 let version = 0;
 const listeners = new Set<() => void>();
 
@@ -128,6 +129,13 @@ export function getSnapLines(): readonly SnapLine[] {
   return shown;
 }
 
+export function setSnapGaps(gaps: Gap[]): void {
+  shownGaps = gaps;
+}
+export function getSnapGaps(): readonly Gap[] {
+  return shownGaps;
+}
+
 /** What else just snapped without a line to draw (a perspective direction, an angle step). */
 export function setSnapNotes(next: SnapTarget[]): void {
   if (next.length === notes.length && next.every((k, i) => k === notes[i])) return;
@@ -136,7 +144,7 @@ export function setSnapNotes(next: SnapTarget[]): void {
 
 /** What the last snap landed on, in order, without repeats (empty when nothing snapped). */
 export function snappedKinds(): SnapTarget[] {
-  const kinds = [...shown.map((l) => l.kind).filter((k): k is SnapTarget => !!k), ...notes];
+  const kinds = [...shown.map((l) => l.kind).filter((k): k is SnapTarget => !!k), ...(shownGaps.length ? (['spacing'] as SnapTarget[]) : []), ...notes];
   return [...new Set(kinds)];
 }
 
