@@ -33,8 +33,6 @@ const noodleBones = (after = 600) => [
 /** Makes the noodle bend with the bones. */
 const bendNoodle = () => L.js(`(() => { const s = __frameling.store(); s.setUi({ activeLayerId: s.get().doc.layers.find((x) => x.name === 'Noodle').id }); __frameling.run('rig.bendLayer'); return true; })()`);
 
-/** A made-up "hello": a few vowel-like bursts, 1.9 s of 16-bit mono WAV, added as a sound on the timeline. */
-const hello = () => L.js(`(async () => { const sr = 16000, n = Math.floor(sr * 1.9); const pcm = new Int16Array(n); const syl = [[0.08, 0.2, 500, 1700, 0.55], [0.22, 0.5, 700, 1200, 0.9], [0.58, 0.8, 450, 1000, 0.75], [0.9, 1.5, 560, 900, 1], [1.55, 1.8, 300, 2300, 0.4]]; for (let i = 0; i < n; i++) { const t = i / sr; let v = 0; for (const [a, b, f1, f2, amp] of syl) if (t >= a && t < b) { const r = (t - a) / (b - a); const env = Math.pow(Math.sin(Math.PI * r), 0.7) * amp; const buzz = 0.55 + 0.45 * Math.sin(2 * Math.PI * 118 * t); v += env * buzz * (0.6 * Math.sin(2 * Math.PI * f1 * t) + 0.4 * Math.sin(2 * Math.PI * f2 * t)); } pcm[i] = Math.max(-1, Math.min(1, v * 0.8)) * 32000; } const head = new ArrayBuffer(44); const dv = new DataView(head); const w = (o, str) => [...str].forEach((c, k) => dv.setUint8(o + k, c.charCodeAt(0))); w(0, 'RIFF'); dv.setUint32(4, 36 + n * 2, true); w(8, 'WAVEfmt '); dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, 1, true); dv.setUint32(24, sr, true); dv.setUint32(28, sr * 2, true); dv.setUint16(32, 2, true); dv.setUint16(34, 16, true); w(36, 'data'); dv.setUint32(40, n * 2, true); const bytes = [...new Uint8Array(head), ...new Uint8Array(pcm.buffer)]; return await __framelingAudio.addSound(bytes, 'hello', 'audio/wav'); })()`);
 
 /** Real speech for the lip sync clip ("Hello, I am Bob.", scripts/lipsync/say.py): the voice a synthesiser makes, added as a sound. */
 const speech = () => L.js(`(async () => { const b = atob(${JSON.stringify(require('fs').readFileSync(require('path').join(__dirname, 'assets', 'hello-speech.wav')).toString('base64'))}); const bytes = Array.from(b, (c) => c.charCodeAt(0)); return await __framelingAudio.addSound(bytes, 'hello', 'audio/wav'); })()`);
@@ -320,7 +318,7 @@ const entries = [
   },
   {
     name: 'sound',
-    steps: [L.template('lip-sync'), L.wait(300), hello(), L.wait(1500), L.js(`__frameling.store().setUi({ frame: 12 })`), L.wait(1000), { move: [150, 300] }, L.wait(300), { shot: '@', crop: [112, 483, 766, 279] }],
+    steps: [L.template('lip-sync'), L.wait(300), speech(), L.wait(1500), L.js(`__frameling.store().setUi({ frame: 12 })`), L.wait(1000), { move: [150, 300] }, L.wait(300), { shot: '@', crop: [112, 483, 766, 279] }],
   },
   {
     name: 'lip-sync',
