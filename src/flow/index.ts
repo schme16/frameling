@@ -1,6 +1,7 @@
 // The clip flow (state graph): which clip plays first and what follows what, for games and Interactives. A feature
 // that can be turned off (Preferences > Features). The flow itself stays in the document (`doc.flow`) either way.
 import { lazyPanel } from '../core/lazy';
+import { anyFlow } from '../core/scan';
 import { defineFeature } from '../features/feature';
 import { flowCommands } from './commands';
 import { flowHelp } from './help';
@@ -17,7 +18,7 @@ export const flowFeature = defineFeature({
   sections: {
     'clip-flow': { blurb: 'How your clips (idle, walk, jump) lead into each other, for games.', group: 'animate', keywords: ['state machine', 'clips', 'game', 'transitions'] },
   },
-  usedBy: (doc) => !!doc.flow,
+  usedBy: anyFlow,
   // A flow that is being tried out stops with the feature.
   deactivate() {
     if (tryingClip()) stopTrying();

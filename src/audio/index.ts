@@ -1,6 +1,7 @@
 // Sound: import, timeline rows, playback and scrubbing, export. A feature that can be turned off (Preferences >
 // Features); the descriptor says everything it adds. The sound data itself stays in the document (`doc.audio`), so a
 // drawing with the feature off keeps its sounds, and they come back when it is turned on.
+import { anyAudio } from '../core/scan';
 import { defineFeature } from '../features/feature';
 import { registerTimelinePart } from '../timeline/slots';
 import { audioChoices } from './choices';
@@ -23,7 +24,7 @@ export const audioFeature = defineFeature({
   commands: audioCommands,
   help: audioHelp,
   choices: audioChoices,
-  usedBy: (doc) => !!doc.audio?.length,
+  usedBy: anyAudio,
   activate() {
     registerTimelinePart({ id: 'audio-side', slot: 'side', component: SoundSide });
     registerTimelinePart({ id: 'audio-main', slot: 'main', component: SoundMain });

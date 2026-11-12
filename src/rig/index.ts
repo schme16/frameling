@@ -11,12 +11,7 @@ import { setRigUi } from './state';
 import { boneTool, poseTool } from './tools';
 import { weightsTool } from './weightsTool';
 import { layerOf, toolIs } from '../ui/panelInfo';
-import type { Doc, Layer } from '../core/format';
-
-/** Every layer a document holds: the stage's, the symbols' and the artboards'. */
-function eachLayer(doc: Doc): Layer[] {
-  return [...doc.layers, ...Object.values(doc.symbols ?? {}).flatMap((s) => s.layers), ...(doc.artboards ?? []).flatMap((a) => a.content?.layers ?? [])];
-}
+import { eachLayer } from '../core/scan';
 
 export const rigFeature = defineFeature({
   id: 'rig',
