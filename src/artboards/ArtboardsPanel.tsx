@@ -126,8 +126,10 @@ export function ArtboardsPanel() {
                 )}
                 <span className="sy-item-meta">
                   {a.variationOf && <VariationBadge of={sourceOf(doc, a)?.name ?? 'its original'} />}
-                  {w} x {h}
-                  {len > 1 && len !== (a.variationOf ? sizeOfLength(doc, a.variationOf) : -1) ? `, ${len} frames` : ''}
+                  <span className="ab-size">
+                    {w} x {h}
+                    {len > 1 && len !== (a.variationOf ? sizeOfLength(doc, a.variationOf) : -1) ? `, ${len} frames` : ''}
+                  </span>
                 </span>
               </div>
               <div className="sy-item-actions" onClick={(e) => e.stopPropagation()}>

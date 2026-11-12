@@ -195,6 +195,12 @@
 .ab-item.ab-var {
   margin-left: 10px;
 }
+.ab-item.ab-var .sy-item-meta {
+  white-space: normal;
+}
+.ab-size {
+  white-space: nowrap;
+}
 .ab-badge {
   display: inline-flex;
   align-items: center;

@@ -7,7 +7,7 @@ import { loadFile, saveFile } from '../../src/io/file';
 import { defaultSettings } from '../../src/export/plan';
 import { artboardExport, planArtboards, setArtboardExport } from '../../src/artboards/export';
 import { followSelection } from '../../src/core/followSelection';
-import { resizeArtboard } from '../../src/artboards/ops';
+import { resizeArtboard, setArtboardBackgroundById } from '../../src/artboards/ops';
 import { activeId, artboardDoc, artboardsOf, deleteArtboard, duplicateArtboard, exportNames, findArtboard, joinShots, switchArtboard, takeContent } from '../../src/artboards/model';
 import {
   aliasId,
@@ -588,6 +588,20 @@ describe('variations: more', () => {
     // The original keeps its size and layers.
     expect(findArtboard(doc(), root())!.content!.width).toBe(200);
     expect(findArtboard(doc(), root())!.content!.layers.some((l) => l.kind === 'camera')).toBe(false);
+  });
+
+  it('the background of a variation that is not open is an override too', () => {
+    const v = make();
+    setArtboardBackgroundById(v, '#123456');
+    expect(findArtboard(doc(), v)!.overrides).toEqual({ stage: { set: { background: '#123456' } } });
+    expect(findArtboard(doc(), v)!.content!.background).toBe('#123456');
+    expect(doc().background).toBe('#ffffff');
+    // And the original's background still flows to variations that do not override it.
+    setArtboardBackgroundById(root(), null);
+    expect(findArtboard(doc(), v)!.content!.background).toBe('#123456');
+    store().undo();
+    store().undo();
+    expect(findArtboard(doc(), v)!.overrides).toEqual({});
   });
 
   it('exports plan one file per picked artboard, variations included, at their own sizes', () => {
