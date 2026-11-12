@@ -1,9 +1,11 @@
 // Reading a picture file into frames: PNG, animated PNG and GIF with our own readers (so they work the same everywhere
 // and in tests), anything else the browser can show (JPEG, BMP, PNG kinds we don't read) through the page's own decoder,
-// and animated WebP frame by frame through the browser's ImageDecoder.
+// and animated WebP frame by frame through the browser's ImageDecoder (or, without one, by taking the file apart and
+// letting the browser decode each frame as a still WebP).
 import { decodePng, PNG_SIGNATURE } from '../../io/png';
 import { ApngProblem, decodeApng, isApng } from './apng';
 import { decodeGif, GIF_MAX_FRAMES, GIF_MAX_PIXELS, GifProblem, isGif } from './gif';
+import { demuxWebp, disposeWebpFrame, drawWebpFrame } from './webp';
 
 export interface PictureFrame {
   pixels: Uint8ClampedArray;
@@ -53,7 +55,7 @@ export async function decodePicture(bytes: Uint8Array): Promise<Picture> {
     }
   }
   if (isAnimatedWebp(bytes)) {
-    const w = await decodeAnimatedWebp(bytes);
+    const w = (await decodeAnimatedWebp(bytes)) ?? (await decodeWebpByFrames(bytes));
     if (w) return w;
     notes.push('This is an animated WebP, but this computer could not read its frames, so only the first picture was taken.');
   }
@@ -117,6 +119,39 @@ async function decodeAnimatedWebp(bytes: Uint8Array): Promise<Picture | null> {
     return null;
   } finally {
     dec?.close();
+  }
+}
+
+/**
+ * Every frame of an animated WebP without ImageDecoder: the file is taken apart (webp.ts), each frame is decoded as a still
+ * WebP by the browser, and the frames are laid over each other the way the file says (null when it can't).
+ */
+async function decodeWebpByFrames(bytes: Uint8Array): Promise<Picture | null> {
+  if (typeof createImageBitmap !== 'function' || typeof OffscreenCanvas === 'undefined') return null;
+  try {
+    const a = demuxWebp(bytes);
+    const { width, height } = a;
+    const frames: PictureFrame[] = [];
+    const notes: string[] = [];
+    const canvas = new Uint8ClampedArray(width * height * 4);
+    for (const f of a.frames) {
+      if (frames.length >= GIF_MAX_FRAMES || (frames.length + 1) * width * height > GIF_MAX_PIXELS) {
+        notes.push(`The animation has ${a.frames.length} frames; only the first ${frames.length} were read, to keep memory in check.`);
+        break;
+      }
+      const bmp = await createImageBitmap(new Blob([f.file as BlobPart], { type: 'image/webp' }), { premultiplyAlpha: 'none' });
+      const c = new OffscreenCanvas(bmp.width, bmp.height);
+      const g = c.getContext('2d', { willReadFrequently: true })!;
+      g.drawImage(bmp, 0, 0);
+      bmp.close();
+      const data = g.getImageData(0, 0, f.width, f.height);
+      drawWebpFrame(canvas, width, f, data.data);
+      frames.push({ pixels: new Uint8ClampedArray(canvas), delay: f.delay <= 10 ? 100 : f.delay });
+      disposeWebpFrame(canvas, width, f);
+    }
+    return frames.length > 1 ? { width, height, frames, kind: 'webp', notes } : null;
+  } catch {
+    return null;
   }
 }
 
