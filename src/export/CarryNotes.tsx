@@ -6,9 +6,9 @@ import type { Doc } from '../core/format';
 import { carryOf, carryWarnings, docFeatures } from './carries';
 
 // A format with a note of its own (LayeredNotes) only gets the warnings added here.
-export function CarryNotes({ format, doc, own }: { format: string; doc: Doc; own: boolean }) {
+export function CarryNotes({ format, doc, own, range }: { format: string; doc: Doc; own: boolean; range?: { start: number; end: number } }) {
   const found = useMemo(() => docFeatures(doc), [doc]);
-  const warnings = carryWarnings(doc, format, found);
+  const warnings = carryWarnings(doc, format, found, range);
   const carry = carryOf(format);
   if (own && !warnings.length) return null;
   return (

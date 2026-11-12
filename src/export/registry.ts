@@ -105,6 +105,8 @@ export interface ExporterDef {
   carry: FormatCarry;
   /** A sentence to add when a clip plays in a way the format cannot carry. */
   clipPlayNote?: string;
+  /** More plain-words notes for this document and the frames being exported, shown with what carries over. */
+  docNotes?(doc: Doc, range: { start: number; end: number }): string[];
   /** The extension when it depends on the settings (a dotLottie, a zip of files). */
   extension?(s: ExportSettings): string;
   /** The name in the save dialog's file type list (and the extension, when it is not the usual one). */

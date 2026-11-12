@@ -80,15 +80,15 @@ See [artboards as shots](help:artboards-shots) and [exporting artboards](help:ar
 
 **Colourways:** open the variation and recolour. Only those shapes stop following the original; the rest keeps following.
 
-**Sizes:** in the variation's panel pick **Square**, **Wide** or **Tall** (or type any **W** and **H** under **This artboard**). The same animation is framed in the new size by a camera that Frameling adds for you, and you can move it like any camera. **Fill (crop)** covers the picture and crops what hangs over; **Fit (show it all)** shows the whole original. Frameling asks which you prefer the first time and remembers.
+**Sizes:** in the variation's panel pick **Square**, **Wide** or **Tall** (or type any **W** and **H** under **This artboard**). The same animation is framed in the new size by a camera that Frameling adds for you, and you can move it like any camera. Resize the original and the cut is framed again by itself, unless you have moved its camera. **Fill (crop)** covers the picture and crops what hangs over; **Fit (show it all)** shows the whole original. Frameling asks which you prefer the first time.
 
 **A/B timing:** move or stretch keys in the variation. Keys you did not touch still follow the original.
 
 **Differences:** the panel lists everything this variation changes, grouped by layer. Click one to jump to that layer, frame and shape. Press **Reset** next to one to take just that change back, or **Reset all to original** to start again. Both can be undone.
 
-**Detach:** **Detach (plain copy)** makes it an ordinary artboard that keeps what it shows and stops following.
+**Detach:** **Detach (plain copy)** makes it an ordinary artboard that stops following.
 
-**Export:** in the Export dialog, **This artboard and its variations** ticks the original and every variation. Then export **each as its own file**, **all in order, as one**, or **packed onto one sheet**, like any artboards. 
+**Export:** in the Export dialog, **This artboard and its variations** ticks the original and every variation. Then export each as its own file, all in order as one, or packed onto one sheet.
 
 **Good to know:**
 - A variation of a variation starts with the same changes and follows the same original.

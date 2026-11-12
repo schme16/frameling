@@ -89,10 +89,10 @@ export function hasSoftOrShadow(found: DocFeatures): boolean {
 }
 
 /** Plain-words lines about what in this document won't come across as it is, for this format. Empty = all of it. */
-export function carryWarnings(doc: Doc, format: FormatId, found: DocFeatures = docFeatures(doc)): string[] {
+export function carryWarnings(doc: Doc, format: FormatId, found: DocFeatures = docFeatures(doc), range?: { start: number; end: number }): string[] {
   const c = carryOf(format);
   const clipNote = exporterOf(format)?.clipPlayNote;
-  const clipWarn = clipNote && doc.clips.some((k) => hasPlaySettings(k)) ? [clipNote] : [];
+  const clipWarn = [...(clipNote && doc.clips.some((k) => hasPlaySettings(k)) ? [clipNote] : []), ...(range ? (exporterOf(format)?.docNotes?.(doc, range) ?? []) : [])];
   if (!c.rows) return clipWarn;
   const out: string[] = [...clipWarn];
   const pictures: string[] = [];

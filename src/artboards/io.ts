@@ -55,6 +55,8 @@ export function readArtboards(raw: any, entries: Record<string, Uint8Array>, war
       // A variation: only its changes are stored. They are read once every original has been.
       ids.add(a.id);
       const v: Artboard = { ...base, variationOf: a.variationOf, overrides: {} };
+      const fr = a.framing;
+      if (isObj(fr) && (fr.mode === 'bars' || fr.mode === 'fill') && typeof fr.sig === 'string' && fr.sig.length < 20000) v.framing = { mode: fr.mode, sig: fr.sig };
       out.push(v);
       pending.push({ v, raw: a.overrides });
       continue;

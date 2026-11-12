@@ -12,7 +12,7 @@ import { dotLottieBytes, readDotLottie } from '../../src/export/dotlottie';
 import { docToLottie, playOrder } from '../../src/export/lottie';
 import { unzipSync } from 'fflate';
 import './withInteractives';
-import { buildPlayable } from '../../src/export/playable';
+import { buildPlayable, clipsTooLong } from '../../src/export/playable';
 import { flowManifest } from '../../src/core/flow';
 import { docWith } from '../timeline/helpers';
 import { defaultSettings } from '../../src/export/plan';
@@ -295,6 +295,22 @@ describe('Interactives', () => {
     const m = build([{ id: 'h', name: 'huge', start: 0, end: 5, loop: false, repeat: 999 }]);
     expect(m.documentFrames).toBeUndefined();
     expect(m.frameCount).toBe(6);
+  });
+
+  it('warns, naming the clip, when playing a clip out would come to more than 5000 frames', () => {
+    const d = docWith([[0, 5]], 6);
+    const range = { start: 0, end: 5 };
+    d.clips = [{ id: 'h', name: 'huge', start: 0, end: 5, loop: false, repeat: 999 }, { id: 'w', name: 'wide', start: 0, end: 5, loop: false, direction: 'pingpong', repeat: 3 }, bounce];
+    const notes = carryWarnings(d, 'interactives', undefined, range);
+    expect(notes).toHaveLength(1);
+    expect(notes[0]).toContain('"huge"');
+    expect(notes[0]).toContain('5,994 frames');
+    expect(notes[0]).toContain('stays forward');
+    expect(clipsTooLong(d, range)).toEqual([{ name: 'huge', frames: 5994, how: '999 times' }]);
+    // Other formats do not play clips out, and a range that cuts the clip short makes it fit.
+    expect(carryWarnings(d, 'gif', undefined, range)).toEqual([]);
+    expect(carryWarnings(d, 'interactives', undefined, { start: 0, end: 2 })).toEqual([]);
+    expect(carryWarnings(d, 'interactives')).toEqual([]);
   });
 
   it('say what is not carried, only when a clip plays another way', () => {

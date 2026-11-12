@@ -121,6 +121,12 @@ export interface Artboard {
   variationOf?: Id;
   /** What a variation changes from its original (missing or empty = nothing yet). */
   overrides?: VariationOverrides;
+  /**
+   * A variation with a size of its own: how Frameling framed the original in it (`mode`) and what the framing camera
+   * looked like when it did (`sig`). While the camera still matches, resizing the original frames it again by itself;
+   * once the person has moved the camera it no longer matches and the framing is left alone. Missing = never framed.
+   */
+  framing?: { mode: 'bars' | 'fill'; sig: string };
 }
 
 /** Changes to a plain object: `set` gives new values for properties, `del` names properties taken away. */
