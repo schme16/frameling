@@ -1,7 +1,7 @@
 // Which big floating things are open: command palette, preferences, help window, welcome and new-document sheets.
 import { createStore } from './mini';
 
-export type PrefsPage = 'general' | 'themes' | 'behaviour' | 'keyboard' | 'workspaces' | 'plugins' | 'features' | 'snapping';
+export type PrefsPage = 'general' | 'themes' | 'behaviour' | 'keyboard' | 'workspaces' | 'plugins' | 'features' | 'snapping' | 'pen' | 'diagnostics';
 
 export interface Overlays {
   palette: boolean;
@@ -13,6 +13,8 @@ export interface Overlays {
   about: boolean;
   /** Quill's first-run hello (Help > Meet Quill again). */
   onboarding?: boolean;
+  /** Quill's pen check: his offer, or the steps (src/tablet/check). */
+  penCheck?: 'offer' | 'run';
 }
 
 export const overlays = createStore<Overlays>({ palette: false, prefs: null, help: null, sheet: null, about: false });
@@ -41,5 +43,5 @@ export const closeOnboarding = () => patch({ onboarding: false });
 
 export const anyOverlayOpen = (): boolean => {
   const o = overlays.get();
-  return o.palette || !!o.prefs || !!o.help || !!o.sheet || o.about || !!o.onboarding;
+  return o.palette || !!o.prefs || !!o.help || !!o.sheet || o.about || !!o.onboarding || !!o.penCheck;
 };

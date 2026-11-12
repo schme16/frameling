@@ -38,6 +38,7 @@ const PrefsModal = whenOpen((o) => !!o.prefs, () => import('../ui/PrefsModal').t
 const HelpWindow = whenOpen((o) => !!o.help, () => import('../ui/HelpBrowser').then((m) => m.HelpWindow));
 const WelcomeSheet = whenOpen((o) => !!o.sheet, () => import('../ui/Welcome').then((m) => m.WelcomeSheet));
 const OnboardingSheet = whenOpen((o) => !!o.onboarding, () => import('../ui/onboarding/Onboarding').then((m) => m.OnboardingSheet), false);
+const PenCheckSheet = whenOpen((o) => !!o.penCheck, () => import('../tablet/check/PenCheck').then((m) => m.PenCheck), false);
 const AboutDialog = whenOpen((o) => o.about, () => import('../ui/About').then((m) => m.AboutDialog), false);
 
 let welcomed = false;
@@ -106,6 +107,7 @@ export function App() {
       <HelpWindow />
       <WelcomeSheet />
       <OnboardingSheet />
+      <PenCheckSheet />
       <AboutDialog />
       <ToastView />
       <TooltipLayer />

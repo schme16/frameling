@@ -17,6 +17,7 @@ import { drawPixelFootprint, drawRing } from './cursors';
 import { VectorStroke } from './vectorStroke';
 import { docToPixel } from '../canvas/pixels';
 import { viewPixelSize, viewSizeFactor } from './view-size';
+import { sizeFactor, vectorDynamics } from '../tablet/dynamics';
 
 let vec: VectorStroke | null = null;
 let pix: PixelStroke | null = null;
@@ -29,7 +30,8 @@ function down(e: ToolPointer, ctx: ToolContext): void {
   const { doc, ui } = store().get();
   if (layer.kind === 'vector') {
     if (!canEdit(ctx, 'vector', 'The brush')) return;
-    vec = new VectorStroke({ ...ui.brush, size: ui.brush.size * viewSizeFactor() }, ui.color);
+    const dyn = vectorDynamics('brush', { ...ui.brush, size: ui.brush.size * viewSizeFactor() }, e);
+    vec = new VectorStroke(dyn.brush, ui.color, dyn);
     vec.add(e, ctx.zoom);
     return;
   }
@@ -39,6 +41,7 @@ function down(e: ToolPointer, ctx: ToolContext): void {
   const s = getToolSettings();
   pix = new PixelStroke(doc, layer, ui.frame, { color: rgba, size: viewPixelSize(s.pixelBrushSize), shape: s.pixelBrushShape, perfect: s.pixelPerfect });
   pixColor = ui.color;
+  pix.scale(sizeFactor('brush', e));
   const here = pix.cell(e.x, e.y);
   const from = e.shift ? lastPixelEnd(doc, layer) : null;
   if (from) pix.beginLine(from, here);
@@ -47,7 +50,10 @@ function down(e: ToolPointer, ctx: ToolContext): void {
 
 function move(e: ToolPointer, ctx: ToolContext): void {
   if (vec) vec.add(e, ctx.zoom);
-  else if (pix) pix.moveTo(pix.cell(e.x, e.y));
+  else if (pix) {
+    pix.scale(sizeFactor('brush', e));
+    pix.moveTo(pix.cell(e.x, e.y));
+  }
 }
 
 function up(e: ToolPointer, ctx: ToolContext): void {
@@ -84,7 +90,7 @@ function overlay(g: CanvasRenderingContext2D, ctx: ToolContext): void {
     const s = getToolSettings();
     drawPixelFootprint(g, ctx, docToPixel(h.x, h.y, layer.pixelSize), layer.pixelSize, viewPixelSize(s.pixelBrushSize), s.pixelBrushShape, ui.color);
   } else {
-    drawRing(g, ctx, h.x, h.y, (ui.brush.size * viewSizeFactor()) / 2);
+    drawRing(g, ctx, h.x, h.y, (ui.brush.size * viewSizeFactor()) / 2, 'brush');
   }
 }
 

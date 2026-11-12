@@ -28,6 +28,8 @@ import { PluginsPage } from '../plugins/PluginsPage';
 import { FeaturesPage } from '../features/FeaturesPage';
 import { UNITS, type Unit } from '../core/units';
 import { SnapPanel } from '../canvas/SnapOptions';
+import { PenPage } from '../tablet/PenPage';
+import { DiagnosticsPage } from '../tablet/check/DiagnosticsPage';
 
 // The Themes page is local to this file for now (overlays.ts decides which pages can be opened from outside).
 type Page = PrefsPage;
@@ -38,9 +40,11 @@ const PAGES: { id: Page; label: string; icon: string; help: string }[] = [
   { id: 'behaviour', label: 'Behaviour', icon: 'sliders', help: 'behaviour' },
   { id: 'keyboard', label: 'Keyboard', icon: 'keyboard', help: 'keyboard-shortcuts' },
   { id: 'snapping', label: 'Snapping', icon: 'magnet', help: 'snapping' },
+  { id: 'pen', label: 'Pen and tablet', icon: 'pen', help: 'pen-tablet' },
   { id: 'workspaces', label: 'Workspaces', icon: 'workspace', help: 'workspaces' },
   { id: 'plugins', label: 'Plugins', icon: 'plugin', help: 'plugins' },
   { id: 'features', label: 'Features', icon: 'grid', help: 'features' },
+  { id: 'diagnostics', label: 'Diagnostics', icon: 'info', help: 'pen-check' },
 ];
 
 export function PrefsModal() {
@@ -69,6 +73,8 @@ function Prefs({ page, commandId }: { page: PrefsPage; commandId?: string }) {
           {current === 'behaviour' && <BehaviourPage />}
           {current === 'keyboard' && <KeyboardPage focusId={commandId} />}
           {current === 'snapping' && <SnappingPage />}
+          {current === 'pen' && <PenPage />}
+          {current === 'diagnostics' && <DiagnosticsPage />}
           {current === 'workspaces' && <WorkspacesPage />}
           {current === 'plugins' && <PluginsPage />}
           {current === 'features' && <FeaturesPage />}

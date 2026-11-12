@@ -1,12 +1,29 @@
 // Hover outlines drawn on the overlay: the brush ring on vector layers, the pixel footprint on pixel layers.
 import type { ToolContext } from '../core/registry';
 import { brushOffsets, type PixelShape, type PxPt } from '../canvas/pixels';
+import { getHoverPen } from '../canvas/controller';
+import { LIGHTEST_SIZE, tiltSize, toolPen } from '../tablet/dynamics';
+import type { PenTool } from '../tablet/settings';
 
-/** A circle that reads on any artwork: a light ring over a dark one. */
-export function drawRing(g: CanvasRenderingContext2D, ctx: ToolContext, x: number, y: number, radius: number): void {
+/**
+ * A circle that reads on any artwork: a light ring over a dark one. For a pen hovering over the page it follows the
+ * pen: bigger when the tool grows as the pen leans, and with a faint inner ring for the smallest mark a light touch makes.
+ */
+export function drawRing(g: CanvasRenderingContext2D, ctx: ToolContext, x: number, y: number, radius: number, tool?: PenTool): void {
   const px = 1 / ctx.zoom;
-  const r = Math.max(radius, 1.5 * px);
+  const hp = tool ? getHoverPen() : null;
+  const grown = hp && tool ? radius * tiltSize(tool, hp) : radius;
+  const r = Math.max(grown, 1.5 * px);
   g.save();
+  if (hp && tool && toolPen(tool).size) {
+    g.beginPath();
+    g.arc(x, y, Math.max(r * LIGHTEST_SIZE, 0.75 * px), 0, Math.PI * 2);
+    g.lineWidth = px;
+    g.setLineDash([2 * px, 2 * px]);
+    g.strokeStyle = 'rgb(0 0 0 / 0.55)';
+    g.stroke();
+    g.setLineDash([]);
+  }
   g.beginPath();
   g.arc(x, y, r, 0, Math.PI * 2);
   g.lineWidth = 3 * px;
