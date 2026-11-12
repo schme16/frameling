@@ -16,11 +16,13 @@ export interface WorkspaceFile {
   layout: Workspace['layout'];
   pixel?: boolean;
   tools?: Workspace['tools'];
+  /** The tool rail's arrangement for this workspace. */
+  rail?: Workspace['rail'];
 }
 
 /** The text to save or copy for a workspace. */
 export function workspaceToText(w: Workspace): string {
-  const file: WorkspaceFile = { format: WORKSPACE_FORMAT, version: WORKSPACE_VERSION, name: w.name, ...(w.about ? { about: w.about } : {}), layout: w.layout, ...(w.pixel ? { pixel: true } : {}), ...(w.tools ? { tools: w.tools } : {}) };
+  const file: WorkspaceFile = { format: WORKSPACE_FORMAT, version: WORKSPACE_VERSION, name: w.name, ...(w.about ? { about: w.about } : {}), layout: w.layout, ...(w.pixel ? { pixel: true } : {}), ...(w.tools ? { tools: w.tools } : {}), ...(w.rail ? { rail: w.rail } : {}) };
   return JSON.stringify(file, null, 2);
 }
 
@@ -46,7 +48,7 @@ export function parseWorkspaceText(text: unknown): ImportResult {
   const f = raw as Record<string, unknown>;
   if (typeof f.version === 'number' && f.version > WORKSPACE_VERSION) return { ok: false, error: 'That workspace is from a newer Frameling. Update Frameling to use it.' };
   if (!f.layout || typeof f.layout !== 'object') return { ok: false, error: 'That workspace has no layout in it.' };
-  const ws = sanitizeWorkspace({ id: 'import', name: f.name, about: f.about, pixel: f.pixel, tools: f.tools, layout: normaliseLayout(f.layout) });
+  const ws = sanitizeWorkspace({ id: 'import', name: f.name, about: f.about, pixel: f.pixel, tools: f.tools, rail: f.rail, layout: normaliseLayout(f.layout) });
   if (!ws) return { ok: false, error: 'That workspace has no name.' };
   return { ok: true, workspace: ws };
 }

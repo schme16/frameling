@@ -1,6 +1,8 @@
 // How the tool rail's tools are grouped and ordered. Pure: no registry, no storage, so it can be tested alone.
-// The arrangement is a list of groups, each a list of tool ids. It is saved in the dock layout (`tools.groups`);
-// a layout without one gets the default, and tools nobody has placed yet (new ones, plugin ones) are put away for you.
+// The arrangement is a list of groups, each a list of tool ids. Every workspace has its own: it starts from the
+// workspace's default (BUILTIN_RAILS for the ones that come with the app, the saved one for your own) and what you
+// change is kept for that workspace alone (`rails` in the dock state). Tools nobody has placed yet (new ones, plugin
+// ones) are put away for you.
 
 export interface ToolGroup {
   id: string;
@@ -27,6 +29,28 @@ export interface ToolRef {
   groupAt?: number;
 }
 
+/**
+ * The arrangement each built-in workspace starts with. A group with no tools only fixes where its group sits; the tools
+ * that start there (their `group` and `groupAt`) fill it. Draw is the standard order.
+ */
+export const BUILTIN_RAILS: Record<string, ToolGroup[]> = {
+  // Drawing first, then colour extras, shapes, select and pen, rig, view.
+  draw: DEFAULT_GROUPS.map((g) => ({ id: g.id, tools: [] })),
+  // Drawing, then rig and motion straight after, then select and pen, shapes, extras and view.
+  animate: ['draw', 'rig', 'select', 'shapes', 'extras', 'view'].map((id) => ({ id, tools: [] })),
+  // Pixel tools first: draw with the eyedropper in reach, shade, dither and pixel select, then shapes; the vector-only
+  // tools (select and pen, rig) come after.
+  pixel: [
+    { id: 'draw', tools: ['pencil', 'brush', 'eraser', 'fill', 'eyedropper'] },
+    { id: 'pixel', name: 'Pixel tools', tools: ['shade', 'dither', 'pixel-select'] },
+    { id: 'shapes', tools: ['line', 'rect', 'ellipse', 'polygon', 'star'] },
+    { id: 'view', tools: ['hand', 'zoom'] },
+    { id: 'extras', tools: [] },
+    { id: 'select', tools: [] },
+    { id: 'rig', tools: [] },
+  ],
+};
+
 const MAX_GROUPS = 24;
 const MAX_TOOLS = 120;
 const RESERVED = new Set(['__proto__', 'constructor', 'prototype']);
@@ -43,8 +67,11 @@ export function defaultGroupOf(tool: ToolRef): string {
   return tool.group && DEFAULT_GROUPS.some((g) => g.id === tool.group) ? tool.group : OTHER_GROUP.id;
 }
 
-/** A saved arrangement made safe: bad ids and repeats dropped, sizes capped. Undefined when there is nothing to keep. */
-export function sanitizeGroups(raw: unknown): ToolGroup[] | undefined {
+/**
+ * A saved arrangement made safe: bad ids and repeats dropped, sizes capped. Undefined when there is nothing to keep.
+ * With `anchors` a group with no tools is kept: it only says where that group sits among the others (a default order).
+ */
+export function sanitizeGroups(raw: unknown, anchors = false): ToolGroup[] | undefined {
   if (!Array.isArray(raw)) return undefined;
   const out: ToolGroup[] = [];
   const seenGroups = new Set<string>();
@@ -59,7 +86,7 @@ export function sanitizeGroups(raw: unknown): ToolGroup[] | undefined {
       seenTools.add(t);
       tools.push(t);
     }
-    if (!tools.length) continue;
+    if (!tools.length && !anchors) continue;
     seenGroups.add(r.id);
     // eslint-disable-next-line no-control-regex
     const name = typeof r.name === 'string' ? r.name.replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 40) : '';
@@ -80,7 +107,7 @@ export function groupName(g: ToolGroup, groups: ToolGroup[]): string {
 /**
  * The arrangement to use for the tools that exist: the saved one with tools that are gone dropped, and tools it doesn't
  * place yet put in their default group (which comes back if it was emptied away), unknown ones in Other.
- * With nothing saved this is the default arrangement. Empty groups are dropped.
+ * With nothing saved this is the default arrangement. Empty groups are dropped (once filled, so an anchor group with no tools to hold goes too).
  */
 export function resolveGroups(saved: ToolGroup[] | undefined, tools: ToolRef[]): ToolGroup[] {
   const ids = tools.map((t) => t.id);
@@ -91,7 +118,8 @@ export function resolveGroups(saved: ToolGroup[] | undefined, tools: ToolRef[]):
   for (const g of saved ?? []) {
     const tools = g.tools.filter((t) => have.has(t) && !placed.has(t));
     tools.forEach((t) => placed.add(t));
-    if (tools.length) groups.push({ ...g, tools });
+    // A group saved with no tools is an anchor (a default order): it stays where it is and the tools that start there fill it.
+    if (tools.length || !g.tools.length) groups.push({ ...g, tools });
   }
   // The unplaced, in the order a default rail would show them.
   const order = (t: string) => {

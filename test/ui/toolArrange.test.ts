@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { currentGroups } from '../../src/ui/toolRail';
 import { applyWorkspace, dock, resetDock, saveWorkspace, setToolGroups, workspaceText, importWorkspace, placeTools } from '../../src/ui/dock';
 import { normaliseLayout, sanitizeWorkspace, emptyLayout } from '../../src/ui/dockModel';
 import { DEFAULT_GROUPS, groupName, moveTool, placeWords, resolveGroups, sanitizeGroups, shiftTool, visibleGroups, type ToolGroup } from '../../src/ui/toolArrange';
@@ -186,36 +187,38 @@ describe('saved arrangements', () => {
 });
 
 describe('with the workspace', () => {
+  beforeAll(async () => {
+    await import('../../src/renderer/features');
+  });
   beforeEach(() => resetDock());
-  it('is saved with the layout, survives moving the rail, and comes back with the workspace', () => {
-    const groups: ToolGroup[] = [{ id: 'g1', tools: ['brush', 'pencil'] }];
-    setToolGroups(groups);
+  const mine: ToolGroup[] = [{ id: 'g1', tools: ['brush', 'pencil'] }];
+  it('is kept for the workspace it was made in, survives moving the rail, and comes back with the workspace', () => {
+    setToolGroups(mine);
     placeTools('right');
-    expect(dock.get().layout.tools.groups).toEqual(groups);
+    expect(dock.get().rails?.draw).toEqual(mine);
     const ws = saveWorkspace('Mine')!;
-    setToolGroups(undefined);
-    expect(dock.get().layout.tools.groups).toBeUndefined();
+    // Saving makes it the workspace's own default.
+    expect(ws.rail).toEqual(mine);
+    expect(dock.get().rails?.[ws.id]).toBeUndefined();
+    applyWorkspace('animate');
     applyWorkspace(ws.id);
-    expect(dock.get().layout.tools.groups).toEqual(groups);
+    expect(currentGroups().find((g) => g.id === 'g1')?.tools).toEqual(['brush', 'pencil']);
   });
   it('goes with an exported workspace and arrives on import', () => {
     setToolGroups([{ id: 'g1', name: 'Faves', tools: ['brush'] }]);
     const ws = saveWorkspace('Shared')!;
     const text = workspaceText(ws.id)!;
     expect(text).toContain('Faves');
-    expect(sanitizeWorkspace(JSON.parse(text).layout ? { id: 'x', name: 'x', layout: JSON.parse(text).layout } : null)!.layout.tools.groups).toEqual([{ id: 'g1', name: 'Faves', tools: ['brush'] }]);
+    expect(JSON.parse(text).rail).toEqual([{ id: 'g1', name: 'Faves', tools: ['brush'] }]);
+    expect(JSON.parse(text).layout.tools.groups).toBeUndefined();
     const r = importWorkspace(text);
     expect(r.ok).toBe(true);
+    expect(r.ok && r.workspace.rail).toEqual([{ id: 'g1', name: 'Faves', tools: ['brush'] }]);
   });
-  it('the built-in workspaces leave the arrangement alone, like the rail place', () => {
-    setToolGroups([{ id: 'g1', tools: ['brush'] }]);
-    applyWorkspace('animate');
-    expect(dock.get().layout.tools.groups).toEqual([{ id: 'g1', tools: ['brush'] }]);
-  });
-  it('a workspace saved before this had none, and uses the default arrangement', () => {
-    const ws = saveWorkspace('Old')!;
-    setToolGroups([{ id: 'g1', tools: ['brush'] }]);
-    applyWorkspace(ws.id);
-    expect(dock.get().layout.tools.groups).toBeUndefined();
+  it('an older file that carried the arrangement in its layout still brings it', () => {
+    const l = { ...emptyLayout(), tools: { place: 'left', x: 1, y: 2, groups: [{ id: 'g1', tools: ['brush'] }] } };
+    const ws = sanitizeWorkspace({ id: 'x', name: 'x', layout: l })!;
+    expect(ws.rail).toEqual([{ id: 'g1', tools: ['brush'] }]);
+    expect(ws.layout.tools.groups).toBeUndefined();
   });
 });

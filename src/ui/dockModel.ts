@@ -34,7 +34,10 @@ export type ToolsPlace = DockZone | 'float';
 export interface Layout {
   zones: Record<DockZone, ZoneState>;
   floats: FloatWin[];
-  /** The tool rail: where it is, and how its tools are grouped and ordered (missing = the default arrangement). */
+  /**
+   * The tool rail: where it is. `groups` is only read from older saves and files; the arrangement now belongs to the
+   * workspace (`Workspace.rail`, and `rails` in the dock state for what the person changed).
+   */
   tools: { place: ToolsPlace; x: number; y: number; groups?: ToolGroup[] };
   /** Panels the person closed. They stay out of the zones until they open them again. */
   hidden: string[];
@@ -55,6 +58,8 @@ export interface Workspace {
   pixel?: boolean;
   /** Tools the tool strip shows on each kind of layer, in this order (missing kind = every tool that works there). */
   tools?: Partial<Record<LayerKind, string[]>>;
+  /** The tool rail's default arrangement for this workspace (missing = the standard one). Groups with no tools only set an order. */
+  rail?: ToolGroup[];
 }
 
 export const ZONES: DockZone[] = ['left', 'right', 'bottom', 'top'];
@@ -156,6 +161,10 @@ export function sanitizeWorkspace(raw: unknown): Workspace | null {
   const id = typeof raw.id === 'string' && /^[\w-]{1,40}$/.test(raw.id) ? raw.id : '';
   if (!name || !id) return null;
   const ws: Workspace = { id, name, layout: normaliseLayout(raw.layout) };
+  // The arrangement used to live in the layout: an older save or file keeps it as this workspace's default.
+  const rail = sanitizeGroups(raw.rail, true) ?? ws.layout.tools.groups;
+  delete ws.layout.tools.groups;
+  if (rail) ws.rail = rail;
   const about = cleanName(raw.about, 140);
   if (about) ws.about = about;
   if (raw.pixel === true) ws.pixel = true;

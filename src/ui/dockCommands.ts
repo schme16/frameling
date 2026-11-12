@@ -175,13 +175,13 @@ registerCommand({
   id: 'view.toolsReset',
   label: 'Reset tools to default',
   category: 'View',
-  description: 'Put the tools back in their usual groups and order.',
+  description: 'Put this workspace\'s tools back in the groups and order it comes with.',
   help: 'tool-strip',
   keywords: ['tools', 'toolbar', 'group', 'order', 'arrange', 'rearrange'],
   enabled: () => isCustomArrangement(),
   run: () => {
     resetToolArrangement();
-    toast('Tools are back in their usual groups.', { duration: 1800 });
+    toast('Tools are back the way this workspace has them.', { duration: 1800 });
   },
 });
 for (const [style, label, about] of [
