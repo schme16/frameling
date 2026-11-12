@@ -15,6 +15,7 @@ import { DEFAULT_TOOL_SETTINGS, setToolSettings } from '../../src/tools/settings
 import { saveFile, loadFile } from '../../src/io/file';
 import { addShapes, box, ctx, drag, ptr, shapesNow, vectorStore } from './helpers';
 import { getTool } from '../../src/core/registry';
+import { setViewSettings } from '../../src/canvas/viewSettings';
 import { setFillOptions } from '../../src/tools/fill-options';
 
 const red = '#ff0000';
@@ -46,6 +47,8 @@ function drawRect(x: number, y: number, w: number, h: number, color: string) {
 }
 
 beforeEach(() => {
+  // Shapes snap to each other by default; these drawings want exact corners.
+  setViewSettings({ snap: false });
   setToolSettings({ ...DEFAULT_TOOL_SETTINGS });
   setFillOptions({ gap: 'small', onTop: false, allOfColour: false });
 });
