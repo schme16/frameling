@@ -20,7 +20,7 @@ export const MENUS: MenuDef[] = [
   {
     label: 'File',
     categories: ['File', 'Export'],
-    items: ['file.new', 'file.open', 'file.openRecent', 'file.openPlayable', 'file.recover', '-', 'file.save', 'file.saveAs', 'file.saveVersion', 'file.versions', 'file.saveAsTemplate', 'file.importTemplate', '-', 'sub:export', 'audio.import'],
+    items: ['file.new', 'file.open', 'file.openRecent', 'file.openPlayable', 'file.recover', '-', 'file.save', 'file.saveAs', 'file.saveVersion', 'file.versions', 'file.saveAsTemplate', 'file.importTemplate', '-', 'sub:export', 'sub:import', 'audio.import'],
   },
   {
     label: 'Edit',
@@ -40,7 +40,7 @@ export const MENUS: MenuDef[] = [
   {
     label: 'Pixel',
     categories: ['Pixel'],
-    items: ['tools.pencil', 'tools.shade', 'tools.dither', 'pixel.mirror', '-', 'pixel.flipH', 'pixel.flipV', 'pixel.rotateRight', 'pixel.rotateLeft', 'pixel.rotate180', 'pixel.rotate', '-', 'pixel.outline', 'pixel.outlineInside', '-', 'view.panel.palette', 'view.panel.preview', 'pixel.previewPlay', 'pixel.previewSize', 'view.workspace.pixel', '-', 'pixel.paletteLock', 'pixel.reduceToPalette', 'palette.fromDrawing', 'palette.import', 'palette.exportGpl', 'palette.exportHex', 'palette.exportPal'],
+    items: ['tools.pencil', 'tools.shade', 'tools.dither', 'pixel.mirror', '-', 'pixel.flipH', 'pixel.flipV', 'pixel.rotateRight', 'pixel.rotateLeft', 'pixel.rotate180', 'pixel.rotate', '-', 'pixel.outline', 'pixel.outlineInside', '-', 'view.panel.palette', 'view.panel.preview', 'pixel.previewPlay', 'pixel.previewSize', 'view.workspace.pixel', '-', 'pixel.paletteLock', 'pixel.reduceToPalette', 'palette.fromDrawing', 'palette.import', 'palette.fromAseprite', 'palette.exportGpl', 'palette.exportHex', 'palette.exportPal'],
   },
   {
     label: 'Animate',
@@ -91,6 +91,10 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
     label: 'One-click motions',
     items: ['motion.bounce', 'motion.wobble', 'motion.float', 'motion.popIn', 'motion.shake', 'motion.fadeIn'],
     prefixes: ['motion.'],
+  },
+  import: {
+    label: 'Import',
+    items: ['file.importAseprite'],
   },
   export: {
     label: 'Export',

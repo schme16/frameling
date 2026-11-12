@@ -90,6 +90,7 @@ const DAY = 24 * 3600 * 1000;
 const keptId = (docId: string) => String(docId).replace(/[^A-Za-z0-9_-]/g, '_').slice(0, 80) || 'doc';
 
 const FRAMELING_TYPE: PickerType = { description: 'Frameling drawing', accept: { 'application/x-frameling': ['.frameling'] } };
+const ASEPRITE_TYPE: PickerType = { description: 'Aseprite file', accept: { 'application/x-aseprite': ['.aseprite', '.ase'] } };
 
 const MIME: Record<string, string> = {
   png: 'image/png',
@@ -352,7 +353,7 @@ export function createWebApi(env: WebEnv): WebApi {
         if (env.pickers.showOpenFilePicker) {
           let h: FileHandleLike | undefined;
           try {
-            [h] = await env.pickers.showOpenFilePicker({ types: [FRAMELING_TYPE], id: 'frameling' });
+            [h] = await env.pickers.showOpenFilePicker({ types: [FRAMELING_TYPE, ASEPRITE_TYPE], id: 'frameling' });
           } catch (e) {
             if (isAbort(e)) return null;
             return { error: friendly(e, 'open') };
@@ -365,7 +366,7 @@ export function createWebApi(env: WebEnv): WebApi {
             return { error: friendly(e, 'open') };
           }
         }
-        const f = await env.pickUpload('.frameling');
+        const f = await env.pickUpload('.frameling,.aseprite,.ase');
         if (!f) return null;
         const bytes = await bytesOf(f);
         const path = makePath('copy', newId(), f.name);

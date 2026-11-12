@@ -65,6 +65,7 @@ What's in `test/`, by folder:
 | `symbols/` | Motions and symbol and shape ops. |
 | `templates/` | Every starter template builds; community templates; setup. |
 | `text/` | Text layout and animators. |
+| `aseprite/` | The Aseprite reader and importer: `writer.ts` writes .aseprite files chunk by chunk (every colour depth, cel type, palette chunk, tags, slices, user data, tilesets) and `import.test.ts` checks every pixel of the imported frames. `aseprite-bin.test.ts` needs `ASEPRITE_BIN`. |
 | `tiles/` | Tile model, copy with alpha, export and edit. `godot-tiles-e2e` needs `GODOT_BIN`. |
 | `timeline/` | Timeline ops, geometry, playback, play range, hold until next, tween offer, the detailed timeline and both panels. |
 | `tools/` | Brush, selection, shapes, merge mode, wells, hold drawing, drawing gaps, follow-ups. |
@@ -487,6 +488,21 @@ script already does. `--renderer <dir>` uses a private `vite build --outDir`; `-
 `test/ui/help-media.test.ts` fails when a topic's media has no entry (so it can't be shot again), when an entry is for no
 topic, or when a file is missing, unused or too big. To add help media for a new topic: write the entry, run
 `npm run help:media -- --only <name>`, look at both files, then set `media: '<name>.png'` on the topic.
+
+## Aseprite import against the real Aseprite
+
+```bash
+ASEPRITE_BIN=/path/to/aseprite npx vitest run test/aseprite/aseprite-bin
+```
+
+Opt-in, like `GODOT_BIN`. `test/aseprite/lua/gen.lua` runs in `aseprite -b` (batch mode, no window; settings go to a
+throwaway folder through `XDG_CONFIG_HOME`, so your own Aseprite settings are never touched) and makes real files:
+RGBA, grayscale and indexed colour, groups, every blend mode, linked cels, tags in every direction, a tilemap with
+flips, slices, user data and a reference layer. For every layer of every frame it also saves Aseprite's own picture
+of that layer alone. The test opens each file with the importer and compares pixel by pixel, plus the settings,
+timing, tags and notes. Reference layers are checked by value, since Aseprite leaves them out of its own render.
+`test/aseprite/import.test.ts` runs without Aseprite, on files made by the test writer. The help picture sample
+`scripts/docs/help/assets/slime-bounce.aseprite` is made by `make-slime.lua` next to it.
 
 ## Quill's dialogue
 

@@ -92,16 +92,14 @@ export function planTiming(durs: number[], fixedFps?: number): Timing {
   const g = durs.reduce(gcd, 0);
   const cands = new Set<number>([clampFps(1000 / mode), clampFps(1000 / g)]);
   for (const d of counts.keys()) if (counts.size <= 6) cands.add(clampFps(1000 / d));
-  const fits = [...cands].map((f) => fit(durs, f)).filter((t) => t.length <= MAX_FRAMES);
-  if (!fits.length) return fit(durs, clampFps(1000 / mode));
-  const exact = fits.filter((t) => t.off === 0).sort((a, b) => a.length - b.length || a.fps - b.fps);
-  if (exact.length) {
-    // The mode rate wins ties so ordinary files keep the rate people expect.
-    const modeFps = clampFps(1000 / mode);
-    return exact.find((t) => t.fps === modeFps && t.length === exact[0].length) ?? exact[0];
-  }
-  const sum = (t: Timing) => t.worst * 1000 + t.off;
-  return fits.sort((a, b) => sum(a) - sum(b) || a.fps - b.fps)[0];
+  const modeFit = fit(durs, clampFps(1000 / mode));
+  if (modeFit.off === 0 && modeFit.length <= MAX_FRAMES) return modeFit;
+  // Another rate that fits every time exactly, when it doesn't make the animation far longer to work with.
+  const exact = [...cands]
+    .map((f) => fit(durs, f))
+    .filter((t) => t.off === 0 && t.fps <= 60 && t.length <= MAX_FRAMES && t.length <= modeFit.length * 3)
+    .sort((a, b) => a.length - b.length || a.fps - b.fps);
+  return exact[0] ?? modeFit;
 }
 
 // ---------------------------------------------------------------- pixels

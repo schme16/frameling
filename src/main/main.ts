@@ -26,7 +26,7 @@ function fileFromArgs(args: string[], cwd = process.cwd()): string | null {
       if (f) return f;
     }
   }
-  const a = args.find((x) => !x.startsWith('-') && /\.(frameling|flplay)$/i.test(x));
+  const a = args.find((x) => !x.startsWith('-') && /\.(frameling|flplay|aseprite|ase)$/i.test(x));
   return a ? path.resolve(cwd, a) : null;
 }
 

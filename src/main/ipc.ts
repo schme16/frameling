@@ -11,6 +11,8 @@ import { addRecent, clearAutosave, clearRecent, keepAutosave, lastDir, listKept,
 import { pathKey, safeFileName } from './paths';
 
 const FILTERS: FileFilter[] = [{ name: 'Frameling drawings', extensions: ['frameling'] }];
+// File > Open also takes Aseprite files, which open as a new drawing.
+const OPEN_FILTERS: FileFilter[] = [{ name: 'Drawings and Aseprite files', extensions: ['frameling', 'aseprite', 'ase'] }, ...FILTERS, { name: 'Aseprite files', extensions: ['aseprite', 'ase'] }];
 const MAX_OPEN_BYTES = 1024 * 1024 * 1024;
 
 export interface IpcHooks {
@@ -80,7 +82,7 @@ export function registerIpc(hooks: IpcHooks): void {
 
   handle('files:open', async () => {
     const win = hooks.window();
-    const r = await dialog.showOpenDialog(win!, { title: 'Open a drawing', defaultPath: lastDir(), properties: ['openFile'], filters: FILTERS });
+    const r = await dialog.showOpenDialog(win!, { title: 'Open a drawing', defaultPath: lastDir(), properties: ['openFile'], filters: OPEN_FILTERS });
     if (r.canceled || !r.filePaths[0]) return null;
     rememberDir(r.filePaths[0]);
     return readFile(r.filePaths[0]);
@@ -90,7 +92,7 @@ export function registerIpc(hooks: IpcHooks): void {
     if (typeof p !== 'string') return { error: 'That is not a file path.' };
     // Opened by double-click, a recent entry or a drop: anything that ends in .frameling, or that was picked before.
     const ext = path.extname(p).toLowerCase();
-    if (!granted.has(key(p)) && ext !== '.frameling' && ext !== '.flplay') return { error: 'Frameling only opens .frameling and .flplay files.' };
+    if (!granted.has(key(p)) && ext !== '.frameling' && ext !== '.flplay' && ext !== '.aseprite' && ext !== '.ase') return { error: 'Frameling only opens .frameling, .flplay and Aseprite files.' };
     return readFile(p);
   });
 
