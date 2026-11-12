@@ -114,6 +114,16 @@ const SHIM = `
     S.stage = async (name, bytes) => { const d = await dirFor(['in']); const h = await d.getFileHandle(name, { create: true }); const w = await h.createWritable(); await w.write(bytes); await w.close(); S.opens.push({ staged: name }); };
     S.read = async (sub, name) => { const d = await dirFor(sub); const h = await d.getFileHandle(name); return new Uint8Array(await (await h.getFile()).arrayBuffer()); };
     S.list = async (sub) => { const d = await dirFor(sub); const out = []; for await (const [n, h] of d.entries()) out.push(n + (h.kind === 'directory' ? '/' : '')); return out; };
+    // Everything written under out/ so far (files and folders), then the folder emptied.
+    S.collect = async () => {
+      const out = [];
+      const walk = async (d, prefix) => { for await (const [n, h] of d.entries()) { if (h.kind === 'directory') await walk(h, prefix + n + '/'); else out.push({ name: prefix + n, b64: b64(new Uint8Array(await (await h.getFile()).arrayBuffer())) }); } };
+      const root = await navigator.storage.getDirectory();
+      let o; try { o = await root.getDirectoryHandle('out'); } catch { return out; }
+      await walk(o, '');
+      await root.removeEntry('out', { recursive: true });
+      return out;
+    };
     S.queue = []; // names to hand to the next Open picker
     window.showOpenFilePicker = async (opts) => {
       S.picks.push({ kind: 'open', types: opts && opts.types });
@@ -229,6 +239,12 @@ function makeWindow(partition) {
     out: async (sub, name) => Buffer.from(await js(`__shim.read(${JSON.stringify(sub)}, ${JSON.stringify(name)}).then((u) => __shim.b64(u))`), 'base64'),
     list: (sub) => js(`__shim.list(${JSON.stringify(sub)})`),
     picks: () => js(`__shim.picks.splice(0)`),
+    /** Everything the page wrote since the last call, in either mode: saved files and folders (picker) or downloads (plain). */
+    collect: async () => {
+      await sleep(250); // a download's bytes are read a moment after the click
+      const raw = await js(`__shim.mode === 'plain' ? __shim.downloads.splice(0) : __shim.collect()`);
+      return raw.map((d) => ({ name: d.name, bytes: Buffer.from(d.b64, 'base64') }));
+    },
   };
   /** Answers a "Remember my choice" question (Quill asks the first time) with its first option. Returns whether one was there. */
   const answerChoice = async () => {

@@ -271,3 +271,89 @@ for (const mode of ['picker', 'plain']) {
     check('a cancelled picture picker opens no dialog', (await w.js(`/Bring in a picture/.test(document.body.innerText)`)) === false);
   });
 }
+
+// Exports through the same function the Export dialog's button calls, into the picker's folders or as downloads.
+const MAGIC = {
+  png: (b) => b.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])),
+  gif: (b) => /^GIF8/.test(b.subarray(0, 4).toString('latin1')),
+  mp4: (b) => b.subarray(4, 8).toString('latin1') === 'ftyp',
+  webm: (b) => b[0] === 0x1a && b[1] === 0x45 && b[2] === 0xdf && b[3] === 0xa3,
+  zip: (b) => b[0] === 0x50 && b[1] === 0x4b,
+  svg: (b) => /<svg[\s>]/.test(b.toString('utf8', 0, 600)),
+  psd: (b) => b.subarray(0, 4).toString('latin1') === '8BPS',
+  pdf: (b) => b.subarray(0, 5).toString('latin1') === '%PDF-',
+  json: (b) => { try { return !!JSON.parse(b.toString('utf8')); } catch { return false; } },
+};
+const CASES = [
+  { id: 'png', tpl: 'bouncing-ball', set: { format: 'png', range: 'frame' }, one: 'png' },
+  { id: 'svg', tpl: 'bouncing-ball', set: { format: 'svg', range: 'frame' }, one: 'svg' },
+  { id: 'apng', tpl: 'bouncing-ball', set: { format: 'apng', range: 'all' }, one: 'png' },
+  { id: 'gif', tpl: 'bouncing-ball', set: { format: 'gif', range: 'all' }, one: 'gif' },
+  { id: 'mp4', tpl: 'bouncing-ball', set: { format: 'mp4', range: 'all' }, one: 'mp4' },
+  { id: 'webm', tpl: 'bouncing-ball', set: { format: 'webm', range: 'all' }, one: 'webm' },
+  { id: 'pngseq', tpl: 'bouncing-ball', set: { format: 'pngseq', range: 'all' }, one: 'zip' },
+  { id: 'lottie', tpl: 'bouncing-ball', set: { format: 'lottie', range: 'all' }, one: 'json' },
+  { id: 'dotlottie', tpl: 'bouncing-ball', set: { format: 'lottie', range: 'all', lottieFile: 'dotlottie' }, one: 'zip', ext: /\.lottie$/ },
+  { id: 'svganim', tpl: 'bouncing-ball', set: { format: 'svganim', range: 'all' }, one: 'svg' },
+  { id: 'psd', tpl: 'bouncing-ball', set: { format: 'psd', range: 'frame' }, one: 'psd' },
+  { id: 'pdf', tpl: 'bouncing-ball', set: { format: 'pdf', range: 'all' }, one: 'pdf' },
+  { id: 'ai', tpl: 'bouncing-ball', set: { format: 'ai', range: 'frame' }, one: 'pdf', ext: /\.ai$/ },
+  { id: 'interactives', tpl: 'bouncing-ball', set: { format: 'interactives', range: 'all' }, one: 'zip', ext: /\.flplay$/ },
+];
+for (const mode of ['picker', 'plain']) {
+  flow(`export-${mode}`, async () => {
+    const w = makeWindow(`persist:export-${mode}`);
+    await w.load(mode);
+    await w.js(`__frameling.overlays.closeSheet()`);
+    let loaded = '';
+    for (const c of CASES) {
+      if (loaded !== c.tpl) {
+        await w.js(`__framelingExport.load(${JSON.stringify(c.tpl)})`);
+        loaded = c.tpl;
+        await sleep(300);
+      }
+      const defaults = await w.js(`__framelingExport.defaults()`);
+      const settings = { ...defaults, ...c.set };
+      const r = await w.js(`__framelingExport.run(${JSON.stringify(settings)})`);
+      const got = await w.files.collect();
+      if (r.error || r.outcome !== 'done') {
+        check(`${c.id}: exports`, false, r.error ?? r.outcome);
+        continue;
+      }
+      const f = got[0];
+      const okName = f && (c.ext ? c.ext.test(f.name) : true);
+      check(`${c.id}: one file, right kind (${f?.name}, ${f?.bytes.length} bytes)`, got.length === 1 && !!okName && MAGIC[c.one](f.bytes) && f.bytes.length > 100, got.map((g) => g.name));
+    }
+  });
+}
+
+// A sprite sheet with each engine's data: a folder of files (picker) or one zip (plain).
+for (const mode of ['picker', 'plain']) {
+  flow(`sheet-${mode}`, async () => {
+    const w = makeWindow(`persist:sheet-${mode}`);
+    await w.load(mode);
+    await w.js(`__frameling.overlays.closeSheet()`);
+    await w.js(`__framelingExport.load('hero-sprites')`);
+    await sleep(300);
+    const defaults = await w.js(`__framelingExport.defaults()`);
+    const engines = await w.js(`__framelingExport.defaults().sheet.engine`);
+    const want = { godot: /\.tscn$|\.tres$|\.png$/, unity: /\.json$|\.cs$|\.png$/, phaser: /\.json$/, pixi: /\.json$/, css: /\.css$/, json: /\.json$/ };
+    for (const engine of Object.keys(want)) {
+      const sheet = { ...defaults.sheet, engine, json: engine !== 'css' ? defaults.sheet.json : false, godot: engine === 'godot', godotScene: engine === 'godot' };
+      const r = await w.js(`__framelingExport.run(${JSON.stringify({ ...defaults, format: 'sheet', range: 'all', clipId: null, sheet })})`);
+      const got = await w.files.collect();
+      if (r.error || r.outcome !== 'done') {
+        check(`sheet for ${engine}: exports`, false, r.error ?? r.outcome);
+        continue;
+      }
+      if (mode === 'plain') {
+        const zip = got.find((g) => /\.zip$/.test(g.name));
+        const names = zip ? Object.keys(require('fflate').unzipSync(new Uint8Array(zip.bytes))) : [];
+        check(`sheet for ${engine}: one zip with a picture and the engine's data (${names.length} files)`, got.length === 1 && names.some((n) => /\.png$/.test(n)) && names.some((n) => want[engine].test(n)) && names.length >= 2, [got.map((g) => g.name), names]);
+      } else {
+        const names = got.map((g) => g.name);
+        check(`sheet for ${engine}: a folder with a picture and the engine's data (${names.length} files)`, names.some((n) => /\.png$/.test(n)) && names.some((n) => want[engine].test(n)) && names.length >= 2, names);
+      }
+    }
+  });
+}
