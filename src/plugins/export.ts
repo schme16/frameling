@@ -33,7 +33,7 @@ export async function runPluginExport(job: PluginExportJob, choice: PluginExport
   const { doc, frame } = sceneOf(st.doc, st.ui.frame);
   // planExport works out the range and size; 'pngseq' is just an animated format with see-through allowed.
   const settings = { ...defaultSettings(doc), format: 'pngseq' as const, range: choice.range, clipId: choice.clipId, scale: choice.scale, transparent: job.def.transparent };
-  const plan = planExport(doc, settings, frame);
+  const plan = planExport(doc, settings, frame, { bake: false });
   if (plan.problem) throw new Error(plan.problem);
 
   const target = job.def.multiple

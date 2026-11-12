@@ -92,7 +92,7 @@ When you export a clip, the loop box follows the clip: a clip that loops repeats
 
 ## Exporting a clip
 
-Pick **One clip** in the Range row and the file follows how that clip plays ([clip direction and repeat](help:timeline-clip-play)). A clip that plays **backward** comes out backward. **Back and forth** comes out as one trip there and back, and a clip that plays **3 times** is in the file 3 times, so it looks the same everywhere. A video made this way has no sound, because the timeline's sound doesn't match the new order.
+Pick **One clip** in the Range row and the file follows how that clip plays ([clip direction and repeat](help:timeline-clip-play)). A clip that plays **backward** comes out backward. **Back and forth** comes out as one trip there and back, and a clip that plays **3 times** is in the file 3 times, so it looks the same everywhere. The same goes for a moving SVG (its timing follows the order), a PNG sequence (the numbers count in play order) and a PDF (the pages come in play order). A video made this way has no sound, because the timeline's sound doesn't match the new order.
 ## Good to know
 
 - Pixel art exports at big whole-number sizes with sharp edges, never blurry.

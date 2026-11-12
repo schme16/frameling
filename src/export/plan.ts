@@ -134,12 +134,12 @@ export function slug(name: string, fallback = 'sprites'): string {
   return s || fallback;
 }
 
-/** Formats that show the pictures one after another with no direction or repeat count of their own. */
-const BAKED_FORMATS: FormatId[] = ['gif', 'apng', 'mp4', 'webm', 'prores'];
+/** Formats that show the pictures one after another (or page after page) with no direction or repeat count of their own. */
+const BAKED_FORMATS: FormatId[] = ['gif', 'apng', 'mp4', 'webm', 'prores', 'svganim', 'pngseq', 'pdf', 'ai'];
 
 /** The order a clip's frames go in for such a format, or undefined when it just plays through once, forward. */
-export function clipPlayOrder(doc: Doc, s: Pick<ExportSettings, 'range' | 'clipId' | 'format'>, range: FrameRange): number[] | undefined {
-  if (s.range !== 'clip' || !BAKED_FORMATS.includes(s.format)) return undefined;
+export function clipPlayOrder(doc: Doc, s: Pick<ExportSettings, 'range' | 'clipId' | 'format' | 'aiFrames'>, range: FrameRange): number[] | undefined {
+  if (s.range !== 'clip' || !BAKED_FORMATS.includes(s.format) || oneFrameOnly(s, formatInfo(s.format).animated)) return undefined;
   const clip = doc.clips.find((c) => c.id === s.clipId);
   if (!clip || !hasPlaySettings(clip)) return undefined;
   return bakedPositions(range.end - range.start + 1, clipDirection(clip), clipPlays(clip));
@@ -166,10 +166,14 @@ export function clipLoopWords(doc: Doc, s: Pick<ExportSettings, 'range' | 'clipI
   return { name: clip.name, plays: clip.loop ? 'loops for ever' : n > 1 ? `plays ${n} times` : 'plays once' };
 }
 
-export function planExport(doc: Doc, s: ExportSettings, currentFrame: number): Plan {
+/** The document frame each picture (or page) of the export shows, in the order the file has them. */
+export const planFrames = (plan: Pick<Plan, 'range' | 'count' | 'order'>): number[] => Array.from({ length: plan.count }, (_, i) => plan.range.start + (plan.order?.[i] ?? i));
+
+/** `bake: false` keeps the range in plain order even for a clip that plays another way (for plugins, which get the clip's settings instead). */
+export function planExport(doc: Doc, s: ExportSettings, currentFrame: number, opts: { bake?: boolean } = {}): Plan {
   const info = formatInfo(s.format);
   const range = resolveRange(doc, s, currentFrame);
-  const order = clipPlayOrder(doc, s, range);
+  const order = opts.bake === false ? undefined : clipPlayOrder(doc, s, range);
   const count = order ? order.length : range.end - range.start + 1;
   const video = s.format === 'mp4' || s.format === 'webm' || s.format === 'prores';
   const { width, height } = outputSize(doc, s.scale, video);
