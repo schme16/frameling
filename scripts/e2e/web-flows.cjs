@@ -764,3 +764,39 @@ for (const mode of ['picker', 'plain']) {
     check('the drawing is still open', /Dropped one/.test(await w.js(`__frameling.store().get().doc.name`)));
   });
 }
+
+// Sound through the browser: a WAV added from the upload picker, then MP4 (AAC) and WebM (Opus) exports that carry it.
+flow('audio', async () => {
+  const w = makeWindow('persist:audio');
+  await w.load('picker');
+  await w.js(`__frameling.overlays.closeSheet()`);
+  await w.js(`__framelingExport.load('bouncing-ball')`);
+  await sleep(300);
+  await w.files.upload('hello-speech.wav', asset('hello-speech.wav'), 'audio/wav');
+  await w.run('audio.import');
+  await sleep(1500);
+  await w.shot('audio-asked');
+  await w.answerChoice();
+  await sleep(500);
+  const clips = await w.js(`(__frameling.store().rootDoc().audio ?? []).map((c) => [c.name, c.start])`);
+  check('a WAV from the upload picker lands on the timeline', clips.length === 1 && /hello-speech/.test(clips[0][0]), clips);
+  await w.shot('audio-timeline');
+  const defaults = await w.js(`__framelingExport.defaults()`);
+  for (const [format, magic] of [['mp4', MAGIC.mp4], ['webm', MAGIC.webm]]) {
+    await w.js(`window.__exp = null; __framelingExport.run(${JSON.stringify({ ...defaults, format, range: 'all' })}).then((r) => (window.__exp = r)); 0`);
+    // An MP4 with sound on a computer that cannot make AAC asks first (Quill's remembered question): answer it.
+    if (format === 'mp4') {
+      const asked = await w.answerChoice();
+      if (asked) await w.shot('audio-mp4-question');
+      console.log(`   (mp4 with sound asked a question: ${asked})`);
+    }
+    const r = await w.waitFor(`window.__exp`, 30000);
+    const out = await w.files.collect();
+    const kind = format === 'mp4' && out[0] && !MAGIC.mp4(out[0].bytes) && MAGIC.webm(out[0].bytes) ? 'webm' : format;
+    check(`${format} with sound is made${kind !== format ? ' (as WebM, as the question said)' : ''}`, r && r.outcome === 'done' && out.length === 1 && (kind === 'webm' ? MAGIC.webm : MAGIC.mp4)(out[0].bytes), [r && r.error, r && r.outcome, out.map((o) => o.name)]);
+    if (out[0]) {
+      const text = out[0].bytes.toString('latin1');
+      check(`${format} carries an audio track`, kind === 'mp4' ? /mp4a|soun/.test(text) : /A_OPUS|A_VORBIS/.test(text), text.length);
+    }
+  }
+});
