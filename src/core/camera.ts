@@ -126,6 +126,20 @@ export function layerCameraMatrix(doc: Doc, layer: Layer, view: CameraView | und
   return isIdentity(m) ? undefined : m;
 }
 
+/** How much a matrix scales lengths (the square root of its area factor). */
+export function matrixScale(m: readonly number[]): number {
+  return Math.sqrt(Math.abs(m[0] * m[3] - m[1] * m[2]));
+}
+
+/**
+ * What to multiply a size by so it comes out that size in what you see: a camera zoomed in 2x shows stage lengths twice
+ * as big, so a size of 10 is 5 on the stage. 1 when there's no camera (or it's a degenerate one).
+ */
+export function sizeThroughCamera(m: readonly number[] | undefined): number {
+  const k = m ? matrixScale(m) : 1;
+  return k > 1e-6 ? 1 / k : 1;
+}
+
 export function isIdentity(m: readonly number[]): boolean {
   return Math.abs(m[0] - 1) < 1e-9 && Math.abs(m[1]) < 1e-9 && Math.abs(m[2]) < 1e-9 && Math.abs(m[3] - 1) < 1e-9 && Math.abs(m[4]) < 1e-9 && Math.abs(m[5]) < 1e-9;
 }

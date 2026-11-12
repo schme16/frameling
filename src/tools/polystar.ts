@@ -13,6 +13,7 @@ import { clearSnap, snapPt } from '../canvas/guides';
 import { addShapes } from './merge-mode';
 import { noteColorUsed } from './recent';
 import { getToolSettings } from './settings';
+import { viewSizeFactor } from './view-size';
 import { dragRect } from './shapes';
 import { canEdit, reportEdit } from './util';
 import { shapeColors } from './wells';
@@ -69,7 +70,7 @@ export function makePolyStar(kind: 'polygon' | 'star', a: Pt, b: Pt, mod: { shif
     type: 'path',
     paths: [polyStarSubPath(kind, r, mod.shift, s)],
     fill: colors.fill,
-    stroke: colors.stroke ? { color: colors.stroke, width: s.shapeStroke, join: 'round', cap: 'round' } : null,
+    stroke: colors.stroke ? { color: colors.stroke, width: s.shapeStroke * viewSizeFactor(), join: 'round', cap: 'round' } : null,
     opacity: 1,
   };
 }

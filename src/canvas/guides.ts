@@ -105,7 +105,7 @@ function showRay(next: { from: Pt; vp: Pt } | null): void {
 }
 
 /** The vanishing points lines can follow: only while the perspective guides show and snapping is on. */
-function vanishingPoints(bypass: boolean): Pt[] {
+export function vanishingPoints(bypass: boolean): Pt[] {
   const v = getViewSettings();
   if (bypass || !v.snap || !v.perspective) return [];
   return store().get().doc.perspective?.points ?? [];

@@ -205,6 +205,8 @@ export class BitmapCache {
 interface OnionItem {
   drawing: Drawing;
   pixelSize: number;
+  /** The camera's matrix for this layer, when the canvas looks through it. */
+  cam?: Mat;
 }
 interface OnionEntry {
   items: OnionItem[];
@@ -311,8 +313,8 @@ export class FramePainter {
 
     // The light table sits under the onion skin and the ghost: it's the page you trace on.
     if (p.lightTable?.items.length && !p.playing && !p.camera && !copy) this.paintGhost(g, p, p.lightTable.items, cacheable, p.lightTable.alpha, p.lightTable.tint);
-    // Through the camera the onion skin would be in the wrong place, so it's left out.
-    if (p.onion.enabled && !p.playing && !p.camera) this.paintOnion(g, p, cacheable);
+    // Through the camera the onion frames go through it too (each layer by its own depth), so they sit where you see them.
+    if (p.onion.enabled && !p.playing) this.paintOnion(g, p, cacheable);
     else if (p.ghost?.length && !p.playing && !p.camera && !copy) this.paintGhost(g, p, p.ghost, cacheable);
 
     if (composited) settled = paintComposited(this, g, p, cacheable) && settled;
@@ -499,13 +501,13 @@ export class FramePainter {
         if (!d || d === poseAt(doc, layer, frame)) continue;
         // Tilemaps stay out of the onion skin: a level behind the character isn't a ghost of anything.
         if (d.kind === 'tilemap') continue;
-        items.push({ drawing: d, pixelSize: layer.kind === 'pixel' ? layer.pixelSize : 1 });
+        items.push({ drawing: d, pixelSize: layer.kind === 'pixel' ? layer.pixelSize : 1, cam: layerCameraMatrix(doc, layer, p.camera) });
       }
       if (!items.length) continue;
       const color = side === 'before' ? onion.beforeColor : onion.afterColor;
       const alpha = onion.opacity * Math.pow(0.65, dist - 1);
       g.globalAlpha = alpha;
-      if (cacheable) {
+      if (cacheable && !items.some((it) => it.cam)) {
         const c = this.onionBitmap(doc, items, color, onion.tint, rect.w, rect.h);
         g.drawImage(c, rect.x, rect.y);
       } else {
@@ -541,13 +543,18 @@ export class FramePainter {
    * With `doc` (the stage-sized bitmap path) a vector drawing is blitted from its cached layer bitmap, the same one
    * the frame uses when it's the current one, instead of rasterising every stroke again. Without it, drawn directly.
    */
-  private drawOnionItems(g: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, items: OnionItem[], color: string, tint: boolean, w: number, h: number, doc?: Doc): void {
+  private drawOnionItems(g: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, items: (OnionItem | GhostItem)[], color: string, tint: boolean, w: number, h: number, doc?: Doc): void {
     for (const it of items) {
       if (doc && it.drawing.kind === 'vector') {
         const e = this.cache.find(it.drawing, it.pixelSize, w, h) ?? this.cache.build(doc, it.drawing, it.pixelSize, w, h);
         g.save();
         g.setTransform(1, 0, 0, 1, 0, 0);
         g.drawImage(e.canvas, 0, 0);
+        g.restore();
+      } else if ('cam' in it && it.cam) {
+        g.save();
+        g.transform(it.cam[0], it.cam[1], it.cam[2], it.cam[3], it.cam[4], it.cam[5]);
+        drawDrawing(g, it.drawing, it.pixelSize);
         g.restore();
       } else drawDrawing(g, it.drawing, it.pixelSize);
     }

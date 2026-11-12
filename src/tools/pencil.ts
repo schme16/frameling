@@ -12,6 +12,7 @@ import { PencilOptions } from './options/PencilOptions';
 import { getToolSettings } from './settings';
 import { canEdit } from './util';
 import { VectorStroke } from './vectorStroke';
+import { viewSizeFactor } from './view-size';
 import { CleanLine } from './cleanLine';
 import { activePixelLayer, makePixelPencil } from '../pixel/tools';
 import { byLayerKind } from '../pixel/ToolOptions';
@@ -42,7 +43,8 @@ export const pencilTool: Tool = {
     if (!canEdit(ctx, 'vector', 'The pencil')) return;
     const t = getToolSettings();
     // Clean line: an even stroked path you can edit by its points, instead of the hand-drawn outline.
-    stroke = t.pencilClean ? new CleanLine(store().get().ui.color, t.pencilSize) : new VectorStroke(pencilBrush(), store().get().ui.color);
+    const f = viewSizeFactor();
+    stroke = t.pencilClean ? new CleanLine(store().get().ui.color, t.pencilSize * f) : new VectorStroke({ ...pencilBrush(), size: t.pencilSize * f }, store().get().ui.color);
     stroke.add(e, ctx.zoom);
   },
   move(e, ctx) {
@@ -65,7 +67,7 @@ export const pencilTool: Tool = {
     if (stroke) return stroke.overlay(g);
     if (pix.active() || activePixelLayer()) return pix.overlay(g, ctx);
     const h = getHover();
-    if (h) drawRing(g, ctx, h.x, h.y, getToolSettings().pencilSize / 2);
+    if (h) drawRing(g, ctx, h.x, h.y, (getToolSettings().pencilSize * viewSizeFactor()) / 2);
   },
 };
 

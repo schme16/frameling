@@ -4,6 +4,7 @@
  * they're still there next time.
  */
 import { useSyncExternalStore } from 'react';
+import type { PlaneChoice } from '../canvas/perspectivePlane';
 
 export interface ToolSettings {
   /** Pixel brush: size in art pixels, shape, and the corner clean-up. */
@@ -18,6 +19,8 @@ export interface ToolSettings {
   /** Rectangle, ellipse and line: outline thickness. Colours come from the fill and stroke boxes (wells.ts). */
   shapeStroke: number;
   cornerRadius: number;
+  /** Rectangle and ellipse with perspective guides showing: which plane they lie on (auto guesses from the drag). */
+  perspectivePlane: PlaneChoice;
   /** Eyedropper: pick from the active layer only. */
   pickActiveLayerOnly: boolean;
   /** Polygon: how many sides. Star: how many points, and how deep the dips are (inner size, 10 to 95 percent). */
@@ -37,6 +40,7 @@ export const DEFAULT_TOOL_SETTINGS: ToolSettings = {
   eraserPixelSize: 1,
   shapeStroke: 4,
   cornerRadius: 0,
+  perspectivePlane: 'auto',
   pickActiveLayerOnly: false,
   polygonSides: 6,
   starPoints: 5,

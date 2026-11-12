@@ -89,5 +89,4 @@ through this, so they can't disagree. SVG writes instances as `<g transform="mat
   Moving it there changes the start key.
 - Instances in a merge-mode layer never merge (they're treated like groups), and the paint bucket ignores them as
   walls.
-- Looking through the camera, onion skins are hidden, and tool sizes on screen don't follow the camera's zoom.
 - Off-stage drawing shows on the faded pasteboard only while a camera exists, and isn't cached (drawn directly).

@@ -16,6 +16,7 @@ import { dragHandles, fromAnchors, type Anchor, type P } from '../geometry/pen';
 import { addShapes } from './merge-mode';
 import { noteColorUsed } from './recent';
 import { getToolSettings } from './settings';
+import { viewSizeFactor } from './view-size';
 import { canEdit, reportEdit } from './util';
 import { shapeColors } from './wells';
 import { withWellGradients } from './gradient-wells';
@@ -96,7 +97,7 @@ function colors() {
 function preview(closed: boolean): PathShape | null {
   const sp = path?.subPath(closed);
   if (!sp) return null;
-  const s = penShape(sp, colors(), getToolSettings().shapeStroke);
+  const s = penShape(sp, colors(), getToolSettings().shapeStroke * viewSizeFactor());
   return s && withWellGradients(s);
 }
 
@@ -109,7 +110,7 @@ function finish(ctx: ToolContext, closed: boolean): void {
   if (!p) return;
   const sp = p.subPath(closed);
   if (!sp) return;
-  const shape = penShape(sp, colors(), getToolSettings().shapeStroke);
+  const shape = penShape(sp, colors(), getToolSettings().shapeStroke * viewSizeFactor());
   if (!shape) {
     ctx.hint('Fill and stroke are both set to none, so the shape would be invisible. Pick a colour for one of them.');
     return;

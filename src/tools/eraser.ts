@@ -15,6 +15,7 @@ import { EraserOptions } from './options/EraserOptions';
 import { PixelStroke } from './pixelStroke';
 import { getToolSettings } from './settings';
 import { reportEdit } from './util';
+import { viewSizeFactor } from './view-size';
 import { activeIsMerge, editShapes } from './merge-mode';
 import { eraseArea, sweepGeom } from '../geometry/merge';
 
@@ -41,7 +42,8 @@ export function shapesTouched(drawing: VectorDrawing, x: number, y: number, radi
 
 function reach(ctx: ToolContext): number {
   // Half the eraser size, but never so small it's hard to hit a thin line.
-  return Math.max(getToolSettings().eraserSize / 2, 3 / ctx.zoom);
+  const f = viewSizeFactor();
+  return Math.max((getToolSettings().eraserSize * f) / 2, (3 * f) / ctx.zoom);
 }
 
 function sweep(g: VectorGesture, x: number, y: number, ctx: ToolContext): void {
