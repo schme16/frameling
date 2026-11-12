@@ -309,6 +309,11 @@ app.whenReady().then(async () => {
   }
   await unlisten();
   console.log(failures.length ? `\n${failures.length} FAILED:\n  ${failures.join('\n  ')}` : '\nAll web checks passed.');
-  fs.rmSync(tmp, { recursive: true, force: true });
+  // The browser may still be writing into its folder as it closes: retry, and never let tidying up fail the run.
+  try {
+    fs.rmSync(tmp, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+  } catch (e) {
+    console.log(`(could not remove ${tmp}: ${e.code})`);
+  }
   app.exit(failures.length ? 1 : 0);
 });
