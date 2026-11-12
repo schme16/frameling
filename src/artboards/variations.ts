@@ -730,12 +730,23 @@ export function sharedEditNote(doc: Doc, what: 'symbols' | 'swatches' | 'folders
   return openVariation(doc) ? SHARED[what] : null;
 }
 
+/** True when `next`'s swatches are `before`'s with more at the end (nothing renamed, recoloured, removed or reordered). */
+function onlyAddedSwatches(before: Doc, next: Doc): boolean {
+  const a = before.swatches ?? [];
+  const b = next.swatches ?? [];
+  return b.length >= a.length && a.every((s, i) => s === b[i] || deepEqual(s, b[i]));
+}
+
 // A change that writes what a variation shares is refused whole, with the sentence, so no edit is lost or leaks into the original.
-registerGuard((_before, next, patches) => {
+// Adding a swatch is let through (it is shared and harmless: the original gets it too); changing or removing one is not.
+registerGuard((before, next, patches) => {
   if (!openVariation(next)) return null;
   for (const p of patches) {
-    const note = SHARED[p.path[0] as string];
-    if (note) return note;
+    const key = p.path[0] as string;
+    const note = SHARED[key];
+    if (!note) continue;
+    if (key === 'swatches' && onlyAddedSwatches(before, next)) continue;
+    return note;
   }
   return null;
 });

@@ -97,11 +97,14 @@ export function throughCameraOf(doc: Doc, v = getViewSettings()): boolean {
   return v.throughBy[`${doc.id}/${activeId(doc)}`] ?? v.throughCamera;
 }
 
-/** Turns looking through the camera on or off for the open artboard only. */
+/** Turns looking through the camera on or off for the open artboard only (remembered for this file's artboard between sessions). */
 export function toggleThroughCamera(on?: boolean): void {
   const doc = store().get().doc;
   const v = getViewSettings();
-  setViewSettings({ throughBy: { ...v.throughBy, [`${doc.id}/${activeId(doc)}`]: on ?? !throughCameraOf(doc, v) } });
+  const key = `${doc.id}/${activeId(doc)}`;
+  // Set again last, so the newest choices are the ones kept.
+  const { [key]: _old, ...rest } = v.throughBy;
+  setViewSettings({ throughBy: { ...rest, [key]: on ?? !throughCameraOf(doc, v) } });
 }
 
 /** Is the canvas looking through the camera right now? */

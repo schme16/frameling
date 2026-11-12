@@ -93,8 +93,8 @@ See [artboards as shots](help:artboards-shots) and [exporting artboards](help:ar
 **Good to know:**
 - A variation of a variation starts with the same changes and follows the same original.
 - **Sound** can differ: turn a sound down, mute it, move it or leave it out in the variation, and the original keeps its own. **Pixel palette** can differ too: change a palette colour in the variation and only its pixels change colour (a colourway). The Differences list shows both.
-- Symbols, tiles, swatches and layer folders are shared with the original. Frameling says so and leaves them as they are if you try to change them from a variation: change them in the original, or detach the variation.
-- Looking through the camera is remembered for each artboard, so a square variation can look through its camera while the original shows the whole stage.
+- Symbols, tiles, swatches and layer folders are shared with the original. You can add a new swatch from a variation (the original gets it too). Changing or removing the rest is refused with a note and left as it is: change them in the original, or detach the variation.
+- Looking through the camera is remembered for each artboard, even after you close and reopen Frameling, so a square variation can look through its camera while the original shows the whole stage.
 - Deleting the original turns its variations into plain artboards.
 - Saving keeps only the changes, so a file with many variations stays small.`,
   },

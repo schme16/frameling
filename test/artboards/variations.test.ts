@@ -846,24 +846,51 @@ describe('variations: sound, palette and what stays shared', () => {
     const v = make();
     open(v);
     const steps = store().canUndo();
-    update('Swatch', (d) => void d.swatches.push({ id: 'sw', name: 'x', color: '#123456' } as never));
+    const first = doc().swatches[0];
+    update('Rename swatch', (d) => void (d.swatches[0].name = 'renamed'));
+    update('Remove swatch', (d) => void (d.swatches = d.swatches.filter((x) => x.id !== first.id)));
     update('Folder', (d) => void (d.folders = { f1: { id: 'f1', name: 'F' } as never }));
     update('Palette', (d) => void (d.palette = { name: 'x', colors: ['#000000'] }));
     update('Symbol', (d) => void (d.symbols = { s1: { id: 's1', name: 'S', layers: [], length: 1 } as never }));
     expect(blocked).toEqual([
+      'Swatches are shared with the original. Change them there, or detach this variation.',
       'Swatches are shared with the original. Change them there, or detach this variation.',
       'Layer folders are shared with the original. Change them there, or detach this variation.',
       'The palette is shared with the original. Change it there, or detach this variation.',
       'Symbols are shared with the original. Change them there, or detach this variation.',
     ]);
     expect(store().canUndo()).toBe(steps);
-    expect(doc().swatches.some((x) => x.id === 'sw')).toBe(false);
+    expect(doc().swatches[0]).toEqual(first);
     expect(doc().folders).toBeUndefined();
     // On the original they are plain edits, shared by everyone.
     open(root());
     update('Swatch', (d) => void d.swatches.push({ id: 'sw', name: 'x', color: '#123456' } as never));
     expect(doc().swatches.some((x) => x.id === 'sw')).toBe(true);
-    expect(blocked).toHaveLength(4);
+    expect(blocked).toHaveLength(5);
+  });
+
+  it('adding a swatch is allowed while a variation is open: it is shared with the original', () => {
+    const v = make();
+    open(v);
+    const n = doc().swatches.length;
+    update('Add swatch', (d) => void d.swatches.push({ id: 'sw', name: '#123456', color: '#123456' } as never));
+    update('Add two', (d) => void d.swatches.push({ id: 'sw2', name: 'a', color: '#111111' } as never, { id: 'sw3', name: 'b', color: '#222222' } as never));
+    expect(blocked).toEqual([]);
+    expect(doc().swatches).toHaveLength(n + 3);
+    expect(doc().swatches.map((x) => x.id).slice(-3)).toEqual(['sw', 'sw2', 'sw3']);
+    // The original has it too, and the variation's overrides did not pick it up.
+    open(root());
+    expect(doc().swatches).toHaveLength(n + 3);
+    expect(findArtboard(doc(), v)!.overrides).toEqual({});
+    // Adding with something else changed at the same time is still refused whole.
+    open(v);
+    update('Add and rename', (d) => {
+      d.swatches.push({ id: 'sw4', name: 'c', color: '#333333' } as never);
+      d.swatches[0].name = 'renamed';
+    });
+    expect(blocked).toHaveLength(1);
+    expect(doc().swatches.some((x) => x.id === 'sw4')).toBe(false);
+    expect(store().undoLabel()).not.toBe('Add and rename');
   });
 });
 

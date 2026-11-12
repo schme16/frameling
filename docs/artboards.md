@@ -191,7 +191,9 @@ original's palette changes never reach a variation that has its own.
 **Limits, on purpose.** Symbols, tiles, swatches and layer folders are shared with the original, and the shared palette
 can only be changed from the original. A change that writes any of them while a variation is open is **refused whole**
 by a store guard (`registerGuard` in `src/core/store.ts`, with the sentence "Swatches are shared with the original.
-Change them there, or detach this variation."), so nothing is lost or leaks into the original; opening a symbol or a
+Change them there, or detach this variation."), so nothing is lost or leaks into the original. The one exception is
+**adding** swatches: they are shared and harmless, so a change whose swatches are the old ones with more at the end
+goes through (renaming, recolouring, removing or reordering one is still refused). Opening a symbol or a
 tile for editing is refused up front the same way (`sharedEditNote`). Detaching a variation with its own palette
 keeps its pixels' colours, but the palette list goes back to the shared one. A size override frames the picture with a camera at the moment it is set; if the
 original is resized later, the variation's zoom is not recomputed (it is an override). Deleting an original turns
@@ -203,7 +205,10 @@ variation read through the whole document found the original's skeleton. Poses, 
 variation are overrides like any layer or drawing property (`test/artboards/variationsRig.test.ts`).
 
 **Looking through the camera** is remembered per artboard (`throughCameraOf`, `toggleThroughCamera` in
-`src/camera/ops.ts`, session only), so making a square variation turns it on for that variation only.
+`src/camera/ops.ts`), so making a square variation turns it on for that variation only. The choices are kept in the
+view settings (`throughBy` in `src/canvas/viewSettings.ts`, saved with the other view settings under document id and
+artboard id, so they survive a restart on this machine; the newest 300 are kept, older saves without it open with none
+chosen). They are not stored in the `.frameling` file.
 
 **Export.** Nothing special: an exporter asks `artboardDoc(root, id)`, which returns the resolved variation. "Each as
 its own file", "all in order, as one" and the atlas therefore work, and the Export dialog's **This artboard and its
