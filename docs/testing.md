@@ -218,7 +218,11 @@ Cases that set `allRenderers` (`play-*`, `hero-sprites` `*-grid`, `scaled*`, the
 every renderer: Phaser 3.90 and 4.2.1, each in WebGL and canvas, and PixiJS 8 in WebGL and WebGPU. WebGPU is probed in the
 page first; with no adapter the run says "PixiJS WebGPU skipped: ..." and goes on. Phaser's canvas renderer is checked with a
 looser limit (mean under 10 of 255) and the report says how many frames were not pixel-exact: a plain `drawImage` of the same
-atlas is exact, so the difference is in the engine's canvas drawing (scaled and trimmed sprites).
+atlas is exact, so the difference is in the engine's canvas drawing (scaled and trimmed sprites). Looked into (`scaled2x-phaser`, Phaser 3.90 and 4.2.1): the canvas picture of a trimmed sprite shown at 2x is one pixel wider and taller
+than Frameling's (about 260 of 4096 pixels per frame, 0.5x is within 25 levels). `roundPixels`, `pixelArt` off and `antialias` off change
+nothing, so there is no game setting for it and the Phaser help recommends WebGL for pixel art. To try a setting on the harness:
+`PHASER_RENDER='{"roundPixels":true}' PHASER_STRICT=1` (adds to the game's `render` config and holds the canvas renderer to the exact limit,
+saving the failing pictures as `_web-fail-*.png`).
 
 | Engine | What is checked |
 |---|---|
@@ -265,6 +269,11 @@ back and forth and looping, `thrice` forward 3 times, `back` backward once, `pla
   order as the baked list). `--only=godot-bones-bounce` loads the skeleton export in Godot and reads the
   AnimationPlayer: baked is a loop of 2n - 2 frames (mode 1), native is `loop_mode = 2` over n frames and the animation
   time goes up and back down; a clip with a set number of directions stays baked.
+- `godot-bones`: loads each Godot bones case in real Godot and compares five frames with Frameling's PNG (rmse) plus single-pixel
+  probes. `--section=bones-nested-fade,bones-blend-subtract` runs just those cases (`bones-blend-linear-dodge`, `-subtract` and
+  `-divide` check the blend shader; `bones-nested-fade` the fade inside a tinted fade). Probes with `compatTol` run twice: on the
+  Compatibility renderer (OpenGL) with that looser tolerance, because its CanvasGroup buffer keeps alpha in 4 steps (RGB10_A2) while
+  the window is opaque, and on the Mobile renderer (Vulkan, skipped with a note when it cannot start) with `tol`.
 - `gif`, `apng`, `mp4`, `webm`: `clip-pingpong`, `clip-pingpong-reverse`, `clip-bounce2`, `clip-bounce3`, `clip-repeat3`,
   `clip-backward` export one clip and check that picture k is the document frame the order rules give. `pngseq` runs the
   same cases and holds each frame once, in the order the clip starts (`stillOrder`), whatever the repeat. The loop flag of a
@@ -439,6 +448,28 @@ slow (2000 frames in order over 2 s, or a painted step p95 over 100 ms) or a sha
 ```bash
 npm run build
 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/selection.cjs [outDir]
+```
+
+## Layers panel end to end: scripts/e2e/layers-panel.cjs
+
+Opens a document of five layers and two folders (shown top first: e, folder Q holding d, c, folder P holding b, a) and
+drives the nested Layers panel in the real window. Each move is checked in the panel (the row order and every row's
+`aria-level`) and in the document (which folder each layer is in), then undone with a real Ctrl+Z (exactly one undo step,
+back to the same layers and rows) and redone. Drags: a layer into a folder (the middle of the folder row), into a folder inside
+a folder, above and below a layer (the edges of its row), onto a layer inside a folder (it joins that folder), a folder into a
+folder, above a folder, below a layer, a folder dropped inside itself and a layer dropped on itself (both do nothing and make no undo
+step). Keys: Alt+Up, Down, Left and Right on layers and on folders (the keyboard focus stays on the row; moves that cannot happen do
+nothing). Fold and unfold with the twisty button and with Left and Right (the rows leave and return, `aria-expanded` follows, the
+document and the undo history are untouched), Left on a layer goes to its folder, a drop on a folded folder's bottom edge goes below
+it. Last, the three-level `aria-level` values and that levels never jump by more than one.
+
+Keys, clicks and undo are real input events. A drag is not: Chromium starts a drag through the operating system, which does not
+finish when the mouse is synthesised, so the script dispatches the same DragEvents (dragstart, dragover at a real point inside the
+row, drop, dragend) on the real rows; the panel's own handlers and the Move command run as for a person's drag.
+
+```bash
+npm run build
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/layers-panel.cjs [outDir]
 ```
 
 ## Pixel drawing through a turned camera: scripts/e2e/pixel-camera.cjs

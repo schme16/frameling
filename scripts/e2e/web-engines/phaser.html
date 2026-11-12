@@ -16,7 +16,7 @@ window.runCheck = async function (cfg) {
     const g = new Phaser.Game({
       type: cfg.renderer === 'canvas' ? Phaser.CANVAS : Phaser.WEBGL, width: cfg.width, height: cfg.height, parent: 'stage', transparent: true,
       audio: { noAudio: true }, banner: false,
-      render: { pixelArt: true, antialias: false, preserveDrawingBuffer: true },
+      render: { pixelArt: true, antialias: false, preserveDrawingBuffer: true, ...(cfg.extraRender || {}) },
       scene: {
         preload() {
           this.load.atlas(cfg.key, cfg.image, cfg.json);
@@ -60,7 +60,7 @@ window.runCheck = async function (cfg) {
       sprite.anims.setCurrentFrame(anim.frames[c.i]);
       await nextRender();
       await nextRender();
-      await r.pixel(`${exp.name}[${c.i}]`, game.canvas, cfg.width, cfg.height, c.ref, gotCanvas);
+      await r.pixel(`${exp.name}[${c.i}]`, game.canvas, cfg.width, cfg.height, c.ref, gotCanvas && !cfg.strict);
     }
     sprite.destroy();
 

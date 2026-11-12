@@ -1,7 +1,7 @@
 // A small scene for the Godot bones checks (test/export/godot-bones-extras-e2e, scripts/e2e/export.cjs). Not a template people see.
 import { newDoc, newVectorLayer, uid } from '../core/doc';
 import { newCameraLayer } from '../core/camera';
-import type { Bone, CameraDrawing, Doc, InstanceShape, PlayMode, VectorLayer } from '../core/format';
+import type { BlendMode, Bone, CameraDrawing, Doc, InstanceShape, PlayMode, VectorLayer } from '../core/format';
 import { boneBetween } from '../rig/math';
 import { ellipsePath, emptyOf, hold, pathShape, rectPath, vectorDrawing } from '../templates/build';
 
@@ -25,6 +25,8 @@ export interface ExtrasOptions {
   armTint?: { color: string; amount: number };
   /** With bodyArm: the arm copy inside the Body symbol is faded to this much itself (a fade inside a fade). */
   armFade?: number;
+  /** The glow layer uses this blend mode (at 0.7 fade, no glow effect) and also covers part of the sun, so it blends over two backdrops. */
+  glowBlend?: BlendMode;
 }
 
 /**
@@ -150,10 +152,12 @@ export function bonesExtrasDoc(o: ExtrasOptions = {}): Doc {
   doc.layers.push(hero);
 
   const glow = newVectorLayer('Glow') as VectorLayer;
-  glow.blend = 'add';
+  glow.blend = o.glowBlend ?? 'add';
   glow.opacity = 0.7;
-  glow.effects = [{ id: uid('e'), kind: 'glow', values: { color: '#ffd76a', size: 10, strength: 1 } }];
-  hold(glow, vectorDrawing(doc, [pathShape([ellipsePath(180, 60, 22, 22)], '#ff8a3a', null)]).id, 0, 12);
+  if (!o.glowBlend) glow.effects = [{ id: uid('e'), kind: 'glow', values: { color: '#ffd76a', size: 10, strength: 1 } }];
+  const glowShapes = [pathShape([ellipsePath(180, 60, 22, 22)], '#ff8a3a', null)];
+  if (o.glowBlend) glowShapes.push(pathShape([rectPath(235, 35, 50, 50)], '#6070c0', null));
+  hold(glow, vectorDrawing(doc, glowShapes).id, 0, 12);
   doc.layers.push(glow);
 
   if (o.camera) {

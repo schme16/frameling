@@ -19,8 +19,11 @@ import type { Mat } from '../rig/math';
 
 export type PartKind = 'cut' | 'mesh' | 'free';
 
-/** The blend modes Godot has natively (a CanvasItemMaterial): normal, Add and Multiply. */
-export type NativeBlend = 'mix' | 'add' | 'mul';
+/** The blend modes Godot has natively (a CanvasItemMaterial): normal, Add and Multiply. The last three are a small included shader that reads what is behind. */
+export type NativeBlend = 'mix' | 'add' | 'mul' | 'dodge' | 'sub' | 'div';
+
+/** True for the blends that are a shader (they read the picture behind), not a CanvasItemMaterial. */
+export const isShaderBlend = (b: NativeBlend): boolean => b === 'dodge' || b === 'sub' || b === 'div';
 
 /** How a layer looks in Godot: its fade, its blend mode and the effects that get baked into its pictures. */
 export interface PartLook {
@@ -263,6 +266,9 @@ export function nativeBlend(mode: Layer['blend']): { blend: NativeBlend; exact: 
   if (!mode || mode === 'normal') return { blend: 'mix', exact: true };
   if (mode === 'add') return { blend: 'add', exact: true };
   if (mode === 'multiply') return { blend: 'mul', exact: true };
+  if (mode === 'linear-dodge') return { blend: 'dodge', exact: true };
+  if (mode === 'subtract') return { blend: 'sub', exact: true };
+  if (mode === 'divide') return { blend: 'div', exact: true };
   // Godot has no Screen, but Add is the nearest thing (both only lighten).
   if (mode === 'screen') return { blend: 'add', exact: false };
   return { blend: 'mix', exact: false };
@@ -283,7 +289,8 @@ export function partLook(doc: Doc, layer: Layer, notes?: BonesNotes): PartLook {
   const effects = [...(layer.effects ?? []), ...around.flatMap((f) => f.effects ?? [])].filter((e) => e.on !== false && (e.keys?.length || !isNoop(e.kind, valuesAt(e, 0))));
   if (notes) {
     if (opacity < 1) notes.native.add('Fade: the node’s modulate');
-    if (nb.blend !== 'mix') notes.native.add('Add and Multiply blend modes: a CanvasItemMaterial');
+    if (nb.blend !== 'mix' && !isShaderBlend(nb.blend)) notes.native.add('Add and Multiply blend modes: a CanvasItemMaterial');
+    if (isShaderBlend(nb.blend)) notes.native.add('Glow brighter (plain), Take away and Brighten by dividing blend modes: a small included shader that reads what is behind, so they mix with the stage but not inside a faded group');
     if (!nb.exact && mode) notes.skip(`${mode === 'screen' ? 'Screen drawn as Add' : `${blendWord(mode)} drawn as normal`}`, layer.name);
     for (const e of effects) notes.bake(effectInfo(e.kind).label, layer.name);
     if (around.some((f) => f.effects?.length)) notes.skip('Folder effects go on each layer separately', layer.name);
@@ -311,11 +318,11 @@ export function groupLayout(sc: BonesScope): { ok: boolean; top: GroupItem[]; ki
   const failed = (why: string) => ({ ok: false, top: [] as GroupItem[], kids: new Map<Id, GroupItem[]>(), why });
   const fail = failed('its parts are mixed up in the layer stack, so the scene tree cannot draw them in the right order inside one group');
   for (const n of sc.nested) {
-    if (n.look.blend !== 'mix') return failed('a symbol inside it uses Add or Multiply, which a group would blend inside itself instead of with the stage');
+    if (n.look.blend !== 'mix') return failed('a symbol inside it uses a blend mode other than normal, which a group would blend inside itself instead of with the stage');
     const inner = groupLayout(n.scope);
     if (!inner.ok) return failed(`a symbol with bones inside it cannot be grouped (${inner.why})`);
   }
-  if (sc.parts.some((p) => (p.look?.blend ?? 'mix') !== 'mix')) return failed('some of its parts use Add or Multiply, which a group would blend inside itself instead of with the stage');
+  if (sc.parts.some((p) => (p.look?.blend ?? 'mix') !== 'mix')) return failed('some of its parts use a blend mode other than normal, which a group would blend inside itself instead of with the stage');
   const kids = new Map<Id, GroupItem[]>();
   type Ranged = { item: GroupItem; lo: number; hi: number };
   // Sorts back to front and checks nothing interleaves. Items without parts in them go last.
@@ -373,7 +380,7 @@ export function groupLayout(sc: BonesScope): { ok: boolean; top: GroupItem[]; ki
 
 /** Why a faded copy can't be a CanvasGroup (undefined when it can), given the blend of its layer and of the copy it sits in. */
 export function groupBlocker(sc: BonesScope, blend: NativeBlend, inherit: NativeBlend = 'mix'): string | undefined {
-  if (blend !== 'mix' || inherit !== 'mix') return 'its layer uses Add or Multiply, which a group would blend inside itself instead of with the stage';
+  if (blend !== 'mix' || inherit !== 'mix') return 'its layer uses a blend mode other than normal, which a group would blend inside itself instead of with the stage';
   return groupLayout(sc).why;
 }
 
