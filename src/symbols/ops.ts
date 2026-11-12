@@ -340,7 +340,7 @@ export function makeTween(layerId?: Id, frame?: number, kind: 'classic' | 'shape
     }
     if (kind === 'classic') wrapIfPlain(dd, b.drawingId, 'Moving part');
     wrapped = Object.keys(dd.symbols ?? {}).length > before;
-    a.tween = { ...(kind === 'shape' ? { kind: 'shape' as const } : {}), ease: a.tween?.ease ?? DEFAULT_EASE, ...(a.tween?.slice ? { slice: a.tween.slice } : {}), ...(a.tween?.spin ? { spin: a.tween.spin } : {}), ...(a.tween?.path ? { path: a.tween.path } : {}), ...(kind === 'shape' && a.tween?.hints ? { hints: a.tween.hints } : {}) };
+    a.tween = { ...(kind === 'shape' ? { kind: 'shape' as const } : {}), ease: a.tween?.ease ?? DEFAULT_EASE, ...(a.tween?.slice ? { slice: a.tween.slice } : {}), ...(a.tween?.spin ? { spin: a.tween.spin } : {}), ...(a.tween?.facing ? { facing: a.tween.facing } : {}), ...(a.tween?.path ? { path: a.tween.path } : {}), ...(kind === 'shape' && a.tween?.hints ? { hints: a.tween.hints } : {}) };
     endFrame = b.start;
   });
   if (endFrame < 0) return undefined;
@@ -568,12 +568,14 @@ export function setMotionPath(points: PathPoint[]): Result {
   if (points.length < 2) return say('Draw a longer line for it to follow.');
   return updateTween('Follow a path', (t) => {
     t.path = { points: points.map((p) => ({ ...p })), orient: t.path?.orient ?? false } as MotionPath;
+    delete t.facing;
   });
 }
 
 export function clearMotionPath(): Result {
   return updateTween('Stop following the path', (t) => {
     delete t.path;
+    delete t.facing;
   });
 }
 

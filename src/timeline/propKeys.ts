@@ -185,7 +185,7 @@ function splitCel(doc: Doc, layer: Layer, frame: number): Cel | undefined {
   const cut: Cel = { id: uid('c'), start: frame, length: end(cel) - frame, drawingId: nd.id };
   if (cel.tween && tp) {
     // Each half takes its part of the easing, its share of the spin and its piece of the motion path.
-    const halves = cutTween(cel.tween, local / cel.length);
+    const halves = cutTween(cel.tween, local / cel.length, nd.kind !== 'camera');
     if (halves.turns) {
       if (nd.kind === 'camera') nd.view.rotation -= halves.turns * 360;
       else if (nd.kind === 'vector') takeTurns(nd, d, doc.drawings[tp.next.drawingId], halves.turns);

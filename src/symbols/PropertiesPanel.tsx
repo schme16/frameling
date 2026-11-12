@@ -266,7 +266,7 @@ export function TweenSection() {
         </Field>
       )}
       <div className="sy-grid">
-        <Num label="Extra spins" value={tw.spin ?? 0} onChange={(v) => updateTween('Extra spins', (t) => void (Math.round(v) ? (t.spin = Math.round(v)) : delete t.spin), { coalesce: `spin-${cel.id}` })} title="Whole turns on the way. Negative spins the other way." />
+        <Num label="Extra spins" value={Math.round(tw.spin ?? 0)} onChange={(v) => updateTween('Extra spins', (t) => void (Math.round(v) ? (t.spin = Math.round(v)) : delete t.spin), { coalesce: `spin-${cel.id}` })} title="Whole turns on the way. Negative spins the other way." />
       </div>
       <Field label="Path to follow (motion path)">
         <div className="cv-row cv-wrap">
@@ -277,7 +277,7 @@ export function TweenSection() {
           {tw.path && <ActionButton onClick={() => clearMotionPath()}>Straight line again</ActionButton>}
         </div>
       </Field>
-      {tw.path && <Toggle label="Turn to face along the path" checked={tw.path.orient} onChange={(v) => updateTween('Turn along the path', (t) => void (t.path && (t.path.orient = v)))} />}
+      {tw.path && <Toggle label="Turn to face along the path" checked={tw.path.orient} onChange={(v) => updateTween('Turn along the path', (t) => void (t.path && ((t.path.orient = v), delete t.facing)))} />}
       <div className="cv-row cv-wrap">
         <ActionButton onClick={() => removeTween()}>Remove in-betweens</ActionButton>
       </div>

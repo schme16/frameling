@@ -8,8 +8,9 @@
  * - Posing: `poseAt` is what a layer shows at a frame once instances know which of their own frames to show and
  *   tweens have moved them. Plain drawings come back as themselves, so the canvas's bitmap cache keeps working.
  */
-import type { Cel, Doc, Drawing, EditFrame, Id, InstanceShape, Layer, MotionPath, PathPoint, Shape, SymbolDef, Transform2D, Tween, VectorDrawing } from './format';
+import type { Cel, Doc, Drawing, EditFrame, Id, InstanceShape, Layer, MotionPath, Shape, SymbolDef, Transform2D, Tween, VectorDrawing } from './format';
 import { tweenEase } from './ease';
+import { locate, tableOf } from './motionPath';
 import { celAt, uid } from './doc';
 import { isAnimatedText } from '../text/model';
 import { poseParticles } from '../particles/draw';
@@ -332,61 +333,12 @@ export function mixColor(a: string, b: string, t: number): string {
   return '#' + x.map((v, i) => Math.round(lerp(v, y[i], Math.max(0, Math.min(1, t)))).toString(16).padStart(2, '0')).join('');
 }
 
-// Motion paths are flattened once into a polyline with running lengths.
-interface PathTable {
-  pts: { x: number; y: number }[];
-  acc: number[];
-  total: number;
-}
-const pathTables = new WeakMap<MotionPath, PathTable>();
-
-function flattenPath(points: PathPoint[]): { x: number; y: number }[] {
-  const out: { x: number; y: number }[] = [];
-  if (!points.length) return out;
-  out.push({ x: points[0].x, y: points[0].y });
-  for (let i = 1; i < points.length; i++) {
-    const a = points[i - 1];
-    const q = points[i];
-    if (q.c1 && q.c2) {
-      for (let k = 1; k <= 16; k++) {
-        const t = k / 16;
-        const u = 1 - t;
-        out.push({
-          x: u * u * u * a.x + 3 * u * u * t * q.c1.x + 3 * u * t * t * q.c2.x + t * t * t * q.x,
-          y: u * u * u * a.y + 3 * u * u * t * q.c1.y + 3 * u * t * t * q.c2.y + t * t * t * q.y,
-        });
-      }
-    } else out.push({ x: q.x, y: q.y });
-  }
-  return out;
-}
-
-function pathTable(p: MotionPath): PathTable {
-  let t = pathTables.get(p);
-  if (!t) {
-    const pts = flattenPath(p.points);
-    const acc = [0];
-    for (let i = 1; i < pts.length; i++) acc.push(acc[i - 1] + Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y));
-    t = { pts, acc, total: acc[acc.length - 1] ?? 0 };
-    pathTables.set(p, t);
-  }
-  return t;
-}
-
 /** Position and heading (degrees) at `t` (0..1, by distance along the line; past the ends it keeps going straight). */
 export function pointOnPath(p: MotionPath, t: number): { x: number; y: number; angle: number } {
-  const tab = pathTable(p);
-  const { pts, acc, total } = tab;
-  if (pts.length < 2 || !total) return { x: pts[0]?.x ?? 0, y: pts[0]?.y ?? 0, angle: 0 };
-  const s = t * total;
-  let i = 1;
-  if (s >= total) i = pts.length - 1;
-  else while (i < pts.length - 1 && acc[i] < s) i++;
-  const a = pts[i - 1];
-  const b = pts[i];
-  const seg = acc[i] - acc[i - 1] || 1;
-  const u = (s - acc[i - 1]) / seg;
-  return { x: lerp(a.x, b.x, u), y: lerp(a.y, b.y, u), angle: Math.atan2(b.y - a.y, b.x - a.x) / RAD };
+  const tab = tableOf(p);
+  const at = locate(tab, t * tab.total);
+  if (!at) return { x: p.points[0]?.x ?? 0, y: p.points[0]?.y ?? 0, angle: 0 };
+  return { x: at.x, y: at.y, angle: at.angle };
 }
 
 /** A position and turn `t` (eased) of the way between two, with the tween's extra spins and motion path applied. */
@@ -396,7 +348,7 @@ export function tweenTransform(ta: Transform2D, tb: Transform2D, tw: Tween, t: n
     y: lerp(ta.y, tb.y, t),
     scaleX: lerp(ta.scaleX, tb.scaleX, t),
     scaleY: lerp(ta.scaleY, tb.scaleY, t),
-    rotation: lerp(ta.rotation, tb.rotation, t) + (tw.spin ?? 0) * 360 * t,
+    rotation: lerp(ta.rotation, tb.rotation, t) + ((tw.spin ?? 0) + (tw.facing ?? 0)) * 360 * t,
     skew: lerp(ta.skew, tb.skew, t),
   };
   if (tw.path && tw.path.points.length > 1) {

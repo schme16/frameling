@@ -623,6 +623,11 @@ export interface Tween {
   slice?: [number, number];
   /** Extra whole turns on the way (positive clockwise). */
   spin?: number;
+  /**
+   * A fraction of a turn that keeps a cut motion path facing the way it did before the cut (turn-to-face paths only). It
+   * belongs to the path: whoever sets, clears or turns off the path clears it, and the Extra spins field never shows it.
+   */
+  facing?: number;
   /** Follow this line on the way (stage coordinates of the layer). */
   path?: MotionPath;
   /** Shape tweens only: paired markers saying which point of the start drawing becomes which of the end one. */
