@@ -1,4 +1,6 @@
 // The flows of scripts/e2e/web.cjs.
+const fs = require('node:fs');
+const path = require('node:path');
 const { flow, check, sleep, makeWindow } = require('./web.cjs');
 
 flow('launch', async () => {
@@ -200,8 +202,6 @@ flow('recovery', async () => {
   await sleep(300);
 });
 
-const fs = require('node:fs');
-const path = require('node:path');
 const ASSETS = path.join(__dirname, '../docs/help/assets');
 const asset = (n) => fs.readFileSync(path.join(ASSETS, n));
 
@@ -534,3 +534,144 @@ for (const mode of ['picker', 'plain']) {
     await w.shot(`model-${mode}`);
   });
 }
+
+// The service worker: the app opens with no network, after plugin frames, and updates come back when the network does.
+flow('offline', async (ctx) => {
+  const w = makeWindow('persist:offline');
+  await w.load('picker');
+  await w.js(`__frameling.overlays.closeSheet()`);
+  const sw = await w.waitFor(`navigator.serviceWorker.ready.then((r) => !!r.active)`, 15000);
+  check('the service worker installs and activates', !!sw, sw);
+  // It takes control on the next load; wait for the copy of the app to be complete.
+  const cached = await w.waitFor(`caches.keys().then(async (ks) => { const k = ks.find((x) => /^frameling-/.test(x)); if (!k) return 0; return (await (await caches.open(k)).keys()).length; }).then((n) => n > 50 && n)`, 15000);
+  check('the whole app is kept in the cache', cached > 50, cached);
+  await w.load('picker');
+  check('the page is controlled by the worker after a reload', await w.js(`!!navigator.serviceWorker.controller`));
+  // A plugin's sandbox frame is a navigation too: it must not replace the saved page.
+  await w.js(`new Promise((res) => { const f = document.createElement('iframe'); f.setAttribute('sandbox', 'allow-scripts'); f.src = new URL('plugin-host.html', document.baseURI).href + '?plugin=probe'; f.onload = () => setTimeout(res, 300); document.body.appendChild(f); })`);
+  await sleep(500);
+  const home = await w.js(`caches.keys().then(async (ks) => { const c = await caches.open(ks.find((x) => /^frameling-/.test(x))); const r = await c.match('./'); return (await r.text()).slice(0, 4000); })`);
+  check("a plugin frame's page does not replace the saved app page", /<div id="root">/.test(home) && !/Plugin<\/title>/.test(home), home.slice(0, 200));
+  // Offline: stop the server and reload.
+  await ctx.unlisten();
+  await w.win.loadURL(`http://127.0.0.1:${ctx.port}/?debug&shim=picker`).catch(() => {});
+  await sleep(2500);
+  const up = await w.js(`!!(window.__frameling && window.frameling && document.querySelector('.ui-app'))`).catch(() => false);
+  check('offline: the app opens from the saved copy', up === true, up);
+  if (up) {
+    await w.js(`__frameling.overlays.closeSheet()`);
+    await w.js(`__frameling.template('bouncing-ball')`);
+    await sleep(400);
+    check('offline: a template opens and draws', (await w.js(`__frameling.store().get().doc.layers.length`)) >= 1);
+    // Parts that load on demand (the Export dialog, Help) come from the cache too.
+    await w.run('file.export');
+    check('offline: the Export dialog (a lazy part) opens', await w.waitFor(`/Animated GIF/.test(document.body.innerText)`, 6000));
+    await w.input.key('Escape');
+    await sleep(300);
+    await w.js(`__frameling.overlays.openHelp('exporting')`);
+    check('offline: Help opens', await w.waitFor(`/Export/.test(document.querySelector('[role=dialog]')?.innerText ?? '')`, 6000));
+    await sleep(800);
+    await w.shot('offline-help');
+    // A save still works (picker mode writes to the disk, no network).
+    await w.js(`__frameling.overlays.closeHelp?.()`);
+    await w.js(`__frameling.store().update('Rename', (d) => { d.name = 'Offline'; })`);
+    await w.js(`__framelingIo.saveDocument()`);
+    await sleep(400);
+    check('offline: Save works', (await w.files.collect()).length === 1);
+  }
+  await ctx.listen();
+  await w.load('picker');
+  check('back online: the app loads again', await w.js(`!!window.__frameling`));
+});
+
+// Plugins in the web build: the sandbox page's policy, an example installed from a file, running, kept in the browser
+// across a reload, and still starting with no network.
+const PROBE = `
+const violations = [];
+self.addEventListener('securitypolicyviolation', (e) => violations.push(e.blockedURI || e.violatedDirective));
+onmessage = async (e) => {
+  const port = e.ports[0];
+  const r = {};
+  try { await fetch('https://example.com/'); r.fetch = 'reached'; } catch (err) { r.fetch = 'blocked'; }
+  try { importScripts('https://example.com/x.js'); r.importScripts = 'reached'; } catch (err) { r.importScripts = 'blocked'; }
+  try { await new Promise((ok, bad) => { const q = indexedDB.open('x'); q.onsuccess = ok; q.onerror = () => bad(q.error); }); r.indexedDB = 'opened'; } catch (err) { r.indexedDB = 'blocked'; }
+  r.document = typeof document;
+  r.parent = typeof parent;
+  await new Promise((ok) => setTimeout(ok, 300));
+  r.violations = violations;
+  port.postMessage(r);
+};`;
+const example = (name) => ({
+  'manifest.json': fs.readFileSync(path.join(__dirname, '../../plugins/examples', name, 'manifest.json'), 'utf8'),
+  'main.js': fs.readFileSync(path.join(__dirname, '../../plugins/examples', name, 'main.js'), 'utf8'),
+});
+flow('plugins', async (ctx) => {
+  const w = makeWindow('persist:plugins');
+  await w.load('picker');
+  await w.js(`__frameling.overlays.closeSheet()`);
+  for (const [page, net] of [['plugin-host.html', []], ['plugin-host-net.html', ['https://allowed.example.com']]]) {
+    const r = await w.js(`new Promise((resolve) => {
+      const f = document.createElement('iframe');
+      f.setAttribute('sandbox', 'allow-scripts');
+      f.src = new URL(${JSON.stringify(page)}, document.baseURI).href;
+      const t = setTimeout(() => resolve({ timeout: true }), 8000);
+      addEventListener('message', function on(e) {
+        if (e.source !== f.contentWindow) return;
+        removeEventListener('message', on);
+        let reachable; try { reachable = !!f.contentDocument; } catch (err) { reachable = false; }
+        const ch = new MessageChannel();
+        ch.port1.onmessage = (m) => { clearTimeout(t); f.remove(); resolve({ ...m.data, appReachable: reachable }); };
+        f.contentWindow.postMessage({ t: 'start', prelude: ${JSON.stringify(PROBE)}, code: '', plugin: {}, network: ${JSON.stringify(net)} }, '*', [ch.port2]);
+      });
+      document.body.appendChild(f);
+    })`);
+    const tag = net.length ? 'net page' : 'plain page';
+    check(`${tag}: the sandbox worker starts`, !r.timeout, r);
+    check(`${tag}: the frame can't reach the app, the network or storage`, r.appReachable === false && r.fetch === 'blocked' && r.importScripts === 'blocked' && r.indexedDB === 'blocked' && r.document === 'undefined' && r.parent === 'undefined', r);
+  }
+  const install = async (name) => {
+    await w.js(`window.__framelingPlugins.install(${JSON.stringify(example(name))}); true`);
+    await sleep(400);
+    await w.js(`document.querySelector('.plugin-approve .ui-btn-primary')?.click(); true`);
+    await sleep(1200);
+  };
+  await install('flip-every-other-frame');
+  const list = await w.js(`__framelingPlugins.list()`);
+  check('the example plugin installs and runs in the web sandbox', list.length === 1 && list[0].status === 'on', list);
+  const flip = async () => {
+    await w.js(`__frameling.template('bouncing-ball'); 0`);
+    await sleep(300);
+    const read = () => w.js(`(() => { const s = __frameling.store().get(); const l = s.doc.layers.find((x) => x.cels.length > 2); __frameling.store().setUi({ activeLayerId: l.id }); const d = s.doc.drawings[l.cels[1].drawingId]; return JSON.stringify(d.shapes?.[0]?.paths?.[0]?.points?.[0] ?? d.shapes?.[0]); })()`);
+    const before = await read();
+    await w.js(`void __frameling.run('plugin.flip-every-other-frame.flip'); 0`);
+    await sleep(1000);
+    return before !== (await read());
+  };
+  check("the plugin's command edits the drawing", await flip());
+  await w.shot('plugins-installed');
+  // A reload: the plugin is kept (IndexedDB) and starts again.
+  await w.load('picker');
+  await w.js(`__frameling.overlays.closeSheet()`);
+  await sleep(1500);
+  const again = await w.js(`__framelingPlugins.list()`);
+  check('after a reload the plugin is still there and on', again.length === 1 && again[0].status === 'on', again);
+  // Offline: a sandboxed frame has no origin, so the browser never asks the service worker for its page. The plugin
+  // can't start; it says so (a problem the person can read), and it starts again once the network is back.
+  await w.waitFor(`navigator.serviceWorker.ready.then((r) => !!r.active)`, 10000);
+  await w.load('picker');
+  await ctx.unlisten();
+  await w.win.loadURL(`http://127.0.0.1:${ctx.port}/?debug&shim=picker`).catch(() => {});
+  await sleep(12000);
+  await w.js(`__frameling.overlays.closeSheet()`).catch(() => {});
+  const off = await w.js(`__framelingPlugins.list()`).catch(() => null);
+  check('offline: the app opens, and the plugin that cannot start says so instead of hanging', off && off.length === 1 && off[0].status === 'problem' && /sandbox did not start/.test(off[0].problem || ''), off);
+  const frames = await w.js(`document.querySelectorAll('iframe.plugin-sandbox').length`).catch(() => -1);
+  check('offline: no copy of the app is loaded inside a plugin frame', frames === 0, frames);
+  await ctx.listen();
+  await w.load('picker');
+  await w.js(`__frameling.overlays.closeSheet()`);
+  await sleep(2000);
+  const back = await w.js(`__framelingPlugins.list()`);
+  check('back online: the plugin starts again', back.length === 1 && back[0].status === 'on', back);
+});
+

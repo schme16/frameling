@@ -68,7 +68,7 @@ self.addEventListener('fetch', (e) => {
   if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;
   // Pages: the network first, so an update shows up; the saved copy when offline.
   if (req.mode === 'navigate') {
-    e.respondWith(fetch(req).then((res) => { const copy = res.clone(); caches.open(CACHE).then((c) => c.put('./', copy)); return res; }).catch(() => caches.match('./')));
+    e.respondWith(fetch(req).then((res) => { if (res.ok) { const copy = res.clone(); caches.open(CACHE).then((c) => c.put('./', copy)); } return res; }).catch(() => caches.match('./')));
     return;
   }
   // Everything else is versioned by name, so the saved copy wins; anything new (a help video) is saved once fetched.

@@ -164,7 +164,7 @@ function makeWindow(partition) {
   win.webContents.on('console-message', (e) => {
     if (e.level === 'error' || e.level === 3) {
       const m = String(e.message ?? e);
-      if (!/Failed to load resource/.test(m)) errors.push(m);
+      if (!/Failed to load resource|example\.com/.test(m)) errors.push(m);
     }
   });
   const wc = win.webContents;
