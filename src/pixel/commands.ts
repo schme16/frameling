@@ -7,7 +7,7 @@ import { registerChoice, withChoice } from '../core/choices';
 import type { Doc, DocPalette, PixelDrawing } from '../core/format';
 import { registerCommands } from '../core/registry';
 import { store } from '../core/store';
-import { paletteScope, setVariationPalette } from '../artboards/variations';
+import { paletteScope, setVariationPalette, sharedEditNote } from '../artboards/variations';
 import { parseHex } from '../canvas/colors';
 import { hint } from '../canvas/controller';
 import { activeDrawing, activeLayer, editActiveDrawing, EDIT_HINTS } from '../tools/edit';
@@ -72,7 +72,7 @@ export function changePaletteColor(index: number, color: string): void {
   if (!old || old.toLowerCase() === color.toLowerCase()) return;
   const next: DocPalette = { ...p, colors: p.colors.map((c, i) => (i === index ? color : c)) };
   const [r, g, b] = rgb3(old);
-  const scope = paletteScope(doc);
+  const scope = paletteScope(doc, old);
   const usesOld = Object.values(doc.drawings).some((d) => d.kind === 'pixel' && scope(d.id) && usesColor(d.pixels, r, g, b));
   const apply = (recolour: boolean) =>
     store().update('Change palette colour', (d) => {
@@ -80,6 +80,8 @@ export function changePaletteColor(index: number, color: string): void {
       if (recolour) recolourDoc(d, old, color, scope);
     });
   if (!usesOld) return apply(false);
+  // In a variation the new colour is its colourway: its pixels follow without asking.
+  if (sharedEditNote(doc, 'palette')) return apply(true);
   withChoice<RecolourChoice>('palette.recolour', (v) => apply(v === 'recolour'));
 }
 

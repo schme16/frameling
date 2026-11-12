@@ -17,7 +17,7 @@ import './pixel.css';
 import { usePopover } from '../ui/popover';
 import { dock, inPixelWorkspace } from '../ui/dock';
 import { paletteIndexOf } from './bar';
-import { variationPalette } from '../artboards/variations';
+import { sharedEditNote, variationPalette } from '../artboards/variations';
 import { PaintWells } from './PaintWells';
 import { usePaintWells } from '../tools/pixelWells';
 
@@ -281,6 +281,7 @@ export function PalettePanel() {
       ) : (
         <p className="cv-tip">The palette lock and shading work on pixel layers. Pick or add a pixel layer to use them.</p>
       )}
+      {sharedEditNote(doc, 'palette') && <p className="cv-tip">This is a variation. Change a colour here and only this variation changes; the rest follows the original. The list of colours itself belongs to the original.</p>}
       {!doc.palette && !variationPalette(doc) && <p className="cv-tip">This is the starter palette. Change anything and it's saved with your document.</p>}
 
       {menu && <ChipMenu menu={menu} palette={palette} onClose={() => setMenu(null)} />}

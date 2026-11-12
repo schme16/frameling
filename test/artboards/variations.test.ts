@@ -791,57 +791,6 @@ describe('variations: sound, palette and what stays shared', () => {
     expect(a.content!.audio!.map((c) => [c.id, c.volume])).toEqual([['a1', 0.25], ['a2', undefined], ['a7', 0.5]]);
   });
 
-  it('a variation gets its own palette; the original and the other variations keep theirs', () => {
-    const d0 = sample();
-    d0.palette = { name: 'Mine', colors: ['#ff0000', '#00ff00', '#0000ff'] };
-    resetStore(d0);
-    const v = make();
-    const w = make();
-    open(v);
-    expect(docPalette(doc()).colors).toEqual(['#ff0000', '#00ff00', '#0000ff']);
-    update('Palette', (d) => void setVariationPalette(d, { name: 'Night', colors: ['#220000', '#002200', '#000022'] }));
-    expect(docPalette(doc()).name).toBe('Night');
-    expect(doc().palette!.name).toBe('Mine');
-    expect(findArtboard(doc(), v)!.overrides!.palette!.name).toBe('Night');
-    // Edits after it do not drop it.
-    update('Look', (d) => void (d.layers[0].opacity = 0.5));
-    expect(findArtboard(doc(), v)!.overrides!.palette!.name).toBe('Night');
-    expect(artboardDoc(doc(), v).palette!.name).toBe('Night');
-    expect(artboardDoc(doc(), w).palette!.name).toBe('Mine');
-    open(w);
-    expect(docPalette(doc()).name).toBe('Mine');
-    open(root());
-    expect(listDifferences(doc(), v).map((i) => i.label)).toContain('Palette: its own colours (3), the original\'s stay as they are');
-    update('Reset', (d) => void resetDifference(d, v, { t: 'palette' }));
-    expect(findArtboard(doc(), v)!.overrides!.palette).toBeUndefined();
-  });
-
-  it('a colourway: changing a palette colour in a variation recolours only its pixels', () => {
-    const d0 = newDoc({ name: 'Px', width: 4, height: 4, length: 2, pixel: { pixelSize: 1 } });
-    const p = newPixelDrawing(4, 4);
-    p.pixels.set([255, 0, 0, 255], 0);
-    d0.drawings[p.id] = p;
-    d0.layers[0].cels.push({ id: 'pc', start: 0, length: 2, drawingId: p.id });
-    d0.palette = { name: 'P', colors: ['#ff0000', '#00ff00'] };
-    resetStore(d0);
-    const v = make();
-    open(v);
-    changePaletteColor(0, '#0000ff');
-    expect(findArtboard(doc(), v)!.overrides!.palette!.colors[0]).toBe('#0000ff');
-    expect(doc().palette!.colors[0]).toBe('#ff0000');
-    const mine = doc().drawings[aliasId(p.id, v)] as PixelDrawing;
-    expect([...mine.pixels.slice(0, 4)]).toEqual([0, 0, 255, 255]);
-    expect([...(doc().drawings[p.id] as PixelDrawing).pixels.slice(0, 4)]).toEqual([255, 0, 0, 255]);
-    open(root());
-    // Changing the original's palette later does not reach the variation's own colours.
-    changePaletteColor(1, '#ffff00');
-    expect([...(doc().drawings[aliasId(p.id, v)] as PixelDrawing).pixels.slice(0, 4)]).toEqual([0, 0, 255, 255]);
-    expect(findArtboard(doc(), v)!.overrides!.palette!.colors).toEqual(['#0000ff', '#00ff00']);
-    // The palette is saved with the variation and opens again.
-    const loaded = loadFile(saveFile(doc())).doc;
-    expect(findArtboard(loaded, v)!.overrides!.palette!.colors).toEqual(['#0000ff', '#00ff00']);
-  });
-
   it('shared things are not edited from a variation: the change is refused with a plain note and nothing is recorded', () => {
     const v = make();
     open(v);

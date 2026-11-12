@@ -186,8 +186,24 @@ export interface VariationOverrides {
   drawings?: Record<Id, DrawingOverride>;
   /** Sound clips by id: volume, mute, start and name changes, clips left out, clips added. */
   audio?: ListOverride<AudioClip>;
-  /** This variation's own palette (a colourway for pixel art). Missing = the original's. */
-  palette?: DocPalette;
+  /** The palette colours this variation changed (a colourway for pixel art). Every other colour follows the original. */
+  palette?: PaletteOverride;
+}
+
+/** One palette colour a variation made its own: `from` is the colour in the original's palette, `to` what this variation has instead. */
+export interface PaletteColourChange {
+  from: Color;
+  to: Color;
+}
+
+/**
+ * A variation's colourway: only the colours it changed. Colours the original adds, removes or moves flow through; the
+ * pixels of the original that have a changed colour are shown in the new one. `legacy` is an older file's whole palette,
+ * turned into changes once the original's palette is known (it is never written).
+ */
+export interface PaletteOverride {
+  changes: PaletteColourChange[];
+  legacy?: DocPalette;
 }
 
 /** The part of a document each artboard has its own copy of. */

@@ -50,6 +50,10 @@ export function registerGuard(fn: Guard): void {
 export function onBlocked(fn: (message: string) => void): void {
   blockedHandler = fn;
 }
+/** Says a refusal's sentence the same way (for a change that is let through as nothing, not as a patch). */
+export function reportBlocked(message: string): void {
+  blockedHandler(message);
+}
 
 export interface OnionSettings {
   enabled: boolean;
