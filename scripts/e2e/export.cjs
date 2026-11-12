@@ -1224,19 +1224,27 @@ async function godotBonesSection() {
     check(files.filter((n) => n.endsWith('.png')).length >= 13, 'expected a picture for every part');
     const tscn = fs.readFileSync(path.join(dir, scene), 'utf8');
     check(tscn.includes('type="Skeleton2D"') && tscn.includes('type="Polygon2D"') && tscn.includes('type="AnimationPlayer"'), 'scene is missing the skeleton, the bent body or the player');
-    if (!GODOT || SKIP.includes('godot')) return;
-    const doc = await X('doc()');
-    const proj = path.join(dir, '_godot');
-    fs.rmSync(proj, { recursive: true, force: true });
-    fs.mkdirSync(path.join(proj, 'sprites'), { recursive: true });
-    for (const n of files) fs.copyFileSync(path.join(dir, n), path.join(proj, 'sprites', n));
-    const bg = (doc.background || '#ffffff').replace('#', '');
-    const c = [0, 2, 4].map((i) => (parseInt(bg.slice(i, i + 2), 16) / 255).toFixed(4)).join(', ');
-    fs.writeFileSync(path.join(proj, 'project.godot'), `config_version=5\n\n[application]\nconfig/name="bones"\n\n[rendering]\nrenderer/rendering_method="gl_compatibility"\nenvironment/defaults/default_clear_color=Color(${c}, 1)\n\n[display]\nwindow/size/viewport_width=${doc.width}\nwindow/size/viewport_height=${doc.height}\n`);
-    const shots = [0, 3, 6, 9, 15, 23];
-    fs.writeFileSync(
-      path.join(proj, 'render.gd'),
-      `extends SceneTree
+    await renderBonesInGodot({ dir, files, scene, settings, shots: [0, 3, 6, 9, 15, 23], anim: 'walk', tolerance: 0.03 });
+  } catch (e) {
+    fail(`harness error: ${e?.stack ?? e}`);
+  }
+}
+
+// Loads a bones export in real Godot (a project with the export's files in sprites/), plays an animation, saves a
+// picture of each wanted frame and compares it with Frameling's own PNG export of the same frame.
+async function renderBonesInGodot({ dir, files, scene, settings, shots, anim, tolerance }) {
+  if (!GODOT || SKIP.includes('godot')) return;
+  const doc = await X('doc()');
+  const proj = path.join(dir, '_godot');
+  fs.rmSync(proj, { recursive: true, force: true });
+  fs.mkdirSync(path.join(proj, 'sprites'), { recursive: true });
+  for (const n of files) fs.copyFileSync(path.join(dir, n), path.join(proj, 'sprites', n));
+  const bg = (doc.background || '#ffffff').replace('#', '');
+  const c = [0, 2, 4].map((i) => (parseInt(bg.slice(i, i + 2), 16) / 255).toFixed(4)).join(', ');
+  fs.writeFileSync(path.join(proj, 'project.godot'), `config_version=5\n\n[application]\nconfig/name="bones"\n\n[rendering]\nrenderer/rendering_method="gl_compatibility"\nenvironment/defaults/default_clear_color=Color(${c}, 1)\n\n[display]\nwindow/size/viewport_width=${doc.width}\nwindow/size/viewport_height=${doc.height}\n`);
+  fs.writeFileSync(
+    path.join(proj, 'render.gd'),
+    `extends SceneTree
 func _init():
 	var s = load("res://sprites/${scene}").instantiate()
 	root.add_child(s)
@@ -1245,7 +1253,7 @@ func _init():
 	await process_frame
 	print("ANIMS " + ",".join(ap.get_animation_list()))
 	for f in [${shots.join(', ')}]:
-		ap.play("walk")
+		ap.play("${anim}")
 		ap.seek(f / ${doc.fps}.0, true)
 		ap.pause()
 		await process_frame
@@ -1255,22 +1263,47 @@ func _init():
 	print("RENDERED")
 	quit()
 `,
-    );
-    sh(GODOT, ['--headless', '--path', proj, '--import'], { timeout: 120000 });
-    const run = sh(GODOT, ['--path', proj, '--rendering-driver', 'opengl3', '--script', 'render.gd'], { timeout: 120000 });
-    if (!check(run.out.includes('RENDERED'), `Godot did not render: ${(run.err + run.out).slice(0, 400)}`)) return;
-    check(/ANIMS walk/.test(run.out), 'Godot has no walk animation');
-    let worst = 0;
-    for (const f of shots) {
-      const ref = await reference(settings, f, false);
-      const e = ref && rmse(path.join(proj, `shot-${f}.png`), ref);
-      if (e === null || e === undefined) continue;
-      worst = Math.max(worst, e);
-      note(`frame ${f}: rmse ${e.toFixed(4)}`);
-      // Godot resamples each part's picture, so edges differ a little. A part out of place is far more than this.
-      check(e < 0.03, `frame ${f} in Godot differs from Frameling's PNG (rmse ${e.toFixed(4)})`);
-    }
-    note(`godot bones ok, worst rmse ${worst.toFixed(4)}`);
+  );
+  sh(GODOT, ['--headless', '--path', proj, '--import'], { timeout: 120000 });
+  const run = sh(GODOT, ['--path', proj, '--rendering-driver', 'opengl3', '--script', 'render.gd'], { timeout: 120000 });
+  if (!check(run.out.includes('RENDERED'), `Godot did not render: ${(run.err + run.out).slice(0, 400)}`)) return;
+  check(new RegExp(`ANIMS .*${anim}`).test(run.out), `Godot has no ${anim} animation`);
+  let worst = 0;
+  for (const f of shots) {
+    const ref = await reference(settings, f, false);
+    const e = ref && rmse(path.join(proj, `shot-${f}.png`), ref);
+    if (e === null || e === undefined) continue;
+    worst = Math.max(worst, e);
+    note(`frame ${f}: rmse ${e.toFixed(4)}`);
+    // Godot resamples each part's picture, so edges differ a little. A part out of place is far more than this.
+    check(e < tolerance, `frame ${f} in Godot differs from Frameling's PNG (rmse ${e.toFixed(4)})`);
+  }
+  note(`godot bones ok, worst rmse ${worst.toFixed(4)}`);
+}
+
+// A symbol with its own bones (moving, faded and tinted), a camera that pans, turns and zooms, a far layer with depth
+// and an Add glow with an effect, exported as bones and compared in Godot with Frameling's own frames.
+async function godotBonesExtrasSection() {
+  const r = begin('bones-extras', 'sheet godot-bones');
+  try {
+    const dir = setAutomationDir(path.join(outDir, 'bones-extras', 'sheet-godot-bones'));
+    await X('loadBonesExtras(true)');
+    const defaults = await X('defaults()');
+    const settings = { ...defaults, format: 'sheet', range: 'all', clipId: null, scale: 1, transparent: false, sheet: { ...defaults.sheet, engine: 'godot', godot: true, godotScene: true, json: false, godotRig: 'bones', godotPath: '' } };
+    r.settings = settings;
+    const res = await X(`run(${JSON.stringify(settings)})`);
+    note(`${res.ms}ms`);
+    if (!check(res.outcome === 'done', `export did not finish: ${JSON.stringify(res)}`)) return;
+    const files = listFiles(dir).sort();
+    note(files.join(', '));
+    const scene = files.find((n) => n.endsWith('.tscn'));
+    if (!check(scene, 'no .tscn')) return;
+    const tscn = fs.readFileSync(path.join(dir, scene), 'utf8');
+    check(tscn.includes('type="Camera2D"') && tscn.includes('type="Parallax2D"'), 'scene is missing the camera or the parallax layer');
+    check(/\[node name="Arm" type="Node2D"/.test(tscn) && tscn.includes('type="Skeleton2D" parent="Arm"'), "scene is missing the symbol's own skeleton");
+    check(!tscn.includes('name="Hero"'), 'the hero layer should hold only the live symbol copies');
+    check(files.some((n) => n.endsWith('.gdshader')), 'no tint shader');
+    await renderBonesInGodot({ dir, files, scene, settings, shots: [0, 3, 6, 8, 11], anim: 'default', tolerance: 0.03 });
   } catch (e) {
     fail(`harness error: ${e?.stack ?? e}`);
   }
@@ -1285,6 +1318,7 @@ func _init():
     await startApp();
     await exportMatrix();
     if (!ONLY || ONLY.includes('godot-bones')) await godotBonesSection();
+    if (!ONLY || ONLY.includes('godot-bones')) await godotBonesExtrasSection();
     if (!SKIP.includes('files')) await filesSection();
   } catch (e) {
     begin('harness', 'startup').failures.push(String(e?.stack ?? e));

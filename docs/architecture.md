@@ -316,8 +316,9 @@ Writers:
 - **PSD** (`psd.ts`, `psd-layers.ts`, `layered.ts`, `layered-run.ts`): one layer per Frameling layer, folders as groups.
 - **ProRes** (`prores.ts`): desktop only, streams frames to FFmpeg (`src/main/video.ts`).
 - **Interactives `.flplay`** (`playable.ts`), described in `docs/format.md`.
-- **Godot add-on** (`godot-addon.ts`, zips `godot/addons/frameling_importer`) and **Godot bones** (`godot-bones.ts`,
-  `godot-bones-run.ts`: Skeleton2D scene with parts).
+- **Godot add-on** (`godot-addon.ts`, zips `godot/addons/frameling_importer`) and **Godot bones** (`godot-bones-scope.ts` the parts,
+  nested symbol rigs and layer looks; `godot-bones.ts` the scene text with Camera2D and Parallax2D;
+  `godot-bones-run.ts` draws the pictures, baking effects: Skeleton2D scene with parts).
 - Plugin exports: `src/plugins/export.ts`. Per-artboard export: `src/artboards/export.ts`. Tilesets:
   `src/tiles/export.ts`.
 

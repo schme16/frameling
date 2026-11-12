@@ -154,14 +154,14 @@ Leave a layer out of every export by making it a [reference layer](help:referenc
     title: 'Bones in Godot: a character you can keep animating',
     section: 'Exporting',
     media: 'export-godot-bones.png',
-    summary: 'Send a character with bones to Godot as a skeleton, its parts and every clip, so you can change poses and timing in Godot.',
-    keywords: ['godot', 'skeleton2d', 'bone2d', 'animationplayer', 'polygon2d', 'rig', 'bones', 'cut-out', 'tscn', 'editable'],
+    summary: 'Send a character with bones to Godot as a skeleton, its parts and every clip (with symbols, camera and looks), so you can change poses and timing in Godot.',
+    keywords: ['godot', 'skeleton2d', 'bone2d', 'animationplayer', 'polygon2d', 'rig', 'bones', 'cut-out', 'tscn', 'editable', 'camera2d', 'parallax2d', 'symbol', 'effects', 'blend'],
     body: `A sprite sheet bakes every frame into a picture. For a character with [bones](help:rig) you can send the skeleton itself instead, and keep animating it in Godot.
 
 ## In Frameling
 
 1. Press **Ctrl+E**, pick **Sprite sheet**, then the **Godot** card.
-2. Under it, pick **Bones (editable in Godot)**. (You only see this when your drawing has bones.)
+2. Under it, pick **Bones (editable in Godot)**. (You only see this when your drawing has bones, or a symbol with bones.)
 3. Check **Where the picture will live in your Godot project**. The parts go in the same folder.
 4. Press **Export** and choose that folder inside your Godot project.
 
@@ -179,10 +179,19 @@ $AnimationPlayer.play("walk")
 
 ## Good to know
 
-- Glides that are **Steady**, **Gentle start**, **Gentle stop** or **Gentle start and stop** use Godot's own easing, so they stay smooth and easy to edit. Other easings get a key on every frame.
-- Held poses snap, like they do here. [Squash and stretch](help:rig-stretch) becomes each bone's scale.
-- Swapped drawings (mouths, hands) swap the part's picture at the right frames.
-- Effects, blend modes and the camera aren't part of the scene. Pick **Baked frames** when you need those.`,
+- Glides that are **Steady**, **Gentle start**, **Gentle stop** or **Gentle start and stop** use Godot's own easing. Other easings get a key on every frame.
+- Held poses snap, like they do here. [Squash and stretch](help:rig-stretch) becomes each bone's scale. Swapped drawings (mouths, hands) swap the part's picture.
+- Pictures are drawn at your export size, so export at the size you'll use.
+
+## Symbols, camera and looks
+
+- A [symbol](help:symbols) with its own bones comes as a node for each placed copy, holding its own Skeleton2D and parts. Its place, fade and [timeline](help:symbol-properties) (loop, once, one frame) are keys. A symbol on a layer with effects, or one that follows a bone, is drawn into the pictures instead.
+- The [camera](help:camera) becomes a **Camera2D** with position, zoom and turn keys. Layers with a depth go under a **Parallax2D**. Both line up exactly when your Godot window is the size of the export.
+- A layer's fade is the node's modulate. **Add** and **Multiply** blend modes use a CanvasItemMaterial (Screen becomes Add, other modes draw normal). A symbol's colour wash uses a tiny shader saved next to the scene.
+- [Effects](help:effects) (soften, glow, shadow, colour adjust, outline, pixelate) are baked into the part's picture, since Godot has none built in. An effect that changes over time gets a picture for each step.
+- Masks and "clip to the layer below" don't come across.
+
+The export window lists what was baked or left out for your drawing.`,
   },
   {
     id: 'export-godot',

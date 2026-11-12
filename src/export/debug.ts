@@ -56,6 +56,8 @@ if (typeof window !== 'undefined' && new URLSearchParams(location.search).has('d
     templates: async () => (await import('../templates')).TEMPLATES.map((t) => t.id),
     load: async (id: string) => store().load((await import('../templates')).findTemplate(id)!.make(), null),
     loadStress: () => store().load(stressDoc(), null),
+    // A symbol with bones, a camera, a far layer and an Add glow, for the Godot bones checks.
+    loadBonesExtras: async (camera = true) => store().load((await import('./bonesExtrasDoc')).bonesExtrasDoc(camera ? { camera: { a: { x: 180, y: 135, zoom: 1, rotation: 0 }, b: { x: 215, y: 150, zoom: 1.4, rotation: 6 } } } : {}), null),
     // Every feature at once (symbols, tweens, effects, folders, masks, tiles, bones, sound): see kitchenSink.ts.
     loadKitchenSink: async () => store().load((await import('./kitchenSink')).kitchenSinkDoc(), null),
     loadKitchenSinkPerf: async (frames?: number) => store().load((await import('./kitchenSink')).kitchenSinkPerfDoc(frames), null),

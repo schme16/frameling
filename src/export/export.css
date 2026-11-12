@@ -201,6 +201,9 @@
 .ex-note.ex-warn {
   color: var(--text);
 }
+.ex-bones-look .ex-note + .ex-note {
+  margin-top: 4px;
+}
 .ex-sub {
   margin: 6px 0 0;
   font-weight: 800;

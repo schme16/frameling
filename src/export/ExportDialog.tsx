@@ -14,7 +14,8 @@ import { setDocLength } from '../timeline/ops';
 import { EnginePicker } from './EnginePicker';
 import { openHelp } from '../ui/overlays';
 import { godotTexturePath } from './sheet';
-import { bonesRigs } from './godot-bones';
+import { hasBonesToExport } from './godot-bones-scope';
+import { BonesLookNotes } from './BonesLookNotes';
 import type { Progress } from './run';
 import { GIF_MAX_FPS } from './gif';
 import { proresSupport, type ProresSupport } from './prores';
@@ -148,7 +149,7 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
   const sheet = normalizeSheet(s.sheet);
   const engine = engineInfo(sheet.engine);
   const separate = sheet.content === 'separate';
-  const hasBones = bonesRigs(doc).length > 0;
+  const hasBones = hasBonesToExport(doc);
   const godotBones = sheet.engine === 'godot' && hasBones && !separate && sheet.godotRig === 'bones';
   const artPx = art ? `${Math.round(doc.width * art)} × ${Math.round(doc.height * art)}` : '';
   const pickEngine = (id: EngineId) => {
@@ -262,6 +263,7 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
                   </button>
                 </p>
               )}
+              {godotBones && <BonesLookNotes doc={doc} />}
               {sheet.engine === 'godot' && (
                 <>
                   {!separate && !godotBones && (
