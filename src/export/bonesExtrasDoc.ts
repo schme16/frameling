@@ -15,6 +15,8 @@ export interface ExtrasOptions {
   bigCopy?: number;
   /** A Show mask over the backdrop (a round window) and a stripe clipped to the backdrop. */
   masked?: boolean;
+  /** Fade the first arm copy to half, with a big hand overlapping the arm (parts that overlap show through when faded one by one). */
+  fade?: boolean;
 }
 
 /**
@@ -47,7 +49,7 @@ export function bonesExtrasDoc(o: ExtrasOptions = {}): Doc {
   const upperPart = part('Upper arm', 'bu', 0, -8, 60, 16, '#ff9e6d');
   const lowerPart = part('Lower arm', 'bl', 60, -6, 50, 12, '#ffc94a');
   const hand = newVectorLayer('Hand') as VectorLayer;
-  hold(hand, vectorDrawing(doc, [pathShape([ellipsePath(115, 0, 9, 9)], '#ff6f91', null)]).id, 0, 12);
+  hold(hand, vectorDrawing(doc, [pathShape([ellipsePath(o.fade ? 100 : 115, 0, o.fade ? 20 : 9, o.fade ? 20 : 9)], '#ff6f91', null)]).id, 0, 12);
   const symId = uid('sym');
   (doc.symbols ??= {})[symId] = { id: symId, name: 'Arm', layers: [rig, upperPart, lowerPart, hand], length: 12, origin: { x: 0, y: 0 } };
 
@@ -95,6 +97,7 @@ export function bonesExtrasDoc(o: ExtrasOptions = {}): Doc {
       const t = (d.shapes[1] as InstanceShape).transform;
       Object.assign(t, { x: 20, y: 215, scaleX: o.bigCopy, scaleY: o.bigCopy, rotation: -20 });
     }
+  if (o.fade) for (const d of [h0, h1]) (d.shapes[0] as InstanceShape).opacity = 0.5;
   if (o.fxOnHero) hero.effects = [{ id: uid('e'), kind: 'blur', values: { radius: 2 } }];
   doc.layers.push(hero);
 

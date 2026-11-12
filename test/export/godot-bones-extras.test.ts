@@ -50,28 +50,34 @@ describe('Godot bones: symbols with bones', () => {
 
   it('writes the nested skeleton under the instance, with its bones and the symbol animation tracks', () => {
     const { tscn } = scene();
-    expect(tscn).toContain('[node name="Arm" type="Node2D" parent="."]');
+    // It fades, so it is a CanvasGroup (a copy that never fades is a plain Node2D).
+    expect(tscn).toContain('[node name="Arm" type="CanvasGroup" parent="."]');
     expect(tscn).toContain('[node name="Arm bones" type="Skeleton2D" parent="Arm"]');
     expect(tscn).toContain('[node name="Lower" type="Bone2D" parent="Arm/Arm bones/Upper"]');
     expect(tscn).toContain('[node name="Upper arm" type="Sprite2D" parent="Arm/Arm bones/Upper"]');
     // The second copy has its own nodes.
     expect(tscn).toContain('[node name="Arm 2" type="Node2D" parent="."]');
+    expect(tscn.split('[node name="Arm 2"')[1].split('\n\n')[0]).not.toContain('modulate');
     expect(tscn).toContain('[node name="Hand" type="Sprite2D" parent="Arm 2"]');
     expect(tscn).toContain('NodePath("Arm/Arm bones/Upper:rotation")');
     expect(tscn).toContain('NodePath("Arm 2/Arm bones/Upper/Lower:rotation")');
     expect(tscn).toContain('NodePath("Arm:transform")');
-    // A fading, tinted copy: modulate and the wash.
-    expect(tscn).toContain('NodePath("Arm:modulate")');
+    // A fading, tinted copy: the group's own fade (plain modulate would fade each part again) and the wash.
+    expect(tscn).toContain('NodePath("Arm:self_modulate")');
+    expect(tscn).not.toContain('NodePath("Arm:modulate")');
     expect(tscn).toContain('shader_parameter/tint_amount');
   });
 
   it("keeps a symbol's own layers between its neighbours' when drawing order is by z", () => {
     const { tscn } = scene();
-    const z = (name: string, parent: string) => Number(tscn.split(`[node name="${name}" type="Node2D" parent="${parent}"]`)[1].match(/z_index = (-?\d+)/)![1]);
+    const z = (name: string, parent: string, type = 'Node2D') => Number(tscn.split(`[node name="${name}" type="${type}" parent="${parent}"]`)[1].match(/z_index = (-?\d+)/)![1]);
     const glow = Number(tscn.split('[node name="Glow" type="Sprite2D"')[1].match(/z_index = (\d+)/)![1]);
-    const hand = Number(tscn.split('[node name="Hand" type="Sprite2D" parent="Arm"]')[1].match(/z_index = (\d+)/)![1]);
-    // The arm node sits at its layer's step, its parts are relative to it and all fit before the next layer's step.
-    expect(z('Arm', '.') + hand).toBeLessThan(glow);
+    // The second copy never fades: its node sits at its layer's step, its parts are relative to it and all fit before the next layer's step.
+    const hand = Number(tscn.split('[node name="Hand" type="Sprite2D" parent="Arm 2"]')[1].match(/z_index = (\d+)/)![1]);
+    expect(z('Arm 2', '.') + hand).toBeLessThan(glow);
+    // The faded one is a group, which only holds children on its own z: the parts have none and the tree orders them.
+    expect(tscn.split('[node name="Hand" type="Sprite2D" parent="Arm"]')[1].split('\n\n')[0]).not.toContain('z_index');
+    expect(z('Arm', '.', 'CanvasGroup')).toBeLessThan(glow);
   });
 
   it('draws the symbol into the pictures when its layer has effects (it cannot stay live)', () => {

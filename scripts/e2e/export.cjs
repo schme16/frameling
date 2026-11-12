@@ -1363,7 +1363,7 @@ async function godotBonesExtrasSection(name = 'bones-extras', extra = {}, more) 
     if (!check(scene, 'no .tscn')) return;
     const tscn = fs.readFileSync(path.join(dir, scene), 'utf8');
     check(tscn.includes('type="Camera2D"') && tscn.includes('type="Parallax2D"'), 'scene is missing the camera or the parallax layer');
-    check(/\[node name="Arm" type="Node2D"/.test(tscn) && tscn.includes('type="Skeleton2D" parent="Arm"'), "scene is missing the symbol's own skeleton");
+    check(/\[node name="Arm" type="(Node2D|CanvasGroup)"/.test(tscn) && tscn.includes('type="Skeleton2D" parent="Arm"'), "scene is missing the symbol's own skeleton");
     check(!tscn.includes('name="Hero"'), 'the hero layer should hold only the live symbol copies');
     check(files.some((n) => n.endsWith('.gdshader')), 'no tint shader');
     if (more) await more({ tscn, files, dir });
@@ -1389,6 +1389,9 @@ async function godotBonesExtrasSection(name = 'bones-extras', extra = {}, more) 
     // A round window mask over the backdrop and a stripe clipped to it, baked into the backdrop's pictures.
     if (!ONLY || ONLY.includes('godot-bones'))
       await godotBonesExtrasSection('bones-masks', { masked: true }, ({ tscn }) => check(!tscn.includes('name="Window"') && tscn.includes('name="Stripe"'), 'the mask layer should not be a node, the clipped stripe should'));
+    // A faded symbol with overlapping parts: it fades as one picture (a CanvasGroup), not part by part.
+    if (!ONLY || ONLY.includes('godot-bones'))
+      await godotBonesExtrasSection('bones-group-fade', { fade: true }, ({ tscn }) => check(/\[node name="Arm" type="CanvasGroup"/.test(tscn), 'the faded symbol should be a CanvasGroup'));
     if (!SKIP.includes('files')) await filesSection();
   } catch (e) {
     begin('harness', 'startup').failures.push(String(e?.stack ?? e));

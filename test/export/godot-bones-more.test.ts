@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { uid } from '../../src/core/doc';
 import { bonesExtrasDoc } from '../../src/export/bonesExtrasDoc';
-import { allScopes, bakeScales, bonesNotes, bonesStage, godotBonesScene, MAX_BAKE, maxStretch } from '../../src/export/godot-bones';
+import { allScopes, bakeScales, groupLayout, bonesNotes, bonesStage, godotBonesScene, MAX_BAKE, maxStretch } from '../../src/export/godot-bones';
 import { buildAnimations } from '../../src/export/sheet';
 import type { Doc, InstanceShape } from '../../src/core/format';
 import { newVectorLayer } from '../../src/core/doc';
@@ -229,5 +229,59 @@ describe('Godot bones: masks and clip to the layer below', () => {
     const { tscn } = sceneOf(doc, 1);
     expect(tscn).toContain('name="Stripe" type="Sprite2D"');
     expect(tscn).not.toContain('name="Window"');
+  });
+});
+
+// ---------------------------------------------------------------- fading a symbol as one picture
+
+describe('Godot bones: a faded symbol is a CanvasGroup', () => {
+  const armGroup = (doc: Doc) => sceneOf(doc, 1).tscn;
+
+  it('writes the parts in drawing order, with no z_index, and fades with self_modulate', () => {
+    const tscn = armGroup(bonesExtrasDoc({ fade: true }));
+    expect(tscn).toContain('[node name="Arm" type="CanvasGroup" parent="."]');
+    const block = tscn.split('[node name="Arm" type="CanvasGroup" parent="."]')[1].split('[node name="Arm 2"')[0];
+    expect(block).toContain('self_modulate = Color(1, 1, 1, 0.5)');
+    expect(block).not.toMatch(/\nmodulate = /);
+    const at = (s: string) => block.indexOf(s);
+    // Back to front: upper arm, then the lower arm (a child bone), then the hand.
+    expect(at('name="Upper arm"')).toBeGreaterThan(-1);
+    expect(at('name="Upper arm"')).toBeLessThan(at('name="Lower arm"'));
+    expect(at('name="Lower arm"')).toBeLessThan(at('name="Hand"'));
+    // The group itself has a z_index (its layer's step); its parts do not.
+    expect(block.split('\n\n').slice(1).join('\n\n')).not.toContain('z_index');
+    expect(tscn).toContain('NodePath("Arm:self_modulate")');
+  });
+
+  it('stays plain nodes with a fade on each part when the parts cannot be ordered by the tree', () => {
+    const doc = bonesExtrasDoc({ fade: true });
+    const sym = Object.values(doc.symbols!)[0];
+    // The hand (not on a bone) between the two arm pieces: a skeleton's nodes can't be split around it.
+    const [rig, upper, lower, hand] = sym.layers;
+    sym.layers = [rig, upper, hand, lower];
+    const tscn = armGroup(doc);
+    expect(tscn).toContain('[node name="Arm" type="Node2D" parent="."]');
+    expect(tscn).toContain('NodePath("Arm:modulate")');
+    expect(tscn.split('[node name="Hand" type="Sprite2D" parent="Arm"]')[1].split('\n\n')[0]).toContain('z_index');
+  });
+
+  it('is not a group for a copy that never fades, or under an Add layer', () => {
+    expect(armGroup(bonesExtrasDoc())).toContain('[node name="Arm 2" type="Node2D"');
+    const doc = bonesExtrasDoc({ fade: true });
+    doc.layers.find((l) => l.name === 'Hero')!.blend = 'add';
+    expect(armGroup(doc)).not.toContain('CanvasGroup');
+  });
+
+  it('lays out the layers around a skeleton that sit wholly behind or in front of it', () => {
+    const doc = bonesExtrasDoc({ fade: true });
+    const sym = Object.values(doc.symbols!)[0];
+    const [rig, upper, lower, hand] = sym.layers;
+    const shadow = { ...hand, id: uid('l'), name: 'Shadow', cels: hand.cels };
+    sym.layers = [shadow, rig, upper, lower, hand];
+    const top = bonesStage(doc, { start: 0, end: 11 });
+    const lay = groupLayout(top.nested[0].scope);
+    expect(lay.ok).toBe(true);
+    const names = lay.top.map((i) => ('part' in i ? i.part.layer.name : 'skeleton'));
+    expect(names).toEqual(['Shadow', 'skeleton', 'Hand']);
   });
 });

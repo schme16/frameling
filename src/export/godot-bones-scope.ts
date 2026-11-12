@@ -271,6 +271,69 @@ export function partLook(doc: Doc, layer: Layer, notes?: BonesNotes): PartLook {
 
 const blendWord = (m: string) => m.replace(/-/g, ' ').replace(/^./, (c) => c.toUpperCase());
 
+// ---------------------------------------------------------------- fading a symbol as one picture
+
+/** One step in the order a grouped symbol's nodes are written: a skeleton, a bone, or a part. */
+export type GroupItem = { rig: Id } | { bone: Id } | { part: BonesPart };
+
+/**
+ * Whether a symbol's scope can sit inside a CanvasGroup (so its copy fades as one picture), and the order its nodes
+ * must be written in. Godot only groups children on the group's own z, so the parts can't use z_index: the scene tree
+ * has to draw them back to front by itself. A bone's parts and child bones can be written in any order, so that works
+ * when the parts of each bone (with its child bones') sit together in the layer stack. `top` is the order under the
+ * instance; `kids` the order under each bone (and under a skeleton, by rig id). Not for symbols holding symbols with
+ * bones, or parts with Add or Multiply (a group blends inside itself, not with the stage).
+ */
+export function groupLayout(sc: BonesScope): { ok: boolean; top: GroupItem[]; kids: Map<Id, GroupItem[]> } {
+  const fail = { ok: false, top: [] as GroupItem[], kids: new Map<Id, GroupItem[]>() };
+  if (sc.nested.length || sc.parts.some((p) => (p.look?.blend ?? 'mix') !== 'mix')) return fail;
+  const kids = new Map<Id, GroupItem[]>();
+  type Ranged = { item: GroupItem; lo: number; hi: number };
+  // Sorts back to front and checks nothing interleaves. Items without parts in them go last.
+  const sorted = (list: Ranged[]): Ranged[] | null => {
+    const drawn = list.filter((r) => r.lo <= r.hi).sort((a, b) => a.lo - b.lo);
+    for (let i = 1; i < drawn.length; i++) if (drawn[i].lo <= drawn[i - 1].hi) return null;
+    return [...drawn, ...list.filter((r) => r.lo > r.hi)];
+  };
+  const taken = new Set<BonesPart>();
+  const rigRanges: Ranged[] = [];
+  for (const rig of sc.rigs) {
+    const seen = new Set<Id>();
+    const children = new Map<Id | null, Id[]>();
+    for (const b of rig.rig.bones) {
+      const parent = b.parent && seen.has(b.parent) ? b.parent : null;
+      seen.add(b.id);
+      children.set(parent, [...(children.get(parent) ?? []), b.id]);
+    }
+    const arrange = (id: Id | null): Ranged | null => {
+      const list: Ranged[] = [];
+      for (const c of children.get(id) ?? []) {
+        const r = arrange(c);
+        if (!r) return null;
+        list.push(r);
+      }
+      if (id) {
+        for (const p of sc.parts)
+          if (p.kind === 'cut' && p.rig?.id === rig.id && p.bone === id) {
+            taken.add(p);
+            list.push({ item: { part: p }, lo: p.z, hi: p.z });
+          }
+      }
+      const out = sorted(list);
+      if (!out) return null;
+      kids.set(id ?? rig.id, out.map((r) => r.item));
+      return { item: id ? { bone: id } : { rig: rig.id }, lo: Math.min(...out.map((r) => r.lo)), hi: Math.max(...out.map((r) => r.hi)) };
+    };
+    const r = arrange(null);
+    if (!r) return fail;
+    rigRanges.push(r);
+  }
+  // Everything else sits beside the skeletons, wholly behind or in front of each.
+  const loose: Ranged[] = sc.parts.filter((p) => !taken.has(p)).map((p) => ({ item: { part: p }, lo: p.z, hi: p.z }));
+  const top = sorted([...rigRanges, ...loose]);
+  return top ? { ok: true, top: top.map((r) => r.item), kids } : fail;
+}
+
 // ---------------------------------------------------------------- masks and clipping
 
 /** What cuts each layer of a list: the masks above it and the layer it is clipped to, the way the compositor plans them. */
