@@ -88,6 +88,8 @@ Like a GIF with none of the limits: full colour and soft see-through edges. It w
 
 GIF and APNG can **loop forever**, or play once and stop. Videos have no loop setting. Players decide that themselves.
 
+When you export a clip, the loop box follows the clip: a clip that loops repeats forever, and one that plays a set number of times (or once) stops after those plays. The dialog says so under the box, and you can tick or untick it to choose for yourself.
+
 ## Exporting a clip
 
 Pick **One clip** in the Range row and the file follows how that clip plays ([clip direction and repeat](help:timeline-clip-play)). A clip that plays **backward** comes out backward. **Back and forth** comes out as one trip there and back, and a clip that plays **3 times** is in the file 3 times, so it looks the same everywhere. A video made this way has no sound, because the timeline's sound doesn't match the new order.
@@ -452,7 +454,7 @@ It uses **CSS animations** inside the SVG rather than SVG's own animation tags (
 
 ## Options
 
-- **Loop forever:** play round and round, or once and stop on the last frame.
+- **Loop forever:** play round and round, or once and stop on the last frame. A clip sets it for you: a clip that plays 3 times makes a file that stops after the 3rd.
 - **Transparent background** leaves the stage colour out.
 
 ## Good to know

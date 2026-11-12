@@ -25,6 +25,10 @@ export interface Plan {
    * (GIF, APNG, videos): which frame of the range each picture shows, counted from its first. Missing = in order.
    */
   order?: number[];
+  /** Whether the file repeats for ever (GIF, APNG, animated SVG), or stops after its last picture. */
+  loop: boolean;
+  /** The loop setting comes from the clip being exported (not from the checkbox). */
+  loopFromClip: boolean;
   width: number;
   height: number;
   /** A file name (or folder name) base, with no extension. */
@@ -141,6 +145,27 @@ export function clipPlayOrder(doc: Doc, s: Pick<ExportSettings, 'range' | 'clipI
   return bakedPositions(range.end - range.start + 1, clipDirection(clip), clipPlays(clip));
 }
 
+/** Formats with a loop setting of their own. */
+const LOOP_FORMATS: FormatId[] = ['gif', 'apng', 'svganim'];
+
+/**
+ * Whether the file repeats for ever. An exported clip sets this itself: one that loops repeats for ever, one that plays
+ * N times or once stops after the passes baked into the file. Choosing by hand (`loopTouched`) wins over the clip.
+ */
+export function exportLoop(doc: Doc, s: Pick<ExportSettings, 'range' | 'clipId' | 'format' | 'loop' | 'loopTouched'>): { loop: boolean; fromClip: boolean } {
+  const clip = s.range === 'clip' && LOOP_FORMATS.includes(s.format) ? doc.clips.find((c) => c.id === s.clipId) : undefined;
+  if (!clip || s.loopTouched) return { loop: s.loop, fromClip: false };
+  return { loop: clip.loop, fromClip: true };
+}
+
+/** What the clip being exported does when it plays, in plain words ("plays 3 times"), or null when no clip sets the loop. */
+export function clipLoopWords(doc: Doc, s: Pick<ExportSettings, 'range' | 'clipId' | 'format'>): { name: string; plays: string } | null {
+  const clip = s.range === 'clip' && LOOP_FORMATS.includes(s.format) ? doc.clips.find((c) => c.id === s.clipId) : undefined;
+  if (!clip) return null;
+  const n = clipPlays(clip);
+  return { name: clip.name, plays: clip.loop ? 'loops for ever' : n > 1 ? `plays ${n} times` : 'plays once' };
+}
+
 export function planExport(doc: Doc, s: ExportSettings, currentFrame: number): Plan {
   const info = formatInfo(s.format);
   const range = resolveRange(doc, s, currentFrame);
@@ -163,7 +188,8 @@ export function planExport(doc: Doc, s: ExportSettings, currentFrame: number): P
   else if (count > MAX_FRAMES) problem = 'That is a lot of frames. Try exporting one clip at a time.';
   else if (s.range === 'clip' && info.animated && !one && !doc.clips.some((c) => c.id === s.clipId)) problem = 'Pick which clip to export.';
   else if (video && count < 2) problem = 'A video needs at least two frames. Try the whole animation or a clip.';
-  return { range, count, ...(order ? { order } : {}), width, height, name, problem };
+  const looping = exportLoop(doc, s);
+  return { range, count, ...(order ? { order } : {}), loop: looping.loop, loopFromClip: looping.fromClip, width, height, name, problem };
 }
 
 /** The file extension this export is saved with: a dotLottie `.lottie`, or a zip when each frame is its own
