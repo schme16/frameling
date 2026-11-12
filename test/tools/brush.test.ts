@@ -140,14 +140,18 @@ describe('brush on a pixel layer', () => {
 
   it('is one undo step, and never edits the old array in place', () => {
     const s = pixelStore();
+    // The drawing itself (not the whole-grid view of it), so arrays can be compared by identity.
+    const raw = () => s.get().doc.drawings[s.get().doc.layers[0].cels[0].drawingId] as PixelDrawing;
     drag(brushTool, ctx(), [at(0, 0), at(2, 0)]);
-    const first = pixelsNow()!.pixels;
+    const first = raw().pixels;
+    const firstCopy = [...first];
     drag(brushTool, ctx(), [at(0, 3), at(2, 3)]);
-    const second = pixelsNow()!.pixels;
+    const second = raw().pixels;
     expect(second).not.toBe(first);
-    expect(getPx(first, 8, 0, 3)).toEqual([0, 0, 0, 0]);
+    expect([...first]).toEqual(firstCopy);
+    expect(getPx(asGrid(raw()).pixels, 8, 0, 3)[3]).toBe(255);
     s.undo();
-    expect(pixelsNow()!.pixels).toBe(first);
+    expect(raw().pixels).toBe(first);
   });
 
   it('removes the L-shaped corner doubles with pixel perfect on, and keeps them off', () => {

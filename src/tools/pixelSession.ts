@@ -8,7 +8,7 @@ import { drawingAt } from '../core/doc';
 import { setLive } from '../canvas/controller';
 import { getPx, setPx, type PxPt, type RGBA } from '../canvas/pixels';
 import { setActivePixels, type EditResult } from './edit';
-import { gridPixels } from '../core/pixelBounds';
+import { forgetGrids, gridPixels } from '../core/pixelBounds';
 import { autoHeldAt } from '../timeline/edit-core';
 import { markTracing } from '../canvas/ghost';
 import { tileModeOn, wrap } from '../tiles/state';
@@ -167,16 +167,20 @@ export class PixelSession {
   /** Ends the preview without changing the document. */
   discard(): void {
     setLive(null);
+    forgetGrids();
   }
 
   /** Ends the preview and writes the result into the document as one undo step. */
   commit(label: string): EditResult | 'nothing' {
     if (!this.changed) {
       setLive(null);
+      forgetGrids();
       return 'nothing';
     }
     const r = setActivePixels(label, new Uint8ClampedArray(this.work), { adds: this.fresh });
     setLive(null);
+    // The whole-grid copy of the old drawing is only wanted while painting; a big canvas's is megabytes.
+    forgetGrids();
     return r;
   }
 }

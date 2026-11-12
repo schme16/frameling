@@ -99,9 +99,10 @@ const PAGE = `(() => {
     cells(layerName) {
       const { doc } = S.get();
       const layer = doc.layers.find((l) => l.name === layerName);
+      // A drawing holds only its painted block, at (x, y) on the grid.
       const d = doc.drawings[layer.cels[0].drawingId];
       const out = [];
-      for (let y = 0; y < d.height; y++) for (let x = 0; x < d.width; x++) if (d.pixels[(y * d.width + x) * 4 + 3]) out.push(x + ',' + y);
+      for (let y = 0; y < d.height; y++) for (let x = 0; x < d.width; x++) if (d.pixels[(y * d.width + x) * 4 + 3]) out.push((x + (d.x || 0)) + ',' + (y + (d.y || 0)));
       return out;
     },
   };
