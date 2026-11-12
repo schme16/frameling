@@ -700,6 +700,35 @@ function rgbaOf(hex: string): number[] {
   return [ch(0), ch(2), ch(4), h.length >= 8 ? ch(6) : 1];
 }
 
+/** The helper script's file name, next to the scene. */
+export const fitScriptName = (base: string) => `${base}-fit-window.gd`;
+
+/**
+ * A small optional script that makes the camera and the layers with depth line up at any window size. Godot's Camera2D
+ * and Parallax2D work from the window's size, which only matches Frameling when the window is the stage times the export
+ * scale; this stretches the window from that size instead (the picture keeps its shape).
+ */
+export function fitWindowScript(width: number, height: number): string {
+  return `# Made by Frameling. Keeps the camera and the layers with depth lined up at any window size.
+# Attach it to any node of the exported scene (the root is fine), or add it as an autoload.
+# Without it they line up only when the window is exactly ${width} x ${height} (the stage times the export scale).
+# The same thing without a script: Project Settings > Display > Window, set Viewport Width and Height to
+# ${width} and ${height}, Stretch Mode to canvas_items and Aspect to keep.
+extends Node
+
+@export var design_size := Vector2i(${width}, ${height})
+
+func _ready() -> void:
+	var window := get_window()
+	window.content_scale_size = design_size
+	window.content_scale_mode = Window.CONTENT_SCALE_MODE_CANVAS_ITEMS
+	window.content_scale_aspect = Window.CONTENT_SCALE_ASPECT_KEEP
+`;
+}
+
+/** True when the scene has a camera, so its window size matters (layers with depth only move with a camera). */
+export const needsFitScript = (doc: Doc) => !!activeCamera(doc);
+
 /** A Godot 4 scene (.tscn) for a rigged character. */
 export function godotBonesScene(o: BonesSceneInput): string {
   return build(o).text;

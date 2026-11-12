@@ -8,31 +8,15 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { cameraMatrix, cameraViewAt, parallaxFactor } from '../../src/core/camera';
 import type { Doc } from '../../src/core/format';
-import { encodePng } from '../../src/io/png';
 import { buildAnimations } from '../../src/export/sheet';
-import { allScopes, bonesStage, godotBonesScene, godotBonesShaders, type BonesScope } from '../../src/export/godot-bones';
+import { bonesStage, godotBonesScene, godotBonesShaders } from '../../src/export/godot-bones';
 import { rigState } from '../../src/rig/math';
 import { rigPoseAt } from '../../src/rig/pose';
 import { bonesExtrasDoc as extrasDoc } from '../../src/export/bonesExtrasDoc';
+import { cards } from './bones-helpers';
 
 const GODOT = process.env.GODOT_BIN;
 const K = 2;
-
-/** A flat card per picture, so the scene has something to load. */
-function cards(top: BonesScope, dir: string) {
-  let n = 0;
-  for (const sc of allScopes(top)) {
-    sc.textures = sc.parts.map((p) =>
-      p.pictures.map(() => {
-        const i = n++;
-        const px = new Uint8ClampedArray(4 * 4 * 4);
-        for (let j = 0; j < 16; j++) px.set([40 + ((i * 53) % 200), 90, 160, 255], j * 4);
-        writeFileSync(path.join(dir, `parts/c${i}.png`), encodePng({ width: 4, height: 4, pixels: px }));
-        return { path: `res://parts/c${i}.png`, x: 2 * i, y: 3 * i, w: 4, h: 4 };
-      }),
-    );
-  }
-}
 
 const m6 = (m: readonly number[], k = K) => [m[0], m[1], m[2], m[3], m[4] * k, m[5] * k];
 const mulM = (a: readonly number[], b: readonly number[]) => [

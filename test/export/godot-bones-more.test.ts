@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { uid } from '../../src/core/doc';
 import { bonesExtrasDoc } from '../../src/export/bonesExtrasDoc';
-import { allScopes, bakeScales, groupLayout, bonesNotes, bonesStage, godotBonesScene, MAX_BAKE, maxStretch } from '../../src/export/godot-bones';
+import { allScopes, bakeScales, fitScriptName, fitWindowScript, groupLayout, needsFitScript, bonesNotes, bonesStage, godotBonesScene, MAX_BAKE, maxStretch } from '../../src/export/godot-bones';
 import { buildAnimations } from '../../src/export/sheet';
 import type { Doc, InstanceShape } from '../../src/core/format';
 import { newVectorLayer } from '../../src/core/doc';
@@ -283,5 +283,33 @@ describe('Godot bones: a faded symbol is a CanvasGroup', () => {
     expect(lay.ok).toBe(true);
     const names = lay.top.map((i) => ('part' in i ? i.part.layer.name : 'skeleton'));
     expect(names).toEqual(['Shadow', 'skeleton', 'Hand']);
+  });
+});
+
+// ---------------------------------------------------------------- window size
+
+describe('Godot bones: the fit-window script', () => {
+  it('stretches the window from the stage size times the export scale, keeping its shape', () => {
+    const gd = fitWindowScript(720, 540);
+    expect(gd).toContain('extends Node');
+    expect(gd).toContain('@export var design_size := Vector2i(720, 540)');
+    expect(gd).toContain('CONTENT_SCALE_MODE_CANVAS_ITEMS');
+    expect(gd).toContain('CONTENT_SCALE_ASPECT_KEEP');
+    // The project-settings way is in the comment.
+    expect(gd).toContain('Stretch Mode to canvas_items');
+    expect(gd).toContain('exactly 720 x 540');
+    expect(gd).not.toContain('—');
+  });
+
+  it('is written only for a scene with a camera', () => {
+    expect(needsFitScript(bonesExtrasDoc())).toBe(false);
+    expect(needsFitScript(bonesExtrasDoc({ camera: { a: { x: 1, y: 1, zoom: 1, rotation: 0 }, b: { x: 2, y: 2, zoom: 1, rotation: 0 } } }))).toBe(true);
+    expect(fitScriptName('hero')).toBe('hero-fit-window.gd');
+  });
+
+  it('is mentioned in the notes for a camera', () => {
+    const doc = bonesExtrasDoc({ camera: { a: { x: 1, y: 1, zoom: 1, rotation: 0 }, b: { x: 2, y: 2, zoom: 1, rotation: 0 } } });
+    expect(bonesNotes(doc).native.join('|')).toContain('fit-window script');
+    expect(bonesNotes(bonesExtrasDoc()).native.join('|')).not.toContain('fit-window');
   });
 });

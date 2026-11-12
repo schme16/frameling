@@ -605,7 +605,10 @@ export function bonesNotes(doc: Doc): { native: string[]; baked: string[]; skipp
     }
   };
   scan(doc.layers, 0);
-  if (doc.layers.some((l) => l.kind === 'camera' && l.visible)) notes.native.add('Camera: a Camera2D that moves and zooms like the stage camera');
+  if (doc.layers.some((l) => l.kind === 'camera' && l.visible)) {
+    notes.native.add('Camera: a Camera2D that moves and zooms like the stage camera');
+    notes.native.add('Window size: attach the included fit-window script so the camera and depth layers line up at any window size');
+  }
   if (doc.layers.some((l) => l.depth && l.visible && !l.reference && l.kind !== 'camera')) notes.native.add('Layer depth: a Parallax2D (the camera pans them at different speeds)');
   return notes.lines();
 }

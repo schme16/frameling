@@ -8,7 +8,7 @@ import { slug } from './plan';
 import { buildAnimations, godotTexturePath } from './sheet';
 import { buildPlan } from '../effects/plan';
 import { compositePlan } from '../effects/composite';
-import { allScopes, bakeScales, bonesStage, godotBonesScene, godotBonesShaders, hasBonesToExport, restPicture, type BonesScope, type BonesTexture, type PartLook, type PartMask } from './godot-bones';
+import { allScopes, bakeScales, bonesStage, fitScriptName, fitWindowScript, godotBonesScene, needsFitScript, godotBonesShaders, hasBonesToExport, restPicture, type BonesScope, type BonesTexture, type PartLook, type PartMask } from './godot-bones';
 import { SheetProblem } from './engines';
 
 export interface BonesRun {
@@ -193,6 +193,8 @@ export async function godotBonesFiles(o: BonesRun): Promise<{ files: { name: str
   const input = { doc, range, parts: top.parts, textures: top.textures!, scale: k, animations, rootName, pixelArt: o.pixelArt, nested: top.nested, shaderDir: dir };
   const main = `${base}.tscn`;
   files.push({ name: main, bytes: strToU8(godotBonesScene(input)) });
+  // A camera (and the depth layers it moves) works from the window's size: a small script makes it match at any size.
+  if (needsFitScript(doc)) files.push({ name: fitScriptName(base), bytes: strToU8(fitWindowScript(Math.round(doc.width * k), Math.round(doc.height * k))) });
   for (const sh of godotBonesShaders(input)) files.push({ name: sh.name, bytes: strToU8(sh.text) });
   return { files, main };
 }
