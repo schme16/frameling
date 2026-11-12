@@ -7,8 +7,8 @@ import { pixelGrid } from '../core/doc';
 import { drawingAt } from '../core/doc';
 import { setLive } from '../canvas/controller';
 import { getPx, setPx, type PxPt, type RGBA } from '../canvas/pixels';
-import { setActivePixels, type EditResult } from './edit';
-import { forgetGrids, gridPixels } from '../core/pixelBounds';
+import { activeGrid, editActiveDrawing, type EditResult } from './edit';
+import { forgetGrids, gridPixels, setGridRect } from '../core/pixelBounds';
 import { autoHeldAt } from '../timeline/edit-core';
 import { markTracing } from '../canvas/ghost';
 import { tileModeOn, wrap } from '../tiles/state';
@@ -44,6 +44,10 @@ export class PixelSession {
   private canvas: LiveCanvas | null;
   private img: ImageData | null = null;
   private dirty: { x0: number; y0: number; x1: number; y1: number } | null = null;
+  /** Everything changed since the session began (flush does not clear it), so commit writes only this and the old block. */
+  private touched: { x0: number; y0: number; x1: number; y1: number } | null = null;
+  /** Where the drawing's block sat when the session began (none when a new drawing starts). */
+  private was: { x?: number; y?: number; width: number; height: number } = { width: 0, height: 0 };
   changed = false;
   /** Mirror drawing, read once when the session starts. */
   readonly mirror: Mirror;
@@ -65,6 +69,7 @@ export class PixelSession {
     this.width = g.width;
     this.height = g.height;
     // The drawing holds only what is painted; the session works on the whole grid.
+    if (d && d.kind === 'pixel' && !this.fresh) this.was = { x: d.x, y: d.y, width: d.width, height: d.height };
     this.base = d && d.kind === 'pixel' && !this.fresh ? gridPixels(d, g.width, g.height) : new Uint8ClampedArray(g.width * g.height * 4);
     this.work = new Uint8ClampedArray(this.base);
     this.layerId = layer.id;
@@ -105,6 +110,14 @@ export class PixelSession {
     if (w[i] === c[0] && w[i + 1] === c[1] && w[i + 2] === c[2] && w[i + 3] === c[3]) return;
     setPx(w, this.width, this.height, x, y, c);
     this.changed = true;
+    const t = this.touched;
+    if (!t) this.touched = { x0: x, y0: y, x1: x, y1: y };
+    else {
+      if (x < t.x0) t.x0 = x;
+      if (y < t.y0) t.y0 = y;
+      if (x > t.x1) t.x1 = x;
+      if (y > t.y1) t.y1 = y;
+    }
     const d = this.dirty;
     if (!d) this.dirty = { x0: x, y0: y, x1: x, y1: y };
     else {
@@ -170,6 +183,15 @@ export class PixelSession {
     forgetGrids();
   }
 
+  /** Writes the work grid into the drawing, copying and trimming only the touched rectangle and the old block. */
+  private write(label: string): EditResult {
+    const g = activeGrid();
+    if (!g) return 'wrong-kind';
+    const t = this.touched;
+    const touched = t ? { x: t.x0, y: t.y0, w: t.x1 - t.x0 + 1, h: t.y1 - t.y0 + 1 } : null;
+    return editActiveDrawing(label, 'pixel', (d) => void setGridRect(d, this.work, g.width, this.was, touched), { adds: this.fresh });
+  }
+
   /** Ends the preview and writes the result into the document as one undo step. */
   commit(label: string): EditResult | 'nothing' {
     if (!this.changed) {
@@ -177,7 +199,7 @@ export class PixelSession {
       forgetGrids();
       return 'nothing';
     }
-    const r = setActivePixels(label, new Uint8ClampedArray(this.work), { adds: this.fresh });
+    const r = this.write(label);
     setLive(null);
     // The whole-grid copy of the old drawing is only wanted while painting; a big canvas's is megabytes.
     forgetGrids();

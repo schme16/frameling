@@ -217,7 +217,10 @@ the grid width. Code that thinks in grid positions (fills, selections, filters, 
 `tools/edit.ts`: `setActivePixels` (a whole-grid array) and `paintActiveGrid` (a copy to change in place). Code that
 only walks pixels one by one (colour counts, recolouring, exports that draw the block) works on the block directly and
 adds `x`, `y` where position matters (`render.ts`, `svg.ts`, `lottie.ts`, `pdf.ts`, `canvas/geometry.ts`). The pixel
-session (`tools/pixelSession.ts`) still paints on a whole grid copy while a stroke is going, and trims on commit.
+session (`tools/pixelSession.ts`) still paints on a whole grid copy while a stroke is going, but commits only the rectangle
+it touched joined with the old block (`setGridRect`), so a stroke on a 4000 x 4000 canvas copies a few kilobytes, not the
+grid. Picture import (`pixel/import/build.ts` `drawingOf`) and the Aseprite import (lazy cels: `parseAseprite(bytes,
+{ lazy: true })` inflates one cel at a time) build trimmed drawings straight away.
 
 **Caches and invalidation.** Almost every cache is a `WeakMap` keyed on an object (a shape, a drawing, a pixel array,
 a cel, a doc). Immer makes new objects for anything edited and pixel and tile arrays are replaced, never changed, so

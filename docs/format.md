@@ -255,8 +255,11 @@ Per kind:
 top left): `{ id, name, x, y, w, h, center?, pivot?, color? }`. `center` (`{ x, y, w, h }`, inside the slice) makes it a
 9-patch: the border around it keeps its size when the picture is stretched. `pivot` (`{ x, y }`, may sit outside) is where
 the sprite turns and sits. The reader keeps a slice with a name and a size of 1 or more, rounds its numbers, drops a
-damaged centre or pivot, and renames a repeated id. A slice does not change over time; Aseprite slices that move between
-frames import at their first position (the full list stays in `ext.aseprite`). Exports gather the slices of every visible
+damaged centre or pivot, and renames a repeated id. A slice that changes between frames has optional `keys`, sorted:
+`{ frame, x, y, w, h, center?, pivot? }` with `frame` a timeline frame of the board, each key holding from its frame until
+the next (before the first key the slice sits at the first key). The slice's own `x`, `y`, `w`, `h`, `center` and `pivot`
+always equal its first key, so a reader that does not know about keys still sees the first place (the reader repairs
+this). Aseprite keys import this way, at the timeline frame where each Aseprite frame starts. Exports gather the slices of every visible
 pixel layer of the board and write them into the engine data (see the sprite sheet export).
 
 ### Cels

@@ -6,12 +6,12 @@ import { registerTool, type Tool, type ToolContext, type ToolPointer } from '../
 import { store } from '../../core/store';
 import { getPixelSettings } from '../settings';
 import { SliceOptions } from './SliceOptions';
-import { dragSlice, hitSlice, rectBetween, sliceColor, sliceLayers, type Grab, type Rect } from './model';
+import { dragSlice, hitSlice, rectBetween, sliceAt, sliceColor, sliceLayers, type Grab, type Rect } from './model';
 import { createSlice, deleteSlice, editSlice, pickedSlice, pickSlice, sliceLayer } from './state';
 
 type Drag =
   | { kind: 'make'; from: { x: number; y: number }; to: { x: number; y: number } }
-  | { kind: 'edit'; id: string; start: Slice; grab: Grab; from: { x: number; y: number }; now: Slice };
+  | { kind: 'edit'; id: string; layerId: string; start: Slice; grab: Grab; from: { x: number; y: number }; now: Slice };
 
 let drag: Drag | null = null;
 
@@ -88,15 +88,24 @@ function drawSlice(g: CanvasRenderingContext2D, s: Slice, ps: number, px: number
   g.restore();
 }
 
+/** The layer the slice being dragged is on (it may not be the active one: the tool picks slices of any shown pixel layer). */
+function dragLayer(): PixelLayer | null {
+  const d = drag;
+  if (d?.kind !== 'edit') return sliceLayer();
+  const l = store().get().doc.layers.find((x) => x.id === d.layerId);
+  return l?.kind === 'pixel' ? l : sliceLayer();
+}
+
 /** Slices of the shown pixel layers, drawn whatever tool is picked (the Slices view option can hide them). */
 registerDecoration((g, ctx) => {
   if (!getPixelSettings().showSlices) return;
-  const { doc } = store().get();
+  const { doc, ui } = store().get();
   const px = 1 / ctx.zoom;
   const id = pickedSlice();
-  for (const l of sliceLayers(doc.layers)) for (const s of l.slices!) if (!(drag?.kind === 'edit' && drag.id === s.id)) drawSlice(g, s, l.pixelSize, px, { picked: s.id === id });
+  // A slice that changes between frames is drawn as it is at this frame.
+  for (const l of sliceLayers(doc.layers)) for (const s of l.slices!) if (!(drag?.kind === 'edit' && drag.id === s.id)) drawSlice(g, sliceAt(s, ui.frame), l.pixelSize, px, { picked: s.id === id });
   if (drag?.kind === 'edit') {
-    const l = sliceLayer();
+    const l = dragLayer();
     if (l) drawSlice(g, drag.now, l.pixelSize, px, { picked: true, ghost: true });
   }
   if (drag?.kind === 'make') {
@@ -123,10 +132,23 @@ export const sliceTool: Tool = {
     const layer = sliceLayer();
     if (!layer) return ctx.hint('Slices go on a pixel layer. Pick one first.');
     const p = at(layer, e);
-    const hit = hitSlice(layer.slices ?? [], p.x, p.y, reachFor(layer, ctx));
+    const { doc, ui } = store().get();
+    // The active layer's slices first, then the other shown pixel layers' from the top: a slice can be picked wherever it is.
+    let hit: ReturnType<typeof hitSlice> = null;
+    let on = layer;
+    let at0 = p;
+    for (const l of [layer, ...sliceLayers(doc.layers).reverse().filter((x) => x.id !== layer.id)]) {
+      const q = l === layer ? p : at(l, e);
+      hit = hitSlice((l.slices ?? []).map((s) => sliceAt(s, ui.frame)), q.x, q.y, reachFor(l, ctx));
+      if (hit) {
+        on = l;
+        at0 = q;
+        break;
+      }
+    }
     if (hit) {
       pickSlice(hit.slice.id);
-      drag = { kind: 'edit', id: hit.slice.id, start: structuredClone(hit.slice), grab: hit.grab, from: snap(p), now: structuredClone(hit.slice) };
+      drag = { kind: 'edit', id: hit.slice.id, layerId: on.id, start: structuredClone(hit.slice), grab: hit.grab, from: snap(at0), now: structuredClone(hit.slice) };
     } else {
       pickSlice(null);
       drag = { kind: 'make', from: snap(p), to: snap(p) };
@@ -134,7 +156,7 @@ export const sliceTool: Tool = {
     ctx.requestOverlay();
   },
   move(e, ctx) {
-    const layer = sliceLayer();
+    const layer = dragLayer();
     if (!drag || !layer) return;
     const p = snap(at(layer, e));
     if (drag.kind === 'make') drag.to = p;

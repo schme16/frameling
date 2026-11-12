@@ -62,8 +62,16 @@ export const CEL_TILEMAP = 3;
 export interface AseImage {
   width: number;
   height: number;
-  /** Pixels in the file's format: 4, 2 or 1 byte each. */
-  data: Uint8Array;
+  /**
+   * Pixels in the file's format: 4, 2 or 1 byte each. When the file was read with `lazy`, this is unpacked from the file's
+   * bytes each time it is asked for and not kept, so ask once per image.
+   */
+  readonly data: Uint8Array;
+}
+
+export interface ParseOptions {
+  /** Keep each cel's picture packed in the file's bytes and unpack it only when `data` is read (one cel at a time), so a big file never holds every picture unpacked. Damaged pictures then show up when they are read. */
+  lazy?: boolean;
 }
 
 export interface AseTilemap {
@@ -279,10 +287,23 @@ function inflate(data: Uint8Array, expected: number): Uint8Array {
   }
 }
 
-function readImage(r: Reader, depth: Depth, compressed: boolean, end: number): AseImage {
+function readImage(r: Reader, depth: Depth, compressed: boolean, end: number, lazy = false): AseImage {
   const width = r.u16();
   const height = r.u16();
   const size = width * height * PIXEL_BYTES[depth];
+  if (lazy) {
+    if (size > MAX_IMAGE_BYTES) throw new AsepriteProblem('An image inside this Aseprite file is too big to open.');
+    const packed = r.bytes(compressed ? end - r.p : size);
+    return {
+      width,
+      height,
+      get data() {
+        const data = compressed ? inflate(packed, size) : packed;
+        if (data.length < size) throw new AsepriteProblem('An image inside this Aseprite file is cut short.');
+        return data;
+      },
+    };
+  }
   const data = compressed ? inflate(r.bytes(end - r.p), size) : r.bytes(size);
   if (data.length < size) throw new AsepriteProblem('An image inside this Aseprite file is cut short.');
   return { width, height, data };
@@ -380,7 +401,7 @@ const hasData = (u: AseUserData): boolean => u.text !== undefined || u.color !==
 /** The pieces of the file's user data that have something in them, or undefined. */
 const keepUser = (u: AseUserData | undefined): AseUserData | undefined => (u && hasData(u) ? u : undefined);
 
-export function parseAseprite(bytes: Uint8Array): AseFile {
+export function parseAseprite(bytes: Uint8Array, opts: ParseOptions = {}): AseFile {
   if (bytes.length >= 4 && bytes[0] === 0x41 && bytes[1] === 0x53 && bytes[2] === 0x45 && bytes[3] === 0x46) throw new AsepriteProblem('That is an Adobe swatch file that also ends in .ase, not an Aseprite drawing.');
   if (bytes.length < 128) throw new AsepriteProblem("That doesn't look like an Aseprite file (it is too small).");
   const r = new Reader(bytes);
@@ -529,7 +550,7 @@ export function parseAseprite(bytes: Uint8Array): AseFile {
           const z = r.i16();
           r.skip(5);
           const cel: AseCel = { layer, frame: f, x, y, opacity, type: ctype, z };
-          if (ctype === CEL_RAW || ctype === CEL_IMAGE) cel.image = readImage(r, depth, ctype === CEL_IMAGE, cend);
+          if (ctype === CEL_RAW || ctype === CEL_IMAGE) cel.image = readImage(r, depth, ctype === CEL_IMAGE, cend, opts.lazy);
           else if (ctype === CEL_LINKED) cel.link = r.u16();
           else if (ctype === CEL_TILEMAP) {
             const w = r.u16();

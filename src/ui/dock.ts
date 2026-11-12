@@ -80,6 +80,12 @@ export function builtinWorkspaces(panels: PanelDef[] = allPanels()): Workspace[]
     if (panels.some((p) => p.id === id)) pixel.hidden.push(id);
   }
   for (const z of ZONES) if (!pixel.zones[z].tabs.includes(pixel.zones[z].active ?? '')) pixel.zones[z].active = pixel.zones[z].tabs[0] ?? null;
+  // Slices sit right after Preview and Tool options, not at the back of a long row of tabs.
+  const right = pixel.zones.right.tabs;
+  if (right.includes('slices')) {
+    right.splice(right.indexOf('slices'), 1);
+    right.splice(Math.min(right.length, (right.includes('tool-options') ? right.indexOf('tool-options') : 0) + 1), 0, 'slices');
+  }
   pixel.zones.right.size = 264;
   pixel.zones.bottom.size = 260;
 

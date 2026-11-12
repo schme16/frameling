@@ -10,9 +10,9 @@ registerCommands([
     id: 'file.openPicture',
     label: 'Open a picture or sprite sheet...',
     category: 'File',
-    description: 'Bring in a PNG, GIF or sprite sheet as a new pixel drawing: cut it into frames and choose how it is built.',
+    description: 'Bring in a PNG, GIF, WebP or sprite sheet as a new pixel drawing: cut it into frames and choose how it is built.',
     help: 'pixel-import',
-    keywords: ['png', 'gif', 'image', 'picture', 'sprite sheet', 'spritesheet', 'atlas', 'slice', 'grid', 'import', 'open', 'animated gif', 'frames'],
+    keywords: ['png', 'gif', 'image', 'picture', 'sprite sheet', 'spritesheet', 'atlas', 'slice', 'grid', 'import', 'open', 'animated gif', 'apng', 'animated png', 'animated webp', 'webp', 'frames'],
     run: () => pickAndOpenPicture(),
   },
   {
@@ -22,7 +22,7 @@ registerCommands([
     keys: ['Mod+I'],
     description: 'Add a PNG, GIF or sprite sheet to this drawing as a layer with its frames, or as boards.',
     help: 'pixel-import',
-    keywords: ['png', 'gif', 'image', 'picture', 'sprite sheet', 'spritesheet', 'atlas', 'slice', 'grid', 'import', 'add', 'animated gif', 'frames'],
+    keywords: ['png', 'gif', 'image', 'picture', 'sprite sheet', 'spritesheet', 'atlas', 'slice', 'grid', 'import', 'add', 'animated gif', 'apng', 'animated png', 'animated webp', 'webp', 'frames'],
     run: () => pickAndAddPicture(),
   },
   {

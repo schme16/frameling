@@ -1,11 +1,13 @@
 // The Slices panel: every slice on the active pixel layer, each with its name, rectangle, 9-patch borders and pivot.
+import { useMemo, type ReactNode } from 'react';
+import { goToArtboard } from '../../artboards/ops';
 import { findLayer } from '../../core/doc';
 import type { Slice } from '../../core/format';
 import { useStore } from '../../core/store';
 import { ActionButton, Tip } from '../../canvas/controls';
 import { setPixelSettings, usePixelSettings } from '../settings';
-import { borders, sliceColor } from './model';
-import { deleteSlice, pickSlice, renameSlice, setNineBorders, setPivot, setSliceRect, toggleNine, togglePivot, usePickedSlice, createSlice, setSliceColor } from './state';
+import { borders, keyAt, sliceAt, sliceColor, sliceOwners, type SliceOwner } from './model';
+import { deleteSlice, keySliceHere, pickSlice, renameSlice, setNineBorders, setPivot, setSliceRect, stopSliceMoving, toggleNine, togglePivot, unkeySliceHere, usePickedSlice, createSlice, setSliceColor } from './state';
 import '../pixel.css';
 import './slices.css';
 
@@ -35,7 +37,10 @@ function Num({ label, value, onChange, min, max }: { label: string; value: numbe
   );
 }
 
-function Row({ s, open, onOpen }: { s: Slice; open: boolean; onOpen: () => void }) {
+function Row({ slice, frame, open, canKey, onOpen }: { slice: Slice; frame: number; open: boolean; canKey: boolean; onOpen: () => void }) {
+  // A slice that changes between frames shows (and edits) the way it is at the current frame.
+  const s = sliceAt(slice, canKey ? frame : 0);
+  const keyHere = slice.keys?.some((k) => k.frame === frame) ?? false;
   const b = borders(s);
   const color = sliceColor(s);
   return (
@@ -48,6 +53,7 @@ function Row({ s, open, onOpen }: { s: Slice; open: boolean; onOpen: () => void 
             {s.w} x {s.h}
             {b ? ', 9-patch' : ''}
             {s.pivot ? ', pivot' : ''}
+            {slice.keys?.length ? ', moves' : ''}
           </span>
         </button>
         <button type="button" className="sl-del" onClick={() => deleteSlice(s.id)} aria-label={`Delete slice ${s.name}`} title="Delete slice">
@@ -88,6 +94,34 @@ function Row({ s, open, onOpen }: { s: Slice; open: boolean; onOpen: () => void 
               <Num label="Pivot Y" value={s.pivot.y - s.y} onChange={(v) => setPivot(s.id, { y: s.y + v })} />
             </div>
           )}
+          {!canKey ? null : slice.keys?.length ? (
+            <div className="sl-keys">
+              <Tip>
+                Changes between frames: {slice.keys.length} {slice.keys.length === 1 ? 'key' : 'keys'} (frame {slice.keys.map((k) => k.frame + 1).join(', ')}). Move it at another frame to key it there.
+              </Tip>
+              <div className="px-row px-wrap">
+                {!keyHere && keyAt(slice, frame) && (
+                  <ActionButton onClick={() => keySliceHere(slice.id)} title="Start a new place for this slice at this frame. It stays where it was before.">
+                    Key this frame
+                  </ActionButton>
+                )}
+                {keyHere && (
+                  <ActionButton onClick={() => unkeySliceHere(slice.id)} title="Take this frame's key away. The slice goes back to the key before it.">
+                    Remove this key
+                  </ActionButton>
+                )}
+                <ActionButton onClick={() => stopSliceMoving(slice.id)} title="Keep the slice in the place it has at this frame, on every frame.">
+                  Keep in one place
+                </ActionButton>
+              </div>
+            </div>
+          ) : (
+            <div className="px-row px-wrap">
+              <ActionButton onClick={() => keySliceHere(slice.id)} title="Let this slice move or change between frames: it keeps its place until this frame, then you move it here.">
+                Move between frames
+              </ActionButton>
+            </div>
+          )}
           <label className="sl-name">
             <span>Colour on the canvas</span>
             <input type="color" value={color} onChange={(e) => setSliceColor(s.id, e.target.value)} aria-label="Slice colour" />
@@ -98,15 +132,39 @@ function Row({ s, open, onOpen }: { s: Slice; open: boolean; onOpen: () => void 
   );
 }
 
+/** A board and layer heading over their slices. */
+function Group({ owner, title, note, children }: { owner: SliceOwner; title: string; note?: string; children: ReactNode }) {
+  return (
+    <li className="sl-group">
+      <div className="sl-group-head">
+        <b>{title}</b>
+        {note && <span className="sl-group-note">{note}</span>}
+        {!owner.open && (
+          <button type="button" className="sl-open" onClick={() => goToArtboard(owner.boardId, true)} title={`Open the board ${owner.boardName} to draw on it and key its slices`}>
+            Open board
+          </button>
+        )}
+      </div>
+      <ul className="sl-list" aria-label={`Slices on ${title}`}>
+        {children}
+      </ul>
+    </li>
+  );
+}
+
 export function SlicesPanel() {
   const layer = useLayer();
+  const frame = useStore((s) => s.ui.frame);
+  const doc = useStore((s) => s.doc);
+  const activeLayerId = useStore((s) => s.ui.activeLayerId);
   const picked = usePickedSlice();
   const show = usePixelSettings((s) => s.showSlices);
-  if (!layer) return <p className="cv-tip">Slices go on a pixel layer. Pick or add a pixel layer to use them.</p>;
-  const slices = layer.slices ?? [];
-  return (
-    <div className="sl-panel">
-      <div className="px-row px-wrap">
+  const owners = useMemo(() => sliceOwners(doc, activeLayerId), [doc, activeLayerId]);
+  const boards = new Set(owners.map((o) => o.boardId)).size;
+  const elsewhere = owners.some((o) => o.layer.id !== layer?.id);
+  const adding = (
+    <div className="px-row px-wrap">
+      {layer && (
         <ActionButton
           onClick={() => {
             createSlice({ x: 0, y: 0, w: 16, h: 16 });
@@ -115,20 +173,46 @@ export function SlicesPanel() {
         >
           + Add slice
         </ActionButton>
-        <label className="sl-check">
-          <input type="checkbox" checked={show} onChange={(e) => setPixelSettings({ showSlices: e.target.checked })} />
-          <span>Show on canvas</span>
-        </label>
-      </div>
-      {slices.length === 0 ? (
-        <Tip>No slices on {layer.name} yet. Pick the Slice tool (Shift+S) and drag on the layer to cut one out. Slices carry a name, a 9-patch and a pivot into your game engine.</Tip>
-      ) : (
-        <ul className="sl-list" aria-label={`Slices on ${layer.name}`}>
-          {slices.map((s) => (
-            <Row key={s.id} s={s} open={picked === s.id} onOpen={() => pickSlice(picked === s.id ? null : s.id)} />
-          ))}
-        </ul>
       )}
+      <label className="sl-check">
+        <input type="checkbox" checked={show} onChange={(e) => setPixelSettings({ showSlices: e.target.checked })} />
+        <span>Show on canvas</span>
+      </label>
+    </div>
+  );
+  if (!layer && !owners.length) return <p className="cv-tip">Slices go on a pixel layer. Pick or add a pixel layer to use them.</p>;
+  const rows = (o: SliceOwner) => o.layer.slices!.map((s) => <Row key={s.id} slice={s} frame={frame} open={picked === s.id} canKey={o.open} onOpen={() => pickSlice(picked === s.id ? null : s.id)} />);
+  // One layer with slices, the one you are on: the plain list. Slices on other layers or boards bring headings.
+  if (layer && !elsewhere && boards <= 1) {
+    const slices = layer.slices ?? [];
+    return (
+      <div className="sl-panel">
+        {adding}
+        {slices.length === 0 ? (
+          <Tip>No slices on {layer.name} yet. Pick the Slice tool (Shift+S) and drag on the layer to cut one out. Slices carry a name, a 9-patch and a pivot into your game engine.</Tip>
+        ) : (
+          <ul className="sl-list" aria-label={`Slices on ${layer.name}`}>
+            {slices.map((s) => (
+              <Row key={s.id} slice={s} frame={frame} open={picked === s.id} canKey onOpen={() => pickSlice(picked === s.id ? null : s.id)} />
+            ))}
+          </ul>
+        )}
+      </div>
+    );
+  }
+  const many = new Set(owners.map((o) => o.boardId)).size > 1 || doc.artboards?.length;
+  return (
+    <div className="sl-panel">
+      {adding}
+      {layer && !layer.slices?.length && <Tip>No slices on {layer.name} yet. Pick the Slice tool (Shift+S) and drag on the layer to cut one out.</Tip>}
+      <ul className="sl-groups" aria-label="Slices on every layer and board">
+        {owners.map((o) => (
+          <Group key={o.layer.id} owner={o} title={many ? `${o.boardName} / ${o.layer.name}` : o.layer.name} note={o.layer.id === layer?.id && o.open ? 'this layer' : !o.layer.visible ? 'hidden, left out of exports' : undefined}>
+            {rows(o)}
+          </Group>
+        ))}
+      </ul>
+      {owners.some((o) => !o.open) && <Tip>Slices on other boards show where they sit on their first frame. Open the board to key them at a frame.</Tip>}
     </div>
   );
 }

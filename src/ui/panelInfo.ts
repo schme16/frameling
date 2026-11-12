@@ -6,6 +6,7 @@ import type { Layer, Shape } from '../core/format';
 import { getTool, type PanelDef } from '../core/registry';
 import type { State } from '../core/store';
 import { ownedUndo } from '../core/owners';
+import { allSliceCount } from '../pixel/slices/model';
 
 /** Where a panel sits on the rail. Properties first, then the rest in this order with a line between groups. */
 export type RailGroup = 'properties' | 'make' | 'animate' | 'learn' | 'more';
@@ -72,10 +73,10 @@ export const PANEL_INFO: Record<string, PanelInfo> = {
     keywords: ['pixel', 'colours', 'indexed'],
   },
   slices: {
-    blurb: 'Named rectangles on a pixel layer, with a 9-patch middle and a pivot, for your game engine.',
+    blurb: 'Named rectangles on a pixel layer, with a 9-patch middle and a pivot, for your game engine. Lists the slices of every board and layer.',
     group: 'properties',
     section: true,
-    relevant: (s) => layerOf(s)?.kind === 'pixel',
+    relevant: (s) => layerOf(s)?.kind === 'pixel' || allSliceCount(s.doc) > 0,
     idle: 'Pick a pixel layer',
     keywords: ['slice', 'slices', '9-patch', 'nine patch', 'pivot', 'hitbox', 'region'],
   },

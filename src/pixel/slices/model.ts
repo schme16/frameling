@@ -1,8 +1,8 @@
 // Slices: named rectangles on a pixel layer, with an optional 9-patch middle and pivot. Plain functions on a layer (an
 // immer draft or a plain object), so they can be tested. All numbers are in the layer's art pixels.
-import type { Doc, Id, Layer, PixelLayer, Slice } from '../../core/format';
+import type { Doc, Id, Layer, PixelLayer, Slice, SliceKey } from '../../core/format';
 import { uid } from '../../core/doc';
-import { artboardsOf } from '../../artboards/model';
+import { activeId, artboardsOf } from '../../artboards/model';
 
 export interface Rect {
   x: number;
@@ -36,8 +36,15 @@ export function rectBetween(a: { x: number; y: number }, b: { x: number; y: numb
   return { x: x0, y: y0, w: Math.max(1, Math.abs(whole(b.x) - whole(a.x))), h: Math.max(1, Math.abs(whole(b.y) - whole(a.y))) };
 }
 
-/** Keeps a slice's numbers sensible: whole, at least 1 x 1, the middle inside it. */
+type Geometry = Pick<Slice, 'x' | 'y' | 'w' | 'h' | 'center' | 'pivot'>;
+
+/** Keeps a slice's numbers sensible: whole, at least 1 x 1, the middle inside it (and the same for each of its keys). */
 export function tidy(s: Slice): void {
+  tidyGeometry(s);
+  if (s.keys) for (const k of s.keys) tidyGeometry(k);
+}
+
+function tidyGeometry(s: Geometry): void {
   s.x = whole(s.x);
   s.y = whole(s.y);
   s.w = Math.max(1, whole(s.w));
@@ -66,6 +73,101 @@ export function removeSlice(layer: PixelLayer, id: Id): boolean {
   layer.slices!.splice(i, 1);
   if (!layer.slices!.length) delete layer.slices;
   return true;
+}
+
+// ---------------------------------------------------------------- slices that change between frames
+
+const geometryOf = (g: Geometry): Geometry => ({ x: g.x, y: g.y, w: g.w, h: g.h, ...(g.center ? { center: { ...g.center } } : {}), ...(g.pivot ? { pivot: { ...g.pivot } } : {}) });
+const sameGeometry = (a: Geometry, b: Geometry): boolean => JSON.stringify(geometryOf(a)) === JSON.stringify(geometryOf(b));
+
+/** The key in force at a frame: the last one at or before it, or the first when the frame is before them all. */
+export function keyAt(s: Pick<Slice, 'keys'>, frame: number): SliceKey | null {
+  const keys = s.keys;
+  if (!keys?.length) return null;
+  let k = keys[0];
+  for (const o of keys) if (o.frame <= frame) k = o;
+  return k;
+}
+
+/** The slice as it looks at a frame (the slice itself when it has no keys). */
+export function sliceAt(s: Slice, frame: number): Slice {
+  const k = keyAt(s, frame);
+  if (!k) return s;
+  const { center: _c, pivot: _p, ...rest } = s;
+  return { ...rest, ...geometryOf(k) };
+}
+
+/** Writes the geometry of `view` (a slice as shown at `frame`) into the slice: into the key for that frame when the slice has keys. */
+export function writeSliceAt(s: Slice, frame: number, view: Geometry): void {
+  if (!s.keys?.length) {
+    Object.assign(s, { x: view.x, y: view.y, w: view.w, h: view.h });
+    if (view.center) s.center = { ...view.center };
+    else delete s.center;
+    if (view.pivot) s.pivot = { ...view.pivot };
+    else delete s.pivot;
+    return;
+  }
+  const cur = keyAt(s, frame)!;
+  if (sameGeometry(cur, view)) return;
+  const keys = s.keys.filter((k) => k.frame !== frame);
+  keys.push({ frame, ...geometryOf(view) });
+  keys.sort((a, b) => a.frame - b.frame);
+  s.keys = keys;
+  syncFirstKey(s);
+}
+
+/** The slice's own numbers always match its first key. */
+function syncFirstKey(s: Slice): void {
+  const k = s.keys?.[0];
+  if (!k) return;
+  Object.assign(s, { x: k.x, y: k.y, w: k.w, h: k.h });
+  if (k.center) s.center = { ...k.center };
+  else delete s.center;
+  if (k.pivot) s.pivot = { ...k.pivot };
+  else delete s.pivot;
+}
+
+/** Starts a key at this frame. A slice that stayed put gets its first key at frame 0 too, so it is where it was until this frame. */
+export function addKeyAt(s: Slice, frame: number): void {
+  const now = geometryOf(sliceAt(s, frame));
+  const keys = s.keys?.length ? [...s.keys] : [{ frame: 0, ...geometryOf(s) }];
+  if (!keys.some((k) => k.frame === frame)) keys.push({ frame, ...now });
+  keys.sort((a, b) => a.frame - b.frame);
+  s.keys = keys;
+  syncFirstKey(s);
+}
+
+/** Removes the key at this frame (the slice goes back to the key before it). The last key left makes it a plain slice again. */
+export function removeKeyAt(s: Slice, frame: number): void {
+  if (!s.keys) return;
+  const keys = s.keys.filter((k) => k.frame !== frame);
+  if (keys.length === s.keys.length) return;
+  s.keys = keys;
+  syncFirstKey(s);
+  if (keys.length <= 1) delete s.keys;
+}
+
+/** Back to one place on every frame: the one it has at this frame. */
+export function stopMoving(s: Slice, frame: number): void {
+  const k = keyAt(s, frame);
+  delete s.keys;
+  if (!k) return;
+  Object.assign(s, { x: k.x, y: k.y, w: k.w, h: k.h });
+  if (k.center) s.center = { ...k.center };
+  else delete s.center;
+  if (k.pivot) s.pivot = { ...k.pivot };
+  else delete s.pivot;
+}
+
+/**
+ * The keys a slice has for frames start to end, counted from `start` (so the first is at 0): the key in force at `start`
+ * comes first. A slice without keys gives one key at 0.
+ */
+export function keysForRange(s: Slice, start: number, end: number): SliceKey[] {
+  if (!s.keys?.length) return [{ frame: 0, ...geometryOf(s) }];
+  const out: SliceKey[] = [{ ...keyAt(s, start)!, frame: 0 }];
+  for (const k of s.keys) if (k.frame > start && k.frame <= end) out.push({ ...k, frame: k.frame - start });
+  return out;
 }
 
 /** Moves a slice, its middle and its pivot together. */
@@ -207,33 +309,92 @@ export interface ExportSlice extends Slice {
 
 /**
  * Every slice of the shown pixel layers, in pixels of the exported picture: art pixels times the layer's pixel size
- * times the export scale. A name two layers share gets the layer's name after it, so names stay unique.
+ * times the export scale. A name two layers share gets the layer's name after it, so names stay unique. With the frames
+ * exported (`range`, timeline frames), a slice that changes between frames is measured on the first exported frame and
+ * keeps its later keys, counted from that frame.
  */
-export function slicesForExport(layers: readonly Layer[], scale: number): ExportSlice[] {
+export function slicesForExport(layers: readonly Layer[], scale: number, range?: { start: number; end: number }): ExportSlice[] {
   const out: ExportSlice[] = [];
   const seen = new Map<string, number>();
   for (const l of sliceLayers(layers)) {
     const k = l.pixelSize * scale;
     const r = (n: number) => Math.round(n * k);
+    const place = <T extends Geometry>(g: T): T => ({
+      ...g,
+      x: r(g.x),
+      y: r(g.y),
+      w: Math.max(1, r(g.w)),
+      h: Math.max(1, r(g.h)),
+      ...(g.center ? { center: { x: r(g.center.x), y: r(g.center.y), w: Math.max(1, r(g.center.w)), h: Math.max(1, r(g.center.h)) } } : {}),
+      ...(g.pivot ? { pivot: { x: r(g.pivot.x), y: r(g.pivot.y) } } : {}),
+    });
     for (const s of l.slices!) {
       let name = s.name;
       const n = (seen.get(name.toLowerCase()) ?? 0) + 1;
       seen.set(name.toLowerCase(), n);
       if (n > 1) name = `${name} ${n}`;
-      out.push({
-        ...s,
-        name,
-        layerName: l.name,
-        x: r(s.x),
-        y: r(s.y),
-        w: Math.max(1, r(s.w)),
-        h: Math.max(1, r(s.h)),
-        ...(s.center ? { center: { x: r(s.center.x), y: r(s.center.y), w: Math.max(1, r(s.center.w)), h: Math.max(1, r(s.center.h)) } } : {}),
-        ...(s.pivot ? { pivot: { x: r(s.pivot.x), y: r(s.pivot.y) } } : {}),
-      });
+      const keys = range && s.keys?.length ? keysForRange(s, range.start, range.end) : [];
+      const first = keys[0] ? { ...s, ...geometryOf(keys[0]) } : s;
+      if (keys[0]) {
+        if (!keys[0].center) delete first.center;
+        if (!keys[0].pivot) delete first.pivot;
+      }
+      const { keys: _k, ...plain } = first;
+      out.push({ ...place(plain as Slice), name, layerName: l.name, ...(keys.length > 1 ? { keys: keys.map(place) } : {}) });
     }
   }
   return out;
+}
+
+/** The layers of every board, the open board's first. The open board's layers are the document's own. */
+export function boardLayers(doc: Doc): { boardId: Id; boardName: string; open: boolean; layers: Layer[] }[] {
+  const open = activeId(doc);
+  const list = artboardsOf(doc).map((a) => ({ boardId: a.id, boardName: a.name, open: a.id === open, layers: a.id === open ? doc.layers : (a.content?.layers ?? []) }));
+  return [...list.filter((b) => b.open), ...list.filter((b) => !b.open)];
+}
+
+/** A layer with slices, and the board it is on. */
+export interface SliceOwner {
+  boardId: Id;
+  boardName: string;
+  /** True for the board that is open: the timeline frame is its own, so keys can be set at it. */
+  open: boolean;
+  layer: PixelLayer;
+}
+
+/**
+ * Every pixel layer with slices on any board (hidden layers included, for editing), the open board first and the active
+ * layer first within it, otherwise top layer first.
+ */
+export function sliceOwners(doc: Doc, activeLayerId?: Id | null): SliceOwner[] {
+  const out: SliceOwner[] = [];
+  for (const b of boardLayers(doc)) {
+    const mine = b.layers.filter((l): l is PixelLayer => l.kind === 'pixel' && !l.reference && !!l.slices?.length).reverse();
+    mine.sort((x, y) => (y.id === activeLayerId ? 1 : 0) - (x.id === activeLayerId ? 1 : 0));
+    for (const layer of mine) out.push({ boardId: b.boardId, boardName: b.boardName, open: b.open, layer });
+  }
+  return out;
+}
+
+/** Finds a pixel layer by id on any board (works on a draft too). */
+export function findPixelLayer(doc: Doc, id: Id): { layer: PixelLayer; open: boolean } | null {
+  const hit = (layers: readonly Layer[]) => layers.find((l): l is PixelLayer => l.kind === 'pixel' && l.id === id);
+  const own = hit(doc.layers);
+  if (own) return { layer: own, open: true };
+  for (const a of doc.artboards ?? []) {
+    const l = a.content ? hit(a.content.layers) : undefined;
+    if (l) return { layer: l, open: false };
+  }
+  return null;
+}
+
+/** The slice with this id, wherever it is. */
+export function findSlice(doc: Doc, id: Id): { slice: Slice; layer: PixelLayer; open: boolean } | null {
+  for (const b of boardLayers(doc)) for (const l of b.layers) if (l.kind === 'pixel') {
+    const s = l.slices?.find((x) => x.id === id);
+    if (s) return { slice: s, layer: l, open: b.open };
+  }
+  return null;
 }
 
 /** Slices of every board, by board name: for the panel when boards are in use. The open board's layers are the document's. */

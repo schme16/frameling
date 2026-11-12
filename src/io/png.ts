@@ -189,6 +189,20 @@ export function decodePng(bytes: Uint8Array): RawImage {
   if (!okDepth || !CHANNELS[ctype]) throw new Error('This kind of PNG picture is not supported');
   if (width < 1 || height < 1 || width * height > 1 << 28) throw new Error('The PNG picture has an odd size');
   const idat = join(chunks.filter((c) => c.type === 'IDAT').map((c) => c.data));
+  return decodePngData({ width, height, depth, ctype }, idat, chunks.find((c) => c.type === 'PLTE')?.data, chunks.find((c) => c.type === 'tRNS')?.data);
+}
+
+/** The picture kind of a PNG (its IHDR without interlacing), for reading picture data that is not in the IDAT chunks (APNG frames). */
+export interface PngKind {
+  width: number;
+  height: number;
+  depth: number;
+  ctype: number;
+}
+
+/** Turns the joined, still-compressed picture data of a width x height block of the given kind into RGBA. */
+export function decodePngData(kind: PngKind, idat: Uint8Array, plte?: Uint8Array, trns?: Uint8Array): RawImage {
+  const { width, height, depth, ctype } = kind;
   const channels = CHANNELS[ctype];
   // Bytes in a row, and the distance back to "the pixel to the left" for the row filters (a whole byte at least).
   const stride = Math.ceil((width * channels * depth) / 8);
@@ -226,8 +240,6 @@ export function decodePng(bytes: Uint8Array): RawImage {
     pixels.set(rows);
     return { width, height, pixels };
   }
-  const plte = chunks.find((c) => c.type === 'PLTE')?.data;
-  const trns = chunks.find((c) => c.type === 'tRNS')?.data;
   if (ctype === 3 && !plte) throw new Error('The PNG picture has no colours');
   // The sample at `i` of a row, as its full value (up to 16 bits).
   const sample = (y: number, i: number): number => {

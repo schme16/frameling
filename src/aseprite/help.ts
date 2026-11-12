@@ -38,7 +38,7 @@ Search for **Use palette from an Aseprite file** in the command palette (Ctrl+K)
 
 After an import, a message says **See what changed** whenever something couldn't be matched exactly. Typical cases:
 
-- **Slices** (with their 9-patch middle and pivot) become [Slices](help:pixel-slices) on the top pixel layer. A slice that moves between frames keeps its first position.
+- **Slices** (with their 9-patch middle and pivot) become [Slices](help:pixel-slices) on the top pixel layer. A slice that moves between frames keeps a key for each place.
 - Anything drawn **outside the canvas** is cropped.
 
 If a file ends in .ase but isn't from Aseprite (Adobe swatch files do this), Frameling says so.

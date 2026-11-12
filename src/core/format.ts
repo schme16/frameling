@@ -316,6 +316,23 @@ export interface Slice {
   pivot?: { x: number; y: number };
   /** The colour it is drawn in on the canvas (missing = a colour picked from its name). */
   color?: Color;
+  /**
+   * For a slice that moves or changes between frames (Aseprite keys): the rectangle, middle and pivot from each listed
+   * frame on, in timeline frames, sorted. The slice's own x, y, w, h, center and pivot always match the first key, so
+   * anything that does not know about keys still sees the first position. Missing = the same on every frame.
+   */
+  keys?: SliceKey[];
+}
+
+/** One frame's look of a slice: its rectangle (and 9-patch middle and pivot) from `frame` until the next key. */
+export interface SliceKey {
+  frame: number;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  center?: { x: number; y: number; w: number; h: number };
+  pivot?: { x: number; y: number };
 }
 
 /**
