@@ -11,7 +11,9 @@ import { fit, hint } from './controller';
 import { ANCHORS, anchorOffset, clampSize, hasPixelArt, MAX_SIZE, NOTE_TEXT, pixelScaleStep, resizeCanvas, scaleArtwork, scaledSize, type Anchor } from './resize';
 import { Icon } from '../ui/icons';
 import { activeId, findArtboard } from '../artboards/model';
-import { reframeVariations, untouchedFramings } from '../artboards/variations';
+import { reframeVariations, setVariationSize, untouchedFramings } from '../artboards/variations';
+import { currentChoice } from '../core/choices';
+import type { FitMode } from '../artboards/fit';
 import './settings.css';
 
 type Mode = 'canvas' | 'scale';
@@ -122,12 +124,15 @@ function DocumentSettings({ close }: { close: () => void }) {
       hint('Close the symbol you are drawing inside first, then change the page.');
       return close();
     }
-    const next = sizeChanged ? (mode === 'canvas' ? resizeCanvas(doc, w, h, anchor) : scaleArtwork(doc, w, h)).doc : doc;
+    // A variation's size is only its picture (a camera frames the art), so it goes the way dragging its edge does, and its framing stays tracked.
+    const open = sizeChanged && doc.artboards?.some((a) => a.variationOf) ? activeId(doc) : '';
+    const asVariation = !!open && !!findArtboard(doc, open)?.variationOf;
+    const next = sizeChanged && !asVariation ? (mode === 'canvas' ? resizeCanvas(doc, w, h, anchor) : scaleArtwork(doc, w, h)).doc : doc;
     const label = sizeChanged ? (mode === 'canvas' ? 'Canvas size' : 'Scale artwork') : 'Page settings';
     store().update(label, (d) => {
-      const open = sizeChanged && d.artboards?.some((a) => a.variationOf) ? activeId(d as Doc) : '';
-      const keep = open && !findArtboard(d as Doc, open)?.variationOf ? untouchedFramings(d as Doc, open) : [];
-      if (sizeChanged) {
+      const keep = open && !asVariation ? untouchedFramings(d as Doc, open) : [];
+      if (asVariation) setVariationSize(d as Doc, open, result.w, result.h, currentChoice<FitMode>('variations.frame'));
+      else if (sizeChanged) {
         d.width = next.width;
         d.height = next.height;
         d.layers = next.layers as typeof d.layers;
@@ -144,7 +149,7 @@ function DocumentSettings({ close }: { close: () => void }) {
     close();
     if (sizeChanged) {
       fit();
-      hint(`The page is now ${formatSize(next.width, next.height, unit, dpiOk)}.`);
+      hint(`The page is now ${formatSize(asVariation ? result.w : next.width, asVariation ? result.h : next.height, unit, dpiOk)}.`);
     }
   };
 
