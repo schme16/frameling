@@ -5,6 +5,7 @@
  */
 import type { Drawing, InstanceShape, MotionPath, PathPoint, Tween } from './format';
 import { cutSlice, tweenEase } from './ease';
+import { buildPathTable, locate } from './motionPath';
 import { isInstance, pairInstances, pointOnPath } from './symbols';
 
 export interface TweenCut {
@@ -43,64 +44,31 @@ export function cutProblem(tw: Tween | undefined, at: number, length: number): s
   return null;
 }
 
-const STEPS = 16;
 const tidy = (n: number): number => (Math.abs(n) < 1e-9 ? 0 : Math.round(n * 1e6) / 1e6);
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 const mid = (a: { x: number; y: number }, b: { x: number; y: number }, t: number) => ({ x: lerp(a.x, b.x, t), y: lerp(a.y, b.y, t) });
 const copyPoint = (p: PathPoint): PathPoint => ({ ...p, ...(p.c1 ? { c1: { ...p.c1 } } : {}), ...(p.c2 ? { c2: { ...p.c2 } } : {}) });
 
 /**
- * Cuts a motion path where the follower is when it has gone `e` (0..1) of the way by distance. The follower walks a
- * 16-step polyline per curve, so the cut lands on the same step and fraction, and each piece keeps its curves.
+ * Cuts a motion path where the follower is when it has gone `e` (0..1) of the way by distance. The follower measures
+ * distance exactly (motionPath.ts), so the cut curve is split at the very point it stands on, and each piece keeps its
+ * curves and plays exactly as that stretch of the whole did.
  */
 export function splitPath(points: PathPoint[], e: number): [PathPoint[], PathPoint[]] {
   const whole = () => [points.map(copyPoint), points.map(copyPoint)] as [PathPoint[], PathPoint[]];
   if (points.length < 2) return whole();
-  // Every straight step of the polyline: which segment, which step, and its two ends.
-  const steps: { seg: number; k: number; n: number; a: { x: number; y: number }; b: { x: number; y: number }; len: number }[] = [];
-  let total = 0;
-  for (let i = 1; i < points.length; i++) {
-    const a = points[i - 1];
-    const q = points[i];
-    const n = q.c1 && q.c2 ? STEPS : 1;
-    let prev: { x: number; y: number } = { x: a.x, y: a.y };
-    for (let k = 1; k <= n; k++) {
-      let cur: { x: number; y: number } = { x: q.x, y: q.y };
-      if (n > 1) {
-        const t = k / n;
-        const u = 1 - t;
-        cur = {
-          x: u * u * u * a.x + 3 * u * u * t * q.c1!.x + 3 * u * t * t * q.c2!.x + t * t * t * q.x,
-          y: u * u * u * a.y + 3 * u * u * t * q.c1!.y + 3 * u * t * t * q.c2!.y + t * t * t * q.y,
-        };
-      }
-      const len = Math.hypot(cur.x - prev.x, cur.y - prev.y);
-      steps.push({ seg: i, k, n, a: prev, b: cur, len });
-      total += len;
-      prev = cur;
-    }
-  }
-  if (!total) return whole();
-  const s = Math.max(0, Math.min(1, e)) * total;
-  let run = 0;
-  let hit = steps[steps.length - 1];
-  let u = 1;
-  for (const st of steps) {
-    if (s <= run + st.len || st === steps[steps.length - 1]) {
-      hit = st;
-      u = st.len ? Math.max(0, Math.min(1, (s - run) / st.len)) : 0;
-      break;
-    }
-    run += st.len;
-  }
-  const j = hit.seg;
+  const tab = buildPathTable(points);
+  if (!(tab.total > 0)) return whole();
+  const at0 = locate(tab, Math.max(0, Math.min(1, e)) * tab.total);
+  if (!at0) return whole();
+  const j = at0.curve + 1;
+  const t = at0.t;
   const q = points[j];
   const a = points[j - 1];
   const first = points.slice(0, j).map(copyPoint);
   const second = points.slice(j + 1).map(copyPoint);
   if (q.c1 && q.c2) {
     // De Casteljau at the curve parameter the follower had reached.
-    const t = (hit.k - 1 + u) / hit.n;
     const p01 = mid(a, q.c1, t);
     const p12 = mid(q.c1, q.c2, t);
     const p23 = mid(q.c2, q, t);
@@ -111,7 +79,7 @@ export function splitPath(points: PathPoint[], e: number): [PathPoint[], PathPoi
     second.unshift({ ...copyPoint(q), c1: p123, c2: p23 });
     second.unshift({ x: at.x, y: at.y });
   } else {
-    const at = mid(a, q, u);
+    const at = mid(a, q, t);
     first.push({ x: at.x, y: at.y });
     second.unshift(copyPoint(q));
     second.unshift({ x: at.x, y: at.y });

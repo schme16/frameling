@@ -73,11 +73,11 @@ function gap(a: Pose[], b: Pose[]): { px: number; deg: number } {
   return { px, deg };
 }
 
-// The follower walks a path in 16 straight steps per curve and turns to face each step, so the two pieces of a cut path
-// (walked in 16 steps of their own) can differ from the whole by under a pixel, and by a step or two of its turning (the arc here turns 90 degrees).
-const PX = 1;
-const stepDeg = (2 * 360) / 4 / 16;
-const degFor = (t: Tween) => (t.path?.orient ? stepDeg : 0.01);
+// The follower measures distance along the path exactly and faces the curve's own tangent, so the pieces of a cut path
+// play the same motion as the whole, to well under these bounds (px, degrees).
+const PX = 0.01;
+const stepDeg = 0.05;
+const degFor = (_t: Tween) => stepDeg;
 
 const EASES: Easing[] = ['linear', 'easeInOut', 'bounceOut', [0.2, 0.9, 0.3, 1]];
 const TWEENS: [string, (ease: Easing) => Tween][] = [
@@ -112,7 +112,6 @@ describe('cutting a tween by time keeps the motion', () => {
           const after = store().get().doc;
           expect(after.layers[0].cels.map((c) => [c.start, c.length])).toEqual([[0, cutAt], [cutAt, 10 - cutAt], [10, 2]]);
           const g = gap(before, sample(after));
-          // The path is followed in 16 straight steps per curve, so its pieces can differ from the whole by a hair.
           expect(g.px).toBeLessThan(PX);
           expect(g.deg).toBeLessThan(degFor(after.layers[0].cels[0].tween!));
         }
