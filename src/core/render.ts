@@ -9,6 +9,7 @@ import { getStroke } from 'perfect-freehand';
 import type { CameraView, Color, Doc, Drawing, FillShape, Layer, PathShape, PixelDrawing, Shape, StrokeShape, SubPath } from './format';
 import { isPosed, poseAt, type PosedInstance, type PosedLayer, type PosedLook } from './symbols';
 import { DEFAULT_TILE_SIZE } from './doc';
+import { folderChain } from './folders';
 import { drawText, textBounds } from '../text/draw';
 import { posedParticles } from '../particles/draw';
 import { drawTilemap } from './tilemap';
@@ -482,8 +483,8 @@ function lookReach(look: PosedLook): number {
   let folder = 0;
   for (const l of look.layers) {
     layer = Math.max(layer, reachOf(l.effects, look.frame));
-    const f = l.folder ? look.folders?.[l.folder] : undefined;
-    if (f) folder = Math.max(folder, reachOf(f.effects, look.frame));
+    // Every folder around the layer adds its own reach.
+    folder = Math.max(folder, folderChain(look.folders, l.folder).reduce((n, f) => n + reachOf(f.effects, look.frame), 0));
   }
   return layer + folder + 1;
 }

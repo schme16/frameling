@@ -1,34 +1,34 @@
 /**
- * The timeline's rows, top first: a header row for each folder, then its layers (unless the folder is folded shut),
+ * The timeline's rows, top first: a header row for each folder, then what is in it (unless the folder is folded shut),
  * and every other layer. The layer list and the frame grid both lay out from this, so they always line up.
  */
 import { useMemo, useSyncExternalStore } from 'react';
 import type { Doc, Id, Layer, LayerFolder } from '../core/format';
+import { layerTree, nodeLayers, type TreeNode } from '../core/folders';
 import { useStore } from '../core/store';
 
-export type TimelineRow = { type: 'layer'; layer: Layer; inFolder: boolean } | { type: 'folder'; folder: LayerFolder; layerIds: Id[]; collapsed: boolean };
+/** `depth` is how many folders it sits in (0 on the stage), for the indent. */
+export type TimelineRow =
+  | { type: 'layer'; layer: Layer; inFolder: boolean; depth: number }
+  | { type: 'folder'; folder: LayerFolder; layerIds: Id[]; collapsed: boolean; depth: number; parent?: Id };
 
-/** Builds the rows. Pure. */
+/** Builds the rows. Pure. Folders inside folders follow their parent; a folded folder hides everything in it. */
 export function timelineRows(doc: Doc, collapsed: ReadonlySet<Id>): TimelineRow[] {
   const out: TimelineRow[] = [];
-  const ls = doc.layers;
-  let i = ls.length - 1;
-  while (i >= 0) {
-    const l = ls[i];
-    const folder = l.folder ? doc.folders?.[l.folder] : undefined;
-    if (!folder) {
-      out.push({ type: 'layer', layer: l, inFolder: false });
-      i--;
-      continue;
+  const walk = (nodes: TreeNode[]) => {
+    // The tree is bottom first; the timeline is top first.
+    for (let i = nodes.length - 1; i >= 0; i--) {
+      const n = nodes[i];
+      if (n.type === 'layer') {
+        out.push({ type: 'layer', layer: n.layer, inFolder: n.depth > 0, depth: n.depth });
+        continue;
+      }
+      const shut = collapsed.has(n.folder.id);
+      out.push({ type: 'folder', folder: n.folder, layerIds: nodeLayers(n).reverse().map((x) => x.id), collapsed: shut, depth: n.depth, parent: n.folder.parent });
+      if (!shut) walk(n.children);
     }
-    let j = i;
-    while (j >= 0 && ls[j].folder === l.folder) j--;
-    const run = ls.slice(j + 1, i + 1).reverse();
-    const shut = collapsed.has(folder.id);
-    out.push({ type: 'folder', folder, layerIds: run.map((x) => x.id), collapsed: shut });
-    if (!shut) for (const x of run) out.push({ type: 'layer', layer: x, inFolder: true });
-    i = j;
-  }
+  };
+  walk(layerTree(doc));
   return out;
 }
 
