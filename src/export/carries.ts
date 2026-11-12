@@ -84,8 +84,8 @@ export const CARRY: Record<FormatId, FormatCarry> = {
     rows: { text: 'shapes', effects: 'picture', clip: 'picture', mask: 'picture', bones: 'picture', folders: 'kept' },
   },
   ai: {
-    summary: 'Opens in Illustrator as its own file: your layers and folders as real layers, shapes and gradients editable. Text becomes letter outlines. Layers with effects, clipping, masks or bending (or holding a symbol with them inside) become pictures.',
-    rows: { text: 'shapes', effects: 'picture', clip: 'picture', mask: 'picture', bones: 'picture', folders: 'kept' },
+    summary: 'Opens in Illustrator as its own file: your layers and folders as real layers, shapes, gradients and text editable (Illustrator needs the text\'s font installed, or it shows another one). Layers with effects, clipping, masks or bending (or holding a symbol with them inside) become pictures.',
+    rows: { effects: 'picture', clip: 'picture', mask: 'picture', bones: 'picture', folders: 'kept' },
   },
 };
 

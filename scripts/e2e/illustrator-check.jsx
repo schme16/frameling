@@ -91,6 +91,18 @@ function inspect(doc) {
     var bm = String(it.blendingMode);
     if (it.blendingMode != BlendModes.NORMAL) r.blends[bm] = (r.blends[bm] || 0) + 1;
   }
+  // Live text, one line each, read last and never its anchor or position: read early, or for a place, Illustrator under Wine
+  // crashes on texts it has not laid out yet (the harness parses the lines, and judges places from the picture).
+  r.textLines = [];
+  for (var i2 = 0; i2 < doc.textFrames.length; i2++) {
+    var t = doc.textFrames[i2];
+    var a = t.textRange.characterAttributes;
+    var fn = '?';
+    try { fn = a.textFont.name; } catch (e1) { fn = 'ERR ' + e1; }
+    var col = '?';
+    try { col = a.fillColor.typename + ' ' + (a.fillColor.red !== undefined ? Math.round(a.fillColor.red) + ',' + Math.round(a.fillColor.green) + ',' + Math.round(a.fillColor.blue) : ''); } catch (e2) {}
+    r.textLines.push(['kind=' + t.kind, 'font=' + fn, 'size=' + a.size, 'tracking=' + a.tracking, 'leading=' + a.leading, 'just=' + t.textRange.paragraphAttributes.justification, 'opacity=' + t.opacity, 'fill=' + col, 'contents=' + t.contents.replace(/\r/g, '\n')].join('\t'));
+  }
   return r;
 }
 

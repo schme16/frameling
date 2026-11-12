@@ -19,7 +19,7 @@ const NOTES: Partial<Record<FormatId, { legend: string; text: string; help: stri
   },
   ai: {
     legend: 'For Illustrator',
-    text: 'Illustrator opens it as its own file, with every shape editable, your layers and folders as real Illustrator layers, and gradients as gradients. Hidden layers and folders come in hidden. Other programs read it as a PDF without them.',
+    text: 'Illustrator opens it as its own file, with every shape editable, your layers and folders as real Illustrator layers, gradients as gradients and your text as live text (it needs the text\'s font installed, or it shows another one). Hidden layers and folders come in hidden. Other programs read it as a PDF, with letter outlines and without the hidden layers.',
     help: 'export-illustrator',
     link: 'How to open it',
   },

@@ -4,6 +4,7 @@
 //
 // expect.layers: layer names that must exist (anywhere in the layer tree). expect.tree: [folder, its layers] pairs. expect.opacity: layer name to percent.
 // expect.hidden: names that must be off. expect.hiddenWithArt: names that must be there, switched off, with art in them. expect.shown: names that must be there and on. expect.minPaths: at least this many path items. expect.size: artboard size.
+// expect.texts: live text frames to find ({ contents, font, size, rgb, tracking, opacity, align }). expect.noText: no live text. expect.gradientStrokes: this many gradient strokes.
 // expect.minGroups: at least this many groups (one per layer or folder). expect.maxRmse: the largest difference to Frameling's own PNG.
 
 const HEAD = `
@@ -129,6 +130,36 @@ const fixtures = [
     expect: { size: [320, 180], layers: ['Back', 'Front', 'On folder', 'On in on folder'], shown: ['Back', 'Front', 'On folder', 'On in on folder', 'In off folder'], hiddenWithArt: ['Off layer', 'Off folder', 'Off in off folder', 'Off in on folder', 'Stripes in off masked + Mask in off masked'], minPaths: 8, maxRmse: 0.03, pdfReader: 0.03 },
   },
   {
+    id: 'hidden-in-effect-folder',
+    title: 'Hidden layers inside folders with effects',
+    code: `(async () => { ${HEAD}
+  return setup('HiddenFx', 320, 180, (d) => {
+    const dr = (id, shapes) => (d.drawings[id] = { id, kind: 'vector', shapes });
+    const soft = { id: 'e1', kind: 'blur', values: { radius: 3 } };
+    d.folders = {
+      fA: { id: 'fA', name: 'Soft group', visible: true, opacity: 1, effects: [soft] },
+      fB: { id: 'fB', name: 'Quiet soft group', visible: false, opacity: 1, effects: [soft] },
+    };
+    dr('dBack', [R('b1', 0, 0, 320, 180, '#bfe6ff')]);
+    dr('dA1', [ELL('a1', 80, 90, 50, 50, '#00aa44')]);
+    dr('dA2', [R('a2', 160, 20, 120, 60, '#ff0000')]);
+    dr('dB1', [R('b2', 20, 20, 80, 50, '#9b59ff')]);
+    dr('dB2', [R('b3', 200, 100, 90, 60, '#ff00ff')]);
+    dr('dFront', [ELL('f1', 270, 40, 25, 25, '#ff7a59')]);
+    d.layers = [
+      layer('l1', 'Back', 'dBack'),
+      layer('l2', 'Soft shown', 'dA1', { folder: 'fA' }),
+      layer('l3', 'Soft hidden', 'dA2', { folder: 'fA', visible: false }),
+      layer('l4', 'Quiet shown', 'dB1', { folder: 'fB' }),
+      layer('l5', 'Quiet hidden', 'dB2', { folder: 'fB', visible: false }),
+      layer('l6', 'Front', 'dFront'),
+    ];
+  });
+})()`,
+    // The folder with the blur becomes a picture of what is on; the layer that is off keeps its art, switched off, in a folder next to the picture.
+    expect: { size: [320, 180], layers: ['Back', 'Front'], shown: ['Back', 'Front', 'Soft shown'], hiddenWithArt: ['Soft group (hidden layers)', 'Soft hidden', 'Quiet soft group (hidden layers)', 'Quiet hidden', 'Quiet shown'], minPaths: 3, maxRmse: 0.03, pdfReader: 0.03 },
+  },
+  {
     id: 'paths',
     title: 'Paths, fills, strokes and joins',
     code: `(async () => { ${HEAD}
@@ -171,7 +202,7 @@ const fixtures = [
     d.layers = [layer('l0', 'Dark patch', 'd0'), layer('l1', 'Gradients', 'd1')];
   });
 })()`,
-    expect: { size: [320, 180], layers: ['Dark patch', 'Gradients'], minPaths: 5, maxRmse: 0.06 },
+    expect: { size: [320, 180], layers: ['Dark patch', 'Gradients'], minPaths: 5, gradientStrokes: 1, maxRmse: 0.06 },
   },
   {
     id: 'masks',
@@ -196,7 +227,7 @@ const fixtures = [
   },
   {
     id: 'text',
-    title: 'Text',
+    title: 'Text (Nunito, which Illustrator does not have)',
     code: `(async () => { ${HEAD}
   return setup('Text', 320, 180, (d) => {
     const T = (id, text, x, y, size, extra) => ({ id, type: 'text', text, font: 'Nunito', size, weight: 800, color: '#ff3366', align: 'left', lineHeight: 1.2, letterSpacing: 0, opacity: 1, transform: TX(x, y), ...extra });
@@ -208,12 +239,56 @@ const fixtures = [
     d.layers = [layer('l1', 'Words', 'd1')];
   });
 })()`,
-    expect: { size: [320, 180], layers: ['Words'], minPaths: 3, maxRmse: 0.06 },
+    // Live text in a font Illustrator does not have: it keeps the font's name and shows another one until the font is installed, so the picture differs more.
+    expect: {
+      size: [320, 180],
+      layers: ['Words'],
+      noText: false,
+      texts: [
+        { contents: 'Hello Illustrator', font: 'Nunito-ExtraBold', size: 36, rgb: [255, 51, 102], align: 'LEFT' },
+        { contents: 'Two lines\nof centred text', font: 'Nunito-Regular', size: 20, rgb: [29, 27, 38], align: 'CENTER' },
+        { contents: 'Italic 123', font: 'Nunito-SemiBoldItalic', size: 28, rgb: [51, 102, 255], align: 'LEFT' },
+      ],
+      minPaths: 0,
+      // Another font is drawn (lighter, and no italic), so the picture is a good way off.
+      maxRmse: 0.17,
+    },
+  },
+  {
+    id: 'text-live',
+    title: 'Text in a font Illustrator has (Arial)',
+    code: `(async () => { ${HEAD}
+  return setup('TextLive', 320, 180, (d) => {
+    const T = (id, text, x, y, size, extra) => ({ id, type: 'text', text, font: 'Arial', size, weight: 400, color: '#ff3366', align: 'left', lineHeight: 1.2, letterSpacing: 0, opacity: 1, transform: TX(x, y), ...extra });
+    d.drawings.d1 = { id: 'd1', kind: 'vector', shapes: [
+      T('t1', 'Hello Illustrator', 10, 45, 36, { weight: 700 }),
+      T('t2', 'Two lines\\nof centred text', 160, 90, 20, { align: 'center', color: '#1d1b26', letterSpacing: 2, lineHeight: 1.5 }),
+      T('t3', 'Italic 123', 10, 150, 28, { italic: true, color: '#3366ff', transform: { x: 10, y: 150, scaleX: 1.5, scaleY: 1.5, rotation: -12, skew: 0 } }),
+      T('t4', 'Half see-through', 310, 175, 14, { align: 'right', opacity: 0.5, color: '#000000' }),
+    ] };
+    d.layers = [layer('l1', 'Words', 'd1')];
+  });
+})()`,
+    expect: {
+      size: [320, 180],
+      layers: ['Words'],
+      texts: [
+        { contents: 'Hello Illustrator', font: 'Arial-BoldMT', size: 36, rgb: [255, 51, 102], align: 'LEFT' },
+        { contents: 'Two lines\nof centred text', font: 'ArialMT', size: 20, rgb: [29, 27, 38], tracking: 100, align: 'CENTER' },
+        { contents: 'Italic 123', font: 'Arial-ItalicMT', size: 42, rgb: [51, 102, 255], align: 'LEFT' },
+        { contents: 'Half see-through', font: 'ArialMT', size: 14, opacity: 50, rgb: [0, 0, 0], align: 'RIGHT' },
+      ],
+      minPaths: 0,
+      // The places, sizes and turns agree; the letters differ a little, since Frameling draws "Arial" with whatever font this computer has for it.
+      maxRmse: 0.11,
+    },
   },
   {
     id: 'text-big',
-    title: 'Text, drawn at 4 times the size',
+    title: 'Text, drawn at 4 times the size (the letter outlines of the PDF part)',
     scale: 4,
+    // As PDF pages, which Illustrator reads without the live text: the outlines are what it shows.
+    ai: 'pages',
     code: `(async () => { ${HEAD}
   return setup('TextBig', 160, 90, (d) => {
     const T = (id, text, x, y, size, extra) => ({ id, type: 'text', text, font: 'Nunito', size, weight: 800, color: '#ff3366', align: 'left', lineHeight: 1.2, letterSpacing: 0, opacity: 1, transform: TX(x, y), ...extra });
@@ -224,7 +299,7 @@ const fixtures = [
     d.layers = [layer('l1', 'Words', 'd1')];
   });
 })()`,
-    expect: { size: [640, 360], layers: ['Words'], minPaths: 3, maxRmse: 0.04 },
+    expect: { size: [640, 360], layers: ['Words'], minPaths: 3, noText: true, maxRmse: 0.04 },
   },
   {
     id: 'symbols',
