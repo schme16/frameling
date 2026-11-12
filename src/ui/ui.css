@@ -1555,6 +1555,18 @@ body.ui-resizing * {
   margin: 2px 0 0;
   color: var(--muted);
 }
+.ui-quest-pinned {
+  position: sticky;
+  top: 8px;
+  z-index: 3;
+  margin-top: 4px;
+  padding: 8px 14px;
+  box-shadow: var(--shadow);
+}
+.ui-quest-pinned .ui-quest-icon {
+  width: 32px;
+  height: 32px;
+}
 .ui-quest-icon {
   display: grid;
   place-items: center;

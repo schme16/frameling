@@ -41,6 +41,8 @@ export interface Prefs {
   units: Unit;
   /** The first-run hello from Quill has been seen (or skipped). */
   onboarded: boolean;
+  /** Something has been drawn (or a lesson finished): the 60-second lesson no longer sits pinned on the Welcome sheet. */
+  firstDrawn: boolean;
   /** Command id -> its shortcuts. An empty list means "no shortcut". Missing means "use the default". */
   keymap: Record<string, string[]>;
   /** The shortcut set underneath the person's own changes (see keymapSets.ts). */
@@ -74,6 +76,7 @@ export const DEFAULT_PREFS: Prefs = {
   fadeTileCopies: false,
   units: DEFAULT_UNIT,
   onboarded: false,
+  firstDrawn: false,
   keymap: {},
   keymapSet: DEFAULT_KEYMAP_SET,
   cleanTimeline: false,
@@ -113,6 +116,8 @@ export function migratePrefs(raw: unknown): Prefs {
     fadeTileCopies: bool(r.fadeTileCopies, DEFAULT_PREFS.fadeTileCopies),
     units: isUnit(r.units) ? r.units : DEFAULT_PREFS.units,
     onboarded: bool(r.onboarded, DEFAULT_PREFS.onboarded),
+    // Someone who got past the first hello before this existed is not new any more.
+    firstDrawn: bool(r.firstDrawn, r.onboarded === true),
     keymap,
     keymapSet: isKeymapSet(r.keymapSet) ? r.keymapSet : DEFAULT_PREFS.keymapSet,
     cleanTimeline: bool(r.cleanTimeline, DEFAULT_PREFS.cleanTimeline),
