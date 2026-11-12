@@ -2,7 +2,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { getSnapGaps, snappedKinds } from '../../src/canvas/snap';
 import { cornerSpacing, snapLineEnd, snapMove, snapPt } from '../../src/canvas/guides';
-import { clampDistance, defaultPicks, describeSnap, SNAP_DISTANCE, snapColourVar, snapNoteParts, SNAP_TARGETS } from '../../src/canvas/snapModel';
+import { clampDistance, defaultPicks, sanitizeChosen, sanitizePicks, describeSnap, SNAP_DISTANCE, snapColourVar, snapNoteParts, SNAP_TARGETS } from '../../src/canvas/snapModel';
 import { resetSnapPicks, setSnapAllLayers, setSnapDistance, setSnapPick } from '../../src/canvas/snapOps';
 import { spacingAxis, spacingFor } from '../../src/canvas/snapSpacing';
 import { otherShapes } from '../../src/canvas/snapShapes';
@@ -93,10 +93,17 @@ describe('equal gaps while moving and drawing', () => {
     for (const t of ['page', 'centre', 'guides', 'grid', 'shapes'] as const) setSnapPick('vector', t, false);
     addShapes(box('a', 20, 100, 40, 40), box('b', 100, 100, 40, 40));
   });
-  it('is off to begin with, so nothing changes until someone asks', () => {
-    expect(defaultPicks().vector.spacing).toBe(false);
+  it('is on to begin with, and a person can turn it off', () => {
+    expect(defaultPicks().vector.spacing).toBe(true);
+    expect(snapMove(R(300, 100, 40, 40), -119, 0, 1, false).dx).toBe(-120);
+    setSnapPick('vector', 'spacing', false);
     expect(snapMove(R(300, 100, 40, 40), -1, 0, 1, false).dx).toBe(-1);
     expect(getSnapGaps()).toHaveLength(0);
+  });
+  it('is saved only when someone chose it, so the new default reaches everyone else', () => {
+    expect(sanitizeChosen({})).toEqual({});
+    expect(sanitizePicks({ vector: { spacing: false } }).vector.spacing).toBe(false);
+    expect(sanitizePicks(undefined).vector.spacing).toBe(true);
   });
   it('moves a box to the equal gap and records the gaps', () => {
     setSnapPick('vector', 'spacing', true);

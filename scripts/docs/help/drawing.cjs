@@ -79,6 +79,8 @@ module.exports = [
       dom("document.querySelector('[aria-label=\"Other shapes, vector layers\"]').click()"), { wait: 1000 },
       dom("document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))"), { wait: 500 },
       { down: p(380, 470) }, { held: p(600, 520) }, { held: p(880, 600) }, { wait: 500 }, { held: p(903, 605) }, { wait: 1200 }, { up: p(903, 605) }, { wait: 600 },
+      // Equal gaps are on to begin with: a third rectangle's top edge settles one gap below the second, the same 45 as between the first two, and the bars say so.
+      { down: p(420, 690) }, { held: p(700, 670) }, { held: p(900, 640) }, { wait: 400 }, { held: p(900, 653) }, { wait: 1800 }, { up: p(900, 653) }, { wait: 600 },
       dom("__frameling.run('view.snapOptions')"), { wait: 2200 }, STOP] }];
   })(),
   { name: 'grids-perspective', steps: [T('bouncing-ball'), view(0.5, 640, 360), dom("__frameling.run('view.perspective2')"), { wait: 5200 }, away, { wait: 300 }, { shot: '@', crop: CV }] },
