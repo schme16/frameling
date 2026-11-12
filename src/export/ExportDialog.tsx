@@ -28,6 +28,8 @@ import { leaveTileEdit } from '../tiles/tileEdit';
 import { inOutRange } from '../timeline/inout';
 import { docDpi, formatSize } from '../core/units';
 import { usePrefs } from '../ui/prefs';
+import { isFeatureOn } from '../features/host';
+import { useFeaturesVersion } from '../features/use';
 import { templateExport } from '../templates/setup';
 import { ArtboardExportPicker } from '../artboards/ExportPicker';
 import { artboardExport, artboardSummary, planArtboards } from '../artboards/export';
@@ -35,13 +37,18 @@ import { customPicture } from '../artboards/fit';
 import { pixelExportStart } from '../pixel/workspace';
 
 /** Last time's settings, repaired so they still make sense for this document. */
+/** The formats on offer: Export for Interactives goes while that feature is off (Preferences > Features). */
+export function availableFormats(): FormatInfo[] {
+  return isFeatureOn('interactives') ? FORMATS : FORMATS.filter((f) => f.id !== 'interactives');
+}
+
 function startingSettings(): ExportSettings {
   const { doc } = sceneOf(store().get().doc, 0);
   const base = defaultSettings(doc);
   const extras = loadSheetExtras();
   if (extras) base.sheet = { ...base.sheet, ...extras };
   const last = loadLastSettings();
-  if (!last || !FORMATS.some((f) => f.id === last.format)) return base;
+  if (!last || !availableFormats().some((f) => f.id === last.format)) return base;
   const s: ExportSettings = { ...base, ...last, sheet: { ...DEFAULT_SHEET, ...last.sheet, ...extras } };
   if (s.range === 'clip' && !doc.clips.some((c) => c.id === s.clipId)) {
     s.range = 'all';
@@ -93,7 +100,8 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
   const webmPref = useChoice<string>('export.webmCodec');
 
   // The popular formats first; the rest open under "More formats" (and stay open while one of them is chosen).
-  const groups = useMemo(() => splitFormats(FORMATS), []);
+  const featuresVersion = useFeaturesVersion();
+  const groups = useMemo(() => splitFormats(availableFormats()), [featuresVersion]);
   const moreChosen = groups.more.some((f) => f.id === s.format);
   const [more, setMore] = useState(false);
   const showMore = more || moreChosen;
@@ -130,7 +138,7 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
   // If the chosen video format turns out to be unavailable, move to one that works.
   useEffect(() => {
     if (!caps || !unavailable(s.format)) return;
-    const next = FORMATS.find((f) => !unavailable(f.id) && f.animated && f.id !== 'sheet');
+    const next = availableFormats().find((f) => !unavailable(f.id) && f.animated && f.id !== 'sheet');
     if (next) set({ format: next.id });
   }, [caps, prores]);
 
@@ -569,7 +577,7 @@ export function openExportDialog(format?: FormatId): void {
   const fromTemplate = templateExport(docId, start, artSize);
   // No template choice: in the Pixel workspace, pixel art starts on a sprite sheet at art size.
   const initial = fromTemplate === start ? pixelExportStart(docId, start, artSize) : fromTemplate;
-  if (format && format !== initial.format) {
+  if (format && format !== initial.format && availableFormats().some((f) => f.id === format)) {
     const { doc } = store().get();
     const art = artScale(doc);
     initial.format = format;
@@ -585,6 +593,6 @@ export function openExportDialog(format?: FormatId): void {
 export function exportAgain(): void {
   leaveTileEdit();
   const last = loadLastSettings();
-  if (!last) return openExportDialog();
+  if (!last || !availableFormats().some((f) => f.id === last.format)) return openExportDialog();
   mountModal((close) => <ExportDialog close={close} initial={startingSettings()} autoStart />);
 }
