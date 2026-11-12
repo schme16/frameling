@@ -91,6 +91,14 @@ const DOCS: Record<string, () => Doc> = {
     hold(l, vectorDrawing(doc, [fill([rectPath(40, 40, 50, 40)], '#ffc94a')]).id, 0, 8);
     return doc;
   },
+  /** Blur first, then shadow (lottie-web gives the whole layer the region of the last effect). */
+  stack2() {
+    const doc = fresh('Stack2');
+    const l = addVectorLayer(doc, 'Box');
+    l.effects = [fx('blur', { radius: 1.5 }), fx('shadow', SHADOW)];
+    hold(l, vectorDrawing(doc, [fill([rectPath(40, 40, 50, 40)], '#ffc94a')]).id, 0, 8);
+    return doc;
+  },
   /** A shadowed box with a camera that pans. */
   camera() {
     const doc = fresh('Camera');
