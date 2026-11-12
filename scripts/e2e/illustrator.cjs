@@ -8,7 +8,7 @@
 //   ILLUSTRATOR_PREFIX   the Wine prefix Illustrator is installed in (the folder with drive_c)
 //   WINE_RUNNER          the Wine build to run it with (a folder with bin/wine). Found from the Lutris game file for the
 //                        prefix when not set.
-//   --only=a,b           only these cases (layers-folders hidden-layers paths gradients masks text symbols frames scale2-transparent
+//   --only=a,b           only these cases (layers-folders nested-folders hidden-layers paths gradients masks text symbols frames scale2-transparent
 //                        text-big artboards stress kitchen-sink bouncing-ball bouncing-logo)
 //   --keep-going         do not refuse when Illustrator or Wine seems to be running for the prefix (never use this
 //                        when someone may be working in Illustrator)
@@ -320,7 +320,7 @@ function judge(t, got, entry) {
   const f = got.found;
   const ex = t.expect;
   note(`artboards ${f.artboards.map((a) => `${a.w}x${a.h}`).join(',')}, layers ${f.layers.map((l) => l.name).join(' | ')}, paths ${f.counts.paths}, compound ${f.counts.compound}, groups ${f.counts.groups}, text ${f.counts.texts}, rasters ${f.counts.rasters}, fills ${JSON.stringify(f.fills)}`);
-  if (!t.pdfOnly && (t.caseId === 'layers-folders' || t.caseId === 'frames-artboards')) layerTreePicture(t, f);
+  if (!t.pdfOnly && (t.caseId === 'layers-folders' || t.caseId === 'nested-folders' || t.caseId === 'frames-artboards')) layerTreePicture(t, f);
   const boards = t.artboards ?? 1;
   check(f.artboards.length === boards, `expected ${boards} artboard${boards === 1 ? '' : 's'}, found ${f.artboards.length}`);
   const sizeWanted = ex.size ?? null;
