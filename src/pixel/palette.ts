@@ -160,14 +160,61 @@ export function usesColor(pixels: Uint8ClampedArray, r: number, g: number, b: nu
 
 /** How many opaque pixels use each palette colour (exact matches), for the panel's "in use" dots. */
 export function colorUse(pixels: Uint8ClampedArray, rgb: Uint8Array, counts: Uint32Array): void {
+  colorUseRange(pixels, rgb, counts, 0, pixels.length >> 2);
+}
+
+/**
+ * The same count over pixels [from, to) only, so a big drawing can be counted a slice at a time without holding the
+ * page. Reads the block as 32-bit pixels and looks each colour up in a small hash of the palette (the first of equal
+ * colours wins, as in exactIndex), so a 16 million pixel drawing takes tens of milliseconds, not hundreds.
+ */
+export function colorUseRange(pixels: Uint8ClampedArray, rgb: Uint8Array, counts: Uint32Array, from: number, to: number): void {
+  const n = rgb.length / 3;
+  let cap = 16;
+  while (cap < n * 2) cap <<= 1;
+  const keys = new Int32Array(cap).fill(-1);
+  const vals = new Int32Array(cap);
+  const mask = cap - 1;
+  const hash = (k: number) => Math.imul(k, 0x9e3779b1) >>> 0;
+  for (let i = n - 1; i >= 0; i--) {
+    const k = rgb[i * 3] | (rgb[i * 3 + 1] << 8) | (rgb[i * 3 + 2] << 16);
+    let h = hash(k) & mask;
+    while (keys[h] !== -1 && keys[h] !== k) h = (h + 1) & mask;
+    keys[h] = k;
+    vals[h] = i;
+  }
+  const lookup = (k: number) => {
+    let h = hash(k) & mask;
+    while (keys[h] !== -1) {
+      if (keys[h] === k) return vals[h];
+      h = (h + 1) & mask;
+    }
+    return -1;
+  };
+  const le = new Uint8Array(new Uint32Array([1]).buffer)[0] === 1;
   let lastKey = -1;
   let lastIdx = -1;
-  for (let i = 0; i < pixels.length; i += 4) {
-    if (pixels[i + 3] === 0) continue;
-    const k = (pixels[i] << 16) | (pixels[i + 1] << 8) | pixels[i + 2];
+  if (le && pixels.byteOffset % 4 === 0) {
+    const px = new Uint32Array(pixels.buffer, pixels.byteOffset, pixels.length >> 2);
+    for (let i = from; i < to; i++) {
+      const v = px[i];
+      if (v >>> 24 === 0) continue;
+      const k = v & 0xffffff;
+      if (k !== lastKey) {
+        lastKey = k;
+        lastIdx = lookup(k);
+      }
+      if (lastIdx >= 0) counts[lastIdx]++;
+    }
+    return;
+  }
+  for (let i = from; i < to; i++) {
+    const o = i * 4;
+    if (pixels[o + 3] === 0) continue;
+    const k = pixels[o] | (pixels[o + 1] << 8) | (pixels[o + 2] << 16);
     if (k !== lastKey) {
       lastKey = k;
-      lastIdx = exactIndex(rgb, pixels[i], pixels[i + 1], pixels[i + 2]);
+      lastIdx = lookup(k);
     }
     if (lastIdx >= 0) counts[lastIdx]++;
   }

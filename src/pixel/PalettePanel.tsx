@@ -10,7 +10,7 @@ import { noteColorUsed } from '../tools/recent';
 import { STARTER_PALETTES } from './builtin';
 import { changePaletteColor, reduceActiveToPalette, setDocPalette, togglePaletteLock } from './commands';
 import { exportPalette, importPalette, paletteFromDrawing } from './palette-files';
-import { colorUse, docPalette, insertColor, makeRamp, moveColor, paletteRgb, ramps, removeColor, toggleRampStart } from './palette';
+import { colorUse, colorUseRange, docPalette, insertColor, makeRamp, moveColor, paletteRgb, ramps, removeColor, toggleRampStart } from './palette';
 import type { PaletteFormat } from './palette-io';
 import '../canvas/canvas.css';
 import './pixel.css';
@@ -102,6 +102,10 @@ function ChipMenu({ menu, palette, onClose }: { menu: Menu; palette: DocPalette;
   );
 }
 
+/** Drawings bigger than this many pixels have their colour use counted in slices, off the edit's own turn. */
+const SLOW_PIXELS = 1 << 20;
+const SLICE_PIXELS = 1 << 20;
+
 export function PalettePanel() {
   const doc = useStore((s) => s.doc);
   const palette = docPalette(doc);
@@ -123,11 +127,34 @@ export function PalettePanel() {
     const d = cel ? doc.drawings[cel.drawingId] : undefined;
     return d?.kind === 'pixel' ? d : null;
   })() : null;
-  const used = useMemo(() => {
+  const slowDrawing = !!drawing && drawing.pixels.length > SLOW_PIXELS * 4;
+  const quick = useMemo(() => {
     const counts = new Uint32Array(palette.colors.length);
-    if (drawing) colorUse(drawing.pixels, paletteRgb(palette.colors), counts);
+    if (drawing && !slowDrawing) colorUse(drawing.pixels, paletteRgb(palette.colors), counts);
     return counts;
-  }, [drawing, palette.colors]);
+  }, [drawing, slowDrawing, palette.colors]);
+  // A big drawing is counted a slice at a time after the edit, so letting go of the pen never waits for it. The dots
+  // keep the last count until the new one is ready.
+  const [counted, setCounted] = useState<Uint32Array | null>(null);
+  useEffect(() => {
+    if (!drawing || !slowDrawing) return;
+    const px = drawing.pixels;
+    const rgb = paletteRgb(palette.colors);
+    const counts = new Uint32Array(palette.colors.length);
+    const total = px.length >> 2;
+    let at = 0;
+    let timer = 0;
+    const step = () => {
+      const to = Math.min(total, at + SLICE_PIXELS);
+      colorUseRange(px, rgb, counts, at, to);
+      at = to;
+      if (at < total) timer = window.setTimeout(step, 0);
+      else setCounted(counts);
+    };
+    timer = window.setTimeout(step, 30);
+    return () => window.clearTimeout(timer);
+  }, [drawing, slowDrawing, palette.colors]);
+  const used = slowDrawing ? (counted ?? quick) : quick;
 
   const has = palette.colors.some((c) => same(c, front));
   // Bigger colours in the Pixel workspace, where this panel is the main colour picker.
