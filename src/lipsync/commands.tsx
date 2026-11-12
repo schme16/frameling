@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { getCommand, registerCommands } from '../core/registry';
+import { getCommand, type Command } from '../core/registry';
 import { store } from '../core/store';
 import { pickedClip } from '../audio/ops';
 import { mountModal, Modal } from '../io/mount';
@@ -93,7 +93,8 @@ export function startLipSync(): void {
   mountModal((close) => <Picker close={close} onGo={(c, l) => void go(c, l)} />);
 }
 
-registerCommands([
+/** What Lip sync adds to the command palette and menus. */
+export const lipsyncCommands: Command[] = [
   {
     id: 'lipsync.auto',
     label: 'Auto lip sync...',
@@ -112,4 +113,4 @@ registerCommands([
     keywords: ['mouth', 'frame names', 'labels', 'mouth chart', 'phoneme', 'custom character'],
     run: openNameFrames,
   },
-]);
+];

@@ -68,6 +68,8 @@ export async function loadBytes(bytes: Uint8Array, filePath: string | null, opts
   store().load(loaded.doc, filePath);
   if (opts.dirty) store().setUi({ dirty: true });
   if (loaded.warnings.length) notify(`Opened, with a few small repairs: ${[...new Set(loaded.warnings)].join(' ')}`, 'warn', undefined, 8000);
+  // A drawing that uses a feature that is turned off offers to turn it on (it opens and keeps its data either way).
+  void import('../features/prompt').then((m) => m.offerTurnOn(loaded.doc)).catch(() => {});
   return true;
 }
 

@@ -22,6 +22,7 @@ const Q: [string, string][] = [
   ['bounce', 'easing'], ['theme', 'themes'], ['colours of the app', 'themes'], ['panel', 'panels'], ['missing panel', 'panels'], ['layout', 'workspaces'], ['help', 'using-help'], ['search', 'command-palette'],
   ['plugin', 'plugins'], ['new drawing', 'new-document'], ['template', 'templates-yours'], ['mascot', 'meet-quill'], ['frames', 'timeline-frames'], ['hold', 'timeline-frames'], ['keyframe', 'timeline-frames'],
   ['smooth line', 'tool-brush'], ['pressure', 'tool-brush'], ['pen', 'tool-brush'], ['thin line', 'tool-pencil'], ['sketch', 'tool-pencil'], ['lasso', 'lasso'], ['gap', 'fill-gaps'], ['leak', 'fill-gaps'],
+  ['turn off', 'features'], ['hide a panel i never use', 'features'],
 ];
 
 

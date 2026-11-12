@@ -24,8 +24,8 @@ interface Entry {
   keywords: string[];
 }
 
-let index: Entry[] | null = null;
-let indexKey = '';
+// A few indexes at once: the topics on show, and the ones of features that are turned off (searched to offer turning them on).
+const indexes = new Map<string, Entry[]>();
 
 function build(topics: HelpTopic[]): Entry[] {
   const out: Entry[] = [];
@@ -45,7 +45,7 @@ function build(topics: HelpTopic[]): Entry[] {
 
 /** Forget the index (when topics change). Done automatically when the number of topics changes. */
 export function resetHelpIndex(): void {
-  index = null;
+  indexes.clear();
 }
 
 /** Ranked matches, best first, at most three from any one topic. */
@@ -53,9 +53,11 @@ export function searchHelp(query: string, limit = 12, topics: HelpTopic[] = allH
   const words = wordsOf(query);
   if (!words.length) return [];
   const key = topics.map((t) => t.id + t.body.length).join('|');
-  if (!index || key !== indexKey) {
+  let index = indexes.get(key);
+  if (!index) {
+    if (indexes.size >= 4) indexes.delete(indexes.keys().next().value!);
     index = build(topics);
-    indexKey = key;
+    indexes.set(key, index);
   }
   const hits: HelpHit[] = [];
   for (const e of index) {

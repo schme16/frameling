@@ -300,6 +300,29 @@ Tick **Remember my choice** and it won't ask again. Untick it to be asked again 
 Open **Preferences** (**Ctrl+,**) and choose **Behaviour**. Every choice is listed there. Pick a different answer, or pick **Ask me** to be asked again next time.`,
   },
   {
+    id: 'features',
+    title: 'Turning parts on and off',
+    section: 'Settings',
+    media: 'features.png',
+    summary: 'Switch off the parts of Frameling you do not use, to keep it simple. Your drawings keep everything.',
+    keywords: ['turn off', 'turn on', 'switch', 'hide', 'optional', 'simple', 'disable', 'enable', 'switch off'],
+    body: `Some parts of Frameling are optional. If you never use one, you can switch it off, and its panels, tools, commands, menu entries, help and example drawings go quiet until you want them back.
+
+## Switching one on or off
+
+Open **Preferences** (**Ctrl+,**) and choose **Features**, or search the command palette (**Ctrl+K**) for **Features**. Each feature has a switch and a line about what it does. Changes happen at once. You never need to restart.
+
+## Your drawings are safe
+
+Turning a feature off never changes a file. If a drawing uses a feature that is off, Frameling asks when you open it: **Turn it on?** Say yes and everything works as before. Say no and the drawing still opens, still draws the same, and keeps all of its data, so you can turn the feature on later and carry on.
+
+## Help for a feature that is off
+
+Help topics for a feature that is off are hidden. If you search for one, Frameling says so and gives you a **Turn on** button.
+
+Some features need others. If you try to turn one off while another needs it, Frameling tells you which to turn off first.`,
+  },
+  {
     id: 'look-and-feel',
     media: 'look-and-feel.png',
     title: 'Mode and look',

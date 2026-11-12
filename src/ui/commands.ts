@@ -63,6 +63,16 @@ registerCommands([
     run: () => openPrefs('general'),
   },
   {
+    id: 'view.features',
+    label: 'Features...',
+    category: 'View',
+    description: 'Turn parts of Frameling on or off, like Lip sync.',
+    help: 'features',
+    keywords: ['turn off', 'turn on', 'switch', 'optional', 'simple', 'hide', 'lip sync', 'particles', 'text', 'tiles'],
+    global: true,
+    run: () => openPrefs('features'),
+  },
+  {
     id: 'view.toggleTheme',
     label: 'Switch dark or light',
     category: 'View',

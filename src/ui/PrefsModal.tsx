@@ -25,6 +25,7 @@ import { toast } from './toast';
 import { BehaviourPage } from './ChoiceDialog';
 import { ThemesPage } from './themes/ThemesPage';
 import { PluginsPage } from '../plugins/PluginsPage';
+import { FeaturesPage } from '../features/FeaturesPage';
 import { UNITS, type Unit } from '../core/units';
 
 // The Themes page is local to this file for now (overlays.ts decides which pages can be opened from outside).
@@ -37,6 +38,7 @@ const PAGES: { id: Page; label: string; icon: string; help: string }[] = [
   { id: 'keyboard', label: 'Keyboard', icon: 'keyboard', help: 'keyboard-shortcuts' },
   { id: 'workspaces', label: 'Workspaces', icon: 'workspace', help: 'workspaces' },
   { id: 'plugins', label: 'Plugins', icon: 'plugin', help: 'plugins' },
+  { id: 'features', label: 'Features', icon: 'grid', help: 'features' },
 ];
 
 export function PrefsModal() {
@@ -66,6 +68,7 @@ function Prefs({ page, commandId }: { page: PrefsPage; commandId?: string }) {
           {current === 'keyboard' && <KeyboardPage focusId={commandId} />}
           {current === 'workspaces' && <WorkspacesPage />}
           {current === 'plugins' && <PluginsPage />}
+          {current === 'features' && <FeaturesPage />}
         </div>
       </div>
     </Modal>

@@ -17,6 +17,8 @@ export interface HelpAuditInput {
   maxWords?: number;
   /** Shortcuts topics may name that aren't commands (held keys inside a tool, keys in a dialog...). */
   extraKeys?: string[];
+  /** Topics of features that are turned off: links to them are fine and their pictures still count as used. */
+  hiddenTopics?: HelpTopic[];
 }
 
 export interface HelpAudit {
@@ -66,8 +68,9 @@ const headingSlugs = (md: string) => new Set([...md.matchAll(/^#{1,4}\s+(.*)$/gm
 export function auditHelp(input: HelpAuditInput): HelpAudit {
   const { topics, commands, panels = [], tools = [], files } = input;
   const maxWords = input.maxWords ?? 400;
-  const byId = new Map(topics.map((t) => [t.id, t]));
-  const slugs = new Map(topics.map((t) => [t.id, headingSlugs(t.body)]));
+  const hidden = input.hiddenTopics ?? [];
+  const byId = new Map([...topics, ...hidden].map((t) => [t.id, t]));
+  const slugs = new Map([...topics, ...hidden].map((t) => [t.id, headingSlugs(t.body)]));
 
   const brokenLinks: string[] = [];
   const checkLink = (where: string, target: string) => {
@@ -83,6 +86,7 @@ export function auditHelp(input: HelpAuditInput): HelpAudit {
   const used = new Set<string>();
   const missingMedia: string[] = [];
   const have = new Set(files);
+  for (const t of hidden) if (t.media) for (const f of mediaFiles(t.media)) used.add(f);
   for (const t of topics) {
     if (!t.media) continue;
     const need = mediaFiles(t.media);

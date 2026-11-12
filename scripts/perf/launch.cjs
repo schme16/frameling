@@ -9,7 +9,7 @@ const path = require('node:path');
 const Orig = electron.BrowserWindow;
 class OffScreen extends Orig {
   constructor(o = {}) {
-    super({ ...o, x: -4000, y: 0, focusable: false, skipTaskbar: true });
+    super({ ...o, x: process.env.PERF_ONSCREEN ? 0 : -4000, y: 0, focusable: false, skipTaskbar: true });
     if (o.show !== false) this.showInactive();
     // The real app shows its window on ready-to-show; showInactive keeps it from taking focus.
     this.show = () => this.showInactive();

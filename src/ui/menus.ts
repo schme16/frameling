@@ -4,6 +4,7 @@
 import { allCommands, allPanels, allTools, getCommand, type Command } from '../core/registry';
 import { isDynamicCommand, isStaleCommand, syncDynamicCommands } from './dynamic';
 import { listWorkspaces } from './dock';
+import { ownedUndo } from '../core/owners';
 
 export type MenuEntry = string;
 
@@ -98,6 +99,23 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
   },
 };
 
+const contributed = new Map<string, string[][]>();
+
+/** A feature adds command ids to the end of a named menu (after the listed ones, before any category extras). Taken away with the feature. */
+export function registerMenuItems(menu: string, items: string[]): void {
+  const list = contributed.get(menu) ?? [];
+  list.push(items);
+  contributed.set(menu, list);
+  ownedUndo(() => {
+    const now = contributed.get(menu);
+    if (!now) return;
+    const at = now.indexOf(items);
+    if (at >= 0) now.splice(at, 1);
+    if (!now.length) contributed.delete(menu);
+  });
+}
+const contributedFor = (menu: string): string[] => (contributed.get(menu) ?? []).flat();
+
 export type MenuItem = { kind: 'command'; command: Command } | { kind: 'separator' } | { kind: 'submenu'; label: string; items: MenuItem[] };
 
 function expand(entry: string, subs: Record<string, SubmenuDef> = SUBMENUS): string[] {
@@ -111,7 +129,7 @@ function expand(entry: string, subs: Record<string, SubmenuDef> = SUBMENUS): str
 /** Every command id named in any menu, so the auto-added ones don't repeat across menus. */
 function listedIds(menus: MenuDef[], subs: Record<string, SubmenuDef> = SUBMENUS): Set<string> {
   const s = new Set<string>();
-  for (const m of menus) for (const e of m.items) for (const id of expand(e, subs)) s.add(id);
+  for (const m of menus) for (const e of [...m.items, ...contributedFor(m.label)]) for (const id of expand(e, subs)) s.add(id);
   return s;
 }
 
@@ -125,7 +143,7 @@ export function resolveMenu(menu: MenuDef, menus: MenuDef[] = MENUS, lookup: (id
   const named = listedIds(menus, subs);
   // Prefixes the submenus here claim, so their stray commands don't also land at the bottom of the menu.
   const claimed = menu.items.filter((e) => e.startsWith('sub:')).flatMap((e) => subs[e.slice(4)]?.prefixes ?? []);
-  for (const e of menu.items) {
+  for (const e of [...menu.items, ...contributedFor(menu.label)]) {
     if (e === '-') {
       out.push({ kind: 'separator' });
       continue;
