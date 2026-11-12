@@ -103,6 +103,7 @@ feature brought it rather than a date that means much. Fields without a note wer
 |---|---|---|
 | `format` | `'frameling'` | |
 | `version` | number | `FORMAT_VERSION` |
+| `lineage` | `true` | Optional. Set by `newDoc` and kept on saving: every shape carries lineage (`origin`) from the start, so keys with no shared lineage are unrelated. Missing in older files (and never added to them on saving), where a selection falls back to the shape at the same place. Read as `true` or dropped. |
 | `id`, `name` | string | `id` is stable across saves (used for the .flplay link and versions). |
 | `width`, `height` | number | Stage size. |
 | `fps` | number | |
@@ -196,7 +197,9 @@ optional `group` (shapes sharing a group select and move together and never merg
 All also have an optional `origin`: the id of the shape this one was copied from when a new key was made (`cloneDrawing`),
 kept through later copies, so every copy of a shape in later keys shares one lineage (`origin ?? id`). A selection follows
 the same shape from key to key by it. Missing in the first shape of a line and in documents from before it existed; there a
-selection falls back to the shape at the same place when the two keys have the same shapes of the same kinds. Paste and
+selection falls back to the shape at the same place when the two keys have the same shapes of the same kinds, and only
+when the document has no `lineage: true` flag (see Doc). In those old documents a jump over several keys also walks through the
+keys in between. Paste and
 Duplicate make a shape of its own (no `origin`). A non-string or empty `origin` in a file is dropped on reading. Ignore it
 when comparing two drawings for "same look" (as `id` is ignored).
 

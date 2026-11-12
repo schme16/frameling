@@ -238,6 +238,7 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
   const doc: Doc = {
     format: 'frameling',
     version: FORMAT_VERSION,
+    ...(raw.lineage === true ? { lineage: true as const } : {}),
     id: str(raw.id, 'd' + Date.now().toString(36)),
     name: str(raw.name, 'Untitled'),
     width,

@@ -3,10 +3,12 @@ import type { Doc, InstanceShape, PathShape, Shape, StrokeShape, VectorDrawing }
 import { newDoc, newVectorDrawing } from '../../src/core/doc';
 import { resetStore, store } from '../../src/core/store';
 import { existingSelection, followSelection, resolveFollowed, shapeLineage } from '../../src/core/followSelection';
+import { switchArtboard } from '../../src/artboards/model';
 import { cloneShape } from '../../src/canvas/geometry';
 import { cloneDrawing } from '../../src/timeline/edit-core';
 import { loadFile, saveFile } from '../../src/io/file';
 import { newTextShape } from '../../src/text/model';
+import { TEMPLATES } from '../../src/templates';
 import { drawingsDiffer } from '../../src/quests/predicates';
 
 const box = (id: string, x = 0): PathShape => ({ id, type: 'path', paths: [{ closed: true, points: [{ x, y: 0 }, { x: x + 5, y: 0 }, { x: x + 5, y: 5 }] }], fill: '#f00', stroke: null, opacity: 1 });
@@ -14,8 +16,10 @@ const line = (id: string): StrokeShape => ({ id, type: 'stroke', points: [{ x: 0
 const inst = (id: string): InstanceShape => ({ id, type: 'instance', symbolId: 'sym', transform: { x: 0, y: 0, scaleX: 1, scaleY: 1, rotation: 0, skew: 0 }, opacity: 1, play: 'loop', firstFrame: 0 });
 
 /** Puts drawings on the first layer, one key of 5 frames each. */
-function build(drawings: VectorDrawing[]): Doc {
+function build(drawings: VectorDrawing[], old = false): Doc {
   const doc = newDoc({ width: 100, height: 100, length: drawings.length * 5 });
+  // A document from before lineage existed has no flag.
+  if (old) delete doc.lineage;
   drawings.forEach((d, i) => {
     doc.drawings[d.id] = d;
     doc.layers[0].cels.push({ id: `k${i}`, start: i * 5, length: 5, drawingId: d.id });
@@ -118,12 +122,12 @@ describe('following the selection from key to key', () => {
   it('old documents (no lineage): the shape at the same place, when the keys look alike', () => {
     const a = drawing([box('a1'), line('a2')]);
     const b = drawing([box('b1'), line('b2')]);
-    const doc = build([a, b]);
+    const doc = build([a, b], true);
     expect(followSelection(doc, layerId(doc), ['a2'], 0, 5)?.selection).toEqual(['b2']);
     // Different kind at that place, or a different number of shapes: no guess.
     const c = drawing([line('c1'), box('c2')]);
     const d = drawing([box('d1')]);
-    const doc2 = build([a, c, d]);
+    const doc2 = build([a, c, d], true);
     expect(followSelection(doc2, layerId(doc2), ['a2'], 0, 5)?.selection).toEqual([]);
     expect(followSelection(doc2, layerId(doc2), ['a2'], 0, 10)?.selection).toEqual([]);
   });
@@ -144,6 +148,75 @@ describe('following the selection from key to key', () => {
     expect(followSelection(doc, layerId(doc), ['y'], 0, 5)?.selection).toEqual([b.shapes[0].id]);
     const both = followSelection(doc, layerId(doc), ['x', 'y'], 0, 5)?.selection;
     expect(both).toEqual([b.shapes[0].id, b.shapes[1].id]);
+  });
+});
+
+describe('new documents never match unrelated keys by position', () => {
+  it('newDoc carries the lineage flag, so two keys that merely look alike are not the same shapes', () => {
+    expect(newDoc().lineage).toBe(true);
+    const a = drawing([box('a1'), line('a2')]);
+    const b = drawing([box('b1'), line('b2')]);
+    const doc = build([a, b]);
+    expect(followSelection(doc, layerId(doc), ['a2'], 0, 5)?.selection).toEqual([]);
+    // The same keys in a document without the flag still match by place.
+    expect(followSelection(build([a, b], true), layerId(doc), ['a2'], 0, 5)?.selection).toEqual(['b2']);
+  });
+
+  it('the flag is saved, read back, and never added to an old file', () => {
+    const doc = build([drawing([box('p')])]);
+    expect(loadFile(saveFile(doc, '1.0.0')).doc.lineage).toBe(true);
+    const old = build([drawing([box('p')])], true);
+    const back = loadFile(saveFile(old, '1.0.0')).doc;
+    expect(back.lineage).toBeUndefined();
+    expect('lineage' in JSON.parse(JSON.stringify(back))).toBe(false);
+    // Junk is dropped.
+    const junk = { ...doc, lineage: 'yes' as unknown as true };
+    expect(loadFile(saveFile(junk, '1.0.0')).doc.lineage).toBeUndefined();
+  });
+
+  it('every template builds a document with the flag', () => {
+    for (const t of TEMPLATES) expect(t.make().lineage, t.id).toBe(true);
+  });
+});
+
+describe('old documents: a jump over several keys', () => {
+  it('walks through the keys in between, so an old key reaches a newer clone directly', () => {
+    const a = drawing([box('a1'), line('a2')]);
+    const b = drawing([box('b1'), line('b2')]); // old key with no lineage
+    const c = cloneDrawing(b) as VectorDrawing; // made later: origin points at b's shapes
+    const doc = build([a, b, c], true);
+    // Direct: a's lineage is a1/a2, c's is b1/b2, so nothing matches without the stops in between.
+    expect(followSelection(doc, layerId(doc), ['a2'], 0, 10)?.selection).toEqual([c.shapes[1].id]);
+    expect(followSelection(doc, layerId(doc), ['a1', 'a2'], 0, 10)?.selection).toEqual([c.shapes[0].id, c.shapes[1].id]);
+    // And back the other way.
+    expect(followSelection(doc, layerId(doc), [c.shapes[1].id], 10, 0)?.selection).toEqual(['a2']);
+  });
+
+  it('does not guess when an in-between key lost the shape', () => {
+    const a = drawing([box('a1'), line('a2')]);
+    const b = drawing([box('b1')]);
+    const c = cloneDrawing(b) as VectorDrawing;
+    const doc = build([a, b, c], true);
+    expect(followSelection(doc, layerId(doc), ['a2'], 0, 10)?.selection).toEqual([]);
+  });
+
+  it('a document with the flag does not walk (lineage is complete)', () => {
+    const a = drawing([box('a1'), line('a2')]);
+    const b = drawing([box('b1'), line('b2')]);
+    const c = cloneDrawing(b) as VectorDrawing;
+    const doc = build([a, b, c]);
+    expect(followSelection(doc, layerId(doc), ['a2'], 0, 10)?.selection).toEqual([]);
+  });
+});
+
+describe('looking the same ignores lineage', () => {
+  it('a drawing differs from its copy only when something real changed', () => {
+    const a = drawing([box('x'), line('y')]);
+    const b = cloneDrawing(a) as VectorDrawing;
+    const c = cloneDrawing(b) as VectorDrawing;
+    expect(drawingsDiffer(a, c)).toBe(false);
+    (c.shapes[0] as PathShape).fill = '#0f0';
+    expect(drawingsDiffer(a, c)).toBe(true);
   });
 });
 
@@ -175,6 +248,40 @@ describe('the store keeps the selection on the same shapes while the playhead mo
   });
 });
 
+describe('the follow memory belongs to one document', () => {
+  const memory = () => (store() as unknown as { follow: unknown }).follow;
+  function holding() {
+    const a = drawing([box('p'), line('s')]);
+    const b = cloneDrawing(a) as VectorDrawing;
+    b.shapes.shift();
+    const doc = build([a, b]);
+    resetStore(doc);
+    store().setUi({ activeLayerId: layerId(doc), frame: 1, selection: ['p', 's'] });
+    store().setUi({ frame: 6 });
+    expect(memory()).not.toBeNull();
+    return doc;
+  }
+
+  it('is reset when a document is loaded', () => {
+    holding();
+    store().load(newDoc());
+    expect(memory()).toBeNull();
+  });
+
+  it('is reset while a nested document is open, and given back when it closes', () => {
+    const doc = holding();
+    const mem = memory();
+    store().enterNested(newDoc(), { tag: 'tile:1', merge: (parent) => parent });
+    expect(memory()).toBeNull();
+    store().exitNested();
+    expect(memory()).toBe(mem);
+    expect(store().get().doc).toBe(doc);
+    // The shape that was missing in the second key still comes back.
+    store().setUi({ frame: 2 });
+    expect(store().get().ui.selection).toEqual(['p', 's']);
+  });
+});
+
 describe('Undo and Redo keep the selection where the shapes still exist', () => {
   it('existingSelection keeps only shapes on the active key', () => {
     const a = drawing([box('p'), line('s')]);
@@ -182,6 +289,41 @@ describe('Undo and Redo keep the selection where the shapes still exist', () => 
     expect(existingSelection(doc, layerId(doc), 0, ['p', 'gone', 's'])).toEqual(['p', 's']);
     expect(existingSelection(doc, layerId(doc), 0, ['gone'])).toEqual([]);
     expect(existingSelection(doc, layerId(doc), 12, ['p'])).toEqual([]);
+  });
+
+  it('keeps a selection that spans layers, on each layer\'s key at the playhead', () => {
+    const a = drawing([box('p')]);
+    const doc = build([a]);
+    const other = drawing([box('q')]);
+    doc.drawings[other.id] = other;
+    doc.layers.push({ ...doc.layers[0], id: 'L2', cels: [{ id: 'o0', start: 0, length: 5, drawingId: other.id }] });
+    expect(existingSelection(doc, layerId(doc), 0, ['p', 'q', 'gone'])).toEqual(['p', 'q']);
+    // A key on the other layer that is not at the playhead does not count.
+    doc.layers[1].cels[0].start = 3;
+    expect(existingSelection(doc, layerId(doc), 0, ['p', 'q'])).toEqual(['p']);
+  });
+
+  it('after Undo or Redo of an artboard switch, keeps what exists in the artboard now open', () => {
+    const doc = build([drawing([box('p')])]);
+    doc.artboards = [{ id: 'ab1', name: 'One', x: 0, y: 0 }, { id: 'ab2', name: 'Two', x: 400, y: 0 }];
+    doc.activeArtboard = 'ab1';
+    const d2 = drawing([box('r')]);
+    const l2 = { ...doc.layers[0], id: 'L9', cels: [{ id: 'o0', start: 0, length: 5, drawingId: d2.id }] };
+    doc.drawings[d2.id] = d2;
+    doc.artboards[1].content = { width: 100, height: 100, length: 5, background: null, layers: [l2], clips: [], markers: [] } as never;
+    resetStore(doc);
+    store().setUi({ activeLayerId: layerId(doc), frame: 0, selection: ['p'] });
+    store().update('Open artboard', (d) => void switchArtboard(d, 'ab2'));
+    // The selection ids are not on the open artboard now.
+    expect(store().get().doc.activeArtboard).toBe('ab2');
+    store().undo();
+    expect(store().get().doc.activeArtboard).toBe('ab1');
+    expect(store().get().ui.selection).toEqual(['p']);
+    store().redo();
+    expect(store().get().doc.activeArtboard).toBe('ab2');
+    expect(store().get().ui.selection).toEqual([]);
+    store().undo();
+    expect(store().get().ui.selection).toEqual([]);
   });
 
   it('keeps the selection after undoing a move, and clears it after undoing the add', () => {

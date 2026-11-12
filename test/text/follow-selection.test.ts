@@ -11,6 +11,8 @@ const txt = (id: string, text: string) => newTextShape(id, { x: 10, y: 20 }, { t
 // Key 1 (frames 0-4): a box and "Hello". Key 2 (5-9): copies with new ids, "Hello" moved. Key 3 (10-14): no text.
 function setup() {
   const doc = newDoc({ width: 200, height: 100, length: 15 });
+  // Copies here are made by hand with no lineage, like a document from before lineage existed.
+  delete doc.lineage;
   const mk = (shapes: VectorDrawing['shapes']) => {
     const d = newVectorDrawing();
     d.shapes.push(...shapes);

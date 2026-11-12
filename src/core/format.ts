@@ -19,6 +19,12 @@ export interface Doc {
   version: number;
   id: Id;
   name: string;
+  /**
+   * True when every shape in this document carries lineage (`origin`) from the start, so keys that look alike but have
+   * no shared lineage are unrelated. Set on documents made by this version; missing in older files, where the selection
+   * still follows by position (see src/core/followSelection.ts). Kept on saving, never added to an old document.
+   */
+  lineage?: true;
   /** Stage size in document pixels. */
   width: number;
   height: number;
