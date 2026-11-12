@@ -48,6 +48,27 @@ npx vite build --config vite.web.config.ts && node scripts/perf/startup.cjs --we
 What loads later is in `src/core/lazy.ts`: the Export dialog and every exporter, the big sheets and dialogs, and most
 dock panels load on first use, and in idle time a moment after start-up so the first click doesn't wait either.
 
+## Where start-up time goes
+
+Three small tools, all for the built app (run them under xvfb, never on the desktop):
+
+- `node scripts/perf/bundle.mjs [--top 40] [--folder src/ui/]` builds the renderer into a temp folder and lists what the
+  initial chunk holds: by source folder, by module, and by "loads only because of one importer" (the bytes that would
+  leave the initial chunk if every static import of that module became a dynamic one). Start here when choosing what to make lazy.
+- `npx vite build --sourcemap --minify false && node scripts/build-main.mjs`, then
+  `xvfb-run -a -s "-screen 0 1600x1000x24" node scripts/perf/startprofile.cjs [--top 30] [--until 260]` profiles the first
+  load of a fresh launch (V8 CPU profile, mapped back to source files with the source map).
+- `STARTUP_TRACE=/tmp/st.json` in front of `electron scripts/perf/launch.cjs app` (with `STARTUP_USER_DATA=<folder>`) records a
+  Chromium trace of the first load; `node scripts/perf/tracesum.cjs /tmp/st.json` lists main-thread work from the
+  first request to the `frameling:interactive` mark (script eval, layout, style, frames). `PERF_DIST=<folder>` points
+  `launch.cjs` (and so `startup.cjs`) at another build's `dist/`, so two builds can be timed one after the other.
+
+Things that were found this way: the first layout of the page is cold (system font fallback lookups are slow on a
+machine with thousands of fonts), so a text glyph the page font lacks (the old "more" dots) cost about 20 ms until it
+became a drawn icon; the main thread waits for the whole entry script to be parsed in the background (about 20 ms per
+MB), so every 100 kB kept out of the initial chunk is worth about 2 ms. Moving to a custom scheme to get V8's code
+cache would change the page's origin and lose everyone's saved preferences (localStorage), so it is not done.
+
 ## The hidden window
 
 The window is parked off-screen (x = -4000) and can't take focus, so nothing appears on the desktop (`startup.cjs` keeps it on-screen under xvfb, where an off-screen window is never
