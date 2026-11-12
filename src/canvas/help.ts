@@ -107,16 +107,16 @@ Shapes jump onto guides, the page's edges and middle, the grid and more when the
 - **Page edges** and **Page middle**: the border of the page, and its middle across and down.
 - **Guides**: the lines you drag out of the rulers ([Rulers and guides](help:rulers-guides)).
 - **Grid**: the square or isometric [grid](help:grids-perspective), while it shows.
-- **Other shapes**: the edges, middles and corner points of the other shapes in your drawing, so a new shape lines up with what is already there. Off until you tick it.
+- **Other shapes**: the edges, middles and corner points of the other shapes in your drawing, so a new shape lines up with what is already there. On to begin with.
 - **Perspective lines**: lines and boxes follow the vanishing points, while the perspective guides show.
 - **Pixel cells** (pixel layers): your drawing stays on whole pixels, and guides, the grid and the page stay out of the way. Untick it if a pixel layer should snap to those too.
 - **Angle steps**: with **Shift**, a line turns to the nearest 45 degrees (or toward a vanishing point) and a rotation moves in steps. Shift is something you ask for, so the big switch and Ctrl don't stop it. Untick it if Shift should do nothing there.
-- **Other artboards**: when you move or size an [artboard](help:artboards), its edges and middle line up with the other artboards'. Off until you tick it.
+- **Other artboards**: when you move or size an [artboard](help:artboards), its edges and middle line up with the other artboards'. On to begin with.
 
 **What snapped**
 A pink line shows the edge or guide a shape landed on, and a small note at the bottom of the canvas says it in words, like "Snapped to guide and page edge".
 
-By default vector layers snap to the page, guides, the grid and perspective lines, and pixel layers stick to their cells.`,
+By default vector layers snap to the page, guides, the grid, perspective lines and other shapes, artboards line up with each other, and pixel layers stick to their cells. If you already changed these ticks, Frameling keeps your choices.`,
   },
   {
     id: 'pixel-grid',

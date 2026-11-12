@@ -14,14 +14,14 @@ const SHOWING: SnapScene = { guides: true, grid: 'square', perspective: true };
 const set = (ctx: 'vector' | 'pixel' | 'artboard', over?: Partial<SnapScene>, bypass = false, on = true, picks = defaultPicks()) => [...activeTargets(on, picks, ctx, bypass, { ...SHOWING, ...over })].sort();
 
 describe('which targets are in force', () => {
-  it('vector work starts with today: page, middle, guides, grid, perspective and angle steps', () => {
-    expect(set('vector')).toEqual(['angles', 'centre', 'grid', 'guides', 'page', 'perspective']);
+  it('vector work starts with the page, middle, guides, grid, other shapes, perspective and angle steps', () => {
+    expect(set('vector')).toEqual(['angles', 'centre', 'grid', 'guides', 'page', 'perspective', 'shapes']);
   });
   it('pixel layers start with cells, perspective and angle steps only', () => {
     expect(set('pixel')).toEqual(['angles', 'cells', 'perspective']);
   });
-  it('artboards start with nothing new on', () => {
-    expect(set('artboard')).toEqual([]);
+  it('artboards start lined up with each other', () => {
+    expect(set('artboard')).toEqual(['artboards']);
   });
   it('the master switch and Ctrl stop the pulls but not Shift angle steps', () => {
     expect(set('vector', {}, false, false)).toEqual(['angles']);
@@ -74,6 +74,17 @@ describe('saved choices', () => {
     expect('bogus' in s.vector).toBe(false);
     expect(s.pixel).toEqual(defaultPicks().pixel);
     expect(s.artboard.artboards).toBe(true);
+  });
+  it('keep what someone saved, and give the two new defaults to ticks that were never saved', () => {
+    expect(defaultPicks().vector.shapes).toBe(true);
+    expect(defaultPicks().artboard.artboards).toBe(true);
+    const kept = sanitizePicks({ vector: { shapes: false }, artboard: { artboards: false } });
+    expect(kept.vector.shapes).toBe(false);
+    expect(kept.artboard.artboards).toBe(false);
+    const older = sanitizePicks({ vector: { page: false } });
+    expect(older.vector.page).toBe(false);
+    expect(older.vector.shapes).toBe(true);
+    expect(older.artboard.artboards).toBe(true);
   });
 });
 
@@ -132,12 +143,13 @@ describe('snapping through the choices', () => {
     setSnapPick('vector', 'guides', false);
     expect(snapPt({ x: 302, y: 5 }, 1, false)).toEqual({ x: 302, y: 0 });
   });
-  it('other shapes snap only when asked, and the selection never snaps to itself', () => {
+  it('other shapes snap by default, can be ticked off, and the selection never snaps to itself', () => {
     addShapes(box('other', 250, 120, 50, 50));
-    expect(snapPt({ x: 252, y: 90 }, 1, false).x).toBe(252);
-    setSnapPick('vector', 'shapes', true);
     expect(snapPt({ x: 252, y: 90 }, 1, false).x).toBe(250);
     expect(snappedKinds()).toEqual(['shapes']);
+    setSnapPick('vector', 'shapes', false);
+    expect(snapPt({ x: 252, y: 90 }, 1, false).x).toBe(252);
+    setSnapPick('vector', 'shapes', true);
     store().setUi({ selection: ['other'] });
     expect(snapPt({ x: 252, y: 90 }, 1, true).x).toBe(252);
     expect(snapPt({ x: 252, y: 90 }, 1, false, true).x).toBe(252);
@@ -207,15 +219,15 @@ describe('on a pixel layer', () => {
 
 describe('artboards', () => {
   beforeEach(() => resetSnapPicks());
-  it('offer their edges and middles only when ticked', () => {
+  it('offer their edges and middles by default, and nothing once unticked', () => {
     const others = [{ x: 100, y: 0, w: 200, h: 100 }];
-    expect(artboardTargets(others, false)).toBeNull();
-    setSnapPick('artboard', 'artboards', true);
     const t = artboardTargets(others, false)!;
     expect(t.x).toEqual([100, 200, 300]);
     expect(t.ky).toEqual(['artboards', 'artboards', 'artboards']);
     expect(artboardTargets(others, true)).toBeNull();
     expect(artboardTargets([], false)).toBeNull();
+    setSnapPick('artboard', 'artboards', false);
+    expect(artboardTargets(others, false)).toBeNull();
   });
 });
 

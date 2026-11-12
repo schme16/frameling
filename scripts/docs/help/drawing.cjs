@@ -67,14 +67,16 @@ module.exports = [
     { drag: [[79, 330], at(640, 330)], steps: 14, delay: 14 }, { wait: 200 },
     { drag: [[400, 57], [400, 330]], steps: 14, delay: 14 }, { wait: 300 }, away, { wait: 300 },
     { shot: '@', crop: [69, 47, 808, 380] }] },
-  // Snapping: a rectangle's corner jumps onto a guide (pink line and the note), then Guides is unticked in the Snap popover and the next one does not.
+  // Snapping: a rectangle's corner jumps onto a guide (pink line and the note), then Guides and Other shapes are unticked in the Snap popover and the next one does not.
   // (This layout puts the page's middle 44 px to the right of where view() assumes, so the points are nudged.)
   ...(() => {
     const p = (x, y) => { const [sx, sy] = at(x, y); return [sx + 44, sy]; };
     return [{ name: 'snapping', steps: [T('blank-vector'), view(0.6), UI({ fillColor: '#9b7bff' }), dom("__frameling.store().update('guide', (d) => { d.guides = [{ id: 'g1', axis: 'x', at: 900 }]; })"), tool('rect'), { wait: 500 }, away, { wait: 300 }, WARM,
       REC([0, 40, 1000, 760], 80), { wait: 500 },
       { down: p(380, 190) }, { held: p(600, 330) }, { held: p(880, 420) }, { wait: 500 }, { held: p(903, 425) }, { wait: 1500 }, { up: p(903, 425) }, { wait: 700 },
-      dom("__frameling.run('view.snapOptions')"), { wait: 1200 }, dom("document.querySelector('[aria-label=\"Guides, vector layers\"]').click()"), { wait: 1000 },
+      dom("__frameling.run('view.snapOptions')"), { wait: 1200 }, dom("document.querySelector('[aria-label=\"Guides, vector layers\"]').click()"), { wait: 600 },
+      // Other shapes is on to begin with, and the first rectangle's edge sits on the guide, so it goes off too.
+      dom("document.querySelector('[aria-label=\"Other shapes, vector layers\"]').click()"), { wait: 1000 },
       dom("document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))"), { wait: 500 },
       { down: p(380, 470) }, { held: p(600, 520) }, { held: p(880, 600) }, { wait: 500 }, { held: p(903, 605) }, { wait: 1200 }, { up: p(903, 605) }, { wait: 600 },
       dom("__frameling.run('view.snapOptions')"), { wait: 2200 }, STOP] }];

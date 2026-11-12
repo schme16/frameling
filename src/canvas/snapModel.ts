@@ -47,14 +47,14 @@ export type SnapPicks = Record<SnapContext, Partial<Record<SnapTarget, boolean>>
 
 /**
  * What a new person has: today's behaviour. Vector work snaps to the page, guides, grid and perspective lines, and
- * Shift gives angle steps. Pixel layers keep to their cells (with perspective and angle steps). The two new targets
- * (other shapes, other artboards) start off, so nothing moves differently until someone asks.
+ * Shift gives angle steps, and the edges of other shapes pull too. Pixel layers keep to their cells (with perspective
+ * and angle steps). Artboards line up with each other. Ticks someone already saved are kept as they are.
  */
 export function defaultPicks(): SnapPicks {
   return {
-    vector: { page: true, centre: true, guides: true, grid: true, shapes: false, perspective: true, angles: true },
+    vector: { page: true, centre: true, guides: true, grid: true, shapes: true, perspective: true, angles: true },
     pixel: { page: false, centre: false, guides: false, grid: false, cells: true, perspective: true, angles: true },
-    artboard: { artboards: false },
+    artboard: { artboards: true },
   };
 }
 
