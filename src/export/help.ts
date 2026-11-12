@@ -309,7 +309,7 @@ The atlas key must be the file's name (\`hero\` here), because the animations po
 
 ## Pixel art
 
-Export at **Art size**, and add \`pixelArt: true\` to your game config so Phaser keeps it sharp when scaled.`,
+Export at **Art size**, and add \`pixelArt: true\` to your game config so Phaser keeps it sharp when scaled. Use Phaser's **WebGL** renderer for pixel art (the default, \`type: Phaser.AUTO\`): it draws every frame exactly as Frameling does. Phaser's Canvas renderer can make a scaled sprite one pixel too big at the edges, and no game setting fixes that.`,
   },
   {
     id: 'export-pixi',

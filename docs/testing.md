@@ -218,7 +218,11 @@ Cases that set `allRenderers` (`play-*`, `hero-sprites` `*-grid`, `scaled*`, the
 every renderer: Phaser 3.90 and 4.2.1, each in WebGL and canvas, and PixiJS 8 in WebGL and WebGPU. WebGPU is probed in the
 page first; with no adapter the run says "PixiJS WebGPU skipped: ..." and goes on. Phaser's canvas renderer is checked with a
 looser limit (mean under 10 of 255) and the report says how many frames were not pixel-exact: a plain `drawImage` of the same
-atlas is exact, so the difference is in the engine's canvas drawing (scaled and trimmed sprites).
+atlas is exact, so the difference is in the engine's canvas drawing (scaled and trimmed sprites). Looked into (`scaled2x-phaser`, Phaser 3.90 and 4.2.1): the canvas picture of a trimmed sprite shown at 2x is one pixel wider and taller
+than Frameling's (about 260 of 4096 pixels per frame, 0.5x is within 25 levels). `roundPixels`, `pixelArt` off and `antialias` off change
+nothing, so there is no game setting for it and the Phaser help recommends WebGL for pixel art. To try a setting on the harness:
+`PHASER_RENDER='{"roundPixels":true}' PHASER_STRICT=1` (adds to the game's `render` config and holds the canvas renderer to the exact limit,
+saving the failing pictures as `_web-fail-*.png`).
 
 | Engine | What is checked |
 |---|---|

@@ -76,6 +76,8 @@ async function createWebChecker() {
         renderer: v.renderer ?? 'webgl', display: job.display ?? 1,
         key: job.key, image: `/case/${job.image}`, json: `/case/${job.json}`, anims: job.anims ? `/case/${job.anims}` : null,
         width: job.width, height: job.height, frameNames: job.frameNames ?? [], meta: job.meta ?? null,
+        // PHASER_RENDER='{"roundPixels":true}' adds to the game's render config; PHASER_STRICT=1 holds Phaser's canvas renderer to the exact limit too (to try a setting).
+        extraRender: process.env.PHASER_RENDER ? JSON.parse(process.env.PHASER_RENDER) : undefined, strict: process.env.PHASER_STRICT === '1',
         animations: job.animations.map((a) => ({ ...a, checks: a.checks.map((c) => ({ i: c.i, ref: refUrl(c.ref) })) })),
       };
       if (job.engine === 'phaser' || job.engine === 'pixi') {
