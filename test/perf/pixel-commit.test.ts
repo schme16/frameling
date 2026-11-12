@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { newDoc } from '../../src/core/doc';
 import type { PixelDrawing, PixelLayer } from '../../src/core/format';
-import { setGridPixels } from '../../src/core/pixelBounds';
+import { gridPixels, setGridPixels } from '../../src/core/pixelBounds';
 import { resetStore, store } from '../../src/core/store';
 import { newBlankKey } from '../../src/timeline/edit-core';
 import { PixelSession } from '../../src/tools/pixelSession';
@@ -23,9 +23,16 @@ describe(`a stroke commit on a ${SIZE} x ${SIZE} canvas`, () => {
     const s = resetStore(doc0);
     paintBlock(s.get(), 1000, 1000, 40).commit('First');
     let t = performance.now();
-    const sess = paintBlock(s.get(), 1500, 2500, 30);
+    const sess = new PixelSession(s.get().doc, s.get().doc.layers[0] as PixelLayer, 0);
     const startMs = performance.now() - t;
-    const work = new Uint8ClampedArray(sess.work);
+    t = performance.now();
+    for (let i = 0; i < 30; i++) sess.set(1500 + i, 2500 + (i % 7), [...RED]);
+    const firstMs = performance.now() - t;
+    expect(sess.get(1500, 2500)).toEqual([...RED]);
+    expect(sess.get(1100, 1005)).toEqual([0, 0, 0, 0]);
+    // The reference: the old drawing laid on a whole grid with the same pixels painted on it.
+    const work = new Uint8ClampedArray(gridPixels(Object.values(s.get().doc.drawings)[0] as PixelDrawing, SIZE, SIZE));
+    for (let i = 0; i < 30; i++) work.set(RED, ((2500 + (i % 7)) * SIZE + 1500 + i) * 4);
     t = performance.now();
     expect(sess.commit('Second')).toBe('ok');
     const rectMs = performance.now() - t;
@@ -47,6 +54,6 @@ describe(`a stroke commit on a ${SIZE} x ${SIZE} canvas`, () => {
     sess2.commit('Third');
     const smallMs = performance.now() - t;
     // eslint-disable-next-line no-console
-    console.log(`PIXEL-COMMIT ${SIZE}x${SIZE}: stroke commit ${rectMs.toFixed(1)} ms (touched rectangle + old block), whole-grid copy and trim ${wholeMs.toFixed(1)} ms, one-pixel commit ${smallMs.toFixed(1)} ms, session start (whole-grid copy, not changed) ${startMs.toFixed(1)} ms`);
+    console.log(`PIXEL-COMMIT ${SIZE}x${SIZE}: stroke commit ${rectMs.toFixed(1)} ms (touched rectangle + old block), whole-grid copy and trim ${wholeMs.toFixed(1)} ms, one-pixel commit ${smallMs.toFixed(1)} ms, session start (nothing copied until the first pixel) ${startMs.toFixed(1)} ms, first 30 pixels ${firstMs.toFixed(1)} ms`);
   }, 120_000);
 });

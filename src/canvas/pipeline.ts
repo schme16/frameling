@@ -340,7 +340,7 @@ export class FramePainter {
         // Pixels being painted on a part attached to a bone show where the part is.
         const bm = bindMatrixAt(doc, layer, p.frame);
         if (bm) g.transform(bm[0], bm[1], bm[2], bm[3], bm[4], bm[5]);
-        g.drawImage(lv.canvas, 0, 0, lv.width * pixelSize, lv.height * pixelSize);
+        g.drawImage(lv.canvas, (lv.x ?? 0) * pixelSize, (lv.y ?? 0) * pixelSize, lv.width * pixelSize, lv.height * pixelSize);
         g.restore();
         continue;
       }

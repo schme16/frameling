@@ -1,14 +1,16 @@
 /**
- * A pixel edit in progress. Works on a private copy of the layer's pixels, shows it live (through the canvas's live
- * preview, so nothing touches the document), and at the end commits a brand new pixel array as one undo step.
+ * A pixel edit in progress. Nothing is copied when it starts: the drawing's own block is read as it is, and a square
+ * tile (128 x 128) is copied only when a stroke first touches it. The live preview (through the canvas's live preview,
+ * so nothing touches the document) is a canvas that covers the drawing's block and whatever has been painted outside
+ * it, made on the first painted pixel. At the end it commits a brand new pixel array as one undo step.
  */
 import type { Doc, PixelLayer } from '../core/format';
 import { pixelGrid } from '../core/doc';
 import { drawingAt } from '../core/doc';
 import { setLive } from '../canvas/controller';
-import { getPx, setPx, type PxPt, type RGBA } from '../canvas/pixels';
+import type { PxPt, RGBA } from '../canvas/pixels';
 import { activeGrid, editActiveDrawing, type EditResult } from './edit';
-import { forgetGrids, gridPixels, setGridRect } from '../core/pixelBounds';
+import { forgetGrids, setPlaced, trimPixels, unionRect } from '../core/pixelBounds';
 import { autoHeldAt } from '../timeline/edit-core';
 import { markTracing } from '../canvas/ghost';
 import { tileModeOn, wrap } from '../tiles/state';
@@ -34,15 +36,30 @@ function makeLiveCanvas(w: number, h: number): LiveCanvas | null {
   return null;
 }
 
+/** Tile edge in art pixels (a power of two). A tile is 64 KB. */
+const TS = 128;
+const SHIFT = 7;
+const MASK = TS - 1;
+/** How far past the painted area the live canvas grows each time, so a long stroke does not rebuild it on every tile. */
+const MARGIN = 256;
+
 export class PixelSession {
   readonly width: number;
   readonly height: number;
   readonly layerId: string;
   readonly pixelSize: number;
-  private base: Uint8ClampedArray;
-  readonly work: Uint8ClampedArray;
-  private canvas: LiveCanvas | null;
-  private img: ImageData | null = null;
+  /** The drawing as it was when the session began (read only: it is the drawing's own block). */
+  private readonly src: { x: number; y: number; width: number; height: number; pixels: Uint8ClampedArray };
+  /** Tiles copied from the block on first touch, in reading order over the grid. */
+  private readonly tiles: (Uint8ClampedArray | undefined)[];
+  private readonly images: (ImageData | undefined)[];
+  private readonly tilesAcross: number;
+  private canvas: LiveCanvas | null = null;
+  /** Where the live canvas sits on the grid. */
+  private cx = 0;
+  private cy = 0;
+  private cw = 0;
+  private ch = 0;
   private dirty: { x0: number; y0: number; x1: number; y1: number } | null = null;
   /** Everything changed since the session began (flush does not clear it), so commit writes only this and the old block. */
   private touched: { x0: number; y0: number; x1: number; y1: number } | null = null;
@@ -57,6 +74,8 @@ export class PixelSession {
   private clip: Uint8Array | null = null;
   private pts = new Int32Array(8);
   private rgba = new Uint8Array(4);
+  /** One pixel of the old picture, handed to inks. */
+  private basePx = new Uint8ClampedArray(4);
 
   /** Painting on a frame that only carries the last drawing along: this starts a new drawing there. */
   private fresh = false;
@@ -68,10 +87,14 @@ export class PixelSession {
     const g = pixelGrid(doc, layer);
     this.width = g.width;
     this.height = g.height;
-    // The drawing holds only what is painted; the session works on the whole grid.
-    if (d && d.kind === 'pixel' && !this.fresh) this.was = { x: d.x, y: d.y, width: d.width, height: d.height };
-    this.base = d && d.kind === 'pixel' && !this.fresh ? gridPixels(d, g.width, g.height) : new Uint8ClampedArray(g.width * g.height * 4);
-    this.work = new Uint8ClampedArray(this.base);
+    // The drawing holds only what is painted; its block is read where it is and copied a tile at a time.
+    const old = d && d.kind === 'pixel' && !this.fresh && d.width > 0 && d.height > 0 && d.pixels.length === d.width * d.height * 4 ? d : null;
+    if (old) this.was = { x: old.x, y: old.y, width: old.width, height: old.height };
+    this.src = old ? { x: old.x ?? 0, y: old.y ?? 0, width: old.width, height: old.height, pixels: old.pixels } : { x: 0, y: 0, width: 0, height: 0, pixels: new Uint8ClampedArray(0) };
+    this.tilesAcross = Math.ceil(g.width / TS);
+    const n = this.tilesAcross * Math.ceil(g.height / TS);
+    this.tiles = new Array(n);
+    this.images = new Array(n);
     this.layerId = layer.id;
     this.pixelSize = layer.pixelSize;
     const ps = getPixelSettings();
@@ -80,21 +103,50 @@ export class PixelSession {
     this.lock = pal ? (ink) => lockedInk(ink, pal) : (ink) => ink;
     const sel = pixelSelection();
     if (sel && sel.width === this.width && sel.height === this.height) this.clip = sel.bits;
-    this.canvas = makeLiveCanvas(this.width, this.height);
-    if (this.canvas) {
-      const g = this.canvas.getContext('2d') as CanvasRenderingContext2D;
-      this.img = new ImageData(this.work as Uint8ClampedArray<ArrayBuffer>, this.width, this.height);
-      g.putImageData(this.img, 0, 0);
-      setLive({ layerId: this.layerId, kind: 'pixel', canvas: this.canvas, width: this.width, height: this.height });
+  }
+
+  /** The old picture's pixel (x, y) written into `out` at `o`. */
+  private readBase(x: number, y: number, out: Uint8ClampedArray | Uint8Array, o: number): void {
+    const s = this.src;
+    const bx = x - s.x;
+    const by = y - s.y;
+    if (bx >= 0 && by >= 0 && bx < s.width && by < s.height) {
+      const i = (by * s.width + bx) * 4;
+      out[o] = s.pixels[i];
+      out[o + 1] = s.pixels[i + 1];
+      out[o + 2] = s.pixels[i + 2];
+      out[o + 3] = s.pixels[i + 3];
+    } else out[o] = out[o + 1] = out[o + 2] = out[o + 3] = 0;
+  }
+
+  /** Fills a tile with the old picture. */
+  private fillTile(t: Uint8ClampedArray, tx: number, ty: number): void {
+    const s = this.src;
+    t.fill(0);
+    const gx = tx << SHIFT;
+    const gy = ty << SHIFT;
+    const x0 = Math.max(gx, s.x);
+    const x1 = Math.min(gx + TS, s.x + s.width);
+    if (x1 <= x0) return;
+    const y0 = Math.max(gy, s.y);
+    const y1 = Math.min(gy + TS, s.y + s.height);
+    for (let y = y0; y < y1; y++) {
+      const from = ((y - s.y) * s.width + (x0 - s.x)) * 4;
+      t.set(s.pixels.subarray(from, from + (x1 - x0) * 4), ((y - gy) * TS + (x0 - gx)) * 4);
     }
   }
 
   get(x: number, y: number): RGBA {
-    return getPx(this.work, this.width, x, y);
+    const t = this.tiles[(y >> SHIFT) * this.tilesAcross + (x >> SHIFT)];
+    if (!t) return this.getBase(x, y);
+    const i = ((y & MASK) * TS + (x & MASK)) * 4;
+    return [t[i], t[i + 1], t[i + 2], t[i + 3]];
   }
 
   getBase(x: number, y: number): RGBA {
-    return getPx(this.base, this.width, x, y);
+    const o = this.basePx;
+    this.readBase(x, y, o, 0);
+    return [o[0], o[1], o[2], o[3]];
   }
 
   /** Paints one pixel. */
@@ -105,18 +157,30 @@ export class PixelSession {
       y = wrap(y, this.height);
     } else if (x < 0 || y < 0 || x >= this.width || y >= this.height) return;
     if (this.clip && !this.clip[y * this.width + x]) return;
-    const i = (y * this.width + x) * 4;
-    const w = this.work;
-    if (w[i] === c[0] && w[i + 1] === c[1] && w[i + 2] === c[2] && w[i + 3] === c[3]) return;
-    setPx(w, this.width, this.height, x, y, c);
+    const ti = (y >> SHIFT) * this.tilesAcross + (x >> SHIFT);
+    let t = this.tiles[ti];
+    if (!t) {
+      const b = this.basePx;
+      this.readBase(x, y, b, 0);
+      if (b[0] === c[0] && b[1] === c[1] && b[2] === c[2] && b[3] === c[3]) return;
+      t = new Uint8ClampedArray(TS * TS * 4);
+      this.fillTile(t, x >> SHIFT, y >> SHIFT);
+      this.tiles[ti] = t;
+    }
+    const i = ((y & MASK) * TS + (x & MASK)) * 4;
+    if (t[i] === c[0] && t[i + 1] === c[1] && t[i + 2] === c[2] && t[i + 3] === c[3]) return;
+    t[i] = c[0];
+    t[i + 1] = c[1];
+    t[i + 2] = c[2];
+    t[i + 3] = c[3];
     this.changed = true;
-    const t = this.touched;
-    if (!t) this.touched = { x0: x, y0: y, x1: x, y1: y };
+    const tc = this.touched;
+    if (!tc) this.touched = { x0: x, y0: y, x1: x, y1: y };
     else {
-      if (x < t.x0) t.x0 = x;
-      if (y < t.y0) t.y0 = y;
-      if (x > t.x1) t.x1 = x;
-      if (y > t.y1) t.y1 = y;
+      if (x < tc.x0) tc.x0 = x;
+      if (y < tc.y0) tc.y0 = y;
+      if (x > tc.x1) tc.x1 = x;
+      if (y > tc.y1) tc.y1 = y;
     }
     const d = this.dirty;
     if (!d) this.dirty = { x0: x, y0: y, x1: x, y1: y };
@@ -132,11 +196,13 @@ export class PixelSession {
   paint(x: number, y: number, ink: Ink): void {
     const n = mirrorPoints(this.mirror, x, y, this.pts);
     const c = this.rgba;
+    const b = this.basePx;
     for (let k = 0; k < n; k++) {
       const px = this.pts[k * 2];
       const py = this.pts[k * 2 + 1];
       if (px < 0 || py < 0 || px >= this.width || py >= this.height) continue;
-      if (ink.color(px, py, this.base, (py * this.width + px) * 4, c)) this.set(px, py, [c[0], c[1], c[2], c[3]]);
+      this.readBase(px, py, b, 0);
+      if (ink.color(px, py, b, 0, c)) this.set(px, py, [c[0], c[1], c[2], c[3]]);
     }
   }
 
@@ -163,18 +229,88 @@ export class PixelSession {
 
   /** Puts everything back to how it was when the session started (for rubber-band lines). */
   reset(): void {
-    this.work.set(this.base);
+    let d: PixelSession['dirty'] = null;
+    for (let ti = 0; ti < this.tiles.length; ti++) {
+      const t = this.tiles[ti];
+      if (!t) continue;
+      const tx = ti % this.tilesAcross;
+      const ty = (ti - tx) / this.tilesAcross;
+      this.fillTile(t, tx, ty);
+      const x0 = tx << SHIFT;
+      const y0 = ty << SHIFT;
+      const x1 = Math.min(x0 + TS, this.width) - 1;
+      const y1 = Math.min(y0 + TS, this.height) - 1;
+      if (!d) d = { x0, y0, x1, y1 };
+      else {
+        d.x0 = Math.min(d.x0, x0);
+        d.y0 = Math.min(d.y0, y0);
+        d.x1 = Math.max(d.x1, x1);
+        d.y1 = Math.max(d.y1, y1);
+      }
+    }
     this.changed = false;
-    this.dirty = { x0: 0, y0: 0, x1: this.width - 1, y1: this.height - 1 };
+    // The tiles' whole area goes back to the screen, outside any dirty rectangle already waiting.
+    const w = this.dirty;
+    if (d && w) this.dirty = { x0: Math.min(d.x0, w.x0), y0: Math.min(d.y0, w.y0), x1: Math.max(d.x1, w.x1), y1: Math.max(d.y1, w.y1) };
+    else this.dirty = d ?? w;
+  }
+
+  /** Makes the live canvas, or grows it, so it covers the grid rectangle (and, the first time, the drawing's block). */
+  private cover(x0: number, y0: number, x1: number, y1: number): boolean {
+    if (this.canvas && x0 >= this.cx && y0 >= this.cy && x1 < this.cx + this.cw && y1 < this.cy + this.ch) return true;
+    const s = this.src;
+    // What is covered now: the canvas, or the old block that the first canvas starts from (maybe nothing).
+    const o = this.canvas
+      ? { x0: this.cx, y0: this.cy, x1: this.cx + this.cw - 1, y1: this.cy + this.ch - 1 }
+      : s.width
+        ? { x0: s.x, y0: s.y, x1: s.x + s.width - 1, y1: s.y + s.height - 1 }
+        : null;
+    const m = Math.min(MARGIN, Math.max(MARGIN >> 2, o ? (o.x1 - o.x0 + 1) >> 1 : 0));
+    // A side the request pushes past gets a margin, so a long stroke does not rebuild the canvas for every tile.
+    const nx0 = !o || x0 < o.x0 ? Math.max(0, x0 - m) : o.x0;
+    const ny0 = !o || y0 < o.y0 ? Math.max(0, y0 - m) : o.y0;
+    const nx1 = !o || x1 > o.x1 ? Math.min(this.width - 1, x1 + m) : o.x1;
+    const ny1 = !o || y1 > o.y1 ? Math.min(this.height - 1, y1 + m) : o.y1;
+    const nw = nx1 - nx0 + 1;
+    const nh = ny1 - ny0 + 1;
+    const next = makeLiveCanvas(nw, nh);
+    if (!next) return false;
+    const g = next.getContext('2d') as CanvasRenderingContext2D;
+    if (this.canvas) g.drawImage(this.canvas as CanvasImageSource, this.cx - nx0, this.cy - ny0);
+    else if (s.width) g.putImageData(new ImageData(s.pixels as Uint8ClampedArray<ArrayBuffer>, s.width, s.height), s.x - nx0, s.y - ny0);
+    this.canvas = next;
+    this.cx = nx0;
+    this.cy = ny0;
+    this.cw = nw;
+    this.ch = nh;
+    return true;
   }
 
   /** Sends what changed to the screen. */
   flush(): void {
     const d = this.dirty;
-    if (!d || !this.canvas || !this.img) return;
-    (this.canvas.getContext('2d') as CanvasRenderingContext2D).putImageData(this.img, 0, 0, d.x0, d.y0, d.x1 - d.x0 + 1, d.y1 - d.y0 + 1);
+    if (!d) return;
+    if (typeof OffscreenCanvas === 'undefined' && typeof document === 'undefined') return;
+    if (!this.cover(d.x0, d.y0, d.x1, d.y1)) return;
+    const g = (this.canvas as LiveCanvas).getContext('2d') as CanvasRenderingContext2D;
+    for (let ty = d.y0 >> SHIFT; ty <= d.y1 >> SHIFT; ty++) {
+      for (let tx = d.x0 >> SHIFT; tx <= d.x1 >> SHIFT; tx++) {
+        const ti = ty * this.tilesAcross + tx;
+        const t = this.tiles[ti];
+        if (!t) continue;
+        let img = this.images[ti];
+        if (!img) img = this.images[ti] = new ImageData(t as Uint8ClampedArray<ArrayBuffer>, TS, TS);
+        const gx = tx << SHIFT;
+        const gy = ty << SHIFT;
+        const sx = Math.max(d.x0, gx) - gx;
+        const sy = Math.max(d.y0, gy) - gy;
+        const ex = Math.min(d.x1, gx + TS - 1) - gx;
+        const ey = Math.min(d.y1, gy + TS - 1) - gy;
+        g.putImageData(img, gx - this.cx, gy - this.cy, sx, sy, ex - sx + 1, ey - sy + 1);
+      }
+    }
     this.dirty = null;
-    setLive({ layerId: this.layerId, kind: 'pixel', canvas: this.canvas, width: this.width, height: this.height });
+    setLive({ layerId: this.layerId, kind: 'pixel', canvas: this.canvas as CanvasImageSource, x: this.cx, y: this.cy, width: this.cw, height: this.ch });
   }
 
   /** Ends the preview without changing the document. */
@@ -183,13 +319,44 @@ export class PixelSession {
     forgetGrids();
   }
 
-  /** Writes the work grid into the drawing, copying and trimming only the touched rectangle and the old block. */
+  /** The finished picture over a rectangle of the grid: the old block with the changed tiles on top. */
+  private crop(r: { x: number; y: number; w: number; h: number }): Uint8ClampedArray {
+    const out = new Uint8ClampedArray(r.w * r.h * 4);
+    const s = this.src;
+    const bx0 = Math.max(r.x, s.x);
+    const bx1 = Math.min(r.x + r.w, s.x + s.width);
+    if (bx1 > bx0) {
+      for (let y = Math.max(r.y, s.y); y < Math.min(r.y + r.h, s.y + s.height); y++) {
+        const from = ((y - s.y) * s.width + (bx0 - s.x)) * 4;
+        out.set(s.pixels.subarray(from, from + (bx1 - bx0) * 4), ((y - r.y) * r.w + (bx0 - r.x)) * 4);
+      }
+    }
+    for (let ty = r.y >> SHIFT; ty <= (r.y + r.h - 1) >> SHIFT; ty++) {
+      for (let tx = r.x >> SHIFT; tx <= (r.x + r.w - 1) >> SHIFT; tx++) {
+        const t = this.tiles[ty * this.tilesAcross + tx];
+        if (!t) continue;
+        const gx = tx << SHIFT;
+        const gy = ty << SHIFT;
+        const x0 = Math.max(r.x, gx);
+        const x1 = Math.min(r.x + r.w, gx + TS);
+        for (let y = Math.max(r.y, gy); y < Math.min(r.y + r.h, gy + TS); y++) {
+          const from = ((y - gy) * TS + (x0 - gx)) * 4;
+          out.set(t.subarray(from, from + (x1 - x0) * 4), ((y - r.y) * r.w + (x0 - r.x)) * 4);
+        }
+      }
+    }
+    return out;
+  }
+
+  /** Writes the result into the drawing, copying and trimming only the touched rectangle and the old block. */
   private write(label: string): EditResult {
     const g = activeGrid();
     if (!g) return 'wrong-kind';
     const t = this.touched;
-    const touched = t ? { x: t.x0, y: t.y0, w: t.x1 - t.x0 + 1, h: t.y1 - t.y0 + 1 } : null;
-    return editActiveDrawing(label, 'pixel', (d) => void setGridRect(d, this.work, g.width, this.was, touched), { adds: this.fresh });
+    const touched = t ? { width: t.x1 - t.x0 + 1, height: t.y1 - t.y0 + 1, x: t.x0, y: t.y0 } : { width: 0, height: 0 };
+    const r = unionRect(this.was, touched);
+    const placed = r ? trimPixels(this.crop(r), r.w, r.h, r.x, r.y) : null;
+    return editActiveDrawing(label, 'pixel', (d) => void setPlaced(d, placed ?? { x: 0, y: 0, width: 0, height: 0, pixels: new Uint8ClampedArray(0) }), { adds: this.fresh });
   }
 
   /** Ends the preview and writes the result into the document as one undo step. */
@@ -201,8 +368,6 @@ export class PixelSession {
     }
     const r = this.write(label);
     setLive(null);
-    // The whole-grid copy of the old drawing is only wanted while painting; a big canvas's is megabytes.
-    forgetGrids();
     return r;
   }
 }
