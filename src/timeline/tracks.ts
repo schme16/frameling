@@ -320,12 +320,19 @@ function effectTrack(layer: Layer, e: LayerEffect, n: number): Track | null {
   return { id: `fx-${e.id}`, label: n > 1 ? `${label} ${n}` : label, icon: 'effects', keys, spans };
 }
 
-const cache = new WeakMap<Layer, { drawings: Doc['drawings']; tracks: Track[] }>();
+/** `deps` are the drawings the layer's keys pointed at when the rows were worked out, key by key. */
+const cache = new WeakMap<Layer, { drawings: Doc['drawings']; deps: (Doc['drawings'][string] | undefined)[]; tracks: Track[] }>();
 
 /** Every property row a layer has, in a steady order. Empty when nothing on it changes over time. */
 export function layerTracks(doc: Doc, layer: Layer): Track[] {
   const hit = cache.get(layer);
   if (hit && hit.drawings === doc.drawings) return hit.tracks;
+  // Another layer's drawing changed (the table is a new object, this layer's own drawings are the same ones): the rows
+  // are still right. Without this, every edit to any drawing worked every layer's rows out again.
+  if (hit && hit.deps.length === layer.cels.length && layer.cels.every((c, i) => doc.drawings[c.drawingId] === hit.deps[i])) {
+    hit.drawings = doc.drawings;
+    return hit.tracks;
+  }
   const tracks: Track[] = [];
   tracks.push(...rowTracks(doc, layer));
   if (layer.kind === 'vector') {
@@ -339,7 +346,7 @@ export function layerTracks(doc: Doc, layer: Layer): Track[] {
     const t = effectTrack(layer, e, n);
     if (t) tracks.push(t);
   }
-  cache.set(layer, { drawings: doc.drawings, tracks });
+  cache.set(layer, { drawings: doc.drawings, deps: layer.cels.map((c) => doc.drawings[c.drawingId]), tracks });
   return tracks;
 }
 
