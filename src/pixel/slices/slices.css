@@ -116,3 +116,51 @@
   gap: 8px;
   cursor: pointer;
 }
+/* Slices grouped by board and layer. */
+.sl-groups {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.sl-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.sl-group-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--fs-small);
+  color: var(--muted);
+}
+.sl-group-head b {
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sl-group-note {
+  font-size: var(--fs-small);
+}
+.sl-open {
+  margin-left: auto;
+  font: inherit;
+  font-size: var(--fs-small);
+  color: var(--text);
+  background: var(--raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  padding: 2px 8px;
+  cursor: pointer;
+}
+.sl-open:hover {
+  border-color: var(--focus);
+}
+.sl-open:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}

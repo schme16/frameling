@@ -2,9 +2,9 @@
 import { current } from 'immer';
 import { useSyncExternalStore } from 'react';
 import { findLayer } from '../../core/doc';
-import type { Id, PixelLayer, Slice } from '../../core/format';
+import type { Doc, Id, PixelLayer, Slice } from '../../core/format';
 import { store } from '../../core/store';
-import { addKeyAt, addSlice, borders, defaultBorders, moveSlice, removeKeyAt, removeSlice, setBorders, sliceAt, stopMoving, tidy, writeSliceAt, type Rect } from './model';
+import { addKeyAt, addSlice, borders, defaultBorders, findSlice, moveSlice, removeKeyAt, removeSlice, setBorders, sliceAt, stopMoving, tidy, writeSliceAt, type Rect } from './model';
 
 let picked: Id | null = null;
 const listeners = new Set<() => void>();
@@ -32,20 +32,20 @@ export function sliceLayer(): PixelLayer | null {
   return l?.kind === 'pixel' ? l : null;
 }
 
-/** Runs an edit on the slice with this id as one undo step. Returns false when there is no such slice. */
+/** Runs an edit on the slice with this id, on any board, as one undo step. Returns false when there is no such slice. */
 export function editSlice(label: string, id: Id, fn: (s: Slice) => void, coalesce?: string): boolean {
-  const layer = layerWith(id);
-  if (!layer) return false;
+  if (!findSlice(store().get().doc, id)) return false;
   store().update(
     label,
     (d) => {
-      const l = findLayer(d, layer.id) as PixelLayer | undefined;
-      const s = l?.slices?.find((x) => x.id === id);
-      if (!s) return;
+      const found = findSlice(d as Doc, id);
+      if (!found) return;
+      const s = found.slice;
       if (s.keys?.length) {
         // A slice that changes between frames is edited as it looks at this frame; a changed rectangle, middle or pivot goes
-        // into that frame's key, and name and colour stay the slice's own.
-        const frame = store().get().ui.frame;
+        // into that frame's key, and name and colour stay the slice's own. On a board that is not open there is no frame to
+        // key at, so it is edited at its first key.
+        const frame = found.open ? store().get().ui.frame : 0;
         const view = structuredClone(sliceAt(current(s), frame)) as Slice;
         delete view.keys;
         fn(view);
@@ -61,11 +61,8 @@ export function editSlice(label: string, id: Id, fn: (s: Slice) => void, coalesc
   return true;
 }
 
-function layerWith(id: Id): PixelLayer | null {
-  const { doc } = store().get();
-  const l = doc.layers.find((x): x is PixelLayer => x.kind === 'pixel' && !!x.slices?.some((s) => s.id === id));
-  return l ?? null;
-}
+/** True when a slice with this id exists on any board. */
+export const sliceExists = (id: Id): boolean => !!findSlice(store().get().doc, id);
 
 /** Makes a slice on the active pixel layer and picks it. */
 export function createSlice(r: Rect, name?: string): Slice | null {
@@ -82,10 +79,10 @@ export function createSlice(r: Rect, name?: string): Slice | null {
 }
 
 export function deleteSlice(id: Id): void {
-  const layer = layerWith(id);
-  if (!layer) return;
+  if (!sliceExists(id)) return;
   store().update('Delete slice', (d) => {
-    removeSlice(findLayer(d, layer.id) as PixelLayer, id);
+    const found = findSlice(d as Doc, id);
+    if (found) removeSlice(found.layer, id);
   });
   if (picked === id) pickSlice(null);
 }
@@ -123,12 +120,13 @@ export const unkeySliceHere = (id: Id) => keyEdit(id, 'Remove slice key', (s, f)
 /** Back to one place on every frame, the place it has now. */
 export const stopSliceMoving = (id: Id) => keyEdit(id, 'Keep slice in one place', (s, f) => stopMoving(s, f));
 
+/** Keys belong to the open board's timeline, so they can only be set on a slice of the open board. */
 function keyEdit(id: Id, label: string, fn: (s: Slice, frame: number) => void): boolean {
-  const layer = layerWith(id);
-  if (!layer) return false;
+  const here = findSlice(store().get().doc, id);
+  if (!here?.open) return false;
   const frame = store().get().ui.frame;
   store().update(label, (d) => {
-    const s = (findLayer(d, layer.id) as PixelLayer | undefined)?.slices?.find((x) => x.id === id);
+    const s = findSlice(d as Doc, id)?.slice;
     if (!s) return;
     fn(s, frame);
     tidy(s);

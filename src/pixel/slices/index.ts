@@ -5,7 +5,7 @@ import { registerCommands, registerPanel } from '../../core/registry';
 import { getPixelSettings, setPixelSettings } from '../settings';
 import './help';
 import './tool';
-import { deleteSlice, pickedSlice, sliceLayer } from './state';
+import { deleteSlice, pickedSlice, sliceExists } from './state';
 
 registerPanel({ id: 'slices', title: 'Slices', icon: 'slice', component: lazyPanel(() => import('./SlicesPanel').then((m) => m.SlicesPanel)), zone: 'right', order: 82, help: 'pixel-slices' });
 
@@ -27,7 +27,7 @@ registerCommands([
     description: 'Remove the slice picked in the Slices panel or with the Slice tool.',
     help: 'pixel-slices',
     keywords: ['slices', 'slice', 'delete', 'remove'],
-    enabled: () => !!pickedSlice() && !!sliceLayer()?.slices?.some((s) => s.id === pickedSlice()),
+    enabled: () => !!pickedSlice() && sliceExists(pickedSlice()!),
     run: () => {
       const id = pickedSlice();
       if (id) deleteSlice(id);

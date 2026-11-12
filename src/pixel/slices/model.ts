@@ -2,7 +2,7 @@
 // immer draft or a plain object), so they can be tested. All numbers are in the layer's art pixels.
 import type { Doc, Id, Layer, PixelLayer, Slice, SliceKey } from '../../core/format';
 import { uid } from '../../core/doc';
-import { artboardsOf } from '../../artboards/model';
+import { activeId, artboardsOf } from '../../artboards/model';
 
 export interface Rect {
   x: number;
@@ -344,6 +344,57 @@ export function slicesForExport(layers: readonly Layer[], scale: number, range?:
     }
   }
   return out;
+}
+
+/** The layers of every board, the open board's first. The open board's layers are the document's own. */
+export function boardLayers(doc: Doc): { boardId: Id; boardName: string; open: boolean; layers: Layer[] }[] {
+  const open = activeId(doc);
+  const list = artboardsOf(doc).map((a) => ({ boardId: a.id, boardName: a.name, open: a.id === open, layers: a.id === open ? doc.layers : (a.content?.layers ?? []) }));
+  return [...list.filter((b) => b.open), ...list.filter((b) => !b.open)];
+}
+
+/** A layer with slices, and the board it is on. */
+export interface SliceOwner {
+  boardId: Id;
+  boardName: string;
+  /** True for the board that is open: the timeline frame is its own, so keys can be set at it. */
+  open: boolean;
+  layer: PixelLayer;
+}
+
+/**
+ * Every pixel layer with slices on any board (hidden layers included, for editing), the open board first and the active
+ * layer first within it, otherwise top layer first.
+ */
+export function sliceOwners(doc: Doc, activeLayerId?: Id | null): SliceOwner[] {
+  const out: SliceOwner[] = [];
+  for (const b of boardLayers(doc)) {
+    const mine = b.layers.filter((l): l is PixelLayer => l.kind === 'pixel' && !l.reference && !!l.slices?.length).reverse();
+    mine.sort((x, y) => (y.id === activeLayerId ? 1 : 0) - (x.id === activeLayerId ? 1 : 0));
+    for (const layer of mine) out.push({ boardId: b.boardId, boardName: b.boardName, open: b.open, layer });
+  }
+  return out;
+}
+
+/** Finds a pixel layer by id on any board (works on a draft too). */
+export function findPixelLayer(doc: Doc, id: Id): { layer: PixelLayer; open: boolean } | null {
+  const hit = (layers: readonly Layer[]) => layers.find((l): l is PixelLayer => l.kind === 'pixel' && l.id === id);
+  const own = hit(doc.layers);
+  if (own) return { layer: own, open: true };
+  for (const a of doc.artboards ?? []) {
+    const l = a.content ? hit(a.content.layers) : undefined;
+    if (l) return { layer: l, open: false };
+  }
+  return null;
+}
+
+/** The slice with this id, wherever it is. */
+export function findSlice(doc: Doc, id: Id): { slice: Slice; layer: PixelLayer; open: boolean } | null {
+  for (const b of boardLayers(doc)) for (const l of b.layers) if (l.kind === 'pixel') {
+    const s = l.slices?.find((x) => x.id === id);
+    if (s) return { slice: s, layer: l, open: b.open };
+  }
+  return null;
 }
 
 /** Slices of every board, by board name: for the panel when boards are in use. The open board's layers are the document's. */
