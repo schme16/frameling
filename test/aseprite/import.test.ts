@@ -245,14 +245,13 @@ describe('layers and groups', () => {
     expect(doc.layers.map((l) => l.name)).toEqual(['Solo', 'A', 'Inner / B', 'Ref', 'Locked', 'Sub', 'Div']);
   });
 
-  it('maps every blend mode with an equal and says which have none', () => {
-    const modes = ['normal', 'multiply', 'screen', 'overlay', 'darken', 'lighten', 'color-dodge', 'color-burn', 'hard-light', 'soft-light', 'difference', 'exclusion', 'hue', 'saturation', 'color', 'luminosity', 'add'];
+  it('maps every blend mode to its equal, and says so for one it does not know', () => {
+    const modes = ['normal', 'multiply', 'screen', 'overlay', 'darken', 'lighten', 'color-dodge', 'color-burn', 'hard-light', 'soft-light', 'difference', 'exclusion', 'hue', 'saturation', 'color', 'luminosity', 'linear-dodge', 'subtract', 'divide'];
     modes.forEach((m, i) => expect(blendFor(i)).toBe(m));
-    expect(blendFor(17)).toBeNull();
-    expect(blendFor(18)).toBeNull();
-    expect(byName('Sub').blend).toBeUndefined();
-    expect(notes.join(' ')).toContain('no "Subtract" blend mode');
-    expect(notes.join(' ')).toContain('no "Divide" blend mode');
+    expect(blendFor(19)).toBeNull();
+    expect(byName('Sub').blend).toBe('subtract');
+    expect(byName('Div').blend).toBe('divide');
+    expect(notes.join(' ')).not.toContain('blend mode');
   });
 
   it('ignores layer opacity when the file says it is not valid', () => {

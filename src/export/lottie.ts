@@ -1128,7 +1128,7 @@ function vectorRuns(ctx: Ctx, layer: Layer, cel: Cel, frames: number[], rawShape
 // ---------------------------------------------------------------- the stage: blend modes, effects, clipping, masks
 
 /** Frameling's blend modes as Lottie's `bm` numbers ('add' has none in lottie-web; screen is the nearest). */
-const BM: Record<string, number> = { normal: 0, multiply: 1, screen: 2, overlay: 3, darken: 4, lighten: 5, 'color-dodge': 6, 'color-burn': 7, 'hard-light': 8, 'soft-light': 9, difference: 10, exclusion: 11, hue: 12, saturation: 13, color: 14, luminosity: 15, add: 2 };
+const BM: Record<string, number> = { normal: 0, multiply: 1, screen: 2, overlay: 3, darken: 4, lighten: 5, 'color-dodge': 6, 'color-burn': 7, 'hard-light': 8, 'soft-light': 9, difference: 10, exclusion: 11, hue: 12, saturation: 13, color: 14, luminosity: 15, add: 2, 'linear-dodge': 2 };
 
 const effectSlider = (nm: string, ix: number, v: Json, mn: string) => ({ ty: 0, nm, mn, ix, v });
 
@@ -1335,6 +1335,7 @@ function drawStep(ctx: Ctx, node: PlanNode, clips: Layer[], r: Range): Json[] {
   if (look.opacity <= 0) return [];
   const bm = BM[look.blend ?? 'normal'] ?? 0;
   if (look.blend === 'add') ctx.notes.add('Add (lighter) blend mode became Screen, its nearest in Lottie.');
+  if (look.blend === 'subtract' || look.blend === 'divide') ctx.notes.add('Subtract and Divide blend modes became Normal: Lottie has neither.');
   const name = node.type === 'layer' ? node.layer.name : node.folder.name;
   // A pass-through folder's layers go straight onto the stage.
   if (node.type === 'folder' && !node.isolate && !clips.length) return levelContent(ctx, node.steps, r);

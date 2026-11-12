@@ -31,7 +31,7 @@ export const MAX_FRAMES = 10000;
 const MAX_PIXEL_BYTES = 1024 * 1024 * 1024;
 
 const BLEND_NAMES = ['Normal', 'Multiply', 'Screen', 'Overlay', 'Darken', 'Lighten', 'Color Dodge', 'Color Burn', 'Hard Light', 'Soft Light', 'Difference', 'Exclusion', 'Hue', 'Saturation', 'Color', 'Luminosity', 'Addition', 'Subtract', 'Divide'];
-const BLEND_MODES: (BlendMode | null)[] = ['normal', 'multiply', 'screen', 'overlay', 'darken', 'lighten', 'color-dodge', 'color-burn', 'hard-light', 'soft-light', 'difference', 'exclusion', 'hue', 'saturation', 'color', 'luminosity', 'add', null, null];
+const BLEND_MODES: (BlendMode | null)[] = ['normal', 'multiply', 'screen', 'overlay', 'darken', 'lighten', 'color-dodge', 'color-burn', 'hard-light', 'soft-light', 'difference', 'exclusion', 'hue', 'saturation', 'color', 'luminosity', 'linear-dodge', 'subtract', 'divide'];
 const DIRECTIONS = ['forward', 'reverse', 'ping-pong', 'ping-pong reverse'];
 
 /** Frameling's blend mode for Aseprite's (null when there is none). */

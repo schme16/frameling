@@ -153,7 +153,8 @@ function maskOf(host: SvgLookHost, content: string, hide: boolean): string {
   return id;
 }
 
-const blendCss = (b: string | undefined) => (b && b !== 'normal' ? `mix-blend-mode:${b === 'add' ? 'plus-lighter' : b}` : '');
+// CSS has no Subtract or Divide: those layers stay Normal in SVG.
+const blendCss = (b: string | undefined) => (b && b !== 'normal' && b !== 'subtract' && b !== 'divide' ? `mix-blend-mode:${b === 'add' || b === 'linear-dodge' ? 'plus-lighter' : b}` : '');
 
 /** A group with a look: opacity, blend mode and a filter (attributes only where they do something). */
 function lookGroup(inner: string, look: { opacity?: number; blend?: string; filter?: string; mask?: string; id?: string }): string {

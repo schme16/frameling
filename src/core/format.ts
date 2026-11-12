@@ -528,7 +528,13 @@ export type BlendMode =
   | 'saturation'
   | 'color'
   | 'luminosity'
-  | 'add';
+  | 'add'
+  /** Adding colours with the plain blend (Aseprite's Addition, Photoshop's Linear Dodge). Done pixel by pixel. */
+  | 'linear-dodge'
+  /** Taking the colours away from what is under (Aseprite's Subtract). Done pixel by pixel, not by the canvas. */
+  | 'subtract'
+  /** Dividing what is under by the colours (Aseprite's Divide). Done pixel by pixel. */
+  | 'divide';
 
 export type EffectKind = 'blur' | 'glow' | 'shadow' | 'adjust' | 'outline' | 'pixelate';
 
