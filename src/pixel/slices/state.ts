@@ -1,9 +1,10 @@
 // Which slice is picked (the one the panel edits and the tool handles), and the edits themselves as undo steps.
+import { current } from 'immer';
 import { useSyncExternalStore } from 'react';
 import { findLayer } from '../../core/doc';
 import type { Id, PixelLayer, Slice } from '../../core/format';
 import { store } from '../../core/store';
-import { addSlice, borders, defaultBorders, moveSlice, removeSlice, setBorders, tidy, type Rect } from './model';
+import { addKeyAt, addSlice, borders, defaultBorders, moveSlice, removeKeyAt, removeSlice, setBorders, sliceAt, stopMoving, tidy, writeSliceAt, type Rect } from './model';
 
 let picked: Id | null = null;
 const listeners = new Set<() => void>();
@@ -41,7 +42,18 @@ export function editSlice(label: string, id: Id, fn: (s: Slice) => void, coalesc
       const l = findLayer(d, layer.id) as PixelLayer | undefined;
       const s = l?.slices?.find((x) => x.id === id);
       if (!s) return;
-      fn(s);
+      if (s.keys?.length) {
+        // A slice that changes between frames is edited as it looks at this frame; a changed rectangle, middle or pivot goes
+        // into that frame's key, and name and colour stay the slice's own.
+        const frame = store().get().ui.frame;
+        const view = structuredClone(sliceAt(current(s), frame)) as Slice;
+        delete view.keys;
+        fn(view);
+        s.name = view.name;
+        if (view.color) s.color = view.color;
+        else delete s.color;
+        writeSliceAt(s, frame, view);
+      } else fn(s);
       tidy(s);
     },
     coalesce ? { coalesce } : {},
@@ -103,3 +115,23 @@ export function togglePivot(id: Id, on: boolean): void {
   });
 }
 export const setPivot = (id: Id, p: { x?: number; y?: number }) => editSlice('Move slice pivot', id, (s) => void (s.pivot && (s.pivot = { x: p.x ?? s.pivot.x, y: p.y ?? s.pivot.y })), `slice-pivot-${id}`);
+
+/** Makes the slice start a new place at this frame (it keeps where it was until here). */
+export const keySliceHere = (id: Id) => keyEdit(id, 'Key slice at this frame', (s, f) => addKeyAt(s, f));
+/** Takes this frame's key away; the last one left makes the slice stay in one place again. */
+export const unkeySliceHere = (id: Id) => keyEdit(id, 'Remove slice key', (s, f) => removeKeyAt(s, f));
+/** Back to one place on every frame, the place it has now. */
+export const stopSliceMoving = (id: Id) => keyEdit(id, 'Keep slice in one place', (s, f) => stopMoving(s, f));
+
+function keyEdit(id: Id, label: string, fn: (s: Slice, frame: number) => void): boolean {
+  const layer = layerWith(id);
+  if (!layer) return false;
+  const frame = store().get().ui.frame;
+  store().update(label, (d) => {
+    const s = (findLayer(d, layer.id) as PixelLayer | undefined)?.slices?.find((x) => x.id === id);
+    if (!s) return;
+    fn(s, frame);
+    tidy(s);
+  });
+  return true;
+}

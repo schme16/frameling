@@ -17,6 +17,10 @@ Pick the **Slice** tool (**Shift+S**) and drag on the layer. The slice snaps to 
 
 Slices belong to the pixel layer they were made on, so a copy of the layer carries its slices along, and hiding the layer leaves them out of exports.
 
+## A slice that moves between frames
+
+A hitbox or a hand that goes somewhere else on each frame is one slice with **keys**. In the Slices panel pick it and press **Move between frames**, then go to another frame and move or resize the slice: that frame gets a key, and the slice keeps that place until the next key. **Remove this key** takes one away, and **Keep in one place** makes it stay put again. Slices from Aseprite that move come in this way. The sprite sheet export writes every key in the JSON (Aseprite's shape), counted from the first frame you export. Godot, Unity, Phaser, Pixi and CSS get the place the slice has on that first frame.
+
 ## 9-patch
 
 Tick **9-patch** and a dashed middle appears with four borders (left, top, right, bottom). When the engine stretches the picture, the borders stay the size they are and only the middle stretches, so a button's corners and outline stay crisp at any size. Drag the dashed lines on the canvas, or type the borders in the panel.
@@ -39,7 +43,7 @@ Slices are measured on the first frame, so that frame stays whole on the sheet (
 
 ## From Aseprite
 
-Slices in an Aseprite file come in as slices on the top pixel layer, with their 9-patch middle and pivot. Aseprite lets a slice move from frame to frame; Frameling's stay put, so it keeps the first position and says so. Slices in a sprite sheet's JSON come in too (see [Cutting a sprite sheet](help:pixel-sheets)).
+Slices in an Aseprite file come in as slices on the top pixel layer, with their 9-patch middle and pivot. A slice that moves from frame to frame comes in with a key for each place. Slices in a sprite sheet's JSON come in too (see [Cutting a sprite sheet](help:pixel-sheets)).
 
 ---
 

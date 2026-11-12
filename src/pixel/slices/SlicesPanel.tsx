@@ -4,8 +4,8 @@ import type { Slice } from '../../core/format';
 import { useStore } from '../../core/store';
 import { ActionButton, Tip } from '../../canvas/controls';
 import { setPixelSettings, usePixelSettings } from '../settings';
-import { borders, sliceColor } from './model';
-import { deleteSlice, pickSlice, renameSlice, setNineBorders, setPivot, setSliceRect, toggleNine, togglePivot, usePickedSlice, createSlice, setSliceColor } from './state';
+import { borders, keyAt, sliceAt, sliceColor } from './model';
+import { deleteSlice, keySliceHere, pickSlice, renameSlice, setNineBorders, setPivot, setSliceRect, stopSliceMoving, toggleNine, togglePivot, unkeySliceHere, usePickedSlice, createSlice, setSliceColor } from './state';
 import '../pixel.css';
 import './slices.css';
 
@@ -35,7 +35,10 @@ function Num({ label, value, onChange, min, max }: { label: string; value: numbe
   );
 }
 
-function Row({ s, open, onOpen }: { s: Slice; open: boolean; onOpen: () => void }) {
+function Row({ slice, frame, open, onOpen }: { slice: Slice; frame: number; open: boolean; onOpen: () => void }) {
+  // A slice that changes between frames shows (and edits) the way it is at the current frame.
+  const s = sliceAt(slice, frame);
+  const keyHere = slice.keys?.some((k) => k.frame === frame) ?? false;
   const b = borders(s);
   const color = sliceColor(s);
   return (
@@ -48,6 +51,7 @@ function Row({ s, open, onOpen }: { s: Slice; open: boolean; onOpen: () => void 
             {s.w} x {s.h}
             {b ? ', 9-patch' : ''}
             {s.pivot ? ', pivot' : ''}
+            {slice.keys?.length ? ', moves' : ''}
           </span>
         </button>
         <button type="button" className="sl-del" onClick={() => deleteSlice(s.id)} aria-label={`Delete slice ${s.name}`} title="Delete slice">
@@ -88,6 +92,34 @@ function Row({ s, open, onOpen }: { s: Slice; open: boolean; onOpen: () => void 
               <Num label="Pivot Y" value={s.pivot.y - s.y} onChange={(v) => setPivot(s.id, { y: s.y + v })} />
             </div>
           )}
+          {slice.keys?.length ? (
+            <div className="sl-keys">
+              <Tip>
+                Changes between frames: {slice.keys.length} {slice.keys.length === 1 ? 'key' : 'keys'} (frame {slice.keys.map((k) => k.frame + 1).join(', ')}). Move it at another frame to key it there.
+              </Tip>
+              <div className="px-row px-wrap">
+                {!keyHere && keyAt(slice, frame) && (
+                  <ActionButton onClick={() => keySliceHere(slice.id)} title="Start a new place for this slice at this frame. It stays where it was before.">
+                    Key this frame
+                  </ActionButton>
+                )}
+                {keyHere && (
+                  <ActionButton onClick={() => unkeySliceHere(slice.id)} title="Take this frame's key away. The slice goes back to the key before it.">
+                    Remove this key
+                  </ActionButton>
+                )}
+                <ActionButton onClick={() => stopSliceMoving(slice.id)} title="Keep the slice in the place it has at this frame, on every frame.">
+                  Keep in one place
+                </ActionButton>
+              </div>
+            </div>
+          ) : (
+            <div className="px-row px-wrap">
+              <ActionButton onClick={() => keySliceHere(slice.id)} title="Let this slice move or change between frames: it keeps its place until this frame, then you move it here.">
+                Move between frames
+              </ActionButton>
+            </div>
+          )}
           <label className="sl-name">
             <span>Colour on the canvas</span>
             <input type="color" value={color} onChange={(e) => setSliceColor(s.id, e.target.value)} aria-label="Slice colour" />
@@ -100,6 +132,7 @@ function Row({ s, open, onOpen }: { s: Slice; open: boolean; onOpen: () => void 
 
 export function SlicesPanel() {
   const layer = useLayer();
+  const frame = useStore((s) => s.ui.frame);
   const picked = usePickedSlice();
   const show = usePixelSettings((s) => s.showSlices);
   if (!layer) return <p className="cv-tip">Slices go on a pixel layer. Pick or add a pixel layer to use them.</p>;
@@ -125,7 +158,7 @@ export function SlicesPanel() {
       ) : (
         <ul className="sl-list" aria-label={`Slices on ${layer.name}`}>
           {slices.map((s) => (
-            <Row key={s.id} s={s} open={picked === s.id} onOpen={() => pickSlice(picked === s.id ? null : s.id)} />
+            <Row key={s.id} slice={s} frame={frame} open={picked === s.id} onOpen={() => pickSlice(picked === s.id ? null : s.id)} />
           ))}
         </ul>
       )}

@@ -23,6 +23,8 @@ export interface SheetSlice {
   center?: { x: number; y: number; w: number; h: number };
   pivot?: { x: number; y: number };
   color?: string;
+  /** Where it moves between frames (Aseprite keys): the place from each frame of the sheet on. Missing = it stays put. */
+  keys?: { frame: number; x: number; y: number; w: number; h: number; center?: { x: number; y: number; w: number; h: number }; pivot?: { x: number; y: number } }[];
 }
 
 export interface SheetData {
@@ -133,6 +135,25 @@ export function readSheetJson(text: string): SheetData | null {
     if (c) slice.center = { x: b.x + c.x, y: b.y + c.y, w: c.w, h: c.h };
     if (isObj(key.pivot) && Number.isFinite(key.pivot.x) && Number.isFinite(key.pivot.y)) slice.pivot = { x: b.x + int(key.pivot.x), y: b.y + int(key.pivot.y) };
     if (typeof s.color === 'string') slice.color = s.color;
+    // Keys that put it somewhere else on other frames.
+    const keys: NonNullable<SheetSlice['keys']> = [];
+    for (const k of s.keys) {
+      const kb = isObj(k) ? rect(k.bounds) : null;
+      if (!kb) continue;
+      const kc = rect(k.center);
+      keys.push({ frame: Math.max(0, int(k.frame)), ...kb, ...(kc ? { center: { x: kb.x + kc.x, y: kb.y + kc.y, w: kc.w, h: kc.h } } : {}), ...(isObj(k.pivot) && Number.isFinite(k.pivot.x) && Number.isFinite(k.pivot.y) ? { pivot: { x: kb.x + int(k.pivot.x), y: kb.y + int(k.pivot.y) } } : {}) });
+    }
+    keys.sort((p, q) => p.frame - q.frame);
+    const look = (o: { x: number; y: number; w: number; h: number; center?: unknown; pivot?: unknown }) => JSON.stringify([o.x, o.y, o.w, o.h, o.center, o.pivot]);
+    if (keys.length > 1 && keys.some((o) => look(o) !== look(keys[0]))) {
+      slice.keys = keys;
+      // The slice's own place is the first key's.
+      Object.assign(slice, { x: keys[0].x, y: keys[0].y, w: keys[0].w, h: keys[0].h });
+      if (keys[0].center) slice.center = keys[0].center;
+      else delete slice.center;
+      if (keys[0].pivot) slice.pivot = keys[0].pivot;
+      else delete slice.pivot;
+    }
     slices.push(slice);
   }
 

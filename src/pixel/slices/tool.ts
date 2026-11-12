@@ -6,7 +6,7 @@ import { registerTool, type Tool, type ToolContext, type ToolPointer } from '../
 import { store } from '../../core/store';
 import { getPixelSettings } from '../settings';
 import { SliceOptions } from './SliceOptions';
-import { dragSlice, hitSlice, rectBetween, sliceColor, sliceLayers, type Grab, type Rect } from './model';
+import { dragSlice, hitSlice, rectBetween, sliceAt, sliceColor, sliceLayers, type Grab, type Rect } from './model';
 import { createSlice, deleteSlice, editSlice, pickedSlice, pickSlice, sliceLayer } from './state';
 
 type Drag =
@@ -91,10 +91,11 @@ function drawSlice(g: CanvasRenderingContext2D, s: Slice, ps: number, px: number
 /** Slices of the shown pixel layers, drawn whatever tool is picked (the Slices view option can hide them). */
 registerDecoration((g, ctx) => {
   if (!getPixelSettings().showSlices) return;
-  const { doc } = store().get();
+  const { doc, ui } = store().get();
   const px = 1 / ctx.zoom;
   const id = pickedSlice();
-  for (const l of sliceLayers(doc.layers)) for (const s of l.slices!) if (!(drag?.kind === 'edit' && drag.id === s.id)) drawSlice(g, s, l.pixelSize, px, { picked: s.id === id });
+  // A slice that changes between frames is drawn as it is at this frame.
+  for (const l of sliceLayers(doc.layers)) for (const s of l.slices!) if (!(drag?.kind === 'edit' && drag.id === s.id)) drawSlice(g, sliceAt(s, ui.frame), l.pixelSize, px, { picked: s.id === id });
   if (drag?.kind === 'edit') {
     const l = sliceLayer();
     if (l) drawSlice(g, drag.now, l.pixelSize, px, { picked: true, ghost: true });
@@ -123,7 +124,8 @@ export const sliceTool: Tool = {
     const layer = sliceLayer();
     if (!layer) return ctx.hint('Slices go on a pixel layer. Pick one first.');
     const p = at(layer, e);
-    const hit = hitSlice(layer.slices ?? [], p.x, p.y, reachFor(layer, ctx));
+    const frame = store().get().ui.frame;
+    const hit = hitSlice((layer.slices ?? []).map((s) => sliceAt(s, frame)), p.x, p.y, reachFor(layer, ctx));
     if (hit) {
       pickSlice(hit.slice.id);
       drag = { kind: 'edit', id: hit.slice.id, start: structuredClone(hit.slice), grab: hit.grab, from: snap(p), now: structuredClone(hit.slice) };

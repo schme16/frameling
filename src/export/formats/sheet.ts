@@ -49,7 +49,7 @@ export const run: ExporterRun['run'] = async (ctx, { plan, crisp, step, rgbaAt }
     pixelArt: crisp,
     maxSide: MAX_SHEET_SIDE,
     nativeBounce: currentChoice('export.clipEngineBounce') === 'engine',
-    slices: slicesForExport(doc.layers, settings.scale),
+    slices: slicesForExport(doc.layers, settings.scale, plan.range),
   });
   return { kind: 'files', folderName: out.main.replace(/\.png$/, ''), files: out.files, main: out.main };
 };

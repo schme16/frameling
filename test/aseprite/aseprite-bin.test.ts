@@ -3,16 +3,18 @@
 // It runs test/aseprite/lua/gen.lua in batch mode (no window, settings in a throwaway folder) to make real .aseprite
 // files and a picture of every layer in every frame, then opens the files with the importer and compares pixel by pixel.
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
 import { drawingAt } from '../../src/core/doc';
-import type { Doc, Layer, PixelDrawing, TilemapDrawing } from '../../src/core/format';
+import type { Doc, Layer, PixelDrawing, PixelLayer, TilemapDrawing } from '../../src/core/format';
 import { decodePng } from '../../src/io/png';
 import { asepriteDoc, planTiming } from '../../src/aseprite/convert';
 import { parseAseprite } from '../../src/aseprite/parse';
 import { flattenTilemap } from '../../src/tiles/model';
+import { readSheetJson } from '../../src/pixel/import/sheetJson';
+import { aseFile, celChunk, layerChunk, sliceChunk } from './writer';
 
 const BIN = process.env.ASEPRITE_BIN;
 
@@ -125,6 +127,32 @@ describe.skipIf(!BIN)('files made by the real Aseprite', () => {
     for (const d of drawings) expect([d.x, d.y, d.width, d.height]).toEqual([400, 300, 40, 40]);
     // 1000 x 1000 x 4 = 4 MB per cel on the canvas, 6.4 KB held.
     expect(drawings.reduce((n, d) => n + d.pixels.byteLength, 0)).toBe(24 * 40 * 40 * 4);
+  });
+
+  it('a slice with keys on two frames: Aseprite\'s own JSON and Frameling\'s import agree on where each key is', () => {
+    const bytes = aseFile({
+      width: 40,
+      height: 30,
+      depth: 32,
+      frames: [
+        { duration: 100, chunks: [layerChunk({ name: 'A' }), celChunk({ layer: 0, kind: 'image', width: 1, height: 1, data: [1, 2, 3, 255] }), sliceChunk({ name: 'hand', nine: true, pivot: true, keys: [{ frame: 0, x: 1, y: 2, w: 5, h: 6, center: [1, 1, 3, 4], pivot: [2, 3] }, { frame: 2, x: 10, y: 12, w: 7, h: 8, center: [2, 2, 3, 3], pivot: [4, 5] }] })] },
+        { duration: 100, chunks: [] },
+        { duration: 200, chunks: [] },
+        { duration: 100, chunks: [] },
+      ],
+    });
+    const out = path.join(dir, 'keys');
+    execFileSync('mkdir', ['-p', out]);
+    writeFileSync(path.join(out, 'hand.aseprite'), bytes);
+    const cfg = path.join(dir, 'cfg');
+    execFileSync(BIN!, ['-b', path.join(out, 'hand.aseprite'), '--sheet', path.join(out, 'hand.png'), '--data', path.join(out, 'hand.json'), '--list-slices', '--format', 'json-array'], { env: { ...process.env, XDG_CONFIG_HOME: cfg, XDG_DATA_HOME: cfg }, timeout: 60000, stdio: 'pipe' });
+    const theirs = readSheetJson(readFileSync(path.join(out, 'hand.json'), 'utf8'))!.slices[0];
+    expect(theirs.keys!.map((k) => [k.frame, k.x, k.y, k.w, k.h])).toEqual([[0, 1, 2, 5, 6], [2, 10, 12, 7, 8]]);
+    // 100, 100, 200, 100 ms at 10 fps: Aseprite frame 2 starts at timeline frame 2.
+    const mine = (asepriteDoc(parseAseprite(bytes), 'k').doc.layers[0] as PixelLayer).slices![0];
+    expect(mine.keys!.map((k) => [k.frame, k.x, k.y, k.w, k.h])).toEqual([[0, 1, 2, 5, 6], [2, 10, 12, 7, 8]]);
+    expect(mine.keys![1]).toMatchObject({ center: { x: 12, y: 14, w: 3, h: 3 }, pivot: { x: 14, y: 17 } });
+    expect(theirs.keys![1]).toMatchObject({ center: { x: 12, y: 14, w: 3, h: 3 }, pivot: { x: 14, y: 17 } });
   });
 
   it('rgba: layer settings, timing and tags', () => {

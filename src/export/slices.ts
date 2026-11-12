@@ -30,19 +30,17 @@ export function nineBorders(s: ExportSlice): { left: number; top: number; right:
 
 const hexColor = (s: ExportSlice): string => (s.color && /^#[0-9a-f]{6}/i.test(s.color) ? s.color.slice(0, 7) : '#0000ff') + 'ff';
 
-/** Aseprite's own shape (meta.slices): the middle and the pivot measured from the slice's corner. Frameling reads it back. */
+/** Aseprite's own shape (meta.slices): the middle and the pivot measured from the slice's corner, one key per change. Frameling reads it back. */
 export function sliceMeta(slices: readonly ExportSlice[], names: readonly string[]) {
   return slices.map((s, i) => ({
     name: names[i],
     color: hexColor(s),
-    keys: [
-      {
-        frame: 0,
-        bounds: { x: s.x, y: s.y, w: s.w, h: s.h },
-        ...(s.center ? { center: { x: s.center.x - s.x, y: s.center.y - s.y, w: s.center.w, h: s.center.h } } : {}),
-        ...(s.pivot ? { pivot: { x: s.pivot.x - s.x, y: s.pivot.y - s.y } } : {}),
-      },
-    ],
+    keys: (s.keys?.length ? s.keys : [{ frame: 0, x: s.x, y: s.y, w: s.w, h: s.h, center: s.center, pivot: s.pivot }]).map((k) => ({
+      frame: k.frame,
+      bounds: { x: k.x, y: k.y, w: k.w, h: k.h },
+      ...(k.center ? { center: { x: k.center.x - k.x, y: k.center.y - k.y, w: k.center.w, h: k.center.h } } : {}),
+      ...(k.pivot ? { pivot: { x: k.pivot.x - k.x, y: k.pivot.y - k.y } } : {}),
+    })),
   }));
 }
 

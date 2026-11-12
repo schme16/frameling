@@ -7,7 +7,7 @@
 import { cleanGradients } from '../core/gradient';
 import { readFolders, readLayerLook } from '../effects/io';
 import { strFromU8, strToU8, unzipSync, zipSync, type Zippable } from 'fflate';
-import { BONE_STRETCH, FORMAT_VERSION, LAYER_LABELS, type LayerLabel, type Cel, type Doc, type Drawing, type KeptShape, type Layer, type Shape, type Slice, type SymbolDef, type Tween, type InstanceShape, type ClipFlow, type ClipTransition, type Tile, type Tileset, type Bone, type BonePose, type LayerBind, type Pose, type Rig, type SavedPose } from '../core/format';
+import { BONE_STRETCH, FORMAT_VERSION, LAYER_LABELS, type LayerLabel, type Cel, type Doc, type Drawing, type KeptShape, type Layer, type Shape, type Slice, type SliceKey, type SymbolDef, type Tween, type InstanceShape, type ClipFlow, type ClipTransition, type Tile, type Tileset, type Bone, type BonePose, type LayerBind, type Pose, type Rig, type SavedPose } from '../core/format';
 import { decodePng, encodePng } from './png';
 import { trimmedDrawing } from '../core/pixelBounds';
 import { rootDoc } from '../core/symbols';
@@ -426,6 +426,25 @@ function readRig(r: unknown): { rig?: Rig } {
   return { rig };
 }
 
+/** The per-frame keys of a slice: whole numbers, real sizes, sorted by frame, one key per frame. Null when none are usable. */
+function readSliceKeys(v: unknown): SliceKey[] | null {
+  if (!Array.isArray(v)) return null;
+  const whole = (n: unknown, fallback = 0) => Math.round(num(n, fallback));
+  const byFrame = new Map<number, SliceKey>();
+  for (const k of v) {
+    if (!isObj(k)) continue;
+    const w = whole(k.w);
+    const h = whole(k.h);
+    if (w < 1 || h < 1) continue;
+    const key: SliceKey = { frame: Math.max(0, whole(k.frame)), x: whole(k.x), y: whole(k.y), w, h };
+    const c = k.center;
+    if (isObj(c) && whole(c.w) >= 1 && whole(c.h) >= 1) key.center = { x: whole(c.x), y: whole(c.y), w: whole(c.w), h: whole(c.h) };
+    if (isObj(k.pivot) && Number.isFinite(k.pivot.x) && Number.isFinite(k.pivot.y)) key.pivot = { x: whole(k.pivot.x), y: whole(k.pivot.y) };
+    byFrame.set(key.frame, key);
+  }
+  return byFrame.size ? [...byFrame.values()].sort((a, b) => a.frame - b.frame) : null;
+}
+
 /** A layer's slices (named rectangles): kept when they have a name and a real size, repaired when a part is off. */
 function readSlices(v: unknown): { slices?: Slice[] } {
   if (!Array.isArray(v)) return {};
@@ -447,6 +466,17 @@ function readSlices(v: unknown): { slices?: Slice[] } {
     const pivot = point(s.pivot);
     if (pivot) slice.pivot = pivot;
     if (typeof s.color === 'string') slice.color = s.color;
+    const keys = readSliceKeys(s.keys);
+    if (keys) {
+      // The slice's own numbers always match its first key.
+      const k = keys[0];
+      Object.assign(slice, { x: k.x, y: k.y, w: k.w, h: k.h });
+      if (k.center) slice.center = k.center;
+      else delete slice.center;
+      if (k.pivot) slice.pivot = k.pivot;
+      else delete slice.pivot;
+      slice.keys = keys;
+    }
     slices.push(slice);
   }
   return slices.length ? { slices } : {};

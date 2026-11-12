@@ -4,7 +4,7 @@
 import type { Draft } from 'immer';
 import { MAX_FRAMES, planTiming } from '../../aseprite/convert';
 import { newDoc, newPixelLayer, uid } from '../../core/doc';
-import type { Clip, Doc, DocPalette, PixelDrawing, PixelLayer, Slice, SpriteWay } from '../../core/format';
+import type { Clip, Doc, DocPalette, PixelDrawing, PixelLayer, Slice, SliceKey, SpriteWay } from '../../core/format';
 import { addArtboard, artboardsOf, ensureArtboards } from '../../artboards/model';
 import { trimPixels } from '../../core/pixelBounds';
 import type { RawImage } from '../../io/png';
@@ -234,17 +234,33 @@ export const drawingOf = (doc: Doc, img: RawImage): PixelDrawing => {
 };
 
 /** Slices land on the layer, so they follow it. The Slice type has ids and optional parts; the sheet's has neither. */
-export function slicesOf(list: SheetSlice[]): Slice[] {
+export function slicesOf(list: SheetSlice[], at?: { starts: readonly number[]; from?: number; ox?: number; oy?: number }): Slice[] {
+  const ox = at?.ox ?? 0;
+  const oy = at?.oy ?? 0;
+  // Keys of a sheet's slices are at sheet frames; they go to where those frames start on the timeline (animation only).
+  const keysOf = (s: SheetSlice): SliceKey[] | undefined => {
+    if (!s.keys?.length || !at?.starts.length) return undefined;
+    const out: SliceKey[] = [];
+    for (const k of s.keys) {
+      const key: SliceKey = { frame: (at.from ?? 0) + at.starts[Math.min(k.frame, at.starts.length - 1)], x: k.x + ox, y: k.y + oy, w: k.w, h: k.h };
+      if (k.center) key.center = { ...k.center, x: k.center.x + ox, y: k.center.y + oy };
+      if (k.pivot) key.pivot = { x: k.pivot.x + ox, y: k.pivot.y + oy };
+      if (out.length && out[out.length - 1].frame === key.frame) out[out.length - 1] = key;
+      else out.push(key);
+    }
+    return out;
+  };
   return list.map((s) => ({
     id: uid('sl'),
     name: s.name,
-    x: s.x,
-    y: s.y,
+    x: s.x + ox,
+    y: s.y + oy,
     w: s.w,
     h: s.h,
-    ...(s.center ? { center: s.center } : {}),
-    ...(s.pivot ? { pivot: s.pivot } : {}),
+    ...(s.center ? { center: { ...s.center, x: s.center.x + ox, y: s.center.y + oy } } : {}),
+    ...(s.pivot ? { pivot: { x: s.pivot.x + ox, y: s.pivot.y + oy } } : {}),
     ...(s.color ? { color: s.color } : {}),
+    ...(keysOf(s) ? { keys: keysOf(s) } : {}),
   }));
 }
 
@@ -349,7 +365,7 @@ export function spriteDoc(s: Sprite, o: BuildOptions): { doc: Doc; notes: string
     });
   }
   // Slices go on the first board's layer.
-  if (s.slices.length) (doc.layers.find((l) => l.kind === 'pixel') as PixelLayer | undefined)!.slices = slicesOf(s.slices);
+  if (s.slices.length) (doc.layers.find((l) => l.kind === 'pixel') as PixelLayer | undefined)!.slices = slicesOf(s.slices, way === 'animation' ? { starts: timing.starts } : undefined);
   if (o.palette) {
     const p = spritePalette(s, o.name);
     if (p) doc.palette = p;
@@ -397,7 +413,7 @@ export function spriteInto(d: Draft<Doc>, s: Sprite, o: BuildOptions, from = 0):
   if (s.slices.length) {
     const ox = Math.floor((cw - s.width) / 2);
     const oy = Math.floor((ch - s.height) / 2);
-    layer.slices = slicesOf(s.slices).map((sl) => ({ ...sl, x: sl.x + ox, y: sl.y + oy, ...(sl.center ? { center: { ...sl.center, x: sl.center.x + ox, y: sl.center.y + oy } } : {}), ...(sl.pivot ? { pivot: { x: sl.pivot.x + ox, y: sl.pivot.y + oy } } : {}) }));
+    layer.slices = slicesOf(s.slices, { starts: way === 'animation' ? starts : [], from, ox, oy });
   }
   if (o.palette) {
     const p = spritePalette(s, o.name);

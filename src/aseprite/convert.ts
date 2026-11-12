@@ -23,12 +23,13 @@ import {
   type Layer,
   type LayerFolder,
   type PixelDrawing,
+  type SliceKey,
   type PixelLayer,
   type Slice,
   type Tile,
   type Tileset,
 } from '../core/format';
-import { LAYER_GROUP, LAYER_TILEMAP, AsepriteProblem, imageRgba, paletteAt, type AseCel, type AseColor, type AseFile, type AseImage, type AseLayer, type AseSlice, type AseTileset } from './parse';
+import { LAYER_GROUP, LAYER_TILEMAP, AsepriteProblem, imageRgba, paletteAt, type AseCel, type AseColor, type AseFile, type AseImage, type AseLayer, type AseSlice, type AseSliceKey, type AseTileset } from './parse';
 
 export const MAX_FRAMES = 10000;
 /** The most pixel memory an import may ask for. */
@@ -266,8 +267,12 @@ const plain = (s: string): string => s.replace(/[\r\n]+/g, ' ').trim();
 
 const hexOf = (c?: [number, number, number, number]): string | undefined => (c && (c[0] || c[1] || c[2]) ? '#' + c.slice(0, 3).map((v) => hex2(v)).join('') : undefined);
 
-/** An Aseprite slice as a Frameling one: its first key's rectangle, with the middle and pivot made absolute. */
-export function sliceFrom(s: AseSlice): { slice: Slice; moves: boolean } {
+/**
+ * An Aseprite slice as a Frameling one: its first key's rectangle, with the middle and pivot made absolute. A slice whose
+ * keys differ keeps them all as keys at the timeline frames where those frames start (`starts` is where each Aseprite
+ * frame starts on the timeline; without it every key is at its own frame number).
+ */
+export function sliceFrom(s: AseSlice, starts?: readonly number[]): { slice: Slice; moves: boolean } {
   const keys = [...s.keys].sort((a, b) => a.frame - b.frame);
   const k = keys[0] ?? { frame: 0, x: 0, y: 0, width: 1, height: 1 };
   const w = Math.max(1, k.width);
@@ -278,7 +283,22 @@ export function sliceFrom(s: AseSlice): { slice: Slice; moves: boolean } {
   if (k.pivot) slice.pivot = { x: k.x + k.pivot.x, y: k.y + k.pivot.y };
   const color = hexOf(s.userData?.color);
   if (color) slice.color = color;
-  const moves = keys.some((o) => o.x !== k.x || o.y !== k.y || o.width !== k.width || o.height !== k.height);
+  const look = (o: AseSliceKey) => JSON.stringify([o.x, o.y, Math.max(1, o.width), Math.max(1, o.height), o.center, o.pivot]);
+  const moves = keys.some((o) => look(o) !== look(k));
+  if (moves) {
+    const out: SliceKey[] = [];
+    for (const o of keys) {
+      const w2 = Math.max(1, o.width);
+      const h2 = Math.max(1, o.height);
+      const key: SliceKey = { frame: starts ? starts[Math.min(Math.max(0, o.frame), starts.length - 1)] : o.frame, x: o.x, y: o.y, w: w2, h: h2 };
+      if (o.center) key.center = { x: o.x + o.center.x, y: o.y + o.center.y, w: Math.max(1, o.center.width), h: Math.max(1, o.center.height) };
+      if (o.pivot) key.pivot = { x: o.x + o.pivot.x, y: o.y + o.pivot.y };
+      // Two Aseprite frames on one timeline frame cannot both key it: the later one wins.
+      if (out.length && out[out.length - 1].frame === key.frame) out[out.length - 1] = key;
+      else out.push(key);
+    }
+    slice.keys = out;
+  }
   return { slice, moves };
 }
 
@@ -605,14 +625,12 @@ export function asepritePieces(file: AseFile, name: string, target?: Target): Pi
   if (deep) notes.push(`Frameling folders go ${MAX_FOLDER_DEPTH} levels deep, so ${deep} group${deep === 1 ? '' : 's'} nested deeper became part of the folder around ${deep === 1 ? 'it' : 'them'} (hiding, fading and the name carry over).`);
   if (zIndexed) notes.push(`${zIndexed} cel${zIndexed === 1 ? ' has' : 's have'} a custom stacking order, which is ignored.`);
   if (scaledRefs) notes.push(`${scaledRefs} scaled reference picture${scaledRefs === 1 ? ' was' : 's were'} resized to the size shown in Aseprite.`);
-  // Slices become Frameling slices on the top pixel layer (a slice that moves between frames keeps its first position).
+  // Slices become Frameling slices on the top pixel layer (a slice that moves between frames keeps a key for each place).
   if (file.slices.length) {
     const top = [...layers].reverse().find((l): l is PixelLayer => l.kind === 'pixel' && !l.reference);
-    const made = file.slices.map(sliceFrom);
+    const made = file.slices.map((sl) => sliceFrom(sl, timing.starts));
     if (top) {
       top.slices = made.map((m) => m.slice);
-      const moving = made.filter((m) => m.moves).map((m) => `"${plain(m.slice.name)}"`);
-      if (moving.length) notes.push(`${listOf(moving)} ${moving.length === 1 ? 'moves' : 'move'} between frames in Aseprite; Frameling slices stay put, so ${moving.length === 1 ? 'it keeps' : 'they keep'} the first position.`);
     } else notes.push(`${file.slices.length} slice${file.slices.length === 1 ? '' : 's'} could not be shown because the file has no pixel layer; ${file.slices.length === 1 ? 'it is' : 'they are'} kept in the drawing's notes.`);
   }
   if (file.pixelWidth !== file.pixelHeight) notes.push(`The pixels are ${file.pixelWidth}:${file.pixelHeight} in Aseprite and show square here.`);
