@@ -8,7 +8,7 @@ import { setChoice } from '../../src/core/choices';
 import { changePaletteColor, setDocPalette } from '../../src/pixel/commands';
 import { docPalette } from '../../src/pixel/palette';
 import { activeId, artboardDoc, artboardsOf, findArtboard, switchArtboard } from '../../src/artboards/model';
-import { aliasId, listDifferences, makeVariation, resetDifference } from '../../src/artboards/variations';
+import { aliasId, listDifferences, makeVariation, resetDifference, settleVariations } from '../../src/artboards/variations';
 import { changesBetween, migrateLegacy, paletteRenames, recolourDrawing, resolvePalette } from '../../src/artboards/paletteOverride';
 
 const doc = () => store().get().doc;
@@ -125,6 +125,8 @@ describe('palette overrides: in a document', () => {
     expect(px(pid)).toEqual([255, 136, 0, 255]);
     expect(px(shown(v))).toEqual(BLUE);
     expect(ovOf(v).palette).toEqual({ changes: [{ from: '#ff8800', to: '#0000ff' }] });
+    // Nothing is left for a full check to do: the incremental settle kept the variation in step.
+    expect(settleVariations(doc())).toBeNull();
     // It adds, then moves colours: they flow through.
     setDocPalette({ ...doc().palette!, colors: [...doc().palette!.colors, '#123456'], names: ['a', 'b', 'c', 'd'] });
     setDocPalette({ ...doc().palette!, colors: ['#123456', ...doc().palette!.colors.slice(0, 3)], names: ['d', 'a', 'b', 'c'] });
@@ -147,6 +149,22 @@ describe('palette overrides: in a document', () => {
       p.pixels = px2;
     });
     expect(px(shown(v), 3)).toEqual(BLUE);
+    expect(settleVariations(doc())).toBeNull();
+  });
+
+  it('opening a variation gives every key its own frozen copy that shares the original\'s data, and undo and redo bring it back', () => {
+    const v = make();
+    open(v);
+    const own = doc().drawings[aliasId(pid, v)] as PixelDrawing;
+    expect(Object.isFrozen(own)).toBe(true);
+    expect(own.pixels).toBe((doc().drawings[pid] as PixelDrawing).pixels);
+    store().undo();
+    expect(activeId(doc())).toBe(root());
+    expect(doc().drawings[aliasId(pid, v)]).toBeUndefined();
+    store().redo();
+    expect(activeId(doc())).toBe(v);
+    expect(px(aliasId(pid, v))).toEqual(RED);
+    expect(settleVariations(doc())).toBeNull();
   });
 
   it('painting in the variation redraws that drawing, and the colourway stays', () => {

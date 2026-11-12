@@ -378,7 +378,7 @@ function aliasObject(d: Drawing, alias: Id): Drawing {
   let m = aliasMemo.get(d);
   if (!m) aliasMemo.set(d, (m = new Map()));
   let hit = m.get(alias);
-  if (!hit) m.set(alias, (hit = { ...d, id: alias } as Drawing));
+  if (!hit) m.set(alias, (hit = Object.freeze({ ...d, id: alias }) as Drawing));
   return hit;
 }
 
@@ -694,7 +694,12 @@ export function settleVariations(doc: Doc, ctx?: { patches: readonly ImmerPatch[
       // Opened (or keys added): every key gets its own drawing, so no tool can write to the original's.
       const own = everything || srcTouched || t!.cels ? openAliasing(doc, a) : null;
       const cur = own ? { ...takeContent(doc), layers: own.layers } : takeContent(doc);
-      const curDrawings = own?.drawings.length ? { ...doc.drawings, ...Object.fromEntries(own.drawings) } : doc.drawings;
+      // The drawings the stage shows: the document's, with the new copies over them (read by key only, so no table is copied).
+      let curDrawings = doc.drawings;
+      if (own?.drawings.length) {
+        curDrawings = Object.create(doc.drawings) as Record<Id, Drawing>;
+        for (const [k, v] of own.drawings) curDrawings[k] = v;
+      }
       const inc: IncrementalDiff | undefined = everything || srcTouched || t!.cels ? undefined : { prev: a.overrides?.drawings, check: mine! };
       const ov = diffContent(base, doc.drawings, cur, curDrawings, a.id, inc, a.overrides?.palette);
       const changed = !deepEqual(ov, a.overrides ?? {});
