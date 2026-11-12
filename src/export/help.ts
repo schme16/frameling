@@ -92,7 +92,7 @@ When you export a clip, the loop box follows the clip: a clip that loops repeats
 
 ## Exporting a clip
 
-Pick **One clip** in the Range row and the file follows how that clip plays ([clip direction and repeat](help:timeline-clip-play)). A clip that plays **backward** comes out backward. **Back and forth** comes out as one trip there and back, and a clip that plays **3 times** is in the file 3 times, so it looks the same everywhere. The same goes for a moving SVG (its timing follows the order), a PNG sequence (the numbers count in play order) and a PDF (the pages come in play order). A video made this way has no sound, because the timeline's sound doesn't match the new order.
+Pick **One clip** in the Range row and the file follows how that clip plays ([clip direction and repeat](help:timeline-clip-play)). A clip that plays **backward** comes out backward. **Back and forth** comes out there and back as the clip says (repeat 3 is there, back, there), and a clip that plays **3 times** is in the file 3 times, so it looks the same everywhere. The same goes for a moving SVG (its timing follows the order). A **PNG sequence, PDF and Illustrator pages** are for looking at, so each frame comes out **once**, in the order the clip starts, however often it repeats. A video made this way has no sound, because the timeline's sound doesn't match the new order.
 ## Good to know
 
 - Pixel art exports at big whole-number sizes with sharp edges, never blurry.
@@ -229,7 +229,7 @@ The export window lists what was baked or left out for your drawing.`,
 $AnimatedSprite2D.play("run")
 \`\`\`
 
-Every clip is there with its speed and loop setting, and held frames last as long as they do in Frameling. A clip that plays backward or back and forth has its frames listed in that order (Godot's animations have no direction of their own), and one that plays a number of times lists them that many times and doesn't loop. Got a character with bones? You can also send it as a [skeleton you can keep editing](help:export-godot-bones). Pixel art scenes are set to sharp (nearest) filtering, so nothing looks blurry.
+Every clip is there with its speed and loop setting, and held frames last as long as they do in Frameling. A clip that plays backward or back and forth has its frames listed in that order (Godot's animations have no direction of their own), and one that plays a number of times lists them that many times and doesn't loop. A back and forth clip that loops can instead use Godot's own **ping-pong** loop (a smaller file, but the two end frames show twice): choose it in **Preferences > Behaviour**, *Back-and-forth clips in game engines*. Clips that play a set number of directions are always listed frame by frame. Got a character with bones? You can also send it as a [skeleton you can keep editing](help:export-godot-bones). Pixel art scenes are set to sharp (nearest) filtering, so nothing looks blurry.
 
 ## Using the .tres yourself
 
@@ -289,7 +289,7 @@ Press **Ctrl+E**, pick **Sprite sheet**, then the **Phaser** card, and export in
 
 - \`hero.png\`: the sheet,
 - \`hero.json\`: where every frame is (a JSON hash atlas),
-- \`hero-anims.json\`: one animation per clip, with speed and looping. A clip that plays a number of times uses Phaser's own **repeat**. Backward and back and forth clips list their frames in that order (Phaser's *yoyo* shows each end twice, so it isn't used).
+- \`hero-anims.json\`: one animation per clip, with speed and looping. A clip that plays a number of times uses Phaser's own **repeat**. Backward and back and forth clips list their frames in that order, so each end shows once. If you would rather have Phaser's own **yoyo** (smaller data, and it plays the same) for a back and forth clip that loops or goes there and back a whole number of times, choose it in **Preferences > Behaviour**, *Back-and-forth clips in game engines*.
 
 ## In your game
 

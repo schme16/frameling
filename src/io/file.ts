@@ -98,11 +98,28 @@ export function saveFile(open: Doc, appVersion = '', now: Date = new Date()): Ui
 
 // ---------------------------------------------------------------- migration
 
+/** Version 1 counted a back and forth clip's repeat in full trips; version 2 counts each direction (2 per trip). */
+function doubleBounceRepeats(clips: unknown): void {
+  if (!Array.isArray(clips)) return;
+  for (const c of clips) {
+    if (!isObj(c) || (c.direction !== 'pingpong' && c.direction !== 'pingpong-reverse')) continue;
+    // A clip that stops after one trip had no repeat written; it is now there and back (2).
+    if (typeof c.repeat === 'number' && Number.isFinite(c.repeat)) c.repeat = Math.round(c.repeat) * 2;
+    else if (c.loop !== true) c.repeat = 2;
+  }
+}
+
 /**
- * One step per format version: `MIGRATIONS[n]` turns a version n document into version n + 1. Version 1 is the only
- * one so far, so the list is empty. When the format changes, bump FORMAT_VERSION and add the step here.
+ * One step per format version: `MIGRATIONS[n]` turns a version n document into version n + 1. When the format changes,
+ * bump FORMAT_VERSION and add the step here. Version 1 to 2: back and forth clips count each direction as one repeat.
  */
-export const MIGRATIONS: Record<number, (raw: any) => any> = {};
+export const MIGRATIONS: Record<number, (raw: any) => any> = {
+  1: (raw) => {
+    doubleBounceRepeats(raw.clips);
+    if (Array.isArray(raw.artboards)) for (const a of raw.artboards) if (isObj(a) && isObj(a.content)) doubleBounceRepeats(a.content.clips);
+    return raw;
+  },
+};
 
 export function migrate(raw: any, from: number): any {
   let doc = raw;

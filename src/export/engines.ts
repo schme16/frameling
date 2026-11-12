@@ -85,21 +85,22 @@ export function expandedNames(a: Animation, d: Pick<SheetData, 'cellOfFrame' | '
 /**
  * Phaser 3 animations, the shape `this.anims.fromJSON` and `this.load.animation` read. Backward is the frames the
  * other way round, and a clip that plays N times uses Phaser's own `repeat` (N - 1) when one pass ends where it
- * should. Back and forth that plays a set number of times lists every frame instead: Phaser's `yoyo` shows the ends
- * twice and would end on the wrong frame.
+ * should. Back and forth lists every frame (the ends once per turn), unless `nativeBounce` is on: then a clip that
+ * goes there and back an even number of times uses Phaser's `yoyo`, which lists one direction (Phaser 3.90 shows each end once, so it looks the same as listing every frame).
  */
-export function phaserAnimations(d: SheetData, textureKey: string) {
+export function phaserAnimations(d: SheetData, textureKey: string, nativeBounce = false) {
   return {
     anims: d.animations.map((a) => {
-      const native = !a.loop && a.repeat && a.pass && !a.direction?.startsWith('pingpong');
+      const bounce = nativeBounce && a.bounce && (a.loop || !!a.repeat) ? a.bounce : null;
+      const native = !bounce && !a.loop && a.repeat && a.pass && !a.direction?.startsWith('pingpong');
       return {
         key: a.name,
         type: 'frame',
-        frames: expandedNames(native ? { ...a, frames: a.pass! } : a, d).map((frame) => ({ key: textureKey, frame })),
+        frames: expandedNames(bounce ? { ...a, frames: bounce.leg } : native ? { ...a, frames: a.pass! } : a, d).map((frame) => ({ key: textureKey, frame })),
         frameRate: a.fps,
-        repeat: a.loop ? -1 : native ? a.repeat! - 1 : 0,
+        repeat: a.loop ? -1 : bounce ? bounce.trips - 1 : native ? a.repeat! - 1 : 0,
         delay: 0,
-        yoyo: false,
+        yoyo: !!bounce,
       };
     }),
     globalTimeScale: 1,
@@ -528,6 +529,8 @@ export interface SheetJob {
   /** Crisp pixel art (sets nearest-neighbour filtering where the engine has a setting for it). */
   pixelArt: boolean;
   maxSide: number;
+  /** Let Godot and Phaser bounce looping or even-count back and forth clips themselves (the preference). */
+  nativeBounce?: boolean;
 }
 
 export interface SheetFiles {
@@ -580,7 +583,7 @@ export function buildSheetFiles(job: SheetJob): SheetFiles {
       if (separate) {
         cells.forEach((c, i) => files.push({ name: `${base}-${slug(names[i], 'sprite')}.tres`, bytes: text(godotAtlasTexture(texturePath, c, layout.positions[i])) }));
       } else {
-        files.push({ name: `${base}.tres`, bytes: text(godotSpriteFrames({ texturePath, layout, cells, cellOfFrame, animations })) });
+        files.push({ name: `${base}.tres`, bytes: text(godotSpriteFrames({ texturePath, layout, cells, cellOfFrame, animations, nativeBounce: job.nativeBounce })) });
         // The clip flow: which clip follows which, as JSON plus a small script that plays it.
         const inRange = (c: Clip) => Math.max(range.start, Math.min(c.start, c.end)) <= Math.min(range.end, Math.max(c.start, c.end));
         const names = exportClipNames(doc.clips, inRange);
@@ -597,7 +600,7 @@ export function buildSheetFiles(job: SheetJob): SheetFiles {
       break;
     case 'phaser':
       files.push({ name: `${base}.json`, bytes: json(hashAtlas(d)) });
-      if (animations.length) files.push({ name: `${base}-anims.json`, bytes: json(phaserAnimations(d, base)) });
+      if (animations.length) files.push({ name: `${base}-anims.json`, bytes: json(phaserAnimations(d, base, job.nativeBounce)) });
       break;
     case 'pixi':
       files.push({ name: `${base}.json`, bytes: json(pixiSheet(d)) });

@@ -43,7 +43,8 @@ describe('stepPosition', () => {
   });
   it('ping-pong without looping stops back at the start', () => {
     expect(pb.stepPosition(5, 4, false, true)).toEqual({ pos: 1, done: false });
-    expect(pb.stepPosition(6, 4, false, true)).toEqual({ pos: 0, done: true });
+    expect(pb.stepPosition(6, 4, false, true)).toEqual({ pos: 0, done: false });
+    expect(pb.stepPosition(7, 4, false, true)).toEqual({ pos: 0, done: true });
   });
   it('copes with a one frame range', () => {
     expect(pb.stepPosition(3, 1, true, true)).toEqual({ pos: 0, done: false });

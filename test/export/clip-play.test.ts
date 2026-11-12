@@ -169,8 +169,8 @@ describe('GIF, APNG and video of a clip', () => {
   it('bakes the order into the pictures', () => {
     for (const f of ['gif', 'apng', 'mp4', 'webm'] as const) {
       const p = planExport(doc, s(f), 0);
-      expect(p.order).toEqual([0, 1, 2, 1, 0, 1, 2, 1, 0]);
-      expect(p.count).toBe(9);
+      expect(p.order).toEqual([0, 1, 2, 1, 0]);
+      expect(p.count).toBe(5);
       expect(p.range).toEqual({ start: 1, end: 3 });
     }
   });

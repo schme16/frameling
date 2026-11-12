@@ -40,7 +40,6 @@ After an import, a message says **See what changed** whenever something couldn't
 
 - **Slices** (including 9-patch and pivots) are kept in the notes but not shown.
 - Anything drawn **outside the canvas** is cropped.
-- A **back and forth** tag that repeats an odd number of times rounds up to whole trips there and back.
 
 If a file ends in .ase but isn't from Aseprite (Adobe swatch files do this), Frameling says so.
 

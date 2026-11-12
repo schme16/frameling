@@ -5,6 +5,7 @@ import { rootDoc } from '../core/symbols';
 import { DEFAULT_BRUSH, newDoc, newPixelDrawing, newPixelLayer, newVectorDrawing, newVectorLayer } from '../core/doc';
 import type { ClipDirection, Doc } from '../core/format';
 import { store } from '../core/store';
+import { setChoice } from '../core/choices';
 import { detectCapabilities } from './capabilities';
 import { exportDocument } from './exporter';
 import { runExport } from './run';
@@ -67,6 +68,8 @@ if (typeof window !== 'undefined' && new URLSearchParams(location.search).has('d
     caps: (w: number, h: number) => detectCapabilities(w, h),
     addClip: (name: string, start: number, end: number, loop = true, direction?: ClipDirection, repeat?: number) =>
       store().update('Add clip', (d) => void d.clips.push({ id: 'clip-' + name, name, start, end, loop, ...(direction ? { direction } : {}), ...(repeat ? { repeat } : {}) })),
+    /** Sets (or with undefined, forgets) a remembered choice, like the one in Preferences > Behaviour. */
+    setChoice: (id: string, value: string | undefined) => setChoice(id, value),
     clearClips: () => store().update('Clear clips', (d) => void (d.clips = [])),
     rename: (name: string) => store().update('Rename', (d) => void (d.name = name)),
     setFrame: (n: number) => store().setUi({ frame: n }),
@@ -88,7 +91,7 @@ if (typeof window !== 'undefined' && new URLSearchParams(location.search).has('d
         const outcome = await exportDocument(s, ac.signal, (p) => progress.push(p));
         return { outcome, ms: Math.round(performance.now() - t0), progress: progress.length };
       } catch (e) {
-        return { error: e instanceof Error ? e.message : String(e), ms: Math.round(performance.now() - t0), progress: progress.length };
+        return { error: e instanceof Error ? e.message : String(e), stack: e instanceof Error ? String(e.stack).split('\n').slice(0, 6).join(' / ') : '', ms: Math.round(performance.now() - t0), progress: progress.length };
       }
     },
   };

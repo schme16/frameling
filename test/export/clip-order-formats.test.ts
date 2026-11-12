@@ -32,12 +32,12 @@ const doc = boxes();
 const settings = (format: 'svganim' | 'pngseq' | 'pdf' | 'ai', clipId: string | null) => ({ ...defaultSettings(doc), format, range: clipId ? ('clip' as const) : ('all' as const), clipId });
 
 describe('PNG sequence and PDF of a clip', () => {
-  it('number and order the pictures in play order, the same count as the plan says', () => {
+  it('hold each frame once, whatever the clip repeats, with the count the plan says', () => {
     const p = planExport(doc, settings('pngseq', 'pp'), 0);
-    expect(p.order).toEqual([0, 1, 2, 1, 0, 1, 2, 1, 0]);
-    expect(p.count).toBe(9);
-    expect(planFrames(p)).toEqual([1, 2, 3, 2, 1, 2, 3, 2, 1]);
-    expect(Array.from({ length: p.count }, (_, i) => frameNumber(i, p.count))[8]).toBe('0009');
+    expect(p.order).toBeUndefined();
+    expect(p.count).toBe(3);
+    expect(planFrames(p)).toEqual([1, 2, 3]);
+    expect(Array.from({ length: p.count }, (_, i) => frameNumber(i, p.count))[2]).toBe('0003');
   });
 
   it('a backward clip is numbered from its last frame', () => {
@@ -45,12 +45,12 @@ describe('PNG sequence and PDF of a clip', () => {
     expect(planFrames(p)).toEqual([2, 1, 0]);
   });
 
-  it('PDF pages (and Illustrator pages) come in play order', () => {
+  it('PDF pages (and Illustrator pages) hold each frame once, in the order the clip starts', () => {
     for (const f of ['pdf', 'ai'] as const) {
       const frames = planFrames(planExport(doc, { ...settings(f, 'pp'), aiFrames: 'pages' }, 0));
-      expect(frames).toEqual([1, 2, 3, 2, 1, 2, 3, 2, 1]);
+      expect(frames).toEqual([1, 2, 3]);
       const text = Buffer.from(writePdf(doc, { frames, scale: 1, background: '#ffffff', title: 'T' })).toString('latin1');
-      expect(text.match(/\/Type\s*\/Page\b/g)).toHaveLength(9);
+      expect(text.match(/\/Type\s*\/Page\b/g)).toHaveLength(3);
     }
   });
 

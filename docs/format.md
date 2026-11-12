@@ -29,13 +29,14 @@ changing them, so an unchanged drawing is never encoded twice, which matters for
 
 ## Version and compatibility rules
 
-- `FORMAT_VERSION` is 1. Every field added since the first commit is optional, so the version has never been bumped
-  and every older file opens unchanged.
+- `FORMAT_VERSION` is 2. Every field added since the first commit is optional, so the version was not bumped until
+  clip repeat counts changed meaning (see the clips note below): `MIGRATIONS[1]` in `file.ts` turns a version 1 file's
+  back and forth repeat counts into the new ones, so every older file still opens and plays as it did.
 - A new field must be optional, and missing must mean "the old behaviour". Write it only when it isn't the default
   (the readers drop `onion: true`, `blend: 'normal'`, `s: 1` and so on), so files stay small and diffable.
 - If a change can't be made optional, bump `FORMAT_VERSION` and add a step to `MIGRATIONS` in `file.ts`:
   `MIGRATIONS[n]` turns a version n document into version n + 1, and `migrate()` runs them in order. A missing step
-  means "this file is too old" (`FileProblem`). The list is empty today.
+  means "this file is too old" (`FileProblem`). The list has one step today (1 to 2, clips).
 - A file whose manifest version is higher than `FORMAT_VERSION` is refused with "made with a newer Frameling".
 - Older readers drop fields they don't know without a warning (the tween reader builds a new `Tween` from the fields it
   knows). Consequence for `Tween.slice` (added in `9611002`, after which no release was cut when this was checked): a
@@ -336,10 +337,21 @@ See `docs/effects.md`.
 
 - `Clip`: `{id, name, start, end, loop, direction?, repeat?}`, frames inclusive. `loop` repeats forever. When it is
   false the clip plays `repeat` times (a whole number from 1 to 999, missing = once) and holds the frame it ends on.
-  `direction` is `'forward'` (missing), `'reverse'`, `'pingpong'` or `'pingpong-reverse'`. One pass of back and forth
-  is 0..n-1 and back down to 0 with each end shown once per turn (a pass shows 2n-2 frames), so a clip that plays
-  it once ends where it started. Old files have neither field and play forward, exactly as before. The rules and the
-  maths are in `src/core/clipPlay.ts` (`directedPosition` for playback, `bakedPositions` for exports).
+  `direction` is `'forward'` (missing), `'reverse'`, `'pingpong'` or `'pingpong-reverse'`. Forward and backward count
+  whole passes. Back and forth counts **each direction as one**, like Aseprite: with 4 frames, repeat 1 is there only
+  (1 2 3 4), 2 is there and back (1 2 3 4 3 2 1), 3 is there, back, there (1 2 3 4 3 2 1 2 3 4); the turn frames show
+  once, and it holds the frame its last direction ends on. Forever goes round 0..n-1, n-2..1 without end.
+  **Format 1** counted whole trips there and back (repeat N = 2N directions, and no repeat = one trip), so opening a
+  version 1 file doubles the repeat of every back and forth clip (a clip with `loop: false` and no repeat gets 2); loops,
+  forward and backward clips are untouched, and artboards' clips are migrated too (test/clips/clipPlay.test.ts). Old
+  files have neither field on plain clips and play forward, exactly as before. The rules and the maths are in
+  `src/core/clipPlay.ts` (`directedPosition` for playback, `bakedPositions` for exports, `stillPositions` for stills).
+  Exports: GIF, APNG, video, animated SVG and sheet frame lists bake the order and the repeats; a PNG sequence, PDF and
+  Illustrator pages hold each frame once, in the order the clip starts (`stillPositions`). Godot and Phaser can use their
+  own ping-pong for back and forth clips (preference `export.clipEngineBounce`, default baked): Godot's SpriteFrames
+  `"loop": 2` (LOOP_PINGPONG) and the AnimationPlayer's `loop_mode = 2` for a clip that loops, Phaser's `yoyo` for a loop
+  or an even number of directions. In Godot those show each end twice (checked in 4.8), so the default bakes; Phaser 3.90's yoyo plays
+  the same as the baked list (each end once, checked in the real engine).
   `Marker`: `{id, name, frame}`. `Swatch`: `{id, name, color}`.
 - `DocPalette`: `{name, colors, ramps?}`; `ramps` lists where each ramp starts.
 - `Tileset`: `{tileWidth, tileHeight, tiles, nextKey, gridX?, gridY?}`. `Tile`: `{key, name, frames: {drawingId, duration}[]}`. Keys

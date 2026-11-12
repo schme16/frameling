@@ -2,9 +2,10 @@
  * How a clip plays: which way (forward, backward, back and forth) and how often (forever, N times, once). Pure
  * functions, shared by the timeline's playback and every exporter, so they all agree on the order of the frames.
  *
- * One pass is one trip through the clip. Forward plays 0..n-1 and backward n-1..0. Back and forth is 0..n-1 and then
- * back down to 0, with the end frames shown once per turn (no stutter): the pass is 0..n-1, n-2..1 and the frame it
- * returns to (0) is where it ends. A clip that repeats N times does N passes and then holds the frame it ends on.
+ * Forward plays 0..n-1 and backward n-1..0; repeating N times does N passes and holds the frame it ends on. Back and
+ * forth counts each direction as one (like Aseprite): repeat 1 is there only (1 2 3 4), 2 is there and back
+ * (1 2 3 4 3 2 1), 3 is there, back, there (1 2 3 4 3 2 1 2 3 4). The turn frames show once. Forever goes round the
+ * whole loop (0..n-1, n-2..1) without end.
  */
 import type { Clip, ClipDirection } from './format';
 
@@ -70,16 +71,20 @@ export function cyclePositions(len: number, dir: ClipDirection): number[] {
   }
 }
 
-/** The position it ends on (and holds) after its last pass. */
-export function holdPosition(len: number, dir: ClipDirection): number {
+/**
+ * The position it ends on (and holds) after its last pass. Back and forth ends where its last direction ends, so it
+ * depends on how many directions it plays (`plays`, one when not said).
+ */
+export function holdPosition(len: number, dir: ClipDirection, plays = 1): number {
   const n = Math.max(1, len);
+  const odd = !Number.isFinite(plays) || plays % 2 === 1;
   switch (dir) {
     case 'reverse':
       return 0;
     case 'pingpong':
-      return 0;
+      return odd ? n - 1 : 0;
     case 'pingpong-reverse':
-      return n - 1;
+      return odd ? 0 : n - 1;
     default:
       return n - 1;
   }
@@ -96,12 +101,13 @@ export function entryPosition(len: number, dir: ClipDirection): number {
  */
 export function directedPosition(idx: number, len: number, dir: ClipDirection, plays: number): { pos: number; done: boolean } {
   const n = Math.max(1, len);
-  const cycle = cycleLength(n, dir);
-  const total = plays * cycle;
-  if (Number.isFinite(total) && idx >= total) return { pos: holdPosition(n, dir), done: true };
+  const back = isBackAndForth(dir);
+  // Back and forth counts each direction once: N of them show N * (n - 1) + 1 frames (the turns once). The rest count passes.
+  const total = back && n > 1 ? plays * (n - 1) + 1 : plays * cycleLength(n, dir);
+  if (Number.isFinite(total) && idx >= total) return { pos: holdPosition(n, dir, plays), done: true };
   if (n === 1) return { pos: 0, done: false };
-  const i = Math.max(0, idx) % cycle;
-  return { pos: cyclePositions(n, dir)[i], done: false };
+  const cycle = cycleLength(n, dir);
+  return { pos: cyclePositions(n, dir)[Math.max(0, idx) % cycle], done: false };
 }
 
 /** The step count that shows `pos` going the way the clip plays (for carrying on from a frame somebody picked). */
@@ -114,16 +120,22 @@ export function indexOfPosition(pos: number, len: number, dir: ClipDirection): n
 /**
  * The whole order a clip shows, as positions, for formats that have no direction or repeat of their own (GIF, a
  * video, Godot's sprite frames). A clip that loops gives one pass (the format repeats it). A clip that plays N times
- * gives N passes, then the frame it holds when that is not already the last one shown.
+ * gives N passes (back and forth: N directions, the turn frames once each).
  */
 export function bakedPositions(len: number, dir: ClipDirection, plays: number): number[] {
-  const pass = cyclePositions(len, dir);
-  if (!Number.isFinite(plays)) return pass;
-  const out: number[] = [];
-  for (let i = 0; i < plays; i++) out.push(...pass);
-  const hold = holdPosition(len, dir);
-  if (out[out.length - 1] !== hold) out.push(hold);
-  return out;
+  if (!Number.isFinite(plays)) return cyclePositions(len, dir);
+  const n = Math.max(1, len);
+  const steps = isBackAndForth(dir) && n > 1 ? plays * (n - 1) + 1 : plays * cycleLength(n, dir);
+  return Array.from({ length: steps }, (_, i) => directedPosition(i, n, dir, plays).pos);
+}
+
+/**
+ * Each frame once, in the order the clip starts to play them (the first direction), whatever the repeat. For files that
+ * show frames as pictures to look at or print (a PNG sequence, a PDF, Illustrator pages) rather than to play.
+ */
+export function stillPositions(len: number, dir: ClipDirection): number[] {
+  const n = Math.max(1, len);
+  return Array.from({ length: n }, (_, i) => (isReversed(dir) ? n - 1 - i : i));
 }
 
 /** `frames` (a clip's frames in order) put in the order the clip plays them. */
@@ -132,9 +144,9 @@ export function bakeFrames<T>(frames: T[], dir: ClipDirection, plays: number): T
 }
 
 /** The frame a finished clip holds (the clip's own frame numbers, start to end inclusive). */
-export function holdFrame(c: Pick<Clip, 'start' | 'end' | 'direction'>): number {
+export function holdFrame(c: Pick<Clip, 'start' | 'end' | 'loop' | 'direction' | 'repeat'>): number {
   const a = Math.min(c.start, c.end);
-  return a + holdPosition(Math.abs(c.end - c.start) + 1, clipDirection(c));
+  return a + holdPosition(Math.abs(c.end - c.start) + 1, clipDirection(c), clipPlays(c));
 }
 
 /** The frame a clip starts on (the clip's own frame numbers). */
@@ -155,14 +167,21 @@ export function hasPlaySettings(c: Partial<Pick<Clip, 'direction' | 'repeat'>>):
   return clipDirection(c) !== 'forward' || (cleanRepeat(c.repeat) ?? 1) > 1;
 }
 
-/** A clip's direction and repeat in plain words, for lists and tooltips: "back and forth, 3 times" (empty when plain). */
+/** How often a clip plays, in plain words. Back and forth counts each direction: "3 ways (there, back, there)". */
+export function repeatWords(dir: ClipDirection, plays: number): string {
+  if (plays === Infinity) return 'Forever';
+  if (!isBackAndForth(dir)) return plays === 1 ? 'Once' : `${plays} times`;
+  return plays === 1 ? 'There only' : plays === 2 ? 'There and back' : plays === 3 ? '3 ways (there, back, there)' : `${plays} ways`;
+}
+
+/** A clip's direction and repeat in plain words, for lists and tooltips: "back and forth, 3 ways" (empty when plain). */
 export function playWords(c: ClipPlaySpec): string {
   const dir = clipDirection(c);
   const out: string[] = [];
   if (dir !== 'forward') out.push(DIRECTION_WORDS[dir].toLowerCase());
   if (c.loop) return out.concat('loops').join(', ');
   const n = clipPlays(c);
-  if (n > 1) out.push(`${n} times`);
+  if (n > 1) out.push(isBackAndForth(dir) ? `${n} ways` : `${n} times`);
   return out.join(', ');
 }
 

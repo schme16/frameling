@@ -13,7 +13,7 @@ import './choices';
 import { artScale, clipLoopWords, defaultSettings, drawnFrames, hasPixelLayers, planExport, scaleAllowed, scaleChoices, type Plan } from './plan';
 import { setDocLength } from '../timeline/ops';
 import { EnginePicker } from './EnginePicker';
-import { openHelp } from '../ui/overlays';
+import { openHelp, openPrefs } from '../ui/overlays';
 import { godotTexturePath } from './sheet';
 import { hasBonesToExport } from './godot-bones-scope';
 import { BonesLookNotes } from './BonesLookNotes';
@@ -132,6 +132,7 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
       return { ...x, sheet };
     });
   const webmPref = useChoice<string>('export.webmCodec');
+  const bounceMode = useChoice<string>('export.clipEngineBounce');
 
   // The popular formats first; the rest open under "More formats" (and stay open while one of them is chosen).
   const featuresVersion = useFeaturesVersion();
@@ -299,6 +300,14 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
                   {engine.game ? `How to use it in ${engine.title}` : 'How to use it'}
                 </button>
               </p>
+              {(sheet.engine === 'godot' || sheet.engine === 'phaser') && !separate && doc.clips.some((c) => c.direction === 'pingpong' || c.direction === 'pingpong-reverse') && (
+                <p className="ex-note">
+                  Back and forth clips: {bounceMode === 'engine' ? (sheet.engine === 'godot' ? "Godot's own ping-pong is used for clips that loop (smaller files, but the two end frames show twice)." : "Phaser's own yoyo is used where it can (smaller files, plays the same).") : 'every frame is listed in order, so the ends show once, just like here.'}{' '}
+                  <button type="button" className="ex-link" onClick={() => openPrefs('behaviour')}>
+                    Change in Preferences
+                  </button>
+                </p>
+              )}
               {sheet.engine === 'godot' && hasBones && !separate && (
                 <div className="ex-seg" role="group" aria-label="What Godot gets">
                   <button type="button" className={sheet.godotRig !== 'bones' ? 'ex-on' : ''} aria-pressed={sheet.godotRig !== 'bones'} title="Every frame drawn onto a sprite sheet. Plays exactly as it looks here." onClick={() => setSheet({ godotRig: 'frames' })}>

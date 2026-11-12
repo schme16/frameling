@@ -8,7 +8,7 @@
  * `fps`; frame 0 is the first frame.
  */
 
-export const FORMAT_VERSION = 1;
+export const FORMAT_VERSION = 2;
 export type Id = string;
 
 /** A colour as CSS hex (`#rrggbb` or `#rrggbbaa`). */

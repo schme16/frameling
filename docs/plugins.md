@@ -108,7 +108,7 @@ where to save, draws the frames exactly as the canvas does, and calls the functi
 - `info`: `{ name, fps, width, height, scale, frameNumbers, clips, markers }`. Each clip is
   `{ name, start, end, loop, direction, repeat }`: `direction` is `'forward'`, `'reverse'`, `'pingpong'` (first to last
   and back, the end frames shown once) or `'pingpong-reverse'`, and `repeat` is how many times it plays when `loop` is
-  false (1 = once; ignored when `loop` is true). `direction` and `repeat` came later and `apiVersion` is still 1, so
+  false (1 = once; ignored when `loop` is true; for the back and forth directions each direction counts as one, so 1 is there only and 2 is there and back). `direction` and `repeat` came later and `apiVersion` is still 1, so
   older plugins that ignore them keep working. `frames` is always the chosen range in order: a plugin that wants a
   clip's play order builds it from these.
 
