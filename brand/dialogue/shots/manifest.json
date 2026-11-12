@@ -173,5 +173,100 @@
   },
   "workspaces.railKept": {
     "file": "shots/workspaces.railKept.png"
+  },
+  "pixel.chooser.title": {
+    "file": "shots/pixel.chooser.title.png"
+  },
+  "pixel.chooser.lead": {
+    "file": "shots/pixel.chooser.lead.png"
+  },
+  "pixel.chooser.unsure": {
+    "file": "shots/pixel.chooser.unsure.png"
+  },
+  "pixel.chooser.picture": {
+    "file": "shots/pixel.chooser.picture.png"
+  },
+  "pixel.chooser.animation": {
+    "file": "shots/pixel.chooser.animation.png"
+  },
+  "pixel.chooser.boards": {
+    "file": "shots/pixel.chooser.boards.png"
+  },
+  "pixel.chooser.sheet": {
+    "file": "shots/pixel.chooser.sheet.png"
+  },
+  "pixel.chooser.ready": {
+    "file": "shots/pixel.chooser.ready.png"
+  },
+  "pixel.keys.ask": {
+    "file": "shots/pixel.keys.ask.png"
+  },
+  "pixel.keys.aseprite": {
+    "file": "shots/pixel.keys.aseprite.png"
+  },
+  "pixel.way.change": {
+    "file": "shots/pixel.way.change.png"
+  },
+  "pixel.sheet.picture": {
+    "file": "shots/pixel.sheet.picture.png"
+  },
+  "pixel.sheet.animation": {
+    "file": "shots/pixel.sheet.animation.png"
+  },
+  "pixel.sheet.boards": {
+    "file": "shots/pixel.sheet.boards.png"
+  },
+  "pixel.sheet.each": {
+    "file": "shots/pixel.sheet.each.png"
+  },
+  "pixel.sheet.one": {
+    "file": "shots/pixel.sheet.one.png",
+    "note": "Only the open board goes on the sheet."
+  },
+  "pixel.sheet.cast": {
+    "file": "shots/pixel.sheet.cast.png"
+  },
+  "pixel.quest.praise": {
+    "file": "shots/pixel.quest.praise.png",
+    "note": "The one-word cheer over the quest bar in pixel quests. It takes turns through the list."
+  },
+  "pixel.keys.frameling": {
+    "file": "shots/pixel.keys.frameling.png"
+  },
+  "pixel.empty": {
+    "file": "shots/pixel.empty.png",
+    "note": "Shown for a brand new empty sprite, once ever. (Shown again here so the review has a picture.)"
+  },
+  "pixel.altPick": {
+    "file": "shots/pixel.altPick.png"
+  },
+  "pixel.perfect": {
+    "file": "shots/pixel.perfect.png"
+  },
+  "pixel.frame2": {
+    "file": "shots/pixel.frame2.png"
+  },
+  "pixel.twoBoards.ask": {
+    "file": "shots/pixel.twoBoards.ask.png"
+  },
+  "pixel.ase.open": {
+    "file": "shots/pixel.ase.open.png"
+  },
+  "pixel.sheet.baked": {
+    "file": "shots/pixel.sheet.baked.png",
+    "note": "Godot here; it names Unity, Phaser or PixiJS too, and \"your engine\" for the others."
+  },
+  "pixel.sheet.many": {
+    "file": "shots/pixel.sheet.many.png"
+  },
+  "pixel.folded": {
+    "file": "shots/pixel.folded.png"
+  },
+  "pixel.makeItMove": {
+    "file": "shots/pixel.makeItMove.png"
+  },
+  "pixel.scale.hover": {
+    "file": "shots/pixel.scale.hover.png",
+    "note": "The words are the tooltip when you hover Quill. The picture shows him standing next to the sprite at the same scale."
   }
 }

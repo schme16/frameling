@@ -133,7 +133,7 @@ const GROUPS = {
     const A = '__framelingArtboards';
     const say = (id, vars) => ({ js: `${P}.say(${JSON.stringify(id)}, ${JSON.stringify(vars ?? {})})` });
     const pick = (way) => ({ js: `document.querySelector('.px-way-card[data-way="${way}"]')?.click()` });
-    const toastShot = (id, note) => [{ wait: 700 }, { shot: [id], crop: TOAST, pad: 60, ...(note ? { note } : {}) }, { js: `document.querySelectorAll('.ui-toast').forEach((t) => t.remove())` }];
+    const toastShot = (id, note) => [{ wait: 700 }, { shot: [id], crop: TOAST, pad: 60, ...(note ? { note } : {}) }, { js: `document.querySelectorAll('.ui-toast-x').forEach((b) => b.click())` }, { wait: 300 }];
     const sheetSays = (ids, note) => ({ shot: ids, crop: '.px-sheet-says', pad: 20, ...(note ? { note } : {}) });
     const openExport = [{ js: `__frameling.run('file.export')` }, { wait: 1200 }];
     const closeExport = [{ key: 'Escape' }, { wait: 500 }];
@@ -158,8 +158,9 @@ const GROUPS = {
       { js: `document.querySelector('.ui-choice-opt')?.click(); document.querySelector('.ui-choice-foot .ui-btn-primary')?.click()` },
       ...toastShot('pixel.keys.aseprite'),
       { js: `${A}.setChoice('pixel.keys', undefined); __frameling.prefs.set({ keymapSet: 'frameling' })` },
+      { wait: 400 },
       { js: `${P}.askKeys()` },
-      { wait: 700 },
+      { wait: 900 },
       { js: `document.querySelectorAll('.ui-choice-opt')[1]?.click(); document.querySelector('.ui-choice-foot .ui-btn-primary')?.click()` },
       ...toastShot('pixel.keys.frameling'),
       // Moments
@@ -188,13 +189,13 @@ const GROUPS = {
       { js: `${P}.openChangeWay()` },
       { wait: 900 },
       { shot: ['pixel.way.change'], crop: '.px-changeway', pad: 10 },
-      { key: 'Escape' },
+      { js: `document.querySelector('.px-changeway .io-foot .io-btn')?.click()` },
       { wait: 400 },
       { js: `__frameling.showPanel('preview')` },
-      { js: `${P}.newSprite('picture', 16)` },
-      { wait: 800 },
-      { js: `${P}.makeItMove()` },
-      { wait: 1500 },
+      { js: `__frameling.template('hero-sprites')` },
+      { wait: 1200 },
+      { js: `document.querySelectorAll('.px-preview-zoom [role="radio"]')[1]?.click()` },
+      { wait: 1200 },
       { shot: ['pixel.scale.hover'], crop: '.px-preview-stage', pad: 16, note: 'The words are the tooltip when you hover Quill. The picture shows him standing next to the sprite at the same scale.' },
       // Export: Quill's sentence for each way
       { js: `${P}.newSprite('picture', 32)` },
