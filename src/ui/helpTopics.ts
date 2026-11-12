@@ -483,7 +483,7 @@ Every workspace has a **Save as a file** button. Send the file to a friend. On t
 
 Prefer a message? **Copy as text** puts the whole workspace on your clipboard. Your friend pastes it into **Paste workspace text here** and presses **Add it to my workspaces**.
 
-A shared workspace moves panels around and brings its tool arrangement. If it names a panel or tool your Frameling doesn't have, that one is skipped, and a panel or tool it doesn't mention goes where it normally lives.
+A shared workspace moves panels around (including any [stacked groups](help:panel-groups)) and brings its tool arrangement and group names. If it names a panel or tool your Frameling doesn't have, that one is skipped, and a panel or tool it doesn't mention goes where it normally lives.
 
 ## Reset
 
@@ -549,6 +549,10 @@ The right side has a **rail** down its edge: an icon with a name for every place
 
 Drag a panel's **tab** (or its name on the rail) to another place to reorder it, or onto another zone to move it there. While you drag, bands light up along the edges of the canvas: drop on one to dock there. Right-click a tab for the same moves as a list, and to **Rename** it.
 
+## Stack groups
+
+A side can hold more than one group of tabs, stacked one over the other: **Layers** on top and **Colours** underneath, say, each with its own tabs. See [Stack panels in groups](help:panel-groups).
+
 ## When the tabs don't all fit
 
 On the left and bottom, when a zone gets narrow, the other tabs shrink to just their icon (hover one to see its name). If even that's not enough, a **+N** button lists the rest.
@@ -572,6 +576,46 @@ Press the **x** on a tab (or by a panel's name on the right) to close it, or pre
 Your layout is remembered. Save arrangements as [workspaces](help:workspaces).`,
   },
   {
+    id: 'panel-groups',
+    order: 2,
+    media: 'panel-groups.mp4',
+    title: 'Stack panels in groups',
+    section: 'Workspace',
+    summary: 'Put two sets of tabs on one side, one over the other, each with its own tabs.',
+    keywords: ['stack', 'split', 'group', 'groups', 'tabs', 'below', 'above', 'beside', 'two panels', 'layers and colours', 'splitter', 'resize', 'join', 'merge', 'dock'],
+    body: `Sometimes you want two panels in view at once, not one behind the other. Give each its own **group**: a side can hold up to four, one over the other (or side by side along the bottom and top), and each group has its own tabs.
+
+## Make a group
+
+Drag a panel's tab (or its name on the right-hand rail) to the **top or bottom edge** of a group's body. A gold box lights up over the half the new group would take, and the label says **new group below** (or above). Let go. The panel now has a group of its own and the two share the room.
+
+Along the bottom and top, groups sit side by side, so the **left and right edges** do the same.
+
+Prefer no dragging? Right-click a tab (or press the menu key on it) and choose **Move to a new group below** or **above**. Or press \`Ctrl+K\` and type **Put this panel in its own group**.
+
+## Fill a group
+
+Drag any tab onto another group's tab bar, or into its body, to put it there. Press **Move into the group above** or **below** in a tab's menu to do the same without dragging. A group left with no tabs goes away, and the one beside it takes the room.
+
+## Resize
+
+Pull the thin line between two groups. Or press **Tab** until it has the focus, then use the arrow keys (up and down on the left and right sides, left and right along the bottom and top). **Shift** makes bigger steps, **Home** and **End** go to the smallest and largest, and **Enter** makes the two even. Double-click the line for the same.
+
+## Put them back
+
+Drag the tabs into one group again, or right-click a tab and choose **Join this side into one group**. It is also in the command search.
+
+## On the right side
+
+The right side keeps its **Properties** and rail in the first group, at the top. Any group you stack under it is a plain group of tabs across the whole width of the side, with its own tab bar. Fold the side away and every group shrinks to its icons.
+
+## Kept with your workspace
+
+Groups are part of the layout, so they are saved in your [workspaces](help:workspaces) and travel in the files you share. A layout from an older Frameling opens as one group per side, just as it was.
+
+See also [Panels](help:panels).`,
+  },
+  {
     id: 'floating-windows',
     order: 3,
     media: 'floating-windows.mp4',
@@ -591,7 +635,7 @@ A window can hold several panels as tabs. Drag a tab onto another window's tabs 
 
 ## Move and resize
 
-Drag the title bar to move a window. Pull any edge or corner to resize it. Click a window to bring it to the front. Double-click the bar to dock it back.
+Drag the title bar to move a window. Pull any edge or corner to resize it, or use the keyboard (see below). Click a window to bring it to the front. Double-click the bar to dock it back.
 
 ## Dock it again
 
@@ -611,7 +655,7 @@ The tool strip has a small grip at its top. Drag it to float the tools, or onto 
 
 ## With the keyboard
 
-Press the menu key on a tab, a window's grip or the tool strip's grip to open its menu. On a window's grip, the arrow keys nudge it. Every move is also in the command search.
+Press the menu key on a tab, a window's grip or the tool strip's grip to open its menu. On a window's grip, the arrow keys nudge it, and **Alt** with the arrow keys makes it bigger or smaller (right and down grow it, left and up shrink it). **Shift** makes bigger steps, and **Alt** with **Enter** goes back to the usual size. The new size is read out. The window's menu has **Make it bigger**, **Make it smaller** and **Back to the usual size** too. Every move is also in the command search.
 
 See also [Panels](help:panels) and [Workspaces](help:workspaces).`,
   },
@@ -652,7 +696,7 @@ Tool keys can be changed in [keyboard shortcuts](help:keyboard-shortcuts).`,
     section: 'Basics',
     media: 'tool-arrange.mp4',
     summary: 'Drag tools into the order you like, into other groups, or into a group of your own.',
-    keywords: ['tools', 'toolbar', 'tool strip', 'groups', 'group', 'order', 'reorder', 'rearrange', 'arrange', 'move', 'drag', 'reset', 'default', 'new group', 'stacked'],
+    keywords: ['tools', 'toolbar', 'tool strip', 'groups', 'group', 'order', 'reorder', 'rearrange', 'arrange', 'move', 'drag', 'reset', 'default', 'new group', 'stacked', 'group name'],
     body: `Your tools, your order. Everything on the [tool strip](help:tool-strip) can be moved.
 
 ## With the mouse
@@ -667,9 +711,13 @@ Click or Tab to a tool, then hold **Alt** and press an arrow key. The tool moves
 
 Right-click a tool, or press the menu key on it. **Move to** lists every group. **Move to a new group** gives the tool a group by itself. A group that ends up with no tools goes away.
 
+## Name your groups
+
+A group you make is called **Group 2**, **Group 3** and so on. Give it a name of your own: double-click the thin divider above the group, or right-click a tool (or the divider) and choose **Rename**. Type a name and press **Enter**. Rest on the divider to see the name again. Clear the name to go back to the usual one. You can rename the usual groups too.
+
 ## Put them back
 
-Right-click the strip and choose **Reset tools to default**. It puts back the tools of the workspace you are in, the way that workspace comes. It is also in the command search.
+Right-click the strip and choose **Reset tools to default**. It puts back the tools and the group names of the workspace you are in, the way that workspace comes. It is also in the command search.
 
 ## One for each workspace
 
@@ -679,11 +727,11 @@ Change the tools in one workspace and the others stay as they were. Switch to an
 
 ## Saved and shared
 
-When you save your own workspace, the tools as they are now become its starting tools, and the workspace you share carries them along. An older workspace without any simply uses the usual groups. If you had arranged your tools before workspaces had their own, that arrangement is now yours for the workspace you were in.
+When you save your own workspace, the tools and group names as they are now become its starting ones, and the workspace you share carries them along. An older workspace without any simply uses the usual groups. If you had arranged your tools before workspaces had their own, that arrangement is now yours for the workspace you were in.
 
 ## In the stacked style
 
-With **Tool rail style** set to **Stacked** in Preferences, press and hold a group's button, or right-click it, and drag a tool from the list onto another group's button, or onto a gap to start a new group.`,
+With **Tool rail style** set to **Stacked** in Preferences, press and hold a group's button, or right-click it, and drag a tool from the list onto another group's button, or onto a gap to start a new group. The list is headed by the group's name, with a pencil button to rename it. Rest on a group's button to see its name there too.`,
   },
   {
     id: 'menus',

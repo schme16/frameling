@@ -137,7 +137,7 @@ const FloatWindow = memo(function FloatWindow({ f, z, win }: { f: FloatWin; z: n
       aria-label={`Move ${title}. Arrow keys nudge it. Alt and the arrow keys resize it.`}
       aria-keyshortcuts="ArrowLeft ArrowRight ArrowUp ArrowDown Alt+ArrowLeft Alt+ArrowRight Alt+ArrowUp Alt+ArrowDown Alt+Enter"
       data-tip="Move window"
-      data-tip-desc="Drag the title bar to move it. Drop it on a side of the canvas to dock it. From the keyboard, arrow keys move it and Alt with the arrows resizes it (Shift for bigger steps, Alt+Enter for the usual size)."
+      data-tip-desc="Drag the title bar to move it. Drop it on a side of the canvas to dock it. From the keyboard, arrow keys move it and Alt with the arrows resizes it (Shift for bigger steps, Alt with Enter for the usual size)."
       data-help="floating-windows"
       onKeyDown={(e) => {
         const step = e.shiftKey ? 64 : 16;

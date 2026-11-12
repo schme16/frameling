@@ -205,7 +205,18 @@ const entries = [
       wait(1400),
       ...dragSlow([[35, 453], [46, 420], [56, 387]], { n: 8, after: 70, hold: 1200 }),
       { move: [300, 500] },
-      wait(1800),
+      wait(1400),
+      // Then the new group gets a name: double-click the divider above it, type, Save.
+      js(`(() => { const gap = document.querySelector('[data-tool-id="pen"]').closest('.ui-tool-group').previousElementSibling; gap.dispatchEvent(new MouseEvent('dblclick', { bubbles: true })); return true; })()`),
+      wait(900),
+      { type: 'Pens', after: 900 },
+      clickText('.ui-dock-rename button', 'Save'),
+      { move: [300, 500] },
+      wait(900),
+      // Resting on the divider shows the name.
+      { move: [56, 249] },
+      { move: [57, 250] },
+      wait(2200),
       { rec: 'stop' },
     ],
   },
@@ -257,6 +268,24 @@ const entries = [
     name: 'panels',
     prefs: CALM,
     steps: [template('bouncing-ball'), wait(800), clickText('[data-panels-button]', 'Panels'), wait(900), ...settle, wait(300), { shot: '@', crop: [760, 120, 520, 640] }],
+  },
+  // Stacked groups: Preview dragged off the rail to the bottom edge of the right side, then the line between them pulled.
+  {
+    name: 'panel-groups',
+    prefs: CALM,
+    steps: [
+      template('bouncing-ball'),
+      wait(1000),
+      ...settle,
+      { rec: '@', crop: [880, 40, 400, 760], every: 70 },
+      wait(1200),
+      ...dragSlow([[1233, 338], [1150, 480], [1090, 700], [1090, 712]], { n: 8, after: 70, hold: 1400 }),
+      wait(1400),
+      ...dragSlow([[1090, 404], [1090, 360], [1090, 290]], { n: 8, after: 70, hold: 500 }),
+      { move: [600, 500] },
+      wait(1800),
+      { rec: 'stop' },
+    ],
   },
 
   // Undo and redo: three strokes drawn, taken back one at a time, then put back.
@@ -427,6 +456,12 @@ const entries = [
       ...dragSlow([[1233, 290], [900, 250], [760, 233]], { n: 8, after: 70, hold: 1000 }),
       wait(1600),
       ...dragSlow([[860, 233], [700, 190], [540, 135]], { n: 9, after: 70, hold: 600 }),
+      wait(1000),
+      // Then the keyboard: Alt and Shift with the arrow keys on the window's grip make it bigger.
+      js(`(() => { document.querySelector('.ui-float-grip').focus(); return true; })()`),
+      wait(700),
+      ...[1, 2, 3, 4].map(() => ({ key: 'Right', mods: ['alt', 'shift'], after: 260 })),
+      ...[1, 2, 3].map(() => ({ key: 'Down', mods: ['alt', 'shift'], after: 260 })),
       wait(1800),
       { rec: 'stop' },
     ],
