@@ -382,6 +382,21 @@ npm run build
 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/effects.cjs
 ```
 
+## Shadow and glow softness per format: scripts/e2e/shadow-sigma.cjs
+
+Draws a box with a Shadow or a Glow of several softness values in the editor (native canvas filter and the JS fallback)
+and in SVG, Moving SVG, Lottie (lottie-web's SVG player, and the dotLottie player when `DOTLOTTIE_DIR` is set, see
+dotlottie-check.cjs), PDF, .ai and PSD, then fits the blur's gaussian sigma from the pixels and prints one table. Fails when a
+format is more than 0.6 px (or 12 percent) of sigma away from the editor. Needs no build. The mapping it found, pinned in
+`test/export/shadow-sigma.test.ts`: Chromium's canvas `drop-shadow(x y b)` blurs with a sigma of b (not the CSS spec's b / 2),
+Shadow softness is that sigma in SVG, Lottie's Softness is four times it (lottie-web and ThorVG use Softness / 4), Glow uses
+size / 2 everywhere. Formats that bake the layer (PDF, .ai, PSD, PNG, video, sheets, Godot, Unity, Interactives) use the editor's
+own renderer.
+
+```bash
+DOTLOTTIE_DIR=$PWD/pkg/package AMOUNTS=4,8,12,16 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/shadow-sigma.cjs [outDir]
+```
+
 ## Vector exports against the renderer: scripts/e2e/vector-check.cjs
 
 Renders test documents (Bouncing logo, a shape tween with hints, a camera move with parallax, the Bouncing ball, a pixel

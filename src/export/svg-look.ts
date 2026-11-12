@@ -78,8 +78,8 @@ export function effectsFilter(host: SvgLookHost, effects: LayerEffect[] | undefi
       prev = out;
     } else if (e.kind === 'shadow') {
       const [b, o, f, c, out] = [res(), res(), res(), res(), res()];
-      // The canvas's drop-shadow(x y b): a blur of b / 2.
-      parts.push(prim(host, 'feGaussianBlur', ` in="${prev}" result="${b}"`, { stdDeviation: num('softness').map((v) => v / 2) }));
+      // Chromium's canvas drop-shadow(x y b) blurs with a sigma of b itself (measured, see test/export/shadow-sigma.test.ts), not the CSS spec's b / 2.
+      parts.push(prim(host, 'feGaussianBlur', ` in="${prev}" result="${b}"`, { stdDeviation: num('softness') }));
       parts.push(prim(host, 'feOffset', ` in="${b}" result="${o}"`, { dx: num('x'), dy: num('y') }));
       parts.push(prim(host, 'feFlood', ` flood-color="${col.color}" result="${f}"`, { 'flood-opacity': num('opacity').map((v) => Math.min(1, v * col.alpha)) }));
       parts.push(`<feComposite in="${f}" in2="${o}" operator="in" result="${c}"/>`);

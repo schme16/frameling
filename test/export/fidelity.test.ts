@@ -64,10 +64,10 @@ describe('Lottie keeps the look', () => {
     expect(ef[0].ty).toBe(29);
     expect(ef[0].ef[0].v.k).toBeCloseTo(10);
     expect(ef[1].ty).toBe(25);
-    // Straight down is 180 degrees in Lottie, softness doubles (sigma = softness / 4 there).
+    // Straight down is 180 degrees in Lottie, softness is four times ours (sigma = softness / 4 there, ours is the sigma).
     expect(ef[1].ef[2].v.k).toBe(180);
     expect(ef[1].ef[3].v.k).toBe(4);
-    expect(ef[1].ef[4].v.k).toBe(10);
+    expect(ef[1].ef[4].v.k).toBe(20);
     expect(notes).toEqual([]);
   });
 
