@@ -16,10 +16,33 @@ registerChoice<FitMode>({
   silent: true,
   help: 'Used by Play all in order and by exporting the artboards all in order, as one.',
   options: [
-    { value: 'bars', label: 'Fit (bars)', detail: 'The whole shot shows, with bars at the sides or top and bottom (the stage colour).' },
+    { value: 'bars', label: 'Fit (bars)', detail: 'The whole shot shows, with bars at the sides or top and bottom.' },
     { value: 'fill', label: 'Fill (crop)', detail: 'The shot covers the whole picture and what hangs over is cropped.' },
   ],
 });
+
+export type BarColor = 'background' | 'black' | 'white';
+
+registerChoice<BarColor>({
+  id: 'artboards.barColor',
+  title: 'Bars round a shot that does not fill the picture',
+  question: 'What colour should the bars be?',
+  category: 'Export',
+  default: 'background',
+  silent: true,
+  help: 'The picture is the first shot, so by default the bars are its background colour.',
+  options: [
+    { value: 'background', label: 'Background colour', detail: 'The first shot\'s stage colour (none if it is see-through).' },
+    { value: 'black', label: 'Black', detail: 'Classic letterbox bars.' },
+    { value: 'white', label: 'White' },
+  ],
+});
+
+/** The bars' colour: what Preferences says, given the picture's own background (null means see-through). */
+export function barColorFor(background: string | null): string | null {
+  const c = currentChoice<BarColor>('artboards.barColor');
+  return c === 'black' ? '#000000' : c === 'white' ? '#ffffff' : background;
+}
 
 /** How shots of different sizes fit: what Preferences says (Fit by default). */
 export const currentFit = (): FitMode => currentChoice<FitMode>('artboards.fit');

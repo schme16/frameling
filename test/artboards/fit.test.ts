@@ -66,7 +66,7 @@ describe('joining shots of different sizes', () => {
     const m = cameraMatrix(out, cameraViewOn(out, camOf(out), 4)!);
     const shape = d.shapes[0];
     if (shape.type !== 'path') throw new Error('bars should be a path');
-    expect(shape.fill).toBe('#112233');
+    expect(shape.fill).toBe('#ffffff');
     const top = shape.paths[0].points.map((p) => apply(m, p.x, p.y));
     // The top bar ends at the picture's y 8 and reaches off the top; the bottom one starts at 24.
     expect(Math.max(...top.map((p) => p.y))).toBeCloseTo(8);
@@ -101,6 +101,28 @@ describe('joining shots of different sizes', () => {
     expect(view).toEqual({ x: 40, y: 10, zoom: 1, rotation: 0 });
     // The shot's own drawing is untouched.
     expect(k.view.zoom).toBe(2);
+  });
+
+  it('bars are the first shot background unless Preferences says otherwise', () => {
+    const { doc, ids } = two(64, 32);
+    setChoice('artboards.barColor', 'black');
+    const bars = join(doc, ids, { fit: 'bars' }).doc.layers.find((l) => l.name === 'Wide bars')!;
+    const d = join(doc, ids, { fit: 'bars' }).doc.drawings;
+    expect(JSON.stringify(d[bars.cels[0].drawingId])).toContain('#000000');
+    setChoice('artboards.barColor', undefined);
+  });
+
+  it('a fitted shot whose camera has gaps still gets the fit in the gaps', () => {
+    const { doc, ids } = two(64, 32);
+    const k = newCameraDrawing({ x: 40, y: 10, zoom: 2, rotation: 0 });
+    doc.drawings[k.id] = k;
+    // The camera has a key for frame 1 only (of 3).
+    artboardsOf(doc)[1].content!.layers.push({ id: 'cam', name: 'Camera', kind: 'camera', visible: true, locked: false, opacity: 1, cels: [{ id: 'kc', start: 1, length: 1, drawingId: k.id }] } as CameraLayer);
+    const { doc: out } = join(doc, ids, { fit: 'bars' });
+    const cam = camOf(out);
+    expect(cameraViewOn(out, cam, 4)).toEqual({ x: 32, y: 16, zoom: 0.5, rotation: 0 });
+    expect(cameraViewOn(out, cam, 5)).toEqual({ x: 40, y: 10, zoom: 1, rotation: 0 });
+    expect(cameraViewOn(out, cam, 6)).toEqual({ x: 32, y: 16, zoom: 0.5, rotation: 0 });
   });
 
   it('one bar colour for all when asked, none when same size', () => {

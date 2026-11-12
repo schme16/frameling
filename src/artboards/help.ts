@@ -12,7 +12,7 @@ registerHelpTopics([
 
 **Add one:** press **New artboard** in **View > Artboards**, or pick the **Artboard** tool (**Shift+W**) and drag a box on the empty space round the page.
 
-**Draw on any of them:** just click one with any tool. It opens, and you draw there. The others stay on show around it, each on the frame you left it on. Onion skin and the timeline belong to the artboard you have open.
+**Draw on any of them:** just click one with any tool. It opens, and you draw there. The others stay on show around it, each on the frame you left it on. The timeline and onion skin follow you: they always show the artboard you have open, and clicking another one (or its name) opens it and brings its timeline with it.
 
 **With the Artboard tool:**
 - **Drag** an artboard to move it. Hold **Shift** to keep it level.
@@ -35,7 +35,7 @@ To export them, see [exporting artboards](help:artboards-export). For animation,
     keywords: ['shots', 'scenes', 'storyboard', 'animatic', 'sequence', 'cuts', 'film', 'play all', 'artboards animation'],
     body: `For animation, think of each [artboard](help:artboards) as a **shot**: it has its own layers, its own timeline and its own length, so a 12 frame close-up and a 48 frame wide shot live happily in one file. Characters made into [symbols](help:symbols) can appear in every shot.
 
-**Make shots:** add an artboard for each one (the same size as the first, so they cut together), or **Duplicate artboard** to start a shot from the last one.
+**Make shots:** add an artboard for each one, or **Duplicate artboard** to start a shot from the last one. They can be different sizes; see [shots of different sizes](help:artboards-letterbox).
 
 **Play them in order:** press **Play all in order** in the Artboards panel. They play one after another in their own window, in the panel's order. The strip under the picture shows each shot; click one to jump to it. Drag them in the panel to change the order.
 
@@ -43,8 +43,29 @@ To export them, see [exporting artboards](help:artboards-export). For animation,
 - **All in order, as one** makes one video or GIF of every shot back to back. Each shot becomes a named clip, and its sounds and markers come along.
 - **Each as its own file** gives a file per shot.
 - **This artboard** exports just the one you have open.
+`,
+  },
+  {
+    id: 'artboards-letterbox',
+    title: 'Shots of different sizes: bars or fill',
+    section: 'Animating',
+    media: 'artboards-letterbox.png',
+    summary: 'Shots of different sizes can play and export as one film. Fit shows the whole shot with bars; Fill covers the picture and crops what hangs over.',
+    keywords: ['letterbox', 'pillarbox', 'bars', 'black bars', 'fit', 'fill', 'crop', 'different sizes', 'aspect ratio', 'join shots', 'mixed sizes'],
+    body: `The picture of a film is the size of its **first** shot. A shot of another size is placed into that picture, in one of two ways:
 
-To join shots into one video they need to be the same size; Frameling tells you if one isn't.`,
+- **Fit (bars)** is the default. The whole shot shows, as big as it can be, centred, with **bars** at the sides (a tall shot) or top and bottom (a wide one). Nothing is cut off, and anything hanging off the edge of the shot's stage stays hidden.
+- **Fill (crop)** makes the shot cover the whole picture, so no bars, but what hangs over the edges is **cropped**.
+
+**Where to pick:** in **Play all in order** (the **Fit (bars)** and **Fill (crop)** buttons next to **Loop**, shown when the shots differ in size), and in the **Export** dialog under **All in order, as one**. It is the same setting in both, and Frameling remembers it. It is also in **Preferences > Behaviour**, with the **bar colour**: the first shot's background colour (the default), black or white.
+
+**Good to know:**
+- A shot's own camera moves still work. Frameling zooms them for the fit.
+- Shots the same size as the picture are left exactly as they are.
+- To change the picture's size, put the shot you want first in the Artboards panel (drag it to the top).
+- Exporting **each as its own file** never fits anything: every shot keeps its own size.
+
+See [artboards as shots](help:artboards-shots) and [exporting artboards](help:artboards-export).`,
   },
   {
     id: 'artboards-export',
@@ -57,7 +78,7 @@ To join shots into one video they need to be the same size; Frameling tells you 
 
 - **This artboard** exports the one you have open, as always.
 - **Each as its own file** exports every ticked artboard separately, named after it (or its **Export as** name). The first time, Frameling asks whether they go **into a folder** or **one zip file**, and remembers (change it in Preferences > Behaviour).
-- **All in order, as one** joins them end to end, for videos, GIFs and other animations. See [shots](help:artboards-shots).
+- **All in order, as one** joins them end to end, for videos, GIFs and other animations. Shots of different sizes get bars or are cropped to fill: see [shots of different sizes](help:artboards-letterbox).
 - **Packed onto one sheet** (with **Sprite sheet** picked) puts every frame of every ticked artboard on one picture, packed tightly, with a JSON atlas. Each artboard is an animation named after it, and its clips come along as "artboard/clip".
 
 **File > Export artboards** and **File > Pack artboards into one sprite sheet** open the dialog already set up.`,

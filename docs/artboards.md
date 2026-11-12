@@ -51,7 +51,11 @@ is lost (`src/artboards/io.ts`, tests in `test/artboards/model.test.ts`).
   reorder, rename, duplicate (with its own copies of the drawings), delete (the last one stays). Below: name, export
   name, size and background (or see-through). Buttons: New artboard, Fit all, Play all in order, Export artboards,
   Line up.
-- **Onion skin and timeline** belong to the open artboard (they read `doc.layers`).
+- **Onion skin and timeline** belong to the open artboard (they read `doc.layers`), and follow you: a press with any
+  tool but the view tools and the Artboard tool on another artboard, or on its name above it, opens it first
+  (`openArtboardUnder` in `ops.ts`, called by the pointer-down hook), so the timeline, stage and tool all switch
+  together. There is one source of truth: the open artboard is the one with no `content` (`doc.activeArtboard` only
+  says which when that is ambiguous), and everything else, the timeline included, reads the document's own fields.
 - **View**: Zoom to artboard, Fit all artboards (Ctrl+Alt+0), next and previous (Alt+PageDown, Alt+PageUp).
 - **Export** (a "Which artboards" row in the Export dialog, shown when there's more than one):
   - This artboard: the usual export.
@@ -83,13 +87,35 @@ by artboards. A/B: `brand/ab/artboards/ab.png` and `ab.mp4` (A built, B mocked).
 - **Export "All in order, as one"** (video and animation formats) builds one document with `joinShots`: the shots end
   to end, each a clip named after it, markers and sounds moved along, a shot's own stage colour as a filled layer
   underneath when they differ, one merged camera layer (the plain view where a shot has none), and in-betweens cut at
-  each shot's end. Shots must be the same size; the dialog says so when they aren't.
+  each shot's end. Shots of different sizes are fitted (below).
 - **Export "Each as its own file"** gives a file per shot.
+
+### Shots of different sizes
+
+The picture is the first shot's size (`joinShots` takes a `size` to override). A shot of another size is placed in it
+by **camera keys**, not by copying or scaling anything: the joined film's one camera layer gets, for that shot, the
+view `{ x: width / 2, y: height / 2, zoom: k }` (the shot's own camera keys have their zoom multiplied by `k`, which
+is exact because zoom is a ratio), so every exporter and the renderer handle it with no new code. `fit.ts` is the
+pure maths (`fitPlacement`), and the choice `artboards.fit` (Preferences > Behaviour, and the Fit/Fill buttons in the
+player and the Export row) says which:
+
+- **Fit (bars)**, the default: `k` is the smaller ratio, so the whole shot shows, centred. The bars are a layer on top
+  of the shot's layers, drawn in stage space where the camera will put the picture's edges (one drawing per
+  distinct camera view, so a still shot has one), which also hides whatever hangs off the stage. Colour: the first
+  shot's background by default, or black or white (choice `artboards.barColor`); no bars if it is see-through.
+- **Fill (crop)**: `k` is the larger ratio, no bars, the overhang is cropped.
+
+A shot the same size as the picture is untouched, and if no shot differs and none has a camera, no camera layer is
+added (the join is exactly as before). A shot's depth (parallax) layers scale by `k` to the power of their factor
+under a camera, so on a fitted shot they sit a little off the plain fit; rarely visible. Play all in order uses the
+same maths on its canvas. Each-as-its-own-file and the atlas never fit: every artboard keeps its size.
+
+Checked end to end by `scripts/e2e/artboards.cjs` (pixel colours of the bars, the crop and the hidden overhang).
 
 ### Not done yet / later
 
 - When exporting several, the Export dialog's own summary line and "A clip" still describe the open artboard (the
   Which artboards row gives the joined total).
-- Shots of different sizes can't be joined (letterboxing would be the next step).
+- A picture size other than the first shot's (the code takes one; there is no control for it yet).
 - Transitions between shots, and a storyboard view of all shots as a strip.
 - Variations (B), if it turns out to be wanted: an optional `crops` list on an artboard, exported as extra files.

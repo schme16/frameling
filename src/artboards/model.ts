@@ -11,7 +11,7 @@ import { cameraInverse, cameraViewOn } from '../core/camera';
 import { newPixelLayer, newVectorLayer, pruneDrawings, uid } from '../core/doc';
 import { rootDoc } from '../core/symbols';
 import { fileSafe } from '../export/plan';
-import { currentFit, fitPlacement, sameSize, type FitMode, type Placement } from './fit';
+import { barColorFor, currentFit, fitPlacement, sameSize, type FitMode, type Placement } from './fit';
 
 /** The id of the artboard a document without any has. */
 export const FIRST_ID = 'artboard-1';
@@ -431,13 +431,13 @@ export interface JoinOptions {
   fit?: FitMode;
   /** The picture's size (default: the first shot's). */
   size?: { width: number; height: number };
-  /** The colour of the bars (default: each shot's own stage colour). */
+  /** The colour of the bars (default: the picture's background, or what Preferences says). */
   barColor?: string | null;
 }
 
 /**
  * Several artboards one after another as one document, for playing or exporting them as a single film. The picture
- * is the first shot's size (or `size`); a shot of another size is fitted into it, with bars (the stage colour) or
+ * is the first shot's size (or `size`); a shot of another size is fitted into it, with bars (the picture's background colour) or
  * cropped to fill (see fit.ts), by a camera key set for each of its frames. Each shot becomes a clip named after it,
  * its markers and sounds move along with it, and the stage colour of a shot that has its own goes in as a filled
  * layer underneath.
@@ -503,6 +503,23 @@ export function joinShots(doc: Doc, ids: Id[], opts: JoinOptions = {}): { doc: D
             c.drawingId = nd;
           }
         }
+        if (place) {
+          // Frames where the shot's camera has no key show its plain view, which still needs the fit.
+          const plain = (from: number, to: number, n: number) => {
+            const dId = tag(`cam-gap${n}`);
+            out.drawings[dId] = { id: dId, kind: 'camera', view: { x: v.width / 2, y: v.height / 2, zoom: place.k, rotation: 0 } };
+            return { id: tag(`camc-gap${n}`), start: from, length: to - from, drawingId: dId };
+          };
+          const filled: typeof cels = [];
+          let cursor = at;
+          for (const c of [...cels].sort((a, b) => a.start - b.start)) {
+            if (c.start > cursor) filled.push(plain(cursor, c.start, filled.length));
+            filled.push(c);
+            cursor = Math.max(cursor, c.start + c.length);
+          }
+          if (cursor < at + len) filled.push(plain(cursor, at + len, filled.length));
+          cels.splice(0, cels.length, ...filled);
+        }
         camera.cels.push(...cels);
       } else {
         const dId = tag('cam');
@@ -510,7 +527,7 @@ export function joinShots(doc: Doc, ids: Id[], opts: JoinOptions = {}): { doc: D
         camera.cels.push({ id: tag('camc'), start: at, length: len, drawingId: dId });
       }
     }
-    const barColor = opts.barColor === undefined ? v.background : opts.barColor;
+    const barColor = opts.barColor === undefined ? barColorFor(views[0].background) : opts.barColor;
     if (place?.bars.length && barColor) out.layers.push(barsLayer(out, v, cam, place, barColor, { w, h }, at, len, tag, shot.name));
     out.clips.push({ id: tag('clip'), name: shot.name, start: at, end: at + len - 1, loop: false });
     for (const m of v.markers) if (m.frame < len) out.markers.push({ ...m, id: tag(m.id), frame: m.frame + at });

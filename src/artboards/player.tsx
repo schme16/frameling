@@ -8,7 +8,7 @@ import { renderFrame } from '../core/render';
 import { Modal, mountModal } from '../io/mount';
 import { leaveTileEdit } from '../tiles/tileEdit';
 import { artboardDoc, artboardsOf, shotAt } from './model';
-import { fitPlacement, sameSize, type FitMode } from './fit';
+import { barColorFor, fitPlacement, sameSize, type FitMode } from './fit';
 
 export interface Reel {
   shots: { id: Id; name: string; doc: Doc }[];
@@ -88,18 +88,25 @@ function ShotsPlayer({ close }: { close: () => void }) {
     const oy = (H - pic.height * k) / 2;
     g.setTransform(k, 0, 0, k, ox, oy);
     g.imageSmoothingEnabled = !d.layers.some((l) => l.kind === 'pixel');
-    // Bars and stage are the shot's own colour, so they read as one.
-    g.fillStyle = d.background ?? '#ffffff';
-    g.fillRect(0, 0, pic.width, pic.height);
     const p = sameSize(d.width, d.height, pic.width, pic.height) ? null : fitPlacement(d.width, d.height, pic.width, pic.height, fit);
     g.save();
+    // Nothing shows outside the picture.
     g.beginPath();
+    g.rect(0, 0, pic.width, pic.height);
+    g.clip();
+    // The bars (the picture's background, as in the export), then the shot's own stage on top.
+    g.fillStyle = (p ? barColorFor(pic.background) : d.background) ?? '#ffffff';
+    g.fillRect(0, 0, pic.width, pic.height);
     if (p) {
-      g.rect(Math.max(0, p.x), Math.max(0, p.y), Math.min(pic.width, p.w), Math.min(pic.height, p.h));
+      g.fillStyle = d.background ?? '#ffffff';
+      g.fillRect(p.x, p.y, p.w, p.h);
+      g.beginPath();
+      g.rect(p.x, p.y, p.w, p.h);
       g.clip();
       g.translate(p.x, p.y);
       g.scale(p.k, p.k);
     } else {
+      g.beginPath();
       g.rect(0, 0, d.width, d.height);
       g.clip();
     }

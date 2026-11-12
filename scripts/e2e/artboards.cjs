@@ -197,9 +197,9 @@ async function exportsSection() {
     if (fit === 'bars') {
       // 200 x 200 fits 320 x 180 at 0.9, 180 wide, with 70 px bars each side.
       check(hex(f(4), 160, 90) === 'FFFF00', 'bars: the yellow box is not centred');
-      check(hex(f(4), 10, 90) === '00AA00' && hex(f(4), 310, 90) === '00AA00', `bars: sides are ${hex(f(4), 10, 90)} and ${hex(f(4), 310, 90)}`);
+      check(hex(f(4), 10, 90) === 'FF0000' && hex(f(4), 310, 90) === 'FF0000', `bars: the sides should be the picture's red, they are ${hex(f(4), 10, 90)} and ${hex(f(4), 310, 90)}`);
       check(hex(f(4), 245, 90) === '0000FF', 'bars: the blue bar on the stage is missing');
-      check(hex(f(4), 270, 90) === '00AA00', `bars: what hangs off the stage shows in the bar (${hex(f(4), 270, 90)})`);
+      check(hex(f(4), 270, 90) === 'FF0000', `bars: what hangs off the stage shows in the bar (${hex(f(4), 270, 90)})`);
     } else {
       check(hex(f(4), 160, 90) === 'FFFF00', 'fill: the yellow box is not centred');
       check(hex(f(4), 10, 90) !== '00AA00' || hex(f(4), 10, 10) === '00AA00', 'fill: the shot does not cover the picture');

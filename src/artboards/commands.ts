@@ -3,6 +3,8 @@ import { lazyPanel } from '../core/lazy';
 import { registerCommands, registerPanel } from '../core/registry';
 import type { State } from '../core/store';
 import { store } from '../core/store';
+import { setChoice } from '../core/choices';
+import './fit';
 import { activeId, artboardsOf, hasArtboards } from './model';
 import { arrangeAll, deleteArtboardById, duplicateArtboardById, fitAllArtboards, goToArtboard, newArtboard, zoomToArtboard } from './ops';
 
@@ -20,6 +22,26 @@ function step(by: number): void {
 }
 
 registerCommands([
+  {
+    id: 'artboards.fitBars',
+    label: 'Shots of different sizes: Fit (bars)',
+    category: 'Artboards',
+    description: 'When shots of different sizes play or export as one film, show each whole with bars where it does not fill the picture.',
+    keywords: ['letterbox', 'pillarbox', 'bars', 'fit', 'different sizes', 'join shots'],
+    help: 'artboards-letterbox',
+    enabled: many,
+    run: () => setChoice('artboards.fit', 'bars'),
+  },
+  {
+    id: 'artboards.fitFill',
+    label: 'Shots of different sizes: Fill (crop)',
+    category: 'Artboards',
+    description: 'When shots of different sizes play or export as one film, make each cover the whole picture and crop what hangs over.',
+    keywords: ['crop', 'fill', 'cover', 'different sizes', 'join shots'],
+    help: 'artboards-letterbox',
+    enabled: many,
+    run: () => setChoice('artboards.fit', 'fill'),
+  },
   {
     id: 'artboards.new',
     label: 'New artboard',

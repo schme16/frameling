@@ -61,7 +61,7 @@ export function ArtboardExportPicker({ settings }: { settings: ExportSettings })
             </button>
           </div>
           <p className="ex-note">
-            These artboards are different sizes, so the picture is the first one's size ({firstSize}). {fit === 'bars' ? 'Each shot is shown whole, with bars (its stage colour) where it does not fill the picture.' : 'Each shot covers the picture and what hangs over is cropped.'} {total} frames in all.
+            These artboards are different sizes, so the picture is the first one's size ({firstSize}). {fit === 'bars' ? 'Each shot is shown whole, with bars where it does not fill the picture.' : 'Each shot covers the picture and what hangs over is cropped.'} {total} frames in all.
           </p>
         </div>
       )}
