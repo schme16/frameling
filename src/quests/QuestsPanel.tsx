@@ -1,3 +1,4 @@
+import { useFeaturesVersion } from '../features/use';
 import { line } from '../ui/mascot/lines';
 import { Icon } from '../ui/icons';
 import { QuillSays } from '../ui/mascot';
@@ -9,6 +10,8 @@ import { engine, playQuest, resumeQuest } from './runtime';
 /** The Quests panel: every quest with its badge, whether it's open yet, and where you were up to. */
 export function QuestsPanel() {
   const p = questProgress.use((x) => x);
+  // Lessons of a feature that is off are left out.
+  useFeaturesVersion();
   const list = allQuests();
   const earned = list.filter((q) => q.badge && p.badges.includes(q.badge.id)).length;
   const total = list.filter((q) => q.badge).length;
