@@ -39,6 +39,18 @@ export function psdRecords(plan: LayeredItem[], pics: PsdPictures): PsdLayer[] {
     clipping: it.clipping,
   });
 
+  // The insides of a folder whose picture is baked: every layer hidden, inner folders kept as hidden groups.
+  const hiddenWalk = (items: LayeredItem[]): PsdLayer[] =>
+    items.flatMap((it): PsdLayer[] => {
+      if (it.kind === 'layer') return [layer(it, true)];
+      if (it.kind === 'masked') return hiddenWalk(it.layers);
+      return [
+        { name: it.folder.name, group: 'end', opacity: 1, blend: 'pass' },
+        ...hiddenWalk(it.layers),
+        { name: it.folder.name, group: 'open', opacity: it.folder.opacity, blend: it.passThrough ? 'pass' : (it.folder.blend ?? 'normal'), hidden: true },
+      ];
+    });
+
   const walk = (items: LayeredItem[]): PsdLayer[] => {
     const out: PsdLayer[] = [];
     for (const it of items) {
@@ -57,7 +69,8 @@ export function psdRecords(plan: LayeredItem[], pics: PsdPictures): PsdLayer[] {
       if (it.baked) {
         // The folder has effects (glow, shadow...), which a group can't hold. The group gets one finished picture of the
         // folder (its masks and clipping already applied) and the layers stay inside, hidden, to edit or bring back.
-        for (const x of members) out.push(layer(x, true));
+        // Folders inside it stay as hidden groups.
+        out.push(...hiddenWalk(it.layers));
         out.push({ name: `${it.folder.name} (with effects)`, image: pics.folder(it.folder, members.map((x) => x.layer)), opacity: 1, blend: 'normal' });
       } else {
         // A mask layer in a folder cuts only the layers under it: they sit in their own "Masked by" group inside the folder.

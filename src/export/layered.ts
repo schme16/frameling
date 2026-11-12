@@ -1,6 +1,7 @@
 // How a frame's layers become the layers of a PSD or a PDF: what stays a layer, what becomes a group, and (for PDF)
 // what has to be flattened into a picture because the format can't express it. Pure, so it can be tested.
 import type { Doc, Layer, LayerFolder } from '../core/format';
+import { folderChain, layerTree, type TreeNode } from '../core/folders';
 import { activeEffects } from '../effects/model';
 import { poseAt, isPosed, type PosedLook } from '../core/symbols';
 import type { Drawing } from '../core/format';
@@ -20,54 +21,45 @@ export function folderPassThrough(f: LayerFolder, members: Layer[], frame = 0): 
 }
 
 /**
- * A folder's layers as items. Like on the stage, a visible mask cuts only what is under it in the folder: those layers
- * become a "masked" item, and layers above the mask are left alone.
+ * One level of the layer tree as items (the stage, or the insides of one folder), bottom first. A visible mask cuts only
+ * what is under it at its level: those items become a "masked" item, and items above the mask are left alone. Folders
+ * inside become groups, each holding their own level. `off`: an enclosing folder is switched off.
  */
-function folderItems(members: Layer[], f: LayerFolder): LayeredItem[] {
+function levelItems(nodes: TreeNode[], frame: number, off: boolean): LayeredItem[] {
   let out: LayeredItem[] = [];
-  members.forEach((m, k) => {
-    const item: LayeredItem = { kind: 'layer', layer: m, clipping: !!m.clipToBelow && k > 0 && !members[k - 1].mask, hidden: !m.visible || !f.visible || !!m.mask, mask: !!m.mask };
+  nodes.forEach((n, k) => {
+    if (n.type === 'folder') {
+      const direct = n.children.flatMap((c) => (c.type === 'layer' ? [c.layer] : []));
+      out.push({
+        kind: 'group',
+        folder: n.folder,
+        passThrough: folderPassThrough(n.folder, direct, frame),
+        baked: activeEffects(n.folder.effects, frame).length > 0,
+        masks: direct.filter((m) => m.mask && m.visible),
+        layers: levelItems(n.children, frame, off || !n.folder.visible),
+      });
+      return;
+    }
+    const m = n.layer;
+    // A layer right after a mask has nothing to clip to (the mask ends the run), same as on the canvas.
+    const prev = k > 0 ? nodes[k - 1] : null;
+    const item: LayeredItem = { kind: 'layer', layer: m, clipping: !!m.clipToBelow && !!prev && !(prev.type === 'layer' && prev.layer.mask), hidden: !m.visible || off || !!m.mask, mask: !!m.mask };
+    // A visible mask cuts out everything under it: that becomes a group with a layer mask, which later masks wrap in
+    // turn (each one cuts what's under it, masked layers included).
     if (m.mask && m.visible && out.length) out = [{ kind: 'masked', mask: m, layers: [...out, item] }];
     else out.push(item);
   });
   return out;
 }
 
-/** The plain layers in a list of items, bottom first, looking inside masked wrappers. */
+/** The plain layers in a list of items, bottom first, looking inside masked wrappers and folders. */
 export function itemLayers(items: LayeredItem[]): Extract<LayeredItem, { kind: 'layer' }>[] {
-  return items.flatMap((x) => (x.kind === 'layer' ? [x] : x.kind === 'masked' ? itemLayers(x.layers) : []));
+  return items.flatMap((x) => (x.kind === 'layer' ? [x] : itemLayers(x.layers)));
 }
 
-/** Layers bottom first, folders as groups (folders are one level deep). Hidden layers are kept, marked hidden. */
+/** Layers bottom first, folders as groups (folders can hold folders). Hidden layers are kept, marked hidden. */
 export function layeredPlan(doc: Doc, frame = 0): LayeredItem[] {
-  let out: LayeredItem[] = [];
-  const layers = doc.layers.filter(exported);
-  let i = 0;
-  while (i < layers.length) {
-    const l = layers[i];
-    const f = l.folder ? doc.folders?.[l.folder] : undefined;
-    if (!f) {
-      // A layer right after a mask has nothing to clip to (the mask ends the run), same as on the canvas.
-      const item: LayeredItem = { kind: 'layer', layer: l, clipping: !!l.clipToBelow && i > 0 && !layers[i - 1].mask, hidden: !l.visible || !!l.mask, mask: !!l.mask };
-      i++;
-      // A visible mask on the stage cuts out everything under it: that becomes a group with a layer mask, which
-      // later masks wrap in turn (each one cuts what's under it, masked layers included).
-      if (l.mask && l.visible && out.length) out = [{ kind: 'masked', mask: l, layers: [...out, item] }];
-      else out.push(item);
-      continue;
-    }
-    const members: Layer[] = [];
-    while (i < layers.length && layers[i].folder === l.folder) members.push(layers[i++]);
-    out.push({
-      kind: 'group',
-      folder: f,
-      passThrough: folderPassThrough(f, members, frame),
-      baked: activeEffects(f.effects, frame).length > 0,
-      masks: members.filter((m) => m.mask && m.visible),
-      layers: folderItems(members, f),
-    });
-  }
-  return out;
+  return levelItems(layerTree({ folders: doc.folders, layers: doc.layers.filter(exported) }), frame, false);
 }
 
 /**
@@ -77,7 +69,10 @@ export function layeredPlan(doc: Doc, frame = 0): LayeredItem[] {
 export function bakedFolderDoc(doc: Doc, folderId: string): Doc {
   const f = doc.folders?.[folderId];
   if (!f) return doc;
-  return { ...doc, folders: { ...doc.folders, [folderId]: { ...f, visible: true, opacity: 1, blend: undefined } } };
+  const folders = { ...doc.folders, [folderId]: { ...f, visible: true, opacity: 1, blend: undefined } };
+  // The folders around it are out of the picture: no fade, blend, effects or hiding of theirs.
+  for (const o of folderChain(doc.folders, folderId)) if (o.id !== folderId) folders[o.id] = { ...o, visible: true, opacity: 1, blend: undefined, effects: undefined };
+  return { ...doc, folders };
 }
 
 /**
