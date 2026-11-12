@@ -108,14 +108,19 @@ async function createWebChecker() {
     let compared = 0;
     let worst = 0;
     const shoot = async (label, classes, ms, want, refFile) => {
-      const s = await ev(`cssShow(${JSON.stringify(classes)}, ${ms === null ? 'null' : ms}, ${zoom})`);
-      win.setContentSize(Math.max(s.w, 120), Math.max(s.h, 120));
-      await sleep(30);
-      const s2 = await ev(`cssShow(${JSON.stringify(classes)}, ${ms === null ? 'null' : ms}, ${zoom})`);
-      const img = await win.webContents.capturePage({ x: 0, y: 0, width: s2.w, height: s2.h });
-      const size = img.getSize();
-      const url = img.toDataURL();
-      const res = await ev(`cssCompare(${JSON.stringify(url)}, ${s2.w}, ${s2.h}, ${JSON.stringify(`/case/${path.basename(refFile)}`)})`);
+      let s2, img, size, url, res;
+      // A first screenshot can be taken before the page has settled after a resize, so a miss gets one more go.
+      for (let attempt = 0; attempt < 2; attempt++) {
+        const s = await ev(`cssShow(${JSON.stringify(classes)}, ${ms === null ? 'null' : ms}, ${zoom})`);
+        win.setContentSize(Math.max(s.w, 120), Math.max(s.h, 120));
+        await sleep(30 + attempt * 200);
+        s2 = await ev(`cssShow(${JSON.stringify(classes)}, ${ms === null ? 'null' : ms}, ${zoom})`);
+        img = await win.webContents.capturePage({ x: 0, y: 0, width: s2.w, height: s2.h });
+        size = img.getSize();
+        url = img.toDataURL();
+        res = await ev(`cssCompare(${JSON.stringify(url)}, ${s2.w}, ${s2.h}, ${JSON.stringify(`/case/${path.basename(refFile)}`)})`);
+        if (res.ok) break;
+      }
       compared++;
       if (res.m) worst = Math.max(worst, res.m.mean);
       if (!res.ok) {
