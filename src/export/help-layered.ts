@@ -17,7 +17,7 @@ registerHelpTopics([
 | Each layer | A layer with the same name |
 | Opacity, hidden layers | The same opacity, hidden layers stay hidden |
 | Blend modes | The same blend mode (Glow brighter becomes Linear Dodge) |
-| Layer folders | Groups (a plain folder is a pass-through group) |
+| Layer folders | Groups (a plain folder is a pass-through group). A folder inside a folder is a group inside the group |
 | Clip to the layer below | A clipping mask |
 | A mask layer in a folder | A "Masked by ..." group inside the folder, holding the layers under the mask, with the mask as its layer mask |
 | A mask layer on the stage | A group holding everything under it, with the mask as its layer mask |
@@ -80,7 +80,7 @@ When the animation has more than one frame, the export window asks how to put th
 
 ## What comes across
 
-- **Layers and folders:** names (accents and other scripts too), folders holding their layers, each layer's opacity and blend mode, and the folder's.
+- **Layers and folders:** names (accents and other scripts too), folders holding their layers (and folders inside folders, as layers inside layers), each layer's opacity and blend mode, and the folder's.
 - **Shapes:** fills, lines with their width, joins and caps, see-through colours, and linear and radial gradients with see-through stops. A shape with a fill and a line is one path, and shapes with holes are compound paths.
 - **Text** comes as letter outlines, not live text, and a symbol copy is plain shapes.
 - **Pictures:** pixel layers, effects, clipping, masks and bending on bones come in as pictures, with their see-through parts.

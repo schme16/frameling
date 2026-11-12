@@ -93,7 +93,7 @@ export function FolderRow({ row, height, drag }: { row: Extract<TimelineRow, { t
       ) : (
         <span className="tl-folder-name" title={`Double-click to rename${look ? `. ${look}` : ''}`} onDoubleClick={() => setEditing(true)}>
           {f.name}
-          {row.collapsed && <small className="tl-look-tag">{n}</small>}
+          {row.collapsed && <small className="tl-look-tag tl-glyph" data-glyph={String(n)} aria-hidden="true" />}
           {look && (
             <span className="tl-look-tag" title={look}>
               <Icon name="effects" size={12} />
@@ -165,6 +165,7 @@ export function lookMenu(layer: Layer): MenuItem[] {
     { label: 'Clip to the layer below', checked: !!layer.clipToBelow, onClick: () => toggleClip(layer) },
     { label: 'Use as a mask', checked: !!layer.mask, onClick: () => toggleMask(layer) },
     { label: 'Put in the folder next to it', onClick: () => void ops.nestNode({ layer: layer.id }) },
-    layer.folder ? { label: 'Take out of its folder', onClick: () => void ops.moveLayerInto(layer.id, store().get().doc.layers.findIndex((l) => l.id === layer.id), null) } : { label: 'Put in a new folder', onClick: () => void ops.makeFolder([layer.id]) },
+    ...(layer.folder ? [{ label: 'Take out of its folder', onClick: () => void ops.outdentNode({ layer: layer.id }) }] : []),
+    { label: layer.folder ? 'Put in a new folder inside it' : 'Put in a new folder', onClick: () => void ops.makeFolder([layer.id]) },
   ];
 }

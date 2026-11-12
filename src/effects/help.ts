@@ -117,7 +117,7 @@ A mask only reaches the layers under it in its own folder, so it never cuts into
 - **Hide it:** the eye on the folder's row hides everything in it, folders inside it too.
 - **Remove it:** **Effects menu > Take layers out of this folder**. Its layers and folders move up a level and stay where they are.
 
-**Keyboard:** with a layer or folder row picked in the list, the up and down arrows walk the rows, left folds a folder (or jumps to the folder it is in) and right unfolds it. Hold **Alt** to move the row itself: Alt+Up and Alt+Down step it through the list (into and out of folders as they come), Alt+Left takes it out of its folder, Alt+Right puts it into the folder next to it.
+**Keyboard:** with a layer or folder row picked in the list, the up and down arrows walk the rows, left folds a folder (or jumps to the folder it is in) and right unfolds it. Hold **Alt** and press an arrow to move the row itself: up and down step it through the list (into and out of folders as they come), left takes it out of its folder, right puts it into the folder next to it.
 
 In the Effects panel, pick a **Folder** at the top (any folder around the layer) to set a see-through amount, a [blend mode](help:blend-modes) or [effects](help:effects) for the whole folder at once. A folder that fades fades as one picture, so overlapping parts don't show through each other. Inside a faded folder, a folder with its own fade is faded first and then fades with the rest, so the amounts multiply.
 

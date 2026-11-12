@@ -122,7 +122,7 @@ const LayerRow = memo(function LayerRow({ layer, h, detailed, tracks, open, inFo
       aria-level={depth + 1}
       aria-selected={active}
       aria-expanded={tracks.length ? open : undefined}
-      aria-label={`${layer.name}, ${kind}`}
+      aria-label={`${layer.name}, ${kind}${layer.reference ? ', reference layer' : ''}`}
       aria-current={active ? 'true' : undefined}
       onClick={select}
       onKeyDown={(e) => {
@@ -193,9 +193,7 @@ const LayerRow = memo(function LayerRow({ layer, h, detailed, tracks, open, inFo
             </small>
           )}
           {layer.reference && (
-            <small className="tl-ref-tag" title="Reference layer: you see it while drawing, exports leave it out">
-              ref
-            </small>
+            <small className="tl-ref-tag tl-glyph" data-glyph="ref" aria-hidden="true" title="Reference layer: you see it while drawing, exports leave it out" />
           )}
         </span>
       )}
@@ -332,7 +330,7 @@ function SoloButton({ layer }: { layer: Layer }) {
       aria-pressed={on}
       onClick={(e) => (e.stopPropagation(), toggleSolo(layer.id))}
     >
-      <span aria-hidden="true">S</span>
+      <span aria-hidden="true" className="tl-glyph" data-glyph="S" />
     </button>
   );
 }

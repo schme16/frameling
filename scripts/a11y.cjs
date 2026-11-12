@@ -294,6 +294,8 @@ app.whenReady().then(async () => {
     const name = `panel ${id}`;
     if (!want(name)) continue;
     await reset(win, DOCS[id] ?? DOCS.default);
+    // The timeline is checked with folders inside folders, the deepest case of its tree.
+    if (id === 'timeline') await js(win, `__frameling.store().update('Folders in folders', (d) => { d.folders = { fOut: { id: 'fOut', name: 'Scene', visible: true, opacity: 1 }, fIn: { id: 'fIn', name: 'Inner', visible: true, opacity: 1, parent: 'fOut' } }; d.layers.forEach((l, i) => { l.folder = i === 0 ? 'fOut' : 'fIn'; }); });`);
     await js(win, `__frameling.showPanel(${JSON.stringify(id)})`);
     await sleep(250);
     add(name, await axe(win, `#ui-panel-${id}`));

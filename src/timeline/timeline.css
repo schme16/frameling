@@ -1079,3 +1079,8 @@
 .tl-header[data-folded~='onion'][data-folded~='hold'][data-folded~='edit'] [data-sep='1'] {
   display: none;
 }
+
+/* Little text marks drawn by CSS, so a row's text is just its name (the row's label says the rest). */
+.tl-glyph::before {
+  content: attr(data-glyph);
+}
