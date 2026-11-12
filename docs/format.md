@@ -174,20 +174,29 @@ are optional, so older files open unchanged. An older Frameling, which doesn't k
 artboard it can't read and leaves it out with a warning (the original is untouched).
 
 ```
-VariationOverrides = { stage?: Patch, layers?: ListOverride<Layer, ListOverride<Cel>>, drawings?: { [originalDrawingId]: DrawingOverride } }
+VariationOverrides = { stage?: Patch, layers?: ListOverride<Layer, ListOverride<Cel>>, drawings?: { [originalDrawingId]: DrawingOverride },
+                       audio?: ListOverride<AudioClip>, palette?: DocPalette }
 Patch              = { set?: { [property]: value }, del?: property[] }       // only what changed
 ListOverride<T,S>  = { items?: { [id]: { patch?: Patch, sub?: S } }, removed?: id[], added?: T[], order?: id[] }
-DrawingOverride    = { replaced?: true, patch?: Patch, shapes?: ListOverride<Shape>, view?: Patch }
+DrawingOverride    = { replaced?: true, patch?: Patch, shapes?: ListOverride<Shape>, view?: Patch, diff?: DrawingDiff }
+DrawingDiff        = { rect?: { x, y, w, h, pixels: "pixels/diff_<id>.png" }, cells?: [slot, value, slot, value, ...] }   // file only
 ```
 
 - `stage` patches `width`, `height`, `background`, `length`, `clips`, `markers`, `flow`, `guides`, `inOut`,
-  `perspective`. Sound is not overridable (it follows the original).
+  `perspective`.
+- `audio` is by sound clip id: `items[id].patch` changes `volume`, `muted`, `start` or `name`; `removed` are the
+  original's clips this variation leaves out; `added` are clips made in it (their bytes in `audio/<id>.<ext>`, `data` names
+  the entry, as for any sound). `palette` is a whole pixel palette that replaces the original's for this variation.
 - `layers` is by layer id. `items[id].patch` changes layer properties (`visible`, `opacity`, `name`, `blend`, ...);
   `items[id].sub` is the same shape for that layer's cels (`start`, `length`, `tween`, ...; a cel's `drawingId`
   names the original's drawing or one the variation made). `added` are layers (and cels, shapes) made in the
   variation; `order` is only written when the order is not "the original's, then the added ones".
 - `drawings` is by the *original's* drawing id: a recolour is `shapes.items[shapeId].patch.set.fill`, a changed camera
-  key is `view`, a drawing the variation redrew whole (pixels, tiles) is `replaced: true`.
+  key is `view`, a drawing the variation redrew whole (pixels, tiles) is `replaced: true`. In a file a redrawn
+  drawing also has `diff` when the change is smaller than the drawing: `rect` is the changed rectangle (a PNG of just
+  that rectangle in `pixels/diff_<id>.png`) and `cells` the changed tile slots. Such a drawing is not in `drawings`;
+  reading builds it from the original's drawing and drops `diff`. Without `diff`, the whole drawing is stored in
+  `drawings` as `<original id>~<artboard id>`.
 - **Which drawings are in `doc.drawings`.** Drawings made in the variation are ordinary entries. A drawing it redrew
   whole is stored as `<original id>~<artboard id>`. Every other `<id>~<artboard id>` entry in memory is worked out
   from the original and never written.
