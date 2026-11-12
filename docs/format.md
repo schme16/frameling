@@ -127,7 +127,7 @@ feature brought it rather than a date that means much. Fields without a note wer
 |---|---|---|
 | `format` | `'frameling'` | |
 | `version` | number | `FORMAT_VERSION` |
-| `lineage` | `true` | Optional. Set by `newDoc` and kept on saving: every shape carries lineage (`origin`) from the start, so keys with no shared lineage are unrelated. Missing in older files (and never added to them on saving), where a selection falls back to the shape at the same place. Read as `true` or dropped. |
+| `lineage` | `true` | Optional. Set by `newDoc` and kept on saving: every shape carries lineage (`origin`) from the start, so keys with no shared lineage are unrelated. Missing in older files until they are opened: reading one upgrades it once (`src/core/upgradeLineage.ts`, part of loading, no undo step), so in memory and from the next save it has the flag. Read as `true` or dropped (then upgraded like an old file). |
 | `id`, `name` | string | `id` is stable across saves (used for the .flplay link and versions). |
 | `width`, `height` | number | Stage size. |
 | `fps` | number | |
@@ -220,10 +220,11 @@ means the hold reaches the next key and gives way when someone draws on a later 
 optional `group` (shapes sharing a group select and move together and never merge; `e2de242`).
 All also have an optional `origin`: the id of the shape this one was copied from when a new key was made (`cloneDrawing`),
 kept through later copies, so every copy of a shape in later keys shares one lineage (`origin ?? id`). A selection follows
-the same shape from key to key by it. Missing in the first shape of a line and in documents from before it existed; there a
-selection falls back to the shape at the same place when the two keys have the same shapes of the same kinds, and only
-when the document has no `lineage: true` flag (see Doc). In those old documents a jump over several keys also walks through the
-keys in between. Paste and
+the same shape from key to key by it. Missing in the first shape of a line. Documents from before it existed are upgraded when they
+open (see `lineage` in Doc): in each layer, walking the keys in time order, a key with no `origin` anywhere whose shape count
+equals the key before gets each shape's `origin` from the shape at the same place when the kinds match (the rest stay roots),
+and `lineage: true` is set. Keys that already had `origin` keep it, repointed at the older line. (The place-matching fallback in
+`followSelection` stays for documents held in memory without the flag.) Paste and
 Duplicate make a shape of its own (no `origin`). A non-string or empty `origin` in a file is dropped on reading. Ignore it
 when comparing two drawings for "same look" (as `id` is ignored).
 

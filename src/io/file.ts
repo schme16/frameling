@@ -15,6 +15,7 @@ import { readOrigin, readParticlesShape, readTextShape } from './shapes-extra';
 import { packAudio, unpackAudio } from './audio-file';
 import { keepUnknownShape, readExt, shapesForSave, withExt } from './ext';
 import { packArtboards, readArtboards } from '../artboards/io';
+import { upgradeLineage } from '../core/upgradeLineage';
 
 export const FILE_EXTENSION = 'frameling';
 
@@ -293,6 +294,7 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
     if (points.length) doc.perspective = { points };
   }
   Object.assign(doc, readArtboards(raw, entries, warnings, { readLayers, readFlow, readGuides }));
+  upgradeLineage(doc);
   return doc;
 }
 

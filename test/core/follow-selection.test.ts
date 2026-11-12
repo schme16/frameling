@@ -7,6 +7,7 @@ import { switchArtboard } from '../../src/artboards/model';
 import { cloneShape } from '../../src/canvas/geometry';
 import { cloneDrawing } from '../../src/timeline/edit-core';
 import { loadFile, saveFile } from '../../src/io/file';
+import { upgradeLineage } from '../../src/core/upgradeLineage';
 import { newTextShape } from '../../src/text/model';
 import { TEMPLATES } from '../../src/templates';
 import { drawingsDiffer } from '../../src/quests/predicates';
@@ -162,16 +163,14 @@ describe('new documents never match unrelated keys by position', () => {
     expect(followSelection(build([a, b], true), layerId(doc), ['a2'], 0, 5)?.selection).toEqual(['b2']);
   });
 
-  it('the flag is saved, read back, and never added to an old file', () => {
+  it('the flag is saved and read back; an old file is upgraded when it opens', () => {
     const doc = build([drawing([box('p')])]);
     expect(loadFile(saveFile(doc, '1.0.0')).doc.lineage).toBe(true);
     const old = build([drawing([box('p')])], true);
-    const back = loadFile(saveFile(old, '1.0.0')).doc;
-    expect(back.lineage).toBeUndefined();
-    expect('lineage' in JSON.parse(JSON.stringify(back))).toBe(false);
-    // Junk is dropped.
+    expect(loadFile(saveFile(old, '1.0.0')).doc.lineage).toBe(true);
+    // Junk is not a flag, so that file counts as old too.
     const junk = { ...doc, lineage: 'yes' as unknown as true };
-    expect(loadFile(saveFile(junk, '1.0.0')).doc.lineage).toBeUndefined();
+    expect(loadFile(saveFile(junk, '1.0.0')).doc.lineage).toBe(true);
   });
 
   it('every template builds a document with the flag', () => {
@@ -363,5 +362,83 @@ describe('the file keeps lineage', () => {
     const bad = loadFile(saveFile(doc, '1.0.0')).doc.drawings[b.id] as VectorDrawing;
     expect(bad.shapes).toHaveLength(4);
     expect(bad.shapes.map((s) => s.origin)).toEqual([undefined, 's', undefined, 't']);
+  });
+});
+
+describe('old files are upgraded when they open', () => {
+  const reopen = (doc: Doc) => loadFile(saveFile(doc, '1.0.0')).doc;
+  const shapesOf = (doc: Doc, d: VectorDrawing) => (doc.drawings[d.id] as VectorDrawing).shapes;
+
+  it('keys that look alike are linked, the first key stays the root, and the flag is set', () => {
+    const a = drawing([box('a1'), line('a2')]);
+    const b = drawing([box('b1'), line('b2')]);
+    const c = drawing([box('c1'), line('c2')]);
+    const back = reopen(build([a, b, c], true));
+    expect(back.lineage).toBe(true);
+    expect(shapesOf(back, a).map((s) => s.origin)).toEqual([undefined, undefined]);
+    expect(shapesOf(back, b).map((s) => s.origin)).toEqual(['a1', 'a2']);
+    // Every later key points at the root, not at the key before.
+    expect(shapesOf(back, c).map((s) => s.origin)).toEqual(['a1', 'a2']);
+    // The selection follows, over one key and over two.
+    expect(followSelection(back, layerId(back), ['a2'], 0, 5)?.selection).toEqual(['b2']);
+    expect(followSelection(back, layerId(back), ['a2'], 0, 10)?.selection).toEqual(['c2']);
+  });
+
+  it('behaves like position matching did: other counts or kinds stay separate roots', () => {
+    const a = drawing([box('a1'), line('a2')]);
+    const b = drawing([line('b1'), box('b2')]); // kinds differ at both places
+    const c = drawing([line('c1'), box('c2')]);
+    const d = drawing([box('d1')]); // fewer shapes
+    const back = reopen(build([a, b, c, d], true));
+    expect(shapesOf(back, b).map((s) => s.origin)).toEqual([undefined, undefined]);
+    expect(shapesOf(back, c).map((s) => s.origin)).toEqual(['b1', 'b2']);
+    expect(shapesOf(back, d).map((s) => s.origin)).toEqual([undefined]);
+    expect(followSelection(back, layerId(back), ['a2'], 0, 5)?.selection).toEqual([]);
+  });
+
+  it('a mixed file: later keys that already have lineage join the upgraded line', () => {
+    const a = drawing([box('a1'), line('a2')]);
+    const b = drawing([box('b1'), line('b2')]);
+    const c = cloneDrawing(b) as VectorDrawing; // origin points at b's own ids
+    const back = reopen(build([a, b, c], true));
+    expect(shapesOf(back, c).map((s) => s.origin)).toEqual(['a1', 'a2']);
+    expect(followSelection(back, layerId(back), ['a2'], 0, 10)?.selection).toEqual([shapesOf(back, c)[1].id]);
+  });
+
+  it('does not change what is drawn or saved apart from origin and the flag', () => {
+    const a = drawing([box('a1'), line('a2')]);
+    const b = drawing([box('b1'), line('b2')]);
+    const doc = build([a, b], true);
+    const strip = (d: Doc) => JSON.parse(JSON.stringify(d, (k, v) => (k === 'origin' && typeof v === 'string' ? undefined : k === 'lineage' ? undefined : v)));
+    const back = reopen(doc);
+    expect(strip(back)).toEqual(strip(doc));
+    expect(drawingsDiffer(a, shapesOf(back, b) ? (back.drawings[b.id] as VectorDrawing) : b)).toBe(drawingsDiffer(a, b));
+  });
+
+  it('holds and repeated drawings are not linked to themselves; a document with the flag is untouched', () => {
+    const a = drawing([box('a1')]);
+    const doc = build([a], true);
+    doc.layers[0].cels.push({ id: 'hold', start: 5, length: 5, drawingId: a.id });
+    expect(shapesOf(reopen(doc), a)[0].origin).toBeUndefined();
+    const flagged = build([drawing([box('x1')]), drawing([box('y1')])]);
+    const before = JSON.stringify(flagged);
+    upgradeLineage(flagged);
+    expect(JSON.stringify(flagged)).toBe(before);
+  });
+
+  it('symbols and other artboards are upgraded too, and opening makes no undo step', () => {
+    const a = drawing([box('a1')]);
+    const b = drawing([box('b1')]);
+    const doc = build([drawing([box('z')])], true);
+    doc.drawings[a.id] = a;
+    doc.drawings[b.id] = b;
+    doc.symbols = { sym: { id: 'sym', name: 'S', length: 10, origin: { x: 0, y: 0 }, layers: [{ ...doc.layers[0], id: 'sl', cels: [{ id: 's0', start: 0, length: 5, drawingId: a.id }, { id: 's1', start: 5, length: 5, drawingId: b.id }] }] } };
+    const back = reopen(doc);
+    expect(back.lineage).toBe(true);
+    expect(shapesOf(back, b)[0].origin).toBe('a1');
+    // Loading it into the store makes no undo step, and the file is not marked changed.
+    store().load(back, null);
+    expect(store().canUndo()).toBe(false);
+    expect(store().get().ui.dirty).toBe(false);
   });
 });
