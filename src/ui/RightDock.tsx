@@ -8,6 +8,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { getPanel, type DockZone } from '../core/registry';
 import { useStore } from '../core/store';
+import { useTl } from '../timeline/state';
 import { dock, hidePanel, setActive, toggleCollapsed } from './dock';
 import { dragState, dropIndexFor, startPanelDrag } from './dockDrag';
 import { menuPoint, openDockMenu, panelMenu } from './dockMenus';
@@ -271,6 +272,8 @@ function Rail({ zone, plans }: { zone: DockZone; plans: RightGroupPlan[] }) {
 // ---------------------------------------------------------------- Properties
 
 function Inspector({ sections, active }: { sections: string[]; active: string | null }) {
+  // The Clip section shows while a clip is picked on the timeline (that is not in the document store).
+  useTl((t) => t.clipId);
   // Joined so the selector hands back something stable between renders.
   const key = useStore((s) => {
     const r = sectionsNow(sections, s, active);

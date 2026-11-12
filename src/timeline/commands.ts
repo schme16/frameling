@@ -82,8 +82,8 @@ const repeatCommand = (id: string, repeat: 'forever' | number, label: string, de
 registerCommands([
   directionCommand('timeline.clipForward', 'forward', 'Clip plays forward', 'The clip you picked plays from its first frame to its last.', ['normal']),
   directionCommand('timeline.clipBackward', 'reverse', 'Clip plays backward', 'The clip you picked plays from its last frame back to its first.', ['reverse', 'rewind']),
-  directionCommand('timeline.clipBackAndForth', 'pingpong', 'Clip plays back and forth (ping-pong)', 'The clip you picked plays to its end and back again, showing each end once.', ['ping pong', 'pingpong', 'boomerang', 'yoyo', 'bounce']),
-  directionCommand('timeline.clipBackAndForthEnd', 'pingpong-reverse', 'Clip plays back and forth, from the end', 'Like back and forth, but starting from the last frame.', ['ping pong', 'pingpong', 'reverse']),
+  directionCommand('timeline.clipBackAndForth', 'pingpong', 'Clip plays back and forth', 'The clip you picked plays to its end and back again, showing each end once.', ['ping pong', 'pingpong', 'boomerang', 'yoyo', 'bounce']),
+  directionCommand('timeline.clipBackAndForthEnd', 'pingpong-reverse', 'Clip plays back and forth, backward first', 'Like back and forth, but it starts from the last frame and goes backward first.', ['ping pong', 'pingpong', 'reverse']),
   repeatCommand('timeline.clipForever', 'forever', 'Clip repeats forever (loops)', 'The clip you picked starts again each time it finishes. Games and sprite sheets read this too.', ['loop', 'forever']),
   repeatCommand('timeline.clipOnce', 1, 'Clip plays once, then holds the last frame', 'The clip you picked plays one time and stays on its last frame. Right-click a clip to repeat it a number of times.', ['once', 'one shot', 'no loop']),
   {

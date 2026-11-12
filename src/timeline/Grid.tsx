@@ -33,6 +33,7 @@ import { clampShift, deleteKeys, firstFrameOf, moveKeys, scaleKeys, scaleMap } f
 import { clearKeys, pickKeys } from './state';
 import { toast } from '../ui/toast';
 import { clipPlayItems } from './ClipPlay';
+import { showPanel } from '../ui/dock';
 import { playWords } from '../core/clipPlay';
 
 export const SIDE_W = 216;
@@ -239,7 +240,7 @@ function ClipsRow({ cw, from, to, h }: { cw: number; from: number; to: number; h
       {clips
         .filter((c) => c.end >= from && c.start <= to)
         .map((c) => (
-          <div key={c.id} className={`tl-clip${picked === c.id ? ' is-picked' : ''}`} data-clip={c.id} style={{ left: c.start * cw + 1, width: (c.end - c.start + 1) * cw - 2 }} title={`${c.name}: frames ${c.start + 1} to ${c.end + 1}${playWords(c) ? ', ' + playWords(c) : ''}. Click to play just this clip. Double-click to rename.`}>
+          <div key={c.id} className={`tl-clip${picked === c.id ? ' is-picked' : ''}`} data-clip={c.id} style={{ left: c.start * cw + 1, width: (c.end - c.start + 1) * cw - 2 }} title={`${c.name}: frames ${c.start + 1} to ${c.end + 1}${playWords(c) ? ', ' + playWords(c) : ''}. Click to play just this clip and see how it plays in Properties. Double-click to rename. Right-click for more.`}>
             <span className="tl-clip-edge is-start" data-edge="start" />
             {editing === c.id ? (
               <InlineName
@@ -684,6 +685,8 @@ export function TimelineBody() {
       if (!c) return;
       const on = tl().clipId === c.id ? null : c.id;
       setTl({ clipId: on });
+      // Its play settings show in Properties (Clip).
+      if (on) showPanel('clip-play');
       const ui = store().get().ui;
       if (on && (ui.frame < c.start || ui.frame > c.end)) store().setUi({ frame: c.start });
     } else if (d.kind === 'clipEdge' && g?.kind === 'clip' && g.id) ops.setClipRange(g.id, g.start, g.end);

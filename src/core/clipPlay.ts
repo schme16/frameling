@@ -16,7 +16,7 @@ export const DIRECTION_WORDS: Record<ClipDirection, string> = {
   forward: 'Forward',
   reverse: 'Backward',
   pingpong: 'Back and forth',
-  'pingpong-reverse': 'Back and forth, from the end',
+  'pingpong-reverse': 'Back and forth, backward first',
 };
 
 export const MAX_REPEAT = 999;

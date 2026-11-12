@@ -36,7 +36,7 @@ export function SheetWhere({ s, set, setSheet, doc }: ExportUiProps) {
       </p>
       {(sheet.engine === 'godot' || sheet.engine === 'phaser') && !separate && doc.clips.some((c) => c.direction === 'pingpong' || c.direction === 'pingpong-reverse') && (
         <p className="ex-note">
-          Back and forth clips: {bounceMode === 'engine' ? (sheet.engine === 'godot' ? "Godot's own ping-pong is used for clips that loop (smaller files, but the two end frames show twice). It needs Godot 4.7 or newer: older Godot plays those clips forward only." : "Phaser's own yoyo is used where it can (smaller files, plays the same).") : 'every frame is listed in order, so the ends show once, just like here.'}{' '}
+          Back and forth clips: {bounceMode === 'engine' ? (sheet.engine === 'godot' ? "Godot's own back and forth loop (it calls it ping-pong) is used for clips that loop (smaller files, but the two end frames show twice). It needs Godot 4.7 or newer: older Godot plays those clips forward only." : "Phaser's own yoyo is used where it can (smaller files, plays the same).") : 'every frame is listed in order, so the ends show once, just like here.'}{' '}
           <button type="button" className="ex-link" onClick={() => openPrefs('behaviour')}>
             Change in Preferences
           </button>

@@ -401,7 +401,7 @@ export function Header() {
         <Btn id="timeline.nextFrame" icon="next" title="Forward one frame" />
         <Btn id="timeline.lastFrame" icon="last" title="Go to the last frame" />
         <Btn id="timeline.toggleLoop" icon="loop" title="Loop: start again at the end" pressed={loop} />
-        <Btn id="timeline.togglePingPong" icon="pingpong" title="Play back and forth (ping-pong)" pressed={pingPong} step="pingpong" />
+        <Btn id="timeline.togglePingPong" icon="pingpong" title="Play back and forth" pressed={pingPong} step="pingpong" />
       </span>
       <Counter />
       <FpsField />
