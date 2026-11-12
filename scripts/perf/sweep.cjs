@@ -321,7 +321,7 @@ const ACTIONS = {
     kinds: ['vector'], unit: 'clicks', units: 4,
     async setup() {
       const t = await findShape();
-      if (!t) throw new Error('no shape to select');
+      if (!t) throw new Skip('no shape to select');
       await ev(`window.__frameling.store().setUi({ tool: 'select', frame: 0, activeLayerId: ${JSON.stringify(t.layer)}, selection: [] }); true`);
       this.target = t;
     },
@@ -339,10 +339,11 @@ const ACTIONS = {
   },
   'select-move': {
     edits: true,
+    skipIfNoEdit: true,
     kinds: ['vector'], unit: 'moves', units: 30,
     async setup() {
       const t = await findShape();
-      if (!t) throw new Error('no shape to select');
+      if (!t) throw new Skip('no shape to select');
       await ev(`window.__frameling.store().setUi({ tool: 'select', frame: 0, activeLayerId: ${JSON.stringify(t.layer)}, selection: [] }); true`);
       this.target = t;
     },
@@ -388,7 +389,7 @@ const ACTIONS = {
           const b = e.getBoundingClientRect();
           return { x: b.left + Math.min(b.width / 2, 12), y: b.top + b.height / 2 };
         })()`);
-        if (!r) throw new Error('no key to click');
+        if (!r) throw new Skip('no key to click');
         send({ type: 'mouseMove', x: Math.round(r.x), y: Math.round(r.y) });
         send({ type: 'mouseDown', x: Math.round(r.x), y: Math.round(r.y), button: 'left', clickCount: 1 });
         send({ type: 'mouseUp', x: Math.round(r.x), y: Math.round(r.y), button: 'left', clickCount: 1 });
@@ -523,7 +524,7 @@ async function measure(name, a, dbg) {
     lastProfile = profile;
     if (a.edits) {
       const h = await ev('window.__frameling.store().historyIds().undo');
-      if (h === before) throw new Error('the action made no edit (the harness is not driving the app)');
+      if (h === before) throw a.skipIfNoEdit ? new Skip('nothing there to edit') : new Error('the action made no edit (the harness is not driving the app)');
     }
     const an = analyse(profile);
     busys.push(an.busy);
@@ -551,6 +552,9 @@ async function traced(dbg, fn) {
   if (main) for (const e of events) if (e.ph === 'X' && e.tid === main.tid && e.pid === main.pid && /^(UpdateLayoutTree|Layout|PrePaint|Paint|Layerize|Commit|HitTest|UpdateLayer|ParseHTML|Decode Image|ImageDecodeTask|CompositeLayers|FireAnimationFrame|MajorGC|MinorGC|V8\.GC_.*|IntersectionObserverController::computeIntersections)$/.test(e.name)) kinds.set(e.name, (kinds.get(e.name) || 0) + e.dur / 1000);
   return kinds;
 }
+
+/** Thrown by an action that cannot run on this document (nothing to select, no key to click): left out, not a failure. */
+class Skip extends Error {}
 
 const pad = (s, n) => String(s).padEnd(n);
 const num = (v) => (v >= 100 ? v.toFixed(0) : v.toFixed(1)).padStart(8);
@@ -596,6 +600,10 @@ const num = (v) => (v >= 100 ? v.toFixed(0) : v.toFixed(1)).padStart(8);
           for (const [k, v] of m.incl.slice(0, topN * 2)) console.error(`        incl ${num(v)}  ${k}`);
         }
       } catch (e) {
+        if (e instanceof Skip) {
+          console.error(`  ${pad(dn, 15)} ${pad(an, 16)} skipped: ${e.message}`);
+          continue;
+        }
         console.error(`  ${pad(dn, 15)} ${pad(an, 16)} FAILED: ${e.message}`);
         results.push({ doc: dn, action: an, error: e.message });
         try { await escape(); await ev(doc.make); await sleep(1500); } catch {}

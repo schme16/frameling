@@ -573,6 +573,18 @@ xvfb-run -a -s "-screen 0 1600x1000x24" node scripts/perf/startup.cjs --web --ou
 Options: `--runs N` (default 7), `--cpu N` (default 4). `--web` serves `dist/web` from a sub-path, then reloads offline
 through the service worker.
 
+`sweep.cjs`: everyday actions (brush and pixel strokes, scrubbing, playing, selecting and moving, adding and deleting
+layers and keys, undo and redo, switching artboards, the Export dialog, saving, opening, autosave, switching workspaces)
+on built-in templates and on big stress documents (40 layers x 240 keys in folders, a 2000 x 2000 pixel sprite with 100
+frames, four variations, 60 symbols), with a CPU profile around each. Prints a table and the hottest functions;
+`compare-sweep.cjs` lines two result files up. Details and options in `scripts/perf/README.md`.
+
+```bash
+npm run build
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/perf/sweep.cjs --reps 3 --top 6 --out scripts/perf/results/sweep.json
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/perf/sweep.cjs --docs stress-vector --actions undo-redo,add-key --trace
+```
+
 ## Screenshots: scripts/shoot.cjs
 
 Screenshots of the built app for A/Bs, docs and checks. It answers the main process's file, autosave, recent and
