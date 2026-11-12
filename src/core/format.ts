@@ -146,9 +146,19 @@ export interface DrawingOverride {
  * A redrawn pixel or tile drawing as a file stores it: only the part that differs from the original's drawing.
  * In memory the variation has the whole drawing (in `doc.drawings`), so tools work on it unchanged.
  */
+export interface DiffRect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  pixels: string | Uint8ClampedArray;
+}
+
 export interface DrawingDiff {
   /** Pixels: the changed rectangle. In a file `pixels` names a PNG entry of just that rectangle; once read it holds its RGBA bytes. */
-  rect?: { x: number; y: number; w: number; h: number; pixels: string | Uint8ClampedArray };
+  rect?: DiffRect;
+  /** Pixels, when the change is in several places far apart: one small rectangle each (a file with one change uses `rect`). */
+  rects?: DiffRect[];
   /** Tiles: the changed slots as pairs of slot number and new value. */
   cells?: number[];
 }

@@ -165,9 +165,12 @@ variation) makes the settler give every key its copy (`openAliasing`; a few tens
 immer patch per copy), and closing it drops the copies nobody overrides. A vector recolour is stored
 as shape property patches (so geometry edits to the original still arrive); a pixel or tile edit makes the variation's
 drawing for that key its own (`replaced`) and tools work on the whole drawing in memory. **In a file** such a drawing is
-saved as what changed (`variationDiffs` in `variationsIo.ts`): the bounding rectangle of the changed pixels as a small
-PNG (`pixels/diff_<id>.png`, `DrawingOverride.diff.rect`), or the changed tile slots as pairs (`diff.cells`); when
-the change covers most of the drawing it is stored whole as before. On opening, `applyDiffs` rebuilds the whole drawing
+saved as what changed (`variationDiffs` in `variationsIo.ts`): the changed pixels as a few small PNG rectangles
+(`pixels/diff_<id>.png`; `changedRects` finds them: changes close together share a rectangle, far apart ones get their
+own, joined while that is cheaper than another zip entry and capped at 8; one rectangle is `DrawingOverride.diff.rect`,
+several are `diff.rects`), or the changed tile slots as pairs (`diff.cells`); when the changes cover most of the
+drawing it is stored whole as before. Two scars in opposite corners of a 64 x 64 key are two tiny PNGs, where one
+bounding rectangle would have covered most of the picture and been stored whole. On opening, `applyDiffs` rebuilds the whole drawing
 from the original's. A 60-frame 64 x 64 pixel animation with a small scar painted on every key adds about 15 KB to a
 600 KB file (it added 606 KB before).
 

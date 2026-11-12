@@ -4,6 +4,7 @@ import { newDoc, newPixelDrawing, newPixelLayer, newTilemapDrawing, newVectorLay
 import type { AudioClip, CameraDrawing, Doc, Layer, PathShape, PixelDrawing, TilemapDrawing, VectorDrawing } from '../../src/core/format';
 import { onBlocked, resetStore, store } from '../../src/core/store';
 import { loadFile, saveFile } from '../../src/io/file';
+import { changedRects, MAX_DIFF_RECTS } from '../../src/artboards/variationsIo';
 import { defaultSettings } from '../../src/export/plan';
 import { artboardExport, planArtboards, setArtboardExport } from '../../src/artboards/export';
 import { followSelection } from '../../src/core/followSelection';
@@ -915,6 +916,68 @@ describe('variations: redrawn pictures are stored as what changed', () => {
     expect((loaded.doc.drawings[d0.layers[0].cels[0].drawingId] as PixelDrawing).pixels[(10 * 64 + 20) * 4]).not.toBe(255);
   });
 
+  it('two edits far apart are two small rectangles, not one big one between them', () => {
+    const d0 = animation(40);
+    resetStore(d0);
+    const alone = saveFile(doc()).length;
+    const v = make();
+    open(v);
+    // A scar in the top left corner and one in the bottom right: their bounding box is most of the picture.
+    update('Two scars on every key', (d) => {
+      for (const c of d.layers[0].cels) {
+        const a = d.drawings[c.drawingId] as PixelDrawing;
+        const px = new Uint8ClampedArray(a.pixels);
+        for (const [x0, y0] of [[2, 2], [56, 56]]) for (let y = y0; y < y0 + 4; y++) for (let x = x0; x < x0 + 4; x++) px.set([255, 0, 0, 255], (y * 64 + x) * 4);
+        a.pixels = px;
+      }
+    });
+    open(root());
+    const bytes = saveFile(doc());
+    expect(bytes.length - alone).toBeLessThan(alone * 0.08);
+    const files = unzipSync(bytes);
+    const diffs = Object.keys(files).filter((n) => n.startsWith('pixels/diff_'));
+    expect(diffs).toHaveLength(80);
+    expect(diffs.every((n) => files[n].length < 200)).toBe(true);
+    const raw = JSON.parse(strFromU8(files['doc.json']));
+    const saved = raw.artboards.find((a: { id: string }) => a.id === v).overrides.drawings;
+    const first = Object.values(saved)[0] as { diff: { rect?: unknown; rects: { w: number; h: number }[] } };
+    expect(first.diff.rect).toBeUndefined();
+    expect(first.diff.rects).toHaveLength(2);
+    // Opens to exactly the same pictures.
+    const loaded = loadFile(bytes);
+    expect(loaded.warnings).toEqual([]);
+    for (const c of findArtboard(loaded.doc, v)!.content!.layers[0].cels) {
+      const mine = loaded.doc.drawings[c.drawingId] as PixelDrawing;
+      const was = doc().drawings[c.drawingId] as PixelDrawing;
+      expect(mine.pixels).toEqual(was.pixels);
+    }
+  });
+
+  it('a stored rectangle that cannot be read leaves the others, with a warning', () => {
+    resetStore(animation(2));
+    const v = make();
+    open(v);
+    update('Two scars', (d) => {
+      const a = d.drawings[d.layers[0].cels[0].drawingId] as PixelDrawing;
+      const px = new Uint8ClampedArray(a.pixels);
+      for (const [x0, y0] of [[2, 2], [56, 56]]) for (let y = y0; y < y0 + 4; y++) for (let x = x0; x < x0 + 4; x++) px.set([255, 0, 0, 255], (y * 64 + x) * 4);
+      a.pixels = px;
+    });
+    open(root());
+    const files = unzipSync(saveFile(doc()));
+    const names = Object.keys(files).filter((n) => n.startsWith('pixels/diff_'));
+    expect(names).toHaveLength(2);
+    delete files[names[1]];
+    const loaded = loadFile(zipSync(files));
+    expect(loaded.warnings.length).toBeGreaterThan(0);
+    const k = findArtboard(loaded.doc, v)!.content!.layers[0].cels[0].drawingId;
+    const got = (loaded.doc.drawings[k] as PixelDrawing).pixels;
+    const want = (doc().drawings[k] as PixelDrawing).pixels;
+    // One scar made it, the other shows the original there.
+    const same = (x: number, y: number) => got[(y * 64 + x) * 4] === want[(y * 64 + x) * 4];
+    expect([same(2, 2), same(56, 56)].filter(Boolean)).toHaveLength(1);
+  });
+
   it('a drawing changed nearly everywhere is stored whole, and the file still round trips', () => {
     resetStore(animation(2));
     const v = make();
@@ -1082,5 +1145,53 @@ describe('variations: a closed variation only has copies of what it overrides', 
     expect((doc().drawings[aliasId('k1', v)] as CameraDrawing).view.zoom).toBe(2);
     expect(copies(v)).toEqual([aliasId('k1', v)]);
     expect(celsOf(findArtboard(doc(), v)!.content!, 'L1')).toEqual(['d1', 'd2']);
+  });
+});
+
+describe('variations: finding what changed in a picture', () => {
+  const blank = (w: number, h: number): PixelDrawing => newPixelDrawing(w, h);
+  const paint = (p: PixelDrawing, x0: number, y0: number, w: number, h: number) => {
+    const px = new Uint8ClampedArray(p.pixels);
+    for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) px.set([9, 9, 9, 255], (y * p.width + x) * 4);
+    return { ...p, pixels: px };
+  };
+
+  it('is empty when nothing changed and null when the sizes differ', () => {
+    expect(changedRects(blank(32, 32), blank(32, 32))).toEqual([]);
+    expect(changedRects(blank(32, 32), blank(16, 32))).toBeNull();
+  });
+
+  it('keeps one change as the tight rectangle round it', () => {
+    const a = blank(64, 64);
+    expect(changedRects(a, paint(a, 10, 20, 5, 3))).toEqual([{ x: 10, y: 20, w: 5, h: 3 }]);
+  });
+
+  it('joins changes that sit close together', () => {
+    const a = blank(64, 64);
+    const b = paint(paint(a, 10, 10, 3, 3), 18, 12, 3, 3);
+    expect(changedRects(a, b)).toEqual([{ x: 10, y: 10, w: 11, h: 5 }]);
+  });
+
+  it('keeps changes far apart separate, and caps how many there are', () => {
+    const a = blank(256, 256);
+    expect(changedRects(a, paint(paint(a, 2, 2, 4, 4), 240, 240, 4, 4))).toEqual([
+      { x: 2, y: 2, w: 4, h: 4 },
+      { x: 240, y: 240, w: 4, h: 4 },
+    ]);
+    // A row of twenty spots too far apart to join cheaply still ends up as at most the cap.
+    let b = a;
+    for (let i = 0; i < 20; i++) b = paint(b, 4 + (i % 5) * 50, 4 + Math.floor(i / 5) * 60, 6, 6);
+    const rs = changedRects(a, b)!;
+    expect(rs.length).toBeGreaterThan(1);
+    expect(rs.length).toBeLessThanOrEqual(MAX_DIFF_RECTS);
+    // Every changed pixel is inside one of them.
+    for (let y = 0; y < 256; y++) for (let x = 0; x < 256; x++) if (b.pixels[(y * 256 + x) * 4] !== a.pixels[(y * 256 + x) * 4]) expect(rs.some((r) => x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h)).toBe(true);
+  });
+
+  it('treats scattered noise as one rectangle', () => {
+    const a = blank(128, 128);
+    const px = new Uint8ClampedArray(a.pixels);
+    for (let y = 0; y < 128; y += 3) for (let x = (y * 7) % 5; x < 128; x += 5) px.set([1, 2, 3, 255], (y * 128 + x) * 4);
+    expect(changedRects(a, { ...a, pixels: px })!.length).toBe(1);
   });
 });
