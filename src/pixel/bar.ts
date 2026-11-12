@@ -7,21 +7,21 @@ import { exactIndex, nearestIndex, paletteRgb } from './palette';
 /** The sizes the bar offers, in art pixels. */
 export const BAR_SIZES = [1, 2, 3, 4, 5, 6, 7, 8] as const;
 
-/** Which setting holds a tool's size on a pixel layer, or null for tools without one. The pencil is always one pixel. */
-export function sizeSettingFor(tool: string): 'pixelBrushSize' | 'eraserPixelSize' | 'ditherSize' | 'pencil' | null {
-  if (tool === 'brush' || tool === 'shade') return 'pixelBrushSize';
+/** Which setting holds a tool's size on a pixel layer, or null for tools without one. The Pencil has a size (1 is the pencil). */
+export function sizeSettingFor(tool: string): 'pixelBrushSize' | 'eraserPixelSize' | 'ditherSize' | 'spraySize' | null {
+  if (tool === 'pencil' || tool === 'brush' || tool === 'shade') return 'pixelBrushSize';
   if (tool === 'eraser') return 'eraserPixelSize';
   if (tool === 'dither') return 'ditherSize';
-  if (tool === 'pencil') return 'pencil';
+  if (tool === 'spray') return 'spraySize';
   return null;
 }
 
 /** Tools whose footprint has a shape (square or round). */
-export const hasShape = (tool: string): boolean => ['pencil', 'brush', 'shade', 'eraser', 'dither'].includes(tool);
+export const hasShape = (tool: string): boolean => ['pencil', 'brush', 'shade', 'eraser', 'dither', 'spray'].includes(tool);
 /** Tools with the "pixel perfect" corner clean-up. */
 export const hasPerfect = (tool: string): boolean => ['pencil', 'brush', 'shade'].includes(tool);
 /** Tools mirror drawing works with. */
-export const hasMirror = (tool: string): boolean => ['pencil', 'brush', 'shade', 'eraser', 'dither', 'line', 'rect', 'ellipse'].includes(tool);
+export const hasMirror = (tool: string): boolean => ['pencil', 'brush', 'shade', 'eraser', 'dither', 'spray', 'line', 'rect', 'ellipse'].includes(tool);
 
 /**
  * The palette colour being painted with: its index (0-based), and whether it's exactly that colour or the nearest

@@ -12,7 +12,8 @@ import { store } from '../core/store';
 import { getToolSettings, setToolSettings } from '../tools/settings';
 import { pickTool } from '../tools/pick';
 import { noteColorUsed } from '../tools/recent';
-import { activeColor, setActiveColor } from '../tools/wells';
+import { activeColor, setActiveColor, swapPaintBack } from '../tools/wells';
+import { paintWellsOn } from '../tools/pixelWells';
 
 export const MAX_BRUSH = 24;
 export const MAX_DITHER = 32;
@@ -21,6 +22,7 @@ export interface Sizes {
   pixelBrushSize: number;
   eraserPixelSize: number;
   ditherSize: number;
+  spraySize: number;
 }
 
 /** What a size key does for this tool: the new size, and the tool to switch to when it isn't the one you are on. Null = nothing to change. */
@@ -29,16 +31,12 @@ export interface SizeStep {
   set: Partial<Sizes>;
 }
 
-/**
- * Bigger (dir 1) or smaller (-1) for the tool in hand. The pencil is always one pixel, so bigger turns it into the
- * brush at two pixels (the same as picking 2 on the pixel bar). Tools with no size do nothing.
- */
+/** Bigger (dir 1) or smaller (-1) for the tool in hand. Tools with no size do nothing. */
 export function stepSize(tool: string, sizes: Sizes, dir: 1 | -1): SizeStep | null {
   const which = sizeSettingFor(tool);
   if (!which) return null;
-  if (which === 'pencil') return dir > 0 ? { tool: 'brush', set: { pixelBrushSize: 2 } } : null;
   const key = which as keyof Sizes;
-  const max = key === 'ditherSize' ? MAX_DITHER : MAX_BRUSH;
+  const max = key === 'ditherSize' || key === 'spraySize' ? MAX_DITHER : MAX_BRUSH;
   const now = sizes[key];
   const next = Math.min(max, Math.max(1, now + dir));
   return next === now ? null : { set: { [key]: next } };
@@ -55,15 +53,16 @@ export function stepPaletteColor(colors: readonly string[], index: number | null
 function resize(dir: 1 | -1): void {
   const step = stepSizeNow(dir);
   if (!step) return;
-  const { ditherSize, ...toolSizes } = step.set;
+  const { ditherSize, spraySize, ...toolSizes } = step.set;
   if (Object.keys(toolSizes).length) setToolSettings(toolSizes);
   if (ditherSize !== undefined) setPixelSettings({ ditherSize });
+  if (spraySize !== undefined) setPixelSettings({ spraySize });
   if (step.tool) pickTool(step.tool);
 }
 
 function stepSizeNow(dir: 1 | -1): SizeStep | null {
   const t = getToolSettings();
-  return stepSize(store().get().ui.tool, { pixelBrushSize: t.pixelBrushSize, eraserPixelSize: t.eraserPixelSize, ditherSize: getPixelSettings().ditherSize }, dir);
+  return stepSize(store().get().ui.tool, { pixelBrushSize: t.pixelBrushSize, eraserPixelSize: t.eraserPixelSize, ditherSize: getPixelSettings().ditherSize, spraySize: getPixelSettings().spraySize }, dir);
 }
 
 const canResize = (dir: 1 | -1) => () => !!activePixelLayer() && !!stepSizeNow(dir);
@@ -91,7 +90,7 @@ registerCommands([
     id: 'pixel.sizeUp',
     label: 'Bigger brush',
     category: 'Pixel',
-    description: 'Make the brush, eraser or dither one pixel bigger. The pencil turns into the brush at 2 pixels.',
+    description: 'Make the pencil, eraser, dither or spray one pixel bigger. The pencil at size 1 is the plain pencil.',
     help: 'pixel-aseprite-habits',
     keywords: ['brush size', 'bigger', 'larger', 'plus', 'size up', 'thicker'],
     enabled: canResize(1),
@@ -101,7 +100,7 @@ registerCommands([
     id: 'pixel.sizeDown',
     label: 'Smaller brush',
     category: 'Pixel',
-    description: 'Make the brush, eraser or dither one pixel smaller.',
+    description: 'Make the pencil, eraser, dither or spray one pixel smaller.',
     help: 'pixel-aseprite-habits',
     keywords: ['brush size', 'smaller', 'minus', 'size down', 'thinner'],
     enabled: canResize(-1),
@@ -126,6 +125,16 @@ registerCommands([
     keywords: ['palette', 'swatch', 'step colour', 'previous swatch', 'cycle'],
     enabled: () => !!activePixelLayer(),
     run: () => stepColor(-1),
+  },
+  {
+    id: 'pixel.swapPaintBack',
+    label: 'Swap Paint and Back colours',
+    category: 'Pixel',
+    description: 'Paint and Back trade places. In the Pixel workspace X does this too, and a right-click paints with Back.',
+    help: 'pixel-wells',
+    keywords: ['paint', 'back', 'foreground', 'background', 'swap', 'colours', 'wells', 'x'],
+    enabled: () => paintWellsOn() && !!store().get().ui.fillColor,
+    run: () => void swapPaintBack(),
   },
   ...ART_ZOOM_PRESETS.map((percent, i) => ({
     id: `pixel.zoom${i + 1}`,

@@ -34,24 +34,18 @@ function SizeButtons({ tool }: { tool: string }) {
   const brush = useToolSettings((s) => s.pixelBrushSize);
   const eraser = useToolSettings((s) => s.eraserPixelSize);
   const dither = usePixelSettings((s) => s.ditherSize);
+  const spray = usePixelSettings((s) => s.spraySize);
   if (!which) return null;
-  const value = which === 'pencil' ? 1 : which === 'pixelBrushSize' ? brush : which === 'eraserPixelSize' ? eraser : dither;
+  const value = which === 'pixelBrushSize' ? brush : which === 'eraserPixelSize' ? eraser : which === 'spraySize' ? spray : dither;
   const pick = (n: number) => {
-    if (which === 'pencil') {
-      // The pencil is always one pixel; bigger sizes are the brush, which is the same pen with a size.
-      if (n === 1) return;
-      setToolSettings({ pixelBrushSize: n });
-      store().setUi({ tool: 'brush' });
-      return;
-    }
-    if (which === 'ditherSize') setPixelSettings({ ditherSize: n });
+    if (which === 'ditherSize' || which === 'spraySize') setPixelSettings({ [which]: n });
     else setToolSettings({ [which]: n });
   };
   return (
     <div className="px-bar-group" role="radiogroup" aria-label="Brush size in pixels">
       <span className="px-bar-label">Size</span>
       {BAR_SIZES.map((n) => (
-        <button key={n} type="button" role="radio" className="px-bar-size" aria-checked={value === n} data-on={value === n ? 'true' : undefined} title={which === 'pencil' && n > 1 ? `${n} pixels (switches to the Brush, the pencil with a size)` : `${n} pixel${n === 1 ? '' : 's'}`} onClick={() => pick(n)}>
+        <button key={n} type="button" role="radio" className="px-bar-size" aria-checked={value === n} data-on={value === n ? 'true' : undefined} title={`${n} pixel${n === 1 ? '' : 's'}${tool === 'pencil' && n === 1 ? ' (the plain pencil)' : ''}`} onClick={() => pick(n)}>
           {n}
         </button>
       ))}

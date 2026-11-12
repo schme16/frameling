@@ -75,9 +75,10 @@ function SizeSlider() {
 export function PixelPencilOptions() {
   return (
     <div className="cv-options">
+      <SizeSlider />
       <PixelPerfectToggle />
       <MirrorOptions />
-      <Tip>The pencil always draws one pixel. Hold Shift and click to draw a straight line from where you last stopped.</Tip>
+      <Tip>Size 1 is the plain pencil, and bigger sizes are the same pencil with a thicker tip. Hold Shift and click to draw a straight line from where you last stopped.</Tip>
     </div>
   );
 }
@@ -128,6 +129,17 @@ export function ShadeOptions() {
       <PixelPerfectToggle />
       <MirrorOptions />
       <Tip>Shading moves each pixel one step along its colour ramp in the Palette panel. Go over it again to go further. Pixels that aren't palette colours are left alone.</Tip>
+    </div>
+  );
+}
+
+export function SprayOptions() {
+  const size = usePixelSettings((s) => s.spraySize);
+  return (
+    <div className="cv-options">
+      <Slider label="Size" value={size} min={2} max={32} format={(v) => `${v} pixels across`} onChange={(v) => setPixelSettings({ spraySize: v })} />
+      <MirrorOptions />
+      <Tip>A sprinkle of the Paint colour. Drag slowly to build it up, or quickly to keep it light.</Tip>
     </div>
   );
 }

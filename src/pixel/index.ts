@@ -11,13 +11,26 @@ import { activePixelLayer } from './tools';
 import { withMirror } from './ToolOptions';
 import { exportPalette, importPalette, paletteFromDrawing } from './palette-files';
 import { store } from '../core/store';
-import { showPanel } from '../ui/dock';
+import { dock, inPixelWorkspace, showPanel } from '../ui/dock';
+import { setPaintWells, setShapeFilledSource } from '../tools/pixelWells';
+import { getPixelSettings } from './settings';
 import { previewSettings, setPreview } from './preview';
 import { watchOnePicture, watchPixelDocs } from './workspace';
 import './workspace-help';
 
 registerPanel({ id: 'palette', title: 'Palette', icon: 'palette', component: lazyPanel(() => import('./PalettePanel').then((m) => m.PalettePanel)), zone: 'right', order: 25, help: 'palette' });
 registerPanel({ id: 'preview', title: 'Preview', icon: 'film', component: lazyPanel(() => import('./PreviewPanel').then((m) => m.PreviewPanel)), zone: 'right', order: 80, help: 'pixel-preview' });
+
+// Paint and Back: in the Pixel workspace the two colour wells are Paint and Back, and every pixel tool paints with Paint.
+setShapeFilledSource(() => getPixelSettings().shapeFilled);
+const syncWells = () => {
+  const on = inPixelWorkspace();
+  setPaintWells(on);
+  const ui = store().get().ui;
+  if (on && (!ui.strokeOn || ui.activeWell !== 'stroke')) store().setUi({ strokeOn: true, activeWell: 'stroke' });
+};
+dock.subscribe(syncWells);
+syncWells();
 
 // Offer the Pixel workspace when pixel art opens (asked once).
 watchPixelDocs(store());

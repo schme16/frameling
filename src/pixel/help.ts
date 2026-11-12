@@ -41,6 +41,20 @@ Every pixel you pass over moves **one step along its ramp** in the [Palette](hel
 This is sometimes called a *shading ink*. It works best with palettes laid out in ramps, dark to light.`,
   },
   {
+    id: 'tool-spray',
+    title: 'Spray',
+    section: 'Pixel art',
+    summary: 'A sprinkle of Paint pixels round the pointer, for grit, stars, snow and soft edges.',
+    keywords: ['airbrush', 'sprinkle', 'scatter', 'grain', 'texture', 'noise', 'spray can'],
+    body: `Pick **Spray** from the Pixel tools, then drag. It scatters a few pixels of your **Paint** colour round the pointer each step, so a slow drag builds up thick and a quick one stays light.
+
+- **Size** is how many pixels across the sprinkle is.
+- It follows [Mirror drawing](help:pixel-mirror) and the [palette lock](help:palette-lock) like the other pixel tools.
+- It has no key of its own, so it never takes one from another tool. Give it one in Preferences > Keyboard, or find it with **Ctrl+K**.
+
+For a tidy, even pattern use the [Dither](help:tool-dither) brush instead.`,
+  },
+  {
     id: 'tool-dither',
     title: 'Dither',
     section: 'Pixel art',

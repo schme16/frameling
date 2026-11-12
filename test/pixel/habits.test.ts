@@ -17,7 +17,7 @@ import { pixelStore, ptr, vectorStore } from '../tools/helpers';
 
 const run = (id: string) => getCommand(id)!.run();
 const enabled = (id: string) => (getCommand(id)!.enabled ? getCommand(id)!.enabled!(store().get()) : true);
-const SIZES = { pixelBrushSize: 3, eraserPixelSize: 5, ditherSize: 4 };
+const SIZES = { pixelBrushSize: 3, eraserPixelSize: 5, ditherSize: 4, spraySize: 8 };
 
 describe('stepSize', () => {
   it('steps the brush, the eraser and dither by one', () => {
@@ -31,9 +31,12 @@ describe('stepSize', () => {
     expect(stepSize('brush', { ...SIZES, pixelBrushSize: MAX_BRUSH }, 1)).toBeNull();
     expect(stepSize('dither', { ...SIZES, ditherSize: MAX_DITHER }, 1)).toBeNull();
   });
-  it('the pencil turns into the brush at 2 pixels, and has no smaller', () => {
-    expect(stepSize('pencil', SIZES, 1)).toEqual({ tool: 'brush', set: { pixelBrushSize: 2 } });
-    expect(stepSize('pencil', SIZES, -1)).toBeNull();
+  it('the pencil is the one sized tool: it steps its own size and stays the pencil', () => {
+    expect(stepSize('pencil', { ...SIZES, pixelBrushSize: 1 }, 1)).toEqual({ set: { pixelBrushSize: 2 } });
+    expect(stepSize('pencil', { ...SIZES, pixelBrushSize: 1 }, -1)).toBeNull();
+  });
+  it('the spray steps its own size', () => {
+    expect(stepSize('spray', SIZES, 1)).toEqual({ set: { spraySize: 9 } });
   });
   it('tools without a size do nothing', () => {
     for (const t of ['fill', 'line', 'rect', 'eyedropper', 'pixel-select']) expect(stepSize(t, SIZES, 1), t).toBeNull();
@@ -70,10 +73,10 @@ describe('the size commands', () => {
     run('pixel.sizeDown');
     expect(getToolSettings().pixelBrushSize).toBe(2);
   });
-  it('bigger with the pencil switches to the brush at 2', () => {
+  it('bigger with the pencil stays on the pencil and gives it a size', () => {
     store().setUi({ tool: 'pencil' });
     run('pixel.sizeUp');
-    expect(store().get().ui.tool).toBe('brush');
+    expect(store().get().ui.tool).toBe('pencil');
     expect(getToolSettings().pixelBrushSize).toBe(2);
   });
   it('the eraser and dither keep their own sizes', () => {

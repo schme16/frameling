@@ -23,6 +23,7 @@ import { mergeShapes } from '../geometry/merge';
 import { pixelSelection } from '../select/pixel-state';
 import { clipToMask } from '../select/mask';
 import { reducedMotion } from '../ui/prefs';
+import { paintWellsOn } from './pixelWells';
 
 export const FILL_HINTS = {
   'no-fill': 'The fill colour is set to none. Pick a fill colour in the Colours panel (the solid box), then fill.',
@@ -124,8 +125,8 @@ export function barrierShapes(doc: Doc, frame: number, own: readonly Shape[], al
 
 function fillVector(e: ToolPointer, ctx: ToolContext) {
   const { doc } = store().get();
-  // The bucket pours the fill colour (the stroke colour is for lines), as in Illustrator.
-  const ui = { ...store().get().ui, color: store().get().ui.fillColor ?? '' };
+  // The bucket pours the fill colour (the stroke colour is for lines), as in Illustrator. With Paint and Back, it pours Paint.
+  const ui = { ...store().get().ui, color: (paintWellsOn() ? store().get().ui.color : store().get().ui.fillColor) ?? '' };
   if (!ui.color) {
     ctx.hint(FILL_HINTS['no-fill']);
     return;
@@ -227,7 +228,8 @@ export function fillPoints(x: number, y: number, width: number, height: number, 
 }
 
 function fillPixels(e: ToolPointer, ctx: ToolContext) {
-  const ui = { ...store().get().ui, color: store().get().ui.fillColor ?? '' };
+  // The bucket pours Paint in the Pixel workspace, the fill colour elsewhere.
+  const ui = { ...store().get().ui, color: (paintWellsOn() ? store().get().ui.color : store().get().ui.fillColor) ?? '' };
   if (!ui.color) {
     ctx.hint(FILL_HINTS['no-fill']);
     return;
