@@ -13,6 +13,9 @@ import { fitView } from '../canvas/view';
 import { lookingThrough } from '../camera/ops';
 import { resizeCanvas, type Anchor } from '../canvas/resize';
 import { toast } from '../ui/toast';
+import { currentChoice } from '../core/choices';
+import { changeVariation, setVariationSize } from './variations';
+import type { FitMode } from './fit';
 import {
   activeArtboard,
   activeId,
@@ -239,7 +242,8 @@ export function moveArtboardTo(id: Id, x: number, y: number, coalesce?: string):
 }
 
 export function setArtboardBackgroundById(id: Id, color: string | null): void {
-  store().update('Artboard background', (d) => setArtboardBackground(d as Doc, id, color), { coalesce: `ab-bg-${id}` });
+  const isVariation = !!findArtboard(store().get().doc, id)?.variationOf;
+  store().update('Artboard background', (d) => void (isVariation ? changeVariation(d as Doc, id, (c) => ({ ...c, background: color })) : setArtboardBackground(d as Doc, id, color)), { coalesce: `ab-bg-${id}` });
 }
 
 export function arrangeAll(columns = 0): void {
@@ -271,10 +275,30 @@ export function resizeArtboard(id: Id, w: number, h: number, anchor: Anchor = 'n
   const h2 = Math.max(1, Math.round(h));
   if (w2 === size.w && h2 === size.h && (!at || (at.x === a.x && at.y === a.y))) return;
   const open = activeId(doc) === id;
-  const view = artboardDoc(doc, id);
-  const out = w2 === size.w && h2 === size.h ? view : resizeCanvas({ ...view, drawings: doc.drawings }, w2, h2, anchor).doc;
   const nx = Math.round(at?.x ?? a.x);
   const ny = Math.round(at?.y ?? a.y);
+  const moveView = () => {
+    if (open && (nx !== a.x || ny !== a.y)) {
+      const ui = s.get().ui;
+      s.setUi({ panX: ui.panX + (nx - a.x) * ui.zoom, panY: ui.panY + (ny - a.y) * ui.zoom });
+      if (seen && seen.active === id) seen = { ...seen, x: nx, y: ny };
+    }
+  };
+  if (a.variationOf) {
+    // A variation's size is only its picture: the art stays where it is and a camera frames it (see variations.ts).
+    s.update('Artboard size', (d) => {
+      setVariationSize(d as Doc, id, w2, h2, currentChoice<FitMode>('variations.frame'));
+      const t = (d as Doc).artboards?.find((b) => b.id === id);
+      if (t) {
+        t.x = nx;
+        t.y = ny;
+      }
+    });
+    moveView();
+    return;
+  }
+  const view = artboardDoc(doc, id);
+  const out = w2 === size.w && h2 === size.h ? view : resizeCanvas({ ...view, drawings: doc.drawings }, w2, h2, anchor).doc;
   s.update('Artboard size', (d) => {
     ensureArtboards(d as Doc);
     const c = takeContent(out);
@@ -287,9 +311,5 @@ export function resizeArtboard(id: Id, w: number, h: number, anchor: Anchor = 'n
       t.y = ny;
     }
   });
-  if (open && (nx !== a.x || ny !== a.y)) {
-    const ui = s.get().ui;
-    s.setUi({ panX: ui.panX + (nx - a.x) * ui.zoom, panY: ui.panY + (ny - a.y) * ui.zoom });
-    if (seen && seen.active === id) seen = { ...seen, x: nx, y: ny };
-  }
+  moveView();
 }

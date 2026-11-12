@@ -15,6 +15,8 @@ import { readOrigin, readParticlesShape, readTextShape } from './shapes-extra';
 import { packAudio, unpackAudio } from './audio-file';
 import { keepUnknownShape, readExt, shapesForSave, withExt } from './ext';
 import { packArtboards, readArtboards } from '../artboards/io';
+import { closedForSave, isDerivedDrawing, resolveAfterLoad } from '../artboards/variationsIo';
+import { switchOpenVariation } from '../artboards/variations';
 import { upgradeLineage } from '../core/upgradeLineage';
 import { readClip } from '../core/clipPlay';
 
@@ -60,11 +62,14 @@ const safeName = (id: string) => id.replace(/[^A-Za-z0-9_-]/g, '_');
 
 export function saveFile(open: Doc, appVersion = '', now: Date = new Date()): Uint8Array {
   // Saved as if no symbol were open for editing.
-  const doc = rootDoc(open);
+  const closed = closedForSave(rootDoc(open));
+  const doc = closed.doc;
   const files: Zippable = {};
   const drawings: Record<string, unknown> = {};
   const used = new Set<string>();
   for (const [id, d] of Object.entries(doc.drawings)) {
+    // A variation's drawings that are worked out from its original are not stored.
+    if (isDerivedDrawing(doc, id)) continue;
     if (d.kind === 'pixel') {
       let name = `pixels/${safeName(id)}.png`;
       while (used.has(name)) name = name.replace(/\.png$/, '_.png');
@@ -85,7 +90,7 @@ export function saveFile(open: Doc, appVersion = '', now: Date = new Date()): Ui
   // Sound bytes go in their own entries; `audio` in doc.json then names them (undefined leaves the key out).
   const audio = packAudio(doc, files);
   // Artboards that aren't open carry their own sounds the same way.
-  files['doc.json'] = strToU8(JSON.stringify({ ...doc, drawings, audio, ...packArtboards(doc, files) }));
+  files['doc.json'] = strToU8(JSON.stringify({ ...doc, drawings, audio, ...packArtboards(doc, files), ...(closed.reopen ? { variationOpen: closed.reopen } : {}) }));
   return zipSync(files, { level: 6 });
 }
 
@@ -294,9 +299,10 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
     const points = raw.perspective.points.filter((p: any) => isObj(p) && Number.isFinite(p.x) && Number.isFinite(p.y)).slice(0, 2).map((p: any) => ({ x: p.x as number, y: p.y as number }));
     if (points.length) doc.perspective = { points };
   }
-  Object.assign(doc, readArtboards(raw, entries, warnings, { readLayers, readFlow, readGuides }));
+  Object.assign(doc, readArtboards(raw, entries, warnings, { readLayers, readFlow, readGuides, top: layers }));
+  resolveAfterLoad(doc, warnings);
   upgradeLineage(doc);
-  return doc;
+  return typeof raw.variationOpen === 'string' ? switchOpenVariation(doc, raw.variationOpen) : doc;
 }
 
 /** Guides, keeping only well-formed ones. */
