@@ -1,0 +1,161 @@
+// End-to-end check of the sparse live preview of a pixel stroke, in the real app with real mouse events. While a stroke is
+// held down the canvas shows the old drawing with only the touched 128 x 128 tiles drawn live; once it is let go the
+// normal picture is drawn. The two must be the same, pixel for pixel, at every zoom (including ones that put tile edges
+// between screen pixels), for painting and for erasing (which lowers alpha: the live tile has to replace the old picture,
+// not lie over it). Below 33% zoom the odd screen pixel may differ (see src/canvas/livePixels.ts), so it is only listed.
+//
+//   npm run build
+//   xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/pixel-live.cjs [outDir]
+//
+// Exits non-zero when anything differs.
+const { app, BrowserWindow } = require('electron');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
+const { pathToFileURL } = require('node:url');
+
+const root = path.resolve(__dirname, '../..');
+const argv = process.argv.slice(2).filter((a) => !a.endsWith('pixel-live.cjs'));
+const outDir = path.resolve(argv.find((a) => !a.startsWith('--')) ?? fs.mkdtempSync(path.join(os.tmpdir(), 'frameling-pxlive-')));
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+fs.rmSync(outDir, { recursive: true, force: true });
+fs.mkdirSync(outDir, { recursive: true });
+
+let win;
+const ev = (js) => win.webContents.executeJavaScript(js, true);
+const send = (e) => win.webContents.sendInputEvent(e);
+const failures = [];
+
+async function startApp() {
+  app.setPath('userData', path.join(outDir, 'userdata'));
+  process.env.FRAMELING_DEV_URL = pathToFileURL(path.join(process.env.PIXEL_LIVE_RENDERER || path.join(root, 'dist/renderer'), 'index.html')).href + '?debug=1';
+  process.env.FRAMELING_AUTOMATION_DIR = path.join(outDir, 'misc');
+  fs.mkdirSync(process.env.FRAMELING_AUTOMATION_DIR, { recursive: true });
+  require(path.join(root, 'dist/main/main.cjs'));
+  app.on('browser-window-created', (_e, w) => w.webContents.setBackgroundThrottling(false));
+  await app.whenReady();
+  for (let i = 0; i < 100 && !BrowserWindow.getAllWindows().length; i++) await sleep(100);
+  win = BrowserWindow.getAllWindows()[0];
+  if (!win) throw new Error('The app never opened a window');
+  win.setSize(1400, 900);
+  for (let i = 0; i < 200; i++) {
+    try {
+      if (await ev('!!window.__frameling')) {
+        await ev(`localStorage.setItem('frameling.prefs.v1', JSON.stringify({ showWelcome: false, showTips: false })); localStorage.setItem('frameling.choices.v1', JSON.stringify({ 'workspace.pixelDocs': 'stay' })); true`);
+        await win.loadURL(process.env.FRAMELING_DEV_URL);
+        await sleep(2500);
+        return;
+      }
+    } catch {
+      // still loading
+    }
+    await sleep(100);
+  }
+  throw new Error('The page never became ready');
+}
+
+/** A 600 x 420 pixel drawing that fills the grid, half see-through in places, so painting and erasing both show. */
+const MAKE = `(() => {
+  const F = window.__frameling;
+  F.template('blank-pixel');
+  const S = F.store();
+  const W = 600, H = 420;
+  const px = new Uint8ClampedArray(W * H * 4);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const o = (y * W + x) * 4;
+    px[o] = (x * 5) & 255; px[o + 1] = (y * 3) & 255; px[o + 2] = ((x ^ y) * 7) & 255;
+    px[o + 3] = ((x >> 3) + (y >> 3)) % 5 === 0 ? 90 : 255;
+  }
+  S.update('big', (d) => {
+    d.width = W; d.height = H;
+    const layer = d.layers.find((l) => l.kind === 'pixel');
+    layer.pixelSize = 1;
+    const dr = { id: 'live-full', kind: 'pixel', width: W, height: H, pixels: px };
+    d.drawings[dr.id] = dr;
+    layer.cels = [{ id: 'live-cel', start: 0, length: 1, drawingId: dr.id }];
+    d.camera = undefined;
+  });
+  const layer = S.get().doc.layers.find((l) => l.kind === 'pixel');
+  S.setUi({ activeLayerId: layer.id, frame: 0, color: '#ff2020' });
+  F.run('view.fit');
+  return true;
+})()`;
+
+async function shotPng(name) {
+  const r = await ev(`(() => { const b = document.querySelector('.cv-root').getBoundingClientRect(); return { x: Math.round(b.left), y: Math.round(b.top), width: Math.round(b.width), height: Math.round(b.height) }; })()`);
+  fs.writeFileSync(path.join(outDir, name), (await win.webContents.capturePage(r)).toPNG());
+}
+
+async function shot() {
+  // The canvas area only, as raw bytes.
+  const r = await ev(`(() => { const b = document.querySelector('.cv-root').getBoundingClientRect(); return { x: Math.round(b.left), y: Math.round(b.top), width: Math.round(b.width), height: Math.round(b.height) }; })()`);
+  const img = await win.webContents.capturePage(r);
+  return img.toBitmap();
+}
+
+async function stroke(tool, zoom, label) {
+  await ev(`window.__frameling.store().setUi({ tool: ${JSON.stringify(tool)}, zoom: ${zoom} })`);
+  await sleep(300);
+  const box = await ev(`(() => { const r = document.querySelector('.cv-root').getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; })()`);
+  const cx = Math.round(box.x + box.w / 2);
+  const cy = Math.round(box.y + box.h / 2);
+  // A stroke across several tiles (a tile is 128 art pixels), going over the old picture.
+  const span = Math.min(box.w / 2 - 30, 128 * zoom * 1.8);
+  const pts = [];
+  for (let i = 0; i <= 40; i++) pts.push([Math.round(cx - span + (2 * span * i) / 40), Math.round(cy + Math.sin(i / 6) * Math.min(box.h / 3, 90 * zoom))]);
+  send({ type: 'mouseMove', x: pts[0][0], y: pts[0][1] });
+  send({ type: 'mouseDown', x: pts[0][0], y: pts[0][1], button: 'left', clickCount: 1 });
+  for (let i = 1; i < pts.length; i++) {
+    send({ type: 'mouseMove', x: pts[i][0], y: pts[i][1], modifiers: ['leftButtonDown'] });
+    await sleep(12);
+  }
+  await sleep(250);
+  const held = await shot();
+  if (process.env.PIXEL_LIVE_PNG) await shotPng(`${label.replace(/\W+/g, '-')}-held.png`);
+  const l = pts[pts.length - 1];
+  send({ type: 'mouseUp', x: l[0], y: l[1], button: 'left', clickCount: 1 });
+  await sleep(400);
+  const done = await shot();
+  if (process.env.PIXEL_LIVE_PNG) await shotPng(`${label.replace(/\W+/g, '-')}-done.png`);
+  let diff = 0;
+  let first = -1;
+  for (let i = 0; i < held.length; i += 4) {
+    if (held[i] !== done[i] || held[i + 1] !== done[i + 1] || held[i + 2] !== done[i + 2]) {
+      diff++;
+      if (first < 0) first = i / 4;
+    }
+  }
+  // Far out (under 33%) a screen pixel stands for three or more art pixels and the odd one may show a neighbour until the stroke ends.
+  const ok = diff === 0 || zoom < 1 / 3;
+  console.log(`${ok ? 'ok  ' : 'FAIL'} ${label}: ${diff} screen pixels differ between the held stroke and the finished one${first >= 0 ? ` (first at ${first})` : ''}`);
+  if (!ok || diff) {
+    if (!ok) failures.push(label);
+    // Where they differ: the box round the differing screen pixels, and both pictures saved for a look.
+    const w = Math.round(box.w);
+    let x0 = 1e9, y0 = 1e9, x1 = -1, y1 = -1;
+    for (let i = 0; i < held.length; i += 4) {
+      if (held[i] !== done[i] || held[i + 1] !== done[i + 1] || held[i + 2] !== done[i + 2]) {
+        const p = i / 4, x = p % w, y = Math.floor(p / w);
+        x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y);
+      }
+    }
+    console.log(`     differing box: x ${x0}..${x1}, y ${y0}..${y1}`);
+  }
+  await ev(`window.__frameling.run('edit.undo')`);
+  await sleep(200);
+}
+
+(async () => {
+  await startApp();
+  await ev(MAKE);
+  await sleep(600);
+  // The pencil paints; the eraser takes alpha away (the live tile must replace the old picture there).
+  for (const zoom of [1, 1.5, 1.25, 1.3719, 2.7, 4.5, 0.683712345, 0.5, 0.35, 0.3, 0.15]) {
+    for (const tool of ['pencil', 'eraser']) await stroke(tool, zoom, `${tool} at ${Math.round(zoom * 100)}%`);
+  }
+  console.log(failures.length ? `FAILED: ${failures.join(', ')}` : 'all the same');
+  app.exit(failures.length ? 1 : 0);
+})().catch((e) => {
+  console.error(e);
+  app.exit(1);
+});

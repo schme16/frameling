@@ -6,6 +6,7 @@
 import type { Doc, Layer } from '../core/format';
 import { poseAt, poseLive } from '../core/symbols';
 import { drawDrawing } from '../core/render';
+import { drawLivePixels } from '../canvas/livePixels';
 import { layerCameraMatrix } from '../core/camera';
 import type { FramePainter, FrameParams } from '../canvas/pipeline';
 import type { Ctx } from './apply';
@@ -31,17 +32,14 @@ export function paintComposited(painter: FramePainter, g: CanvasRenderingContext
       const d = lv?.kind === 'vector' ? poseLive(doc, layer, p.frame, lv.drawing) : lv?.kind === 'tilemap' ? lv.drawing : poseAt(doc, layer, p.frame);
       lg.save();
       lg.transform(cam[0], cam[1], cam[2], cam[3], cam[4], cam[5]);
-      if (lv?.kind === 'pixel') {
-        lg.imageSmoothingEnabled = false;
-        lg.drawImage(lv.canvas, (lv.x ?? 0) * pixelSize, (lv.y ?? 0) * pixelSize, lv.width * pixelSize, lv.height * pixelSize);
-      } else if (d) drawDrawing(lg, d, pixelSize, { doc, frame: p.frame });
+      if (lv?.kind === 'pixel') drawLivePixels(lg, lv, pixelSize);
+      else if (d) drawDrawing(lg, d, pixelSize, { doc, frame: p.frame });
       lg.restore();
       return;
     }
     if (lv?.kind === 'pixel') {
       lg.save();
-      lg.imageSmoothingEnabled = false;
-      lg.drawImage(lv.canvas, (lv.x ?? 0) * pixelSize, (lv.y ?? 0) * pixelSize, lv.width * pixelSize, lv.height * pixelSize);
+      drawLivePixels(lg, lv, pixelSize);
       lg.restore();
       return;
     }

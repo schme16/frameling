@@ -407,6 +407,86 @@ async function main() {
     return out;
   }
 
+  // ------------------------------------------------------------------ pixel drawing, full grid
+  // A pixel drawing that fills the whole grid (the worst case for the live preview): the first dab of a stroke, from the
+  // pointer event to the canvas showing it, how much is uploaded to the live canvas, and what each paint costs after.
+  async function pixellive() {
+    const out = {};
+    for (const size of [2048, 4096]) {
+      await setDoc({ frames: 1, layers: 1, strokesPer: 0 });
+      // Opening a pixel document asks about the workspace the first time: answer it in advance.
+      await js(`localStorage.setItem('frameling.choices.v1', JSON.stringify({ 'workspace.pixelDocs': 'stay' })); true`);
+      await js(`(() => {
+        const F = window.__frameling;
+        const doc = window.__h.mkDoc({ width: ${size}, height: ${size}, frames: 1, layers: 1, strokesPer: 0 });
+        const px = new Uint8ClampedArray(${size} * ${size} * 4);
+        for (let i = 0; i < ${size} * ${size}; i++) { const o = i * 4; px[o] = (i * 7) & 255; px[o + 1] = (i >> 6) & 255; px[o + 2] = 90; px[o + 3] = 255; }
+        const layer = doc.layers[0];
+        layer.kind = 'pixel'; layer.pixelSize = 1;
+        const dr = { id: 'px-full', kind: 'pixel', width: ${size}, height: ${size}, pixels: px };
+        doc.drawings = { [dr.id]: dr };
+        layer.cels = [{ id: 'cel-full', start: 0, length: 1, drawingId: dr.id }];
+        F.store().load(doc);
+        F.store().setUi({ tool: 'pencil', activeLayerId: layer.id, frame: 0, color: '#d6204a' });
+        F.run('view.fit');
+        return true;
+      })()`);
+      await js('window.__h.raf2()');
+      await sleep(400);
+      for (let i = 0; i < 2; i++) {
+        send({ type: 'keyDown', keyCode: 'Escape' });
+        send({ type: 'keyUp', keyCode: 'Escape' });
+        await sleep(150);
+      }
+      const runs = [];
+      for (let lap = 0; lap < 4; lap++) {
+        const box = await canvasBox();
+        await js(`(() => {
+          const T = window.__pxl = { down: 0, puts: [], hooked: false };
+          const proto = (typeof OffscreenCanvasRenderingContext2D !== 'undefined' ? OffscreenCanvasRenderingContext2D : CanvasRenderingContext2D).prototype;
+          if (!proto.__putHook) {
+            const orig = proto.putImageData; proto.__putHook = true;
+            proto.putImageData = function (img, ...a) { const t0 = performance.now(); const r = orig.call(this, img, ...a); window.__pxl.puts.push({ at: t0, ms: performance.now() - t0, px: (a[4] ?? img.width) * (a[5] ?? img.height) }); return r; };
+          }
+          window.addEventListener('pointerdown', (e) => { if (!T.down) T.down = e.timeStamp; }, { capture: true, once: true });
+          window.addEventListener('pointerup', (e) => { T.up = e.timeStamp; }, { capture: true, once: true });
+          window.__framelingPerf.reset();
+        })()`);
+        const cx = Math.round(box.x + box.w / 2 + lap * 30);
+        const cy = Math.round(box.y + box.h / 2);
+        const pts = [];
+        for (let i = 0; i < 60; i++) pts.push([cx + i * 3, cy + Math.round(Math.sin(i / 5) * 12)]);
+        await strokeThrough(pts, { perTick: 2, tickMs: 16 });
+        await sleep(250);
+        if (process.env.PERF_DEBUG) dbg('stroke ' + JSON.stringify(box) + ' ' + JSON.stringify(await js(`(() => { const r = document.querySelector('.cv-root').getBoundingClientRect(); const el = document.elementFromPoint(${cx}, ${cy}); return [el && el.className, window.__frameling.store().get().ui.tool, window.__framelingPerf.painted.length, Object.keys(window.__frameling.store().get().doc.drawings).length]; })()`)));
+        runs.push(
+          await js(`(() => {
+            const b = window.__framelingPerf, T = window.__pxl;
+            const first = b.painted.find((p) => p.t >= T.down);
+            const during = b.mainMs;
+            const q = (a, p) => { const s = [...a].sort((x, y) => x - y); return s.length ? s[Math.min(s.length - 1, Math.floor(p * s.length))] : 0; };
+            return {
+              firstPaintMs: first ? first.t - T.down : null,
+              firstMainMs: during[0] ?? null,
+              mainMsMedian: q(during, 0.5), mainMsP95: q(during, 0.95), mainMsMax: Math.max(0, ...during),
+              uploads: T.puts.length, uploadMs: T.puts.reduce((a, p) => a + p.ms, 0), uploadMegapixels: T.puts.reduce((a, p) => a + p.px, 0) / 1e6,
+              maxUploadMs: Math.max(0, ...T.puts.map((p) => p.ms)),
+              uploadMsWhileDrawing: T.puts.filter((p) => p.at < T.up).reduce((a, p) => a + p.ms, 0), maxUploadMsWhileDrawing: Math.max(0, ...T.puts.filter((p) => p.at < T.up).map((p) => p.ms)),
+              bigUploads: T.puts.filter((p) => p.ms > 2).map((p) => ({ ms: Math.round(p.ms * 10) / 10, megapixels: Math.round(p.px / 1e4) / 100, afterDownMs: Math.round(p.at - T.down), beforeUpMs: Math.round(T.up - p.at) })),
+              uploadMsAfterRelease: T.puts.filter((p) => p.at >= T.up).reduce((a, p) => a + p.ms, 0),
+            };
+          })()`),
+        );
+        await js('window.__frameling.store().undo()');
+        await js('window.__h.raf2()');
+        await sleep(150);
+      }
+      const med = (k) => stats(runs.map((r) => r[k])).p50;
+      out[size + 'px'] = { firstPaintMs: med('firstPaintMs'), firstMainMs: med('firstMainMs'), mainMsMedian: med('mainMsMedian'), mainMsP95: med('mainMsP95'), mainMsMax: med('mainMsMax'), uploads: med('uploads'), uploadMs: med('uploadMs'), uploadMegapixels: med('uploadMegapixels'), maxUploadMs: med('maxUploadMs'), uploadMsWhileDrawing: med('uploadMsWhileDrawing'), maxUploadMsWhileDrawing: med('maxUploadMsWhileDrawing'), uploadMsAfterRelease: med('uploadMsAfterRelease'), laps: runs };
+    }
+    return out;
+  }
+
   // ------------------------------------------------------------------ templates
   async function templates() {
     const out = {};
@@ -695,7 +775,7 @@ async function main() {
     return out;
   }
 
-  const tests = { draw: drawLong, playback, rigfx, pixelblend, templates, zoompan: zoomPan, onioncam: onionCamera, memory, soak };
+  const tests = { draw: drawLong, playback, rigfx, pixelblend, pixellive, templates, zoompan: zoomPan, onioncam: onionCamera, memory, soak };
   await load();
   const gpu = await app.getGPUInfo('basic').catch(() => null);
   const feat = app.getGPUFeatureStatus();
