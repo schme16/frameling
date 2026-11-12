@@ -2,9 +2,11 @@
 // lottie-web from the Lottie export, and lays the animated SVG out so the driver can capture it at any frame.
 // Bundled by esbuild into one script (see vector-check.cjs).
 import { makePuppet } from '../../src/templates/puppet';
+import { bonesRigs } from '../../src/export/godot-bones';
+import { gridMesh, skinMesh } from '../../src/rig/math';
 import lottie from 'lottie-web/build/player/lottie_canvas';
 import lottieSvg from 'lottie-web/build/player/lottie_svg';
-import type { Doc, InstanceShape, LayerEffect } from '../../src/core/format';
+import type { Doc, InstanceShape, LayerEffect, VectorDrawing } from '../../src/core/format';
 import { newTextShape, newAnimator } from '../../src/text/model';
 import { newParticles } from '../../src/particles/model';
 import { defaultValues } from '../../src/effects/model';
@@ -135,6 +137,33 @@ function symbolParticlesDoc(): Doc {
   const d = vectorDrawing(doc, []);
   d.shapes = [p];
   hold(l, d.id, 0, 18);
+  return doc;
+}
+
+/** Symbol sprites with drag sideways and gravity down: x and y keep different timing (separated position on layers). */
+function symbolGravityDoc(): Doc {
+  const doc = newDoc({ name: 'Symbol gravity', width: 400, height: 300, length: 36, fps: 12 });
+  doc.layers = [];
+  const l = addVectorLayer(doc, 'Coins');
+  const k = vectorDrawing(doc, [fill([ellipsePath(20, 20, 10, 10)], '#ffc94a'), fill([rectPath(16, 16, 8, 8)], '#ff6f91')]);
+  const sym = makeSymbol(doc, k.id, k.shapes.map((s) => s.id), { x: 20, y: 20 }, 'Coin');
+  const p = { ...newParticles(uid('s'), 'sparkle', { x: 60, y: 60 }), burst: 12, life: 3, speed: 260, direction: -20, spread: 30, drag: 2.5, gravity: 420, variance: 0.2, sprite: 'symbol' as const, symbolId: sym!.symbolId };
+  const d = vectorDrawing(doc, []);
+  d.shapes = [p];
+  hold(l, d.id, 0, 36);
+  return doc;
+}
+
+/** The puppet with a squashed chest, a stretched thigh and a skinned body: parts that bend, not only turn. */
+function puppetSkinDoc(): Doc {
+  const doc = makePuppet();
+  const rig = bonesRigs(doc)[0];
+  const chest = rig.rig.bones.find((b) => b.name === 'Chest')!.id;
+  const thigh = rig.rig.bones.find((b) => b.name === 'Left thigh')!.id;
+  const d1 = doc.drawings[rig.cels[1].drawingId] as VectorDrawing;
+  d1.pose = { ...d1.pose!, [chest]: { ...d1.pose![chest], s: 0.8 }, [thigh]: { ...d1.pose![thigh], s: 1.25 } };
+  const body = doc.layers.find((l) => l.name === 'Body')!;
+  body.bind = { rig: rig.id, bone: chest, mesh: skinMesh(rig.rig, gridMesh({ x: 320, y: 178, w: 80, h: 150 }, 6)) };
   return doc;
 }
 
@@ -332,6 +361,7 @@ const DOCS: Record<string, () => Doc> = {
   text: textDoc,
   particles: particlesDoc,
   'symbol-particles': symbolParticlesDoc,
+  'symbol-gravity': symbolGravityDoc,
   tint: tintDoc,
   blend: blendDoc,
   masks: maskDoc,
@@ -346,6 +376,7 @@ const DOCS: Record<string, () => Doc> = {
   'morph-template': makeMorph,
   'camera-pan-template': makeCameraPan,
   'puppet-template': makePuppet,
+  'puppet-skin': puppetSkinDoc,
 };
 for (const t of TEMPLATES) DOCS['tpl:' + t.id] = t.make;
 
@@ -415,6 +446,10 @@ const api = {
     await new Promise((r) => setTimeout(r, 300));
     svgHolder.innerHTML = animatedSvg(doc);
     return { length: doc.length, width: doc.width, height: doc.height, lottieBytes, svgBytes: svgHolder.innerHTML.length };
+  },
+  /** The Lottie file of the loaded document, to look at. */
+  json() {
+    return JSON.stringify(docToLottie(doc));
   },
   /** Where the bytes of this document's Lottie file go. */
   sizes() {

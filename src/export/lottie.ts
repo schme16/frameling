@@ -87,7 +87,7 @@ const FIT_TOLERANCE = 0.05;
 // How far a value may stray from the straight line between kept keys (see smoothTrack): what no one can see.
 /** Stage pixels (positions, path points, gradient ends). */
 const POS_TOL = 0.25;
-const PATH_TOL = 0.05;
+const PATH_TOL = 0.25;
 /** Colour channels and gradient stops, 0..1: half a step of 8-bit colour. */
 const COLOUR_TOL = 0.004;
 /** Opacity in percent. */
@@ -98,6 +98,10 @@ const SCALE_TOL = 0.25;
 const ANGLE_TOL = 0.5;
 // A symbol copy can be as big as the stage, so a hair of scale or turn is many pixels at its edge: tighter.
 const COPY_POS_TOL = 0.05;
+/** How far a moving shape's points may stray from a pure move of its first frame (see rigidMoves). */
+const RIGID_TOL = 0.05;
+/** Separate x and y tracks may each stray this share of the position tolerance (their errors add up). */
+const SPLIT_TOL = 0.4;
 const COPY_SCALE_TOL = 0.02;
 const COPY_ANGLE_TOL = 0.02;
 
@@ -244,7 +248,9 @@ function tinted(c: string, tints: Tint[]): { rgb: [number, number, number]; alph
 }
 
 /** A group transform for one frame (sprites: letters and particles). */
-interface Tr {
+export interface Tr {
+  /** Where the group turns and scales about (the origin when missing). */
+  a?: number[];
   p: number[];
   s: number[];
   r: number;
@@ -280,7 +286,7 @@ export function lottieGradient(gr: Gradient, tints: Tint[]): LottieGrad {
 }
 
 /** The parts of a plain shape that can change from frame to frame. */
-interface ShapeLook {
+export interface ShapeLook {
   paths: Json[];
   fill: { rgb: number[]; o: number; grad?: LottieGrad } | null;
   stroke: { rgb: number[]; o: number; w: number; lc: number; lj: number; grad?: LottieGrad } | null;
@@ -288,6 +294,8 @@ interface ShapeLook {
   soft?: { rgb: number[] };
   /** Sprites move as a group; plain shapes have their points in stage space and no transform. */
   tr?: Tr;
+  /** Tolerances for the group's tracks, when they are tighter than the sprites' (see rigidMoves). */
+  trTol?: { p: number; s: number; r: number };
 }
 
 /** `still`: the shape doesn't change over the run, so a brush outline may be refitted with fewer points. */
@@ -352,6 +360,38 @@ export function smoothTrack(values: (number | number[])[], times: number[], tol:
   return { a: 1, k: fitKeys(vs, times, tol).map(({ i, ease }, n, all) => keyOf(vs[i], times[i], n < all.length - 1 ? vs[all[n + 1].i] : undefined, ease)) };
 }
 
+/**
+ * A position from one `[x, y]` per frame, as x and y tracks of their own (and how many bytes that saves over one
+ * track), when x and y keep different timing (drag sideways, gravity down): one shared easing needs a key wherever
+ * either of them bends. Null when the shared track is as small or the position doesn't move.
+ */
+export function splitPosition(values: number[][], times: number[], tol: number): { x: Json; y: Json; saved: number } | null {
+  const joint = smoothTrack(values, times, tol);
+  if (joint.a === 0 || values.length < 4) return null;
+  const x = smoothTrack(values.map((v) => v[0]), times, tol * SPLIT_TOL);
+  const y = smoothTrack(values.map((v) => v[1]), times, tol * SPLIT_TOL);
+  return { x, y, saved: JSON.stringify(joint).length - JSON.stringify([x, y]).length };
+}
+
+/**
+ * A layer's position from one `[x, y]` per frame: Lottie's separated position (`s: true`, an x and a y track) when
+ * that is clearly smaller than one track with a shared easing. Players read the easing of each separated track on its
+ * own, so ThorVG (which reads only the first easing value of a multi-dimensional key) follows it best. Shape groups
+ * can't use this (lottie-web ignores it there): see `shapeGroup`.
+ */
+export function positionTrack(values: number[][], times: number[], tol: number): Json {
+  const joint = smoothTrack(values, times, tol);
+  const sp = splitPosition(values, times, tol);
+  return sp && sp.saved > 0.15 * JSON.stringify(joint).length ? { s: true, x: sp.x, y: sp.y } : joint;
+}
+
+/** A one-number track as a position track along one axis (the other stays 0). */
+export function along(track: Json, axis: 0 | 1): Json {
+  const at = (v: number) => (axis === 0 ? [v, 0] : [0, v]);
+  if (!track.a) return stat(at(track.k[0] ?? track.k));
+  return { a: 1, k: track.k.map((key: Json) => ({ ...key, s: at(key.s[0]) })) };
+}
+
 /** A key: the value, and how it moves to the next key's (held when they are the same). */
 function keyOf(v: number[], t: number, next: number[] | undefined, ease: [number, number]): Json {
   const key: Json = { t, s: v };
@@ -412,6 +452,63 @@ function fitSegment(vs: number[][], times: number[], a: number, j: number, tol: 
     if (g < 0 || g > 1) return null;
   }
   return off(r) <= tol ? r : null;
+}
+
+/**
+ * Moving shapes whose points are the same on every frame but carried along by a turn, a shift and maybe a uniform
+ * scale (a posed bone part, a spinning logo) are written as one path with an animated group transform: a few eased
+ * keys instead of a whole path per frame, and the turn is exact where blending the points frame to frame would cut the
+ * corner. Null when the paths aren't such a move to within `RIGID_TOL` stage pixels on every frame.
+ */
+export function rigidMoves(looks: ShapeLook[]): ShapeLook[] | null {
+  const first = looks[0];
+  if (looks.length < 3 || !first.paths.length || looks.some((l) => l.tr || l.soft || l.fill?.grad || l.stroke?.grad)) return null;
+  const same0 = (l: ShapeLook) => l.paths.length === first.paths.length && l.paths.every((p, k) => p.v.length === first.paths[k].v.length && p.c === first.paths[k].c);
+  if (!looks.every(same0) || looks.every((l) => same(l.paths, first.paths))) return null;
+  const pts = (l: ShapeLook) => l.paths.flatMap((p) => p.v as number[][]);
+  const hands = (l: ShapeLook) => l.paths.flatMap((p) => [...(p.i as number[][]), ...(p.o as number[][])]);
+  const u0 = pts(first);
+  const h0 = hands(first);
+  const n = u0.length;
+  const cx = u0.reduce((s, q) => s + q[0], 0) / n;
+  const cy = u0.reduce((s, q) => s + q[1], 0) / n;
+  const uu = u0.reduce((s, q) => s + (q[0] - cx) ** 2 + (q[1] - cy) ** 2, 0);
+  if (uu < 1e-6) return null;
+  const radius = Math.max(1, ...u0.map((q) => Math.hypot(q[0] - cx, q[1] - cy)), ...h0.map((q) => Math.hypot(q[0], q[1])));
+  const trs: Tr[] = [];
+  for (const l of looks) {
+    const w = pts(l);
+    const wx = w.reduce((s, q) => s + q[0], 0) / n;
+    const wy = w.reduce((s, q) => s + q[1], 0) / n;
+    let dot = 0;
+    let crs = 0;
+    for (let j = 0; j < n; j++) {
+      const ax = u0[j][0] - cx;
+      const ay = u0[j][1] - cy;
+      const bx = w[j][0] - wx;
+      const by = w[j][1] - wy;
+      dot += ax * bx + ay * by;
+      crs += ax * by - ay * bx;
+    }
+    const a = dot / uu;
+    const b = crs / uu;
+    // Where the centre of the first frame's points ends up, and the move as a matrix: x' = a x - b y + e.
+    const e = wx - (a * cx - b * cy);
+    const f = wy - (b * cx + a * cy);
+    for (let j = 0; j < n; j++) if (Math.hypot(a * u0[j][0] - b * u0[j][1] + e - w[j][0], b * u0[j][0] + a * u0[j][1] + f - w[j][1]) > RIGID_TOL) return null;
+    const h = hands(l);
+    for (let j = 0; j < h.length; j++) if (Math.hypot(a * h0[j][0] - b * h0[j][1] - h[j][0], b * h0[j][0] + a * h0[j][1] - h[j][1]) > RIGID_TOL) return null;
+    // A line's width is scaled with the group, so with a line the scale must stay 1.
+    if ((first.stroke || l.stroke) && Math.abs(Math.hypot(a, b) - 1) > 0.001) return null;
+    // A scale that is one to within a hair of a pixel at the far edge is one.
+    const k = Math.hypot(a, b);
+    const snap = Math.abs(k - 1) * radius < RIGID_TOL / 2 ? k : 1;
+    const t = decompose([a / snap, b / snap, -b / snap, a / snap, e, f], { x: cx, y: cy });
+    trs.push({ a: [r3(cx), r3(cy)], p: [r3(t.x), r3(t.y)], s: [r3(t.scaleX * 100), r3(t.scaleY * 100)], r: r3(t.rotation), sk: 0, o: 100 });
+  }
+  // Tolerances as stage pixels at the shape's far edge.
+  const trTol = { p: RIGID_TOL, s: Math.max(0.005, ((RIGID_TOL) / radius) * 100), r: Math.max(0.01, ((RIGID_TOL) / radius) * (180 / Math.PI)) };
+  return looks.map((l, k) => ({ ...l, paths: first.paths, tr: trs[k], trTol }));
 }
 
 /** The frames that still need a key, each with the easing to the next one. Frames in between lie within `tol`. */
@@ -492,7 +589,15 @@ function gradProps(first: LottieGrad, per: (LottieGrad | undefined)[], times: nu
 }
 
 /** A group for one shape over a run of frames. */
-function shapeGroup(looks: ShapeLook[], times: number[], name: string): Json | null {
+function shapeGroup(raw: ShapeLook[], times: number[], name: string): Json | null {
+  const plain = shapeGroupOf(raw, times, name);
+  const rigid = plain && rigidMoves(raw);
+  if (!rigid) return plain;
+  const moved = shapeGroupOf(rigid, times, name);
+  return moved && JSON.stringify(moved).length < JSON.stringify(plain).length ? moved : plain;
+}
+
+function shapeGroupOf(looks: ShapeLook[], times: number[], name: string): Json | null {
   const it: Json[] = [];
   const nPaths = Math.max(...looks.map((l) => l.paths.length));
   if (!nPaths) return null;
@@ -536,19 +641,35 @@ function shapeGroup(looks: ShapeLook[], times: number[], name: string): Json | n
     const stops = (c: number[]) => [0, ...c, 0.45, ...c, 1, ...c, 0, 1, 0.45, r3(0xaa / 255), 1, 0];
     it.push({ ty: 'gf', nm: 'Soft', o: stat(100), r: 1, t: 2, s: stat([0, 0]), e: stat([SPRITE_UNIT / 2, 0]), h: stat(0), a: stat(0), g: { p: 3, k: smoothTrack(looks.map((l) => stops((l.soft ?? f).rgb)), times, COLOUR_TOL) } });
   }
+  let outer: Json | null = null;
   if (looks[0].tr) {
     const trs = looks.map((l) => l.tr!);
+    const tol = looks[0].trTol ?? { p: POS_TOL, s: SCALE_TOL, r: ANGLE_TOL };
+    // x and y with their own timing go in two nested groups (an outer one that only moves sideways, an inner one that
+    // moves up and down and does the rest): a whole transform per axis is not needed, and lottie-web and ThorVG both
+    // play nested groups.
+    const sp = splitPosition(trs.map((t) => t.p), times, tol.p);
+    const nested = !!sp && sp.x.a === 1 && sp.y.a === 1;
+    if (nested) outer = { ...noTr(), p: along(sp!.x, 0) };
     it.push({
       ty: 'tr',
-      a: stat([0, 0]),
-      p: smoothTrack(trs.map((t) => t.p), times, POS_TOL),
-      s: smoothTrack(trs.map((t) => t.s), times, SCALE_TOL),
-      r: smoothTrack(unwrap(trs.map((t) => t.r)), times, ANGLE_TOL),
+      a: stat(trs[0].a ?? [0, 0]),
+      p: nested ? along(sp!.y, 1) : smoothTrack(trs.map((t) => t.p), times, tol.p),
+      s: smoothTrack(trs.map((t) => t.s), times, tol.s),
+      r: smoothTrack(unwrap(trs.map((t) => t.r)), times, tol.r),
       o: smoothTrack(trs.map((t) => t.o), times, OPACITY_TOL),
-      sk: smoothTrack(trs.map((t) => t.sk), times, ANGLE_TOL),
+      sk: smoothTrack(trs.map((t) => t.sk), times, tol.r),
       sa: stat(0),
     });
   } else it.push(noTr());
+  if (outer) {
+    // Only when the two groups together are clearly smaller than one.
+    const joint = it.map((x) => (x.ty === 'tr' ? { ...x, p: smoothTrack(looks.map((l) => l.tr!.p), times, looks[0].trTol?.p ?? POS_TOL) } : x));
+    const two = { ty: 'gr', nm: name, it: [{ ty: 'gr', nm: 'Move', it }, outer] };
+    const one = { ty: 'gr', nm: name, it: joint };
+    if (JSON.stringify(two).length < JSON.stringify(one).length * 0.9) return two;
+    return one;
+  }
   return { ty: 'gr', nm: name, it };
 }
 
@@ -770,7 +891,7 @@ function instanceKs(insts: InstanceShape[], times: number[], origin: { x: number
     ks.o = keyed((s) => [r3(s.opacity * 100)]);
     return ks;
   }
-  ks.p = smoothTrack(insts.map((s) => [r3(s.transform.x), r3(s.transform.y)]), times, COPY_POS_TOL);
+  ks.p = positionTrack(insts.map((s) => [r3(s.transform.x), r3(s.transform.y)]), times, COPY_POS_TOL);
   ks.s = smoothTrack(insts.map((s) => [r3(s.transform.scaleX * 100), r3(s.transform.scaleY * 100)]), times, COPY_SCALE_TOL);
   ks.r = smoothTrack(insts.map((s) => r3(s.transform.rotation)), times, COPY_ANGLE_TOL);
   ks.sk = smoothTrack(insts.map((s) => r3(-s.transform.skew)), times, COPY_ANGLE_TOL);
@@ -1083,7 +1204,7 @@ function vectorRuns(ctx: Ctx, layer: Layer, cel: Cel, frames: number[], rawShape
       const ts = sps.map((s) => decompose(s.m, c.def.origin));
       const ks: Json = {
         a: stat([r3(c.def.origin.x + ctx.pad), r3(c.def.origin.y + ctx.pad)]),
-        p: smoothTrack(ts.map((t) => [r3(t.x), r3(t.y)]), times, POS_TOL),
+        p: positionTrack(ts.map((t) => [r3(t.x), r3(t.y)]), times, POS_TOL),
         s: smoothTrack(ts.map((t) => [r3(t.scaleX * 100), r3(t.scaleY * 100)]), times, SCALE_TOL),
         r: smoothTrack(unwrap(ts.map((t) => r3(t.rotation))), times, ANGLE_TOL),
         sk: smoothTrack(ts.map((t) => r3(-t.skew)), times, ANGLE_TOL),
