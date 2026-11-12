@@ -511,7 +511,8 @@
 }
 /* One colour for each thing a snap can land on, so the line (and the dot in the "Snapped to" note) says which it was.
    The dark set reads 3:1 on white and on every dark theme's surfaces; the light set does on every light theme's canvas
-   and surfaces. test/a11y/snap-colours.test.ts checks both across all 14 themes. */
+   and surfaces. test/a11y/snap-colours.test.ts checks both across all 14 themes. Themes carry these as tokens too
+   (snap-* in src/ui/themes/tokens.ts, editable in the theme editor) and write them over these, which stay as the fallback. */
 :root {
   --snap-page: #0e9a8c;
   --snap-centre: #4d88e8;

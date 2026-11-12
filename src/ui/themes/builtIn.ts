@@ -3,7 +3,7 @@
 // checked (see contrast.ts and test/ui/themes.test.ts), and the chosen-state rule holds in nearly all of them: chosen
 // tabs, tools and switches are gold with dark text. The few in CHOSEN_FROM_PALETTE pick their chosen colour from their
 // own palette instead, still with dark text on it.
-import { BRAND, deriveTokens, type ThemeMode, type ThemeTokens } from './tokens';
+import { BRAND, SNAP_DEFAULTS, deriveTokens, type ThemeMode, type ThemeTokens } from './tokens';
 
 export interface Theme {
   id: string;
@@ -21,7 +21,7 @@ export const DEFAULT_DARK = 'midnight-sketchbook';
 export const DEFAULT_LIGHT = 'paper-and-honey';
 
 function make(id: string, name: string, mode: ThemeMode, description: string, core: ThemeTokens, extra: ThemeTokens = {}): Theme {
-  const tokens = { ...deriveTokens({ ...BRAND, ...core }, mode), ...extra };
+  const tokens = { ...deriveTokens({ ...BRAND, ...SNAP_DEFAULTS[mode], ...core }, mode), ...extra };
   return { id, name, mode, builtIn: true, description, tokens };
 }
 

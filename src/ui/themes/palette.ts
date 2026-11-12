@@ -2,7 +2,7 @@
 // design, so it aims for something calm, readable and on brand: backgrounds tinted with the colour's hue, text that
 // passes contrast, the colour itself as the accent, and gold for chosen things as always.
 import { contrast, ensureContrast, hexToHsl, hslToHex, parseHex } from './color';
-import { BRAND, deriveTokens, type ThemeMode, type ThemeTokens } from './tokens';
+import { BRAND, SNAP_DEFAULTS, SNAP_TOKENS, deriveTokens, type ThemeMode, type ThemeTokens } from './tokens';
 
 const GOLD = '#ffc94a';
 const GOLD_TEXT = '#1d1b26';
@@ -47,8 +47,13 @@ export function paletteFromColour(seed: string, mode: ThemeMode): ThemeTokens {
   const ok = ensureContrast(dark ? '#4fd1a5' : '#2f9e79', panel, 3.1);
   const focus = ensureContrast(dark ? GOLD : '#a86200', bg, 3.1);
 
+  // Snap colours keep to their usual hues, moved only as far as needed to show on this palette's canvas and panels.
+  const snap: ThemeTokens = {};
+  for (const name of SNAP_TOKENS) snap[name] = [canvas, panel, raised].reduce((c, surface) => ensureContrast(c, surface, 3.1), SNAP_DEFAULTS[mode][name]);
+
   const core: ThemeTokens = {
     ...BRAND,
+    ...snap,
     bg, panel, 'panel-2': panel2, raised, line, text, muted, faint, 'canvas-bg': canvas,
     'chosen-bg': GOLD, 'chosen-fg': GOLD_TEXT, accent, focus, danger, ok, 'cel-key': celKey, playhead,
   };
