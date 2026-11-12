@@ -189,6 +189,17 @@ function GeneralPage({ onThemes }: { onThemes: () => void }) {
           ]}
         />
       </Row>
+      <Row label="Tool rail style" hint="Two wide shows every tool, two across, in groups you can drag around. Stacked shows one button per group; press and hold it, or right-click, for the rest.">
+        <Segmented<'two' | 'stacked'>
+          label="Tool rail style"
+          value={p.toolRail}
+          onChange={(toolRail) => setPrefs({ toolRail })}
+          options={[
+            { id: 'two', label: 'Two wide' },
+            { id: 'stacked', label: 'Stacked' },
+          ]}
+        />
+      </Row>
       <Row label="Show Quill" hint="Quill the hedgehog shows you round and cheers you on. Off hides him; his words still show.">
         <Switch label="Show Quill" on={p.showQuill} onChange={setShowQuill} />
       </Row>

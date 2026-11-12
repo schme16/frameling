@@ -3,6 +3,7 @@
 // live state and the workspaces; DockView.tsx and friends draw it.
 import type { LayerKind } from '../core/format';
 import type { DockZone } from '../core/registry';
+import { sanitizeGroups, type ToolGroup } from './toolArrange';
 
 export type { DockZone };
 
@@ -33,7 +34,8 @@ export type ToolsPlace = DockZone | 'float';
 export interface Layout {
   zones: Record<DockZone, ZoneState>;
   floats: FloatWin[];
-  tools: { place: ToolsPlace; x: number; y: number };
+  /** The tool rail: where it is, and how its tools are grouped and ordered (missing = the default arrangement). */
+  tools: { place: ToolsPlace; x: number; y: number; groups?: ToolGroup[] };
   /** Panels the person closed. They stay out of the zones until they open them again. */
   hidden: string[];
   /** Every panel this layout has seen, so a panel added by a later version gets placed once. */
@@ -134,6 +136,8 @@ export function normaliseLayout(raw: unknown): Layout {
   l.known = [...new Set((Array.isArray(r.known) ? r.known : []).filter(isId))].slice(0, 500);
   const t = isObj(r.tools) ? r.tools : {};
   l.tools = { place: (TOOLS_PLACES as unknown[]).includes(t.place) ? (t.place as ToolsPlace) : 'left', x: Math.round(num(t.x, 90)), y: Math.round(num(t.y, 110)) };
+  const groups = sanitizeGroups(t.groups);
+  if (groups) l.tools.groups = groups;
   if (isObj(r.names)) {
     const names: Record<string, string> = {};
     for (const [id, n] of Object.entries(r.names).slice(0, 200)) {
@@ -397,7 +401,7 @@ export function renameFloatIn(l: Layout, floatId: string, name: string): Layout 
 
 /** The tool rail moved to a zone's edge or floated (at a position, when given). */
 export function placeToolsIn(l: Layout, place: ToolsPlace, at?: { x: number; y: number }): Layout {
-  return { ...l, tools: { place, x: at ? Math.round(at.x) : l.tools.x, y: at ? Math.round(at.y) : l.tools.y } };
+  return { ...l, tools: { ...l.tools, place, x: at ? Math.round(at.x) : l.tools.x, y: at ? Math.round(at.y) : l.tools.y } };
 }
 
 // ---------------------------------------------------------------- what a drop would do

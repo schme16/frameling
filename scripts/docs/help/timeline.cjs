@@ -26,7 +26,7 @@ const CROP = [64, 40, 856, 640];
 // A pink title typed on the canvas with the Text tool, 110 px, ready to be styled or animated.
 const textSetup = (len) => [
   ...open('blank-vector', [js(`${F}.store().update('Length', (d) => { d.length = ${len}; d.fps = 24; d.background = '#fff6e5'; })`), js(`${F}.store().setUi({ color: '#e0447a', fillColor: '#e0447a' })`)], ['text']),
-  { click: [33, 441], after: 500 },
+  { eval: `${F}.run('tools.text')`, after: 500 },
   { click: [300, 150], after: 600 },
   ...typing('Once upon\na time...'),
   { wait: 400 },

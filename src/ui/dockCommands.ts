@@ -6,7 +6,9 @@ import { ZONES, type DockZone, type ToolsPlace } from './dockModel';
 import { askRename } from './dockMenus';
 import { lastPanel } from './dockShared';
 import { openPrefs } from './overlays';
+import { getPrefs, setPrefs } from './prefs';
 import { toast } from './toast';
+import { isCustomArrangement, resetToolArrangement } from './toolRail';
 import { copyWorkspaceText, exportWorkspaceFile, importWorkspaceFile, pasteWorkspaceText, stepWorkspace } from './workspaceActions';
 
 /** The panel the "this panel" commands act on: the one last worked in, if it is still showing. */
@@ -166,5 +168,34 @@ for (const p of [...ZONES, 'float'] as ToolsPlace[]) {
     keywords: ['tools', 'toolbar', 'strip', 'move', p],
     checked: () => dock.get().layout.tools.place === p,
     run: () => placeTools(p, p === 'float' ? { x: 90, y: 110 } : undefined),
+  });
+}
+
+registerCommand({
+  id: 'view.toolsReset',
+  label: 'Reset tools to default',
+  category: 'View',
+  description: 'Put the tools back in their usual groups and order.',
+  help: 'tool-strip',
+  keywords: ['tools', 'toolbar', 'group', 'order', 'arrange', 'rearrange'],
+  enabled: () => isCustomArrangement(),
+  run: () => {
+    resetToolArrangement();
+    toast('Tools are back in their usual groups.', { duration: 1800 });
+  },
+});
+for (const [style, label, about] of [
+  ['two', 'Tool rail: show every tool, two wide', 'Every tool in groups, two across. Drag them to arrange.'],
+  ['stacked', 'Tool rail: one button per group', 'One button per group. Press and hold, or right-click, for the rest of the group.'],
+] as const) {
+  registerCommand({
+    id: `view.toolRail.${style}`,
+    label,
+    category: 'View',
+    description: about,
+    help: 'tool-strip',
+    keywords: ['tools', 'toolbar', 'rail', 'style', 'stacked', 'two wide', 'flyout'],
+    checked: () => getPrefs().toolRail === style,
+    run: () => setPrefs({ toolRail: style }),
   });
 }

@@ -7,6 +7,7 @@ import { DEFAULT_KEYMAP_SET, isKeymapSet } from './keymapSets';
 
 export type ThemePref = 'system' | 'dark' | 'light';
 export type LookPref = 'cosy' | 'crisp';
+export type ToolRailPref = 'two' | 'stacked';
 
 export interface Prefs {
   /** The mode: follow the computer (system), or always dark, or always light. (Called `theme` since before themes existed.) */
@@ -31,6 +32,8 @@ export interface Prefs {
   showQuill: boolean;
   /** How the right side is laid out: Properties with a labelled rail, every panel on the rail, or tabs. */
   rightSide: 'inspector' | 'rail' | 'tabs';
+  /** The tool rail: every tool two wide in groups, or one button per group with the rest in a flyout. */
+  toolRail: ToolRailPref;
   /** Tile mode: fade the copies round the tile you're drawing (off shows them at full strength). */
   fadeTileCopies: boolean;
   /** How sizes are shown: pixels, or mm, cm, inches or points at the document's DPI. */
@@ -60,6 +63,7 @@ export const DEFAULT_PREFS: Prefs = {
   showTips: true,
   showQuill: true,
   rightSide: 'inspector',
+  toolRail: 'two',
   fadeTileCopies: false,
   units: DEFAULT_UNIT,
   onboarded: false,
@@ -95,6 +99,7 @@ export function migratePrefs(raw: unknown): Prefs {
     showTips: bool(r.showTips, DEFAULT_PREFS.showTips),
     showQuill: bool(r.showQuill, DEFAULT_PREFS.showQuill),
     rightSide: r.rightSide === 'rail' || r.rightSide === 'tabs' || r.rightSide === 'inspector' ? r.rightSide : DEFAULT_PREFS.rightSide,
+    toolRail: r.toolRail === 'stacked' || r.toolRail === 'two' ? r.toolRail : DEFAULT_PREFS.toolRail,
     fadeTileCopies: bool(r.fadeTileCopies, DEFAULT_PREFS.fadeTileCopies),
     units: isUnit(r.units) ? r.units : DEFAULT_PREFS.units,
     onboarded: bool(r.onboarded, DEFAULT_PREFS.onboarded),
