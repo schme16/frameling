@@ -1,0 +1,1 @@
+Left: Frameling's own PNG of the frame. Right: the same .ai file opened in Adobe Illustrator 30.1 and exported to PNG (scripts/e2e/illustrator.cjs). gradients-before-fix.png: see-through gradient colours lost before the soft mask fix.
