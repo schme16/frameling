@@ -6,6 +6,4 @@ Clips of the "Camera and parallax" example: the camera pans from frame 1 to 37 w
 - B (before): they stay on the stage and move with the plain camera, so a guide drifts off the hill as the camera pans. `depth-*-B.mp4`.
 - `depth-*-A-left-B-right.mp4`: both side by side, A on the left, labelled.
 
-Things to judge in A: the grid is only as wide as the page, so on a far layer it slides across and leaves part of the view without grid; guides are long enough to always cross the view. A guide on a layer pinned to the stage (depth 0) looks the same in A and B.
-
-B is cheap to render: `__frameling.anim.guidesOnStage(true)` in the debug hook (the flag lives in `src/camera/ops.ts`). Rebuild the clips with `SHOT_SHOW=1 xvfb-run -a -s "-screen 0 1600x1000x24" node scripts/docs/depth-guides-ab.cjs`.
+Decided: A, guides follow the picked layer, and the grid now covers the whole picture on a far layer (it used to be only as wide as the layer's own page). The debug flag that drew B and the script that rendered these clips are gone; the clips stay as the record.

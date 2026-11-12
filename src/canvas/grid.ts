@@ -46,35 +46,50 @@ export function snapIso(p: Pt, size: number, ratio: number): Pt {
   return best;
 }
 
+/** A box in stage space: x0, y0 to x1, y1. */
+export interface Box {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+}
+
 /** One isometric family of parallel lines across a w x h page, as segments clipped to the page. */
 export function isoLines(size: number, ratio: number, w: number, h: number): [Pt, Pt][] {
+  return isoLinesIn(size, ratio, { x0: 0, y0: 0, x1: w, y1: h });
+}
+
+/** The same across any box (the lines stay anchored at the origin, so a bigger box just shows more of the same grid). */
+export function isoLinesIn(size: number, ratio: number, box: Box): [Pt, Pt][] {
   const out: [Pt, Pt][] = [];
   if (!(size > 0)) return out;
   const t = size * ratio;
   const m = ratio; // slope: (t / 2) / (size / 2)
   // y = m x + k t (rising to the right, going down the page) and y = -m x + k t.
   for (const sign of [1, -1]) {
-    const kMin = Math.floor(Math.min(0, -sign * m * w) / t) - 1;
-    const kMax = Math.ceil(Math.max(h, h - sign * m * w) / t) + 1;
+    const lo = Math.min(sign * m * box.x0, sign * m * box.x1);
+    const hi = Math.max(sign * m * box.x0, sign * m * box.x1);
+    const kMin = Math.floor((box.y0 - hi) / t) - 1;
+    const kMax = Math.ceil((box.y1 - lo) / t) + 1;
     for (let k = kMin; k <= kMax; k++) {
-      const seg = clipLine(sign * m, k * t, w, h);
+      const seg = clipLine(sign * m, k * t, box);
       if (seg) out.push(seg);
     }
   }
   return out;
 }
 
-/** The part of y = m x + c inside the page, or null. */
-function clipLine(m: number, c: number, w: number, h: number): [Pt, Pt] | null {
+/** The part of y = m x + c inside the box, or null. */
+function clipLine(m: number, c: number, box: Box): [Pt, Pt] | null {
   const pts: Pt[] = [];
   const add = (x: number, y: number) => {
-    if (x >= -1e-6 && x <= w + 1e-6 && y >= -1e-6 && y <= h + 1e-6 && !pts.some((q) => Math.abs(q.x - x) < 1e-6 && Math.abs(q.y - y) < 1e-6)) pts.push({ x, y });
+    if (x >= box.x0 - 1e-6 && x <= box.x1 + 1e-6 && y >= box.y0 - 1e-6 && y <= box.y1 + 1e-6 && !pts.some((q) => Math.abs(q.x - x) < 1e-6 && Math.abs(q.y - y) < 1e-6)) pts.push({ x, y });
   };
-  add(0, c);
-  add(w, m * w + c);
+  add(box.x0, m * box.x0 + c);
+  add(box.x1, m * box.x1 + c);
   if (m !== 0) {
-    add(-c / m, 0);
-    add((h - c) / m, h);
+    add((box.y0 - c) / m, box.y0);
+    add((box.y1 - c) / m, box.y1);
   }
   if (pts.length < 2) return null;
   pts.sort((a, b) => a.x - b.x);

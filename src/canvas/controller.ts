@@ -174,8 +174,12 @@ export function setCursor(c: string | null): void {
 
 // ---------------------------------------------------------------- overlays that aren't a tool's
 
-/** Drawn on the overlay after the tool's own, in document coordinates, whatever tool is picked (marching ants). */
-export type StageOverlay = (g: CanvasRenderingContext2D, zoom: number) => void;
+/**
+ * Drawn on the overlay after the tool's own, in document coordinates, whatever tool is picked (marching ants).
+ * `page` is where the page (the picture you see) falls in the space being drawn in: its four corners, which are the
+ * page's own corners unless the picked layer sits behind a moving camera.
+ */
+export type StageOverlay = (g: CanvasRenderingContext2D, zoom: number, page: Pt[]) => void;
 const stageOverlays: StageOverlay[] = [];
 
 export function addStageOverlay(fn: StageOverlay): void {

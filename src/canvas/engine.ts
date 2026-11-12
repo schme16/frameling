@@ -25,7 +25,7 @@ import { cssVar, subscribeTheme } from './theme';
 import { getViewSettings, subscribeViewSettings } from './viewSettings';
 import { ghostItems } from './ghost';
 import { drawDecorations } from './decorations';
-import { canvasCamera, canvasLayerCamera, currentView, getGuidesOnStage, lookingThrough, overlayCamera, stageCamera } from '../camera/ops';
+import { canvasCamera, canvasLayerCamera, currentView, lookingThrough, overlayCamera, stageCamera } from '../camera/ops';
 import { cameraFrameCorners, matrixScale } from '../core/camera';
 import { invert, applyMat, type Mat } from '../core/symbols';
 import { screenToDoc, stageDeviceRect, wheelZoomFactor, zoomAbout, type Pt } from './view';
@@ -388,8 +388,9 @@ export class CanvasEngine {
     const extra = ctl.getStageOverlays();
     if (extra.length) {
       g.save();
-      layerSpace(getGuidesOnStage() ? cam : lc);
-      for (const fn of extra) fn(g, ui.zoom);
+      layerSpace(lc);
+      const page = pageCorners(doc.width, doc.height, lc);
+      for (const fn of extra) fn(g, ui.zoom, page);
       g.restore();
     }
   }
@@ -763,6 +764,17 @@ export class CanvasEngine {
     this.invalidate(false, true);
     this.updateCursor();
   }
+}
+
+/** The page's four corners in the space a camera matrix leads to (the page's own corners with no matrix). */
+function pageCorners(w: number, h: number, m: Mat | null): Pt[] {
+  const inv = m ? invert(m) : null;
+  return [
+    { x: 0, y: 0 },
+    { x: w, y: 0 },
+    { x: w, y: h },
+    { x: 0, y: h },
+  ].map((p) => (inv ? applyMat(inv, p.x, p.y) : p));
 }
 
 /** The camera's view on the playhead's frame, as stage-space corners (for the pasteboard), when it's on. */
