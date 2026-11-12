@@ -6,6 +6,8 @@ import type { ClipTransition, Doc, Id } from '../core/format';
 import { store } from '../core/store';
 import { addTransition, moveFlowBox, nextClip, removeTransition, setStartClip, startClip, updateTransition } from '../core/flow';
 import { setTl } from '../timeline/state';
+import { onPlayPass } from '../timeline/playback';
+import { holdFrame, entryFrame } from '../core/clipPlay';
 import { toast } from '../ui/toast';
 
 export function connectClips(from: Id, to: Id): Id | undefined {
@@ -40,8 +42,9 @@ export function placeBox(id: Id, x: number, y: number, coalesce: string): void {
 
 // ---------------------------------------------------------------- try it
 
-let trying: { clipId: Id; last: number } | null = null;
+let trying: { clipId: Id } | null = null;
 let unsub: (() => void) | null = null;
+let offPass: (() => void) | null = null;
 const listeners = new Set<() => void>();
 
 export function tryingClip(): Id | null {
@@ -61,9 +64,9 @@ function play(id: Id): void {
   const doc = store().get().doc;
   const c = doc.clips.find((x) => x.id === id);
   if (!c) return stopTrying();
-  trying = { clipId: id, last: c.start };
+  trying = { clipId: id };
   setTl({ clipId: id });
-  store().setUi({ frame: Math.min(c.start, c.end), playing: true });
+  store().setUi({ frame: entryFrame(c), playing: true });
   emit();
 }
 
@@ -81,13 +84,16 @@ export function startTrying(): void {
     const s = store().get();
     const c = s.doc.clips.find((x) => x.id === trying!.clipId);
     if (!c) return stopTrying();
-    const f = s.ui.frame;
-    const end = Math.max(c.start, c.end);
-    // The clip ended: it stopped on its last frame, or a looping one wrapped round.
-    const ended = (f === end && !s.ui.playing) || (f < trying.last && trying.last >= end - 1);
-    trying.last = f;
+    // The clip ended: it stopped on the frame it holds (a looping one is caught by `onPlayPass`).
+    const ended = s.ui.frame === holdFrame(c) && !s.ui.playing;
     if (!ended) return;
     const next = nextClip(s.doc, c.id);
+    if (next) play(next.id);
+  });
+  offPass?.();
+  offPass = onPlayPass(() => {
+    if (!trying) return;
+    const next = nextClip(store().get().doc, trying.clipId);
     if (next) play(next.id);
   });
   play(first.id);
@@ -103,6 +109,8 @@ export function fireTrigger(name: string): void {
 export function stopTrying(): void {
   unsub?.();
   unsub = null;
+  offPass?.();
+  offPass = null;
   if (trying) store().setUi({ playing: false });
   trying = null;
   emit();

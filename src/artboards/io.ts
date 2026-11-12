@@ -6,6 +6,7 @@
 import type { Zippable } from 'fflate';
 import type { Artboard, ArtboardContent, ClipFlow, Doc, Guide, Layer } from '../core/format';
 import { packAudio, unpackAudio } from '../io/audio-file';
+import { readClip } from '../core/clipPlay';
 
 /** The artboards for doc.json, with each set-aside artboard's sound bytes added to the zip. Empty when there are none. */
 export function packArtboards(doc: Doc, files: Zippable): { artboards?: unknown[]; activeArtboard?: string } {
@@ -80,7 +81,7 @@ function readContent(c: unknown, entries: Record<string, Uint8Array>, warnings: 
   } catch {
     return null;
   }
-  const clips = Array.isArray(c.clips) ? c.clips.filter((x: any) => isObj(x) && typeof x.id === 'string') : [];
+  const clips = Array.isArray(c.clips) ? c.clips.filter((x: any) => isObj(x) && typeof x.id === 'string').map(readClip) : [];
   const out: ArtboardContent = {
     width,
     height,

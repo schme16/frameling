@@ -460,8 +460,19 @@ export interface Clip {
   /** First and last frame, inclusive. */
   start: number;
   end: number;
+  /** Repeats forever. When false it plays `repeat` times (once when `repeat` is missing) and holds its last frame. */
   loop: boolean;
+  /** Which way it plays (missing = forward). See `ClipDirection` and src/core/clipPlay.ts. */
+  direction?: ClipDirection;
+  /** How many times it plays when `loop` is false: a whole number from 1 (missing = 1). Ignored when `loop` is true. */
+  repeat?: number;
 }
+
+/**
+ * Forward, backward (`reverse`), back and forth (`pingpong`: the end frames show once per turn) and back and forth
+ * starting from the end (`pingpong-reverse`).
+ */
+export type ClipDirection = 'forward' | 'reverse' | 'pingpong' | 'pingpong-reverse';
 
 export interface Marker {
   id: Id;

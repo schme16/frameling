@@ -7,7 +7,7 @@
  * gives a friendly sentence for a toast.
  */
 import type { Draft } from 'immer';
-import type { Doc, Id } from '../core/format';
+import type { ClipDirection, Doc, Id } from '../core/format';
 import { celAt, findLayer } from '../core/doc';
 import { store } from '../core/store';
 import * as core from './edit-core';
@@ -283,6 +283,12 @@ export function setClipRange(id: Id, a: number, b: number): Outcome {
 }
 export function setClipLoop(id: Id, loop: boolean): Outcome {
   return simple(loop ? 'Make clip loop' : 'Make clip play once', (d) => core.setClipLoop(d, id, loop));
+}
+export function setClipDirection(id: Id, direction: ClipDirection): Outcome {
+  return simple('Change how a clip plays', (d) => core.setClipDirection(d, id, direction));
+}
+export function setClipRepeat(id: Id, repeat: 'forever' | number): Outcome {
+  return simple('Change how often a clip plays', (d) => core.setClipRepeat(d, id, repeat));
 }
 export function removeClip(id: Id): Outcome {
   return simple('Delete clip', (d) => core.removeClip(d, id));

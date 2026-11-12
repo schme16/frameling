@@ -6,6 +6,8 @@ import { useStore } from '../core/store';
 import { cleanFlow, flowLayout, triggerNames } from '../core/flow';
 import { ActionButton, Choice, Tip } from '../canvas/controls';
 import { Icon } from '../ui/icons';
+import { ClipPlayFields } from '../timeline/ClipPlay';
+import { playWords } from '../core/clipPlay';
 import { connectClips, deleteTransition, editTransition, fireTrigger, makeStart, placeBox, startTrying, stopTrying, subscribeTry, tryingClip } from './ops';
 import './flow.css';
 
@@ -182,7 +184,7 @@ export function FlowPanel() {
                 tabIndex={0}
                 role="button"
                 aria-pressed={on}
-                aria-label={`${c.name} ${Math.abs(c.end - c.start) + 1} frames${c.loop ? ', loops' : ''}${c.id === start ? ', plays first' : ''}`}
+                aria-label={`${c.name} ${Math.abs(c.end - c.start) + 1} frames${playWords(c) ? ', ' + playWords(c) : ''}${c.id === start ? ', plays first' : ''}`}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
@@ -275,6 +277,7 @@ export function FlowPanel() {
           <div className="cv-row cv-wrap">
             {selClip.id !== start ? <ActionButton onClick={() => makeStart(selClip.id)}>Play this one first</ActionButton> : <Tip>This clip plays first (the star).</Tip>}
           </div>
+          <ClipPlayFields clip={selClip} />
           {doc.clips.length > 1 && (
             <label className="fl-trigger-name">
               <span>Then go to</span>

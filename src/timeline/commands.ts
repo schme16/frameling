@@ -11,7 +11,9 @@ import { playCue } from '../ui/sounds';
 const tick = () => void (store().get().ui.playing || playCue('tick'));
 import * as ops from './ops';
 import * as pb from './playback';
-import { setTl } from './state';
+import { setTl, tl } from './state';
+import type { Clip, ClipDirection } from '../core/format';
+import { clipDirection, clipPlays } from '../core/clipPlay';
 
 /** Runs an op and, when it was refused for a reason worth knowing, says so gently. */
 export function say(o: ops.Outcome): ops.Outcome {
