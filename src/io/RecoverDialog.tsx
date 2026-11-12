@@ -47,10 +47,10 @@ function RecoverDialog({ close }: { close: () => void }) {
                   <small>Last changed {when(k.savedAt)}</small>
                   <small>Kept until {new Date(k.keptAt + 7 * 24 * 3600 * 1000).toLocaleDateString()}</small>
                 </span>
-                <button type="button" className="io-btn io-primary" data-autofocus={i === 0 ? '' : undefined} onClick={() => void open(k)}>
+                <button type="button" className="io-btn io-primary" data-testid={`recover.open.${k.id}`} data-autofocus={i === 0 ? '' : undefined} onClick={() => void open(k)}>
                   Open
                 </button>
-                <button type="button" className="io-btn" aria-label={`Delete the kept copy of ${k.name}`} onClick={() => void drop(k)}>
+                <button type="button" className="io-btn" data-testid={`recover.delete.${k.id}`} aria-label={`Delete the kept copy of ${k.name}`} onClick={() => void drop(k)}>
                   Delete
                 </button>
               </li>
@@ -59,7 +59,7 @@ function RecoverDialog({ close }: { close: () => void }) {
         )}
       </div>
       <div className="io-foot">
-        <button type="button" className="io-btn io-primary" onClick={close}>
+        <button type="button" className="io-btn io-primary" data-testid="recover.close" onClick={close}>
           Close
         </button>
       </div>

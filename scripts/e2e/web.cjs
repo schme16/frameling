@@ -107,6 +107,16 @@ const SHIM = `
       }, 10);
     };
   }
+  // Safari stand-ins, for checking the web build's Safari paths in Chromium: ?ua=safari looks like Safari (late downloads
+  // are held back for a Save button), ?gesture=1 has GestureEvent (pinch), ?persist=grant|deny answers storage.persist().
+  const q = new URLSearchParams(location.search);
+  S.persistCalls = 0;
+  if (q.get('ua') === 'safari') Object.defineProperty(navigator, 'userAgent', { get: () => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15' });
+  if (q.get('gesture')) window.GestureEvent = function GestureEvent() {};
+  if (q.get('persist')) {
+    navigator.storage.persisted = async () => false;
+    navigator.storage.persist = async () => { S.persistCalls++; return q.get('persist') === 'grant'; };
+  }
   if (mode === 'plain') {
     delete window.showOpenFilePicker; delete window.showSaveFilePicker; delete window.showDirectoryPicker;
   } else {
@@ -214,6 +224,8 @@ function makeWindow(partition) {
     if (debug) await js(`new Promise((r) => { const t = () => (window.__frameling && window.__framelingIo ? r() : setTimeout(t, 50)); t(); })`);
     await sleep(600);
   };
+  /** Clicks the button with this data-testid (a trailing * matches any that start with it). Returns whether there was one. */
+  const clickId = (id) => js(`(() => { const b = document.querySelector(${JSON.stringify(id.endsWith('*') ? `[data-testid^="${id.slice(0, -1)}"]` : `[data-testid="${id}"]`)}); b?.click(); return !!b; })()`);
   const clickText = (text, sel = 'button') => js(`(() => { const b = [...document.querySelectorAll(${JSON.stringify(sel)})].find((b) => b.textContent.trim() === ${JSON.stringify(text)}); b?.click(); return !!b; })()`);
   const body = () => js('document.body.innerText');
   /** Waits until the page expression is truthy (up to `ms`); returns its last value. */
@@ -251,7 +263,7 @@ function makeWindow(partition) {
   const answerChoice = async () => {
     const t0 = Date.now();
     while (Date.now() - t0 < 1500) {
-      const done = await js(`(() => { const d = [...document.querySelectorAll('[role=dialog]')].find((x) => /Remember my choice/.test(x.innerText)); if (!d) return false; [...d.querySelectorAll('button')].find((b) => b.textContent.trim() === 'OK')?.click(); return true; })()`);
+      const done = await js(`(() => { const ok = document.querySelector('[data-testid^="choice."][data-testid$=".ok"]'); if (!ok) return false; ok.click(); return true; })()`);
       if (done) { await sleep(500); return true; }
       await sleep(150);
     }
@@ -259,7 +271,7 @@ function makeWindow(partition) {
   };
   /** Runs a command without waiting for it to finish (a command that opens a dialog finishes when it closes). */
   const run = (id) => js(`void __frameling.run(${JSON.stringify(id)}); 0`);
-  return { win, wc, js, input, shot, load, clickText, body, waitFor, files, run, answerChoice };
+  return { win, wc, js, input, shot, load, clickText, clickId, body, waitFor, files, run, answerChoice };
 }
 
 // ---------------------------------------------------------------- flows

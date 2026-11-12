@@ -13,6 +13,19 @@ const api: FramelingApi = {
     electron: process.versions.electron,
     chrome: process.versions.chrome,
   },
+  // Not personal: only the kind of desktop, which decides how a pen reaches the app on Linux.
+  ...(process.platform === 'linux'
+    ? {
+        session: {
+          type: process.env.XDG_SESSION_TYPE ?? '',
+          desktop: process.env.XDG_CURRENT_DESKTOP ?? '',
+          wayland: !!process.env.WAYLAND_DISPLAY,
+          x11: !!process.env.DISPLAY,
+          // What the launcher was told with FRAMELING_OZONE (empty: Electron's own choice, which is Wayland on a Wayland session).
+          ozone: process.env.FRAMELING_OZONE ?? process.argv.find((a) => a.startsWith('--ozone-platform='))?.split('=')[1] ?? '',
+        },
+      }
+    : {}),
   files: {
     open: () => call('files:open'),
     read: (path) => call('files:read', path),

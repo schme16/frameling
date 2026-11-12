@@ -3,7 +3,7 @@
 // they change. The add-on's own files are the source; they're bundled here as text.
 import { strToU8, zipSync, type Zippable } from 'fflate';
 import { baseName, desktop } from '../io/desktop';
-import { notify } from '../io/notify';
+import { notify, notifySaved } from '../io/notify';
 import { can } from '../platform';
 import pluginCfg from '../../godot/addons/frameling_importer/plugin.cfg?raw';
 import pluginGd from '../../godot/addons/frameling_importer/plugin.gd?raw';
@@ -43,5 +43,5 @@ export async function saveGodotAddon(): Promise<void> {
   if (!target) return;
   const r = await api.files.write(target, bytes);
   if ('error' in r) return notify(r.error, 'error');
-  notify(`Saved ${baseName(target)}. Unzip it into your Godot project, then switch it on in Project Settings, Plugins.`, 'success', can('showInFolder') ? { label: 'Show in folder', run: () => void api.files.showInFolder(target) } : undefined, 9000, 'cheer', 'exported');
+  notifySaved(`Saved ${baseName(target)}. Unzip it into your Godot project, then switch it on in Project Settings, Plugins.`, 'success', can('showInFolder') ? { label: 'Show in folder', run: () => void api.files.showInFolder(target) } : undefined, 9000, 'cheer', 'exported');
 }

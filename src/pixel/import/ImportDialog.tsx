@@ -236,6 +236,7 @@ export function ImportDialog({ pic, fileName, mode, hasDrawing, companion, pickJ
                     role="radio"
                     aria-checked={how === id}
                     className={`im-segbtn${how === id ? ' on' : ''}`}
+                    data-testid={`import.how.${id}`}
                     onClick={async () => {
                       if (id === 'json' && !json) {
                         const j = await pickJson();
@@ -367,7 +368,7 @@ export function ImportDialog({ pic, fileName, mode, hasDrawing, companion, pickJ
               <legend>What it becomes</legend>
               <div className="im-ways" role="radiogroup" aria-label="What it becomes">
                 {WAYS.map((w) => (
-                  <button key={w.id} type="button" role="radio" aria-checked={effectiveWay === w.id} className={`im-way${effectiveWay === w.id ? ' on' : ''}`} onClick={() => setWay(w.id)} title={w.blurb}>
+                  <button key={w.id} type="button" role="radio" aria-checked={effectiveWay === w.id} className={`im-way${effectiveWay === w.id ? ' on' : ''}`} data-testid={`import.way.${w.id}`} onClick={() => setWay(w.id)} title={w.blurb}>
                     <b>{w.name}</b>
                     <span>{w.term}</span>
                   </button>
@@ -422,10 +423,10 @@ export function ImportDialog({ pic, fileName, mode, hasDrawing, companion, pickJ
         <span className="im-summary" aria-live="polite">
           {problem || summary}
         </span>
-        <button type="button" className="io-btn" onClick={close}>
+        <button type="button" className="io-btn" data-testid="import.cancel" onClick={close}>
           Cancel
         </button>
-        <button type="button" className="io-btn io-primary" onClick={go} disabled={!!problem} data-autofocus>
+        <button type="button" className="io-btn io-primary" data-testid="import.go" onClick={go} disabled={!!problem} data-autofocus>
           {mode === 'palette' ? 'Take the colours' : into ? 'Add it' : 'Bring it in'}
         </button>
       </div>

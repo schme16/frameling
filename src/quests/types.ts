@@ -91,6 +91,12 @@ export interface Quest {
   ready?: (s: State) => boolean;
 }
 
+/**
+ * What the start-up knows of a quest, for cards and lists: the full `Quest` minus its steps and checks, which load on
+ * demand (catalog.ts is this, library.ts is the whole thing).
+ */
+export type QuestInfo = Omit<Quest, 'steps' | 'prepare' | 'ready' | 'finish'>;
+
 export interface QuestProgress {
   /** The quest being played right now, or null. */
   active: string | null;

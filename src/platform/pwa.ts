@@ -3,6 +3,7 @@
 import { registerCommands } from '../core/registry';
 import { notify } from '../io/notify';
 import { openHelp } from '../ui/overlays';
+import { saveWaitingFiles } from './index';
 
 interface InstallPrompt extends Event {
   prompt(): Promise<void>;
@@ -46,6 +47,17 @@ export function registerWebCommands(): void {
       help: 'web-browser',
       keywords: ['pwa', 'offline', 'install', 'shortcut', 'home screen', 'web app'],
       run: () => installApp(),
+    },
+    {
+      id: 'file.saveWaiting',
+      label: 'Save the finished file',
+      category: 'File',
+      description: 'Downloads a file that finished exporting while you were away, when the browser held it back.',
+      help: 'web-browser',
+      keywords: ['download', 'ready', 'export', 'safari', 'save'],
+      run: () => {
+        if (!saveWaitingFiles()) notify('There is no finished file waiting to be saved.', 'info');
+      },
     },
     {
       id: 'help.webBrowser',

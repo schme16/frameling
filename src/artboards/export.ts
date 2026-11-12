@@ -10,7 +10,7 @@ import { registerChoice, choose } from '../core/choices';
 import { createStore } from '../ui/mini';
 import { baseName, desktop } from '../io/desktop';
 import { can } from '../platform';
-import { notify } from '../io/notify';
+import { notifySaved } from '../io/notify';
 import { encodePng, type RawImage } from '../io/png';
 import { detectCapabilities } from '../export/capabilities';
 import { backgroundFor, drawFrame, makeCanvas, readPixels } from '../export/draw';
@@ -211,7 +211,7 @@ export async function exportArtboards(
     if (!w) return 'stopped';
     if ('error' in w) throw new ArtboardExportProblem(w.error);
     const shown = w.paths.find((p) => baseName(p) === main) ?? w.paths[0];
-    notify(`Exported ${ids.length} artboards onto ${main}.`, 'success', can('showInFolder') ? { label: 'Show in folder', run: () => void api.files.showInFolder(shown) } : undefined, 9000, 'cheer', 'exported');
+    notifySaved(`Exported ${ids.length} artboards onto ${main}.`, 'success', can('showInFolder') ? { label: 'Show in folder', run: () => void api.files.showInFolder(shown) } : undefined, 9000, 'cheer', 'exported');
     return 'done';
   }
 
@@ -266,7 +266,7 @@ export async function exportArtboards(
     shown = w.paths[0];
   }
   const what = `${ids.length} artboard${ids.length === 1 ? '' : 's'} as ${info.title}`;
-  notify(`Exported ${what}${where === 'zip' ? ` in ${baseName(target)}` : ''}.${notes.length ? ` ${notes[0]}` : ''}`, notes.length ? 'warn' : 'success', can('showInFolder') ? { label: 'Show in folder', run: () => void api.files.showInFolder(shown) } : undefined, 9000, 'cheer', 'exported');
+  notifySaved(`Exported ${what}${where === 'zip' ? ` in ${baseName(target)}` : ''}.${notes.length ? ` ${notes[0]}` : ''}`, notes.length ? 'warn' : 'success', can('showInFolder') ? { label: 'Show in folder', run: () => void api.files.showInFolder(shown) } : undefined, 9000, 'cheer', 'exported');
   return 'done';
 }
 

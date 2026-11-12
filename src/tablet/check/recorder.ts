@@ -104,6 +104,8 @@ export interface ReportEnv {
   chrome: string;
   /** The desktop shell's platform name ("win32", "darwin", "linux"), or "web". */
   platform: string;
+  /** Linux: the desktop session (Wayland or X11) and the window system Chromium chose, when known. */
+  session?: { type: string; desktop: string; wayland: boolean; x11: boolean; ozone: string };
   userAgent: string;
   devicePixelRatio: number;
   screen: { width: number; height: number };
@@ -305,7 +307,7 @@ export class CheckRecorder {
       version: REPORT_VERSION,
       createdAt: env.now.toISOString(),
       app: { version: env.appVersion, electron: env.electron, chrome: env.chrome },
-      system: { platform: env.platform, userAgent: env.userAgent, devicePixelRatio: env.devicePixelRatio, screen: env.screen, maxTouchPoints: env.maxTouchPoints },
+      system: { platform: env.platform, ...(env.session ? { session: env.session } : {}), userAgent: env.userAgent, devicePixelRatio: env.devicePixelRatio, screen: env.screen, maxTouchPoints: env.maxTouchPoints },
       support: env.support,
       devices: {
         pointerTypes: { ...this.types },
@@ -360,7 +362,7 @@ export interface TabletReport {
   version: number;
   createdAt: string;
   app: { version: string; electron: string; chrome: string };
-  system: { platform: string; userAgent: string; devicePixelRatio: number; screen: { width: number; height: number }; maxTouchPoints: number };
+  system: { platform: string; session?: ReportEnv['session']; userAgent: string; devicePixelRatio: number; screen: { width: number; height: number }; maxTouchPoints: number };
   support: ReportEnv['support'];
   devices: { pointerTypes: Record<string, number>; pointerIds: number; hid: ReportEnv['hid']; note: string };
   settings: unknown;

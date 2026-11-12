@@ -15,6 +15,7 @@ import type { SpaceTapMode, WheelMode } from './choices';
 import * as ctl from './controller';
 import { LIGHT_TABLE_OPACITY, lightTableItems, lightTableTint } from './lightTable';
 import { pressesControl, SpaceTap, wheelIntent } from './input';
+import { attachPinch } from './pinch';
 import { perf } from './perf';
 import { neighbourFrames, upcomingFrames } from '../timeline/playback';
 import { FramePainter } from './pipeline';
@@ -168,6 +169,9 @@ export class CanvasEngine {
     }) as EventListener);
     this.listen(root, 'contextmenu', (e) => e.preventDefault());
     this.listen(root, 'wheel', this.onWheel as EventListener, { passive: false });
+    // Safari reports a trackpad pinch as gesture events, not ctrl+wheel (and would zoom the page).
+    const unpinch = attachPinch(root, this.onPinch);
+    if (unpinch) this.cleanups.push(unpinch);
     this.listen(window, 'keydown', this.onKeyDown as EventListener, { capture: true });
     this.listen(window, 'keyup', this.onKeyUp as EventListener, { capture: true });
     this.listen(window, 'blur', () => {
@@ -925,6 +929,12 @@ export class CanvasEngine {
     const intent = wheelIntent(e, currentChoice<WheelMode>('canvas.wheel'));
     if (intent.kind === 'zoom') ctl.setView(zoomAbout(v, v.zoom * wheelZoomFactor(intent.factorDelta, e.deltaMode), sx, sy));
     else ctl.setView({ zoom: v.zoom, panX: v.panX - intent.dx, panY: v.panY - intent.dy });
+  };
+
+  private onPinch = (factor: number, clientX: number, clientY: number): void => {
+    this.refreshBounds();
+    const v = { zoom: store().get().ui.zoom, panX: store().get().ui.panX, panY: store().get().ui.panY };
+    ctl.setView(zoomAbout(v, v.zoom * factor, clientX - this.bounds.left, clientY - this.bounds.top));
   };
 
   private onKeyDown = (e: KeyboardEvent): void => {

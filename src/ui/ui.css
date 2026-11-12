@@ -1895,7 +1895,8 @@ body.ui-resizing * {
 }
 .ui-ws.is-chosen {
   border-color: var(--sunny);
-  background: color-mix(in srgb, var(--sunny) 12%, var(--raised));
+  /* A light tint, so the softer text inside still reads on it (12% was 4.47:1 in Midnight Sketchbook). */
+  background: color-mix(in srgb, var(--sunny) 8%, var(--raised));
 }
 .ui-ws-name {
   font-weight: 700;
@@ -2098,6 +2099,12 @@ body.ui-resizing * {
 }
 .ui-help-empty {
   padding: 16px;
+  color: var(--muted);
+}
+.ui-help-loading {
+  margin: 0;
+  padding: 16px;
+  min-height: 3em;
   color: var(--muted);
 }
 .ui-help-home {

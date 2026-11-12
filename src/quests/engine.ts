@@ -3,6 +3,7 @@
 // drive it with a plain Store, a fake clock and an in-memory storage.
 import type { State } from '../core/store';
 import type { MiniStore } from '../ui/mini';
+import { QUESTS_KEY, readSaved, type Saved } from './saved';
 import { FRESH_PROGRESS, NO_PROBE, type Probe, type Quest, type QuestEvent, type QuestProgress, type QuestStep, type StepCtx } from './types';
 
 export interface StateSource {
@@ -26,7 +27,7 @@ export interface EngineDeps {
   now?(): number;
 }
 
-export const QUESTS_KEY = 'frameling.quests.v1';
+export { QUESTS_KEY };
 export const DEFAULT_HINT_AFTER = 20;
 
 interface Run {
@@ -40,8 +41,6 @@ interface Run {
   frames: Set<number>;
   probeKey: string;
 }
-
-type Saved = Pick<QuestProgress, 'completed' | 'badges' | 'paused'>;
 
 export class QuestEngine {
   private run: Run | null = null;
@@ -334,19 +333,7 @@ export class QuestEngine {
   }
 
   private load(): Saved | null {
-    try {
-      const raw = this.deps.storage?.getItem(QUESTS_KEY);
-      if (!raw) return null;
-      const v = JSON.parse(raw) as Partial<Saved>;
-      const paused = v.paused && typeof v.paused.id === 'string' && Number.isInteger(v.paused.step) ? { id: v.paused.id, step: Math.max(0, v.paused.step) } : null;
-      return {
-        completed: Array.isArray(v.completed) ? v.completed.filter((x) => typeof x === 'string') : [],
-        badges: Array.isArray(v.badges) ? v.badges.filter((x) => typeof x === 'string') : [],
-        paused,
-      };
-    } catch {
-      return null;
-    }
+    return readSaved(this.deps.storage);
   }
 
   private save(): void {

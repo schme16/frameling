@@ -70,7 +70,7 @@ What's in `test/`, by folder:
 | `tiles/` | Tile model, copy with alpha, export and edit. `godot-tiles-e2e` needs `GODOT_BIN`. |
 | `timeline/` | Timeline ops, geometry, playback, play range, hold until next, tween offer, the detailed timeline and both panels. |
 | `tools/` | Brush, selection, shapes, merge mode, wells, hold drawing, drawing gaps, follow-ups. |
-| `ui/` | Dock (model, live state and workspaces, stacked tab groups, floating windows and dragging, tool group names), right dock, panelInfo, tab fitting, menus, keyboard and keys, palette, themes, sounds, onboarding, Quill (runtime, view, goodbye, lines), starters, example cards, and the help checks. |
+| `ui/` | Dock (model, live state and workspaces, stacked tab groups, floating windows and dragging, tool group names), right dock, panelInfo, tab fitting, menus, keyboard and keys, palette, themes, sounds, onboarding, Quill (runtime, view, goodbye, lines), starters, example cards, and the help checks. `ui/css-vars.test.ts` fails when a `var(--x)` in the CSS or in an inline style is not defined anywhere (a theme token, a stylesheet or a style prop), because an undefined one just takes its fallback. |
 | top level | `smoke.test.ts` (package targets), `core.test.ts` (store, undo, registries), `case-sensitive-imports.test.ts`. |
 
 Godot checks inside vitest:
@@ -86,7 +86,8 @@ npm run help:audit
 ```
 
 Runs `test/ui/help-audit.test.ts`, `help-media.test.ts` and `help-words.test.ts` (all three are part of `npm test`
-too) and prints the full report. Fails when:
+too) and prints the full report. The topics' words load on demand, so these tests `await loadHelpBodies()` first (do the
+same in any test or script that reads `helpBody()` or runs `searchHelp`). Fails when:
 
 - a command has no help topic;
 - a topic has no picture or clip, or names a file missing from `public/help/`: a topic names a base file (`select.png`)
@@ -382,6 +383,38 @@ npm run build
 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/effects.cjs
 ```
 
+## Shadow and glow softness per format: scripts/e2e/shadow-sigma.cjs
+
+Draws a box with a Shadow or a Glow of several softness values in the editor (native canvas filter and the JS fallback)
+and in SVG, Moving SVG, Lottie (lottie-web's SVG player, and the dotLottie player when `DOTLOTTIE_DIR` is set, see
+dotlottie-check.cjs), PDF, .ai and PSD, then fits the blur's gaussian sigma from the pixels and prints one table. Fails when a
+format is more than 0.6 px (or 12 percent) of sigma away from the editor. Needs no build. The mapping it found, pinned in
+`test/export/shadow-sigma.test.ts`: Chromium's canvas `drop-shadow(x y b)` blurs with a sigma of b (not the CSS spec's b / 2),
+Shadow softness is that sigma in SVG, Lottie's Softness is four times it (lottie-web and ThorVG use Softness / 4), Glow uses
+size / 2 everywhere. Formats that bake the layer (PDF, .ai, PSD, PNG, video, sheets, Godot, Unity, Interactives) use the editor's
+own renderer.
+
+```bash
+DOTLOTTIE_DIR=$PWD/pkg/package AMOUNTS=4,8,12,16 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/shadow-sigma.cjs [outDir]
+```
+
+## Shadow room in Lottie players: scripts/e2e/shadow-clip.cjs
+
+lottie-web's SVG player cuts a Drop Shadow off at the layer's own box (its filter region is the bounding box of what the layer
+draws), so a shadow thrown past a small drawing used to vanish; the dotLottie player (ThorVG) never had the problem. The writer
+now gives a shadowed layer an invisible rectangle (`Shadow room`, fill opacity 0) the size of what the layer draws over the
+frames plus the shadow's reach (`effectReach`, in `layersBox` and `shadowRoom` in `lottie.ts`); shape layers carry it inside,
+pictures and symbol copies go in a precomp with a room layer (one per camera depth, so it moves with them). Pinned in
+`test/export/lottie-shadow-room.test.ts`. The script plays small documents (a box, a dot, held drawings, a folder, a symbol copy, a pixel
+layer, shadow with soften both ways round, a panning camera) in the editor, lottie-web's SVG and canvas players and (with
+`DOTLOTTIE_DIR`) the dotLottie player, saves a PNG of each, and prints the share of the editor's shadow ink each shows and the
+RMSE against it. It fails when the SVG or dotLottie player shows under 85 percent or is more than 6 away. lottie-web's canvas
+player ignores effects, so a shadow never shows there (reported only; "Draw Soften and Shadow as pictures" is the way).
+
+```bash
+DOTLOTTIE_DIR=$PWD/pkg/package xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/shadow-clip.cjs [outDir]
+```
+
 ## Vector exports against the renderer: scripts/e2e/vector-check.cjs
 
 Renders test documents (Bouncing logo, a shape tween with hints, a camera move with parallax, the Bouncing ball, a pixel
@@ -543,6 +576,7 @@ xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/web.cjs [--only
 | `model-*` | Nested folders, clip direction and repeat, and variations saved, opened again and compared; a ping-pong clip's play order. |
 | `snapping`, `prefs`, `features`, `pen` | Snapping ticks and a real drag onto the page edge, every Preferences page, Features switches kept across a reload, Chromium pen events on the Pen and tablet pad and the Brush. |
 | `offline` | The service worker caches the whole app, the app opens with the server stopped (lazy dialogs, Help, Save still work) and again when it is back. |
+| `safari` | Safari's ways, with stand-ins from the shim in the page address (`?ua=safari` looks like Safari, `?gesture=1` has GestureEvent, `?persist=grant\|deny` answers `navigator.storage.persist()`): pinch from gesture events on the canvas and timeline, a late export held back for a "Your file is ready" Save button (button and command), and the one-time "browser may clear your work" notice. |
 | `plugins` | The sandbox page policy, an example plugin installs, runs and is kept across a reload, and what a plugin does offline. |
 | `sweep` | The app served from a sub-folder (`/tools/frameling/`), every panel and tool, every help picture and clip served, a help clip decodes. |
 | `web-only` | Install as an app, the browser help topic, About, the tab title, "Leave site?". |
@@ -585,8 +619,14 @@ axe "serious" or "critical" result or a keyboard failure.
 ```bash
 xvfb-run -a -s "-screen 0 1600x1000x24" npm run a11y          # builds, then runs
 npm run build
-xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/a11y.cjs [--json out.json] [--themes] [--only name,name]
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/a11y.cjs [--json out.json] [--themes] [--only name,name] [--theme dark|light] [--shots dir]
 ```
+
+A full run is about 120 views and takes 4 to 6 minutes (more when the machine is busy), and prints nothing new when piped
+into `tail` until it ends, so give it time before calling it stuck. It always exits: 0 clean, 1 problems found, 2 when the
+run itself failed (an error, or no end after `A11Y_TIMEOUT` minutes, 30 by default). Without `--theme` it follows the
+system, which is light under xvfb, so run it once with `--theme dark` too: colour contrast problems differ by theme.
+`--shots <dir>` saves a picture of each dialog as it is checked (it puts the window on the virtual screen).
 
 Popups (`popup ...`) also check that Tab and Shift+Tab out of one close it and land on another control, and so does
 focus moving elsewhere. Every scenario sets up its own state, so any `--only` subset works on its own;
@@ -843,6 +883,31 @@ npm run install-local -- --no-build   # copy the last build
 
 Copies the newest `release/*.AppImage` to `/mnt/109313D2109313D2/lutris-applications/frameling/frameling.AppImage`
 (`FRAMELING_INSTALL_DIR` overrides), closing a running copy first if the file is busy. Linux only.
+
+## The Linux launcher and a stock Ubuntu 24.04
+
+The AppImage starts through `build/linux/launcher.sh` (put in front of the program by `build/after-pack.cjs`; the program
+is `frameling.bin`). It keeps the browser sandbox on, asks before dropping it, and has `FRAMELING_OZONE` for forcing
+Wayland or X11. `test/platform/linux-launcher.test.ts` runs it against a stand-in program.
+
+The sandbox behaviour only shows on a kernel with `kernel.apparmor_restrict_unprivileged_userns = 1` (stock Ubuntu 24.04;
+Zorin OS turns it off). A container shares the host's kernel, so it cannot show it. A throwaway virtual machine can:
+`qemu-system-x86_64 -enable-kvm` with the Ubuntu 24.04 cloud image and a cloud-init seed, `xvfb` and Electron's libraries
+installed, the AppImage copied in. Things worth running there: the AppImage with no `libfuse2`; the same with an AppArmor
+profile loaded (`sudo apparmor_parser -r`, see `--show-linux-fix`); with the sysctl at 0; under `weston --backend=headless`
+for Wayland. `window.frameling.session` (also in the pen report) says which window system Chromium used.
+`brand/pen-check-demo/LINUX-BETA.md` lists what was found. A pretend tablet (a `uinput` device read by Xorg's dummy driver
+and libinput) sends real pen events to Chromium on X11.
+
+## The pen check on video: scripts/docs/pen-check-demo.cjs
+
+Records a dummy run of Quill's whole pen check with a pen made up from DevTools protocol events and a drawn pen cursor, into
+`brand/pen-check-demo/` (see its `NOTE.md`):
+
+```bash
+npm run build
+SHOT_SHOW=1 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/docs/pen-check-demo.cjs <outDir> --theme dark
+```
 
 ## CI
 

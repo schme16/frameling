@@ -37,7 +37,7 @@ Every pull request into `main` builds the app for all three systems. Open the pu
 |---|---|
 | Windows | `Frameling-<version>-setup-x64.exe` (installer) or `...-portable-x64.exe` (runs without installing) |
 | macOS | `Frameling-<version>-mac-arm64.dmg` (Apple silicon) or `...-mac-x64.dmg` (Intel) |
-| Linux | `Frameling-<version>-linux-x86_64.AppImage` (make it executable, then run it) |
+| Linux | `Frameling-<version>-linux-x86_64.AppImage` (make it executable, then run it; see Help, Installing on Linux) |
 
 The builds are only self-signed (Windows) and ad-hoc signed (macOS), so on Windows click **More info → Run anyway**, and on macOS right-click the app and choose **Open** the first time (see Signing, below).
 
@@ -201,7 +201,7 @@ checks every line is used, every id used exists, and the placeholders match.
 
 ## In-app help
 
-Topics are registered with `registerHelp` next to the feature (`src/*/help.ts`), and every one has a picture or a
+Topics are registered with `registerHelp` next to the feature (`src/*/help.ts`), their words are in the `help.bodies.ts` beside it (a lazily loaded chunk), and every one has a picture or a
 short clip in `public/help/`. `npm run help:audit` (also part of `npm test`) fails when a command has no topic, a
 topic has no media, a media file is missing or unused, a `help:` link goes nowhere, or a topic names a shortcut no
 command has any more. It also lists topics over 400 words. `test/ui/help-words.test.ts` checks that the plain words

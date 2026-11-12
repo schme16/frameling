@@ -3,11 +3,13 @@
 // back where it was).
 //
 //   npm run a11y                       (builds first)
-//   npx electron scripts/a11y.cjs [--json out.json] [--themes] [--only name,name]
+//   npx electron scripts/a11y.cjs [--json out.json] [--themes] [--only name,name] [--theme dark|light] [--shots dir]
 //
 // --themes also runs axe's colour contrast rule on the main window and a few panels in every built-in theme.
 // Exits 1 when anything serious (axe "serious" or "critical", or a keyboard failure) is found. A11Y_SHOW=1 shows
-// the window. Needs `npm run build` first; it uses dist/ and never touches your settings (fresh profile per run).
+// the window. --theme runs everything in the default dark or light theme (the system's choice otherwise), and --shots
+// saves a picture of each dialog as it is checked. Needs `npm run build` first; it uses dist/ and never touches your
+// settings (fresh profile per run).
 const { app, BrowserWindow, ipcMain } = require('electron');
 const fs = require('node:fs');
 const os = require('node:os');
@@ -22,7 +24,21 @@ const opt = (n) => {
 };
 const only = opt('--only')?.split(',');
 const jsonOut = opt('--json');
+const forceTheme = opt('--theme');
+const shotsDir = opt('--shots');
+if (shotsDir) fs.mkdirSync(shotsDir, { recursive: true });
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// Any failure ends the run with exit code 2. Without this an error inside the async run below was only a warning, the
+// window stayed open and the process never exited (which is how `npm run a11y` seemed to hang). A watchdog ends a run
+// that stops answering for any other reason; A11Y_TIMEOUT is in minutes.
+const fail = (why) => {
+  console.error(`a11y run failed: ${why?.stack ?? why}`);
+  app.exit(2);
+};
+process.on('unhandledRejection', fail);
+process.on('uncaughtException', fail);
+setTimeout(() => fail(new Error('timed out')), Number(process.env.A11Y_TIMEOUT || 30) * 60_000).unref();
 
 let axeSource;
 try {
@@ -90,7 +106,8 @@ const DIALOGS = [
 const DOCS = { default: 'bouncing-ball', text: 'bouncing-logo', effects: 'bouncing-logo', rig: 'puppet', 'lip-sync': 'lip-sync', particles: 'sparkle-fx', tileset: 'tileset', palette: 'blank-pixel', 'symbol-props': 'bouncing-logo', camera: 'camera-parallax', 'clip-flow': 'hero-sprites', library: 'bouncing-logo' };
 
 async function makeWindow() {
-  const show = process.env.A11Y_SHOW === '1';
+  // --shots needs a window on the (virtual) screen: an off-screen one gives no frames to capture under xvfb.
+  const show = process.env.A11Y_SHOW === '1' || !!shotsDir;
   const win = new BrowserWindow({
     width: 1400,
     height: 900,
@@ -292,7 +309,7 @@ app.whenReady().then(async () => {
   const win = await makeWindow();
   await load(win);
   // Skip the first-run sheets for the checks of everything else (they get their own scenarios).
-  await js(win, `__frameling.prefs.set({ showWelcome: false, onboarded: true, showTips: true });`);
+  await js(win, `__frameling.prefs.set({ showWelcome: false, onboarded: true, showTips: true${forceTheme ? `, theme: ${JSON.stringify(forceTheme)}` : ''} });`);
   await load(win);
   await reset(win);
 
@@ -368,6 +385,12 @@ app.whenReady().then(async () => {
     if (!has) {
       add(name, { missing: true, violations: [] });
       continue;
+    }
+    if (shotsDir) {
+      // A picture that never comes back (no frame under xvfb with the window off-screen) must not stall the run.
+      const img = await Promise.race([win.webContents.capturePage(), sleep(8000).then(() => null)]);
+      if (img) fs.writeFileSync(path.join(shotsDir, `${name.replace(/\W+/g, '-')}.png`), img.toPNG());
+      else console.log(`   no picture of ${name}`);
     }
     add(name, await axe(win, '[role=dialog]'));
     const k = await dialogKeys(win);
@@ -501,4 +524,4 @@ app.whenReady().then(async () => {
   if (jsonOut) fs.writeFileSync(jsonOut, JSON.stringify(report, null, 2));
   win.destroy();
   app.exit(serious || keyProblems ? 1 : 0);
-});
+}).catch(fail);

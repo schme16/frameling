@@ -109,8 +109,13 @@ Save, autosave and versions always save `rootDoc(store().rootDoc())`: tile nesti
 
 - **Commands** (`registerCommand`): `{id 'area.verb', label, category, keys?, help?, keywords?, enabled?, checked?,
   run, global?, layers?}`. Menus, the command palette, the keyboard, tooltips and the help audit all read them.
-- **Help topics** (`registerHelp`, `registerHelpTopics`): `{id, title, summary, body (Markdown, help:id links),
-  section, keywords?, media?, order?}`.
+- **Help topics** (`registerHelp`, `registerHelpTopics`): `{id, title, summary, body? (Markdown, help:id links),
+  section, keywords?, media?, order?}`. The words of the built-in topics are not in the topic: they sit in a
+  `*.bodies.ts` file beside the topic list (`export const bodies = { 'topic-id': \`...\` }`) and load as one chunk
+  (`src/core/helpBodies.ts`) when Help opens, so the start-up bundle only carries ids, titles, summaries and keywords.
+  Read the words with `helpBody(topic)` after `await loadHelpBodies()` (the help browser does this and shows a short
+  loading state; tests and scripts that search or audit the text await it first). A topic that sets `body` itself (a
+  plugin's) needs neither.
 - **Panels** (`registerPanel`): `{id, title, icon, component, zone: left|right|bottom, order?, help?}`.
 - **Tools** (`registerTool`): `{id, label, icon, key?, layers, options?, down, move, up, hover, cancel, overlay, onKey,
   leave, ...}`.
@@ -458,6 +463,12 @@ API and threat model are in `docs/plugins.md`; the manifest is in `docs/format.m
   command runs while a quest is active. Quests are in `library.ts` and each feature's `quest.ts`; `predicates.ts`
   checks the document, `probe.ts` reads what isn't in the store, `actions.ts` does "Show me how" through normal
   commands. `QuestLayer.tsx` mounts the spotlight, quest bar and celebration in their own React root.
+  Start-up only has `registry.ts`, `catalog.ts` (a quest's id, title, summary, icon, badge, group and needs, the
+  `QuestInfo` the welcome card, onboarding and the panel list read) and the saved progress (`saved.ts`). The steps and
+  checks (`library.ts`), the engine, its runtime and the layer are one lazy chunk, `boot.ts`, brought in by
+  `startQuest` (and the resume command, and the Quests panel) through `loadQuests()`. Read a quest's steps with
+  `getFullQuest(id)` (undefined until then); `getQuest(id)` is the catalog entry or the whole quest.
+  `test/quests/catalog.test.ts` fails when the catalog and the library disagree, so change both together.
 
 ## Quill, the mascot
 

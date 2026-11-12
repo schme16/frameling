@@ -56,6 +56,8 @@ export interface WebEnv {
   /** `darwin`, `win32` or `linux`, guessed from the browser, so shortcuts show Cmd on a Mac. */
   platform: string;
   now?: () => number;
+  /** Called after a safety copy is written to the browser's storage (the moment to ask the browser to keep it). */
+  onSaved?: () => void;
   /** Where page events come from (beforeunload, pagehide). Left out in tests. */
   events?: Pick<Window, 'addEventListener'>;
 }
@@ -588,6 +590,7 @@ export function createWebApi(env: WebEnv): WebApi {
         await ready;
         try {
           await (await db()).put('autosave', 'current', { bytes, note: { ...meta, savedAt: now() } });
+          env.onSaved?.();
         } catch {
           // A failed autosave is not worth interrupting someone's drawing for.
         }

@@ -47,4 +47,10 @@ module.exports = [
     prefs: CALM,
     steps: [template('bouncing-ball'), cmd('pen.check'), wait(1500), penCheckSteps, wait(500), ...shotOf('.tb-check', 10)],
   },
+  {
+    // Installing on Linux: the Diagnostics page, where Quill's pen check starts once the app is running.
+    name: 'installing-on-linux',
+    prefs: CALM,
+    steps: [template('bouncing-ball'), js(`${F}.overlays.openPrefs('diagnostics')`), wait(1500), ...shotOf('.ui-prefs', 10)],
+  },
 ];

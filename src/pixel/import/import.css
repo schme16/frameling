@@ -219,7 +219,7 @@
 }
 .im-link {
   font: inherit;
-  color: var(--link, var(--text));
+  color: var(--text);
   background: none;
   border: none;
   padding: 0;

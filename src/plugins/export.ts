@@ -3,7 +3,7 @@
 import { sceneOf } from '../core/symbols';
 import { store } from '../core/store';
 import { baseName, desktop } from '../io/desktop';
-import { notify } from '../io/notify';
+import { notifySaved } from '../io/notify';
 import { can } from '../platform';
 import { backgroundFor, drawFrame, makeCanvas, readPixels } from '../export/draw';
 import { defaultSettings, planExport } from '../export/plan';
@@ -102,6 +102,6 @@ async function exportWithPlugin(job: PluginExportJob, choice: PluginExportChoice
     const w = await api.files.write(target, files[0].bytes);
     if ('error' in w) throw new Error(w.error);
   }
-  notify(`Exported ${baseName(shown)}.`, 'success', can('showInFolder') ? { label: 'Show in folder', run: () => void api.files.showInFolder(shown) } : undefined, 9000, 'cheer');
+  notifySaved(`Exported ${baseName(shown)}.`, 'success', can('showInFolder') ? { label: 'Show in folder', run: () => void api.files.showInFolder(shown) } : undefined, 9000, 'cheer');
   return 'done';
 }

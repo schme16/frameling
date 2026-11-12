@@ -475,12 +475,12 @@ function grow2(b: Box, d: Box): Box {
   return b;
 }
 
-/** How far past the drawing an effect can paint, in document pixels. */
+/** How far past the drawing an effect can paint, in document pixels (three sigmas of the blur: the soften radius and the shadow softness are sigmas, the glow's is half its size). */
 export function effectReach(kind: string, v: Record<string, number | string>): number {
   const n = (k: string) => Math.abs(Number(v[k]) || 0);
   if (kind === 'blur') return n('radius') * 3;
   if (kind === 'glow') return n('size') * 1.5;
-  if (kind === 'shadow') return Math.max(n('x'), n('y')) + n('softness') * 1.5;
+  if (kind === 'shadow') return Math.max(n('x'), n('y')) + n('softness') * 3;
   if (kind === 'outline') return n('width') + 1;
   if (kind === 'pixelate') return n('size');
   return 0;

@@ -124,7 +124,7 @@ export function reduceCheck(f: CheckFlow, a: CheckAction): CheckFlow {
 
 /** What this computer and Frameling are, for the report. Nothing personal: no names, no paths. */
 export async function gatherEnv(now: Date = new Date()): Promise<ReportEnv> {
-  const api = desktop() ?? (typeof window !== 'undefined' ? (window as { frameling?: { platform?: string; versions?: { app: string; electron: string; chrome: string } } }).frameling : undefined);
+  const api = desktop() ?? (typeof window !== 'undefined' ? (window as { frameling?: { platform?: string; session?: ReportEnv['session']; versions?: { app: string; electron: string; chrome: string } } }).frameling : undefined);
   const nav = typeof navigator !== 'undefined' ? navigator : undefined;
   let hid: ReportEnv['hid'] = { available: false, devices: [] };
   try {
@@ -139,6 +139,7 @@ export async function gatherEnv(now: Date = new Date()): Promise<ReportEnv> {
     electron: api?.versions?.electron ?? '',
     chrome: api?.versions?.chrome ?? '',
     platform: api?.platform ?? 'web',
+    session: api?.session,
     userAgent: nav?.userAgent ?? '',
     devicePixelRatio: typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1,
     screen: { width: typeof screen !== 'undefined' ? screen.width : 0, height: typeof screen !== 'undefined' ? screen.height : 0 },

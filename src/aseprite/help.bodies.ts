@@ -1,0 +1,41 @@
+// The words of the help topics in help.ts, kept apart so they load only when Help is opened (see src/core/helpBodies.ts).
+export const bodies: Record<string, string> = {
+  'aseprite-import': `Frameling opens **Aseprite** files directly. You don't need to export anything first.
+
+## Open one as a new drawing
+
+Press **Ctrl+O** (**Cmd+O**) and pick a file ending in **.aseprite** or **.ase**. You can also drag the file onto the Frameling window, or right-click it in your file manager and choose **Open with Frameling**. Frameling is offered there but never takes over the double-click, so Aseprite keeps that. It opens as a new, unsaved drawing, so **Save** asks where to keep it as a .frameling file. Your original Aseprite file is never changed.
+
+## Add one to the drawing you have open
+
+Choose **File > Import > Aseprite file...**. Its layers go on top of yours, its frames start at the first frame, and its colours join your palette. It is one undo step. The drawing keeps its own frame rate and size.
+
+When you drop a file on the window, Frameling asks the first time whether to open it or add it, then remembers (change it any time in Preferences > Behaviour).
+
+## Only want the colours?
+
+Search for **Use palette from an Aseprite file** in the command palette (Ctrl+K). It sets your drawing's palette to the file's, without touching anything else.
+
+## What comes across
+
+- **Layers**, in order, with their opacity, blend mode, hidden and locked state, and groups as folders (a group inside a group becomes a folder inside a folder). Reference layers stay reference layers.
+- **Frames with their timing.** Frameling counts frames at one rate, so it picks the rate that fits every frame's time exactly (a 100 ms frame next to a 150 ms one becomes 20 fps, held 2 and 3 frames) and holds the frames to match. If the times can't fit exactly, it tells you.
+- **Linked cels** share one drawing, so a hold stays a hold.
+- **Each cel's position and opacity**, in every colour mode: full colour, grayscale and indexed.
+- **The palette**, as your drawing's palette. The original index details are kept in the drawing's notes.
+- **Tags** become named clips, so they work in exports and game engines. A tag's direction (forward, backward, back and forth) and how many times it repeats come across too, and Frameling's clips play and export that way.
+- **Tilemaps** become real tiles in your tileset, flips included, when they line up with the tile grid. Otherwise that layer comes across as flat pixels and the dialog says why.
+
+## What gets approximated
+
+After an import, a message says **See what changed** whenever something couldn't be matched exactly. Typical cases:
+
+- **Slices** (with their 9-patch middle and pivot) become [Slices](help:pixel-slices) on the top pixel layer. A slice that moves between frames keeps a key for each place.
+- Anything drawn **outside the canvas** is cropped.
+
+If a file ends in .ase but isn't from Aseprite (Adobe swatch files do this), Frameling says so.
+
+---
+
+Working on pixel art? See [Pixel art](help:pixel-art) and [Palette](help:palette).`,
+};
