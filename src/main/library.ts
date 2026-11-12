@@ -80,7 +80,7 @@ export function showLibraryFolder(kind: LibraryKind): void {
 // ---------------------------------------------------------------- other files
 
 /** The kinds of file openOther may show. Anything else asked for is dropped. */
-const OPEN_EXTS = new Set(['frameling', 'flplay', 'zip', 'flplugin']);
+const OPEN_EXTS = new Set(['frameling', 'flplay', 'zip', 'flplugin', 'aseprite', 'ase']);
 
 export function cleanFilters(filters: unknown): FileFilter[] {
   if (!Array.isArray(filters)) return [];

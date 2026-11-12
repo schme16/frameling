@@ -99,6 +99,12 @@ export async function openDocument(): Promise<void> {
   const r = await api.files.open();
   if (!r) return;
   if ('error' in r) return notify(r.error, 'error');
+  // Other kinds of file (Aseprite) open through their own opener.
+  const other = openers.find((o) => o.test(r.path));
+  if (other) {
+    await other.open(r.bytes, r.path);
+    return;
+  }
   if (await loadBytes(r.bytes, r.path)) void api.recent.add(r.path);
 }
 

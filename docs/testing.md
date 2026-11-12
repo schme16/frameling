@@ -65,6 +65,7 @@ What's in `test/`, by folder:
 | `symbols/` | Motions and symbol and shape ops. |
 | `templates/` | Every starter template builds; community templates; setup. |
 | `text/` | Text layout and animators. |
+| `aseprite/` | The Aseprite reader and importer: `writer.ts` writes .aseprite files chunk by chunk (every colour depth, cel type, palette chunk, tags, slices, user data, tilesets) and `import.test.ts` checks every pixel of the imported frames. `aseprite-bin.test.ts` needs `ASEPRITE_BIN`. |
 | `tiles/` | Tile model, copy with alpha, export and edit. `godot-tiles-e2e` needs `GODOT_BIN`. |
 | `timeline/` | Timeline ops, geometry, playback, play range, hold until next, tween offer, the detailed timeline and both panels. |
 | `tools/` | Brush, selection, shapes, merge mode, wells, hold drawing, drawing gaps, follow-ups. |
@@ -235,24 +236,33 @@ ILLUSTRATOR_PREFIX=/path/to/wine/prefix xvfb-run -a -s "-screen 0 1600x1000x24" 
 |---|---|
 | `ILLUSTRATOR_PREFIX` | The Wine prefix Illustrator is installed in (the folder with `drive_c`). |
 | `WINE_RUNNER` | The Wine build to run it with (a folder with `bin/wine`). Found from the Lutris game file for the prefix when not set. |
-| `ILLUSTRATOR_STRICT_LAYERS=1` | Count the layer names Illustrator drops as failures (a known gap, see below). |
-| `--only=a,b` | Cases: `layers-folders paths gradients masks text symbols frames scale2-transparent artboards stress kitchen-sink bouncing-ball bouncing-logo`. |
+| `--only=a,b` | Cases: `layers-folders paths gradients gradients-pdf masks text text-big symbols frames frames-files frames-artboards frames-one scale2-transparent artboards stress kitchen-sink bouncing-ball bouncing-logo`. |
 | `--keep-going` | Run even if something already runs in the prefix (never when someone may be using Illustrator). |
 
 It refuses to start when any process has the prefix as its `WINEPREFIX`. Illustrator runs in a Wine virtual desktop
 inside the xvfb screen, started the way Lutris starts it (DXVK in the prefix, `dxgi` native then builtin), with an
 ExtendScript (`illustrator-check.jsx`) passed as the file to open. A screenshot loop presses the two boxes that would
 block it (the "quit unexpectedly" box after an unclean exit, and "You are about to run the script": Continue). The
-script opens each file (a page at a time, through Illustrator's PDF import settings, which it puts back afterwards),
-records artboards, layers, groups, item counts, fills and strokes, exports a PNG and quits. Outputs in `outDir`: the
-`.ai` and PNG files per case, Illustrator's PNGs, `side-by-side/*.png` (Frameling left, Illustrator right) and
-`report.json`. A case fails when the artboard size is wrong, a hidden layer shows, too few paths or groups arrive, or the
-picture is further from Frameling's than the case allows (RMSE). It takes a few minutes; Illustrator takes about 20
-seconds to start.
+script opens each file (through Illustrator's PDF import settings for the page, which it puts back afterwards),
+records artboards, layers (with sublayers and opacity), groups, item counts, fills and strokes, exports a PNG of the
+artboard asked for and quits. Outputs in `outDir`: the `.ai` and PNG files per case, Illustrator's PNGs,
+`side-by-side/*.png` (Frameling left, Illustrator right) and `report.json`. A case fails when the artboard count or size
+is wrong, a layer name, a folder's layers or a layer opacity is not there, a hidden layer shows, too few paths arrive, or
+the picture is further from Frameling's than the case allows (RMSE). It takes about 10 minutes for every case;
+Illustrator takes about 20 seconds to start.
 
-What Illustrator does with the file today: a `.ai` without Illustrator's own private data is read as a PDF import, so
-layer names are dropped (one "Layer 1", with a group per Frameling layer or folder keeping opacity and blend), a file with
-several frames asks "PDF Import Options" for the page, text is outlines and symbols are plain shapes.
+The cases cover the four ways an animation goes into `.ai` (`aiFrames` in the export settings): `frames-one` (this frame),
+`frames-files` (a zip of one file per frame, each opened), `frames-artboards` (one file with an artboard per frame, each
+artboard exported and compared), and `frames` / `gradients-pdf` (pages: a plain PDF, which Illustrator imports as groups
+without layer names, so only the pictures are compared). `text-big` draws text at 4 times the size to show the outlines.
+
+What Illustrator does with the file: it holds Illustrator's own data (the page's `/PieceInfo /Illustrator /Private`
+streams, written by `src/export/ai-native.ts`), so Illustrator opens it as its own document, with layers, sublayers,
+artboards, gradients and opacity as real ones. Without that data (the "Pages" way) Illustrator reads it as a PDF import:
+layer names are dropped (one "Layer 1", with a group per Frameling layer or folder keeping opacity and blend) and a file
+with several pages asks "PDF Import Options". Probing the format: save a small file from Illustrator itself with an
+ExtendScript (`doc.saveAs` with `Compatibility.ILLUSTRATOR17` and `compressed = false`) and read its `AIPrivateData`
+streams; the layer, path, gradient and raster operators in `ai-native.ts` were worked out that way.
 
 ## Effects pixels: scripts/e2e/effects.cjs
 
@@ -499,6 +509,25 @@ script already does. `--renderer <dir>` uses a private `vite build --outDir`; `-
 `test/ui/help-media.test.ts` fails when a topic's media has no entry (so it can't be shot again), when an entry is for no
 topic, or when a file is missing, unused or too big. To add help media for a new topic: write the entry, run
 `npm run help:media -- --only <name>`, look at both files, then set `media: '<name>.png'` on the topic.
+
+## Aseprite import against the real Aseprite
+
+```bash
+ASEPRITE_BIN=/path/to/aseprite npx vitest run test/aseprite/aseprite-bin
+```
+
+Opt-in, like `GODOT_BIN`. `test/aseprite/lua/gen.lua` runs in `aseprite -b` (batch mode, no window; settings go to a
+throwaway folder through `XDG_CONFIG_HOME`, so your own Aseprite settings are never touched) and makes real files:
+RGBA, grayscale and indexed colour, groups, every blend mode, linked cels, tags in every direction, a tilemap with
+flips, slices, user data and a reference layer. For every layer of every frame it also saves Aseprite's own picture
+of that layer alone. The test opens each file with the importer and compares pixel by pixel, plus the settings,
+timing, tags and notes. Reference layers are checked by value, since Aseprite leaves them out of its own render.
+`test/aseprite/import.test.ts` runs without Aseprite, on files made by the test writer. The help picture sample
+`scripts/docs/help/assets/slime-bounce.aseprite` is made by `make-slime.lua` next to it.
+
+`xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/aseprite.cjs [file.aseprite ...]` opens real files in the real app through
+`openPath` (the double-click and recent-files path), adds one to the open drawing, undoes it, and fails on any page error. With no
+files it uses the sample. It only reads the files you give it.
 
 ## Quill's dialogue
 

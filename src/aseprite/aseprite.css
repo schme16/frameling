@@ -1,0 +1,7 @@
+.ase-notes {
+  margin: 8px 0 0;
+  padding-left: 20px;
+  display: grid;
+  gap: 8px;
+  line-height: 1.4;
+}

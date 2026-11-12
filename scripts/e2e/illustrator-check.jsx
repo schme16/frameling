@@ -114,6 +114,8 @@ for (var n = 0; n < manifest.files.length; n++) {
     png.transparency = !!entry.transparent;
     png.horizontalScale = 100;
     png.verticalScale = 100;
+    // One artboard of several: the one asked for.
+    if (entry.artboard !== null && entry.artboard !== undefined) doc.artboards.setActiveArtboardIndex(entry.artboard);
     doc.exportFile(new File(entry.png), ExportType.PNG24, png);
     doc.close(SaveOptions.DONOTSAVECHANGES);
     res.ok = true;

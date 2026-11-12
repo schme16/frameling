@@ -12,6 +12,7 @@ import '../camera';
 import '../artboards';
 import '../rig';
 import '../io';
+import '../aseprite';
 import '../platform/help';
 import '../export';
 import '../tiles';
