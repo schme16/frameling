@@ -3,7 +3,8 @@
 // (override with FRAMELING_INSTALL_DIR). If the copy fails because Frameling is running from that file, it closes
 // Frameling and tries again.
 import { execFileSync, execSync } from 'node:child_process';
-import { chmodSync, copyFileSync, mkdirSync, readdirSync, statSync } from 'node:fs';
+import { chmodSync, copyFileSync, mkdirSync, readdirSync, statSync, writeFileSync } from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 
 const dir = process.env.FRAMELING_INSTALL_DIR ?? '/mnt/109313D2109313D2/lutris-applications/frameling';
@@ -70,3 +71,26 @@ async function install() {
 
 await install();
 console.log(`Installed ${built} -> ${target}`);
+
+// A launcher, so menus and the taskbar show Quill and group the window with it (StartupWMClass is the window's
+// class). It points at the installed copy and its icon next to it.
+const icon = path.join(dir, 'frameling.png');
+copyFileSync('build/icons/256x256.png', icon);
+const apps = path.join(os.homedir(), '.local/share/applications');
+mkdirSync(apps, { recursive: true });
+writeFileSync(
+  path.join(apps, 'frameling.desktop'),
+  [
+    '[Desktop Entry]',
+    'Type=Application',
+    'Name=Frameling',
+    'Comment=Draw and animate 2D art',
+    `Exec="${target}" %U`,
+    `Icon=${icon}`,
+    'Terminal=false',
+    'Categories=Graphics;',
+    'StartupWMClass=frameling',
+    '',
+  ].join('\n'),
+);
+console.log(`Launcher: ${path.join(apps, 'frameling.desktop')}`);

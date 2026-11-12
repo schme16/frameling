@@ -59,6 +59,8 @@ function createWindow() {
     minWidth: 800,
     minHeight: 560,
     title: 'Frameling',
+    // Quill in the taskbar on Windows and Linux (an AppImage has no installed launcher to take it from).
+    ...(process.platform === 'darwin' ? {} : { icon: path.join(__dirname, 'icon.png') }),
     backgroundColor: '#1d1b26',
     show: false,
     // The app draws its own menu bar, so Windows and Linux get no native one.
