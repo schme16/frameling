@@ -3,6 +3,7 @@
 import { BUILT_IN_THEMES, defaultThemeFor, getBuiltIn, type Theme } from './builtIn';
 import { isHex, normHex } from './color';
 import { ALL_TOKENS, COLOUR_TOKENS, CORE_TOKENS, DERIVED_TOKENS, deriveTokens, isShadowToken, type ThemeMode, type ThemeTokens } from './tokens';
+import { flushTheme } from '../../canvas/theme';
 
 export const FILE_KIND = 'frameling-theme';
 export const FILE_VERSION = 1;
@@ -187,12 +188,14 @@ export function writeTheme(el: HTMLElement, theme: Pick<Theme, 'mode' | 'tokens'
   if (prev) for (const name of prev) if (!next.has(name)) el.style.removeProperty(`--${name}`);
   applied.set(el, next);
   el.style.setProperty('color-scheme', theme.mode);
+  flushTheme();
 }
 
 /** Takes every theme variable off an element again, so theme.css shows through. */
 export function clearTheme(el: HTMLElement): void {
   for (const name of applied.get(el) ?? []) el.style.removeProperty(`--${name}`);
   el.style.removeProperty('color-scheme');
+  flushTheme();
   applied.delete(el);
 }
 

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from 'vitest';
-import { cssVar, subscribeTheme } from '../../src/canvas/theme';
+import { cssVar, flushTheme, subscribeTheme } from '../../src/canvas/theme';
 
 const settle = () => new Promise((r) => setTimeout(r));
 
@@ -22,6 +22,15 @@ describe('canvas theme tokens', () => {
     root.dataset.theme = 'dark';
     await settle();
     expect(seen.length).toBe(2);
+  });
+
+  it('flushTheme makes a token written a moment ago readable at once', () => {
+    const root = document.documentElement;
+    root.style.setProperty('--flush', '#aaaaaa');
+    expect(cssVar('--flush')).toBe('#aaaaaa');
+    root.style.setProperty('--flush', '#bbbbbb');
+    flushTheme();
+    expect(cssVar('--flush')).toBe('#bbbbbb');
   });
 
   it('can be unsubscribed without breaking the others', async () => {
