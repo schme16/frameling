@@ -94,12 +94,7 @@ light table, version history, shortcut sets, sounds (on by default), a Godot imp
 
 ## The queue, in order
 
-1. **Interactives' workspace system** (board task 18): toolbars, panels, floating windows, docking, rearranging,
-   naming and grouping, saveable and shareable workspaces. The porting notes at the end of
-   `docs/right-panel-research.md` map Interactives' dock model onto Frameling's (`src/ui/dock.ts`, `DockView.tsx`,
-   `RightDock.tsx`, `panelInfo.ts`). Keep the right side's presentation work; add the top zone, floats and a movable
-   tool rail; keep the late-registering panel list (`known`) for plugins and lazy panels.
-2. **Help media in light and dark** (board task 17): capture every help picture and clip in both, the help browser
+1. **Help media in light and dark** (board task 17): capture every help picture and clip in both, the help browser
    picks by the current mode (and follows Auto), the help audit checks both exist. Do this last, after any other big
    UI change, so nothing is captured twice.
 
@@ -127,6 +122,7 @@ light table, version history, shortcut sets, sounds (on by default), a Godot imp
   - Not tried on real Windows or macOS (only CI builds).
   - Safari/WebKit untested for the web build.
   - The `frameling://` handler on Windows comes from a custom NSIS script, untested.
+- **Workspaces:** a zone is one tab group (no stacked groups inside a zone); floats have no keyboard resize; `zoneOf()` is null for a panel in a float (use `placeOf()`); `npm run a11y` reports 11 keyboard issues (Escape on dialogs, focus into popups, focus rings on `div.tl-main` and the right splitter), not yet checked whether they predate workspaces.
 - **Help media:** a few clips predate the latest UI changes (task 17 will recapture everything).
 
 ## Decisions already made (don't reopen)
