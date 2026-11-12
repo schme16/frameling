@@ -241,18 +241,20 @@ The path you typed in Frameling has to match where the picture really is in your
     media: 'export-unity.png',
     summary: 'Drop the files into Unity: sprites are sliced and an animation clip is made for each of your clips.',
     keywords: ['unity', 'sprite', 'slice', 'sprite editor', 'animation clip', 'anim', 'animator', 'c#', 'importer'],
-    body: `Written for Unity 2021.2 or newer, and checked in Unity 6.6. It needs the **2D Sprite** package: 2D projects have it already. In a 3D project, add it first (**Window > Package Manager > Unity Registry > 2D Sprite**), or Unity reports an error about \`UnityEditor.U2D.Sprites\`.
+    body: `Checked in Unity 6.6 (6000.6), in a project with the **2D Sprite** package and in a new 3D project without it. Other versions are untested: the 2D Sprite package says it works with Unity 2019.4 and later, so that is the oldest to expect, but we haven't tried it.
+
+With the 2D Sprite package (2D projects have it) the importer cuts the sprites the current way. Without it, it still compiles and cuts them the older way, so your project never gets stuck on a script error. To get the package anyway, open **Window > Package Manager > Unity Registry > 2D Sprite**.
 
 ## In Frameling
 
 1. Press **Ctrl+E**, pick **Sprite sheet**, then the **Unity** card.
 2. For pixel art, pick **Art size**.
-3. Leave **Include the importer script** ticked the first time. A project only needs one copy, so untick it for later exports.
+3. Leave **Include the importer script** ticked the first time. It adds two small files, \`FramelingSheetImporter.cs\` and \`FramelingSheetImporter.asmdef\`. A project only needs one copy of the pair, so untick it for later exports.
 4. Press **Export** and choose a folder **inside your project's Assets folder**, for example \`Assets/Sprites\`.
 
 ## In Unity
 
-1. Switch to Unity. The small script (\`FramelingSheetImporter.cs\`) reads the \`.json\` beside your picture and cuts it into sprites. Pixel art is set to sharp (point) filtering with no compression.
+1. Switch to Unity. The small script reads the \`.json\` beside your picture and cuts it into sprites. Pixel art is set to sharp (point) filtering with no compression.
 2. Next to the picture you'll find an animation clip for each of your clips (\`hero_run.anim\`...), with your loop settings.
 3. Drag a clip onto a sprite in your scene, and Unity sets up the Animator for you. Or open the picture's arrow to see every sprite.
 
@@ -261,7 +263,9 @@ Export again any time: sprites keep their identity, so scenes that use them don'
 ## Good to know
 
 - One sprite unit is the height of a frame, so a 32 pixel character is one unit tall.
-- If you already have a copy of the script, delete the extra one. Two copies stop scripts compiling.`,
+- Keep the \`.cs\` and \`.asmdef\` files together in one folder. The \`.asmdef\` is how the script knows whether the 2D Sprite package is there.
+- If you already have a copy of the pair, delete the extra one. Two copies stop scripts compiling.
+- A sheet exported as separate sprites has no clips, so you get the sprites and no animation clips.`,
   },
   {
     id: 'export-phaser',

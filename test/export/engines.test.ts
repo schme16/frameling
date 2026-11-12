@@ -6,7 +6,7 @@ import { packInto, packSheet, packShelves } from '../../src/export/pack';
 import { buildAnimations, buildCells, composeSheet, layoutCells, layoutPacked } from '../../src/export/sheet';
 import {
   animationCellNames, buildSheetFiles, cssSprites, hashAtlas, phaserAnimations, pixiSheet, separateSpriteNames, unitySheet,
-  UNITY_SCRIPT, UNITY_SCRIPT_NAME, type SheetData,
+  UNITY_ASMDEF, UNITY_ASMDEF_NAME, UNITY_SCRIPT, UNITY_SCRIPT_NAME, type SheetData,
 } from '../../src/export/engines';
 import { artScale } from '../../src/export/plan';
 import { DEFAULT_SHEET, normalizeSheet, type SheetSettings } from '../../src/export/types';
@@ -174,6 +174,45 @@ describe('engine data files', () => {
     expect(UNITY_SCRIPT).not.toContain('time = t, value = keys[');
   });
 
+  it('Unity script: compiles without the 2D Sprite package (guarded by a define from the asmdef, with the older cutting API as fallback)', () => {
+    // The package namespace only appears inside the define, so a project without the package never sees it.
+    const lines = UNITY_SCRIPT.split('\n');
+    const usingAt = lines.findIndex((l) => l.includes('using UnityEditor.U2D.Sprites;'));
+    expect(usingAt).toBeGreaterThan(0);
+    expect(lines[usingAt - 1]).toBe('#if FRAMELING_2D_SPRITE');
+    expect(lines[usingAt + 1]).toBe('#endif');
+    // Every use of the package types sits before the #else, so the fallback path has none of them.
+    const elseAt = UNITY_SCRIPT.indexOf('#else');
+    const endAt = UNITY_SCRIPT.indexOf('#endif', elseAt);
+    expect(elseAt).toBeGreaterThan(0);
+    for (const k of ['SpriteDataProviderFactories', 'ISpriteNameFileIdDataProvider', 'SpriteRect', 'SpriteNameFileIdPair']) {
+      const first = UNITY_SCRIPT.indexOf(k, UNITY_SCRIPT.indexOf('#if FRAMELING_2D_SPRITE\n    static'));
+      expect(first).toBeGreaterThan(0);
+      expect(first).toBeLessThan(elseAt);
+      expect(UNITY_SCRIPT.indexOf(k, elseAt)).toBe(-1);
+    }
+    const fallback = UNITY_SCRIPT.slice(elseAt, endAt);
+    expect(fallback).toContain('importer.spritesheet =');
+    expect(fallback).toContain('new SpriteMetaData');
+    expect(fallback).toContain('SpriteAlignment.Custom');
+    expect(fallback).toContain('pivotX');
+    // The whole file is still wrapped so it only builds in the editor, and the clips code does not need the package.
+    expect(UNITY_SCRIPT).toContain('#if UNITY_EDITOR');
+    expect(UNITY_SCRIPT.split('#if').length).toBe(UNITY_SCRIPT.split('#endif').length);
+  });
+
+  it('Unity asmdef: editor only, defines FRAMELING_2D_SPRITE when the 2D Sprite package is installed', () => {
+    expect(UNITY_ASMDEF_NAME).toBe('FramelingSheetImporter.asmdef');
+    const a = JSON.parse(UNITY_ASMDEF);
+    expect(a.name).toBe('Frameling.SheetImporter');
+    expect(a.includePlatforms).toEqual(['Editor']);
+    expect(a.references).toContain('Unity.2D.Sprite.Editor');
+    expect(a.versionDefines).toEqual([{ name: 'com.unity.2d.sprite', expression: '1.0.0', define: 'FRAMELING_2D_SPRITE' }]);
+    // A missing package must not stop the assembly from building.
+    expect(a.defineConstraints).toEqual([]);
+    expect(UNITY_SCRIPT).toContain(a.versionDefines[0].define);
+  });
+
   it('CSS: a class per frame and keyframes where held frames last their full time', () => {
     const d = sampleData();
     const css = cssSprites(d, { prefix: 'Hero Run', pixelArt: true, separate: false });
@@ -219,7 +258,7 @@ describe('the files each engine gets', () => {
     expect(names(job({ engine: 'godot', godotScene: false, json: true }, four()))).toEqual(['hero-run.json', 'hero-run.png', 'hero-run.tres']);
     expect(names(job({ engine: 'phaser' }, four()))).toEqual(['hero-run-anims.json', 'hero-run.json', 'hero-run.png']);
     expect(names(job({ engine: 'pixi' }, four()))).toEqual(['hero-run.json', 'hero-run.png']);
-    expect(names(job({ engine: 'unity' }, four()))).toEqual(['FramelingSheetImporter.cs', 'hero-run.json', 'hero-run.png']);
+    expect(names(job({ engine: 'unity' }, four()))).toEqual(['FramelingSheetImporter.asmdef', 'FramelingSheetImporter.cs', 'hero-run.json', 'hero-run.png']);
     expect(names(job({ engine: 'unity', unityScript: false }, four()))).toEqual(['hero-run.json', 'hero-run.png']);
     expect(names(job({ engine: 'css', json: false }, four()))).toEqual(['hero-run.css', 'hero-run.html', 'hero-run.png']);
   });
@@ -248,6 +287,18 @@ describe('the files each engine gets', () => {
     expect(Object.keys(hash.frames)).toEqual(['idle_0', 'run_0', 'run_1']);
     expect(hash.animations.idle.frames).toEqual(['idle_0', 'idle_0']);
     expect(hash.frames.idle_0.duration).toBe(200);
+  });
+
+  it('Unity with separate sprites: a json with every sprite and no animations, so no clips are made', () => {
+    const icons = [solid(8, 8, 1), solid(8, 8, 1)];
+    const doc = { name: 'Icons', clips: [], markers: [{ id: 'm', name: 'heart', frame: 0 }], fps: 10 };
+    const r = job({ engine: 'unity', content: 'separate', trim: true }, icons, { doc, name: 'Icons' });
+    const u = JSON.parse(fileText(r, 'icons.json'));
+    expect(u.format).toBe('frameling-unity');
+    expect(u.frames.map((f: { name: string }) => f.name)).toEqual(['heart', 'frame_2']);
+    expect(u.animations).toEqual([]);
+    // The script skips clip making when there is nothing to make.
+    expect(UNITY_SCRIPT).toContain('data.animations.Length == 0) continue;');
   });
 
   it('separate sprites: one atlas with a name per frame and no animations, or one PNG each', () => {

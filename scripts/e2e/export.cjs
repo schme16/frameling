@@ -487,7 +487,7 @@ async function vSheet(files, dir, s, exp, caseCtx) {
   // Settings saved before engines existed say where they're going with the json and Godot ticks.
   const engine = s.sheet.engine ?? (s.sheet.godot || s.sheet.godotScene ? 'godot' : s.sheet.json ? 'json' : 'none');
   const generic = engine === 'json' || ((engine === 'godot' || engine === 'css') && s.sheet.json);
-  const want = { godot: ['.tres'], unity: ['.json', '.cs'], phaser: ['.json', '-anims.json'], pixi: ['.json'], css: ['.css', '.html'], json: ['.json'], none: [] }[engine];
+  const want = { godot: ['.tres'], unity: ['.json', '.cs', '.asmdef'], phaser: ['.json', '-anims.json'], pixi: ['.json'], css: ['.css', '.html'], json: ['.json'], none: [] }[engine];
   for (const ext of want) check(names.some((n) => n.endsWith(ext)), `${engine}: no ${ext} file`);
   const json = generic ? names.find((n) => n.endsWith('.json') && !n.endsWith('-flow.json')) : null;
   check(generic ? !!json : engine !== 'none' || !names.some((n) => n.endsWith('.json')), 'json file presence does not match the setting');
@@ -558,37 +558,60 @@ async function vSheet(files, dir, s, exp, caseCtx) {
 
 // Unity is slow to start, so only these templates go through it (the hero has several clips and is pixel art).
 const UNITY_TEMPLATES = ['hero-sprites', 'bouncing-ball'];
-let unityProject = null;
+const unityProjects = {};
 
-/** Makes (once per run) a throwaway project that has the 2D Sprite package the importer needs. */
-function unityProjectDir() {
-  if (unityProject) return unityProject;
-  const proj = path.join(outDir, '_unity-project');
-  const r = sh(UNITY, ['-batchmode', '-nographics', '-quit', '-createProject', proj, '-logFile', path.join(outDir, 'unity-create.log')], { timeout: 600000 });
-  if (!fs.existsSync(path.join(proj, 'Packages', 'manifest.json'))) throw new Error(`Unity could not make a project: ${(r.err + r.out).slice(0, 300)} (see unity-create.log)`);
-  const mf = path.join(proj, 'Packages', 'manifest.json');
+/**
+ * Makes (once per run) a throwaway project. `pkg` true adds the 2D Sprite package (the importer's best path); false is
+ * the default 3D template as Unity makes it, which has no such package, so the importer must fall back and still compile.
+ */
+function unityProjectDir(pkg) {
+  const key = pkg ? 'pkg' : 'older';
+  if (unityProjects[key]) return unityProjects[key];
+  const plain = path.join(outDir, '_unity-project-older');
+  if (!unityProjects.older && !unityProjects.made) {
+    const r = sh(UNITY, ['-batchmode', '-nographics', '-quit', '-createProject', plain, '-logFile', path.join(outDir, 'unity-create.log')], { timeout: 600000 });
+    if (!fs.existsSync(path.join(plain, 'Packages', 'manifest.json'))) throw new Error(`Unity could not make a project: ${(r.err + r.out).slice(0, 300)} (see unity-create.log)`);
+    unityProjects.made = true;
+    unityProjects.older = plain;
+    const m = JSON.parse(fs.readFileSync(path.join(plain, 'Packages', 'manifest.json'), 'utf8'));
+    if (m.dependencies['com.unity.2d.sprite']) throw new Error('the default Unity project already has the 2D Sprite package, so the "without it" check proves nothing');
+  }
+  if (!pkg) return unityProjects.older;
+  const withPkg = path.join(outDir, '_unity-project');
+  fs.rmSync(withPkg, { recursive: true, force: true });
+  fs.cpSync(plain, withPkg, { recursive: true });
+  const mf = path.join(withPkg, 'Packages', 'manifest.json');
   const m = JSON.parse(fs.readFileSync(mf, 'utf8'));
   m.dependencies['com.unity.2d.sprite'] = '1.0.0';
   fs.writeFileSync(mf, JSON.stringify(m, null, 2));
-  return (unityProject = proj);
+  return (unityProjects.pkg = withPkg);
 }
 
-/** Drops the exported sheet and the importer script into the project, lets Unity compile and import them, and checks the sprites and clips. */
+/**
+ * Drops the exported sheet and the importer files into a project, lets Unity compile and import them, and checks the
+ * sprites and clips. Done in a project with the 2D Sprite package and in one without it.
+ */
 async function unityCheck(dir, names) {
-  const proj = unityProjectDir();
+  for (const pkg of [true, false]) unityCheckIn(unityProjectDir(pkg), pkg, dir, names);
+}
+
+function unityCheckIn(proj, pkg, dir, names) {
+  const where = pkg ? 'with package' : 'no package';
   const assets = path.join(proj, 'Assets');
-  fs.rmSync(path.join(assets, 'Frameling'), { recursive: true, force: true });
-  fs.rmSync(path.join(assets, 'Editor'), { recursive: true, force: true });
+  for (const d of ['Frameling', 'Importer', 'Editor']) fs.rmSync(path.join(assets, d), { recursive: true, force: true });
   fs.mkdirSync(path.join(assets, 'Frameling'), { recursive: true });
-  fs.mkdirSync(path.join(assets, 'Editor'), { recursive: true });
+  fs.mkdirSync(path.join(assets, 'Importer'), { recursive: true });
   const png = names.find((n) => n.endsWith('.png'));
   check(names.includes('FramelingSheetImporter.cs'), 'unity: the importer script was not exported');
-  // Like a person would: the picture and its json in a folder, the importer script anywhere under Assets.
-  for (const n of names) fs.copyFileSync(path.join(dir, n), path.join(assets, n.endsWith('.cs') ? 'Editor' : 'Frameling', n));
-  fs.copyFileSync(path.join(__dirname, 'unity', 'FramelingSheetCheck.cs'), path.join(assets, 'Editor', 'FramelingSheetCheck.cs'));
+  check(names.includes('FramelingSheetImporter.asmdef'), 'unity: the importer assembly definition was not exported');
+  // Like a person would: the picture and its json in a folder, the importer script and its .asmdef together anywhere under Assets.
+  for (const n of names) fs.copyFileSync(path.join(dir, n), path.join(assets, /\.(cs|asmdef)$/.test(n) ? 'Importer' : 'Frameling', n));
+  // The check lives in the importer's assembly so it can read the importer's types.
+  fs.copyFileSync(path.join(__dirname, 'unity', 'FramelingSheetCheck.cs'), path.join(assets, 'Importer', 'FramelingSheetCheck.cs'));
   const sheetArg = `Assets/Frameling/${png}`;
-  const ids = path.join(dir, 'unity-ids.txt');
-  runUnity(proj, dir, 'first import', ['-sheet', sheetArg, '-ids', ids]);
+  const ids = path.join(dir, `unity-ids-${pkg ? 'pkg' : 'older'}.txt`);
+  const expect = pkg ? 'package' : 'older';
+  runUnity(proj, dir, `first import ${where}`, ['-sheet', sheetArg, '-ids', ids, '-expect', expect]);
   // Re-export: the json changes (a new speed and a longer first hold), the picture is imported again, and nothing may break.
   const jsonFile = path.join(assets, 'Frameling', png.replace(/\.png$/, '.json'));
   const data = JSON.parse(fs.readFileSync(jsonFile, 'utf8'));
@@ -596,8 +619,8 @@ async function unityCheck(dir, names) {
     data.animations[0].fps = 24;
     data.animations[0].holds[0] += 1;
     fs.writeFileSync(jsonFile, JSON.stringify(data));
-    runUnity(proj, dir, 're-import', ['-sheet', sheetArg, '-ids', ids, '-reimport']);
   }
+  runUnity(proj, dir, `re-import ${where}`, ['-sheet', sheetArg, '-ids', ids, '-expect', expect, '-reimport']);
 }
 
 /** One Unity batchmode run of the check script; its report lines become notes and failures. */
@@ -782,6 +805,8 @@ async function exportMatrix() {
         await runCase(tpl, fmt, 'nodedupe-godotpath', (s) => ({ ...s, sheet: { ...s.sheet, dedupe: false, json: true, godot: true, godotScene: true, godotPath: 'art/chars/hero.png' } }));
         await runCase(tpl, fmt, 'packed-extrude', (s) => ({ ...s, sheet: { ...s.sheet, engine: 'json', layout: 'packed', trim: true, padding: 2, extrude: 1, json: true } }));
         for (const engine of ['phaser', 'pixi', 'unity', 'css']) await runCase(tpl, fmt, engine, (s) => ({ ...s, sheet: { ...s.sheet, engine, layout: 'packed', trim: true, padding: 1, json: false } }));
+        // No clips: separate sprites make a json with no animations, so Unity must cut the sprites and make no .anim files.
+        if (tpl === 'bouncing-ball') await runCase(tpl, fmt, 'unity-noclips', (s) => ({ ...s, sheet: { ...s.sheet, engine: 'unity', content: 'separate', separateFiles: false, layout: 'packed', trim: true, padding: 1, json: false } }));
         // The phase 2 test: the hero at art size, packed, straight into Godot.
         if (tpl === 'hero-sprites') await runCase(tpl, fmt, 'art-size-godot', (s) => ({ ...s, scale: 1 / 8, transparent: true, sheet: { ...s.sheet, engine: 'godot', godotScene: true, json: true, layout: 'packed', trim: true, padding: 1, extrude: 1, godotPath: '' } }));
       }
