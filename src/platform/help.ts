@@ -20,6 +20,8 @@ registerHelpTopics([
 - **Open** shows the usual "choose a file" box.
 - Frameling also keeps its own copy in the browser, so **Open recent...** still works.
 
+In any browser you can also **drop a .frameling file onto the page** to open it.
+
 ## Exporting
 
 Exports work the same. Where the browser can't pick a save spot, the file downloads. Exports of several files (a **sprite sheet** and its data, a tileset) go into a folder you choose in Chrome and Edge, and download as one **.zip** elsewhere.
@@ -42,6 +44,8 @@ A few shortcuts belong to the browser and can't be used by any web page, such as
 
 ## Install it as an app
 
-**Help > Install Frameling as an app...** adds Frameling to your apps (in Chrome and Edge). It then opens in its own window, works **offline**, and can open .frameling files when you double-click them. In Safari, use **Share > Add to Dock** (or **Add to Home Screen** on an iPad). Firefox can't install it, but the page still works offline once it has loaded.`,
+**Help > Install Frameling as an app...** adds Frameling to your apps (in Chrome and Edge). It then opens in its own window, works **offline**, and can open .frameling files when you double-click them. In Safari, use **Share > Add to Dock** (or **Add to Home Screen** on an iPad). Firefox can't install it, but the page still works offline once it has loaded.
+
+One thing needs a connection: **plugins**. A plugin runs in a sealed box that the offline copy can't open, so it starts again when you are back online.`,
   },
 ]);

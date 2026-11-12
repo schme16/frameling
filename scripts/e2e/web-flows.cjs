@@ -675,3 +675,92 @@ flow('plugins', async (ctx) => {
   check('back online: the plugin starts again', back.length === 1 && back[0].status === 'on', back);
 });
 
+
+// A file handed over by the system (an installed web app opened with a .frameling file: launchQueue).
+flow('open-with', async () => {
+  const w = makeWindow('persist:open-with');
+  await w.load('picker');
+  await w.js(`__frameling.overlays.closeSheet()`);
+  await w.js(`__frameling.template('blink')`);
+  await w.js(`__frameling.store().update('Rename', (d) => { d.name = 'Handed over'; })`);
+  await w.js(`__framelingIo.saveDocument()`);
+  await sleep(400);
+  const f = (await w.files.collect()).find((g) => /\.frameling$/.test(g.name));
+  await w.js(`__frameling.template('bouncing-ball')`);
+  await w.js(`__frameling.store().setUi({ dirty: false })`);
+  await w.files.stage(f.name, f.bytes);
+  await w.js(`(async () => { const d = await (await navigator.storage.getDirectory()).getDirectoryHandle('in'); await window.frameling.receiveFiles([await d.getFileHandle(${JSON.stringify(f.name)})]); })()`);
+  await sleep(1500);
+  const name = await w.js(`__frameling.store().get().doc.name`);
+  check('a file handed over by the system opens', /Handed over/.test(name), name);
+});
+
+// Hosted in a sub-folder (https://host/tools/frameling/), every panel and tool, and every help picture and clip served.
+flow('sweep', async () => {
+  const w = makeWindow('persist:sweep');
+  await w.load('picker', '', true, '/tools/frameling/');
+  await w.js(`__frameling.overlays.closeSheet()`);
+  check('the app starts from a sub-folder', await w.js(`location.pathname === '/tools/frameling/' && !!document.querySelector('.ui-app')`));
+  const mani = await w.js(`fetch('./manifest.webmanifest').then((r) => r.json())`);
+  check('the manifest is served with relative start_url and scope', mani.start_url === './' && mani.scope === './' && mani.icons.length >= 3 && Array.isArray(mani.file_handlers), mani.start_url);
+  const icons = await w.js(`Promise.all(${JSON.stringify(mani.icons.map((i) => i.src))}.map((s) => fetch(s).then((r) => r.ok)))`);
+  check('every manifest icon is served', icons.every(Boolean), icons);
+  await w.js(`__frameling.template('bouncing-ball')`);
+  await sleep(300);
+  // Panels and tools.
+  const panels = await w.js(`__frameling.panels()`);
+  const tools = await w.js(`__frameling.tools()`);
+  for (const id of panels) await w.js(`__frameling.showPanel(${JSON.stringify(id)})`);
+  await sleep(1200);
+  for (const id of tools) await w.js(`__frameling.store().setUi({ tool: ${JSON.stringify(id)} })`);
+  await sleep(500);
+  check(`${panels.length} panels and ${tools.length} tools open without an error`, true);
+  // Help: every topic's picture or clip comes from the web server.
+  const topics = await w.js(`__frameling.help()`);
+  const files = new Set();
+  for (const t of topics) {
+    if (!t.media) continue;
+    for (const m of ['dark', 'light']) {
+      const f = t.media.replace(/(\.[a-z0-9]+)$/i, `-${m}$1`);
+      files.add(f);
+      if (/\.(mp4|webm)$/i.test(t.media)) files.add(f.replace(/\.(mp4|webm)$/i, '-poster.png'));
+    }
+  }
+  const missing = await w.js(`(async () => { const bad = []; for (const f of ${JSON.stringify([...files])}) { const r = await fetch('help/' + f, { method: 'HEAD' }); if (!r.ok) bad.push(f); } return bad; })()`);
+  check(`all ${files.size} help pictures and clips for ${topics.length} topics are served`, missing.length === 0, missing.slice(0, 5));
+  // A help clip plays in the browser.
+  const clip = topics.find((t) => /\.mp4$/.test(t.media ?? ''));
+  if (clip) {
+    await w.js(`__frameling.overlays.openHelp(${JSON.stringify(clip.id)})`);
+    await sleep(1500);
+    const v = await w.js(`(() => { const v = document.querySelector('video'); return v ? { ready: v.readyState, err: v.error && v.error.code, w: v.videoWidth } : null; })()`);
+    check(`a help clip (${clip.id}) loads and decodes as H.264`, v && !v.err && v.w > 0, v);
+    await w.shot('sweep-help-clip');
+  }
+});
+
+// Dropping files on the page: a drawing opens, an unknown file gets a polite word and the page stays put.
+for (const mode of ['picker', 'plain']) {
+  flow(`drop-${mode}`, async () => {
+    const w = makeWindow(`persist:drop-${mode}`);
+    await w.load(mode);
+    await w.js(`__frameling.overlays.closeSheet()`);
+    await w.js(`__frameling.template('blink')`);
+    await w.js(`__frameling.store().update('Rename', (d) => { d.name = 'Dropped one'; })`);
+    await w.js(`__framelingIo.saveDocument()`);
+    await sleep(400);
+    const f = (await w.files.collect()).find((g) => /\.frameling$/.test(g.name));
+    await w.js(`__frameling.template('bouncing-ball')`);
+    await w.js(`__frameling.store().setUi({ dirty: false })`);
+    const drop = (name, bytes) => w.js(`(() => { const dt = new DataTransfer(); dt.items.add(new File([__shim.unb64(${JSON.stringify(Buffer.from(bytes).toString('base64'))})], ${JSON.stringify(name)})); const over = new DragEvent('dragover', { dataTransfer: dt, bubbles: true, cancelable: true }); document.body.dispatchEvent(over); const e = new DragEvent('drop', { dataTransfer: dt, bubbles: true, cancelable: true }); document.body.dispatchEvent(e); return { overPrevented: over.defaultPrevented, dropPrevented: e.defaultPrevented }; })()`);
+    const r = await drop(f.name, f.bytes);
+    check('a dragged file is allowed to drop, and the browser does not navigate to it', r.overPrevented && r.dropPrevented, r);
+    await sleep(1500);
+    check('a dropped .frameling drawing opens', /Dropped one/.test(await w.js(`__frameling.store().get().doc.name`)));
+    const r2 = await drop('notes.txt', Buffer.from('hello'));
+    check('an unknown file is turned away without leaving the page', r2.dropPrevented === true);
+    await sleep(500);
+    check('and Frameling says what it does open', /opens its own drawings/.test(await w.body()));
+    check('the drawing is still open', /Dropped one/.test(await w.js(`__frameling.store().get().doc.name`)));
+  });
+}

@@ -44,6 +44,7 @@ const TYPES = {
 };
 const server = http.createServer((q, r) => {
   let p = decodeURIComponent(new URL(q.url, 'http://x').pathname);
+  p = p.replace(/^\/tools\/frameling(?=\/)/, ''); // the app also answers under a sub-folder, like a real host
   if (p.endsWith('/')) p += 'index.html';
   const f = path.join(WEB, p);
   if (!f.startsWith(WEB) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) {
@@ -208,8 +209,8 @@ function makeWindow(partition) {
     fs.writeFileSync(path.join(shotsDir, `${name}.png`), (await wc.capturePage()).toPNG());
   };
   /** Opens the app. With debug off (no ?debug) the first-run hello shows as for a visitor, and no test hooks exist. */
-  const load = async (shim = 'picker', extra = '', debug = true) => {
-    await win.loadURL(`http://127.0.0.1:${port}/?${debug ? 'debug&' : ''}shim=${shim}${extra}`);
+  const load = async (shim = 'picker', extra = '', debug = true, base = '/') => {
+    await win.loadURL(`http://127.0.0.1:${port}${base}?${debug ? 'debug&' : ''}shim=${shim}${extra}`);
     if (debug) await js(`new Promise((r) => { const t = () => (window.__frameling && window.__framelingIo ? r() : setTimeout(t, 50)); t(); })`);
     await sleep(600);
   };
