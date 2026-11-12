@@ -153,6 +153,11 @@ export interface ToolPointer {
   pointerType: string;
   /** Milliseconds, for velocity. */
   time: number;
+  /** Pen only: how far the pen leans, in degrees from upright, left to right and top to bottom (-90 to 90). */
+  tiltX?: number;
+  tiltY?: number;
+  /** Pen only: how far the pen is turned about its own barrel, in degrees (0 to 359). */
+  twist?: number;
 }
 
 /** What a tool gets from the canvas. */

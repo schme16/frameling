@@ -225,14 +225,27 @@ export function grabAt(p: Pt, zoom: number): CanvasGrab | null {
 // ---------------------------------------------------------------- pointer extras
 
 let hover: Pt | null = null;
+let hoverPen: HoverPen | null = null;
 let predicted: Pt[] = [];
+
+/** What a pen hovering over the canvas reports, for the cursor: how it leans, and whether the eraser end is the one near. */
+export interface HoverPen {
+  tiltX?: number;
+  tiltY?: number;
+  eraser: boolean;
+}
 
 /** Where the pointer is over the canvas (document pixels), or null when it's elsewhere. */
 export function getHover(): Pt | null {
   return hover;
 }
-export function setHover(p: Pt | null): void {
+export function setHover(p: Pt | null, pen: HoverPen | null = null): void {
   hover = p;
+  hoverPen = p ? pen : null;
+}
+/** Set while a pen (not a mouse or finger) is hovering over the canvas. */
+export function getHoverPen(): HoverPen | null {
+  return hoverPen;
 }
 
 /** The pen's predicted next points. Only for drawing the live preview further ahead, never committed. */

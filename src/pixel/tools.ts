@@ -31,6 +31,8 @@ import { flattenSubPath } from '../geometry/hit';
 import { getPixelSettings } from './settings';
 import { DitherOptions, PixelPencilOptions, ShadeOptions, SprayOptions } from './ToolOptions';
 import { SPRAY_DENSITY, seeded, sprayCells } from './spray';
+import { flowFactor, sizeFactor } from '../tablet/dynamics';
+import type { PenTool } from '../tablet/settings';
 
 /** The active layer when it's a pixel layer. */
 export function activePixelLayer(): PixelLayer | null {
@@ -128,13 +130,16 @@ function inkTool(spec: InkToolSpec): Tool {
       if (typeof ink === 'string') return ctx.hint(ink);
       const { doc, ui } = store().get();
       stroke = new PixelStroke(doc, layer, ui.frame, { color: [0, 0, 0, 255], size: viewPixelSize(spec.size()), shape: getToolSettings().pixelBrushShape, perfect: spec.perfect(), ink });
+      stroke.scale(sizeFactor(spec.id as PenTool, e));
       const here = stroke.cell(e.x, e.y);
       const from = e.shift ? lastPixelEnd(doc, layer) : null;
       if (from) stroke.beginLine(from, here);
       else stroke.begin(here);
     },
     move(e) {
-      stroke?.moveTo(stroke.cell(e.x, e.y));
+      if (!stroke) return;
+      stroke.scale(sizeFactor(spec.id as PenTool, e));
+      stroke.moveTo(stroke.cell(e.x, e.y));
     },
     up(e, ctx) {
       const s = stroke;
@@ -213,13 +218,17 @@ export const sprayTool: Tool = (() => {
   let last: PxPt | null = null;
   let rng = seeded(1);
   let radius = 4;
+  let density = SPRAY_DENSITY;
   const dab = (at: PxPt, ink: Ink) => {
     if (!session) return;
-    for (const c of sprayCells(at.x, at.y, radius, SPRAY_DENSITY, rng)) session.paint(c.x, c.y, ink);
+    for (const c of sprayCells(at.x, at.y, radius, density, rng)) session.paint(c.x, c.y, ink);
   };
   let ink: Ink | null = null;
   const go = (e: ToolPointer, first: boolean) => {
     if (!session || !ink) return;
+    // A pen: pressure and tilt change the size of the cloud, and how thick it is.
+    radius = (getPixelSettings().spraySize / 2) * sizeFactor('spray', e);
+    density = Math.min(1, SPRAY_DENSITY * flowFactor('spray', e));
     const at = docToPixel(e.x, e.y, session.pixelSize);
     // Along the way too, so a fast drag still sprays an even trail.
     const from = first || !last ? at : last;
@@ -316,13 +325,16 @@ export function makePixelPencil() {
       color = ui.color;
       const t = getToolSettings();
       stroke = new PixelStroke(doc, layer, ui.frame, { color: rgba, size: viewPixelSize(t.pixelBrushSize), shape: t.pixelBrushShape, perfect: t.pixelPerfect });
+      stroke.scale(sizeFactor('pencil', e));
       const here = stroke.cell(e.x, e.y);
       const from = e.shift ? lastPixelEnd(doc, layer) : null;
       if (from) stroke.beginLine(from, here);
       else stroke.begin(here);
     },
     move(e: ToolPointer): void {
-      stroke?.moveTo(stroke.cell(e.x, e.y));
+      if (!stroke) return;
+      stroke.scale(sizeFactor('pencil', e));
+      stroke.moveTo(stroke.cell(e.x, e.y));
     },
     up(e: ToolPointer, ctx: ToolContext): void {
       const s = stroke;

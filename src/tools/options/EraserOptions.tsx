@@ -1,4 +1,5 @@
 import { Slider, Tip } from '../../canvas/controls';
+import { PenOptions } from '../../tablet/PenOptions';
 import { setToolSettings, useToolSettings } from '../settings';
 import { useActiveLayerKind } from './BrushOptions';
 import { DrawModeToggle } from './DrawModeToggle';
@@ -16,6 +17,7 @@ export function EraserOptions() {
       <div className="cv-options">
         <Slider label="Size" value={pixels} min={1} max={24} format={(v) => `${v} pixel${v === 1 ? '' : 's'}`} onChange={(v) => setToolSettings({ eraserPixelSize: v })} />
         <Tip>Rubs out pixels as you drag.</Tip>
+        <PenOptions tool="eraser" size />
       </div>
     );
   }
@@ -28,6 +30,7 @@ export function EraserOptions() {
           ? 'This layer merges shapes, so the eraser rubs out just the area under the circle. Grouped shapes are left alone.'
           : 'This erases whole lines. Anything the circle touches disappears, so one swipe removes a stroke or a shape. Undo brings it back.'}
       </Tip>
+      <PenOptions tool="eraser" size />
     </div>
   );
 }

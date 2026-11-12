@@ -18,6 +18,7 @@ import { reportEdit } from './util';
 import { viewPixelSize, viewSizeFactor } from './view-size';
 import { activeIsMerge, editShapes } from './merge-mode';
 import { eraseArea, sweepGeom } from '../geometry/merge';
+import { sizeFactor } from '../tablet/dynamics';
 
 interface VectorGesture {
   layerId: Id;
@@ -40,14 +41,14 @@ export function shapesTouched(drawing: VectorDrawing, x: number, y: number, radi
   return out;
 }
 
-function reach(ctx: ToolContext): number {
-  // Half the eraser size, but never so small it's hard to hit a thin line.
+function reach(ctx: ToolContext, pen = 1): number {
+  // Half the eraser size (more or less with a pen's pressure or tilt), but never so small it's hard to hit a thin line.
   const f = viewSizeFactor();
-  return Math.max((getToolSettings().eraserSize * f) / 2, (3 * f) / ctx.zoom);
+  return Math.max((getToolSettings().eraserSize * f * pen) / 2, (3 * f) / ctx.zoom);
 }
 
-function sweep(g: VectorGesture, x: number, y: number, ctx: ToolContext): void {
-  const r = reach(ctx);
+function sweep(g: VectorGesture, x: number, y: number, ctx: ToolContext, pen = 1): void {
+  const r = reach(ctx, pen);
   if (g.area) {
     // One capsule from the last spot to this one, so a fast flick still rubs out everything in between.
     const e = eraseArea(g.area.shapes, sweepGeom(g.last ?? { x, y }, { x, y }, r));
@@ -90,25 +91,29 @@ function down(e: ToolPointer, ctx: ToolContext): void {
       return;
     }
     vec = { layerId: layer.id, drawing: d, removed: new Set(), last: null, area: activeIsMerge() ? { shapes: d.shapes.slice(), changed: false } : null };
-    sweep(vec, e.x, e.y, ctx);
+    sweep(vec, e.x, e.y, ctx, sizeFactor('eraser', e));
     return;
   }
   if (layer.kind !== 'pixel') return;
   const { doc, ui } = store().get();
   pix = new PixelStroke(doc, layer, ui.frame, { color: [0, 0, 0, 0], size: viewPixelSize(getToolSettings().eraserPixelSize), shape: getToolSettings().pixelBrushShape, perfect: false });
+  pix.scale(sizeFactor('eraser', e));
   pix.begin(pix.cell(e.x, e.y));
 }
 
 function move(e: ToolPointer, ctx: ToolContext): void {
-  if (vec) sweep(vec, e.x, e.y, ctx);
-  else if (pix) pix.moveTo(pix.cell(e.x, e.y));
+  if (vec) sweep(vec, e.x, e.y, ctx, sizeFactor('eraser', e));
+  else if (pix) {
+    pix.scale(sizeFactor('eraser', e));
+    pix.moveTo(pix.cell(e.x, e.y));
+  }
 }
 
 function up(e: ToolPointer, ctx: ToolContext): void {
   if (vec) {
     const g = vec;
     vec = null;
-    sweep(g, e.x, e.y, ctx);
+    sweep(g, e.x, e.y, ctx, sizeFactor('eraser', e));
     if (g.area?.changed) {
       const shapes = g.area.shapes;
       const r = editShapes('Erase', () => shapes);
@@ -146,7 +151,7 @@ function overlay(g: CanvasRenderingContext2D, ctx: ToolContext): void {
   if (layer?.kind === 'pixel') {
     drawPixelFootprint(g, ctx, docToPixel(h.x, h.y, layer.pixelSize), layer.pixelSize, viewPixelSize(getToolSettings().eraserPixelSize), getToolSettings().pixelBrushShape, null);
   } else {
-    drawRing(g, ctx, h.x, h.y, reach(ctx));
+    drawRing(g, ctx, h.x, h.y, reach(ctx), 'eraser');
   }
 }
 

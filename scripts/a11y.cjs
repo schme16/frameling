@@ -69,6 +69,10 @@ const DIALOGS = [
   ['plugin-export-options', [installPlugin('export-report'), approve(false), waitMs(1500), run('plugin.export-report.export.report')]],
   ['prefs-plugins-powers', [installPlugin('star-kit'), approve(true), waitMs(1500), `__frameling.overlays.openPrefs('plugins')`]],
   ['prefs-features', `__frameling.overlays.openPrefs('features')`],
+  ['prefs-pen', `__frameling.overlays.openPrefs('pen')`],
+  ['prefs-diagnostics', `__frameling.overlays.openPrefs('diagnostics')`],
+  ['pen-check-offer', `__frameling.overlays.state.set((o) => ({ ...o, penCheck: 'offer' }))`],
+  ['pen-check', run('pen.check')],
   ['canvas-size', run('document.settings')],
   ['export', run('file.export')],
   ['export-tileset', [tpl('tileset'), run('tiles.export')]],
@@ -139,7 +143,7 @@ async function key(win, keyCode, modifiers = []) {
 async function reset(win, doc = 'bouncing-ball') {
   await js(win, `
     const f = __frameling;
-    f.overlays.state.set((o) => ({ ...o, palette: false, prefs: null, help: null, sheet: null, about: false, onboarding: false }));
+    f.overlays.state.set((o) => ({ ...o, palette: false, prefs: null, help: null, sheet: null, about: false, onboarding: false, penCheck: undefined }));
     f.template(${JSON.stringify(doc)});
     f.store().setUi({ tool: 'select' });
     document.activeElement?.blur?.();

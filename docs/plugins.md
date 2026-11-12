@@ -388,7 +388,7 @@ person can always turn it off.
   export is running, which may think for a while) means stuck. A tick that comes very late (the computer slept) is not blamed on the plugin.
   `frameling.progress(done, total)` (see Progress) starts that count again while a command or export is running, when `done` has
   moved forward; the runtime hands it to the watchdog (`Watchdog.progress`) and, for an export, to the dialog's progress bar.
-- **Measuring (off by default).** Preferences > Plugins has a switch, "Measure plugins' memory and speed (uses more memory)"
+- **Measuring (off by default).** Preferences > Diagnostics has a switch, "Measure plugins' memory and speed (uses more memory)"
   (`pluginDiagnostics`, off). Off: the heartbeat above still runs, plugins share one process, nothing is counted and there is
   no memory cap. On, two things happen:
   - *Heartbeat numbers, straight away, nothing extra running* (`src/plugins/diagnostics.ts`): the round trip of each ping

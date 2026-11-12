@@ -275,5 +275,58 @@
       "Tidy little pixels."
     ],
     "where": "Pixel quests: the one-word cheer when a step is ticked (replaces the usual cheers in pixel quests)."
+  },
+  "pen.check.offer": {
+    "text": "Ooh, is that a drawing pen I can feel? Want to check it with me? It takes about a minute, and it helps make pens work properly.",
+    "where": "Pen check: Quill's offer, the first time a pen is seen (and again next time if the check was left half way). Buttons: Let's go, Not now, Don't ask again."
+  },
+  "pen.check.later": { "text": "No worries! I'll ask again next time I spot a pen.", "where": "Pen check: after Not now on the offer, or when the check is closed half way." },
+  "pen.check.never": { "text": "Okay, I won't ask again. If you change your mind, it's in Preferences, Diagnostics.", "where": "Pen check: after Don't ask again on the offer." },
+  "pen.check.hello": {
+    "text": "Right, let's test your pen! I'll ask for one thing at a time. Do each one on the grey pad, and I'll tick it off. Skip any your pen can't do.",
+    "where": "Pen check: the first thing Quill says when the steps start."
+  },
+  "pen.check.step.hover": { "text": "First, hover! Hold the pen just above the pad without touching it, and wiggle it about.", "where": "Pen check, step 1 (hover): Quill's instruction." },
+  "pen.check.step.pressure": { "text": "Now press! Draw one line that starts really light and gets harder and harder.", "where": "Pen check, step 2 (pressure): Quill's instruction." },
+  "pen.check.step.tilt": { "text": "Time to lean! Draw a squiggle with the pen tipped over to the left, then another tipped to the right.", "where": "Pen check, step 3 (tilt): Quill's instruction." },
+  "pen.check.step.twist": {
+    "text": "Can your pen twist? Spin it round in your fingers while it touches the pad. Most can't, so skip it if yours can't.",
+    "where": "Pen check, step 4 (twist or barrel rotation): Quill's instruction."
+  },
+  "pen.check.step.eraser": { "text": "Flip it over! Touch the pad with the eraser end and drag. No eraser end? Skip this one.", "where": "Pen check, step 5 (eraser end): Quill's instruction." },
+  "pen.check.step.barrel1": { "text": "Hold the button nearest the tip, and draw a little line with it held down.", "where": "Pen check, step 6 (first barrel button): Quill's instruction." },
+  "pen.check.step.barrel2": { "text": "Now the other button, if there is one. Hold it down and draw a little line.", "where": "Pen check, step 7 (second barrel button): Quill's instruction." },
+  "pen.check.step.scribble": {
+    "text": "Scribble as fast as you can for a couple of seconds. That tells me how many dots a second your pen gives me.",
+    "where": "Pen check, step 8 (fast scribble for the sample rate): Quill's instruction."
+  },
+  "pen.check.step.keys": {
+    "text": "Last one! Press an express key, or spin the touch ring or dial, if your tablet has any.",
+    "where": "Pen check, step 9 (express keys and touch ring): Quill's instruction."
+  },
+  "pen.check.got": {
+    "text": [
+      "Got it!",
+      "Lovely!",
+      "Perfect, thanks!",
+      "Ooh, I felt that one."
+    ],
+    "where": "Pen check: the little cheer when a step is ticked off (the app picks one)."
+  },
+  "pen.check.skipped": { "text": "No worries, skipping that one.", "where": "Pen check: after Skip this one." },
+  "pen.check.nopen": {
+    "text": "Hmm, I can't hear a pen. Are you drawing with a mouse? If it is a tablet, its driver might need Windows Ink turned on.",
+    "where": "Pen check: shown when a step has been going a while and only mouse or touch events have arrived."
+  },
+  "pen.check.save": { "text": "That's the lot, thank you! Pick where to save the report.", "where": "Pen check: all steps done, before the Save dialog." },
+  "pen.check.cancelled": { "text": "That's okay. Press Save the report whenever you're ready.", "where": "Pen check: the Save dialog was cancelled." },
+  "pen.check.failed": { "text": "Oops, that didn't save. Try again, or pick another folder.", "where": "Pen check: saving the report failed." },
+  "pen.check.saved": {
+    "text": "Here ya go! Shane'll need this to get this tablet thingo sorted out properly (you know he needs all the help he can get).",
+    "where": "Pen check: Quill's last words, once the report file has been saved."
+  },
+  "pen.check.diagnostics": {
+    "text": "Got a pen or tablet that is acting up? I can walk you through a quick check, then save a little file with what I saw.",
+    "where": "Preferences, Diagnostics: Quill's words above the pen check button."
   }
 }

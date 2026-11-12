@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { PenOptions } from '../../tablet/PenOptions';
 import { findLayer } from '../../core/doc';
 import type { BrushSettings } from '../../core/format';
 import { drawShape } from '../../core/render';
@@ -63,6 +64,7 @@ function VectorBrushOptions() {
       {pressure && <Slider label="How much" value={Math.round(brush.thinning * 100)} min={5} max={100} format={(v) => `${v}%`} onChange={(v) => setBrush({ thinning: v / 100 })} />}
       <Slider label="Pointy start" value={brush.taperStart} min={0} max={120} format={(v) => (v ? `${v}px` : 'Off')} onChange={(v) => setBrush({ taperStart: v })} />
       <Slider label="Pointy end" value={brush.taperEnd} min={0} max={120} format={(v) => (v ? `${v}px` : 'Off')} onChange={(v) => setBrush({ taperEnd: v })} />
+      <PenOptions tool="brush" opacity />
     </div>
   );
 }
@@ -87,6 +89,7 @@ function PixelBrushOptions() {
       )}
       <Toggle label="Pixel perfect" checked={perfect} onChange={(v) => setToolSettings({ pixelPerfect: v })} hint="Keeps hand-drawn lines one pixel thick by tidying the corners. Works with size 1." />
       <Tip>Hold Shift and click to draw a straight line from where you last stopped.</Tip>
+      <PenOptions tool="brush" size />
     </div>
   );
 }

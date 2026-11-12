@@ -7,7 +7,7 @@ import { currentChoice, withChoice } from '../core/choices';
 import { getCommand, getTool, type Tool, type ToolContext, type ToolPointer } from '../core/registry';
 import { store, type State } from '../core/store';
 import { activeLayer } from '../tools/edit';
-import { altPicks, tempEyedropperTool } from '../tools/eyedropper';
+import { altPicks, eyedropperTool, tempEyedropperTool } from '../tools/eyedropper';
 import { paintWellsOn, rightPaints } from '../tools/pixelWells';
 import { swapPaintBack } from '../tools/wells';
 import './choices';
@@ -33,6 +33,12 @@ import { cameraFrameCorners, matrixScale } from '../core/camera';
 import { invert, applyMat, type Mat } from '../core/symbols';
 import { screenToDoc, stageDeviceRect, wheelZoomFactor, zoomAbout, type Pt } from './view';
 import { overlayMatrix, STAGE_TOOLS, toLayerSpace } from '../rig/pose';
+import { meaningOfPress } from '../tablet/buttons';
+import { penFields } from '../tablet/input';
+import { getPen, markPenSeen, PEN_TOOLS, type PenTool } from '../tablet/settings';
+import { Stabilizer } from '../tablet/stabilizer';
+import { PenTracker, pinchView, type PinchStart } from '../tablet/touch';
+import { noticePen } from '../tablet/check/state';
 
 export interface EngineElements {
   root: HTMLElement;
@@ -44,7 +50,8 @@ export interface EngineElements {
 type Gesture =
   | { kind: 'pan'; pointerId: number; startX: number; startY: number; panX: number; panY: number }
   | { kind: 'tool'; pointerId: number; tool: Tool; restoreTool: string | null; swapped?: boolean }
-  | { kind: 'grab'; pointerId: number; grab: ctl.CanvasGrab };
+  | { kind: 'grab'; pointerId: number; grab: ctl.CanvasGrab }
+  | { kind: 'pinch'; pointerId: number; ids: [number, number]; start: PinchStart };
 
 /** Spare time per tick that playback may spend rasterising upcoming frames, in ms. */
 export const WARM_SLICE_MS = 5;
@@ -83,6 +90,14 @@ export class CanvasEngine {
   /** The cursor for a canvas handle under the pointer (a vanishing point), or null. */
   private grabHover: string | null = null;
   private lastPtr: ToolPointer | null = null;
+  /** Fingers on the screen now (client positions), for two finger pan and zoom. */
+  private touches = new Map<number, { x: number; y: number }>();
+  /** Whether a pen is near the screen, so fingers and palms can be ignored. */
+  private pen = new PenTracker();
+  /** The pen's eraser end is the one hovering, so the eraser's ring shows. */
+  private hoverEraser = false;
+  /** Steadies the stroke in progress (pull string or average), when the tool has the stabilizer on. */
+  private stab: Stabilizer | null = null;
   private selfSwitch = false;
   private zoomingUntil = 0;
   private idleHandle = 0;
@@ -131,13 +146,17 @@ export class CanvasEngine {
     this.listen(root, 'pointerup', this.onPointerUp as EventListener);
     this.listen(root, 'pointercancel', this.onPointerCancel as EventListener);
     this.listen(root, 'pointerenter', () => ((this.inside = true), this.updateCursor()));
-    this.listen(root, 'pointerleave', () => {
+    this.listen(root, 'pointerleave', ((e: PointerEvent) => {
+      if (e.pointerType === 'pen') {
+        this.pen.left(e.timeStamp);
+        this.hoverEraser = false;
+      }
       this.inside = false;
       if (!this.gesture) {
         ctl.setHover(null);
         this.invalidate(false, true);
       }
-    });
+    }) as EventListener);
     this.listen(root, 'contextmenu', (e) => e.preventDefault());
     this.listen(root, 'wheel', this.onWheel as EventListener, { passive: false });
     this.listen(window, 'keydown', this.onKeyDown as EventListener, { capture: true });
@@ -471,7 +490,7 @@ export class CanvasEngine {
   // ---------------------------------------------------------------- cursor
 
   private currentTool(): Tool | undefined {
-    return getTool(store().get().ui.tool);
+    return getTool(this.hoverEraser ? 'eraser' : store().get().ui.tool);
   }
 
   private updateCursor(): void {
@@ -520,12 +539,10 @@ export class CanvasEngine {
 
   private toPointer(e: PointerEvent): ToolPointer {
     const p = this.toLayerPoint(this.toDocPoint(e, true));
-    const pen = e.pointerType === 'pen';
     return {
       x: p.x,
       y: p.y,
-      pressure: pen ? e.pressure || 0.5 : 0.5,
-      hasPressure: pen,
+      ...penFields(e, getPen().pen),
       shift: e.shiftKey,
       alt: e.altKey,
       mod: e.ctrlKey || e.metaKey,
@@ -535,37 +552,99 @@ export class CanvasEngine {
     };
   }
 
+  /** Holds on to a pointer so its moves and its release come here. A pointer that is already gone just isn't held. */
+  private capture(id: number): void {
+    try {
+      this.els.root.setPointerCapture(id);
+    } catch {
+      // not an active pointer any more
+    }
+  }
+
+  /** A finger went down. True when the canvas has dealt with it (ignored, panning, or part of a pinch). */
+  private touchDown(e: PointerEvent): boolean {
+    if (this.pen.rejectsTouch(e.timeStamp)) return true;
+    const t = getPen().touch;
+    this.touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    const g = this.gesture;
+    const touchGesture = !!g && this.touches.has(g.pointerId);
+    if (t.twoFingers && this.touches.size === 2 && (!g || touchGesture)) {
+      // The first finger may have started a stroke: a second one means this is a pan or zoom, so take it back.
+      if (g) this.cancelGesture();
+      this.refreshBounds();
+      const [i, j] = [...this.touches.keys()];
+      const rel = (k: number) => ({ x: this.touches.get(k)!.x - this.bounds.left, y: this.touches.get(k)!.y - this.bounds.top });
+      const ui = store().get().ui;
+      this.capture(i);
+      this.capture(j);
+      e.preventDefault();
+      this.gesture = { kind: 'pinch', pointerId: i, ids: [i, j], start: { a: rel(i), b: rel(j), view: { zoom: ui.zoom, panX: ui.panX, panY: ui.panY } } };
+      this.updateCursor();
+      return true;
+    }
+    if (g || this.touches.size > 1) return true;
+    if (t.oneFinger === 'off') return true;
+    if (t.oneFinger === 'pan') {
+      const ui = store().get().ui;
+      e.preventDefault();
+      this.capture(e.pointerId);
+      this.gesture = { kind: 'pan', pointerId: e.pointerId, startX: e.clientX, startY: e.clientY, panX: ui.panX, panY: ui.panY };
+      this.updateCursor();
+      return true;
+    }
+    return false;
+  }
+
+  /** The two fingers of a pinch have moved. */
+  private pinchMove(g: Extract<Gesture, { kind: 'pinch' }>): void {
+    const a = this.touches.get(g.ids[0]);
+    const b = this.touches.get(g.ids[1]);
+    if (!a || !b) return;
+    this.refreshBounds();
+    const rel = (p: { x: number; y: number }) => ({ x: p.x - this.bounds.left, y: p.y - this.bounds.top });
+    ctl.setView(pinchView(g.start, rel(a), rel(b)), true);
+  }
+
   private onPointerDown = (e: PointerEvent): void => {
-    if (this.gesture) return;
+    if (e.pointerType === 'pen') {
+      markPenSeen();
+      this.pen.down(e.timeStamp);
+    }
     // Buttons floating over the canvas (the tile banner's Done, the edit bar) get their own click: capturing the
     // pointer here would send the release to the canvas and the click would never happen.
     if (pressesControl(e.target)) return;
+    if (e.pointerType === 'touch' && this.touchDown(e)) return;
+    if (this.gesture) return;
     this.spaceTap.spoil();
     this.refreshBounds();
     const active = document.activeElement as HTMLElement | null;
     if (active && isTyping(active)) active.blur();
     const ui = store().get().ui;
 
-    const penEraser = e.pointerType === 'pen' && (e.button === 5 || (e.buttons & 32) !== 0);
-    const wantPan = e.button === 1 || (e.button === 0 && (this.spaceDown || ui.tool === 'hand') && !penEraser);
+    // A pen's presses are read through its settings: the eraser end, and what each barrel button does.
+    const meaning = e.pointerType === 'pen' ? meaningOfPress(e, getPen().pen) : null;
+    const button = meaning ? meaning.button : e.button;
+    const penEraser = !!meaning?.eraser;
+    const pick = !!meaning?.pick;
+    const wantPan = button === 1 || (button === 0 && (this.spaceDown || ui.tool === 'hand') && !penEraser && !pick);
     if (wantPan) {
       e.preventDefault();
-      this.els.root.setPointerCapture(e.pointerId);
+      this.capture(e.pointerId);
       this.gesture = { kind: 'pan', pointerId: e.pointerId, startX: e.clientX, startY: e.clientY, panX: ui.panX, panY: ui.panY };
       this.updateCursor();
       return;
     }
     // A right-click paints with Back in the Pixel workspace (the press below checks the tool and the layer).
-    const rightClick = e.button === 2 && !penEraser && paintWellsOn();
-    if (e.button !== 0 && !penEraser && !rightClick) return;
+    const rightClick = button === 2 && !penEraser && paintWellsOn();
+    if (button !== 0 && !penEraser && !rightClick) return;
     // A press on another artboard opens it first, so the tool works there.
     ctl.runPointerDownHooks(this.toDocPoint(e), penEraser ? 'eraser' : ui.tool);
 
     // Handles that work with any tool (vanishing points) come before the tool.
-    const grab = !penEraser && !ui.playing ? ctl.grabAt(this.toDocPoint(e, true), ui.zoom) : null;
+    const grab = !penEraser && !pick && !ui.playing ? ctl.grabAt(this.toDocPoint(e, true), ui.zoom) : null;
     if (grab) {
       e.preventDefault();
-      this.els.root.setPointerCapture(e.pointerId);
+      this.capture(e.pointerId);
       this.gesture = { kind: 'grab', pointerId: e.pointerId, grab };
       grab.down(this.toDocPoint(e, true));
       this.updateCursor();
@@ -573,11 +652,12 @@ export class CanvasEngine {
       return;
     }
 
-    let tool = penEraser ? getTool('eraser') : getTool(ui.tool);
+    // A barrel button set to "Pick a colour" picks for as long as it is held, like holding the eyedropper's key.
+    let tool = penEraser ? getTool('eraser') : pick ? eyedropperTool : getTool(ui.tool);
     if (!tool) return;
     const layer = activeLayer().layer;
     // Alt held over a painting tool on a pixel layer: this press picks a colour (the tool comes back by itself).
-    if (!penEraser && altPicks(tool.id, layer?.kind, e.altKey)) tool = tempEyedropperTool;
+    if (!penEraser && !pick && altPicks(tool.id, layer?.kind, e.altKey)) tool = tempEyedropperTool;
     if (rightClick && (tool === tempEyedropperTool || !rightPaints(tool.id, layer?.kind, 2))) return;
     if (layer && !tool.layers.includes(layer.kind)) {
       const kinds = tool.layers.join(' or ');
@@ -589,7 +669,7 @@ export class CanvasEngine {
       return;
     }
     e.preventDefault();
-    this.els.root.setPointerCapture(e.pointerId);
+    this.capture(e.pointerId);
     let restoreTool: string | null = null;
     if (penEraser && ui.tool !== 'eraser') {
       restoreTool = ui.tool;
@@ -602,22 +682,37 @@ export class CanvasEngine {
     this.gesture = { kind: 'tool', pointerId: e.pointerId, tool, restoreTool, swapped };
     const ptr = this.toPointer(e);
     this.lastPtr = ptr;
+    this.stab = null;
+    const tp = PEN_TOOLS.includes(tool.id as PenTool) && !pick && !rightClick ? getPen().tools[tool.id as PenTool] : null;
+    if (tp && tp.stabilizer > 0) {
+      this.stab = new Stabilizer(tp.stabMode, tp.stabilizer, ui.zoom);
+      this.stab.start({ x: ptr.x, y: ptr.y, pressure: ptr.pressure });
+    }
     ctl.setHover(null);
     tool.down?.(ptr, this.ctx);
     this.invalidate(false, true);
   };
 
   private onPointerMove = (e: PointerEvent): void => {
+    if (e.pointerType === 'touch' && this.touches.has(e.pointerId)) this.touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (e.pointerType === 'pen') this.pen.seen(e.timeStamp);
     const g = this.gesture;
+    if (g?.kind === 'pinch') {
+      this.pinchMove(g);
+      return;
+    }
     if (!g) {
       if (e.buttons !== 0 && e.pointerType !== 'pen') return;
+      if (e.pointerType === 'touch') return;
       this.inside = true;
+      this.hoverEraser = e.pointerType === 'pen' && getPen().pen.eraserEnd && (e.buttons & 32) !== 0;
+      if (e.pointerType === 'pen') noticePen();
       this.refreshBounds();
       this.altDown = e.altKey;
       const ui = store().get().ui;
       if (ui.playing) return;
       const ptr = this.toPointer(e);
-      ctl.setHover({ x: ptr.x, y: ptr.y });
+      ctl.setHover({ x: ptr.x, y: ptr.y }, e.pointerType === 'pen' ? { tiltX: ptr.tiltX, tiltY: ptr.tiltY, eraser: this.hoverEraser } : null);
       const hg = ctl.grabAt(this.toDocPoint(e, true), ui.zoom);
       this.grabHover = hg ? (hg.cursor ?? 'move') : null;
       const tool = this.currentTool();
@@ -644,23 +739,50 @@ export class CanvasEngine {
     const events = list.length ? list : [e];
     let ptr = this.lastPtr!;
     for (const ce of events) {
-      ptr = this.toPointer(ce);
+      ptr = this.steady(this.toPointer(ce));
       g.tool.move?.(ptr, this.ctx);
     }
     this.lastPtr = ptr;
-    const pred = typeof e.getPredictedEvents === 'function' ? e.getPredictedEvents() : [];
+    // The pen's predicted path draws ahead of the line for less lag, but not when the stabilizer holds the brush back.
+    const pred = !this.stab && typeof e.getPredictedEvents === 'function' ? e.getPredictedEvents() : [];
     ctl.setPredicted(pred.map((pe) => this.toLayerPoint(this.toDocPoint(pe, true))));
     this.invalidate(false, true);
   };
 
+  /** The pointer sample as the stabilizer's brush sees it (unchanged when the stabilizer is off). */
+  private steady(p: ToolPointer): ToolPointer {
+    if (!this.stab) return p;
+    const s = this.stab.push({ x: p.x, y: p.y, pressure: p.pressure });
+    return { ...p, x: s.x, y: s.y, pressure: s.pressure };
+  }
+
   private onPointerUp = (e: PointerEvent): void => {
+    if (e.pointerType === 'pen') {
+      this.pen.up(e.timeStamp);
+      noticePen();
+    }
+    if (e.pointerType === 'touch') this.touches.delete(e.pointerId);
     const g = this.gesture;
+    if (g?.kind === 'pinch' && g.ids.includes(e.pointerId)) {
+      this.endPinch(g);
+      return;
+    }
     if (!g || e.pointerId !== g.pointerId) return;
     if (this.els.root.hasPointerCapture(e.pointerId)) this.els.root.releasePointerCapture(e.pointerId);
     this.gesture = null;
     if (g.kind === 'tool') {
       ctl.setPredicted([]);
-      g.tool.up?.(this.toPointer(e), this.ctx);
+      // A lifted pen reports no pressure, so the last real sample's pen fields stand for it.
+      const last = this.lastPtr;
+      const raw = this.toPointer(e);
+      const up = e.pointerType === 'pen' && last ? { ...raw, pressure: last.pressure, hasPressure: last.hasPressure, tiltX: last.tiltX, tiltY: last.tiltY, twist: last.twist } : raw;
+      if (this.stab) {
+        // The brush walks the rest of the way to where the pen lifted.
+        const steps = this.stab.finish({ x: up.x, y: up.y, pressure: up.pressure });
+        for (const s of steps.slice(0, -1)) g.tool.move?.({ ...up, x: s.x, y: s.y, pressure: s.pressure }, this.ctx);
+        this.stab = null;
+      }
+      g.tool.up?.(up, this.ctx);
       this.restoreTool(g);
     } else if (g.kind === 'grab') g.grab.up(this.toDocPoint(e, true));
     this.lastPtr = null;
@@ -668,8 +790,18 @@ export class CanvasEngine {
     this.invalidate(false, true);
   };
 
+  private endPinch(g: Extract<Gesture, { kind: 'pinch' }>): void {
+    for (const id of g.ids) if (this.els.root.hasPointerCapture?.(id)) this.els.root.releasePointerCapture(id);
+    this.gesture = null;
+    this.updateCursor();
+  }
+
   private onPointerCancel = (e: PointerEvent): void => {
-    if (this.gesture && e.pointerId === this.gesture.pointerId) this.cancelGesture();
+    if (e.pointerType === 'touch') this.touches.delete(e.pointerId);
+    if (e.pointerType === 'pen') this.pen.up(e.timeStamp);
+    const g = this.gesture;
+    if (g?.kind === 'pinch' && g.ids.includes(e.pointerId)) this.endPinch(g);
+    else if (g && e.pointerId === g.pointerId) this.cancelGesture();
   };
 
   private restoreTool(g: Gesture): void {
@@ -685,6 +817,7 @@ export class CanvasEngine {
     const g = this.gesture;
     if (!g) return;
     this.gesture = null;
+    this.stab = null;
     if (this.els.root.hasPointerCapture?.(g.pointerId)) this.els.root.releasePointerCapture(g.pointerId);
     if (g.kind === 'grab') g.grab.cancel?.();
     if (g.kind === 'tool') {

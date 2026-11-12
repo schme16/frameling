@@ -10,6 +10,7 @@ import { usePaintWells } from '../tools/pixelWells';
 import { clampOutline, MAX_OUTLINE, MIN_OUTLINE } from './thick';
 import { DITHER_PATTERNS, type DitherPattern } from './dither';
 import { setPixelSettings, usePixelSettings, type SymmetryMode } from './settings';
+import { PenOptions } from '../tablet/PenOptions';
 import './pixel.css';
 
 export function useLayerKind(): 'vector' | 'pixel' {
@@ -78,7 +79,9 @@ export function PixelPencilOptions() {
     <div className="cv-options">
       <SizeSlider />
       <PixelPerfectToggle />
+      <PenOptions tool="shade" size />
       <MirrorOptions />
+      <PenOptions tool="pencil" size />
       <Tip>Size 1 is the plain pencil, and bigger sizes are the same pencil with a thicker tip. Hold Shift and click to draw a straight line from where you last stopped.</Tip>
     </div>
   );
@@ -144,6 +147,7 @@ export function SprayOptions() {
       <Slider label="Size" value={size} min={2} max={32} format={(v) => `${v} pixels across`} onChange={(v) => setPixelSettings({ spraySize: v })} />
       <MirrorOptions />
       <Tip>A sprinkle of the Paint colour. Drag slowly to build it up, or quickly to keep it light.</Tip>
+      <PenOptions tool="spray" size flow />
     </div>
   );
 }
@@ -177,6 +181,7 @@ export function DitherOptions() {
       </div>
       <Slider label="Size" value={size} min={1} max={32} format={(v) => `${v} pixel${v === 1 ? '' : 's'}`} onChange={(v) => setPixelSettings({ ditherSize: v })} />
       <MirrorOptions />
+      <PenOptions tool="dither" size />
       <Tip>The dark squares above take the stroke colour, the light ones the fill colour. Set the fill to none to leave those pixels as they are.</Tip>
     </div>
   );

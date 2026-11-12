@@ -231,7 +231,7 @@ function hooksFor(m: PluginManifest, onExporter: (def: PluginExporterDef) => voi
   };
 }
 
-/** "Measure plugins' memory and speed" (Preferences > Plugins). Off by default: nothing is counted and no memory is looked at. */
+/** "Measure plugins' memory and speed" (Preferences > Diagnostics). Off by default: nothing is counted and no memory is looked at. */
 export const diagnosticsOn = (): boolean => getPrefs().pluginDiagnostics;
 
 /** What the heartbeat and the process metrics say about each running plugin, by id (empty while measuring is off). */

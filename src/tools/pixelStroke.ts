@@ -36,6 +36,8 @@ export class PixelStroke {
   private last: PxPt | null = null;
   private lineFrom: PxPt | null = null;
   private ink: Ink;
+  private size: number;
+  private offsetsBySize = new Map<number, PxPt[]>();
 
   constructor(
     private doc: Doc,
@@ -45,10 +47,26 @@ export class PixelStroke {
   ) {
     // Plain paint adds a new drawing over a carried-along one; rubbing out or shading works on what's there.
     this.session = new PixelSession(doc, layer, frame, { adds: !opts.ink && opts.color[3] > 0 });
+    this.size = opts.size;
     this.offsets = brushOffsets(opts.size, opts.shape);
+    this.offsetsBySize.set(opts.size, this.offsets);
     this.ink = this.session.lock(opts.ink ?? solidInk(opts.color));
     // The corner clean-up only means something for a one pixel line.
     this.perfect = opts.perfect && opts.size === 1 && (opts.color[3] > 0 || !!opts.ink) ? new PixelPerfect() : null;
+  }
+
+  /**
+   * Makes the brush `factor` times the size it started with from now on (pen pressure or tilt), never under one pixel.
+   * A one pixel pixel perfect line keeps its size, since its corner clean-up works on single pixels.
+   */
+  scale(factor: number): void {
+    if (this.perfect || factor === 1) return;
+    const n = Math.min(128, Math.max(1, Math.round(this.opts.size * factor)));
+    if (n === this.size) return;
+    this.size = n;
+    let o = this.offsetsBySize.get(n);
+    if (!o) this.offsetsBySize.set(n, (o = brushOffsets(n, this.opts.shape)));
+    this.offsets = o;
   }
 
   /** Where in the grid a document position lands. */

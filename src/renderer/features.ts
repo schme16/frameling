@@ -5,6 +5,7 @@ import '../core/commands';
 import '../ui';
 import '../canvas';
 import '../tools';
+import '../tablet';
 import '../geometry';
 import '../timeline';
 import '../symbols';
