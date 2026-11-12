@@ -4,6 +4,7 @@
 // -reimport forces the picture through the importer again (after its json changed). -ids compares the sprites' ids with
 // the ones an earlier run saved there (so re-exporting must keep them), or saves them when the file isn't there yet.
 // -expect package|older says which cutting path the importer must have taken (2D Sprite package present or not).
+// -wait <seconds> keeps the editor open at least that long before it exits.
 // A sheet with no animations must leave no .anim files next to it.
 // Exit code 0 means every check passed; 1 means some failed (listed in the report); 2 means the clips never appeared.
 #if UNITY_EDITOR
@@ -57,6 +58,9 @@ public static class FramelingSheetCheck
             if (missing.Count > 0 && EditorApplication.timeSinceStartup - started < 60) return;
             // With no clips there is nothing to wait for, so give a late delayCall a few seconds to (wrongly) make one.
             if (data.animations.Length == 0 && EditorApplication.timeSinceStartup - started < 4) return;
+            // -wait <seconds>: keep the editor open that long (the importer's Console warning comes a few seconds after the scripts load).
+            var wait = Arg("-wait");
+            if (wait != null && EditorApplication.timeSinceStartup - started < float.Parse(wait, System.Globalization.CultureInfo.InvariantCulture)) return;
             EditorApplication.update -= tick;
             Finish(sheet, data, report, missing.Count > 0);
         };

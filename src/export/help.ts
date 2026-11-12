@@ -265,7 +265,7 @@ Export again any time: sprites keep their identity, so scenes that use them don'
 
 - One sprite unit is the height of a frame, so a 32 pixel character is one unit tall.
 - Keep the \`.cs\` and \`.asmdef\` files together in one folder. The \`.asmdef\` is how the script knows whether the 2D Sprite package is there.
-- If you already have a copy of the pair, delete the extra one. Two copies stop scripts compiling.
+- Only keep one copy. If another \`FramelingSheetImporter.cs\` is in your project (an older one in \`Assets/Editor\`, say), Unity's Console shows a warning naming it. Delete that older file, and its \`.asmdef\` if it has one: two copies cut every sheet twice, and two \`.asmdef\` files can stop scripts compiling.
 - A sheet exported as separate sprites has no clips, so you get the sprites and no animation clips.`,
   },
   {

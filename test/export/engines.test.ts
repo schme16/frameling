@@ -164,6 +164,17 @@ describe('engine data files', () => {
     expect(UNITY_SCRIPT_NAME).toBe('FramelingSheetImporter.cs');
   });
 
+  it('the Unity importer warns in the Console about another copy of itself, naming the file to delete', () => {
+    expect(UNITY_SCRIPT).toContain('[InitializeOnLoadMethod]');
+    expect(UNITY_SCRIPT).toContain('AssetDatabase.FindAssets("FramelingSheetImporter t:MonoScript")');
+    expect(UNITY_SCRIPT).toContain('Debug.LogWarning("Frameling: another copy of FramelingSheetImporter is in this project');
+    expect(UNITY_SCRIPT).toContain('"Delete the older file " + other');
+    // Once per session, and the script is still wrapped so it compiles anywhere.
+    expect(UNITY_SCRIPT).toContain('SessionState.GetBool("Frameling.OtherImporterChecked"');
+    expect(UNITY_SCRIPT.trimEnd().endsWith('#endif')).toBe(true);
+    expect(UNITY_SCRIPT).not.toContain('${');
+  });
+
   it('Unity script: fits the texture size to the sheet and ends clips where Unity does (verified in Unity 6.6 by scripts/e2e)', () => {
     // Unity shrinks sheets bigger than the max texture size, so the script raises it to cover the sheet.
     expect(UNITY_SCRIPT).toContain('importer.maxTextureSize = size');

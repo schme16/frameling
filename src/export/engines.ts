@@ -166,7 +166,7 @@ export const UNITY_ASMDEF = JSON.stringify(
 
 /** The small editor script that slices a sheet and makes the animation clips. Wrapped in UNITY_EDITOR, so it can live in any folder. */
 export const UNITY_SCRIPT = `// Frameling sprite sheet importer for Unity (checked in Unity 6.6).
-// Keep one copy anywhere under Assets, with FramelingSheetImporter.asmdef beside it. When a PNG has a Frameling .json
+// Keep one copy anywhere under Assets, with FramelingSheetImporter.asmdef beside it (a second copy gets a Console warning). When a PNG has a Frameling .json
 // beside it, this cuts the PNG into sprites and makes an animation clip (.anim) for each of your clips, next to the PNG.
 // Re-export to update them. With the 2D Sprite package (2D projects have it) the sprites keep their ids when you re-export;
 // without it the older cutting API is used, so the project still compiles.
@@ -185,6 +185,35 @@ public class FramelingSheetImporter : AssetPostprocessor
     [System.Serializable] public class FrameData { public string name; public float x, y, w, h, pivotX, pivotY; }
     [System.Serializable] public class AnimData { public string name; public float fps; public bool loop; public string[] frames; public int[] holds; }
     [System.Serializable] public class SheetData { public string format; public int version; public string image; public int width, height; public float pixelsPerUnit; public bool pixelArt; public FrameData[] frames; public AnimData[] animations; }
+
+    // Says so in the Console when another copy of this importer is in the project (an older script in Assets/Editor, say):
+    // both would cut every sheet, and the older one may be out of date. Once per editor session, so it doesn't repeat on every compile.
+    [InitializeOnLoadMethod]
+    static void WarnAboutOtherCopies()
+    {
+        if (SessionState.GetBool("Frameling.OtherImporterChecked", false)) return;
+        // The asset database isn't ready while scripts load, and a reload can drop a waiting call, so it is marked done only once it ran.
+        EditorApplication.delayCall += () =>
+        {
+            if (SessionState.GetBool("Frameling.OtherImporterChecked", false)) return;
+            SessionState.SetBool("Frameling.OtherImporterChecked", true);
+            var found = new List<string>();
+            string own = null;
+            foreach (var guid in AssetDatabase.FindAssets("FramelingSheetImporter t:MonoScript"))
+            {
+                var path = AssetDatabase.GUIDToAssetPath(guid);
+                if (Path.GetFileName(path) != "FramelingSheetImporter.cs") continue;
+                // This copy's own file is the one whose class is the running one.
+                var script = AssetDatabase.LoadAssetAtPath<MonoScript>(path);
+                if (script != null && script.GetClass() == typeof(FramelingSheetImporter)) own = path;
+                else found.Add(path);
+            }
+            foreach (var other in found)
+                Debug.LogWarning("Frameling: another copy of FramelingSheetImporter is in this project, so every sheet is cut twice. "
+                    + "Delete the older file " + other + " (and the FramelingSheetImporter.asmdef beside it, if there is one) and keep " + (own ?? "the newer copy") + ".",
+                    AssetDatabase.LoadAssetAtPath<MonoScript>(other));
+        };
+    }
 
     static SheetData Read(string pngPath)
     {
