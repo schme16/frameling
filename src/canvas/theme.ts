@@ -19,6 +19,14 @@ function watch(): void {
   window.matchMedia?.('(prefers-color-scheme: dark)').addEventListener?.('change', changed);
 }
 
+/**
+ * Forgets the cached token values now. The page's own watcher does this after the next tick; call this right after
+ * writing tokens in code and before reading them back (the watcher is too late for that).
+ */
+export function flushTheme(): void {
+  cache.clear();
+}
+
 /** Calls `fn` after the theme tokens have changed (and the cache is clear). Returns the unsubscribe. */
 export function subscribeTheme(fn: () => void): () => void {
   watch();

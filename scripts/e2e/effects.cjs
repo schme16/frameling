@@ -23,7 +23,7 @@ function layer(name, shapes, extra = {}, length = 20) {
 function doc(parts, extra = {}) {
   const drawings = {};
   for (const p of parts) drawings[p.drawing.id] = p.drawing;
-  return { format: 'frameling', version: 1, id: 'd', name: 't', width: W, height: H, fps: 12, length: 20, background: '#ffffff', layers: parts.map((p) => p.layer), drawings, clips: [], markers: [], swatches: [], ...extra };
+  return { format: 'frameling', version: 1, lineage: true, id: 'd', name: 't', width: W, height: H, fps: 12, length: 20, background: '#ffffff', layers: parts.map((p) => p.layer), drawings, clips: [], markers: [], swatches: [], ...extra };
 }
 
 const px = (data, x, y) => data.slice((y * W + x) * 4, (y * W + x) * 4 + 4);

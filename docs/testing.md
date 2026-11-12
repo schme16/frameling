@@ -239,6 +239,21 @@ npm run build
 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/artboards.cjs [outDir]
 ```
 
+## Selection end to end: scripts/e2e/selection.cjs
+
+Picks shapes with real mouse clicks (Select, and Shift for several) and scrubs the playhead across keys made by the real
+Duplicate key command: the selection must follow the same shapes by lineage, and come back on return. Then it opens an old
+file (no `lineage` flag, no `origin`s) through the real open path and checks it is upgraded with no undo step and still
+follows; checks Undo and Redo keep the selected shapes that still exist; opens and undoes an artboard switch and checks no
+stale ids stay selected (the app clears the selection when the open artboard changes); and times a 2000-key timeline: every
+frame in order, long jumps, and 600 painted steps (one animation frame each). Prints the timings; fails when a step is
+slow (2000 frames in order over 2 s, or a painted step p95 over 100 ms) or a shape is lost.
+
+```bash
+npm run build
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/selection.cjs [outDir]
+```
+
 ## Plugin sandbox: scripts/e2e/plugins.cjs
 
 Checks the sandbox page blocks network and storage, the frame can't reach the app, and both example plugins in
