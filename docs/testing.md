@@ -279,7 +279,7 @@ ILLUSTRATOR_PREFIX=/path/to/wine/prefix xvfb-run -a -s "-screen 0 1600x1000x24" 
 |---|---|
 | `ILLUSTRATOR_PREFIX` | The Wine prefix Illustrator is installed in (the folder with `drive_c`). |
 | `WINE_RUNNER` | The Wine build to run it with (a folder with `bin/wine`). Found from the Lutris game file for the prefix when not set. |
-| `--only=a,b` | Cases: `layers-folders paths gradients gradients-pdf masks text text-big symbols frames frames-files frames-artboards frames-one scale2-transparent artboards stress kitchen-sink bouncing-ball bouncing-logo`. |
+| `--only=a,b` | Cases: `layers-folders hidden-layers paths gradients gradients-pdf masks text text-big symbols frames frames-files frames-artboards frames-one scale2-transparent artboards stress kitchen-sink bouncing-ball bouncing-logo`. |
 | `--keep-going` | Run even if something already runs in the prefix (never when someone may be using Illustrator). |
 
 It refuses to start when any process has the prefix as its `WINEPREFIX`. Illustrator runs in a Wine virtual desktop
@@ -292,7 +292,7 @@ artboard asked for and quits. Outputs in `outDir`: the `.ai` and PNG files per c
 `side-by-side/*.png` (Frameling left, Illustrator right) and `report.json`. A case fails when the artboard count or size
 is wrong, a layer name, a folder's layers or a layer opacity is not there, a hidden layer shows, too few paths arrive, or
 the picture is further from Frameling's than the case allows (RMSE). It takes about 10 minutes for every case;
-Illustrator takes about 20 seconds to start.
+Illustrator takes about 20 seconds to start. Cases with `expect.pdfReader` also draw the file's PDF part with `pdftoppm` (poppler) and compare it with Frameling's picture, which shows that layers switched off in the PDF part stay off in a reader that is not Illustrator (`hidden-layers`: hidden layers and folders must be hidden in Illustrator with their art in them, and absent from both pictures).
 
 The cases cover the four ways an animation goes into `.ai` (`aiFrames` in the export settings): `frames-one` (this frame),
 `frames-files` (a zip of one file per frame, each opened), `frames-artboards` (one file with an artboard per frame, each

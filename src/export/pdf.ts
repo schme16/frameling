@@ -141,7 +141,7 @@ export class PdfWriter {
   private gsKeys = new Map<string, string>();
   readonly gs: string[] = [];
   readonly xobjects: string[] = [];
-  readonly ocgs: { id: number; name: string; parent: number | null }[] = [];
+  readonly ocgs: { id: number; name: string; parent: number | null; hidden: boolean }[] = [];
   /** The layers being drawn into right now (indexes into ocgs, outermost first). */
   private layerStack: number[] = [];
   readonly shadings: string[] = [];
@@ -269,13 +269,14 @@ export class PdfWriter {
 
   /**
    * Starts a PDF layer (optional content group), inside the one being drawn into if there is one. Layers with the same
-   * name in the same place are shared across pages. End it with endLayer.
+   * name in the same place are shared across pages. `hidden`: the layer is off when the file opens (viewers that honour layers
+   * don't show it, and Illustrator's own data in ai-native.ts lists it as a hidden layer). End it with endLayer.
    */
-  beginLayer(name: string): string {
+  beginLayer(name: string, hidden = false): string {
     const parent = this.layerStack.length ? this.layerStack[this.layerStack.length - 1] : null;
-    let i = this.ocgs.findIndex((o) => o.name === name && o.parent === parent);
+    let i = this.ocgs.findIndex((o) => o.name === name && o.parent === parent && o.hidden === hidden);
     if (i < 0) {
-      this.ocgs.push({ id: this.add(`<< /Type /OCG /Name ${pdfString(name)} >>`), name, parent });
+      this.ocgs.push({ id: this.add(`<< /Type /OCG /Name ${pdfString(name)} >>`), name, parent, hidden });
       i = this.ocgs.length - 1;
     }
     this.layerStack.push(i);
@@ -325,9 +326,11 @@ export class PdfWriter {
     const props = this.ocgs.map((o, i) => `/OC${i + 1} ${o.id} 0 R`).join(' ');
     this.set(this.resId, `<< /ProcSet [/PDF /ImageC /ImageB] /ExtGState << ${this.gs.join(' ')} >> /XObject << ${this.xobjects.join(' ')} >> /Shading << ${this.shadings.join(' ')} >> /Properties << ${props} >> >>`);
     const ocgRefs = this.ocgs.map((o) => `${o.id} 0 R`).join(' ');
+    const onRefs = this.ocgs.filter((o) => !o.hidden).map((o) => `${o.id} 0 R`).join(' ');
+    const offRefs = this.ocgs.filter((o) => o.hidden).map((o) => `${o.id} 0 R`).join(' ');
     // Layers listed top first, the way layer panels show them, folders holding their layers.
     const order = this.layerOrder(null);
-    const ocp = this.ocgs.length ? ` /OCProperties << /OCGs [${ocgRefs}] /D << /Order [${order}] /ON [${ocgRefs}] >> >>` : '';
+    const ocp = this.ocgs.length ? ` /OCProperties << /OCGs [${ocgRefs}] /D << /Order [${order}] /ON [${onRefs}]${offRefs ? ` /OFF [${offRefs}]` : ''} >> >>` : '';
     const catalog = this.add(`<< /Type /Catalog /Pages ${pagesId} 0 R${ocp}${this.ocgs.length ? ' /PageMode /UseOC' : ''} >>`);
     const infoId = this.add(`<< /Title ${pdfString(info.title)} /Creator ${pdfString(info.creator)} /Producer (Frameling) >>`);
 
@@ -481,8 +484,10 @@ export interface PdfFrameContext {
   doc: Doc;
   frame: number;
   /** A picture of these layers alone (with their effects, clipping and masks), the stage's size at `pictureScale`. */
-  picture?: (layers: Layer[], own: boolean) => RawImage | null;
+  picture?: (layers: Layer[], own: boolean, reveal?: boolean) => RawImage | null;
   pictureScale: number;
+  /** Keep hidden layers and folders, as layers that are off (for the Illustrator data of a .ai). */
+  includeHidden?: boolean;
   /** Pixel art: pictures stay blocky when scaled (no smoothing). */
   crisp?: boolean;
   /** What the camera sees on this frame, when the drawing has one. */
@@ -702,7 +707,7 @@ function drawPicture(cx: Content, ctx: PdfFrameContext, img: RawImage, crisp: bo
 function drawUnit(cx: Content, ctx: PdfFrameContext, u: FlatUnit): void {
   if (u.kind === 'folder') {
     // A folder is a layer holding its layers (Acrobat shows them nested; the Illustrator data in ai-native.ts too).
-    cx.push(`/OC /${ctx.writer.beginLayer(u.folder.name)} BDC`);
+    cx.push(`/OC /${ctx.writer.beginLayer(u.folder.name, u.hidden)} BDC`);
     grouped(cx, ctx, u.folder.opacity, u.folder.blend, (c) => {
       for (const x of u.units) drawUnit(c, ctx, x);
     });
@@ -711,7 +716,7 @@ function drawUnit(cx: Content, ctx: PdfFrameContext, u: FlatUnit): void {
     return;
   }
   const first = u.kind === 'vector' ? u.layer : (u.own ?? u.layers[u.layers.length - 1]);
-  const oc = ctx.writer.beginLayer(u.kind === 'vector' || u.layers.length === 1 ? first.name : u.layers.map((l) => l.name).join(' + '));
+  const oc = ctx.writer.beginLayer(u.kind === 'vector' || u.layers.length === 1 ? first.name : u.layers.map((l) => l.name).join(' + '), u.hidden);
   cx.push(`/OC /${oc} BDC`);
   if (u.kind === 'vector') {
     const l = u.layer;
@@ -725,7 +730,7 @@ function drawUnit(cx: Content, ctx: PdfFrameContext, u: FlatUnit): void {
         if (cam) c.push('Q');
       });
   } else if (ctx.picture) {
-    const img = ctx.picture(u.layers, !!u.own);
+    const img = ctx.picture(u.layers, !!u.own, u.inHidden);
     // Pixel and tile layers stay blocky when the picture is scaled.
     const crisp = !!ctx.crisp || u.layers.every((l) => l.kind !== 'vector');
     if (img) {
@@ -751,7 +756,7 @@ export function pdfFrameContent(ctx: PdfFrameContext, scale: number, background:
     ctx.writer.endLayer();
   }
   ctx.view = cameraViewAt(ctx.doc, ctx.frame);
-  for (const u of flatPlan(ctx.doc, ctx.frame)) drawUnit(cx, ctx, u);
+  for (const u of flatPlan(ctx.doc, ctx.frame, ctx.includeHidden)) drawUnit(cx, ctx, u);
   return cx.toString();
 }
 
@@ -762,7 +767,7 @@ export interface PdfOptions {
   background: Color | null;
   title: string;
   /** Pictures of layers PDF can't draw as vector (from the renderer). */
-  picture?: (frame: number, layers: Layer[], own: boolean) => RawImage | null;
+  picture?: (frame: number, layers: Layer[], own: boolean, reveal?: boolean) => RawImage | null;
   pictureScale?: number;
   crisp?: boolean;
   creator?: string;
@@ -773,7 +778,7 @@ export interface PdfOptions {
 export function writePdf(doc: Doc, opts: PdfOptions & { native?: boolean }): Uint8Array {
   const writer = new PdfWriter();
   const pages = opts.frames.map((frame, i) => {
-    const content = pdfFrameContent({ writer, doc, frame, picture: opts.picture ? (ls, own) => opts.picture!(frame, ls, own) : undefined, pictureScale: opts.pictureScale ?? 1, crisp: opts.crisp }, opts.scale, opts.background);
+    const content = pdfFrameContent({ writer, doc, frame, picture: opts.picture ? (ls, own, reveal) => opts.picture!(frame, ls, own, reveal) : undefined, pictureScale: opts.pictureScale ?? 1, crisp: opts.crisp, includeHidden: !!opts.native }, opts.scale, opts.background);
     opts.onPage?.(i);
     return { content, width: doc.width * opts.scale, height: doc.height * opts.scale };
   });

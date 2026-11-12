@@ -251,4 +251,78 @@ describe('see-through gradients in the PDF part', () => {
     expect(all).toMatch(/W\* n \/Sh\d+ sh/);
     expect(all).not.toMatch(/\/GS\d+ gs\nW\* n/);
   });
+
+  describe('hidden layers and folders', () => {
+    /** A hidden layer, a hidden folder with a visible layer and a hidden one, and a visible layer in a visible folder. */
+    function withHidden(): Doc {
+      const doc = layered();
+      const hid = Object.assign(newVectorLayer('Off layer'), { id: 'h1', visible: false });
+      const inOff = Object.assign(newVectorLayer('In off folder'), { id: 'h2', folder: 'fo' });
+      const offInOff = Object.assign(newVectorLayer('Off in off folder'), { id: 'h3', folder: 'fo', visible: false });
+      for (const [l, d] of [[hid, 'dh1'], [inOff, 'dh2'], [offInOff, 'dh3']] as const) {
+        l.cels = [{ id: 'c' + d, start: 0, length: 1, drawingId: d }];
+        doc.drawings[d] = { id: d, kind: 'vector', shapes: [rect('x' + d, 5, 5, 10, 10, '#ff00ff')] };
+      }
+      doc.folders!.fo = { id: 'fo', name: 'Off folder', visible: false, opacity: 1 } as LayerFolder;
+      doc.layers = [...doc.layers, hid, inOff, offInOff];
+      return doc;
+    }
+    const lb = (data: string, name: string) => {
+      const m = new RegExp(`%AI5_BeginLayer\\n(\\d) \\d \\d \\d \\d \\d \\d \\d+ [^\\n]*Lb\\n\\(${name.replace(/[()]/g, '\\$&')}\\) Ln`).exec(data);
+      return m ? Number(m[1]) : null;
+    };
+
+    it('writes hidden layers and folders as hidden Illustrator layers that keep their art', () => {
+      const data = illustratorData(nativePdf(withHidden())).doc;
+      expect(lb(data, 'Off layer')).toBe(0);
+      expect(lb(data, 'Off folder')).toBe(0);
+      expect(lb(data, 'Off in off folder')).toBe(0);
+      // A visible layer inside a hidden folder stays on itself, and the ordinary ones are on.
+      expect(lb(data, 'In off folder')).toBe(1);
+      expect(lb(data, 'Sky')).toBe(1);
+      expect(lb(data, 'Scenery')).toBe(1);
+      // The art is in the data: the magenta fill of the three hidden-or-in-hidden drawings.
+      expect(data.match(/0 1 0 0 1 0 1 Xa/g)?.length).toBe(3);
+    });
+
+    it('puts the hidden layers in the PDF part as layers that are off, so other programs do not show them', () => {
+      const bytes = writePdf(withHidden(), { frames: [0], scale: 1, background: '#ffffff', title: 'T', native: true });
+      const pdf = Buffer.from(bytes).toString('latin1');
+      const off = /\/OFF \[([^\]]*)\]/.exec(pdf);
+      expect(off).not.toBeNull();
+      // Two hidden layers and the hidden folder.
+      expect(off![1].trim().split(/\s+/).filter((x) => x === 'R').length).toBe(3);
+      for (const name of ['Off layer', 'Off folder', 'Off in off folder']) {
+        const id = new RegExp(`(\\d+) 0 obj\\n<< /Type /OCG /Name \\(${name}\\) >>`).exec(pdf)![1];
+        expect(off![1]).toContain(`${id} 0 R`);
+      }
+      const on = /\/ON \[([^\]]*)\]/.exec(pdf)![1];
+      const idOf = (name: string) => new RegExp(`(\\d+) 0 obj\\n<< /Type /OCG /Name \\(${name}\\) >>`).exec(pdf)![1];
+      expect(on).toContain(`${idOf('In off folder')} 0 R`);
+      expect(on).not.toContain(`${idOf('Off layer')} 0 R`);
+    });
+
+    it('leaves hidden layers out of a plain PDF and out of the .ai pages', () => {
+      const bytes = writePdf(withHidden(), { frames: [0], scale: 1, background: '#ffffff', title: 'T' });
+      const pdf = Buffer.from(bytes).toString('latin1');
+      expect(pdf).not.toContain('/OFF');
+      expect(pdf).not.toContain('Off layer');
+      expect(pdf).not.toContain('Off folder');
+      expect(pdf).not.toContain('In off folder');
+    });
+
+    it('a folder that was hidden with effects keeps a picture of the folder shown', () => {
+      const doc = withHidden();
+      doc.folders!.fo.effects = [{ id: 'e1', kind: 'blur', enabled: true, params: { radius: 2 } }] as unknown as LayerFolder['effects'];
+      const asked: { reveal?: boolean; names: string[] }[] = [];
+      const picture = (_f: number, layers: { name: string }[], _own: boolean, reveal?: boolean) => {
+        asked.push({ reveal, names: layers.map((l) => l.name) });
+        return { width: 1, height: 1, pixels: new Uint8Array(4) };
+      };
+      writePdf(doc, { frames: [0], scale: 1, background: null, title: 'T', native: true, picture: picture as never });
+      const folderPic = asked.find((a) => a.names.includes('In off folder'));
+      expect(folderPic?.reveal).toBe(true);
+    });
+  });
 });
+

@@ -88,6 +88,8 @@ interface AiLayer {
   children: AiLayer[];
   opacity: number;
   blend: number;
+  /** Switched off in the document. */
+  hidden?: boolean;
 }
 
 const BLEND_INDEX: Record<string, number> = {
@@ -418,6 +420,7 @@ function translate(run: Run, content: string, rootName: string): AiLayer[] {
           const o = run.w.ocgs[Number(String(st[st.length - 1]).replace('/OC', '')) - 1];
           flushFill();
           const l = mk(o?.name ?? 'Layer');
+          if (o?.hidden) l.hidden = true;
           const parent = layerStack[layerStack.length - 1];
           (parent ? parent.children : roots).push(l);
           layerStack.push(l);
@@ -640,7 +643,7 @@ function writeItems(o: Out, items: AiItem[]): void {
 function writeLayer(o: Out, l: AiLayer, index: { n: number }): void {
   const [r, g, b] = LAYER_COLORS[index.n % LAYER_COLORS.length];
   o.ln('%AI5_BeginLayer');
-  o.ln(`1 1 1 1 0 0 1 ${index.n++} ${r} ${g} ${b} 0 50 0 Lb`);
+  o.ln(`${l.hidden ? 0 : 1} 1 1 1 0 0 ${l.hidden ? 0 : 1} ${index.n++} ${r} ${g} ${b} 0 50 0 Lb`);
   o.ln(`${aiString(l.name)} Ln`);
   o.ln(`${l.children.length ? 1 : 0} AE`);
   o.ln('0 A');
@@ -718,7 +721,8 @@ export function nativeData(writer: PdfWriter, pages: AiPageInput[], title: strin
     '%AI5_TargetResolution: 800',
     `%AI5_NumLayers: ${countLayers(layers)}`,
     '%AI9_OpenToView: 0 0 1 1196 905 18 0 0 46 89 0 0 0 1 1 0 1 1 0 1',
-    `%AI5_OpenViewLayers: ${layers.map(() => '7').join('')}`,
+    // One digit per top layer, top layer first: 7 shown, 6 hidden (bits: shown 1, preview 2, editable 4).
+    `%AI5_OpenViewLayers: ${layers.map((l) => (l.hidden ? '6' : '7')).reverse().join('')}`,
     '%%PageOrigin:0 0',
     '%AI9_Flatten: 1',
     '%AI12_CMSettings: 00.MS',

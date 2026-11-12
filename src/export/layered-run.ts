@@ -10,8 +10,10 @@ import { writePdf } from './pdf';
 import { writePsd, type PsdLayer } from './psd';
 
 /** A picture of some layers on their own, at `scale`. `plain` takes the layer's blend and opacity off (PSD keeps them itself). */
-export function layersPicture(doc: Doc, frame: number, layers: Layer[], scale: number, plain: boolean, crisp: boolean): RawImage {
+export function layersPicture(doc: Doc, frame: number, layers: Layer[], scale: number, plain: boolean, crisp: boolean, reveal = false): RawImage {
   const ids = new Set(layers.map((l) => l.id));
+  // `reveal`: the layers sit in a folder that is switched off, and the picture is of what is in it.
+  if (reveal && doc.folders) doc = { ...doc, folders: Object.fromEntries(Object.entries(doc.folders).map(([k, f]) => [k, { ...f, visible: true }])) };
   // The camera layer stays, so a picture sees what the camera sees, like the merged frame does.
   const d: Doc = plain && layers.length === 1 ? soloDoc(doc, layers[0]) : doc;
   return drawPicture(d, frame, scale, crisp, plain && layers.length === 1, (l) => ids.has(l.id));
@@ -66,7 +68,7 @@ export function pdfFile(doc: Doc, frames: number[], scale: number, transparent: 
     background: transparent ? null : (doc.background ?? '#ffffff'),
     title: doc.name || 'Untitled',
     creator: ai ? 'Frameling (PDF compatible Illustrator file)' : 'Frameling',
-    picture: (frame, layers, own) => layersPicture(doc, frame, layers, pictureScale, own, crisp),
+    picture: (frame, layers, own, reveal) => layersPicture(doc, frame, layers, pictureScale, own, crisp, reveal),
     pictureScale,
     crisp,
     onPage,
