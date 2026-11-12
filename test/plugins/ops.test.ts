@@ -78,6 +78,34 @@ describe('plugin ops', () => {
     expect(d.markers.at(-1)).toMatchObject({ name: 'Hit', frame: 0 });
     expect(d.clips.at(-1)).toMatchObject({ name: 'Idle', start: 0, end: 0, loop: true });
     expect(d.swatches.at(-1)).toMatchObject({ name: 'Teal', color: '#00aaaa' });
+    expect(d.clips.at(-1)).not.toHaveProperty('direction');
+    expect(d.clips.at(-1)).not.toHaveProperty('repeat');
     expect((d.drawings.dv as { shapes: StrokeShape[] }).shapes[0]).toMatchObject({ color: '#00ff00', opacity: 0.5 });
+  });
+
+  it('addClip sets how the clip plays: direction and repeat, checked, and older calls stay as they were', () => {
+    const s = setup();
+    edit(s, [
+      { op: 'addClip', name: 'Back', start: 0, end: 0, direction: 'reverse' },
+      { op: 'addClip', name: 'Twice', start: 0, end: 0, repeat: 2 },
+      { op: 'addClip', name: 'Once', start: 0, end: 0, loop: false },
+      { op: 'addClip', name: 'Ping', start: 0, end: 0, loop: false, repeat: 3, direction: 'pingpong' },
+      { op: 'addClip', name: 'Forever', start: 0, end: 0, loop: true, repeat: 5, direction: 'forward' },
+    ]);
+    const c = s.get().doc.clips.slice(-5);
+    expect(c[0]).toMatchObject({ name: 'Back', loop: true, direction: 'reverse' });
+    expect(c[0]).not.toHaveProperty('repeat');
+    expect(c[1]).toMatchObject({ name: 'Twice', loop: false, repeat: 2 });
+    expect(c[2]).toMatchObject({ name: 'Once', loop: false });
+    expect(c[2]).not.toHaveProperty('repeat');
+    expect(c[3]).toMatchObject({ name: 'Ping', loop: false, repeat: 3, direction: 'pingpong' });
+    expect(c[4]).toMatchObject({ name: 'Forever', loop: true });
+    expect(c[4]).not.toHaveProperty('repeat');
+    expect(c[4]).not.toHaveProperty('direction');
+    const before = s.get().doc.clips.length;
+    expect(() => edit(s, [{ op: 'addClip', name: 'x', start: 0, end: 0, direction: 'sideways' }])).toThrow(OpProblem);
+    expect(() => edit(s, [{ op: 'addClip', name: 'x', start: 0, end: 0, repeat: 0 }])).toThrow(OpProblem);
+    expect(() => edit(s, [{ op: 'addClip', name: 'x', start: 0, end: 0, repeat: 'twice' }])).toThrow(/repeat/);
+    expect(s.get().doc.clips.length).toBe(before);
   });
 });

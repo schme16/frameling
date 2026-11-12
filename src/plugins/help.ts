@@ -94,7 +94,7 @@ The permissions are **document.read**, **document.edit**, **export**, **panels**
 
 - \`frameling.commands.register({ id, label }, run)\` adds a command to the Plugins menu.
 - \`await frameling.document.get()\` gives the drawing, \`await frameling.document.state()\` the frame and layer you're on.
-- \`await frameling.document.edit('Label', [ops])\` changes it, as one Undo step. Ops include **flipDrawing**, **transformDrawing**, **setPixels**, **setLayer**, **setShapeStyle**, **addMarker** and **addClip**.
+- \`await frameling.document.edit('Label', [ops])\` changes it, as one Undo step. Ops include **flipDrawing**, **transformDrawing**, **setPixels**, **setLayer**, **setShapeStyle**, **addMarker** and **addClip** (which can also set how it plays: direction and repeat).
 - \`frameling.exporters.register({ id, label, extension }, (frames, info) => files)\` adds an export. Frames are RGBA pictures. Hand back \`[{ name, bytes }]\`, \`{ name, text }\` or \`{ name, image }\` (Frameling makes the PNG).
 - \`frameling.panels.register({ id, title }, ui, onEvent)\` adds a panel described as a tree of parts.
 - \`frameling.ui.notify('Done!')\` shows a message.

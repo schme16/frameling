@@ -1,7 +1,8 @@
 // The only changes a plugin can make to a drawing: a short, checked list. A batch of them is applied in one
 // store.update, so the whole batch is one step in Undo. Anything wrong in a batch stops all of it (nothing half done).
 import type { Draft } from 'immer';
-import type { Doc, Drawing, Layer, Shape } from '../core/format';
+import type { ClipDirection, Doc, Drawing, Layer, Shape } from '../core/format';
+import { CLIP_DIRECTIONS, MAX_REPEAT, cleanRepeat, isDirection } from '../core/clipPlay';
 import { uid } from '../core/doc';
 import { scaleAbout, transformShapes, type Matrix } from '../canvas/geometry';
 import { flipH, flipV } from '../pixel/transform';
@@ -16,7 +17,7 @@ export type PluginOp =
   | { op: 'removeShape'; drawingId: string; shapeId: string }
   | { op: 'addMarker'; frame: number; name: string }
   | { op: 'removeMarker'; markerId: string }
-  | { op: 'addClip'; name: string; start: number; end: number; loop?: boolean }
+  | { op: 'addClip'; name: string; start: number; end: number; loop?: boolean; direction?: ClipDirection; repeat?: number }
   | { op: 'removeClip'; clipId: string }
   | { op: 'addSwatch'; name: string; color: string };
 
@@ -146,7 +147,21 @@ export function applyOp(doc: Draft<Doc>, raw: unknown): void {
     }
     case 'addClip': {
       if (!fin(o.start) || !fin(o.end) || o.start < 0 || o.end < o.start || o.end >= doc.length) throw new OpProblem(`start and end must be frames from 0 to ${doc.length - 1}, start first.`);
-      doc.clips.push({ id: uid('c'), name: str(o.name ?? 'Clip', 'name') || 'Clip', start: Math.round(o.start), end: Math.round(o.end), loop: o.loop !== false });
+      // How it plays: `direction` (forward when missing) and `repeat` (how many times, whole 1 to 999). Giving a repeat
+      // without saying `loop` means it plays that many times instead of for ever; a looping clip ignores its repeat.
+      if (o.direction !== undefined && !isDirection(o.direction)) throw new OpProblem(`direction must be one of ${CLIP_DIRECTIONS.map((x) => `"${x}"`).join(', ')}.`);
+      const repeat = o.repeat === undefined ? undefined : cleanRepeat(o.repeat);
+      if (o.repeat !== undefined && repeat === undefined) throw new OpProblem(`repeat must be a whole number from 1 to ${MAX_REPEAT}.`);
+      const loop = o.loop === undefined ? repeat === undefined : o.loop !== false;
+      doc.clips.push({
+        id: uid('c'),
+        name: str(o.name ?? 'Clip', 'name') || 'Clip',
+        start: Math.round(o.start),
+        end: Math.round(o.end),
+        loop,
+        ...(isDirection(o.direction) && o.direction !== 'forward' ? { direction: o.direction } : {}),
+        ...(!loop && repeat && repeat > 1 ? { repeat } : {}),
+      });
       return;
     }
     case 'removeClip': {
