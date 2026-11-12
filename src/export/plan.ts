@@ -4,7 +4,7 @@ import type { Doc } from '../core/format';
 import { inOutRange } from '../timeline/inout';
 import { bakedPositions, clipDirection, clipPlays, hasPlaySettings, isBackAndForth, stillPositions } from '../core/clipPlay';
 import { exporterOf } from './registry';
-import { DEFAULT_SHEET, formatInfo, oneFrameOnly, type ExportSettings, type FormatId } from './types';
+import { DEFAULT_SHEET, formatInfo, normalizeSheet, oneFrameOnly, type ExportSettings, type FormatId } from './types';
 
 export const MAX_SIDE = 8192;
 export const MAX_FRAMES = 5000;
@@ -55,7 +55,23 @@ export function artScale(doc: Doc): number | null {
   const sizes = new Set(art.map((l) => ('pixelSize' in l ? l.pixelSize : 1)));
   if (sizes.size !== 1) return null;
   const p = [...sizes][0];
-  return p > 1 ? 1 / p : null;
+  return p >= 1 ? 1 / p : null;
+}
+
+/**
+ * A sprite sheet made for a game engine (or a JSON atlas, or a web page) of pixel art always goes out at real size:
+ * one art pixel is one pixel, and the engine scales it up. Only "Just the picture" keeps the size that was picked.
+ */
+export function sheetRealSize(doc: Doc, s: ExportSettings): number | null {
+  if (s.format !== 'sheet') return null;
+  const art = artScale(doc);
+  return art !== null && normalizeSheet(s.sheet).engine !== 'none' ? art : null;
+}
+
+/** The settings with a sheet for a game engine put at real size. */
+export function withRealSize(doc: Doc, s: ExportSettings): ExportSettings {
+  const art = sheetRealSize(doc, s);
+  return art === null || s.scale === art ? s : { ...s, scale: art };
 }
 
 /** The scale is one of the choices offered for this document. */

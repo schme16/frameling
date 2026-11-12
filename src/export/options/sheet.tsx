@@ -1,11 +1,10 @@
 // What a sprite sheet export asks: where it is going (the engine and its extras) and how the sheet is laid out.
-import { useChoice, withChoice } from '../../core/choices';
+import { useChoice } from '../../core/choices';
 import { sheetExported } from '../../pixel/moments';
 import { sheetFooter } from '../../pixel/sheetMode';
 import { isPixelDoc } from '../../pixel/way';
 import { store } from '../../core/store';
 import { openHelp, openPrefs } from '../../ui/overlays';
-import { artScale } from '../plan';
 import { BonesLookNotes } from '../BonesLookNotes';
 import { EnginePicker } from '../EnginePicker';
 import { hasBonesToExport } from '../godot-bones-scope';
@@ -17,7 +16,6 @@ import { Check } from './controls';
 /** Where it is going: the engine picker and what that engine adds. */
 export function SheetWhere({ s, set, setSheet, doc }: ExportUiProps) {
   const bounceMode = useChoice<string>('export.clipEngineBounce');
-  const art = artScale(doc);
   const sheet = normalizeSheet(s.sheet);
   const engine = engineInfo(sheet.engine);
   const separate = sheet.content === 'separate';
@@ -25,8 +23,6 @@ export function SheetWhere({ s, set, setSheet, doc }: ExportUiProps) {
   const godotBones = sheet.engine === 'godot' && hasBones && !separate && sheet.godotRig === 'bones';
   const pickEngine = (id: EngineId) => {
     setSheet({ engine: id, ...(id === 'godot' ? { godot: true } : {}) });
-    // Pixel art for a game: offer the real size once, then remember the answer.
-    if (art && engineInfo(id).game && s.scale !== art) withChoice<string>('export.gameArtSize', (v) => v === 'art' && set({ scale: art }));
   };
   return (
     <fieldset>

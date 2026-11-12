@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { defaultSettings, drawnFrames, fileSafe, frameNumber, outputSize, planExport, resolveRange, scaleChoices, slug } from '../../src/export/plan';
+import { artScale, defaultSettings, drawnFrames, sheetRealSize, withRealSize, fileSafe, frameNumber, outputSize, planExport, resolveRange, scaleChoices, slug } from '../../src/export/plan';
 import { DEFAULT_SHEET, type ExportSettings } from '../../src/export/types';
+import { newDoc } from '../../src/core/doc';
 import { sampleDoc } from './helpers';
 
 const base = (over: Partial<ExportSettings> = {}): ExportSettings => ({ ...defaultSettings(sampleDoc()), ...over, sheet: { ...DEFAULT_SHEET } });
@@ -58,5 +59,35 @@ describe('drawn frames', () => {
     expect(drawnFrames(docOf([[0, 24]], 24))).toBeNull();
     expect(drawnFrames(docOf([], 24))).toBeNull();
     expect(drawnFrames(docOf([[0, 2]], 24, true))).toBeNull();
+  });
+});
+
+describe('real size for game engines', () => {
+  const sprite = (pixelSize: number, w = 28, h = 24) => newDoc({ name: 'Slime', width: w, height: h, pixel: { pixelSize } });
+  const sheet = (engine: 'godot' | 'unity' | 'phaser' | 'pixi' | 'css' | 'json' | 'none', scale = 8): ExportSettings => ({ ...defaultSettings(sprite(1)), format: 'sheet', scale, sheet: { ...DEFAULT_SHEET, engine } });
+
+  it('an Aseprite-style sprite (art pixels already 1x) has a real size of 1x', () => {
+    expect(artScale(sprite(1))).toBe(1);
+    expect(artScale(sprite(8, 256, 256))).toBe(1 / 8);
+    // The size a big sprite would start on (8x) is no longer what the sheet gets.
+    expect(defaultSettings(sprite(1)).scale).toBe(8);
+  });
+
+  it('a sheet for any engine or atlas goes out at real size, whatever the size buttons said', () => {
+    for (const e of ['godot', 'unity', 'phaser', 'pixi', 'css', 'json'] as const) {
+      const out = withRealSize(sprite(1), sheet(e));
+      expect(out.scale).toBe(1);
+      const plan = planExport(sprite(1), out, 0);
+      expect(plan.width).toBe(28);
+      expect(plan.height).toBe(24);
+    }
+    expect(withRealSize(sprite(8, 256, 256), sheet('godot')).scale).toBe(1 / 8);
+  });
+
+  it('just the picture, other formats and vector art keep the size that was picked', () => {
+    expect(withRealSize(sprite(1), sheet('none')).scale).toBe(8);
+    expect(withRealSize(sprite(1), { ...sheet('godot'), format: 'gif' }).scale).toBe(8);
+    const vector = newDoc({ name: 'V', width: 100, height: 100 });
+    expect(sheetRealSize(vector, sheet('godot'))).toBeNull();
   });
 });
