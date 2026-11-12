@@ -69,8 +69,15 @@
       if (!cond) r.problems.push(t);
       return !!cond;
     };
-    r.pixel = async (label, source, w, h, refUrl) => {
+    // `loose` is for a renderer known to be a little off the exact picture (Phaser's canvas renderer): a pixel-exact match
+    // passes quietly, a close one passes and is counted in r.soft, and only a picture that is far off fails.
+    r.soft = null;
+    r.pixel = async (label, source, w, h, refUrl, loose) => {
       const res = await compare(source, w, h, refUrl);
+      if (!res.ok && loose && res.m && res.m.mean < 10) {
+        r.soft = { mean: Math.max(r.soft ? r.soft.mean : 0, res.m.mean), max: Math.max(r.soft ? r.soft.max : 0, res.m.max), n: (r.soft ? r.soft.n : 0) + 1 };
+        res.ok = true;
+      }
       r.compared++;
       if (res.m) {
         r.worst.mean = Math.max(r.worst.mean, res.m.mean);

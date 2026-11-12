@@ -224,7 +224,9 @@ export function animatedSvgExport(doc: Doc, opts: AnimatedSvgOptions = {}): { sv
   if (doc.background && !opts.transparent) out.push(`<rect width="${n2(doc.width)}" height="${n2(doc.height)}"${paint('fill', doc.background, 1)}/>`);
   if (content) out.push(content);
   const style = w.styles.length ? `<style>\n${w.styles.join('\n')}\n</style>\n` : '';
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${n2(doc.width)} ${n2(doc.height)}">\n${style}${defsBlock([...defs, ...sprites], content)}${out.join('\n')}\n</svg>\n`;
+  // isolation: layers blend with each other only. Without it a blend mode like Add also blends with the web page behind an
+  // inline SVG (over white it turns a flash into plain white).
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${n2(doc.width)} ${n2(doc.height)}" style="isolation:isolate">\n${style}${defsBlock([...defs, ...sprites], content)}${out.join('\n')}\n</svg>\n`;
   return { svg, notes: [...notes] };
 }
 

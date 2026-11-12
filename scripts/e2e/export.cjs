@@ -44,8 +44,10 @@ const GODOT = process.env.GODOT_BIN;
 const UNITY = process.env.UNITY_BIN;
 const WEB = process.env.WEB_ENGINES === '1' && !SKIP.includes('web');
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-// Phaser and PixiJS need WebGL, which Chromium blocklists on a virtual display unless the software renderer is allowed.
-if (WEB) for (const sw of [['ignore-gpu-blocklist'], ['use-gl', 'angle'], ['use-angle', 'swiftshader'], ['enable-unsafe-swiftshader']]) app.commandLine.appendSwitch(...sw);
+// Phaser and PixiJS need WebGL, which Chromium blocklists on a virtual display unless the blocklist is ignored (it then
+// runs on the software renderer). PixiJS's WebGPU renderer needs WebGPU switched on. Do not add the ANGLE or SwiftShader
+// switches here: with them the GPU process drops the WebGPU device, and WebGL works without them.
+if (WEB) for (const sw of [['ignore-gpu-blocklist'], ['enable-unsafe-webgpu']]) app.commandLine.appendSwitch(...sw);
 
 fs.rmSync(outDir, { recursive: true, force: true });
 fs.mkdirSync(outDir, { recursive: true });
@@ -249,7 +251,7 @@ async function expectationFor(settings) {
   return { plan, doc, fps: doc.fps, loop, count: plan.count, width: plan.width, height: plan.height, frameOf: (k) => plan.range.start + (order ? order[k] : k) };
 }
 
-const BAKED = new Set(['gif', 'apng', 'mp4', 'webm', 'prores']);
+const BAKED = new Set(['gif', 'apng', 'mp4', 'webm', 'prores', 'svganim']);
 const STILLS = new Set(['pngseq', 'pdf', 'ai']);
 
 /**
@@ -292,7 +294,7 @@ async function reference(settings, docFrame, transparent) {
 
 // ---------------------------------------------------------------- validators (one per format)
 
-const TOL = { lossless: 0.0005, svg: 0.07, gif: 0.12, video: 0.1 };
+const TOL = { lossless: 0.0005, svg: 0.07, svganim: 0.02, gif: 0.12, video: 0.1 };
 
 async function vVideo(file, s, exp, caseCtx) {
   if (!need('ffprobe', 'ffmpeg')) return;
@@ -529,6 +531,92 @@ async function vSvg(file, s, exp, caseCtx) {
   }
 }
 
+// The animated SVG, really played: it is put in a web page in a Chromium window, its CSS animations are paused and moved to the middle
+// of each moment with the Web Animations API, and the window is photographed. Each photograph must match the app's own PNG
+// of the document frame that moment shows (so a clip that goes back and forth or plays 3 times is checked in play order),
+// and be closer to that frame than to the frames next to it. After the end, a loop starts over and anything else holds.
+async function vSvgAnim(file, s, exp, caseCtx) {
+  if (!need('convert', 'compare')) return;
+  if (need('xmllint')) check(sh('xmllint', ['--noout', file]).status === 0, 'xmllint says the animated SVG is not well formed');
+  const dir = path.dirname(file);
+  const count = exp.plan.count;
+  const frames = Array.from({ length: count }, (_, k) => exp.plan.range.start + (exp.plan.order?.[k] ?? k));
+  const loop = exp.plan.loop;
+  const step = 1000 / exp.fps;
+  const tol = caseCtx.tol ?? TOL.svganim;
+  const win2 = new BrowserWindow({ show: false, width: exp.width, height: exp.height, useContentSize: true, webPreferences: { backgroundThrottling: false } });
+  win2.keepShown = true;
+  win2.show();
+  const errs = [];
+  win2.webContents.on('console-message', (e) => {
+    if ((e.level ?? e.severity) === 'error' || (e.level ?? e.severity) === 3) errs.push(String(e.message ?? e));
+  });
+  const wev = (js) => win2.webContents.executeJavaScript(js, true);
+  const refs = new Map();
+  // The SVG sits inside a web page over white, as it does on a site, so a blend mode that reaches past the SVG (it must not:
+  // Frameling's layers blend with each other only) shows up. The pictures to compare with are flattened over white too.
+  const refOf = async (f) => {
+    if (!refs.has(f)) {
+      const r = await reference(s, f, caseCtx.transparent);
+      const flat = r && path.join(dir, `_white-${f}.png`);
+      if (r) sh('convert', [r, '-background', 'white', '-alpha', 'remove', '-alpha', 'off', flat]);
+      refs.set(f, flat);
+    }
+    return refs.get(f);
+  };
+  let worst = 0;
+  try {
+    const page = path.join(dir, '_play.html');
+    fs.writeFileSync(page, `<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;background:#fff}svg{display:block}</style></head><body>${fs.readFileSync(file, 'utf8').replace(/^<\?xml[^>]*>\s*/, '')}</body></html>`);
+    await win2.loadURL(pathToFileURL(page).href);
+    const info = await wev(`(() => { const a = document.getAnimations(); const t = a.map((x) => x.effect.getComputedTiming()); return { n: a.length, durations: [...new Set(t.map((x) => x.duration))], iterations: [...new Set(t.map((x) => x.iterations))] }; })()`);
+    if (!check(info.n > 0, 'the animated SVG has no running animations')) return;
+    check(info.durations.length === 1 && near(info.durations[0], count * step, 1), `animations last ${info.durations} ms, wanted ${(count * step).toFixed(1)}`);
+    const it = info.iterations[0];
+    check(info.iterations.length === 1 && (loop ? it === Infinity || it === null : it === 1), `iterations ${JSON.stringify(info.iterations)}, wanted ${loop ? 'forever' : 1}`);
+    let n = 0;
+    const shoot = async (ms, name) => {
+      await wev(`(() => { for (const a of document.getAnimations()) { a.pause(); a.currentTime = ${ms}; } return new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))); })()`);
+      const img = await win2.webContents.capturePage({ x: 0, y: 0, width: exp.width, height: exp.height });
+      const f = path.join(dir, `_anim-${name}.png`);
+      fs.writeFileSync(f, img.toPNG());
+      if (img.getSize().width !== exp.width) fail(`${name}: the window picture is ${img.getSize().width} wide, wanted ${exp.width}`);
+      n++;
+      return f;
+    };
+    // The pictures to tell apart: a moment must be nearer its own frame than the frames before and after it, unless they look the same.
+    const closer = async (shot, k, own) => {
+      for (const other of [frames[k - 1], frames[k + 1]]) {
+        if (other === undefined || other === frames[k]) continue;
+        const o = await refOf(other);
+        const same = o && (await rmse(o, await refOf(frames[k])));
+        const e = o && rmse(shot, o);
+        if (own !== null && e !== null && e !== undefined && same > 0.002 && e < own - same / 2) fail(`${path.basename(shot)} looks more like frame ${other} than frame ${frames[k]} (rmse ${e.toFixed(4)} against ${own.toFixed(4)})`);
+      }
+    };
+    for (let k = 0; k < count; k++) {
+      const shot = await shoot((k + 0.5) * step, `m${k}`);
+      const ref = await refOf(frames[k]);
+      const e = ref && rmse(shot, ref);
+      if (e === null || e === undefined) continue;
+      worst = Math.max(worst, e);
+      check(e < tol, `moment ${k + 1} (document frame ${frames[k]}) plays differently from the PNG export (rmse ${e.toFixed(4)})`);
+      await closer(shot, k, e);
+    }
+    // Past the end.
+    const endRef = await refOf(loop ? frames[0] : frames[count - 1]);
+    const past = await shoot(count * step + (loop ? 0.5 * step : 3000), 'past');
+    const e = endRef && rmse(past, endRef);
+    if (e !== null && e !== undefined) check(e < tol, loop ? `after the last moment it did not start over on frame ${frames[0]} (rmse ${e.toFixed(4)})` : `after the last moment it did not hold frame ${frames[count - 1]} (rmse ${e.toFixed(4)})`);
+  } catch (e) {
+    fail(`animated SVG check: ${e?.stack ?? e}`);
+  } finally {
+    win2.destroy();
+  }
+  for (const m of errs) fail(`the SVG page logged an error: ${m}`);
+  note(`played in Chromium: ${count} moments (frames ${frames.join(',')}), ${loop ? 'loops' : 'plays once'}, worst rmse ${worst.toFixed(4)}`);
+}
+
 async function vSheet(files, dir, s, exp, caseCtx) {
   const names = files.sort();
   note(names.join(', '));
@@ -676,6 +764,9 @@ async function webCheck(engine, dir, names, s, exp, caseCtx) {
   const doc = exp.doc;
   const range = exp.plan.range;
   const separate = s.sheet.content === 'separate';
+  // The sprite may be shown bigger or smaller than the frame (nearest-neighbour for pixel art); the pictures to match are then
+  // the frame scaled the same way by ImageMagick's point filter, which is exact for the whole-pixel blocks pixel art is made of.
+  const display = caseCtx.web.display ?? 1;
   const image = names.find((n) => n.endsWith('.png') && !n.startsWith('_'));
   const jsonName = names.find((n) => n.endsWith('.json') && !n.endsWith('-anims.json') && !n.endsWith('-flow.json'));
   const animsName = names.find((n) => n.endsWith('-anims.json'));
@@ -686,13 +777,14 @@ async function webCheck(engine, dir, names, s, exp, caseCtx) {
     if (!refs.has(docFrame)) {
       const f = await reference(s, docFrame, caseCtx.transparent);
       const dest = path.join(dir, `_ref-${docFrame}.png`);
-      if (f) fs.copyFileSync(f, dest);
+      if (f && display === 1) fs.copyFileSync(f, dest);
+      else if (f) sh('convert', [f, '-filter', 'point', '-resize', `${display * 100}%`, dest]);
       refs.set(docFrame, f ? dest : null);
     }
     return refs.get(docFrame);
   };
-  const job = { engine, dir, image, json: jsonName, anims: animsName, css: names.find((n) => n.endsWith('.css')), html: names.find((n) => n.endsWith('.html')), separate, width: exp.width, height: exp.height };
-  job.animations = [];
+  const base = { engine, dir, image, json: jsonName, anims: animsName, css: names.find((n) => n.endsWith('.css')), html: names.find((n) => n.endsWith('.html')), separate, display, width: Math.round(exp.width * display), height: Math.round(exp.height * display) };
+  base.animations = [];
   for (const a of animations) {
     // Phaser and CSS repeat a forward or backward clip themselves (one pass, N times); everything else lists every frame.
     const yoyo = engine === 'phaser' && caseCtx.native && !!a.leg;
@@ -703,19 +795,23 @@ async function webCheck(engine, dir, names, s, exp, caseCtx) {
       const ref = await refOf(range.start + listed[i]);
       if (ref) checks.push({ i, ref });
     }
-    job.animations.push({ name: a.name, fps: a.fps, loop: a.loop, count: listed.length, times: yoyo ? a.trips : native ? a.plays : 1, yoyo, checks });
+    base.animations.push({ name: a.name, fps: a.fps, loop: a.loop, count: listed.length, times: yoyo ? a.trips : native ? a.plays : 1, yoyo, checks });
   }
   if (engine !== 'css') {
     const data = JSON.parse(fs.readFileSync(path.join(dir, jsonName), 'utf8'));
-    job.key = image.replace(/\.png$/, '');
-    job.frameNames = Object.keys(data.frames);
-    job.meta = data.meta.frameling ?? null;
+    base.key = image.replace(/\.png$/, '');
+    base.frameNames = Object.keys(data.frames);
+    base.meta = data.meta.frameling ?? null;
     // Separate sprites have no animations, and Phaser with no anims file is just an atlas.
-    if (separate || (engine === 'phaser' && !animsName)) job.animations = [];
+    if (separate || (engine === 'phaser' && !animsName)) base.animations = [];
   }
-  const r = await webChecker.run(job);
-  for (const p of r.problems) fail(p);
-  for (const n of r.notes) note(n);
+  // Which engine builds and renderers to load it in: the usual one, or (allRenderers) Phaser 3 and 4 in WebGL and canvas, PixiJS in WebGL and WebGPU.
+  const all = { phaser: [{ phaser: 3, renderer: 'webgl' }, { phaser: 3, renderer: 'canvas' }, { phaser: 4, renderer: 'webgl' }, { phaser: 4, renderer: 'canvas' }], pixi: [{ renderer: 'webgl' }, { renderer: 'webgpu' }], css: [{}] }[engine];
+  for (const variant of caseCtx.web.allRenderers ? all : all.slice(0, 1)) {
+    const r = await webChecker.run({ ...base, variant });
+    for (const p of r.problems) fail(p);
+    for (const n of r.notes) note(n);
+  }
 }
 
 // Unity is slow to start, so only these templates go through it (the hero has several clips and is pixel art).
@@ -994,6 +1090,8 @@ async function runCase(tpl, fmt, label, edit, opts = {}) {
       svgApprox: tpl === 'kitchen-sink',
       // The preference "Back-and-forth clips in game engines" is set to the engine's own ping-pong for this case.
       native: !!opts.native,
+      web: opts.web ?? {},
+      tol: opts.tol,
     };
     if (fmt === 'webm' && settings.transparent && !caps.webm.alpha) note('this computer cannot do see-through WebM, so the background is kept');
     r.settings = settings;
@@ -1021,9 +1119,9 @@ async function runCase(tpl, fmt, label, edit, opts = {}) {
     if (!check(files.length === 1, `expected 1 file, found ${files.length}: ${files}`)) return;
     const f = path.join(dir, files[0]);
     note(`${files[0]} ${fs.statSync(f).size} bytes`);
-    const ext = { mp4: '.mp4', webm: '.webm', gif: '.gif', apng: '.png', png: '.png', pngseq: '.zip', svg: '.svg', interactives: '.flplay', psd: '.psd', pdf: '.pdf', ai: '.ai', prores: '.mov' }[fmt];
+    const ext = { mp4: '.mp4', webm: '.webm', gif: '.gif', apng: '.png', png: '.png', pngseq: '.zip', svg: '.svg', svganim: '.svg', interactives: '.flplay', psd: '.psd', pdf: '.pdf', ai: '.ai', prores: '.mov' }[fmt];
     check(files[0].endsWith(ext), `file name ${files[0]} does not end in ${ext}`);
-    const v = { mp4: vVideo, webm: vVideo, gif: vGif, apng: vApng, png: vPng, pngseq: vPngSeq, svg: vSvg, interactives: vPlayable, psd: vPsd, pdf: vPdf, ai: vPdf, prores: vProres }[fmt];
+    const v = { mp4: vVideo, webm: vVideo, gif: vGif, apng: vApng, png: vPng, pngseq: vPngSeq, svg: vSvg, svganim: vSvgAnim, interactives: vPlayable, psd: vPsd, pdf: vPdf, ai: vPdf, prores: vProres }[fmt];
     await v(f, settings, exp, caseCtx);
   } catch (e) {
     fail(`harness error: ${e?.stack ?? e}`);
@@ -1039,6 +1137,23 @@ const BOUNCE_CLIPS = `__framelingExport.clearClips(); __framelingExport.addClip(
 const BOUNCE_CLIPS_NATIVE = BOUNCE_CLIPS + `; __framelingExport.setChoice('export.clipEngineBounce', 'engine')`;
 
 const isPixelTpl = (t) => t === 'hero-sprites' || t === 'blank-pixel';
+
+// The animated SVG, played for real (see vSvgAnim): a clip that goes back and forth and loops, a clip that plays 3 times and
+// stops, one that plays backward, the whole Bouncing ball, and the Explosion (see-through, with glow, add blending and particles).
+async function svgAnimCases() {
+  if (ONLY && !ONLY.includes('svganim')) return;
+  const half = (s) => ({ ...s, scale: 0.5 });
+  if (TEMPLATES.includes('bouncing-ball')) {
+    for (const [label, name] of [['clip-pingpong', 'swing'], ['clip-repeat3', 'thrice'], ['clip-backward', 'back']]) {
+      await runCase('bouncing-ball', 'svganim', label, async (s) => ({ ...half(s), range: 'clip', clipId: 'clip-' + name }), { prepare: PLAY_CLIPS });
+    }
+    await runCase('bouncing-ball', 'svganim', 'defaults', half);
+  }
+  await runCase('explosion-fx', 'svganim', 'defaults', (s) => ({ ...half(s), transparent: true }), {
+    // Smoke puffs are hard-edged circles in SVG and soft in the app, so the later frames sit a little further off.
+    tol: 0.045,
+  });
+}
 
 async function exportMatrix() {
   const caps = await X('caps(512, 512)');
@@ -1084,17 +1199,21 @@ async function exportMatrix() {
         await runCase(tpl, fmt, 'dither-noloop', (s) => ({ ...s, dither: true, loop: false }));
       }
       if (fmt === 'apng') await runCase(tpl, fmt, 'noloop', (s) => ({ ...s, loop: false }));
+      // A frame rate that is not a whole number: the Settings box only takes whole ones, a file or a plugin can carry any.
+      if (tpl === 'bouncing-ball' && ['gif', 'apng', 'mp4', 'webm'].includes(fmt)) {
+        for (const fps of [12.5, 23.976]) await runCase(tpl, fmt, `fps${fps}`, (s) => s, { prepare: `__frameling.store().update('fps', (d) => { d.fps = ${fps}; })` });
+      }
       if (fmt === 'sheet') {
         await runCase(tpl, fmt, 'trim-pot-pad', (s) => ({ ...s, sheet: { ...s.sheet, trim: true, pot: true, padding: 2, columns: 3 } }));
         await runCase(tpl, fmt, 'godot', (s) => ({ ...s, sheet: { ...s.sheet, trim: true, dedupe: true, json: true, godot: true, godotScene: true, godotPath: '' } }));
         await runCase(tpl, fmt, 'nodedupe-godotpath', (s) => ({ ...s, sheet: { ...s.sheet, dedupe: false, json: true, godot: true, godotScene: true, godotPath: 'art/chars/hero.png' } }));
         await runCase(tpl, fmt, 'packed-extrude', (s) => ({ ...s, sheet: { ...s.sheet, engine: 'json', layout: 'packed', trim: true, padding: 2, extrude: 1, json: true } }));
-        for (const engine of ['phaser', 'pixi', 'unity', 'css']) await runCase(tpl, fmt, engine, (s) => ({ ...s, sheet: { ...s.sheet, engine, layout: 'packed', trim: true, padding: 1, json: false } }));
+        for (const engine of ['phaser', 'pixi', 'unity', 'css']) await runCase(tpl, fmt, engine, (s) => ({ ...s, sheet: { ...s.sheet, engine, layout: 'packed', trim: true, padding: 1, json: false } }), { web: { allRenderers: true } });
         // The web engines, with more clips, a clip that stops, a plain grid with see-through frames, and separate sprites in CSS.
         if (WEB && (tpl === 'bouncing-ball' || tpl === 'hero-sprites')) {
           const clips = tpl === 'hero-sprites' ? '' : `__framelingExport.addClip('mid', 2, 5); __framelingExport.addClip('once', 0, 1, false)`;
           for (const engine of ['phaser', 'pixi', 'css']) {
-            await runCase(tpl, fmt, `${engine}-grid`, (s) => ({ ...s, transparent: true, sheet: { ...s.sheet, engine, layout: 'grid', trim: false, dedupe: false, pot: true, padding: 2, json: false } }), { prepare: clips });
+            await runCase(tpl, fmt, `${engine}-grid`, (s) => ({ ...s, transparent: true, sheet: { ...s.sheet, engine, layout: 'grid', trim: false, dedupe: false, pot: true, padding: 2, json: false } }), { prepare: clips, web: { allRenderers: tpl === 'hero-sprites' } });
             if (tpl === 'bouncing-ball') await runCase(tpl, fmt, `${engine}-clips`, (s) => ({ ...s, sheet: { ...s.sheet, engine, layout: 'packed', trim: true, dedupe: true, padding: 1, json: false } }), { prepare: clips });
           }
           // Awkward clip names: spaces, punctuation, letters CSS names cannot hold, and names that only differ in case.
@@ -1120,7 +1239,17 @@ async function exportMatrix() {
           }
           await runCase(tpl, fmt, 'play-json', (s) => ({ ...s, sheet: { ...s.sheet, engine: 'json', layout: 'packed', trim: true, dedupe: false, padding: 1, json: true } }), { prepare: play });
           await runCase(tpl, fmt, 'play-unity', (s) => ({ ...s, sheet: { ...s.sheet, engine: 'unity', layout: 'packed', trim: true, dedupe: false, padding: 1, json: false } }), { prepare: play });
-          if (WEB) for (const engine of ['phaser', 'pixi', 'css']) await runCase(tpl, fmt, `play-${engine}`, (s) => ({ ...s, sheet: { ...s.sheet, engine, layout: 'packed', trim: true, dedupe: false, padding: 1, json: false } }), { prepare: play });
+          if (WEB) for (const engine of ['phaser', 'pixi', 'css']) await runCase(tpl, fmt, `play-${engine}`, (s) => ({ ...s, sheet: { ...s.sheet, engine, layout: 'packed', trim: true, dedupe: false, padding: 1, json: false } }), { prepare: play, web: { allRenderers: true } });
+          // A clip rate that is not a whole number (the Settings box only takes whole ones, a file or plugin can carry any), in each engine.
+          if (WEB) for (const fps of [12.5, 23.976]) for (const engine of ['phaser', 'pixi', 'css']) await runCase(tpl, fmt, `fps${fps}-${engine}`, (s) => ({ ...s, sheet: { ...s.sheet, engine, layout: 'packed', trim: true, dedupe: false, padding: 1, json: false } }), { prepare: `${play}; __frameling.store().update('fps', (d) => { d.fps = ${fps}; })` });
+        }
+        // Pixel art shown at 2x (the art-size sheet) and 0.5x (the full-size sheet), nearest-neighbour, in every renderer.
+        if (WEB && tpl === 'hero-sprites') {
+          for (const engine of ['phaser', 'pixi', 'css']) {
+            const sheet = (s) => ({ ...s.sheet, engine, layout: 'packed', trim: true, dedupe: true, padding: 2, extrude: 1, json: false });
+            await runCase(tpl, fmt, `scaled2x-${engine}`, (s) => ({ ...s, scale: 1 / 8, transparent: true, sheet: sheet(s) }), { web: { display: 2, allRenderers: true } });
+            await runCase(tpl, fmt, `scaled0.5x-${engine}`, (s) => ({ ...s, transparent: true, sheet: sheet(s) }), { web: { display: 0.5, allRenderers: true } });
+          }
         }
         // No clips: separate sprites make a json with no animations, so Unity must cut the sprites and make no .anim files.
         if (tpl === 'bouncing-ball') await runCase(tpl, fmt, 'unity-noclips', (s) => ({ ...s, sheet: { ...s.sheet, engine: 'unity', content: 'separate', separateFiles: false, layout: 'packed', trim: true, padding: 1, json: false } }));
@@ -1808,6 +1937,7 @@ async function godotBonesExtrasSection(name = 'bones-extras', extra = {}, more, 
   try {
     await startApp();
     await exportMatrix();
+    await svgAnimCases();
     if (!ONLY || ONLY.includes('godot-bones')) await godotBonesSection();
     if (!ONLY || ONLY.includes('godot-bones') || ONLY.includes('godot-bones-bounce')) for (const native of [false, true]) await godotBonesBounceSection(native);
     if (!ONLY || ONLY.includes('godot-bones')) await godotBonesExtrasSection();

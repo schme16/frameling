@@ -21,6 +21,7 @@ function startServer(engines) {
     if (rel.startsWith('/case/')) file = path.join(state.dir, rel.slice(6));
     else if (rel.startsWith('/harness/')) file = path.join(harness, rel.slice(9));
     else if (rel === '/engines/phaser.min.js') file = engines.phaser;
+    else if (rel === '/engines/phaser4.min.js') file = engines.phaser4;
     else if (rel === '/engines/pixi.min.js') file = engines.pixi;
     const base = rel.startsWith('/case/') ? state.dir : rel.startsWith('/harness/') ? harness : null;
     if (!file || (base && !path.resolve(file).startsWith(path.resolve(base) + path.sep)) || !fs.existsSync(file) || !fs.statSync(file).isFile()) {
@@ -54,43 +55,50 @@ async function createWebChecker() {
 
   /**
    * job: { engine: 'phaser'|'pixi'|'css', dir, key, image, json, anims, width, height, frameNames, meta,
-   *        separate, css, html, animations: [{ name, fps, loop, count, checks: [{ i, ref }] }] }
-   * `ref` is a PNG file of the document frame, which must be inside dir. Returns { problems, notes }.
+   *        separate, css, html, animations: [{ name, fps, loop, count, checks: [{ i, ref }] }],
+   *        variant: { phaser: 3 | 4, renderer: 'webgl' | 'canvas' | 'webgpu' }, display: 1 }
+   * `ref` is a PNG file of the document frame, which must be inside dir. `width` and `height` are what the page draws:
+   * the frame size times `display` (the factor the sprite is shown at; its refs are already that size).
+   * Returns { problems, notes }.
    */
   async function run(job) {
     srv.state.dir = job.dir;
     srv.state.missing = [];
     const out = { problems: [], notes: [] };
+    const v = job.variant ?? {};
+    const tag = job.engine === 'phaser' ? `Phaser ${v.phaser ?? 3} ${v.renderer ?? 'webgl'}` : job.engine === 'pixi' ? `PixiJS ${v.renderer ?? 'webgl'}` : 'css';
     const errors = [];
     const win = await openWindow(job.width, job.height, errors);
     const ev = (js) => win.webContents.executeJavaScript(js, true);
     try {
       const refUrl = (f) => `/case/${path.basename(f)}`;
       const cfg = {
+        renderer: v.renderer ?? 'webgl', display: job.display ?? 1,
         key: job.key, image: `/case/${job.image}`, json: `/case/${job.json}`, anims: job.anims ? `/case/${job.anims}` : null,
         width: job.width, height: job.height, frameNames: job.frameNames ?? [], meta: job.meta ?? null,
         animations: job.animations.map((a) => ({ ...a, checks: a.checks.map((c) => ({ i: c.i, ref: refUrl(c.ref) })) })),
       };
       if (job.engine === 'phaser' || job.engine === 'pixi') {
-        await win.loadURL(`${srv.origin}/harness/${job.engine}.html`);
+        await win.loadURL(`${srv.origin}/harness/${job.engine}.html?v=${v.phaser ?? 3}`);
         const r = await Promise.race([ev(`window.runCheck(${JSON.stringify(cfg)})`), sleep(120000).then(() => ({ problems: ['the check page never finished'], notes: [], shots: {} }))]);
-        out.problems.push(...r.problems);
+        out.problems.push(...r.problems.map((p) => `[${tag}] ${p}`));
         out.notes.push(...r.notes, `${r.compared ?? 0} frames compared, worst mean ${r.worst ? r.worst.mean.toFixed(3) : '?'}, max ${r.worst ? r.worst.max.toFixed(0) : '?'}`);
-        for (const [k, url] of Object.entries(r.shots ?? {})) fs.writeFileSync(path.join(job.dir, `_web-fail-${job.engine}-${k}.png`), Buffer.from(url.split(',')[1], 'base64'));
+        if (r.soft) out.notes.push(`${tag}: not pixel-exact in ${r.soft.n} frames (worst mean ${r.soft.mean.toFixed(2)}, max ${r.soft.max.toFixed(0)}); a plain drawImage of the same atlas is exact, so this is the engine's canvas drawing`);
+        for (const [k, url] of Object.entries(r.shots ?? {})) fs.writeFileSync(path.join(job.dir, `_web-fail-${tag.replace(/[^A-Za-z0-9]+/g, '_')}-${k}.png`), Buffer.from(url.split(',')[1], 'base64'));
       } else {
-        await cssCheck(job, cfg, win, ev, out);
+        await cssCheck(job, cfg, win, ev, out, job.display ?? 1);
       }
     } catch (e) {
-      out.problems.push(`${job.engine}: ${e?.stack ?? e}`);
+      out.problems.push(`${tag}: ${e?.stack ?? e}`);
     } finally {
       win.destroy();
     }
-    for (const m of srv.state.missing) out.problems.push(`${job.engine}: the page asked for ${m}, which was not exported`);
-    for (const e of errors) out.problems.push(`${job.engine}: the page logged an error: ${e}`);
+    for (const m of srv.state.missing) out.problems.push(`${tag}: the page asked for ${m}, which was not exported`);
+    for (const e of errors) out.problems.push(`${tag}: the page logged an error: ${e}`);
     return out;
   }
 
-  async function cssCheck(job, cfg, win, ev, out) {
+  async function cssCheck(job, cfg, win, ev, out, zoom) {
     const css = fs.readFileSync(path.join(job.dir, job.css), 'utf8');
     const prefix = /class="([^"\s]+)/.exec(css.split('\n')[0])?.[1];
     const keyframes = [...css.matchAll(/@keyframes\s+(\S+)/g)].map((m) => m[1]);
@@ -100,14 +108,19 @@ async function createWebChecker() {
     let compared = 0;
     let worst = 0;
     const shoot = async (label, classes, ms, want, refFile) => {
-      const s = await ev(`cssShow(${JSON.stringify(classes)}, ${ms === null ? 'null' : ms})`);
-      win.setContentSize(Math.max(s.w, 120), Math.max(s.h, 120));
-      await sleep(30);
-      const s2 = await ev(`cssShow(${JSON.stringify(classes)}, ${ms === null ? 'null' : ms})`);
-      const img = await win.webContents.capturePage({ x: 0, y: 0, width: s2.w, height: s2.h });
-      const size = img.getSize();
-      const url = img.toDataURL();
-      const res = await ev(`cssCompare(${JSON.stringify(url)}, ${s2.w}, ${s2.h}, ${JSON.stringify(`/case/${path.basename(refFile)}`)})`);
+      let s2, img, size, url, res;
+      // A first screenshot can be taken before the page has settled after a resize, so a miss gets one more go.
+      for (let attempt = 0; attempt < 2; attempt++) {
+        const s = await ev(`cssShow(${JSON.stringify(classes)}, ${ms === null ? 'null' : ms}, ${zoom})`);
+        win.setContentSize(Math.max(s.w, 120), Math.max(s.h, 120));
+        await sleep(30 + attempt * 200);
+        s2 = await ev(`cssShow(${JSON.stringify(classes)}, ${ms === null ? 'null' : ms}, ${zoom})`);
+        img = await win.webContents.capturePage({ x: 0, y: 0, width: s2.w, height: s2.h });
+        size = img.getSize();
+        url = img.toDataURL();
+        res = await ev(`cssCompare(${JSON.stringify(url)}, ${s2.w}, ${s2.h}, ${JSON.stringify(`/case/${path.basename(refFile)}`)})`);
+        if (res.ok) break;
+      }
       compared++;
       if (res.m) worst = Math.max(worst, res.m.mean);
       if (!res.ok) {

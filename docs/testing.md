@@ -183,7 +183,7 @@ xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/export.cjs [out
 | Option | |
 |---|---|
 | `outDir` | Where outputs and `report.json` go (default: a new folder in the system temp dir). |
-| `--only=gif,mp4` | Only these formats: `png svg pngseq apng gif mp4 webm sheet interactives psd pdf ai prores godot-bones`. |
+| `--only=gif,mp4` | Only these formats: `png svg pngseq apng gif mp4 webm sheet interactives psd pdf ai prores godot-bones svganim`. |
 | `--templates=a,b` | Only these templates: `bouncing-ball hero-sprites blank-vector blank-pixel bouncing-logo stress kitchen-sink`. |
 | `--skip=files` | Skip save/open/autosave/close. `--skip=godot` skips the Godot checks. |
 | `--show` | Leave the window visible. |
@@ -206,12 +206,19 @@ WEB_ENGINES=1 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/e
 ```
 
 Loads the exported sheets in the real thing, in a window on the virtual display (it has to be shown: a hidden window stops
-WebGL animation frames). Phaser 3.90.0 and PixiJS 8.23.0 are pinned in `scripts/e2e/web-engines/engines.cjs`. The first run
+WebGL animation frames). Phaser 3.90.0, Phaser 4.2.1 and PixiJS 8.23.0 are pinned in `scripts/e2e/web-engines/engines.cjs`. The first run
 downloads each package from the npm registry, checks it against the pinned sha512, and unpacks its browser build into
 `~/.cache/frameling-web-engines` (override with `WEB_ENGINES_DIR`), so nothing goes into `package.json`. The check
 serves the export folder over http on 127.0.0.1 and loads it the way a web page would, with the code from the help topics.
-Chromium needs the software GL switches the harness sets (`ignore-gpu-blocklist`, SwiftShader), or WebGL is refused on a
-virtual display.
+Chromium needs `ignore-gpu-blocklist` (the harness sets it), or WebGL is refused on a virtual display; `enable-unsafe-webgpu`
+adds WebGPU, which Electron 45 (Chromium 156) then has on the software Vulkan driver. Do not add `use-angle swiftshader` or
+`use-gl angle`: with them the GPU process drops the WebGPU device.
+
+Cases that set `allRenderers` (`play-*`, `hero-sprites` `*-grid`, `scaled*`, the plain `phaser` and `pixi` cases) load the sheet in
+every renderer: Phaser 3.90 and 4.2.1, each in WebGL and canvas, and PixiJS 8 in WebGL and WebGPU. WebGPU is probed in the
+page first; with no adapter the run says "PixiJS WebGPU skipped: ..." and goes on. Phaser's canvas renderer is checked with a
+looser limit (mean under 10 of 255) and the report says how many frames were not pixel-exact: a plain `drawImage` of the same
+atlas is exact, so the difference is in the engine's canvas drawing (scaled and trimmed sprites).
 
 | Engine | What is checked |
 |---|---|
@@ -226,6 +233,16 @@ file the export did not write is a failure too. On failure the picture the engin
 `_web-fail-*.png`. The cases per template are the engine defaults (`phaser`, `pixi`, `css`: packed, trimmed), `-grid` (no trim, no dedupe, power of
 two, see-through), `-clips` and `-names` (extra clips, one that does not loop, awkward names), and `css-separate`. Timing is
 real time, so each animation gets three goes and passes if one is within the limits.
+
+Two more groups of cases (hero and bouncing ball, in all three engines):
+
+- `scaled2x-<engine>` (art-size sheet) and `scaled0.5x-<engine>` (full-size sheet): the sprite is drawn at 2x and 0.5x with
+  nearest-neighbour filtering (Phaser `pixelArt`, PixiJS `scaleMode = 'nearest'`, CSS `image-rendering: pixelated` with
+  `zoom`) and compared with the frame scaled by ImageMagick's point filter. Packed, trimmed, padding 2, extrude 1.
+- `fps12.5-<engine>` and `fps23.976-<engine>` (with the play clips): the document's frame rate is not a whole number (the
+  Settings box only takes whole ones; a file or a plugin can carry any). Phaser's `frameRate`, PixiJS's `animationSpeed` and
+  the CSS durations must still give frames / fps. `gif`, `apng`, `mp4` and `webm` have `fps12.5` and `fps23.976` cases too
+  (GIF keeps the total time with whole 1/100 s delays, APNG with whole milliseconds, video stores the rate).
 
 ### Clips that play another way (direction and repeat)
 
@@ -252,6 +269,14 @@ back and forth and looping, `thrice` forward 3 times, `back` backward once, `pla
   `clip-backward` export one clip and check that picture k is the document frame the order rules give. `pngseq` runs the
   same cases and holds each frame once, in the order the clip starts (`stillOrder`), whatever the repeat. The loop flag of a
   GIF or APNG follows the clip unless the box was changed by hand.
+
+- `svganim` (the Moving SVG): `clip-pingpong`, `clip-repeat3`, `clip-backward`, `defaults` for bouncing-ball, and `defaults`
+  for the Explosion template, played for real. The SVG is put in a web page over white in a Chromium window, its CSS animations
+  are paused and set to the middle of each moment with the Web Animations API, and the window is photographed. Each picture
+  must match the app's PNG of the document frame that moment shows (so the clip is checked in play order, rmse under 0.02,
+  and nearer its own frame than the ones next to it); after the end a loop starts over and anything else holds its last
+  frame; durations and iteration counts are read back. The Explosion has a looser limit because smoke puffs are hard-edged
+  circles in SVG and soft in the app.
 
 The expected order is written out again in `export.cjs` (`oracleOrder`, from `docs/format.md`), not taken from the
 app's code, and the app's own export plan has to agree with it.

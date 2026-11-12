@@ -25,6 +25,11 @@ describe('animated SVG', () => {
     expect(parsed.querySelector('parsererror')).toBeNull();
   });
 
+  it('keeps layer blending inside the SVG, so an Add layer does not blend with the page behind it', () => {
+    const svg = animatedSvg(makeBouncingBall());
+    expect(/^<svg [^>]*style="isolation:isolate"/.test(svg)).toBe(true);
+  });
+
   it('moves a tweened symbol copy with transform keyframes instead of redrawing it', () => {
     const doc = newDoc({ width: 200, height: 100, length: 10, fps: 10 });
     doc.layers = [];
