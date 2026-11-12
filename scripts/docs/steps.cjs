@@ -83,6 +83,23 @@ async function runSteps(win, steps, { outDir, width, height, name }) {
       const [lx, ly] = pts[pts.length - 1];
       send({ type: 'mouseUp', x: lx, y: ly, button: 'left', clickCount: 1, modifiers: mods });
       await sleep(s.after ?? 80);
+    } else if (s.wheel || s.pinch) {
+      // The mouse wheel at a point: "wheel": [x, y], "dy": -120 (negative = up, which zooms in), "dx", "count" notches
+      // sent "delay" ms apart, "mods": ["shift"]. "pinch" is a trackpad pinch, which Chromium delivers as Ctrl + wheel
+      // with small deltas: "pinch": [x, y], "dy": -6 (negative = spread = zoom in), "count": 14.
+      const [x, y] = s.wheel || s.pinch;
+      const pinch = !!s.pinch;
+      // dy and dx are the page's own deltaY / deltaX (negative = up). Electron's input events count the other way round.
+      const dy = -(s.dy ?? (pinch ? -6 : -120));
+      const dx = -(s.dx ?? 0);
+      const mods = [...(s.mods ?? []), ...(pinch ? ['control'] : [])];
+      send({ type: 'mouseMove', x, y });
+      await sleep(30);
+      for (let i = 0; i < (s.count ?? (pinch ? 14 : 1)); i++) {
+        send({ type: 'mouseWheel', x, y, deltaX: dx, deltaY: dy, wheelTicksX: Math.sign(dx), wheelTicksY: pinch ? 0 : Math.sign(dy), hasPreciseScrollingDeltas: pinch, canScroll: true, modifiers: mods });
+        await sleep(s.delay ?? (pinch ? 24 : 70));
+      }
+      await sleep(s.after ?? 80);
     } else if (s.key) {
       const modifiers = s.mods ?? [];
       send({ type: 'keyDown', keyCode: s.key, modifiers });

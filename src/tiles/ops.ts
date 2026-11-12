@@ -100,6 +100,26 @@ export function setTileSize(w: number, h: number): boolean {
   return ok;
 }
 
+/** Moves the tile grid: where a tile edge sits from the stage's top-left corner, in art pixels. One undo step. */
+export function setTileGrid(x: number, y: number): boolean {
+  leaveTileEdit();
+  let ok = false;
+  store().update('Move tile grid', (d) => void (ok = m.setTileGrid(d as Doc, x, y)));
+  return ok;
+}
+
+/** The tile size and the grid start together, from the Tileset panel's form: one undo step. */
+export function setTileSettings(w: number, h: number, gx: number, gy: number): boolean {
+  leaveTileEdit();
+  let ok = false;
+  store().update('Change tile settings', (d) => {
+    const a = m.setTileSize(d as Doc, w, h);
+    const b = m.setTileGrid(d as Doc, gx, gy);
+    ok = a || b;
+  });
+  return ok;
+}
+
 /** Picks the tile the tile tools paint with. On a tilemap layer, also switches to the tile brush if no tile tool is on. */
 export function pickTile(key: number): void {
   setTileUi({ brush: key });

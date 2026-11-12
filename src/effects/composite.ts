@@ -10,6 +10,7 @@ import type { BlendMode, Doc, Layer, LayerEffect } from '../core/format';
 import { applyEffect, BufferPool, ctx2, makeCanvas, type Canvas2, type Ctx } from './apply';
 import { activeEffects, compositeOp, isPixelBlend } from './model';
 import { blendPixels } from './pixelBlend';
+import { blitPixelsGpu } from './pixelBlendGL';
 import type { PlanNode, PlanStep } from './plan';
 
 export interface CompositeHooks {
@@ -153,8 +154,9 @@ function blit(g: Ctx, c: Canvas2, blend: BlendMode | undefined, alpha: number): 
   g.restore();
 }
 
-/** Blend modes the canvas lacks: mixes the two pictures pixel by pixel and puts the result back. */
+/** Blend modes the canvas lacks: mixed on the GPU when there is one, else pixel by pixel on the CPU. */
 function blitPixels(g: Ctx, c: Canvas2, blend: BlendMode, alpha: number): void {
+  if (blitPixelsGpu(g, c, blend, alpha)) return;
   const w = c.width;
   const h = c.height;
   const back = g.getImageData(0, 0, w, h);

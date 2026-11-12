@@ -161,8 +161,11 @@ module.exports = [
     fold('symbol-props', 'effects'), { wait: 600 },
     draw([[560, 290], [500, 250], [430, 220]], { steps: 14, delay: 28 }), { wait: 1800 }, STOP] },
   // Moving around the page: zoom in with the Zoom tool, slide with the Hand tool, then fit it all again.
-  { name: 'canvas-navigation', steps: [T('bouncing-ball'), { wait: 600 }, tool('zoom'), { wait: 600 }, away, WARM, REC([0, 0, 1280, 800], 100), { wait: 1000 },
-    { click: [495, 160], after: 1000 }, { click: [495, 160], after: 1000 }, { click: [495, 160], after: 1200 }, tool('hand'), { wait: 700 },
+  { name: 'canvas-navigation', steps: [T('bouncing-ball'), { wait: 600 }, away, WARM, REC([0, 0, 1280, 800], 100), { wait: 1000 },
+    // The wheel zooms towards the pointer, a trackpad pinch zooms too, Shift+wheel slides sideways, the Hand tool drags the page.
+    { wheel: [495, 190], dy: -100, count: 4, delay: 140, after: 1200 }, { pinch: [495, 190], dy: -6, count: 12, delay: 40, after: 1200 },
+    { wheel: [495, 269], dx: 0, dy: 120, count: 3, delay: 110, mods: ['shift'], after: 1000 },
+    tool('hand'), { wait: 700 },
     { drag: [[480, 260], [440, 330], [400, 400]], steps: 10, delay: 26 }, { wait: 1000 }, { key: '0', mods: ['control'], after: 1800 }, STOP] },
   // The pen: click for corners, drag for curves, click the first point to close the leaf.
   { name: 'tool-pen', steps: [T('blank-vector'), view(0.6), UI({ color: '#1d1b26', fillColor: '#93cdb0' }), tool('pen'), { wait: 700 }, away, WARM, REC([113, 47, 764, 385], 80), { wait: 900 },

@@ -81,8 +81,13 @@ and nothing changes, and the promise rejects with a message saying why.
 | `setShapeStyle` | `drawingId`, `shapeId`, any of `color`, `fill`, `opacity` |
 | `removeShape` | `drawingId`, `shapeId` |
 | `addMarker` / `removeMarker` | `frame`, `name` / `markerId` |
-| `addClip` / `removeClip` | `name`, `start`, `end`, `loop` / `clipId` |
+| `addClip` / `removeClip` | `name`, `start`, `end`, `loop`, `direction`, `repeat` / `clipId` |
 | `addSwatch` | `name`, `color` |
+
+`addClip`'s `direction` is `'forward'` (the default), `'reverse'`, `'pingpong'` or `'pingpong-reverse'`, and `repeat` is
+how many times it plays, a whole number from 1 to 999. Give a `repeat` without `loop` and the clip plays that many times
+instead of for ever; `loop: true` plays for ever and ignores `repeat`. Both are optional, so older plugins keep working
+(`apiVersion` is still 1).
 
 Edits are refused while a symbol or tile is open for editing in place.
 

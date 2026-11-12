@@ -6,17 +6,19 @@ import { getCommand } from '../core/registry';
 import { Icon } from '../ui/icons';
 import { findTile, tileDrawingAt } from './model';
 import * as ops from './ops';
-import { setTileUi, useTileUi } from './state';
+import { getTileUi, setTileUi, useTileUi } from './state';
 import { TileThumb } from './TileThumb';
 import './tiles.css';
 
 const run = (id: string) => void getCommand(id)?.run();
 
-function SizeForm({ w, h, onDone }: { w: number; h: number; onDone: () => void }) {
+function SizeForm({ w, h, gx, gy, onDone }: { w: number; h: number; gx: number; gy: number; onDone: () => void }) {
   const [tw, setW] = useState(String(w));
   const [th, setH] = useState(String(h));
+  const [x, setX] = useState(String(gx));
+  const [y, setY] = useState(String(gy));
   const apply = () => {
-    ops.setTileSize(Number(tw), Number(th));
+    ops.setTileSettings(Number(tw), Number(th), Number(x), Number(y));
     onDone();
   };
   return (
@@ -36,6 +38,16 @@ function SizeForm({ w, h, onDone }: { w: number; h: number; onDone: () => void }
         Height
         <input type="number" min={1} max={256} value={th} onChange={(e) => setH(e.target.value)} />
       </label>
+      <span className="tz-grid-start" title="Where a tile edge sits from the top-left corner of the stage. Leave at 0 when your tiles start at the corner. You can also drag the round handle on the canvas.">
+        <label>
+          Grid starts at x
+          <input type="number" min={0} max={255} value={x} onChange={(e) => setX(e.target.value)} aria-label="Grid starts at x" />
+        </label>
+        <label>
+          y
+          <input type="number" min={0} max={255} value={y} onChange={(e) => setY(e.target.value)} aria-label="Grid starts at y" />
+        </label>
+      </span>
       <button type="submit" className="cv-action">
         Set
       </button>
@@ -53,8 +65,8 @@ export function TilesetPanel() {
   const frame = useStore((s) => s.ui.frame);
   const nested = useStore(() => store().nestedTag());
   const editing = nested ? ops.editingTileKey() : 0;
-  const { brush, tileMode } = useTileUi((s) => s);
-  const [sizing, setSizing] = useState(false);
+  const { brush, tileMode, sizeForm: sizing } = useTileUi((s) => s);
+  const setSizing = (v: boolean | ((x: boolean) => boolean)) => setTileUi({ sizeForm: typeof v === 'function' ? v(getTileUi().sizeForm) : v });
   const [renaming, setRenaming] = useState(0);
   const [drag, setDrag] = useState<{ key: number; over: number } | null>(null);
   const ts = doc.tileset;
@@ -100,11 +112,11 @@ export function TilesetPanel() {
         >
           <Icon name="tile-mode" size={16} />
         </button>
-        <button type="button" className="tz-size" title="Change the tile size" onClick={() => setSizing((v) => !v)}>
+        <button type="button" className="tz-size" title="Change the tile size, and where the tile grid starts" onClick={() => setSizing((v) => !v)}>
           {ts ? `${ts.tileWidth} × ${ts.tileHeight}` : '16 × 16'}
         </button>
       </div>
-      {sizing && <SizeForm w={ts?.tileWidth ?? 16} h={ts?.tileHeight ?? 16} onDone={() => setSizing(false)} />}
+      {sizing && <SizeForm w={ts?.tileWidth ?? 16} h={ts?.tileHeight ?? 16} gx={ts?.gridX ?? 0} gy={ts?.gridY ?? 0} onDone={() => setSizing(false)} />}
 
       {tiles.length ? (
         <div className="tz-grid" role="listbox" aria-label="Tiles">

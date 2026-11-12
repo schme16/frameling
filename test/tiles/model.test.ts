@@ -19,6 +19,8 @@ import {
   mirrorFlags,
   moveTile,
   rotateFlags,
+  clampGrid,
+  setTileGrid,
   setTileSize,
   tileFrameIndex,
   tileUsage,
@@ -236,5 +238,52 @@ describe('a tile grid that starts off the corner', () => {
     const back = loadFile(saveFile(doc)).doc;
     expect(back.tileset!.gridX).toBeUndefined();
     expect(back.tileset!.gridY).toBeUndefined();
+  });
+});
+
+describe('moving the tile grid', () => {
+  it('sets, clamps and clears the grid start, and says when nothing changed', () => {
+    const doc = newDoc({ name: 't', width: 10, height: 6 });
+    ensureTileset(doc, 4, 4);
+    expect(setTileGrid(doc, 0, 0)).toBe(false);
+    expect(setTileGrid(doc, 2, 9)).toBe(true);
+    expect([doc.tileset!.gridX, doc.tileset!.gridY]).toEqual([2, 3]);
+    expect(setTileGrid(doc, 2, 3)).toBe(false);
+    expect(setTileGrid(doc, 0, -5)).toBe(true);
+    expect(doc.tileset!.gridX).toBeUndefined();
+    expect(doc.tileset!.gridY).toBeUndefined();
+    expect(clampGrid(7.6, 4)).toBe(3);
+    expect(clampGrid(NaN, 4)).toBe(0);
+  });
+
+  it('keeps the tiles on a map where they are in the grid, and grows the map to cover the stage', () => {
+    const doc = newDoc({ name: 't', width: 10, height: 6 });
+    ensureTileset(doc, 4, 4);
+    const layer = newTilemapLayer('T', 1);
+    const g = tilemapGrid(doc, layer);
+    const map = newTilemapDrawing(g.columns, g.rows);
+    expect([map.columns, map.rows]).toEqual([3, 2]);
+    map.cells[1] = makeCell(5);
+    map.cells[3 + 2] = makeCell(6);
+    doc.drawings[map.id] = map;
+    layer.cels.push({ id: 'c1', start: 0, length: 1, drawingId: map.id });
+    doc.layers.push(layer);
+    setTileGrid(doc, 1, 1);
+    const grown = doc.drawings[map.id] as typeof map;
+    expect(tilemapGrid(doc, layer)).toEqual({ columns: 4, rows: 3 });
+    expect([grown.columns, grown.rows]).toEqual([4, 3]);
+    expect(grown.cells[1]).toBe(makeCell(5));
+    expect(grown.cells[4 + 2]).toBe(makeCell(6));
+  });
+
+  it('keeps the grid start inside the tile when the tile gets smaller, and the file keeps it', () => {
+    const doc = newDoc({ name: 't', width: 10, height: 6 });
+    ensureTileset(doc, 8, 8);
+    setTileGrid(doc, 6, 2);
+    setTileSize(doc, 4, 4);
+    expect(doc.tileset!.gridX).toBeUndefined();
+    expect(doc.tileset!.gridY).toBe(2);
+    const { doc: back } = loadFile(saveFile(doc));
+    expect(back.tileset!.gridY).toBe(2);
   });
 });

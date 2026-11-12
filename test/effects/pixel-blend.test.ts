@@ -63,3 +63,16 @@ describe('pixel blend modes (Linear dodge, Subtract, Divide)', () => {
     expect(blendFor(18)).toBe('divide');
   });
 });
+
+describe('GPU path for the pixel-mixed blend modes', () => {
+  it('says no (so the CPU path runs) when there is no WebGL2, or the mode is not one of the three', async () => {
+    const { blitPixelsGpu, setPixelBlendGpu } = await import('../../src/effects/pixelBlendGL');
+    const g = { canvas: { width: 2, height: 2 } } as never;
+    const top = { width: 2, height: 2 } as never;
+    expect(blitPixelsGpu(g, top, 'divide', 1)).toBe(false);
+    expect(blitPixelsGpu(g, top, 'multiply', 1)).toBe(false);
+    setPixelBlendGpu(false);
+    expect(blitPixelsGpu(g, top, 'subtract', 1)).toBe(false);
+    setPixelBlendGpu(true);
+  });
+});

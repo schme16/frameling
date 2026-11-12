@@ -23,6 +23,12 @@ const WIN_H = 900;
 app.commandLine.appendSwitch('enable-precise-memory-info');
 app.commandLine.appendSwitch('js-flags', '--expose-gc');
 app.commandLine.appendSwitch('disable-renderer-backgrounding');
+// No GPU (xvfb): software WebGL, so the WebGL paths can run at all (the numbers are then software numbers).
+if (process.env.PERF_SOFTWARE_GL === '1') {
+  app.commandLine.appendSwitch('ignore-gpu-blocklist');
+  app.commandLine.appendSwitch('enable-unsafe-swiftshader');
+  app.commandLine.appendSwitch('use-angle', 'swiftshader');
+}
 app.commandLine.appendSwitch('disable-background-timer-throttling');
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -102,6 +108,7 @@ true;
 async function main() {
   ipcMain.handle('app:launchFile', () => null);
   ipcMain.handle('recent:list', () => []);
+  ipcMain.handle('library:list', () => []);
   ipcMain.handle('autosave:read', () => null);
   await app.whenReady();
   // A window that is truly hidden gets one rAF a second with this app (nothing is presented), which makes every
@@ -367,6 +374,36 @@ async function main() {
       const skipped = bag.painted.slice(1).reduce((n, p, i) => n + Math.max(0, p.frame - bag.painted[i].frame - 1), 0);
       out[lap] = { framesPainted: bag.painted.length, framesSkipped: skipped, paintIntervalMs: stats(dt), latePaints: dt.filter((d) => d > (1000 / 24) * 1.5).length, paintMs: stats(bag.mainMs), longTasks: longs.length, longTaskMaxMs: longs.length ? Math.round(Math.max(...longs.map((l) => l.d))) : 0 };
     }
+    return out;
+  }
+
+  // ------------------------------------------------------------------ pixel-mixed blend modes
+  // One 1920x1080 frame: a backdrop and three layers on Linear dodge, Subtract and Divide, rendered by the single renderer
+  // (what an export does), with the GPU path off (pixel by pixel on the CPU, the old way) and on.
+  async function pixelblend() {
+    const spec = { width: 1920, height: 1080, frames: 1, layers: 4, strokesPer: 12, pts: 14, opacity: 1 };
+    const out = {};
+    // The same frame with every layer on Normal, for what the drawing alone costs.
+    {
+      const ms = [];
+      for (let lap = 0; lap < 5; lap++) ms.push(await js(`window.__framelingEffects.renderMs(window.__h.mkDoc(${JSON.stringify(spec)}), 0, 6)`));
+      out.normalMs = stats(ms);
+    }
+    for (const gpu of [false, true]) {
+      const ms = [];
+      for (let lap = 0; lap < 5; lap++) {
+        ms.push(
+          await js(`(() => {
+            const doc = window.__h.mkDoc(${JSON.stringify(spec)});
+            ['linear-dodge', 'subtract', 'divide'].forEach((m, i) => { doc.layers[i + 1].blend = m; doc.layers[i + 1].opacity = [0.8, 1, 0.6][i]; });
+            const E = window.__framelingEffects; E.setPixelBlendGpu(${gpu});
+            return E.renderMs(doc, 0, 6);
+          })()`),
+        );
+      }
+      out[gpu ? 'gpu' : 'cpu'] = { frameMs: stats(ms), gpuBlits: await js('window.__framelingEffects.gpuBlits()') };
+    }
+    out.speedup = Math.round((out.cpu.frameMs.p50 / out.gpu.frameMs.p50) * 100) / 100;
     return out;
   }
 
@@ -658,7 +695,7 @@ async function main() {
     return out;
   }
 
-  const tests = { draw: drawLong, playback, rigfx, templates, zoompan: zoomPan, onioncam: onionCamera, memory, soak };
+  const tests = { draw: drawLong, playback, rigfx, pixelblend, templates, zoompan: zoomPan, onioncam: onionCamera, memory, soak };
   await load();
   const gpu = await app.getGPUInfo('basic').catch(() => null);
   const feat = app.getGPUFeatureStatus();

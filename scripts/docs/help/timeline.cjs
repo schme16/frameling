@@ -216,10 +216,11 @@ module.exports = [
     steps: [
       ...open('bouncing-ball', [{ click: [fx(9), 621], after: 500 }, ...only('effects')]),
       { click: [1053, 321], after: 700 },
-      { click: [1000, 350], after: 700 },
-      { click: [1053, 321], after: 700 },
-      { move: [1000, 350], after: 600 },
-      { shot: '@', crop: [108, 40, 1164, 680] },
+      // The list is long: scroll it so the three newest modes (Glow brighter plain, Take away, Brighten by dividing) show.
+      js(`(() => { const l = document.querySelector('.fx-blend-list'); l.scrollTop = l.scrollHeight; })()`),
+      { wait: 300 },
+      { move: [1050, 606], after: 600 },
+      { shot: '@', crop: [108, 40, 1164, 750] },
     ],
   },
   {

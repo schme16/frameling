@@ -258,6 +258,27 @@ module.exports = [
     ],
   },
   {
+    // The tile grid starting a few pixels in: the Tileset panel's size form with Grid starts at x, y, and the handle on the canvas.
+    name: 'tile-grid',
+    prefs: { showTips: false },
+    steps: [
+      js(`${F}.template('tileset')`),
+      wait(600),
+      js(`${F}.showPanel('tileset')`),
+      wait(400),
+      js(`(() => { const st = ${F}.store(); const l = st.get().doc.layers.find((x) => x.name === 'Ground'); st.setUi({ activeLayerId: l.id, tool: 'tile-brush' }); st.update('Grid', (d) => { d.tileset.gridX = 5; d.tileset.gridY = 7; }); })()`),
+      js(`${F}.run('view.fit')`),
+      wait(500),
+      js(`document.querySelector('.tz-size')?.click()`),
+      wait(500),
+      { down: [214, 108] },
+      { held: [217, 111] },
+      { held: [219, 114], after: 300 },
+      { shot: '@', crop: [120, 50, 1070, 680] },
+      { up: [219, 114] },
+    ],
+  },
+  {
     name: 'export-tileset',
     steps: [
       js(`${F}.template('tileset')`),
@@ -530,13 +551,44 @@ module.exports = [
   },
   {
     // The same renderer in a frame: a subframe has no desktop bridge, so it starts up as the browser version does.
+    // The frame is a plain drawn browser window (tab, back/forward/reload, address bar) in neutral greys, no real browser's look.
     name: 'web-browser',
     prefs: { showTips: false },
+    size: [1280, 884],
     steps: [
-      js(`(() => { const f = document.createElement('iframe'); f.id = 'web-frame'; f.src = new URL('index.html?debug=1', location.href).href; f.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;border:0;z-index:99999;background:#000'; document.body.appendChild(f); return true; })()`),
+      js(`(() => {
+        const dark = (() => { const m = getComputedStyle(document.body).backgroundColor.match(/\\d+/g) || [0, 0, 0]; return (0.2126 * m[0] + 0.7152 * m[1] + 0.0722 * m[2]) < 128; })();
+        const c = dark ? { strip: '#1c1b22', bar: '#2b2a33', tab: '#2b2a33', pill: '#1c1b22', text: '#d9d6e2', mute: '#8d8a99', line: '#3a3945' } : { strip: '#dcd8d0', bar: '#f4f1ea', tab: '#f4f1ea', pill: '#e6e2d8', text: '#2a2833', mute: '#7a7686', line: '#c9c4b8' };
+        const svg = (d, w = 16) => '<svg width="' + w + '" height="' + w + '" viewBox="0 0 16 16" fill="none" stroke="' + c.mute + '" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">' + d + '</svg>';
+        const chrome = document.createElement('div');
+        chrome.id = 'web-chrome';
+        chrome.style.cssText = 'position:fixed;left:0;top:0;right:0;height:84px;z-index:99999;font:13px system-ui,sans-serif;color:' + c.text + ';background:' + c.strip + ';border-bottom:1px solid ' + c.line;
+        chrome.innerHTML =
+          '<div style="height:40px;display:flex;align-items:flex-end;padding:0 12px">' +
+            '<div style="display:flex;align-items:center;gap:8px;width:220px;height:32px;padding:0 12px;border-radius:9px 9px 0 0;background:' + c.tab + '">' +
+              '<span style="width:14px;height:14px;border-radius:4px;background:#ffc94a;display:inline-block"></span><span style="flex:1">Frameling</span>' + svg('<path d="M4.5 4.5l7 7M11.5 4.5l-7 7"/>', 12) +
+            '</div>' +
+            '<span style="margin:0 0 8px 10px">' + svg('<path d="M8 3.5v9M3.5 8h9"/>', 14) + '</span>' +
+          '</div>' +
+          '<div style="height:43px;display:flex;align-items:center;gap:10px;padding:0 14px;background:' + c.bar + '">' +
+            svg('<path d="M10 3.5L5.5 8l4.5 4.5"/>', 18) + svg('<path d="M6 3.5L10.5 8 6 12.5"/>', 18) + svg('<path d="M12.5 8a4.5 4.5 0 11-1.4-3.3M12.5 3v2.4h-2.4"/>', 18) +
+            '<div style="flex:1;height:28px;border-radius:14px;background:' + c.pill + ';display:flex;align-items:center;gap:8px;padding:0 14px">' +
+              svg('<rect x="3.5" y="7" width="9" height="6.5" rx="1.5"/><path d="M5.5 7V5.2a2.5 2.5 0 015 0V7"/>', 14) +
+              '<span style="color:' + c.text + '">frameling.example/app</span>' +
+            '</div>' +
+            svg('<circle cx="8" cy="3.5" r="0.6"/><circle cx="8" cy="8" r="0.6"/><circle cx="8" cy="12.5" r="0.6"/>', 18) +
+          '</div>';
+        document.body.appendChild(chrome);
+        const f = document.createElement('iframe');
+        f.id = 'web-frame';
+        f.src = new URL('index.html?debug=1', location.href).href;
+        f.style.cssText = 'position:fixed;left:0;top:84px;width:100%;height:calc(100% - 84px);border:0;z-index:99999;background:#000';
+        document.body.appendChild(f);
+        return true;
+      })()`),
       wait(4000),
-      { click: [655, 22], after: 700 },
-      { move: [726, 354], after: 2200 },
+      { click: [655, 106], after: 700 },
+      { move: [726, 438], after: 2200 },
       { shot: '@' },
     ],
   },

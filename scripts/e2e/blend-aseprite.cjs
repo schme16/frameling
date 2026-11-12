@@ -15,6 +15,13 @@ const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 const { composite } = require('./blend-reference.cjs');
 
+// Software WebGL (SwiftShader) when there is no GPU, so the GPU path of Linear dodge, Subtract and Divide is the one measured.
+if (process.env.BLEND_NO_SOFTWARE_GL !== '1') {
+  app.commandLine.appendSwitch('ignore-gpu-blocklist');
+  app.commandLine.appendSwitch('enable-unsafe-swiftshader');
+  app.commandLine.appendSwitch('use-angle', 'swiftshader');
+}
+
 const root = path.resolve(__dirname, '../..');
 const ASE = process.env.ASEPRITE_BIN;
 const outDir = path.resolve(process.argv.slice(2).find((a) => !a.endsWith('blend-aseprite.cjs') && !a.startsWith('--')) ?? fs.mkdtempSync(path.join(os.tmpdir(), 'frameling-blend-')));
