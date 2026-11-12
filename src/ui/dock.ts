@@ -207,8 +207,10 @@ export function syncPanels(): void {
 }
 
 // Where panels were when their feature was turned off, so they come back to the same place. Kept apart from the layout
-// (and across restarts), because the layout forgets a panel that is not registered.
-const PARKED_KEY = 'frameling.dock.parked.v1';
+// (and across restarts), because the layout forgets a panel that is not registered. Each workspace has its own places,
+// so a panel never comes back into a layout it was not in.
+const PARKED_KEY = 'frameling.dock.parked.v2';
+const PARKED_OLD_KEY = 'frameling.dock.parked.v1';
 interface Parked {
   /** The zone it was in, or the window (with its box) when it floated. */
   zone?: DockZone;
@@ -219,35 +221,70 @@ interface Parked {
   /** The person had closed it. */
   hidden?: boolean;
 }
-const readParked = (): Record<string, Parked> => {
-  const v = readRaw<unknown>(PARKED_KEY, {});
-  return v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, Parked>) : {};
+type ParkedByWorkspace = Record<string, Record<string, Parked>>;
+const isRecord = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
+const readAllParked = (): ParkedByWorkspace => {
+  const v = readRaw<unknown>(PARKED_KEY, null);
+  if (isRecord(v)) return v as ParkedByWorkspace;
+  // The first version kept one list for whichever workspace was open: it now belongs to the one that is open.
+  const old = readRaw<unknown>(PARKED_OLD_KEY, null);
+  if (!isRecord(old)) return {};
+  try {
+    localStorage.removeItem(PARKED_OLD_KEY);
+  } catch {
+    // Nothing to do.
+  }
+  return { [dock.get().workspaceId]: old as Record<string, Parked> };
+};
+const writeAllParked = (all: ParkedByWorkspace): void => {
+  const kept = Object.fromEntries(Object.entries(all).filter(([, v]) => Object.keys(v).length));
+  writeJson(PARKED_KEY, kept);
 };
 
-/** Remembers where these panels are, just before their feature is turned off and they leave the layout. */
-export function parkPanels(ids: string[]): void {
-  const l = dock.get().layout;
-  const parked = readParked();
-  for (const id of ids) {
-    const at = locate(l, id);
-    if (at && 'zone' in at) parked[id] = { zone: at.zone, index: l.zones[at.zone].tabs.indexOf(id), front: l.zones[at.zone].active === id };
-    else if (at) {
-      const f = l.floats.find((x) => x.id === at.float)!;
-      parked[id] = { float: { id: f.id, x: f.x, y: f.y, w: f.w, h: f.h }, index: f.tabs.indexOf(id), front: f.active === id };
-    } else if (l.hidden.includes(id)) parked[id] = { hidden: true };
-    else delete parked[id];
+/** Where a panel is in a layout, as something that can be put back. Null when the layout does not hold it. */
+function placeInLayout(l: Layout, id: string): Parked | null {
+  const at = locate(l, id);
+  if (at && 'zone' in at) return { zone: at.zone, index: l.zones[at.zone].tabs.indexOf(id), front: l.zones[at.zone].active === id };
+  if (at) {
+    const f = l.floats.find((x) => x.id === at.float)!;
+    return { float: { id: f.id, x: f.x, y: f.y, w: f.w, h: f.h }, index: f.tabs.indexOf(id), front: f.active === id };
   }
-  writeJson(PARKED_KEY, parked);
+  return l.hidden.includes(id) ? { hidden: true } : null;
+}
+
+/** Remembers where these panels are, just before their feature is turned off and they leave the layout (this workspace's). */
+export function parkPanels(ids: string[]): void {
+  const s = dock.get();
+  const all = readAllParked();
+  const mine = { ...all[s.workspaceId] };
+  for (const id of ids) {
+    const at = placeInLayout(s.layout, id);
+    if (at) mine[id] = at;
+    else delete mine[id];
+  }
+  writeAllParked({ ...all, [s.workspaceId]: mine });
+}
+
+/** Panels a workspace's saved layout holds that nothing registers right now (their feature is off): their places are kept for it. */
+function parkMissing(w: Workspace): void {
+  const have = new Set(allPanels().map((p) => p.id));
+  const gone = [...placedIds(w.layout), ...w.layout.hidden].filter((id) => !have.has(id));
+  if (!gone.length) return;
+  const all = readAllParked();
+  const mine = { ...all[w.id] };
+  for (const id of gone) if (!mine[id]) mine[id] = placeInLayout(w.layout, id) ?? { hidden: true };
+  writeAllParked({ ...all, [w.id]: mine });
 }
 
 /**
- * Panels that came back (their feature was turned on) go where they were when it was turned off: the same zone or
- * window and place among its tabs, or closed if they were closed. Panels with no memory of a place are placed in their
- * home zone if this layout has never seen them, and otherwise stay closed.
+ * Panels that came back (their feature was turned on) go where they were when it was turned off, in the workspace that
+ * is open: the same zone or window and place among its tabs, or closed if they were closed. Panels with no memory of a
+ * place are placed in their home zone if this layout has never seen them, and otherwise stay closed.
  */
 export function replacePanels(ids: string[]): void {
   const s = dock.get();
-  const parked = readParked();
+  const all = readAllParked();
+  const parked = all[s.workspaceId] ?? {};
   const mine = ids.filter((id) => parked[id] && getPanel(id));
   if (!s.fresh && mine.length) {
     const made = new Map<string, string>();
@@ -276,11 +313,12 @@ export function replacePanels(ids: string[]): void {
       Object.assign(l, next);
     });
   }
-  if (mine.length) {
-    const left = readParked();
-    for (const id of mine) delete left[id];
-    writeJson(PARKED_KEY, left);
+  // Other workspaces are rebuilt from their own layouts when they are opened, so what they kept for these panels goes too.
+  let changed = false;
+  for (const list of Object.values(all)) {
+    for (const id of ids) if (id in list) (delete list[id], (changed = true));
   }
+  if (changed) writeAllParked(all);
   syncPanels();
 }
 
@@ -458,6 +496,8 @@ export function applyWorkspace(id: string): boolean {
   const w = listWorkspaces().find((x) => x.id === id);
   if (!w) return false;
   const s = dock.get();
+  // Panels of a feature that is off are not in the reconciled layout: keep their places for when it comes back.
+  parkMissing(w);
   const layout = reconcile(w.layout);
   // The ones that come with the app only say where panels go: the person's own panel names and where the tool rail sits
   // stay. Each workspace has its own tool arrangement (see railOf), so none is carried in the layout.
@@ -511,6 +551,11 @@ export function deleteWorkspace(id: string): void {
   const s = dock.get();
   if (!s.user.some((w) => w.id === id)) return;
   const { [id]: _gone, ...rails } = s.rails ?? {};
+  const parked = readAllParked();
+  if (parked[id]) {
+    delete parked[id];
+    writeAllParked(parked);
+  }
   commit({ ...s, user: s.user.filter((w) => w.id !== id), workspaceId: s.workspaceId === id ? 'draw' : s.workspaceId, rails: Object.keys(rails).length ? rails : undefined });
   if (s.workspaceId === id) applyWorkspace('draw');
 }
