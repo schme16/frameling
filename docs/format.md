@@ -180,7 +180,8 @@ VariationOverrides = { stage?: Patch, layers?: ListOverride<Layer, ListOverride<
 Patch              = { set?: { [property]: value }, del?: property[] }       // only what changed
 ListOverride<T,S>  = { items?: { [id]: { patch?: Patch, sub?: S } }, removed?: id[], added?: T[], order?: id[] }
 DrawingOverride    = { replaced?: true, patch?: Patch, shapes?: ListOverride<Shape>, view?: Patch, diff?: DrawingDiff }
-DrawingDiff        = { rect?: { x, y, w, h, pixels: "pixels/diff_<id>.png" }, cells?: [slot, value, slot, value, ...] }   // file only
+DrawingDiff        = { rect?: Rect, rects?: Rect[], cells?: [slot, value, slot, value, ...] }   // file only
+Rect               = { x, y, w, h, pixels: "pixels/diff_<id>.png" }
 ```
 
 - `stage` patches `width`, `height`, `background`, `length`, `clips`, `markers`, `flow`, `guides`, `inOut`,
@@ -195,7 +196,8 @@ DrawingDiff        = { rect?: { x, y, w, h, pixels: "pixels/diff_<id>.png" }, ce
 - `drawings` is by the *original's* drawing id: a recolour is `shapes.items[shapeId].patch.set.fill`, a changed camera
   key is `view`, a drawing the variation redrew whole (pixels, tiles) is `replaced: true`. In a file a redrawn
   drawing also has `diff` when the change is smaller than the drawing: `rect` is the changed rectangle (a PNG of just
-  that rectangle in `pixels/diff_<id>.png`) and `cells` the changed tile slots. Such a drawing is not in `drawings`;
+  that rectangle in `pixels/diff_<id>.png`), `rects` is up to 8 of them when the changes are far apart (a file with one
+  change keeps writing `rect`; readers take both, at most 64 rects) and `cells` the changed tile slots. Such a drawing is not in `drawings`;
   reading builds it from the original's drawing and drops `diff`. Without `diff`, the whole drawing is stored in
   `drawings` as `<original id>~<artboard id>`.
 - **Which drawings are in `doc.drawings`.** Drawings made in the variation are ordinary entries. A drawing it redrew

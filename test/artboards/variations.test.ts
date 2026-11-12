@@ -4,6 +4,7 @@ import { newDoc, newPixelDrawing, newPixelLayer, newTilemapDrawing, newVectorLay
 import type { AudioClip, CameraDrawing, Doc, Layer, PathShape, PixelDrawing, TilemapDrawing, VectorDrawing } from '../../src/core/format';
 import { onBlocked, resetStore, store } from '../../src/core/store';
 import { loadFile, saveFile } from '../../src/io/file';
+import { changedRects, MAX_DIFF_RECTS } from '../../src/artboards/variationsIo';
 import { defaultSettings } from '../../src/export/plan';
 import { artboardExport, planArtboards, setArtboardExport } from '../../src/artboards/export';
 import { followSelection } from '../../src/core/followSelection';
@@ -85,11 +86,16 @@ describe('variations: making one', () => {
     const c = a.content!;
     expect(c.layers.map((l) => l.id)).toEqual(['L2', 'L1']);
     expect(c.width).toBe(200);
-    // Its keys point at its own drawing ids, which are the original's drawings until something changes.
+    // Closed, its keys point straight at the original's drawings (no copy per key), until it overrides one.
     const cel = layerOf(c, 'L1').cels[0];
-    expect(cel.drawingId).toBe(aliasId('d1', v));
-    const own = doc().drawings[cel.drawingId] as VectorDrawing;
-    expect(own.id).toBe(cel.drawingId);
+    expect(cel.drawingId).toBe('d1');
+    expect(Object.keys(doc().drawings).filter((k) => k.endsWith(`~${v}`))).toEqual([]);
+    expect(layerOf(c, 'L1')).toBe(layerOf(artboardsOf(doc())[0].content ?? { layers: doc().layers }, 'L1'));
+    // Open, it has its own drawing id for every key: the original's drawing until an edit changes it.
+    open(v);
+    const own = doc().drawings[layerOf(doc(), 'L1').cels[0].drawingId] as VectorDrawing;
+    expect(layerOf(doc(), 'L1').cels[0].drawingId).toBe(aliasId('d1', v));
+    expect(own.id).toBe(aliasId('d1', v));
     expect(own.shapes).toBe((doc().drawings.d1 as VectorDrawing).shapes);
     expect(variationsOf(doc(), root())).toHaveLength(1);
     expect(familyIds(doc(), v)).toEqual([root(), v]);
@@ -648,8 +654,10 @@ describe('variations: settling only what an edit touched', () => {
     open(root());
     update('original drawing', (d) => void (shape(d, 'd2', 's3').fill = '#222222'));
     inStep();
-    expect(shape(doc(), aliasId('d2', b), 's3').fill).toBe('#222222');
-    expect(shape(doc(), aliasId('d2', a), 's3').fill).toBe('#222222');
+    // Variations that override nothing of d2 point at the original's drawing, so they follow it by themselves.
+    expect(layerOf(findArtboard(doc(), b)!.content!, 'L1').cels[1].drawingId).toBe('d2');
+    expect(findArtboard(doc(), a)!.content!.layers.find((l) => l.id === 'L1')!.cels[1].drawingId).toBe('d2');
+    expect(doc().drawings[aliasId('d2', b)]).toBeUndefined();
     update('original key', (d) => void d.layers.find((l) => l.id === 'L1')!.cels.push({ id: 'c8', start: 8, length: 1, drawingId: 'd1' }));
     inStep();
     expect(findArtboard(doc(), b)!.content!.layers.find((l) => l.id === 'L1')!.cels.some((c) => c.id === 'c8')).toBe(true);
@@ -838,24 +846,51 @@ describe('variations: sound, palette and what stays shared', () => {
     const v = make();
     open(v);
     const steps = store().canUndo();
-    update('Swatch', (d) => void d.swatches.push({ id: 'sw', name: 'x', color: '#123456' } as never));
+    const first = doc().swatches[0];
+    update('Rename swatch', (d) => void (d.swatches[0].name = 'renamed'));
+    update('Remove swatch', (d) => void (d.swatches = d.swatches.filter((x) => x.id !== first.id)));
     update('Folder', (d) => void (d.folders = { f1: { id: 'f1', name: 'F' } as never }));
     update('Palette', (d) => void (d.palette = { name: 'x', colors: ['#000000'] }));
     update('Symbol', (d) => void (d.symbols = { s1: { id: 's1', name: 'S', layers: [], length: 1 } as never }));
     expect(blocked).toEqual([
+      'Swatches are shared with the original. Change them there, or detach this variation.',
       'Swatches are shared with the original. Change them there, or detach this variation.',
       'Layer folders are shared with the original. Change them there, or detach this variation.',
       'The palette is shared with the original. Change it there, or detach this variation.',
       'Symbols are shared with the original. Change them there, or detach this variation.',
     ]);
     expect(store().canUndo()).toBe(steps);
-    expect(doc().swatches.some((x) => x.id === 'sw')).toBe(false);
+    expect(doc().swatches[0]).toEqual(first);
     expect(doc().folders).toBeUndefined();
     // On the original they are plain edits, shared by everyone.
     open(root());
     update('Swatch', (d) => void d.swatches.push({ id: 'sw', name: 'x', color: '#123456' } as never));
     expect(doc().swatches.some((x) => x.id === 'sw')).toBe(true);
-    expect(blocked).toHaveLength(4);
+    expect(blocked).toHaveLength(5);
+  });
+
+  it('adding a swatch is allowed while a variation is open: it is shared with the original', () => {
+    const v = make();
+    open(v);
+    const n = doc().swatches.length;
+    update('Add swatch', (d) => void d.swatches.push({ id: 'sw', name: '#123456', color: '#123456' } as never));
+    update('Add two', (d) => void d.swatches.push({ id: 'sw2', name: 'a', color: '#111111' } as never, { id: 'sw3', name: 'b', color: '#222222' } as never));
+    expect(blocked).toEqual([]);
+    expect(doc().swatches).toHaveLength(n + 3);
+    expect(doc().swatches.map((x) => x.id).slice(-3)).toEqual(['sw', 'sw2', 'sw3']);
+    // The original has it too, and the variation's overrides did not pick it up.
+    open(root());
+    expect(doc().swatches).toHaveLength(n + 3);
+    expect(findArtboard(doc(), v)!.overrides).toEqual({});
+    // Adding with something else changed at the same time is still refused whole.
+    open(v);
+    update('Add and rename', (d) => {
+      d.swatches.push({ id: 'sw4', name: 'c', color: '#333333' } as never);
+      d.swatches[0].name = 'renamed';
+    });
+    expect(blocked).toHaveLength(1);
+    expect(doc().swatches.some((x) => x.id === 'sw4')).toBe(false);
+    expect(store().undoLabel()).not.toBe('Add and rename');
   });
 });
 
@@ -906,6 +941,68 @@ describe('variations: redrawn pictures are stored as what changed', () => {
       expect(mine.pixels).toEqual(was.pixels);
     }
     expect((loaded.doc.drawings[d0.layers[0].cels[0].drawingId] as PixelDrawing).pixels[(10 * 64 + 20) * 4]).not.toBe(255);
+  });
+
+  it('two edits far apart are two small rectangles, not one big one between them', () => {
+    const d0 = animation(40);
+    resetStore(d0);
+    const alone = saveFile(doc()).length;
+    const v = make();
+    open(v);
+    // A scar in the top left corner and one in the bottom right: their bounding box is most of the picture.
+    update('Two scars on every key', (d) => {
+      for (const c of d.layers[0].cels) {
+        const a = d.drawings[c.drawingId] as PixelDrawing;
+        const px = new Uint8ClampedArray(a.pixels);
+        for (const [x0, y0] of [[2, 2], [56, 56]]) for (let y = y0; y < y0 + 4; y++) for (let x = x0; x < x0 + 4; x++) px.set([255, 0, 0, 255], (y * 64 + x) * 4);
+        a.pixels = px;
+      }
+    });
+    open(root());
+    const bytes = saveFile(doc());
+    expect(bytes.length - alone).toBeLessThan(alone * 0.08);
+    const files = unzipSync(bytes);
+    const diffs = Object.keys(files).filter((n) => n.startsWith('pixels/diff_'));
+    expect(diffs).toHaveLength(80);
+    expect(diffs.every((n) => files[n].length < 200)).toBe(true);
+    const raw = JSON.parse(strFromU8(files['doc.json']));
+    const saved = raw.artboards.find((a: { id: string }) => a.id === v).overrides.drawings;
+    const first = Object.values(saved)[0] as { diff: { rect?: unknown; rects: { w: number; h: number }[] } };
+    expect(first.diff.rect).toBeUndefined();
+    expect(first.diff.rects).toHaveLength(2);
+    // Opens to exactly the same pictures.
+    const loaded = loadFile(bytes);
+    expect(loaded.warnings).toEqual([]);
+    for (const c of findArtboard(loaded.doc, v)!.content!.layers[0].cels) {
+      const mine = loaded.doc.drawings[c.drawingId] as PixelDrawing;
+      const was = doc().drawings[c.drawingId] as PixelDrawing;
+      expect(mine.pixels).toEqual(was.pixels);
+    }
+  });
+
+  it('a stored rectangle that cannot be read leaves the others, with a warning', () => {
+    resetStore(animation(2));
+    const v = make();
+    open(v);
+    update('Two scars', (d) => {
+      const a = d.drawings[d.layers[0].cels[0].drawingId] as PixelDrawing;
+      const px = new Uint8ClampedArray(a.pixels);
+      for (const [x0, y0] of [[2, 2], [56, 56]]) for (let y = y0; y < y0 + 4; y++) for (let x = x0; x < x0 + 4; x++) px.set([255, 0, 0, 255], (y * 64 + x) * 4);
+      a.pixels = px;
+    });
+    open(root());
+    const files = unzipSync(saveFile(doc()));
+    const names = Object.keys(files).filter((n) => n.startsWith('pixels/diff_'));
+    expect(names).toHaveLength(2);
+    delete files[names[1]];
+    const loaded = loadFile(zipSync(files));
+    expect(loaded.warnings.length).toBeGreaterThan(0);
+    const k = findArtboard(loaded.doc, v)!.content!.layers[0].cels[0].drawingId;
+    const got = (loaded.doc.drawings[k] as PixelDrawing).pixels;
+    const want = (doc().drawings[k] as PixelDrawing).pixels;
+    // One scar made it, the other shows the original there.
+    const same = (x: number, y: number) => got[(y * 64 + x) * 4] === want[(y * 64 + x) * 4];
+    expect([same(2, 2), same(56, 56)].filter(Boolean)).toHaveLength(1);
   });
 
   it('a drawing changed nearly everywhere is stored whole, and the file still round trips', () => {
@@ -966,5 +1063,162 @@ describe('variations: redrawn pictures are stored as what changed', () => {
     expect([mine.cells[3], mine.cells[41], mine.cells[4]]).toEqual([9, 7, 5]);
     expect((loaded.drawings[t.id] as TilemapDrawing).cells[3]).toBe(5);
     expect(findArtboard(loaded, v)!.overrides!.drawings![t.id]).toEqual({ replaced: true });
+  });
+});
+
+describe('variations: a closed variation only has copies of what it overrides', () => {
+  const copies = (v: string) => Object.keys(doc().drawings).filter((k) => k.endsWith(`~${v}`));
+  const celsOf = (c: { layers: Layer[] }, lid: string) => layerOf(c, lid).cels.map((x) => x.drawingId);
+  const inStep = () => expect(settleVariations(doc())).toBeNull();
+
+  it('closing keeps copies for overridden drawings only, opening gives every key one again', () => {
+    const v = make();
+    open(v);
+    // Open: every key has its own drawing.
+    expect(celsOf(doc(), 'L1')).toEqual([aliasId('d1', v), aliasId('d2', v)]);
+    expect(celsOf(doc(), 'L2')).toEqual([aliasId('d3', v)]);
+    expect(copies(v).sort()).toEqual([aliasId('d1', v), aliasId('d2', v), aliasId('d3', v)].sort());
+    update('Recolour', (d) => void (shape(d, aliasId('d1', v), 's1').fill = '#ff00ff'));
+    inStep();
+    open(root());
+    inStep();
+    // Closed: the recoloured drawing has a copy, the rest is the original's own.
+    const c = findArtboard(doc(), v)!.content!;
+    expect(celsOf(c, 'L1')).toEqual([aliasId('d1', v), 'd2']);
+    expect(celsOf(c, 'L2')).toEqual(['d3']);
+    expect(copies(v)).toEqual([aliasId('d1', v)]);
+    expect(shape(doc(), aliasId('d1', v), 's1').fill).toBe('#ff00ff');
+    expect(shape(doc(), 'd1', 's1').fill).toBe('#ff0000');
+    // The untouched layer is the original's very layer.
+    expect(layerOf(c, 'L2')).toBe(layerOf(doc(), 'L2'));
+    // Open it again: all keys are its own once more, the override is kept, and a new edit stays in the variation.
+    open(v);
+    inStep();
+    expect(celsOf(doc(), 'L1')).toEqual([aliasId('d1', v), aliasId('d2', v)]);
+    expect(copies(v)).toHaveLength(3);
+    update('Recolour another', (d) => void (shape(d, aliasId('d2', v), 's3').fill = '#123456'));
+    inStep();
+    expect(shape(doc(), 'd2', 's3').fill).toBe('#0000ff');
+    expect(Object.keys(findArtboard(doc(), v)!.overrides!.drawings!).sort()).toEqual(['d1', 'd2']);
+    open(root());
+    inStep();
+    expect(copies(v).sort()).toEqual([aliasId('d1', v), aliasId('d2', v)]);
+  });
+
+  it('an edit of an overridden drawing in the original arrives, an edit of any other costs the variation nothing', () => {
+    const v = make();
+    open(v);
+    update('Recolour', (d) => void (shape(d, aliasId('d1', v), 's1').fill = '#ff00ff'));
+    open(root());
+    const before = findArtboard(doc(), v)!.content;
+    update('original d2', (d) => void (shape(d, 'd2', 's3').fill = '#222222'));
+    inStep();
+    expect(findArtboard(doc(), v)!.content).toBe(before);
+    expect(copies(v)).toEqual([aliasId('d1', v)]);
+    // d1's own override stays, and the rest of d1 follows the original.
+    update('original d1', (d) => void (shape(d, 'd1', 's2').fill = '#333333'));
+    inStep();
+    expect(shape(doc(), aliasId('d1', v), 's1').fill).toBe('#ff00ff');
+    expect(shape(doc(), aliasId('d1', v), 's2').fill).toBe('#333333');
+    // Opened, the variation sees the new d2 through its own copy of it.
+    open(v);
+    expect(shape(doc(), aliasId('d2', v), 's3').fill).toBe('#222222');
+    inStep();
+  });
+
+  it('a reset while closed drops the copy, and the key follows the original again', () => {
+    const v = make();
+    open(v);
+    update('Recolour', (d) => void (shape(d, aliasId('d1', v), 's1').fill = '#ff00ff'));
+    open(root());
+    update('Reset', (d) => void resetVariation(d, v));
+    inStep();
+    expect(copies(v)).toEqual([]);
+    expect(celsOf(findArtboard(doc(), v)!.content!, 'L1')).toEqual(['d1', 'd2']);
+    expect(findArtboard(doc(), v)!.overrides).toEqual({});
+    // Resetting one difference while open keeps every key its own.
+    open(v);
+    update('Recolour', (d) => void (shape(d, aliasId('d1', v), 's1').fill = '#ff00ff'));
+    const item = listDifferences(doc(), v).find((i) => i.reset.t === 'drawing')!;
+    update('Reset one', (d) => void resetDifference(d, v, item.reset));
+    inStep();
+    expect(celsOf(doc(), 'L1')).toEqual([aliasId('d1', v), aliasId('d2', v)]);
+    expect(shape(doc(), aliasId('d1', v), 's1').fill).toBe('#ff0000');
+  });
+
+  it('a variation opened through a file load has its own drawings too, so edits never reach the original', () => {
+    const v = make();
+    open(v);
+    update('Recolour', (d) => void (shape(d, aliasId('d1', v), 's1').fill = '#ff00ff'));
+    const loaded = loadFile(saveFile(doc())).doc;
+    expect(activeId(loaded)).toBe(v);
+    expect(layerOf(loaded, 'L1').cels.map((c) => c.drawingId)).toEqual([aliasId('d1', v), aliasId('d2', v)]);
+    resetStore(loaded);
+    update('Edit', (d) => void (shape(d, aliasId('d2', v), 's3').fill = '#abcdef'));
+    expect(shape(doc(), 'd2', 's3').fill).toBe('#0000ff');
+    expect(findArtboard(doc(), v)!.overrides!.drawings!.d2).toBeTruthy();
+    inStep();
+  });
+
+  it('a size change on a closed variation zooms its own camera keys and keeps the copies tidy', () => {
+    const doc0 = sample();
+    const cam: CameraDrawing = { id: 'k1', kind: 'camera', view: { x: 100, y: 50, zoom: 1, rotation: 0 } };
+    doc0.drawings.k1 = cam;
+    doc0.layers.push({ id: 'C', name: 'Cam', kind: 'camera', visible: true, locked: false, opacity: 1, cels: [{ id: 'ck', start: 0, length: 8, drawingId: 'k1' }] } as Layer);
+    resetStore(doc0);
+    const v = make();
+    update('Resize', (d) => void setVariationSize(d, v, 100, 200, 'fill'));
+    inStep();
+    expect((doc().drawings[aliasId('k1', v)] as CameraDrawing).view.zoom).toBe(2);
+    expect(copies(v)).toEqual([aliasId('k1', v)]);
+    expect(celsOf(findArtboard(doc(), v)!.content!, 'L1')).toEqual(['d1', 'd2']);
+  });
+});
+
+describe('variations: finding what changed in a picture', () => {
+  const blank = (w: number, h: number): PixelDrawing => newPixelDrawing(w, h);
+  const paint = (p: PixelDrawing, x0: number, y0: number, w: number, h: number) => {
+    const px = new Uint8ClampedArray(p.pixels);
+    for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) px.set([9, 9, 9, 255], (y * p.width + x) * 4);
+    return { ...p, pixels: px };
+  };
+
+  it('is empty when nothing changed and null when the sizes differ', () => {
+    expect(changedRects(blank(32, 32), blank(32, 32))).toEqual([]);
+    expect(changedRects(blank(32, 32), blank(16, 32))).toBeNull();
+  });
+
+  it('keeps one change as the tight rectangle round it', () => {
+    const a = blank(64, 64);
+    expect(changedRects(a, paint(a, 10, 20, 5, 3))).toEqual([{ x: 10, y: 20, w: 5, h: 3 }]);
+  });
+
+  it('joins changes that sit close together', () => {
+    const a = blank(64, 64);
+    const b = paint(paint(a, 10, 10, 3, 3), 18, 12, 3, 3);
+    expect(changedRects(a, b)).toEqual([{ x: 10, y: 10, w: 11, h: 5 }]);
+  });
+
+  it('keeps changes far apart separate, and caps how many there are', () => {
+    const a = blank(256, 256);
+    expect(changedRects(a, paint(paint(a, 2, 2, 4, 4), 240, 240, 4, 4))).toEqual([
+      { x: 2, y: 2, w: 4, h: 4 },
+      { x: 240, y: 240, w: 4, h: 4 },
+    ]);
+    // A row of twenty spots too far apart to join cheaply still ends up as at most the cap.
+    let b = a;
+    for (let i = 0; i < 20; i++) b = paint(b, 4 + (i % 5) * 50, 4 + Math.floor(i / 5) * 60, 6, 6);
+    const rs = changedRects(a, b)!;
+    expect(rs.length).toBeGreaterThan(1);
+    expect(rs.length).toBeLessThanOrEqual(MAX_DIFF_RECTS);
+    // Every changed pixel is inside one of them.
+    for (let y = 0; y < 256; y++) for (let x = 0; x < 256; x++) if (b.pixels[(y * 256 + x) * 4] !== a.pixels[(y * 256 + x) * 4]) expect(rs.some((r) => x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h)).toBe(true);
+  });
+
+  it('treats scattered noise as one rectangle', () => {
+    const a = blank(128, 128);
+    const px = new Uint8ClampedArray(a.pixels);
+    for (let y = 0; y < 128; y += 3) for (let x = (y * 7) % 5; x < 128; x += 5) px.set([1, 2, 3, 255], (y * 128 + x) * 4);
+    expect(changedRects(a, { ...a, pixels: px })!.length).toBe(1);
   });
 });

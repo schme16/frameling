@@ -6,7 +6,7 @@
  * variation made are ordinary entries in `drawings`; the ones it redrew (pixels, tiles) are saved as `<id>~<variation>`.
  * Everything else about it is worked out from its original when the file opens.
  */
-import { LAYER_LABELS, type Artboard, type AudioClip, type DrawingDiff, type PixelDrawing, type Cel, type Doc, type Drawing, type DrawingOverride, type Id, type Layer, type ListOverride, type Patch, type Shape, type VariationOverrides } from '../core/format';
+import { LAYER_LABELS, type Artboard, type AudioClip, type DiffRect, type DrawingDiff, type PixelDrawing, type Cel, type Doc, type Drawing, type DrawingOverride, type Id, type Layer, type ListOverride, type Patch, type Shape, type VariationOverrides } from '../core/format';
 import { readClip } from '../core/clipPlay';
 import { packAudio, unpackAudio } from '../io/audio-file';
 import { decodePng } from '../io/png';
@@ -197,25 +197,41 @@ export function readOverrides(raw: unknown, r: Pick<ArtboardReaders, 'readLayers
 
 const BIG = 1 << 24;
 
-/** A redrawn drawing's stored changes, checked: the rectangle's PNG decoded, the tile pairs as whole numbers. */
+/** Most rectangles one stored change can have (a file asking for more is cut there). */
+const MAX_READ_RECTS = 64;
+
+/** One stored rectangle, checked: its PNG decoded. Null when it cannot be read. */
+function readRect(r: unknown, io: { entries: Record<string, Uint8Array> }): DiffRect | null {
+  if (!(isObj(r) && int(r.x, 0) && int(r.y, 0) && int(r.w, 0) && int(r.h, 0) && r.x < BIG && r.y < BIG && r.w < BIG && r.h < BIG)) return null;
+  if (r.w === 0 || r.h === 0) return { x: r.x, y: r.y, w: 0, h: 0, pixels: new Uint8ClampedArray(0) };
+  if (typeof r.pixels === 'string' && /^pixels\/[A-Za-z0-9_-]+\.png$/.test(r.pixels) && io.entries[r.pixels]) {
+    try {
+      const img = decodePng(io.entries[r.pixels]);
+      if (img.width === r.w && img.height === r.h) return { x: r.x, y: r.y, w: r.w, h: r.h, pixels: img.pixels };
+    } catch {
+      // Left out, with a warning from the caller.
+    }
+  }
+  return null;
+}
+
+/** A redrawn drawing's stored changes, checked: the rectangles' PNGs decoded, the tile pairs as whole numbers. */
 function readDiff(raw: unknown, io: { entries: Record<string, Uint8Array>; warnings: string[] }): DrawingDiff | undefined {
   if (!isObj(raw)) return undefined;
   const out: DrawingDiff = {};
-  const r = raw.rect;
-  if (isObj(r) && int(r.x, 0) && int(r.y, 0) && int(r.w, 0) && int(r.h, 0) && r.x < BIG && r.y < BIG && r.w < BIG && r.h < BIG) {
-    if (r.w === 0 || r.h === 0) out.rect = { x: r.x, y: r.y, w: 0, h: 0, pixels: new Uint8ClampedArray(0) };
-    else if (typeof r.pixels === 'string' && /^pixels\/[A-Za-z0-9_-]+\.png$/.test(r.pixels) && io.entries[r.pixels]) {
-      try {
-        const img = decodePng(io.entries[r.pixels]);
-        if (img.width === r.w && img.height === r.h) out.rect = { x: r.x, y: r.y, w: r.w, h: r.h, pixels: img.pixels };
-      } catch {
-        // Left out below, with a warning.
-      }
-    }
-    if (!out.rect) io.warnings.push('A variation has a changed picture that could not be read, so it shows the original there.');
+  if (raw.rect !== undefined) {
+    const r = readRect(raw.rect, io);
+    if (r) out.rect = r;
+    else io.warnings.push('A variation has a changed picture that could not be read, so it shows the original there.');
+  }
+  if (Array.isArray(raw.rects)) {
+    const rects = raw.rects.slice(0, MAX_READ_RECTS).map((r) => readRect(r, io));
+    const good = rects.filter((r): r is DiffRect => !!r);
+    if (good.length) out.rects = good;
+    if (good.length < raw.rects.length) io.warnings.push('A variation has a changed picture that could not be read, so it shows the original there.');
   }
   if (Array.isArray(raw.cells) && raw.cells.length % 2 === 0 && raw.cells.every((n) => typeof n === 'number' && Number.isInteger(n) && n >= 0)) out.cells = raw.cells as number[];
-  return out.rect || out.cells ? out : undefined;
+  return out.rect || out.rects || out.cells ? out : undefined;
 }
 
 /** The part of a pixel drawing that differs from another of the same size: its bounding rectangle, or null when they are the same. */
@@ -243,6 +259,106 @@ export function changedRect(a: PixelDrawing, b: PixelDrawing): { x: number; y: n
   return x1 < 0 ? { x: 0, y: 0, w: 0, h: 0 } : { x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1 };
 }
 
+/** Most rectangles one drawing's change is split into. */
+export const MAX_DIFF_RECTS = 8;
+/** What one more rectangle costs in a file (a zip entry and PNG headers), in pixels of RGBA data: nearer ones are joined. */
+const RECT_COST = 400;
+const BLOCK = 8;
+/** Beyond this many separate spots the change is scattered like noise, and one rectangle is as good as any. */
+const MAX_SPOTS = 200;
+
+interface Box {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+}
+const boxArea = (b: Box) => (b.x1 - b.x0) * (b.y1 - b.y0);
+const joined = (a: Box, b: Box): Box => ({ x0: Math.min(a.x0, b.x0), y0: Math.min(a.y0, b.y0), x1: Math.max(a.x1, b.x1), y1: Math.max(a.y1, b.y1) });
+
+/**
+ * The parts of a pixel drawing that differ from another of the same size, as a few rectangles: changes close together
+ * share one, far apart ones get their own (two distant edits stay small instead of spanning everything between them).
+ * Rectangles are joined while that costs less than another entry in a file, and until there are at most `max`.
+ * Empty when they are the same, null when the sizes differ.
+ */
+export function changedRects(a: PixelDrawing, b: PixelDrawing, max = MAX_DIFF_RECTS): { x: number; y: number; w: number; h: number }[] | null {
+  if (a.width !== b.width || a.height !== b.height) return null;
+  const { width: W, height: H } = a;
+  const p = a.pixels;
+  const q = b.pixels;
+  const bw = Math.ceil(W / BLOCK);
+  const bh = Math.ceil(H / BLOCK);
+  // The tight box of the changes in each block of the picture.
+  const cell: (Box | undefined)[] = new Array(bw * bh);
+  for (let y = 0; y < H; y++) {
+    const row = y * W * 4;
+    for (let x = 0; x < W; x++) {
+      const i = row + x * 4;
+      if (p[i] === q[i] && p[i + 1] === q[i + 1] && p[i + 2] === q[i + 2] && p[i + 3] === q[i + 3]) continue;
+      const k = ((y / BLOCK) | 0) * bw + ((x / BLOCK) | 0);
+      const c = cell[k];
+      if (!c) cell[k] = { x0: x, y0: y, x1: x + 1, y1: y + 1 };
+      else {
+        if (x < c.x0) c.x0 = x;
+        if (x + 1 > c.x1) c.x1 = x + 1;
+        if (y + 1 > c.y1) c.y1 = y + 1;
+      }
+    }
+  }
+  // Blocks that touch (corners too) are one spot.
+  const spot = new Int32Array(bw * bh).fill(-1);
+  const boxes: Box[] = [];
+  for (let k0 = 0; k0 < cell.length; k0++) {
+    if (!cell[k0] || spot[k0] >= 0) continue;
+    const id = boxes.length;
+    let box = cell[k0]!;
+    spot[k0] = id;
+    const stack = [k0];
+    while (stack.length) {
+      const k = stack.pop()!;
+      const bx = k % bw;
+      const by = (k / bw) | 0;
+      for (let dy = -1; dy <= 1; dy++)
+        for (let dx = -1; dx <= 1; dx++) {
+          const nx = bx + dx;
+          const ny = by + dy;
+          if (nx < 0 || ny < 0 || nx >= bw || ny >= bh) continue;
+          const n = ny * bw + nx;
+          if (!cell[n] || spot[n] >= 0) continue;
+          spot[n] = id;
+          box = joined(box, cell[n]!);
+          stack.push(n);
+        }
+    }
+    boxes.push(box);
+  }
+  if (!boxes.length) return [];
+  let list = boxes;
+  if (list.length > MAX_SPOTS) list = [list.reduce(joined)];
+  // Join the pair that wastes least, while that is cheaper than a rectangle of its own, or while there are too many.
+  for (;;) {
+    if (list.length < 2) break;
+    let bi = 0;
+    let bj = 1;
+    let best = Infinity;
+    for (let i = 0; i < list.length; i++)
+      for (let j = i + 1; j < list.length; j++) {
+        const waste = boxArea(joined(list[i], list[j])) - boxArea(list[i]) - boxArea(list[j]);
+        if (waste < best) {
+          best = waste;
+          bi = i;
+          bj = j;
+        }
+      }
+    if (best >= RECT_COST && list.length <= max) break;
+    const m = joined(list[bi], list[bj]);
+    list = list.filter((_, k) => k !== bi && k !== bj);
+    list.push(m);
+  }
+  return list.map((c) => ({ x: c.x0, y: c.y0, w: c.x1 - c.x0, h: c.y1 - c.y0 })).sort((u, v) => u.y - v.y || u.x - v.x);
+}
+
 const safe = (id: string) => id.replace(/[^A-Za-z0-9_-]/g, '_');
 
 /**
@@ -262,19 +378,22 @@ export function variationDiffs(doc: Doc, files: Zippable, png: (d: { width: numb
       const base = doc.drawings[orig];
       if (!mine || !base || mine.kind !== base.kind) continue;
       if (mine.kind === 'pixel' && base.kind === 'pixel') {
-        const r = changedRect(base, mine);
-        if (!r || r.w * r.h > mine.width * mine.height * 0.8) continue;
-        if (!r.w) {
-          out.set(alias, { rect: { ...r, pixels: '' } });
+        const rs = changedRects(base, mine);
+        if (!rs || rs.reduce((n, r) => n + r.w * r.h, 0) > mine.width * mine.height * 0.8) continue;
+        if (!rs.length) {
+          out.set(alias, { rect: { x: 0, y: 0, w: 0, h: 0, pixels: '' } });
           continue;
         }
-        const crop = new Uint8ClampedArray(r.w * r.h * 4);
-        for (let y = 0; y < r.h; y++) crop.set(mine.pixels.subarray(((r.y + y) * mine.width + r.x) * 4, ((r.y + y) * mine.width + r.x + r.w) * 4), y * r.w * 4);
-        let name = `pixels/diff_${safe(alias)}.png`;
-        while (used.has(name) || files[name]) name = name.replace(/\.png$/, '_.png');
-        used.add(name);
-        files[name] = [png({ width: r.w, height: r.h, pixels: crop }), { level: 0 }];
-        out.set(alias, { rect: { ...r, pixels: name } });
+        const stored = rs.map((r): DiffRect => {
+          const crop = new Uint8ClampedArray(r.w * r.h * 4);
+          for (let y = 0; y < r.h; y++) crop.set(mine.pixels.subarray(((r.y + y) * mine.width + r.x) * 4, ((r.y + y) * mine.width + r.x + r.w) * 4), y * r.w * 4);
+          let name = `pixels/diff_${safe(alias)}.png`;
+          while (used.has(name) || files[name]) name = name.replace(/\.png$/, '_.png');
+          used.add(name);
+          files[name] = [png({ width: r.w, height: r.h, pixels: crop }), { level: 0 }];
+          return { ...r, pixels: name };
+        });
+        out.set(alias, stored.length === 1 ? { rect: stored[0] } : { rects: stored });
       } else if (mine.kind === 'tilemap' && base.kind === 'tilemap' && mine.cells.length === base.cells.length) {
         const cells: number[] = [];
         for (let i = 0; i < mine.cells.length; i++) if (mine.cells[i] !== base.cells[i]) cells.push(i, mine.cells[i]);
@@ -293,11 +412,15 @@ function applyDiffs(doc: Doc, a: Artboard): void {
     delete o.diff;
     const base = doc.drawings[orig];
     const alias = aliasId(orig, a.id);
-    if (base?.kind === 'pixel' && diff.rect && diff.rect.pixels instanceof Uint8ClampedArray) {
-      const { x, y, w, h, pixels } = diff.rect;
-      if (x + w > base.width || y + h > base.height) continue;
+    const rects = [...(diff.rect ? [diff.rect] : []), ...(diff.rects ?? [])].filter((r) => r.pixels instanceof Uint8ClampedArray);
+    if (base?.kind === 'pixel' && rects.length) {
       const px = new Uint8ClampedArray(base.pixels);
-      for (let r = 0; r < h; r++) px.set(pixels.subarray(r * w * 4, (r + 1) * w * 4), ((y + r) * base.width + x) * 4);
+      for (const r of rects) {
+        const { x, y, w, h } = r;
+        const pixels = r.pixels as Uint8ClampedArray;
+        if (x + w > base.width || y + h > base.height) continue;
+        for (let row = 0; row < h; row++) px.set(pixels.subarray(row * w * 4, (row + 1) * w * 4), ((y + row) * base.width + x) * 4);
+      }
       doc.drawings[alias] = { ...base, id: alias, pixels: px };
     } else if (base?.kind === 'tilemap' && diff.cells) {
       const cells = new Uint32Array(base.cells);
