@@ -446,6 +446,28 @@ npm run build
 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/selection.cjs [outDir]
 ```
 
+## Layers panel end to end: scripts/e2e/layers-panel.cjs
+
+Opens a document of five layers and two folders (shown top first: e, folder Q holding d, c, folder P holding b, a) and
+drives the nested Layers panel in the real window. Each move is checked in the panel (the row order and every row's
+`aria-level`) and in the document (which folder each layer is in), then undone with a real Ctrl+Z (exactly one undo step,
+back to the same layers and rows) and redone. Drags: a layer into a folder (the middle of the folder row), into a folder inside
+a folder, above and below a layer (the edges of its row), onto a layer inside a folder (it joins that folder), a folder into a
+folder, above a folder, below a layer, a folder dropped inside itself and a layer dropped on itself (both do nothing and make no undo
+step). Keys: Alt+Up, Down, Left and Right on layers and on folders (the keyboard focus stays on the row; moves that cannot happen do
+nothing). Fold and unfold with the twisty button and with Left and Right (the rows leave and return, `aria-expanded` follows, the
+document and the undo history are untouched), Left on a layer goes to its folder, a drop on a folded folder's bottom edge goes below
+it. Last, the three-level `aria-level` values and that levels never jump by more than one.
+
+Keys, clicks and undo are real input events. A drag is not: Chromium starts a drag through the operating system, which does not
+finish when the mouse is synthesised, so the script dispatches the same DragEvents (dragstart, dragover at a real point inside the
+row, drop, dragend) on the real rows; the panel's own handlers and the Move command run as for a person's drag.
+
+```bash
+npm run build
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/layers-panel.cjs [outDir]
+```
+
 ## Pixel drawing through a turned camera: scripts/e2e/pixel-camera.cjs
 
 Looks through a zoomed and turned camera (30 degrees, 90 degrees, and a layer at another depth) and draws a rectangle,
