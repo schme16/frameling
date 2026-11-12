@@ -1918,7 +1918,7 @@ const FADE_PROBES = [6, 8, 11].flatMap((frame) => [
   { frame, x: 55, y: 190, what: 'the torso alone' },
 ]);
 // The glow layer (a round and a square patch at 0.7 fade) over the sky and over the sun, frame 0 before the camera moves.
-const blendAt = (what) => [{ frame: 0, x: 180, y: 60, what: `${what} over the sky` }, { frame: 0, x: 240, y: 40, what: `${what} square over the sky` }, { frame: 0, x: 260, y: 60, what: `${what} square over the sun` }];
+const blendAt = (what) => [{ frame: 0, x: 180, y: 60, what: `${what} over the sky` }, { frame: 0, x: 237, y: 38, what: `${what} square over the sky` }, { frame: 0, x: 260, y: 60, what: `${what} square over the sun` }];
 const BLEND_PROBES = { 'linear-dodge': blendAt('linear dodge'), subtract: blendAt('subtract'), divide: blendAt('divide') };
 // Where the lower arm lies under the big hand of the faded arm inside the faded Body: one picture, so the arm does not show through.
 const NESTED_PROBES = [
