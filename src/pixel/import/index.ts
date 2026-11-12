@@ -64,3 +64,15 @@ function installPictureDrop(target: Window = window): void {
   });
 }
 if (typeof window !== 'undefined' && typeof document !== 'undefined') setTimeout(() => installPictureDrop(), 0);
+
+export const openPictureBytes = (bytes: Uint8Array, path: string): Promise<boolean> => run().then((m) => m.openPictureBytes(bytes, path));
+export const addPictureBytes = (bytes: Uint8Array, path: string): Promise<boolean> => run().then((m) => m.addPictureBytes(bytes, path));
+
+// With ?debug in the page address, opening a picture from bytes is exposed for the help picture capture and the checks.
+if (typeof window !== 'undefined' && new URLSearchParams(location.search).has('debug')) {
+  const w = window as unknown as { __framelingPicture: unknown };
+  w.__framelingPicture = {
+    open: (bytes: number[], name: string) => openPictureBytes(Uint8Array.from(bytes), name),
+    add: (bytes: number[], name: string) => addPictureBytes(Uint8Array.from(bytes), name),
+  };
+}
