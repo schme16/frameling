@@ -5,6 +5,7 @@ import { registerPanel } from '../core/registry';
 import './ui.css';
 import './commands';
 import './rightCommands';
+import './dockCommands';
 import './helpTopics';
 import './quests';
 import './onboarding';

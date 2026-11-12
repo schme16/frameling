@@ -1,35 +1,13 @@
-// Dock layout: which panels sit in the left, right and bottom zones, in what order, how big, and the workspaces
-// (saved layouts). The view lives in DockView.tsx; this file is plain state so it can be tested.
+// The dock's live state: where every panel is (the left, right, bottom and top zones, or a floating window), how big
+// each zone is, and the workspaces (saved layouts). The pure model is in dockModel.ts; the views are DockView.tsx,
+// DockFloats.tsx and RightDock.tsx. This file is plain state so it can be tested.
 import { allPanels, getPanel, type DockZone, type PanelDef } from '../core/registry';
 import type { LayerKind } from '../core/format';
+import { cleanName, clone, closeFloat, closePanel, clampSize, dockAllFloats, dockFloat, emptyLayout, frontPanel, locate, MAX_SAVED, moveGroupTo, movePanelTo, nameOf, normaliseLayout, placeToolsIn, placedIds, raiseFloat, renameFloatIn, renamePanelIn, sanitizeWorkspace, sanitizeWorkspaces, setFloatBox, ZONES, type DropTarget, type Layout, type Place, type ToolsPlace, type Workspace } from './dockModel';
 import { createStore, readRaw, writeJson } from './mini';
+import { parseWorkspaceText, uniqueWorkspaceName, workspaceToText } from './workspaceFile';
 
-export interface ZoneState {
-  tabs: string[];
-  active: string | null;
-  /** Width (left, right) or height (bottom) in px when open. */
-  size: number;
-  collapsed: boolean;
-}
-
-export interface Layout {
-  zones: Record<DockZone, ZoneState>;
-  /** Panels the person closed. They stay out of the zones until they open them again. */
-  hidden: string[];
-  /** Every panel this layout has seen, so a panel added by a later version gets placed once. */
-  known: string[];
-}
-
-export interface Workspace {
-  id: string;
-  name: string;
-  builtin?: boolean;
-  layout: Layout;
-  /** A pixel art workspace: the pixel bar over the canvas, export starting on a sprite sheet (missing = no). */
-  pixel?: boolean;
-  /** Tools the tool strip shows on each kind of layer, in this order (missing kind = every tool that works there). */
-  tools?: Partial<Record<LayerKind, string[]>>;
-}
+export * from './dockModel';
 
 export interface DockState {
   layout: Layout;
@@ -39,19 +17,9 @@ export interface DockState {
   user: Workspace[];
 }
 
-export const ZONES: DockZone[] = ['left', 'right', 'bottom'];
-export const DEFAULT_SIZE: Record<DockZone, number> = { left: 260, right: 316, bottom: 230 };
-export const MIN_SIZE: Record<DockZone, number> = { left: 180, right: 200, bottom: 110 };
-export const MAX_SIZE: Record<DockZone, number> = { left: 560, right: 640, bottom: 640 };
 export const DOCK_KEY = 'frameling.dock.v1';
-
-export const clampSize = (zone: DockZone, n: number): number => Math.max(MIN_SIZE[zone], Math.min(MAX_SIZE[zone], Math.round(n)));
-
-const emptyZone = (zone: DockZone): ZoneState => ({ tabs: [], active: null, size: DEFAULT_SIZE[zone], collapsed: false });
-
-function emptyLayout(): Layout {
-  return { zones: { left: emptyZone('left'), right: emptyZone('right'), bottom: emptyZone('bottom') }, hidden: [], known: [] };
-}
+/** Saved state is version 2 from the top zone, floating windows, the movable tool rail and panel names. Version 1 loads as it was. */
+const DOCK_VERSION = 2;
 
 const isHelp = (p: PanelDef) => /help/.test(p.id);
 const isColour = (p: PanelDef) => /colou?r|palette|swatch/.test(p.id);
@@ -98,9 +66,9 @@ export function builtinWorkspaces(panels: PanelDef[] = allPanels()): Workspace[]
   pixel.zones.bottom.size = 260;
 
   return [
-    { id: 'draw', name: 'Draw', builtin: true, layout: draw },
-    { id: 'animate', name: 'Animate', builtin: true, layout: animate },
-    { id: 'pixel', name: 'Pixel', builtin: true, layout: pixel, pixel: true, tools: { pixel: [...PIXEL_TOOLS] } },
+    { id: 'draw', name: 'Draw', builtin: true, about: 'Tools and colours close at hand, with a small timeline underneath.', layout: draw },
+    { id: 'animate', name: 'Animate', builtin: true, about: 'A tall timeline across the bottom, with Layers leading the right side.', layout: animate },
+    { id: 'pixel', name: 'Pixel', builtin: true, about: 'For pixel art: only the pixel tools, a big palette on the left and a real-size Preview.', layout: pixel, pixel: true, tools: { pixel: [...PIXEL_TOOLS] } },
   ];
 }
 
@@ -125,19 +93,29 @@ export function inPixelWorkspace(): boolean {
   return !!currentWorkspace()?.pixel;
 }
 
-const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
-
-/** Fixes a layout against the registered panels: drops ones that no longer exist, places new ones. */
+/**
+ * Fixes a layout against the registered panels: drops ones that no longer exist, places new ones, and brings an older
+ * saved layout (no top zone, no windows, no tool rail place) up to date.
+ */
 export function reconcile(layout: Layout, panels: PanelDef[] = allPanels()): Layout {
-  const l = clone(layout);
+  const l = normaliseLayout(layout);
   const ids = new Set(panels.map((p) => p.id));
-  const placed = new Set<string>();
   for (const z of ZONES) {
     const zs = l.zones[z];
-    zs.tabs = zs.tabs.filter((id) => ids.has(id) && !placed.has(id) && (placed.add(id), true));
+    zs.tabs = zs.tabs.filter((id) => ids.has(id));
     if (!zs.active || !zs.tabs.includes(zs.active)) zs.active = zs.tabs[0] ?? null;
   }
+  for (const f of l.floats) {
+    f.tabs = f.tabs.filter((id) => ids.has(id));
+    if (!f.active || !f.tabs.includes(f.active)) f.active = f.tabs[0] ?? null;
+  }
+  l.floats = l.floats.filter((f) => f.tabs.length);
+  const placed = new Set(placedIds(l));
   l.hidden = l.hidden.filter((id) => ids.has(id) && !placed.has(id));
+  if (l.names) {
+    for (const id of Object.keys(l.names)) if (!ids.has(id)) delete l.names[id];
+    if (!Object.keys(l.names).length) delete l.names;
+  }
   const known = new Set(l.known);
   for (const p of panels) {
     if (known.has(p.id) || placed.has(p.id) || l.hidden.includes(p.id)) continue;
@@ -150,18 +128,26 @@ export function reconcile(layout: Layout, panels: PanelDef[] = allPanels()): Lay
 }
 
 function initial(): DockState {
-  const saved = readRaw<Partial<DockState> | null>(DOCK_KEY, null);
-  const user = Array.isArray(saved?.user) ? saved!.user! : [];
+  const saved = readRaw<Record<string, unknown> | null>(DOCK_KEY, null);
+  const user = sanitizeWorkspaces(saved?.user);
   // Panels from other areas register after this file loads, so a first run waits for syncPanels() to build the layout.
-  if (!saved?.layout) return { layout: emptyLayout(), workspaceId: 'draw', user, fresh: true };
-  return { layout: saved.layout, workspaceId: saved.workspaceId ?? 'draw', user };
+  if (!saved?.layout || typeof saved.layout !== 'object') return { layout: emptyLayout(), workspaceId: 'draw', user, fresh: true };
+  return { layout: normaliseLayout(saved.layout), workspaceId: typeof saved.workspaceId === 'string' ? saved.workspaceId : 'draw', user };
 }
 
 export const dock = createStore<DockState>(initial());
 
+/** True while the panels are put away for room to draw (Hide all panels). Not kept: a new session starts with them back. */
+export const panelsAway = createStore(false);
+export const togglePanelsAway = (to?: boolean): void => panelsAway.set(to ?? !panelsAway.get());
+
+function save(): void {
+  writeJson(DOCK_KEY, { ...dock.get(), v: DOCK_VERSION });
+}
+
 function commit(next: DockState): void {
   dock.set(next);
-  writeJson(DOCK_KEY, next);
+  save();
 }
 
 function change(fn: (l: Layout) => void): void {
@@ -169,6 +155,20 @@ function change(fn: (l: Layout) => void): void {
   const layout = clone(s.layout);
   fn(layout);
   commit({ ...s, layout });
+}
+
+/** Replaces the layout with what a pure function made of it. Nothing changes when it hands the same layout back. */
+function apply(fn: (l: Layout) => Layout, persist = true): void {
+  const s = dock.get();
+  const layout = fn(s.layout);
+  if (layout === s.layout) return;
+  if (persist) commit({ ...s, layout });
+  else dock.set({ ...s, layout });
+}
+
+/** Writes the layout out (after changes that were made without saving, like a window being dragged). */
+export function flushDock(): void {
+  save();
 }
 
 /** Call once everything has registered (and again if a panel registers later). */
@@ -183,12 +183,27 @@ export function syncPanels(): void {
   if (JSON.stringify(layout) !== JSON.stringify(s.layout)) commit({ ...s, layout });
 }
 
+/** Where a panel was made to go: its own zone, or the right side when it isn't registered. */
+export const homeOf = (id: string): DockZone => getPanel(id)?.zone ?? 'right';
+
 export function isVisible(id: string, l: Layout = dock.get().layout): boolean {
-  return ZONES.some((z) => l.zones[z].tabs.includes(id));
+  return locate(l, id) !== null;
 }
 
+/** The zone a panel is docked in. Null when it is closed or in a floating window (see `placeOf`). */
 export function zoneOf(id: string, l: Layout = dock.get().layout): DockZone | null {
-  return ZONES.find((z) => l.zones[z].tabs.includes(id)) ?? null;
+  const at = locate(l, id);
+  return at && 'zone' in at ? at.zone : null;
+}
+
+/** Where a panel is: a zone, a floating window, or null when it is closed. */
+export function placeOf(id: string, l: Layout = dock.get().layout): Place | null {
+  return locate(l, id);
+}
+
+/** What a panel is called now: the name the person gave it, else its own title. */
+export function panelTitle(id: string, l: Layout = dock.get().layout): string {
+  return nameOf(l, id, getPanel(id)?.title ?? id);
 }
 
 export function setActive(zone: DockZone, id: string): void {
@@ -196,6 +211,14 @@ export function setActive(zone: DockZone, id: string): void {
     if (!l.zones[zone].tabs.includes(id)) return;
     l.zones[zone].active = id;
     l.zones[zone].collapsed = false;
+  });
+}
+
+/** Makes a panel the front tab of a floating window and brings the window to the front. */
+export function setFloatActive(floatId: string, id: string): void {
+  apply((l) => {
+    const at = locate(l, id);
+    return at && 'float' in at && at.float === floatId ? frontPanel(l, id) : l;
   });
 }
 
@@ -207,58 +230,87 @@ export function toggleCollapsed(zone: DockZone, to?: boolean): void {
   change((l) => void (l.zones[zone].collapsed = to ?? !l.zones[zone].collapsed));
 }
 
+/** The screen's size, for keeping new windows on it (not known while testing). */
+const screen = (): { w: number; h: number } | undefined => (typeof window !== 'undefined' && window.innerWidth > 0 ? { w: window.innerWidth, h: window.innerHeight } : undefined);
+
+/** Puts a panel somewhere: a zone or window at a position, or a new window. Works for panels anywhere and for closed ones. */
+export function placePanel(id: string, to: DropTarget): void {
+  if (!getPanel(id)) return;
+  apply((l) => movePanelTo(l, id, to, screen()));
+}
+
 /** Puts a panel in a zone at a position (the end by default). Works for panels in another zone and for hidden ones. */
 export function movePanel(id: string, zone: DockZone, index?: number): void {
-  if (!getPanel(id)) return;
-  change((l) => {
-    for (const z of ZONES) {
-      const zs = l.zones[z];
-      const at = zs.tabs.indexOf(id);
-      if (at >= 0) {
-        zs.tabs.splice(at, 1);
-        if (zs.active === id) zs.active = zs.tabs[Math.min(at, zs.tabs.length - 1)] ?? null;
-        // Dropping onto a later slot in the same zone: removing it shifted everything left.
-        if (z === zone && index !== undefined && index > at) index -= 1;
-      }
-    }
-    l.hidden = l.hidden.filter((x) => x !== id);
-    const dest = l.zones[zone];
-    const i = index === undefined ? dest.tabs.length : Math.max(0, Math.min(index, dest.tabs.length));
-    dest.tabs.splice(i, 0, id);
-    dest.active = id;
-    dest.collapsed = false;
-    if (!l.known.includes(id)) l.known.push(id);
-  });
+  placePanel(id, { zone, index });
+}
+
+/** Gives a panel a window of its own, near the middle of the screen unless told where. */
+export function floatPanel(id: string, at?: { x: number; y: number }): void {
+  const s = screen();
+  const w = s?.w ?? 1200;
+  const n = dock.get().layout.floats.length;
+  placePanel(id, { newFloat: at ?? { x: Math.round(w / 2 - 190) + n * 28, y: 120 + n * 28 } });
+}
+
+/** Puts a window's whole group into a zone or another window. */
+export function moveFloatTo(floatId: string, to: DropTarget): void {
+  apply((l) => moveGroupTo(l, floatId, to));
+}
+
+/** Docks a window back: its panels return to the zones they were made for. */
+export function dockFloatBack(floatId: string): void {
+  apply((l) => dockFloat(l, floatId, homeOf));
+}
+
+export function dockEverythingBack(): void {
+  apply((l) => dockAllFloats(l, homeOf));
+}
+
+/** Closes a window and its panels (they're in the panel list to bring back). */
+export function closeFloatWindow(floatId: string): void {
+  apply((l) => closeFloat(l, floatId));
+}
+
+export function raiseFloatWindow(floatId: string): void {
+  apply((l) => raiseFloat(l, floatId), false);
+}
+
+/** Moves or resizes a window. `persist` false while it is being dragged (call flushDock() when it lets go). */
+export function setFloatWindowBox(floatId: string, box: Parameters<typeof setFloatBox>[2], persist = false): void {
+  apply((l) => setFloatBox(l, floatId, box), persist);
+}
+
+export function renamePanel(id: string, name: string): void {
+  apply((l) => renamePanelIn(l, id, name));
+}
+
+export function renameFloat(floatId: string, name: string): void {
+  apply((l) => renameFloatIn(l, floatId, name));
+}
+
+export function placeTools(place: ToolsPlace, at?: { x: number; y: number }, persist = true): void {
+  apply((l) => placeToolsIn(l, place, at), persist);
 }
 
 export function hidePanel(id: string): void {
-  change((l) => {
-    for (const z of ZONES) {
-      const zs = l.zones[z];
-      const at = zs.tabs.indexOf(id);
-      if (at < 0) continue;
-      zs.tabs.splice(at, 1);
-      if (zs.active === id) zs.active = zs.tabs[Math.min(at, zs.tabs.length - 1)] ?? null;
-    }
-    if (!l.hidden.includes(id)) l.hidden.push(id);
-  });
+  apply((l) => closePanel(l, id));
 }
 
 export function showPanel(id: string): void {
   const p = getPanel(id);
   if (!p) return;
-  const zone = zoneOf(id);
-  if (zone) setActive(zone, id);
+  const l = dock.get().layout;
+  if (locate(l, id)) apply((x) => frontPanel(x, id));
   else movePanel(id, p.zone);
 }
 
 /** Opens a hidden panel, or closes a panel that's showing at the front. A panel hiding behind another tab comes forward. */
 export function togglePanel(id: string): void {
   const l = dock.get().layout;
-  const z = zoneOf(id, l);
-  if (!z) return showPanel(id);
-  const zs = l.zones[z];
-  if (zs.collapsed || zs.active !== id) return setActive(z, id);
+  const at = locate(l, id);
+  if (!at) return showPanel(id);
+  const front = 'zone' in at ? !l.zones[at.zone].collapsed && l.zones[at.zone].active === id : l.floats.find((f) => f.id === at.float)!.active === id;
+  if (!front) return showPanel(id);
   hidePanel(id);
 }
 
@@ -276,7 +328,14 @@ export function currentWorkspace(): Workspace | undefined {
 export function applyWorkspace(id: string): boolean {
   const w = listWorkspaces().find((x) => x.id === id);
   if (!w) return false;
-  commit({ ...dock.get(), workspaceId: w.id, layout: reconcile(w.layout) });
+  const s = dock.get();
+  const layout = reconcile(w.layout);
+  // The ones that come with the app only say where panels go: the person's own panel names and tool rail stay.
+  if (w.builtin) {
+    layout.tools = s.layout.tools;
+    if (s.layout.names) layout.names = s.layout.names;
+  }
+  commit({ ...s, workspaceId: w.id, layout });
   return true;
 }
 
@@ -285,15 +344,22 @@ export function resetLayout(): void {
   if (!applyWorkspace(dock.get().workspaceId)) applyWorkspace('draw');
 }
 
-/** Saves the layout as it is now under a name. Same name again replaces it. */
+let idSeq = 0;
+const newWorkspaceId = () => `u-${Date.now().toString(36)}${(idSeq++).toString(36)}`;
+
+/** True when there is no room to save another workspace of your own. */
+export const workspacesFull = (): boolean => dock.get().user.length >= MAX_SAVED;
+
+/** Saves the layout as it is now under a name. Same name again replaces it. Null when the name is empty or you have the most you can keep. */
 export function saveWorkspace(name: string): Workspace | null {
-  const clean = name.trim().slice(0, 40);
+  const clean = cleanName(name);
   if (!clean) return null;
   const s = dock.get();
   const existing = s.user.find((w) => w.name.toLowerCase() === clean.toLowerCase());
+  if (!existing && s.user.length >= MAX_SAVED) return null;
   // A layout saved from the Pixel workspace stays a pixel one (its tool list and pixel bar come along).
   const from = currentWorkspace();
-  const ws: Workspace = { id: existing?.id ?? `u-${Date.now().toString(36)}`, name: clean, layout: clone(s.layout), ...(from?.pixel ? { pixel: true } : {}), ...(from?.tools ? { tools: clone(from.tools) } : {}) };
+  const ws: Workspace = { id: existing?.id ?? newWorkspaceId(), name: clean, ...(existing?.about ? { about: existing.about } : {}), layout: clone(s.layout), ...(from?.pixel ? { pixel: true } : {}), ...(from?.tools ? { tools: clone(from.tools) } : {}) };
   const user = existing ? s.user.map((w) => (w.id === ws.id ? ws : w)) : [...s.user, ws];
   commit({ ...s, user, workspaceId: ws.id });
   return ws;
@@ -307,14 +373,52 @@ export function deleteWorkspace(id: string): void {
 }
 
 export function renameWorkspace(id: string, name: string): void {
-  const clean = name.trim().slice(0, 40);
+  const clean = cleanName(name);
   const s = dock.get();
   if (!clean) return;
   commit({ ...s, user: s.user.map((w) => (w.id === id ? { ...w, name: clean } : w)) });
+}
+
+/** Moves one of your own workspaces to a place in the list (0 is first). The ones that come with the app stay put. */
+export function moveWorkspace(id: string, to: number): void {
+  const s = dock.get();
+  const from = s.user.findIndex((w) => w.id === id);
+  if (from < 0) return;
+  const at = Math.max(0, Math.min(to, s.user.length - 1));
+  if (at === from) return;
+  const user = [...s.user];
+  const [w] = user.splice(from, 1);
+  user.splice(at, 0, w);
+  commit({ ...s, user });
+}
+
+/** A workspace as text to save to a file or copy. Any workspace in the list, or the layout as it is now when no id is given. */
+export function workspaceText(id?: string): string | null {
+  const w = id ? listWorkspaces().find((x) => x.id === id) : undefined;
+  if (id && !w) return null;
+  const from = currentWorkspace();
+  const ws: Workspace = w ?? { id: 'now', name: from?.name ?? 'My workspace', layout: dock.get().layout, ...(from?.pixel ? { pixel: true } : {}), ...(from?.tools ? { tools: from.tools } : {}) };
+  return workspaceToText({ ...ws, layout: reconcile(ws.layout) });
+}
+
+export type AddResult = { ok: true; workspace: Workspace } | { ok: false; error: string };
+
+/** Adds a workspace from a file's text or pasted text to your own. It keeps the current layout until you switch to it. */
+export function importWorkspace(text: string): AddResult {
+  const r = parseWorkspaceText(text);
+  if (!r.ok) return r;
+  const s = dock.get();
+  if (s.user.length >= MAX_SAVED) return { ok: false, error: `You already have ${MAX_SAVED} workspaces of your own. Delete one to make room.` };
+  const taken = listWorkspaces().map((w) => w.name);
+  const ws = sanitizeWorkspace({ ...r.workspace, id: newWorkspaceId(), name: uniqueWorkspaceName(r.workspace.name, taken) });
+  if (!ws) return { ok: false, error: 'That workspace could not be added.' };
+  commit({ ...s, user: [...s.user, ws] });
+  return { ok: true, workspace: ws };
 }
 
 /** For tests. */
 export function resetDock(): void {
   const draw = builtinWorkspaces().find((w) => w.id === 'draw')!;
   commit({ layout: draw.layout, workspaceId: 'draw', user: [], fresh: false });
+  panelsAway.set(false);
 }

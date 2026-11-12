@@ -2,13 +2,13 @@
 // closed). Used by the rail's Panels button and the tab bar's Panels button.
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { allPanels } from '../core/registry';
-import { dock, showPanel, zoneOf } from './dock';
+import { dock, panelTitle, placeOf, showPanel } from './dock';
 import { Icon } from './icons';
 import { GROUP_NAMES, infoFor, isSection, matchPanel, RAIL_GROUPS } from './panelInfo';
 import { rightStyle } from './rightStyle';
 import { usePopover } from './popover';
 
-const ZONE_NAMES = { left: 'Left side', right: 'Right side', bottom: 'Bottom' } as const;
+const ZONE_NAMES = { left: 'Left side', right: 'Right side', bottom: 'Bottom', top: 'Top' } as const;
 
 export function PanelPicker({ at, side, onClose }: { at: { x: number; y: number; w: number; h: number }; side: 'left' | 'below'; onClose: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -76,7 +76,8 @@ export function PanelPicker({ at, side, onClose }: { at: { x: number; y: number;
               {GROUP_NAMES[g]}
             </div>
             {ps.map((p) => {
-              const z = zoneOf(p.id, layout);
+              const at = placeOf(p.id, layout);
+              const z = at && 'zone' in at ? at.zone : null;
               const i = flat.indexOf(p);
               return (
                 <div
@@ -91,8 +92,8 @@ export function PanelPicker({ at, side, onClose }: { at: { x: number; y: number;
                   <Icon name={p.icon} size={16} />
                   <span className="rd-picker-text">
                     <span className="rd-picker-name">
-                      {p.title}
-                      <span className={`rd-picker-where${z ? '' : ' is-closed'}`}>{!z ? 'Closed' : z === 'right' && merged && isSection(p.id) ? 'In Properties' : ZONE_NAMES[z]}</span>
+                      {panelTitle(p.id, layout)}
+                      <span className={`rd-picker-where${at ? '' : ' is-closed'}`}>{!at ? 'Closed' : !z ? 'Floating' : z === 'right' && merged && isSection(p.id) ? 'In Properties' : ZONE_NAMES[z]}</span>
                     </span>
                     <span className="rd-picker-blurb">{infoFor(p).blurb}</span>
                   </span>

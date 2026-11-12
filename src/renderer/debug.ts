@@ -19,6 +19,8 @@ import { setWeightsLook } from '../rig/weightsTool';
 import { setShowQuill } from '../ui/mascot/goodbye';
 import { closeSheet, openHelp, openPrefs, overlays } from '../ui/overlays';
 import { showPanel } from '../ui/dock';
+import * as dockApi from '../ui/dock';
+import * as dockFloats from '../ui/DockFloats';
 import type { RightStyle } from '../ui/rightStyle';
 import { BUILT_IN_THEMES } from '../ui/themes/builtIn';
 import { toast } from '../ui/toast';
@@ -54,6 +56,8 @@ if (new URLSearchParams(location.search).has('debug')) {
     // Theme and look picks, for shots in a given theme.
     prefs: { get: getPrefs, set: setPrefs },
     commands: () => allCommands().map((c) => c.id),
+    // The dock (panels, floating windows, workspaces), for shots and checks.
+    dock: { ...dockApi, chrome: dockFloats.setFloatChrome },
     // Swap in another Quill sheet (a placeholder, or art being tried out) without a rebuild.
     quests: {
       start: startQuest,

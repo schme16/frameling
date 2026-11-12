@@ -428,9 +428,9 @@ Gold stays gold for chosen things by default, with dark text on it. If you chang
     title: 'Workspaces',
     section: 'Workspace',
     media: 'workspaces.png',
-    summary: 'A workspace is a saved way of arranging your panels.',
-    keywords: ['layout', 'panels', 'draw', 'animate', 'pixel', 'reset', 'save', 'arrange'],
-    body: `Different jobs want different rooms. Frameling comes with three:
+    summary: 'A workspace is a saved way of arranging your panels. Keep your own, and share them.',
+    keywords: ['layout', 'panels', 'draw', 'animate', 'pixel', 'reset', 'save', 'arrange', 'share', 'export', 'import', 'rename', 'reorder', 'file', 'copy', 'paste'],
+    body: `Different jobs want different rooms. Frameling comes with three, and each says what it is for:
 
 - **Draw** has the tools and colours close, and a small timeline.
 - **Animate** gives the timeline lots of room.
@@ -438,11 +438,25 @@ Gold stays gold for chosen things by default, with dark text on it. If you chang
 
 ## Switching
 
-Use **View, Draw workspace** (and friends), or the command search.
+Use **View, Draw workspace** (and friends), or the command search. **Next workspace** and **Previous workspace** step through the list.
 
 ## Your own
 
-Arrange the panels how you like. Then open **Preferences, Workspaces**, type a name and press **Save**. It shows up in the View menu next to the others.
+Arrange the panels how you like: dock them on any side, float some in windows (see [Floating windows](help:floating-windows)), name them. Then open **Preferences, Workspaces**, type a name and press **Save**. You can keep up to 12. It shows up in the View menu next to the others.
+
+On that page you can also:
+
+- **Rename** one, or move it **up** or **down** the list.
+- **Update** one to the layout you have now.
+- **Delete** one (it asks once more, so a slip doesn't cost you anything).
+
+## Share
+
+Every workspace has a **Save as a file** button. Send the file to a friend. On their **Workspaces** page, **Add a workspace file** puts it in their list. If the file isn't a workspace, Frameling says so and changes nothing.
+
+Prefer a message? **Copy as text** puts the whole workspace on your clipboard. Your friend pastes it into **Paste workspace text here** and presses **Add it to my workspaces**.
+
+A shared workspace only moves panels around. If it names a panel your Frameling doesn't have, that one is skipped, and a panel it doesn't mention goes where it normally lives.
 
 ## Reset
 
@@ -494,7 +508,7 @@ Want a section somewhere else? Drag its name onto the left or bottom zone. See [
     section: 'Workspace',
     summary: 'Panels dock on the left, right and bottom. The right side names every one on its rail.',
     keywords: ['dock', 'tabs', 'more', 'overflow', 'drag', 'resize', 'collapse', 'splitter', 'hide', 'show', 'move', 'missing panel', 'lost panel', 'panel gone', 'bring back', 'close panel'],
-    body: `Panels hold things like the timeline, layers and colours. They live in three zones: **left**, **right** and **bottom**.
+    body: `Panels hold things like the timeline, layers and colours. They dock in four zones: **left**, **right**, **bottom** and **top**, or float in a window of their own. See [Floating windows](help:floating-windows). A zone with nothing in it takes no room.
 
 ## The right side
 
@@ -506,7 +520,7 @@ The right side has a **rail** down its edge: an icon with a name for every place
 
 ## Move
 
-Drag a panel's **tab** (or its name on the rail) to another place to reorder it, or onto another zone to move it there. A glow shows where it will land.
+Drag a panel's **tab** (or its name on the rail) to another place to reorder it, or onto another zone to move it there. While you drag, bands light up along the edges of the canvas: drop on one to dock there. Right-click a tab for the same moves as a list, and to **Rename** it.
 
 ## When the tabs don't all fit
 
@@ -529,6 +543,50 @@ Press the **x** on a tab (or by a panel's name on the right) to close it, or pre
 **Tab** lands on the chosen tab of each zone. The **arrow keys** move between tabs (up and down on the rail), **Home** and **End** jump to the first and last.
 
 Your layout is remembered. Save arrangements as [workspaces](help:workspaces).`,
+  },
+  {
+    id: 'floating-windows',
+    order: 3,
+    media: 'floating-windows.mp4',
+    title: 'Floating windows',
+    section: 'Workspace',
+    summary: 'Drag a panel out to a window of its own, and drag it back to dock it.',
+    keywords: ['float', 'window', 'detach', 'undock', 'dock', 'pop out', 'tabs', 'group', 'rename', 'name', 'tools', 'tool strip', 'toolbar', 'move tools', 'top', 'second', 'hide all', 'panels away'],
+    body: `Any panel can float over the canvas in a window of its own. Handy for keeping the **Preview** next to your drawing, or a panel out of the way.
+
+## Pop a panel out
+
+Drag a panel's tab (or its name on the right-hand rail) out over the canvas and let go. A dashed box shows the window it will make. You can also right-click the tab and pick **Move to its own window**, or press \`Ctrl+Shift+\\\` while you are working in the panel.
+
+## Group panels
+
+A window can hold several panels as tabs. Drag a tab onto another window's tabs to join it. Drag one back out to split it off. Right-click a tab and use **Group with a window** if you would rather not drag.
+
+## Move and resize
+
+Drag the title bar to move a window. Pull any edge or corner to resize it. Click a window to bring it to the front. Double-click the bar to dock it back.
+
+## Dock it again
+
+Drag a tab, or a whole window by its title bar, towards a side of the canvas. Bands light up to say **Dock left**, **Dock right**, **Dock at the top** and **Dock at the bottom**. Let go on one, or on another zone's tabs, to dock there. **Dock back** on the window's bar sends its panels home.
+
+## Names
+
+Right-click a tab and choose **Rename** to call a panel what you like. Double-click a window's name to name the window. Both are kept in your workspace.
+
+## The tools
+
+The tool strip has a small grip at its top. Drag it to float the tools, or onto a side of the canvas to put them there, even along the top or bottom. Right-click the strip for the same as a list.
+
+## Room to draw
+
+**Hide all panels** (\`Ctrl+\\\`) puts every panel away. Press it again to bring them back.
+
+## With the keyboard
+
+Press the menu key on a tab, a window's grip or the tool strip's grip to open its menu. On a window's grip, the arrow keys nudge it. Every move is also in the command search.
+
+See also [Panels](help:panels) and [Workspaces](help:workspaces).`,
   },
   {
     id: 'tool-strip',

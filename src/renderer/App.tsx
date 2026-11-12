@@ -16,7 +16,9 @@ import { ChoiceDialog } from '../ui/ChoiceDialog';
 import { AskDialog } from '../platform/AskDialog';
 import { StatusBar } from '../ui/StatusBar';
 import { ToastView } from '../ui/ToastView';
-import { ToolStrip } from '../ui/ToolStrip';
+import { ToolFloat, ToolSlot } from '../ui/ToolStrip';
+import { DockOverlays } from '../ui/DockOverlays';
+import { FloatLayer } from '../ui/DockFloats';
 import { TooltipLayer } from '../ui/Tooltips';
 import { TopBar } from '../ui/TopBar';
 import { maybeOnboard } from '../ui/onboarding';
@@ -67,20 +69,29 @@ export function App() {
       <h1 className="ui-sr-only">Frameling</h1>
       <TopBar />
       <div className="ui-body">
-        <ToolStrip />
+        <ToolSlot at="left" />
         <DockZoneView zone="left" />
         <Splitter zone="left" />
         <div className="ui-center">
+          <ToolSlot at="top" />
+          <DockZoneView zone="top" />
+          <Splitter zone="top" />
           <main className="ui-canvas" aria-label="Drawing canvas" data-help="canvas">
             <PixelBar />
             <CanvasView />
           </main>
           <Splitter zone="bottom" />
           <DockZoneView zone="bottom" />
+          <ToolSlot at="bottom" />
         </div>
         <Splitter zone="right" />
         <DockZoneView zone="right" />
+        <ToolSlot at="right" />
       </div>
+      <FloatLayer>
+        <ToolFloat />
+      </FloatLayer>
+      <DockOverlays />
       <StatusBar />
       <CommandPalette />
       <PrefsModal />

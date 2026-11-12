@@ -29,7 +29,7 @@ export const MENUS: MenuDef[] = [
   {
     label: 'View',
     categories: ['View', 'Artboards'],
-    items: ['view.zoomIn', 'view.zoomOut', 'view.fit', 'view.zoom100', 'view.center', 'view.pixelGrid', 'view.emptyGhost', 'view.whereDidItGo', '-', 'view.rulers', 'view.guides', 'view.snap', 'view.lockGuides', 'view.clearGuides', '-', 'view.gridSquare', 'view.gridIso', 'view.perspective1', 'view.perspective2', 'view.showPerspective', 'view.removePerspective', 'view.gridSettings', '-', 'view.lightTable', 'view.lightTableDrawing', 'view.clearLightTable', '-', 'group:panels', 'view.allPanels', '-', 'group:workspaces', 'view.saveWorkspace', 'view.resetLayout', '-', 'view.toggleTheme', 'view.nextTheme', 'view.themes', 'view.toggleLook', 'view.toggleSounds', '-', 'view.commandPalette'],
+    items: ['view.zoomIn', 'view.zoomOut', 'view.fit', 'view.zoom100', 'view.center', 'view.pixelGrid', 'view.emptyGhost', 'view.whereDidItGo', '-', 'view.rulers', 'view.guides', 'view.snap', 'view.lockGuides', 'view.clearGuides', '-', 'view.gridSquare', 'view.gridIso', 'view.perspective1', 'view.perspective2', 'view.showPerspective', 'view.removePerspective', 'view.gridSettings', '-', 'view.lightTable', 'view.lightTableDrawing', 'view.clearLightTable', '-', 'group:panels', 'view.allPanels', 'sub:panelwin', '-', 'group:workspaces', 'view.saveWorkspace', 'view.manageWorkspaces', 'sub:wsshare', 'view.resetLayout', '-', 'view.toggleTheme', 'view.nextTheme', 'view.themes', 'view.toggleLook', 'view.toggleSounds', '-', 'view.commandPalette'],
   },
   {
     label: 'Draw',
@@ -77,6 +77,15 @@ export interface SubmenuDef {
 }
 
 export const SUBMENUS: Record<string, SubmenuDef> = {
+  panelwin: {
+    label: 'Panel windows and tools',
+    items: ['view.floatPanel', 'view.renamePanel', 'view.movePanel.left', 'view.movePanel.right', 'view.movePanel.bottom', 'view.movePanel.top', 'view.dockAllWindows', 'view.hidePanels', '-', 'view.toolsPlace.left', 'view.toolsPlace.right', 'view.toolsPlace.top', 'view.toolsPlace.bottom', 'view.toolsPlace.float'],
+    prefixes: ['view.movePanel.', 'view.toolsPlace.'],
+  },
+  wsshare: {
+    label: 'Share a workspace',
+    items: ['view.exportWorkspace', 'view.importWorkspace', 'view.copyWorkspace', 'view.pasteWorkspace', '-', 'view.previousWorkspace', 'view.nextWorkspace'],
+  },
   motions: {
     label: 'One-click motions',
     items: ['motion.bounce', 'motion.wobble', 'motion.float', 'motion.popIn', 'motion.shake', 'motion.fadeIn'],

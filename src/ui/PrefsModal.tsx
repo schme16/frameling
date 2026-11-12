@@ -1,7 +1,7 @@
 import { line } from './mascot/lines';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { allCommands, type Command } from '../core/registry';
-import { applyWorkspace, currentWorkspace, deleteWorkspace, dock, listWorkspaces, renameWorkspace, resetLayout, saveWorkspace } from './dock';
+import { WorkspacesPage } from './WorkspacesPage';
 import { isStaleCommand, syncDynamicCommands } from './dynamic';
 import { Icon } from './icons';
 import { QuillEmpty, setShowQuill } from './mascot';
@@ -394,100 +394,6 @@ function KeyboardPage({ focusId }: { focusId?: string }) {
             {line('empty.shortcuts')}
           </QuillEmpty>
         )}
-      </div>
-    </>
-  );
-}
-
-// ---------------------------------------------------------------- workspaces
-
-function WorkspacesPage() {
-  dock.use((d) => d);
-  const [name, setName] = useState('');
-  const [editing, setEditing] = useState<string | null>(null);
-  const [draft, setDraft] = useState('');
-  const list = listWorkspaces();
-  const now = currentWorkspace();
-
-  const save = () => {
-    const ws = saveWorkspace(name);
-    if (!ws) return;
-    setName('');
-    toast(`Saved "${ws.name}". Find it in the View menu.`, { kind: 'success' });
-  };
-
-  return (
-    <>
-      <h3>Workspaces</h3>
-      <p className="ui-pref-intro">A workspace is a way of arranging your panels. Switch between them any time.</p>
-      <ul className="ui-ws-list">
-        {list.map((w) => (
-          <li key={w.id} className={`ui-ws${now?.id === w.id ? ' is-chosen' : ''}`}>
-            <Icon name={w.builtin ? 'workspace' : 'heart'} size={16} />
-            {editing === w.id ? (
-              <input
-                className="ui-ws-edit"
-                aria-label="Workspace name"
-                value={draft}
-                autoFocus
-                maxLength={40}
-                onChange={(e) => setDraft(e.target.value)}
-                onBlur={() => (renameWorkspace(w.id, draft), setEditing(null))}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') (renameWorkspace(w.id, draft), setEditing(null));
-                  if (e.key === 'Escape') {
-                    e.preventDefault();
-                    setEditing(null);
-                  }
-                }}
-              />
-            ) : (
-              <span className="ui-ws-name">{w.name}</span>
-            )}
-            {w.builtin && <span className="ui-tag">Comes with Frameling</span>}
-            {now?.id === w.id && <span className="ui-tag ui-tag-on">In use</span>}
-            <span className="ui-status-spacer" />
-            {now?.id !== w.id && (
-              <button type="button" className="ui-btn ui-btn-small" onClick={() => applyWorkspace(w.id)}>
-                Use
-              </button>
-            )}
-            {!w.builtin && (
-              <>
-                <button type="button" className="ui-btn ui-btn-small" onClick={() => (setDraft(w.name), setEditing(w.id))}>
-                  Rename
-                </button>
-                <button type="button" className="ui-btn ui-btn-small" onClick={() => (saveWorkspace(w.name), toast(`Updated "${w.name}" to the layout you have now.`, { kind: 'success' }))}>
-                  Update
-                </button>
-                <button type="button" className="ui-icon-btn" aria-label={`Delete ${w.name}`} data-tip={`Delete ${w.name}`} onClick={() => deleteWorkspace(w.id)}>
-                  <Icon name="trash" size={15} />
-                </button>
-              </>
-            )}
-          </li>
-        ))}
-      </ul>
-      <form
-        className="ui-ws-save"
-        onSubmit={(e) => {
-          e.preventDefault();
-          save();
-        }}
-      >
-        <label className="ui-field ui-field-wide">
-          <span>Save the layout you have now as</span>
-          <input type="text" placeholder="My cosy corner" value={name} maxLength={40} onChange={(e) => setName(e.target.value)} />
-        </label>
-        <button type="submit" className="ui-btn ui-btn-primary" disabled={!name.trim()}>
-          Save
-        </button>
-      </form>
-      <div className="ui-pref-foot">
-        <button type="button" className="ui-btn" onClick={() => (resetLayout(), toast('Panels are back where they started.', { kind: 'success' }))}>
-          Reset layout
-        </button>
-        <span>Puts the panels back to how the workspace in use began.</span>
       </div>
     </>
   );

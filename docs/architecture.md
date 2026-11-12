@@ -208,9 +208,23 @@ Before the first paint it applies preferences and syncs panels and dynamic comma
 keyboard, the roving keys and hover tracking, then onboarding or the welcome sheet. Two frames after mount it sets the
 `frameling:interactive` mark and starts warming lazy parts.
 
-- **Dock** (`src/ui/dock.ts`, view in `DockView.tsx`): zones `left`, `right`, `bottom`, each with tabs, active tab,
-  size and collapsed state, saved in `localStorage` `frameling.dock.v1`. `syncPanels()` places newly registered panels
-  by their `zone`. Tabs fit by `src/ui/tabFit.ts` (full, compact, or overflow behind "+N").
+- **Dock**, in layers:
+  - `src/ui/dockModel.ts` is the pure model: `Layout` (zones `left`, `right`, `bottom`, `top` with tabs, active tab,
+    size and collapsed state; `floats`, the floating windows, later = nearer the front; `tools`, where the tool rail
+    is; `names`, panels the person renamed; `hidden`; `known`), `normaliseLayout` (tidies anything, so layouts saved
+    before the top zone and windows load as they were), and the moves (`movePanelTo`, `moveGroupTo`, `dockFloat`,
+    `closePanel`, `frontPanel`, `clampBox`...). No registry, no storage.
+  - `src/ui/dock.ts` is the live store (`dock`), saved in `localStorage` `frameling.dock.v1` (`v: 2`), over the model:
+    `syncPanels()` places newly registered panels by their `zone`, `reconcile` fits a layout to what is registered,
+    `placePanel`, `floatPanel`, `showPanel`, `togglePanel`, workspaces (below). `panelsAway` is "Hide all panels".
+  - `DockView.tsx` draws the zones (tabs fit by `tabFit.ts`: full, compact, or overflow behind "+N"); `DockFloats.tsx`
+    the floating windows (two looks, `floatChrome`); `ToolStrip.tsx` the tool rail in whichever slot it is placed
+    (`ToolSlot`) or floating (`ToolFloat`); `DockOverlays.tsx` the drag bands and label, the right-click menu and the
+    name box.
+  - `dockDrag.ts` does the dragging with pointer events (not HTML drag and drop, so a tab can leave the window).
+    Views mark drop places with `data-dock-strip`, `-tab`, `-tabs`, `-axis`, `-area`, `-zone`, `-float` and `-edge`, and
+    `targetAt` reads what is under the pointer. `dockMenus.ts` holds the menus as data; `dockCommands.ts` the
+    commands ("this panel" is the last one clicked in, `lastPanel`).
 - **Right side** (`src/ui/RightDock.tsx`), chosen by preference (`src/ui/rightStyle.ts`): `inspector` (default),
   `rail` or `tabs`. The rail is a vertical labelled strip. In inspector mode, panels marked as sections (tool options,
   colours, palette, tileset, motion, effects, text, particles, camera, bones) show as one stack of foldable sections
@@ -226,9 +240,9 @@ keyboard, the roving keys and hover tracking, then onboarding or the welcome she
 
 ## Workspaces
 
-`src/ui/dock.ts` `builtinWorkspaces()` makes Draw, Animate and Pixel from the registered panels. Pixel puts colours and
+`src/ui/dock.ts` `builtinWorkspaces()` makes Draw, Animate and Pixel from the registered panels, each with a one-line `about`. Pixel puts colours and
 the palette on the left, closes panels pixel art rarely needs (`PIXEL_HIDDEN`) and narrows the tool strip
-(`PIXEL_TOOLS`). People can save, rename and delete their own (`saveWorkspace`). `applyWorkspace(id)` switches,
+(`PIXEL_TOOLS`). People can keep up to 12 of their own (`saveWorkspace`, `renameWorkspace`, `moveWorkspace`, `deleteWorkspace`; floating windows, the tool rail place and panel names go with a workspace). They share as a file or as text: `src/ui/workspaceFile.ts` writes and reads `{ format: 'frameling-workspace', version, name, layout... }` and trusts nothing in it (the same tidying as a saved layout, size and count caps), `importWorkspace` adds one with a free name, `workspaceActions.ts` has the file picker, clipboard and toasts. `applyWorkspace(id)` switches,
 called from `view.workspace.<id>`, Preferences > Workspaces and onboarding. `src/pixel/workspace.ts` offers to switch
 to Pixel when a pixel document opens (a remembered choice). `src/ui/presets.ts` is new-document size presets, not
 workspaces.

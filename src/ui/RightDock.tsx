@@ -6,7 +6,9 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { getPanel, type DockZone } from '../core/registry';
 import { useStore } from '../core/store';
-import { dock, hidePanel, movePanel, setActive, toggleCollapsed } from './dock';
+import { dock, hidePanel, setActive, toggleCollapsed } from './dock';
+import { dragState, dropIndexFor, startPanelDrag } from './dockDrag';
+import { menuPoint, openDockMenu, panelMenu } from './dockMenus';
 import { dragging, PanelBoundary } from './dockShared';
 import { Icon } from './icons';
 import { openHelp } from './overlays';
@@ -26,14 +28,14 @@ let lastShown: string | null = null;
 export function RightDock({ zone, style }: { zone: DockZone; style: RightStyle }) {
   const z = dock.use((d) => d.layout.zones[zone]);
   const drag = dragging.use((v) => v);
+  const names = dock.use((d) => d.layout.names);
+  const dropAt = dragState.use((d) => dropIndexFor(d, { zone }, z.tabs.length));
   const merge = style === 'inspector';
   const { sections, rail } = splitZone(z.tabs, merge);
   const active = z.active && z.tabs.includes(z.active) ? z.active : (z.tabs[0] ?? null);
   const onProps = merge && !!active && sections.includes(active);
   if (onProps) lastSection = active;
   const picker = panelPicker.use((v) => v);
-  const [dropAt, setDropAt] = useState<number | null>(null);
-  const railRef = useRef<HTMLDivElement>(null);
 
   // The rail, top to bottom: Properties (when there are sections), then the groups.
   const groups = railGroups(rail);
@@ -53,6 +55,13 @@ export function RightDock({ zone, style }: { zone: DockZone; style: RightStyle }
   const focusItem = (id: string) => requestAnimationFrame(() => document.getElementById(`rd-tab-${id}`)?.focus());
 
   const onKey = (e: React.KeyboardEvent, id: string) => {
+    if (id !== PROPS && (e.key === 'ContextMenu' || (e.shiftKey && e.key === 'F10'))) {
+      e.preventDefault();
+      e.stopPropagation();
+      const at = menuPoint(e.currentTarget);
+      openDockMenu(at.x, at.y, panelMenu(id, at));
+      return;
+    }
     if (e.key === 'Delete' && id !== PROPS) {
       e.preventDefault();
       e.stopPropagation();
@@ -69,41 +78,12 @@ export function RightDock({ zone, style }: { zone: DockZone; style: RightStyle }
     focusItem(items[to]);
   };
 
-  // Dropping a dragged panel on the rail: before the item under the pointer.
-  const indexAt = (e: React.DragEvent): number => {
-    const els = [...(railRef.current?.querySelectorAll<HTMLElement>('[data-rail-id]') ?? [])];
-    for (const el of els) {
-      const r = el.getBoundingClientRect();
-      if (e.clientY < r.top + r.height / 2) {
-        const id = el.dataset.railId!;
-        return id === PROPS ? 0 : z.tabs.indexOf(id);
-      }
-    }
-    return z.tabs.length;
-  };
-  const dropProps = {
-    onDragOver: (e: React.DragEvent) => {
-      if (!drag) return;
-      e.preventDefault();
-      e.dataTransfer.dropEffect = 'move';
-      setDropAt(indexAt(e));
-    },
-    onDragLeave: () => setDropAt(null),
-    onDrop: (e: React.DragEvent) => {
-      if (!drag) return;
-      e.preventDefault();
-      movePanel(drag, zone, dropAt ?? indexAt(e));
-      dragging.set(null);
-      setDropAt(null);
-    },
-  };
-
   const tabFor = (id: string) => {
     const isProps = id === PROPS;
     const p = isProps ? null : getPanel(id);
     if (!isProps && !p) return null;
-    const title = isProps ? 'Properties' : p!.title;
-    const label = isProps ? 'Properties' : shortName(p!);
+    const title = isProps ? 'Properties' : (names?.[id] ?? p!.title);
+    const label = isProps ? 'Properties' : (names?.[id] ?? shortName(p!));
     const on = chosen === id;
     const blurb = isProps ? 'Settings for what you are doing now: the tool, colours and whatever you have selected.' : infoFor(p!).blurb;
     const before = drag && dropAt !== null && dropAt === (isProps ? 0 : z.tabs.indexOf(id));
@@ -122,17 +102,18 @@ export function RightDock({ zone, style }: { zone: DockZone; style: RightStyle }
         tabIndex={(chosen ?? items[0]) === id ? 0 : -1}
         data-help={isProps ? 'properties' : (p!.help ?? 'panels')}
         data-tip={title}
-        data-tip-desc={`${blurb}${isProps ? '' : ' Drag to move it.'}`}
-        draggable={!isProps}
-        onDragStart={(e) => {
-          e.dataTransfer.setData('text/plain', id);
-          e.dataTransfer.effectAllowed = 'move';
-          dragging.set(id);
-        }}
-        onDragEnd={() => {
-          dragging.set(null);
-          setDropAt(null);
-        }}
+        data-tip-desc={`${blurb}${isProps ? '' : ' Drag to move it. Right-click for more.'}`}
+        data-dock-tab={id}
+        data-panel-id={isProps ? undefined : id}
+        onPointerDown={isProps ? undefined : (e) => startPanelDrag(e, id)}
+        onContextMenu={
+          isProps
+            ? undefined
+            : (e) => {
+                e.preventDefault();
+                openDockMenu(e.clientX, e.clientY, panelMenu(id, { x: e.clientX, y: e.clientY }));
+              }
+        }
         onClick={() => open(id)}
         onKeyDown={(e) => onKey(e, id)}
       >
@@ -149,9 +130,9 @@ export function RightDock({ zone, style }: { zone: DockZone; style: RightStyle }
   const width = z.collapsed ? RAIL_W : z.size + RAIL_W;
 
   return (
-    <section className={`ui-zone ui-zone-${zone} rd${z.collapsed ? ' is-collapsed' : ''}${drag ? ' is-target' : ''}`} style={{ width }} aria-label={`${zone} side`} {...dropProps}>
+    <section className={`ui-zone ui-zone-${zone} rd${z.collapsed ? ' is-collapsed' : ''}${drag ? ' is-target' : ''}`} style={{ width }} aria-label={`${zone} side`} data-dock-area="" data-dock-zone={zone}>
       {!z.collapsed && (onProps || panel) && (
-        <div className="rd-body" role="tabpanel" id="rd-body" aria-labelledby={`rd-tab-${onProps ? PROPS : active}`}>
+        <div className="rd-body" role="tabpanel" id="rd-body" aria-labelledby={`rd-tab-${onProps ? PROPS : active}`} data-panel-id={onProps ? undefined : (active ?? undefined)}>
           {onProps ? (
             <Inspector sections={sections} active={active} />
           ) : (
@@ -159,7 +140,7 @@ export function RightDock({ zone, style }: { zone: DockZone; style: RightStyle }
               <>
                 <header className="rd-head">
                   <Icon name={panel.icon} size={16} />
-                  <h2 className="rd-head-title">{panel.title}</h2>
+                  <h2 className="rd-head-title">{names?.[panel.id] ?? panel.title}</h2>
                   <button type="button" className="ui-icon-btn" aria-label={`Help on ${panel.title}`} data-tip="What's this?" onClick={() => openHelp(panel.help ?? 'panels')}>
                     <Icon name="help" size={14} />
                   </button>
@@ -178,7 +159,7 @@ export function RightDock({ zone, style }: { zone: DockZone; style: RightStyle }
           )}
         </div>
       )}
-      <div className="rd-rail" ref={railRef}>
+      <div className="rd-rail" data-dock-strip="" data-dock-zone={zone} data-dock-tabs={z.tabs.join(',')} data-dock-axis="y">
         <div className="rd-rail-items" role="tablist" aria-label="Right side" aria-orientation="vertical">
           {merge && sections.length > 0 && tabFor(PROPS)}
           {groups.map((g, gi) => (
@@ -304,13 +285,12 @@ function Section({ id, open, flash, all }: { id: string; open: boolean; flash: b
     <section className={`rd-sec${open ? '' : ' is-folded'}${flash ? ' is-flash' : ''}`} id={`rd-sec-${id}`} aria-labelledby={`rd-sec-h-${id}`} data-help={p.help}>
       <h3
         className="rd-sec-head"
-        draggable
-        onDragStart={(e) => {
-          e.dataTransfer.setData('text/plain', id);
-          e.dataTransfer.effectAllowed = 'move';
-          dragging.set(id);
+        data-panel-id={id}
+        onPointerDown={(e) => startPanelDrag(e, id)}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          openDockMenu(e.clientX, e.clientY, panelMenu(id, { x: e.clientX, y: e.clientY }));
         }}
-        onDragEnd={() => dragging.set(null)}
       >
         <button
           type="button"
