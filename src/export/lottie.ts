@@ -33,6 +33,7 @@ import { activeEffects, effectInfo, isNoop, valuesAt } from '../effects/model';
 import { canTraceText, glyphSprites, particleSprites, SPRITE_UNIT, type ParticleSprite } from './sprites';
 import { cameraViewAt, cameraViewOn, activeCamera, parallaxFactor } from '../core/camera';
 import { encodePng } from '../io/png';
+import { fitClosed, sampleMidpointSpline } from './curve-fit';
 import { flattenTilemap } from '../tiles/model';
 import { sortedStops } from '../core/gradient';
 import type { PosedMesh } from '../rig/pose';
@@ -66,6 +67,14 @@ const r3 = (v: number) => {
   const x = Math.round(v * 1000) / 1000;
   return Object.is(x, -0) ? 0 : x;
 };
+
+/** Path numbers: two decimals is a hundredth of a stage pixel, far below what shows even at four times the size. */
+const rp = (v: number) => {
+  const x = Math.round(v * 100) / 100;
+  return Object.is(x, -0) ? 0 : x;
+};
+/** How far (stage pixels) a brush outline may move when it is refitted with fewer points. */
+const FIT_TOLERANCE = 0.05;
 
 /** `#rgb[a]` / `#rrggbb[aa]` as Lottie's 0..1 rgb and an alpha. */
 export function lottieColor(c: string): { rgb: [number, number, number]; alpha: number } {
@@ -128,22 +137,50 @@ export function lottiePath(sp: SubPath): Json {
   const oo: number[][] = [];
   for (let k = 0; k < n; k++) {
     const p = pts[k];
-    v.push([r3(p.x), r3(p.y)]);
+    v.push([rp(p.x), rp(p.y)]);
     // In: the second control of the curve arriving here. Out: the first control of the curve leaving.
     const arrive = k > 0 || sp.closed ? p : undefined;
-    ii.push(arrive?.c2 && arrive.c1 ? [r3(arrive.c2.x - p.x), r3(arrive.c2.y - p.y)] : [0, 0]);
+    ii.push(arrive?.c2 && arrive.c1 ? [rp(arrive.c2.x - p.x), rp(arrive.c2.y - p.y)] : [0, 0]);
     const next = k + 1 < n ? pts[k + 1] : sp.closed ? pts[0] : undefined;
-    oo.push(next?.c1 && next.c2 ? [r3(next.c1.x - p.x), r3(next.c1.y - p.y)] : [0, 0]);
+    oo.push(next?.c1 && next.c2 ? [rp(next.c1.x - p.x), rp(next.c1.y - p.y)] : [0, 0]);
   }
   return { c: sp.closed, v, i: ii, o: oo };
 }
 
 /** A brush stroke's outline, smoothed like the canvas does it (quadratic curves through the midpoints). */
-export function strokeOutlinePath(s: StrokeShape): Json | null {
+const fitCache = new WeakMap<StrokeShape, Json>();
+
+/** The same outline with fewer points: cubics fitted to the smoothed outline, kept only when they are fewer. */
+function fittedOutline(s: StrokeShape, n: number): Json | null {
+  const hit = fitCache.get(s);
+  // A copy each time: players write into what they are given.
+  if (hit !== undefined) return hit && { c: hit.c, v: hit.v.map((x: number[]) => [...x]), i: hit.i.map((x: number[]) => [...x]), o: hit.o.map((x: number[]) => [...x]) };
+  let out: Json | null = null;
+  const cubics = fitClosed(sampleMidpointSpline(strokeOutline(s), 0.75), FIT_TOLERANCE);
+  if (cubics.length && cubics.length < n) {
+    out = {
+      c: true,
+      v: cubics.map((c) => [rp(c[0][0]), rp(c[0][1])]),
+      i: cubics.map((_, k) => {
+        const c = cubics[(k + cubics.length - 1) % cubics.length];
+        return [rp(c[2][0] - c[3][0]), rp(c[2][1] - c[3][1])];
+      }),
+      o: cubics.map((c) => [rp(c[1][0] - c[0][0]), rp(c[1][1] - c[0][1])]),
+    };
+  }
+  fitCache.set(s, out);
+  return out && fittedOutline(s, n);
+}
+
+export function strokeOutlinePath(s: StrokeShape, fit = false): Json | null {
   const p = strokeOutline(s);
   const n = p.length;
   if (n < 2) return null;
-  if (n < 4) return { c: true, v: p.map(([x, y]) => [r3(x), r3(y)]), i: p.map(() => [0, 0]), o: p.map(() => [0, 0]) };
+  if (fit && n >= 4) {
+    const f = fittedOutline(s, n);
+    if (f) return f;
+  }
+  if (n < 4) return { c: true, v: p.map(([x, y]) => [rp(x), rp(y)]), i: p.map(() => [0, 0]), o: p.map(() => [0, 0]) };
   const v: number[][] = [];
   const ii: number[][] = [];
   const oo: number[][] = [];
@@ -152,9 +189,9 @@ export function strokeOutlinePath(s: StrokeShape): Json | null {
     const a = p[k];
     const b = p[(k + 1) % n];
     const m = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
-    v.push([r3(m[0]), r3(m[1])]);
-    ii.push([r3((2 / 3) * (a[0] - m[0])), r3((2 / 3) * (a[1] - m[1]))]);
-    oo.push([r3((2 / 3) * (b[0] - m[0])), r3((2 / 3) * (b[1] - m[1]))]);
+    v.push([rp(m[0]), rp(m[1])]);
+    ii.push([rp((2 / 3) * (a[0] - m[0])), rp((2 / 3) * (a[1] - m[1]))]);
+    oo.push([rp((2 / 3) * (b[0] - m[0])), rp((2 / 3) * (b[1] - m[1]))]);
   }
   return { c: true, v, i: ii, o: oo };
 }
@@ -223,12 +260,13 @@ interface ShapeLook {
   tr?: Tr;
 }
 
-function lookOf(s: Exclude<Shape, InstanceShape>, tints: Tint[]): ShapeLook {
+/** `still`: the shape doesn't change over the run, so a brush outline may be refitted with fewer points. */
+function lookOf(s: Exclude<Shape, InstanceShape>, tints: Tint[], still = false): ShapeLook {
   // Text and particles are turned into sprites before this (expandSprites).
   if (s.type === 'text' || s.type === 'particles') return { paths: [], fill: null, stroke: null };
   if (s.type === 'stroke') {
     const c = tinted(s.color, tints);
-    const p = strokeOutlinePath(s);
+    const p = strokeOutlinePath(s, still);
     return { paths: p ? [p] : [], fill: { rgb: c.rgb, o: r3(c.alpha * s.opacity * 100) }, stroke: null };
   }
   const paths = s.paths.filter((sp) => sp.points.length).map(lottiePath);
@@ -310,7 +348,7 @@ export function smoothTrack(values: (number | number[])[], times: number[], tol:
 }
 
 // A fresh one each time: lottie-web writes into the data it's given, so shared objects break it.
-const noTr = () => ({ ty: 'tr', p: stat([0, 0]), a: stat([0, 0]), s: stat([100, 100]), r: stat(0), o: stat(100), sk: stat(0), sa: stat(0) });
+const noTr = () => ({ ty: 'tr', p: stat([0, 0]), a: stat([0, 0]), s: stat([100, 100]), r: stat(0), o: stat(100) });
 
 /** Angles per frame without jumps of a whole turn, so blending between frames takes the short way. */
 function unwrap(rs: number[]): number[] {
@@ -582,6 +620,8 @@ interface Ctx {
   doc: Doc;
   assets: Json[];
   symbolAssets: Map<string, string>;
+  /** Precomps for drawings shown in several keys of a layer, by drawing and colour wash. */
+  sharedDrawings: Map<string, string>;
   images: Map<string, string>;
   /** How far symbol content may sit outside the stage before a copy clips it. */
   pad: number;
@@ -792,6 +832,7 @@ function layerPieces(ctx: Ctx, layer: Layer, from: number, to: number, offset: n
   const out: Json[] = [];
   const { doc } = ctx;
   const op = withOpacity ? layer.opacity : 1;
+  const uses = drawingUses(doc, layer, from, to);
   for (const cel of layer.cels) {
     const a = Math.max(from, cel.start);
     const b = Math.min(to, cel.start + cel.length - 1);
@@ -810,6 +851,11 @@ function layerPieces(ctx: Ctx, layer: Layer, from: number, to: number, offset: n
       out.push(tag({ ty: 2, refId: id, ip: a - offset, op: b + 1 - offset, st: 0, sr: 1, ks: { a: stat([0, 0]), p: stat([0, 0]), s: stat([100, 100]), r: stat(0), o: stat(100) } }));
       continue;
     }
+    const shared = (uses.get(cel.drawingId) ?? 0) > 1 ? sharedDrawing(ctx, layer, cel, uses.get(cel.drawingId)!) : undefined;
+    if (shared) {
+      out.push(tag({ ty: 0, refId: shared, w: doc.width + ctx.pad * 2, h: doc.height + ctx.pad * 2, ip: a - offset, op: b + 1 - offset, st: a - offset, sr: 1, ks: { a: stat([ctx.pad, ctx.pad]), p: stat([0, 0]), s: stat([100, 100]), r: stat(0), o: stat(100) } }));
+      continue;
+    }
     const frames: number[] = [];
     for (let f = a; f <= b; f++) frames.push(f);
     // A layer on a bone comes back as one posed group: its shapes are moved (or bent) into place per frame.
@@ -822,12 +868,54 @@ function layerPieces(ctx: Ctx, layer: Layer, from: number, to: number, offset: n
     const s0 = sig(first.shapes);
     if (!drawings.every((d) => d?.kind === 'vector' && sig(d.shapes) === s0)) {
       // The shapes change kind partway (shouldn't happen): every frame on its own.
-      frames.forEach((f, k) => out.push(...vectorRuns(ctx, layer, cel, [f], [drawings[k]!.kind === 'vector' ? (drawings[k] as any).shapes : []], offset).map(tag)));
+      frames.forEach((f, k) => out.push(...vectorRuns(ctx, layer, cel, [f], [drawings[k]!.kind === 'vector' ? (drawings[k] as any).shapes : []], offset, true).map(tag)));
       continue;
     }
-    out.push(...vectorRuns(ctx, layer, cel, frames, drawings.map((d) => (d as any).shapes as Shape[]), offset).map(tag));
+    out.push(...vectorRuns(ctx, layer, cel, frames, drawings.map((d) => (d as any).shapes as Shape[]), offset, drawings.every((d) => d === first)).map(tag));
   }
   return out;
+}
+
+/** Does this key show a plain drawing (paths, fills and brush strokes only) that is the same on every frame of it? */
+function plainKey(doc: Doc, layer: Layer, cel: Cel): boolean {
+  if (layer.bind || cel.tween || (layer.kind && layer.kind !== 'vector')) return false;
+  const d = doc.drawings[cel.drawingId];
+  return d?.kind === 'vector' && d.shapes.every((s) => s.type === 'path' || s.type === 'fill' || s.type === 'stroke') && poseAt(doc, layer, cel.start) === d;
+}
+
+/** How many keys of the layer (inside the range) show each plain drawing. */
+function drawingUses(doc: Doc, layer: Layer, from: number, to: number): Map<string, number> {
+  const uses = new Map<string, number>();
+  for (const cel of layer.cels) {
+    if (cel.start > to || cel.start + cel.length - 1 < from || !plainKey(doc, layer, cel)) continue;
+    uses.set(cel.drawingId, (uses.get(cel.drawingId) ?? 0) + 1);
+  }
+  return uses;
+}
+
+/**
+ * A drawing that comes back in several keys is written once, as a precomp the keys point at (the shapes are the bulk
+ * of the file). Only when that saves bytes: a small drawing costs less than the precomp layer that would replace it.
+ */
+function sharedDrawing(ctx: Ctx, layer: Layer, cel: Cel, uses: number): string | undefined {
+  const mapKey = cel.drawingId + '#' + tintKey(ctx.tints);
+  const known = ctx.sharedDrawings.get(mapKey);
+  if (known) return known;
+  const d = ctx.doc.drawings[cel.drawingId];
+  if (d?.kind !== 'vector') return undefined;
+  const pieces = vectorRuns(ctx, layer, cel, [cel.start], [d.shapes], cel.start, true);
+  if (!pieces.length || pieces.some((l) => l.ty !== 4)) return undefined;
+  // Each use costs a precomp layer (about 330 bytes) instead of the shape layer; the precomp itself about 300 more.
+  if ((uses - 1) * (JSON.stringify(pieces).length - 330) < 300) return undefined;
+  const id = `drawing_${ctx.sharedDrawings.size}`;
+  ctx.sharedDrawings.set(mapKey, id);
+  for (const l of pieces) {
+    l.ip = 0;
+    l.op = ctx.doc.length + 1;
+  }
+  const shift = { ty: 3, ind: 1, nm: 'Offset', ip: 0, op: ctx.doc.length + 1, st: 0, sr: 1, ks: { a: stat([0, 0]), p: stat([ctx.pad, ctx.pad]), s: stat([100, 100]), r: stat(0), o: stat(100) } };
+  ctx.assets.push({ id, nm: 'Drawing', fr: ctx.doc.fps, layers: [...numbered(pieces, 2, 1), shift] });
+  return id;
 }
 
 /** An opacity property multiplied by `by`. */
@@ -837,7 +925,7 @@ function scaleO(o: Json, by: number): Json {
 }
 
 /** A key's shapes over its frames: runs of plain shapes become shape layers, symbol copies become precomp layers. */
-function vectorRuns(ctx: Ctx, layer: Layer, cel: Cel, frames: number[], rawShapes: Shape[][], offset: number): Json[] {
+function vectorRuns(ctx: Ctx, layer: Layer, cel: Cel, frames: number[], rawShapes: Shape[][], offset: number, still: boolean): Json[] {
   const { doc } = ctx;
   const times = frames.map((f) => f - offset);
   const ip = frames[0] - offset;
@@ -849,7 +937,7 @@ function vectorRuns(ctx: Ctx, layer: Layer, cel: Cel, frames: number[], rawShape
   const flush = () => {
     if (!run.length) return;
     const groups = run
-      .map((k) => shapeGroup(items.map((list) => (list[k].type === 'look' ? (list[k] as LookItem).look : lookOf(list[k] as Exclude<Shape, InstanceShape>, ctx.tints))), times, `Shape ${k + 1}`))
+      .map((k) => shapeGroup(items.map((list) => (list[k].type === 'look' ? (list[k] as LookItem).look : lookOf(list[k] as Exclude<Shape, InstanceShape>, ctx.tints, still))), times, `Shape ${k + 1}`))
       .filter((g): g is Json => !!g)
       .reverse();
     if (groups.length) out.push({ ty: 4, ip, op: opEnd, st: 0, sr: 1, ks: { a: stat([0, 0]), p: stat([0, 0]), s: stat([100, 100]), r: stat(0), o: stat(100) }, shapes: groups });
@@ -1397,7 +1485,7 @@ export function lottieExport(doc: Doc, opts: LottieOptions = {}): { data: Json; 
   const from = Math.max(0, opts.range?.start ?? 0);
   const to = Math.min(doc.length - 1, opts.range?.end ?? doc.length - 1);
   const count = to - from + 1;
-  const ctx: Ctx = { doc, assets: [], symbolAssets: new Map(), images: new Map(), pad: Math.max(doc.width, doc.height) * 2, tints: [], notes: new Set(), comps: 0, pictures: opts.pictures ?? 'balanced', bake: opts.bake };
+  const ctx: Ctx = { doc, assets: [], symbolAssets: new Map(), sharedDrawings: new Map(), images: new Map(), pad: Math.max(doc.width, doc.height) * 2, tints: [], notes: new Set(), comps: 0, pictures: opts.pictures ?? 'balanced', bake: opts.bake };
   const include = (l: Layer) => l.visible && !l.reference && l.kind !== 'camera';
   const r: Range = { from, to, offset: from };
   const content = levelContent(ctx, buildPlan(doc, include), r);

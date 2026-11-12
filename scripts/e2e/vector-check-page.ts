@@ -391,6 +391,8 @@ const api = {
     anim?.destroy();
     holder.innerHTML = '';
     const data = docToLottie(doc);
+    // lottie-web adds fields to the data it plays, so the file size is taken first.
+    const lottieBytes = JSON.stringify(data).length;
     const canvas = document.createElement('canvas');
     canvas.width = doc.width;
     canvas.height = doc.height;
@@ -408,7 +410,7 @@ const api = {
     await new Promise<void>((r) => (animSvg!.isLoaded ? r() : animSvg!.addEventListener('DOMLoaded', () => r())));
     await new Promise((r) => setTimeout(r, 300));
     svgHolder.innerHTML = animatedSvg(doc);
-    return { length: doc.length, width: doc.width, height: doc.height, lottieBytes: JSON.stringify(data).length, svgBytes: svgHolder.innerHTML.length };
+    return { length: doc.length, width: doc.width, height: doc.height, lottieBytes, svgBytes: svgHolder.innerHTML.length };
   },
   /** Where the bytes of this document's Lottie file go. */
   sizes() {
