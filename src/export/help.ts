@@ -105,7 +105,7 @@ Pick **One clip** in the Range row and the file follows how that clip plays ([cl
     media: 'export-sheet.png',
     summary: 'Put every frame on one picture, with the files a game engine or web page needs to play it.',
     keywords: ['sprite sheet', 'sprite sheets', 'sprite', 'atlas', 'sheet', 'texture', 'game', 'json', 'trim', 'padding', 'power of two', 'packed', 'extrude', 'bleed', 'icons', 'tiles', 'texture atlas', 'json hash', 'json array'],
-    body: `A sprite sheet is one picture holding all your frames. Games load that one picture and cut the frames out.
+    body: `A sprite sheet is one picture holding all your frames. 
 
 Press **Ctrl+E**, pick **Sprite sheet**, then pick **where it's going**. Frameling saves the picture plus whatever that place needs, into a folder you choose.
 
@@ -121,9 +121,9 @@ Press **Ctrl+E**, pick **Sprite sheet**, then pick **where it's going**. Frameli
 | **Any engine (JSON)** | The JSON atlas most tools read | below |
 | **Just the picture** | Only the PNG | |
 
-## Pixel art: Art size
+## Pixel art: real size
 
-For pixel art, **Art size** (in the Size row) makes one art pixel one pixel, so a 32 x 32 character comes out 32 x 32. Game engines want that, and scale it up sharply themselves.
+Pixel art on a sheet for an engine, a web page or JSON always goes out at **real size**: one art pixel is one pixel, so a 32 x 32 character is 32 x 32. Games scale it up sharply themselves. Nothing to pick. **Just the picture** keeps the size you choose.
 
 ## An animation, or separate sprites
 
@@ -135,8 +135,7 @@ For pixel art, **Art size** (in the Size row) makes one art pixel one pixel, so 
 
 - **Tidy grid** puts every frame in a slot the same size. **Columns** sets how many per row (Auto makes it roughly square).
 - **Packed tight** fits frames of different sizes together like a jigsaw, for the smallest picture (a *packed atlas*). Best with **Trim** on.
-- **Padding:** empty pixels between frames, so neighbours never bleed into each other.
-- **Edge bleed:** copies edge pixels outward (*extrude*), so no seams show when sprites are scaled.
+- **Padding** and **Edge bleed** (*extrude*) keep neighbours from bleeding into each other, and seams from showing when sprites are scaled.
 - **Trim empty space:** cuts each frame down to the part you drew. Nothing shifts when it plays.
 - **Power-of-two size:** rounds the sheet up to 64, 128, 256..., for older engines.
 - **Store repeated frames once:** a frame the same as the one before isn't stored twice.
@@ -171,7 +170,7 @@ With the 2D Sprite package (2D projects have it) the importer cuts the sprites t
 ## In Frameling
 
 1. Press **Ctrl+E**, pick **Sprite sheet**, then the **Unity** card.
-2. For pixel art, pick **Art size**.
+2. Pixel art goes out at real size by itself.
 3. Leave **Include the importer script** ticked the first time. It adds two small files, \`FramelingSheetImporter.cs\` and \`FramelingSheetImporter.asmdef\`. A project only needs one copy of the pair, so untick it for later exports.
 4. Press **Export** and choose a folder **inside your project's Assets folder**, for example \`Assets/Sprites\`.
 
@@ -222,7 +221,7 @@ The atlas key must be the file's name (\`hero\` here), because the animations po
 
 ## Pixel art
 
-Export at **Art size**, and add \`pixelArt: true\` to your game config so Phaser keeps it sharp when scaled. Use Phaser's **WebGL** renderer for pixel art (the default, \`type: Phaser.AUTO\`): it draws every frame exactly as Frameling does. Phaser's Canvas renderer can make a scaled sprite one pixel too big at the edges, and no game setting fixes that.`,
+Pixel art goes out at real size. Add \`pixelArt: true\` to your game config so Phaser keeps it sharp when scaled. Use Phaser's **WebGL** renderer for pixel art (the default, \`type: Phaser.AUTO\`): it draws every frame exactly as Frameling does. Phaser's Canvas renderer can make a scaled sprite one pixel too big at the edges, and no game setting fixes that.`,
   },
   {
     id: 'export-pixi',
@@ -250,7 +249,7 @@ Frames you held for longer are listed more than once, so they play for the right
 
 ## Pixel art
 
-Export at **Art size**, and set \`texture.source.scaleMode = 'nearest'\` (PixiJS 8) so it stays sharp when scaled.`,
+Pixel art goes out at real size. Set \`texture.source.scaleMode = 'nearest'\` (PixiJS 8) so it stays sharp when scaled.`,
   },
   {
     id: 'export-css-sprites',
@@ -393,7 +392,7 @@ It uses **CSS animations** inside the SVG rather than SVG's own animation tags (
 
 1. Name your clips in the timeline (idle, wave, run...). Each one becomes something Interactives can play. Add **markers** for moments the page should react to (a footstep, the ball landing).
 2. Press **Ctrl+E** and pick **Interactives**, or choose **File > Export > Export for Interactives**.
-3. Pick the size. Pixel art starts at **Art size**: Interactives scales it up itself and keeps every pixel sharp.
+3. Pick the size. Pixel art starts at real size (**Art size**): Interactives scales it up itself and keeps every pixel sharp.
 4. Press **Export** and save the \`.flplay\` file.
 
 ## In Interactives

@@ -171,14 +171,14 @@ module.exports = [
     ],
   },
   {
-    // A clip set to play back and forth: pick it, set it, and play. The clip's sign shows in the clips row.
+    // A clip set to play back and forth: pick it, set it, and play. The clip's sign shows in the clips row, and its settings in Properties (Clip).
     name: 'clip-play',
     steps: [
       ...open('bouncing-ball'),
       { click: [fx(8), 571], after: 500 },
       js(`${F}.run('timeline.clipBackAndForth')`), { wait: 500 },
       { move: PARK },
-      { rec: '@', crop: [64, 90, 856, 600], every: 80 },
+      { rec: '@', crop: [60, 44, 1240, 716], every: 80 },
       { wait: 600 },
       { key: 'Enter', after: 5200 },
       { key: 'Enter', after: 800 },

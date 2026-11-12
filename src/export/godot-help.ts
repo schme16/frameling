@@ -61,7 +61,7 @@ The export window lists what was baked or left out for your drawing.`,
 ## In Frameling
 
 1. Press **Ctrl+E**, pick **Sprite sheet**, then the **Godot** card.
-2. For pixel art, pick **Art size**.
+2. Pixel art goes out at real size by itself.
 3. Leave **Also make a ready-to-play scene** ticked.
 4. Check **Where the picture will live in your Godot project**. The default is \`res://sprites/<your name>.png\`. Change it if your project keeps pictures somewhere else, for example \`res://art/hero.png\`.
 5. Press **Export** and choose the folder **inside your Godot project** that matches that path. For \`res://sprites/\`, that's the \`sprites\` folder in your project (make it if it doesn't exist).
