@@ -8,7 +8,7 @@ import type { Mouth } from './chart';
 import { HOP, measureSteps, stepCount, stepRows, type HopFeatures } from './dsp';
 import { classifySteps } from './classify';
 import { alignLine, blendAligned } from './align';
-import { lineMouths } from './text';
+import { lineMouths, type Expected } from './text';
 
 export { fft } from './dsp';
 
@@ -19,6 +19,8 @@ export interface MouthOptions {
   lead?: number;
   /** What is said, typed in. Lines the sounds up with the words, which fixes many wrong guesses. */
   text?: string;
+  /** The sounds of the typed words, already worked out (expectedFromText in dict.ts, which knows how words are said); used instead of `text` when given. */
+  expected?: Expected[];
   /** Settings for the pooling and smoothing steps (the defaults were tuned on the reference set; scripts/lipsync/eval.mjs takes overrides). */
   tune?: Partial<Tuning>;
 }
@@ -36,7 +38,7 @@ export interface Tuning {
 /** Below this loudness (dB, mean square; about 0.00016 rms) a step is silence. */
 const SILENT_DB = -76;
 
-export const DEFAULT_TUNING: Tuning = { mbpBoost: 1.5, fvBoost: 1.2, switchCost: 0.8, textWeight: 0.2 };
+export const DEFAULT_TUNING: Tuning = { mbpBoost: 1.5, fvBoost: 1.2, switchCost: 0.8, textWeight: 0.4 };
 
 /** Turns runs shorter than `min` frames into part of a neighbour, so nothing flickers. */
 export function holdAtLeast(mouths: Mouth[], min: number, exempt: Mouth = 'MBP'): Mouth[] {
@@ -177,7 +179,7 @@ function mouthsFromSteps(feats: HopFeatures[], fps: number, frames: number, opts
   // Nothing but a whisper of sound is rest, however quiet the rest of the recording is.
   const restAt = classes.indexOf('rest');
   odds = odds.map((p, t) => (feats[t].level < SILENT_DB ? Float32Array.from(p, (_, c) => (c === restAt ? 1 : 0)) : p));
-  const expected = opts.text ? lineMouths(opts.text) : [];
+  const expected = opts.expected ?? (opts.text ? lineMouths(opts.text) : []);
   if (expected.length) {
     const aligned = alignLine(odds, classes, expected);
     if (aligned) odds = blendAligned(odds, classes, aligned, tune.textWeight);

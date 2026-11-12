@@ -40,7 +40,7 @@ It's a good first pass, not a perfect one. Frameling listens to how loud the sou
 
 ## Typing the words
 
-If you know what is said, press **Animate > Auto lip sync with the words...** (or **With the words...** in the Lip sync panel) and type it. Frameling lines the mouths up with your words, which helps most when the recording is noisy or mumbled. Frameling remembers the words for that sound until you close the app.
+If you know what is said, press **Animate > Auto lip sync with the words...** (or **With the words...** in the Lip sync panel) and type it. Frameling lines the mouths up with your words, which helps most when the recording is noisy or mumbled. Spell the words normally: Frameling knows how common English words sound, and reads numbers out ("42" is "forty two"). Frameling remembers the words for that sound until you close the app.
 
 ## Fixing it by hand
 

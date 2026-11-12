@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { expectedFromText } from '../../src/lipsync/dict';
 import { guessMouths, guessMouthsAsync, holdAtLeast, poolSteps, smoothPath } from '../../src/lipsync/analysis';
 import { fft, hopFeatures, levinson, stepFeatures, FEATURE_COUNT } from '../../src/lipsync/dsp';
 import type { Mouth } from '../../src/lipsync/chart';
@@ -170,9 +171,9 @@ describe.each(['moon-slt', 'moon-espeak'])('a spoken line (%s)', (name) => {
     }
   });
 
-  it('is at least as good when the words are typed in', () => {
+  it('is at least as good when the words are typed in', async () => {
     const plain = accuracy(guessMouths(f.samples, f.rate, FPS, frames), truth);
-    const typed = accuracy(guessMouths(f.samples, f.rate, FPS, frames, { text: f.text }), truth);
+    const typed = accuracy(guessMouths(f.samples, f.rate, FPS, frames, { text: f.text, expected: await expectedFromText(f.text) }), truth);
     expect(typed).toBeGreaterThan(plain - 0.1);
     expect(typed).toBeGreaterThan(0.6);
   });

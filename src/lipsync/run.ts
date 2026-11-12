@@ -34,7 +34,10 @@ export async function lipSync(clipId: Id, layerId: Id, text = ''): Promise<LipSy
   const { first, frames } = soundFrames({ start: clip.start, duration: buf.duration }, doc.fps, doc.length);
   if (!frames) return { ok: false, why: 'The sound sits outside the animation. Drag it onto the frames, or make the animation longer.' };
   const channels = Array.from({ length: buf.numberOfChannels }, (_, c) => buf.getChannelData(c));
-  const mouths = await guessMouthsAsync(samplesFor(channels, buf.sampleRate, clip, doc.fps), buf.sampleRate, doc.fps, frames, { text: text.trim() });
+  // The pronunciation list is only fetched when words were typed.
+  const said = text.trim();
+  const expected = said ? await (await import('./dict')).expectedFromText(said) : undefined;
+  const mouths = await guessMouthsAsync(samplesFor(channels, buf.sampleRate, clip, doc.fps), buf.sampleRate, doc.fps, frames, { text: said, expected });
   let keys = 0;
   store().update(`Lip sync "${clip.name}"`, (d) => {
     keys = applyMouths(d, layerId, first, mouths);
