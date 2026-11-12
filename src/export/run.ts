@@ -7,7 +7,7 @@ import { encodePng, type RawImage } from '../io/png';
 import { ApngWriter } from './apng';
 import { backgroundFor, drawFrame, makeCanvas, readPixels } from './draw';
 import { buildPalette, GifWriter, sampleFrames } from './gif';
-import { frameNumber, MAX_SHEET_SIDE, planExport, type Plan } from './plan';
+import { frameNumber, MAX_SHEET_SIDE, planExport, planFrames, type Plan } from './plan';
 import { buildSheetFiles } from './engines';
 import { playablePackage } from './playable';
 import { saveFile } from '../io/file';
@@ -94,7 +94,7 @@ export async function runExport(ctx: RunContext): Promise<RunResult> {
     }
     case 'svganim': {
       step(0, 'Writing the animation');
-      const svg = animatedSvg(doc, { range: plan.range, scale: settings.scale, transparent: bg === 'none', loop: settings.loop });
+      const svg = animatedSvg(doc, { range: plan.range, order: plan.order, scale: settings.scale, transparent: bg === 'none', loop: plan.loop });
       return { kind: 'file', name: `${plan.name}.svg`, bytes: strToU8(svg) };
     }
     case 'pngseq': {
@@ -108,7 +108,7 @@ export async function runExport(ctx: RunContext): Promise<RunResult> {
       return { kind: 'file', name: `${plan.name}.zip`, bytes: zipSync(files) };
     }
     case 'apng': {
-      const w = new ApngWriter({ width: plan.width, height: plan.height, fps: doc.fps, loop: settings.loop }, plan.count);
+      const w = new ApngWriter({ width: plan.width, height: plan.height, fps: doc.fps, loop: plan.loop }, plan.count);
       for (let i = 0; i < plan.count; i++) {
         await breathe(signal, i);
         step(i, `Drawing frame ${i + 1} of ${plan.count}`);
@@ -129,7 +129,7 @@ export async function runExport(ctx: RunContext): Promise<RunResult> {
       }
       const palette = buildPalette(sampled, transparent);
       sampled.length = 0;
-      const w = new GifWriter({ width: plan.width, height: plan.height, fps: doc.fps, loop: settings.loop, transparent, dither: settings.dither }, palette, plan.count);
+      const w = new GifWriter({ width: plan.width, height: plan.height, fps: doc.fps, loop: plan.loop, transparent, dither: settings.dither }, palette, plan.count);
       for (let i = 0; i < plan.count; i++) {
         await breathe(signal, i);
         step(i, `Drawing frame ${i + 1} of ${plan.count}`);
@@ -203,8 +203,7 @@ export async function runExport(ctx: RunContext): Promise<RunResult> {
     }
     case 'pdf':
     case 'ai': {
-      const frames: number[] = [];
-      for (let i = 0; i < plan.count; i++) frames.push(plan.range.start + i);
+      const frames = planFrames(plan);
       const ai = settings.format === 'ai';
       const how = aiFramesOf(settings);
       step(0, 'Writing the pages');

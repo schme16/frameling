@@ -97,6 +97,8 @@ export interface ExportSettings {
   scale: number;
   transparent: boolean;
   loop: boolean;
+  /** The loop setting was chosen by hand, so a clip's own (plays forever, N times or once) no longer sets it. */
+  loopTouched?: boolean;
   /** GIF only. */
   dither: boolean;
   sheet: SheetSettings;

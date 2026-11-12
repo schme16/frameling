@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import type { Doc } from '../core/format';
 import { sceneOf } from '../core/symbols';
 import { store, useStore } from '../core/store';
 import { desktop } from '../io/desktop';
@@ -9,7 +10,7 @@ import { detectCapabilities, type Capabilities } from './capabilities';
 import { describeError, exportDocument, loadLastSettings, loadSheetExtras, saveSheetExtras } from './exporter';
 import { setChoice, useChoice, getChoiceDef, withChoice } from '../core/choices';
 import './choices';
-import { artScale, defaultSettings, drawnFrames, hasPixelLayers, planExport, scaleAllowed, scaleChoices } from './plan';
+import { artScale, clipLoopWords, defaultSettings, drawnFrames, hasPixelLayers, planExport, scaleAllowed, scaleChoices, type Plan } from './plan';
 import { setDocLength } from '../timeline/ops';
 import { EnginePicker } from './EnginePicker';
 import { openHelp } from '../ui/overlays';
@@ -64,6 +65,8 @@ function startingSettings(): ExportSettings {
   }
   if (s.range === 'inOut' && !inOutRange(doc)) s.range = 'all';
   if (!scaleAllowed(doc, s.scale)) s.scale = base.scale;
+  // Whether the loop was chosen by hand is not remembered: a clip sets it again next time.
+  delete s.loopTouched;
   if (s.lottiePictures && !PICTURE_CHOICES.some((c) => c.id === s.lottiePictures)) delete s.lottiePictures;
   if (s.lottieFile && !FILE_CHOICES.some((c) => c.id === s.lottieFile)) delete s.lottieFile;
   if (s.lottieSoft && s.lottieSoft !== 'pictures') delete s.lottieSoft;
@@ -82,6 +85,21 @@ const FILE_CHOICES: { id: NonNullable<ExportSettings['lottieFile']>; label: stri
   { id: 'json', label: 'Lottie (.json)', note: 'One plain file that every Lottie player opens.' },
   { id: 'dotlottie', label: 'dotLottie (.lottie)', note: 'One smaller file that holds the animation and its pictures. Plays in the dotLottie players (LottieFiles, web, iOS, Android), which not every older Lottie player is.' },
 ];
+
+/** Says that the clip being exported sets the loop, and lets a hand-made choice go back to following it. */
+function LoopNote({ doc, s, plan, onFollow }: { doc: Doc; s: ExportSettings; plan: Plan; onFollow: () => void }) {
+  const clip = clipLoopWords(doc, s);
+  if (!clip) return null;
+  if (plan.loopFromClip) return <p className="ex-note">Set by the clip &ldquo;{clip.name}&rdquo;, which {clip.plays}. Tick or untick to choose another way.</p>;
+  return (
+    <p className="ex-note">
+      The clip &ldquo;{clip.name}&rdquo; {clip.plays}.{' '}
+      <button type="button" className="ex-link" onClick={onFollow}>
+        Follow the clip
+      </button>
+    </p>
+  );
+}
 
 function Check({ checked, onChange, disabled, children, hint }: { checked: boolean; onChange: (v: boolean) => void; disabled?: boolean; children: React.ReactNode; hint?: string }) {
   return (
@@ -482,9 +500,10 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
           {s.format === 'svganim' && (
             <fieldset>
               <legend>Playback</legend>
-              <Check checked={s.loop} onChange={(v) => set({ loop: v })}>
+              <Check checked={plan.loop} onChange={(v) => set({ loop: v, loopTouched: true })}>
                 Loop forever
               </Check>
+              <LoopNote doc={doc} s={s} plan={plan} onFollow={() => set({ loopTouched: false })} />
               <p className="ex-note">
                 It plays by itself in any browser, also in an image tag.{' '}
                 <button type="button" className="ex-link" onClick={() => openHelp('export-svg-animated')}>
@@ -497,9 +516,10 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
           {(s.format === 'gif' || s.format === 'apng') && (
             <fieldset>
               <legend>Playback</legend>
-              <Check checked={s.loop} onChange={(v) => set({ loop: v })}>
+              <Check checked={plan.loop} onChange={(v) => set({ loop: v, loopTouched: true })}>
                 Loop forever
               </Check>
+              <LoopNote doc={doc} s={s} plan={plan} onFollow={() => set({ loopTouched: false })} />
               {s.format === 'gif' && (
                 <Check checked={s.dither} onChange={(v) => set({ dither: v })}>
                   Smooth colours (dither), for gradients and soft shading

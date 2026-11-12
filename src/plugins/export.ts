@@ -8,7 +8,7 @@ import { can } from '../platform';
 import { backgroundFor, drawFrame, makeCanvas, readPixels } from '../export/draw';
 import { defaultSettings, planExport } from '../export/plan';
 import { runtimeOf } from './manager';
-import type { ExportFrame, PluginExporterDef } from './runtime';
+import { exportClips, type ExportFrame, type PluginExporterDef } from './runtime';
 
 export interface PluginExportJob {
   pluginId: string;
@@ -33,7 +33,7 @@ export async function runPluginExport(job: PluginExportJob, choice: PluginExport
   const { doc, frame } = sceneOf(st.doc, st.ui.frame);
   // planExport works out the range and size; 'pngseq' is just an animated format with see-through allowed.
   const settings = { ...defaultSettings(doc), format: 'pngseq' as const, range: choice.range, clipId: choice.clipId, scale: choice.scale, transparent: job.def.transparent };
-  const plan = planExport(doc, settings, frame);
+  const plan = planExport(doc, settings, frame, { bake: false });
   if (plan.problem) throw new Error(plan.problem);
 
   const target = job.def.multiple
@@ -62,7 +62,7 @@ export async function runPluginExport(job: PluginExportJob, choice: PluginExport
     height: plan.height,
     scale: choice.scale,
     frameNumbers,
-    clips: doc.clips.map((c) => ({ name: c.name, start: c.start, end: c.end, loop: c.loop })),
+    clips: exportClips(doc.clips),
     markers: doc.markers.map((m) => ({ name: m.name, frame: m.frame })),
   };
   let files;

@@ -25,6 +25,10 @@ export interface Plan {
    * (GIF, APNG, videos): which frame of the range each picture shows, counted from its first. Missing = in order.
    */
   order?: number[];
+  /** Whether the file repeats for ever (GIF, APNG, animated SVG), or stops after its last picture. */
+  loop: boolean;
+  /** The loop setting comes from the clip being exported (not from the checkbox). */
+  loopFromClip: boolean;
   width: number;
   height: number;
   /** A file name (or folder name) base, with no extension. */
@@ -130,21 +134,46 @@ export function slug(name: string, fallback = 'sprites'): string {
   return s || fallback;
 }
 
-/** Formats that show the pictures one after another with no direction or repeat count of their own. */
-const BAKED_FORMATS: FormatId[] = ['gif', 'apng', 'mp4', 'webm', 'prores'];
+/** Formats that show the pictures one after another (or page after page) with no direction or repeat count of their own. */
+const BAKED_FORMATS: FormatId[] = ['gif', 'apng', 'mp4', 'webm', 'prores', 'svganim', 'pngseq', 'pdf', 'ai'];
 
 /** The order a clip's frames go in for such a format, or undefined when it just plays through once, forward. */
-export function clipPlayOrder(doc: Doc, s: Pick<ExportSettings, 'range' | 'clipId' | 'format'>, range: FrameRange): number[] | undefined {
-  if (s.range !== 'clip' || !BAKED_FORMATS.includes(s.format)) return undefined;
+export function clipPlayOrder(doc: Doc, s: Pick<ExportSettings, 'range' | 'clipId' | 'format' | 'aiFrames'>, range: FrameRange): number[] | undefined {
+  if (s.range !== 'clip' || !BAKED_FORMATS.includes(s.format) || oneFrameOnly(s, formatInfo(s.format).animated)) return undefined;
   const clip = doc.clips.find((c) => c.id === s.clipId);
   if (!clip || !hasPlaySettings(clip)) return undefined;
   return bakedPositions(range.end - range.start + 1, clipDirection(clip), clipPlays(clip));
 }
 
-export function planExport(doc: Doc, s: ExportSettings, currentFrame: number): Plan {
+/** Formats with a loop setting of their own. */
+const LOOP_FORMATS: FormatId[] = ['gif', 'apng', 'svganim'];
+
+/**
+ * Whether the file repeats for ever. An exported clip sets this itself: one that loops repeats for ever, one that plays
+ * N times or once stops after the passes baked into the file. Choosing by hand (`loopTouched`) wins over the clip.
+ */
+export function exportLoop(doc: Doc, s: Pick<ExportSettings, 'range' | 'clipId' | 'format' | 'loop' | 'loopTouched'>): { loop: boolean; fromClip: boolean } {
+  const clip = s.range === 'clip' && LOOP_FORMATS.includes(s.format) ? doc.clips.find((c) => c.id === s.clipId) : undefined;
+  if (!clip || s.loopTouched) return { loop: s.loop, fromClip: false };
+  return { loop: clip.loop, fromClip: true };
+}
+
+/** What the clip being exported does when it plays, in plain words ("plays 3 times"), or null when no clip sets the loop. */
+export function clipLoopWords(doc: Doc, s: Pick<ExportSettings, 'range' | 'clipId' | 'format'>): { name: string; plays: string } | null {
+  const clip = s.range === 'clip' && LOOP_FORMATS.includes(s.format) ? doc.clips.find((c) => c.id === s.clipId) : undefined;
+  if (!clip) return null;
+  const n = clipPlays(clip);
+  return { name: clip.name, plays: clip.loop ? 'loops for ever' : n > 1 ? `plays ${n} times` : 'plays once' };
+}
+
+/** The document frame each picture (or page) of the export shows, in the order the file has them. */
+export const planFrames = (plan: Pick<Plan, 'range' | 'count' | 'order'>): number[] => Array.from({ length: plan.count }, (_, i) => plan.range.start + (plan.order?.[i] ?? i));
+
+/** `bake: false` keeps the range in plain order even for a clip that plays another way (for plugins, which get the clip's settings instead). */
+export function planExport(doc: Doc, s: ExportSettings, currentFrame: number, opts: { bake?: boolean } = {}): Plan {
   const info = formatInfo(s.format);
   const range = resolveRange(doc, s, currentFrame);
-  const order = clipPlayOrder(doc, s, range);
+  const order = opts.bake === false ? undefined : clipPlayOrder(doc, s, range);
   const count = order ? order.length : range.end - range.start + 1;
   const video = s.format === 'mp4' || s.format === 'webm' || s.format === 'prores';
   const { width, height } = outputSize(doc, s.scale, video);
@@ -163,7 +192,8 @@ export function planExport(doc: Doc, s: ExportSettings, currentFrame: number): P
   else if (count > MAX_FRAMES) problem = 'That is a lot of frames. Try exporting one clip at a time.';
   else if (s.range === 'clip' && info.animated && !one && !doc.clips.some((c) => c.id === s.clipId)) problem = 'Pick which clip to export.';
   else if (video && count < 2) problem = 'A video needs at least two frames. Try the whole animation or a clip.';
-  return { range, count, ...(order ? { order } : {}), width, height, name, problem };
+  const looping = exportLoop(doc, s);
+  return { range, count, ...(order ? { order } : {}), loop: looping.loop, loopFromClip: looping.fromClip, width, height, name, problem };
 }
 
 /** The file extension this export is saved with: a dotLottie `.lottie`, or a zip when each frame is its own

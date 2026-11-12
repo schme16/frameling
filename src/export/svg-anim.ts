@@ -24,6 +24,8 @@ import { composeSvg, composeSymbol, tintAttr } from './svg-look';
 
 export interface AnimatedSvgOptions {
   range?: { start: number; end: number };
+  /** The order the range plays in: for each moment of the animation, which frame of the range (counted from its first) shows. Missing = in order. */
+  order?: number[];
   scale?: number;
   transparent?: boolean;
   /** Play round and round (default) or once and stop on the last frame. */
@@ -181,26 +183,31 @@ function celSvg(w: Writer, doc: Doc, layer: Layer, cel: Cel, frames: number[], d
 export function animatedSvgExport(doc: Doc, opts: AnimatedSvgOptions = {}): { svg: string; notes: string[] } {
   const from = Math.max(0, opts.range?.start ?? 0);
   const to = Math.min(doc.length - 1, opts.range?.end ?? doc.length - 1);
-  const count = to - from + 1;
+  const order = opts.order?.length && opts.order.every((p) => p >= 0 && p <= to - from) ? opts.order : undefined;
+  const count = order ? order.length : to - from + 1;
   const loop = opts.loop !== false;
   const w = new Writer(count, count / doc.fps, loop);
   const scale = opts.scale ?? 1;
   const W = Math.max(1, Math.round(doc.width * scale));
   const H = Math.max(1, Math.round(doc.height * scale));
   const used = new Set<string>();
-  const views = Array.from({ length: count }, (_, i) => cameraViewAt(doc, from + i));
+  // The document frame each moment shows (a clip played backward or several times shows a frame more than once).
+  const allFrames = Array.from({ length: count }, (_, i) => from + (order?.[i] ?? i));
+  const views = allFrames.map((f) => cameraViewAt(doc, f));
   const notes = new Set<string>();
   const defs: string[] = [];
-  const allFrames = Array.from({ length: count }, (_, i) => from + i);
   const body = (layer: Layer): string => {
     const parts: string[] = [];
     for (const cel of layer.cels) {
       const a = Math.max(from, cel.start);
       const b = Math.min(to, cel.start + cel.length - 1);
       if (a > b) continue;
-      const docFrames: number[] = [];
-      for (let f = a; f <= b; f++) docFrames.push(f);
-      parts.push(...celSvg(w, doc, layer, cel, docFrames.map((f) => f - from), docFrames));
+      // The moments this cel shows on, and the document frame at each.
+      const moments: number[] = [];
+      if (order) allFrames.forEach((f, i) => f >= a && f <= b && moments.push(i));
+      else for (let f = a; f <= b; f++) moments.push(f - from);
+      if (!moments.length) continue;
+      parts.push(...celSvg(w, doc, layer, cel, moments, moments.map((i) => allFrames[i])));
     }
     if (!parts.length) return '';
     const id = layerId(layer.name, used);

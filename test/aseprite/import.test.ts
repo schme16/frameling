@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { drawingAt } from '../../src/core/doc';
 import { TILE_FLIP_D, TILE_FLIP_X, TILE_FLIP_Y, type Doc, type Layer, type PixelDrawing, type TilemapDrawing } from '../../src/core/format';
 import { loadFile, saveFile } from '../../src/io/file';
-import { asepriteDoc, asepritePieces, blendFor, mergePieces, planTiming, scaleRgba } from '../../src/aseprite/convert';
+import { asepriteDoc, asepritePieces, blendFor, mergePieces, planTiming, scaleRgba, tagPlay } from '../../src/aseprite/convert';
+import { clipOrder } from '../../src/core/clipPlay';
 import { AsepriteProblem, parseAseprite } from '../../src/aseprite/parse';
 import { aseFile, celChunk, celExtraChunk, layerChunk, oldPaletteChunk, paletteChunk, profileChunk, rgbaImage, sliceChunk, tagsChunk, tilesetChunk, userChunk } from './writer';
 
@@ -341,10 +342,16 @@ describe('tags, slices and user data', () => {
     expect(doc.clips.map((c) => [c.name, c.direction, c.repeat])).toEqual([
       ['idle', undefined, undefined],
       ['back', 'reverse', undefined],
-      ['bounce', 'pingpong', 3],
-      ['both', 'pingpong-reverse', undefined],
+      ['bounce', 'pingpong', 2],
+      ['both', 'reverse', undefined],
     ]);
     expect(notes.join(' ')).not.toMatch(/play forward in Frameling|direction is kept|repeat a set number/);
+  });
+
+  it('says when an odd ping-pong repeat count had to be rounded to whole trips', () => {
+    expect(notes.filter((n) => /bounce/.test(n))).toHaveLength(1);
+    expect(notes.join(' ')).toMatch(/Tag "bounce" repeats 3 times going one way and then the other.*plays 2 times/);
+    expect(notes.filter((n) => /Tag "both"|Tag "back"/.test(n))).toHaveLength(0);
   });
 
   it('keeps direction, repeat, colours and user data in the notes', () => {
@@ -587,5 +594,56 @@ describe('adding to an open drawing', () => {
     expect(pic.width).toBe(4);
     expect(px(pic, 1, 1)).toEqual([7, 7, 7, 255]);
     expect(px(pic, 2, 2)).toEqual([0, 0, 0, 0]);
+  });
+});
+
+/**
+ * How Aseprite counts repeats on ping-pong tags. Aseprite 1.3.18 (/aseprite/src/doc/playback.cpp) drives its own
+ * playback, and these frame orders come from running doc::Playback in PlayAll mode over a 6 frame sprite (frames 0 to
+ * 5) with one tag on frames 1 to 4, linked against the installed build's libdoc. The rule in the source: a ping-pong
+ * tag calls decrementRepeat() at every turn, so each direction counts as one repeat (a repeat of 2 is one trip there
+ * and back, 1 is one way), the turn frames show once, and 0 repeats is forever. Forward and reverse count whole passes.
+ */
+describe('Aseprite ping-pong repeat counting (checked against its own playback)', () => {
+  // [direction, repeat, tag frames in the order Aseprite plays them]
+  const seen: [number, number, number[]][] = [
+    [2, 1, [1, 2, 3, 4]],
+    [2, 2, [1, 2, 3, 4, 3, 2, 1]],
+    [2, 3, [1, 2, 3, 4, 3, 2, 1, 2, 3, 4]],
+    [2, 4, [1, 2, 3, 4, 3, 2, 1, 2, 3, 4, 3, 2, 1]],
+    [2, 5, [1, 2, 3, 4, 3, 2, 1, 2, 3, 4, 3, 2, 1, 2, 3, 4]],
+    [3, 1, [4, 3, 2, 1]],
+    [3, 2, [4, 3, 2, 1, 2, 3, 4]],
+    [3, 3, [4, 3, 2, 1, 2, 3, 4, 3, 2, 1]],
+    [3, 4, [4, 3, 2, 1, 2, 3, 4, 3, 2, 1, 2, 3, 4]],
+    [1, 2, [4, 3, 2, 1, 4, 3, 2, 1]],
+    [0, 3, [1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4]],
+  ];
+  const played = (dir: number, rep: number) => {
+    const p = tagPlay(dir, rep);
+    return clipOrder({ start: 1, end: 4, loop: p.loop, direction: p.direction, repeat: p.repeat > 1 ? p.repeat : undefined });
+  };
+
+  it('plays what Aseprite plays when the repeat count is a whole number of trips or a single way', () => {
+    for (const [dir, rep, frames] of seen) {
+      if (dir >= 2 && rep > 1 && rep % 2 === 1) continue;
+      expect(played(dir, rep), `direction ${dir}, repeat ${rep}`).toEqual(frames);
+    }
+  });
+
+  it('rounds an odd count up to the next whole trip, so Aseprite\'s frames are the start of the clip', () => {
+    for (const [dir, rep, frames] of seen) {
+      if (!(dir >= 2 && rep > 1 && rep % 2 === 1)) continue;
+      const got = played(dir, rep);
+      expect(tagPlay(dir, rep).roundedUp).toBe(true);
+      expect(got.slice(0, frames.length), `direction ${dir}, repeat ${rep}`).toEqual(frames);
+      expect(got.length).toBeGreaterThan(frames.length);
+    }
+  });
+
+  it('keeps 0 repeats as forever, and other directions count whole passes', () => {
+    expect(tagPlay(2, 0)).toMatchObject({ loop: true, direction: 'pingpong' });
+    expect(tagPlay(0, 3)).toMatchObject({ loop: false, repeat: 3 });
+    expect(tagPlay(1, 2)).toMatchObject({ direction: 'reverse', repeat: 2 });
   });
 });

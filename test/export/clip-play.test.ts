@@ -174,8 +174,7 @@ describe('GIF, APNG and video of a clip', () => {
       expect(p.range).toEqual({ start: 1, end: 3 });
     }
   });
-  it('leaves other formats and plain clips alone', () => {
-    expect(planExport(doc, s('pngseq'), 0).order).toBeUndefined();
+  it('leaves sprite sheets and plain clips alone', () => {
     expect(planExport(doc, s('sheet'), 0).count).toBe(3);
     doc.clips.push({ id: 'q', name: 'q', start: 0, end: 2, loop: true });
     expect(planExport(doc, { ...s('gif'), clipId: 'q' }, 0).order).toBeUndefined();
