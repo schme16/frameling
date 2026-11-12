@@ -25,7 +25,7 @@ import { cssVar, subscribeTheme } from './theme';
 import { getViewSettings, subscribeViewSettings } from './viewSettings';
 import { ghostItems } from './ghost';
 import { drawDecorations } from './decorations';
-import { canvasCamera, canvasLayerCamera, currentView, lookingThrough, overlayCamera, stageCamera } from '../camera/ops';
+import { canvasCamera, canvasLayerCamera, currentView, getGuidesOnStage, lookingThrough, overlayCamera, stageCamera } from '../camera/ops';
 import { cameraFrameCorners, matrixScale } from '../core/camera';
 import { invert, applyMat, type Mat } from '../core/symbols';
 import { screenToDoc, stageDeviceRect, wheelZoomFactor, zoomAbout, type Pt } from './view';
@@ -373,9 +373,9 @@ export class CanvasEngine {
     // What is aimed at, and drawn over, the picked layer goes through that layer's own camera speed (a layer at another
     // depth): the tool's marks, guides, grid, the selection edge and the handles. The page frame stays with the plain camera.
     const lc = cam ? overlayCamera(STAGE_TOOLS.has(tool?.id ?? ui.tool)) : null;
-    const layerSpace = () => {
+    const layerSpace = (m: Mat | null = lc) => {
       g.setTransform(rect.w / doc.width, 0, 0, rect.h / doc.height, rect.x, rect.y);
-      if (lc) g.transform(lc[0], lc[1], lc[2], lc[3], lc[4], lc[5]);
+      if (m) g.transform(m[0], m[1], m[2], m[3], m[4], m[5]);
     };
     if (tool?.overlay && !(this.gesture?.kind === 'pan')) {
       g.save();
@@ -388,7 +388,7 @@ export class CanvasEngine {
     const extra = ctl.getStageOverlays();
     if (extra.length) {
       g.save();
-      layerSpace();
+      layerSpace(getGuidesOnStage() ? cam : lc);
       for (const fn of extra) fn(g, ui.zoom);
       g.restore();
     }
