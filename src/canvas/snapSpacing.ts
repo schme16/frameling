@@ -45,12 +45,13 @@ export function spacingAxis(m: Rect, axis: 'x' | 'y', others: readonly Rect[], t
     const g = r[pos] - (l[pos] + l[size]);
     if (g > SAME) pairs.push({ l, r, g });
   }
-  const sizes = [...new Set(pairs.map((p) => Math.round(p.g * 2) / 2))];
+  // Each distinct gap once, at its real size (gaps within half a pixel count as the same).
+  const mates: { g: number; mate: (typeof pairs)[number] }[] = [];
+  for (const p of pairs) if (!mates.some((m) => near(m.g, p.g))) mates.push({ g: p.g, mate: p });
   const gap = (from: number, to: number): Gap => ({ axis, from, to, at: mid, label: round1(to - from) });
   const cands: { at: number; show: Gap[] }[] = [];
   for (const r of row) {
-    for (const g of sizes) {
-      const mate = pairs.find((p) => near(p.g, g))!;
+    for (const { g, mate } of mates) {
       const mateGap = gap(mate.l[pos] + mate.l[size], mate.r[pos]);
       const after = r[pos] + r[size] + g;
       cands.push({ at: after, show: [gap(r[pos] + r[size], after), mateGap] });

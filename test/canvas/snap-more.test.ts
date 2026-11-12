@@ -56,6 +56,11 @@ describe('equal gaps (pure)', () => {
     expect(hit.gaps.map((g) => g.label)).toEqual([20, 20]);
     expect(hit.gaps[0]).toMatchObject({ axis: 'x', from: 60, to: 80 });
   });
+  it('keeps the real size of a gap that is not a whole number', () => {
+    const hit = spacingAxis(R(80, 0, 20, 20), 'x', [R(0, 0, 20, 20), R(40.3, 0, 20, 20)], 4)!;
+    expect(hit.gaps.map((g) => g.label)).toEqual([20.3, 20.3]);
+    expect(hit.d).toBeCloseTo(0.6, 5);
+  });
   it('also works on the other side of a pair', () => {
     expect(spacingAxis(R(-39, 0, 20, 20), 'x', [a, b], 4)!.d).toBe(-1);
   });
