@@ -44,6 +44,7 @@ export function tileDocument(parent: Doc, key: number): Doc | null {
   return {
     format: 'frameling',
     version: parent.version,
+    ...(parent.lineage ? { lineage: true as const } : {}),
     // The same id every time for the same tile, so the canvas keeps its view while you go back and forth.
     id: `${parent.id}~tile${key}`,
     name: tile.name,

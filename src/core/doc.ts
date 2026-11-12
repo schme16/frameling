@@ -39,6 +39,7 @@ export function newDoc(opts: Partial<Pick<Doc, 'name' | 'width' | 'height' | 'fp
   const doc: Doc = {
     format: 'frameling',
     version: FORMAT_VERSION,
+    lineage: true,
     id: uid('d'),
     name: opts.name ?? 'Untitled',
     width: opts.width ?? 1280,

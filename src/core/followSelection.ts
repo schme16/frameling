@@ -2,9 +2,10 @@
  * Keeping the selection while the playhead moves or after Undo and Redo. A new key on a layer is a copy of the one
  * before with new shape ids (see `cloneDrawing`), so a selection by id would be lost the moment the playhead crosses
  * into it. Each copy remembers where it came from (`origin`), so the same shape can be found in every key. Old
- * documents have no `origin`: there the shape at the same place in the list stands in. Pure: no store, no DOM.
+ * documents have no `origin` (and no `lineage` flag): there the shape at the same place in the list stands in, and a
+ * jump over several keys walks through the keys in between. Pure: no store, no DOM.
  */
-import type { Doc, Id, Shape, VectorDrawing } from './format';
+import type { Cel, Doc, Id, Layer, Shape, VectorDrawing } from './format';
 import { celAt, findLayer } from './doc';
 
 /** The id every copy of a shape shares: its `origin`, or its own id when it is the first of its line. */
@@ -46,17 +47,54 @@ function describe(d: VectorDrawing, selection: Id[]): { wanted: Followed[]; othe
 }
 
 /** The ids of the shapes in `d` that `wanted` stands for (shapes this key has no copy of are left out). */
-export function resolveFollowed(d: VectorDrawing, wanted: Followed[]): Id[] {
+export function resolveFollowed(d: VectorDrawing, wanted: Followed[], positional = true): Id[] {
   const claimed = new Set<number>();
-  const hasLineage = d.shapes.some((s) => s.origin);
+  const hasLineage = !positional || d.shapes.some((s) => s.origin);
   const out: Id[] = [];
   for (const w of wanted) {
     let i = d.shapes.findIndex((s, k) => !claimed.has(k) && shapeLineage(s) === w.lineage);
-    // No lineage anywhere (an old document): the shape at the same place, when the two keys look alike.
+    // An old document (no `lineage` flag, no lineage in this key): the shape at the same place, when the two keys look alike.
     if (i < 0 && w.legacy && !hasLineage && d.shapes.length === w.of && d.shapes[w.at]?.type === w.type && !claimed.has(w.at)) i = w.at;
     if (i < 0) continue;
     claimed.add(i);
     out.push(d.shapes[i].id);
+  }
+  return out;
+}
+
+/** Shapes this key resolves for `wanted`, going through the keys between `a` and `b` when a direct match fails (old documents). */
+function resolveAcross(doc: Doc, layer: Layer, a: Cel | undefined, b: Cel, db: VectorDrawing, wanted: Followed[]): Id[] {
+  const positional = !doc.lineage;
+  const direct = resolveFollowed(db, wanted, positional);
+  if (!positional || direct.length === wanted.length) return direct;
+  // Old documents: lineage may only reach part of the way. Step key by key and describe the shape again at each stop.
+  const cels = [...layer.cels].sort((x, y) => x.start - y.start);
+  const i = a ? cels.indexOf(a) : -1;
+  const j = cels.indexOf(b);
+  if (i < 0 || j < 0 || Math.abs(i - j) < 2) return direct;
+  const stops = i < j ? cels.slice(i + 1, j) : cels.slice(j + 1, i).reverse();
+  const steps: VectorDrawing[] = [];
+  for (const c of stops) {
+    const d = doc.drawings[c.drawingId];
+    if (d?.kind === 'vector' && steps[steps.length - 1] !== d) steps.push(d);
+  }
+  const out: Id[] = [];
+  const claimed = new Set<Id>();
+  for (const w of wanted) {
+    const own = resolveFollowed(db, [w], positional)[0];
+    let id = own && !claimed.has(own) ? own : undefined;
+    if (!id) {
+      let cur = w;
+      for (const d of steps) {
+        const hit = resolveFollowed(d, [cur], positional)[0];
+        if (hit) cur = describe(d, [hit]).wanted[0];
+      }
+      id = resolveFollowed(db, [cur], positional).find((x) => !claimed.has(x));
+    }
+    if (id) {
+      claimed.add(id);
+      out.push(id);
+    }
   }
   return out;
 }
@@ -95,16 +133,27 @@ export function followSelection(doc: Doc, layerId: Id | null, selection: Id[], f
   }
   if (!mem.wanted.length) return null;
   const db = vectorAt(doc, layerId, to);
-  const next = [...(db ? resolveFollowed(db, mem.wanted) : []), ...mem.other];
+  const next = [...(db && b ? resolveAcross(doc, layer, a, b, db, mem.wanted) : []), ...mem.other];
   if (same(next, selection)) return null;
   return { selection: next, memory: { ...mem, shown: next } };
 }
 
-/** The part of `selection` that still exists on the active layer's key at `frame` (after Undo or Redo). */
+/**
+ * The part of `selection` that still exists after Undo or Redo: shapes on the key showing at `frame` on any layer of the
+ * open drawing (the active layer's first, others too, so a selection across layers survives). After an artboard switch
+ * that means the artboard now open.
+ */
 export function existingSelection(doc: Doc, layerId: Id | null, frame: number, selection: Id[]): Id[] {
   if (!selection.length) return selection;
-  const d = vectorAt(doc, layerId, frame);
-  if (!d) return [];
-  const here = new Set(d.shapes.map((s) => s.id));
+  const here = new Set<Id>();
+  const add = (d: VectorDrawing | null | undefined) => {
+    if (d) for (const s of d.shapes) here.add(s.id);
+  };
+  add(vectorAt(doc, layerId, frame));
+  for (const l of doc.layers) {
+    const cel = celAt(l, frame);
+    const d = cel ? doc.drawings[cel.drawingId] : undefined;
+    if (d?.kind === 'vector') add(d);
+  }
   return selection.filter((id) => here.has(id));
 }

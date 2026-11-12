@@ -92,6 +92,8 @@ interface Nested {
   redo: HistoryEntry[];
   /** View and selection to go back to. */
   ui: Pick<UiState, 'frame' | 'activeLayerId' | 'selection' | 'zoom' | 'panX' | 'panY'>;
+  /** The selection memory of the open document, handed back when the nested one closes. */
+  follow: FollowMemory | null;
   /** The open document with the nested one's changes in it (pure: returns a new doc, or `parent` if nothing changed). */
   merge: (parent: Doc, nested: Doc) => Doc;
 }
@@ -241,10 +243,12 @@ export class Store {
       undo: this.undoStack,
       redo: this.redoStack,
       ui: { frame: u.frame, activeLayerId: u.activeLayerId, selection: u.selection, zoom: u.zoom, panX: u.panX, panY: u.panY },
+      follow: this.follow,
       merge: opts.merge,
     };
     this.undoStack = [];
     this.redoStack = [];
+    this.follow = null;
     this.state = { doc, ui: { ...u, frame: 0, selection: [], activeLayerId: doc.layers[doc.layers.length - 1]?.id ?? null, playing: false, ...opts.ui } };
     this.emit();
   }
@@ -258,6 +262,7 @@ export class Store {
     this.merged = null;
     this.undoStack = n.undo;
     this.redoStack = n.redo;
+    this.follow = n.follow;
     this.state = { doc: n.parent, ui: { ...this.state.ui, ...n.ui, playing: false } };
     this.emit();
     return child;
@@ -283,6 +288,7 @@ export class Store {
   load(doc: Doc, filePath: string | null = null): void {
     this.nested = null;
     this.merged = null;
+    this.follow = null;
     this.undoStack = [];
     this.redoStack = [];
     const u = this.state.ui;
