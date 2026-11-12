@@ -104,6 +104,8 @@ const RIGID_TOL = 0.05;
 const SPLIT_TOL = 0.4;
 const COPY_SCALE_TOL = 0.02;
 const COPY_ANGLE_TOL = 0.02;
+/** How far (stage pixels, on screen) the camera's anchor, zoom and turn may stray: it moves every layer, so it is held tighter than a position. */
+const CAMERA_PX = 0.1;
 
 /** `#rgb[a]` / `#rrggbb[aa]` as Lottie's 0..1 rgb and an alpha. */
 export function lottieColor(c: string): { rgb: [number, number, number]; alpha: number } {
@@ -1698,9 +1700,12 @@ function cameraNulls(doc: Doc, from: number, to: number, depths: number[], first
   const times = frames.map((f) => f - from);
   const cx = doc.width / 2;
   const cy = doc.height / 2;
+  const reach = Math.hypot(doc.width, doc.height) / 2;
   for (const depth of [...new Set(depths)]) {
     const fac = parallaxFactor(depth);
     const ind = firstInd + nulls.length;
+    // An anchor off by a little shows that much times the zoom; a zoom or turn off by a little shows more the further out it is.
+    const topScale = Math.max(1, ...views.map((v) => depthScale(v, fac)));
     nulls.push({
       ty: 3,
       ind,
@@ -1710,10 +1715,11 @@ function cameraNulls(doc: Doc, from: number, to: number, depths: number[], first
       st: 0,
       sr: 1,
       ks: {
-        a: track(views.map((v) => { const an = depthAnchor(doc, v, fac); return [r3(an.x), r3(an.y)]; }), times, true),
+        // Eased keys instead of one per frame: x and y (and the two scale axes) share an easing, as a camera move does.
+        a: smoothTrack(views.map((v) => { const an = depthAnchor(doc, v, fac); return [r3(an.x), r3(an.y)]; }), times, CAMERA_PX / topScale),
         p: stat([r3(cx), r3(cy)]),
-        s: track(views.map((v) => r3(depthScale(v, fac) * 100)).map((z) => [z, z]), times, true),
-        r: track(views.map((v) => r3(-v.rotation)), times, true),
+        s: smoothTrack(views.map((v) => r3(depthScale(v, fac) * 100)).map((z) => [z, z]), times, (CAMERA_PX / reach) * 100),
+        r: smoothTrack(unwrap(views.map((v) => -v.rotation)), times, (CAMERA_PX / reach) * (180 / Math.PI)),
         o: stat(100),
       },
     });
