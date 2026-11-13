@@ -27,7 +27,7 @@ export const canSend = (): boolean => !!ingest();
 
 export type SendOutcome =
   | { ok: true }
-  | { ok: false; why: 'no-key' | 'too-big' | 'too-often' | 'refused' | 'offline' | 'failed'; detail?: string };
+  | { ok: false; why: 'no-key' | 'too-big' | 'too-often' | 'refused' | 'offline' | 'unreachable' | 'failed'; detail?: string };
 
 /** Plain words for each way it can go wrong. */
 export const SEND_WORDS: Record<Exclude<SendOutcome & { ok: false }, { ok: true }>['why'], string> = {
@@ -36,6 +36,7 @@ export const SEND_WORDS: Record<Exclude<SendOutcome & { ok: false }, { ok: true 
   'too-often': 'That is a lot of reports in a short while. Have a cup of tea and try again in a few minutes.',
   refused: 'The board turned the report away. The key in this build may have been changed.',
   offline: "No connection, so it couldn't go. It will not be sent by itself later: press Send again when you're back.",
+  unreachable: "Couldn't reach the board. It will not try again by itself: press Send when you want to.",
   failed: "That didn't go through. Save the file instead and send it however you like.",
 };
 
@@ -66,7 +67,10 @@ export async function sendReport(report: IngestReport, fetcher: typeof fetch = f
       body: reportText(report),
     });
   } catch {
-    return { ok: false, why: 'offline' };
+    // A thrown fetch is either no connection or something in the way (a policy, a proxy). Saying "no connection"
+    // when there plainly is one sends people off checking their wifi for nothing.
+    const online = typeof navigator === 'undefined' || navigator.onLine !== false;
+    return { ok: false, why: online ? 'unreachable' : 'offline' };
   }
   if (r.ok) return { ok: true };
   if (r.status === 429) return { ok: false, why: 'too-often' };

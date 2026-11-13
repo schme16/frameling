@@ -81,7 +81,7 @@ describe('sending', () => {
   });
 
   it('has plain words for every way it can go wrong', () => {
-    for (const why of ['no-key', 'too-big', 'too-often', 'refused', 'offline', 'failed'] as const) {
+    for (const why of ['no-key', 'too-big', 'too-often', 'refused', 'offline', 'unreachable', 'failed'] as const) {
       expect(SEND_WORDS[why]).toBeTruthy();
       expect(SEND_WORDS[why]).not.toMatch(/[\u2013\u2014]/);
     }

@@ -46,11 +46,25 @@ describe('the request a build makes', () => {
     expect(await sendReport(report, reply(500))).toMatchObject({ ok: false, why: 'failed' });
   });
 
-  it('calls no connection no connection, and never retries by itself', async () => {
+  it('never retries by itself when the request throws', async () => {
     const f = vi.fn(async () => {
-      throw new Error('offline');
+      throw new Error('blocked');
     }) as unknown as typeof fetch;
-    expect(await sendReport(report, f)).toEqual({ ok: false, why: 'offline' });
+    const out = await sendReport(report, f);
+    expect(out.ok).toBe(false);
     expect((f as unknown as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(1);
+  });
+
+  it('only blames the connection when there really is none', async () => {
+    const thrower = () =>
+      vi.fn(async () => {
+        throw new Error('nope');
+      }) as unknown as typeof fetch;
+    const was = globalThis.navigator;
+    vi.stubGlobal('navigator', { onLine: true });
+    expect(await sendReport(report, thrower())).toEqual({ ok: false, why: 'unreachable' });
+    vi.stubGlobal('navigator', { onLine: false });
+    expect(await sendReport(report, thrower())).toEqual({ ok: false, why: 'offline' });
+    vi.stubGlobal('navigator', was);
   });
 });
