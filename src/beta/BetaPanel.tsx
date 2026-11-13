@@ -7,7 +7,7 @@ import { getPrefs, setPrefs, usePrefs } from '../ui/prefs';
 import { toast } from '../ui/toast';
 import { gatherEnv } from '../tablet/check/state';
 import { buildReport, docShape, reportText, type IngestReport } from './report';
-import { BETA_PAGE, canSend, SEND_WORDS, sendReport } from './send';
+import { BETA_PAGE, canSend, checkBoard, lastSendFailure, sayFailure, sendReport } from './send';
 import { recentProblems } from './problems';
 import './beta.css';
 
@@ -18,6 +18,9 @@ export function BetaPanel() {
   const [where, setWhere] = useState('');
   const [preview, setPreview] = useState<IngestReport | null>(null);
   const [busy, setBusy] = useState(false);
+  const [checking, setChecking] = useState(false);
+  // What the last check or send said, kept on the page so it can be read twice and quoted.
+  const [said, setSaid] = useState<{ good: boolean; text: string } | null>(null);
 
   // The preview is thrown away whenever the words change, so what you read is never out of date.
   useEffect(() => setPreview(null), [note, where, contact]);
@@ -34,6 +37,17 @@ export function BetaPanel() {
     });
   };
 
+  const check = async () => {
+    setChecking(true);
+    try {
+      const r = await checkBoard();
+      if (r.ok) setSaid({ good: true, text: 'The board is there and it accepts this copy of Frameling. If a report still fails, it is something else.' });
+      else setSaid({ good: false, text: sayFailure(r) });
+    } finally {
+      setChecking(false);
+    }
+  };
+
   const show = () => void build().then(setPreview);
 
   const send = async () => {
@@ -46,7 +60,10 @@ export function BetaPanel() {
         setNote('');
         setWhere('');
         setPreview(null);
-      } else toast(SEND_WORDS[out.why], { kind: 'warn' });
+      } else {
+        setSaid({ good: false, text: sayFailure(out) });
+        toast(sayFailure(out), { kind: 'warn' });
+      }
     } finally {
       setBusy(false);
     }
@@ -98,8 +115,15 @@ export function BetaPanel() {
             <button type="button" className="ui-btn" onClick={() => void send()} disabled={!note.trim() || busy || !canSend()}>
               {busy ? 'Sending...' : 'Send it'}
             </button>
+            <button type="button" className="tb-clear" onClick={() => void check()} disabled={checking || !canSend()}>
+              {checking ? 'Checking...' : 'Check the connection'}
+            </button>
           </div>
-          {!canSend() && <p className="tb-note">This build can't send (it carries no key). The pen check's Save a file still works, and you can send that however you like.</p>}
+          {(() => {
+            const failed = said ?? (lastSendFailure() ? { good: false, text: `The last report didn't go. ${sayFailure(lastSendFailure()!)}` } : null);
+            return failed && <p className="tb-note" role="status" data-good={failed.good}>{failed.text}</p>;
+          })()}
+          {!canSend() && <p className="tb-note">This build can't send (it was made without a way to send, so it isn't your internet). The pen check's Save a file still works, and you can send that however you like.</p>}
           {preview && (
             <>
               <p className="tb-note">This, word for word, is what goes. Nothing else.</p>

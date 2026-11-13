@@ -56,6 +56,7 @@ function invokeStubs(library) {
     'video:frame': () => ({ error: 'No FFmpeg in the test harness.' }),
     'video:finish': () => ({ error: 'No FFmpeg in the test harness.' }),
     'video:cancel': () => undefined,
+    'beta:request': () => ({ code: 'ERR_BLOCKED_BY_CLIENT', message: 'No board in the test harness.' }),
   };
 }
 

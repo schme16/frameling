@@ -74,14 +74,14 @@ describe('sending', () => {
 
   it('does nothing at all in a build with no key', async () => {
     const fetcher = vi.fn();
-    const out = await sendReport(report, fetcher as unknown as typeof fetch);
+    const out = await sendReport(report, fetcher);
     expect(out).toEqual({ ok: false, why: 'no-key' });
     // The important half: it never even reached for the network.
     expect(fetcher).not.toHaveBeenCalled();
   });
 
   it('has plain words for every way it can go wrong', () => {
-    for (const why of ['no-key', 'too-big', 'too-often', 'refused', 'offline', 'unreachable', 'failed'] as const) {
+    for (const why of Object.keys(SEND_WORDS) as (keyof typeof SEND_WORDS)[]) {
       expect(SEND_WORDS[why]).toBeTruthy();
       expect(SEND_WORDS[why]).not.toMatch(/[\u2013\u2014]/);
     }
