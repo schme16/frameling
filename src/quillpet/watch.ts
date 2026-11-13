@@ -1,7 +1,8 @@
 // What the pet notices while you work. Started when the feature is turned on and stopped when it's turned off, so
 // with the pet off nothing here is listening and Quill is just the mascot again.
 import { store } from '../core/store';
-import { firstVisitToday, tellQuill } from './store';
+import { petStore, firstVisitToday, tellQuill } from './store';
+import { paintQuills, plainQuills } from './quills';
 
 const now = (): number => (typeof performance === 'undefined' ? Date.now() : performance.now());
 
@@ -43,12 +44,19 @@ export function startWatching(): () => void {
     if (next.doc !== prev.doc) {
       lastEdit = now();
       tellQuill({ kind: 'drew' });
+      // The colour you drew with goes in his quills. Worth no closeness: that would be paying you to change colour.
+      if (next.ui.color) tellQuill({ kind: 'noticed', colour: next.ui.color });
     }
     if (next.ui.playing && !prev.ui.playing) tellQuill({ kind: 'played' });
     prev = next;
   });
+  // Repaint his pencils whenever his colours change, and once now.
+  const offPet = petStore.subscribe(() => paintQuills(petStore.get().colours));
+  paintQuills(petStore.get().colours);
   return () => {
     off();
+    offPet();
+    plainQuills();
     forgetNow();
   };
 }

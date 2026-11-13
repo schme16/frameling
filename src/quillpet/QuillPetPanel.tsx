@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Quill, useShowQuill } from '../ui/mascot';
 import { line, lines } from '../ui/mascot/lines';
 import { sinceInput } from '../ui/mascot/runtime';
+import { useStore } from '../core/store';
 import { daysAway, noteSeen, petStore, tellQuill } from './store';
 import { MOOD_WORDS, moodNow, nextStage, stageOf, stageProgress, type Mood } from './model';
 import { noteFuss, sinceEdit, sinceFinished, sinceFuss } from './watch';
@@ -43,6 +44,8 @@ export function QuillPetPanel() {
     daysAway: away,
   });
 
+  const colour = useStore((st) => st.ui.color);
+  const hasColour = !!colour && !pet.colours.some((c) => c.toLowerCase() === colour.toLowerCase());
   const stage = stageOf(pet.closeness);
   const next = nextStage(pet.closeness);
   const progress = stageProgress(pet.closeness);
@@ -67,6 +70,13 @@ export function QuillPetPanel() {
     setSaid(all[Math.floor(Math.random() * all.length)]);
   };
 
+  const feed = () => {
+    if (!colour) return;
+    tellQuill({ kind: 'fed', colour });
+    noteFuss();
+    setSaid(line('pet.fed'));
+  };
+
   return (
     <div className="cv-panel cv-options qp-panel" data-help="quill-pet">
       <div className="qp-stage">
@@ -81,6 +91,21 @@ export function QuillPetPanel() {
       </div>
 
       {showQuill && <p className="qp-says">{said}</p>}
+
+      {showQuill && (
+        <div className="qp-colours">
+          <p className="qp-colours-top">His pencils</p>
+          <ul className="qp-swatches" aria-label="The colours in his quills">
+            {pet.colours.length === 0 && <li className="qp-none">Draw with a colour and he'll pick it up</li>}
+            {pet.colours.slice(-5).map((c) => (
+              <li key={c} style={{ background: c }} title={c} />
+            ))}
+          </ul>
+          <button type="button" className="ui-btn qp-feed" onClick={feed} disabled={!hasColour} title={hasColour ? `Give him ${colour}` : 'He already has this one'}>
+            Give him this colour
+          </button>
+        </div>
+      )}
 
       <div className="qp-close">
         <div className="qp-close-top">

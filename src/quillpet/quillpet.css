@@ -79,3 +79,38 @@
 :root[data-motion='reduce'] .qp-bar > span {
   transition: none;
 }
+.qp-colours {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.qp-colours-top {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+}
+.qp-swatches {
+  display: flex;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  min-height: 18px;
+  align-items: center;
+}
+.qp-swatches > li {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  border: 1px solid var(--line);
+}
+.qp-swatches > li.qp-none {
+  width: auto;
+  height: auto;
+  border: 0;
+  font-size: 11px;
+  color: var(--muted);
+}
+.qp-feed {
+  align-self: flex-start;
+}

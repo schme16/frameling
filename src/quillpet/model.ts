@@ -52,6 +52,7 @@ export type PetEvent =
   | { kind: 'petted' }
   | { kind: 'gave'; thing: PetThing }
   | { kind: 'fed'; colour: string }
+  | { kind: 'noticed'; colour: string }
   | { kind: 'visited' };
 
 /** What each one is worth, and how many times a day it can count. A day's drawing is worth a lot, but not endless:
@@ -64,6 +65,9 @@ const WORTH: Record<PetEvent['kind'], { points: number; perDay: number }> = {
   petted: { points: 1, perDay: 20 },
   gave: { points: 4, perDay: 12 },
   fed: { points: 2, perDay: 12 },
+  // A colour he picks up just by watching you draw. Worth nothing, so drawing can't be used to farm closeness, but
+  // it still goes in his quills.
+  noticed: { points: 0, perDay: 0 },
   visited: { points: 3, perDay: 1 },
 };
 
@@ -112,7 +116,7 @@ export function apply(pet: PetState, count: DayCount, ev: PetEvent, at: number):
     const things = [...next.things.filter((t) => t.id !== ev.thing.id), ev.thing];
     next = { ...next, things: things.slice(-MAX_THINGS) };
   }
-  if (ev.kind === 'fed') {
+  if (ev.kind === 'fed' || ev.kind === 'noticed') {
     const colours = [...next.colours.filter((x) => x.toLowerCase() !== ev.colour.toLowerCase()), ev.colour];
     next = { ...next, colours: colours.slice(-MAX_COLOURS) };
   }
