@@ -259,6 +259,20 @@ const GROUPS = {
     { wait: 1500 },
     { shot: ['workspaces.railKept'], crop: TOAST, pad: 60 },
   ],
+  // After a crash: the dazed Quill, in a build that can send (a pretend crash) and in one that can't.
+  crash: [
+    { js: `__frameling.crashOffer('ask')` },
+    { wait: 1400 },
+    { shot: ['crash.offer'], crop: '.bt-crash', pad: 12 },
+    { js: `document.querySelector('[data-testid="crash.no"]').click()` },
+    { wait: 400 },
+    { js: `__frameling.crashOffer('tell')` },
+    { wait: 1400 },
+    { shot: ['crash.told'], crop: '.bt-crash', pad: 12 },
+    { js: `document.querySelector('[data-testid="crash.ok"]').click()` },
+    { wait: 300 },
+    // crash.sent only shows once a send works, which a build with no key can't do; it is the same dialog with him cheering.
+  ],
   about: [run('help.about'), { wait: 3000 }, { shot: ['about.quill'], crop: '.ui-about', pad: 0 }],
   // Quill's corner and his things: a stroke, a colour, a drawing given, and the moment you get closer.
   pet: [

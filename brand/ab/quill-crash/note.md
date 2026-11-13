@@ -1,0 +1,1 @@
+Dazed Quill (swirly eyes, hair on end, a plaster, stars going round) offering to send the crash notes after a crash, dark and light; told-dark.png is the same Quill in a build that can't send, where he only says what happened.

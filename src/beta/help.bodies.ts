@@ -1,5 +1,24 @@
 // The words of the topic in help.ts, kept apart so they load only when Help is opened (see src/core/helpBodies.ts).
 export const bodies: Record<string, string> = {
+  'crash-notes': `If Frameling crashed last time, a dazed **Quill** meets you when you open it again, swirly eyes and all, and asks whether to send the **crash notes** so it can be fixed.
+
+**He asks, you decide.** Nothing is sent unless you press **Send the notes**. **Read what would go** shows the whole report, word for word, before you decide.
+
+**What the notes are:** how Frameling stopped (it was shut down without closing properly, or the drawing window crashed), what Frameling and this computer are (version, platform, screen, what your pen can do). Never your drawing, what you called it, where it lives or anything you typed.
+
+**No thanks:** the box under the buttons remembers it, and then Quill stays away after a crash. Change your mind any time in **Preferences > Behaviour > Quill after a crash**.
+
+**Later:** the command **Send the notes from the last crash** brings him back with the same notes, whatever you said before.
+
+**How Frameling knows:** when it starts it leaves a small file in its own folder, and when it quits properly it takes the file away. If the file is still there next time, it didn't quit properly. Nothing leaves your computer for this.
+
+**Good to know:**
+- He turns up once per crash, and never after you closed Frameling the usual way.
+- Only a beta build can send. A copy without a way to send still has Quill say what happened, and then leaves it there.
+- With **Let me send reports to the makers** off in Preferences > Diagnostics, he doesn't offer to send anything.
+- If the notes won't go, Frameling says why in plain words and you can try again.
+
+help:beta-reports help:preferences`,
   'beta-reports': `Something went wrong and you want to tell us? **Preferences > Diagnostics > Telling the makers**, or the command **Tell the makers what happened**.
 
 **The switch.** **Let me send reports to the makers** is on in a beta build, because that is what being a tester is, and off in an ordinary build. Turn it off and nothing is sent at all, crashes included.
@@ -24,5 +43,5 @@ export const bodies: Record<string, string> = {
 
 **The testing page.** [Everything a tester needs is on one page](https://project-boards.shanegadsby.com/s/qUR_fOzbJGN9T1_ItQ3HEJ6u): getting the build open on each kind of computer, what is most useful to send, and what we do and don't see. No login, nothing to join.
 
-help:pen-check help:preferences`,
+help:pen-check help:preferences help:crash-notes`,
 };

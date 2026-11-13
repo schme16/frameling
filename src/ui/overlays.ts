@@ -16,6 +16,8 @@ export interface Overlays {
   onboarding?: boolean;
   /** Quill's pen check: his offer, or the steps (src/tablet/check). */
   penCheck?: 'offer' | 'run';
+  /** Quill, dazed, after a crash (src/beta/crashAsk.ts). */
+  crashOffer?: boolean;
 }
 
 export const overlays = createStore<Overlays>({ palette: false, prefs: null, help: null, sheet: null, about: false });
@@ -44,7 +46,7 @@ export const closeOnboarding = () => patch({ onboarding: false });
 
 export const anyOverlayOpen = (): boolean => {
   const o = overlays.get();
-  return o.palette || !!o.prefs || !!o.help || !!o.sheet || o.about || !!o.onboarding || !!o.penCheck;
+  return o.palette || !!o.prefs || !!o.help || !!o.sheet || o.about || !!o.onboarding || !!o.penCheck || !!o.crashOffer;
 };
 
 /** A document that opens while the Welcome or New sheet is showing (a double-click, Open recent) closes the sheet. */

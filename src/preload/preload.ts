@@ -84,6 +84,8 @@ const api: FramelingApi = {
   app: {
     // How big everything is drawn. Chromium's own page zoom, so text, panels and the canvas all stay crisp.
     setUiScale: (factor) => webFrame.setZoomFactor(Math.min(3, Math.max(0.5, factor))),
+    getLastCrash: () => call('app:lastCrash'),
+    crashOffered: () => ipcRenderer.send('app:crashOffered'),
     getDisplay: () => call('app:display'),
     onDisplayChanged: (handler) => {
       const fn = (_: unknown, d: Parameters<typeof handler>[0]) => handler(d);

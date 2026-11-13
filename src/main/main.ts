@@ -7,13 +7,23 @@ import { watchDisplay } from './display';
 import { clearAutosave, keepAutosave, pruneKept } from './store';
 import type { DocumentState } from '../preload/api';
 import { isolationWanted, PLUGIN_PROCESS_FEATURE } from './pluginMemory';
+import { endRun, markOffered, noteEvent, readLast, startRun } from './crashMarker';
 
 // Plugins share one process (cheap), unless "Measure plugins' memory and speed" was on when Frameling last closed: then
 // each sandbox gets a process of its own (about 90 MB each), so its memory can be told apart.
 if (isolationWanted(app.getPath('userData'))) app.commandLine.appendSwitch('enable-features', PLUGIN_PROCESS_FEATURE);
 
 // Only one Frameling runs at a time; a second launch focuses the first window and hands it the file, if it has one.
-if (!app.requestSingleInstanceLock()) app.quit();
+const gotLock = app.requestSingleInstanceLock();
+if (!gotLock) app.quit();
+
+// Spotting a crash (see crashMarker.ts): a marker written at start and taken away on a proper quit. Only the copy that
+// holds the lock does it (a second launch quits straight away and must not touch the first one's marker), and only
+// the installed app does (a dev run killed with Ctrl+C is not a crash worth Quill's time).
+const watchCrashes = gotLock && (app.isPackaged || process.env.FRAMELING_CRASH_MARKER === '1');
+let quitting = false;
+const dataDir = () => app.getPath('userData');
+
 
 let win: BrowserWindow | null = null;
 let docState: DocumentState = { dirty: false, name: 'Untitled', filePath: null };
@@ -68,6 +78,10 @@ function createWindow() {
     },
   });
   win.once('ready-to-show', () => win?.show());
+  // The drawing window dying is a crash even if the app is then closed properly, so it goes in the marker.
+  win.webContents.on('render-process-gone', (_e, d) => {
+    if (watchCrashes && !quitting && d.reason !== 'clean-exit') noteEvent(dataDir(), process.pid, `The drawing window stopped (${d.reason}, exit code ${d.exitCode}).`);
+  });
   // Dragged onto another screen: tell the page, which may offer a better interface size for it.
   const stopWatching = watchDisplay(win, (d) => win?.webContents.send('app:displayChanged', d));
   win.once('closed', stopWatching);
@@ -148,6 +162,8 @@ registerIpc({
     win.setRepresentedFilename(s.filePath ?? '');
   },
   keepUnsavedDone: () => keepDone?.(),
+  lastCrash: () => readLast(dataDir()),
+  crashOffered: () => markOffered(dataDir()),
   saveBeforeCloseDone: (ok) => {
     askingClose = false;
     if (!ok) return;
@@ -179,6 +195,7 @@ app.on('open-url', (e, url) => {
 });
 
 app.whenReady().then(() => {
+  if (watchCrashes) startRun({ dir: dataDir(), pid: process.pid, version: app.getVersion(), platform: `${process.platform} ${process.arch}` });
   setupMenu();
   // Whatever a crash left behind is put aside too, so it can still be found after the "Restore it?" question goes away.
   try {
@@ -201,3 +218,13 @@ app.whenReady().then(() => {
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
+
+// A proper quit clears the marker. Closing the window is not enough (on a Mac the app lives on), and being asked to
+// stop by the system (logging out, a shutdown, Ctrl+C) is not a crash either, so those signals quit properly too.
+app.on('will-quit', () => {
+  quitting = true;
+  if (watchCrashes) endRun(dataDir(), process.pid);
+});
+if (watchCrashes && process.platform !== 'win32') {
+  for (const sig of ['SIGTERM', 'SIGINT', 'SIGHUP'] as const) process.on(sig, () => app.quit());
+}
