@@ -6,9 +6,9 @@ export function desktop(): FramelingApi | null {
   return w?.frameling?.files ? w.frameling : null;
 }
 
-/** "This browser" on the web build, "This computer" in the desktop app: for plain-words messages about what the machine can do. */
+/** "This computer": for plain-words messages about what the machine can or can't do. */
 export function where(): string {
-  return typeof window !== 'undefined' && (window as { frameling?: { kind?: string } }).frameling?.kind === 'web' ? 'This browser' : 'This computer';
+  return 'This computer';
 }
 
 /** The last part of a path, whatever separator it uses. */

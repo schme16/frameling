@@ -93,23 +93,16 @@ describe('WebM codec preference', () => {
     expect((await m.detectCapabilities(320, 240)).webm.codec).toBe('vp9');
   });
 
-  it('says "computer" in the desktop app and "browser" on the web build', async () => {
+  it('says what this computer cannot do, in plain words', async () => {
     can.plain = new Set();
     let m = await load();
-    expect((await m.detectCapabilities(320, 240)).mp4.reason).toMatch(/^This computer can't make H\.264/);
-    (window as any).frameling = { kind: 'web' };
-    try {
-      m = await load();
-      const c = await m.detectCapabilities(320, 240);
-      expect(c.mp4.reason).toMatch(/^This browser can't make H\.264/);
-      expect(c.webm.reason).toMatch(/^This browser can't make WebM/);
-      m = await load();
-      delete (globalThis as any).VideoEncoder;
-      const none = await m.detectCapabilities(1, 1);
-      expect(none.mp4.reason).toMatch(/^This browser's video encoder isn't available/);
-    } finally {
-      delete (window as any).frameling;
-    }
+    const c = await m.detectCapabilities(320, 240);
+    expect(c.mp4.reason).toMatch(/^This computer can't make H\.264/);
+    expect(c.webm.reason).toMatch(/^This computer can't make WebM/);
+    m = await load();
+    delete (globalThis as any).VideoEncoder;
+    const none = await m.detectCapabilities(1, 1);
+    expect(none.mp4.reason).toMatch(/^This computer's video encoder isn't available/);
   });
 
   it('is not tripped by the unused imports', () => {

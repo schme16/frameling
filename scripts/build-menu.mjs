@@ -1,5 +1,5 @@
 // One-step build for people building Frameling themselves. build.sh and build.cmd run this.
-// With no argument it shows a menu; or name what to build: this, all, windows, mac, linux, web.
+// With no argument it shows a menu; or name what to build: this, all, windows, mac, linux.
 // Add --test to run the tests first.
 import { execSync, spawnSync } from 'node:child_process';
 import { existsSync, readdirSync, statSync } from 'node:fs';
@@ -11,7 +11,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 process.chdir(root);
 
 const host = process.platform === 'win32' ? 'windows' : process.platform === 'darwin' ? 'mac' : 'linux';
-const NAMES = { windows: 'Windows', mac: 'macOS', linux: 'Linux', web: 'Web (runs in a browser)' };
+const NAMES = { windows: 'Windows', mac: 'macOS', linux: 'Linux' };
 const ARGS = {
   windows: '--win nsis portable',
   mac: '--mac dmg --arm64 --x64',
@@ -22,7 +22,7 @@ const has = (cmd) => spawnSync(host === 'windows' ? 'where' : 'which', [cmd], { 
 
 // Why this computer can't build a target, or null when it can.
 function cannot(target) {
-  if (target === 'web' || target === host) return null;
+  if (target === host) return null;
   if (target === 'mac') return 'macOS apps can only be built on a Mac.';
   if (target === 'linux' && host === 'windows') return 'the Linux app can\'t be built on Windows. Use WSL or a Linux computer.';
   if (target === 'windows' && !has('wine')) return 'building the Windows app here needs Wine installed (https://www.winehq.org).';
@@ -41,7 +41,6 @@ async function choose() {
     ['windows', NAMES.windows],
     ['mac', NAMES.mac],
     ['linux', NAMES.linux],
-    ['web', NAMES.web],
   ];
   console.log('\nBuild Frameling\n');
   items.forEach(([key, label], i) => {
@@ -61,17 +60,17 @@ async function choose() {
   return item[0];
 }
 
-const ALIASES = { win: 'windows', windows: 'windows', mac: 'mac', macos: 'mac', osx: 'mac', linux: 'linux', web: 'web', this: 'this', all: 'all' };
+const ALIASES = { win: 'windows', windows: 'windows', mac: 'mac', macos: 'mac', osx: 'mac', linux: 'linux', this: 'this', all: 'all' };
 const argv = process.argv.slice(2);
 const withTests = argv.includes('--test');
 const named = argv.find((a) => !a.startsWith('--'));
 let pick = named ? ALIASES[named.toLowerCase()] : await choose();
 if (!pick) {
-  console.error(`Unknown target "${named}". Use one of: this, all, windows, mac, linux, web.`);
+  console.error(`Unknown target "${named}". Use one of: this, all, windows, mac, linux.`);
   process.exit(1);
 }
 
-const targets = pick === 'this' ? [host] : pick === 'all' ? ['windows', 'mac', 'linux', 'web'] : [pick];
+const targets = pick === 'this' ? [host] : pick === 'all' ? ['windows', 'mac', 'linux'] : [pick];
 const skipped = [];
 const todo = targets.filter((t) => {
   const why = cannot(t);
@@ -88,7 +87,7 @@ const started = Date.now();
 if (!existsSync('node_modules')) run('npm ci');
 if (withTests) run('npm test');
 
-const desktop = todo.filter((t) => t !== 'web');
+const desktop = todo;
 if (desktop.length) {
   run('npm run build');
   for (const t of desktop) {
@@ -98,7 +97,6 @@ if (desktop.length) {
     run(`npx electron-builder ${ARGS[t]} --publish never`, { CSC_IDENTITY_AUTO_DISCOVERY: 'false' });
   }
 }
-if (todo.includes('web')) run('npm run build:web');
 
 // What came out.
 const fresh = (dir, test) =>
@@ -106,7 +104,6 @@ const fresh = (dir, test) =>
 const out = fresh('release', (f) => /\.(AppImage|exe|dmg)$/.test(f));
 console.log('\nDone.');
 for (const f of out) console.log(`  ${f}  (${(statSync(f).size / 1048576).toFixed(0)} MB)`);
-if (todo.includes('web')) console.log(`  ${path.join('dist', 'web')}${path.sep}  (put these files on any web server)`);
 if (skipped.length) {
   console.log('\nSkipped:');
   for (const s of skipped) console.log(`  ${s}`);

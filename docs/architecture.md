@@ -5,16 +5,15 @@ page (`docs/format.md`), and so do the tests (`docs/testing.md`).
 
 ## The big picture
 
-Frameling is an Electron app with a React and TypeScript page, built with Vite. The same page also runs in a plain
-browser (the web build). There is no server.
+Frameling is an Electron app with a React and TypeScript page, built with Vite. There is no server.
 
 - **Main process** (`src/main/`): windows, file dialogs, the disk, autosave copies, the user library, FFmpeg for
   ProRes. Bundled by esbuild to `dist/main/main.cjs` (`scripts/build-main.mjs`).
 - **Preload** (`src/preload/`): puts a small bridge on `window.frameling`. Bundled to `dist/preload/preload.cjs`.
 - **Renderer** (`src/renderer/` plus every feature folder): the whole app. Vite builds it to `dist/renderer`
-  (`vite.config.ts`, root `src/renderer`, relative `base: './'`) or to `dist/web` (`vite.web.config.ts`).
-- **Platform layer** (`src/platform/`): the page only talks to `window.frameling`. On the desktop that's the preload
-  bridge; in a browser `src/platform/web/` builds the same bridge in the page.
+  (`vite.config.ts`, root `src/renderer`, relative `base: './'`).
+- **Platform layer** (`src/platform/`): the page only talks to `window.frameling`, the preload bridge, and keeps the
+  few things it does for itself (downloads, the file picker, which OS this is).
 
 Everything in the page reads and writes one store (`src/core/store.ts`). Features register commands, panels, tools,
 help topics and choices in registries (`src/core/registry.ts`), and the shell (menus, palette, keyboard, dock, help)
@@ -51,20 +50,11 @@ Windows and macOS, safe file names), `menu.ts` (no native menu on Windows and Li
 `files`, `recent`, `autosave`, `app`, and the optional `library`, `media` and `video`. `src/preload/preload.ts` builds it
 from `ipcRenderer` and exposes it with `contextBridge`.
 
-## Platform layer: desktop and web
+## Platform layer
 
-- `src/platform/install.ts` is the first import in `src/renderer/main.tsx`. It calls `installPlatform()`; on the web it
-  also registers the web-only commands and starts the PWA.
-- `src/platform/index.ts`: `platformKind()` is `'none'` without a bridge, else `bridge.kind ?? 'desktop'`. `isWeb()`
-  and `can(feature)` (`showInFolder`, `nativeMenus`, `closeWithSave`, desktop only) are what code checks. Very little
-  code asks.
-- `src/platform/web/web.ts` (`createWebApi`): File System Access where the browser has it, otherwise upload and
-  download. Paths are made up (`<kind>:/<id>/<name>`). Multi-file exports go to a picked folder or a zip download.
-  No ProRes, media or folder reading.
-- `src/platform/web/idb.ts`: IndexedDB `frameling` with stores `recent`, `handles`, `copies`, `autosave`, `kept`,
-  `library`, and an in-memory fallback.
-- `src/platform/pwa.ts`: service worker (`sw.js`, written by `vite.web.config.ts`, which also writes the web manifest
-  with file handlers for `.frameling` and `.flplay`), and the "Install as an app" command.
+- `src/platform/index.ts`: `platformKind()` is `'none'` without a bridge, else `'desktop'`. `can(feature)`
+  (`showInFolder`, `nativeMenus`, `closeWithSave`) is what code checks, along with `download`, `pickUpload` and
+  `guessOs`. Very little code asks.
 - `src/platform/ask.ts` + `AskDialog.tsx`: an in-page question (falls back to `confirm`).
 - `src/platform/library.ts`: the library API, or an in-memory one.
 - `src/io/desktop.ts` `desktop()` returns the bridge (desktop or web) or null.

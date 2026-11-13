@@ -2,7 +2,7 @@
 
 A friendly desktop tool for drawing and animating 2D art, made for vector and pixel art alike. Draw frame by frame or tween between poses, then export to video, GIFs, sprite sheets, Godot, and natively into Interactives.
 
-It runs as a desktop app (Electron, Windows, macOS, Linux) and as a web page from the same code. The plan lives on
+It runs as a desktop app (Electron, Windows, macOS, Linux). The plan lives on
 the project board (project `frameling`, doc `evaluation`). Developer docs are in [docs/](docs/README.md).
 
 ## What it does
@@ -41,7 +41,6 @@ Every pull request into `main` builds the app for all three systems. Open the pu
 
 The builds are only self-signed (Windows) and ad-hoc signed (macOS), so on Windows click **More info → Run anyway**, and on macOS right-click the app and choose **Open** the first time (see Signing, below).
 
-The same run also has **frameling-web**: the web version, for machines where installing isn't allowed (see below).
 
 ### Build it yourself
 
@@ -58,20 +57,19 @@ A menu asks what to build:
   3. Windows
   4. macOS  (not on this computer)
   5. Linux
-  6. Web (runs in a browser)
 ```
 
-Or skip the menu by naming it: `./build.sh this`, `all`, `windows`, `mac`, `linux` or `web` (the same words work with
+Or skip the menu by naming it: `./build.sh this`, `all`, `windows`, `mac` or `linux` (the same words work with
 `build.cmd`). Add `--test` to run the tests first. The first run installs the packages (`npm ci`); the apps land in
-`release/` and the web version in `dist/web/`.
+`release/`.
 
 What each computer can build:
 
 | On | Can build |
 |---|---|
-| Windows | Windows, web |
-| macOS | macOS, Linux, web (Windows too with [Wine](https://www.winehq.org)) |
-| Linux | Linux, web (Windows too with Wine) |
+| Windows | Windows |
+| macOS | macOS, Linux (Windows too with [Wine](https://www.winehq.org)) |
+| Linux | Linux (Windows too with Wine) |
 
 Only a Mac can build the macOS app. Builds made this way are unsigned on Windows; macOS ones are ad-hoc signed (see
 Signing, below).
@@ -111,33 +109,6 @@ the desktop you're working at, for example:
 ```bash
 xvfb-run -a -s "-screen 0 1600x1000x24" npm run a11y
 ```
-
-### The web version
-
-```bash
-npm run build:web      # static files into dist/web/
-npm run preview:web    # serves dist/web on http://localhost:5198
-```
-
-`dist/web/` is plain static files with relative paths, so it can be copied into any folder of any web server (a
-sub-path like `/tools/frameling/` is fine). It needs https (or localhost) for the offline copy and "Install as an app"
-to work. Nothing is deployed anywhere automatically.
-
-It is the same page as the desktop app. `src/platform/` works out where it's running: the desktop app's preload
-script puts the bridge on `window.frameling`, and in a plain browser `src/platform/web/` builds the same bridge in the
-page. Everything else goes through that bridge, so very little code knows the difference.
-
-| | Chrome, Edge | Firefox, Safari |
-|---|---|---|
-| Open and save | File System Access: Save asks once, then saves in place | Open is an upload; Save downloads the file each time |
-| Open recent | Remembers the files (the browser may ask to allow access again) | Reopens the browser's own copy of the file |
-| Multi-file exports (sprite sheet, tileset) | Into a folder you pick | One .zip download |
-| Autosave and Recover unsaved work | IndexedDB, every 15 seconds and when the tab is hidden, kept 7 days | Same |
-| Install as an app, offline | Yes (manifest, service worker, opens .frameling files) | Offline after the first visit. Safari can add it to the Dock or Home Screen; Firefox can't install it |
-
-Not in the browser: ProRes export (it runs FFmpeg on the computer), fonts installed on the computer for text, "Show in folder", the native "Save changes?" on close (the browser's own "Leave site?" shows
-instead, and the work is put aside in Recover unsaved work), and shortcuts the browser keeps (Ctrl+N, Ctrl+W, Ctrl+T).
-The in-app help topic "Frameling in a web browser" says the same in plain words.
 
 ### Install on this Linux machine
 
@@ -183,8 +154,14 @@ in `{curly}` brackets are filled in by the app, so keep them. A list is several 
 app picks from (silly names, quest cheers). Quest step instructions are tutorial content and stay in
 `src/quests/library.ts`; help topics and plain app messages (errors, saving) aren't in it either.
 
-The easy way to edit them is the review page, `brand/dialogue/index.html` (open it straight from disk). Each line
-has its screenshot in place and a box to change it; your edits are kept in that browser until you reset them.
+The easy way to edit them is the review page, `brand/dialogue/index.html`. Open it straight from disk:
+
+```bash
+xdg-open brand/dialogue/index.html
+```
+
+Each line has its screenshot in place and a box to change it; your edits are kept in that browser until you reset
+them.
 
 1. Edit the lines on the page, then press **Download my changes** (or **Copy my changes** and paste into a file).
 2. `npm run dialogue:apply ~/Downloads/quill-lines-2026-11-11.json` merges them into `lines.json` and prints what
@@ -282,13 +259,13 @@ would need to:
 
 Sandboxed add-ons that add commands, exports and panels: see [docs/plugins.md](docs/plugins.md) for the API, the
 sandbox and the threat model. Examples are in `plugins/examples/`. Installed plugins live in `library/plugins/` in the
-user data folder (web: IndexedDB).
+user data folder.
 
 ## Templates
 
 Built-in templates are built in code (`src/templates/`). Your templates are `.frameling` files with a `template.json`
 beside the drawing (name, blurb, kind, tags, author, licence, card frame; `src/templates/community.ts`), kept in
-`library/templates/` in the user data folder (web: IndexedDB). Files dropped into that folder show up too. The welcome
+`library/templates/` in the user data folder. Files dropped into that folder show up too. The welcome
 sheet lists sources from `registerTemplateSource` (`src/templates/user.ts`), so an online gallery can be added later
 as one more source with its own section; there is no server for one today.
 
@@ -298,7 +275,7 @@ The full map is [docs/architecture.md](docs/architecture.md). In short:
 
 - `src/main/`: the Electron main process (windows, dialogs, files, autosave copies, the user library, FFmpeg).
 - `src/preload/`: the small, safe bridge between the page and the desktop (`window.frameling`).
-- `src/platform/`: which bridge the page has (desktop or browser), and the browser one itself.
+- `src/platform/`: the few things the page does for itself rather than through the desktop bridge.
 - `src/renderer/`: the page's entry (`main.tsx`, `App.tsx`), `features.ts` (loads every area) and the `?debug` hooks.
 - `src/core/`: the document format (`format.ts`), the store with undo (`store.ts`), the registries, and the single
   renderer (`render.ts`) and posing (`symbols.ts`) every view and export uses.
@@ -312,7 +289,7 @@ The full map is [docs/architecture.md](docs/architecture.md). In short:
   `docs/`, `dialogue/`, `a11y.cjs`, `shoot.cjs`); see [docs/testing.md](docs/testing.md).
 - `public/`: help media, the mascot sheet, the plugin host pages. `brand/`: mascot sources, A/B shots, the dialogue
   review page. `godot/`: the Godot importer add-on. `plugins/examples/`: example plugins.
-- `.github/workflows/build.yml`: the Windows, macOS and Linux builds, and the web build.
+- `.github/workflows/build.yml`: the Windows, macOS and Linux builds.
 
 Branches: work happens on `development`, which reaches `main` through pull requests, and each pull request builds the apps.
 

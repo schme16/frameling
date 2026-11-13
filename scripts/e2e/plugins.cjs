@@ -5,7 +5,6 @@
 //   xvfb-run -a npx electron scripts/e2e/plugins.cjs                    (measuring off: the default; plugins share a process)
 //   PLUGINS_DIAG=1 xvfb-run -a npx electron scripts/e2e/plugins.cjs     (measuring on: a process per plugin, memory and speed shown)
 //
-// The web build: `npm run build:web && npm run preview:web`, then PLUGINS_URL=http://localhost:5198/ the same command
 // (no desktop bridge: the page builds its own, and plugins are kept in IndexedDB).
 //
 // Exits non-zero when anything fails.

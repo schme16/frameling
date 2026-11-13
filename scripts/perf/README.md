@@ -33,17 +33,12 @@ file and anything it preloads, from `index.html`).
 
 ```bash
 npm run build && node scripts/perf/startup.cjs --out scripts/perf/results/startup-desktop.json
-npx vite build --config vite.web.config.ts && node scripts/perf/startup.cjs --web --out scripts/perf/results/startup-web.json
 ```
 
 - The desktop run starts the real main process (`dist/main/main.cjs`) through `launch.cjs`, which parks windows
   off-screen on a real desktop and keeps them on-screen under xvfb (`display.cjs`; `PERF_ONSCREEN=1` or `0` forces it). Afterwards it imports every lazily loaded chunk from `file://` in that real window, to prove they load.
-- `--web` serves `dist/web` from a sub-path (`/some/sub/path/frameling/`), then stops the server and opens the app
-  again offline, and opens Export, Preferences, Themes and Help, so the lazily loaded chunks have to come from the
-  service worker's copy.
 - The first launch has a fresh profile; the median is of the launches after it. `--cpu 4` (the default) also reloads
-  each page with the CPU slowed down four times; that number is only dependable for the desktop run, as Chromium drops
-  the throttling when a service worker takes the reload.
+  each page with the CPU slowed down four times.
 
 What loads later is in `src/core/lazy.ts`: the Export dialog and every exporter, the big sheets and dialogs, and most
 dock panels load on first use, and in idle time a moment after start-up so the first click doesn't wait either.

@@ -564,48 +564,6 @@ npm run build
 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/pixel-live.cjs [outDir]
 ```
 
-## The web build in a real browser: scripts/e2e/web.cjs
-
-Loads `dist/web` in Electron's Chromium over a small static server on 127.0.0.1 (a secure context, so the service worker,
-IndexedDB and the browser's private file system all work) with no desktop bridge, so the page builds its own browser
-bridge exactly as it does on the web. The flows are in `scripts/e2e/web-flows.cjs`, one `flow(name, fn)` each:
-
-```bash
-npm run build:web
-xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/web.cjs [--only=export-picker,offline] [--skip=audio] [--shots=<dir>]
-```
-
-| Flow | What it checks |
-|---|---|
-| `launch` | First visit without `?debug`: Quill's hello walks through its six pages, the choice is kept on the next visit. |
-| `pixel` | The Welcome sheet's Pixel art card, Quill's pixel chooser (An animation, 16 x 16), real-mouse drawing with the Pencil, undo and redo. |
-| `workspaces` | A tab dragged out over the canvas floats, stacked groups, saving a workspace, the workspace file (download, then back in through the upload picker), kept across a reload. |
-| `files-picker`, `files-plain` | Save (once asks, then in place / downloads each time), Open, cancelled pickers, recents. |
-| `recent-*`, `open-with`, `drop-*` | Open recent after a reload, a file handed over by the installed app, a file dropped on the page (a drawing opens, anything else is turned away politely). |
-| `recovery` | Autosave in IndexedDB, the next visit puts the work aside (with a picture), Recover unsaved work lists it. |
-| `import-*` | A sprite sheet picture (gaps, and its JSON), an Aseprite file and a GIF through the web's pickers. |
-| `export-*`, `sheet-*`, `export-dialog` | PNG, SVG, APNG, GIF, MP4, WebM, PNG sequence, Lottie, dotLottie, moving SVG, PSD, PDF, .ai, Interactives as one file; sprite sheets with every engine's data as a folder or one zip; the dialog shows ProRes disabled with its reason; the Export button. |
-| `audio` | A WAV from the upload picker, MP4 and WebM exports that carry it (Quill asks once when this browser can't make AAC). |
-| `model-*` | Nested folders, clip direction and repeat, and variations saved, opened again and compared; a ping-pong clip's play order. |
-| `snapping`, `prefs`, `features`, `pen` | Snapping ticks and a real drag onto the page edge, every Preferences page, Features switches kept across a reload, Chromium pen events on the Pen and tablet pad and the Brush. |
-| `offline` | The service worker caches the whole app, the app opens with the server stopped (lazy dialogs, Help, Save still work) and again when it is back. |
-| `safari` | Safari's ways, with stand-ins from the shim in the page address (`?ua=safari` looks like Safari, `?gesture=1` has GestureEvent, `?persist=grant\|deny` answers `navigator.storage.persist()`): pinch from gesture events on the canvas and timeline, a late export held back for a "Your file is ready" Save button (button and command), and the one-time "browser may clear your work" notice. |
-| `plugins` | The sandbox page policy, an example plugin installs, runs and is kept across a reload, and what a plugin does offline. |
-| `sweep` | The app served from a sub-folder (`/tools/frameling/`), every panel and tool, every help picture and clip served, a help clip decodes. |
-| `web-only` | Install as an app, the browser help topic, About, the tab title, "Leave site?". |
-
-The browser's own file pickers can't be clicked from outside, so a preload shim stands in for them. In **picker** mode
-(Chrome and Edge) `showOpenFilePicker`, `showSaveFilePicker` and `showDirectoryPicker` hand out real file handles from the
-browser's private file system (OPFS), so saving, reading back and keeping handles in IndexedDB are the real code. In
-**plain** mode (Firefox and Safari) the pickers are removed, downloads are caught and the upload picker is answered from a
-queue. Open the app with `?shim=plain` or `?shim=picker` in a flow's `w.load(mode)`. Use `w.files.collect()` to read what
-the page wrote or downloaded, `w.files.stage(...)` / `w.files.upload(...)` to give it a file, `w.run(id)` to start a
-command without waiting for its dialog, and `w.answerChoice()` for Quill's "Remember my choice" questions.
-
-The whole run takes a few minutes (longer on a busy machine, as software GL is slow), so use `--only` while working on one area.
-The harness runs in the Chromium that Electron ships, so what it proves is Chromium's behaviour. Safari and Firefox are covered by
-reading the code (see the WebKit notes on the board), not by this run.
-
 ## Plugin sandbox: scripts/e2e/plugins.cjs
 
 Checks the sandbox page blocks network and storage, the frame can't reach the app, and both example plugins in
@@ -614,13 +572,6 @@ Checks the sandbox page blocks network and storage, the frame can't reach the ap
 ```bash
 npm run build
 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/plugins.cjs
-```
-
-For the web build, serve it and point the harness at it:
-
-```bash
-npm run build:web && npm run preview:web      # serves http://localhost:5198
-PLUGINS_URL=http://localhost:5198/ xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/plugins.cjs
 ```
 
 ## Accessibility: scripts/a11y.cjs
@@ -676,12 +627,9 @@ desktop it is parked off-screen so nothing shows. `scripts/perf/display.cjs` dec
 ```bash
 npm run build
 xvfb-run -a -s "-screen 0 1600x1000x24" node scripts/perf/startup.cjs --out scripts/perf/results/startup-desktop.json
-npx vite build --config vite.web.config.ts
-xvfb-run -a -s "-screen 0 1600x1000x24" node scripts/perf/startup.cjs --web --out scripts/perf/results/startup-web.json
 ```
 
-Options: `--runs N` (default 7), `--cpu N` (default 4). `--web` serves `dist/web` from a sub-path, then reloads offline
-through the service worker.
+Options: `--runs N` (default 7), `--cpu N` (default 4).
 
 `sweep.cjs`: everyday actions (brush and pixel strokes, scrubbing, playing, selecting and moving, adding and deleting
 layers and keys, undo and redo, switching artboards, the Export dialog, saving, opening, autosave, switching workspaces)
@@ -848,6 +796,7 @@ see-through backdrops its own way (up to 64 of 255 off). `test/aseprite/blend-bi
 ## Quill's dialogue
 
 ```bash
+xdg-open /mnt/109313D2109313D2/projects/frameling/brand/dialogue/index.html   # open the review page itself
 npm run dialogue:page                                   # rebuild brand/dialogue/index.html from lines.json
 xvfb-run -a -s "-screen 0 1600x1000x24" npm run dialogue:shots    # build, retake every shot, rebuild the page (~2 min)
 npm run build
@@ -867,7 +816,7 @@ npm run build:mascot
 
 Reads `brand/mascot/mascot.frameling` and `mascot-icon.frameling` with the app's own reader and writes
 `public/mascot/mascot.png` + `mascot.json`, `build/icon.png`, `build/icon.svg`, `build/icons/` and
-`public/mascot/logo.png`, touching only files whose bytes changed. `npm run build` and `npm run build:web` run it first.
+`public/mascot/logo.png`, touching only files whose bytes changed. `npm run build` runs it first.
 `test/io/mascot-source.test.ts` checks the source files still load.
 
 ## The off-screen window and ?debug hooks
@@ -953,7 +902,6 @@ SHOT_SHOW=1 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/docs/pe
 - `build` (Linux, Windows, macOS): `npm ci`, `npm test`, `npm run build`, then `electron-builder` (AppImage; NSIS and
   portable; dmg for arm64 and x64), with Windows signed when `WIN_CSC_LINK` and `WIN_CSC_KEY_PASSWORD` are set.
   Uploads `frameling-<OS>` artifacts, kept 14 days.
-- `web`: `npm ci`, `npm test`, `npm run build:web`, uploads `frameling-web`.
 
 CI runs vitest only. The Electron harnesses are run by hand, under xvfb, before merging work they cover.
 

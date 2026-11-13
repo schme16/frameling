@@ -12,8 +12,6 @@
   "scripts": {
     "dev": "node scripts/dev.mjs",
     "build": "node scripts/gen-psnames.mjs && npm run build:mascot && npm run typecheck && vite build && node scripts/build-main.mjs",
-    "build:web": "npm run build:mascot && npm run typecheck && vite build --config vite.web.config.ts",
-    "preview:web": "vite preview --config vite.web.config.ts",
     "typecheck": "tsc --noEmit",
     "build:mascot": "node scripts/build-mascot.mjs",
     "test": "vitest run",

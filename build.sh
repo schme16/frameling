@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Build Frameling in one step. Run ./build.sh for a menu, or name what to build:
-#   ./build.sh this | all | windows | mac | linux | web   (add --test to run the tests first)
+#   ./build.sh this | all | windows | mac | linux   (add --test to run the tests first)
 set -euo pipefail
 cd "$(dirname "$0")"
 

@@ -182,10 +182,7 @@ The publisher shows as **Frameling (self-signed)**.
 ## Linux
 
 Make the **AppImage** executable (right-click, **Properties**, **Allow executing as a program**, or \`chmod +x\`) and double-click it.
-
-## Or skip installing
-
-The [web version](help:web-browser) runs in Chrome, Edge or Firefox with nothing to install.`,
+`,
   'meet-quill': `Quill is a small pixel-art hedgehog whose quills are coloured pencils. He turns up to help:
 
 - He **waves** hello on the welcome sheet and in **Help, About Frameling**.

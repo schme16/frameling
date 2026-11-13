@@ -34,8 +34,7 @@ export async function autosaveNow(): Promise<void> {
   if (!api || !ui.dirty || doc === lastDoc) return;
   try {
     const bytes = await saveFileAsync(doc, api.versions.app, new Date(), { reuse: true });
-    const thumb = api.kind === 'web' ? await thumbnailOf(rootDoc(doc)) : undefined;
-    await api.autosave.write(bytes, { name: doc.name, filePath: ui.filePath, docId: doc.id, ...(thumb ? { thumb } : {}) });
+    await api.autosave.write(bytes, { name: doc.name, filePath: ui.filePath, docId: doc.id });
     lastDoc = doc;
   } catch {
     // Try again at the next tick; a failed autosave should never get in the way.

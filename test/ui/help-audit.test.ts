@@ -14,7 +14,7 @@ import { KEYMAP_SETS } from '../../src/ui/keymapSets';
 
 const helpDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../public/help');
 
-// Keys a topic may name that no command has: the browser's own (web-browser) and renaming a tile in the Tileset panel.
+// Keys a topic may name that no command has: the ones the window keeps, and renaming a tile in the Tileset panel.
 // Plus every key a shortcut set gives (the shortcut-sets topic names them).
 const EXTRA_KEYS = ['Mod+W', 'Mod+T', 'F2', ...KEYMAP_SETS.flatMap((s) => Object.values(s.keys).flat())];
 

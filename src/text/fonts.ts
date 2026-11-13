@@ -25,11 +25,11 @@ function installed(g: OffscreenCanvasRenderingContext2D, family: string): boolea
   return false;
 }
 
-/** Fonts on this computer from a list of common ones (desktop only; the web version keeps to the shipped two). */
+/** Fonts on this computer, from a list of common ones. */
 export function systemFonts(): string[] {
   if (found) return found;
   found = [];
-  if (!desktop() || desktop()?.kind === 'web' || typeof OffscreenCanvas === 'undefined') return found;
+  if (!desktop() || typeof OffscreenCanvas === 'undefined') return found;
   const g = new OffscreenCanvas(4, 4).getContext('2d');
   if (!g) return found;
   for (const f of COMMON) if (installed(g, f)) found.push(f);

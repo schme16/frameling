@@ -12,7 +12,6 @@ import '../symbols';
 import '../artboards';
 import '../io';
 import '../aseprite';
-import '../platform/help';
 import '../export';
 import '../effects';
 import '../quests';

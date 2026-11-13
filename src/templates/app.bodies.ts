@@ -23,7 +23,7 @@ Choose **File > Import template...**, or the **Import template...** card under *
 
 ## Where they live
 
-In the desktop app, your templates are .frameling files in a **templates** folder in Frameling's own data folder, so you can drop files in by hand. In a web browser they're kept in the browser (see [Frameling in a web browser](help:web-browser)).
+Your templates are .frameling files in a **templates** folder in Frameling's own data folder, so you can drop files in by hand.
 
 To remove one, hover its card and press the bin. Drawings you started from it stay as they are.`,
 };

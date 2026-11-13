@@ -17,7 +17,7 @@ let cached: Promise<ProresSupport> | null = null;
 /** Can this computer make ProRes? (Asks the desktop side, which looks for FFmpeg.) */
 export function proresSupport(fresh = false): Promise<ProresSupport> {
   const api = desktop();
-  if (!api?.video || api.kind === 'web') return Promise.resolve({ ok: false, reason: 'ProRes is made with FFmpeg, so it needs the Frameling desktop app.' });
+  if (!api?.video) return Promise.resolve({ ok: false, reason: 'ProRes is made with FFmpeg, so it needs the Frameling desktop app.' });
   if (!cached || fresh) cached = api.video.probe().catch(() => ({ ok: false, reason: 'Frameling could not check for FFmpeg.' }));
   return cached;
 }

@@ -46,11 +46,7 @@ describe('plugin sandbox', () => {
     }
   });
 
-  it('says why a sandbox did not start, and blames the missing connection only in a browser that is offline', () => {
-    const win = (kind: string | undefined, onLine: boolean) => ({ navigator: { onLine } as Navigator, frameling: { kind } });
-    expect(startFailure(win('web', false))).toMatch(/need a connection/);
-    expect(startFailure(win('web', true))).toBe("The plugin's sandbox did not start.");
-    expect(startFailure(win('desktop', false))).toBe("The plugin's sandbox did not start.");
-    expect(startFailure(win(undefined, false))).toBe("The plugin's sandbox did not start.");
+  it('says why a sandbox did not start, in plain words', () => {
+    expect(startFailure()).toBe("The plugin's sandbox did not start.");
   });
 });

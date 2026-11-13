@@ -1,6 +1,6 @@
 @echo off
 rem Build Frameling in one step. Run build.cmd for a menu, or name what to build:
-rem   build.cmd this ^| all ^| windows ^| mac ^| linux ^| web   (add --test to run the tests first)
+rem   build.cmd this ^| all ^| windows ^| mac ^| linux   (add --test to run the tests first)
 setlocal
 cd /d "%~dp0"
 

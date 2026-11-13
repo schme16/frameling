@@ -1,6 +1,6 @@
 // Bundle composition: builds the renderer to a private folder and lists what the initial chunk holds, by source
 // folder and by biggest module, so you can see what is worth making lazy.
-//   node scripts/perf/bundle.mjs [--top 40] [--web]
+//   node scripts/perf/bundle.mjs [--top 40]
 import { build } from 'vite';
 import { gzipSync } from 'node:zlib';
 import { mkdtempSync } from 'node:fs';
@@ -9,7 +9,6 @@ import { join } from 'node:path';
 
 const args = process.argv.slice(2);
 const top = Number(args[args.indexOf('--top') + 1]) || 40;
-const web = args.includes('--web');
 const root = new URL('../..', import.meta.url).pathname;
 const out = mkdtempSync(join(tmpdir(), 'frameling-bundle-'));
 let report;
@@ -61,7 +60,7 @@ const analyse = {
   },
 };
 process.chdir(root);
-await build({ configFile: join(root, web ? 'vite.web.config.ts' : 'vite.config.ts'), logLevel: 'error', plugins: [analyse], build: { outDir: join(out, 'r'), emptyOutDir: true, reportCompressedSize: false } });
+await build({ configFile: join(root, 'vite.config.ts'), logLevel: 'error', plugins: [analyse], build: { outDir: join(out, 'r'), emptyOutDir: true, reportCompressedSize: false } });
 const k = (n) => (n / 1024).toFixed(1).padStart(8) + ' kB';
 console.log(`entry ${report.entry.name}: ${k(report.entry.bytes)} raw, ${k(report.entry.gzip)} gzip; ${report.chunks} chunks\n`);
 console.log('by folder (rendered bytes, pre-minify)');
