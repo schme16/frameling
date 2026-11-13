@@ -11,6 +11,12 @@ import { reportFits, reportText } from './report';
 
 declare const __FRAMELING_INGEST__: { url: string; key: string } | undefined;
 
+/**
+ * The testers' page: everything a beta tester needs, on one page that needs no login. Public, read-only, and the
+ * only page the link opens. Written as the board doc `beta-testing` and shared from the board.
+ */
+export const BETA_PAGE = 'https://project-boards.shanegadsby.com/s/qUR_fOzbJGN9T1_ItQ3HEJ6u';
+
 export interface Ingest {
   url: string;
   key: string;

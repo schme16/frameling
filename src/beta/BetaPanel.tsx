@@ -7,7 +7,7 @@ import { getPrefs, setPrefs, usePrefs } from '../ui/prefs';
 import { toast } from '../ui/toast';
 import { gatherEnv } from '../tablet/check/state';
 import { buildReport, docShape, reportText, type IngestReport } from './report';
-import { canSend, SEND_WORDS, sendReport } from './send';
+import { BETA_PAGE, canSend, SEND_WORDS, sendReport } from './send';
 import { recentProblems } from './problems';
 import './beta.css';
 
@@ -60,6 +60,13 @@ export function BetaPanel() {
         onChange={(v) => setPrefs({ betaReports: v })}
         hint="Off by default. Even with it on, a report only goes when you press Send, and you can read every word of it first."
       />
+      <p className="tb-note">
+        New to this?{' '}
+        <a href={BETA_PAGE} target="_blank" rel="noreferrer noopener">
+          The testing page
+        </a>{' '}
+        says what is most useful to send and exactly what we see.
+      </p>
       {!on ? (
         <p className="tb-note">Frameling never sends anything by itself. There is no counting of what you do, no ping when it starts, and nothing at all leaves this computer unless you ask it to.</p>
       ) : (

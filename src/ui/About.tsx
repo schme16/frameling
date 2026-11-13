@@ -4,6 +4,7 @@ import { Logo } from './icons';
 import { Quill, useQuillShown } from './mascot';
 import { Modal } from './Modal';
 import { closeAbout, openHelp, overlays } from './overlays';
+import { BETA_PAGE, canSend } from '../beta/send';
 
 export function AboutDialog() {
   const open = overlays.use((o) => o.about);
@@ -24,6 +25,16 @@ function About() {
         {v?.electron && (
           <p className="ui-about-small">
             Electron {v.electron}, Chrome {v.chrome}
+          </p>
+        )}
+        {/* Only a beta build can send reports, so only a beta build points at the testing page. */}
+        {canSend() && (
+          <p className="ui-about-small">
+            This is a beta build.{' '}
+            <a href={BETA_PAGE} target="_blank" rel="noreferrer noopener">
+              The testing page
+            </a>{' '}
+            says how to tell us what happened.
           </p>
         )}
       </div>

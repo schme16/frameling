@@ -19,5 +19,7 @@ export const bodies: Record<string, string> = {
 - Only a beta build can send. An ordinary build has no key in it, so the button says so and the pen check's **Save a file** is there instead.
 - The report goes to the makers' board and nowhere else. The key a beta build carries can only add a report: it cannot read the board, and it cannot read back anything it has sent.
 
+**The testing page.** [Everything a tester needs is on one page](https://project-boards.shanegadsby.com/s/qUR_fOzbJGN9T1_ItQ3HEJ6u): getting the build open on each kind of computer, what is most useful to send, and what we do and don't see. No login, nothing to join.
+
 help:pen-check help:preferences`,
 };
