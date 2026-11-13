@@ -569,12 +569,12 @@ With **Tool rail style** set to **Stacked** in Preferences, press and hold a gro
 - A menu that is taller than the window **scrolls**: use the mouse wheel, or the arrow keys.
 
 With a menu open, use the **arrow keys** to move, **Home** and **End** to jump to the first or last choice, **Enter** to choose, and **Esc** to close.`,
-  'status-bar': `The strip along the bottom tells you where you are.
+  'status-bar': `The strip along the bottom tells you where you are, and each part opens what it is telling you about.
 
-- **Zoom** is how big the canvas looks.
-- **Size** is your drawing's width and height.
-- **fps** is how many frames play each second.
-- **Frame** is which frame you're on, out of how many.
+- **Zoom** is how big the canvas looks. Press it to jump back to a good size.
+- **Size** is your drawing's width and height. Press it to change the page.
+- **fps** is how many frames play each second. Press it to change the speed.
+- **Frame** is which frame you're on, out of how many. Press it to bring the Timeline out in front.
 - A friendly **tip** changes every so often. Press it to see another. Turn tips off in **Preferences, General**.`,
   'document-name': `Your drawing's name sits in the middle of the top bar. Press it, type a new name and press **Enter**.
 

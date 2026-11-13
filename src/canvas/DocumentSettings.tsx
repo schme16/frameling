@@ -1,7 +1,7 @@
 // "Canvas size and speed": the page size (in the chosen unit), DPI, frame rate and background, in one dialog.
 // Changing the size either makes room round the artwork (canvas size, with an anchor) or scales everything with it
 // (image size). Whatever changes lands as one undo step.
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Doc } from '../core/format';
 import { store } from '../core/store';
 import { cleanDpi, docDpi, formatSize, pxTo, roundIn, toPx, unitInfo, type Unit } from '../core/units';
@@ -74,7 +74,10 @@ function Preview({ doc, w, h, mode, anchor }: { doc: Doc; w: number; h: number; 
   );
 }
 
-function DocumentSettings({ close }: { close: () => void }) {
+/** Which field the dialog should open on, when something sent you here to change that one thing. */
+export type SettingsField = 'size' | 'fps';
+
+function DocumentSettings({ close, field }: { close: () => void; field?: SettingsField }) {
   const doc = store().get().doc;
   const unit = getPrefs().units;
   const [mode, setMode] = useState<Mode>('canvas');
@@ -90,6 +93,14 @@ function DocumentSettings({ close }: { close: () => void }) {
   const onVariation = !!doc.artboards?.some((a) => a.variationOf) && !!findArtboard(doc, activeId(doc))?.variationOf;
   const pixelArt = hasPixelArt(doc);
   const step = pixelScaleStep(doc);
+  // Sent here from the footer bar to change one thing: that field is ready to type in, already selected.
+  const form = useRef<HTMLFormElement>(null);
+  useEffect(() => {
+    if (!field) return;
+    const el = form.current?.querySelector<HTMLInputElement>(field === 'fps' ? '.ds-fps input' : 'input');
+    el?.focus();
+    el?.select();
+  }, [field]);
 
   // Scaling pixel art keeps its shape, so width and height stay linked.
   const linked = link || (mode === 'scale' && pixelArt);
@@ -158,6 +169,7 @@ function DocumentSettings({ close }: { close: () => void }) {
   return (
     <Modal title="Canvas size and speed" onClose={close} className="ds-modal">
       <form
+        ref={form}
         className="io-body ds-body"
         onSubmit={(e) => {
           e.preventDefault();
@@ -244,7 +256,7 @@ function DocumentSettings({ close }: { close: () => void }) {
         ))}
 
         <div className="ds-row">
-          <label className="ui-field" data-tip="Frames per second (fps)" data-tip-desc="How many drawings show each second. 12 is classic hand-drawn, 24 is film, 30 or 60 is smooth for games.">
+          <label className="ui-field ds-fps" data-tip="Frames per second (fps)" data-tip-desc="How many drawings show each second. 12 is classic hand-drawn, 24 is film, 30 or 60 is smooth for games.">
             <span>Speed (frames per second)</span>
             <input type="number" min={1} max={120} value={fps || ''} onChange={(e) => setFps(Number(e.target.value))} />
           </label>
@@ -273,10 +285,10 @@ function DocumentSettings({ close }: { close: () => void }) {
   );
 }
 
-export function openDocumentSettings(): void {
+export function openDocumentSettings(field?: SettingsField): void {
   if (store().get().doc.editing?.length) {
     hint('Close the symbol you are drawing inside first, then change the page.');
     return;
   }
-  mountModal((close) => <DocumentSettings close={close} />);
+  mountModal((close) => <DocumentSettings close={close} field={field} />);
 }
