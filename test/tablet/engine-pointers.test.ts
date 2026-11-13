@@ -9,6 +9,7 @@ import { registerTool, unregisterTool, type Tool } from '../../src/core/registry
 import { resetStore, store } from '../../src/core/store';
 import { resetPen, setToolPen } from '../../src/tablet/settings';
 import { resetOffer } from '../../src/tablet/check/state';
+import { penTools } from '../../src/tablet/tool';
 
 const noop = () => undefined;
 const ctx2d = new Proxy({}, { get: (_t, k) => (k === 'canvas' ? {} : k === 'measureText' ? () => ({ width: 0 }) : k === 'getImageData' ? () => ({ data: new Uint8ClampedArray(4), width: 1, height: 1 }) : noop), set: () => true });
@@ -66,6 +67,8 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  penTools.enabled = false;
+  penTools.reset();
   resetOffer();
   stop();
   root.remove();
@@ -74,9 +77,9 @@ afterEach(() => {
 });
 
 let clock = 1000;
-function fire(type: string, o: { id: number; kind: 'pen' | 'mouse' | 'touch'; x?: number; y?: number; buttons?: number; button?: number; pressure?: number; target?: Element }) {
+function fire(type: string, o: { id: number; kind: 'pen' | 'mouse' | 'touch'; x?: number; y?: number; buttons?: number; button?: number; pressure?: number; device?: number; target?: Element }) {
   const e = new MouseEvent(type, { bubbles: true, cancelable: true, clientX: o.x ?? 50, clientY: o.y ?? 50, button: o.button ?? 0, buttons: o.buttons ?? 0 });
-  Object.defineProperties(e, { pointerId: { value: o.id }, pointerType: { value: o.kind }, pressure: { value: o.pressure ?? 0.5 }, timeStamp: { value: (clock += 8) }, tiltX: { value: 0 }, tiltY: { value: 0 }, twist: { value: 0 } });
+  Object.defineProperties(e, { pointerId: { value: o.id }, pointerType: { value: o.kind }, pressure: { value: o.pressure ?? 0.5 }, timeStamp: { value: (clock += 8) }, tiltX: { value: 0 }, tiltY: { value: 0 }, twist: { value: 0 }, persistentDeviceId: { value: o.device ?? 0 } });
   (o.target ?? root).dispatchEvent(e);
   // A browser lets go of the pointer's capture itself once it lifts.
   if (type === 'pointerup' || type === 'pointercancel' || type === 'lostpointercapture') captured.delete(o.id);
@@ -100,6 +103,34 @@ describe('the pen', () => {
     fire('pointerup', { id: 7, kind: 'pen', button: 5 });
     expect(store().get().ui.tool).toBe('brush');
     expect(gestureOf()).toBeNull();
+  });
+
+  it('under X11 the eraser end is a second device: it erases, the tip does not, and the tool comes back', () => {
+    // As Chromium reported a pretend Huion under Xorg with libinput: no eraser bit, pen device 2 and eraser device 3.
+    penTools.enabled = true;
+    fire('pointerdown', { id: 7, kind: 'pen', buttons: 1, device: 2 });
+    fire('pointerup', { id: 7, kind: 'pen', device: 2 });
+    expect(calls).toEqual(['brush.down', 'brush.up']);
+    calls.length = 0;
+    fire('pointermove', { id: 7, kind: 'pen', device: 3 });
+    fire('pointerdown', { id: 7, kind: 'pen', buttons: 1, device: 3 });
+    expect(calls).toEqual(['eraser.down']);
+    expect(store().get().ui.tool).toBe('eraser');
+    fire('pointerup', { id: 7, kind: 'pen', device: 3 });
+    expect(store().get().ui.tool).toBe('brush');
+    calls.length = 0;
+    fire('pointerdown', { id: 7, kind: 'pen', buttons: 1, device: 2 });
+    expect(calls).toEqual(['brush.down']);
+    fire('pointerup', { id: 7, kind: 'pen', device: 2 });
+  });
+
+  it('with no device ids (Wayland, Windows) nothing is guessed', () => {
+    penTools.enabled = true;
+    fire('pointerdown', { id: 7, kind: 'pen', buttons: 1 });
+    fire('pointerup', { id: 7, kind: 'pen' });
+    fire('pointerdown', { id: 8, kind: 'pen', buttons: 1 });
+    expect(calls).toEqual(['brush.down', 'brush.up', 'brush.down']);
+    fire('pointerup', { id: 8, kind: 'pen' });
   });
 
   it('Escape drops the stroke and a later lift draws nothing more, even with the stabilizer on', () => {

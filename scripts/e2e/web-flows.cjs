@@ -598,6 +598,34 @@ flow('offline', async (ctx) => {
     await w.js(`__framelingIo.saveDocument()`);
     await sleep(400);
     check('offline: Save works', (await w.files.collect()).length === 1);
+    // Zipping and decoding big pictures runs on workers (a bundled script, kept by the service worker like the rest).
+    const big = await w.js(`(async () => {
+      const F = __frameling, A = __framelingArtboards, Orig = window.Worker;
+      let started = 0, failed = 0;
+      window.Worker = function (...a) { started++; const x = new Orig(...a); x.addEventListener('error', () => failed++); return x; };
+      F.template('blank-pixel');
+      const d = structuredClone(F.store().get().doc);
+      d.width = 1200; d.height = 1100; d.length = 2; d.drawings = {};
+      const layer = d.layers.find((l) => l.kind === 'pixel');
+      layer.pixelSize = 1; layer.cels = [];
+      for (let f = 0; f < 2; f++) {
+        const px = new Uint8ClampedArray(1100 * 1000 * 4);
+        for (let i = 0; i < px.length; i += 4) { const v = ((i >> 5) + f) & 255; px[i] = v; px[i + 1] = 255 - v; px[i + 2] = 80; px[i + 3] = 255; }
+        d.drawings['bp' + f] = { id: 'bp' + f, kind: 'pixel', x: 0, y: 0, width: 1100, height: 1000, pixels: px };
+        layer.cels.push({ id: 'bc' + f, start: f, length: 1, drawingId: 'bp' + f });
+      }
+      F.store().load(d);
+      const before = F.store().get().doc.drawings.bp1.pixels.slice(0, 4096);
+      const bytes = await A.saveBytesAsync();
+      const afterSave = started;
+      await A.openBytesAsync(bytes);
+      const after = F.store().get().doc.drawings.bp1;
+      let same = after.pixels.length === 1100 * 1000 * 4;
+      for (let i = 0; i < before.length; i++) if (before[i] !== after.pixels[i]) same = false;
+      window.Worker = Orig;
+      return { started, afterSave, failed, same, size: bytes.length };
+    })()`);
+    check('offline: saving and opening a big drawing runs on workers and round-trips', big.started >= 1 && big.failed === 0 && big.same, big);
   }
   await ctx.listen();
   await w.load('picker');

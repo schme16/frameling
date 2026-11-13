@@ -57,7 +57,7 @@ app.commandLine.appendSwitch('disable-background-timer-throttling');
 
 async function start() {
   app.setPath('userData', path.join(outDir, 'userdata'));
-  process.env.FRAMELING_DEV_URL = pathToFileURL(path.join(rendererDir, 'index.html')).href + '?debug=1' + (cacheStats ? '&perf' : '');
+  process.env.FRAMELING_DEV_URL = pathToFileURL(path.join(rendererDir, 'index.html')).href + '?debug=1&nofreeze' + (cacheStats ? '&perf' : '');
   process.env.FRAMELING_AUTOMATION_DIR = path.join(outDir, 'misc');
   fs.mkdirSync(process.env.FRAMELING_AUTOMATION_DIR, { recursive: true });
   require(path.join(root, 'dist/main/main.cjs'));
@@ -447,7 +447,8 @@ const ACTIONS = {
   'open-file': {
     kinds: ['vector', 'pixel'], unit: 'opens', units: 1,
     async setup() { await ev(`window.__swBytes = window.__framelingArtboards.saveBytes(); true`); },
-    async act() { await ev(`window.__framelingArtboards.openBytes(window.__swBytes); true`); await sleep(400); },
+    // The app opens files through loadFileAsync (pictures decoded on workers); older builds only had the sync hook.
+    async act() { await ev(`(async () => { const A = window.__framelingArtboards; await (A.openBytesAsync || (async (b) => A.openBytes(b)))(window.__swBytes); return true; })()`); await sleep(400); },
   },
   'autosave': {
     kinds: ['vector', 'pixel'], unit: 'saves', units: 1,

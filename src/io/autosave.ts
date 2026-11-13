@@ -4,7 +4,7 @@ import { store } from '../core/store';
 import { isWeb } from '../platform';
 import { desktop } from './desktop';
 import { autosaveNow, clearAutosaveCopy, documentTitle, keepUnsavedWork, loadBytes, openPath, saveDocument } from './document';
-import { loadFile } from './file';
+import { loadFileAsync } from './file';
 import { notify } from './notify';
 import { closeSheet, overlays } from '../ui/overlays';
 import { recovery, restorePending } from './recovery';
@@ -27,7 +27,7 @@ export async function offerRecovery(): Promise<void> {
     return;
   }
   try {
-    loadFile(found.bytes);
+    await loadFileAsync(found.bytes);
   } catch {
     await clearAutosaveCopy();
     return;

@@ -175,7 +175,8 @@ describe('timeline frames to boards, and back', () => {
     expect(next.clips.map((c) => [c.name, c.start, c.end])).toEqual([['idle', 0, 3], ['idle', 4, 7], ['idle', 8, 11]]);
   });
   it('layers are matched by name across boards', () => {
-    const doc = change(anim(2), 'boards').next;
+    // A result of produce may be frozen under test, so edit a copy.
+    const doc = structuredClone(change(anim(2), 'boards').next);
     const second = artboardsOf(doc)[1].content!;
     const extra = { ...second.layers[0], id: 'extra', name: 'Shadow', cels: [] } as PixelLayer;
     second.layers.push(extra);
@@ -183,7 +184,7 @@ describe('timeline frames to boards, and back', () => {
     expect(next.layers.map((l) => l.name)).toEqual(['Layer 1', 'Shadow']);
   });
   it('says which board is the odd one out when sizes differ', () => {
-    const doc = change(anim(3), 'boards').next;
+    const doc = structuredClone(change(anim(3), 'boards').next);
     artboardsOf(doc)[2].content!.width = 64;
     const { r, next } = change(doc, 'animation');
     expect(r.ok).toBe(false);
@@ -191,7 +192,7 @@ describe('timeline frames to boards, and back', () => {
     expect(next).toBe(doc);
   });
   it('refuses variations and non-pixel layers with a reason', () => {
-    const doc = change(anim(2), 'boards').next;
+    const doc = structuredClone(change(anim(2), 'boards').next);
     artboardsOf(doc)[1].variationOf = artboardsOf(doc)[0].id;
     expect((change(doc, 'animation').r as { problem: string }).problem).toMatch(/variations/);
     const vec = anim(3);

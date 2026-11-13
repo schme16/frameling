@@ -6,7 +6,9 @@
 //
 // Checks: pressure changes the line's width and opacity (in the stored points and on screen), tilt and twist arrive,
 // the hover ring, the eraser end (and back to the tool), the two barrel buttons, the stabilizer, palm rejection, and
-// two finger pan and zoom. Exits non-zero when anything fails.
+// two finger pan and zoom. On Linux also: the barrel buttons as Linux sends them (the button nearest the tip is bit 4),
+// the eraser end as a second device (X11 with libinput), and Quill's pen check walked through, with its report.
+// Exits non-zero when anything fails.
 const { app, BrowserWindow } = require('electron');
 const fs = require('node:fs');
 const os = require('node:os');
@@ -245,8 +247,13 @@ async function barrelButtons() {
   await ev(`__frameling.store().setUi({ color: '#000000' })`);
   const [x, y] = await win_(210, 150);
   const fire = (type, dx, dy, buttons, button) => ev(`document.querySelector('.cv-root').dispatchEvent(new PointerEvent(${JSON.stringify(type)}, { bubbles: true, cancelable: true, pointerId: 43, pointerType: 'pen', isPrimary: true, clientX: ${x} + ${dx}, clientY: ${y} + ${dy}, pressure: 0.5, button: ${button}, buttons: ${buttons} }))`);
+  // The bits the system sends: standard is 2 then 4, Linux sends the button nearest the tip as 4 (button 1) and the other as 2.
+  const linux = process.platform === 'linux';
+  const first = linux ? 4 : 2;
+  const second = 6 - first;
+  note(`the button nearest the tip arrives as bit ${first}`);
   // Tip and the button nearest it, held together.
-  await fire('pointerdown', 0, 0, 3, 0);
+  await fire('pointerdown', 0, 0, 1 | first, 0);
   await fire('pointerup', 0, 0, 0, 0);
   await sleep(200);
   const col = await ev('__frameling.store().get().ui.color');
@@ -254,8 +261,8 @@ async function barrelButtons() {
   check((await shapeCount()) === 1, 'picking did not draw');
   // The other button pans.
   const before = await ev('(() => { const u = __frameling.store().get().ui; return [u.panX, u.panY]; })()');
-  await fire('pointerdown', 0, 0, 5, 0);
-  for (let i = 1; i <= 8; i++) await fire('pointermove', i * 10, i * 5, 5, -1);
+  await fire('pointerdown', 0, 0, 1 | second, 0);
+  for (let i = 1; i <= 8; i++) await fire('pointermove', i * 10, i * 5, 1 | second, -1);
   await fire('pointerup', 80, 40, 0, 0);
   await sleep(150);
   const after = await ev('(() => { const u = __frameling.store().get().ui; return [u.panX, u.panY]; })()');
@@ -323,12 +330,157 @@ async function touch() {
   check((await shapeCount()) === 1, 'the two finger gesture did not draw');
 }
 
+async function linuxButtonsAlone() {
+  begin('Linux: the barrel button that arrives as bit 4 (button 1) picks a colour and does not pan');
+  if (process.platform !== 'linux') return note('not Linux, nothing to check');
+  await fresh();
+  await ev(`__frameling.store().setUi({ color: '#e0203a' })`);
+  await penStroke(60, 360, 150, 20, { force: () => 0.6 });
+  await ev(`__frameling.store().setUi({ color: '#000000' })`);
+  const [x, y] = await win_(210, 150);
+  const before = await ev('(() => { const u = __frameling.store().get().ui; return [u.panX, u.panY]; })()');
+  // A hovering pen with the button down, as libinput under Xorg and Wayland send it: pointerdown, button 1, buttons 4, pressure 0.
+  await ev(`(async () => { const r = document.querySelector('.cv-root'); const f = (type, dx, b, button) => r.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, pointerId: 44, pointerType: 'pen', isPrimary: true, clientX: ${x} + dx, clientY: ${y}, pressure: 0, button, buttons: b })); f('pointerdown', 0, 4, 1); for (let i = 1; i <= 4; i++) f('pointermove', i * 3, 4, -1); f('pointerup', 12, 0, 1); })()`);
+  await sleep(200);
+  const col = await ev('__frameling.store().get().ui.color');
+  check(col.toLowerCase() === '#e0203a', `a hovering press as button 1 should pick, the colour was ${col}`);
+  const after = await ev('(() => { const u = __frameling.store().get().ui; return [u.panX, u.panY]; })()');
+  check(after[0] === before[0] && after[1] === before[1], 'the page moved: the button was taken for a middle click');
+}
+
+async function eraserByDevice() {
+  begin('Linux X11: the eraser end arrives as a second device with no eraser bit, and still erases');
+  if (process.platform !== 'linux') return note('not Linux, nothing to check');
+  await fresh();
+  // The eraser bit came in earlier scenarios, and once it has the second-device guess stays off: start the learning again.
+  await ev(`__frameling.pen.forgetTools()`);
+  await penStroke(60, 360, 150, 20, { force: () => 0.6 });
+  check((await shapeCount()) === 1, 'a line to erase');
+  const mid = await win_(210, 150);
+  // As Chromium reported a pretend Huion under Xorg: the tip is persistentDeviceId 2, the flipped pen 3, pointerId unchanged.
+  const during = await ev(`(async () => {
+    const r = document.querySelector('.cv-root');
+    const fire = (type, x, y, buttons, device, button) => { const e = new PointerEvent(type, { bubbles: true, cancelable: true, pointerId: 7, pointerType: 'pen', isPrimary: true, clientX: x, clientY: y, pressure: type === 'pointerup' ? 0 : 0.5, button, buttons }); Object.defineProperty(e, 'persistentDeviceId', { value: device }); r.dispatchEvent(e); };
+    const out = [];
+    // A short tip stroke teaches which device is the tip.
+    fire('pointerdown', ${mid[0]}, ${mid[1]} + 80, 1, 2, 0); fire('pointerup', ${mid[0]}, ${mid[1]} + 80, 0, 2, 0);
+    fire('pointermove', ${mid[0]} - 30, ${mid[1]}, 0, 3, -1);
+    fire('pointerdown', ${mid[0]} - 30, ${mid[1]}, 1, 3, 0);
+    out.push(__frameling.store().get().ui.tool, JSON.stringify(__frameling.pen.get().pen));
+    for (let i = 0; i <= 12; i++) fire('pointermove', ${mid[0]} - 30 + i * 5, ${mid[1]}, 1, 3, -1);
+    fire('pointerup', ${mid[0]} + 30, ${mid[1]}, 0, 3, 0);
+    return out;
+  })()`);
+  await sleep(200);
+  check(during[0] === "eraser", `the tool while the second device was down was ${during[0]} ${during[1]}`);
+  check((await ev('__frameling.store().get().ui.tool')) === 'brush', 'the brush came back');
+  check((await shapeCount()) === 1, 'the line was erased (the short tip stroke below it is the one left)');
+}
+
+/** Quill's pen check on Linux, from the first step to the saved report, with pen events from the page. */
+async function penCheckOnLinux() {
+  begin('Linux: Quill\'s pen check, eraser end by device, button bits, "doesn\'t show up", and the report');
+  if (process.platform !== 'linux') return note('not Linux, nothing to check');
+  await fresh();
+  const reportPath = path.join(process.env.FRAMELING_AUTOMATION_DIR, `frameling-tablet-report-${new Date().toISOString().slice(0, 10)}.json`);
+  const open = async () => {
+    await ev(`__frameling.overlays.state.set((o) => ({ ...o, penCheck: 'run', prefs: null, palette: false }))`);
+    await sleep(500);
+    await ev(`(window.__pc = { fire(type, o = {}) { const c = document.querySelector('[data-testid=check-pad]'); const r = c.getBoundingClientRect(); const e = new PointerEvent(type, { bubbles: true, cancelable: true, pointerId: 2, pointerType: 'pen', isPrimary: true, clientX: r.left + (o.x ?? 100), clientY: r.top + (o.y ?? 100), pressure: o.pressure ?? 0, button: o.button ?? -1, buttons: o.buttons ?? 0, tiltX: o.tiltX ?? 0, tiltY: o.tiltY ?? 0, twist: 0, width: 1, height: 1 }); Object.defineProperty(e, 'persistentDeviceId', { value: o.device ?? 2 }); c.dispatchEvent(e); }, wait: (ms) => new Promise((r) => setTimeout(r, ms)) }, true)`);
+  };
+  const step = () => ev(`document.querySelector('.tb-check-steps li[data-state=now] span')?.textContent ?? ''`);
+  const says = () => ev(`document.querySelector('[data-testid=quill-says]')?.textContent ?? ''`);
+  const click = (label) => ev(`(() => { const b = [...document.querySelectorAll('button')].find((x) => x.textContent === ${JSON.stringify(label)}); if (b) b.click(); return !!b; })()`);
+  const upToEraser = async () => {
+    await ev(`(async () => { const p = window.__pc;
+      for (let i = 0; i < 10; i++) { p.fire('pointermove', { x: 100 + i * 5 }); await p.wait(8); }
+      p.fire('pointerdown', { buttons: 1, button: 0, pressure: 0.05 });
+      for (let i = 1; i <= 20; i++) { p.fire('pointermove', { buttons: 1, pressure: i / 20, x: 100 + i * 8 }); await p.wait(8); }
+      p.fire('pointerup', { button: 0 });
+      for (let i = 0; i < 6; i++) { p.fire('pointermove', { tiltX: -40, tiltY: 10 }); await p.wait(8); }
+      for (let i = 0; i < 6; i++) { p.fire('pointermove', { tiltX: 40, tiltY: -10 }); await p.wait(8); }
+    })()`);
+    await sleep(200);
+  };
+  const label = "My pen's eraser end doesn't show up here";
+  const has = () => ev(`[...document.querySelectorAll('button')].some((x) => x.textContent === ${JSON.stringify(label)})`);
+
+  // Pass one: the flipped pen is a second device.
+  await open();
+  await upToEraser();
+  check((await step()) === 'Twist', `after hover, press and lean the step is ${await step()}`);
+  await click('Skip this one');
+  check((await step()) === 'Eraser end', 'the eraser step is next');
+  check(!(await has()), 'the "doesn\'t show up" button is there before anything was tried');
+  await ev(`window.__pc.fire('pointerdown', { buttons: 1, button: 0, pressure: 0.3, device: 12 })`);
+  await sleep(200);
+  check((await step()) === 'Button nearest the tip', `the flipped pen (a second device) ticked the eraser step: now ${await step()}`);
+  // Linux sends the button nearest the tip as bit 4, and then the other as bit 2: both tick, in that order.
+  await ev(`window.__pc.fire('pointerdown', { buttons: 5, button: 1, pressure: 0, device: 2 })`);
+  await sleep(150);
+  check((await step()) === 'Other button', `bit 4 ticked the first button: now ${await step()}`);
+  await ev(`window.__pc.fire('pointerdown', { buttons: 5, button: -1, device: 2 })`);
+  await sleep(100);
+  check((await step()) === 'Other button', 'the same bit again must not tick the other button');
+  await ev(`window.__pc.fire('pointerdown', { buttons: 3, button: 2, device: 2 })`);
+  await sleep(150);
+  check((await step()) === 'Fast scribble', `bit 2 ticked the other button: now ${await step()}`);
+  await ev(`(async () => { const p = window.__pc; p.fire('pointerdown', { buttons: 1, button: 0, pressure: 0.4 }); for (let i = 0; i < 40; i++) { p.fire('pointermove', { buttons: 1, pressure: 0.4, x: 100 + (i % 7) * 9, y: 100 + (i % 5) * 7 }); await p.wait(14); } p.fire('pointerup', { button: 0 }); })()`);
+  await sleep(200);
+  check((await step()) === 'Express keys and ring', `the scribble ticked: now ${await step()}`);
+  await click('Skip this one');
+  await sleep(200);
+  check(await click('Save the report'), 'there is a Save button at the end');
+  await sleep(800);
+  let rep = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+  check(rep.version === 2, `report version ${rep.version}`);
+  check(rep.buttons.eraserBy === 'device', `eraserBy ${rep.buttons.eraserBy}`);
+  check(JSON.stringify(rep.buttons.rawBarrelBits) === '[2,4]', `raw barrel bits ${JSON.stringify(rep.buttons.rawBarrelBits)}`);
+  const e1 = rep.steps.find((x) => x.id === 'eraser');
+  check(e1.status === 'done' && e1.session && e1.session.window === 'x11', `eraser step ${JSON.stringify(e1.session)} ${e1.status}`);
+  check(JSON.stringify(e1.seen.persistentDeviceIds) === '[12]' && e1.seen.persistentDeviceIdChanges === 1, `device ids in the eraser step ${JSON.stringify(e1.seen.persistentDeviceIds)}`);
+  const b1 = rep.steps.find((x) => x.id === 'barrel1');
+  check(b1.seen.rawBitCounts.bit4 >= 1 && b1.seen.rawBitCounts.bit2 === 0, `barrel1 raw bits ${JSON.stringify(b1.seen.rawBitCounts)}`);
+  note(`report: eraserBy ${rep.buttons.eraserBy}, raw bits ${JSON.stringify(rep.buttons.rawBarrelBits)}, session ${JSON.stringify(e1.session)}`);
+  await ev(`__frameling.overlays.state.set((o) => ({ ...o, penCheck: undefined }))`);
+  await sleep(300);
+
+  // Pass two: the eraser end never shows. After a few seconds Quill says so kindly and offers to move on.
+  fs.rmSync(reportPath, { force: true });
+  await open();
+  await upToEraser();
+  await click('Skip this one');
+  check((await step()) === 'Eraser end', 'the eraser step is next, second time');
+  await ev(`window.__pc.fire('pointerdown', { buttons: 1, button: 0, pressure: 0.3, device: 2 })`);
+  let shown = false;
+  for (let i = 0; i < 20 && !shown; i++) {
+    await sleep(500);
+    shown = await has();
+  }
+  check(shown, 'after a few seconds with only the tip, the "doesn\'t show up" button appears');
+  const hello = await says();
+  check(/eraser/i.test(hello) && /barrel button/i.test(hello) && !/—/.test(hello), `Quill said: ${hello}`);
+  await click(label);
+  await sleep(200);
+  check((await step()) === 'Button nearest the tip', `pressing it moved on: now ${await step()}`);
+  for (let i = 0; i < 4; i++) await click('Skip this one');
+  await sleep(200);
+  await click('Save the report');
+  await sleep(800);
+  rep = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+  const e2 = rep.steps.find((x) => x.id === 'eraser');
+  check(e2.status === 'skipped' && e2.reason === 'no-eraser-end', `eraser step ${e2.status} ${e2.reason}`);
+  check(e2.session.window === 'x11', `session in the step ${JSON.stringify(e2.session)}`);
+  check(rep.buttons.eraserBy === null, `eraserBy ${rep.buttons.eraserBy}`);
+  await ev(`__frameling.overlays.state.set((o) => ({ ...o, penCheck: undefined }))`);
+}
+
 (async () => {
   const guard = setTimeout(() => process.exit(2), 8 * 60 * 1000);
   try {
     await startApp();
     dbg().attach('1.3');
-    for (const s of [pressure, opacity, tiltAndTwist, hoverRing, eraserEnd, barrelButtons, stabilizer, touch]) {
+    for (const s of (process.env.ONLY ? process.env.ONLY.split(',').map((n) => ({ eraserByDevice, penCheckOnLinux, linuxButtonsAlone, barrelButtons, eraserEnd })[n]) : [pressure, opacity, tiltAndTwist, hoverRing, eraserEnd, barrelButtons, linuxButtonsAlone, eraserByDevice, stabilizer, touch, penCheckOnLinux])) {
       try {
         await s();
       } catch (e) {

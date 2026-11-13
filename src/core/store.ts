@@ -14,7 +14,10 @@ import { existingSelection, followSelection, type FollowMemory } from './followS
 
 enablePatches();
 // Pixel drawings hold typed arrays, which immer can't freeze; we never mutate state outside update() anyway.
-setAutoFreeze(false);
+// Under test and in the harnesses (?debug, unless &nofreeze) it is turned on instead, so a write in place into a
+// committed document throws where it happens. The save keeps drawings' text between saves and relies on there being none.
+const strict = import.meta.env?.MODE === 'test' || (typeof location !== 'undefined' && /[?&]debug\b/.test(location.search) && !/[?&]nofreeze\b/.test(location.search));
+setAutoFreeze(strict);
 
 export type ToolId = string;
 

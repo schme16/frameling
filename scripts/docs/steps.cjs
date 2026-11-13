@@ -6,6 +6,27 @@ const { installIpcStubs } = require('../ipc-stubs.cjs');
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+/** What would make a picture wrong: a first-time question left open, or something still loading. Null when fine. */
+const PROBE = `(() => {
+  const out = [];
+  const ask = document.querySelector('[data-testid^="choice."], [data-testid^="ask."]');
+  if (ask) out.push('question open: ' + ask.getAttribute('data-testid'));
+  if (document.querySelector('.ui-help-loading[data-slow], .tpl-loading, .au-loading, [aria-busy="true"]')) out.push('loading state');
+  const t = document.body.innerText;
+  if (/Loading\\.\\.\\.|Loading help|Getting the sound ready/.test(t)) out.push('loading text');
+  return out.join('; ') || null;
+})()`;
+/** Problems seen while a step list ran (each once), for the caller to print. */
+const issues = new Set();
+async function probe(wc, where) {
+  try {
+    const r = await wc.executeJavaScript(PROBE);
+    if (r) issues.add(`${where}: ${r}`);
+  } catch {
+    // the page is busy; the next look will do
+  }
+}
+
 let rec = null;
 function startRec(outDir, wc, name, crop, every) {
   const dir = path.join(outDir, name);
@@ -16,6 +37,7 @@ function startRec(outDir, wc, name, crop, every) {
     let n = 0;
     while (r.running) {
       const t = Date.now();
+      if (n % 12 === 3) await probe(wc, `frame ${n}`);
       const img = await wc.capturePage(crop ? { x: crop[0], y: crop[1], width: crop[2], height: crop[3] } : undefined);
       fs.writeFileSync(path.join(dir, `f${String(n).padStart(4, '0')}.png`), img.toPNG());
       r.stamps.push(t - r.t0);
@@ -46,7 +68,22 @@ async function runSteps(win, steps, { outDir, width, height, name }) {
     if (s.eval) await wc.executeJavaScript(s.eval);
     else if (s.log) console.log(JSON.stringify(await wc.executeJavaScript(s.log)));
     else if (s.wait) await sleep(s.wait);
-    else if (s.click) {
+    else if (s.clickOn) {
+      // Click the middle of the first element matching a selector (and containing `text`, when given), so a step
+      // doesn't depend on where a menu or button happens to sit. `hover: true` only moves there; `dx`, `dy` shift the point.
+      const r = await wc.executeJavaScript(`(() => { const t = ${JSON.stringify(s.text ?? null)}; const el = [...document.querySelectorAll(${JSON.stringify(s.clickOn)})].find((e) => !t || e.textContent.trim() === t || e.getAttribute('aria-label') === t || e.textContent.trim().startsWith(t)); const b = el?.getBoundingClientRect(); return b && [Math.round(b.x + b.width / 2) + ${s.dx ?? 0}, Math.round(b.y + b.height / 2) + ${s.dy ?? 0}]; })()`);
+      if (!r) throw new Error(`clickOn: nothing for ${s.clickOn} ${s.text ?? ''}`);
+      send({ type: 'mouseMove', x: r[0], y: r[1] });
+      await sleep(s.pause ?? 0);
+      if (s.hover) {
+        await sleep(s.after ?? 80);
+        continue;
+      }
+      send({ type: 'mouseDown', x: r[0], y: r[1], button: 'left', clickCount: 1 });
+      await sleep(30);
+      send({ type: 'mouseUp', x: r[0], y: r[1], button: 'left', clickCount: 1 });
+      await sleep(s.after ?? 80);
+    } else if (s.click) {
       const [x, y] = s.click;
       send({ type: 'mouseMove', x, y });
       await sleep(s.pause ?? 0);
@@ -151,6 +188,7 @@ async function runSteps(win, steps, { outDir, width, height, name }) {
       // throwaway one to get it painting, then the real one.
       await wc.capturePage();
       await sleep(150);
+      await probe(wc, 'shot');
       const img = await wc.capturePage(crop ? { x: crop[0], y: crop[1], width: crop[2], height: crop[3] } : undefined);
       fs.writeFileSync(path.join(outDir, `${s.shot === '@' ? name : s.shot}.png`), img.toPNG());
     }
@@ -185,4 +223,4 @@ function makeWindow(BrowserWindow, width, height) {
   });
 }
 
-module.exports = { mockMain, makeWindow, runSteps, sleep, stopActiveRec: async () => { if (rec) await stopRec(rec); rec = null; } };
+module.exports = { issues, mockMain, makeWindow, runSteps, sleep, stopActiveRec: async () => { if (rec) await stopRec(rec); rec = null; } };

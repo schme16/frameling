@@ -32,6 +32,7 @@ fs.mkdirSync(path.join(work, 'frames'), { recursive: true });
 const W = 1280;
 const H = 740; // page; the caption bar below makes it 1280 x 800
 let win;
+let linux = false;
 const ev = (js) => win.webContents.executeJavaScript(js, true);
 const dbg = () => win.webContents.debugger;
 const problems = [];
@@ -72,7 +73,8 @@ const OVERLAY = `(() => {
     if (e.pointerType !== 'pen') return;
     const touching = (e.buttons & 1) !== 0 || e.type === 'pointerdown';
     const eraser = (e.buttons & 32) !== 0 || e.button === 5;
-    const bt1 = (e.buttons & 2) !== 0, bt2 = (e.buttons & 4) !== 0;
+    const swap = !!window.__fakePenSwap; // Linux: bit 4 is the button nearest the tip
+    const bt1 = (e.buttons & (swap ? 4 : 2)) !== 0, bt2 = (e.buttons & (swap ? 2 : 4)) !== 0;
     el.style.opacity = '1';
     el.style.transform = 'translate(' + e.clientX + 'px,' + e.clientY + 'px)';
     el.className = (touching && e.type !== 'pointerup' ? 'touch ' : '') + (eraser ? 'eraser ' : '');
@@ -238,18 +240,22 @@ async function startApp() {
   win.setContentSize(W, H);
   await sleep(300);
   await ev(OVERLAY);
+  // The pen on Linux sends the button nearest the tip as bit 4 (the app reads it that way there), so the made-up pen does too.
+  linux = await ev(`window.frameling?.platform === 'linux'`);
+  await ev(`window.__fakePenSwap = ${linux}`);
 }
 
 const padRect = async () => ev(`(() => { const b = document.querySelector('[data-testid="check-pad"]').getBoundingClientRect(); return { l: b.left, t: b.top, w: b.width, h: b.height }; })()`);
+const helpBtn = `[...document.querySelectorAll('.tb-check-buttons .tb-clear')].some((b) => b.textContent.includes("eraser end doesn't show up"))`;
 const stepStates = () => ev(`[...document.querySelectorAll('.tb-check-steps li')].map((l) => l.dataset.state)`);
 
-async function waitFor(js, what, ms = 8000) {
+async function waitFor(js, what, ms = 8000, optional = false) {
   const end = Date.now() + ms;
   while (Date.now() < end) {
     if (await ev(js)) return true;
     await sleep(100);
   }
-  must(false, 'timed out waiting for ' + what);
+  if (!optional) must(false, 'timed out waiting for ' + what);
   return false;
 }
 
@@ -310,19 +316,34 @@ async function run() {
   await ticked(3, 'twist');
 
   // 5 eraser
-  cap('Step 5 of 9, Eraser end: the pen flipped over and dragged (made as the real pen sends it)');
+  cap('Step 5 of 9, Eraser end: flip the pen over and drag it. (A pen that has no eraser end can skip)');
   await glide(px(0.06), py(0.5), { ms: 500 });
+  // A tip-only pen, or one whose eraser end is not told apart on X11: after about six seconds Quill offers a way out.
+  // Shown as a short aside, only when this session offers it (the check decides, not this script).
+  for (let k = 0; k < 3 && !(await ev(helpBtn)); k++) {
+    for (let i = 0; i <= 30; i++) {
+      const t = i / 30;
+      await pen('mouseMoved', px(0.1 + 0.8 * t), py(0.5 + 0.2 * Math.sin(t * 6 + k)), { buttons: 0 });
+      await sleep(30);
+    }
+  }
+  if (await waitFor(helpBtn, 'the eraser aside', 3000, true)) {
+    cap('On X11 a flipped pen can look like a normal one, so after a few seconds Quill offers this button');
+    await sleep(3200);
+    cap('Here the eraser end does show up, so we flip the pen and drag it');
+    await sleep(900);
+  }
   await synthStroke(px(0.07), py(0.55), px(0.93), py(0.5), 33, 41, 44, 32);
   await ticked(4, 'eraser');
 
   // 6 barrel 1
   cap('Step 6 of 9, Button nearest the tip: held down while drawing a little line');
-  await synthStroke(px(0.15), py(0.25), px(0.4), py(0.35), 3, 42, 26, 35);
+  await synthStroke(px(0.15), py(0.25), px(0.4), py(0.35), linux ? 5 : 3, 42, 26, 35);
   await ticked(5, 'barrel 1');
 
   // 7 barrel 2
   cap('Step 7 of 9, The other button: held down while drawing a little line');
-  await synthStroke(px(0.55), py(0.35), px(0.8), py(0.25), 5, 43, 26, 35);
+  await synthStroke(px(0.55), py(0.35), px(0.8), py(0.25), linux ? 3 : 5, 43, 26, 35);
   await ticked(6, 'barrel 2');
 
   // 8 scribble

@@ -4,7 +4,7 @@ export const bodies: Record<string, string> = {
 
 ## Adding a sound
 
-Pick **File > Import sound...** (or press the **Sound** button above the timeline) and choose a file. WAV, MP3, OGG, M4A and FLAC files work. You can also **drop a sound file onto the window**.
+Pick **File > Import sound...** (or press the **Sound** button above the timeline) and choose a file. WAV, MP3, OGG, M4A and FLAC files work. (Older versions of Safari can't open OGG, so use an MP3 or M4A copy there.) You can also **drop a sound file onto the window**.
 
 It appears in a row under your layers as a **waveform**, a picture of how loud it is. The tall parts are where a word or a hit lands.
 
@@ -36,7 +36,7 @@ Exporting an **MP4 or WebM** mixes every unmuted sound into the video.
 
 MP4 sound is **AAC**, which every player knows. For that the desktop app uses **ffmpeg**, a free program, if it's on your computer. Without it the sound is **Opus**, which QuickTime, Safari and iPhones play silent, so Frameling asks the first time whether to keep the MP4 or make a WebM instead.
 
-If your computer can't make sound for video at all, Frameling says so and makes the video without it. GIFs, PNGs and the other formats have no sound.
+In a browser without a sound encoder (older versions of Safari), the video comes out as a **MOV** file that carries the sound uncompressed. It plays in QuickTime, Safari and iPhones, but the file is bigger. A WebM can't do that, so it comes out without sound and Frameling says so. If your computer can't make sound for video at all, Frameling says so and makes the video without it. GIFs, PNGs and the other formats have no sound.
 
 Sounds are saved inside your .frameling file, so they travel with it.
 

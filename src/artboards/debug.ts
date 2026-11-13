@@ -6,7 +6,7 @@ import { store } from '../core/store';
 import * as model from './model';
 import * as ops from './ops';
 import { makeVariation } from './variations';
-import { loadFile, saveFile, saveFileAsync } from '../io/file';
+import { loadFile, loadFileAsync, saveFile, saveFileAsync } from '../io/file';
 
 /** Paints a filled box of art pixels. */
 function box(px: Uint8ClampedArray, w: number, x0: number, y0: number, bw: number, bh: number, hex: string): void {
@@ -177,6 +177,7 @@ if (typeof window !== 'undefined' && new URLSearchParams(location.search).has('d
     /** The same through the path Save and autosave use (compressing off the page's thread). */
     saveBytesAsync: () => saveFileAsync(store().get().doc),
     openBytes: (b: Uint8Array) => store().load(loadFile(b).doc),
+    openBytesAsync: async (b: Uint8Array) => store().load((await loadFileAsync(b)).doc),
     /** What the Export dialog's artboard row is set to, as if clicked. */
     setExport: (p: Partial<{ mode: 'one' | 'each' | 'joined' | 'atlas'; ids: string[] | null }>) => import('./export').then((m) => m.setArtboardExport(p)),
     setChoice: (id: string, v: string | undefined) => import('../core/choices').then((m) => m.setChoice(id, v)),

@@ -1,0 +1,8137 @@
+{
+ "label": "perf-sweep-2",
+ "when": "2026-11-12T13:08:03.481Z",
+ "reps": 3,
+ "results": [
+  {
+   "doc": "bouncing-ball",
+   "action": "brush-stroke",
+   "busyMs": 19.2,
+   "runs": [
+    19.2,
+    23.4,
+    14.8
+   ],
+   "unit": "moves",
+   "units": 60,
+   "perUnitMs": 0.32,
+   "topSelf": [
+    [
+     "(program) :0",
+     10
+    ],
+    [
+     "drawImage :0",
+     0.7
+    ],
+    [
+     "save :0",
+     0.5
+    ],
+    [
+     "fill :0",
+     0.5
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     10
+    ],
+    [
+     "frame index-D6EMZNfR.js:54",
+     4
+    ],
+    [
+     "drawOverlay index-D6EMZNfR.js:54",
+     3
+    ],
+    [
+     "t.overlay index-D6EMZNfR.js:61",
+     1.9
+    ],
+    [
+     "overlay index-D6EMZNfR.js:57",
+     1.8
+    ],
+    [
+     "hG index-D6EMZNfR.js:57",
+     1.8
+    ],
+    [
+     "Ch index-D6EMZNfR.js:11",
+     1.8
+    ],
+    [
+     "onPointerMove index-D6EMZNfR.js:54",
+     1.7
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "scrub",
+   "busyMs": 86.6,
+   "runs": [
+    86.6,
+    83.1,
+    91.4
+   ],
+   "unit": "moves",
+   "units": 80,
+   "perUnitMs": 1.08,
+   "topSelf": [
+    [
+     "(program) :0",
+     58.4
+    ],
+    [
+     "t index-D6EMZNfR.js:10",
+     1.7
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     1.6
+    ],
+    [
+     "(garbage collector) :0",
+     1.5
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     58.4
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     19.5
+    ],
+    [
+     "Ch index-D6EMZNfR.js:11",
+     15.1
+    ],
+    [
+     "wh index-D6EMZNfR.js:11",
+     15
+    ],
+    [
+     "Xf index-D6EMZNfR.js:10",
+     14.7
+    ],
+    [
+     "On index-D6EMZNfR.js:10",
+     14.7
+    ],
+    [
+     "Wf index-D6EMZNfR.js:10",
+     11.1
+    ],
+    [
+     "pe index-D6EMZNfR.js:61",
+     10.9
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "play",
+   "busyMs": 55.1,
+   "runs": [
+    55.1,
+    53.4,
+    57.8
+   ],
+   "unit": "seconds",
+   "units": 1.5,
+   "perUnitMs": 36.75,
+   "topSelf": [
+    [
+     "(program) :0",
+     42
+    ],
+    [
+     "i index-D6EMZNfR.js:61",
+     0.8
+    ],
+    [
+     "n index-D6EMZNfR.js:61",
+     0.7
+    ],
+    [
+     "Gu index-D6EMZNfR.js:17",
+     0.6
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     42
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     5.6
+    ],
+    [
+     "Mf index-D6EMZNfR.js:10",
+     4.4
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     4.3
+    ],
+    [
+     "Ff index-D6EMZNfR.js:10",
+     4.3
+    ],
+    [
+     "Af index-D6EMZNfR.js:10",
+     4.3
+    ],
+    [
+     "AM index-D6EMZNfR.js:54",
+     4.2
+    ],
+    [
+     "setUi index-D6EMZNfR.js:3",
+     3.2
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "select-click",
+   "busyMs": 36.7,
+   "runs": [
+    36.7,
+    40.7,
+    33.7
+   ],
+   "unit": "clicks",
+   "units": 4,
+   "perUnitMs": 9.18,
+   "topSelf": [
+    [
+     "(program) :0",
+     25.4
+    ],
+    [
+     "(garbage collector) :0",
+     1.5
+    ],
+    [
+     "setAttribute :0",
+     0.5
+    ],
+    [
+     "removeChild :0",
+     0.5
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     25.4
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     7.1
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     6.2
+    ],
+    [
+     "Ff index-D6EMZNfR.js:10",
+     6.2
+    ],
+    [
+     "Af index-D6EMZNfR.js:10",
+     6.2
+    ],
+    [
+     "Mf index-D6EMZNfR.js:10",
+     6.2
+    ],
+    [
+     "$d index-D6EMZNfR.js:10",
+     4.2
+    ],
+    [
+     "Qd index-D6EMZNfR.js:10",
+     4.2
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "select-move",
+   "busyMs": 48.9,
+   "runs": [
+    34.5,
+    48.9,
+    77
+   ],
+   "unit": "moves",
+   "units": 30,
+   "perUnitMs": 1.63,
+   "topSelf": [
+    [
+     "(program) :0",
+     38.7
+    ],
+    [
+     "qte index-D6EMZNfR.js:54",
+     1.7
+    ],
+    [
+     "(garbage collector) :0",
+     1.2
+    ],
+    [
+     "setTransform :0",
+     0.8
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     38.7
+    ],
+    [
+     "frame index-D6EMZNfR.js:54",
+     4.9
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     4.6
+    ],
+    [
+     "drawMain index-D6EMZNfR.js:54",
+     3.5
+    ],
+    [
+     "paint index-D6EMZNfR.js:54",
+     3
+    ],
+    [
+     "Mf index-D6EMZNfR.js:10",
+     2.7
+    ],
+    [
+     "Af index-D6EMZNfR.js:10",
+     2.7
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     2.6
+    ]
+   ],
+   "rendering": [],
+   "note": "selected 1"
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "add-layer",
+   "busyMs": 36.3,
+   "runs": [
+    30.6,
+    48.7,
+    36.3
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 12.11,
+   "topSelf": [
+    [
+     "(program) :0",
+     27.5
+    ],
+    [
+     "(garbage collector) :0",
+     3.3
+    ],
+    [
+     "cy index-D6EMZNfR.js:54",
+     1.7
+    ],
+    [
+     "lp index-D6EMZNfR.js:11",
+     0.5
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     27.5
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     3.6
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     3.5
+    ],
+    [
+     "(garbage collector) :0",
+     3.3
+    ],
+    [
+     "Mf index-D6EMZNfR.js:10",
+     3.1
+    ],
+    [
+     "Ff index-D6EMZNfR.js:10",
+     3
+    ],
+    [
+     "Af index-D6EMZNfR.js:10",
+     3
+    ],
+    [
+     "$d index-D6EMZNfR.js:10",
+     2.7
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "delete-layer",
+   "busyMs": 38,
+   "runs": [
+    38,
+    64.9,
+    35.3
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 12.67,
+   "topSelf": [
+    [
+     "(program) :0",
+     33.4
+    ],
+    [
+     "removeChild :0",
+     1.9
+    ],
+    [
+     "mn index-D6EMZNfR.js:10",
+     1.2
+    ],
+    [
+     "Cl index-D6EMZNfR.js:10",
+     1.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     33.4
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     9.5
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     9
+    ],
+    [
+     "Af index-D6EMZNfR.js:10",
+     8.8
+    ],
+    [
+     "Mf index-D6EMZNfR.js:10",
+     8.7
+    ],
+    [
+     "Ff index-D6EMZNfR.js:10",
+     8.6
+    ],
+    [
+     "cf index-D6EMZNfR.js:10",
+     5.5
+    ],
+    [
+     "Vd index-D6EMZNfR.js:10",
+     5.5
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "add-key",
+   "busyMs": 42.8,
+   "runs": [
+    42.8,
+    45.6,
+    35.9
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 14.25,
+   "topSelf": [
+    [
+     "(program) :0",
+     25.3
+    ],
+    [
+     "setTransform :0",
+     3.4
+    ],
+    [
+     "(garbage collector) :0",
+     2.1
+    ],
+    [
+     "update index-D6EMZNfR.js:3",
+     1.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     25.3
+    ],
+    [
+     "frame index-D6EMZNfR.js:54",
+     5.5
+    ],
+    [
+     "drawMain index-D6EMZNfR.js:54",
+     4.4
+    ],
+    [
+     "paintStage index-D6EMZNfR.js:54",
+     4.3
+    ],
+    [
+     "paint index-D6EMZNfR.js:54",
+     4.3
+    ],
+    [
+     "(anon) :0",
+     4.3
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     4.2
+    ],
+    [
+     "yj index-D6EMZNfR.js:54",
+     4.2
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "delete-key",
+   "busyMs": 71.6,
+   "runs": [
+    79.6,
+    71.6,
+    48.9
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 23.85,
+   "topSelf": [
+    [
+     "(program) :0",
+     49.9
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:61",
+     1.9
+    ],
+    [
+     "releasePointerCapture :0",
+     1.4
+    ],
+    [
+     "Au index-D6EMZNfR.js:10",
+     1.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     49.9
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     10.8
+    ],
+    [
+     "Ff index-D6EMZNfR.js:10",
+     6
+    ],
+    [
+     "Af index-D6EMZNfR.js:10",
+     6
+    ],
+    [
+     "Mf index-D6EMZNfR.js:10",
+     6
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     5.9
+    ],
+    [
+     "On index-D6EMZNfR.js:10",
+     4.7
+    ],
+    [
+     "Xf index-D6EMZNfR.js:10",
+     4.7
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "undo-redo",
+   "busyMs": 44.1,
+   "runs": [
+    44.1,
+    39.5,
+    52.3
+   ],
+   "unit": "steps",
+   "units": 12,
+   "perUnitMs": 3.67,
+   "topSelf": [
+    [
+     "(program) :0",
+     32.7
+    ],
+    [
+     "Uu index-D6EMZNfR.js:17",
+     0.7
+    ],
+    [
+     "lp index-D6EMZNfR.js:11",
+     0.6
+    ],
+    [
+     "Che index-D6EMZNfR.js:61",
+     0.5
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     32.7
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     7.5
+    ],
+    [
+     "Mf index-D6EMZNfR.js:10",
+     6.9
+    ],
+    [
+     "Af index-D6EMZNfR.js:10",
+     6.8
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     6.7
+    ],
+    [
+     "Ff index-D6EMZNfR.js:10",
+     6.7
+    ],
+    [
+     "Qd index-D6EMZNfR.js:10",
+     4.3
+    ],
+    [
+     "$d index-D6EMZNfR.js:10",
+     4.3
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "switch-artboard",
+   "busyMs": 33.7,
+   "runs": [
+    33.7,
+    47.3,
+    30.3
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 5.61,
+   "topSelf": [
+    [
+     "(program) :0",
+     24.5
+    ],
+    [
+     "setAttribute :0",
+     1
+    ],
+    [
+     "Gr index-D6EMZNfR.js:10",
+     0.9
+    ],
+    [
+     "createElementNS :0",
+     0.9
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     24.5
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     8.6
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     8
+    ],
+    [
+     "Ff index-D6EMZNfR.js:10",
+     8
+    ],
+    [
+     "Af index-D6EMZNfR.js:10",
+     8
+    ],
+    [
+     "Mf index-D6EMZNfR.js:10",
+     8
+    ],
+    [
+     "Qd index-D6EMZNfR.js:10",
+     5.8
+    ],
+    [
+     "$d index-D6EMZNfR.js:10",
+     5.7
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "export-dialog",
+   "busyMs": 9.2,
+   "runs": [
+    9.2,
+    9.9,
+    8.7
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 9.24,
+   "topSelf": [
+    [
+     "(program) :0",
+     6.3
+    ],
+    [
+     "focus :0",
+     1.1
+    ],
+    [
+     "removeChild :0",
+     0.2
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:54",
+     0.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     6.3
+    ],
+    [
+     "D index-D6EMZNfR.js:3",
+     1.8
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     1.8
+    ],
+    [
+     "focus :0",
+     1.2
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     1.1
+    ],
+    [
+     "_f index-D6EMZNfR.js:10",
+     0.9
+    ],
+    [
+     "Pf index-D6EMZNfR.js:10",
+     0.9
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:61",
+     0.9
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "save-file",
+   "busyMs": 1.3,
+   "runs": [
+    1.3,
+    1.4,
+    1.1
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 1.35,
+   "topSelf": [
+    [
+     "(program) :0",
+     0.5
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:61",
+     0.3
+    ],
+    [
+     "encode :0",
+     0.3
+    ],
+    [
+     "c$ index-D6EMZNfR.js:61",
+     0.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "c$ index-D6EMZNfR.js:61",
+     0.8
+    ],
+    [
+     "u$ index-D6EMZNfR.js:61",
+     0.8
+    ],
+    [
+     "saveBytesAsync debug-B-gsfp0A.js:3",
+     0.8
+    ],
+    [
+     "(anon) :0",
+     0.8
+    ],
+    [
+     "s$ index-D6EMZNfR.js:61",
+     0.6
+    ],
+    [
+     "(program) :0",
+     0.5
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:61",
+     0.3
+    ],
+    [
+     "encode :0",
+     0.3
+    ]
+   ],
+   "rendering": [],
+   "note": "0.0 MB file"
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "open-file",
+   "busyMs": 10.8,
+   "runs": [
+    22.8,
+    6.8,
+    10.8
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 10.75,
+   "topSelf": [
+    [
+     "(garbage collector) :0",
+     5.9
+    ],
+    [
+     "(program) :0",
+     2.3
+    ],
+    [
+     "setTransform :0",
+     1.8
+    ],
+    [
+     "Eo index-D6EMZNfR.js:3",
+     0.8
+    ]
+   ],
+   "topIncl": [
+    [
+     "(garbage collector) :0",
+     5.9
+    ],
+    [
+     "(program) :0",
+     2.3
+    ],
+    [
+     "drawMain index-D6EMZNfR.js:54",
+     2.3
+    ],
+    [
+     "frame index-D6EMZNfR.js:54",
+     2.3
+    ],
+    [
+     "paintStage index-D6EMZNfR.js:54",
+     2.1
+    ],
+    [
+     "paint index-D6EMZNfR.js:54",
+     2.1
+    ],
+    [
+     "build index-D6EMZNfR.js:54",
+     2
+    ],
+    [
+     "setTransform :0",
+     1.8
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "autosave",
+   "busyMs": 0.8,
+   "runs": [
+    0.8,
+    0.8,
+    1.1
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 0.84,
+   "topSelf": [
+    [
+     "(program) :0",
+     0.5
+    ],
+    [
+     "postMessage :0",
+     0.1
+    ],
+    [
+     "s$ index-D6EMZNfR.js:61",
+     0.1
+    ],
+    [
+     "(anon) :0",
+     0.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     0.5
+    ],
+    [
+     "H$ index-D6EMZNfR.js:61",
+     0.4
+    ],
+    [
+     "(anon) :0",
+     0.4
+    ],
+    [
+     "u$ index-D6EMZNfR.js:61",
+     0.3
+    ],
+    [
+     "c$ index-D6EMZNfR.js:61",
+     0.2
+    ],
+    [
+     "postMessage :0",
+     0.1
+    ],
+    [
+     "pump index-D6EMZNfR.js:61",
+     0.1
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:61",
+     0.1
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "bouncing-ball",
+   "action": "workspaces",
+   "busyMs": 200.8,
+   "runs": [
+    200.8,
+    185.3,
+    208
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 33.47,
+   "topSelf": [
+    [
+     "(program) :0",
+     88.4
+    ],
+    [
+     "(garbage collector) :0",
+     24.8
+    ],
+    [
+     "setTransform :0",
+     19.6
+    ],
+    [
+     "scale :0",
+     8
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     88.4
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     39.2
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     37.9
+    ],
+    [
+     "Mf index-D6EMZNfR.js:10",
+     35.3
+    ],
+    [
+     "Ff index-D6EMZNfR.js:10",
+     34.9
+    ],
+    [
+     "Af index-D6EMZNfR.js:10",
+     34.9
+    ],
+    [
+     "(garbage collector) :0",
+     24.8
+    ],
+    [
+     "Qd index-D6EMZNfR.js:10",
+     19.7
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "puppet",
+   "action": "brush-stroke",
+   "busyMs": 25,
+   "runs": [
+    25.5,
+    19.6,
+    25
+   ],
+   "unit": "moves",
+   "units": 60,
+   "perUnitMs": 0.42,
+   "topSelf": [
+    [
+     "(program) :0",
+     13.4
+    ],
+    [
+     "setTransform :0",
+     1
+    ],
+    [
+     "toPointer index-D6EMZNfR.js:54",
+     0.6
+    ],
+    [
+     "F index-D6EMZNfR.js:3",
+     0.4
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     13.4
+    ],
+    [
+     "frame index-D6EMZNfR.js:54",
+     4.9
+    ],
+    [
+     "drawOverlay index-D6EMZNfR.js:54",
+     3.8
+    ],
+    [
+     "hG index-D6EMZNfR.js:57",
+     2.5
+    ],
+    [
+     "t.overlay index-D6EMZNfR.js:61",
+     2.5
+    ],
+    [
+     "overlay index-D6EMZNfR.js:57",
+     2.4
+    ],
+    [
+     "d_ index-D6EMZNfR.js:54",
+     2.1
+    ],
+    [
+     "onPointerMove index-D6EMZNfR.js:54",
+     1.7
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "puppet",
+   "action": "scrub",
+   "busyMs": 382.4,
+   "runs": [
+    378.4,
+    382.4,
+    411.8
+   ],
+   "unit": "moves",
+   "units": 80,
+   "perUnitMs": 4.78,
+   "topSelf": [
+    [
+     "setTransform :0",
+     143.8
+    ],
+    [
+     "(program) :0",
+     127.4
+    ],
+    [
+     "(garbage collector) :0",
+     49.9
+    ],
+    [
+     "drawImage :0",
+     13.9
+    ]
+   ],
+   "topIncl": [
+    [
+     "build index-D6EMZNfR.js:54",
+     153.3
+    ],
+    [
+     "setTransform :0",
+     143.8
+    ],
+    [
+     "t index-D6EMZNfR.js:54",
+     129.6
+    ],
+    [
+     "warm index-D6EMZNfR.js:54",
+     128.9
+    ],
+    [
+     "(program) :0",
+     127.4
+    ],
+    [
+     "(garbage collector) :0",
+     49.9
+    ],
+    [
+     "frame index-D6EMZNfR.js:54",
+     48.9
+    ],
+    [
+     "drawMain index-D6EMZNfR.js:54",
+     45.6
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "puppet",
+   "action": "play",
+   "busyMs": 287.1,
+   "runs": [
+    325.3,
+    283.5,
+    287.1
+   ],
+   "unit": "seconds",
+   "units": 1.5,
+   "perUnitMs": 191.43,
+   "topSelf": [
+    [
+     "setTransform :0",
+     109.3
+    ],
+    [
+     "(program) :0",
+     90.2
+    ],
+    [
+     "(garbage collector) :0",
+     58.1
+    ],
+    [
+     "drawImage :0",
+     11.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "frame index-D6EMZNfR.js:54",
+     134.3
+    ],
+    [
+     "warmAhead index-D6EMZNfR.js:54",
+     120.6
+    ],
+    [
+     "warm index-D6EMZNfR.js:54",
+     119.4
+    ],
+    [
+     "build index-D6EMZNfR.js:54",
+     115.3
+    ],
+    [
+     "setTransform :0",
+     109.3
+    ],
+    [
+     "(program) :0",
+     90.2
+    ],
+    [
+     "(garbage collector) :0",
+     58.1
+    ],
+    [
+     "drawMain index-D6EMZNfR.js:54",
+     12.9
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "puppet",
+   "action": "select-click",
+   "busyMs": 6,
+   "runs": [
+    5.4,
+    6.6,
+    6
+   ],
+   "unit": "clicks",
+   "units": 4,
+   "perUnitMs": 1.51,
+   "topSelf": [
+    [
+     "(program) :0",
+     3.4
+    ],
+    [
+     "closest :0",
+     0.5
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     0.2
+    ],
+    [
+     "ZN index-D6EMZNfR.js:54",
+     0.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     3.4
+    ],
+    [
+     "zae index-D6EMZNfR.js:54",
+     0.5
+    ],
+    [
+     "qae index-D6EMZNfR.js:54",
+     0.5
+    ],
+    [
+     "e index-D6EMZNfR.js:54",
+     0.5
+    ],
+    [
+     "closest :0",
+     0.5
+    ],
+    [
+     "m index-D6EMZNfR.js:61",
+     0.5
+    ],
+    [
+     "On index-D6EMZNfR.js:10",
+     0.4
+    ],
+    [
+     "Xf index-D6EMZNfR.js:10",
+     0.4
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "puppet",
+   "action": "add-layer",
+   "busyMs": 24,
+   "runs": [
+    24,
+    27,
+    18.9
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 7.99,
+   "topSelf": [
+    [
+     "(program) :0",
+     17.2
+    ],
+    [
+     "ap index-D6EMZNfR.js:11",
+     0.5
+    ],
+    [
+     "Wu index-D6EMZNfR.js:17",
+     0.3
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:61",
+     0.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     17.2
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     3.8
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     3.5
+    ],
+    [
+     "Ff index-D6EMZNfR.js:10",
+     3.5
+    ],
+    [
+     "Af index-D6EMZNfR.js:10",
+     3.5
+    ],
+    [
+     "Mf index-D6EMZNfR.js:10",
+     3.5
+    ],
+    [
+     "Qd index-D6EMZNfR.js:10",
+     2.2
+    ],
+    [
+     "nf index-D6EMZNfR.js:10",
+     2.1
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "puppet",
+   "action": "delete-layer",
+   "busyMs": 24.6,
+   "runs": [
+    24.5,
+    24.6,
+    26.4
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 8.21,
+   "topSelf": [
+    [
+     "(program) :0",
+     18.1
+    ],
+    [
+     "f index-D6EMZNfR.js:10",
+     0.4
+    ],
+    [
+     "lp index-D6EMZNfR.js:11",
+     0.3
+    ],
+    [
+     "ap index-D6EMZNfR.js:11",
+     0.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     18.1
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     4.9
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     4.7
+    ],
+    [
+     "Ff index-D6EMZNfR.js:10",
+     4.7
+    ],
+    [
+     "Af index-D6EMZNfR.js:10",
+     4.7
+    ],
+    [
+     "Mf index-D6EMZNfR.js:10",
+     4.7
+    ],
+    [
+     "nf index-D6EMZNfR.js:10",
+     3.3
+    ],
+    [
+     "$d index-D6EMZNfR.js:10",
+     3.3
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "puppet",
+   "action": "add-key",
+   "busyMs": 29.9,
+   "runs": [
+    29.9,
+    23.4,
+    30.8
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 9.96,
+   "topSelf": [
+    [
+     "(program) :0",
+     11.9
+    ],
+    [
+     "(garbage collector) :0",
+     5.8
+    ],
+    [
+     "setTransform :0",
+     3.7
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:61",
+     0.4
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     11.9
+    ],
+    [
+     "(garbage collector) :0",
+     5.8
+    ],
+    [
+     "build index-D6EMZNfR.js:54",
+     4.5
+    ],
+    [
+     "setTransform :0",
+     3.7
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     3.2
+    ],
+    [
+     "warm index-D6EMZNfR.js:54",
+     3.2
+    ],
+    [
+     "t index-D6EMZNfR.js:54",
+     3.2
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     2.8
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "puppet",
+   "action": "undo-redo",
+   "busyMs": 60.4,
+   "runs": [
+    60.4,
+    62.6,
+    50.7
+   ],
+   "unit": "steps",
+   "units": 12,
+   "perUnitMs": 5.03,
+   "topSelf": [
+    [
+     "(program) :0",
+     39.3
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:61",
+     1.1
+    ],
+    [
+     "bump index-D6EMZNfR.js:54",
+     1
+    ],
+    [
+     "lp index-D6EMZNfR.js:11",
+     0.8
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     39.3
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     10.6
+    ],
+    [
+     "Mf index-D6EMZNfR.js:10",
+     9.5
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     9.4
+    ],
+    [
+     "Ff index-D6EMZNfR.js:10",
+     9.4
+    ],
+    [
+     "Af index-D6EMZNfR.js:10",
+     9.4
+    ],
+    [
+     "Qd index-D6EMZNfR.js:10",
+     6.1
+    ],
+    [
+     "nf index-D6EMZNfR.js:10",
+     6
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "puppet",
+   "action": "switch-artboard",
+   "busyMs": 63.4,
+   "runs": [
+    61.9,
+    63.4,
+    66.1
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 10.57,
+   "topSelf": [
+    [
+     "(program) :0",
+     35.6
+    ],
+    [
+     "i index-D6EMZNfR.js:61",
+     7
+    ],
+    [
+     "drawImage :0",
+     1.9
+    ],
+    [
+     "setAttribute :0",
+     1.5
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     35.6
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     14.2
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     11.9
+    ],
+    [
+     "Mf index-D6EMZNfR.js:10",
+     10.9
+    ],
+    [
+     "Af index-D6EMZNfR.js:10",
+     10.5
+    ],
+    [
+     "Ff index-D6EMZNfR.js:10",
+     10.4
+    ],
+    [
+     "nf index-D6EMZNfR.js:10",
+     8.8
+    ],
+    [
+     "$d index-D6EMZNfR.js:10",
+     8.8
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "puppet",
+   "action": "export-dialog",
+   "busyMs": 12,
+   "runs": [
+    9.4,
+    12,
+    14.7
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 12.01,
+   "topSelf": [
+    [
+     "(program) :0",
+     8
+    ],
+    [
+     "focus :0",
+     1
+    ],
+    [
+     "removeChild :0",
+     0.8
+    ],
+    [
+     "gu index-D6EMZNfR.js:10",
+     0.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     8
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     2.5
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     2
+    ],
+    [
+     "D index-D6EMZNfR.js:3",
+     1.9
+    ],
+    [
+     "wh index-D6EMZNfR.js:11",
+     1.6
+    ],
+    [
+     "On index-D6EMZNfR.js:10",
+     1.5
+    ],
+    [
+     "Xf index-D6EMZNfR.js:10",
+     1.5
+    ],
+    [
+     "cf index-D6EMZNfR.js:10",
+     1.4
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "puppet",
+   "action": "save-file",
+   "busyMs": 1.7,
+   "runs": [
+    1.7,
+    0.8,
+    3.4
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 1.69,
+   "topSelf": [
+    [
+     "(program) :0",
+     1
+    ],
+    [
+     "s$ index-D6EMZNfR.js:61",
+     0.9
+    ],
+    [
+     "encode :0",
+     0.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "s$ index-D6EMZNfR.js:61",
+     1
+    ],
+    [
+     "c$ index-D6EMZNfR.js:61",
+     1
+    ],
+    [
+     "u$ index-D6EMZNfR.js:61",
+     1
+    ],
+    [
+     "saveBytesAsync debug-B-gsfp0A.js:3",
+     1
+    ],
+    [
+     "(anon) :0",
+     1
+    ],
+    [
+     "(program) :0",
+     1
+    ],
+    [
+     "encode :0",
+     0.1
+    ]
+   ],
+   "rendering": [],
+   "note": "0.0 MB file"
+  },
+  {
+   "doc": "puppet",
+   "action": "open-file",
+   "busyMs": 25.4,
+   "runs": [
+    28.2,
+    25.4,
+    23.5
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 25.35,
+   "topSelf": [
+    [
+     "setTransform :0",
+     8.1
+    ],
+    [
+     "(garbage collector) :0",
+     7.7
+    ],
+    [
+     "(program) :0",
+     4.8
+    ],
+    [
+     "drawImage :0",
+     0.7
+    ]
+   ],
+   "topIncl": [
+    [
+     "frame index-D6EMZNfR.js:54",
+     9.7
+    ],
+    [
+     "drawMain index-D6EMZNfR.js:54",
+     9.6
+    ],
+    [
+     "paintStage index-D6EMZNfR.js:54",
+     9.5
+    ],
+    [
+     "paint index-D6EMZNfR.js:54",
+     9.5
+    ],
+    [
+     "build index-D6EMZNfR.js:54",
+     8.6
+    ],
+    [
+     "setTransform :0",
+     8.1
+    ],
+    [
+     "(garbage collector) :0",
+     7.7
+    ],
+    [
+     "(program) :0",
+     4.8
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "puppet",
+   "action": "autosave",
+   "busyMs": 0.8,
+   "runs": [
+    0.6,
+    1.6,
+    0.8
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 0.79,
+   "topSelf": [
+    [
+     "(program) :0",
+     0.7
+    ],
+    [
+     "u$ index-D6EMZNfR.js:61",
+     0.1
+    ],
+    [
+     "pump index-D6EMZNfR.js:61",
+     0.1
+    ],
+    [
+     "(anon) :0",
+     0.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     0.7
+    ],
+    [
+     "H$ index-D6EMZNfR.js:61",
+     0.3
+    ],
+    [
+     "(anon) :0",
+     0.3
+    ],
+    [
+     "u$ index-D6EMZNfR.js:61",
+     0.2
+    ],
+    [
+     "pump index-D6EMZNfR.js:61",
+     0.1
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:61",
+     0.1
+    ],
+    [
+     "run index-D6EMZNfR.js:61",
+     0.1
+    ],
+    [
+     "PZ index-D6EMZNfR.js:61",
+     0.1
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "puppet",
+   "action": "workspaces",
+   "busyMs": 239.4,
+   "runs": [
+    239.4,
+    251.9,
+    226
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 39.9,
+   "topSelf": [
+    [
+     "(program) :0",
+     99.6
+    ],
+    [
+     "setTransform :0",
+     48
+    ],
+    [
+     "(garbage collector) :0",
+     18.3
+    ],
+    [
+     "scrollIntoView :0",
+     11
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     99.6
+    ],
+    [
+     "frame index-D6EMZNfR.js:54",
+     50.2
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     49.6
+    ],
+    [
+     "setTransform :0",
+     48
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     45.1
+    ],
+    [
+     "drawMain index-D6EMZNfR.js:54",
+     44.9
+    ],
+    [
+     "paint index-D6EMZNfR.js:54",
+     44.7
+    ],
+    [
+     "Mf index-D6EMZNfR.js:10",
+     43.6
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "brush-stroke",
+   "busyMs": 21.4,
+   "runs": [
+    17.7,
+    21.4,
+    23.9
+   ],
+   "unit": "moves",
+   "units": 60,
+   "perUnitMs": 0.36,
+   "topSelf": [
+    [
+     "(program) :0",
+     13.1
+    ],
+    [
+     "toPointer index-D6EMZNfR.js:54",
+     0.5
+    ],
+    [
+     "frame index-D6EMZNfR.js:54",
+     0.5
+    ],
+    [
+     "Th index-D6EMZNfR.js:20",
+     0.4
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     13.1
+    ],
+    [
+     "frame index-D6EMZNfR.js:54",
+     4.7
+    ],
+    [
+     "drawOverlay index-D6EMZNfR.js:54",
+     3.6
+    ],
+    [
+     "d_ index-D6EMZNfR.js:54",
+     2
+    ],
+    [
+     "overlay index-D6EMZNfR.js:57",
+     1.8
+    ],
+    [
+     "hG index-D6EMZNfR.js:57",
+     1.8
+    ],
+    [
+     "t.overlay index-D6EMZNfR.js:61",
+     1.8
+    ],
+    [
+     "c_ index-D6EMZNfR.js:54",
+     1.6
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "scrub",
+   "busyMs": 118,
+   "runs": [
+    118,
+    138.7,
+    117.2
+   ],
+   "unit": "moves",
+   "units": 80,
+   "perUnitMs": 1.47,
+   "topSelf": [
+    [
+     "(program) :0",
+     75
+    ],
+    [
+     "(garbage collector) :0",
+     4.9
+    ],
+    [
+     "drawImage :0",
+     3.3
+    ],
+    [
+     "setTransform :0",
+     2.8
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     75
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     29.7
+    ],
+    [
+     "wh index-D6EMZNfR.js:11",
+     22.2
+    ],
+    [
+     "Ch index-D6EMZNfR.js:11",
+     21.8
+    ],
+    [
+     "On index-D6EMZNfR.js:10",
+     21.1
+    ],
+    [
+     "Xf index-D6EMZNfR.js:10",
+     21.1
+    ],
+    [
+     "Wf index-D6EMZNfR.js:10",
+     16.7
+    ],
+    [
+     "pe index-D6EMZNfR.js:61",
+     16.4
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "play",
+   "busyMs": 74.1,
+   "runs": [
+    74.7,
+    67.2,
+    74.1
+   ],
+   "unit": "seconds",
+   "units": 1.5,
+   "perUnitMs": 49.43,
+   "topSelf": [
+    [
+     "(program) :0",
+     56
+    ],
+    [
+     "i index-D6EMZNfR.js:61",
+     1.2
+    ],
+    [
+     "cb index-D6EMZNfR.js:54",
+     1
+    ],
+    [
+     "requestAnimationFrame :0",
+     0.8
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     56
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     6.6
+    ],
+    [
+     "Af index-D6EMZNfR.js:10",
+     5.4
+    ],
+    [
+     "AM index-D6EMZNfR.js:54",
+     5.4
+    ],
+    [
+     "Ff index-D6EMZNfR.js:10",
+     5.4
+    ],
+    [
+     "Mf index-D6EMZNfR.js:10",
+     5.4
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     5.3
+    ],
+    [
+     "setUi index-D6EMZNfR.js:3",
+     3.7
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "select-click",
+   "busyMs": 45.1,
+   "runs": [
+    34.4,
+    47.2,
+    45.1
+   ],
+   "unit": "clicks",
+   "units": 4,
+   "perUnitMs": 11.27,
+   "topSelf": [
+    [
+     "(program) :0",
+     29.3
+    ],
+    [
+     "(garbage collector) :0",
+     1.9
+    ],
+    [
+     "removeChild :0",
+     0.7
+    ],
+    [
+     "lp index-D6EMZNfR.js:11",
+     0.5
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     29.3
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     7.7
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     6.8
+    ],
+    [
+     "Af index-D6EMZNfR.js:10",
+     6.8
+    ],
+    [
+     "Mf index-D6EMZNfR.js:10",
+     6.8
+    ],
+    [
+     "Ff index-D6EMZNfR.js:10",
+     6.7
+    ],
+    [
+     "nf index-D6EMZNfR.js:10",
+     4.3
+    ],
+    [
+     "$d index-D6EMZNfR.js:10",
+     4.3
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "select-move",
+   "busyMs": 42,
+   "runs": [
+    38.2,
+    47.5,
+    42
+   ],
+   "unit": "moves",
+   "units": 30,
+   "perUnitMs": 1.4,
+   "topSelf": [
+    [
+     "(program) :0",
+     29.3
+    ],
+    [
+     "d_ index-D6EMZNfR.js:54",
+     0.7
+    ],
+    [
+     "setTransform :0",
+     0.6
+    ],
+    [
+     "frame index-D6EMZNfR.js:54",
+     0.5
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     29.3
+    ],
+    [
+     "frame index-D6EMZNfR.js:54",
+     4.8
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     3.8
+    ],
+    [
+     "Mf index-D6EMZNfR.js:10",
+     3.4
+    ],
+    [
+     "Ff index-D6EMZNfR.js:10",
+     3.3
+    ],
+    [
+     "Af index-D6EMZNfR.js:10",
+     3.3
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     3.2
+    ],
+    [
+     "onPointerMove index-D6EMZNfR.js:54",
+     3
+    ]
+   ],
+   "rendering": [],
+   "note": "selected 1"
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "add-layer",
+   "busyMs": 15.8,
+   "runs": [
+    20.2,
+    14.4,
+    15.8
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 5.26,
+   "topSelf": [
+    [
+     "(program) :0",
+     10.7
+    ],
+    [
+     "(garbage collector) :0",
+     1.7
+    ],
+    [
+     "setAttribute :0",
+     0.4
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:61",
+     0.4
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     10.7
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     2.7
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     2.6
+    ],
+    [
+     "Mf index-D6EMZNfR.js:10",
+     2.2
+    ],
+    [
+     "Ff index-D6EMZNfR.js:10",
+     2.2
+    ],
+    [
+     "Af index-D6EMZNfR.js:10",
+     2.2
+    ],
+    [
+     "Qd index-D6EMZNfR.js:10",
+     1.8
+    ],
+    [
+     "nf index-D6EMZNfR.js:10",
+     1.7
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "delete-layer",
+   "busyMs": 21,
+   "runs": [
+    21,
+    14.5,
+    27.3
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 6.99,
+   "topSelf": [
+    [
+     "(program) :0",
+     12.5
+    ],
+    [
+     "(garbage collector) :0",
+     3.6
+    ],
+    [
+     "n index-D6EMZNfR.js:61",
+     1
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:61",
+     0.5
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     12.5
+    ],
+    [
+     "(garbage collector) :0",
+     3.6
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     2.1
+    ],
+    [
+     "(anon) :0",
+     2.1
+    ],
+    [
+     "Dj index-D6EMZNfR.js:54",
+     2
+    ],
+    [
+     "run index-D6EMZNfR.js:61",
+     2
+    ],
+    [
+     "run debug-B-gsfp0A.js:3",
+     2
+    ],
+    [
+     "emit index-D6EMZNfR.js:3",
+     1.9
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "add-key",
+   "busyMs": 23.1,
+   "runs": [
+    25.7,
+    23.1,
+    16.9
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 7.7,
+   "topSelf": [
+    [
+     "(program) :0",
+     10
+    ],
+    [
+     "(garbage collector) :0",
+     3.6
+    ],
+    [
+     "drawImage :0",
+     2.1
+    ],
+    [
+     "setTransform :0",
+     2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     10
+    ],
+    [
+     "frame index-D6EMZNfR.js:54",
+     4.8
+    ],
+    [
+     "paint index-D6EMZNfR.js:54",
+     4.6
+    ],
+    [
+     "drawMain index-D6EMZNfR.js:54",
+     4.6
+    ],
+    [
+     "paintStage index-D6EMZNfR.js:54",
+     4.5
+    ],
+    [
+     "(garbage collector) :0",
+     3.6
+    ],
+    [
+     "paintOnion index-D6EMZNfR.js:54",
+     2.5
+    ],
+    [
+     "drawImage :0",
+     2.1
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "delete-key",
+   "busyMs": 36.7,
+   "runs": [
+    30.3,
+    36.7,
+    45.2
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 12.23,
+   "topSelf": [
+    [
+     "(program) :0",
+     21.6
+    ],
+    [
+     "(garbage collector) :0",
+     2.6
+    ],
+    [
+     "setTransform :0",
+     1.8
+    ],
+    [
+     "vp index-D6EMZNfR.js:11",
+     1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     21.6
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     6.7
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     4.1
+    ],
+    [
+     "Ff index-D6EMZNfR.js:10",
+     4.1
+    ],
+    [
+     "Af index-D6EMZNfR.js:10",
+     4.1
+    ],
+    [
+     "Mf index-D6EMZNfR.js:10",
+     4.1
+    ],
+    [
+     "frame index-D6EMZNfR.js:54",
+     3.4
+    ],
+    [
+     "nf index-D6EMZNfR.js:10",
+     3
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "undo-redo",
+   "busyMs": 34.4,
+   "runs": [
+    35,
+    33.6,
+    34.4
+   ],
+   "unit": "steps",
+   "units": 12,
+   "perUnitMs": 2.86,
+   "topSelf": [
+    [
+     "(program) :0",
+     25
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:61",
+     0.6
+    ],
+    [
+     "postMessage :0",
+     0.4
+    ],
+    [
+     "(anon) :0",
+     0.4
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     25
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     5.9
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     5.2
+    ],
+    [
+     "Ff index-D6EMZNfR.js:10",
+     5.2
+    ],
+    [
+     "Af index-D6EMZNfR.js:10",
+     5.2
+    ],
+    [
+     "Mf index-D6EMZNfR.js:10",
+     5.2
+    ],
+    [
+     "Qd index-D6EMZNfR.js:10",
+     3
+    ],
+    [
+     "nf index-D6EMZNfR.js:10",
+     3
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "switch-artboard",
+   "busyMs": 31.8,
+   "runs": [
+    29.8,
+    53.9,
+    31.8
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 5.3,
+   "topSelf": [
+    [
+     "(program) :0",
+     20.2
+    ],
+    [
+     "i index-D6EMZNfR.js:61",
+     2.9
+    ],
+    [
+     "(garbage collector) :0",
+     2.3
+    ],
+    [
+     "closest :0",
+     0.9
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     20.2
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     6.8
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     6.1
+    ],
+    [
+     "Mf index-D6EMZNfR.js:10",
+     5.9
+    ],
+    [
+     "Ff index-D6EMZNfR.js:10",
+     5.9
+    ],
+    [
+     "Af index-D6EMZNfR.js:10",
+     5.9
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:61",
+     4.1
+    ],
+    [
+     "nf index-D6EMZNfR.js:10",
+     3.5
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "export-dialog",
+   "busyMs": 9.5,
+   "runs": [
+    8.4,
+    9.5,
+    20.1
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 9.48,
+   "topSelf": [
+    [
+     "(program) :0",
+     7.1
+    ],
+    [
+     "(garbage collector) :0",
+     2.5
+    ],
+    [
+     "focus :0",
+     1
+    ],
+    [
+     "removeChild :0",
+     0.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     7.1
+    ],
+    [
+     "(garbage collector) :0",
+     2.5
+    ],
+    [
+     "D index-D6EMZNfR.js:3",
+     1.8
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     1.8
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     1.2
+    ],
+    [
+     "focus :0",
+     1
+    ],
+    [
+     "Sl index-D6EMZNfR.js:10",
+     0.9
+    ],
+    [
+     "Uu index-D6EMZNfR.js:10",
+     0.9
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "save-file",
+   "busyMs": 1.1,
+   "runs": [
+    1.1,
+    1.4,
+    0.8
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 1.1,
+   "topSelf": [
+    [
+     "(program) :0",
+     0.6
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:61",
+     0.3
+    ],
+    [
+     "postMessage :0",
+     0.1
+    ],
+    [
+     "No index-D6EMZNfR.js:3",
+     0.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     0.6
+    ],
+    [
+     "u$ index-D6EMZNfR.js:61",
+     0.5
+    ],
+    [
+     "saveBytesAsync debug-B-gsfp0A.js:3",
+     0.5
+    ],
+    [
+     "(anon) :0",
+     0.5
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:61",
+     0.4
+    ],
+    [
+     "c$ index-D6EMZNfR.js:61",
+     0.4
+    ],
+    [
+     "s$ index-D6EMZNfR.js:61",
+     0.3
+    ],
+    [
+     "postMessage :0",
+     0.1
+    ]
+   ],
+   "rendering": [],
+   "note": "0.0 MB file"
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "open-file",
+   "busyMs": 4.9,
+   "runs": [
+    4.9,
+    17.7,
+    4.7
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 4.93,
+   "topSelf": [
+    [
+     "(garbage collector) :0",
+     4.2
+    ],
+    [
+     "(program) :0",
+     1.7
+    ],
+    [
+     "setTransform :0",
+     0.7
+    ],
+    [
+     "Eo index-D6EMZNfR.js:3",
+     0.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(garbage collector) :0",
+     4.2
+    ],
+    [
+     "(program) :0",
+     1.7
+    ],
+    [
+     "frame index-D6EMZNfR.js:54",
+     1.3
+    ],
+    [
+     "paintStage index-D6EMZNfR.js:54",
+     1.1
+    ],
+    [
+     "paint index-D6EMZNfR.js:54",
+     1.1
+    ],
+    [
+     "drawMain index-D6EMZNfR.js:54",
+     1.1
+    ],
+    [
+     "b$ index-D6EMZNfR.js:61",
+     1
+    ],
+    [
+     "build index-D6EMZNfR.js:54",
+     0.9
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "autosave",
+   "busyMs": 0.6,
+   "runs": [
+    0.6,
+    0.6,
+    0.9
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 0.6,
+   "topSelf": [
+    [
+     "(program) :0",
+     0.5
+    ],
+    [
+     "(anon) :0",
+     0.1
+    ],
+    [
+     "c$ index-D6EMZNfR.js:61",
+     0.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     0.5
+    ],
+    [
+     "(anon) :0",
+     0.2
+    ],
+    [
+     "c$ index-D6EMZNfR.js:61",
+     0.1
+    ],
+    [
+     "u$ index-D6EMZNfR.js:61",
+     0.1
+    ],
+    [
+     "H$ index-D6EMZNfR.js:61",
+     0.1
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "walk-cycle",
+   "action": "workspaces",
+   "busyMs": 153.8,
+   "runs": [
+    153.8,
+    151.3,
+    179.5
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 25.63,
+   "topSelf": [
+    [
+     "(program) :0",
+     74.1
+    ],
+    [
+     "setTransform :0",
+     17.6
+    ],
+    [
+     "(garbage collector) :0",
+     16
+    ],
+    [
+     "scrollIntoView :0",
+     5.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     74.1
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     33.8
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     32.6
+    ],
+    [
+     "Mf index-D6EMZNfR.js:10",
+     31.1
+    ],
+    [
+     "Ff index-D6EMZNfR.js:10",
+     30.5
+    ],
+    [
+     "Af index-D6EMZNfR.js:10",
+     30.5
+    ],
+    [
+     "lf index-D6EMZNfR.js:10",
+     18.8
+    ],
+    [
+     "cf index-D6EMZNfR.js:10",
+     18.8
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "hero-sprites",
+   "action": "pixel-stroke",
+   "busyMs": 33.5,
+   "runs": [
+    33.5,
+    30.1,
+    49.7
+   ],
+   "unit": "moves",
+   "units": 60,
+   "perUnitMs": 0.56,
+   "topSelf": [
+    [
+     "(program) :0",
+     26
+    ],
+    [
+     "move index-D6EMZNfR.js:57",
+     1.4
+    ],
+    [
+     "On index-D6EMZNfR.js:10",
+     1.1
+    ],
+    [
+     "sk index-D6EMZNfR.js:54",
+     0.5
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     26
+    ],
+    [
+     "frame index-D6EMZNfR.js:54",
+     4.2
+    ],
+    [
+     "onPointerMove index-D6EMZNfR.js:54",
+     3.4
+    ],
+    [
+     "move index-D6EMZNfR.js:57",
+     2.4
+    ],
+    [
+     "Ch index-D6EMZNfR.js:11",
+     2.4
+    ],
+    [
+     "wh index-D6EMZNfR.js:11",
+     2.2
+    ],
+    [
+     "drawOverlay index-D6EMZNfR.js:54",
+     1.9
+    ],
+    [
+     "drawMain index-D6EMZNfR.js:54",
+     1.9
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "hero-sprites",
+   "action": "scrub",
+   "busyMs": 149.6,
+   "runs": [
+    125.5,
+    151.4,
+    149.6
+   ],
+   "unit": "moves",
+   "units": 80,
+   "perUnitMs": 1.87,
+   "topSelf": [
+    [
+     "(program) :0",
+     95.3
+    ],
+    [
+     "(garbage collector) :0",
+     2.9
+    ],
+    [
+     "Vu index-D6EMZNfR.js:17",
+     2.2
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:61",
+     1.9
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     95.3
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     32.9
+    ],
+    [
+     "wh index-D6EMZNfR.js:11",
+     18.7
+    ],
+    [
+     "Ch index-D6EMZNfR.js:11",
+     18.5
+    ],
+    [
+     "On index-D6EMZNfR.js:10",
+     17.8
+    ],
+    [
+     "Xf index-D6EMZNfR.js:10",
+     17.8
+    ],
+    [
+     "Mf index-D6EMZNfR.js:10",
+     15.6
+    ],
+    [
+     "Ff index-D6EMZNfR.js:10",
+     15.6
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "hero-sprites",
+   "action": "play",
+   "busyMs": 86.2,
+   "runs": [
+    78,
+    86.5,
+    86.2
+   ],
+   "unit": "seconds",
+   "units": 1.5,
+   "perUnitMs": 57.43,
+   "topSelf": [
+    [
+     "(program) :0",
+     63.6
+    ],
+    [
+     "(garbage collector) :0",
+     2.6
+    ],
+    [
+     "i index-D6EMZNfR.js:61",
+     0.9
+    ],
+    [
+     "n index-D6EMZNfR.js:61",
+     0.8
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     63.6
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     9.9
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     7.9
+    ],
+    [
+     "Ff index-D6EMZNfR.js:10",
+     7.9
+    ],
+    [
+     "Af index-D6EMZNfR.js:10",
+     7.9
+    ],
+    [
+     "Mf index-D6EMZNfR.js:10",
+     7.9
+    ],
+    [
+     "AM index-D6EMZNfR.js:54",
+     5.7
+    ],
+    [
+     "setUi index-D6EMZNfR.js:3",
+     4.3
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "hero-sprites",
+   "action": "add-layer",
+   "busyMs": 17.8,
+   "runs": [
+    19.9,
+    16.8,
+    17.8
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 5.94,
+   "topSelf": [
+    [
+     "(program) :0",
+     12.5
+    ],
+    [
+     "ap index-D6EMZNfR.js:11",
+     0.5
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:61",
+     0.4
+    ],
+    [
+     "_ index-D6EMZNfR.js:10",
+     0.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     12.5
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     3.7
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     3.6
+    ],
+    [
+     "Mf index-D6EMZNfR.js:10",
+     3.1
+    ],
+    [
+     "Ff index-D6EMZNfR.js:10",
+     3
+    ],
+    [
+     "Af index-D6EMZNfR.js:10",
+     3
+    ],
+    [
+     "nf index-D6EMZNfR.js:10",
+     2.2
+    ],
+    [
+     "$d index-D6EMZNfR.js:10",
+     2.2
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "hero-sprites",
+   "action": "delete-layer",
+   "busyMs": 20.4,
+   "runs": [
+    20.4,
+    19.8,
+    24.5
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 6.79,
+   "topSelf": [
+    [
+     "(program) :0",
+     14.1
+    ],
+    [
+     "(garbage collector) :0",
+     1.7
+    ],
+    [
+     "lp index-D6EMZNfR.js:11",
+     0.3
+    ],
+    [
+     "Vu index-D6EMZNfR.js:17",
+     0.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     14.1
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     4.4
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     4
+    ],
+    [
+     "Ff index-D6EMZNfR.js:10",
+     3.7
+    ],
+    [
+     "Af index-D6EMZNfR.js:10",
+     3.7
+    ],
+    [
+     "Mf index-D6EMZNfR.js:10",
+     3.7
+    ],
+    [
+     "nf index-D6EMZNfR.js:10",
+     2.4
+    ],
+    [
+     "$d index-D6EMZNfR.js:10",
+     2.4
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "hero-sprites",
+   "action": "add-key",
+   "busyMs": 13.3,
+   "runs": [
+    14.6,
+    13.3,
+    12.9
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 4.43,
+   "topSelf": [
+    [
+     "(program) :0",
+     9.4
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:61",
+     0.5
+    ],
+    [
+     "lp index-D6EMZNfR.js:11",
+     0.2
+    ],
+    [
+     "Pl index-D6EMZNfR.js:10",
+     0.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     9.4
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     2.7
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     2.4
+    ],
+    [
+     "Ff index-D6EMZNfR.js:10",
+     2.4
+    ],
+    [
+     "Af index-D6EMZNfR.js:10",
+     2.4
+    ],
+    [
+     "Mf index-D6EMZNfR.js:10",
+     2.4
+    ],
+    [
+     "yj index-D6EMZNfR.js:54",
+     1.4
+    ],
+    [
+     "run index-D6EMZNfR.js:61",
+     1.4
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "hero-sprites",
+   "action": "delete-key",
+   "busyMs": 29,
+   "runs": [
+    29,
+    27.4,
+    29
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 9.65,
+   "topSelf": [
+    [
+     "(program) :0",
+     19.5
+    ],
+    [
+     "Pl index-D6EMZNfR.js:10",
+     0.6
+    ],
+    [
+     "(garbage collector) :0",
+     0.4
+    ],
+    [
+     "lp index-D6EMZNfR.js:11",
+     0.4
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     19.5
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     5.7
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     4.4
+    ],
+    [
+     "Ff index-D6EMZNfR.js:10",
+     4.4
+    ],
+    [
+     "Af index-D6EMZNfR.js:10",
+     4.4
+    ],
+    [
+     "Mf index-D6EMZNfR.js:10",
+     4.4
+    ],
+    [
+     "Qd index-D6EMZNfR.js:10",
+     2.8
+    ],
+    [
+     "nf index-D6EMZNfR.js:10",
+     2.8
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "hero-sprites",
+   "action": "undo-redo",
+   "busyMs": 51.3,
+   "runs": [
+    51.3,
+    52.9,
+    45.2
+   ],
+   "unit": "steps",
+   "units": 12,
+   "perUnitMs": 4.28,
+   "topSelf": [
+    [
+     "(program) :0",
+     35.4
+    ],
+    [
+     "emit index-D6EMZNfR.js:3",
+     1.3
+    ],
+    [
+     "lp index-D6EMZNfR.js:11",
+     0.9
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:61",
+     0.8
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     35.4
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     9.6
+    ],
+    [
+     "Mf index-D6EMZNfR.js:10",
+     8.4
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     8.3
+    ],
+    [
+     "Ff index-D6EMZNfR.js:10",
+     8.3
+    ],
+    [
+     "Af index-D6EMZNfR.js:10",
+     8.3
+    ],
+    [
+     "(anon) :0",
+     4.5
+    ],
+    [
+     "Qd index-D6EMZNfR.js:10",
+     4.3
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "hero-sprites",
+   "action": "switch-artboard",
+   "busyMs": 44.7,
+   "runs": [
+    44.8,
+    44.7,
+    39.1
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 7.44,
+   "topSelf": [
+    [
+     "(program) :0",
+     27.3
+    ],
+    [
+     "(garbage collector) :0",
+     3.5
+    ],
+    [
+     "setAttribute :0",
+     1.2
+    ],
+    [
+     "removeChild :0",
+     0.8
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     27.3
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     8
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     7.7
+    ],
+    [
+     "Ff index-D6EMZNfR.js:10",
+     7.7
+    ],
+    [
+     "Af index-D6EMZNfR.js:10",
+     7.7
+    ],
+    [
+     "Mf index-D6EMZNfR.js:10",
+     7.7
+    ],
+    [
+     "Qd index-D6EMZNfR.js:10",
+     4.9
+    ],
+    [
+     "nf index-D6EMZNfR.js:10",
+     4.8
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "hero-sprites",
+   "action": "export-dialog",
+   "busyMs": 9.2,
+   "runs": [
+    8.4,
+    10.5,
+    9.2
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 9.16,
+   "topSelf": [
+    [
+     "(program) :0",
+     7
+    ],
+    [
+     "focus :0",
+     0.7
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:54",
+     0.2
+    ],
+    [
+     "removeChild :0",
+     0.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     7
+    ],
+    [
+     "D index-D6EMZNfR.js:3",
+     1.4
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     1.2
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     0.9
+    ],
+    [
+     "focus :0",
+     0.8
+    ],
+    [
+     "Pf index-D6EMZNfR.js:10",
+     0.7
+    ],
+    [
+     "Sl index-D6EMZNfR.js:10",
+     0.7
+    ],
+    [
+     "Uu index-D6EMZNfR.js:10",
+     0.7
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "hero-sprites",
+   "action": "save-file",
+   "busyMs": 0.6,
+   "runs": [
+    0.6,
+    0.9,
+    0.6
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 0.6,
+   "topSelf": [
+    [
+     "(program) :0",
+     0.3
+    ],
+    [
+     "(anon) :0",
+     0.2
+    ],
+    [
+     "pump index-D6EMZNfR.js:61",
+     0.1
+    ],
+    [
+     "clearTimeout :0",
+     0.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(anon) :0",
+     0.4
+    ],
+    [
+     "(program) :0",
+     0.3
+    ],
+    [
+     "pump index-D6EMZNfR.js:61",
+     0.2
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:61",
+     0.2
+    ],
+    [
+     "run index-D6EMZNfR.js:61",
+     0.2
+    ],
+    [
+     "PZ index-D6EMZNfR.js:61",
+     0.2
+    ],
+    [
+     "u$ index-D6EMZNfR.js:61",
+     0.2
+    ],
+    [
+     "saveBytesAsync debug-B-gsfp0A.js:3",
+     0.2
+    ]
+   ],
+   "rendering": [],
+   "note": "0.0 MB file"
+  },
+  {
+   "doc": "hero-sprites",
+   "action": "open-file",
+   "busyMs": 4,
+   "runs": [
+    4,
+    3.4,
+    4.7
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 3.96,
+   "topSelf": [
+    [
+     "(program) :0",
+     2.1
+    ],
+    [
+     "C$ index-D6EMZNfR.js:61",
+     0.3
+    ],
+    [
+     "postMessage :0",
+     0.2
+    ],
+    [
+     "b$ index-D6EMZNfR.js:61",
+     0.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     2.1
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     0.8
+    ],
+    [
+     "Mf index-D6EMZNfR.js:10",
+     0.8
+    ],
+    [
+     "b$ index-D6EMZNfR.js:61",
+     0.7
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     0.7
+    ],
+    [
+     "Ff index-D6EMZNfR.js:10",
+     0.7
+    ],
+    [
+     "Af index-D6EMZNfR.js:10",
+     0.7
+    ],
+    [
+     "C$ index-D6EMZNfR.js:61",
+     0.5
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "hero-sprites",
+   "action": "autosave",
+   "busyMs": 1.1,
+   "runs": [
+    1.1,
+    1.1,
+    0.9
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 1.1,
+   "topSelf": [
+    [
+     "(program) :0",
+     0.5
+    ],
+    [
+     "(anon) :0",
+     0.3
+    ],
+    [
+     "pump index-D6EMZNfR.js:61",
+     0.2
+    ],
+    [
+     "encode :0",
+     0.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(anon) :0",
+     0.5
+    ],
+    [
+     "(program) :0",
+     0.5
+    ],
+    [
+     "u$ index-D6EMZNfR.js:61",
+     0.3
+    ],
+    [
+     "H$ index-D6EMZNfR.js:61",
+     0.3
+    ],
+    [
+     "pump index-D6EMZNfR.js:61",
+     0.2
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:61",
+     0.2
+    ],
+    [
+     "run index-D6EMZNfR.js:61",
+     0.2
+    ],
+    [
+     "PZ index-D6EMZNfR.js:61",
+     0.2
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "hero-sprites",
+   "action": "workspaces",
+   "busyMs": 165.6,
+   "runs": [
+    224.5,
+    165.6,
+    137.9
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 27.59,
+   "topSelf": [
+    [
+     "(program) :0",
+     95.7
+    ],
+    [
+     "setTransform :0",
+     12.6
+    ],
+    [
+     "(garbage collector) :0",
+     9.8
+    ],
+    [
+     "scrollIntoView :0",
+     8
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     95.7
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     40.4
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     40
+    ],
+    [
+     "Ff index-D6EMZNfR.js:10",
+     35.3
+    ],
+    [
+     "Af index-D6EMZNfR.js:10",
+     35.3
+    ],
+    [
+     "Mf index-D6EMZNfR.js:10",
+     35.3
+    ],
+    [
+     "lf index-D6EMZNfR.js:10",
+     22.5
+    ],
+    [
+     "cf index-D6EMZNfR.js:10",
+     22.5
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "brush-stroke",
+   "busyMs": 42.1,
+   "runs": [
+    47.2,
+    41.5,
+    42.1
+   ],
+   "unit": "moves",
+   "units": 60,
+   "perUnitMs": 0.7,
+   "topSelf": [
+    [
+     "(program) :0",
+     29.2
+    ],
+    [
+     "Xn index-D6EMZNfR.js:3",
+     2.2
+    ],
+    [
+     "restore :0",
+     1.7
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:61",
+     1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     29.2
+    ],
+    [
+     "frame index-D6EMZNfR.js:54",
+     6.7
+    ],
+    [
+     "drawOverlay index-D6EMZNfR.js:54",
+     3.5
+    ],
+    [
+     "pG index-D6EMZNfR.js:57",
+     3
+    ],
+    [
+     "finishGesture index-D6EMZNfR.js:54",
+     3
+    ],
+    [
+     "onPointerUp index-D6EMZNfR.js:54",
+     3
+    ],
+    [
+     "MN index-D6EMZNfR.js:54",
+     3
+    ],
+    [
+     "paintStage index-D6EMZNfR.js:54",
+     3
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "scrub",
+   "busyMs": 1330.2,
+   "runs": [
+    1330.2,
+    1341.2,
+    1288.6
+   ],
+   "unit": "moves",
+   "units": 80,
+   "perUnitMs": 16.63,
+   "topSelf": [
+    [
+     "setTransform :0",
+     651.1
+    ],
+    [
+     "(program) :0",
+     293
+    ],
+    [
+     "(garbage collector) :0",
+     178.2
+    ],
+    [
+     "drawImage :0",
+     80.8
+    ]
+   ],
+   "topIncl": [
+    [
+     "frame index-D6EMZNfR.js:54",
+     805.3
+    ],
+    [
+     "drawMain index-D6EMZNfR.js:54",
+     803.7
+    ],
+    [
+     "paint index-D6EMZNfR.js:54",
+     798.5
+    ],
+    [
+     "paintStage index-D6EMZNfR.js:54",
+     798.3
+    ],
+    [
+     "MN index-D6EMZNfR.js:54",
+     797.4
+    ],
+    [
+     "Hg index-D6EMZNfR.js:54",
+     796.8
+    ],
+    [
+     "Kg index-D6EMZNfR.js:54",
+     796.4
+    ],
+    [
+     "Ug index-D6EMZNfR.js:54",
+     796.4
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "play",
+   "busyMs": 872.1,
+   "runs": [
+    880.3,
+    835.6,
+    872.1
+   ],
+   "unit": "seconds",
+   "units": 1.5,
+   "perUnitMs": 581.42,
+   "topSelf": [
+    [
+     "setTransform :0",
+     376.7
+    ],
+    [
+     "(program) :0",
+     207.5
+    ],
+    [
+     "(garbage collector) :0",
+     152.5
+    ],
+    [
+     "drawImage :0",
+     48.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "frame index-D6EMZNfR.js:54",
+     474.3
+    ],
+    [
+     "warm index-D6EMZNfR.js:54",
+     393.3
+    ],
+    [
+     "build index-D6EMZNfR.js:54",
+     387.2
+    ],
+    [
+     "warmAhead index-D6EMZNfR.js:54",
+     381.6
+    ],
+    [
+     "setTransform :0",
+     376.7
+    ],
+    [
+     "(program) :0",
+     207.5
+    ],
+    [
+     "(garbage collector) :0",
+     152.5
+    ],
+    [
+     "drawMain index-D6EMZNfR.js:54",
+     91.2
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "select-click",
+   "busyMs": 122.6,
+   "runs": [
+    122.6,
+    120.5,
+    132.5
+   ],
+   "unit": "clicks",
+   "units": 4,
+   "perUnitMs": 30.64,
+   "topSelf": [
+    [
+     "(program) :0",
+     107.6
+    ],
+    [
+     "restore :0",
+     5.6
+    ],
+    [
+     "removeChild :0",
+     0.7
+    ],
+    [
+     "setAttribute :0",
+     0.4
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     107.6
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     7.6
+    ],
+    [
+     "frame index-D6EMZNfR.js:54",
+     7
+    ],
+    [
+     "drawMain index-D6EMZNfR.js:54",
+     6.8
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     6.8
+    ],
+    [
+     "Ff index-D6EMZNfR.js:10",
+     6.8
+    ],
+    [
+     "Af index-D6EMZNfR.js:10",
+     6.8
+    ],
+    [
+     "Mf index-D6EMZNfR.js:10",
+     6.8
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "select-move",
+   "busyMs": 203.3,
+   "runs": [
+    203.3,
+    145.5,
+    269.9
+   ],
+   "unit": "moves",
+   "units": 30,
+   "perUnitMs": 6.78,
+   "topSelf": [
+    [
+     "(program) :0",
+     93.3
+    ],
+    [
+     "restore :0",
+     30.6
+    ],
+    [
+     "i$ index-D6EMZNfR.js:61",
+     23.9
+    ],
+    [
+     "(garbage collector) :0",
+     16.8
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     93.3
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:61",
+     45.9
+    ],
+    [
+     "u$ index-D6EMZNfR.js:61",
+     44.9
+    ],
+    [
+     "H$ index-D6EMZNfR.js:61",
+     44.9
+    ],
+    [
+     "c$ index-D6EMZNfR.js:61",
+     44.8
+    ],
+    [
+     "frame index-D6EMZNfR.js:54",
+     40
+    ],
+    [
+     "drawMain index-D6EMZNfR.js:54",
+     38.7
+    ],
+    [
+     "paint index-D6EMZNfR.js:54",
+     37.7
+    ]
+   ],
+   "rendering": [],
+   "note": "selected 1"
+  },
+  {
+   "doc": "stress-vector",
+   "action": "add-layer",
+   "busyMs": 78.9,
+   "runs": [
+    78.9,
+    79.6,
+    76.6
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 26.31,
+   "topSelf": [
+    [
+     "(program) :0",
+     67.5
+    ],
+    [
+     "restore :0",
+     4.2
+    ],
+    [
+     "lp index-D6EMZNfR.js:11",
+     0.8
+    ],
+    [
+     "emit index-D6EMZNfR.js:3",
+     0.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     67.5
+    ],
+    [
+     "frame index-D6EMZNfR.js:54",
+     5.1
+    ],
+    [
+     "drawMain index-D6EMZNfR.js:54",
+     5
+    ],
+    [
+     "MN index-D6EMZNfR.js:54",
+     4.9
+    ],
+    [
+     "paintStage index-D6EMZNfR.js:54",
+     4.9
+    ],
+    [
+     "paint index-D6EMZNfR.js:54",
+     4.9
+    ],
+    [
+     "Jg index-D6EMZNfR.js:54",
+     4.8
+    ],
+    [
+     "Kg index-D6EMZNfR.js:54",
+     4.8
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "delete-layer",
+   "busyMs": 92.5,
+   "runs": [
+    92.5,
+    83.8,
+    96.8
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 30.84,
+   "topSelf": [
+    [
+     "(program) :0",
+     75.3
+    ],
+    [
+     "restore :0",
+     4.1
+    ],
+    [
+     "_i index-D6EMZNfR.js:3",
+     2.7
+    ],
+    [
+     "n index-D6EMZNfR.js:3",
+     1.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     75.3
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     5.4
+    ],
+    [
+     "frame index-D6EMZNfR.js:54",
+     5.3
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     5.2
+    ],
+    [
+     "Ff index-D6EMZNfR.js:10",
+     5.2
+    ],
+    [
+     "Af index-D6EMZNfR.js:10",
+     5.2
+    ],
+    [
+     "Mf index-D6EMZNfR.js:10",
+     5.2
+    ],
+    [
+     "drawMain index-D6EMZNfR.js:54",
+     5.2
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "add-key",
+   "busyMs": 232.2,
+   "runs": [
+    238.5,
+    232.2,
+    228.4
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 77.41,
+   "topSelf": [
+    [
+     "setTransform :0",
+     105.1
+    ],
+    [
+     "(program) :0",
+     49.4
+    ],
+    [
+     "(garbage collector) :0",
+     44.3
+    ],
+    [
+     "drawImage :0",
+     7.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "build index-D6EMZNfR.js:54",
+     107.9
+    ],
+    [
+     "t index-D6EMZNfR.js:54",
+     107.6
+    ],
+    [
+     "warm index-D6EMZNfR.js:54",
+     107.5
+    ],
+    [
+     "setTransform :0",
+     105.1
+    ],
+    [
+     "(program) :0",
+     49.4
+    ],
+    [
+     "(garbage collector) :0",
+     44.3
+    ],
+    [
+     "drawMain index-D6EMZNfR.js:54",
+     14.7
+    ],
+    [
+     "frame index-D6EMZNfR.js:54",
+     14.7
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "delete-key",
+   "busyMs": 323,
+   "runs": [
+    323,
+    325.9,
+    278.2
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 107.67,
+   "topSelf": [
+    [
+     "(program) :0",
+     147.8
+    ],
+    [
+     "setTransform :0",
+     74.9
+    ],
+    [
+     "(garbage collector) :0",
+     26.5
+    ],
+    [
+     "restore :0",
+     7.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     147.8
+    ],
+    [
+     "build index-D6EMZNfR.js:54",
+     77.8
+    ],
+    [
+     "setTransform :0",
+     74.9
+    ],
+    [
+     "t index-D6EMZNfR.js:54",
+     59.1
+    ],
+    [
+     "warm index-D6EMZNfR.js:54",
+     59
+    ],
+    [
+     "frame index-D6EMZNfR.js:54",
+     35.5
+    ],
+    [
+     "drawMain index-D6EMZNfR.js:54",
+     35.3
+    ],
+    [
+     "paint index-D6EMZNfR.js:54",
+     34.9
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "undo-redo",
+   "busyMs": 602.3,
+   "runs": [
+    602.3,
+    596.8,
+    622.9
+   ],
+   "unit": "steps",
+   "units": 12,
+   "perUnitMs": 50.19,
+   "topSelf": [
+    [
+     "setTransform :0",
+     225.9
+    ],
+    [
+     "(program) :0",
+     175.7
+    ],
+    [
+     "(garbage collector) :0",
+     135.7
+    ],
+    [
+     "restore :0",
+     17.7
+    ]
+   ],
+   "topIncl": [
+    [
+     "build index-D6EMZNfR.js:54",
+     231.9
+    ],
+    [
+     "setTransform :0",
+     225.9
+    ],
+    [
+     "(program) :0",
+     175.7
+    ],
+    [
+     "frame index-D6EMZNfR.js:54",
+     135.9
+    ],
+    [
+     "(garbage collector) :0",
+     135.7
+    ],
+    [
+     "warm index-D6EMZNfR.js:54",
+     135.6
+    ],
+    [
+     "t index-D6EMZNfR.js:54",
+     135.6
+    ],
+    [
+     "drawMain index-D6EMZNfR.js:54",
+     134.9
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "switch-artboard",
+   "busyMs": 408.4,
+   "runs": [
+    408.4,
+    341,
+    444.1
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 68.07,
+   "topSelf": [
+    [
+     "(program) :0",
+     212
+    ],
+    [
+     "setTransform :0",
+     69.3
+    ],
+    [
+     "(garbage collector) :0",
+     24.2
+    ],
+    [
+     "removeChild :0",
+     10.8
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     212
+    ],
+    [
+     "build index-D6EMZNfR.js:54",
+     70.3
+    ],
+    [
+     "setTransform :0",
+     69.3
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     64
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     52.3
+    ],
+    [
+     "t index-D6EMZNfR.js:54",
+     50.9
+    ],
+    [
+     "warm index-D6EMZNfR.js:54",
+     50.8
+    ],
+    [
+     "Mf index-D6EMZNfR.js:10",
+     50
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "export-dialog",
+   "busyMs": 41.1,
+   "runs": [
+    46.2,
+    41.1,
+    39.7
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 41.12,
+   "topSelf": [
+    [
+     "(program) :0",
+     35.5
+    ],
+    [
+     "focus :0",
+     1.7
+    ],
+    [
+     "o carries-DwCFTWDy.js:1",
+     1.7
+    ],
+    [
+     "(anon) ExportDialog-C4yerweP.js:1",
+     1.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     35.5
+    ],
+    [
+     "D index-D6EMZNfR.js:3",
+     5.4
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     4.1
+    ],
+    [
+     "Pf index-D6EMZNfR.js:10",
+     4.1
+    ],
+    [
+     "nf index-D6EMZNfR.js:10",
+     4
+    ],
+    [
+     "$d index-D6EMZNfR.js:10",
+     4
+    ],
+    [
+     "Qd index-D6EMZNfR.js:10",
+     4
+    ],
+    [
+     "$o index-D6EMZNfR.js:10",
+     3.4
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "save-file",
+   "busyMs": 213.9,
+   "runs": [
+    212.4,
+    213.9,
+    229.2
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 213.93,
+   "topSelf": [
+    [
+     "encode :0",
+     94.2
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:61",
+     61.4
+    ],
+    [
+     "s$ index-D6EMZNfR.js:61",
+     34.7
+    ],
+    [
+     "(garbage collector) :0",
+     21.7
+    ]
+   ],
+   "topIncl": [
+    [
+     "u$ index-D6EMZNfR.js:61",
+     193.5
+    ],
+    [
+     "(anon) :0",
+     193.5
+    ],
+    [
+     "saveBytesAsync debug-B-gsfp0A.js:3",
+     193.4
+    ],
+    [
+     "c$ index-D6EMZNfR.js:61",
+     192.6
+    ],
+    [
+     "s$ index-D6EMZNfR.js:61",
+     190.3
+    ],
+    [
+     "encode :0",
+     94.2
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:61",
+     62
+    ],
+    [
+     "(garbage collector) :0",
+     21.7
+    ]
+   ],
+   "rendering": [],
+   "note": "7.1 MB file"
+  },
+  {
+   "doc": "stress-vector",
+   "action": "open-file",
+   "busyMs": 414.2,
+   "runs": [
+    413.8,
+    414.2,
+    447.7
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 414.16,
+   "topSelf": [
+    [
+     "qa index-D6EMZNfR.js:3",
+     126.1
+    ],
+    [
+     "S$ index-D6EMZNfR.js:61",
+     108.2
+    ],
+    [
+     "Ha index-D6EMZNfR.js:3",
+     50.6
+    ],
+    [
+     "(garbage collector) :0",
+     37.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "b$ index-D6EMZNfR.js:61",
+     335.3
+    ],
+    [
+     "openBytesAsync debug-B-gsfp0A.js:3",
+     187.3
+    ],
+    [
+     "Eo index-D6EMZNfR.js:3",
+     186.7
+    ],
+    [
+     "Uo index-D6EMZNfR.js:3",
+     186.7
+    ],
+    [
+     "x$ index-D6EMZNfR.js:61",
+     186.7
+    ],
+    [
+     "(anon) :1",
+     186.7
+    ],
+    [
+     "(anon) :0",
+     186.7
+    ],
+    [
+     "qa index-D6EMZNfR.js:3",
+     186.1
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "autosave",
+   "busyMs": 37.3,
+   "runs": [
+    34.4,
+    37.3,
+    49
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 37.31,
+   "topSelf": [
+    [
+     "s$ index-D6EMZNfR.js:61",
+     21.4
+    ],
+    [
+     "H$ index-D6EMZNfR.js:61",
+     7.1
+    ],
+    [
+     "call preload.cjs:5",
+     4.5
+    ],
+    [
+     "c$ index-D6EMZNfR.js:61",
+     2
+    ]
+   ],
+   "topIncl": [
+    [
+     "H$ index-D6EMZNfR.js:61",
+     38.6
+    ],
+    [
+     "(anon) :0",
+     31.6
+    ],
+    [
+     "u$ index-D6EMZNfR.js:61",
+     26.7
+    ],
+    [
+     "s$ index-D6EMZNfR.js:61",
+     23.4
+    ],
+    [
+     "c$ index-D6EMZNfR.js:61",
+     16
+    ],
+    [
+     "call preload.cjs:5",
+     4.6
+    ],
+    [
+     "write preload.cjs:64",
+     4.6
+    ],
+    [
+     "encode :0",
+     1.7
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "stress-vector",
+   "action": "workspaces",
+   "busyMs": 710,
+   "runs": [
+    710,
+    603.6,
+    721.9
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 118.33,
+   "topSelf": [
+    [
+     "(program) :0",
+     356.7
+    ],
+    [
+     "setTransform :0",
+     105.6
+    ],
+    [
+     "(garbage collector) :0",
+     73
+    ],
+    [
+     "drawImage :0",
+     30.5
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     356.7
+    ],
+    [
+     "frame index-D6EMZNfR.js:54",
+     128.5
+    ],
+    [
+     "paint index-D6EMZNfR.js:54",
+     125.1
+    ],
+    [
+     "drawMain index-D6EMZNfR.js:54",
+     123.6
+    ],
+    [
+     "Jg index-D6EMZNfR.js:54",
+     121.2
+    ],
+    [
+     "Kg index-D6EMZNfR.js:54",
+     121.2
+    ],
+    [
+     "Ug index-D6EMZNfR.js:54",
+     121.2
+    ],
+    [
+     "Hg index-D6EMZNfR.js:54",
+     121.2
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "pixel-stroke",
+   "busyMs": 61.9,
+   "runs": [
+    61.9,
+    53.2,
+    79.8
+   ],
+   "unit": "moves",
+   "units": 60,
+   "perUnitMs": 1.03,
+   "topSelf": [
+    [
+     "(program) :0",
+     44
+    ],
+    [
+     "drawImage :0",
+     5
+    ],
+    [
+     "putImageData :0",
+     1.6
+    ],
+    [
+     "crop index-D6EMZNfR.js:57",
+     1.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     44
+    ],
+    [
+     "onPointerMove index-D6EMZNfR.js:54",
+     8.6
+    ],
+    [
+     "move index-D6EMZNfR.js:57",
+     7.6
+    ],
+    [
+     "moveTo index-D6EMZNfR.js:57",
+     7.4
+    ],
+    [
+     "frame index-D6EMZNfR.js:54",
+     6.3
+    ],
+    [
+     "flush index-D6EMZNfR.js:57",
+     5.7
+    ],
+    [
+     "drawImage :0",
+     5
+    ],
+    [
+     "drawMain index-D6EMZNfR.js:54",
+     4.7
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "scrub",
+   "busyMs": 218.3,
+   "runs": [
+    218.3,
+    251,
+    169.9
+   ],
+   "unit": "moves",
+   "units": 80,
+   "perUnitMs": 2.73,
+   "topSelf": [
+    [
+     "(program) :0",
+     145.6
+    ],
+    [
+     "(garbage collector) :0",
+     11.1
+    ],
+    [
+     "Vu index-D6EMZNfR.js:17",
+     2.5
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:61",
+     2.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     145.6
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     45.5
+    ],
+    [
+     "Mf index-D6EMZNfR.js:10",
+     24.3
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     24.2
+    ],
+    [
+     "Ff index-D6EMZNfR.js:10",
+     24.2
+    ],
+    [
+     "Af index-D6EMZNfR.js:10",
+     24.2
+    ],
+    [
+     "wh index-D6EMZNfR.js:11",
+     22.4
+    ],
+    [
+     "Ch index-D6EMZNfR.js:11",
+     22.2
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "play",
+   "busyMs": 71.2,
+   "runs": [
+    68.8,
+    71.2,
+    165.1
+   ],
+   "unit": "seconds",
+   "units": 1.5,
+   "perUnitMs": 47.48,
+   "topSelf": [
+    [
+     "(program) :0",
+     59.1
+    ],
+    [
+     "(garbage collector) :0",
+     24.3
+    ],
+    [
+     "cb index-D6EMZNfR.js:54",
+     1
+    ],
+    [
+     "i index-D6EMZNfR.js:61",
+     0.9
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     59.1
+    ],
+    [
+     "(garbage collector) :0",
+     24.3
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     9.8
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     8.4
+    ],
+    [
+     "Ff index-D6EMZNfR.js:10",
+     8.4
+    ],
+    [
+     "Af index-D6EMZNfR.js:10",
+     8.4
+    ],
+    [
+     "Mf index-D6EMZNfR.js:10",
+     8.4
+    ],
+    [
+     "AM index-D6EMZNfR.js:54",
+     6.3
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "add-layer",
+   "busyMs": 18.9,
+   "runs": [
+    32.9,
+    18.9,
+    17.1
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 6.31,
+   "topSelf": [
+    [
+     "(program) :0",
+     12.6
+    ],
+    [
+     "Uj index-D6EMZNfR.js:54",
+     3
+    ],
+    [
+     "vie index-D6EMZNfR.js:54",
+     1.2
+    ],
+    [
+     "(garbage collector) :0",
+     0.8
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     12.6
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:54",
+     4.8
+    ],
+    [
+     "Uj index-D6EMZNfR.js:54",
+     4.2
+    ],
+    [
+     "Gj index-D6EMZNfR.js:54",
+     4.2
+    ],
+    [
+     "Tie index-D6EMZNfR.js:54",
+     4.2
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     3.8
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     3.4
+    ],
+    [
+     "Mf index-D6EMZNfR.js:10",
+     3.2
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "delete-layer",
+   "busyMs": 24.5,
+   "runs": [
+    24.5,
+    30.2,
+    19.5
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 8.18,
+   "topSelf": [
+    [
+     "(program) :0",
+     16.4
+    ],
+    [
+     "(garbage collector) :0",
+     1.3
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:61",
+     0.9
+    ],
+    [
+     "removeChild :0",
+     0.4
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     16.4
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     5.1
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     5
+    ],
+    [
+     "Mf index-D6EMZNfR.js:10",
+     4.8
+    ],
+    [
+     "Ff index-D6EMZNfR.js:10",
+     4.7
+    ],
+    [
+     "Af index-D6EMZNfR.js:10",
+     4.7
+    ],
+    [
+     "nf index-D6EMZNfR.js:10",
+     3.2
+    ],
+    [
+     "$d index-D6EMZNfR.js:10",
+     3.2
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "add-key",
+   "busyMs": 31.2,
+   "runs": [
+    65.2,
+    31.2,
+    31.2
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 10.41,
+   "topSelf": [
+    [
+     "(program) :0",
+     11.8
+    ],
+    [
+     "(garbage collector) :0",
+     10.9
+    ],
+    [
+     "rU index-D6EMZNfR.js:57",
+     3.7
+    ],
+    [
+     "putImageData :0",
+     3.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     11.8
+    ],
+    [
+     "(garbage collector) :0",
+     10.9
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     7.2
+    ],
+    [
+     "frame index-D6EMZNfR.js:54",
+     7.1
+    ],
+    [
+     "drawMain index-D6EMZNfR.js:54",
+     6.8
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     6.7
+    ],
+    [
+     "Ff index-D6EMZNfR.js:10",
+     6.7
+    ],
+    [
+     "Af index-D6EMZNfR.js:10",
+     6.7
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "delete-key",
+   "busyMs": 32.8,
+   "runs": [
+    30.4,
+    33.6,
+    32.8
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 10.94,
+   "topSelf": [
+    [
+     "(program) :0",
+     21.2
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:61",
+     1.3
+    ],
+    [
+     "t index-D6EMZNfR.js:10",
+     1.1
+    ],
+    [
+     "h index-D6EMZNfR.js:10",
+     1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     21.2
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     7.5
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     5
+    ],
+    [
+     "Ff index-D6EMZNfR.js:10",
+     5
+    ],
+    [
+     "Af index-D6EMZNfR.js:10",
+     5
+    ],
+    [
+     "Mf index-D6EMZNfR.js:10",
+     5
+    ],
+    [
+     "(anon) :0",
+     3.3
+    ],
+    [
+     "Qd index-D6EMZNfR.js:10",
+     3.2
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "undo-redo",
+   "busyMs": 41.9,
+   "runs": [
+    45.3,
+    41,
+    41.9
+   ],
+   "unit": "steps",
+   "units": 12,
+   "perUnitMs": 3.5,
+   "topSelf": [
+    [
+     "(program) :0",
+     30.4
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:61",
+     0.8
+    ],
+    [
+     "Mu index-D6EMZNfR.js:10",
+     0.8
+    ],
+    [
+     "Pl index-D6EMZNfR.js:10",
+     0.7
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     30.4
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     8.6
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     7.5
+    ],
+    [
+     "Ff index-D6EMZNfR.js:10",
+     7.5
+    ],
+    [
+     "Af index-D6EMZNfR.js:10",
+     7.5
+    ],
+    [
+     "Mf index-D6EMZNfR.js:10",
+     7.5
+    ],
+    [
+     "Qd index-D6EMZNfR.js:10",
+     4
+    ],
+    [
+     "nf index-D6EMZNfR.js:10",
+     3.9
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "switch-artboard",
+   "busyMs": 54.8,
+   "runs": [
+    40.7,
+    54.8,
+    80.5
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 9.13,
+   "topSelf": [
+    [
+     "(program) :0",
+     32.6
+    ],
+    [
+     "(garbage collector) :0",
+     11.7
+    ],
+    [
+     "drawImage :0",
+     1.6
+    ],
+    [
+     "fillRect :0",
+     0.8
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     32.6
+    ],
+    [
+     "(garbage collector) :0",
+     11.7
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     7.9
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     7.7
+    ],
+    [
+     "Ff index-D6EMZNfR.js:10",
+     7.3
+    ],
+    [
+     "Af index-D6EMZNfR.js:10",
+     7.3
+    ],
+    [
+     "Mf index-D6EMZNfR.js:10",
+     7.3
+    ],
+    [
+     "Qd index-D6EMZNfR.js:10",
+     4.5
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "export-dialog",
+   "busyMs": 9.5,
+   "runs": [
+    8.5,
+    10.9,
+    9.5
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 9.46,
+   "topSelf": [
+    [
+     "(program) :0",
+     7.3
+    ],
+    [
+     "focus :0",
+     0.6
+    ],
+    [
+     "querySelector :0",
+     0.2
+    ],
+    [
+     "removeChild :0",
+     0.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     7.3
+    ],
+    [
+     "D index-D6EMZNfR.js:3",
+     1.6
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     1.3
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     1.2
+    ],
+    [
+     "nf index-D6EMZNfR.js:10",
+     0.9
+    ],
+    [
+     "$d index-D6EMZNfR.js:10",
+     0.9
+    ],
+    [
+     "Qd index-D6EMZNfR.js:10",
+     0.9
+    ],
+    [
+     "Pf index-D6EMZNfR.js:10",
+     0.9
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "save-file",
+   "busyMs": 3.1,
+   "runs": [
+    3.1,
+    3.1,
+    2.9
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 3.06,
+   "topSelf": [
+    [
+     "pump index-D6EMZNfR.js:61",
+     1.2
+    ],
+    [
+     "ww index-D6EMZNfR.js:54",
+     0.8
+    ],
+    [
+     "(program) :0",
+     0.5
+    ],
+    [
+     "u$ index-D6EMZNfR.js:61",
+     0.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "u$ index-D6EMZNfR.js:61",
+     2.5
+    ],
+    [
+     "saveBytesAsync debug-B-gsfp0A.js:3",
+     2.5
+    ],
+    [
+     "(anon) :0",
+     2.5
+    ],
+    [
+     "pump index-D6EMZNfR.js:61",
+     1.3
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:61",
+     1.3
+    ],
+    [
+     "run index-D6EMZNfR.js:61",
+     1.3
+    ],
+    [
+     "PZ index-D6EMZNfR.js:61",
+     1.3
+    ],
+    [
+     "c$ index-D6EMZNfR.js:61",
+     1
+    ]
+   ],
+   "rendering": [],
+   "note": "1.0 MB file"
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "open-file",
+   "busyMs": 76.5,
+   "runs": [
+    76.5,
+    49.4,
+    93.4
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 76.45,
+   "topSelf": [
+    [
+     "(garbage collector) :0",
+     49.6
+    ],
+    [
+     "(program) :0",
+     13.3
+    ],
+    [
+     "postMessage :0",
+     1.2
+    ],
+    [
+     "p_ index-D6EMZNfR.js:54",
+     1.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(garbage collector) :0",
+     49.6
+    ],
+    [
+     "(program) :0",
+     13.3
+    ],
+    [
+     "b$ index-D6EMZNfR.js:61",
+     3.2
+    ],
+    [
+     "openBytesAsync debug-B-gsfp0A.js:3",
+     2.3
+    ],
+    [
+     "e.onmessage index-D6EMZNfR.js:61",
+     2.3
+    ],
+    [
+     "paintDirect index-D6EMZNfR.js:54",
+     2.2
+    ],
+    [
+     "paintStage index-D6EMZNfR.js:54",
+     2.2
+    ],
+    [
+     "paint index-D6EMZNfR.js:54",
+     2.2
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "autosave",
+   "busyMs": 5.5,
+   "runs": [
+    5.3,
+    5.5,
+    6.9
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 5.55,
+   "topSelf": [
+    [
+     "call preload.cjs:5",
+     1.2
+    ],
+    [
+     "pump index-D6EMZNfR.js:61",
+     1.2
+    ],
+    [
+     "H$ index-D6EMZNfR.js:61",
+     1
+    ],
+    [
+     "ww index-D6EMZNfR.js:54",
+     0.9
+    ]
+   ],
+   "topIncl": [
+    [
+     "H$ index-D6EMZNfR.js:61",
+     5.2
+    ],
+    [
+     "(anon) :0",
+     4.2
+    ],
+    [
+     "u$ index-D6EMZNfR.js:61",
+     2.7
+    ],
+    [
+     "call preload.cjs:5",
+     1.3
+    ],
+    [
+     "write preload.cjs:64",
+     1.3
+    ],
+    [
+     "c$ index-D6EMZNfR.js:61",
+     1.3
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:61",
+     1.3
+    ],
+    [
+     "pump index-D6EMZNfR.js:61",
+     1.2
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "stress-pixel",
+   "action": "workspaces",
+   "busyMs": 223.6,
+   "runs": [
+    223.6,
+    186,
+    232.7
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 37.27,
+   "topSelf": [
+    [
+     "(program) :0",
+     88.7
+    ],
+    [
+     "scale :0",
+     37.5
+    ],
+    [
+     "(garbage collector) :0",
+     23.2
+    ],
+    [
+     "setTransform :0",
+     13.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     88.7
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     49.9
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     47.6
+    ],
+    [
+     "Mf index-D6EMZNfR.js:10",
+     46.4
+    ],
+    [
+     "Ff index-D6EMZNfR.js:10",
+     45.9
+    ],
+    [
+     "Af index-D6EMZNfR.js:10",
+     45.9
+    ],
+    [
+     "J PreviewPanel-7NTIGxPx.js:1",
+     41.1
+    ],
+    [
+     "we PreviewPanel-7NTIGxPx.js:1",
+     37.8
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "variations",
+   "action": "brush-stroke",
+   "busyMs": 21.2,
+   "runs": [
+    19.4,
+    21.6,
+    21.2
+   ],
+   "unit": "moves",
+   "units": 60,
+   "perUnitMs": 0.35,
+   "topSelf": [
+    [
+     "(program) :0",
+     12.6
+    ],
+    [
+     "drawImage :0",
+     0.5
+    ],
+    [
+     "requestAnimationFrame :0",
+     0.4
+    ],
+    [
+     "k1 index-D6EMZNfR.js:61",
+     0.4
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     12.6
+    ],
+    [
+     "frame index-D6EMZNfR.js:54",
+     4.6
+    ],
+    [
+     "drawOverlay index-D6EMZNfR.js:54",
+     3.8
+    ],
+    [
+     "t.overlay index-D6EMZNfR.js:61",
+     2.2
+    ],
+    [
+     "overlay index-D6EMZNfR.js:57",
+     2.1
+    ],
+    [
+     "hG index-D6EMZNfR.js:57",
+     2.1
+    ],
+    [
+     "d_ index-D6EMZNfR.js:54",
+     1.7
+    ],
+    [
+     "onPointerMove index-D6EMZNfR.js:54",
+     1.5
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "variations",
+   "action": "scrub",
+   "busyMs": 109.1,
+   "runs": [
+    109.1,
+    99.6,
+    131.2
+   ],
+   "unit": "moves",
+   "units": 80,
+   "perUnitMs": 1.36,
+   "topSelf": [
+    [
+     "(program) :0",
+     72.6
+    ],
+    [
+     "drawImage :0",
+     4.9
+    ],
+    [
+     "Vu index-D6EMZNfR.js:17",
+     2.8
+    ],
+    [
+     "setTransform :0",
+     2.8
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     72.6
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     26
+    ],
+    [
+     "wh index-D6EMZNfR.js:11",
+     20.7
+    ],
+    [
+     "Ch index-D6EMZNfR.js:11",
+     20.4
+    ],
+    [
+     "Xf index-D6EMZNfR.js:10",
+     20.1
+    ],
+    [
+     "On index-D6EMZNfR.js:10",
+     20
+    ],
+    [
+     "Wf index-D6EMZNfR.js:10",
+     16.7
+    ],
+    [
+     "pe index-D6EMZNfR.js:61",
+     16.3
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "variations",
+   "action": "play",
+   "busyMs": 76,
+   "runs": [
+    130.1,
+    76,
+    63.9
+   ],
+   "unit": "seconds",
+   "units": 1.5,
+   "perUnitMs": 50.69,
+   "topSelf": [
+    [
+     "(program) :0",
+     58.3
+    ],
+    [
+     "(garbage collector) :0",
+     15.3
+    ],
+    [
+     "cb index-D6EMZNfR.js:54",
+     1.1
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:61",
+     1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     58.3
+    ],
+    [
+     "(garbage collector) :0",
+     15.3
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     7.1
+    ],
+    [
+     "AM index-D6EMZNfR.js:54",
+     5.9
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     5.4
+    ],
+    [
+     "Ff index-D6EMZNfR.js:10",
+     5.4
+    ],
+    [
+     "Af index-D6EMZNfR.js:10",
+     5.4
+    ],
+    [
+     "Mf index-D6EMZNfR.js:10",
+     5.4
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "variations",
+   "action": "select-click",
+   "busyMs": 40.2,
+   "runs": [
+    40.2,
+    37.4,
+    41.3
+   ],
+   "unit": "clicks",
+   "units": 4,
+   "perUnitMs": 10.06,
+   "topSelf": [
+    [
+     "(program) :0",
+     28.4
+    ],
+    [
+     "removeChild :0",
+     0.8
+    ],
+    [
+     "(garbage collector) :0",
+     0.7
+    ],
+    [
+     "setAttribute :0",
+     0.5
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     28.4
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     7.6
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     6.7
+    ],
+    [
+     "Ff index-D6EMZNfR.js:10",
+     6.7
+    ],
+    [
+     "Af index-D6EMZNfR.js:10",
+     6.7
+    ],
+    [
+     "Mf index-D6EMZNfR.js:10",
+     6.7
+    ],
+    [
+     "nf index-D6EMZNfR.js:10",
+     4.3
+    ],
+    [
+     "$d index-D6EMZNfR.js:10",
+     4.3
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "variations",
+   "action": "select-move",
+   "busyMs": 37,
+   "runs": [
+    37,
+    35.7,
+    40
+   ],
+   "unit": "moves",
+   "units": 30,
+   "perUnitMs": 1.23,
+   "topSelf": [
+    [
+     "(program) :0",
+     26.3
+    ],
+    [
+     "setTransform :0",
+     0.8
+    ],
+    [
+     "(garbage collector) :0",
+     0.7
+    ],
+    [
+     "drawOverlay index-D6EMZNfR.js:54",
+     0.4
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     26.3
+    ],
+    [
+     "frame index-D6EMZNfR.js:54",
+     4.3
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     3.2
+    ],
+    [
+     "drawMain index-D6EMZNfR.js:54",
+     3.1
+    ],
+    [
+     "Mf index-D6EMZNfR.js:10",
+     2.8
+    ],
+    [
+     "paint index-D6EMZNfR.js:54",
+     2.8
+    ],
+    [
+     "Ff index-D6EMZNfR.js:10",
+     2.7
+    ],
+    [
+     "Af index-D6EMZNfR.js:10",
+     2.7
+    ]
+   ],
+   "rendering": [],
+   "note": "selected 1"
+  },
+  {
+   "doc": "variations",
+   "action": "add-layer",
+   "busyMs": 16.3,
+   "runs": [
+    15.4,
+    17,
+    16.3
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 5.44,
+   "topSelf": [
+    [
+     "(program) :0",
+     10.5
+    ],
+    [
+     "drawImage :0",
+     0.8
+    ],
+    [
+     "ap index-D6EMZNfR.js:11",
+     0.2
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:61",
+     0.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     10.5
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     2.3
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     2.2
+    ],
+    [
+     "Ff index-D6EMZNfR.js:10",
+     2
+    ],
+    [
+     "Af index-D6EMZNfR.js:10",
+     2
+    ],
+    [
+     "Mf index-D6EMZNfR.js:10",
+     2
+    ],
+    [
+     "nf index-D6EMZNfR.js:10",
+     1.7
+    ],
+    [
+     "$d index-D6EMZNfR.js:10",
+     1.7
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "variations",
+   "action": "delete-layer",
+   "busyMs": 18.1,
+   "runs": [
+    18.1,
+    21.7,
+    16.6
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 6.04,
+   "topSelf": [
+    [
+     "(program) :0",
+     11.3
+    ],
+    [
+     "drawImage :0",
+     0.8
+    ],
+    [
+     "i$ index-D6EMZNfR.js:61",
+     0.7
+    ],
+    [
+     "lp index-D6EMZNfR.js:11",
+     0.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     11.3
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     3.1
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     3
+    ],
+    [
+     "Ff index-D6EMZNfR.js:10",
+     2.7
+    ],
+    [
+     "Af index-D6EMZNfR.js:10",
+     2.7
+    ],
+    [
+     "Mf index-D6EMZNfR.js:10",
+     2.7
+    ],
+    [
+     "nf index-D6EMZNfR.js:10",
+     2
+    ],
+    [
+     "$d index-D6EMZNfR.js:10",
+     2
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "variations",
+   "action": "add-key",
+   "busyMs": 19.9,
+   "runs": [
+    19.7,
+    19.9,
+    21.5
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 6.63,
+   "topSelf": [
+    [
+     "(program) :0",
+     10.1
+    ],
+    [
+     "drawImage :0",
+     2.8
+    ],
+    [
+     "setTransform :0",
+     1.7
+    ],
+    [
+     "dT index-D6EMZNfR.js:54",
+     0.4
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     10.1
+    ],
+    [
+     "frame index-D6EMZNfR.js:54",
+     4.6
+    ],
+    [
+     "drawMain index-D6EMZNfR.js:54",
+     4.4
+    ],
+    [
+     "paintStage index-D6EMZNfR.js:54",
+     4.4
+    ],
+    [
+     "paint index-D6EMZNfR.js:54",
+     4.4
+    ],
+    [
+     "drawImage :0",
+     2.8
+    ],
+    [
+     "paintOnion index-D6EMZNfR.js:54",
+     2.5
+    ],
+    [
+     "yj index-D6EMZNfR.js:54",
+     2.3
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "variations",
+   "action": "delete-key",
+   "busyMs": 41.9,
+   "runs": [
+    41.9,
+    78.8,
+    32.3
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 13.95,
+   "topSelf": [
+    [
+     "(program) :0",
+     34.4
+    ],
+    [
+     "(garbage collector) :0",
+     4.3
+    ],
+    [
+     "drawImage :0",
+     1.7
+    ],
+    [
+     "setTransform :0",
+     0.8
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     34.4
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     4.4
+    ],
+    [
+     "(garbage collector) :0",
+     4.3
+    ],
+    [
+     "Mf index-D6EMZNfR.js:10",
+     3.3
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     3.2
+    ],
+    [
+     "Ff index-D6EMZNfR.js:10",
+     3.2
+    ],
+    [
+     "Af index-D6EMZNfR.js:10",
+     3.2
+    ],
+    [
+     "frame index-D6EMZNfR.js:54",
+     2.8
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "variations",
+   "action": "undo-redo",
+   "busyMs": 43.4,
+   "runs": [
+    46.1,
+    43.4,
+    41.5
+   ],
+   "unit": "steps",
+   "units": 12,
+   "perUnitMs": 3.62,
+   "topSelf": [
+    [
+     "(program) :0",
+     26.3
+    ],
+    [
+     "drawImage :0",
+     3.5
+    ],
+    [
+     "Pl index-D6EMZNfR.js:10",
+     0.7
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:61",
+     0.6
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     26.3
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     6.8
+    ],
+    [
+     "Mf index-D6EMZNfR.js:10",
+     6.2
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     6.1
+    ],
+    [
+     "Ff index-D6EMZNfR.js:10",
+     6.1
+    ],
+    [
+     "Af index-D6EMZNfR.js:10",
+     6.1
+    ],
+    [
+     "Cse index-D6EMZNfR.js:57",
+     5.5
+    ],
+    [
+     "r index-D6EMZNfR.js:57",
+     5.5
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "variations",
+   "action": "switch-artboard",
+   "busyMs": 45.3,
+   "runs": [
+    46,
+    45.3,
+    41.8
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 7.55,
+   "topSelf": [
+    [
+     "(program) :0",
+     24.9
+    ],
+    [
+     "removeChild :0",
+     1.5
+    ],
+    [
+     "drawImage :0",
+     1.2
+    ],
+    [
+     "getPropertyValue :0",
+     0.6
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     24.9
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     11.2
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     10.9
+    ],
+    [
+     "Mf index-D6EMZNfR.js:10",
+     10.4
+    ],
+    [
+     "Ff index-D6EMZNfR.js:10",
+     10.3
+    ],
+    [
+     "Af index-D6EMZNfR.js:10",
+     10.3
+    ],
+    [
+     "Qd index-D6EMZNfR.js:10",
+     6.8
+    ],
+    [
+     "nf index-D6EMZNfR.js:10",
+     6.7
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "variations",
+   "action": "export-dialog",
+   "busyMs": 9.2,
+   "runs": [
+    7.4,
+    10.2,
+    9.2
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 9.24,
+   "topSelf": [
+    [
+     "(program) :0",
+     5.9
+    ],
+    [
+     "focus :0",
+     1
+    ],
+    [
+     "removeChild :0",
+     0.2
+    ],
+    [
+     "Ne ExportDialog-C4yerweP.js:1",
+     0.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     5.9
+    ],
+    [
+     "D index-D6EMZNfR.js:3",
+     2.1
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     1.9
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     1.4
+    ],
+    [
+     "Pf index-D6EMZNfR.js:10",
+     1.1
+    ],
+    [
+     "_f index-D6EMZNfR.js:10",
+     1.1
+    ],
+    [
+     "Sl index-D6EMZNfR.js:10",
+     1
+    ],
+    [
+     "Uu index-D6EMZNfR.js:10",
+     1
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "variations",
+   "action": "save-file",
+   "busyMs": 1.1,
+   "runs": [
+    1.4,
+    1.1,
+    0.8
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 1.1,
+   "topSelf": [
+    [
+     "(program) :0",
+     0.6
+    ],
+    [
+     "encode :0",
+     0.3
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:61",
+     0.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     0.6
+    ],
+    [
+     "s$ index-D6EMZNfR.js:61",
+     0.5
+    ],
+    [
+     "c$ index-D6EMZNfR.js:61",
+     0.5
+    ],
+    [
+     "u$ index-D6EMZNfR.js:61",
+     0.5
+    ],
+    [
+     "saveBytesAsync debug-B-gsfp0A.js:3",
+     0.5
+    ],
+    [
+     "(anon) :0",
+     0.5
+    ],
+    [
+     "encode :0",
+     0.3
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:61",
+     0.3
+    ]
+   ],
+   "rendering": [],
+   "note": "0.0 MB file"
+  },
+  {
+   "doc": "variations",
+   "action": "open-file",
+   "busyMs": 3.9,
+   "runs": [
+    3.9,
+    7.2,
+    3.6
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 3.93,
+   "topSelf": [
+    [
+     "(program) :0",
+     1.7
+    ],
+    [
+     "drawImage :0",
+     0.5
+    ],
+    [
+     "S$ index-D6EMZNfR.js:61",
+     0.3
+    ],
+    [
+     "(garbage collector) :0",
+     0.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     1.7
+    ],
+    [
+     "b$ index-D6EMZNfR.js:61",
+     1
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     0.8
+    ],
+    [
+     "Ff index-D6EMZNfR.js:10",
+     0.7
+    ],
+    [
+     "Af index-D6EMZNfR.js:10",
+     0.7
+    ],
+    [
+     "Mf index-D6EMZNfR.js:10",
+     0.7
+    ],
+    [
+     "openBytesAsync debug-B-gsfp0A.js:3",
+     0.7
+    ],
+    [
+     "S$ index-D6EMZNfR.js:61",
+     0.6
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "variations",
+   "action": "autosave",
+   "busyMs": 0.8,
+   "runs": [
+    0.8,
+    1.1,
+    0.8
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 0.83,
+   "topSelf": [
+    [
+     "(program) :0",
+     0.7
+    ],
+    [
+     "PZ index-D6EMZNfR.js:61",
+     0.1
+    ],
+    [
+     "(anon) :0",
+     0.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     0.7
+    ],
+    [
+     "(anon) :0",
+     0.2
+    ],
+    [
+     "PZ index-D6EMZNfR.js:61",
+     0.1
+    ],
+    [
+     "u$ index-D6EMZNfR.js:61",
+     0.1
+    ],
+    [
+     "H$ index-D6EMZNfR.js:61",
+     0.1
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "variations",
+   "action": "workspaces",
+   "busyMs": 148.1,
+   "runs": [
+    148.1,
+    131,
+    176.7
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 24.69,
+   "topSelf": [
+    [
+     "(program) :0",
+     75.3
+    ],
+    [
+     "setTransform :0",
+     13.5
+    ],
+    [
+     "(garbage collector) :0",
+     8.6
+    ],
+    [
+     "scale :0",
+     5.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     75.3
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     32.9
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     31.2
+    ],
+    [
+     "Mf index-D6EMZNfR.js:10",
+     29.5
+    ],
+    [
+     "Ff index-D6EMZNfR.js:10",
+     29.1
+    ],
+    [
+     "Af index-D6EMZNfR.js:10",
+     29.1
+    ],
+    [
+     "lf index-D6EMZNfR.js:10",
+     19.6
+    ],
+    [
+     "cf index-D6EMZNfR.js:10",
+     19.6
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "brush-stroke",
+   "busyMs": 68.3,
+   "runs": [
+    47.6,
+    73.4,
+    68.3
+   ],
+   "unit": "moves",
+   "units": 60,
+   "perUnitMs": 1.14,
+   "topSelf": [
+    [
+     "(program) :0",
+     20.6
+    ],
+    [
+     "drawImage :0",
+     15.9
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:61",
+     4.4
+    ],
+    [
+     "fill :0",
+     3.9
+    ]
+   ],
+   "topIncl": [
+    [
+     "frame index-D6EMZNfR.js:54",
+     26.5
+    ],
+    [
+     "drawMain index-D6EMZNfR.js:54",
+     22.5
+    ],
+    [
+     "paintStage index-D6EMZNfR.js:54",
+     22.4
+    ],
+    [
+     "paint index-D6EMZNfR.js:54",
+     22.4
+    ],
+    [
+     "(program) :0",
+     20.6
+    ],
+    [
+     "drawImage :0",
+     15.9
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     11.3
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:61",
+     9.6
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "scrub",
+   "busyMs": 124.2,
+   "runs": [
+    250.5,
+    124.2,
+    105.6
+   ],
+   "unit": "moves",
+   "units": 80,
+   "perUnitMs": 1.55,
+   "topSelf": [
+    [
+     "(program) :0",
+     109.9
+    ],
+    [
+     "postMessage :0",
+     4.1
+    ],
+    [
+     "ly index-D6EMZNfR.js:54",
+     3.1
+    ],
+    [
+     "bs index-D6EMZNfR.js:10",
+     2.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     109.9
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     34.7
+    ],
+    [
+     "wh index-D6EMZNfR.js:11",
+     20.4
+    ],
+    [
+     "Ch index-D6EMZNfR.js:11",
+     20.1
+    ],
+    [
+     "On index-D6EMZNfR.js:10",
+     19.3
+    ],
+    [
+     "Xf index-D6EMZNfR.js:10",
+     19.3
+    ],
+    [
+     "Ff index-D6EMZNfR.js:10",
+     15.9
+    ],
+    [
+     "Af index-D6EMZNfR.js:10",
+     15.9
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "play",
+   "busyMs": 66.2,
+   "runs": [
+    66.2,
+    83.1,
+    61.4
+   ],
+   "unit": "seconds",
+   "units": 1.5,
+   "perUnitMs": 44.15,
+   "topSelf": [
+    [
+     "(program) :0",
+     51
+    ],
+    [
+     "ly index-D6EMZNfR.js:54",
+     4.2
+    ],
+    [
+     "cb index-D6EMZNfR.js:54",
+     1.1
+    ],
+    [
+     "i index-D6EMZNfR.js:61",
+     0.9
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     51
+    ],
+    [
+     "frame index-D6EMZNfR.js:54",
+     8.7
+    ],
+    [
+     "cy index-D6EMZNfR.js:54",
+     6.2
+    ],
+    [
+     "warmAhead index-D6EMZNfR.js:54",
+     6
+    ],
+    [
+     "ly index-D6EMZNfR.js:54",
+     5.5
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     5.2
+    ],
+    [
+     "warm index-D6EMZNfR.js:54",
+     5.1
+    ],
+    [
+     "AM index-D6EMZNfR.js:54",
+     4.6
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "select-click",
+   "busyMs": 42.9,
+   "runs": [
+    44,
+    42.1,
+    42.9
+   ],
+   "unit": "clicks",
+   "units": 4,
+   "perUnitMs": 10.71,
+   "topSelf": [
+    [
+     "(program) :0",
+     29.7
+    ],
+    [
+     "removeChild :0",
+     1.2
+    ],
+    [
+     "appendChild :0",
+     0.6
+    ],
+    [
+     "setAttribute :0",
+     0.5
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     29.7
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     9.3
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     8.6
+    ],
+    [
+     "Ff index-D6EMZNfR.js:10",
+     8.6
+    ],
+    [
+     "Af index-D6EMZNfR.js:10",
+     8.6
+    ],
+    [
+     "Mf index-D6EMZNfR.js:10",
+     8.6
+    ],
+    [
+     "nf index-D6EMZNfR.js:10",
+     5.5
+    ],
+    [
+     "$d index-D6EMZNfR.js:10",
+     5.5
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "select-move",
+   "busyMs": 268.2,
+   "runs": [
+    274,
+    268.2,
+    265.4
+   ],
+   "unit": "moves",
+   "units": 30,
+   "perUnitMs": 8.94,
+   "topSelf": [
+    [
+     "(program) :0",
+     224.2
+    ],
+    [
+     "drawImage :0",
+     9.1
+    ],
+    [
+     "d_ index-D6EMZNfR.js:54",
+     6.1
+    ],
+    [
+     "fill :0",
+     4.4
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     224.2
+    ],
+    [
+     "frame index-D6EMZNfR.js:54",
+     29.7
+    ],
+    [
+     "drawMain index-D6EMZNfR.js:54",
+     27.8
+    ],
+    [
+     "paintStage index-D6EMZNfR.js:54",
+     27.2
+    ],
+    [
+     "paint index-D6EMZNfR.js:54",
+     27.2
+    ],
+    [
+     "p_ index-D6EMZNfR.js:54",
+     16.4
+    ],
+    [
+     "m_ index-D6EMZNfR.js:54",
+     16.4
+    ],
+    [
+     "d_ index-D6EMZNfR.js:54",
+     16.3
+    ]
+   ],
+   "rendering": [],
+   "note": "selected 1"
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "add-layer",
+   "busyMs": 14.4,
+   "runs": [
+    14.1,
+    14.4,
+    14.5
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 4.81,
+   "topSelf": [
+    [
+     "(program) :0",
+     10.3
+    ],
+    [
+     "setAttribute :0",
+     0.3
+    ],
+    [
+     "ly index-D6EMZNfR.js:54",
+     0.2
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:3",
+     0.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     10.3
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     2.3
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     2.1
+    ],
+    [
+     "Ff index-D6EMZNfR.js:10",
+     1.8
+    ],
+    [
+     "Af index-D6EMZNfR.js:10",
+     1.8
+    ],
+    [
+     "Mf index-D6EMZNfR.js:10",
+     1.8
+    ],
+    [
+     "nf index-D6EMZNfR.js:10",
+     1.5
+    ],
+    [
+     "$d index-D6EMZNfR.js:10",
+     1.5
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "delete-layer",
+   "busyMs": 17.8,
+   "runs": [
+    17.8,
+    17.8,
+    20.7
+   ],
+   "unit": "layers",
+   "units": 3,
+   "perUnitMs": 5.94,
+   "topSelf": [
+    [
+     "(program) :0",
+     12.5
+    ],
+    [
+     "_i index-D6EMZNfR.js:3",
+     0.5
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:61",
+     0.4
+    ],
+    [
+     "n index-D6EMZNfR.js:3",
+     0.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     12.5
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     3.6
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     3.4
+    ],
+    [
+     "Ff index-D6EMZNfR.js:10",
+     3
+    ],
+    [
+     "Af index-D6EMZNfR.js:10",
+     3
+    ],
+    [
+     "Mf index-D6EMZNfR.js:10",
+     3
+    ],
+    [
+     "nf index-D6EMZNfR.js:10",
+     2.4
+    ],
+    [
+     "$d index-D6EMZNfR.js:10",
+     2.4
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "add-key",
+   "busyMs": 73.9,
+   "runs": [
+    73.9,
+    89.1,
+    70.2
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 24.63,
+   "topSelf": [
+    [
+     "drawImage :0",
+     28.8
+    ],
+    [
+     "(program) :0",
+     9.9
+    ],
+    [
+     "setTransform :0",
+     7.8
+    ],
+    [
+     "(garbage collector) :0",
+     5.4
+    ]
+   ],
+   "topIncl": [
+    [
+     "frame index-D6EMZNfR.js:54",
+     33.6
+    ],
+    [
+     "paint index-D6EMZNfR.js:54",
+     33
+    ],
+    [
+     "drawMain index-D6EMZNfR.js:54",
+     33
+    ],
+    [
+     "paintStage index-D6EMZNfR.js:54",
+     32.9
+    ],
+    [
+     "drawImage :0",
+     28.8
+    ],
+    [
+     "build index-D6EMZNfR.js:54",
+     15.8
+    ],
+    [
+     "t index-D6EMZNfR.js:54",
+     14.4
+    ],
+    [
+     "warm index-D6EMZNfR.js:54",
+     14.3
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "delete-key",
+   "busyMs": 108.1,
+   "runs": [
+    100.1,
+    133.2,
+    108.1
+   ],
+   "unit": "keys",
+   "units": 3,
+   "perUnitMs": 36.04,
+   "topSelf": [
+    [
+     "drawImage :0",
+     50.6
+    ],
+    [
+     "(program) :0",
+     19.1
+    ],
+    [
+     "setTransform :0",
+     8
+    ],
+    [
+     "(garbage collector) :0",
+     7.6
+    ]
+   ],
+   "topIncl": [
+    [
+     "frame index-D6EMZNfR.js:54",
+     55.6
+    ],
+    [
+     "drawMain index-D6EMZNfR.js:54",
+     55.3
+    ],
+    [
+     "paintStage index-D6EMZNfR.js:54",
+     55.2
+    ],
+    [
+     "paint index-D6EMZNfR.js:54",
+     55.2
+    ],
+    [
+     "drawImage :0",
+     50.6
+    ],
+    [
+     "(program) :0",
+     19.1
+    ],
+    [
+     "build index-D6EMZNfR.js:54",
+     16.8
+    ],
+    [
+     "warm index-D6EMZNfR.js:54",
+     15.5
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "undo-redo",
+   "busyMs": 68,
+   "runs": [
+    68,
+    68,
+    65.8
+   ],
+   "unit": "steps",
+   "units": 12,
+   "perUnitMs": 5.66,
+   "topSelf": [
+    [
+     "(program) :0",
+     24.5
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:61",
+     16.7
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:54",
+     6.1
+    ],
+    [
+     "Kv index-D6EMZNfR.js:54",
+     5.3
+    ]
+   ],
+   "topIncl": [
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     37.8
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     37.3
+    ],
+    [
+     "Ff index-D6EMZNfR.js:10",
+     37.3
+    ],
+    [
+     "Af index-D6EMZNfR.js:10",
+     37.3
+    ],
+    [
+     "Mf index-D6EMZNfR.js:10",
+     37.3
+    ],
+    [
+     "Qd index-D6EMZNfR.js:10",
+     35
+    ],
+    [
+     "nf index-D6EMZNfR.js:10",
+     34.9
+    ],
+    [
+     "$d index-D6EMZNfR.js:10",
+     34.9
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "switch-artboard",
+   "busyMs": 63,
+   "runs": [
+    64,
+    63,
+    62.8
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 10.5,
+   "topSelf": [
+    [
+     "drawImage :0",
+     29.6
+    ],
+    [
+     "(program) :0",
+     21
+    ],
+    [
+     "setAttribute :0",
+     0.8
+    ],
+    [
+     "n index-D6EMZNfR.js:61",
+     0.6
+    ]
+   ],
+   "topIncl": [
+    [
+     "r index-D6EMZNfR.js:57",
+     32.9
+    ],
+    [
+     "Cse index-D6EMZNfR.js:57",
+     32.6
+    ],
+    [
+     "drawImage :0",
+     29.6
+    ],
+    [
+     "(program) :0",
+     21
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     5.3
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     5.2
+    ],
+    [
+     "Ff index-D6EMZNfR.js:10",
+     4.8
+    ],
+    [
+     "Af index-D6EMZNfR.js:10",
+     4.8
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "export-dialog",
+   "busyMs": 10.3,
+   "runs": [
+    10.3,
+    8.5,
+    13.2
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 10.27,
+   "topSelf": [
+    [
+     "(program) :0",
+     6.6
+    ],
+    [
+     "focus :0",
+     1.6
+    ],
+    [
+     "o carries-DwCFTWDy.js:1",
+     0.7
+    ],
+    [
+     "addEventListener :0",
+     0.2
+    ]
+   ],
+   "topIncl": [
+    [
+     "(program) :0",
+     6.6
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:10",
+     2.6
+    ],
+    [
+     "D index-D6EMZNfR.js:3",
+     2.5
+    ],
+    [
+     "Bd index-D6EMZNfR.js:10",
+     1.7
+    ],
+    [
+     "focus :0",
+     1.7
+    ],
+    [
+     "_f index-D6EMZNfR.js:10",
+     1.4
+    ],
+    [
+     "Pf index-D6EMZNfR.js:10",
+     1.3
+    ],
+    [
+     "Sl index-D6EMZNfR.js:10",
+     1.2
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "save-file",
+   "busyMs": 30.9,
+   "runs": [
+    30.9,
+    53.3,
+    30.4
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 30.94,
+   "topSelf": [
+    [
+     "encode :0",
+     13.6
+    ],
+    [
+     "s$ index-D6EMZNfR.js:61",
+     8.3
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:61",
+     7.6
+    ],
+    [
+     "(garbage collector) :0",
+     5.9
+    ]
+   ],
+   "topIncl": [
+    [
+     "(anon) :0",
+     30.1
+    ],
+    [
+     "u$ index-D6EMZNfR.js:61",
+     29.9
+    ],
+    [
+     "saveBytesAsync debug-B-gsfp0A.js:3",
+     29.9
+    ],
+    [
+     "c$ index-D6EMZNfR.js:61",
+     29.9
+    ],
+    [
+     "s$ index-D6EMZNfR.js:61",
+     29.6
+    ],
+    [
+     "encode :0",
+     13.6
+    ],
+    [
+     "(anon) index-D6EMZNfR.js:61",
+     7.7
+    ],
+    [
+     "(garbage collector) :0",
+     5.9
+    ]
+   ],
+   "rendering": [],
+   "note": "0.6 MB file"
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "open-file",
+   "busyMs": 54.9,
+   "runs": [
+    71,
+    54.9,
+    52.3
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 54.92,
+   "topSelf": [
+    [
+     "S$ index-D6EMZNfR.js:61",
+     14
+    ],
+    [
+     "qa index-D6EMZNfR.js:3",
+     12.2
+    ],
+    [
+     "drawImage :0",
+     8.8
+    ],
+    [
+     "Ha index-D6EMZNfR.js:3",
+     4.4
+    ]
+   ],
+   "topIncl": [
+    [
+     "b$ index-D6EMZNfR.js:61",
+     40.3
+    ],
+    [
+     "S$ index-D6EMZNfR.js:61",
+     20.9
+    ],
+    [
+     "openBytesAsync debug-B-gsfp0A.js:3",
+     19.9
+    ],
+    [
+     "Uo index-D6EMZNfR.js:3",
+     19.4
+    ],
+    [
+     "x$ index-D6EMZNfR.js:61",
+     19.4
+    ],
+    [
+     "(anon) :1",
+     19.4
+    ],
+    [
+     "(anon) :0",
+     19.4
+    ],
+    [
+     "Eo index-D6EMZNfR.js:3",
+     19.4
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "autosave",
+   "busyMs": 5.6,
+   "runs": [
+    5.6,
+    5.2,
+    5.7
+   ],
+   "unit": "saves",
+   "units": 1,
+   "perUnitMs": 5.64,
+   "topSelf": [
+    [
+     "s$ index-D6EMZNfR.js:61",
+     3
+    ],
+    [
+     "H$ index-D6EMZNfR.js:61",
+     0.7
+    ],
+    [
+     "(program) :0",
+     0.5
+    ],
+    [
+     "c$ index-D6EMZNfR.js:61",
+     0.4
+    ]
+   ],
+   "topIncl": [
+    [
+     "H$ index-D6EMZNfR.js:61",
+     5
+    ],
+    [
+     "(anon) :0",
+     4.3
+    ],
+    [
+     "c$ index-D6EMZNfR.js:61",
+     3.9
+    ],
+    [
+     "u$ index-D6EMZNfR.js:61",
+     3.9
+    ],
+    [
+     "s$ index-D6EMZNfR.js:61",
+     3.4
+    ],
+    [
+     "(program) :0",
+     0.5
+    ],
+    [
+     "call preload.cjs:5",
+     0.4
+    ],
+    [
+     "write preload.cjs:64",
+     0.4
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  },
+  {
+   "doc": "stress-symbols",
+   "action": "workspaces",
+   "busyMs": 290.4,
+   "runs": [
+    290.4,
+    247.2,
+    291.5
+   ],
+   "unit": "switches",
+   "units": 6,
+   "perUnitMs": 48.4,
+   "topSelf": [
+    [
+     "drawImage :0",
+     122
+    ],
+    [
+     "(program) :0",
+     72.8
+    ],
+    [
+     "setTransform :0",
+     14
+    ],
+    [
+     "(garbage collector) :0",
+     12.5
+    ]
+   ],
+   "topIncl": [
+    [
+     "drawImage :0",
+     122
+    ],
+    [
+     "J PreviewPanel-7NTIGxPx.js:1",
+     87.9
+    ],
+    [
+     "(program) :0",
+     72.8
+    ],
+    [
+     "i PreviewPanel-7NTIGxPx.js:1",
+     63.8
+    ],
+    [
+     "frame index-D6EMZNfR.js:54",
+     62.3
+    ],
+    [
+     "drawMain index-D6EMZNfR.js:54",
+     58.4
+    ],
+    [
+     "paint index-D6EMZNfR.js:54",
+     58.2
+    ],
+    [
+     "paintStage index-D6EMZNfR.js:54",
+     54.1
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  }
+ ]
+}

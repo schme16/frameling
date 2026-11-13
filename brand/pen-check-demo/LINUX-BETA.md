@@ -23,10 +23,18 @@ The same words are in Frameling under Help, "Installing on Linux".
 
 ## What to expect
 
-- The eraser end may not tick off on X11: the system hands it to Frameling as a normal pen. Skip it and tell us.
-- The two barrel buttons may come in swapped on X11 (the button nearest the tip arriving as "the other button"). That is
-  what Frameling's Pen and tablet page is for: you can set what each button does.
+- **The eraser end.** On Wayland it should tick off like on any system. On X11 (and the Xwayland X11 that Frameling can run
+  under) the system hands the eraser end over as a normal pen touch, with no eraser button bit. Frameling now notices that
+  the flipped pen is a second device, so the step should still tick. If it does not (Quill waits a few seconds, then says so),
+  press **My pen's eraser end doesn't show up here**: it goes in the report and Quill moves on. You can still make a pen
+  button erase: Preferences, Pen and tablet, set a button to **Erase**.
+- **The two barrel buttons.** On Linux the button nearest the tip arrives as a "middle click" (`buttons` bit 4) and the other
+  as a "right click" (bit 2), the other way round to Windows. Frameling swaps them back, so "the button nearest the tip"
+  means that on every system, and the pad in Pen and tablet names the raw bit as you press. The pen check ticks either bit
+  for the first button, and wants the other bit for the second.
 - Express keys come in as keyboard keys. If the key step does not tick, press any key on the keyboard to confirm the step itself works.
+- The report (version 2) lists, for every step, which window system it came through, the raw button bits and masks, and how
+  the pointer and device numbers changed. If something is off, that is what tells us what arrived.
 
 ---
 
@@ -45,9 +53,43 @@ libfuse2), with the AppImage built by `npm run dist:linux`.
 | Zorin OS | This computer is Zorin OS 18.1: the package `zorin-os-default-settings` ships `/etc/sysctl.d/20-apparmor-zorin.conf` setting the restriction to 0. A Zorin 18 beta tester should never see the question. |
 | Wayland or X11 | Electron 45 (Chromium 156) picks Wayland by itself on a Wayland session (checked under weston: no switch needed, and `--ozone-platform-hint=auto` changes nothing). So no switch was added. `FRAMELING_OZONE=x11\|wayland\|auto` is in the launcher for forcing it, and verified: on a Wayland session it gives `x11`. |
 | The report | Now says which session it came from (`system.session`: `type`, `desktop`, `wayland`, `x11`, and `ozone`, the window system Chromium really used). |
-| Pen through X11 | Tested with a pretend Huion tablet (uinput, Xorg with libinput, Frameling's own pointer events): `pointerType: "pen"`, pressure from 0 to 0.88, tilt X from -49 to 64 and tilt Y, contact and barrel bits all arrived. **Not through**: the eraser end (it arrived as a normal pen touch, no eraser bit), and the first barrel button arrived as `buttons` bit 4 (middle) rather than bit 2. |
-| Pen through native Wayland | **Not tested.** The Chromium binary contains the Wayland tablet code (`wayland_tablet_manager.cc`, `zwp_tablet_v2`), but sway in the VM never mapped the window, so no tablet event was sent. This is the main thing the beta tester's two reports will answer. |
+| Pen through X11 | Tested with a pretend Huion tablet (uinput, Xorg with libinput, Frameling's own pointer events): `pointerType: "pen"`, pressure from 0 to 0.88, tilt X from -49 to 64 and tilt Y, contact and barrel bits all arrived. The eraser end arrives as a normal pen touch (`buttons` 1, no bit 32, no button 5, the same `pointerId`), but from a second device: `persistentDeviceId` is 2 for the tip and 3 for the eraser, and flips back and forth as the pen is flipped. The first barrel button arrives as bit 4 (middle click) and the second as bit 2 (right click). See "The pen on X11 and Wayland" below. |
+| Pen through native Wayland | Tested in the same VM with weston (drm backend, a pretend Huion read by its libinput) and Electron with `--ozone-platform=wayland`. The eraser end arrives properly (`button` 5, `buttons` 32, and a new `pointerId`). The barrel buttons are the same as on X11: first is bit 4, second is bit 2. `persistentDeviceId` is 0 (not given). GNOME's own compositor (Mutter) was **not** tested: it speaks the same tablet protocol, but that is an assumption. |
 | hid-uclogic vs Huion's driver | Not testable without the tablet. The kernel driver (`hid-uclogic`) is present on the Zorin 18.1 kernel here. Advice to try the kernel driver first and Huion's own driver second is from general knowledge, not tested. |
 
 Not done: a real Huion tablet, a real GNOME Wayland session, Zorin's own kernel and Mutter, and an AppArmor profile
 for a differently named AppImage file (the mount folder name starts with the AppImage's name; the profile uses `.mount_*`, which should match).
+
+## The pen on X11 and Wayland
+
+Measured with the pretend Huion (a uinput device with a tip, an eraser tool, `BTN_STYLUS` and `BTN_STYLUS2`) in an Ubuntu
+24.04.5 VM, Chromium 156 from Electron 45. Every event was read by the page, and the whole of Quill's pen check was run in the
+built app on each. `scripts/linux-pen/` has the pieces to do it again (see "A pretend tablet" in docs/testing.md).
+
+| What | X11 (Xorg, libinput driver) | Wayland (weston, native) |
+|---|---|---|
+| Tip | `pointerType` pen, `buttons` 1 | same |
+| Eraser end | `pointerType` pen, `buttons` 1, `button` 0. **No eraser bit.** `pointerId` the same as the tip's. `persistentDeviceId` differs (tip 2, eraser 3) | `button` 5, `buttons` 32. `pointerId` changes every time a tool comes into range |
+| Button nearest the tip (`BTN_STYLUS`) | `button` 1, `buttons` 4 | same |
+| Other button (`BTN_STYLUS2`) | `button` 2, `buttons` 2 | same |
+| `persistentDeviceId` | a number per X device (the tip and the eraser are two devices) | 0 |
+| Width and height | 1 and 1 | 1 and 1 |
+| Tilt | (-1, -1) at rest for a tilt of about -0.5 degrees: rounded | same |
+
+Why X11 looks like that: the X driver for libinput makes one X device per tool (a "Pen" and an "Eraser"), and Chromium on X11 does
+not turn the eraser device into the eraser bit. The page only sees it as a different `persistentDeviceId`. The barrels are the
+X convention (stylus button 1 is X button 2, a middle click, and stylus button 2 is button 3, a right click), and Chromium's
+Wayland code gives the same.
+
+What Frameling does with it (`src/tablet/buttons.ts`, `src/tablet/tool.ts`):
+
+- On Linux the two barrel bits are swapped back, so "button nearest the tip" and "other button" mean what they say.
+- On Linux, with no eraser bit ever seen, a pen touch from a different `persistentDeviceId` than the first touching device
+  (the tip) is the eraser end. Not used on Wayland (no ids; the bit works) or other systems.
+- The pen check ticks the eraser step by the bit or by that device change, and records which in `buttons.eraserBy`. If neither
+  shows, Quill offers "My pen's eraser end doesn't show up here" and the report has `reason: "no-eraser-end"` on that step.
+
+Still not verified: a real Huion (its eraser may or may not be a separate tool; many Huion pens have no eraser end at all),
+GNOME's Mutter (Wayland) and a GNOME X11 session, and a tablet unplugged and plugged back in while Frameling is open (the tip
+and eraser get new device numbers, and the first touch after that is taken as the tip, so the eraser end could be read as the tip
+until Frameling is restarted).

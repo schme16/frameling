@@ -778,6 +778,11 @@ theme (Midnight sketchbook for dark, Paper and honey for light), the welcome she
 person has it, so the pair differs only in colour. Pictures and posters are scaled to 800 px wide at most (`width` changes it) and saved as 256 colour PNGs (a third the size, no visible loss on UI),
 clips go through `encode.sh` (H.264, yuv420p, under 1 MB each). Run the script under xvfb like everything else: the npm
 script already does. `--renderer <dir>` uses a private `vite build --outDir`; `--out <dir>` writes elsewhere.
+Every entry starts with the first-time question "Workspace follows the drawing" answered Never (so it never covers pixel art);
+an entry can give other answers, or change that one, with `choices: { 'workspace.follow': 'always' }`. Steps can click by selector
+instead of by position with `{"clickOn": ".ui-menubar [role=menuitem]", "text": "Animate", "after": 900}` (`"hover": true` only moves
+there, `"dx"`, `"dy"` shift the point), which keeps a clip working when a menu or button moves. Each capture looks for a question
+left open or a loading state in the frame and prints `[LOOK: ...]` after the entry's `ok` line: look at those files.
 
 `test/ui/help-media.test.ts` fails when a topic's media has no entry (so it can't be shot again), when an entry is for no
 topic, or when a file is missing, unused or too big. To add help media for a new topic: write the entry, run
@@ -909,8 +914,27 @@ Zorin OS turns it off). A container shares the host's kernel, so it cannot show 
 installed, the AppImage copied in. Things worth running there: the AppImage with no `libfuse2`; the same with an AppArmor
 profile loaded (`sudo apparmor_parser -r`, see `--show-linux-fix`); with the sysctl at 0; under `weston --backend=headless`
 for Wayland. `window.frameling.session` (also in the pen report) says which window system Chromium used.
-`brand/pen-check-demo/LINUX-BETA.md` lists what was found. A pretend tablet (a `uinput` device read by Xorg's dummy driver
-and libinput) sends real pen events to Chromium on X11.
+`brand/pen-check-demo/LINUX-BETA.md` lists what was found. A pretend tablet sends real pen events to Chromium on X11 and
+on Wayland: see the next section.
+
+## A pretend tablet: scripts/linux-pen/
+
+A `uinput` pen tablet (`tablet.py`: a tip, an eraser tool, two barrel buttons, pressure and tilt, and the steady stream of
+reports a real one sends) read by libinput, in an Ubuntu 24.04 VM: Xorg with the dummy video driver and the libinput driver
+for X11, weston (drm backend, kiosk shell) for Wayland. Chromium sees real pen events from the system, not DevTools ones.
+It has to be a VM: on the host the new device's event node is `root:input` and the desktop user cannot open it (writing to
+`/dev/uinput` is allowed, reading the node is not), and the desktop's own X server would pick the pen up and move the cursor.
+`scripts/linux-pen/vm-up.sh <folder>` makes the VM (cloud image, KVM, ssh on port 2231, the folder shared into the VM as
+`/mnt/share`) and its header lists what to run in it:
+
+- `vmrun.sh` and `vmwl.sh` load a bare page that logs every pointer event, with a scenario file of tablet commands
+  (`scen1.txt` is a tip stroke, both barrel buttons and an eraser stroke); `show.py` prints the log.
+- `vmapp.sh x11|wayland` runs Quill's whole pen check in the built app (`dist/`) through `appcheck.cjs`, and
+  `report-summary.py` prints the saved report's steps.
+
+What it showed is in `brand/pen-check-demo/LINUX-BETA.md`, "The pen on X11 and Wayland". `scripts/e2e/pen.cjs` pins the
+same behaviour with synthetic events on every run (the Linux-only checks at the end); `ONLY=eraserByDevice,penCheckOnLinux`
+runs just those.
 
 ## The pen check on video: scripts/docs/pen-check-demo.cjs
 

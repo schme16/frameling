@@ -281,6 +281,7 @@ const flow = (name, fn) => (flows[name] = fn);
 module.exports = { flow, check, sleep, makeWindow, errors, tmp };
 process.on('uncaughtException', (e) => { console.error(e); app.exit(1); });
 require('./web-flows.cjs');
+require('./web-flows-safari-apis.cjs');
 
 app.commandLine.appendSwitch('ignore-gpu-blocklist');
 app.setPath('userData', path.join(tmp, 'user'));
@@ -308,6 +309,11 @@ app.whenReady().then(async () => {
   }
   await unlisten();
   console.log(failures.length ? `\n${failures.length} FAILED:\n  ${failures.join('\n  ')}` : '\nAll web checks passed.');
-  fs.rmSync(tmp, { recursive: true, force: true });
+  // The browser may still be writing into its folder as it closes: retry, and never let tidying up fail the run.
+  try {
+    fs.rmSync(tmp, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+  } catch (e) {
+    console.log(`(could not remove ${tmp}: ${e.code})`);
+  }
   app.exit(failures.length ? 1 : 0);
 });

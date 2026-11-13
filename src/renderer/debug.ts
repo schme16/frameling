@@ -10,6 +10,7 @@ import '../features/debug';
 import '../artboards/debug';
 import '../pixel/debug';
 import { store } from '../core/store';
+import { guard as saveGuard } from '../io/file';
 import { findTemplate } from '../templates';
 import * as tiles from '../tiles/debug';
 import { allCommands, allHelp, allPanels, allTools, getCommand } from '../core/registry';
@@ -21,6 +22,7 @@ import { setWeightsLook } from '../rig/weightsTool';
 import { setShowQuill } from '../ui/mascot/goodbye';
 import { closeSheet, openHelp, openPrefs, overlays } from '../ui/overlays';
 import { getPen, resetPen, setPenDevice, setToolPen, setTouch } from '../tablet/settings';
+import { penTools } from '../tablet/tool';
 import { showPanel } from '../ui/dock';
 import * as dockApi from '../ui/dock';
 import * as dockFloats from '../ui/DockFloats';
@@ -34,6 +36,9 @@ import { setLightTableTint } from '../canvas/lightTable';
 import { offerTweenAt } from '../timeline/tweenOffer';
 
 if (new URLSearchParams(location.search).has('debug')) {
+  // Saving keeps each vector drawing's text; in the harnesses such a drawing is frozen so a write in place throws.
+  // Perf runs add &nofreeze to measure the normal path.
+  saveGuard.freeze = !new URLSearchParams(location.search).has('nofreeze');
   (window as unknown as { __frameling: unknown }).__frameling = {
     store,
     run: (id: string) => getCommand(id)?.run(),
@@ -82,7 +87,7 @@ if (new URLSearchParams(location.search).has('debug')) {
     recovery,
     overlays: { openHelp, openPrefs, closeSheet, state: overlays },
     // Pen and tablet settings, for the pen check (scripts/e2e/pen.cjs).
-    pen: { get: getPen, setTool: setToolPen, setDevice: setPenDevice, setTouch, reset: resetPen },
+    pen: { get: getPen, setTool: setToolPen, setDevice: setPenDevice, setTouch, reset: resetPen, forgetTools: () => penTools.reset() },
     // The accessibility check (scripts/a11y.cjs) opens every panel and picks every tool.
     panels: () => allPanels().map((p) => p.id),
     tools: () => allTools().map((t) => t.id),

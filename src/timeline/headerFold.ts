@@ -25,3 +25,25 @@ export function chooseFold(current: number, max: number, widthAt: (level: number
 
 /** The accessible name of the "more" button: says when a switch folded inside it is on. */
 export const switchLabel = (on: number) => (on > 0 ? `More, ${on} switch${on === 1 ? '' : 'es'} on` : 'More timeline buttons');
+
+/** The bits of a mutation record the header cares about (so a test can hand in plain objects). */
+export interface HeaderMutation {
+  type: string;
+  addedNodes: ArrayLike<{ nodeType: number }>;
+  removedNodes: ArrayLike<{ nodeType: number }>;
+}
+
+/**
+ * What a batch of changes inside the header means for its folding. A button or chip coming or going (an element added
+ * or removed) can free or need room: 'structure'. Only text changing (the frame counter) can need room only if the text
+ * got longer: 'grow'. Anything else (a number going from 12 to 13, an attribute) needs no measuring at all: 'none'.
+ * Measuring forces the page to lay out, which is the expensive part while scrubbing.
+ */
+export function headerChange(records: readonly HeaderMutation[], textGrew: boolean): 'structure' | 'grow' | 'none' {
+  for (const r of records) {
+    if (r.type !== 'childList') continue;
+    for (const n of Array.from(r.addedNodes)) if (n.nodeType === 1) return 'structure';
+    for (const n of Array.from(r.removedNodes)) if (n.nodeType === 1) return 'structure';
+  }
+  return textGrew ? 'grow' : 'none';
+}

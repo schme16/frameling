@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { DocPalette } from '../../src/core/format';
-import { colorUse, colorUseRange, exactIndex, insertColor, makeRamp, moveColor, nearestIndex, paletteRgb, rampOf, ramps, reduceToPalette, remapColor, removeColor, shadeStep, toggleRampStart } from '../../src/pixel/palette';
+import { cachedColorUse, colorUse, colorUseOf, colorUseRange, exactIndex, insertColor, makeRamp, moveColor, nearestIndex, paletteRgb, rampOf, ramps, reduceToPalette, remapColor, removeColor, shadeStep, toggleRampStart } from '../../src/pixel/palette';
 import { PaletteProblem, paletteFromPixels, parseGpl, parseHexList, parseJascPal, parsePaletteFile, toGpl, toHexList, toJascPal } from '../../src/pixel/palette-io';
 import { dragBox, plotEllipse, plotLine, plotRect, snapCleanLine } from '../../src/pixel/raster';
 import { DITHER_PATTERNS, ditherOn } from '../../src/pixel/dither';
@@ -66,6 +66,27 @@ describe('palette maths', () => {
     const counts = new Uint32Array(5);
     colorUse(red, rgb, counts);
     expect([...counts]).toEqual([1, 0, 0, 1, 0]);
+  });
+
+  it('keeps colour counts per pixel array and palette list, and counts again when either is another', () => {
+    const colors = ['#000000', '#ff0000', '#00ff00'];
+    const px = new Uint8ClampedArray([255, 0, 0, 255, 0, 255, 0, 255, 255, 0, 0, 255]);
+    expect(cachedColorUse(px, colors)).toBeNull();
+    const first = colorUseOf(px, colors);
+    expect([...first]).toEqual([0, 2, 1]);
+    // Same pixels and list: the very same answer, not a new scan.
+    expect(colorUseOf(px, colors)).toBe(first);
+    // Another list of colours (even equal ones), or other pixels, are counted afresh.
+    const other = colorUseOf(px, ['#ff0000', '#00ff00']);
+    expect(other).not.toBe(first);
+    expect([...other]).toEqual([2, 1]);
+    const px2 = px.slice();
+    px2[0] = 0;
+    expect([...colorUseOf(px2, colors)]).toEqual([1, 1, 1]);
+    const rgb = paletteRgb(colors);
+    const check = new Uint32Array(3);
+    colorUse(px2, rgb, check);
+    expect([...colorUseOf(px2, colors)]).toEqual([...check]);
   });
 
   it('counts colour use like a plain exact-match scan, whole or in slices, with duplicates and odd offsets', () => {
