@@ -5,6 +5,7 @@ export type NewKeyChoice = 'blank' | 'copy';
 export type HoldChoice = 'push' | 'cover';
 export type FrameScopeChoice = 'all' | 'layer';
 export type NewKeyHoldChoice = 'until-next' | 'one-frame';
+export type TidyEndChoice = 'tidy' | 'keep';
 
 registerChoice<NewKeyChoice>({
   id: 'timeline.newKey',
@@ -62,3 +63,18 @@ registerChoice<NewKeyHoldChoice>({
 
 /** "Hold longer" choice in the words the edit code uses. */
 export const clashFor = (c: HoldChoice): 'push' | 'trim' => (c === 'cover' ? 'trim' : 'push');
+
+// Asked the first time an edit leaves empty frames on the end. Keep is the safe answer if the question is closed.
+registerChoice<TidyEndChoice>({
+  id: 'timeline.tidyEnd',
+  title: 'Empty frames at the end',
+  question: 'Take the empty frames off the end?',
+  options: [
+    { value: 'tidy', label: 'Take them off', detail: 'The animation ends where its last drawing, marker or clip ends. Every time an edit leaves empty frames on the end, they go.' },
+    { value: 'keep', label: 'Keep the length I have', detail: 'The animation stays as long as it was. The empty frames wait at the end until you change the length or use Tidy the end.' },
+  ],
+  default: 'keep',
+  dismiss: 'keep',
+  category: 'Timeline',
+  help: 'timeline-tidy-end',
+});

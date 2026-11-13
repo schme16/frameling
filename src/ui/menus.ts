@@ -50,7 +50,7 @@ export const MENUS: MenuDef[] = [
   {
     label: 'Animate',
     categories: ['Animate', 'Animation', 'Timeline', 'Frames', 'Sound', 'Lip sync'],
-    items: ['timeline.play', 'timeline.toggleLoop', 'timeline.togglePingPong', 'timeline.toggleOnion', 'timeline.onionKeysOnly', 'timeline.onionBoards', '-', 'timeline.setIn', 'timeline.setOut', 'timeline.clearInOut', '-', 'timeline.prevFrame', 'timeline.nextFrame', 'timeline.prevKey', 'timeline.nextKey', 'timeline.firstFrame', 'timeline.lastFrame', '-', 'timeline.newKey', 'timeline.emptyFrame', 'timeline.duplicateKey', 'timeline.clearKey', '-', 'timeline.insertFrame', 'timeline.removeFrame', 'timeline.addMarker', '-', 'sub:motions'],
+    items: ['timeline.play', 'timeline.toggleLoop', 'timeline.togglePingPong', 'timeline.toggleOnion', 'timeline.onionKeysOnly', 'timeline.onionBoards', '-', 'timeline.setIn', 'timeline.setOut', 'timeline.clearInOut', '-', 'timeline.prevFrame', 'timeline.nextFrame', 'timeline.prevKey', 'timeline.nextKey', 'timeline.firstFrame', 'timeline.lastFrame', '-', 'timeline.newKey', 'timeline.emptyFrame', 'timeline.duplicateKey', 'timeline.clearKey', '-', 'timeline.insertFrame', 'timeline.removeFrame', 'timeline.tidyEnd', 'timeline.addMarker', '-', 'sub:motions'],
   },
   {
     label: 'Rig',

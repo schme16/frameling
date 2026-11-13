@@ -13,6 +13,8 @@ const only = (id) => [js(`${F}.showPanel(${JSON.stringify(id)})`), { wait: 600 }
 const typing = (str) => [...str].map((c) => (c === '\n' ? { eval: `document.execCommand('insertText', false, '\\n')` } : { key: c, after: 70 }));
 // Frame f (1 based) of the timeline: the centre x of its cell, at the default zoom in the Animate workspace.
 const fx = (f) => 361 + 22 * (f - 1);
+// The right edge (where you grab a hold to stretch it) of a drawing that ends at frame f, when the timeline is zoomed to 14 px a frame.
+const edge = (f) => 350 + 14 * f - 4;
 const RULER_Y = 523;
 const BALL_Y = 595;
 const LINES_Y = 595;
@@ -76,6 +78,29 @@ module.exports = [
       { key: '2', mods: ['alt'], after: 1100 },
       { click: [fx(7), BALL_Y], after: 900 },
       { key: '3', mods: ['alt'], after: 1500 },
+      { rec: 'stop' },
+    ],
+  },
+  {
+    // The question appears: stretch the last drawing's hold to frame 31, pull it back to 28, and Frameling asks.
+    // It is the one entry that leaves 'timeline.tidyEnd' unanswered, so the real dialog shows.
+    name: 'timeline-tidy-end',
+    steps: [
+      ...open('bouncing-ball', [js(`${F}.store().update('Setup', (d) => { d.clips = []; d.markers = []; })`), { wait: 400 }]),
+      // Zoom the timeline out a little, so frames 1 to 35 all fit and the view never has to scroll.
+      js(`(() => { const el = document.querySelector('[data-step=zoom]'); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(el, '14'); el.dispatchEvent(new Event('input', { bubbles: true })); })()`),
+      { wait: 600 },
+      { move: [700, 720] },
+      { rec: '@', crop: [108, 40, 1100, 640], every: 80 },
+      { wait: 900 },
+      // Out to the end of frame 31, then back to the end of frame 28.
+      { drag: [[edge(16), BALL_Y], [edge(31), BALL_Y]], steps: 40, delay: 30, after: 1500 },
+      { drag: [[edge(31), BALL_Y], [edge(28), BALL_Y]], steps: 20, delay: 40, after: 2400 },
+      // The question stays up a moment, then "Take them off".
+      js(`[...document.querySelectorAll('[role=dialog] *')].find((e) => e.children.length === 0 && e.textContent.trim() === 'Take them off')?.click()`),
+      { wait: 900 },
+      js(`[...document.querySelectorAll('[role=dialog] button')].find((b) => b.textContent.trim() === 'OK')?.click()`),
+      { wait: 2200 },
       { rec: 'stop' },
     ],
   },

@@ -1,0 +1,1 @@
+Stretch the last hold to frame 31, pull it back to 28, and Frameling asks "Take the empty frames off the end?" (dark and light clips; answering "Take them off" ends the timeline at 28, and the answer is remembered in Preferences > Behaviour).

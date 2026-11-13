@@ -130,6 +130,35 @@ A new drawing stays on screen until your next one, so there are no blank gaps. S
 **<** and **>** (Shift+comma and Shift+full stop) jump to the previous and next drawing on the layer you're on.
 
 If a layer is locked its frames can't be changed. Click the padlock to unlock it.`,
+  'timeline-tidy-end': `Stretch a hold to frame 31, then pull it back to 28, and the timeline still says 31. The three frames on the end are empty. **Tidy the end** is Frameling taking them off, so the animation finishes where your last drawing does.
+
+## The first time it happens
+
+Frameling asks: **Take the empty frames off the end?**
+
+- **Take them off:** the animation ends where its last drawing, marker or clip ends. From then on it happens by itself, in the same step as your edit, so one **Undo** puts it all back.
+- **Keep the length I have:** nothing changes. The empty frames wait on the end.
+
+Your answer is remembered. Change it any time in **Preferences > Behaviour**, under **Empty frames at the end**.
+
+## Do it yourself
+
+Open the command palette and run **Tidy the end**, or use **Timeline > Tidy the end**. It works whatever you chose above, and you can undo it.
+
+## What it never touches
+
+The end never moves past the furthest of these, so nothing gets lost:
+
+- the last drawing, with its hold
+- markers and clips (a clip counts to its last frame)
+- the **in** and **out** points of a play range
+- animated effect keys and where a sound starts
+
+Each artboard keeps its own length, so tidying one never changes another.
+
+Good to know: opening a file never shortens it. Only an edit that leaves empty frames on the end asks, such as dragging a hold shorter, removing a frame, deleting a drawing or deleting a layer. Setting the length yourself always does exactly what you typed.
+
+Learn more: [Frames, keys and holds](help:timeline-frames), [The timeline](help:timeline).`,
   'timeline-onion': `Drawing a walk or a bounce is much easier when you can see where the last pose was. **Onion skin** (named after the thin paper animators traced through) shows the neighbouring frames as faint ghosts under your drawing.
 
 Press **Shift+O**, or click the onion in the timeline's top bar.
