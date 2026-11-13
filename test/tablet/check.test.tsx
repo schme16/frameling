@@ -95,6 +95,8 @@ const fire = (f: Fire) => act(() => void pad().dispatchEvent(pointer(f)));
 const says = () => host.querySelector('[data-testid=quill-says]')!.textContent!;
 const step = () => host.querySelector('.tb-check-steps li[data-state=now] span')?.textContent;
 const button = (name: string) => [...host.querySelectorAll('button')].find((b) => b.textContent === name)!;
+/** A step that is done waits for Next before the check moves on. */
+const goNext = () => act(() => button('Next').click());
 
 let t = 1000;
 const next = (dt = 8) => (t += dt);
@@ -393,31 +395,42 @@ describe('the pen check dialog', () => {
 
     // The pen does: hover, press, lean, twist, then the eraser end and both buttons.
     for (let i = 0; i < 8; i++) fire({ x: 100 + i, t: next() });
+    // The pad waits: nothing moves on until Next is pressed.
+    expect(says()).toContain(line('pen.check.ready'));
+    goNext();
     expect(step()).toBe('Press');
     expect(says()).toContain(line('pen.check.step.pressure'));
     fire({ type: 'pointerdown', buttons: 1, pressure: 0.05, t: next() });
     for (let i = 1; i <= 20; i++) fire({ buttons: 1, pressure: i / 20, x: 100 + i * 5, t: next() });
     fire({ type: 'pointerup', t: next() });
+    goNext();
     expect(step()).toBe('Lean');
     for (let i = 0; i < 6; i++) fire({ tiltX: -40, tiltY: 10, t: next() });
     for (let i = 0; i < 6; i++) fire({ tiltX: 40, tiltY: -10, t: next() });
+    goNext();
     expect(step()).toBe('Twist');
     fire({ type: 'pointerdown', buttons: 1, pressure: 0.5, t: next() });
     for (let i = 0; i < 8; i++) fire({ buttons: 1, pressure: 0.5, twist: i * 30, t: next() });
     fire({ type: 'pointerup', t: next() });
+    goNext();
     expect(step()).toBe('Eraser end');
     fire({ buttons: 32, t: next() });
+    goNext();
     expect(step()).toBe('Button nearest the tip');
     fire({ buttons: 3, t: next() });
+    goNext();
     expect(step()).toBe('Other button');
     fire({ buttons: 5, t: next() });
+    goNext();
     expect(step()).toBe('Fast scribble');
 
     // A fast scribble: a lot of events with folded samples over more than 400 ms.
     fire({ type: 'pointerdown', buttons: 1, pressure: 0.4, t: next() });
     for (let i = 0; i < 40; i++) fire({ buttons: 1, pressure: 0.4, x: 100 + (i % 7) * 9, y: 100 + (i % 5) * 7, coalesced: 3, t: next(14) });
+    goNext();
     expect(step()).toBe('Express keys and ring');
     act(() => void window.dispatchEvent(new KeyboardEvent('keydown', { key: 'F13', code: 'F13' })));
+    // The last step hands straight over to saving: no Next to press.
     expect(says()).toContain(line('pen.check.save'));
     expect(button('Save the report')).toBeTruthy();
 
@@ -460,14 +473,18 @@ describe('the pen check dialog', () => {
   /** Gets the dialog to the eraser step the quick way: a pen with every step before it. */
   function toEraserStep(device = 2): void {
     for (let i = 0; i < 8; i++) fire({ x: 100 + i, t: next(), device });
+    goNext();
     fire({ type: 'pointerdown', buttons: 1, pressure: 0.05, t: next(), device });
     for (let i = 1; i <= 20; i++) fire({ buttons: 1, pressure: i / 20, x: 100 + i * 5, t: next(), device });
     fire({ type: 'pointerup', t: next(), device });
+    goNext();
     for (let i = 0; i < 6; i++) fire({ tiltX: -40, tiltY: 10, t: next(), device });
     for (let i = 0; i < 6; i++) fire({ tiltX: 40, tiltY: -10, t: next(), device });
+    goNext();
     fire({ type: 'pointerdown', buttons: 1, pressure: 0.5, t: next(), device });
     for (let i = 0; i < 8; i++) fire({ buttons: 1, pressure: 0.5, twist: i * 30, t: next(), device });
     fire({ type: 'pointerup', t: next(), device });
+    goNext();
   }
 
   it('on X11 the eraser step ticks when the flipped pen shows up as a second device, with no eraser bit', async () => {
@@ -477,6 +494,7 @@ describe('the pen check dialog', () => {
     toEraserStep(2);
     expect(step()).toBe('Eraser end');
     fire({ type: 'pointerdown', buttons: 1, pressure: 0.3, t: next(), device: 3 });
+    goNext();
     expect(step()).toBe('Button nearest the tip');
   });
 
@@ -516,7 +534,7 @@ describe('the pen check dialog', () => {
     expect(says()).not.toBe(line('pen.check.eraser.hidden'));
   });
 
-  it('a fast burst of events (faster than React redraws) ticks off one step at a time, not several', async () => {
+  it('a fast burst of events (faster than React redraws) ticks off one step and then waits for Next', async () => {
     await act(async () => root.render(<PenCheck />));
     act(() => startPenCheck());
     act(() => {
@@ -525,8 +543,11 @@ describe('the pen check dialog', () => {
       el.dispatchEvent(pointer({ type: 'pointerdown', buttons: 1, pressure: 0.05, t: next() }));
       for (let i = 1; i <= 20; i++) el.dispatchEvent(pointer({ buttons: 1, pressure: i / 20, t: next() }));
     });
-    expect(step()).toBe('Lean');
-    expect([...host.querySelectorAll('.tb-check-steps li[data-state=done]')].map((li) => li.querySelector('span')!.textContent)).toEqual(['Hover', 'Press']);
+    // Only Hover is ticked: the press that followed in the same burst is not counted towards the next step.
+    expect([...host.querySelectorAll('.tb-check-steps li[data-state=done]')].map((li) => li.querySelector('span')!.textContent)).toEqual(['Hover']);
+    expect(button('Next')).toBeTruthy();
+    goNext();
+    expect(step()).toBe('Press');
   });
 
   it('skipping marks a step skipped, and closing half way is offered again next time', async () => {

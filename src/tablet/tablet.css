@@ -196,3 +196,14 @@
 .tb-check-pad {
   height: 180px;
 }
+
+/* The Next button in the pen check: the one to press when a step is ticked off. */
+.tb-clear.tb-go {
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+  border-color: transparent;
+  font-weight: 700;
+}
+.tb-clear.tb-go:hover {
+  filter: brightness(1.05);
+}

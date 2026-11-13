@@ -112,6 +112,14 @@ function Check({ start }: { start: 'offer' | 'run' }) {
   const nopenSaid = useRef(false);
   const [eraserHelp, setEraserHelp] = useState(false);
   const eraserHelpSaid = useRef(false);
+  // A step that is done waits here, with a Next button, instead of the pad moving on under your hand. The ref is what
+  // the event handlers read: they are set up once per step and would otherwise hold an old answer.
+  const [doneStep, setDoneStepState] = useState<CheckStepId | null>(null);
+  const doneRef = useRef<CheckStepId | null>(null);
+  const setDoneStep = (id: CheckStepId | null) => {
+    doneRef.current = id;
+    setDoneStepState(id);
+  };
 
   const stepId = flow.phase === 'run' ? CHECK_STEPS[flow.step] : null;
 
@@ -122,7 +130,9 @@ function Check({ start }: { start: 'offer' | 'run' }) {
     nopenSaid.current = false;
     setEraserHelp(false);
     eraserHelpSaid.current = false;
-    setMood('point');
+    // While a finished step waits for Next, Quill keeps cheering rather than pointing at the next one.
+    if (!doneRef.current) setMood('point');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stepId]);
 
   // Express keys and a touch ring talk to the page as keys and scrolls.
@@ -172,15 +182,28 @@ function Check({ start }: { start: 'offer' | 'run' }) {
   function afterEvent(): void {
     const i = stepRef.current;
     const id = CHECK_STEPS[i];
-    if (!id || !rec.current.currentDone()) return;
+    if (!id || !rec.current.currentDone() || doneRef.current) return;
     rec.current.finish(id, 'done');
     dispatch({ type: 'stepDone', id });
+    cheerN.current++;
+    // The step is ticked off, but nothing moves until you press Next: no more being hurried along mid-stroke.
+    setDoneStep(id);
+    setSays(`${pick(cheers, cheerN.current)} ${CHECK_STEPS[i + 1] ? line('pen.check.ready') : line('pen.check.save')}`);
+    setMood('cheer');
+  }
+
+  /** The Next button after a step is done: on to the following one. */
+  function goNext(): void {
+    if (!doneRef.current) return;
+    const i = stepRef.current;
     stepRef.current = i + 1;
     const next = CHECK_STEPS[i + 1];
     if (next) rec.current.start(next);
-    cheerN.current++;
-    setSays(`${pick(cheers, cheerN.current)} ${next ? stepSays(next) : line('pen.check.save')}`);
-    setMood('cheer');
+    setDoneStep(null);
+    if (next) {
+      setSays(stepSays(next));
+      setMood('point');
+    }
   }
 
   const draw = (e: PointerEvent, drawing: boolean) => {
@@ -232,6 +255,7 @@ function Check({ start }: { start: 'offer' | 'run' }) {
     if (!id) return;
     rec.current.finish(id, 'skipped', reason);
     dispatch({ type: 'skip', id });
+    setDoneStep(null);
     stepRef.current = i + 1;
     const next = CHECK_STEPS[i + 1];
     if (next) rec.current.start(next);
@@ -334,9 +358,15 @@ function Check({ start }: { start: 'offer' | 'run' }) {
         )}
         {flow.phase === 'run' && (
           <div className="tb-check-buttons">
-            <button type="button" className="tb-clear" data-autofocus onClick={() => skip()}>
-              Skip this one
-            </button>
+            {doneStep ? (
+              <button type="button" className="tb-clear tb-go" data-autofocus onClick={goNext}>
+                Next
+              </button>
+            ) : (
+              <button type="button" className="tb-clear" data-autofocus onClick={() => skip()}>
+                Skip this one
+              </button>
+            )}
             {stepId === 'eraser' && eraserHelp && (
               <button type="button" className="tb-clear" onClick={() => skip('no-eraser-end')}>
                 {"My pen's eraser end doesn't show up here"}
