@@ -66,6 +66,15 @@ registerHelpTopics([
     keywords: ['settings', 'options', 'config'],
   },
   {
+    id: 'interface-size',
+    order: 2,
+    title: 'Interface size',
+    section: 'Settings',
+    media: 'interface-size.png',
+    summary: 'Draw everything bigger on a very sharp screen. Quill offers it, and you can set it yourself.',
+    keywords: ['bigger', 'smaller', 'tiny', 'small text', '4k', 'tablet', 'dense', 'hidpi', 'dpi', 'display', 'monitor', 'screen', 'second screen', 'slider'],
+  },
+  {
     id: 'installing',
     title: 'Installing Frameling',
     section: 'Getting started',

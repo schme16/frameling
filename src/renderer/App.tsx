@@ -13,6 +13,7 @@ import { trackHover } from '../ui/help/context';
 import { installKeyboard } from '../ui/keyboard';
 import { installRovingKeys } from '../ui/roving';
 import { watchFirstDrawing } from '../ui/firstDrawing';
+import { startScreenWatch } from '../ui/screenSize';
 import { installSheetCloser, openSheet, overlays, type Overlays } from '../ui/overlays';
 import { applyPrefs, getPrefs } from '../ui/prefs';
 import { ChoiceDialog } from '../ui/ChoiceDialog';
@@ -58,6 +59,8 @@ export function App() {
     // The first time, Quill's hello comes instead of the welcome sheet.
     if (!welcomed && !maybeOnboard() && getPrefs().showWelcome) openSheet('welcome');
     welcomed = true;
+    // Quill offers a better interface size on a very dense screen, and again on a new one the window is dragged to.
+    startScreenWatch();
     // Someone who changed the one tool arrangement before workspaces had their own is told where it went, once.
     const kept = takeRailMigrationNote();
     if (kept) toast(line('workspaces.railKept', { workspace: kept }), { kind: 'info', duration: 9000 });

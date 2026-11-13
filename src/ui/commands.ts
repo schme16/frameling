@@ -5,6 +5,7 @@ import { resetLayoutAndAsk } from './workspaceActions';
 import { openAbout, openHelp, openPrefs, openSheet, togglePalette } from './overlays';
 import { effectiveTheme, getPrefs, setPrefs } from './prefs';
 import { toast } from './toast';
+import { suggestForThisScreen } from './screenSize';
 import { BUILT_IN_THEMES } from './themes/builtIn';
 import { selectTheme, themeById } from './themes/library';
 
@@ -61,6 +62,16 @@ registerCommands([
     keywords: ['settings', 'options', 'theme', 'shortcuts'],
     global: true,
     run: () => openPrefs('general'),
+  },
+  {
+    id: 'view.interfaceSize',
+    label: 'Suggest an interface size for this screen',
+    category: 'View',
+    description: 'Quill looks at this screen and offers a bigger or smaller interface if it would read better.',
+    help: 'interface-size',
+    keywords: ['interface size', 'bigger', 'smaller', '4k', 'tablet', 'dense', 'tiny', 'small text', 'dpi', 'display'],
+    global: true,
+    run: () => void suggestForThisScreen(),
   },
   {
     id: 'view.features',

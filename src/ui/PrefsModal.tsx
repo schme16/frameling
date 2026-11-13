@@ -192,7 +192,7 @@ function GeneralPage({ onThemes }: { onThemes: () => void }) {
       <Row label="Clean timeline" hint="Off shows the detailed timeline: keys as diamonds, tweens with their easing, and rows for what changes on each layer. On shows one plain block per drawing.">
         <Switch label="Clean timeline" on={p.cleanTimeline} onChange={(cleanTimeline) => setPrefs({ cleanTimeline })} />
       </Row>
-      <Row label="Interface size" hint="How big everything is drawn: menus, panels, the timeline and the page itself. Handy on a big, dense screen like a 4k drawing tablet, where the usual size can be hard to read.">
+      <Row label="Interface size" hint="How big everything is drawn: menus, panels, the timeline and the page itself. Handy on a big, dense screen like a 4k drawing tablet, where the usual size can be hard to read. Quill offers a size on a screen like that, and again on each new screen you drag the window to.">
         <div className="ui-pref-volume">
           <input
             type="range"

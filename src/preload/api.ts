@@ -79,6 +79,19 @@ export interface LibraryApi {
   showFolder?(kind: LibraryKind): Promise<void>;
 }
 
+/** A screen as the computer reports it: sizes in its own units (before any interface size), and its scale factor. */
+export interface DisplayInfo {
+  id: number;
+  width: number;
+  height: number;
+  scaleFactor: number;
+  /** The part of the screen windows can use (without taskbars and docks). */
+  workWidth: number;
+  workHeight: number;
+  windowWidth: number;
+  windowHeight: number;
+}
+
 export interface FramelingApi {
   /** Which kind of home the page has: the desktop app, or a web browser (src/platform). Missing means desktop. */
   kind?: 'desktop' | 'web';
@@ -160,6 +173,10 @@ export interface FramelingApi {
   app: {
     /** How big the whole interface is drawn, 0.5 to 3 (1 is the usual size). Everything stays crisp. */
     setUiScale?(factor: number): void;
+    /** The screen the window is on right now. */
+    getDisplay?(): Promise<DisplayInfo | null>;
+    /** Called when the window is dragged onto another screen, or a screen changes size. Returns an unsubscribe function. */
+    onDisplayChanged?(handler: (d: DisplayInfo) => void): () => void;
     /** Tells the window about the document (title bar dot on macOS, "Save changes?" on close). */
     setDocumentState(state: DocumentState): void;
     /** The file the app was launched with, once. */

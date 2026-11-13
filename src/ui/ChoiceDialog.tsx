@@ -30,7 +30,7 @@ export function ChoiceDialog() {
 
 function Ask({ pending }: { pending: Pending }) {
   const { def, resolve } = pending;
-  const [value, setValue] = useState(def.default);
+  const [value, setValue] = useState(def.highlight ?? def.default);
   const [remember, setRemember] = useState(true);
   const quill = useQuillShown();
   const finish = (r: { value: string; remember: boolean } | null) => {
