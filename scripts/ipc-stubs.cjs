@@ -40,6 +40,7 @@ function invokeStubs(library) {
     'autosave:readKept': () => null,
     'autosave:removeKept': () => true,
     'app:launchFile': () => null,
+    'app:display': () => null,
     'app:askSaveChanges': () => 'discard',
     'library:list': (_e, kind) => own(kind).map((k) => ({ id: k.slice(kind.length + 1), size: library.get(k).length, modified: 0 })),
     'library:read': (_e, kind, id) => library.get(`${kind}/${id}`) ?? null,

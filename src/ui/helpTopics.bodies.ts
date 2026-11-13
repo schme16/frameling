@@ -159,12 +159,35 @@ There are five pages:
 - **General**: [mode and look](help:look-and-feel), [units](help:units), [sounds](help:sounds), motion, the welcome sheet and [Show Quill](help:meet-quill).
 - **Themes**: pick [themes](help:themes) and [make your own](help:make-your-own-theme).
 - **Behaviour**: [the choices Frameling asked you about](help:behaviour), like what N does.
-- **Interface size** (on the General page): draws everything bigger or smaller, 75% to 200%. Handy on a 2k or 4k drawing tablet, where the usual size can be hard to read.
+- **Interface size** (on the General page): draws everything bigger or smaller, 75% to 200%. Handy on a 2k or 4k drawing tablet, where the usual size can be hard to read. [Quill can suggest a size](help:interface-size) for each screen.
 - **Your settings** (on the General page): **Back up...** saves everything you have set into one small file, and **Put a backup back...** reads one in and starts Frameling again. Handy for a new computer.
 - **Keyboard**: see and change [shortcuts](help:keyboard-shortcuts), or pick a [shortcut set](help:shortcut-sets).
 - **Workspaces**: save and switch [panel layouts](help:workspaces).
 
 Changes happen straight away and are remembered for next time.`,
+  'interface-size': `On a very sharp screen, like a 4k drawing tablet, everything can look tiny. **Interface size** draws the whole of Frameling bigger (or smaller): menus, panels, the timeline and the canvas, all still crisp.
+
+## Set it yourself
+
+Open **Preferences** (**Ctrl+,**), choose **General**, and drag the **Interface size** slider. It goes from 75% to 200%, and **100%** puts it back to the usual size.
+
+## Quill offers
+
+The first time Frameling opens on a very sharp screen, Quill asks if you'd like a bigger interface, and says what size he has in mind. Pick **Yes** and it changes at once. Pick **No thanks** and nothing changes.
+
+Drag the window onto another screen and he looks again. If that screen would read better at a different size, he offers it once. Say yes or no and he remembers, for that screen, so moving back and forth never asks twice. Going back to a screen you said yes to puts its size back by itself.
+
+## Ask again
+
+Search the command palette (**Ctrl+K**) for **Suggest an interface size for this screen**, or find it in the **View** menu. Quill looks at the screen you're on and asks again, whatever you said before.
+
+## Good to know
+
+- He only offers on screens that hold a lot of pixels *as the computer shows them*. A 4k panel the computer already shows at 200% looks fine, so he stays quiet.
+- He never suggests a size that leaves the window too small for the panels.
+- Every answer is listed in **Preferences, Behaviour** while Frameling is running, and the slider always has the last word.
+
+See also [Preferences](help:preferences) and [Behaviour choices](help:behaviour).`,
   installing: `Frameling is signed, but not yet with a paid certificate, so Windows and macOS don't recognise it. The first time you open it they ask you to say it's OK. After that it opens like any other app.
 
 ## Windows

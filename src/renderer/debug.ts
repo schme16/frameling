@@ -18,6 +18,7 @@ import { allCommands, allHelp, allPanels, allTools, getCommand } from '../core/r
 import { celebrate, praise } from '../quests/feedback';
 import { allQuests, getFullQuest, loadQuests, questProgress, startQuest } from '../quests/registry';
 import { getPrefs, setPrefs } from '../ui/prefs';
+import { considerScreen } from '../ui/screenSize';
 import { quillSheet, setQuillSheet, tick as quillTick } from '../ui/mascot/runtime';
 import { setWeightsLook } from '../rig/weightsTool';
 import { setShowQuill } from '../ui/mascot/goodbye';
@@ -64,6 +65,8 @@ if (new URLSearchParams(location.search).has('debug')) {
     tiles,
     // Theme and look picks, for shots in a given theme.
     prefs: { get: getPrefs, set: setPrefs },
+    // Quill's interface size offer for a pretend screen (shots, checks): { id, width, height, scaleFactor, workWidth, workHeight }.
+    screenOffer: (d: Omit<Parameters<typeof considerScreen>[0], 'windowWidth' | 'windowHeight'>) => void considerScreen({ windowWidth: 1400, windowHeight: 900, ...d }, { force: true }),
     commands: () => allCommands().map((c) => c.id),
     /** Every help topic with its picture or clip, for the web check that every file is served. */
     help: () => allHelp().map((t) => ({ id: t.id, media: t.media ?? null })),

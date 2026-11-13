@@ -3,6 +3,7 @@ import path from 'node:path';
 import { grantFile, registerIpc } from './ipc';
 import { fileFromArgs, fileFromUrl, PROTOCOL } from './library';
 import { setupMenu } from './menu';
+import { watchDisplay } from './display';
 import { clearAutosave, keepAutosave, pruneKept } from './store';
 import type { DocumentState } from '../preload/api';
 import { isolationWanted, PLUGIN_PROCESS_FEATURE } from './pluginMemory';
@@ -67,6 +68,9 @@ function createWindow() {
     },
   });
   win.once('ready-to-show', () => win?.show());
+  // Dragged onto another screen: tell the page, which may offer a better interface size for it.
+  const stopWatching = watchDisplay(win, (d) => win?.webContents.send('app:displayChanged', d));
+  win.once('closed', stopWatching);
 
   // Links to the web open in the user's browser, never inside the app.
   win.webContents.setWindowOpenHandler(({ url }) => {

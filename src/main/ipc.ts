@@ -9,6 +9,7 @@ import { ffmpegPath, mp4SoundToAac } from './media';
 import { registerVideoIpc } from './video';
 import { addLinked, canOpenOther, cleanFilters, isLibraryKind, isLinked, libraryId, listLibrary, pickFolder, readLibrary, readSmallFolder, removeLibrary, showLibraryFolder, writeLibrary } from './library';
 import { addRecent, clearAutosave, clearRecent, keepAutosave, lastDir, listKept, listRecent, readAutosave, readKept, rememberDir, removeKept, removeRecent, writeAutosave, writeFileAtomic } from './store';
+import { describeDisplay } from './display';
 import { pathKey, safeFileName } from './paths';
 import { PLUGIN_PROCESS_FEATURE, pluginMemory, wantIsolation } from './pluginMemory';
 
@@ -233,6 +234,10 @@ export function registerIpc(hooks: IpcHooks): void {
   });
 
   handle('app:launchFile', () => hooks.takeLaunchFile());
+  handle('app:display', () => {
+    const w = hooks.window();
+    return w ? describeDisplay(w) : null;
+  });
 
   handle('app:askSaveChanges', async (_e, name: string): Promise<SaveChoice> => {
     const r = await dialog.showMessageBox(hooks.window()!, {

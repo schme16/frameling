@@ -137,6 +137,17 @@ const entries = [
     prefs: CALM,
     steps: [template('bouncing-ball'), cmd('timeline.hold2'), wait(1200), ...shotOf('.ui-choice', null, 16)],
   },
+  // Quill's offer of a bigger interface on a very dense screen (a pretend 4k panel; the capture screen isn't one).
+  {
+    name: 'interface-size',
+    prefs: CALM,
+    steps: [
+      template('bouncing-ball'),
+      js(`${F}.screenOffer({ id: 7, width: 3840, height: 2160, scaleFactor: 1, workWidth: 3840, workHeight: 2100 })`),
+      wait(1200),
+      ...shotOf('.ui-choice', null, 16),
+    ],
+  },
   // Preferences, General: the top of the page (mode, theme, look).
   {
     name: 'look-and-feel',

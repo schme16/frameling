@@ -28,6 +28,8 @@ export interface ChoiceDef<V extends string = string> {
   default: V;
   /** Used instead of the default when the dialog is closed without picking (when closing should not mean the default). */
   dismiss?: V;
+  /** The option the dialog starts on, when that should differ from the default (an offer starts on "Yes" but does nothing unasked). */
+  highlight?: V;
   /** Groups it in Preferences > Behaviour. */
   category: string;
   help?: string;
