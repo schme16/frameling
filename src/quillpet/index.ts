@@ -17,7 +17,7 @@ export const quillPetFeature = defineFeature({
   commands: quillPetCommands,
   panels: [quillPetPanel],
   help: quillPetHelp,
-  menus: [{ menu: 'View', items: ['quillPet.open'] }],
+  menus: [{ menu: 'View', items: ['quillPet.open', 'quillPet.give'] }],
   sections: {
     'quill-pet': {
       blurb: 'Quill, how he is, and how well the two of you know each other.',

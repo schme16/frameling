@@ -5,6 +5,7 @@ import type { Command, PanelDef } from '../core/registry';
 import { showPanel } from '../ui/dock';
 import { getPrefs } from '../ui/prefs';
 import { noteFuss } from './watch';
+import { giveToQuill } from './give';
 import { tellQuill } from './store';
 
 export const quillPetPanel: PanelDef = {
@@ -40,5 +41,18 @@ export const quillPetCommands: Command[] = [
       noteFuss();
       showPanel('quill-pet');
     },
+  },
+  {
+    id: 'quillPet.give',
+    label: 'Give this drawing to Quill',
+    category: 'View',
+    description: 'He keeps a little picture of the frame you are on, in his corner, for as long as you like.',
+    keywords: ['quill', 'pet', 'give', 'present', 'gift', 'keep', 'collection', 'hedgehog'],
+    help: 'quill-pet',
+    enabled: () => getPrefs().showQuill,
+    run: () =>
+      void giveToQuill().then((got) => {
+        if (got) showPanel('quill-pet');
+      }),
   },
 ];

@@ -650,5 +650,14 @@
       "Into the quills it goes."
     ],
     "where": "Quill's panel: you gave him the colour you're drawing with (the app picks one)."
+  },
+  "pet.thing": { "text": "{name}! One of my favourites.", "where": "Quill's panel: you pressed one of the things you gave him. {name} is what it was called.", "vars": ["name"] },
+  "pet.given": {
+    "text": [
+      "For me? I'll put it somewhere safe.",
+      "Oh, that is lovely. Thank you!",
+      "Straight into the collection."
+    ],
+    "where": "Quill's panel: you gave him the frame you were on (the app picks one)."
   }
 }

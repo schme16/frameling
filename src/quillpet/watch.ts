@@ -3,6 +3,10 @@
 import { store } from '../core/store';
 import { petStore, firstVisitToday, tellQuill } from './store';
 import { paintQuills, plainQuills } from './quills';
+import { line } from '../ui/mascot/lines';
+import { toast } from '../ui/toast';
+import { noteSeen } from './store';
+import { stageOf } from './model';
 
 const now = (): number => (typeof performance === 'undefined' ? Date.now() : performance.now());
 
@@ -34,13 +38,33 @@ export function forgetNow(): void {
   finishedAt = -Infinity;
 }
 
+/**
+ * Getting closer is worth saying out loud, once, wherever you are. The panel may well be shut, so it comes as one of
+ * his toasts rather than a line only he can see.
+ */
+function sayIfCloser(): void {
+  const pet = petStore.get();
+  const stage = stageOf(pet.closeness);
+  const id = `stage.${stage.id}`;
+  if (stage.at === 0 || pet.seen.includes(id)) return;
+  noteSeen(id);
+  toast(line('pet.closer', { stage: stage.name.toLowerCase() }), { quill: 'cheer', duration: 6000 });
+}
+
 /** Starts watching. Gives back the way to stop, which the feature calls when it's switched off. */
 export function startWatching(): () => void {
   const s = store();
   let prev = s.get();
+  let loads = s.loads;
   if (firstVisitToday()) tellQuill({ kind: 'visited' });
   const off = s.subscribe(() => {
     const next = s.get();
+    // Opening a document (or a template) is not you drawing, so he doesn't count it or take its colour.
+    if (s.loads !== loads) {
+      loads = s.loads;
+      prev = next;
+      return;
+    }
     if (next.doc !== prev.doc) {
       lastEdit = now();
       tellQuill({ kind: 'drew' });
@@ -51,7 +75,10 @@ export function startWatching(): () => void {
     prev = next;
   });
   // Repaint his pencils whenever his colours change, and once now.
-  const offPet = petStore.subscribe(() => paintQuills(petStore.get().colours));
+  const offPet = petStore.subscribe(() => {
+    paintQuills(petStore.get().colours);
+    sayIfCloser();
+  });
   paintQuills(petStore.get().colours);
   return () => {
     off();

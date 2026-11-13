@@ -8,11 +8,16 @@ export const bodies: Record<string, string> = {
 
 **How he's feeling:** the line under him says what he's up to. He draws along while you're drawing, watches when you stop, dozes off when nothing's happened for a minute, and is proud of you when you finish something.
 
+**His pencils:** the quills on his back take the colours you draw with, newest last. Press **Give him this colour** to hand him the one you're on. He keeps the last five, and any pencil you haven't given a colour to stays as the art drew it.
+
+**His things:** press **Give him this** (or **View > Give this drawing to Quill**) and he keeps a little picture of the frame you're on. Press one of them and he'll tell you what he thinks. The small **x** in the corner gives it back.
+
 **How well you know each other:** the bar at the bottom. It fills as you two spend time making things, and it only ever goes up. **Just met**, then **Friends**, **Good friends**, **Best friends**, and **Inseparable** if you stick at it.
 
 **Good to know:**
 - He never minds being left alone. Come back after a week, a month or a year and he's pleased to see you. Nothing drains, nothing goes down, and he's never cross.
 - Drawing is what he likes best, so you feed him by getting on with your work. There's nothing to remember to do.
+- He keeps a picture of your drawing, not the drawing. Nothing you make depends on him, and giving something back never touches your file.
 - Had enough of the panel? Turn **Quill's corner** off in **Preferences > Features** and he goes back to being just the mascot, saying hello and lending a hand where he always did.
 - Had enough of Quill altogether? **Show Quill** in **Preferences** hides him everywhere, this panel included, and anything you actually need to read stays as a plain note.
 

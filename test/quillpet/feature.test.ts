@@ -89,3 +89,29 @@ describe('with the pet on, he notices', () => {
     expect(petStore.get().closeness).toBeGreaterThan(before);
   });
 });
+
+describe('getting closer is announced once', () => {
+  it('says it when you reach a step, and never says it twice', async () => {
+    const { clearToasts, toasts } = await import('../../src/ui/toast');
+    // The feature is on (beforeEach), so its watcher is the one listening.
+    setPet(FRESH_PET);
+    clearToasts();
+    // Enough to get from Just met to Friends (30).
+    for (let i = 0; i < 4; i++) tellQuill({ kind: 'quest' });
+    const said = toasts.get().filter((t) => t.message.includes('Look at us'));
+    expect(said).toHaveLength(1);
+    expect(said[0].message).toContain('friends');
+    // Nothing more, however much fuss is made.
+    for (let i = 0; i < 10; i++) tellQuill({ kind: 'petted' });
+    expect(toasts.get().filter((t) => t.message.includes('Look at us'))).toHaveLength(1);
+  });
+
+  it('says nothing at all with the pet switched off', async () => {
+    const { clearToasts, toasts } = await import('../../src/ui/toast');
+    setFeatureOn('quill-pet', false);
+    setPet(FRESH_PET);
+    clearToasts();
+    for (let i = 0; i < 4; i++) tellQuill({ kind: 'quest' });
+    expect(toasts.get()).toEqual([]);
+  });
+});

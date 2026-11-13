@@ -2,11 +2,12 @@
 import type { Doc } from '../core/format';
 import { renderFrameToCanvas } from '../core/render';
 
-/** A PNG data: URL, about `size` pixels on the long side, or undefined when drawing it fails. */
-export async function thumbnailOf(doc: Doc, size = 120): Promise<string | undefined> {
+/** A PNG data: URL, about `size` pixels on the long side, or undefined when drawing it fails. `frame` picks which
+ *  frame to draw (the first one by default). */
+export async function thumbnailOf(doc: Doc, size = 120, frame = 0): Promise<string | undefined> {
   try {
     const scale = size / Math.max(doc.width, doc.height);
-    const c = renderFrameToCanvas(doc, 0, scale);
+    const c = renderFrameToCanvas(doc, frame, scale);
     // Pixel art stays blocky when shrunk or grown this little, and a see-through drawing gets its stage colour or white.
     const flat = new OffscreenCanvas(c.width, c.height);
     const g = flat.getContext('2d')!;
