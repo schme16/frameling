@@ -9,7 +9,7 @@ import { readFolders, readLayerLook } from '../effects/io';
 import { strFromU8, strToU8, unzipSync, zip, zipSync, type Zippable } from 'fflate';
 import { BONE_STRETCH, FORMAT_VERSION, LAYER_LABELS, type LayerLabel, type Cel, type Doc, type Drawing, type KeptShape, type Layer, type Shape, type Slice, type SliceKey, type SymbolDef, type Tween, type InstanceShape, type ClipFlow, type ClipTransition, type Tile, type Tileset, type Bone, type BonePose, type LayerBind, type Pose, type Rig, type SavedPose } from '../core/format';
 import { decodePng, encodePng, type RawImage } from './png';
-import { decodePngsInWorkers, readDocJsonInWorker, zipInWorker } from './ioClient';
+import { decodePngsInWorkers, inflateDocInWorker, zipInWorker } from './ioClient';
 import { MAX_UNZIPPED } from './ioJobs';
 import { trimmedDrawing } from '../core/pixelBounds';
 import { rootDoc } from '../core/symbols';
@@ -323,10 +323,19 @@ function docJsonSize(bytes: Uint8Array): number {
 /**
  * The same as `loadFile`, with the heavy parts on worker threads: the pictures of a big pixel document are decoded in
  * parallel (inflating and unfiltering 100 frames of a large stage holds the page for a second or more), and the JSON of a
- * big vector document is inflated and parsed off the page. Falls back to doing it here, with the same errors.
+ * big vector document is inflated off the page (the platform's zlib is several times quicker than fflate, and the page is left with parsing).
+ * Falls back to doing it all here, with the same errors.
  */
 export async function loadFileAsync(bytes: Uint8Array): Promise<LoadedFile> {
-  const parsed = docJsonSize(bytes) >= loadTuning.minDocJson ? await readDocJsonInWorker(bytes) : null;
+  let parsed: { raw: unknown } | null = null;
+  if (docJsonSize(bytes) >= loadTuning.minDocJson) {
+    try {
+      const inflated = await inflateDocInWorker(bytes);
+      if (inflated) parsed = { raw: JSON.parse(strFromU8(inflated)) };
+    } catch {
+      // Left for the plain path below, which reports it.
+    }
+  }
   const entries = unzipFile(bytes, !!parsed);
   const decoded = await decodePngsInWorkers(entries);
   return loadEntries(entries, decoded, parsed ?? undefined);
@@ -344,11 +353,11 @@ function unzipFile(bytes: Uint8Array, skipDoc = false): Record<string, Uint8Arra
   return entries;
 }
 
-function loadEntries(entries: Record<string, Uint8Array>, decoded?: Map<string, RawImage>, parsed?: { manifest: unknown; raw: unknown }): LoadedFile {
+function loadEntries(entries: Record<string, Uint8Array>, decoded?: Map<string, RawImage>, parsed?: { raw: unknown }): LoadedFile {
   let manifest: Manifest;
   let raw: any;
   try {
-    manifest = (parsed?.manifest ?? JSON.parse(strFromU8(entries['manifest.json']))) as Manifest;
+    manifest = JSON.parse(strFromU8(entries['manifest.json']));
     raw = parsed?.raw ?? JSON.parse(strFromU8(entries['doc.json']));
   } catch {
     throw damaged();
