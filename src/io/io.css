@@ -36,8 +36,10 @@
   font-weight: 800;
 }
 .io-body {
-  padding: 8px 20px 12px;
+  padding: 8px 14px 12px 20px;
   overflow: auto;
+  /* The scrollbar sits inside the rounded corner instead of being clipped by it. */
+  margin-right: 6px;
 }
 .io-foot {
   display: flex;

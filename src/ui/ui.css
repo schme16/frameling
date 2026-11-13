@@ -1670,7 +1670,9 @@ body.ui-resizing * {
   flex: 1;
   min-width: 0;
   overflow-y: auto;
-  padding: 8px 24px 24px;
+  padding: 8px 18px 24px;
+  /* Clear of the modal's rounded corners, so the scrollbar is a whole bar and not a cut-off one. */
+  margin: 0 5px 5px 0;
 }
 .ui-prefs-page h3 {
   margin: 12px 0 10px;
@@ -1708,6 +1710,8 @@ body.ui-resizing * {
 }
 .ui-segmented {
   display: inline-flex;
+  /* Never squashed by a long description beside it: the words on the buttons stay on one line. */
+  flex: none;
   padding: 3px;
   gap: 2px;
   border: 1px solid var(--line);
@@ -1722,6 +1726,7 @@ body.ui-resizing * {
   align-items: center;
   gap: 6px;
   height: 26px;
+  white-space: nowrap;
   padding: 0 12px;
   border: 0;
   border-radius: var(--radius-pill);
