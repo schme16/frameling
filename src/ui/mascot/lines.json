@@ -621,5 +621,26 @@
   "pen.check.diagnostics": {
     "text": "Got a pen or tablet that is acting up? I can walk you through a quick check, then save a little file with what I saw.",
     "where": "Preferences, Diagnostics: Quill's words above the pen check button."
-  }
+  },
+  "pet.petted": {
+    "text": [
+      "Ooh, right behind the ears!",
+      "That's the spot, thank you!",
+      "Prrrrp. Hedgehogs don't purr. I'm doing it anyway.",
+      "Careful of the pencils!",
+      "You're very good at this, you know."
+    ],
+    "where": "Quill's panel: you stroked him (the app picks one)."
+  },
+  "pet.hello.again": {
+    "text": "There you are! It's been {days}. I kept your seat warm.",
+    "where": "Quill's panel: your first visit of the day after a day or more away. {days} is \"a day\", \"3 days\" and so on.",
+    "vars": ["days"]
+  },
+  "pet.closer": {
+    "text": "Look at us, {stage} now. I'd have brought a cake if I had hands for it.",
+    "where": "Quill's panel: you just reached a new step of how well you know each other. {stage} is its name, like \"Good friends\".",
+    "vars": ["stage"]
+  },
+  "pet.hello": { "text": "Hullo! Don't mind me, I'll just be here.", "where": "Quill's panel: his line when you open the panel and nothing else is going on." }
 }

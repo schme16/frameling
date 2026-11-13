@@ -1,7 +1,7 @@
 // Help pictures and clips for the app shell: first run, welcome, help window, palette, preferences, themes, workspaces,
 // panels, floating windows, the strips and menus, messages, examples, quests, sounds and shortcut sets.
 // Steps are theme neutral: the runner picks the mode; nothing here sets a theme.
-const { cmd, template, wait, js, key } = require('./_lib.cjs');
+const { cmd, panel, template, wait, js, key } = require('./_lib.cjs');
 
 const F = '__frameling';
 /** Open Preferences on a page. */
@@ -491,6 +491,26 @@ const entries = [
       wait(2700),
       clickText('.qb-go', ''),
       wait(2700),
+      { rec: 'stop' },
+    ],
+  },
+  // Quill's corner: he potters about, you give him a stroke, and the bar shows how well you know each other.
+  {
+    name: 'quill-pet',
+    prefs: CALM,
+    steps: [
+      template('bouncing-ball'),
+      wait(800),
+      panel('quill-pet'),
+      wait(1200),
+      ...settle,
+      tag('.qp-panel'),
+      { rec: '@', el: '[data-shot]', pad: 10, every: 70 },
+      wait(1800),
+      clickText('.qp-pat', ''),
+      wait(2200),
+      clickText('.qp-pat', ''),
+      wait(2400),
       { rec: 'stop' },
     ],
   },

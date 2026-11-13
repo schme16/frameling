@@ -20,7 +20,7 @@ import {
   type PetEvent,
   type PetState,
   type PetThing,
-} from '../../src/ui/mascot/pet/model';
+} from '../../src/quillpet/model';
 
 const AT = new Date(2026, 10, 13, 10, 0, 0).getTime();
 const day = 86400000;

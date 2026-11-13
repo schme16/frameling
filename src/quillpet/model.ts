@@ -4,7 +4,7 @@
 // The one rule the whole model is built around: **nothing here ever makes Quill worse off.** Closeness only goes up,
 // there is no meter that drains while you're away, and there is no unhappy mood to fall into. Come back after a
 // month and he's delighted, not sulking. Every function below is written so that stays true, and the tests check it.
-import type { QuillAnim } from '../timing';
+import type { QuillAnim } from '../ui/mascot/timing';
 
 /** A thing you gave him: a drawing of yours, kept as a small picture. */
 export interface PetThing {

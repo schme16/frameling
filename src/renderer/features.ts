@@ -24,6 +24,7 @@ import { audioFeature } from '../audio';
 import { cameraFeature } from '../camera';
 import { godotFeature } from '../export/godot';
 import { flowFeature } from '../flow';
+import { quillPetFeature } from '../quillpet';
 import { interactivesFeature } from '../interactives';
 import { particlesFeature } from '../particles';
 import { rigFeature } from '../rig';
@@ -31,4 +32,4 @@ import { tilesFeature } from '../tiles';
 import { textFeature } from '../text';
 import { lipsyncFeature } from '../lipsync';
 
-registerFeatures([audioFeature, cameraFeature, flowFeature, godotFeature, interactivesFeature, lipsyncFeature, particlesFeature, rigFeature, textFeature, tilesFeature]);
+registerFeatures([audioFeature, cameraFeature, flowFeature, godotFeature, interactivesFeature, lipsyncFeature, particlesFeature, quillPetFeature, rigFeature, textFeature, tilesFeature]);

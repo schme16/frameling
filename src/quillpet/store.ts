@@ -1,6 +1,6 @@
 // What Quill remembers, kept between runs. The thinking is all in model.ts; this is the live copy, the saving, and
 // one place to tell him something happened.
-import { createStore } from '../../mini';
+import { createStore } from '../ui/mini';
 import { apply, dayKey, daysBetween, FRESH_PET, letGo, markSeen, type DayCount, type PetEvent, type PetState } from './model';
 
 export const PET_KEY = 'frameling.quill.v1';
