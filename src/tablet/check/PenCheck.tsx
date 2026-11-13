@@ -265,7 +265,7 @@ function Check({ start }: { start: 'offer' | 'run' }) {
   const status = (id: CheckStepId, i: number) => (flow.done.includes(id) ? 'Done' : flow.skipped.includes(id) ? 'Skipped' : flow.phase === 'run' && i === flow.step ? 'Now' : '');
 
   return (
-    <Modal title="Pen check with Quill" size="lg" className="tb-check" onClose={close} initialFocus="[data-autofocus]">
+    <Modal title="Pen check with Quill" size="lg" className={`tb-check${flow.phase === 'offer' ? ' tb-check-asking' : ''}`} onClose={close} initialFocus="[data-autofocus]">
       <div className="tb-check-body">
         <QuillSays anim={mood} then="idle" size={96} bubbleClassName="tb-check-bubble">
           <p aria-live="polite" data-testid="quill-says">

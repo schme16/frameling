@@ -559,3 +559,15 @@ describe('Preferences, Diagnostics', () => {
     expect(button('Check my pen again')).toBeTruthy();
   });
 });
+
+describe('the offer sheet is only as big as the question', () => {
+  it('asks in a sheet sized to its content, and gives the check its full height once it starts', async () => {
+    await act(async () => root.render(<PenCheck />));
+    act(() => overlays.set((o) => ({ ...o, penCheck: 'offer' })));
+    const sheet = () => document.querySelector('.tb-check')!;
+    expect(sheet(), 'the offer is on screen').toBeTruthy();
+    expect(sheet().classList.contains('tb-check-asking'), 'while asking, no fixed height').toBe(true);
+    act(() => button("Let's go").click());
+    expect(sheet().classList.contains('tb-check-asking'), 'once running, the full height is back').toBe(false);
+  });
+});

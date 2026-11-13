@@ -122,7 +122,15 @@ app.whenReady().then(async () => {
       true;
     `);
     await sleep(Number(process.env.SHOT_WAIT || 900));
-    if (steps) await runSteps(win, JSON.parse(fs.readFileSync(steps, 'utf8')));
+    if (steps) {
+      // A step that throws used to leave the run hanging for ever. Say which one, and carry on to the shot so
+      // there is something to look at.
+      try {
+        await runSteps(win, JSON.parse(fs.readFileSync(steps, 'utf8')));
+      } catch (e) {
+        logs.push(`step failed: ${e && e.message ? e.message : e}`);
+      }
+    }
     await sleep(300);
     fs.writeFileSync(path.join(outDir, `${name}.png`), (await win.webContents.capturePage()).toPNG());
     console.log(`shot ${name}${logs.length ? `\n  console errors:\n  ${logs.join('\n  ')}` : ''}`);
