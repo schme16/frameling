@@ -8,13 +8,13 @@ export const bodies: Record<string, string> = {
 - **Light touch, fainter line.** Brush and Pencil can fade the whole line when you press lightly.
 - **Leaning.** Lay the pen over for a bigger mark, like shading with the side of a pencil. Switch on **Leaning changes size**.
 - **Eraser end.** Flip the pen over to erase. It goes back to your tool after. (Linux: see below.)
-- **Pen buttons.** The button nearest the tip picks a colour while held. The other one moves the page. You can change both, and if they come through the wrong way round, turn on **Swap my two pen buttons**.
+- **Pen buttons.** The button nearest the tip picks a colour while held. The other one moves the page. You can change both, and swap them if they arrive the wrong way round.
 - **Hovering.** You see a ring the size of your brush, with a faint inner ring for the smallest mark a light touch makes.
-- **Stabilizer.** Every drawing tool has a slider. **Pull string** hangs the brush on a rope behind your pen. **Average** smooths your last few moves. It steadies a mouse too.
+- **Stabilizer.** Every drawing tool has a slider, at a gentle 12% to start with. **Pull string** hangs the brush on a rope behind your pen. **Average** smooths your last few moves. It steadies a mouse too.
 
 ## Pen and tablet preferences
 
-Open **Preferences, Pen and tablet**. You can try your pen on a pad (it says whether Frameling hears a pen or a mouse), pick a **Soft**, **Normal** or **Firm** pressure feel or drag the dots on the graph, set the lightest press that counts, and choose what the buttons do. One table shows what every tool does with pressure, leaning and the stabilizer.
+Open **Preferences, Pen and tablet**. Try your pen on a pad (it says whether Frameling hears a pen or a mouse), pick a **Soft**, **Normal** or **Firm** pressure feel or drag the dots on the graph, set the lightest press that counts, and choose what the buttons do. One table shows what every tool does with pressure, leaning and the stabilizer.
 
 Frameling keeps one set of settings for any pen, and one for your mouse and fingers.
 
@@ -28,9 +28,9 @@ While your pen is near the screen, a resting hand is ignored. Otherwise two fing
 
 - **Windows:** open the Wacom Tablet Properties or the Huion driver and turn on **Windows Ink**, then restart Frameling.
 - **Mac:** install the maker's driver. It then just works.
-- **Linux:** most Wacom and Huion tablets work on their own. No pressure? Try the tablet in another drawing program. If flipping the pen doesn't erase, the system may not be telling Frameling about the eraser end: set a button to **Erase** in Pen and tablet. The pad there names each button as you press it, and if the two are round the wrong way, **Swap my two pen buttons** puts them right.
+- **Linux:** most Wacom and Huion tablets work on their own. No pressure? Try the tablet in another drawing program. If flipping the pen doesn't erase, the system may not be telling Frameling about the eraser end: set a button to **Erase** in Pen and tablet. The pad there names each button as you press it; if the two are round the wrong way, turn on **Swap my two pen buttons**.
 
-**Faint marks while hovering?** Raise **Lightest press that counts**. **Wobbly lines?** Try some **Stabilizer**.
+**Faint marks while hovering?** Raise **Lightest press that counts**. **Wobbly lines?** Turn **Stabilizer** up from the 12% it starts at.
 
 **Still stuck?** [Quill can check your pen with you](help:pen-check) and save a report file for whoever is helping.
 

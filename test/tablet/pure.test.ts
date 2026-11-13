@@ -5,7 +5,7 @@ import { CATCH_UP_STEPS, Stabilizer, ropeLength, windowSize } from '../../src/ta
 import { barrelBits, firstBarrelBit, getPenHost, isLinuxDesktop, meaningOfPress, penPress, setPenHost, type PenButtonSettings } from '../../src/tablet/buttons';
 import { ToolGuess } from '../../src/tablet/tool';
 import { penFields } from '../../src/tablet/input';
-import { cleanPen, DEFAULT_PEN } from '../../src/tablet/settings';
+import { cleanPen, DEFAULT_PEN, DEFAULT_STABILIZER, PEN_TOOLS } from '../../src/tablet/settings';
 import { pinchView, PenTracker, PALM_GRACE_MS } from '../../src/tablet/touch';
 import { curveWithHandle, handleSpots } from '../../src/tablet/CurveEditor';
 
@@ -292,5 +292,14 @@ describe('touch', () => {
     expect(zoomed.zoom).toBeCloseTo(2);
     // The document point that was under the middle (150, 100) is still under the middle.
     expect(zoomed.panX + 150 * 2).toBeCloseTo(150 + 0, 5);
+  });
+});
+
+describe('what the tools start with', () => {
+  it('every drawing tool gets a gentle stabilizer, so a slow line does not wobble', () => {
+    for (const id of PEN_TOOLS) expect(DEFAULT_PEN.tools[id].stabilizer).toBe(DEFAULT_STABILIZER);
+    expect(DEFAULT_STABILIZER).toBe(12);
+    // Still only a suggestion: a saved 0 stays 0.
+    expect(cleanPen({ tools: { brush: { stabilizer: 0 } } }).tools.brush.stabilizer).toBe(0);
   });
 });

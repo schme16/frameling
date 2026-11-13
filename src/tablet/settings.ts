@@ -57,7 +57,11 @@ export interface PenSettings {
   seen: boolean;
 }
 
-const tool = (o: Partial<ToolPen> = {}): ToolPen => ({ size: false, opacity: false, flow: false, tilt: false, stabilizer: 0, stabMode: 'string', ...o });
+// A light steadying on every tool to start with: enough to take the wobble out of a slow line, not enough to feel
+// like the line is lagging behind the pen. Each tool's own options can change it.
+export const DEFAULT_STABILIZER = 12;
+
+const tool = (o: Partial<ToolPen> = {}): ToolPen => ({ size: false, opacity: false, flow: false, tilt: false, stabilizer: DEFAULT_STABILIZER, stabMode: 'string', ...o });
 
 export const DEFAULT_PEN: PenSettings = {
   pen: { curve: CURVE_PRESETS.normal, min: 0, max: 1, tiltAmount: 60, eraserEnd: true, barrel1: 'eyedropper', barrel2: 'pan', swapButtons: false },

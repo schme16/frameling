@@ -7,7 +7,7 @@ import { CanvasEngine } from '../../src/canvas/engine';
 import { newDoc, newVectorDrawing } from '../../src/core/doc';
 import { registerTool, unregisterTool, type Tool } from '../../src/core/registry';
 import { resetStore, store } from '../../src/core/store';
-import { resetPen, setToolPen } from '../../src/tablet/settings';
+import { PEN_TOOLS, resetPen, setToolPen } from '../../src/tablet/settings';
 import { resetOffer } from '../../src/tablet/check/state';
 import { penTools } from '../../src/tablet/tool';
 
@@ -36,6 +36,8 @@ const probe = (id: string, counter: () => void, un: () => void): Tool => ({
 
 beforeEach(() => {
   resetPen();
+  // These are about the pointer plumbing, not the smoothing, so no tool steadies the line unless the test says to.
+  for (const id of PEN_TOOLS) setToolPen(id, { stabilizer: 0 });
   const doc = newDoc({ width: 200, height: 100 });
   doc.drawings = { dv: { ...newVectorDrawing(), id: 'dv' } };
   doc.layers[0].cels = [{ id: 'c1', drawingId: 'dv', start: 0, length: 24 }];
