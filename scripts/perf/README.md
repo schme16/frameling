@@ -174,3 +174,5 @@ The second sweep round (`results/sweep-after-2.json`, compare it with `sweep-aft
 rest of file saving and opening off the page's thread: `save-file` and `autosave` hand a finished `doc.json` (kept per drawing
 between saves) to a worker, and `open-file` of a pixel document decodes its pictures on workers (the harness calls
 `openBytesAsync`, the path File > Open takes; `openBytes` is the plain synchronous reader, kept for older builds).
+
+`open-file` of a big vector document (`stress-vector`, a 36 MB `doc.json`) reads and parses that JSON on a worker and hands the parsed object across (`readDocJsonInWorker`, only for a `doc.json` over 1 MB): the page's time drops from about 340 ms to about 195 ms, and the open itself takes about 250 ms longer by the clock (the hand-over is not free), with the page free to draw meanwhile.
