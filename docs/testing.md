@@ -844,12 +844,28 @@ own `debug.ts`, which put test hooks on `window`. None of it is in the normal st
 ## Installing on this Linux machine
 
 ```bash
-npm run install-local                 # npm run dist:linux, then copy the AppImage
-npm run install-local -- --no-build   # copy the last build
+npm run install-local                 # npm run dist:linux, then copy the AppImage (and the beta one, see below)
+npm run install-local -- --no-build   # copy the last builds
 ```
 
 Copies the newest `release/*.AppImage` to `/mnt/109313D2109313D2/lutris-applications/frameling/frameling.AppImage`
-(`FRAMELING_INSTALL_DIR` overrides), closing a running copy first if the file is busy. Linux only.
+(`FRAMELING_INSTALL_DIR` overrides), closing a running copy first if the file is busy. Linux only. The ordinary build
+runs with `FRAMELING_INGEST_KEY`, `FRAMELING_INGEST_URL`, `FRAMELING_BETA` and `FRAMELING_PROFILE` removed from its
+environment, and `beta-check --expect-no-key` looks inside its packed `app.asar` before it is copied.
+
+With `FRAMELING_INGEST_KEY` in the environment it also builds the beta copy first, into `release-beta/` (with
+`FRAMELING_BETA=1`, so a build with no key stops, and `FRAMELING_PROFILE=beta`), runs
+`node scripts/beta-check.mjs --expect-key release-beta/linux-unpacked/resources/app.asar`, and only then installs it as
+`frameling.beta.AppImage` with its own launcher (`frameling-beta.desktop`) and icon. Without the key it prints one line
+and installs just the ordinary copy; a beta already in the folder is left as it was. The profile makes the beta copy
+keep its data in a `Frameling Beta` folder next to `Frameling` (`src/main/profile.ts`), so its settings, recent files and
+single-instance lock are its own, and it does not register `frameling://`. The two can run at once.
+`test/beta/install-plan.test.ts` covers the choices; to try the whole thing without touching the real folder, use a
+placeholder key and a throwaway place:
+
+```bash
+FRAMELING_INGEST_KEY=pbk_TEST_ONLY_NOT_A_KEY FRAMELING_INSTALL_DIR=/tmp/fl XDG_DATA_HOME=/tmp/fl/data npm run install-local
+```
 
 ## The Linux launcher and a stock Ubuntu 24.04
 

@@ -1,6 +1,7 @@
 node_modules
 dist/
 release/
+release-beta/
 *.log
 .DS_Store
 CLAUDE.md
