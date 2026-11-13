@@ -6,3 +6,6 @@
   under both, so a bright theme can be your night one if that is what you want.
 - The page's preamble is a tooltip on the heading now, and the copy button says **Make it mine**. The buttons on a
   theme card wait below it and swoop up when you point at the card, tab into it, or pick it.
+- **after-card-dark / after-card-light**: the card as you asked for it. The squiggle is a gentle wave instead of a
+  jagged zigzag, and each half is the real app preview drawn in the theme you picked, so the card shows your actual
+  two themes rather than colour blocks.

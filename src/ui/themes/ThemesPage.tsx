@@ -7,23 +7,14 @@ import { effectiveTheme, getPrefs, setPrefs, usePrefs, type ThemePref } from '..
 import { toast } from '../toast';
 import { BUILT_IN_THEMES, type Theme } from './builtIn';
 import { addCustomTheme, selectTheme } from './library';
-import { copyTheme, findTheme, importThemeText, MAX_FILE_BYTES, themeStyle } from './model';
+import { copyTheme, findTheme, importThemeText, MAX_FILE_BYTES } from './model';
 import { ThemeEditor } from './ThemeEditor';
 import { ThemePreview } from './ThemePreview';
 import type { ThemeMode } from './tokens';
 
-/** One theme's colours as a plain block: the page, a panel, and its brightest few colours. */
+/** One theme's half of the card: the real app preview, drawn in that theme's colours. */
 function ThemeHalf({ theme, dark = false }: { theme: Theme; dark?: boolean }) {
-  return (
-    <div className={`th-current-half${dark ? ' is-dark' : ''}`} style={themeStyle(theme) as React.CSSProperties} aria-hidden="true">
-      <span className="th-current-panel" />
-      <span className="th-current-dots">
-        <i style={{ background: 'var(--chosen-bg)' }} />
-        <i style={{ background: 'var(--accent)' }} />
-        <i style={{ background: 'var(--ok)' }} />
-      </span>
-    </div>
-  );
+  return <ThemePreview theme={theme} className={`th-current-half${dark ? ' is-dark' : ''}`} />;
 }
 
 /**
