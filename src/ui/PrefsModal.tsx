@@ -23,6 +23,7 @@ import { Modal } from './Modal';
 import { closePrefs, overlays, type PrefsPage } from './overlays';
 import { setPrefs, usePrefs, type LookPref, type ThemePref } from './prefs';
 import { toast } from './toast';
+import { applySettings, pickSettingsFile, saveSettingsFile } from './settingsFile';
 import { BehaviourPage } from './ChoiceDialog';
 import { ThemesPage } from './themes/ThemesPage';
 import { PluginsPage } from '../plugins/PluginsPage';
@@ -133,6 +134,23 @@ function SnappingPage() {
 }
 
 // ---------------------------------------------------------------- general
+
+async function backUpSettings(): Promise<void> {
+  const r = await saveSettingsFile();
+  if (r === 'saved') toast('Your settings are saved.', { kind: 'success' });
+  else if (r === 'failed') toast('That file could not be saved.', { kind: 'error' });
+}
+
+/** Puts a backup back and starts Frameling again, so every part reads the restored settings. */
+async function restoreSettings(): Promise<void> {
+  const r = await pickSettingsFile();
+  if (!r) return;
+  if (!r.ok) return void toast(r.why, { kind: 'error' });
+  const n = applySettings(r.file);
+  if (!n) return void toast('Those settings could not be put back.', { kind: 'error' });
+  toast('Your settings are back. Frameling is starting again.', { kind: 'success' });
+  setTimeout(() => location.reload(), 900);
+}
 
 function GeneralPage({ onThemes }: { onThemes: () => void }) {
   const p = usePrefs((x) => x);
@@ -252,6 +270,16 @@ function GeneralPage({ onThemes }: { onThemes: () => void }) {
       </Row>
       <Row label="Thicker pixel outlines" hint="Pixel shapes (rectangle, ellipse, line, polygon, star) get an outline thicker than one pixel. Off keeps the classic one pixel line.">
         <Switch label="Thicker pixel outlines" on={p.pixelThickOutlines} onChange={(pixelThickOutlines) => setPrefs({ pixelThickOutlines })} />
+      </Row>
+      <Row label="Your settings" hint="Everything you have set: themes, shortcuts, pen settings, workspaces and the answers you have given. Keep a copy, or put one back on another computer.">
+        <div className="ui-pref-volume">
+          <button type="button" className="ui-btn ui-btn-small" onClick={() => void backUpSettings()}>
+            Back up...
+          </button>
+          <button type="button" className="ui-btn ui-btn-small" onClick={() => void restoreSettings()}>
+            Put a backup back...
+          </button>
+        </div>
       </Row>
       {p.pixelThickOutlines && (
         <Row label="Outline thickness" hint="How many pixels thick the outline is. A filled shape keeps its fill; only the outline gets thicker.">
