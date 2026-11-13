@@ -115,3 +115,32 @@ describe('getting closer is announced once', () => {
     expect(toasts.get()).toEqual([]);
   });
 });
+
+describe('his things have a panel of their own', () => {
+  it('brings both panels and both commands', () => {
+    const on = ids();
+    expect(on.panels).toEqual(expect.arrayContaining(['quill-pet', 'quill-things']));
+    expect(on.commands).toEqual(expect.arrayContaining(['quillPet.open', 'quillPet.things', 'quillPet.give']));
+    expect(on.help).toEqual(expect.arrayContaining(['quill-pet', 'quill-things']));
+  });
+
+  it('takes the things panel away with the rest when the pet is off', () => {
+    setFeatureOn('quill-pet', false);
+    expect(ids().panels).not.toContain('quill-things');
+    expect(ids().commands).not.toContain('quillPet.things');
+    expect(ids().help).not.toContain('quill-things');
+  });
+
+  it('says when he was given a thing in plain words', async () => {
+    const { sayWhen } = await import('../../src/quillpet/QuillThingsPanel');
+    const now = new Date(2026, 10, 13, 12).getTime();
+    const day = 86400000;
+    expect(sayWhen(now, now)).toBe('today');
+    expect(sayWhen(now - day, now)).toBe('yesterday');
+    expect(sayWhen(now - 3 * day, now)).toBe('3 days ago');
+    expect(sayWhen(now - 21 * day, now)).toBe('about 3 weeks ago');
+    expect(sayWhen(now - 90 * day, now)).toBe('about 3 months ago');
+    // A thing from the future (a clock that moved) still reads sensibly.
+    expect(sayWhen(now + day, now)).toBe('today');
+  });
+});

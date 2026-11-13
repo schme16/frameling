@@ -494,6 +494,22 @@ const entries = [
       { rec: 'stop' },
     ],
   },
+  // Quill's things: the drawings he has been given.
+  {
+    name: 'quill-things',
+    prefs: CALM,
+    steps: [
+      template('bouncing-ball'),
+      wait(800),
+      panel('quill-things'),
+      wait(900),
+      js(`(() => { const s = ${F}.store(); for (const f of [0, 6, 12]) { s.setUi({ frame: f }); document.querySelector('.qp-give').click(); } return true; })()`),
+      wait(2200),
+      ...settle,
+      tag('.qt-panel'),
+      shotEl(2),
+    ],
+  },
   // Quill's corner: he potters about, you give him a stroke, and the bar shows how well you know each other.
   {
     name: 'quill-pet',
@@ -513,9 +529,7 @@ const entries = [
       wait(2000),
       // His pencils take the colour you are drawing with, and he keeps a picture of the frame you are on.
       clickText('.qp-feed', ''),
-      wait(2200),
-      clickText('.qp-give', ''),
-      wait(2400),
+      wait(2600),
       { rec: 'stop' },
     ],
   },

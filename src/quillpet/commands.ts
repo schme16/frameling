@@ -18,6 +18,16 @@ export const quillPetPanel: PanelDef = {
   help: 'quill-pet',
 };
 
+export const quillThingsPanel: PanelDef = {
+  id: 'quill-things',
+  title: "Quill's things",
+  icon: 'image',
+  component: lazyPanel(() => import('./QuillThingsPanel').then((m) => m.QuillThingsPanel)),
+  zone: 'right',
+  order: 86,
+  help: 'quill-things',
+};
+
 export const quillPetCommands: Command[] = [
   {
     id: 'quillPet.open',
@@ -43,6 +53,15 @@ export const quillPetCommands: Command[] = [
     },
   },
   {
+    id: 'quillPet.things',
+    label: "Quill's things",
+    category: 'View',
+    description: 'Opens the drawings you have given Quill.',
+    keywords: ['quill', 'pet', 'things', 'collection', 'gifts', 'presents', 'drawings', 'kept'],
+    help: 'quill-things',
+    run: () => showPanel('quill-things'),
+  },
+  {
     id: 'quillPet.give',
     label: 'Give this drawing to Quill',
     category: 'View',
@@ -52,7 +71,7 @@ export const quillPetCommands: Command[] = [
     enabled: () => getPrefs().showQuill,
     run: () =>
       void giveToQuill().then((got) => {
-        if (got) showPanel('quill-pet');
+        if (got) showPanel('quill-things');
       }),
   },
 ];

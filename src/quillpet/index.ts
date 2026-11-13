@@ -3,7 +3,7 @@
 // onboarding and the quests all carry on exactly as they were. Show Quill in Preferences is the other switch, and
 // that one hides him everywhere, pet included.
 import { defineFeature } from '../features/feature';
-import { quillPetCommands, quillPetPanel } from './commands';
+import { quillPetCommands, quillPetPanel, quillThingsPanel } from './commands';
 import { quillPetHelp } from './help';
 import { startWatching } from './watch';
 
@@ -15,14 +15,20 @@ export const quillPetFeature = defineFeature({
   about: 'Quill lives in a panel of his own, keeps you company while you draw, and remembers the two of you.',
   optional: true,
   commands: quillPetCommands,
-  panels: [quillPetPanel],
+  panels: [quillPetPanel, quillThingsPanel],
   help: quillPetHelp,
-  menus: [{ menu: 'View', items: ['quillPet.open', 'quillPet.give'] }],
+  menus: [{ menu: 'View', items: ['quillPet.open', 'quillPet.things', 'quillPet.give'] }],
   sections: {
     'quill-pet': {
       blurb: 'Quill, how he is, and how well the two of you know each other.',
       group: 'learn',
       keywords: ['quill', 'pet', 'hedgehog', 'friend'],
+    },
+    'quill-things': {
+      short: 'His things',
+      blurb: 'The drawings you have given Quill, which he keeps.',
+      group: 'learn',
+      keywords: ['quill', 'things', 'collection', 'gifts', 'presents'],
     },
   },
   activate: () => {

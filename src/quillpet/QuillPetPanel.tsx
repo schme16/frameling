@@ -5,8 +5,7 @@ import { Quill, useShowQuill } from '../ui/mascot';
 import { line, lines } from '../ui/mascot/lines';
 import { sinceInput } from '../ui/mascot/runtime';
 import { useStore } from '../core/store';
-import { daysAway, letGoOf, petStore, tellQuill } from './store';
-import { giveToQuill } from './give';
+import { daysAway, petStore, tellQuill } from './store';
 import { MOOD_WORDS, moodNow, nextStage, stageOf, stageProgress, type Mood } from './model';
 import { noteFuss, sinceEdit, sinceFinished, sinceFuss } from './watch';
 import './quillpet.css';
@@ -97,46 +96,6 @@ export function QuillPetPanel() {
           <button type="button" className="ui-btn qp-feed" onClick={feed} disabled={!hasColour} title={hasColour ? `Give him ${colour}` : 'He already has this one'}>
             Give him this colour
           </button>
-        </div>
-      )}
-
-      {showQuill && (
-        <div className="qp-things">
-          <div className="qp-things-top">
-            <p className="qp-colours-top">His things</p>
-            <button
-              type="button"
-              className="ui-btn qp-give"
-              onClick={() => void giveToQuill().then((got) => got && setSaid(line('pet.given')))}
-              title="He keeps a little picture of the frame you are on"
-            >
-              Give him this
-            </button>
-          </div>
-          {pet.things.length === 0 ? (
-            <p className="qp-none">Nothing yet. Give him a drawing and he'll keep it.</p>
-          ) : (
-            <ul className="qp-thing-list" aria-label="Things you have given Quill">
-              {[...pet.things].reverse().map((t) => (
-                <li key={t.id}>
-                  <button
-                    type="button"
-                    className="qp-thing"
-                    title={t.name}
-                    onClick={() => {
-                      noteFuss();
-                      setSaid(line('pet.thing', { name: t.name }));
-                    }}
-                  >
-                    <img src={t.picture} alt={t.name} />
-                  </button>
-                  <button type="button" className="qp-thing-back" title={`Give ${t.name} back`} aria-label={`Give ${t.name} back`} onClick={() => letGoOf(t.id)}>
-                    x
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
         </div>
       )}
 
