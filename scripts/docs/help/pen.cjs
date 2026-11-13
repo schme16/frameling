@@ -48,6 +48,21 @@ module.exports = [
     steps: [template('bouncing-ball'), cmd('pen.check'), wait(1500), penCheckSteps, wait(500), ...shotOf('.tb-check', 10)],
   },
   {
+    // Telling the makers: the beta report panel with the switch on and a note written, so the picture shows what it asks
+    // for and the two buttons. The switch is off for everyone by default, so the shot turns it on first.
+    name: 'beta-reports',
+    prefs: CALM,
+    steps: [
+      template('bouncing-ball'),
+      js(`${F}.prefs.set({ betaReports: true })`),
+      js(`${F}.overlays.openPrefs('diagnostics')`),
+      wait(1500),
+      js(`(() => { const t = document.querySelector('.bt-beta textarea'); if (!t) return false; const set = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set; set.call(t, 'It froze when I pressed Export, with the timeline open.'); t.dispatchEvent(new Event('input', { bubbles: true })); return true; })()`),
+      wait(600),
+      ...shotOf('.bt-beta', 10),
+    ],
+  },
+  {
     // Installing on Linux: the Diagnostics page, where Quill's pen check starts once the app is running.
     name: 'installing-on-linux',
     prefs: CALM,

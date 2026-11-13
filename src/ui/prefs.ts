@@ -33,6 +33,13 @@ export interface Prefs {
   showTextures: boolean;
   /** Show Quill, the hedgehog guide. Off hides him and his chatter everywhere; words people need stay as plain notes. */
   showQuill: boolean;
+  /**
+   * Beta reports: whether the panel in Preferences > Diagnostics offers to send one. Off until you turn it on, and
+   * even then nothing goes without you pressing Send and reading what it says first (src/beta).
+   */
+  betaReports: boolean;
+  /** How to get back to you about a report, only if you chose to give it. Kept on this computer, never anywhere else. */
+  betaContact: string;
   /** How the right side is laid out: Properties with a labelled rail, every panel on the rail, or tabs. */
   rightSide: 'inspector' | 'rail' | 'tabs';
   /** The tool rail: every tool two wide in groups, or one button per group with the rest in a flyout. */
@@ -74,6 +81,8 @@ export const DEFAULT_PREFS: Prefs = {
   showTips: true,
   showTextures: true,
   showQuill: true,
+  betaReports: false,
+  betaContact: '',
   rightSide: 'inspector',
   toolRail: 'two',
   fadeTileCopies: false,
@@ -115,6 +124,8 @@ export function migratePrefs(raw: unknown): Prefs {
     showTips: bool(r.showTips, DEFAULT_PREFS.showTips),
     showTextures: bool(r.showTextures, DEFAULT_PREFS.showTextures),
     showQuill: bool(r.showQuill, DEFAULT_PREFS.showQuill),
+    betaReports: bool(r.betaReports, DEFAULT_PREFS.betaReports),
+    betaContact: typeof r.betaContact === 'string' ? r.betaContact.slice(0, 200) : DEFAULT_PREFS.betaContact,
     rightSide: r.rightSide === 'rail' || r.rightSide === 'tabs' || r.rightSide === 'inspector' ? r.rightSide : DEFAULT_PREFS.rightSide,
     toolRail: r.toolRail === 'stacked' || r.toolRail === 'two' ? r.toolRail : DEFAULT_PREFS.toolRail,
     fadeTileCopies: bool(r.fadeTileCopies, DEFAULT_PREFS.fadeTileCopies),

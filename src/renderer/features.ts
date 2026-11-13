@@ -17,7 +17,11 @@ import '../effects';
 import '../quests';
 import '../plugins';
 import '../templates/app';
+import { installBeta } from '../beta';
 import { registerFeatures } from '../features/host';
+
+// Beta reports: a panel and a command. Nothing is sent without the person pressing Send.
+installBeta();
 import '../features/sync';
 import { audioFeature } from '../audio';
 import { cameraFeature } from '../camera';

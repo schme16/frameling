@@ -3,6 +3,7 @@
 import { QuillSays } from '../../ui/mascot';
 import { line } from '../../ui/mascot/lines';
 import { DiagnosticsSwitch } from '../../plugins/DiagnosticsSwitch';
+import { BetaPanel } from '../../beta/BetaPanel';
 import { checkMemory, startPenCheck } from './state';
 import '../tablet.css';
 
@@ -12,6 +13,8 @@ export function DiagnosticsPage() {
     <div className="tb-page" data-testid="diagnostics-page">
       <h3>Diagnostics</h3>
       <p className="ui-pref-intro">Checks that find out what is going on when something is not working, and save a small file you can send to whoever is helping.</p>
+      <h4>Telling the makers</h4>
+      <BetaPanel />
       <h4>Plugins</h4>
       <DiagnosticsSwitch />
       <h4>Pen and tablet</h4>

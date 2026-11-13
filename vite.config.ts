@@ -12,7 +12,14 @@ export default defineConfig({
   publicDir: '../../public',
   plugins: [react()],
   // The web build has no desktop side to ask for the version (src/platform).
-  define: { __FRAMELING_VERSION__: JSON.stringify(version) },
+  // The beta build's write-only ingest key, from the environment at build time, never from the repository. An
+  // ordinary build has none, so it simply has no Send button (src/beta/send.ts).
+  define: {
+    __FRAMELING_VERSION__: JSON.stringify(version),
+    __FRAMELING_INGEST__: JSON.stringify(
+      process.env.FRAMELING_INGEST_KEY ? { url: process.env.FRAMELING_INGEST_URL || 'https://project-boards.shanegadsby.com', key: process.env.FRAMELING_INGEST_KEY } : null,
+    ),
+  },
   build: {
     outDir: '../../dist/renderer',
     emptyOutDir: true,
