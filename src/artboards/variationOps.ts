@@ -11,6 +11,7 @@ import { leaveTileEdit } from '../tiles/tileEdit';
 import { toggleThroughCamera } from '../camera/ops';
 import type { FitMode } from './fit';
 import { activeId, findArtboard, sizeOf } from './model';
+import { whyNoVariation } from './shared';
 import { goToArtboard, installArtboards } from './ops';
 import { detachVariation, listDifferences, makeVariation, resetDifference, resetVariation, setVariationSize, sourceOf, variationsOf, type DiffItem, type ResetKey } from './variations';
 
@@ -47,6 +48,11 @@ function toTopLevel(): void {
  * framed on the original (the first time, Frameling asks whether to fill or fit; see the choice `variations.frame`).
  */
 export async function makeVariationOf(id?: Id, preset: SizePreset = 'same', open = true): Promise<Id | null> {
+  const why = whyNoVariation(store().get().doc);
+  if (why) {
+    void toast(why, { kind: 'warn' });
+    return null;
+  }
   toTopLevel();
   installArtboards();
   const from = id ?? activeId(store().get().doc);

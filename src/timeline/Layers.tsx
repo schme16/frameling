@@ -26,9 +26,16 @@ export const ROW_H = CLEAN_ROW_H;
 /** The buttons above the layer list: add (vector, pixel), duplicate, delete. */
 export function LayerTools({ inPanel = false }: { inPanel?: boolean } = {}) {
   const count = useStore((s) => s.doc.layers.length);
+  // Frames on boards: these layers are on every frame.
+  const everyFrame = useStore((s) => !!s.doc.sharedLayers && (s.doc.artboards?.length ?? 0) > 1);
   return (
     <div className={`tl-layer-tools${inPanel ? ' in-panel' : ''}`} role="toolbar" aria-label="Layers">
-      {inPanel ? null : <span className="tl-layer-tools-title">Layers</span>}
+      {inPanel ? null : (
+        <span className="tl-layer-tools-title">
+          Layers
+          {everyFrame ? <span className="tl-shared-chip" title="One set of layers for the whole drawing: add, hide or reorder one here and every frame has it. Each frame keeps its own pixels.">on every frame</span> : null}
+        </span>
+      )}
       <button type="button" className="tl-btn" title={tip('layers.addVector', 'Add a vector layer: smooth drawing you can resize and edit')} aria-label="Add vector layer" onClick={() => runCmd('layers.addVector')}>
         <Icon name="vector" size={15} />
         <span className="tl-btn-text">Vector</span>
@@ -43,6 +50,11 @@ export function LayerTools({ inPanel = false }: { inPanel?: boolean } = {}) {
       <button type="button" className="tl-btn" title={count > 1 ? tip('layers.delete', 'Delete this layer') : 'You need at least one layer'} aria-label="Delete layer" disabled={count < 2} onClick={() => runCmd('layers.delete')}>
         <Icon name="trash" size={15} />
       </button>
+      {inPanel && everyFrame ? (
+        <p className="tl-shared-note">
+          These layers are on <b>every frame</b>. Each frame keeps its own pixels on them.
+        </p>
+      ) : null}
     </div>
   );
 }

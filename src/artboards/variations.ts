@@ -1033,7 +1033,8 @@ export interface NewVariation {
  * changes). It is placed beside the one it came from and not opened. Returns its id.
  */
 export function makeVariation(d: Doc, from: Id, o: NewVariation = {}): Id | null {
-  if (d.editing?.length) return null;
+  // Variations lean on each board having layers of its own, so they are off while the boards share one stack.
+  if (d.editing?.length || d.sharedLayers) return null;
   const list = ensureArtboards(d);
   const s = snap(d);
   const src = findArtboard(s, from);

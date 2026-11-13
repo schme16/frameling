@@ -21,6 +21,15 @@ registerHelpTopics([
     keywords: ['way', 'mode', 'chip', 'one picture', 'animation', 'frames on boards', 'convert', 'artboards', 'timeline', 'make it move', 'change how'],
   },
   {
+    id: 'pixel-shared-layers',
+    order: 4.5,
+    title: 'One set of layers for every frame',
+    section: 'Pixel art',
+    media: 'pixel-shared-layers.png',
+    summary: 'Frames on boards share one stack of layers: add Lines once and every frame has it, and each frame keeps its own pixels.',
+    keywords: ['layers', 'shared layers', 'every frame', 'one stack', 'frames on boards', 'boards', 'lines', 'colour', 'shade', 'sketch', 'aseprite', 'variations'],
+  },
+  {
     id: 'pixel-wells',
     order: 5,
     title: 'Paint and Back colours',

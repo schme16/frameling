@@ -5,6 +5,7 @@
  */
 import type { Cel, Doc, Drawing, Id, Layer, Pose, Rig, VectorDrawing, VectorLayer } from '../core/format';
 import { tweenEase } from '../core/ease';
+import { siblings } from '../core/sharedLayers';
 import type { PosedMesh } from '../core/layerKinds';
 import { deformMesh, lerpPose, mapply, minv, mmul, rigState, unposeOnMesh, type Mat, type RigState } from './math';
 
@@ -46,7 +47,11 @@ function indexOf(doc: Doc): LayerIndex {
 export function anyLayer(doc: Doc, id: Id, near?: Layer): Layer | undefined {
   const ix = indexOf(doc);
   const own = near && ix.home.get(near);
-  return own ? own.get(id) : ix.first.get(id);
+  if (own) return own.get(id);
+  // With shared layers a closed board's layers are the stack holding that board's cels: look beside the layer there.
+  const beside = near && siblings.get(near);
+  if (beside) return beside.find((l) => l.id === id);
+  return ix.first.get(id);
 }
 
 /** The key on a bones layer that rules `frame`: the one covering it, else the last one before it, else the first. */

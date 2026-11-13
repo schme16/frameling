@@ -37,6 +37,27 @@ are stored as `audio/<id>.<ext>` entries like the open one's. Reading repairs wh
 left out with a warning, and if no entry is marked open, the document's own content becomes an artboard so nothing
 is lost (`src/artboards/io.ts`, tests in `test/artboards/model.test.ts`).
 
+## One stack of layers for every board (`doc.sharedLayers`)
+
+Frames on boards share one layer stack, as in Aseprite: layers one way, frames the other. `doc.sharedLayers: true` (optional,
+missing in every older file) makes `doc.layers` the stack for the whole drawing, and a closed board keeps only its own cels
+on each layer, in `ArtboardContent.cels` (a map from layer id to `Cel[]`), with `content.layers` empty. The open board's cels
+are in `doc.layers` as always. `takeContent` and `putContent` do the swap: `putContent` builds a new array of the document's
+layers holding the board's cels, so layer identity and every layer setting stay the document's and only the drawing swaps.
+`contentOf` and `boardLayers` (core/symbols.ts) give a closed board's layers as that same view, read only.
+
+- Adding, renaming, hiding, locking, reordering a layer, its blend, effects and folders: free, there is one stack.
+- Deleting a layer drops its cels from every board and duplicating copies them (with their own drawings) on every board
+  (`src/timeline/edit-core.ts`). `pruneDrawings` counts the cels in `content.cels`.
+- In the file only `cels` is written for a closed board (no copies of the layers), read back through the same layer reader so a
+  cel with a missing or wrong drawing is left out with the usual warning (`src/artboards/io.ts`).
+- Variations lean on `content.layers`, so they are off while shared (`whyNoVariation`, `makeVariation` returns null), and the reader
+  ignores the flag when a board is a variation (the app never writes both).
+- Sheets (a sprite per board) keep a stack per board. Converting frames on boards to a sheet gives each board its own copy.
+- An older file with a stack per board is never rewritten on its own: `shareLayers` (src/artboards/shared.ts) merges the stacks
+  by kind, name and pixel size, behind the choice `pixel.shareLayers` and the command **Put the frames on one stack of layers**;
+  `unshareLayers` undoes it on purpose. Tests: `test/artboards/shared-layers.test.ts`.
+
 ## Pixel art (built)
 
 - **Artboard tool** (Shift+W): drag on the empty pasteboard to make one, drag one to move it (Shift keeps it level),

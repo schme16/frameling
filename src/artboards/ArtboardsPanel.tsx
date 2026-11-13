@@ -19,6 +19,7 @@ import { paintThumbBackdrop } from '../canvas/thumbBackdrop';
 import { artPixelOf, artSizeOf } from '../pixel/units';
 import '../symbols/symbols.css';
 import './artboards.css';
+import { stackLook } from '../core/sharedLayers';
 
 /** The length of an artboard, open or not. */
 const sizeOfLength = (doc: Doc, id: Id): number => {
@@ -53,7 +54,7 @@ function Thumb({ doc, id, size = 40 }: { doc: Doc; id: Id; size?: number }) {
     g.strokeStyle = 'rgba(128,128,128,0.5)';
     g.strokeRect(ox + 0.5, oy + 0.5, ad.width * k - 1, ad.height * k - 1);
     // Only redraw when this artboard's content (or the drawings, for the open one) changes.
-  }, [content, a?.content ? null : doc.drawings, size]);
+  }, [content, a?.content ? null : doc.drawings, size, doc.sharedLayers ? stackLook(doc.layers) : null, doc.folders]);
   return <canvas ref={ref} className="sy-thumb" style={{ width: size, height: size }} aria-hidden="true" />;
 }
 

@@ -349,7 +349,8 @@ export function slicesForExport(layers: readonly Layer[], scale: number, range?:
 /** The layers of every board, the open board's first. The open board's layers are the document's own. */
 export function boardLayers(doc: Doc): { boardId: Id; boardName: string; open: boolean; layers: Layer[] }[] {
   const open = activeId(doc);
-  const list = artboardsOf(doc).map((a) => ({ boardId: a.id, boardName: a.name, open: a.id === open, layers: a.id === open ? doc.layers : (a.content?.layers ?? []) }));
+  // With shared layers the slices belong to the layers, which every board has: they are listed once, on the open board.
+  const list = artboardsOf(doc).map((a) => ({ boardId: a.id, boardName: a.name, open: a.id === open, layers: a.id === open ? doc.layers : doc.sharedLayers ? [] : (a.content?.layers ?? []) }));
   return [...list.filter((b) => b.open), ...list.filter((b) => !b.open)];
 }
 
@@ -402,6 +403,6 @@ export function allSliceCount(doc: Doc): number {
   let n = 0;
   const count = (layers: readonly Layer[]) => layers.forEach((l) => l.kind === 'pixel' && (n += l.slices?.length ?? 0));
   count(doc.layers);
-  for (const a of artboardsOf(doc)) if (a.content) count(a.content.layers);
+  for (const a of artboardsOf(doc)) if (a.content && !doc.sharedLayers) count(a.content.layers);
   return n;
 }

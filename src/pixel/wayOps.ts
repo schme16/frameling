@@ -6,6 +6,7 @@ import type { Doc, Id, SpriteWay } from '../core/format';
 import { getCommand } from '../core/registry';
 import { store } from '../core/store';
 import { fitAllArtboards } from '../artboards/ops';
+import { shareLayers, unshareLayers, whyNotShare, type SharedChange } from '../artboards/shared';
 import { onToolEvent } from '../tools/toolEvents';
 import { dock, inPixelWorkspace, stackPanelsIn, toggleCollapsed } from '../ui/dock';
 import { locate } from '../ui/dockModel';
@@ -84,13 +85,82 @@ export function watchSecondThings(s: DocSource): () => void {
     if (was.boards <= 1 && prev.boards > 1 && (!stored || stored === 'picture' || stored === 'animation')) {
       const say = (v: 'boards' | 'sheet') => {
         if (store().get().doc.id !== doc.id) return;
-        store().update('Say how this sprite is built', (d) => void (d.sprite = { way: v }));
+        store().update('Say how this sprite is built', (d) => {
+          d.sprite = { way: v };
+          // Frames of one sprite draw on one stack of layers; the board that was just made has nothing on it to lose.
+          if (v === 'boards') shareLayers(d as Doc, { fresh: true });
+        });
       };
       if (inHarness()) say(currentChoice<'boards' | 'sheet'>('pixel.twoBoards'));
       else withChoice<'boards' | 'sheet'>('pixel.twoBoards', say);
     } else if (was.length <= 1 && prev.length > 1 && prev.boards <= 1 && wayOf(doc) === 'animation' && (!stored || stored === 'picture')) {
       moment('frame2', () => line('pixel.frame2'), { doc: doc.id });
     }
+  });
+}
+
+// ---------------------------------------------------------------- one stack of layers for the frames
+
+export const SHARE_CHOICE = 'pixel.shareLayers';
+
+registerChoice<'share' | 'leave' | 'later'>({
+  id: SHARE_CHOICE,
+  title: 'Frames on boards: one stack of layers',
+  question: 'Every board of this sprite has layers of its own. Put the frames on one stack, so a layer you add once shows on every frame?',
+  category: 'Pixel art',
+  help: 'pixel-shared-layers',
+  default: 'later',
+  dismiss: 'later',
+  options: [
+    { value: 'share', label: 'One stack for all the frames', detail: 'Layers with the same name and kind join up, and every board keeps its own pixels. One undo step puts it back.' },
+    { value: 'leave', label: 'Leave my files as they are', detail: 'Each board keeps layers of its own. You can put them on one stack later, from the Pixel menu.' },
+    { value: 'later', label: 'Not now', detail: 'Ask again the next time a file like this opens.', once: true },
+  ],
+});
+
+/** Frames on boards that still have a stack of layers per board, and could share one. */
+export function canOfferShared(doc: Doc): boolean {
+  return isPixelDoc(doc) && wayOf(doc) === 'boards' && boardCount(doc) > 1 && whyNotShare(doc) === null;
+}
+
+/** Puts the boards on one stack of layers, as one undo step. Says what happened (or why not) in a toast. */
+export function shareLayersNow(say = true): SharedChange {
+  let result: SharedChange = { ok: false, problem: 'Nothing changed.' };
+  store().update('Put the frames on one stack of layers', (d) => {
+    result = shareLayers(d as Doc);
+  });
+  const r = result as SharedChange;
+  if (say) toast(r.ok ? r.note : r.problem, { kind: r.ok ? 'success' : 'warn' });
+  return r;
+}
+
+/** Gives every board layers of its own again, as one undo step. */
+export function unshareLayersNow(say = true): SharedChange {
+  let result: SharedChange = { ok: false, problem: 'Nothing changed.' };
+  store().update('Give each board its own layers', (d) => {
+    result = unshareLayers(d as Doc);
+  });
+  const r = result as SharedChange;
+  if (say) toast(r.ok ? r.note : r.problem, { kind: r.ok ? 'success' : 'warn' });
+  return r;
+}
+
+/**
+ * A file in the frames on boards way that has layers per board is never rewritten on its own. When one opens (or a sheet
+ * becomes frames on boards) Frameling asks once, and remembers: put them on one stack, or leave them.
+ */
+export function watchSharedOffer(s: DocSource): () => void {
+  let last = { id: s.get().doc.id, way: wayOf(s.get().doc) };
+  return s.subscribe(() => {
+    const { doc } = s.get();
+    const was = last;
+    last = { id: doc.id, way: wayOf(doc) };
+    if (doc.editing?.length || (doc.id === was.id && was.way === last.way)) return;
+    if (last.way !== 'boards' || !canOfferShared(doc) || inHarness()) return;
+    withChoice<'share' | 'leave' | 'later'>(SHARE_CHOICE, (v) => {
+      // Still the same document, and still offering, by the time they answer.
+      if (v === 'share' && store().get().doc.id === doc.id && canOfferShared(store().get().doc)) shareLayersNow();
+    });
   });
 }
 
@@ -170,6 +240,7 @@ export function watchToolMoments(): () => void {
 
 export function installWayWatchers(s: DocSource): void {
   watchSecondThings(s);
+  watchSharedOffer(s);
   watchWayLayout(s);
   watchFirstPixel(s);
   watchToolMoments();

@@ -9,9 +9,10 @@
 // The way is kept in `doc.sprite.way` (optional). When it is missing, or no longer matches the file, it is worked
 // out from the document (`inferWay`), so old files open unchanged.
 import { current, isDraft } from 'immer';
-import type { Artboard, ArtboardContent, Clip, Doc, Id, Layer, PixelLayer, SpriteWay } from '../core/format';
+import type { Artboard, ArtboardContent, Cel, Clip, Doc, Id, Layer, PixelLayer, SpriteWay } from '../core/format';
 import { newBlankPixelDrawing, newDoc, pruneDrawings, uid } from '../core/doc';
 import { addArtboard, artboardsOf, contentOf, ensureArtboards, gapFor, sizeOf } from '../artboards/model';
+import { unshareLayers } from '../artboards/shared';
 import { line } from '../ui/mascot/lines';
 import { START_FRAMES } from './units';
 
@@ -146,12 +147,12 @@ export const SIZE_CHOICES: { w: number; h: number }[] = [
 export const SHEET_BOARDS = ['Hero', 'Enemy', 'Item'];
 export const FRAME_BOARDS = START_FRAMES.animation;
 
-const blankCels = (doc: Doc, layer: PixelLayer, w: number, h: number, n: number): void => {
+const blankCels = (doc: Doc, cels: Cel[], n: number): void => {
   for (let i = 0; i < n; i++) {
     // A new picture has nothing painted yet, so it holds no pixels.
     const d = newBlankPixelDrawing();
     doc.drawings[d.id] = d;
-    layer.cels.push({ id: uid('c'), start: i, length: 1, drawingId: d.id });
+    cels.push({ id: uid('c'), start: i, length: 1, drawingId: d.id });
   }
 };
 
@@ -165,20 +166,28 @@ export function newSpriteDoc(o: NewSprite): Doc {
   const way = o.way;
   const frames = way === 'picture' || way === 'boards' ? 1 : START_FRAMES.animation;
   const doc = newDoc({ name: o.name ?? 'Untitled pixel art', width: w * ps, height: h * ps, fps: o.fps ?? 12, length: frames, background: null, pixel: { pixelSize: ps } });
-  blankCels(doc, doc.layers[0] as PixelLayer, w, h, frames);
+  blankCels(doc, doc.layers[0].cels, frames);
   doc.layers[0].name = 'Sprite';
   if (way === 'animation') doc.clips.push(idleClip(frames - 1));
   if (way === 'boards' || way === 'sheet') {
     const names = way === 'boards' ? Array.from({ length: FRAME_BOARDS }, (_, i) => `Frame ${i + 1}`) : SHEET_BOARDS;
     const list = ensureArtboards(doc);
     list[0].name = names[0];
+    // Frames on boards share one stack of layers (Sprite, and whatever you add); sprites on a sheet keep their own.
+    if (way === 'boards') doc.sharedLayers = true;
     for (const name of names.slice(1)) {
       const id = addArtboard(doc, { name, width: doc.width, height: doc.height, length: frames });
       const a = artboardsOf(doc).find((b) => b.id === id)!;
+      if (way === 'boards') {
+        const cels: Cel[] = [];
+        blankCels(doc, cels, frames);
+        a.content!.cels = { [doc.layers[0].id]: cels };
+        continue;
+      }
       const layer = a.content!.layers[0] as PixelLayer;
       layer.name = 'Sprite';
-      blankCels(doc, layer, w, h, frames);
-      if (way === 'sheet') a.content!.clips.push(idleClip(frames - 1));
+      blankCels(doc, layer.cels, frames);
+      a.content!.clips.push(idleClip(frames - 1));
     }
     if (way === 'sheet') doc.clips.push(idleClip(frames - 1));
   }
@@ -208,6 +217,7 @@ export function framesToBoards(d: Doc): Change {
   if (!onlyPixelLayers(d.layers)) return fail('Only pixel layers can be split into boards. This sprite has other kinds of layer.');
   const n = Math.max(1, d.length);
   d.sprite = { way: 'boards' };
+  d.sharedLayers = true;
   if (n < 2) {
     ensureArtboards(d)[0].name = 'Frame 1';
     return { ok: true, note: 'It has one frame, so it is one board for now. Add boards for more frames.' };
@@ -216,35 +226,18 @@ export function framesToBoards(d: Doc): Change {
   const first = list[0];
   const w = d.width;
   const gap = gapFor(w);
+  // One stack of layers for every board: each board keeps only the picture it has on each layer.
   const copyOf = (f: number): ArtboardContent => {
-    const folders = new Map<Id, Id>();
-    const folderCopy = (old: Id): Id => {
-      let nf = folders.get(old);
-      if (nf) return nf;
-      nf = uid('f');
-      folders.set(old, nf);
-      const src = d.folders![old];
-      d.folders![nf] = { ...plain(src), id: nf };
-      if (src.parent && d.folders![src.parent]) d.folders![nf].parent = folderCopy(src.parent);
-      return nf;
-    };
-    const layers: Layer[] = d.layers.map((l) => {
+    const cels: Record<Id, Cel[]> = {};
+    for (const l of d.layers) {
       const c = celAt(l, f);
-      // Cloned whole: a spread of a draft holds drafts of its arrays (effects, slices), which cannot be cloned.
-      const copy: Layer = { ...plain(l), cels: [], id: uid('l') };
-      if (copy.folder) {
-        if (d.folders?.[copy.folder]) copy.folder = folderCopy(copy.folder);
-        else delete copy.folder;
-      }
       const src = c ? d.drawings[c.drawingId] : undefined;
-      if (c && src) {
-        const nid = uid(src.id.charAt(0) || 'p');
-        d.drawings[nid] = { ...plain(src), id: nid };
-        copy.cels = [{ id: uid('c'), start: 0, length: 1, drawingId: nid }];
-      }
-      return copy;
-    });
-    return { width: d.width, height: d.height, background: d.background, length: 1, layers, clips: [], markers: [] };
+      if (!c || !src) continue;
+      const nid = uid(src.id.charAt(0) || 'p');
+      d.drawings[nid] = { ...plain(src), id: nid };
+      cels[l.id] = [{ id: uid('c'), start: 0, length: 1, drawingId: nid }];
+    }
+    return { width: d.width, height: d.height, background: d.background, length: 1, layers: [], cels, clips: [], markers: [] };
   };
   const made: ArtboardContent[] = [];
   for (let f = 1; f < n; f++) made.push(copyOf(f));
@@ -274,6 +267,7 @@ export function boardsToFrames(d: Doc): Change {
   if (list.length < 2) {
     delete d.artboards;
     delete d.activeArtboard;
+    delete d.sharedLayers;
     d.sprite = { way: 'animation' };
     return { ok: true, note: 'It is one board, so it is one animation already.' };
   }
@@ -298,7 +292,8 @@ export function boardsToFrames(d: Doc): Change {
       const k0 = l.name.trim().toLowerCase();
       const nth = (used.get(k0) ?? 0) + 1;
       used.set(k0, nth);
-      const key = `${k0}#${nth}`;
+      // On one shared stack the same layer has the same id on every board.
+      const key = d.sharedLayers ? l.id : `${k0}#${nth}`;
       let target = byName.get(key);
       if (target && target.pixelSize !== l.pixelSize) return fail(`The layer "${l.name}" has a different pixel size on ${a.name}, so the frames would not line up.`);
       if (!target) {
@@ -331,6 +326,7 @@ export function boardsToFrames(d: Doc): Change {
   else delete d.perspective;
   delete d.artboards;
   delete d.activeArtboard;
+  delete d.sharedLayers;
   d.sprite = { way: 'animation' };
   pruneDrawings(d);
   return { ok: true, note: `${plural(list.length, 'board')} became ${plural(d.length, 'frame')} on the timeline.` };
@@ -344,6 +340,8 @@ export function convertWay(d: Doc, to: SpriteWay): Change {
     return { ok: true, note: 'It was already built that way.' };
   }
   const boards = boardCount(d);
+  // A lone board has nothing to share its layers with.
+  if (boards === 1 && to !== 'boards') delete d.sharedLayers;
   if (to === 'picture') {
     if (boards > 1) return fail(`This sprite has ${boards} boards. A single picture is one board with one frame, so take the boards away first, or pick Frames on boards or Sprites on a sheet.`);
     if (d.length > 1) return fail(`This sprite has ${d.length} frames. A single picture has just one, so pick An animation, or delete the extra frames first.`);
@@ -363,10 +361,16 @@ export function convertWay(d: Doc, to: SpriteWay): Change {
   if (to === 'boards') {
     if (boards === 1 && d.length > 1) return framesToBoards(d);
     d.sprite = { way: 'boards' };
-    if (boards === 1) return { ok: true, note: 'Add a board for each frame.' };
+    if (boards === 1) {
+      // Boards added from here on share these layers.
+      d.sharedLayers = true;
+      return { ok: true, note: 'Add a board for each frame.' };
+    }
     // Sprites on a sheet to frames on boards: the boards stay as they are and now play in order.
     return { ok: true, note: 'The boards now play in order as frames of one sprite.' };
   }
+  // Sprites on a sheet each have layers of their own.
+  if (d.sharedLayers) unshareLayers(d);
   d.sprite = { way: 'sheet' };
   return { ok: true, note: boards === 1 ? 'Add a board for each sprite.' : 'Each board is now a sprite of its own.' };
 }
@@ -408,7 +412,7 @@ export function wayChoices(doc: Doc): WayChoice[] {
 /** A copy cheap enough for a dry run: the parts a conversion changes are copied, the drawings are shared. */
 function structuredCloneLite(doc: Doc): Doc {
   const copy: Doc = { ...doc, layers: doc.layers.map((l) => ({ ...l, cels: [...l.cels] })), clips: [...doc.clips], markers: [...doc.markers], drawings: { ...doc.drawings } };
-  if (doc.artboards) copy.artboards = doc.artboards.map((a) => ({ ...a } as Artboard));
+  if (doc.artboards) copy.artboards = doc.artboards.map((a) => ({ ...a, ...(a.content ? { content: { ...a.content } } : {}) } as Artboard));
   if (doc.folders) copy.folders = { ...doc.folders };
   return copy;
 }

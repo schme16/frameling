@@ -6,9 +6,10 @@
  * two. Functions that change a document change the one they are given (an immer draft or a plain object).
  */
 import { current, isDraft } from 'immer';
-import type { Artboard, ArtboardContent, CameraView, ClipFlow, Doc, Drawing, Id, Layer } from '../core/format';
+import type { Artboard, ArtboardContent, CameraView, Cel, ClipFlow, Doc, Drawing, Id, Layer } from '../core/format';
 import { cameraInverse, cameraViewOn } from '../core/camera';
-import { newPixelLayer, newVectorLayer, pruneDrawings, uid } from '../core/doc';
+import { newPixelLayer, newVectorLayer, peek, pruneDrawings, uid } from '../core/doc';
+import { celsOfStack, layersWithCels } from '../core/sharedLayers';
 import { rootDoc } from '../core/symbols';
 import { fileSafe } from '../export/plan';
 import { basePalette, resolvePalette } from './paletteOverride';
@@ -61,7 +62,10 @@ export function findArtboard(doc: Doc, id: Id): Artboard | undefined {
 
 /** The open artboard's content, as it would be stored aside. */
 export function takeContent(doc: Doc): ArtboardContent {
-  const c: ArtboardContent = { width: doc.width, height: doc.height, background: doc.background, length: doc.length, layers: doc.layers, clips: doc.clips, markers: doc.markers };
+  // With shared layers the stack stays the document's; the artboard keeps only what it has drawn on each layer.
+  const shared = !!doc.sharedLayers;
+  const c: ArtboardContent = { width: doc.width, height: doc.height, background: doc.background, length: doc.length, layers: shared ? [] : doc.layers, clips: doc.clips, markers: doc.markers };
+  if (shared) c.cels = celsOfStack(peek(doc.layers));
   if (doc.flow) c.flow = doc.flow;
   if (doc.audio) c.audio = doc.audio;
   if (doc.guides) c.guides = doc.guides;
@@ -76,7 +80,10 @@ export function putContent(doc: Doc, c: ArtboardContent): void {
   doc.height = c.height;
   doc.background = c.background;
   doc.length = c.length;
-  doc.layers = c.layers;
+  // Shared layers: the layers and every setting on them stay the document's, only the drawing on them swaps. A new
+  // array, never the stack changed in place (this is also called on a plain copy of the open document).
+  if (doc.sharedLayers || c.cels) doc.layers = layersWithCels(peek(doc.layers), c.cels);
+  else doc.layers = c.layers;
   doc.clips = c.clips;
   doc.markers = c.markers;
   if (c.flow) doc.flow = c.flow;
@@ -95,7 +102,10 @@ export function putContent(doc: Doc, c: ArtboardContent): void {
 export function contentOf(doc: Doc, id: Id): ArtboardContent | undefined {
   const a = findArtboard(doc, id);
   if (!a) return undefined;
-  return a.content ?? takeContent(rootDoc(doc));
+  const root = rootDoc(doc);
+  const c = a.content ?? takeContent(root);
+  // With shared layers the layers come from the document's stack, holding this artboard's cels. Read only.
+  return c.cels ? { ...c, layers: layersWithCels(peek(root.layers), c.cels) } : c;
 }
 
 /** Its size, whether it is open or not. */
@@ -283,7 +293,8 @@ export function addArtboard(d: Doc, o: NewArtboard = {}): Id {
   const w = Math.max(1, Math.round(o.width ?? root.width));
   const h = Math.max(1, Math.round(o.height ?? root.height));
   const px = root.layers.find((l) => l.kind === 'pixel');
-  const layer: Layer = px && px.kind === 'pixel' ? newPixelLayer('Layer 1', px.pixelSize) : newVectorLayer('Layer 1');
+  // With shared layers a new artboard is the same stack with nothing drawn on it yet.
+  const layers: Layer[] = d.sharedLayers ? [] : [px && px.kind === 'pixel' ? newPixelLayer('Layer 1', px.pixelSize) : newVectorLayer('Layer 1')];
   const spot = nextSpot(d, w);
   const id = uid('ab');
   list.push({
@@ -291,7 +302,7 @@ export function addArtboard(d: Doc, o: NewArtboard = {}): Id {
     name: o.name ?? freshName(d),
     x: Math.round(o.x ?? spot.x),
     y: Math.round(o.y ?? spot.y),
-    content: { width: w, height: h, background: o.background === undefined ? root.background : o.background, length: Math.max(1, Math.round(o.length ?? root.length)), layers: [layer], clips: [], markers: [] },
+    content: { width: w, height: h, background: o.background === undefined ? root.background : o.background, length: Math.max(1, Math.round(o.length ?? root.length)), layers, ...(d.sharedLayers ? { cels: {} } : {}), clips: [], markers: [] },
   });
   return id;
 }
@@ -304,7 +315,8 @@ function cloneContent(d: Doc, c: ArtboardContent): ArtboardContent {
   const drawingIds = new Map<Id, Id>();
   const layerIds = new Map<Id, Id>();
   const folderIds = new Map<Id, Id>();
-  for (const l of out.layers) layerIds.set(l.id, uid('l'));
+  // Shared layers keep their ids (it is the same stack); only the cels are new copies.
+  if (!out.cels) for (const l of out.layers) layerIds.set(l.id, uid('l'));
   // A copy of a folder, and of the folders around it.
   const copyFolder = (old: Id): Id => {
     let f = folderIds.get(old);
@@ -316,11 +328,8 @@ function cloneContent(d: Doc, c: ArtboardContent): ArtboardContent {
     if (src.parent && d.folders![src.parent]) d.folders![f].parent = copyFolder(src.parent);
     return f;
   };
-  for (const l of out.layers) {
-    l.id = layerIds.get(l.id)!;
-    if (l.bind) l.bind.rig = layerIds.get(l.bind.rig) ?? l.bind.rig;
-    if (l.folder && d.folders?.[l.folder]) l.folder = copyFolder(l.folder);
-    for (const cel of l.cels) {
+  const copyCels = (cels: Cel[]): void => {
+    for (const cel of cels) {
       cel.id = uid('c');
       let nd = drawingIds.get(cel.drawingId);
       if (!nd) {
@@ -332,7 +341,14 @@ function cloneContent(d: Doc, c: ArtboardContent): ArtboardContent {
       }
       cel.drawingId = nd;
     }
+  };
+  for (const l of out.layers) {
+    l.id = layerIds.get(l.id)!;
+    if (l.bind) l.bind.rig = layerIds.get(l.bind.rig) ?? l.bind.rig;
+    if (l.folder && d.folders?.[l.folder]) l.folder = copyFolder(l.folder);
+    copyCels(l.cels);
   }
+  for (const cels of Object.values(out.cels ?? {})) copyCels(cels);
   const clipIds = new Map<Id, Id>();
   for (const c2 of out.clips) {
     const n = uid('clip');

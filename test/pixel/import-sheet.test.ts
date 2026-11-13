@@ -244,7 +244,10 @@ describe('new documents in each way', () => {
     expect(boards.length).toBe(6);
     expect(boards.map((b) => b.name)).toEqual(['Frame 1', 'Frame 2', 'Frame 3', 'Frame 4', 'Frame 5', 'Frame 6']);
     expect(px(doc, doc.layers[0] as PixelLayer, 0)).toBe(1);
-    expect((boards[4].content!.layers[0] as PixelLayer).cels.length).toBe(1);
+    // Frames on boards share one stack of layers: a board holds only its own cels on it.
+    expect(doc.sharedLayers).toBe(true);
+    expect(boards[4].content!.layers).toEqual([]);
+    expect(boards[4].content!.cels![doc.layers[0].id].length).toBe(1);
     expect(wayOf(doc)).toBe('boards');
   });
   it('sprites on a sheet: a board per row, or per cell', () => {

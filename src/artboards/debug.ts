@@ -1,11 +1,12 @@
 // With ?debug in the page address, expose artboard actions and two demo documents for help pictures and A/B shots.
 // Never on in normal use.
-import { newDoc, newPixelDrawing, newVectorLayer, uid } from '../core/doc';
+import { newDoc, newPixelDrawing, newPixelLayer, newVectorLayer, uid } from '../core/doc';
 import type { Doc, PixelLayer, VectorDrawing } from '../core/format';
 import { store } from '../core/store';
 import * as model from './model';
 import * as ops from './ops';
 import { makeVariation } from './variations';
+import { addPixelLayer } from '../timeline/edit-core';
 import { loadFile, loadFileAsync, saveFile, saveFileAsync } from '../io/file';
 
 /** Paints a filled box of art pixels. */
@@ -60,6 +61,69 @@ export function demoFrames(): Doc {
   });
   model.switchArtboard(doc, model.artboardsOf(doc)[0].id);
   return doc;
+}
+
+/**
+ * The same blob jumping, four frames on four boards, drawn on four layers that every board shares: Sketch, Colour,
+ * Shade and Lines.
+ */
+export function demoSharedFrames(): Doc {
+  const doc = newDoc({ name: 'Blob jump, layered', width: 128, height: 128, length: 1, background: '#fffaf0', pixel: { pixelSize: 4 } });
+  doc.sharedLayers = true;
+  doc.layers = ['Sketch', 'Colour', 'Shade', 'Lines'].map((n) => newPixelLayer(n, 4));
+  doc.layers[0].onion = false;
+  const poses: [number, number, number][] = [[0, 2, 0], [4, -1, 1], [9, -2, 0], [4, -1, 1]];
+  poses.forEach(([lift, squash, step], k) => {
+    if (k > 0) model.switchArtboard(doc, model.addArtboard(doc, { name: `Frame ${k + 1}`, length: 1 }));
+    else model.renameArtboard(doc, model.activeId(doc), 'Frame 1');
+    const w = 32;
+    const bw = 12 + squash;
+    const bh = 10 - squash;
+    const x0 = Math.round((w - bw) / 2);
+    const y0 = 32 - 6 - bh - lift;
+    const pics = doc.layers.map(() => newPixelDrawing(w, w));
+    // Sketch: a loose pale box a pixel wider than the body.
+    box(pics[0].pixels, w, x0 - 1, y0 - 1, bw + 2, 1, '#b9c6ee');
+    box(pics[0].pixels, w, x0 - 1, y0 - 1, 1, bh + 3, '#b9c6ee');
+    box(pics[0].pixels, w, x0 + bw, y0 - 1, 1, bh + 3, '#b9c6ee');
+    // Colour and Shade.
+    box(pics[1].pixels, w, x0 + 1, y0 + 1, bw - 2, bh - 1, '#4fd1a5');
+    box(pics[2].pixels, w, x0 + 1, y0 + bh - 2, bw - 2, 2, '#2f9e7a');
+    // Lines: the outline, eyes and feet.
+    box(pics[3].pixels, w, x0 + 1, y0, bw - 2, 1, '#1d1b26');
+    box(pics[3].pixels, w, x0, y0 + 1, 1, bh, '#1d1b26');
+    box(pics[3].pixels, w, x0 + bw - 1, y0 + 1, 1, bh, '#1d1b26');
+    box(pics[3].pixels, w, x0 + 1, y0 + bh, bw - 2, 1, '#1d1b26');
+    box(pics[3].pixels, w, x0 + 3, y0 + 3, 2, 2, '#1d1b26');
+    box(pics[3].pixels, w, x0 + bw - 5, y0 + 3, 2, 2, '#1d1b26');
+    box(pics[3].pixels, w, x0 + 2 + step, y0 + bh + 1, 3, 2, '#1d1b26');
+    box(pics[3].pixels, w, x0 + bw - 5 - step, y0 + bh + 1, 3, 2, '#1d1b26');
+    doc.layers.forEach((l, i) => {
+      doc.drawings[pics[i].id] = pics[i];
+      l.cels = [{ id: uid('c'), start: 0, length: 1, drawingId: pics[i].id }];
+    });
+  });
+  model.switchArtboard(doc, model.artboardsOf(doc)[0].id);
+  doc.sprite = { way: 'boards' };
+  return doc;
+}
+
+/** For pictures: a layer added once (to the stack every board shares), with a little spark drawn on it on each board. */
+function addSparkles(name = 'Sparkle'): void {
+  store().update('Add a layer', (d) => {
+    const doc = d as Doc;
+    const id = addPixelLayer(doc, null, name, 4);
+    model.artboardsOf(doc).forEach((a, k) => {
+      const pic = newPixelDrawing(32, 32);
+      const x = 6 + k * 5;
+      box(pic.pixels, 32, x, 5, 1, 3, '#ffc94a');
+      box(pic.pixels, 32, x - 1, 6, 3, 1, '#ffc94a');
+      doc.drawings[pic.id] = pic;
+      const cel = { id: uid('c'), start: 0, length: 1, drawingId: pic.id };
+      if (a.content) (a.content.cels ??= {})[id] = [cel];
+      else doc.layers.find((l) => l.id === id)!.cels.push(cel);
+    });
+  });
 }
 
 export function demoSprites(): Doc {
@@ -171,7 +235,8 @@ if (typeof window !== 'undefined' && new URLSearchParams(location.search).has('d
     model,
     ops,
     makeVariation,
-    load: (which: 'sprites' | 'shots' | 'mixed' | 'variations' | 'frames') => (which === 'variations' ? loadVariationsDemo() : store().load(which === 'mixed' ? demoShots(true) : which === 'shots' ? demoShots() : which === 'frames' ? demoFrames() : demoSprites())),
+    addSparkles,
+    load: (which: 'sprites' | 'shots' | 'mixed' | 'variations' | 'frames' | 'shared') => (which === 'variations' ? loadVariationsDemo() : which === 'shared' ? store().load(demoSharedFrames()) : store().load(which === 'mixed' ? demoShots(true) : which === 'shots' ? demoShots() : which === 'frames' ? demoFrames() : demoSprites())),
     /** The document saved to bytes, and bytes opened as the document (for checking a file round trip). */
     saveBytes: () => saveFile(store().get().doc),
     /** The same through the path Save and autosave use (compressing off the page's thread). */

@@ -22,6 +22,8 @@ function step(by: number): void {
   goToArtboard(list[(i + by + list.length) % list.length].id, true);
 }
 
+/** Variations need layers of their own, so they are off while the frames share one stack. */
+const canVary = (s: State) => top(s) && !s.doc.sharedLayers;
 const onVariation = (s: State) => top(s) && isVariation(activeArtboard(s.doc));
 const hasFamily = (s: State) => top(s) && familyOf(s.doc, activeId(s.doc)).length > 1;
 
@@ -30,10 +32,10 @@ const variationCommands: Parameters<typeof registerCommands>[0] = [
     id: 'artboards.makeVariation',
     label: 'Make a variation (linked copy)',
     category: 'Artboards',
-    description: 'A copy of this artboard that follows it: edit the original and the variation follows along, except for the things you changed in the variation.',
+    description: 'A copy of this artboard that follows it: edit the original and the variation follows along, except for the things you changed in the variation. Off while the frames share one stack of layers.',
     keywords: ['variation', 'linked copy', 'alternate take', 'colourway', 'colorway', 'recolour', 'recolor', 'versions', 'linked artboard', 'a/b', 'override'],
     help: 'variations',
-    enabled: top,
+    enabled: canVary,
     run: () => void import('./variationOps').then((m) => m.makeVariationOf()),
   },
   ...(['square', 'wide', 'tall'] as const).map((preset) => ({
@@ -43,7 +45,7 @@ const variationCommands: Parameters<typeof registerCommands>[0] = [
     description: `A linked copy cut ${preset === 'square' ? 'square (1:1)' : preset === 'wide' ? 'wide (16:9)' : 'tall (9:16)'}, with the same animation framed in it by a camera.`,
     keywords: ['variation', 'size', 'aspect ratio', 'crop', 'social', 'cut', preset],
     help: 'variations',
-    enabled: top,
+    enabled: canVary,
     run: () => void import('./variationOps').then((m) => m.makeVariationOf(undefined, preset)),
   })),
   {
