@@ -2,6 +2,7 @@
 export const bodies: Record<string, string> = {
   'canvas-navigation': `**Zoom**
 - Scroll the mouse wheel. It zooms towards your pointer, so what you're looking at stays put. (If you'd rather the wheel slid the page up and down, change **Mouse wheel** in Preferences > Behaviour. Then **Ctrl** (**Cmd** on a Mac) plus the wheel zooms.)
+- Hold **Alt** while you scroll for careful little steps, and **Ctrl** for big sweeping ones. (With the wheel set to slide the page, where Ctrl is already doing the zooming, big steps are **Ctrl and Shift**.)
 - Pinch on a trackpad. This always zooms.
 - **Ctrl+=** zooms in and **Ctrl+-** zooms out.
 - **Ctrl+0** fits the whole page in the window. **Ctrl+1** shows it at actual size (100%).

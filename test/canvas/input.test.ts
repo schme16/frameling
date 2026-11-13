@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import '../../src/canvas/choices';
 import { currentChoice, getChoiceDef, setChoice, setChoiceAsker, withChoice } from '../../src/core/choices';
-import { SPACE_TAP_MS, SpaceTap, wheelIntent, type WheelLike } from '../../src/canvas/input';
+import { SPACE_TAP_MS, SpaceTap, wheelIntent, zoomStep, type WheelLike } from '../../src/canvas/input';
+import { wheelZoomFactor } from '../../src/canvas/view';
 
 const wheel = (over: Partial<WheelLike> = {}): WheelLike => ({ deltaX: 0, deltaY: 100, deltaMode: 0, ctrlKey: false, metaKey: false, shiftKey: false, ...over });
 
@@ -93,5 +94,37 @@ describe('the canvas choices', () => {
     expect(seen).toEqual(['pan-only']);
     await new Promise((r) => setTimeout(r));
     expect(seen).toEqual(['pan-only', 'play']);
+  });
+});
+
+describe('three sizes of zoom step', () => {
+  const ev = (o: Partial<WheelLike> = {}): WheelLike => ({ deltaX: 0, deltaY: 100, deltaMode: 0, ctrlKey: false, metaKey: false, shiftKey: false, ...o });
+
+  it('Alt takes careful steps, whichever way the wheel is set', () => {
+    expect(zoomStep(ev({ altKey: true }), 'zoom')).toBe('fine');
+    expect(zoomStep(ev({ altKey: true, ctrlKey: true }), 'scroll')).toBe('fine');
+  });
+
+  it('a Ctrl that was not needed to zoom takes big ones', () => {
+    expect(zoomStep(ev({ ctrlKey: true }), 'zoom')).toBe('coarse');
+    // With the wheel set to scroll, Ctrl is what starts the zoom, so it stays the usual size.
+    expect(zoomStep(ev({ ctrlKey: true }), 'scroll')).toBe('normal');
+    expect(zoomStep(ev({ ctrlKey: true, shiftKey: true }), 'scroll')).toBe('coarse');
+  });
+
+  it('a plain wheel is the usual size, and the intent carries it', () => {
+    expect(zoomStep(ev(), 'zoom')).toBe('normal');
+    const i = wheelIntent(ev({ altKey: true }), 'zoom');
+    expect(i).toEqual({ kind: 'zoom', factorDelta: 100, step: 'fine' });
+  });
+
+  it('a careful step moves less than usual, and a big one more', () => {
+    const fine = wheelZoomFactor(-100, 0, 'fine');
+    const normal = wheelZoomFactor(-100, 0);
+    const coarse = wheelZoomFactor(-100, 0, 'coarse');
+    expect(fine).toBeLessThan(normal);
+    expect(normal).toBeLessThan(coarse);
+    // A trackpad pinch keeps its own size: its fingers are already careful.
+    expect(wheelZoomFactor(-8, 0, 'coarse')).toBe(wheelZoomFactor(-8, 0));
   });
 });

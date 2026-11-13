@@ -931,7 +931,7 @@ export class CanvasEngine {
     const sy = e.clientY - this.bounds.top;
     const v = { zoom: store().get().ui.zoom, panX: store().get().ui.panX, panY: store().get().ui.panY };
     const intent = wheelIntent(e, currentChoice<WheelMode>('canvas.wheel'));
-    if (intent.kind === 'zoom') ctl.setView(zoomAbout(v, v.zoom * wheelZoomFactor(intent.factorDelta, e.deltaMode), sx, sy));
+    if (intent.kind === 'zoom') ctl.setView(zoomAbout(v, v.zoom * wheelZoomFactor(intent.factorDelta, e.deltaMode, intent.step), sx, sy));
     else ctl.setView({ zoom: v.zoom, panX: v.panX - intent.dx, panY: v.panY - intent.dy });
   };
 
