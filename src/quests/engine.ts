@@ -40,6 +40,11 @@ interface Run {
   edits: string[];
   frames: Set<number>;
   probeKey: string;
+  /**
+   * Whether this step may finish. A step you went **back** to starts unarmed: if what it asks for is already true
+   * (the brush is still picked), it waits until that stops being true, so you can really do it again.
+   */
+  armed: boolean;
 }
 
 export class QuestEngine {
@@ -123,6 +128,23 @@ export class QuestEngine {
     }
     this.finishStep(true);
     this.check();
+  }
+
+  /**
+   * Goes back one step to try it again. The step you land on counts as not done, and its "how things stood" snapshot
+   * is taken fresh, so doing the action moves you on by itself exactly as it did the first time.
+   */
+  back(): boolean {
+    const r = this.run;
+    if (!r || r.index === 0) return false;
+    const { quest } = r;
+    const index = r.index - 1;
+    const step = quest.steps[index];
+    this.patch((p) => ({ ...p, step: index, hint: false, done: { ...p.done, [quest.id]: (p.done[quest.id] ?? []).filter((id) => id !== step.id) } }));
+    this.begin(quest, index);
+    if (this.run) this.run.armed = false;
+    this.check();
+    return true;
   }
 
   /** "Next" for a step with no check of its own. */
@@ -243,6 +265,7 @@ export class QuestEngine {
       edits: [],
       frames: new Set([state.ui.frame]),
       probeKey: JSON.stringify(probe),
+      armed: true,
     };
     if (this.deps.progress.get().hint) this.patch((p) => ({ ...p, hint: false }));
     this.patch((p) => ({ ...p, step: index }));
@@ -293,7 +316,12 @@ export class QuestEngine {
           } catch {
             ok = false;
           }
-          if (!ok) break;
+          if (!ok) {
+            // What the step asks for is not true now, so doing it from here counts.
+            r.armed = true;
+            break;
+          }
+          if (!r.armed) break;
           this.finishStep(false);
         }
       } while (this.again && this.run);

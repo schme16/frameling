@@ -13,7 +13,8 @@ export interface Celebration {
 }
 
 export interface Feedback {
-  praise: { key: number; text: string } | null;
+  /** `did` is the Great work card: it stays until the person presses Next. Without one, the cheer fades by itself. */
+  praise: { key: number; text: string; did?: string } | null;
   celebration: Celebration | null;
 }
 
@@ -25,12 +26,20 @@ let key = 0;
 let praiseTimer: ReturnType<typeof setTimeout> | null = null;
 let partyTimer: ReturnType<typeof setTimeout> | null = null;
 
-/** `pixel`: the cheers for pixel quests (Chunky! Crisp!). */
-export function praise(pixel = false): void {
+/** `pixel`: the cheers for pixel quests (Chunky! Crisp!). `did`: what was just done, which makes it a card with a Next button. */
+export function praise(pixel = false, did?: string): void {
   if (praiseTimer) clearTimeout(praiseTimer);
   const k = ++key;
-  feedback.set((f) => ({ ...f, praise: { key: k, text: (pixel ? PIXEL_WORDS : WORDS)[k % (pixel ? PIXEL_WORDS : WORDS).length] } }));
-  praiseTimer = setTimeout(() => feedback.set((f) => ({ ...f, praise: null })), 1800);
+  feedback.set((f) => ({ ...f, praise: { key: k, text: (pixel ? PIXEL_WORDS : WORDS)[k % (pixel ? PIXEL_WORDS : WORDS).length], did } }));
+  // A card waits for Next; a bare cheer gets out of the way on its own.
+  if (!did) praiseTimer = setTimeout(() => feedback.set((f) => ({ ...f, praise: null })), 1800);
+}
+
+/** The Great work card's Next button, and anything else that moves on. */
+export function clearPraise(): void {
+  if (praiseTimer) clearTimeout(praiseTimer);
+  praiseTimer = null;
+  feedback.set((f) => (f.praise ? { ...f, praise: null } : f));
 }
 
 export function celebrate(quest: Quest, badge: Badge | null, still: boolean, ms = 9000): void {

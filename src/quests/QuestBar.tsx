@@ -4,7 +4,7 @@ import { QuillSays, useShowQuill } from '../ui/mascot';
 import { stepScript } from '../ui/mascot/scripts';
 import { openHelp } from '../ui/overlays';
 import { engine, putDownQuest } from './runtime';
-import { feedback } from './feedback';
+import { clearPraise, feedback } from './feedback';
 import { getFullQuest, questProgress } from './registry';
 import { placeBar, type Spot } from './place';
 import { resolveTarget } from './target';
@@ -51,13 +51,12 @@ export function QuestBar() {
 
   if (!quest || !step) return null;
   const last = p.step === quest.steps.length - 1;
+  // The Great work card: what you just did, and a Next button to carry on. The next step waits behind it. A step
+  // without words of its own still gets a card, counting off where you are.
+  const card = praise;
+  const didWords = praise?.did ?? `That's step ${p.step} of ${quest.steps.length} done.`;
   return (
     <section ref={ref} className={`qb qb-${spot}`} role="region" aria-label={`Quest: ${quest.title}`} data-quest="bar">
-      {praise && (
-        <span className="qb-praise" key={praise.key} role="status">
-          <Icon name="check" size={14} /> {quillOn ? praise.text : 'Done'}
-        </span>
-      )}
       <header className="qb-head">
         <span className="qb-icon">
           <Icon name={quest.icon} size={16} />
@@ -70,6 +69,27 @@ export function QuestBar() {
           <Icon name="close" size={14} />
         </button>
       </header>
+      {card ? (
+        <div className="qb-card" key={card.key}>
+          <QuillSays anim={script} size={96} className="qb-quill">
+            <p className="qb-say" aria-live="polite">
+              <b className="qb-great">{quillOn ? card.text : 'Great work!'}</b> {didWords}
+            </p>
+          </QuillSays>
+          <footer className="qb-foot">
+            <span className="qb-dots" role="img" aria-label={`${p.step} of ${quest.steps.length} steps done`}>
+              {quest.steps.map((s, i) => (
+                <i key={s.id} className={i < p.step ? 'is-done' : i === p.step ? 'is-now' : ''} />
+              ))}
+            </span>
+            <span className="qb-grow" />
+            <button type="button" className="qb-btn qb-go" onClick={clearPraise} autoFocus>
+              Next
+            </button>
+          </footer>
+        </div>
+      ) : (
+      <>
       <QuillSays anim={script} size={96} className="qb-quill">
         <p className="qb-say" aria-live="polite">
           {step.say}
@@ -88,6 +108,11 @@ export function QuestBar() {
           ))}
         </span>
         <span className="qb-grow" />
+        {p.step > 0 && (
+          <button type="button" className="qb-btn qb-quiet" onClick={() => engine.back()} title="Go back a step and try it again">
+            Back
+          </button>
+        )}
         {step.help && (
           <button type="button" className="qb-btn qb-quiet" onClick={() => openHelp(step.help)}>
             Tell me more
@@ -102,6 +127,8 @@ export function QuestBar() {
           </button>
         )}
       </footer>
+      </>
+      )}
     </section>
   );
 }

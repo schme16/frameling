@@ -6,7 +6,7 @@ import { store } from '../core/store';
 import { getPrefs, reducedMotion } from '../ui/prefs';
 import { runCommandById } from './actions';
 import { QuestEngine, type StateSource } from './engine';
-import { celebrate, dismissCelebration, praise } from './feedback';
+import { celebrate, clearPraise, dismissCelebration, praise } from './feedback';
 import { playCue } from '../ui/sounds';
 import { watchCommands, type CommandWatch } from './hook';
 import { readProbe } from './probe';
@@ -55,10 +55,16 @@ function stopWatching(): void {
 }
 
 engine.on((e) => {
-  if (e.kind === 'start') startWatching();
-  else if (e.kind === 'stop') stopWatching();
+  // A card from a quest you have left behind would be nonsense, so starting or putting one down clears it.
+  if (e.kind === 'start') {
+    clearPraise();
+    startWatching();
+  } else if (e.kind === 'stop') {
+    clearPraise();
+    stopWatching();
+  }
   else if (e.kind === 'step' && !e.skipped) {
-    praise(PIXEL_QUESTS.has(e.quest.id));
+    praise(PIXEL_QUESTS.has(e.quest.id), e.step.did);
     playCue('step');
   }
   else if (e.kind === 'finish') {

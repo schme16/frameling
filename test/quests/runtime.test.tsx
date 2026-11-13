@@ -201,6 +201,9 @@ describe('the quest bar', () => {
     expect(host.querySelectorAll('.qb-dots i')).toHaveLength(2);
     act(() => button('Show me').click());
     expect(body).toHaveBeenCalledOnce();
+    // The Great work card holds the next step back until you press Next.
+    expect(text()).toContain("That's step 1 of 2 done.");
+    act(() => button('Next').click());
     expect(text()).toContain('Step 2 of 2');
     expect(host.querySelector('.qb-dots i.is-done')).toBeTruthy();
     act(() => button('Not now').click());

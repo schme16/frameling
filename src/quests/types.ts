@@ -41,6 +41,8 @@ export interface QuestStep {
   say: string;
   /** An extra line saying why, shown quietly under the instruction. */
   why?: string;
+  /** What you just did, for the Great work card ("You drew your first line."). Falls back to the step's own words. */
+  did?: string;
   /** The thing to ring while this step is on. */
   target?: QuestTarget;
   /** Becomes true when the step is done. A step without one is finished by its Next button. */
