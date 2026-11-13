@@ -4,7 +4,7 @@ export const bodies: Record<string, string> = {
 
 What changes:
 
-- **The tool strip shows only pixel tools** on a pixel layer: pencil, eraser, bucket, shade, dither, spray, line, rectangle, ellipse, select, eyedropper, hand and zoom. The pencil has a size, and size 1 is the plain pencil. Other tools still work from their keys.
+- **The tool strip shows only pixel tools** on a pixel layer: pencil, eraser, bucket, shade, dither, spray, line, rectangle, ellipse, the four ways to pick (box, lasso, polygon, magic wand), eyedropper, hand and zoom. The pencil has a size, and size 1 is the plain pencil. Other tools still work from their keys.
 - **The [Palette](help:palette) is on the left, with bigger colours**, laid out in its ramps, and the two big [Paint and Back](help:pixel-wells) squares at the top.
 - **The mode chip** at the start of the pixel bar says how the sprite is built, and the layout follows it: see [The four ways to build a sprite](help:pixel-ways).
 - **The [Preview](help:pixel-preview) panel** leads the right side, playing your animation at real size. A one-picture file (one frame) starts with it put away, and it comes forward by itself when you add a second frame.
@@ -36,7 +36,7 @@ The status bar and the [Artboards](help:artboards) panel use pixel units in the 
 - **Size 1 to 8** sets the pencil, shade, eraser, dither or spray size in pixels. Size 1 is the plain pencil.
 - **Square or round** sets the brush shape. Round shows from size 3.
 - **Pixel perfect** tidies the corners of hand-drawn lines so they stay one pixel thick.
-- With **Select**, pick a box, a lasso or the magic wand.
+- **The four ways to pick** are side by side: **Box**, **Lasso**, **Polygon** and **Magic wand**. Click one to pick with it, and they share one selection, so you can start a box and add to it with the lasso. Everything else about picking (how each new pick joins the last, what the wand matches) is behind **More tool options**. See [Picking part of a drawing](help:selecting).
 - **Mirror**: left and right, top and bottom, or both. Click the lit one again to turn it off. Shift+M cycles. See [Mirror drawing](help:pixel-mirror).
 - **Onion skin** (Shift+O) shows the frames either side. See [Onion skin](help:timeline-onion).
 - **Tile mode** repeats the drawing round the edges for seamless tiles (it comes with the Tiles feature). See [Tile mode](help:tile-mode).
