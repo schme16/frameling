@@ -8,6 +8,7 @@ import { eraserTool } from '../../src/tools/eraser';
 import { DEFAULT_TOOL_SETTINGS, setToolSettings } from '../../src/tools/settings';
 import { forgetLastPixelEnd } from '../../src/tools/pixelStroke';
 import { getPx } from '../../src/canvas/pixels';
+import { setChoice } from '../../src/core/choices';
 import { addShapes, ctx, drag, pixelStore, ptr, shapesNow, vectorStore } from './helpers';
 
 const wave: [number, number][] = [[10, 10], [30, 18], [60, 40], [90, 38], [120, 20]];
@@ -223,6 +224,9 @@ describe('brush on a pixel layer', () => {
 });
 
 describe('eraser', () => {
+  // These are about erasing whole lines; rubbing out just the bit is in erase-bits.test.ts.
+  beforeEach(() => setChoice('eraser.vectorWay', 'whole'));
+
   it('clears pixels on a pixel layer', () => {
     const s = pixelStore();
     s.setUi({ color: '#ff0000' });

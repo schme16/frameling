@@ -4,6 +4,7 @@ import type { PixelDrawing, StrokeShape } from '../../src/core/format';
 import { store } from '../../src/core/store';
 import { brushTool } from '../../src/tools/brush';
 import { pencilTool } from '../../src/tools/pencil';
+import { setChoice } from '../../src/core/choices';
 import { eraserTool } from '../../src/tools/eraser';
 import { DEFAULT_TOOL_SETTINGS, setToolSettings } from '../../src/tools/settings';
 import { forgetLastPixelEnd } from '../../src/tools/pixelStroke';
@@ -148,6 +149,7 @@ describe('pencil with a pen', () => {
 
 describe('eraser with a pen', () => {
   it('reaches further with a harder press when pressure sizes it', () => {
+    setChoice('eraser.vectorWay', 'whole');
     const st = vectorStore();
     st.setUi({ brush: { ...st.get().ui.brush, size: 3 } });
     setToolSettings({ eraserSize: 40 });

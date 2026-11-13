@@ -4,6 +4,7 @@ import type { StrokeShape } from '../../src/core/format';
 import { store } from '../../src/core/store';
 import { brushTool } from '../../src/tools/brush';
 import { pencilTool } from '../../src/tools/pencil';
+import { setChoice } from '../../src/core/choices';
 import { eraserTool } from '../../src/tools/eraser';
 import { forgetLastVectorEnd } from '../../src/tools/vectorStroke';
 import { forgetLastPixelEnd } from '../../src/tools/pixelStroke';
@@ -54,6 +55,7 @@ describe('Shift+click on a vector layer', () => {
   });
 
   it('the eraser rubs out everything along the line, not just under the click', () => {
+    setChoice('eraser.vectorWay', 'whole');
     const s = vectorStore();
     s.setUi({ brush: { ...s.get().ui.brush, size: 4 } });
     setToolSettings({ eraserSize: 10 });

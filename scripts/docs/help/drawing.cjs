@@ -123,10 +123,11 @@ module.exports = [
   { name: 'tool-pencil', steps: [T('blank-vector'), view(1), tool('pencil'), UI({ color: '#2a2a6a' }), { wait: 700 }, WARM, REC(SMALL), { wait: 500 },
     draw([[380, 350], [440, 265], [500, 245], [560, 235], [610, 290], [650, 400], [690, 415], [740, 430], [800, 370], [850, 275], [905, 295]], { steps: 12, delay: 14 }), { wait: 300 },
     draw([[390, 470], [480, 485], [570, 495], [650, 475], [700, 460], [770, 480], [840, 495], [910, 470]], { steps: 12, delay: 14 }), { wait: 1000 }, STOP] },
-  // The eraser takes out a whole line with one swipe.
+  // The eraser nibbles the end of one line, then cuts another in two with a swipe across it.
   { name: 'tool-eraser', steps: [T('blank-vector'), view(1),
     put('Lines', [squiggle(along(30, (t) => [390 + 500 * t, 240 + 6 * t]), '#e8457a', 7), squiggle(along(30, (t) => [390 + 500 * t, 360 + 6 * t]), '#46b59b', 7), squiggle(along(30, (t) => [390 + 500 * t, 480 + 6 * t]), '#6a52d4', 7)]),
-    tool('eraser'), { wait: 700 }, WARM, REC(SMALL), { wait: 900 }, draw([[560, 300], [610, 340], [660, 380], [700, 420]], { steps: 14, delay: 28 }), { wait: 1200 }, STOP] },
+    tool('eraser'), { wait: 700 }, WARM, REC(SMALL), { wait: 900 }, draw([[930, 246], [880, 244], [830, 243], [780, 242], [740, 241]], { steps: 14, delay: 28 }), { wait: 600 },
+    draw([[640, 310], [640, 345], [640, 380], [640, 415]], { steps: 14, delay: 28 }), { wait: 200 }, draw([[662, 415], [662, 380], [662, 345], [662, 310]], { steps: 14, delay: 28 }), { wait: 1200 }, STOP] },
   // Duplicate (Ctrl+D) three times, then Delete the top copy.
   { name: 'duplicate-delete', steps: [T('blank-vector'), view(1),
     put('Lines', [ell(600, 250, 220, 200, '#f4c04f', '#3a2d5c', 3), rect(500, 230, 180, 180, '#e84a78', '#3a2d5c', 3)]), tool('select'), { click: at(530, 260) }, { wait: 500 }, WARM, REC(SMALL), { wait: 800 },

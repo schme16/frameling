@@ -5,6 +5,7 @@ import { addCamera, setDepth, setView, toggleThroughCamera } from '../../src/cam
 import { store } from '../../src/core/store';
 import { pencilTool } from '../../src/tools/pencil';
 import { brushTool } from '../../src/tools/brush';
+import { setChoice } from '../../src/core/choices';
 import { eraserTool } from '../../src/tools/eraser';
 import { ellipseTool, rectTool } from '../../src/tools/shapes';
 import { DEFAULT_TOOL_SETTINGS, setToolSettings } from '../../src/tools/settings';
@@ -132,6 +133,7 @@ describe('tool sizes through a zoomed camera', () => {
   });
 
   it('the eraser reaches by what you see too', () => {
+    setChoice('eraser.vectorWay', 'whole');
     zoomedCamera(2);
     setToolSettings({ eraserSize: 40 });
     // The box is 15 away: a radius of 20 on the stage would reach it, the 10 you get at zoom 2 does not.
