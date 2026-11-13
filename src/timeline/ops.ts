@@ -13,6 +13,10 @@ import { store } from '../core/store';
 import * as core from './edit-core';
 import type { Clash } from './edit-core';
 import { shiftInOut } from './inout';
+import { emptyTail, fitLength, tidyEnd as tidyEndCore } from './tidyEnd';
+import { rememberedChoice, withChoice } from '../core/choices';
+import type { TidyEndChoice } from './choices';
+import './choices';
 
 export type Reason = 'locked' | 'no-layer' | 'nothing-here' | 'last-layer' | 'no-change';
 export interface Outcome {
@@ -38,6 +42,50 @@ export function whyNot(o: Outcome): string {
 const ok = (id?: Id): Outcome => ({ ok: true, id });
 const no = (reason: Reason): Outcome => ({ ok: false, reason });
 
+// ---------------------------------------------------------------- the end of the animation
+
+/** Inside an edit: if you've said "take them off", the empty frames go in the same undo step. Only the main timeline. */
+export function foldTail(d: Draft<Doc>): void {
+  if (rememberedChoice('timeline.tidyEnd') === 'tidy' && !d.editing) tidyEndCore(d as Doc);
+}
+
+/** After the end moved in, the playhead stays on a frame that is still there. */
+export function keepPlayheadIn(): void {
+  const { doc, ui } = store().get();
+  if (ui.frame > doc.length - 1) store().setUi({ frame: Math.max(0, doc.length - 1) });
+}
+
+/** After an edit that pulled the last thing in (it ended at frame `was`, now earlier) and left empty frames, ask once what to do (then remember). */
+export function offerTidyEnd(was = 0): void {
+  const doc = store().get().doc;
+  if (doc.editing || fitLength(doc) >= was || !emptyTail(doc)) return;
+  withChoice<TidyEndChoice>('timeline.tidyEnd', (v) => {
+    if (v === 'tidy') tidyEnd();
+  });
+}
+
+/**
+ * A store update that watches the end of the animation: if the edit pulls the last drawing, marker or clip in and
+ * leaves empty frames on the end, they go in the same undo step when you've said so, and otherwise you're asked
+ * (once). Opening a file never does this, and neither does an edit that leaves the end alone.
+ */
+function update(label: string, recipe: (d: Draft<Doc>) => void, opts?: { coalesce?: string }): void {
+  const was = fitLength(store().get().doc);
+  store().update(label, (d) => {
+    recipe(d);
+    if (fitLength(d as Doc) < was) foldTail(d);
+  }, opts);
+  keepPlayheadIn();
+  offerTidyEnd(was);
+}
+
+/** Takes the empty frames off the end now, whatever you've chosen to do after edits. */
+export function tidyEnd(): Outcome {
+  const o = simple('Take the empty frames off the end', (d) => !d.editing && tidyEndCore(d as Doc));
+  keepPlayheadIn();
+  return o;
+}
+
 /** The layer edits go to when none is named: the active one, or the top one. */
 export function currentLayerId(): Id | null {
   const { doc, ui } = store().get();
@@ -57,7 +105,7 @@ function edit(label: string, layerId: Id | undefined, run: (doc: Draft<Doc>, lay
   if (layer.locked) return no('locked');
   let result: Id | boolean | null = null;
   const before = store().get().doc;
-  store().update(label, (d) => void (result = run(d, id)), opts);
+  update(label, (d) => void (result = run(d, id)), opts);
   if (!result) return no('nothing-here');
   // A recipe that said yes but left the doc alone (same length, say) changed nothing.
   if (store().get().doc === before) return no('no-change');
@@ -139,7 +187,7 @@ export function removeFrameAll(frame?: number): Outcome {
   const at = frame ?? store().get().ui.frame;
   let any = false;
   const before = store().get().doc;
-  store().update('Remove a frame (all layers)', (d) => {
+  update('Remove a frame (all layers)', (d) => {
     for (const l of d.layers) if (!l.locked && core.removeFrame(d, l.id, at)) any = true;
     if (any) shiftInOut(d, at, -1);
   });
@@ -190,7 +238,7 @@ export function deleteLayer(layerId?: Id): Outcome {
   const id = layerId ?? currentLayerId();
   if (!id || !findLayer(store().get().doc, id)) return no('no-layer');
   let next: Id | null = null;
-  store().update('Delete layer', (d) => void (next = core.deleteLayer(d, id)?.next ?? null));
+  update('Delete layer', (d) => void (next = core.deleteLayer(d, id)?.next ?? null));
   if (!next) return no('last-layer');
   if (store().get().ui.activeLayerId === id) store().setUi({ activeLayerId: next });
   return ok();

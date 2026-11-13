@@ -225,6 +225,18 @@ registerCommands([
     help: 'timeline-frames',
     run: () => frameEdit('remove', true),
   },
+  {
+    id: 'timeline.tidyEnd',
+    label: 'Tidy the end',
+    category: 'Timeline',
+    description: 'Take the empty frames off the end of the animation. It stops at your last drawing, marker or clip, so nothing is lost.',
+    help: 'timeline-tidy-end',
+    keywords: ['shorten', 'trim', 'length', 'empty frames', 'dead tail', 'end'],
+    run: () => {
+      const o = ops.tidyEnd();
+      if (!o.ok) toast('The end is already tidy: nothing empty to take off.');
+    },
+  },
   exposure(1),
   exposure(2),
   exposure(3),

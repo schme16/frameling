@@ -39,6 +39,15 @@ registerHelpTopics([
     keywords: ['key', 'keyframe', 'hold', 'exposure', 'ones', 'twos', 'threes', 'on twos', 'duplicate', 'insert', 'remove frame', 'flipbook', 'carry on', 'until next', 'blank gap'],
   },
   {
+    id: 'timeline-tidy-end',
+    order: 2.1,
+    title: 'Tidy the end: empty frames after your last drawing',
+    section: 'Animating',
+    media: 'timeline-tidy-end.mp4',
+    summary: 'Pull a hold shorter and the animation can be left with empty frames on the end. Frameling asks once whether to take them off.',
+    keywords: ['length', 'shorter', 'shrink', 'trim', 'empty frames', 'dead tail', 'end', 'duration', 'tidy'],
+  },
+  {
     id: 'timeline-onion',
     order: 4,
     title: 'Onion skin',
