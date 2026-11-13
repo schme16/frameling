@@ -9,6 +9,7 @@ import { setSelectSettings, useSelectSettings, type SelectMode, type SelectSetti
 const MODES: { value: SelectMode; label: string; title: string }[] = [
   { value: 'box', label: 'Box', title: 'Drag a rectangle round what you want (a marquee).' },
   { value: 'lasso', label: 'Lasso', title: 'Draw round what you want, freehand. Hold Alt as you let go to add straight sides.' },
+  { value: 'polygon', label: 'Polygon', title: 'Click each corner. Click the first corner again, or press Escape to give up.' },
   { value: 'wand', label: 'Magic wand', title: 'Click a colour to pick every pixel of it.' },
 ];
 
@@ -43,7 +44,13 @@ export function PixelSelectOptions() {
   const sel = pixelSelection();
   const count = sel ? maskCount(sel) : 0;
   const how =
-    mode === 'wand' ? 'Click a colour to pick it.' : mode === 'lasso' ? 'Draw round what you want.' : 'Drag a box round what you want.';
+    mode === 'wand'
+      ? 'Click a colour to pick it.'
+      : mode === 'polygon'
+        ? 'Click each corner, then click the first one again to close it.'
+        : mode === 'lasso'
+          ? 'Draw round what you want.'
+          : 'Drag a box round what you want.';
   return (
     <div className="cv-options">
       <SelectModeChoice wand />

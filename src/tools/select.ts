@@ -210,7 +210,8 @@ function down(e: ToolPointer, ctx: ToolContext): void {
     if (locked) ctx.hint(`That's on "${locked.name}", which is locked. Unlock it in the timeline to select it.`);
   }
   if (cut) setCut(null);
-  const lasso = getSelectSettings().mode === 'lasso' ? [{ x: e.x, y: e.y }] : null;
+  const picks = getSelectSettings().mode;
+  const lasso = picks === 'lasso' || picks === 'polygon' ? [{ x: e.x, y: e.y }] : null;
   g = { ...base, drawing: d, mode: 'marquee', originals: [], handle: null, base: e.shift ? selectedIds() : [], lasso };
 }
 

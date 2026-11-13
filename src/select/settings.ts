@@ -3,8 +3,11 @@
 import { useSyncExternalStore } from 'react';
 import type { SelectOp } from './mask';
 
-/** Box (a rectangle), lasso (draw round it) or magic wand (click a colour, pixel layers only). */
-export type SelectMode = 'box' | 'lasso' | 'wand';
+/**
+ * Box (a rectangle), lasso (draw round it freehand), polygon (click each corner) or magic wand (click a colour,
+ * pixel layers only).
+ */
+export type SelectMode = 'box' | 'lasso' | 'polygon' | 'wand';
 
 export interface SelectSettings {
   mode: SelectMode;

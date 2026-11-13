@@ -33,7 +33,7 @@ const DRAG_PX = 3;
 
 type Gesture =
   | { kind: 'box'; op: SelectOp; start: Pt; cur: Pt; size: number }
-  | { kind: 'lasso'; op: SelectOp; pts: Pt[]; cur: Pt; size: number; open: boolean }
+  | { kind: 'lasso'; op: SelectOp; pts: Pt[]; cur: Pt; size: number; open: boolean; poly?: boolean }
   | { kind: 'move'; start: Pt; startCell: { x: number; y: number }; from: { dx: number; dy: number }; size: number; lifted: boolean; copy: boolean };
 
 let g: Gesture | null = null;
@@ -73,10 +73,12 @@ function apply(m: Mask, op: SelectOp): void {
 
 function down(e: ToolPointer, ctx: ToolContext): void {
   if (g?.kind === 'lasso' && g.open) {
-    g.open = false;
     g.cur = e;
+    // Back on the first corner closes it, whichever way it was started.
     if (lassoClosesAt(g.pts, e, ctx.zoom)) return finishLasso(ctx);
     g.pts.push({ x: e.x, y: e.y });
+    // A polygon keeps waiting for the next corner. An Alt lasso waits for the next Alt as you let go.
+    g.open = !!g.poly;
     return;
   }
   g = null;
@@ -105,7 +107,8 @@ function down(e: ToolPointer, ctx: ToolContext): void {
     return;
   }
   if (isFloating()) dropFloating();
-  if (mode === 'lasso') g = { kind: 'lasso', op, pts: [{ x: e.x, y: e.y }], cur: e, size, open: false };
+  if (mode === 'polygon') g = { kind: 'lasso', op, pts: [{ x: e.x, y: e.y }], cur: e, size, open: true, poly: true };
+  else if (mode === 'lasso') g = { kind: 'lasso', op, pts: [{ x: e.x, y: e.y }], cur: e, size, open: false };
   else g = { kind: 'box', op, start: { x: e.x, y: e.y }, cur: e, size };
 }
 
@@ -154,6 +157,11 @@ function up(e: ToolPointer, ctx: ToolContext): void {
   }
   if (s.kind === 'lasso') {
     s.cur = e;
+    // A polygon is built from clicks, so letting go of one does nothing at all.
+    if (s.poly) {
+      ctx.requestOverlay();
+      return;
+    }
     lassoPoint(s.pts, e, ctx.zoom);
     if (e.alt && s.op !== 'subtract') {
       // Alt held as you let go keeps the lasso open: each Alt+click adds a straight side.

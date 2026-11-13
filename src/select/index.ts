@@ -11,9 +11,11 @@ import { getSelectSettings, onSelectSettings } from './settings';
 // The Select button in the toolbar shows how it picks: an arrow for a box, a lasso, or a wand.
 function syncIcons(): void {
   const mode = getSelectSettings().mode;
-  pixelSelectTool.icon = mode === 'wand' ? 'wand' : mode === 'lasso' ? 'lasso' : 'select';
+  const shape = mode === 'wand' ? 'wand' : mode === 'polygon' ? 'polygon' : mode === 'lasso' ? 'lasso' : 'select';
+  pixelSelectTool.icon = shape;
   const vector = getTool('select');
-  if (vector) vector.icon = mode === 'lasso' ? 'lasso' : 'select';
+  // The vector tool has no wand of its own, so it shows the box arrow for that one.
+  if (vector) vector.icon = shape === 'wand' ? 'select' : shape;
 }
 syncIcons();
 onSelectSettings(() => {

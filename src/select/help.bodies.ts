@@ -4,6 +4,7 @@ export const bodies: Record<string, string> = {
 
 - **Box**: drag a rectangle (a *marquee*).
 - **Lasso**: draw round what you want. Hold **Alt** as you let go and each **Alt+click** adds a straight side; click without Alt (or on the first point) to finish.
+- **Polygon**: click each corner, one at a time, and click the first corner again to close it. **Escape** gives up on it. Good for anything with straight edges, where a freehand lasso wobbles.
 - **Magic wand**: click a colour to pick it. **Colour match** lets close colours in too, and turn off **Only touching pixels** to pick that colour everywhere. Shortcut: **W**.
 
 The selected part gets a crawling dashed edge (*marching ants*).
