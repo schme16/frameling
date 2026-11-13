@@ -34,7 +34,7 @@ $AnimationPlayer.play("walk")
 - Each [layer folder](help:layer-folders) is a **Node2D** with its layers inside, nested the same way, so you can hide or script a whole folder. A hidden folder arrives hidden. Its fade goes on its node when its layers don't overlap, else on each layer, as do blend modes and effects. Layers on a bone stay under their bone.
 - The [camera](help:camera) becomes a **Camera2D** with position, zoom and turn keys. Layers with a depth go under a **Parallax2D**.
 - Camera and depth layers line up when your Godot window is the stage size times the export scale. For other sizes, attach the saved \`-fit-window.gd\` to the scene's root.
-- A layer's fade is the node's modulate. **Add** and **Multiply** use a CanvasItemMaterial (Screen becomes Add). **Glow brighter, plain**, **Take away**, **Brighten by dividing** and a symbol's colour wash use a tiny shader saved beside the scene (other modes draw normal).
+- A layer's fade is the node's modulate. **Add** and **Multiply** use a CanvasItemMaterial. **Screen**, **Glow brighter, plain**, **Take away**, **Brighten by dividing** and a symbol's colour wash use a tiny shader saved beside the scene (other modes draw normal).
 - [Effects](help:effects) are baked into the part's picture, since Godot has none. So are **masks** and "clip to the layer below", when part and mask move together; otherwise they are left out.
 
 The export window lists what was baked or left out for your drawing.`,

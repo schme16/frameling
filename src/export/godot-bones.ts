@@ -161,12 +161,14 @@ const blendExpr: Partial<Record<NativeBlend, string>> = {
   sub: 'max(cb - cs, vec3(0.0))',
   // Divide: nothing behind stays black, a colour at least as bright as the layer's goes to full, else cb / cs.
   div: 'mix(min(cb / max(cs, vec3(0.0001)), vec3(1.0)), vec3(0.0), step(cb, vec3(0.0)))',
+  // Screen: what is behind and the layer both lighten, and neither can go over white.
+  screen: 'vec3(1.0) - (vec3(1.0) - cb) * (vec3(1.0) - cs)',
 };
 
 /** A tiny canvas shader: each colour mixes toward `tint_color` by `tint_amount`, like Frameling's colour wash. */
 export function tintShader(blend: NativeBlend): string {
   if (isShaderBlend(blend))
-    return `// Made by Frameling. A blend mode Godot has no setting for (${{ dodge: 'Glow brighter, plain (linear dodge)', sub: 'Take away (subtract)', div: 'Brighten by dividing (divide)' }[blend as 'dodge']}), done like Frameling does it:
+    return `// Made by Frameling. A blend mode Godot has no setting for (${{ dodge: 'Glow brighter, plain (linear dodge)', sub: 'Take away (subtract)', div: 'Brighten by dividing (divide)', screen: 'Screen' }[blend as 'dodge']}), done like Frameling does it:
 // the colour behind and the layer's colour go through the formula, and the layer's see-through amount decides how much shows.
 // It also carries the colour wash (tint_color mixed in by tint_amount, 0 to 1) when a symbol is tinted.
 shader_type canvas_item;

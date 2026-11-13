@@ -20,10 +20,10 @@ import type { Mat } from '../rig/math';
 export type PartKind = 'cut' | 'mesh' | 'free';
 
 /** The blend modes Godot has natively (a CanvasItemMaterial): normal, Add and Multiply. The last three are a small included shader that reads what is behind. */
-export type NativeBlend = 'mix' | 'add' | 'mul' | 'dodge' | 'sub' | 'div';
+export type NativeBlend = 'mix' | 'add' | 'mul' | 'dodge' | 'sub' | 'div' | 'screen';
 
 /** True for the blends that are a shader (they read the picture behind), not a CanvasItemMaterial. */
-export const isShaderBlend = (b: NativeBlend): boolean => b === 'dodge' || b === 'sub' || b === 'div';
+export const isShaderBlend = (b: NativeBlend): boolean => b === 'dodge' || b === 'sub' || b === 'div' || b === 'screen';
 
 /** How a layer looks in Godot: its fade, its blend mode and the effects that get baked into its pictures. */
 export interface PartLook {
@@ -278,8 +278,8 @@ export function nativeBlend(mode: Layer['blend']): { blend: NativeBlend; exact: 
   if (mode === 'linear-dodge') return { blend: 'dodge', exact: true };
   if (mode === 'subtract') return { blend: 'sub', exact: true };
   if (mode === 'divide') return { blend: 'div', exact: true };
-  // Godot has no Screen, but Add is the nearest thing (both only lighten).
-  if (mode === 'screen') return { blend: 'add', exact: false };
+  // Godot has no Screen setting, so it goes through the same small shader the other read-behind blends use.
+  if (mode === 'screen') return { blend: 'screen', exact: true };
   return { blend: 'mix', exact: false };
 }
 
@@ -315,8 +315,8 @@ export function partLook(doc: Doc, layer: Layer, notes?: BonesNotes): PartLook {
   if (notes) {
     if (opacity < 1) notes.native.add('Fade: the node’s modulate');
     if (nb.blend !== 'mix' && !isShaderBlend(nb.blend)) notes.native.add('Add and Multiply blend modes: a CanvasItemMaterial');
-    if (isShaderBlend(nb.blend)) notes.native.add('Glow brighter (plain), Take away and Brighten by dividing blend modes: a small included shader that reads what is behind, so they mix with the stage but not inside a faded group');
-    if (!nb.exact && mode) notes.skip(`${mode === 'screen' ? 'Screen drawn as Add' : `${blendWord(mode)} drawn as normal`}`, layer.name);
+    if (isShaderBlend(nb.blend)) notes.native.add('Screen, Glow brighter (plain), Take away and Brighten by dividing blend modes: a small included shader that reads what is behind, so they mix with the stage but not inside a faded group');
+    if (!nb.exact && mode) notes.skip(`${blendWord(mode)} drawn as normal`, layer.name);
     for (const e of effects) notes.bake(effectInfo(e.kind).label, layer.name);
     if (around.some((f) => f.effects?.length)) notes.skip('Folder effects go on each layer separately', layer.name);
   }

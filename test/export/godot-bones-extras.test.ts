@@ -151,15 +151,15 @@ describe('Godot bones: looks', () => {
     expect(nativeBlend('add')).toEqual({ blend: 'add', exact: true });
     expect(nativeBlend('multiply')).toEqual({ blend: 'mul', exact: true });
     expect(nativeBlend(undefined)).toEqual({ blend: 'mix', exact: true });
-    expect(nativeBlend('screen').exact).toBe(false);
+    expect(nativeBlend('screen')).toEqual({ blend: 'screen', exact: true });
     expect(nativeBlend('overlay')).toEqual({ blend: 'mix', exact: false });
     expect(nativeBlend('linear-dodge')).toEqual({ blend: 'dodge', exact: true });
     expect(nativeBlend('subtract')).toEqual({ blend: 'sub', exact: true });
     expect(nativeBlend('divide')).toEqual({ blend: 'div', exact: true });
   });
 
-  it('writes a shader for linear dodge, subtract and divide that reads what is behind', () => {
-    for (const b of ['dodge', 'sub', 'div'] as const) {
+  it('writes a shader for screen, linear dodge, subtract and divide that reads what is behind', () => {
+    for (const b of ['dodge', 'sub', 'div', 'screen'] as const) {
       const t = tintShader(b);
       expect(t).toContain('hint_screen_texture');
       expect(t).toContain('render_mode blend_mix;');
