@@ -11,9 +11,46 @@ import { addShapes } from './merge-mode';
 import { noteColorUsed } from './recent';
 import { reportEdit } from './util';
 import type { VectorDynamics } from '../tablet/dynamics';
+import { store } from '../core/store';
+
+/** The document and layer a stroke belongs to, for remembering where it ended. */
+function lastStore(): { doc: string; ui: string } {
+  const s = store().get();
+  return { doc: s.doc.id, ui: s.ui.activeLayerId ?? '' };
+}
 
 /** Points closer than this on screen add nothing the eye can see, and would only bloat the file. */
 const MIN_STEP_SCREEN = 0.35;
+
+/** Where the last vector stroke ended, per layer, for Shift+click straight lines. */
+let lastEnd: { docId: string; layerId: string; x: number; y: number } | null = null;
+
+/** Where the last brush or pencil stroke on this layer ended, if it was this drawing. */
+export function lastVectorEnd(docId: string, layerId: string): { x: number; y: number } | null {
+  return lastEnd && lastEnd.docId === docId && lastEnd.layerId === layerId ? { x: lastEnd.x, y: lastEnd.y } : null;
+}
+
+export function forgetLastVectorEnd(): void {
+  lastEnd = null;
+}
+
+/** Remembers where a stroke finished, so the next Shift+click can run a line from it. */
+export function noteVectorEnd(docId: string, layerId: string, p: { x: number; y: number }): void {
+  lastEnd = { docId, layerId, x: p.x, y: p.y };
+}
+
+/**
+ * Shift+click: the stroke starts at the end of the last one, so a click lays a straight line from there. Nothing
+ * remembered (or no Shift) just starts where you clicked.
+ */
+export function startFromLast(stroke: { add(e: ToolPointer, zoom: number): void }, e: ToolPointer, zoom: number): void {
+  if (e.shift) {
+    const { doc, ui } = lastStore();
+    const from = lastVectorEnd(doc, ui);
+    if (from) stroke.add({ ...e, x: from.x, y: from.y }, zoom);
+  }
+  stroke.add(e, zoom);
+}
 
 export function buildStroke(points: StrokePoint[], brush: BrushSettings, color: string, opacity = 1, realPressure = false): StrokeShape {
   // A lone click becomes a dot: two identical points make perfect-freehand draw a round dab.
@@ -83,7 +120,12 @@ export class VectorStroke {
     if (!shape) return;
     // On a merge layer the stroke joins or cuts what it lands on.
     const r = addShapes('Draw stroke', [shape]).result;
-    if (r === 'ok') noteColorUsed(this.color);
+    if (r === 'ok') {
+      noteColorUsed(this.color);
+      const { doc, ui } = lastStore();
+      const end = this.points[this.points.length - 1];
+      if (end) noteVectorEnd(doc, ui, end);
+    }
     else if (r !== 'nothing') reportEdit(ctx, r);
   }
 }

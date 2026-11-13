@@ -12,7 +12,7 @@ import { docToPixel } from '../canvas/pixels';
 import { activeDrawing, activeLayer, editActiveDrawing, EDIT_HINTS } from './edit';
 import { drawPixelFootprint, drawRing } from './cursors';
 import { EraserOptions } from './options/EraserOptions';
-import { PixelStroke } from './pixelStroke';
+import { lastPixelEnd, PixelStroke } from './pixelStroke';
 import { getToolSettings } from './settings';
 import { reportEdit } from './util';
 import { viewPixelSize, viewSizeFactor } from './view-size';
@@ -30,6 +30,10 @@ interface VectorGesture {
 }
 let vec: VectorGesture | null = null;
 let pix: PixelStroke | null = null;
+/** Where the last rub-out on a vector layer ended, for Shift+click straight lines. One layer of one document. */
+let lastErase: { docId: string; layerId: string; x: number; y: number } | null = null;
+const eraseEnd = (docId: string, layerId: string) => (lastErase && lastErase.docId === docId && lastErase.layerId === layerId ? { x: lastErase.x, y: lastErase.y } : null);
+const noteErase = (layerId: string, e: { x: number; y: number }) => (lastErase = { docId: store().get().doc.id, layerId, x: e.x, y: e.y });
 
 /** The ids of shapes within `radius` of the point. Exported for tests. */
 export function shapesTouched(drawing: VectorDrawing, x: number, y: number, radius: number, skip: Set<Id> = new Set()): Id[] {
@@ -90,19 +94,27 @@ function down(e: ToolPointer, ctx: ToolContext): void {
       vec = { layerId: layer.id, drawing: { id: '', kind: 'vector', shapes: [] }, removed: new Set(), last: null, area: null };
       return;
     }
-    vec = { layerId: layer.id, drawing: d, removed: new Set(), last: null, area: activeIsMerge() ? { shapes: d.shapes.slice(), changed: false } : null };
+    // Shift+click rubs out in a straight line from where the last rub ended: the sweep walks the whole way there.
+    vec = { layerId: layer.id, drawing: d, removed: new Set(), last: e.shift ? eraseEnd(store().get().doc.id, layer.id) : null, area: activeIsMerge() ? { shapes: d.shapes.slice(), changed: false } : null };
     sweep(vec, e.x, e.y, ctx, sizeFactor('eraser', e));
+    noteErase(layer.id, e);
     return;
   }
   if (layer.kind !== 'pixel') return;
   const { doc, ui } = store().get();
   pix = new PixelStroke(doc, layer, ui.frame, { color: [0, 0, 0, 0], size: viewPixelSize(getToolSettings().eraserPixelSize), shape: getToolSettings().pixelBrushShape, perfect: false });
   pix.scale(sizeFactor('eraser', e));
-  pix.begin(pix.cell(e.x, e.y));
+  const here = pix.cell(e.x, e.y);
+  const from = e.shift ? lastPixelEnd(doc, layer) : null;
+  if (from) pix.beginLine(from, here);
+  else pix.begin(here);
 }
 
 function move(e: ToolPointer, ctx: ToolContext): void {
-  if (vec) sweep(vec, e.x, e.y, ctx, sizeFactor('eraser', e));
+  if (vec) {
+    sweep(vec, e.x, e.y, ctx, sizeFactor('eraser', e));
+    noteErase(vec.layerId, e);
+  }
   else if (pix) {
     pix.scale(sizeFactor('eraser', e));
     pix.moveTo(pix.cell(e.x, e.y));
@@ -114,6 +126,7 @@ function up(e: ToolPointer, ctx: ToolContext): void {
     const g = vec;
     vec = null;
     sweep(g, e.x, e.y, ctx, sizeFactor('eraser', e));
+    noteErase(g.layerId, e);
     if (g.area?.changed) {
       const shapes = g.area.shapes;
       const r = editShapes('Erase', () => shapes);

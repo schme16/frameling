@@ -11,7 +11,7 @@ import { drawRing } from './cursors';
 import { PencilOptions } from './options/PencilOptions';
 import { getToolSettings } from './settings';
 import { canEdit } from './util';
-import { VectorStroke } from './vectorStroke';
+import { startFromLast, VectorStroke } from './vectorStroke';
 import { viewSizeFactor } from './view-size';
 import { CleanLine } from './cleanLine';
 import { activePixelLayer, makePixelPencil } from '../pixel/tools';
@@ -53,7 +53,7 @@ export const pencilTool: Tool = {
     // Clean line: an even stroked path you can edit by its points, instead of the hand-drawn outline.
     const f = viewSizeFactor();
     stroke = t.pencilClean ? new CleanLine(store().get().ui.color, t.pencilSize * f) : new VectorStroke(...penStrokeArgs({ ...pencilBrush(), size: t.pencilSize * f }, store().get().ui.color, e));
-    stroke.add(e, ctx.zoom);
+    startFromLast(stroke, e, ctx.zoom);
   },
   move(e, ctx) {
     if (pix.active()) return pix.move(e);

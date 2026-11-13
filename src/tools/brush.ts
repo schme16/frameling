@@ -14,7 +14,7 @@ import { noteColorUsed } from './recent';
 import { getToolSettings } from './settings';
 import { canEdit, reportEdit } from './util';
 import { drawPixelFootprint, drawRing } from './cursors';
-import { VectorStroke } from './vectorStroke';
+import { startFromLast, VectorStroke } from './vectorStroke';
 import { docToPixel } from '../canvas/pixels';
 import { viewPixelSize, viewSizeFactor } from './view-size';
 import { sizeFactor, vectorDynamics } from '../tablet/dynamics';
@@ -32,7 +32,8 @@ function down(e: ToolPointer, ctx: ToolContext): void {
     if (!canEdit(ctx, 'vector', 'The brush')) return;
     const dyn = vectorDynamics('brush', { ...ui.brush, size: ui.brush.size * viewSizeFactor() }, e);
     vec = new VectorStroke(dyn.brush, ui.color, dyn);
-    vec.add(e, ctx.zoom);
+    // Shift+click runs a straight line from where the last stroke ended, as it does on a pixel layer.
+    startFromLast(vec, e, ctx.zoom);
     return;
   }
   if (layer.kind !== 'pixel') return;

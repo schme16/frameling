@@ -4,7 +4,7 @@ export const bodies: Record<string, string> = {
 
 **On a vector layer** the brush makes smooth lines that follow your hand. If you have a drawing pen, pressing harder makes the line thicker. With a mouse, drawing faster makes it a little thinner. Every line stays editable, so you can select it later and move or resize it.
 
-In the options you can change the size, how much it smooths out wobbles, whether pressure matters, and whether lines start or end in a point.
+In the options you can change the size, how much it smooths out wobbles, whether pressure matters, and whether lines start or end in a point. Hold **Shift** and click to run a straight line from where your last line stopped.
 
 **On a pixel layer** it paints hard-edged pixels, with the size counted in art pixels. Looking through a zoomed [camera](help:camera), the size is what you see: a 4 pixel brush paints 2 pixels through a camera zoomed in 2x (whole pixels, rounded, never less than 1). (For one pixel lines, the [Pencil](help:tool-pencil) is quicker.)
 - **Pixel perfect** tidies the little L-shaped corners that make hand-drawn lines look lumpy, so they stay one pixel thick.
@@ -15,7 +15,7 @@ In the options you can change the size, how much it smooths out wobbles, whether
 If the brush won't draw, the layer might be locked or hidden. Check it in the timeline.`,
   'tool-pencil': `Press **P**, then drag.
 
-**On a vector layer** the pencil draws a thin line that stays the same width, however hard you press. It follows your hand closely, which makes it good for sketching and rough animation. For thicker lines that swell with pressure, use the Brush (B).
+**On a vector layer** the pencil draws a thin line that stays the same width, however hard you press. It follows your hand closely, which makes it good for sketching and rough animation. For thicker lines that swell with pressure, use the Brush (B). Hold **Shift** and click to run a straight line from where your last line stopped.
 
 **Clean line.** Set **Line** to **Clean line** in the options and the pencil smooths what you draw into a few even curves (a centre-line stroke). You can then reshape it point by point with [Edit points](help:tool-points) (**A**). Good for tidy outlines and inking.
 
@@ -26,7 +26,7 @@ If the brush won't draw, the layer might be locked or hidden. Check it in the ti
 - [Mirror drawing](help:pixel-mirror) and the [palette lock](help:palette-lock) work with it too.`,
   'tool-eraser': `Press **E**, then drag over what you want gone.
 
-**On a vector layer** it erases whole lines. Anything the circle touches, a stroke or a shape, disappears as a whole, so one quick swipe removes a line without you having to trace it. The **Reach** option sets how close you need to get. If you took out too much, Undo brings it back.
+**On a vector layer** it erases whole lines. Anything the circle touches, a stroke or a shape, disappears as a whole, so one quick swipe removes a line without you having to trace it. The **Reach** option sets how close you need to get. If you took out too much, Undo brings it back. Hold **Shift** and click to rub out in a straight line from where you last stopped.
 
 **On a layer set to Merge** it rubs out just the area under the circle instead, the way a real eraser does. See [Merge shapes or keep them separate](help:merge-drawing).
 
