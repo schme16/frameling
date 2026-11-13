@@ -34,6 +34,13 @@ describe('menu filtering', () => {
     const r = registry([c('file.new'), c('edit.undo', 'Undo', 'File')]);
     expect(shape(resolveMenu(menu, [menu, other], r.lookup, r.all))).toEqual(['file.new']);
   });
+  it('File ends with Quit on the desktop, and drops it in a browser tab', () => {
+    const file = MENUS.find((m) => m.label === 'File')!;
+    expect(file.items.at(-1)).toBe('file.quit');
+    // In a browser tab nobody registers it, so the entry and its separator go quietly.
+    const r = registry([c('file.new', 'New', 'File')]);
+    expect(shape(resolveMenu(file, MENUS, r.lookup, r.all, SUBMENUS))).toEqual(['file.new']);
+  });
   it('the real menus are named File, Edit, View, Artboards, Draw, Pixel, Animate, Rig, Effects, Plugins and Help', () => {
     expect(MENUS.map((m) => m.label)).toEqual(['File', 'Edit', 'View', 'Artboards', 'Draw', 'Pixel', 'Animate', 'Rig', 'Effects', 'Plugins', 'Help']);
   });
