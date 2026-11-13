@@ -3653,3 +3653,8 @@ body.dock-dragging .ui-tip {
 .ui-choice-quill .ui-choice-q {
   margin: 0;
 }
+
+/* A menu row's tip sits beside the menu and takes no pointer, so walking to a submenu never crosses it. */
+.ui-tip.is-aside {
+  pointer-events: none;
+}

@@ -5,6 +5,7 @@ import { commandEnabled, runCommand } from './palette';
 import { Icon } from './icons';
 import { Keys } from './ShortcutChip';
 import { effectiveKeys } from './keys';
+import { headingTo, HOVER_GRACE, HOVER_STEP, type Box, type Pt } from './hoverIntent';
 
 export function MenuBar() {
   const [open, setOpen] = useState<number | null>(null);
@@ -16,6 +17,39 @@ export function MenuBar() {
   useStore((s) => (open === null ? null : s));
   const menus = resolveMenus();
   const bar = useRef<HTMLElement>(null);
+  // Where the pointer was and is, the open submenu's box, and the change we are holding back while the pointer is
+  // still on its way to that box. Moving diagonally into a submenu crosses the rows below it; without this, each of
+  // those rows would close the submenu out from under you.
+  const trail = useRef<{ prev: Pt | null; now: Pt | null }>({ prev: null, now: null });
+  const subBox = useRef<Box | null>(null);
+  const pend = useRef<{ timer: number; until: number } | null>(null);
+  const subNow = useRef<string | null>(null);
+  subNow.current = sub;
+
+  const stopPend = () => {
+    if (pend.current) window.clearTimeout(pend.current.timer);
+    pend.current = null;
+  };
+  /** Ask for the submenu to change. It happens at once unless the pointer is heading into the open one. */
+  const askSub = (label: string | null) => {
+    if (label === subNow.current) {
+      stopPend();
+      return;
+    }
+    const until = pend.current?.until ?? Date.now() + HOVER_GRACE;
+    if (subNow.current !== null && Date.now() < until && headingTo(trail.current.prev, trail.current.now, subBox.current)) {
+      if (pend.current) window.clearTimeout(pend.current.timer);
+      pend.current = { until, timer: window.setTimeout(() => askSub(label), HOVER_STEP) };
+      return;
+    }
+    stopPend();
+    setSub(label);
+  };
+  useEffect(() => stopPend, []);
+  useEffect(() => {
+    stopPend();
+    if (sub === null) subBox.current = null;
+  }, [sub]);
 
   useEffect(() => {
     if (open === null) return;
@@ -106,7 +140,7 @@ export function MenuBar() {
     if (it.kind === 'submenu') {
       const shown = sub === it.label;
       return (
-        <div key={`sub-${it.label}`} className="ui-menu-subwrap" onMouseEnter={() => setSub(it.label)} onMouseLeave={() => setSub(null)}>
+        <div key={`sub-${it.label}`} className="ui-menu-subwrap" onMouseEnter={() => askSub(it.label)} onMouseLeave={() => askSub(null)}>
           <button
             type="button"
             role="menuitem"
@@ -129,7 +163,9 @@ export function MenuBar() {
             <Icon name="chevron-right" size={14} />
           </button>
           {shown && (
-            <SubmenuBox label={it.label}>{it.items.map((x, j) => row(x, j, menu, true))}</SubmenuBox>
+            <SubmenuBox label={it.label} onBox={(b) => (subBox.current = b)} onEnter={stopPend}>
+              {it.items.map((x, j) => row(x, j, menu, true))}
+            </SubmenuBox>
           )}
         </div>
       );
@@ -147,6 +183,7 @@ export function MenuBar() {
         aria-disabled={!enabled || undefined}
         className={`ui-menu-item${enabled ? '' : ' is-disabled'}`}
         data-command={c.id}
+        onMouseEnter={inSub ? undefined : () => askSub(null)}
         onKeyDown={(e) => (inSub ? onSubKey(e, menu) : onItemKey(e, menu))}
         onClick={() => {
           if (!enabled) return;
@@ -162,7 +199,16 @@ export function MenuBar() {
   };
 
   return (
-    <nav className="ui-menubar" role="menubar" aria-label="Menus" ref={bar} data-help="menus">
+    <nav
+      className="ui-menubar"
+      role="menubar"
+      aria-label="Menus"
+      ref={bar}
+      data-help="menus"
+      onMouseMove={(e) => {
+        trail.current = { prev: trail.current.now, now: { x: e.clientX, y: e.clientY } };
+      }}
+    >
       {menus.map(({ menu, items }, index) => (
         <div key={menu.label} className="ui-menu-wrap">
           <button
@@ -203,7 +249,17 @@ export function jumpTo(key: string, at: number, n: number): number {
  * A submenu opens beside its row. It is fixed to the window (so the menu it belongs to can scroll without clipping it),
  * kept inside the window, and scrolls itself when it is taller than the window.
  */
-function SubmenuBox({ label, children }: { label: string; children: React.ReactNode }) {
+function SubmenuBox({
+  label,
+  children,
+  onBox,
+  onEnter,
+}: {
+  label: string;
+  children: React.ReactNode;
+  onBox: (b: Box) => void;
+  onEnter: () => void;
+}) {
   const box = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     const el = box.current;
@@ -215,10 +271,12 @@ function SubmenuBox({ label, children }: { label: string; children: React.ReactN
     const h = el.offsetHeight;
     const left = row.right + 2 + w <= window.innerWidth - gap ? row.right + 2 : Math.max(gap, row.left - w - 2);
     el.style.left = `${left}px`;
-    el.style.top = `${Math.max(gap, Math.min(row.top - 7, window.innerHeight - gap - h))}px`;
+    const top = Math.max(gap, Math.min(row.top - 7, window.innerHeight - gap - h));
+    el.style.top = `${top}px`;
+    onBox({ left, top, right: left + w, bottom: top + h });
   }, []);
   return (
-    <div ref={box} className="ui-menu ui-submenu" role="menu" aria-label={label}>
+    <div ref={box} className="ui-menu ui-submenu" role="menu" aria-label={label} onMouseEnter={onEnter}>
       {children}
     </div>
   );

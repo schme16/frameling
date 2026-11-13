@@ -21,6 +21,32 @@ export interface TipContent {
 
 const SELECTOR = '[title], [data-tip], [data-command]';
 
+/**
+ * A menu row gets its tip to one side of the whole menu, never over it, and the tip can't be pointed at. The way to a
+ * submenu runs diagonally across the rows below it, so a tip sitting on that path was read as leaving the menu and
+ * shut it under you (see hoverIntent.ts for the other half of that). `.ui-menu` covers the menu bar's menus, their
+ * submenus and the right-click menus, which all share the class.
+ */
+const inMenu = (el: Element): boolean => !!el.closest('.ui-menu, .ui-menubar');
+
+/**
+ * The box around the open menu panels, so a tip can be put beside the lot. Only the dropped-down panels count: the
+ * menu bar strip itself runs the whole width of the window, and counting it would leave nowhere to put anything.
+ * Null when no menu is open, and then the tip is placed the ordinary way.
+ */
+function menuBox(): { left: number; top: number; right: number; bottom: number } | null {
+  const menus = [...document.querySelectorAll('.ui-menu')];
+  if (!menus.length) return null;
+  const rs = menus.map((m) => m.getBoundingClientRect()).filter((r) => r.width > 0 && r.height > 0);
+  if (!rs.length) return null;
+  return {
+    left: Math.min(...rs.map((r) => r.left)),
+    top: Math.min(...rs.map((r) => r.top)),
+    right: Math.max(...rs.map((r) => r.right)),
+    bottom: Math.max(...rs.map((r) => r.bottom)),
+  };
+}
+
 /** What the tip for an element says, or null if it has none. */
 export function tipFor(el: Element): TipContent | null {
   const cmdId = el.getAttribute('data-command');
@@ -37,6 +63,8 @@ export function tipFor(el: Element): TipContent | null {
 interface Shown {
   tip: TipContent;
   rect: DOMRect;
+  /** The thing is a menu row, so the tip goes beside the menu and takes no pointer. */
+  aside?: boolean;
 }
 
 export function TooltipLayer() {
@@ -75,17 +103,22 @@ export function TooltipLayer() {
       const go = () => {
         lastShownAt.current = Date.now();
         setPos(null);
-        setShown({ tip, rect: el.getBoundingClientRect() });
+        setShown({ tip, rect: el.getBoundingClientRect(), ...(inMenu(el) ? { aside: true } : {}) });
       };
       const quick = Date.now() - lastShownAt.current < 400;
       if (delay === 0 || quick) go();
       else showTimer.current = window.setTimeout(go, delay);
     };
+    // Whatever the tip belongs to can be taken off the page while it is up (a menu closes, a panel changes). No
+    // mouseout ever comes for an element that is no longer there, so the tip would sit on screen. This catches it.
+    const gone = window.setInterval(() => {
+      if (current.current && !document.contains(current.current)) hide();
+    }, 300);
     const over = (e: MouseEvent) => {
       const el = e.target instanceof Element ? e.target.closest(SELECTOR) : null;
       if (!el || el === current.current) return;
       if (el.closest('.ui-tip')) return;
-      show(el, 550);
+      show(el, inMenu(el) ? 320 : 550);
     };
     const out = (e: MouseEvent) => {
       const to = e.relatedTarget instanceof Element ? e.relatedTarget : null;
@@ -119,6 +152,7 @@ export function TooltipLayer() {
     document.addEventListener('scroll', hide, true);
     return () => {
       clear();
+      window.clearInterval(gone);
       document.removeEventListener('mouseover', over);
       document.removeEventListener('mouseout', out);
       document.removeEventListener('focusin', focusIn);
@@ -137,6 +171,15 @@ export function TooltipLayer() {
     const r = shown.rect;
     const vw = window.innerWidth;
     const vh = window.innerHeight;
+    // A menu row's tip goes beside every open menu, on whichever side has room, level with the row. Never over the
+    // menu, and never on the diagonal between a row and its submenu.
+    const menus = shown.aside ? menuBox() : null;
+    if (menus) {
+      const gap = 10;
+      const left = menus.right + gap + b.width <= vw - 8 ? menus.right + gap : Math.max(8, menus.left - gap - b.width);
+      setPos({ left, top: Math.max(8, Math.min(vh - b.height - 8, r.top - 6)) });
+      return;
+    }
     let top = r.bottom + 8;
     if (top + b.height > vh - 8) top = Math.max(8, r.top - b.height - 8);
     // Tools sit at the left edge: put the tip beside them rather than over the canvas edge.
@@ -154,7 +197,7 @@ export function TooltipLayer() {
   return (
     <div
       ref={box}
-      className="ui-tip"
+      className={`ui-tip${shown.aside ? ' is-aside' : ''}`}
       role="tooltip"
       style={{ left: pos?.left ?? 0, top: pos?.top ?? 0, visibility: pos ? 'visible' : 'hidden' }}
       onMouseEnter={() => (overTip.current = true)}
@@ -168,7 +211,7 @@ export function TooltipLayer() {
         {tip.keys[0] && <Keys shortcut={tip.keys[0]} />}
       </div>
       {tip.desc && <div className="ui-tip-desc">{tip.desc}</div>}
-      {tip.help && (
+      {tip.help && !shown.aside && (
         <button
           type="button"
           className="ui-tip-more"
