@@ -6,6 +6,7 @@ import { isStaleCommand, syncDynamicCommands } from './dynamic';
 import { Icon } from './icons';
 import { QuillEmpty, setShowQuill } from './mascot';
 import { addBinding, allConflicts, comboFromEvent, comboToString, conflictsFor, effectiveKeys, layeredOverrides, removeBinding, resetBindings, setBindings } from './keys';
+import { HISTORY_STEPS_RANGE } from '../core/store';
 import { KEYMAP_SETS, keymapSet } from './keymapSets';
 import { previewCue, type SoundCue } from './sounds';
 import { clampOutline, MAX_OUTLINE, MIN_OUTLINE } from '../pixel/thick';
@@ -172,6 +173,21 @@ function GeneralPage({ onThemes }: { onThemes: () => void }) {
       </Row>
       <Row label="Clean timeline" hint="Off shows the detailed timeline: keys as diamonds, tweens with their easing, and rows for what changes on each layer. On shows one plain block per drawing.">
         <Switch label="Clean timeline" on={p.cleanTimeline} onChange={(cleanTimeline) => setPrefs({ cleanTimeline })} />
+      </Row>
+      <Row label="Undo steps" hint="How many steps Frameling keeps so you can undo them. A long history of pixel art gets heavy, so it stops growing once it is holding a lot, keeping the newest steps.">
+        <div className="ui-pref-volume">
+          <input
+            type="range"
+            className="cv-slider"
+            min={HISTORY_STEPS_RANGE.min}
+            max={HISTORY_STEPS_RANGE.max}
+            step={10}
+            value={p.historySteps}
+            aria-label="Undo steps"
+            onChange={(e) => setPrefs({ historySteps: Number(e.target.value) })}
+          />
+          <span className="ui-pref-value">{p.historySteps}</span>
+        </div>
       </Row>
       <Row label="Units" hint="How sizes are shown. Pixels suit screens and games; mm, cm, inches and points suit print.">
         <Segmented<Unit> label="Units" value={p.units} onChange={(units) => setPrefs({ units })} options={UNITS.map((u) => ({ id: u.id, label: u.id }))} />

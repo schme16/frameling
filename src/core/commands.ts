@@ -40,6 +40,8 @@ Changed your mind? **Ctrl+Shift+Z** (or **Ctrl+Y**) puts the change back.
 
 Whatever you had selected stays selected after Undo or Redo, as long as it is still there.
 
-Frameling remembers your last 300 changes. Dragging something counts as one change, however long you drag for.`,
+Frameling remembers your last 300 changes. Dragging something counts as one change, however long you drag for.
+
+**Want more, or fewer?** **Preferences, General, Undo steps** sets how many to keep, from 20 to 2000. Pixel art makes heavy steps (a step can hold a whole layer), so a very long history stops growing once it is holding a lot, always keeping the newest ones.`,
   },
 ]);

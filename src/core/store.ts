@@ -122,6 +122,8 @@ interface HistoryEntry {
   label: string;
   coalesce?: string;
   at: number;
+  /** Roughly how much memory this step holds, in bytes (pixel art makes heavy steps, a moved shape a light one). */
+  weight: number;
 }
 
 type Listener = () => void;
@@ -140,7 +142,46 @@ interface Nested {
   merge: (parent: Doc, nested: Doc) => Doc;
 }
 
-const HISTORY_LIMIT = 300;
+/** How many undo steps to keep when nobody has said otherwise: generous, and changeable in Preferences. */
+export const DEFAULT_HISTORY_STEPS = 300;
+/** The most and least you can set it to. */
+export const HISTORY_STEPS_RANGE = { min: 20, max: 2000 };
+/**
+ * However many steps you ask for, the history stops growing past this much memory (a few hundred pixel-art steps can
+ * each hold a whole layer). The newest steps always stay: at least this many, whatever they weigh.
+ */
+export const HISTORY_BYTES = 192 * 1024 * 1024;
+const ALWAYS_KEEP = 10;
+
+let historySteps = DEFAULT_HISTORY_STEPS;
+
+/** Preferences says how many steps to keep. Lowering it drops the oldest ones straight away. */
+export function setHistorySteps(n: number): void {
+  historySteps = Math.round(Math.min(HISTORY_STEPS_RANGE.max, Math.max(HISTORY_STEPS_RANGE.min, n)));
+  current?.trimHistory();
+}
+
+export function historyStepsNow(): number {
+  return historySteps;
+}
+
+/** Roughly how much memory a patch value holds. Typed arrays and strings are what actually get big. */
+export function weighValue(v: unknown, depth = 0): number {
+  if (v === null || v === undefined || depth > 6) return 8;
+  if (ArrayBuffer.isView(v)) return (v as ArrayBufferView).byteLength;
+  if (typeof v === 'string') return v.length * 2;
+  if (typeof v !== 'object') return 8;
+  if (Array.isArray(v)) {
+    let n = 16;
+    for (const x of v) n += weighValue(x, depth + 1);
+    return n;
+  }
+  let n = 16;
+  for (const x of Object.values(v as Record<string, unknown>)) n += weighValue(x, depth + 1);
+  return n;
+}
+
+const weighPatches = (list: Patch[]): number => list.reduce((n, p) => n + weighValue(p.value, 1) + 24, 0);
 let nextEntryId = 1;
 const COALESCE_MS = 1200;
 
@@ -231,10 +272,11 @@ export class Store {
       last.patches.push(...patches);
       last.inverse.unshift(...inverse);
       last.at = now;
+      last.weight += weighPatches(patches) + weighPatches(inverse);
     } else {
-      this.undoStack.push({ id: nextEntryId++, patches, inverse, label, coalesce: opts.coalesce, at: now });
-      if (this.undoStack.length > HISTORY_LIMIT) this.undoStack.shift();
+      this.undoStack.push({ id: nextEntryId++, patches, inverse, label, coalesce: opts.coalesce, at: now, weight: weighPatches(patches) + weighPatches(inverse) });
     }
+    this.trimHistory();
     this.redoStack = [];
     this.state = { doc: next, ui: { ...this.state.ui, dirty: true } };
     this.emit();
@@ -265,6 +307,18 @@ export class Store {
   }
   undoLabel(): string | null {
     return this.undoStack[this.undoStack.length - 1]?.label ?? null;
+  }
+
+  /** Drops the oldest steps until the history is within the number you asked for, and within its memory budget. */
+  trimHistory(): void {
+    while (this.undoStack.length > historySteps) this.undoStack.shift();
+    let weight = this.undoStack.reduce((n, e) => n + e.weight, 0);
+    while (this.undoStack.length > ALWAYS_KEEP && weight > HISTORY_BYTES) weight -= this.undoStack.shift()!.weight;
+  }
+
+  /** How much memory the undo history is holding, roughly, in bytes. */
+  historyWeight(): number {
+    return this.undoStack.reduce((n, e) => n + e.weight, 0);
   }
   redoLabel(): string | null {
     return this.redoStack[this.redoStack.length - 1]?.label ?? null;

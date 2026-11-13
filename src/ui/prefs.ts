@@ -6,6 +6,7 @@ import { DEFAULT_UNIT, isUnit, type Unit } from '../core/units';
 import { DEFAULT_KEYMAP_SET, isKeymapSet } from './keymapSets';
 import { clampOutline, DEFAULT_OUTLINE } from '../pixel/thick';
 import { canSend } from '../beta/send';
+import { DEFAULT_HISTORY_STEPS, HISTORY_STEPS_RANGE, setHistorySteps } from '../core/store';
 
 export type ThemePref = 'system' | 'dark' | 'light';
 export type LookPref = 'cosy' | 'crisp';
@@ -64,6 +65,8 @@ export interface Prefs {
   pixelThickOutlines: boolean;
   /** How thick that outline is, in art pixels (1 to 16). */
   pixelOutlineWidth: number;
+  /** How many undo steps to keep (20 to 2000). A very long history still stops growing when it gets heavy. */
+  historySteps: number;
   /** Measure each plugin's memory and speed (switch is in Preferences > Diagnostics, numbers in Preferences > Plugins). Off by default: the memory part needs each plugin in its own process, which costs memory and a restart. */
   pluginDiagnostics: boolean;
 }
@@ -93,6 +96,7 @@ export const DEFAULT_PREFS: Prefs = {
   firstDrawn: false,
   keymap: {},
   keymapSet: DEFAULT_KEYMAP_SET,
+  historySteps: DEFAULT_HISTORY_STEPS,
   cleanTimeline: false,
   pixelThickOutlines: false,
   pixelOutlineWidth: DEFAULT_OUTLINE,
@@ -132,6 +136,7 @@ export function migratePrefs(raw: unknown): Prefs {
     toolRail: r.toolRail === 'stacked' || r.toolRail === 'two' ? r.toolRail : DEFAULT_PREFS.toolRail,
     fadeTileCopies: bool(r.fadeTileCopies, DEFAULT_PREFS.fadeTileCopies),
     units: isUnit(r.units) ? r.units : DEFAULT_PREFS.units,
+    historySteps: typeof r.historySteps === 'number' && Number.isFinite(r.historySteps) ? Math.round(Math.min(HISTORY_STEPS_RANGE.max, Math.max(HISTORY_STEPS_RANGE.min, r.historySteps))) : DEFAULT_PREFS.historySteps,
     onboarded: bool(r.onboarded, DEFAULT_PREFS.onboarded),
     // Someone who got past the first hello before this existed is not new any more.
     firstDrawn: bool(r.firstDrawn, r.onboarded === true),
@@ -190,9 +195,11 @@ function watchSystem(): void {
 
 /** Writes the theme colours, look and motion preferences onto <html>. Safe to call any time. */
 export function applyPrefs(): void {
+  const p = prefsStore.get();
+  // The store keeps its own copy, so undo works the same in tests and harnesses with no DOM.
+  setHistorySteps(p.historySteps);
   if (typeof document === 'undefined') return;
   watchSystem();
-  const p = prefsStore.get();
   const root = document.documentElement;
   const theme = activeTheme();
   writeTheme(root, theme);

@@ -3663,3 +3663,11 @@ body.dock-dragging .ui-tip {
 .ui-tip.is-aside {
   pointer-events: none;
 }
+
+/* The number beside a slider in Preferences (undo steps). */
+.ui-pref-value {
+  min-width: 4ch;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
