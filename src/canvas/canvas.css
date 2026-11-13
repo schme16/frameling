@@ -73,16 +73,16 @@
 @media (prefers-color-scheme: light) {
   :root:not([data-theme='dark'])[data-surround='seeds'] .cv-surround {
     --seed-ink: color-mix(in srgb, var(--chosen-bg) 78%, var(--accent));
-    --seed-a: color-mix(in srgb, var(--seed-ink) 96%, var(--canvas-bg));
-    --seed-b: color-mix(in srgb, var(--seed-ink) 82%, var(--canvas-bg));
-    --seed-outline: drop-shadow(0 0 0.7px var(--seed-edge)) drop-shadow(0 0 0.7px var(--seed-edge));
+    --seed-a: color-mix(in srgb, var(--seed-ink) 84%, var(--canvas-bg));
+    --seed-b: color-mix(in srgb, var(--seed-ink) 70%, var(--canvas-bg));
+    --seed-outline: drop-shadow(0 0 0.6px var(--seed-edge)) drop-shadow(0 0 0.6px var(--seed-edge));
   }
 }
 :root[data-theme='light'][data-surround='seeds'] .cv-surround {
   --seed-ink: color-mix(in srgb, var(--chosen-bg) 78%, var(--accent));
-  --seed-a: color-mix(in srgb, var(--seed-ink) 96%, var(--canvas-bg));
-  --seed-b: color-mix(in srgb, var(--seed-ink) 82%, var(--canvas-bg));
-  --seed-outline: drop-shadow(0 0 0.7px var(--seed-edge)) drop-shadow(0 0 0.7px var(--seed-edge));
+  --seed-a: color-mix(in srgb, var(--seed-ink) 84%, var(--canvas-bg));
+  --seed-b: color-mix(in srgb, var(--seed-ink) 70%, var(--canvas-bg));
+  --seed-outline: drop-shadow(0 0 0.6px var(--seed-edge)) drop-shadow(0 0 0.6px var(--seed-edge));
 }
 /* The sock themes: soft knee-high-sock stripes in pink, white and blue, with paw prints wandering over them. */
 :root[data-surround='socks'] .cv-surround {
