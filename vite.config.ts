@@ -8,6 +8,9 @@ const version = JSON.parse(readFileSync(new URL('./package.json', import.meta.ur
 // ordinary build has no key, never calls out, and keeps the strict policy it has always had.
 const ingestKey = process.env.FRAMELING_INGEST_KEY ?? '';
 const ingestUrl = process.env.FRAMELING_INGEST_URL || 'https://project-boards.shanegadsby.com';
+// FRAMELING_BETA=1 says this is meant to be a beta build. Without a key it would quietly be an ordinary one that
+// cannot send, which a tester then reads as their own internet failing, so it stops here instead.
+if (process.env.FRAMELING_BETA && !ingestKey) throw new Error('FRAMELING_BETA is set but FRAMELING_INGEST_KEY is not: this would be a build that cannot send reports. Set the key and build again.');
 const ingestOrigin = ingestKey ? new URL(ingestUrl).origin : '';
 
 const allowIngest = {

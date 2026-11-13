@@ -79,6 +79,11 @@ export interface LibraryApi {
   showFolder?(kind: LibraryKind): Promise<void>;
 }
 
+/** One request to the board that beta reports go to, made by the desktop side so a failure comes back with its real reason. */
+export interface BetaBridge {
+  request(req: { url: string; method?: 'GET' | 'POST'; headers?: Record<string, string>; body?: string }): Promise<{ status: number; type: string; text: string } | { code: string; message?: string }>;
+}
+
 export interface FramelingApi {
   /** Which kind of home the page has: the desktop app, or a web browser (src/platform). Missing means desktop. */
   kind?: 'desktop' | 'web';
@@ -157,6 +162,8 @@ export interface FramelingApi {
     finish(id: number): Promise<{ ok: true } | FileFailure>;
     cancel(id: number): Promise<void>;
   };
+  /** Sends beta reports (src/beta). Missing in the web build, which uses the page's own fetch. */
+  beta?: BetaBridge;
   app: {
     /** How big the whole interface is drawn, 0.5 to 3 (1 is the usual size). Everything stays crisp. */
     setUiScale?(factor: number): void;

@@ -19,6 +19,7 @@ export const bodies: Record<string, string> = {
 **Good to know:**
 - There is still no telemetry. Nothing counts what you do, nothing is sent when Frameling starts, and nothing you write goes until you press Send. The one thing that goes on its own is a crash, in a beta build, with the switch on.
 - Only a beta build can send. An ordinary build has no key in it, so the button says so and the pen check's **Save a file** is there instead.
+- If a report won't go, Frameling says why in plain words and keeps it under the buttons. **Check the connection** asks the board if it is there and likes this copy's key, without sending anything.
 - The report goes to the makers' board and nowhere else. The key a beta build carries can only add a report: it cannot read the board, and it cannot read back anything it has sent.
 
 **The testing page.** [Everything a tester needs is on one page](https://project-boards.shanegadsby.com/s/qUR_fOzbJGN9T1_ItQ3HEJ6u): getting the build open on each kind of computer, what is most useful to send, and what we do and don't see. No login, nothing to join.

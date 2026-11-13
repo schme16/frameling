@@ -915,3 +915,18 @@ CI runs vitest only. The Electron harnesses are run by hand, under xvfb, before 
 (`loadShapeExports`) and registers the Godot engine, as the app has them at start. A test of the Interactives export card imports
 `test/export/withInteractives.ts`. `test/export/registry.test.ts` covers the export registry (order, plan rules, feature-owned formats, sound with Audio off),
 `test/core/shape-kinds.test.ts` the shape kinds, `test/features/stage3-features.test.ts` Camera, Particles, Text and Godot exports being switched off and on.
+
+## Beta reports: the network, told apart
+
+`scripts/e2e/beta-net.cjs` runs the desktop side of beta reports (`src/main/beta.ts`) against real failures of Electron's own
+network stack, using throwaway local servers (it sends no report anywhere), and checks each one is named for what it is:
+a good key, a refused key, a wi-fi sign-in page, a filter's HTML, a 502, a proxy asking for sign-in, too many reports, a
+certificate nobody trusts, a connection nothing accepts, a server that never answers, an address that isn't the build's board,
+an ordinary build with no board, a name that doesn't exist, a request cancelled by a policy, and a proxy that is down. It also
+asks the real board's health address when the computer is online (`BETA_NET_OFFLINE=1` skips that).
+
+    xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/beta-net.cjs
+
+`npm run beta:check` (after `npm run build`, or pointed at an unpacked `app.asar`) says whether a build carries an ingest key
+and which board it sends to, without printing the key; `--expect-key` makes it exit 1 when there is none, so run it before
+handing a build to a tester. `FRAMELING_BETA=1` on the build itself stops with an error if `FRAMELING_INGEST_KEY` is missing.

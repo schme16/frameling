@@ -8,6 +8,11 @@
  */
 import type { IngestReport } from './report';
 import { reportFits, reportText } from './report';
+import { BOARD_HOST, outcomeOf, SEND_WORDS, sayFailure, type Failure, type Reply, type SendOutcome } from './outcome';
+import type { FramelingApi } from '../preload/api';
+
+export { SEND_WORDS, sayFailure };
+export type { SendOutcome };
 
 declare const __FRAMELING_INGEST__: { url: string; key: string } | undefined;
 
@@ -31,56 +36,78 @@ export function ingest(): Ingest | null {
 /** Whether this build can send at all. */
 export const canSend = (): boolean => !!ingest();
 
-export type SendOutcome =
-  | { ok: true }
-  | { ok: false; why: 'no-key' | 'too-big' | 'too-often' | 'refused' | 'offline' | 'unreachable' | 'failed'; detail?: string };
+/** The board a build with no key would still be checked against (nothing is sent to it, only asked if it is there). */
+export const BOARD_URL = `https://${BOARD_HOST}`;
 
-/** Plain words for each way it can go wrong. */
-export const SEND_WORDS: Record<Exclude<SendOutcome & { ok: false }, { ok: true }>['why'], string> = {
-  'no-key': "This build can't send reports. Save the file instead and send it however you like.",
-  'too-big': 'That report is too big to send. Shorten the note and try again.',
-  'too-often': 'That is a lot of reports in a short while. Have a cup of tea and try again in a few minutes.',
-  refused: 'The board turned the report away. The key in this build may have been changed.',
-  offline: "No connection, so it couldn't go. It will not be sent by itself later: press Send again when you're back.",
-  unreachable: "Couldn't reach the board. It will not try again by itself: press Send when you want to.",
-  failed: "That didn't go through. Save the file instead and send it however you like.",
-};
+/** Makes one request and says what came back, or the code of what stopped it. */
+export type Transport = (url: string, init: { method: 'GET' | 'POST'; headers?: Record<string, string>; body?: string }) => Promise<Reply>;
 
-/** Is the key this build carries still good? Asks the board without sending anything. */
-export async function checkKey(fetcher: typeof fetch = fetch): Promise<boolean> {
-  const i = ingest();
-  if (!i) return false;
-  try {
-    const r = await fetcher(`${i.url}/api/ingest`, { headers: { Authorization: `Bearer ${i.key}` } });
-    if (!r.ok) return false;
-    const body = (await r.json()) as { ok?: boolean };
-    return body?.ok === true;
-  } catch {
-    return false;
-  }
+/** How long the page's own fetch waits before giving up and saying so. */
+export const WAIT_MS = 20000;
+
+/** The page's own fetch, with a time limit. It cannot tell why it failed, so the code says only that it did. */
+export const fetchTransport =
+  (fetcher: typeof fetch = fetch): Transport =>
+  async (url, init) => {
+    try {
+      const r = await fetcher(url, { ...init, signal: typeof AbortSignal !== 'undefined' && 'timeout' in AbortSignal ? AbortSignal.timeout(WAIT_MS) : undefined });
+      return { status: r.status, type: r.headers.get('content-type') ?? '', text: (await r.text()).slice(0, 4000) };
+    } catch (e) {
+      const name = (e as { name?: string } | null)?.name;
+      return { code: name === 'TimeoutError' || name === 'AbortError' ? 'TIMEOUT' : 'FETCH_FAILED', message: String((e as Error)?.message ?? e).slice(0, 200) };
+    }
+  };
+
+/** In the desktop app the request is made by the desktop side, which can see the real reason; elsewhere, by the page. */
+export function defaultTransport(): Transport {
+  const bridge = typeof window !== 'undefined' ? (window as { frameling?: FramelingApi }).frameling?.beta : undefined;
+  if (!bridge) return fetchTransport();
+  return async (url, init) => {
+    try {
+      return await bridge.request({ url, ...init });
+    } catch (e) {
+      return { code: 'FETCH_FAILED', message: String((e as Error)?.message ?? e).slice(0, 200) };
+    }
+  };
 }
 
-/** Sends one report. Never called on its own: only ever from the button the person presses. */
-export async function sendReport(report: IngestReport, fetcher: typeof fetch = fetch): Promise<SendOutcome> {
+const online = () => (typeof navigator === 'undefined' ? true : navigator.onLine !== false);
+
+/** Is the board there, and is the key this build carries accepted? Sends no report. Says which of the two failed. */
+export async function checkBoard(transport: Transport = defaultTransport()): Promise<SendOutcome & { stage?: 'board' | 'key' }> {
+  const i = ingest();
+  if (!i) return { ok: false, why: 'no-key' };
+  const alive = await transport(`${i.url}/api/health`, { method: 'GET' });
+  const first = outcomeOf(alive, online());
+  if (!first.ok) return { ...first, stage: 'board' };
+  const key = await transport(`${i.url}/api/ingest`, { method: 'GET', headers: { Authorization: `Bearer ${i.key}` } });
+  const second = outcomeOf(key, online());
+  return second.ok ? { ok: true } : { ...second, stage: 'key' };
+}
+
+/** Is the key this build carries still good? Asks the board without sending anything. */
+export async function checkKey(transport: Transport = defaultTransport()): Promise<boolean> {
+  const i = ingest();
+  if (!i) return false;
+  const r = await transport(`${i.url}/api/ingest`, { method: 'GET', headers: { Authorization: `Bearer ${i.key}` } });
+  return outcomeOf(r, online()).ok;
+}
+
+/** Sends one report. Never called on its own: only ever from the button the person presses (or a crash, in a beta build). */
+export async function sendReport(report: IngestReport, transport: Transport = defaultTransport()): Promise<SendOutcome> {
   const i = ingest();
   if (!i) return { ok: false, why: 'no-key' };
   if (!reportFits(report)) return { ok: false, why: 'too-big' };
-  let r: Response;
-  try {
-    r = await fetcher(`${i.url}/api/ingest`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${i.key}`, 'Content-Type': 'application/json' },
-      body: reportText(report),
-    });
-  } catch {
-    // A thrown fetch is either no connection or something in the way (a policy, a proxy). Saying "no connection"
-    // when there plainly is one sends people off checking their wifi for nothing.
-    const online = typeof navigator === 'undefined' || navigator.onLine !== false;
-    return { ok: false, why: online ? 'unreachable' : 'offline' };
-  }
-  if (r.ok) return { ok: true };
-  if (r.status === 429) return { ok: false, why: 'too-often' };
-  if (r.status === 401 || r.status === 403) return { ok: false, why: 'refused' };
-  if (r.status === 413) return { ok: false, why: 'too-big' };
-  return { ok: false, why: 'failed', detail: `${r.status}` };
+  const reply = await transport(`${i.url}/api/ingest`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${i.key}`, 'Content-Type': 'application/json' },
+    body: reportText(report),
+  });
+  const out = outcomeOf(reply, online());
+  lastFailure = out.ok ? null : out;
+  return out;
 }
+
+let lastFailure: Failure | null = null;
+/** How the last report went wrong, if it did (a crash report goes by itself, so the person never saw it fail). Kept in memory only. */
+export const lastSendFailure = (): Failure | null => lastFailure;

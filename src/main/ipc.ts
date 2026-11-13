@@ -7,6 +7,7 @@ import type { AutosaveMeta, DocumentState, FileFilter, SaveChoice } from '../pre
 import { psNamesFor, type FontWant } from './fonts';
 import { ffmpegPath, mp4SoundToAac } from './media';
 import { registerVideoIpc } from './video';
+import { registerBetaIpc } from './beta';
 import { addLinked, canOpenOther, cleanFilters, isLibraryKind, isLinked, libraryId, listLibrary, pickFolder, readLibrary, readSmallFolder, removeLibrary, showLibraryFolder, writeLibrary } from './library';
 import { addRecent, clearAutosave, clearRecent, keepAutosave, lastDir, listKept, listRecent, readAutosave, readKept, rememberDir, removeKept, removeRecent, writeAutosave, writeFileAtomic } from './store';
 import { pathKey, safeFileName } from './paths';
@@ -262,6 +263,7 @@ export function registerIpc(hooks: IpcHooks): void {
 
   // ProRes through FFmpeg (src/main/video.ts), only into files picked in an export dialog.
   registerVideoIpc(handle, (p) => granted.has(key(p)));
+  registerBetaIpc(handle);
   // ------------------------------------------------ plugins, templates and Interactives packages
 
   handle('files:openOther', async (_e, opts: { filters: FileFilter[]; title?: string }) => {

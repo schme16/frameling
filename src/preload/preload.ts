@@ -80,6 +80,7 @@ const api: FramelingApi = {
     finish: (id) => call('video:finish', id),
     cancel: (id) => call('video:cancel', id),
   },
+  beta: { request: (req) => call('beta:request', req) },
   app: {
     // How big everything is drawn. Chromium's own page zoom, so text, panels and the canvas all stay crisp.
     setUiScale: (factor) => webFrame.setZoomFactor(Math.min(3, Math.max(0.5, factor))),
