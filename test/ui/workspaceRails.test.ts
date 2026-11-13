@@ -226,7 +226,7 @@ describe('loading what an older version saved', () => {
     expect((await load()).takeRailMigrationNote()).toBeNull();
   });
   it('the note is a Quill line with the workspace filled in', () => {
-    expect(line('workspaces.railKept', { workspace: 'Animate' })).toBe('Your tool arrangement stays in Animate. Other workspaces now start from their own.');
+    expect(line('workspaces.railKept', { workspace: 'Animate' })).toBe('Your tool arrangement stays in Animate. Other workspaces now remember their own as well.');
   });
   it('the arrangement is written out with the workspace id and read back', async () => {
     moveToolTo('hand', { newGroupAt: 0 });

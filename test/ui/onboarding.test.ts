@@ -48,7 +48,7 @@ describe('onboarding flow', () => {
     s = reduceFlow(s, { type: 'toggle', interest: 'cartoons' });
     expect(s.interests).toEqual(['tiles']);
     expect(s.lastPick).toBeNull();
-    expect(makeReaction(s)).toMatch(/Great picks/);
+    expect(makeReaction(s)).toMatch(/great picks/);
     expect(makeReaction(startFlow())).toMatch(/no wrong answers/i);
     // Unknown interests are ignored.
     expect(reduceFlow(s, { type: 'toggle', interest: 'nope' as never })).toBe(s);

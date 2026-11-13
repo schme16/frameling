@@ -29,7 +29,7 @@ export interface Prefs {
   showWelcome: boolean;
   /** Show the friendly tips in the status bar. */
   showTips: boolean;
-  /** Show Quill, the hedgehog guide. Off hides him everywhere; his speech bubbles still show their words. */
+  /** Show Quill, the hedgehog guide. Off hides him and his chatter everywhere; words people need stay as plain notes. */
   showQuill: boolean;
   /** How the right side is laid out: Properties with a labelled rail, every panel on the rail, or tabs. */
   rightSide: 'inspector' | 'rail' | 'tabs';

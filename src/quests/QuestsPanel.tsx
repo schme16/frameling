@@ -28,7 +28,7 @@ export function QuestsPanel() {
       {p.active || p.paused ? (
         <p className="qp-lead">Short lessons that teach by doing. Each one earns a badge.</p>
       ) : (
-        <QuillSays anim={allDone ? 'cheer' : 'idle'} then={allDone ? 'idle' : undefined} size={48} className="qp-quill">
+        <QuillSays anim={allDone ? 'cheer' : 'idle'} then={allDone ? 'idle' : undefined} size={48} className="qp-quill" whenHidden={<p className="qp-lead">{allDone ? 'All quests done. You can do any of them again.' : 'Short lessons that teach by doing. Each one earns a badge.'}</p>}>
           <p className="qp-lead">{line(allDone ? 'quests.panel.allDone' : 'quests.panel.intro')}</p>
         </QuillSays>
       )}

@@ -36,7 +36,7 @@ function RecoverDialog({ close }: { close: () => void }) {
       <div className="io-body">
         <p className="io-muted">Drawings you chose not to save are kept here for 7 days, in case you change your mind.</p>
         {items === null ? null : items.length === 0 ? (
-          <QuillEmpty anim="idle" className="io-empty">{line('empty.recover')}</QuillEmpty>
+          <QuillEmpty anim="idle" className="io-empty" whenHidden="Nothing to recover. Work you leave unsaved shows up here for a week.">{line('empty.recover')}</QuillEmpty>
         ) : (
           <ul className="io-recover">
             {items.map((k, i) => (

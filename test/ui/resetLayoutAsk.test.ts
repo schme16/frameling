@@ -23,7 +23,7 @@ describe('Quill asks about the tools after Reset layout', () => {
     expect(LINES['workspaces.resetTools'].vars).toEqual(['workspace']);
     expect(placeholders(LINES['workspaces.resetTools'].text)).toEqual(['workspace']);
     expect(LINES['workspaces.resetTools'].where.length).toBeGreaterThan(10);
-    expect(line('workspaces.resetTools', { workspace: 'Draw' })).toBe('Reset your tools in Draw too?');
+    expect(line('workspaces.resetTools', { workspace: 'Draw' })).toBe('Reset your tool layout in Draw too?');
   });
 
   it('does not ask when the tools are already the default', () => {
@@ -39,7 +39,7 @@ describe('Quill asks about the tools after Reset layout', () => {
     expect(isCustomArrangement()).toBe(true);
     expect(shown()).toHaveLength(1);
     const t = shown()[0];
-    expect(t.message).toBe('Reset your tools in Draw too?');
+    expect(t.message).toBe('Reset your tool layout in Draw too?');
     expect([t.action?.label, t.decline?.label]).toEqual(['Yes', 'No']);
     t.action!.run();
     expect(isCustomArrangement()).toBe(false);
