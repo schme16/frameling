@@ -63,7 +63,9 @@ type Drag =
   | { kind: 'inOut'; a: number }
   | { kind: 'inOutEdge'; edge: 'in' | 'out' }
   | { kind: 'keys'; refs: KeyRef[]; startX: number; grab: number; ref: KeyRef; wasPicked: boolean; moved: boolean; last: number }
-  | { kind: 'box'; x0: number; y0: number; add: boolean };
+  | { kind: 'box'; x0: number; y0: number; add: boolean }
+  // Dragging the timeline itself about, with the middle button or Space held.
+  | { kind: 'pan'; x: number; y: number; left: number; top: number };
 
 type Ghost =
   | { kind: 'cel'; layerId: Id; start: number; length: number; trim: boolean }
@@ -384,6 +386,7 @@ export function TimelineBody() {
   const [ghost, setGhost] = useState<Ghost | null>(null);
   const [view, setView] = useState({ left: 0, width: 800 });
   const [menu, setMenu] = useState<{ x: number; y: number; items: MenuItem[] } | null>(null);
+  const [panning, setPanning] = useState(false);
   const keepScroll = useRef<number | null>(null);
 
   // What's on screen, so a 500 frame animation with 20 layers draws a few hundred things, not thousands.
@@ -413,6 +416,31 @@ export function TimelineBody() {
       el.removeEventListener('scroll', queue);
       ro.disconnect();
       if (raf) cancelAnimationFrame(raf);
+    };
+  }, []);
+
+  // Space held means "drag the timeline about", the same as on the canvas. A tap on its own still plays, because the
+  // key is never swallowed here.
+  const space = useRef(false);
+  useEffect(() => {
+    const down = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (e.key !== ' ' || t?.closest?.('input, textarea, [contenteditable]')) return;
+      space.current = true;
+      // With the timeline focused, Space would otherwise scroll it a page down while you are holding it to pan.
+      if (t && scroller.current?.contains(t)) e.preventDefault();
+    };
+    const up = (e: KeyboardEvent) => {
+      if (e.key === ' ') space.current = false;
+    };
+    const off = () => (space.current = false);
+    window.addEventListener('keydown', down, true);
+    window.addEventListener('keyup', up, true);
+    window.addEventListener('blur', off);
+    return () => {
+      window.removeEventListener('keydown', down, true);
+      window.removeEventListener('keyup', up, true);
+      window.removeEventListener('blur', off);
     };
   }, []);
 
@@ -511,6 +539,15 @@ export function TimelineBody() {
   const focusMain = () => main.current?.focus({ preventScroll: true });
 
   const onDown = (e: RPointerEvent<HTMLDivElement>) => {
+    // The middle button, or Space and the left button, drags the timeline about under the pointer.
+    const el = scroller.current;
+    if (el && (e.button === 1 || (e.button === 0 && space.current))) {
+      e.preventDefault();
+      dragRef.current = { kind: 'pan', x: e.clientX, y: e.clientY, left: el.scrollLeft, top: el.scrollTop };
+      setPanning(true);
+      main.current?.setPointerCapture(e.pointerId);
+      return;
+    }
     if (e.button !== 0) return;
     const t = e.target as HTMLElement;
     if (t.closest('input')) return;
@@ -598,6 +635,14 @@ export function TimelineBody() {
   const onMove = (e: RPointerEvent<HTMLDivElement>) => {
     const d = dragRef.current;
     if (!d) return;
+    if (d.kind === 'pan') {
+      const el = scroller.current;
+      if (el) {
+        el.scrollLeft = d.left - (e.clientX - d.x);
+        el.scrollTop = d.top - (e.clientY - d.y);
+      }
+      return;
+    }
     const doc = store().get().doc;
     const cwNow = tl().cw;
     switch (d.kind) {
@@ -687,6 +732,11 @@ export function TimelineBody() {
 
   const onUp = (e: RPointerEvent<HTMLDivElement>) => {
     const d = dragRef.current;
+    if (d?.kind === 'pan') {
+      dragRef.current = null;
+      setPanning(false);
+      return;
+    }
     const g = ghost;
     dragRef.current = null;
     const click = clickRef.current;
@@ -904,7 +954,7 @@ export function TimelineBody() {
   const markers = useStore((s) => (detailed ? s.doc.markers : null));
 
   return (
-    <div ref={scroller} className={`tl-body${detailed ? ' is-detailed' : ''}`} style={bodyStyle} data-dragging={ghost ? ghost.kind : undefined}>
+    <div ref={scroller} className={`tl-body${detailed ? ' is-detailed' : ''}${panning ? ' is-panning' : ''}`} style={bodyStyle} data-dragging={ghost ? ghost.kind : undefined}>
       <div className="tl-inner">
       <div className="tl-side">
         <div className="tl-corner" style={{ height: rulerH + marksH + clipsH }}>
@@ -924,6 +974,7 @@ export function TimelineBody() {
         onPointerUp={onUp}
         onPointerCancel={() => {
           dragRef.current = null;
+          setPanning(false);
           setGhost(null);
         }}
         onDoubleClick={onDouble}

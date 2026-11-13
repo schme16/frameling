@@ -15,6 +15,7 @@ export const bodies: Record<string, string> = {
 - Drag along the numbers at the top to scrub through your animation.
 - Press **,** and **.** to step back and forward one frame, **Home** and **End** to jump to the ends.
 - Hold **Ctrl** and scroll to zoom in and out of the timeline.
+- Drag the timeline about with the middle mouse button, or hold **Space** and drag, just like the canvas.
 
 ## Making things
 

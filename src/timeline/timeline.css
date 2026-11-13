@@ -230,7 +230,8 @@
   position: relative;
   background: var(--panel-2);
 }
-.tl-body[data-dragging] {
+.tl-body[data-dragging],
+.tl-body.is-panning {
   cursor: grabbing;
 }
 /* Sticky parts need a parent as wide as the content, or they let go when you scroll past the visible width. */
