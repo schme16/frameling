@@ -9,7 +9,7 @@ import type { Id, Shape, VectorDrawing } from '../core/format';
 import { registerTool, type Tool, type ToolContext, type ToolPointer } from '../core/registry';
 import { store } from '../core/store';
 import { cssVar } from '../canvas/theme';
-import { setCursor, setLive } from '../canvas/controller';
+import { requestOverlay, setCursor, setLive } from '../canvas/controller';
 import {
   angleFromCentre,
   apply,
@@ -72,8 +72,10 @@ interface Gesture {
   moved: boolean;
   /** Lasso mode: the points so far (document pixels). */
   lasso: Pt[] | null;
-  /** A lasso left open between Alt+clicks (straight sides), waiting for the next corner. */
+  /** A lasso left open between Alt+clicks (straight sides), or a polygon, waiting for the next corner. */
   open: boolean;
+  /** The Polygon way: every side is straight and each click is a corner, until you close it. */
+  poly?: boolean;
   /** The move, resize or turn as last worked out (with snapping), so drawing it doesn't snap again. */
   m?: Matrix;
 }
@@ -150,10 +152,12 @@ function down(e: ToolPointer, ctx: ToolContext): void {
   // A lasso left open by Alt+click: this click adds the next corner (or closes it).
   if (g?.open && g.lasso && vectorDrawing() !== g.drawing) g = null;
   if (g?.open && g.lasso) {
-    g.open = false;
     g.cur = e;
-    if (lassoClosesAt(g.lasso, e, ctx.zoom)) return finishLasso(g, ctx);
+    // Back on the first corner closes it, whichever way it was started.
+    if (lassoClosesAt(g.lasso, e, ctx.zoom)) return finishLasso(g);
     g.lasso.push({ x: e.x, y: e.y });
+    // A polygon keeps waiting for the next corner. An Alt lasso waits for the next Alt as you let go.
+    g.open = !!g.poly;
     return;
   }
   const { layer } = activeLayer();
@@ -211,8 +215,9 @@ function down(e: ToolPointer, ctx: ToolContext): void {
   }
   if (cut) setCut(null);
   const picks = modeOfTool(store().get().ui.tool);
-  const lasso = picks === 'lasso' || picks === 'polygon' ? [{ x: e.x, y: e.y }] : null;
-  g = { ...base, drawing: d, mode: 'marquee', originals: [], handle: null, base: e.shift ? selectedIds() : [], lasso };
+  const poly = picks === 'polygon';
+  const lasso = picks === 'lasso' || poly ? [{ x: e.x, y: e.y }] : null;
+  g = { ...base, drawing: d, mode: 'marquee', originals: [], handle: null, base: e.shift ? selectedIds() : [], lasso, open: poly, poly };
 }
 
 function move(e: ToolPointer, ctx: ToolContext): void {
@@ -238,6 +243,13 @@ function up(e: ToolPointer, ctx: ToolContext): void {
   if (!s) return;
   s.cur = e;
   if (s.lasso) {
+    // A polygon is built from clicks, so letting go of one does nothing but wait for the next corner.
+    if (s.poly) {
+      s.open = true;
+      g = s;
+      ctx.requestOverlay();
+      return;
+    }
     lassoPoint(s.lasso, e, ctx.zoom);
     // Alt held as you let go keeps the lasso open: each Alt+click adds a straight side.
     if (e.alt) {
@@ -246,7 +258,7 @@ function up(e: ToolPointer, ctx: ToolContext): void {
       ctx.requestOverlay();
       return;
     }
-    return finishLasso(s, ctx);
+    return finishLasso(s);
   }
   if (s.mode === 'marquee') {
     g = s;
@@ -297,12 +309,12 @@ function up(e: ToolPointer, ctx: ToolContext): void {
 }
 
 /** Closes a lasso and selects what it touches (on a merge layer, cuts out exactly what's inside it). */
-function finishLasso(s: Gesture, ctx: ToolContext): void {
+function finishLasso(s: Gesture): void {
   g = null;
   const pts = s.lasso ?? [];
   const area = pts.length >= 3 ? polygonGeom(pts) : [];
   if (!area.length) {
-    ctx.requestOverlay();
+    requestOverlay();
     return;
   }
   const shapes = s.drawing.shapes;
@@ -310,16 +322,23 @@ function finishLasso(s: Gesture, ctx: ToolContext): void {
   const ids = new Set([...s.base, ...hits]);
   setSelection(shapes.filter((x) => ids.has(x.id)).map((x) => x.id));
   if (activeIsMerge()) pickPartIn(s.drawing, area, (x) => shapeInsideArea(x, area));
-  ctx.requestOverlay();
+  requestOverlay();
 }
 
-/** True while a lasso is waiting for its next Alt+click corner. */
+/** True while a lasso or polygon is waiting for its next corner. */
 export const lassoIsOpen = (): boolean => !!g?.open;
 
-/** Lets go of a lasso left open between Alt+clicks. True when there was one. */
+/** Lets go of a lasso or polygon left open, without picking anything. True when there was one. */
 export function cancelOpenLasso(): boolean {
   if (!g?.open) return false;
   g = null;
+  return true;
+}
+
+/** Closes a lasso or polygon left open and picks what it covers. True when there was one. */
+export function closeOpenLasso(): boolean {
+  if (!g?.open || !g.lasso) return false;
+  finishLasso(g);
   return true;
 }
 
@@ -483,6 +502,12 @@ function polygon(gx: CanvasRenderingContext2D, pts: Pt[]): void {
   gx.closePath();
 }
 
+/** Enter closes a polygon or lasso you left open, so you don't have to land back on the first corner. */
+function polygonKey(e: KeyboardEvent): boolean {
+  if (e.key !== 'Enter' || !g?.open) return false;
+  return closeOpenLasso();
+}
+
 /** One tool per way of picking on a vector layer. The magic wand has no meaning here, so it is left out. */
 export const selectTools: Tool[] = WAYS.filter((w) => w.vector).map((w) => ({
   id: w.vector as string,
@@ -502,6 +527,7 @@ export const selectTools: Tool[] = WAYS.filter((w) => w.vector).map((w) => ({
   hover,
   cancel,
   overlay,
+  onKey: polygonKey,
 }));
 
 export const selectTool = selectTools[0];

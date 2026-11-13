@@ -3,8 +3,8 @@ export const bodies: Record<string, string> = {
   'pixel-select': `Each way of picking is its own tool in the toolbar, so you can see them all and reach any of them in one press:
 
 - **Box** (**V**): drag a rectangle (a *marquee*).
-- **Lasso** (**Shift+L**): draw round what you want. Hold **Alt** as you let go and each **Alt+click** adds a straight side; click without Alt (or on the first point) to finish.
-- **Polygon** (**Shift+G**): click each corner, one at a time, and click the first corner again to close it. **Escape** gives up on it. Good for anything with straight edges, where a freehand lasso wobbles.
+- **Lasso** (**Shift+L**): draw round what you want. Hold **Alt** as you let go and each **Alt+click** adds a straight side; click without Alt, click the first point, or press **Enter**, to finish.
+- **Polygon** (**Shift+G**): click each corner, one at a time, then close it: click the first corner again, or press **Enter** wherever you are. **Escape** gives up on it. Good for anything with straight edges, where a freehand lasso wobbles.
 - **Magic wand** (**W**): click a colour to pick it. **Colour match** lets close colours in too, and turn off **Only touching pixels** to pick that colour everywhere. Shortcut: **W**.
 
 The selected part gets a crawling dashed edge (*marching ants*).
@@ -31,7 +31,7 @@ They all share one selection, so you can start a box, then switch to the lasso a
   lasso: `Press **Shift+L**, or pick **Lasso** in the toolbar.
 
 - **Drag round** what you want. When you let go, every shape the lasso touches is selected.
-- **Straight sides:** hold **Alt** as you let go, then **Alt+click** each corner. Click without Alt, or on the first point, to finish. **Escape** gives up.
+- **Straight sides:** hold **Alt** as you let go, then **Alt+click** each corner. Click without Alt, click the first point, or press **Enter**, to finish. **Escape** gives up.
 - **Shift** adds to what's already selected.
 
 On a **merge layer** (where shapes join like paint) the lasso cuts out exactly what's inside it, so you can lift out just part of a painted area and move it, recolour it or delete it.

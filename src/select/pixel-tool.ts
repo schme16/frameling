@@ -7,7 +7,7 @@ import { gridPixels } from '../core/pixelBounds';
 import { registerTool, type Tool, type ToolContext, type ToolPointer } from '../core/registry';
 import { currentChoice, registerChoice } from '../core/choices';
 import { cssVar } from '../canvas/theme';
-import { addStageOverlay, setCursor } from '../canvas/controller';
+import { addStageOverlay, requestOverlay, setCursor } from '../canvas/controller';
 import type { Pt } from '../canvas/geometry';
 import { activeLayer, EDIT_HINTS } from '../tools/edit';
 import { combineMasks, maskEdges, maskHas, polygonMask, rectMask, wandMask, type Mask, type SelectOp } from './mask';
@@ -77,7 +77,7 @@ function down(e: ToolPointer, ctx: ToolContext): void {
   if (g?.kind === 'lasso' && g.open) {
     g.cur = e;
     // Back on the first corner closes it, whichever way it was started.
-    if (lassoClosesAt(g.pts, e, ctx.zoom)) return finishLasso(ctx);
+    if (lassoClosesAt(g.pts, e, ctx.zoom)) return finishLasso();
     g.pts.push({ x: e.x, y: e.y });
     // A polygon keeps waiting for the next corner. An Alt lasso waits for the next Alt as you let go.
     g.open = !!g.poly;
@@ -171,7 +171,7 @@ function up(e: ToolPointer, ctx: ToolContext): void {
       ctx.requestOverlay();
       return;
     }
-    return finishLasso(ctx);
+    return finishLasso();
   }
   g = null;
   const a = activePixelGrid();
@@ -189,7 +189,7 @@ function up(e: ToolPointer, ctx: ToolContext): void {
   ctx.requestOverlay();
 }
 
-function finishLasso(ctx: ToolContext): void {
+function finishLasso(): void {
   const s = g;
   g = null;
   if (!s || s.kind !== 'lasso') return;
@@ -199,17 +199,30 @@ function finishLasso(ctx: ToolContext): void {
   if (pts.length < 3) {
     if (s.op === 'replace') setPixelSelection(null);
   } else apply(polygonMask(a.width, a.height, pts), s.op);
-  ctx.requestOverlay();
+  requestOverlay();
 }
 
-/** True while a lasso is waiting for its next Alt+click corner. */
+/** True while a lasso or polygon is waiting for its next corner. */
 export const pixelLassoIsOpen = (): boolean => g?.kind === 'lasso' && g.open;
 
-/** Lets go of a lasso left open between Alt+clicks. True when there was one. */
+/** Lets go of a lasso or polygon left open, without picking anything. True when there was one. */
 export function cancelOpenPixelLasso(): boolean {
   if (g?.kind !== 'lasso' || !g.open) return false;
   g = null;
   return true;
+}
+
+/** Closes a lasso or polygon left open and picks what it covers. True when there was one. */
+export function closeOpenPixelLasso(): boolean {
+  if (g?.kind !== 'lasso' || !g.open) return false;
+  finishLasso();
+  return true;
+}
+
+/** Enter closes a polygon or lasso you left open, so you don't have to land back on the first corner. */
+function polygonKey(e: KeyboardEvent): boolean {
+  if (e.key !== 'Enter' || !pixelLassoIsOpen()) return false;
+  return closeOpenPixelLasso();
 }
 
 function cancel(ctx: ToolContext): void {
@@ -281,9 +294,47 @@ export const pixelSelectTools: Tool[] = WAYS.map((w) => ({
   hover,
   cancel,
   overlay,
+  onKey: polygonKey,
 }));
 
 /** The box one, which is what Select has always meant. */
 export const pixelSelectTool = pixelSelectTools[0];
 
 for (const t of pixelSelectTools) registerTool(t);
+
+// ---------------------------------------------------------------- marching ants, whatever tool is picked
+
+let antsCache: { m: Mask; size: number; path: Path2D } | null = null;
+
+function antsPath(m: Mask, size: number): Path2D {
+  if (antsCache && antsCache.m === m && antsCache.size === size) return antsCache.path;
+  const e = maskEdges(m);
+  const path = new Path2D();
+  for (let i = 0; i < e.length; i += 4) {
+    path.moveTo(e[i] * size, e[i + 1] * size);
+    path.lineTo(e[i + 2] * size, e[i + 3] * size);
+  }
+  antsCache = { m, size, path };
+  return path;
+}
+
+addStageOverlay((gx, zoom) => {
+  const m = pixelSelection();
+  const a = activePixelGrid();
+  if (!m || !a || typeof Path2D === 'undefined') return;
+  const path = antsPath(m, a.layer.pixelSize);
+  const px = 1 / zoom;
+  // Black and white dashes that crawl along, so the edge shows on any colour.
+  // They hold still when motion is turned down.
+  const crawl = reducedMotion() ? 0 : (Date.now() / 60) % 8;
+  gx.save();
+  gx.lineWidth = px;
+  gx.setLineDash([4 * px, 4 * px]);
+  gx.lineDashOffset = -crawl * px;
+  gx.strokeStyle = 'white';
+  gx.stroke(path);
+  gx.lineDashOffset = (4 - crawl) * px;
+  gx.strokeStyle = 'black';
+  gx.stroke(path);
+  gx.restore();
+});

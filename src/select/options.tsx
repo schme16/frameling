@@ -34,7 +34,7 @@ export function PixelSelectOptions() {
     mode === 'wand'
       ? 'Click a colour to pick it.'
       : mode === 'polygon'
-        ? 'Click each corner, then click the first one again to close it.'
+        ? 'Click each corner, then the first one again (or press Enter) to close it.'
         : mode === 'lasso'
           ? 'Draw round what you want.'
           : 'Drag a box round what you want.';

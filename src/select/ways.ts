@@ -27,7 +27,7 @@ export interface SelectWay {
 export const WAYS: SelectWay[] = [
   { mode: 'box', vector: 'select', pixel: 'pixel-select', label: 'Select', icon: 'select', key: 'v', at: 0, blurb: 'Drag a box round what you want (a marquee).' },
   { mode: 'lasso', vector: 'select-lasso', pixel: 'pixel-select-lasso', label: 'Lasso', icon: 'lasso', key: 'Shift+L', at: 1, blurb: 'Draw round what you want, freehand.' },
-  { mode: 'polygon', vector: 'select-polygon', pixel: 'pixel-select-polygon', label: 'Polygon select', icon: 'polygon', key: 'Shift+G', at: 2, blurb: 'Click each corner, then the first one again to close it.' },
+  { mode: 'polygon', vector: 'select-polygon', pixel: 'pixel-select-polygon', label: 'Polygon select', icon: 'polygon', key: 'Shift+G', at: 2, blurb: 'Click each corner, then the first one again (or Enter) to close it.' },
   { mode: 'wand', vector: null, pixel: 'pixel-select-wand', label: 'Magic wand', icon: 'wand', key: 'w', at: 3, blurb: 'Click a colour to pick every pixel of it.' },
 ];
 
