@@ -67,6 +67,8 @@ export interface Prefs {
   pixelOutlineWidth: number;
   /** How many undo steps to keep (20 to 2000). A very long history still stops growing when it gets heavy. */
   historySteps: number;
+  /** How big the whole interface is drawn, as a share of the usual size (0.75 to 2). For big, dense screens. */
+  uiScale: number;
   /** Measure each plugin's memory and speed (switch is in Preferences > Diagnostics, numbers in Preferences > Plugins). Off by default: the memory part needs each plugin in its own process, which costs memory and a restart. */
   pluginDiagnostics: boolean;
 }
@@ -97,6 +99,7 @@ export const DEFAULT_PREFS: Prefs = {
   keymap: {},
   keymapSet: DEFAULT_KEYMAP_SET,
   historySteps: DEFAULT_HISTORY_STEPS,
+  uiScale: 1,
   cleanTimeline: false,
   pixelThickOutlines: false,
   pixelOutlineWidth: DEFAULT_OUTLINE,
@@ -136,6 +139,7 @@ export function migratePrefs(raw: unknown): Prefs {
     toolRail: r.toolRail === 'stacked' || r.toolRail === 'two' ? r.toolRail : DEFAULT_PREFS.toolRail,
     fadeTileCopies: bool(r.fadeTileCopies, DEFAULT_PREFS.fadeTileCopies),
     units: isUnit(r.units) ? r.units : DEFAULT_PREFS.units,
+    uiScale: typeof r.uiScale === 'number' && Number.isFinite(r.uiScale) ? Math.min(UI_SCALE_RANGE.max, Math.max(UI_SCALE_RANGE.min, r.uiScale)) : DEFAULT_PREFS.uiScale,
     historySteps: typeof r.historySteps === 'number' && Number.isFinite(r.historySteps) ? Math.round(Math.min(HISTORY_STEPS_RANGE.max, Math.max(HISTORY_STEPS_RANGE.min, r.historySteps))) : DEFAULT_PREFS.historySteps,
     onboarded: bool(r.onboarded, DEFAULT_PREFS.onboarded),
     // Someone who got past the first hello before this existed is not new any more.
@@ -194,8 +198,12 @@ function watchSystem(): void {
 }
 
 /** Writes the theme colours, look and motion preferences onto <html>. Safe to call any time. */
+/** How small and how big the interface can be drawn, and the steps the slider takes. */
+export const UI_SCALE_RANGE = { min: 0.75, max: 2, step: 0.05 };
+
 export function applyPrefs(): void {
   const p = prefsStore.get();
+  applyUiScale(p.uiScale);
   // The store keeps its own copy, so undo works the same in tests and harnesses with no DOM.
   setHistorySteps(p.historySteps);
   if (typeof document === 'undefined') return;
@@ -216,6 +224,23 @@ export function applyPrefs(): void {
   root.dataset.look = p.look;
   if (p.reduceMotion) root.dataset.motion = 'reduce';
   else delete root.dataset.motion;
+}
+
+/**
+ * Draws the whole interface bigger or smaller. On the desktop that is Chromium's own page zoom, so everything stays
+ * sharp; in a browser tab it is the same thing through CSS, which the page's own styles follow.
+ */
+export function applyUiScale(scale: number): void {
+  const n = Math.min(UI_SCALE_RANGE.max, Math.max(UI_SCALE_RANGE.min, scale));
+  const api = typeof window !== 'undefined' ? (window as { frameling?: { app?: { setUiScale?: (f: number) => void } } }).frameling : undefined;
+  if (api?.app?.setUiScale) {
+    api.app.setUiScale(n);
+    return;
+  }
+  if (typeof document === 'undefined') return;
+  const root = document.documentElement as HTMLElement & { style: CSSStyleDeclaration };
+  if (n === 1) root.style.removeProperty('zoom');
+  else root.style.setProperty('zoom', String(n));
 }
 
 /** The theme that's actually showing right now (resolves "system"). */

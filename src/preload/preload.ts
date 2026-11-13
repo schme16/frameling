@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from 'electron';
+import { contextBridge, ipcRenderer, webFrame } from 'electron';
 import type { FramelingApi } from './api';
 
 // The page's only window into the desktop side. It grows as features need it; the page never gets Node itself.
@@ -81,6 +81,8 @@ const api: FramelingApi = {
     cancel: (id) => call('video:cancel', id),
   },
   app: {
+    // How big everything is drawn. Chromium's own page zoom, so text, panels and the canvas all stay crisp.
+    setUiScale: (factor) => webFrame.setZoomFactor(Math.min(3, Math.max(0.5, factor))),
     setDocumentState: (state) => ipcRenderer.send('app:documentState', state),
     getLaunchFile: () => call('app:launchFile'),
     onOpenFile: (handler) => {

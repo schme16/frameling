@@ -159,6 +159,7 @@ There are five pages:
 - **General**: [mode and look](help:look-and-feel), [units](help:units), [sounds](help:sounds), motion, the welcome sheet and [Show Quill](help:meet-quill).
 - **Themes**: pick [themes](help:themes) and [make your own](help:make-your-own-theme).
 - **Behaviour**: [the choices Frameling asked you about](help:behaviour), like what N does.
+- **Interface size** (on the General page): draws everything bigger or smaller, 75% to 200%. Handy on a 2k or 4k drawing tablet, where the usual size can be hard to read.
 - **Your settings** (on the General page): **Back up...** saves everything you have set into one small file, and **Put a backup back...** reads one in and starts Frameling again. Handy for a new computer.
 - **Keyboard**: see and change [shortcuts](help:keyboard-shortcuts), or pick a [shortcut set](help:shortcut-sets).
 - **Workspaces**: save and switch [panel layouts](help:workspaces).

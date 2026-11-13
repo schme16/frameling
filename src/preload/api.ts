@@ -158,6 +158,8 @@ export interface FramelingApi {
     cancel(id: number): Promise<void>;
   };
   app: {
+    /** How big the whole interface is drawn, 0.5 to 3 (1 is the usual size). Everything stays crisp. */
+    setUiScale?(factor: number): void;
     /** Tells the window about the document (title bar dot on macOS, "Save changes?" on close). */
     setDocumentState(state: DocumentState): void;
     /** The file the app was launched with, once. */

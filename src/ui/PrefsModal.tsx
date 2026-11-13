@@ -21,7 +21,7 @@ import { Keys } from './ShortcutChip';
 import { wordsOf } from './match';
 import { Modal } from './Modal';
 import { closePrefs, overlays, type PrefsPage } from './overlays';
-import { setPrefs, usePrefs, type LookPref, type ThemePref } from './prefs';
+import { setPrefs, UI_SCALE_RANGE, usePrefs, type LookPref, type ThemePref } from './prefs';
 import { toast } from './toast';
 import { applySettings, pickSettingsFile, saveSettingsFile } from './settingsFile';
 import { BehaviourPage } from './ChoiceDialog';
@@ -191,6 +191,26 @@ function GeneralPage({ onThemes }: { onThemes: () => void }) {
       </Row>
       <Row label="Clean timeline" hint="Off shows the detailed timeline: keys as diamonds, tweens with their easing, and rows for what changes on each layer. On shows one plain block per drawing.">
         <Switch label="Clean timeline" on={p.cleanTimeline} onChange={(cleanTimeline) => setPrefs({ cleanTimeline })} />
+      </Row>
+      <Row label="Interface size" hint="How big everything is drawn: menus, panels, the timeline and the page itself. Handy on a big, dense screen like a 4k drawing tablet, where the usual size can be hard to read.">
+        <div className="ui-pref-volume">
+          <input
+            type="range"
+            className="cv-slider"
+            min={UI_SCALE_RANGE.min * 100}
+            max={UI_SCALE_RANGE.max * 100}
+            step={UI_SCALE_RANGE.step * 100}
+            value={Math.round(p.uiScale * 100)}
+            aria-label="Interface size"
+            onChange={(e) => setPrefs({ uiScale: Number(e.target.value) / 100 })}
+          />
+          <span className="ui-pref-value">{Math.round(p.uiScale * 100)}%</span>
+          {p.uiScale !== 1 && (
+            <button type="button" className="ui-btn ui-btn-small" onClick={() => setPrefs({ uiScale: 1 })}>
+              Usual size
+            </button>
+          )}
+        </div>
       </Row>
       <Row label="Undo steps" hint="How many steps Frameling keeps so you can undo them. A long history of pixel art gets heavy, so it stops growing once it is holding a lot, keeping the newest steps.">
         <div className="ui-pref-volume">
