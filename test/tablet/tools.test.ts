@@ -11,6 +11,7 @@ import { sprayTool } from '../../src/pixel/tools';
 import { DEFAULT_PIXEL_SETTINGS, setPixelSettings } from '../../src/pixel/settings';
 import { resetPen, setPenDevice, setToolPen } from '../../src/tablet/settings';
 import { flowFactor, opacityFactor, pressureSize, sizeFactor, tiltSize } from '../../src/tablet/dynamics';
+import { strokeOutline } from '../../src/core/render';
 import { ctx, drag, pixelStore, ptr, shapesNow, vectorStore } from '../tools/helpers';
 import '../../src/pixel';
 
@@ -27,6 +28,11 @@ function stroke(tool: typeof brushTool, pressures: number[], extra: Partial<Para
 }
 
 const lastStroke = () => shapesNow().at(-1) as StrokeShape;
+/** How wide the drawn line really is: the height of its outline, for a stroke drawn along a straight horizontal line. */
+function thickness(s: StrokeShape): number {
+  const ys = strokeOutline(s).map(([, y]) => y);
+  return Math.max(...ys) - Math.min(...ys);
+}
 const ramp = [0.05, 0.2, 0.4, 0.6, 0.8, 1];
 
 beforeEach(() => {
@@ -111,6 +117,20 @@ describe('vector brush with a pen', () => {
     brushTool.down?.(ptr(10, 150), c);
     brushTool.up?.(ptr(60, 150), c);
     expect(lastStroke().brush.thinning).toBe(0);
+  });
+
+  it('draws a line about twice as wide with the pen laid over, and a steady one upright', () => {
+    const s = vectorStore();
+    s.setUi({ brush: { ...s.get().ui.brush, thinning: 0, taperStart: 0, taperEnd: 0, streamline: 0 } });
+    setToolPen('brush', { tilt: true, size: false });
+    stroke(brushTool, [0.5, 0.5, 0.5, 0.5], { tiltX: 0, tiltY: 0 }, 40);
+    const upright = thickness(lastStroke());
+    stroke(brushTool, [0.5, 0.5, 0.5, 0.5], { tiltX: 80, tiltY: 0 }, 90);
+    const leaning = thickness(lastStroke());
+    expect(leaning / upright).toBeGreaterThan(1.8);
+    // Upright, the line is the size it is set to and stays even: no widths worked out from how fast it was drawn.
+    expect(upright).toBeCloseTo(s.get().ui.brush.size, 0);
+    expect(lastStroke().realPressure).toBe(true);
   });
 });
 

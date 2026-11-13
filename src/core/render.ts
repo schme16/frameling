@@ -41,7 +41,8 @@ const strokeOutlineCache = new WeakMap<StrokeShape, number[][]>();
 /** The filled outline polygon of a brush stroke, worked out fresh. */
 function computeOutline(s: StrokeShape): number[][] {
   const b = s.brush;
-  const simulate = s.points.every((p) => p.p === 0.5);
+  // Every point at the middle means nothing varied, so widths come from the speed instead. A pen's own widths stand.
+  const simulate = !s.realPressure && s.points.every((p) => p.p === 0.5);
   return getStroke(
     s.points.map((p) => [p.x, p.y, p.p]),
     {

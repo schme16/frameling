@@ -6,7 +6,7 @@ export const bodies: Record<string, string> = {
 
 - **Pressure.** Press harder for a thicker line. The Brush does this on vector layers. Pencil, Eraser, Spray and the pixel tools can too: switch it on in the tool's options (the **Pen** switches show once Frameling has seen your pen).
 - **Light touch, fainter line.** Brush and Pencil can fade the whole line when you press lightly.
-- **Leaning.** Lay the pen over for a bigger mark, like shading with the side of a pencil. Switch on **Leaning changes size**.
+- **Leaning.** Lay the pen over for a bigger mark, up to twice the size, like shading with the side of a pencil. Switch on **Leaning changes size**.
 - **Eraser end.** Flip the pen over to erase. It goes back to your tool after. (Linux: see below.)
 - **Pen buttons.** The button nearest the tip picks a colour while held. The other one moves the page. You can change both, and swap them if they arrive the wrong way round.
 - **Hovering.** You see a ring the size of your brush, with a faint inner ring for the smallest mark a light touch makes.

@@ -543,6 +543,8 @@ export interface StrokeShape {
   ext?: Ext;
   points: StrokePoint[];
   brush: BrushSettings;
+  /** The widths came from a real pen, so they are never made up from how fast the line was drawn (missing = work it out). */
+  realPressure?: boolean;
   color: Color;
   opacity: number;
 }

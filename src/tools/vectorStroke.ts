@@ -15,16 +15,18 @@ import type { VectorDynamics } from '../tablet/dynamics';
 /** Points closer than this on screen add nothing the eye can see, and would only bloat the file. */
 const MIN_STEP_SCREEN = 0.35;
 
-export function buildStroke(points: StrokePoint[], brush: BrushSettings, color: string, opacity = 1): StrokeShape {
+export function buildStroke(points: StrokePoint[], brush: BrushSettings, color: string, opacity = 1, realPressure = false): StrokeShape {
   // A lone click becomes a dot: two identical points make perfect-freehand draw a round dab.
   const pts = points.length === 1 ? [points[0], { ...points[0] }] : points;
-  return { id: uid('sh'), type: 'stroke', points: pts, brush: { ...brush }, color, opacity };
+  return { id: uid('sh'), type: 'stroke', points: pts, brush: { ...brush }, ...(realPressure ? { realPressure: true } : {}), color, opacity };
 }
 
 export class VectorStroke {
   private points: StrokePoint[] = [];
   /** The share of full strength at each point, when opacity follows pressure. */
   private strengths: number[] = [];
+  /** A pen drew this, so its widths are the pen's own and never worked out from the speed. */
+  private fromPen = false;
 
   constructor(
     private brush: BrushSettings,
@@ -34,6 +36,7 @@ export class VectorStroke {
   ) {}
 
   private point(e: ToolPointer): StrokePoint {
+    if (this.dyn && e.pointerType === 'pen') this.fromPen = true;
     return { x: e.x, y: e.y, p: this.dyn ? this.dyn.width(e) : e.hasPressure ? e.pressure : 0.5 };
   }
 
@@ -62,7 +65,7 @@ export class VectorStroke {
         pts = [...pts, ...pred.map((q) => ({ x: q.x, y: q.y, p }))];
       }
     }
-    return buildStroke(pts, this.brush, this.color, this.opacity());
+    return buildStroke(pts, this.brush, this.color, this.opacity(), this.fromPen);
   }
 
   overlay(g: CanvasRenderingContext2D): void {
