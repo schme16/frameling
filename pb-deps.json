@@ -1,0 +1,13 @@
+{
+	"from": "frameling",
+	"deps": [
+		{
+			"ref": "project-boards/pub-doc",
+			"why": "The beta page testers read with no password is a public share on the board"
+		},
+		{
+			"ref": "project-boards/ingest",
+			"why": "The beta build sends reports with a write-only key"
+		}
+	]
+}
