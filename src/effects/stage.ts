@@ -9,6 +9,7 @@ import { drawDrawing } from '../core/render';
 import { drawLivePixels } from '../canvas/livePixels';
 import { layerCameraMatrix } from '../core/camera';
 import type { FramePainter, FrameParams } from '../canvas/pipeline';
+import { blitEntry, blitEntryStretched } from '../canvas/bitmapBlit';
 import type { Ctx } from './apply';
 import { BufferPool, ctx2 } from './apply';
 import { compositePlan } from './composite';
@@ -52,10 +53,10 @@ export function paintComposited(painter: FramePainter, g: CanvasRenderingContext
       const stale = p.zooming && !fresh ? painter.cache.stale(drawing, pixelSize) : undefined;
       if (stale) {
         settled = false;
-        lg.drawImage(stale.canvas, rect.x, rect.y, rect.w, rect.h);
+        blitEntryStretched(lg, stale, rect.x, rect.y, rect.w, rect.h);
       } else {
         const e = fresh ?? painter.vectorBitmap(doc, layer.id, drawing, pixelSize, rect.w, rect.h);
-        lg.drawImage(e.canvas, rect.x, rect.y);
+        blitEntry(lg, e, rect.x, rect.y);
       }
       lg.restore();
       return;
