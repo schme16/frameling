@@ -268,5 +268,31 @@
   "pixel.scale.hover": {
     "file": "shots/pixel.scale.hover.png",
     "note": "The words are the tooltip when you hover Quill. The picture shows him standing next to the sprite at the same scale."
+  },
+  "pet.hello": {
+    "file": "shots/pet.hello.png"
+  },
+  "pet.petted": {
+    "file": "shots/pet.petted.png",
+    "note": "One of the set, picked at random."
+  },
+  "pet.fed": {
+    "file": "shots/pet.fed.png",
+    "note": "One of the set."
+  },
+  "pet.given": {
+    "file": "shots/pet.given.png",
+    "note": "One of the set."
+  },
+  "pet.thing": {
+    "file": "shots/pet.thing.png"
+  },
+  "pet.closer": {
+    "file": "shots/pet.closer.png",
+    "note": "The toast when you reach a new step with him."
+  },
+  "pet.hello.again": {
+    "file": "shots/pet.hello.again.png",
+    "note": "Shown when the panel is opened after a day or more away. Stood in for by setting the day he last saw you."
   }
 }
