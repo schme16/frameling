@@ -69,11 +69,16 @@ export interface Prefs {
   historySteps: number;
   /** How big the whole interface is drawn, as a share of the usual size (0.75 to 2). For big, dense screens. */
   uiScale: number;
+  /** Theme picking: Basic keeps each mode to its own themes, Advanced lets any theme be either. */
+  themePicking: 'basic' | 'advanced';
   /** Measure each plugin's memory and speed (switch is in Preferences > Diagnostics, numbers in Preferences > Plugins). Off by default: the memory part needs each plugin in its own process, which costs memory and a restart. */
   pluginDiagnostics: boolean;
 }
 
 export const PREFS_KEY = 'frameling.prefs.v1';
+
+/** How small and how big the interface can be drawn, and the steps the slider takes. */
+export const UI_SCALE_RANGE = { min: 0.75, max: 2, step: 0.05 };
 
 export const DEFAULT_PREFS: Prefs = {
   theme: 'system',
@@ -100,6 +105,7 @@ export const DEFAULT_PREFS: Prefs = {
   keymapSet: DEFAULT_KEYMAP_SET,
   historySteps: DEFAULT_HISTORY_STEPS,
   uiScale: 1,
+  themePicking: 'basic',
   cleanTimeline: false,
   pixelThickOutlines: false,
   pixelOutlineWidth: DEFAULT_OUTLINE,
@@ -139,6 +145,7 @@ export function migratePrefs(raw: unknown): Prefs {
     toolRail: r.toolRail === 'stacked' || r.toolRail === 'two' ? r.toolRail : DEFAULT_PREFS.toolRail,
     fadeTileCopies: bool(r.fadeTileCopies, DEFAULT_PREFS.fadeTileCopies),
     units: isUnit(r.units) ? r.units : DEFAULT_PREFS.units,
+    themePicking: r.themePicking === 'advanced' ? 'advanced' : DEFAULT_PREFS.themePicking,
     uiScale: typeof r.uiScale === 'number' && Number.isFinite(r.uiScale) ? Math.min(UI_SCALE_RANGE.max, Math.max(UI_SCALE_RANGE.min, r.uiScale)) : DEFAULT_PREFS.uiScale,
     historySteps: typeof r.historySteps === 'number' && Number.isFinite(r.historySteps) ? Math.round(Math.min(HISTORY_STEPS_RANGE.max, Math.max(HISTORY_STEPS_RANGE.min, r.historySteps))) : DEFAULT_PREFS.historySteps,
     onboarded: bool(r.onboarded, DEFAULT_PREFS.onboarded),
@@ -198,9 +205,6 @@ function watchSystem(): void {
 }
 
 /** Writes the theme colours, look and motion preferences onto <html>. Safe to call any time. */
-/** How small and how big the interface can be drawn, and the steps the slider takes. */
-export const UI_SCALE_RANGE = { min: 0.75, max: 2, step: 0.05 };
-
 export function applyPrefs(): void {
   const p = prefsStore.get();
   applyUiScale(p.uiScale);

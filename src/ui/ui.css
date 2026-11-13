@@ -2883,6 +2883,97 @@ body.ui-resizing * {
   flex-wrap: wrap;
   gap: 4px;
   padding: 0 2px 2px;
+  /* The buttons wait below the card and swoop up when you point at it (or tab into it). */
+  max-height: 0;
+  opacity: 0;
+  transform: translateY(8px);
+  overflow: hidden;
+  transition:
+    max-height 0.22s var(--ease),
+    opacity 0.18s var(--ease),
+    transform 0.22s var(--ui-pop);
+}
+.th-card:hover .th-card-actions,
+.th-card:focus-within .th-card-actions,
+.th-card.is-chosen .th-card-actions {
+  max-height: 80px;
+  opacity: 1;
+  transform: none;
+}
+:root[data-motion='reduce'] .th-card-actions {
+  transition: none;
+}
+
+/* The two themes you are using, in one card split corner to corner by a squiggle. */
+.th-current {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 4px 0 16px;
+  padding: 10px;
+  border: 2px solid var(--chosen-bg);
+  border-radius: var(--radius);
+  background: var(--panel-2);
+}
+.th-current-art {
+  position: relative;
+  flex: none;
+  width: 190px;
+  aspect-ratio: 16 / 10;
+  border-radius: var(--radius-small);
+  overflow: hidden;
+}
+.th-current-half {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 10px;
+  background: var(--bg);
+}
+.th-current-panel {
+  width: 58%;
+  height: 34%;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  background: var(--panel);
+}
+.th-current-half:not(.is-dark) {
+  /* The light half only has the top left corner, so its bits sit up there together. */
+  justify-content: flex-start;
+  gap: 8px;
+}
+.th-current-half.is-dark .th-current-panel {
+  align-self: flex-end;
+}
+.th-current-dots {
+  display: flex;
+  gap: 5px;
+}
+.th-current-half.is-dark .th-current-dots {
+  justify-content: flex-end;
+}
+.th-current-dots i {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+.th-current-half.is-dark {
+  /* A hand-drawn squiggle from the top right corner to the bottom left one. */
+  clip-path: polygon(100% 0, 100% 100%, 0 100%, 14% 86%, 26% 80%, 30% 70%, 44% 62%, 50% 50%, 62% 44%, 68% 32%, 80% 24%, 86% 12%);
+}
+.th-current-words {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.th-current-words span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
 }
 .th-footer {
   display: flex;

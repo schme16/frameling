@@ -1,0 +1,8 @@
+# The Themes page
+
+- **current-card**: the two themes you are using, as one card cut corner to corner by a squiggle: your light pick on
+  the top left, your dark pick on the bottom right, each showing its page, a panel and its brightest colours.
+- **advanced**: **Picking** is new. Basic lists the themes made for each mode, as before. Advanced lists every theme
+  under both, so a bright theme can be your night one if that is what you want.
+- The page's preamble is a tooltip on the heading now, and the copy button says **Make it mine**. The buttons on a
+  theme card wait below it and swoop up when you point at the card, tab into it, or pick it.

@@ -5,9 +5,12 @@ import { defaultThemeFor, type Theme } from './builtIn';
 import { findTheme, MAX_CUSTOM } from './model';
 import type { ThemeMode } from './tokens';
 
-/** Use a theme for its own mode (dark themes for dark mode, light for light). */
-export function selectTheme(theme: Theme): void {
-  setPrefs(theme.mode === 'dark' ? { darkTheme: theme.id } : { lightTheme: theme.id });
+/**
+ * Use a theme. It goes to its own mode by default (dark themes for dark mode, light for light); with Advanced
+ * picking, `as` says which mode it is being picked for, so a bright theme can be your night one if you like.
+ */
+export function selectTheme(theme: Theme, as?: ThemeMode): void {
+  setPrefs((as ?? theme.mode) === 'dark' ? { darkTheme: theme.id } : { lightTheme: theme.id });
 }
 
 export function isInUse(theme: Theme): boolean {
