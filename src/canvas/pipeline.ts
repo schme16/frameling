@@ -25,6 +25,8 @@ import { needsCompositor } from '../effects/model';
 import { GHOST_ALPHA, type GhostItem } from './ghost';
 import { onionBoards, onionFrames } from './onion';
 import { artboardDoc } from '../artboards/model';
+import { blitEntry, blitEntryStretched } from './bitmapBlit';
+import { cropFor, shapesInk, unionCrop, type CropRect } from './inkBox';
 
 export interface FrameParams {
   doc: Doc;
@@ -74,17 +76,28 @@ type Canvas2 = OffscreenCanvas | HTMLCanvasElement;
 function makeCanvas(w: number, h: number): Canvas2 {
   return typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(w, h) : Object.assign(document.createElement('canvas'), { width: w, height: h });
 }
+type Ctx2 = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 const ctxOf = (c: Canvas2) => c.getContext('2d') as CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 
 // Total bitmap memory we'll hold (in pixels, 4 bytes each), across all layers and frames.
 export const BUDGET_PIXELS = 40_000_000;
 
-interface Entry {
+export interface Entry {
   drawing: Drawing;
   pixelSize: number;
+  /** The stage size this was made for (the key). */
   w: number;
   h: number;
+  /**
+   * Where the bitmap sits on a stage-sized frame, in whole device pixels. A drawing that only covers part of the stage
+   * gets a bitmap of just that part (a layer of a few strokes is a few thousand pixels, not the whole stage), so far
+   * more of them fit in the memory budget and each is cheaper to make and blit.
+   */
+  x: number;
+  y: number;
   canvas: Canvas2;
+  /** The pixels this holds, for the budget. */
+  pixels: number;
   used: number;
   list: Entry[];
 }
@@ -102,6 +115,8 @@ export class BitmapCache {
   hits = 0;
   /** Bitmaps thrown out to stay inside the budget. */
   evictions = 0;
+  /** Make bitmaps only as big as their drawings (off only for the pixel comparison in scripts/e2e/layer-cache.cjs). */
+  crop = true;
 
   find(d: Drawing, pixelSize: number, w: number, h: number): Entry | undefined {
     const e = this.map.get(d)?.find((x) => x.pixelSize === pixelSize && x.w === w && x.h === h);
@@ -148,27 +163,79 @@ export class BitmapCache {
    * sequence of paint operations the full draw would do, minus the repeats. That's what a new brush stroke is.
    */
   build(doc: Doc, d: Drawing, pixelSize: number, w: number, h: number, from?: Entry): Entry {
-    const canvas = makeCanvas(w, h);
-    const g = ctxOf(canvas);
-    if (from && from.drawing.kind === 'vector' && d.kind === 'vector') {
-      g.drawImage(from.canvas, 0, 0);
-      g.setTransform(w / doc.width, 0, 0, h / doc.height, 0, 0);
-      for (let i = from.drawing.shapes.length; i < d.shapes.length; i++) drawShape(g, d.shapes[i], { doc, frame: 0 });
-      this.appends++;
+    const grown = from && from.drawing.kind === 'vector' && d.kind === 'vector' ? from : undefined;
+    const fw = Math.trunc(w);
+    const fh = Math.trunc(h);
+    let crop: CropRect | null = null;
+    if (this.crop && d.kind === 'vector') {
+      // Only the part of the frame the drawing can touch. When it grew from an earlier bitmap, that and the new shapes.
+      const added = grown && grown.drawing.kind === 'vector' ? d.shapes.slice(grown.drawing.shapes.length) : d.shapes;
+      const c = cropFor(shapesInk(added), doc.width, doc.height, w, h);
+      if (c) crop = grown ? unionCrop({ x: grown.x, y: grown.y, w: grown.canvas.width, h: grown.canvas.height }, c) : c;
+      if (crop && crop.w * crop.h * 2 > fw * fh) crop = null;
+    }
+    let canvas: Canvas2;
+    let at = { x: 0, y: 0 };
+    if (crop) {
+      // Drawn on a whole-frame canvas all the same, so every pixel comes out exactly as it always did (shifting the
+      // drawing onto a smaller canvas, or clipping it to the part, moves float rounding and flips the odd edge pixel),
+      // reused between builds, and only the part that can hold ink is copied out.
+      const sg = this.scratchFor(fw, fh, crop);
+      sg.save();
+      if (grown) sg.drawImage(grown.canvas, grown.x, grown.y);
+      sg.setTransform(w / doc.width, 0, 0, h / doc.height, 0, 0);
+      this.paintInto(sg, doc, d, pixelSize, grown);
+      sg.restore();
+      canvas = makeCanvas(crop.w, crop.h);
+      ctxOf(canvas).drawImage(sg.canvas as CanvasImageSource, crop.x, crop.y, crop.w, crop.h, 0, 0, crop.w, crop.h);
+      at = { x: crop.x, y: crop.y };
     } else {
+      canvas = makeCanvas(w, h);
+      const g = ctxOf(canvas);
+      if (grown) g.drawImage(grown.canvas, grown.x, grown.y);
       g.setTransform(w / doc.width, 0, 0, h / doc.height, 0, 0);
-      // The frame only matters to tilemaps, and those inside symbols carry their own.
-      drawDrawing(g, d, pixelSize, { doc, frame: 0 });
+      this.paintInto(g, doc, d, pixelSize, grown);
     }
     this.builds++;
     let list = this.map.get(d);
     if (!list) this.map.set(d, (list = []));
-    const e: Entry = { drawing: d, pixelSize, w, h, canvas, used: ++this.tick, list };
+    const e: Entry = { drawing: d, pixelSize, w, h, x: at.x, y: at.y, canvas, pixels: canvas.width * canvas.height, used: ++this.tick, list };
     list.push(e);
     this.all.add(e);
-    this.total += w * h;
+    this.total += e.pixels;
     this.trim(e);
     return e;
+  }
+
+  /** Draws the drawing (or only the shapes added to `grown`'s) with `g` already set to the stage's scale. */
+  private paintInto(g: Ctx2, doc: Doc, d: Drawing, pixelSize: number, grown?: Entry): void {
+    if (grown && grown.drawing.kind === 'vector' && d.kind === 'vector') {
+      for (let i = grown.drawing.shapes.length; i < d.shapes.length; i++) drawShape(g, d.shapes[i], { doc, frame: 0 });
+      this.appends++;
+    } else {
+      // The frame only matters to tilemaps, and those inside symbols carry their own.
+      drawDrawing(g, d, pixelSize, { doc, frame: 0 });
+    }
+  }
+
+  private scratch: { canvas: Canvas2; g: Ctx2; w: number; h: number; dirty: CropRect | null } | null = null;
+
+  /** The reused whole-frame canvas, empty where `crop` is (where the drawing goes). */
+  private scratchFor(w: number, h: number, crop: CropRect): Ctx2 {
+    let s = this.scratch;
+    if (!s || s.w !== w || s.h !== h) {
+      const canvas = makeCanvas(w, h);
+      s = this.scratch = { canvas, g: ctxOf(canvas), w, h, dirty: null };
+    }
+    const g = s.g;
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    if (s.dirty) g.clearRect(s.dirty.x, s.dirty.y, s.dirty.w, s.dirty.h);
+    // Cleared with room to spare, so ink a hair outside the box (it is a generous box, not an exact one) can't linger.
+    const m = Math.max(32, Math.ceil(Math.max(crop.w, crop.h) / 2));
+    const x = Math.max(0, crop.x - m);
+    const y = Math.max(0, crop.y - m);
+    s.dirty = { x, y, w: Math.min(w, crop.x + crop.w + m) - x, h: Math.min(h, crop.y + crop.h + m) - y };
+    return g;
   }
 
   /** Drops bitmaps of other scales for a drawing (after a zoom settles). */
@@ -180,7 +247,7 @@ export class BitmapCache {
 
   private remove(e: Entry): void {
     this.all.delete(e);
-    this.total -= e.w * e.h;
+    this.total -= e.pixels;
     const i = e.list.indexOf(e);
     if (i >= 0) e.list.splice(i, 1);
   }
@@ -198,6 +265,7 @@ export class BitmapCache {
   }
 
   clear(): void {
+    this.scratch = null;
     this.all.clear();
     this.total = 0;
     this.map = new WeakMap();
@@ -239,11 +307,18 @@ export class FramePainter {
     return rect.w * rect.h <= Math.max(2_000_000, width * height * 1.25);
   }
 
-  /** How many frames ahead of the playhead fit in about half the bitmap budget (at most 48). */
+  /**
+   * How many frames ahead of the playhead fit in about half the bitmap budget (at most 48). Bitmaps are only as big as
+   * their drawings, so once some are held their average size is used instead of a whole stage.
+   */
   warmDepth(doc: Doc, rect: Rect): number {
     const layers = doc.layers.filter((l) => l.visible && l.kind === 'vector').length;
     if (!layers) return 0;
-    return Math.max(0, Math.min(48, Math.floor((BUDGET_PIXELS * 0.5) / (layers * rect.w * rect.h))));
+    const { entries, pixels } = this.cache.size;
+    const whole = rect.w * rect.h;
+    // Needs a fair sample (a frame's worth), and never assumes bitmaps smaller than a 40th of the stage.
+    const each = entries >= layers ? Math.min(whole, Math.max(whole / 40, pixels / entries)) : whole;
+    return Math.max(0, Math.min(48, Math.floor((BUDGET_PIXELS * 0.5) / (layers * each))));
   }
 
   /**
@@ -360,7 +435,7 @@ export class FramePainter {
           const old = this.cache.stale(drawing, pixelSize);
           if (old) {
             g.globalAlpha = layer.opacity;
-            g.drawImage(old.canvas, rect.x, rect.y, rect.w, rect.h);
+            blitEntryStretched(g, old, rect.x, rect.y, rect.w, rect.h);
             g.globalAlpha = 1;
             settled = false;
             continue;
@@ -373,7 +448,7 @@ export class FramePainter {
         }
         this.lastVector.set(layer.id, drawing);
         g.globalAlpha = layer.opacity;
-        g.drawImage(e.canvas, rect.x, rect.y);
+        blitEntry(g, e, rect.x, rect.y);
         g.globalAlpha = 1;
       } else {
         this.paintDirect(g, p, drawing, layer, pixelSize);
@@ -583,7 +658,7 @@ export class FramePainter {
         const e = this.cache.find(it.drawing, it.pixelSize, w, h) ?? this.cache.build(doc, it.drawing, it.pixelSize, w, h);
         g.save();
         g.setTransform(1, 0, 0, 1, 0, 0);
-        g.drawImage(e.canvas, 0, 0);
+        blitEntry(g, e, 0, 0);
         g.restore();
       } else if (it.cam) {
         g.save();

@@ -3,7 +3,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { FramePainter, BUDGET_PIXELS, type FrameParams } from '../../src/canvas/pipeline';
 import { DEFAULT_BRUSH, newDoc, newVectorLayer, uid } from '../../src/core/doc';
-import type { Doc, Layer, StrokeShape, VectorDrawing } from '../../src/core/format';
+import type { Doc, Layer, PathShape, StrokeShape, VectorDrawing } from '../../src/core/format';
 import { drawLayerAt, fadeStats } from '../../src/core/render';
 import { neighbourFrames, upcomingFrames } from '../../src/timeline/playback';
 import { counts, installFakeCanvas, mainCtx, removeFakeCanvas, resetCounts } from './fakeCanvas';
@@ -24,6 +24,11 @@ const stroke = (i: number): StrokeShape => ({
   color: '#000000',
   opacity: 1,
 });
+
+/** A shape reaching from corner to corner of the 400 x 300 test stage. */
+const spanning = (): PathShape[] => [
+  { id: uid('sh'), type: 'path', paths: [{ closed: true, points: [{ x: 0, y: 0 }, { x: 400, y: 0 }, { x: 400, y: 300 }, { x: 0, y: 300 }] }], fill: '#123456', stroke: null, opacity: 1 },
+];
 
 /** frames x layers, each cel a different drawing of `n` strokes. */
 function makeDoc(frames: number, layers = 1, n = 5): Doc {
@@ -97,6 +102,8 @@ describe('bitmap cache', () => {
 
   it('keeps inside its memory budget by dropping the oldest bitmaps', () => {
     const doc = makeDoc(8);
+    // Each frame's drawing spans the whole stage, so each bitmap is a whole frame.
+    for (const d of Object.values(doc.drawings)) if (d.kind === 'vector') d.shapes.push(...spanning());
     const p = new FramePainter();
     const g = mainCtx();
     // 3000x3000 stage bitmaps: only a few fit in 40M pixels.
@@ -110,6 +117,65 @@ describe('bitmap cache', () => {
     expect(counts.fills).toBe(0);
     p.paint(g, params(doc, 0, big));
     expect(counts.fills).toBeGreaterThan(0);
+  });
+});
+
+describe('cropped bitmaps', () => {
+  it('makes a layer bitmap only as big as its drawing', () => {
+    const doc = makeDoc(1, 1, 3);
+    const p = new FramePainter();
+    p.paint(mainCtx(), params(doc, 0));
+    const small = p.cache.size.pixels;
+    expect(small).toBeGreaterThan(0);
+    expect(small).toBeLessThan(0.1 * 400 * 300);
+    // The old way, for comparison: a whole frame.
+    const full = new FramePainter();
+    full.cache.crop = false;
+    full.paint(mainCtx(), params(doc, 0));
+    expect(full.cache.size.pixels).toBe(400 * 300);
+  });
+
+  it('keeps a whole frame for drawings whose reach is not known', () => {
+    const doc = makeDoc(1, 1, 1);
+    const d = Object.values(doc.drawings)[0] as VectorDrawing;
+    d.shapes.push({ id: uid('sh'), type: 'text' } as never);
+    const p = new FramePainter();
+    p.paint(mainCtx(), params(doc, 0));
+    expect(p.cache.size.pixels).toBe(400 * 300);
+  });
+
+  it('holds many frames of small drawings where whole frames would be thrown out', () => {
+    const doc = makeDoc(40, 5, 3);
+    const p = new FramePainter();
+    const g = mainCtx();
+    const big = { rect: { x: 0, y: 0, w: 3000, h: 3000 }, width: 3200, height: 3200 };
+    for (let f = 0; f < 40; f++) p.paint(g, params(doc, f, big));
+    expect(p.cache.evictions).toBe(0);
+    expect(p.cache.size.entries).toBe(200);
+    // Scrubbing back over them rasterises nothing.
+    resetCounts();
+    for (let f = 39; f >= 0; f--) p.paint(g, params(doc, f, big));
+    expect(counts.fills).toBe(0);
+    expect(p.cache.builds).toBe(200);
+  });
+
+  it('grows the bitmap to take in a stroke added outside it', () => {
+    const doc = makeDoc(1, 1, 2);
+    const layer = doc.layers[0];
+    const d0 = Object.values(doc.drawings)[0] as VectorDrawing;
+    const p = new FramePainter();
+    const g = mainCtx();
+    p.paint(g, params(doc, 0));
+    const before = p.cache.size.pixels;
+    // The same shapes plus one far away, as a finished brush stroke is.
+    const far = { ...stroke(0), id: uid('sh'), points: [{ x: 350, y: 250, p: 0.5 }, { x: 380, y: 280, p: 0.5 }] };
+    const d1: VectorDrawing = { id: uid('dr'), kind: 'vector', shapes: [...d0.shapes, far] };
+    const doc2 = { ...doc, drawings: { [d1.id]: d1 } };
+    layer.cels = [{ ...layer.cels[0], drawingId: d1.id }];
+    p.paint(g, params(doc2, 0));
+    expect(p.cache.appends).toBe(1);
+    expect(p.cache.size.pixels).toBeGreaterThan(before);
+    expect(p.cache.size.pixels).toBeLessThanOrEqual(400 * 300 + before);
   });
 });
 

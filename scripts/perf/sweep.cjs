@@ -13,6 +13,7 @@
 //   --profile-dir d   keep one .cpuprofile per document and action (open in Chrome DevTools > Performance)
 //   --trace           also record a Chromium trace of each action and print where the page's own (non-JavaScript) time went:
 //                     style recalculation, layout, paint and so on (the "(program)" time a CPU profile cannot split)
+//   --cache-stats     load the page with ?perf and print the layer bitmap cache's builds, hits, evictions and size per action
 //   --label name      stored in the JSON
 //
 // Environment: PERF_RENDERER=dir uses another renderer build (an unminified one gives readable function names:
@@ -37,6 +38,7 @@ const outFile = opt('out', '');
 const profDir = opt('profile-dir', '');
 const label = opt('label', 'sweep');
 const trace = args.includes('--trace');
+const cacheStats = args.includes('--cache-stats');
 const rendererDir = process.env.PERF_RENDERER || path.join(root, 'dist/renderer');
 const outDir = fs.mkdtempSync(path.join(os.tmpdir(), 'frameling-sweep-'));
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -55,7 +57,7 @@ app.commandLine.appendSwitch('disable-background-timer-throttling');
 
 async function start() {
   app.setPath('userData', path.join(outDir, 'userdata'));
-  process.env.FRAMELING_DEV_URL = pathToFileURL(path.join(rendererDir, 'index.html')).href + '?debug=1&nofreeze';
+  process.env.FRAMELING_DEV_URL = pathToFileURL(path.join(rendererDir, 'index.html')).href + '?debug=1&nofreeze' + (cacheStats ? '&perf' : '');
   process.env.FRAMELING_AUTOMATION_DIR = path.join(outDir, 'misc');
   fs.mkdirSync(process.env.FRAMELING_AUTOMATION_DIR, { recursive: true });
   require(path.join(root, 'dist/main/main.cjs'));
@@ -514,15 +516,18 @@ async function measure(name, a, dbg) {
   const incl = new Map();
   let lastProfile = null;
   const rendering = new Map();
+  const cstat = { builds: 0, hits: 0, evictions: 0, entries: 0, mpix: 0 };
   for (let r = 0; r < reps; r++) {
     if (a.setup) await a.setup();
     await sleep(300);
     const before = a.edits ? await ev('window.__frameling.store().historyIds().undo') : null;
+    const c0 = cacheStats ? await cacheNow() : null;
     await dbg.sendCommand('Profiler.start');
     if (trace) { const k = await traced(dbg, () => a.act()); for (const [n, v] of k) rendering.set(n, (rendering.get(n) || 0) + v / reps); }
     else await a.act();
     const { profile } = await dbg.sendCommand('Profiler.stop');
     lastProfile = profile;
+    if (c0) { const c1 = await cacheNow(); for (const k of ['builds', 'hits', 'evictions']) cstat[k] += (c1[k] - c0[k]) / reps; cstat.entries = c1.entries; cstat.mpix = c1.mpix; }
     if (a.edits) {
       const h = await ev('window.__frameling.store().historyIds().undo');
       if (h === before) throw a.skipIfNoEdit ? new Skip('nothing there to edit') : new Error('the action made no edit (the harness is not driving the app)');
@@ -534,8 +539,11 @@ async function measure(name, a, dbg) {
     if (a.cleanup) await a.cleanup();
     await restore(base);
   }
-  return { busy: median(busys), all: busys, self: top(self, Math.max(topN, 3), reps), incl: top(incl, Math.max(topN * 2, 6), reps), rendering: [...rendering].map(([k, v]) => [k, +v.toFixed(1)]).filter(([, v]) => v >= 0.5).sort((x, y) => y[1] - x[1]), profile: lastProfile };
+  return { cache: cacheStats ? cstat : null, busy: median(busys), all: busys, self: top(self, Math.max(topN, 3), reps), incl: top(incl, Math.max(topN * 2, 6), reps), rendering: [...rendering].map(([k, v]) => [k, +v.toFixed(1)]).filter(([, v]) => v >= 0.5).sort((x, y) => y[1] - x[1]), profile: lastProfile };
 }
+
+/** The layer bitmap cache's counters (page opened with ?perf). */
+const cacheNow = () => ev(`(() => { const c = window.__framelingPerf.painter.cache; const z = c.size; return { builds: c.builds, hits: c.hits, evictions: c.evictions, entries: z.entries, mpix: z.pixels / 1e6 }; })()`);
 
 /** Records a trace while `fn` runs; returns time (ms) in the main thread's rendering work by kind. */
 async function traced(dbg, fn) {
@@ -591,10 +599,11 @@ const num = (v) => (v >= 100 ? v.toFixed(0) : v.toFixed(1)).padStart(8);
         const m = await measure(an, ctx, dbg);
         const units = typeof a.units === 'function' ? a.units(ctx) : a.units;
         const st = await state();
-        const row = { doc: dn, action: an, busyMs: +m.busy.toFixed(1), runs: m.all.map((x) => +x.toFixed(1)), unit: a.unit, units, perUnitMs: +(m.busy / units).toFixed(2), topSelf: m.self, topIncl: m.incl, rendering: m.rendering, note: ctx.moved !== undefined ? `selected ${ctx.moved}` : ctx.len ? `${(ctx.len / 1048576).toFixed(1)} MB file` : '' };
+        const row = { doc: dn, action: an, busyMs: +m.busy.toFixed(1), runs: m.all.map((x) => +x.toFixed(1)), unit: a.unit, units, perUnitMs: +(m.busy / units).toFixed(2), topSelf: m.self, topIncl: m.incl, rendering: m.rendering, cache: m.cache, note: ctx.moved !== undefined ? `selected ${ctx.moved}` : ctx.len ? `${(ctx.len / 1048576).toFixed(1)} MB file` : '' };
         results.push(row);
         console.error(`  ${pad(dn, 15)} ${pad(an, 16)} busy ${num(m.busy)} ms  (${num(row.perUnitMs)} per unit)  [${m.all.map((x) => x.toFixed(0)).join(' ')}]  after: ${st.layers} layers, undo "${st.undo}"`);
         if (profDir && m.profile) fs.writeFileSync(path.join(profDir, `${dn}.${an}.cpuprofile`), JSON.stringify(m.profile));
+        if (m.cache) console.error(`        bitmaps per run: ${m.cache.builds.toFixed(0)} built, ${m.cache.hits.toFixed(0)} found, ${m.cache.evictions.toFixed(0)} evicted; held ${m.cache.entries} (${m.cache.mpix.toFixed(1)} Mpx)`);
         if (trace && m.rendering.length) console.error('        page   ' + m.rendering.map(([k, v]) => `${k} ${v}`).join(', '));
         if (topN) {
           for (const [k, v] of m.self.slice(0, topN)) console.error(`        self ${num(v)}  ${k}`);
