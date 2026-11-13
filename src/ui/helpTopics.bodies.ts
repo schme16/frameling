@@ -293,6 +293,10 @@ Chosen things (the tool, the tab, a switch that is on) are gold in most themes. 
 
 **Lantern Night** (dark) and **Sunbeam** (light) have extra contrast: brighter words and stronger borders. Try them if small text is hard to read.
 
+## Textures
+
+Some themes scatter a faint pattern round the page: strawberry seeds, a camo print, sock stripes and paw prints. If you'd rather have it plain, open **Preferences** and switch **Textures** off. Everything else about the theme stays as it is.
+
 ## Themes and the look
 
 Themes are only colours. [Cosy or Crisp](help:look-and-feel) is separate, so you can mix any theme with either look.

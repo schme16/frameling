@@ -118,6 +118,20 @@ registerCommands([
     run: () => setPrefs({ look: getPrefs().look === 'cosy' ? 'crisp' : 'cosy' }),
   },
   {
+    id: 'view.toggleTextures',
+    label: 'Textures on or off',
+    category: 'View',
+    description: "The faint pattern some themes scatter round the page: strawberry seeds, camo, sock stripes and paws.",
+    help: 'themes',
+    keywords: ['texture', 'textures', 'pattern', 'seeds', 'camo', 'socks', 'paws', 'background', 'plain'],
+    checked: () => getPrefs().showTextures,
+    run: () => {
+      const on = !getPrefs().showTextures;
+      setPrefs({ showTextures: on });
+      toast(on ? 'Textures are on.' : 'Textures are off.', { kind: 'info' });
+    },
+  },
+  {
     id: 'view.resetLayout',
     label: 'Reset layout',
     category: 'View',

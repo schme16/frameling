@@ -111,7 +111,7 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
   },
   look: {
     label: 'Look and sound',
-    items: ['view.toggleTheme', 'view.nextTheme', 'view.themes', 'view.toggleLook', 'view.toggleSounds', '-', 'view.cleanTimeline'],
+    items: ['view.toggleTheme', 'view.nextTheme', 'view.themes', 'view.toggleLook', 'view.toggleTextures', 'view.toggleSounds', '-', 'view.cleanTimeline'],
   },
   variations: {
     label: 'Variations',

@@ -88,6 +88,36 @@ describe('built-in themes', () => {
     expect(surroundFor({ id: DEFAULT_DARK })).toBeNull();
   });
 
+  it('textures go on the root as data-surround, and the Textures preference takes them off', () => {
+    expect(DEFAULT_PREFS.showTextures).toBe(true);
+    expect(migratePrefs({}).showTextures).toBe(true);
+    expect(migratePrefs({ showTextures: false }).showTextures).toBe(false);
+    setPrefs({ theme: 'light', lightTheme: 'strawberry' });
+    expect(root().dataset.surround).toBe('seeds');
+    setPrefs({ showTextures: false });
+    expect(root().dataset.surround).toBeUndefined();
+    setPrefs({ showTextures: true });
+    expect(root().dataset.surround).toBe('seeds');
+    // A theme with no pattern never gets the attribute either way.
+    setPrefs({ lightTheme: DEFAULT_LIGHT });
+    expect(root().dataset.surround).toBeUndefined();
+  });
+
+  it('seeds are fainter on dark than on light, and only light themes outline them', () => {
+    const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../../src/canvas/canvas.css'), 'utf8');
+    const strengths = (block: string) => [...block.matchAll(/--seed-[ab]: color-mix\(in srgb, var\(--chosen-bg\) (\d+)%/g)].map((m) => Number(m[1]));
+    const i = css.indexOf("[data-surround='seeds'] .cv-surround {");
+    const dark = strengths(css.slice(i, css.indexOf('}', i)));
+    const j = css.indexOf(":root[data-theme='light'][data-surround='seeds'] .cv-surround {");
+    const light = css.slice(j, css.indexOf('}', j));
+    expect(dark).toHaveLength(2);
+    for (const [k, v] of strengths(light).entries()) expect(v).toBeGreaterThan(dark[k]!);
+    expect(light).toContain('--seed-outline: drop-shadow(');
+    // The outline sits on .cv-surround itself: on one element a filter runs before the mask and would be cut away.
+    expect(css).toContain('filter: var(--seed-outline, none);');
+    expect(css).not.toMatch(/\.cv-surround::(before|after) \{[^}]*filter:/);
+  });
+
   it('dark themes are dark and light themes are light', () => {
     for (const t of BUILT_IN_THEMES) {
       const l = contrast(t.tokens.bg, '#000000');
