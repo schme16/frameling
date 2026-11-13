@@ -36,6 +36,8 @@ export function CanvasView() {
 
   return (
     <div className={`cv-root${rulers ? ' has-rulers' : ''}`} ref={rootRef} tabIndex={-1} aria-label="Drawing canvas" role="application" onDoubleClick={(e) => void (onTextDoubleClick(e) || onCanvasDoubleClick(e))} onDragOver={onCanvasDragOver} onDragLeave={onCanvasDragLeave} onDrop={onCanvasDrop}>
+      {/* The theme's texture, if it has one and textures are on: a layer of its own behind everything (canvas.css). */}
+      <div className="cv-surround" aria-hidden="true" />
       <ArtboardsUnderlay />
       <div className="cv-stage" ref={stageRef} />
       <canvas className="cv-layer" ref={mainRef} />

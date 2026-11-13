@@ -29,7 +29,9 @@ export interface Prefs {
   showWelcome: boolean;
   /** Show the friendly tips in the status bar. */
   showTips: boolean;
-  /** Show Quill, the hedgehog guide. Off hides him everywhere; his speech bubbles still show their words. */
+  /** Show the theme's texture around the page (camo print, strawberry seeds, sock stripes). On by default. */
+  showTextures: boolean;
+  /** Show Quill, the hedgehog guide. Off hides him and his chatter everywhere; words people need stay as plain notes. */
   showQuill: boolean;
   /** How the right side is laid out: Properties with a labelled rail, every panel on the rail, or tabs. */
   rightSide: 'inspector' | 'rail' | 'tabs';
@@ -70,6 +72,7 @@ export const DEFAULT_PREFS: Prefs = {
   reduceMotion: false,
   showWelcome: true,
   showTips: true,
+  showTextures: true,
   showQuill: true,
   rightSide: 'inspector',
   toolRail: 'two',
@@ -110,6 +113,7 @@ export function migratePrefs(raw: unknown): Prefs {
     reduceMotion: bool(r.reduceMotion, DEFAULT_PREFS.reduceMotion),
     showWelcome: bool(r.showWelcome, DEFAULT_PREFS.showWelcome),
     showTips: bool(r.showTips, DEFAULT_PREFS.showTips),
+    showTextures: bool(r.showTextures, DEFAULT_PREFS.showTextures),
     showQuill: bool(r.showQuill, DEFAULT_PREFS.showQuill),
     rightSide: r.rightSide === 'rail' || r.rightSide === 'tabs' || r.rightSide === 'inspector' ? r.rightSide : DEFAULT_PREFS.rightSide,
     toolRail: r.toolRail === 'stacked' || r.toolRail === 'two' ? r.toolRail : DEFAULT_PREFS.toolRail,
@@ -183,8 +187,9 @@ export function applyPrefs(): void {
   // computer's own setting decides them, which always agrees with the theme chosen above.
   if (p.theme === 'system' && !preview) delete root.dataset.theme;
   else root.dataset.theme = theme.mode;
-  // A pattern around the page for the themes that have one (camo, strawberry seeds). Pure CSS, see canvas.css.
-  const surround = surroundFor(theme);
+  // A pattern around the page for the themes that have one (camo, strawberry seeds, sock stripes), unless textures
+  // are turned off. Pure CSS, see canvas.css.
+  const surround = p.showTextures ? surroundFor(theme) : null;
   if (surround) root.dataset.surround = surround;
   else delete root.dataset.surround;
   // Written every time (even when unchanged) so things that cache token values, like the canvas, hear about it.

@@ -27,6 +27,20 @@ async function probe(wc, where) {
   }
 }
 
+/** Where a step wants the picture cropped: its own `crop`, or the box of the element its `el` selector finds, with
+ *  padding, clamped to the window. Shared by `shot` and `rec` so a clip can follow a panel the same way. */
+async function cropOf(wc, s, width, height) {
+  if (!s.el) return s.crop;
+  const r = await wc.executeJavaScript(`(() => { const b = document.querySelector(${JSON.stringify(s.el)})?.getBoundingClientRect(); return b && [b.x, b.y, b.width, b.height]; })()`);
+  if (!r) throw new Error(`no element ${s.el}`);
+  const pad = s.pad ?? 12;
+  const x = Math.max(0, Math.floor(r[0] - pad));
+  const y = Math.max(0, Math.floor(r[1] - pad));
+  // Even numbers: H.264 can't encode an odd width or height, and a clip can be cropped to an element too.
+  const even = (n) => Math.max(2, n - (n % 2));
+  return [x, y, even(Math.min(width - x, Math.ceil(r[2] + pad * 2))), even(Math.min(height - y, Math.ceil(r[3] + pad * 2)))];
+}
+
 let rec = null;
 function startRec(outDir, wc, name, crop, every) {
   const dir = path.join(outDir, name);
@@ -168,22 +182,13 @@ async function runSteps(win, steps, { outDir, width, height, name }) {
       if (rec) await stopRec(rec);
       rec = null;
     } else if (s.rec) {
-      rec = startRec(outDir, wc, s.rec === '@' ? name : s.rec, s.crop, s.every ?? 60);
+      rec = startRec(outDir, wc, s.rec === '@' ? name : s.rec, await cropOf(wc, s, width, height), s.every ?? 60);
     } else if (s.type) {
       // Types into the focused input in a way React notices.
       await wc.executeJavaScript(`(() => { const el = document.activeElement; const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set; set.call(el, ${JSON.stringify(s.type)}); el.dispatchEvent(new Event('input', { bubbles: true })); return true; })()`);
       await sleep(s.after ?? 200);
     } else if (s.shot) {
-      let crop = s.crop;
-      if (s.el) {
-        // Crop to an element's box (a selector), with padding, clamped to the window.
-        const r = await wc.executeJavaScript(`(() => { const b = document.querySelector(${JSON.stringify(s.el)})?.getBoundingClientRect(); return b && [b.x, b.y, b.width, b.height]; })()`);
-        if (!r) throw new Error(`no element ${s.el}`);
-        const pad = s.pad ?? 12;
-        const x = Math.max(0, Math.floor(r[0] - pad));
-        const y = Math.max(0, Math.floor(r[1] - pad));
-        crop = [x, y, Math.min(width - x, Math.ceil(r[2] + pad * 2)), Math.min(height - y, Math.ceil(r[3] + pad * 2))];
-      }
+      const crop = await cropOf(wc, s, width, height);
       // A hidden window paints lazily, so the first capture can hand back the frame before the last step. Take a
       // throwaway one to get it painting, then the real one.
       await wc.capturePage();

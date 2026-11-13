@@ -167,6 +167,9 @@ function GeneralPage({ onThemes }: { onThemes: () => void }) {
           ]}
         />
       </Row>
+      <Row label="Textures" hint="The faint pattern some themes scatter round the page: strawberry seeds, camo, sock stripes and paw prints. Off leaves the area around your drawing plain.">
+        <Switch label="Textures" on={p.showTextures} onChange={(showTextures) => setPrefs({ showTextures })} />
+      </Row>
       <Row label="Clean timeline" hint="Off shows the detailed timeline: keys as diamonds, tweens with their easing, and rows for what changes on each layer. On shows one plain block per drawing.">
         <Switch label="Clean timeline" on={p.cleanTimeline} onChange={(cleanTimeline) => setPrefs({ cleanTimeline })} />
       </Row>
@@ -437,7 +440,7 @@ function KeyboardPage({ focusId }: { focusId?: string }) {
           </section>
         ))}
         {!cats.length && (
-          <QuillEmpty anim={[{ anim: 'think', hold: 2400 }, { anim: 'idle' }]} size={96} className="ui-help-empty">
+          <QuillEmpty anim={[{ anim: 'think', hold: 2400 }, { anim: 'idle' }]} size={96} className="ui-help-empty" whenHidden="No shortcuts match that.">
             {line('empty.shortcuts')}
           </QuillEmpty>
         )}

@@ -128,7 +128,7 @@ function Chooser({ close }: { close: () => void }) {
           }}
         />
         <SizeRow label={ASK[way ?? 'animation']} size={size} onSize={setSize} />
-        <QuillSays side="left" anim={way ? 'cheer' : 'think'} size={56} className="px-chooser-says">
+        <QuillSays side="left" anim={way ? 'cheer' : 'think'} size={56} className="px-chooser-says" whenHidden={way ? null : <span>Not sure? Pick An animation. You can switch any time, and nothing is lost.</span>}>
           <span aria-live="polite">{way ? pickedLine(way) : line('pixel.chooser.unsure')}</span>
         </QuillSays>
       </div>

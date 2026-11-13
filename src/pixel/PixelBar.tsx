@@ -157,7 +157,7 @@ export function PictureStrip() {
   return (
     <div className="px-picture-strip" role="group" aria-label="One picture" data-help="pixel-ways">
       {quill && <Quill anim="idle" size={32} />}
-      <span className="px-picture-say">{line('pixel.folded')}</span>
+      <span className="px-picture-say">{quill ? line('pixel.folded') : 'One picture, so there is no timeline.'}</span>
       <button type="button" className="io-btn io-primary" data-command="pixel.makeItMove" onClick={makeItMove}>
         <Icon name="play" size={14} /> Make it move
       </button>

@@ -9,6 +9,7 @@ import '../plugins/debug';
 import '../features/debug';
 import '../artboards/debug';
 import '../pixel/debug';
+import '../quillpet/debug';
 import { store } from '../core/store';
 import { guard as saveGuard } from '../io/file';
 import { findTemplate } from '../templates';

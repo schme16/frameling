@@ -1,7 +1,7 @@
 // Help pictures and clips for the app shell: first run, welcome, help window, palette, preferences, themes, workspaces,
 // panels, floating windows, the strips and menus, messages, examples, quests, sounds and shortcut sets.
 // Steps are theme neutral: the runner picks the mode; nothing here sets a theme.
-const { cmd, template, wait, js, key } = require('./_lib.cjs');
+const { cmd, panel, template, wait, js, key } = require('./_lib.cjs');
 
 const F = '__frameling';
 /** Open Preferences on a page. */
@@ -491,6 +491,45 @@ const entries = [
       wait(2700),
       clickText('.qb-go', ''),
       wait(2700),
+      { rec: 'stop' },
+    ],
+  },
+  // Quill's things: the drawings he has been given.
+  {
+    name: 'quill-things',
+    prefs: CALM,
+    steps: [
+      template('bouncing-ball'),
+      wait(800),
+      panel('quill-things'),
+      wait(900),
+      js(`(() => { const s = ${F}.store(); for (const f of [0, 6, 12]) { s.setUi({ frame: f }); document.querySelector('.qp-give').click(); } return true; })()`),
+      wait(2200),
+      ...settle,
+      tag('.qt-panel'),
+      shotEl(2),
+    ],
+  },
+  // Quill's corner: he potters about, you give him a stroke, and the bar shows how well you know each other.
+  {
+    name: 'quill-pet',
+    prefs: CALM,
+    steps: [
+      template('bouncing-ball'),
+      wait(800),
+      panel('quill-pet'),
+      // A colour worth giving him, so the strip under him reads.
+      js(`${F}.store().setUi({ color: '#ff6f91' })`),
+      wait(1200),
+      ...settle,
+      tag('.qp-panel'),
+      { rec: '@', el: '[data-shot]', pad: 10, every: 70 },
+      wait(1600),
+      clickText('.qp-pat', ''),
+      wait(2000),
+      // His pencils take the colour you are drawing with, and he keeps a picture of the frame you are on.
+      clickText('.qp-feed', ''),
+      wait(2600),
       { rec: 'stop' },
     ],
   },

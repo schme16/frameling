@@ -93,6 +93,14 @@ module.exports = [
       js(`(() => { const d0 = ${F}.store().get().doc; ${F}.store().update('Camera', (d) => { d.drawings.camdr = { id: 'camdr', kind: 'camera', view: { x: d0.width / 2, y: d0.height / 2 + 30, zoom: 1.5, rotation: 0 } }; d.layers.push({ id: 'camlayer', name: 'Camera', kind: 'camera', visible: true, locked: false, opacity: 1, onion: false, cels: [{ id: 'camcel', start: 0, length: d.length, drawingId: 'camdr' }] }); }); ${F}.run('camera.lookThrough'); })()`),
       { wait: 1500 },
       { key: '.', after: 700 }, { key: '.', after: 700 }, { key: '.', after: 700 }, { key: '.', after: 700 }, { key: '.', after: 1400 },
+      // Last, a storyboard: the boards either side come up as ghosts too. The Ball film demo is three shots as
+      // artboards; on shot 2, frame 1, the boards on each side show the frame you cut from and the one you cut to.
+      js(`__framelingArtboards.load('shots'); true`),
+      { wait: 1600 },
+      js(`(() => { const s = ${F}.store(); const m = __framelingArtboards.model; const d = s.get().doc; const b = m.artboardsOf(d)[1]; s.update('Go to a board', (x) => void m.switchArtboard(x, b.id)); s.setUi({ frame: 0 }); })()`),
+      { wait: 1600 },
+      js(`${F}.run('timeline.onionBoards')`),
+      { wait: 2600 },
       { rec: 'stop' },
     ],
   },

@@ -198,7 +198,7 @@ If nothing happens for about a minute he dozes off. Move the mouse or press a ke
 
 ## Hiding Quill
 
-Open **Preferences** (**Ctrl+,**), choose **General** and turn off **Show Quill** (or turn it off on the settings step of **Help > Meet Quill again**). He goes away everywhere. Anything he was saying still shows, just without him.
+Open **Preferences** (**Ctrl+,**), choose **General** and turn off **Show Quill** (or turn it off on the settings step of **Help > Meet Quill again**). He goes away everywhere, and so does his chatter. Things you need, like quest steps, errors and what a sprite sheet holds, still show as plain notes, and you still get the usual pop-up messages (saved, exported and so on).
 
 He'll be a little sad about it (a sniffle, maybe a tear), but he understands. He waves a brave goodbye and then hides. Want him back? Turn **Show Quill** on again, or say hi from **Help > Meet Quill again**. He'll cheer.
 
@@ -277,16 +277,25 @@ So you can have a pastel theme by day and a cosy dark one at night, without touc
 | **Midnight Sketchbook** | **Paper & Honey** | The classic Frameling look. |
 | **Moonlit Pond** | **Studio White** | Calm and plain. |
 | **Hot Cocoa** | **Strawberry Milk** | Warm and cosy, soft and pink. |
-| **Strawberry Night** | **Strawberry** | Berry red, cream and little yellow seeds. Quill's favourite. |
+| **Strawberry Night** | **Strawberry** | Berry red, cream and little yellow seeds scattered round the page. Quill's favourite. |
 | **Glacier Grid** | **Ice Camo** | Charcoal, ice and bright aqua, with a faint camo print around the page. |
 | **Lilac Static** | **Lavender Hum** | Soft lilac with a little pastel glow. |
+| **Gumdrop Night** | **Gumdrop Day** | Based on Monokai: lemon, candy pink, lime and sky blue. |
+| **Batwing** | **Bat Nap** | Based on Darcula: charcoal, pumpkin orange and a warm lamp. |
+| **Mocha Kitten** | **Latte Kitten** | Based on Catppuccin: soothing pastels with lilac. |
+| **Retro Groove Night** | **Retro Groove Day** | Based on Gruvbox: retro browns, cream and earthy colours. |
+| **Puppy Socks** | **Kitty Socks** | Trans pink and blue with rainbow touches, knee-high sock stripes and paw prints round the page. |
 | **Lantern Night** | **Sunbeam** | Extra contrast. |
 
-Chosen things (the tool, the tab, a switch that is on) are gold in most themes. The aqua and lilac themes use their own colour instead, still with dark words on it.
+Chosen things (the tool, the tab, a switch that is on) are gold in most themes. The aqua, lilac, Gumdrop, Kitten and Socks themes use their own colour instead, still with dark words on it.
 
 ## Easier to see
 
 **Lantern Night** (dark) and **Sunbeam** (light) have extra contrast: brighter words and stronger borders. Try them if small text is hard to read.
+
+## Textures
+
+Some themes scatter a faint pattern round the page: strawberry seeds, a camo print, sock stripes and paw prints. If you'd rather have it plain, open **Preferences** and switch **Textures** off. Everything else about the theme stays as it is.
 
 ## Themes and the look
 

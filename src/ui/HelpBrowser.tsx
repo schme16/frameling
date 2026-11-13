@@ -132,7 +132,7 @@ export function HelpBrowser({ compact = false, initial, onExpand }: { compact?: 
       ))}
       {!words.ready && <Loading slow={words.slow} />}
       {words.ready && !hits.length && !offers.length && (
-        <QuillEmpty anim={[{ anim: 'think', hold: 2400 }, { anim: 'idle' }]} className="ui-help-empty">
+        <QuillEmpty anim={[{ anim: 'think', hold: 2400 }, { anim: 'idle' }]} className="ui-help-empty" whenHidden="No help topics match that.">
           {line('empty.help')}
         </QuillEmpty>
       )}

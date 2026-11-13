@@ -79,3 +79,22 @@ export async function decodePngsInWorkers(entries: Record<string, Uint8Array>, p
   );
   return out;
 }
+
+/**
+ * `doc.json` of a file inflated on a worker (with the platform's own zlib where it has one, which is several times
+ * quicker than fflate), its bytes handed over without a copy. Parsing stays on the page: the parsed object costs as
+ * much to hand across as it does to parse. Null when there is no worker or anything went wrong (a damaged file too):
+ * the caller then reads the file itself and reports as it always did.
+ */
+export async function inflateDocInWorker(bytes: Uint8Array): Promise<Uint8Array | null> {
+  const p = getPool();
+  if (!p) return null;
+  try {
+    // A copy of the zip goes across: the caller still needs it for the pictures.
+    const copy = bytes.slice();
+    const r = await p.run<IoReply>({ kind: 'inflate', bytes: copy }, [copy.buffer]);
+    return r.ok && 'text' in r ? r.text : null;
+  } catch {
+    return null;
+  }
+}

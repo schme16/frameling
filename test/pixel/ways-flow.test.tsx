@@ -280,9 +280,9 @@ describe('a second board', () => {
     resetStore(newSpriteDoc({ way: 'picture', width: 16, height: 16 }));
     const off = watchSecondThings(store());
     store().update('longer', (d) => void (d.length = 2));
-    expect(toasts.get().at(-1)?.message).toBe('A second frame! Now it moves.');
+    expect(toasts.get().at(-1)?.message).toBe("A second frame, it's practically moving already!");
     store().update('longer', (d) => void (d.length = 3));
-    expect(toasts.get().filter((t) => t.message === 'A second frame! Now it moves.')).toHaveLength(1);
+    expect(toasts.get().filter((t) => t.message === "A second frame, it's practically moving already!")).toHaveLength(1);
     off();
   });
 });

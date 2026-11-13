@@ -15,7 +15,7 @@ export function DiagnosticsPage() {
       <h4>Plugins</h4>
       <DiagnosticsSwitch />
       <h4>Pen and tablet</h4>
-      <QuillSays anim="talk" then="idle" size={80}>
+      <QuillSays anim="talk" then="idle" size={80} whenHidden={<p>Pen or tablet acting up? A quick check walks you through it, then saves a small file with what it saw.</p>}>
         <p>{line('pen.check.diagnostics')}</p>
       </QuillSays>
       <div className="tb-check-buttons">

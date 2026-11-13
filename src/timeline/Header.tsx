@@ -10,6 +10,7 @@ import * as ops from './ops';
 import { inOutRange, playRange } from './playback';
 import { clearInOut } from './range';
 import { clearLightTable, lightTableLabel } from '../canvas/lightTable';
+import { hasArtboards } from '../artboards/model';
 import { MAX_CW, MIN_CW, setTl, tl, useTl } from './state';
 import { useFeaturesVersion } from '../features/use';
 import { TimelineSlot } from './slots';
@@ -143,6 +144,7 @@ function HoldButtons() {
 /** The onion skin settings box. It sits at a point on screen, and is opened from its header button or, when that is folded, from the "more" menu. */
 function OnionPopup({ pos, onClose }: { pos: { x: number; y: number }; onClose: () => void }) {
   const onion = useStore((s) => s.ui.onion);
+  const boards = useStore((s) => hasArtboards(s.doc));
   const set = (p: Partial<typeof onion>) => store().setUi((ui) => ({ onion: { ...ui.onion, ...p } }));
   const step = (key: 'before' | 'after', by: number) => set({ [key]: Math.max(0, Math.min(8, onion[key] + by)) });
   return (
@@ -180,6 +182,12 @@ function OnionPopup({ pos, onClose }: { pos: { x: number; y: number }; onClose: 
         <input type="checkbox" checked={!!onion.keysOnly} onChange={(e) => set({ keysOnly: e.target.checked })} />
         <span>Only show keys (skip held frames)</span>
       </label>
+      {boards ? (
+        <label className="tl-pop-check">
+          <input type="checkbox" checked={!!onion.boards} onChange={(e) => set({ boards: e.target.checked })} data-testid="onion.boards" />
+          <span>Show the boards either side too (artboards)</span>
+        </label>
+      ) : null}
     </Floating>
   );
 }

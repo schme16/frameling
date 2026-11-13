@@ -1,0 +1,98 @@
+{
+ "label": "sweep",
+ "when": "2026-11-13T05:38:37.348Z",
+ "reps": 3,
+ "results": [
+  {
+   "doc": "stress-vector",
+   "action": "open-file",
+   "busyMs": 168.5,
+   "runs": [
+    168.1,
+    170.8,
+    168.5
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 168.53,
+   "topSelf": [
+    [
+     "C$ index-DSxFyRf1.js:61",
+     83.8
+    ],
+    [
+     "setTransform :0",
+     18.6
+    ],
+    [
+     "decode :0",
+     16.5
+    ],
+    [
+     "(garbage collector) :0",
+     12.9
+    ],
+    [
+     "E$ index-DSxFyRf1.js:61",
+     5.7
+    ],
+    [
+     "(program) :0",
+     3.5
+    ]
+   ],
+   "topIncl": [
+    [
+     "C$ index-DSxFyRf1.js:61",
+     117
+    ],
+    [
+     "drawMain index-DSxFyRf1.js:54",
+     24.7
+    ],
+    [
+     "frame index-DSxFyRf1.js:54",
+     24.7
+    ],
+    [
+     "paint index-DSxFyRf1.js:54",
+     24.7
+    ],
+    [
+     "Vg index-DSxFyRf1.js:54",
+     24.6
+    ],
+    [
+     "vae index-DSxFyRf1.js:54",
+     24.6
+    ],
+    [
+     "paintStage index-DSxFyRf1.js:54",
+     24.6
+    ],
+    [
+     "qg index-DSxFyRf1.js:54",
+     24.5
+    ],
+    [
+     "Gg index-DSxFyRf1.js:54",
+     24.5
+    ],
+    [
+     "Hg index-DSxFyRf1.js:54",
+     24.5
+    ],
+    [
+     "l index-DSxFyRf1.js:54",
+     24.4
+    ],
+    [
+     "vectorBitmap index-DSxFyRf1.js:54",
+     20.1
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  }
+ ]
+}

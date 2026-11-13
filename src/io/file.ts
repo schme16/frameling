@@ -9,7 +9,8 @@ import { readFolders, readLayerLook } from '../effects/io';
 import { strFromU8, strToU8, unzipSync, zip, zipSync, type Zippable } from 'fflate';
 import { BONE_STRETCH, FORMAT_VERSION, LAYER_LABELS, type LayerLabel, type Cel, type Doc, type Drawing, type KeptShape, type Layer, type Shape, type Slice, type SliceKey, type SymbolDef, type Tween, type InstanceShape, type ClipFlow, type ClipTransition, type Tile, type Tileset, type Bone, type BonePose, type LayerBind, type Pose, type Rig, type SavedPose } from '../core/format';
 import { decodePng, encodePng, type RawImage } from './png';
-import { decodePngsInWorkers, zipInWorker } from './ioClient';
+import { decodePngsInWorkers, inflateDocInWorker, zipInWorker } from './ioClient';
+import { MAX_UNZIPPED } from './ioJobs';
 import { trimmedDrawing } from '../core/pixelBounds';
 import { rootDoc } from '../core/symbols';
 import { isEasing } from '../core/ease';
@@ -286,7 +287,6 @@ export function migrate(raw: any, from: number): any {
 
 // The drawing basics; text, particles and the like are kinds that register themselves (core/shapeKinds.ts).
 const BASIC_SHAPES = new Set(['stroke', 'fill', 'path', 'instance']);
-const MAX_UNZIPPED = 1024 * 1024 * 1024;
 
 function isObj(v: unknown): v is Record<string, any> {
   return typeof v === 'object' && v !== null && !Array.isArray(v);
@@ -301,32 +301,64 @@ export function loadFile(bytes: Uint8Array): LoadedFile {
   return loadEntries(unzipFile(bytes));
 }
 
-/**
- * The same as `loadFile`, with the pictures of a big pixel document decoded on worker threads in parallel (inflating and
- * unfiltering 100 frames of a large stage holds the page for a second or more). Falls back to decoding here.
- */
-export async function loadFileAsync(bytes: Uint8Array): Promise<LoadedFile> {
-  const entries = unzipFile(bytes);
-  return loadEntries(entries, await decodePngsInWorkers(entries));
+/** A document.json this big is worth a trip to a worker (smaller ones are read faster right here). Tests lower it. */
+export const loadTuning = { minDocJson: 1 << 20 };
+
+/** What `doc.json` inflates to, from the zip's directory alone (nothing is inflated); 0 when it cannot say. */
+function docJsonSize(bytes: Uint8Array): number {
+  let size = 0;
+  try {
+    unzipSync(bytes, {
+      filter: (f) => {
+        if (f.name === 'doc.json') size = f.originalSize;
+        return false;
+      },
+    });
+  } catch {
+    return 0;
+  }
+  return size;
 }
 
-function unzipFile(bytes: Uint8Array): Record<string, Uint8Array> {
+/**
+ * The same as `loadFile`, with the heavy parts on worker threads: the pictures of a big pixel document are decoded in
+ * parallel (inflating and unfiltering 100 frames of a large stage holds the page for a second or more), and the JSON of a
+ * big vector document is inflated off the page (the platform's zlib is several times quicker than fflate, and the page is left with parsing).
+ * Falls back to doing it all here, with the same errors.
+ */
+export async function loadFileAsync(bytes: Uint8Array): Promise<LoadedFile> {
+  let parsed: { raw: unknown } | null = null;
+  if (docJsonSize(bytes) >= loadTuning.minDocJson) {
+    try {
+      const inflated = await inflateDocInWorker(bytes);
+      if (inflated) parsed = { raw: JSON.parse(strFromU8(inflated)) };
+    } catch {
+      // Left for the plain path below, which reports it.
+    }
+  }
+  const entries = unzipFile(bytes, !!parsed);
+  const decoded = await decodePngsInWorkers(entries);
+  return loadEntries(entries, decoded, parsed ?? undefined);
+}
+
+/** The entries of a file that matter. With `skipDoc` (its JSON was read elsewhere) `doc.json` is left uninflated. */
+function unzipFile(bytes: Uint8Array, skipDoc = false): Record<string, Uint8Array> {
   let entries: Record<string, Uint8Array>;
   try {
-    entries = unzipSync(bytes, { filter: (f) => f.originalSize <= MAX_UNZIPPED && (f.name === 'manifest.json' || f.name === 'doc.json' || f.name.startsWith('pixels/') || f.name.startsWith('audio/')) });
+    entries = unzipSync(bytes, { filter: (f) => f.originalSize <= MAX_UNZIPPED && (f.name === 'manifest.json' || (f.name === 'doc.json' && !skipDoc) || f.name.startsWith('pixels/') || f.name.startsWith('audio/')) });
   } catch {
     throw new FileProblem("That doesn't look like a Frameling file, so it could not be opened.");
   }
-  if (!entries['manifest.json'] || !entries['doc.json']) throw new FileProblem("That doesn't look like a Frameling file, so it could not be opened.");
+  if (!entries['manifest.json'] || (!skipDoc && !entries['doc.json'])) throw new FileProblem("That doesn't look like a Frameling file, so it could not be opened.");
   return entries;
 }
 
-function loadEntries(entries: Record<string, Uint8Array>, decoded?: Map<string, RawImage>): LoadedFile {
+function loadEntries(entries: Record<string, Uint8Array>, decoded?: Map<string, RawImage>, parsed?: { raw: unknown }): LoadedFile {
   let manifest: Manifest;
   let raw: any;
   try {
     manifest = JSON.parse(strFromU8(entries['manifest.json']));
-    raw = JSON.parse(strFromU8(entries['doc.json']));
+    raw = parsed?.raw ?? JSON.parse(strFromU8(entries['doc.json']));
   } catch {
     throw damaged();
   }

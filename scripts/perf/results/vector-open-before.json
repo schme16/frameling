@@ -1,0 +1,98 @@
+{
+ "label": "sweep",
+ "when": "2026-11-13T05:38:11.920Z",
+ "reps": 3,
+ "results": [
+  {
+   "doc": "stress-vector",
+   "action": "open-file",
+   "busyMs": 311.7,
+   "runs": [
+    339,
+    307.2,
+    311.7
+   ],
+   "unit": "opens",
+   "units": 1,
+   "perUnitMs": 311.71,
+   "topSelf": [
+    [
+     "Eo index-DHRo_M_n.js:3",
+     99.6
+    ],
+    [
+     "QQ index-DHRo_M_n.js:65",
+     89.5
+    ],
+    [
+     "qa index-DHRo_M_n.js:3",
+     33
+    ],
+    [
+     "setTransform :0",
+     18.8
+    ],
+    [
+     "decode :0",
+     16.2
+    ],
+    [
+     "(garbage collector) :0",
+     14.1
+    ]
+   ],
+   "topIncl": [
+    [
+     "XQ index-DHRo_M_n.js:65",
+     266
+    ],
+    [
+     "openBytesAsync debug-C4GxGwr2.js:3",
+     150.4
+    ],
+    [
+     "Uo index-DHRo_M_n.js:3",
+     149.8
+    ],
+    [
+     "ZQ index-DHRo_M_n.js:65",
+     149.8
+    ],
+    [
+     "(anon) :1",
+     149.8
+    ],
+    [
+     "(anon) :0",
+     149.8
+    ],
+    [
+     "Eo index-DHRo_M_n.js:3",
+     149.7
+    ],
+    [
+     "QQ index-DHRo_M_n.js:65",
+     116.1
+    ],
+    [
+     "qa index-DHRo_M_n.js:3",
+     45.9
+    ],
+    [
+     "frame index-DHRo_M_n.js:58",
+     24.8
+    ],
+    [
+     "zg index-DHRo_M_n.js:58",
+     24.7
+    ],
+    [
+     "wN index-DHRo_M_n.js:58",
+     24.7
+    ]
+   ],
+   "rendering": [],
+   "note": ""
+  }
+ ]
+}

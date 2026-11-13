@@ -1,0 +1,178 @@
+/* Quill's panel. Quiet on purpose: he's company, not a dashboard. */
+.qp-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.qp-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 0 2px;
+}
+.qp-pat {
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  line-height: 0;
+  border-radius: 12px;
+}
+.qp-pat:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 4px;
+}
+.qp-pat:active {
+  transform: translateY(1px);
+}
+.qp-mood {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+.qp-away,
+.qp-says {
+  margin: 0;
+  font-size: 13px;
+  text-align: center;
+  color: var(--text);
+}
+.qp-says {
+  background: var(--panel-2);
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+.qp-close {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.qp-close-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 12px;
+}
+.qp-stage-name {
+  font-weight: 600;
+}
+.qp-days,
+.qp-next {
+  color: var(--muted);
+  font-size: 11px;
+  margin: 0;
+}
+.qp-bar {
+  height: 6px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--text) 12%, transparent);
+  overflow: hidden;
+}
+.qp-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--accent);
+  transition: width 240ms ease;
+}
+:root[data-motion='reduce'] .qp-bar > span {
+  transition: none;
+}
+.qp-colours {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.qp-colours-top {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+}
+.qp-swatches {
+  display: flex;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  min-height: 18px;
+  align-items: center;
+}
+.qp-swatches > li {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  border: 1px solid var(--line);
+}
+.qp-swatches > li.qp-none {
+  width: auto;
+  height: auto;
+  border: 0;
+  font-size: 11px;
+  color: var(--muted);
+}
+.qp-feed {
+  align-self: flex-start;
+}
+.qp-things {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.qp-things-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.qp-none {
+  margin: 0;
+  font-size: 11px;
+  color: var(--muted);
+}
+.qp-thing-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.qp-thing-list > li {
+  position: relative;
+}
+.qp-thing {
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--panel-2);
+  cursor: pointer;
+  line-height: 0;
+}
+.qp-thing img {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+.qp-thing-back {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--raised);
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+  opacity: 0;
+}
+.qp-thing-list > li:hover .qp-thing-back,
+.qp-thing-back:focus-visible {
+  opacity: 1;
+}

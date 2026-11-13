@@ -10,7 +10,8 @@ import { checkContrast } from '../../src/ui/themes/contrast';
 
 const css = readFileSync(path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../src/canvas/canvas.css'), 'utf8');
 const guideFor = (mode: 'dark' | 'light') => {
-  const block = mode === 'light' ? css.slice(css.indexOf(":root[data-theme='light']")) : css.slice(css.indexOf(':root {'));
+  // The whole-root blocks, not a rule that only narrows one theme's surround: those start with the same selector.
+  const block = mode === 'light' ? css.slice(css.indexOf(":root[data-theme='light'] {")) : css.slice(css.indexOf(':root {'));
   return /--guide:\s*(#[0-9a-f]{6})/i.exec(block)![1];
 };
 

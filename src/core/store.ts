@@ -70,6 +70,8 @@ export interface OnionSettings {
   tint: boolean;
   /** Count keys instead of frames, so held frames are skipped (missing = no). */
   keysOnly?: boolean;
+  /** Also ghost the artboards either side of the open one, like frames (missing = no). */
+  boards?: boolean;
 }
 
 export interface UiState {
