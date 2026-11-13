@@ -161,7 +161,7 @@ export const BUILT_IN_THEMES: Theme[] = [
   }),
 
   // Based on Catppuccin (Mocha and Latte), https://catppuccin.com
-  make('mocha-kitten', 'Mocha Kitten', 'dark', 'Catppuccin Mocha: soothing pastels on deep blue-grey, with a lilac chosen colour.', {
+  make('mocha-kitten', 'Mocha Puppy', 'dark', 'Catppuccin Mocha: soothing pastels on deep blue-grey, with a lilac chosen colour.', {
     bg: '#181825', panel: '#1e1e2e', 'panel-2': '#252536', raised: '#313244', line: '#45475a',
     text: '#cdd6f4', muted: '#bac2de', faint: '#a6adc8', 'canvas-bg': '#11111b',
     'chosen-bg': '#cba6f7', 'chosen-fg': '#1e1e2e', accent: '#89b4fa', focus: '#f5c2e7', danger: '#f38ba8', ok: '#a6e3a1',

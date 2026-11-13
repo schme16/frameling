@@ -279,7 +279,7 @@ So you can have a pastel theme by day and a cosy dark one at night, without touc
 | **Lilac Static** | **Lavender Hum** | Soft lilac with a little pastel glow. |
 | **Gumdrop Night** | **Gumdrop Day** | Based on Monokai: lemon, candy pink, lime and sky blue. |
 | **Batwing** | **Bat Nap** | Based on Darcula: charcoal, pumpkin orange and a warm lamp. |
-| **Mocha Kitten** | **Latte Kitten** | Based on Catppuccin: soothing pastels with lilac. |
+| **Mocha Puppy** | **Latte Kitten** | Based on Catppuccin: soothing pastels with lilac. |
 | **Retro Groove Night** | **Retro Groove Day** | Based on Gruvbox: retro browns, cream and earthy colours. |
 | **Puppy Socks** | **Kitty Socks** | Trans pink and blue with rainbow touches, knee-high sock stripes and paw prints round the page. |
 | **Lantern Night** | **Sunbeam** | Extra contrast. |
