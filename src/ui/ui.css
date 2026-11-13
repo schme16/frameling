@@ -2937,6 +2937,20 @@ body.ui-resizing * {
   /* A gentle hand-drawn wave from the top right corner to the bottom left one. */
   clip-path: polygon(100% 0%, 95.8% 5.8%, 91.9% 11.9%, 87.3% 17.3%, 81.6% 21.6%, 75% 25%, 68.1% 28.1%, 61.8% 31.8%, 56.7% 36.7%, 52.9% 42.9%, 50% 50%, 47.1% 57.1%, 43.3% 63.3%, 38.2% 68.2%, 31.9% 71.9%, 25% 75%, 18.4% 78.4%, 12.7% 82.7%, 8.1% 88.1%, 4.2% 94.2%, 0% 100%, 100% 100%);
 }
+.th-current-line {
+  /* The ink line along the join, drawn over both halves so the squiggle reads as one pen stroke. */
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.th-current-line polyline {
+  stroke: #110f18;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
 .th-current-words {
   display: flex;
   flex-direction: column;

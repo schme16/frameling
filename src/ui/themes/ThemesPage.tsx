@@ -12,6 +12,9 @@ import { ThemeEditor } from './ThemeEditor';
 import { ThemePreview } from './ThemePreview';
 import type { ThemeMode } from './tokens';
 
+/** The wave the card is cut along, as the ink line drawn over the join. The same points as the clip in ui.css. */
+const SQUIGGLE = '100,0 95.8,5.8 91.9,11.9 87.3,17.3 81.6,21.6 75,25 68.1,28.1 61.8,31.8 56.7,36.7 52.9,42.9 50,50 47.1,57.1 43.3,63.3 38.2,68.2 31.9,71.9 25,75 18.4,78.4 12.7,82.7 8.1,88.1 4.2,94.2 0,100';
+
 /** One theme's half of the card: the real app preview, drawn in that theme's colours. */
 function ThemeHalf({ theme, dark = false }: { theme: Theme; dark?: boolean }) {
   return <ThemePreview theme={theme} className={`th-current-half${dark ? ' is-dark' : ''}`} />;
@@ -27,6 +30,9 @@ function CurrentTheme({ dark, light }: { dark: Theme; light: Theme }) {
       <div className="th-current-art">
         <ThemeHalf theme={light} />
         <ThemeHalf theme={dark} dark />
+        <svg className="th-current-line" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+          <polyline points={SQUIGGLE} fill="none" vectorEffect="non-scaling-stroke" />
+        </svg>
       </div>
       <div className="th-current-words">
         <strong>Your two themes</strong>

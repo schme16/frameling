@@ -9,3 +9,5 @@
 - **after-card-dark / after-card-light**: the card as you asked for it. The squiggle is a gentle wave instead of a
   jagged zigzag, and each half is the real app preview drawn in the theme you picked, so the card shows your actual
   two themes rather than colour blocks.
+- **line-card-dark / line-card-light**: the join is drawn as a black ink line, 3 px, over both halves, so the
+  squiggle reads as one pen stroke rather than just where two pictures meet.
