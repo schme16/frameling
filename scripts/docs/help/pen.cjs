@@ -66,6 +66,12 @@ module.exports = [
     ],
   },
   {
+    // After a crash: the dazed Quill and his offer (a pretend crash, since the capture never really crashes).
+    name: 'crash-notes',
+    prefs: CALM,
+    steps: [template('bouncing-ball'), js(`${F}.crashOffer('ask')`), wait(1500), ...shotOf('.bt-crash', 16)],
+  },
+  {
     // Installing on Linux: the Diagnostics page, where Quill's pen check starts once the app is running.
     name: 'installing-on-linux',
     prefs: CALM,

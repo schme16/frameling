@@ -22,15 +22,15 @@ describe('mascot.frameling (the source of the app mascot)', () => {
     expect(warnings).toEqual([]);
     expect(doc.width).toBe(48);
     expect(doc.fps).toBe(MASCOT_FPS);
-    expect(doc.clips.map((c) => c.name)).toEqual(['idle', 'wave', 'talk', 'point', 'cheer', 'think', 'draw', 'sleep', 'oops', 'sad', 'wave-sad']);
+    expect(doc.clips.map((c) => c.name)).toEqual(['idle', 'wave', 'talk', 'point', 'cheer', 'think', 'draw', 'sleep', 'oops', 'sad', 'wave-sad', 'dazed']);
     expect(doc.clips.find((c) => c.name === 'cheer')!.loop).toBe(false);
     expect(doc.clips.find((c) => c.name === 'sad')!.loop).toBe(true);
     expect(doc.clips.find((c) => c.name === 'wave-sad')!.loop).toBe(false);
   });
 
-  // add-sad.mjs only appends and redraw-arms.mjs only swaps the arm, so the original animations keep their timing,
+  // add-sad.mjs and add-dazed.mjs only append and redraw-arms.mjs only swaps the arm, so the original animations keep their timing,
   // and the ones without an arm are still the old generator's pixels.
-  it.runIf(manifest.app === 'add-sad' || manifest.app === 'redraw-arms')('kept the original animations as they were (bar the arms)', () => {
+  it.runIf(['add-sad', 'add-dazed', 'redraw-arms'].includes(manifest.app))('kept the original animations as they were (bar the arms)', () => {
     const built = docToSheet(doc);
     const old = json('brand/quill/b/quill.json');
     const oldPng = png('brand/quill/b/quill.png');

@@ -11,6 +11,7 @@ import { registerBetaIpc } from './beta';
 import { addLinked, canOpenOther, cleanFilters, isLibraryKind, isLinked, libraryId, listLibrary, pickFolder, readLibrary, readSmallFolder, removeLibrary, showLibraryFolder, writeLibrary } from './library';
 import { addRecent, clearAutosave, clearRecent, keepAutosave, lastDir, listKept, listRecent, readAutosave, readKept, rememberDir, removeKept, removeRecent, writeAutosave, writeFileAtomic } from './store';
 import { describeDisplay } from './display';
+import type { LastCrash } from './crashMarker';
 import { pathKey, safeFileName } from './paths';
 import { PLUGIN_PROCESS_FEATURE, pluginMemory, wantIsolation } from './pluginMemory';
 
@@ -26,6 +27,9 @@ export interface IpcHooks {
   setDocumentState(s: DocumentState): void;
   saveBeforeCloseDone(ok: boolean): void;
   keepUnsavedDone(): void;
+  /** The notes of the last crash found, and whether Quill has offered them. */
+  lastCrash(): LastCrash | null;
+  crashOffered(): void;
 }
 
 // Paths people picked in dialogs this session (or opened). Writes anywhere else are refused.
@@ -235,6 +239,7 @@ export function registerIpc(hooks: IpcHooks): void {
   });
 
   handle('app:launchFile', () => hooks.takeLaunchFile());
+  handle('app:lastCrash', () => hooks.lastCrash());
   handle('app:display', () => {
     const w = hooks.window();
     return w ? describeDisplay(w) : null;
@@ -256,6 +261,10 @@ export function registerIpc(hooks: IpcHooks): void {
   ipcMain.on('app:documentState', (e, s: DocumentState) => {
     if (e.sender !== hooks.window()?.webContents) return;
     hooks.setDocumentState({ dirty: !!s?.dirty, name: String(s?.name ?? 'Untitled'), filePath: typeof s?.filePath === 'string' ? s.filePath : null });
+  });
+  ipcMain.on('app:crashOffered', (e) => {
+    if (e.sender !== hooks.window()?.webContents) return;
+    hooks.crashOffered();
   });
   ipcMain.on('app:keepUnsavedDone', (e) => {
     if (e.sender !== hooks.window()?.webContents) return;

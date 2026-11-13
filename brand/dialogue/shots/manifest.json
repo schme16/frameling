@@ -294,5 +294,11 @@
   "pet.hello.again": {
     "file": "shots/pet.hello.again.png",
     "note": "Shown when the panel is opened after a day or more away. Stood in for by setting the day he last saw you."
+  },
+  "crash.offer": {
+    "file": "shots/crash.offer.png"
+  },
+  "crash.told": {
+    "file": "shots/crash.told.png"
   }
 }

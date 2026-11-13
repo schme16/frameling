@@ -7,6 +7,7 @@ import { betaHelp } from './help';
 import { openPrefs } from '../ui/overlays';
 import { watchProblems } from './problems';
 import { startAuto } from './auto';
+import { considerCrash, registerCrashChoice } from './crashAsk';
 
 export function installBeta(): () => void {
   registerHelpTopics(betaHelp);
@@ -20,6 +21,19 @@ export function installBeta(): () => void {
       keywords: ['report', 'bug', 'beta', 'feedback', 'crash', 'diagnostic', 'telemetry', 'send', 'problem', 'broken'],
       global: true,
       run: () => openPrefs('diagnostics'),
+    },
+  ]);
+  registerCrashChoice();
+  registerCommands([
+    {
+      id: 'help.sendCrashNotes',
+      label: 'Send the notes from the last crash...',
+      category: 'Help',
+      description: 'If Frameling crashed last time, Quill offers the crash notes again. You read them first, and nothing goes unless you press Send.',
+      help: 'crash-notes',
+      keywords: ['crash', 'crashed', 'notes', 'report', 'diagnostic', 'send', 'quill', 'dazed', 'froze', 'closed badly'],
+      global: true,
+      run: () => void considerCrash({ force: true }),
     },
   ]);
   const stops = [watchProblems(), startAuto()];

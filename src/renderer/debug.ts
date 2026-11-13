@@ -19,6 +19,7 @@ import { celebrate, praise } from '../quests/feedback';
 import { allQuests, getFullQuest, loadQuests, questProgress, startQuest } from '../quests/registry';
 import { getPrefs, setPrefs } from '../ui/prefs';
 import { considerScreen } from '../ui/screenSize';
+import { crashDialog, crashReport } from '../beta/crashAsk';
 import { quillSheet, setQuillSheet, tick as quillTick } from '../ui/mascot/runtime';
 import { setWeightsLook } from '../rig/weightsTool';
 import { setShowQuill } from '../ui/mascot/goodbye';
@@ -67,6 +68,12 @@ if (new URLSearchParams(location.search).has('debug')) {
     prefs: { get: getPrefs, set: setPrefs },
     // Quill's interface size offer for a pretend screen (shots, checks): { id, width, height, scaleFactor, workWidth, workHeight }.
     screenOffer: (d: Omit<Parameters<typeof considerScreen>[0], 'windowWidth' | 'windowHeight'>) => void considerScreen({ windowWidth: 1400, windowHeight: 900, ...d }, { force: true }),
+    // Quill's offer after a crash, for a pretend crash (shots, checks): 'ask' offers to send, 'tell' only says what happened.
+    crashOffer: (mode: 'ask' | 'tell' = 'ask') => {
+      const notes = { how: 'killed' as const, startedAt: Date.UTC(2026, 10, 14, 9, 30), version: '1.4.0', platform: 'linux x64', events: [] };
+      const env = { appVersion: '1.4.0', platform: 'linux', electron: '45.0.0', screen: { width: 1920, height: 1080 } };
+      crashDialog.set({ mode, notes, report: crashReport(notes, env) });
+    },
     commands: () => allCommands().map((c) => c.id),
     /** Every help topic with its picture or clip, for the web check that every file is served. */
     help: () => allHelp().map((t) => ({ id: t.id, media: t.media ?? null })),

@@ -41,6 +41,7 @@ function invokeStubs(library) {
     'autosave:removeKept': () => true,
     'app:launchFile': () => null,
     'app:display': () => null,
+    'app:lastCrash': () => null,
     'app:askSaveChanges': () => 'discard',
     'library:list': (_e, kind) => own(kind).map((k) => ({ id: k.slice(kind.length + 1), size: library.get(k).length, modified: 0 })),
     'library:read': (_e, kind, id) => library.get(`${kind}/${id}`) ?? null,
@@ -61,7 +62,7 @@ function invokeStubs(library) {
 }
 
 /** Channels the page sends with ipcRenderer.send() (no answer). */
-const SEND_CHANNELS = ['app:documentState', 'app:keepUnsavedDone', 'app:saveBeforeCloseDone'];
+const SEND_CHANNELS = ['app:documentState', 'app:crashOffered', 'app:keepUnsavedDone', 'app:saveBeforeCloseDone'];
 
 /** Every channel stubbed by default, for the drift test. */
 const STUBBED_INVOKE = Object.keys(invokeStubs(new Map()));

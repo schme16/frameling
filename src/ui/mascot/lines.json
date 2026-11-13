@@ -683,5 +683,20 @@
       "Straight into the collection."
     ],
     "where": "Quill's panel: you gave him the frame you were on (the app picks one)."
-  }
+  },
+  "crash.offer": {
+    "text": [
+      "Ow... oh! Hello. Frameling fell over last time, and I'm still a bit dizzy.",
+      "Shall I send the crash notes so it can be fixed? You can read every word first, and nothing goes unless you press Send."
+    ],
+    "where": "A dazed Quill meets you on the first start after Frameling crashed, in a build that can send reports. Two bubbles, with Send the notes and No thanks under them."
+  },
+  "crash.told": {
+    "text": [
+      "Ow... oh! Hello. Frameling fell over last time, and I'm still a bit dizzy.",
+      "This copy can't send anything to anyone, so the notes stay right here. I'm sorry it happened!"
+    ],
+    "where": "The same dazed Quill, in a build that has no way to send reports. He only says what happened, with OK under it."
+  },
+  "crash.sent": { "text": "Sent! Thank you, that helps more than you'd think.", "where": "The dazed Quill again, once the crash notes have gone: he cheers up." }
 }

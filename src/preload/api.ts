@@ -79,6 +79,18 @@ export interface LibraryApi {
   showFolder?(kind: LibraryKind): Promise<void>;
 }
 
+/** What the desktop side knows about a crash it found when Frameling started. Plain facts, nothing about what was drawn. */
+export interface CrashNotes {
+  /** `killed`: stopped without closing properly. `window`: the drawing window crashed. `both`: the window crashed, then the app stopped without closing. */
+  how: 'killed' | 'window' | 'both';
+  /** When the run that crashed began (milliseconds since 1970). */
+  startedAt: number;
+  version: string;
+  platform: string;
+  /** Plain lines about what went wrong, such as how the window crashed. */
+  events: string[];
+}
+
 /** A screen as the computer reports it: sizes in its own units (before any interface size), and its scale factor. */
 export interface DisplayInfo {
   id: number;
@@ -180,6 +192,10 @@ export interface FramelingApi {
   app: {
     /** How big the whole interface is drawn, 0.5 to 3 (1 is the usual size). Everything stays crisp. */
     setUiScale?(factor: number): void;
+    /** The notes of the last crash found, and whether Quill has offered them yet. Null when there has been none. Missing in the web build. */
+    getLastCrash?(): Promise<{ notes: CrashNotes; offered: boolean } | null>;
+    /** Quill has offered the notes (or said what happened), so he won't turn up for them again. */
+    crashOffered?(): void;
     /** The screen the window is on right now. */
     getDisplay?(): Promise<DisplayInfo | null>;
     /** Called when the window is dragged onto another screen, or a screen changes size. Returns an unsubscribe function. */
