@@ -110,3 +110,34 @@ describe('the problems it remembers', () => {
     expect(off).toHaveBeenCalledTimes(2);
   });
 });
+
+describe('automatic reports in a beta build', () => {
+  it('sends nothing at all without a key, however much goes wrong', async () => {
+    const { autoOn, forgetAuto } = await import('../../src/beta/auto');
+    forgetAuto();
+    // No key in an ordinary build, so nothing is ever sent by itself.
+    expect(autoOn()).toBe(false);
+    forgetProblems();
+    for (let i = 0; i < 10; i++) noteProblem(`broke ${i}`);
+    expect(autoOn()).toBe(false);
+  });
+
+  it('tells anyone listening when something goes wrong', async () => {
+    const { onProblem } = await import('../../src/beta/problems');
+    forgetProblems();
+    let heard = 0;
+    const off = onProblem(() => (heard += 1));
+    noteProblem('one');
+    noteProblem('two');
+    expect(heard).toBe(2);
+    off();
+    noteProblem('three');
+    expect(heard).toBe(2);
+  });
+
+  it('gives up after a few, so a build stuck in a loop cannot sit there sending', async () => {
+    const { AUTO_MAX } = await import('../../src/beta/auto');
+    expect(AUTO_MAX).toBeGreaterThan(0);
+    expect(AUTO_MAX).toBeLessThanOrEqual(10);
+  });
+});

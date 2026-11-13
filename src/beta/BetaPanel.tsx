@@ -58,7 +58,7 @@ export function BetaPanel() {
         label="Let me send reports to the makers"
         checked={on}
         onChange={(v) => setPrefs({ betaReports: v })}
-        hint="Off by default. Even with it on, a report only goes when you press Send, and you can read every word of it first."
+        hint="On in a beta build, off in an ordinary one. With it on, a crash is reported by itself, and anything you write here goes when you press Send."
       />
       <p className="tb-note">
         New to this?{' '}
@@ -68,7 +68,7 @@ export function BetaPanel() {
         says what is most useful to send and exactly what we see.
       </p>
       {!on ? (
-        <p className="tb-note">Frameling never sends anything by itself. There is no counting of what you do, no ping when it starts, and nothing at all leaves this computer unless you ask it to.</p>
+        <p className="tb-note">Nothing is being sent. No crash reports, no counting of what you do, no ping when it starts, and nothing at all leaves this computer.</p>
       ) : (
         <>
           <label className="bt-field">
@@ -84,8 +84,12 @@ export function BetaPanel() {
             <input value={contact} onChange={(e) => setPrefs({ betaContact: e.target.value })} placeholder="Left empty is fine" />
           </label>
           <p className="tb-note">
-            It takes what Frameling and this computer are, the shape of your drawing (how big, how many frames and layers) and anything that has
-            gone wrong in the page. Never your drawing, never what you called it, never where it lives, never anything you typed anywhere else.
+            <b>This is a beta build, so a crash tells us by itself</b>, up to a few times a run. Nothing else is ever sent on its own: there is no
+            counting of what you do and no ping when Frameling starts. Turn the switch off and even crashes stay here.
+          </p>
+          <p className="tb-note">
+            Either way it takes what Frameling and this computer are, the shape of your drawing (how big, how many frames and layers) and what went
+            wrong. Never your drawing, never what you called it, never where it lives, never anything you typed anywhere else.
           </p>
           <div className="tb-check-buttons">
             <button type="button" className="tb-clear" onClick={show} disabled={!note.trim()}>

@@ -5,6 +5,7 @@ import { sanitizeCustomThemes, themeForMode, writeTheme } from './themes/model';
 import { DEFAULT_UNIT, isUnit, type Unit } from '../core/units';
 import { DEFAULT_KEYMAP_SET, isKeymapSet } from './keymapSets';
 import { clampOutline, DEFAULT_OUTLINE } from '../pixel/thick';
+import { canSend } from '../beta/send';
 
 export type ThemePref = 'system' | 'dark' | 'light';
 export type LookPref = 'cosy' | 'crisp';
@@ -34,8 +35,9 @@ export interface Prefs {
   /** Show Quill, the hedgehog guide. Off hides him and his chatter everywhere; words people need stay as plain notes. */
   showQuill: boolean;
   /**
-   * Beta reports: whether the panel in Preferences > Diagnostics offers to send one. Off until you turn it on, and
-   * even then nothing goes without you pressing Send and reading what it says first (src/beta).
+   * Beta reports: whether the panel in Preferences > Diagnostics offers to send one. On by default in a beta build
+   * (which is what being a tester is), off everywhere else, and a tester can turn it off whenever they like. See
+   * `defaultBetaReports` below and src/beta.
    */
   betaReports: boolean;
   /** How to get back to you about a report, only if you chose to give it. Kept on this computer, never anywhere else. */
@@ -81,7 +83,7 @@ export const DEFAULT_PREFS: Prefs = {
   showTips: true,
   showTextures: true,
   showQuill: true,
-  betaReports: false,
+  betaReports: canSend(),
   betaContact: '',
   rightSide: 'inspector',
   toolRail: 'two',

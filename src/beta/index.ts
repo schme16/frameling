@@ -6,6 +6,7 @@ import { registerCommands, registerHelpTopics } from '../core/registry';
 import { betaHelp } from './help';
 import { openPrefs } from '../ui/overlays';
 import { watchProblems } from './problems';
+import { startAuto } from './auto';
 
 export function installBeta(): () => void {
   registerHelpTopics(betaHelp);
@@ -21,7 +22,10 @@ export function installBeta(): () => void {
       run: () => openPrefs('diagnostics'),
     },
   ]);
-  return watchProblems();
+  const stops = [watchProblems(), startAuto()];
+  return () => {
+    for (const stop of stops) stop();
+  };
 }
 
 export { recentProblems, noteProblem } from './problems';

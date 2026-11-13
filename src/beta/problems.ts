@@ -13,8 +13,17 @@ export const recentProblems = (): string[] => problems.map((p) => `${new Date(p.
 /** For the tests, and for after a report goes. */
 export const forgetProblems = (): void => void (problems = []);
 
+const watchers = new Set<() => void>();
+
+/** Called whenever something new goes wrong, for the automatic reports in a beta build. */
+export function onProblem(fn: () => void): () => void {
+  watchers.add(fn);
+  return () => void watchers.delete(fn);
+}
+
 export function noteProblem(what: string): void {
   problems = [...problems, { at: Date.now(), what: what.slice(0, 500) }].slice(-MAX);
+  for (const fn of watchers) fn();
 }
 
 /** Starts listening for errors the page throws. Gives back the way to stop. */
