@@ -28,7 +28,7 @@ function RecentDialog({ close }: { close: () => void }) {
     <Modal title="Open recent" onClose={close}>
       <div className="io-body">
         {files === null ? null : files.length === 0 ? (
-          <QuillEmpty anim="draw" className="io-empty">{line('empty.recent')}</QuillEmpty>
+          <QuillEmpty anim="draw" className="io-empty" whenHidden="Nothing here yet. Drawings you open or save show up here.">{line('empty.recent')}</QuillEmpty>
         ) : (
           <ul className="io-recent">
             {files.map((f) => (

@@ -241,11 +241,11 @@ describe('the other changes', () => {
 describe('Quill sums up the sheet', () => {
   it('names a cast of sprites', () => {
     const d = newSpriteDoc({ way: 'sheet', width: 16, height: 16 });
-    expect(sheetSentence(d, 'atlas')).toBe('This sheet has 3 sprites, one per board, 12 frames in all.');
+    expect(sheetSentence(d, 'atlas')).toBe('This sheet has 3 sprites (wow!), one per board, 12 frames in all.');
   });
   it('names frames on boards', () => {
     const d = newSpriteDoc({ way: 'boards', width: 16, height: 16 });
-    expect(sheetSentence(d, 'joined')).toBe('This sheet is 4 boards played as frames of one sprite, 4 frames in all.');
+    expect(sheetSentence(d, 'joined')).toBe('This sheet is 4 boards played as frames of a single sprite, 4 frames in all.');
   });
   it('an animation and a picture', () => {
     expect(sheetSentence(anim(6), 'one')).toBe('This sheet has 1 sprite with 6 frames.');

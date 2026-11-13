@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Icon } from '../ui/icons';
-import { QuillSays } from '../ui/mascot';
+import { QuillSays, useShowQuill } from '../ui/mascot';
 import { stepScript } from '../ui/mascot/scripts';
 import { openHelp } from '../ui/overlays';
 import { engine, putDownQuest } from './runtime';
@@ -13,6 +13,7 @@ import { resolveTarget } from './target';
 export function QuestBar() {
   const p = questProgress.use((x) => x);
   const praise = feedback.use((f) => f.praise);
+  const quillOn = useShowQuill();
   const quest = p.active ? getFullQuest(p.active) : undefined;
   const step = quest?.steps[p.step];
   const ref = useRef<HTMLElement>(null);
@@ -54,7 +55,7 @@ export function QuestBar() {
     <section ref={ref} className={`qb qb-${spot}`} role="region" aria-label={`Quest: ${quest.title}`} data-quest="bar">
       {praise && (
         <span className="qb-praise" key={praise.key} role="status">
-          <Icon name="check" size={14} /> {praise.text}
+          <Icon name="check" size={14} /> {quillOn ? praise.text : 'Done'}
         </span>
       )}
       <header className="qb-head">

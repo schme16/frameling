@@ -437,7 +437,7 @@ function KeyboardPage({ focusId }: { focusId?: string }) {
           </section>
         ))}
         {!cats.length && (
-          <QuillEmpty anim={[{ anim: 'think', hold: 2400 }, { anim: 'idle' }]} size={96} className="ui-help-empty">
+          <QuillEmpty anim={[{ anim: 'think', hold: 2400 }, { anim: 'idle' }]} size={96} className="ui-help-empty" whenHidden="No shortcuts match that.">
             {line('empty.shortcuts')}
           </QuillEmpty>
         )}

@@ -198,7 +198,7 @@ If nothing happens for about a minute he dozes off. Move the mouse or press a ke
 
 ## Hiding Quill
 
-Open **Preferences** (**Ctrl+,**), choose **General** and turn off **Show Quill** (or turn it off on the settings step of **Help > Meet Quill again**). He goes away everywhere. Anything he was saying still shows, just without him.
+Open **Preferences** (**Ctrl+,**), choose **General** and turn off **Show Quill** (or turn it off on the settings step of **Help > Meet Quill again**). He goes away everywhere, and so does his chatter. Things you need, like quest steps, errors and what a sprite sheet holds, still show as plain notes, and you still get the usual pop-up messages (saved, exported and so on).
 
 He'll be a little sad about it (a sniffle, maybe a tear), but he understands. He waves a brave goodbye and then hides. Want him back? Turn **Show Quill** on again, or say hi from **Help > Meet Quill again**. He'll cheer.
 

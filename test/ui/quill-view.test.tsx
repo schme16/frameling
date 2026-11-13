@@ -2,7 +2,7 @@
 import { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { Quill, QuillSays } from '../../src/ui/mascot';
+import { Quill, QuillEmpty, QuillSays } from '../../src/ui/mascot';
 import { playerCount, setQuillSheet } from '../../src/ui/mascot/runtime';
 import { resetPrefs, setPrefs } from '../../src/ui/prefs';
 import { FAKE_SHEET } from '../fixtures/quill-sheet';
@@ -38,7 +38,7 @@ describe('Quill on screen', () => {
     expect(playerCount()).toBe(1);
   });
 
-  it('hides everywhere when Show Quill is off, but bubbles keep their words', async () => {
+  it('hides everywhere when Show Quill is off, but bubbles people need keep their words', async () => {
     await act(async () =>
       root.render(
         <>
@@ -55,6 +55,32 @@ describe('Quill on screen', () => {
     expect(host.textContent).toContain('Hello there');
     expect(host.querySelector('.quill-says')!.classList.contains('is-alone')).toBe(true);
     expect(playerCount()).toBe(0);
+  });
+
+  it('drops his chatter when Show Quill is off, or swaps in the plain version', async () => {
+    await act(async () =>
+      root.render(
+        <>
+          <QuillSays whenHidden={null}>
+            <p>Chatter</p>
+          </QuillSays>
+          <QuillSays whenHidden={<p>Plain words</p>}>
+            <p>Chatty words</p>
+          </QuillSays>
+          <QuillEmpty whenHidden="Nothing here.">I looked hard!</QuillEmpty>
+        </>,
+      ),
+    );
+    expect(host.textContent).toContain('Chatter');
+    expect(host.textContent).toContain('Chatty words');
+    expect(host.textContent).toContain('I looked hard!');
+    await act(async () => setPrefs({ showQuill: false }));
+    expect(host.textContent).not.toContain('Chatter');
+    expect(host.textContent).not.toContain('Chatty words');
+    expect(host.textContent).toContain('Plain words');
+    expect(host.textContent).not.toContain('I looked hard!');
+    expect(host.textContent).toContain('Nothing here.');
+    expect(host.querySelectorAll('.quill-says')).toHaveLength(1);
   });
 
   it('draws nothing while there is no sheet', async () => {
