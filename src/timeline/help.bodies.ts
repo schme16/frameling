@@ -136,7 +136,7 @@ If a layer is locked its frames can't be changed. Click the padlock to unlock it
 
 Frameling asks: **Take the empty frames off the end?**
 
-- **Take them off:** the animation ends where its last drawing, marker or clip ends. From then on it happens by itself, in the same step as your edit, so one **Undo** puts it all back.
+- **Take them off** (the one it starts on): the animation ends where its last drawing, marker or clip ends. From then on it happens by itself, in the same step as your edit, so one **Undo** puts it all back.
 - **Keep the length I have:** nothing changes. The empty frames wait on the end.
 
 Your answer is remembered. Change it any time in **Preferences > Behaviour**, under **Empty frames at the end**.

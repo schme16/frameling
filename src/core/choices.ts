@@ -147,6 +147,11 @@ export function setChoiceDeferral(fn: (() => boolean) | null): void {
 
 const deferred = (): boolean => !!deferral?.();
 
+/** Whether a question can be put to the person at all right now (there is an asker, and nothing is holding questions). */
+export function canAsk(id: string): boolean {
+  return !!asker && !defs.get(id)?.silent && !deferred();
+}
+
 /**
  * The answer for a choice, asking the person the first time. Resolves with the default if they close the dialog
  * without picking, and doesn't remember that.

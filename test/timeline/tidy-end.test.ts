@@ -92,14 +92,14 @@ describe('the question and the preference', () => {
     expect(def.question).toBe('Take the empty frames off the end?');
     expect(def.options.map((o) => o.value)).toEqual(['tidy', 'keep']);
     expect(def.silent).toBeFalsy();
-    expect(def.default).toBe('keep');
+    expect(def.default).toBe('tidy');
     expect(def.category).toBe('Timeline');
   });
 
-  it('shortening a hold leaves the length alone when nothing is asked (no way to ask: keep)', () => {
+  it('shortening a hold takes the empty frames off when there is no way to ask (the default)', () => {
     const { s, layer, cel } = hold(28);
     ops.resizeCel(layer.id, cel.id, 18);
-    expect(s.get().doc.length).toBe(31);
+    expect(s.get().doc.length).toBe(28);
   });
 
   it('asks the first time, and tidies when the answer is take them off', async () => {

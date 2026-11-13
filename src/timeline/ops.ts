@@ -14,7 +14,7 @@ import * as core from './edit-core';
 import type { Clash } from './edit-core';
 import { shiftInOut } from './inout';
 import { emptyTail, fitLength, tidyEnd as tidyEndCore } from './tidyEnd';
-import { rememberedChoice, withChoice } from '../core/choices';
+import { canAsk, currentChoice, rememberedChoice, withChoice } from '../core/choices';
 import type { TidyEndChoice } from './choices';
 import './choices';
 
@@ -44,9 +44,15 @@ const no = (reason: Reason): Outcome => ({ ok: false, reason });
 
 // ---------------------------------------------------------------- the end of the animation
 
-/** Inside an edit: if you've said "take them off", the empty frames go in the same undo step. Only the main timeline. */
+/**
+ * Inside an edit: if you've said "take them off", the empty frames go in the same undo step. Where the question
+ * can't be put at all (a script, an automated run), the default answer stands and folds in the same way, so the edit
+ * is still one undo step. Only the main timeline.
+ */
 export function foldTail(d: Draft<Doc>): void {
-  if (rememberedChoice('timeline.tidyEnd') === 'tidy' && !d.editing) tidyEndCore(d as Doc);
+  if (d.editing) return;
+  const answer = rememberedChoice('timeline.tidyEnd') ?? (canAsk('timeline.tidyEnd') ? undefined : currentChoice('timeline.tidyEnd'));
+  if (answer === 'tidy') tidyEndCore(d as Doc);
 }
 
 /** After the end moved in, the playhead stays on a frame that is still there. */

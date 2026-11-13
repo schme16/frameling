@@ -64,7 +64,9 @@ registerChoice<NewKeyHoldChoice>({
 /** "Hold longer" choice in the words the edit code uses. */
 export const clashFor = (c: HoldChoice): 'push' | 'trim' => (c === 'cover' ? 'trim' : 'push');
 
-// Asked the first time an edit leaves empty frames on the end. Keep is the safe answer if the question is closed.
+// Asked the first time an edit leaves empty frames on the end. Taking them off is the default, so that is what
+// happens where there is no way to ask; closing the question without picking still keeps the length, since closing a
+// question should never throw frames away.
 registerChoice<TidyEndChoice>({
   id: 'timeline.tidyEnd',
   title: 'Empty frames at the end',
@@ -73,7 +75,7 @@ registerChoice<TidyEndChoice>({
     { value: 'tidy', label: 'Take them off', detail: 'The animation ends where its last drawing, marker or clip ends. Every time an edit leaves empty frames on the end, they go.' },
     { value: 'keep', label: 'Keep the length I have', detail: 'The animation stays as long as it was. The empty frames wait at the end until you change the length or use Tidy the end.' },
   ],
-  default: 'keep',
+  default: 'tidy',
   dismiss: 'keep',
   category: 'Timeline',
   help: 'timeline-tidy-end',
