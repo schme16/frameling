@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { CURVE_PRESETS, cleanCurve, cleanRange, curveAt, mapPressure, presetOf } from '../../src/tablet/curve';
 import { altitudeOf, azimuthOf, leanOf } from '../../src/tablet/tilt';
 import { CATCH_UP_STEPS, Stabilizer, ropeLength, windowSize } from '../../src/tablet/stabilizer';
-import { barrelBits, getPenHost, isLinuxDesktop, meaningOfPress, penPress, setPenHost, type PenButtonSettings } from '../../src/tablet/buttons';
+import { barrelBits, firstBarrelBit, getPenHost, isLinuxDesktop, meaningOfPress, penPress, setPenHost, type PenButtonSettings } from '../../src/tablet/buttons';
 import { ToolGuess } from '../../src/tablet/tool';
 import { penFields } from '../../src/tablet/input';
 import { cleanPen, DEFAULT_PEN } from '../../src/tablet/settings';
@@ -135,7 +135,7 @@ describe('pen buttons on Linux', () => {
   // click (button 1, bit 4), the other a right click (button 2, bit 2).
   const settings: PenButtonSettings = { eraserEnd: true, barrel1: 'eyedropper', barrel2: 'pan' };
   const press = (button: number, buttons: number) => ({ pointerType: 'pen', button, buttons });
-  afterEach(() => setPenHost({ swapBarrels: false }));
+  afterEach(() => setPenHost({ swapBarrels: false, userSwap: false }));
 
   it('reads the raw barrel bits from the button and from what is held', () => {
     expect(barrelBits({ button: 1, buttons: 4 })).toBe(4);
@@ -168,6 +168,21 @@ describe('pen buttons on Linux', () => {
     expect(meaningOfPress(press(1, 4), { ...settings, barrel1: 'back' }).button).toBe(2);
     expect(meaningOfPress(press(1, 4), { ...settings, barrel1: 'none' }).button).toBe(0);
     expect(meaningOfPress(press(1, 4), { ...settings, barrel1: 'pan' }).button).toBe(1);
+  });
+  it('swapping the two buttons yourself flips whatever this system does', () => {
+    // The beta tester's Huion on Zorin (X11) sends the button nearest the tip as bit 2, not the bit 4 Linux usually does.
+    setPenHost({ swapBarrels: true, userSwap: true });
+    expect(firstBarrelBit()).toBe(2);
+    expect(penPress(press(2, 2))).toEqual({ eraser: false, barrel1: true, barrel2: false });
+    expect(penPress(press(1, 4))).toEqual({ eraser: false, barrel1: false, barrel2: true });
+    // On Windows and macOS the same switch sends it the other way.
+    setPenHost({ swapBarrels: false, userSwap: true });
+    expect(firstBarrelBit()).toBe(4);
+    expect(penPress(press(1, 4))).toMatchObject({ barrel1: true, barrel2: false });
+    // Both off is the standard: bit 2 is the button nearest the tip.
+    setPenHost({ swapBarrels: false, userSwap: false });
+    expect(firstBarrelBit()).toBe(2);
+    expect(penPress(press(2, 2))).toMatchObject({ barrel1: true, barrel2: false });
   });
   it('a mouse middle click is still just a mouse', () => {
     setPenHost({ swapBarrels: true });

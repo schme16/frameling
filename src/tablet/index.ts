@@ -7,6 +7,7 @@ import './check/help';
 import { startPenCheck } from './check/state';
 import { getPen, PEN_TOOLS, setPenDevice, setToolPen, type PenTool } from './settings';
 import { isLinuxDesktop, setPenHost } from './buttons';
+import { penStore } from './settings';
 import { penTools } from './tool';
 import { desktop } from '../io/desktop';
 
@@ -14,10 +15,12 @@ import { desktop } from '../io/desktop';
 export function startPenHost(): void {
   const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
   const linux = isLinuxDesktop(desktop()?.platform, ua);
-  setPenHost({ swapBarrels: linux });
+  setPenHost({ swapBarrels: linux, userSwap: getPen().pen.swapButtons });
   penTools.enabled = linux;
 }
 startPenHost();
+// Turning "Swap my two pen buttons" on or off takes effect straight away.
+penStore.subscribe(() => setPenHost({ userSwap: getPen().pen.swapButtons }));
 
 const currentPenTool = (): PenTool | null => {
   const id = store().get().ui.tool as PenTool;

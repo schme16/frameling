@@ -34,6 +34,8 @@ export interface PenDevice {
   eraserEnd: boolean;
   barrel1: BarrelAction;
   barrel2: BarrelAction;
+  /** The two barrel buttons come through the other way round on this tablet, so swap what they do. */
+  swapButtons: boolean;
 }
 
 export type OneFinger = 'draw' | 'pan' | 'off';
@@ -58,7 +60,7 @@ export interface PenSettings {
 const tool = (o: Partial<ToolPen> = {}): ToolPen => ({ size: false, opacity: false, flow: false, tilt: false, stabilizer: 0, stabMode: 'string', ...o });
 
 export const DEFAULT_PEN: PenSettings = {
-  pen: { curve: CURVE_PRESETS.normal, min: 0, max: 1, tiltAmount: 60, eraserEnd: true, barrel1: 'eyedropper', barrel2: 'pan' },
+  pen: { curve: CURVE_PRESETS.normal, min: 0, max: 1, tiltAmount: 60, eraserEnd: true, barrel1: 'eyedropper', barrel2: 'pan', swapButtons: false },
   touch: { oneFinger: 'draw', twoFingers: true, palmRejection: true },
   tools: { brush: tool(), pencil: tool(), eraser: tool(), spray: tool({ flow: true }), shade: tool(), dither: tool() },
   seen: false,
@@ -101,6 +103,7 @@ export function cleanPen(raw: unknown): PenSettings {
       eraserEnd: bool(p.eraserEnd, d.pen.eraserEnd),
       barrel1: oneOf(p.barrel1, actions, d.pen.barrel1),
       barrel2: oneOf(p.barrel2, actions, d.pen.barrel2),
+      swapButtons: bool(p.swapButtons, d.pen.swapButtons),
     },
     touch: {
       oneFinger: oneOf(t.oneFinger, ['draw', 'pan', 'off'] as const, d.touch.oneFinger),

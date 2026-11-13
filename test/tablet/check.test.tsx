@@ -10,6 +10,7 @@ import { OFFER_DELAY_MS, checkMemory, noticePen, reduceCheck, resetOffer, setChe
 import { overlays } from '../../src/ui/overlays';
 import { LINES, line } from '../../src/ui/mascot/lines';
 import { DEFAULT_PEN, resetPen } from '../../src/tablet/settings';
+import { setPenHost } from '../../src/tablet/buttons';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -223,6 +224,22 @@ describe('the notebook', () => {
     expect(e.session).toEqual({ type: 'x11', window: 'x11' });
     expect(e.seen).toMatchObject({ eraser: 0, eraserGuess: 1, persistentDeviceIds: [2, 3], persistentDeviceIdChanges: 1, pointerIds: [2], pointerIdChanges: 0 });
     expect(rep.hints.join(' ')).toMatch(/second device/);
+  });
+
+  it('notices the two pen buttons arriving the wrong way round, and says which switch fixes it', () => {
+    // The beta tester's Huion on Zorin: Linux usually sends the button nearest the tip as bit 4, this one sends bit 2.
+    setPenHost({ swapBarrels: true, userSwap: false });
+    const r = new CheckRecorder(DEFAULT_PEN.pen);
+    r.start('barrel1');
+    r.push(s({ type: 'pointerdown', button: 2, buttons: 2 }));
+    r.finish('barrel1', 'done');
+    expect(r.buttonsLookSwapped()).toEqual({ saw: 2, expected: 4 });
+    expect(r.report({ ...env(), platform: 'linux' }).hints.join(' ')).toMatch(/wrong way round/);
+    // With the switch on, that same bit is what Frameling expects, so there is nothing to say.
+    setPenHost({ userSwap: true });
+    expect(r.buttonsLookSwapped()).toBeNull();
+    expect(r.report({ ...env(), platform: 'linux' }).hints.join(' ')).not.toMatch(/wrong way round/);
+    setPenHost({ swapBarrels: false, userSwap: false });
   });
 
   it('the real eraser bit wins, and without a second device nothing is guessed', () => {

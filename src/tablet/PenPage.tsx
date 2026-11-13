@@ -2,7 +2,7 @@
 // choose what fingers do, and see what each tool does with pressure, tilt and the stabilizer.
 import { useEffect, useRef, useState } from 'react';
 import { Row, Segmented, Switch } from '../ui/PrefsModal';
-import { BARREL_ACTIONS, barrelBits, getPenHost, penPress, type BarrelAction } from './buttons';
+import { BARREL_ACTIONS, barrelBits, firstBarrelBit, penPress, type BarrelAction } from './buttons';
 import { penTools } from './tool';
 import { CurveEditor } from './CurveEditor';
 import { CURVE_PRESETS, PRESET_ORDER, presetOf, type CurvePreset } from './curve';
@@ -57,7 +57,7 @@ function TestPad({ onRaw }: { onRaw: (raw: number | null) => void }) {
     const guessed = penTools.isEraser(pe);
     const press = penPress(pe, { eraser: guessed });
     const raw = barrelBits(pe);
-    const first = getPenHost().swapBarrels ? 4 : 2;
+    const first = firstBarrelBit();
     const bit = (n: number) => (raw & n ? ` (raw bit ${n})` : '');
     const parts = [press.eraser ? (guessed ? 'eraser end (from the second device)' : 'eraser end') : '', press.barrel1 ? `barrel button 1${bit(first)}` : '', press.barrel2 ? `barrel button 2${bit(6 - first)}` : ''].filter(Boolean).join(', ');
     setRead({ type: e.pointerType, raw: e.pressure, out: f.pressure, tiltX: f.tiltX, tiltY: f.tiltY, twist: f.twist, parts });
@@ -216,6 +216,9 @@ export function PenPage() {
       </Row>
       <Row label="Other button" hint="The second button on the barrel, the middle click. Many pens have only one.">
         <ActionSelect label="Other button" value={pen.barrel2} onChange={(v) => setPenDevice({ barrel2: v })} />
+      </Row>
+      <Row label="Swap my two pen buttons" hint="Turn this on if the button nearest the tip does what the other one should. Tablets don't all number them the same way.">
+        <Switch on={pen.swapButtons} onChange={(v) => setPenDevice({ swapButtons: v })} label="Swap my two pen buttons" />
       </Row>
 
       <h4>Fingers and palms</h4>

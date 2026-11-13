@@ -1,6 +1,6 @@
 // The pen check's notebook: what Frameling sees from a pen, step by step, and the report that comes out of it. No
 // DOM and no React, so the whole thing can be driven by simulated events in tests.
-import { barrelBits, getPenHost, penPress } from '../buttons';
+import { barrelBits, firstBarrelBit, getPenHost, penPress } from '../buttons';
 import { ToolGuess } from '../tool';
 import { mapPressure } from '../curve';
 import { altitudeOf, azimuthOf } from '../tilt';
@@ -367,7 +367,23 @@ export class CheckRecorder {
     if (a.pen > 0 && a.contact > 0 && a.eraser === 0 && a.eraserGuess > 0) out.push('No eraser bit arrived, but a second device did when the pen was flipped. That is how X11 with libinput shows the eraser end, and Frameling uses it.');
     else if (a.pen > 0 && a.contact > 0 && a.eraser === 0 && this.reasons.get('eraser') === 'no-eraser-end') out.push('The person said the eraser end did not show up. No eraser bit and no second device arrived. On X11 a barrel button can be set to Erase in Pen and tablet.');
     else if (a.pen > 0 && a.contact > 0 && a.eraser === 0 && this.steps.get('eraser')?.status === 'skipped') out.push('The eraser end was not tried or has none.');
+    const swapped = this.buttonsLookSwapped();
+    if (swapped) out.push(`The button nearest the tip arrived as raw bit ${swapped.saw}, and here Frameling reads bit ${swapped.expected} as that button, so the two are the wrong way round on this tablet. Turn on "Swap my two pen buttons" in Preferences, Pen and tablet.`);
     return out;
+  }
+
+  /**
+   * The button nearest the tip came through as the other button's bit, so this tablet numbers them the other way
+   * round from the rest of the system. Only says so when that step saw one bit and no other.
+   */
+  buttonsLookSwapped(): { saw: 2 | 4; expected: 2 | 4 } | null {
+    const e = this.steps.get('barrel1');
+    if (!e || e.status !== 'done') return null;
+    const { bit2, bit4 } = e.stats;
+    if ((bit2 > 0) === (bit4 > 0)) return null;
+    const saw: 2 | 4 = bit2 > 0 ? 2 : 4;
+    const expected = firstBarrelBit();
+    return saw === expected ? null : { saw, expected };
   }
 
   /** Everything seen, as the report that gets saved. */

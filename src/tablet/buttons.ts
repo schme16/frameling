@@ -27,11 +27,16 @@ export interface PressLike {
  */
 export interface PenHost {
   swapBarrels: boolean;
+  /** The person said their two buttons come through the wrong way round, so flip whatever the system does. */
+  userSwap: boolean;
 }
 
-let host: PenHost = { swapBarrels: false };
+let host: PenHost = { swapBarrels: false, userSwap: false };
 export const setPenHost = (h: Partial<PenHost>): void => void (host = { ...host, ...h });
 export const getPenHost = (): PenHost => host;
+
+/** Which raw bit is the button nearest the tip: what this system does, flipped if the person said to. */
+export const firstBarrelBit = (): 2 | 4 => (host.swapBarrels !== host.userSwap ? 4 : 2);
 
 /** True for Chromium on a Linux desktop (not Android), from the platform name or, with no shell, the user agent. */
 export function isLinuxDesktop(platform: string | undefined, userAgent: string): boolean {
@@ -59,7 +64,7 @@ export interface PenPress {
 export function penPress(e: PressLike, extra: { eraser?: boolean; swapBarrels?: boolean } = {}): PenPress {
   if (e.pointerType !== 'pen') return { eraser: false, barrel1: false, barrel2: false };
   const bits = barrelBits(e);
-  const swap = extra.swapBarrels ?? host.swapBarrels;
+  const swap = extra.swapBarrels ?? host.swapBarrels !== host.userSwap;
   const first = swap ? 4 : 2;
   return {
     eraser: e.button === 5 || (e.buttons & 32) !== 0 || !!extra.eraser,

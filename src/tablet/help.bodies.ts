@@ -8,7 +8,7 @@ export const bodies: Record<string, string> = {
 - **Light touch, fainter line.** Brush and Pencil can fade the whole line when you press lightly.
 - **Leaning.** Lay the pen over for a bigger mark, like shading with the side of a pencil. Switch on **Leaning changes size**.
 - **Eraser end.** Flip the pen over to erase. It goes back to your tool after. (Linux: see below.)
-- **Pen buttons.** The button nearest the tip picks a colour while held. The other one moves the page. You can change both.
+- **Pen buttons.** The button nearest the tip picks a colour while held. The other one moves the page. You can change both, and if they come through the wrong way round, turn on **Swap my two pen buttons**.
 - **Hovering.** You see a ring the size of your brush, with a faint inner ring for the smallest mark a light touch makes.
 - **Stabilizer.** Every drawing tool has a slider. **Pull string** hangs the brush on a rope behind your pen. **Average** smooths your last few moves. It steadies a mouse too.
 
@@ -28,7 +28,7 @@ While your pen is near the screen, a resting hand is ignored. Otherwise two fing
 
 - **Windows:** open the Wacom Tablet Properties or the Huion driver and turn on **Windows Ink**, then restart Frameling.
 - **Mac:** install the maker's driver. It then just works.
-- **Linux:** most Wacom and Huion tablets work on their own. No pressure? Try the tablet in another drawing program. If flipping the pen doesn't erase, the system may not be telling Frameling about the eraser end: set a button to **Erase** in Pen and tablet. The pad there names each button as you press it.
+- **Linux:** most Wacom and Huion tablets work on their own. No pressure? Try the tablet in another drawing program. If flipping the pen doesn't erase, the system may not be telling Frameling about the eraser end: set a button to **Erase** in Pen and tablet. The pad there names each button as you press it, and if the two are round the wrong way, **Swap my two pen buttons** puts them right.
 
 **Faint marks while hovering?** Raise **Lightest press that counts**. **Wobbly lines?** Try some **Stabilizer**.
 
