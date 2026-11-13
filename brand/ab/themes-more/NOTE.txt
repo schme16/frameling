@@ -1,0 +1,9 @@
+Themes, more (dark | light in each pair-*.png; zoom-* are 2x close-ups of the area round the page):
+  pair-gumdrop-night   Gumdrop Night | Gumdrop Day        based on Monokai, lemon and tangerine chosen colours
+  pair-batwing         Batwing | Bat Nap                  based on Darcula, warm lamp gold chosen
+  pair-mocha-kitten    Mocha Kitten | Latte Kitten        based on Catppuccin Mocha and Latte, lilac chosen
+  pair-retro-groove    Retro Groove Night | Day           based on Gruvbox, its own yellow chosen
+  pair-puppy-socks     Puppy Socks | Kitty Socks          trans pink and blue, rainbow brand touches, sock stripes and paw prints
+  pair-strawberry / zoom-strawberry*   yellow seeds now scattered and turned every which way (were a faint grid)
+  pair-glacier-grid / zoom-*camo      camo shards smaller and fainter, two layers of different tile sizes so the repeat hides
+Patterns are SVG masks from scripts/theme-motifs.mjs, static, behind the stage.

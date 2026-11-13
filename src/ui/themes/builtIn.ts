@@ -129,19 +129,99 @@ export const BUILT_IN_THEMES: Theme[] = [
     'chosen-bg': '#bba6ea', 'chosen-fg': '#1d1830', accent: '#6a4fc4', focus: '#6a4fc4', danger: '#c23a4f', ok: '#23866a',
     'cel-key': '#8a6fd6', playhead: '#e0457f',
   }),
+
+  // Based on Monokai: lemon, candy pink, lime and sky blue.
+  make('gumdrop-night', 'Gumdrop Night', 'dark', 'Monokai after dark: olive-black with lemon, candy pink, lime and sky blue. Sweet and zingy.', {
+    bg: '#1e1f1c', panel: '#272822', 'panel-2': '#2f302a', raised: '#3e3d32', line: '#56554a',
+    text: '#f8f8f2', muted: '#cfcfc2', faint: '#b5b096', 'canvas-bg': '#1a1b17',
+    'chosen-bg': '#e6db74', 'chosen-fg': '#272822', accent: '#66d9ef', focus: '#e6db74', danger: '#f92672', ok: '#a6e22e',
+    'cel-key': '#ae81ff', playhead: '#f92672',
+  }, { peach: '#fd971f', rose: '#f92672', grape: '#ae81ff', sky: '#66d9ef', mint: '#a6e22e' }),
+
+  make('gumdrop-day', 'Gumdrop Day', 'light', 'Monokai in the sunshine: soft cream with tangerine, candy pink and grape.', {
+    bg: '#f2f1ea', panel: '#fdfdf8', 'panel-2': '#f4f3ea', raised: '#ffffff', line: '#dcdacb',
+    text: '#272822', muted: '#5a594d', faint: '#67655a', 'canvas-bg': '#e8e6da',
+    'chosen-bg': '#fd971f', 'chosen-fg': '#1a1b16', accent: '#1a7f97', focus: '#c4134f', danger: '#c4134f', ok: '#5a8a00',
+    'cel-key': '#8a5cf0', playhead: '#d61f63',
+  }, { peach: '#fd971f', rose: '#f92672', grape: '#ae81ff', sky: '#66d9ef', mint: '#a6e22e' }),
+
+  // Based on Darcula: charcoal, pumpkin and a warm lamp.
+  make('batwing', 'Batwing', 'dark', 'Based on Darcula: charcoal, cool grey words, pumpkin orange and a warm lamp glow.', {
+    bg: '#232323', panel: '#2b2b2b', 'panel-2': '#313335', raised: '#3c3f41', line: '#55595b',
+    text: '#d4dce4', muted: '#a9b7c6', faint: '#a0abb6', 'canvas-bg': '#1e1f22',
+    'chosen-bg': '#ffc66d', 'chosen-fg': '#2b2b2b', accent: '#e0893f', focus: '#ffc66d', danger: '#ff6b68', ok: '#8fb573',
+    'cel-key': '#9876aa', playhead: '#6897bb',
+  }, { peach: '#cc7832', grape: '#9876aa', sky: '#6897bb', mint: '#8fb573' }),
+
+  make('bat-nap', 'Bat Nap', 'light', 'Darcula\'s daytime twin: crisp white and grey, inky blue, plum and a warm lamp.', {
+    bg: '#f2f2f2', panel: '#ffffff', 'panel-2': '#f7f8fa', raised: '#ffffff', line: '#d1d1d1',
+    text: '#1e1f22', muted: '#4d5157', faint: '#6c707e', 'canvas-bg': '#e4e4e6',
+    'chosen-bg': '#ffc66d', 'chosen-fg': '#1e1f22', accent: '#0033b3', focus: '#3574f0', danger: '#c7222d', ok: '#067d17',
+    'cel-key': '#871094', playhead: '#d1365c',
+  }),
+
+  // Based on Catppuccin (Mocha and Latte), https://catppuccin.com
+  make('mocha-kitten', 'Mocha Kitten', 'dark', 'Catppuccin Mocha: soothing pastels on deep blue-grey, with a lilac chosen colour.', {
+    bg: '#181825', panel: '#1e1e2e', 'panel-2': '#252536', raised: '#313244', line: '#45475a',
+    text: '#cdd6f4', muted: '#bac2de', faint: '#a6adc8', 'canvas-bg': '#11111b',
+    'chosen-bg': '#cba6f7', 'chosen-fg': '#1e1e2e', accent: '#89b4fa', focus: '#f5c2e7', danger: '#f38ba8', ok: '#a6e3a1',
+    'cel-key': '#b4befe', playhead: '#fab387',
+  }, { peach: '#fab387', rose: '#f38ba8', grape: '#cba6f7', sky: '#89dceb', mint: '#94e2d5' }),
+
+  make('latte-kitten', 'Latte Kitten', 'light', 'Catppuccin Latte: milky pastels, cool grey-blue words and a lilac chosen colour.', {
+    bg: '#e6e9ef', panel: '#eff1f5', 'panel-2': '#e6e9ef', raised: '#f7f8fb', line: '#ccd0da',
+    text: '#41445c', muted: '#5c5f77', faint: '#5f6278', 'canvas-bg': '#dce0e8',
+    'chosen-bg': '#cba6f7', 'chosen-fg': '#1e1e2e', accent: '#1e66f5', focus: '#8839ef', danger: '#d20f39', ok: '#40a02b',
+    'cel-key': '#8839ef', playhead: '#e64553',
+  }, { peach: '#fe640b', rose: '#e64553', grape: '#8839ef', sky: '#04a5e5', mint: '#179299' }),
+
+  // Based on Gruvbox ("retro groove").
+  make('retro-groove-night', 'Retro Groove Night', 'dark', 'Based on Gruvbox: retro browns, warm cream words and earthy, groovy colours.', {
+    bg: '#1d2021', panel: '#282828', 'panel-2': '#32302f', raised: '#3c3836', line: '#5a524c',
+    text: '#fbf1c7', muted: '#d5c4a1', faint: '#bdae93', 'canvas-bg': '#1a1a1a',
+    'chosen-bg': '#fabd2f', 'chosen-fg': '#282828', accent: '#83a598', focus: '#fabd2f', danger: '#fb4934', ok: '#b8bb26',
+    'cel-key': '#d3869b', playhead: '#8ec07c',
+  }, { peach: '#fe8019', rose: '#fb4934', grape: '#d3869b', sky: '#83a598', mint: '#8ec07c' }),
+
+  make('retro-groove-day', 'Retro Groove Day', 'light', 'Gruvbox by day: old paper, dark-roast words and faded seventies colours.', {
+    bg: '#f2e5bc', panel: '#fbf1c7', 'panel-2': '#f2e5bc', raised: '#f9f5d7', line: '#d5c4a1',
+    text: '#282828', muted: '#504945', faint: '#665c54', 'canvas-bg': '#ebdbb2',
+    'chosen-bg': '#fabd2f', 'chosen-fg': '#282828', accent: '#076678', focus: '#af3a03', danger: '#9d0006', ok: '#79740e',
+    'cel-key': '#076678', playhead: '#b16286',
+  }, { peach: '#af3a03', rose: '#9d0006', grape: '#8f3f71', sky: '#076678', mint: '#427b58' }),
+
+  // Pride, trans flag and programmer socks: pink, blue and white stripes, a rainbow of little touches, paw prints.
+  make('puppy-socks', 'Puppy Socks', 'dark', 'Trans pink and blue, a rainbow of little touches, knee-high sock stripes and puppy paw prints round the page.', {
+    bg: '#1b1724', panel: '#231e2f', 'panel-2': '#2b2539', raised: '#342d45', line: '#4a4060',
+    text: '#fff5fa', muted: '#d9c9e3', faint: '#b3a6c4', 'canvas-bg': '#17131f',
+    'chosen-bg': '#f5a9b8', 'chosen-fg': '#1d1b26', accent: '#5bcefa', focus: '#5bcefa', danger: '#ff8a8a', ok: '#7fe0b0',
+    'cel-key': '#5bcefa', playhead: '#f5a9b8',
+  }, { peach: '#ffa552', rose: '#f5a9b8', grape: '#b18cff', sky: '#5bcefa', mint: '#7ee08f' }),
+
+  make('kitty-socks', 'Kitty Socks', 'light', 'Trans blue and pink on white, rainbow touches, knee-high sock stripes and kitty paw prints round the page.', {
+    bg: '#f3eef6', panel: '#ffffff', 'panel-2': '#f7f2fa', raised: '#ffffff', line: '#e2d5ea',
+    text: '#2a2233', muted: '#5c4f69', faint: '#6e6180', 'canvas-bg': '#eee4f2',
+    'chosen-bg': '#5bcefa', 'chosen-fg': '#0f1b24', accent: '#c2366e', focus: '#1f7fae', danger: '#c62f3f', ok: '#1f8f6a',
+    'cel-key': '#e05b8a', playhead: '#1f7fae',
+  }, { peach: '#ff8c3a', rose: '#f5a9b8', grape: '#9b6cf0', sky: '#5bcefa', mint: '#4fbf6a' }),
 ];
 
 /** Built-ins whose chosen colour comes from their own palette rather than gold. Text on it is still dark. */
-export const CHOSEN_FROM_PALETTE: ReadonlySet<string> = new Set(['glacier-grid', 'ice-camo', 'lilac-static', 'lavender-hum']);
+export const CHOSEN_FROM_PALETTE: ReadonlySet<string> = new Set([
+  'glacier-grid', 'ice-camo', 'lilac-static', 'lavender-hum', 'gumdrop-night', 'gumdrop-day', 'mocha-kitten', 'latte-kitten',
+  'puppy-socks', 'kitty-socks',
+]);
 
-export type Surround = 'camo' | 'seeds';
+export type Surround = 'camo' | 'seeds' | 'socks';
 
-/** Built-ins with a faint pattern in the canvas surround (camo print, strawberry seeds). Copies of them keep it. */
+/** Built-ins with a faint pattern in the canvas surround (camo print, strawberry seeds, sock stripes and paws). Copies keep it. */
 export const SURROUNDS: Readonly<Record<string, Surround>> = {
   'glacier-grid': 'camo',
   'ice-camo': 'camo',
   strawberry: 'seeds',
   'strawberry-night': 'seeds',
+  'puppy-socks': 'socks',
+  'kitty-socks': 'socks',
 };
 
 /** Which pattern, if any, a theme shows around the page. */
