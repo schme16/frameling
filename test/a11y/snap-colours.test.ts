@@ -52,12 +52,12 @@ describe('snap colours as theme tokens', () => {
     for (const t of BUILT_IN_THEMES) for (const n of SNAP_TOKENS) expect(t.tokens[n], `${t.id} ${n}`).toMatch(/^#[0-9a-f]{6}$/i);
     for (const n of SNAP_TOKENS) expect(ALL_TOKENS).toContain(n);
   });
-  it('start as the values canvas.css holds, for dark and light, in all 14 built-in themes', () => {
+  it('start as the values canvas.css holds, for dark and light, in all 24 built-in themes', () => {
     for (const n of SNAP_TOKENS) {
       expect(SNAP_DEFAULTS.dark[n].toLowerCase(), n).toBe(sets.dark[nameOf(n)].toLowerCase());
       expect(SNAP_DEFAULTS.light[n].toLowerCase(), n).toBe(sets.light[nameOf(n)].toLowerCase());
     }
-    expect(BUILT_IN_THEMES).toHaveLength(14);
+    expect(BUILT_IN_THEMES).toHaveLength(24);
     for (const t of BUILT_IN_THEMES) for (const n of SNAP_TOKENS) expect(t.tokens[n].toLowerCase(), `${t.id} ${n}`).toBe(SNAP_DEFAULTS[t.mode][n].toLowerCase());
   });
   it('raise no contrast warning in any built-in theme', () => {

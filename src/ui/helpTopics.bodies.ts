@@ -277,12 +277,17 @@ So you can have a pastel theme by day and a cosy dark one at night, without touc
 | **Midnight Sketchbook** | **Paper & Honey** | The classic Frameling look. |
 | **Moonlit Pond** | **Studio White** | Calm and plain. |
 | **Hot Cocoa** | **Strawberry Milk** | Warm and cosy, soft and pink. |
-| **Strawberry Night** | **Strawberry** | Berry red, cream and little yellow seeds. Quill's favourite. |
+| **Strawberry Night** | **Strawberry** | Berry red, cream and little yellow seeds scattered round the page. Quill's favourite. |
 | **Glacier Grid** | **Ice Camo** | Charcoal, ice and bright aqua, with a faint camo print around the page. |
 | **Lilac Static** | **Lavender Hum** | Soft lilac with a little pastel glow. |
+| **Gumdrop Night** | **Gumdrop Day** | Based on Monokai: lemon, candy pink, lime and sky blue. |
+| **Batwing** | **Bat Nap** | Based on Darcula: charcoal, pumpkin orange and a warm lamp. |
+| **Mocha Kitten** | **Latte Kitten** | Based on Catppuccin: soothing pastels with lilac. |
+| **Retro Groove Night** | **Retro Groove Day** | Based on Gruvbox: retro browns, cream and earthy colours. |
+| **Puppy Socks** | **Kitty Socks** | Trans pink and blue with rainbow touches, knee-high sock stripes and paw prints round the page. |
 | **Lantern Night** | **Sunbeam** | Extra contrast. |
 
-Chosen things (the tool, the tab, a switch that is on) are gold in most themes. The aqua and lilac themes use their own colour instead, still with dark words on it.
+Chosen things (the tool, the tab, a switch that is on) are gold in most themes. The aqua, lilac, Gumdrop, Kitten and Socks themes use their own colour instead, still with dark words on it.
 
 ## Easier to see
 

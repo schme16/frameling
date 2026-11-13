@@ -27,6 +27,11 @@ describe('built-in themes', () => {
     expect(new Set(BUILT_IN_THEMES.map((t) => t.id)).size).toBe(BUILT_IN_THEMES.length);
     expect(new Set(BUILT_IN_THEMES.map((t) => t.name)).size).toBe(BUILT_IN_THEMES.length);
     for (const id of ['midnight-sketchbook', 'paper-and-honey', 'moonlit-pond', 'studio-white', 'strawberry-milk']) expect(getBuiltIn(id)).toBeTruthy();
+    // Every pair the user asked for has a dark and a light side.
+    for (const [dark, light] of [['gumdrop-night', 'gumdrop-day'], ['batwing', 'bat-nap'], ['mocha-kitten', 'latte-kitten'], ['retro-groove-night', 'retro-groove-day'], ['puppy-socks', 'kitty-socks']]) {
+      expect(getBuiltIn(dark)?.mode, dark).toBe('dark');
+      expect(getBuiltIn(light)?.mode, light).toBe('light');
+    }
   });
 
   it('covers every colour token with a valid value', () => {
@@ -78,6 +83,8 @@ describe('built-in themes', () => {
     expect(surroundFor({ id: 'custom-1', basedOn: 'glacier-grid' })).toBe('camo');
     expect(surroundFor({ id: 'lavender-hum' })).toBeNull();
     expect(surroundFor({ id: 'strawberry' })).toBe('seeds');
+    expect(surroundFor({ id: 'kitty-socks' })).toBe('socks');
+    expect(surroundFor({ id: 'custom-2', basedOn: 'puppy-socks' })).toBe('socks');
     expect(surroundFor({ id: DEFAULT_DARK })).toBeNull();
   });
 
