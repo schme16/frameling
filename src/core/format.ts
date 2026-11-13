@@ -85,6 +85,12 @@ export interface Doc {
   artboards?: Artboard[];
   /** The id of the open artboard (missing = the first). */
   activeArtboard?: Id;
+  /**
+   * One layer stack for every artboard (frames on boards): `layers` is that stack, and each artboard keeps only what it
+   * has drawn on each layer, in `ArtboardContent.cels`. Missing = every artboard has layers of its own, as in old files.
+   * Never on a document with variations. See src/core/sharedLayers.ts.
+   */
+  sharedLayers?: true;
   /** How a pixel sprite is built (missing = worked out from the document, see src/pixel/way.ts). */
   sprite?: SpriteInfo;
   /** Data kept for features and plugins, by feature id. See `Ext`. */
@@ -218,7 +224,10 @@ export interface ArtboardContent {
   height: number;
   background: Color | null;
   length: number;
+  /** The artboard's own layers. Empty when the document shares one stack (`Doc.sharedLayers`): see `cels`. */
   layers: Layer[];
+  /** With shared layers: this artboard's cels on each layer of the document's stack, by layer id (missing = nothing drawn). */
+  cels?: Record<Id, Cel[]>;
   clips: Clip[];
   markers: Marker[];
   flow?: ClipFlow;

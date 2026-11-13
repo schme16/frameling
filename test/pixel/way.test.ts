@@ -3,6 +3,7 @@
 import { produce } from 'immer';
 import { describe, expect, it } from 'vitest';
 import { artboardsOf, contentOf } from '../../src/artboards/model';
+import { unshareLayers } from '../../src/artboards/shared';
 import type { Doc, PixelLayer } from '../../src/core/format';
 import { loadFile, saveFile } from '../../src/io/file';
 import { newDoc, newPixelDrawing } from '../../src/core/doc';
@@ -176,7 +177,8 @@ describe('timeline frames to boards, and back', () => {
   });
   it('layers are matched by name across boards', () => {
     // A result of produce may be frozen under test, so edit a copy.
-    const doc = structuredClone(change(anim(2), 'boards').next);
+    // Boards that each have a stack of their own (an older file), not the shared stack new ones start with.
+    const doc = structuredClone(produce(change(anim(2), 'boards').next, (d) => void unshareLayers(d as Doc)));
     const second = artboardsOf(doc)[1].content!;
     const extra = { ...second.layers[0], id: 'extra', name: 'Shadow', cels: [] } as PixelLayer;
     second.layers.push(extra);

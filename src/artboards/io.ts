@@ -4,7 +4,7 @@
  * in the zip beside the rest. Pure bytes in and out, like file.ts (which passes its readers in).
  */
 import type { Zippable } from 'fflate';
-import type { Artboard, ArtboardContent, ClipFlow, Doc, DocPalette, DrawingDiff, Guide, Layer } from '../core/format';
+import type { Artboard, ArtboardContent, Cel, ClipFlow, Doc, DocPalette, DrawingDiff, Guide, Layer } from '../core/format';
 import { packAudio, unpackAudio } from '../io/audio-file';
 import { readClip } from '../core/clipPlay';
 import { readOverrides, variationForSave } from './variationsIo';
@@ -27,6 +27,8 @@ export interface ArtboardReaders {
   readPalette?: (raw: unknown) => { palette?: DocPalette };
   /** The layers of the open artboard (the file's own), for reading what a variation of it adds. */
   top?: Layer[];
+  /** The file shares one layer stack between its artboards (`sharedLayers`): `top` is that stack. */
+  shared?: boolean;
 }
 
 const isObj = (v: unknown): v is Record<string, any> => typeof v === 'object' && v !== null && !Array.isArray(v);
@@ -91,14 +93,35 @@ export function readArtboards(raw: any, entries: Record<string, Uint8Array>, war
   return { artboards: out, activeArtboard: active };
 }
 
+/**
+ * An artboard's cels on a shared stack, checked by the same reader as any layer's cels: each goes through as the cels of
+ * a layer of the same id and kind, so a cel with a missing or wrong drawing is left out with the usual warning.
+ */
+function readCels(raw: unknown, stack: readonly Layer[], r: ArtboardReaders): Record<string, Cel[]> {
+  const out: Record<string, Cel[]> = {};
+  if (!isObj(raw)) return out;
+  for (const l of stack) {
+    const mine = raw[l.id];
+    if (!Array.isArray(mine) || !mine.length) continue;
+    const read = r.readLayers([{ id: l.id, kind: l.kind, cels: mine }])[0];
+    if (read.cels.length) out[l.id] = read.cels;
+  }
+  return out;
+}
+
 function readContent(c: unknown, entries: Record<string, Uint8Array>, warnings: string[], r: ArtboardReaders): ArtboardContent | null {
   if (!isObj(c) || !Array.isArray(c.layers)) return null;
   const width = num(c.width, 0);
   const height = num(c.height, 0);
   if (width < 1 || height < 1) return null;
   let layers: Layer[];
+  let cels: Record<string, Cel[]> | undefined;
   try {
-    layers = r.readLayers(c.layers);
+    // With a shared stack the layers are the file's own and the artboard holds only its cels on them.
+    if (r.shared) {
+      layers = [];
+      cels = readCels(c.cels, r.top ?? [], r);
+    } else layers = r.readLayers(c.layers);
   } catch {
     return null;
   }
@@ -109,6 +132,7 @@ function readContent(c: unknown, entries: Record<string, Uint8Array>, warnings: 
     background: typeof c.background === 'string' ? c.background : null,
     length: Math.max(1, Math.round(num(c.length, 1))),
     layers,
+    ...(cels ? { cels } : {}),
     clips,
     markers: Array.isArray(c.markers) ? c.markers.filter((x: any) => isObj(x) && typeof x.id === 'string') : [],
   };

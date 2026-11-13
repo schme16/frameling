@@ -42,6 +42,23 @@ module.exports = [
     ],
   },
   {
+    // Frames on boards with one set of layers: a layer added once is on every frame, and the Layers panel says so.
+    name: 'pixel-shared-layers',
+    prefs: { showTips: false },
+    steps: [
+      pixelWs,
+      wait(500),
+      js(`${A}.load('shared')`),
+      js(`${F}.showPanel('layers')`),
+      wait(900),
+      js(`${A}.addSparkles('Sparkle')`),
+      js(`${F}.run('artboards.fitAll')`),
+      away,
+      wait(1200),
+      { shot: '@' },
+    ],
+  },
+  {
     // The Palette with Paint and Back at the top, a right-click stroke of Back on the sprite.
     name: 'pixel-wells',
     prefs: { showTips: false },

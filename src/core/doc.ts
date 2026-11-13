@@ -192,7 +192,12 @@ export function pruneDrawings(doc: Doc): void {
   for (const a0 of peek(doc.artboards) ?? []) {
     const a = peek(a0);
     // Artboards that aren't open keep their layers aside.
-    if (a.content) useLayers(peek(a.content).layers);
+    if (a.content) {
+      const content = peek(a.content);
+      useLayers(content.layers);
+      // Shared layers: what this artboard drew on each layer of the document's stack.
+      for (const cels of Object.values(peek(content.cels) ?? {})) for (const c of peek(cels)) used.add(peek(c).drawingId);
+    }
     // A variation that is open has its added keys' drawings only in its overrides (its stage points at its own copies).
     const ls = peek(peek(a.overrides)?.layers);
     if (!ls) continue;

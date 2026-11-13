@@ -26,7 +26,7 @@ With Quill turned off in Preferences, the New sheet shows the same four as plain
 Click the chip, or run **Change how this sprite is built...** from the Pixel menu. Each way says what it would do, and why one is not possible. It is one undo step.
 
 - **Timeline frames to boards**: every frame becomes its own board, side by side. Clips are not kept on boards.
-- **Boards to timeline frames**: every board becomes frames on one timeline, in order. Layers are matched by name, and the boards must all be the same size. If one is not, you are told which.
+- **Boards to timeline frames**: every board becomes frames on one timeline, in order. Layers are matched by name (frames that share one set of layers already match), and the boards must all be the same size. If one is not, you are told which.
 - **Frames on boards and a cast on a sheet** swap by changing what the boards are called.
 - **Make it move** turns a one-picture sprite into an animation with four frames and a first clip.
 
@@ -35,6 +35,27 @@ The way is saved in the file. Older files and files from other programs are work
 ## Quill notices
 
 Add a second frame to a one-picture sprite and the timeline comes back. Add a second board and Quill asks once whether they are frames of one sprite or different sprites, then remembers. In Export, Quill says in one sentence how the sheet is built, with a link to change it.`,
+  'pixel-shared-layers': `In **Frames on boards** every frame is a board, and all the boards use **one set of layers**. Add a layer called Lines once and every frame has a Lines layer. Each frame keeps its own pixels on it, so frame 7's lines are not frame 8's. This is how Aseprite works: layers go one way, frames the other.
+
+**Add, rename, hide, lock, reorder:** do it on any frame, in the [Layers](help:timeline-layers) panel or on the timeline. Every frame follows, because there is only one stack. The note at the top of the Layers panel says **on every frame** so you know.
+
+**Delete a layer:** it goes from every frame, with what was drawn on it. **Duplicate** copies it on every frame too, with its own copies of the pictures. Both are one undo step.
+
+**New boards:** a new board starts with the same layers and nothing drawn on them.
+
+## A file that already has layers per board
+
+Frameling never rewrites a file on its own. When you open frames on boards where each board has its own layers, Frameling asks once whether to put them on one stack, and remembers your answer (change it any time in Preferences > Behaviour). To do it later, run **Put the frames on one stack of layers** from the Pixel menu.
+
+Layers with the same kind and name join up, so 23 frames that each have Lines end up with one Lines. A layer only some frames have is added to the stack, and the others are empty there. If two boards disagree about a setting, the open board's wins. One undo step puts it back, and **Give each board its own layers** does the same on purpose.
+
+## Good to know
+
+- **Sprites on a sheet** keep a stack per board, because each board is a different sprite.
+- **Variations** (linked copies) need layers of their own, so making one is off while the frames share a stack. Give each board its own layers first.
+- Going from boards to timeline frames matches layers by their place in the one stack, so nothing is merged by name.
+
+See also [The four ways to build a sprite](help:pixel-ways) and [Artboards](help:artboards).`,
   'pixel-wells': `In the [Pixel workspace](help:pixel-workspace) the colour boxes are called **Paint** (the square in front) and **Back** (behind it). Every pixel tool paints with Paint, and nothing quietly switches to a different colour when you change tool: pick green and the bucket pours green.
 
 - **Click a swatch** in the [Palette](help:palette) to set Paint. Click a big square to pick any colour for it.

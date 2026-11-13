@@ -379,6 +379,8 @@ export function deleteLayer(doc: Doc, layerId: Id): { next: Id } | null {
   const i = doc.layers.findIndex((l) => l.id === layerId);
   if (i < 0 || doc.layers.length <= 1) return null;
   doc.layers.splice(i, 1);
+  // One stack for every board: the layer goes from all of them, with what they drew on it.
+  if (sharedBoards(doc)) for (const a of doc.artboards!) if (a.content?.cels) delete a.content.cels[layerId];
   pruneDrawings(doc);
   return { next: doc.layers[Math.min(i, doc.layers.length - 1)].id };
 }
@@ -404,8 +406,29 @@ export function duplicateLayer(doc: Doc, layerId: Id): Id | null {
     c.drawingId = to;
   }
   doc.layers.splice(i + 1, 0, copy);
+  // One stack for every board: each board gets its own copy of what it drew on the layer, drawings copied too.
+  if (sharedBoards(doc)) {
+    for (const a of doc.artboards!) {
+      const cels = a.content?.cels?.[layerId];
+      if (!cels?.length) continue;
+      const mine = new Map<Id, Id>();
+      a.content!.cels![copy.id] = plain(cels).map((c: Cel) => {
+        let to = mine.get(c.drawingId);
+        if (!to && doc.drawings[c.drawingId]) {
+          const d = cloneDrawing(doc.drawings[c.drawingId]);
+          doc.drawings[d.id] = d;
+          to = d.id;
+          mine.set(c.drawingId, to);
+        }
+        return { ...c, id: uid('c'), drawingId: to ?? c.drawingId };
+      });
+    }
+  }
   return copy.id;
 }
+
+/** True when the boards share one layer stack and the stack on show is the document's (not a symbol's). */
+const sharedBoards = (doc: Doc): boolean => !!doc.sharedLayers && !doc.editing?.length && !!doc.artboards?.length;
 
 export function renameLayer(doc: Doc, layerId: Id, name: string): boolean {
   const l = findLayer(doc, layerId);

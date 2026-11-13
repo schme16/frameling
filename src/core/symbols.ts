@@ -8,11 +8,12 @@
  * - Posing: `poseAt` is what a layer shows at a frame once instances know which of their own frames to show and
  *   tweens have moved them. Plain drawings come back as themselves, so the canvas's bitmap cache keeps working.
  */
-import type { Cel, Doc, Drawing, EditFrame, Id, InstanceShape, Layer, MotionPath, Shape, SymbolDef, Transform2D, Tween, VectorDrawing } from './format';
+import type { Artboard, Cel, Doc, Drawing, EditFrame, Id, InstanceShape, Layer, MotionPath, Shape, SymbolDef, Transform2D, Tween, VectorDrawing } from './format';
 import { folderChain } from './folders';
+import { layersWithCels } from './sharedLayers';
 import { tweenEase } from './ease';
 import { locate, tableOf } from './motionPath';
-import { celAt, uid } from './doc';
+import { celAt, peek, uid } from './doc';
 import { kindOf, type PoseEnv } from './shapeKinds';
 import { morphShapes } from './shape-tween';
 import { bindLayer, type PosedMesh } from './layerKinds';
@@ -112,8 +113,18 @@ export function allLayerLists(doc: Doc): Layer[][] {
   const out: Layer[][] = [doc.layers];
   for (const f of doc.editing ?? []) out.push(f.layers);
   for (const s of Object.values(doc.symbols ?? {})) out.push(s.layers);
-  for (const a of doc.artboards ?? []) if (a.content) out.push(a.content.layers);
+  for (const a of doc.artboards ?? []) if (a.content) out.push(boardLayers(doc, a));
   return out;
+}
+
+/**
+ * The layers an artboard has, whether it is open or not (read only). The open one's are the document's own. With shared
+ * layers a closed artboard's are the document's stack holding that artboard's cels.
+ */
+export function boardLayers(doc: Doc, a: Artboard): Layer[] {
+  const c = a.content;
+  if (!c) return doc.layers;
+  return c.cels ? layersWithCels(peek(rootDoc(doc).layers), c.cels) : c.layers;
 }
 
 // ---------------------------------------------------------------- editing in place

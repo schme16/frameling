@@ -529,7 +529,10 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
     if (points.length) doc.perspective = { points };
   }
   if (isObj(raw.sprite) && ['picture', 'animation', 'boards', 'sheet'].includes(raw.sprite.way)) doc.sprite = { way: raw.sprite.way };
-  Object.assign(doc, readArtboards(raw, entries, warnings, { readLayers, readFlow, readGuides, readPalette, top: layers }));
+  // One layer stack for every artboard (frames on boards), never together with variations.
+  const shared = raw.sharedLayers === true && Array.isArray(raw.artboards) && raw.artboards.length > 0 && !raw.artboards.some((a: any) => isObj(a) && typeof a.variationOf === 'string' && a.variationOf);
+  Object.assign(doc, readArtboards(raw, entries, warnings, { readLayers, readFlow, readGuides, readPalette, top: layers, ...(shared ? { shared: true } : {}) }));
+  if (shared) doc.sharedLayers = true;
   resolveAfterLoad(doc, warnings);
   upgradeLineage(doc);
   return typeof raw.variationOpen === 'string' ? switchOpenVariation(doc, raw.variationOpen) : doc;

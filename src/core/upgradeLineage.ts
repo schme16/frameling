@@ -6,6 +6,7 @@
  */
 import type { Doc, Id, Layer, VectorDrawing } from './format';
 import { shapeLineage } from './followSelection';
+import { boardLayers } from './symbols';
 
 /** Links the keys of one layer, in time order. `done` holds drawings already linked (a drawing is only changed once). */
 function upgradeLayer(doc: Doc, layer: Layer, done: Set<Id>, moved: Map<Id, Id>): void {
@@ -44,7 +45,7 @@ export function upgradeLineage(doc: Doc): void {
   const each = (layers: Layer[]) => layers.forEach((l) => upgradeLayer(doc, l, done, moved));
   each(doc.layers);
   for (const s of Object.values(doc.symbols ?? {})) each(s.layers);
-  for (const a of doc.artboards ?? []) if (a.content) each(a.content.layers);
+  for (const a of doc.artboards ?? []) if (a.content) each(boardLayers(doc, a));
   // A key that had lineage of its own pointed at ids that now belong to an older line: follow them there.
   if (moved.size) {
     for (const d of Object.values(doc.drawings)) {

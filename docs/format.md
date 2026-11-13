@@ -86,6 +86,10 @@ Repaired, with a warning:
   made in the variation go through the ordinary layer reader (so cels at missing drawings are dropped too).
 - An artboard that can't be read is dropped. If no artboard is the open one, the document's own content gets a new
   artboard (`artboard-open`) at 0, 0, so nothing is lost.
+- `sharedLayers: true` (optional, never in older files): one layer stack for every artboard. A set-aside artboard then
+  holds `content.cels` (layer id to cels) and `content.layers: []`; its cels go through the ordinary layer reader as the cels
+  of the layer with that id, so cels at missing drawings are dropped. The flag is ignored when an
+  artboard is a variation (the app never writes both). See docs/artboards.md.
 
 Repaired quietly (defaults filled, values clamped):
 

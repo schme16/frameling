@@ -9,6 +9,7 @@ import { lookingThrough } from '../camera/ops';
 import { tileModeOn } from '../tiles/state';
 import { activeArtboard, artboardDoc, artboardsOf, hasArtboards, sizeOf } from './model';
 import { rememberedFrame } from './ops';
+import { stackLook } from '../core/sharedLayers';
 import { readableOn } from './labelColor';
 
 /** Bitmaps of artboards that aren't open, by artboard id: they only change when that artboard does. */
@@ -61,7 +62,7 @@ export function paintUnderlay(g: CanvasRenderingContext2D, doc: Doc, view: { zoo
     g.fillRect(x, y, rw, rh);
     g.restore();
     if (!ad.background) paintChecker(g, x, y, rw, rh, dpr);
-    const key = [a.content, frame, k, doc.symbols, doc.palette, doc.tileset];
+    const key = [a.content, frame, k, doc.symbols, doc.palette, doc.tileset, doc.folders, doc.sharedLayers ? stackLook(doc.layers) : null];
     let hit = bitmaps.get(a.id);
     if (rw <= MAX_BITMAP && rh <= MAX_BITMAP) {
       if (!hit || !same(hit.key, key) || hit.canvas.width !== rw || hit.canvas.height !== rh) {

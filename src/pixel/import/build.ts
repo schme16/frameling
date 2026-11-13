@@ -4,7 +4,7 @@
 import type { Draft } from 'immer';
 import { MAX_FRAMES, planTiming } from '../../aseprite/convert';
 import { newDoc, newPixelLayer, uid } from '../../core/doc';
-import type { Clip, Doc, DocPalette, PixelDrawing, PixelLayer, Slice, SliceKey, SpriteWay } from '../../core/format';
+import type { Clip, Doc, DocPalette, Id, PixelDrawing, PixelLayer, Slice, SliceKey, SpriteWay } from '../../core/format';
 import { addArtboard, artboardsOf, ensureArtboards } from '../../artboards/model';
 import { trimPixels } from '../../core/pixelBounds';
 import type { RawImage } from '../../io/png';
@@ -314,6 +314,14 @@ function boardContent(doc: Doc, s: Sprite, ids: number[], label: string, withCli
   return { content: { width: s.width, height: s.height, background: null, length, layers: [layer], clips, markers: [] }, length };
 }
 
+type BoardContent = ReturnType<typeof boardContent>['content'];
+
+/** A board's content on a shared stack: the picture it made goes on the stack's layer `into`, and it holds no layers. */
+function onStack(c: BoardContent, into: Id): BoardContent {
+  const { layers, ...rest } = c;
+  return { ...rest, layers: [], cels: { [into]: layers[0].cels } };
+}
+
 /** A new document: the sprite in one of the four ways. */
 export function spriteDoc(s: Sprite, o: BuildOptions): { doc: Doc; notes: string[] } {
   const notes = [...s.notes];
@@ -338,11 +346,13 @@ export function spriteDoc(s: Sprite, o: BuildOptions): { doc: Doc; notes: string
     // Boards play one frame each, so the frame rate is the one that fits the delays best.
     const first = boardContent(doc, s, [0], 'Frame 1', false, timing.fps);
     doc.layers = first.content.layers;
+    // Frames on boards share one stack of layers: each board holds only its own picture on them.
+    doc.sharedLayers = true;
     list[0].name = 'Frame 1';
     for (let i = 1; i < s.frames.length; i++) {
       const id = addArtboard(doc, { name: `Frame ${i + 1}`, width: s.width, height: s.height, length: 1, background: null });
       const a = artboardsOf(doc).find((b) => b.id === id)!;
-      a.content = boardContent(doc, s, [i], `Frame ${i + 1}`, false, timing.fps).content;
+      a.content = onStack(boardContent(doc, s, [i], `Frame ${i + 1}`, false, timing.fps).content, doc.layers[0].id);
     }
     doc.length = 1;
     doc.clips = [];
@@ -386,10 +396,20 @@ export function spriteInto(d: Draft<Doc>, s: Sprite, o: BuildOptions, from = 0):
   if (way === 'boards' || way === 'sheet') {
     const groups = way === 'boards' ? s.frames.map((_, i) => ({ name: `${o.name} ${i + 1}`, frames: [i] })) : o.rowsAsSprites ? s.groups.map((g) => ({ ...g, name: `${o.name} ${g.name}` })) : s.frames.map((f, i) => ({ name: f.name ?? `${o.name} ${i + 1}`, frames: [i] }));
     ensureArtboards(doc);
+    // Boards of a drawing that shares one stack of layers draw on it: on its pixel layer of the same size, or a new one.
+    let into: Id | null = null;
+    if (doc.sharedLayers) {
+      let target = doc.layers.find((l) => l.kind === 'pixel' && l.pixelSize === 1);
+      if (!target) {
+        target = newPixelLayer('Imported', 1);
+        doc.layers.push(target);
+      }
+      into = target.id;
+    }
     for (const g of groups) {
       const made = boardContent(doc, s, g.frames, g.name, way === 'sheet', doc.fps);
       const id = addArtboard(doc, { name: nameFor(g.name), width: s.width, height: s.height, length: made.length, background: null });
-      artboardsOf(doc).find((b) => b.id === id)!.content = made.content;
+      artboardsOf(doc).find((b) => b.id === id)!.content = into ? onStack(made.content, into) : made.content;
     }
     if (s.slices.length) notes.push('Slices were not added to the new boards.');
     return notes;
