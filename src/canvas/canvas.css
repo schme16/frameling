@@ -43,12 +43,16 @@
   -webkit-mask-position: 70px 40px;
   mask-position: 70px 40px;
 }
-/* The strawberry themes: yellow seeds, each turned its own way. Faint on the dark themes. On the light ones they keep
-   more of their yellow and get a hair-thin outline, because yellow on cream all but disappears without one. */
+/* The strawberry themes: yellow seeds, each turned its own way. The colour of a seed is mixed in two goes: --seed-ink
+   is the seed itself, then each layer sets how much of it shows through the page colour. On the dark themes the ink is
+   mostly the cream text colour, so the seeds read as pale little flecks instead of going brown against the berry. On
+   the light ones the ink is the yellow, deepened with a touch of the berry accent and laid on nearly solid, with a
+   hair-thin outline, because plain yellow on cream all but disappears. */
 :root[data-surround='seeds'] .cv-surround {
-  --seed-a: color-mix(in srgb, var(--chosen-bg) 30%, var(--canvas-bg));
-  --seed-b: color-mix(in srgb, var(--chosen-bg) 22%, var(--canvas-bg));
-  --seed-edge: color-mix(in srgb, var(--accent) 30%, transparent);
+  --seed-ink: color-mix(in srgb, var(--chosen-bg) 25%, var(--text));
+  --seed-a: color-mix(in srgb, var(--seed-ink) 42%, var(--canvas-bg));
+  --seed-b: color-mix(in srgb, var(--seed-ink) 32%, var(--canvas-bg));
+  --seed-edge: color-mix(in srgb, var(--accent) 38%, transparent);
   filter: var(--seed-outline, none);
 }
 :root[data-surround='seeds'] .cv-surround::before {
@@ -68,15 +72,17 @@
    with the mode on System, once for light picked outright. */
 @media (prefers-color-scheme: light) {
   :root:not([data-theme='dark'])[data-surround='seeds'] .cv-surround {
-    --seed-a: color-mix(in srgb, var(--chosen-bg) 70%, var(--canvas-bg));
-    --seed-b: color-mix(in srgb, var(--chosen-bg) 55%, var(--canvas-bg));
-    --seed-outline: drop-shadow(0 0 0.6px var(--seed-edge)) drop-shadow(0 0 0.6px var(--seed-edge));
+    --seed-ink: color-mix(in srgb, var(--chosen-bg) 78%, var(--accent));
+    --seed-a: color-mix(in srgb, var(--seed-ink) 96%, var(--canvas-bg));
+    --seed-b: color-mix(in srgb, var(--seed-ink) 82%, var(--canvas-bg));
+    --seed-outline: drop-shadow(0 0 0.7px var(--seed-edge)) drop-shadow(0 0 0.7px var(--seed-edge));
   }
 }
 :root[data-theme='light'][data-surround='seeds'] .cv-surround {
-  --seed-a: color-mix(in srgb, var(--chosen-bg) 70%, var(--canvas-bg));
-  --seed-b: color-mix(in srgb, var(--chosen-bg) 55%, var(--canvas-bg));
-  --seed-outline: drop-shadow(0 0 0.6px var(--seed-edge)) drop-shadow(0 0 0.6px var(--seed-edge));
+  --seed-ink: color-mix(in srgb, var(--chosen-bg) 78%, var(--accent));
+  --seed-a: color-mix(in srgb, var(--seed-ink) 96%, var(--canvas-bg));
+  --seed-b: color-mix(in srgb, var(--seed-ink) 82%, var(--canvas-bg));
+  --seed-outline: drop-shadow(0 0 0.7px var(--seed-edge)) drop-shadow(0 0 0.7px var(--seed-edge));
 }
 /* The sock themes: soft knee-high-sock stripes in pink, white and blue, with paw prints wandering over them. */
 :root[data-surround='socks'] .cv-surround {

@@ -103,15 +103,21 @@ describe('built-in themes', () => {
     expect(root().dataset.surround).toBeUndefined();
   });
 
-  it('seeds are fainter on dark than on light, and only light themes outline them', () => {
+  it('seeds are fainter and paler on dark than on light, and only light themes outline them', () => {
     const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../../src/canvas/canvas.css'), 'utf8');
-    const strengths = (block: string) => [...block.matchAll(/--seed-[ab]: color-mix\(in srgb, var\(--chosen-bg\) (\d+)%/g)].map((m) => Number(m[1]));
+    const strengths = (block: string) => [...block.matchAll(/--seed-[ab]: color-mix\(in srgb, var\(--seed-ink\) (\d+)%/g)].map((m) => Number(m[1]));
+    const yellow = (block: string) => Number(/--seed-ink: color-mix\(in srgb, var\(--chosen-bg\) (\d+)%/.exec(block)?.[1] ?? NaN);
     const i = css.indexOf("[data-surround='seeds'] .cv-surround {");
-    const dark = strengths(css.slice(i, css.indexOf('}', i)));
+    const darkBlock = css.slice(i, css.indexOf('}', i));
+    const dark = strengths(darkBlock);
     const j = css.indexOf(":root[data-theme='light'][data-surround='seeds'] .cv-surround {");
     const light = css.slice(j, css.indexOf('}', j));
     expect(dark).toHaveLength(2);
     for (const [k, v] of strengths(light).entries()) expect(v).toBeGreaterThan(dark[k]!);
+    // Dark seeds are lifted towards the cream text colour, so they don't go brown on the berry; light ones stay yellow.
+    expect(darkBlock).toContain('var(--text)');
+    expect(yellow(darkBlock)).toBeLessThan(50);
+    expect(yellow(light)).toBeGreaterThan(50);
     expect(light).toContain('--seed-outline: drop-shadow(');
     // The outline sits on .cv-surround itself: on one element a filter runs before the mask and would be cut away.
     expect(css).toContain('filter: var(--seed-outline, none);');
