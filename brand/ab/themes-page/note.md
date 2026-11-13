@@ -11,3 +11,6 @@
   two themes rather than colour blocks.
 - **line-card-dark / line-card-light**: the join is drawn as a black ink line, 3 px, over both halves, so the
   squiggle reads as one pen stroke rather than just where two pictures meet.
+- **wavy-card-dark / wavy-card-light / wavy-zoom-dark**: three bends instead of two, and each half is now clipped to
+  its own side of the wave, so the line really is where one theme stops and the other starts. The zoom shows the cut
+  close up: the paper is white in both themes, so it reads as continuous where the wave crosses the drawing.
