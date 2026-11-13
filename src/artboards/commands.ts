@@ -9,7 +9,7 @@ import { activeArtboard, activeId, artboardsOf, hasArtboards } from './model';
 import { familyOf, isVariation, sourceOf } from './variations';
 import { arrangeAll, deleteArtboardById, duplicateArtboardById, fitAllArtboards, goToArtboard, newArtboard, zoomToArtboard } from './ops';
 
-registerPanel({ id: 'artboards', title: 'Artboards', icon: 'artboard', component: lazyPanel(() => import('./ArtboardsPanel').then((m) => m.ArtboardsPanel)), zone: 'right', order: 39, help: 'artboards' });
+registerPanel({ id: 'artboards', title: 'Artboards', icon: 'artboard', component: lazyPanel(() => import('./ArtboardsPanel').then((m) => m.ArtboardsPanel)), zone: 'right', order: 40, help: 'artboards' });
 
 const top = (s: State) => !s.doc.editing?.length && !store().nestedTag();
 const many = (s: State) => top(s) && hasArtboards(s.doc);

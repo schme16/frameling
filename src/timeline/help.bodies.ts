@@ -184,6 +184,12 @@ Want to trace a particular frame, not just the last one? Put it on the [light ta
 
 You can mix both in one animation.
 
+## Where the list is
+
+Layers show in two places, and they are the same list: the **Layers** panel in the right rail, and down the left
+side of the timeline, where each row lines up with that layer's keys. Use whichever is closer to what you are
+doing. Anything you change in one shows in the other at once.
+
 ## The layer list
 
 - **Click** a layer to draw on it.

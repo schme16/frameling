@@ -14,7 +14,7 @@ import { moveNode } from '../effects/ops';
 import type { Drop, Node } from '../effects/edit';
 import { rowKey } from '../effects/rowKeys';
 import { LAYER_LABELS, type LayerLabel } from '../core/format';
-import { CLEAN_ROW_H, type LayoutRow } from './layout';
+import { CLEAN_ROW_H, type Layout, type LayoutRow } from './layout';
 import { useLayout } from './view';
 import { isSolo, LABEL_WORDS, setLayerLabel, toggleSolo } from './layerExtras';
 import { layerColorClass } from './Detail';
@@ -24,11 +24,11 @@ import type { Track } from './tracks';
 export const ROW_H = CLEAN_ROW_H;
 
 /** The buttons above the layer list: add (vector, pixel), duplicate, delete. */
-export function LayerTools() {
+export function LayerTools({ inPanel = false }: { inPanel?: boolean } = {}) {
   const count = useStore((s) => s.doc.layers.length);
   return (
-    <div className="tl-layer-tools" role="toolbar" aria-label="Layers">
-      <span className="tl-layer-tools-title">Layers</span>
+    <div className={`tl-layer-tools${inPanel ? ' in-panel' : ''}`} role="toolbar" aria-label="Layers">
+      {inPanel ? null : <span className="tl-layer-tools-title">Layers</span>}
       <button type="button" className="tl-btn" title={tip('layers.addVector', 'Add a vector layer: smooth drawing you can resize and edit')} aria-label="Add vector layer" onClick={() => runCmd('layers.addVector')}>
         <Icon name="vector" size={15} />
         <span className="tl-btn-text">Vector</span>
@@ -243,10 +243,14 @@ interface DragState {
 }
 const NO_DRAG: DragState = { node: null, over: null, where: 'above' };
 
-/** The layer list, top layer first. */
-export function LayerList() {
+/**
+ * The layer list, top layer first. The timeline lays its rows out to line up with the keys; the Layers panel passes
+ * its own even-height layout instead (see LayersPanel).
+ */
+export function LayerList({ layout: given }: { layout?: Layout } = {}) {
   const layers = useStore((s) => s.doc.layers);
-  const layout = useLayout();
+  const own = useLayout();
+  const layout = given ?? own;
   const detailed = layout.style === 'detailed';
   const activeId = useStore((s) => s.ui.activeLayerId) ?? layers[layers.length - 1]?.id;
   const editing = useTl((t) => (t.editing?.kind === 'layer' ? t.editing.id : null));

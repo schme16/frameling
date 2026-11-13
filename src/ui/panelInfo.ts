@@ -122,6 +122,11 @@ export const PANEL_INFO: Record<string, PanelInfo> = {
     group: 'make',
     keywords: ['symbols', 'assets', 'reuse'],
   },
+  layers: {
+    blurb: 'The sheets your drawing is stacked from: add, rename, reorder, hide and lock them. The same list the timeline shows.',
+    group: 'make',
+    keywords: ['layer', 'layers', 'vector', 'pixel', 'hide', 'lock', 'reorder', 'folder', 'stack'],
+  },
   artboards: {
     blurb: 'Several canvases in one file: a sprite each, or a shot each, side by side.',
     group: 'make',

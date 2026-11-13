@@ -40,7 +40,7 @@ export const MENUS: MenuDef[] = [
   {
     label: 'Draw',
     categories: ['Draw', 'Drawing', 'Tools', 'Select', 'Selection', 'Shape', 'Shapes', 'Geometry', 'Layers', 'Arrange'],
-    items: ['group:tools', '-', 'select.flipH', 'select.flipV', '-', 'arrange.front', 'arrange.forward', 'arrange.backward', 'arrange.back', '-', 'layers.addVector', 'layers.addPixel', 'layers.duplicate', 'layers.delete', '-', 'layers.up', 'layers.down', 'layers.toggleVisible', 'layers.toggleLocked'],
+    items: ['group:tools', '-', 'select.flipH', 'select.flipV', '-', 'arrange.front', 'arrange.forward', 'arrange.backward', 'arrange.back', '-', 'layers.addVector', 'layers.addPixel', 'layers.duplicate', 'layers.delete', '-', 'layers.up', 'layers.down', 'layers.toggleVisible', 'layers.toggleLocked', '-', 'view.panel.layers'],
   },
   {
     label: 'Pixel',

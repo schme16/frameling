@@ -1129,3 +1129,26 @@
   gap: 6px;
   color: var(--text);
 }
+
+/* ---------------------------------------------------------------- the Layers panel (src/timeline/LayersPanel.tsx) */
+
+.lp-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+.lp-panel .tl-layer-tools.in-panel {
+  flex: none;
+  height: auto;
+  border-bottom: 1px solid var(--line);
+}
+.lp-list {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+/* In the panel the rows fill the width, with no timeline column to keep to. */
+.lp-list .tl-layers {
+  width: 100%;
+}
