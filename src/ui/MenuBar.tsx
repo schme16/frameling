@@ -51,6 +51,26 @@ export function MenuBar() {
     if (sub === null) subBox.current = null;
   }, [sub]);
 
+  // Escape closes an open menu wherever the keyboard happens to be, and never reaches the canvas behind it (where it
+  // would drop the selection). A submenu goes first, so Escape walks back out one level at a time.
+  useEffect(() => {
+    if (open === null) return;
+    const key = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || e.defaultPrevented) return;
+      e.preventDefault();
+      e.stopPropagation();
+      if (subNow.current !== null) {
+        stopPend();
+        setSub(null);
+        return;
+      }
+      setOpen(null);
+      bar.current?.querySelectorAll<HTMLElement>('[data-top]')[open]?.focus();
+    };
+    window.addEventListener('keydown', key, true);
+    return () => window.removeEventListener('keydown', key, true);
+  }, [open]);
+
   useEffect(() => {
     if (open === null) return;
     const away = (e: PointerEvent) => {
