@@ -1,13 +1,16 @@
 // The Polygon way of picking: the mode itself, and the words that go with it.
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_SELECT_SETTINGS, type SelectMode } from '../src/select/settings';
+import { modeOfTool, WAYS, type SelectMode } from '../src/select/ways';
 import { polygonMask, maskHas } from '../src/select/mask';
 
 describe('the polygon select mode', () => {
-  it('is one of the ways to pick, and not the one you start with', () => {
-    const modes: SelectMode[] = ['box', 'lasso', 'polygon', 'wand'];
+  it('is a tool of its own, on both kinds of layer', () => {
+    const modes: SelectMode[] = WAYS.map((w) => w.mode);
     expect(modes).toContain('polygon');
-    expect(DEFAULT_SELECT_SETTINGS.mode).toBe('box');
+    expect(modeOfTool('select-polygon')).toBe('polygon');
+    expect(modeOfTool('pixel-select-polygon')).toBe('polygon');
+    // Anything else is the box, which is what Select has always meant.
+    expect(modeOfTool('pencil')).toBe('box');
   });
 
   it('picks the pixels inside the corners you clicked', () => {

@@ -10,7 +10,8 @@ const PLACES: Record<string, string[]> = {
   draw: ['pencil', 'brush', 'eraser', 'fill', 'tile-brush', 'tile-eraser', 'tile-fill'],
   extras: ['shade', 'dither', 'gradient', 'eyedropper', 'tile-picker', 'spray'],
   shapes: ['line', 'rect', 'ellipse', 'polygon', 'star', 'tile-rect', 'text'],
-  select: ['select', 'pixel-select', 'points', 'pen', 'slice'],
+  // Each way of picking is its own tool, vector and pixel side by side at the same place in the group.
+  select: ['select', 'pixel-select', 'select-lasso', 'pixel-select-lasso', 'select-polygon', 'pixel-select-polygon', 'pixel-select-wand', 'points', 'pen', 'slice'],
   rig: ['bone', 'pose', 'weights', 'motion-path', 'shape-hints'],
   view: ['hand', 'zoom', 'camera', 'artboard'],
 };

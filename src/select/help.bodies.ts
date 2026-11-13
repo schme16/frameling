@@ -1,13 +1,15 @@
 // The words of the help topics in help.ts, kept apart so they load only when Help is opened (see src/core/helpBodies.ts).
 export const bodies: Record<string, string> = {
-  'pixel-select': `Press **V** on a pixel layer, then choose how to pick in the tool options:
+  'pixel-select': `Each way of picking is its own tool in the toolbar, so you can see them all and reach any of them in one press:
 
-- **Box**: drag a rectangle (a *marquee*).
-- **Lasso**: draw round what you want. Hold **Alt** as you let go and each **Alt+click** adds a straight side; click without Alt (or on the first point) to finish.
-- **Polygon**: click each corner, one at a time, and click the first corner again to close it. **Escape** gives up on it. Good for anything with straight edges, where a freehand lasso wobbles.
-- **Magic wand**: click a colour to pick it. **Colour match** lets close colours in too, and turn off **Only touching pixels** to pick that colour everywhere. Shortcut: **W**.
+- **Box** (**V**): drag a rectangle (a *marquee*).
+- **Lasso** (**Shift+L**): draw round what you want. Hold **Alt** as you let go and each **Alt+click** adds a straight side; click without Alt (or on the first point) to finish.
+- **Polygon** (**Shift+G**): click each corner, one at a time, and click the first corner again to close it. **Escape** gives up on it. Good for anything with straight edges, where a freehand lasso wobbles.
+- **Magic wand** (**W**): click a colour to pick it. **Colour match** lets close colours in too, and turn off **Only touching pixels** to pick that colour everywhere. Shortcut: **W**.
 
 The selected part gets a crawling dashed edge (*marching ants*).
+
+They all share one selection, so you can start a box, then switch to the lasso and add to it.
 
 **Adding and taking away.** Hold **Shift** to add to the selection, **Alt** to take away (start outside the selection), both to keep only the overlap. Or set **Each new pick** in the options.
 
@@ -26,7 +28,7 @@ The selected part gets a crawling dashed edge (*marching ants*).
 - **Reduce to palette** changes only the selected pixels.
 
 **Ctrl+A** selects everything, **Ctrl+Shift+I** inverts (selects everything else), **Escape** lets go. The selection stays put when you change frame, so you can work on the same spot frame after frame.`,
-  lasso: `Press **Shift+L**, or pick **Lasso** in the Select tool's options.
+  lasso: `Press **Shift+L**, or pick **Lasso** in the toolbar.
 
 - **Drag round** what you want. When you let go, every shape the lasso touches is selected.
 - **Straight sides:** hold **Alt** as you let go, then **Alt+click** each corner. Click without Alt, or on the first point, to finish. **Escape** gives up.

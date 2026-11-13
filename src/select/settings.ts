@@ -3,14 +3,9 @@
 import { useSyncExternalStore } from 'react';
 import type { SelectOp } from './mask';
 
-/**
- * Box (a rectangle), lasso (draw round it freehand), polygon (click each corner) or magic wand (click a colour,
- * pixel layers only).
- */
-export type SelectMode = 'box' | 'lasso' | 'polygon' | 'wand';
+export type { SelectMode } from './ways';
 
 export interface SelectSettings {
-  mode: SelectMode;
   /** What a new selection does when no key is held (Shift always adds, Alt always takes away). */
   op: Exclude<SelectOp, 'intersect'>;
   /** Magic wand: how close a colour has to be, 0 to 100 (percent). */
@@ -19,7 +14,7 @@ export interface SelectSettings {
   contiguous: boolean;
 }
 
-export const DEFAULT_SELECT_SETTINGS: SelectSettings = { mode: 'box', op: 'replace', tolerance: 0, contiguous: true };
+export const DEFAULT_SELECT_SETTINGS: SelectSettings = { op: 'replace', tolerance: 0, contiguous: true };
 
 const KEY = 'frameling.selectSettings';
 let state: SelectSettings = { ...DEFAULT_SELECT_SETTINGS };

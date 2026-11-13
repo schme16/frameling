@@ -26,7 +26,7 @@ import {
   setPixelSelection,
 } from './pixel-state';
 import { cancelOpenPixelLasso, pixelLassoIsOpen } from './pixel-tool';
-import { setSelectSettings, type SelectMode } from './settings';
+import { isPixelSelectTool, toolFor, type SelectMode } from './ways';
 
 const onPixel = (): boolean => !!activePixelGrid();
 const hasSel = (): boolean => !!pixelSelection();
@@ -88,7 +88,7 @@ export function pastePixels(): boolean {
     hint('What you copied would land off the edge of this layer.');
     return false;
   }
-  if (store().get().ui.tool !== PIXEL_SELECT_TOOL) store().setUi({ tool: PIXEL_SELECT_TOOL });
+  if (!isPixelSelectTool(store().get().ui.tool)) store().setUi({ tool: PIXEL_SELECT_TOOL });
   return floatPixels(pixels, mask);
 }
 
@@ -162,10 +162,11 @@ install();
 
 // ---------------------------------------------------------------- new commands
 
+/** Picks the tool for a way, on whichever kind of layer you are on. */
 function pickWith(mode: SelectMode): void {
-  if (mode === 'wand' && !onPixel()) return hint('The magic wand picks pixels by colour, so it works on pixel layers.');
-  setSelectSettings({ mode });
-  store().setUi({ tool: onPixel() ? PIXEL_SELECT_TOOL : 'select' });
+  const tool = toolFor(mode, onPixel());
+  if (!tool) return hint('The magic wand picks pixels by colour, so it works on pixel layers.');
+  store().setUi({ tool });
 }
 
 const commands: Command[] = [
@@ -199,7 +200,6 @@ const commands: Command[] = [
     id: 'select.lasso',
     label: 'Lasso',
     category: 'Tools',
-    keys: ['Shift+L'],
     description: 'The Select tool, drawing round what you want. Hold Alt as you let go for straight sides.',
     help: 'pixel-select',
     keywords: ['lasso', 'freehand selection', 'polygon lasso', 'draw round'],
@@ -209,7 +209,6 @@ const commands: Command[] = [
     id: 'select.wand',
     label: 'Magic wand',
     category: 'Tools',
-    keys: ['W'],
     description: 'The Select tool on a pixel layer, picking every pixel of the colour you click.',
     help: 'pixel-select',
     keywords: ['magic wand', 'select colour', 'select color', 'by colour', 'tolerance'],

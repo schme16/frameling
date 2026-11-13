@@ -6,7 +6,7 @@ import { findLayer } from '../core/doc';
 import { getCommand } from '../core/registry';
 import { store, useStore } from '../core/store';
 import { useViewSettings } from '../canvas/viewSettings';
-import { setSelectSettings, useSelectSettings, type SelectMode } from '../select/settings';
+import { WAYS } from '../select/ways';
 import { useFeaturesVersion } from '../features/use';
 import { useTileUi } from '../tiles/state';
 import { setToolSettings, useToolSettings } from '../tools/settings';
@@ -76,19 +76,14 @@ function ShapeButtons() {
   );
 }
 
-const SELECT_MODES: { mode: SelectMode; icon: string; title: string; command: string }[] = [
-  { mode: 'box', icon: 'select', title: 'Select with a box', command: 'select.box' },
-  { mode: 'lasso', icon: 'lasso', title: 'Lasso: draw round what you want', command: 'select.lasso' },
-  { mode: 'wand', icon: 'wand', title: 'Magic wand: pick pixels by colour', command: 'select.wand' },
-];
-
+// Each way of picking is its own tool now, so the bar shows them all and presses switch tool.
 function SelectModes() {
-  const mode = useSelectSettings((s) => s.mode);
+  const tool = useStore((s) => s.ui.tool);
   return (
     <div className="px-bar-group" role="radiogroup" aria-label="How to select">
-      {SELECT_MODES.map((m) => (
-        <Btn key={m.mode} on={mode === m.mode} title={m.title} command={m.command} onClick={() => setSelectSettings({ mode: m.mode })}>
-          <Icon name={m.icon} size={16} />
+      {WAYS.map((w) => (
+        <Btn key={w.mode} on={tool === w.pixel} title={`${w.label}: ${w.blurb}`} onClick={() => store().setUi({ tool: w.pixel })}>
+          <Icon name={w.icon} size={16} />
         </Btn>
       ))}
     </div>

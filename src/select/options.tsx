@@ -1,25 +1,12 @@
-// Tool options for Select: how it picks (box, lasso, magic wand), and what to do with the selected pixels.
+// Tool options for Select: what a new pick does, the wand's settings, and what to do with the selected pixels. How
+// it picks is not here any more: each way is its own tool in the toolbar (src/select/ways.ts).
 import { getCommand } from '../core/registry';
 import { useStore } from '../core/store';
 import { ActionButton, Choice, Slider, Tip, Toggle } from '../canvas/controls';
 import { maskCount } from './mask';
 import { pixelSelection, usePixelSelectionVersion } from './pixel-state';
-import { setSelectSettings, useSelectSettings, type SelectMode, type SelectSettings } from './settings';
-
-const MODES: { value: SelectMode; label: string; title: string }[] = [
-  { value: 'box', label: 'Box', title: 'Drag a rectangle round what you want (a marquee).' },
-  { value: 'lasso', label: 'Lasso', title: 'Draw round what you want, freehand. Hold Alt as you let go to add straight sides.' },
-  { value: 'polygon', label: 'Polygon', title: 'Click each corner. Click the first corner again, or press Escape to give up.' },
-  { value: 'wand', label: 'Magic wand', title: 'Click a colour to pick every pixel of it.' },
-];
-
-/** Box / Lasso (and Magic wand on pixel layers). */
-export function SelectModeChoice({ wand }: { wand: boolean }) {
-  const mode = useSelectSettings((s) => s.mode);
-  const options = wand ? MODES : MODES.filter((m) => m.value !== 'wand');
-  const value = !wand && mode === 'wand' ? 'box' : mode;
-  return <Choice<SelectMode> label="Pick with" value={value} options={options} onChange={(v) => setSelectSettings({ mode: v })} />;
-}
+import { setSelectSettings, useSelectSettings, type SelectSettings } from './settings';
+import { modeOfTool } from './ways';
 
 const run = (id: string) => () => void getCommand(id)?.run();
 
@@ -37,7 +24,7 @@ export function PixelSelectOptions() {
   usePixelSelectionVersion();
   // Re-read when the layer or frame changes too.
   useStore((s) => s.ui.activeLayerId);
-  const mode = useSelectSettings((s) => s.mode);
+  const mode = modeOfTool(useStore((st) => st.ui.tool));
   const op = useSelectSettings((s) => s.op);
   const tolerance = useSelectSettings((s) => s.tolerance);
   const contiguous = useSelectSettings((s) => s.contiguous);
@@ -53,7 +40,6 @@ export function PixelSelectOptions() {
           : 'Drag a box round what you want.';
   return (
     <div className="cv-options">
-      <SelectModeChoice wand />
       <Choice<SelectSettings['op']>
         label="Each new pick"
         value={op}

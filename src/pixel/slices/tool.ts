@@ -124,7 +124,7 @@ export const sliceTool: Tool = {
   layers: ['pixel'],
   order: 36,
   group: 'select',
-  groupAt: 4,
+  groupAt: 7,
   help: 'pixel-slices',
   cursor: 'crosshair',
   options: SliceOptions,

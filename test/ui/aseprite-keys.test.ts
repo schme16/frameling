@@ -32,7 +32,7 @@ describe('Aseprite keys', () => {
     ['m', 'tools.pixel-select'],
     ['v', 'tools.pixel-select'],
     ['q', 'select.lasso'],
-    ['w', 'select.wand'],
+    ['w', 'tools.pixel-select-wand'],
     ['Shift+Alt+M', 'pixel.mirror'],
     // colours, size, palette
     ['x', 'colors.swap'],

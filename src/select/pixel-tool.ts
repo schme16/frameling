@@ -24,6 +24,8 @@ import {
   setPixelSelection,
 } from './pixel-state';
 import { getSelectSettings } from './settings';
+import { modeOfTool, WAYS } from './ways';
+import { store } from '../core/store';
 import { drawLasso, lassoClosesAt, lassoPoint } from './lasso';
 import { PixelSelectOptions } from './options';
 import { reducedMotion } from '../ui/prefs';
@@ -87,7 +89,7 @@ function down(e: ToolPointer, ctx: ToolContext): void {
   const size = a.layer.pixelSize;
   const cell = cellOf(e, size);
   const sel = pixelSelection();
-  const mode = getSelectSettings().mode;
+  const mode = modeOfTool(store().get().ui.tool);
   // Inside the selection with no keys held: drag the pixels. With Alt: drag a copy.
   const copy = altCopies(e);
   if (sel && !e.shift && (!e.alt || copy) && maskHas(sel, cell.x, cell.y)) {
@@ -260,15 +262,16 @@ function overlay(gx: CanvasRenderingContext2D, ctx: ToolContext): void {
   }
 }
 
-export const pixelSelectTool: Tool = {
-  id: PIXEL_SELECT_TOOL,
+/** One tool per way of picking, all sharing these handlers. The way comes from which one you chose. */
+export const pixelSelectTools: Tool[] = WAYS.map((w) => ({
+  id: w.pixel,
   group: 'select',
-  groupAt: 1,
-  label: 'Select',
-  icon: 'select',
-  key: 'v',
+  groupAt: w.at,
+  label: w.label,
+  icon: w.icon,
+  key: w.key,
   layers: ['pixel'],
-  order: 5,
+  order: 5 + w.at,
   help: 'pixel-select',
   cursor: 'crosshair',
   options: PixelSelectOptions,
@@ -278,43 +281,9 @@ export const pixelSelectTool: Tool = {
   hover,
   cancel,
   overlay,
-};
+}));
 
-registerTool(pixelSelectTool);
+/** The box one, which is what Select has always meant. */
+export const pixelSelectTool = pixelSelectTools[0];
 
-// ---------------------------------------------------------------- marching ants, whatever tool is picked
-
-let antsCache: { m: Mask; size: number; path: Path2D } | null = null;
-
-function antsPath(m: Mask, size: number): Path2D {
-  if (antsCache && antsCache.m === m && antsCache.size === size) return antsCache.path;
-  const e = maskEdges(m);
-  const path = new Path2D();
-  for (let i = 0; i < e.length; i += 4) {
-    path.moveTo(e[i] * size, e[i + 1] * size);
-    path.lineTo(e[i + 2] * size, e[i + 3] * size);
-  }
-  antsCache = { m, size, path };
-  return path;
-}
-
-addStageOverlay((gx, zoom) => {
-  const m = pixelSelection();
-  const a = activePixelGrid();
-  if (!m || !a || typeof Path2D === 'undefined') return;
-  const path = antsPath(m, a.layer.pixelSize);
-  const px = 1 / zoom;
-  // Black and white dashes that crawl along, so the edge shows on any colour.
-  // They hold still when motion is turned down.
-  const crawl = reducedMotion() ? 0 : (Date.now() / 60) % 8;
-  gx.save();
-  gx.lineWidth = px;
-  gx.setLineDash([4 * px, 4 * px]);
-  gx.lineDashOffset = -crawl * px;
-  gx.strokeStyle = 'white';
-  gx.stroke(path);
-  gx.lineDashOffset = (4 - crawl) * px;
-  gx.strokeStyle = 'black';
-  gx.stroke(path);
-  gx.restore();
-});
+for (const t of pixelSelectTools) registerTool(t);

@@ -2,8 +2,7 @@ import { getCommand } from '../../core/registry';
 import { useStore } from '../../core/store';
 import { ActionButton, Tip } from '../../canvas/controls';
 import { DrawModeToggle } from './DrawModeToggle';
-import { SelectModeChoice } from '../../select/options';
-import { useSelectSettings } from '../../select/settings';
+import { modeOfTool } from '../../select/ways';
 
 const ACTIONS: [string, string][] = [
   ['select.flipH', 'Flip left-right'],
@@ -16,11 +15,10 @@ const ACTIONS: [string, string][] = [
 
 export function SelectOptions() {
   const count = useStore((s) => s.ui.selection.length);
-  const lasso = useSelectSettings((s) => s.mode === 'lasso');
+  const lasso = modeOfTool(useStore((s) => s.ui.tool)) !== 'box';
   return (
     <div className="cv-options">
       <DrawModeToggle />
-      <SelectModeChoice wand={false} />
       <Tip>
         {count ? `${count} selected.` : lasso ? 'Click a shape, or draw a lasso round several (hold Alt as you let go for straight sides).' : 'Click a shape, or drag a box round several.'} Hold Shift to add more. Drag a corner to resize and the round handle to turn.
       </Tip>

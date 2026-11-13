@@ -152,7 +152,7 @@ function hitTarget(t: Editable, p: P, zoom: number): Hit {
 export const pointsTool: Tool = {
   id: 'points',
   group: 'select',
-  groupAt: 2,
+  groupAt: 5,
   label: 'Edit points',
   icon: 'points',
   key: 'a',

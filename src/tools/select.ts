@@ -38,7 +38,7 @@ import { SelectOptions } from './options/SelectOptions';
 import { reportEdit } from './util';
 import { activeIsMerge, editShapes, pendingCut, setCut, withGroups } from './merge-mode';
 import { cutOut, mergeable, placeMoved, polygonGeom, shapeBox, shapeInsideArea, shapeTouchesArea, type Geom } from '../geometry/merge';
-import { getSelectSettings } from '../select/settings';
+import { modeOfTool, WAYS } from '../select/ways';
 import { drawLasso, lassoClosesAt, lassoPoint } from '../select/lasso';
 import { subPathsToPath2D } from '../core/render';
 import { angleSteps, clearSnap, snapMove, snapPt } from '../canvas/guides';
@@ -210,7 +210,7 @@ function down(e: ToolPointer, ctx: ToolContext): void {
     if (locked) ctx.hint(`That's on "${locked.name}", which is locked. Unlock it in the timeline to select it.`);
   }
   if (cut) setCut(null);
-  const picks = getSelectSettings().mode;
+  const picks = modeOfTool(store().get().ui.tool);
   const lasso = picks === 'lasso' || picks === 'polygon' ? [{ x: e.x, y: e.y }] : null;
   g = { ...base, drawing: d, mode: 'marquee', originals: [], handle: null, base: e.shift ? selectedIds() : [], lasso };
 }
@@ -483,15 +483,16 @@ function polygon(gx: CanvasRenderingContext2D, pts: Pt[]): void {
   gx.closePath();
 }
 
-export const selectTool: Tool = {
-  id: 'select',
+/** One tool per way of picking on a vector layer. The magic wand has no meaning here, so it is left out. */
+export const selectTools: Tool[] = WAYS.filter((w) => w.vector).map((w) => ({
+  id: w.vector as string,
   group: 'select',
-  groupAt: 0,
-  label: 'Select',
-  icon: 'select',
-  key: 'v',
-  layers: ['vector'],
-  order: 5,
+  groupAt: w.at,
+  label: w.label,
+  icon: w.icon,
+  key: w.key,
+  layers: ['vector'] as Tool['layers'],
+  order: 5 + w.at,
   help: 'tool-select',
   cursor: 'default',
   options: SelectOptions,
@@ -501,6 +502,8 @@ export const selectTool: Tool = {
   hover,
   cancel,
   overlay,
-};
+}));
 
-registerTool(selectTool);
+export const selectTool = selectTools[0];
+
+for (const t of selectTools) registerTool(t);

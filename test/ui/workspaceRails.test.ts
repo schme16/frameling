@@ -31,12 +31,16 @@ describe('the three defaults', () => {
     expect(ids(g)).toEqual(['draw', 'rig', 'select', 'shapes', 'extras', 'view']);
     expect(g[1].tools).toEqual(['bone', 'pose', 'weights', 'motion-path', 'shape-hints']);
   });
-  it('Pixel: pixel tools first, shade, dither and pixel select together, vector-only tools later', () => {
+  it('Pixel: pixel tools first, then the ways of selecting together, vector-only tools later', () => {
     applyWorkspace('pixel');
     const g = currentGroups();
-    expect(ids(g).slice(0, 3)).toEqual(['draw', 'pixel', 'shapes']);
+    // Selecting sits right after the pixel tools, where the one Select button used to live among them.
+    expect(ids(g).slice(0, 4)).toEqual(['draw', 'pixel', 'select', 'shapes']);
     expect(g[0].tools.slice(0, 4)).toEqual(['pencil', 'eraser', 'fill', 'eyedropper']);
-    expect(g[1].tools).toEqual(['shade', 'dither', 'spray', 'pixel-select']);
+    expect(g[1].tools).toEqual(['shade', 'dither', 'spray']);
+    // Every way of picking is its own tool, and they sit together in the Select group.
+    expect(groupOf(g, 'pixel-select-lasso')).toBe('select');
+    expect(groupOf(g, 'pixel-select-wand')).toBe('select');
     expect(ids(g).indexOf('select')).toBeGreaterThan(ids(g).indexOf('pixel'));
     expect(ids(g).indexOf('rig')).toBeGreaterThan(ids(g).indexOf('shapes'));
     expect(groupOf(g, 'select')).toBe('select');
