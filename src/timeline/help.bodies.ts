@@ -145,6 +145,12 @@ Click the little arrow beside the onion for:
 
 On the ruler, the frames being ghosted are softly shaded in the same colours.
 
+## Boards either side
+
+Storyboarding on several [artboards](help:artboards)? Tick **Show the boards either side too** and the boards around the one you're on come up as ghosts as well, counted the same way as frames: **frames before** boards back, **frames after** boards on. The board before shows its last frame, the one you cut from, and the board after shows its first, the one you cut to, so a hand or a horizon carries across the cut. On a board with one drawing on it that's just that drawing. Also in **Timeline > Onion skin shows the boards either side**.
+
+Board ghosts sit under this board's own frame ghosts, and a board of another size is fitted into yours and centred. Variations are left out: a variation is another take on a board, not the next one.
+
 Looking through the [camera](help:camera)? The ghosts go through it too, so they sit where you see the drawing, and they stay quick even with heavy drawings.
 
 > Ghosts are only for you. They never show up when you play or export.`,

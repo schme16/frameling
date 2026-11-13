@@ -21,6 +21,8 @@ To export them, see [exporting artboards](help:artboards-export). For animation,
 
 **Make shots:** add an artboard for each one, or **Duplicate artboard** to start a shot from the last one. They can be different sizes; see [shots of different sizes](help:artboards-letterbox).
 
+**See the shots either side:** turn on the [onion skin](help:timeline-onion) and tick **Show the boards either side too**. The board before shows its last frame and the board after its first, as faint ghosts under what you're drawing, so a hand or a horizon carries across the cut.
+
 **Play them in order:** press **Play all in order** in the Artboards panel. They play one after another in their own window, in the panel's order. The strip under the picture shows each shot; click one to jump to it. Drag them in the panel to change the order.
 
 **Export them:**

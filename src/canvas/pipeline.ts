@@ -9,9 +9,9 @@
  * exports can never disagree about what a frame looks like.
  */
 import type { CameraView, Doc, Drawing, Layer } from '../core/format';
-import { layerCameraMatrix } from '../core/camera';
+import { cameraViewAt, layerCameraMatrix } from '../core/camera';
 import type { Mat } from '../core/symbols';
-import { poseAt, poseLive } from '../core/symbols';
+import { mul, poseAt, poseLive, rootDoc } from '../core/symbols';
 import { paintEditBackdrop } from './backdrop';
 import { bindMatrixAt } from '../rig/pose';
 import { drawDrawing, drawShape, pixelCanvas } from '../core/render';
@@ -23,7 +23,8 @@ import { paintComposited } from '../effects/stage';
 import { EffectCache } from '../effects/composite';
 import { needsCompositor } from '../effects/model';
 import { GHOST_ALPHA, type GhostItem } from './ghost';
-import { onionFrames } from './onion';
+import { onionBoards, onionFrames } from './onion';
+import { artboardDoc } from '../artboards/model';
 
 export interface FrameParams {
   doc: Doc;
@@ -496,7 +497,22 @@ export class FramePainter {
   // ---------------------------------------------------------------- onion skin
 
   private paintOnion(g: CanvasRenderingContext2D, p: FrameParams, cacheable: boolean): void {
-    const { doc, frame, onion, rect } = p;
+    const { doc, frame, onion } = p;
+    // The boards either side go on first: they're another shot, so they sit under this shot's own ghosts.
+    for (const b of onionBoards(doc, onion)) {
+      const nd = artboardDoc(rootDoc(doc), b.id);
+      // Looking through the camera, each board shows what its own camera sees, fitted into the stage.
+      const view = p.camera ? cameraViewAt(nd, b.frame) : undefined;
+      const items: OnionItem[] = [];
+      for (const layer of nd.layers) {
+        if (!layer.visible || layer.onion === false) continue;
+        const d = poseAt(nd, layer, b.frame);
+        if (!d || d.kind === 'tilemap' || d.kind === 'camera') continue;
+        const lc = layerCameraMatrix(nd, layer, view);
+        items.push({ drawing: d, pixelSize: layer.kind === 'pixel' ? layer.pixelSize : 1, cam: lc ? mul(b.fit, lc) : b.fit });
+      }
+      this.paintOnionPass(g, p, items, b.side, b.dist, cacheable);
+    }
     // Furthest first, so the nearest ghost ends up on top.
     for (const { frame: f, side, dist } of onionFrames(doc, frame, onion)) {
       const items: OnionItem[] = [];
@@ -509,25 +525,30 @@ export class FramePainter {
         if (d.kind === 'tilemap') continue;
         items.push({ drawing: d, pixelSize: layer.kind === 'pixel' ? layer.pixelSize : 1, cam: layerCameraMatrix(doc, layer, p.camera) });
       }
-      if (!items.length) continue;
-      const color = side === 'before' ? onion.beforeColor : onion.afterColor;
-      const alpha = onion.opacity * Math.pow(0.65, dist - 1);
-      g.globalAlpha = alpha;
-      // Through the camera too: the bitmap is keyed by the camera matrix and the size, so a still camera hits it.
-      if (cacheable) {
-        const c = this.onionBitmap(doc, items, color, onion.tint, rect.w, rect.h);
-        g.drawImage(c, rect.x, rect.y);
-      } else {
-        const sc = (this.scratch2 = this.sized(this.scratch2, p.width, p.height));
-        const sg = ctxOf(sc);
-        sg.setTransform(1, 0, 0, 1, 0, 0);
-        sg.clearRect(0, 0, p.width, p.height);
-        sg.setTransform(rect.w / doc.width, 0, 0, rect.h / doc.height, rect.x, rect.y);
-        this.drawOnionItems(sg, items, color, onion.tint, p.width, p.height);
-        g.drawImage(sc, 0, 0);
-      }
-      g.globalAlpha = 1;
+      this.paintOnionPass(g, p, items, side, dist, cacheable);
     }
+  }
+
+  /** One onion ghost (a frame or a board): its colour and strength come from the side and how far away it is. */
+  private paintOnionPass(g: CanvasRenderingContext2D, p: FrameParams, items: OnionItem[], side: 'before' | 'after', dist: number, cacheable: boolean): void {
+    if (!items.length) return;
+    const { doc, onion, rect } = p;
+    const color = side === 'before' ? onion.beforeColor : onion.afterColor;
+    g.globalAlpha = onion.opacity * Math.pow(0.65, dist - 1);
+    // Through the camera too: the bitmap is keyed by the camera matrix and the size, so a still camera hits it.
+    if (cacheable) {
+      const c = this.onionBitmap(doc, items, color, onion.tint, rect.w, rect.h);
+      g.drawImage(c, rect.x, rect.y);
+    } else {
+      const sc = (this.scratch2 = this.sized(this.scratch2, p.width, p.height));
+      const sg = ctxOf(sc);
+      sg.setTransform(1, 0, 0, 1, 0, 0);
+      sg.clearRect(0, 0, p.width, p.height);
+      sg.setTransform(rect.w / doc.width, 0, 0, rect.h / doc.height, rect.x, rect.y);
+      this.drawOnionItems(sg, items, color, onion.tint, p.width, p.height);
+      g.drawImage(sc, 0, 0);
+    }
+    g.globalAlpha = 1;
   }
 
   private paintGhost(g: CanvasRenderingContext2D, p: FrameParams, ghosts: GhostItem[], cacheable: boolean, alpha = GHOST_ALPHA, tint: string | null = null): void {

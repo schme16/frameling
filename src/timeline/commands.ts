@@ -3,6 +3,7 @@ import { clashFor, type FrameScopeChoice, type HoldChoice, type NewKeyChoice } f
 /** Everything you can do from the timeline as commands: they feed the shortcuts, the palette and the tooltips. */
 import { registerCommands } from '../core/registry';
 import { findLayer } from '../core/doc';
+import { hasArtboards } from '../artboards/model';
 import { store } from '../core/store';
 import { toast } from '../ui/toast';
 import { playCue } from '../ui/sounds';
@@ -150,6 +151,17 @@ registerCommands([
     keywords: ['onion skin', 'keys only', 'keyframes', 'skip holds', 'drawings only'],
     checked: (s) => !!s.ui.onion.keysOnly,
     run: () => store().setUi((ui) => ({ onion: { ...ui.onion, keysOnly: !ui.onion.keysOnly, enabled: ui.onion.keysOnly ? ui.onion.enabled : true } })),
+  },
+  {
+    id: 'timeline.onionBoards',
+    label: 'Onion skin shows the boards either side',
+    category: 'Timeline',
+    description: 'With several artboards, ghost the board before and the board after as well, so a storyboard lines up like frames do.',
+    help: 'timeline-onion',
+    keywords: ['onion skin', 'boards', 'artboards', 'storyboard', 'shots', 'scenes', 'neighbouring'],
+    enabled: (s) => hasArtboards(s.doc),
+    checked: (s) => !!s.ui.onion.boards,
+    run: () => store().setUi((ui) => ({ onion: { ...ui.onion, boards: !ui.onion.boards, enabled: ui.onion.boards ? ui.onion.enabled : true } })),
   },
   {
     id: 'timeline.newKey',
