@@ -4,13 +4,15 @@
 //
 //   node scripts/beta-check.mjs                    look at dist/ and say what it has
 //   node scripts/beta-check.mjs --expect-key       the same, and exit 1 when it has no key (use before handing a build out)
-//   node scripts/beta-check.mjs path/to/app.asar   look inside a packed app (--expect-key works here too)
+//   node scripts/beta-check.mjs --expect-no-key    the same, and exit 1 when it DOES have a key (the ordinary copy must not)
+//   node scripts/beta-check.mjs path/to/app.asar   look inside a packed app (both flags work here too)
 import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
 const args = process.argv.slice(2);
 const expect = args.includes('--expect-key');
+const expectNone = args.includes('--expect-no-key');
 const given = args.find((a) => !a.startsWith('--'));
 
 let root = given ?? 'dist';
@@ -52,5 +54,9 @@ if (existsSync(mainFile)) console.log(mainHasBoard ? 'The desktop side knows the
 cleanup?.();
 if (expect && !board) {
   console.error('\nNo key in this build. Build it again with FRAMELING_INGEST_KEY set, for example:\n  FRAMELING_INGEST_KEY=pbk_... npm run install-local');
+  process.exit(1);
+}
+if (expectNone && board) {
+  console.error('\nThis build carries a key, so it is not an ordinary copy. Build it again with FRAMELING_INGEST_KEY, FRAMELING_INGEST_URL, FRAMELING_BETA and FRAMELING_PROFILE unset.');
   process.exit(1);
 }

@@ -119,6 +119,8 @@ npm run install-local -- --no-build   # install the last build without rebuildin
 
 This copies the AppImage to `/mnt/109313D2109313D2/lutris-applications/frameling/frameling.AppImage`. If Frameling is running from there, the script closes it first so the file can be replaced. Set `FRAMELING_INSTALL_DIR` to install somewhere else. It also writes the launcher, which lists Frameling under "Open with" for Aseprite files (and adds the Aseprite file type to your own mime folder if nothing else defines it) without becoming their default.
 
+If `FRAMELING_INGEST_KEY` is set in your environment, it builds a second copy as well, `frameling.beta.AppImage`: the same app with the key compiled in, so it can send reports. The ordinary copy is always built without the key, even when the key is set. The beta copy has its own launcher (**Frameling Beta**), its own settings, recent files and crash notes (a `Frameling Beta` data folder), and never claims `frameling://` links or Aseprite files, so you can run both at once. It is only installed after `npm run beta:check -- --expect-key` finds the key inside the packed app. With no key set, the beta copy is skipped with one line saying so. The key is read from the environment only, and never printed or written to a file.
+
 ### Editing the mascot
 
 Quill, the mascot, is drawn in Frameling itself. The source files are in `brand/mascot/`:

@@ -1,4 +1,4 @@
-// The desktop side of install-local: the launcher (~/.local/share/applications/frameling.desktop) and, when nothing on
+// The desktop side of install-local: the launcher (~/.local/share/applications/frameling.desktop; frameling-beta.desktop for the beta copy) and, when nothing on
 // the computer defines it yet, the Aseprite file type. Frameling is listed under "Open with" for Aseprite files but is
 // never made the default, and mimeapps.list is never touched.
 import { execFileSync } from 'node:child_process';
@@ -8,18 +8,21 @@ import path from 'node:path';
 
 export const ASEPRITE_MIME = 'application/x-aseprite';
 
-/** The launcher. `%U` hands over file:// links for files (the app understands those) and frameling:// links as they are. */
-export function desktopEntry(target, icon) {
+/**
+ * The launcher. `%U` hands over file:// links for files (the app understands those) and frameling:// links as they are.
+ * The beta copy gets its own name and claims no file types, so the ordinary copy stays the one that opens files.
+ */
+export function desktopEntry(target, icon, { beta = false } = {}) {
   return [
     '[Desktop Entry]',
     'Type=Application',
-    'Name=Frameling',
-    'Comment=Draw and animate 2D art',
+    beta ? 'Name=Frameling Beta' : 'Name=Frameling',
+    beta ? 'Comment=Draw and animate 2D art (the beta copy, which can send reports)' : 'Comment=Draw and animate 2D art',
     `Exec="${target}" %U`,
     `Icon=${icon}`,
     'Terminal=false',
     'Categories=Graphics;',
-    `MimeType=${ASEPRITE_MIME};`,
+    ...(beta ? [] : [`MimeType=${ASEPRITE_MIME};`]),
     'StartupWMClass=frameling',
     '',
   ].join('\n');
@@ -53,12 +56,17 @@ const quiet = (cmd, args, env) => {
  * Writes the launcher and, if needed, the Aseprite type; refreshes the desktop's caches. `env` decides where
  * (XDG_DATA_HOME), so tests can use a throwaway folder. Returns what it did (`stolen`: Frameling came out as the default for Aseprite files, which should not happen).
  */
-export function installIntegration({ target, icon, mimeXml, env = process.env, home = os.homedir() }) {
+export function installIntegration({ target, icon, mimeXml, beta = false, env = process.env, home = os.homedir() }) {
   const dirs = mimeDataDirs(env, home);
   const apps = path.join(dirs[0], 'applications');
   mkdirSync(apps, { recursive: true });
-  const launcher = path.join(apps, 'frameling.desktop');
-  writeFileSync(launcher, desktopEntry(target, icon));
+  const launcher = path.join(apps, beta ? 'frameling-beta.desktop' : 'frameling.desktop');
+  writeFileSync(launcher, desktopEntry(target, icon, { beta }));
+  // The beta copy only gets a launcher: the file type and its default belong to the ordinary copy.
+  if (beta) {
+    quiet('update-desktop-database', [apps], env);
+    return { launcher, wroteMime: false, stolen: false };
+  }
   let wroteMime = false;
   const own = path.join(dirs[0], 'mime/packages', 'application-x-aseprite.xml');
   // Defined by us already (an earlier install) counts as ours to refresh; defined by anyone else is left alone.

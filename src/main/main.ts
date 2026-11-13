@@ -1,3 +1,4 @@
+import './profile';
 import { app, BrowserWindow, dialog, shell } from 'electron';
 import path from 'node:path';
 import { grantFile, registerIpc } from './ipc';
@@ -8,6 +9,7 @@ import { clearAutosave, keepAutosave, pruneKept } from './store';
 import type { DocumentState } from '../preload/api';
 import { isolationWanted, PLUGIN_PROCESS_FEATURE } from './pluginMemory';
 import { endRun, markOffered, noteEvent, readLast, startRun } from './crashMarker';
+import { PROFILE } from './profileName';
 
 // Plugins share one process (cheap), unless "Measure plugins' memory and speed" was on when Frameling last closed: then
 // each sandbox gets a process of its own (about 90 MB each), so its memory can be told apart.
@@ -37,8 +39,9 @@ let keepDone: (() => void) | null = null;
 // frameling://open?path=... opens a file, so other apps (Interactives' "Edit in Frameling") can hand one over. Only the
 // installed app claims it (the macOS app, the Linux .desktop file and the Windows installer register it too, see
 // build/installer.nsh), so a dev run never takes it over. The Windows portable build runs from a temporary copy of
-// itself, so it registers the .exe the person actually has.
-if (app.isPackaged) {
+// itself, so it registers the .exe the person actually has. A profile copy (the beta one) never claims it, so the
+// ordinary copy keeps the links.
+if (app.isPackaged && !PROFILE) {
   const portable = process.env.PORTABLE_EXECUTABLE_FILE;
   if (process.platform === 'win32' && portable) app.setAsDefaultProtocolClient(PROTOCOL, portable, []);
   else app.setAsDefaultProtocolClient(PROTOCOL);
