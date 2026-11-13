@@ -45,7 +45,7 @@ registerHelpTopics([
     section: 'Animating',
     media: 'onion-skin.mp4',
     summary: 'See faint ghosts of the frames before and after this one, so each drawing lines up with its neighbours.',
-    keywords: ['onion skin', 'ghost', 'tracing', 'tint', 'previous frame', 'keys only', 'held frames', 'twos'],
+    keywords: ['onion skin', 'ghost', 'tracing', 'tint', 'previous frame', 'keys only', 'held frames', 'twos', 'boards', 'artboards', 'storyboard', 'shots', 'either side'],
   },
   {
     id: 'drawings-carry-on',
