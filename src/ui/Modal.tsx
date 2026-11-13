@@ -1,6 +1,7 @@
 // A dialog shell: dim backdrop, focus kept inside, Esc closes, focus goes back to where it was.
 import { useEffect, useRef, type ReactNode } from 'react';
 import { Icon } from './icons';
+import { pressedBackdrop } from './backdropClick';
 
 const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
@@ -63,7 +64,7 @@ export function Modal({
     <div
       className="ui-backdrop"
       onPointerDown={(e) => {
-        if (e.target === e.currentTarget) closeRef.current();
+        if (e.target === e.currentTarget) pressedBackdrop(e.clientX, e.clientY, ref.current, () => closeRef.current());
       }}
     >
       <div ref={ref} className={`ui-modal ui-modal-${size} ${className}`} role="dialog" aria-modal="true" aria-label={title} tabIndex={-1} onKeyDown={onKey}>

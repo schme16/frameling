@@ -208,7 +208,11 @@ Tick **Remember my choice** and it won't ask again. Untick it to be asked again 
 
 ## Changing your mind
 
-Open **Preferences** (**Ctrl+,**) and choose **Behaviour**. Every choice is listed there. Pick a different answer, or pick **Ask me** to be asked again next time.`,
+Open **Preferences** (**Ctrl+,**) and choose **Behaviour**. Every choice is listed there. Pick a different answer, or pick **Ask me** to be asked again next time.
+
+## Dialogs
+
+Pressing the dim area beside a dialog is one of these questions: it can close the dialog, or leave it alone so a stray press costs you nothing. A press that only just misses the dialog's edge never counts either way. **Escape** and the close button always work.`,
   features: `Some parts of Frameling are optional. If you never use one, you can switch it off, and its panels, tools, commands, menu entries, help and example drawings go quiet until you want them back.
 
 ## Switching one on or off
