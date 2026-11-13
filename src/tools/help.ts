@@ -25,8 +25,8 @@ registerHelpTopics([
     media: 'tool-eraser.mp4',
     title: 'Eraser',
     section: 'Drawing',
-    summary: 'Rub things out. On vector layers it removes whole lines, on pixel layers it clears pixels.',
-    keywords: ['rub', 'delete', 'remove', 'erase whole lines', 'rubber', 'rub out'],
+    summary: 'Rub things out. On vector layers it rubs out just the bit you drag over (or whole lines, if you like), on pixel layers it clears pixels.',
+    keywords: ['rub', 'delete', 'remove', 'erase whole lines', 'rubber', 'rub out', 'cut a line', 'partial', 'just the bit'],
   },
   {
     id: 'tool-rect',

@@ -1,10 +1,11 @@
 /**
- * Eraser [E]. On a vector layer it removes whole lines and shapes it touches ("erase whole lines"), previewing them
- * disappearing as you go. On a pixel layer it clears pixels.
+ * Eraser [E]. On a vector layer it rubs out just the bit you drag over (a brush stroke can be cut in two or nibbled
+ * at the end), or, if you prefer, removes the whole lines and shapes it touches ("erase whole lines"). A merge layer
+ * always rubs out area. Either way the change previews live as you drag. On a pixel layer it clears pixels.
  */
 import type { Drawing, Id, Shape, VectorDrawing } from '../core/format';
 import { findLayer } from '../core/doc';
-import { registerTool, type Tool, type ToolContext, type ToolPointer } from '../core/registry';
+import { registerCommands, registerTool, type Tool, type ToolContext, type ToolPointer } from '../core/registry';
 import { store } from '../core/store';
 import { getHover, setLive } from '../canvas/controller';
 import { hitShape } from '../canvas/geometry';
@@ -17,7 +18,9 @@ import { getToolSettings } from './settings';
 import { reportEdit } from './util';
 import { viewPixelSize, viewSizeFactor } from './view-size';
 import { activeIsMerge, editShapes } from './merge-mode';
-import { eraseArea, sweepGeom } from '../geometry/merge';
+import { eraseArea, eraseBits, sweepGeom } from '../geometry/merge';
+import { currentChoice, registerChoice, setChoice } from '../core/choices';
+import { toast } from '../ui/toast';
 import { sizeFactor } from '../tablet/dynamics';
 
 interface VectorGesture {
@@ -25,9 +28,45 @@ interface VectorGesture {
   drawing: VectorDrawing;
   removed: Set<Id>;
   last: { x: number; y: number } | null;
-  /** Merge layers rub out area instead of whole lines: the shapes as they are so far. */
-  area: { shapes: Shape[]; changed: boolean } | null;
+  /** Rubbing out area instead of whole lines: the shapes as they are so far. `bits` cuts shapes that stay separate (object layers). */
+  area: { shapes: Shape[]; changed: boolean; bits: boolean } | null;
 }
+
+export type EraserWay = 'bit' | 'whole';
+
+registerChoice<EraserWay>({
+  id: 'eraser.vectorWay',
+  title: 'Eraser on lines and shapes',
+  question: 'When the eraser touches a line or shape, what should it rub out?',
+  options: [
+    { value: 'bit', label: 'Just the bit I drag over', detail: 'Like a real rubber: a line is cut or nibbled where the circle passes, and the rest stays.' },
+    { value: 'whole', label: 'The whole line', detail: 'Anything the circle touches disappears, so one swipe removes a stroke or a shape.' },
+  ],
+  default: 'bit',
+  category: 'Drawing',
+  help: 'tool-eraser',
+  silent: true,
+});
+
+/** How the eraser treats lines and shapes on a layer that keeps them separate. */
+export const eraserWay = (): EraserWay => currentChoice<EraserWay>('eraser.vectorWay');
+
+registerCommands([
+  {
+    id: 'eraser.bit',
+    label: 'Eraser rubs out just the bit',
+    category: 'Draw',
+    description: 'The eraser rubs out only the part you drag over, so a line can be cut or nibbled. Turn it off to erase whole lines.',
+    help: 'tool-eraser',
+    keywords: ['eraser', 'rubber', 'rub out', 'erase whole lines', 'partial', 'cut line'],
+    checked: () => eraserWay() === 'bit',
+    run: () => {
+      const next: EraserWay = eraserWay() === 'bit' ? 'whole' : 'bit';
+      setChoice('eraser.vectorWay', next);
+      toast(next === 'bit' ? 'The eraser now rubs out just the bit you drag over.' : 'The eraser now removes whole lines.');
+    },
+  },
+]);
 let vec: VectorGesture | null = null;
 let pix: PixelStroke | null = null;
 /** Where the last rub-out on a vector layer ended, for Shift+click straight lines. One layer of one document. */
@@ -55,10 +94,11 @@ function sweep(g: VectorGesture, x: number, y: number, ctx: ToolContext, pen = 1
   const r = reach(ctx, pen);
   if (g.area) {
     // One capsule from the last spot to this one, so a fast flick still rubs out everything in between.
-    const e = eraseArea(g.area.shapes, sweepGeom(g.last ?? { x, y }, { x, y }, r));
+    const swept = sweepGeom(g.last ?? { x, y }, { x, y }, r);
+    const e = g.area.bits ? eraseBits(g.area.shapes, swept) : eraseArea(g.area.shapes, swept);
     g.last = { x, y };
     if (e.changed) {
-      g.area = { shapes: e.shapes, changed: true };
+      g.area = { shapes: e.shapes, changed: true, bits: g.area.bits };
       setLive({ layerId: g.layerId, kind: 'vector', drawing: { ...g.drawing, shapes: e.shapes } });
     }
     return;
@@ -95,7 +135,7 @@ function down(e: ToolPointer, ctx: ToolContext): void {
       return;
     }
     // Shift+click rubs out in a straight line from where the last rub ended: the sweep walks the whole way there.
-    vec = { layerId: layer.id, drawing: d, removed: new Set(), last: e.shift ? eraseEnd(store().get().doc.id, layer.id) : null, area: activeIsMerge() ? { shapes: d.shapes.slice(), changed: false } : null };
+    vec = { layerId: layer.id, drawing: d, removed: new Set(), last: e.shift ? eraseEnd(store().get().doc.id, layer.id) : null, area: activeIsMerge() ? { shapes: d.shapes.slice(), changed: false, bits: false } : eraserWay() === 'bit' ? { shapes: d.shapes.slice(), changed: false, bits: true } : null };
     sweep(vec, e.x, e.y, ctx, sizeFactor('eraser', e));
     noteErase(layer.id, e);
     return;
@@ -129,7 +169,7 @@ function up(e: ToolPointer, ctx: ToolContext): void {
     noteErase(g.layerId, e);
     if (g.area?.changed) {
       const shapes = g.area.shapes;
-      const r = editShapes('Erase', () => shapes);
+      const r = editShapes(g.area.bits ? 'Erase part of a line' : 'Erase', () => shapes);
       if (r !== 'nothing') reportEdit(ctx, r);
     } else if (g.removed.size) {
       const gone = g.removed;

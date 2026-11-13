@@ -1,0 +1,1 @@
+The eraser on a vector layer, new way (A, now the default): the pink line is nibbled at its end, then the green line is cut in two with a swipe across it, the pieces staying separate shapes. The old way (B, set **Rub out** to **Whole lines**) removes a whole line with one touch. Clips: tool-eraser-dark.mp4 and tool-eraser-light.mp4 (H.264, yuv420p).

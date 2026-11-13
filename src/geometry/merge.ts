@@ -460,6 +460,98 @@ export function eraseArea(shapes: readonly Shape[], area: Geom): { shapes: Shape
   return { shapes: out, changed };
 }
 
+/** Shapes that can be rubbed out in part: lines, fills and outlined shapes (grouped ones too). Symbols, text and particles cannot. */
+export const rubbable = (s: Shape): boolean => s.type === 'stroke' || s.type === 'fill' || s.type === 'path';
+
+const looseCache = new WeakMap<Shape, Box | null>();
+
+/**
+ * A box that surely holds everything the shape paints, worked out from its raw points alone (no outline, no clipping),
+ * so a busy layer is not flattened just to find out which shapes are nowhere near the eraser. Generous on purpose.
+ */
+function looseBox(s: Shape): Box | null {
+  if (looseCache.has(s)) return looseCache.get(s)!;
+  let x0 = Infinity;
+  let y0 = Infinity;
+  let x1 = -Infinity;
+  let y1 = -Infinity;
+  const add = (x: number, y: number) => {
+    if (x < x0) x0 = x;
+    if (x > x1) x1 = x;
+    if (y < y0) y0 = y;
+    if (y > y1) y1 = y;
+  };
+  let pad = 0;
+  if (s.type === 'stroke') {
+    for (const p of s.points) add(p.x, p.y);
+    pad = s.brush.size * 2 + 4;
+  } else if (s.type === 'fill' || s.type === 'path') {
+    for (const sp of s.paths)
+      for (const p of sp.points) {
+        add(p.x, p.y);
+        if (p.c1) add(p.c1.x, p.c1.y);
+        if (p.c2) add(p.c2.x, p.c2.y);
+      }
+    // A miter join can reach well past the line's width.
+    if (s.type === 'path' && s.stroke) pad = s.stroke.width * 6 + 4;
+  }
+  const b = x0 === Infinity ? null : { x0: x0 - pad, y0: y0 - pad, x1: x1 + pad, y1: y1 + pad };
+  looseCache.set(s, b);
+  return b;
+}
+
+/**
+ * The eraser in object drawing: takes `area` out of the lines and shapes it touches and leaves every other shape
+ * exactly as it was (the same object). A shape the area cuts becomes plain fills, one per separate piece, back to
+ * front as before, so a brush stroke cut in half is two shapes. The first piece keeps the shape's id; the others get
+ * new ids. Every piece carries the shape's lineage (`origin`) and group, so selections and keys still find it.
+ * A shape rubbed away entirely is gone. Shapes the area only brushes by their box are never touched.
+ */
+export function eraseBits(shapes: readonly Shape[], area: Geom): { shapes: Shape[]; changed: boolean } {
+  const box = geomBox(area);
+  if (!box) return { shapes: shapes.slice(), changed: false };
+  let changed = false;
+  const out: Shape[] = [];
+  for (const s of shapes) {
+    if (!rubbable(s) || !overlaps(looseBox(s), box) || !overlaps(shapeBox(s), box)) {
+      out.push(s);
+      continue;
+    }
+    const parts = shapeParts(s);
+    const cut = parts.map((p) => (overlaps(geomBox(p.geom), box) ? intersection(p.geom, area) : []));
+    // A failed clip (null) counts as a miss, so the shape stays as it is.
+    if (!cut.some((c) => c && c.length)) {
+      out.push(s);
+      continue;
+    }
+    const lineage = s.origin ?? s.id;
+    let first = true;
+    let pieces = 0;
+    parts.forEach((p, i) => {
+      const hit = cut[i] && cut[i]!.length;
+      const left = hit ? difference(p.geom, area) : p.geom;
+      if (left === null) {
+        // Could not cut this part: keep it whole rather than losing it.
+        pieces += pushPieces(out, p.geom, p, s, lineage, first);
+      } else pieces += pushPieces(out, left, p, s, lineage, first);
+      if (pieces) first = false;
+    });
+    changed = true;
+  }
+  return { shapes: out, changed };
+}
+
+function pushPieces(out: Shape[], g: Geom, p: Part, from: Shape, lineage: Id, first: boolean): number {
+  const fills = geomToFills(g, p.color, p.opacity, first ? from.id : undefined, p.gradient);
+  fills.forEach((f, i) => {
+    // The piece that keeps the id also keeps what the shape had: its lineage, group and where it sat.
+    if (from.origin || !(first && i === 0)) f.origin = lineage;
+    if (from.group) f.group = from.group;
+  });
+  out.push(...fills);
+  return fills.length;
+}
+
 /**
  * Cuts the selected ungrouped shapes along an area, so the part inside can be lifted out. Returns the shapes with
  * each cut one replaced by its outside piece(s) followed by its inside piece(s), and the ids now selected: the

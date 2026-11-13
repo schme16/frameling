@@ -26,9 +26,13 @@ If the brush won't draw, the layer might be locked or hidden. Check it in the ti
 - [Mirror drawing](help:pixel-mirror) and the [palette lock](help:palette-lock) work with it too.`,
   'tool-eraser': `Press **E**, then drag over what you want gone.
 
-**On a vector layer** it erases whole lines. Anything the circle touches, a stroke or a shape, disappears as a whole, so one quick swipe removes a line without you having to trace it. The **Reach** option sets how close you need to get. If you took out too much, Undo brings it back. Hold **Shift** and click to rub out in a straight line from where you last stopped.
+**On a vector layer** it rubs out just the bit you drag over, the way a real rubber does. Drag across a brush stroke and it's cut in two, drag along the end and you nibble it shorter. The pieces stay separate shapes, so you can still pick each one up and move it. Rub a shape away completely and it's gone. If you took out too much, Undo brings it back. Hold **Shift** and click to rub out in a straight line from where you last stopped.
 
-**On a layer set to Merge** it rubs out just the area under the circle instead, the way a real eraser does. See [Merge shapes or keep them separate](help:merge-drawing).
+The **Size** option sets how big the circle is. Once a line has been cut it becomes a plain filled shape, so its brush settings are no longer editable. Symbols and text are left alone.
+
+**Want whole lines instead?** In the options, set **Rub out** to **Whole lines**. Anything the circle touches then disappears as a whole, so one quick swipe removes a stroke without you tracing it, and **Size** becomes **Reach**. Frameling remembers your pick, and **Eraser rubs out just the bit** in the command palette (**Ctrl+K**) flips it too.
+
+**On a layer set to Merge** it always rubs out just the area under the circle. See [Merge shapes or keep them separate](help:merge-drawing).
 
 **On a pixel layer** it clears pixels as you drag, and you choose its size in art pixels. Through a zoomed [camera](help:camera) the size is what you see, in whole pixels.
 
