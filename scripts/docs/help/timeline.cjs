@@ -162,11 +162,13 @@ module.exports = [
   },
   {
     name: 'timeline-layers',
+    // The same list in both places: the Layers panel on the right and the timeline's own column underneath.
     steps: [
       ...open('bouncing-ball'),
       js(`${F}.run('layers.addPixel')`), { wait: 800 },
+      js(`${F}.showPanel('layers')`), { wait: 900 },
       { move: PARK }, { move: [645, 785], after: 1200 },
-      { shot: '@', crop: [108, 505, 560, 190] },
+      { shot: '@', crop: [108, 44, 1160, 700] },
     ],
   },
   {
