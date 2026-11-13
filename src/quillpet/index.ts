@@ -6,8 +6,11 @@ import { defineFeature } from '../features/feature';
 import { quillPetCommands, quillPetPanel, quillThingsPanel } from './commands';
 import { quillPetHelp } from './help';
 import { startWatching } from './watch';
+import { watchForPresents } from './gifts';
+import { registerPresentChoice } from './choices';
 
 let stop: (() => void) | null = null;
+let stopGifts: (() => void) | null = null;
 
 export const quillPetFeature = defineFeature({
   id: 'quill-pet',
@@ -30,13 +33,23 @@ export const quillPetFeature = defineFeature({
       group: 'learn',
       keywords: ['quill', 'things', 'collection', 'gifts', 'presents'],
     },
+    'quill-presents': {
+      short: 'His presents',
+      blurb: 'Quill redraws something of yours with a wobbly hand and leaves it for you.',
+      group: 'learn',
+      keywords: ['quill', 'present', 'gift', 'crayon', 'copy', 'made', 'surprise'],
+    },
   },
   activate: () => {
+    registerPresentChoice();
     stop = startWatching();
+    stopGifts = watchForPresents();
   },
   deactivate: () => {
     stop?.();
     stop = null;
+    stopGifts?.();
+    stopGifts = null;
   },
 });
 

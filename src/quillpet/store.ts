@@ -1,7 +1,22 @@
 // What Quill remembers, kept between runs. The thinking is all in model.ts; this is the live copy, the saving, and
 // one place to tell him something happened.
 import { createStore } from '../ui/mini';
-import { apply, dayKey, daysBetween, FRESH_PET, letGo, markSeen, type DayCount, type PetEvent, type PetState } from './model';
+import {
+  addPresent,
+  apply,
+  dayKey,
+  daysBetween,
+  FRESH_PET,
+  letGo,
+  letGoOfPresent,
+  markSeen,
+  openPresent,
+  type DayCount,
+  type PetEvent,
+  type PetState,
+  type Present,
+} from './model';
+import type { ThingSource } from './crayon';
 
 export const PET_KEY = 'frameling.quill.v1';
 
@@ -14,6 +29,13 @@ export function readPet(storage: Pick<Storage, 'getItem'> | null | undefined): P
     const v = JSON.parse(raw) as Partial<PetState>;
     const num = (x: unknown, min = 0) => (typeof x === 'number' && Number.isFinite(x) ? Math.max(min, x) : min);
     const strs = (x: unknown) => (Array.isArray(x) ? x.filter((s): s is string => typeof s === 'string') : []);
+    // A source only counts if it has a stage and a list of shapes. Anything else and he just keeps the picture.
+    const source = (x: unknown): ThingSource | undefined => {
+      const v = x as Partial<ThingSource> | undefined;
+      if (!v || typeof v !== 'object' || !Array.isArray(v.shapes)) return undefined;
+      if (!Number.isFinite(v.width) || !Number.isFinite(v.height)) return undefined;
+      return { width: v.width as number, height: v.height as number, background: typeof v.background === 'string' ? v.background : null, shapes: v.shapes };
+    };
     return {
       metAt: num(v.metAt),
       closeness: num(v.closeness),
@@ -22,10 +44,23 @@ export function readPet(storage: Pick<Storage, 'getItem'> | null | undefined): P
       things: Array.isArray(v.things)
         ? v.things
             .filter((t) => t && typeof t.id === 'string' && typeof t.picture === 'string')
-            .map((t) => ({ id: t.id, name: typeof t.name === 'string' ? t.name : 'A drawing', picture: t.picture, givenAt: num(t.givenAt) }))
+            .map((t) => {
+              const src = source((t as { source?: unknown }).source);
+              return { id: t.id, name: typeof t.name === 'string' ? t.name : 'A drawing', picture: t.picture, givenAt: num(t.givenAt), ...(src ? { source: src } : {}) };
+            })
         : [],
       colours: strs(v.colours),
       seen: strs(v.seen),
+      presents: Array.isArray(v.presents)
+        ? (v.presents
+            .map((p) => {
+              const src = source((p as { source?: unknown })?.source);
+              if (!p || typeof p.id !== 'string' || typeof p.picture !== 'string' || !src) return null;
+              return { id: p.id, kind: 'crayon', name: typeof p.name === 'string' ? p.name : 'A present', picture: p.picture, source: src, seed: num(p.seed), madeAt: num(p.madeAt), ...(p.opened ? { opened: true as const } : {}) };
+            })
+            .filter(Boolean) as Present[])
+        : [],
+      lastPresentAt: num(v.lastPresentAt),
     };
   } catch {
     return FRESH_PET;
@@ -81,6 +116,26 @@ export function noteSeen(id: string): void {
   const next = markSeen(petStore.get(), id);
   if (next === petStore.get()) return;
   petStore.set(next);
+  save();
+}
+
+/** Puts something he made on his shelf. */
+export function keepPresent(present: Present): void {
+  petStore.set(addPresent(petStore.get(), present));
+  save();
+}
+
+/** Marks one as opened. */
+export function notePresentOpened(id: string): void {
+  const next = openPresent(petStore.get(), id);
+  if (next === petStore.get()) return;
+  petStore.set(next);
+  save();
+}
+
+/** Gives one of his presents back, because you asked. */
+export function letGoOfPresentNamed(id: string): void {
+  petStore.set(letGoOfPresent(petStore.get(), id));
   save();
 }
 

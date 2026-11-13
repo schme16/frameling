@@ -652,6 +652,29 @@
     "where": "Quill's panel: you gave him the colour you're drawing with (the app picks one)."
   },
   "pet.thing": { "text": "{name}! One of my favourites.", "where": "Quill's panel: you pressed one of the things you gave him. {name} is what it was called.", "vars": ["name"] },
+  "pet.present.made": {
+    "text": [
+      "I made you something out of {name}. It's in my things when you want it.",
+      "Don't look yet. Alright, do look. I had a go at {name} with my crayons.",
+      "There's a thing on my shelf for you. {name}, only wobblier."
+    ],
+    "where": "A toast: Quill has made you a crayon copy of one of your drawings. {name} is what the drawing was called.",
+    "vars": ["name"]
+  },
+  "pet.present.stage": {
+    "text": "Now we're proper friends, I made you something. It's {name}, done my way, waiting in my things.",
+    "where": "A toast: the present Quill makes when the two of you reach a new step. {name} is the drawing he worked from.",
+    "vars": ["name"]
+  },
+  "pet.present.opened": {
+    "text": [
+      "Mind the edges, I went a bit outside the lines.",
+      "It's yours now. Draw all over it if you like.",
+      "Not as neat as yours. That's rather the point."
+    ],
+    "where": "Quill's things: you opened one of his presents (the app picks one)."
+  },
+  "pet.present.none": { "text": "Give me one of your drawings and I'll see what I can do with it.", "where": "Quill's things: the shelf where his presents go, while he has not made one yet." },
   "pet.given": {
     "text": [
       "For me? I'll put it somewhere safe.",

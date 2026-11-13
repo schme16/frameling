@@ -17,4 +17,13 @@ export const quillPetHelp: HelpTopic[] = [
     summary: "The drawings you have given Quill. He keeps a little picture of each one, for as long as you like, and gives one back whenever you ask.",
     keywords: ['quill', 'things', 'collection', 'gifts', 'presents', 'keep', 'given', 'pet'],
   },
+  {
+    id: 'quill-presents',
+    title: 'The presents Quill makes you',
+    section: 'Getting around',
+    media: 'quill-presents.png',
+    summary:
+      'Now and then Quill redraws one of your drawings with a wobbly hand and leaves it on his shelf. It opens as a drawing of your own. Nothing is generated: it is your shapes, played with.',
+    keywords: ['quill', 'present', 'presents', 'gift', 'crayon', 'copy', 'wobbly', 'made', 'surprise', 'pet'],
+  },
 ];

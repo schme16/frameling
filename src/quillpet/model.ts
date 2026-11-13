@@ -5,6 +5,7 @@
 // there is no meter that drains while you're away, and there is no unhappy mood to fall into. Come back after a
 // month and he's delighted, not sulking. Every function below is written so that stays true, and the tests check it.
 import type { QuillAnim } from '../ui/mascot/timing';
+import type { ThingSource } from './crayon';
 
 /** A thing you gave him: a drawing of yours, kept as a small picture. */
 export interface PetThing {
@@ -15,6 +16,28 @@ export interface PetThing {
   picture: string;
   /** When you gave it, ms since epoch. */
   givenAt: number;
+  /**
+   * The shapes themselves, kept for the newest few things only (see `MAX_SOURCES`). A picture is enough to show a
+   * collection, but to make you something back he needs the drawing. Vector shapes only, so it stays small.
+   */
+  source?: ThingSource;
+}
+
+/** Something Quill made for you, out of a drawing you gave him. */
+export interface Present {
+  id: string;
+  /** Which kind. A crayon copy is the only one he knows so far. */
+  kind: 'crayon';
+  /** What he called it. */
+  name: string;
+  /** A small PNG data URL of what he made, for his shelf. */
+  picture: string;
+  /** The drawing he worked from, and the seed he used. Kept as a recipe, so a present is small and always the same. */
+  source: ThingSource;
+  seed: number;
+  madeAt: number;
+  /** True once you've opened it. He never once asks why you haven't. */
+  opened?: boolean;
 }
 
 /** Everything Quill remembers between runs. */
@@ -33,13 +56,21 @@ export interface PetState {
   colours: string[];
   /** Moments he's already made a fuss of, so he only does it once. */
   seen: string[];
+  /** What he's made for you, oldest first. */
+  presents: Present[];
+  /** When he last made you something, ms since epoch. 0 = never. */
+  lastPresentAt: number;
 }
 
-export const FRESH_PET: PetState = { metAt: 0, closeness: 0, days: 0, lastDay: '', things: [], colours: [], seen: [] };
+export const FRESH_PET: PetState = { metAt: 0, closeness: 0, days: 0, lastDay: '', things: [], colours: [], seen: [], presents: [], lastPresentAt: 0 };
 
 /** How many things and colours he keeps. Old ones drop off the front, nothing is ever taken as a punishment. */
 export const MAX_THINGS = 24;
 export const MAX_COLOURS = 12;
+/** How many things keep their shapes as well as their picture. The rest keep the picture, as they always did. */
+export const MAX_SOURCES = 3;
+/** How many of his presents are kept. The oldest drops off, the same way his things do. */
+export const MAX_PRESENTS = 8;
 
 // ---------------------------------------------------------------- what he notices
 
@@ -114,7 +145,7 @@ export function apply(pet: PetState, count: DayCount, ev: PetEvent, at: number):
 
   if (ev.kind === 'gave') {
     const things = [...next.things.filter((t) => t.id !== ev.thing.id), ev.thing];
-    next = { ...next, things: things.slice(-MAX_THINGS) };
+    next = { ...next, things: keepNewestSources(things.slice(-MAX_THINGS)) };
   }
   if (ev.kind === 'fed' || ev.kind === 'noticed') {
     const colours = [...next.colours.filter((x) => x.toLowerCase() !== ev.colour.toLowerCase()), ev.colour];
@@ -123,6 +154,22 @@ export function apply(pet: PetState, count: DayCount, ev: PetEvent, at: number):
   // The only line that touches closeness, and it only ever adds.
   if (gained) next = { ...next, closeness: next.closeness + gained };
   return { pet: next, count: c, gained };
+}
+
+/**
+ * Only the newest few things keep their shapes. The older ones keep their picture and lose the drawing, so his
+ * collection can grow without his corner growing with it.
+ */
+export function keepNewestSources(things: PetThing[], max = MAX_SOURCES): PetThing[] {
+  const withSource = things.filter((t) => t.source).length;
+  if (withSource <= max) return things;
+  let over = withSource - max;
+  return things.map((t) => {
+    if (!t.source || over <= 0) return t;
+    over -= 1;
+    const { source: _drop, ...rest } = t;
+    return rest;
+  });
 }
 
 /** Takes one of his things away, because you asked. The only thing that ever shrinks, and never on its own. */
@@ -221,3 +268,61 @@ export const MOOD_WORDS: Record<Mood, string> = {
   excited: 'Excited',
   proud: 'Proud of you',
 };
+
+// ---------------------------------------------------------------- when he makes you something
+
+/** Why he's making you one. */
+export type PresentReason = 'stage' | 'thanks';
+
+/** How many things he's been given since the last time he made you something. */
+export function givenSincePresent(pet: PetState): number {
+  return pet.things.filter((t) => t.givenAt > pet.lastPresentAt).length;
+}
+
+/** He keeps a present for every step of knowing each other, so he only marks each one once. */
+export const presentMark = (stage: Stage): string => `gift.${stage.id}`;
+
+/** How many things he needs to have been given, and how long a wait, before he makes one just because. */
+export const THANKS_THINGS = 3;
+export const THANKS_DAYS = 2;
+
+/**
+ * Whether Quill would like to make you something now, and why. He decides: there is no button for it, because a
+ * present you asked for is a toy and a present that turns up is a moment.
+ *
+ * Never more than one a day, never without a drawing of yours to work from, and never as a comment on your drawing.
+ * The quiet-moment rule (not mid-stroke) lives in the runtime, not here, because it needs a clock.
+ */
+export function presentDue(pet: PetState, at: number): PresentReason | null {
+  if (!pet.things.some((t) => t.source)) return null;
+  if (pet.lastPresentAt && dayKey(pet.lastPresentAt) === dayKey(at)) return null;
+  const stage = stageOf(pet.closeness);
+  if (stage.at > 0 && !pet.seen.includes(presentMark(stage))) return 'stage';
+  const waited = daysBetween(pet.lastPresentAt || pet.metAt, at);
+  if (givenSincePresent(pet) >= THANKS_THINGS && waited >= THANKS_DAYS) return 'thanks';
+  return null;
+}
+
+/** The newest thing of yours he still has the drawing of: what he'd work from. */
+export function sourceThing(pet: PetState): PetThing | undefined {
+  return [...pet.things].reverse().find((t) => t.source);
+}
+
+/** Puts a present on his shelf, oldest dropping off the front. Never touches anything else he remembers. */
+export function addPresent(pet: PetState, present: Present): PetState {
+  return { ...pet, presents: [...pet.presents, present].slice(-MAX_PRESENTS), lastPresentAt: present.madeAt };
+}
+
+/** Marks one as opened, so his shelf can show which are still wrapped. */
+export function openPresent(pet: PetState, id: string): PetState {
+  const presents = pet.presents.map((p) => (p.id === id && !p.opened ? { ...p, opened: true } : p));
+  return presents.some((p, i) => p !== pet.presents[i]) ? { ...pet, presents } : pet;
+}
+
+/** Lets one go, because you asked. */
+export function letGoOfPresent(pet: PetState, id: string): PetState {
+  return { ...pet, presents: pet.presents.filter((p) => p.id !== id) };
+}
+
+/** How many are still wrapped. */
+export const unopenedCount = (pet: PetState): number => pet.presents.filter((p) => !p.opened).length;

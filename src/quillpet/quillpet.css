@@ -142,6 +142,7 @@
   position: relative;
 }
 .qp-thing {
+  position: relative;
   padding: 0;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -175,4 +176,34 @@
 .qp-thing-list > li:hover .qp-thing-back,
 .qp-thing-back:focus-visible {
   opacity: 1;
+}
+
+/* His shelf: the presents he's made you, above the drawings you gave him. */
+.qt-shelf {
+  margin: 10px 0 4px;
+}
+.qt-shelf-title {
+  margin: 0 0 6px;
+  font-size: var(--fs-small);
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+}
+.qt-shelf-none {
+  margin: 0;
+}
+/* A present you haven't opened yet gets a quiet spot, never a badge shouting at you. */
+.qt-thing.is-new {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.qt-new {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 2px var(--panel);
 }

@@ -510,6 +510,25 @@ const entries = [
       shotEl(2),
     ],
   },
+  // The presents Quill makes: his shelf with one on it, above the things you gave him.
+  {
+    name: 'quill-presents',
+    prefs: CALM,
+    steps: [
+      template('bouncing-ball'),
+      wait(800),
+      panel('quill-things'),
+      wait(900),
+      // Give him a couple of frames, then have him make one out of the newest.
+      js(`(() => { const s = ${F}.store(); for (const f of [0, 8]) { s.setUi({ frame: f }); document.querySelector('.qp-give').click(); } return true; })()`),
+      wait(2200),
+      js(`window.__framelingQuillPet.present()`),
+      wait(1800),
+      ...settle,
+      tag('.qt-panel'),
+      shotEl(2),
+    ],
+  },
   // Quill's corner: he potters about, you give him a stroke, and the bar shows how well you know each other.
   {
     name: 'quill-pet',
