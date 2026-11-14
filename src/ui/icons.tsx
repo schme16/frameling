@@ -468,6 +468,7 @@ const ICONS: Record<string, ReactNode> = {
   folder: <path d="M3.6 7.4a2 2 0 0 1 2-2h3.6l2.2 2.5h7a2 2 0 0 1 2 2v7.6a2 2 0 0 1-2 2H5.6a2 2 0 0 1-2-2z" />,
   undo: <path d="M9 5.5L4.5 10 9 14.5M5 10h9.5a4.5 4.5 0 0 1 0 9H11" />,
   redo: <path d="M15 5.5l4.5 4.5-4.5 4.5M19 10H9.5a4.5 4.5 0 0 0 0 9H13" />,
+  history: <path d="M4 12a8 8 0 1 0 2.5-5.8M4 4.5v3.7h3.7M12 8v4.2l2.8 1.8" />,
   // the small stuff
   close: <path d="M6 6l12 12M18 6L6 18" />,
   check: <path d="M5 12.8l4.4 4.4L19 7.6" />,

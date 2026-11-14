@@ -126,6 +126,13 @@ interface HistoryEntry {
   weight: number;
 }
 
+/** One step of the history as the History panel shows it. */
+export interface HistoryStep {
+  id: number;
+  label: string;
+  at: number;
+}
+
 type Listener = () => void;
 
 /** A document edited inside the open one (a tile), with the open document and its history put aside meanwhile. */
@@ -327,6 +334,54 @@ export class Store {
   /** Ids of the steps Undo and Redo would take next (they keep their id as they move between the two). */
   historyIds(): { undo: number | null; redo: number | null } {
     return { undo: this.undoStack[this.undoStack.length - 1]?.id ?? null, redo: this.redoStack[this.redoStack.length - 1]?.id ?? null };
+  }
+
+  /** The steps you can see: done ones oldest first, then undone ones in the order Redo would put them back. */
+  historyList(): { done: HistoryStep[]; undone: HistoryStep[] } {
+    const view = (e: HistoryEntry): HistoryStep => ({ id: e.id, label: e.label, at: e.at });
+    return { done: this.undoStack.map(view), undone: [...this.redoStack].reverse().map(view) };
+  }
+
+  /**
+   * Goes to how the drawing stood just after the step `id` (or to before the first step, with `null`), by undoing or
+   * redoing as many steps as it takes, in one go. The steps you came back past stay for Redo until you change something.
+   * Returns false when there is no such step.
+   */
+  jumpToStep(id: number | null): boolean {
+    const doneAt = id === null ? -1 : this.undoStack.findIndex((e) => e.id === id);
+    let doc = this.state.doc;
+    if (doneAt >= 0 || id === null) {
+      if (this.undoStack.length - 1 === doneAt) return true;
+      while (this.undoStack.length - 1 > doneAt) {
+        const e = this.undoStack.pop()!;
+        this.redoStack.push(e);
+        doc = applyPatches(doc, e.inverse);
+      }
+    } else {
+      if (!this.redoStack.some((e) => e.id === id)) return false;
+      for (;;) {
+        const e = this.redoStack.pop()!;
+        this.undoStack.push({ ...e, coalesce: undefined });
+        doc = applyPatches(doc, e.patches);
+        if (e.id === id) break;
+      }
+    }
+    this.afterHistory(doc);
+    return true;
+  }
+
+  /** The drawing as it stood just after the step `id` (or before the first one, with `null`), without changing anything. */
+  docAtStep(id: number | null): Doc | null {
+    let doc = this.state.doc;
+    const doneAt = id === null ? -1 : this.undoStack.findIndex((e) => e.id === id);
+    if (doneAt >= 0 || id === null) {
+      for (let i = this.undoStack.length - 1; i > doneAt; i--) doc = applyPatches(doc, this.undoStack[i].inverse);
+      return doc;
+    }
+    const at = this.redoStack.findIndex((e) => e.id === id);
+    if (at < 0) return null;
+    for (let i = this.redoStack.length - 1; i >= at; i--) doc = applyPatches(doc, this.redoStack[i].patches);
+    return doc;
   }
 
   undo(): void {

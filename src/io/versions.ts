@@ -75,8 +75,9 @@ export function markVersionBaseline(doc: Doc = store().rootDoc(), at = Date.now(
  * Takes a version of the open drawing. Named ones are kept until deleted; automatic ones are pruned. Resolves with
  * the new version, or null if it couldn't be made.
  */
-export function takeVersion(opts: { name?: string; reason?: VersionMeta['reason']; now?: number } = {}): Promise<VersionMeta | null> {
-  const open = store().rootDoc();
+export function takeVersion(opts: { name?: string; reason?: VersionMeta['reason']; now?: number; doc?: Doc } = {}): Promise<VersionMeta | null> {
+  // `doc` keeps an earlier state of the drawing (a step from the History panel) rather than how it is now.
+  const open = opts.doc ?? store().rootDoc();
   const now = opts.now ?? Date.now();
   return serial(async () => {
     try {
@@ -101,7 +102,7 @@ export function takeVersion(opts: { name?: string; reason?: VersionMeta['reason'
       const { keep, drop } = pruneVersions(list, now);
       for (const d of drop) await library.remove('versions', d.id).catch(() => undefined);
       await writeIndex(doc.id, keep);
-      if (store().rootDoc() === open) markVersionBaseline(open, now);
+      if (!opts.doc && store().rootDoc() === open) markVersionBaseline(open, now);
       versionsChanged.set((n) => n + 1);
       return meta;
     } catch {
