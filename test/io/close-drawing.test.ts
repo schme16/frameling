@@ -125,8 +125,13 @@ describe('Close drawing', () => {
 
     const now = store();
     const fresh = new Store(newDoc());
-    // Everything a new window has: the same ui (frame, selection, zoom, onion skin, file, dirty flag...) and the same drawing, apart from ids.
-    expect(now.get().ui).toEqual({ ...fresh.get().ui, activeLayerId: now.get().doc.layers[0].id });
+    // Everything a new window has: the same ui (frame, selection, zoom, file, dirty flag...) and the same drawing,
+    // apart from ids. The settings that are deliberately remembered between drawings (the brush, the two colours,
+    // looping and the onion skin: see src/core/uiMemory.ts) are kept, exactly as New and Open keep them.
+    const kept = { ...fresh.get().ui, activeLayerId: now.get().doc.layers[0].id, brush: now.get().ui.brush, color: now.get().ui.color, fillColor: now.get().ui.fillColor, strokeOn: now.get().ui.strokeOn, loopPlayback: now.get().ui.loopPlayback, pingPong: now.get().ui.pingPong, onion: now.get().ui.onion };
+    expect(now.get().ui).toEqual(kept);
+    // The onion skin is a setting, so closing does not switch it off.
+    expect(now.get().ui.onion.enabled).toBe(true);
     const ids = (d: object) => JSON.parse(JSON.stringify(d).replace(/"id":"[^"]*"/g, '"id":"x"'));
     expect(ids(now.get().doc)).toEqual(ids(fresh.get().doc));
     expect(now.canUndo()).toBe(false);
