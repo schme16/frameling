@@ -16,6 +16,10 @@ export interface PixelFillOptions {
   mode?: 'contiguous' | 'all';
   /** Tile mode: the area carries on across the edges (left meets right, top meets bottom). */
   wrap?: boolean;
+  /** How different a colour can be and still count as the clicked one, 0 (exact) to 255 per channel. Default 0. */
+  tolerance?: number;
+  /** One byte per pixel; 1 is a wall (a line drawn on another layer). The fill never crosses or paints a wall. */
+  walls?: Uint8Array;
 }
 
 export interface PixelFillResult {
@@ -26,8 +30,9 @@ export interface PixelFillResult {
 }
 
 /**
- * Replaces the colour at (x, y) with `color`. Tolerance is zero: exact matches only (fully transparent pixels all
- * count as the same colour, whatever their hidden RGB).
+ * Replaces the colour at (x, y) with `color`. By default only exact matches count (fully transparent pixels all count
+ * as the same colour, whatever their hidden RGB); `tolerance` lets close colours count too, and `walls` marks pixels
+ * the fill stops at.
  */
 export function floodFillPixels(src: Uint8ClampedArray, width: number, height: number, x: number, y: number, color: Rgba, opts: PixelFillOptions = {}): PixelFillResult {
   const out = new Uint8ClampedArray(src);
@@ -38,11 +43,23 @@ export function floodFillPixels(src: Uint8ClampedArray, width: number, height: n
   const tb = src[at + 2];
   const ta = src[at + 3];
   const [nr, ng, nb, na] = color;
-  const same = (i: number) => (ta === 0 ? src[i + 3] === 0 : src[i] === tr && src[i + 1] === tg && src[i + 2] === tb && src[i + 3] === ta);
-  // Painting the colour it already is changes nothing.
-  if (ta === 0 ? na === 0 : tr === nr && tg === ng && tb === nb && ta === na) return { pixels: out, changed: 0 };
+  const walls = opts.walls && opts.walls.length === width * height ? opts.walls : undefined;
+  // A click on a wall fills nothing.
+  if (walls && walls[y * width + x]) return { pixels: out, changed: 0 };
+  const tol = Math.max(0, Math.min(255, Math.round(opts.tolerance ?? 0)));
+  const same = (i: number) => {
+    if (walls && walls[i >> 2]) return false;
+    if (tol === 0) return ta === 0 ? src[i + 3] === 0 : src[i] === tr && src[i + 1] === tg && src[i + 2] === tb && src[i + 3] === ta;
+    const a = src[i + 3];
+    if (ta === 0 && a === 0) return true;
+    if (ta === 0 || a === 0) return Math.abs(a - ta) <= tol;
+    return Math.abs(src[i] - tr) <= tol && Math.abs(src[i + 1] - tg) <= tol && Math.abs(src[i + 2] - tb) <= tol && Math.abs(a - ta) <= tol;
+  };
+  // Painting the colour it already is changes nothing (with a tolerance, near colours still get tidied to it).
+  if (tol === 0 && (ta === 0 ? na === 0 : tr === nr && tg === ng && tb === nb && ta === na)) return { pixels: out, changed: 0 };
   let changed = 0;
   const paint = (i: number) => {
+    if (out[i] === nr && out[i + 1] === ng && out[i + 2] === nb && out[i + 3] === na) return;
     out[i] = nr;
     out[i + 1] = ng;
     out[i + 2] = nb;
@@ -109,4 +126,29 @@ export function floodFillPoints(src: Uint8ClampedArray, width: number, height: n
     changed += r.changed;
   }
   return { pixels: changed ? pixels : new Uint8ClampedArray(src), changed };
+}
+
+/** The most of the picture a layer can cover and still count as line art; past that it is a backdrop. */
+export const BACKDROP_SHARE = 0.6;
+/** How much of a pixel a line must cover (alpha, 0 to 255) to count as a wall. */
+export const WALL_ALPHA = 32;
+
+/**
+ * The walls for the bucket from other layers' pixels (each `w x h` RGBA, already drawn at this layer's pixel size):
+ * a pixel is a wall where any layer has ink. A layer covering most of the picture is a backdrop, not line art, so it
+ * is left out; otherwise a background would wall everything in. Returns null when there are no walls at all.
+ */
+export function wallsFromLayers(layers: readonly Uint8ClampedArray[], w: number, h: number): Uint8Array | null {
+  const total = w * h;
+  const walls = new Uint8Array(total);
+  let any = false;
+  for (const px of layers) {
+    if (px.length < total * 4) continue;
+    let ink = 0;
+    for (let p = 0; p < total; p++) if (px[p * 4 + 3] >= WALL_ALPHA) ink++;
+    if (!ink || ink > total * BACKDROP_SHARE) continue;
+    for (let p = 0; p < total; p++) if (px[p * 4 + 3] >= WALL_ALPHA) walls[p] = 1;
+    any = true;
+  }
+  return any ? walls : null;
 }

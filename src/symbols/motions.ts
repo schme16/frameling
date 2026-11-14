@@ -7,7 +7,7 @@
 import { current, isDraft } from 'immer';
 import type { Cel, Doc, Id, InstanceShape, Layer, VectorDrawing } from '../core/format';
 import { celAt, findLayer, uid } from '../core/doc';
-import { freeSymbolName, isInstance, makeSymbol, symbolContent } from '../core/symbols';
+import { freeSymbolName, isInstance, makePixelSymbol, makeSymbol, pixelKeyAt, symbolContent } from '../core/symbols';
 import { motionFrames, motionKeys, motionPoses, type MotionId } from '../core/motions';
 import { shapesBounds, symbolBounds } from '../canvas/geometry';
 import { cloneDrawing } from '../timeline/edit-core';
@@ -22,7 +22,7 @@ export interface MotionWhere {
   selection: Id[];
 }
 
-export type MotionOutcome = { ok: true; start: number; frames: number; instanceIds: Id[]; wrapped: boolean } | { ok: false; why: string };
+export type MotionOutcome = { ok: true; start: number; frames: number; instanceIds: Id[]; wrapped: boolean; layerId: Id } | { ok: false; why: string };
 
 const plain = <T,>(x: T): T => (isDraft(x) ? (current(x as never) as T) : x);
 const end = (c: Cel) => c.start + c.length;
@@ -32,7 +32,11 @@ export function motionProblem(doc: Doc, w: MotionWhere): string | null {
   const layer = findLayer(doc, w.layerId);
   if (!layer) return 'Add a layer first, then draw something to move.';
   if (layer.locked) return 'This layer is locked. Unlock it in the timeline to animate it.';
-  if (layer.kind !== 'vector') return 'One-click motions work on drawing layers, not pixel layers.';
+  if (layer.kind === 'pixel') {
+    if (celAt(layer, w.frame)?.tween) return 'This drawing is already moving (it has in-betweens). Pick a frame without them, or remove them first.';
+    return pixelKeyAt(doc, layer.id, w.frame) ? null : 'Draw something first (or go to a frame with a drawing), then make it move.';
+  }
+  if (layer.kind !== 'vector') return 'One-click motions work on drawing layers.';
   if (layer.rig) return 'This is the Bones layer. Pick the layer with your drawing on it.';
   const cel = celAt(layer, w.frame);
   const d = cel ? doc.drawings[cel.drawingId] : undefined;
@@ -68,7 +72,16 @@ function instanceSize(doc: Doc, s: InstanceShape): { w: number; h: number } {
 export function applyMotion(doc: Doc, w: MotionWhere, id: MotionId, room: MotionRoom = 'squeeze'): MotionOutcome {
   const why = motionProblem(doc, w);
   if (why) return { ok: false, why };
-  const layer = findLayer(doc, w.layerId)!;
+  let layer = findLayer(doc, w.layerId)!;
+  // Pixel art moves as a symbol: the key becomes one first, on a vector layer in the same place.
+  let lifted = false;
+  if (layer.kind === 'pixel') {
+    const made = makePixelSymbol(doc, layer.id, w.frame, freeSymbolName(doc, 'Moving part'));
+    if (!made) return { ok: false, why: 'Draw something first (or go to a frame with a drawing), then make it move.' };
+    w = { ...w, layerId: made.layerId, selection: [made.instanceId] };
+    layer = findLayer(doc, made.layerId)!;
+    lifted = true;
+  }
   let cel = celAt(layer, w.frame)!;
   const start = w.frame;
 
@@ -100,7 +113,7 @@ export function applyMotion(doc: Doc, w: MotionWhere, id: MotionId, room: Motion
   const base = doc.drawings[cel.drawingId] as VectorDrawing;
   const sel = new Set(w.selection.filter((sid) => base.shapes.some((s) => s.id === sid)));
   let targets: Id[];
-  let wrapped = false;
+  let wrapped = lifted;
   const picked = sel.size ? base.shapes.filter((s) => sel.has(s.id)) : base.shapes;
   const loose = picked.filter((s) => !isInstance(s));
   targets = picked.filter(isInstance).map((s) => s.id);
@@ -160,7 +173,7 @@ export function applyMotion(doc: Doc, w: MotionWhere, id: MotionId, room: Motion
   layer.cels.splice(layer.cels.indexOf(cel), 1, ...cels);
   layer.cels.sort((a, b) => a.start - b.start);
   doc.length = Math.max(doc.length, ...layer.cels.map(end));
-  return { ok: true, start, frames, instanceIds: ids, wrapped };
+  return { ok: true, start, frames, instanceIds: ids, wrapped, layerId: w.layerId };
 }
 
 /** Cels inside symbols that show this drawing (a key copied into a symbol). */

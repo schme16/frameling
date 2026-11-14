@@ -2,7 +2,7 @@
 export const bodies: Record<string, string> = {
   symbols: `A **symbol** is a drawing you can reuse. Each copy of it on the canvas (an *instance*) can have its own size, turn, fade and colour wash, but they all share one drawing. Fix a line inside the symbol and every copy is fixed.
 
-**Make one:** select what you drew with the Select tool (V), then press **F8**, or pick **Tools and layers > Make a reusable symbol**. Nothing selected? The whole drawing on this frame becomes the symbol.
+**Make one:** select what you drew with the Select tool (V), then press **F8**, or pick **Tools and layers > Make a reusable symbol**. Nothing selected? The whole drawing on this frame becomes the symbol. Pixel art works too: see [Symbols from pixel art](help:symbols-pixel).
 
 **The Library** lists every symbol in your document (**View > Library**):
 - **Drag** a symbol onto the canvas to place a copy, or press its **+** button to drop one in the middle.
@@ -13,6 +13,27 @@ export const bodies: Record<string, string> = {
 **Symbols can move by themselves.** A symbol has its own timeline, so a flapping wing or a blinking eye can be one symbol that loops wherever you put it. See [Symbol and motion](help:symbol-properties) for how each copy plays.
 
 Symbols can go inside other symbols, as deep as you like (just never inside themselves). They are what [in-betweens](help:tweens) move.`,
+  'symbols-pixel': `A pixel sprite can be a symbol, so you can place it again and again, and move, turn, fade and tween it like any other. Put the same coin on a level ten times and animate it once.
+
+**Make one:** pick the pixel layer, go to the frame with the sprite, and press **F8** (**Tools and layers > Make a reusable symbol**). The sprite stays exactly where it is and stays pixels.
+
+**Where it goes:** symbols sit on vector layers, so if the pixel layer held only this drawing it becomes that layer, in the same place with the same name and look. If it held other drawings, the symbol gets a new layer just above and the rest stay put. Undo puts it all back.
+
+**Then use it like any symbol:**
+- **Ctrl+Shift+T** or **Make in-betweens** on a pixel key does the symbol step for you, then adds the end key to move. See [In-betweens](help:tweens).
+- The [one-click motions](help:one-click-motions) (bounce, wobble, pop in) work on pixel art too.
+- Drag it out of the **Library** onto a pixel layer and the copy goes on a new layer above.
+- **Double-click** it to keep drawing in pixels inside. Every copy changes.
+
+**Turned or resized:** pixel art stays crisp. Its pixels are never smoothed, so a turned sprite keeps hard, square edges.
+
+## Good to know
+
+- Only the painted part goes into the symbol, so it turns and scales around the sprite's own middle.
+- The symbol holds the drawing at this frame. Draw inside it to give it more frames.
+- A **morph** reshapes outlines, and pixels have none, so morphs need vector shapes. In-betweens move pixel art as a whole.
+
+See [Symbols](help:symbols), and [Pixel art](help:pixel-art) to start a sprite.`,
   'symbols-editing': `**Double-click** a symbol on the canvas with the Select tool (or press **F9**) to open it. The rest of the scene fades back so you can see where it sits, and the timeline shows the symbol's own frames and layers.
 
 Draw, add layers and add frames just as you would on the main stage. Every copy of the symbol changes with you.
@@ -54,7 +75,7 @@ Don't want it? Turn it off in **Preferences > Behaviour > Offer in-betweens betw
 3. Frameling makes an end key and moves the playhead there. **Move, resize or turn** the drawing there.
 4. Press play.
 
-If the drawing wasn't a [symbol](help:symbols) yet, it becomes one, because in-betweens move symbols.
+If the drawing wasn't a [symbol](help:symbols) yet, it becomes one, because in-betweens move symbols. That goes for pixel art too: see [Symbols from pixel art](help:symbols-pixel).
 
 **Even quicker:** click a frame between two drawings in the timeline, and a little [In-betweens? offer](help:tween-offer) appears there. One click makes them.
 
@@ -104,7 +125,7 @@ On the canvas, the dots along the motion trail show one in-between each. Bunched
 **What it makes**
 Plain [keys with in-betweens](help:tweens), each with its own [easing](help:easing). Nothing is hidden: drag the keys to change the timing, move the drawing on any key to change a pose, or change an easing in the Symbol and motion panel. Every motion ends just as it started, so it loops, and you can add another one straight after it.
 
-Shapes that aren't a [symbol](help:symbols) yet are made into one first, so they can move as one piece. **Ctrl+Z** undoes the whole motion in one go.
+Shapes that aren't a [symbol](help:symbols) yet are made into one first, so they can move as one piece. A pixel drawing works too: it becomes a symbol on a vector layer first (see [Symbols from pixel art](help:symbols-pixel)), and stays crisp as it moves. **Ctrl+Z** undoes the whole motion in one go.
 
 **Not enough room?** If the motion runs into the next drawing on the layer, Frameling asks the first time whether to make it quicker to fit or move the later drawings along, then remembers (Preferences > Behaviour).`,
   'motion-paths': `Out of the box, in-betweens move in a straight line. To send them along a curve:

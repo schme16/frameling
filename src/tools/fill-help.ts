@@ -10,6 +10,14 @@ registerHelpTopics([
     keywords: ['paint bucket', 'colour', 'color', 'flood', 'fill in', 'bucket'],
   },
   {
+    id: 'fill-pixel',
+    title: 'Filling pixel art under your lines',
+    section: 'Drawing',
+    media: 'fill-pixel.png',
+    summary: 'On a pixel layer the paint bucket can stop at lines on other layers, and fill colours that are close but not the same.',
+    keywords: ['pixel', 'bucket', 'fill', 'under lines', 'all layers', 'colour layer', 'flats', 'tolerance', 'colour match', 'anti-aliased'],
+  },
+  {
     id: 'fill-gaps',
     title: 'Closing gaps',
     section: 'Drawing',

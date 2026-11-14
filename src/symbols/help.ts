@@ -11,6 +11,15 @@ registerHelpTopics([
     keywords: ['symbol', 'library', 'reuse', 'instance', 'component', 'movie clip', 'graphic', 'convert to symbol', 'F8'],
   },
   {
+    id: 'symbols-pixel',
+    order: 1.5,
+    title: 'Symbols from pixel art',
+    section: 'Symbols and motion',
+    media: 'symbols-pixel.png',
+    summary: 'Turn a pixel sprite into a symbol to place it again and again, and to move, turn, fade and tween it.',
+    keywords: ['pixel', 'sprite', 'pixel symbol', 'pixel art', 'tween pixel', 'move sprite', 'reuse sprite', 'coin'],
+  },
+  {
     id: 'symbols-editing',
     title: 'Drawing inside a symbol',
     section: 'Symbols and motion',

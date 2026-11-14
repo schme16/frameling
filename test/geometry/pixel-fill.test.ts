@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { floodFillPixels, floodFillPoints, parseColor, type Rgba } from '../../src/geometry/pixel-fill';
+import { floodFillPixels, floodFillPoints, parseColor, wallsFromLayers, type Rgba } from '../../src/geometry/pixel-fill';
 
 /** Builds an RGBA grid from rows of characters: `.` transparent, `#` black, `r` red. */
 function grid(rows: string[]): { px: Uint8ClampedArray; w: number; h: number } {
@@ -107,5 +107,101 @@ describe('floodFillPoints', () => {
     expect([...r.pixels.slice(0, 4)]).toEqual([255, 0, 0, 255]);
     expect([...r.pixels.slice(12, 16)]).toEqual([255, 0, 0, 255]);
     expect(r.pixels).not.toBe(src);
+  });
+});
+
+describe('pixel flood fill: colour match', () => {
+  it('stays exact at zero, and takes close colours when asked', () => {
+    const { px, w, h } = grid(['.....']);
+    // A slightly off red, then a very different blue, then clear.
+    px.set([255, 0, 0, 255], 0);
+    px.set([250, 6, 0, 255], 4);
+    px.set([0, 0, 255, 255], 8);
+    const exact = floodFillPixels(px, w, h, 0, 0, [0, 255, 0, 255]);
+    expect(exact.changed).toBe(1);
+    const close = floodFillPixels(px, w, h, 0, 0, [0, 255, 0, 255], { tolerance: 10 });
+    expect(close.changed).toBe(2);
+    expect([...close.pixels.slice(4, 8)]).toEqual([0, 255, 0, 255]);
+    // The blue is too far off at this setting.
+    expect([...close.pixels.slice(8, 12)]).toEqual([0, 0, 255, 255]);
+    expect(floodFillPixels(px, w, h, 0, 0, [0, 255, 0, 255], { tolerance: 255 }).changed).toBe(5);
+  });
+
+  it('tidies near colours to the one you pour even when the click is already that colour', () => {
+    const { px, w, h } = grid(['rr']);
+    px.set([250, 4, 0, 255], 4);
+    expect(floodFillPixels(px, w, h, 0, 0, [255, 0, 0, 255]).changed).toBe(0);
+    const r = floodFillPixels(px, w, h, 0, 0, [255, 0, 0, 255], { tolerance: 20 });
+    expect(r.changed).toBe(1);
+    expect([...r.pixels.slice(4, 8)]).toEqual([255, 0, 0, 255]);
+  });
+
+  it('leaves transparent alone unless it is close in alpha', () => {
+    const { px, w, h } = grid(['..']);
+    px.set([0, 0, 0, 20], 4);
+    expect(floodFillPixels(px, w, h, 0, 0, BLUE, { tolerance: 10 }).changed).toBe(1);
+    expect(floodFillPixels(px, w, h, 0, 0, BLUE, { tolerance: 30 }).changed).toBe(2);
+  });
+});
+
+describe('pixel flood fill: walls from other layers', () => {
+  const walls = (rows: string[]) => Uint8Array.from(rows.join('').split('').map((c) => (c === '#' ? 1 : 0)));
+
+  it('fills only inside the lines of another layer', () => {
+    const { px, w, h } = grid(['.....', '.....', '.....', '.....', '.....']);
+    const wl = walls(['.###.', '.#.#.', '.#.#.', '.###.', '.....']);
+    const r = floodFillPixels(px, w, h, 2, 1, BLUE, { walls: wl });
+    expect(r.changed).toBe(2);
+    expect(show(r.pixels, w)).toEqual(['.....', '..b..', '..b..', '.....', '.....']);
+  });
+
+  it('does nothing when you click right on a wall, and never paints a wall', () => {
+    const { px, w, h } = grid(['.....', '.....']);
+    const wl = walls(['..#..', '..#..']);
+    expect(floodFillPixels(px, w, h, 2, 0, BLUE, { walls: wl }).changed).toBe(0);
+    const r = floodFillPixels(px, w, h, 0, 0, BLUE, { walls: wl });
+    expect(show(r.pixels, w)).toEqual(['bb...', 'bb...']);
+  });
+
+  it('stops "fill all of this colour" at walls too, and works with mirrored points', () => {
+    const { px, w, h } = grid(['.....']);
+    const wl = walls(['..#..']);
+    const all = floodFillPixels(px, w, h, 0, 0, BLUE, { mode: 'all', walls: wl });
+    expect(show(all.pixels, w)).toEqual(['bb.bb']);
+    const two = floodFillPoints(px, w, h, [[0, 0], [4, 0]], BLUE, { walls: wl });
+    expect(show(two.pixels, w)).toEqual(['bb.bb']);
+  });
+
+  it('combines with a colour match', () => {
+    const { px, w, h } = grid(['.....']);
+    px.set([0, 0, 0, 10], 4);
+    const wl = walls(['..#..']);
+    const r = floodFillPixels(px, w, h, 0, 0, BLUE, { walls: wl, tolerance: 20 });
+    expect(r.changed).toBe(2);
+  });
+});
+
+describe('walls from layers', () => {
+  const layer = (rows: string[]) => grid(rows).px;
+  it('marks every pixel that has ink on any layer', () => {
+    const a = layer(['#....', '.....']);
+    const b = layer(['....#', '.....']);
+    const w = wallsFromLayers([a, b], 5, 2)!;
+    expect([...w]).toEqual([1, 0, 0, 0, 1, 0, 0, 0, 0, 0]);
+  });
+  it('ignores a backdrop that covers most of the picture, so it cannot wall everything in', () => {
+    const backdrop = layer(['#####', '#####']);
+    const line = layer(['..#..', '.....']);
+    expect([...wallsFromLayers([backdrop, line], 5, 2)!]).toEqual([0, 0, 1, 0, 0, 0, 0, 0, 0, 0]);
+  });
+  it('is null when nothing is drawn elsewhere', () => {
+    expect(wallsFromLayers([], 3, 3)).toBeNull();
+    expect(wallsFromLayers([layer(['...', '...', '...'])], 3, 3)).toBeNull();
+  });
+  it('lets faint ink through but counts a clear line', () => {
+    const px = new Uint8ClampedArray(2 * 4);
+    px[3] = 10;
+    px[7] = 200;
+    expect([...wallsFromLayers([px], 2, 1)!]).toEqual([0, 1]);
   });
 });

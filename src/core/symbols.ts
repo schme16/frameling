@@ -16,6 +16,7 @@ import { locate, tableOf } from './motionPath';
 import { celAt, peek, uid } from './doc';
 import { kindOf, type PoseEnv } from './shapeKinds';
 import { morphShapes } from './shape-tween';
+import { trimPixels } from './pixelBounds';
 import { bindLayer, type PosedMesh } from './layerKinds';
 
 // ---------------------------------------------------------------- matrices
@@ -227,6 +228,60 @@ export function makeSymbol(doc: Doc, drawingId: Id, shapeIds: Id[], origin: { x:
   });
   d.shapes = kept;
   return { symbolId, instanceId: inst.id };
+}
+
+/** True when the layer has a pixel drawing with something in it showing at `frame`. */
+export function pixelKeyAt(doc: Doc, layerId: Id, frame: number): boolean {
+  const l = doc.layers.find((x) => x.id === layerId);
+  const cel = l?.kind === 'pixel' ? celAt(l, frame) : undefined;
+  const d = cel ? doc.drawings[cel.drawingId] : undefined;
+  return d?.kind === 'pixel' && d.width > 0 && d.height > 0;
+}
+
+/**
+ * Turns the pixel drawing showing on a pixel layer at `frame` into a symbol (on a draft). The symbol keeps a pixel
+ * layer of the same pixel size, so the art stays pixels and is drawn the way the pixel layer drew it. Symbols are
+ * placed by instances, which live on vector layers, so the instance goes on a vector layer that holds the same frames:
+ * the pixel layer itself when this was its only drawing (it becomes that vector layer, same place in the stack and
+ * same look), otherwise a new vector layer just above it. Nothing moves on screen. Returns undefined when there is
+ * nothing to take.
+ */
+export function makePixelSymbol(doc: Doc, layerId: Id, frame: number, name?: string): { symbolId: Id; instanceId: Id; layerId: Id } | undefined {
+  const at = doc.layers.findIndex((x) => x.id === layerId);
+  const layer = doc.layers[at];
+  if (!layer || layer.kind !== 'pixel') return undefined;
+  const cel = celAt(layer, frame);
+  const d = cel ? doc.drawings[cel.drawingId] : undefined;
+  if (!cel || d?.kind !== 'pixel' || d.width <= 0 || d.height <= 0) return undefined;
+  const ps = layer.pixelSize;
+  // Only the painted part goes in, so the symbol's middle (what it turns and scales around) is the art's own middle.
+  const t = trimPixels(d.pixels, d.width, d.height, d.x ?? 0, d.y ?? 0);
+  if (t.width <= 0 || t.height <= 0) return undefined;
+  const origin = { x: (t.x + t.width / 2) * ps, y: (t.y + t.height / 2) * ps };
+  // The drawing moves into the symbol, unless another frame shows it too (then the symbol gets its own copy).
+  const shared = allLayerLists(doc).some((list) => list.some((l) => l.cels.some((c) => c !== cel && c.drawingId === d.id)));
+  const innerId = shared ? uid('p') : d.id;
+  doc.drawings[innerId] = { id: innerId, kind: 'pixel', ...(t.x ? { x: t.x } : {}), ...(t.y ? { y: t.y } : {}), width: t.width, height: t.height, pixels: new Uint8ClampedArray(t.pixels) };
+  const inner: Layer = { id: uid('l'), name: 'Layer 1', kind: 'pixel', visible: true, locked: false, opacity: 1, pixelSize: ps, ...(layer.paletteLock ? { paletteLock: true } : {}), cels: [{ id: uid('c'), start: 0, length: 1, drawingId: innerId }] };
+  const symbolId = uid('y');
+  (doc.symbols ??= {})[symbolId] = { id: symbolId, name: name ?? freeSymbolName(doc), layers: [inner], length: 1, origin };
+  const inst = newInstance(symbolId, origin);
+  const held: VectorDrawing = { id: uid('v'), kind: 'vector', shapes: [inst] };
+  doc.drawings[held.id] = held;
+  const heldCel: Cel = { id: uid('c'), start: cel.start, length: cel.length, drawingId: held.id };
+  const rest = layer.cels.filter((c) => c !== cel);
+  const keepPixels = rest.length > 0 || !!layer.slices?.length;
+  if (keepPixels) {
+    layer.cels = rest;
+    const { id: _id, kind: _k, pixelSize: _p, paletteLock: _l, slices: _s, cels: _c, ...look } = layer as Layer & { pixelSize: number; paletteLock?: boolean; slices?: unknown };
+    const above: Layer = { ...look, id: uid('l'), name: `${layer.name} symbol`, kind: 'vector', cels: [heldCel] } as Layer;
+    doc.layers.splice(at + 1, 0, above);
+    return { symbolId, instanceId: inst.id, layerId: above.id };
+  }
+  // Only drawing on its layer: the layer becomes the vector layer, in the same place with the same look.
+  const { pixelSize: _p, paletteLock: _l, slices: _s, ...look } = layer as Layer & { pixelSize: number; paletteLock?: boolean; slices?: unknown };
+  doc.layers[at] = { ...look, kind: 'vector', cels: [heldCel] } as Layer;
+  return { symbolId, instanceId: inst.id, layerId };
 }
 
 function plainShapes(shapes: Shape[]): Shape[] {

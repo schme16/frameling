@@ -1136,9 +1136,9 @@ export function celMenu(layer: Layer, frame: number): MenuItem[] {
     { separator: true },
     cel?.tween
       ? { label: 'Remove in-betweens', onClick: () => void removeTween(layer.id, frame) }
-      : { label: 'Make in-betweens (tween)', hint: keyHint('tween.make'), disabled: none || layer.kind !== 'vector', onClick: () => void makeTween(layer.id, frame) },
+      : { label: 'Make in-betweens (tween)', hint: keyHint('tween.make'), disabled: none || (layer.kind !== 'vector' && layer.kind !== 'pixel'), onClick: () => void makeTween(layer.id, frame) },
     { heading: 'One-click motions' },
-    ...MOTIONS.map((m): MenuItem => ({ label: `Make it ${m.label.toLowerCase()}`, disabled: none || layer.kind !== 'vector' || !!cel?.tween, onClick: () => makeMotion(m.id, layer.id, frame) })),
+    ...MOTIONS.map((m): MenuItem => ({ label: `Make it ${m.label.toLowerCase()}`, disabled: none || (layer.kind !== 'vector' && layer.kind !== 'pixel') || !!cel?.tween, onClick: () => makeMotion(m.id, layer.id, frame) })),
     { separator: true },
     hold(1),
     hold(2),
