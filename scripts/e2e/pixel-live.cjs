@@ -2,7 +2,7 @@
 // held down the canvas shows the old drawing with only the touched 128 x 128 tiles drawn live; once it is let go the
 // normal picture is drawn. The two must be the same, pixel for pixel, at every zoom (including ones that put tile edges
 // between screen pixels), for painting and for erasing (which lowers alpha: the live tile has to replace the old picture,
-// not lie over it). Below 33% zoom, on a zoom where art pixel edges land exactly on screen pixel middles (30%, 15%), the held and finished pictures may differ (see src/canvas/livePixels.ts), so that is only listed. Undo and redo are exact at every zoom.
+// not lie over it). The far-out zooms that land exactly on screen pixel middles (30%, 15%) are in the list and held to the same standard (see src/canvas/livePixels.ts), and so is the Gradient tool, which paints through the same live preview. Undo and redo are exact at every zoom.
 //
 //   npm run build
 //   xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/pixel-live.cjs [outDir]
@@ -103,7 +103,8 @@ async function stroke(tool, zoom, label) {
   // Zooming out keeps the pan, which leaves a small drawing in the corner and the stroke (made round the middle of the view)
   // off it altogether. So from there the drawing is put in the middle, on a whole-pixel pan like the zoomed-in runs.
   const centre = zoom < 1 ? `, panX: ${Math.round((box.w - 600 * zoom) / 2)}, panY: ${Math.round((box.h - 420 * zoom) / 2)}` : '';
-  await ev(`window.__frameling.store().setUi({ tool: ${JSON.stringify(tool)}, zoom: ${zoom}${centre} })`);
+  // The gradient runs from Paint to Back, so give it a Back colour that differs from the paint.
+  await ev(`window.__frameling.store().setUi({ tool: ${JSON.stringify(tool)}, zoom: ${zoom}${centre}${tool === 'gradient' ? ", fillColor: '#2030ff'" : ''} })`);
   await sleep(300);
   const before = await shot();
   const cx = Math.round(box.x + box.w / 2);
@@ -141,19 +142,29 @@ async function stroke(tool, zoom, label) {
   for (let i = 0; i < done.length; i += 4) if (done[i] !== before[i] || done[i + 1] !== before[i + 1] || done[i + 2] !== before[i + 2]) drew++;
   console.log(`${drew ? 'ok  ' : 'FAIL'} ${label}: the stroke changed ${drew} screen pixels`);
   if (!drew) failures.push(label + ' (nothing drawn)');
+  // The Gradient tool draws its guide line and two handles over the picture while it is held; they are not the picture, so
+  // the screen pixels within 14 of the drag line (the handles are about 10 across) are left out of the comparison.
+  const w0 = Math.round(box.w);
+  const a = { x: pts[0][0] - box.x, y: pts[0][1] - box.y };
+  const z = { x: l[0] - box.x, y: l[1] - box.y };
+  const guide = (px, py) => {
+    if (tool !== 'gradient') return false;
+    const dx = z.x - a.x, dy = z.y - a.y;
+    const t = Math.max(0, Math.min(1, ((px - a.x) * dx + (py - a.y) * dy) / (dx * dx + dy * dy || 1)));
+    return Math.hypot(px - (a.x + t * dx), py - (a.y + t * dy)) < 14;
+  };
   let diff = 0;
   let first = -1;
   for (let i = 0; i < held.length; i += 4) {
     if (held[i] !== done[i] || held[i + 1] !== done[i + 1] || held[i + 2] !== done[i + 2]) {
+      const p = i / 4;
+      if (guide(p % w0, Math.floor(p / w0))) continue;
       diff++;
-      if (first < 0) first = i / 4;
+      if (first < 0) first = p;
     }
   }
-  // Far out (under 33%) the preview is always the sparse one (see src/canvas/livePixels.ts), so on a zoom where an edge between
-  // art pixels lands exactly on the middle of a screen pixel (30%, 15%: every few screen pixels, on a whole-pixel pan) that pixel
-  // may show the other neighbour until the stroke ends. That is only listed. Any other far-out zoom has to match exactly.
-  const lands = zoom < 1 / 3 && Math.abs(zoom * 20 - Math.round(zoom * 20)) < 1e-9;
-  const ok = diff === 0 || lands;
+  // Held and finished must be the same pixels at every zoom, the far-out ones that land exactly on screen pixel middles (30%, 15%) included.
+  const ok = diff === 0;
   console.log(`${ok ? 'ok  ' : 'FAIL'} ${label}: ${diff} screen pixels differ between the held stroke and the finished one${first >= 0 ? ` (first at ${first})` : ''}`);
   if (!ok || diff) {
     if (!ok) failures.push(label);
@@ -163,6 +174,7 @@ async function stroke(tool, zoom, label) {
     for (let i = 0; i < held.length; i += 4) {
       if (held[i] !== done[i] || held[i + 1] !== done[i + 1] || held[i + 2] !== done[i + 2]) {
         const p = i / 4, x = p % w, y = Math.floor(p / w);
+        if (guide(x, y)) continue;
         x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y);
       }
     }
@@ -197,8 +209,11 @@ async function stroke(tool, zoom, label) {
   for (const t of ['pencil', 'eraser']) await ev(`__frameling.pen.setTool(${JSON.stringify(t)}, { stabilizer: 0 })`);
   await sleep(600);
   // The pencil paints; the eraser takes alpha away (the live tile must replace the old picture there).
-  for (const zoom of [1, 1.5, 1.25, 1.3719, 2.7, 4.5, 0.683712345, 0.5, 0.35, 0.2837, 0.1234, 0.3, 0.15]) {
-    for (const tool of ['pencil', 'eraser']) await stroke(tool, zoom, `${tool} at ${Math.round(zoom * 100)}%`);
+  // PIXEL_LIVE_ZOOMS=0.3,0.15 and PIXEL_LIVE_TOOLS=pencil narrow a run to what is being looked at.
+  const zooms = process.env.PIXEL_LIVE_ZOOMS ? process.env.PIXEL_LIVE_ZOOMS.split(',').map(Number) : [1, 1.5, 1.25, 1.3719, 2.7, 4.5, 0.683712345, 0.5, 0.35, 0.2837, 0.1234, 0.3, 0.15, 0.25, 0.125];
+  const tools = process.env.PIXEL_LIVE_TOOLS ? process.env.PIXEL_LIVE_TOOLS.split(',') : ['pencil', 'eraser', 'gradient'];
+  for (const zoom of zooms) {
+    for (const tool of tools) await stroke(tool, zoom, `${tool} at ${Math.round(zoom * 100)}%`);
   }
   console.log(failures.length ? `FAILED: ${failures.join(', ')}` : 'all the same');
   app.exit(failures.length ? 1 : 0);

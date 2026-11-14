@@ -7,8 +7,10 @@
  * snapped to whole screen pixels, so they meet with no seam. One thing the pieces cannot match is a screen pixel whose
  * middle falls exactly on the edge between two art pixels (zoom 150% on a whole-pixel pan, say): the screen picks one of
  * the two art pixels and a clipped draw can pick the other from the finished, unclipped picture. Those screens (and a
- * turned camera) get the whole picture instead (`fill`), which is drawn in one piece like the finished one. Zoomed far
- * out, a rare screen pixel that only nearly lands on an edge may still show its neighbour until the stroke ends.
+ * turned camera) get the whole picture instead (`fill`), which is drawn in one piece like the finished one. That holds far
+ * out too: where a touched tile's edge lands on a screen middle (30%, 25%, 15%) the picture is filled, and elsewhere far
+ * out no touched edge lands on one (to within a few thousandths of a screen pixel), so the sparse preview and the finished
+ * picture are the same pixels.
  */
 import type { Live } from './controller';
 import { drawDrawing, type Ctx2D } from '../core/render';
@@ -52,24 +54,53 @@ export function around(box: R, tiles: readonly R[]): R[] {
 /** Below this many screen pixels per art pixel the sparse preview is used whatever the pan. */
 export const SPARSE_BELOW = 1 / 3;
 
+/** How close to a screen pixel's middle an edge counts as on it. The two draws round their float maths a hair apart, so this sits above that noise. */
+const NEAR = 3e-4;
+
 /**
  * True when an edge between art pixels lands on the middle of a screen pixel along one axis: `scale` screen pixels per
  * art pixel, `offset` the screen position of art pixel 0, `size` the screen's length. Magnified, a screen pixel that is
- * merely very close to an edge can go either way too (so the test is loose); zoomed out the edges are so many that only an
- * exact landing (zoom 50%, 35%...) is told apart, and the odd near miss is left to the aliasing.
+ * merely very close to an edge can go either way too (so the test is loose); zoomed out the edges are so many that over
+ * the whole screen only an exact landing (zoom 50%, 35%...) is told apart.
+ *
+ * `span` (art pixel edges, first to last) limits the look to the edges inside it. The live preview only has to match
+ * where it draws a touched tile: everywhere else it draws the old picture whole-canvas, the same canvas the finished
+ * one is drawn from. Far out (under SPARSE_BELOW) it is only asked about that span, which is a few dozen edges, so a
+ * far-out zoom that lands exactly (30%, 25%, 15%) can be told apart and the whole screen is not scanned. With no span,
+ * far out, it says no.
  */
-export function edgeOnMiddle(scale: number, offset: number, size: number): boolean {
-  // Far out (a big drawing fitted to the screen) a screen pixel stands for three or more art pixels and which of them it
-  // shows is already arbitrary; this is where the sparse preview matters most, so it is always used.
-  if (scale < SPARSE_BELOW) return false;
-  const tol = scale >= 1 ? 3e-4 : 1e-6;
-  const from = Math.floor(-offset / scale) - 1;
-  const to = Math.ceil((size - offset) / scale) + 1;
+export function edgeOnMiddle(scale: number, offset: number, size: number, span?: { from: number; to: number }): boolean {
+  const mag = Math.abs(scale);
+  const far = mag < SPARSE_BELOW;
+  if (far && !span) return false;
+  const tol = mag >= 1 ? 3e-4 : far ? NEAR : 1e-6;
+  // A flipped view has a negative scale: the screen's two ends are edges in either order.
+  const e0 = (0 - offset) / scale;
+  const e1 = (size - offset) / scale;
+  let from = Math.floor(Math.min(e0, e1)) - 1;
+  let to = Math.ceil(Math.max(e0, e1)) + 1;
+  if (far && span) {
+    from = Math.max(from, span.from);
+    to = Math.min(to, span.to);
+  }
   for (let i = from; i <= to; i++) {
     const f = scale * i + offset;
     if (Math.abs(f - Math.floor(f) - 0.5) < tol) return true;
   }
   return false;
+}
+
+/** The art pixel edges the live tiles span along each axis (their outer edges, one more each side for the clip's seam), or undefined with no tiles. */
+export function tileSpan(tiles: readonly R[]): { x: { from: number; to: number }; y: { from: number; to: number } } | undefined {
+  if (!tiles.length) return undefined;
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (const t of tiles) {
+    x0 = Math.min(x0, t.x);
+    y0 = Math.min(y0, t.y);
+    x1 = Math.max(x1, t.x + t.w);
+    y1 = Math.max(y1, t.y + t.h);
+  }
+  return { x: { from: x0 - 1, to: x1 + 1 }, y: { from: y0 - 1, to: y1 + 1 } };
 }
 
 /** Draws the live pixel canvas of a layer, with the layer's transform already set on `g`. */
@@ -80,7 +111,8 @@ export function drawLivePixels(g: Ctx2D, lv: PixelLive, pixelSize: number): void
   const straight = Math.abs(m.b) < 1e-9 && Math.abs(m.c) < 1e-9;
   if (sp) {
     const c = g.canvas as { width: number; height: number };
-    if (!straight || edgeOnMiddle(m.a * pixelSize, m.e, c.width) || edgeOnMiddle(m.d * pixelSize, m.f, c.height)) {
+    const span = tileSpan(sp.tiles);
+    if (!straight || edgeOnMiddle(m.a * pixelSize, m.e, c.width, span?.x) || edgeOnMiddle(m.d * pixelSize, m.f, c.height, span?.y)) {
       sp.fill();
       sp = undefined;
     }
