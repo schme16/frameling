@@ -23,27 +23,28 @@ describe('WebM codec preference', () => {
     localStorage.clear();
   });
 
-  it('registers a silent Export choice that defaults to VP9, which plays almost everywhere', async () => {
+  it('registers a silent Export choice that defaults to AV1, with VP9 as the safe one', async () => {
     const m = await load();
     const choices = await import('../../src/core/choices');
     const def = choices.getChoiceDef('export.webmCodec')!;
     expect(def.silent).toBe(true);
     expect(def.category).toBe('Export');
-    expect(def.default).toBe('vp9');
-    expect(def.options.map((o) => o.value)).toEqual(['vp9', 'av1']);
-    expect(def.options.find((o) => o.value === 'av1')!.detail).toMatch(/cannot play it/);
-    expect(def.options.find((o) => o.value === 'vp9')!.detail).toMatch(/almost everywhere/);
+    expect(def.default).toBe('av1');
+    expect(def.options.map((o) => o.value)).toEqual(['av1', 'vp9']);
+    expect(def.options.find((o) => o.value === 'av1')!.detail).toMatch(/Smaller files/);
+    expect(def.options.find((o) => o.value === 'vp9')!.detail).toMatch(/older/);
     expect(m.webmOrder('av1')).toEqual(['av1', 'vp9', 'vp8']);
     expect(m.webmOrder('vp9')).toEqual(['vp9', 'av1', 'vp8']);
     expect(m.webmOrder('anything else')).toEqual(['vp9', 'av1', 'vp8']);
   });
 
-  it('uses VP9 unless AV1 was picked, and still finds a codec for transparency', async () => {
+  it('uses AV1 unless VP9 was picked, and still finds a codec for transparency', async () => {
     const m = await load();
     const c = await m.detectCapabilities(320, 240);
-    expect(c.webm.codec).toBe('vp9');
+    expect(c.webm.codec).toBe('av1');
     expect(c.webm.ok).toBe(true);
     expect(c.webm.alpha).toBe(true);
+    // A see-through background still goes out as VP9, because that is the one players understand with alpha.
     expect(c.webm.alphaCodec).toBe('vp9');
     expect(c.mp4.codec).toBe('avc');
   });
@@ -93,12 +94,12 @@ describe('WebM codec preference', () => {
     expect(c.webm.reason).toMatch(/WebM/);
   });
 
-  it('uses AV1 when the person chose it, and re-probes after the choice changes', async () => {
+  it('uses VP9 when the person chose it, and re-probes after the choice changes', async () => {
     const m = await load();
     const choices = await import('../../src/core/choices');
-    expect((await m.detectCapabilities(320, 240)).webm.codec).toBe('vp9');
-    choices.setChoice('export.webmCodec', 'av1');
     expect((await m.detectCapabilities(320, 240)).webm.codec).toBe('av1');
+    choices.setChoice('export.webmCodec', 'vp9');
+    expect((await m.detectCapabilities(320, 240)).webm.codec).toBe('vp9');
   });
 
   it('says what this computer cannot do, in plain words', async () => {

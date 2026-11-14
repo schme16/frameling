@@ -27,7 +27,7 @@ const defs: ExporterDef[] = [
     ...video('mp4'),
   },
   {
-    info: { id: 'webm', title: 'WebM video', tag: 'VP9', goodFor: 'The web, and videos with a see-through background.', icon: 'film', ext: 'webm', animated: true, alpha: true },
+    info: { id: 'webm', title: 'WebM video', tag: 'AV1', goodFor: 'The web, and videos with a see-through background.', icon: 'film', ext: 'webm', animated: true, alpha: true },
     video: true,
     baked: true,
     carry: { summary: PICTURES, help: VIDEO_HELP },

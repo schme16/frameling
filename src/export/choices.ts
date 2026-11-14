@@ -9,11 +9,11 @@ registerChoice<WebmCodecPref>({
   question: 'Which codec should WebM videos use?',
   category: 'Export',
   silent: true,
-  default: 'vp9',
-  help: 'VP9 plays almost everywhere. AV1 makes smaller files, but some players and browsers cannot play it. If this computer cannot make the one you pick, Frameling quietly uses another that works.',
+  default: 'av1',
+  help: 'AV1 makes smaller files at the same quality and plays in today\'s browsers and players. VP9 is the safer one for an older player or phone. If this computer cannot make the one you pick, Frameling quietly uses another that works.',
   options: [
-    { value: 'vp9', label: 'VP9', detail: 'Plays almost everywhere, in browsers, phones and older players. Files are a little bigger.' },
-    { value: 'av1', label: 'AV1', detail: 'Smaller files at the same quality, but some players and browsers cannot play it, and it takes longer to make.' },
+    { value: 'av1', label: 'AV1', detail: 'Smaller files at the same quality. Today\'s browsers and players handle it; it takes a little longer to make.' },
+    { value: 'vp9', label: 'VP9', detail: 'The safe one: plays in older browsers, phones and players too. Files are a little bigger.' },
   ],
 });
 

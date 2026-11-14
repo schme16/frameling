@@ -78,7 +78,7 @@ Plays almost everywhere: phones, social media, slides. It can't have a see-throu
 
 Great for websites. It can keep a **transparent background** on computers that support it. If yours doesn't, the option is greyed out and says so.
 
-WebM uses **VP9**, which plays almost everywhere. **AV1** makes smaller files, but some players and browsers can't play it. Pick one with the *Video codec* buttons in the export window, or in Preferences > Behaviour. A see-through background always uses a codec that can keep it.
+WebM uses **AV1**, which makes smaller files at the same quality and plays in today's browsers and players. **VP9** is the safer one if it has to play on something older. Pick one with the *Video codec* buttons in the export window, or in Preferences > Behaviour. A see-through background always uses a codec that can keep it, which means VP9 or VP8.
 
 ## Animated GIF
 
