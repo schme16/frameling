@@ -795,12 +795,17 @@ kbd {
   padding: 3px 8px 1px;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
   color: var(--faint);
   font-size: 10px;
   font-weight: 800;
+  line-height: 1.25;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+  /* A name that does not fit on one line drops to a second before anything is cut; only a third line (or one long word) ends in dots. */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  text-wrap: balance;
 }
 .ui-tool-head.is-edit {
   display: flex;
@@ -814,7 +819,10 @@ kbd {
   padding: 1px 4px;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  text-wrap: balance;
   border: 0;
   border-radius: 6px;
   background: transparent;

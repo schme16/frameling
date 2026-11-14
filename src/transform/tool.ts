@@ -318,7 +318,7 @@ function poly(gx: CanvasRenderingContext2D, pts: Pt[]): void {
 
 export const transformTool: Tool = {
   id: 'transform',
-  group: 'select',
+  group: 'pen',
   // After the ways of picking (0 to 4) and before the Points tool.
   groupAt: 4.5,
   label: 'Transform',

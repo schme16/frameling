@@ -11,7 +11,8 @@ const PLACES: Record<string, string[]> = {
   extras: ['shade', 'dither', 'gradient', 'eyedropper', 'tile-picker', 'spray'],
   shapes: ['line', 'rect', 'ellipse', 'polygon', 'star', 'tile-rect', 'text'],
   // Each way of picking is its own tool, vector and pixel side by side at the same place in the group.
-  select: ['select', 'pixel-select', 'select-lasso', 'pixel-select-lasso', 'select-polygon', 'pixel-select-polygon', 'select-magnetic', 'pixel-select-magnetic', 'pixel-select-wand', 'transform', 'points', 'pen', 'slice'],
+  select: ['select', 'pixel-select', 'select-lasso', 'pixel-select-lasso', 'select-polygon', 'pixel-select-polygon', 'select-magnetic', 'pixel-select-magnetic', 'pixel-select-wand', 'slice'],
+  pen: ['transform', 'points', 'pen'],
   rig: ['bone', 'pose', 'weights', 'motion-path', 'shape-hints'],
   view: ['hand', 'zoom', 'camera', 'artboard'],
 };
@@ -27,12 +28,15 @@ const flat = (g: ToolGroup[]) => g.flatMap((x) => x.tools);
 const names = (g: ToolGroup[]) => g.map((x) => x.id);
 
 describe('the default arrangement', () => {
-  it('groups the real tools: drawing, extras, shapes, select and pen, rig, view', () => {
+  it('groups the real tools: drawing, colour, shapes, select, pen and edit, rig, view', () => {
     const g = resolve(undefined, VECTOR);
-    expect(names(g)).toEqual(['draw', 'extras', 'shapes', 'select', 'rig', 'view']);
+    expect(names(g)).toEqual(['draw', 'extras', 'shapes', 'select', 'pen', 'rig', 'view']);
     expect(g[0].tools).toEqual(['pencil', 'brush', 'eraser', 'fill']);
+    expect(g[1].tools).toEqual(['gradient', 'eyedropper']);
     expect(g[2].tools).toEqual(['line', 'rect', 'ellipse', 'polygon', 'star', 'text']);
-    expect(g[5].tools).toEqual(['hand', 'zoom']);
+    expect(g[3].tools).toEqual(['select']);
+    expect(g[4].tools).toEqual(['points', 'pen']);
+    expect(g[6].tools).toEqual(['hand', 'zoom']);
   });
   it('puts every tool exactly once, wherever it was registered from', () => {
     const g = resolve(undefined, [...VECTOR].reverse());
@@ -48,7 +52,7 @@ describe('the tools the app registers', () => {
     await import('../../src/renderer/features');
     const { allTools } = await import('../../src/core/registry');
     const g = resolveGroups(undefined, allTools());
-    expect(names(g)).toEqual(['draw', 'extras', 'shapes', 'select', 'rig', 'view']);
+    expect(names(g)).toEqual(['draw', 'extras', 'shapes', 'select', 'pen', 'rig', 'view']);
     for (const group of g) expect(group.tools).toEqual(PLACES[group.id]);
   });
 });
@@ -94,9 +98,9 @@ describe('moving tools', () => {
   });
   it('into a group of its own, anywhere among the groups', () => {
     const a = moveTool(base(), 'text', { newGroupAt: 1 });
-    expect(a).toHaveLength(7);
+    expect(a).toHaveLength(8);
     expect(a[1].tools).toEqual(['text']);
-    expect(a[1].id).toBe('g7');
+    expect(a[1].id).toBe('g8');
     expect(a.find((g) => g.id === 'shapes')!.tools).not.toContain('text');
     expect(flat(a).sort()).toEqual([...VECTOR].sort());
   });

@@ -183,7 +183,7 @@ export const railSizesNow = (): RailSizes => railSizes(getPrefs().look, getPrefs
 export const isCustomWidth = (): boolean => dock.get().railWidths?.[dock.get().workspaceId] !== undefined;
 
 /** How wide the rail is now, in pixels: the one saved for this workspace, or its natural width. */
-export const toolRailWidth = (): number => railWidthNow(railWidthOf(dock.get()), railSizesNow(), getPrefs().toolRail);
+export const toolRailWidth = (): number => railWidthNow(railWidthOf(dock.get()), railSizesNow(), getPrefs().toolRail, getPrefs().toolNames);
 
 /** How many buttons fit across a group at the rail's width now. */
 export const toolRailAcross = (): number => acrossFor(toolRailWidth(), railSizesNow(), getPrefs().toolRail);
@@ -198,8 +198,9 @@ export function setToolRailWidth(px: number, persist = true): void {
   const s = railSizesNow();
   const style = getPrefs().toolRail;
   const d = dock.get();
-  const chosen = chosenRailWidth(px, s, style);
-  setRailWidth(chosen ?? (defaultRailWidthOf(d, d.workspaceId) !== undefined ? naturalRailWidth(s, style) : undefined), persist);
+  const names = getPrefs().toolNames;
+  const chosen = chosenRailWidth(px, s, style, names);
+  setRailWidth(chosen ?? (defaultRailWidthOf(d, d.workspaceId) !== undefined ? naturalRailWidth(s, style, names) : undefined), persist);
 }
 
 /** The width back to this workspace's own default (what it was saved with, or the natural width). */
@@ -223,10 +224,16 @@ export function wantedNamesWidth(nav: HTMLElement | null = document.querySelecto
   let wanted = 0;
   for (const head of nav.querySelectorAll<HTMLElement>('.ui-tool-head')) {
     const label = head.querySelector<HTMLElement>('.ui-tool-head-name') ?? head;
+    // The name on one line, whatever it takes on screen now (a name that has dropped to two lines still asks for its whole width).
+    const before = label.style.cssText;
+    label.style.whiteSpace = 'nowrap';
+    label.style.display = 'block';
+    label.style.setProperty('-webkit-line-clamp', 'none');
     const range = document.createRange();
     range.selectNodeContents(label);
     const cs = getComputedStyle(label);
     const text = range.getBoundingClientRect().width + parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
+    label.style.cssText = before;
     // Whatever else shares the row (the fold arrow while the tools are being changed).
     wanted = Math.max(wanted, text + (head.offsetWidth - label.offsetWidth));
   }
@@ -243,8 +250,11 @@ export function fitToolRailNames(): void {
   const style = getPrefs().toolRail;
   const wanted = wantedNamesWidth();
   if (!wanted) return void toast('There are no group names to fit. Turn on Group names in Change the tools.', { duration: 2600, quill: null });
-  const fit = fitRailWidth(wanted, s, style);
-  setToolRailWidth(toolRailWidth() === fit ? naturalRailWidth(s, style) : fit);
+  const names = getPrefs().toolNames;
+  const fit = fitRailWidth(wanted, s, style, names);
+  const usual = naturalRailWidth(s, style, names);
+  if (fit === usual && toolRailWidth() === usual) return void toast('Every group name already shows whole.', { duration: 2200, quill: null });
+  setToolRailWidth(toolRailWidth() === fit ? usual : fit);
 }
 
 /** The preferences "Put the tools back" puts back with the arrangement. */

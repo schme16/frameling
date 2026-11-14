@@ -625,7 +625,11 @@ See also [Panels](help:panels) and [Workspaces](help:workspaces).`,
 
 ## Groups
 
-Tools that belong together sit together, with a thin gap between groups: drawing tools, colour and pixel extras, shapes, select and pen, rig and motion, and the view tools (hand and zoom). A tool that came from a plugin and has no group yet goes in **Other**.
+Tools that belong together sit together under a small name: **Draw**, **Colour**, **Shapes**, **Select**, **Pen and edit**, **Rig and motion** and **View** (hand, zoom and artboard). A tool that came from a plugin and has no group yet goes in **Other**.
+
+The strip starts wide enough to read every name on one line. A longer name of your own drops to a second line before anything is cut short.
+
+For a slimmer strip, turn off **Tool group names** in **Preferences, General**. The groups stay, as thin gaps.
 
 ## Choose a tool
 
@@ -633,9 +637,9 @@ Press its button, or press its key. Rest on a button to see the key.
 
 ## The strip stays put
 
-Switch between a vector layer and a pixel layer and nothing moves, so your hand can learn the strip. A tool that doesn't work on the layer you're on is left off the strip, so the strip is shorter and everything else stays exactly where it was: Shade, Dither, Spray and the Magic wand wait out of sight on a vector layer, and Text, Gradient and the curve tools on a pixel layer. If you'd rather see every tool all the time, set **Tools that do not work here** to **Grey them out** in **Preferences, General** (or in [Change the tools](help:tool-builder)). Then they wait where they sit, and resting on one says why.
+Switch between a vector layer and a pixel layer and nothing moves, so your hand can learn the strip. A tool that doesn't work on the layer you're on is left off the strip, so the strip is shorter and everything else stays exactly where it was: Shade, Dither, Spray and the Magic wand wait out of sight on a vector layer, and Text, Gradient and the curve tools on a pixel layer. To see every tool all the time, set **Tools that do not work here** to **Grey them out** in **Preferences, General**. They wait where they sit, and resting on one says why.
 
-While they're out of sight, a small button with a number sits under the strip. Rest on it to read which tools are waiting and what they need (**Text and Gradient work on vector layers.**). Press it to jump to a layer they work on with the tool in your hand, or to see them greyed out instead.
+While they're out of sight, a small button with a number sits under the strip. Rest on it to read which tools are waiting and what they need. Press it to jump to a layer they work on, or to see them greyed out instead.
 
 A few tools share one place with their pixel twin: the Lasso, Polygon select, Magnetic lasso and Select each have one button, and it picks the one for the layer you're on. Change layer with the Lasso in your hand and you still have a lasso.
 
@@ -643,11 +647,11 @@ Tilemap and camera layers are different jobs, so on those the strip shows only t
 
 ## Your way
 
-Drag tools into the order you like, or into other groups. See [Arrange your tools](help:tool-arrange). To rename groups, put tools away or fold a group into one button, open [Change the tools](help:tool-builder). Drag the strip's inner edge to make it wider, so the group names show whole. Drag the grip at its top to put it on another side, or [float it over the canvas](help:tool-move). Right-click the strip to put the tools back the way they came.
+Drag tools into the order you like, or into other groups. See [Arrange your tools](help:tool-arrange). To rename groups, put tools away or fold a group into one button, open [Change the tools](help:tool-builder). Drag the strip's inner edge to make it wider or narrower, and double-click the edge to fit your longest name. Drag the grip at its top to put it on another side, or [float it over the canvas](help:tool-move). Right-click the strip to put the tools back the way they came.
 
 ## One button per group
 
-If you would rather have a thinner strip, open **Preferences, General** and set **Tool rail style** to **Stacked**. Each group becomes one button, with a small corner mark. Press and hold it, or right-click it, to see the rest of the group and pick from there.
+If you would rather have a thinner strip, open **Preferences, General** and set **Tool rail style** to **Stacked**. Each group becomes one button, with a small corner mark. Press and hold it, or right-click it, to see the rest of the group and pick from there. Names come back when you pull its edge wider.
 
 Tool keys can be changed in [keyboard shortcuts](help:keyboard-shortcuts).`,
   'tool-move': `Pick the tool strip up by the little grip at its top and carry it. Where it would land lights up as you go, and letting go puts it there. There's no menu to hunt through.
@@ -706,9 +710,9 @@ See also [Change the tools](help:tool-builder), [Panels](help:panels) and [Float
 
 **Fold a group:** press the little arrow beside its name. The group becomes one button with a corner mark; press and hold it for the rest. **Rail style** in the panel folds every group at once, and your own folds are still there when you go back to **Every tool**.
 
-**Button size** is small, medium or large. **Group names** shows or hides the names above the groups (it is on to begin with; turn it off for a slimmer strip). **Tools that do not work on this layer** hides them, or greys them out where they sit.
+**Button size** is small, medium or large. **Group names** shows or hides the names above the groups (on to begin with; turn it off for a slimmer strip). **Tools that do not work on this layer** hides them, or greys them out where they sit.
 
-**Make the strip wider:** drag its inner edge, the line between the strip and the canvas. A wider strip shows more of each group's name and fits more buttons across. Double-click the edge to fit the longest name; double-click again for the usual width. A name that still doesn't fit ends in dots and never wraps. The command search has **Tool rail: wider**, **narrower** and **fit the group names** too.
+**Make the strip wider:** drag its inner edge, the line between the strip and the canvas. A wider strip fits more buttons across, and room for longer names of your own. Double-click the edge to fit the longest name; double-click again for the usual width. A name that doesn't fit drops to a second line first. The command search has **Tool rail: wider**, **narrower** and **fit the group names** too.
 
 **Put the tools back** undoes all of it for this workspace, and width, size, names and style too. The message that follows has **Undo**.
 
