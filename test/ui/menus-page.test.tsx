@@ -9,7 +9,8 @@ import { getCommand } from '../../src/core/registry';
 import { MenusPage } from '../../src/ui/MenusPage';
 import { MENUS, resolveMenus } from '../../src/ui/menus';
 import { NO_EDITS, setList } from '../../src/ui/menuEdits';
-import { getMenuEdits, MENUS_KEY, resetMenuEdits, setMenuEdits } from '../../src/ui/menuState';
+import { getMenuEdits, resetMenuEdits, setMenuEdits } from '../../src/ui/menuState';
+import { DOCK_KEY } from '../../src/ui/dock';
 import '../../src/ui/menuCommands';
 import { toasts } from '../../src/ui/toast';
 
@@ -62,10 +63,10 @@ describe('the Menus page', () => {
     expect(rows().slice(0, 2)).toEqual(['edit.redo', 'edit.undo']);
     const edit = resolveMenus().find((m) => m.menu.label === 'Edit')!;
     expect(edit.items[0].kind === 'command' && edit.items[0].command.id).toBe('edit.redo');
-    expect(localStorage.getItem(MENUS_KEY)).not.toBeNull();
+    expect(JSON.parse(localStorage.getItem(DOCK_KEY) ?? 'null')?.menus).toBeDefined();
     click(host.querySelector('[data-testid="menus.put-this-back"]'));
     expect(rows().slice(0, 2)).toEqual(['edit.undo', 'edit.redo']);
-    expect(localStorage.getItem(MENUS_KEY)).toBeNull();
+    expect(JSON.parse(localStorage.getItem(DOCK_KEY) ?? 'null')?.menus).toBeUndefined();
     expect(toasts.get().some((t) => t.message.includes('back the way it came'))).toBe(true);
   });
   it('takes an entry out, lists it under Taken out, and Put back returns it where it was', () => {

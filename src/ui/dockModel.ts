@@ -6,6 +6,8 @@ import type { DockZone } from '../core/registry';
 import { cleanLocks, savedLocks, type Locks } from './dockLock';
 import { sanitizeGroups, type ToolGroup } from './toolArrange';
 import { cleanRailWidth } from './toolRailWidth';
+import type { MenuEdits } from './menuEdits';
+import { cleanBrought } from './workspaceMenus';
 
 export type { DockZone };
 
@@ -87,6 +89,8 @@ export interface Workspace {
   railWidth?: number;
   /** What is locked in this workspace (missing = nothing): the tool rail and the panels stay where they are put. */
   locks?: { tools?: true; panels?: true };
+  /** The menu changes this workspace brings (missing = the menus as they come). The person's own changes in it are in the dock state. */
+  menus?: MenuEdits;
 }
 
 export const ZONES: DockZone[] = ['left', 'right', 'bottom', 'top'];
@@ -232,6 +236,8 @@ export function sanitizeWorkspace(raw: unknown): Workspace | null {
   if (railWidth) ws.railWidth = railWidth;
   const locks = savedLocks(cleanLocks(raw.locks, true));
   if (locks) ws.locks = locks;
+  const menus = cleanBrought(raw.menus);
+  if (menus) ws.menus = menus;
   const about = cleanName(raw.about, 140);
   if (about) ws.about = about;
   if (raw.pixel === true) ws.pixel = true;

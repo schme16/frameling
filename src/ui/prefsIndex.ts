@@ -105,7 +105,7 @@ export const SETTING_ROWS: PrefRow[] = [
   // Menus
   row('menus', 'Menus', 'Move, rename, take out and add menu entries, and make menus of your own.', ['menu bar', 'customise menus', 'customize menus', 'edit menus', 'rearrange menus', 'reorder', 'hide a menu', 'remove from menu', 'submenu'], { find: 'Menus' }),
   row('menus', 'Make a menu of your own', 'A new name on the menu bar, with the commands you use most.', ['my menu', 'favourites', 'favorites', 'custom menu', 'new menu', 'add menu'], { find: 'Make a menu of your own' }),
-  row('menus', 'Put the menus back', 'Every menu back to how it came with Frameling.', ['reset menus', 'default menus', 'restore menus', 'undo menu changes'], { find: 'Put all the menus back' }),
+  row('menus', 'Put the menus back', 'Every menu in this workspace back to how it came with Frameling.', ['reset menus', 'default menus', 'restore menus', 'undo menu changes'], { find: 'Put all the menus back' }),
 
   // Plugins
   row('plugins', 'Plugins', 'Add commands, exports, panels and tools. Each runs in its own sandbox.', ['add-ons', 'addons', 'extensions', 'scripts', 'mods', 'plug-ins', 'scripting', 'api', 'automation', 'macros'], { find: 'Plugins' }),

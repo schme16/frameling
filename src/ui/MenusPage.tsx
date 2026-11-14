@@ -29,7 +29,8 @@ import {
   type MenuEdits,
 } from './menuEdits';
 import { getMenuEdits, setMenuEdits, useMenuEdits } from './menuState';
-import { paletteItems, rankPalette } from './palette';
+import { commandEnabled, paletteItems, rankPalette, runCommand } from './palette';
+import { dock, listWorkspaces } from './dock';
 import { toast } from './toast';
 import './menusPage.css';
 
@@ -57,6 +58,9 @@ function changed(before: MenuEdits, message: string): void {
 
 export function MenusPage() {
   const edits = useMenuEdits((e) => e);
+  const everywhere = getCommand('view.menusEverywhere');
+  const canShare = dock.use((s) => (everywhere && s ? commandEnabled(everywhere) : false));
+  const workspaceName = dock.use((s) => listWorkspaces().find((w) => w.id === s.workspaceId)?.name ?? 'this workspace');
   const [here, setHere] = useState<Here>({ menu: null, sub: null });
   const shape = currentShape();
   const key = keyOf(here);
@@ -129,7 +133,7 @@ export function MenusPage() {
     <div className="ui-me" data-testid="menus.page">
       <h3>Menus</h3>
       <p className="ui-pref-intro">
-        Make the menus yours. Move things about, take out what you never use, add any command, and make menus of your own. Everything is still in the command search (Ctrl+K), whatever you do here.
+        <strong data-testid="menus.workspace">These are the menus for {workspaceName}.</strong> Each workspace keeps its own. Move things about, take out what you never use, add any command, and make menus of your own. Everything is still in the command search (Ctrl+K).
       </p>
       {crumbs}
       {here.menu === null ? (
@@ -159,6 +163,9 @@ export function MenusPage() {
       <div className="ui-pref-foot">
         <button type="button" className="ui-btn" data-testid="menus.put-all-back" disabled={!anything} onClick={putAllBack}>
           Put all the menus back
+        </button>
+        <button type="button" className="ui-btn" data-testid="menus.everywhere" disabled={!canShare} onClick={() => everywhere && runCommand(everywhere)} title="Copy these menus to every other workspace">
+          Use these in every workspace
         </button>
         <span>{anything ? 'Changed menus have a "Changed" tag.' : 'The menus are as they came.'}</span>
       </div>

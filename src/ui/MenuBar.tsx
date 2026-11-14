@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { store, useStore } from '../core/store';
 import { menuTitle, resolveMenus, type MenuItem } from './menus';
+import { useMenuEdits } from './menuState';
 import { commandEnabled, runCommand } from './palette';
 import { Icon } from './icons';
 import { Keys } from './ShortcutChip';
@@ -16,6 +17,8 @@ export function MenuBar() {
   // While a menu is open, re-read on every change so ticks and greyed items stay true. While closed, don't
   // re-render at all (the playhead moving would otherwise redraw the menu bar every frame).
   useStore((s) => (open === null ? null : s));
+  // New menu changes, or another workspace (which has its own), redraw the bar even while no menu is open.
+  useMenuEdits((e) => e);
   const menus = resolveMenus();
   const bar = useRef<HTMLElement>(null);
   // Menus that don't fit beside the rest of the top bar fold into a More menu at the end (see menuFold.ts).

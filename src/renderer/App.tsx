@@ -5,7 +5,7 @@ import { CanvasView } from '../canvas/CanvasView';
 import { PictureStrip, PixelBar } from '../pixel/PixelBar';
 import { CommandPalette } from '../ui/CommandPalette';
 import { DockZoneView, Splitter } from '../ui/DockView';
-import { syncPanels, takeRailMigrationNote } from '../ui/dock';
+import { shareMenusWithAll, syncPanels, takeMenusMigrationNote, takeRailMigrationNote } from '../ui/dock';
 import { line } from '../ui/mascot/lines';
 import { toast } from '../ui/toast';
 import { syncDynamicCommands } from '../ui/dynamic';
@@ -78,6 +78,9 @@ export function App() {
     // Someone who changed the one tool arrangement before workspaces had their own is told where it went, once.
     const kept = takeRailMigrationNote();
     if (kept) toast(line('workspaces.railKept', { workspace: kept }), { kind: 'info', duration: 9000 });
+    // Someone who changed the menus before workspaces had their own is told where those changes went, once.
+    const menusKept = takeMenusMigrationNote();
+    if (menusKept) toast(line('workspaces.menusKept', { workspace: menusKept }), { kind: 'info', duration: 12000, action: { label: 'Use them everywhere', id: 'menus-everywhere', run: shareMenusWithAll } });
     // The first frame with the canvas drawn and the page free to take input. scripts/perf/startup.cjs reads it.
     requestAnimationFrame(() =>
       requestAnimationFrame(() => {
