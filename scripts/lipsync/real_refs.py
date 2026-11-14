@@ -48,12 +48,15 @@ def mel_features(x, rate=16000, win=400, hop=160, bands=26):
     return f - f.mean(axis=0)  # per-recording mean: removes the speaker and microphone's tilt
 
 
-def speech_span(x, rate, floor_db=-40):
-    """Seconds where the recording is louder than `floor_db` below its peak (10 ms steps): its first and last speech."""
+def speech_span(x, rate, floor_db=-40, noise_margin=8):
+    """Seconds where the recording is clearly speech (10 ms steps): its first and last speech.
+    Louder than `floor_db` below the peak, and also `noise_margin` dB above the recording's own noise floor (its
+    quietest tenth), because a real room is rarely quieter than 40 dB under the speech."""
     h = rate // 100
     n = len(x) // h
     level = 10 * np.log10(np.array([np.mean(x[i * h:(i + 1) * h] ** 2) for i in range(n)]) + 1e-12)
-    loud = np.nonzero(level > level.max() + floor_db)[0]
+    floor = np.percentile(level[level > -100], 10) if np.any(level > -100) else -100
+    loud = np.nonzero(level > max(level.max() + floor_db, floor + noise_margin))[0]
     return loud[0] / 100, (loud[-1] + 1) / 100
 
 
@@ -72,6 +75,20 @@ def dtw(a, b):
     return path[::-1]
 
 
+def make_warp(rx, rr, r0, r1, sx, sr, s0, s1):
+    """A function from seconds in the reading (sx, speech from s0 to s1) to seconds in the recording (rx, speech r0 to r1)."""
+    a = mel_features(resample(rx[int(r0 * rr):int(r1 * rr)], rr, 16000))
+    b = mel_features(resample(sx[int(s0 * sr):int(s1 * sr)], sr, 16000))
+    path = dtw(a, b)
+    # For each reading frame, the recording frame it lands on (the middle of the recording frames that map to it).
+    land = {}
+    for i, j in path: land.setdefault(j, []).append(i)
+    mapped = np.array([np.mean(land[j]) if j in land else np.nan for j in range(len(b))])
+    idx = np.arange(len(b))
+    mapped = np.interp(idx, idx[~np.isnan(mapped)], mapped[~np.isnan(mapped)])
+    return lambda t: r0 + float(np.interp((min(max(t, s0), s1) - s0) * 100, idx, mapped)) / 100
+
+
 if __name__ == '__main__':
     out = sys.argv[1]
     os.makedirs(out, exist_ok=True)
@@ -85,16 +102,7 @@ if __name__ == '__main__':
         rx, rr = read_wav(wav)
         # Only the speech is warped; the silence around it stays silence.
         (r0, r1), (s0, s1) = speech_span(rx, rr), speech_span(sx, sr)
-        a = mel_features(resample(rx[int(r0 * rr):int(r1 * rr)], rr, 16000))
-        b = mel_features(resample(sx[int(s0 * sr):int(s1 * sr)], sr, 16000))
-        path = dtw(a, b)
-        # For each synthetic frame, the real frame it lands on (the middle of the real frames that map to it).
-        land = {}
-        for i, j in path: land.setdefault(j, []).append(i)
-        mapped = np.array([np.mean(land[j]) if j in land else np.nan for j in range(len(b))])
-        idx = np.arange(len(b))
-        mapped = np.interp(idx, idx[~np.isnan(mapped)], mapped[~np.isnan(mapped)])
-        warp = lambda t: r0 + float(np.interp((min(max(t, s0), s1) - s0) * 100, idx, mapped)) / 100  # seconds in the synthetic reading to seconds in the recording
+        warp = make_warp(rx, rr, r0, r1, sx, sr, s0, s1)
         total = len(rx) / rr
         phonemes = []
         for p in syn['phonemes']:

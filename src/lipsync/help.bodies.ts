@@ -28,11 +28,11 @@ Frameling finds each mouth by the **name of its frame** ("M B P", "mbp" and "MBP
 
 Press **Frames and motion > Auto lip sync...** (or the button in the Lip sync panel). With more than one sound or mouth layer it asks which. It writes a key for each stretch of the same mouth, as **one undo step**.
 
-It's a good first pass, not a perfect one. Frameling listens to how loud the sound is, where its energy sits (which tells the vowels apart), whether it is hissy or humming, and the quick dips that mean the lips closed. It all happens on your computer. Fix the rest by hand.
+It's a good first pass, not a perfect one. Frameling listens to loudness, where the energy sits (which tells vowels apart), hiss versus hum, and the quick dips that mean the lips closed. It all happens on your computer.
 
 ## Typing the words
 
-If you know what is said, press **Frames and motion > Auto lip sync with the words...** (or **With the words...** in the Lip sync panel) and type it. Frameling lines the mouths up with your words, which helps most when the recording is noisy or mumbled. Spell the words normally: Frameling knows how common English words sound, and reads numbers out ("42" is "forty two"). Frameling remembers the words for that sound until you close the app.
+If you know what is said, press **Frames and motion > Auto lip sync with the words...** (or **With the words...** in the Lip sync panel) and type it. Frameling lines the mouths up with your words, which helps when the recording is noisy or mumbled. Spell the words normally: Frameling knows how common English words sound, and reads numbers out ("42" is "forty two"). Frameling remembers the words for that sound until you close the app.
 
 ## Fixing it by hand
 
@@ -47,5 +47,6 @@ Turn on **Go to the next frame after each pick** to work along quickly.
 
 - Mouths stay on for at least two frames so they don't flicker.
 - Running Auto lip sync again replaces only the frames under the sound.
+- Closed lips (M B P) and whispers are the hardest. Typing the words helps most.
 - Your own character? Draw each mouth on its own frame inside one symbol, then use **Name a symbol's frames** (in Frames and motion) to give them the chart names.`,
 };
