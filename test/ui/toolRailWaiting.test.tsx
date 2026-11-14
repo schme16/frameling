@@ -116,7 +116,8 @@ describe('the layer line on the rail', () => {
     act(() => store().setUi({ activeLayerId: k.vector }));
     act(() => root.render(<ToolStrip />));
     expect(line()!.textContent).toContain('Vector layer');
-    expect(line()!.textContent).toMatch(/\d+ tools off/);
+    expect(line()!.textContent).not.toMatch(/tools off/);
+    expect(line()!.getAttribute('data-tip')).toMatch(/\d+ tools off/);
     expect(line()!.getAttribute('data-tip-desc')).toContain('Shade');
     expect(line()!.getAttribute('data-tip-desc')).toContain('need a pixel layer');
   });
@@ -153,7 +154,8 @@ describe('the layer line on the rail', () => {
     act(() => store().setUi({ activeLayerId: k.vector }));
     act(() => root.render(<ToolStrip />));
     expect(line()!.textContent).toContain('Vector layer');
-    expect(line()!.textContent).toMatch(/\d+ greyed out/);
+    expect(line()!.textContent).not.toMatch(/greyed out/);
+    expect(line()!.getAttribute('data-tip')).toMatch(/\d+ tools? greyed out/);
     expect(line()!.classList.contains('is-off')).toBe(false);
     expect(host.querySelector('.ui-tool-head-off')).toBeNull();
   });

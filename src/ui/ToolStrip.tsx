@@ -466,7 +466,6 @@ export function ToolStrip({ place = 'left' }: { place?: DockZone | 'float' }) {
           <Icon name={layerIcon(kind)} size={14} />
           <span className="ui-tool-layer-text">
             <span className="ui-tool-layer-word">{line.word}</span>
-            {line.off && <span className="ui-tool-layer-off">{line.off}</span>}
           </span>
           {line.off && <span className="ui-tool-layer-count" aria-hidden="true">{waiting.length}</span>}
         </button>
