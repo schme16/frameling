@@ -24,8 +24,14 @@ export const AUTO_WAIT = 4000;
 let sent = 0;
 let timer: ReturnType<typeof setTimeout> | null = null;
 
+/**
+ * A run being driven by one of our own harnesses, which always opens the app with ?debug. Those runs are meant to
+ * break things on purpose, so their problems are ours to read in the log, not reports for the board.
+ */
+const underHarness = (): boolean => typeof location !== 'undefined' && new URLSearchParams(location.search).has('debug');
+
 /** Whether an automatic report would go right now. */
-export const autoOn = (): boolean => canSend() && getPrefs().betaReports && sent < AUTO_MAX;
+export const autoOn = (): boolean => canSend() && !underHarness() && getPrefs().betaReports && sent < AUTO_MAX;
 
 /** For the tests. */
 export function forgetAuto(): void {

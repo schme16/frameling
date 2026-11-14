@@ -10,6 +10,7 @@ import { setChoice } from '../core/choices';
 import { detectCapabilities } from './capabilities';
 import { exportDocument } from './exporter';
 import { runExport } from './run';
+import { allExporters } from './registry';
 import { defaultSettings, planExport } from './plan';
 import type { ExportSettings } from './types';
 
@@ -104,6 +105,9 @@ if (typeof window !== 'undefined' && new URLSearchParams(location.search).has('d
     defaults: () => defaultSettings(rootDoc(store().get().doc)),
     plan: (s: ExportSettings) => planExport(rootDoc(store().get().doc), s, store().get().ui.frame),
     caps: (w: number, h: number) => detectCapabilities(w, h),
+    // The formats registered right now. A format whose feature is switched off is not in here, so a harness can
+    // skip it instead of asking for it and getting an error.
+    formats: () => allExporters().map((d) => d.info.id),
     addClip: (name: string, start: number, end: number, loop = true, direction?: ClipDirection, repeat?: number) =>
       store().update('Add clip', (d) => void d.clips.push({ id: 'clip-' + name, name, start, end, loop, ...(direction ? { direction } : {}), ...(repeat ? { repeat } : {}) })),
     /** Sets (or with undefined, forgets) a remembered choice, like the one in Preferences > Behaviour. */

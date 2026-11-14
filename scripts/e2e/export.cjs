@@ -1174,9 +1174,15 @@ async function exportMatrix() {
   console.log(`video support here: mp4=${caps.mp4.ok ? caps.mp4.codec : 'NO (' + caps.mp4.reason + ')'} webm=${caps.webm.ok ? caps.webm.codec + (caps.webm.alpha ? '+alpha' : '') : 'NO'}`);
   if (!caps.webm.alpha) console.log('WARNING: see-through WebM is unavailable here. If the page logs a Content Security Policy error about a worker, index.html needs worker-src blob: in its policy.');
   const addClip = (tpl) => `__framelingExport.addClip('mid', ${tpl === 'stress' ? '1, 2' : '2, 5'})`;
+  // A format whose feature is switched off in src/features/flags.json is not registered at all, so asking for it
+  // throws. Skip those here and say so once, rather than running cases that can only fail.
+  const registered = new Set(await X('formats()'));
+  const off = ALL_FORMATS.filter((f) => !registered.has(f));
+  if (off.length) console.log(`skipping ${off.join(', ')}: the feature is switched off, so nothing exports as that`);
   for (const tpl of TEMPLATES) {
     for (const fmt of ALL_FORMATS) {
       if (ONLY && !ONLY.includes(fmt)) continue;
+      if (!registered.has(fmt)) continue;
       const video = fmt === 'mp4' || fmt === 'webm' || fmt === 'prores';
       if (LAYERED.has(fmt)) {
         await layeredCases(tpl, fmt);
