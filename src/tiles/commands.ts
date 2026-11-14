@@ -257,7 +257,8 @@ export const tileCommands: Command[] = [
     id: 'tiles.showShapes',
     label: 'Show collision shapes over the level',
     category: 'View',
-    keys: ['Alt+Shift+K'],
+    // C for collision. Alt+Shift+K belongs to Remove bone, which has K, Alt+K and Alt+Shift+K as a family.
+    keys: ['Alt+Shift+C'],
     description: 'Draws every tile\'s collision shape over a tile map, so you can see what a game will treat as solid.',
     help: 'tile-collision',
     keywords: ['collision', 'hitbox', 'physics', 'debug', 'solid'],

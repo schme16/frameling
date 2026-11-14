@@ -113,7 +113,7 @@ Tick **One-way platform** and things land on the tile from above but jump up thr
 
 ## See what is solid
 
-**View > Show collision shapes over the level** (**Alt+Shift+K**) draws every tile's shape over your tile map in pink. A dashed line means one-way. Turned or flipped tiles show their shape turned or flipped too.
+**View > Show collision shapes over the level** (**Alt+Shift+C**) draws every tile's shape over your tile map in pink. A dashed line means one-way. Turned or flipped tiles show their shape turned or flipped too.
 
 ## Good to know
 
