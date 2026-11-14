@@ -36,7 +36,29 @@ The brush lays down a pattern: the pattern's dark squares take your **stroke** c
 - Set the **fill to none** (press / with the fill box in front) and the light squares are left as they are. Great for scattering texture over a finished area.
 - The pattern is fixed to the page, not to your stroke, so separate strokes always line up.
 
-The usual name for this is *ordered dithering*.`,
+The usual name for this is *ordered dithering*. To dither a whole area from one colour into another, use the [Gradient](help:pixel-gradient) tool (F).`,
+  'pixel-gradient': `Press **F** on a pixel layer, then drag across the picture. The colours run from your **Paint** colour at the start to your **Back** colour where you let go.
+
+On pixel art a gradient is never a smooth blur. It is a few real colours that melt into each other in a pattern of dots, the way pixel artists have always done skies and glows. This is *ordered dithering*.
+
+## The options
+
+- **Colours.** **Palette steps** walks through the palette colours that sit between Paint and Back, so every pixel is a colour you already have. **Two colours** uses only Paint and Back. **Smooth** is a plain blend of the two, for pictures with no palette to keep to.
+- **Dither.** **Classic** is the usual pattern. **Smooth** is finer and softer. **Chunky** is bold and retro. **Grainy** is scattered like film grain. **Bands** has no dots at all: hard steps.
+- **Shape.** **Linear** runs along the line you drag. **Radial** spreads out from where you press, and the end of the drag sets how far it reaches.
+- **Covers.** **Everywhere** paints the whole canvas, empty pixels too (good for a sky). **Painted pixels** colours only what is already drawn and leaves empty pixels empty (good for shading a sprite).
+
+A small strip at the top of the options shows what you will get.
+
+## Good to know
+
+- **Select first** to keep the gradient to one spot. With nothing selected it goes over the whole canvas.
+- Hold **Shift** to keep the direction to 45 degree steps.
+- On a layer with the [palette lock](help:palette-lock) on, every colour snaps to the palette.
+- One drag is one undo step. Drag again to try another direction; Undo puts it back.
+- Find the options in the command palette (**Ctrl+K**): *Gradient: next dither style*, *next colour mode*, and *switch between linear and radial*.
+
+For a hand-painted pattern, use the [Dither](help:tool-dither) brush. On a drawn layer the same tool makes [smooth gradients](help:tool-gradient) in shapes.`,
   'pixel-mirror': `This is [mirror drawing](help:mirror-drawing) on a pixel layer. Press **Shift+M** to turn it on. Press it again to change direction: **left and right**, **top and bottom**, **both** (four ways at once), then off.
 
 A dashed line on the page shows where the mirror is. Everything the pencil, brush, eraser, shade, dither and shape tools paint on a pixel layer is copied across it, and the paint bucket fills the mirrored spot too.

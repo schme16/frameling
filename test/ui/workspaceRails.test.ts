@@ -37,7 +37,7 @@ describe('the three defaults', () => {
     // Selecting sits right after the pixel tools, where the one Select button used to live among them.
     expect(ids(g).slice(0, 4)).toEqual(['draw', 'pixel', 'select', 'shapes']);
     expect(g[0].tools.slice(0, 4)).toEqual(['pencil', 'eraser', 'fill', 'eyedropper']);
-    expect(g[1].tools).toEqual(['shade', 'dither', 'spray']);
+    expect(g[1].tools).toEqual(['shade', 'dither', 'gradient', 'spray']);
     // Every way of picking is its own tool, and they sit together in the Select group.
     expect(groupOf(g, 'pixel-select-lasso')).toBe('select');
     expect(groupOf(g, 'pixel-select-wand')).toBe('select');

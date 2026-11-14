@@ -115,6 +115,23 @@ module.exports = [
     steps: [...pixelDoc(slimeRows(), ['p']), ...properties, center, wait(300), away, wait(400), { shot: '@' }],
   },
   {
+    // Gradient on a pixel layer: a sunset sky from Paint to Back, stepping through the palette, with its options showing.
+    name: 'pixel-gradient',
+    steps: (() => {
+      const g = grid(32, 16, 16, false);
+      return [
+        ...pixelDoc(null, ['f'], { w: 32, h: 16, zoomIn: 2 }),
+        ...properties,
+        center,
+        setUi({ color: '#5a1f33', fillColor: '#ffe066' }),
+        stroke(g, [[16, 0], [16, 15]], { steps: 10 }),
+        away,
+        wait(500),
+        { shot: '@', crop: [403, 47, 791, 418] },
+      ];
+    })(),
+  },
+  {
     name: 'pixel-dither',
     steps: [
       ...pixelDoc(slimeRows(), ['b', ['shift']]),

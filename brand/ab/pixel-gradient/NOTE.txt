@@ -1,0 +1,2 @@
+Same sunset (Paint #5a1f33 to Back #ffe066, Cosy Sixteen palette), dark and light, one setting changed at a time.
+dither-styles-*: the five dither styles of a pixel gradient (Classic is the default). colours-*: A plain two-colour dither, B palette steps (the default: every pixel is a colour you already have, stepping maroon, brown, orange, yellow), C a smooth mix with no dithering (for layers with no palette). radial-vs-linear-*: the two shapes with palette steps.
