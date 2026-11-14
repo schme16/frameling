@@ -269,6 +269,21 @@
     "text": "Quill stays away after a crash. The command Send the notes from the last crash still works.",
     "where": "Dialog and Preferences: the small line under the \"no\" answer in \"Quill after a crash\"."
   },
+  "choice.beta.autoMachine.title": { "text": "Your computer in automatic crash reports", "where": "Name of this choice in Preferences > Behaviour (group: Diagnostics)." },
+  "choice.beta.autoMachine.question": {
+    "text": "When a beta build tells the makers about a crash by itself, may that report say what your computer is: the processor, the memory and the graphics card? It goes without you reading it first, so it only does if you say yes.",
+    "where": "The question the \"Your computer in automatic crash reports\" dialog asks, once, soon after a beta build starts."
+  },
+  "choice.beta.autoMachine.yes.label": { "text": "Yes, include them", "where": "Dialog and Preferences: the button for the answer \"yes\" in \"Your computer in automatic crash reports\"." },
+  "choice.beta.autoMachine.yes.detail": {
+    "text": "A crash report carries the same computer details as one you send by hand. It helps a lot with a blank or slow canvas.",
+    "where": "Dialog and Preferences: the small line under the \"yes\" answer in \"Your computer in automatic crash reports\"."
+  },
+  "choice.beta.autoMachine.no.label": { "text": "No, keep them out", "where": "Dialog and Preferences: the button for the answer \"no\" in \"Your computer in automatic crash reports\"." },
+  "choice.beta.autoMachine.no.detail": {
+    "text": "Automatic crash reports stay as they are: what went wrong, and nothing about your computer. A report you send by hand can still carry them.",
+    "where": "Dialog and Preferences: the small line under the \"no\" answer in \"Your computer in automatic crash reports\"."
+  },
   "choice.ui.backdropClick.title": { "text": "Pressing beside a dialog", "where": "Name of this choice in Preferences > Behaviour (group: Dialogs)." },
   "choice.ui.backdropClick.question": { "text": "Should pressing the dim area beside a dialog close it?", "where": "The question the \"Pressing beside a dialog\" dialog asks." },
   "choice.ui.backdropClick.close.label": { "text": "Yes, close it", "where": "Dialog and Preferences: the button for the answer \"close\" in \"Pressing beside a dialog\"." },

@@ -7,6 +7,7 @@ import { betaHelp } from './help';
 import { openPrefs } from '../ui/overlays';
 import { watchProblems } from './problems';
 import { startAuto } from './auto';
+import { registerAutoMachineChoice, watchAutoMachine } from './autoMachine';
 import { considerCrash, registerCrashChoice } from './crashAsk';
 
 export function installBeta(): () => void {
@@ -24,6 +25,7 @@ export function installBeta(): () => void {
     },
   ]);
   registerCrashChoice();
+  registerAutoMachineChoice();
   registerCommands([
     {
       id: 'help.sendCrashNotes',
@@ -36,7 +38,7 @@ export function installBeta(): () => void {
       run: () => void considerCrash({ force: true }),
     },
   ]);
-  const stops = [watchProblems(), startAuto()];
+  const stops = [watchProblems(), startAuto(), watchAutoMachine()];
   return () => {
     for (const stop of stops) stop();
   };

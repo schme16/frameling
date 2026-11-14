@@ -2,11 +2,13 @@
 // then, only then, you press Send. Nothing here ever acts on its own.
 import { useEffect, useRef, useState } from 'react';
 import { Toggle } from '../canvas/controls';
+import { setChoice, useChoices } from '../core/choices';
 import { store } from '../core/store';
 import { getPrefs, setPrefs, usePrefs } from '../ui/prefs';
 import { toast } from '../ui/toast';
 import { gatherEnv } from '../tablet/check/state';
 import { refreshReport } from '../gpu/report';
+import { AUTO_MACHINE_CHOICE } from './autoMachine';
 import { MachineBox } from './MachineBox';
 import { machineFacts, type MachineFacts } from './machine';
 import { buildReport, docShape, reportText, type IngestReport } from './report';
@@ -81,6 +83,27 @@ function ContactRow() {
           )}
         </>
       )}
+    </div>
+  );
+}
+
+/** The answer to "may reports sent by themselves say what this computer is?", changeable at any time. */
+function AutoMachineRow() {
+  const known = useChoices()[AUTO_MACHINE_CHOICE];
+  return (
+    <div className="bt-contact" data-testid="beta.autoMachine" data-answer={known ?? 'unanswered'}>
+      <div className="bt-contact-head">
+        <span>Your computer in automatic crash reports</span>
+        <span className="bt-remembered">{known === undefined ? 'Not answered yet, so left out' : known === 'yes' ? 'Included' : 'Left out'}</span>
+      </div>
+      <div className="bt-contact-buttons">
+        <button type="button" className="tb-clear" data-testid="beta.autoMachine.yes" aria-pressed={known === 'yes'} onClick={() => setChoice(AUTO_MACHINE_CHOICE, 'yes')}>
+          Include them
+        </button>
+        <button type="button" className="tb-clear" data-testid="beta.autoMachine.no" aria-pressed={known === 'no'} onClick={() => setChoice(AUTO_MACHINE_CHOICE, 'no')}>
+          Leave them out
+        </button>
+      </div>
     </div>
   );
 }
@@ -189,6 +212,10 @@ export function BetaPanel() {
           <p className="tb-note">
             <b>This is a beta build, so a crash tells us by itself</b>, up to a few times a run. Nothing else is ever sent on its own: there is no
             counting of what you do and no ping when Frameling starts. Turn the switch off and even crashes stay here.
+          </p>
+          <AutoMachineRow />
+          <p className="tb-note">
+            A crash report sent by itself is not read by you first, so it leaves out your computer's details unless you said yes just above. Frameling asks you once, soon after it starts.
           </p>
           <p className="tb-note">
             Either way it takes what Frameling and this computer are (and, with the box above ticked, the processor, memory and graphics card), the shape of your drawing (how big, how many frames and layers) and what went
