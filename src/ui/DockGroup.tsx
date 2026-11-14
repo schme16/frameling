@@ -2,6 +2,7 @@
 // tab bar over its panel, and the splitter you can pull or use from the keyboard. The model is dockModel.ts.
 import { Fragment, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { getPanel, type DockZone } from '../core/registry';
+import { useLocked } from './lockState';
 import { dock, flushDock, panelTitle, setActive, toggleCollapsed } from './dock';
 import { evenGroupSplit, hidePanel, nudgeGroupSplit, setGroupSplit } from './lockedDock';
 import { dragState, dropIndexFor, splitFor, startPanelDrag } from './dockDrag';
@@ -129,6 +130,7 @@ function GroupSplitter({ zone, boundary, stack }: { zone: DockZone; boundary: nu
 
 /** One group as a tab bar over its panel. The first group of a zone also holds the fold button (and the Panels button on the right). */
 export function TabGroupView({ zone, group, panelsButton }: { zone: DockZone; group: number; panelsButton?: boolean }) {
+  const locked = useLocked('panels');
   const picker = panelPicker.use((v) => (panelsButton ? v : null));
   const z = dock.use((d) => d.layout.zones[zone]);
   const g = groupsOf(z)[group] ?? { tabs: [], active: null };
@@ -230,7 +232,7 @@ export function TabGroupView({ zone, group, panelsButton }: { zone: DockZone; gr
           className="ui-tab-main"
           data-help={p.help ?? 'panels'}
           data-tip={title}
-          data-tip-desc={z.collapsed ? 'Press to open. Drag to move it. Right-click for more.' : 'Drag to move it, out to a window, to another side or to the edge of a group to split. Right-click for more.'}
+          data-tip-desc={z.collapsed ? (locked ? 'Press to open. Right-click for more.' : 'Press to open. Drag to move it. Right-click for more.') : locked ? 'Locked in place. Right-click for more.' : 'Drag to move it, out to a window, to another side or to the edge of a group to split. Right-click for more.'}
           onClick={() => setActive(zone, id)}
           onKeyDown={(e) => {
             // Delete closes the panel, like the little x does.
@@ -340,6 +342,12 @@ export function TabGroupView({ zone, group, panelsButton }: { zone: DockZone; gr
           </div>
         )}
         <span className="ui-tabbar-fill" />
+        {locked && first && (
+          // Takes no room of its own, so nothing beside it moves when the lock goes on.
+          <span className="ui-tabbar-lock" data-tip="Panels locked" data-tip-desc="The panels stay where they are. Right-click a tab and choose Unlock the panels to move them." data-help="lock-layout">
+            <Icon name="lock" size={12} />
+          </span>
+        )}
         {panelsButton && first && flat && (
           <button
             type="button"

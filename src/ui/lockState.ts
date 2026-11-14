@@ -1,6 +1,7 @@
 // The lock, live: is the tool rail or the panels locked now, saying no when something is refused, and Quill's one
 // gentle word the first time something moves by accident. The pure parts (what a lock is, the words) are in dockLock.ts.
 import { dock, locksOf, setLock } from './dock';
+import { useSyncExternalStore } from 'react';
 import { isLockedIn, lockedReason, looksAccidental, type Doing, type LockKind } from './dockLock';
 import { line } from './mascot/lines';
 import { getPrefs } from './prefs';
@@ -14,6 +15,20 @@ export const isLocked = (kind: LockKind): boolean => isLockedIn(locksOf(dock.get
 export const railLocked = (): boolean => isLocked('tools');
 /** Nothing about the panels and windows moves, resizes or is rearranged while this says so. */
 export const panelsLocked = (): boolean => isLocked('panels');
+
+/** Reads the lock in a component, so it draws itself locked (or not) the moment the lock changes. */
+export const useLocked = (kind: LockKind): boolean => useSyncExternalStore(dock.subscribe, () => isLocked(kind));
+
+// The page says what is locked on its root, so the handles that invite a move (the rail's grip and edge, the panels'
+// edges and bars) can leave with plain CSS: `:root[data-lock-tools]` and `:root[data-lock-panels]`.
+function showLocks(): void {
+  if (typeof document === 'undefined') return;
+  const root = document.documentElement;
+  root.toggleAttribute('data-lock-tools', railLocked());
+  root.toggleAttribute('data-lock-panels', panelsLocked());
+}
+dock.subscribe(showLocks);
+showLocks();
 
 let told = { key: '', at: 0 };
 const REPEAT_MS = 2500;
