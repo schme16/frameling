@@ -16,6 +16,10 @@
 // next column). Mark a stack that is meant with data-overlaps.
 // Exits 1 when anything wraps, overlaps or jumps.
 const { app, BrowserWindow, ipcMain } = require('electron');
+// Software drawing with no GPU process (what a harness with no flags got under xvfb, so its pictures stay as they were), with
+// the colour pinned to sRGB (scripts/lib/gpu.cjs).
+const gpu = require('../lib/gpu.cjs');
+gpu.use('software', { noGpu: true });
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
@@ -449,6 +453,7 @@ async function runPass(p) {
 // Each pass closes its window before the next opens; without this Electron quits when the first one closes.
 app.on('window-all-closed', () => {});
 app.whenReady().then(async () => {
+  await gpu.confirmOrExit();
   installIpcStubs(ipcMain);
   const only = process.env.NOWRAP_PASSES?.split(',');
   for (const p of PASSES) {

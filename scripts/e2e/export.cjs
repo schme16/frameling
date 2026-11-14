@@ -44,10 +44,11 @@ const GODOT = process.env.GODOT_BIN;
 const UNITY = process.env.UNITY_BIN;
 const WEB = process.env.WEB_ENGINES === '1' && !SKIP.includes('web');
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-// Phaser and PixiJS need WebGL, which Chromium blocklists on a virtual display unless the blocklist is ignored (it then
-// runs on the software renderer). PixiJS's WebGPU renderer needs WebGPU switched on. Do not add the ANGLE or SwiftShader
-// switches here: with them the GPU process drops the WebGPU device, and WebGL works without them.
-if (WEB) for (const sw of [['ignore-gpu-blocklist'], ['enable-unsafe-webgpu']]) app.commandLine.appendSwitch(...sw);
+// Software drawing, the same everywhere, colour pinned to sRGB (scripts/lib/gpu.cjs). Phaser and PixiJS need WebGL, which
+// Chromium blocklists on a virtual display, and PixiJS's WebGPU renderer needs WebGPU: that is the { webgpu } variant,
+// which leaves the ANGLE and SwiftShader switches out (with them the GPU process drops the WebGPU device).
+const gpu = require('../lib/gpu.cjs');
+gpu.use('software', { webgpu: WEB });
 
 fs.rmSync(outDir, { recursive: true, force: true });
 fs.mkdirSync(outDir, { recursive: true });
@@ -150,6 +151,7 @@ async function startApp() {
   for (let i = 0; i < 100 && !BrowserWindow.getAllWindows().length; i++) await sleep(100);
   win = BrowserWindow.getAllWindows()[0];
   if (!win) throw new Error('The app never opened a window');
+  await gpu.confirmOrExit(win);
   await waitForPage();
 }
 

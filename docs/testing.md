@@ -233,9 +233,10 @@ WebGL animation frames). Phaser 3.90.0, Phaser 4.2.1 and PixiJS 8.23.0 are pinne
 downloads each package from the npm registry, checks it against the pinned sha512, and unpacks its browser build into
 `~/.cache/frameling-web-engines` (override with `WEB_ENGINES_DIR`), so nothing goes into `package.json`. The check
 serves the export folder over http on 127.0.0.1 and loads it the way a web page would, with the code from the help topics.
-Chromium needs `ignore-gpu-blocklist` (the harness sets it), or WebGL is refused on a virtual display; `enable-unsafe-webgpu`
-adds WebGPU, which Electron 45 (Chromium 156) then has on the software Vulkan driver. Do not add `use-angle swiftshader` or
-`use-gl angle`: with them the GPU process drops the WebGPU device.
+Chromium needs `ignore-gpu-blocklist`, or WebGL is refused on a virtual display; `enable-unsafe-webgpu`
+adds WebGPU, which Electron 45 (Chromium 156) then has on the software Vulkan driver. Both come from
+`gpu.use('software', { webgpu: true })` (scripts/lib/gpu.cjs), which leaves out `use-angle swiftshader` and `use-gl angle`:
+with them the GPU process drops the WebGPU device.
 
 Cases that set `allRenderers` (`play-*`, `hero-sprites` `*-grid`, `scaled*`, the plain `phaser` and `pixi` cases) load the sheet in
 every renderer: Phaser 3.90 and 4.2.1, each in WebGL and canvas, and PixiJS 8 in WebGL and WebGPU. WebGPU is probed in the
@@ -378,6 +379,19 @@ ExtendScript (`doc.saveAs` with `Compatibility.ILLUSTRATOR17` and `compressed = 
 streams; the layer, path, gradient and raster operators in `ai-native.ts` were worked out that way.
 
 Live text (`ai-text.ts`) is in the setup part of the data, as `%AI11_BeginTextDocument` with one `/AI11TextDocument : /ASCII85Decode` block: the text engine's document, nested dictionaries with numbers for keys. Facts found by saving texts from Illustrator and decoding that block: whole numbers and reals are different types (a size written `36` is read as 36/65536, write `36.0`); the fill is a `/SimplePaint` with `[alpha r g b]` (a `/CAITextPaint` without its id string is ignored); each story has a text ending in a return, a character run, an optional paragraph run (`/0` is 0 left, 1 right, 2 centre) and a layout cache that may be an empty list (Illustrator lays the text out itself, but a missing cache key hangs it); each frame has an origin and a matrix `[a b c d tx ty]` in a y down space whose (0, 0) is the file's (0, 0) moved by the ruler origin (8191 less half the artboard, plus a half point). The layer item only says which story it is (`/AI11Text` with `/StoryIndex`). Probe by decoding with a small script: ASCII85 the lines after `/AI11TextDocument`, each with its leading `%` taken off.
+
+## Colour and the engine: scripts/lib/gpu.cjs and scripts/e2e/colour.cjs
+
+Every Electron harness picks its engine through `scripts/lib/gpu.cjs` (`gpu.use('software')` or `gpu.use('card')` before
+ready, `gpu.confirmOrExit()` after), pins the colour profile to sRGB, and prints which engine it really got; a run that
+asked for the card and got software fails. Speed claims (`perf/`) use the card, pixel comparisons use software.
+`GPU_MODE=card|software` overrides. The colour proof is `scripts/e2e/colour.cjs`. Everything, with the numbers, is in
+[colour-and-gpu.md](colour-and-gpu.md).
+
+```bash
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/colour.cjs
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/lib/gpu-check.cjs card
+```
 
 ## Effects pixels: scripts/e2e/effects.cjs
 

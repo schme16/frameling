@@ -19,8 +19,11 @@ const SHAPES = ['star', 'polygon'];
 const SCALE = 6;
 const CELL = 34;
 
-app.disableHardwareAcceleration();
+// Software drawing with no GPU process at all (an offscreen window paints nothing otherwise), colour pinned to sRGB (scripts/lib/gpu.cjs).
+const gpu = require('../lib/gpu.cjs');
+gpu.use('software', { noGpu: true });
 app.whenReady().then(async () => {
+  await gpu.confirmOrExit();
   const bundle = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'psc-')), 'cells.cjs');
   esbuild.buildSync({ entryPoints: [path.join(__dirname, 'pixelStarCorners.ts')], bundle: true, platform: 'node', format: 'cjs', outfile: bundle, logLevel: 'error' });
   const { cellsFor } = require(bundle);

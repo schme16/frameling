@@ -7,6 +7,10 @@
 //
 // Exits non-zero when anything fails.
 const { app, BrowserWindow, ipcMain } = require('electron');
+// Software drawing with no GPU process (what a harness with no flags got under xvfb, so its pictures stay as they were), with
+// the colour pinned to sRGB (scripts/lib/gpu.cjs).
+const gpu = require('../lib/gpu.cjs');
+gpu.use('software', { noGpu: true });
 const path = require('node:path');
 const { installIpcStubs } = require('../ipc-stubs.cjs');
 
@@ -197,6 +201,7 @@ process.on('uncaughtException', bail);
 setTimeout(() => bail(new Error('effects harness timed out after 180s')), 180000).unref();
 
 app.whenReady().then(async () => {
+  await gpu.confirmOrExit();
   installIpcStubs(ipcMain);
   const win = new BrowserWindow({ show: false, width: 1280, height: 800, webPreferences: { preload: path.join(__dirname, '../../dist/preload/preload.cjs'), contextIsolation: true, sandbox: true, backgroundThrottling: false } });
   await win.loadFile(path.join(__dirname, '../../dist/renderer/index.html'), { query: { debug: '1' } });

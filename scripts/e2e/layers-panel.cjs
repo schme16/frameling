@@ -12,6 +12,10 @@
 // dragover at a real point inside the row, drop, dragend) dispatched on the real rows, which run the panel's own handlers
 // and the same Move command a person's drag does.
 const { app, BrowserWindow } = require('electron');
+// Software drawing with no GPU process (what a harness with no flags got under xvfb, so its pictures stay as they were), with
+// the colour pinned to sRGB (scripts/lib/gpu.cjs).
+const gpu = require('../lib/gpu.cjs');
+gpu.use('software', { noGpu: true });
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
@@ -53,6 +57,7 @@ async function startApp() {
   await app.whenReady();
   for (let i = 0; i < 100 && !BrowserWindow.getAllWindows().length; i++) await sleep(100);
   win = BrowserWindow.getAllWindows()[0];
+  await gpu.confirmOrExit(win);
   if (!win) throw new Error('The app never opened a window');
   win.setSize(1600, 1000);
   for (let i = 0; i < 200; i++) {

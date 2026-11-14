@@ -140,6 +140,15 @@ const summaryInitial = () => initialJs('dist/renderer').files.map((f) => f.split
 const median = (xs) => [...xs].sort((a, b) => a - b)[Math.floor(xs.length / 2)];
 
 async function main() {
+  // Which engine this is, before anything is timed: the card, or a failure (scripts/lib/gpu.cjs).
+  const mode = process.env.PERF_SOFTWARE_GL === '1' ? 'software' : 'card';
+  const pre = require('node:child_process').spawnSync(electronBin, [path.join(__dirname, '../lib/gpu-check.cjs'), mode], { encoding: 'utf8', env: { ...process.env, ELECTRON_ENABLE_LOGGING: '' } });
+  const line = (pre.stdout || '').split('\n').filter((l) => l.startsWith('[gpu]')).join('\n');
+  console.log(line || '[gpu] no answer');
+  if (pre.status !== 0) {
+    console.error('Start-up was not measured: the engine is not the one asked for.');
+    process.exit(1);
+  }
   const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'frameling-startup-'));
   let port = 9400 + Math.floor(Math.random() * 400);
   const results = [];

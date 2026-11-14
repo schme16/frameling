@@ -18,8 +18,11 @@ const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'frameling-webp-'));
 
 buildSync({ entryPoints: [path.join(root, 'src/pixel/import/picture.ts')], bundle: true, format: 'iife', globalName: 'Picture', outfile: path.join(tmp, 'picture.js'), logLevel: 'error' });
 
-app.disableHardwareAcceleration();
+// Software drawing with no GPU process at all (an offscreen window paints nothing otherwise), colour pinned to sRGB (scripts/lib/gpu.cjs).
+const gpu = require('../lib/gpu.cjs');
+gpu.use('software', { noGpu: true });
 app.whenReady().then(async () => {
+  await gpu.confirmOrExit();
   const win = new BrowserWindow({ show: false, webPreferences: { offscreen: true } });
   // The page the app itself is loaded from is a file, which counts as a secure page (ImageDecoder needs one).
   fs.writeFileSync(path.join(tmp, 'page.html'), '<!doctype html><title>webp</title>');

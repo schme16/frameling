@@ -18,7 +18,7 @@ Options:
 | `--label name` | a name stored in the results |
 | `PERF_RENDERER=dir` | use a renderer build from another folder, so you can measure without touching `dist/` (`npx vite build --outDir /somewhere/renderer`) |
 | `PERF_CPU_SLOWDOWN=4` | emulate a CPU four times slower (Chromium's CPU throttling). The GPU is unchanged. |
-| `PERF_SOFTWARE_GL=1` | software WebGL (SwiftShader) for machines with no GPU, e.g. under xvfb, so the WebGL paths run (numbers are then software numbers) |
+| `PERF_SOFTWARE_GL=1` | ask for software (SwiftShader) instead of the real card, for a machine with no card. Without it the run uses the card and fails if the card did not come up; either way the first line says which engine it got and the results file keeps it (`env.gpuRun`, or `gpu` for the sweep). Details: docs/colour-and-gpu.md |
 | `PERF_SHOW=1` | put the window on screen, to watch it |
 
 A full run takes about two minutes. Don't run other Electron work at the same time, it skews the numbers. Compare

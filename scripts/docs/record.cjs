@@ -19,6 +19,10 @@
 //   {"rec": "stop"}                                     stop, and write frames + a timing list into <outDir>/<name>/
 // Frames are stamped as they are captured; encode.sh turns each folder into an H.264 MP4 at the real pace.
 const { app, BrowserWindow, ipcMain } = require('electron');
+// Software drawing with no GPU process (what a harness with no flags got under xvfb, so its pictures stay as they were), with
+// the colour pinned to sRGB (scripts/lib/gpu.cjs).
+const gpu = require('../lib/gpu.cjs');
+gpu.use('software', { noGpu: true });
 const fs = require('node:fs');
 const path = require('node:path');
 
@@ -43,6 +47,7 @@ const { runSteps: run, sleep, stopActiveRec, mockMain, makeWindow } = require('.
 const runSteps = (win, steps) => run(win, steps, { outDir, width, height });
 
 app.whenReady().then(async () => {
+  await gpu.confirmOrExit();
   mockMain(ipcMain);
   fs.mkdirSync(outDir, { recursive: true });
   const win = makeWindow(BrowserWindow, width, height);

@@ -7,6 +7,10 @@ const fs = require('node:fs');
 const http = require('node:http');
 const path = require('node:path');
 const { app, BrowserWindow } = require('electron');
+// Software drawing with no GPU process (what a harness with no flags got under xvfb, so its pictures stay as they were), with
+// the colour pinned to sRGB (scripts/lib/gpu.cjs).
+const gpu = require('../lib/gpu.cjs');
+gpu.use('software', { noGpu: true });
 const { ensureEngines } = require('./web-engines/engines.cjs');
 
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.css': 'text/css', '.png': 'image/png' };
@@ -68,6 +72,7 @@ async function load(win, p) {
 }
 
 app.whenReady().then(async () => {
+  await gpu.confirmOrExit();
   engines = await ensureEngines();
   await new Promise((r) => server.listen(0, '127.0.0.1', r));
   const result = {};

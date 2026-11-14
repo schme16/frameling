@@ -7,6 +7,10 @@
 //
 // Exits non-zero when anything fails. Uses a throwaway profile inside outDir. Prints the timings it measured.
 const { app, BrowserWindow } = require('electron');
+// Software drawing with no GPU process (what a harness with no flags got under xvfb, so its pictures stay as they were), with
+// the colour pinned to sRGB (scripts/lib/gpu.cjs).
+const gpu = require('../lib/gpu.cjs');
+gpu.use('software', { noGpu: true });
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
@@ -49,6 +53,7 @@ async function startApp() {
   await app.whenReady();
   for (let i = 0; i < 100 && !BrowserWindow.getAllWindows().length; i++) await sleep(100);
   win = BrowserWindow.getAllWindows()[0];
+  await gpu.confirmOrExit(win);
   if (!win) throw new Error('The app never opened a window');
   win.setSize(1400, 900);
   for (let i = 0; i < 200; i++) {
