@@ -10,7 +10,7 @@ import { openPrefs } from './overlays';
 import { getPrefs, setPrefs } from './prefs';
 import { toast } from './toast';
 import { store } from '../core/store';
-import { askGroupRename, bringToolBack, currentGroups, foldToolGroup, putToolAway, putToolsBack, setToolbarEditing, startToolGroupHere, toolbarEditing, toolbarIsChanged, joinToolGroupAbove } from './toolRail';
+import { askGroupRename, bringToolBack, currentGroups, foldToolGroup, putToolAway, putToolsBack, setToolbarEditing, startToolGroupHere, toolbarEditing, toolbarIsChanged, joinToolGroupAbove, fitToolRailNames, isCustomWidth, resetToolRailWidth, stepToolRail } from './toolRail';
 import { copyWorkspaceText, exportWorkspaceFile, importWorkspaceFile, pasteWorkspaceText, stepWorkspace } from './workspaceActions';
 
 /** The panel the "this panel" commands act on: the one last worked in, if it is still showing. */
@@ -347,6 +347,38 @@ registerCommand({
   keywords: ['tools', 'toolbar', 'group', 'names', 'labels', 'headings', 'rail'],
   checked: () => getPrefs().toolNames,
   run: () => setPrefs({ toolNames: !getPrefs().toolNames }),
+});
+
+// The width of the tool rail, which can also be pulled by its inner edge. Only a rail docked at a side has one.
+const railAtSide = (): boolean => {
+  const at = dock.get().layout.tools.place;
+  return at === 'left' || at === 'right';
+};
+for (const [id, label, about, run] of [
+  ['view.toolRailWider', 'Tool rail: wider', 'One more button across, and more of the group names showing. You can also drag the rail\'s inner edge.', () => stepToolRail(1)],
+  ['view.toolRailNarrower', 'Tool rail: narrower', 'One button fewer across, down to icons alone. You can also drag the rail\'s inner edge.', () => stepToolRail(-1)],
+  ['view.toolRailFit', 'Tool rail: fit the group names', 'The width that shows every group name whole. Run it again to go back to the usual width. Double-click the rail\'s inner edge does the same.', fitToolRailNames],
+] as const) {
+  registerCommand({
+    id,
+    label,
+    category: 'View',
+    description: about,
+    help: 'tool-builder',
+    keywords: ['tools', 'toolbar', 'rail', 'width', 'wider', 'narrower', 'resize', 'group names', 'titles', 'fit', 'drag'],
+    enabled: railAtSide,
+    run,
+  });
+}
+registerCommand({
+  id: 'view.toolRailWidthReset',
+  label: 'Tool rail: back to its usual width',
+  category: 'View',
+  description: 'Two buttons across, or one in the one-per-group style, however far you pulled the rail.',
+  help: 'tool-builder',
+  keywords: ['tools', 'toolbar', 'rail', 'width', 'reset', 'default', 'usual', 'resize'],
+  enabled: () => railAtSide() && isCustomWidth(),
+  run: resetToolRailWidth,
 });
 
 // How the workspace switcher beside the drawing's name looks (see WorkspaceSwitcher.tsx).

@@ -4,6 +4,7 @@
 import type { LayerKind } from '../core/format';
 import type { DockZone } from '../core/registry';
 import { sanitizeGroups, type ToolGroup } from './toolArrange';
+import { cleanRailWidth } from './toolRailWidth';
 
 export type { DockZone };
 
@@ -71,6 +72,8 @@ export interface Workspace {
   tools?: Partial<Record<LayerKind, string[]>>;
   /** The tool rail's default arrangement for this workspace (missing = the standard one). Groups with no tools only set an order. */
   rail?: ToolGroup[];
+  /** How wide the tool rail is for this workspace, in pixels (missing = its natural width). */
+  railWidth?: number;
 }
 
 export const ZONES: DockZone[] = ['left', 'right', 'bottom', 'top'];
@@ -195,6 +198,8 @@ export function sanitizeWorkspace(raw: unknown): Workspace | null {
   const rail = sanitizeGroups(raw.rail, true) ?? ws.layout.tools.groups;
   delete ws.layout.tools.groups;
   if (rail) ws.rail = rail;
+  const railWidth = cleanRailWidth(raw.railWidth);
+  if (railWidth) ws.railWidth = railWidth;
   const about = cleanName(raw.about, 140);
   if (about) ws.about = about;
   if (raw.pixel === true) ws.pixel = true;

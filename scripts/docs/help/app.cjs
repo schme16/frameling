@@ -267,7 +267,11 @@ const entries = [
       { clickOn: '[data-tool-head="select"] .ui-tool-fold', after: 400 },
       { move: [560, 500] },
       wait(1500),
-      // Put it all back.
+      // Make the strip wider: drag its inner edge until the longest group name shows whole.
+      { dragOn: '.ui-rail-splitter', to: '.ui-rail-splitter', toDx: 125, steps: 24, delay: 40, hold: 500 },
+      { move: [560, 500] },
+      wait(1800),
+      // Put it all back: the width goes too.
       { clickOn: '.ui-tb-back', after: 500 },
       { move: [560, 500] },
       wait(1800),

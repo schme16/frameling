@@ -571,7 +571,7 @@ kbd {
   padding-top: 8px;
 }
 
-/* Groups: two tools across, a thin gap between groups. */
+/* Groups: two tools across (more on a wider rail), a thin gap between groups. */
 .ui-tool-groups {
   display: flex;
   flex-direction: column;
@@ -583,7 +583,8 @@ kbd {
 }
 .ui-tool-group {
   display: grid;
-  grid-template-columns: repeat(2, auto);
+  /* Two across, or as many as the width the rail was pulled to fits (ToolStrip sets --tool-cols). */
+  grid-template-columns: repeat(var(--tool-cols, 2), auto);
   gap: 4px;
   padding: 2px;
   border-radius: calc(var(--radius) - 1px);

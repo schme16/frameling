@@ -1,8 +1,8 @@
 // The docked zones (left, right, bottom, top): tabs you can drag, splitters you can pull, zones that fold away.
-import { useRef } from 'react';
 import { type DockZone } from '../core/registry';
 import { clampSize, DEFAULT_SIZE, dock, MAX_SIZE, MIN_SIZE, panelsAway, resizeZone } from './dock';
 import { TabGroupView, ZoneStack } from './DockGroup';
+import { useEdgeDrag } from './dockShared';
 import { RightDock } from './RightDock';
 import { rightStyle } from './rightStyle';
 
@@ -30,12 +30,12 @@ function TabZoneView({ zone, panelsButton }: { zone: DockZone; panelsButton?: bo
 /** The thin line between a zone and the canvas. */
 export function Splitter({ zone }: { zone: DockZone }) {
   const z = dock.use((d) => d.layout.zones[zone]);
-  const start = useRef<{ pos: number; size: number } | null>(null);
   const away = panelsAway.use((v) => v);
-  if (!z.tabs.length || z.collapsed || away) return null;
   const horizontal = zone === 'bottom' || zone === 'top';
   // Dragging right grows the left side, left grows the right side; down grows the top, up grows the bottom.
   const sign = zone === 'left' || zone === 'top' ? 1 : -1;
+  const drag = useEdgeDrag({ horizontal, sign, size: () => z.size, set: (n) => resizeZone(zone, clampSize(zone, n)) });
+  if (!z.tabs.length || z.collapsed || away) return null;
 
   return (
     <div
@@ -49,24 +49,7 @@ export function Splitter({ zone }: { zone: DockZone }) {
       aria-valuetext={`${z.size} pixels`}
       tabIndex={0}
       data-help="panels"
-      onPointerDown={(e) => {
-        e.currentTarget.setPointerCapture(e.pointerId);
-        start.current = { pos: horizontal ? e.clientY : e.clientX, size: z.size };
-        document.body.classList.add('ui-resizing');
-      }}
-      onPointerMove={(e) => {
-        if (!start.current) return;
-        const delta = (horizontal ? e.clientY : e.clientX) - start.current.pos;
-        resizeZone(zone, start.current.size + sign * delta);
-      }}
-      onPointerUp={() => {
-        start.current = null;
-        document.body.classList.remove('ui-resizing');
-      }}
-      onPointerCancel={() => {
-        start.current = null;
-        document.body.classList.remove('ui-resizing');
-      }}
+      {...drag}
       onDoubleClick={() => resizeZone(zone, DEFAULT_SIZE[zone])}
       onKeyDown={(e) => {
         // Arrows resize (Shift for bigger steps), Home and End go to the smallest and largest, Enter resets.

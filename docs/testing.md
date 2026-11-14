@@ -678,6 +678,7 @@ file is a JSON array run in order with real input events:
 |---|---|
 | `{"eval": "js"}` | Run JavaScript in the page. |
 | `{"click": [x, y]}` | Left click at window coordinates. |
+| `{"dblclick": [x, y]}` | Double-click at window coordinates (`record.cjs` and the help clips only). |
 | `{"drag": [[x, y], ...], "steps": 6}` | Press, move through the points, release. |
 | `{"down": [x, y]}`, `{"move": [x, y]}`, `{"up": [x, y]}` | For shots mid-drag. |
 | `{"key": "g", "mods": ["control"]}` | A key press (Electron keyCode names). |
