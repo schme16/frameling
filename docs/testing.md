@@ -803,7 +803,13 @@ xvfb-run -a -s "-screen 0 1600x1000x24" npm run dialogue:shots    # build, retak
 npm run build
 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/dialogue/shots.cjs [group ...]   # some groups, current build
 npm run dialogue:apply <changes.json> [--check]         # merge edits from the review page into lines.json
+npm run dialogue:apply -- --board [--check]             # the same, from the edits saved on the board (pb must be signed in)
+npm run dialogue:publish                                # build the page with its pictures inside, put it on the board as quill-dialogue
 ```
+
+The page (`page.mjs` + `page-client.js`, with `lines-tools.mjs` copied in whole) reads the live list from GitHub, saves
+edits to the `quill-lines-draft` board doc and raises the merge task through the board's own API as whoever has the page
+open. `test/ui/quill-dialogue-live.test.ts` runs it in jsdom against a pretend board and a pretend GitHub.
 
 `shots.cjs` saves one cropped shot per line id into `brand/dialogue/shots/` and notes into `manifest.json` there.
 It honours `SHOT_SHOW=1`. `apply.mjs` refuses the whole file if a line lost or gained a `{placeholder}` or names a line

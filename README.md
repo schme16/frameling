@@ -162,14 +162,19 @@ The easy way to edit them is the review page, `brand/dialogue/index.html`. Open 
 xdg-open brand/dialogue/index.html
 ```
 
-Each line has its screenshot in place and a box to change it; your edits are kept in that browser until you reset
-them.
+Each line has its screenshot in place and a box to change it. The same page lives on the board as the
+`quill-dialogue` doc (`npm run dialogue:publish` puts the current build there). Whenever it opens it reads the live list
+from the repo's `development` branch on GitHub (no key), so it is never a stale copy, and it saves your edits as you type:
+in the browser, and on the board as the `quill-lines-draft` doc. **Put these in the app** raises a board task listing
+each changed line (was, now, and the exact row that goes into `lines.json`). If the board can't be reached from the
+page, the edits stay in the browser and the button copies the task text instead.
 
-1. Edit the lines on the page, then press **Download my changes** (or **Copy my changes** and paste into a file).
+1. Edit the lines on the page. To merge from the board: `npm run dialogue:apply -- --board` (add `--check` first). To
+   merge from a file: press **Download my changes** (or **Copy my changes** and paste into a file).
 2. `npm run dialogue:apply ~/Downloads/quill-lines-2026-11-11.json` merges them into `lines.json` and prints what
    changed. It refuses the whole file, and writes nothing, if a line lost or gained a `{placeholder}` or names a line
    that doesn't exist. Add `--check` to see the changes without writing them.
-3. `npm run dialogue:page` refreshes the page's text; `SHOT_SHOW=1 xvfb-run -a -s "-screen 0 1600x1000x24" npm run
+3. `npm run dialogue:page` refreshes the page's built-in copy (the fallback); `SHOT_SHOW=1 xvfb-run -a -s "-screen 0 1600x1000x24" npm run
    dialogue:shots` rebuilds the app and retakes every screenshot too (about two minutes, inside xvfb, see
    `scripts/dialogue/shots.cjs`). A shot that only shows the nearest moment says so under the line.
 
