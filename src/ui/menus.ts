@@ -60,7 +60,7 @@ export const MENUS: MenuDef[] = [
     label: 'Animate',
     title: 'Frames and motion',
     categories: ['Animate', 'Animation', 'Timeline', 'Frames', 'Sound', 'Lip sync'],
-    items: ['timeline.play', 'timeline.toggleLoop', 'timeline.togglePingPong', '-', 'timeline.toggleOnion', 'timeline.onionKeysOnly', 'timeline.onionBoards', '-', 'sub:range', 'sub:goto', '-', 'timeline.newKey', 'timeline.emptyFrame', 'timeline.duplicateKey', 'timeline.clearKey', 'timeline.deleteKeys', 'sub:keys', 'sub:holds', '-', 'timeline.insertFrame', 'timeline.removeFrame', 'timeline.insertFrameOther', 'timeline.removeFrameOther', 'timeline.tidyEnd', 'timeline.addMarker', '-', 'sub:tween', 'sub:motions', 'sub:camera', 'sub:atext', 'sub:clips', '-', 'sub:rig', 'sub:sound', 'sub:reference', 'sub:artboards'],
+    items: ['timeline.play', 'timeline.toggleLoop', 'timeline.togglePingPong', '-', 'timeline.toggleOnion', 'timeline.onionKeysOnly', 'timeline.onionBoards', '-', 'sub:range', 'sub:goto', '-', 'timeline.newKey', 'timeline.emptyFrame', 'timeline.duplicateKey', 'timeline.clearKey', 'timeline.deleteKeys', 'sub:keys', 'sub:holds', '-', 'timeline.insertFrame', 'timeline.removeFrame', 'timeline.insertFrameOther', 'timeline.removeFrameOther', 'timeline.tidyEnd', 'timeline.addMarker', '-', 'sub:tween', 'sub:drawon', 'sub:motions', 'sub:camera', 'sub:atext', 'sub:clips', '-', 'sub:rig', 'sub:sound', 'sub:reference', 'sub:artboards'],
   },
   {
     label: 'Help',
@@ -238,6 +238,11 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
     label: 'In-betweens and easing',
     items: ['tween.make', 'tween.morph', 'tween.remove', '-', 'tween.drawPath', 'tween.pathFromSelection', '-', 'tween.hints', 'tween.hints.clear', '-', 'tween.ease.linear', 'tween.ease.easeIn', 'tween.ease.easeOut', 'tween.ease.easeInOut', 'tween.ease.backIn', 'tween.ease.backOut', 'tween.ease.bounceOut', 'tween.ease.elasticOut'],
     prefixes: ['tween.'],
+  },
+  drawon: {
+    label: 'Make a line draw itself',
+    items: ['trim.drawOn', 'trim.drawOff', 'trim.whole', '-', 'view.panel.draw-on'],
+    prefixes: ['trim.'],
   },
   camera: {
     label: 'Camera',

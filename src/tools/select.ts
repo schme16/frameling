@@ -43,7 +43,9 @@ import { modeOfTool, WAYS } from '../select/ways';
 import { drawLasso, lassoClosesAt, lassoPoint } from '../select/lasso';
 import { MagneticTrace, ringSource, type Ring } from '../select/magnetic';
 import { clingReach, getSelectSettings } from '../select/settings';
-import { subPathsToPath2D } from '../core/render';
+import { outlinePath, strokeOutlineWhole, subPathsToPath2D } from '../core/render';
+import { trimOf } from '../core/trimTween';
+import { trimActive } from '../geometry/trim';
 import { angleSteps, clearSnap, snapMove, snapPt } from '../canvas/guides';
 import { lockedLayerAt } from '../canvas/lost';
 import { landMatrix } from './select-land';
@@ -411,6 +413,22 @@ function hover(e: ToolPointer, ctx: ToolContext): void {
   setCursor(topShapeAt(cut ? cut.lifted : d.shapes, e.x, e.y, HIT_TOL / ctx.zoom) || topShapeAt(d.shapes, e.x, e.y, HIT_TOL / ctx.zoom) ? 'move' : null);
 }
 
+/** The part of each picked line that a trim hides, as a faint dashed outline (nothing for a line that shows all of itself). */
+function ghostOfTrim(gx: CanvasRenderingContext2D, shapes: readonly Shape[], px: number, ink: string): void {
+  const hidden = shapes.filter((s) => trimActive(trimOf(s)));
+  if (!hidden.length) return;
+  gx.save();
+  gx.setLineDash([5 * px, 4 * px]);
+  gx.lineWidth = 1.25 * px;
+  gx.strokeStyle = ink;
+  gx.globalAlpha = 0.45;
+  for (const s of hidden) {
+    if (s.type === 'path') gx.stroke(subPathsToPath2D(s.paths));
+    else if (s.type === 'stroke') gx.stroke(outlinePath(strokeOutlineWhole(s)));
+  }
+  gx.restore();
+}
+
 function overlay(gx: CanvasRenderingContext2D, ctx: ToolContext): void {
   const px = 1 / ctx.zoom;
   const ink = cssVar('--grape', '#9b7bff');
@@ -450,6 +468,9 @@ function overlay(gx: CanvasRenderingContext2D, ctx: ToolContext): void {
   const b = g && g.mode !== 'marquee' ? g.bounds : shapesBounds(sel);
   if (!b || !sel.length) return;
   const m = g && g.mode !== 'marquee' && g.moved ? (g.m ?? gestureMatrix(g)) : IDENTITY;
+
+  // A line that draws itself shows its hidden part as a faint dashed ghost while it is picked, so it can still be found.
+  if (!(g && g.mode !== 'marquee' && g.moved)) ghostOfTrim(gx, sel, px, ink);
 
   // Each selected shape gets a thin outline of its own box, so you can see what's in.
   gx.save();

@@ -7,6 +7,10 @@
  * count the same as on the stage: every writer composites them inside the copy (PDF turns the copy's layer into a
  * picture for effects, clipping and masks, as it does on the stage).
  *
+ * Lines that draw themselves (Start, End, Offset) are kept by every format: the picture formats draw each frame, SVG and PDF
+ * cut the line to what shows on the frame, and Lottie and animated SVG keep a plain line as one line with a trim path or a
+ * dash offset that moves (anything fancier, like a line that also has arrow heads, is cut frame by frame, still as vector).
+ *
  * Gradients (linear and radial, fills and lines) are kept as real gradients by SVG, animated SVG, Lottie and PDF.
  * PDF's gradients are solid colours only, so a see-through stop comes out solid there.
  */
@@ -16,6 +20,8 @@ import type { FormatId } from './types';
 import { effectInfo } from '../effects/model';
 
 import { shapeFeatureOf } from './shapeExport';
+import { trimOf } from '../core/trimTween';
+import { trimActive } from '../geometry/trim';
 import { exporterOf, type Carry, type Feature, type FormatCarry } from './registry';
 import './builtin';
 
@@ -32,6 +38,7 @@ export const FEATURE_WORDS: Record<Feature, string> = {
   folders: 'layer folders',
   bones: 'bent (boned) drawings',
   gradientAlpha: 'see-through colours inside gradients',
+  trim: 'lines that draw themselves',
 };
 
 /** What a format keeps (it is in the format's registration, see builtin.ts). */
@@ -65,6 +72,7 @@ export function docFeatures(doc: Doc): DocFeatures {
   for (const d of Object.values(doc.drawings)) {
     if (d.kind !== 'vector') continue;
     for (const s of d.shapes) {
+      if (trimActive(trimOf(s))) features.add('trim');
       const kind = s.type !== 'stroke' && s.type !== 'fill' && s.type !== 'path' && s.type !== 'instance' ? shapeFeatureOf(s.type) : undefined;
       if (kind) features.add(kind);
       else if (s.type === 'instance' && s.tint && s.tint.amount > 0) features.add('tint');

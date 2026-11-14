@@ -606,6 +606,20 @@ export interface BrushSettings {
   capEnd: boolean;
 }
 
+/**
+ * Which part of an outline shows, for a line that draws itself. All three are percents of the line's length. The line
+ * between `start` and `end` shows and the rest doesn't (`start` after `end` counts the same, the smaller first). `offset`
+ * slides that window along the line; on a closed outline it wraps round, on an open line it stops at the ends.
+ * Missing, or 0, 100 and 0, = the whole line. Keyed by drawing key, in-betweens ease between the keys.
+ */
+export interface Trim {
+  start: number;
+  end: number;
+  offset: number;
+  /** An outline made of several lines: 'together' trims each by the same amount (missing), 'inOrder' treats them as one long line. */
+  order?: 'together' | 'inOrder';
+}
+
 /** A brush or pencil stroke, kept as its input points so it can be re-rendered or re-styled losslessly. */
 export interface StrokeShape {
   id: Id;
@@ -622,6 +636,8 @@ export interface StrokeShape {
   realPressure?: boolean;
   color: Color;
   opacity: number;
+  /** Shows only part of the line (missing = all of it). See `Trim`. */
+  trim?: Trim;
 }
 
 /** One closed outline: a list of points, each optionally a cubic bezier from the previous point. */
@@ -700,6 +716,8 @@ export interface PathStroke {
   arrowSize?: number;
   /** Width along the line, as stops from the start (0) to the end (1), times `width` (missing = the same all the way). */
   widths?: WidthStop[];
+  /** Shows only part of the outline, so a line can draw itself (missing = all of it). See `Trim`. */
+  trim?: Trim;
 }
 
 /** A geometric shape (rectangle, ellipse, line, polygon, pen path), with an optional fill and stroke. */

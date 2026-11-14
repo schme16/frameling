@@ -17,6 +17,7 @@
 import { blendGradient } from './gradient';
 import type { Color, FillShape, Gradient, InstanceShape, ParticlesShape, PathPoint, PathShape, Shape, ShapeHint, StrokePoint, StrokeShape, SubPath, TextShape, Transform2D, VectorDrawing } from './format';
 import { strokeOutline } from './render';
+import { lerpTrim } from '../geometry/trim';
 
 type P = { x: number; y: number };
 /** One cubic segment: a to d, with controls b and c. */
@@ -466,6 +467,8 @@ export function resampleStroke(points: StrokePoint[], n: number): StrokePoint[] 
   return out;
 }
 
+const trimField = (trim: ReturnType<typeof lerpTrim>) => (trim ? { trim } : {});
+
 function strokeAsFill(s: StrokeShape): FillShape {
   const o = strokeOutline(s);
   return { id: s.id, type: 'fill', paths: [{ points: o.map(([x, y]) => ({ x, y })), closed: true }], color: s.color, opacity: s.opacity, ...(s.group ? { group: s.group } : {}) };
@@ -700,6 +703,7 @@ export function morphShapes(from: VectorDrawing, to: VectorDrawing, t: number, h
         brush: br,
         color: mixColors(a.color, b.color, t) ?? a.color,
         opacity: Math.max(0, Math.min(1, lerp(a.opacity, b.opacity, t))),
+        ...trimField(lerpTrim(a.trim, b.trim, t)),
       });
       continue;
     }
@@ -718,7 +722,10 @@ export function morphShapes(from: VectorDrawing, to: VectorDrawing, t: number, h
       const base = (t < 0.5 ? (sa ?? sb) : (sb ?? sa))!;
       const color = mixColors(sa?.color ?? null, sb?.color ?? null, t);
       const width = lerp(sa?.width ?? 0, sb?.width ?? 0, t);
-      if (color && width > 0.01) stroke = { ...base, color, width };
+      if (color && width > 0.01) {
+        const { trim: _t, ...plain } = base;
+        stroke = { ...plain, color, width, ...trimField(lerpTrim(sa?.trim, sb?.trim, t)) };
+      }
     }
     const fillGradient = blendGradient(p.a.fillGradient, p.b.fillGradient, t);
     const strokeGradient = blendGradient(p.a.strokeGradient, p.b.strokeGradient, t);

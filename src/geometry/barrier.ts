@@ -7,7 +7,7 @@
  * - Existing fills: not walls (a fill is paint, not a line), unless `includeFills` asks for their thin edge.
  */
 import type { Shape, SubPath } from '../core/format';
-import { strokeOutline } from '../core/render';
+import { strokeOutlineWhole as strokeOutline } from '../core/render';
 import { flattenSubPath } from './hit';
 import { ringArea2, type FillRule } from './raster';
 

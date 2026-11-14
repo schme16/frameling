@@ -42,6 +42,7 @@ import { fitClosed, sampleMidpointSpline } from './curve-fit';
 import { flattenDrawing } from '../core/layerKinds';
 import { sortedStops } from '../core/gradient';
 import { dashOffsetPx, dashPx, expandStroke, hasLineStyle } from '../geometry/lineStyle';
+import { nativeTrim, trimSpan } from './trimNative';
 import type { PosedMesh } from '../core/layerKinds';
 
 export interface LottieOptions {
@@ -304,6 +305,8 @@ export interface ShapeLook {
   paths: Json[];
   fill: { rgb: number[]; o: number; grad?: LottieGrad } | null;
   stroke: { rgb: number[]; o: number; w: number; lc: number; lj: number; grad?: LottieGrad; dash?: { d: number[]; o: number } } | null;
+  /** Lottie's own trim path on the line: start and end in percent, and the slide in degrees (360 is a whole turn). */
+  trim?: { s: number; e: number; o: number };
   /** A soft round sprite: a radial fade of this colour (SOFT_RADIUS wide, the size particle sprites are drawn at). */
   soft?: { rgb: number[] };
   /** Sprites move as a group; plain shapes have their points in stage space and no transform. */
@@ -634,6 +637,11 @@ function shapeGroupOf(looks: ShapeLook[], times: number[], name: string): Json |
     if (!blend) for (let j = 0; j < vals.length; j++) vals[j] = padPath(vals[j], most);
     it.push({ ty: 'sh', nm: `Path ${k + 1}`, ks: blend && !vals.every((v) => same(v, vals[0])) ? pathTrack(vals, times, PATH_TOL) : track(vals, times, blend, (v) => v) });
   }
+  // A line drawing itself: Lottie's trim path, after the paths it trims and before the line.
+  if (looks.some((l) => l.trim)) {
+    const at = (get: (t: NonNullable<ShapeLook['trim']>) => number, whole: number) => smoothTrack(looks.map((l) => (l.trim ? get(l.trim) : whole)), times, OPACITY_TOL);
+    it.push({ ty: 'tm', nm: 'Trim', s: at((t) => t.s, 0), e: at((t) => t.e, 100), o: at((t) => t.o, 0), m: 1 });
+  }
   // Fill and line are kept on every frame where any frame has them (see-through where missing), so the structure
   // is the same throughout.
   const anyStroke = looks.some((l) => l.stroke);
@@ -820,6 +828,22 @@ function expandSprites(ctx: Ctx, shapes: Shape[][]): Item[][] {
     const make = s0.type !== 'stroke' && s0.type !== 'fill' && s0.type !== 'path' && s0.type !== 'instance' ? shapeExportOf(s0.type)?.lottie : undefined;
     if (make) {
       cols.push(make(kit, shapes.map((list) => list[k])));
+      continue;
+    }
+    // A line that only draws itself stays one line, with Lottie's own trim path moving along it.
+    const run = nativeTrim(shapes.map((list) => list[k]), { dash: true, noFill: true, noOpenSlide: true });
+    if (run) {
+      const base = lookOf(run.base, ctx.tints);
+      const closed = run.base.paths[0].closed && run.base.paths[0].points.length > 2;
+      cols.push(
+        run.trims.map((t) => {
+          const shows = !!trimSpan(t, closed);
+          const lo = t ? Math.min(t.start, t.end) : 0;
+          const hi = t ? Math.max(t.start, t.end) : 100;
+          const look: ShapeLook = { ...base, trim: { s: r3(lo), e: r3(hi), o: r3((t?.offset ?? 0) * 3.6) }, ...(shows || !base.stroke ? {} : { stroke: { ...base.stroke, o: 0 } }) };
+          return [{ type: 'look', look } as LookItem];
+        }),
+      );
       continue;
     }
     // A line with dashes kept, arrow heads or a changing width is a few plain shapes; every frame gets the same few.

@@ -19,6 +19,7 @@ import { activeEffects, needsCompositor } from '../effects/model';
 import { ctx2, makeCanvas, type Canvas2 } from '../effects/apply';
 import { canvasGradient } from './gradient';
 import { dashOffsetPx, dashPx, expandStroke, hasLineStyle } from '../geometry/lineStyle';
+import { trimActive, trimStrokePoints } from '../geometry/trim';
 
 export type Ctx2D = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 
@@ -38,14 +39,26 @@ export interface RenderOptions {
 const strokeCache = new WeakMap<StrokeShape, Path2D>();
 const pathCache = new WeakMap<FillShape | PathShape, Path2D>();
 const strokeOutlineCache = new WeakMap<StrokeShape, number[][]>();
+const wholeOutlineCache = new WeakMap<StrokeShape, number[][]>();
 
-/** The filled outline polygon of a brush stroke, worked out fresh. */
-function computeOutline(s: StrokeShape): number[][] {
-  const b = s.brush;
+/**
+ * The filled outline polygon of a brush stroke, worked out fresh. With a trim only the part that shows is outlined, and
+ * where the window cuts the line the end is a round pen tip, not a taper (so a line drawing itself keeps its full width).
+ */
+function computeOutline(s: StrokeShape, whole = false): number[][] {
+  let b = s.brush;
+  let points = s.points;
+  if (!whole && trimActive(s.trim)) {
+    const cut = trimStrokePoints(s.points, s.trim);
+    if (!cut) return [];
+    points = cut.points;
+    if (cut.cutStart) b = { ...b, taperStart: 0, capStart: true };
+    if (cut.cutEnd) b = { ...b, taperEnd: 0, capEnd: true };
+  }
   // Every point at the middle means nothing varied, so widths come from the speed instead. A pen's own widths stand.
   const simulate = !s.realPressure && s.points.every((p) => p.p === 0.5);
   return getStroke(
-    s.points.map((p) => [p.x, p.y, p.p]),
+    points.map((p) => [p.x, p.y, p.p]),
     {
       size: b.size,
       thinning: b.thinning,
@@ -65,6 +78,17 @@ export function strokeOutline(s: StrokeShape): number[][] {
   if (!o) {
     o = computeOutline(s);
     strokeOutlineCache.set(s, o);
+  }
+  return o;
+}
+
+/** The whole line's outline, whatever its trim hides: for picking, bounds and editing, which shouldn't lose a hidden line. */
+export function strokeOutlineWhole(s: StrokeShape): number[][] {
+  if (!trimActive(s.trim)) return strokeOutline(s);
+  let o = wholeOutlineCache.get(s);
+  if (!o) {
+    o = computeOutline(s, true);
+    wholeOutlineCache.set(s, o);
   }
   return o;
 }

@@ -8,11 +8,13 @@
  * position, size, turn, slant, see-through or tint, one bone's pose, or the camera's place, zoom or turn. Moving it
  * moves only that row (see propKeys.ts).
  */
-import type { Cel, CameraView, Doc, Easing, Id, InstanceShape, Layer, LayerEffect, VectorDrawing } from '../core/format';
+import type { Cel, CameraView, Doc, Easing, Id, InstanceShape, Layer, LayerEffect, Shape, Trim, VectorDrawing } from '../core/format';
 import { tweenEase } from '../core/ease';
 import { isInstance, nextKey, pairInstances } from '../core/symbols';
 import { bonePose } from '../rig/math';
 import { effectInfo, isAnimated } from '../effects/model';
+import { canTrim, shapeLine, trimOf } from '../core/trimTween';
+import { cleanTrim, FULL_TRIM, trimWords } from '../geometry/trim';
 
 export type KeyRef = string;
 
@@ -209,6 +211,53 @@ const TINT = instProp(
 /** The symbol properties that have rows, in row order. */
 export const INSTANCE_PROPS: readonly InstProp[] = [POSITION, SCALE, ROTATION, SKEW, OPACITY, TINT];
 
+/** The lines that carry a trim anywhere on the layer, on each key, so a line plain on one key still shows its row there. */
+export function trimLists(doc: Doc, layer: Layer): (Shape[] | undefined)[] {
+  const drawn = layer.cels.map((c) => {
+    const d = doc.drawings[c.drawingId];
+    return d && d.kind === 'vector' ? d.shapes.filter(canTrim) : [];
+  });
+  const lines = new Set<string>();
+  for (const list of drawn) for (const s of list) if (trimOf(s)) lines.add(shapeLine(s));
+  if (!lines.size) return layer.cels.map(() => undefined);
+  return drawn.map((list) => {
+    const mine = list.filter((s) => lines.has(shapeLine(s)));
+    return mine.length ? mine : undefined;
+  });
+}
+
+/** Puts a trim on a drawing's shape (on a draft), or takes it off when it is the whole line (or undefined). */
+export function writeTrimOf(s: Shape, t: Trim | undefined): void {
+  const clean = cleanTrim(t);
+  if (s.type === 'stroke') {
+    if (clean) s.trim = clean;
+    else delete s.trim;
+  } else if (s.type === 'path' && s.stroke) {
+    if (clean) s.stroke.trim = clean;
+    else delete s.stroke.trim;
+  }
+}
+
+/** A row's numbers (start, end, slide) written to a shape, keeping how its several lines are taken. */
+export function writeTrim(s: Shape, v: number[]): void {
+  writeTrimOf(s, { start: v[0], end: v[1], offset: v[2], order: trimOf(s)?.order });
+}
+
+/** The "Draw on" row: how much of each trimmed line shows (start, end, slide). */
+export const TRIM_ROW: RowDef<Shape> = rowDef(
+  'trim',
+  'Draw on',
+  'draw-on',
+  'a line',
+  trimLists,
+  (s) => {
+    const t = trimOf(s) ?? FULL_TRIM;
+    return [t.start, t.end, t.offset];
+  },
+  writeTrim,
+  (v) => `draws ${trimWords(cleanTrim({ start: v[0], end: v[1], offset: v[2] }))}`,
+);
+
 /** The drawing on each key of a bones layer (undefined where it isn't a vector drawing). */
 const poseHolders = (doc: Doc, layer: Layer): (VectorDrawing[] | undefined)[] =>
   layer.cels.map((c) => {
@@ -260,7 +309,7 @@ const CAMERA_PROPS: readonly RowDef<CameraView>[] = [
 export function layerRows(layer: Layer): RowDef[] {
   if (layer.kind === 'camera') return [...CAMERA_PROPS];
   if (layer.kind !== 'vector') return [];
-  return [...(layer.rig?.bones.map((b) => boneRow(b.id, b.name)) ?? []), ...INSTANCE_PROPS];
+  return [...(layer.rig?.bones.map((b) => boneRow(b.id, b.name)) ?? []), ...INSTANCE_PROPS, TRIM_ROW];
 }
 
 /** One row of a layer by its id, or undefined when the layer doesn't have it. */
@@ -271,7 +320,7 @@ export function rowOf(layer: Layer, rowId: string): RowDef | undefined {
     const b = layer.rig?.bones.find((x) => BONE_ROW + x.id === rowId);
     return b ? boneRow(b.id, b.name) : undefined;
   }
-  return INSTANCE_PROPS.find((p) => p.id === rowId);
+  return rowId === TRIM_ROW.id ? TRIM_ROW : INSTANCE_PROPS.find((p) => p.id === rowId);
 }
 
 /** The rows of property keys a layer has: those with something that changes, each key moving on its own. */

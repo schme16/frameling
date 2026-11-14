@@ -2,7 +2,7 @@
 // (which already carries its width, taper and round or flat ends) is fitted with cubic curves; the Smoothness chosen is
 // how far the curves may stray from that outline. Pure.
 import type { PathPoint, PathShape, Shape, StrokeShape } from '../core/format';
-import { strokeOutline } from '../core/render';
+import { strokeOutlineWhole as strokeOutline } from '../core/render';
 import { fitClosed, sampleMidpointSpline, type Cubic } from '../export/curve-fit';
 
 /** The smoothest setting is this fraction of the brush width: past that a line stops looking like the one drawn. */

@@ -8,7 +8,7 @@
  */
 import polygonClipping, { type MultiPolygon, type Pair, type Polygon } from 'polygon-clipping';
 import type { Color, FillShape, Gradient, Id, PathShape, Shape, SubPath } from '../core/format';
-import { strokeOutline } from '../core/render';
+import { strokeOutlineWhole as strokeOutline } from '../core/render';
 import { uid } from '../core/doc';
 import { rdp } from './bezier';
 import { gradientKey } from '../core/gradient';
