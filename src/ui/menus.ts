@@ -60,7 +60,7 @@ export const MENUS: MenuDef[] = [
     label: 'Animate',
     title: 'Frames and motion',
     categories: ['Animate', 'Animation', 'Timeline', 'Frames', 'Sound', 'Lip sync'],
-    items: ['timeline.play', 'timeline.toggleLoop', 'timeline.togglePingPong', 'timeline.toggleOnion', 'timeline.onionKeysOnly', 'timeline.onionBoards', '-', 'timeline.setIn', 'timeline.setOut', 'timeline.clearInOut', '-', 'timeline.prevFrame', 'timeline.nextFrame', 'timeline.prevKey', 'timeline.nextKey', 'timeline.firstFrame', 'timeline.lastFrame', '-', 'timeline.newKey', 'timeline.emptyFrame', 'timeline.duplicateKey', 'timeline.clearKey', '-', 'timeline.insertFrame', 'timeline.removeFrame', 'timeline.tidyEnd', 'timeline.addMarker', '-', 'sub:motions'],
+    items: ['timeline.play', 'timeline.toggleLoop', 'timeline.togglePingPong', 'timeline.toggleOnion', 'timeline.onionKeysOnly', 'timeline.onionBoards', '-', 'timeline.setIn', 'timeline.setOut', 'timeline.clearInOut', '-', 'timeline.prevFrame', 'timeline.nextFrame', 'timeline.prevKey', 'timeline.nextKey', 'timeline.firstFrame', 'timeline.lastFrame', '-', 'timeline.newKey', 'timeline.emptyFrame', 'timeline.duplicateKey', 'timeline.clearKey', '-', 'timeline.insertFrame', 'timeline.removeFrame', 'timeline.tidyEnd', 'timeline.addMarker', '-', 'sub:reference', 'sub:motions'],
   },
   {
     label: 'Rig',
@@ -144,6 +144,10 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
     label: 'Light table',
     items: ['view.lightTable', 'view.lightTableDrawing', 'view.clearLightTable'],
   },
+  reference: {
+    label: 'Reference picture',
+    items: ['reference.place', 'reference.fit', 'reference.fill', 'reference.reset', '-', 'reference.pictureFromHere', 'reference.removeFromHere', '-', 'reference.toggleShow'],
+  },
   look: {
     label: 'Look and sound',
     items: ['view.toggleTheme', 'view.nextTheme', 'view.themes', 'view.toggleLook', 'view.toggleTextures', 'view.toggleSounds', '-', 'view.cleanTimeline'],
@@ -165,7 +169,7 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
   },
   import: {
     label: 'Import',
-    items: ['heading:Add to this drawing', 'file.importPicture', 'file.importAseprite', 'heading:Frames, logos and layers', 'file.importSequenceFiles', 'file.importSequenceFolder', 'file.importSvg', 'file.importLayered', 'heading:Open as a new drawing', 'file.openPicture', 'file.openAseprite', 'heading:Colours', 'palette.import', 'palette.fromPicture'],
+    items: ['heading:Add to this drawing', 'file.importPicture', 'file.importAseprite', 'heading:Frames, logos and layers', 'file.importSequenceFiles', 'file.importSequenceFolder', 'file.importSvg', 'file.importLayered', 'heading:To trace over', 'file.importReference', 'reference.paste', 'file.importVideo', 'heading:Open as a new drawing', 'file.openPicture', 'file.openAseprite', 'heading:Colours', 'palette.import', 'palette.fromPicture'],
   },
   export: {
     label: 'Export',

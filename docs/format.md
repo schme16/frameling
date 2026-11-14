@@ -19,6 +19,7 @@ A `.frameling` file is a zip (fflate) with:
 | `doc.json` | The `Doc`, with binary parts swapped for entry names (below). |
 | `pixels/<id>.png` | One PNG per pixel drawing. `doc.json` holds the entry name in `pixels` instead of the bytes. |
 | `audio/<id>.<ext>` | One entry per sound clip (stored, not compressed). `doc.json` holds the entry name in `data`. |
+| `pictures/<id>.<ext>` | One entry per reference picture a layer still shows (`jpg` or `png`, stored as it came). `doc.json` holds the entry name in `data`. Pictures no layer shows are not written. |
 
 Tilemap drawings store `cells` as a plain number list in `doc.json`. Sounds on artboards that aren't open are packed
 the same way (`src/artboards/io.ts` `packArtboards`). `saveFile(doc, appVersion)` always saves `rootDoc(doc)`
@@ -68,7 +69,7 @@ Refused outright:
 - A pixel drawing whose PNG entry is missing, misnamed, undecodable or the wrong size. A tilemap drawing with a
   bad size (over 4,000,000 cells, or `cells` the wrong length).
 - A layer of an unknown kind, or two layers with the same id.
-- Entries over 1 GB unzipped are skipped, and only `manifest.json`, `doc.json`, `pixels/` and `audio/` are unzipped. A pixel drawing's `x` and `y` are clamped to 0 or more (and at most 1048576).
+- Entries over 1 GB unzipped are skipped, and only `manifest.json`, `doc.json`, `pixels/`, `audio/` and `pictures/` are unzipped. A pixel drawing's `x` and `y` are clamped to 0 or more (and at most 1048576).
 
 Repaired, with a warning:
 
@@ -162,6 +163,7 @@ feature brought it rather than a date that means much. Fields without a note wer
 | `editing?` | `EditFrame[]` | Symbol edit stack. In memory only, never saved (`828d4a8`). |
 | `flow?` | `ClipFlow` | Clip state graph (`f587827`). |
 | `audio?` | `AudioClip[]` | (`0b554d4`) |
+| `pictures?` | `ReferencePicture[]` | The pictures reference layers show: `{id, name, data, mime, width, height}`. Bytes in `pictures/<id>.<ext>`; `width` and `height` are as the picture shows (a phone photo's turn already applied). Shared by every layer and shot that names the id. |
 | `guides?` | `Guide[]` | Ruler guides, never exported (`b5f0737`). |
 | `inOut?` | `{start, end}` | Play range, inclusive (`9edd74d`). |
 | `perspective?` | `{points: {x, y}[]}` | One or two vanishing points, never exported (`4dfae46`). |
@@ -237,6 +239,7 @@ See "Variations" in `docs/artboards.md` for how they are kept in step while edit
 | `cels` | Sorted by `start`, never overlapping. A frame with no cel is empty. |
 | `onion?` | false = left out of onion skin (`b6d4329`). |
 | `reference?` | Shown while drawing, left out of every export (`c4c91b3`). |
+| `picture?` | `LayerPicture`: a reference picture this layer shows, drawn by the editing canvas only (never by `renderFrame`, so never exported). `{x, y, scale, turn?, shots}`: the middle of the picture in stage pixels, stage pixels per picture pixel, degrees clockwise about the middle, and `shots: {picture, start, length?}[]` in order of `start` (a shot holds until the next one, or for `length` frames). One placement per layer. A shot naming a picture that isn't in `Doc.pictures` is dropped on reading. |
 | `bind?` | `LayerBind`, attached to a bone (`0b554d4`). |
 | `blend?` | `BlendMode`, missing = normal (`ebd1163`). |
 | `effects?` | `LayerEffect[]` (`ebd1163`). |

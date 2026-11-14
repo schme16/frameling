@@ -10,6 +10,7 @@ import { drawLivePixels } from '../canvas/livePixels';
 import { layerCameraMatrix } from '../core/camera';
 import type { FramePainter, FrameParams } from '../canvas/pipeline';
 import { blitEntry, blitEntryStretched } from '../canvas/bitmapBlit';
+import { paintLayerPicture } from '../reference/paint';
 import type { Ctx } from './apply';
 import { BufferPool, ctx2 } from './apply';
 import { compositePlan } from './composite';
@@ -26,6 +27,14 @@ export function paintComposited(painter: FramePainter, g: CanvasRenderingContext
   const sy = rect.h / doc.height;
   const paint = (lg: Ctx, layer: Layer) => {
     if (layer.kind === 'camera') return;
+    // A reference picture (the layer's fade is the compositor's here).
+    if (layer.picture) {
+      const pc = p.camera ? layerCameraMatrix(doc, layer, p.camera) : undefined;
+      lg.save();
+      if (pc) lg.transform(pc[0], pc[1], pc[2], pc[3], pc[4], pc[5]);
+      paintLayerPicture(lg, doc, layer, p.frame, false);
+      lg.restore();
+    }
     const lv = p.live && p.live.layerId === layer.id ? p.live : null;
     const pixelSize = layer.kind === 'vector' ? 1 : layer.pixelSize;
     // Looking through the camera: drawn straight through it (stage-sized bitmaps would cut off what's outside).

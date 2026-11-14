@@ -18,6 +18,7 @@ import { isEasing } from '../core/ease';
 import { readOrigin } from './shapes-extra';
 import { hasShapeKind, shapeKind } from '../core/shapeKinds';
 import { packAudio, unpackAudio } from './audio-file';
+import { packPictures, readLayerPicture, unpackPictures } from './pictures-file';
 import { keepUnknownShape, readExt, shapesForSave, withExt } from './ext';
 import { packArtboards, readArtboards } from '../artboards/io';
 import { closedForSave, isDerivedDrawing, resolveAfterLoad, variationDiffs } from '../artboards/variationsIo';
@@ -203,8 +204,10 @@ function filesToSave(open: Doc, appVersion: string, now: Date, reuse = false): Z
   files['manifest.json'] = strToU8(JSON.stringify(manifest, null, 2));
   // Sound bytes go in their own entries; `audio` in doc.json then names them (undefined leaves the key out).
   const audio = packAudio(doc, files);
+  // Reference pictures the same way, in `pictures/` (only those a layer still shows).
+  const pictures = packPictures(doc, files);
   // Artboards that aren't open carry their own sounds the same way.
-  files['doc.json'] = docJsonBytes({ ...doc, drawings: DRAWINGS_MARK, audio, ...packArtboards(doc, files, diffs), ...(closed.reopen ? { variationOpen: closed.reopen } : {}) }, entries);
+  files['doc.json'] = docJsonBytes({ ...doc, drawings: DRAWINGS_MARK, audio, pictures, ...packArtboards(doc, files, diffs), ...(closed.reopen ? { variationOpen: closed.reopen } : {}) }, entries);
   return files;
 }
 
@@ -346,7 +349,7 @@ export async function loadFileAsync(bytes: Uint8Array): Promise<LoadedFile> {
 function unzipFile(bytes: Uint8Array, skipDoc = false): Record<string, Uint8Array> {
   let entries: Record<string, Uint8Array>;
   try {
-    entries = unzipSync(bytes, { filter: (f) => f.originalSize <= MAX_UNZIPPED && (f.name === 'manifest.json' || (f.name === 'doc.json' && !skipDoc) || f.name.startsWith('pixels/') || f.name.startsWith('audio/')) });
+    entries = unzipSync(bytes, { filter: (f) => f.originalSize <= MAX_UNZIPPED && (f.name === 'manifest.json' || (f.name === 'doc.json' && !skipDoc) || f.name.startsWith('pixels/') || f.name.startsWith('audio/') || f.name.startsWith('pictures/')) });
   } catch {
     throw new FileProblem("That doesn't look like a Frameling file, so it could not be opened.");
   }
@@ -442,6 +445,9 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
     }
   }
 
+  // Reference pictures first, so a layer's shots can be checked against them.
+  const pictures = unpackPictures(raw.pictures, entries, warnings);
+  const pictureIds = new Set((pictures ?? []).map((p) => p.id));
   // The same reader does the stage's layers and every symbol's.
   const readLayers = (rawLayers: any[]): Layer[] => {
     const layers: Layer[] = [];
@@ -469,6 +475,7 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
         opacity: Math.min(1, Math.max(0, num(l.opacity, 1))),
         ...(l.onion === false ? { onion: false } : {}),
         ...(l.reference === true ? { reference: true } : {}),
+        ...readLayerPicture(l.picture, pictureIds),
         ...((LAYER_LABELS as readonly unknown[]).includes(l.label) ? { label: l.label as LayerLabel } : {}),
         ...(typeof l.depth === 'number' && Number.isFinite(l.depth) && l.depth ? { depth: Math.max(-0.9, Math.min(100, l.depth)) } : {}),
         ...readBind(l.bind),
@@ -518,6 +525,7 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
   if (tileset) doc.tileset = tileset;
   const audio = unpackAudio(raw.audio, entries, warnings);
   if (audio) doc.audio = audio;
+  if (pictures) doc.pictures = pictures;
   const guides = readGuides(raw.guides);
   if (guides) doc.guides = guides;
   if (isObj(raw.inOut) && Number.isFinite(raw.inOut.start) && Number.isFinite(raw.inOut.end)) {

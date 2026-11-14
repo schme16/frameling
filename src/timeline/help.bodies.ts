@@ -387,5 +387,6 @@ A reference layer's name turns *italic* with a small **ref** tag. Choose **Expor
 ## Good to know
 
 - Hiding a layer (the eye) also keeps it out of exports, but then you can't see it either. A reference layer stays visible.
-- The game hero template's **Ground** is a reference layer, so its sprite sheets come out with just the character and its shadow.`,
+- The game hero template's **Ground** is a reference layer, so its sprite sheets come out with just the character and its shadow.
+- To trace a photo or a model sheet, see [A picture behind your drawing](help:reference-picture). It is a reference layer that holds a picture.`,
 };

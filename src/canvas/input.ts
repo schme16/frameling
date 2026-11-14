@@ -85,3 +85,12 @@ export function pressesControl(target: EventTarget | null): boolean {
   const el = target as Element | null;
   return !!el && typeof el.closest === 'function' && !!el.closest('button, a[href], select, [role="button"]');
 }
+
+/**
+ * A plain press on something laid over the canvas that handles its own pointer (the reference picture's handles): the
+ * canvas leaves it alone, so no tool draws underneath. Other buttons (the middle one pans) still reach the canvas.
+ */
+export function heldByOverlay(e: { button: number; target: EventTarget | null }): boolean {
+  const el = e.target as Element | null;
+  return e.button === 0 && !!el && typeof el.closest === 'function' && !!el.closest('[data-canvas-hold]');
+}

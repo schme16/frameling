@@ -11,6 +11,7 @@ import { ArtboardsUnderlay } from '../artboards/Underlay';
 import { SnapChip } from './SnapOptions';
 import { TurnChip } from './TurnChip';
 import { isTurned, useTurn } from './turn';
+import { ReferenceBar, ReferenceHandles } from '../reference/Placement';
 
 export function CanvasView() {
   const rootRef = useRef<HTMLDivElement>(null);
@@ -49,6 +50,7 @@ export function CanvasView() {
         <div className="cv-stage" ref={stageRef} />
         <canvas className="cv-layer" ref={mainRef} />
         <canvas className="cv-layer cv-overlay" ref={overlayRef} />
+        <ReferenceHandles />
         <TextEditor />
       </div>
       <EditBar />
@@ -56,6 +58,7 @@ export function CanvasView() {
       {rulers && <Rulers root={rootRef} />}
       <SnapChip />
       <TurnChip />
+      <ReferenceBar />
       {hint && (
         <div className="cv-hint" key={hint.id} role="status" aria-live="polite">
           {hint.text}

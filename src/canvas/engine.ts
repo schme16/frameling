@@ -13,8 +13,9 @@ import { swapPaintBack } from '../tools/wells';
 import './choices';
 import type { SpaceTapMode, WheelMode } from './choices';
 import * as ctl from './controller';
+import { subscribePictures } from '../reference/paint';
 import { LIGHT_TABLE_OPACITY, lightTableItems, lightTableTint } from './lightTable';
-import { pressesControl, SpaceTap, wheelIntent } from './input';
+import { heldByOverlay, pressesControl, SpaceTap, wheelIntent } from './input';
 import { attachPinch } from './pinch';
 import { perf } from './perf';
 import { neighbourFrames, upcomingFrames } from '../timeline/playback';
@@ -208,6 +209,8 @@ export class CanvasEngine {
     this.cleanups.push(subscribeViewSettings(() => this.invalidate(true, true)));
     this.cleanups.push(subscribeTileUi(() => this.invalidate(true, true)));
     this.cleanups.push(subscribePrefs(() => this.invalidate(true, true)));
+    // A reference picture that has just been read.
+    this.cleanups.push(subscribePictures(() => this.invalidate(true, false)));
     this.cleanups.push(subscribeTurn(() => this.resize(true)));
     // Grid and handle colours come from theme tokens, so a theme or look change repaints both canvases.
     this.cleanups.push(subscribeTheme(() => this.invalidate(true, true)));
@@ -695,7 +698,7 @@ export class CanvasEngine {
     }
     // Buttons floating over the canvas (the tile banner's Done, the edit bar) get their own click: capturing the
     // pointer here would send the release to the canvas and the click would never happen.
-    if (pressesControl(e.target)) return;
+    if (pressesControl(e.target) || heldByOverlay(e)) return;
     if (e.pointerType === 'touch' && this.touchDown(e)) return;
     if (this.gesture) return;
     this.penPressed = e.pointerType === 'pen' && e.pressure > 0;
