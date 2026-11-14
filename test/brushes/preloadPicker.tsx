@@ -15,7 +15,12 @@ export async function preloadPicker(): Promise<void> {
   const root = createRoot(host);
   await act(async () => root.render(<BrushPicker />));
   await act(async () => host.querySelector<HTMLButtonElement>('.pk-btn')!.click());
-  await act(async () => void (await new Promise((r) => setTimeout(r, 20))));
+  // Wait for the panel to arrive rather than for a fixed moment: on a busy machine the import can take longer than
+  // any single sleep we would pick, and a test that fails only when the machine is loaded is worse than no test.
+  const until = Date.now() + 5000;
+  while (!document.querySelector('.pk-pop') && Date.now() < until) {
+    await act(async () => void (await new Promise((r) => setTimeout(r, 10))));
+  }
   if (!document.querySelector('.pk-pop')) throw new Error('The brush picker panel did not load.');
   await act(async () => root.unmount());
   host.remove();
