@@ -121,6 +121,19 @@ export function readGpu(r: GpuReport, keptBytes = 0): Reading {
   return { mode, headline, advice, card, driver, path, cardMemory, holding: `Frameling is holding ${parts.join(', ')}.` };
 }
 
+/**
+ * The one line Frameling prints as it starts, so a terminal says at once whether the card is in use. Same facts and words
+ * as Preferences > Performance (Card in use, Drawing path), plain words first and the engine's name second.
+ */
+export function startLine(r: GpuReport): string {
+  const x = readGpu(r);
+  const how = x.path === 'Software' ? '' : `, through ${x.path}`;
+  if (x.mode === 'card' && x.path !== 'Software') return `Frameling: drawing on your graphics card (${x.card})${how}.`;
+  if (x.mode === 'partly') return `Frameling: your graphics card (${x.card}) draws the window, but the canvas is drawn in software, which is slower${how}.`;
+  const why = x.mode === 'off' ? 'hardware drawing is switched off' : x.mode === 'card' ? 'the engine is using its built-in software drawing' : 'no graphics card could be used';
+  return `Frameling: drawing in software, which is slower (${why}).`;
+}
+
 /** Everything, as plain text to paste into a bug report. */
 export function reportText(r: GpuReport, keptBytes: number, settings: { hardware: boolean; cacheMb: number; scrub: string; fpsCap: number }, appVersion?: string): string {
   const x = readGpu(r, keptBytes);
@@ -131,6 +144,7 @@ export function reportText(r: GpuReport, keptBytes: number, settings: { hardware
     `Card in use: ${x.card}`,
     `Driver: ${x.driver}`,
     `Drawing path: ${x.path}`,
+    `On start: ${startLine(r).replace(/^Frameling: /, '')}`,
     `Card memory: ${x.cardMemory}`,
     `Memory: ${x.holding}`,
     `Cards found: ${r.devices.length ? r.devices.map((d) => `${d.name ?? vendorName(d.vendorId)} [${d.vendorId.toString(16)}:${d.deviceId.toString(16)}]${d.active ? ' (active)' : ''}${d.driver ? ` driver ${d.driver}` : ''}`).join('; ') : 'none'}`,

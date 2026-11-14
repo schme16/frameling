@@ -1,7 +1,7 @@
 // What the Performance page says for each way a computer can be drawing: the card doing it, only the window on the card,
 // switched off three ways, and no card found. Pure words from a report, so the cases are plain objects.
 import { describe, expect, it } from 'vitest';
-import { bytesText, cardName, drawMode, drawPath, readGpu, reportText, restartNeeded, vendorName } from '../../src/gpu/describe';
+import { bytesText, cardName, drawMode, drawPath, readGpu, reportText, restartNeeded, startLine, vendorName } from '../../src/gpu/describe';
 import type { GpuReport } from '../../src/preload/api';
 
 const base: GpuReport = {
@@ -135,4 +135,27 @@ describe('the copied report', () => {
     expect(bytesText(1536 * 1024 * 1024)).toBe('1.5 GB');
     expect(bytesText(40_000_000)).toBe('38 MB');
   });
+});
+
+describe('the line printed on start', () => {
+  it('names the card and the way it is reached, plain words first', () => {
+    expect(startLine({ ...base, glImplementation: '(gl=egl-angle,angle=opengl)', features: { ...base.features, vulkan: 'disabled_off' } })).toBe(
+      'Frameling: drawing on your graphics card (NVIDIA GeForce RTX 4080 SUPER), through OpenGL.',
+    );
+  });
+  it('says software and why when switched off, when there is no card, and when the engine fell back', () => {
+    expect(startLine({ ...base, hardwareAcceleration: false })).toBe('Frameling: drawing in software, which is slower (hardware drawing is switched off).');
+    expect(startLine({ ...base, flags: ['--disable-gpu'] })).toContain('switched off');
+    expect(startLine(software)).toBe('Frameling: drawing in software, which is slower (no graphics card could be used).');
+    expect(startLine({ ...base, glImplementation: '(gl=egl-angle,angle=swiftshader)', features: { ...base.features, vulkan: 'disabled_off' } })).toContain('built-in software drawing');
+  });
+  it('says when only the window is on the card', () => {
+    const l = startLine({ ...base, glImplementation: '(gl=egl-angle,angle=opengl)', features: { ...base.features, '2d_canvas': 'disabled_software', vulkan: 'disabled_off' } });
+    expect(l).toContain('draws the window, but the canvas is drawn in software');
+  });
+  it('is in the copied report too, so the terminal and the page agree', () => {
+    const text = reportText(software, 0, { hardware: true, cacheMb: 160, scrub: 'full', fpsCap: 0 });
+    expect(text).toContain('On start: drawing in software, which is slower (no graphics card could be used).');
+  });
+  it('has no em dashes', () => expect(startLine(base)).not.toContain('\u2014'));
 });

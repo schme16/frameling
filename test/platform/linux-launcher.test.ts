@@ -6,6 +6,7 @@ import { chmodSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSy
 import os from 'node:os';
 import path from 'node:path';
 import { createRequire } from 'node:module';
+import { NSS_NOISE_PATTERN } from '../../src/main/stderrNoise';
 import { describe, expect, it } from 'vitest';
 
 const root = path.resolve(__dirname, '../..');
@@ -52,6 +53,32 @@ describe.skipIf(!canRun)('Linux launcher', () => {
     mkdirSync(path.join(dir, 'cfg/Frameling'), { recursive: true });
     writeFileSync(path.join(dir, 'cfg/Frameling/no-sandbox-ok'), '');
     expect(run(dir, ['--no-sandbox']).stdout.trim()).toBe(`ARGS: --no-sandbox ${GPU}`);
+  });
+
+  it('holds the same certificate-line pattern as the one the app code names', () => {
+    expect(readFileSync(launcher, 'utf8')).toContain(`NSS_NOISE='${NSS_NOISE_PATTERN}'`);
+  });
+
+  it('drops only the harmless certificate line from the errors, keeps the rest, and keeps the exit code', () => {
+    const dir = fakeApp();
+    writeFileSync(
+      path.join(dir, 'frameling.bin'),
+      [
+        '#!/usr/bin/env bash',
+        'echo "out line"',
+        'echo "[1:2:ERROR:crypto/nss_util.cc:382] After loading Root Certs, loaded==false: NSS error code: -8018" >&2',
+        'echo "[1:2:ERROR:gpu_process_host.cc:1] GPU process exited unexpectedly" >&2',
+        'echo "[1:2:ERROR:crypto/nss_util.cc:382] After loading Root Certs, loaded==false: NSS error code: -8000" >&2',
+        'exit 7',
+        '',
+      ].join('\n'),
+    );
+    const r = run(dir, []);
+    expect(r.stdout.trim()).toBe('out line');
+    expect(r.stderr).not.toContain('-8018');
+    expect(r.stderr).toContain('GPU process exited unexpectedly');
+    expect(r.stderr).toContain('NSS error code: -8000');
+    expect(r.status).toBe(7);
   });
 
   it('picks the window system by hand with FRAMELING_OZONE', () => {

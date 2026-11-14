@@ -4,6 +4,7 @@ import { app } from 'electron';
 import os from 'node:os';
 import { gpuOffPath, gpuOffState, linuxVramBytes, setGpuOffFile } from './gpuFile';
 import type { GpuReport } from '../preload/api';
+import { startLine } from '../gpu/describe';
 
 type Handle = (channel: string, fn: (e: unknown, ...args: any[]) => unknown) => void;
 
@@ -64,6 +65,15 @@ export async function gpuReport(): Promise<GpuReport> {
     appKb: kb(['Browser', 'Tab', 'GPU', 'Utility']),
     vramBytes: process.platform === 'linux' ? linuxVramBytes() ?? undefined : undefined,
   };
+}
+
+/** Says once, in the terminal, which drawing path is in use (the same words as Preferences > Performance). */
+export async function logDrawingPath(): Promise<void> {
+  try {
+    console.log(startLine(await gpuReport()));
+  } catch {
+    // A courtesy line: never worth a failure.
+  }
 }
 
 export function registerGpuIpc(handle: Handle): void {
