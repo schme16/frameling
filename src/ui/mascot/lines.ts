@@ -1,6 +1,7 @@
 // Everything Quill says lives in lines.json, so it can be edited (and reviewed against screenshots, see
 // brand/dialogue) without touching code. Code reads it through line() / lines() / lineParts().
 import data from './lines.json';
+import { currentMascot } from './mascots';
 
 type Data = typeof data;
 export type LineId = Exclude<keyof Data, '$about'>;
@@ -29,7 +30,7 @@ export function fill(text: string, vars: Vars = {}): string {
 }
 
 function entry(id: LineId): LineEntry {
-  const e = LINES[id];
+  const e = currentMascot().lines?.[id] ?? LINES[id];
   if (!e) throw new Error(`No Quill line "${id}" in lines.json`);
   return e;
 }

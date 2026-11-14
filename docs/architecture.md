@@ -491,8 +491,12 @@ API and threat model are in `docs/plugins.md`; the manifest is in `docs/format.m
   moves every Quill on screen by setting `background-position`, an idle clock sends him to sleep), `Quill.tsx`
   (`Quill`, `QuillSays`, `QuillEmpty`), `scripts.ts` (little performances), `goodbye.ts` (turning him off and on).
 - `lines.json` holds everything he says; `lines.ts` reads it (`line`, `lines`, `lineParts`) with typed ids.
-- `npm run build:mascot` (`scripts/build-mascot.mjs`, helpers in `scripts/mascot/`) turns
-  `brand/mascot/mascot.frameling` into the sheet and `mascot-icon.frameling` into the app icons. See the README.
+- `mascots.json` and `mascots.ts` are the registry: which mascots there are and which is current (the `mascot`
+  preference). The app asks it, not Quill by name; `runtime.ts` loads whichever is current. The clips a mascot must
+  draw, and how to add one, are in `docs/mascots.md`.
+- `npm run build:mascot` (`scripts/build-mascot.mjs`, helpers in `scripts/mascot/`) turns each mascot's source (Quill's
+  is `brand/mascot/mascot.frameling`) into its sheet and `mascot-icon.frameling` into the app icons, and fails if a
+  mascot is missing a clip. See the README.
 
 ## Help
 

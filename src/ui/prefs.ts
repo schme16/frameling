@@ -47,6 +47,8 @@ export interface Prefs {
   showTextures: boolean;
   /** Show Quill, the hedgehog guide. Off hides him and his chatter everywhere; words people need stay as plain notes. */
   showQuill: boolean;
+  /** Which mascot shows. The id of one in src/ui/mascot/mascots.json; anything unknown means the standard one. */
+  mascot: string;
   /**
    * Beta reports: whether the panel in Preferences > Diagnostics offers to send one. On by default in a beta build
    * (which is what being a tester is), off everywhere else, and a tester can turn it off whenever they like. See
@@ -121,6 +123,7 @@ export const DEFAULT_PREFS: Prefs = {
   workspaceSwitcher: 'tabs',
   showTextures: true,
   showQuill: true,
+  mascot: 'quill',
   betaReports: canSend(),
   betaContact: '',
   updateCheck: true,
@@ -174,6 +177,7 @@ export function migratePrefs(raw: unknown): Prefs {
     workspaceSwitcher: isSwitcherLook(r.workspaceSwitcher) ? r.workspaceSwitcher : DEFAULT_PREFS.workspaceSwitcher,
     showTextures: bool(r.showTextures, DEFAULT_PREFS.showTextures),
     showQuill: bool(r.showQuill, DEFAULT_PREFS.showQuill),
+    mascot: typeof r.mascot === 'string' && r.mascot ? r.mascot.slice(0, 40) : DEFAULT_PREFS.mascot,
     betaReports: bool(r.betaReports, DEFAULT_PREFS.betaReports),
     updateCheck: bool(r.updateCheck, DEFAULT_PREFS.updateCheck),
     updateSkipped: typeof r.updateSkipped === 'string' ? r.updateSkipped.slice(0, 40) : DEFAULT_PREFS.updateSkipped,

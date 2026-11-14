@@ -7,6 +7,7 @@ import { allCommands, type Command } from '../core/registry';
 import { allChoices, type ChoiceDef } from '../core/choices';
 import { switchableFeatures } from '../features/host';
 import type { FeatureDescriptor } from '../features/feature';
+import { hasChoice } from './mascot/mascots';
 import { isStaleCommand } from './dynamic';
 import { effectiveKeys } from './keys';
 import type { PrefsPage } from './overlays';
@@ -197,6 +198,11 @@ export function featureRows(features: FeatureDescriptor[] = switchableFeatures()
   return features.map((f) => ({ id: `features.${f.id}`, page: 'features', label: f.name, hint: f.about, also: FEATURE_ALSO[f.id] ?? [], kind: 'feature' }));
 }
 
+/** The guide picker, which is only on the page once there is more than one mascot to pick from. */
+export function mascotRows(): PrefRow[] {
+  return hasChoice() ? [row('general', 'Your guide', 'Who shows you round and cheers you on.', ['mascot', 'guide', 'character', 'helper', 'hedgehog', 'assistant'])] : [];
+}
+
 /** The commands the Keyboard page lists, so a command can be found by name and the page scrolls to it. */
 export function commandRows(commands: Command[] = allCommands().filter((c) => !c.hidden && !isStaleCommand(c.id)), keysOf: (c: Command) => string[] = effectiveKeys): PrefRow[] {
   return commands.map((c) => {
@@ -207,5 +213,5 @@ export function commandRows(commands: Command[] = allCommands().filter((c) => !c
 
 /** Every row there is right now: the fixed ones, the choices, the features, and the commands. */
 export function allPrefRows(): PrefRow[] {
-  return [...SETTING_ROWS, ...choiceRows(), ...featureRows(), ...commandRows()];
+  return [...SETTING_ROWS, ...mascotRows(), ...choiceRows(), ...featureRows(), ...commandRows()];
 }

@@ -1178,10 +1178,10 @@ that doesn't exist. The workflow is in the README.
 npm run build:mascot
 ```
 
-Reads `brand/mascot/mascot.frameling` and `mascot-icon.frameling` with the app's own reader and writes
+Reads each mascot's source (Quill's is `brand/mascot/mascot.frameling`) and `mascot-icon.frameling` with the app's own reader and writes
 `public/mascot/mascot.png` + `mascot.json`, `build/icon.png`, `build/icon.svg`, `build/icons/` and
 `public/mascot/logo.png`, touching only files whose bytes changed. `npm run build` runs it first.
-`test/io/mascot-source.test.ts` checks the source files still load.
+`test/io/mascot-source.test.ts` checks the source files still load. `test/ui/mascots.test.ts` checks every mascot in `src/ui/mascot/mascots.json` keeps the clip contract in `docs/mascots.md` (and that the code only asks for clips on the list), and `test/ui/mascots-switch.test.tsx` the picker (hidden while there is one) and switching the sheet while running.
 
 ## The off-screen window and ?debug hooks
 

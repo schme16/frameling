@@ -1,6 +1,7 @@
-// Builds the mascot (Quill) the app shows from its Frameling source files:
+// Builds every mascot the app has (src/ui/mascot/mascots.json) from its Frameling source files. For Quill:
 //   brand/mascot/mascot.frameling       -> public/mascot/mascot.png + mascot.json (one animation per clip)
 //   brand/mascot/mascot-icon.frameling  -> build/icon.png, build/icon.svg, build/icons/*.png, public/mascot/logo.png
+// A mascot that lacks a clip the app asks for fails the build. See docs/mascots.md.
 // Edit those files in Frameling, save, then `npm run build:mascot` (npm run build runs it too).
 // Uses the app's own .frameling reader (src/io/file.ts), so whatever Frameling saves, this reads.
 import fs from 'node:fs';
@@ -26,14 +27,30 @@ const put = (rel, bytes) => {
 	console.log('  wrote ' + rel);
 };
 
-const sheet = lib.docToSheet(open('brand/mascot/mascot.frameling'));
-for (const w of sheet.warnings) console.warn('mascot.frameling: ' + w);
-put('public/mascot/mascot.png', lib.encodePng(sheet.image));
-put('public/mascot/mascot.json', JSON.stringify(sheet.meta, null, '\t') + '\n');
+const manifest = JSON.parse(fs.readFileSync(path.join(ROOT, 'src/ui/mascot/mascots.json'), 'utf8'));
+let broken = 0;
 
-const icons = lib.docToIcons(open('brand/mascot/mascot-icon.frameling'));
-for (const [rel, img] of Object.entries(icons.pngs)) put(rel, lib.encodePng(img));
-put('build/icon.svg', icons.svg);
+for (const m of manifest.mascots) {
+	const sheet = lib.docToSheet(open(m.source));
+	for (const w of sheet.warnings) console.warn(`${m.source}: ${w}`);
+	// The clip contract (see docs/mascots.md): a mascot missing a clip the app asks for stops the build.
+	const problems = lib.sheetProblems(sheet.meta);
+	if (problems.length) {
+		broken++;
+		console.error(`${m.name} (${m.source}) breaks the clip contract: ${problems.join(', ')}.`);
+	}
+	put('public/' + m.sheet, lib.encodePng(sheet.image));
+	put('public/' + m.meta, JSON.stringify(sheet.meta, null, '\t') + '\n');
+	const anims = Object.keys(sheet.meta.anims);
+	console.log(`mascot ${m.id}: ${anims.length} animations (${anims.join(', ')})`);
 
-const anims = Object.keys(sheet.meta.anims);
-console.log(`mascot: ${anims.length} animations (${anims.join(', ')}), ${wrote ? wrote + ' file(s) updated' : 'nothing changed'}`);
+	// The app icon and logo belong to the app, so only the mascot that lists one makes them.
+	if (m.appIcon) {
+		const icons = lib.docToIcons(open(m.appIcon));
+		for (const [rel, img] of Object.entries(icons.pngs)) put(rel, lib.encodePng(img));
+		put('build/icon.svg', icons.svg);
+	}
+}
+
+if (broken) process.exit(1);
+console.log(wrote ? `${wrote} file(s) updated` : 'nothing changed');
