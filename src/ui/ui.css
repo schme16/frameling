@@ -4321,3 +4321,53 @@ body.dock-dragging .ui-tip {
   margin-left: 4px;
   vertical-align: middle;
 }
+
+/* Locked (see lockState.ts): the handles that invite a move leave, and nothing around them shifts. */
+.ui-tools-grip.is-locked,
+.ui-float-grip.is-locked {
+  cursor: default;
+  opacity: 0.7;
+}
+.ui-tools-grip.is-locked:hover,
+.ui-float-grip.is-locked:hover {
+  background: transparent;
+  color: var(--faint);
+}
+.ui-tools-grip.is-locked .ui-icon {
+  transform: none;
+}
+.ui-float-bar.is-locked {
+  cursor: default;
+}
+/* A quiet lock at the end of the first tab bar of a side. It has no width of its own, so nothing moves. */
+.ui-tabbar-lock {
+  position: relative;
+  flex: none;
+  width: 0;
+  margin-left: -2px;
+  align-self: center;
+  color: var(--faint);
+  opacity: 0.7;
+}
+.ui-tabbar-lock .ui-icon {
+  position: absolute;
+  right: 4px;
+  top: -7px;
+}
+/* The edges stay in the layout (their margins count) but can't be grabbed, so there is no resize cursor. */
+:root[data-lock-tools] .ui-rail-splitter {
+  visibility: hidden;
+  pointer-events: none;
+}
+:root[data-lock-panels] .ui-splitter:not(.ui-rail-splitter),
+:root[data-lock-panels] .ui-group-split {
+  pointer-events: none;
+  cursor: default;
+}
+:root[data-lock-panels] .ui-splitter:not(.ui-rail-splitter) {
+  visibility: hidden;
+}
+:root[data-lock-panels] .ui-group-split::before,
+:root[data-lock-panels] .ui-group-split::after {
+  display: none;
+}

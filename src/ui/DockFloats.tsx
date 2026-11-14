@@ -2,12 +2,13 @@
 // new window, or onto a zone to dock it), edges to resize by. Also the floating tool rail.
 import { memo, useEffect, useState, type ReactNode } from 'react';
 import { getPanel } from '../core/registry';
-import { dock, dockFloatBack, panelsAway, panelTitle, raiseFloatWindow, setFloatActive, setFloatWindowBox } from './dock';
-import { closeFloatWindow, hidePanel, resetFloatSize, resizeFloatBy } from './lockedDock';
+import { dock, panelsAway, panelTitle, raiseFloatWindow, setFloatActive, setFloatWindowBox } from './dock';
+import { closeFloatWindow, dockFloatBack, hidePanel, resetFloatSize, resizeFloatBy } from './lockedDock';
 import { clampBox, floatTitle, type FloatWin } from './dockModel';
 import { dragState, dropIndexFor, startFloatDrag, startFloatResize, startPanelDrag } from './dockDrag';
 import { askRename, menuPoint, floatMenu, openDockMenu, panelMenu } from './dockMenus';
 import { PanelBoundary } from './dockShared';
+import { useLocked } from './lockState';
 import { Icon } from './icons';
 import { PanelScope } from './explain/ExplainIcon';
 import { createStore, readRaw, writeJson } from './mini';
@@ -53,6 +54,7 @@ const EDGES = ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'];
 
 const FloatWindow = memo(function FloatWindow({ f, z, win }: { f: FloatWin; z: number; win: { w: number; h: number } }) {
   const names = dock.use((d) => d.layout.names);
+  const locked = useLocked('panels');
   const chrome = floatChrome.use((v) => v);
   const dropAt = dragState.use((d) => dropIndexFor(d, { float: f.id }, f.tabs.length));
   const dragged = dragState.use((d) => (d && d.kind === 'panel' ? d.panels[0] : null));
@@ -90,7 +92,7 @@ const FloatWindow = memo(function FloatWindow({ f, z, win }: { f: FloatWin; z: n
               className="ui-tab-main"
               data-help={p.help ?? 'floating-windows'}
               data-tip={label}
-              data-tip-desc="Drag it onto a side of the window to dock it, or onto another window to join it. Right-click for more."
+              data-tip-desc={locked ? 'Locked in place. Right-click for more.' : 'Drag it onto a side of the window to dock it, or onto another window to join it. Right-click for more.'}
               onClick={() => setFloatActive(f.id, id)}
               onKeyDown={(e) => {
                 if (e.key === 'ContextMenu' || (e.shiftKey && e.key === 'F10')) {
@@ -132,7 +134,12 @@ const FloatWindow = memo(function FloatWindow({ f, z, win }: { f: FloatWin; z: n
     </div>
   );
 
-  const grip = (
+  const grip = locked ? (
+    // Locked: no handle to carry it by, only a quiet lock in the same place so the bar doesn't shift.
+    <span className="ui-float-grip is-locked" data-tip="Locked in place" data-tip-desc="This window stays where it is. Right-click its title bar and choose Unlock the panels to move it again." data-help="lock-layout">
+      <Icon name="lock" size={13} />
+    </span>
+  ) : (
     <button
       type="button"
       className="ui-float-grip"
@@ -191,7 +198,7 @@ const FloatWindow = memo(function FloatWindow({ f, z, win }: { f: FloatWin; z: n
     >
       <div className="ui-float-head" data-dock-strip="" data-dock-float={f.id} data-dock-tabs={f.tabs.join(',')} data-dock-axis="x">
         <div
-          className="ui-float-bar"
+          className={`ui-float-bar${locked ? ' is-locked' : ''}`}
           onPointerDown={(e) => {
             if ((e.target as HTMLElement).closest('button, input, [data-dock-tab]')) return;
             startFloatDrag(e, { ...f, ...box });
@@ -222,7 +229,7 @@ const FloatWindow = memo(function FloatWindow({ f, z, win }: { f: FloatWin; z: n
           <PanelHost id={active} name={panelTitle(active)} />
         </div>
       )}
-      {EDGES.map((e) => (
+      {!locked && EDGES.map((e) => (
         <div key={e} className={`ui-float-rz ui-float-rz-${e}`} aria-hidden="true" onPointerDown={(ev) => startFloatResize(ev, { ...f, ...box }, e)} />
       ))}
     </section>

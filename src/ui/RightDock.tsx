@@ -9,6 +9,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { getPanel, type DockZone } from '../core/registry';
 import { useStore } from '../core/store';
 import { useTl } from '../timeline/state';
+import { useLocked } from './lockState';
 import { dock, setActive, toggleCollapsed } from './dock';
 import { hidePanel } from './lockedDock';
 import { dragState, dropIndexFor, startPanelDrag } from './dockDrag';
@@ -98,6 +99,7 @@ function GroupBody({ zone, plan }: { zone: DockZone; plan: RightGroupPlan }) {
 
 /** The one rail down the whole side. With stacked groups, each group's places sit under its own heading. */
 function Rail({ zone, plans }: { zone: DockZone; plans: RightGroupPlan[] }) {
+  const locked = useLocked('panels');
   const z = dock.use((d) => d.layout.zones[zone]);
   const drag = dragging.use((v) => v);
   const names = dock.use((d) => d.layout.names);
@@ -179,7 +181,7 @@ function Rail({ zone, plans }: { zone: DockZone; plans: RightGroupPlan[] }) {
         tabIndex={tabStop === id ? 0 : -1}
         data-help={isProps ? 'properties' : (pd!.help ?? 'panels')}
         data-tip={title}
-        data-tip-desc={`${blurb}${isProps ? '' : ' Drag to move it. Right-click for more.'}`}
+        data-tip-desc={`${blurb}${isProps ? '' : locked ? ' Right-click for more.' : ' Drag to move it. Right-click for more.'}`}
         data-dock-tab={id}
         data-panel-id={isProps ? undefined : id}
         onPointerDown={isProps ? undefined : (e) => startPanelDrag(e, id)}
@@ -242,6 +244,12 @@ function Rail({ zone, plans }: { zone: DockZone; plans: RightGroupPlan[] }) {
         )}
       </div>
       <span className="rd-fill" />
+      {locked && (
+        // Takes no room of its own, so nothing beside it moves when the lock goes on.
+        <span className="rd-lock" data-tip="Panels locked" data-tip-desc="The panels stay where they are. Right-click a tab and choose Unlock the panels to move them." data-help="lock-layout">
+          <Icon name="lock" size={13} />
+        </span>
+      )}
       <button
         type="button"
         className={`rd-item rd-panels${picker ? ' is-open' : ''}`}

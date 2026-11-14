@@ -7,6 +7,7 @@ import { store, useStore } from '../core/store';
 import { syncDynamicCommands } from './dynamic';
 import { pickTool } from '../tools/pick';
 import { Icon } from './icons';
+import { useLocked } from './lockState';
 import { currentWorkspace, dock, railOf, railWidthOf } from './dock';
 import { startToolsDrag, nudgeTools } from './dockDrag';
 import { useEdgeDrag } from './dockShared';
@@ -209,6 +210,7 @@ export function ToolStrip({ place = 'left' }: { place?: DockZone | 'float' }) {
   useFeaturesVersion();
   syncDynamicCommands();
   const sideways = place === 'top' || place === 'bottom';
+  const locked = useLocked('tools');
   const style = usePrefs((p) => p.toolRail);
   const stacked = style === 'stacked';
   const size = usePrefs((p) => p.toolSize);
@@ -363,7 +365,12 @@ export function ToolStrip({ place = 'left' }: { place?: DockZone | 'float' }) {
     choose(frontOf(g));
   };
 
-  const grip = (
+  const grip = locked ? (
+    // Locked: no handle to carry it by, only a quiet lock in the same place so the rail doesn't shift.
+    <span className="ui-tools-grip is-locked" data-tip="Locked in place" data-tip-desc="The tools stay where they are. Right-click the rail and choose Unlock the tools to move or change them." data-help="lock-layout">
+      <Icon name="lock" size={12} />
+    </span>
+  ) : (
     <button
       type="button"
       className="ui-tools-grip"
@@ -427,7 +434,7 @@ export function ToolStrip({ place = 'left' }: { place?: DockZone | 'float' }) {
                   data-tool-gap={gi}
                   aria-hidden="true"
                   data-tip={editing ? 'A new group goes here' : heading ?? groupName(g, groups)}
-                  data-tip-desc={editing ? 'Drag a tool onto the +, or click a tool and choose Start a new group here.' : 'Double-click to rename this group. Right-click for more.'}
+                  data-tip-desc={editing ? 'Drag a tool onto the +, or click a tool and choose Start a new group here.' : (locked ? 'Locked in place. Right-click for more.' : 'Double-click to rename this group. Right-click for more.')}
                   data-help={editing ? 'tool-builder' : 'tool-strip'}
                   onDoubleClick={() => askGroupRename(g.id)}
                   onContextMenu={(e) => {

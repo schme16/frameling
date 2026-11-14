@@ -340,10 +340,8 @@ const entries = [
       { clickOn: '.ui-menu-item', text: 'Lock the tools', after: 700 },
       { move: [620, 420] },
       wait(900),
-      // Locked: carrying the grip goes nowhere, and a message says why.
-      { dragOn: '.ui-tools-grip', to: '.ui-body', toDx: 400, steps: 12, delay: 45, hold: 600, after: 300 },
-      { move: [620, 420] },
-      wait(3200),
+      // Locked: the grip is gone (a small lock sits where it was), and the rail's edge can't be grabbed.
+      wait(2600),
       // The menu now offers Unlock, with the rest greyed and a reason under each.
       { rclick: [50, 420] },
       wait(2200),
