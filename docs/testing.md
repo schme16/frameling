@@ -1065,6 +1065,8 @@ npm run help:media -- --entries scripts/docs/ab --out brand/ab/<topic>   # the e
 
 `scripts/ab/canvas-marks-exports.cjs` is the look for marks drawn over a picture: the canvas with the marks showing beside the PNG the real exporter writes and the SVG (drawn by rsvg-convert), in both themes, into brand/ab/canvas-notes (`SHOT_SHOW=1 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/ab/canvas-marks-exports.cjs <outDir>`). It fails if the document stops holding the marks or if one reaches the SVG. The code-side proof is `test/notes/marks-never-exported.test.ts`, which runs every registered format's plan and checks the renderer is never handed a mark.
 
+`scripts/docs/ab-brush-tips-list/shots.cjs` shoots the brush picker and the brush preview for the real-tip thumbnails, the built-in list (45 brushes in 7 groups, `src/brushes/starters.ts`) and the preview ink. Every entry runs in both modes, and the `-odd` twins use Puppy Socks and Ice Camo so the ink is seen to follow the panel's colour, not the mode. To get a before, build a detached worktree of the base commit, copy the folder in and shoot it with `--only` for the entries the base has (`preview-8,preview-3,open-default` and their `-odd` twins).
+
 `scripts/docs/ab/shape-tools.cjs` is such a folder for combining shapes (before and after, all four operations) and Hold to
 tidy (snapping, slow drawing that is left alone, undo giving the line back). `scripts/ab/shape-tools-files.cjs` is its
 own Electron script: the dashes, arrow heads and tapered lines on screen beside what the PNG, SVG, PDF and Lottie exports

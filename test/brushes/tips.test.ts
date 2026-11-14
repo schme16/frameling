@@ -22,6 +22,8 @@ import { clearPixelStamp, currentTip, makeBrushFromSelection, patchTip, pixelBru
 import { toasts } from '../../src/ui/toast';
 import { addShapes, box, ctx, drag, pixelStore, shapesNow, vectorStore } from '../tools/helpers';
 
+const S = (n: string) => STARTERS.find((s) => s.id === `starter:${n}`)!;
+
 let stop: () => void = () => {};
 beforeEach(() => {
   stop();
@@ -93,16 +95,16 @@ describe('saved brushes remember the tip', () => {
       expect(store().get().ui.brush.tip?.kind).toBe(kind);
       expect(P.currentBrushState()).toEqual({ activeId: s.id, changed: false });
     }
-    P.applyPreset(STARTERS[0].id);
+    P.applyPreset(S('ink').id);
     expect(currentTip()).toBeUndefined();
   });
   it('a changed tip setting marks the picked brush as changed, and Revert brings it back', () => {
-    P.applyPreset(STARTERS[4].id);
+    P.applyPreset(S('chalk').id);
     patchTip({ amount: 0.1 });
     expect(P.currentBrushState().changed).toBe(true);
     P.revertActive();
     expect(P.currentBrushState().changed).toBe(false);
-    expect(currentTip()?.amount).toBe(STARTERS[4].brush.tip?.amount);
+    expect(currentTip()?.amount).toBe(S('chalk').brush.tip?.amount);
   });
   it('saving keeps the tip, and picking another brush and back brings it with its settings', () => {
     setTipKind('stamp');
@@ -110,14 +112,14 @@ describe('saved brushes remember the tip', () => {
     patchTip({ spacing: 2.5, jitter: 0.7 });
     const saved = P.saveCurrentAs('Hearts')!;
     expect(saved.brush.tip).toMatchObject({ shape: 'heart', spacing: 2.5, jitter: 0.7 });
-    P.applyPreset(STARTERS[0].id);
+    P.applyPreset(S('ink').id);
     expect(currentTip()).toBeUndefined();
     P.applyPreset(saved.id);
     expect(currentTip()).toMatchObject({ kind: 'stamp', shape: 'heart', spacing: 2.5, jitter: 0.7 });
   });
   it('a brush that matches a tipped starter is found by its tip, not just its sliders', () => {
-    expect(sameBrush(STARTERS[4].brush, { ...STARTERS[4].brush, tip: undefined })).toBe(false);
-    expect(sameBrush(STARTERS[4].brush, { ...STARTERS[4].brush, tip: { kind: 'chalk' } })).toBe(true);
+    expect(sameBrush(S('chalk').brush, { ...S('chalk').brush, tip: undefined })).toBe(false);
+    expect(sameBrush(S('chalk').brush, { ...S('chalk').brush, tip: { kind: 'chalk' } })).toBe(true);
   });
   it('goes through sharing as text, custom stamp and all, and an old file without tips still reads', () => {
     store().setUi({ brush: { ...DEFAULT_BRUSH, tip: { kind: 'stamp', shape: 'custom', custom: [[-0.5, -0.5, 0.5, -0.5, 0, 0.5]], angle: 'upright' } } });

@@ -1,6 +1,7 @@
 // The brush library as the picker shows it: groups, favourites, recent, search and the keyboard order. Pure functions,
 // no DOM, so the rules can be tested without drawing anything.
 import type { BrushPreset } from './model';
+import { STARTER_GROUPS } from './starters';
 
 export const MY_GROUP = 'My brushes';
 export const STARTERS_GROUP = 'Starters';
@@ -24,8 +25,8 @@ export function cleanGroup(raw: unknown): string | undefined {
   return g;
 }
 
-/** The group a brush sits in: the starters have theirs, brushes saved before groups existed land in "My brushes". */
-export const groupOf = (p: BrushPreset): string => (p.builtin ? STARTERS_GROUP : p.group || MY_GROUP);
+/** The group a brush sits in: a starter has its own (Pencils, Pens...), brushes saved before groups existed land in "My brushes". */
+export const groupOf = (p: BrushPreset): string => (p.builtin ? p.group || STARTERS_GROUP : p.group || MY_GROUP);
 
 /** The names of the groups of your own in use, for suggesting one when you save. */
 export function groupNames(all: readonly BrushPreset[]): string[] {
@@ -120,9 +121,12 @@ export interface PickerFacts {
   query: string;
 }
 
-/** My brushes first, then the starters, then groups of your own by name. */
+/** My brushes first, then the groups that come with Frameling in their own order, then groups of your own by name. */
 function groupOrder(name: string): number {
-  return name === MY_GROUP ? 0 : name === STARTERS_GROUP ? 1 : 2;
+  if (name === MY_GROUP) return 0;
+  if (name === STARTERS_GROUP) return 1;
+  const own = STARTER_GROUPS.findIndex((g) => g.toLowerCase() === name.toLowerCase());
+  return own >= 0 ? 2 + own : 2 + STARTER_GROUPS.length;
 }
 
 /** A group's section key. Capitals don't make another group: "Inking" and "inking" are one. */

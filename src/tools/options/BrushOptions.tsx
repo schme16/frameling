@@ -6,6 +6,7 @@ import { drawShape } from '../../core/render';
 import { store, useStore } from '../../core/store';
 import { Choice, MoreOptions, Slider, Tip, Toggle } from '../../canvas/controls';
 import { buildStroke } from '../vectorStroke';
+import { inkFor, useThemeTick } from '../../brushes/ink';
 import { DrawModeToggle } from './DrawModeToggle';
 import { setToolSettings, useToolSettings } from '../settings';
 import { MirrorOptions } from './MirrorOptions';
@@ -22,6 +23,7 @@ export function useActiveLayerKind(): 'vector' | 'pixel' {
 /** A sample squiggle drawn with the brush as set, so you can see what you're choosing. */
 export function BrushPreview({ brush, color }: { brush: BrushSettings; color: string }) {
   const ref = useRef<HTMLCanvasElement>(null);
+  const theme = useThemeTick();
   useEffect(() => {
     const c = ref.current;
     if (!c) return;
@@ -42,8 +44,9 @@ export function BrushPreview({ brush, color }: { brush: BrushSettings; color: st
     }
     // Keep the preview inside its box however big the brush gets.
     const size = Math.min(brush.size, h * 0.8);
-    drawShape(g, buildStroke(pts, { ...brush, size }, color));
-  }, [brush, color]);
+    // Your drawing colour when it shows up against the panel, otherwise the theme's own ink (near black on near black is no preview).
+    drawShape(g, buildStroke(pts, { ...brush, size }, inkFor(c, color, 3)));
+  }, [brush, color, theme]);
   return <canvas className="cv-preview" ref={ref} aria-label="Preview of the brush stroke" role="img" />;
 }
 

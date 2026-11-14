@@ -6,6 +6,7 @@ import type { BrushSettings } from '../core/format';
 import { brushFrom } from '../core/uiMemory';
 import { defaultTip, sameTip } from '../geometry/tip';
 import { cleanGroup } from './library';
+import { STARTERS } from './starters';
 
 /** Which tool a brush came from. Only the brush for now; the field is there so more can follow without a new format. */
 export type PresetTool = 'brush';
@@ -30,19 +31,7 @@ export const BRUSHES_EXT = '.frameling-brushes.json';
 /** Bigger than this isn't a brush file (1000 brushes with names and groups come to about 400 KB). */
 export const MAX_BRUSHES_BYTES = 1024 * 1024;
 
-const make = (id: string, name: string, brush: Partial<BrushSettings>): BrushPreset => ({ id: `starter:${id}`, name, tool: 'brush', builtin: true, brush: { ...DEFAULT_BRUSH, ...brush } });
-
-/** The few good brushes that come with Frameling. */
-export const STARTERS: readonly BrushPreset[] = [
-  make('ink', 'Ink', { size: 5, thinning: 0.5, smoothing: 0.7, streamline: 0.7 }),
-  make('marker', 'Marker', { size: 28, thinning: 0, smoothing: 0.5, streamline: 0.4 }),
-  make('pencil', 'Pencil', { size: 2, thinning: 0.25, smoothing: 0.3, streamline: 0.25 }),
-  make('tapered', 'Tapered brush', { size: 14, thinning: 0.6, smoothing: 0.6, streamline: 0.6, taperStart: 40, taperEnd: 60 }),
-  make('chalk', 'Chalk', { size: 18, thinning: 0.3, smoothing: 0.4, streamline: 0.4, tip: defaultTip('chalk') }),
-  make('charcoal', 'Charcoal', { size: 22, thinning: 0.4, smoothing: 0.4, streamline: 0.4, tip: defaultTip('charcoal') }),
-  make('watercolour', 'Watercolour', { size: 30, thinning: 0, smoothing: 0.6, streamline: 0.6, tip: defaultTip('watercolour') }),
-  make('leaves', 'Leaves', { size: 22, thinning: 0, smoothing: 0.6, streamline: 0.6, tip: { ...defaultTip('stamp'), shape: 'leaf', spacing: 0.9, jitter: 0.35, scatter: 0.3 } }),
-];
+export { STARTERS } from './starters';
 
 /** A name as it is kept: spaces tidied, cut to length. Empty when there is nothing in it. */
 export function cleanName(raw: unknown): string {

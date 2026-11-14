@@ -21,14 +21,16 @@ import {
   STARTERS_GROUP,
   toggleId,
 } from '../../src/brushes/library';
+import { STARTER_GROUPS } from '../../src/brushes/starters';
 import { addShared, allPresets, brushesToText, MAX_PRESETS, movePreset, parseBrushesText, sanitizeList, savePreset, STARTERS, type BrushPreset } from '../../src/brushes/model';
 
 const mk = (id: string, name: string, group?: string): BrushPreset => ({ id, name, tool: 'brush', brush: { ...DEFAULT_BRUSH }, ...(group ? { group } : {}) });
 const big = (n: number): BrushPreset[] => allPresets(Array.from({ length: n }, (_, i) => mk(`m${i}`, `Brush ${i}`, i % 2 ? 'Inking' : i % 3 ? 'Painting' : undefined)));
 
 describe('groups', () => {
-  it('puts the starters in Starters and a brush with no group in My brushes', () => {
-    expect(groupOf(STARTERS[0])).toBe(STARTERS_GROUP);
+  it('puts each starter in its own group (Pens, Paint...) and a brush with no group in My brushes', () => {
+    expect(groupOf(STARTERS.find((s) => s.id === 'starter:ink')!)).toBe('Pens');
+    expect(groupOf({ ...STARTERS[0], group: undefined })).toBe(STARTERS_GROUP);
     expect(groupOf(mk('a', 'A'))).toBe(MY_GROUP);
     expect(groupOf(mk('a', 'A', 'Inking'))).toBe('Inking');
   });
@@ -41,9 +43,9 @@ describe('groups', () => {
     expect(cleanGroup(5)).toBeUndefined();
     expect(cleanGroup('x'.repeat(100))).toHaveLength(40);
   });
-  it('orders the groups: My brushes, Starters, then yours by name', () => {
+  it('orders the groups: My brushes, the ones that come with Frameling, then yours by name', () => {
     const names = groupsOf(big(10)).map((g) => g.name);
-    expect(names).toEqual([MY_GROUP, STARTERS_GROUP, 'Inking', 'Painting']);
+    expect(names).toEqual([MY_GROUP, ...STARTER_GROUPS, 'Inking', 'Painting']);
   });
   it('lists the group names of your own once each, for suggesting one', () => {
     expect(groupNames([mk('a', 'A', 'Inking'), mk('b', 'B', 'inking'), mk('c', 'C', 'Aqua'), mk('d', 'D')])).toEqual(['Aqua', 'Inking']);
@@ -167,7 +169,7 @@ describe('what the list shows', () => {
     expect(flatten(sections).every((i) => i.kind === 'row')).toBe(true);
   });
   it('lists every foldable section for fold all and open all', () => {
-    expect(foldableKeys({ all })).toEqual(['favourites', 'recent', groupKey(MY_GROUP), groupKey(STARTERS_GROUP), groupKey('Inking'), groupKey('Painting')]);
+    expect(foldableKeys({ all })).toEqual(['favourites', 'recent', groupKey(MY_GROUP), ...STARTER_GROUPS.map(groupKey), groupKey('Inking'), groupKey('Painting')]);
   });
   it('stays cheap with 400 brushes: rows only for the open group', () => {
     const lots = big(400);
@@ -213,7 +215,7 @@ describe('keyboard order', () => {
 describe('capitals', () => {
   it('make no new group', () => {
     const g = groupsOf(allPresets([mk('a', 'A', 'Inking'), mk('b', 'B', 'inking')]));
-    expect(g.map((x) => x.name)).toEqual([STARTERS_GROUP, 'Inking']);
-    expect(g[1].brushes).toHaveLength(2);
+    expect(g.map((x) => x.name)).toEqual([...STARTER_GROUPS, 'Inking']);
+    expect(g.at(-1)!.brushes).toHaveLength(2);
   });
 });

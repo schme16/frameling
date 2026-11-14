@@ -40,7 +40,7 @@ import {
   useRowStyle,
 } from './picker';
 import { applyPreset, brushesVersion, currentBrushState, everyBrush, startNaming, useBrushPresets } from './presets';
-import { Stroke } from './Stroke';
+import { Stroke, TipThumb } from './Stroke';
 import './picker.css';
 
 // ---------------------------------------------------------------- small pieces
@@ -73,12 +73,13 @@ const Folder = () => (
 );
 const sectionIcon = (s: Section): ReactNode => (s.kind === 'favourites' ? <Star on /> : s.kind === 'recent' ? <Clock /> : <Folder />);
 
-/** The round tip, as wide as the brush (up to a point), with the real size under it. */
-export const tipDot = (size: number): number => Math.round(Math.min(26, Math.max(4, size * 0.9)));
-const Tip = ({ size }: { size: number }) => (
+/** The picture of the brush's real tip (chalk grain, a wash, its stamps) and its size under it. */
+export const TIP_W = 44;
+export const tipHeight = (scale: number): number => Math.max(20, Math.round(30 * scale));
+const Tip = ({ brush, scale, on }: { brush: BrushSettings; scale: number; on: boolean }) => (
   <span className="pk-tip" aria-hidden="true">
-    <i style={{ width: tipDot(size), height: tipDot(size) }} />
-    <b>{size}</b>
+    <TipThumb brush={brush} w={TIP_W} h={tipHeight(scale)} on={on} />
+    <b>{brush.size}</b>
   </span>
 );
 
@@ -113,9 +114,9 @@ const Row = memo(function Row({ b, idx, on, hot, fav, rows, scale, live, showGro
       title={`${b.name}, ${groupOf(b)}${b.builtin ? ', comes with Frameling' : ''}`}
       onClick={() => onPick(b.id)}
     >
-      {tip && <Tip size={brush.size} />}
+      {tip && <Tip brush={brush} scale={scale} on={on} />}
       <span className="pk-main">
-        <Stroke brush={brush} h={Math.round((tip ? 30 : 26) * scale)} />
+        <Stroke brush={brush} h={Math.round((tip ? 30 : 26) * scale)} on={on} />
         <span className="pk-name">
           <span className="pk-name-text">{b.name}</span>
           {showGroup && <em>{groupOf(b)}</em>}
