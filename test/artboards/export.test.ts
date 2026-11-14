@@ -80,7 +80,7 @@ describe('exporting artboards', () => {
 });
 
 describe('artboards on the store', () => {
-  it('opening another keeps the view steady, and undo goes back', () => {
+  it('opening another keeps the view steady, and going back puts it back', () => {
     resetArtboardView();
     const doc = sprites();
     resetStore(doc);
@@ -93,7 +93,7 @@ describe('artboards on the store', () => {
     expect(activeId(s.doc)).toBe(b.id);
     expect(s.doc.width).toBe(32);
     expect(s.ui.panX).toBe(100 + (b.x - a.x) * 2);
-    store().undo();
+    goToArtboard(a.id);
     expect(activeId(store().get().doc)).toBe(a.id);
     expect(store().get().ui.panX).toBe(100);
   });

@@ -9,8 +9,8 @@ import { activeColor, setActiveColor } from '../tools/wells';
 import { noteColorUsed } from '../tools/recent';
 import { STARTER_PALETTES } from './builtin';
 import { changePaletteColor, reduceActiveToPalette, setDocPalette, togglePaletteLock } from './commands';
-import { exportPalette, importPalette, paletteFromDrawing } from './palette-files';
-import { cachedColorUse, colorUseOf, colorUseRange, docPalette, insertColor, makeRamp, moveColor, paletteRgb, ramps, removeColor, rememberColorUse, toggleRampStart } from './palette';
+import { exportPalette, importPalette, paletteFromDrawing, paletteFromSwatchesNow } from './palette-files';
+import { cachedColorUse, colorUseOf, colorUseRange, docPalette, insertColor, makeRamp, moveColor, offerSwatchPalette, paletteRgb, ramps, removeColor, rememberColorUse, toggleRampStart } from './palette';
 import type { PaletteFormat } from './palette-io';
 import '../canvas/canvas.css';
 import './pixel.css';
@@ -317,7 +317,16 @@ export function PalettePanel() {
         <p className="cv-tip">The palette lock and shading work on pixel layers. Pick or add a pixel layer to use them.</p>
       )}
       {sharedEditNote(doc, 'palette') && <p className="cv-tip">This is a variation. Change a colour here and only this variation changes; the rest follows the original. The list of colours itself belongs to the original.</p>}
-      {!doc.palette && !variationPalette(doc) && <p className="cv-tip">This is the starter palette. Change anything and it's saved with your document.</p>}
+      {offerSwatchPalette(doc) ? (
+        <div className="cv-tip px-swatch-offer" data-testid="swatch-offer">
+          <p>This is the starter palette, but your file has colours of its own: its swatches.</p>
+          <ActionButton onClick={paletteFromSwatchesNow} title="Make the pixel palette from the swatches, in the order they are listed. Your pixels don't change.">
+            Use my swatches
+          </ActionButton>
+        </div>
+      ) : (
+        !doc.palette && !variationPalette(doc) && <p className="cv-tip">This is the starter palette. Change anything and it's saved with your document.</p>
+      )}
 
       {menu && <ChipMenu menu={menu} palette={palette} onClose={() => setMenu(null)} />}
     </div>

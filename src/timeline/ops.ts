@@ -343,6 +343,13 @@ export function addClip(a: number, b: number, name?: string): Outcome {
   store().update('Add clip', (d) => void (id = core.addClip(d, a, b, name)));
   return ok(id);
 }
+/** Copies a clip onto the end of the animation, drawings and all, as its own clip. */
+export function duplicateClip(id: Id): Outcome {
+  if (inSymbol()) return no('in-symbol');
+  let made: Id | null = null;
+  store().update('Duplicate clip', (d) => void (made = core.duplicateClip(d, id)));
+  return made ? ok(made) : no('no-change');
+}
 export function renameClip(id: Id, name: string): Outcome {
   if (inSymbol()) return no('in-symbol');
   return simple('Rename clip', (d) => core.renameClip(d, id, name));

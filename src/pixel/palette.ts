@@ -8,12 +8,46 @@
  */
 import type { Doc, DocPalette } from '../core/format';
 import { parseHex } from '../canvas/colors';
+import { DEFAULT_SWATCHES } from '../core/doc';
 import { STARTER_PALETTES } from './builtin';
 import { variationPalette } from '../artboards/variations';
 
 /** The palette a document uses: its own (an open variation's colourway first), or the first starter palette when it has none yet. */
 export function docPalette(doc: Doc): DocPalette {
   return variationPalette(doc) ?? doc.palette ?? STARTER_PALETTES[0].palette;
+}
+
+/** The most colours a pixel palette holds. */
+export const MAX_PALETTE = 256;
+
+const defaultSwatchKey = DEFAULT_SWATCHES.map(([n, c]) => `${n.toLowerCase()}=${c.toLowerCase()}`).join('|');
+
+/**
+ * A palette made from the file's own named swatches, in the order they are listed, one ramp, each keeping its name.
+ * Null when there is nothing of the file's own to use: no swatches, or only the ten every new file starts with.
+ */
+export function paletteFromSwatches(doc: Pick<Doc, 'name' | 'swatches'>): DocPalette | null {
+  const list = doc.swatches ?? [];
+  if (!list.length) return null;
+  if (list.map((w) => `${w.name.toLowerCase()}=${w.color.toLowerCase()}`).join('|') === defaultSwatchKey) return null;
+  const seen = new Set<string>();
+  const colors: string[] = [];
+  const names: string[] = [];
+  for (const w of list) {
+    const k = w.color.toLowerCase();
+    if (seen.has(k) || !parseHex(w.color)) continue;
+    seen.add(k);
+    colors.push(w.color);
+    names.push(w.name);
+    if (colors.length >= MAX_PALETTE) break;
+  }
+  if (!colors.length) return null;
+  return { name: `${doc.name || 'Document'} swatches`, colors, ...(names.some(Boolean) ? { names } : {}) };
+}
+
+/** True when the file has swatches of its own but is still showing the starter palette, so the Palette panel offers them. */
+export function offerSwatchPalette(doc: Doc): boolean {
+  return !doc.palette && !variationPalette(doc) && paletteFromSwatches(doc) !== null;
 }
 
 /** A palette as packed RGB bytes (three per colour) for fast lookups. Cached per colour list. */

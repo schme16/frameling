@@ -111,6 +111,8 @@ Anything turned off the edge of the page is cut off, so leave a little room.`,
 
 **Files.** **Load...** reads GIMP \`.gpl\`, \`.hex\` lists (as used by many palette sites), JASC \`.pal\` and Adobe \`.ase\` swatch files (from Illustrator or Photoshop; their groups become ramps and the colour names show when you hover), or takes the colours from a picture (see [Taking the colours from a picture](help:palette-picture)). You can also drop an \`.ase\` file on the window. **Save as...** writes any of the three. **From drawing** makes a palette from the colours on this frame.
 
+**Your swatches.** A file that has named colours of its own (in the Swatches panel) but no pixel palette still shows the starter palette, so the Palette panel offers **Use my swatches** under the colours. It keeps their order and names, and your pixels don't change. The same thing is in the command palette as **Make a palette from the swatches**. It asks first, instead of doing it when you open the file, because opening a file shouldn't change it.
+
 The palette is saved with your document. Until you change it, a new document uses Cosy Sixteen.`,
   'palette-lock': `Turn on **Lock this layer to the palette** in the Palette panel (or Pixel tools > Lock this layer to the palette).
 

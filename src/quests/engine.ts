@@ -13,6 +13,8 @@ export interface StateSource {
   undoLabel?(): string | null;
   /** True after an undo, when the newest label is old news. */
   canRedo?(): boolean;
+  /** True when the newest change was only a look at another artboard, so it left no edit behind. */
+  lastChangeWasView?(): boolean;
 }
 
 export interface EngineDeps {
@@ -286,7 +288,7 @@ export class QuestEngine {
     if (!r || state === prev) return;
     r.frames.add(state.ui.frame);
     // A new edit (not an undo or redo coming back round) leaves its label on top of the undo stack.
-    if (state.doc !== prev.doc && !this.deps.source.canRedo?.()) r.edits.push(this.deps.source.undoLabel?.() ?? '');
+    if (state.doc !== prev.doc && !this.deps.source.canRedo?.() && !this.deps.source.lastChangeWasView?.()) r.edits.push(this.deps.source.undoLabel?.() ?? '');
     this.touch();
     this.check(prev);
   }

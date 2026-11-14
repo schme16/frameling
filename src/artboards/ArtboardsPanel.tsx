@@ -15,6 +15,7 @@ import { CLEAN_ROW_H } from '../timeline/layout';
 import { activeId, artboardDoc, artboardsOf, findArtboard, hasArtboards, sizeOf } from './model';
 import { arrangeAll, deleteArtboardById, duplicateArtboardById, fitAllArtboards, goToArtboard, newArtboard, renameArtboardById, reorderArtboardById, zoomToArtboard } from './ops';
 import { openShotsPlayer } from './player';
+import { SEARCH_FROM, findAnswered, matchArtboards, onFindRequest } from './find';
 import { openArtboardExport } from './exportDialog';
 import { VariationSection } from './VariationPanel';
 import { sourceOf } from './variations';
@@ -66,6 +67,24 @@ export function ArtboardsPanel() {
   const [renaming, setRenaming] = useState<Id | null>(null);
   const [menu, setMenu] = useState<{ id: Id; x: number; y: number } | null>(null);
   const dnd = useRowDrag<Id>();
+  const [query, setQuery] = useState('');
+  const [asked, setAsked] = useState(false);
+  const search = useRef<HTMLInputElement>(null);
+  // "Find an artboard" in the command palette shows the box and puts the cursor in it, even before the panel was open.
+  useEffect(
+    () =>
+      onFindRequest(() => {
+        findAnswered();
+        setAsked(true);
+        requestAnimationFrame(() => search.current?.focus());
+      }),
+    [],
+  );
+  // The open artboard stays in sight in a long list, however it was opened (a row, the Preview's numbers, Next artboard).
+  const openNow = activeId(doc);
+  useEffect(() => {
+    document.querySelector<HTMLElement>('.ab-rows [aria-current="true"]')?.scrollIntoView?.({ block: 'nearest' });
+  }, [openNow]);
   if (nested)
     return (
       <div className="cv-panel cv-options ab-panel" data-help="artboards">
@@ -84,6 +103,8 @@ export function ArtboardsPanel() {
   // The speed shows on each row only once they differ: a file where every artboard is at 12 fps says nothing.
   const mixed = many && mixedRates(doc);
   const canVary = !doc.sharedLayers;
+  const showSearch = list.length > SEARCH_FROM || asked;
+  const shown = showSearch ? matchArtboards(list, query) : list;
 
   const move = (id: Id, to: number) => {
     reorderArtboardById(id, Math.max(0, Math.min(list.length - 1, to)));
@@ -164,7 +185,7 @@ export function ArtboardsPanel() {
         }
       >
         {many && (
-          <span className="tl-layer-new" role="group" aria-label="All artboards">
+          <span className={`tl-layer-new${list.length > SEARCH_FROM ? ' ab-compact' : ''}`} role="group" aria-label="All artboards">
             <span className="tl-layer-new-label" aria-hidden="true">
               All artboards
             </span>
@@ -180,8 +201,34 @@ export function ArtboardsPanel() {
           <Tip>Every artboard shares your palette, swatches and symbols. Add one, or drag on the empty space round the page with the Artboard tool (Shift+W).</Tip>
         </div>
       )}
+      {showSearch && (
+        <div className="ab-find">
+          <Icon name="search" size={13} />
+          <input
+            ref={search}
+            type="search"
+            value={query}
+            placeholder={`Find an artboard (${list.length})`}
+            aria-label="Find an artboard"
+            title="Type part of a name. Enter opens the first match, Escape clears."
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => {
+              e.stopPropagation();
+              if (e.key === 'Escape') {
+                e.preventDefault();
+                setQuery('');
+              } else if (e.key === 'Enter' && shown[0]) {
+                e.preventDefault();
+                if (shown[0].id !== open) goToArtboard(shown[0].id, true);
+              }
+            }}
+          />
+        </div>
+      )}
       <div className="tl-layers ab-rows" role="tree" aria-label="Artboards, in Play all order">
-        {list.map((a, i) => {
+        {showSearch && query.trim() && !shown.length ? <p className="cv-tip ab-none">No artboard has that in its name.</p> : null}
+        {shown.map((a) => {
+          const i = list.findIndex((x) => x.id === a.id);
           const { size, frames } = aboutOf(a);
           const src = a.variationOf ? sourceOf(doc, a) : undefined;
           const rate = mixed ? `${rateOf(doc, a.id)} fps` : '';

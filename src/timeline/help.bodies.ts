@@ -242,7 +242,9 @@ You can mix both in one animation.
 ## Where the list is
 
 Layers show in two places, and they are the same list: down the left side of the timeline, where each row lines up with that layer's keys, and in the **Layers** panel in the right rail. Use whichever is closer to what you are
-doing. Anything you change in one shows in the other at once. The Animate workspace shows only the timeline's column, so you never see the same list twice; the Layers panel is one press away in the rail, handy for a drawing with a great many layers. The [Artboards](help:artboards) panel is built the same way: the same header, rows and menu, so you only learn it once.
+doing. Anything you change in one shows in the other at once. The Animate workspace shows only the timeline's column, so you never see the same list twice; the Layers panel is one press away in the rail, handy for a drawing with a great many layers.
+
+**Lots of layers?** A file opens with the timeline tall enough to show them, as far as the window allows (never more than half of it). If you've made it smaller since, press **Ctrl+K** and run **Fit layers**, or drag the edge above it. The [Artboards](help:artboards) panel is built the same way: the same header, rows and menu, so you only learn it once.
 
 ## The layer list
 
@@ -314,7 +316,8 @@ Click the **x** beside the range in the top bar, or use **Frames and motion > Pl
 
 - **Click** a clip to play just that part. Playback and the first and last frame buttons stay inside it. Click it again to go back to the whole animation.
 - A **short clip** shrinks to a small icon, or just a coloured bar when it is only a frame or two, so it never covers its neighbour. Rest the mouse on it for its name, or zoom in the timeline. Tab reaches each clip; **Enter** picks it and **F2** renames it.
-- **Double-click** to rename it. Right-click for more: which way it plays, how often it repeats, delete.
+- **Double-click** to rename it. Right-click for more: **Duplicate clip**, which way it plays, how often it repeats, delete.
+- **Duplicate clip** copies the clip, drawings and all, onto the end of the animation as **Run copy**. Paint on the copy and the first one stays as it was, so it's the quick way to start a new pose or a variation.
 - **Plays** and **Repeat** are saved with the clip: forward, backward or [back and forth](help:timeline-clip-play), and forever (a run cycle), once (a jump) or a number of times. A game engine reads them too.
 
 > Frames in your animation that are not in any clip still play and still export. Clips just give them names.

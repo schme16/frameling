@@ -22,8 +22,11 @@ artboard (the document itself, at 0, 0, called "Artboard 1"):
 **The open artboard's content is the document's own fields.** That one decision is what keeps the feature small and
 safe: every tool, the timeline, onion skin, the renderer, undo and every exporter already work on `doc.layers`,
 `doc.width` and so on, so they work on the open artboard without knowing artboards exist. Going to another artboard
-is one undo step that swaps the two (`switchArtboard`): the open one's fields go into its `content`, the other's come
-out. Drawings stay in the shared `doc.drawings`, so pixels and shapes are never copied by a switch.
+swaps the two (`switchArtboard`): the open one's fields go into its `content`, the other's come out. The swap is a
+*view* step (`update(..., { view: true })`): it dirties nothing, never shows in the History panel and Undo never stops on
+it, but it stays in the stack so an earlier edit's patches still land on the artboard they were made on. Undo takes the
+looks on top along with the edit before them; Redo puts the looks that came before an edit back first. A new look
+clears Redo, since the steps waiting there were made on another artboard. Tests: `test/artboards/switch-is-a-look.test.ts`. Drawings stay in the shared `doc.drawings`, so pixels and shapes are never copied by a switch.
 
 Content is measured from the artboard's own top-left, so a pixel drawing is exactly its artboard's art grid and
 resizing one artboard never touches another's drawings.
@@ -68,7 +71,10 @@ layers holding the board's cels, so layer identity and every layer setting stay 
   frame and layer it was left on.
 - **The pasteboard** shows the other artboards behind the open one at their own frames, each with its name above it
   (`Underlay.tsx`, cached bitmaps per artboard, redrawn only when that artboard changes).
-- **Artboards panel**: list with thumbnails, click to open, double-click to fill the window, drag (or the arrows) to
+- **Artboards panel**: list with thumbnails, click to open, double-click the row to fill the window and double-click
+  the name to rename it (the same as the Layers panel; the name stops the double-click reaching the row), a search
+  box once there are more than six (Enter opens the first match; **Find an artboard by name** in the command palette
+  puts the cursor in it, `src/artboards/find.ts`), the open row kept in view, drag (or the arrows) to
   reorder, rename, duplicate (with its own copies of the drawings), delete (the last one stays). Below: name, export
   name, size and background (or see-through). Buttons: New artboard, Fit all, Play all in order, Export artboards,
   Line up.

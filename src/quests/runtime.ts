@@ -20,6 +20,7 @@ const source: StateSource = {
   subscribe: (fn) => store().subscribe(fn),
   undoLabel: () => store().undoLabel(),
   canRedo: () => store().canRedo(),
+  lastChangeWasView: () => store().lastChangeWasView(),
 };
 
 export const engine = new QuestEngine({

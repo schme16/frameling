@@ -215,7 +215,7 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
   },
   palette: {
     label: 'Palette',
-    items: ['pixel.paletteLock', 'pixel.reduceToPalette', '-', 'pixel.nextColor', 'pixel.previousColor', '-', 'palette.fromDrawing', 'palette.import', 'palette.fromPicture', 'palette.fromAseprite', '-', 'palette.exportGpl', 'palette.exportHex', 'palette.exportPal'],
+    items: ['pixel.paletteLock', 'pixel.reduceToPalette', '-', 'pixel.nextColor', 'pixel.previousColor', '-', 'palette.fromDrawing', 'palette.fromSwatches', 'palette.import', 'palette.fromPicture', 'palette.fromAseprite', '-', 'palette.exportGpl', 'palette.exportHex', 'palette.exportPal'],
     prefixes: ['palette.'],
   },
   slices: {
@@ -243,7 +243,7 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
   },
   goto: {
     label: 'Move around the timeline',
-    items: ['timeline.prevFrame', 'timeline.nextFrame', 'timeline.prevKey', 'timeline.nextKey', 'timeline.firstFrame', 'timeline.lastFrame', '-', 'timeline.zoomFit', 'timeline.toggleProperties', 'perf.quickScrub'],
+    items: ['timeline.prevFrame', 'timeline.nextFrame', 'timeline.prevKey', 'timeline.nextKey', 'timeline.firstFrame', 'timeline.lastFrame', '-', 'timeline.zoomFit', 'timeline.fitLayers', 'timeline.toggleProperties', 'perf.quickScrub'],
   },
   keys: {
     label: 'Copy, move and stretch keys',
@@ -275,7 +275,7 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
   },
   clips: {
     label: 'Clips and clip flow',
-    items: ['flow.open', 'flow.try', 'flow.addToggle', 'flow.addNumber', 'flow.fromAny', '-', 'timeline.clipForward', 'timeline.clipBackward', 'timeline.clipOnce', 'timeline.clipForever', 'timeline.clipBackAndForth', 'timeline.clipBackAndForthEnd'],
+    items: ['flow.open', 'flow.try', 'flow.addToggle', 'flow.addNumber', 'flow.fromAny', '-', 'timeline.clipDuplicate', '-', 'timeline.clipForward', 'timeline.clipBackward', 'timeline.clipOnce', 'timeline.clipForever', 'timeline.clipBackAndForth', 'timeline.clipBackAndForthEnd'],
     prefixes: ['timeline.clip', 'flow.'],
   },
   sound: {
@@ -296,7 +296,7 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
     label: 'Artboards',
     items: [
       'artboards.new', 'artboards.duplicate', 'artboards.delete',
-      '-', 'artboards.previous', 'artboards.next', 'artboards.zoomTo', 'artboards.fitAll', 'artboards.lineUp', 'artboards.playAll', 'artboards.sameSpeed',
+      '-', 'artboards.find', 'artboards.previous', 'artboards.next', 'artboards.zoomTo', 'artboards.fitAll', 'artboards.lineUp', 'artboards.playAll', 'artboards.sameSpeed',
       'heading:Variations', 'artboards.makeVariation', 'artboards.variation.wide', 'artboards.variation.tall', 'artboards.variation.square', 'artboards.goToOriginal', 'artboards.resetVariation', 'artboards.detachVariation', 'artboards.recolourVariation',
       'heading:Joined shots', 'artboards.pictureFirst', 'artboards.pictureLargest', 'artboards.pictureCustom', 'artboards.fitFill', 'artboards.fitBars',
       '-', 'artboards.export', 'artboards.exportVariations', 'artboards.exportAtlas', '-', 'view.panel.artboards',

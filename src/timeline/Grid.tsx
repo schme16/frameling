@@ -6,7 +6,7 @@ import { celAt } from '../core/doc';
 import type { Cel, Clip, Id, Layer } from '../core/format';
 import { store, useStore } from '../core/store';
 import { Icon } from '../ui/icons';
-import { say } from './commands';
+import { duplicateClipAndPick, say } from './commands';
 import { keyHint } from './cmd';
 import { chipBox } from './clipLayout';
 import { MAX_LENGTH } from './edit-core';
@@ -1212,6 +1212,7 @@ function clipMenu(c: Clip): MenuItem[] {
     { label: 'Show how it plays in Properties', onClick: () => { setTl({ clipId: c.id }); showPanel('clip-play'); } },
     { label: tl().clipId === c.id ? 'Play everything again' : 'Play just this clip', onClick: () => setTl({ clipId: tl().clipId === c.id ? null : c.id }) },
     { label: 'Rename', onClick: () => setTl({ editing: { kind: 'clip', id: c.id } }) },
+    { label: 'Duplicate clip', onClick: () => void duplicateClipAndPick(c.id) },
     { separator: true },
     ...clipPlayItems(c),
     { separator: true },

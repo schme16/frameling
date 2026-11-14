@@ -171,20 +171,27 @@ export interface Fit {
   timeline: 'fold' | 'open';
   /** Two panels to stack in the right zone, the first over the second (the second with its own tabs kept), if any. */
   stack: [string, string] | null;
+  /** How much of the zone the first of the two takes (missing = the dock's usual). A long list of boards asks for more. */
+  topShare?: number;
 }
+
+/** Past this many boards the Artboards panel takes more of the right side, so more of its rows show. */
+const MANY_BOARDS = 6;
+const MANY_BOARDS_SHARE = 0.52;
 
 /** What the workspace shows for each way: a picture folds the timeline; the board ways stack the Artboards panel over the Preview, so the Preview and its board strip stay in view. */
 export function layoutFor(doc: Doc): Fit {
   const way = wayOf(doc);
   if (way === 'picture') return { timeline: 'fold', stack: null };
   if (way === 'animation') return { timeline: 'open', stack: null };
-  return { timeline: totalFrames(doc) <= boardCount(doc) ? 'fold' : 'open', stack: ['artboards', 'preview'] };
+  const many = boardCount(doc) > MANY_BOARDS;
+  return { timeline: totalFrames(doc) <= boardCount(doc) ? 'fold' : 'open', stack: ['artboards', 'preview'], ...(many ? { topShare: MANY_BOARDS_SHARE } : {}) };
 }
 
 export interface WayDock {
   inPixelWorkspace(): boolean;
   fold(timeline: boolean): void;
-  stack(top: string, bottom: string): void;
+  stack(top: string, bottom: string, topShare?: number): void;
 }
 
 const realDock: WayDock = {
@@ -193,7 +200,7 @@ const realDock: WayDock = {
     const at = locate(dock.get().layout, 'timeline');
     if (at && 'zone' in at) toggleCollapsed(at.zone, on);
   },
-  stack: (top, bottom) => stackPanelsIn(top, bottom),
+  stack: (top, bottom, share) => stackPanelsIn(top, bottom, 'right', share),
 };
 
 /**
@@ -210,7 +217,7 @@ export function watchWayLayout(s: DocSource, d: WayDock = realDock): () => void 
     seen = { id: doc.id, way };
     const fit = layoutFor(doc);
     d.fold(fit.timeline === 'fold');
-    if (fit.stack) d.stack(...fit.stack);
+    if (fit.stack) d.stack(fit.stack[0], fit.stack[1], fit.topShare);
   };
   check();
   return s.subscribe(check);

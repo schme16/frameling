@@ -9,6 +9,7 @@ import './range';
 import './help';
 import { installPlayback } from './playback';
 import { installTweenOffer } from './tweenOffer';
+import { installFitOnOpen } from './fitHeight';
 import { store } from '../core/store';
 import { TimelinePanel } from './TimelinePanel';
 
@@ -22,6 +23,8 @@ registerPanel({ id: 'layers', title: 'Layers', icon: 'layers', component: lazyPa
 installPlayback();
 // The in-betweens offer closes itself when it stops fitting (see tweenOffer.ts).
 installTweenOffer(store());
+// A file opens with its layers showing, within reason (see fitHeight.ts).
+installFitOnOpen();
 
 export { play, pause, togglePlay, goTo, stepFrame, stepKey, playRange } from './playback';
 export * as timelineOps from './ops';
