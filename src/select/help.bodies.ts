@@ -12,7 +12,7 @@ The selected part gets a crawling dashed edge (*marching ants*).
 
 They all share one selection, so you can start a box, then switch to the lasso and add to it.
 
-**Adding and taking away.** Hold **Shift** to add to the selection, **Alt** to take away (start outside the selection), both to keep only the overlap. Or set **Each new pick** in the options.
+**Adding and taking away.** Hold **Shift** to add to the selection, **Alt** to take away (start outside the selection), both to keep only the overlap. Or set **Selection mode** in the options to **New**, **Add** or **Remove**.
 
 **Moving.** Drag inside the selection to move those pixels (Shift keeps it straight). The arrow keys nudge one pixel, ten with Shift. The pixels float above the drawing while you move them, and land when you deselect, pick another tool, or change frame or layer. However many drags and nudges it took, it's **one undo step**. Undo while they're still floating just puts them back. Undo and Redo bring the selection back too, as it was before and after each step.
 

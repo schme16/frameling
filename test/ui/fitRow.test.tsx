@@ -81,8 +81,8 @@ describe('Choice', () => {
     const host2 = document.createElement('div');
     document.body.append(host2);
     const r = createRoot(host2);
-    act(() => r.render(<Choice label="Each new pick" value="add" options={[{ value: 'replace', label: 'Starts afresh' }, { value: 'add', label: 'Adds' }]} onChange={() => {}} />));
-    expect([...host2.querySelectorAll('[role=radio]')].map((b) => b.textContent)).toEqual(['Starts afresh', 'Adds']);
+    act(() => r.render(<Choice label="Selection mode" value="add" options={[{ value: 'replace', label: 'New' }, { value: 'add', label: 'Add' }]} onChange={() => {}} />));
+    expect([...host2.querySelectorAll('[role=radio]')].map((b) => b.textContent)).toEqual(['New', 'Add']);
     act(() => r.unmount());
   });
 });

@@ -44,12 +44,12 @@ export function PixelSelectOptions() {
   return (
     <div className="cv-options">
       <Choice<SelectSettings['op']>
-        label="Each new pick"
+        label="Selection mode"
         value={op}
         options={[
-          { value: 'replace', label: 'Starts afresh', title: 'A new pick replaces the old one.' },
-          { value: 'add', label: 'Adds', title: 'A new pick adds to what is already selected (same as holding Shift).' },
-          { value: 'subtract', label: 'Takes away', title: 'A new pick takes pixels out of the selection (same as holding Alt).' },
+          { value: 'replace', label: 'New', title: 'A new pick replaces the old one.' },
+          { value: 'add', label: 'Add', title: 'A new pick adds to what is already selected (same as holding Shift).' },
+          { value: 'subtract', label: 'Remove', title: 'A new pick takes pixels out of the selection (same as holding Alt).' },
         ]}
         onChange={(v) => setSelectSettings({ op: v })}
       />

@@ -20,3 +20,5 @@ Every pair is **before** then **after**, right side at its smallest (200 px) on 
 Numbers from the check (five passes: 1280 with the right side smallest and usual, interface 150% and 200%, and 1920):
 before 118 controls broke their words or stuck out (29 once the cards and help-topic rows, which are meant to wrap, are
 set aside) plus 1 jumping panel; after 0 and 0.
+- **selection-mode-after-dark**: the row is **Selection mode** with **New**, **Add** and **Remove**, in the user's
+  own words. Short labels, one line each, and three buttons of the same size.
