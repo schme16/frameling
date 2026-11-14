@@ -1,0 +1,40 @@
+/* Layout mockups for a big brush library. Debug only. Theme tokens only. */
+.mk-row { position: relative; }
+.mk-search { display: flex; align-items: center; gap: 6px; padding: 4px 8px; border: 1px solid var(--line); border-radius: var(--radius-small); background: var(--raised); color: var(--muted); }
+.mk-search input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font: inherit; font-size: var(--fs-small); color: var(--text); }
+.mk-search:focus-within { border-color: var(--focus); }
+.mk-more { border-style: dashed; color: var(--muted); }
+.mk-more:hover { color: var(--text); }
+.mk-drawer { display: flex; flex-direction: column; gap: 6px; padding: 8px; border: 1px solid var(--line); border-radius: var(--radius-small); background: var(--panel-2); }
+.mk-scroll { overflow-y: auto; max-height: 190px; padding-right: 2px; }
+.mk-pills { display: flex; flex-wrap: wrap; gap: 3px; }
+.mk-pills-row { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; }
+.mk-pill { flex: none; padding: 2px 8px; border-radius: 999px; border: 0; background: transparent; color: var(--muted); font-size: var(--fs-small); font-weight: 600; cursor: pointer; white-space: nowrap; }
+.mk-pill:hover { background: var(--hover-bg); color: var(--text); }
+.mk-pill[data-on='true'] { background: var(--chosen-bg); color: var(--chosen-fg); }
+.mk-count { font-size: 11px; font-weight: 500; opacity: 0.65; }
+.mk-empty, .mk-hint { margin: 0; font-size: var(--fs-small); color: var(--muted); }
+.mk-label { font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+.mk-thumb { flex: none; display: block; color: inherit; }
+.mk-brushbtn, .mk-current { display: flex; align-items: center; gap: 8px; width: 100%; padding: 5px 9px; border: 1px solid var(--line); border-radius: var(--radius-small); background: var(--raised); color: var(--text); font: inherit; font-size: var(--fs-small); font-weight: 600; text-align: left; }
+.mk-brushbtn { cursor: pointer; }
+.mk-brushbtn:hover { background: var(--hover-bg); }
+.mk-brushbtn[aria-expanded='true'] { border-color: var(--focus); }
+.mk-brushbtn-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mk-pop { position: fixed; z-index: 1000; width: 360px; display: flex; flex-direction: column; gap: 8px; padding: 10px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); color: var(--text); box-shadow: var(--shadow); }
+.mk-pop .mk-scroll { max-height: 300px; }
+.mk-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.mk-card { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 4px 5px; border: 1px solid var(--line-soft); border-radius: var(--radius-small); background: var(--raised); color: var(--text); font: inherit; cursor: pointer; min-width: 0; }
+.mk-card:hover { background: var(--hover-bg); }
+.mk-card[data-on='true'] { background: var(--chosen-bg); color: var(--chosen-fg); border-color: transparent; }
+.mk-card-name { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--fs-small); font-weight: 600; }
+.mk-panel { display: flex; flex-direction: column; gap: 8px; padding: 10px; height: 100%; min-height: 0; }
+.mk-panel-list { flex: 1; max-height: none; display: flex; flex-direction: column; gap: 2px; }
+.mk-folder-head { display: flex; align-items: center; gap: 6px; width: 100%; padding: 4px 6px; border: 0; border-radius: var(--radius-small); background: transparent; color: var(--text); font: inherit; font-size: var(--fs-small); font-weight: 700; cursor: pointer; text-align: left; }
+.mk-folder-head:hover { background: var(--hover-bg); }
+.mk-folder-name { flex: 1; }
+.mk-folder-body { display: flex; flex-direction: column; padding-left: 10px; }
+.mk-row-item { display: flex; align-items: center; gap: 8px; padding: 2px 6px; border: 0; border-radius: var(--radius-small); background: transparent; color: var(--text); font: inherit; font-size: var(--fs-small); cursor: pointer; text-align: left; }
+.mk-row-item:hover { background: var(--hover-bg); }
+.mk-row-item[data-on='true'] { background: var(--chosen-bg); color: var(--chosen-fg); }
+.mk-item-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }

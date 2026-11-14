@@ -23,6 +23,7 @@ import {
   updateActive,
   useBrushPresets,
 } from './presets';
+import { useMockRow } from './mockSlot';
 import './brushes.css';
 
 /** The dot beside a name: as wide as the brush, up to a point, so the row can be read at a glance. */
@@ -82,7 +83,13 @@ const suggestName = (): string => {
   }
 };
 
+/** The saved brushes. With ?debug a layout mockup can stand in for it (brand/ab/brush-library). */
 export function BrushPresetRow() {
+  const mock = useMockRow();
+  return mock ? <>{mock()}</> : <RealBrushPresetRow />;
+}
+
+function RealBrushPresetRow() {
   // Redraw when the brush in use or the list changes.
   useStore((s) => s.ui.brush);
   useBrushPresets(brushesVersion);
