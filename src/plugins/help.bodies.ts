@@ -15,8 +15,8 @@ Its commands turn up in the **Plugins** menu and the command palette (**Ctrl+K**
 Every plugin runs in its own **sandbox**, a closed box inside Frameling. It can't see your files, your other drawings or the rest of the app. It can only:
 
 - **See your drawing**, if it asked to.
-- **Change your drawing**, if it asked to. Each change is one step, so **Undo** (Ctrl+Z) takes it back.
-- **Add a way to export**, if it asked to. Frameling draws the frames and asks you where to save; the plugin only makes the file.
+- **Change your drawing**, if it asked to. Each change is one **Undo** step (Ctrl+Z).
+- **Add a way to export**, if it asked to. Frameling draws the frames and asks where to save; the plugin only makes the file.
 - **Show a panel**, if it asked to. Frameling draws the panel from a simple list of buttons, sliders and text.
 - **Use the internet**, only if it asked for it, named the sites, and you said yes. You can install it **without the internet** instead.
 - **Add its own tools**, **draw guides on the canvas** or **add its own kinds of shape**, only if it asked and you switched that on. These have a switch each. See [What a plugin may ask for](help:plugin-permissions).
@@ -25,7 +25,7 @@ Every plugin runs in its own **sandbox**, a closed box inside Frameling. It can'
 
 **Edit > Plugins > Manage plugins...** (or **Preferences > Plugins**) lists them. Use the switch to turn one off for a while, or the bin to remove it. Turning one off takes away everything it added.
 
-If a plugin goes wrong, Frameling says so and offers to turn it off. Your drawing is safe either way.
+If a plugin goes wrong, Frameling says so and offers to turn it off. Your drawing is safe.
 
 Frameling also keeps an eye on each plugin. If one **stops responding** (stuck in a loop, or silent for a minute in the middle of a long job that never says how far it has got), Frameling turns it off for you and says so. It stays off, even next time you open Frameling, until you press **Turn it on** in the message or switch it on in **Preferences > Plugins**. Your drawing isn't touched.
 
