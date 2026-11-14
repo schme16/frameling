@@ -68,6 +68,7 @@ On a **pixel layer** the line is one pixel wide (or as thick as you set in [Pixe
 
 - **Click** a line or shape to select it. **Shift+click** adds more, or takes one off.
 - **Drag a box** round several to select them all. Or take the **Lasso** tool (**Shift+L**) and draw round them, or the **Polygon** tool (**Shift+G**) and click each corner, or the **Magnetic lasso** (**Shift+E**) and trace roughly round them, and it clings to their edges. See [Lasso](help:lasso) and [Magnetic lasso](help:select-magnetic).
+- **Drag a box over part of a shape** and Frameling asks, the first time, whether you meant just the bit you went round or the whole shape. **Ctrl** swaps it for one drag: see [Picking part of a shape](help:select-parts).
 - **Drag a selection** to move it. Hold **Shift** to keep it in a straight line.
 - **Drag a corner** to resize. Hold **Shift** to keep its proportions, **Alt** to resize from the middle.
 - **Drag the round handle** above to turn it. Hold **Shift** to snap to neat angles.

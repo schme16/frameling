@@ -26,7 +26,6 @@ import {
   shapeOutlines,
   shapesBounds,
   topShapeAt,
-  transformShape,
   translate,
   type HandleId,
   type Matrix,
@@ -38,7 +37,7 @@ import { activeDrawing, activeLayer } from './edit';
 import { SelectOptions } from './options/SelectOptions';
 import { reportEdit } from './util';
 import { activeIsMerge, pendingCut, setCut, withGroups } from './merge-mode';
-import { cutOut, mergeable, polygonGeom, shapeBox, shapeInsideArea, shapeTouchesArea, type Geom } from '../geometry/merge';
+import { cutOut, mergeable, polygonGeom, shapeBox, shapeInsideArea, type Geom } from '../geometry/merge';
 import { modeOfTool, WAYS } from '../select/ways';
 import { drawLasso, lassoClosesAt, lassoPoint } from '../select/lasso';
 import { MagneticTrace, ringSource, type Ring } from '../select/magnetic';
@@ -49,9 +48,33 @@ import { trimActive } from '../geometry/trim';
 import { angleSteps, clearSnap, snapMove, snapPt } from '../canvas/guides';
 import { lockedLayerAt } from '../canvas/lost';
 import { landMatrix } from './select-land';
+import { withChoice } from '../core/choices';
+import {
+  addPicks,
+  boxArea,
+  currentParts,
+  lassoArea,
+  pickedBounds,
+  pickScoped,
+  SCOPE_CHOICE,
+  scopeFor,
+  setParts,
+  shapePoints,
+  transformPicked,
+  vectorScope,
+  type Area,
+  type PartMap,
+  type ScopedPick,
+  type VectorScope,
+} from '../select/scope';
 
 /** How far off (screen pixels) a click can be and still hit a thin line. */
 const HIT_TOL = 5;
+/** The box the handles go round when only some points are picked: wider than the points, so a picked corner is not under a handle. */
+function handleBox(b: Rect, parts: PartMap, zoom: number): Rect {
+  return parts.size ? inflateRect(b, 16 / zoom) : b;
+}
+
 /** A drag shorter than this (screen pixels) is still a click. */
 const DRAG_PX = 3;
 
@@ -86,6 +109,10 @@ interface Gesture {
   mag?: MagneticTrace;
   /** The move, resize or turn as last worked out (with snapping), so drawing it doesn't snap again. */
   m?: Matrix;
+  /** Points picked on their own (just the bit you went round): the move, resize or turn only takes these. */
+  parts: PartMap;
+  /** Shift+drag: the points that were already picked, which a new drag adds to. */
+  basePick: PartMap;
 }
 
 let g: Gesture | null = null;
@@ -157,7 +184,7 @@ function updatePreview(s: Gesture, zoom: number): void {
   if (!s.moved && Math.hypot(s.cur.x - s.start.x, s.cur.y - s.start.y) * zoom < DRAG_PX) return;
   s.moved = true;
   const m = (s.m = gestureMatrix(s, zoom));
-  const moved = new Map(s.originals.map((o) => [o.id, transformShape(o, m)]));
+  const moved = new Map(s.originals.map((o) => [o.id, transformPicked(o, m, s.parts)]));
   setLive({ layerId: s.layerId, kind: 'vector', drawing: { ...s.drawing, shapes: s.drawing.shapes.map((x) => moved.get(x.id) ?? x) } });
 }
 
@@ -187,14 +214,17 @@ function down(e: ToolPointer, ctx: ToolContext): void {
   // Part of a merged shape picked with a box: the gesture works on the drawing as if it were cut there.
   const cut = pendingCut();
   const originalsNow = cut ? cut.lifted : selectedOn(d);
-  const bounds = shapesBounds(originalsNow);
+  const parts: PartMap = cut ? new Map() : currentParts(d.id);
+  const bounds = cut ? shapesBounds(originalsNow) : pickedBounds(originalsNow, parts);
   const drawing = cut ? { ...d, shapes: cut.shapes } : d;
-  const base = { layerId: layer.id, drawing, start: { x: e.x, y: e.y }, cur: e, bounds, startAngle: 0, toggleOffOnClick: null as Id | null, base: selectedIds(), moved: false, lasso: null, open: false };
+  const base = { layerId: layer.id, drawing, start: { x: e.x, y: e.y }, cur: e, bounds, startAngle: 0, toggleOffOnClick: null as Id | null, base: selectedIds(), moved: false, lasso: null, open: false, parts, basePick: new Map() as PartMap };
 
   if (bounds) {
-    const h = hitHandle(bounds, e.x, e.y, ctx.zoom);
+    // Handles sit round the picked points, not on them (see `handleBox`), so a corner you picked can still be grabbed.
+    const box = handleBox(bounds, parts, ctx.zoom);
+    const h = hitHandle(box, e.x, e.y, ctx.zoom);
     if (h) {
-      g = { ...base, mode: h === 'rotate' ? 'rotate' : 'scale', originals: originalsNow, handle: h, startAngle: angleFromCentre(bounds, e.x, e.y) };
+      g = { ...base, bounds: box, mode: h === 'rotate' ? 'rotate' : 'scale', originals: originalsNow, handle: h, startAngle: angleFromCentre(box, e.x, e.y) };
       return;
     }
   }
@@ -203,6 +233,11 @@ function down(e: ToolPointer, ctx: ToolContext): void {
   const magnetic = picks === 'magnetic';
   if (cut && !e.shift && !magnetic && topShapeAt(cut.lifted, e.x, e.y, HIT_TOL / ctx.zoom)) {
     g = { ...base, mode: 'move', originals: cut.lifted, handle: null };
+    return;
+  }
+  // A click on a point you picked grabs it, even where the shape's own line is a little way off.
+  if (!cut && !e.shift && !magnetic && parts.size && nearPickedPoint(d.shapes, parts, e, ctx.zoom)) {
+    g = { ...base, mode: 'move', originals: originalsNow, handle: null };
     return;
   }
   const hit = magnetic ? undefined : topShapeAt(d.shapes, e.x, e.y, HIT_TOL / ctx.zoom);
@@ -221,9 +256,13 @@ function down(e: ToolPointer, ctx: ToolContext): void {
       for (const id of family) ids.add(id);
     }
     const list = d.shapes.filter((s) => ids.has(s.id)).map((s) => s.id);
+    // Shift+click on another shape keeps the points already picked; a click on a shape already picked keeps them too.
+    const same = list.length === base.base.length && list.every((x, i) => x === base.base[i]);
+    const keep: PartMap = e.shift ? new Map([...parts].filter(([id]) => ids.has(id))) : same ? parts : new Map();
     setSelection(list);
+    setParts(d.id, keep);
     const originals = d.shapes.filter((s) => ids.has(s.id));
-    g = { ...base, drawing: d, mode: 'move', originals, bounds: shapesBounds(originals), handle: null, toggleOffOnClick: toggle };
+    g = { ...base, drawing: d, mode: 'move', originals, bounds: pickedBounds(originals, keep), handle: null, toggleOffOnClick: toggle, parts: keep };
     return;
   }
   if (!e.shift) setSelection([]);
@@ -241,7 +280,7 @@ function down(e: ToolPointer, ctx: ToolContext): void {
     mag.begin(e, reachOf(ctx));
   }
   const lasso = mag ? mag.pts : picks === 'lasso' || poly ? [{ x: e.x, y: e.y }] : null;
-  g = { ...base, drawing: d, mode: 'marquee', originals: [], handle: null, base: e.shift ? selectedIds() : [], lasso, open: poly, poly, mag };
+  g = { ...base, drawing: d, mode: 'marquee', originals: [], handle: null, base: e.shift ? selectedIds() : [], lasso, open: poly, poly, mag, parts: new Map(), basePick: e.shift && !cut ? parts : new Map() };
 }
 
 function move(e: ToolPointer, ctx: ToolContext): void {
@@ -254,9 +293,8 @@ function move(e: ToolPointer, ctx: ToolContext): void {
     return;
   }
   if (g.mode === 'marquee') {
-    const r = rectFromPoints(g.start, e);
-    const hits = withGroups(g.drawing.shapes, shapesInRect(g.drawing.shapes, r).map((s) => s.id));
-    setSelection([...new Set([...g.base, ...hits])]);
+    // A live preview with the way you have set (or Ctrl's other way); the question, if there is one, comes on letting go.
+    landPick(g, pickIn(g, boxArea(rectFromPoints(g.start, e)), activeIsMerge() ? 'whole' : scopeFor(vectorScope(), e.mod)));
   } else {
     updatePreview(g, ctx.zoom);
   }
@@ -289,7 +327,8 @@ function up(e: ToolPointer, ctx: ToolContext): void {
     g = s;
     move(e, ctx);
     g = null;
-    if (activeIsMerge()) pickPart(s.drawing, rectFromPoints(s.start, e));
+    const r = rectFromPoints(s.start, e);
+    conclude(s, boxArea(r), e.mod, () => pickPart(s.drawing, r));
     ctx.requestOverlay();
     return;
   }
@@ -302,7 +341,7 @@ function up(e: ToolPointer, ctx: ToolContext): void {
   const m = gestureMatrix(s, ctx.zoom);
   clearSnap();
   const label = s.mode === 'move' ? 'Move' : s.mode === 'scale' ? 'Resize' : 'Rotate';
-  const { result: r, ids } = landMatrix(label, { drawing: s.drawing, originals: s.originals }, m);
+  const { result: r, ids } = landMatrix(label, { drawing: s.drawing, originals: s.originals }, m, { parts: s.parts });
   if (activeIsMerge()) {
     // Lands the merge way: joins its colour and cuts others where it ends up.
     setCut(null);
@@ -326,12 +365,50 @@ function finishLasso(s: Gesture): void {
     requestOverlay();
     return;
   }
-  const shapes = s.drawing.shapes;
-  const hits = withGroups(shapes, shapes.filter((x) => shapeTouchesArea(x, area)).map((x) => x.id));
-  const ids = new Set([...s.base, ...hits]);
-  setSelection(shapes.filter((x) => ids.has(x.id)).map((x) => x.id));
-  if (activeIsMerge()) pickPartIn(s.drawing, area, (x) => shapeInsideArea(x, area));
+  conclude(s, lassoArea(pts), s.cur.mod, () => pickPartIn(s.drawing, area, (x) => shapeInsideArea(x, area)));
   requestOverlay();
+}
+
+function pickIn(s: Gesture, area: Area, scope: VectorScope): ScopedPick {
+  return pickScoped(s.drawing.shapes, area, scope, { points: !activeIsMerge(), expand: (ids) => withGroups(s.drawing.shapes, ids) });
+}
+
+/** Puts a pick on the selection (and on top of what Shift kept). */
+function landPick(s: Gesture, pick: ScopedPick): void {
+  const ids = new Set([...s.base, ...pick.ids]);
+  setSelection(s.drawing.shapes.filter((x) => ids.has(x.id)).map((x) => x.id));
+  setParts(s.drawing.id, addPicks(s.basePick, s.base, pick.parts));
+}
+
+/**
+ * The end of a box or a lasso: picks what it covers. The first time it covers only part of a shape, Frameling asks which
+ * you meant (the whole shape, or just the bit you went round) and remembers. Ctrl swaps the answer for this one drag.
+ * A merge layer already has its own way (a box cuts out just the part inside, see `cutAfter`), so it is never asked.
+ */
+function conclude(s: Gesture, area: Area, swap: boolean, cutAfter: () => void): void {
+  if (activeIsMerge()) {
+    landPick(s, pickIn(s, area, 'whole'));
+    cutAfter();
+    requestOverlay();
+    return;
+  }
+  const probe = pickIn(s, area, 'whole');
+  const finish = (setting: VectorScope): void => {
+    landPick(s, pickIn(s, area, scopeFor(setting, swap)));
+    requestOverlay();
+  };
+  // Nothing to ask when every shape is wholly inside, or when Ctrl is already saying which way this one goes.
+  withChoice<VectorScope>(SCOPE_CHOICE, finish, { matters: probe.differs && !swap });
+}
+
+/** Whether the pointer is on a point of a picked part. */
+function nearPickedPoint(shapes: readonly Shape[], parts: PartMap, e: Pt, zoom: number): boolean {
+  const reach = (HIT_TOL * 2) / zoom;
+  for (const s of shapes) {
+    const keys = parts.get(s.id);
+    if (keys) for (const p of shapePoints(s)) if (keys.has(p.key) && Math.hypot(p.x - e.x, p.y - e.y) <= reach) return true;
+  }
+  return false;
 }
 
 /** True while a lasso or polygon is waiting for its next corner. */
@@ -353,7 +430,10 @@ export function closeOpenLasso(): boolean {
 
 function cancel(ctx: ToolContext): void {
   clearSnap();
-  if (g?.mode === 'marquee') setSelection(g.base);
+  if (g?.mode === 'marquee') {
+    setSelection(g.base);
+    setParts(g.drawing.id, g.basePick);
+  }
   g = null;
   setLive(null);
   ctx.requestOverlay();
@@ -407,7 +487,9 @@ function hover(e: ToolPointer, ctx: ToolContext): void {
   if (!d) return setCursor(null);
   const cut = pendingCut();
   const sel = cut ? cut.lifted : selectedOn(d);
-  const b = shapesBounds(sel);
+  const parts: PartMap = cut ? new Map() : currentParts(d.id);
+  const b0 = pickedBounds(sel, parts);
+  const b = b0 && handleBox(b0, parts, ctx.zoom);
   const h = b ? hitHandle(b, e.x, e.y, ctx.zoom) : null;
   if (h) return setCursor(RESIZE_CURSOR[h]);
   setCursor(topShapeAt(cut ? cut.lifted : d.shapes, e.x, e.y, HIT_TOL / ctx.zoom) || topShapeAt(d.shapes, e.x, e.y, HIT_TOL / ctx.zoom) ? 'move' : null);
@@ -453,6 +535,7 @@ function overlay(gx: CanvasRenderingContext2D, ctx: ToolContext): void {
   if (!d) return;
   const cut = g ? null : pendingCut();
   const sel = g && g.mode !== 'marquee' ? g.originals : cut ? cut.lifted : selectedOn(d);
+  const parts: PartMap = g && g.mode !== 'marquee' ? g.parts : cut ? new Map() : currentParts(d.id);
   if (cut) {
     // The picked part, outlined with marching-ant dashes so it reads as "just this bit".
     gx.save();
@@ -465,7 +548,9 @@ function overlay(gx: CanvasRenderingContext2D, ctx: ToolContext): void {
     for (const s of cut.lifted) if (s.type === 'fill' || s.type === 'path') gx.stroke(subPathsToPath2D(s.paths));
     gx.restore();
   }
-  const b = g && g.mode !== 'marquee' ? g.bounds : shapesBounds(sel);
+  const b0 = g && g.mode !== 'marquee' ? g.bounds : pickedBounds(sel, parts);
+  // A resize or turn already holds the padded box it started from.
+  const b = b0 && (g && (g.mode === 'scale' || g.mode === 'rotate') ? b0 : handleBox(b0, parts, ctx.zoom));
   if (!b || !sel.length) return;
   const m = g && g.mode !== 'marquee' && g.moved ? (g.m ?? gestureMatrix(g)) : IDENTITY;
 
@@ -479,6 +564,7 @@ function overlay(gx: CanvasRenderingContext2D, ctx: ToolContext): void {
   gx.globalAlpha = 0.5;
   if (sel.length > 1) {
     for (const s of sel) {
+      if (parts.has(s.id)) continue;
       const sb = shapeBounds(s);
       const corners = quad(sb, m);
       polygon(gx, corners);
@@ -486,6 +572,23 @@ function overlay(gx: CanvasRenderingContext2D, ctx: ToolContext): void {
     }
   }
   gx.globalAlpha = 1;
+  // The points picked on their own, as little squares, so you can see which corners you have.
+  if (parts.size) {
+    const dot = 7 * px;
+    gx.lineWidth = 1.5 * px;
+    gx.strokeStyle = 'white';
+    gx.fillStyle = ink;
+    for (const s of sel) {
+      const keys = parts.get(s.id);
+      if (!keys) continue;
+      for (const p of shapePoints(s)) {
+        if (!keys.has(p.key)) continue;
+        const q = apply(m, p.x, p.y);
+        gx.strokeRect(q.x - dot / 2, q.y - dot / 2, dot, dot);
+        gx.fillRect(q.x - dot / 2, q.y - dot / 2, dot, dot);
+      }
+    }
+  }
   // The box round the lot, in white then ink so it reads on any artwork.
   const box = quad(inflateRect(b, 0), m);
   gx.lineWidth = 3 * px;

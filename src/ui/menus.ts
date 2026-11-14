@@ -170,7 +170,7 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
   },
   toolopts: {
     label: 'Brush and tool options',
-    items: ['draw.moreBrushOptions', 'pen.stabilizer', 'eraser.bit', 'pen.eraserEnd', 'fill.allLayers', '-', 'settings.rememberOnion', 'settings.forgetDrawing'],
+    items: ['draw.moreBrushOptions', 'pen.stabilizer', 'eraser.bit', 'select.scope', 'pen.eraserEnd', 'fill.allLayers', '-', 'settings.rememberOnion', 'settings.forgetDrawing'],
   },
   effects: {
     label: 'Effects',

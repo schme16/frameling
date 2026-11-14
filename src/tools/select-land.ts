@@ -5,6 +5,7 @@ import type { Id, Shape, VectorDrawing } from '../core/format';
 import { store } from '../core/store';
 import { isInBetween, shownDrawing } from '../core/symbols';
 import { shapesBounds, transformShape, type Matrix, type Rect } from '../canvas/geometry';
+import { transformPicked, type PartMap } from '../select/scope';
 import { activeDrawing, activeLayer, editActiveDrawing, type EditResult } from './edit';
 import { activeIsMerge, editShapes, pendingCut } from './merge-mode';
 import { placeMoved } from '../geometry/merge';
@@ -38,14 +39,16 @@ export function selectionTarget(): (Target & { bounds: Rect }) | null {
  * cutting what they cover), and `ids` are the shapes that came out. In the middle of an in-between the same change
  * is made to the key it creates.
  */
-export function landMatrix(label: string, t: Target, m: Matrix | MatrixFor, opts: { coalesce?: string } = {}): { result: EditResult | 'nothing'; ids?: Id[] } {
+export function landMatrix(label: string, t: Target, m: Matrix | MatrixFor, opts: { coalesce?: string; parts?: PartMap } = {}): { result: EditResult | 'nothing'; ids?: Id[] } {
   // One matrix for all of them (a drag), or one each (Align and Spread out: every shape goes its own way). A shape with no matrix stays.
   const matrixOf = new Map<Id, Matrix>();
   for (const o of t.originals) {
     const mo = typeof m === 'function' ? m(o) : m;
     if (mo) matrixOf.set(o.id, mo);
   }
-  const repl = new Map(t.originals.filter((o) => matrixOf.has(o.id)).map((o) => [o.id, transformShape(o, matrixOf.get(o.id)!)]));
+  // Only a drag of picked points says `parts`; everything else takes whole shapes.
+  const take = (o: Shape, mo: Matrix): Shape => (opts.parts?.size ? transformPicked(o, mo, opts.parts) : transformShape(o, mo));
+  const repl = new Map(t.originals.filter((o) => matrixOf.has(o.id)).map((o) => [o.id, take(o, matrixOf.get(o.id)!)]));
   if (activeIsMerge()) {
     let ids: Id[] = [];
     const result = editShapes(
@@ -72,7 +75,7 @@ export function landMatrix(label: string, t: Target, m: Matrix | MatrixFor, opts
       }
       // Mid-tween: the same move applied to whatever the frame ends up holding, a new key (made from the in-between)
       // or the key before (moved by the same amount).
-      d.shapes = d.shapes.map((x) => (repl.has(x.id) ? transformShape((isDraft(x) ? current(x) : x) as Shape, matrixOf.get(x.id)!) : x));
+      d.shapes = d.shapes.map((x) => (repl.has(x.id) ? take((isDraft(x) ? current(x) : x) as Shape, matrixOf.get(x.id)!) : x));
     },
     opts,
   );
