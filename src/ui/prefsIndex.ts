@@ -151,6 +151,7 @@ export const CHOICE_ALSO: Record<string, string[]> = {
   'motion.room': ['overlap', 'motion clip', 'trim', 'clip length', 'transition', 'overrun', 'longer than gap'],
   'versions.restore': ['revert', 'history', 'restore', 'previous version', 'file history', 'rollback', 'open copy', 'undo save', 'backup', 'version history', 'snapshots', 'autosave', 'auto save', 'recovery', 'saving'],
   'aseprite.drop': ['import aseprite', 'ase file', 'open aseprite', 'drag and drop', 'drop file', 'import', 'open file'],
+  'import.where': ['import sequence', 'import svg', 'import psd', 'photoshop', 'openraster', 'logo', 'folder of pictures', 'png sequence', 'add or new', 'new drawing', 'import', 'open file'],
   'beta.crashOffer': ['crash', 'bug report', 'crash report', 'error report', 'send report', 'crash notes', 'feedback', 'telemetry', 'privacy', 'diagnostic'],
   'audio.scrub': ['scrubbing', 'audio scrub', 'hear sound', 'play sound while dragging', 'sound preview', 'scrub audio', 'timeline scrub'],
   'audio.longSound': ['extend animation', 'sound length', 'trim timeline', 'audio longer', 'match audio', 'timeline length', 'duration', 'fit to sound'],

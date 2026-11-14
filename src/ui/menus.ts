@@ -157,7 +157,7 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
   },
   import: {
     label: 'Import',
-    items: ['heading:Add to this drawing', 'file.importPicture', 'file.importAseprite', 'heading:Open as a new drawing', 'file.openPicture', 'file.openAseprite', 'heading:Colours', 'palette.import', 'palette.fromPicture'],
+    items: ['heading:Add to this drawing', 'file.importPicture', 'file.importAseprite', 'heading:Frames, logos and layers', 'file.importSequenceFiles', 'file.importSequenceFolder', 'file.importSvg', 'file.importLayered', 'heading:Open as a new drawing', 'file.openPicture', 'file.openAseprite', 'heading:Colours', 'palette.import', 'palette.fromPicture'],
   },
   export: {
     label: 'Export',

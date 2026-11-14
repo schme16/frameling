@@ -67,6 +67,7 @@ What's in `test/`, by folder:
 | `symbols/` | Motions and symbol and shape ops. |
 | `templates/` | Every starter template builds; community templates; setup. |
 | `text/` | Text layout and animators. |
+| `import/` | Bringing work in from elsewhere (`src/import/`). `svg.test.ts`: the XML reader (entities, doctype bombs, depth, plain error messages with line numbers), colours, lengths, transforms, path data (every command, arcs, flags that run together, closing curves, errors keep what was read), style sheets, then whole SVGs in `test/fixtures/import/` (an Inkscape-style and an Illustrator-style file), the badge the help pictures use, a round trip through the app's own SVG export, every kind of thing it leaves out and says so, and hostile input. `psd.test.ts` + `psdBuilder.ts` (a small PSD writer that makes what the app's writer can't: raw, RLE, zip and zip-with-prediction channels at 8 and 16 bits, an `Lr16` block, masks in their own box, adjustment, text, smart object and style blocks, odd blend keys, CMYK and 32 bit headers): reading, the app's own PSD export read back, every refusal sentence, a cut-short file at every length and a flipped byte at every third position (must read or throw `LayeredProblem`, never anything else). `ora.test.ts`: OpenRaster zips built in the test. `sequence.test.ts`: natural sort, runs, gaps, junk, the PNG sequence zip round trip (export naming in, exact pixels out), timing, and damaged zips. `pieces.test.ts`: fitting and centring. `flow.test.tsx` (jsdom): each import end to end in the store (new drawing, add to the open one, undo, the toast and the "See what was left out" list, every broken file leaves the drawing as it was). The help pictures' scene is made by `scripts/fixtures/make-import-fixtures.ts` (run from the repo root; the command is at the top of the file) into `scripts/docs/help/assets/` (`import-scene.psd`, `import-scene.ora`; `import-logo.svg` is hand written). |
 | `aseprite/` | The Aseprite reader and importer: `writer.ts` writes .aseprite files chunk by chunk (every colour depth, cel type, palette chunk, tags, slices, user data, tilesets) and `import.test.ts` checks every pixel of the imported frames. `aseprite-bin.test.ts` needs `ASEPRITE_BIN`. |
 | `tiles/` | Tile model, copy with alpha, export and edit. `godot-tiles-e2e` needs `GODOT_BIN`. |
 | `timeline/` | Timeline ops, geometry, playback, play range, hold until next, tween offer, the detailed timeline and both panels. Copying keys: `frame-clip.test.ts` (the pure copy and paste: holds, new drawings, making room or covering, several layers, vector and pixel across kinds) and `frame-clip-commands.test.ts` (on the store, as one undo step). |
@@ -1115,3 +1116,18 @@ real built app (`npm run build` first), draws, picks **File > Close drawing**, a
 ```bash
 xvfb-run -a -s "-screen 0 1280x800x24" npx electron scripts/ab/close-drawing.cjs dark out.mp4
 ```
+
+## Import looks: scripts/docs/ab-import and ab-import-before
+
+Before and after stills for the three importers (brand/ab/import-batch/). `ab-import/after.cjs` runs on this branch; `ab-import-before/before.cjs` runs
+on a build of the commit this branch started from (a throwaway `git worktree add --detach` and `npm run build`), handing each file to the nearest thing the old app
+had, the picture reader. Both go through help-media.cjs, in xvfb:
+
+```bash
+SHOT_SHOW=1 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/docs/help-media.cjs --entries scripts/docs/ab-import/ --out <dir>
+# in the throwaway worktree of the base commit:
+SHOT_SHOW=1 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/docs/help-media.cjs --entries <abs path>/scripts/docs/ab-import-before/ --out <dir>
+```
+
+The page hooks they use are `__framelingImport.sequence / zip / svg / layered` (under `?debug`, src/import/index.ts).
+

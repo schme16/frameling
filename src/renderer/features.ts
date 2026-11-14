@@ -13,6 +13,7 @@ import '../symbols';
 import '../artboards';
 import '../io';
 import '../aseprite';
+import '../import';
 import '../export';
 import '../effects';
 import '../quests';

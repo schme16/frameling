@@ -221,6 +221,8 @@ export interface BuildOptions {
   rowsAsSprites: boolean;
   /** Put the picture's colours in the palette. */
   palette: boolean;
+  /** A new drawing plays at this rate (missing = the one that fits the frames' delays best). */
+  fps?: number;
 }
 
 /** A drawing holding only the painted block of a whole-grid picture (what the app keeps in memory and saves). */
@@ -327,7 +329,7 @@ export function spriteDoc(s: Sprite, o: BuildOptions): { doc: Doc; notes: string
   const notes = [...s.notes];
   if (!s.frames.length) throw new Error('There is nothing to import.');
   const way = o.way;
-  const timing = timingOf(s);
+  const timing = timingOf(s, o.fps);
   const doc = newDoc({ name: o.name, width: s.width, height: s.height, fps: timing.fps, length: 1, background: null, pixel: { pixelSize: 1 } });
   const layer = doc.layers[0] as PixelLayer;
   layer.name = 'Sprite';
