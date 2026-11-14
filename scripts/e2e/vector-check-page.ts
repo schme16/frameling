@@ -23,6 +23,7 @@ import { TEMPLATES } from '../../src/templates';
 import { dotLottieBytes } from '../../src/export/dotlottie';
 import { strToU8, zipSync } from 'fflate';
 import { lottieSizes } from '../../src/export/lottie-size';
+import * as edit from '../../src/effects/edit';
 import { makeCameraPan } from '../../src/templates/camera-pan';
 import { addPixelLayer, addVectorLayer, ellipsePath, fill, hold, pathShape, rectPath, vectorDrawing } from '../../src/templates/build';
 
@@ -356,6 +357,56 @@ function heavyEffectsDoc(): Doc {
   return doc;
 }
 
+/** Masks the new way: a mask added to a layer (its own folder), one switched off, and masks on and over pixel layers. */
+function masksMoreDoc(): Doc {
+  const doc = newDoc({ name: 'Masks more', width: 400, height: 300, length: 6, fps: 12 });
+  doc.layers = [];
+  const back = addVectorLayer(doc, 'Back');
+  hold(back, vectorDrawing(doc, [fill([rectPath(0, 0, 400, 300)], '#fff4d6')]).id, 0, 6);
+  // A layer with a mask added to it: painted to show a circle, in a folder of its own (the way Add a mask makes it).
+  const art = addVectorLayer(doc, 'Art');
+  hold(art, vectorDrawing(doc, [fill([rectPath(10, 10, 180, 130)], '#ff6f91')]).id, 0, 6);
+  const m1 = addVectorLayer(doc, 'Mask for Art');
+  m1.mask = 'show';
+  hold(m1, vectorDrawing(doc, [fill([ellipsePath(100, 75, 60, 50)], '#000000')]).id, 0, 6);
+  // A mask that is switched off cuts nothing, even though it has drawing.
+  const art2 = addVectorLayer(doc, 'Art 2');
+  hold(art2, vectorDrawing(doc, [fill([rectPath(210, 10, 180, 130)], '#4fd1a5')]).id, 0, 6);
+  const m2 = addVectorLayer(doc, 'Off mask');
+  m2.mask = 'show';
+  m2.visible = false;
+  hold(m2, vectorDrawing(doc, [fill([ellipsePath(300, 75, 40, 40)], '#000000')]).id, 0, 6);
+  // A pixel layer cut by a vector mask, and a pixel layer cut by a pixel mask.
+  const px = addPixelLayer(doc, 'Sprite', 10);
+  const sd = newPixelDrawing(40, 30);
+  for (let y = 15; y < 30; y++) for (let x = 0; x < 20; x++) sd.pixels.set([90, 140, 255, 255], (y * 40 + x) * 4);
+  sd.id = uid('p');
+  doc.drawings[sd.id] = sd;
+  hold(px, sd.id, 0, 6);
+  const m3 = addVectorLayer(doc, 'Hole');
+  m3.mask = 'hide';
+  hold(m3, vectorDrawing(doc, [fill([ellipsePath(100, 225, 45, 30)], '#000000')]).id, 0, 6);
+  const px2 = addPixelLayer(doc, 'Sprite 2', 10);
+  const sd2 = newPixelDrawing(40, 30);
+  for (let y = 15; y < 30; y++) for (let x = 20; x < 40; x++) sd2.pixels.set([255, 190, 60, 255], (y * 40 + x) * 4);
+  sd2.id = uid('p');
+  doc.drawings[sd2.id] = sd2;
+  hold(px2, sd2.id, 0, 6);
+  const m4 = addPixelLayer(doc, 'Pixel mask', 10);
+  m4.mask = 'show';
+  const md = newPixelDrawing(40, 30);
+  for (let y = 0; y < 30; y++) for (let x = 0; x < 30; x++) md.pixels.set([0, 0, 0, 255], (y * 40 + x) * 4);
+  md.id = uid('p');
+  doc.drawings[md.id] = md;
+  hold(m4, md.id, 0, 6);
+  const named = (n: string) => doc.layers.find((l) => l.name === n)!.id;
+  edit.makeFolder(doc, [named('Art'), named('Mask for Art')], 'Masked: Art');
+  edit.makeFolder(doc, [named('Art 2'), named('Off mask')], 'Masked: Art 2');
+  edit.makeFolder(doc, [named('Sprite'), named('Hole')], 'Masked: Sprite');
+  edit.makeFolder(doc, [named('Sprite 2'), named('Pixel mask')], 'Masked: Sprite 2');
+  return doc;
+}
+
 const DOCS: Record<string, () => Doc> = {
   overlap: overlapDoc,
   'heavy-effects': heavyEffectsDoc,
@@ -366,6 +417,7 @@ const DOCS: Record<string, () => Doc> = {
   tint: tintDoc,
   blend: blendDoc,
   masks: maskDoc,
+  'masks-more': masksMoreDoc,
   effects: effectsDoc,
   'symbol-looks': symbolLooksDoc,
   'bouncing-logo': makeBouncingLogo,

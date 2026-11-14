@@ -13,6 +13,7 @@ import { blitEntry, blitEntryStretched } from '../canvas/bitmapBlit';
 import type { Ctx } from './apply';
 import { BufferPool, ctx2 } from './apply';
 import { compositePlan } from './composite';
+import { ghostPlan } from './masks';
 import { buildPlan } from './plan';
 
 let tintPool: BufferPool | null = null;
@@ -73,14 +74,26 @@ export function paintComposited(painter: FramePainter, g: CanvasRenderingContext
   g.setTransform(sx, 0, 0, sy, rect.x, rect.y);
   compositePlan(g, doc, p.frame, buildPlan(doc, (l) => l.visible), { paint, key }, p.zooming ? undefined : painter.effects);
 
-  // A mask layer is never shown, which makes drawing on one blind. While it's the one being worked on, its drawing
-  // shows faintly on top in the mask colour.
+  // A mask layer is never shown, which makes drawing on one blind. While it's the one being worked on, what it hides
+  // shows faintly (a ghost of the layers it cuts, cut the other way round) and its own drawing shows in the mask colour.
   const active = p.activeLayerId ? doc.layers.find((l) => l.id === p.activeLayerId) : undefined;
   if (active?.mask && active.visible) {
     const w = Math.max(1, (g.canvas as HTMLCanvasElement).width);
     const h = Math.max(1, (g.canvas as HTMLCanvasElement).height);
     if (!tintPool) tintPool = new BufferPool(w, h);
     tintPool.resize(w, h);
+    const ghost = ghostPlan(doc, active.id);
+    if (ghost) {
+      const gc = tintPool.get();
+      const gg = ctx2(gc);
+      gg.setTransform(sx, 0, 0, sy, rect.x, rect.y);
+      compositePlan(gg, ghost.doc, p.frame, ghost.steps, { paint, key }, p.zooming ? undefined : painter.effects);
+      g.setTransform(1, 0, 0, 1, 0, 0);
+      g.globalAlpha = GHOST_ALPHA;
+      g.drawImage(gc, 0, 0);
+      g.globalAlpha = 1;
+      tintPool.put(gc);
+    }
     const c = tintPool.get();
     const cg = ctx2(c);
     cg.setTransform(sx, 0, 0, sy, rect.x, rect.y);
@@ -101,6 +114,9 @@ export function paintComposited(painter: FramePainter, g: CanvasRenderingContext
 
 /** The colour a mask layer shows in while it's being drawn. */
 export const MASK_TINT = '#9b7bff';
+
+/** How strongly the part a mask hides shows while the mask is being painted. */
+export const GHOST_ALPHA = 0.28;
 
 /** Picking a mask layer, or leaving one, changes the canvas (the faint mask overlay). */
 export function maskFocusChanged(s: { doc: Doc; ui: { activeLayerId: string | null } }, p: { doc: Doc; ui: { activeLayerId: string | null } }): boolean {

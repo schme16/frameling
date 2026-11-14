@@ -23,7 +23,7 @@ registerHelpTopics([
     title: 'Masks and clipping',
     section: 'Effects',
     media: 'masks.png',
-    summary: 'Show a layer only inside the one below it (clip), or use a drawing to show or hide the layers under it (mask).',
+    summary: 'Paint where a layer shows with a mask, in one press, and switch it off without losing it. Or clip a layer to the one below it.',
     keywords: ['mask', 'clipping mask', 'clip', 'clip to below', 'reveal', 'stencil', 'cut out', 'inside the lines', 'layer mask'],
   },
   {

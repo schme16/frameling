@@ -45,6 +45,17 @@ Within a level (the stage, or one folder), bottom to top (`src/effects/plan.ts`)
 Making a mask from the Effects menu or panel puts the mask and the layer under it (or every layer under it, asked the
 first time and remembered: choice `effects.maskScope`) into a folder, so a new mask never reaches further than meant.
 
+**Masks you paint** (`src/effects/masks.ts`, no format change). **Add a mask to this layer** (`layers.addMask`, Ctrl+Alt+Shift+M,
+the Mask button in the Layers panel) adds an empty mask layer above the layer, in a folder with it, and picks it. What it
+starts as is the choice `effects.maskStart` (`show` hides the layer until painted, `hide` shows it until painted). A
+pixel layer gets a pixel mask with the same squares. A mask is **on** while it is visible: switching it off is the eye
+(a `MaskSwitch` in its row, `layers.maskOnOff`), and an off mask is never drawn and cuts nothing, in the renderer and in
+every exporter (and `docFeatures` no longer lists it, so a PDF does not warn about it). While a mask is the layer being
+painted, the canvas shows what it hides at 28% (`ghostPlan`: the layers it cuts, cut the other way round) and what it
+shows with a purple wash. `maskLinks` says which mask cuts which layers; the rows use it to colour the mask purple and
+edge the cut layers, and `layers.maskSwitch` (Ctrl+Alt+J) jumps between the two. A mask dragged out of its folder asks
+what to do once (`effects.maskLeavesFolder`: keep it, or make it a plain layer in a second undo step).
+
 ## How it renders
 
 One compositor (`src/effects/composite.ts`) used by both:

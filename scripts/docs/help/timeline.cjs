@@ -1,7 +1,7 @@
 const F = '__frameling';
 const js = (code) => ({ eval: code });
 // The "ask the first time" questions (hold longer, mask scope...) are answered up front, so no dialog opens mid-clip.
-const ANSWERS = { 'timeline.holdLonger': 'push', 'timeline.newKey': 'blank', 'timeline.frameScope': 'all', 'effects.maskScope': 'below', 'draw.heldFrame': 'new-key', 'draw.tweenFrame': 'new-key', 'canvas.spaceTap': 'play', 'draw.newLayerMode': 'object', 'workspace.follow': 'never', 'particles.where': 'new-layer' };
+const ANSWERS = { 'timeline.holdLonger': 'push', 'timeline.newKey': 'blank', 'timeline.frameScope': 'all', 'effects.maskScope': 'below', 'effects.maskStart': 'show', 'effects.maskLeavesFolder': 'keep', 'draw.heldFrame': 'new-key', 'draw.tweenFrame': 'new-key', 'canvas.spaceTap': 'play', 'draw.newLayerMode': 'object', 'workspace.follow': 'never', 'particles.where': 'new-layer' };
 const PANELS = ['tool-options', 'timeline', 'colors', 'palette', 'library', 'tileset', 'symbol-props', 'effects', 'particles', 'camera', 'text', 'rig', 'clip-flow', 'artboards', 'lipsync', 'preview', 'quests', 'help'];
 // Properties (the right side) is one long list of sections. Folding all but the ones named in `keep` leaves them in view.
 const quiet = (keep, answers = {}) => [js(`localStorage.setItem('frameling.choices.v1', ${JSON.stringify(JSON.stringify({ ...ANSWERS, ...answers }))}); localStorage.setItem('frameling.inspector.v1', ${JSON.stringify(JSON.stringify({ folded: keep.length ? PANELS.filter((p) => !keep.includes(p)) : [] }))}); setTimeout(() => location.reload(), 0); true`), { wait: 2500 }];
@@ -261,13 +261,13 @@ module.exports = [
   {
     name: 'masks',
     steps: [
-      ...open('bouncing-ball', [], [], { 'effects.maskScope': 'all' }),
-      js(`${F}.run('layers.addVector')`), { wait: 600 },
-      js(`${F}.store().update('Name the mask layer', (d) => { const l = d.layers.find((x) => x.name === 'Layer 4'); if (l) l.name = 'Window'; })`),
+      // One press adds a mask above the Ball; painting it with the Ellipse shows the Ball through it, and what it hides stays faint.
+      ...open('bouncing-ball', [], [], { 'effects.maskStart': 'show' }),
+      js(`(() => { const s = ${F}.store(); const l = s.get().doc.layers.find((x) => x.name === 'Ball'); s.setUi({ activeLayerId: l.id, frame: 7, color: '#1d1b26', fillColor: '#ff6f91' }); })()`), { wait: 500 },
+      js(`${F}.prefs.set({ firstDrawn: true, showExplanations: false })`),
+      js(`${F}.run('layers.addMask')`), { wait: 900 },
       ELLIPSE,
-      { drag: [[470, 190], [590, 310]], steps: 12, delay: 20, after: 600 },
-      js(`${F}.run('layers.useAsMask')`), { wait: 1000 },
-      { click: [fx(8), 621], after: 500 },
+      { drag: [[470, 175], [565, 240]], steps: 12, delay: 20, after: 600 },
       { move: PARK }, { move: [645, 785], after: 1200 },
       { shot: '@', crop: [108, 40, 812, 700] },
     ],

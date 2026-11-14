@@ -382,7 +382,8 @@ Live text (`ai-text.ts`) is in the setup part of the data, as `%AI11_BeginTextDo
 ## Effects pixels: scripts/e2e/effects.cjs
 
 Renders tiny documents through the single renderer in a real Chromium canvas and compares pixels with values worked
-out by hand: blend modes, clipping, masks, folders, effects.
+out by hand: blend modes, clipping, masks, folders, effects. Cases flagged for the editor also read the editor canvas
+(masks on, switched off, empty, and the faint ghost and purple wash while a mask is the layer being painted).
 
 ```bash
 npm run build
@@ -444,6 +445,11 @@ difference and the share of pixels off by more than 48, and fails when a frame i
 ```bash
 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/vector-check.cjs [outDir]
 ```
+
+`masks-more` is the mask case for the layer-masks work: a mask added to a layer, one switched off, and masks over and
+as pixel layers; it must match in lottie-web and in Chromium's SVG. For masks in the other exporters see
+`test/export/masks-exporters.test.ts` (SVG, Lottie, PSD and PDF layout, what a format warns about) and
+`scripts/ab/layer-masks.cjs` (the clip and the exported PNG beside the screen).
 
 It also prints one summary line per document: RMSE (0 to 255, both over white) against `renderFrame` for lottie-web's canvas
 and SVG players, the Lottie file size and where the bytes go (baked effect pictures, pixel-layer pictures, keyframes,

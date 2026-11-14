@@ -3,7 +3,7 @@
  * document, so they're tested without the store; ops.ts runs them as undo steps.
  */
 import type { BlendMode, Doc, EffectKind, Id, Layer, LayerEffect, LayerFolder } from '../core/format';
-import { uid } from '../core/doc';
+import { newPixelLayer, newVectorLayer, uid } from '../core/doc';
 import { MAX_FOLDER_DEPTH, folderAndDescendants, folderHeight, folderLevel, layerFolders, layerIsUnder } from '../core/folders';
 import { clampParam, defaultValues, effectInfo, valuesAt, withKey } from './model';
 
@@ -179,6 +179,47 @@ export function useAsMask(doc: Doc, layerId: Id, scope: 'below' | 'all', mode: '
   }
   if (!setMask(doc, layerId, mode)) return null;
   return {};
+}
+
+/**
+ * Gives a layer a mask of its own: a new empty layer just above it, in a folder with it so the mask cuts only that
+ * layer. 'show' starts hidden (paint where it shows), 'hide' starts shown (paint where it hides). The mask is a pixel
+ * layer on a pixel layer (same squares), else a vector layer. Returns the mask's id, and the folder when it made one.
+ */
+export function addMask(doc: Doc, layerId: Id, mode: 'show' | 'hide' = 'show'): { mask: Id; folder?: Id } | null {
+  const i = doc.layers.findIndex((x) => x.id === layerId);
+  const base = doc.layers[i];
+  if (!base || base.mask || base.kind === 'camera') return null;
+  const names = new Set(doc.layers.map((l) => l.name));
+  let name = `Mask for ${base.name}`;
+  for (let n = 2; names.has(name); n++) name = `Mask for ${base.name} ${n}`;
+  const m: Layer = base.kind === 'pixel' ? newPixelLayer(name, base.pixelSize) : newVectorLayer(name);
+  m.mask = mode;
+  if (base.folder) m.folder = base.folder;
+  doc.layers.splice(i + 1, 0, m);
+  // Alone at the bottom of its folder, the mask can join it. Otherwise the pair gets a folder of their own, so the
+  // mask does not reach the layers under it.
+  const f = base.folder;
+  const alone = !!f && !doc.layers.some((l) => l !== m && l !== base && l.folder === f && doc.layers.indexOf(l) < i) && !Object.values(doc.folders ?? {}).some((x) => x.parent === f);
+  if (alone) return { mask: m.id };
+  const folder = makeFolder(doc, [base.id, m.id], `Masked: ${base.name}`);
+  return { mask: m.id, folder: folder ?? undefined };
+}
+
+/** Turns a mask on or off without losing it. An off mask is hidden: not drawn, and it cuts nothing. */
+export function setMaskOn(doc: Doc, layerId: Id, on: boolean): boolean {
+  const l = doc.layers.find((x) => x.id === layerId);
+  if (!l?.mask || l.visible === on) return false;
+  l.visible = on;
+  return true;
+}
+
+/** Swaps what a mask does: shows inside its drawing becomes hides inside it, and back. */
+export function flipMask(doc: Doc, layerId: Id): boolean {
+  const l = doc.layers.find((x) => x.id === layerId);
+  if (!l?.mask) return false;
+  l.mask = l.mask === 'show' ? 'hide' : 'show';
+  return true;
 }
 
 // ---------------------------------------------------------------- folders
