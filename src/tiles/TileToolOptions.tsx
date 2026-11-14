@@ -2,7 +2,10 @@
 import { ActionButton, Field, Tip } from '../canvas/controls';
 import { useStore } from '../core/store';
 import { getCommand } from '../core/registry';
+import { useChoice } from '../core/choices';
+import { AUTO_EDGES, type AutoEdgesChoice } from './choices';
 import { findTile, tileDrawingAt } from './model';
+import { hasTerrainTiles } from './terrain';
 import { useTileUi } from './state';
 import { TileThumb } from './TileThumb';
 import './tiles.css';
@@ -14,6 +17,7 @@ export function TileToolOptions() {
   const drawings = useStore((s) => s.doc.drawings);
   const tool = useStore((s) => s.ui.tool);
   const { brush, flags } = useTileUi((s) => s);
+  const auto = useChoice<AutoEdgesChoice>(AUTO_EDGES) === 'on';
   const tile = findTile(tileset, brush) ?? tileset?.tiles[0];
   const square = !!tileset && tileset.tileWidth === tileset.tileHeight;
   if (!tileset?.tiles.length) {
@@ -39,6 +43,13 @@ export function TileToolOptions() {
           </div>
         </div>
       </Field>
+      {hasTerrainTiles(tileset) && (
+        <Field label="Edges" value={auto ? 'picked for you' : 'as you paint them'}>
+          <ActionButton onClick={() => run('tiles.autoEdges')} pressed={auto} title="Pick the edge and corner tiles that fit, as you paint (Alt+Shift+E)">
+            {auto ? 'Auto edges: on' : 'Auto edges: off'}
+          </ActionButton>
+        </Field>
+      )}
       <Tip>
         {tool === 'tile-rect'
           ? 'Drag to fill a rectangle with the tile. Alt+drag clears one.'

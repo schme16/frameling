@@ -42,13 +42,13 @@ export const MENUS: MenuDef[] = [
   {
     label: 'View',
     categories: ['View'],
-    items: ['view.zoomIn', 'view.zoomOut', 'view.fit', 'view.zoom100', 'view.center', 'sub:turnview', '-', 'group:workspaces', 'sub:workspaces', '-', 'sub:panels', 'sub:panelwin', 'sub:toolrail', 'view.changeMenus', 'view.menusReset', '-', 'view.pixelGrid', 'tiles.tileMode', 'view.emptyGhost', 'camera.lookThrough', 'camera.whilePlaying', 'view.whereDidItGo', '-', 'view.rulers', 'view.guides', 'sub:snapping', 'sub:grids', 'sub:lighttable', 'sub:notes', '-', 'sub:look', 'view.features', 'view.featuresAllOn', 'view.searchSettings', 'view.commandPalette', '-', 'quillPet.open', 'quillPet.give', 'quillPet.pat'],
+    items: ['view.zoomIn', 'view.zoomOut', 'view.fit', 'view.zoom100', 'view.center', 'sub:turnview', '-', 'group:workspaces', 'sub:workspaces', '-', 'sub:panels', 'sub:panelwin', 'sub:toolrail', 'view.changeMenus', 'view.menusReset', '-', 'view.pixelGrid', 'tiles.tileMode', 'tiles.showShapes', 'view.emptyGhost', 'camera.lookThrough', 'camera.whilePlaying', 'view.whereDidItGo', '-', 'view.rulers', 'view.guides', 'sub:snapping', 'sub:grids', 'sub:lighttable', 'sub:notes', '-', 'sub:look', 'view.features', 'view.featuresAllOn', 'view.searchSettings', 'view.commandPalette', '-', 'quillPet.open', 'quillPet.give', 'quillPet.pat'],
   },
   {
     label: 'Draw',
     title: 'Tools and layers',
     categories: ['Draw', 'Drawing', 'Tools', 'Select', 'Selection', 'Shape', 'Shapes', 'Geometry', 'Layers', 'Arrange', 'Effects'],
-    items: ['sub:tools', 'pixel.mirror', '-', 'select.flipH', 'select.flipV', '-', 'transform.apply', 'transform.putBack', 'transform.pivotMiddle', '-', 'arrange.front', 'arrange.forward', 'arrange.backward', 'arrange.back', '-', 'arrange.group', 'arrange.ungroup', 'arrange.breakApart', 'sub:symbols', '-', 'sub:combine', 'sub:linestyle', 'sub:tidy', 'sub:recolour', 'sub:brushes', 'sub:toolopts', '-', 'layers.addVector', 'layers.addPixel', 'tiles.addLayer', 'layers.duplicate', 'layers.delete', '-', 'layers.up', 'layers.down', 'layers.toggleVisible', 'layers.toggleLocked', 'timeline.soloLayer', 'layers.toggleReference', '-', 'sub:effects', 'sub:masks', '-', 'view.panel.layers'],
+    items: ['sub:tools', 'pixel.mirror', '-', 'select.flipH', 'select.flipV', '-', 'transform.apply', 'transform.putBack', 'transform.pivotMiddle', '-', 'arrange.front', 'arrange.forward', 'arrange.backward', 'arrange.back', '-', 'arrange.group', 'arrange.ungroup', 'arrange.breakApart', 'sub:symbols', '-', 'sub:combine', 'sub:linestyle', 'sub:tidy', 'sub:recolour', 'sub:brushes', 'sub:toolopts', '-', 'layers.addVector', 'layers.addPixel', 'tiles.addLayer', 'sub:tiles', 'layers.duplicate', 'layers.delete', '-', 'layers.up', 'layers.down', 'layers.toggleVisible', 'layers.toggleLocked', 'timeline.soloLayer', 'layers.toggleReference', '-', 'sub:effects', 'sub:masks', '-', 'view.panel.layers'],
   },
   {
     label: 'Pixel',
@@ -134,6 +134,11 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
     label: 'Line style',
     items: ['stroke.dash.solid', 'stroke.dash.dashed', 'stroke.dash.dotted', 'stroke.dash.dashdot', '-', 'stroke.arrow.start', 'stroke.arrow.end', '-', 'stroke.width.even', 'stroke.width.swell', 'stroke.width.pinch', 'stroke.width.taper', 'stroke.width.taperStart', 'stroke.width.brush'],
     prefixes: ['stroke.'],
+  },
+  tiles: {
+    label: 'Tiles',
+    items: ['tiles.new', 'tiles.edit', 'tiles.done', 'tiles.duplicate', 'tiles.delete', '-', 'tiles.solid', 'tiles.drawBox', 'tiles.drawShape', 'tiles.oneWay', 'tiles.clearShapes', '-', 'tiles.addValue', '-', 'tiles.addTerrain', 'tiles.makeEdgeTiles', 'tiles.guessEdges', 'tiles.autoEdges', '-', 'tiles.gridStart', 'tiles.export'],
+    prefixes: ['tiles.'],
   },
   symbols: {
     label: 'Symbols',

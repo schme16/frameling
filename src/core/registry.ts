@@ -232,6 +232,8 @@ export interface Tool {
    */
   slot?: string;
   help?: string;
+  /** Left off the tool rail, menus and keyboard list: a tool a feature switches to itself (the Collision tool while a tile is open). */
+  railless?: boolean;
   cursor?: string;
   /** Tool options shown in the Tool options panel. */
   options?: ComponentType;
@@ -268,5 +270,5 @@ export function getTool(id: string): Tool | undefined {
   return tools.get(id);
 }
 export function allTools(): Tool[] {
-  return [...tools.values()].sort((a, b) => (a.order ?? 50) - (b.order ?? 50));
+  return [...tools.values()].filter((t) => !t.railless).sort((a, b) => (a.order ?? 50) - (b.order ?? 50));
 }

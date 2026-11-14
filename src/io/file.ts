@@ -28,6 +28,7 @@ import { upgradeLineage } from '../core/upgradeLineage';
 import { readClip } from '../core/clipPlay';
 import { cleanStrokeStyle } from '../geometry/lineStyle';
 import { cleanTrim } from '../geometry/trim';
+import { readDataLayers, readTerrainMode, readTerrains, readTileExtras } from '../core/tileFormat';
 
 export const FILE_EXTENSION = 'frameling';
 
@@ -799,6 +800,8 @@ function readTileset(raw: any, drawings: Record<string, Drawing>, warnings: stri
   }
   const tiles: Tile[] = [];
   const keys = new Set<number>();
+  const dataLayers = readDataLayers(raw.dataLayers);
+  const terrains = readTerrains(raw.terrains);
   for (const t of Array.isArray(raw.tiles) ? raw.tiles : []) {
     const key = Math.round(num(t?.key, 0));
     if (!isObj(t) || key < 1 || key > 0x0fffffff || keys.has(key)) {
@@ -814,7 +817,9 @@ function readTileset(raw: any, drawings: Record<string, Drawing>, warnings: stri
       continue;
     }
     keys.add(key);
-    tiles.push({ key, name: str(t.name, 'Tile ' + (tiles.length + 1)), frames: frames.map((f: any) => ({ drawingId: f.drawingId, duration: Math.max(1, Math.round(num(f.duration, 1))) })) });
+    const tile: Tile = { key, name: str(t.name, 'Tile ' + (tiles.length + 1)), frames: frames.map((f: any) => ({ drawingId: f.drawingId, duration: Math.max(1, Math.round(num(f.duration, 1))) })) };
+    readTileExtras(t, tile, { tileWidth, tileHeight, dataLayers, terrains });
+    tiles.push(tile);
   }
   const top = Math.max(0, ...keys);
   const edge = (v: unknown, size: number): number => {
@@ -823,7 +828,19 @@ function readTileset(raw: any, drawings: Record<string, Drawing>, warnings: stri
   };
   const gridX = edge(raw.gridX, tileWidth);
   const gridY = edge(raw.gridY, tileHeight);
-  return { tileWidth, tileHeight, tiles, nextKey: Math.max(top + 1, Math.round(num(raw.nextKey, 1))), ...(gridX ? { gridX } : {}), ...(gridY ? { gridY } : {}) };
+  const terrainMode = terrains ? readTerrainMode(raw.terrainMode) : undefined;
+  const nextTerrain = terrains ? Math.max(1 + Math.max(...terrains.map((t) => t.id)), Math.round(num(raw.nextTerrain, 1))) : 0;
+  return {
+    tileWidth,
+    tileHeight,
+    tiles,
+    nextKey: Math.max(top + 1, Math.round(num(raw.nextKey, 1))),
+    ...(gridX ? { gridX } : {}),
+    ...(gridY ? { gridY } : {}),
+    ...(dataLayers ? { dataLayers } : {}),
+    ...(terrains ? { terrains, nextTerrain } : {}),
+    ...(terrainMode ? { terrainMode } : {}),
+  };
 }
 
 /** The pixel palette, if the file has a usable one. */

@@ -343,6 +343,10 @@
   cursor: pointer;
   font-weight: 600;
 }
+.cv-action.is-on {
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+}
 .cv-action:hover:not(:disabled) {
   background: var(--hover-bg);
 }

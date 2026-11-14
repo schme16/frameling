@@ -5,13 +5,16 @@
  * Layout: tiles go left to right in tileset order, an animated tile's frames side by side on one row (which is how
  * Godot and Tiled expect animation frames), wrapping to a new row when a tile no longer fits.
  */
-import type { Doc, TilemapDrawing, TilemapLayer } from '../core/format';
+import type { Doc, Tile, TileDataValue, TilemapDrawing, TilemapLayer, Tileset } from '../core/format';
 import { drawingAt, tileOrigin } from '../core/doc';
 import { TILE_FLIP_D, TILE_FLIP_X, TILE_FLIP_Y } from '../core/format';
 import { strToU8 } from 'fflate';
 import { encodePng, type RawImage } from '../io/png';
 import { slug } from '../export/plan';
-import { cellFlags, cellKey } from './model';
+import { cellFlags, cellKey, findTile } from './model';
+import { GODOT_DATA_TYPE } from './data';
+import { godotPolygons, shapePoints, validShape } from './shapes';
+import { GODOT_BIT, GODOT_MODE, PEERING, modeOf, modeUses } from './terrain';
 
 export interface TilesetExportSettings {
   /** Tiles per row; 0 picks a roughly square picture. */
@@ -53,6 +56,8 @@ export interface TileAtlas {
   /** Godot's separation and Tiled's spacing: padding plus extrude on both sides. */
   spacing: number;
   tiles: AtlasTile[];
+  /** The tileset the picture was cut from: its shapes, values and terrains travel with the picture. */
+  tileset?: Tileset;
 }
 
 /** Places the tiles in slots. Pure layout, no pixels. */
@@ -110,7 +115,7 @@ export function buildTileAtlas(doc: Doc, s: Pick<TilesetExportSettings, 'columns
       }
     });
   });
-  return { image: { width: W, height: H, pixels: px }, tileWidth: tw, tileHeight: th, scale, columns: lay.columns, rows: lay.rows, margin: ex, spacing, tiles: lay.tiles };
+  return { image: { width: W, height: H, pixels: px }, tileWidth: tw, tileHeight: th, scale, columns: lay.columns, rows: lay.rows, margin: ex, spacing, tiles: lay.tiles, ...(ts ? { tileset: ts } : {}) };
 }
 
 /** The tilemap layers and the map each shows at `frame`. */
@@ -138,9 +143,45 @@ export function godotAlternative(flags: number): number {
   return (flags & TILE_FLIP_X ? GODOT_FLIP_H : 0) | (flags & TILE_FLIP_Y ? GODOT_FLIP_V : 0) | (flags & TILE_FLIP_D ? GODOT_TRANSPOSE : 0);
 }
 
-/** A Godot 4 TileSet with one atlas source cut from the picture. Animated tiles keep their frames and timing. */
+const gdPoints = (pts: { x: number; y: number }[]) => `PackedVector2Array(${pts.map((p) => `${gdNum(p.x)}, ${gdNum(p.y)}`).join(', ')})`;
+const gdNum = (n: number) => String(Math.round(n * 10000) / 10000);
+const gdColor = (hex: string) => {
+  const c = [1, 3, 5].map((i) => Math.round((parseInt(hex.slice(i, i + 2), 16) / 255) * 10000) / 10000);
+  return `Color(${c.join(', ')}, 1)`;
+};
+const gdValue = (type: string, v: TileDataValue): string => (type === 'bool' ? String(!!v) : type === 'string' ? gdString(String(v)) : type === 'int' ? String(Math.round(Number(v))) : gdFloat(Number(v)));
+
+/** The lines of one tile's data that follow `x:y/0 = 0`: its terrain, shapes and values. */
+function godotTileData(at: string, tile: Tile, ts: Tileset, scale: number): string[] {
+  const out: string[] = [];
+  const mode = modeOf(ts);
+  const terrains = ts.terrains ?? [];
+  const index = (id: number) => terrains.findIndex((t) => t.id === id);
+  if (tile.terrain && index(tile.terrain.id) >= 0) {
+    out.push(`${at}/0/terrain_set = 0`, `${at}/0/terrain = ${index(tile.terrain.id)}`);
+  }
+  const polys = tile.collision ? godotPolygons(tile.collision, ts.tileWidth, ts.tileHeight, scale) : [];
+  polys.forEach((pts, i) => {
+    out.push(`${at}/0/physics_layer_0/polygon_${i}/points = ${gdPoints(pts)}`);
+    if (tile.collision?.oneWay) out.push(`${at}/0/physics_layer_0/polygon_${i}/one_way = true`);
+  });
+  if (tile.terrain && index(tile.terrain.id) >= 0) {
+    for (const p of PEERING) {
+      const id = tile.terrain.bits?.[p.bit];
+      if (id !== undefined && index(id) >= 0 && modeUses(mode, p.bit)) out.push(`${at}/0/terrains_peering_bit/${GODOT_BIT[p.bit]} = ${index(id)}`);
+    }
+  }
+  (ts.dataLayers ?? []).forEach((l, i) => {
+    const v = tile.data?.[l.name];
+    if (v !== undefined) out.push(`${at}/0/custom_data_${i} = ${gdValue(l.type, v)}`);
+  });
+  return out;
+}
+
+/** A Godot 4 TileSet with one atlas source cut from the picture. Animated tiles keep their frames and timing. Shapes, custom values and terrains become its physics layer, custom data layers and terrain set. */
 export function godotTileSet(atlas: TileAtlas, texturePath: string, fps: number): string {
   const out: string[] = [];
+  const ts = atlas.tileset;
   out.push('[gd_resource type="TileSet" load_steps=3 format=3]', '');
   out.push(`[ext_resource type="Texture2D" path=${gdString(texturePath)} id="1_tiles"]`, '');
   out.push('[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_1"]');
@@ -156,9 +197,17 @@ export function godotTileSet(atlas: TileAtlas, texturePath: string, fps: number)
       t.frames.forEach((f, i) => out.push(`${at}/animation_frame_${i}/duration = ${gdFloat(f.duration / Math.max(1, fps))}`));
     }
     out.push(`${at}/0 = 0`);
+    const tile = ts ? findTile(ts, t.key) : undefined;
+    if (ts && tile) out.push(...godotTileData(at, tile, ts, atlas.scale ?? 1));
   }
   out.push('', '[resource]');
   out.push(`tile_size = Vector2i(${atlas.tileWidth}, ${atlas.tileHeight})`);
+  if (ts && ts.tiles.some((t) => t.collision?.shapes.some(validShape))) out.push('physics_layer_0/collision_layer = 1');
+  if (ts?.terrains?.length) {
+    out.push(`terrain_set_0/mode = ${GODOT_MODE[modeOf(ts)]}`);
+    ts.terrains.forEach((t, i) => out.push(`terrain_set_0/terrain_${i}/name = ${gdString(t.name)}`, `terrain_set_0/terrain_${i}/color = ${gdColor(t.color)}`));
+  }
+  (ts?.dataLayers ?? []).forEach((l, i) => out.push(`custom_data_layer_${i}/name = ${gdString(l.name)}`, `custom_data_layer_${i}/type = ${GODOT_DATA_TYPE[l.type]}`));
   out.push('sources/0 = SubResource("TileSetAtlasSource_1")', '');
   return out.join('\n');
 }
@@ -229,11 +278,41 @@ function tiledGid(atlas: TileAtlas, v: number, firstGid: number, where: Map<numb
   return ((firstGid + localId(atlas, slot.col, slot.row)) | cellFlags(v)) >>> 0;
 }
 
+/** A tile's custom values (and its terrain and one-way flag) as Tiled properties. */
+function tiledProperties(ts: Tileset | undefined, tile: Tile | undefined): { name: string; type: string; value: TileDataValue }[] {
+  if (!ts || !tile) return [];
+  const out: { name: string; type: string; value: TileDataValue }[] = [];
+  for (const l of ts.dataLayers ?? []) {
+    const v = tile.data?.[l.name];
+    if (v !== undefined) out.push({ name: l.name, type: l.type === 'bool' ? 'bool' : l.type === 'int' ? 'int' : l.type === 'float' ? 'float' : 'string', value: v });
+  }
+  const terrain = ts.terrains?.find((t) => t.id === tile.terrain?.id);
+  if (terrain) out.push({ name: 'terrain', type: 'string', value: terrain.name });
+  if (tile.collision?.oneWay) out.push({ name: 'oneWay', type: 'bool', value: true });
+  return out;
+}
+
+/** A tile's shapes as the object layer Tiled keeps its collision in, in the picture's pixels. */
+function tiledCollision(tile: Tile, ts: Tileset, scale: number): object | undefined {
+  const shapes = (tile.collision?.shapes ?? []).filter(validShape);
+  if (!shapes.length) return undefined;
+  const objects = shapes.map((s, i) => {
+    const base = { id: i + 1, name: '', type: '', rotation: 0, visible: true };
+    if (s.kind === 'box') return { ...base, x: s.x * scale, y: s.y * scale, width: s.w * scale, height: s.h * scale };
+    const pts = shapePoints(s);
+    return { ...base, x: 0, y: 0, polygon: pts.map((p) => ({ x: p.x * scale, y: p.y * scale })) };
+  });
+  return { draworder: 'index', id: shapes.length + 2, name: '', opacity: 1, type: 'objectgroup', visible: true, x: 0, y: 0, objects };
+}
+
 export function tiledTileset(atlas: TileAtlas, o: { name: string; image: string; fps: number }): object {
   const tiles: object[] = [];
   for (const t of atlas.tiles) {
     const f0 = t.frames[0];
-    const entry: Record<string, unknown> = { id: localId(atlas, f0.col, f0.row), properties: [{ name: 'name', type: 'string', value: t.name }] };
+    const tile = atlas.tileset ? findTile(atlas.tileset, t.key) : undefined;
+    const entry: Record<string, unknown> = { id: localId(atlas, f0.col, f0.row), properties: [{ name: 'name', type: 'string', value: t.name }, ...tiledProperties(atlas.tileset, tile)] };
+    const group = tile && atlas.tileset ? tiledCollision(tile, atlas.tileset, atlas.scale ?? 1) : undefined;
+    if (group) entry.objectgroup = group;
     if (t.frames.length > 1) entry.animation = t.frames.map((f) => ({ tileid: localId(atlas, f.col, f.row), duration: Math.round((f.duration * 1000) / Math.max(1, o.fps)) }));
     tiles.push(entry);
   }
@@ -301,10 +380,21 @@ export function tilesetJson(atlas: TileAtlas, o: { image: string; fps: number; m
     margin: atlas.margin,
     spacing: atlas.spacing,
     fps: o.fps,
-    tiles: atlas.tiles.map((t) => ({
-      name: t.name,
-      frames: t.frames.map((f) => ({ x: atlas.margin + f.col * (atlas.tileWidth + atlas.spacing), y: atlas.margin + f.row * (atlas.tileHeight + atlas.spacing), duration: f.duration })),
-    })),
+    ...(atlas.tileset?.dataLayers?.length ? { dataLayers: atlas.tileset.dataLayers } : {}),
+    ...(atlas.tileset?.terrains?.length ? { terrains: atlas.tileset.terrains.map((t) => ({ name: t.name, color: t.color })), terrainMode: modeOf(atlas.tileset) } : {}),
+    tiles: atlas.tiles.map((t) => {
+      const tile = atlas.tileset ? findTile(atlas.tileset, t.key) : undefined;
+      const terrains = atlas.tileset?.terrains ?? [];
+      const nameOf = (id: number) => terrains.find((x) => x.id === id)?.name;
+      const own = tile?.terrain ? nameOf(tile.terrain.id) : undefined;
+      return {
+        name: t.name,
+        frames: t.frames.map((f) => ({ x: atlas.margin + f.col * (atlas.tileWidth + atlas.spacing), y: atlas.margin + f.row * (atlas.tileHeight + atlas.spacing), duration: f.duration })),
+        ...(tile?.collision?.shapes.length ? { collision: { oneWay: !!tile.collision.oneWay, shapes: tile.collision.shapes.map((s) => (s.kind === 'box' ? { type: 'box', x: s.x, y: s.y, width: s.w, height: s.h } : { type: 'polygon', points: s.points })) } } : {}),
+        ...(tile?.data ? { data: tile.data } : {}),
+        ...(own ? { terrain: { name: own, edges: Object.fromEntries(Object.entries(tile!.terrain!.bits ?? {}).map(([k, v]) => [k, nameOf(v as number)]).filter(([, v]) => v)) } } : {}),
+      };
+    }),
     cellFormat: '0 is empty. Otherwise the tile number (1 is the first tile) plus flags: 2^31 mirrored left to right, 2^30 mirrored top to bottom, 2^29 swapped across the diagonal.',
     maps: o.maps.map(({ layer, map }) => ({ name: layer.name, columns: map?.columns ?? 0, rows: map?.rows ?? 0, visible: layer.visible, opacity: layer.opacity, cells: map ? Array.from(map.cells, cell) : [] })),
   };

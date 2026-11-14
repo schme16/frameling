@@ -13,6 +13,7 @@ import { toast } from '../ui/toast';
 import { sharedEditNote } from '../artboards/variations';
 import { findTile } from './model';
 import { getTileUi, setTileUi } from './state';
+import { TILE_PROPS_EXT, propsInExt, propsOf, writeProps } from './props';
 
 const TAG = 'tile:';
 
@@ -61,6 +62,8 @@ export function tileDocument(parent: Doc, key: number): Doc | null {
     clips: [],
     markers: [],
     swatches: parent.swatches,
+    // The tile's shapes, values and terrain, edited here with the picture and put back with it.
+    ext: { [TILE_PROPS_EXT]: propsOf(tile) },
   };
 }
 
@@ -85,6 +88,8 @@ export function applyTileDoc(doc: Doc | Draft<Doc>, key: number, sub: Doc): void
   const ts = doc.tileset;
   const tile = ts?.tiles.find((t) => t.key === key);
   if (!ts || !tile) return;
+  const props = propsInExt(sub.ext);
+  if (props) writeProps(tile, props);
   const { frames, drawings } = framesFromTileDoc(sub, ts.tileWidth, ts.tileHeight);
   if (!frames.length) return;
   const same = frames.length === tile.frames.length && frames.every((f, i) => f.drawingId === tile.frames[i].drawingId && f.duration === tile.frames[i].duration);
@@ -127,7 +132,7 @@ export function finishTileEdit(): void {
   const sub = store().exitNested();
   if (!sub) return;
   // The canvas refits for the document coming back; put the view back where it was instead.
-  store().setUi({ zoom: back.zoom, panX: back.panX, panY: back.panY });
+  store().setUi({ zoom: back.zoom, panX: back.panX, panY: back.panY, ...(store().get().ui.tool === 'tile-shape' ? { tool: 'tile-brush' } : {}) });
   const name = findTile(store().get().doc.tileset, key)?.name ?? 'tile';
   store().update(`Edit tile "${name}"`, (d) => applyTileDoc(d as Doc, key, sub));
 }
