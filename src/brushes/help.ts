@@ -19,4 +19,13 @@ registerHelpTopics([
     summary: 'Give a line a hand-made feel: chalk, charcoal, a watercolour edge, or a shape repeated along it. Or make a brush from your own drawing.',
     keywords: ['brush', 'tip', 'tips', 'texture', 'textured', 'chalk', 'charcoal', 'watercolour', 'watercolor', 'grain', 'rough', 'stamp', 'stamps', 'leaf', 'star', 'custom brush', 'pixel brush', 'brush from selection', 'make a brush', 'sketch', 'wash', 'paper'],
   },
+  {
+    id: 'brush-picker',
+    order: 8.1,
+    media: 'brush-picker.mp4',
+    title: 'The brush picker: find a brush in a big library',
+    section: 'Drawing',
+    summary: 'One button drops down every brush with a stroke across it. Search, groups, favourites and recent keep even hundreds of brushes quick to reach.',
+    keywords: ['brush picker', 'picker', 'dropdown', 'drop down', 'brush library', 'many brushes', 'hundreds of brushes', 'brush pack', 'search brushes', 'groups', 'folders', 'favourites', 'favorites', 'star', 'recent brushes', 'two columns', 'row size', 'brush list', 'choose a brush', 'alt+p'],
+  },
 ]);

@@ -1021,6 +1021,8 @@ npm run help:media -- --entries scripts/docs/ab --out brand/ab/<topic>   # the e
 
 `scripts/docs/ab-psd-text/psd-text.cjs` is another: the same Photoshop file (`scripts/docs/help/assets/import-text.psd`, made by `scripts/fixtures/make-text-fixture.ts` with ImageMagick) brought in, with the title selected and the left-out list open. Run it once with `--renderer` pointing at a build of the base commit and once without, for the before and after.
 
+`scripts/docs/ab-brush-picker-built/built.cjs` shoots the finished brush picker against a made-up pack of 148 brushes (`scripts/docs/help/_library.cjs`, added through `__brushes.addFromText`, which only exists with `?debug`) in each state: at rest, one group open, Recent, Favourites, every group folded, searching, two columns resized. The brush-picker help clip uses the same pack.
+
 `scripts/docs/ab/shape-tools.cjs` is such a folder for combining shapes (before and after, all four operations) and Hold to
 tidy (snapping, slow drawing that is left alone, undo giving the line back). `scripts/ab/shape-tools-files.cjs` is its
 own Electron script: the dashes, arrow heads and tapered lines on screen beside what the PNG, SVG, PDF and Lottie exports

@@ -1,45 +1,8 @@
-/* The saved-brush row in the brush options. Theme tokens only. */
+/* The saved-brush row in the brush options (the picker itself is in picker.css). Theme tokens only. */
 .bp-row {
   display: flex;
   flex-direction: column;
   gap: 8px;
-}
-.bp-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-.bp-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  max-width: 100%;
-  padding: 3px 9px 3px 7px;
-  border-radius: 999px;
-  border: 1px solid var(--line);
-  background: var(--raised);
-  color: inherit;
-  font-size: var(--fs-small);
-  font-weight: 600;
-  cursor: pointer;
-}
-.bp-chip:hover {
-  background: var(--hover-bg);
-}
-.bp-chip[data-on='true'] {
-  background: var(--chosen-bg);
-  color: var(--chosen-fg);
-}
-.bp-chip-name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.bp-dot {
-  flex: none;
-  border-radius: 50%;
-  background: currentColor;
-  opacity: 0.85;
 }
 .bp-changed {
   flex: none;
@@ -68,6 +31,9 @@
   font-size: var(--fs-small);
   font-weight: 700;
   color: var(--muted);
+}
+.bp-name-label small {
+  font-weight: 500;
 }
 .bp-name-label input {
   font: inherit;

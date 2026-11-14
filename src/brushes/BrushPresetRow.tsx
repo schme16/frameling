@@ -1,4 +1,4 @@
-// The row of saved brushes at the top of the brush options: pick one, save the one you are using, update or delete it.
+// The saved brushes at the top of the brush options: the picker, and saving, updating, renaming and deleting the one you are using.
 import { useEffect, useRef, useState } from 'react';
 import { ActionButton } from '../canvas/controls';
 import { useStore } from '../core/store';
@@ -23,14 +23,14 @@ import {
   updateActive,
   useBrushPresets,
 } from './presets';
-import { useMockRow } from './mockSlot';
+import { BrushPicker } from './BrushPicker';
+import { groupNames, MAX_GROUP } from './library';
 import './brushes.css';
-
-/** The dot beside a name: as wide as the brush, up to a point, so the row can be read at a glance. */
-export const dotSize = (size: number): number => Math.round(Math.min(14, Math.max(4, 3 + size * 0.35)));
 
 function NameField({ mode }: { mode: 'save' | 'rename' }) {
   const [name, setName] = useState(() => (mode === 'rename' ? currentName() : suggestName()));
+  // A new brush goes in the group of the one you have picked; renaming keeps its group unless you change it.
+  const [group, setGroup] = useState(() => activeOwn()?.group ?? '');
   const ref = useRef<HTMLInputElement>(null);
   useEffect(() => {
     ref.current?.focus();
@@ -38,8 +38,8 @@ function NameField({ mode }: { mode: 'save' | 'rename' }) {
   }, []);
   const go = () => {
     if (!cleanName(name)) return;
-    if (mode === 'save') saveCurrentAs(name);
-    else renameActive(name);
+    if (mode === 'save') saveCurrentAs(name, group);
+    else renameActive(name, group);
   };
   return (
     <form
@@ -64,6 +64,28 @@ function NameField({ mode }: { mode: 'save' | 'rename' }) {
           }}
         />
       </label>
+      <label className="bp-name-label">
+        <span>
+          Group <small>(optional)</small>
+        </span>
+        <input
+          type="text"
+          value={group}
+          list="bp-groups"
+          maxLength={MAX_GROUP}
+          placeholder="My brushes"
+          onChange={(e) => setGroup(e.target.value)}
+          onKeyDown={(e) => {
+            e.stopPropagation();
+            if (e.key === 'Escape') startNaming(null);
+          }}
+        />
+        <datalist id="bp-groups">
+          {groupNames(everyBrush()).map((g) => (
+            <option key={g} value={g} />
+          ))}
+        </datalist>
+      </label>
       <div className="bp-name-go">
         <ActionButton onClick={go} disabled={!cleanName(name)}>
           {mode === 'save' ? 'Save' : 'Rename'}
@@ -83,44 +105,18 @@ const suggestName = (): string => {
   }
 };
 
-/** The saved brushes. With ?debug a layout mockup can stand in for it (brand/ab/brush-library). */
+/** The saved brushes: the picker, then what you can do to the one you are using. */
 export function BrushPresetRow() {
-  const mock = useMockRow();
-  return mock ? <>{mock()}</> : <RealBrushPresetRow />;
-}
-
-function RealBrushPresetRow() {
   // Redraw when the brush in use or the list changes.
   useStore((s) => s.ui.brush);
   useBrushPresets(brushesVersion);
-  const all = everyBrush();
   const mode = useBrushPresets(namingMode);
-  const { activeId, changed } = currentBrushState();
+  const { changed } = currentBrushState();
   const own = activeOwn();
   const full = myBrushes().length >= MAX_PRESETS;
   return (
     <div className="bp-row" data-testid="brush-presets">
-      <div className="bp-chips" role="group" aria-label="Saved brushes">
-        {all.map((p) => {
-          const on = p.id === activeId;
-          return (
-            <button
-              key={p.id}
-              type="button"
-              className="bp-chip"
-              data-on={on}
-              data-changed={on && changed}
-              aria-pressed={on}
-              title={on && changed ? `${p.name}, changed since you picked it. Update keeps the change.` : p.builtin ? `${p.name}, comes with Frameling` : p.name}
-              onClick={() => applyPreset(p.id)}
-            >
-              <span className="bp-dot" style={{ width: dotSize(p.brush.size), height: dotSize(p.brush.size) }} />
-              <span className="bp-chip-name">{p.name}</span>
-              {on && changed && <span className="bp-changed" aria-label="changed" />}
-            </button>
-          );
-        })}
-      </div>
+      <BrushPicker />
       {mode ? (
         <NameField key={mode} mode={mode} />
       ) : (

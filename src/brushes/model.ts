@@ -5,6 +5,7 @@ import { DEFAULT_BRUSH } from '../core/doc';
 import type { BrushSettings } from '../core/format';
 import { brushFrom } from '../core/uiMemory';
 import { defaultTip, sameTip } from '../geometry/tip';
+import { cleanGroup } from './library';
 
 /** Which tool a brush came from. Only the brush for now; the field is there so more can follow without a new format. */
 export type PresetTool = 'brush';
@@ -16,15 +17,18 @@ export interface BrushPreset {
   brush: BrushSettings;
   /** One of the starters that come with Frameling: it can be picked and copied, never changed or deleted. */
   builtin?: boolean;
+  /** The group it sits in in the picker (see library.ts). Left out means "My brushes". */
+  group?: string;
 }
 
-export const MAX_PRESETS = 100;
+/** How many brushes of your own you can keep. A paid brush pack runs to a few hundred; the picker only draws open groups. */
+export const MAX_PRESETS = 1000;
 export const MAX_NAME = 40;
 export const BRUSHES_FORMAT = 'frameling-brushes';
 export const BRUSHES_VERSION = 1;
 export const BRUSHES_EXT = '.frameling-brushes.json';
-/** Bigger than this isn't a brush file. */
-export const MAX_BRUSHES_BYTES = 256 * 1024;
+/** Bigger than this isn't a brush file (1000 brushes with names and groups come to about 400 KB). */
+export const MAX_BRUSHES_BYTES = 1024 * 1024;
 
 const make = (id: string, name: string, brush: Partial<BrushSettings>): BrushPreset => ({ id: `starter:${id}`, name, tool: 'brush', builtin: true, brush: { ...DEFAULT_BRUSH, ...brush } });
 
@@ -77,7 +81,8 @@ export function sanitizePreset(raw: unknown, id: string): BrushPreset | null {
   if (r.tool !== undefined && r.tool !== 'brush') return null;
   const brush = brushFrom(r.brush, DEFAULT_BRUSH);
   if (!brush) return null;
-  return { id, name, tool: 'brush', brush };
+  const group = cleanGroup(r.group);
+  return group ? { id, name, tool: 'brush', brush, group } : { id, name, tool: 'brush', brush };
 }
 
 /** Reads a saved list. Damaged entries are left out, names are made unique, and the list is held to its limit. */
@@ -104,17 +109,36 @@ export type SaveResult = { list: BrushPreset[]; preset: BrushPreset; replaced: b
  * Saves a brush under a name. A name you already used replaces that brush (the same id, so it stays where it was);
  * a name a starter has gets a number after it. Returns null when the name is empty or the list is full.
  */
-export function savePreset(list: readonly BrushPreset[], name: string, brush: BrushSettings, newId: string): SaveResult | null {
+export function savePreset(list: readonly BrushPreset[], name: string, brush: BrushSettings, newId: string, group?: string): SaveResult | null {
   const clean = cleanName(name);
   if (!clean) return null;
   const mineSame = list.find((p) => same(p.name, clean));
   if (mineSame) {
     const preset = { ...mineSame, brush: { ...brush } };
+    if (group !== undefined) setGroup(preset, group);
     return { list: list.map((p) => (p === mineSame ? preset : p)), preset, replaced: true };
   }
   if (list.length >= MAX_PRESETS) return null;
   const preset: BrushPreset = { id: newId, name: uniqueName(clean, STARTERS.map((s) => s.name)), tool: 'brush', brush: { ...brush } };
+  setGroup(preset, group);
   return { list: [...list, preset], preset, replaced: false };
+}
+
+/** Puts a brush in a group (or back in "My brushes" when the group is empty or is that name). */
+function setGroup(p: BrushPreset, raw: string | undefined): void {
+  const g = cleanGroup(raw);
+  if (g) p.group = g;
+  else delete p.group;
+}
+
+/** Moves a saved brush to a group. An empty group puts it back in "My brushes". Starters stay where they are. */
+export function movePreset(list: readonly BrushPreset[], id: string, group: string): BrushPreset[] {
+  return list.map((p) => {
+    if (p.id !== id) return p;
+    const next = { ...p };
+    setGroup(next, group);
+    return next;
+  });
 }
 
 /** Puts a brush into a saved one, keeping its name. Starters are left alone. */
@@ -167,14 +191,14 @@ export function stepPreset(all: readonly BrushPreset[], activeId: string | null,
 
 /** The text to save or copy for these brushes (the starters are never in it: everyone has them). */
 export function brushesToText(list: readonly BrushPreset[]): string {
-  const presets = list.filter((p) => !p.builtin).map((p) => ({ name: p.name, tool: p.tool, brush: p.brush }));
+  const presets = list.filter((p) => !p.builtin).map((p) => (p.group ? { name: p.name, tool: p.tool, brush: p.brush, group: p.group } : { name: p.name, tool: p.tool, brush: p.brush }));
   return JSON.stringify({ format: BRUSHES_FORMAT, version: BRUSHES_VERSION, presets }, null, 2);
 }
 
 /** A file name for a shared set: "my-brushes.frameling-brushes.json". */
 export const brushesFileName = (): string => `my-brushes${BRUSHES_EXT}`;
 
-export type ParseResult = { ok: true; presets: { name: string; brush: BrushSettings }[]; skipped: number } | { ok: false; error: string };
+export type ParseResult = { ok: true; presets: { name: string; brush: BrushSettings; group?: string }[]; skipped: number } | { ok: false; error: string };
 
 /** Reads brushes out of text (a file's or what was pasted). Nothing in it is trusted. */
 export function parseBrushesText(text: unknown): ParseResult {
@@ -190,11 +214,11 @@ export function parseBrushesText(text: unknown): ParseResult {
   if (!f || typeof f !== 'object' || f.format !== BRUSHES_FORMAT) return { ok: false, error: 'That is not a set of Frameling brushes.' };
   if (typeof f.version === 'number' && f.version > BRUSHES_VERSION) return { ok: false, error: 'Those brushes are from a newer Frameling. Update Frameling to use them.' };
   if (!Array.isArray(f.presets)) return { ok: false, error: 'There are no brushes in that.' };
-  const presets: { name: string; brush: BrushSettings }[] = [];
+  const presets: { name: string; brush: BrushSettings; group?: string }[] = [];
   let skipped = 0;
   for (const item of f.presets) {
     const p = presets.length < MAX_PRESETS ? sanitizePreset(item, 'in') : null;
-    if (p) presets.push({ name: p.name, brush: p.brush });
+    if (p) presets.push(p.group ? { name: p.name, brush: p.brush, group: p.group } : { name: p.name, brush: p.brush });
     else skipped++;
   }
   if (!presets.length) return { ok: false, error: 'There are no brushes in that.' };
@@ -202,12 +226,14 @@ export function parseBrushesText(text: unknown): ParseResult {
 }
 
 /** Adds shared brushes to your list under fresh ids, with names that don't clash. Stops at the limit. */
-export function addShared(list: readonly BrushPreset[], incoming: readonly { name: string; brush: BrushSettings }[], newId: () => string): { list: BrushPreset[]; added: number } {
+export function addShared(list: readonly BrushPreset[], incoming: readonly { name: string; brush: BrushSettings; group?: string }[], newId: () => string): { list: BrushPreset[]; added: number } {
   const out = [...list];
   let added = 0;
   for (const it of incoming) {
     if (out.length >= MAX_PRESETS) break;
-    out.push({ id: newId(), name: uniqueName(it.name, allPresets(out).map((p) => p.name)), tool: 'brush', brush: { ...it.brush } });
+    const p: BrushPreset = { id: newId(), name: uniqueName(it.name, allPresets(out).map((p) => p.name)), tool: 'brush', brush: { ...it.brush } };
+    setGroup(p, it.group);
+    out.push(p);
     added++;
   }
   return { list: out, added };
