@@ -3,7 +3,8 @@
 // No DOM and no fs here: scripts/build-mascot.mjs does the disk, test/io/mascot-source.test.ts checks the maths.
 import { gridPixels } from '../../src/core/pixelBounds';
 import { celAt } from '../../src/core/doc';
-import type { Cel, Clip, Doc, Layer, PixelDrawing, PixelLayer, Swatch } from '../../src/core/format';
+import { artboardDoc, artboardsOf, arrangeArtboards, contentOf, hasArtboards, nextSpot, putContent } from '../../src/artboards/model';
+import type { Artboard, ArtboardContent, Cel, Clip, Doc, Layer, PixelDrawing, PixelLayer, Swatch } from '../../src/core/format';
 import { FORMAT_VERSION } from '../../src/core/format';
 import type { RawImage } from '../../src/io/png';
 import type { Sheet, SheetAnim } from '../../src/ui/mascot/timing';
@@ -132,57 +133,136 @@ function flatten(doc: Doc, layers: PixelLayer[], cels: (Cel | undefined)[]): Raw
   return img;
 }
 
+/** One animation's worth of timeline: a whole document, or one artboard of one. */
+interface Board {
+  /** The document as that board sees it: its own timeline over the shared layers. */
+  doc: Doc;
+  /** Names the animation when the board has no clip of its own. */
+  name: string;
+}
+
+type PlainClip = Pick<Clip, 'name' | 'start' | 'end' | 'loop'>;
+
 /**
- * Builds the sheet: one animation per clip (in the document's clip order), one sheet frame per unique combination of
- * drawings, laid out left to right in order of first use. A frame lasts as long as its cels stay the same, so an
- * exposure of 50 frames at 100 fps is one 500 ms frame. With no clips, the whole document is one animation, "idle".
+ * The animations on one board. A board with one clip across all of it is one animation named after the artboard, so
+ * renaming the artboard or duplicating it (the copy is "wave 2" but its clip is still "wave") does what it looks like.
+ * A board with no clip is one looping animation named after it, and a document with neither is "idle".
+ */
+function clipsOf(board: Board, named: boolean): PlainClip[] {
+  const b = board.doc;
+  if (!b.clips.length) return [{ name: board.name, start: 0, end: b.length - 1, loop: true }];
+  const [only] = b.clips;
+  if (named && b.clips.length === 1 && only.start === 0 && only.end === b.length - 1) return [{ ...only, name: board.name }];
+  return b.clips;
+}
+
+/** The boards the sheet is built from, in order: each artboard, or the document itself when it has none. */
+function boardsOf(doc: Doc): Board[] {
+  if (!hasArtboards(doc)) return [{ doc, name: 'idle' }];
+  return artboardsOf(doc).map((a) => ({ doc: artboardDoc(doc, a.id), name: a.name }));
+}
+
+/**
+ * Builds the sheet: one animation per clip, walking the artboards in their order and each artboard's clips in theirs
+ * (a document without artboards is just one board). An artboard with one clip across all of it is named after the artboard. One sheet frame per unique combination of drawings, laid out left to
+ * right in order of first use, across every board. A frame lasts as long as its cels stay the same, so an exposure of 50
+ * frames at 100 fps is one 500 ms frame. A board with no clips is one looping animation named after the artboard, and a
+ * document with neither is "idle".
  */
 export function docToSheet(doc: Doc, columns = SHEET_COLUMNS): BuiltSheet {
   const warnings: string[] = [];
-  const layers = sourceLayers(doc, warnings);
-  const clips: Pick<Clip, 'name' | 'start' | 'end' | 'loop'>[] = doc.clips.length ? doc.clips : [{ name: 'idle', start: 0, end: doc.length - 1, loop: true }];
+  const boards = boardsOf(doc);
+  const { width, height } = boards[0].doc;
 
   const tiles: RawImage[] = [];
   const tileOf = new Map<string, number>();
   const anims: Record<string, SheetAnim> = {};
-  const msPerFrame = 1000 / doc.fps;
 
-  for (const clip of clips) {
-    if (anims[clip.name]) warnings.push(`Two clips are called "${clip.name}". Only the first one was used.`);
-    if (anims[clip.name] || clip.end < clip.start) continue;
-    const frames: { tile: number; length: number; key: string }[] = [];
-    for (let f = clip.start; f <= clip.end; f++) {
-      const cels = layers.map((l) => celAt(l, f));
-      // A new sheet frame starts wherever any layer moves on to another cel.
-      const key = cels.map((c) => c?.id ?? '-').join('|');
-      const last = frames[frames.length - 1];
-      if (last && last.key === key) {
-        last.length++;
-        continue;
-      }
-      const look = cels.map((c) => c?.drawingId ?? '-').join('|');
-      let tile = tileOf.get(look);
-      if (tile === undefined) {
-        tile = tiles.length;
-        tiles.push(flatten(doc, layers, cels));
-        tileOf.set(look, tile);
-      }
-      frames.push({ tile, length: 1, key });
+  for (const board of boards) {
+    const b = board.doc;
+    if (b.width !== width || b.height !== height) {
+      warnings.push(`The artboard "${board.name}" is ${b.width} x ${b.height}, not ${width} x ${height} like the first one, so it was left out.`);
+      continue;
     }
-    anims[clip.name] = {
-      loop: !!clip.loop,
-      frames: frames.map((fr) => {
-        const exact = fr.length * msPerFrame;
-        const ms = Math.max(1, Math.round(exact));
-        if (Math.abs(ms - exact) > 1e-6) warnings.push(`A frame in "${clip.name}" lasts ${exact.toFixed(2)} ms, which was rounded to ${ms} ms.`);
-        return { x: (fr.tile % columns) * doc.width, y: Math.floor(fr.tile / columns) * doc.height, ms };
-      }),
-    };
+    const layers = sourceLayers(b, warnings);
+    const clips = clipsOf(board, hasArtboards(doc));
+    const msPerFrame = 1000 / b.fps;
+
+    for (const clip of clips) {
+      if (anims[clip.name]) warnings.push(`Two clips are called "${clip.name}". Only the first one was used.`);
+      if (anims[clip.name] || clip.end < clip.start) continue;
+      const frames: { tile: number; length: number; key: string }[] = [];
+      for (let f = clip.start; f <= clip.end; f++) {
+        const cels = layers.map((l) => celAt(l, f));
+        // A new sheet frame starts wherever any layer moves on to another cel.
+        const key = cels.map((c) => c?.id ?? '-').join('|');
+        const last = frames[frames.length - 1];
+        if (last && last.key === key) {
+          last.length++;
+          continue;
+        }
+        const look = cels.map((c) => c?.drawingId ?? '-').join('|');
+        let tile = tileOf.get(look);
+        if (tile === undefined) {
+          tile = tiles.length;
+          tiles.push(flatten(b, layers, cels));
+          tileOf.set(look, tile);
+        }
+        frames.push({ tile, length: 1, key });
+      }
+      anims[clip.name] = {
+        loop: !!clip.loop,
+        frames: frames.map((fr) => {
+          const exact = fr.length * msPerFrame;
+          const ms = Math.max(1, Math.round(exact));
+          if (Math.abs(ms - exact) > 1e-6) warnings.push(`A frame in "${clip.name}" lasts ${exact.toFixed(2)} ms, which was rounded to ${ms} ms.`);
+          return { x: (fr.tile % columns) * width, y: Math.floor(fr.tile / columns) * height, ms };
+        }),
+      };
+    }
   }
 
-  const image = blankImage(columns * doc.width, Math.max(1, Math.ceil(tiles.length / columns)) * doc.height);
-  tiles.forEach((t, i) => paste(image, t, (i % columns) * doc.width, Math.floor(i / columns) * doc.height));
-  return { image, meta: { frameW: doc.width, frameH: doc.height, anims }, warnings };
+  const image = blankImage(columns * width, Math.max(1, Math.ceil(tiles.length / columns)) * height);
+  tiles.forEach((t, i) => paste(image, t, (i % columns) * width, Math.floor(i / columns) * height));
+  return { image, meta: { frameW: width, frameH: height, anims }, warnings: [...new Set(warnings)] };
+}
+
+// ---------------------------------------------------------------- comparing two sheets
+
+/**
+ * What differs between two built sheets, in plain words, frame by frame: the animations and their order, each frame's tile
+ * and hold, and each frame's pixels. An empty list means the sheets are the same. `frames` counts the frames compared.
+ */
+export function compareSheets(a: { image: RawImage; meta: Sheet }, b: { image: RawImage; meta: Sheet }): { differences: string[]; frames: number } {
+  const out: string[] = [];
+  let frames = 0;
+  const names = Object.keys(a.meta.anims);
+  const others = Object.keys(b.meta.anims);
+  if (names.join('|') !== others.join('|')) out.push(`the animations are ${names.join(', ')} against ${others.join(', ')}`);
+  if (a.meta.frameW !== b.meta.frameW || a.meta.frameH !== b.meta.frameH) out.push(`the frames are ${a.meta.frameW} x ${a.meta.frameH} against ${b.meta.frameW} x ${b.meta.frameH}`);
+  else {
+    for (const name of names) {
+      const x = a.meta.anims[name];
+      const y = b.meta.anims[name];
+      if (!y) continue;
+      if (!!x.loop !== !!y.loop) out.push(`"${name}" ${x.loop ? 'loops' : 'plays once'} against ${y.loop ? 'loops' : 'plays once'}`);
+      if (x.frames.length !== y.frames.length) {
+        out.push(`"${name}" has ${x.frames.length} frames against ${y.frames.length}`);
+        continue;
+      }
+      x.frames.forEach((f, i) => {
+        frames++;
+        const g = y.frames[i];
+        if (f.x !== g.x || f.y !== g.y) out.push(`"${name}" frame ${i + 1} is on tile ${f.x},${f.y} against ${g.x},${g.y}`);
+        if (f.ms !== g.ms) out.push(`"${name}" frame ${i + 1} lasts ${f.ms} ms against ${g.ms}`);
+        const w = a.meta.frameW;
+        const h = a.meta.frameH;
+        if (!sameImage(crop(a.image, f.x, f.y, w, h), crop(b.image, g.x, g.y, w, h))) out.push(`"${name}" frame ${i + 1} looks different`);
+      });
+    }
+  }
+  if (!sameImage(a.image, b.image)) out.push('the sheet pictures are not the same');
+  return { differences: out, frames };
 }
 
 // ---------------------------------------------------------------- copying a clip
@@ -231,6 +311,143 @@ export function copyClip(doc: Doc, from: string, to: string): Clip {
   while (doc.clips.some((c) => c.id === clip.id)) clip.id += '-2';
   doc.clips.push(clip);
   return clip;
+}
+
+// ---------------------------------------------------------------- one artboard per animation
+
+const slugOf = (name: string): string => name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'copy';
+
+/** Artboards laid out in this many columns on the pasteboard, so thirteen of them read as a grid and not a long strip. */
+export const BOARD_COLUMNS = 5;
+
+/**
+ * Turns a document whose clips are end to end on one timeline into one artboard per clip, in clip order, named after the
+ * clip. The layers become one shared stack (sharedLayers), so a part is still one layer across every animation, and each
+ * artboard keeps only its own cels on it, starting at frame 1. Nothing is redrawn: the drawings stay shared exactly as
+ * they were, so the built sheet comes out the same. The first artboard is the open one. Throws, in plain words, when the
+ * document already has artboards or no clips.
+ */
+export function splitIntoArtboards(doc: Doc): void {
+  if (hasArtboards(doc) || doc.artboards?.length) throw new Error('This file already has artboards.');
+  if (!doc.clips.length) throw new Error('There are no clips to split into artboards.');
+  const seen = new Set<string>();
+  const used = new Set<string>();
+  const boards: Artboard[] = doc.clips.map((clip) => {
+    let slug = slugOf(clip.name);
+    while (used.has(slug)) slug += '-2';
+    used.add(slug);
+    const cels: Record<string, Cel[]> = {};
+    for (const layer of doc.layers) {
+      const mine: Cel[] = [];
+      for (const cel of layer.cels) {
+        const a = Math.max(cel.start, clip.start);
+        const b = Math.min(cel.start + cel.length - 1, clip.end);
+        if (b < a) continue;
+        // A cel that ran across two clips is one cel on each board, so give the second a name of its own.
+        let id = cel.id;
+        if (seen.has(id)) id = `${id}-${slug}`;
+        seen.add(id);
+        mine.push({ ...cel, id, start: a - clip.start, length: b - a + 1 });
+      }
+      if (mine.length) cels[layer.id] = mine;
+    }
+    const length = clip.end - clip.start + 1;
+    const content: ArtboardContent = { width: doc.width, height: doc.height, background: doc.background, length, layers: [], cels, clips: [{ ...clip, start: 0, end: length - 1 }], markers: [] };
+    return { id: `artboard-${slug}`, name: clip.name, x: 0, y: 0, content };
+  });
+  doc.sharedLayers = true;
+  doc.artboards = boards;
+  doc.activeArtboard = boards[0].id;
+  // The first one is open: its content is the document's own fields.
+  putContent(doc, boards[0].content!);
+  delete boards[0].content;
+  arrangeArtboards(doc, BOARD_COLUMNS);
+}
+
+/** One animation of a file, in the order it is built: its name, its length in frames, whether it loops, and where it lives. */
+export interface AnimationInfo {
+  name: string;
+  frames: number;
+  loop: boolean;
+  /** The artboard it is on, when the file has artboards. */
+  board?: string;
+}
+
+/** Every animation the sheet will hold, in order: each artboard's clips (or the artboard itself when it has none). */
+export function animationsOf(doc: Doc): AnimationInfo[] {
+  const out: AnimationInfo[] = [];
+  const boards = boardsOf(doc);
+  boards.forEach((b, i) => {
+    const board = hasArtboards(doc) ? artboardsOf(doc)[i].name : undefined;
+    for (const c of clipsOf(b, hasArtboards(doc))) out.push({ name: c.name, frames: c.end - c.start + 1, loop: !!c.loop, ...(board ? { board } : {}) });
+  });
+  return out;
+}
+
+/**
+ * Adds a copy of an animation to draw over, under a new name. With artboards that is a new artboard after the last one,
+ * with its own clone of every drawing it shows (a drawing shown twice stays one drawing), so painting on the copy never
+ * touches the original. Without artboards it is `copyClip`, a copy after the last frame. Returns where it went.
+ * Throws, in plain words, if the animation is missing or the name is taken.
+ */
+export function copyAnimation(doc: Doc, from: string, to: string): { name: string; board?: string; frames: number; layers: number } {
+  if (!hasArtboards(doc)) {
+    const clip = copyClip(doc, from, to);
+    return { name: clip.name, frames: clip.end - clip.start + 1, layers: doc.layers.filter((l) => l.cels.some((c) => c.start >= clip.start)).length };
+  }
+  if (!doc.sharedLayers) throw new Error('Copying an animation needs one stack of layers shared by every artboard.');
+  const list = artboardsOf(doc);
+  const src = list.find((a) => a.name === from) ?? list.find((a) => contentOf(doc, a.id)?.clips.some((c) => c.name === from));
+  if (!src) throw new Error(`There is no animation called "${from}". The animations are: ${animationsOf(doc).map((a) => a.name).join(', ')}.`);
+  const name = to.trim();
+  if (!name) throw new Error('Give the new animation a name.');
+  if (animationsOf(doc).some((a) => a.name.toLowerCase() === name.toLowerCase()) || list.some((a) => a.name.toLowerCase() === name.toLowerCase())) throw new Error(`There is already an animation called "${name}".`);
+  const slug = slugOf(name);
+  let boardId = `artboard-${slug}`;
+  while (list.some((a) => a.id === boardId)) boardId += '-2';
+  const content = contentOf(doc, src.id)!;
+  const celIds = new Set<string>();
+  const clipIds = new Set<string>();
+  for (const a of list) {
+    const c = contentOf(doc, a.id)!;
+    for (const cels of Object.values(c.cels ?? {})) for (const cel of cels) celIds.add(cel.id);
+    for (const clip of c.clips) clipIds.add(clip.id);
+  }
+  const cels: Record<string, Cel[]> = {};
+  let drawn = 0;
+  for (const layer of doc.layers) {
+    const mine = content.cels?.[layer.id];
+    if (!mine?.length) continue;
+    drawn++;
+    const clones = new Map<string, string>();
+    let n = 0;
+    cels[layer.id] = mine.map((cel) => {
+      let did = clones.get(cel.drawingId);
+      if (!did) {
+        const base = `${layer.id.replace(/^layer-/, '')}-${slug}`;
+        did = `${base}-${++n}`;
+        while (doc.drawings[did]) did = `${base}-${++n}`;
+        const d = doc.drawings[cel.drawingId];
+        if (d?.kind === 'pixel') doc.drawings[did] = { ...d, id: did, pixels: d.pixels.slice() };
+        else if (d) doc.drawings[did] = { ...d, id: did } as typeof d;
+        clones.set(cel.drawingId, did);
+      }
+      let cid = `${cel.id}-${slug}`;
+      while (celIds.has(cid)) cid += '-2';
+      celIds.add(cid);
+      return { ...cel, id: cid, drawingId: did };
+    });
+  }
+  const clips = content.clips.map((c) => {
+    let id = `clip-${slug}`;
+    while (clipIds.has(id)) id += '-2';
+    clipIds.add(id);
+    return { ...c, id, name: c.name === src.name || c.name === from ? name : `${name}-${c.name}` };
+  });
+  const spot = nextSpot(doc, content.width);
+  const copy: ArtboardContent = { width: content.width, height: content.height, background: content.background, length: content.length, layers: [], cels, clips, markers: content.markers.map((m) => ({ ...m })) };
+  list.push({ id: boardId, name, x: spot.x, y: spot.y, content: copy });
+  return { name, board: boardId, frames: content.length, layers: drawn };
 }
 
 // ---------------------------------------------------------------- the other way (one-time conversion)

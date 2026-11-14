@@ -10,7 +10,7 @@ One entry in `src/ui/mascot/mascots.json`, read by the app (`mascots.ts`) and by
 | Part | Where | Notes |
 |---|---|---|
 | Identity | `id`, `name`, `blurb` | `id` is what the `mascot` preference stores. |
-| The drawing | `source` (a `.frameling` file in `brand/`) | One clip per animation, laid out however suits the art. |
+| The drawing | `source` (a `.frameling` file in `brand/`) | One animation each: an artboard of its own (Quill's, one stack of layers shared by every artboard), or a clip on one timeline. Both build the same way, in the artboard order or the clip order, and an artboard with one clip across all of it is named after the artboard. |
 | The sprite sheet | `sheet` and `meta`, served from `public/` | Made from `source` by `npm run build:mascot`. Never edited by hand. |
 | The pencils | `pencils` (optional) | The coloured parts the pet repaints with your colours. No pencils, no repainting. |
 | His words | `lines` on the registered mascot (optional) | Overrides by line id. A line he doesn't have falls back to the standard one in `lines.json`. |

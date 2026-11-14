@@ -6,7 +6,8 @@ import { newDoc, newPixelLayer } from '../../src/core/doc';
 import type { Doc, PixelDrawing } from '../../src/core/format';
 import { loadFile, saveFile } from '../../src/io/file';
 import { decodePng } from '../../src/io/png';
-import { blankImage, copyClip, crop, docToIcons, docToSheet, iconSvg, sameImage, scaleNearest, sheetToDoc, MASCOT_FPS } from '../../scripts/mascot/sheet';
+import { artboardsOf, contentOf, duplicateArtboard, hasArtboards, renameArtboard, reorderArtboard } from '../../src/artboards/model';
+import { animationsOf, blankImage, compareSheets, copyAnimation, copyClip, crop, splitIntoArtboards, docToIcons, docToSheet, iconSvg, sameImage, scaleNearest, sheetToDoc, MASCOT_FPS } from '../../scripts/mascot/sheet';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const read = (rel: string) => new Uint8Array(readFileSync(join(ROOT, rel)));
@@ -18,15 +19,26 @@ describe('mascot.frameling (the source of the app mascot)', () => {
   // Until someone saves it from Frameling, the file is exactly what the one-time conversion wrote.
   const unedited = manifest.app === 'convert-from-quill';
 
-  it('opens cleanly with one clip per animation', () => {
+  const NAMES = ['idle', 'wave', 'talk', 'point', 'cheer', 'think', 'draw', 'sleep', 'oops', 'sad', 'wave-sad', 'dazed', 'wake'];
+  const clipOf = (name: string) => contentOf(doc, artboardsOf(doc).find((a) => a.name === name)!.id)!.clips[0];
+
+  it('opens cleanly with one artboard per animation, each with its one clip', () => {
     expect(warnings).toEqual([]);
     expect(doc.width).toBe(48);
     expect(doc.fps).toBe(MASCOT_FPS);
-    expect(doc.clips.map((c) => c.name)).toEqual(['idle', 'wave', 'talk', 'point', 'cheer', 'think', 'draw', 'sleep', 'oops', 'sad', 'wave-sad', 'dazed', 'wake']);
-    expect(doc.clips.find((c) => c.name === 'cheer')!.loop).toBe(false);
-    expect(doc.clips.find((c) => c.name === 'sad')!.loop).toBe(true);
-    expect(doc.clips.find((c) => c.name === 'wave-sad')!.loop).toBe(false);
-    expect(doc.clips.find((c) => c.name === 'wake')!.loop).toBe(false);
+    expect(doc.sharedLayers).toBe(true);
+    expect(artboardsOf(doc).map((a) => a.name)).toEqual(NAMES);
+    for (const a of artboardsOf(doc)) {
+      const c = contentOf(doc, a.id)!;
+      expect(c.clips.map((k) => k.name), a.name).toEqual([a.name]);
+      // The clip is the whole artboard, from its first frame to its last, so its timeline is only that animation.
+      expect([c.clips[0].start, c.clips[0].end], a.name).toEqual([0, c.length - 1]);
+    }
+    expect(animationsOf(doc).map((x) => x.name)).toEqual(NAMES);
+    expect(clipOf('cheer').loop).toBe(false);
+    expect(clipOf('sad').loop).toBe(true);
+    expect(clipOf('wave-sad').loop).toBe(false);
+    expect(clipOf('wake').loop).toBe(false);
   });
 
   // Laying the file out as parts changed no picture and no hold: the original animations keep their timing,
@@ -61,23 +73,26 @@ describe('mascot.frameling (the source of the app mascot)', () => {
     expect(['Hood', 'Pencil quills', 'Ear', 'Face'].map(folderOf)).toEqual(['Head', 'Head', 'Head', 'Head']);
     expect(['Cheeks', 'Eyes', 'Mouth'].map(folderOf)).toEqual(['Face', 'Face', 'Face']);
     expect(['Arms', 'Extras'].map(folderOf)).toEqual(['Arms and extras', 'Arms and extras']);
-    for (const l of doc.layers) {
-      expect(l.kind, l.name).toBe('pixel');
-      expect(l.cels.length, l.name).toBeGreaterThan(0);
-      let at = 0;
-      for (const c of l.cels) {
-        expect(c.start, `${l.name} ${c.id}`).toBeGreaterThanOrEqual(at);
-        at = c.start + c.length;
-        expect(doc.drawings[c.drawingId], c.drawingId).toBeTruthy();
+    for (const l of doc.layers) expect(l.kind, l.name).toBe('pixel');
+    let used = new Set<string>();
+    for (const a of artboardsOf(doc)) {
+      const c = contentOf(doc, a.id)!;
+      for (const l of c.layers) {
+        let at = 0;
+        for (const cel of l.cels) {
+          expect(cel.start, `${a.name} ${l.name} ${cel.id}`).toBeGreaterThanOrEqual(at);
+          at = cel.start + cel.length;
+          expect(doc.drawings[cel.drawingId], cel.drawingId).toBeTruthy();
+          used.add(cel.drawingId);
+        }
+        expect(at, `${a.name} ${l.name}`).toBeLessThanOrEqual(c.length);
       }
-      expect(at, l.name).toBeLessThanOrEqual(doc.length);
     }
-    // Every drawing is used and belongs to the layer its name says.
-    const used = new Set(doc.layers.flatMap((l) => l.cels.map((c) => c.drawingId)));
+    // Every drawing is used by some animation.
     expect(Object.keys(doc.drawings).filter((id) => !used.has(id))).toEqual([]);
-    // Every clip is whole: it starts where the one before ended and nothing is left over at the end.
-    doc.clips.forEach((c, i) => expect(c.start).toBe(i ? doc.clips[i - 1].end + 1 : 0));
-    expect(doc.clips[doc.clips.length - 1].end).toBe(doc.length - 1);
+    // A cel id is one cel in the whole file, so a selection or a link never means two things.
+    const ids = artboardsOf(doc).flatMap((a) => contentOf(doc, a.id)!.layers.flatMap((l) => l.cels.map((c) => c.id)));
+    expect(new Set(ids).size).toBe(ids.length);
     // The palette is his: named, in ramps, and holds every colour he is drawn with.
     expect(doc.palette?.name).toBe('Quill');
     expect(doc.palette?.names?.every(Boolean)).toBe(true);
@@ -272,5 +287,229 @@ describe('icon helpers', () => {
     img.pixels.set([255, 0, 0, 255, 255, 0, 0, 255]);
     expect(scaleNearest(img, 3).width).toBe(6);
     expect(iconSvg(img)).toContain('<rect x="0" y="0" width="2" height="1" fill="#ff0000"/>');
+  });
+});
+
+// ---------------------------------------------------------------- one artboard per animation
+
+describe('splitIntoArtboards', () => {
+  const split = () => {
+    const doc = tiny();
+    splitIntoArtboards(doc);
+    return doc;
+  };
+
+  it('makes an artboard per clip, in clip order, named after the clip, on one shared stack of layers', () => {
+    const doc = split();
+    expect(doc.sharedLayers).toBe(true);
+    expect(hasArtboards(doc)).toBe(true);
+    expect(artboardsOf(doc).map((a) => a.name)).toEqual(['go', 'stop']);
+    expect(doc.activeArtboard).toBe(artboardsOf(doc)[0].id);
+    expect(doc.layers.length).toBe(1);
+    // Each artboard is only its own animation, from frame 1, with the clip across all of it.
+    expect(artboardsOf(doc).map((a) => contentOf(doc, a.id)!.length)).toEqual([4, 2]);
+    expect(artboardsOf(doc).map((a) => contentOf(doc, a.id)!.clips.map((c) => [c.name, c.start, c.end, c.loop]))).toEqual([[['go', 0, 3, true]], [['stop', 0, 1, false]]]);
+    expect(doc.length).toBe(4);
+    expect(doc.clips.map((c) => c.name)).toEqual(['go']);
+  });
+
+  it('cuts a cel that crossed two clips into one on each artboard, with ids of their own', () => {
+    const doc = split();
+    const stop = contentOf(doc, artboardsOf(doc)[1].id)!.layers[0].cels;
+    expect(stop.map((c) => [c.start, c.length, c.drawingId])).toEqual([[0, 2, 'red']]);
+    const ids = artboardsOf(doc).flatMap((a) => contentOf(doc, a.id)!.layers[0].cels.map((c) => c.id));
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it('builds exactly the sheet the one long timeline built: same tiles, same order, same holds', () => {
+    const before = docToSheet(tiny(), 4);
+    const after = docToSheet(split(), 4);
+    expect(after.meta).toEqual(before.meta);
+    expect(sameImage(after.image, before.image)).toBe(true);
+    expect(after.warnings).toEqual([]);
+  });
+
+  it('survives being saved and opened again, still the same sheet', () => {
+    const doc = split();
+    const again = loadFile(saveFile(doc, 'test', new Date(2026, 10, 14))).doc;
+    expect(artboardsOf(again).map((a) => a.name)).toEqual(['go', 'stop']);
+    const a = docToSheet(again, 4), b = docToSheet(tiny(), 4);
+    expect(a.meta).toEqual(b.meta);
+    expect(sameImage(a.image, b.image)).toBe(true);
+  });
+
+  it('lays the artboards out in a grid on the pasteboard, none on top of another', () => {
+    const doc = tiny();
+    doc.length = 6;
+    for (let i = 0; i < 4; i++) doc.clips.push({ id: `x${i}`, name: `x${i}`, start: 5, end: 5, loop: false });
+    splitIntoArtboards(doc);
+    const spots = artboardsOf(doc).map((a) => `${a.x},${a.y}`);
+    expect(new Set(spots).size).toBe(spots.length);
+  });
+
+  it('says plainly what is wrong', () => {
+    expect(() => splitIntoArtboards(split())).toThrow(/already has artboards/);
+    const doc = tiny();
+    doc.clips = [];
+    expect(() => splitIntoArtboards(doc)).toThrow(/no clips/);
+  });
+});
+
+describe('docToSheet over artboards', () => {
+  it('walks the artboards in their order: the tile order follows the artboards, and boards sharing drawings share tiles', () => {
+    const doc = tiny();
+    splitIntoArtboards(doc);
+    reorderArtboard(doc, artboardsOf(doc)[1].id, 0);
+    const built = docToSheet(doc, 4);
+    expect(Object.keys(built.meta.anims)).toEqual(['stop', 'go']);
+    // "stop" now comes first and shows red, which "go" shows too: still two tiles, red first.
+    expect(built.meta.anims.stop.frames[0]).toMatchObject({ x: 0, y: 0 });
+    expect(built.meta.anims.go.frames.map((f) => f.x)).toEqual([0, 2, 0]);
+  });
+
+  it('an artboard with one clip across all of it is named after the artboard, so renaming and duplicating do what they look like', () => {
+    const doc = tiny();
+    splitIntoArtboards(doc);
+    renameArtboard(doc, artboardsOf(doc)[0].id, 'go faster');
+    duplicateArtboard(doc, artboardsOf(doc)[1].id);
+    const built = docToSheet(doc, 4);
+    expect(Object.keys(built.meta.anims)).toEqual(['go faster', 'stop', 'stop 2']);
+    expect(built.warnings).toEqual([]);
+    expect(built.meta.anims['go faster'].loop).toBe(true);
+    // The copy has drawings of its own, so its own tile, but the same holds.
+    expect(built.meta.anims['stop 2'].frames.map((f) => f.ms)).toEqual(built.meta.anims.stop.frames.map((f) => f.ms));
+  });
+
+  it('keeps the clips of an artboard that has more than one', () => {
+    const doc = tiny();
+    splitIntoArtboards(doc);
+    const again = loadFile(saveFile(doc, 't', new Date(2026, 10, 14))).doc;
+    const board = artboardsOf(again).find((a) => a.content)!;
+    board.content!.clips = [{ id: 'k1', name: 'first half', start: 0, end: 0, loop: false }, { id: 'k2', name: 'second half', start: 1, end: 1, loop: true }];
+    expect(Object.keys(docToSheet(again, 4).meta.anims)).toEqual(['go', 'first half', 'second half']);
+  });
+
+  it('an artboard with no clip is one looping animation named after it', () => {
+    const doc = tiny();
+    splitIntoArtboards(doc);
+    const again = loadFile(saveFile(doc, 't', new Date(2026, 10, 14))).doc;
+    for (const a of artboardsOf(again)) if (a.content) a.content.clips = [];
+    const meta = docToSheet(again, 4).meta;
+    expect(meta.anims.stop.loop).toBe(true);
+    expect(meta.anims.stop.frames.length).toBe(1);
+  });
+
+  it('leaves out an artboard of another size, and says so', () => {
+    const doc = tiny();
+    splitIntoArtboards(doc);
+    const again = loadFile(saveFile(doc, 't', new Date(2026, 10, 14))).doc;
+    const other = artboardsOf(again).find((a) => a.content)!;
+    other.content!.width = 4;
+    const built = docToSheet(again, 4);
+    expect(Object.keys(built.meta.anims)).toEqual(['go']);
+    expect(built.warnings.some((w) => w.includes('"stop"') && w.includes('left out'))).toBe(true);
+  });
+
+  it('still reads a hidden folder per board', () => {
+    const doc = tiny();
+    const top = newPixelLayer('Top', 1);
+    top.folder = 'f';
+    top.cels = [{ id: 't', start: 0, length: 6, drawingId: 'blue' }];
+    doc.layers.push(top);
+    doc.folders = { f: { id: 'f', name: 'Extras', visible: false, opacity: 1 } };
+    splitIntoArtboards(doc);
+    expect(Array.from(docToSheet(doc, 4).image.pixels.subarray(0, 4))).toEqual([255, 0, 0, 255]);
+  });
+});
+
+describe('copyAnimation', () => {
+  const copied = () => {
+    const doc = tiny();
+    splitIntoArtboards(doc);
+    const made = copyAnimation(doc, 'go', 'go again');
+    return { doc, made };
+  };
+
+  it('on a file with artboards adds an artboard after the last, named for the new animation', () => {
+    const { doc, made } = copied();
+    expect(made).toMatchObject({ name: 'go again', frames: 4, layers: 1 });
+    expect(artboardsOf(doc).map((a) => a.name)).toEqual(['go', 'stop', 'go again']);
+    const c = contentOf(doc, made.board!)!;
+    expect(c.length).toBe(4);
+    expect(c.clips.map((k) => [k.name, k.start, k.end, k.loop])).toEqual([['go again', 0, 3, true]]);
+    expect(doc.length).toBe(4);
+    const spots = artboardsOf(doc).map((a) => `${a.x},${a.y}`);
+    expect(new Set(spots).size).toBe(3);
+  });
+
+  it('copies the drawings, so painting on the copy leaves the original alone', () => {
+    const { doc, made } = copied();
+    const cels = contentOf(doc, made.board!)!.layers[0].cels;
+    expect(cels.every((c) => c.drawingId !== 'red' && c.drawingId !== 'blue')).toBe(true);
+    (doc.drawings[cels[0].drawingId] as PixelDrawing).pixels.fill(0);
+    expect(Array.from((doc.drawings.red as PixelDrawing).pixels.subarray(0, 4))).toEqual([255, 0, 0, 255]);
+    // A drawing shown twice stays one drawing.
+    expect(cels[0].drawingId).toBe(cels[2].drawingId);
+  });
+
+  it('adds the animation to the sheet, after the others, looking the same', () => {
+    const { doc } = copied();
+    const { meta, image } = docToSheet(doc, 4);
+    expect(Object.keys(meta.anims)).toEqual(['go', 'stop', 'go again']);
+    const a = meta.anims.go.frames, b = meta.anims['go again'].frames;
+    expect(b.map((f) => f.ms)).toEqual(a.map((f) => f.ms));
+    b.forEach((f, i) => expect(sameImage(crop(image, f.x, f.y, 2, 2), crop(image, a[i].x, a[i].y, 2, 2))).toBe(true));
+  });
+
+  it('finds the animation by the name of its clip too, and says plainly what is wrong with a bad name', () => {
+    const doc = tiny();
+    splitIntoArtboards(doc);
+    expect(() => copyAnimation(doc, 'nope', 'x')).toThrow(/no animation called "nope".*go, stop/);
+    expect(() => copyAnimation(doc, 'go', 'Stop')).toThrow(/already an animation called "Stop"/);
+    expect(() => copyAnimation(doc, 'go', '  ')).toThrow(/Give the new animation a name/);
+  });
+
+  it('on a file with one timeline is still copyClip', () => {
+    const doc = tiny();
+    const made = copyAnimation(doc, 'go', 'go again');
+    expect(made.board).toBeUndefined();
+    expect(doc.clips.map((c) => c.name)).toEqual(['go', 'stop', 'go again']);
+  });
+
+  it('survives being saved and opened again', () => {
+    const { doc } = copied();
+    const again = loadFile(saveFile(doc, 't', new Date(2026, 10, 14))).doc;
+    expect(artboardsOf(again).map((a) => a.name)).toEqual(['go', 'stop', 'go again']);
+    expect(docToSheet(again, 4).meta).toEqual(docToSheet(doc, 4).meta);
+  });
+});
+
+describe('compareSheets', () => {
+  it('finds no difference between a sheet and itself, and counts the frames', () => {
+    const a = docToSheet(tiny(), 4);
+    expect(compareSheets(a, docToSheet(tiny(), 4))).toEqual({ differences: [], frames: 4 });
+  });
+
+  it('says which frame of which animation looks different, or lasts a different time, or moved', () => {
+    const a = docToSheet(tiny(), 4);
+    const b = docToSheet(tiny(), 4);
+    b.image.pixels[0] = 9;
+    b.meta.anims.go.frames[1] = { ...b.meta.anims.go.frames[1], ms: 150 };
+    b.meta.anims.stop.frames[0] = { ...b.meta.anims.stop.frames[0], x: 4 };
+    const { differences } = compareSheets(a, b);
+    expect(differences).toContain('"go" frame 1 looks different');
+    expect(differences).toContain('"go" frame 2 lasts 100 ms against 150');
+    expect(differences.some((d) => d.startsWith('"stop" frame 1 is on tile 0,0 against 4,0'))).toBe(true);
+    expect(differences).toContain('the sheet pictures are not the same');
+  });
+
+  it('notices a different order of animations or a different number of frames', () => {
+    const a = docToSheet(tiny(), 4);
+    const b = docToSheet(tiny(), 4);
+    b.meta.anims.go.frames.pop();
+    expect(compareSheets(a, b).differences).toEqual(['"go" has 3 frames against 2']);
+    const c = docToSheet(tiny(), 4);
+    c.meta.anims = { stop: c.meta.anims.stop, go: c.meta.anims.go };
+    expect(compareSheets(a, c).differences[0]).toMatch(/the animations are go, stop against stop, go/);
   });
 });
