@@ -17,7 +17,24 @@ export interface Sheet {
   anims: Record<string, SheetAnim>;
 }
 
-export type QuillAnim = 'idle' | 'wave' | 'talk' | 'point' | 'cheer' | 'think' | 'draw' | 'sleep' | 'oops' | 'sad' | 'wave-sad' | 'dazed' | 'wake';
+/**
+ * The clips the app asks a mascot for, by name. This list is the contract: every mascot's sheet must have all of them
+ * (see docs/mascots.md and test/ui/mascots.test.ts). Adding a name here means every mascot has to draw it.
+ */
+export const CLIPS = ['idle', 'wave', 'talk', 'point', 'cheer', 'think', 'draw', 'sleep', 'oops', 'sad', 'wave-sad', 'dazed', 'wake'] as const;
+
+export type QuillAnim = (typeof CLIPS)[number];
+
+/** Clips that run for as long as they're wanted, so they must loop: resting and sleeping. */
+export const LOOPING_CLIPS: readonly QuillAnim[] = ['idle', 'sleep'];
+
+/** What is wrong with a sheet as a mascot, in plain words. An empty list means it keeps the contract. */
+export function sheetProblems(sheet: Sheet): string[] {
+  const out: string[] = [];
+  for (const c of CLIPS) if (!sheet.anims[c]) out.push(`no "${c}" clip`);
+  for (const c of LOOPING_CLIPS) if (sheet.anims[c] && !sheet.anims[c].loop) out.push(`"${c}" must loop`);
+  return out;
+}
 
 /** One step of a little performance: play `anim`, for `hold` ms if given (else once through, or forever if it loops). */
 export interface Beat {

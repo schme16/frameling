@@ -7,7 +7,7 @@ import { toast } from './toast';
 import type { FeatureDescriptor } from '../features/feature';
 import { oneOfEach } from './toolTwins';
 import { offFeatures, setFeatureOn } from '../features/host';
-import { choiceRows, featureRows, SETTING_ROWS } from './prefsIndex';
+import { choiceRows, featureRows, mascotRows, SETTING_ROWS } from './prefsIndex';
 import { PAGE_NAMES, searchPrefs, type PrefRow } from './prefsSearch';
 
 export type PaletteItem =
@@ -148,7 +148,7 @@ export interface ShownHit {
 }
 
 /** The rows of Preferences the palette looks through: the settings, the remembered choices and the features. The Keyboard page's commands are the palette's own. */
-export const settingRows = (): PrefRow[] => [...SETTING_ROWS, ...choiceRows(), ...featureRows()];
+export const settingRows = (): PrefRow[] => [...SETTING_ROWS, ...mascotRows(), ...choiceRows(), ...featureRows()];
 
 /**
  * The palette's results with a few settings let in after the best matches, so a word that names a setting ("smoothing",

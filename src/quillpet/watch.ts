@@ -2,7 +2,8 @@
 // with the pet off nothing here is listening and Quill is just the mascot again.
 import { store } from '../core/store';
 import { petStore, firstVisitToday, tellQuill } from './store';
-import { paintQuills, plainQuills } from './quills';
+import { forgetPaint, paintQuills, plainQuills } from './quills';
+import { onMascotSwitched } from '../ui/mascot/runtime';
 import { line } from '../ui/mascot/lines';
 import { toast } from '../ui/toast';
 import { noteSeen } from './store';
@@ -80,9 +81,15 @@ export function startWatching(): () => void {
     sayIfCloser();
   });
   paintQuills(petStore.get().colours);
+  // Another mascot arrived: his pencils are his own, so start the painting again on his sheet.
+  const offSwitch = onMascotSwitched(() => {
+    forgetPaint();
+    paintQuills(petStore.get().colours);
+  });
   return () => {
     off();
     offPet();
+    offSwitch();
     plainQuills();
     forgetNow();
   };
