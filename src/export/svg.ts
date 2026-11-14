@@ -10,6 +10,7 @@ import { withSprites } from './svg-extra';
 import { composeSvg, composeSymbol, tintAttr, tintDefs } from './svg-look';
 import { cameraViewAt, layerCameraMatrix } from '../core/camera';
 import { gradientKey, sortedStops } from '../core/gradient';
+import { dashOffsetPx, dashPx, expandStroke, hasLineStyle } from '../geometry/lineStyle';
 
 /** A number with at most 4 decimals (matrices need more than 2). */
 export function n4(v: number): string {
@@ -191,12 +192,27 @@ function meshImage(d: Parameters<typeof drawMeshed>[1], pixelSize: number, mesh:
 }
 
 function pathShapeToSvg(s: PathShape): string {
+  // Heads and a changing width become shapes of their own; dashes stay on the line as stroke-dasharray.
+  if (hasLineStyle(s.stroke)) {
+    const parts = expandStroke(s);
+    return parts.length === 1 && parts[0].shape === s ? plainPathToSvg(s) : parts.map((p) => plainPathToSvg(p.shape)).join('');
+  }
+  return plainPathToSvg(s);
+}
+
+function plainPathToSvg(s: PathShape): string {
   const d = subPathsToPathData(s.paths);
   if (!d) return '';
   const defs: string[] = [];
   let a = s.fill ? (s.fillGradient ? gradientPaint('fill', s.fillGradient, s.opacity, defs) : paint('fill', s.fill, s.opacity)) + ' fill-rule="evenodd"' : ' fill="none"';
   if (s.stroke) {
     a += (s.strokeGradient ? gradientPaint('stroke', s.strokeGradient, s.opacity, defs) : paint('stroke', s.stroke.color, s.opacity)) + ` stroke-width="${n2(s.stroke.width)}" stroke-linejoin="${s.stroke.join}" stroke-linecap="${s.stroke.cap}"`;
+    const dash = dashPx(s.stroke);
+    if (dash) {
+      a += ` stroke-dasharray="${dash.map((v) => n4(v)).join(' ')}"`;
+      const off = dashOffsetPx(s.stroke);
+      if (off) a += ` stroke-dashoffset="${n2(off)}"`;
+    }
   }
   return withDefs(defs, `<path d="${d}"${a}/>`);
 }

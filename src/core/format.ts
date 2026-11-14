@@ -630,6 +630,34 @@ export interface Gradient {
   to: { x: number; y: number };
 }
 
+/** The head on the end of an open line. */
+export type ArrowHead = 'triangle' | 'open' | 'dot' | 'bar';
+
+/** How wide a line is at one place along it: `at` from 0 (start) to 1 (end), `w` times the line's width. */
+export interface WidthStop {
+  at: number;
+  w: number;
+}
+
+/** A shape's outline. Everything after `cap` is optional, so older files read unchanged (missing = a plain line). */
+export interface PathStroke {
+  color: Color;
+  width: number;
+  join: 'round' | 'miter' | 'bevel';
+  cap: 'round' | 'butt' | 'square';
+  /** Dashes and gaps, in line widths: [3, 2] is a dash three widths long, then a gap of two (missing or empty = solid). A dash of about 0 with round caps is a dot. */
+  dash?: number[];
+  /** Where in the pattern the line starts, in line widths (missing = 0). */
+  dashOffset?: number;
+  /** A head on the start and the end of every open line (missing = none). */
+  arrowStart?: ArrowHead;
+  arrowEnd?: ArrowHead;
+  /** How long the heads are, in line widths (missing = 4). */
+  arrowSize?: number;
+  /** Width along the line, as stops from the start (0) to the end (1), times `width` (missing = the same all the way). */
+  widths?: WidthStop[];
+}
+
 /** A geometric shape (rectangle, ellipse, line, polygon, pen path), with an optional fill and stroke. */
 export interface PathShape {
   id: Id;
@@ -642,7 +670,7 @@ export interface PathShape {
   ext?: Ext;
   paths: SubPath[];
   fill: Color | null;
-  stroke: { color: Color; width: number; join: 'round' | 'miter' | 'bevel'; cap: 'round' | 'butt' | 'square' } | null;
+  stroke: PathStroke | null;
   opacity: number;
   /** Gradients for the inside and the outline, used instead of the plain colours when set. */
   fillGradient?: Gradient;

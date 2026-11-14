@@ -6,6 +6,7 @@ import { Wells } from '../../canvas/panels/Wells';
 import { setToolSettings, useToolSettings } from '../settings';
 import { DrawModeToggle } from './DrawModeToggle';
 import { MirrorOptions } from './MirrorOptions';
+import { LineStyleOptions } from './LineStyleOptions';
 
 /** "On a plane": where a rectangle or ellipse lies when the perspective guides are showing. Shared with pixel shapes. */
 export function PlaneOption({ show = true }: { show?: boolean }) {
@@ -44,6 +45,7 @@ export function ShapeOptions() {
       <DrawModeToggle />
       <Wells />
       {(isLine || strokeOn) && <Slider label={isLine ? 'Thickness' : 'Outline thickness'} value={stroke} min={1} max={60} format={(v) => `${v}px`} onChange={(v) => setToolSettings({ shapeStroke: v })} />}
+      {(isLine || strokeOn) && <LineStyleOptions arrows={isLine} />}
       {tool === 'rect' && <Slider label="Rounded corners" value={radius} min={0} max={200} format={(v) => (v ? `${v}px` : 'Square')} onChange={(v) => setToolSettings({ cornerRadius: v })} />}
       <PlaneOption show={!isLine} />
       <MirrorOptions />

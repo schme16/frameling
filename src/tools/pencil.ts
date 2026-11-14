@@ -55,6 +55,7 @@ export const pencilTool: Tool = {
     const f = viewSizeFactor();
     stroke = t.pencilClean ? new CleanLine(store().get().ui.color, t.pencilSize * f) : new VectorStroke(...penStrokeArgs({ ...pencilBrush(), size: t.pencilSize * f }, store().get().ui.color, e));
     startFromLast(stroke, e, ctx.zoom);
+    if (stroke instanceof VectorStroke && !e.shift) stroke.watchHold(ctx.zoom, ctx.requestOverlay);
   },
   move(e, ctx) {
     if (pix.active()) return pix.move(e);
@@ -68,12 +69,13 @@ export const pencilTool: Tool = {
     ctx.requestOverlay();
   },
   cancel(ctx) {
+    if (stroke instanceof VectorStroke) stroke.stop();
     stroke = null;
     pix.cancel();
     ctx.requestOverlay();
   },
   overlay(g, ctx) {
-    if (stroke) return stroke.overlay(g);
+    if (stroke) return stroke instanceof VectorStroke ? stroke.overlay(g, ctx.zoom) : stroke.overlay(g);
     if (pix.active() || activePixelLayer()) return pix.overlay(g, ctx);
     const h = getHover();
     if (!h) return;

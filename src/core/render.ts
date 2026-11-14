@@ -18,6 +18,7 @@ import { buildPlan } from '../effects/plan';
 import { activeEffects, needsCompositor } from '../effects/model';
 import { ctx2, makeCanvas, type Canvas2 } from '../effects/apply';
 import { canvasGradient } from './gradient';
+import { dashOffsetPx, dashPx, expandStroke, hasLineStyle } from '../geometry/lineStyle';
 
 export type Ctx2D = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 
@@ -143,21 +144,35 @@ export function drawShape(g: Ctx2D, s: Shape, at?: DrawContext): void {
   } else if (s.type === 'fill') {
     g.fillStyle = s.gradient ? canvasGradient(g, s.gradient) : s.color;
     g.fill(shapePath(s), 'evenodd');
-  } else {
-    const p = shapePath(s);
-    if (s.fill) {
-      g.fillStyle = s.fillGradient ? canvasGradient(g, s.fillGradient) : s.fill;
-      g.fill(p, 'evenodd');
+  } else if (hasLineStyle(s.stroke)) {
+    // Dashes, arrow heads or a changing width: the outline as the plain shapes that paint it.
+    for (const part of expandStroke(s)) drawPlainPath(g, part.shape);
+  } else drawPlainPath(g, s);
+  g.globalAlpha = 1;
+}
+
+function drawPlainPath(g: Ctx2D, s: PathShape): void {
+  const p = shapePath(s);
+  if (s.fill) {
+    g.fillStyle = s.fillGradient ? canvasGradient(g, s.fillGradient) : s.fill;
+    g.fill(p, 'evenodd');
+  }
+  if (s.stroke) {
+    g.strokeStyle = s.strokeGradient ? canvasGradient(g, s.strokeGradient) : s.stroke.color;
+    g.lineWidth = s.stroke.width;
+    g.lineJoin = s.stroke.join;
+    g.lineCap = s.stroke.cap;
+    const dash = dashPx(s.stroke);
+    if (dash) {
+      g.setLineDash(dash);
+      g.lineDashOffset = dashOffsetPx(s.stroke);
     }
-    if (s.stroke) {
-      g.strokeStyle = s.strokeGradient ? canvasGradient(g, s.strokeGradient) : s.stroke.color;
-      g.lineWidth = s.stroke.width;
-      g.lineJoin = s.stroke.join;
-      g.lineCap = s.stroke.cap;
-      g.stroke(p);
+    g.stroke(p);
+    if (dash) {
+      g.setLineDash([]);
+      g.lineDashOffset = 0;
     }
   }
-  g.globalAlpha = 1;
 }
 
 // Pixel drawings become canvases once per pixel array (arrays are replaced on edit, never mutated).

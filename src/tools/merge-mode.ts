@@ -122,7 +122,7 @@ function vectorDrawing(): VectorDrawing | undefined {
   return d && d.kind === 'vector' ? d : undefined;
 }
 
-function selected(): Shape[] {
+export function selected(): Shape[] {
   const c = pendingCut();
   if (c) return c.lifted;
   const d = vectorDrawing();

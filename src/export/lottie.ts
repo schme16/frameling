@@ -41,6 +41,7 @@ import { encodePng } from '../io/png';
 import { fitClosed, sampleMidpointSpline } from './curve-fit';
 import { flattenDrawing } from '../core/layerKinds';
 import { sortedStops } from '../core/gradient';
+import { dashOffsetPx, dashPx, expandStroke, hasLineStyle } from '../geometry/lineStyle';
 import type { PosedMesh } from '../core/layerKinds';
 
 export interface LottieOptions {
@@ -302,7 +303,7 @@ const SOFT_RADIUS = 5;
 export interface ShapeLook {
   paths: Json[];
   fill: { rgb: number[]; o: number; grad?: LottieGrad } | null;
-  stroke: { rgb: number[]; o: number; w: number; lc: number; lj: number; grad?: LottieGrad } | null;
+  stroke: { rgb: number[]; o: number; w: number; lc: number; lj: number; grad?: LottieGrad; dash?: { d: number[]; o: number } } | null;
   /** A soft round sprite: a radial fade of this colour (SOFT_RADIUS wide, the size particle sprites are drawn at). */
   soft?: { rgb: number[] };
   /** Sprites move as a group; plain shapes have their points in stage space and no transform. */
@@ -334,7 +335,7 @@ function lookOf(s: Exclude<Shape, InstanceShape>, tints: Tint[], still = false):
   return {
     paths,
     fill: f ? (ps.fillGradient ? { rgb: f.rgb, o: r3(s.opacity * 100), grad: lottieGradient(ps.fillGradient, tints) } : { rgb: f.rgb, o: r3(f.alpha * s.opacity * 100) }) : null,
-    stroke: st && sc ? { rgb: sc.rgb, o: r3((ps.strokeGradient ? 1 : sc.alpha) * s.opacity * 100), w: r3(st.width), lc: LC[st.cap], lj: LJ[st.join], ...(ps.strokeGradient ? { grad: lottieGradient(ps.strokeGradient, tints) } : {}) } : null,
+    stroke: st && sc ? { rgb: sc.rgb, o: r3((ps.strokeGradient ? 1 : sc.alpha) * s.opacity * 100), w: r3(st.width), lc: LC[st.cap], lj: LJ[st.join], ...(ps.strokeGradient ? { grad: lottieGradient(ps.strokeGradient, tints) } : {}), ...(dashPx(st) ? { dash: { d: dashPx(st)!.map(r3), o: r3(dashOffsetPx(st)) } } : {}) } : null,
   };
 }
 
@@ -610,6 +611,15 @@ function shapeGroup(raw: ShapeLook[], times: number[], name: string): Json | nul
   return moved && JSON.stringify(moved).length < JSON.stringify(plain).length ? moved : plain;
 }
 
+/** Lottie's dash list: a dash and a gap for each pair in the pattern, then where it starts. */
+function dashItems(dash: { d: number[]; o: number } | undefined): Json {
+  if (!dash) return {};
+  // Every entry needs a name of its own: lottie-web draws nothing at all when two of them share one.
+  const items: Json[] = dash.d.map((v, i) => ({ n: i % 2 === 0 ? 'd' : 'g', nm: `${i % 2 === 0 ? 'Dash' : 'Gap'}${i < 2 ? '' : ` ${Math.floor(i / 2) + 1}`}`, v: stat(Math.max(0.01, v)) }));
+  items.push({ n: 'o', nm: 'Offset', v: stat(dash.o) });
+  return { d: items };
+}
+
 function shapeGroupOf(looks: ShapeLook[], times: number[], name: string): Json | null {
   const it: Json[] = [];
   const nPaths = Math.max(...looks.map((l) => l.paths.length));
@@ -640,6 +650,8 @@ function shapeGroupOf(looks: ShapeLook[], times: number[], name: string): Json |
       lc: st.lc,
       lj: st.lj,
       ml: 10,
+      // Dashes, as they are on the first frame that has any (Lottie holds one pattern for the whole line).
+      ...dashItems(looks.find((l) => l.stroke?.dash)?.stroke?.dash),
     });
   }
   if (looks.some((l) => l.fill)) {
@@ -771,6 +783,28 @@ export interface LottieKit {
   hideSym(s: SymbolSprite): SymbolSprite;
 }
 
+const ROLE_ORDER = (r: string) => (r === 'fill' ? 0 : r === 'line' ? 1 : 2);
+
+/**
+ * One path shape across the frames, as the plain shapes its outline turns into (the line, a fill, arrow heads), one slot
+ * per part with the same slots on every frame. A frame without a part shows it faded right out.
+ */
+export function expandLine(ctx: Pick<Ctx, 'tints'>, frames: PathShape[]): Item[][][] {
+  const per = frames.map((s) => expandStroke(s, { split: true }));
+  const roles = [...new Set(per.flatMap((parts) => parts.map((p) => p.role)))].sort((a, b) => ROLE_ORDER(a) - ROLE_ORDER(b));
+  const hide = (l: LookItem): LookItem => ({ type: 'look', look: { ...l.look, fill: l.look.fill && { ...l.look.fill, o: 0 }, stroke: l.look.stroke && { ...l.look.stroke, o: 0 } } });
+  const out: Item[][][] = [];
+  for (const role of roles) {
+    const col = per.map((parts) => {
+      const p = parts.find((x) => x.role === role);
+      return p ? ({ type: 'look', look: lookOf(p.shape, ctx.tints) } as LookItem) : null;
+    });
+    const filled = fillGaps(col, hide);
+    if (filled) out.push(filled.map((x) => [x]));
+  }
+  return out;
+}
+
 /**
  * Text and particles turned into sprites, frame by frame, with the same number of items on every frame: a letter per
  * letter, and a slot per particle that's alive on any of the frames (faded out where it isn't).
@@ -786,6 +820,11 @@ function expandSprites(ctx: Ctx, shapes: Shape[][]): Item[][] {
     const make = s0.type !== 'stroke' && s0.type !== 'fill' && s0.type !== 'path' && s0.type !== 'instance' ? shapeExportOf(s0.type)?.lottie : undefined;
     if (make) {
       cols.push(make(kit, shapes.map((list) => list[k])));
+      continue;
+    }
+    // A line with dashes kept, arrow heads or a changing width is a few plain shapes; every frame gets the same few.
+    if (shapes.some((list) => list[k].type === 'path' && hasLineStyle((list[k] as PathShape).stroke))) {
+      cols.push(...expandLine(ctx, shapes.map((list) => list[k] as PathShape)));
       continue;
     }
     cols.push(shapes.map((list) => [list[k]]));

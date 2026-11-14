@@ -50,7 +50,7 @@ What's in `test/`, by folder:
 | `effects/` | Effect model and how effects look inside symbols. |
 | `clips/` | How a clip plays (`src/core/clipPlay.ts`): the order of one pass, stepping, repeat counts, baking for formats without direction, reading a clip from a file. Exporters are in `export/clip-play.test.ts`. |
 | `export/` | Every writer (APNG, GIF, sheet, SVG and animated SVG, Lottie, PDF, PSD, ProRes, YUV, playable, Godot, Godot add-on, Godot bones), the plan, capabilities, engine presets and fidelity. `*-e2e.test.ts` load the output in a real Godot 4 and are skipped unless `GODOT_BIN` is set. |
-| `geometry/` | Fill, flood, merge, morph, pen, raster, tracing. |
+| `geometry/` | Fill, flood, merge, morph, pen, raster, tracing; combining shapes (`boolean.test.ts`: join, cut out, overlap, punch, colours kept, curves refitted); dashes, arrow heads and width along a line (`line-style.test.ts`); and recognising a rough stroke as a line, circle, box or triangle (`quickshape.test.ts`, with rates over many wobbly strokes). |
 | `integration/` | Whole-feature runs: the kitchen sink document, selecting mid-tween, nested editing, tiles inside symbols. |
 | `interactives/` | The .flplay round trip. |
 | `io/` | The .frameling file, PNG, sound in files, recovery, kept work, versions, save-as history, the user library (main side), cross-platform paths, reference layers, and that `brand/mascot/*.frameling` still load. |
@@ -800,7 +800,7 @@ file is a JSON array run in order with real input events:
 | `{"eval": "js"}` | Run JavaScript in the page. |
 | `{"click": [x, y]}` | Left click at window coordinates. |
 | `{"dblclick": [x, y]}` | Double-click at window coordinates (`record.cjs` and the help clips only). |
-| `{"drag": [[x, y], ...], "steps": 6}` | Press, move through the points, release. |
+| `{"drag": [[x, y], ...], "steps": 6}` | Press, move through the points, release. Options: `"hold": ms` keeps the pen still at the end before it lifts (Hold to tidy), `"pull": [x, y]` then drags there still pressed, `"pause": [[pointIndex, ms]]` keeps it still part way along. |
 | `{"down": [x, y]}`, `{"move": [x, y]}`, `{"up": [x, y]}` | For shots mid-drag. |
 | `{"key": "g", "mods": ["control"]}` | A key press (Electron keyCode names). |
 | `{"wait": 300}` | Milliseconds. |
@@ -858,6 +858,12 @@ npm run help:media -- --theme light       # one theme only
 npm run help:media -- --list              # every entry and whether it is a picture or a clip
 npm run help:media -- --entries scripts/docs/ab --out brand/ab/<topic>   # the entries of another folder, for a before/after look (not a help topic)
 ```
+
+`scripts/docs/ab/shape-tools.cjs` is such a folder for combining shapes (before and after, all four operations) and Hold to
+tidy (snapping, slow drawing that is left alone, undo giving the line back). `scripts/ab/shape-tools-files.cjs` is its
+own Electron script: the dashes, arrow heads and tapered lines on screen beside what the PNG, SVG, PDF and Lottie exports
+make of them, drawn by rsvg-convert, pdftoppm and lottie-web (`SHOT_SHOW=1 xvfb-run -a -s "-screen 0 1600x1000x24" npx
+electron scripts/ab/shape-tools-files.cjs <outDir>`; the exports come from `__framelingExport.fileBase64`).
 
 It runs the steps in `scripts/docs/help/*.cjs` (one file per area; files starting with `_` aren't entries). Each entry is
 `{ name, steps, prefs?, size?, width?, poster?, wait? }`: `name` is the topic's media base name, `steps` are the

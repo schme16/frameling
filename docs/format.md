@@ -318,7 +318,13 @@ when comparing two drawings for "same look" (as `id` is ignored).
 - `FillShape` (`type: 'fill'`): `paths: SubPath[]` (even-odd), `color`, `opacity`, `gradient?` (`e352d32`; `color`
   stays as its first stop).
 - `PathShape` (`type: 'path'`): `paths`, `fill: Color | null`, `stroke: {color, width, join, cap} | null`, `opacity`,
-  `fillGradient?`, `strokeGradient?` (`e352d32`).
+  `fillGradient?`, `strokeGradient?` (`e352d32`). The stroke can also carry, all optional (a missing one is a plain
+  line, so older files read unchanged, and bad values are dropped on open by `cleanStrokeStyle`):
+  `dash?: number[]` and `dashOffset?` (dashes and gaps, in **line widths**, so they scale with the line; a dash of about
+  0 with round caps is a dot), `arrowStart?` / `arrowEnd?` (`'triangle' | 'open' | 'dot' | 'bar'`, on every open subpath),
+  `arrowSize?` (line widths, default 4) and `widths?: {at, w}[]` (width along the line, `at` 0 to 1, `w` times `width`).
+  `src/geometry/lineStyle.ts` turns these into plain shapes for the writers; see `test/export/line-style.test.ts` for
+  what each format does with them.
 - `SubPath` is `{points: PathPoint[], closed}`; `PathPoint` is `{x, y, c1?, c2?}` (cubic controls arriving at it).
 - `Gradient` is `{kind: 'linear' | 'radial', stops: {at, color}[], from, to}` in document pixels, so it moves with
   the shape.

@@ -7,7 +7,7 @@
 import { cleanGradients } from '../core/gradient';
 import { readFolders, readLayerLook } from '../effects/io';
 import { strFromU8, strToU8, unzipSync, zip, zipSync, type Zippable } from 'fflate';
-import { BONE_STRETCH, FORMAT_VERSION, LAYER_LABELS, type LayerLabel, type Cel, type Doc, type Drawing, type KeptShape, type Layer, type Shape, type Slice, type SliceKey, type SymbolDef, type Tween, type InstanceShape, type ClipFlow, type ClipTransition, type Tile, type Tileset, type Bone, type BonePose, type LayerBind, type Pose, type Rig, type SavedPose } from '../core/format';
+import { BONE_STRETCH, FORMAT_VERSION, LAYER_LABELS, type LayerLabel, type Cel, type Doc, type Drawing, type KeptShape, type Layer, type Shape, type Slice, type SliceKey, type SymbolDef, type Tween, type InstanceShape, type ClipFlow, type ClipTransition, type Tile, type Tileset, type Bone, type BonePose, type LayerBind, type Pose, type Rig, type SavedPose, type PathStroke } from '../core/format';
 import { decodePng, encodePng, type RawImage } from './png';
 import { decodePngsInWorkers, inflateDocInWorker, zipInWorker } from './ioClient';
 import { MAX_UNZIPPED } from './ioJobs';
@@ -24,6 +24,7 @@ import { closedForSave, isDerivedDrawing, resolveAfterLoad, variationDiffs } fro
 import { switchOpenVariation } from '../artboards/variations';
 import { upgradeLineage } from '../core/upgradeLineage';
 import { readClip } from '../core/clipPlay';
+import { cleanStrokeStyle } from '../geometry/lineStyle';
 
 export const FILE_EXTENSION = 'frameling';
 
@@ -395,7 +396,7 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
       let lost = !Array.isArray(d.shapes);
       for (const s of Array.isArray(d.shapes) ? d.shapes : []) {
         if (isObj(s) && (BASIC_SHAPES.has(s.type) || hasShapeKind(s.type))) {
-          const read: Shape | null = s.type === 'instance' ? readInstance(s) : hasShapeKind(s.type) ? shapeKind(s.type)!.read(s) : (cleanOrigin(cleanGradients(s)) as Shape);
+          const read: Shape | null = s.type === 'instance' ? readInstance(s) : hasShapeKind(s.type) ? shapeKind(s.type)!.read(s) : (cleanLineStyle(cleanOrigin(cleanGradients(s))) as Shape);
           if (read) shapes.push(withExt(read, s, warnings));
           else lost = true;
         } else {
@@ -727,6 +728,12 @@ export function readFlow(raw: unknown, clips: { id: string }[]): ClipFlow | unde
   const start = typeof raw.start === 'string' && ids.has(raw.start) ? raw.start : undefined;
   if (!transitions.length && !start && !Object.keys(positions).length) return undefined;
   return { ...(start ? { start } : {}), transitions, ...(Object.keys(positions).length ? { positions } : {}) };
+}
+
+/** A path shape whose outline has dashes, arrow heads or widths that make no sense gets them taken out, so drawing never meets them. */
+function cleanLineStyle<T extends Record<string, any>>(s: T): T {
+  if (s.type !== 'path' || !isObj(s.stroke)) return s;
+  return { ...s, stroke: cleanStrokeStyle(s.stroke as PathStroke) };
 }
 
 /** A stroke, fill or path shape with a bad `origin` taken out. */

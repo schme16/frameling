@@ -21,6 +21,13 @@ export interface ToolSettings {
   /** Rectangle, ellipse and line: outline thickness. Colours come from the fill and stroke boxes (wells.ts). */
   shapeStroke: number;
   cornerRadius: number;
+  /** New lines and shapes: dashes, how wide the line is along its length, and arrow heads on open lines (see geometry/lineStyle.ts). */
+  lineDash: string;
+  lineWidth: string;
+  arrowStart: string;
+  arrowEnd: string;
+  /** Hold to tidy: how long the pen stays still before a stroke is tidied, in milliseconds (see tools/quickshape.ts). */
+  quickHoldMs: number;
   /** Rectangle and ellipse with perspective guides showing: which plane they lie on (auto guesses from the drag). */
   perspectivePlane: PlaneChoice;
   /** Eyedropper: pick from the active layer only. */
@@ -48,6 +55,11 @@ export const DEFAULT_TOOL_SETTINGS: ToolSettings = {
   eraserPixelSize: 1,
   shapeStroke: 4,
   cornerRadius: 0,
+  lineDash: 'solid',
+  lineWidth: 'even',
+  arrowStart: 'none',
+  arrowEnd: 'none',
+  quickHoldMs: 600,
   perspectivePlane: 'auto',
   pickActiveLayerOnly: false,
   polygonSides: 6,
