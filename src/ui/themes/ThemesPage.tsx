@@ -3,6 +3,7 @@
 import { useCallback, useRef, useState } from 'react';
 import { Icon } from '../icons';
 import { openHelp } from '../overlays';
+import { menuPoint, openDockMenu } from '../dockMenus';
 import { effectiveTheme, getPrefs, setPrefs, usePrefs, type ThemePref } from '../prefs';
 import { toast } from '../toast';
 import { BUILT_IN_THEMES, type Theme } from './builtIn';
@@ -50,11 +51,28 @@ function CurrentTheme({ dark, light }: { dark: Theme; light: Theme }) {
 /** The theme behind an id, falling back to the default for that mode if it has gone. */
 const themeOf = (id: string, mode: ThemeMode, custom: Theme[]): Theme => findTheme(id, custom) ?? BUILT_IN_THEMES.find((t) => t.mode === mode)!;
 
-function ThemeCard({ theme, chosen, onPick, onCopy, onEdit }: { theme: Theme; chosen: boolean; onPick: () => void; onCopy: () => void; onEdit?: () => void }) {
+/** A card in the gallery: the preview, the name, and badges saying which of your two themes it is, if either. */
+function ThemeCard({ theme, use, onPick, onCopy, onEdit }: { theme: Theme; use: { day: boolean; night: boolean }; onPick: (at: { x: number; y: number }) => void; onCopy: () => void; onEdit?: () => void }) {
+  const chosen = use.day || use.night;
+  const says = use.day && use.night ? 'your theme by day and at night' : use.day ? 'your theme by day' : use.night ? 'your theme at night' : 'not in use';
   return (
     <div className={`th-card${chosen ? ' is-chosen' : ''}`}>
-      <button type="button" role="radio" aria-checked={chosen} className="th-card-pick" onClick={onPick} title={theme.description}>
+      <button type="button" className="th-card-pick" onClick={(e) => onPick(menuPoint(e.currentTarget))} title={theme.description} aria-label={`${theme.name}, ${says}`}>
         <ThemePreview theme={theme} />
+        {chosen && (
+          <span className="th-card-badges" aria-hidden="true">
+            {use.day && (
+              <span className="th-card-badge is-day" title="Your theme by day">
+                <Icon name="sun" size={13} />
+              </span>
+            )}
+            {use.night && (
+              <span className="th-card-badge is-night" title="Your theme at night">
+                <Icon name="moon" size={13} />
+              </span>
+            )}
+          </span>
+        )}
         <span className="th-card-name">
           <strong>{theme.name}</strong>
           {chosen && (
@@ -80,21 +98,29 @@ function ThemeCard({ theme, chosen, onPick, onCopy, onEdit }: { theme: Theme; ch
   );
 }
 
-function Gallery({ mode, custom, picked, every, onCopy, onEdit }: { mode: ThemeMode; custom: Theme[]; picked: string; every: boolean; onCopy: (t: Theme) => void; onEdit: (id: string) => void }) {
-  // Basic keeps each list to the themes made for that mode. Advanced offers every theme for either one.
+/** Pressing a theme asks what it is for. Any theme can be either one, however bright or dark it is. */
+function askWhatFor(theme: Theme, at: { x: number; y: number }): void {
+  openDockMenu(at.x, at.y, [
+    { heading: theme.name },
+    { label: 'Use it by day', onClick: () => selectTheme(theme, 'light') },
+    { label: 'Use it at night', onClick: () => selectTheme(theme, 'dark') },
+    { label: 'Use it for both', onClick: () => { selectTheme(theme, 'light'); selectTheme(theme, 'dark'); } },
+  ]);
+}
+
+/** Every theme in one grid. Which of your two a theme is shows on the card, so there is no list to pick from. */
+function Gallery({ custom, day, night, onCopy, onEdit }: { custom: Theme[]; day: string; night: string; onCopy: (t: Theme) => void; onEdit: (id: string) => void }) {
   const all = [...BUILT_IN_THEMES, ...custom];
-  const list = every ? [...all.filter((t) => t.mode === mode), ...all.filter((t) => t.mode !== mode)] : all.filter((t) => t.mode === mode);
-  const showing = effectiveTheme() === mode;
   return (
-    <section className="th-section" aria-label={mode === 'dark' ? 'For dark mode' : 'For light mode'}>
+    <section className="th-section" aria-label="Every theme">
       <h4>
-        <Icon name={mode === 'dark' ? 'moon' : 'sun'} size={15} />
-        {mode === 'dark' ? 'For dark mode' : 'For light mode'}
-        {showing && <span className="th-now">showing now</span>}
+        <Icon name="palette" size={15} />
+        Every theme
+        <span className="th-now">press one and say what it is for</span>
       </h4>
-      <div className="th-grid" role="radiogroup" aria-label={mode === 'dark' ? 'Theme for dark mode' : 'Theme for light mode'}>
-        {list.map((t) => (
-          <ThemeCard key={t.id} theme={t} chosen={t.id === picked} onPick={() => selectTheme(t, mode)} onCopy={() => onCopy(t)} onEdit={t.builtIn ? undefined : () => onEdit(t.id)} />
+      <div className="th-grid" role="group" aria-label="Themes">
+        {all.map((t) => (
+          <ThemeCard key={t.id} theme={t} use={{ day: t.id === day, night: t.id === night }} onPick={(at) => askWhatFor(t, at)} onCopy={() => onCopy(t)} onEdit={t.builtIn ? undefined : () => onEdit(t.id)} />
         ))}
       </div>
     </section>
@@ -169,22 +195,7 @@ export function ThemesPage() {
           ))}
         </div>
       </div>
-      <div className="th-modebar">
-        <div className="ui-pref-text">
-          <strong>Picking</strong>
-          <span>Basic shows the themes made for each mode. Advanced lets any theme be your dark one or your light one, however bright it is.</span>
-        </div>
-        <div className="ui-segmented" role="radiogroup" aria-label="Picking">
-          {([['basic', 'Basic'], ['advanced', 'Advanced']] as const).map(([id, label]) => (
-            <button key={id} type="button" role="radio" aria-checked={(p.themePicking ?? 'basic') === id} className={`ui-seg${(p.themePicking ?? 'basic') === id ? ' is-chosen' : ''}`} onClick={() => setPrefs({ themePicking: id })}>
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <Gallery mode="dark" custom={p.customThemes} picked={p.darkTheme} every={p.themePicking === 'advanced'} onCopy={copy} onEdit={setEditing} />
-      <Gallery mode="light" custom={p.customThemes} picked={p.lightTheme} every={p.themePicking === 'advanced'} onCopy={copy} onEdit={setEditing} />
+      <Gallery custom={p.customThemes} day={p.lightTheme} night={p.darkTheme} onCopy={copy} onEdit={setEditing} />
 
       <div className="th-footer">
         <button type="button" className="ui-btn ui-btn-primary" onClick={() => copy([...BUILT_IN_THEMES, ...p.customThemes].find((t) => t.id === (effectiveTheme() === 'dark' ? p.darkTheme : p.lightTheme)) ?? BUILT_IN_THEMES[0])}>

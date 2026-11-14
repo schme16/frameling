@@ -309,12 +309,13 @@ Soft little sounds for quest steps, finished exports and "no". They're on to sta
 
 ## Choosing
 
-Open **Preferences** (**Ctrl+,**), then **Themes**. You'll see two groups:
+Open **Preferences** (**Ctrl+,**), then **Themes**. Every theme sits in one grid. Press one and Frameling asks what it is for:
 
-- **For dark mode**: pick the theme to use when Frameling is dark.
-- **For light mode**: pick the theme to use when Frameling is light.
+- **Use it by day**: it becomes your light theme.
+- **Use it at night**: it becomes your dark theme.
+- **Use it for both**: the same colours whatever the time.
 
-Press a card to pick it. The change is instant. A tick shows which one is in use.
+The change is instant. Your two wear a badge in the corner of the card, a sun by day and a moon at night, with a gold edge round them. Any theme can be either one, however bright or dark it is: a dark theme by day is allowed if that is what you like.
 
 ## Dark, light and System
 
@@ -328,7 +329,7 @@ So you can have a pastel theme by day and a cosy dark one at night, without touc
 
 ## The themes
 
-| For dark mode | For light mode | Mood |
+| The darker one | The lighter one | Mood |
 | --- | --- | --- |
 | **Midnight Sketchbook** | **Paper & Honey** | The classic Frameling look. |
 | **Moonlit Pond** | **Studio White** | Calm and plain. |

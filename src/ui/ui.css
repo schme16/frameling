@@ -3255,6 +3255,27 @@ body.ui-resizing * {
   gap: 6px;
   padding: 0 2px;
 }
+.th-card-badges {
+  /* Which of your two themes this is: a sun by day, a moon at night, in the corner of the preview. */
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  display: flex;
+  gap: 4px;
+}
+.th-card-badge {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+  box-shadow: 0 1px 4px rgb(0 0 0 / 35%);
+}
+.th-card-pick {
+  position: relative;
+}
 .th-card-tick {
   display: grid;
   place-items: center;
