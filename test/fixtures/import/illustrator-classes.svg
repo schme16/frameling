@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Illustrator style: a style block with class names, a data-name layer, a clip nobody sees. -->
+<svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 64 64" style="enable-background:new 0 0 64 64;" xml:space="preserve">
+<style type="text/css">
+	.st0{fill:#FF6600;}
+	.st1{fill:none;stroke:#222222;stroke-width:2;stroke-miterlimit:10;stroke-dasharray:4,2;}
+	.st2{opacity:0.5;fill:#0066FF;}
+</style>
+<g id="Logo" data-name="Logo">
+	<path class="st0" d="M32,4L60,60H4L32,4z"/>
+	<polygon class="st1" points="32,16 50,52 14,52 "/>
+	<g class="st2">
+		<rect x="8" y="8" width="16" height="16" rx="3"/>
+		<ellipse cx="48" cy="16" rx="8" ry="6"/>
+	</g>
+</g>
+</svg>

@@ -20,8 +20,8 @@ import { choiceAt, saveChangesQuestion } from '../shared/saveQuestion';
 import { PLUGIN_PROCESS_FEATURE, pluginMemory, wantIsolation } from './pluginMemory';
 
 const FILTERS: FileFilter[] = [{ name: 'Frameling drawings', extensions: ['frameling'] }];
-// File > Open also takes Aseprite files and pictures (PNG, GIF, sprite sheets), which open as a new drawing.
-const OPEN_FILTERS: FileFilter[] = [{ name: 'Drawings, Aseprite files and pictures', extensions: ['frameling', 'aseprite', 'ase', 'png', 'apng', 'gif'] }, ...FILTERS, { name: 'Aseprite files', extensions: ['aseprite', 'ase'] }, { name: 'Pictures and sprite sheets', extensions: ['png', 'apng', 'gif', 'webp', 'jpg', 'jpeg', 'bmp'] }];
+// File > Open also takes Aseprite files, pictures (PNG, GIF, sprite sheets), SVG and layered files (PSD, ORA), which open as a new drawing.
+const OPEN_FILTERS: FileFilter[] = [{ name: 'Drawings, Aseprite files, pictures, SVG and layered files', extensions: ['frameling', 'aseprite', 'ase', 'png', 'apng', 'gif', 'svg', 'svgz', 'psd', 'ora'] }, ...FILTERS, { name: 'Aseprite files', extensions: ['aseprite', 'ase'] }, { name: 'SVG and layered files (Photoshop, Krita, OpenRaster)', extensions: ['svg', 'svgz', 'psd', 'ora'] }, { name: 'Pictures and sprite sheets', extensions: ['png', 'apng', 'gif', 'webp', 'jpg', 'jpeg', 'bmp'] }];
 const MAX_OPEN_BYTES = 1024 * 1024 * 1024;
 
 export interface IpcHooks {
