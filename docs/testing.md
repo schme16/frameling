@@ -565,6 +565,23 @@ npm run build
 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/pixel-live.cjs [outDir]
 ```
 
+## What is remembered between launches: scripts/e2e/remember.cjs
+
+The brush, the stroke and fill colours, loop playback and the onion skin are kept between launches (src/core/uiMemory.ts
+and src/tools/rememberUi.ts, saved inside the tool settings). This runs the real app twice on one profile on disk: the
+`set` launch changes each setting (the options through the real panels, by clicking a value and typing a number), and the
+`check` launch reads each one back and prints `kept` or `forgotten`, plus the things that should not stick (playhead, zoom,
+tool).
+
+```bash
+npm run build
+REMEMBER_PHASE=set   REMEMBER_DIR=/tmp/profile xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/remember.cjs
+REMEMBER_PHASE=check REMEMBER_DIR=/tmp/profile xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/remember.cjs
+```
+
+`REMEMBER_ROOT=<another checkout>` runs the same check against that checkout's `dist/` (for a before and after).
+`scripts/shoot.cjs` now starts from a throwaway profile, so what one run set does not show up in the next.
+
 ## Plugin sandbox: scripts/e2e/plugins.cjs
 
 Checks the sandbox page blocks network and storage, the frame can't reach the app, and both example plugins in

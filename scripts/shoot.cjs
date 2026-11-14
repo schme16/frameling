@@ -80,6 +80,9 @@ if (process.env.SHOT_SCALE) app.commandLine.appendSwitch('force-device-scale-fac
 // and the next variant's load fails (ERR_FAILED) and the run stalls.
 app.on('window-all-closed', () => {});
 
+// A throwaway profile, so what one run left behind (the brush, colours and onion skin are remembered between launches) never shows in the next.
+app.setPath('userData', fs.mkdtempSync(path.join(require('node:os').tmpdir(), 'frameling-shoot-')));
+
 app.whenReady().then(async () => {
   // The real main process answers these; for shots there is no file and no history.
   // The real main process answers these; for shots there is no file and no history (stand-ins in scripts/ipc-stubs.cjs).

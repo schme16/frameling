@@ -6,11 +6,10 @@
 import type { PathShape, SubPath } from '../core/format';
 import { uid } from '../core/doc';
 import { registerTool, type Tool, type ToolContext, type ToolPointer } from '../core/registry';
-import { drawShape } from '../core/render';
 import { store } from '../core/store';
 import type { Pt, Rect } from '../canvas/geometry';
 import { clearSnap, snapPt } from '../canvas/guides';
-import { addShapes } from './merge-mode';
+import { addDrawn, drawWithMirror } from './mirror';
 import { noteColorUsed } from './recent';
 import { getToolSettings } from './settings';
 import { viewSizeFactor } from './view-size';
@@ -123,7 +122,7 @@ function polyStarTool(kind: 'polygon' | 'star', label: string, key: string, orde
       const shape = build();
       drag = null;
       if (shape) {
-        const r = addShapes(`Draw ${label.toLowerCase()}`, [shape]).result;
+        const r = addDrawn(`Draw ${label.toLowerCase()}`, [shape]).result;
         if (r === 'ok') {
           if (shape.fill) noteColorUsed(shape.fill);
           if (shape.stroke) noteColorUsed(shape.stroke.color);
@@ -140,7 +139,7 @@ function polyStarTool(kind: 'polygon' | 'star', label: string, key: string, orde
     overlay(g, ctx) {
       if (pix.active() || activePixelLayer()) return pix.overlay(g, ctx);
       const s = build();
-      if (s) drawShape(g, s);
+      if (s) drawWithMirror(g, s);
     },
   };
 }

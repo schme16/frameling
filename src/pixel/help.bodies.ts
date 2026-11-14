@@ -37,7 +37,7 @@ The brush lays down a pattern: the pattern's dark squares take your **stroke** c
 - The pattern is fixed to the page, not to your stroke, so separate strokes always line up.
 
 The usual name for this is *ordered dithering*.`,
-  'pixel-mirror': `Press **Shift+M** to turn it on. Press it again to change direction: **left and right**, **top and bottom**, **both** (four ways at once), then off.
+  'pixel-mirror': `This is [mirror drawing](help:mirror-drawing) on a pixel layer. Press **Shift+M** to turn it on. Press it again to change direction: **left and right**, **top and bottom**, **both** (four ways at once), then off.
 
 A dashed line on the page shows where the mirror is. Everything the pencil, brush, eraser, shade, dither and shape tools paint on a pixel layer is copied across it, and the paint bucket fills the mirrored spot too.
 

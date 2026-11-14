@@ -18,6 +18,7 @@ import { startFromLast, VectorStroke } from './vectorStroke';
 import { docToPixel } from '../canvas/pixels';
 import { viewPixelSize, viewSizeFactor } from './view-size';
 import { sizeFactor, vectorDynamics } from '../tablet/dynamics';
+import { activeVectorMirror, mirrorSpots } from './mirror';
 
 let vec: VectorStroke | null = null;
 let pix: PixelStroke | null = null;
@@ -91,7 +92,8 @@ function overlay(g: CanvasRenderingContext2D, ctx: ToolContext): void {
     const s = getToolSettings();
     drawPixelFootprint(g, ctx, docToPixel(h.x, h.y, layer.pixelSize), layer.pixelSize, viewPixelSize(s.pixelBrushSize), s.pixelBrushShape, ui.color);
   } else {
-    drawRing(g, ctx, h.x, h.y, (ui.brush.size * viewSizeFactor()) / 2, 'brush');
+    const m = activeVectorMirror();
+    for (const p of m ? mirrorSpots(m, h.x, h.y) : [h]) drawRing(g, ctx, p.x, p.y, (ui.brush.size * viewSizeFactor()) / 2, 'brush');
   }
 }
 

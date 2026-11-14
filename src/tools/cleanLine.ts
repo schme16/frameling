@@ -5,9 +5,8 @@
 import type { PathPoint, PathShape, SubPath } from '../core/format';
 import { uid } from '../core/doc';
 import type { ToolContext, ToolPointer } from '../core/registry';
-import { drawShape } from '../core/render';
 import { fitCurve, rdp, type V } from '../geometry/bezier';
-import { addShapes } from './merge-mode';
+import { addDrawn, drawWithMirror } from './mirror';
 import { noteColorUsed } from './recent';
 import { reportEdit } from './util';
 import { withWellGradients } from './gradient-wells';
@@ -104,7 +103,7 @@ export class CleanLine {
     const shape = cleanLineShape(this.points, this.color, this.width);
     if (!shape) return;
     const s = withWellGradients(shape);
-    const r = addShapes('Draw clean line', [s]).result;
+    const r = addDrawn('Draw clean line', [s]).result;
     if (r === 'ok') noteColorUsed(this.color);
     else if (r !== 'nothing') reportEdit(ctx, r);
   }
@@ -116,6 +115,6 @@ export class CleanLine {
 
   draw(g: CanvasRenderingContext2D): void {
     const s = this.shape();
-    if (s) drawShape(g, s);
+    if (s) drawWithMirror(g, s);
   }
 }

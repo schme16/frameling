@@ -15,6 +15,7 @@ import { makeMirror, mirrorPoints, snapToPalette } from '../pixel/ink';
 import { getPixelSettings } from '../pixel/settings';
 import { docPalette } from '../pixel/palette';
 import { activeDrawing, activeLayer, EDIT_HINTS, editActiveDrawing, setActivePixels } from './edit';
+import { sayNoMirror } from './mirror';
 import { gridPixels } from '../core/pixelBounds';
 import { FillOptionsPanel, gapWidth, getFillOptions, setFillOptions, toleranceBytes } from './fill-options';
 import { wallsFor } from './fill-walls';
@@ -126,6 +127,8 @@ export function barrierShapes(doc: Doc, frame: number, own: readonly Shape[], al
 }
 
 function fillVector(e: ToolPointer, ctx: ToolContext) {
+  // Mirror drawing copies strokes and shapes, not a fill. Say so rather than sit lit and quiet.
+  sayNoMirror((m) => ctx.hint(m), "Mirror drawing doesn't reach the paint bucket: it fills just where you click. Click the other side too, or turn mirror drawing off.");
   const { doc } = store().get();
   // The bucket pours the fill colour (the stroke colour is for lines), as in Illustrator. With Paint and Back, it pours Paint.
   const ui = { ...store().get().ui, color: (paintWellsOn() ? store().get().ui.color : store().get().ui.fillColor) ?? '' };

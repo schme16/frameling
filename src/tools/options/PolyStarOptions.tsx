@@ -4,6 +4,7 @@ import { Wells } from '../../canvas/panels/Wells';
 import { setToolSettings, useToolSettings } from '../settings';
 import { PixelOutlineOptions, useLayerKind } from '../../pixel/ToolOptions';
 import { DrawModeToggle } from './DrawModeToggle';
+import { MirrorOptions } from './MirrorOptions';
 
 export function PolyStarOptions() {
   const tool = useStore((s) => s.ui.tool);
@@ -24,6 +25,7 @@ export function PolyStarOptions() {
         <Slider label="Sides" value={t.polygonSides} min={3} max={24} onChange={(v) => setToolSettings({ polygonSides: v })} />
       )}
       {pixel ? <PixelOutlineOptions show={strokeOn} /> : strokeOn && <Slider label="Outline thickness" value={t.shapeStroke} min={1} max={60} format={(v) => `${v}px`} onChange={(v) => setToolSettings({ shapeStroke: v })} />}
+      {!pixel && <MirrorOptions />}
       <Tip>{`Hold Shift to keep it even${star ? ' (equal arms)' : ' (all sides the same)'}. Hold Alt to draw from the middle.`}</Tip>
     </div>
   );

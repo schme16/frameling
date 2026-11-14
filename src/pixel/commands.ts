@@ -300,10 +300,10 @@ registerCommands([
   {
     id: 'pixel.mirror',
     label: 'Mirror drawing (off, left-right, up-down, both)',
-    category: 'Pixel',
+    category: 'Draw',
     keys: ['Shift+M'],
-    description: 'Draw on one side and it appears on the other too. Press again to change direction.',
-    help: 'pixel-mirror',
+    description: 'Draw on one side and it appears on the other too, on pixel and vector layers. Press again to change direction.',
+    help: 'mirror-drawing',
     keywords: ['symmetry', 'mirror', 'symmetrical', 'kaleidoscope'],
     checked: () => getPixelSettings().symmetry !== 'off',
     run: cycleMirror,

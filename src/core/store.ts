@@ -185,7 +185,7 @@ const weighPatches = (list: Patch[]): number => list.reduce((n, p) => n + weighV
 let nextEntryId = 1;
 const COALESCE_MS = 1200;
 
-function initialUi(doc: Doc): UiState {
+export function initialUi(doc: Doc): UiState {
   return {
     frame: 0,
     activeLayerId: doc.layers[doc.layers.length - 1]?.id ?? null,
@@ -414,7 +414,7 @@ export class Store {
     this.redoStack = [];
     this.loads++;
     const u = this.state.ui;
-    this.state = { doc, ui: { ...initialUi(doc), filePath, color: u.color, fillColor: u.fillColor, strokeOn: u.strokeOn, activeWell: u.activeWell, brush: u.brush, tool: u.tool } };
+    this.state = { doc, ui: { ...initialUi(doc), filePath, color: u.color, fillColor: u.fillColor, strokeOn: u.strokeOn, activeWell: u.activeWell, brush: u.brush, tool: u.tool, loopPlayback: u.loopPlayback, pingPong: u.pingPong, onion: u.onion } };
     this.emit();
     for (const fn of this.loadListeners) fn();
   }

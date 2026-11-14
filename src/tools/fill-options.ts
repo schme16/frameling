@@ -8,6 +8,7 @@ import { findLayer } from '../core/doc';
 import '../geometry/fill.css';
 import { DrawModeToggle } from './options/DrawModeToggle';
 import { Slider } from '../canvas/controls';
+import { usePixelSettings } from '../pixel/settings';
 
 export type GapPreset = 'none' | 'small' | 'medium' | 'large';
 
@@ -82,6 +83,7 @@ export function FillOptionsPanel(): ReactNode {
   const o = useFillOptions();
   const kind = useStore((s) => (findLayer(s.doc, s.ui.activeLayerId) ?? s.doc.layers[s.doc.layers.length - 1])?.kind ?? 'vector');
   const pixel = kind === 'pixel';
+  const mirrorOn = usePixelSettings((s) => s.symmetry !== 'off');
   return h(
     'div',
     { className: 'fl-fill-options' },
@@ -139,6 +141,7 @@ export function FillOptionsPanel(): ReactNode {
             o.allLayers,
             (v) => setFillOptions({ allLayers: v }),
           ),
+          mirrorOn && h('div', { className: 'fl-fill-note', key: 'mirror' }, "Mirror drawing doesn't reach the bucket. It fills just where you click."),
         ],
   );
 }

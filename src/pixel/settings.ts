@@ -1,4 +1,4 @@
-// Options for the pixel art tools (mirror drawing, shading, dither), kept in the browser's storage like the other
+// Options for the pixel art tools (mirror drawing, shading, dither; mirror drawing is shared with the vector tools), kept in the browser's storage like the other
 // tool options in src/tools/settings.ts.
 import { useSyncExternalStore } from 'react';
 import type { DitherPattern } from './dither';
@@ -11,6 +11,9 @@ export interface PixelSettings {
   /** Where the mirror lines sit, in art pixels from the left / top (half steps allowed). null = the canvas centre. */
   axisX: number | null;
   axisY: number | null;
+  /** The same two lines on a vector layer, in document pixels from the left / top. null = the page centre. */
+  vectorAxisX: number | null;
+  vectorAxisY: number | null;
   /** The shading brush makes pixels lighter (true) or darker. */
   shadeLighter: boolean;
   ditherPattern: DitherPattern;
@@ -30,6 +33,8 @@ export const DEFAULT_PIXEL_SETTINGS: PixelSettings = {
   symmetry: 'off',
   axisX: null,
   axisY: null,
+  vectorAxisX: null,
+  vectorAxisY: null,
   shadeLighter: true,
   ditherPattern: 'checker',
   ditherSize: 4,

@@ -17,6 +17,7 @@ import { CleanLine } from './cleanLine';
 import { activePixelLayer, makePixelPencil } from '../pixel/tools';
 import { byLayerKind } from '../pixel/ToolOptions';
 import { vectorDynamics } from '../tablet/dynamics';
+import { activeVectorMirror, mirrorSpots } from './mirror';
 
 let stroke: VectorStroke | CleanLine | null = null;
 const pix = makePixelPencil();
@@ -75,7 +76,9 @@ export const pencilTool: Tool = {
     if (stroke) return stroke.overlay(g);
     if (pix.active() || activePixelLayer()) return pix.overlay(g, ctx);
     const h = getHover();
-    if (h) drawRing(g, ctx, h.x, h.y, (getToolSettings().pencilSize * viewSizeFactor()) / 2, 'pencil');
+    if (!h) return;
+    const m = activeVectorMirror();
+    for (const p of m ? mirrorSpots(m, h.x, h.y) : [h]) drawRing(g, ctx, p.x, p.y, (getToolSettings().pencilSize * viewSizeFactor()) / 2, 'pencil');
   },
 };
 

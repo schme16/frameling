@@ -99,7 +99,7 @@ Click a slider's number to type an exact value (Enter keeps it, Escape cancels).
 
 ## More brush options
 
-The brush shows **Size** and the colour first, so you can start drawing. Press **More brush options** for smoothing, pressure, pointy ends, the stabilizer and **Merge shapes together**. It stays open or shut the way you left it. You can also flip it from the command palette.
+The brush shows **Size** and the colour first, so you can start drawing. Press **More brush options** for smoothing, pressure, pointy ends, the stabilizer, [mirror drawing](help:mirror-drawing) and **Merge shapes together**. It stays open or shut the way you left it. You can also flip it from the command palette.
 
 Your settings are remembered, so the brush is just as you left it next time.`,
   'grids-perspective': `**Grids**

@@ -1,0 +1,17 @@
+forgotten  vector brush size (33)
+forgotten  vector brush pointy end (17)
+forgotten  stroke colour (#123456)
+forgotten  fill colour (#654321)
+forgotten  stroke switched off
+forgotten  loop playback off
+forgotten  onion skin on
+forgotten  onion frames before (5)
+forgotten  onion frames after (3)
+forgotten  onion strength (0.6)
+kept       eraser size (40), already remembered
+kept       pencil thickness (5), already remembered
+kept       star points (9), already remembered
+kept       shape outline (11), already remembered
+kept       mirror drawing on, already remembered
+
+not meant to be kept: playhead frame 0 (was 7), zoom 0.7597222222222222 (was 2.5), tool brush (was ellipse)

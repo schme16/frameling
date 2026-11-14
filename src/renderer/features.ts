@@ -19,6 +19,7 @@ import '../plugins';
 import '../templates/app';
 import { installBeta } from '../beta';
 import { registerFeatures } from '../features/host';
+import { startRememberingUi } from '../tools/rememberUi';
 
 // Beta reports: a panel and a command. Nothing is sent without the person pressing Send.
 installBeta();
@@ -36,3 +37,6 @@ import { textFeature } from '../text';
 import { lipsyncFeature } from '../lipsync';
 
 registerFeatures([audioFeature, cameraFeature, flowFeature, godotFeature, interactivesFeature, lipsyncFeature, particlesFeature, quillPetFeature, rigFeature, textFeature, tilesFeature]);
+
+// Brush, colours, loop playback and onion skin: put back as they were, and saved from here on.
+startRememberingUi();
