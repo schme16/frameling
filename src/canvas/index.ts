@@ -11,10 +11,12 @@ import './gridView';
 import './lightTable';
 import './help';
 import { installLostHint } from './lostHint';
+import { installNudges } from '../nudge';
 
 registerPanel({ id: 'tool-options', title: 'Tool options', icon: 'sliders', component: ToolOptionsPanel, zone: 'right', order: 10, help: 'tool-options' });
 registerPanel({ id: 'colors', title: 'Colours', icon: 'palette', component: ColorsPanel, zone: 'right', order: 20, help: 'colours' });
 
 installLostHint();
+installNudges();
 
 export { CanvasView } from './CanvasView';

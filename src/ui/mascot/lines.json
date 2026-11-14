@@ -442,6 +442,16 @@
     "text": "Nothing to recover. \nBut just so you know, work you leave unsaved will show up here for a whole WEEK (just in-case ;) ).",
     "where": "File > Recover with nothing in it."
   },
+  "nudge.page": {
+    "text": "Draw something. The {tool} is ready.",
+    "where": "A faint line on the page itself while a new drawing is still empty, with the Brush or Pencil picked. It goes at the first stroke and never comes back for that file. Never printed in an export. Not Quill speaking, but his words to edit.",
+    "vars": ["tool"]
+  },
+  "nudge.page.other": { "text": "Draw something. Pick a tool and have a go.", "where": "The same faint line on an empty page when some other tool is picked (Select, Hand, Zoom and so on)." },
+  "nudge.drawn": {
+    "text": "Ooh, your first drawing! Press Play to watch it, or draw on frame 2 to make it move.",
+    "where": "A toast with Quill after the first drawing in a new file, with Play it and Not now buttons. Shows at most three times ever, and never again after Not now or Play it."
+  },
   "pixel.chooser.title": { "text": "Pixel time! What are we making?", "where": "Pixel chooser (New > Pixel art): the heading beside Quill." },
   "pixel.chooser.lead": { "text": "Pick the one that sounds most like it, but don't stress too hard, you can change your mind later.", "where": "Pixel chooser: the line under the heading." },
   "pixel.chooser.unsure": { "text": "Not sure? Pick An animation. You can switch any time, and nothing is lost.", "where": "Pixel chooser: Quill's bubble before you have picked a card." },

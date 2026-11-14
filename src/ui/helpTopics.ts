@@ -92,6 +92,14 @@ registerHelpTopics([
     keywords: ['quill', 'hedgehog', 'mascot', 'guide', 'helper', 'character', 'hide', 'show quill', 'turn off', 'goodbye', 'sad'],
   },
   {
+    id: 'empty-page',
+    title: 'The empty page and Quill\'s nudge',
+    section: 'Getting started',
+    media: 'empty-page.png',
+    summary: 'A faint line on a new page says what to do, and Quill has one tip after your first drawing. Both switch off.',
+    keywords: ['empty page', 'blank page', 'white page', 'nothing happens', 'where do i start', 'draw something', 'brush is ready', 'nudge', 'hint', 'tip', 'first drawing', 'not now', 'quiet'],
+  },
+  {
     id: 'behaviour',
     title: 'Behaviour choices',
     section: 'Settings',
