@@ -2572,6 +2572,17 @@ body.ui-resizing * {
   color: var(--muted);
   font-size: var(--fs-small);
 }
+.ui-choice-usual {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 12px 20px 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--line-soft);
+  color: var(--muted);
+  font-size: var(--fs-small);
+}
 .ui-choice-foot {
   display: flex;
   align-items: center;

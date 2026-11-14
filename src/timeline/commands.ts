@@ -1,8 +1,9 @@
 import { withChoice } from '../core/choices';
+import { frameScopeMatters, holdLongerMatters, newKeyMatters } from './matters';
 import { clashFor, type FrameScopeChoice, type HoldChoice, type NewKeyChoice } from './choices';
 /** Everything you can do from the timeline as commands: they feed the shortcuts, the palette and the tooltips. */
 import { registerCommands } from '../core/registry';
-import { findLayer } from '../core/doc';
+import { celAt, findLayer } from '../core/doc';
 import { hasArtboards } from '../artboards/model';
 import { store } from '../core/store';
 import { toast } from '../ui/toast';
@@ -30,16 +31,29 @@ const exposure = (n: number) => ({
   description: `Show this drawing for ${n} frame${n === 1 ? '' : 's'} before the next one.`,
   help: 'timeline-frames',
   keywords: ['exposure', 'hold', 'twos', 'threes', 'ones', 'duration'],
-  run: () => withChoice<HoldChoice>('timeline.holdLonger', (c) => void say(ops.setExposure(n, undefined, undefined, clashFor(c)))),
+  run: () => {
+    const { doc, ui } = store().get();
+    const layer = findLayer(doc, ops.currentLayerId());
+    const cel = layer && celAt(layer, ui.frame);
+    // Nothing after the drawing to run into: both answers give the same animation, so nothing is asked.
+    const matters = !!layer && !!cel && holdLongerMatters(layer.cels, cel.id, cel.start, n);
+    withChoice<HoldChoice>('timeline.holdLonger', (c) => void say(ops.setExposure(n, undefined, undefined, clashFor(c))), { matters, gently: true });
+  },
 });
 
 /** Adds or removes a frame on every layer or just this one, per the remembered choice (`other` flips it, for Alt). */
 function frameEdit(kind: 'insert' | 'remove', other: boolean) {
-  withChoice<FrameScopeChoice>('timeline.frameScope', (scope) => {
-    const all = (scope === 'all') !== other;
-    if (kind === 'insert') say(all ? ops.insertFrameAll() : ops.insertFrame());
-    else say(all ? ops.removeFrameAll() : ops.removeFrame());
-  });
+  withChoice<FrameScopeChoice>(
+    'timeline.frameScope',
+    (scope) => {
+      const all = (scope === 'all') !== other;
+      if (kind === 'insert') say(all ? ops.insertFrameAll() : ops.insertFrame());
+      else say(all ? ops.removeFrameAll() : ops.removeFrame());
+    },
+    // With one layer both answers do the same. Adding a frame is undone in a click, so it just happens and says so;
+    // taking one off every layer can remove drawings from the others, so that one still stops and asks.
+    { matters: frameScopeMatters(store().get().doc), gently: kind === 'insert' && !other },
+  );
 }
 
 // How the picked clip plays: one command per way, ticked for the one it uses now.
@@ -171,7 +185,13 @@ registerCommands([
     description: 'Start a new drawing on this frame, blank or as a copy (your choice in Preferences, Behaviour). A held drawing is split in two.',
     help: 'timeline-frames',
     keywords: ['keyframe', 'blank', 'new frame', 'empty', 'copy'],
-    run: () => withChoice<NewKeyChoice>('timeline.newKey', (c) => void say(ops.newBlankKey(undefined, undefined, c === 'copy'))),
+    run: () => {
+      const { doc, ui } = store().get();
+      const layerId = ops.currentLayerId();
+      // On an empty frame or a drawing with nothing in it, a copy is a blank page: nothing is asked.
+      const matters = !layerId || newKeyMatters(doc, layerId, ui.frame);
+      withChoice<NewKeyChoice>('timeline.newKey', (c) => void say(ops.newBlankKey(undefined, undefined, c === 'copy')), { matters, gently: true });
+    },
   },
   {
     id: 'timeline.duplicateKey',

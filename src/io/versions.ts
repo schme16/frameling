@@ -164,6 +164,7 @@ registerChoice<RestoreChoice>({
     { value: 'copy', label: 'Open as a copy', detail: 'The version opens as a new, unsaved drawing, and the one you have now stays as it is.' },
   ],
   default: 'in-place',
+  mustAsk: true,
   category: 'Files',
   help: 'version-history',
 });

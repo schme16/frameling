@@ -61,13 +61,18 @@ export function keepPlayheadIn(): void {
   if (ui.frame > doc.length - 1) store().setUi({ frame: Math.max(0, doc.length - 1) });
 }
 
-/** After an edit that pulled the last thing in (it ended at frame `was`, now earlier) and left empty frames, ask once what to do (then remember). */
+/** After an edit that pulled the last thing in (it ended at frame `was`, now earlier) and left empty frames: take them off and say so, until you've chosen otherwise. */
 export function offerTidyEnd(was = 0): void {
   const doc = store().get().doc;
   if (doc.editing || fitLength(doc) >= was || !emptyTail(doc)) return;
-  withChoice<TidyEndChoice>('timeline.tidyEnd', (v) => {
-    if (v === 'tidy') tidyEnd();
-  });
+  // Only empty frames go, and Undo brings them back, so it just happens and a toast says so (with a Change button).
+  withChoice<TidyEndChoice>(
+    'timeline.tidyEnd',
+    (v) => {
+      if (v === 'tidy') tidyEnd();
+    },
+    { gently: true },
+  );
 }
 
 /**

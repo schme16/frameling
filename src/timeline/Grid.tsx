@@ -1,6 +1,7 @@
 import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent as RPointerEvent } from 'react';
 import { withChoice } from '../core/choices';
 import { clashFor, type HoldChoice } from './choices';
+import { holdLongerMatters } from './matters';
 import { celAt } from '../core/doc';
 import type { Cel, Clip, Id, Layer } from '../core/format';
 import { store, useStore } from '../core/store';
@@ -752,14 +753,22 @@ export function TimelineBody() {
     if (main.current?.hasPointerCapture(e.pointerId)) main.current.releasePointerCapture(e.pointerId);
     // Push later drawings along or cover them: the remembered choice, and Alt does the other one.
     const alt = e.altKey;
-    const withClash = (fn: (clash: 'push' | 'trim') => void) =>
-      withChoice<HoldChoice>('timeline.holdLonger', (choice) => {
-        const c = clashFor(choice);
-        fn(alt ? (c === 'push' ? 'trim' : 'push') : c);
-      });
+    const withClash = (where: { layerId: string; celId: string; start: number; length: number }, fn: (clash: 'push' | 'trim') => void) => {
+      const layer = store().get().doc.layers.find((l) => l.id === where.layerId);
+      // Nothing for the dragged drawing to run into: both answers give the same animation, so nothing is asked.
+      const matters = !layer || holdLongerMatters(layer.cels, where.celId, where.start, where.length);
+      withChoice<HoldChoice>(
+        'timeline.holdLonger',
+        (choice) => {
+          const c = clashFor(choice);
+          fn(alt ? (c === 'push' ? 'trim' : 'push') : c);
+        },
+        { matters, gently: !alt },
+      );
+    };
     if (d.kind === 'length' && g?.kind === 'length') ops.setDocLength(g.length);
-    else if (d.kind === 'move' && d.moved && g?.kind === 'cel') withClash((clash) => say(ops.moveCel(d.layerId, d.celId, g.start, clash, g.layerId !== d.layerId ? g.layerId : undefined)));
-    else if (d.kind === 'resize' && g?.kind === 'cel') withClash((clash) => say(ops.resizeCel(d.layerId, d.celId, g.length, clash)));
+    else if (d.kind === 'move' && d.moved && g?.kind === 'cel') withClash({ layerId: g.layerId, celId: d.celId, start: g.start, length: g.length }, (clash) => say(ops.moveCel(d.layerId, d.celId, g.start, clash, g.layerId !== d.layerId ? g.layerId : undefined)));
+    else if (d.kind === 'resize' && g?.kind === 'cel') withClash({ layerId: d.layerId, celId: d.celId, start: g.start, length: g.length }, (clash) => say(ops.resizeCel(d.layerId, d.celId, g.length, clash)));
     else if (d.kind === 'keys') {
       if (!d.moved) {
         // A plain click on one of several picked keys picks just that one.

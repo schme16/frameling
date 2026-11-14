@@ -15,6 +15,8 @@ export interface ChoiceOption<V extends string = string> {
   detail?: string;
   /** An answer for this time only ("Not now"): never remembered, and not offered in Preferences. */
   once?: boolean;
+  /** What was done when this answer was used without asking, in the past tense, for the toast ("Started a blank drawing."). */
+  did?: string;
 }
 
 export interface ChoiceDef<V extends string = string> {
@@ -37,7 +39,46 @@ export interface ChoiceDef<V extends string = string> {
   quill?: boolean;
   /** Never ask: just use the remembered answer or the default (for choices that are preferences, not questions). */
   silent?: boolean;
+  /** Always a sheet that stops and asks, never a toast, and left alone by "Use the usual answers for everything" (it can change or lose something that Undo does not bring back). */
+  mustAsk?: boolean;
 }
+
+/** What a call can say about the moment it is asked in. */
+export interface AskOpts {
+  /** False when every answer would do the same thing right now (one layer, nothing after the drawing): nothing is asked, nothing is remembered. */
+  matters?: boolean;
+  /**
+   * Do the usual thing and say so in a toast with a Change button, instead of a sheet that stops the hand. `undo` takes
+   * the thing back so another answer can be applied; without it the last undo step is used.
+   */
+  gently?: boolean | { undo?: () => void };
+}
+
+/** The part of a call that decides how a choice is put. A pure function of what is known, so it can be tested on its own. */
+export type AskPlan = 'remembered' | 'usual' | 'toast' | 'sheet';
+
+export interface AskFacts {
+  remembered: boolean;
+  /** There is a way to ask at all (the sheet is mounted). */
+  canAsk: boolean;
+  /** A preference rather than a question, or questions are being held back (a lesson is playing). */
+  silent: boolean;
+  matters: boolean;
+  gently: boolean;
+  mustAsk: boolean;
+  /** There is a way to show a toast with a Change button. */
+  canTell: boolean;
+}
+
+export function planAsk(f: AskFacts): AskPlan {
+  if (f.remembered) return 'remembered';
+  if (f.silent || !f.canAsk || !f.matters) return 'usual';
+  if (f.gently && f.canTell && !f.mustAsk) return 'toast';
+  return 'sheet';
+}
+
+/** Tells the person what was done the usual way and lets them change it. Provided by the UI; without one the usual answer is just used. */
+export type GentleTeller = (def: ChoiceDef, value: string, run: (value: string) => void, undo: (() => void) | undefined) => void;
 
 export type ChoiceAsker = (def: ChoiceDef) => Promise<{ value: string; remember: boolean } | null>;
 
@@ -135,6 +176,38 @@ export function setChoiceAsker(fn: ChoiceAsker | null): void {
   asker = fn;
 }
 
+let teller: GentleTeller | null = null;
+
+export function setGentleTeller(fn: GentleTeller | null): void {
+  teller = fn;
+}
+
+/** Puts one choice to the person with its sheet, whatever is remembered (the Change button on a toast). */
+export function askAgain(id: string, startOn?: string): Promise<{ value: string; remember: boolean } | null> {
+  const def = defs.get(id);
+  if (!def || !asker) return Promise.resolve(null);
+  return asker(startOn ? { ...def, highlight: startOn } : def);
+}
+
+/**
+ * Sets every choice to its usual answer, so nothing asks again ("Use the usual answers for everything"). Choices that
+ * must always ask, and the ones already answered, are left alone. Every choice is still listed in Preferences > Behaviour.
+ * Returns how many it set.
+ */
+export function setUsualAnswers(): number {
+  let n = 0;
+  const next = { ...answers };
+  for (const def of defs.values()) {
+    if (def.mustAsk || def.silent || next[def.id] !== undefined) continue;
+    next[def.id] = def.default;
+    n++;
+  }
+  answers = next;
+  save();
+  emit();
+  return n;
+}
+
 let deferral: (() => boolean) | null = null;
 
 /**
@@ -179,13 +252,28 @@ export function choose<V extends string = string>(id: string): Promise<V> {
  * Runs `fn` with the answer: straight away (same tick) when it's already known or can't be asked, otherwise after
  * the person answers. Prefer this over `choose` in event handlers, so remembered choices act instantly.
  */
-export function withChoice<V extends string = string>(id: string, fn: (value: V) => void): void {
+export function withChoice<V extends string = string>(id: string, fn: (value: V) => void, opts: AskOpts = {}): void {
   const def = defs.get(id);
-  if (answers[id] !== undefined || !asker || def?.silent || deferred()) {
+  const gently = !!opts.gently;
+  const plan = planAsk({
+    remembered: answers[id] !== undefined,
+    canAsk: !!asker,
+    silent: !!def?.silent || deferred(),
+    matters: opts.matters !== false,
+    gently,
+    mustAsk: !!def?.mustAsk,
+    canTell: !!teller,
+  });
+  if (plan === 'remembered' || plan === 'usual') {
     fn(currentChoice<V>(id));
-    return;
+  } else if (plan === 'toast' && def) {
+    // Do the usual thing now, say so, and remember it so the toast is a one-off (Preferences still lists it).
+    const undo = typeof opts.gently === 'object' ? opts.gently.undo : undefined;
+    setChoice(id, def.default);
+    teller!(def, def.default, fn as (value: string) => void, undo);
+  } else {
+    void choose<V>(id).then(fn);
   }
-  void choose<V>(id).then(fn);
 }
 
 /** Calls `fn` whenever a remembered answer changes, with the choice and its new value (undefined = forgotten). */
@@ -227,5 +315,6 @@ export function _resetChoicesForTests(): void {
   defs.clear();
   pending.clear();
   asker = null;
+  teller = null;
   deferral = null;
 }

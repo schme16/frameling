@@ -95,7 +95,7 @@ registerHelpTopics([
     title: 'Behaviour choices',
     section: 'Settings',
     media: 'behaviour-choice.png',
-    summary: 'Some things people like differently. Frameling asks the first time, then remembers.',
+    summary: 'Some things people like differently. Frameling does the usual thing, tells you, and lets you change it.',
     keywords: ['ask', 'remember', 'choice', 'behaviour', 'behavior', 'preference', 'held', 'space', 'wheel'],
   },
   {

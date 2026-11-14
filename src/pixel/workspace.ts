@@ -23,7 +23,7 @@ registerChoice({
   dismiss: 'later',
   quill: true,
   options: [
-    { value: 'always', label: 'Always', detail: 'Pixel art opens in the Pixel workspace, and drawings in Draw. After this it happens by itself, no more questions.' },
+    { value: 'always', label: 'Always', did: 'Switched workspace to match your drawing.', detail: 'Pixel art opens in the Pixel workspace, and drawings in Draw. After this it happens by itself, no more questions.' },
     { value: 'later', label: 'Not now', detail: 'Stay as you are this time. Frameling asks again next time it matters.', once: true },
     { value: 'never', label: 'Never', detail: 'Keep my layout as it is. View > Workspaces switches any time.' },
   ],
@@ -85,10 +85,16 @@ export function watchPixelDocs(
       if (pixel) then();
       return;
     }
-    withChoice(FOLLOW_CHOICE, (v) => {
-      if (v === 'always') follow();
-      if (pixel) then();
-    });
+    // Switching is easy to take back, so it just happens and a toast says so (with a Change button).
+    const from = dock.get().workspaceId;
+    withChoice(
+      FOLLOW_CHOICE,
+      (v) => {
+        if (v === 'always') follow();
+      },
+      { gently: { undo: () => void applyWorkspace(from) } },
+    );
+    if (pixel) then();
   });
 }
 
