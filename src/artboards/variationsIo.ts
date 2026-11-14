@@ -51,7 +51,7 @@ const LAYER_KEYS: Record<string, Check> = {
   ext: obj,
 };
 const SOUND_KEYS: Record<string, Check> = { name: str, start: (v) => num(v), volume: (v) => num(v) && v >= 0 && v <= 1, muted: bool };
-const CEL_KEYS: Record<string, Check> = { start: (v) => int(v, 0), length: (v) => int(v, 1), tween: obj, autoHold: bool, drawingId: str };
+const CEL_KEYS: Record<string, Check> = { start: (v) => int(v, 0), length: (v) => int(v, 1), tween: obj, autoHold: bool, drawingId: str, offset: (v) => isObj(v) && num(v.x) && num(v.y) };
 const VIEW_KEYS: Record<string, Check> = { x: num, y: num, zoom: (v) => num(v) && v > 0, rotation: num };
 const STAGE_CHECKS: Record<string, Check> = {
   width: (v) => int(v, 1) && v <= 16384,

@@ -10,7 +10,7 @@ import { duplicateClipAndPick, say } from './commands';
 import { keyHint } from './cmd';
 import { chipBox } from './clipLayout';
 import { MAX_LENGTH } from './edit-core';
-import { celGap, frameAtX, holdWords, labelStep, thinCels, visibleFrames, zoomScroll } from './geometry';
+import { celGap, frameAtX, holdWords, labelStep, movedWords, thinCels, visibleFrames, zoomScroll } from './geometry';
 import { placesOf, sharedDrawings, type DrawingUse } from '../core/sharedDrawings';
 import { SharedMark, sharedTitle } from './SharedMark';
 import { LayerList, LayerTools, ROW_H } from './Layers';
@@ -113,10 +113,14 @@ const GridRow = memo(function GridRow({ layer, cw, from, to, active, shared }: {
         return (
           <div
             key={c.id}
-            className={`tl-cel${auto ? ' is-auto' : ''}${use ? ' is-shared' : ''}${p.dense ? ' is-dense' : ''}${width < 8 ? ' is-thin' : ''}`}
+            className={`tl-cel${auto ? ' is-auto' : ''}${use ? ' is-shared' : ''}${c.offset && !p.dense ? ' is-moved' : ''}${p.dense ? ' is-dense' : ''}${width < 8 ? ' is-thin' : ''}`}
             data-cel={c.id}
             style={{ left: p.left + gap / 2, width: Math.max(1, width) }}
-            title={p.dense ? `${p.count} short drawings. Zoom in to see each one.` : sharedTitle(use, auto ? 'This drawing carries on until your next one. Draw on a later frame to start a new drawing there.' : undefined)}
+            title={
+              p.dense
+                ? `${p.count} short drawings. Zoom in to see each one.`
+                : [c.offset ? movedWords(c.offset) : '', sharedTitle(use, auto ? 'This drawing carries on until your next one. Draw on a later frame to start a new drawing there.' : undefined) ?? ''].filter(Boolean).join(' ') || undefined
+            }
           >
             {p.dense ? null : (
               <span className="tl-cel-key" style={{ width: Math.max(1, Math.min(cw, c.length * cw) - gap) }}>

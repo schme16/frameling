@@ -4,6 +4,7 @@ import { registerPanel } from '../core/registry';
 import './choices';
 import './commands';
 import './keyCommands';
+import './offsetCommands';
 import './frameClipCommands';
 import './clipSightCommands';
 import './range';

@@ -57,6 +57,15 @@ registerHelpTopics([
     keywords: ['fit', 'zoom out', 'long animation', 'hundreds of frames', 'whole animation', 'show all frames', 'zoom to fit', 'thin', 'narrow frames'],
   },
   {
+    id: 'timeline-move-drawing',
+    order: 2.3,
+    title: 'Move a drawing without redrawing it',
+    section: 'Animating',
+    media: 'timeline-move-drawing.png',
+    summary: 'A breathe or a head bob moves a part by a pixel or two. Nudge the drawing on each frame instead of drawing it again.',
+    keywords: ['offset', 'nudge', 'bob', 'breathe', 'head bob', 'move', 'reposition', 'shift', 'duplicate drawings', 'folder', 'group', 'together', 'one pixel'],
+  },
+  {
     id: 'timeline-copy-keys',
     order: 2.2,
     title: 'Copying frames and keys',

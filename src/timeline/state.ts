@@ -21,6 +21,8 @@ export interface TlState {
   drawingsAll: boolean;
   /** Counts up each time "Find a drawing" is run, so the open panel puts the cursor in its search box. */
   findTick: number;
+  /** Moving a drawing (Ctrl+Alt+arrows) moves the whole folder it is in instead, so the group moves together. */
+  moveFolder: boolean;
 }
 
 /** Frames can go very narrow, so a clip of thousands of frames still fits the window (see thinCels in geometry.ts). */
@@ -32,7 +34,7 @@ export const DEFAULT_CW = 22;
 export const cwToSlider = (cw: number): number => Math.log(Math.max(MIN_CW, Math.min(MAX_CW, cw)) / MIN_CW) / Math.log(MAX_CW / MIN_CW);
 export const sliderToCw = (v: number): number => MIN_CW * Math.pow(MAX_CW / MIN_CW, Math.max(0, Math.min(1, v)));
 
-const freshTl = (): TlState => ({ cw: DEFAULT_CW, clipId: null, editing: null, open: new Set(), keys: new Set(), drawingsAll: false, findTick: 0 });
+const freshTl = (): TlState => ({ cw: DEFAULT_CW, clipId: null, editing: null, open: new Set(), keys: new Set(), drawingsAll: false, findTick: 0, moveFolder: false });
 let state: TlState = freshTl();
 const listeners = new Set<() => void>();
 

@@ -45,6 +45,13 @@ stops `npm run build:mascot`, and `test/ui/mascots.test.ts` fails for every masc
 breaks the contract, whose frames fall outside the picture, or whose source file is missing. Adding a clip to `CLIPS`
 means every mascot has to draw it.
 
+The sheet builder (`scripts/mascot/sheet.ts`, `docToSheet`) draws the way the canvas does for what a pixel sheet can
+hold: a layer's opacity and blend mode, a folder's opacity and blend mode (a fading folder is drawn as one picture and
+then faded, so its layers don't show through each other), hidden folders left out, and a key's offset (a part nudged
+without redrawing it; the same drawing in two places is two tiles). Effects, clipping and masks are not applied, and the
+build says so for any layer that has them. `npm run build:mascot` and `node brand/mascot/mascot.mjs check` fail if a
+frame of the sheet that ships differs from what the file builds. Blend maths for plain bytes is `src/effects/blendPure.ts`.
+
 ## Adding a mascot
 
 1. Draw the source as a Frameling file with all the clips above, under `brand/<name>/`.

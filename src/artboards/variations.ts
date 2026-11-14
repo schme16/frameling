@@ -1389,7 +1389,7 @@ const LAYER_WORDS: Record<string, string> = {
   rig: 'bones',
 };
 
-const CEL_WORDS: Record<string, string> = { start: 'moved', length: 'held for a different time', tween: 'in-between', drawingId: 'drawing', autoHold: 'hold' };
+const CEL_WORDS: Record<string, string> = { start: 'moved', length: 'held for a different time', tween: 'in-between', drawingId: 'drawing', autoHold: 'hold', offset: 'position' };
 
 const STAGE_WORDS: Record<string, string> = { background: 'Background colour', clips: 'Clips', markers: 'Markers', flow: 'Clip flow', guides: 'Guides', inOut: 'In and out points', perspective: 'Perspective guides', length: 'Length', fps: 'Speed (frames per second)' };
 

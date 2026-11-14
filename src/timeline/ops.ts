@@ -13,6 +13,8 @@ import { store } from '../core/store';
 import { placesOf } from '../core/sharedDrawings';
 import { askAboutMasks } from '../effects/ops';
 import * as core from './edit-core';
+import * as offsetCore from './offset-core';
+import { canOffset } from '../core/offset';
 import type { Clash } from './edit-core';
 import { shiftInOut } from './inout';
 import { emptyTail, fitLength, tidyEnd as tidyEndCore } from './tidyEnd';
@@ -20,7 +22,7 @@ import { canAsk, currentChoice, rememberedChoice, withChoice } from '../core/cho
 import type { TidyEndChoice } from './choices';
 import './choices';
 
-export type Reason = 'locked' | 'no-layer' | 'nothing-here' | 'last-layer' | 'no-change' | 'in-symbol' | 'not-shared';
+export type Reason = 'locked' | 'no-layer' | 'nothing-here' | 'last-layer' | 'no-change' | 'in-symbol' | 'not-shared' | 'cannot-move' | 'no-folder';
 export interface Outcome {
   ok: boolean;
   reason?: Reason;
@@ -36,6 +38,8 @@ const WHY: Record<Reason, string> = {
   'no-change': 'Nothing to change there.',
   'in-symbol': 'Markers and clips belong to the main scene. Go back out of the symbol first.',
   'not-shared': "This drawing is only shown here, so it's already its own.",
+  'cannot-move': "Only drawing layers can be moved this way, not a camera, a skeleton or tiles.",
+  'no-folder': "This layer isn't in a folder. Put it in one first, then you can move the whole folder.",
 };
 
 /** A friendly sentence for why an op did nothing. */
@@ -418,4 +422,60 @@ function simple(label: string, run: (doc: Draft<Doc>) => boolean, opts?: { coale
   let did = false;
   store().update(label, (d) => void (did = run(d)), opts);
   return did ? ok() : no('no-change');
+}
+
+// ---------------------------------------------------------------- moving a drawing without redrawing it
+
+/**
+ * Moves the drawing on the picked layer at this frame by (dx, dy) steps: a step is a pixel, or an art pixel on a pixel
+ * layer. On a later frame of a held drawing it makes a new key there that shares the drawing (see offset-core.ts).
+ */
+export function nudgeKey(dx: number, dy: number, layerId?: Id, frame?: number): Outcome {
+  const t = target(layerId, frame);
+  if (!t) return no('no-layer');
+  const layer = findLayer(store().get().doc, t.layerId);
+  if (layer && !canOffset(layer)) return no('cannot-move');
+  if (layer && !celAt(layer, t.frame)) return no('nothing-here');
+  return edit('Move drawing', t.layerId, (d, id) => offsetCore.nudge(d as Doc, id, t.frame, dx, dy), { coalesce: `offset:${t.layerId}:${t.frame}` });
+}
+
+/** Puts the drawing on the picked layer back where it was drawn. */
+export function resetKeyOffset(layerId?: Id, frame?: number): Outcome {
+  const t = target(layerId, frame);
+  if (!t) return no('no-layer');
+  return edit('Put drawing back', t.layerId, (d, id) => offsetCore.setOffset(d as Doc, id, t.frame, undefined));
+}
+
+/** Sets exactly where the drawing sits (document pixels from where it was drawn). */
+export function setKeyOffset(x: number, y: number, layerId?: Id, frame?: number): Outcome {
+  const t = target(layerId, frame);
+  if (!t) return no('no-layer');
+  return edit('Move drawing', t.layerId, (d, id) => offsetCore.setOffset(d as Doc, id, t.frame, { x, y }));
+}
+
+/** The folder the picked layer sits in, if any. */
+export function pickedFolderId(): Id | null {
+  const { doc } = store().get();
+  const layer = findLayer(doc, currentLayerId());
+  return layer?.folder && doc.folders?.[layer.folder] ? layer.folder : null;
+}
+
+/** Moves every drawing in the picked layer's folder at this frame by the same amount, so the group moves together. One undo step. */
+export function nudgeFolder(dx: number, dy: number, frame?: number): Outcome {
+  const folder = pickedFolderId();
+  if (!folder) return no('no-folder');
+  const at = frame ?? store().get().ui.frame;
+  let moved = 0;
+  store().update('Move folder', (d) => void (moved = offsetCore.nudgeFolder(d as Doc, folder, at, dx, dy)), { coalesce: `offset-folder:${folder}:${at}` });
+  return moved ? ok() : no('nothing-here');
+}
+
+/** Puts every drawing in the picked layer's folder back where it was drawn, at this frame. */
+export function resetFolderOffset(frame?: number): Outcome {
+  const folder = pickedFolderId();
+  if (!folder) return no('no-folder');
+  const at = frame ?? store().get().ui.frame;
+  let moved = 0;
+  store().update('Put folder back', (d) => void (moved = offsetCore.resetFolder(d as Doc, folder, at)));
+  return moved ? ok() : no('no-change');
 }

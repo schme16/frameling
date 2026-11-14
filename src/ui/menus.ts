@@ -60,7 +60,7 @@ export const MENUS: MenuDef[] = [
     label: 'Animate',
     title: 'Frames and motion',
     categories: ['Animate', 'Animation', 'Timeline', 'Frames', 'Sound', 'Lip sync'],
-    items: ['timeline.play', 'timeline.toggleLoop', 'timeline.togglePingPong', '-', 'timeline.toggleOnion', 'timeline.onionKeysOnly', 'timeline.onionBoards', 'timeline.onionAcrossClips', '-', 'sub:range', 'sub:goto', '-', 'timeline.newKey', 'timeline.emptyFrame', 'timeline.duplicateKey', 'timeline.makeOwnDrawing', 'timeline.clearKey', 'timeline.nameKey', 'timeline.deleteKeys', 'sub:keys', 'sub:holds', '-', 'timeline.insertFrame', 'timeline.removeFrame', 'timeline.insertFrameOther', 'timeline.removeFrameOther', 'timeline.tidyEnd', 'timeline.addMarker', '-', 'sub:tween', 'sub:drawon', 'sub:motions', 'sub:camera', 'sub:atext', 'sub:clips', '-', 'sub:rig', 'sub:sound', 'sub:reference', 'sub:artboards'],
+    items: ['timeline.play', 'timeline.toggleLoop', 'timeline.togglePingPong', '-', 'timeline.toggleOnion', 'timeline.onionKeysOnly', 'timeline.onionBoards', 'timeline.onionAcrossClips', '-', 'sub:range', 'sub:goto', '-', 'timeline.newKey', 'timeline.emptyFrame', 'timeline.duplicateKey', 'timeline.makeOwnDrawing', 'timeline.clearKey', 'timeline.nameKey', 'timeline.deleteKeys', 'sub:keys', 'sub:holds', 'sub:movedrawing', '-', 'timeline.insertFrame', 'timeline.removeFrame', 'timeline.insertFrameOther', 'timeline.removeFrameOther', 'timeline.tidyEnd', 'timeline.addMarker', '-', 'sub:tween', 'sub:drawon', 'sub:motions', 'sub:camera', 'sub:atext', 'sub:clips', '-', 'sub:rig', 'sub:sound', 'sub:reference', 'sub:artboards'],
   },
   {
     label: 'Help',
@@ -252,6 +252,11 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
   holds: {
     label: 'Hold a drawing',
     items: ['timeline.hold1', 'timeline.hold2', 'timeline.hold3', 'timeline.hold4'],
+  },
+  movedrawing: {
+    label: 'Move a drawing without redrawing it',
+    items: ['timeline.offsetLeft', 'timeline.offsetRight', 'timeline.offsetUp', 'timeline.offsetDown', '-', 'timeline.offsetFolder', 'timeline.offsetReset'],
+    prefixes: ['timeline.offset'],
   },
   tween: {
     label: 'In-betweens and easing',

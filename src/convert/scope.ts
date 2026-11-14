@@ -1,5 +1,5 @@
 // How many frames a conversion reaches, and which drawings that means. Pure: layers and frame numbers in, a list out.
-import type { Cel, Clip, Id, Layer } from '../core/format';
+import type { Cel, CelOffset, Clip, Id, Layer } from '../core/format';
 
 export type FramesWhere = 'this' | 'clip' | 'all';
 
@@ -14,6 +14,8 @@ export interface Bake {
   drawingId: Id;
   /** Bakes with the same key give the same picture, so it is worked out once (a drawing held on two keys, say). */
   key: string;
+  /** Pixels into shapes: where the key was moved to (see core/offset.ts), which the new key keeps. Shapes into pixels draw it into the picture instead. */
+  offset?: CelOffset;
 }
 
 /**
@@ -24,11 +26,12 @@ export interface Bake {
 export function bakesFor(layer: Layer, where: FramesWhere, frame: number, clip: Pick<Clip, 'start' | 'end'> | null): Bake[] {
   const out: Bake[] = [];
   const perFrame = (c: Cel) => layer.kind === 'vector' && !!c.tween;
+  // A moved vector drawing is drawn into its picture, so the same drawing in two places is two pictures. A moved pixel drawing is traced as it was drawn and the new key is moved the same.
   const push = (c: Cel, from: number, to: number) => {
     // `from` to `to` are the frames of this key to bake, inclusive.
     if (perFrame(c)) {
       for (let f = from; f <= to; f++) out.push({ start: f, length: 1, frame: f, drawingId: c.drawingId, key: `${c.drawingId}@${f}` });
-    } else out.push({ start: from, length: to - from + 1, frame: c.start, drawingId: c.drawingId, key: c.drawingId });
+    } else out.push({ start: from, length: to - from + 1, frame: c.start, drawingId: c.drawingId, key: c.offset && layer.kind === 'vector' ? `${c.drawingId}~${c.offset.x},${c.offset.y}` : c.drawingId, ...(c.offset && layer.kind === 'pixel' ? { offset: { ...c.offset } } : {}) });
   };
   if (where === 'this') {
     const c = layer.cels.find((x) => frame >= x.start && frame < x.start + x.length);

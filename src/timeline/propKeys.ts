@@ -8,7 +8,7 @@
  * Pure on a draft or plain doc. `planPropEdits` only looks (so a refusal leaves the doc alone); `applyPropEdits` does it.
  */
 import type { Cel, Doc, Id, Layer } from '../core/format';
-import { allLayerLists, isInstance, nextKey, pairInstances, symbolContent, tweenInstance, tweenProgress } from '../core/symbols';
+import { allLayerLists, celOffsetAt, isInstance, nextKey, pairInstances, symbolContent, tweenInstance, tweenProgress } from '../core/symbols';
 import { cameraViewOn } from '../core/camera';
 import { cutTween, cutProblem, takeTurns } from '../core/tweenCut';
 import { rigPoseAt } from '../rig/pose';
@@ -153,6 +153,7 @@ export function splitCel(doc: Doc, layer: Layer, frame: number): Cel | undefined
   if (!cel || !d) return undefined;
   const local = frame - cel.start;
   const tp = tweenProgress(layer, cel, frame);
+  const here = celOffsetAt(layer, frame);
   let nd;
   if (d.kind === 'camera') {
     nd = cloneDrawing(d);
@@ -198,6 +199,8 @@ export function splitCel(doc: Doc, layer: Layer, frame: number): Cel | undefined
     cel.tween = halves.first;
   }
   if (cel.autoHold) cut.autoHold = true;
+  // The new key sits where the glide had got to, so a moved drawing keeps its motion (see core/offset.ts).
+  if (here) cut.offset = { ...here };
   cel.length = local;
   delete cel.autoHold;
   layer.cels.splice(layer.cels.indexOf(cel) + 1, 0, cut);

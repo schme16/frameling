@@ -158,6 +158,9 @@ export function setGeometryDoc(fn: (() => Doc) | null): void {
   docSource = fn ?? (() => store().get().doc);
 }
 
+/** A box moved by a key's offset (see core/offset.ts). */
+const moveRect = (r: Rect, o: { x: number; y: number } | undefined): Rect => (o ? { ...r, x: r.x + o.x, y: r.y + o.y } : r);
+
 const symBounds = new WeakMap<Layer[], { drawings: Doc['drawings']; symbols: Doc['symbols']; r: Rect | null }>();
 let boundsDepth = 0;
 
@@ -176,9 +179,9 @@ export function symbolBounds(doc: Doc, id: string): Rect | null {
         if (!d) continue;
         if (d.kind === 'vector') {
           const b = unionRects(d.shapes.map((s) => (s.type === 'instance' ? instanceBoundsIn(doc, s) : shapeBounds(s))).filter((r): r is Rect => !!r));
-          if (b) rects.push(b);
+          if (b) rects.push(moveRect(b, cel.offset));
         } else if (d.kind === 'pixel' && l.kind === 'pixel') {
-          if (d.width > 0 && d.height > 0) rects.push({ x: (d.x ?? 0) * l.pixelSize, y: (d.y ?? 0) * l.pixelSize, w: d.width * l.pixelSize, h: d.height * l.pixelSize });
+          if (d.width > 0 && d.height > 0) rects.push(moveRect({ x: (d.x ?? 0) * l.pixelSize, y: (d.y ?? 0) * l.pixelSize, w: d.width * l.pixelSize, h: d.height * l.pixelSize }, cel.offset));
         }
       }
   } finally {

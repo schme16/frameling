@@ -7,7 +7,7 @@ import type { Cel, Easing, Id, Layer } from '../core/format';
 import type { DrawingUse } from '../core/sharedDrawings';
 import { easeLabel, tweenEase } from '../core/ease';
 import { nextKey } from '../core/symbols';
-import { celLabelBox, holdWords, MIN_LABEL_W, thinCels } from './geometry';
+import { celLabelBox, holdWords, MIN_LABEL_W, movedWords, thinCels } from './geometry';
 import { InlineName } from './Menu';
 import * as ops from './ops';
 import { setTl, useTl } from './state';
@@ -40,7 +40,8 @@ export function EaseCurve({ ease: e, slice, width, height = 12 }: { ease: Easing
 function celTitle(layer: Layer, c: Cel, tweened: boolean): string {
   const span = c.length > 1 ? `, held for ${holdWords(c.length)}` : '';
   const tw = tweened && c.tween ? `. ${c.tween.kind === 'shape' ? 'Melts into the next drawing (shape tween)' : 'Moves to the next drawing (tween)'}, ${easeLabel(c.tween.ease).toLowerCase()}` : '';
-  return `${layer.name}: ${c.name ? '"' + c.name + '", ' : ''}drawing at frame ${c.start + 1}${span}${tw}. Drag the diamond to retime it, drag the block to move it, drag its end to hold it longer.`;
+  const moved = c.offset ? ` ${movedWords(c.offset)}` : '';
+  return `${layer.name}: ${c.name ? '"' + c.name + '", ' : ''}drawing at frame ${c.start + 1}${span}${tw}.${moved} Drag the diamond to retime it, drag the block to move it, drag its end to hold it longer.`;
 }
 
 /** One layer's row: keys (solid cell with a diamond), holds (a band with an end cap), tweens (an arrow with the easing). */
@@ -95,7 +96,7 @@ export const DetailRow = memo(function DetailRow({ layer, cw, from, to, active, 
         return (
           <div
             key={c.id}
-            className={`tl-cel tl-dcel${auto ? ' is-auto' : ''}${use ? ' is-shared' : ''}${tweened ? (c.tween?.kind === 'shape' ? ' is-shape' : ' is-tween') : c.tween ? ' is-broken' : ''}${c.length === 1 ? ' is-single' : ''}${w < 8 ? ' is-thin' : ''}`}
+            className={`tl-cel tl-dcel${auto ? ' is-auto' : ''}${use ? ' is-shared' : ''}${c.offset ? ' is-moved' : ''}${tweened ? (c.tween?.kind === 'shape' ? ' is-shape' : ' is-tween') : c.tween ? ' is-broken' : ''}${c.length === 1 ? ' is-single' : ''}${w < 8 ? ' is-thin' : ''}`}
             data-cel={c.id}
             style={{ left: p.left, width: w }}
             title={sharedTitle(use, celTitle(layer, c, tweened))}

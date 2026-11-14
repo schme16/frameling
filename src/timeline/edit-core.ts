@@ -169,12 +169,14 @@ export function newBlankKey(doc: Doc, layerId: Id, frame: number, copy = false):
   } else if (cel.start === frame) {
     const d = make(doc.drawings[cel.drawingId]);
     cel.drawingId = d.id;
+    // A fresh blank drawing starts where it was drawn; a copy stays where it was moved to (see core/offset.ts).
+    if (!copy) delete cel.offset;
     id = cel.id;
   } else {
     const oldEnd = end(cel);
     const d = make(doc.drawings[cel.drawingId]);
     cel.length = frame - cel.start;
-    const c: Cel = { id: uid('c'), start: frame, length: oldEnd - frame, drawingId: d.id, ...(cel.autoHold ? { autoHold: true } : {}) };
+    const c: Cel = { id: uid('c'), start: frame, length: oldEnd - frame, drawingId: d.id, ...(cel.autoHold ? { autoHold: true } : {}), ...(copy && cel.offset ? { offset: { ...cel.offset } } : {}) };
     layer.cels.push(c);
     layer.cels.sort((a, b) => a.start - b.start);
     id = c.id;
@@ -199,11 +201,11 @@ export function duplicateKey(doc: Doc, layerId: Id, frame: number): Id | null {
   doc.drawings[copy.id] = copy;
   let c: Cel;
   if (target < end(cel)) {
-    c = { id: uid('c'), start: target, length: end(cel) - target, drawingId: copy.id, ...(cel.autoHold ? { autoHold: true } : {}) };
+    c = { id: uid('c'), start: target, length: end(cel) - target, drawingId: copy.id, ...(cel.autoHold ? { autoHold: true } : {}), ...(cel.offset ? { offset: { ...cel.offset } } : {}) };
     cel.length = target - cel.start;
   } else {
     if (celAt(layer, target)) shiftFrom(layer, target, 1);
-    c = { id: uid('c'), start: target, length: 1, drawingId: copy.id };
+    c = { id: uid('c'), start: target, length: 1, drawingId: copy.id, ...(cel.offset ? { offset: { ...cel.offset } } : {}) };
   }
   layer.cels.push(c);
   layer.cels.sort((a, b) => a.start - b.start);

@@ -5,6 +5,7 @@
  */
 import type { Cel, Doc, Drawing, Id, Layer, Pose, Rig, VectorDrawing, VectorLayer } from '../core/format';
 import { tweenEase } from '../core/ease';
+import { celOffsetAt } from '../core/symbols';
 import { siblings } from '../core/sharedLayers';
 import type { PosedMesh } from '../core/layerKinds';
 import { deformMesh, lerpPose, mapply, minv, mmul, rigState, unposeOnMesh, type Mat, type RigState } from './math';
@@ -213,7 +214,11 @@ export const STAGE_TOOLS = new Set(['bone', 'pose', 'weights', 'hand', 'zoom', '
 export function toLayerSpace(doc: Doc, layerId: Id | null, frame: number, tool: string, p: { x: number; y: number }): { x: number; y: number } {
   if (!layerId || STAGE_TOOLS.has(tool)) return p;
   const layer = doc.layers.find((l) => l.id === layerId);
-  if (!layer?.bind) return p;
+  if (!layer) return p;
+  // A key that is moved (see core/offset.ts) sits outside the bone, so its offset comes off first.
+  const off = celOffsetAt(layer, frame);
+  if (off) p = { x: p.x - off.x, y: p.y - off.y };
+  if (!layer.bind) return p;
   const r = bindRig(doc, layer);
   if (!r) return p;
   const mesh = layer.bind.mesh;
@@ -225,11 +230,21 @@ export function toLayerSpace(doc: Doc, layerId: Id | null, frame: number, tool: 
   return m ? mapply(minv(m), p.x, p.y) : p;
 }
 
-/** The extra transform a tool's overlay needs on an attached layer (undefined when none). */
+/** The extra transform a tool's overlay needs on an attached or moved layer (undefined when none). */
 export function overlayMatrix(doc: Doc, layerId: Id | null, frame: number, tool: string): Mat | undefined {
   if (!layerId || STAGE_TOOLS.has(tool)) return undefined;
   const layer = doc.layers.find((l) => l.id === layerId);
-  if (!layer?.bind || layer.bind.mesh) return undefined;
-  const m = bindMatrixAt(doc, layer, frame);
+  if (!layer) return undefined;
+  return placementAt(doc, layer, frame);
+}
+
+/**
+ * Where a layer's own art is on the stage at a frame beyond the camera: carried by its bone (rigid attachments), then
+ * moved by its key's offset. Undefined when it sits where it was drawn. Bending attachments are drawn through their mesh.
+ */
+export function placementAt(doc: Doc, layer: Layer, frame: number): Mat | undefined {
+  const bone = layer.bind && !layer.bind.mesh ? bindMatrixAt(doc, layer, frame) : undefined;
+  const off = celOffsetAt(layer, frame);
+  const m = off ? (bone ? mmul([1, 0, 0, 1, off.x, off.y], bone) : ([1, 0, 0, 1, off.x, off.y] as Mat)) : bone;
   return m && !isIdentity(m) ? m : undefined;
 }

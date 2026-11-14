@@ -3,6 +3,9 @@
 // No DOM and no fs here: scripts/build-mascot.mjs does the disk, test/io/mascot-source.test.ts checks the maths.
 import { gridPixels } from '../../src/core/pixelBounds';
 import { celAt } from '../../src/core/doc';
+import { celOffsetAt } from '../../src/core/symbols';
+import { folderChain, layerTree, type TreeNode } from '../../src/core/folders';
+import { blendOnto } from '../../src/effects/blendPure';
 import { artboardDoc, artboardsOf, arrangeArtboards, contentOf, hasArtboards, nextSpot, putContent } from '../../src/artboards/model';
 import type { Artboard, ArtboardContent, Cel, Clip, Doc, Layer, PixelDrawing, PixelLayer, Swatch } from '../../src/core/format';
 import { FORMAT_VERSION } from '../../src/core/format';
@@ -103,6 +106,10 @@ function sourceLayers(doc: Doc, warnings: string[]): PixelLayer[] {
       warnings.push(`Layer "${l.name}" is a vector layer, so it was left out (the mascot is pixel art).`);
       continue;
     }
+    // The builder mixes opacity and blend modes (layers and folders). Anything beyond that would come out different from the canvas, so say so.
+    const chain = [l, ...folderChain(doc.folders, l.folder)];
+    if (chain.some((x) => x.effects?.some((e) => e.on !== false))) warnings.push(`"${l.name}" has effects (on it or on a folder it sits in), which the sheet does not apply.`);
+    if (l.clipToBelow || l.mask) warnings.push(`"${l.name}" is a clipping or mask layer, which the sheet does not apply.`);
     out.push(l);
   }
   return out;
@@ -115,21 +122,67 @@ function grid(doc: Doc, l: PixelLayer, d: PixelDrawing): RawImage {
   return { width, height, pixels: gridPixels(d, width, height) };
 }
 
-/** One frame of the document, all source layers flattened, at the document's size. */
+/** A layer's picture for one key, at the document's size and where the key's offset puts it (undefined when there is nothing to draw). */
+function layerArt(doc: Doc, l: PixelLayer, cel: Cel | undefined): RawImage | undefined {
+  const d = cel ? (doc.drawings[cel.drawingId] as PixelDrawing | undefined) : undefined;
+  if (!d || d.kind !== 'pixel') return undefined;
+  let art: RawImage = scaleNearest(grid(doc, l, d), l.pixelSize);
+  if (art.width !== doc.width || art.height !== doc.height) {
+    const fit = blankImage(doc.width, doc.height);
+    paste(fit, crop(art, 0, 0, Math.min(art.width, doc.width), Math.min(art.height, doc.height)), 0, 0);
+    art = fit;
+  }
+  const o = celOffsetAt(l, cel!.start);
+  return o && (o.x || o.y) ? shifted(art, Math.round(o.x), Math.round(o.y)) : art;
+}
+
+/** An image moved by (dx, dy), what slides off the edge lost and what slides in clear. */
+function shifted(img: RawImage, dx: number, dy: number): RawImage {
+  const out = blankImage(img.width, img.height);
+  const x0 = Math.max(0, dx);
+  const x1 = Math.min(img.width, img.width + dx);
+  if (x1 <= x0) return out;
+  for (let y = Math.max(0, dy); y < Math.min(img.height, img.height + dy); y++) {
+    const from = ((y - dy) * img.width + (x0 - dx)) * 4;
+    out.pixels.set(img.pixels.subarray(from, from + (x1 - x0) * 4), (y * img.width + x0) * 4);
+  }
+  return out;
+}
+
+/** Puts `src` over `dst` the way a layer or a folder does: with its opacity and its blend mode. */
+function mix(dst: RawImage, src: RawImage, opacity: number, blend: Layer['blend']): void {
+  if (!blend || blend === 'normal') over(dst, src, opacity);
+  else blendOnto(dst.pixels, src.pixels, blend, opacity);
+}
+
+/**
+ * Draws one level of the layer tree onto `into`, bottom first. A folder that fades or blends is drawn into a picture of
+ * its own first and then mixed in as one, so its layers fade together (overlaps don't show through each other), like
+ * the canvas does. A plain folder just lets its layers through.
+ */
+function drawNodes(doc: Doc, nodes: TreeNode[], celOf: Map<Layer, Cel | undefined>, into: RawImage): void {
+  for (const n of nodes) {
+    if (n.type === 'layer') {
+      const art = layerArt(doc, n.layer as PixelLayer, celOf.get(n.layer));
+      if (art) mix(into, art, n.layer.opacity, n.layer.blend);
+      continue;
+    }
+    const f = n.folder;
+    if (f.opacity >= 1 && (!f.blend || f.blend === 'normal')) {
+      drawNodes(doc, n.children, celOf, into);
+      continue;
+    }
+    const inner = blankImage(into.width, into.height);
+    drawNodes(doc, n.children, celOf, inner);
+    mix(into, inner, f.opacity, f.blend);
+  }
+}
+
+/** One frame of the document, all source layers flattened (folders faded and blended like the canvas), at the document's size. */
 function flatten(doc: Doc, layers: PixelLayer[], cels: (Cel | undefined)[]): RawImage {
   const img = blankImage(doc.width, doc.height);
-  layers.forEach((l, i) => {
-    const cel = cels[i];
-    const d = cel ? (doc.drawings[cel.drawingId] as PixelDrawing | undefined) : undefined;
-    if (!d || d.kind !== 'pixel') return;
-    let art: RawImage = scaleNearest(grid(doc, l, d), l.pixelSize);
-    if (art.width !== doc.width || art.height !== doc.height) {
-      const fit = blankImage(doc.width, doc.height);
-      paste(fit, crop(art, 0, 0, Math.min(art.width, doc.width), Math.min(art.height, doc.height)), 0, 0);
-      art = fit;
-    }
-    over(img, art, l.opacity);
-  });
+  const celOf = new Map<Layer, Cel | undefined>(layers.map((l, i) => [l, cels[i]]));
+  drawNodes(doc, layerTree({ folders: doc.folders, layers }), celOf, img);
   return img;
 }
 
@@ -201,7 +254,8 @@ export function docToSheet(doc: Doc, columns = SHEET_COLUMNS): BuiltSheet {
           last.length++;
           continue;
         }
-        const look = cels.map((c) => c?.drawingId ?? '-').join('|');
+        // The same drawing in another place is another picture.
+        const look = cels.map((c) => (c ? c.drawingId + (c.offset ? `@${c.offset.x},${c.offset.y}` : '') : '-')).join('|');
         let tile = tileOf.get(look);
         if (tile === undefined) {
           tile = tiles.length;

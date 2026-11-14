@@ -161,7 +161,7 @@ export function drawLineOn(doc: Doc, layerId: Id, frame: number, lines: readonly
       const copy = cloneDrawing(doc.drawings[a.drawingId]);
       doc.drawings[copy.id] = copy;
       a.length = at - a.start;
-      layer.cels.push({ id: uid('c'), start: at, length: end - at, drawingId: copy.id });
+      layer.cels.push({ id: uid('c'), start: at, length: end - at, drawingId: copy.id, ...(a.offset ? { offset: { ...a.offset } } : {}) });
       layer.cels.sort((x, y) => x.start - y.start);
       b = layer.cels.find((c) => c.start === at)!;
     }

@@ -106,3 +106,9 @@ export function thinCels<C extends { start: number; length: number }>(cels: read
 export function celGap(cw: number): number {
   return cw >= 5 ? 2 : cw >= 2 ? 1 : 0;
 }
+
+/** "Moved 3 right and 2 down from where it was drawn", in words. */
+export function movedWords(o: { x: number; y: number }): string {
+  const bits = [o.x ? `${Math.abs(o.x)} ${o.x > 0 ? 'right' : 'left'}` : '', o.y ? `${Math.abs(o.y)} ${o.y > 0 ? 'down' : 'up'}` : ''].filter(Boolean);
+  return `Moved ${bits.join(' and ')} from where it was drawn.`;
+}

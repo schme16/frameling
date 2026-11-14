@@ -296,6 +296,16 @@
   border-color: var(--chosen-fg);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--chosen-bg) 55%, transparent);
 }
+.tl-dcel.is-moved .tl-dkey-cell::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  border-style: solid;
+  border-width: 0 0 7px 7px;
+  border-color: transparent transparent color-mix(in srgb, var(--lc) 35%, #000) transparent;
+  pointer-events: none;
+}
 .tl-dkey-cell.is-picked {
   box-shadow: 0 0 0 2px var(--chosen-bg);
   z-index: 1;

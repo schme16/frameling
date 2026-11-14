@@ -9,6 +9,10 @@
  */
 
 export const FORMAT_VERSION = 3;
+/** What a file that uses a key's `offset` is saved as, so an older Frameling refuses it instead of drawing parts in the wrong place. Files that don't use one stay at `FORMAT_VERSION`. */
+export const OFFSET_FORMAT_VERSION = 4;
+/** The newest version this build can open. */
+export const NEWEST_FORMAT_VERSION = OFFSET_FORMAT_VERSION;
 export type Id = string;
 
 /** A colour as CSS hex (`#rrggbb` or `#rrggbbaa`). */
@@ -487,6 +491,19 @@ export interface Cel {
    * drops it without a warning and the file plays the same.
    */
   name?: string;
+  /**
+   * Where the drawing sits on this key, in document pixels from where it was drawn (missing = not moved). Lets a
+   * breathe or a head bob move a part by a pixel or two without a new drawing for every position. Drawn by every
+   * renderer and export, and in-betweens go from this key's offset to the next key's when the key has a tween. A file
+   * that uses it is written as version 4, so an older Frameling refuses it rather than drawing the part in the wrong place.
+   */
+  offset?: CelOffset;
+}
+
+/** How far a key's drawing is moved, in document pixels. Right and down are positive. */
+export interface CelOffset {
+  x: number;
+  y: number;
 }
 
 export type Drawing = VectorDrawing | PixelDrawing | TilemapDrawing | CameraDrawing;

@@ -498,7 +498,7 @@ export function makeTween(layerId?: Id, frame?: number, kind: 'classic' | 'shape
         const copy = cloneDrawing(dd.drawings[a.drawingId] as never);
         dd.drawings[copy.id] = copy as never;
         a.length = at - a.start;
-        l.cels.push({ id: uid('c'), start: at, length: end - at, drawingId: copy.id });
+        l.cels.push({ id: uid('c'), start: at, length: end - at, drawingId: copy.id, ...(a.offset ? { offset: { ...a.offset } } : {}) });
         l.cels.sort((x, y) => x.start - y.start);
         b = l.cels.find((c) => c.start === at)!;
       }

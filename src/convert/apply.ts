@@ -35,7 +35,7 @@ function celsFor(bakes: readonly Bake[], idFor: (b: Bake) => Id | undefined): Ce
   const out: Cel[] = [];
   for (const b of bakes) {
     const drawingId = idFor(b);
-    if (drawingId) out.push({ id: uid('c'), start: b.start, length: b.length, drawingId });
+    if (drawingId) out.push({ id: uid('c'), start: b.start, length: b.length, drawingId, ...(b.offset ? { offset: { ...b.offset } } : {}) });
   }
   return out;
 }
