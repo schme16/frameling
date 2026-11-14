@@ -234,6 +234,23 @@ registerCommand({
     toast('Tools are back the way this workspace has them.', { duration: 1800 });
   },
 });
+// How the workspace switcher beside the drawing's name looks (see WorkspaceSwitcher.tsx).
+for (const [look, label, about] of [
+  ['tabs', 'Workspace switcher: tabs', 'Every workspace as a small tab beside the drawing name, the one you are in lit up.'],
+  ['chip', 'Workspace switcher: just the name', 'One chip with the workspace you are in. Press it for the list.'],
+  ['off', 'Workspace switcher: hide it', 'Leave the top bar clear. Switch from View, or the command search.'],
+] as const) {
+  registerCommand({
+    id: `view.workspaceSwitcher.${look}`,
+    label,
+    category: 'View',
+    description: about,
+    help: 'workspace-switcher',
+    keywords: ['workspace', 'layout', 'tabs', 'chip', 'top bar', 'draw', 'animate', 'pixel', 'show', 'hide'],
+    checked: () => getPrefs().workspaceSwitcher === look,
+    run: () => setPrefs({ workspaceSwitcher: look }),
+  });
+}
 for (const [style, label, about] of [
   ['two', 'Tool rail: show every tool, two wide', 'Every tool in groups, two across. Drag them to arrange.'],
   ['stacked', 'Tool rail: one button per group', 'One button per group. Press and hold, or right-click, for the rest of the group.'],

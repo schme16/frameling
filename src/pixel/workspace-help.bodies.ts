@@ -56,7 +56,7 @@ The sliders button at the end opens the Tool options panel, with everything else
 - Every change shows straight away, so you can draw a frame and watch it move.
 - While the timeline itself is playing, the Preview follows it.
 
-It's in the Pixel workspace on the right. Anywhere else, open it from View > Panels > Preview. Pixel > Play or pause the Preview works from the command palette too.`,
+It's in the Pixel workspace on the right. Anywhere else, open it from View > Panels > Preview. Pixel tools > Play or pause the Preview works from the command palette too.`,
   'pixel-preview-boards': `When a sprite has several boards, the [Preview](help:pixel-preview) adds a strip of small buttons under the picture. What the strip does depends on [how the sprite is built](help:pixel-ways).
 
 - **Frames on boards**: the Preview plays every board in order as one animation, each board a frame (or as many frames as its own timeline has). The strip shows which board is playing, with the playing one lit. Click a board to jump there. While paused, clicking a board opens it for drawing instead.

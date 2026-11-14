@@ -1,6 +1,7 @@
 // Help for everything the shell does. Short words, what it does first, then how.
 import { registerHelpTopics } from '../core/registry';
 import './onboarding/help';
+import './workspaceSwitcher-help';
 
 registerHelpTopics([
   {

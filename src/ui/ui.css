@@ -367,6 +367,83 @@ kbd {
   gap: 2px;
 }
 
+/* The workspace switcher: small tabs like the segmented control, or one chip with the name. */
+.ws-switch {
+  position: relative;
+  margin-right: 8px;
+}
+.ws-tabs {
+  display: inline-flex;
+  padding: 3px;
+  gap: 2px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--bg);
+}
+:root[data-look='crisp'] .ws-tabs {
+  border-radius: var(--radius-small);
+  background: var(--panel);
+}
+.ws-tab {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 11px;
+  white-space: nowrap;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--muted);
+  font-weight: 700;
+}
+:root[data-look='crisp'] .ws-tab {
+  border-radius: calc(var(--radius-small) - 1px);
+}
+.ws-tab:hover,
+.ws-tab.is-open {
+  color: var(--text);
+  background: var(--hover-bg);
+}
+.ws-tab.is-on {
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+}
+.ws-tab.ws-more {
+  padding: 0 6px;
+}
+.ws-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 10px 0 9px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--bg);
+  color: var(--text);
+  font-weight: 700;
+}
+:root[data-look='crisp'] .ws-chip {
+  border-radius: var(--radius-small);
+  background: var(--panel);
+}
+.ws-chip:hover,
+.ws-chip.is-open {
+  background: var(--hover-bg);
+}
+.ws-chip-name {
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ws-list {
+  position: fixed;
+  left: auto;
+  width: 300px;
+  min-width: 0;
+}
+
 /* ------------------------------------------------------------ body */
 
 .ui-body {

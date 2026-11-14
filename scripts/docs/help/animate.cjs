@@ -111,7 +111,7 @@ const entries = [
       L.wait(600),
       { rec: '@', crop: [0, 0, 1280, 800], every: 80 },
       L.wait(800),
-      { clickOn: '.ui-menubar [role=menuitem]', text: 'Animate', after: 900 },
+      { clickOn: '.ui-menubar [role=menuitem]', text: 'Frames and motion', after: 900 },
       { clickOn: '[role=menu] [role=menuitem]', text: 'One-click motions', hover: true, after: 1000 },
       { clickOn: '[role=menu] [role=menuitem]', text: 'Make it bounce', hover: true, after: 900 },
       { clickOn: '[role=menu] [role=menuitem]', text: 'Make it bounce', after: 1800 },

@@ -2,7 +2,7 @@
 export const bodies: Record<string, string> = {
   symbols: `A **symbol** is a drawing you can reuse. Each copy of it on the canvas (an *instance*) can have its own size, turn, fade and colour wash, but they all share one drawing. Fix a line inside the symbol and every copy is fixed.
 
-**Make one:** select what you drew with the Select tool (V), then press **F8**, or pick **Draw > Make a reusable symbol**. Nothing selected? The whole drawing on this frame becomes the symbol.
+**Make one:** select what you drew with the Select tool (V), then press **F8**, or pick **Tools and layers > Make a reusable symbol**. Nothing selected? The whole drawing on this frame becomes the symbol.
 
 **The Library** lists every symbol in your document (**View > Library**):
 - **Drag** a symbol onto the canvas to place a copy, or press its **+** button to drop one in the middle.
@@ -91,7 +91,7 @@ On the canvas, the dots along the motion trail show one in-between each. Bunched
 **How**
 1. Go to the frame where the motion should start.
 2. Select what should move with the Select tool (V). Nothing selected moves the whole drawing on this frame.
-3. Pick **Animate > One-click motions**, or right-click the frame in the timeline, or press **Ctrl+K** and type "make it".
+3. Pick **Frames and motion > One-click motions**, or right-click the frame in the timeline, or press **Ctrl+K** and type "make it".
 
 **The motions**
 - **Bounce**: crouches, hops up and lands with a squash, like a ball.
@@ -110,7 +110,7 @@ Shapes that aren't a [symbol](help:symbols) yet are made into one first, so they
   'motion-paths': `Out of the box, in-betweens move in a straight line. To send them along a curve:
 
 1. Go to a frame with in-betweens.
-2. In **Symbol and motion**, press **Draw a path** (or choose **Animate > Draw a path to follow**).
+2. In **Symbol and motion**, press **Draw a path** (or choose **Frames and motion > Draw a path to follow**).
 3. Drag the route on the canvas. That's it: press play.
 
 The path keeps its shape, and bends just enough that it still starts and ends exactly where your two keys are. So you can move either key afterwards and the path follows along.
@@ -125,7 +125,7 @@ Make a key partway along (draw on an in-between, or drop a timeline diamond ther
   'shape-tweens': `**Morphing** turns one drawing into another: a square into a circle, a closed eye into an open one, a puddle into a splash. Animators call it a *shape tween*.
 
 1. Draw the first shape and hold it for a few frames.
-2. Press **Ctrl+Shift+M** (or **Animate > Morph between shapes**, or **Morph between shapes** in the **Symbol and motion** panel).
+2. Press **Ctrl+Shift+M** (or **Frames and motion > Morph between shapes**, or **Morph between shapes** in the **Symbol and motion** panel).
 3. Frameling makes an end key and takes you there. Change the drawing: reshape it, recolour it, or rub it out and draw something new.
 4. Press play.
 

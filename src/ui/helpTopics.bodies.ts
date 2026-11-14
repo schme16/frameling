@@ -374,7 +374,7 @@ Each workspace brings its own tools, and you can change them (see below).
 
 ## Switching
 
-Use **View, Draw workspace** (and friends), or the command search. **Next workspace** and **Previous workspace** step through the list. Pixel art and drawings can pick their workspace for you: the first time it matters, Frameling asks, and you can answer **Always**, **Not now** or **Never** (change it in Preferences, Behaviour). The Animate workspace is never switched.
+Press a tab in the [switcher](help:workspace-switcher) at the top, or use **View, Draw workspace** (and friends), or the command search. **Ctrl+Alt+1**, **2** and **3** jump to Draw, Animate and Pixel. **Next workspace** and **Previous workspace** step through the list. Pixel art and drawings can pick their workspace for you: the first time it matters, Frameling asks, and you can answer **Always**, **Not now** or **Never** (change it in Preferences, Behaviour). The Animate workspace is never switched.
 
 ## Your own
 
@@ -594,6 +594,7 @@ With **Tool rail style** set to **Stacked** in Preferences, press and hold a gro
 - A **tick** means it is switched on.
 - **Greyed** choices can't be used right now (nothing to undo yet, for example).
 - Shortcuts are shown on the right.
+- **Tools and layers**, **Pixel tools** and **Frames and motion** are lists of things to do, not rooms. To change room, use the [workspace switcher](help:workspace-switcher).
 - A **small arrow** on the right opens a smaller menu beside it (Snapping and Panels, in View, for example).
 - A menu that is taller than the window **scrolls**: use the mouse wheel, or the arrow keys.
 

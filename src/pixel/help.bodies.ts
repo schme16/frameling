@@ -9,7 +9,7 @@ A sprite usually goes like this:
 3. **Fill it in** with the paint bucket (G).
 4. **Shade it** with the [Shade](help:tool-shade) tool (S): each pass moves a pixel one step darker or lighter along its colour ramp.
 5. **Add texture** with the [Dither](help:tool-dither) brush (Shift+B).
-6. **Finish with an outline** round the whole thing: Pixel > Add outline. See [Outlines](help:pixel-outline).
+6. **Finish with an outline** round the whole thing: Pixel tools > Add outline. See [Outlines](help:pixel-outline).
 
 Need it facing the other way, or tilted? See [Flip and turn](help:pixel-flip-rotate). Want to keep strictly to your palette? Turn on the [palette lock](help:palette-lock).`,
   'tool-shade': `Press **S** on a pixel layer, then brush over your drawing.
@@ -44,9 +44,9 @@ A dashed line on the page shows where the mirror is. Everything the pencil, brus
 **Moving the mirror line.** In the tool options, drag **Mirror line across** or **Mirror line down**. It moves in half pixel steps: on a whole number the line runs between two pixels (both sides are copied), on a half it runs through the middle of a pixel column (that column is shared, which is how you get an odd-width face with one nose). **Back to the middle** puts it back.
 
 The usual name for this is *symmetry*.`,
-  'pixel-outline': `Pixel > **Add outline (outside)** draws a one pixel outline round everything drawn on this frame of the layer you're on. It uses the **stroke** colour and goes round holes too.
+  'pixel-outline': `Pixel tools > **Add outline (outside)** draws a one pixel outline round everything drawn on this frame of the layer you're on. It uses the **stroke** colour and goes round holes too.
 
-Pixel > **Add outline (inside the edge)** repaints the outer pixels of your drawing instead, so it doesn't get any bigger. Handy when a sprite has to fit a tile exactly.
+Pixel tools > **Add outline (inside the edge)** repaints the outer pixels of your drawing instead, so it doesn't get any bigger. Handy when a sprite has to fit a tile exactly.
 
 Each is one undo step. Run it twice for a thicker outline, or with a different stroke colour for a two-colour edge.`,
   'pixel-shapes': `On a pixel layer the shape tools ([Rectangle](help:tool-rect), [Ellipse](help:tool-ellipse), [Line](help:tool-line), [Polygon and Star](help:tool-polygon-star)) and the [Pen](help:tool-pen) paint clean, hard pixels with no soft edges. Out of the box the outline is one pixel thick.
@@ -68,7 +68,7 @@ Each is one undo step. Run it twice for a thicker outline, or with a different s
 Everything is painted as whole pixels, never blended. The shape snaps to the pixel under the pointer, so even with a turned or zoomed [camera](help:camera) it lands where you aim. It keeps to the palette when the layer's [palette lock](help:palette-lock) is on, and a thicker outline works too (see [Pixel shapes](help:pixel-shapes)).
 
 Want a flat box on a perspective picture? Set **On a plane** to **Flat**, or hold **Ctrl** to ignore the guides for one shape.`,
-  'pixel-flip-rotate': `These work on the drawing on this frame of the pixel layer you're on. Find them in the **Pixel** menu or the command palette.
+  'pixel-flip-rotate': `These work on the drawing on this frame of the pixel layer you're on. Find them in the **Pixel tools** menu or the command palette.
 
 - **Flip drawing left to right** and **upside down** mirror it around its own middle, so it stays where it is. Perfect for a character that walks both ways.
 - **Turn right**, **Turn left** and **Turn round** are exact quarter and half turns: every pixel lands on the grid, nothing changes colour.
@@ -90,7 +90,7 @@ Anything turned off the edge of the page is cut off, so leave a little room.`,
 **Files.** **Load...** reads GIMP \`.gpl\`, \`.hex\` lists (as used by many palette sites), JASC \`.pal\` and Adobe \`.ase\` swatch files (from Illustrator or Photoshop; their groups become ramps and the colour names show when you hover), or takes the colours from a picture. You can also drop an \`.ase\` file on the window. **Save as...** writes any of the three. **From drawing** makes a palette from the colours on this frame.
 
 The palette is saved with your document. Until you change it, a new document uses Cosy Sixteen.`,
-  'palette-lock': `Turn on **Lock this layer to the palette** in the Palette panel (or Pixel > Lock this layer to the palette).
+  'palette-lock': `Turn on **Lock this layer to the palette** in the Palette panel (or Pixel tools > Lock this layer to the palette).
 
 From then on, every colour painted on that layer, by any tool, snaps to the **nearest palette colour**. The pencil, brush, shapes, bucket, dither and outline all follow it. Clearing with the eraser still clears.
 

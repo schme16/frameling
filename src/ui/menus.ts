@@ -8,8 +8,14 @@ import { ownedUndo } from '../core/owners';
 
 export type MenuEntry = string;
 
+/** The words for a menu on screen. */
+export const menuTitle = (m: Pick<MenuDef, 'label' | 'title'>): string => m.title ?? m.label;
+
 export interface MenuDef {
+  /** The menu's id: features add items by this name, so it stays put even when the words on screen change. */
   label: string;
+  /** What the menu bar and screen readers say, when that isn't the id. Says what is in the menu, not a workspace's name. */
+  title?: string;
   items: MenuEntry[];
   /** Registered commands in these categories that aren't named anywhere else show up at the end. */
   categories: string[];
@@ -30,7 +36,7 @@ export const MENUS: MenuDef[] = [
   {
     label: 'View',
     categories: ['View'],
-    items: ['view.zoomIn', 'view.zoomOut', 'view.fit', 'view.zoom100', 'view.center', '-', 'group:workspaces', 'view.saveWorkspace', 'view.manageWorkspaces', 'sub:wsshare', 'view.resetLayout', '-', 'sub:panels', 'sub:panelwin', '-', 'view.pixelGrid', 'tiles.tileMode', 'view.emptyGhost', 'camera.lookThrough', 'camera.whilePlaying', 'view.whereDidItGo', '-', 'view.rulers', 'view.guides', 'sub:snapping', 'sub:grids', 'sub:lighttable', '-', 'sub:look', '-', 'view.interfaceSize', 'view.features', 'view.commandPalette'],
+    items: ['view.zoomIn', 'view.zoomOut', 'view.fit', 'view.zoom100', 'view.center', '-', 'group:workspaces', 'view.saveWorkspace', 'view.manageWorkspaces', 'sub:wsshare', 'sub:wsswitch', 'view.resetLayout', '-', 'sub:panels', 'sub:panelwin', '-', 'view.pixelGrid', 'tiles.tileMode', 'view.emptyGhost', 'camera.lookThrough', 'camera.whilePlaying', 'view.whereDidItGo', '-', 'view.rulers', 'view.guides', 'sub:snapping', 'sub:grids', 'sub:lighttable', '-', 'sub:look', '-', 'view.interfaceSize', 'view.features', 'view.commandPalette'],
   },
   {
     label: 'Artboards',
@@ -39,16 +45,19 @@ export const MENUS: MenuDef[] = [
   },
   {
     label: 'Draw',
+    title: 'Tools and layers',
     categories: ['Draw', 'Drawing', 'Tools', 'Select', 'Selection', 'Shape', 'Shapes', 'Geometry', 'Layers', 'Arrange'],
     items: ['group:tools', '-', 'select.flipH', 'select.flipV', '-', 'arrange.front', 'arrange.forward', 'arrange.backward', 'arrange.back', '-', 'layers.addVector', 'layers.addPixel', 'layers.duplicate', 'layers.delete', '-', 'layers.up', 'layers.down', 'layers.toggleVisible', 'layers.toggleLocked', '-', 'view.panel.layers'],
   },
   {
     label: 'Pixel',
+    title: 'Pixel tools',
     categories: ['Pixel'],
     items: ['pixel.changeWay', 'pixel.makeItMove', 'pixel.shareLayers', 'pixel.unshareLayers', '-', 'tools.pencil', 'tools.shade', 'tools.dither', 'tools.spray', 'pixel.mirror', '-', 'pixel.flipH', 'pixel.flipV', 'pixel.rotateRight', 'pixel.rotateLeft', 'pixel.rotate180', 'pixel.rotate', '-', 'pixel.outline', 'pixel.outlineInside', '-', 'view.panel.palette', 'view.panel.preview', 'pixel.previewPlay', 'pixel.previewSize', 'view.workspace.pixel', '-', 'pixel.paletteLock', 'pixel.reduceToPalette', 'palette.fromDrawing', 'palette.import', 'palette.fromPicture', 'palette.fromAseprite', 'palette.exportGpl', 'palette.exportHex', 'palette.exportPal'],
   },
   {
     label: 'Animate',
+    title: 'Frames and motion',
     categories: ['Animate', 'Animation', 'Timeline', 'Frames', 'Sound', 'Lip sync'],
     items: ['timeline.play', 'timeline.toggleLoop', 'timeline.togglePingPong', 'timeline.toggleOnion', 'timeline.onionKeysOnly', 'timeline.onionBoards', '-', 'timeline.setIn', 'timeline.setOut', 'timeline.clearInOut', '-', 'timeline.prevFrame', 'timeline.nextFrame', 'timeline.prevKey', 'timeline.nextKey', 'timeline.firstFrame', 'timeline.lastFrame', '-', 'timeline.newKey', 'timeline.emptyFrame', 'timeline.duplicateKey', 'timeline.clearKey', '-', 'timeline.insertFrame', 'timeline.removeFrame', 'timeline.tidyEnd', 'timeline.addMarker', '-', 'sub:motions'],
   },
@@ -95,6 +104,11 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
   wsshare: {
     label: 'Share a workspace',
     items: ['view.exportWorkspace', 'view.importWorkspace', 'view.copyWorkspace', 'view.pasteWorkspace', '-', 'view.previousWorkspace', 'view.nextWorkspace'],
+  },
+  wsswitch: {
+    label: 'Workspace switcher',
+    items: ['view.workspaceSwitcher.tabs', 'view.workspaceSwitcher.chip', 'view.workspaceSwitcher.off'],
+    prefixes: ['view.workspaceSwitcher.'],
   },
   snapping: {
     label: 'Snapping',

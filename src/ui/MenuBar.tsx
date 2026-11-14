@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { store, useStore } from '../core/store';
-import { resolveMenus, type MenuItem } from './menus';
+import { menuTitle, resolveMenus, type MenuItem } from './menus';
 import { commandEnabled, runCommand } from './palette';
 import { Icon } from './icons';
 import { Keys } from './ShortcutChip';
@@ -243,10 +243,10 @@ export function MenuBar() {
             onMouseEnter={() => open !== null && setOpen(index)}
             onKeyDown={(e) => onBarKey(e, index)}
           >
-            {menu.label}
+            {menuTitle(menu)}
           </button>
           {open === index && (
-            <div className="ui-menu" role="menu" aria-label={menu.label} data-menu={index}>
+            <div className="ui-menu" role="menu" aria-label={menuTitle(menu)} data-menu={index}>
               {items.map((it, i) => row(it, i, index))}
             </div>
           )}

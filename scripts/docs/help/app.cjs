@@ -563,6 +563,23 @@ const entries = [
       { rec: 'stop' },
     ],
   },
+  // The workspace switcher at the top: press each tab and watch the room rearrange.
+  {
+    name: 'workspace-switcher',
+    // Wide enough for the tabs (a window under 1400 wide shows the chip instead).
+    size: [1600, 900],
+    prefs: CALM,
+    steps: [
+      template('bouncing-ball'),
+      wait(900),
+      { rec: '@', crop: [0, 0, 1600, 900], every: 80 },
+      wait(1200),
+      { clickOn: '.ws-tab', text: 'Animate', after: 1800 },
+      { clickOn: '.ws-tab', text: 'Pixel', after: 1800 },
+      { clickOn: '.ws-tab', text: 'Draw', after: 1600 },
+      { rec: 'stop' },
+    ],
+  },
 ];
 
 module.exports = entries.map((e) => ({ ...e, steps: e.steps.flat() }));

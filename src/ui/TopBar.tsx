@@ -5,6 +5,7 @@ import { Icon, Logo } from './icons';
 import { MenuBar } from './MenuBar';
 import { commandEnabled, runCommand } from './palette';
 import { openPalette } from './overlays';
+import { WorkspaceSwitcher } from './WorkspaceSwitcher';
 
 function DocName() {
   const name = useStore((s) => s.doc.name);
@@ -86,6 +87,7 @@ export function TopBar() {
         <DocName />
       </div>
       <div className="ui-topbar-end">
+        <WorkspaceSwitcher />
         <CmdButton id="edit.undo" icon="undo" label="Undo" />
         <CmdButton id="edit.redo" icon="redo" label="Redo" />
         <button type="button" className="ui-icon-btn" aria-label="Find a command" data-command="view.commandPalette" onClick={openPalette}>

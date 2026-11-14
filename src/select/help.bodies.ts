@@ -23,7 +23,7 @@ They all share one selection, so you can start a box, then switch to the lasso a
 
 - Painting (pencil, brush, eraser, shade, dither, shapes, the paint bucket) only changes selected pixels.
 - **Delete** clears the selected pixels.
-- The Pixel menu's flips and turns work on just the selection, around its middle, and the selection turns too.
+- The **Pixel tools** menu's flips and turns work on just the selection, around its middle, and the selection turns too.
 - **Add outline** goes round just the selected art, onto empty pixels.
 - **Reduce to palette** changes only the selected pixels.
 
