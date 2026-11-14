@@ -181,7 +181,23 @@ What this settles:
   window check, but the pair has not been seen on a real screen, and a virtual one cannot show presenting. What would move
   them to the default: `FRAMELING_GPU=full` run on a real screen for a while (the user's own machine is enough), then a
   second maker's card in the same check. The caution was "wait for a second card"; it is now "wait for the real screen".
-- Vulkan stays off by default for the same reason, stronger: it is the one that was seen to blank.
+- ANGLE on Vulkan stays off by default for the same reason, stronger: it is the one that was seen to blank.
+
+### The likely cause, from the user's own Chrome (not yet proven on a real screen)
+
+The user's desktop Chrome runs Vulkan fine on this same machine and screen. Its command line is
+`--use-vulkan --enable-features=Vulkan --ignore-gpu-blocklist --ozone-platform=x11`, and its `chrome://gpu` says Skia
+Backend `GaneshVulkan`, GL implementation `(gl=egl-angle,angle=opengl)`, renderer `ANGLE (NVIDIA Corporation, NVIDIA
+GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0 NVIDIA 615.71.09)`. So Chrome puts **Skia on Vulkan and leaves ANGLE on
+OpenGL**. The set that blanked Frameling was `Vulkan,DefaultANGLEVulkan`, and `DefaultANGLEVulkan` is the part that moves
+ANGLE onto Vulkan. The reading: ANGLE-on-Vulkan presenting to a real X server is what blanks; Skia-on-Vulkan is fine.
+That is `FRAMELING_GPU=skia` (`--use-vulkan` plus `--enable-features=Vulkan`, never `DefaultANGLEVulkan`).
+
+Tested here, inside xvfb, with the real app and the window check: it draws correctly (vector and pixel drawings), with the
+app's graphics process on the NVIDIA card, on its own, with `FRAMELING_GPU=full`'s switches added, and even with the card
+not asked for (Skia on Vulkan on the NVIDIA card while WebGL is on llvmpipe, canvas still correct). Not proven: that it
+presents correctly on the real screen, which is the whole question and which xvfb cannot answer. It stays opt-in
+(`FRAMELING_GPU=skia`) until the user has run the steps on their own display (see the steps card).
 
 ## Which card (gpu-detect)
 

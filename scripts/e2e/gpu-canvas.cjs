@@ -34,6 +34,11 @@ const CONFIGS = [
   { name: 'software', env: { FRAMELING_GPU: 'off' }, ship: true, card: false },
   { name: 'as-shipped', env: { FRAMELING_CARD: 'discrete' }, ship: true, card: true },
   { name: 'full', env: { FRAMELING_CARD: 'discrete', FRAMELING_GPU: 'full' }, ship: true, card: true },
+  // What the user's own Chrome runs all day on the real screen: Skia on Vulkan, ANGLE left on OpenGL (no DefaultANGLEVulkan).
+  { name: 'skia-vulkan', env: { FRAMELING_CARD: 'discrete', FRAMELING_GPU: 'skia' }, ship: false, card: true },
+  { name: 'skia-vulkan+chrome-args', env: { FRAMELING_CARD: 'discrete' }, args: ['--use-vulkan', '--enable-features=Vulkan'], ship: false, card: true },
+  // Skia on Vulkan with the card not asked for: WebGL lands on llvmpipe, Skia is on the card all the same.
+  { name: 'skia-vulkan-nocard', env: { FRAMELING_CARD: 'system', FRAMELING_GPU: 'skia' }, ship: false, card: false },
   { name: 'vulkan', env: { FRAMELING_GPU: 'vulkan' }, ship: false, card: true },
   { name: 'vulkan+use-vulkan', env: { FRAMELING_GPU: 'vulkan' }, args: ['--use-vulkan'], ship: false, card: true },
   { name: 'vulkan+angle-vulkan', env: { FRAMELING_GPU: 'vulkan' }, args: ['--use-angle=vulkan', '--use-vulkan'], ship: false, card: true },
@@ -115,7 +120,7 @@ async function run(cfg, template, { hide = false } = {}) {
     const ours = tree(port);
     if (shotsDir) { fs.mkdirSync(shotsDir, { recursive: true }); fs.writeFileSync(path.join(shotsDir, `${cfg.name}-${template}.png`), Buffer.from(shot.result.data, 'base64')); }
     ws.close();
-    return { cells, renderer: report.liveRenderer || '(no WebGL)', asked: report.asked, flags: report.flags, features: report.features, cardPids: onCard ? [...ours].filter((p) => onCard.includes(p)) : null, smiThere: !!onCard };
+    return { cells, renderer: report.liveRenderer || '(no WebGL)', asked: report.asked, flags: report.flags, features: report.features, skia: report.skia, impl: report.glImplementation, cardPids: onCard ? [...ours].filter((p) => onCard.includes(p)) : null, smiThere: !!onCard };
   } finally {
     for (const p of tree(port)) { try { process.kill(Number(p), 'SIGKILL'); } catch { /* gone */ } }
     try { process.kill(-child.pid, 'SIGKILL'); } catch { /* gone */ }
@@ -143,7 +148,7 @@ async function main() {
           else if (r.smiThere && !r.cardPids.length) problems.push('the page names a card but none of the app\'s processes is on the NVIDIA card in nvidia-smi');
         }
         const proof = !cfg.card ? '' : r.cardPids === null ? ' (nvidia-smi not available)' : ` on the card in nvidia-smi: pid ${r.cardPids.join(',') || 'none'}`;
-        line = `${cfg.name.padEnd(20)} ${t.padEnd(14)} adapter: ${r.renderer}${proof}`;
+        line = `${cfg.name.padEnd(20)} ${t.padEnd(14)} adapter: ${r.renderer}${proof} [vulkan feature ${r.features.vulkan}, skia ${r.skia}]`;
       } catch (e) {
         problems.push(String(e.message || e));
         line = `${cfg.name.padEnd(20)} ${t.padEnd(14)} (did not run)`;

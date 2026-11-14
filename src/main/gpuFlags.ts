@@ -30,6 +30,7 @@ export function colourSwitches(env: Record<string, string | undefined> = process
 // check (scripts/e2e/gpu-canvas.cjs, composited pixels, on that card). What nobody has seen is the pair on a real screen,
 // and a virtual screen cannot show it: it has no card to present on, and presenting is where the Vulkan blank canvas
 // happened. So they stay opt-in until FRAMELING_GPU=full has been run on a real screen, not until a second card turns up.
+// FRAMELING_GPU=skia is the one to try first (Skia on Vulkan, ANGLE left on OpenGL, as the user's own Chrome runs).
 // FRAMELING_GPU=vulkan asks for Vulkan through ANGLE. On the user's real screen that left the canvas empty (the file opens,
 // every layer is there, nothing is drawn). Under a virtual screen the same card draws correctly through it, with every
 // combination of --use-vulkan, --use-angle=vulkan and VulkanFromANGLE tried: so the drawing is not what fails, the step
@@ -40,6 +41,11 @@ export function colourSwitches(env: Record<string, string | undefined> = process
 export const HARDWARE_SWITCH: EngineSwitch = ['ignore-gpu-blocklist'];
 export const FULL_SWITCHES: EngineSwitch[] = [['enable-zero-copy'], ['canvas-oop-rasterization']];
 export const VULKAN_FEATURES = 'Vulkan,DefaultANGLEVulkan';
+// FRAMELING_GPU=skia: Skia (the engine's own drawing library) on Vulkan, with ANGLE (WebGL and the GL side) left on OpenGL.
+// This is exactly what the user's own Chrome runs on the real screen (--use-vulkan --enable-features=Vulkan, no
+// DefaultANGLEVulkan), and it is the one that is known to present correctly there.
+export const SKIA_VULKAN_SWITCH: EngineSwitch = ['use-vulkan'];
+export const SKIA_VULKAN_FEATURES = 'Vulkan';
 
 /** The hardware switches for this machine. `off` is true when hardware drawing is switched off (see gpuFile.ts). Features come back separately, to be merged. */
 export function hardwareSwitches(
@@ -52,7 +58,8 @@ export function hardwareSwitches(
   if (mode === 'off') return { switches: [], features: [] };
   const switches: EngineSwitch[] = [HARDWARE_SWITCH];
   if (mode === 'full') switches.push(...FULL_SWITCHES);
-  return { switches, features: mode === 'vulkan' ? [VULKAN_FEATURES] : [] };
+  if (mode === 'skia') switches.push(SKIA_VULKAN_SWITCH);
+  return { switches, features: mode === 'vulkan' ? [VULKAN_FEATURES] : mode === 'skia' ? [SKIA_VULKAN_FEATURES] : [] };
 }
 
 /** Adds to --enable-features without losing what is already there (appending the switch again replaces its value). */

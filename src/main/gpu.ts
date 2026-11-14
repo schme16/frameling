@@ -94,7 +94,7 @@ export function addFeatures(features: readonly string[]): void {
   app.commandLine.appendSwitch('enable-features', mergeFeatures(now, features));
 }
 
-const SWITCHES = ['disable-gpu', 'ignore-gpu-blocklist', 'enable-features', 'enable-zero-copy', 'canvas-oop-rasterization', 'use-angle', 'use-gl'];
+const SWITCHES = ['disable-gpu', 'use-vulkan', 'ignore-gpu-blocklist', 'enable-features', 'enable-zero-copy', 'canvas-oop-rasterization', 'use-angle', 'use-gl'];
 
 const text = (v: unknown): string | undefined => (typeof v === 'string' && v.trim() ? v.trim() : undefined);
 const whole = (v: unknown): number => (typeof v === 'number' && Number.isFinite(v) ? v : 0);

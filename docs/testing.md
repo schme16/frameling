@@ -491,7 +491,7 @@ was on the NVIDIA card in `nvidia-smi` while it ran. A control hides the canvas 
 
 ```bash
 npm run build && xvfb-run -a -s "-screen 0 1600x1000x24" node scripts/e2e/gpu-canvas.cjs            # what ships
-npm run build && xvfb-run -a -s "-screen 0 1600x1000x24" node scripts/e2e/gpu-canvas.cjs --explore  # plus the Vulkan combinations (report only)
+npm run build && xvfb-run -a -s "-screen 0 1600x1000x24" node scripts/e2e/gpu-canvas.cjs --explore  # plus the Vulkan and Skia-on-Vulkan combinations (report only)
 node scripts/e2e/gpu-canvas.cjs --shots /tmp/shots   # keeps each window picture
 ```
 

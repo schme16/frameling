@@ -121,6 +121,12 @@ describe('hardware drawing (the app, in the main process)', () => {
     for (const v of [undefined, '', 'full', 'off', 'card', 'FULL ']) expect(hardwareSwitches({ FRAMELING_GPU: v }, 'linux').features).toEqual([]);
     expect(hardwareSwitches({ FRAMELING_GPU: 'Vulkan' }, 'linux').features).toEqual(['Vulkan,DefaultANGLEVulkan']);
   });
+  it('FRAMELING_GPU=skia is Skia on Vulkan with ANGLE left on OpenGL (what the user\'s own Chrome runs), never DefaultANGLEVulkan', () => {
+    const r = hardwareSwitches({ FRAMELING_GPU: 'skia' }, 'linux');
+    expect(r.switches.map(asArg)).toEqual(['--ignore-gpu-blocklist', '--use-vulkan']);
+    expect(r.features).toEqual(['Vulkan']);
+    expect(r.features.join(',')).not.toMatch(/DefaultANGLEVulkan/);
+  });
   it('merges features instead of replacing them, once each', () => {
     expect(mergeFeatures('', ['A'])).toBe('A');
     expect(mergeFeatures('A,B', ['C'])).toBe('A,B,C');
