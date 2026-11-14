@@ -698,6 +698,9 @@ npm run build
 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/no-wrap.cjs
 ```
 
+The Export window is walked once for each format card (with More formats open), and once with artboards, since each format
+brings its own options and changes the column's height (`NOWRAP_ONLY="dialog export"` runs just those).
+
 About 4 minutes a pass, 15 for all five. `NOWRAP_PASSES=a,b` runs only the passes whose name contains a or b (`smallest`,
 `usual`, `150`, `200`, `wide`), `NOWRAP_ONLY="tool select"` only the views whose name starts with that, `NOWRAP_JSON=<file>`
 saves every finding, `NOWRAP_SHOTS=<dir>` a picture of each view with a wrap, `NOWRAP_DIST=<dir>` checks another copy of `dist/`

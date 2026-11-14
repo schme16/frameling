@@ -252,3 +252,11 @@ sheet; variations, differing sizes and non-pixel layers are refused with the rea
 sheet swap by changing the label only. Export starts on the way: frames on boards as "all in order, as one", a sheet as
 "packed onto one sheet" (`src/pixel/sheetMode.ts`), and Quill's sentence at the top of the Sprite sheet options follows
 the mode that is picked.
+
+## The panel is the Layers panel's list
+
+`src/artboards/ArtboardsPanel.tsx` and the Layers panel (`src/timeline/Layers.tsx`) are built from the same parts in
+`src/timeline/PieceRow.tsx`: `PieceTools` (the header with its add buttons and the duplicate and delete pair), `PieceRow` (grip,
+picture, name with inline rename, buttons, the ... menu, drag marks, keys), `useRowDrag`, `dropIndex` and `pieceMenuBasics`. What
+only a board has stays in `ArtboardsPanel`: the thumbnail, the size in the row, the variation tag and indent, and the menu's
+Zoom to and variation items. Change the row or the header in `PieceRow` and both panels change.

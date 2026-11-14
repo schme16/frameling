@@ -28,6 +28,9 @@
   width: min(860px, 100%);
 }
 .io-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   padding: 16px 20px 4px;
 }
 .io-head h2 {

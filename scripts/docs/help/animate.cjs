@@ -10,6 +10,8 @@ const scrollTo = (text, pad = 8) => L.js(`(() => { const el = [...document.query
 /** Takes the in-betweens off every layer of the open template, then starts the document afresh (no history, no unsaved dot). */
 const noTweens = () => L.js(`(() => { const s = __frameling.store(); s.update('setup', (d) => { for (const l of d.layers) for (const c of l.cels || []) delete c.tween; }); s.load(s.get().doc); return true; })()`);
 const fit = () => L.cmd('view.fit');
+/** The nth row of the Artboards panel's list, as page code (rows, not pixels, so the layout can move). */
+const ROW = (n) => `document.querySelectorAll('.ab-panel [data-artboard]')[${n}]`;
 
 
 /** The puppet with the Bones layer on its first frame, tool and layer picked, the Rig panel open. */
@@ -162,6 +164,7 @@ const entries = [
   },
   {
     name: 'artboards',
+    prefs: { firstDrawn: true }, // no "tuck the explanations away" offer in the picture
     steps: [
       L.js(`__framelingArtboards.load('sprites')`),
       L.wait(400),
@@ -171,11 +174,17 @@ const entries = [
       L.wait(1200),
       { rec: '@', crop: [60, 44, 1220, 716], every: 80 },
       L.wait(1000),
-      { click: [1041, 217], after: 1300 },
-      { click: [1041, 273], after: 1300 },
-      { click: [951, 326], after: 1700 },
-      { click: [1039, 382], after: 1500 },
-      { click: [1041, 161], after: 1500 },
+      // Pick the second and third boards, add a blank one and pick it, then back to the first (rows, by place in the list).
+      L.js(`${ROW(1)}.click()`),
+      L.wait(1300),
+      L.js(`${ROW(2)}.click()`),
+      L.wait(1300),
+      L.js(`document.querySelector('.ab-panel [aria-label="New blank artboard"]').click()`),
+      L.wait(1700),
+      L.js(`${ROW(3)}.click()`),
+      L.wait(1500),
+      L.js(`${ROW(0)}.click()`),
+      L.wait(1500),
       { rec: 'stop' },
     ],
   },
@@ -186,6 +195,7 @@ const entries = [
   {
     // Three sprites at 6, 12 and 24 fps: the panel names each board's speed, and the Speed box is under the list.
     name: 'artboards-speed',
+    prefs: { firstDrawn: true }, // no "tuck the explanations away" offer in the picture
     steps: [
       L.js(`__framelingArtboards.load('speeds')`),
       L.wait(400),
@@ -210,6 +220,7 @@ const entries = [
     // Variations: the original and two linked copies side by side; open one to see what it changes; then recolour the
     // original's ground and watch both variations follow (the orange one keeps its own fainter ground).
     name: 'variations',
+    prefs: { firstDrawn: true }, // no "tuck the explanations away" offer in the picture
     steps: [
       L.js(`__framelingArtboards.load('variations')`),
       L.wait(400),
@@ -218,12 +229,14 @@ const entries = [
       L.wait(1200),
       { rec: '@', crop: [112, 44, 1168, 690], every: 80 },
       L.wait(1200),
-      { click: [1050, 218], after: 1500 },
+      L.js(`${ROW(1)}.click()`),
+      L.wait(1500),
       L.js(`document.querySelector('.ab-panel').closest('.rd-scroll').scrollTo(0, 330)`),
       L.wait(1800),
       L.js(`document.querySelector('.ab-panel').closest('.rd-scroll').scrollTo(0, 0)`),
       L.wait(600),
-      { click: [1050, 162], after: 1500 },
+      L.js(`${ROW(0)}.click()`),
+      L.wait(1500),
       L.js(`(() => { const s = __frameling.store(); s.update('Recolour the ground', (d) => { const l = d.layers.find((x) => x.name === 'Ground'); const dr = d.drawings[l.cels[0].drawingId]; dr.shapes[0].fill = '#e6c15a'; dr.shapes[1].fill = '#c9a227'; }); return true; })()`),
       L.wait(2200),
       { rec: 'stop' },

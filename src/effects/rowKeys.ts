@@ -34,7 +34,20 @@ export function rowKey(e: KeyboardEvent<HTMLElement>, node: Node, selector: stri
     refocusRow(selector);
     return done();
   }
-  if (e.shiftKey) return false;
+  return walkRows(e, folder);
+}
+
+/**
+ * Plain arrows, Home and End walk the rows of a list (a tree of `[role=treeitem][data-row]`); Right and Left fold a
+ * folder, or step into and out of one. Shared by the layer list and the Artboards panel, so both move the same way.
+ */
+export function walkRows(e: KeyboardEvent<HTMLElement>, folder?: { id: string; collapsed: boolean }): boolean {
+  if (e.target !== e.currentTarget || e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return false;
+  const done = () => {
+    e.preventDefault();
+    e.stopPropagation();
+    return true;
+  };
   const rows = rowsOf(e.currentTarget);
   const at = rows.indexOf(e.currentTarget);
   switch (e.key) {

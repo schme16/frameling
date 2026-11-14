@@ -12,7 +12,9 @@ export const bodies: Record<string, string> = {
 - **Alt+drag** to copy it.
 - On pixel art, sizes and places snap to whole art pixels.
 
-**In the Artboards panel:** click one to open it, double-click to fill the window with it, drag to reorder, double-click its name to rename it. Underneath, set the open one's **Name**, **Export as** (the file name it exports with), **W** and **H**, **Speed** (see [a speed for each artboard](help:artboards-speed)), and **Background** (or **See-through**).
+**In the Artboards panel:** it works like the [Layers panel](help:timeline-layers), because artboards and layers are the same kind of list. **New artboard** at the top adds a **Blank** one or a **Variation**, and the two buttons beside it **duplicate** and **delete** the open one. Click a row to open it, double-click the row to fill the window with it, double-click its name to rename it, drag the grip to reorder, or hold **Alt** and press the up or down arrow. Right-click a row, or press its **...** button, for the same menu a layer has, plus **Zoom to this artboard**. What only a board has shows in its row: its size at the right, and a small link tag when it is a variation (it sits indented under its original).
+
+Underneath the list, set the open one's **Name**, **Export as** (the file name it exports with), **W** and **H**, **Speed** (see [a speed for each artboard](help:artboards-speed)), and **Background** (or **See-through**).
 
 **Getting around:** **Alt+PageDown** and **Alt+PageUp** go to the next and previous artboard. **Ctrl+Alt+0** fits them all in the window. **Artboards > Zoom to artboard** fills the window with the open one. **Line up** puts them in a tidy row.
 
@@ -66,7 +68,7 @@ See [artboards as shots](help:artboards-shots) and [exporting artboards](help:ar
 See [artboards as shots](help:artboards-shots) and [exporting artboards](help:artboards-export).`,
   variations: `A **variation (linked copy)** is an [artboard](help:artboards) that follows another one. It shows everything its **original** shows, except for the things you change in it. Change the hero's drawing in the original and the variation changes too. Change the hero's colour in the variation and only the variation turns that colour.
 
-**Make one:** press **Make a variation** in the Artboards panel, or **Artboards > Variations > Make a variation (linked copy)**, or press **Ctrl+K** and type "variation". It opens beside the original with a **Variation** tag. Then just work in it as usual: recolour shapes, move keys to change the timing, hide a layer, add one of its own.
+**Make one:** press **Variation** at the top of the Artboards panel, or **Make a variation** under the list, or **Artboards > Variations > Make a variation (linked copy)**, or press **Ctrl+K** and type "variation". It opens beside the original, indented under it in the list with a small link tag. Then just work in it as usual: recolour shapes, move keys to change the timing, hide a layer, add one of its own.
 
 **Colourways:** press **Recolour this variation** and pick new colours: every frame changes, only in the variation. See [recolour a variation](help:variations-recolour).
 
