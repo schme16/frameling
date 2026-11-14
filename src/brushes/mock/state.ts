@@ -4,7 +4,9 @@ import { useSyncExternalStore } from 'react';
 import { store } from '../../core/store';
 import { FAVOURITE_IDS, makeLibrary, RECENT_IDS, type MockBrush } from './library';
 
-export type Layout = 'A' | 'B' | 'C' | 'D';
+export type Layout = 'A' | 'B' | 'C' | 'D' | 'P';
+/** Round two, the dropdown picker: how a row looks. */
+export type Rows = 'tip' | 'sample' | 'two';
 
 export interface MockState {
   layout: Layout;
@@ -17,9 +19,13 @@ export interface MockState {
   /** Folders open in the panel layout. */
   folders: string[];
   recent: string[];
+  /** Picker (P): the row style, the row size slider (0.6 to 1.5), and the open groups (null: Recent and the current brush's). */
+  rows: Rows;
+  rowScale: number;
+  opened: string[] | null;
 }
 
-let state: MockState = { layout: 'A', n: 4, activeId: 'starter:ink', query: '', open: false, group: 'Recent', folders: [], recent: RECENT_IDS };
+let state: MockState = { layout: 'A', n: 4, activeId: 'starter:ink', query: '', open: false, group: 'Recent', folders: [], recent: RECENT_IDS, rows: 'tip', rowScale: 1, opened: null };
 const listeners = new Set<() => void>();
 
 export const mockState = (): MockState => state;
