@@ -221,10 +221,10 @@ registerHelpTopics([
   },
   {
     id: 'drawing-mode',
-    title: "Which layer you're drawing on",
+    title: "Pixels or Vectors",
     section: 'Basics',
     media: 'drawing-mode.png',
-    summary: 'The line at the top of the tool strip says what kind of layer you are on, and why some tools are off.',
+    summary: 'The switch at the top of the tool strip shows what kind of layer you are on, and flips when you pick a tool that needs the other kind.',
     keywords: ['layer kind', 'drawing mode', 'pixel layer', 'vector layer', 'tools missing', 'tools gone', 'tools off', 'pixel tools', 'shade', 'dither', 'greyed out', 'hidden tools', 'workspace', 'which layer', 'go to layer'],
   },
   {

@@ -21,7 +21,7 @@ import { awayPlaces, groupName, headingOf, hiddenTools, railFor, resolveGroups, 
 import { iconSizeFor, ToolbarBuilder } from './ToolbarBuilder';
 import { acrossFor, clampRailWidth, minRailWidth, naturalRailWidth, railSizes, railWidthNow, RAIL_BIG_STEP, RAIL_MAX, RAIL_STEP } from './toolRailWidth';
 import { toast } from './toast';
-import { layerIcon, modeLine, offInGroup, tellAboutOffLayer } from './drawingMode';
+import { flipSideFor, modeLine, offInGroup, pressSide, SIDES, sideOf, sideWord, tellAboutOffLayer, topLayerOf, type Side } from './drawingMode';
 import { askGroupRename, currentGroups, flyRequest, endToolRailPull, fitToolRailNames, foldToolGroup, frontTools, groupMenu, layerLineMenu, railNote, setToolbarEditing, setToolRailWidth, startToolDrag, stepTool, toolbarEditing, toolDrag, toolMenu } from './toolRail';
 
 /** The kind of layer being drawn on (the last one when none is picked), or null with no layers. */
@@ -251,10 +251,8 @@ export function ToolStrip({ place = 'left' }: { place?: DockZone | 'float' }) {
   const offKey = rail.off.join(',');
   const off = useMemo(() => new Set(offKey ? offKey.split(',') : []), [offKey]);
   const why = (id: string): string => whyOff({ label: getTool(id)?.label, layers: getTool(id)?.layers ?? [] }, kind);
-  const choose = (id: string) => {
-    if (off.has(id)) toast(why(id), { quill: null });
-    else pickTool(id);
-  };
+  // A greyed-out tool is not refused: picking it flips the switch to the layer it needs.
+  const choose = (id: string) => pickTool(id);
   const saved = dock.use((d) => railOf(d));
   // Each tool with where it asked to start in the rail, as text so the memo below only reruns when that changes.
   const allKey = allTools().map((t) => `${t.id}|${t.group ?? ''}|${t.groupAt ?? ''}|${t.slot ?? ''}`).join(',');
@@ -280,6 +278,11 @@ export function ToolStrip({ place = 'left' }: { place?: DockZone | 'float' }) {
   const waiting = only ? [] : waitingFor(everything, kind, awayIds);
   const layerName = useStore((s) => (findLayer(s.doc, s.ui.activeLayerId) ?? s.doc.layers[s.doc.layers.length - 1])?.name ?? '');
   const line = kind ? modeLine(kind, layerName, waiting, greyOut) : null;
+  // The top layer of each kind, for what each side of the switch says it would go to.
+  const topPixel = useStore((s) => topLayerOf(s.doc.layers, 'pixel')?.name ?? '');
+  const topVector = useStore((s) => topLayerOf(s.doc.layers, 'vector')?.name ?? '');
+  const topOf: Record<Side, string> = { pixel: topPixel, vector: topVector };
+  const lit = sideOf(kind);
   // Gold only when the layout and the layer disagree (the Pixel workspace on a vector layer): that is when missing tools surprise you.
   const alert = !!wsId && inPixelWorkspace() && kind !== 'pixel' && waiting.length > 0 && !greyOut;
   const waitingKey = waiting.map((w) => w.id).join(',');
@@ -310,14 +313,24 @@ export function ToolStrip({ place = 'left' }: { place?: DockZone | 'float' }) {
   const byId = new Map(tools.map((t) => [t.id, t]));
   const axis = sideways ? 'y' : 'x';
 
-  // The picked tool doesn't work on this kind of layer: move to the same job there (the Lasso becomes the Pixel lasso),
-  // or else the first one that does. A tool the workspace only leaves out of the strip still works (picked by its key,
-  // say), so it's left alone.
+  // The picked tool doesn't work on this kind of layer. Picked on purpose: a one-way tool (Shade, Edit points) flips the
+  // Pixels | Vectors switch to the layer it needs, and the Lasso becomes the Pixel lasso instead. The layer changed under
+  // a tool instead (you pressed the other side): move to the same job there, or else the first tool that does work.
+  // A tool the workspace only leaves out of the strip still works (picked by its key, say), so it's left alone.
+  const lastTool = useRef(current);
   useEffect(() => {
+    const picked = lastTool.current !== current;
+    lastTool.current = current;
     const now = getTool(current);
     if (!tools.length || !now || !kind || now.layers.includes(kind)) return;
-    const next = twinFor(everything, current, kind) ?? tools.find((t) => !off.has(t.id))?.id;
-    if (next) store().setUi({ tool: next });
+    const twin = twinFor(everything, current, kind);
+    const fallback = twin ?? tools.find((t) => !off.has(t.id))?.id;
+    const flip = twin || !picked ? null : flipSideFor(now.layers, kind);
+    if (flip) {
+      pressSide(flip, { because: now.label, declined: () => fallback && store().setUi({ tool: fallback }) });
+      return;
+    }
+    if (fallback) store().setUi({ tool: fallback });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current, ids, kind]);
 
@@ -449,26 +462,40 @@ export function ToolStrip({ place = 'left' }: { place?: DockZone | 'float' }) {
       </span>
       {grip}
       {line && kind && (
-        <button
-          type="button"
-          className={`ui-tool-layer is-${kind}${waiting.length && !greyOut ? ' is-off' : ''}${alert ? ' is-alert' : ''}`}
+        <div
+          className={`ui-tool-switch is-${kind}${lit ? ` is-${lit}` : ''}${waiting.length && !greyOut ? ' is-off' : ''}${alert ? ' is-alert' : ''}`}
+          role="group"
           aria-label={line.label}
-          aria-haspopup="menu"
-          data-tip={line.tip}
-          data-tip-desc={line.desc}
           data-help="drawing-mode"
           data-layer-kind={kind}
-          onClick={(e) => {
+          onContextMenu={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
             const r = e.currentTarget.getBoundingClientRect();
             openDockMenu(sideways ? r.left : r.right + 6, sideways ? r.bottom + 6 : r.top, layerLineMenu(kind, layerName, waiting));
           }}
         >
-          <Icon name={layerIcon(kind)} size={14} />
-          <span className="ui-tool-layer-text">
-            <span className="ui-tool-layer-word">{line.word}</span>
-          </span>
-          {line.off && <span className="ui-tool-layer-count" aria-hidden="true">{waiting.length}</span>}
-        </button>
+          {SIDES.map((side) => {
+            const on = lit === side;
+            const gone = side === line.needs && waiting.length > 0;
+            return (
+              <button
+                key={side}
+                type="button"
+                className={`ui-tool-side is-${side}${on ? ' is-on' : ''}`}
+                aria-pressed={on}
+                data-side={side}
+                data-tip={on ? line.tip : topOf[side] ? `${sideWord(side)}: go to "${topOf[side]}"` : `${sideWord(side)}: no ${side} layer yet`}
+                data-tip-desc={on ? line.desc : topOf[side] ? `Switch to the top ${side} layer.${gone ? ` ${waitingWords(waiting)}` : ''}` : `Press to make a ${side} layer.`}
+                onClick={() => pressSide(side)}
+              >
+                <Icon name={side} size={14} />
+                <span className="ui-tool-side-word">{sideWord(side)}</span>
+                {gone && !greyOut && <span className="ui-tool-layer-count" aria-hidden="true">{waiting.length}</span>}
+              </button>
+            );
+          })}
+        </div>
       )}
       <div className="ui-tool-groups">
         {groups.map((g, gi) => {

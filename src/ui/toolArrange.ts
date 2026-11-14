@@ -312,7 +312,7 @@ export function whyOff(tool: { label?: string; layers: LayerKind[] }, kind: Laye
   const name = tool.label ?? 'This tool';
   const needs = tool.layers.includes('pixel') && !tool.layers.includes('vector') ? 'pixel' : 'vector';
   const on = KIND_WORDS[kind ?? 'vector'];
-  return `${name} works on ${needs} layers, and you're on a ${on} layer. Click a ${needs} layer, or add one with ${needs === 'pixel' ? 'Pixel' : 'Vector'} in the Layers header.`;
+  return `${name} works on ${needs} layers, and you're on a ${on} layer. Pick ${tool.label ?? 'it'}, or press ${needs === 'pixel' ? 'Pixels' : 'Vectors'} at the top of the rail, and you switch to a ${needs} layer.`;
 }
 
 /** True when a group carries a name that is not the one it would have anyway (its usual name, or "Group N"). */

@@ -39,6 +39,7 @@ export const SETTING_ROWS: PrefRow[] = [
   row('general', 'Tool group names', 'A name above each group of tools.', ['toolbar labels', 'tool labels', 'group titles', 'tool headings', 'slimmer toolbar']),
   row('general', 'Tool button size', 'How big the buttons on the tool rail are.', ['toolbar size', 'icon size', 'big buttons', 'tool icons', 'button size', 'toolbar icon size']),
   row('general', 'Tools that do not work here', 'Hide the tools a layer cannot use, or grey them out.', ['hide tools', 'grey out tools', 'disabled tools', 'unavailable tools', 'vector tools on pixel layer', 'greyed out', 'gray out']),
+  row('general', 'New pixel layer size', 'How wide each square is on a pixel layer made from the Pixels and Vectors switch.', ['pixel size', 'grid size', 'square size', 'chunky', 'new layer', 'pixels and vectors', 'toggle']),
   row('general', 'Show Quill', 'Quill the hedgehog shows you round. Off hides him.', ['mascot', 'hedgehog', 'assistant', 'helper', 'character', 'hide mascot', 'clippy', 'guide']),
   row('general', 'Fade tile copies', 'In tile mode, fade the copies round the tile you are drawing.', ['tile preview', 'seamless', 'tiling', 'repeat mode', 'pattern preview', 'offset', 'wrap around', 'tiled mode']),
   row('general', 'Thicker pixel outlines', 'Pixel shapes get an outline thicker than one pixel.', ['stroke width', 'line width', 'outline', 'border thickness', 'line thickness', 'pixel line', 'stroke']),

@@ -95,7 +95,7 @@ describe('railFor', () => {
 describe('why a tool is off', () => {
   it('says what it works on, what you are on, and what to do', () => {
     const w = whyOff({ label: 'Shade', layers: ['pixel'] }, 'vector');
-    expect(w).toBe("Shade works on pixel layers, and you're on a vector layer. Click a pixel layer, or add one with Pixel in the Layers header.");
+    expect(w).toBe("Shade works on pixel layers, and you're on a vector layer. Pick Shade, or press Pixels at the top of the rail, and you switch to a pixel layer.");
     expect(whyOff({ label: 'Text', layers: ['vector'] }, 'pixel')).toContain('Text works on vector layers, and you\'re on a pixel layer.');
   });
   it('has no em dashes', () => {
@@ -349,8 +349,10 @@ describe('the rail on the page', () => {
     expect(shade.classList.contains('is-off')).toBe(true);
     expect(shade.getAttribute('aria-disabled')).toBe('true');
     expect(shade.getAttribute('data-tip-desc')).toContain('Shade works on pixel layers');
+    // Pressing it is not refused: the switch flips to Pixels and Shade is the tool.
     act(() => shade.click());
-    expect(store().get().ui.tool).not.toBe('shade');
+    expect(store().get().ui.tool).toBe('shade');
+    expect(store().get().ui.activeLayerId).toBe(k.pixel);
     expect(toasts.get().some((t) => t.message.includes('Shade works on pixel layers'))).toBe(true);
     on(k.pixel);
     expect(host.querySelector('[data-tool-id="shade"]')!.classList.contains('is-off')).toBe(false);

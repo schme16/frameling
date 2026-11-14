@@ -649,25 +649,31 @@ The tool strip has a small grip at its top. Drag it to move the strip: [Move the
 Press the menu key on a tab, a window's grip or the tool strip's grip to open its menu. On a window's grip, the arrow keys nudge it, and **Alt** with the arrow keys makes it bigger or smaller (right and down grow it, left and up shrink it). **Shift** makes bigger steps, and **Alt** with **Enter** goes back to the usual size. The new size is read out. The window's menu has **Make it bigger**, **Make it smaller** and **Back to the usual size** too. Every move is also in the command search.
 
 See also [Panels](help:panels) and [Workspaces](help:workspaces).`,
-  'drawing-mode': `The line at the top of the tool strip says which kind of layer you're drawing on: **Pixel layer**, **Vector layer**, and so on. The layer decides which tools work, not the workspace.
+  'drawing-mode': `At the top of the tool strip is a switch: **Pixels** on the left, **Vectors** on the right. It lights the kind of layer you're drawing on, so you can always see whether your tools paint pixels or make shapes.
 
-## Why the line is there
+## Why it's there
 
-The **Pixel** workspace is a layout: a big palette and a real-size Preview. It doesn't change what the layer can do. Pick a vector layer while you're in the Pixel workspace and Shade, Dither, Spray and the Magic wand have nothing to work on, so they leave the strip. The line is how you see that, without opening the Layers panel.
+The layer decides what your tools can do, not the workspace. The **Pixel** workspace is only a layout: a big palette and a real-size Preview. Pick a vector layer in it and Shade, Dither and Spray have nothing to work on. The switch shows you that, without opening the Layers panel.
+
+## Change side
+
+Press the other side. **Pixels** takes you to your top pixel layer, **Vectors** to your top vector layer. Rest on a side to see which layer that is.
+
+With no layer of that kind it offers to make one. The first time it asks; after that it does what you chose. A new pixel layer copies the square size of your other pixel (or tile) layer, else it uses **New pixel layer size** in **Preferences, General**, and it tells you which. Undo takes the new layer back.
+
+## Pick a tool and it follows
+
+Shade, Dither, Spray, the Magic wand and Slices only work on pixels, so picking one flips the switch to **Pixels**. Edit points and Shape hints flip it to **Vectors**. The Lasso becomes the Pixel lasso instead. Tools that work on both leave the switch alone.
 
 ## When tools are off
 
-The line turns gold and counts them: **5 tools off**. A group that lost some says so beside its name (**3 off**). Rest on the line to read which tools they are.
+The switch has a gold outline in the Pixel workspace on a vector layer, which is when missing tools come as a surprise. A group that lost some says so beside its name (**3 off**). Rest on the lit side to read which tools they are.
 
-**Get them back:** press the line, then **Go to the pixel layer** (it names yours). With no pixel layer yet it offers **Add a pixel layer**. Clicking a pixel layer in the Layers panel or the timeline does the same.
+**Hide them** leaves the tools off the strip, so it's shorter and the rest stay put. **Grey them out** keeps every tool where it is, dimmed. Right-click the switch for that, or use **Preferences, General**. The first time tools leave the strip Frameling tells you and lets you change your mind.
 
 **From the keyboard:** search for **Go to a pixel layer** or **Go to a vector layer** in the command palette. They're in the **Layers** menu too.
 
-## Hide them, or grey them out
-
-**Hide them** leaves the tools off the strip, so it's shorter and the rest stay put. **Grey them out** keeps every tool where it is, dimmed, and resting on one says why. The first time tools leave the strip Frameling tells you and lets you change your mind. After that it stays as you chose; change it any time from the line, the **View** menu, or **Preferences, General**.
-
-**Good to know:** on a strip that is one button wide, the line shrinks to its icon, with a gold number when tools are off. Tile and camera layers are different jobs, so they show only the tools that work there.
+**Good to know:** on a strip that is one button wide, or lying along the top, the switch shrinks to two icons, with a gold number on the side that has the missing tools. On a tile or camera layer neither side is lit; press one to go to a layer of that kind.
 
 See also [The tool strip](help:tool-strip), [The Pixel workspace](help:pixel-workspace) and [Workspaces](help:workspaces).`,
   'tool-strip': `The strip down the left holds your tools, two across. The one with the gold glow is the one you're using.
@@ -688,7 +694,7 @@ Press its button, or press its key. Rest on a button to see the key.
 
 Switch between a vector layer and a pixel layer and nothing moves, so your hand can learn the strip. A tool that doesn't work on the layer you're on is left off the strip, so the strip is shorter and everything else stays exactly where it was: Shade, Dither, Spray and the Magic wand wait out of sight on a vector layer, and Text, Gradient and the curve tools on a pixel layer. To see every tool all the time, set **Tools that do not work here** to **Grey them out** in **Preferences, General**. They wait where they sit, and resting on one says why.
 
-While they're out of sight, the line at the top of the strip says so: it turns gold and counts them (**5 tools off**). Press it to jump to a layer they work on, or to see them greyed out instead. [Which layer you're drawing on](help:drawing-mode) says more.
+While they're out of sight, the switch at the top of the strip shows which kind of layer you're on. Press the other side to jump to a layer they work on, or right-click it to see them greyed out instead. [Which layer you're drawing on](help:drawing-mode) says more.
 
 A few tools share one place with their pixel twin: the Lasso, Polygon select, Magnetic lasso and Select each have one button, and it picks the one for the layer you're on. Change layer with the Lasso in your hand and you still have a lasso.
 

@@ -940,68 +940,95 @@ kbd {
   color: var(--text);
 }
 
-/* The layer line at the top of the rail: which layer the tools are for, and how many are off because of it. */
-.ui-tool-layer {
+/* The Pixels | Vectors switch at the top of the rail: it shows the kind of the layer you are on, and pressing a side goes to a layer of that kind. */
+.ui-tool-switch {
   box-sizing: border-box;
   display: flex;
-  align-items: center;
-  gap: 6px;
   flex: none;
+  gap: 2px;
   width: calc(100% - 8px);
   margin: 2px 4px 4px;
-  padding: 4px 8px;
+  padding: 2px;
   border: 1px solid var(--line);
   border-radius: 10px;
+  background: transparent;
+}
+.ui-tool-side {
+  position: relative;
+  display: flex;
+  flex: 1 1 0;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-width: 0;
+  padding: 4px 2px;
+  border: 0;
+  border-radius: 8px;
   background: transparent;
   color: var(--muted);
   font-size: var(--fs-small);
   font-weight: 800;
   line-height: 1.2;
-  text-align: left;
 }
-.ui-tool-layer:hover,
-.ui-tool-layer:focus-visible {
+.ui-tool-side:hover,
+.ui-tool-side:focus-visible {
   background: var(--hover-bg);
   color: var(--text);
 }
-.ui-tool-layer svg {
+.ui-tool-side.is-on,
+.ui-tool-side.is-on:hover,
+.ui-tool-side.is-on:focus-visible {
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+  box-shadow: 0 2px 0 color-mix(in srgb, var(--sunny-deep) 70%, transparent);
+}
+:root[data-look='crisp'] .ui-tool-side.is-on {
+  box-shadow: none;
+}
+.ui-tool-side svg {
   flex: none;
+  display: none;
 }
-.ui-tool-layer-text {
-  display: flex;
-  flex-direction: column;
+.ui-tool-side-word {
   min-width: 0;
-}
-.ui-tool-layer-off {
-  color: var(--text);
-  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .ui-tool-layer-count {
   display: none;
 }
-/* Tools are off: a firmer line. It turns gold only when the layout and the layer disagree (the Pixel workspace on a vector layer), which is when missing tools come as a surprise. */
-.ui-tool-layer.is-off {
+/* Tools are off: a firmer outline. It turns gold only when the layout and the layer disagree (the Pixel workspace on a vector layer), which is when missing tools come as a surprise. */
+.ui-tool-switch.is-off {
   border-color: var(--muted);
-  color: var(--text);
 }
-.ui-tool-layer.is-alert {
+.ui-tool-switch.is-alert {
   border-color: var(--sunny-deep, var(--sunny));
-  background: color-mix(in srgb, var(--sunny) 18%, transparent);
+  background: color-mix(in srgb, var(--sunny) 14%, transparent);
 }
-.ui-tool-layer.is-alert:hover,
-.ui-tool-layer.is-alert:focus-visible {
-  background: color-mix(in srgb, var(--sunny) 30%, transparent);
+/* One button wide, or lying along the top: icons only, and the count on the side that has the missing tools. */
+.ui-tools.is-stacked:not(.has-names) .ui-tool-switch,
+.ui-tools.is-sideways .ui-tool-switch {
+  width: auto;
+  flex-direction: column;
+  align-self: center;
 }
-/* One button wide, or lying along the top: just the icon, and the count when tools are off. */
-.ui-tools.is-stacked .ui-tool-layer,
-.ui-tools.is-sideways .ui-tool-layer {
-  position: relative;
-  width: var(--tool);
-  justify-content: center;
+.ui-tools.is-sideways .ui-tool-switch {
+  flex-direction: row;
+  margin: 0 6px 0 2px;
+}
+.ui-tools.is-stacked:not(.has-names) .ui-tool-side,
+.ui-tools.is-sideways .ui-tool-side {
+  flex: none;
+  width: calc(var(--tool) - 8px);
   padding: 6px 0;
 }
-.ui-tools.is-stacked:not(.has-names) .ui-tool-layer-text,
-.ui-tools.is-sideways .ui-tool-layer-text {
+.ui-tools.is-stacked:not(.has-names) .ui-tool-side svg,
+.ui-tools.is-sideways .ui-tool-side svg {
+  display: block;
+}
+.ui-tools.is-stacked:not(.has-names) .ui-tool-side-word,
+.ui-tools.is-sideways .ui-tool-side-word {
   display: none;
 }
 .ui-tools.is-stacked:not(.has-names) .ui-tool-layer-count,
