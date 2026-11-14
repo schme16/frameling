@@ -582,7 +582,7 @@ Tilemap and camera layers are different jobs, so on those the strip shows only t
 
 ## Your way
 
-Drag tools into the order you like, or into other groups. See [Arrange your tools](help:tool-arrange). To rename groups, put tools away or fold a group into one button, open [Change the tools](help:tool-builder). Right-click the strip to move it to another side, or to put the tools back the way they came.
+Drag tools into the order you like, or into other groups. See [Arrange your tools](help:tool-arrange). To rename groups, put tools away or fold a group into one button, open [Change the tools](help:tool-builder). Drag the strip's inner edge to make it wider, so the group names show whole. Right-click the strip to move it to another side, or to put the tools back the way they came.
 
 ## One button per group
 
@@ -605,9 +605,11 @@ Tool keys can be changed in [keyboard shortcuts](help:keyboard-shortcuts).`,
 
 **Button size** is small, medium or large. **Group names** shows or hides the names above the groups (it is on to begin with; turn it off for a slimmer strip). **Tools that do not work on this layer** hides them, or greys them out where they sit.
 
-**Put the tools back** undoes all of it for this workspace, and size, names and style too. The message that follows has **Undo**.
+**Make the strip wider:** drag its inner edge, the line between the strip and the canvas. A wider strip shows more of each group's name and fits more buttons across. Double-click the edge to fit the longest name; double-click again for the usual width. A name that still doesn't fit ends in dots and never wraps. The command search has **Tool rail: wider**, **narrower** and **fit the group names** too.
 
-Good to know: each [workspace](help:workspaces) keeps its own groups, names, hidden and folded tools, and they go with the workspace when you save or share it. See also [Arrange your tools](help:tool-arrange) and [The tool strip](help:tool-strip).`,
+**Put the tools back** undoes all of it for this workspace, and width, size, names and style too. The message that follows has **Undo**.
+
+Good to know: each [workspace](help:workspaces) keeps its own groups, names, hidden and folded tools and strip width, and they go with the workspace when you save or share it. See also [Arrange your tools](help:tool-arrange) and [The tool strip](help:tool-strip).`,
   'tool-arrange': `Your tools, your order. Everything on the [tool strip](help:tool-strip) can be moved.
 
 ## With the mouse

@@ -7,8 +7,9 @@ import { store, useStore } from '../core/store';
 import { syncDynamicCommands } from './dynamic';
 import { pickTool } from '../tools/pick';
 import { Icon } from './icons';
-import { currentWorkspace, dock, railOf } from './dock';
+import { currentWorkspace, dock, railOf, railWidthOf } from './dock';
 import { startToolsDrag, nudgeTools } from './dockDrag';
+import { useEdgeDrag } from './dockShared';
 import { menuPoint, openDockMenu, toolsMenu } from './dockMenus';
 import type { DockZone } from './dockModel';
 import { useFeaturesVersion } from '../features/use';
@@ -16,8 +17,9 @@ import { usePrefs } from './prefs';
 import { usePopover } from './popover';
 import { awayPlaces, groupName, headingOf, hiddenTools, railFor, resolveGroups, slotMates, twinFor, visibleGroups, whyOff, type RailTool, type ToolGroup } from './toolArrange';
 import { iconSizeFor, ToolbarBuilder } from './ToolbarBuilder';
+import { acrossFor, clampRailWidth, minRailWidth, railSizes, railWidthNow, RAIL_BIG_STEP, RAIL_MAX, RAIL_STEP } from './toolRailWidth';
 import { toast } from './toast';
-import { askGroupRename, currentGroups, flyRequest, foldToolGroup, frontTools, groupMenu, railNote, setToolbarEditing, startToolDrag, stepTool, toolbarEditing, toolDrag, toolMenu } from './toolRail';
+import { askGroupRename, currentGroups, flyRequest, endToolRailPull, fitToolRailNames, foldToolGroup, frontTools, groupMenu, railNote, setToolbarEditing, setToolRailWidth, startToolDrag, stepTool, toolbarEditing, toolDrag, toolMenu } from './toolRail';
 
 /** The kind of layer being drawn on (the last one when none is picked), or null with no layers. */
 function useActiveKind(): LayerKind | null {
@@ -27,7 +29,56 @@ function useActiveKind(): LayerKind | null {
 /** The tool rail where it is docked: it renders in the slot of the side it was put on, and nowhere else. */
 export function ToolSlot({ at }: { at: DockZone }) {
   const place = dock.use((d) => d.layout.tools.place);
-  return place === at ? <ToolStrip place={at} /> : null;
+  if (place !== at) return null;
+  // On the left or right the inner edge can be pulled, to make room for the group names.
+  if (at === 'left') return (<><ToolStrip place={at} /><RailSplitter at={at} /></>);
+  if (at === 'right') return (<><RailSplitter at={at} /><ToolStrip place={at} /></>);
+  return <ToolStrip place={at} />;
+}
+
+/** The edge of a docked tool rail on the canvas side. Pull it to set the width; the same feel as the panel splitters. */
+function RailSplitter({ at }: { at: 'left' | 'right' }) {
+  const saved = dock.use((d) => railWidthOf(d));
+  const style = usePrefs((p) => p.toolRail);
+  const size = usePrefs((p) => p.toolSize);
+  const look = usePrefs((p) => p.look);
+  const sizes = railSizes(look, size);
+  const width = railWidthNow(saved, sizes, style);
+  // A rail on the left grows when pulled right; on the right, when pulled left.
+  const drag = useEdgeDrag({ horizontal: false, sign: at === 'left' ? 1 : -1, size: () => width, set: (n) => setToolRailWidth(n, false), end: endToolRailPull });
+  const to = (n: number) => setToolRailWidth(clampRailWidth(n, sizes));
+  return (
+    <div
+      className="ui-splitter ui-splitter-v ui-rail-splitter"
+      role="separator"
+      aria-orientation="vertical"
+      aria-label="Resize the tool rail"
+      aria-valuenow={width}
+      aria-valuemin={minRailWidth(sizes)}
+      aria-valuemax={RAIL_MAX}
+      aria-valuetext={`${width} pixels, ${acrossFor(width, sizes, style)} across`}
+      tabIndex={0}
+      data-tip="Resize the tool rail"
+      data-tip-desc="Drag to make it wider or narrower. Double-click to fit the group names."
+      data-help="tool-builder"
+      {...drag}
+      onDoubleClick={fitToolRailNames}
+      onKeyDown={(e) => {
+        // Arrows resize (Shift for bigger steps), Home and End go to the narrowest and widest, Enter fits the names.
+        if (e.altKey || e.ctrlKey || e.metaKey) return;
+        const grow = at === 'left' ? 'ArrowRight' : 'ArrowLeft';
+        const shrink = at === 'left' ? 'ArrowLeft' : 'ArrowRight';
+        const step = e.shiftKey ? RAIL_BIG_STEP : RAIL_STEP;
+        if (e.key === grow) to(width + step);
+        else if (e.key === shrink) to(width - step);
+        else if (e.key === 'Home') to(0);
+        else if (e.key === 'End') to(RAIL_MAX);
+        else if (e.key === 'Enter') fitToolRailNames();
+        else return;
+        e.preventDefault();
+      }}
+    />
+  );
 }
 
 /** The tool rail as a small window over the canvas, when it has been floated. */
@@ -162,8 +213,14 @@ export function ToolStrip({ place = 'left' }: { place?: DockZone | 'float' }) {
   const stacked = style === 'stacked';
   const size = usePrefs((p) => p.toolSize);
   const showNames = usePrefs((p) => p.toolNames);
+  const look = usePrefs((p) => p.look);
+  const savedWidth = dock.use((d) => railWidthOf(d));
   const editing = toolbarEditing.use((e) => e);
   const iconPx = iconSizeFor(size);
+  // A width the person pulled (docked at a side): the rail takes it, and the buttons across follow it.
+  const sizes = railSizes(look, size);
+  const pulledWidth = savedWidth !== undefined && (place === 'left' || place === 'right') ? railWidthNow(savedWidth, sizes, style) : undefined;
+  const pulled = pulledWidth === undefined ? undefined : ({ width: pulledWidth, '--tool-cols': acrossFor(pulledWidth, sizes, style) } as React.CSSProperties);
   const kind = useActiveKind();
   const current = useStore((s) => s.ui.tool);
   // The workspace can narrow the strip (the Pixel workspace shows only pixel art tools on pixel layers).
@@ -216,7 +273,7 @@ export function ToolStrip({ place = 'left' }: { place?: DockZone | 'float' }) {
     measure();
     window.addEventListener('resize', measure);
     return () => window.removeEventListener('resize', measure);
-  }, [editing, size, showNames, stacked, place, groups.length]);
+  }, [editing, size, showNames, stacked, place, groups.length, pulledWidth]);
   const held = useRef<{ timer: number; fired: boolean }>({ timer: 0, fired: false });
   const byId = new Map(tools.map((t) => [t.id, t]));
   const axis = sideways ? 'y' : 'x';
@@ -337,6 +394,7 @@ export function ToolStrip({ place = 'left' }: { place?: DockZone | 'float' }) {
       ref={navRef}
       className={`ui-tools${sideways ? ' is-sideways' : ''}${place === 'float' ? ' is-floating' : ''}${stacked ? ' is-stacked' : ' is-two'}${drag ? ' is-arranging' : ''}${editing ? ' is-editing' : ''}${showNames && !sideways ? ' has-names' : ''} is-size-${size}`}
       aria-label="Tools"
+      style={pulled}
       aria-describedby="tool-rail-hint"
       data-help="tool-strip"
       onKeyDown={onKey}

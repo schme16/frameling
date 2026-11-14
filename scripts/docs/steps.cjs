@@ -126,6 +126,17 @@ async function runSteps(win, steps, { outDir, width, height, name }) {
       await sleep(30);
       send({ type: 'mouseUp', x, y, button: 'left', clickCount: 1 });
       await sleep(s.after ?? 80);
+    } else if (s.dblclick) {
+      // Two quick presses at one spot, the second counted as a double-click.
+      const [x, y] = s.dblclick;
+      send({ type: 'mouseMove', x, y });
+      for (const n of [1, 2]) {
+        send({ type: 'mouseDown', x, y, button: 'left', clickCount: n });
+        await sleep(30);
+        send({ type: 'mouseUp', x, y, button: 'left', clickCount: n });
+        await sleep(40);
+      }
+      await sleep(s.after ?? 80);
     } else if (s.down || s.held || s.up) {
       // Hold the button over several steps, for a shot in the middle of a drag: down, then held moves, then up.
       const [x, y] = s.down || s.held || s.up;

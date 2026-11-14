@@ -1,7 +1,8 @@
 // The tool rail's live side: the arrangement as it is now, moving tools (by pointer drag, keyboard, menu), and the
 // stacked style's "front tool" of each group. The pure model is toolArrange.ts; ToolStrip.tsx draws it.
 import { allTools, getTool } from '../core/registry';
-import { dock, railOf, resetToolGroups, setToolGroups } from './dock';
+import { defaultRailWidthOf, dock, flushDock, railOf, railWidthOf, resetToolGroups, setRailWidth, setToolGroups } from './dock';
+import { acrossFor, chosenRailWidth, columnStep, fitRailWidth, naturalRailWidth, railSizes, railWidthNow, type RailSizes } from './toolRailWidth';
 import { DEFAULT_PREFS, getPrefs, setPrefs } from './prefs';
 import { toast } from './toast';
 import { run } from './dockDrag';
@@ -152,11 +153,81 @@ export function joinToolGroupAbove(groupId: string, visible: (id: string) => boo
   if (up && arrange((g) => joinGroupAbove(g, groupId, up.id))) railNote.set('Group joined to the one above.');
 }
 
-/** True when the rail is not as it comes: moved, named, hidden or folded tools, or a button size, names or style set. */
+/** True when the rail is not as it comes: moved, named, hidden or folded tools, a button size, names or style set, or its width pulled. */
 export const toolbarIsChanged = (): boolean => {
   const p = getPrefs();
-  return isCustomArrangement() || TOOL_PREF_KEYS.some((k) => p[k] !== DEFAULT_PREFS[k]);
+  return isCustomArrangement() || isCustomWidth() || TOOL_PREF_KEYS.some((k) => p[k] !== DEFAULT_PREFS[k]);
 };
+
+// ---------------------------------------------------------------- the rail's width
+
+/** The pixel sizes of the rail's buttons now (button size and look). */
+export const railSizesNow = (): RailSizes => railSizes(getPrefs().look, getPrefs().toolSize);
+
+/** True when the person has pulled this workspace's rail to a width of their own. */
+export const isCustomWidth = (): boolean => dock.get().railWidths?.[dock.get().workspaceId] !== undefined;
+
+/** How wide the rail is now, in pixels: the one saved for this workspace, or its natural width. */
+export const toolRailWidth = (): number => railWidthNow(railWidthOf(dock.get()), railSizesNow(), getPrefs().toolRail);
+
+/** How many buttons fit across a group at the rail's width now. */
+export const toolRailAcross = (): number => acrossFor(toolRailWidth(), railSizesNow(), getPrefs().toolRail);
+
+/**
+ * Sets the rail's width from a pull or a step. The natural width is kept as "no width" so the rail goes on following its
+ * style and button size (unless the workspace brings a width of its own: then the natural one has to be said out loud).
+ * `persist` false while the edge is being dragged; call flushDock() at the end.
+ */
+export function setToolRailWidth(px: number, persist = true): void {
+  const s = railSizesNow();
+  const style = getPrefs().toolRail;
+  const d = dock.get();
+  const chosen = chosenRailWidth(px, s, style);
+  setRailWidth(chosen ?? (defaultRailWidthOf(d, d.workspaceId) !== undefined ? naturalRailWidth(s, style) : undefined), persist);
+}
+
+/** The width back to this workspace's own default (what it was saved with, or the natural width). */
+export const resetToolRailWidth = (): void => setRailWidth(undefined);
+
+/** Ends a drag of the rail's edge: what was set on the way is saved. */
+export const endToolRailPull = (): void => flushDock();
+
+/** One more button across (1) or one fewer (-1). Says so when it is as wide or as narrow as it goes. */
+export function stepToolRail(dir: 1 | -1): void {
+  const s = railSizesNow();
+  const before = toolRailWidth();
+  setToolRailWidth(before + dir * columnStep(s));
+  if (toolRailWidth() === before) toast(dir > 0 ? 'The tool rail is as wide as it goes.' : 'The tool rail is as narrow as it goes.', { duration: 1800, quill: null });
+}
+
+/** The width the group names want to show whole, read off the rail on screen. Zero when no names show. */
+export function wantedNamesWidth(nav: HTMLElement | null = document.querySelector<HTMLElement>('nav.ui-tools')): number {
+  if (!nav) return 0;
+  let wanted = 0;
+  for (const head of nav.querySelectorAll<HTMLElement>('.ui-tool-head')) {
+    const label = head.querySelector<HTMLElement>('.ui-tool-head-name') ?? head;
+    const range = document.createRange();
+    range.selectNodeContents(label);
+    const cs = getComputedStyle(label);
+    const text = range.getBoundingClientRect().width + parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
+    // Whatever else shares the row (the fold arrow while the tools are being changed).
+    wanted = Math.max(wanted, text + (head.offsetWidth - label.offsetWidth));
+  }
+  return wanted;
+}
+
+/**
+ * The width that shows every group name whole. Done again on a rail that is already that wide, it goes back to the
+ * natural width, so one gesture (double-click on the edge) is both ways.
+ */
+export function fitToolRailNames(): void {
+  const s = railSizesNow();
+  const style = getPrefs().toolRail;
+  const wanted = wantedNamesWidth();
+  if (!wanted) return void toast('There are no group names to fit. Turn on Group names in Change the tools.', { duration: 2600, quill: null });
+  const fit = fitRailWidth(wanted, s, style);
+  setToolRailWidth(toolRailWidth() === fit ? naturalRailWidth(s, style) : fit);
+}
 
 /** The preferences "Put the tools back" puts back with the arrangement. */
 const TOOL_PREF_KEYS = ['toolSize', 'toolNames', 'toolRail', 'toolsOffLayer'] as const;
@@ -169,10 +240,12 @@ export function putToolsBack(): void {
   const d = dock.get();
   const id = d.workspaceId;
   const before = d.rails?.[id];
+  const beforeWidth = d.railWidths?.[id];
   const p = getPrefs();
   const prefs = Object.fromEntries(TOOL_PREF_KEYS.map((k) => [k, p[k]]));
   if (!toolbarIsChanged()) return void toast('The tools are already the way they come.', { duration: 1800 });
   resetToolArrangement();
+  resetToolRailWidth();
   setPrefs(Object.fromEntries(TOOL_PREF_KEYS.map((k) => [k, DEFAULT_PREFS[k]])));
   toast('The tools are back the way they come.', {
     kind: 'success',
@@ -181,6 +254,7 @@ export function putToolsBack(): void {
       run: () => {
         // Only in the workspace it was done in: if you moved on, leave that one alone.
         if (dock.get().workspaceId === id && before) setToolGroups(before);
+        if (dock.get().workspaceId === id && beforeWidth) setRailWidth(beforeWidth);
         setPrefs(prefs);
       },
     },

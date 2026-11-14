@@ -196,8 +196,8 @@ registerHelpTopics([
     title: 'Change the tools',
     section: 'Basics',
     media: 'tool-builder.mp4',
-    summary: 'Name groups, make your own, put tools away, fold a group into one button, and set the button size.',
-    keywords: ['tools', 'toolbar', 'tool strip', 'tool rail', 'customise', 'customize', 'builder', 'groups', 'group names', 'divider', 'hide', 'put away', 'fold', 'one button', 'size', 'bigger', 'smaller', 'reset', 'put back', 'slim', 'grey'],
+    summary: 'Name groups, make your own, put tools away, fold a group into one button, set the button size, and drag the strip wider.',
+    keywords: ['tools', 'toolbar', 'tool strip', 'tool rail', 'customise', 'customize', 'builder', 'groups', 'group names', 'divider', 'hide', 'put away', 'fold', 'one button', 'size', 'bigger', 'smaller', 'reset', 'put back', 'slim', 'grey', 'wider', 'width', 'resize', 'narrower', 'drag the edge', 'titles'],
   },
   {
     id: 'tool-arrange',
