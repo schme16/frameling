@@ -171,3 +171,31 @@ between saves) to a worker, and `open-file` of a pixel document decodes its pict
 `openBytesAsync`, the path File > Open takes; `openBytes` is the plain synchronous reader, kept for older builds).
 
 `open-file` of a big vector document (`stress-vector`, a 36 MB `doc.json`) reads and parses that JSON on a worker and hands the parsed object across (`readDocJsonInWorker`, only for a `doc.json` over 1 MB): the page's time drops from about 340 ms to about 195 ms, and the open itself takes about 250 ms longer by the clock (the hand-over is not free), with the page free to draw meanwhile.
+
+## The second window
+
+`popout.cjs` measures what the second window costs the drawing window, in the real app (two windows, the real message
+port), in one run:
+
+```bash
+npm run build
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/perf/popout.cjs --rounds 7 --seconds 6 --out scripts/perf/results/popout.json
+```
+
+It plays a heavy drawing (240 frames, 5 layers, 50 strokes each) at a 24 and a 60 frames-per-second drawing rate, and
+alternates four conditions round after round: the second window **closed**; an **animated control window** (a plain second
+window that changes its whole picture every screen frame and does nothing else, so a cost that comes from the machine
+presenting two windows shows up without our code in it); the real second window **open but never painting** (what the messages
+alone cost); and the real second window **open**. For each it reports how many frames the drawing window painted a second, how
+many it skipped, the time a paint takes and the gap between paints; for the second window, how many pictures it paints a
+second and how long each takes. The summary is the median of each condition across the rounds, because on a shared machine one
+round in three can be a different machine. Compare the rows of one run with each other, never with another run.
+
+What the first run found (xvfb, software drawing, the machine shared with other agents, so rough; the numbers are in
+`results/popout-second-window.json`): at 24 frames a second there is no difference at all (24 painted a second, 0 skipped, the
+same paint gap, closed or open). At 60 frames a second, a drawing heavy enough to need most of the machine's software drawing,
+the drawing window painted 53 a second closed, 51 with the messages alone, 47 beside the animated control window, and 28 with the
+real second window painting every frame. So the messages cost about 4%, and the rest is the second window drawing its own copy of each frame
+on the same software engine. Halving the picture's resolution while it played did not help (33 against 32), and neither did
+painting every other frame, so neither was kept. Not measured: a real graphics card (none comes up under xvfb), where the second
+window's drawing is on the card and should cost the drawing window much less.

@@ -20,6 +20,7 @@ import '../import';
 import '../export';
 import '../effects';
 import '../quests';
+import '../popout';
 import '../plugins';
 import '../templates/app';
 import { installBeta } from '../beta';

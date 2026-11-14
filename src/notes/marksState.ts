@@ -64,6 +64,12 @@ function persist(): void {
 
 export const getMarksState = () => snapshot;
 
+/** Calls `fn` whenever the marks switch or a mark in progress changes (for the second window). Returns the unsubscribe. */
+export function subscribeMarksState(fn: () => void): () => void {
+  listeners.add(fn);
+  return () => void listeners.delete(fn);
+}
+
 export function setMarksSaved(patch: Partial<Saved>): void {
   const next = { ...saved, ...patch };
   if (next.show === saved.show && next.shape === saved.shape && next.color === saved.color && next.w === saved.w) return;

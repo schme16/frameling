@@ -16,6 +16,7 @@
 //     choices: {...},            // answers to ask-once questions, on top of workspace.follow: 'never' (so that one never shows)
 //     size: [1280, 800],         // window size, default 1280 x 800
 //     steps: [...],              // the record.cjs steps. {"shot": "@"} saves the picture, {"rec": "@", ...} starts the clip.
+//     external: 'scripts/e2e/popout-media.cjs',  // made by another script (it needs the real main process, e.g. two windows): this run skips it and says which one to use
 //     width: 800,                // widest the output gets (default 800)
 //     poster: 12 }               // clips: the poster frame (default the last one)
 // An entry that records ({"rec": "@"}) makes `<name>-dark.mp4` + `<name>-dark-poster.png` (and -light); one that shoots
@@ -120,6 +121,7 @@ app.whenReady().then(async () => {
     return;
   }
   const picked = entries.filter((e) => !only || only.includes(e.name));
+  for (const e of picked.filter((x) => x.external)) console.log(`skipped ${e.name}: made by ${e.external}`);
   if (only) for (const n of only) if (!names.has(n)) console.log(`no entry named ${n}`);
   fs.mkdirSync(outDir, { recursive: true });
   const lib = mockMain(ipcMain);
@@ -132,7 +134,7 @@ app.whenReady().then(async () => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'help-media-'));
   const failed = [];
   let made = 0;
-  for (const e of picked) {
+  for (const e of picked.filter((x) => !x.external)) {
     for (const mode of THEMES) {
       logs.length = 0;
       try {

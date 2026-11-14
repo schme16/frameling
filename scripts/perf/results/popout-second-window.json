@@ -1,0 +1,2245 @@
+{
+  "env": {
+    "engine": "see the first line of the log",
+    "rounds": 7,
+    "seconds": 6
+  },
+  "runs": [
+    {
+      "fps": 24,
+      "secondWindow": "closed",
+      "seconds": 6,
+      "drawingWindow": {
+        "framesPainted": 144,
+        "paintedPerSecond": 24,
+        "framesSkipped": 0,
+        "paintGapMs": {
+          "n": 143,
+          "mean": 41.84,
+          "p50": 48.3,
+          "p95": 50.5,
+          "max": 53.2
+        },
+        "paintMs": {
+          "n": 144,
+          "mean": 0.22,
+          "p50": 0.2,
+          "p95": 0.3,
+          "max": 0.4
+        },
+        "rafGapMs": {
+          "n": 361,
+          "mean": 16.67,
+          "p50": 16.7,
+          "p95": 16.7,
+          "max": 16.8
+        }
+      }
+    },
+    {
+      "fps": 24,
+      "secondWindow": "animated control window",
+      "seconds": 6,
+      "drawingWindow": {
+        "framesPainted": 144,
+        "paintedPerSecond": 24,
+        "framesSkipped": 0,
+        "paintGapMs": {
+          "n": 143,
+          "mean": 41.73,
+          "p50": 49.1,
+          "p95": 50.6,
+          "max": 50.8
+        },
+        "paintMs": {
+          "n": 144,
+          "mean": 0.24,
+          "p50": 0.2,
+          "p95": 0.3,
+          "max": 0.4
+        },
+        "rafGapMs": {
+          "n": 360,
+          "mean": 16.67,
+          "p50": 16.7,
+          "p95": 16.7,
+          "max": 16.8
+        }
+      }
+    },
+    {
+      "fps": 24,
+      "secondWindow": "open, messages only (never paints)",
+      "seconds": 6,
+      "drawingWindow": {
+        "framesPainted": 144,
+        "paintedPerSecond": 24,
+        "framesSkipped": 0,
+        "paintGapMs": {
+          "n": 143,
+          "mean": 41.84,
+          "p50": 49.2,
+          "p95": 50.3,
+          "max": 66.3
+        },
+        "paintMs": {
+          "n": 144,
+          "mean": 0.22,
+          "p50": 0.2,
+          "p95": 0.3,
+          "max": 0.4
+        },
+        "rafGapMs": {
+          "n": 361,
+          "mean": 16.67,
+          "p50": 16.7,
+          "p95": 16.8,
+          "max": 16.8
+        }
+      },
+      "pictureWindow": {
+        "picturesPainted": 0,
+        "paintedPerSecond": 0,
+        "distinctFramesShown": 0,
+        "paintMs": {
+          "n": 0
+        },
+        "paintGapMs": {
+          "n": 0
+        }
+      }
+    },
+    {
+      "fps": 24,
+      "secondWindow": "open",
+      "seconds": 6,
+      "drawingWindow": {
+        "framesPainted": 145,
+        "paintedPerSecond": 24.1,
+        "framesSkipped": 0,
+        "paintGapMs": {
+          "n": 144,
+          "mean": 41.68,
+          "p50": 48.5,
+          "p95": 50.7,
+          "max": 67
+        },
+        "paintMs": {
+          "n": 145,
+          "mean": 0.23,
+          "p50": 0.2,
+          "p95": 0.3,
+          "max": 0.4
+        },
+        "rafGapMs": {
+          "n": 360,
+          "mean": 16.71,
+          "p50": 16.7,
+          "p95": 16.8,
+          "max": 33.4
+        }
+      },
+      "pictureWindow": {
+        "picturesPainted": 145,
+        "paintedPerSecond": 24.1,
+        "distinctFramesShown": 144,
+        "paintMs": {
+          "n": 145,
+          "mean": 0.26,
+          "p50": 0.3,
+          "p95": 0.4,
+          "max": 0.5
+        },
+        "paintGapMs": {
+          "n": 144,
+          "mean": 41.7,
+          "p50": 49.4,
+          "p95": 50.7,
+          "max": 67.3
+        }
+      }
+    },
+    {
+      "fps": 24,
+      "secondWindow": "closed",
+      "seconds": 6,
+      "drawingWindow": {
+        "framesPainted": 144,
+        "paintedPerSecond": 24,
+        "framesSkipped": 0,
+        "paintGapMs": {
+          "n": 143,
+          "mean": 41.84,
+          "p50": 48.5,
+          "p95": 50.3,
+          "max": 50.9
+        },
+        "paintMs": {
+          "n": 144,
+          "mean": 0.21,
+          "p50": 0.2,
+          "p95": 0.3,
+          "max": 0.5
+        },
+        "rafGapMs": {
+          "n": 361,
+          "mean": 16.67,
+          "p50": 16.7,
+          "p95": 16.8,
+          "max": 16.8
+        }
+      }
+    },
+    {
+      "fps": 24,
+      "secondWindow": "animated control window",
+      "seconds": 6,
+      "drawingWindow": {
+        "framesPainted": 144,
+        "paintedPerSecond": 23.9,
+        "framesSkipped": 0,
+        "paintGapMs": {
+          "n": 143,
+          "mean": 41.83,
+          "p50": 48.4,
+          "p95": 50.5,
+          "max": 50.9
+        },
+        "paintMs": {
+          "n": 144,
+          "mean": 0.24,
+          "p50": 0.2,
+          "p95": 0.3,
+          "max": 0.4
+        },
+        "rafGapMs": {
+          "n": 360,
+          "mean": 16.67,
+          "p50": 16.7,
+          "p95": 16.8,
+          "max": 16.8
+        }
+      }
+    },
+    {
+      "fps": 24,
+      "secondWindow": "open, messages only (never paints)",
+      "seconds": 6,
+      "drawingWindow": {
+        "framesPainted": 144,
+        "paintedPerSecond": 23.9,
+        "framesSkipped": 0,
+        "paintGapMs": {
+          "n": 143,
+          "mean": 41.72,
+          "p50": 48.2,
+          "p95": 50.7,
+          "max": 50.8
+        },
+        "paintMs": {
+          "n": 144,
+          "mean": 0.22,
+          "p50": 0.2,
+          "p95": 0.3,
+          "max": 0.4
+        },
+        "rafGapMs": {
+          "n": 360,
+          "mean": 16.67,
+          "p50": 16.7,
+          "p95": 16.8,
+          "max": 16.8
+        }
+      },
+      "pictureWindow": {
+        "picturesPainted": 0,
+        "paintedPerSecond": 0,
+        "distinctFramesShown": 0,
+        "paintMs": {
+          "n": 0
+        },
+        "paintGapMs": {
+          "n": 0
+        }
+      }
+    },
+    {
+      "fps": 24,
+      "secondWindow": "open",
+      "seconds": 6,
+      "drawingWindow": {
+        "framesPainted": 144,
+        "paintedPerSecond": 24,
+        "framesSkipped": 0,
+        "paintGapMs": {
+          "n": 143,
+          "mean": 41.84,
+          "p50": 46.4,
+          "p95": 50.8,
+          "max": 67.2
+        },
+        "paintMs": {
+          "n": 144,
+          "mean": 0.22,
+          "p50": 0.2,
+          "p95": 0.3,
+          "max": 0.4
+        },
+        "rafGapMs": {
+          "n": 360,
+          "mean": 16.71,
+          "p50": 16.7,
+          "p95": 16.8,
+          "max": 33.2
+        }
+      },
+      "pictureWindow": {
+        "picturesPainted": 144,
+        "paintedPerSecond": 24,
+        "distinctFramesShown": 144,
+        "paintMs": {
+          "n": 144,
+          "mean": 0.24,
+          "p50": 0.2,
+          "p95": 0.4,
+          "max": 0.5
+        },
+        "paintGapMs": {
+          "n": 143,
+          "mean": 41.74,
+          "p50": 49.5,
+          "p95": 50.9,
+          "max": 67.2
+        }
+      }
+    },
+    {
+      "fps": 24,
+      "secondWindow": "closed",
+      "seconds": 6,
+      "drawingWindow": {
+        "framesPainted": 144,
+        "paintedPerSecond": 24,
+        "framesSkipped": 0,
+        "paintGapMs": {
+          "n": 143,
+          "mean": 41.86,
+          "p50": 47.9,
+          "p95": 50.6,
+          "max": 70.5
+        },
+        "paintMs": {
+          "n": 144,
+          "mean": 0.2,
+          "p50": 0.2,
+          "p95": 0.3,
+          "max": 0.4
+        },
+        "rafGapMs": {
+          "n": 361,
+          "mean": 16.67,
+          "p50": 16.7,
+          "p95": 16.7,
+          "max": 16.8
+        }
+      }
+    },
+    {
+      "fps": 24,
+      "secondWindow": "animated control window",
+      "seconds": 6,
+      "drawingWindow": {
+        "framesPainted": 145,
+        "paintedPerSecond": 24,
+        "framesSkipped": 0,
+        "paintGapMs": {
+          "n": 144,
+          "mean": 41.87,
+          "p50": 49,
+          "p95": 50.7,
+          "max": 66.1
+        },
+        "paintMs": {
+          "n": 145,
+          "mean": 0.24,
+          "p50": 0.2,
+          "p95": 0.4,
+          "max": 0.5
+        },
+        "rafGapMs": {
+          "n": 359,
+          "mean": 16.81,
+          "p50": 16.7,
+          "p95": 16.8,
+          "max": 49.9
+        }
+      }
+    },
+    {
+      "fps": 24,
+      "secondWindow": "open, messages only (never paints)",
+      "seconds": 6,
+      "drawingWindow": {
+        "framesPainted": 103,
+        "paintedPerSecond": 17.1,
+        "framesSkipped": 39,
+        "paintGapMs": {
+          "n": 102,
+          "mean": 58.74,
+          "p50": 50.8,
+          "p95": 132.9,
+          "max": 189.9
+        },
+        "paintMs": {
+          "n": 103,
+          "mean": 0.49,
+          "p50": 0.4,
+          "p95": 0.9,
+          "max": 2
+        },
+        "rafGapMs": {
+          "n": 182,
+          "mean": 32.97,
+          "p50": 16.7,
+          "p95": 83.4,
+          "max": 183.3
+        }
+      },
+      "pictureWindow": {
+        "picturesPainted": 0,
+        "paintedPerSecond": 0,
+        "distinctFramesShown": 0,
+        "paintMs": {
+          "n": 0
+        },
+        "paintGapMs": {
+          "n": 0
+        }
+      }
+    },
+    {
+      "fps": 24,
+      "secondWindow": "open",
+      "seconds": 6,
+      "drawingWindow": {
+        "framesPainted": 46,
+        "paintedPerSecond": 7.6,
+        "framesSkipped": 96,
+        "paintGapMs": {
+          "n": 45,
+          "mean": 132.18,
+          "p50": 130.7,
+          "p95": 198.9,
+          "max": 217.6
+        },
+        "paintMs": {
+          "n": 46,
+          "mean": 0.68,
+          "p50": 0.4,
+          "p95": 2.8,
+          "max": 4.1
+        },
+        "rafGapMs": {
+          "n": 46,
+          "mean": 129.34,
+          "p50": 133.3,
+          "p95": 200,
+          "max": 200
+        }
+      },
+      "pictureWindow": {
+        "picturesPainted": 47,
+        "paintedPerSecond": 7.8,
+        "distinctFramesShown": 47,
+        "paintMs": {
+          "n": 47,
+          "mean": 4.34,
+          "p50": 3.4,
+          "p95": 10.8,
+          "max": 19.6
+        },
+        "paintGapMs": {
+          "n": 46,
+          "mean": 130.48,
+          "p50": 122.8,
+          "p95": 196,
+          "max": 224
+        }
+      }
+    },
+    {
+      "fps": 24,
+      "secondWindow": "closed",
+      "seconds": 6,
+      "drawingWindow": {
+        "framesPainted": 82,
+        "paintedPerSecond": 13.6,
+        "framesSkipped": 62,
+        "paintGapMs": {
+          "n": 81,
+          "mean": 73.92,
+          "p50": 67.3,
+          "p95": 129.2,
+          "max": 157.6
+        },
+        "paintMs": {
+          "n": 82,
+          "mean": 0.43,
+          "p50": 0.4,
+          "p95": 0.9,
+          "max": 2.4
+        },
+        "rafGapMs": {
+          "n": 87,
+          "mean": 68.96,
+          "p50": 66.7,
+          "p95": 133.2,
+          "max": 133.4
+        }
+      }
+    },
+    {
+      "fps": 24,
+      "secondWindow": "animated control window",
+      "seconds": 6,
+      "drawingWindow": {
+        "framesPainted": 99,
+        "paintedPerSecond": 16.5,
+        "framesSkipped": 45,
+        "paintGapMs": {
+          "n": 98,
+          "mean": 61.07,
+          "p50": 51.3,
+          "p95": 140.9,
+          "max": 147.1
+        },
+        "paintMs": {
+          "n": 99,
+          "mean": 0.39,
+          "p50": 0.3,
+          "p95": 0.7,
+          "max": 1.7
+        },
+        "rafGapMs": {
+          "n": 155,
+          "mean": 38.82,
+          "p50": 16.7,
+          "p95": 116.6,
+          "max": 150
+        }
+      }
+    },
+    {
+      "fps": 24,
+      "secondWindow": "open, messages only (never paints)",
+      "seconds": 6,
+      "drawingWindow": {
+        "framesPainted": 144,
+        "paintedPerSecond": 24,
+        "framesSkipped": 0,
+        "paintGapMs": {
+          "n": 143,
+          "mean": 41.72,
+          "p50": 49.1,
+          "p95": 50.5,
+          "max": 50.9
+        },
+        "paintMs": {
+          "n": 144,
+          "mean": 0.21,
+          "p50": 0.2,
+          "p95": 0.3,
+          "max": 0.4
+        },
+        "rafGapMs": {
+          "n": 360,
+          "mean": 16.67,
+          "p50": 16.7,
+          "p95": 16.7,
+          "max": 16.8
+        }
+      },
+      "pictureWindow": {
+        "picturesPainted": 0,
+        "paintedPerSecond": 0,
+        "distinctFramesShown": 0,
+        "paintMs": {
+          "n": 0
+        },
+        "paintGapMs": {
+          "n": 0
+        }
+      }
+    },
+    {
+      "fps": 24,
+      "secondWindow": "open",
+      "seconds": 6,
+      "drawingWindow": {
+        "framesPainted": 144,
+        "paintedPerSecond": 24,
+        "framesSkipped": 0,
+        "paintGapMs": {
+          "n": 143,
+          "mean": 41.83,
+          "p50": 49.2,
+          "p95": 50.7,
+          "max": 66.1
+        },
+        "paintMs": {
+          "n": 144,
+          "mean": 0.22,
+          "p50": 0.2,
+          "p95": 0.3,
+          "max": 0.4
+        },
+        "rafGapMs": {
+          "n": 361,
+          "mean": 16.67,
+          "p50": 16.7,
+          "p95": 16.7,
+          "max": 16.8
+        }
+      },
+      "pictureWindow": {
+        "picturesPainted": 145,
+        "paintedPerSecond": 24.1,
+        "distinctFramesShown": 145,
+        "paintMs": {
+          "n": 145,
+          "mean": 0.26,
+          "p50": 0.2,
+          "p95": 0.4,
+          "max": 2
+        },
+        "paintGapMs": {
+          "n": 144,
+          "mean": 41.67,
+          "p50": 49.6,
+          "p95": 50.6,
+          "max": 52.3
+        }
+      }
+    },
+    {
+      "fps": 24,
+      "secondWindow": "closed",
+      "seconds": 6,
+      "drawingWindow": {
+        "framesPainted": 131,
+        "paintedPerSecond": 21.8,
+        "framesSkipped": 12,
+        "paintGapMs": {
+          "n": 130,
+          "mean": 45.65,
+          "p50": 45.4,
+          "p95": 100,
+          "max": 168.6
+        },
+        "paintMs": {
+          "n": 131,
+          "mean": 0.26,
+          "p50": 0.2,
+          "p95": 0.4,
+          "max": 0.8
+        },
+        "rafGapMs": {
+          "n": 304,
+          "mean": 19.74,
+          "p50": 16.7,
+          "p95": 33.3,
+          "max": 133.3
+        }
+      }
+    },
+    {
+      "fps": 24,
+      "secondWindow": "animated control window",
+      "seconds": 6,
+      "drawingWindow": {
+        "framesPainted": 64,
+        "paintedPerSecond": 10.6,
+        "framesSkipped": 80,
+        "paintGapMs": {
+          "n": 63,
+          "mean": 95.37,
+          "p50": 88.5,
+          "p95": 148.1,
+          "max": 173.9
+        },
+        "paintMs": {
+          "n": 64,
+          "mean": 0.64,
+          "p50": 0.4,
+          "p95": 1.8,
+          "max": 4.3
+        },
+        "rafGapMs": {
+          "n": 65,
+          "mean": 92.3,
+          "p50": 83.4,
+          "p95": 149.9,
+          "max": 183.3
+        }
+      }
+    },
+    {
+      "fps": 24,
+      "secondWindow": "open, messages only (never paints)",
+      "seconds": 6,
+      "drawingWindow": {
+        "framesPainted": 68,
+        "paintedPerSecond": 11.3,
+        "framesSkipped": 75,
+        "paintGapMs": {
+          "n": 67,
+          "mean": 88.85,
+          "p50": 82,
+          "p95": 152.6,
+          "max": 218.6
+        },
+        "paintMs": {
+          "n": 68,
+          "mean": 0.56,
+          "p50": 0.4,
+          "p95": 1.3,
+          "max": 3.1
+        },
+        "rafGapMs": {
+          "n": 70,
+          "mean": 85.23,
+          "p50": 83.3,
+          "p95": 150,
+          "max": 166.7
+        }
+      },
+      "pictureWindow": {
+        "picturesPainted": 0,
+        "paintedPerSecond": 0,
+        "distinctFramesShown": 0,
+        "paintMs": {
+          "n": 0
+        },
+        "paintGapMs": {
+          "n": 0
+        }
+      }
+    },
+    {
+      "fps": 24,
+      "secondWindow": "open",
+      "seconds": 6,
+      "drawingWindow": {
+        "framesPainted": 43,
+        "paintedPerSecond": 7.1,
+        "framesSkipped": 100,
+        "paintGapMs": {
+          "n": 42,
+          "mean": 140.76,
+          "p50": 135.7,
+          "p95": 203.3,
+          "max": 218.9
+        },
+        "paintMs": {
+          "n": 43,
+          "mean": 0.55,
+          "p50": 0.4,
+          "p95": 1.1,
+          "max": 4.3
+        },
+        "rafGapMs": {
+          "n": 43,
+          "mean": 137.2,
+          "p50": 133.3,
+          "p95": 200,
+          "max": 216.6
+        }
+      },
+      "pictureWindow": {
+        "picturesPainted": 44,
+        "paintedPerSecond": 7.3,
+        "distinctFramesShown": 43,
+        "paintMs": {
+          "n": 44,
+          "mean": 4.82,
+          "p50": 4.5,
+          "p95": 9.4,
+          "max": 11.7
+        },
+        "paintGapMs": {
+          "n": 43,
+          "mean": 139.84,
+          "p50": 131.6,
+          "p95": 203.4,
+          "max": 224.2
+        }
+      }
+    },
+    {
+      "fps": 24,
+      "secondWindow": "closed",
+      "seconds": 6,
+      "drawingWindow": {
+        "framesPainted": 144,
+        "paintedPerSecond": 24,
+        "framesSkipped": 0,
+        "paintGapMs": {
+          "n": 143,
+          "mean": 41.84,
+          "p50": 48.3,
+          "p95": 50.4,
+          "max": 51.4
+        },
+        "paintMs": {
+          "n": 144,
+          "mean": 0.2,
+          "p50": 0.2,
+          "p95": 0.3,
+          "max": 0.3
+        },
+        "rafGapMs": {
+          "n": 361,
+          "mean": 16.67,
+          "p50": 16.7,
+          "p95": 16.7,
+          "max": 16.8
+        }
+      }
+    },
+    {
+      "fps": 24,
+      "secondWindow": "animated control window",
+      "seconds": 6,
+      "drawingWindow": {
+        "framesPainted": 144,
+        "paintedPerSecond": 24,
+        "framesSkipped": 0,
+        "paintGapMs": {
+          "n": 143,
+          "mean": 41.84,
+          "p50": 49.3,
+          "p95": 50.6,
+          "max": 51
+        },
+        "paintMs": {
+          "n": 144,
+          "mean": 0.23,
+          "p50": 0.2,
+          "p95": 0.3,
+          "max": 0.4
+        },
+        "rafGapMs": {
+          "n": 361,
+          "mean": 16.67,
+          "p50": 16.7,
+          "p95": 16.8,
+          "max": 16.8
+        }
+      }
+    },
+    {
+      "fps": 24,
+      "secondWindow": "open, messages only (never paints)",
+      "seconds": 6,
+      "drawingWindow": {
+        "framesPainted": 131,
+        "paintedPerSecond": 21.8,
+        "framesSkipped": 11,
+        "paintGapMs": {
+          "n": 130,
+          "mean": 45.71,
+          "p50": 49.4,
+          "p95": 81.2,
+          "max": 131.4
+        },
+        "paintMs": {
+          "n": 131,
+          "mean": 0.29,
+          "p50": 0.2,
+          "p95": 0.5,
+          "max": 2.6
+        },
+        "rafGapMs": {
+          "n": 286,
+          "mean": 20.8,
+          "p50": 16.7,
+          "p95": 66.6,
+          "max": 133.3
+        }
+      },
+      "pictureWindow": {
+        "picturesPainted": 0,
+        "paintedPerSecond": 0,
+        "distinctFramesShown": 0,
+        "paintMs": {
+          "n": 0
+        },
+        "paintGapMs": {
+          "n": 0
+        }
+      }
+    },
+    {
+      "fps": 24,
+      "secondWindow": "open",
+      "seconds": 6,
+      "drawingWindow": {
+        "framesPainted": 60,
+        "paintedPerSecond": 10,
+        "framesSkipped": 84,
+        "paintGapMs": {
+          "n": 59,
+          "mean": 101.4,
+          "p50": 90.9,
+          "p95": 199.1,
+          "max": 231.4
+        },
+        "paintMs": {
+          "n": 60,
+          "mean": 0.39,
+          "p50": 0.4,
+          "p95": 0.8,
+          "max": 1.6
+        },
+        "rafGapMs": {
+          "n": 81,
+          "mean": 74.28,
+          "p50": 33.4,
+          "p95": 183.3,
+          "max": 216.6
+        }
+      },
+      "pictureWindow": {
+        "picturesPainted": 60,
+        "paintedPerSecond": 10,
+        "distinctFramesShown": 60,
+        "paintMs": {
+          "n": 60,
+          "mean": 2.91,
+          "p50": 2.4,
+          "p95": 9.3,
+          "max": 13.4
+        },
+        "paintGapMs": {
+          "n": 59,
+          "mean": 101.21,
+          "p50": 101.2,
+          "p95": 191.3,
+          "max": 233.4
+        }
+      }
+    },
+    {
+      "fps": 24,
+      "secondWindow": "closed",
+      "seconds": 6,
+      "drawingWindow": {
+        "framesPainted": 144,
+        "paintedPerSecond": 24,
+        "framesSkipped": 0,
+        "paintGapMs": {
+          "n": 143,
+          "mean": 41.84,
+          "p50": 48.3,
+          "p95": 50.7,
+          "max": 50.9
+        },
+        "paintMs": {
+          "n": 144,
+          "mean": 0.21,
+          "p50": 0.2,
+          "p95": 0.3,
+          "max": 0.4
+        },
+        "rafGapMs": {
+          "n": 361,
+          "mean": 16.67,
+          "p50": 16.7,
+          "p95": 16.7,
+          "max": 16.8
+        }
+      }
+    },
+    {
+      "fps": 24,
+      "secondWindow": "animated control window",
+      "seconds": 6,
+      "drawingWindow": {
+        "framesPainted": 144,
+        "paintedPerSecond": 24,
+        "framesSkipped": 0,
+        "paintGapMs": {
+          "n": 143,
+          "mean": 41.85,
+          "p50": 49,
+          "p95": 50.6,
+          "max": 50.9
+        },
+        "paintMs": {
+          "n": 144,
+          "mean": 0.23,
+          "p50": 0.2,
+          "p95": 0.3,
+          "max": 0.4
+        },
+        "rafGapMs": {
+          "n": 361,
+          "mean": 16.67,
+          "p50": 16.7,
+          "p95": 16.8,
+          "max": 16.8
+        }
+      }
+    },
+    {
+      "fps": 24,
+      "secondWindow": "open, messages only (never paints)",
+      "seconds": 6,
+      "drawingWindow": {
+        "framesPainted": 144,
+        "paintedPerSecond": 24,
+        "framesSkipped": 0,
+        "paintGapMs": {
+          "n": 143,
+          "mean": 41.73,
+          "p50": 49.1,
+          "p95": 50.5,
+          "max": 51.2
+        },
+        "paintMs": {
+          "n": 144,
+          "mean": 0.2,
+          "p50": 0.2,
+          "p95": 0.3,
+          "max": 0.4
+        },
+        "rafGapMs": {
+          "n": 360,
+          "mean": 16.67,
+          "p50": 16.7,
+          "p95": 16.7,
+          "max": 16.8
+        }
+      },
+      "pictureWindow": {
+        "picturesPainted": 0,
+        "paintedPerSecond": 0,
+        "distinctFramesShown": 0,
+        "paintMs": {
+          "n": 0
+        },
+        "paintGapMs": {
+          "n": 0
+        }
+      }
+    },
+    {
+      "fps": 24,
+      "secondWindow": "open",
+      "seconds": 6,
+      "drawingWindow": {
+        "framesPainted": 144,
+        "paintedPerSecond": 24,
+        "framesSkipped": 0,
+        "paintGapMs": {
+          "n": 143,
+          "mean": 41.8,
+          "p50": 45.4,
+          "p95": 50.7,
+          "max": 66.2
+        },
+        "paintMs": {
+          "n": 144,
+          "mean": 0.23,
+          "p50": 0.2,
+          "p95": 0.3,
+          "max": 0.5
+        },
+        "rafGapMs": {
+          "n": 358,
+          "mean": 16.76,
+          "p50": 16.7,
+          "p95": 16.8,
+          "max": 33.3
+        }
+      },
+      "pictureWindow": {
+        "picturesPainted": 145,
+        "paintedPerSecond": 24.1,
+        "distinctFramesShown": 144,
+        "paintMs": {
+          "n": 145,
+          "mean": 0.25,
+          "p50": 0.2,
+          "p95": 0.4,
+          "max": 0.7
+        },
+        "paintGapMs": {
+          "n": 144,
+          "mean": 41.72,
+          "p50": 49.6,
+          "p95": 50.7,
+          "max": 66
+        }
+      }
+    },
+    {
+      "fps": 60,
+      "secondWindow": "closed",
+      "seconds": 6,
+      "drawingWindow": {
+        "framesPainted": 335,
+        "paintedPerSecond": 55.7,
+        "framesSkipped": 25,
+        "paintGapMs": {
+          "n": 334,
+          "mean": 17.96,
+          "p50": 16.6,
+          "p95": 30.8,
+          "max": 57.8
+        },
+        "paintMs": {
+          "n": 335,
+          "mean": 0.21,
+          "p50": 0.2,
+          "p95": 0.3,
+          "max": 0.5
+        },
+        "rafGapMs": {
+          "n": 345,
+          "mean": 17.44,
+          "p50": 16.7,
+          "p95": 16.8,
+          "max": 50
+        }
+      }
+    },
+    {
+      "fps": 60,
+      "secondWindow": "animated control window",
+      "seconds": 6,
+      "drawingWindow": {
+        "framesPainted": 281,
+        "paintedPerSecond": 46.7,
+        "framesSkipped": 79,
+        "paintGapMs": {
+          "n": 280,
+          "mean": 21.42,
+          "p50": 17.4,
+          "p95": 37.9,
+          "max": 110.3
+        },
+        "paintMs": {
+          "n": 281,
+          "mean": 0.3,
+          "p50": 0.3,
+          "p95": 0.4,
+          "max": 0.8
+        },
+        "rafGapMs": {
+          "n": 286,
+          "mean": 20.98,
+          "p50": 16.7,
+          "p95": 33.4,
+          "max": 116.7
+        }
+      }
+    },
+    {
+      "fps": 60,
+      "secondWindow": "open, messages only (never paints)",
+      "seconds": 6,
+      "drawingWindow": {
+        "framesPainted": 256,
+        "paintedPerSecond": 42.5,
+        "framesSkipped": 104,
+        "paintGapMs": {
+          "n": 255,
+          "mean": 23.51,
+          "p50": 16.8,
+          "p95": 46.8,
+          "max": 225.6
+        },
+        "paintMs": {
+          "n": 256,
+          "mean": 0.28,
+          "p50": 0.2,
+          "p95": 0.4,
+          "max": 4.1
+        },
+        "rafGapMs": {
+          "n": 264,
+          "mean": 22.79,
+          "p50": 16.7,
+          "p95": 33.4,
+          "max": 216.7
+        }
+      },
+      "pictureWindow": {
+        "picturesPainted": 0,
+        "paintedPerSecond": 0,
+        "distinctFramesShown": 0,
+        "paintMs": {
+          "n": 0
+        },
+        "paintGapMs": {
+          "n": 0
+        }
+      }
+    },
+    {
+      "fps": 60,
+      "secondWindow": "open",
+      "seconds": 6,
+      "drawingWindow": {
+        "framesPainted": 148,
+        "paintedPerSecond": 24.6,
+        "framesSkipped": 208,
+        "paintGapMs": {
+          "n": 147,
+          "mean": 40.62,
+          "p50": 35.8,
+          "p95": 68,
+          "max": 96.5
+        },
+        "paintMs": {
+          "n": 148,
+          "mean": 0.27,
+          "p50": 0.3,
+          "p95": 0.4,
+          "max": 0.6
+        },
+        "rafGapMs": {
+          "n": 148,
+          "mean": 40.31,
+          "p50": 33.4,
+          "p95": 66.7,
+          "max": 100
+        }
+      },
+      "pictureWindow": {
+        "picturesPainted": 148,
+        "paintedPerSecond": 24.6,
+        "distinctFramesShown": 125,
+        "paintMs": {
+          "n": 148,
+          "mean": 0.44,
+          "p50": 0.3,
+          "p95": 1.2,
+          "max": 2.7
+        },
+        "paintGapMs": {
+          "n": 147,
+          "mean": 40.66,
+          "p50": 39.4,
+          "p95": 66.2,
+          "max": 95.2
+        }
+      }
+    },
+    {
+      "fps": 60,
+      "secondWindow": "closed",
+      "seconds": 6,
+      "drawingWindow": {
+        "framesPainted": 263,
+        "paintedPerSecond": 43.7,
+        "framesSkipped": 97,
+        "paintGapMs": {
+          "n": 262,
+          "mean": 22.86,
+          "p50": 16.8,
+          "p95": 45.7,
+          "max": 205.7
+        },
+        "paintMs": {
+          "n": 263,
+          "mean": 0.25,
+          "p50": 0.2,
+          "p95": 0.4,
+          "max": 3.6
+        },
+        "rafGapMs": {
+          "n": 296,
+          "mean": 20.27,
+          "p50": 16.7,
+          "p95": 33.4,
+          "max": 200.1
+        }
+      }
+    },
+    {
+      "fps": 60,
+      "secondWindow": "animated control window",
+      "seconds": 6,
+      "drawingWindow": {
+        "framesPainted": 297,
+        "paintedPerSecond": 49.4,
+        "framesSkipped": 62,
+        "paintGapMs": {
+          "n": 296,
+          "mean": 20.25,
+          "p50": 17.1,
+          "p95": 35.7,
+          "max": 52.6
+        },
+        "paintMs": {
+          "n": 297,
+          "mean": 0.3,
+          "p50": 0.3,
+          "p95": 0.4,
+          "max": 0.8
+        },
+        "rafGapMs": {
+          "n": 302,
+          "mean": 19.87,
+          "p50": 16.7,
+          "p95": 33.4,
+          "max": 50.1
+        }
+      }
+    },
+    {
+      "fps": 60,
+      "secondWindow": "open, messages only (never paints)",
+      "seconds": 6,
+      "drawingWindow": {
+        "framesPainted": 323,
+        "paintedPerSecond": 53.7,
+        "framesSkipped": 37,
+        "paintGapMs": {
+          "n": 322,
+          "mean": 18.65,
+          "p50": 16.6,
+          "p95": 33.5,
+          "max": 51.7
+        },
+        "paintMs": {
+          "n": 323,
+          "mean": 0.24,
+          "p50": 0.2,
+          "p95": 0.4,
+          "max": 0.6
+        },
+        "rafGapMs": {
+          "n": 338,
+          "mean": 17.8,
+          "p50": 16.7,
+          "p95": 33.3,
+          "max": 33.4
+        }
+      },
+      "pictureWindow": {
+        "picturesPainted": 0,
+        "paintedPerSecond": 0,
+        "distinctFramesShown": 0,
+        "paintMs": {
+          "n": 0
+        },
+        "paintGapMs": {
+          "n": 0
+        }
+      }
+    },
+    {
+      "fps": 60,
+      "secondWindow": "open",
+      "seconds": 6,
+      "drawingWindow": {
+        "framesPainted": 180,
+        "paintedPerSecond": 29.9,
+        "framesSkipped": 177,
+        "paintGapMs": {
+          "n": 179,
+          "mean": 33.55,
+          "p50": 30.1,
+          "p95": 52.7,
+          "max": 73
+        },
+        "paintMs": {
+          "n": 180,
+          "mean": 0.25,
+          "p50": 0.2,
+          "p95": 0.4,
+          "max": 0.8
+        },
+        "rafGapMs": {
+          "n": 181,
+          "mean": 33.24,
+          "p50": 33.3,
+          "p95": 50,
+          "max": 66.7
+        }
+      },
+      "pictureWindow": {
+        "picturesPainted": 181,
+        "paintedPerSecond": 30.1,
+        "distinctFramesShown": 150,
+        "paintMs": {
+          "n": 181,
+          "mean": 0.27,
+          "p50": 0.3,
+          "p95": 0.4,
+          "max": 0.7
+        },
+        "paintGapMs": {
+          "n": 180,
+          "mean": 33.39,
+          "p50": 30.8,
+          "p95": 51.2,
+          "max": 71.1
+        }
+      }
+    },
+    {
+      "fps": 60,
+      "secondWindow": "closed",
+      "seconds": 6,
+      "drawingWindow": {
+        "framesPainted": 329,
+        "paintedPerSecond": 54.7,
+        "framesSkipped": 25,
+        "paintGapMs": {
+          "n": 328,
+          "mean": 18.29,
+          "p50": 16.6,
+          "p95": 31.1,
+          "max": 107.6
+        },
+        "paintMs": {
+          "n": 329,
+          "mean": 0.23,
+          "p50": 0.2,
+          "p95": 0.3,
+          "max": 0.5
+        },
+        "rafGapMs": {
+          "n": 343,
+          "mean": 17.49,
+          "p50": 16.7,
+          "p95": 16.8,
+          "max": 100
+        }
+      }
+    },
+    {
+      "fps": 60,
+      "secondWindow": "animated control window",
+      "seconds": 6,
+      "drawingWindow": {
+        "framesPainted": 282,
+        "paintedPerSecond": 46.9,
+        "framesSkipped": 77,
+        "paintGapMs": {
+          "n": 281,
+          "mean": 21.34,
+          "p50": 16.9,
+          "p95": 41.1,
+          "max": 108.1
+        },
+        "paintMs": {
+          "n": 282,
+          "mean": 0.29,
+          "p50": 0.3,
+          "p95": 0.4,
+          "max": 0.9
+        },
+        "rafGapMs": {
+          "n": 286,
+          "mean": 21.04,
+          "p50": 16.7,
+          "p95": 33.4,
+          "max": 83.3
+        }
+      }
+    },
+    {
+      "fps": 60,
+      "secondWindow": "open, messages only (never paints)",
+      "seconds": 6,
+      "drawingWindow": {
+        "framesPainted": 285,
+        "paintedPerSecond": 47.4,
+        "framesSkipped": 74,
+        "paintGapMs": {
+          "n": 284,
+          "mean": 21.15,
+          "p50": 17.1,
+          "p95": 40.1,
+          "max": 94.2
+        },
+        "paintMs": {
+          "n": 285,
+          "mean": 0.26,
+          "p50": 0.3,
+          "p95": 0.4,
+          "max": 0.7
+        },
+        "rafGapMs": {
+          "n": 297,
+          "mean": 20.26,
+          "p50": 16.7,
+          "p95": 33.4,
+          "max": 83.3
+        }
+      },
+      "pictureWindow": {
+        "picturesPainted": 0,
+        "paintedPerSecond": 0,
+        "distinctFramesShown": 0,
+        "paintMs": {
+          "n": 0
+        },
+        "paintGapMs": {
+          "n": 0
+        }
+      }
+    },
+    {
+      "fps": 60,
+      "secondWindow": "open",
+      "seconds": 6,
+      "drawingWindow": {
+        "framesPainted": 169,
+        "paintedPerSecond": 28.1,
+        "framesSkipped": 190,
+        "paintGapMs": {
+          "n": 168,
+          "mean": 35.72,
+          "p50": 33.2,
+          "p95": 51.3,
+          "max": 87.5
+        },
+        "paintMs": {
+          "n": 169,
+          "mean": 0.25,
+          "p50": 0.2,
+          "p95": 0.4,
+          "max": 0.5
+        },
+        "rafGapMs": {
+          "n": 172,
+          "mean": 34.98,
+          "p50": 33.3,
+          "p95": 50.1,
+          "max": 83.4
+        }
+      },
+      "pictureWindow": {
+        "picturesPainted": 169,
+        "paintedPerSecond": 28.1,
+        "distinctFramesShown": 136,
+        "paintMs": {
+          "n": 169,
+          "mean": 0.29,
+          "p50": 0.3,
+          "p95": 0.5,
+          "max": 1
+        },
+        "paintGapMs": {
+          "n": 168,
+          "mean": 35.63,
+          "p50": 35.8,
+          "p95": 50.2,
+          "max": 71.7
+        }
+      }
+    },
+    {
+      "fps": 60,
+      "secondWindow": "closed",
+      "seconds": 6,
+      "drawingWindow": {
+        "framesPainted": 336,
+        "paintedPerSecond": 55.9,
+        "framesSkipped": 24,
+        "paintGapMs": {
+          "n": 335,
+          "mean": 17.92,
+          "p50": 16.6,
+          "p95": 30.8,
+          "max": 54.6
+        },
+        "paintMs": {
+          "n": 336,
+          "mean": 0.22,
+          "p50": 0.2,
+          "p95": 0.3,
+          "max": 0.4
+        },
+        "rafGapMs": {
+          "n": 345,
+          "mean": 17.44,
+          "p50": 16.7,
+          "p95": 16.8,
+          "max": 50
+        }
+      }
+    },
+    {
+      "fps": 60,
+      "secondWindow": "animated control window",
+      "seconds": 6,
+      "drawingWindow": {
+        "framesPainted": 303,
+        "paintedPerSecond": 50.4,
+        "framesSkipped": 56,
+        "paintGapMs": {
+          "n": 302,
+          "mean": 19.85,
+          "p50": 16.8,
+          "p95": 34,
+          "max": 58.8
+        },
+        "paintMs": {
+          "n": 303,
+          "mean": 0.29,
+          "p50": 0.3,
+          "p95": 0.4,
+          "max": 0.7
+        },
+        "rafGapMs": {
+          "n": 311,
+          "mean": 19.29,
+          "p50": 16.7,
+          "p95": 33.4,
+          "max": 66.6
+        }
+      }
+    },
+    {
+      "fps": 60,
+      "secondWindow": "open, messages only (never paints)",
+      "seconds": 6,
+      "drawingWindow": {
+        "framesPainted": 304,
+        "paintedPerSecond": 50.6,
+        "framesSkipped": 56,
+        "paintGapMs": {
+          "n": 303,
+          "mean": 19.81,
+          "p50": 16.7,
+          "p95": 35.8,
+          "max": 83.8
+        },
+        "paintMs": {
+          "n": 304,
+          "mean": 0.26,
+          "p50": 0.3,
+          "p95": 0.4,
+          "max": 0.7
+        },
+        "rafGapMs": {
+          "n": 314,
+          "mean": 19.16,
+          "p50": 16.7,
+          "p95": 33.3,
+          "max": 83.3
+        }
+      },
+      "pictureWindow": {
+        "picturesPainted": 0,
+        "paintedPerSecond": 0,
+        "distinctFramesShown": 0,
+        "paintMs": {
+          "n": 0
+        },
+        "paintGapMs": {
+          "n": 0
+        }
+      }
+    },
+    {
+      "fps": 60,
+      "secondWindow": "open",
+      "seconds": 6,
+      "drawingWindow": {
+        "framesPainted": 177,
+        "paintedPerSecond": 29.4,
+        "framesSkipped": 180,
+        "paintGapMs": {
+          "n": 176,
+          "mean": 34.03,
+          "p50": 31.1,
+          "p95": 50.2,
+          "max": 80
+        },
+        "paintMs": {
+          "n": 177,
+          "mean": 0.24,
+          "p50": 0.2,
+          "p95": 0.4,
+          "max": 0.7
+        },
+        "rafGapMs": {
+          "n": 178,
+          "mean": 33.71,
+          "p50": 33.3,
+          "p95": 50,
+          "max": 66.7
+        }
+      },
+      "pictureWindow": {
+        "picturesPainted": 179,
+        "paintedPerSecond": 29.8,
+        "distinctFramesShown": 148,
+        "paintMs": {
+          "n": 179,
+          "mean": 0.28,
+          "p50": 0.3,
+          "p95": 0.5,
+          "max": 0.9
+        },
+        "paintGapMs": {
+          "n": 178,
+          "mean": 33.75,
+          "p50": 33,
+          "p95": 47.7,
+          "max": 56.1
+        }
+      }
+    },
+    {
+      "fps": 60,
+      "secondWindow": "closed",
+      "seconds": 6,
+      "drawingWindow": {
+        "framesPainted": 320,
+        "paintedPerSecond": 53.2,
+        "framesSkipped": 40,
+        "paintGapMs": {
+          "n": 319,
+          "mean": 18.8,
+          "p50": 16.7,
+          "p95": 32.6,
+          "max": 49.5
+        },
+        "paintMs": {
+          "n": 320,
+          "mean": 0.24,
+          "p50": 0.2,
+          "p95": 0.4,
+          "max": 0.5
+        },
+        "rafGapMs": {
+          "n": 337,
+          "mean": 17.8,
+          "p50": 16.7,
+          "p95": 33.3,
+          "max": 33.4
+        }
+      }
+    },
+    {
+      "fps": 60,
+      "secondWindow": "animated control window",
+      "seconds": 6,
+      "drawingWindow": {
+        "framesPainted": 265,
+        "paintedPerSecond": 44.1,
+        "framesSkipped": 95,
+        "paintGapMs": {
+          "n": 264,
+          "mean": 22.66,
+          "p50": 17.2,
+          "p95": 42.3,
+          "max": 149.2
+        },
+        "paintMs": {
+          "n": 265,
+          "mean": 0.29,
+          "p50": 0.3,
+          "p95": 0.4,
+          "max": 0.7
+        },
+        "rafGapMs": {
+          "n": 294,
+          "mean": 20.41,
+          "p50": 16.7,
+          "p95": 33.4,
+          "max": 149.9
+        }
+      }
+    },
+    {
+      "fps": 60,
+      "secondWindow": "open, messages only (never paints)",
+      "seconds": 6,
+      "drawingWindow": {
+        "framesPainted": 335,
+        "paintedPerSecond": 55.7,
+        "framesSkipped": 25,
+        "paintGapMs": {
+          "n": 334,
+          "mean": 17.97,
+          "p50": 16.6,
+          "p95": 30.4,
+          "max": 55.3
+        },
+        "paintMs": {
+          "n": 335,
+          "mean": 0.22,
+          "p50": 0.2,
+          "p95": 0.3,
+          "max": 0.6
+        },
+        "rafGapMs": {
+          "n": 349,
+          "mean": 17.24,
+          "p50": 16.7,
+          "p95": 16.8,
+          "max": 50
+        }
+      },
+      "pictureWindow": {
+        "picturesPainted": 0,
+        "paintedPerSecond": 0,
+        "distinctFramesShown": 0,
+        "paintMs": {
+          "n": 0
+        },
+        "paintGapMs": {
+          "n": 0
+        }
+      }
+    },
+    {
+      "fps": 60,
+      "secondWindow": "open",
+      "seconds": 6,
+      "drawingWindow": {
+        "framesPainted": 160,
+        "paintedPerSecond": 26.6,
+        "framesSkipped": 196,
+        "paintGapMs": {
+          "n": 159,
+          "mean": 37.61,
+          "p50": 34.2,
+          "p95": 57.3,
+          "max": 83.7
+        },
+        "paintMs": {
+          "n": 160,
+          "mean": 0.27,
+          "p50": 0.3,
+          "p95": 0.4,
+          "max": 0.6
+        },
+        "rafGapMs": {
+          "n": 161,
+          "mean": 37.16,
+          "p50": 33.4,
+          "p95": 66.6,
+          "max": 66.8
+        }
+      },
+      "pictureWindow": {
+        "picturesPainted": 161,
+        "paintedPerSecond": 26.8,
+        "distinctFramesShown": 135,
+        "paintMs": {
+          "n": 161,
+          "mean": 0.29,
+          "p50": 0.3,
+          "p95": 0.5,
+          "max": 0.7
+        },
+        "paintGapMs": {
+          "n": 160,
+          "mean": 37.4,
+          "p50": 36.1,
+          "p95": 56.1,
+          "max": 79.6
+        }
+      }
+    },
+    {
+      "fps": 60,
+      "secondWindow": "closed",
+      "seconds": 6,
+      "drawingWindow": {
+        "framesPainted": 306,
+        "paintedPerSecond": 50.9,
+        "framesSkipped": 54,
+        "paintGapMs": {
+          "n": 305,
+          "mean": 19.69,
+          "p50": 16.9,
+          "p95": 34.9,
+          "max": 55.8
+        },
+        "paintMs": {
+          "n": 306,
+          "mean": 0.26,
+          "p50": 0.3,
+          "p95": 0.4,
+          "max": 1
+        },
+        "rafGapMs": {
+          "n": 319,
+          "mean": 18.86,
+          "p50": 16.7,
+          "p95": 33.4,
+          "max": 33.4
+        }
+      }
+    },
+    {
+      "fps": 60,
+      "secondWindow": "animated control window",
+      "seconds": 6,
+      "drawingWindow": {
+        "framesPainted": 302,
+        "paintedPerSecond": 50.2,
+        "framesSkipped": 57,
+        "paintGapMs": {
+          "n": 301,
+          "mean": 19.92,
+          "p50": 16.8,
+          "p95": 34.5,
+          "max": 60.7
+        },
+        "paintMs": {
+          "n": 302,
+          "mean": 0.3,
+          "p50": 0.3,
+          "p95": 0.4,
+          "max": 0.6
+        },
+        "rafGapMs": {
+          "n": 317,
+          "mean": 18.93,
+          "p50": 16.7,
+          "p95": 33.4,
+          "max": 50
+        }
+      }
+    },
+    {
+      "fps": 60,
+      "secondWindow": "open, messages only (never paints)",
+      "seconds": 6,
+      "drawingWindow": {
+        "framesPainted": 306,
+        "paintedPerSecond": 50.9,
+        "framesSkipped": 53,
+        "paintGapMs": {
+          "n": 305,
+          "mean": 19.67,
+          "p50": 16.8,
+          "p95": 36.5,
+          "max": 64.8
+        },
+        "paintMs": {
+          "n": 306,
+          "mean": 0.26,
+          "p50": 0.2,
+          "p95": 0.4,
+          "max": 0.6
+        },
+        "rafGapMs": {
+          "n": 328,
+          "mean": 18.34,
+          "p50": 16.7,
+          "p95": 33.3,
+          "max": 50
+        }
+      },
+      "pictureWindow": {
+        "picturesPainted": 0,
+        "paintedPerSecond": 0,
+        "distinctFramesShown": 0,
+        "paintMs": {
+          "n": 0
+        },
+        "paintGapMs": {
+          "n": 0
+        }
+      }
+    },
+    {
+      "fps": 60,
+      "secondWindow": "open",
+      "seconds": 6,
+      "drawingWindow": {
+        "framesPainted": 160,
+        "paintedPerSecond": 26.6,
+        "framesSkipped": 196,
+        "paintGapMs": {
+          "n": 159,
+          "mean": 37.71,
+          "p50": 35.2,
+          "p95": 55.2,
+          "max": 63.1
+        },
+        "paintMs": {
+          "n": 160,
+          "mean": 0.27,
+          "p50": 0.3,
+          "p95": 0.4,
+          "max": 0.5
+        },
+        "rafGapMs": {
+          "n": 161,
+          "mean": 37.27,
+          "p50": 33.4,
+          "p95": 50.1,
+          "max": 66.7
+        }
+      },
+      "pictureWindow": {
+        "picturesPainted": 161,
+        "paintedPerSecond": 26.8,
+        "distinctFramesShown": 137,
+        "paintMs": {
+          "n": 161,
+          "mean": 0.34,
+          "p50": 0.3,
+          "p95": 0.6,
+          "max": 2.3
+        },
+        "paintGapMs": {
+          "n": 160,
+          "mean": 37.56,
+          "p50": 36.1,
+          "p95": 53.3,
+          "max": 64
+        }
+      }
+    },
+    {
+      "fps": 60,
+      "secondWindow": "closed",
+      "seconds": 6,
+      "drawingWindow": {
+        "framesPainted": 276,
+        "paintedPerSecond": 45.9,
+        "framesSkipped": 81,
+        "paintGapMs": {
+          "n": 275,
+          "mean": 21.65,
+          "p50": 17.4,
+          "p95": 40.6,
+          "max": 78.6
+        },
+        "paintMs": {
+          "n": 276,
+          "mean": 0.26,
+          "p50": 0.3,
+          "p95": 0.4,
+          "max": 1.2
+        },
+        "rafGapMs": {
+          "n": 296,
+          "mean": 20.16,
+          "p50": 16.7,
+          "p95": 33.4,
+          "max": 66.6
+        }
+      }
+    },
+    {
+      "fps": 60,
+      "secondWindow": "animated control window",
+      "seconds": 6,
+      "drawingWindow": {
+        "framesPainted": 278,
+        "paintedPerSecond": 46.3,
+        "framesSkipped": 81,
+        "paintGapMs": {
+          "n": 277,
+          "mean": 21.64,
+          "p50": 17.6,
+          "p95": 41.9,
+          "max": 66.9
+        },
+        "paintMs": {
+          "n": 278,
+          "mean": 0.28,
+          "p50": 0.3,
+          "p95": 0.4,
+          "max": 0.7
+        },
+        "rafGapMs": {
+          "n": 291,
+          "mean": 20.62,
+          "p50": 16.7,
+          "p95": 33.4,
+          "max": 50.1
+        }
+      }
+    },
+    {
+      "fps": 60,
+      "secondWindow": "open, messages only (never paints)",
+      "seconds": 6,
+      "drawingWindow": {
+        "framesPainted": 326,
+        "paintedPerSecond": 54.2,
+        "framesSkipped": 34,
+        "paintGapMs": {
+          "n": 325,
+          "mean": 18.49,
+          "p50": 16.8,
+          "p95": 31.4,
+          "max": 49.8
+        },
+        "paintMs": {
+          "n": 326,
+          "mean": 0.23,
+          "p50": 0.2,
+          "p95": 0.4,
+          "max": 0.8
+        },
+        "rafGapMs": {
+          "n": 337,
+          "mean": 17.85,
+          "p50": 16.7,
+          "p95": 33.3,
+          "max": 50.1
+        }
+      },
+      "pictureWindow": {
+        "picturesPainted": 0,
+        "paintedPerSecond": 0,
+        "distinctFramesShown": 0,
+        "paintMs": {
+          "n": 0
+        },
+        "paintGapMs": {
+          "n": 0
+        }
+      }
+    },
+    {
+      "fps": 60,
+      "secondWindow": "open",
+      "seconds": 6,
+      "drawingWindow": {
+        "framesPainted": 177,
+        "paintedPerSecond": 29.4,
+        "framesSkipped": 181,
+        "paintGapMs": {
+          "n": 176,
+          "mean": 34.04,
+          "p50": 31.4,
+          "p95": 48.9,
+          "max": 89.7
+        },
+        "paintMs": {
+          "n": 177,
+          "mean": 0.24,
+          "p50": 0.2,
+          "p95": 0.3,
+          "max": 0.9
+        },
+        "rafGapMs": {
+          "n": 178,
+          "mean": 33.71,
+          "p50": 33.3,
+          "p95": 50,
+          "max": 66.6
+        }
+      },
+      "pictureWindow": {
+        "picturesPainted": 179,
+        "paintedPerSecond": 29.8,
+        "distinctFramesShown": 150,
+        "paintMs": {
+          "n": 179,
+          "mean": 0.27,
+          "p50": 0.3,
+          "p95": 0.4,
+          "max": 0.8
+        },
+        "paintGapMs": {
+          "n": 178,
+          "mean": 33.76,
+          "p50": 32.4,
+          "p95": 49.1,
+          "max": 65.8
+        }
+      }
+    }
+  ],
+  "summary": [
+    {
+      "fps": 24,
+      "secondWindow": "closed",
+      "rounds": 7,
+      "drawingPaintedPerSecond": 24,
+      "drawingFramesSkipped": 0,
+      "drawingPaintMsMean": 0.21,
+      "drawingPaintGapP95Ms": 50.6
+    },
+    {
+      "fps": 24,
+      "secondWindow": "animated control window",
+      "rounds": 7,
+      "drawingPaintedPerSecond": 24,
+      "drawingFramesSkipped": 0,
+      "drawingPaintMsMean": 0.24,
+      "drawingPaintGapP95Ms": 50.6
+    },
+    {
+      "fps": 24,
+      "secondWindow": "open, messages only (never paints)",
+      "rounds": 7,
+      "drawingPaintedPerSecond": 23.9,
+      "drawingFramesSkipped": 0,
+      "drawingPaintMsMean": 0.22,
+      "drawingPaintGapP95Ms": 50.7,
+      "pictureWindowPaintedPerSecond": 0
+    },
+    {
+      "fps": 24,
+      "secondWindow": "open",
+      "rounds": 7,
+      "drawingPaintedPerSecond": 24,
+      "drawingFramesSkipped": 0,
+      "drawingPaintMsMean": 0.23,
+      "drawingPaintGapP95Ms": 50.8,
+      "pictureWindowPaintedPerSecond": 24,
+      "pictureWindowPaintMsMean": 0.26
+    },
+    {
+      "fps": 60,
+      "secondWindow": "closed",
+      "rounds": 7,
+      "drawingPaintedPerSecond": 53.2,
+      "drawingFramesSkipped": 40,
+      "drawingPaintMsMean": 0.24,
+      "drawingPaintGapP95Ms": 32.6
+    },
+    {
+      "fps": 60,
+      "secondWindow": "animated control window",
+      "rounds": 7,
+      "drawingPaintedPerSecond": 46.9,
+      "drawingFramesSkipped": 77,
+      "drawingPaintMsMean": 0.29,
+      "drawingPaintGapP95Ms": 37.9
+    },
+    {
+      "fps": 60,
+      "secondWindow": "open, messages only (never paints)",
+      "rounds": 7,
+      "drawingPaintedPerSecond": 50.9,
+      "drawingFramesSkipped": 53,
+      "drawingPaintMsMean": 0.26,
+      "drawingPaintGapP95Ms": 35.8,
+      "pictureWindowPaintedPerSecond": 0
+    },
+    {
+      "fps": 60,
+      "secondWindow": "open",
+      "rounds": 7,
+      "drawingPaintedPerSecond": 28.1,
+      "drawingFramesSkipped": 190,
+      "drawingPaintMsMean": 0.25,
+      "drawingPaintGapP95Ms": 52.7,
+      "pictureWindowPaintedPerSecond": 28.1,
+      "pictureWindowPaintMsMean": 0.29
+    }
+  ]
+}

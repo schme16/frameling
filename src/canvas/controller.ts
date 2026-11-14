@@ -6,6 +6,7 @@
 import { ownedUndo } from '../core/owners';
 import type { Drawing, Id, PixelDrawing } from '../core/format';
 import { store } from '../core/store';
+import { noteLive } from '../popout/ink';
 import { toast } from '../ui/toast';
 import { tileModeOn } from '../tiles/state';
 import { centerView, clampPan, fitView, nextZoomStep, screenToDoc, stageDeviceRect, zoomAbout, zoomToRect, type Pt, type Rect, type TurnRoom, type View } from './view';
@@ -167,6 +168,7 @@ let live: Live | null = null;
 
 export function setLive(l: Live | null): void {
   live = l;
+  noteLive(l);
   invalidate(true, false);
 }
 export function getLive(): Live | null {

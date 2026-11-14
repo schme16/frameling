@@ -15,6 +15,7 @@ import { choiceAt, saveChangesQuestion } from '../shared/saveQuestion';
 import { closeStep, createCloseAsker, holdClose } from './closeQuestion';
 import { addFeatures, applyGpuOff, logDrawingPath } from './gpu';
 import { colourSwitches } from './gpuFlags';
+import { makePopout } from './popoutWindow';
 import { createRestarter, fitWindow, readState, relaunchPlan, type RestartState, type WindowPlace } from './restart';
 
 // The colour profile is pinned to sRGB before the engine starts (see gpuFlags.ts for what that means on a wide-gamut screen).
@@ -69,6 +70,8 @@ const dataDir = () => app.getPath('userData');
 
 
 let win: BrowserWindow | null = null;
+// The picture window: a second window that shows the drawing big and follows the drawing window (see popout.ts).
+const popout = makePopout({ main: () => win, dataDir: () => app.getPath('userData'), dir: __dirname });
 let docState: DocumentState = { dirty: false, name: 'Untitled', filePath: null };
 // A file waiting to be opened by the page (given on the command line, or by the system before the window was ready).
 let launchFile: string | null = null;
@@ -241,7 +244,12 @@ function createWindow() {
   const devUrl = process.env.FRAMELING_DEV_URL;
   if (devUrl) void win.loadURL(devUrl);
   else void win.loadFile(path.join(__dirname, '../renderer/index.html'));
-  win.on('closed', () => (win = null));
+  // The picture window goes with the drawing window, and gets a fresh link if the page is loaded again.
+  win.webContents.on('did-finish-load', () => popout.mainReloaded());
+  win.on('closed', () => {
+    win = null;
+    popout.mainClosed();
+  });
 }
 
 registerIpc({
@@ -279,6 +287,7 @@ registerIpc({
     return r ? { file: r.file, view: r.view, carry: r.carry === true } : null;
   },
   finishUpdate: () => app.quit(),
+  popout,
 });
 
 app.on('second-instance', (_e, argv, cwd) => {

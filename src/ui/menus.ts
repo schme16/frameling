@@ -42,7 +42,7 @@ export const MENUS: MenuDef[] = [
   {
     label: 'View',
     categories: ['View'],
-    items: ['view.zoomIn', 'view.zoomOut', 'view.fit', 'view.zoom100', 'view.center', 'sub:turnview', '-', 'group:workspaces', 'sub:workspaces', '-', 'sub:panels', 'sub:panelwin', 'sub:toolrail', 'view.changeMenus', 'view.menusReset', 'view.menusEverywhere', '-', 'view.pixelGrid', 'tiles.tileMode', 'tiles.showShapes', 'view.emptyGhost', 'camera.lookThrough', 'camera.whilePlaying', 'view.whereDidItGo', '-', 'view.rulers', 'view.guides', 'sub:snapping', 'sub:grids', 'sub:lighttable', 'sub:notes', 'sub:marks', '-', 'sub:look', 'view.features', 'view.featuresAllOn', 'view.searchSettings', 'view.commandPalette', '-', 'quillPet.open', 'quillPet.give', 'quillPet.pat'],
+    items: ['view.zoomIn', 'view.zoomOut', 'view.fit', 'view.zoom100', 'view.center', 'sub:turnview', '-', 'group:workspaces', 'sub:workspaces', '-', 'sub:panels', 'sub:panelwin', 'sub:toolrail', 'view.changeMenus', 'view.menusReset', 'view.menusEverywhere', '-', 'view.pixelGrid', 'tiles.tileMode', 'tiles.showShapes', 'view.emptyGhost', 'camera.lookThrough', 'camera.whilePlaying', 'view.whereDidItGo', '-', 'popout.toggle', 'popout.front', '-', 'view.rulers', 'view.guides', 'sub:snapping', 'sub:grids', 'sub:lighttable', 'sub:notes', 'sub:marks', '-', 'sub:look', 'view.features', 'view.featuresAllOn', 'view.searchSettings', 'view.commandPalette', '-', 'quillPet.open', 'quillPet.give', 'quillPet.pat'],
   },
   {
     label: 'Draw',

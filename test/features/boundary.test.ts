@@ -31,8 +31,8 @@ const CORE_BACK_IMPORTS = ['core/render.ts -> effects'];
 const CONVERTED: Record<string, { importers: string[] }> = {
   // The video exporters read sound data by name to mix and mux it (it stays in the file whether or not the feature is on).
   audio: { importers: ['renderer/features.ts', 'lipsync/commands.tsx', 'lipsync/run.ts', 'export/formats/video-prep.ts', 'export/formats/video.ts'] },
-  // The camera's helpers (is it looked through, where is it) are used by the canvas, the tools, artboards and the marks overlay (which hides while the camera is looked through): it keeps working on a drawing that holds a camera.
-  camera: { importers: ['renderer/features.ts', 'artboards/Underlay.tsx', 'artboards/ops.ts', 'artboards/variationOps.ts', 'canvas/engine.ts', 'notes/MarksLayer.tsx', 'quests/library.ts', 'text/TextEditor.tsx', 'tools/eyedropper.ts', 'tools/view-size.ts'] },
+  // The camera's helpers (is it looked through, where is it) are used by the canvas, the tools, artboards the marks overlay (which hides while the camera is looked through) and the second window (which says whether the drawing window looks through it): it keeps working on a drawing that holds a camera.
+  camera: { importers: ['renderer/features.ts', 'artboards/Underlay.tsx', 'artboards/ops.ts', 'artboards/variationOps.ts', 'canvas/engine.ts', 'notes/MarksLayer.tsx', 'popout/link.ts', 'quests/library.ts', 'text/TextEditor.tsx', 'tools/eyedropper.ts', 'tools/view-size.ts'] },
   // Sprite sheet engine, add-on and help: no folder of its own, and nothing imports it but the feature list.
   'godot-export': { importers: [] },
   flow: { importers: ['renderer/features.ts'] },
@@ -40,8 +40,8 @@ const CONVERTED: Record<string, { importers: string[] }> = {
   lipsync: { importers: ['renderer/features.ts', 'templates/lip-sync.ts'] },
   // Templates that use its shapes, the lessons, and (for text) the canvas, which opens the editor on a double click, and plugins, whose text items become text shapes.
   particles: { importers: ['quests/library.ts', 'renderer/features.ts', 'templates/explosion.ts'] },
-  // Pure bone maths and posing, which the canvas, the timeline, the exporters, the templates and the Godot/Lottie/PDF writers use on any puppet (it keeps working with the feature off); plus the lesson and the debug hook.
-  rig: { importers: ['canvas/engine.ts', 'canvas/pipeline.ts', 'export/bonesExtrasDoc.ts', 'export/godot-bones-scope.ts', 'export/godot-bones.ts', 'export/kitchenSink.ts', 'quests/library.ts', 'renderer/debug.ts', 'renderer/features.ts', 'templates/puppet.ts', 'timeline/propKeys.ts', 'timeline/tracks.ts'] },
+  // Pure bone maths and posing, which the canvas, the second window (a stroke in progress sits on its bone), the timeline, the exporters, the templates and the Godot/Lottie/PDF writers use on any puppet (it keeps working with the feature off); plus the lesson and the debug hook.
+  rig: { importers: ['canvas/engine.ts', 'canvas/pipeline.ts', 'export/bonesExtrasDoc.ts', 'export/godot-bones-scope.ts', 'export/godot-bones.ts', 'export/kitchenSink.ts', 'popout/show.ts', 'quests/library.ts', 'renderer/debug.ts', 'renderer/features.ts', 'templates/puppet.ts', 'timeline/propKeys.ts', 'timeline/tracks.ts'] },
   // Tile mode and tile editing are read by the canvas, the pixel tools, artboards and symbols (a level keeps drawing and editing with the feature off); the templates that build levels; the lesson and the debug hook.
   tiles: { importers: ['artboards/Underlay.tsx', 'artboards/ops.ts', 'artboards/player.tsx', 'artboards/variationOps.ts', 'canvas/CanvasView.tsx', 'canvas/controller.ts', 'canvas/engine.ts', 'export/ExportDialog.tsx', 'export/kitchenSink.ts', 'pixel/PixelBar.tsx', 'quests/library.ts', 'renderer/debug.ts', 'renderer/features.ts', 'symbols/ops.ts', 'templates/blank.ts', 'templates/tileset.ts', 'timeline/Layers.tsx', 'tools/fill.ts', 'tools/pixelSession.ts'] },
   text: { importers: ['canvas/CanvasView.tsx', 'import/layered/build.ts', 'import/layered/psdfonts.ts', 'import/layered/read.ts', 'plugins/drawlist.ts', 'plugins/fonts.ts', 'quests/library.ts', 'renderer/features.ts', 'templates/spinner.ts', 'templates/title-card.ts'] },
