@@ -74,6 +74,8 @@ export interface Doc {
   pictures?: ReferencePicture[];
   /** Guide lines dragged out of the rulers (missing = none). Never drawn in exports. See `Guide`. */
   guides?: Guide[];
+  /** Notes left on the canvas, for you or whoever opens the file next (missing = none). Saved in the file, never exported. See `CanvasNote`. */
+  notes?: CanvasNote[];
   /** The play range set on the timeline (in and out, inclusive): only these frames play and loop (missing = all). */
   inOut?: { start: number; end: number };
   /** Perspective guides: one or two vanishing points in stage pixels (missing = none). Never drawn in exports. */
@@ -259,6 +261,44 @@ export interface ArtboardContent {
   guides?: Guide[];
   inOut?: Doc['inOut'];
   perspective?: Doc['perspective'];
+}
+
+/** A note's answer to it. */
+export interface NoteReply {
+  id: Id;
+  text: string;
+  /** Who wrote it, when that is known. */
+  by?: string;
+  /** When, as milliseconds since 1970, when that is known. */
+  at?: number;
+}
+
+/**
+ * A note left on the canvas ("the elbow pops here"). It lives in the file and is never drawn into an export (see
+ * src/notes). `pin` says where it belongs: the page (always there), one frame, or one layer (while that layer has a
+ * drawing on the frame you are on). Missing `pin` = the page.
+ */
+export interface CanvasNote {
+  id: Id;
+  /** Where its marker sits, in stage pixels. */
+  x: number;
+  y: number;
+  text: string;
+  pin?: 'page' | 'frame' | 'layer';
+  /** The frame a frame note belongs to (0 is the first). */
+  frame?: number;
+  /** The layer a layer note belongs to. */
+  layer?: Id;
+  /** The artboard it was left on (missing = shows on every artboard, or the document has none). */
+  board?: Id;
+  /** Who left it, when that is known. */
+  by?: string;
+  /** When, as milliseconds since 1970, when that is known. */
+  at?: number;
+  /** Ticked off as done (missing = still open). */
+  done?: true;
+  /** Answers, oldest first (missing = none). */
+  replies?: NoteReply[];
 }
 
 /** A guide line across the stage: `axis` 'x' is an up-and-down line at x = `at`, 'y' a sideways one at y = `at`. */

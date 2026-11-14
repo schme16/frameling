@@ -12,6 +12,7 @@ import './snapCommands';
 import './gridView';
 import './lightTable';
 import '../reference';
+import '../notes';
 import './help';
 import './turn-help';
 import './seeThrough-help';

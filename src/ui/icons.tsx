@@ -249,6 +249,13 @@ const ICONS: Record<string, ReactNode> = {
     </>
   ),
   marker: <path d="M6.5 20.5V4M6.5 5h11l-2.6 3.6 2.6 3.6h-11" />,
+  note: (
+    <>
+      <path d="M5 4.5h14v10l-5 5H5z" />
+      <path d="M14 19.5v-5h5" />
+      <path d="M8.5 9h7M8.5 12.5h4" />
+    </>
+  ),
   key: <path d="M12 3.8l7.8 8.2-7.8 8.2L4.2 12z" fill="currentColor" />,
   hold: (
     <>

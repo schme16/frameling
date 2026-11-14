@@ -6,11 +6,14 @@ import { planExport } from './plan';
 import { exporterOf, type RunEnv } from './registry';
 import { isCancelled, type Progress, type RunContext, type RunResult } from './runtime';
 import { formatInfo } from './types';
+import { withoutNotes } from '../notes/model';
 
 export { isCancelled, type Progress, type RunContext, type RunResult };
 
 export async function runExport(ctx: RunContext): Promise<RunResult> {
-  const { doc, settings, currentFrame, onProgress } = ctx;
+  const { settings, currentFrame, onProgress } = ctx;
+  // Notes never go out: the document the formats see has none, whatever the caller passed.
+  const doc = withoutNotes(ctx.doc);
   const def = exporterOf(settings.format);
   if (!def) throw new Error('That kind of export is turned off.');
   const plan = planExport(doc, settings, currentFrame);

@@ -8,6 +8,7 @@ import { removeOwned, withOwner } from '../core/owners';
 import { drawingAt, findLayer } from '../core/doc';
 import { store } from '../core/store';
 import { rootDoc } from '../core/symbols';
+import { withoutNotes } from '../notes/model';
 import { announceUiChange } from '../features/host';
 import { baseName, desktop } from '../io/desktop';
 import { notify } from '../io/notify';
@@ -119,7 +120,7 @@ function hooksFor(m: PluginManifest, onExporter: (def: PluginExporterDef) => voi
   const pid = m.id;
   const mine = () => added.get(pid) ?? (added.set(pid, { commands: [], panels: [] }), added.get(pid)!);
   return {
-    getDoc: () => rootDoc(store().rootDoc()),
+    getDoc: () => withoutNotes(rootDoc(store().rootDoc())),
     getState: () => {
       const { doc, ui } = store().get();
       const layer = findLayer(doc, ui.activeLayerId);

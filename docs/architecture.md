@@ -261,6 +261,7 @@ an edit misses the old entry and the old one is garbage collected. The main ones
   passed to `tool.down/move/up`. Tools preview with `setLive` and the overlay, then commit with one `store().update`.
 - Pure helpers: `view.ts` (zoom and pan maths), `input.ts` (wheel intent, Space tap), `onion.ts`, `lightTable.ts`,
   `snap.ts`, `grid.ts`, `guides.ts`. `perf.ts` records timings only with `?perf`.
+- **Notes on the canvas** (`src/notes`): `Doc.notes` holds them, so they save in the file. `model.ts` is the pure logic (which show on a frame, reading them back, `withoutNotes`), `ops.ts` the store changes (a new note is a draft in `state.ts` until it has words), `NotesLayer.tsx` the markers and the open card, `tool.ts`, `NotesPanel.tsx`. They never reach an export: `sceneOf`, `runExport`, the Interactives package source, plugins and templates all take the document through `withoutNotes`, and `test/notes/never-exported.test.ts` holds that line (a new exporter that reads `doc.notes` fails it).
 - **Snapping choices**: `snapModel.ts` (pure) lists the targets (page, centre, guides, grid, other shapes, perspective,
   cells, angles, artboards) and `activeTargets` says which are in force for one gesture, from the master switch, the
   per-kind ticks (`viewSettings.snapPicks`: vector, pixel, artboard), Ctrl and what is showing. `guides.ts` asks it before

@@ -1,6 +1,7 @@
 // An Interactives package (.flplay). Registered by the Interactives feature (src/interactives), so it goes with it.
 import type { RawImage } from '../../io/png';
 import { saveFile } from '../../io/file';
+import { withoutNotes } from '../../notes/model';
 import { MAX_SHEET_SIDE } from '../plan';
 import { playablePackage } from '../playable';
 import { breathe } from '../runtime';
@@ -26,7 +27,7 @@ export const run: ExporterRun['run'] = async (ctx, { plan, bg, crisp, step, rgba
     maxSide: MAX_SHEET_SIDE,
     appVersion: ctx.appVersion,
     // The drawing inside carries a marker so Frameling knows it came from Interactives (feature id under `ext`).
-    source: settings.includeSource === false ? null : saveFile({ ...doc, ext: { ...doc.ext, interactives: { used: true } } }, ctx.appVersion ?? ''),
+    source: settings.includeSource === false ? null : saveFile(withoutNotes({ ...doc, ext: { ...doc.ext, interactives: { used: true } } }), ctx.appVersion ?? ''),
   });
   return { kind: 'file', name: `${plan.name}.flplay`, bytes };
 };
