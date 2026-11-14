@@ -5,6 +5,7 @@ import { renderFrameToCanvas } from '../core/render';
 import { store } from '../core/store';
 import type { Doc } from '../core/format';
 import { askAboutUnsavedChanges, listRecentFiles, openPath } from '../io/document';
+import { RecentPicture, useRecentPictures } from '../io/RecentPicture';
 import type { RecentFile } from '../preload/api';
 import { Icon, Logo } from './icons';
 import { Quill, useQuillShown, useShowQuill } from './mascot';
@@ -37,6 +38,7 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
   const [custom, setCustom] = useState(false);
   const [spec, setSpec] = useState<CustomSpec>({ name: 'Untitled', width: 800, height: 600, fps: 12, pixel: false, pixelSize: 8 });
   const [recent, setRecent] = useState<RecentFile[]>([]);
+  const pics = useRecentPictures(recent);
   const open = getCommand('file.open');
   const quest = getQuest('first-animation');
   const quill = useQuillShown();
@@ -46,7 +48,7 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
 
   useEffect(() => {
     let live = true;
-    void listRecentFiles().then((r) => live && setRecent(r.slice(0, 4)));
+    void listRecentFiles().then((r) => live && setRecent(r.filter((f) => !f.missing).slice(0, 4)));
     return () => void (live = false);
   }, []);
 
@@ -132,7 +134,7 @@ function Sheet({ mode: sheetMode }: { mode: 'welcome' | 'new' | 'examples' }) {
                   window.setTimeout(() => void openPath(r.path), 0);
                 }}
               >
-                <Icon name="film" size={16} />
+                <RecentPicture preview={pics[r.path]} size={44} />
                 <span>{r.name}</span>
               </button>
             ))}

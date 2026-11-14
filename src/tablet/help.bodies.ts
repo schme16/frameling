@@ -24,7 +24,7 @@ While your pen is near the screen, a resting hand is ignored. Otherwise two fing
 
 **Every line is the same thickness, or the pad says you are using a mouse.** The tablet is sending mouse movements, not pen ones.
 
-- **Windows:** open the Wacom Tablet Properties or the Huion driver and turn on **Windows Ink**, then restart Frameling.
+- **Windows:** open the Wacom Tablet Properties or the Huion driver and turn on **Windows Ink**, then restart Frameling (search the command palette for **Restart Frameling**).
 - **Mac:** install the maker's driver. It then just works.
 - **Linux:** most Wacom and Huion tablets work on their own. No pressure? Try the tablet in another drawing program. If flipping the pen doesn't erase, the system may not be telling Frameling about the eraser end: set a button to **Erase** in Pen and tablet. The pad there names each button as you press it; if the two are round the wrong way, turn on **Swap my two pen buttons**.
 

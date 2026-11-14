@@ -1193,3 +1193,29 @@ SHOT_SHOW=1 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/docs/he
 ```
 
 The page hooks are `__framelingReference.add / place` (under `?debug`, src/reference/index.ts) and `__framelingImport.video` (src/import/index.ts).
+
+## Restart and Open recent pictures: scripts/ab/restart-recent.cjs
+
+Runs the REAL main process with a real profile and real `.frameling` files (not the stand-ins), because both features are
+about what the main process does. `RR_ROOT=<another checkout>` runs the same against that checkout's `dist/`, for the before.
+
+```bash
+npm run build
+RR_MODE=recent RR_OUT=brand/ab/recent-pictures xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/ab/restart-recent.cjs
+THEME=dark xvfb-run -a -s "-screen 0 1600x1000x24" scripts/ab/restart-recent-record.sh /tmp/restart-dark
+python3 scripts/ab/restart-recent-cut.py dark
+```
+
+- `recent` saves six starter drawings (each file gets its `preview.png`), strips the picture from one (an older file) and
+  deletes another (a file that has gone), then shoots Open recent in both themes, and again in a 800 x 560 window at the
+  interface size 200%.
+- `restart` is two halves of one run: the relaunched copy runs the same script again and tells itself apart by a marker
+  file. The first half saves a drawing, moves the window, goes to frame 6, makes an unsaved change and runs the Restart
+  command; it presses Save on Quill's question. The second half (after the app really came back) writes `result.json`
+  with the file, frame and window position before and after, and `same`. `restart-recent-record.sh` records the virtual
+  screen with ffmpeg around it, and `restart-recent-cut.py` cuts, crops and captions the clip.
+- The unit side: `test/main/restart.test.ts` (the order, Cancel, a failed save, where relaunching is not possible, what to
+  open, the window and view that come back), `test/io/restart-page.test.tsx`, `test/io/preview.test.ts` (the picture in the
+  file, read from the end of the zip, kept for older files) and `test/io/recent-dialog.test.tsx`.
+- `scripts/ipc-stubs.cjs` keeps a pretend recent list and kept pictures, and `__framelingIo.demoRecent([...])` fills it for
+  pictures of Open recent (`scripts/docs/help/restart-recent.cjs`).

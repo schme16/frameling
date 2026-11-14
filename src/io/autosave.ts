@@ -8,6 +8,7 @@ import { loadFileAsync } from './file';
 import { notify } from './notify';
 import { closeSheet, overlays } from '../ui/overlays';
 import { recovery, restorePending } from './recovery';
+import { applyRestoredView } from './restart';
 
 export { autosaveNow };
 
@@ -83,7 +84,10 @@ export function startFileServices(): void {
 
   void (async () => {
     const file = await api.app.getLaunchFile();
+    // A restart left word of where you were: open that drawing again, then go back to the same frame and view.
+    const restore = await api.app.getRestore?.().catch(() => null);
     if (file) await openPath(file);
+    if (restore && file && restore.file === file && store().get().ui.filePath === file) applyRestoredView(restore.view);
     await offerRecovery();
   })();
 }

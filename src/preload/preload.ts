@@ -63,6 +63,8 @@ const api: FramelingApi = {
     add: (path) => call('recent:add', path),
     remove: (path) => call('recent:remove', path),
     clear: () => call('recent:clear'),
+    preview: (path) => call('recent:preview', path),
+    keepPreview: (path, png) => call('recent:keepPreview', path, png),
   },
   autosave: {
     write: (bytes, meta) => call('autosave:write', bytes, meta),
@@ -94,7 +96,7 @@ const api: FramelingApi = {
       return () => void ipcRenderer.removeListener('update:progress', fn);
     },
   },
-  gpu: { report: () => call('gpu:report'), setHardware: (on) => call('gpu:setHardware', on), restart: () => call('gpu:restart') },
+  gpu: { report: () => call('gpu:report'), setHardware: (on) => call('gpu:setHardware', on) },
   app: {
     // How big everything is drawn. Chromium's own page zoom, so text, panels and the canvas all stay crisp.
     setUiScale: (factor) => webFrame.setZoomFactor(Math.min(3, Math.max(0.5, factor))),
@@ -108,6 +110,8 @@ const api: FramelingApi = {
     },
     setDocumentState: (state) => ipcRenderer.send('app:documentState', state),
     getLaunchFile: () => call('app:launchFile'),
+    restart: (view) => call('app:restart', view),
+    getRestore: () => call('app:restore'),
     onOpenFile: (handler) => {
       const fn = (_: unknown, path: string) => handler(path);
       ipcRenderer.on('app:openFile', fn);

@@ -157,7 +157,7 @@ function docJsonBytes(rest: Record<string, unknown>, entries: DrawingEntry[]): U
 }
 
 /** Everything that goes in the file, ready to be zipped (the part of saving that has to look at the document). */
-function filesToSave(open: Doc, appVersion: string, now: Date, reuse = false): Zippable {
+function filesToSave(open: Doc, appVersion: string, now: Date, reuse = false, preview?: Uint8Array): Zippable {
   // Saved as if no symbol were open for editing.
   const closed = closedForSave(rootDoc(open));
   const doc = closed.doc;
@@ -203,6 +203,8 @@ function filesToSave(open: Doc, appVersion: string, now: Date, reuse = false): Z
   }
   const manifest: Manifest = { format: 'frameling', version: FORMAT_VERSION, app: appVersion, created: now.toISOString(), name: doc.name };
   files['manifest.json'] = strToU8(JSON.stringify(manifest, null, 2));
+  // A small picture of the drawing for lists of files. Stored as it is (a PNG is already packed), and older versions skip it.
+  if (preview?.length) files['preview.png'] = [preview, { level: 0 }];
   // Sound bytes go in their own entries; `audio` in doc.json then names them (undefined leaves the key out).
   const audio = packAudio(doc, files);
   // Reference pictures the same way, in `pictures/` (only those a layer still shows).
@@ -213,7 +215,7 @@ function filesToSave(open: Doc, appVersion: string, now: Date, reuse = false): Z
 }
 
 export function saveFile(open: Doc, appVersion = '', now: Date = new Date(), opts: SaveOptions = {}): Uint8Array {
-  return zipSync(filesToSave(open, appVersion, now, opts.reuse), { level: 6, mtime: now.getTime() });
+  return zipSync(filesToSave(open, appVersion, now, opts.reuse, opts.preview), { level: 6, mtime: now.getTime() });
 }
 
 export interface SaveOptions {
@@ -223,6 +225,8 @@ export interface SaveOptions {
    * something ever changed a drawing in place. See `cachedEntry`.
    */
   reuse?: boolean;
+  /** A small PNG of the drawing, kept in the file as `preview.png` for lists of files (Open recent). Made by io/preview.ts; optional. */
+  preview?: Uint8Array;
 }
 
 /**
@@ -231,7 +235,7 @@ export interface SaveOptions {
  * versions use this.
  */
 export async function saveFileAsync(open: Doc, appVersion = '', now: Date = new Date(), opts: SaveOptions = {}): Promise<Uint8Array> {
-  let files = filesToSave(open, appVersion, now, opts.reuse);
+  let files = filesToSave(open, appVersion, now, opts.reuse, opts.preview);
   // One worker does all the zipping (checksums included, which fflate's own async zip would do on this thread).
   // doc.json is the big one and is made fresh for each save, so its buffer is handed over rather than copied.
   const doc = files['doc.json'];
@@ -239,7 +243,7 @@ export async function saveFileAsync(open: Doc, appVersion = '', now: Date = new 
   const made = await zipInWorker(files, 6, doc instanceof Uint8Array ? [doc] : [], now.getTime());
   if (made) return made;
   // No worker (or it failed): the handed over buffer is gone, so make the files again.
-  if (doc instanceof Uint8Array && doc.length !== size) files = filesToSave(open, appVersion, now, opts.reuse);
+  if (doc instanceof Uint8Array && doc.length !== size) files = filesToSave(open, appVersion, now, opts.reuse, opts.preview);
   return new Promise((resolve, reject) => zip(files, { level: 6, mtime: now.getTime() }, (err, data) => (err ? reject(err) : resolve(data))));
 }
 

@@ -164,7 +164,7 @@ export async function installUpdate(tag: string, d: InstallDeps): Promise<Instal
   return { ok: true, next: 'installer' };
 }
 
-export function registerUpdateIpc(handle: Handle, win: () => Electron.BrowserWindow | null, finish: (relaunchInto: string | null) => void): void {
+export function registerUpdateIpc(handle: Handle, win: () => Electron.BrowserWindow | null, finish: () => void): void {
   handle('update:facts', () => updateFacts());
   handle('update:releases', async () => {
     if (!updateFacts().canCheck) return { ok: false, message: "This copy is running from the source folder, so it doesn't look for updates." };
@@ -188,6 +188,6 @@ export function registerUpdateIpc(handle: Handle, win: () => Electron.BrowserWin
   handle('update:openPage', (_e, url: unknown) => {
     if (typeof url === 'string' && isReleaseAddress(url)) void shell.openExternal(url);
   });
-  // The new copy is in: open it (an AppImage), or just close so the installer can work (Windows).
-  handle('update:finish', () => finish(process.env.APPIMAGE && !PROFILE ? process.env.APPIMAGE : null));
+  // An installer is open: just close so it can work. (An AppImage that was swapped restarts the ordinary way, app:restart.)
+  handle('update:finish', () => finish());
 }

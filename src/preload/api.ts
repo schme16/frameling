@@ -24,7 +24,12 @@ export interface RecentFile {
   path: string;
   name: string;
   openedAt: number;
+  /** The file has gone (a drive unplugged, moved). It stays on the list so it can be removed or found again. */
+  missing?: boolean;
 }
+
+/** What to show for a recent drawing: its little picture, nothing (an older file, or one that can't be read), or "the file has gone". */
+export type RecentPreview = { state: 'picture'; url: string } | { state: 'none' } | { state: 'missing' };
 
 export interface DocumentState {
   dirty: boolean;
@@ -121,7 +126,7 @@ export interface UpdateBridge {
   install(tag: string): Promise<{ ok: true; next: 'restart' | 'installer' } | { ok: false; message: string }>;
   /** Opens a release's page in the browser. */
   openPage(url: string): Promise<void>;
-  /** The new copy is in place: open it (or close, so an installer can run). */
+  /** The installer is open: close so it can finish. (A swapped AppImage restarts through app.restart instead.) */
   finish(): Promise<void>;
   /** How far the download has got, 0 to 100. Returns an unsubscribe function. */
   onProgress(handler: (pct: number) => void): () => void;
@@ -168,8 +173,6 @@ export interface GpuBridge {
   report(): Promise<GpuReport>;
   /** Writes or removes the gpu-off file. Takes effect at the next start. */
   setHardware(on: boolean): Promise<{ ok: true; path: string } | FileFailure>;
-  /** Closes Frameling (asking about unsaved work first) and opens it again. */
-  restart(): Promise<void>;
 }
 
 /** The system clipboard, for pictures and text. Missing in a plain browser tab, where the page's own clipboard is used. */
@@ -237,6 +240,10 @@ export interface FramelingApi {
     add(path: string): Promise<void>;
     remove(path: string): Promise<void>;
     clear(): Promise<void>;
+    /** The little picture of a drawing on the list. Reads a few KB from the file, never the drawing. Optional: web and older builds. */
+    preview?(path: string): Promise<RecentPreview>;
+    /** Keeps a picture for a drawing that had none of its own (an older file), so the list can show it. Only for files on the list. */
+    keepPreview?(path: string, png: Uint8Array): Promise<void>;
   };
   autosave: {
     write(bytes: Uint8Array, meta: AutosaveMeta): Promise<void>;
@@ -281,6 +288,14 @@ export interface FramelingApi {
     setDocumentState(state: DocumentState): void;
     /** The file the app was launched with, once. */
     getLaunchFile(): Promise<string | null>;
+    /**
+     * Restart: closes the way closing does (asking about unsaved work first), then opens again with the drawing and the
+     * window as they were. `view` is where the person is in the drawing. Says no, in plain words, when this copy can't open
+     * itself again; then nothing is closed. Use `restartFrameling()` in src/io/restart.ts, not this.
+     */
+    restart(view: { frame?: number; layerId?: string; zoom?: number; panX?: number; panY?: number }): Promise<{ ok: true } | { ok: false; message: string }>;
+    /** What a restart left for this start (the drawing and where the person was in it), once. Null on an ordinary start. */
+    getRestore(): Promise<{ file: string | null; view: { frame?: number; layerId?: string; zoom?: number; panX?: number; panY?: number } } | null>;
     /** Called when a `.frameling` file is opened while the app is already running. Returns an unsubscribe function. */
     onOpenFile(handler: (path: string) => void): () => void;
     /** Called when the window is closing with unsaved changes and they chose Save. Resolve true once saved, false to stay open. */

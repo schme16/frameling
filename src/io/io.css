@@ -93,12 +93,22 @@
   display: grid;
   gap: 4px;
 }
-.io-recent button {
+.io-recent li {
   display: grid;
-  grid-template-columns: 22px 1fr;
-  gap: 2px 10px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 2px;
+  position: relative;
+}
+.io-recent li > button:first-child {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  align-content: center;
+  gap: 2px 12px;
   align-items: center;
   width: 100%;
+  min-height: 70px;
   text-align: left;
   font: inherit;
   color: inherit;
@@ -108,25 +118,74 @@
   padding: 8px 10px;
   cursor: pointer;
 }
-.io-recent button:hover {
+.io-recent li > button:first-child:hover:not(:disabled) {
   background: var(--hover-bg);
+}
+.io-recent li > button:first-child:disabled {
+  cursor: default;
+  opacity: 0.7;
 }
 .io-recent button:focus-visible {
   outline: 2px solid var(--focus);
 }
-.io-recent svg {
-  grid-row: span 2;
-  color: var(--muted);
-}
 .io-recent b {
   font-weight: 700;
+  align-self: end;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .io-recent small {
   color: var(--muted);
   font-size: var(--fs-small);
+  align-self: start;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+/* The little picture: the same box with or without one, so nothing jumps as they arrive. */
+.io-pic {
+  grid-row: span 2;
+  display: grid;
+  place-items: center;
+  flex: none;
+  overflow: hidden;
+  border-radius: var(--radius-small);
+  border: 1px solid var(--line-soft);
+  background: var(--raised);
+  color: var(--muted);
+}
+.io-pic img {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 2px;
+  /* A soft checkerboard shows through where the drawing is see-through. */
+  background-color: color-mix(in srgb, var(--text) 4%, var(--raised));
+  background-image: conic-gradient(color-mix(in srgb, var(--text) 9%, var(--raised)) 25%, transparent 0 50%, color-mix(in srgb, var(--text) 9%, var(--raised)) 0 75%, transparent 0);
+  background-size: 10px 10px;
+}
+.io-recent-remove {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  opacity: 0;
+}
+.io-recent li:hover .io-recent-remove,
+.io-recent li:focus-within .io-recent-remove,
+.io-recent li.is-missing .io-recent-remove {
+  opacity: 1;
+}
+.io-recent-remove:hover {
+  color: var(--text);
+  background: var(--hover-bg);
 }
 .io-empty {
   color: var(--muted);
@@ -162,4 +221,16 @@
 .io-recover-text small {
   color: var(--muted);
   font-size: var(--fs-small);
+}
+
+/* A short window (or the interface at 200%): smaller pictures, so more rows fit. */
+@media (max-height: 480px) {
+  .io-recent li > button:first-child {
+    min-height: 54px;
+    padding: 6px 8px;
+  }
+  .io-recent .io-pic {
+    width: 52px !important;
+    height: 39px !important;
+  }
 }

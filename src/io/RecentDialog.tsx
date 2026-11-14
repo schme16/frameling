@@ -3,9 +3,10 @@ import { useEffect, useState } from 'react';
 import { Icon } from '../ui/icons';
 import { QuillEmpty } from '../ui/mascot';
 import { describePlace } from '../platform';
-import { dirName } from './desktop';
+import { desktop, dirName } from './desktop';
 import { clearRecentFiles, listRecentFiles, openPath } from './document';
 import { Modal, mountModal } from './mount';
+import { RecentPicture, useRecentPictures } from './RecentPicture';
 import type { RecentFile } from '../preload/api';
 
 function when(t: number): string {
@@ -24,6 +25,11 @@ function RecentDialog({ close }: { close: () => void }) {
   useEffect(() => {
     void listRecentFiles().then(setFiles);
   }, []);
+  const pics = useRecentPictures(files);
+  const remove = (f: RecentFile) => {
+    void desktop()?.recent.remove(f.path);
+    setFiles((list) => (list ?? []).filter((x) => x.path !== f.path));
+  };
   return (
     <Modal title="Open recent" onClose={close}>
       <div className="io-body">
@@ -32,20 +38,24 @@ function RecentDialog({ close }: { close: () => void }) {
         ) : (
           <ul className="io-recent">
             {files.map((f) => (
-              <li key={f.path}>
+              <li key={f.path} className={f.missing ? 'is-missing' : undefined}>
                 <button
                   type="button"
-                  data-autofocus={f === files[0] ? '' : undefined}
+                  data-autofocus={f === files.find((x) => !x.missing) ? '' : undefined}
+                  disabled={f.missing}
                   onClick={() => {
                     close();
                     void openPath(f.path);
                   }}
                 >
-                  <Icon name="open" />
+                  <RecentPicture preview={pics[f.path]} />
                   <b>{f.name}</b>
                   <small title={f.path}>
-                    {when(f.openedAt)} {describePlace(f.path, dirName)}
+                    {f.missing ? "Can't find this file. It was" : when(f.openedAt)} {describePlace(f.path, dirName)}
                   </small>
+                </button>
+                <button type="button" className="io-recent-remove" aria-label={`Remove ${f.name} from the list`} title="Remove from the list (the file itself stays where it is)" onClick={() => remove(f)}>
+                  <Icon name="close" size={14} />
                 </button>
               </li>
             ))}
