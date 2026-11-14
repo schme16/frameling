@@ -172,10 +172,14 @@ export function timingOf(s: Sprite, fixedFps?: number): ReturnType<typeof planTi
   return planTiming(s.frames.map((f) => f.delay ?? fallback), fixedFps);
 }
 
+/** The frames the colours are taken from: a long animation has few new colours after the first frames, so a sample is enough. */
+export function sampledFrames(s: Sprite): Sprite['frames'] {
+  return s.frames.length > 64 ? s.frames.filter((_, i) => i % Math.ceil(s.frames.length / 64) === 0) : s.frames;
+}
+
 /** Palette colours of a sprite: every solid colour it uses (up to 256, the most used kept exactly). Null for no colours. */
 export function spritePalette(s: Sprite, name: string): DocPalette | null {
-  // A long animation has few new colours after the first frames, so a sample of the frames is enough.
-  const use = s.frames.length > 64 ? s.frames.filter((_, i) => i % Math.ceil(s.frames.length / 64) === 0) : s.frames;
+  const use = sampledFrames(s);
   const pixels = new Uint8ClampedArray(use.reduce((n, f) => n + f.image.pixels.length, 0));
   let at = 0;
   for (const f of use) {
@@ -192,8 +196,7 @@ export function spritePalette(s: Sprite, name: string): DocPalette | null {
 /** How many different solid colours the frames use (counting stops at `cap`). */
 export function colourCount(s: Sprite, cap = 9999): number {
   const seen = new Set<number>();
-  const use = s.frames.length > 64 ? s.frames.filter((_, i) => i % Math.ceil(s.frames.length / 64) === 0) : s.frames;
-  for (const f of use) {
+  for (const f of sampledFrames(s)) {
     const p = f.image.pixels;
     for (let i = 0; i < p.length; i += 4) {
       if (p[i + 3] < 128) continue;
@@ -221,6 +224,11 @@ export interface BuildOptions {
   rowsAsSprites: boolean;
   /** Put the picture's colours in the palette. */
   palette: boolean;
+  /**
+   * The colours already picked for that (see pickSpritePalette: it does the counting without holding the page up).
+   * Null means the picture has none to take. Missing means pick them here, in one go, which a big picture can stall on.
+   */
+  colours?: DocPalette | null;
   /** A new drawing plays at this rate (missing = the one that fits the frames' delays best). */
   fps?: number;
 }
@@ -379,7 +387,7 @@ export function spriteDoc(s: Sprite, o: BuildOptions): { doc: Doc; notes: string
   // Slices go on the first board's layer.
   if (s.slices.length) (doc.layers.find((l) => l.kind === 'pixel') as PixelLayer | undefined)!.slices = slicesOf(s.slices, way === 'animation' ? { starts: timing.starts } : undefined);
   if (o.palette) {
-    const p = spritePalette(s, o.name);
+    const p = o.colours !== undefined ? o.colours : spritePalette(s, o.name);
     if (p) doc.palette = p;
   }
   if (doc.length > MAX_FRAMES) doc.length = MAX_FRAMES;
@@ -438,7 +446,7 @@ export function spriteInto(d: Draft<Doc>, s: Sprite, o: BuildOptions, from = 0):
     layer.slices = slicesOf(s.slices, { starts: way === 'animation' ? starts : [], from, ox, oy });
   }
   if (o.palette) {
-    const p = spritePalette(s, o.name);
+    const p = o.colours !== undefined ? o.colours : spritePalette(s, o.name);
     if (p) doc.palette = mergePalette(doc.palette ?? docPalette(doc), p);
   }
   return notes;
