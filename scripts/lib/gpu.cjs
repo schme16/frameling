@@ -47,8 +47,10 @@ let chosen = null;
 /** The switches a mode sets, as [name, value?] pairs (exported so a test can compare them with the launcher). */
 function switchesFor(mode, opts = {}) {
   if (mode === 'software' && opts.noGpu) return [COLOUR_SWITCH];
-  const full = opts.full || process.env.GPU_FULL === '1';
-  const base = mode === 'card' ? [...CARD_SWITCHES, ...(full ? CARD_FULL_SWITCHES : [])] : opts.webgpu ? [['ignore-gpu-blocklist']] : [...SOFTWARE_SWITCHES];
+  // GPU_SHIPPED=1: what the app now ships on Linux (hardware drawing, the canvas pair, Skia on Vulkan), so a speed claim can be about the real thing.
+  const shipped = mode === 'card' && (opts.shipped || process.env.GPU_SHIPPED === '1');
+  const full = opts.full || process.env.GPU_FULL === '1' || shipped;
+  const base = mode === 'card' ? [...CARD_SWITCHES, ...(full ? CARD_FULL_SWITCHES : []), ...(shipped ? [['use-vulkan'], ['enable-features', 'Vulkan']] : [])] : opts.webgpu ? [['ignore-gpu-blocklist']] : [...SOFTWARE_SWITCHES];
   if (opts.webgpu) base.push(['enable-unsafe-webgpu']);
   return [...base, COLOUR_SWITCH];
 }
