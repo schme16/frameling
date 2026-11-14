@@ -70,6 +70,8 @@ export interface Doc {
   flow?: ClipFlow;
   /** Sound clips on the audio track, in the order they were added (missing = none). See `AudioClip`. */
   audio?: AudioClip[];
+  /** The pictures that reference layers show behind the drawing, by what they were added as (missing = none). See `ReferencePicture`. */
+  pictures?: ReferencePicture[];
   /** Guide lines dragged out of the rulers (missing = none). Never drawn in exports. See `Guide`. */
   guides?: Guide[];
   /** The play range set on the timeline (in and out, inclusive): only these frames play and loop (missing = all). */
@@ -286,6 +288,8 @@ export interface BaseLayer {
   onion?: boolean;
   /** A reference layer: shown while drawing, left out of every export (ground lines, sketches, guides). Missing = no. */
   reference?: boolean;
+  /** A picture this reference layer shows, drawn by the canvas only and never exported (missing = none). See `LayerPicture`. */
+  picture?: LayerPicture;
   /** Attached to a bone, so it moves with the skeleton (missing = not attached). See `LayerBind`. */
   bind?: LayerBind;
   /** How the layer mixes with what's under it (missing = 'normal'). */
@@ -1127,6 +1131,45 @@ export interface SkinMesh {
 // ---------------------------------------------------------------- sound
 
 /** A sound placed on the timeline. */
+/** One picture a reference layer can show: the file as it came (JPG or PNG). In a saved file it lives beside doc.json as `pictures/<id>.<ext>`. */
+export interface ReferencePicture {
+  id: Id;
+  /** What it was called, for the layer's name and the lists ("model-sheet.png"). */
+  name: string;
+  data: Uint8Array;
+  /** `image/jpeg` or `image/png`. */
+  mime: string;
+  /** Its own size in pixels, as it shows (a phone photo turned by its EXIF note is already the right way up). */
+  width: number;
+  height: number;
+}
+
+/** Which picture shows on which frames of a picture layer. A shot with no `length` holds until the next one starts. */
+export interface PictureShot {
+  /** An id in `Doc.pictures`. */
+  picture: Id;
+  /** The first frame it shows on. */
+  start: number;
+  /** How many frames it shows for (missing = until the next shot, or the end). */
+  length?: number;
+}
+
+/**
+ * What a reference layer shows and where it sits. One placement for the layer (a rotoscoped clip stays put from frame to
+ * frame); `shots` says which picture is on which frame. Drawn in the layer's place in the stack, under its fade.
+ */
+export interface LayerPicture {
+  /** The middle of the picture, in stage pixels. */
+  x: number;
+  y: number;
+  /** Stage pixels per picture pixel: 1 shows it at its own size. */
+  scale: number;
+  /** Turned this many degrees clockwise about its middle (missing = 0). */
+  turn?: number;
+  /** In order of `start`. */
+  shots: PictureShot[];
+}
+
 export interface AudioClip {
   id: Id;
   name: string;

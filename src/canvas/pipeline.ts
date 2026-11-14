@@ -20,6 +20,7 @@ import type { Live } from './controller';
 import { drawLivePixels } from './livePixels';
 import type { Rect } from './view';
 import { paintComposited } from '../effects/stage';
+import { paintLayerPicture } from '../reference/paint';
 import { EffectCache } from '../effects/composite';
 import { budgetPixels } from '../gpu/settings';
 import { needsCompositor } from '../effects/model';
@@ -405,6 +406,8 @@ export class FramePainter {
     if (composited) settled = paintComposited(this, g, p, cacheable) && settled;
     else for (const layer of doc.layers) {
       if (!layer.visible) continue;
+      // A reference picture sits in the layer's place in the stack. Only this canvas draws it; exports never do.
+      if (layer.picture) this.paintPicture(g, p, layer);
       const lv = p.live && p.live.layerId === layer.id ? p.live : null;
       if (layer.kind === 'camera') continue;
       const pixelSize = layer.kind === 'vector' ? 1 : layer.pixelSize;
@@ -472,6 +475,17 @@ export class FramePainter {
     }
     g.restore();
     return settled;
+  }
+
+  /** A reference layer's picture, placed on the stage (and carried by the camera like the layer's drawing would be). */
+  private paintPicture(g: CanvasRenderingContext2D, p: FrameParams, layer: Layer): void {
+    const { doc, rect } = p;
+    g.save();
+    g.setTransform(rect.w / doc.width, 0, 0, rect.h / doc.height, rect.x, rect.y);
+    const cam = p.camera ? layerCameraMatrix(doc, layer, p.camera) : undefined;
+    if (cam) g.transform(cam[0], cam[1], cam[2], cam[3], cam[4], cam[5]);
+    paintLayerPicture(g, doc, layer, p.frame);
+    g.restore();
   }
 
   /**

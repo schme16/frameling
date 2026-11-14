@@ -1032,7 +1032,7 @@ own `debug.ts`, which put test hooks on `window`. None of it is in the normal st
 | `__frameling` | `src/renderer/debug.ts` | `store`, `run(commandId)`, `template(id)`, `prefs`, `commands()`, `panels()`, `tools()`, `showPanel`, `quests`, `quill`, `toast`, `recovery`, `overlays`, `rightStyle`, `themes()`, `anim` (grids, light table, tween offer), `tiles`, and more. |
 | `__framelingExport` | `src/export/debug.ts` | Drives exports for `e2e/export.cjs` and `e2e/artboards.cjs`. |
 | `__framelingIo` | `src/io/debug.ts` | Open a path, file helpers. |
-| `__framelingEffects`, `__framelingTemplates`, `__framelingPlugins`, `__framelingArtboards`, `__framelingAudio` | each area's `debug.ts` or `index.ts` | Area hooks for its harness and help shots. |
+| `__framelingReference`, `__framelingEffects`, `__framelingTemplates`, `__framelingPlugins`, `__framelingArtboards`, `__framelingAudio` | each area's `debug.ts` or `index.ts` | Area hooks for its harness and help shots. |
 | `__framelingCameraLook`, `__framelingRulerLook`, `__framelingGradientLook`, `__framelingHandleLook` | `src/camera/canvas.ts`, `src/canvas/Rulers.tsx`, `src/canvas/panels/GradientEditor.tsx`, `src/tools/point-handles.ts` | Swap a look for A/B shots. |
 | `__framelingPerf` | `src/canvas/perf.ts` | Timings, only with `?perf`. |
 
@@ -1180,3 +1180,16 @@ SHOT_SHOW=1 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/docs/he
 
 The page hooks they use are `__framelingImport.sequence / zip / svg / layered` (under `?debug`, src/import/index.ts).
 
+
+## Reference and video looks: scripts/docs/ab-reference
+
+A photo placed behind a drawing and traced, a clip of moving, sizing, turning and fading it with real mouse drags (they go through the
+overlay's handles, so the clip also proves a drag on them doesn't draw underneath), the video window, and a clip of a video's frames landing on a
+reference layer and playing (brand/ab/reference/). The photo is drawn in the page and `scripts/docs/help/assets/reference-walk.mp4` (a ball
+bouncing, made with ffmpeg) is the video; it is decoded by WebCodecs inside Electron, so the clip also proves the decoder path. Through help-media.cjs, in xvfb:
+
+```bash
+SHOT_SHOW=1 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/docs/help-media.cjs --entries scripts/docs/ab-reference --out brand/ab/reference
+```
+
+The page hooks are `__framelingReference.add / place` (under `?debug`, src/reference/index.ts) and `__framelingImport.video` (src/import/index.ts).

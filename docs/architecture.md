@@ -445,6 +445,7 @@ API and threat model are in `docs/plugins.md`; the manifest is in `docs/format.m
 
 ## Other feature folders
 
+- `src/reference/`: reference pictures (a JPG or PNG on a reference layer, to trace over): which picture shows on which frame and where it sits (`model.ts`, pure), drawing it for the editing canvas only (`paint.ts`, so exports never see it), adding and moving it (`ops.ts`), the handles and the bar (`Placement.tsx`), the drop and the commands. Its file part is `src/io/pictures-file.ts`. `src/import/video/` opens a video as frames to trace over (mediabunny's decoder, a video element as the fallback).
 - `src/audio/`: sound clips on the timeline, decode, waveforms, playback that follows the playhead, offline mix.
 - `src/lipsync/`: guesses mouth shapes from sound (loudness and spectrum, no AI) and keys a mouth symbol.
 - `src/flow/`: the clip flow graph and its panel.

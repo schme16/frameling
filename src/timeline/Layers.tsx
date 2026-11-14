@@ -1,3 +1,4 @@
+import { setPlacing } from '../reference/state';
 import { memo, useMemo, useState } from 'react';
 import { Explainer } from '../ui/explain/ExplainIcon';
 import type { Id, Layer } from '../core/format';
@@ -106,6 +107,7 @@ export function layerMenu(layer: Layer, onRename: () => void): MenuItem[] {
     { separator: true },
     { label: layer.visible ? 'Hide layer' : 'Show layer', onClick: () => void ops.setLayerVisible(layer.id, !layer.visible) },
     { label: layer.locked ? 'Unlock layer' : 'Lock layer (protect it from changes)', onClick: () => void ops.setLayerLocked(layer.id, !layer.locked) },
+    ...(layer.picture ? [{ label: 'Move, size and turn the picture', onClick: () => setPlacing(layer.id) } as MenuItem] : []),
     { label: layer.reference ? 'Export this layer again' : 'Reference layer (leave out of exports)', onClick: () => void ops.setLayerReference(layer.id, !layer.reference) },
     { label: isSolo(store().get().doc, layer.id) ? 'Show the other layers again' : 'Show only this layer (solo)', onClick: () => toggleSolo(layer.id) },
     { separator: true },
@@ -200,7 +202,7 @@ const LayerRow = memo(function LayerRow({ layer, h, detailed, tracks, open, inFo
               <Icon name="bone" size={10} />
             </small>
           )}
-          {layer.reference && <small className="tl-ref-tag tl-glyph" data-glyph="ref" aria-hidden="true" title="Reference layer: you see it while drawing, exports leave it out" />}
+          {layer.reference && <small className="tl-ref-tag tl-glyph" data-glyph="ref" aria-hidden="true" title={layer.picture ? 'Reference picture: you see it while drawing, exports leave it out' : 'Reference layer: you see it while drawing, exports leave it out'} />}
         </>
       }
       meta={
