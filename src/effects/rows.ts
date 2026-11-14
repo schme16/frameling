@@ -6,6 +6,7 @@ import { useMemo, useSyncExternalStore } from 'react';
 import type { Doc, Id, Layer, LayerFolder } from '../core/format';
 import { layerTree, nodeLayers, type TreeNode } from '../core/folders';
 import { useStore } from '../core/store';
+import { onFreshDrawing } from '../core/fresh';
 
 /** `depth` is how many folders it sits in (0 on the stage), for the indent. */
 export type TimelineRow =
@@ -48,6 +49,13 @@ const listeners = new Set<() => void>();
 export function collapsedFolders(): ReadonlySet<Id> {
   return shut;
 }
+
+// A new drawing has its folders open.
+onFreshDrawing(() => {
+  if (!shut.size) return;
+  shut = new Set();
+  listeners.forEach((f) => f());
+});
 
 export function toggleFolderCollapsed(id: Id, to?: boolean): void {
   const next = new Set(shut);

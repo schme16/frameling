@@ -1,6 +1,6 @@
 // Saving keeps each vector drawing's text (UTF-8) between saves. The file must come out exactly as if the whole
 // document had been written in one go, whether the drawings were seen before or not.
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { strFromU8, unzipSync } from 'fflate';
 import { produce } from 'immer';
 import { newDoc, newPixelDrawing, newPixelLayer, newTilemapDrawing, newVectorDrawing } from '../../src/core/doc';
@@ -64,6 +64,21 @@ function reference(doc: Doc, bytesOf: Uint8Array): string {
 const docJson = (bytes: Uint8Array) => strFromU8(unzipSync(bytes)['doc.json']);
 const NOW = new Date('2026-01-01T00:00:00Z');
 const REUSE = { reuse: true };
+
+describe('the time a save is stamped with', () => {
+  afterEach(() => void vi.useRealTimers());
+
+  it('is the time it was given, so two saves are the same bytes even when the clock moves between them', async () => {
+    const doc = sample(3);
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-06-01T10:00:00.900Z'));
+    const first = saveFile(doc, 't', NOW, REUSE);
+    vi.setSystemTime(new Date('2026-06-01T10:00:03.100Z'));
+    expect(saveFile(doc, 't', NOW, REUSE)).toEqual(first);
+    vi.useRealTimers();
+    expect(await saveFileAsync(doc, 't', NOW, REUSE)).toEqual(first);
+  });
+});
 
 describe('saving with kept drawing text', () => {
   it('writes doc.json exactly as one whole stringify would, first time and again', () => {

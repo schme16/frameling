@@ -9,6 +9,7 @@ import { setTl } from '../timeline/state';
 import { onPlayPass } from '../timeline/playback';
 import { holdFrame, entryFrame } from '../core/clipPlay';
 import { toast } from '../ui/toast';
+import { onFreshDrawing } from '../core/fresh';
 
 export function connectClips(from: Id, to: Id): Id | undefined {
   const doc = store().get().doc;
@@ -115,3 +116,8 @@ export function stopTrying(): void {
   trying = null;
   emit();
 }
+
+// A different drawing ends a flow being tried.
+onFreshDrawing(() => {
+  if (trying) stopTrying();
+});

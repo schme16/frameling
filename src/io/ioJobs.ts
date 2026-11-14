@@ -9,7 +9,7 @@ import { decodePng, type RawImage } from './png';
 /** The most one entry of a file may inflate to (a zip bomb stops here). */
 export const MAX_UNZIPPED = 1024 * 1024 * 1024;
 
-export type IoRequest = { id: number; kind: 'zip'; files: Zippable; level: number } | { id: number; kind: 'png'; bytes: Uint8Array } | { id: number; kind: 'inflate'; bytes: Uint8Array };
+export type IoRequest = { id: number; kind: 'zip'; files: Zippable; level: number; mtime?: number } | { id: number; kind: 'png'; bytes: Uint8Array } | { id: number; kind: 'inflate'; bytes: Uint8Array };
 export type IoReply =
   | { id: number; ok: true; zip: Uint8Array }
   | { id: number; ok: true; image: RawImage }
@@ -21,7 +21,7 @@ export function runJob(req: IoRequest): { reply: IoReply; transfer: ArrayBuffer[
   try {
     if (req.kind === 'inflate') throw new Error('inflate waits on the platform: use runJobAsync');
     if (req.kind === 'zip') {
-      const zip = zipSync(req.files, { level: req.level as 6 });
+      const zip = zipSync(req.files, { level: req.level as 6, mtime: req.mtime });
       return { reply: { id: req.id, ok: true, zip }, transfer: [zip.buffer as ArrayBuffer] };
     }
     const image = decodePng(req.bytes);

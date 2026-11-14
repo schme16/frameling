@@ -28,11 +28,11 @@ export function setIoPool(p: WorkerPool | null | undefined): void {
  * except those in `give`, whose buffers are handed over (they are empty here afterwards, so a caller that gets null
  * must make its files again).
  */
-export async function zipInWorker(files: Zippable, level: number, give: Uint8Array[] = []): Promise<Uint8Array | null> {
+export async function zipInWorker(files: Zippable, level: number, give: Uint8Array[] = [], mtime?: number): Promise<Uint8Array | null> {
   const p = getPool();
   if (!p) return null;
   try {
-    const r = await p.run<IoReply>({ kind: 'zip', files, level }, give.map((g) => g.buffer as ArrayBuffer));
+    const r = await p.run<IoReply>({ kind: 'zip', files, level, mtime }, give.map((g) => g.buffer as ArrayBuffer));
     return r.ok && 'zip' in r ? r.zip : null;
   } catch {
     return null;

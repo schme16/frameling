@@ -4,6 +4,7 @@
  */
 import { useSyncExternalStore } from 'react';
 import type { Id } from '../core/format';
+import { onFreshDrawing } from '../core/fresh';
 
 export interface TlState {
   /** Width of one frame cell in screen pixels. */
@@ -71,3 +72,5 @@ export function subscribeTl(fn: () => void): () => void {
 export function useTl<T>(selector: (s: TlState) => T): T {
   return useSyncExternalStore(subscribeTl, () => selector(state));
 }
+
+onFreshDrawing(resetTl);

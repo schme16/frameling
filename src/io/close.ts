@@ -1,9 +1,9 @@
 // Close drawing: puts the open drawing away and brings back the start screen, with everything as a new window has it.
 import { newDoc } from '../core/doc';
 import { store } from '../core/store';
-import { resetTl } from '../timeline/state';
 import { openSheet } from '../ui/overlays';
 import { desktop } from './desktop';
+import { resetDrawingState } from './fresh';
 import { askAboutUnsavedChanges, clearAutosaveCopy, forgetAutosaved } from './document';
 
 /**
@@ -17,7 +17,8 @@ export async function closeDrawing(): Promise<boolean> {
   if (path) void desktop()?.recent.add(path);
   // load() gives a new window's history, selection, playhead, zoom, onion skin and file; the rest lives outside the store.
   store().load(newDoc());
-  resetTl();
+  // The drawing-bound state outside the store (timeline, bone, sound...) is reset by the load itself; this is for a store nothing watches.
+  resetDrawingState();
   forgetAutosaved();
   await clearAutosaveCopy();
   openSheet('welcome');

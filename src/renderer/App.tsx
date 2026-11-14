@@ -16,6 +16,7 @@ import { watchFirstDrawing } from '../ui/firstDrawing';
 import { startScreenWatch } from '../ui/screenSize';
 import { startCrashWatch } from '../beta/crashAsk';
 import { CrashOffer } from '../beta/CrashOffer';
+import { installDrawingReset } from '../io/fresh';
 import { installSheetCloser, openSheet, overlays, type Overlays } from '../ui/overlays';
 import { applyPrefs, getPrefs } from '../ui/prefs';
 import { ChoiceDialog } from '../ui/ChoiceDialog';
@@ -58,7 +59,7 @@ export function App() {
   });
 
   useEffect(() => {
-    const off = [installKeyboard(), installRovingKeys(), trackHover(), installSheetCloser(), watchFirstDrawing()];
+    const off = [installKeyboard(), installRovingKeys(), trackHover(), installSheetCloser(), installDrawingReset(), watchFirstDrawing()];
     // The first time, Quill's hello comes instead of the welcome sheet.
     if (!welcomed && !maybeOnboard() && getPrefs().showWelcome) openSheet('welcome');
     welcomed = true;

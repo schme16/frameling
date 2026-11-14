@@ -41,7 +41,7 @@ export const SETTING_ROWS: PrefRow[] = [
   row('general', 'Fade tile copies', 'In tile mode, fade the copies round the tile you are drawing.', ['tile preview', 'seamless', 'tiling', 'repeat mode', 'pattern preview', 'offset', 'wrap around', 'tiled mode']),
   row('general', 'Thicker pixel outlines', 'Pixel shapes get an outline thicker than one pixel.', ['stroke width', 'line width', 'outline', 'border thickness', 'line thickness', 'pixel line', 'stroke']),
   row('general', 'Outline thickness', 'How many pixels thick the outline is.', ['stroke width', 'line width', 'border size', 'stroke size', 'outline width', 'pixel stroke']),
-  row('general', 'Your settings', 'Keep a copy of everything you have set, or put one back on another computer.', ['backup', 'back up', 'restore', 'export settings', 'import settings', 'sync', 'settings file', 'transfer', 'new computer', 'reset', 'autosave', 'save settings', 'preferences file']),
+  row('general', 'Your settings', 'Backup keeps a copy of everything you have set; Restore puts one back, on this computer or another.', ['backup', 'back up', 'restore', 'export settings', 'import settings', 'sync', 'settings file', 'transfer', 'new computer', 'reset', 'autosave', 'save settings', 'preferences file']),
 
   // Themes
   row('themes', 'Your two themes', 'The theme you use in dark mode and the one for light mode.', ['dark theme', 'light theme', 'day theme', 'night theme', 'colour scheme', 'skin', 'appearance'], { find: 'Your two themes' }),
