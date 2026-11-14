@@ -47,18 +47,21 @@ Want to share your work as a video, a GIF or pictures? That's **Export**, a diff
 help:saving-and-opening help:version-history`,
   restart: `Some things only change when Frameling starts again: the **Hardware drawing** switch, measuring plugins' memory, a new version that has just been put in. Wherever Frameling says that, a **Restart now** button does the whole job.
 
-**What happens:**
-- If you have unsaved work, Frameling asks first, the same question as closing: **Save**, **Don't save** or **Cancel**. **Cancel** stops the restart and nothing is lost.
-- It closes, opens again by itself, and opens the drawing you had, on the same frame, with the window where you left it.
+**What happens:** Frameling closes and opens again by itself, on the same drawing, the same frame and layer, the same zoom, with the window where you left it. If you have unsaved changes, they come across too. It all looks as if nothing happened: the drawing is still marked as unsaved, so closing it later still asks, and **Save** still saves.
+
+**It never asks about saving,** because nothing is at risk. Your unsaved work is set aside first, the same safety copy [Autosave](help:autosave) keeps, and Frameling opens that.
+
+**The one thing that doesn't come across is Undo.** The steps you could undo live in memory, so after a restart Undo starts fresh. The first time you restart with some steps to undo, Frameling tells you and asks once; it remembers your answer (change it in **Preferences > Behaviour**). Afterwards a short message says Undo started fresh.
 
 **Any time:** search the command palette (**Ctrl+K**) for **Restart Frameling**.
 
-**If it can't:** a copy that can't find its own file to open again says so, and stays open so your drawing is safe. Close it and start it again yourself; the change is waiting.
+**If it can't:**
+- A drawing too big to set aside (hundreds of megabytes), or no room to write the copy: Frameling says so, then asks the usual question first (**Save**, **Don't save** or **Cancel**) and comes back to the saved drawing.
+- A copy that can't find its own file to open again says so and stays open, so your drawing is safe. Close it and start it again yourself; the change is waiting.
 
 **Good to know:**
-- **Don't save** means what it says: you come back to the drawing as it was last saved (a copy of the unsaved work still waits a week in **Recover unsaved work**).
-- A drawing you have never saved is saved first if you press **Save**, so it can come back.
-- After a Windows installer update, Frameling only closes so the installer can finish, and says so.
+- A drawing you have never saved comes back as **Untitled**, with its changes, ready for **Save**.
+- After a Windows installer update, Frameling only closes so the installer can finish, so it asks about unsaved work like any close.
 
 help:updates help:performance help:autosave`,
   autosave: `Every minute, if you have unsaved changes, Frameling tucks a copy of your work away in its own private folder.

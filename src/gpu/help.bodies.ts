@@ -17,7 +17,7 @@ These are what the system reports, not a speed test. A card doing the drawing is
 
 ## What you can change
 
-- **Hardware drawing.** Lets the card do the drawing (the *GPU*, or *hardware acceleration*). Turn it off if the picture flickers or the window won't open. It needs a restart: the page says so before you press anything, then offers **Restart now**, which asks about unsaved work first, then opens Frameling again on the same drawing (see [Restarting Frameling](help:restart)).
+- **Hardware drawing.** Lets the card do the drawing (the *GPU*, or *hardware acceleration*). Turn it off if the picture flickers or the window won't open. It needs a restart: the page says so before you press anything, then offers **Restart now**, which opens Frameling again on the same drawing, unsaved changes and all (see [Restarting Frameling](help:restart)).
 - **Drawings kept ready.** Memory for keeping each layer's picture ready, so stepping, scrubbing and playing over drawings you have already seen doesn't redraw them. Bigger keeps more of a long or layered animation ready and costs that much memory. Small is 80 MB, Usual is 160 MB.
 - **Scrubbing the timeline.** **Quick** leaves the onion skins, ghosts and light table out while you drag along the timeline and puts them back when you let go.
 - **Playback frame rate limit.** The most frames a second playback shows. On a computer that can't keep up, a lower limit gives each frame more time, so playback drops frames and stays in time instead of running slow. Your animation's own frame rate isn't touched.

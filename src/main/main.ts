@@ -49,8 +49,16 @@ const restarter = createRestarter({
       portableFile: process.env.PORTABLE_EXECUTABLE_FILE ?? '',
       exists: (f) => fs.existsSync(f),
     }),
-  quit: () => app.quit(),
-  state: (view): RestartState => ({ at: Date.now(), file: docState.filePath, view, window: lastPlace }),
+  // Work that is safe in the autosave goes straight away (the close is let through unasked); otherwise it asks first.
+  quit: (ask) => {
+    if (!ask) closeApproved = true;
+    app.quit();
+  },
+  state: (view): RestartState => {
+    const w = win && !win.isDestroyed() && !win.isMinimized() ? win : null;
+    if (w) lastPlace = { ...w.getNormalBounds(), maximized: w.isMaximized(), fullScreen: w.isFullScreen() };
+    return { at: Date.now(), file: docState.filePath, view, window: lastPlace };
+  },
   writeState: (s) => writeFileAtomic(restartFile(), JSON.stringify(s)),
   relaunch: (execPath) => app.relaunch(execPath ? { execPath } : undefined),
 });
@@ -263,11 +271,11 @@ registerIpc({
   },
   closeQuestionShown: (id) => closeAsker.shown(id),
   closeQuestionAnswer: (id, answer) => closeAsker.answered(id, answer),
-  restart: (view) => restarter.request(view),
+  restart: (view, carry) => restarter.request(view, carry),
   takeRestore: () => {
     const r = restoring;
     restoring = null;
-    return r ? { file: r.file, view: r.view } : null;
+    return r ? { file: r.file, view: r.view, carry: r.carry === true } : null;
   },
   finishUpdate: () => app.quit(),
 });
@@ -297,19 +305,21 @@ app.on('open-url', (e, url) => {
 app.whenReady().then(() => {
   if (watchCrashes) startRun({ dir: dataDir(), pid: process.pid, version: app.getVersion(), platform: `${process.platform} ${process.arch}` });
   setupMenu();
+  // A restart left word of what to come back to: the drawing it had open wins over a file on the command line.
+  restoring = takeRestartState();
   // Whatever a crash left behind is put aside too, so it can still be found after the "Restore it?" question goes away.
+  // Not the work a restart carried across: that is about to be opened, not put aside.
   try {
-    keepAutosave();
+    if (!restoring?.carry) keepAutosave();
     pruneKept();
   } catch {
     // A tidy-up, nothing more.
   }
-  // A restart left word of what to come back to: the drawing it had open wins over a file on the command line.
-  restoring = takeRestartState();
   const f = restoring?.file && fs.existsSync(restoring.file) ? restoring.file : fileFromArgs(process.argv.slice(1));
   if (f) {
     grantFile(f);
-    launchFile = f;
+    // Carried work opens from the autosave (the page does that), not from the saved file.
+    if (!restoring?.carry) launchFile = f;
   }
   createWindow();
   app.on('activate', () => {

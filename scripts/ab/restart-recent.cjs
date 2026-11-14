@@ -3,7 +3,7 @@
 //
 //   npm run build
 //   RR_MODE=recent  RR_OUT=brand/ab/recent-pictures  xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/ab/restart-recent.cjs
-//   RR_MODE=restart RR_OUT=brand/ab/real-restart     xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/ab/restart-recent.cjs
+//   RR_MODE=restart (asks, then comes back saved) or RR_MODE=carry (unsaved work carried across, nothing asked) RR_OUT=brand/ab/real-restart     xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/ab/restart-recent.cjs
 //
 // RR_ROOT points at another checkout's built app (the build from before the change, for the "before" stills).
 // recent:  saves a few drawings from the templates, makes one look like an older file (no picture inside) and one go
@@ -130,7 +130,7 @@ async function recent() {
 // Times (epoch ms) of the moments in the clip, so the recording can be cut to them.
 const mark = (name) => fs.appendFileSync(path.join(work, 'marks.txt'), `${name} ${Date.now()}\n`);
 
-async function restart() {
+async function restart(carry = false) {
   const marker = path.join(work, 'came-back.json');
   const first = !fs.existsSync(path.join(work, 'started'));
   if (first) {
@@ -149,15 +149,58 @@ async function restart() {
     await ev(`__framelingIo.saveDocument()`);
     await sleep(1200);
     await ev(`__frameling.store().setUi({ frame: 5 })`);
-    // An unsaved change, so the usual question is asked.
-    await ev(`(() => { const s = __frameling.store(); s.setUi({ dirty: true }); })()`);
+    if (carry) {
+      // A real unsaved change: a thick brush stroke across the picture, with real mouse events.
+      await ev(`__frameling.run('tools.brush'); __frameling.store().setUi((u) => ({ color: '#e0245e', brush: { ...u.brush, size: 22 } })); true`);
+      await sleep(400);
+      const m = (type, x, y) => win.webContents.sendInputEvent({ type, x, y, button: 'left', clickCount: 1, ...(type === 'mouseMove' && down ? { modifiers: ['leftButtonDown'] } : {}) });
+      let down = false;
+      m('mouseMove', 330, 220);
+      await sleep(80);
+      m('mouseDown', 330, 220);
+      down = true;
+      for (let i = 1; i <= 24; i++) {
+        m('mouseMove', 330 + i * 12, 220 + Math.sin(i / 3) * 50);
+        await sleep(30);
+      }
+      m('mouseUp', 618, 220);
+      down = false;
+      await sleep(900);
+    } else {
+      // An unsaved change, so the usual question is asked.
+      await ev(`(() => { const s = __frameling.store(); s.setUi({ dirty: true }); })()`);
+    }
     await sleep(1500);
-    const before = { bounds: win.getBounds(), file: await ev(`__frameling.store().get().ui.filePath`), frame: await ev(`__frameling.store().get().ui.frame`) };
+    const before = { bounds: win.getBounds(), file: await ev(`__frameling.store().get().ui.filePath`), frame: await ev(`__frameling.store().get().ui.frame`), dirty: await ev(`__frameling.store().get().ui.dirty`), drawing: await ev(`JSON.stringify(__frameling.store().get().doc.drawings).length`) };
     fs.writeFileSync(path.join(work, 'before.json'), JSON.stringify(before));
     console.log('before', JSON.stringify(before));
     mark('asked');
     await ev(`__frameling.run('app.restart')`);
     await sleep(2200);
+    if (carry) {
+      if (process.env.RR_DEBUG_SHOT) fs.writeFileSync(process.env.RR_DEBUG_SHOT, (await win.webContents.capturePage()).toPNG());
+      // The first restart with Undo steps says so and asks once (a remembered choice); answer it like a person would.
+      await ev(`(() => { const b = [...document.querySelectorAll('button')].find((x) => /^ok$/i.test(x.textContent.trim())); if (!b) throw new Error('no OK button'); b.click(); return true; })()`);
+      fs.writeFileSync(path.join(work, 'question-shown'), 'false');
+      mark('clicked-restart');
+      // No question about saving: look for one while the window is still going (a window already gone means none).
+      let asked = false;
+      for (let i = 0; i < 6; i++) {
+        await sleep(150);
+        try {
+          if (win.isDestroyed()) break;
+          asked = asked || (await ev(`[...document.querySelectorAll('button')].some((x) => /^save$/i.test(x.textContent.trim()))`));
+        } catch {
+          break;
+        }
+      }
+      if (asked) fs.writeFileSync(path.join(work, 'question-shown'), 'true');
+      await sleep(15000);
+      console.log('still here: the restart did not happen');
+      process.exitCode = 1;
+      app.exit(1);
+      return;
+    }
     // Quill's question is on screen: press Save, like a person would.
     await ev(`(() => { const b = [...document.querySelectorAll('button')].find((x) => /^save$/i.test(x.textContent.trim())); if (!b) throw new Error('no Save button'); b.click(); return true; })()`);
     mark('clicked-save');
@@ -169,10 +212,12 @@ async function restart() {
   }
   mark('back');
   await sleep(2500);
-  const after = { bounds: win.getBounds(), file: await ev(`__frameling.store().get().ui.filePath`), frame: await ev(`__frameling.store().get().ui.frame`), dirty: await ev(`__frameling.store().get().ui.dirty`) };
+  const after = { bounds: win.getBounds(), file: await ev(`__frameling.store().get().ui.filePath`), frame: await ev(`__frameling.store().get().ui.frame`), dirty: await ev(`__frameling.store().get().ui.dirty`), drawing: await ev(`JSON.stringify(__frameling.store().get().doc.drawings).length`) };
   const before = JSON.parse(fs.readFileSync(path.join(work, 'before.json'), 'utf8'));
-  const same = before.file === after.file && before.frame === after.frame && before.bounds.x === after.bounds.x && before.bounds.y === after.bounds.y && before.bounds.width === after.bounds.width;
-  fs.writeFileSync(path.join(work, 'came-back.json'), JSON.stringify({ before, after, same }, null, 2));
+  const where = before.file === after.file && before.frame === after.frame && before.bounds.x === after.bounds.x && before.bounds.y === after.bounds.y && before.bounds.width === after.bounds.width;
+  // Carried work: the very same drawing, and still marked unsaved. Otherwise it was saved first, so it comes back saved.
+  const same = carry ? where && after.dirty === true && after.drawing === before.drawing && fs.readFileSync(path.join(work, 'question-shown'), 'utf8') === 'false' : where;
+  fs.writeFileSync(path.join(work, 'came-back.json'), JSON.stringify({ carry, questionShown: carry ? fs.readFileSync(path.join(work, 'question-shown'), 'utf8') === 'true' : true, before, after, same }, null, 2));
   console.log('after', JSON.stringify(after), same ? 'SAME' : 'DIFFERENT');
   fs.mkdirSync(out, { recursive: true });
   fs.copyFileSync(path.join(work, 'marks.txt'), path.join(out, 'marks.txt'));
@@ -187,7 +232,7 @@ const setThemeOnce = async () => {
   await setTheme(process.env.RR_THEME || 'dark');
 };
 
-(mode === 'recent' ? recent : restart)().catch((e) => {
+(mode === 'recent' ? recent : () => restart(mode === 'carry'))().catch((e) => {
   console.error(e);
   app.exit(1);
 });
