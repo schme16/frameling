@@ -229,6 +229,39 @@ function rings(s: FillShape | PathShape): { pts: Pt[]; closed: boolean }[] {
   return r;
 }
 
+const outlinesCache = new WeakMap<Shape, { pts: Pt[]; closed: boolean }[]>();
+
+/**
+ * The lines a shape is drawn along, for things that cling to them (the magnetic select). Fills and paths give their
+ * rings, a brush stroke its outline, and anything else (a symbol, text) the box round it.
+ */
+export function shapeOutlines(s: Shape): { pts: Pt[]; closed: boolean }[] {
+  if (s.type === 'fill' || s.type === 'path') return rings(s);
+  let o = outlinesCache.get(s);
+  if (!o) {
+    if (s.type === 'stroke') {
+      const line = strokeOutline(s);
+      o = line.length > 1 ? [{ pts: line.map((p) => ({ x: p[0], y: p[1] })), closed: true }] : [{ pts: s.points.map((p) => ({ x: p.x, y: p.y })), closed: false }];
+    } else {
+      const b = shapeBounds(s);
+      o = [
+        {
+          pts: [
+            { x: b.x, y: b.y },
+            { x: b.x + b.w, y: b.y },
+            { x: b.x + b.w, y: b.y + b.h },
+            { x: b.x, y: b.y + b.h },
+          ],
+          closed: true,
+        },
+      ];
+    }
+    // An instance's box moves with its symbol, so it is worked out again each time.
+    if (s.type !== 'instance') outlinesCache.set(s, o);
+  }
+  return o;
+}
+
 /** The box a shape covers, line width included. */
 export function shapeBounds(s: Shape): Rect {
   // Not cached: the symbol behind an instance can change while the instance stays the same object.

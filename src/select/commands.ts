@@ -206,6 +206,15 @@ const commands: Command[] = [
     run: () => pickWith('lasso'),
   },
   {
+    id: 'select.magnetic',
+    label: 'Magnetic lasso',
+    category: 'Tools',
+    description: 'The Select tool, tracing roughly round something and clinging to its edge. Click to place a point, Backspace takes one back, Enter closes it.',
+    help: 'select-magnetic',
+    keywords: ['magnetic', 'magnet', 'edge', 'snap', 'cling', 'follow edge', 'smart select', 'intelligent scissors', 'cut out', 'trace', 'outline'],
+    run: () => pickWith('magnetic'),
+  },
+  {
     id: 'select.wand',
     label: 'Magic wand',
     category: 'Tools',

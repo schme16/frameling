@@ -17,15 +17,19 @@ export function lassoClosesAt(pts: Pt[], p: Pt, zoom: number): boolean {
   return pts.length >= 3 && Math.hypot(p.x - pts[0].x, p.y - pts[0].y) * zoom <= CLOSE_PX;
 }
 
-/** The lasso as a dashed line, closed back to the start, with a line to the pointer while it's left open. */
-export function drawLasso(g: CanvasRenderingContext2D, pts: Pt[], rubber: Pt | null, zoom: number, ink: string): void {
+/**
+ * The lasso as a dashed line, closed back to the start, with a line to the pointer while it's left open. The rubber
+ * can be several points (the magnetic lasso's stretch along an edge), and `clings` marks the edge point it holds.
+ */
+export function drawLasso(g: CanvasRenderingContext2D, pts: Pt[], rubber: Pt | Pt[] | null, zoom: number, ink: string, clings?: Pt | null): void {
   if (!pts.length) return;
   const px = 1 / zoom;
   g.save();
   g.beginPath();
   g.moveTo(pts[0].x, pts[0].y);
   for (let i = 1; i < pts.length; i++) g.lineTo(pts[i].x, pts[i].y);
-  if (rubber) g.lineTo(rubber.x, rubber.y);
+  if (Array.isArray(rubber)) for (const r of rubber) g.lineTo(r.x, r.y);
+  else if (rubber) g.lineTo(rubber.x, rubber.y);
   g.closePath();
   g.globalAlpha = 0.12;
   g.fillStyle = ink;
@@ -45,6 +49,17 @@ export function drawLasso(g: CanvasRenderingContext2D, pts: Pt[], rubber: Pt | n
     g.arc(pts[0].x, pts[0].y, 4 * px, 0, Math.PI * 2);
     g.fillStyle = 'white';
     g.fill();
+    g.stroke();
+  }
+  if (clings) {
+    // Where it has hold of an edge.
+    g.setLineDash([]);
+    g.beginPath();
+    g.arc(clings.x, clings.y, 3.5 * px, 0, Math.PI * 2);
+    g.fillStyle = ink;
+    g.fill();
+    g.lineWidth = 1.5 * px;
+    g.strokeStyle = 'white';
     g.stroke();
   }
   g.restore();

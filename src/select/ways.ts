@@ -2,13 +2,13 @@
  * The ways of picking, one tool each.
  *
  * It used to be one Select button with the way hidden inside it as a setting, so the toolbar showed a single icon
- * that changed shape depending on what you last chose, and nobody could tell there were four. Now each way is its
+ * that changed shape depending on what you last chose, and nobody could tell there were several. Now each way is its
  * own tool, the way the shapes are, and **the tool you picked is the way it picks**: there is no mode to keep in
  * step with the toolbar, because the toolbar is the mode.
  *
  * Vector layers have no magic wand (there are no pixels to match), so that one is pixel only.
  */
-export type SelectMode = 'box' | 'lasso' | 'polygon' | 'wand';
+export type SelectMode = 'box' | 'lasso' | 'polygon' | 'magnetic' | 'wand';
 
 export interface SelectWay {
   mode: SelectMode;
@@ -28,7 +28,8 @@ export const WAYS: SelectWay[] = [
   { mode: 'box', vector: 'select', pixel: 'pixel-select', label: 'Select', icon: 'select', key: 'v', at: 0, blurb: 'Drag a box round what you want (a marquee).' },
   { mode: 'lasso', vector: 'select-lasso', pixel: 'pixel-select-lasso', label: 'Lasso', icon: 'lasso', key: 'Shift+L', at: 1, blurb: 'Draw round what you want, freehand.' },
   { mode: 'polygon', vector: 'select-polygon', pixel: 'pixel-select-polygon', label: 'Polygon select', icon: 'polygon', key: 'Shift+G', at: 2, blurb: 'Click each corner, then the first one again (or Enter) to close it.' },
-  { mode: 'wand', vector: null, pixel: 'pixel-select-wand', label: 'Magic wand', icon: 'wand', key: 'w', at: 3, blurb: 'Click a colour to pick every pixel of it.' },
+  { mode: 'magnetic', vector: 'select-magnetic', pixel: 'pixel-select-magnetic', label: 'Magnetic lasso', icon: 'magnet', key: 'Shift+E', at: 3, blurb: 'Trace roughly round something and the outline clings to its edge. Click to place a point yourself, Enter to close.' },
+  { mode: 'wand', vector: null, pixel: 'pixel-select-wand', label: 'Magic wand', icon: 'wand', key: 'w', at: 4, blurb: 'Click a colour to pick every pixel of it.' },
 ];
 
 const BY_TOOL = new Map<string, SelectWay>();

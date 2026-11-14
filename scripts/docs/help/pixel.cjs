@@ -11,7 +11,9 @@ const GREEN = '#4f9a45';
 const DARK = '#1f4d3a';
 const LIGHT = '#a8e070';
 const WHITE = '#e8e3ee';
-const LEGEND = { K: INK, g: GREEN, d: DARK, l: LIGHT, W: WHITE };
+const SKY = '#cfeaff';
+const DIRT = '#8a6b4a';
+const LEGEND = { K: INK, g: GREEN, d: DARK, l: LIGHT, W: WHITE, s: SKY, e: DIRT };
 
 const W = 28;
 const H = 24;
@@ -505,6 +507,53 @@ module.exports = [
         { click: g.at(5, 24), after: 1200 },
         away,
         wait(900),
+        { rec: 'stop' },
+      ];
+    })(),
+  },
+  {
+    // The magnetic lasso: a rough trace round the slime, the outline clinging to its edge, then closing it.
+    name: 'select-magnetic',
+    steps: (() => {
+      const g = grid(28, 24, 12, false);
+      // The slime on a sky with a strip of ground, so picking it out means picking it from a background.
+      const rows = slimeRows().map((r, y) => [...r].map((c) => (c !== '.' ? c : y >= 22 ? 'e' : 's')).join(''));
+      // Where the pointer goes, in art pixels, a little outside the edge all the way round. A click lands at each.
+      const way = [[7.4, 4.4], [14, 4.3], [20.6, 4.4], [22.7, 6.3], [24.6, 8.4], [25.8, 11], [27.7, 14], [27.7, 19], [26.7, 20.6], [25.6, 22.5], [14, 22.5], [3.4, 22.5], [2.3, 20.7], [0.4, 19], [0.4, 14], [1.2, 11.8], [2.2, 9.6], [3.4, 8], [4.4, 6.9], [5.6, 5.8]];
+      const at = ([x, y]) => g.at(x - 0.5, y - 0.5);
+      const steps = [];
+      const hover = (a, b) => {
+        const n = Math.max(2, Math.round(Math.hypot(b[0] - a[0], b[1] - a[1]) / 0.6));
+        for (let i = 1; i <= n; i++) steps.push({ move: at([a[0] + ((b[0] - a[0]) * i) / n, a[1] + ((b[1] - a[1]) * i) / n]) }, wait(16));
+      };
+      way.forEach((p, i) => {
+        if (i) hover(way[i - 1], p);
+        else steps.push({ move: at(p) }, wait(300));
+        if (i % 2 === 0) steps.push({ click: at(p), after: 160 });
+      });
+      return [
+        ...pixelDoc(rows, ['p']),
+        setUi({ tool: 'pixel-select-magnetic' }),
+        ...properties,
+        center,
+        away,
+        wait(500),
+        { rec: '@', crop: [403, 47, 790, 444], every: 70 },
+        wait(900),
+        ...steps,
+        // Back to the start to close it.
+        ...(() => {
+          const out = [];
+          const last = way[way.length - 1];
+          const first = [7.4, 4.4];
+          const n = 6;
+          for (let i = 1; i <= n; i++) out.push({ move: at([last[0] + ((first[0] - last[0]) * i) / n, last[1] + ((first[1] - last[1]) * i) / n]) }, wait(40));
+          // The dot where it started is on the corner it clung to, so that is what gets clicked.
+          out.push({ click: [Math.round(g.ox + 8 * 12), Math.round(g.oy + 5 * 12)], after: 400 });
+          return out;
+        })(),
+        away,
+        wait(1800),
         { rec: 'stop' },
       ];
     })(),
