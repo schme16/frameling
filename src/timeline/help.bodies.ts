@@ -106,7 +106,7 @@ A **key** (keyframe) is a frame where you drew something new. A **hold** is how 
 | 3 frames | on threes | slow, chunky, stop-motion feel |
 | 4 frames | on fours | very slow or stylised moves |
 
-Press **Alt+1** to **Alt+4** to hold the current drawing for that many frames. The drawings after it move along to make room. The **Hold for** buttons in the timeline do the same (on a narrow timeline they fold into one **Hold** button with a menu).
+Press **Alt+1** to **Alt+4** to hold the current drawing for that many frames. The drawings after it move along to make room. The **Hold for** buttons in the timeline do the same (on a narrow timeline they fold into one **Hold for** button with a menu). It says **none** on a frame with no drawing.
 
 Example: click the first of three one-frame drawings and press **Alt+2**. It's held for two frames and the others slide along. Do the same to the rest and it plays on twos.
 
@@ -118,6 +118,8 @@ A new drawing stays on screen until your next one, so there are no blank gaps. S
 - **Copy this drawing to the next frame (D):** a copy to nudge into the next pose. If another drawing is already next, the later ones shift along. On an empty frame it copies the last drawing to that frame, so you can carry on.
 - **Clear this drawing:** wipes it clean but keeps the frame and its hold.
 - **Make these frames empty:** takes the drawing away completely.
+
+In the top bar these buttons show their words while there's room, and shrink to icons as the timeline narrows. Hover one for its tip.
 
 ## Adding and removing time
 
@@ -161,7 +163,7 @@ Good to know: opening a file never shortens it. Only an edit that leaves empty f
 Learn more: [Frames, keys and holds](help:timeline-frames), [The timeline](help:timeline).`,
   'timeline-onion': `Drawing a walk or a bounce is much easier when you can see where the last pose was. **Onion skin** (named after the thin paper animators traced through) shows the neighbouring frames as faint ghosts under your drawing.
 
-Press **Shift+O**, or click the onion in the timeline's top bar.
+Press **Shift+O**, or click **Onion skin** (the onion, when the bar is narrow) in the timeline's top bar.
 
 ## Settings
 
@@ -229,7 +231,7 @@ doing. Anything you change in one shows in the other at once.
 - The **...** button (or right-click) has the opacity slider, to make a whole layer see-through, plus move up and move down.
 - **Drag** a layer up or down to change what's in front.
 
-Along the top of the list: **Vector** and **Pixel** add a new layer above the one you're on, and the two small buttons duplicate (with all its drawings copied) or delete the layer. You always keep at least one layer, and Undo brings back a deleted one.
+Along the top of the list, **Vector** and **Pixel** sit under **New layer**: each is a button that adds a layer of that kind above the one you're on (they aren't a mode switch). The two small buttons duplicate (with all its drawings copied) or delete the layer. You always keep at least one layer, and Undo brings back a deleted one.
 
 Shortcuts: **Ctrl+Shift+N** adds a vector layer.`,
   'timeline-playing': `Press **Enter** (or the play button) to watch your animation, and again to stop.

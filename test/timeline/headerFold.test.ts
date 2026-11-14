@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FOLD_STEPS, chooseFold, foldedAt, foldSlack, headerChange, switchLabel } from '../../src/timeline/headerFold';
+import { FOLD_STEPS, LEVELS, WORD_STEPS, chooseFold, droppedAt, foldedAt, foldedAtLevel, foldSlack, headerChange, switchLabel } from '../../src/timeline/headerFold';
 
 const MAX = FOLD_STEPS.length;
 // Each fold level frees 40px, starting from 1000 needed.
@@ -13,6 +13,31 @@ describe('fold order', () => {
     expect(foldedAt(5)).not.toContain('hold');
     expect(foldedAt(MAX).at(-1)).toBe('zoom');
     expect(foldedAt(99)).toHaveLength(MAX);
+  });
+});
+
+describe('words before folding', () => {
+  it('drops the words first, Onion skin first and New drawing last, and folds nothing meanwhile', () => {
+    expect(WORD_STEPS).toEqual(['onion', 'frame', 'copy', 'new']);
+    expect(droppedAt(0)).toEqual([]);
+    expect(droppedAt(1)).toEqual(['onion']);
+    expect(droppedAt(3)).toEqual(['onion', 'frame', 'copy']);
+    expect(droppedAt(99)).toEqual([...WORD_STEPS]);
+    for (let l = 0; l <= WORD_STEPS.length; l++) expect(foldedAtLevel(l)).toEqual([]);
+  });
+  it('starts folding buttons only once every word is gone', () => {
+    expect(foldedAtLevel(WORD_STEPS.length + 1)).toEqual(['pingpong']);
+    expect(droppedAt(WORD_STEPS.length + 1)).toEqual([...WORD_STEPS]);
+    expect(foldedAtLevel(LEVELS)).toEqual([...FOLD_STEPS]);
+    expect(LEVELS).toBe(WORD_STEPS.length + FOLD_STEPS.length);
+  });
+  it('drops one word at a time as the width shrinks, and brings it back only with room to spare', () => {
+    // 30px per level, so level 0 needs 1000 and level 1 needs 970.
+    const w = (l: number) => 1000 - l * 30;
+    expect(chooseFold(0, LEVELS, w, 1000, foldSlack, true)).toBe(0);
+    expect(chooseFold(0, LEVELS, w, 975, foldSlack, true)).toBe(1);
+    expect(chooseFold(1, LEVELS, w, 1000, foldSlack, true)).toBe(1);
+    expect(chooseFold(1, LEVELS, w, 1000 + foldSlack, foldSlack, true)).toBe(0);
   });
 });
 

@@ -95,8 +95,8 @@ describe('the Layers panel', () => {
   it('has the add, duplicate and delete buttons, without repeating the panel name', () => {
     mount();
     const tools = host.querySelector('[role=toolbar][aria-label=Layers]')!;
-    expect(tools.querySelector('[aria-label="Add vector layer"]')).toBeTruthy();
-    expect(tools.querySelector('[aria-label="Add pixel layer"]')).toBeTruthy();
+    expect(tools.querySelector('[aria-label="New vector layer"]')).toBeTruthy();
+    expect(tools.querySelector('[aria-label="New pixel layer"]')).toBeTruthy();
     expect(tools.querySelector('[aria-label="Duplicate layer"]')).toBeTruthy();
     expect(tools.textContent).not.toContain('Layers');
   });

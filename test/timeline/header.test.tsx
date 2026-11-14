@@ -6,10 +6,11 @@
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { getCommand } from '../../src/core/registry';
 import { resetStore, store } from '../../src/core/store';
 import '../../src/renderer/features';
 import { Header } from '../../src/timeline/Header';
-import { FOLD_STEPS } from '../../src/timeline/headerFold';
+import { FOLD_STEPS, WORD_STEPS } from '../../src/timeline/headerFold';
 import { setTl } from '../../src/timeline/state';
 import { SEL } from '../../src/quests/library';
 import { forgetMoreAsk, resolveTarget } from '../../src/quests/target';
@@ -23,6 +24,12 @@ let host: HTMLElement;
 let sheet: HTMLStyleElement;
 let available = 5000;
 
+const ancestors = (el: Element, upTo: Element) => {
+  const out: Element[] = [];
+  for (let e = el.parentElement; e && e !== upTo; e = e.parentElement) out.push(e);
+  return out;
+};
+
 beforeAll(() => {
   (globalThis as { ResizeObserver?: unknown }).ResizeObserver = class {
     observe() {}
@@ -30,8 +37,10 @@ beforeAll(() => {
     disconnect() {}
   };
   Object.defineProperty(HTMLElement.prototype, 'clientWidth', { configurable: true, get: () => available });
-  HTMLElement.prototype.getBoundingClientRect = function () {
-    return { width: 40, height: 28, top: 0, left: 0, right: 40, bottom: 28, x: 0, y: 0, toJSON() {} } as DOMRect;
+  // Every item is 40px wide, and each word still showing inside a group adds 30px (so dropping a word frees room).
+  HTMLElement.prototype.getBoundingClientRect = function (this: HTMLElement) {
+    const words = [...this.querySelectorAll('[data-word]')].filter((w) => ![w, ...ancestors(w, this)].some((e) => getComputedStyle(e).display === 'none')).length;
+    return { width: 40 + 30 * words, height: 28, top: 0, left: 0, right: 40, bottom: 28, x: 0, y: 0, toJSON() {} } as DOMRect;
   };
 });
 beforeEach(() => {
@@ -40,7 +49,7 @@ beforeEach(() => {
   document.body.appendChild(host);
   sheet = document.createElement('style');
   // The same hiding rules the real stylesheet has for folded steps.
-  sheet.textContent = '.tl-overflow { display: none; }\n.tl-header[data-folded]:not([data-folded=""]) .tl-overflow { display: inline-flex; }\n' + FOLD_STEPS.map((s) => `.tl-header[data-folded~="${s}"] [data-step="${s}"] { display: none; }`).join('\n');
+  sheet.textContent = '.tl-overflow { display: none; }\n.tl-header[data-folded]:not([data-folded=""]) .tl-overflow { display: inline-flex; }\n' + FOLD_STEPS.map((s) => `.tl-header[data-folded~="${s}"] [data-step="${s}"] { display: none; }`).join('\n') + '\n' + WORD_STEPS.map((w) => `.tl-header[data-bare~="${w}"] [data-word="${w}"] { display: none; }`).join('\n');
   document.head.appendChild(sheet);
   root = createRoot(host);
   resetStore(docWith([[0, 2]], 24));
@@ -58,11 +67,81 @@ afterEach(() => {
 const mount = () => act(() => root.render(<Header />));
 const header = () => host.querySelector<HTMLElement>('.tl-header')!;
 const folded = () => (header().getAttribute('data-folded') ?? '').split(' ').filter(Boolean);
+const bare = () => (header().getAttribute('data-bare') ?? '').split(' ').filter(Boolean);
 const more = () => host.querySelector<HTMLElement>('.tl-overflow')!;
 function menu(): string[] {
   act(() => more().click());
   return [...document.querySelectorAll('.tl-menu-item')].map((b) => b.textContent ?? '');
 }
+
+describe('words beside the icons', () => {
+  const wordsShowing = () => [...host.querySelectorAll<HTMLElement>('[data-word]')].filter((w) => showing(w)).map((w) => w.textContent);
+  it('shows New drawing, Copy, Add a frame and Onion skin when there is room, and nothing is folded', () => {
+    mount();
+    expect(bare()).toEqual([]);
+    expect(wordsShowing()).toEqual(['New drawing', 'Copy', 'Add a frame', 'Onion skin']);
+    expect(folded()).toEqual([]);
+  });
+
+  it('drops the words one at a time, Onion skin first and New drawing last, before folding any button', () => {
+    // Every group is 40px plus 30 for each word, so each word dropped frees 30px. Find the width where one word has gone.
+    const seen: string[][] = [];
+    for (let w = 2000; w >= 100; w -= 10) {
+      available = w;
+      act(() => root.unmount());
+      root = createRoot(host);
+      mount();
+      if (!folded().length) seen.push(bare());
+      else break;
+    }
+    expect(seen[0]).toEqual([]);
+    expect(seen.map((b) => b.length)).toContain(1);
+    expect(seen.find((b) => b.length === 1)).toEqual(['onion']);
+    expect(seen.find((b) => b.length === 2)).toEqual(['onion', 'frame']);
+    expect(seen.find((b) => b.length === 3)).toEqual(['onion', 'frame', 'copy']);
+  });
+
+  it('keeps every button reachable with no words: the icons stay, with names for speech and tips', () => {
+    available = 50;
+    mount();
+    expect(bare()).toEqual([...WORD_STEPS]);
+    for (const id of ['timeline.newKey', 'timeline.duplicateKey', 'timeline.insertFrame', 'timeline.toggleOnion']) {
+      const b = host.querySelector(`[data-testid="${id}"]`)!;
+      expect(b.getAttribute('aria-label'), id).toBeTruthy();
+      expect(b.getAttribute('title'), id).toBeTruthy();
+    }
+  });
+
+  it('puts the visible words in the name speech users hear', () => {
+    mount();
+    expect(host.querySelector('[data-testid="timeline.insertFrame"]')!.getAttribute('aria-label')).toMatch(/add a frame/i);
+    expect(host.querySelector('[data-testid="timeline.toggleOnion"]')!.getAttribute('aria-label')).toMatch(/onion skin/i);
+  });
+
+  it('is named the same in the palette as on the button', () => {
+    const label = (id: string) => getCommand(id)!.label;
+    expect(label('timeline.newKey')).toMatch(/^New drawing/);
+    expect(label('timeline.duplicateKey')).toMatch(/^Copy/);
+    expect(label('timeline.insertFrame')).toMatch(/^Add a frame/);
+    expect(label('timeline.toggleOnion')).toMatch(/onion skin/i);
+  });
+});
+
+describe('the hold box when nothing is drawn', () => {
+  const holdButton = () => host.querySelector<HTMLElement>('.tl-hold-menu')!;
+  it('says the hold of the drawing under the playhead', () => {
+    mount();
+    expect(holdButton().textContent).toMatch(/Hold for\s*\d/);
+    expect(holdButton().textContent).not.toContain('-');
+  });
+  it('says none, not a bare dash, when the frame has no drawing', () => {
+    resetStore(docWith([[0, 2]], 24));
+    act(() => store().setUi({ frame: 10 }));
+    mount();
+    expect(holdButton().textContent).toContain('Hold for none');
+    expect(holdButton().getAttribute('title')).toMatch(/no drawing/i);
+  });
+});
 
 describe('timeline header folding', () => {
   it('folds nothing when there is room', () => {

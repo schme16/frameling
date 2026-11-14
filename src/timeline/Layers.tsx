@@ -28,28 +28,40 @@ export function LayerTools({ inPanel = false }: { inPanel?: boolean } = {}) {
   const count = useStore((s) => s.doc.layers.length);
   // Frames on boards: these layers are on every frame.
   const everyFrame = useStore((s) => !!s.doc.sharedLayers && (s.doc.artboards?.length ?? 0) > 1);
-  return (
-    <div className={`tl-layer-tools${inPanel ? ' in-panel' : ''}`} role="toolbar" aria-label="Layers">
-      {inPanel ? null : (
-        <span className="tl-layer-tools-title">
-          Layers
-          {everyFrame ? <span className="tl-shared-chip" title="One set of layers for the whole drawing: add, hide or reorder one here and every frame has it. Each frame keeps its own pixels.">on every frame</span> : null}
-        </span>
-      )}
-      <button type="button" className="tl-btn" title={tip('layers.addVector', 'Add a vector layer: smooth drawing you can resize and edit')} aria-label="Add vector layer" onClick={() => runCmd('layers.addVector')}>
-        <Icon name="vector" size={15} />
-        <span className="tl-btn-text">Vector</span>
-      </button>
-      <button type="button" className="tl-btn" title={tip('layers.addPixel', 'Add a pixel layer: pixel art, one square at a time')} aria-label="Add pixel layer" onClick={() => runCmd('layers.addPixel')}>
-        <Icon name="pixel" size={15} />
-        <span className="tl-btn-text">Pixel</span>
-      </button>
+  const actions = (
+    <span className="tl-layer-actions" role="group" aria-label="This layer">
       <button type="button" className="tl-btn" title={tip('layers.duplicate', 'Duplicate this layer with all its drawings')} aria-label="Duplicate layer" onClick={() => runCmd('layers.duplicate')}>
         <Icon name="duplicate" size={15} />
       </button>
       <button type="button" className="tl-btn" title={count > 1 ? tip('layers.delete', 'Delete this layer') : 'You need at least one layer'} aria-label="Delete layer" disabled={count < 2} onClick={() => runCmd('layers.delete')}>
         <Icon name="trash" size={15} />
       </button>
+    </span>
+  );
+  return (
+    <div className={`tl-layer-tools${inPanel ? ' in-panel' : ''}`} role="toolbar" aria-label="Layers">
+      {inPanel ? null : (
+        <span className="tl-layer-tools-title">
+          <span>
+            Layers
+            {everyFrame ? <span className="tl-shared-chip" title="One set of layers for the whole drawing: add, hide or reorder one here and every frame has it. Each frame keeps its own pixels.">on every frame</span> : null}
+          </span>
+          {actions}
+        </span>
+      )}
+      {/* The two buttons add a layer of that kind (they are not a mode switch), so the row says so. */}
+      <span className="tl-layer-new" role="group" aria-label="New layer">
+        <span className="tl-layer-new-label" aria-hidden="true">New layer</span>
+        <button type="button" className="tl-btn" title={tip('layers.addVector', 'New vector layer: smooth drawing you can resize and edit')} aria-label="New vector layer" onClick={() => runCmd('layers.addVector')}>
+          <Icon name="vector" size={15} />
+          <span className="tl-btn-text">Vector</span>
+        </button>
+        <button type="button" className="tl-btn" title={tip('layers.addPixel', 'New pixel layer: pixel art, one square at a time')} aria-label="New pixel layer" onClick={() => runCmd('layers.addPixel')}>
+          <Icon name="pixel" size={15} />
+          <span className="tl-btn-text">Pixel</span>
+        </button>
+      </span>
+      {inPanel ? actions : null}
       {inPanel && everyFrame ? (
         <p className="tl-shared-note">
           These layers are on <b>every frame</b>. Each frame keeps its own pixels on them.

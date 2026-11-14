@@ -185,6 +185,11 @@
 .tl-hold-item.is-on span {
   color: inherit;
 }
+.tl-hold-menu strong {
+  display: inline-block;
+  min-width: 4ch;
+  text-align: left;
+}
 .tl-hold-pop {
   width: 200px;
 }
@@ -195,9 +200,6 @@
   .tl-hold-menu {
     display: inline-flex;
   }
-  .tl-btn-frame .tl-btn-text {
-    display: none;
-  }
   .tl-zoom input {
     width: 64px;
   }
@@ -207,6 +209,7 @@
   .tl-header {
     column-gap: 6px;
   }
+  /* The "for" in "Hold for 1" goes when the bar is tight. */
   .tl-long {
     display: none;
   }
@@ -270,8 +273,29 @@
 }
 .tl-layer-tools-title {
   flex: 0 0 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
   color: var(--muted);
   font-weight: 700;
+}
+.tl-layer-new,
+.tl-layer-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.tl-layer-new-label {
+  margin-right: 2px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+/* In the panel the duplicate and delete buttons follow the two add buttons, and wrap under them when the panel is narrow. */
+.in-panel .tl-layer-actions {
+  margin-left: 4px;
 }
 .tl-shared-chip {
   margin-left: 6px;
@@ -1060,12 +1084,6 @@
   }
 }
 @container tl (max-width: 960px) {
-  .tl-header .tl-group .tl-btn-text {
-    display: none;
-  }
-  .tl-header .tl-hold-menu .tl-btn-text {
-    display: inline;
-  }
   .tl-zoom input {
     width: 40px;
   }
@@ -1109,6 +1127,11 @@
 .tl-header[data-folded]:not([data-folded='']) .tl-overflow {
   display: inline-flex;
 }
+/* The words beside icons go first (Header.tsx lists the dropped ones in data-bare), then buttons fold into "more". */
+.tl-header[data-bare~='onion'] [data-word='onion'],
+.tl-header[data-bare~='frame'] [data-word='frame'],
+.tl-header[data-bare~='copy'] [data-word='copy'],
+.tl-header[data-bare~='new'] [data-word='new'],
 .tl-header[data-folded~='pingpong'] [data-step='pingpong'],
 .tl-header[data-folded~='sound'] [data-step='sound'],
 .tl-header[data-folded~='clean'] [data-step='clean'],

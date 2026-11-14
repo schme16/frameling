@@ -4,8 +4,24 @@
 export const FOLD_STEPS = ['pingpong', 'sound', 'clean', 'fit', 'edit', 'hold', 'onion', 'zoom'] as const;
 export type FoldStep = (typeof FOLD_STEPS)[number];
 
+/**
+ * The words beside icons, in the order they drop as the header gets narrower (before anything folds away): the least
+ * needed first, so "New drawing" keeps its word longest.
+ */
+export const WORD_STEPS = ['onion', 'frame', 'copy', 'new'] as const;
+export type WordStep = (typeof WORD_STEPS)[number];
+
+/** The words dropped at a level: levels 0 to 3 drop one more word each, and the folding steps come after them. */
+export const droppedAt = (level: number): WordStep[] => WORD_STEPS.slice(0, Math.max(0, Math.min(WORD_STEPS.length, level)));
+
+/** How many levels there are in all: every word drops, then every step folds. */
+export const LEVELS = WORD_STEPS.length + FOLD_STEPS.length;
+
 /** The steps folded away at a level (0 folds nothing). The last step only hides the zoom slider, so it is never clipped. */
 export const foldedAt = (level: number): FoldStep[] => FOLD_STEPS.slice(0, Math.max(0, Math.min(FOLD_STEPS.length, level)));
+
+/** The folded steps for a whole-header level, which counts the word levels first. */
+export const foldedAtLevel = (level: number): FoldStep[] => foldedAt(level - WORD_STEPS.length);
 
 /** Spare room (px) needed before a folded button comes back. Folding happens the moment it doesn't fit; this stops flicker. */
 export const foldSlack = 28;

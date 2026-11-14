@@ -16,9 +16,9 @@ import { useFeaturesVersion } from '../features/use';
 import { TimelineSlot } from './slots';
 import { usePrefs } from '../ui/prefs';
 import { moreRequest } from './headerMenu';
-import { FOLD_STEPS, chooseFold, foldedAt, foldSlack, headerChange, switchLabel, type FoldStep } from './headerFold';
+import { LEVELS, chooseFold, droppedAt, foldedAtLevel, foldSlack, headerChange, switchLabel, type FoldStep, type WordStep } from './headerFold';
 
-function Btn({ id, icon, text, title, pressed, disabled, onClick, className = '', step }: { id?: string; icon?: string; text?: ReactNode; title: string; pressed?: boolean; disabled?: boolean; onClick?: () => void; className?: string; step?: FoldStep }) {
+function Btn({ id, icon, text, title, pressed, disabled, onClick, className = '', step, word }: { id?: string; icon?: string; text?: ReactNode; title: string; pressed?: boolean; disabled?: boolean; onClick?: () => void; className?: string; step?: FoldStep; word?: WordStep }) {
   return (
     <button
       type="button"
@@ -33,7 +33,7 @@ function Btn({ id, icon, text, title, pressed, disabled, onClick, className = ''
       onClick={onClick ?? (() => id && runCmd(id))}
     >
       {icon ? <Icon name={icon} size={16} /> : null}
-      {text !== undefined ? <span className="tl-btn-text">{text}</span> : null}
+      {text !== undefined ? <span className="tl-btn-text" data-word={word}>{text}</span> : null}
     </button>
   );
 }
@@ -102,7 +102,7 @@ function HoldButtons() {
       <button
         type="button"
         className="tl-btn tl-hold-menu"
-        title="How many frames this drawing stays on screen before the next one (exposure)"
+        title={length ? 'How many frames this drawing stays on screen before the next one (exposure)' : 'Nothing is drawn on this frame yet, so there is no drawing to hold. Make a new drawing first.'}
         aria-haspopup="menu"
         aria-expanded={!!pos}
         onClick={(e) => {
@@ -111,7 +111,7 @@ function HoldButtons() {
         }}
       >
         <span className="tl-btn-text">
-          Hold<span className="tl-long"> for</span> <strong>{length || '-'}</strong>
+          Hold<span className="tl-long"> for</span> <strong>{length || 'none'}</strong>
         </span>
         <Icon name="chevron-down" size={14} />
       </button>
@@ -197,7 +197,7 @@ function OnionControls() {
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
   return (
     <span className="tl-group tl-onion">
-      <Btn id="timeline.toggleOnion" icon="onion" title="See the frames around this one (onion skin)" pressed={onion.enabled} />
+      <Btn id="timeline.toggleOnion" icon="onion" text="Onion skin" word="onion" title="See the frames around this one (onion skin)" pressed={onion.enabled} />
       <button
         type="button"
         className="tl-btn tl-btn-mini"
@@ -359,8 +359,10 @@ function neededWidth(h: HTMLElement): number {
 
 // Writing the same value again still makes the page redo its styles, and measuring right after forces a layout.
 const setFolded = (h: HTMLElement, level: number) => {
-  const v = foldedAt(level).join(' ');
+  const v = foldedAtLevel(level).join(' ');
   if (h.getAttribute('data-folded') !== v) h.setAttribute('data-folded', v);
+  const w = droppedAt(level).join(' ');
+  if (h.getAttribute('data-bare') !== w) h.setAttribute('data-bare', w);
 };
 
 /**
@@ -374,7 +376,7 @@ function useFolding(ref: { current: HTMLElement | null }): number {
     if (!h) return;
     let cur = 0;
     const fit = (probeDown: boolean) => {
-      const next = chooseFold(cur, FOLD_STEPS.length, (l) => (setFolded(h, l), neededWidth(h)), h.clientWidth, foldSlack, probeDown);
+      const next = chooseFold(cur, LEVELS, (l) => (setFolded(h, l), neededWidth(h)), h.clientWidth, foldSlack, probeDown);
       setFolded(h, next);
       if (next !== cur) {
         cur = next;
@@ -433,10 +435,10 @@ export function Header() {
       <LightTableChip />
       <span className="tl-sep" data-sep="1" aria-hidden="true" />
       <span className="tl-group" role="group" aria-label="Drawings and frames" data-step="edit">
-        <Btn id="timeline.newKey" icon="key" text={<>New<span className="tl-long"> drawing</span></>} title="Start a new blank drawing on this frame (new key)" />
-        <Btn id="timeline.duplicateKey" icon="duplicate" text="Copy" title="Copy this drawing to the next frame (duplicate key)" />
-        <Btn id="timeline.insertFrame" icon="plus" text="Frame" title="Add a frame: hold this drawing one frame longer" className="tl-btn-frame" />
-        <Btn id="timeline.removeFrame" icon="minus" text="Frame" title="Remove a frame" className="tl-btn-frame" />
+        <Btn id="timeline.newKey" icon="key" text="New drawing" word="new" title="Start a new blank drawing on this frame (new key)" />
+        <Btn id="timeline.duplicateKey" icon="duplicate" text="Copy" word="copy" title="Copy this drawing to the next frame (duplicate key)" />
+        <Btn id="timeline.insertFrame" icon="plus" text="Add a frame" word="frame" title="Add a frame: hold this drawing one frame longer" />
+        <Btn id="timeline.removeFrame" icon="minus" title="Remove a frame: take one frame out" />
       </span>
       <span data-step="hold">
         <HoldButtons />
@@ -447,7 +449,7 @@ export function Header() {
         <OnionControls />
       </span>
       <span className="tl-grow" />
-      <OverflowMenu folded={foldedAt(level)} />
+      <OverflowMenu folded={foldedAtLevel(level)} />
       <Btn id="view.cleanTimeline" icon="sliders" title="Clean timeline: plain blocks, no property rows" pressed={clean} className="tl-btn-mini tl-look-toggle" step="clean" />
       <label className="tl-zoom" title="Zoom the timeline (or hold Ctrl and scroll)">
         <button type="button" className="tl-btn tl-btn-mini" data-step="fit" title={tip('timeline.zoomFit', 'Fit the whole animation in view')} aria-label="Fit the whole animation in view" data-testid="timeline.zoomFit" onClick={() => runCmd('timeline.zoomFit')}>
