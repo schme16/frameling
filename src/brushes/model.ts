@@ -4,6 +4,7 @@
 import { DEFAULT_BRUSH } from '../core/doc';
 import type { BrushSettings } from '../core/format';
 import { brushFrom } from '../core/uiMemory';
+import { defaultTip, sameTip } from '../geometry/tip';
 
 /** Which tool a brush came from. Only the brush for now; the field is there so more can follow without a new format. */
 export type PresetTool = 'brush';
@@ -33,6 +34,10 @@ export const STARTERS: readonly BrushPreset[] = [
   make('marker', 'Marker', { size: 28, thinning: 0, smoothing: 0.5, streamline: 0.4 }),
   make('pencil', 'Pencil', { size: 2, thinning: 0.25, smoothing: 0.3, streamline: 0.25 }),
   make('tapered', 'Tapered brush', { size: 14, thinning: 0.6, smoothing: 0.6, streamline: 0.6, taperStart: 40, taperEnd: 60 }),
+  make('chalk', 'Chalk', { size: 18, thinning: 0.3, smoothing: 0.4, streamline: 0.4, tip: defaultTip('chalk') }),
+  make('charcoal', 'Charcoal', { size: 22, thinning: 0.4, smoothing: 0.4, streamline: 0.4, tip: defaultTip('charcoal') }),
+  make('watercolour', 'Watercolour', { size: 30, thinning: 0, smoothing: 0.6, streamline: 0.6, tip: defaultTip('watercolour') }),
+  make('leaves', 'Leaves', { size: 22, thinning: 0, smoothing: 0.6, streamline: 0.6, tip: { ...defaultTip('stamp'), shape: 'leaf', spacing: 0.9, jitter: 0.35, scatter: 0.3 } }),
 ];
 
 /** A name as it is kept: spaces tidied, cut to length. Empty when there is nothing in it. */
@@ -57,7 +62,7 @@ export function uniqueName(name: string, taken: readonly string[]): string {
 /** True when two brushes are the same brush (numbers within a hair, since a slider can leave rounding behind). */
 export function sameBrush(a: BrushSettings, b: BrushSettings): boolean {
   const close = (x: number, y: number) => Math.abs(x - y) < 1e-6;
-  return close(a.size, b.size) && close(a.thinning, b.thinning) && close(a.smoothing, b.smoothing) && close(a.streamline, b.streamline) && close(a.taperStart, b.taperStart) && close(a.taperEnd, b.taperEnd) && a.capStart === b.capStart && a.capEnd === b.capEnd;
+  return close(a.size, b.size) && close(a.thinning, b.thinning) && close(a.smoothing, b.smoothing) && close(a.streamline, b.streamline) && close(a.taperStart, b.taperStart) && close(a.taperEnd, b.taperEnd) && a.capStart === b.capStart && a.capEnd === b.capEnd && sameTip(a.tip, b.tip);
 }
 
 /** Every brush to show: the starters, then yours. */

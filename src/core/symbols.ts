@@ -19,6 +19,7 @@ import { morphShapes } from './shape-tween';
 import { trimPixels } from './pixelBounds';
 import { bindLayer, type PosedMesh } from './layerKinds';
 import { withoutNotes } from '../notes/model';
+import { withTips } from './tips';
 import { hasTrim, trimmedBetween } from './trimTween';
 
 // ---------------------------------------------------------------- matrices
@@ -692,6 +693,12 @@ export const poseStats = { built: 0 };
  * Plain drawings come back unchanged.
  */
 export function poseAt(doc: Doc, layer: Layer, frame: number, depth = 0): Drawing | undefined {
+  const d = poseAtPlain(doc, layer, frame, depth);
+  return d ? withTips(d) : d;
+}
+
+/** `poseAt` with brush tips left as the lines they were drawn as, for code that looks lines up by their id. */
+export function poseAtPlain(doc: Doc, layer: Layer, frame: number, depth = 0): Drawing | undefined {
   const d = poseCel(doc, layer, frame, depth);
   return d && layer.bind ? bindLayer(doc, layer, frame, d) : d;
 }

@@ -319,8 +319,18 @@ Duplicate make a shape of its own (no `origin`). A non-string or empty `origin` 
 when comparing two drawings for "same look" (as `id` is ignored).
 
 - `StrokeShape` (`type: 'stroke'`): `points: {x, y, p}[]` (p = pressure 0..1, 0.5 without a pen), `brush:
-  BrushSettings` (`size, thinning, smoothing, streamline, taperStart, taperEnd, capStart, capEnd`), `color`,
-  `opacity`. Kept as input points so it re-renders losslessly.
+  BrushSettings` (`size, thinning, smoothing, streamline, taperStart, taperEnd, capStart, capEnd`, and `tip?`), `color`,
+  `opacity`. Kept as input points so it re-renders losslessly. **Brush tips** (`brush.tip`, all optional, missing = a plain
+  line, so older files read unchanged): `kind` is `'chalk' | 'charcoal' | 'watercolour' | 'stamp'`, and the rest depend on it:
+  `amount` and `grain` (chalk and charcoal: how much grain, 0 to 1, and how coarse, 0.5 to 3; watercolour: `amount` is the edge
+  strength), and for a stamp `shape` (`dot | leaf | star | diamond | dash | heart | custom`), `spacing` (a share of the
+  brush size), `jitter`, `angle` (`follow | upright | random`), `scatter`, `custom` (a made-from-a-selection stamp as closed
+  outlines, flat `[x, y, ...]` lists centred on 0 and 1 unit across, at most 90 points in all) and `seed` (set when the line is
+  drawn, so the random parts stay put). A tip is read by `readTip` (`src/geometry/tip.ts`), on open and when a saved brush is
+  read: anything that is not a tip makes the line plain, numbers are held to their range. The line keeps its points; the
+  fills and lines a tip draws are worked out by `src/geometry/tipShapes.ts` when drawing and exporting (`poseAt` swaps them
+  in, see `src/core/tips.ts`), never stored. A saved brush (`src/brushes`) and a shared brush file hold the same `tip`.
+  A pixel brush made from a selection is not in the document: it is the `pixelStamp` tool setting (`src/brushes/stamps.ts`).
 - `FillShape` (`type: 'fill'`): `paths: SubPath[]` (even-odd), `color`, `opacity`, `gradient?` (`e352d32`; `color`
   stays as its first stop).
 - `PathShape` (`type: 'path'`): `paths`, `fill: Color | null`, `stroke: {color, width, join, cap} | null`, `opacity`,

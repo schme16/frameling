@@ -7,12 +7,15 @@
 import { useSyncExternalStore } from 'react';
 import type { PlaneChoice } from '../canvas/perspectivePlane';
 import type { RememberedUi } from '../core/uiMemory';
+import type { PixelStamp } from '../brushes/stamps';
 
 export interface ToolSettings {
   /** Pixel brush: size in art pixels, shape, and the corner clean-up. */
   pixelBrushSize: number;
   pixelBrushShape: 'square' | 'round';
   pixelPerfect: boolean;
+  /** A pixel brush made from a selection (null = the square or round one). Checked when it is read: see brushes/stamps.ts. */
+  pixelStamp: PixelStamp | null;
   /** Pencil: line width in document pixels. */
   pencilSize: number;
   /** Eraser: size in document pixels on vector layers, in art pixels on pixel layers. */
@@ -54,6 +57,7 @@ export const DEFAULT_TOOL_SETTINGS: ToolSettings = {
   pixelBrushSize: 1,
   pixelBrushShape: 'square',
   pixelPerfect: true,
+  pixelStamp: null,
   pencilSize: 2,
   eraserSize: 16,
   eraserPixelSize: 1,

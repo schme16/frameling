@@ -5,6 +5,8 @@ import { store } from '../core/store';
 import { showPanel } from '../ui/dock';
 import { pickTool } from '../tools/pick';
 import './help';
+import { TIPS } from '../geometry/tip';
+import { clearPixelStamp, makeBrushFromSelection, pixelBrushStamp, setTipKind, stepTip } from './tips';
 import {
   activeOwn,
   addBrushesFromClipboard,
@@ -98,6 +100,76 @@ registerCommands([
       stepBrush(-1);
       if (store().get().ui.tool !== 'brush') pickTool('brush');
     },
+  },
+  {
+    id: 'brush.tip.plain',
+    label: 'Brush tip: Plain',
+    category: 'Draw',
+    description: 'A smooth, solid line, as the brush usually draws.',
+    help: 'brush-tips',
+    keywords: ['brush', 'tip', 'texture', 'plain', 'smooth', 'solid'],
+    run: () => {
+      showBrushOptions();
+      setTipKind(null);
+    },
+  },
+  ...TIPS.map((t) => ({
+    id: `brush.tip.${t.id}`,
+    label: `Brush tip: ${t.label}`,
+    category: 'Draw',
+    description: t.hint,
+    help: 'brush-tips',
+    keywords: ['brush', 'tip', 'texture', t.label.toLowerCase(), ...(t.id === 'stamp' ? ['stamp', 'leaf', 'star', 'repeat', 'pattern'] : t.id === 'watercolour' ? ['watercolor', 'wash', 'paint'] : ['grain', 'dusty', 'rough', 'sketch'])],
+    run: () => {
+      showBrushOptions();
+      setTipKind(t.id);
+    },
+  })),
+  {
+    id: 'brush.tipNext',
+    label: 'Next brush tip',
+    category: 'Draw',
+    keys: ['Alt+Shift+ArrowDown'],
+    description: 'Switch the brush to the next tip: Plain, Chalk, Charcoal, Watercolour, Stamp.',
+    help: 'brush-tips',
+    keywords: ['brush', 'tip', 'texture', 'next', 'cycle'],
+    run: () => {
+      stepTip(1);
+      if (store().get().ui.tool !== 'brush') pickTool('brush');
+    },
+  },
+  {
+    id: 'brush.tipPrevious',
+    label: 'Previous brush tip',
+    category: 'Draw',
+    keys: ['Alt+Shift+ArrowUp'],
+    description: 'Switch the brush to the tip before this one.',
+    help: 'brush-tips',
+    keywords: ['brush', 'tip', 'texture', 'previous', 'cycle'],
+    run: () => {
+      stepTip(-1);
+      if (store().get().ui.tool !== 'brush') pickTool('brush');
+    },
+  },
+  {
+    id: 'brush.fromSelection',
+    label: 'Make a brush from the selection',
+    category: 'Draw',
+    keys: ['Mod+Alt+B'],
+    description: 'Turn what you have selected into a brush: a stamp on a drawing layer, a small picture brush on a pixel layer.',
+    help: 'brush-tips',
+    keywords: ['brush', 'custom brush', 'stamp', 'selection', 'make brush', 'pixel brush', 'pattern'],
+    run: () => void makeBrushFromSelection(),
+  },
+  {
+    id: 'brush.pixelReset',
+    label: 'Back to the usual pixel brush',
+    category: 'Draw',
+    description: 'Stop painting with the brush made from a selection, and use the square or round pixel brush again.',
+    help: 'brush-tips',
+    keywords: ['brush', 'pixel brush', 'custom brush', 'reset', 'square', 'round'],
+    enabled: () => !!pixelBrushStamp(),
+    run: () => clearPixelStamp(),
   },
   {
     id: 'brush.saveFile',

@@ -29,6 +29,7 @@ import { readClip } from '../core/clipPlay';
 import { cleanStrokeStyle } from '../geometry/lineStyle';
 import { cleanTrim } from '../geometry/trim';
 import { readDataLayers, readTerrainMode, readTerrains, readTileExtras } from '../core/tileFormat';
+import { readTip } from '../geometry/tip';
 
 export const FILE_EXTENSION = 'frameling';
 
@@ -749,6 +750,12 @@ export function readFlow(raw: unknown, clips: { id: string }[]): ClipFlow | unde
 
 /** A path shape whose outline has dashes, arrow heads or widths that make no sense gets them taken out, so drawing never meets them. */
 function cleanLineStyle<T extends Record<string, any>>(s: T): T {
+  if (s.type === 'stroke' && isObj(s.brush) && 'tip' in s.brush) {
+    // A brush line's tip (chalk, stamps and so on): kept when it reads as one, otherwise the line is plain.
+    const { tip, ...brush } = s.brush;
+    const clean = readTip(tip);
+    s = { ...s, brush: clean ? { ...brush, tip: clean } : brush };
+  }
   if (s.type === 'stroke' && 'trim' in s) {
     // A brush line's trim (the part of the line that shows): sane numbers, or gone.
     const { trim, ...rest } = s;

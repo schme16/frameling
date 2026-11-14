@@ -1015,6 +1015,8 @@ npm run help:media -- --list              # every entry and whether it is a pict
 npm run help:media -- --entries scripts/docs/ab --out brand/ab/<topic>   # the entries of another folder, for a before/after look (not a help topic)
 ```
 
+`scripts/docs/ab-brush-tips/tips.cjs` draws the same three strokes with each brush tip (plain for reference, chalk, charcoal, watercolour, a leaf stamp, a star stamp and a paw stamp made from a selection with the real command), once per theme, into brand/ab/brush-tips (`--entries scripts/docs/ab-brush-tips --out <dir>`). In the dark theme the page is slate and the lines are cream; in the light theme it is ink on white. Brush texture is judged by eye, so rerun it after changing `src/geometry/tipShapes.ts`.
+
 `scripts/docs/ab-pixel-gradient/pixel-gradient.cjs` makes the single looks for the pixel gradient (each dither style, two colours against palette steps against a smooth mix, linear against radial); `scripts/ab/pixel-gradient-montage.sh <dir of looks>` puts them side by side with labels in brand/ab/pixel-gradient/.
 
 `scripts/docs/ab-psd-text/psd-text.cjs` is another: the same Photoshop file (`scripts/docs/help/assets/import-text.psd`, made by `scripts/fixtures/make-text-fixture.ts` with ImageMagick) brought in, with the title selected and the left-out list open. Run it once with `--renderer` pointing at a build of the base commit and once without, for the before and after.

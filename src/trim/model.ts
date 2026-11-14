@@ -6,7 +6,7 @@
  */
 import type { Cel, Doc, Id, Layer, Shape, Trim, VectorDrawing } from '../core/format';
 import { celAt, uid } from '../core/doc';
-import { poseAt, nextKey } from '../core/symbols';
+import { poseAtPlain, nextKey } from '../core/symbols';
 import { cutProblem, MORPH_CUT_WHY } from '../core/tweenCut';
 import { canTrim, shapeLine, trimOf } from '../core/trimTween';
 import { writeTrimOf } from '../timeline/tracks';
@@ -216,7 +216,7 @@ export function trimView(doc: Doc, layerId: Id | null, frame: number, ids: reado
   if (!cel || !d) return null;
   const lines = trimLines(d.shapes, ids);
   if (!lines.length) return null;
-  const shown = poseAt(doc, layer, frame);
+  const shown = poseAtPlain(doc, layer, frame);
   const shapes = (shown?.kind === 'vector' ? shown.shapes : d.shapes).filter((s) => canTrim(s) && lines.includes(shapeLine(s)));
   const picked = d.shapes.filter((s) => canTrim(s) && lines.includes(shapeLine(s)));
   const first = trimNumbers(shapes[0]);

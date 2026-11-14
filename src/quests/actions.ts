@@ -1,5 +1,6 @@
 // What "Show me how" does, and how a quest gets the document ready. Everything here goes through the same doors the
 // person would use (commands, the edit helper), so undo works and nothing is special-cased.
+import { plainBrush } from '../geometry/tip';
 import { drawingAt, findLayer, pixelGrid, uid } from '../core/doc';
 import type { Doc, PathPoint, Shape, StrokePoint } from '../core/format';
 import { getCommand, getTool } from '../core/registry';
@@ -32,7 +33,7 @@ export function drawDemoBall(dx = 0): boolean {
   const cx = doc.width * 0.35 + dx;
   const cy = doc.height * 0.5;
   const res = editActiveDrawing('Draw stroke', 'vector', (d) => {
-    d.shapes.push({ id: uid('s'), type: 'stroke', points: circlePoints(cx, cy, r), brush: { ...ui.brush }, color: ui.color, opacity: 1 });
+    d.shapes.push({ id: uid('s'), type: 'stroke', points: circlePoints(cx, cy, r), brush: { ...plainBrush(ui.brush) }, color: ui.color, opacity: 1 });
   });
   return res === 'ok';
 }

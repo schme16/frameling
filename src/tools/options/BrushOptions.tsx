@@ -11,6 +11,9 @@ import { setToolSettings, useToolSettings } from '../settings';
 import { MirrorOptions } from './MirrorOptions';
 import { HoldToTidyOptions } from './HoldToTidyOptions';
 import { BrushPresetRow } from '../../brushes/BrushPresetRow';
+import { TipOptions } from '../../brushes/TipOptions';
+import { PixelStampOptions } from '../../brushes/PixelStampOptions';
+import { readPixelStamp } from '../../brushes/stamps';
 
 export function useActiveLayerKind(): 'vector' | 'pixel' {
   return useStore((s) => (findLayer(s.doc, s.ui.activeLayerId) ?? s.doc.layers[s.doc.layers.length - 1])?.kind === 'pixel' ? 'pixel' : 'vector');
@@ -61,6 +64,7 @@ function VectorBrushOptions() {
     <div className="cv-options">
       <BrushPresetRow />
       <BrushPreview brush={brush} color={color} />
+      <TipOptions />
       <Slider label="Size" value={brush.size} min={1} max={120} format={(v) => `${v}px`} onChange={(v) => setBrush({ size: v })} />
       <MoreOptions name="brush" label="More brush options" hint="Merge shapes together, smoothing, pressure, pointy ends, the stabilizer and mirror drawing.">
         <DrawModeToggle />
@@ -81,10 +85,11 @@ function PixelBrushOptions() {
   const size = useToolSettings((s) => s.pixelBrushSize);
   const shape = useToolSettings((s) => s.pixelBrushShape);
   const perfect = useToolSettings((s) => s.pixelPerfect);
+  const stamp = readPixelStamp(useToolSettings((s) => s.pixelStamp));
   return (
     <div className="cv-options">
-      <Slider label="Size" value={size} min={1} max={24} format={(v) => `${v} pixel${v === 1 ? '' : 's'}`} onChange={(v) => setToolSettings({ pixelBrushSize: v })} />
-      {size > 2 && (
+      {!stamp && <Slider label="Size" value={size} min={1} max={24} format={(v) => `${v} pixel${v === 1 ? '' : 's'}`} onChange={(v) => setToolSettings({ pixelBrushSize: v })} />}
+      {!stamp && size > 2 && (
         <Choice
           label="Shape"
           value={shape}
@@ -95,7 +100,8 @@ function PixelBrushOptions() {
           onChange={(v) => setToolSettings({ pixelBrushShape: v })}
         />
       )}
-      <Toggle label="Pixel perfect" checked={perfect} onChange={(v) => setToolSettings({ pixelPerfect: v })} hint="Keeps hand-drawn lines one pixel thick by tidying the corners. Works with size 1." />
+      {!stamp && <Toggle label="Pixel perfect" checked={perfect} onChange={(v) => setToolSettings({ pixelPerfect: v })} hint="Keeps hand-drawn lines one pixel thick by tidying the corners. Works with size 1." />}
+      <PixelStampOptions />
       <Tip>Hold Shift and click to draw a straight line from where you last stopped.</Tip>
       <PenOptions tool="brush" size />
     </div>

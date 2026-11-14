@@ -7,6 +7,7 @@ import { PixelPerfect, bresenham, brushOffsets, docToPixel, type PixelShape, typ
 import { PixelSession } from './pixelSession';
 import { solidInk, type Ink } from '../pixel/ink';
 import { toolEvent } from './toolEvents';
+import { stampCells, stampSpacing, type PixelStamp } from '../brushes/stamps';
 
 /** Where the last pixel stroke ended, per layer, for Shift+click lines. */
 let lastEnd: { docId: string; layerId: string; x: number; y: number } | null = null;
@@ -26,6 +27,8 @@ export interface PixelStrokeOptions {
   perfect: boolean;
   /** How painted pixels get their colour (shading, dither). Defaults to plain `color`. */
   ink?: Ink;
+  /** A brush made from a selection: its shape (or picture) is stamped instead of a square or round dab. */
+  stamp?: PixelStamp;
 }
 
 export class PixelStroke {
@@ -38,6 +41,10 @@ export class PixelStroke {
   private ink: Ink;
   private size: number;
   private offsetsBySize = new Map<number, PxPt[]>();
+  /** A picture brush: each cell with its own colour, stamped as copies this far apart (null for a plain shape). */
+  private picture: { o: PxPt; ink: Ink }[] | null = null;
+  private spacing = 1;
+  private lastDab: PxPt | null = null;
 
   constructor(
     private doc: Doc,
@@ -48,11 +55,16 @@ export class PixelStroke {
     // Plain paint adds a new drawing over a carried-along one; rubbing out or shading works on what's there.
     this.session = new PixelSession(doc, layer, frame, { adds: !opts.ink && opts.color[3] > 0 });
     this.size = opts.size;
-    this.offsets = brushOffsets(opts.size, opts.shape);
+    const cells = opts.stamp ? stampCells(opts.stamp) : null;
+    this.offsets = cells ? cells.map((c) => ({ x: c.x, y: c.y })) : brushOffsets(opts.size, opts.shape);
     this.offsetsBySize.set(opts.size, this.offsets);
     this.ink = this.session.lock(opts.ink ?? solidInk(opts.color));
+    if (opts.stamp?.keep && cells) {
+      this.picture = cells.map((c) => ({ o: { x: c.x, y: c.y }, ink: this.session.lock(solidInk(c.rgba)) }));
+      this.spacing = stampSpacing(opts.stamp);
+    }
     // The corner clean-up only means something for a one pixel line.
-    this.perfect = opts.perfect && opts.size === 1 && (opts.color[3] > 0 || !!opts.ink) ? new PixelPerfect() : null;
+    this.perfect = !cells && opts.perfect && opts.size === 1 && (opts.color[3] > 0 || !!opts.ink) ? new PixelPerfect() : null;
   }
 
   /**
@@ -60,7 +72,7 @@ export class PixelStroke {
    * A one pixel pixel perfect line keeps its size, since its corner clean-up works on single pixels.
    */
   scale(factor: number): void {
-    if (this.perfect || factor === 1) return;
+    if (this.perfect || factor === 1 || this.opts.stamp) return;
     const n = Math.min(128, Math.max(1, Math.round(this.opts.size * factor)));
     if (n === this.size) return;
     this.size = n;
@@ -90,7 +102,8 @@ export class PixelStroke {
   moveTo(p: PxPt): void {
     if (this.lineFrom) {
       this.session.reset();
-      for (const q of bresenham(this.lineFrom.x, this.lineFrom.y, p.x, p.y)) this.session.stampInk(q, this.offsets, this.ink);
+      this.lastDab = null;
+      for (const q of bresenham(this.lineFrom.x, this.lineFrom.y, p.x, p.y)) this.dab(q);
       this.last = p;
       this.session.flush();
       return;
@@ -108,9 +121,19 @@ export class PixelStroke {
     return p.y * this.session.width + p.x;
   }
 
+  /** One dab of the brush at a pixel. A picture brush lays copies side by side as you drag, a shape smears like any brush. */
+  private dab(p: PxPt): void {
+    const pic = this.picture;
+    if (!pic) return this.session.stampInk(p, this.offsets, this.ink);
+    const l = this.lastDab;
+    if (l && Math.max(Math.abs(p.x - l.x), Math.abs(p.y - l.y)) < this.spacing) return;
+    this.lastDab = p;
+    for (const c of pic) this.session.paint(p.x + c.o.x, p.y + c.o.y, c.ink);
+  }
+
   private paintPixel(p: PxPt): void {
     if (!this.perfect) {
-      this.session.stampInk(p, this.offsets, this.ink);
+      this.dab(p);
       return;
     }
     this.counts.set(this.key(p), (this.counts.get(this.key(p)) ?? 0) + 1);

@@ -255,6 +255,7 @@ The second class picks the clip. Loops keep going; clips that don't loop stop on
 ## What you get
 
 - **Vector layers** become real paths: every brush stroke becomes one filled shape, and shapes keep their curves, fills and outlines.
+- **Brush tips** (chalk, charcoal, watercolour, stamps) stay vector, written as plain shapes, so they look the same. Chalk and charcoal grain is thousands of tiny shapes, so those files come out bigger. See [brush tips](help:brush-tips).
 - **Pixel layers** become small rectangles: one for each run of pixels in the same colour. Nothing is lost, every pixel is still there, but a big pixel drawing makes a big file.
 - Each layer is its own group named after the layer, so it's easy to find in other programs. Layer opacity is kept. Hidden layers are left out.
 - **Folders** are groups too, named after the folder, with the folder's layers inside (and folders inside folders as groups inside groups), even a folder that changes nothing. Other programs read the name from the group's id (spaces and symbols become dashes, and a repeated name gets an underscore). Inkscape shows the folder's own name, spelled the way you wrote it.

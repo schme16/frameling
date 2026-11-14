@@ -3,6 +3,7 @@
 import type { Doc, Drawing, Gradient, Layer, PathShape, PixelDrawing, Shape, StrokeShape, SubPath } from '../core/format';
 import { isPosed, poseAt, type PosedInstance, type PosedLayer } from '../core/symbols';
 import { drawMeshed, strokeOutline } from '../core/render';
+import { strokeParts } from '../core/tips';
 import { encodePng } from '../io/png';
 import { flattenDrawing } from '../core/layerKinds';
 import { shapeExportOf } from './shapeExport';
@@ -121,6 +122,9 @@ export function shapeToSvg(s: Shape, doc?: Doc): string {
   // Text, particles and the like write themselves, through their registered export.
   if (s.type !== 'stroke' && s.type !== 'fill' && s.type !== 'path') return shapeExportOf(s.type)?.svg?.(s) ?? '';
   if (s.type === 'stroke') {
+    // A chalk, charcoal, watercolour or stamp line is written as the plain shapes it is made of.
+    const parts = s.brush.tip ? strokeParts(s) : null;
+    if (parts) return parts.map((p) => shapeToSvg(p, doc)).join('');
     const d = strokeToPathData(s);
     return d ? `<path d="${d}"${paint('fill', s.color, s.opacity)}/>` : '';
   }
