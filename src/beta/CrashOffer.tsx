@@ -7,6 +7,8 @@ import { QuillSays } from '../ui/mascot';
 import { line, lines } from '../ui/mascot/lines';
 import { setChoice } from '../core/choices';
 import { CRASH_CHOICE, crashDialog } from './crashAsk';
+import { MachineBox } from './MachineBox';
+import type { MachineFacts } from './machine';
 import { reportText } from './report';
 import { sayFailure, sendReport } from './send';
 import './beta.css';
@@ -47,6 +49,7 @@ function Offer({ dialog }: { dialog: NonNullable<ReturnType<typeof crashDialog.g
           <details className="bt-crash-read">
             <summary>Read what would go</summary>
             <p className="tb-note">This, word for word, is what goes. Nothing else.</p>
+            {report.data.machine ? <MachineBox machine={report.data.machine as MachineFacts} /> : null}
             <pre className="bt-preview" data-testid="crash.report">{reportText(report)}</pre>
           </details>
         )}

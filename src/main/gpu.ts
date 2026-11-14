@@ -6,6 +6,7 @@ import os from 'node:os';
 import { gpuOffPath, gpuOffState, linuxVramBytes, setGpuOffFile } from './gpuFile';
 import { gpuLostLine, hardwareSwitches, mergeFeatures, softwareFallbackLine } from './gpuFlags';
 import type { GpuReport } from '../preload/api';
+import { readCpu } from '../gpu/cpu';
 import { startLine } from '../gpu/describe';
 import { activeIndex, bestName, pciIdsName } from '../gpu/identify';
 import { relaunchPlan } from './restart';
@@ -186,7 +187,18 @@ export async function gpuReport(sender?: WebContents): Promise<GpuReport> {
     gpuKb: kb(['GPU']),
     appKb: kb(['Browser', 'Tab', 'GPU', 'Utility']),
     vramBytes: process.platform === 'linux' ? linuxVramBytes() ?? undefined : undefined,
+    cpu: readCpu({ cpus: os.cpus(), arch: process.arch, cpuinfo: process.platform === 'linux' ? readCpuinfo() : null }),
+    memoryBytes: os.totalmem(),
   };
+}
+
+/** Linux's own list of processors, for the model and the real core count. Null when it cannot be read. */
+function readCpuinfo(): string | null {
+  try {
+    return fs.readFileSync('/proc/cpuinfo', 'utf8');
+  } catch {
+    return null;
+  }
 }
 
 /** Says once, in the terminal, which drawing path is in use (the same words as Preferences > Performance). */

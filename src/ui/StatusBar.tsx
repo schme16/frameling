@@ -81,7 +81,7 @@ export function StatusBar() {
           onClick={() => setTurn(turnedBy(getTurn(), 1))}
           data-tip="Turn the page"
           data-tip-desc="Hold Alt and drag on the canvas to turn the page to any angle, like a sheet on your desk. Press here to turn it a little. Only the view changes."
-          aria-label="Turn the page. Hold Alt and drag on the canvas, or press here to turn it a little."
+          aria-label="Straight. Turn the page: hold Alt and drag on the canvas, or press here to turn it a little."
         >
           <Icon name="rotate" size={14} />
           Straight

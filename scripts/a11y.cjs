@@ -7,7 +7,7 @@
 //
 // --themes also runs axe's colour contrast rule on the main window and a few panels in every built-in theme.
 // Exits 1 when anything serious (axe "serious" or "critical", or a keyboard failure) is found. A11Y_SHOW=1 shows
-// the window. --theme runs everything in the default dark or light theme (the system's choice otherwise), and --shots
+// the window (put it on the virtual screen under xvfb: an off-screen window gets no keyboard focus, so every key check fails). --theme runs everything in the default dark or light theme (the system's choice otherwise), and --shots
 // saves a picture of each dialog as it is checked. Needs `npm run build` first; it uses dist/ and never touches your
 // settings (fresh profile per run).
 const { app, BrowserWindow, ipcMain } = require('electron');
@@ -15,6 +15,8 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { installIpcStubs } = require('./ipc-stubs.cjs');
+const { judgeCoverage } = require('./lib/a11y-coverage.cjs');
+const { docFor, SEEDS } = require('./lib/sheet-layout.cjs');
 
 const args = process.argv.slice(2);
 const flag = (n) => args.includes(n);
@@ -200,12 +202,18 @@ async function axe(win, scope) {
   return js(
     win,
     `const ctx = ${scope ? `document.querySelector(${JSON.stringify(scope)})` : 'document'};
-    if (!ctx) return { missing: true, violations: [] };
-    const r = await axe.run(ctx, { resultTypes: ['violations'], rules: { region: { enabled: false } } });
+    if (!ctx) return { missing: true, why: 'no such element', violations: [] };
+    // On the page is not enough: an element in a tab that is not showing is skipped by axe, so it must be on screen.
+    const box = ctx.getBoundingClientRect ? ctx.getBoundingClientRect() : { width: 1, height: 1 };
+    const shown = ctx === document || (box.width > 0 && box.height > 0 && getComputedStyle(ctx).visibility !== 'hidden' && !ctx.closest('[hidden], [aria-hidden=true]'));
+    if (!shown) return { missing: true, why: 'on the page but not showing', violations: [] };
+    const r = await axe.run(ctx, { resultTypes: ['violations', 'passes'], rules: { region: { enabled: false } } });
+    // How many elements axe really judged (a rule that passes lists them), so an empty look is visible in the numbers.
+    const examined = new Set([...r.passes, ...r.violations].flatMap((v) => v.nodes.map((n) => n.target.join(' ')))).size;
     const violations = r.violations.map((v) => ({ id: v.id, impact: v.impact, help: v.help, nodes: v.nodes.slice(0, 6).map((n) => ({ target: n.target.join(' '), summary: n.failureSummary.split('\\n').slice(1, 3).join(' ').trim() })), count: v.nodes.length }));
     const unsaid = (() => { const SCOPE = ${JSON.stringify(scope ?? null)}; ${STATE_PROBE} })();
     if (unsaid.length) violations.push({ id: 'toggle-state', impact: 'serious', help: 'Looks chosen but does not say so', nodes: unsaid.slice(0, 6).map((t) => ({ target: t, summary: 'add aria-pressed (or aria-checked in a radiogroup)' })), count: unsaid.length });
-    return { violations };`,
+    return { violations, examined };`,
   );
 }
 
@@ -293,12 +301,12 @@ async function dialogKeys(win) {
   return { problems: out, stops: walk.seen.length };
 }
 
-const report = { scenarios: [], keyboard: [], themes: [] };
+const report = { scenarios: [], keyboard: [], themes: [], coverage: null };
 const add = (name, res) => {
   report.scenarios.push({ name, ...res });
   const v = res.violations ?? [];
-  const tag = res.missing ? ' (not found)' : '';
-  console.log(`${v.length ? 'x' : 'ok'} ${name}${tag}${v.length ? ': ' + v.map((x) => `${x.id}[${x.impact}]x${x.count}`).join(', ') : ''}`);
+  const tag = res.missing ? ` (NOT CHECKED, ${res.why ?? 'not found'}: nothing was examined)` : res.examined !== undefined ? ` (${res.examined} elements)` : '';
+  console.log(`${v.length || res.missing ? 'x' : 'ok'} ${name}${tag}${v.length ? ': ' + v.map((x) => `${x.id}[${x.impact}]x${x.count}`).join(', ') : ''}`);
   for (const x of v) for (const n of x.nodes) console.log(`     ${x.id}: ${n.target}  ${n.summary}`);
 };
 const want = (name) => !only || only.some((o) => name.startsWith(o));
@@ -309,7 +317,7 @@ app.whenReady().then(async () => {
   const win = await makeWindow();
   await load(win);
   // Skip the first-run sheets for the checks of everything else (they get their own scenarios).
-  await js(win, `__frameling.prefs.set({ showWelcome: false, onboarded: true, showTips: true${forceTheme ? `, theme: ${JSON.stringify(forceTheme)}` : ''} });`);
+  await js(win, `__frameling.prefs.set({ showWelcome: false, onboarded: true, showTips: true, rightSide: 'tabs'${forceTheme ? `, theme: ${JSON.stringify(forceTheme)}` : ''} });`);
   await load(win);
   await reset(win);
 
@@ -326,17 +334,22 @@ app.whenReady().then(async () => {
 
   // Every panel, in a document that gives it something to show.
   const panels = await js(win, `return __frameling.panels()`);
+  report.panels = panels;
   for (const id of panels) {
     const name = `panel ${id}`;
     if (!want(name)) continue;
-    await reset(win, DOCS[id] ?? DOCS.default);
+    // The same document and small state per panel as the panel contact sheet, so each one has something to be judged on.
+    await reset(win, docFor(id));
     // The timeline is checked with folders inside folders, the deepest case of its tree.
     if (id === 'timeline') await js(win, `__frameling.store().update('Folders in folders', (d) => { d.folders = { fOut: { id: 'fOut', name: 'Scene', visible: true, opacity: 1 }, fIn: { id: 'fIn', name: 'Inner', visible: true, opacity: 1, parent: 'fOut' } }; d.layers.forEach((l, i) => { l.folder = i === 0 ? 'fOut' : 'fIn'; }); });`);
+    // A state a panel needs on top of its document (a picked text shape, named slices, a few notes) is made first.
+    if (SEEDS[id] && (await js(win, `return __frameling.seed.${SEEDS[id]}() === false`))) throw new Error(`the seeding hook for ${SEEDS[id]} found nothing to seed`);
     await js(win, `__frameling.showPanel(${JSON.stringify(id)})`);
     await sleep(250);
     add(name, await axe(win, `#ui-panel-${id}`));
-    // And again with everything selected, which is when most panels show their controls.
-    await js(win, `__frameling.run('select.all')`);
+    // And again with everything selected, which is when most panels show their controls. (A seeded panel keeps its own
+    // selection: select all would undo the picked text shape.)
+    if (!SEEDS[id]) await js(win, `__frameling.run('select.all')`);
     await sleep(250);
     add(`${name} (selected)`, await axe(win, `#ui-panel-${id}`));
     const k = await panelKeys(win, `#ui-panel-${id}`);
@@ -359,11 +372,13 @@ app.whenReady().then(async () => {
   for (const t of tools) {
     const name = `tool ${t}`;
     if (!want(name)) continue;
-    const doc = /^tile/.test(t) ? 'tileset' : /pixel|shade|dither/.test(t) ? 'blank-pixel' : /pose|bone|weights/.test(t) ? 'puppet' : t === 'camera' ? 'camera-parallax' : 'bouncing-ball';
+    const doc = /^tile/.test(t) ? 'tileset' : /pixel|shade|dither/.test(t) ? 'blank-pixel' : /pose|bone|weights/.test(t) ? 'puppet' : t === 'slice' ? 'hero-sprites' : t === 'camera' ? 'camera-parallax' : 'bouncing-ball';
     await reset(win, doc);
-    await js(win, `__frameling.showPanel('tool-options'); __frameling.store().setUi({ tool: ${JSON.stringify(t)} });`);
+    // The Slice tool puts its options in the Slices panel, which opens by itself and stays in front of Tool options.
+    const home = t === 'slice' ? 'slices' : 'tool-options';
+    await js(win, `__frameling.showPanel('tool-options'); __frameling.store().setUi({ tool: ${JSON.stringify(t)} }); __frameling.showPanel(${JSON.stringify(home)});`);
     await sleep(200);
-    add(name, await axe(win, '#ui-panel-tool-options'));
+    add(name, await axe(win, `#ui-panel-${home}`));
   }
 
   // Dialogs: axe, then the keyboard.
@@ -488,6 +503,8 @@ app.whenReady().then(async () => {
     const problems = [];
     if (walk.noRing.length) problems.push(`no visible focus ring: ${[...new Set(walk.noRing)].join(', ')}`);
     if (walk.stuck > 3) problems.push('focus got stuck');
+    // Almost no stops means the window has no keyboard focus (an off-screen window under xvfb), not that the app is clean.
+    if (walk.seen.length < 20) problems.push(`Tab reached only ${walk.seen.length} things: the window had no keyboard focus (set A11Y_SHOW=1 under xvfb)`);
     report.keyboard.push({ name: 'main tab order', problems, stops: walk.seen.length, order: walk.seen });
     console.log(`tab main: ${walk.seen.length} stops ${problems.length ? 'x ' + problems.join('; ') : 'ok'}`);
   }
@@ -516,12 +533,18 @@ app.whenReady().then(async () => {
     }
   }
 
+  // A scenario that did not find its target is a failure, not a pass: a check that looked at nothing proves nothing.
+  const cov = judgeCoverage(report.scenarios, { panels: report.panels ?? [], full: !only });
+  report.coverage = cov;
+  if (report.panels) console.log(`\npanels: ${cov.panelsExamined} of ${cov.panelsExpected} really checked (the app lists ${cov.panelsListed})`);
+  for (const p of cov.problems) console.log(`x COVERAGE ${p}`);
+
   const serious = report.scenarios.flatMap((s) => (s.violations ?? []).filter((v) => v.impact === 'serious' || v.impact === 'critical')).length;
   const keyProblems = report.keyboard.filter((k) => k.problems.length).length;
   const all = report.scenarios.reduce((n, s) => n + (s.violations ?? []).length, 0);
-  console.log(`\n${report.scenarios.length} views checked: ${all} axe ${all === 1 ? 'rule' : 'rules'} broken (${serious} serious or worse), ${keyProblems} keyboard ${keyProblems === 1 ? 'problem' : 'problems'}.`);
+  console.log(`\n${report.scenarios.length} views checked: ${all} axe ${all === 1 ? 'rule' : 'rules'} broken (${serious} serious or worse), ${keyProblems} keyboard ${keyProblems === 1 ? 'problem' : 'problems'}, ${cov.notFound.length} not found.`);
   if (win.errors.length) console.log(`console errors:\n  ${[...new Set(win.errors)].slice(0, 10).join('\n  ')}`);
   if (jsonOut) fs.writeFileSync(jsonOut, JSON.stringify(report, null, 2));
   win.destroy();
-  app.exit(serious || keyProblems ? 1 : 0);
+  app.exit(serious || keyProblems || cov.problems.length ? 1 : 0);
 }).catch(fail);

@@ -10,6 +10,7 @@
  * You can read the whole thing before it goes: `reportText` is what the panel shows, and it is exactly what is sent.
  */
 import type { Doc } from '../core/format';
+import type { MachineFacts } from './machine';
 
 /** The board's ingest shape (see the Reports tab). Every field is optional at the far end; we fill what we can. */
 export interface IngestReport {
@@ -74,6 +75,8 @@ export interface ReportParts {
   where?: string;
   env: Record<string, unknown>;
   shape?: DocShape;
+  /** The processor, memory and graphics. Only when the person left "Include details of this computer" on. */
+  machine?: MachineFacts | null;
   /** The last few things that went wrong in the page, already made safe. */
   problems?: string[];
 }
@@ -99,6 +102,7 @@ export function buildReport(p: ReportParts, app = 'Frameling'): IngestReport {
       where: p.where ?? '',
       env: p.env,
       ...(p.shape ? { doc: p.shape } : {}),
+      ...(p.machine ? { machine: p.machine } : {}),
       ...(p.problems?.length ? { problems: p.problems.slice(-20).map((x) => scrub(x).slice(0, 500)) } : {}),
     },
   };

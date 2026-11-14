@@ -252,7 +252,8 @@ export function PieceRow(p: PieceRowProps) {
           {p.tags}
         </span>
       )}
-      {p.meta}
+      {/* A space between the name and the small print, so the words read apart to a screen reader and to a checker. */}
+      {p.meta ? <> {p.meta}</> : null}
       {p.buttons}
       <button
         type="button"

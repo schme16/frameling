@@ -39,7 +39,8 @@ export function ThemePreview({ theme, className = '' }: { theme: Pick<Theme, 'to
         </div>
       </div>
       <div className="th-prev-time">
-        <span className="th-prev-chip">Draw</span>
+        {/* The word is drawn by the stylesheet: it is part of a little picture, not text for a button's name to repeat. */}
+        <span className="th-prev-chip" />
         <span className="th-prev-cels">
           <i />
           <i className="is-key" />

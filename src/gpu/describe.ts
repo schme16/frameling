@@ -2,6 +2,7 @@
 // GpuReport) and it says which card is drawing, which way it talks to it, whether that is good, and what to try when
 // it isn't. Nothing here is measured speed: it only reports what the browser engine says it is doing.
 import type { GpuReport } from '../preload/api';
+import { archText, cpuText } from './cpu';
 import { isSoftwareRenderer, parseRenderer } from './identify';
 
 export type DrawMode =
@@ -159,6 +160,8 @@ export function reportText(r: GpuReport, keptBytes: number, settings: { hardware
     `GL: ${r.glVersion ?? 'not reported'} ${r.glImplementation ?? ''}`.trim(),
     `Skia backend: ${r.skia ?? 'not reported'}`,
     `System: ${r.platform} ${r.arch}, Electron ${r.electron}, Chromium ${r.chromium}`,
+    `Processor: ${cpuText(r.cpu)}${r.cpu ? `, ${archText(r.cpu.arch)}` : ''}`,
+    `Computer memory: ${r.memoryBytes ? bytesText(r.memoryBytes) : 'not reported'}`,
     `Switches: ${r.flags.length ? r.flags.join(' ') : 'none'}`,
     `Hardware drawing setting: ${settings.hardware ? 'on' : 'off'} (gpu-off file ${r.off.file ? 'present' : 'absent'}, FRAMELING_GPU=${r.off.env ? 'off' : 'unset'}) at ${r.off.path}`,
     `Performance settings: kept drawings ${settings.cacheMb} MB, scrubbing ${settings.scrub}, playback cap ${settings.fpsCap || 'none'}`,

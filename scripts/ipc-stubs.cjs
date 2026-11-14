@@ -75,6 +75,7 @@ function invokeStubs(library) {
       features: { gpu_compositing: 'enabled', '2d_canvas': 'enabled_on', rasterization: 'enabled_on', vulkan: 'enabled_on' },
       hardwareAcceleration: true, flags: ['--ignore-gpu-blocklist', '--enable-features=Vulkan,DefaultANGLEVulkan'],
       off: { file: false, env: false, path: '/home/you/.config/Frameling/gpu-off' }, gpuKb: 318 * 1024, appKb: 842 * 1024, vramBytes: 12 * 1024 ** 3,
+      cpu: { model: 'AMD Ryzen 7 5800X 8-Core Processor', cores: 8, threads: 16, arch: 'x64' }, memoryBytes: 32 * 1024 ** 3,
     }),
     'gpu:setHardware': () => ({ ok: true, path: '/home/you/.config/Frameling/gpu-off' }),
     'app:restart': () => ({ ok: true }),

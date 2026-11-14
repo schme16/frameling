@@ -82,6 +82,9 @@ module.exports = [
       wait(1500),
       js(`(() => { const t = document.querySelector('.bt-beta textarea'); if (!t) return false; const set = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set; set.call(t, 'It froze when I pressed Export, with the timeline open.'); t.dispatchEvent(new Event('input', { bubbles: true })); return true; })()`),
       wait(600),
+      // The panel is taller than the Preferences window, so let its parents grow for the picture.
+      js(`(() => { const e = document.querySelector('.bt-beta'); for (let p = e.parentElement; p && p !== document.body; p = p.parentElement) { const c = getComputedStyle(p); if (c.overflowY !== 'visible' || c.maxHeight !== 'none') { p.style.overflow = 'visible'; p.style.maxHeight = 'none'; p.style.height = 'auto'; } } return true; })()`),
+      wait(300),
       ...shotOf('.bt-beta', 10),
     ],
   },

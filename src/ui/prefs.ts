@@ -65,6 +65,8 @@ export interface Prefs {
   updateSkipped: string;
   /** How to get back to you about a report, only if you chose to give it. Kept on this computer, never anywhere else. */
   betaContact: string;
+  /** Put the processor, memory and graphics in a report. Always shown first; this just lets a person leave it out. */
+  betaMachine: boolean;
   /** How the right side is laid out: Properties with a labelled rail, every panel on the rail, or tabs. */
   rightSide: 'inspector' | 'rail' | 'tabs';
   /** The tool rail: every tool two wide in groups, or one button per group with the rest in a flyout. */
@@ -126,6 +128,7 @@ export const DEFAULT_PREFS: Prefs = {
   mascot: 'quill',
   betaReports: canSend(),
   betaContact: '',
+  betaMachine: true,
   updateCheck: true,
   updateSkipped: '',
   rightSide: 'inspector',
@@ -181,6 +184,7 @@ export function migratePrefs(raw: unknown): Prefs {
     betaReports: bool(r.betaReports, DEFAULT_PREFS.betaReports),
     updateCheck: bool(r.updateCheck, DEFAULT_PREFS.updateCheck),
     updateSkipped: typeof r.updateSkipped === 'string' ? r.updateSkipped.slice(0, 40) : DEFAULT_PREFS.updateSkipped,
+    betaMachine: bool(r.betaMachine, DEFAULT_PREFS.betaMachine),
     betaContact: typeof r.betaContact === 'string' ? r.betaContact.slice(0, 200) : DEFAULT_PREFS.betaContact,
     rightSide: r.rightSide === 'rail' || r.rightSide === 'tabs' || r.rightSide === 'inspector' ? r.rightSide : DEFAULT_PREFS.rightSide,
     toolRail: r.toolRail === 'stacked' || r.toolRail === 'two' ? r.toolRail : DEFAULT_PREFS.toolRail,
