@@ -302,6 +302,14 @@ Open **Preferences** (**Ctrl+,**) and choose **Features**, or search the command
 
 For example, turning **Particles** off also takes its panel and commands out of the menus and the command palette. Turn it back on and they return.
 
+## Getting them all back
+
+If some are off and you want the lot, press **Turn everything back on** at the bottom of the list, or search the command palette (**Ctrl+K**) for **Turn every feature back on**. Both only work while something is off.
+
+## Quill's hello puts some away
+
+On its last page, Quill's hello can tuck away the parts your picks don't need. It says which, and **Bring them back** on the message that follows undoes it. They show here as switched off like any other, so it's the same way back. See [Quill's hello](help:first-run).
+
 ## Your drawings are safe
 
 Turning a feature off never changes a file. If a drawing uses a feature that is off, Frameling asks when you open it: **Turn it on?** Say yes and everything works as before. Say no and the drawing still opens, still draws the same, and keeps all of its data, so you can turn the feature on later and carry on.

@@ -3,23 +3,23 @@ import type { HelpTopic } from '../core/registry';
 export const quillPetHelp: HelpTopic[] = [
   {
     id: 'quill-pet',
-    title: 'Quill, and his corner',
+    title: 'Quill',
     section: 'Getting around',
     media: 'quill-pet.mp4',
-    summary: "Quill lives in a panel of his own. He gets on with things while you draw, you can give him a scratch, and the two of you get closer the more you make together. He never minds being left alone.",
+    summary: "Quill has one home in the right rail. He gets on with things while you draw, you can give him a scratch, and the two of you get closer the more you make together. His shelves and the way to his lessons are in there too. He never minds being left alone.",
     keywords: ['quill', 'pet', 'hedgehog', 'mascot', 'friend', 'companion', 'corner', 'scratch', 'stroke', 'pat', 'closeness'],
   },
   {
     id: 'quill-things',
-    title: "Quill's things",
+    title: 'Things you give Quill',
     section: 'Getting around',
     media: 'quill-things.png',
-    summary: "The drawings you have given Quill. He keeps a little picture of each one, for as long as you like, and gives one back whenever you ask.",
+    summary: "The drawings you have given Quill, on his shelves in the Quill tab. He keeps a little picture of each one, for as long as you like, and gives one back whenever you ask.",
     keywords: ['quill', 'things', 'collection', 'gifts', 'presents', 'keep', 'given', 'pet'],
   },
   {
     id: 'quill-presents',
-    title: 'The presents Quill makes you',
+    title: 'Presents from Quill',
     section: 'Getting around',
     media: 'quill-presents.png',
     summary:

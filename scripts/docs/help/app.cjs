@@ -454,7 +454,7 @@ const entries = [
     ],
   },
 
-  // Quill's hello, step by step: hello, what you make, colours (looked at, not changed), settings, a name, the start.
+  // Quill's hello, step by step: hello, what you make, colours (looked at, not changed), settings, then the last page (a name, and the start).
   {
     name: 'first-run',
     steps: [
@@ -476,11 +476,9 @@ const entries = [
       next(),
       wait(3000),
       next(),
-      wait(500),
+      wait(1200),
       focusType('#ob-name-input', 'Bouncy Pancake'),
-      wait(2600),
-      next(),
-      wait(2600),
+      wait(3200),
       { rec: 'stop' },
     ],
   },
@@ -622,42 +620,44 @@ const entries = [
       { rec: 'stop' },
     ],
   },
-  // Quill's things: the drawings he has been given.
+  // Quill's shelves in the Quill tab: the drawings he has been given.
   {
     name: 'quill-things',
     prefs: CALM,
     steps: [
       template('bouncing-ball'),
       wait(800),
-      panel('quill-things'),
+      panel('quill-pet'),
       wait(900),
       js(`(() => { const s = ${F}.store(); for (const f of [0, 6, 12]) { s.setUi({ frame: f }); document.querySelector('.qp-give').click(); } return true; })()`),
       wait(2200),
+      js(`document.querySelector('.qt-panel').scrollIntoView({ block: 'start' })`),
       ...settle,
       tag('.qt-panel'),
       shotEl(2),
     ],
   },
-  // The presents Quill makes: his shelf with one on it, above the things you gave him.
+  // The presents Quill makes: his shelf with one on it, above the things you gave him, in the Quill tab.
   {
     name: 'quill-presents',
     prefs: CALM,
     steps: [
       template('bouncing-ball'),
       wait(800),
-      panel('quill-things'),
+      panel('quill-pet'),
       wait(900),
       // Give him a couple of frames, then have him make one out of the newest.
       js(`(() => { const s = ${F}.store(); for (const f of [0, 8]) { s.setUi({ frame: f }); document.querySelector('.qp-give').click(); } return true; })()`),
       wait(2200),
       js(`window.__framelingQuillPet.present()`),
       wait(1800),
+      js(`document.querySelector('.qt-panel').scrollIntoView({ block: 'start' })`),
       ...settle,
       tag('.qt-panel'),
       shotEl(2),
     ],
   },
-  // Quill's corner: he potters about, you give him a stroke, and the bar shows how well you know each other.
+  // The Quill tab: he potters about, you give him a stroke, and the bar shows how well you know each other.
   {
     name: 'quill-pet',
     prefs: CALM,
@@ -669,7 +669,7 @@ const entries = [
       js(`${F}.store().setUi({ color: '#ff6f91' })`),
       wait(1200),
       ...settle,
-      tag('.qp-panel'),
+      tag('.qp-him'),
       { rec: '@', el: '[data-shot]', pad: 10, every: 70 },
       wait(1600),
       clickText('.qp-pat', ''),

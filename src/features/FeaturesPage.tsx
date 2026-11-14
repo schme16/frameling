@@ -3,7 +3,7 @@
 import { Icon } from '../ui/icons';
 import { openHelp } from '../ui/overlays';
 import { toast } from '../ui/toast';
-import { isFeatureOn, needsIt, setFeatureOn, switchableFeatures } from './host';
+import { isFeatureOn, needsIt, offFeatures, setFeatureOn, switchableFeatures } from './host';
 import { useFeaturesVersion } from './use';
 
 export function FeaturesPage() {
@@ -43,6 +43,13 @@ export function FeaturesPage() {
           );
         })}
       </div>
+      {offFeatures().length > 0 && (
+        <div>
+          <button type="button" className="ui-btn" data-testid="features-all-on" onClick={() => offFeatures().forEach((f) => change(f.id, true))}>
+            Turn everything back on
+          </button>
+        </div>
+      )}
       <p className="ui-pref-intro">If you open a drawing that uses a feature that is off, Frameling asks if you want it back. If you say no, nothing is lost.</p>
       <div>
         <button type="button" className="ui-btn ui-btn-quiet" onClick={() => openHelp('features')}>

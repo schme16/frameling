@@ -1,12 +1,16 @@
-// Quill's panel: where he lives when the pet is turned on. He gets on with whatever he's doing, you can give him a scratch,
-// and it shows how well you two know each other. Nothing here nags, and nothing here goes down.
+// Quill's home: the one panel where he lives when the pet is turned on, called Quill everywhere. He gets on with
+// whatever he's doing, you can give him a scratch, and it shows how well you two know each other, then his shelves
+// (presents from him, things from you) and the way to his lessons. Nothing here nags, and nothing here goes down.
+// Each part reads only the stores, so a bigger home (a window of his own) can lay the same parts out as rooms or tabs.
 import { useEffect, useRef, useState } from 'react';
 import { Quill, useShowQuill } from '../ui/mascot';
+import { showPanel } from '../ui/dock';
 import { line, lines } from '../ui/mascot/lines';
 import { sinceInput } from '../ui/mascot/runtime';
 import { useStore } from '../core/store';
 import { daysAway, petStore, tellQuill } from './store';
 import { MOOD_WORDS, moodNow, nextStage, stageOf, stageProgress, type Mood } from './model';
+import { QuillShelves } from './QuillShelves';
 import { noteFuss, sinceEdit, sinceFinished, sinceFuss } from './watch';
 import './quillpet.css';
 
@@ -28,7 +32,8 @@ function useTick(ms = 1000): number {
   return n;
 }
 
-export function QuillPetPanel() {
+/** How he is, his pencils, and how well you two know each other. */
+export function QuillHim() {
   useTick();
   const pet = petStore.use((s) => s);
   const showQuill = useShowQuill();
@@ -70,7 +75,7 @@ export function QuillPetPanel() {
   };
 
   return (
-    <div className="cv-panel cv-options qp-panel" data-help="quill-pet">
+    <div className="qp-him">
       <div className="qp-stage">
         {showQuill ? (
           <button type="button" className="qp-pat" onClick={pat} title="Give him a scratch" aria-label="Give Quill a scratch">
@@ -109,6 +114,30 @@ export function QuillPetPanel() {
         </div>
         <p className="qp-next">{next ? `${next.toGo} to go until ${next.stage.name.toLowerCase()}` : 'As close as it gets'}</p>
       </div>
+    </div>
+  );
+}
+
+/** The way to the lessons he guides, which keep their own panel because the list is long. */
+export function QuillLessons() {
+  return (
+    <section className="qp-lessons" aria-label="Quests">
+      <h3 className="qt-shelf-title">Lessons with Quill</h3>
+      <p className="qp-none">Short lessons that teach by doing, with Quill beside you.</p>
+      <button type="button" className="ui-btn" onClick={() => showPanel('quests')}>
+        Open Quests
+      </button>
+    </section>
+  );
+}
+
+/** Quill's home in the right rail: all of him in one tab. */
+export function QuillPetPanel() {
+  return (
+    <div className="cv-panel cv-options qp-panel" data-help="quill-pet">
+      <QuillHim />
+      <QuillShelves />
+      <QuillLessons />
     </div>
   );
 }

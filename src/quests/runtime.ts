@@ -5,6 +5,7 @@ import { allCommands } from '../core/registry';
 import { store } from '../core/store';
 import { getPrefs, reducedMotion } from '../ui/prefs';
 import { runCommandById } from './actions';
+import { didWords } from './did';
 import { QuestEngine, type StateSource } from './engine';
 import { celebrate, clearPraise, dismissCelebration, praise } from './feedback';
 import { playCue } from '../ui/sounds';
@@ -64,7 +65,7 @@ engine.on((e) => {
     stopWatching();
   }
   else if (e.kind === 'step' && !e.skipped) {
-    praise(PIXEL_QUESTS.has(e.quest.id), e.step.did);
+    praise(PIXEL_QUESTS.has(e.quest.id), e.step.did ?? didWords(e.quest.id, e.step.id));
     playCue('step');
   }
   else if (e.kind === 'finish') {

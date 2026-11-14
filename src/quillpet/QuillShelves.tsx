@@ -1,5 +1,6 @@
-// Quill's things: the drawings you've given him. Its own panel, so his corner stays about him and the collection has
-// room to grow. He keeps a little picture of each one, never the drawing itself.
+// Quill's shelves: the presents he has made you and the drawings you have given him. One part of his home (the Quill
+// panel); it reads only the pet store, so the same part can sit anywhere he gets a room. He keeps a little picture of
+// each thing, never the drawing itself.
 import { useState } from 'react';
 import { QuillSays, useShowQuill } from '../ui/mascot';
 import { line } from '../ui/mascot/lines';
@@ -23,7 +24,7 @@ export function sayWhen(givenAt: number, now = Date.now()): string {
   return `about ${Math.round(days / 30)} months ago`;
 }
 
-export function QuillThingsPanel() {
+export function QuillShelves() {
   const things = petStore.use((s) => s.things);
   const presents = petStore.use((s) => s.presents);
   const showQuill = useShowQuill();
@@ -32,11 +33,11 @@ export function QuillThingsPanel() {
   const give = () => void giveToQuill().then((got) => got && setSaid(line('pet.given')));
 
   return (
-    <div className="cv-panel cv-options qt-panel" data-help="quill-things">
+    <div className="qt-panel" data-help="quill-things">
       <div className="qt-top">
-        <p className="qt-count">{things.length === 0 ? 'Nothing yet' : things.length === 1 ? '1 thing' : `${things.length} things`}</p>
+        <p className="qt-count">{things.length === 0 ? 'Nothing given yet' : things.length === 1 ? '1 thing given' : `${things.length} things given`}</p>
         <button type="button" className="ui-btn qp-give" onClick={give} title="He keeps a little picture of the frame you are on">
-          Give him this
+          Give him this drawing
         </button>
       </div>
 
@@ -75,7 +76,7 @@ export function QuillThingsPanel() {
       )}
 
       {things.length === 0 ? (
-        <p className="qp-none">Press <b>Give him this</b> and Quill keeps a little picture of the frame you're on. He'll hang on to it for as long as you like.</p>
+        <p className="qp-none">Press <b>Give him this drawing</b> and Quill keeps a little picture of the frame you're on. He'll hang on to it for as long as you like.</p>
       ) : (
         <>
         <h3 className="qt-shelf-title">Yours, that he keeps</h3>

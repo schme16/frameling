@@ -1,11 +1,9 @@
 // Quill's first-run hello: who he is, what Frameling is for, what you'd like to make, your colours, a few settings,
-// a name for your first animation, then off you go. Every step can be skipped. The steps live in flow.ts.
+// then a name for your first animation and off you go. Every step can be skipped. The steps live in flow.ts.
 import { isFirstRun, markFirstRun } from './state';
 import { useEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react';
-import { currentChoice, setChoice } from '../../core/choices';
 import { getHelp } from '../../core/registry';
 import { store } from '../../core/store';
-import { UNITS, type Unit } from '../../core/units';
 import { askAboutUnsavedChanges } from '../../io/document';
 import { applyWorkspace, showPanel } from '../dock';
 import { Icon } from '../icons';
@@ -24,6 +22,7 @@ import { getFeature, isFeatureOn } from '../../features/host';
 import { offerTurnOnForWish } from '../../features/prompt';
 import { useFeaturesVersion } from '../../features/use';
 import { DOZE_MS, INTERESTS, isStrawberry, makeReaction, pickedButOff, planFor, reduceFlow, sillyName, startFlow, STEPS, stepIndex, strawberryFor, type FlowState, type StepId } from './flow';
+import { bringBack, nameList, tuckAway, tuckPlan } from './tuck';
 import './onboarding.css';
 
 /** True while this is the automatic first-run showing (a skip then still opens the welcome sheet). */
@@ -40,11 +39,26 @@ const TITLES: Record<StepId, string> = {
   make: 'What would you like to make?',
   themes: 'Pick your colours',
   prefs: 'A few handy settings',
-  name: 'Name your first animation',
   done: 'All set!',
 };
 
+/** True in a short window (about 760 px or less), where Quill and his bubbles are drawn smaller so they all fit. */
+function useShortWindow(): boolean {
+  const query = '(max-height: 760px)';
+  const ask = () => (typeof window.matchMedia === 'function' ? window.matchMedia(query) : null);
+  const [short, setShort] = useState(() => !!ask()?.matches);
+  useEffect(() => {
+    const m = ask();
+    if (!m) return;
+    const on = () => setShort(m.matches);
+    m.addEventListener('change', on);
+    return () => m.removeEventListener('change', on);
+  }, []);
+  return short;
+}
+
 function Flow() {
+  const short = useShortWindow();
   const [s, dispatch] = useReducer(reduceFlow, undefined, () => startFlow(sillyName()));
   // Show Quill switched on the settings step: a sad goodbye (he stays on screen until it's done), or a cheer.
   const [mood, setMood] = useState<{ kind: 'bye' | 'back'; n: number; playing: boolean } | null>(null);
@@ -56,6 +70,7 @@ function Flow() {
   const themes = useMemo(() => [...BUILT_IN_THEMES, ...p.customThemes], [p.customThemes]);
   useFeaturesVersion();
   const plan = planFor(s.interests.filter(interestAvailable), questProgress.get().completed);
+  const tuck = tuckPlan(s.interests);
 
   // Quill nods off when a step sits untouched, and wakes up a bit embarrassed.
   const lastPoke = useRef(Date.now());
@@ -102,7 +117,16 @@ function Flow() {
     applyWorkspace(plan.workspace);
     if (plan.panel) showPanel(plan.panel);
     const name = s.name.trim() || 'Untitled';
+    // Put away the areas none of the picks need, and say how to get them back.
+    const tucked = s.tuck ? tuckAway(tuck.ids) : [];
     end('done');
+    if (tucked.length) {
+      toast(line('onboarding.tucked', { names: nameList(tuck.names.filter((_, n) => tucked.includes(tuck.ids[n]))) }), {
+        kind: 'info',
+        duration: 12_000,
+        action: { label: 'Bring them back', id: 'tuck-undo', run: () => bringBack(tucked) },
+      });
+    }
     // A blank pixel grid is Quill's pixel chooser: one picture, an animation, frames on boards or sprites on a sheet.
     if (go === 'blank' && plan.blank === 'blank-pixel') {
       const { openPixelChooser } = await import('../../pixel/Chooser');
@@ -157,7 +181,7 @@ function Flow() {
   return (
     <Modal title={`Welcome to Frameling: ${TITLES[s.step]}`} size="lg" hideHeader className="ob ob-a" onClose={() => end('skipped')} initialFocus=".ob-next, .ob-go">
       <div className="ob-body" onPointerDown={poke} onKeyDown={poke}>
-        <aside className={`ob-quill${quill ? '' : ' is-alone'}`}>
+        <aside className={`ob-quill${quill ? '' : ' is-alone'}${short ? ' is-short' : ''}`}>
           <div className="ob-bubbles" aria-live="polite" key={`${s.step}-${dozing}-${mood?.n ?? 0}`}>
             {words.map((w, n) => (
               <p key={n} className="ob-bubble" style={{ animationDelay: `${n * 450}ms` }}>
@@ -169,7 +193,7 @@ function Flow() {
             <div className="ob-quill-stand">
               <Quill
                 anim={anim}
-                size={192}
+                size={short ? 156 : 192}
                 force={byePlaying}
                 onDone={byePlaying ? () => setMood((m) => m && { ...m, playing: false }) : undefined}
               />
@@ -185,8 +209,7 @@ function Flow() {
             {s.step === 'make' && <Make s={s} toggle={(interest) => dispatch({ type: 'toggle', interest })} />}
             {s.step === 'themes' && <Themes themes={themes} strawberry={strawberry} />}
             {s.step === 'prefs' && <Settings onQuill={quillSwitched} />}
-            {s.step === 'name' && <Name name={s.name} setName={(name) => dispatch({ type: 'name', name })} next={() => dispatch({ type: 'next' })} />}
-            {s.step === 'done' && <Done s={s} plan={plan} go={(g) => void finish(g)} />}
+            {s.step === 'done' && <Done s={s} plan={plan} tuck={tuck} setName={(name) => dispatch({ type: 'name', name })} setTuck={(on) => dispatch({ type: 'tuck', on })} go={(g) => void finish(g)} />}
           </div>
         </section>
       </div>
@@ -251,10 +274,9 @@ function sayFor(s: FlowState, o: { strawberryName: string; lovesIt: boolean; qui
       return lines(o.lovesIt ? 'onboarding.themes.loved' : 'onboarding.themes.hint', { theme: o.strawberryName });
     case 'prefs':
       return lines(o.quillOn ? 'onboarding.prefs.on' : 'onboarding.prefs.off');
-    case 'name':
-      return lines('onboarding.name');
     case 'done':
-      return lines('onboarding.done', { name: o.name.trim() || line('onboarding.done.noName') });
+      // The name is asked for on this page, so his name lines lead and the "how shall we start" ones follow.
+      return [...lines('onboarding.name'), ...lines('onboarding.done', { name: o.name.trim() || line('onboarding.done.noName') })];
   }
 }
 
@@ -268,10 +290,8 @@ function animFor(s: FlowState, lovesIt: boolean, beat: number): Script {
       return lovesIt ? [{ anim: 'cheer' }, { anim: 'cheer' }, { anim: 'idle' }] : [{ anim: 'talk', hold: 2600 }, { anim: 'idle' }];
     case 'prefs':
       return [{ anim: 'think', hold: 1800 }, { anim: 'idle' }];
-    case 'name':
-      return [{ anim: 'draw', hold: 2600 }, { anim: 'idle' }];
     case 'done':
-      return [{ anim: 'cheer' }, { anim: 'cheer' }, { anim: 'wave', hold: 1600 }, { anim: 'idle' }];
+      return [{ anim: 'draw', hold: 2200 }, { anim: 'cheer' }, { anim: 'wave', hold: 1600 }, { anim: 'idle' }];
   }
 }
 
@@ -297,6 +317,7 @@ function Berry() {
 
 // ---------------------------------------------------------------- steps
 
+/** What Frameling does, as a plain list (not cards: nothing here is a button, so nothing looks like one). */
 function Hello() {
   const items: [string, string, string][] = [
     ['brush', 'Draw', 'Brushes, shapes and fills.'],
@@ -306,17 +327,20 @@ function Hello() {
     ['export', 'Share', 'GIFs, videos, sprite sheets, games.'],
   ];
   return (
-    <div className="ob-hello">
-      {items.map(([icon, title, blurb], n) => (
-        <div key={title} className="ob-feature" style={{ animationDelay: `${150 + n * 90}ms` }}>
-          <span className="ob-feature-icon">
-            <Icon name={icon} size={22} />
-          </span>
-          <strong>{title}</strong>
-          <span>{blurb}</span>
-        </div>
-      ))}
-    </div>
+    <>
+      <p className="ob-lead">Here is what you can do.</p>
+      <ul className="ob-hello" aria-label="What you can do in Frameling">
+        {items.map(([icon, title, blurb], n) => (
+          <li key={title} style={{ animationDelay: `${150 + n * 90}ms` }}>
+            <span className="ob-hello-icon">
+              <Icon name={icon} size={20} />
+            </span>
+            <strong>{title}</strong>
+            <span>{blurb}</span>
+          </li>
+        ))}
+      </ul>
+    </>
   );
 }
 
@@ -442,26 +466,8 @@ function Setting({ label, hint, children }: { label: string; hint: string; child
 
 function Settings({ onQuill }: { onQuill: (on: boolean) => void }) {
   const p = usePrefs((x) => x);
-  const [wheel, setWheel] = useState(() => currentChoice<'zoom' | 'scroll'>('canvas.wheel'));
   return (
     <div className="ob-settings">
-      <Setting label="Units" hint="How sizes are shown. Pixels suit screens and games; mm, cm and inches suit print.">
-        <Segmented<Unit> label="Units" value={p.units} onChange={(units) => setPrefs({ units })} options={UNITS.map((u) => ({ id: u.id, label: u.id }))} />
-      </Setting>
-      <Setting label="Mouse wheel" hint="What the wheel does over the canvas. Pinching a trackpad always zooms.">
-        <Segmented<'zoom' | 'scroll'>
-          label="Mouse wheel"
-          value={wheel}
-          onChange={(v) => {
-            setChoice('canvas.wheel', v);
-            setWheel(v);
-          }}
-          options={[
-            { id: 'zoom', label: 'Zoom', icon: 'zoom' },
-            { id: 'scroll', label: 'Scroll', icon: 'hand' },
-          ]}
-        />
-      </Setting>
       <Setting label="Look" hint="Cosy is soft and rounded. Crisp is tighter and sharper.">
         <Segmented<LookPref>
           label="Look"
@@ -476,27 +482,19 @@ function Settings({ onQuill }: { onQuill: (on: boolean) => void }) {
       <Setting label="Sounds" hint="Little sound effects, as they arrive.">
         <Switch label="Sounds" on={p.sounds} onChange={(sounds) => setPrefs({ sounds })} />
       </Setting>
-      <Setting label="Reduce motion" hint="Stops the bouncing and fading.">
-        <Switch label="Reduce motion" on={p.reduceMotion} onChange={(reduceMotion) => setPrefs({ reduceMotion })} />
-      </Setting>
       <Setting label="Show Quill" hint={line('onboarding.prefs.showQuill')}>
         <Switch label="Show Quill" on={p.showQuill} onChange={onQuill} />
       </Setting>
+      <p className="ob-lead ob-more">Units, the mouse wheel and the rest are in Preferences whenever you want them. Less motion follows your computer's own setting.</p>
     </div>
   );
 }
 
-function Name({ name, setName, next }: { name: string; setName: (n: string) => void; next: () => void }) {
+function Name({ name, setName }: { name: string; setName: (n: string) => void }) {
   const [spin, setSpin] = useState(0);
   return (
-    <form
-      className="ob-name"
-      onSubmit={(e) => {
-        e.preventDefault();
-        next();
-      }}
-    >
-      <label htmlFor="ob-name-input">Its name</label>
+    <form className="ob-name" onSubmit={(e) => e.preventDefault()}>
+      <label htmlFor="ob-name-input">Name your first animation</label>
       <div className="ob-name-row">
         <input id="ob-name-input" type="text" value={name} maxLength={80} onChange={(e) => setName(e.target.value)} data-autofocus />
         <button
@@ -535,7 +533,7 @@ function Dice() {
   );
 }
 
-function Done({ s, plan, go }: { s: FlowState; plan: ReturnType<typeof planFor>; go: (g: 'quest' | 'template' | 'blank') => void }) {
+function Done({ s, plan, tuck, setName, setTuck, go }: { s: FlowState; plan: ReturnType<typeof planFor>; tuck: ReturnType<typeof tuckPlan>; setName: (n: string) => void; setTuck: (on: boolean) => void; go: (g: 'quest' | 'template' | 'blank') => void }) {
   const quest = getQuest(plan.quest);
   const [templateName, setTemplateName] = useState('');
   useEffect(() => {
@@ -547,10 +545,18 @@ function Done({ s, plan, go }: { s: FlowState; plan: ReturnType<typeof planFor>;
   const ws = plan.workspace === 'pixel' ? 'Pixel' : plan.workspace === 'animate' ? 'Animate' : 'Draw';
   return (
     <div className="ob-done">
+      <Name name={s.name} setName={setName} />
       <p className="ob-lead">
         {lineParts('onboarding.done.lead', { workspace: <strong key="ws">{ws}</strong>, name: <strong key="name">{s.name.trim() || line('onboarding.done.leadNoName')}</strong> })}
       </p>
       <TilesOffNote s={s} />
+      {tuck.ids.length > 0 && (
+        <div className="ob-tuck">
+          <Setting label="Tuck away what you didn't pick" hint={`Puts ${nameList(tuck.names)} out of sight for now, so the menus and panels stay small. Preferences > Features brings any of it back.`}>
+            <Switch label="Tuck away what you didn't pick" on={s.tuck} onChange={setTuck} />
+          </Setting>
+        </div>
+      )}
       <div className="ob-go-list">
         {quest && (
           <button type="button" className="ob-go is-main" onClick={() => go('quest')}>

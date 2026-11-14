@@ -60,7 +60,7 @@ describe('Tiles picked, then Tiles turned off', () => {
   it('says nothing while Tiles is on', async () => {
     await click(tilesCard()!);
     expect(note()).toBeNull();
-    await next(4);
+    await next(3);
     expect(note()).toBeNull();
   });
 
@@ -70,7 +70,7 @@ describe('Tiles picked, then Tiles turned off', () => {
     expect(tilesCard()).toBeUndefined();
     expect(note()?.textContent).toContain('You picked Tiles and levels, but Tiles is turned off');
     expect(note()?.textContent).not.toContain('—');
-    await next(4);
+    await next(3);
     expect(document.querySelector('.ob-done')).toBeTruthy();
     expect(note()?.textContent).toContain('Turn Tiles on');
   });
