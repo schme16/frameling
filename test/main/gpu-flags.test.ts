@@ -55,11 +55,21 @@ describe('harness engine modes', () => {
     expect(sw).toContain('--enable-unsafe-webgpu');
     expect(sw.join(' ')).not.toMatch(/swiftshader|use-angle/);
   });
-  it('the card flags are the Linux launcher flags', () => {
+  it('the card flags are the Linux launcher flags, and the fuller set is the one it keeps back', () => {
     const launcher = readFileSync(path.join(root, 'build/linux/launcher.sh'), 'utf8');
     const line = /^GPU_ARGS=\((.*)\)$/m.exec(launcher);
     expect(line, 'GPU_ARGS in build/linux/launcher.sh').not.toBeNull();
     expect(harness.CARD_SWITCHES.map(asArg)).toEqual(line![1].trim().split(/\s+/));
+    const more = /^\s*GPU_ARGS\+=\((.*)\)$/m.exec(launcher);
+    expect(more, 'the FRAMELING_GPU=full line in build/linux/launcher.sh').not.toBeNull();
+    expect(harness.CARD_FULL_SWITCHES.map(asArg)).toEqual(more![1].trim().split(/\s+/));
+  });
+
+  it('the fuller set is only there when it is asked for, because it has blanked a canvas', () => {
+    expect(harness.switchesFor('card').map(asArg).join(' ')).not.toMatch(/zero-copy|oop-rasterization|Vulkan/);
+    const full = harness.switchesFor('card', { full: true }).map(asArg);
+    expect(full).toContain('--enable-zero-copy');
+    expect(full).toContain('--canvas-oop-rasterization');
   });
 });
 

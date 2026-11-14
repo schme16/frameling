@@ -83,6 +83,9 @@ const DIALOGS = [
   ['prefs features', `__frameling.overlays.openPrefs('features')`],
   ['prefs pen', `__frameling.overlays.openPrefs('pen')`],
   ['prefs diagnostics', `__frameling.overlays.openPrefs('diagnostics')`],
+  // The ask-the-first-time questions: each option's detail is a sentence, so these are where words run off an edge.
+  // The four here carry the longest details of any question in the app.
+  ...['versions.restore', 'export.clipEngineBounce', 'effects.maskStart', 'timeline.newKeyHold'].map((id) => [`question ${id}`, `void __frameling.choices.ask('${id}')`]),
   ['pen check offer', `__frameling.overlays.state.set((o) => ({ ...o, penCheck: 'offer' }))`],
   ['pen check', run('pen.check')],
   ['canvas size', run('document.settings')],

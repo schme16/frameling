@@ -42,6 +42,7 @@ import { setGridLook } from '../canvas/gridView';
 import { setLightTableTint } from '../canvas/lightTable';
 import { offerTweenAt } from '../timeline/tweenOffer';
 import { getFillOptions, setFillOptions } from '../tools/fill-options';
+import { allChoices, askAgain, forgetAnswers } from '../core/choices';
 
 if (new URLSearchParams(location.search).has('debug')) {
   // Saving keeps each vector drawing's text; in the harnesses such a drawing is frozen so a write in place throws.
@@ -75,6 +76,8 @@ if (new URLSearchParams(location.search).has('debug')) {
     gpu: { pretend: pretendReport },
     // Theme and look picks, for shots in a given theme.
     prefs: { get: getPrefs, set: setPrefs },
+    // Ask-the-first-time questions, for their shots and the no-wrap check: ask one by id, or forget the answers.
+    choices: { ask: askAgain, forget: forgetAnswers, all: () => allChoices().map((c) => c.id) },
     // Quill's interface size offer for a pretend screen (shots, checks): { id, width, height, scaleFactor, workWidth, workHeight }.
     screenOffer: (d: Omit<Parameters<typeof considerScreen>[0], 'windowWidth' | 'windowHeight'>) => void considerScreen({ windowWidth: 1400, windowHeight: 900, ...d }, { force: true }),
     // Quill's offer after a crash, for a pretend crash (shots, checks): 'ask' offers to send, 'tell' only says what happened.

@@ -163,6 +163,8 @@ function Ask({ pending, aside }: { pending: Pending; aside: boolean }) {
             type="button"
             role="radio"
             aria-checked={value === o.value}
+            // The detail under each label is a sentence, so it wraps rather than running off the edge.
+            data-wraps
             className={`ui-choice-opt${value === o.value ? ' is-chosen' : ''}`}
             data-testid={`choice.${def.id}.${o.value}`}
             onClick={() => setValue(o.value)}

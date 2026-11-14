@@ -28,7 +28,10 @@ const run = (dir: string, args: string[], env: Record<string, string> = {}) =>
 
 describe.skipIf(!canRun)('Linux launcher', () => {
   // The flags that turn the card on. They lead every start, so the tests say so once here rather than in each line.
-  const GPU = '--ignore-gpu-blocklist --enable-features=Vulkan,DefaultANGLEVulkan --enable-zero-copy --canvas-oop-rasterization';
+  // The default says yes to the card and nothing more. The fuller set blanked the canvas on an NVIDIA driver, so
+  // it is behind FRAMELING_GPU=full (see the gpu-blank-canvas card).
+  const GPU = '--ignore-gpu-blocklist';
+  const GPU_FULL = `${GPU} --enable-features=Vulkan,DefaultANGLEVulkan --enable-zero-copy --canvas-oop-rasterization`;
   it('is valid shell', () => {
     execFileSync('bash', ['-n', launcher]);
   });
@@ -69,6 +72,12 @@ describe.skipIf(!canRun)('Linux launcher', () => {
     expect(r.stdout.trim()).toBe(`ARGS: --no-sandbox ${GPU} a.frameling`);
     expect(r.stderr).toContain('Starting without it');
     expect(r.stderr).toContain('--show-linux-fix');
+  });
+
+  it('adds the fuller graphics set only when it is asked for', () => {
+    const r = run(fakeApp(), ['file.frameling'], { FRAMELING_GPU: 'full' });
+    expect(r.stdout.trim()).toBe(`ARGS: ${GPU_FULL} file.frameling`);
+    expect(r.stderr).toContain('fuller graphics set');
   });
 
   it('leaves the card out when it is switched off by hand', () => {

@@ -3020,6 +3020,8 @@ body.ui-resizing * {
   display: flex;
   flex-direction: column;
   gap: 3px;
+  /* So a long detail wraps inside the button instead of pushing it wider. */
+  min-width: 0;
 }
 .ui-choice-text span {
   color: var(--muted);

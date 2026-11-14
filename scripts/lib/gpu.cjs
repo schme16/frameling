@@ -28,8 +28,12 @@ const { app, BrowserWindow } = require('electron');
 
 const SOFT = /swiftshader|llvmpipe|lavapipe|softpipe|software|basic render|microsoft basic/i;
 
-// Kept in the same order as GPU_ARGS in build/linux/launcher.sh.
-const CARD_SWITCHES = [['ignore-gpu-blocklist'], ['enable-features', 'Vulkan,DefaultANGLEVulkan'], ['enable-zero-copy'], ['canvas-oop-rasterization']];
+// Kept in the same order as GPU_ARGS in build/linux/launcher.sh: the app's default is to say yes to the card and
+// nothing more.
+const CARD_SWITCHES = [['ignore-gpu-blocklist']];
+// The fuller set the launcher adds for FRAMELING_GPU=full. It blanked the canvas on an NVIDIA driver, so a harness
+// only takes it when it is asked for by name: gpu.use('card', { full: true }), or GPU_FULL=1.
+const CARD_FULL_SWITCHES = [['enable-features', 'Vulkan,DefaultANGLEVulkan'], ['enable-zero-copy'], ['canvas-oop-rasterization']];
 const SOFTWARE_SWITCHES = [['ignore-gpu-blocklist'], ['enable-unsafe-swiftshader'], ['use-angle', 'swiftshader']];
 // The colour profile pin; src/main/gpuFlags.ts sets the same switch for the app.
 const COLOUR_SWITCH = ['force-color-profile', 'srgb'];
@@ -39,7 +43,8 @@ let chosen = null;
 /** The switches a mode sets, as [name, value?] pairs (exported so a test can compare them with the launcher). */
 function switchesFor(mode, opts = {}) {
   if (mode === 'software' && opts.noGpu) return [COLOUR_SWITCH];
-  const base = mode === 'card' ? [...CARD_SWITCHES] : opts.webgpu ? [['ignore-gpu-blocklist']] : [...SOFTWARE_SWITCHES];
+  const full = opts.full || process.env.GPU_FULL === '1';
+  const base = mode === 'card' ? [...CARD_SWITCHES, ...(full ? CARD_FULL_SWITCHES : [])] : opts.webgpu ? [['ignore-gpu-blocklist']] : [...SOFTWARE_SWITCHES];
   if (opts.webgpu) base.push(['enable-unsafe-webgpu']);
   return [...base, COLOUR_SWITCH];
 }
@@ -173,4 +178,4 @@ async function confirmOrExit(win) {
 /** The mode in force, or null before use(). */
 const current = () => (chosen ? chosen.mode : null);
 
-module.exports = { use, judge, confirm, confirmOrExit, current, switchesFor, probe, SOFT, CARD_SWITCHES, SOFTWARE_SWITCHES, COLOUR_SWITCH };
+module.exports = { use, judge, confirm, confirmOrExit, current, switchesFor, probe, SOFT, CARD_SWITCHES, CARD_FULL_SWITCHES, SOFTWARE_SWITCHES, COLOUR_SWITCH };

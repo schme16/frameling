@@ -108,11 +108,17 @@ card (`GPU_MODE=card`) it fails: Divide and Subtract come out up to 4 levels off
 
 What was checked, and what was not.
 
-- **Window composited on the card, canvas kept there.** With the launcher's flags (`--ignore-gpu-blocklist`,
+- **Window composited on the card, canvas kept there.** With the fuller set (`--ignore-gpu-blocklist`,
   `Vulkan,DefaultANGLEVulkan`, `--enable-zero-copy`, `--canvas-oop-rasterization`) the engine reports compositing,
   2D canvas and rasterisation enabled and Vulkan on, and WebGL's renderer is the NVIDIA card. Colours and the busy
   picture match software as above, so zero-copy and out-of-process canvas drawing do not stripe or shift anything in
   what could be read back.
+- **What that check missed, and it matters.** It read pixels back out of an offscreen canvas. It never looked at the
+  window. On the user's NVIDIA driver that same set opened a file with every layer in it and drew **nothing at all**
+  on the canvas. So the launcher now passes `--ignore-gpu-blocklist` and nothing else, and the fuller set is behind
+  `FRAMELING_GPU=full` until each switch is proven one at a time with a picture of the real window. The lesson for
+  any graphics check here: reading a canvas back is not proof that anything reached the screen. See the
+  `gpu-blank-canvas` card.
 - **The silent fall back** (above) is the real risk with hardware drawing on: on a driver the engine can't use, the
   AppImage still opens, in llvmpipe, and looks fine. The launcher's `FRAMELING_GPU=off` is the honest way to ask for
   software. Preferences should show the renderer name (task `gpu-prefs-page`).

@@ -54,14 +54,18 @@ for a in "$@"; do
 done
 
 # Hardware drawing. Frameling is a drawing app, so leaving the card out of it is the worst thing to leave to chance,
-# and the browser engine says no to plenty of perfectly good Linux drivers by default. These say yes:
-#  --ignore-gpu-blocklist   use the card even on a driver the engine has not been told about
-#  --enable-features=Vulkan,DefaultANGLEVulkan  draw through Vulkan, which is the path that works across X11 and Wayland
-#  --enable-zero-copy, --canvas-oop-rasterization  keep the pixels on the card instead of copying them back and forth
-# If the card cannot be used after all, the browser engine falls back to software by itself and the window still
-# opens, so there is nothing here to undo. For a driver that is worse than that, FRAMELING_GPU=off (or the file
-# Frameling/gpu-off in your config folder, which Preferences writes) leaves them all out.
-GPU_ARGS=(--ignore-gpu-blocklist --enable-features=Vulkan,DefaultANGLEVulkan --enable-zero-copy --canvas-oop-rasterization)
+# and the browser engine says no to plenty of perfectly good Linux drivers by default. --ignore-gpu-blocklist says
+# yes: use the card even on a driver the engine has not been told about. That is all the default does.
+#
+# The fuller set (Vulkan through ANGLE, and keeping canvas pixels on the card) blanked the canvas on an NVIDIA
+# driver here: the file opened, every layer was there, and nothing was drawn. Nothing that can do that is on by
+# default in a drawing app. It is behind FRAMELING_GPU=full until each switch is proven on real cards, one at a
+# time, with a picture of the canvas each time. See the gpu-blank-canvas card.
+GPU_ARGS=(--ignore-gpu-blocklist)
+if [ "${FRAMELING_GPU:-}" = full ]; then
+  GPU_ARGS+=(--enable-features=Vulkan,DefaultANGLEVulkan --enable-zero-copy --canvas-oop-rasterization)
+  say 'trying the fuller graphics set (FRAMELING_GPU=full). If nothing is drawn, run it without that.'
+fi
 if [ "${FRAMELING_GPU:-}" = off ] || [ -f "${XDG_CONFIG_HOME:-$HOME/.config}/Frameling/gpu-off" ]; then
   GPU_ARGS=(--disable-gpu)
   say 'drawing in software, as you asked (FRAMELING_GPU=off).'
