@@ -18,7 +18,7 @@ type V = [number, number];
 
 /** Most stamps on one line, and most grain holes in one line. Bigger lines get fewer, bigger ones instead. */
 export const MAX_STAMPS = 3000;
-export const MAX_HOLES = 12000;
+export const MAX_HOLES = 4000;
 const MAX_CELLS = 300000;
 
 const r2 = (v: number) => Math.round(v * 100) / 100;
@@ -214,16 +214,31 @@ interface Grain {
   clump: number;
 }
 
-function grainFor(kind: 'chalk' | 'charcoal', t: ResolvedTip, size: number): Grain {
-  const base = Math.max(1.2, Math.min(4.5 * t.grain, size * 0.32));
+/**
+ * The most grain cells a line is worked out with. A big brush gets coarser grain (the same look, seen from further off)
+ * rather than tens of thousands of holes, which take half a second a frame to draw. Lines up to about 120 px wide and a
+ * few thousand long are well under it, so they keep the grain they always had.
+ */
+const GRAIN_CELLS = 20000;
+
+function grainFor(kind: 'chalk' | 'charcoal', t: ResolvedTip, size: number, area: number): Grain {
+  const own = Math.max(1.2, Math.min(4.5 * t.grain, size * 0.32));
+  const base = Math.max(own, Math.sqrt(area / GRAIN_CELLS));
   return kind === 'chalk' ? { g: base, edge: 0.3 * base, clump: 5 } : { g: base, edge: 0.7 * base, clump: 3 };
 }
 
 function grainShape(s: StrokeShape, outline: number[][], kind: 'chalk' | 'charcoal', t: ResolvedTip): Shape[] | null {
   const size = s.brush.size;
-  const gr = grainFor(kind, t, size);
   const base = ringFrom(outline, 2);
   if (base.length < 4) return null;
+  // How much paper the line covers (the outline's area), which is what the work grows with.
+  let twice = 0;
+  for (let i = 0; i < base.length; i++) {
+    const p = base[i];
+    const q = base[(i + 1) % base.length];
+    twice += p[0] * q[1] - q[0] * p[1];
+  }
+  const gr = grainFor(kind, t, size, Math.abs(twice) / 2);
   // Join the outline's overlaps, when it has any.
   const first = cover([base], gr.g, false);
   if (!first) return null;

@@ -4,6 +4,8 @@
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKey, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Slider } from '../canvas/controls';
+import { typedSize } from '../tools/brushRange';
+import { useBrushRange } from '../tools/options/useBrushRange';
 import type { BrushSettings } from '../core/format';
 import { store, useStore } from '../core/store';
 import { usePopover } from '../ui/popover';
@@ -151,6 +153,7 @@ function Panel({ anchor, onClose, onPicked }: { anchor: HTMLElement; onClose: (r
   useBrushPresets(brushesVersion);
   usePicker(pickerVersion);
   const live = useStore((st) => st.ui.brush);
+  const range = useBrushRange(false);
   const rows = useRowStyle();
   const scale = rowScale();
   const all = everyBrush();
@@ -328,7 +331,7 @@ function Panel({ anchor, onClose, onPicked }: { anchor: HTMLElement; onClose: (r
           <i style={{ width: LIVE_SIZE(live.size), height: LIVE_SIZE(live.size) }} />
         </div>
         <div className="pk-sliders">
-          <Slider label="Size" value={live.size} min={1} max={120} format={(v) => `${v}px`} onChange={(v) => setBrush({ size: v })} />
+          <Slider label="Size" value={live.size} min={range.min} max={range.max} typeMax={range.typedMax} curve format={(v) => `${v}px`} onChange={(v) => setBrush({ size: typedSize(v) })} />
           <Slider label="Smoothing" value={Math.round(live.streamline * 100)} min={0} max={100} format={(v) => `${v}%`} onChange={(v) => setBrush({ streamline: v / 100, smoothing: v / 100 })} />
         </div>
       </div>

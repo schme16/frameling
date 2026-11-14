@@ -15,6 +15,8 @@ import { BrushPresetRow } from '../../brushes/BrushPresetRow';
 import { TipOptions } from '../../brushes/TipOptions';
 import { PixelStampOptions } from '../../brushes/PixelStampOptions';
 import { readPixelStamp } from '../../brushes/stamps';
+import { typedSize } from '../brushRange';
+import { useBrushRange } from './useBrushRange';
 
 export function useActiveLayerKind(): 'vector' | 'pixel' {
   return useStore((s) => (findLayer(s.doc, s.ui.activeLayerId) ?? s.doc.layers[s.doc.layers.length - 1])?.kind === 'pixel' ? 'pixel' : 'vector');
@@ -63,12 +65,13 @@ function VectorBrushOptions() {
   const brush = useStore((s) => s.ui.brush);
   const color = useStore((s) => s.ui.color);
   const pressure = brush.thinning !== 0;
+  const range = useBrushRange(false);
   return (
     <div className="cv-options">
       <BrushPresetRow />
       <BrushPreview brush={brush} color={color} />
       <TipOptions />
-      <Slider label="Size" value={brush.size} min={1} max={120} format={(v) => `${v}px`} onChange={(v) => setBrush({ size: v })} />
+      <Slider label="Size" value={brush.size} min={range.min} max={range.max} typeMax={range.typedMax} curve format={(v) => `${v}px`} onChange={(v) => setBrush({ size: typedSize(v) })} />
       <MoreOptions name="brush" label="More brush options" hint="Merge shapes together, smoothing, pressure, pointy ends, the stabilizer and mirror drawing.">
         <DrawModeToggle />
         <Slider label="Smoothing" value={Math.round(brush.streamline * 100)} min={0} max={100} format={(v) => `${v}%`} onChange={(v) => setBrush({ streamline: v / 100, smoothing: v / 100 })} hint="Higher evens out a shaky hand." />
@@ -89,9 +92,10 @@ function PixelBrushOptions() {
   const shape = useToolSettings((s) => s.pixelBrushShape);
   const perfect = useToolSettings((s) => s.pixelPerfect);
   const stamp = readPixelStamp(useToolSettings((s) => s.pixelStamp));
+  const range = useBrushRange(true);
   return (
     <div className="cv-options">
-      {!stamp && <Slider label="Size" value={size} min={1} max={24} format={(v) => `${v} pixel${v === 1 ? '' : 's'}`} onChange={(v) => setToolSettings({ pixelBrushSize: v })} />}
+      {!stamp && <Slider label="Size" value={size} min={range.min} max={range.max} typeMax={range.typedMax} curve format={(v) => `${v} pixel${v === 1 ? '' : 's'}`} onChange={(v) => setToolSettings({ pixelBrushSize: typedSize(v, true) })} />}
       {!stamp && size > 2 && (
         <Choice
           label="Shape"

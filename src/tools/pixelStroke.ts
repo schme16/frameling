@@ -3,7 +3,8 @@
  * Shift+click straight lines from the last pixel. Used by the brush (paints) and the eraser (clears).
  */
 import type { Doc, PixelLayer } from '../core/format';
-import { PixelPerfect, bresenham, brushOffsets, docToPixel, type PixelShape, type PxPt, type RGBA } from '../canvas/pixels';
+import { PixelPerfect, bresenham, brushSpans, docToPixel, type BrushSpan, type PixelShape, type PxPt, type RGBA } from '../canvas/pixels';
+import { TYPED_MAX } from './brushRange';
 import { PixelSession } from './pixelSession';
 import { solidInk, type Ink } from '../pixel/ink';
 import { toolEvent } from './toolEvents';
@@ -33,14 +34,18 @@ export interface PixelStrokeOptions {
 
 export class PixelStroke {
   readonly session: PixelSession;
-  private offsets: PxPt[];
+  /** A brush made from a selection: its cells. A plain brush is `spans` instead. */
+  private offsets: PxPt[] = [];
+  /** The plain brush's footprint, a row at a time, and the one dab just laid (what the next dab needn't repaint). */
+  private spans: BrushSpan[] = [];
+  private dabbed: { x: number; y: number; spans: readonly BrushSpan[] } | null = null;
   private perfect: PixelPerfect | null;
   private counts = new Map<number, number>();
   private last: PxPt | null = null;
   private lineFrom: PxPt | null = null;
   private ink: Ink;
   private size: number;
-  private offsetsBySize = new Map<number, PxPt[]>();
+  private spansBySize = new Map<number, BrushSpan[]>();
   /** A picture brush: each cell with its own colour, stamped as copies this far apart (null for a plain shape). */
   private picture: { o: PxPt; ink: Ink }[] | null = null;
   private spacing = 1;
@@ -56,8 +61,11 @@ export class PixelStroke {
     this.session = new PixelSession(doc, layer, frame, { adds: !opts.ink && opts.color[3] > 0 });
     this.size = opts.size;
     const cells = opts.stamp ? stampCells(opts.stamp) : null;
-    this.offsets = cells ? cells.map((c) => ({ x: c.x, y: c.y })) : brushOffsets(opts.size, opts.shape);
-    this.offsetsBySize.set(opts.size, this.offsets);
+    if (cells) this.offsets = cells.map((c) => ({ x: c.x, y: c.y }));
+    else {
+      this.spans = brushSpans(opts.size, opts.shape);
+      this.spansBySize.set(opts.size, this.spans);
+    }
     this.ink = this.session.lock(opts.ink ?? solidInk(opts.color));
     if (opts.stamp?.keep && cells) {
       this.picture = cells.map((c) => ({ o: { x: c.x, y: c.y }, ink: this.session.lock(solidInk(c.rgba)) }));
@@ -73,12 +81,12 @@ export class PixelStroke {
    */
   scale(factor: number): void {
     if (this.perfect || factor === 1 || this.opts.stamp) return;
-    const n = Math.min(128, Math.max(1, Math.round(this.opts.size * factor)));
+    const n = Math.min(TYPED_MAX, Math.max(1, Math.round(this.opts.size * factor)));
     if (n === this.size) return;
     this.size = n;
-    let o = this.offsetsBySize.get(n);
-    if (!o) this.offsetsBySize.set(n, (o = brushOffsets(n, this.opts.shape)));
-    this.offsets = o;
+    let o = this.spansBySize.get(n);
+    if (!o) this.spansBySize.set(n, (o = brushSpans(n, this.opts.shape)));
+    this.spans = o;
   }
 
   /** Where in the grid a document position lands. */
@@ -103,6 +111,7 @@ export class PixelStroke {
     if (this.lineFrom) {
       this.session.reset();
       this.lastDab = null;
+      this.dabbed = null;
       for (const q of bresenham(this.lineFrom.x, this.lineFrom.y, p.x, p.y)) this.dab(q);
       this.last = p;
       this.session.flush();
@@ -124,7 +133,12 @@ export class PixelStroke {
   /** One dab of the brush at a pixel. A picture brush lays copies side by side as you drag, a shape smears like any brush. */
   private dab(p: PxPt): void {
     const pic = this.picture;
-    if (!pic) return this.session.stampInk(p, this.offsets, this.ink);
+    if (!pic) {
+      if (this.opts.stamp) return this.session.stampInk(p, this.offsets, this.ink);
+      this.session.stampSpans(p, this.spans, this.ink, this.dabbed);
+      this.dabbed = { x: p.x, y: p.y, spans: this.spans };
+      return;
+    }
     const l = this.lastDab;
     if (l && Math.max(Math.abs(p.x - l.x), Math.abs(p.y - l.y)) < this.spacing) return;
     this.lastDab = p;

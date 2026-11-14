@@ -6,7 +6,9 @@ export const bodies: Record<string, string> = {
 
 In the options you can change the size, how much it smooths out wobbles, whether pressure matters, and whether lines start or end in a point. Hold **Shift** and click to run a straight line from where your last line stopped. The **Tip** row gives lines a different feel: [chalk, charcoal, watercolour or stamps](help:brush-tips).
 
-**On a pixel layer** it paints hard-edged pixels, with the size counted in art pixels. Looking through a zoomed [camera](help:camera), the size is what you see: a 4 pixel brush paints 2 pixels through a camera zoomed in 2x (whole pixels, rounded, never less than 1). (For one pixel lines, the [Pencil](help:tool-pencil) is quicker.)
+**How big can it go?** The **Size** slider runs from 1 pixel to a little wider than your canvas, so a big canvas gets a big brush and a small one is not left with a slider that is all too wide. The first part of the slider is for small, careful sizes and the last part is for the huge ones. Want it bigger still? Click the number beside the slider and type any size you like. The pencil's **Thickness** and the pen's **Line thickness** work the same way.
+
+**On a pixel layer** it paints hard-edged pixels, with the size counted in art pixels (the slider runs up to a little wider than your pixel canvas, and you can click the number and type a bigger one). Looking through a zoomed [camera](help:camera), the size is what you see: a 4 pixel brush paints 2 pixels through a camera zoomed in 2x (whole pixels, rounded, never less than 1). (For one pixel lines, the [Pencil](help:tool-pencil) is quicker.)
 - **Pixel perfect** tidies the little L-shaped corners that make hand-drawn lines look lumpy, so they stay one pixel thick.
 - Hold **Shift** and click to draw a straight line from where you last stopped.
 

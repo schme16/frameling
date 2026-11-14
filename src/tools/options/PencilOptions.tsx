@@ -7,11 +7,14 @@ import { DrawModeToggle } from './DrawModeToggle';
 import { setToolSettings, useToolSettings } from '../settings';
 import { MirrorOptions } from './MirrorOptions';
 import { HoldToTidyOptions } from './HoldToTidyOptions';
+import { typedSize } from '../brushRange';
+import { useBrushRange } from './useBrushRange';
 
 export function PencilOptions() {
   const size = useToolSettings((s) => s.pencilSize);
   const color = useStore((s) => s.ui.color);
   const clean = useToolSettings((s) => s.pencilClean);
+  const range = useBrushRange(false);
   return (
     <div className="cv-options">
       <DrawModeToggle />
@@ -25,7 +28,7 @@ export function PencilOptions() {
         onChange={(v) => setToolSettings({ pencilClean: v === 'clean' })}
       />
       {!clean && <BrushPreview brush={{ ...pencilBrush(), size }} color={color} />}
-      <Slider label="Thickness" value={size} min={1} max={clean ? 40 : 16} step={0.5} format={(v) => `${v}px`} onChange={(v) => setToolSettings({ pencilSize: v })} />
+      <Slider label="Thickness" value={size} min={range.min} max={range.max} typeMax={range.typedMax} curve step={0.5} format={(v) => `${v}px`} onChange={(v) => setToolSettings({ pencilSize: typedSize(v) })} />
       <Tip>{clean ? 'Clean lines come out smooth and even. Bend them later with Edit points (A).' : 'The pencil keeps an even, thin line. For lines that swell with pressure, use the brush.'}</Tip>
       {!clean && <HoldToTidyOptions />}
       <MirrorOptions />

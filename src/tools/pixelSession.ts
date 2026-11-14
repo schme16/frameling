@@ -13,7 +13,7 @@ import { pixelGrid } from '../core/doc';
 import { dropPixelCanvas, peekPixelCanvas, pixelCanvas, seedPixelCanvas } from '../core/render';
 import { drawingAt } from '../core/doc';
 import { setLive } from '../canvas/controller';
-import type { PxPt, RGBA } from '../canvas/pixels';
+import type { BrushSpan, PxPt, RGBA } from '../canvas/pixels';
 import { activeGrid, editActiveDrawing, type EditResult } from './edit';
 import { forgetGrids, setPlaced, trimPixels, unionRect } from '../core/pixelBounds';
 import { autoHeldAt } from '../timeline/edit-core';
@@ -234,6 +234,60 @@ export class PixelSession {
   /** Paints a brush footprint around a pixel with an ink (mirrored). */
   stampInk(p: PxPt, offsets: PxPt[], ink: Ink): void {
     for (const o of offsets) this.paint(p.x + o.x, p.y + o.y, ink);
+  }
+
+  /**
+   * Paints a brush footprint made of rows around a pixel. `after` is a footprint just painted (its centre and rows):
+   * what it already covered is skipped, which is what makes a long drag with a big brush cheap, since each step only
+   * adds a thin crescent. Safe because painting a pixel twice in one stroke gives the same pixel (inks read the picture
+   * from before the stroke).
+   */
+  stampSpans(p: PxPt, spans: readonly BrushSpan[], ink: Ink, after: { x: number; y: number; spans: readonly BrushSpan[] } | null): void {
+    const olo = after && after.spans.length ? after.spans[0].y : 0;
+    // Only what can land on the picture is worked through: a brush far bigger than the canvas would otherwise loop over
+    // millions of pixels that are thrown away. A mirror brings images back from the far side, and tile mode wraps round, so those widen it.
+    const box = this.reach();
+    for (const s of spans) {
+      const y = p.y + s.y;
+      if (y < box.y0 || y > box.y1) continue;
+      const x0 = Math.max(box.x0, p.x + s.x0);
+      const x1 = Math.min(box.x1, p.x + s.x1);
+      if (x1 < x0) continue;
+      let k = -1;
+      if (after) k = y - after.y - olo;
+      if (!after || k < 0 || k >= after.spans.length) {
+        for (let x = x0; x <= x1; x++) this.paint(x, y, ink);
+        continue;
+      }
+      const o = after.spans[k];
+      const a0 = after.x + o.x0;
+      const a1 = after.x + o.x1;
+      if (x1 < a0 || x0 > a1) {
+        for (let x = x0; x <= x1; x++) this.paint(x, y, ink);
+        continue;
+      }
+      for (let x = x0; x < a0 && x <= x1; x++) this.paint(x, y, ink);
+      for (let x = Math.max(x0, a1 + 1); x <= x1; x++) this.paint(x, y, ink);
+    }
+  }
+
+  /** The pixels a stroke can reach: the picture, plus (with a mirror) where its far-side images come from. Unbounded in tile mode. */
+  private reach(): { x0: number; y0: number; x1: number; y1: number } {
+    if (tileModeOn()) return { x0: -Infinity, y0: -Infinity, x1: Infinity, y1: Infinity };
+    const m = this.mirror;
+    let x0 = 0;
+    let x1 = this.width - 1;
+    let y0 = 0;
+    let y1 = this.height - 1;
+    if (m.mode === 'h' || m.mode === 'both') {
+      x0 = Math.min(x0, m.ax2 - this.width);
+      x1 = Math.max(x1, m.ax2 - 1);
+    }
+    if (m.mode === 'v' || m.mode === 'both') {
+      y0 = Math.min(y0, m.ay2 - this.height);
+      y1 = Math.max(y1, m.ay2 - 1);
+    }
+    return { x0, y0, x1, y1 };
   }
 
   /** Paints a brush footprint around a pixel. */

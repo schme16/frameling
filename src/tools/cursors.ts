@@ -1,6 +1,6 @@
 // Hover outlines drawn on the overlay: the brush ring on vector layers, the pixel footprint on pixel layers.
 import type { ToolContext } from '../core/registry';
-import { brushOffsets, type PixelShape, type PxPt } from '../canvas/pixels';
+import { brushSpans, type PixelShape, type PxPt } from '../canvas/pixels';
 import { getHoverPen } from '../canvas/controller';
 import { LIGHTEST_SIZE, tiltSize, toolPen } from '../tablet/dynamics';
 import type { PenTool } from '../tablet/settings';
@@ -35,11 +35,30 @@ export function drawRing(g: CanvasRenderingContext2D, ctx: ToolContext, x: numbe
   g.restore();
 }
 
+/** Past this many rows the footprint is drawn as one outline instead of a square per pixel, which a big brush could not afford. */
+const GRID_ROWS = 24;
+
+/** The footprint's edge as one closed path: down the left side, back up the right. */
+function outline(g: CanvasRenderingContext2D, at: PxPt, ps: number, spans: readonly { y: number; x0: number; x1: number }[]): void {
+  g.beginPath();
+  for (const r of spans) {
+    g.lineTo((at.x + r.x0) * ps, (at.y + r.y) * ps);
+    g.lineTo((at.x + r.x0) * ps, (at.y + r.y + 1) * ps);
+  }
+  for (let i = spans.length - 1; i >= 0; i--) {
+    const r = spans[i];
+    g.lineTo((at.x + r.x1 + 1) * ps, (at.y + r.y + 1) * ps);
+    g.lineTo((at.x + r.x1 + 1) * ps, (at.y + r.y) * ps);
+  }
+  g.closePath();
+}
+
 /** The art pixels a brush would cover, outlined and lightly filled with the colour. */
 export function drawPixelFootprint(g: CanvasRenderingContext2D, ctx: ToolContext, at: PxPt, pixelSize: number, size: number, shape: PixelShape, color: string | null, stamp?: readonly { x: number; y: number; rgba: readonly number[] }[]): void {
   const px = 1 / ctx.zoom;
   g.save();
-  const offs: PxPt[] = stamp ? stamp.map((c) => ({ x: c.x, y: c.y })) : brushOffsets(size, shape);
+  const spans = stamp ? [] : brushSpans(size, shape);
+  const smooth = spans.length > GRID_ROWS;
   if (stamp) {
     // A brush made from a selection shows its own colours when it has them, and your colour when it is a plain shape.
     g.globalAlpha = 0.7;
@@ -51,14 +70,19 @@ export function drawPixelFootprint(g: CanvasRenderingContext2D, ctx: ToolContext
   } else if (color) {
     g.globalAlpha = 0.55;
     g.fillStyle = color;
-    for (const o of offs) g.fillRect((at.x + o.x) * pixelSize, (at.y + o.y) * pixelSize, pixelSize, pixelSize);
+    if (smooth) {
+      outline(g, at, pixelSize, spans);
+      g.fill();
+    } else for (const r of spans) g.fillRect((at.x + r.x0) * pixelSize, (at.y + r.y) * pixelSize, (r.x1 - r.x0 + 1) * pixelSize, pixelSize);
     g.globalAlpha = 1;
   }
   g.lineWidth = 3 * px;
   g.strokeStyle = 'rgb(255 255 255 / 0.75)';
   const box = () => {
+    if (smooth) return outline(g, at, pixelSize, spans);
     g.beginPath();
-    for (const o of offs) g.rect((at.x + o.x) * pixelSize, (at.y + o.y) * pixelSize, pixelSize, pixelSize);
+    if (stamp) for (const c of stamp) g.rect((at.x + c.x) * pixelSize, (at.y + c.y) * pixelSize, pixelSize, pixelSize);
+    else for (const r of spans) for (let x = r.x0; x <= r.x1; x++) g.rect((at.x + x) * pixelSize, (at.y + r.y) * pixelSize, pixelSize, pixelSize);
   };
   box();
   g.stroke();
