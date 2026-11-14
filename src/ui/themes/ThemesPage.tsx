@@ -60,7 +60,7 @@ function ThemeCard({ theme, use, onPick, onCopy, onEdit }: { theme: Theme; use: 
       <button type="button" className="th-card-pick" onClick={(e) => onPick(menuPoint(e.currentTarget))} data-tip={theme.name} data-tip-desc={theme.description ?? 'Made by you.'} aria-label={`${theme.name}, ${says}. ${theme.description ?? 'Made by you.'}`}>
         <ThemePreview theme={theme} />
         {chosen && (
-          <span className="th-card-badges" aria-hidden="true">
+          <span className={`th-card-badges${use.day && use.night ? ' is-both' : ''}`} aria-hidden="true">
             {use.day && (
               <span className="th-card-badge is-day" title="Your theme by day">
                 <Icon name="sun" size={13} />

@@ -18,5 +18,7 @@ Every pixel tool copies across the line, and the bucket fills the mirrored spot 
 
 In the tool options, drag **Mirror line across** or **Mirror line down**. On a vector layer it moves in page pixels, on a pixel layer in half pixel steps. **Back to the middle** puts it back. The pixel line and the vector line are kept apart, because a pixel layer counts in its own big pixels.
 
+Good to know: mirror drawing starts off every time you open Frameling, so a mirror you left on yesterday never doubles a stroke today by surprise. Where the lines sit is remembered.
+
 The usual name for this is *symmetry*.`,
 };

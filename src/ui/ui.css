@@ -3257,22 +3257,30 @@ body.ui-resizing * {
   padding: 0 2px;
 }
 .th-card-badges {
-  /* Which of your two themes this is: a sun by day, a moon at night, in the corner of the preview. */
+  /* A folded corner on the card: gold, with a sun on your day theme and a moon on your night one. */
   position: absolute;
-  top: 6px;
-  left: 6px;
+  top: 0;
+  left: 0;
   display: flex;
-  gap: 4px;
+  flex-direction: column;
+  gap: 2px;
+  width: 44px;
+  height: 44px;
+  padding: 3px 0 0 3px;
+  border-top-left-radius: var(--radius-small);
+  background: var(--chosen-bg);
+  color: var(--chosen-fg);
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+}
+.th-card-badges.is-both {
+  width: 56px;
+  height: 56px;
 }
 .th-card-badge {
   display: grid;
   place-items: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: var(--chosen-bg);
-  color: var(--chosen-fg);
-  box-shadow: 0 1px 4px rgb(0 0 0 / 35%);
+  width: 17px;
+  height: 17px;
 }
 .th-card-pick {
   position: relative;

@@ -57,6 +57,9 @@ try {
         const d = DEFAULT_PIXEL_SETTINGS[k];
         if (v !== undefined && (typeof v === typeof d || (d === null && (typeof v === 'number' || v === null)))) (state as unknown as Record<string, unknown>)[k] = v;
       }
+      // Mirror drawing starts off every time. It reaches drawn layers now, so a mirror left on in a pixel session
+      // last week would quietly double a stroke today. Where the lines sit is still remembered.
+      state.symmetry = 'off';
     }
   }
 } catch {
