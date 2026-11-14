@@ -23,12 +23,11 @@ const WIN_H = 900;
 app.commandLine.appendSwitch('enable-precise-memory-info');
 app.commandLine.appendSwitch('js-flags', '--expose-gc');
 app.commandLine.appendSwitch('disable-renderer-backgrounding');
-// No GPU (xvfb): software WebGL, so the WebGL paths can run at all (the numbers are then software numbers).
-if (process.env.PERF_SOFTWARE_GL === '1') {
-  app.commandLine.appendSwitch('ignore-gpu-blocklist');
-  app.commandLine.appendSwitch('enable-unsafe-swiftshader');
-  app.commandLine.appendSwitch('use-angle', 'swiftshader');
-}
+// Numbers are speed claims, so they are measured on the real card, and the run fails if the card did not come up (it does
+// not quietly measure software). PERF_SOFTWARE_GL=1 asks for software instead, for a machine with no card; the results
+// then say so in env.gpuRun. Details and the colour pin: scripts/lib/gpu.cjs.
+const gpuMod = require('../lib/gpu.cjs');
+gpuMod.use(process.env.PERF_SOFTWARE_GL === '1' ? 'software' : 'card');
 app.commandLine.appendSwitch('disable-background-timer-throttling');
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -111,6 +110,7 @@ async function main() {
   ipcMain.handle('library:list', () => []);
   ipcMain.handle('autosave:read', () => null);
   await app.whenReady();
+  const gpuRun = await gpuMod.confirmOrExit();
   // A window that is truly hidden gets one rAF a second with this app (nothing is presented), which makes every
   // number meaningless. So the window is mapped but parked off-screen and unfocusable: nothing appears, nothing
   // takes focus, and frames are produced at the display's rate. PERF_HIDDEN=1 forces a truly hidden one.
@@ -777,7 +777,6 @@ async function main() {
 
   const tests = { draw: drawLong, playback, rigfx, pixelblend, pixellive, templates, zoompan: zoomPan, onioncam: onionCamera, memory, soak };
   await load();
-  const gpu = await app.getGPUInfo('basic').catch(() => null);
   const feat = app.getGPUFeatureStatus();
   results.env = {
     label,
@@ -785,10 +784,11 @@ async function main() {
     electron: process.versions.electron,
     chrome: process.versions.chrome,
     cpu: os.cpus()[0]?.model,
+    gpuRun,
     window: [WIN_W, WIN_H],
     gpu2dCanvas: feat.canvas_oop_rasterization ?? feat['2d_canvas'],
     gpuFeatures: { canvas: feat['2d_canvas'], oop: feat.canvas_oop_rasterization, gpu_compositing: feat.gpu_compositing },
-    gpuDevice: gpu?.gpuDevice?.[0] ? { vendorId: gpu.gpuDevice[0].vendorId, deviceString: gpu.gpuDevice[0].deviceString } : null,
+    // (No gpuDevice here any more: getGPUInfo lists the first device, not the one drawing, so it named the wrong card. gpuRun.renderer is what WebGL says is drawing.)
     dpr: await js('window.devicePixelRatio'),
     idleRafMs: await js(`new Promise((res) => { const ts = []; const l = (t) => { ts.push(t); if (ts.length < 40) requestAnimationFrame(l); else res((ts[39] - ts[0]) / 39); }; requestAnimationFrame(l); })`),
     renderer: rendererDir,

@@ -5,17 +5,17 @@
 //   xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/pixelblend-gpu.cjs
 //
 // Fails (non-zero) when the two paths differ by more than 1 level on any pixel (colour measured premultiplied, so
-// near-transparent pixels don't count rounding noise), or when the GPU path was not used.
+// near-transparent pixels don't count rounding noise), or when the GPU path was not used, or when the engine is not
+// the one asked for (scripts/lib/gpu.cjs).
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('node:path');
 const { installIpcStubs } = require('../ipc-stubs.cjs');
 
-// Without a real GPU (xvfb) Chromium blocks WebGL; software WebGL (SwiftShader) lets the GPU path run.
-if (process.env.PIXELBLEND_NO_SOFTWARE_GL !== '1') {
-  app.commandLine.appendSwitch('ignore-gpu-blocklist');
-  app.commandLine.appendSwitch('enable-unsafe-swiftshader');
-  app.commandLine.appendSwitch('use-angle', 'swiftshader');
-}
+// Software WebGL (SwiftShader), so the GPU blend path runs and gives the same answer on any machine. GPU_MODE=card runs
+// the same comparison on the real card (the pixels must agree within the limit below either way). The timing line is
+// only a rough guide in software: the card is the one that says how fast it is.
+const gpu = require('../lib/gpu.cjs');
+gpu.use('software');
 
 let n = 0;
 let seed = 12345;
@@ -40,6 +40,7 @@ process.on('unhandledRejection', (e) => {
 });
 
 app.whenReady().then(async () => {
+  await gpu.confirmOrExit();
   installIpcStubs(ipcMain);
   const win = new BrowserWindow({ show: false, width: 1280, height: 800, webPreferences: { preload: path.join(__dirname, '../../dist/preload/preload.cjs'), contextIsolation: true, sandbox: true, backgroundThrottling: false } });
   win.webContents.on('console-message', (e) => (e.level === 'error' || e.level === 3) && console.log('page error:', String(e.message ?? e)));

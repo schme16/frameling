@@ -8,6 +8,10 @@
 // Prints a table (expected sigma, then each format's) and exits non-zero when a format is more than TOL pixels off the editor.
 // Needs pdftoppm and ImageMagick convert for the PDF, .ai and PSD rows; a missing tool skips them.
 const { app, BrowserWindow } = require('electron');
+// Software drawing with no GPU process (what a harness with no flags got under xvfb, so its pictures stay as they were), with
+// the colour pinned to sRGB (scripts/lib/gpu.cjs).
+const gpu = require('../lib/gpu.cjs');
+gpu.use('software', { noGpu: true });
 const cp = require('node:child_process');
 const fs = require('node:fs');
 const os = require('node:os');
@@ -28,6 +32,7 @@ const pkg = process.env.DOTLOTTIE_DIR && path.resolve(process.env.DOTLOTTIE_DIR)
 const has = (bin) => cp.spawnSync('which', [bin]).status === 0;
 
 app.whenReady().then(async () => {
+  await gpu.confirmOrExit();
   let failed = 0;
   let server;
   try {

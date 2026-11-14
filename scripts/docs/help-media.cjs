@@ -21,6 +21,10 @@
 // makes `<name>-dark.png` (and -light). The steps run once per theme, in a fresh page, with the mode's default theme
 // (the dark one and the light one the app starts with), so the two versions match except for the colours.
 const { app, BrowserWindow, ipcMain } = require('electron');
+// Software drawing with no GPU process (what a harness with no flags got under xvfb, so its pictures stay as they were), with
+// the colour pinned to sRGB (scripts/lib/gpu.cjs).
+const gpu = require('../lib/gpu.cjs');
+gpu.use('software', { noGpu: true });
 const { execFileSync } = require('node:child_process');
 const fs = require('node:fs');
 const os = require('node:os');
@@ -101,6 +105,7 @@ async function capture(win, e, mode, tmp, lib) {
 }
 
 app.whenReady().then(async () => {
+  await gpu.confirmOrExit();
   const entries = loadEntries();
   const names = new Set();
   for (const e of entries) {

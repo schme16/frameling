@@ -7,6 +7,10 @@
 // shot per line id to brand/dialogue/shots/<id>.png. Lines that share a moment get the same picture. Notes (where the
 // shot is only the nearest moment) go in brand/dialogue/shots/manifest.json for the page.
 const { app, BrowserWindow, ipcMain } = require('electron');
+// Software drawing with no GPU process (what a harness with no flags got under xvfb, so its pictures stay as they were), with
+// the colour pinned to sRGB (scripts/lib/gpu.cjs).
+const gpu = require('../lib/gpu.cjs');
+gpu.use('software', { noGpu: true });
 const fs = require('node:fs');
 const path = require('node:path');
 
@@ -387,6 +391,7 @@ async function clickAt(win, sel) {
 app.on('window-all-closed', () => {});
 
 app.whenReady().then(async () => {
+  await gpu.confirmOrExit();
   // The real main process answers these; for shots there is no file and no history.
   for (const ch of ['app:launchFile', 'autosave:read', 'autosave:readKept']) ipcMain.handle(ch, () => null);
   ipcMain.handle('files:read', () => ({ error: 'No such file.' }));

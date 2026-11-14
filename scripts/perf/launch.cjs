@@ -5,6 +5,9 @@
 //   electron scripts/perf/launch.cjs app            the real app, main process and all
 //   electron scripts/perf/launch.cjs url <address>  a plain browser window on that address
 const electron = require('electron');
+// A speed claim, so the real card (scripts/lib/gpu.cjs). startup.cjs checks beforehand that the card comes up, since
+// asking the page here would be part of what is being timed.
+require('../lib/gpu.cjs').use(process.env.PERF_SOFTWARE_GL === '1' ? 'software' : 'card');
 const path = require('node:path');
 const { keepOnScreen } = require('./display.cjs');
 

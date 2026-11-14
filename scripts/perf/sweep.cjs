@@ -47,11 +47,11 @@ const ev = (js) => win.webContents.executeJavaScript(js, true);
 const send = (e) => win.webContents.sendInputEvent(e);
 const key = async (k) => { send({ type: 'keyDown', keyCode: k }); send({ type: 'keyUp', keyCode: k }); await sleep(60); };
 
-if (process.env.PERF_SOFTWARE_GL === '1') {
-  app.commandLine.appendSwitch('ignore-gpu-blocklist');
-  app.commandLine.appendSwitch('enable-unsafe-swiftshader');
-  app.commandLine.appendSwitch('use-angle', 'swiftshader');
-}
+// Speed claims are measured on the real card and the run fails if it did not come up; PERF_SOFTWARE_GL=1 asks for
+// software instead, and the results file says which one it was (scripts/lib/gpu.cjs).
+const gpuMod = require('../lib/gpu.cjs');
+let gpuRun = null;
+gpuMod.use(process.env.PERF_SOFTWARE_GL === '1' ? 'software' : 'card');
 app.commandLine.appendSwitch('disable-renderer-backgrounding');
 app.commandLine.appendSwitch('disable-background-timer-throttling');
 
@@ -65,6 +65,7 @@ async function start() {
   await app.whenReady();
   for (let i = 0; i < 100 && !BrowserWindow.getAllWindows().length; i++) await sleep(100);
   win = BrowserWindow.getAllWindows()[0];
+  gpuRun = await gpuMod.confirmOrExit(win);
   win.setSize(1400, 900);
   for (let i = 0; i < 300; i++) {
     try {
@@ -625,6 +626,6 @@ const num = (v) => (v >= 100 ? v.toFixed(0) : v.toFixed(1)).padStart(8);
     if (r.error) { console.log(pad(r.doc, 16) + pad(r.action, 17) + 'FAILED ' + r.error); continue; }
     console.log(pad(r.doc, 16) + pad(r.action, 17) + pad(r.busyMs.toFixed(0), 9) + pad(r.perUnitMs.toFixed(2), 10) + r.unit + (r.note ? '  ' + r.note : ''));
   }
-  if (outFile) fs.writeFileSync(outFile, JSON.stringify({ label, when: new Date().toISOString(), reps, results }, null, 1));
+  if (outFile) fs.writeFileSync(outFile, JSON.stringify({ label, when: new Date().toISOString(), gpu: gpuRun, reps, results }, null, 1));
   app.exit(0);
 })().catch((e) => { console.error(e); app.exit(1); });

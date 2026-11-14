@@ -8,6 +8,10 @@
 //
 // DIALOGRING_ONLY=<text> runs only the dialogs whose name starts with it. Exits 1 when any press does the wrong thing.
 const { app, BrowserWindow, ipcMain } = require('electron');
+// Software drawing with no GPU process (what a harness with no flags got under xvfb, so its pictures stay as they were), with
+// the colour pinned to sRGB (scripts/lib/gpu.cjs).
+const gpu = require('../lib/gpu.cjs');
+gpu.use('software', { noGpu: true });
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
@@ -91,6 +95,7 @@ const problems = [];
 
 app.on('window-all-closed', () => {});
 app.whenReady().then(async () => {
+  await gpu.confirmOrExit();
   installIpcStubs(ipcMain);
   const win = new BrowserWindow({
     width: 1600,

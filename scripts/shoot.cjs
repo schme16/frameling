@@ -14,6 +14,10 @@
 //   {"down": [x, y]} / {"move": [x, y]} / {"up": [x, y]}   press, move (held if pressed) and release, for shots mid-drag
 // SHOT_SCALE=2 shoots at twice the pixel density. SHOT_LOG=1 also prints console errors as they happen (handy when a step hangs). Run `npm run build` first.
 const { app, BrowserWindow, ipcMain } = require('electron');
+// Software drawing with no GPU process (what a harness with no flags got under xvfb, so its pictures stay as they were), with
+// the colour pinned to sRGB (scripts/lib/gpu.cjs).
+const gpu = require('./lib/gpu.cjs');
+gpu.use('software', { noGpu: true });
 const fs = require('node:fs');
 const path = require('node:path');
 const { installIpcStubs } = require('./ipc-stubs.cjs');
@@ -84,6 +88,7 @@ app.on('window-all-closed', () => {});
 app.setPath('userData', fs.mkdtempSync(path.join(require('node:os').tmpdir(), 'frameling-shoot-')));
 
 app.whenReady().then(async () => {
+  await gpu.confirmOrExit();
   // The real main process answers these; for shots there is no file and no history.
   // The real main process answers these; for shots there is no file and no history (stand-ins in scripts/ipc-stubs.cjs).
   // A step can open a real .frameling file: {"eval": "__framelingIo.openPath('/abs/path.frameling')"}.

@@ -12,6 +12,10 @@ import { endRun, markOffered, noteEvent, readLast, startRun } from './crashMarke
 import { PROFILE } from './profileName';
 import { choiceAt, saveChangesQuestion } from '../shared/saveQuestion';
 import { closeStep, createCloseAsker, holdClose } from './closeQuestion';
+import { colourSwitches } from './gpuFlags';
+
+// The colour profile is pinned to sRGB before the engine starts (see gpuFlags.ts for what that means on a wide-gamut screen).
+for (const [name, value] of colourSwitches()) value === undefined ? app.commandLine.appendSwitch(name) : app.commandLine.appendSwitch(name, value);
 
 // Plugins share one process (cheap), unless "Measure plugins' memory and speed" was on when Frameling last closed: then
 // each sandbox gets a process of its own (about 90 MB each), so its memory can be told apart.

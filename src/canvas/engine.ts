@@ -42,6 +42,7 @@ import { Stabilizer } from '../tablet/stabilizer';
 import { drawVectorMirrorLines, mirrorsOnVector } from '../tools/mirror';
 import { PenTracker, pinchView, type PinchStart } from '../tablet/touch';
 import { noticePen, setStrokeProbe } from '../tablet/check/state';
+import { watchPixelRatio } from './pixelRatio';
 
 export interface EngineElements {
   root: HTMLElement;
@@ -187,6 +188,8 @@ export class CanvasEngine {
     const ro = new ResizeObserver(() => this.resize());
     ro.observe(root);
     this.cleanups.push(() => ro.disconnect());
+    // A window dragged to a screen at another scale keeps its size, so no resize comes: ask for the new pixel ratio directly.
+    this.cleanups.push(watchPixelRatio(() => this.resize()));
     this.cleanups.push(store().subscribe(this.onStore));
     this.cleanups.push(subscribeViewSettings(() => this.invalidate(true, true)));
     this.cleanups.push(subscribeTileUi(() => this.invalidate(true, true)));
@@ -247,6 +250,9 @@ export class CanvasEngine {
 
   private frame = (): void => {
     this.raf = 0;
+    // The pixel ratio can change without a resize or a media query event reaching us (see pixelRatio.ts), so each frame
+    // makes sure the canvas still holds the right number of pixels. Reading it is free.
+    if ((window.devicePixelRatio || 1) !== this.lastDpr) this.resize();
     let mainMs = 0;
     if (this.dirtyMain) {
       const t0 = performance.now();
