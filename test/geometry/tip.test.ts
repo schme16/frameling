@@ -101,6 +101,8 @@ describe('a brush with a tip', () => {
     expect(tipName(undefined)).toBe('Plain');
     expect(tipName(defaultTip('watercolour'))).toBe('Watercolour');
     expect(tipName({ kind: 'stamp', shape: 'star' })).toBe('Star stamp');
+    expect(tipName({ kind: 'stamp', shape: 'paw' })).toBe('Paw print stamp');
+    expect(readTip({ kind: 'stamp', shape: 'paw' })).toMatchObject({ shape: 'paw' });
     expect(tipName({ kind: 'stamp', shape: 'custom', custom: [[0, 0, 1, 0, 1, 1]] })).toBe('Your stamp');
   });
 });

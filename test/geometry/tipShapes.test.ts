@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import type { BrushSettings, FillShape, PathShape, Shape, StrokeShape, SubPath } from '../../src/core/format';
 import { DEFAULT_BRUSH } from '../../src/core/doc';
 import { defaultTip } from '../../src/geometry/tip';
-import { cover, hash3, MAX_HOLES, MAX_STAMPS, resample, ringFrom, stampSites, tipShapes, vnoise, type OutlineFn } from '../../src/geometry/tipShapes';
+import { cover, hash3, MAX_HOLES, MAX_STAMPS, resample, ringFrom, stampRings, stampSites, tipShapes, vnoise, type OutlineFn } from '../../src/geometry/tipShapes';
 
 const outline: OutlineFn = (s, b) => getStroke(s.points.map((p) => [p.x, p.y, p.p]), { size: b.size, thinning: b.thinning, smoothing: b.smoothing, streamline: b.streamline, simulatePressure: true, last: true });
 
@@ -178,6 +178,26 @@ describe('stamps', () => {
     expect(out.length).toBeGreaterThan(3);
     expect(out[0].paths).toHaveLength(2);
     expect(Math.max(...out[0].paths[0].points.map((p) => p.x)) - Math.min(...out[0].paths[0].points.map((p) => p.x))).toBeCloseTo(10, 0);
+  });
+  it('a paw print is a pad and four toes, 1 across and centred, toes to the front when it follows the line', () => {
+    const rings = stampRings('paw', []);
+    expect(rings).toHaveLength(5);
+    const xs = rings.flatMap((r) => r.filter((_, i) => i % 2 === 0));
+    const ys = rings.flatMap((r) => r.filter((_, i) => i % 2 === 1));
+    expect(Math.max(...xs) - Math.min(...xs)).toBeGreaterThan(0.9);
+    expect(Math.max(...xs) - Math.min(...xs)).toBeLessThan(1.02);
+    expect(Math.max(...ys) - Math.min(...ys)).toBeLessThan(1.02);
+    expect(Math.abs(Math.max(...xs) + Math.min(...xs))).toBeLessThan(0.02);
+    expect(Math.abs(Math.max(...ys) + Math.min(...ys))).toBeLessThan(0.1);
+    // Three toes sit above the pad (upright: toes at the top), and the pad is the biggest outline.
+    const centreY = (r: number[]) => r.filter((_, i) => i % 2 === 1).reduce((a, b) => a + b, 0) / (r.length / 2);
+    expect(centreY(rings[0])).toBeGreaterThan(centreY(rings[2]));
+    const out = run(stroke(tip({ shape: 'paw', angle: 'follow', spacing: 2 }), { size: 12 }));
+    expect(out.length).toBeGreaterThan(3);
+    expect(out.every((f) => f.paths.length === 5)).toBe(true);
+    // The line runs left to right (a little down), so the toes lead: they sit to the right of the pad.
+    const cx = (r: { x: number }[]) => r.reduce((a, b) => a + b.x, 0) / r.length;
+    expect(cx(out[1].paths[2].points)).toBeGreaterThan(cx(out[1].paths[0].points));
   });
   it('joins see-through stamps so overlaps do not show darker', () => {
     const out = fills(tipShapes(stroke(tip({ spacing: 0.4, shape: 'dot' }), { size: 20 }, line(), 0.5), outline));

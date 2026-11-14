@@ -33,6 +33,7 @@ export const STAMPS: readonly { id: StampShape; label: string; angle: StampAngle
   { id: 'star', label: 'Star', angle: 'random' },
   { id: 'diamond', label: 'Diamond', angle: 'follow' },
   { id: 'heart', label: 'Heart', angle: 'upright' },
+  { id: 'paw', label: 'Paw print', angle: 'follow' },
 ];
 
 /** The most points a custom stamp keeps (all its outlines together), so a brush stays small in a file. */
@@ -151,7 +152,7 @@ export function resolveTip(t: BrushTip): ResolvedTip {
 }
 
 const KINDS = new Set<string>(['chalk', 'charcoal', 'watercolour', 'stamp', 'nib', 'along', 'edged', 'bristle']);
-const SHAPES = new Set<string>(['dot', 'leaf', 'star', 'diamond', 'dash', 'heart', 'custom']);
+const SHAPES = new Set<string>(['dot', 'leaf', 'star', 'diamond', 'dash', 'heart', 'paw', 'custom']);
 const ANGLES = new Set<string>(['follow', 'upright', 'random']);
 
 const num = (v: unknown, lo: number, hi: number): number | undefined => (typeof v === 'number' && Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : undefined);

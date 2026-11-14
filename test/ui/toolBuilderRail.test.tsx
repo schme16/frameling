@@ -54,7 +54,7 @@ describe('the rail while it is built', () => {
   it('shows the group names out of the box, and a plain divider for a group nobody named', () => {
     mount();
     const heads = [...host.querySelectorAll('.ui-tool-head')].map((h) => h.textContent);
-    expect(heads.slice(0, 3)).toEqual(['Draw', 'Colour', 'Shapes']);
+    expect(heads.slice(0, 3)).toEqual(['Select', 'Draw', 'Colour']);
     act(() => startToolGroupHere('ellipse'));
     expect([...host.querySelectorAll('.ui-tool-head')].length).toBe(heads.length);
     expect(host.querySelectorAll('.ui-tool-gap').length).toBeGreaterThan(heads.length - 1);

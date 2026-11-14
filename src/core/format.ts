@@ -694,7 +694,7 @@ export interface BrushSettings {
 /** The kinds of tip a brush can have besides plain. */
 export type TipKind = 'chalk' | 'charcoal' | 'watercolour' | 'stamp' | 'nib' | 'along' | 'edged' | 'bristle';
 /** The built-in stamps, and `custom` for one made from a selection. */
-export type StampShape = 'dot' | 'leaf' | 'star' | 'diamond' | 'dash' | 'heart' | 'custom';
+export type StampShape = 'dot' | 'leaf' | 'star' | 'diamond' | 'dash' | 'heart' | 'paw' | 'custom';
 /** How stamps turn: along the line, always upright, or every which way. */
 export type StampAngle = 'follow' | 'upright' | 'random';
 

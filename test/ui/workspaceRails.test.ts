@@ -21,27 +21,26 @@ const groupOf = (g: ToolGroup[], tool: string) => g.find((x) => x.tools.includes
 const every = () => flat(resolveGroups(undefined, allTools())).sort();
 
 describe('the three defaults', () => {
-  it('Draw: drawing first, then the standard order', () => {
-    expect(ids(currentGroups())).toEqual(['draw', 'extras', 'shapes', 'select', 'pen', 'rig', 'view']);
-    expect(currentGroups()[0].tools.slice(0, 4)).toEqual(['pencil', 'brush', 'eraser', 'fill']);
+  it('Draw: select first, then drawing and the standard order', () => {
+    expect(ids(currentGroups())).toEqual(['select', 'draw', 'extras', 'shapes', 'pen', 'rig', 'view']);
+    expect(currentGroups()[1].tools.slice(0, 4)).toEqual(['pencil', 'brush', 'eraser', 'fill']);
   });
-  it('Animate: drawing, then rig and motion, then the rest', () => {
+  it('Animate: select first, then drawing, rig and motion, then the rest', () => {
     applyWorkspace('animate');
     const g = currentGroups();
-    expect(ids(g)).toEqual(['draw', 'rig', 'select', 'pen', 'shapes', 'extras', 'view']);
-    expect(g[1].tools).toEqual(['bone', 'bone-edit', 'bone-remove', 'pose', 'weights', 'record-move', 'motion-path', 'shape-hints']);
+    expect(ids(g)).toEqual(['select', 'draw', 'rig', 'pen', 'shapes', 'extras', 'view']);
+    expect(g[2].tools).toEqual(['bone', 'bone-edit', 'bone-remove', 'pose', 'weights', 'record-move', 'motion-path', 'shape-hints']);
   });
-  it('Pixel: pixel tools first, then the ways of selecting together, vector-only tools later', () => {
+  it('Pixel: the ways of selecting first, then the pixel tools, vector-only tools later', () => {
     applyWorkspace('pixel');
     const g = currentGroups();
-    // Selecting sits right after the pixel tools, where the one Select button used to live among them.
-    expect(ids(g).slice(0, 4)).toEqual(['draw', 'pixel', 'select', 'shapes']);
-    expect(g[0].tools.slice(0, 4)).toEqual(['pencil', 'eraser', 'fill', 'eyedropper']);
-    expect(g[1].tools).toEqual(['shade', 'dither', 'gradient', 'spray']);
+    expect(ids(g).slice(0, 4)).toEqual(['select', 'draw', 'pixel', 'shapes']);
+    expect(g[1].tools.slice(0, 4)).toEqual(['pencil', 'eraser', 'fill', 'eyedropper']);
+    expect(g[2].tools).toEqual(['shade', 'dither', 'gradient', 'spray']);
     // Every way of picking is its own tool, and they sit together in the Select group.
     expect(groupOf(g, 'pixel-select-lasso')).toBe('select');
     expect(groupOf(g, 'pixel-select-wand')).toBe('select');
-    expect(ids(g).indexOf('select')).toBeGreaterThan(ids(g).indexOf('pixel'));
+    expect(ids(g).indexOf('select')).toBeLessThan(ids(g).indexOf('draw'));
     expect(ids(g).indexOf('rig')).toBeGreaterThan(ids(g).indexOf('shapes'));
     expect(groupOf(g, 'select')).toBe('select');
   });
@@ -63,7 +62,7 @@ describe('changes belong to the workspace they were made in', () => {
     expect(isCustomArrangement()).toBe(true);
     applyWorkspace('animate');
     expect(isCustomArrangement()).toBe(false);
-    expect(ids(currentGroups())).toEqual(['draw', 'rig', 'select', 'pen', 'shapes', 'extras', 'view']);
+    expect(ids(currentGroups())).toEqual(['select', 'draw', 'rig', 'pen', 'shapes', 'extras', 'view']);
     applyWorkspace('draw');
     expect(currentGroups()[0].tools).toEqual(['hand']);
   });
@@ -84,12 +83,12 @@ describe('changes belong to the workspace they were made in', () => {
     applyWorkspace('animate');
     moveToolTo('hand', { newGroupAt: 0 });
     resetToolArrangement();
-    expect(ids(currentGroups())).toEqual(['draw', 'rig', 'select', 'pen', 'shapes', 'extras', 'view']);
+    expect(ids(currentGroups())).toEqual(['select', 'draw', 'rig', 'pen', 'shapes', 'extras', 'view']);
     expect(isCustomArrangement()).toBe(false);
     applyWorkspace('pixel');
     expect(isCustomArrangement()).toBe(true);
     resetToolArrangement();
-    expect(ids(currentGroups()).slice(0, 2)).toEqual(['draw', 'pixel']);
+    expect(ids(currentGroups()).slice(0, 3)).toEqual(['select', 'draw', 'pixel']);
     expect(dock.get().rails).toBeUndefined();
   });
   it('putting everything back by hand counts as the default again', () => {
@@ -110,11 +109,11 @@ describe('your own workspaces', () => {
     applyWorkspace('pixel');
     const ws = saveWorkspace('Sprites')!;
     expect(ws.rail).toEqual(BUILTIN_RAILS.pixel);
-    expect(ids(currentGroups()).slice(0, 2)).toEqual(['draw', 'pixel']);
+    expect(ids(currentGroups()).slice(0, 3)).toEqual(['select', 'draw', 'pixel']);
     moveToolTo('hand', { newGroupAt: 0 });
     expect(isCustomArrangement()).toBe(true);
     resetToolArrangement();
-    expect(ids(currentGroups()).slice(0, 2)).toEqual(['draw', 'pixel']);
+    expect(ids(currentGroups()).slice(0, 3)).toEqual(['select', 'draw', 'pixel']);
   });
   it('a changed workspace of your own keeps its changes, and Reset layout brings back what was saved', () => {
     const ws = saveWorkspace('Mine')!;
@@ -123,7 +122,7 @@ describe('your own workspaces', () => {
     applyWorkspace(ws.id);
     expect(currentGroups()[0].tools).toEqual(['hand']);
     resetLayout();
-    expect(currentGroups()[0].tools[0]).toBe('pencil');
+    expect(currentGroups().find((g) => g.id === 'draw')!.tools[0]).toBe('pencil');
   });
   it('saving over it again folds its changes in; deleting it forgets them', () => {
     const ws = saveWorkspace('Mine')!;
@@ -144,9 +143,9 @@ describe('your own workspaces', () => {
     const r = importWorkspace(workspaceText('animate')!);
     expect(r.ok && r.workspace.rail?.[0].tools).toEqual(['hand']);
     applyWorkspace('pixel');
-    expect(JSON.parse(workspaceText('pixel')!).rail.map((g: ToolGroup) => g.id).slice(0, 2)).toEqual(['draw', 'pixel']);
+    expect(JSON.parse(workspaceText('pixel')!).rail.map((g: ToolGroup) => g.id).slice(0, 3)).toEqual(['select', 'draw', 'pixel']);
     // Exporting the one you are in, with no id.
-    expect(JSON.parse(workspaceText()!).rail.map((g: ToolGroup) => g.id).slice(0, 2)).toEqual(['draw', 'pixel']);
+    expect(JSON.parse(workspaceText()!).rail.map((g: ToolGroup) => g.id).slice(0, 3)).toEqual(['select', 'draw', 'pixel']);
   });
   it('a file with a made up rail is tidied', () => {
     const r = importWorkspace(JSON.stringify({ format: 'frameling-workspace', version: 1, name: 'Odd', layout: {}, rail: [{ id: '__proto__', tools: ['a'] }, { id: 'ok', tools: ['pencil', 'pencil', '../x'] }, 4] }));

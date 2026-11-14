@@ -38,6 +38,13 @@ describe('the built-in brushes', () => {
       for (const p of parts!) if (p.type === 'stroke') expect(p.brush.tip, s.name).toBeUndefined();
     }
   });
+  it('has a paw print in Stamps and texture, a stamp like the others', () => {
+    const paw = STARTERS.find((s) => s.name === 'Paw prints')!;
+    expect(paw.group).toBe('Stamps and texture');
+    expect(paw.brush.tip).toMatchObject({ kind: 'stamp', shape: 'paw', angle: 'follow' });
+    const names = STARTERS.filter((s) => s.group === 'Stamps and texture').map((s) => s.name);
+    expect(names).toEqual(expect.arrayContaining(['Leaves', 'Falling leaves', 'Stars', 'Sparkles', 'Paw prints']));
+  });
   it('keep the grain of a tipped brush from bloating a file', () => {
     const chalky = STARTERS.filter((s) => s.brush.tip?.kind === 'chalk' || s.brush.tip?.kind === 'charcoal');
     expect(chalky.length).toBeGreaterThan(8);
