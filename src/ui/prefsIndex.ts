@@ -132,6 +132,7 @@ export const CHOICE_ALSO: Record<string, string[]> = {
   'artboards.pictureSize': ['canvas size', 'image size', 'document size', 'resolution', 'export size', 'video size', 'output size', 'dimensions', 'width height'],
   'variations.frame': ['artboard canvas', 'alt size', 'resize canvas', 'different size', 'artboard fit', 'scale', 'crop'],
   'draw.heldFrame': ['hold', 'held frame', 'exposure', 'edit held', 'shared drawing', 'clone frame', 'hold frame', 'extend'],
+  'draw.sharedDrawing': ['shared drawing', 'linked drawing', 'used in several places', 'unlink', 'make unique', 'own copy', 'change everywhere', 'artboards share', 'one drawing many places'],
   'draw.tweenFrame': ['inbetween', 'in-between', 'tween', 'auto key', 'autokey', 'auto keyframe', 'keyframe on edit', 'set key', 'create key'],
   'canvas.wheel': ['scroll', 'scroll wheel', 'zoom', 'pan', 'mousewheel', 'mouse scroll', 'zoom direction', 'scroll zoom', 'scrolling', 'trackpad'],
   'canvas.spaceTap': ['spacebar', 'space bar', 'play', 'pause', 'playback', 'hand tool', 'space to play', 'play pause key'],

@@ -386,6 +386,8 @@ export function duplicateArtboard(d: Doc, id: Id): Id | null {
   const content = cloneContent(d, src.content ?? takeContent(isDraft(d) ? (current(d) as Doc) : d));
   const nid = uid('ab');
   const copy: Artboard = { id: nid, name: freshName(d, src.name), x: 0, y: src.y, content };
+  // A clip that is just the artboard's name ("wave") becomes the copy's ("wave 2"), so the two don't export as one name.
+  if (followsName(content.clips, content.length, src.name)) content.clips[0].name = copy.name;
   // Beside the original when there's room, else after everything.
   const right = src.x + content.width + gapFor(content.width);
   const clash = boxes(d).some((b) => b.id !== id && right < b.x + b.w && right + content.width > b.x && src.y < b.y + b.h && src.y + content.height > b.y);
@@ -413,10 +415,35 @@ export function deleteArtboard(d: Doc, id: Id): boolean {
   return true;
 }
 
+/**
+ * The clip that is only the artboard's name said again: the one clip on a board, running across all of it. Anything
+ * else (two clips, or one that covers part of the board) is the person's own and is left alone.
+ */
+export function wholeBoardClip<C extends { name: string; start: number; end: number }>(clips: readonly C[], length: number): C | undefined {
+  const [c] = clips;
+  return clips.length === 1 && c.start === 0 && c.end === length - 1 ? c : undefined;
+}
+
+/** True when `clip` is the whole board's only clip and is named after it, so a new artboard name should carry over to it. */
+function followsName(clips: readonly { name: string; start: number; end: number }[], length: number, artboardName: string): boolean {
+  return wholeBoardClip(clips, length)?.name === artboardName;
+}
+
+/**
+ * Renames an artboard. A clip that runs across the whole board and carries the artboard's old name is renamed with it,
+ * so an export sees one name, not two. A clip with a name of its own is left alone.
+ */
 export function renameArtboard(d: Doc, id: Id, name: string): void {
   const a = ensureArtboards(d).find((b) => b.id === id);
   const n = name.trim();
-  if (a && n) a.name = n.slice(0, 120);
+  if (!a || !n) return;
+  const old = a.name;
+  a.name = n.slice(0, 120);
+  // A variation's clips come from its original, so they are not renamed here.
+  if (a.variationOf) return;
+  const clips = a.content ? a.content.clips : d.clips;
+  const length = a.content ? a.content.length : d.length;
+  if (followsName(clips, length, old)) clips[0].name = a.name;
 }
 
 export function setExportName(d: Doc, id: Id, name: string): void {

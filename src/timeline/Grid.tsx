@@ -10,7 +10,9 @@ import { duplicateClipAndPick, say } from './commands';
 import { keyHint } from './cmd';
 import { chipBox } from './clipLayout';
 import { MAX_LENGTH } from './edit-core';
-import { frameAtX, holdWords, labelStep, visibleFrames, zoomScroll } from './geometry';
+import { celGap, frameAtX, holdWords, labelStep, thinCels, visibleFrames, zoomScroll } from './geometry';
+import { placesOf, sharedDrawings, type DrawingUse } from '../core/sharedDrawings';
+import { SharedMark, sharedTitle } from './SharedMark';
 import { LayerList, LayerTools, ROW_H } from './Layers';
 import { ContextMenu, InlineName, type MenuItem } from './Menu';
 import * as ops from './ops';
@@ -93,30 +95,40 @@ const Playhead = memo(function Playhead({ part, cw, cursor }: { part: 'ruler' | 
   );
 });
 
-/** One layer's row of drawings. Only draws the cels that are on screen. */
-const GridRow = memo(function GridRow({ layer, cw, from, to, active }: { layer: Layer; cw: number; from: number; to: number; active: boolean }) {
+/** One layer's row of drawings. Only draws the cels that are on screen, and joins runs of tiny ones into one band. */
+const GridRow = memo(function GridRow({ layer, cw, from, to, active, shared }: { layer: Layer; cw: number; from: number; to: number; active: boolean; shared: ReadonlyMap<Id, DrawingUse> }) {
   const shown: Cel[] = [];
   for (const c of layer.cels) {
     if (c.start > to) break;
     if (c.start + c.length >= from) shown.push(c);
   }
+  const gap = celGap(cw);
   return (
     <div className={`tl-row${active ? ' is-active' : ''}${layer.visible ? '' : ' is-hidden'}${layer.locked ? ' is-locked' : ''}`} style={{ height: ROW_H }} data-layer={layer.id}>
-      {shown.map((c) => (
-        <div
-          key={c.id}
-          className={`tl-cel${c.autoHold && c.length > 1 ? ' is-auto' : ''}`}
-          data-cel={c.id}
-          style={{ left: c.start * cw + 1, width: c.length * cw - 2 }}
-          title={c.autoHold && c.length > 1 ? 'This drawing carries on until your next one. Draw on a later frame to start a new drawing there.' : undefined}
-        >
-          <span className="tl-cel-key" style={{ width: Math.min(cw, c.length * cw) - 2 }}>
-            <i className="tl-cel-dot" />
-          </span>
-          {c.tween ? <TweenBar layer={layer} cel={c} cw={cw} /> : null}
-          <span className="tl-cel-handle" title="Drag to hold this drawing for longer or shorter" />
-        </div>
-      ))}
+      {thinCels(shown, cw).map((p) => {
+        const c = p.cel;
+        const width = p.right - p.left - gap;
+        const use = p.dense ? undefined : shared.get(c.drawingId);
+        const auto = c.autoHold && c.length > 1;
+        return (
+          <div
+            key={c.id}
+            className={`tl-cel${auto ? ' is-auto' : ''}${use ? ' is-shared' : ''}${p.dense ? ' is-dense' : ''}${width < 8 ? ' is-thin' : ''}`}
+            data-cel={c.id}
+            style={{ left: p.left + gap / 2, width: Math.max(1, width) }}
+            title={p.dense ? `${p.count} short drawings. Zoom in to see each one.` : sharedTitle(use, auto ? 'This drawing carries on until your next one. Draw on a later frame to start a new drawing there.' : undefined)}
+          >
+            {p.dense ? null : (
+              <span className="tl-cel-key" style={{ width: Math.max(1, Math.min(cw, c.length * cw) - gap) }}>
+                <i className="tl-cel-dot" />
+              </span>
+            )}
+            {use ? <SharedMark use={use} width={width} at={Math.max(1, Math.min(cw, c.length * cw) - gap) + 3} /> : null}
+            {c.tween && !p.dense ? <TweenBar layer={layer} cel={c} cw={cw} /> : null}
+            <span className="tl-cel-handle" title="Drag to hold this drawing for longer or shorter" />
+          </div>
+        );
+      })}
     </div>
   );
 });
@@ -382,6 +394,7 @@ function keySpots(layout: Layout, refs: ReadonlySet<KeyRef>): { ref: KeyRef; fra
 export function TimelineBody() {
   const layers = useStore((s) => s.doc.layers);
   const length = useStore((s) => s.doc.length);
+  const shared = useStore((s) => sharedDrawings(s.doc));
   const fps = useStore((s) => s.doc.fps);
   const activeId = useStore((s) => s.ui.activeLayerId) ?? layers[layers.length - 1]?.id;
   const cw = useTl((t) => t.cw);
@@ -1009,7 +1022,7 @@ export function TimelineBody() {
       </div>
       <div
         ref={main}
-        className="tl-main"
+        className={`tl-main${cw < 4 ? ' is-tiny' : ''}`}
         style={gridStyle}
         tabIndex={0}
         aria-label="Frames. Arrow keys move around, Shift and arrows pick keys, Delete removes picked keys."
@@ -1047,16 +1060,16 @@ export function TimelineBody() {
             ) : r.kind === 'prop' ? (
               <PropRow key={r.key} layer={r.layer} track={r.track} cw={cw} from={from} to={to} picked={picked} h={r.h} last={r.last} />
             ) : detailed ? (
-              <DetailRow key={r.key} layer={r.layer} cw={cw} from={from} to={to} active={r.layer.id === activeId} picked={picked} fxKeys={r.open ? null : fxTracks(r.tracks)} h={r.h} />
+              <DetailRow key={r.key} layer={r.layer} shared={shared} cw={cw} from={from} to={to} active={r.layer.id === activeId} picked={picked} fxKeys={r.open ? null : fxTracks(r.tracks)} h={r.h} />
             ) : (
-              <GridRow key={r.key} layer={r.layer} cw={cw} from={from} to={to} active={r.layer.id === activeId} />
+              <GridRow key={r.key} layer={r.layer} shared={shared} cw={cw} from={from} to={to} active={r.layer.id === activeId} />
             ),
           )}
           {markers?.filter((m) => m.frame >= from && m.frame <= to).map((m) => <i key={m.id} className="tl-mline" style={{ left: m.frame * cw }} aria-hidden="true" />)}
           <span className="tl-beyond" style={{ left: (ghost?.kind === 'length' ? ghost.length : length) * cw }} />
           <Playhead part="rows" cw={cw} cursor={cursor} />
           <TweenOfferView cw={cw} layout={layout} />
-          {ghostCel && ghostRow ? <i className={`tl-ghost-cel${ghostCel.trim ? ' is-trim' : ''}`} style={{ left: ghostCel.start * cw + 1, width: ghostCel.length * cw - 2, top: ghostRow.y + 3, height: ghostRow.h - 6 }} /> : null}
+          {ghostCel && ghostRow ? <i className={`tl-ghost-cel${ghostCel.trim ? ' is-trim' : ''}`} style={{ left: ghostCel.start * cw + celGap(cw) / 2, width: Math.max(1, ghostCel.length * cw - celGap(cw)), top: ghostRow.y + 3, height: ghostRow.h - 6 }} /> : null}
           {dragKeys ? <KeysGhost layout={layout} refs={picked} map={dragKeys.map} text={dragKeys.text} cw={cw} /> : null}
           {box ? <i className="tl-box" style={{ left: Math.min(box.x0, box.x1), top: Math.min(box.y0, box.y1), width: Math.abs(box.x1 - box.x0), height: Math.abs(box.y1 - box.y0) }} /> : null}
         </div>
@@ -1176,6 +1189,9 @@ export function celMenu(layer: Layer, frame: number): MenuItem[] {
     { heading: `${layer.name}, frame ${frame + 1}${cel ? ` (drawing held for ${holdWords(cel.length)})` : ' (empty)'}` },
     { label: 'New blank drawing here', hint: keyHint('timeline.newKey'), onClick: () => void say(ops.newBlankKey(layer.id, frame)) },
     { label: 'Copy this drawing to the next frame', hint: keyHint('timeline.duplicateKey'), disabled: none, onClick: () => void say(ops.duplicateKey(layer.id, frame)) },
+    ...(cel && placesOf(store().get().doc, cel.drawingId) > 1
+      ? [{ label: 'Make this drawing its own (stop sharing it)', hint: keyHint('timeline.makeOwnDrawing'), onClick: () => void say(ops.makeOwnDrawing(layer.id, frame)) } as MenuItem]
+      : []),
     { label: 'Copy this drawing', hint: keyHint('edit.copy'), disabled: none, onClick: () => void copyKeys({ layerId: layer.id, frame }) },
     { label: 'Paste keys here', hint: keyHint('edit.paste'), disabled: !hasFrameClip(), onClick: () => pasteKeys({ layerId: layer.id, frame }) },
     { label: 'Clear this drawing', disabled: none, onClick: () => void say(ops.clearKey(layer.id, frame)) },

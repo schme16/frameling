@@ -23,6 +23,8 @@ To export them, see [exporting artboards](help:artboards-export). For animation,
 
 **Make shots:** add an artboard for each one, or **Duplicate artboard** to start a shot from the last one. They can be different sizes; see [shots of different sizes](help:artboards-letterbox).
 
+**Names that stay together:** an artboard with one clip across all of it (say an artboard called "wave" with a clip called "wave") keeps the two names in step. Rename the artboard and the clip follows; duplicate it and the copy's clip is called "wave 2" too, so an export never sees two clips with one name. Give the clip a name of your own and Frameling leaves it alone.
+
 **See the shots either side:** turn on the [onion skin](help:timeline-onion) and tick **Show the boards either side too**. The board before shows its last frame and the board after its first, as faint ghosts under what you're drawing, so a hand or a horizon carries across the cut.
 
 **Play them in order:** press **Play all in order** in the Artboards panel. They play one after another in their own window, in the panel's order, each at its own [speed](help:artboards-speed). The strip under the picture shows each shot; click one to jump to it. Drag them in the panel to change the order.

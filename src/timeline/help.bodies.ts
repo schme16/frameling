@@ -155,6 +155,51 @@ The copy keeps each drawing, how long it is held, and the gaps between them.
 - Only drawing keys are copied. Effect keys aren't; a symbol's position, size and turn travel with its drawing.
 - On the canvas, **Ctrl+C** still copies shapes. It is the timeline having focus (click it first) that makes it copy keys.
 - Shapes and pixels: [Copy and paste with other apps](help:clipboard-system).`,
+  'timeline-shared': `Sometimes one drawing is shown in more than one place: on two layers, twice along the timeline, or on a few artboards. It's one drawing, not copies, so changing it in one place changes it in all of them. That's handy when they're meant to match. It's a surprise when they aren't.
+
+## How you can tell
+
+A block whose drawing is shown somewhere else has a **pale edge** along the bottom. When the block is wide enough it also has a small **link with a number** on it: how many places show that drawing. Rest the mouse on the block to hear where, like "Shown in 3 places: here and on the artboards wave and talk".
+
+## Make this one its own
+
+Click the block, then right-click it and pick **Make this drawing its own (stop sharing it)**, or press **Ctrl+K** and run it from the command palette. This place gets a copy that looks the same; from then on changing it changes only this one. The other places keep the drawing as it was. It's one **Undo** step.
+
+## When you draw on one
+
+The first time you change a shared drawing, Frameling asks:
+
+- **Change it everywhere** (what it does to start with): every place that shows the drawing changes with it.
+- **Make this one its own:** this place gets a copy with your change, and the others stay as they were.
+
+Your answer is remembered. Change it any time in **Preferences > Behaviour**, under **Drawing on a shared drawing**. Nothing is asked about a drawing that is only shown once.
+
+## Good to know
+
+- Copying a drawing (**D**, or copy and paste) always makes a real copy, so you only meet shared drawings in files built that way on purpose.
+- Variations follow their original by design, so they don't count as another place.
+- A copy takes up room in the file, so make drawings their own only where you need to.
+
+Next: [Frames, keys and holds](help:timeline-frames), [Artboards](help:artboards).`,
+  'timeline-fit': `Press the **magnifier** at the end of the timeline's top bar (or run **Fit the whole animation in the timeline** from the command palette, **Ctrl+K**) and every frame fits across the timeline, whether you have 24 frames or 400.
+
+## Very long animations
+
+A frame can be very narrow, so a long animation still fits. At that size drawings are too small to draw one by one:
+
+- A run of very short drawings is drawn as **one band**. Rest the mouse on it to see how many it stands for.
+- Longer holds keep their own block, so you can still see where the big moments are.
+- The numbers along the top spread out to match, every 100 or 500 frames instead of every 5.
+
+**To work on it:** zoom back in. **Ctrl and scroll** zooms around the pointer, the slider beside the magnifier zooms evenly from tiny to roomy, and the playhead stays on screen.
+
+## Good to know
+
+- Fit changes only how the timeline looks. Your animation and its length stay as they were.
+- Frames can't go narrower than a fifth of a pixel, so about 5,000 frames fit across a normal window.
+- Not sure where you are in a long one? Fit it, find the part, then **Ctrl and scroll** into it.
+
+Next: [The timeline](help:timeline), [Keys, tweens and property rows](help:timeline-detailed).`,
   'timeline-tidy-end': `Stretch a hold to frame 31, then pull it back to 28, and the timeline still says 31. The three frames on the end are empty. **Tidy the end** is Frameling taking them off, so the animation finishes where your last drawing does.
 
 ## The first time it happens

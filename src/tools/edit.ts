@@ -14,7 +14,8 @@ import { cutProblem, cutTween, takeTurns, OVERSHOOT_CUT_WHY } from '../core/twee
 import { isInBetween, nextKey, shownDrawing } from '../core/symbols';
 import { store } from '../core/store';
 import { registerChoice, withChoice } from '../core/choices';
-import { autoHeldAt, newKeySpan, splitAutoHold } from '../timeline/edit-core';
+import { placesOf } from '../core/sharedDrawings';
+import { autoHeldAt, cloneDrawing, newKeySpan, splitAutoHold } from '../timeline/edit-core';
 import { markTracing } from '../canvas/ghost';
 
 export type HeldFrameChoice = 'new-key' | 'edit-held';
@@ -31,6 +32,21 @@ registerChoice<HeldFrameChoice>({
   default: 'new-key',
   category: 'Drawing',
   help: 'timeline-frames',
+});
+
+export type SharedDrawingChoice = 'everywhere' | 'own';
+
+registerChoice<SharedDrawingChoice>({
+  id: 'draw.sharedDrawing',
+  title: 'Drawing on a shared drawing',
+  question: 'This drawing is shown in more than one place (the link mark on its block in the timeline says where). When you change it, what should happen?',
+  options: [
+    { value: 'everywhere', label: 'Change it everywhere', detail: 'Every place that shows this drawing changes with it. Good when they are meant to match.', did: 'Changed the drawing everywhere it is shown.' },
+    { value: 'own', label: 'Make this one its own', detail: 'This place gets a copy of its own, with your change. The other places keep the drawing as it was.', did: 'Made this one its own, so only this place changed.' },
+  ],
+  default: 'everywhere',
+  category: 'Drawing',
+  help: 'timeline-shared',
 });
 
 export type TweenFrameChoice = 'new-key' | 'edit-key';
@@ -109,7 +125,7 @@ export function editActiveDrawing<K extends 'vector' | 'pixel' | 'tilemap'>(
   // On an in-between the new key starts from what shows there, not from the key before.
   const tweened = isInBetween(store().get().doc, layer, frame);
   const shown = tweened ? shownDrawing(store().get().doc, layer, frame) : undefined;
-  const apply = (split: boolean) =>
+  const apply = (split: boolean, own = false) =>
     store().update(
       label,
       (doc) => {
@@ -136,6 +152,12 @@ export function editActiveDrawing<K extends 'vector' | 'pixel' | 'tilemap'>(
           l.cels.sort((a, b) => a.start - b.start);
           cel = l.cels.find((c) => c.start === frame)!;
         }
+        // This place gets a drawing of its own, so the other places that show the old one stay as they are.
+        if (own && cel) {
+          const copy = cloneDrawing(current(doc.drawings[cel.drawingId]) as Drawing) as Draft<Drawing>;
+          doc.drawings[copy.id] = copy;
+          cel.drawingId = copy.id;
+        }
         const auto = opts.adds && cel ? autoHeldAt(l as Layer, frame) : undefined;
         if (auto) {
           // A later frame of an automatic hold works like an empty frame: a new drawing starts here.
@@ -160,18 +182,26 @@ export function editActiveDrawing<K extends 'vector' | 'pixel' | 'tilemap'>(
       },
       { coalesce: opts.coalesce },
     );
-  if (!held || held.start === frame || (opts.adds && autoHeldAt(layer, frame))) {
-    apply(false);
+  // Changing a drawing that other places show would change them too. Asked the first time, then remembered
+  // (Preferences > Behaviour). Not when a new drawing is about to be made here, which nothing else shows.
+  const autoNew = !!opts.adds && !!autoHeldAt(layer, frame);
+  const run = (split: boolean) => {
+    const shared = !!held && !autoNew && !(split && held.start < frame) && placesOf(store().get().doc, held.drawingId) > 1;
+    if (shared) withChoice<SharedDrawingChoice>('draw.sharedDrawing', (v) => apply(split, v === 'own'));
+    else apply(split);
+  };
+  if (!held || held.start === frame || autoNew) {
+    run(false);
     return 'ok';
   }
   if (held.tween?.kind === 'shape' && frame > held.start && nextKey(layer, held)) return 'morph';
   if (tweened && cutProblem(held.tween, (frame - held.start) / held.length, held.length)) return 'overshoot';
   if (tweened) {
-    withChoice<TweenFrameChoice>('draw.tweenFrame', (v) => apply(v === 'new-key'));
+    withChoice<TweenFrameChoice>('draw.tweenFrame', (v) => run(v === 'new-key'));
     return 'ok';
   }
   // Drawing on a held frame. Asked the first time, then remembered (Preferences > Behaviour).
-  withChoice<HeldFrameChoice>('draw.heldFrame', (v) => apply(v === 'new-key'));
+  withChoice<HeldFrameChoice>('draw.heldFrame', (v) => run(v === 'new-key'));
   return 'ok';
 }
 

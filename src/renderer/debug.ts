@@ -46,6 +46,7 @@ import { pretendReport } from '../gpu/report';
 import { setGridLook } from '../canvas/gridView';
 import { setLightTableTint } from '../canvas/lightTable';
 import { offerTweenAt } from '../timeline/tweenOffer';
+import { setTl } from '../timeline/state';
 import { getFillOptions, setFillOptions } from '../tools/fill-options';
 import { allChoices, askAgain, forgetAnswers } from '../core/choices';
 
@@ -97,6 +98,8 @@ if (new URLSearchParams(location.search).has('debug')) {
     },
     // Quill's "Save changes?" question, for shots and checks: a drawing with a file (false) or a never-saved one (true).
     saveQuestion: (neverSaved = false) => void askSaveInPage(neverSaved ? 'Untitled' : 'Ball bounce', neverSaved),
+    // The timeline's frame width (pixels a frame), for shots of a zoom the slider is too coarse to land on.
+    timelineZoom: (cw: number) => setTl({ cw }),
     commands: () => allCommands().map((c) => c.id),
     /** Every help topic with its picture or clip, for the web check that every file is served. */
     help: () => allHelp().map((t) => ({ id: t.id, media: t.media ?? null })),

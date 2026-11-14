@@ -11,7 +11,7 @@ import { inOutRange, playRange } from './playback';
 import { clearInOut } from './range';
 import { clearLightTable, lightTableLabel } from '../canvas/lightTable';
 import { hasArtboards } from '../artboards/model';
-import { MAX_CW, MIN_CW, setTl, tl, useTl } from './state';
+import { cwToSlider, setTl, sliderToCw, tl, useTl } from './state';
 import { useFeaturesVersion } from '../features/use';
 import { TimelineSlot } from './slots';
 import { usePrefs } from '../ui/prefs';
@@ -457,7 +457,7 @@ export function Header() {
         <button type="button" className="tl-btn tl-btn-mini" data-step="fit" title={tip('timeline.zoomFit', 'Fit the whole animation in view')} aria-label="Fit the whole animation in view" data-testid="timeline.zoomFit" onClick={() => runCmd('timeline.zoomFit')}>
           <Icon name="zoom" size={14} />
         </button>
-        <input type="range" data-step="zoom" data-testid="timeline.zoom" aria-label="Timeline zoom" min={MIN_CW} max={MAX_CW} value={cw} onChange={(e) => setTl({ cw: Number(e.target.value) })} />
+        <input type="range" data-step="zoom" data-testid="timeline.zoom" aria-label="Timeline zoom" min={0} max={1} step={0.001} value={cwToSlider(cw)} onChange={(e) => setTl({ cw: sliderToCw(Number(e.target.value)) })} />
       </label>
     </div>
   );

@@ -3,10 +3,12 @@
  * their easing drawn in, and the property rows under an opened layer. The clean timeline uses Grid.tsx's GridRow.
  */
 import { memo } from 'react';
-import type { Cel, Easing, Layer } from '../core/format';
+import type { Cel, Easing, Id, Layer } from '../core/format';
+import type { DrawingUse } from '../core/sharedDrawings';
 import { easeLabel, tweenEase } from '../core/ease';
 import { nextKey } from '../core/symbols';
-import { holdWords } from './geometry';
+import { holdWords, thinCels } from './geometry';
+import { SharedMark, sharedTitle } from './SharedMark';
 import { celRef, type Track } from './tracks';
 
 /** The colour class for a layer: its label, or its kind's own colour. */
@@ -39,7 +41,7 @@ function celTitle(layer: Layer, c: Cel, tweened: boolean): string {
 }
 
 /** One layer's row: keys (solid cell with a diamond), holds (a band with an end cap), tweens (an arrow with the easing). */
-export const DetailRow = memo(function DetailRow({ layer, cw, from, to, active, picked, fxKeys, h }: { layer: Layer; cw: number; from: number; to: number; active: boolean; picked: ReadonlySet<string>; fxKeys: Track[] | null; h: number }) {
+export const DetailRow = memo(function DetailRow({ layer, cw, from, to, active, picked, fxKeys, h, shared }: { layer: Layer; cw: number; from: number; to: number; active: boolean; picked: ReadonlySet<string>; fxKeys: Track[] | null; h: number; shared: ReadonlyMap<Id, DrawingUse> }) {
   const shown: Cel[] = [];
   for (const c of layer.cels) {
     if (c.start > to) break;
@@ -47,19 +49,24 @@ export const DetailRow = memo(function DetailRow({ layer, cw, from, to, active, 
   }
   return (
     <div className={`tl-row tl-drow ${layerColorClass(layer)}${active ? ' is-active' : ''}${layer.visible ? '' : ' is-hidden'}${layer.locked ? ' is-locked' : ''}`} style={{ height: h }} data-layer={layer.id}>
-      {shown.map((c) => {
+      {thinCels(shown, cw).map((p) => {
+        const c = p.cel;
+        // A band of tiny drawings is drawn as one plain block: no diamond, no tween arrow.
+        if (p.dense)
+          return <div key={c.id} className="tl-cel tl-dcel is-dense" data-cel={c.id} style={{ left: p.left, width: p.right - p.left }} title={`${p.count} short drawings. Zoom in to see each one.`} />;
         const next = c.tween ? nextKey(layer, c) : undefined;
         const tweened = !!(c.tween && next);
         const ref = celRef(layer.id, c.id);
-        const w = c.length * cw;
+        const w = p.right - p.left;
         const auto = c.autoHold && c.length > 1;
+        const use = shared.get(c.drawingId);
         return (
           <div
             key={c.id}
-            className={`tl-cel tl-dcel${auto ? ' is-auto' : ''}${tweened ? (c.tween?.kind === 'shape' ? ' is-shape' : ' is-tween') : c.tween ? ' is-broken' : ''}${c.length === 1 ? ' is-single' : ''}`}
+            className={`tl-cel tl-dcel${auto ? ' is-auto' : ''}${use ? ' is-shared' : ''}${tweened ? (c.tween?.kind === 'shape' ? ' is-shape' : ' is-tween') : c.tween ? ' is-broken' : ''}${c.length === 1 ? ' is-single' : ''}${w < 8 ? ' is-thin' : ''}`}
             data-cel={c.id}
-            style={{ left: c.start * cw, width: w }}
-            title={celTitle(layer, c, tweened)}
+            style={{ left: p.left, width: w }}
+            title={sharedTitle(use, celTitle(layer, c, tweened))}
           >
             <span className={`tl-dkey-cell${picked.has(ref) ? ' is-picked' : ''}`} style={{ width: cw }} data-key={ref}>
               <span className={`tl-dkey${picked.has(ref) ? ' is-picked' : ''}`} />
@@ -70,6 +77,7 @@ export const DetailRow = memo(function DetailRow({ layer, cw, from, to, active, 
               </span>
             ) : null}
             {!tweened && c.length > 1 ? <span className="tl-dend" style={{ width: Math.min(cw, 10) }} /> : null}
+            {use ? <SharedMark use={use} width={w} at={cw + 3} /> : null}
             <span className="tl-cel-handle" title="Drag to hold this drawing for longer or shorter" />
           </div>
         );
