@@ -11,7 +11,7 @@
 //
 // NOWRAP_JSON=<file> saves every finding. NOWRAP_SHOTS=<dir> saves a picture of each view that has a wrap.
 // NOWRAP_EXPLAIN=on runs with the explanations on show (a new person's view; the default run has them tucked away behind the ? icons).
-// NOWRAP_ONLY=<text> runs only the views whose name starts with it. NOWRAP_PASSES=a,b runs only those passes.
+// NOWRAP_SIZE=<w>x<h> runs the passes at that window size. NOWRAP_ONLY=<text> runs only the views whose name starts with it. NOWRAP_PASSES=a,b runs only those passes.
 // It also looks for a control sitting on top of another one (an overlap is not a wrap: words that will not wrap run under the
 // next column). Mark a stack that is meant with data-overlaps.
 // Exits 1 when anything wraps, overlaps or jumps.
@@ -44,11 +44,19 @@ const PASSES = [
   { name: 'wide 1920, interface 100%', w: 1920, h: 1000, scale: 1, right: 0 },
 ];
 
+// NOWRAP_SIZE=1280x720 runs every pass at that window size instead (for checking one screen, such as the hello at 720 high).
+if (process.env.NOWRAP_SIZE) {
+  const [w, h] = process.env.NOWRAP_SIZE.split('x').map(Number);
+  for (const p of PASSES) Object.assign(p, { w, h, name: `${p.name.replace(/^\w+ \d+, /, '')} at ${w}x${h}` });
+}
+
 // Documents that give each panel something to show (the same ones scripts/a11y.cjs uses).
 const DOCS = { default: 'bouncing-ball', text: 'bouncing-logo', effects: 'bouncing-logo', rig: 'puppet', 'lip-sync': 'lip-sync', particles: 'sparkle-fx', tileset: 'tileset', palette: 'blank-pixel', 'symbol-props': 'bouncing-logo', camera: 'camera-parallax', 'clip-flow': 'hero-sprites', library: 'bouncing-logo' };
 const tpl = (id) => `__frameling.template(${JSON.stringify(id)});`;
 const run = (id) => `__frameling.run(${JSON.stringify(id)});`;
 const picture = (file) => `void __framelingPicture.open(${JSON.stringify(Array.from(fs.readFileSync(path.join(__dirname, '../docs/help/assets', file))))}, ${JSON.stringify(file)}); true`;
+const HELLO_NEXT = `document.querySelector('.ob-next')?.click()`;
+const HELLO_PICK = `for (const t of ['Sketches and cartoons', 'Game sprites and pixel art', 'Tiles and levels']) [...document.querySelectorAll('.ob-card')].find((c) => c.textContent.includes(t))?.click()`;
 const DIALOGS = [
   ['palette', run('view.commandPalette')],
   ['help', run('help.contents')],
@@ -59,6 +67,11 @@ const DIALOGS = [
   ['welcome', run('help.welcome')],
   ['about', run('help.about')],
   ['onboarding', run('help.meetQuill')],
+  // The other pages of the hello (each needs the one before it): what to make with three picked, colours, settings, the last page.
+  ['onboarding make', [run('help.meetQuill'), HELLO_NEXT, HELLO_PICK]],
+  ['onboarding colours', [run('help.meetQuill'), HELLO_NEXT, HELLO_NEXT]],
+  ['onboarding settings', [run('help.meetQuill'), HELLO_NEXT, HELLO_NEXT, HELLO_NEXT]],
+  ['onboarding last page', [run('help.meetQuill'), HELLO_NEXT, HELLO_PICK, HELLO_NEXT, HELLO_NEXT, HELLO_NEXT]],
   ['prefs general', `__frameling.overlays.openPrefs('general')`],
   ['prefs themes', `__frameling.overlays.openPrefs('themes')`],
   ['prefs behaviour', `__frameling.overlays.openPrefs('behaviour')`],

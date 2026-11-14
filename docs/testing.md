@@ -704,6 +704,22 @@ saves every finding, `NOWRAP_SHOTS=<dir>` a picture of each view with a wrap, `N
 (copy it before a change to get the before numbers). It exits 1 when anything wraps or jumps. The edge of the window itself
 is left to the dock's layout, not judged here: at 200% on a 1280 screen the app has only 640 pixels to share.
 
+## Quill's hello, page by page: scripts/e2e/hello-fit.cjs
+
+Walks every page of the first-run hello (hello, what to make with and without picks, colours with Auto, settings, the last page) at
+the sizes and interface scales you give it, in dark and light, and saves a picture of each so every one can be opened and looked at.
+It reports an element that **scrolls** (a welcome sheet with a scrollbar looks broken), is **clipped** by a box that hides overflow
+(a bubble cut off at an edge), **spills** (words crossing the edge of the card, button or bubble they sit in) or sticks **outside**
+the sheet. The checks do not replace looking at the pictures. Exits 1 on any finding.
+
+```bash
+npm run build
+HELLOFIT_OUT=/tmp/hello HELLOFIT_SIZES=1280x720,1600x900 HELLOFIT_SCALES=1,1.5 xvfb-run -a -s "-screen 0 1700x1000x24" npx electron scripts/e2e/hello-fit.cjs
+```
+
+`HELLOFIT_DIST=<dir>` checks another copy of `dist/`, `HELLOFIT_THEMES=dark` one theme. `scripts/e2e/no-wrap.cjs` also has the hello's
+pages as dialogs (`NOWRAP_ONLY="dialog onboarding"`), and `NOWRAP_SIZE=1280x720` runs its passes at that window size.
+
 ## Performance: scripts/perf/
 
 Full details, options and how to read the numbers are in `scripts/perf/README.md`. Results go in
