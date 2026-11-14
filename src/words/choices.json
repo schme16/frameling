@@ -997,26 +997,32 @@
     "where": "Dialog and Preferences: the small line under the \"plain\" answer in \"A mask that leaves its folder\"."
   },
   "choice.effects.maskLeavesFolder.plain.did": { "text": "Made it a plain layer.", "where": "Toast when \"plain\" is used without asking (\"A mask that leaves its folder\"), in the past tense." },
-  "choice.toggle.makeLayer.title": { "text": "Pixels or Vectors with no layer of that kind", "where": "Name of this choice in Preferences > Behaviour (group: Layers)." },
+  "choice.toggle.makeLayer.title": { "text": "Drawing pixels or vectors with no layer of that kind", "where": "Name of this choice in Preferences > Behaviour (group: Layers)." },
   "choice.toggle.makeLayer.question": {
-    "text": "You pressed Pixels or Vectors and there is no layer of that kind yet. Make one for you?",
-    "where": "The question the \"Pixels or Vectors with no layer of that kind\" dialog asks."
+    "text": "You pressed Pixels or Vectors, or picked a tool that draws one of them, and there is no layer of that kind yet. Make one for you?",
+    "where": "The question the \"Drawing pixels or vectors with no layer of that kind\" dialog asks."
   },
-  "choice.toggle.makeLayer.make.label": { "text": "Make one", "where": "Dialog and Preferences: the button for the answer \"make\" in \"Pixels or Vectors with no layer of that kind\"." },
+  "choice.toggle.makeLayer.make.label": { "text": "Make one", "where": "Dialog and Preferences: the button for the answer \"make\" in \"Drawing pixels or vectors with no layer of that kind\"." },
   "choice.toggle.makeLayer.make.detail": {
-    "text": "A new layer of that kind goes above the one you are on, and you land on it. Undo takes it back.",
-    "where": "Dialog and Preferences: the small line under the \"make\" answer in \"Pixels or Vectors with no layer of that kind\"."
+    "text": "When you draw, a new layer of that kind goes right next to the one you are on and shows as one row with it. Undo takes the layer and the stroke back together.",
+    "where": "Dialog and Preferences: the small line under the \"make\" answer in \"Drawing pixels or vectors with no layer of that kind\"."
   },
   "choice.toggle.makeLayer.make.did": {
     "text": "Made the layer you asked for.",
-    "where": "Toast when \"make\" is used without asking (\"Pixels or Vectors with no layer of that kind\"), in the past tense."
+    "where": "Toast when \"make\" is used without asking (\"Drawing pixels or vectors with no layer of that kind\"), in the past tense."
   },
-  "choice.toggle.makeLayer.tell.label": { "text": "Just tell me how", "where": "Dialog and Preferences: the button for the answer \"tell\" in \"Pixels or Vectors with no layer of that kind\"." },
+  "choice.toggle.makeLayer.tell.label": {
+    "text": "Just tell me how",
+    "where": "Dialog and Preferences: the button for the answer \"tell\" in \"Drawing pixels or vectors with no layer of that kind\"."
+  },
   "choice.toggle.makeLayer.tell.detail": {
     "text": "Nothing is made. A note says where New layer is.",
-    "where": "Dialog and Preferences: the small line under the \"tell\" answer in \"Pixels or Vectors with no layer of that kind\"."
+    "where": "Dialog and Preferences: the small line under the \"tell\" answer in \"Drawing pixels or vectors with no layer of that kind\"."
   },
-  "choice.toggle.makeLayer.tell.did": { "text": "Said how to add one.", "where": "Toast when \"tell\" is used without asking (\"Pixels or Vectors with no layer of that kind\"), in the past tense." },
+  "choice.toggle.makeLayer.tell.did": {
+    "text": "Said how to add one.",
+    "where": "Toast when \"tell\" is used without asking (\"Drawing pixels or vectors with no layer of that kind\"), in the past tense."
+  },
   "choice.menus.newEntries.title": { "text": "New things in a menu you changed", "where": "Name of this choice in Preferences > Behaviour (group: Menus)." },
   "choice.menus.newEntries.question": {
     "text": "When Frameling adds something new to a menu you have changed, where should it go?",

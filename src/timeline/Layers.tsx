@@ -6,6 +6,8 @@ import { store, useStore } from '../core/store';
 import { Icon } from '../ui/icons';
 import { say } from './commands';
 import { runCmd, tip } from './cmd';
+import { pairOf } from '../core/pairs';
+import { setDrawIntent } from '../ui/drawingMode';
 import { ContextMenu, type MenuItem } from './Menu';
 import { PieceActions, PieceButton, PieceRow, PieceTools, pieceMenuBasics, useRowDrag } from './PieceRow';
 import { isFeatureOn } from '../features/host';
@@ -123,8 +125,76 @@ export function layerMenu(layer: Layer, onRename: () => void): MenuItem[] {
   ];
 }
 
+/** Which menu a click opened: a half's own, a pair's, or a plain layer's. */
+function menuFor(menu: { layer: Layer; chip?: boolean }, onRename: () => void, isPairRow: boolean): MenuItem[] {
+  const doc = store().get().doc;
+  const layer = doc.layers.find((l) => l.id === menu.layer.id) ?? menu.layer;
+  if (menu.chip && pairOf(doc.layers, layer)) return halfMenu(layer);
+  if (isPairRow && pairOf(doc.layers, layer)) return pairMenu(layer, onRename);
+  return layerMenu(layer, onRename);
+}
+
+/** One half of a pair: hide, lock, rename, split off, delete, each for that half alone. */
+export function halfMenu(h: Layer): MenuItem[] {
+  const doc = store().get().doc;
+  const other = pairOf(doc.layers, h);
+  return [
+    { heading: `${halfWord(h)} half: ${h.name}` },
+    { label: 'Draw on this half', onClick: () => (setDrawIntent(null), store().setUi({ activeLayerId: h.id })) },
+    { separator: true },
+    { label: h.visible ? 'Hide this half' : 'Show this half', onClick: () => void ops.setLayerVisible(h.id, !h.visible) },
+    { label: h.locked ? 'Unlock this half' : 'Lock this half (protect it from changes)', onClick: () => void ops.setLayerLocked(h.id, !h.locked) },
+    { label: h.onion === false ? 'Show this half in the onion skin' : 'Leave this half out of the onion skin', onClick: () => void ops.setLayerOnion(h.id, h.onion === false) },
+    { node: <OpacitySlider layerId={h.id} /> },
+    { separator: true },
+    { label: 'Rename this half', onClick: () => setTl({ editing: { kind: 'layer', id: h.id } }) },
+    { label: 'Swap which half is on top', disabled: !other, onClick: () => void ops.swapPairOrder(h.id) },
+    { label: 'Split the pair into two layers', onClick: () => void ops.unpairLayers(h.id) },
+    { label: `Delete this ${h.kind} half`, danger: true, disabled: doc.layers.length < 2, onClick: () => void say(ops.deleteLayer(h.id)) },
+  ];
+}
+
+/** A pair's row menu: the things that act on the whole pair, then each half's own. */
+export function pairMenu(layer: Layer, onRename: () => void): MenuItem[] {
+  const doc = store().get().doc;
+  const other = pairOf(doc.layers, layer)!;
+  const total = doc.layers.length;
+  const index = Math.max(doc.layers.indexOf(layer), doc.layers.indexOf(other));
+  const lowest = Math.min(doc.layers.indexOf(layer), doc.layers.indexOf(other));
+  const both = [layer, other];
+  const hidden = both.every((l) => !l.visible);
+  const locked = both.every((l) => l.locked);
+  const halves = orderedHalves(layer, other);
+  return [
+    { heading: `${pairName(layer)} (a pair: pixels and vectors)` },
+    { label: 'Rename the pair', onClick: onRename },
+    { label: 'Duplicate the pair', onClick: () => void say(ops.duplicateLayer(layer.id)) },
+    { label: 'Delete both halves', danger: true, disabled: total < 3, onClick: () => void say(ops.deletePair(layer.id)) },
+    { separator: true },
+    { label: 'Bring forward (move up)', disabled: index >= total - 1 && !layer.folder, onClick: () => void ops.stepLayer('up', layer.id) },
+    { label: 'Send backward (move down)', disabled: lowest <= 0 && !layer.folder, onClick: () => void ops.stepLayer('down', layer.id) },
+    { label: 'Swap which half is on top', onClick: () => void ops.swapPairOrder(layer.id) },
+    { separator: true },
+    { label: hidden ? 'Show both halves' : 'Hide both halves', onClick: () => void ops.setPairVisible(layer.id, hidden) },
+    { label: locked ? 'Unlock both halves' : 'Lock both halves', onClick: () => void ops.setPairLocked(layer.id, !locked) },
+    { label: 'Split the pair into two layers', onClick: () => void ops.unpairLayers(layer.id) },
+    ...halves.flatMap((h): MenuItem[] => [
+      { separator: true },
+      { heading: `${halfWord(h)} half` },
+      { label: h.visible ? 'Hide' : 'Show', onClick: () => void ops.setLayerVisible(h.id, !h.visible) },
+      { label: h.locked ? 'Unlock' : 'Lock', onClick: () => void ops.setLayerLocked(h.id, !h.locked) },
+      { label: `Delete the ${h.kind} half`, danger: true, onClick: () => void say(ops.deleteLayer(h.id)) },
+    ]),
+  ];
+}
+
 interface RowProps {
   layer: Layer;
+  /** The other half, when a pair is shown as one row: this is its top half, and the row stands for both. */
+  half?: Layer;
+  /** Which layer is picked (a pair row is lit when either half is). */
+  activeId?: Id;
+  onHalfMenu?: (half: Layer, x: number, y: number) => void;
   /** Row height, and (detailed look) its property rows and whether they're showing. */
   h: number;
   detailed: boolean;
@@ -145,7 +215,8 @@ interface RowProps {
   onMenu: (layer: Layer, x: number, y: number) => void;
 }
 
-const LayerRow = memo(function LayerRow({ layer, h, detailed, tracks, open, inFolder, depth, active, editing, mask, dropMark, onDragStart, onDragOver, onDrop, onDragEnd, onMenu }: RowProps) {
+const LayerRow = memo(function LayerRow({ layer, half, activeId, onHalfMenu, h, detailed, tracks, open, inFolder, depth, active, editing, mask, dropMark, onDragStart, onDragOver, onDrop, onDragEnd, onMenu }: RowProps) {
+  if (half) return <PairRow layer={layer} half={half} activeId={activeId} h={h} depth={depth} inFolder={inFolder} active={active} editing={editing} dropMark={dropMark} onDragStart={onDragStart} onDragOver={onDragOver} onDrop={onDrop} onDragEnd={onDragEnd} onMenu={onMenu} onHalfMenu={onHalfMenu} />;
   const select = () => store().setUi({ activeLayerId: layer.id });
   const kind = layer.kind === 'pixel' ? 'Pixel layer (pixel art)' : layer.kind === 'tilemap' ? 'Tilemap layer (painted with tiles)' : layer.kind === 'camera' ? 'Camera (frames the scene)' : 'Vector layer (smooth drawing)';
   return (
@@ -155,7 +226,7 @@ const LayerRow = memo(function LayerRow({ layer, h, detailed, tracks, open, inFo
       h={h}
       active={active}
       dim={!layer.visible}
-      className={`${detailed ? `is-detailed ${layerColorClass(layer)}` : ''}${layer.locked ? ' is-locked' : ''}${layer.reference ? ' is-reference' : ''}${layer.mask ? ' is-mask' : ''}${mask?.by ? ' is-masked' : ''}${layer.clipToBelow ? ' is-clipped' : ''}`}
+      className={`${detailed ? `is-detailed ${layerColorClass(layer)}` : ''}${layer.locked ? ' is-locked' : ''}${layer.reference ? ' is-reference' : ''}${layer.mask ? ' is-mask' : ''}${mask?.by ? ' is-masked' : ''}${layer.clipToBelow ? ' is-clipped' : ''}${layer.pair ? ` is-paired is-${layer.kind}-half` : ''}`}
       inFolder={inFolder}
       depth={depth}
       label={`${layer.name}, ${kind}${layer.reference ? ', reference layer' : ''}`}
@@ -242,6 +313,119 @@ const LayerRow = memo(function LayerRow({ layer, h, detailed, tracks, open, inFo
   );
 });
 
+const HALF_SUFFIX = /\s*\((pixels|vectors)\)\s*$/i;
+/** A pair's name for its row: the layers' name without the "(pixels)" or "(vectors)" tag. */
+export const pairName = (layer: Layer): string => layer.name.replace(HALF_SUFFIX, '').trim() || layer.name;
+
+/** The two kinds of half, Pixels on the left and Vectors on the right, like the switch on the tool rail. */
+const orderedHalves = (a: Layer, b: Layer): Layer[] => (a.kind === 'pixel' ? [a, b] : [b, a]);
+const halfWord = (l: Layer): string => (l.kind === 'pixel' ? 'Pixels' : 'Vectors');
+
+/** What each half chip says and how it reads aloud. */
+export function halfChipWords(h: Layer, on: boolean): { tip: string; label: string } {
+  const state = `${h.visible ? '' : ', hidden'}${h.locked ? ', locked' : ''}`;
+  return {
+    tip: `${halfWord(h)} half: "${h.name}"${state}. ${on ? 'You are drawing on it.' : 'Click to draw on it.'} Right-click for hide, lock and more.`,
+    label: `${halfWord(h)} half, ${h.name}${state}${on ? ', picked' : ''}`,
+  };
+}
+
+/** The pair's chips: one for each half, lit when it is the layer you draw on. Click to go to a half; right-click for its own menu. */
+function PairChips({ layer, half, activeId, onMenu }: { layer: Layer; half: Layer; activeId?: Id; onMenu?: (h: Layer, x: number, y: number) => void }) {
+  return (
+    <span className="tl-halves" role="group" aria-label="The two halves of this pair">
+      {orderedHalves(layer, half).map((h) => {
+        const on = activeId === h.id;
+        const words = halfChipWords(h, on);
+        return (
+          <button
+            key={h.id}
+            type="button"
+            className={`tl-half is-${h.kind}${on ? ' is-on' : ''}${h.visible ? '' : ' is-off'}${h.locked ? ' is-locked' : ''}`}
+            data-half={h.kind}
+            aria-pressed={on}
+            aria-label={words.label}
+            title={words.tip}
+            onClick={(e) => {
+              e.stopPropagation();
+              setDrawIntent(null);
+              store().setUi({ activeLayerId: h.id });
+            }}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onMenu?.(h, e.clientX, e.clientY);
+            }}
+          >
+            <Icon name={h.kind} size={13} />
+            {h.locked ? <Icon name="lock" size={9} className="tl-half-lock" /> : null}
+            {h.visible ? null : <span className="tl-half-off" aria-hidden="true" />}
+          </button>
+        );
+      })}
+    </span>
+  );
+}
+
+/** A pair as one row: its name, a chip for each half, and the eye and padlock for both. */
+function PairRow({ layer, half: other, activeId, h, depth, inFolder, active, editing, dropMark, onDragStart, onDragOver, onDrop, onDragEnd, onMenu, onHalfMenu }: Omit<RowProps, 'detailed' | 'tracks' | 'open' | 'mask'>) {
+  const half = other as Layer;
+  const both = [layer, half];
+  const hiddenCount = both.filter((l) => !l.visible).length;
+  const lockedCount = both.filter((l) => l.locked).length;
+  const name = pairName(layer);
+  // Click on the row: stay on the half you are on, else go to the top one.
+  const select = () => {
+    if (activeId !== layer.id && activeId !== half.id) store().setUi({ activeLayerId: layer.id });
+  };
+  const eyeWord = hiddenCount === 2 ? 'Show both layers' : hiddenCount === 1 ? 'Show the hidden half' : 'Hide both layers';
+  const lockWord = lockedCount === 2 ? 'Unlock both layers' : lockedCount === 1 ? 'Lock both layers' : 'Lock both layers so they can not be changed by accident';
+  return (
+    <PieceRow
+      id={layer.id}
+      attr="data-layer"
+      h={h}
+      active={active}
+      dim={hiddenCount === 2}
+      className={`is-pair${lockedCount === 2 ? ' is-locked' : ''}`}
+      inFolder={inFolder}
+      depth={depth}
+      label={`${name}, a pair: a vector layer and a pixel layer, shown as one row`}
+      drag={{ dropMark, onDragStart, onDragOver, onDrop, onDragEnd }}
+      onSelect={select}
+      onMenu={(x, y) => onMenu(layer, x, y)}
+      lead={
+        <span className="tl-kind is-pair" title="A pair: a vector layer and a pixel layer that share their frames" data-pair="">
+          <Icon name="pixel" size={11} />
+          <Icon name="vector" size={11} />
+        </span>
+      }
+      name={name}
+      nameTitle="Double-click to rename the pair"
+      nameLabel="Pair name"
+      editing={editing}
+      onStartRename={() => setTl({ editing: { kind: 'layer', id: layer.id } })}
+      onRename={(v) => {
+        setTl({ editing: null });
+        if (v !== null) ops.renamePair(layer.id, v);
+      }}
+      meta={<PairChips layer={layer} half={half} activeId={activeId} onMenu={onHalfMenu} />}
+      buttons={
+        <>
+          <button type="button" className="tl-icon-btn" title={eyeWord} aria-label={eyeWord} aria-pressed={hiddenCount > 0} onClick={(e) => (e.stopPropagation(), ops.setPairVisible(layer.id, hiddenCount > 0))}>
+            <Icon name={hiddenCount === 2 ? 'eye-off' : 'eye'} size={15} />
+          </button>
+          <button type="button" className="tl-icon-btn" title={lockWord} aria-label={lockWord} aria-pressed={lockedCount > 0} onClick={(e) => (e.stopPropagation(), ops.setPairLocked(layer.id, lockedCount < 2))}>
+            <Icon name={lockedCount > 0 ? 'lock' : 'unlock'} size={15} />
+          </button>
+        </>
+      }
+      moreTitle="More: either half, split the pair, move up or down, duplicate, delete"
+      moreLabel="More pair options"
+    />
+  );
+}
+
 /**
  * The layer list, top layer first. The timeline lays its rows out to line up with the keys; the Layers panel passes
  * its own even-height layout instead (see LayersPanel).
@@ -263,7 +447,7 @@ export function LayerList({ layout: given }: { layout?: Layout } = {}) {
   // What is being dragged (a layer, or a folder with all in it), and the row it is over: a layer's id, or `f:` and a folder's.
   const dnd = useRowDrag<Node>();
   const drag = dnd.drag;
-  const [menu, setMenu] = useState<{ layer: Layer; x: number; y: number } | null>(null);
+  const [menu, setMenu] = useState<{ layer: Layer; x: number; y: number; chip?: boolean } | null>(null);
 
   const drop = (over: string) => {
     const { node, where } = dnd.take();
@@ -299,13 +483,16 @@ export function LayerList({ layout: given }: { layout?: Layout } = {}) {
         <LayerRow
           key={l.id}
           layer={l}
+          half={r.half}
+          activeId={activeId}
+          onHalfMenu={(half, x, y) => setMenu({ layer: half, x, y, chip: true })}
           h={r.h}
           detailed={detailed}
           tracks={r.tracks}
           open={r.open}
           inFolder={r.inFolder}
           depth={r.depth}
-          active={l.id === activeId}
+          active={l.id === activeId || (!!r.half && r.half.id === activeId)}
           editing={editing === l.id}
           mask={maskInfo?.get(l.id)}
           dropMark={mark(l.id, !!drag.node && 'layer' in drag.node && drag.node.layer === l.id)}
@@ -322,7 +509,7 @@ export function LayerList({ layout: given }: { layout?: Layout } = {}) {
           x={menu.x}
           y={menu.y}
           onClose={() => setMenu(null)}
-          items={layerMenu(store().get().doc.layers.find((l) => l.id === menu.layer.id) ?? menu.layer, () => setTl({ editing: { kind: 'layer', id: menu.layer.id } }))}
+          items={menuFor(menu, () => setTl({ editing: { kind: 'layer', id: menu.layer.id } }), !!layout.rows.some((r) => r.kind === 'layer' && r.half && (r.layer.id === menu.layer.id || r.half.id === menu.layer.id)))}
         />
       ) : null}
     </div>

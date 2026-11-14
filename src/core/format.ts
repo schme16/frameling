@@ -384,6 +384,12 @@ export interface BaseLayer {
   /** A colour label for the timeline, to tell layers apart at a glance (missing = the kind's own colour). */
   label?: LayerLabel;
   /**
+   * The other half of a pair: the vector layer and the pixel layer that one drawing is made of (missing = not paired).
+   * Both name each other. A pair is shown as one row, and its cels keep the same starts and lengths. A link the other
+   * layer does not return, or that joins two layers of one kind, counts as no pair at all. See `core/pairs.ts`.
+   */
+  pair?: Id;
+  /**
    * Cels on this layer, sorted by `start`, never overlapping. A frame with no cel covering it is empty.
    */
   cels: Cel[];

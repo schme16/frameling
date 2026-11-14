@@ -11,6 +11,7 @@ import type { ClipDirection, Doc, Id } from '../core/format';
 import { celAt, findLayer } from '../core/doc';
 import { store } from '../core/store';
 import { placesOf } from '../core/sharedDrawings';
+import { pairOf, pairOfId, siblingName, unlinkPair } from '../core/pairs';
 import { askAboutMasks } from '../effects/ops';
 import * as core from './edit-core';
 import * as offsetCore from './offset-core';
@@ -21,8 +22,9 @@ import { emptyTail, fitLength, tidyEnd as tidyEndCore } from './tidyEnd';
 import { canAsk, currentChoice, rememberedChoice, withChoice } from '../core/choices';
 import type { TidyEndChoice } from './choices';
 import './choices';
+import './pairs';
 
-export type Reason = 'locked' | 'no-layer' | 'nothing-here' | 'last-layer' | 'no-change' | 'in-symbol' | 'not-shared' | 'cannot-move' | 'no-folder';
+export type Reason = 'locked' | 'no-layer' | 'nothing-here' | 'last-layer' | 'no-change' | 'in-symbol' | 'not-shared' | 'cannot-move' | 'no-folder' | 'pair-locked';
 export interface Outcome {
   ok: boolean;
   reason?: Reason;
@@ -32,6 +34,7 @@ export interface Outcome {
 
 const WHY: Record<Reason, string> = {
   locked: 'This layer is locked. Unlock it (the padlock) to change its frames.',
+  'pair-locked': 'The other half of this pair is locked, and its frames change with this one. Unlock it first (right-click its chip in Layers).',
   'no-layer': 'Add a layer first.',
   'nothing-here': 'There is no drawing on this frame. Press N to start one.',
   'last-layer': 'You need at least one layer, so this one has to stay.',
@@ -116,15 +119,29 @@ function target(layerId?: Id, frame?: number): { layerId: Id; frame: number } | 
   return id ? { layerId: id, frame: frame ?? store().get().ui.frame } : null;
 }
 
-/** Runs a cel edit: checks the layer exists and isn't locked, applies it as one undo step. */
-function edit(label: string, layerId: Id | undefined, run: (doc: Draft<Doc>, layerId: Id) => Id | boolean | null, opts?: { coalesce?: string }): Outcome {
+/**
+ * Runs a cel edit: checks the layer exists and isn't locked, applies it as one undo step. A half of a pair keeps its other
+ * half in step on its own (see pairs.ts), and the other half must not be locked either, as its keys change too. With
+ * `both` the edit is also run on the other half, for an edit that carries a drawing (a copy, a clear), so the drawing
+ * comes with it instead of a blank key.
+ */
+function edit(label: string, layerId: Id | undefined, run: (doc: Draft<Doc>, layerId: Id) => Id | boolean | null, opts?: { coalesce?: string; both?: boolean }): Outcome {
   const id = layerId ?? currentLayerId();
   const layer = findLayer(store().get().doc, id);
   if (!id || !layer) return no('no-layer');
   if (layer.locked) return no('locked');
+  if (pairOf(store().get().doc.layers, layer)?.locked) return no('pair-locked');
   let result: Id | boolean | null = null;
   const before = store().get().doc;
-  update(label, (d) => void (result = run(d, id)), opts);
+  update(
+    label,
+    (d) => {
+      result = run(d, id);
+      const other = opts?.both && result ? pairOfId(d.layers as never, id) : undefined;
+      if (other) run(d, other.id);
+    },
+    opts,
+  );
   if (!result) return no('nothing-here');
   // A recipe that said yes but left the doc alone (same length, say) changed nothing.
   if (store().get().doc === before) return no('no-change');
@@ -137,7 +154,7 @@ function edit(label: string, layerId: Id | undefined, run: (doc: Draft<Doc>, lay
 export function newBlankKey(layerId?: Id, frame?: number, copy = false): Outcome {
   const t = target(layerId, frame);
   if (!t) return no('no-layer');
-  return edit(copy ? 'New drawing (copy of this one)' : 'New blank drawing', t.layerId, (d) => core.newBlankKey(d, t.layerId, t.frame, copy));
+  return edit(copy ? 'New drawing (copy of this one)' : 'New blank drawing', t.layerId, (d, id) => core.newBlankKey(d, id, t.frame, copy), { both: true });
 }
 
 /** Copies the drawing to the next frame and moves the playhead onto the copy. On an empty frame, copies the last drawing to it. */
@@ -147,11 +164,11 @@ export function duplicateKey(layerId?: Id, frame?: number): Outcome {
   // On an empty frame, copy the last drawing to here instead, and stay put.
   const layer = findLayer(store().get().doc, t.layerId);
   if (layer && !celAt(layer, t.frame) && layer.cels.some((c) => c.start < t.frame)) {
-    const here = edit('Copy the last drawing to this frame', t.layerId, (d) => core.copyEarlierKey(d, t.layerId, t.frame));
+    const here = edit('Copy the last drawing to this frame', t.layerId, (d, id) => core.copyEarlierKey(d, id, t.frame), { both: true });
     if (here.ok) store().setUi({ activeLayerId: t.layerId });
     return here;
   }
-  const r = edit('Copy drawing to next frame', t.layerId, (d) => core.duplicateKey(d, t.layerId, t.frame));
+  const r = edit('Copy drawing to next frame', t.layerId, (d, id) => core.duplicateKey(d, id, t.frame), { both: true });
   if (r.ok) store().setUi({ frame: t.frame + 1, activeLayerId: t.layerId });
   return r;
 }
@@ -164,13 +181,13 @@ export function makeOwnDrawing(layerId?: Id, frame?: number): Outcome {
   const cel = layer && celAt(layer, t.frame);
   if (!cel) return no('nothing-here');
   if (placesOf(store().get().doc, cel.drawingId) < 2) return no('not-shared');
-  return edit('Make this drawing its own', t.layerId, (d) => core.makeOwnDrawing(d, t.layerId, t.frame));
+  return edit('Make this drawing its own', t.layerId, (d, id) => core.makeOwnDrawing(d, id, t.frame), { both: true });
 }
 
 export function clearKey(layerId?: Id, frame?: number): Outcome {
   const t = target(layerId, frame);
   if (!t) return no('no-layer');
-  return edit('Clear drawing', t.layerId, (d) => core.clearKey(d, t.layerId, t.frame));
+  return edit('Clear drawing', t.layerId, (d, id) => core.clearKey(d, id, t.frame), { both: true });
 }
 
 /** Removes the drawing and its hold, leaving empty frames. */
@@ -274,6 +291,49 @@ export function deleteLayer(layerId?: Id): Outcome {
   return ok();
 }
 
+/** Deletes a layer and its other half too, as one undo step. */
+export function deletePair(layerId?: Id): Outcome {
+  const id = layerId ?? currentLayerId();
+  const doc = store().get().doc;
+  const other = pairOfId(doc.layers, id);
+  if (!id || !other) return deleteLayer(id ?? undefined);
+  if (doc.layers.length <= 2) return no('last-layer');
+  let next: Id | null = null;
+  update('Delete both layers', (d) => {
+    core.deleteLayer(d, other.id);
+    next = core.deleteLayer(d, id)?.next ?? null;
+  });
+  if (!next) return no('last-layer');
+  if ([id, other.id].includes(store().get().ui.activeLayerId ?? '')) store().setUi({ activeLayerId: next });
+  return ok();
+}
+
+/** Renames both halves of a pair after one name: "Ink" gives "Ink (vectors)" and "Ink (pixels)". */
+export function renamePair(layerId: Id, name: string): Outcome {
+  const doc = store().get().doc;
+  const l = findLayer(doc, layerId);
+  const other = pairOfId(doc.layers, layerId);
+  if (!l || !other) return renameLayer(layerId, name);
+  const n = name.trim();
+  if (!n) return no('no-change');
+  return simple('Rename pair', (d) => {
+    let any = false;
+    for (const x of [l, other]) {
+      const t = d.layers.find((y) => y.id === x.id);
+      const named = siblingName(n, x.kind as 'vector' | 'pixel');
+      if (t && t.name !== named) ((t.name = named), (any = true));
+    }
+    return any;
+  });
+}
+
+/** Makes the two halves of a pair two plain layers again. They keep their keys and drawings. */
+export function unpairLayers(layerId?: Id): Outcome {
+  const id = layerId ?? currentLayerId();
+  if (!id || !pairOfId(store().get().doc.layers, id)) return no('nothing-here');
+  return simple('Split the pair into two layers', (d) => unlinkPair(d.layers as never, id));
+}
+
 export function duplicateLayer(layerId?: Id): Outcome {
   const id = layerId ?? currentLayerId();
   if (!id || !findLayer(store().get().doc, id)) return no('no-layer');
@@ -304,6 +364,42 @@ export function stepLayer(dir: 'up' | 'down', layerId?: Id): Outcome {
 
 export function setLayerVisible(layerId: Id, visible: boolean): Outcome {
   return simple(visible ? 'Show layer' : 'Hide layer', (d) => core.setLayerVisible(d, layerId, visible));
+}
+
+/** Shows or hides a pair's two halves together, as one step. */
+export function setPairVisible(layerId: Id, visible: boolean): Outcome {
+  const other = pairOfId(store().get().doc.layers, layerId);
+  return simple(visible ? 'Show both layers' : 'Hide both layers', (d) => {
+    let any = false;
+    for (const id of other ? [layerId, other.id] : [layerId]) any = core.setLayerVisible(d, id, visible) || any;
+    return any;
+  });
+}
+
+/** Locks or unlocks a pair's two halves together, as one step. */
+export function setPairLocked(layerId: Id, locked: boolean): Outcome {
+  const other = pairOfId(store().get().doc.layers, layerId);
+  return simple(locked ? 'Lock both layers' : 'Unlock both layers', (d) => {
+    let any = false;
+    for (const id of other ? [layerId, other.id] : [layerId]) any = core.setLayerLocked(d, id, locked) || any;
+    return any;
+  });
+}
+
+/** Swaps which half of a pair is on top (the pair stays side by side). */
+export function swapPairOrder(layerId: Id): Outcome {
+  const doc = store().get().doc;
+  const other = pairOfId(doc.layers, layerId);
+  if (!other) return no('nothing-here');
+  return simple('Swap the two halves', (d) => {
+    const i = d.layers.findIndex((l) => l.id === layerId);
+    const j = d.layers.findIndex((l) => l.id === other.id);
+    if (i < 0 || j < 0 || Math.abs(i - j) !== 1) return false;
+    const t = d.layers[i];
+    d.layers[i] = d.layers[j];
+    d.layers[j] = t;
+    return true;
+  });
 }
 
 export function setLayerLocked(layerId: Id, locked: boolean): Outcome {

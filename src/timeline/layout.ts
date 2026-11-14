@@ -15,7 +15,7 @@ export const PROP_ROW_H = 22;
 
 export type LayoutRow =
   | { kind: 'folder'; key: string; y: number; h: number; row: Extract<TimelineRow, { type: 'folder' }> }
-  | { kind: 'layer'; key: string; y: number; h: number; layer: Layer; inFolder: boolean; depth: number; tracks: Track[]; open: boolean }
+  | { kind: 'layer'; key: string; y: number; h: number; layer: Layer; /** The other half, when a pair is shown as one row. */ half?: Layer; inFolder: boolean; depth: number; tracks: Track[]; open: boolean }
   | { kind: 'prop'; key: string; y: number; h: number; layer: Layer; depth: number; track: Track; last: boolean };
 
 export interface Layout {
@@ -36,7 +36,7 @@ export function buildLayout(rows: TimelineRow[], style: TimelineStyle, open: Rea
     }
     const tracks = style === 'clean' ? [] : tracksOf(r.layer);
     const isOpen = tracks.length > 0 && open.has(r.layer.id);
-    out.push({ kind: 'layer', key: r.layer.id, y, h: rowH, layer: r.layer, inFolder: r.inFolder, depth: r.depth, tracks, open: isOpen });
+    out.push({ kind: 'layer', key: r.layer.id, y, h: rowH, layer: r.layer, ...(r.half ? { half: r.half } : {}), inFolder: r.inFolder, depth: r.depth, tracks, open: isOpen });
     y += rowH;
     if (isOpen)
       tracks.forEach((t, i) => {

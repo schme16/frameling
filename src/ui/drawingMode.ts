@@ -4,9 +4,12 @@
 // between layers. ToolStrip.tsx draws it.
 import { onChoiceChange, rememberedChoice, registerChoice, setChoice, withChoice } from '../core/choices';
 import { findLayer } from '../core/doc';
-import type { Layer, LayerKind } from '../core/format';
-import { store } from '../core/store';
+import type { Id, Layer, LayerKind } from '../core/format';
+import { pairOf } from '../core/pairs';
+import { store, useStore } from '../core/store';
+import { useSyncExternalStore } from 'react';
 import * as ops from '../timeline/ops';
+import { whyNoHalf } from '../timeline/pairs';
 import { inHarness } from '../pixel/harness';
 import { getPrefs, setPrefs, subscribePrefs, type OffLayerPref } from './prefs';
 import { openPrefs } from './overlays';
@@ -108,6 +111,63 @@ export function sideOf(kind: LayerKind | null): Side | null {
   return kind === 'pixel' || kind === 'vector' ? kind : null;
 }
 
+// ---- What you are about to write. Pressing the other side does not move you: it says what the next stroke is, and the
+// stroke goes to the other half of the layer's pair (made if it is not there). The intent belongs to the layer it was set
+// on, so picking another layer puts the switch back to that layer's own kind.
+
+let intent: { side: Side; layerId: Id } | null = null;
+const intentListeners = new Set<() => void>();
+
+/** Says what the next stroke on this layer is: pixels or vectors, whatever the layer is. */
+export function setDrawIntent(side: Side | null, layerId?: Id): void {
+  const next = side && layerId ? { side, layerId } : null;
+  if (intent?.side === next?.side && intent?.layerId === next?.layerId) return;
+  intent = next;
+  intentListeners.forEach((f) => f());
+}
+
+/** The kind the next stroke will be: the side you pressed on this layer, or else the layer's own kind. */
+export function drawKind(layers: readonly Layer[], activeLayerId: Id | null): LayerKind | null {
+  const l = findLayer({ layers } as never, activeLayerId) ?? layers[layers.length - 1];
+  if (!l) return null;
+  // Picking another layer drops it: it was about the layer it was pressed on.
+  if (intent && intent.layerId !== l.id) intent = null;
+  return intent ? intent.side : l.kind;
+}
+
+/** The kind the next stroke will be, right now. */
+export const drawKindNow = (): LayerKind | null => drawKind(store().get().doc.layers, store().get().ui.activeLayerId);
+
+/** The side you pressed on a layer and have not drawn on yet, or null. */
+export function drawIntentFor(layerId: Id | null | undefined): Side | null {
+  return intent && intent.layerId === layerId ? intent.side : null;
+}
+
+/** React: the kind the next stroke will be. */
+export function useDrawKind(): LayerKind | null {
+  const layers = useStore((s) => s.doc.layers);
+  const id = useStore((s) => s.ui.activeLayerId);
+  useSyncExternalStore(
+    (f) => (intentListeners.add(f), () => void intentListeners.delete(f)),
+    () => intent,
+  );
+  return drawKind(layers, id);
+}
+
+/** The short tip on a side of the switch you are not on. `half` is the other half of your layer's pair, `top` the top layer of that kind. */
+export function sideTip(side: Side, o: { half: string; top: string; canMake: boolean }): string {
+  if (o.half) return `${sideWord(side)}: go to "${o.half}"`;
+  if (o.canMake) return `${sideWord(side)}: draw ${side === 'pixel' ? 'pixels' : 'vectors'} on this layer's pair`;
+  return o.top ? `${sideWord(side)}: go to "${o.top}"` : `${sideWord(side)}: no ${side} layer yet`;
+}
+
+/** The longer line under it. */
+export function sideDesc(side: Side, o: { half: string; top: string; canMake: boolean; name: string }): string {
+  if (o.half) return `This layer has a ${side} half. Switch to it.`;
+  if (o.canMake) return `Your next stroke goes on a ${side} layer next to "${o.name}", made for you if there is not one yet.`;
+  return o.top ? `Switch to the top ${side} layer.` : `Press to make a ${side} layer.`;
+}
+
 /** What pressing a side does: nothing (already there), go to a layer, or make one because there is none. */
 export type PressPlan = { do: 'stay' } | { do: 'go'; layerId: string; name: string } | { do: 'make' };
 
@@ -184,6 +244,37 @@ export function makeLayerFor(side: Side): void {
  * `because` names the tool that sent you here. `declined` runs when no layer came of it, so the caller can step aside.
  */
 export function pressSide(side: Side, opts: { because?: string; declined?: () => void } = {}): void {
+  const { doc, ui } = store().get();
+  const active = findLayer(doc, ui.activeLayerId) ?? doc.layers[doc.layers.length - 1];
+  const own = sideOf(active?.kind ?? null);
+  if (active && own) {
+    if (sideOf(drawKindNow()) === side) return;
+    // Its other half, if it has one, is where you go. Otherwise nothing moves: the next stroke is what changes, and it
+    // makes the other half when it lands (see drawAnywhere.ts).
+    const half = pairOf(doc.layers, active);
+    if (half && half.kind === side) {
+      setDrawIntent(null);
+      store().setUi({ activeLayerId: half.id });
+      return;
+    }
+    if (side === own) {
+      setDrawIntent(null);
+      return;
+    }
+    if (!whyNoHalf(active)) {
+      setDrawIntent(side, active.id);
+      if (opts.because) toast(`${opts.because} draws ${side === 'pixel' ? 'pixels' : 'vectors'}, so your next stroke goes on a ${side} layer next to "${active.name}".`, { quill: null, duration: 3200 });
+      return;
+    }
+  }
+  goToSide(side, opts);
+}
+
+/**
+ * Goes to the top layer of that kind, or, with none, makes one (asked once, remembered). The way for the layers that
+ * cannot have another half (tile and camera layers, a bones layer), and for the "Go to a pixel layer" commands.
+ */
+export function goToSide(side: Side, opts: { because?: string; declined?: () => void } = {}): void {
   const plan = planPress(store().get().doc.layers, sideOf(activeKindNow()), side);
   if (plan.do === 'stay') return;
   if (plan.do === 'go') {

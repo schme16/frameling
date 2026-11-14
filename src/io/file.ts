@@ -9,6 +9,7 @@ import { readNotes } from '../notes/model';
 import { readMarks } from '../notes/marks';
 import { cleanGradients } from '../core/gradient';
 import { readFolders, readLayerLook } from '../effects/io';
+import { sanitisePairs } from '../core/pairs';
 import { strFromU8, strToU8, unzipSync, zip, zipSync, type Zippable } from 'fflate';
 import { BONE_STRETCH, FLOW_ANY, FORMAT_VERSION, NEWEST_FORMAT_VERSION, MAX_FLOW_BLEND, LAYER_LABELS, type LayerLabel, type Cel, type CelOffset, type Doc, type Drawing, type KeptShape, type Layer, type Shape, type Slice, type SliceKey, type SymbolDef, type Tween, type InstanceShape, type ClipFlow, type ClipTransition, type FlowCondition, type FlowInput, type Tile, type Tileset, type Bone, type BonePose, type LayerBind, type Pose, type Rig, type SavedPose, type PathStroke } from '../core/format';
 import { decodePng, encodePng, type RawImage } from './png';
@@ -494,6 +495,7 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
         ...(typeof l.depth === 'number' && Number.isFinite(l.depth) && l.depth ? { depth: Math.max(-0.9, Math.min(100, l.depth)) } : {}),
         ...readBind(l.bind),
         ...readLayerLook(l),
+        ...(typeof l.pair === 'string' && l.pair ? { pair: l.pair } : {}),
         ...readExt(l.ext, warnings),
         cels,
       };
@@ -502,6 +504,8 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
       else if (l.kind === 'camera') layers.push({ ...base, kind: 'camera' });
       else layers.push({ ...base, kind: 'vector', ...(l.drawMode === 'merge' ? { drawMode: 'merge' as const } : {}), ...readRig(l.rig) });
     }
+    // A link to a layer that is not there, or that does not link back, is no pair.
+    sanitisePairs(layers);
     return layers;
   };
   const layers = readLayers(raw.layers);
