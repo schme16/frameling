@@ -14,6 +14,7 @@ registerPanel({
   component: lazyPanel(() => import('./TrimPanel').then((m) => m.TrimPanel)),
   zone: 'right',
   order: 36,
+  startsAway: true,
   help: HELP,
 });
 

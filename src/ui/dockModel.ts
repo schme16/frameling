@@ -11,6 +11,18 @@ import { cleanBrought } from './workspaceMenus';
 
 export type { DockZone };
 
+/** Where a panel sits on the right rail: Properties first, then these in order with a line between. */
+export const RAIL_GROUPS = ['properties', 'make', 'animate', 'learn', 'more'] as const;
+export type RailGroup = (typeof RAIL_GROUPS)[number];
+const isRailGroup = (v: unknown): v is RailGroup => (RAIL_GROUPS as readonly unknown[]).includes(v);
+
+/**
+ * Panels a NEW layout puts in a different rail group from the usual one (the group in panelInfo.ts). Library starts in the
+ * last group, at the end of the rail. Only new layouts get this (see `Layout.railAt`): one saved earlier keeps the usual
+ * groups, so Library stays where its person left it.
+ */
+export const START_RAIL_AT: Readonly<Record<string, RailGroup>> = { library: 'more' };
+
 /** One group of tabs: a zone holds one, or several stacked. */
 export interface DockGroup {
   tabs: string[];
@@ -70,6 +82,12 @@ export interface Layout {
   known: string[];
   /** Names the person gave panels, by panel id (missing = the panel's own title). */
   names?: Record<string, string>;
+  /**
+   * Panels this layout puts in another rail group than their usual one, by panel id. Set when a layout is first made
+   * (START_RAIL_AT) and kept with it. Missing = every panel in its usual group, which is how every layout saved before
+   * this reads, so an old layout and an old workspace file keep their rail as it was.
+   */
+  railAt?: Record<string, RailGroup>;
 }
 
 export interface Workspace {
@@ -210,6 +228,11 @@ export function normaliseLayout(raw: unknown): Layout {
   const groups = sanitizeGroups(t.groups);
   if (groups) l.tools.groups = groups;
   if ((ZONES as unknown[]).includes(t.home)) l.tools.home = t.home as DockZone;
+  if (isObj(r.railAt)) {
+    const railAt: Record<string, RailGroup> = {};
+    for (const [id, g] of Object.entries(r.railAt).slice(0, 200)) if (isId(id) && isRailGroup(g)) railAt[id] = g;
+    if (Object.keys(railAt).length) l.railAt = railAt;
+  }
   if (isObj(r.names)) {
     const names: Record<string, string> = {};
     for (const [id, n] of Object.entries(r.names).slice(0, 200)) {

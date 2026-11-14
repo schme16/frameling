@@ -285,11 +285,12 @@ keyboard, the roving keys and hover tracking, then onboarding or the welcome she
 - **Dock**, in layers:
   - `src/ui/dockModel.ts` is the pure model: `Layout` (zones `left`, `right`, `bottom`, `top` with tabs, active tab,
     size and collapsed state; `floats`, the floating windows, later = nearer the front; `tools`, where the tool rail
-    is; `names`, panels the person renamed; `hidden`; `known`), `normaliseLayout` (tidies anything, so layouts saved
+    is; `names`, panels the person renamed; `hidden`; `known`; optional `railAt`, panels this layout puts in another
+    rail group than their usual one), `normaliseLayout` (tidies anything, so layouts saved
     before the top zone and windows load as they were), and the moves (`movePanelTo`, `moveGroupTo`, `dockFloat`,
     `closePanel`, `frontPanel`, `clampBox`...). No registry, no storage.
   - `src/ui/dock.ts` is the live store (`dock`), saved in `localStorage` `frameling.dock.v1` (`v: 2`), over the model:
-    `syncPanels()` places newly registered panels by their `zone`, `reconcile` fits a layout to what is registered,
+    `syncPanels()` places newly registered panels by their `zone` (a panel with `startsAway` goes to `hidden` instead: Clip flow and Draw on), `reconcile` fits a layout to what is registered,
     `placePanel`, `floatPanel`, `showPanel`, `togglePanel`, workspaces (below). `panelsAway` is "Hide all panels".
   - `DockView.tsx` draws the zones (tabs fit by `tabFit.ts`: full, compact, or overflow behind "+N"); `DockFloats.tsx`
     the floating windows (two looks, `floatChrome`); `ToolStrip.tsx` the tool rail in whichever slot it is placed

@@ -149,6 +149,11 @@ export interface PanelDef {
   zone: DockZone;
   /** Order within that zone (lower first). */
   order?: number;
+  /**
+   * Starts put away: a new layout leaves it off the rail (it is in the Panels list, the palette and the menus, one press
+   * from open), and a layout that has never met it puts it away rather than on the rail. A layout that has met it is left alone.
+   */
+  startsAway?: boolean;
   help?: string;
 }
 

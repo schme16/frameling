@@ -8,10 +8,10 @@ import type { State } from '../core/store';
 import { ownedUndo } from '../core/owners';
 import { allSliceCount } from '../pixel/slices/model';
 import { tl } from '../timeline/state';
+import { RAIL_GROUPS, type RailGroup } from './dockModel';
 
 /** Where a panel sits on the rail. Properties first, then the rest in this order with a line between groups. */
-export type RailGroup = 'properties' | 'make' | 'animate' | 'learn' | 'more';
-export const RAIL_GROUPS: RailGroup[] = ['properties', 'make', 'animate', 'learn', 'more'];
+export { RAIL_GROUPS, type RailGroup };
 export const GROUP_NAMES: Record<RailGroup, string> = { properties: 'Properties', make: 'Make', animate: 'Animate', learn: 'Learn', more: 'More' };
 
 export interface PanelInfo {
@@ -214,11 +214,12 @@ export interface RightGroupPlan {
 }
 
 /** The right side's groups as the rail draws them. Only the first group folds its sections into Properties. */
-export function planRight(groups: { tabs: string[]; active: string | null }[], merge: boolean): RightGroupPlan[] {
+export function planRight(groups: { tabs: string[]; active: string | null }[], merge: boolean, railAt?: Record<string, RailGroup>): RightGroupPlan[] {
+  const groupOf = (id: string): RailGroup => railAt?.[id] ?? PANEL_INFO[id]?.group ?? 'more';
   return groups.map((g, index) => {
     const { sections, rail } = splitZone(g.tabs, merge && index === 0);
     const active = g.active && g.tabs.includes(g.active) ? g.active : (g.tabs[0] ?? null);
-    return { index, tabs: g.tabs, sections, places: railGroups(rail), active, onProps: sections.length > 0 && !!active && sections.includes(active) };
+    return { index, tabs: g.tabs, sections, places: railGroups(rail, groupOf), active, onProps: sections.length > 0 && !!active && sections.includes(active) };
   });
 }
 

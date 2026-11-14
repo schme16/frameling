@@ -4,12 +4,24 @@ import type { Clip } from '../core/format';
 import { useStore } from '../core/store';
 import { clipDirection, clipPlays, isBackAndForth } from '../core/clipPlay';
 import { ActionButton, Tip } from '../canvas/controls';
+import { getPanel } from '../core/registry';
+import { showPanel } from '../ui/dock';
 import { ClipPlayFields, DIRECTION_HELP, repeatLabel } from './ClipPlay';
 import { setTl, useTl } from './state';
 
 /** The clip picked on the timeline, if it is still in the document. */
 export function pickedClipOf(doc: { clips: Clip[] }, clipId: string | null): Clip | undefined {
   return clipId ? doc.clips.find((c) => c.id === clipId) : undefined;
+}
+
+/** Clip flow starts put away, so the place you are looking at clips gets a way to it (not shown when the feature is off). */
+function OpenFlow() {
+  if (!getPanel('clip-flow')) return null;
+  return (
+    <div className="cv-row cv-wrap">
+      <ActionButton onClick={() => showPanel('clip-flow')} title="How your clips lead into each other, for games">Open Clip flow</ActionButton>
+    </div>
+  );
 }
 
 export function ClipPanel() {
@@ -19,6 +31,7 @@ export function ClipPanel() {
     return (
       <div className="cv-panel" data-help="timeline-clip-play">
         <Tip stays>Click a clip on the timeline to see and change how it plays: forward, backward or back and forth, and how many times. Drag across frames in the clips row to make one.</Tip>
+        <OpenFlow />
       </div>
     );
   }
@@ -40,6 +53,7 @@ export function ClipPanel() {
       <div className="cv-row cv-wrap">
         <ActionButton onClick={() => setTl({ clipId: null })}>Play everything again</ActionButton>
       </div>
+      <OpenFlow />
     </div>
   );
 }

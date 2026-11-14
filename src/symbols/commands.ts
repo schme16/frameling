@@ -10,7 +10,7 @@ import { MOTIONS } from '../core/motions';
 import { canMotion, makeMotion } from './motion-ops';
 import { clearShapeHints, hintTarget, makeShapeTween, makeTweenAsking, setTweenKind, currentKey, deleteUnused, editInstance, leaveSymbol, makeSymbolFromDrawing, makeSymbolFromFrames, makeSymbolFromSelection, makeTween, pickedKeys, pathFromSelection, removeTween, resetTransform, selectedInstance, setEase } from './ops';
 
-registerPanel({ id: 'library', title: 'Library', icon: 'symbol', component: lazyPanel(() => import('./LibraryPanel').then((m) => m.LibraryPanel)), zone: 'right', order: 30, help: 'symbols' });
+registerPanel({ id: 'library', title: 'Library', icon: 'symbol', component: lazyPanel(() => import('./LibraryPanel').then((m) => m.LibraryPanel)), zone: 'right', order: 92, help: 'symbols' }); // 92: the end of the rail, before plugin panels (95)
 registerPanel({ id: 'symbol-props', title: 'Symbol and motion', icon: 'tween', component: lazyPanel(() => import('./PropertiesPanel').then((m) => m.PropertiesPanel)), zone: 'right', order: 35, help: 'symbol-properties' });
 
 const inside = (s: State) => !!s.doc.editing?.length;

@@ -3,7 +3,7 @@
 // DockFloats.tsx and RightDock.tsx. This file is plain state so it can be tested.
 import { allPanels, allTools, getPanel, type DockZone, type PanelDef } from '../core/registry';
 import type { LayerKind } from '../core/format';
-import { activeOfGroup, cleanName, clone, closeFloat, closePanel, clampSize, coveredBy, dockAllFloats, dockFloat, emptyLayout, evenSplit, frontPanel, groupTabs, isFront, joinAllGroups, joinGroupUp, locate, FLOAT_DEFAULT, MAX_SAVED, moveGroupTo, movePanelTo, nameOf, normaliseLayout, nudgeSplit, placeToolsIn, placedIds, raiseFloat, renameFloatIn, renamePanelIn, resizeBox, retainTabs, sanitizeWorkspace, sanitizeWorkspaces, setFloatBox, splitGroupsAt, stackPanels, ZONES, type DropTarget, type Layout, type Place, type ToolsPlace, type Workspace } from './dockModel';
+import { activeOfGroup, cleanName, clone, closeFloat, closePanel, clampSize, coveredBy, dockAllFloats, dockFloat, emptyLayout, evenSplit, frontPanel, groupTabs, isFront, joinAllGroups, joinGroupUp, locate, FLOAT_DEFAULT, MAX_SAVED, moveGroupTo, movePanelTo, nameOf, normaliseLayout, nudgeSplit, placeToolsIn, START_RAIL_AT, placedIds, raiseFloat, renameFloatIn, renamePanelIn, resizeBox, retainTabs, sanitizeWorkspace, sanitizeWorkspaces, setFloatBox, splitGroupsAt, stackPanels, ZONES, type DropTarget, type Layout, type Place, type ToolsPlace, type Workspace } from './dockModel';
 import { createStore, readRaw, writeJson } from './mini';
 import { isRoomFolded } from './roomFolds';
 import { toast } from './toast';
@@ -74,9 +74,13 @@ const isColour = (p: PanelDef) => /colou?r|palette|swatch/.test(p.id);
 function layoutFrom(panels: PanelDef[], place: (p: PanelDef) => DockZone, order: (a: PanelDef, b: PanelDef) => number = () => 0): Layout {
   const l = emptyLayout();
   const sorted = [...panels].sort((a, b) => (isHelp(a) ? 1 : 0) - (isHelp(b) ? 1 : 0) || order(a, b));
-  for (const p of sorted) l.zones[place(p)].tabs.push(p.id);
+  // Panels that start put away are closed, the same state as one the person closed: in the Panels list, one press from open.
+  for (const p of sorted) (p.startsAway ? l.hidden : l.zones[place(p)].tabs).push(p.id);
   for (const z of ZONES) l.zones[z].active = l.zones[z].tabs[0] ?? null;
   l.known = panels.map((p) => p.id);
+  // Where the rail puts a panel other than in its usual group (Library: the end). Only a new layout says so.
+  const railAt = Object.fromEntries(panels.filter((p) => START_RAIL_AT[p.id]).map((p) => [p.id, START_RAIL_AT[p.id]]));
+  if (Object.keys(railAt).length) l.railAt = railAt;
   return l;
 }
 
@@ -173,9 +177,14 @@ export function reconcile(layout: Layout, panels: PanelDef[] = allPanels()): Lay
   const known = new Set(l.known);
   for (const p of panels) {
     if (known.has(p.id) || placed.has(p.id) || l.hidden.includes(p.id)) continue;
+    known.add(p.id);
+    // A panel this layout has never met and that starts put away goes to the closed list, not onto the rail.
+    if (p.startsAway) {
+      l.hidden.push(p.id);
+      continue;
+    }
     l.zones[p.zone].tabs.push(p.id);
     if (!l.zones[p.zone].active) l.zones[p.zone].active = p.id;
-    known.add(p.id);
   }
   l.known = [...new Set([...known, ...panels.map((p) => p.id)])];
   return l;
