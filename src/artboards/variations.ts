@@ -24,17 +24,18 @@ import { registerGuard, registerSettler, reportBlocked, type SettleContext } fro
 import { basePalette, changesBetween, changesOf, drawingColours, followRenames, isColourEdit, makeOverride, paletteRenames, plainHex, recolourDrawing, resolvePalette, rgbKey, tidyChanges } from './paletteOverride';
 import { activeId, artboardsOf, boxes, ensureArtboards, findArtboard, gapFor, nextSpot, putContent, switchArtboard, takeContent } from './model';
 import { fitPlacement, type FitMode } from './fit';
+import { choiceWord } from '../words/choices';
 
 registerChoice<FitMode>({
   id: 'variations.frame',
-  title: 'A variation of a different size',
-  question: 'When a variation has a different size, how should it frame the original?',
+  title: choiceWord('choice.variations.frame.title'),
+  question: choiceWord('choice.variations.frame.question'),
   category: 'Artboards',
   default: 'fill',
   help: 'A camera is added to the variation to frame the original. You can move it like any camera.',
   options: [
-    { value: 'fill', label: 'Fill (crop)', detail: 'The picture is filled, and what hangs over the edges is cropped. Good for a square or tall cut of a wide shot.' },
-    { value: 'bars', label: 'Fit (show it all)', detail: 'The whole original shows, with the stage colour round it where it does not fill the picture.' },
+    { value: 'fill', label: choiceWord('choice.variations.frame.fill.label'), detail: choiceWord('choice.variations.frame.fill.detail') },
+    { value: 'bars', label: choiceWord('choice.variations.frame.bars.label'), detail: choiceWord('choice.variations.frame.bars.detail') },
   ],
 });
 

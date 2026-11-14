@@ -5,40 +5,41 @@ import type { Quest } from '../quests/types';
 import { getTurn, isTurned } from './turn';
 // The steps run the turn commands.
 import './turnCommands';
+import { questWord } from '../words/quests';
 
 const turned = () => isTurned(getTurn());
 const pickBrush = () => store().setUi({ tool: 'brush' });
 
 export const TURN_QUEST: Quest = {
   id: 'turn-the-page',
-  title: 'Turn the page',
-  summary: 'Turn the canvas to any angle, the way you turn a sheet of paper, then put it straight again.',
+  title: questWord('quest.turn-the-page.title'),
+  summary: questWord('quest.turn-the-page.summary'),
   minutes: 1,
   icon: 'rotate',
   group: 'drawing',
-  badge: { id: 'page-turner', name: 'Page Turner', icon: 'rotate', color: '--sky' },
+  badge: { id: 'page-turner', name: questWord('quest.turn-the-page.badge'), icon: 'rotate', color: '--sky' },
   requires: [],
-  finish: 'Turn it whenever a stroke feels awkward. It only changes how you look at the page, never the drawing or what you export.',
+  finish: questWord('quest.turn-the-page.finish'),
   steps: [
     {
       id: 'turn',
-      say: 'Hold Alt and drag round the middle of the canvas, with the Brush or Pencil. The page turns with your pointer.',
-      why: 'Painters turn the paper to reach a stroke comfortably. Alt and a plain click still picks a colour on a pixel layer. Hold Shift as you drag to turn in neat 15 degree steps.',
+      say: questWord('quest.turn-the-page.turn.say'),
+      why: questWord('quest.turn-the-page.turn.why'),
       target: '.cv-root',
       enter: pickBrush,
       done: () => turned(),
       show: 'view.turnRight',
-      hint: 'Press Alt, then drag in a slow circle around the middle of the canvas. Alt and . (full stop) turns it a little too.',
+      hint: questWord('quest.turn-the-page.turn.hint'),
       help: 'turn-flip-view',
     },
     {
       id: 'straight',
-      say: 'Press Straighten on the note at the top of the canvas to put the page back.',
-      why: 'The note stays while the page is turned, so you never mistake a turned view for a crooked drawing. Ctrl+Shift+0 does the same.',
+      say: questWord('quest.turn-the-page.straight.say'),
+      why: questWord('quest.turn-the-page.straight.why'),
       target: '.tv-chip-reset',
       done: () => !turned(),
       show: 'view.resetTurn',
-      hint: 'It is the button at the top of the canvas.',
+      hint: questWord('quest.turn-the-page.straight.hint'),
       help: 'turn-flip-view',
     },
   ],

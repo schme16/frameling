@@ -9,6 +9,7 @@ import { notify } from './notify';
 import { choose, registerChoice } from '../core/choices';
 import { closeSheet } from '../ui/overlays';
 import { handOverUnsavedWork, loadBytes, openPath } from './document';
+import { choiceWord } from '../words/choices';
 
 export interface RestartView {
   frame?: number;
@@ -37,14 +38,14 @@ export const UNDO_CHOICE = 'restart.undo';
 // has some, then remembered (and changeable in Preferences, Behaviour).
 registerChoice({
   id: UNDO_CHOICE,
-  title: 'Restarting with Undo steps',
-  question: "Frameling will restart and come back to your drawing just as it is, unsaved changes and all. The one thing that can't come across is Undo: it starts fresh. Restart?",
+  title: choiceWord('choice.restart.undo.title'),
+  question: choiceWord('choice.restart.undo.question'),
   category: 'Files',
   help: 'restart',
   default: 'go',
   options: [
-    { value: 'go', label: 'Restart', detail: 'Your drawing comes back as it is. Undo starts fresh.', did: 'Restarted, and Undo started fresh.' },
-    { value: 'wait', label: 'Not now', detail: 'Stay here and keep Undo.', once: true },
+    { value: 'go', label: choiceWord('choice.restart.undo.go.label'), detail: choiceWord('choice.restart.undo.go.detail'), did: choiceWord('choice.restart.undo.go.did') },
+    { value: 'wait', label: choiceWord('choice.restart.undo.wait.label'), detail: choiceWord('choice.restart.undo.wait.detail'), once: true },
   ],
 });
 

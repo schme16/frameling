@@ -27,7 +27,9 @@
     "dialogue:shots": "npm run build && electron scripts/dialogue/shots.cjs",
     "dialogue:page": "node scripts/dialogue/page.mjs",
     "dialogue:apply": "node scripts/dialogue/apply.mjs",
-    "dialogue:publish": "node scripts/dialogue/page.mjs --put"
+    "dialogue:publish": "node scripts/dialogue/page.mjs --put",
+    "words:apply": "node scripts/words/apply.mjs",
+    "words:list": "node scripts/words/list.mjs"
   },
   "dependencies": {
     "fflate": "^0.8.3",

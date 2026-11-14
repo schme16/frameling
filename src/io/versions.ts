@@ -16,6 +16,7 @@ import { notify } from './notify';
 import { thumbnailOf } from './thumb';
 import { createStore } from '../ui/mini';
 import { parseIndex, pruneVersions, safeDocKey, VERSION_EVERY_MS, versionFileId, versionLabel, type VersionMeta } from './version-rules';
+import { choiceWord } from '../words/choices';
 
 export type { VersionMeta } from './version-rules';
 
@@ -158,11 +159,11 @@ export type RestoreChoice = 'in-place' | 'copy';
 
 registerChoice<RestoreChoice>({
   id: 'versions.restore',
-  title: 'Bringing back a version',
-  question: 'When you bring back an earlier version, should it replace what you have now, or open as a separate copy?',
+  title: choiceWord('choice.versions.restore.title'),
+  question: choiceWord('choice.versions.restore.question'),
   options: [
-    { value: 'in-place', label: 'Replace what I have', detail: 'Your drawing goes back to that version. Changed your mind? Undo (Ctrl+Z) brings it straight back. A version of how it was is kept too.' },
-    { value: 'copy', label: 'Open as a copy', detail: 'The version opens as a new, unsaved drawing, and the one you have now stays as it is.' },
+    { value: 'in-place', label: choiceWord('choice.versions.restore.in-place.label'), detail: choiceWord('choice.versions.restore.in-place.detail') },
+    { value: 'copy', label: choiceWord('choice.versions.restore.copy.label'), detail: choiceWord('choice.versions.restore.copy.detail') },
   ],
   default: 'in-place',
   mustAsk: true,

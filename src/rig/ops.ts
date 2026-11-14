@@ -11,16 +11,17 @@ import { currentChoice, type ChoiceDef } from '../core/choices';
 import { shapesBounds } from '../canvas/geometry';
 import { boneBetween, boneForBox, descendants, gridMesh, mapply, minv, mirrorPose, nearestBone, rigState, skinMesh, swapSides, tidyPose, wrapAngle, type Pt } from './math';
 import { isRigLayer, rigPoseAt, type RigLayer } from './pose';
+import { choiceWord } from '../words/choices';
 
 export type NewPoseChoice = 'glide' | 'hold';
 
 export const newPoseChoice: ChoiceDef<NewPoseChoice> = {
   id: 'rig.newPose',
-  title: 'Posing on a new frame',
-  question: "You're posing bones on a frame that has no pose of its own yet. How should the frames in between move?",
+  title: choiceWord('choice.rig.newPose.title'),
+  question: choiceWord('choice.rig.newPose.question'),
   options: [
-    { value: 'glide', label: 'Glide from the last pose', detail: 'The bones move smoothly from the pose before to this one (a tween with easing).' },
-    { value: 'hold', label: 'Jump to the new pose', detail: 'The old pose holds until this frame, then the bones snap to the new one (good for snappy, stepped motion).' },
+    { value: 'glide', label: choiceWord('choice.rig.newPose.glide.label'), detail: choiceWord('choice.rig.newPose.glide.detail') },
+    { value: 'hold', label: choiceWord('choice.rig.newPose.hold.label'), detail: choiceWord('choice.rig.newPose.hold.detail') },
   ],
   default: 'glide',
   category: 'Animating',
@@ -185,11 +186,11 @@ export type RemoveBoneChoice = 'keep' | 'branch';
 
 export const removeBoneChoice: ChoiceDef<RemoveBoneChoice> = {
   id: 'rig.removeBone',
-  title: 'Removing a bone with bones hanging from it',
-  question: 'The bone you removed had other bones hanging from it (like a forearm from an upper arm). What should happen to those?',
+  title: choiceWord('choice.rig.removeBone.title'),
+  question: choiceWord('choice.rig.removeBone.question'),
   options: [
-    { value: 'keep', label: 'Keep them', detail: 'They stay, and hang from the bone above instead. Good for taking one joint out of a chain.', did: 'Removed the bone and kept the ones hanging from it.' },
-    { value: 'branch', label: 'Remove them too', detail: 'The whole branch goes: the bone and everything hanging from it. Good for taking a whole arm away.', did: 'Removed the bone and everything hanging from it.' },
+    { value: 'keep', label: choiceWord('choice.rig.removeBone.keep.label'), detail: choiceWord('choice.rig.removeBone.keep.detail'), did: choiceWord('choice.rig.removeBone.keep.did') },
+    { value: 'branch', label: choiceWord('choice.rig.removeBone.branch.label'), detail: choiceWord('choice.rig.removeBone.branch.detail'), did: choiceWord('choice.rig.removeBone.branch.did') },
   ],
   default: 'keep',
   category: 'Animating',

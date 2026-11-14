@@ -16,6 +16,7 @@ import { inHarness } from './harness';
 import { moment } from './moments';
 import { boardCount, convertWay, isPixelDoc, totalFrames, wayOf, type Change } from './way';
 import { isBlankDocQuick } from './blank';
+import { choiceWord } from '../words/choices';
 
 /** Moves the open sprite to another way, as one undo step. Says what happened (or why not) in a toast. */
 export function changeWay(to: SpriteWay, say = true): Change {
@@ -53,15 +54,15 @@ export function makeItMove(): void {
 
 registerChoice<'boards' | 'sheet'>({
   id: 'pixel.twoBoards',
-  title: 'A second board in a one-picture sprite',
+  title: choiceWord('choice.pixel.twoBoards.title'),
   question: line('pixel.twoBoards.ask'),
   category: 'Pixel art',
   help: 'pixel-ways',
   default: 'boards',
   quill: true,
   options: [
-    { value: 'boards', label: 'Frames of one sprite', detail: 'Each board is a frame, and they play in order as one animation.' },
-    { value: 'sheet', label: 'Two different sprites', detail: 'Each board is a sprite of its own, and they pack onto one sheet.' },
+    { value: 'boards', label: choiceWord('choice.pixel.twoBoards.boards.label'), detail: choiceWord('choice.pixel.twoBoards.boards.detail') },
+    { value: 'sheet', label: choiceWord('choice.pixel.twoBoards.sheet.label'), detail: choiceWord('choice.pixel.twoBoards.sheet.detail') },
   ],
 });
 
@@ -105,16 +106,16 @@ export const SHARE_CHOICE = 'pixel.shareLayers';
 
 registerChoice<'share' | 'leave' | 'later'>({
   id: SHARE_CHOICE,
-  title: 'Frames on boards: one stack of layers',
-  question: 'Every board of this sprite has layers of its own. Put the frames on one stack, so a layer you add once shows on every frame?',
+  title: choiceWord('choice.pixel.shareLayers.title'),
+  question: choiceWord('choice.pixel.shareLayers.question'),
   category: 'Pixel art',
   help: 'pixel-shared-layers',
   default: 'later',
   dismiss: 'later',
   options: [
-    { value: 'share', label: 'One stack for all the frames', detail: 'Layers with the same name and kind join up, and every board keeps its own pixels. One undo step puts it back.' },
-    { value: 'leave', label: 'Leave my files as they are', detail: 'Each board keeps layers of its own. You can put them on one stack later, from the Pixel tools menu.' },
-    { value: 'later', label: 'Not now', detail: 'Ask again the next time a file like this opens.', once: true },
+    { value: 'share', label: choiceWord('choice.pixel.shareLayers.share.label'), detail: choiceWord('choice.pixel.shareLayers.share.detail') },
+    { value: 'leave', label: choiceWord('choice.pixel.shareLayers.leave.label'), detail: choiceWord('choice.pixel.shareLayers.leave.detail') },
+    { value: 'later', label: choiceWord('choice.pixel.shareLayers.later.label'), detail: choiceWord('choice.pixel.shareLayers.later.detail'), once: true },
   ],
 });
 

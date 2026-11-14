@@ -31,6 +31,7 @@ import { store } from '../core/store';
 import { drawLasso, lassoClosesAt, lassoPoint } from './lasso';
 import { PixelSelectOptions } from './options';
 import { reducedMotion } from '../ui/prefs';
+import { choiceWord } from '../words/choices';
 
 /** A drag shorter than this (screen pixels) is a click. */
 const DRAG_PX = 3;
@@ -46,15 +47,15 @@ export type AltInsideChoice = 'copy' | 'subtract';
 
 registerChoice<AltInsideChoice>({
   id: 'select.altInside',
-  title: 'Alt+drag inside a pixel selection',
-  question: 'What should Alt+drag do when it starts inside the selected pixels?',
+  title: choiceWord('choice.select.altInside.title'),
+  question: choiceWord('choice.select.altInside.question'),
   category: 'Pixel art',
   silent: true,
   default: 'copy',
   help: 'Alt+drag outside the selection always takes away from it.',
   options: [
-    { value: 'copy', label: 'Copy the pixels', detail: 'Drags a copy and leaves the originals where they were.' },
-    { value: 'subtract', label: 'Take away from the selection', detail: 'Draws a box or lasso that is cut out of the selection.' },
+    { value: 'copy', label: choiceWord('choice.select.altInside.copy.label'), detail: choiceWord('choice.select.altInside.copy.detail') },
+    { value: 'subtract', label: choiceWord('choice.select.altInside.subtract.label'), detail: choiceWord('choice.select.altInside.subtract.detail') },
   ],
 });
 

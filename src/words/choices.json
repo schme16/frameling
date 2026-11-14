@@ -1,0 +1,1362 @@
+{
+  "$about": "Every question the app asks once and then remembers, in one place: the name of each choice in Preferences, the question, each answer and the line under it, and the toast for an unasked answer. Edit the text freely. Words in {curly} brackets are filled in by the app, so keep them, spelled the same. Grouped by where the choice shows in Preferences > Behaviour. npm run words:apply merges edits in and refuses a lost placeholder.",
+  "choice.rig.newPose.title": { "text": "Posing on a new frame", "where": "Name of this choice in Preferences > Behaviour (group: Animating)." },
+  "choice.rig.newPose.question": {
+    "text": "You're posing bones on a frame that has no pose of its own yet. How should the frames in between move?",
+    "where": "The question the \"Posing on a new frame\" dialog asks."
+  },
+  "choice.rig.newPose.glide.label": { "text": "Glide from the last pose", "where": "Dialog and Preferences: the button for the answer \"glide\" in \"Posing on a new frame\"." },
+  "choice.rig.newPose.glide.detail": {
+    "text": "The bones move smoothly from the pose before to this one (a tween with easing).",
+    "where": "Dialog and Preferences: the small line under the \"glide\" answer in \"Posing on a new frame\"."
+  },
+  "choice.rig.newPose.hold.label": { "text": "Jump to the new pose", "where": "Dialog and Preferences: the button for the answer \"hold\" in \"Posing on a new frame\"." },
+  "choice.rig.newPose.hold.detail": {
+    "text": "The old pose holds until this frame, then the bones snap to the new one (good for snappy, stepped motion).",
+    "where": "Dialog and Preferences: the small line under the \"hold\" answer in \"Posing on a new frame\"."
+  },
+  "choice.rig.removeBone.title": { "text": "Removing a bone with bones hanging from it", "where": "Name of this choice in Preferences > Behaviour (group: Animating)." },
+  "choice.rig.removeBone.question": {
+    "text": "The bone you removed had other bones hanging from it (like a forearm from an upper arm). What should happen to those?",
+    "where": "The question the \"Removing a bone with bones hanging from it\" dialog asks."
+  },
+  "choice.rig.removeBone.keep.label": { "text": "Keep them", "where": "Dialog and Preferences: the button for the answer \"keep\" in \"Removing a bone with bones hanging from it\"." },
+  "choice.rig.removeBone.keep.detail": {
+    "text": "They stay, and hang from the bone above instead. Good for taking one joint out of a chain.",
+    "where": "Dialog and Preferences: the small line under the \"keep\" answer in \"Removing a bone with bones hanging from it\"."
+  },
+  "choice.rig.removeBone.keep.did": {
+    "text": "Removed the bone and kept the ones hanging from it.",
+    "where": "Toast when \"keep\" is used without asking (\"Removing a bone with bones hanging from it\"), in the past tense."
+  },
+  "choice.rig.removeBone.branch.label": { "text": "Remove them too", "where": "Dialog and Preferences: the button for the answer \"branch\" in \"Removing a bone with bones hanging from it\"." },
+  "choice.rig.removeBone.branch.detail": {
+    "text": "The whole branch goes: the bone and everything hanging from it. Good for taking a whole arm away.",
+    "where": "Dialog and Preferences: the small line under the \"branch\" answer in \"Removing a bone with bones hanging from it\"."
+  },
+  "choice.rig.removeBone.branch.did": {
+    "text": "Removed the bone and everything hanging from it.",
+    "where": "Toast when \"branch\" is used without asking (\"Removing a bone with bones hanging from it\"), in the past tense."
+  },
+  "choice.motion.room.title": { "text": "A motion that runs into the next drawing", "where": "Name of this choice in Preferences > Behaviour (group: Animation)." },
+  "choice.motion.room.question": {
+    "text": "This motion is longer than the gap before the next drawing on this layer. What should happen?",
+    "where": "The question the \"A motion that runs into the next drawing\" dialog asks."
+  },
+  "choice.motion.room.squeeze.label": { "text": "Make it quicker to fit", "where": "Dialog and Preferences: the button for the answer \"squeeze\" in \"A motion that runs into the next drawing\"." },
+  "choice.motion.room.squeeze.detail": {
+    "text": "The motion plays faster, and the next drawing stays where it is.",
+    "where": "Dialog and Preferences: the small line under the \"squeeze\" answer in \"A motion that runs into the next drawing\"."
+  },
+  "choice.motion.room.push.label": { "text": "Move later drawings along", "where": "Dialog and Preferences: the button for the answer \"push\" in \"A motion that runs into the next drawing\"." },
+  "choice.motion.room.push.detail": {
+    "text": "The motion keeps its speed, and the drawings after it on this layer move later.",
+    "where": "Dialog and Preferences: the small line under the \"push\" answer in \"A motion that runs into the next drawing\"."
+  },
+  "choice.tween.plainDrawing.title": { "text": "In-betweens on a plain drawing", "where": "Name of this choice in Preferences > Behaviour (group: Animation)." },
+  "choice.tween.plainDrawing.question": {
+    "text": "This drawing is not a symbol. How should it change from this key to the next?",
+    "where": "The question the \"In-betweens on a plain drawing\" dialog asks."
+  },
+  "choice.tween.plainDrawing.symbol.label": { "text": "Move it as one piece", "where": "Dialog and Preferences: the button for the answer \"symbol\" in \"In-betweens on a plain drawing\"." },
+  "choice.tween.plainDrawing.symbol.detail": {
+    "text": "Frameling makes it a symbol, then you move, turn, resize or fade it on the next key (classic tween).",
+    "where": "Dialog and Preferences: the small line under the \"symbol\" answer in \"In-betweens on a plain drawing\"."
+  },
+  "choice.tween.plainDrawing.morph.label": { "text": "Morph the shapes", "where": "Dialog and Preferences: the button for the answer \"morph\" in \"In-betweens on a plain drawing\"." },
+  "choice.tween.plainDrawing.morph.detail": {
+    "text": "The outlines and colours melt into whatever you draw on the next key (shape tween).",
+    "where": "Dialog and Preferences: the small line under the \"morph\" answer in \"In-betweens on a plain drawing\"."
+  },
+  "choice.symbols.frames.title": { "text": "Symbol from a layer with several drawings", "where": "Name of this choice in Preferences > Behaviour (group: Animation)." },
+  "choice.symbols.frames.question": {
+    "text": "This layer has several drawings. What should the new symbol hold?",
+    "where": "The question the \"Symbol from a layer with several drawings\" dialog asks."
+  },
+  "choice.symbols.frames.all.label": { "text": "The whole animation", "where": "Dialog and Preferences: the button for the answer \"all\" in \"Symbol from a layer with several drawings\"." },
+  "choice.symbols.frames.all.detail": {
+    "text": "Every drawing, in time, as one looping symbol. Place it again and again, move it, fade it.",
+    "where": "Dialog and Preferences: the small line under the \"all\" answer in \"Symbol from a layer with several drawings\"."
+  },
+  "choice.symbols.frames.one.label": { "text": "Just this drawing", "where": "Dialog and Preferences: the button for the answer \"one\" in \"Symbol from a layer with several drawings\"." },
+  "choice.symbols.frames.one.detail": {
+    "text": "Only the drawing on this frame (or your selection on a vector layer). The other drawings stay on the layer.",
+    "where": "Dialog and Preferences: the small line under the \"one\" answer in \"Symbol from a layer with several drawings\"."
+  },
+  "choice.record.room.title": { "text": "A recorded move that runs over later drawings", "where": "Name of this choice in Preferences > Behaviour (group: Animation)." },
+  "choice.record.room.question": {
+    "text": "Your move is longer than the gap before the next drawing on this layer. What should happen?",
+    "where": "The question the \"A recorded move that runs over later drawings\" dialog asks."
+  },
+  "choice.record.room.replace.label": {
+    "text": "The move takes their place",
+    "where": "Dialog and Preferences: the button for the answer \"replace\" in \"A recorded move that runs over later drawings\"."
+  },
+  "choice.record.room.replace.detail": {
+    "text": "The later drawings that it runs over are replaced by the move. Undo brings them back.",
+    "where": "Dialog and Preferences: the small line under the \"replace\" answer in \"A recorded move that runs over later drawings\"."
+  },
+  "choice.record.room.replace.did": {
+    "text": "The move took the place of the drawings it ran over.",
+    "where": "Toast when \"replace\" is used without asking (\"A recorded move that runs over later drawings\"), in the past tense."
+  },
+  "choice.record.room.push.label": { "text": "Move later drawings along", "where": "Dialog and Preferences: the button for the answer \"push\" in \"A recorded move that runs over later drawings\"." },
+  "choice.record.room.push.detail": {
+    "text": "The move keeps its length and the drawings after it on this layer move later.",
+    "where": "Dialog and Preferences: the small line under the \"push\" answer in \"A recorded move that runs over later drawings\"."
+  },
+  "choice.record.room.push.did": {
+    "text": "Later drawings moved along to make room.",
+    "where": "Toast when \"push\" is used without asking (\"A recorded move that runs over later drawings\"), in the past tense."
+  },
+  "choice.trim.order.title": { "text": "A shape with several outlines drawing itself", "where": "Name of this choice in Preferences > Behaviour (group: Animation)." },
+  "choice.trim.order.question": {
+    "text": "This shape is made of several separate outlines. Should they all draw at the same time, or one after another like one long line?",
+    "where": "The question the \"A shape with several outlines drawing itself\" dialog asks."
+  },
+  "choice.trim.order.together.label": { "text": "All at once", "where": "Dialog and Preferences: the button for the answer \"together\" in \"A shape with several outlines drawing itself\"." },
+  "choice.trim.order.together.detail": {
+    "text": "Every outline draws at the same time, each by the same amount.",
+    "where": "Dialog and Preferences: the small line under the \"together\" answer in \"A shape with several outlines drawing itself\"."
+  },
+  "choice.trim.order.together.did": {
+    "text": "Made all the outlines draw at once.",
+    "where": "Toast when \"together\" is used without asking (\"A shape with several outlines drawing itself\"), in the past tense."
+  },
+  "choice.trim.order.inOrder.label": { "text": "One after another", "where": "Dialog and Preferences: the button for the answer \"inOrder\" in \"A shape with several outlines drawing itself\"." },
+  "choice.trim.order.inOrder.detail": {
+    "text": "The outlines draw in turn, as if they were one long line.",
+    "where": "Dialog and Preferences: the small line under the \"inOrder\" answer in \"A shape with several outlines drawing itself\"."
+  },
+  "choice.trim.order.inOrder.did": {
+    "text": "Made the outlines draw one after another.",
+    "where": "Toast when \"inOrder\" is used without asking (\"A shape with several outlines drawing itself\"), in the past tense."
+  },
+  "choice.variations.frame.title": { "text": "A variation of a different size", "where": "Name of this choice in Preferences > Behaviour (group: Artboards)." },
+  "choice.variations.frame.question": {
+    "text": "When a variation has a different size, how should it frame the original?",
+    "where": "The question the \"A variation of a different size\" dialog asks."
+  },
+  "choice.variations.frame.fill.label": { "text": "Fill (crop)", "where": "Dialog and Preferences: the button for the answer \"fill\" in \"A variation of a different size\"." },
+  "choice.variations.frame.fill.detail": {
+    "text": "The picture is filled, and what hangs over the edges is cropped. Good for a square or tall cut of a wide shot.",
+    "where": "Dialog and Preferences: the small line under the \"fill\" answer in \"A variation of a different size\"."
+  },
+  "choice.variations.frame.bars.label": { "text": "Fit (show it all)", "where": "Dialog and Preferences: the button for the answer \"bars\" in \"A variation of a different size\"." },
+  "choice.variations.frame.bars.detail": {
+    "text": "The whole original shows, with the stage colour round it where it does not fill the picture.",
+    "where": "Dialog and Preferences: the small line under the \"bars\" answer in \"A variation of a different size\"."
+  },
+  "choice.canvas.wheel.title": { "text": "Mouse wheel", "where": "Name of this choice in Preferences > Behaviour (group: Canvas)." },
+  "choice.canvas.wheel.question": { "text": "What should the mouse wheel do over the canvas?", "where": "The question the \"Mouse wheel\" dialog asks." },
+  "choice.canvas.wheel.zoom.label": { "text": "Zoom", "where": "Dialog and Preferences: the button for the answer \"zoom\" in \"Mouse wheel\"." },
+  "choice.canvas.wheel.zoom.detail": {
+    "text": "The wheel zooms towards the cursor. Shift+wheel scrolls sideways.",
+    "where": "Dialog and Preferences: the small line under the \"zoom\" answer in \"Mouse wheel\"."
+  },
+  "choice.canvas.wheel.scroll.label": { "text": "Scroll", "where": "Dialog and Preferences: the button for the answer \"scroll\" in \"Mouse wheel\"." },
+  "choice.canvas.wheel.scroll.detail": {
+    "text": "The wheel moves the drawing up and down. Hold Ctrl to zoom.",
+    "where": "Dialog and Preferences: the small line under the \"scroll\" answer in \"Mouse wheel\"."
+  },
+  "choice.canvas.spaceTap.title": { "text": "Tapping Space", "where": "Name of this choice in Preferences > Behaviour (group: Canvas)." },
+  "choice.canvas.spaceTap.question": { "text": "Should a quick tap of Space play and pause your animation?", "where": "The question the \"Tapping Space\" dialog asks." },
+  "choice.canvas.spaceTap.play.label": { "text": "Play or pause", "where": "Dialog and Preferences: the button for the answer \"play\" in \"Tapping Space\"." },
+  "choice.canvas.spaceTap.play.detail": {
+    "text": "A quick tap plays. Holding Space and dragging still pans.",
+    "where": "Dialog and Preferences: the small line under the \"play\" answer in \"Tapping Space\"."
+  },
+  "choice.canvas.spaceTap.pan-only.label": { "text": "Only for panning", "where": "Dialog and Preferences: the button for the answer \"pan-only\" in \"Tapping Space\"." },
+  "choice.canvas.spaceTap.pan-only.detail": {
+    "text": "Space does nothing unless you hold it and drag.",
+    "where": "Dialog and Preferences: the small line under the \"pan-only\" answer in \"Tapping Space\"."
+  },
+  "choice.notes.pin.title": { "text": "Where a new note belongs", "where": "Name of this choice in Preferences > Behaviour (group: Canvas)." },
+  "choice.notes.pin.question": {
+    "text": "A note can belong to this frame, to the whole page, or to this layer. Which should a new note start as?",
+    "where": "The question the \"Where a new note belongs\" dialog asks."
+  },
+  "choice.notes.pin.frame.label": { "text": "This frame", "where": "Dialog and Preferences: the button for the answer \"frame\" in \"Where a new note belongs\"." },
+  "choice.notes.pin.frame.detail": {
+    "text": "It shows only on the frame you are on, and the timeline marks the frame.",
+    "where": "Dialog and Preferences: the small line under the \"frame\" answer in \"Where a new note belongs\"."
+  },
+  "choice.notes.pin.frame.did": { "text": "Pinned the note to this frame.", "where": "Toast when \"frame\" is used without asking (\"Where a new note belongs\"), in the past tense." },
+  "choice.notes.pin.page.label": { "text": "The page", "where": "Dialog and Preferences: the button for the answer \"page\" in \"Where a new note belongs\"." },
+  "choice.notes.pin.page.detail": {
+    "text": "It shows on every frame, for things about the whole drawing.",
+    "where": "Dialog and Preferences: the small line under the \"page\" answer in \"Where a new note belongs\"."
+  },
+  "choice.notes.pin.page.did": { "text": "Put the note on the page.", "where": "Toast when \"page\" is used without asking (\"Where a new note belongs\"), in the past tense." },
+  "choice.notes.pin.layer.label": { "text": "This layer", "where": "Dialog and Preferences: the button for the answer \"layer\" in \"Where a new note belongs\"." },
+  "choice.notes.pin.layer.detail": {
+    "text": "It shows on the frames where that layer has a drawing.",
+    "where": "Dialog and Preferences: the small line under the \"layer\" answer in \"Where a new note belongs\"."
+  },
+  "choice.notes.pin.layer.did": { "text": "Pinned the note to this layer.", "where": "Toast when \"layer\" is used without asking (\"Where a new note belongs\"), in the past tense." },
+  "choice.marks.pin.title": { "text": "Where a new mark belongs", "where": "Name of this choice in Preferences > Behaviour (group: Canvas)." },
+  "choice.marks.pin.question": {
+    "text": "A mark can belong to this frame, to the whole page, or to this layer. Which should a new mark start as?",
+    "where": "The question the \"Where a new mark belongs\" dialog asks."
+  },
+  "choice.marks.pin.frame.label": { "text": "This frame", "where": "Dialog and Preferences: the button for the answer \"frame\" in \"Where a new mark belongs\"." },
+  "choice.marks.pin.frame.detail": { "text": "It shows only on the frame you are on.", "where": "Dialog and Preferences: the small line under the \"frame\" answer in \"Where a new mark belongs\"." },
+  "choice.marks.pin.frame.did": { "text": "Put the mark on this frame.", "where": "Toast when \"frame\" is used without asking (\"Where a new mark belongs\"), in the past tense." },
+  "choice.marks.pin.page.label": { "text": "The page", "where": "Dialog and Preferences: the button for the answer \"page\" in \"Where a new mark belongs\"." },
+  "choice.marks.pin.page.detail": {
+    "text": "It shows on every frame, for things about the whole drawing.",
+    "where": "Dialog and Preferences: the small line under the \"page\" answer in \"Where a new mark belongs\"."
+  },
+  "choice.marks.pin.page.did": { "text": "Put the mark on the page.", "where": "Toast when \"page\" is used without asking (\"Where a new mark belongs\"), in the past tense." },
+  "choice.marks.pin.layer.label": { "text": "This layer", "where": "Dialog and Preferences: the button for the answer \"layer\" in \"Where a new mark belongs\"." },
+  "choice.marks.pin.layer.detail": {
+    "text": "It shows on the frames where that layer has a drawing.",
+    "where": "Dialog and Preferences: the small line under the \"layer\" answer in \"Where a new mark belongs\"."
+  },
+  "choice.marks.pin.layer.did": { "text": "Put the mark on this layer.", "where": "Toast when \"layer\" is used without asking (\"Where a new mark belongs\"), in the past tense." },
+  "choice.popout.camera.title": { "text": "Second window and the camera", "where": "Name of this choice in Preferences > Behaviour (group: Canvas)." },
+  "choice.popout.camera.question": {
+    "text": "This drawing has a camera. In the second window, should the picture be what the camera sees, or the same as your drawing window?",
+    "where": "The question the \"Second window and the camera\" dialog asks."
+  },
+  "choice.popout.camera.camera.label": { "text": "What the camera sees", "where": "Dialog and Preferences: the button for the answer \"camera\" in \"Second window and the camera\"." },
+  "choice.popout.camera.camera.detail": {
+    "text": "The finished picture, as an export would show it, even while you work on the whole page.",
+    "where": "Dialog and Preferences: the small line under the \"camera\" answer in \"Second window and the camera\"."
+  },
+  "choice.popout.camera.camera.did": {
+    "text": "The second window shows what the camera sees.",
+    "where": "Toast when \"camera\" is used without asking (\"Second window and the camera\"), in the past tense."
+  },
+  "choice.popout.camera.same.label": { "text": "Same as my drawing window", "where": "Dialog and Preferences: the button for the answer \"same\" in \"Second window and the camera\"." },
+  "choice.popout.camera.same.detail": {
+    "text": "It looks through the camera when your drawing window does, and shows the whole page when it does.",
+    "where": "Dialog and Preferences: the small line under the \"same\" answer in \"Second window and the camera\"."
+  },
+  "choice.popout.camera.same.did": {
+    "text": "The second window shows what your drawing window shows.",
+    "where": "Toast when \"same\" is used without asking (\"Second window and the camera\"), in the past tense."
+  },
+  "choice.popout.marks.title": { "text": "Second window and marks", "where": "Name of this choice in Preferences > Behaviour (group: Canvas)." },
+  "choice.popout.marks.question": {
+    "text": "This drawing has marks (arrows, circles and words you drew over it). Should the second window show them?",
+    "where": "The question the \"Second window and marks\" dialog asks."
+  },
+  "choice.popout.marks.hide.label": { "text": "Hide them", "where": "Dialog and Preferences: the button for the answer \"hide\" in \"Second window and marks\"." },
+  "choice.popout.marks.hide.detail": {
+    "text": "The second window shows the picture only, clean, like an export.",
+    "where": "Dialog and Preferences: the small line under the \"hide\" answer in \"Second window and marks\"."
+  },
+  "choice.popout.marks.hide.did": { "text": "The second window hides marks.", "where": "Toast when \"hide\" is used without asking (\"Second window and marks\"), in the past tense." },
+  "choice.popout.marks.show.label": { "text": "Show them", "where": "Dialog and Preferences: the button for the answer \"show\" in \"Second window and marks\"." },
+  "choice.popout.marks.show.detail": {
+    "text": "Marks sit over the picture while it is still. They never show while it plays or through the camera.",
+    "where": "Dialog and Preferences: the small line under the \"show\" answer in \"Second window and marks\"."
+  },
+  "choice.popout.marks.show.did": { "text": "The second window shows marks.", "where": "Toast when \"show\" is used without asking (\"Second window and marks\"), in the past tense." },
+  "choice.beta.crashOffer.title": { "text": "Quill after a crash", "where": "Name of this choice in Preferences > Behaviour (group: Diagnostics)." },
+  "choice.beta.crashOffer.question": {
+    "text": "When Frameling crashed last time, shall Quill turn up and offer to send the crash notes? Nothing is ever sent without a press.",
+    "where": "The question the \"Quill after a crash\" dialog asks."
+  },
+  "choice.beta.crashOffer.ask.label": { "text": "Offer to send the notes", "where": "Dialog and Preferences: the button for the answer \"ask\" in \"Quill after a crash\"." },
+  "choice.beta.crashOffer.ask.detail": {
+    "text": "Quill asks once per crash. You can read the notes before anything goes.",
+    "where": "Dialog and Preferences: the small line under the \"ask\" answer in \"Quill after a crash\"."
+  },
+  "choice.beta.crashOffer.no.label": { "text": "No thanks", "where": "Dialog and Preferences: the button for the answer \"no\" in \"Quill after a crash\"." },
+  "choice.beta.crashOffer.no.detail": {
+    "text": "Quill stays away after a crash. The command Send the notes from the last crash still works.",
+    "where": "Dialog and Preferences: the small line under the \"no\" answer in \"Quill after a crash\"."
+  },
+  "choice.ui.backdropClick.title": { "text": "Pressing beside a dialog", "where": "Name of this choice in Preferences > Behaviour (group: Dialogs)." },
+  "choice.ui.backdropClick.question": { "text": "Should pressing the dim area beside a dialog close it?", "where": "The question the \"Pressing beside a dialog\" dialog asks." },
+  "choice.ui.backdropClick.close.label": { "text": "Yes, close it", "where": "Dialog and Preferences: the button for the answer \"close\" in \"Pressing beside a dialog\"." },
+  "choice.ui.backdropClick.close.detail": {
+    "text": "A press beside a dialog puts it away, the way it works in a lot of apps.",
+    "where": "Dialog and Preferences: the small line under the \"close\" answer in \"Pressing beside a dialog\"."
+  },
+  "choice.ui.backdropClick.stay.label": { "text": "No, leave it open", "where": "Dialog and Preferences: the button for the answer \"stay\" in \"Pressing beside a dialog\"." },
+  "choice.ui.backdropClick.stay.detail": {
+    "text": "Only Escape and the close button close a dialog, so a stray press never costs you anything.",
+    "where": "Dialog and Preferences: the small line under the \"stay\" answer in \"Pressing beside a dialog\"."
+  },
+  "choice.convert.where.title": { "text": "Turn into pixels or shapes: where it goes", "where": "Name of this choice in Preferences > Behaviour (group: Draw)." },
+  "choice.convert.where.question": {
+    "text": "When you turn shapes into pixels, or pixels into shapes, where should the result go?",
+    "where": "The question the \"Turn into pixels or shapes: where it goes\" dialog asks."
+  },
+  "choice.convert.where.beside.label": { "text": "A new layer beside it", "where": "Dialog and Preferences: the button for the answer \"beside\" in \"Turn into pixels or shapes: where it goes\"." },
+  "choice.convert.where.beside.detail": {
+    "text": "The original stays (it is hidden when all of it was turned), so you can compare or go back.",
+    "where": "Dialog and Preferences: the small line under the \"beside\" answer in \"Turn into pixels or shapes: where it goes\"."
+  },
+  "choice.convert.where.replace.label": { "text": "In its place", "where": "Dialog and Preferences: the button for the answer \"replace\" in \"Turn into pixels or shapes: where it goes\"." },
+  "choice.convert.where.replace.detail": {
+    "text": "What was turned comes out of the original, and the result takes its place.",
+    "where": "Dialog and Preferences: the small line under the \"replace\" answer in \"Turn into pixels or shapes: where it goes\"."
+  },
+  "choice.convert.frames.title": { "text": "Turn into pixels or shapes: how many frames", "where": "Name of this choice in Preferences > Behaviour (group: Draw)." },
+  "choice.convert.frames.question": { "text": "How many frames should it reach?", "where": "The question the \"Turn into pixels or shapes: how many frames\" dialog asks." },
+  "choice.convert.frames.this.label": { "text": "This drawing", "where": "Dialog and Preferences: the button for the answer \"this\" in \"Turn into pixels or shapes: how many frames\"." },
+  "choice.convert.frames.this.detail": {
+    "text": "Just the drawing on this layer at this frame.",
+    "where": "Dialog and Preferences: the small line under the \"this\" answer in \"Turn into pixels or shapes: how many frames\"."
+  },
+  "choice.convert.frames.clip.label": { "text": "The clip", "where": "Dialog and Preferences: the button for the answer \"clip\" in \"Turn into pixels or shapes: how many frames\"." },
+  "choice.convert.frames.clip.detail": {
+    "text": "Every frame of the clip you are in.",
+    "where": "Dialog and Preferences: the small line under the \"clip\" answer in \"Turn into pixels or shapes: how many frames\"."
+  },
+  "choice.convert.frames.all.label": { "text": "Every frame", "where": "Dialog and Preferences: the button for the answer \"all\" in \"Turn into pixels or shapes: how many frames\"." },
+  "choice.convert.frames.all.detail": {
+    "text": "The whole layer. Slow for a long animation.",
+    "where": "Dialog and Preferences: the small line under the \"all\" answer in \"Turn into pixels or shapes: how many frames\"."
+  },
+  "choice.convert.edges.pixels.title": { "text": "Turn into pixels: edges", "where": "Name of this choice in Preferences > Behaviour (group: Draw)." },
+  "choice.convert.edges.pixels.question": { "text": "Should the pixels have hard edges or soft ones?", "where": "The question the \"Turn into pixels: edges\" dialog asks." },
+  "choice.convert.edges.pixels.follow.label": { "text": "Follow the drawing", "where": "Dialog and Preferences: the button for the answer \"follow\" in \"Turn into pixels: edges\"." },
+  "choice.convert.edges.pixels.follow.detail": {
+    "text": "Hard for chunky pixels and pixel art, soft for fine pixels on a vector drawing.",
+    "where": "Dialog and Preferences: the small line under the \"follow\" answer in \"Turn into pixels: edges\"."
+  },
+  "choice.convert.edges.pixels.hard.label": { "text": "Hard edges", "where": "Dialog and Preferences: the button for the answer \"hard\" in \"Turn into pixels: edges\"." },
+  "choice.convert.edges.pixels.hard.detail": { "text": "Every pixel is painted or empty.", "where": "Dialog and Preferences: the small line under the \"hard\" answer in \"Turn into pixels: edges\"." },
+  "choice.convert.edges.pixels.smooth.label": { "text": "Soft edges", "where": "Dialog and Preferences: the button for the answer \"smooth\" in \"Turn into pixels: edges\"." },
+  "choice.convert.edges.pixels.smooth.detail": {
+    "text": "Edge pixels are partly see-through.",
+    "where": "Dialog and Preferences: the small line under the \"smooth\" answer in \"Turn into pixels: edges\"."
+  },
+  "choice.convert.edges.shapes.title": { "text": "Turn into shapes: edges", "where": "Name of this choice in Preferences > Behaviour (group: Draw)." },
+  "choice.convert.edges.shapes.question": { "text": "Should the shapes keep the pixel stair steps, or be rounded into curves?", "where": "The question the \"Turn into shapes: edges\" dialog asks." },
+  "choice.convert.edges.shapes.follow.label": { "text": "Follow the drawing", "where": "Dialog and Preferences: the button for the answer \"follow\" in \"Turn into shapes: edges\"." },
+  "choice.convert.edges.shapes.follow.detail": {
+    "text": "Steps for pixel art, curves for everything else.",
+    "where": "Dialog and Preferences: the small line under the \"follow\" answer in \"Turn into shapes: edges\"."
+  },
+  "choice.convert.edges.shapes.hug.label": { "text": "Keep the pixel steps", "where": "Dialog and Preferences: the button for the answer \"hug\" in \"Turn into shapes: edges\"." },
+  "choice.convert.edges.shapes.hug.detail": {
+    "text": "Straight edges exactly where the pixels were.",
+    "where": "Dialog and Preferences: the small line under the \"hug\" answer in \"Turn into shapes: edges\"."
+  },
+  "choice.convert.edges.shapes.smooth.label": { "text": "Round into curves", "where": "Dialog and Preferences: the button for the answer \"smooth\" in \"Turn into shapes: edges\"." },
+  "choice.convert.edges.shapes.smooth.detail": {
+    "text": "Smooth edges with far fewer points.",
+    "where": "Dialog and Preferences: the small line under the \"smooth\" answer in \"Turn into shapes: edges\"."
+  },
+  "choice.convert.layering.title": { "text": "Turn into shapes: stacking", "where": "Name of this choice in Preferences > Behaviour (group: Draw)." },
+  "choice.convert.layering.question": { "text": "Should each colour sit on top of the one below, or beside it?", "where": "The question the \"Turn into shapes: stacking\" dialog asks." },
+  "choice.convert.layering.stacked.label": { "text": "Stacked, no gaps", "where": "Dialog and Preferences: the button for the answer \"stacked\" in \"Turn into shapes: stacking\"." },
+  "choice.convert.layering.stacked.detail": {
+    "text": "Each colour also sits under the ones above it.",
+    "where": "Dialog and Preferences: the small line under the \"stacked\" answer in \"Turn into shapes: stacking\"."
+  },
+  "choice.convert.layering.pieces.label": { "text": "Side by side", "where": "Dialog and Preferences: the button for the answer \"pieces\" in \"Turn into shapes: stacking\"." },
+  "choice.convert.layering.pieces.detail": {
+    "text": "Each shape is only its own colour.",
+    "where": "Dialog and Preferences: the small line under the \"pieces\" answer in \"Turn into shapes: stacking\"."
+  },
+  "choice.convert.split.title": { "text": "Turn into shapes: one shape for", "where": "Name of this choice in Preferences > Behaviour (group: Draw)." },
+  "choice.convert.split.question": { "text": "Should each colour be one shape, or each blob of colour?", "where": "The question the \"Turn into shapes: one shape for\" dialog asks." },
+  "choice.convert.split.colour.label": { "text": "Each colour", "where": "Dialog and Preferences: the button for the answer \"colour\" in \"Turn into shapes: one shape for\"." },
+  "choice.convert.split.colour.detail": {
+    "text": "All the red is one shape, even in two places.",
+    "where": "Dialog and Preferences: the small line under the \"colour\" answer in \"Turn into shapes: one shape for\"."
+  },
+  "choice.convert.split.blob.label": { "text": "Each blob", "where": "Dialog and Preferences: the button for the answer \"blob\" in \"Turn into shapes: one shape for\"." },
+  "choice.convert.split.blob.detail": {
+    "text": "Every separate piece is its own shape.",
+    "where": "Dialog and Preferences: the small line under the \"blob\" answer in \"Turn into shapes: one shape for\"."
+  },
+  "choice.text.fontSwapScope.title": { "text": "Swap fonts changes", "where": "Name of this choice in Preferences > Behaviour (group: Draw)." },
+  "choice.text.fontSwapScope.question": { "text": "When you swap fonts, which text should change?", "where": "The question the \"Swap fonts changes\" dialog asks." },
+  "choice.text.fontSwapScope.missing.label": { "text": "Only the missing fonts", "where": "Dialog and Preferences: the button for the answer \"missing\" in \"Swap fonts changes\"." },
+  "choice.text.fontSwapScope.missing.detail": {
+    "text": "Fonts that are here are left alone, so a swap fixes what is broken and nothing else.",
+    "where": "Dialog and Preferences: the small line under the \"missing\" answer in \"Swap fonts changes\"."
+  },
+  "choice.text.fontSwapScope.all.label": { "text": "Every font", "where": "Dialog and Preferences: the button for the answer \"all\" in \"Swap fonts changes\"." },
+  "choice.text.fontSwapScope.all.detail": {
+    "text": "Any font in the list can be swapped for another.",
+    "where": "Dialog and Preferences: the small line under the \"all\" answer in \"Swap fonts changes\"."
+  },
+  "choice.text.pixelClickAway.title": { "text": "Clicking away from pixel text", "where": "Name of this choice in Preferences > Behaviour (group: Draw)." },
+  "choice.text.pixelClickAway.question": {
+    "text": "When you are typing pixel text and click somewhere else on the picture, what should happen?",
+    "where": "The question the \"Clicking away from pixel text\" dialog asks."
+  },
+  "choice.text.pixelClickAway.finish.label": { "text": "Just finish the words", "where": "Dialog and Preferences: the button for the answer \"finish\" in \"Clicking away from pixel text\"." },
+  "choice.text.pixelClickAway.finish.detail": {
+    "text": "The click puts the pixels in the layer and nothing more. Click again to start new words.",
+    "where": "Dialog and Preferences: the small line under the \"finish\" answer in \"Clicking away from pixel text\"."
+  },
+  "choice.text.pixelClickAway.new.label": { "text": "Finish and start new words there", "where": "Dialog and Preferences: the button for the answer \"new\" in \"Clicking away from pixel text\"." },
+  "choice.text.pixelClickAway.new.detail": {
+    "text": "Handy for labelling lots of things in a row: click, type, click the next place, type.",
+    "where": "Dialog and Preferences: the small line under the \"new\" answer in \"Clicking away from pixel text\"."
+  },
+  "choice.recolour.where.title": { "text": "Recolour reaches", "where": "Name of this choice in Preferences > Behaviour (group: Draw)." },
+  "choice.recolour.where.question": { "text": "When you recolour, where should it start out?", "where": "The question the \"Recolour reaches\" dialog asks." },
+  "choice.recolour.where.all.label": { "text": "Everything", "where": "Dialog and Preferences: the button for the answer \"all\" in \"Recolour reaches\"." },
+  "choice.recolour.where.all.detail": { "text": "Every frame and every layer, and the swatches.", "where": "Dialog and Preferences: the small line under the \"all\" answer in \"Recolour reaches\"." },
+  "choice.recolour.where.layer.label": { "text": "This layer", "where": "Dialog and Preferences: the button for the answer \"layer\" in \"Recolour reaches\"." },
+  "choice.recolour.where.layer.detail": { "text": "Every frame of the layer you are on.", "where": "Dialog and Preferences: the small line under the \"layer\" answer in \"Recolour reaches\"." },
+  "choice.recolour.where.frame.label": { "text": "This frame", "where": "Dialog and Preferences: the button for the answer \"frame\" in \"Recolour reaches\"." },
+  "choice.recolour.where.frame.detail": {
+    "text": "The drawing showing on this frame, on every layer.",
+    "where": "Dialog and Preferences: the small line under the \"frame\" answer in \"Recolour reaches\"."
+  },
+  "choice.recolour.where.selection.label": { "text": "The selection", "where": "Dialog and Preferences: the button for the answer \"selection\" in \"Recolour reaches\"." },
+  "choice.recolour.where.selection.detail": {
+    "text": "Only the shapes or pixels you have selected.",
+    "where": "Dialog and Preferences: the small line under the \"selection\" answer in \"Recolour reaches\"."
+  },
+  "choice.brush.alongFit.title": { "text": "A brush that goes along the line", "where": "Name of this choice in Preferences > Behaviour (group: Drawing)." },
+  "choice.brush.alongFit.question": {
+    "text": "Your drawing is shorter than most lines. What should it do on a long line?",
+    "where": "The question the \"A brush that goes along the line\" dialog asks."
+  },
+  "choice.brush.alongFit.stretch.label": { "text": "Stretch to fit", "where": "Dialog and Preferences: the button for the answer \"stretch\" in \"A brush that goes along the line\"." },
+  "choice.brush.alongFit.stretch.detail": {
+    "text": "One copy, stretched down the whole line. Good for a ribbon, a rope or a flame.",
+    "where": "Dialog and Preferences: the small line under the \"stretch\" answer in \"A brush that goes along the line\"."
+  },
+  "choice.brush.alongFit.stretch.did": {
+    "text": "Made it stretch down the whole line.",
+    "where": "Toast when \"stretch\" is used without asking (\"A brush that goes along the line\"), in the past tense."
+  },
+  "choice.brush.alongFit.repeat.label": { "text": "Repeat", "where": "Dialog and Preferences: the button for the answer \"repeat\" in \"A brush that goes along the line\"." },
+  "choice.brush.alongFit.repeat.detail": {
+    "text": "Whole copies end to end, a little stretched so they fit exactly. Good for a chain, a border or a row of beads.",
+    "where": "Dialog and Preferences: the small line under the \"repeat\" answer in \"A brush that goes along the line\"."
+  },
+  "choice.brush.alongFit.repeat.did": { "text": "Made it repeat along the line.", "where": "Toast when \"repeat\" is used without asking (\"A brush that goes along the line\"), in the past tense." },
+  "choice.brushes.rows.title": { "text": "How the brush picker lists brushes", "where": "Name of this choice in Preferences > Behaviour (group: Drawing)." },
+  "choice.brushes.rows.question": { "text": "How should the brush picker list your brushes?", "where": "The question the \"How the brush picker lists brushes\" dialog asks." },
+  "choice.brushes.rows.tip.label": { "text": "One column", "where": "Dialog and Preferences: the button for the answer \"tip\" in \"How the brush picker lists brushes\"." },
+  "choice.brushes.rows.tip.detail": {
+    "text": "Each brush gets a wide row: its tip and size, a long stroke, and its name.",
+    "where": "Dialog and Preferences: the small line under the \"tip\" answer in \"How the brush picker lists brushes\"."
+  },
+  "choice.brushes.rows.two.label": { "text": "Two columns, denser", "where": "Dialog and Preferences: the button for the answer \"two\" in \"How the brush picker lists brushes\"." },
+  "choice.brushes.rows.two.detail": {
+    "text": "Two brushes side by side, so more fit before you scroll.",
+    "where": "Dialog and Preferences: the small line under the \"two\" answer in \"How the brush picker lists brushes\"."
+  },
+  "choice.brushes.edits.title": { "text": "Changing a saved brush", "where": "Name of this choice in Preferences > Behaviour (group: Drawing)." },
+  "choice.brushes.edits.question": { "text": "When you change a saved brush (its size, say), should the saved copy change too?", "where": "The question the \"Changing a saved brush\" dialog asks." },
+  "choice.brushes.edits.keep.label": { "text": "No, keep it as saved", "where": "Dialog and Preferences: the button for the answer \"keep\" in \"Changing a saved brush\"." },
+  "choice.brushes.edits.keep.detail": {
+    "text": "The brush row shows it has changed, with Update to keep the change and the brush button to go back.",
+    "where": "Dialog and Preferences: the small line under the \"keep\" answer in \"Changing a saved brush\"."
+  },
+  "choice.brushes.edits.follow.label": { "text": "Yes, save every change", "where": "Dialog and Preferences: the button for the answer \"follow\" in \"Changing a saved brush\"." },
+  "choice.brushes.edits.follow.detail": {
+    "text": "Your saved brush always matches what you are drawing with. The starters never change.",
+    "where": "Dialog and Preferences: the small line under the \"follow\" answer in \"Changing a saved brush\"."
+  },
+  "choice.brush.pixelStampColours.title": { "text": "A brush made from pixels with several colours", "where": "Name of this choice in Preferences > Behaviour (group: Drawing)." },
+  "choice.brush.pixelStampColours.question": {
+    "text": "This brush has more than one colour in it. How should it paint?",
+    "where": "The question the \"A brush made from pixels with several colours\" dialog asks."
+  },
+  "choice.brush.pixelStampColours.own.label": {
+    "text": "With its own colours",
+    "where": "Dialog and Preferences: the button for the answer \"own\" in \"A brush made from pixels with several colours\"."
+  },
+  "choice.brush.pixelStampColours.own.detail": {
+    "text": "Each click stamps the picture as it was, like a little sticker. Dragging lays copies side by side.",
+    "where": "Dialog and Preferences: the small line under the \"own\" answer in \"A brush made from pixels with several colours\"."
+  },
+  "choice.brush.pixelStampColours.own.did": {
+    "text": "Made it paint with its own colours.",
+    "where": "Toast when \"own\" is used without asking (\"A brush made from pixels with several colours\"), in the past tense."
+  },
+  "choice.brush.pixelStampColours.mine.label": {
+    "text": "In the colour I have picked",
+    "where": "Dialog and Preferences: the button for the answer \"mine\" in \"A brush made from pixels with several colours\"."
+  },
+  "choice.brush.pixelStampColours.mine.detail": {
+    "text": "Only its shape counts, painted in your colour, so you can draw with it like any other brush.",
+    "where": "Dialog and Preferences: the small line under the \"mine\" answer in \"A brush made from pixels with several colours\"."
+  },
+  "choice.brush.pixelStampColours.mine.did": {
+    "text": "Made it paint in your colour.",
+    "where": "Toast when \"mine\" is used without asking (\"A brush made from pixels with several colours\"), in the past tense."
+  },
+  "choice.particles.where.title": { "text": "Where new particles go", "where": "Name of this choice in Preferences > Behaviour (group: Drawing)." },
+  "choice.particles.where.question": { "text": "Where should new particles go?", "where": "The question the \"Where new particles go\" dialog asks." },
+  "choice.particles.where.new-layer.label": { "text": "On a new layer of their own", "where": "Dialog and Preferences: the button for the answer \"new-layer\" in \"Where new particles go\"." },
+  "choice.particles.where.new-layer.detail": {
+    "text": "Easiest to give them a glow or a blend mode, hide them, or move them in front of or behind things.",
+    "where": "Dialog and Preferences: the small line under the \"new-layer\" answer in \"Where new particles go\"."
+  },
+  "choice.particles.where.this-layer.label": { "text": "On the layer I have picked", "where": "Dialog and Preferences: the button for the answer \"this-layer\" in \"Where new particles go\"." },
+  "choice.particles.where.this-layer.detail": {
+    "text": "They sit with the drawing on that layer and share its look.",
+    "where": "Dialog and Preferences: the small line under the \"this-layer\" answer in \"Where new particles go\"."
+  },
+  "choice.pixelGradient.where.title": { "text": "Gradient on pixel layers", "where": "Name of this choice in Preferences > Behaviour (group: Drawing)." },
+  "choice.pixelGradient.where.question": { "text": "Should a gradient on a pixel layer cover the empty pixels too?", "where": "The question the \"Gradient on pixel layers\" dialog asks." },
+  "choice.pixelGradient.where.all.label": { "text": "Everywhere", "where": "Dialog and Preferences: the button for the answer \"all\" in \"Gradient on pixel layers\"." },
+  "choice.pixelGradient.where.all.detail": {
+    "text": "Covers the whole selection, or the whole canvas when nothing is selected, empty pixels too. Good for a sky or a backdrop.",
+    "where": "Dialog and Preferences: the small line under the \"all\" answer in \"Gradient on pixel layers\"."
+  },
+  "choice.pixelGradient.where.painted.label": { "text": "Only painted pixels", "where": "Dialog and Preferences: the button for the answer \"painted\" in \"Gradient on pixel layers\"." },
+  "choice.pixelGradient.where.painted.detail": {
+    "text": "Colours what is already drawn and leaves empty pixels empty. Good for shading a sprite.",
+    "where": "Dialog and Preferences: the small line under the \"painted\" answer in \"Gradient on pixel layers\"."
+  },
+  "choice.select.vectorScope.title": { "text": "Selecting part of a shape", "where": "Name of this choice in Preferences > Behaviour (group: Drawing)." },
+  "choice.select.vectorScope.question": {
+    "text": "You've dragged round only part of a shape. Should Frameling pick just the bit you went round (so you can move one corner), or the whole shape? Hold Ctrl while you drag to get the other one for a go. You can change this any time in Preferences.",
+    "where": "The question the \"Selecting part of a shape\" dialog asks."
+  },
+  "choice.select.vectorScope.parts.label": { "text": "Just the bit I went round", "where": "Dialog and Preferences: the button for the answer \"parts\" in \"Selecting part of a shape\"." },
+  "choice.select.vectorScope.parts.detail": {
+    "text": "Only the points and edges inside your drag are picked. Move them and the shape stretches, so you can nudge one corner and leave the rest.",
+    "where": "Dialog and Preferences: the small line under the \"parts\" answer in \"Selecting part of a shape\"."
+  },
+  "choice.select.vectorScope.parts.did": { "text": "Picked just the bit you went round.", "where": "Toast when \"parts\" is used without asking (\"Selecting part of a shape\"), in the past tense." },
+  "choice.select.vectorScope.whole.label": { "text": "The whole shape", "where": "Dialog and Preferences: the button for the answer \"whole\" in \"Selecting part of a shape\"." },
+  "choice.select.vectorScope.whole.detail": {
+    "text": "Any shape your drag touches is picked all of it. Move it and it goes as one piece, so you are arranging, not reshaping.",
+    "where": "Dialog and Preferences: the small line under the \"whole\" answer in \"Selecting part of a shape\"."
+  },
+  "choice.select.vectorScope.whole.did": { "text": "Picked the whole shape.", "where": "Toast when \"whole\" is used without asking (\"Selecting part of a shape\"), in the past tense." },
+  "choice.tiles.autoEdges.title": { "text": "Tile edges (terrains)", "where": "Name of this choice in Preferences > Behaviour (group: Drawing)." },
+  "choice.tiles.autoEdges.question": {
+    "text": "When you paint with a tile that belongs to a terrain (grass, water), should Frameling pick the right edge and corner tiles for you?",
+    "where": "The question the \"Tile edges (terrains)\" dialog asks."
+  },
+  "choice.tiles.autoEdges.on.label": { "text": "Yes, pick them for me", "where": "Dialog and Preferences: the button for the answer \"on\" in \"Tile edges (terrains)\"." },
+  "choice.tiles.autoEdges.on.detail": {
+    "text": "Paint with any tile of the terrain and its edges and corners swap to the ones that fit what is around them. Erasing heals the edges too.",
+    "where": "Dialog and Preferences: the small line under the \"on\" answer in \"Tile edges (terrains)\"."
+  },
+  "choice.tiles.autoEdges.on.did": { "text": "Picking edge tiles for you as you paint.", "where": "Toast when \"on\" is used without asking (\"Tile edges (terrains)\"), in the past tense." },
+  "choice.tiles.autoEdges.off.label": { "text": "No, paint exactly the tile I chose", "where": "Dialog and Preferences: the button for the answer \"off\" in \"Tile edges (terrains)\"." },
+  "choice.tiles.autoEdges.off.detail": {
+    "text": "Every click places the tile you picked, whatever is next to it.",
+    "where": "Dialog and Preferences: the small line under the \"off\" answer in \"Tile edges (terrains)\"."
+  },
+  "choice.tiles.autoEdges.off.did": { "text": "Painting exactly the tile you pick.", "where": "Toast when \"off\" is used without asking (\"Tile edges (terrains)\"), in the past tense." },
+  "choice.shapes.combineLook.title": { "text": "Colours when shapes are combined", "where": "Name of this choice in Preferences > Behaviour (group: Drawing)." },
+  "choice.shapes.combineLook.question": {
+    "text": "When shapes with different colours are joined into one, whose colours should it keep?",
+    "where": "The question the \"Colours when shapes are combined\" dialog asks."
+  },
+  "choice.shapes.combineLook.bottom.label": { "text": "The bottom shape", "where": "Dialog and Preferences: the button for the answer \"bottom\" in \"Colours when shapes are combined\"." },
+  "choice.shapes.combineLook.bottom.detail": {
+    "text": "The one furthest back. The result takes its fill, outline and see-through.",
+    "where": "Dialog and Preferences: the small line under the \"bottom\" answer in \"Colours when shapes are combined\"."
+  },
+  "choice.shapes.combineLook.bottom.did": {
+    "text": "Kept the bottom shape’s colours.",
+    "where": "Toast when \"bottom\" is used without asking (\"Colours when shapes are combined\"), in the past tense."
+  },
+  "choice.shapes.combineLook.top.label": { "text": "The top shape", "where": "Dialog and Preferences: the button for the answer \"top\" in \"Colours when shapes are combined\"." },
+  "choice.shapes.combineLook.top.detail": {
+    "text": "The one in front. The result takes its fill, outline and see-through.",
+    "where": "Dialog and Preferences: the small line under the \"top\" answer in \"Colours when shapes are combined\"."
+  },
+  "choice.shapes.combineLook.top.did": { "text": "Kept the top shape’s colours.", "where": "Toast when \"top\" is used without asking (\"Colours when shapes are combined\"), in the past tense." },
+  "choice.draw.heldFrame.title": { "text": "Drawing on a held frame", "where": "Name of this choice in Preferences > Behaviour (group: Drawing)." },
+  "choice.draw.heldFrame.question": {
+    "text": "This frame is still showing a drawing from an earlier frame (it's being held). When you draw here, what should happen?",
+    "where": "The question the \"Drawing on a held frame\" dialog asks."
+  },
+  "choice.draw.heldFrame.new-key.label": { "text": "Make a new drawing here", "where": "Dialog and Preferences: the button for the answer \"new-key\" in \"Drawing on a held frame\"." },
+  "choice.draw.heldFrame.new-key.detail": {
+    "text": "This frame gets its own copy of the drawing, with your change. Earlier frames stay as they were.",
+    "where": "Dialog and Preferences: the small line under the \"new-key\" answer in \"Drawing on a held frame\"."
+  },
+  "choice.draw.heldFrame.edit-held.label": { "text": "Change the held drawing", "where": "Dialog and Preferences: the button for the answer \"edit-held\" in \"Drawing on a held frame\"." },
+  "choice.draw.heldFrame.edit-held.detail": {
+    "text": "Your change shows on every frame that holds that drawing.",
+    "where": "Dialog and Preferences: the small line under the \"edit-held\" answer in \"Drawing on a held frame\"."
+  },
+  "choice.draw.sharedDrawing.title": { "text": "Drawing on a shared drawing", "where": "Name of this choice in Preferences > Behaviour (group: Drawing)." },
+  "choice.draw.sharedDrawing.question": {
+    "text": "This drawing is shown in more than one place (the link mark on its block in the timeline says where). When you change it, what should happen?",
+    "where": "The question the \"Drawing on a shared drawing\" dialog asks."
+  },
+  "choice.draw.sharedDrawing.everywhere.label": { "text": "Change it everywhere", "where": "Dialog and Preferences: the button for the answer \"everywhere\" in \"Drawing on a shared drawing\"." },
+  "choice.draw.sharedDrawing.everywhere.detail": {
+    "text": "Every place that shows this drawing changes with it. Good when they are meant to match.",
+    "where": "Dialog and Preferences: the small line under the \"everywhere\" answer in \"Drawing on a shared drawing\"."
+  },
+  "choice.draw.sharedDrawing.everywhere.did": {
+    "text": "Changed the drawing everywhere it is shown.",
+    "where": "Toast when \"everywhere\" is used without asking (\"Drawing on a shared drawing\"), in the past tense."
+  },
+  "choice.draw.sharedDrawing.own.label": { "text": "Make this one its own", "where": "Dialog and Preferences: the button for the answer \"own\" in \"Drawing on a shared drawing\"." },
+  "choice.draw.sharedDrawing.own.detail": {
+    "text": "This place gets a copy of its own, with your change. The other places keep the drawing as it was.",
+    "where": "Dialog and Preferences: the small line under the \"own\" answer in \"Drawing on a shared drawing\"."
+  },
+  "choice.draw.sharedDrawing.own.did": {
+    "text": "Made this one its own, so only this place changed.",
+    "where": "Toast when \"own\" is used without asking (\"Drawing on a shared drawing\"), in the past tense."
+  },
+  "choice.draw.tweenFrame.title": { "text": "Changing an in-between", "where": "Name of this choice in Preferences > Behaviour (group: Drawing)." },
+  "choice.draw.tweenFrame.question": {
+    "text": "This frame is an in-between: Frameling works it out from the keys on either side. When you move or change something here, what should happen?",
+    "where": "The question the \"Changing an in-between\" dialog asks."
+  },
+  "choice.draw.tweenFrame.new-key.label": { "text": "Make a key here", "where": "Dialog and Preferences: the button for the answer \"new-key\" in \"Changing an in-between\"." },
+  "choice.draw.tweenFrame.new-key.detail": {
+    "text": "This frame becomes a key with your change, and the glide goes through it. The keys on either side stay as they were.",
+    "where": "Dialog and Preferences: the small line under the \"new-key\" answer in \"Changing an in-between\"."
+  },
+  "choice.draw.tweenFrame.edit-key.label": { "text": "Change the key before", "where": "Dialog and Preferences: the button for the answer \"edit-key\" in \"Changing an in-between\"." },
+  "choice.draw.tweenFrame.edit-key.detail": {
+    "text": "Your change goes to the key the in-betweens start from, so the whole glide changes.",
+    "where": "Dialog and Preferences: the small line under the \"edit-key\" answer in \"Changing an in-between\"."
+  },
+  "choice.eraser.vectorWay.title": { "text": "Eraser on lines and shapes", "where": "Name of this choice in Preferences > Behaviour (group: Drawing)." },
+  "choice.eraser.vectorWay.question": { "text": "When the eraser touches a line or shape, what should it rub out?", "where": "The question the \"Eraser on lines and shapes\" dialog asks." },
+  "choice.eraser.vectorWay.bit.label": { "text": "Just the bit I drag over", "where": "Dialog and Preferences: the button for the answer \"bit\" in \"Eraser on lines and shapes\"." },
+  "choice.eraser.vectorWay.bit.detail": {
+    "text": "Like a real rubber: a line is cut or nibbled where the circle passes, and the rest stays.",
+    "where": "Dialog and Preferences: the small line under the \"bit\" answer in \"Eraser on lines and shapes\"."
+  },
+  "choice.eraser.vectorWay.whole.label": { "text": "The whole line", "where": "Dialog and Preferences: the button for the answer \"whole\" in \"Eraser on lines and shapes\"." },
+  "choice.eraser.vectorWay.whole.detail": {
+    "text": "Anything the circle touches disappears, so one swipe removes a stroke or a shape.",
+    "where": "Dialog and Preferences: the small line under the \"whole\" answer in \"Eraser on lines and shapes\"."
+  },
+  "choice.draw.newLayerMode.title": { "text": "New vector layers", "where": "Name of this choice in Preferences > Behaviour (group: Drawing)." },
+  "choice.draw.newLayerMode.question": { "text": "When you add a vector layer, how should shapes drawn on it behave?", "where": "The question the \"New vector layers\" dialog asks." },
+  "choice.draw.newLayerMode.object.label": { "text": "Keep shapes separate", "where": "Dialog and Preferences: the button for the answer \"object\" in \"New vector layers\"." },
+  "choice.draw.newLayerMode.object.detail": {
+    "text": "Each shape stays on its own, so you can pick it up and move it later (object drawing).",
+    "where": "Dialog and Preferences: the small line under the \"object\" answer in \"New vector layers\"."
+  },
+  "choice.draw.newLayerMode.merge.label": { "text": "Merge shapes together", "where": "Dialog and Preferences: the button for the answer \"merge\" in \"New vector layers\"." },
+  "choice.draw.newLayerMode.merge.detail": {
+    "text": "Shapes cut and join each other like paint (merge drawing).",
+    "where": "Dialog and Preferences: the small line under the \"merge\" answer in \"New vector layers\"."
+  },
+  "choice.draw.holdToTidy.title": { "text": "Hold to tidy", "where": "Name of this choice in Preferences > Behaviour (group: Drawing)." },
+  "choice.draw.holdToTidy.question": {
+    "text": "When you hold the pen still at the end of a brush or pencil line, should it turn into a clean line, circle or box?",
+    "where": "The question the \"Hold to tidy\" dialog asks."
+  },
+  "choice.draw.holdToTidy.off.label": { "text": "Leave my lines as I drew them", "where": "Dialog and Preferences: the button for the answer \"off\" in \"Hold to tidy\"." },
+  "choice.draw.holdToTidy.off.detail": {
+    "text": "Nothing changes. You can still tidy a line any time with Tidy into a shape.",
+    "where": "Dialog and Preferences: the small line under the \"off\" answer in \"Hold to tidy\"."
+  },
+  "choice.draw.holdToTidy.off.did": {
+    "text": "Left your line as you drew it. Hold to tidy can turn it into a clean line, circle or box.",
+    "where": "Toast when \"off\" is used without asking (\"Hold to tidy\"), in the past tense."
+  },
+  "choice.draw.holdToTidy.on.label": { "text": "Tidy them into shapes", "where": "Dialog and Preferences: the button for the answer \"on\" in \"Hold to tidy\"." },
+  "choice.draw.holdToTidy.on.detail": {
+    "text": "Hold still for about half a second and a rough circle, box, triangle or straight line becomes a clean one. Undo gives your line back.",
+    "where": "Dialog and Preferences: the small line under the \"on\" answer in \"Hold to tidy\"."
+  },
+  "choice.draw.holdToTidy.on.did": { "text": "Tidied it into a clean shape.", "where": "Toast when \"on\" is used without asking (\"Hold to tidy\"), in the past tense." },
+  "choice.memory.onion.title": { "text": "Onion skin at launch", "where": "Name of this choice in Preferences > Behaviour (group: Drawing)." },
+  "choice.memory.onion.question": { "text": "When Frameling opens, should the onion skin be on if you left it on?", "where": "The question the \"Onion skin at launch\" dialog asks." },
+  "choice.memory.onion.remember.label": { "text": "Yes, as I left it", "where": "Dialog and Preferences: the button for the answer \"remember\" in \"Onion skin at launch\"." },
+  "choice.memory.onion.remember.detail": {
+    "text": "The onion skin comes back on, with the same frames and strength.",
+    "where": "Dialog and Preferences: the small line under the \"remember\" answer in \"Onion skin at launch\"."
+  },
+  "choice.memory.onion.fresh.label": { "text": "No, start with it off", "where": "Dialog and Preferences: the button for the answer \"fresh\" in \"Onion skin at launch\"." },
+  "choice.memory.onion.fresh.detail": {
+    "text": "Your frames before and after, and the strength, are still remembered. Only on or off starts off.",
+    "where": "Dialog and Preferences: the small line under the \"fresh\" answer in \"Onion skin at launch\"."
+  },
+  "choice.transform.skewKey.title": { "text": "Slanting with the Transform tool", "where": "Name of this choice in Preferences > Behaviour (group: Drawing)." },
+  "choice.transform.skewKey.question": { "text": "Which key turns an edge drag into a slant (a skew)?", "where": "The question the \"Slanting with the Transform tool\" dialog asks." },
+  "choice.transform.skewKey.ctrl.label": { "text": "Ctrl (Cmd on a Mac)", "where": "Dialog and Preferences: the button for the answer \"ctrl\" in \"Slanting with the Transform tool\"." },
+  "choice.transform.skewKey.ctrl.detail": {
+    "text": "Hold Ctrl and drag the middle of a side. Shift stays free to keep proportions and to snap turns and slants to 15 degrees.",
+    "where": "Dialog and Preferences: the small line under the \"ctrl\" answer in \"Slanting with the Transform tool\"."
+  },
+  "choice.transform.skewKey.shift.label": { "text": "Shift", "where": "Dialog and Preferences: the button for the answer \"shift\" in \"Slanting with the Transform tool\"." },
+  "choice.transform.skewKey.shift.detail": {
+    "text": "Hold Shift and drag the middle of a side. Shift no longer keeps proportions on a side; corners still do.",
+    "where": "Dialog and Preferences: the small line under the \"shift\" answer in \"Slanting with the Transform tool\"."
+  },
+  "choice.clipboard.bigPicture.title": { "text": "Pasting a picture bigger than the page", "where": "Name of this choice in Preferences > Behaviour (group: Edit)." },
+  "choice.clipboard.bigPicture.question": {
+    "text": "This picture is bigger than the layer. Shrink it to fit, or keep its size and cut off what hangs over?",
+    "where": "The question the \"Pasting a picture bigger than the page\" dialog asks."
+  },
+  "choice.clipboard.bigPicture.shrink.label": { "text": "Shrink it to fit", "where": "Dialog and Preferences: the button for the answer \"shrink\" in \"Pasting a picture bigger than the page\"." },
+  "choice.clipboard.bigPicture.shrink.detail": {
+    "text": "The whole picture stays, smaller, with its shape kept. A picture that already fits is never made bigger.",
+    "where": "Dialog and Preferences: the small line under the \"shrink\" answer in \"Pasting a picture bigger than the page\"."
+  },
+  "choice.clipboard.bigPicture.shrink.did": {
+    "text": "Shrank the picture to fit.",
+    "where": "Toast when \"shrink\" is used without asking (\"Pasting a picture bigger than the page\"), in the past tense."
+  },
+  "choice.clipboard.bigPicture.crop.label": {
+    "text": "Keep its size, cut the edges",
+    "where": "Dialog and Preferences: the button for the answer \"crop\" in \"Pasting a picture bigger than the page\"."
+  },
+  "choice.clipboard.bigPicture.crop.detail": {
+    "text": "It stays at its own size, centred, so the edges that hang over the page are cut off.",
+    "where": "Dialog and Preferences: the small line under the \"crop\" answer in \"Pasting a picture bigger than the page\"."
+  },
+  "choice.clipboard.bigPicture.crop.did": {
+    "text": "Kept its size and cut off the edges.",
+    "where": "Toast when \"crop\" is used without asking (\"Pasting a picture bigger than the page\"), in the past tense."
+  },
+  "choice.artboards.exportAs.title": { "text": "Exporting several artboards", "where": "Name of this choice in Preferences > Behaviour (group: Export)." },
+  "choice.artboards.exportAs.question": { "text": "Where should the artboards go, one file each?", "where": "The question the \"Exporting several artboards\" dialog asks." },
+  "choice.artboards.exportAs.folder.label": { "text": "Into a folder", "where": "Dialog and Preferences: the button for the answer \"folder\" in \"Exporting several artboards\"." },
+  "choice.artboards.exportAs.folder.detail": {
+    "text": "Pick a folder and every artboard lands in it, ready to use.",
+    "where": "Dialog and Preferences: the small line under the \"folder\" answer in \"Exporting several artboards\"."
+  },
+  "choice.artboards.exportAs.zip.label": { "text": "One zip file", "where": "Dialog and Preferences: the button for the answer \"zip\" in \"Exporting several artboards\"." },
+  "choice.artboards.exportAs.zip.detail": {
+    "text": "Everything in one .zip, handy for sending or uploading.",
+    "where": "Dialog and Preferences: the small line under the \"zip\" answer in \"Exporting several artboards\"."
+  },
+  "choice.artboards.fit.title": { "text": "Shots of different sizes", "where": "Name of this choice in Preferences > Behaviour (group: Export)." },
+  "choice.artboards.fit.question": { "text": "When shots are different sizes, how should each fit the picture?", "where": "The question the \"Shots of different sizes\" dialog asks." },
+  "choice.artboards.fit.bars.label": { "text": "Fit (bars)", "where": "Dialog and Preferences: the button for the answer \"bars\" in \"Shots of different sizes\"." },
+  "choice.artboards.fit.bars.detail": {
+    "text": "The whole shot shows, with bars at the sides or top and bottom.",
+    "where": "Dialog and Preferences: the small line under the \"bars\" answer in \"Shots of different sizes\"."
+  },
+  "choice.artboards.fit.fill.label": { "text": "Fill (crop)", "where": "Dialog and Preferences: the button for the answer \"fill\" in \"Shots of different sizes\"." },
+  "choice.artboards.fit.fill.detail": {
+    "text": "The shot covers the whole picture and what hangs over is cropped.",
+    "where": "Dialog and Preferences: the small line under the \"fill\" answer in \"Shots of different sizes\"."
+  },
+  "choice.artboards.barColor.title": { "text": "Bars round a shot that does not fill the picture", "where": "Name of this choice in Preferences > Behaviour (group: Export)." },
+  "choice.artboards.barColor.question": { "text": "What colour should the bars be?", "where": "The question the \"Bars round a shot that does not fill the picture\" dialog asks." },
+  "choice.artboards.barColor.background.label": {
+    "text": "Background colour",
+    "where": "Dialog and Preferences: the button for the answer \"background\" in \"Bars round a shot that does not fill the picture\"."
+  },
+  "choice.artboards.barColor.background.detail": {
+    "text": "The first shot's stage colour (none if it is see-through).",
+    "where": "Dialog and Preferences: the small line under the \"background\" answer in \"Bars round a shot that does not fill the picture\"."
+  },
+  "choice.artboards.barColor.black.label": { "text": "Black", "where": "Dialog and Preferences: the button for the answer \"black\" in \"Bars round a shot that does not fill the picture\"." },
+  "choice.artboards.barColor.black.detail": {
+    "text": "Classic letterbox bars.",
+    "where": "Dialog and Preferences: the small line under the \"black\" answer in \"Bars round a shot that does not fill the picture\"."
+  },
+  "choice.artboards.barColor.white.label": { "text": "White", "where": "Dialog and Preferences: the button for the answer \"white\" in \"Bars round a shot that does not fill the picture\"." },
+  "choice.artboards.pictureSize.title": { "text": "Picture size when shots are joined", "where": "Name of this choice in Preferences > Behaviour (group: Export)." },
+  "choice.artboards.pictureSize.question": {
+    "text": "How big should the picture be when shots are played or exported in order?",
+    "where": "The question the \"Picture size when shots are joined\" dialog asks."
+  },
+  "choice.artboards.pictureSize.first.label": { "text": "First shot", "where": "Dialog and Preferences: the button for the answer \"first\" in \"Picture size when shots are joined\"." },
+  "choice.artboards.pictureSize.first.detail": {
+    "text": "The picture is the size of the first shot.",
+    "where": "Dialog and Preferences: the small line under the \"first\" answer in \"Picture size when shots are joined\"."
+  },
+  "choice.artboards.pictureSize.largest.label": { "text": "Largest shot", "where": "Dialog and Preferences: the button for the answer \"largest\" in \"Picture size when shots are joined\"." },
+  "choice.artboards.pictureSize.largest.detail": {
+    "text": "The picture is the size of the biggest shot, so none of them has to shrink.",
+    "where": "Dialog and Preferences: the small line under the \"largest\" answer in \"Picture size when shots are joined\"."
+  },
+  "choice.artboards.pictureSize.custom.label": { "text": "Custom", "where": "Dialog and Preferences: the button for the answer \"custom\" in \"Picture size when shots are joined\"." },
+  "choice.artboards.pictureSize.custom.detail": {
+    "text": "Type the width and height you want.",
+    "where": "Dialog and Preferences: the small line under the \"custom\" answer in \"Picture size when shots are joined\"."
+  },
+  "choice.export.mp4Sound.title": { "text": "MP4 videos with sound", "where": "Name of this choice in Preferences > Behaviour (group: Export)." },
+  "choice.export.mp4Sound.question": {
+    "text": "This computer can't make the usual kind of sound for MP4 (AAC), so the sound would be Opus. Opus plays in Chrome, Edge, Firefox, VLC and Windows, but Apple's QuickTime, Safari and iPhones play the video silent. What would you like?",
+    "where": "The question the \"MP4 videos with sound\" dialog asks."
+  },
+  "choice.export.mp4Sound.mp4.label": { "text": "Keep it MP4", "where": "Dialog and Preferences: the button for the answer \"mp4\" in \"MP4 videos with sound\"." },
+  "choice.export.mp4Sound.mp4.detail": {
+    "text": "Sound plays almost everywhere, but not in QuickTime, Safari or on iPhones.",
+    "where": "Dialog and Preferences: the small line under the \"mp4\" answer in \"MP4 videos with sound\"."
+  },
+  "choice.export.mp4Sound.webm.label": { "text": "Make a WebM instead", "where": "Dialog and Preferences: the button for the answer \"webm\" in \"MP4 videos with sound\"." },
+  "choice.export.mp4Sound.webm.detail": {
+    "text": "Made for the web: plays with sound in every browser, though not in QuickTime.",
+    "where": "Dialog and Preferences: the small line under the \"webm\" answer in \"MP4 videos with sound\"."
+  },
+  "choice.export.webmCodec.title": { "text": "WebM video codec", "where": "Name of this choice in Preferences > Behaviour (group: Export)." },
+  "choice.export.webmCodec.question": { "text": "Which codec should WebM videos use?", "where": "The question the \"WebM video codec\" dialog asks." },
+  "choice.export.webmCodec.av1.label": { "text": "AV1", "where": "Dialog and Preferences: the button for the answer \"av1\" in \"WebM video codec\"." },
+  "choice.export.webmCodec.av1.detail": {
+    "text": "Smaller files at the same quality. Today's browsers and players handle it; it takes a little longer to make.",
+    "where": "Dialog and Preferences: the small line under the \"av1\" answer in \"WebM video codec\"."
+  },
+  "choice.export.webmCodec.vp9.label": { "text": "VP9", "where": "Dialog and Preferences: the button for the answer \"vp9\" in \"WebM video codec\"." },
+  "choice.export.webmCodec.vp9.detail": {
+    "text": "The safe one: plays in older browsers, phones and players too. Files are a little bigger.",
+    "where": "Dialog and Preferences: the small line under the \"vp9\" answer in \"WebM video codec\"."
+  },
+  "choice.export.clipEngineBounce.title": { "text": "Back-and-forth clips in game engines", "where": "Name of this choice in Preferences > Behaviour (group: Export)." },
+  "choice.export.clipEngineBounce.question": { "text": "How should a back and forth clip go into Godot and Phaser?", "where": "The question the \"Back-and-forth clips in game engines\" dialog asks." },
+  "choice.export.clipEngineBounce.bake.label": { "text": "Baked, ends show once", "where": "Dialog and Preferences: the button for the answer \"bake\" in \"Back-and-forth clips in game engines\"." },
+  "choice.export.clipEngineBounce.bake.detail": {
+    "text": "Every frame is listed in the order it plays, so the ends show once and it looks exactly like Frameling. A little more data.",
+    "where": "Dialog and Preferences: the small line under the \"bake\" answer in \"Back-and-forth clips in game engines\"."
+  },
+  "choice.export.clipEngineBounce.engine.label": {
+    "text": "The engine's own back and forth",
+    "where": "Dialog and Preferences: the button for the answer \"engine\" in \"Back-and-forth clips in game engines\"."
+  },
+  "choice.export.clipEngineBounce.engine.detail": {
+    "text": "Smaller data: only one direction is listed and the engine bounces it. In Godot the two end frames show twice, and it needs Godot 4.7 or newer (older Godot plays it forward only); Phaser plays it the same as baked.",
+    "where": "Dialog and Preferences: the small line under the \"engine\" answer in \"Back-and-forth clips in game engines\"."
+  },
+  "choice.export.iconFit.title": { "text": "Icons from a drawing that is not square", "where": "Name of this choice in Preferences > Behaviour (group: Export)." },
+  "choice.export.iconFit.question": {
+    "text": "An icon is square. What should happen to a drawing that is wider or taller?",
+    "where": "The question the \"Icons from a drawing that is not square\" dialog asks."
+  },
+  "choice.export.iconFit.fit.label": { "text": "Show it all", "where": "Dialog and Preferences: the button for the answer \"fit\" in \"Icons from a drawing that is not square\"." },
+  "choice.export.iconFit.fit.detail": {
+    "text": "Keeps the whole drawing, with empty margins at the sides.",
+    "where": "Dialog and Preferences: the small line under the \"fit\" answer in \"Icons from a drawing that is not square\"."
+  },
+  "choice.export.iconFit.fill.label": { "text": "Fill the square", "where": "Dialog and Preferences: the button for the answer \"fill\" in \"Icons from a drawing that is not square\"." },
+  "choice.export.iconFit.fill.detail": {
+    "text": "Fills the square edge to edge and cuts off what sticks out.",
+    "where": "Dialog and Preferences: the small line under the \"fill\" answer in \"Icons from a drawing that is not square\"."
+  },
+  "choice.aseprite.drop.title": { "text": "An Aseprite file dropped on the window", "where": "Name of this choice in Preferences > Behaviour (group: Files)." },
+  "choice.aseprite.drop.question": { "text": "You dropped an Aseprite file. What should Frameling do with it?", "where": "The question the \"An Aseprite file dropped on the window\" dialog asks." },
+  "choice.aseprite.drop.open.label": { "text": "Open it as a new drawing", "where": "Dialog and Preferences: the button for the answer \"open\" in \"An Aseprite file dropped on the window\"." },
+  "choice.aseprite.drop.open.detail": {
+    "text": "Asks to save changes to the open drawing first.",
+    "where": "Dialog and Preferences: the small line under the \"open\" answer in \"An Aseprite file dropped on the window\"."
+  },
+  "choice.aseprite.drop.add.label": { "text": "Add it to this drawing", "where": "Dialog and Preferences: the button for the answer \"add\" in \"An Aseprite file dropped on the window\"." },
+  "choice.aseprite.drop.add.detail": {
+    "text": "Its layers go on top, its tiles and colours join yours.",
+    "where": "Dialog and Preferences: the small line under the \"add\" answer in \"An Aseprite file dropped on the window\"."
+  },
+  "choice.import.where.title": { "text": "Bringing in a sequence, an SVG or a layered file", "where": "Name of this choice in Preferences > Behaviour (group: Files)." },
+  "choice.import.where.question": { "text": "Where should it go?", "where": "The question the \"Bringing in a sequence, an SVG or a layered file\" dialog asks." },
+  "choice.import.where.add.label": { "text": "Add it to this drawing", "where": "Dialog and Preferences: the button for the answer \"add\" in \"Bringing in a sequence, an SVG or a layered file\"." },
+  "choice.import.where.add.detail": {
+    "text": "Its layers go on top of yours, as one undo step.",
+    "where": "Dialog and Preferences: the small line under the \"add\" answer in \"Bringing in a sequence, an SVG or a layered file\"."
+  },
+  "choice.import.where.add.did": {
+    "text": "Added it to this drawing.",
+    "where": "Toast when \"add\" is used without asking (\"Bringing in a sequence, an SVG or a layered file\"), in the past tense."
+  },
+  "choice.import.where.new.label": { "text": "Open it as a new drawing", "where": "Dialog and Preferences: the button for the answer \"new\" in \"Bringing in a sequence, an SVG or a layered file\"." },
+  "choice.import.where.new.detail": {
+    "text": "Asks to save changes to the open drawing first.",
+    "where": "Dialog and Preferences: the small line under the \"new\" answer in \"Bringing in a sequence, an SVG or a layered file\"."
+  },
+  "choice.import.where.new.did": {
+    "text": "Opened it as a new drawing.",
+    "where": "Toast when \"new\" is used without asking (\"Bringing in a sequence, an SVG or a layered file\"), in the past tense."
+  },
+  "choice.interactives.saveTarget.title": { "text": "Saving a drawing from Interactives", "where": "Name of this choice in Preferences > Behaviour (group: Files)." },
+  "choice.interactives.saveTarget.question": {
+    "text": "This drawing came from an Interactives file (.flplay). The editable drawing travels inside it. Where should Save put your changes?",
+    "where": "The question the \"Saving a drawing from Interactives\" dialog asks."
+  },
+  "choice.interactives.saveTarget.flplay.label": {
+    "text": "Just update the Interactives file",
+    "where": "Dialog and Preferences: the button for the answer \"flplay\" in \"Saving a drawing from Interactives\"."
+  },
+  "choice.interactives.saveTarget.flplay.detail": {
+    "text": "One file to look after. Interactives picks up the changes next time it loads.",
+    "where": "Dialog and Preferences: the small line under the \"flplay\" answer in \"Saving a drawing from Interactives\"."
+  },
+  "choice.interactives.saveTarget.both.label": {
+    "text": "Also keep a .frameling file",
+    "where": "Dialog and Preferences: the button for the answer \"both\" in \"Saving a drawing from Interactives\"."
+  },
+  "choice.interactives.saveTarget.both.detail": {
+    "text": "Asks where to save a .frameling the first time, then updates both.",
+    "where": "Dialog and Preferences: the small line under the \"both\" answer in \"Saving a drawing from Interactives\"."
+  },
+  "choice.restart.undo.title": { "text": "Restarting with Undo steps", "where": "Name of this choice in Preferences > Behaviour (group: Files)." },
+  "choice.restart.undo.question": {
+    "text": "Frameling will restart and come back to your drawing just as it is, unsaved changes and all. The one thing that can't come across is Undo: it starts fresh. Restart?",
+    "where": "The question the \"Restarting with Undo steps\" dialog asks."
+  },
+  "choice.restart.undo.go.label": { "text": "Restart", "where": "Dialog and Preferences: the button for the answer \"go\" in \"Restarting with Undo steps\"." },
+  "choice.restart.undo.go.detail": {
+    "text": "Your drawing comes back as it is. Undo starts fresh.",
+    "where": "Dialog and Preferences: the small line under the \"go\" answer in \"Restarting with Undo steps\"."
+  },
+  "choice.restart.undo.go.did": { "text": "Restarted, and Undo started fresh.", "where": "Toast when \"go\" is used without asking (\"Restarting with Undo steps\"), in the past tense." },
+  "choice.restart.undo.wait.label": { "text": "Not now", "where": "Dialog and Preferences: the button for the answer \"wait\" in \"Restarting with Undo steps\"." },
+  "choice.restart.undo.wait.detail": { "text": "Stay here and keep Undo.", "where": "Dialog and Preferences: the small line under the \"wait\" answer in \"Restarting with Undo steps\"." },
+  "choice.versions.restore.title": { "text": "Bringing back a version", "where": "Name of this choice in Preferences > Behaviour (group: Files)." },
+  "choice.versions.restore.question": {
+    "text": "When you bring back an earlier version, should it replace what you have now, or open as a separate copy?",
+    "where": "The question the \"Bringing back a version\" dialog asks."
+  },
+  "choice.versions.restore.in-place.label": { "text": "Replace what I have", "where": "Dialog and Preferences: the button for the answer \"in-place\" in \"Bringing back a version\"." },
+  "choice.versions.restore.in-place.detail": {
+    "text": "Your drawing goes back to that version. Changed your mind? Undo (Ctrl+Z) brings it straight back. A version of how it was is kept too.",
+    "where": "Dialog and Preferences: the small line under the \"in-place\" answer in \"Bringing back a version\"."
+  },
+  "choice.versions.restore.copy.label": { "text": "Open as a copy", "where": "Dialog and Preferences: the button for the answer \"copy\" in \"Bringing back a version\"." },
+  "choice.versions.restore.copy.detail": {
+    "text": "The version opens as a new, unsaved drawing, and the one you have now stays as it is.",
+    "where": "Dialog and Preferences: the small line under the \"copy\" answer in \"Bringing back a version\"."
+  },
+  "choice.reference.drop.title": { "text": "Dropping one JPG or PNG on the window", "where": "Name of this choice in Preferences > Behaviour (group: Files)." },
+  "choice.reference.drop.question": { "text": "What should a picture dropped on the window be?", "where": "The question the \"Dropping one JPG or PNG on the window\" dialog asks." },
+  "choice.reference.drop.reference.label": {
+    "text": "A reference behind my drawing",
+    "where": "Dialog and Preferences: the button for the answer \"reference\" in \"Dropping one JPG or PNG on the window\"."
+  },
+  "choice.reference.drop.reference.detail": {
+    "text": "To trace or copy from. It is never exported, and you can move, size and fade it.",
+    "where": "Dialog and Preferences: the small line under the \"reference\" answer in \"Dropping one JPG or PNG on the window\"."
+  },
+  "choice.reference.drop.pixel.label": { "text": "Pixel art to work with", "where": "Dialog and Preferences: the button for the answer \"pixel\" in \"Dropping one JPG or PNG on the window\"." },
+  "choice.reference.drop.pixel.detail": {
+    "text": "Opens the picture window, to cut it into pixel frames or a sheet.",
+    "where": "Dialog and Preferences: the small line under the \"pixel\" answer in \"Dropping one JPG or PNG on the window\"."
+  },
+  "choice.reference.longVideo.title": { "text": "A video longer than the animation", "where": "Name of this choice in Preferences > Behaviour (group: Files)." },
+  "choice.reference.longVideo.question": {
+    "text": "The video is longer than your animation. Make the animation as long as the video?",
+    "where": "The question the \"A video longer than the animation\" dialog asks."
+  },
+  "choice.reference.longVideo.extend.label": {
+    "text": "Make it as long as the video",
+    "where": "Dialog and Preferences: the button for the answer \"extend\" in \"A video longer than the animation\"."
+  },
+  "choice.reference.longVideo.extend.detail": {
+    "text": "Adds empty frames so every picture from the video has a frame to sit on.",
+    "where": "Dialog and Preferences: the small line under the \"extend\" answer in \"A video longer than the animation\"."
+  },
+  "choice.reference.longVideo.keep.label": { "text": "Keep my animation as it is", "where": "Dialog and Preferences: the button for the answer \"keep\" in \"A video longer than the animation\"." },
+  "choice.reference.longVideo.keep.detail": {
+    "text": "The pictures that fall after the last frame are left out.",
+    "where": "Dialog and Preferences: the small line under the \"keep\" answer in \"A video longer than the animation\"."
+  },
+  "choice.pixel.keys.title": { "text": "Coming from Aseprite?", "where": "Name of this choice in Preferences > Behaviour (group: Keyboard)." },
+  "choice.pixel.keys.aseprite.label": { "text": "Use Aseprite keys", "where": "Dialog and Preferences: the button for the answer \"aseprite\" in \"Coming from Aseprite?\"." },
+  "choice.pixel.keys.aseprite.detail": {
+    "text": "B is the pencil, X swaps Paint and Back, [ and ] step the palette, 1 to 6 zoom.",
+    "where": "Dialog and Preferences: the small line under the \"aseprite\" answer in \"Coming from Aseprite?\"."
+  },
+  "choice.pixel.keys.frameling.label": { "text": "Use Frameling keys", "where": "Dialog and Preferences: the button for the answer \"frameling\" in \"Coming from Aseprite?\"." },
+  "choice.pixel.keys.frameling.detail": {
+    "text": "Frameling's own keys. Aseprite keys are one pick away in Preferences, Keyboard.",
+    "where": "Dialog and Preferences: the small line under the \"frameling\" answer in \"Coming from Aseprite?\"."
+  },
+  "choice.effects.maskScope.title": { "text": "Using a layer as a mask", "where": "Name of this choice in Preferences > Behaviour (group: Layers)." },
+  "choice.effects.maskScope.question": {
+    "text": "This layer is going to be a mask: what is drawn on it shows the layers under it, and the rest is hidden. Which layers should it mask?",
+    "where": "The question the \"Using a layer as a mask\" dialog asks."
+  },
+  "choice.effects.maskScope.below.label": { "text": "Just the layer under it", "where": "Dialog and Preferences: the button for the answer \"below\" in \"Using a layer as a mask\"." },
+  "choice.effects.maskScope.below.detail": {
+    "text": "The mask and that one layer go into a folder together. Drag more layers into the folder to mask them too.",
+    "where": "Dialog and Preferences: the small line under the \"below\" answer in \"Using a layer as a mask\"."
+  },
+  "choice.effects.maskScope.all.label": { "text": "Every layer under it", "where": "Dialog and Preferences: the button for the answer \"all\" in \"Using a layer as a mask\"." },
+  "choice.effects.maskScope.all.detail": {
+    "text": "The mask and every layer under it go into a folder together.",
+    "where": "Dialog and Preferences: the small line under the \"all\" answer in \"Using a layer as a mask\"."
+  },
+  "choice.effects.maskStart.title": { "text": "A new mask starts as", "where": "Name of this choice in Preferences > Behaviour (group: Layers)." },
+  "choice.effects.maskStart.question": { "text": "You are adding a mask to this layer. What should it start as?", "where": "The question the \"A new mask starts as\" dialog asks." },
+  "choice.effects.maskStart.show.label": { "text": "Paint where it shows", "where": "Dialog and Preferences: the button for the answer \"show\" in \"A new mask starts as\"." },
+  "choice.effects.maskStart.show.detail": {
+    "text": "The mask starts empty, so the layer is hidden until you paint on the mask. What you paint is what you see.",
+    "where": "Dialog and Preferences: the small line under the \"show\" answer in \"A new mask starts as\"."
+  },
+  "choice.effects.maskStart.show.did": { "text": "Added a mask that shows where you paint.", "where": "Toast when \"show\" is used without asking (\"A new mask starts as\"), in the past tense." },
+  "choice.effects.maskStart.hide.label": { "text": "Paint where it hides", "where": "Dialog and Preferences: the button for the answer \"hide\" in \"A new mask starts as\"." },
+  "choice.effects.maskStart.hide.detail": {
+    "text": "The layer shows in full, and what you paint on the mask is hidden. Like rubbing out, but you can change your mind later.",
+    "where": "Dialog and Preferences: the small line under the \"hide\" answer in \"A new mask starts as\"."
+  },
+  "choice.effects.maskStart.hide.did": { "text": "Added a mask that hides where you paint.", "where": "Toast when \"hide\" is used without asking (\"A new mask starts as\"), in the past tense." },
+  "choice.effects.maskLeavesFolder.title": { "text": "A mask that leaves its folder", "where": "Name of this choice in Preferences > Behaviour (group: Layers)." },
+  "choice.effects.maskLeavesFolder.question": {
+    "text": "That mask is out of its folder now, so it reaches every layer under it. What should happen to it?",
+    "where": "The question the \"A mask that leaves its folder\" dialog asks."
+  },
+  "choice.effects.maskLeavesFolder.keep.label": { "text": "Keep it a mask", "where": "Dialog and Preferences: the button for the answer \"keep\" in \"A mask that leaves its folder\"." },
+  "choice.effects.maskLeavesFolder.keep.detail": {
+    "text": "It now shows or hides every layer under it, not just the ones in its folder.",
+    "where": "Dialog and Preferences: the small line under the \"keep\" answer in \"A mask that leaves its folder\"."
+  },
+  "choice.effects.maskLeavesFolder.keep.did": { "text": "Kept it as a mask.", "where": "Toast when \"keep\" is used without asking (\"A mask that leaves its folder\"), in the past tense." },
+  "choice.effects.maskLeavesFolder.plain.label": { "text": "Make it a plain layer again", "where": "Dialog and Preferences: the button for the answer \"plain\" in \"A mask that leaves its folder\"." },
+  "choice.effects.maskLeavesFolder.plain.detail": {
+    "text": "It stops being a mask and shows its drawing like any layer. Nothing is lost.",
+    "where": "Dialog and Preferences: the small line under the \"plain\" answer in \"A mask that leaves its folder\"."
+  },
+  "choice.effects.maskLeavesFolder.plain.did": { "text": "Made it a plain layer.", "where": "Toast when \"plain\" is used without asking (\"A mask that leaves its folder\"), in the past tense." },
+  "choice.toggle.makeLayer.title": { "text": "Pixels or Vectors with no layer of that kind", "where": "Name of this choice in Preferences > Behaviour (group: Layers)." },
+  "choice.toggle.makeLayer.question": {
+    "text": "You pressed Pixels or Vectors and there is no layer of that kind yet. Make one for you?",
+    "where": "The question the \"Pixels or Vectors with no layer of that kind\" dialog asks."
+  },
+  "choice.toggle.makeLayer.make.label": { "text": "Make one", "where": "Dialog and Preferences: the button for the answer \"make\" in \"Pixels or Vectors with no layer of that kind\"." },
+  "choice.toggle.makeLayer.make.detail": {
+    "text": "A new layer of that kind goes above the one you are on, and you land on it. Undo takes it back.",
+    "where": "Dialog and Preferences: the small line under the \"make\" answer in \"Pixels or Vectors with no layer of that kind\"."
+  },
+  "choice.toggle.makeLayer.make.did": {
+    "text": "Made the layer you asked for.",
+    "where": "Toast when \"make\" is used without asking (\"Pixels or Vectors with no layer of that kind\"), in the past tense."
+  },
+  "choice.toggle.makeLayer.tell.label": { "text": "Just tell me how", "where": "Dialog and Preferences: the button for the answer \"tell\" in \"Pixels or Vectors with no layer of that kind\"." },
+  "choice.toggle.makeLayer.tell.detail": {
+    "text": "Nothing is made. A note says where New layer is.",
+    "where": "Dialog and Preferences: the small line under the \"tell\" answer in \"Pixels or Vectors with no layer of that kind\"."
+  },
+  "choice.toggle.makeLayer.tell.did": { "text": "Said how to add one.", "where": "Toast when \"tell\" is used without asking (\"Pixels or Vectors with no layer of that kind\"), in the past tense." },
+  "choice.menus.newEntries.title": { "text": "New things in a menu you changed", "where": "Name of this choice in Preferences > Behaviour (group: Menus)." },
+  "choice.menus.newEntries.question": {
+    "text": "When Frameling adds something new to a menu you have changed, where should it go?",
+    "where": "The question the \"New things in a menu you changed\" dialog asks."
+  },
+  "choice.menus.newEntries.add.label": { "text": "Put it in the menu", "where": "Dialog and Preferences: the button for the answer \"add\" in \"New things in a menu you changed\"." },
+  "choice.menus.newEntries.add.detail": {
+    "text": "It goes next to the entry it follows. Nothing you moved or took out comes back.",
+    "where": "Dialog and Preferences: the small line under the \"add\" answer in \"New things in a menu you changed\"."
+  },
+  "choice.menus.newEntries.leave.label": { "text": "Leave it out", "where": "Dialog and Preferences: the button for the answer \"leave\" in \"New things in a menu you changed\"." },
+  "choice.menus.newEntries.leave.detail": {
+    "text": "Your menus stay exactly as you made them. The new thing is still in the command search.",
+    "where": "Dialog and Preferences: the small line under the \"leave\" answer in \"New things in a menu you changed\"."
+  },
+  "choice.palette.recolour.title": { "text": "Changing a palette colour", "where": "Name of this choice in Preferences > Behaviour (group: Pixel art)." },
+  "choice.palette.recolour.question": {
+    "text": "You changed a colour in the palette. Should the pixels already painted in that colour change too?",
+    "where": "The question the \"Changing a palette colour\" dialog asks."
+  },
+  "choice.palette.recolour.recolour.label": { "text": "Change the pixels too", "where": "Dialog and Preferences: the button for the answer \"recolour\" in \"Changing a palette colour\"." },
+  "choice.palette.recolour.recolour.detail": {
+    "text": "Every pixel of the old colour, on every pixel layer and frame, becomes the new colour. Great for trying out colour schemes.",
+    "where": "Dialog and Preferences: the small line under the \"recolour\" answer in \"Changing a palette colour\"."
+  },
+  "choice.palette.recolour.palette-only.label": { "text": "Just the palette", "where": "Dialog and Preferences: the button for the answer \"palette-only\" in \"Changing a palette colour\"." },
+  "choice.palette.recolour.palette-only.detail": {
+    "text": "Your drawing stays as it is. Only the palette changes.",
+    "where": "Dialog and Preferences: the small line under the \"palette-only\" answer in \"Changing a palette colour\"."
+  },
+  "choice.pixel.twoBoards.title": { "text": "A second board in a one-picture sprite", "where": "Name of this choice in Preferences > Behaviour (group: Pixel art)." },
+  "choice.pixel.twoBoards.boards.label": { "text": "Frames of one sprite", "where": "Dialog and Preferences: the button for the answer \"boards\" in \"A second board in a one-picture sprite\"." },
+  "choice.pixel.twoBoards.boards.detail": {
+    "text": "Each board is a frame, and they play in order as one animation.",
+    "where": "Dialog and Preferences: the small line under the \"boards\" answer in \"A second board in a one-picture sprite\"."
+  },
+  "choice.pixel.twoBoards.sheet.label": { "text": "Two different sprites", "where": "Dialog and Preferences: the button for the answer \"sheet\" in \"A second board in a one-picture sprite\"." },
+  "choice.pixel.twoBoards.sheet.detail": {
+    "text": "Each board is a sprite of its own, and they pack onto one sheet.",
+    "where": "Dialog and Preferences: the small line under the \"sheet\" answer in \"A second board in a one-picture sprite\"."
+  },
+  "choice.pixel.shareLayers.title": { "text": "Frames on boards: one stack of layers", "where": "Name of this choice in Preferences > Behaviour (group: Pixel art)." },
+  "choice.pixel.shareLayers.question": {
+    "text": "Every board of this sprite has layers of its own. Put the frames on one stack, so a layer you add once shows on every frame?",
+    "where": "The question the \"Frames on boards: one stack of layers\" dialog asks."
+  },
+  "choice.pixel.shareLayers.share.label": {
+    "text": "One stack for all the frames",
+    "where": "Dialog and Preferences: the button for the answer \"share\" in \"Frames on boards: one stack of layers\"."
+  },
+  "choice.pixel.shareLayers.share.detail": {
+    "text": "Layers with the same name and kind join up, and every board keeps its own pixels. One undo step puts it back.",
+    "where": "Dialog and Preferences: the small line under the \"share\" answer in \"Frames on boards: one stack of layers\"."
+  },
+  "choice.pixel.shareLayers.leave.label": { "text": "Leave my files as they are", "where": "Dialog and Preferences: the button for the answer \"leave\" in \"Frames on boards: one stack of layers\"." },
+  "choice.pixel.shareLayers.leave.detail": {
+    "text": "Each board keeps layers of its own. You can put them on one stack later, from the Pixel tools menu.",
+    "where": "Dialog and Preferences: the small line under the \"leave\" answer in \"Frames on boards: one stack of layers\"."
+  },
+  "choice.pixel.shareLayers.later.label": { "text": "Not now", "where": "Dialog and Preferences: the button for the answer \"later\" in \"Frames on boards: one stack of layers\"." },
+  "choice.pixel.shareLayers.later.detail": {
+    "text": "Ask again the next time a file like this opens.",
+    "where": "Dialog and Preferences: the small line under the \"later\" answer in \"Frames on boards: one stack of layers\"."
+  },
+  "choice.select.altInside.title": { "text": "Alt+drag inside a pixel selection", "where": "Name of this choice in Preferences > Behaviour (group: Pixel art)." },
+  "choice.select.altInside.question": { "text": "What should Alt+drag do when it starts inside the selected pixels?", "where": "The question the \"Alt+drag inside a pixel selection\" dialog asks." },
+  "choice.select.altInside.copy.label": { "text": "Copy the pixels", "where": "Dialog and Preferences: the button for the answer \"copy\" in \"Alt+drag inside a pixel selection\"." },
+  "choice.select.altInside.copy.detail": {
+    "text": "Drags a copy and leaves the originals where they were.",
+    "where": "Dialog and Preferences: the small line under the \"copy\" answer in \"Alt+drag inside a pixel selection\"."
+  },
+  "choice.select.altInside.subtract.label": {
+    "text": "Take away from the selection",
+    "where": "Dialog and Preferences: the button for the answer \"subtract\" in \"Alt+drag inside a pixel selection\"."
+  },
+  "choice.select.altInside.subtract.detail": {
+    "text": "Draws a box or lasso that is cut out of the selection.",
+    "where": "Dialog and Preferences: the small line under the \"subtract\" answer in \"Alt+drag inside a pixel selection\"."
+  },
+  "choice.transform.resample.title": { "text": "Turning and slanting pixels", "where": "Name of this choice in Preferences > Behaviour (group: Pixel art)." },
+  "choice.transform.resample.question": {
+    "text": "How should pixels be picked again when you turn or slant a pixel selection?",
+    "where": "The question the \"Turning and slanting pixels\" dialog asks."
+  },
+  "choice.transform.resample.crisp.label": { "text": "Crisp (rounds the steps)", "where": "Dialog and Preferences: the button for the answer \"crisp\" in \"Turning and slanting pixels\"." },
+  "choice.transform.resample.crisp.detail": {
+    "text": "The art is doubled with Scale2x first, so diagonal lines come out smoother. Still no blending, so no new colours.",
+    "where": "Dialog and Preferences: the small line under the \"crisp\" answer in \"Turning and slanting pixels\"."
+  },
+  "choice.transform.resample.plain.label": { "text": "Plain (nearest pixel)", "where": "Dialog and Preferences: the button for the answer \"plain\" in \"Turning and slanting pixels\"." },
+  "choice.transform.resample.plain.detail": {
+    "text": "Each pixel just takes the colour of the pixel under it. Blockier, and exactly what a stretch does.",
+    "where": "Dialog and Preferences: the small line under the \"plain\" answer in \"Turning and slanting pixels\"."
+  },
+  "choice.nudge.page.title": { "text": "A hint on an empty page", "where": "Name of this choice in Preferences > Behaviour (group: Quill)." },
+  "choice.nudge.page.question": { "text": "Should a new, empty page say what to do?", "where": "The question the \"A hint on an empty page\" dialog asks." },
+  "choice.nudge.drawn.title": { "text": "Quill's tip after your first drawing", "where": "Name of this choice in Preferences > Behaviour (group: Quill)." },
+  "choice.nudge.drawn.question": { "text": "Should Quill say what to try next after your first drawing?", "where": "The question the \"Quill's tip after your first drawing\" dialog asks." },
+  "choice.quill.presents.title": { "text": "Quill's presents", "where": "Name of this choice in Preferences > Behaviour (group: Quill)." },
+  "choice.quill.presents.question": {
+    "text": "Quill made you something out of a drawing you gave him. Would you like him to do that now and then?",
+    "where": "The question the \"Quill's presents\" dialog asks."
+  },
+  "choice.quill.presents.yes.label": { "text": "Yes, now and then", "where": "Dialog and Preferences: the button for the answer \"yes\" in \"Quill's presents\"." },
+  "choice.quill.presents.yes.detail": {
+    "text": "He makes you one once in a while, as a quiet toast you can ignore. Never more than one a day.",
+    "where": "Dialog and Preferences: the small line under the \"yes\" answer in \"Quill's presents\"."
+  },
+  "choice.quill.presents.no.label": { "text": "No thank you", "where": "Dialog and Preferences: the button for the answer \"no\" in \"Quill's presents\"." },
+  "choice.quill.presents.no.detail": {
+    "text": "He keeps the drawings you give him and makes nothing from them.",
+    "where": "Dialog and Preferences: the small line under the \"no\" answer in \"Quill's presents\"."
+  },
+  "choice.audio.scrub.title": { "text": "Hear the sound while you drag the playhead", "where": "Name of this choice in Preferences > Behaviour (group: Sound)." },
+  "choice.audio.scrub.question": { "text": "Play a short bit of the sound as you move the playhead?", "where": "The question the \"Hear the sound while you drag the playhead\" dialog asks." },
+  "choice.audio.scrub.on.label": { "text": "Yes, play a snippet", "where": "Dialog and Preferences: the button for the answer \"on\" in \"Hear the sound while you drag the playhead\"." },
+  "choice.audio.scrub.on.detail": {
+    "text": "You hear the sound at the playhead as you scrub or step.",
+    "where": "Dialog and Preferences: the small line under the \"on\" answer in \"Hear the sound while you drag the playhead\"."
+  },
+  "choice.audio.scrub.off.label": { "text": "No, keep it quiet", "where": "Dialog and Preferences: the button for the answer \"off\" in \"Hear the sound while you drag the playhead\"." },
+  "choice.audio.scrub.off.detail": {
+    "text": "Sound plays only when you press play.",
+    "where": "Dialog and Preferences: the small line under the \"off\" answer in \"Hear the sound while you drag the playhead\"."
+  },
+  "choice.audio.longSound.title": { "text": "A sound longer than the animation", "where": "Name of this choice in Preferences > Behaviour (group: Sound)." },
+  "choice.audio.longSound.question": {
+    "text": "This sound is longer than your animation. Make the animation as long as the sound?",
+    "where": "The question the \"A sound longer than the animation\" dialog asks."
+  },
+  "choice.audio.longSound.extend.label": { "text": "Make it as long as the sound", "where": "Dialog and Preferences: the button for the answer \"extend\" in \"A sound longer than the animation\"." },
+  "choice.audio.longSound.extend.detail": {
+    "text": "Adds empty frames so the whole sound fits.",
+    "where": "Dialog and Preferences: the small line under the \"extend\" answer in \"A sound longer than the animation\"."
+  },
+  "choice.audio.longSound.keep.label": { "text": "Keep my animation as it is", "where": "Dialog and Preferences: the button for the answer \"keep\" in \"A sound longer than the animation\"." },
+  "choice.audio.longSound.keep.detail": {
+    "text": "The end of the sound goes past the last frame and is not played or exported.",
+    "where": "Dialog and Preferences: the small line under the \"keep\" answer in \"A sound longer than the animation\"."
+  },
+  "choice.flow.anyFirst.title": { "text": "Any clip arrows and a clip's own arrows", "where": "Name of this choice in Preferences > Behaviour (group: Timeline)." },
+  "choice.flow.anyFirst.question": {
+    "text": "Sometimes an \"Any clip\" arrow (like hurt) and a clip's own arrow (like run to jump) are ready at the same moment. Which should go first?",
+    "where": "The question the \"Any clip arrows and a clip's own arrows\" dialog asks."
+  },
+  "choice.flow.anyFirst.any.label": { "text": "The Any clip arrow", "where": "Dialog and Preferences: the button for the answer \"any\" in \"Any clip arrows and a clip's own arrows\"." },
+  "choice.flow.anyFirst.any.detail": {
+    "text": "Hurt cuts in on whatever is playing, even if the clip had somewhere else to go.",
+    "where": "Dialog and Preferences: the small line under the \"any\" answer in \"Any clip arrows and a clip's own arrows\"."
+  },
+  "choice.flow.anyFirst.any.did": { "text": "Any clip arrows go first.", "where": "Toast when \"any\" is used without asking (\"Any clip arrows and a clip's own arrows\"), in the past tense." },
+  "choice.flow.anyFirst.own.label": { "text": "The clip's own arrow", "where": "Dialog and Preferences: the button for the answer \"own\" in \"Any clip arrows and a clip's own arrows\"." },
+  "choice.flow.anyFirst.own.detail": {
+    "text": "A clip finishes its own business first. Any clip arrows only go when nothing else is ready.",
+    "where": "Dialog and Preferences: the small line under the \"own\" answer in \"Any clip arrows and a clip's own arrows\"."
+  },
+  "choice.flow.anyFirst.own.did": { "text": "A clip's own arrows go first.", "where": "Toast when \"own\" is used without asking (\"Any clip arrows and a clip's own arrows\"), in the past tense." },
+  "choice.timeline.newKey.title": { "text": "New drawing (N)", "where": "Name of this choice in Preferences > Behaviour (group: Timeline)." },
+  "choice.timeline.newKey.question": {
+    "text": "When you make a new drawing on a frame, should it start blank or as a copy of the drawing that was there?",
+    "where": "The question the \"New drawing (N)\" dialog asks."
+  },
+  "choice.timeline.newKey.blank.label": { "text": "Start blank", "where": "Dialog and Preferences: the button for the answer \"blank\" in \"New drawing (N)\"." },
+  "choice.timeline.newKey.blank.detail": {
+    "text": "A clean page. The onion skin shows the last drawing faintly, so you can draw over it like a flipbook.",
+    "where": "Dialog and Preferences: the small line under the \"blank\" answer in \"New drawing (N)\"."
+  },
+  "choice.timeline.newKey.blank.did": { "text": "Started a blank drawing.", "where": "Toast when \"blank\" is used without asking (\"New drawing (N)\"), in the past tense." },
+  "choice.timeline.newKey.copy.label": { "text": "Start as a copy", "where": "Dialog and Preferences: the button for the answer \"copy\" in \"New drawing (N)\"." },
+  "choice.timeline.newKey.copy.detail": {
+    "text": "Begin with the last drawing and change a little of it. Handy for small movements.",
+    "where": "Dialog and Preferences: the small line under the \"copy\" answer in \"New drawing (N)\"."
+  },
+  "choice.timeline.newKey.copy.did": { "text": "Started a copy of the drawing.", "where": "Toast when \"copy\" is used without asking (\"New drawing (N)\"), in the past tense." },
+  "choice.timeline.holdLonger.title": { "text": "Holding a drawing longer", "where": "Name of this choice in Preferences > Behaviour (group: Timeline)." },
+  "choice.timeline.holdLonger.question": {
+    "text": "When you make a drawing stay on screen for more frames, what should happen to the drawings after it?",
+    "where": "The question the \"Holding a drawing longer\" dialog asks."
+  },
+  "choice.timeline.holdLonger.push.label": { "text": "Move them later", "where": "Dialog and Preferences: the button for the answer \"push\" in \"Holding a drawing longer\"." },
+  "choice.timeline.holdLonger.push.detail": {
+    "text": "Nothing is lost. The animation gets longer.",
+    "where": "Dialog and Preferences: the small line under the \"push\" answer in \"Holding a drawing longer\"."
+  },
+  "choice.timeline.holdLonger.push.did": { "text": "Moved the drawings after it later.", "where": "Toast when \"push\" is used without asking (\"Holding a drawing longer\"), in the past tense." },
+  "choice.timeline.holdLonger.cover.label": { "text": "Cover them", "where": "Dialog and Preferences: the button for the answer \"cover\" in \"Holding a drawing longer\"." },
+  "choice.timeline.holdLonger.cover.detail": {
+    "text": "The animation stays the same length. The drawings after it are shortened or covered.",
+    "where": "Dialog and Preferences: the small line under the \"cover\" answer in \"Holding a drawing longer\"."
+  },
+  "choice.timeline.holdLonger.cover.did": { "text": "Covered the drawings after it.", "where": "Toast when \"cover\" is used without asking (\"Holding a drawing longer\"), in the past tense." },
+  "choice.timeline.frameScope.title": { "text": "Adding or removing a frame", "where": "Name of this choice in Preferences > Behaviour (group: Timeline)." },
+  "choice.timeline.frameScope.question": {
+    "text": "When you add or remove a frame, should it happen on every layer, or only the layer you are on?",
+    "where": "The question the \"Adding or removing a frame\" dialog asks."
+  },
+  "choice.timeline.frameScope.all.label": { "text": "Every layer", "where": "Dialog and Preferences: the button for the answer \"all\" in \"Adding or removing a frame\"." },
+  "choice.timeline.frameScope.all.detail": {
+    "text": "Like adding a page to the whole flipbook. Layers stay in step. Hold Alt to do just one layer.",
+    "where": "Dialog and Preferences: the small line under the \"all\" answer in \"Adding or removing a frame\"."
+  },
+  "choice.timeline.frameScope.all.did": { "text": "Added a frame on every layer.", "where": "Toast when \"all\" is used without asking (\"Adding or removing a frame\"), in the past tense." },
+  "choice.timeline.frameScope.layer.label": { "text": "Just this layer", "where": "Dialog and Preferences: the button for the answer \"layer\" in \"Adding or removing a frame\"." },
+  "choice.timeline.frameScope.layer.detail": {
+    "text": "Only the selected layer changes. Hold Alt to do every layer.",
+    "where": "Dialog and Preferences: the small line under the \"layer\" answer in \"Adding or removing a frame\"."
+  },
+  "choice.timeline.frameScope.layer.did": { "text": "Added a frame on this layer only.", "where": "Toast when \"layer\" is used without asking (\"Adding or removing a frame\"), in the past tense." },
+  "choice.timeline.newKeyHold.title": { "text": "How long a new drawing lasts", "where": "Name of this choice in Preferences > Behaviour (group: Timeline)." },
+  "choice.timeline.newKeyHold.question": {
+    "text": "When you draw on an empty frame, how long should the new drawing stay on screen?",
+    "where": "The question the \"How long a new drawing lasts\" dialog asks."
+  },
+  "choice.timeline.newKeyHold.until-next.label": { "text": "Until the next drawing", "where": "Dialog and Preferences: the button for the answer \"until-next\" in \"How long a new drawing lasts\"." },
+  "choice.timeline.newKeyHold.until-next.detail": {
+    "text": "It stays until your next drawing, or the end, so playing never shows blank gaps. Draw on a later frame to start a new drawing there.",
+    "where": "Dialog and Preferences: the small line under the \"until-next\" answer in \"How long a new drawing lasts\"."
+  },
+  "choice.timeline.newKeyHold.one-frame.label": { "text": "One frame", "where": "Dialog and Preferences: the button for the answer \"one-frame\" in \"How long a new drawing lasts\"." },
+  "choice.timeline.newKeyHold.one-frame.detail": {
+    "text": "Each drawing is one frame (on ones) until you hold it longer. Empty frames stay empty.",
+    "where": "Dialog and Preferences: the small line under the \"one-frame\" answer in \"How long a new drawing lasts\"."
+  },
+  "choice.timeline.tidyEnd.title": { "text": "Empty frames at the end", "where": "Name of this choice in Preferences > Behaviour (group: Timeline)." },
+  "choice.timeline.tidyEnd.question": { "text": "Take the empty frames off the end?", "where": "The question the \"Empty frames at the end\" dialog asks." },
+  "choice.timeline.tidyEnd.tidy.label": { "text": "Take them off", "where": "Dialog and Preferences: the button for the answer \"tidy\" in \"Empty frames at the end\"." },
+  "choice.timeline.tidyEnd.tidy.detail": {
+    "text": "The animation ends where its last drawing, marker or clip ends. Every time an edit leaves empty frames on the end, they go.",
+    "where": "Dialog and Preferences: the small line under the \"tidy\" answer in \"Empty frames at the end\"."
+  },
+  "choice.timeline.tidyEnd.tidy.did": { "text": "Took the empty frames off the end.", "where": "Toast when \"tidy\" is used without asking (\"Empty frames at the end\"), in the past tense." },
+  "choice.timeline.tidyEnd.keep.label": { "text": "Keep the length I have", "where": "Dialog and Preferences: the button for the answer \"keep\" in \"Empty frames at the end\"." },
+  "choice.timeline.tidyEnd.keep.detail": {
+    "text": "The animation stays as long as it was. The empty frames wait at the end until you change the length or use Tidy the end.",
+    "where": "Dialog and Preferences: the small line under the \"keep\" answer in \"Empty frames at the end\"."
+  },
+  "choice.timeline.tidyEnd.keep.did": { "text": "Kept the length you have.", "where": "Toast when \"keep\" is used without asking (\"Empty frames at the end\"), in the past tense." },
+  "choice.timeline.onionClips.title": { "text": "Onion skin at the end of a clip", "where": "Name of this choice in Preferences > Behaviour (group: Timeline)." },
+  "choice.timeline.onionClips.question": {
+    "text": "The onion skin is at the edge of a clip. Should it stop there, or carry on into the next clip?",
+    "where": "The question the \"Onion skin at the end of a clip\" dialog asks."
+  },
+  "choice.timeline.onionClips.inside.label": { "text": "Stop at the edge of the clip", "where": "Dialog and Preferences: the button for the answer \"inside\" in \"Onion skin at the end of a clip\"." },
+  "choice.timeline.onionClips.inside.detail": {
+    "text": "Ghosts never come from the clip next door. Best when each clip is its own animation (idle, run, jump).",
+    "where": "Dialog and Preferences: the small line under the \"inside\" answer in \"Onion skin at the end of a clip\"."
+  },
+  "choice.timeline.onionClips.inside.did": {
+    "text": "The onion skin stays inside the clip you are in, so you draw against your own animation.",
+    "where": "Toast when \"inside\" is used without asking (\"Onion skin at the end of a clip\"), in the past tense."
+  },
+  "choice.timeline.onionClips.across.label": { "text": "Carry on into the next clip", "where": "Dialog and Preferences: the button for the answer \"across\" in \"Onion skin at the end of a clip\"." },
+  "choice.timeline.onionClips.across.detail": {
+    "text": "Handy for one long scene made of clips back to back, where the end of one is the start of the next.",
+    "where": "Dialog and Preferences: the small line under the \"across\" answer in \"Onion skin at the end of a clip\"."
+  },
+  "choice.timeline.onionClips.across.did": {
+    "text": "The onion skin carries on over the edge of a clip into the next one.",
+    "where": "Toast when \"across\" is used without asking (\"Onion skin at the end of a clip\"), in the past tense."
+  },
+  "choice.timeline.pasteOver.title": { "text": "Pasting keys onto other keys", "where": "Name of this choice in Preferences > Behaviour (group: Timeline)." },
+  "choice.timeline.pasteOver.question": {
+    "text": "This paste lands on frames that already have drawings. Should they make room, or should the paste cover them?",
+    "where": "The question the \"Pasting keys onto other keys\" dialog asks."
+  },
+  "choice.timeline.pasteOver.insert.label": { "text": "Make room", "where": "Dialog and Preferences: the button for the answer \"insert\" in \"Pasting keys onto other keys\"." },
+  "choice.timeline.pasteOver.insert.detail": {
+    "text": "Nothing is lost. The drawings in the way move later, and the animation gets longer if it needs to.",
+    "where": "Dialog and Preferences: the small line under the \"insert\" answer in \"Pasting keys onto other keys\"."
+  },
+  "choice.timeline.pasteOver.insert.did": {
+    "text": "Moved the drawings in the way later.",
+    "where": "Toast when \"insert\" is used without asking (\"Pasting keys onto other keys\"), in the past tense."
+  },
+  "choice.timeline.pasteOver.cover.label": { "text": "Paste over them", "where": "Dialog and Preferences: the button for the answer \"cover\" in \"Pasting keys onto other keys\"." },
+  "choice.timeline.pasteOver.cover.detail": {
+    "text": "The animation stays the same length. The drawings in the way are shortened or covered (Undo brings them back).",
+    "where": "Dialog and Preferences: the small line under the \"cover\" answer in \"Pasting keys onto other keys\"."
+  },
+  "choice.timeline.pasteOver.cover.did": { "text": "Covered the drawings in the way.", "where": "Toast when \"cover\" is used without asking (\"Pasting keys onto other keys\"), in the past tense." },
+  "choice.timeline.tweenOffer.title": { "text": "Offer in-betweens between keys", "where": "Name of this choice in Preferences > Behaviour (group: Timeline)." },
+  "choice.timeline.tweenOffer.question": {
+    "text": "When you click a frame between two drawings, should Frameling offer to make the in-betweens?",
+    "where": "The question the \"Offer in-betweens between keys\" dialog asks."
+  },
+  "choice.timeline.tweenOffer.on.label": { "text": "Offer them", "where": "Dialog and Preferences: the button for the answer \"on\" in \"Offer in-betweens between keys\"." },
+  "choice.timeline.tweenOffer.on.detail": {
+    "text": "A small \"Move\" or \"Morph\" offer appears on the frames you clicked. Ignore it and it goes away.",
+    "where": "Dialog and Preferences: the small line under the \"on\" answer in \"Offer in-betweens between keys\"."
+  },
+  "choice.timeline.tweenOffer.off.label": { "text": "Don't offer", "where": "Dialog and Preferences: the button for the answer \"off\" in \"Offer in-betweens between keys\"." },
+  "choice.timeline.tweenOffer.off.detail": {
+    "text": "Make in-betweens from the right-click menu or Ctrl+Shift+T instead.",
+    "where": "Dialog and Preferences: the small line under the \"off\" answer in \"Offer in-betweens between keys\"."
+  },
+  "choice.tools.offLayer.title": { "text": "Tools that do not work on this layer", "where": "Name of this choice in Preferences > Behaviour (group: Tools)." },
+  "choice.tools.offLayer.question": {
+    "text": "Some tools only work on one kind of layer. Hide the ones that do not work here, or keep them on the rail, greyed out?",
+    "where": "The question the \"Tools that do not work on this layer\" dialog asks."
+  },
+  "choice.tools.offLayer.hide.label": { "text": "Hide them", "where": "Dialog and Preferences: the button for the answer \"hide\" in \"Tools that do not work on this layer\"." },
+  "choice.tools.offLayer.hide.detail": {
+    "text": "A shorter rail. The line at the top says which layer you are on and how many tools are off.",
+    "where": "Dialog and Preferences: the small line under the \"hide\" answer in \"Tools that do not work on this layer\"."
+  },
+  "choice.tools.offLayer.hide.did": {
+    "text": "Tools that do not work on this layer are hidden. The line at the top of the rail says what is off.",
+    "where": "Toast when \"hide\" is used without asking (\"Tools that do not work on this layer\"), in the past tense."
+  },
+  "choice.tools.offLayer.grey.label": { "text": "Grey them out", "where": "Dialog and Preferences: the button for the answer \"grey\" in \"Tools that do not work on this layer\"." },
+  "choice.tools.offLayer.grey.detail": {
+    "text": "Every tool stays where it is. The ones that cannot be used here are dimmed, and say why when you point at them.",
+    "where": "Dialog and Preferences: the small line under the \"grey\" answer in \"Tools that do not work on this layer\"."
+  },
+  "choice.tools.offLayer.grey.did": {
+    "text": "Tools that do not work on this layer are greyed out, in their usual places.",
+    "where": "Toast when \"grey\" is used without asking (\"Tools that do not work on this layer\"), in the past tense."
+  },
+  "choice.workspace.follow.title": { "text": "Workspace follows the drawing", "where": "Name of this choice in Preferences > Behaviour (group: Workspace)." },
+  "choice.workspace.follow.question": {
+    "text": "Switch workspaces to match the kind of drawing? (Pixel for pixel art, Draw for drawings)",
+    "where": "The question the \"Workspace follows the drawing\" dialog asks."
+  },
+  "choice.workspace.follow.always.label": { "text": "Always", "where": "Dialog and Preferences: the button for the answer \"always\" in \"Workspace follows the drawing\"." },
+  "choice.workspace.follow.always.detail": {
+    "text": "Pixel art opens in the Pixel workspace, and drawings in Draw. After this it happens by itself, no more questions.",
+    "where": "Dialog and Preferences: the small line under the \"always\" answer in \"Workspace follows the drawing\"."
+  },
+  "choice.workspace.follow.always.did": {
+    "text": "Switched workspace to match your drawing.",
+    "where": "Toast when \"always\" is used without asking (\"Workspace follows the drawing\"), in the past tense."
+  },
+  "choice.workspace.follow.later.label": { "text": "Not now", "where": "Dialog and Preferences: the button for the answer \"later\" in \"Workspace follows the drawing\"." },
+  "choice.workspace.follow.later.detail": {
+    "text": "Stay as you are this time. Frameling asks again next time it matters.",
+    "where": "Dialog and Preferences: the small line under the \"later\" answer in \"Workspace follows the drawing\"."
+  },
+  "choice.workspace.follow.never.label": { "text": "Never", "where": "Dialog and Preferences: the button for the answer \"never\" in \"Workspace follows the drawing\"." },
+  "choice.workspace.follow.never.detail": {
+    "text": "Keep my layout as it is. The workspace lines in the View menu switch any time.",
+    "where": "Dialog and Preferences: the small line under the \"never\" answer in \"Workspace follows the drawing\"."
+  }
+}

@@ -5,16 +5,17 @@ import type { Cel, Doc, Id, Layer } from '../core/format';
 import { drawingHasArt, isInstance } from '../core/symbols';
 import { makeTween } from '../symbols/ops';
 import { createStore } from '../ui/mini';
+import { choiceWord } from '../words/choices';
 
 export type TweenOfferChoice = 'on' | 'off';
 
 registerChoice<TweenOfferChoice>({
   id: 'timeline.tweenOffer',
-  title: 'Offer in-betweens between keys',
-  question: 'When you click a frame between two drawings, should Frameling offer to make the in-betweens?',
+  title: choiceWord('choice.timeline.tweenOffer.title'),
+  question: choiceWord('choice.timeline.tweenOffer.question'),
   options: [
-    { value: 'on', label: 'Offer them', detail: 'A small "Move" or "Morph" offer appears on the frames you clicked. Ignore it and it goes away.' },
-    { value: 'off', label: "Don't offer", detail: 'Make in-betweens from the right-click menu or Ctrl+Shift+T instead.' },
+    { value: 'on', label: choiceWord('choice.timeline.tweenOffer.on.label'), detail: choiceWord('choice.timeline.tweenOffer.on.detail') },
+    { value: 'off', label: choiceWord('choice.timeline.tweenOffer.off.label'), detail: choiceWord('choice.timeline.tweenOffer.off.detail') },
   ],
   default: 'on',
   category: 'Timeline',

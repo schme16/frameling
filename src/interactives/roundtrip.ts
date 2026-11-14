@@ -10,21 +10,22 @@ import { notify } from '../io/notify';
 import { withoutNotes } from '../notes/model';
 import { defaultSettings } from '../export/plan';
 import { getLink, readPlayable, setLink, type PlayableLink } from './link';
+import { choiceWord } from '../words/choices';
 
 export const PLAYABLE_FILTERS = [{ name: 'Interactives animations', extensions: ['flplay'] }];
 export const isPlayablePath = (p: string): boolean => /\.flplay$/i.test(p);
 
 const saveTarget: ChoiceDef<'flplay' | 'both'> = {
   id: 'interactives.saveTarget',
-  title: 'Saving a drawing from Interactives',
-  question: 'This drawing came from an Interactives file (.flplay). The editable drawing travels inside it. Where should Save put your changes?',
+  title: choiceWord('choice.interactives.saveTarget.title'),
+  question: choiceWord('choice.interactives.saveTarget.question'),
   category: 'Files',
   help: 'edit-in-frameling',
   default: 'flplay',
   mustAsk: true,
   options: [
-    { value: 'flplay', label: 'Just update the Interactives file', detail: 'One file to look after. Interactives picks up the changes next time it loads.' },
-    { value: 'both', label: 'Also keep a .frameling file', detail: 'Asks where to save a .frameling the first time, then updates both.' },
+    { value: 'flplay', label: choiceWord('choice.interactives.saveTarget.flplay.label'), detail: choiceWord('choice.interactives.saveTarget.flplay.detail') },
+    { value: 'both', label: choiceWord('choice.interactives.saveTarget.both.label'), detail: choiceWord('choice.interactives.saveTarget.both.detail') },
   ],
 };
 export const interactivesChoices = [saveTarget];

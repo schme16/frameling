@@ -4,16 +4,17 @@
 import { useSyncExternalStore } from 'react';
 import { currentChoice, registerChoice, setChoice, useChoice } from '../core/choices';
 import { pushRecent, ROW_SCALE, sanitizeMemory, toggleId, type PickerMemory, type RowStyle } from './library';
+import { choiceWord } from '../words/choices';
 
 const KEY = 'frameling.brushPicker';
 
 registerChoice<RowStyle>({
   id: 'brushes.rows',
-  title: 'How the brush picker lists brushes',
-  question: 'How should the brush picker list your brushes?',
+  title: choiceWord('choice.brushes.rows.title'),
+  question: choiceWord('choice.brushes.rows.question'),
   options: [
-    { value: 'tip', label: 'One column', detail: 'Each brush gets a wide row: its tip and size, a long stroke, and its name.' },
-    { value: 'two', label: 'Two columns, denser', detail: 'Two brushes side by side, so more fit before you scroll.' },
+    { value: 'tip', label: choiceWord('choice.brushes.rows.tip.label'), detail: choiceWord('choice.brushes.rows.tip.detail') },
+    { value: 'two', label: choiceWord('choice.brushes.rows.two.label'), detail: choiceWord('choice.brushes.rows.two.detail') },
   ],
   default: 'tip',
   category: 'Drawing',

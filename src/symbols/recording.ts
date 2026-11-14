@@ -15,20 +15,21 @@ import { cloneDrawing } from '../timeline/edit-core';
 import { toast } from '../ui/toast';
 import { nextStart, prepareTargets, type MotionWhere } from './motions';
 import { where } from './motion-ops';
+import { choiceWord } from '../words/choices';
 
 /** When the recording runs over drawings later on the layer: take their place, or move them along. */
 export type RecordRoom = 'replace' | 'push';
 
 registerChoice<RecordRoom>({
   id: 'record.room',
-  title: 'A recorded move that runs over later drawings',
-  question: 'Your move is longer than the gap before the next drawing on this layer. What should happen?',
+  title: choiceWord('choice.record.room.title'),
+  question: choiceWord('choice.record.room.question'),
   category: 'Animation',
   default: 'replace',
   help: 'record-motion',
   options: [
-    { value: 'replace', label: 'The move takes their place', detail: 'The later drawings that it runs over are replaced by the move. Undo brings them back.', did: 'The move took the place of the drawings it ran over.' },
-    { value: 'push', label: 'Move later drawings along', detail: 'The move keeps its length and the drawings after it on this layer move later.', did: 'Later drawings moved along to make room.' },
+    { value: 'replace', label: choiceWord('choice.record.room.replace.label'), detail: choiceWord('choice.record.room.replace.detail'), did: choiceWord('choice.record.room.replace.did') },
+    { value: 'push', label: choiceWord('choice.record.room.push.label'), detail: choiceWord('choice.record.room.push.detail'), did: choiceWord('choice.record.room.push.did') },
   ],
 });
 

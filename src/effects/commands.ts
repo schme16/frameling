@@ -10,16 +10,17 @@ import { showPanel } from '../ui/dock';
 import { BLEND_MODES, EFFECTS } from './model';
 import { maskPartner } from './masks';
 import * as ops from './ops';
+import { choiceWord } from '../words/choices';
 
 export type MaskScope = 'below' | 'all';
 
 registerChoice<MaskScope>({
   id: 'effects.maskScope',
-  title: 'Using a layer as a mask',
-  question: 'This layer is going to be a mask: what is drawn on it shows the layers under it, and the rest is hidden. Which layers should it mask?',
+  title: choiceWord('choice.effects.maskScope.title'),
+  question: choiceWord('choice.effects.maskScope.question'),
   options: [
-    { value: 'below', label: 'Just the layer under it', detail: 'The mask and that one layer go into a folder together. Drag more layers into the folder to mask them too.' },
-    { value: 'all', label: 'Every layer under it', detail: 'The mask and every layer under it go into a folder together.' },
+    { value: 'below', label: choiceWord('choice.effects.maskScope.below.label'), detail: choiceWord('choice.effects.maskScope.below.detail') },
+    { value: 'all', label: choiceWord('choice.effects.maskScope.all.label'), detail: choiceWord('choice.effects.maskScope.all.detail') },
   ],
   default: 'below',
   category: 'Layers',
@@ -30,11 +31,11 @@ export type MaskStart = 'show' | 'hide';
 
 registerChoice<MaskStart>({
   id: 'effects.maskStart',
-  title: 'A new mask starts as',
-  question: 'You are adding a mask to this layer. What should it start as?',
+  title: choiceWord('choice.effects.maskStart.title'),
+  question: choiceWord('choice.effects.maskStart.question'),
   options: [
-    { value: 'show', label: 'Paint where it shows', detail: 'The mask starts empty, so the layer is hidden until you paint on the mask. What you paint is what you see.', did: 'Added a mask that shows where you paint.' },
-    { value: 'hide', label: 'Paint where it hides', detail: 'The layer shows in full, and what you paint on the mask is hidden. Like rubbing out, but you can change your mind later.', did: 'Added a mask that hides where you paint.' },
+    { value: 'show', label: choiceWord('choice.effects.maskStart.show.label'), detail: choiceWord('choice.effects.maskStart.show.detail'), did: choiceWord('choice.effects.maskStart.show.did') },
+    { value: 'hide', label: choiceWord('choice.effects.maskStart.hide.label'), detail: choiceWord('choice.effects.maskStart.hide.detail'), did: choiceWord('choice.effects.maskStart.hide.did') },
   ],
   default: 'show',
   category: 'Layers',
@@ -45,11 +46,11 @@ export type MaskLeaves = 'keep' | 'plain';
 
 registerChoice<MaskLeaves>({
   id: 'effects.maskLeavesFolder',
-  title: 'A mask that leaves its folder',
-  question: 'That mask is out of its folder now, so it reaches every layer under it. What should happen to it?',
+  title: choiceWord('choice.effects.maskLeavesFolder.title'),
+  question: choiceWord('choice.effects.maskLeavesFolder.question'),
   options: [
-    { value: 'keep', label: 'Keep it a mask', detail: 'It now shows or hides every layer under it, not just the ones in its folder.', did: 'Kept it as a mask.' },
-    { value: 'plain', label: 'Make it a plain layer again', detail: 'It stops being a mask and shows its drawing like any layer. Nothing is lost.', did: 'Made it a plain layer.' },
+    { value: 'keep', label: choiceWord('choice.effects.maskLeavesFolder.keep.label'), detail: choiceWord('choice.effects.maskLeavesFolder.keep.detail'), did: choiceWord('choice.effects.maskLeavesFolder.keep.did') },
+    { value: 'plain', label: choiceWord('choice.effects.maskLeavesFolder.plain.label'), detail: choiceWord('choice.effects.maskLeavesFolder.plain.detail'), did: choiceWord('choice.effects.maskLeavesFolder.plain.did') },
   ],
   default: 'keep',
   category: 'Layers',

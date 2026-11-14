@@ -1,0 +1,686 @@
+{
+  "$about": "Everything the quests say: each one's name, summary, badge and finishing line, and every step's instruction, reason and hint. Edit the text freely. Words in {curly} brackets are filled in by the app, so keep them, spelled the same. The steps themselves (what counts as done, what to ring) stay in code. npm run words:apply merges edits in and refuses a lost placeholder.",
+  "quest.camera-move.title": { "text": "Camera move", "where": "Quest \"Camera move\": its name, on the welcome sheet, in the Quests panel and on the Great work card." },
+  "quest.camera-move.summary": {
+    "text": "Pan a camera across a valley, with far hills that drift slower.",
+    "where": "Quest \"Camera move\": the one friendly sentence under its name, on the welcome sheet and in the Quests panel."
+  },
+  "quest.camera-move.badge": { "text": "Director", "where": "Quest \"Camera move\": the name of the badge you earn for finishing it." },
+  "quest.camera-move.finish": {
+    "text": "That's a real camera move with parallax. Exports always see what the camera sees.",
+    "where": "Quest \"Camera move\": the line on the Great work card once you have finished it."
+  },
+  "quest.camera-move.add.say": { "text": "Add a camera: Frames and motion > Camera > Add a camera.", "where": "Quest \"Camera move\", step 1 (add): what the guide says." },
+  "quest.camera-move.add.why": {
+    "text": "The camera is a layer of its own. Its frame shows what an export will show.",
+    "where": "Quest \"Camera move\", step 1 (add): the quiet line under it saying why."
+  },
+  "quest.camera-move.add.hint": { "text": "The Camera panel on the right has an Add a camera button too.", "where": "Quest \"Camera move\", step 1 (add): said when nothing has happened for a while." },
+  "quest.camera-move.move.say": { "text": "This is the last frame. Drag the camera frame to the right, over the house.", "where": "Quest \"Camera move\", step 2 (move): what the guide says." },
+  "quest.camera-move.move.why": {
+    "text": "Moving the camera on another frame gives that frame a camera key of its own.",
+    "where": "Quest \"Camera move\", step 2 (move): the quiet line under it saying why."
+  },
+  "quest.camera-move.move.hint": {
+    "text": "Press inside the camera frame (the box with the dark edge) and drag.",
+    "where": "Quest \"Camera move\", step 2 (move): said when nothing has happened for a while."
+  },
+  "quest.camera-move.glide.say": { "text": "Now make it glide: on frame 1, press Ctrl+Shift+T for in-betweens.", "where": "Quest \"Camera move\", step 3 (glide): what the guide says." },
+  "quest.camera-move.glide.why": {
+    "text": "Without in-betweens the camera would jump at the last frame. With them it pans smoothly.",
+    "where": "Quest \"Camera move\", step 3 (glide): the quiet line under it saying why."
+  },
+  "quest.camera-move.glide.hint": {
+    "text": "Or right-click the camera key on frame 1 in the timeline and choose Make in-betweens.",
+    "where": "Quest \"Camera move\", step 3 (glide): said when nothing has happened for a while."
+  },
+  "quest.camera-move.depth.say": { "text": "Push the Far hills back: in the Camera panel, set their distance to 3.", "where": "Quest \"Camera move\", step 4 (depth): what the guide says." },
+  "quest.camera-move.depth.why": {
+    "text": "Far things drift slower than near ones as the camera passes. That is called parallax.",
+    "where": "Quest \"Camera move\", step 4 (depth): the quiet line under it saying why."
+  },
+  "quest.camera-move.depth.hint": {
+    "text": "Each layer has a box under \"Distance from the camera\" in the Camera panel. 0 is right on the stage.",
+    "where": "Quest \"Camera move\", step 4 (depth): said when nothing has happened for a while."
+  },
+  "quest.camera-move.look.say": { "text": "Press Shift+C to look through the camera.", "where": "Quest \"Camera move\", step 5 (look): what the guide says." },
+  "quest.camera-move.look.hint": {
+    "text": "View > Look through the camera does the same. Press it again to see the whole stage.",
+    "where": "Quest \"Camera move\", step 5 (look): said when nothing has happened for a while."
+  },
+  "quest.camera-move.play.say": { "text": "Press play. Lights, camera, action!", "where": "Quest \"Camera move\", step 6 (play): what the guide says." },
+  "quest.camera-move.play.hint": { "text": "The big triangle in the timeline, or press Enter.", "where": "Quest \"Camera move\", step 6 (play): said when nothing has happened for a while." },
+  "quest.turn-the-page.title": { "text": "Turn the page", "where": "Quest \"Turn the page\": its name, on the welcome sheet, in the Quests panel and on the Great work card." },
+  "quest.turn-the-page.summary": {
+    "text": "Turn the canvas to any angle, the way you turn a sheet of paper, then put it straight again.",
+    "where": "Quest \"Turn the page\": the one friendly sentence under its name, on the welcome sheet and in the Quests panel."
+  },
+  "quest.turn-the-page.badge": { "text": "Page Turner", "where": "Quest \"Turn the page\": the name of the badge you earn for finishing it." },
+  "quest.turn-the-page.finish": {
+    "text": "Turn it whenever a stroke feels awkward. It only changes how you look at the page, never the drawing or what you export.",
+    "where": "Quest \"Turn the page\": the line on the Great work card once you have finished it."
+  },
+  "quest.turn-the-page.turn.say": {
+    "text": "Hold Alt and drag round the middle of the canvas, with the Brush or Pencil. The page turns with your pointer.",
+    "where": "Quest \"Turn the page\", step 1 (turn): what the guide says."
+  },
+  "quest.turn-the-page.turn.why": {
+    "text": "Painters turn the paper to reach a stroke comfortably. Alt and a plain click still picks a colour on a pixel layer. Hold Shift as you drag to turn in neat 15 degree steps.",
+    "where": "Quest \"Turn the page\", step 1 (turn): the quiet line under it saying why."
+  },
+  "quest.turn-the-page.turn.hint": {
+    "text": "Press Alt, then drag in a slow circle around the middle of the canvas. Alt and . (full stop) turns it a little too.",
+    "where": "Quest \"Turn the page\", step 1 (turn): said when nothing has happened for a while."
+  },
+  "quest.turn-the-page.straight.say": {
+    "text": "Press Straighten on the note at the top of the canvas to put the page back.",
+    "where": "Quest \"Turn the page\", step 2 (straight): what the guide says."
+  },
+  "quest.turn-the-page.straight.why": {
+    "text": "The note stays while the page is turned, so you never mistake a turned view for a crooked drawing. Ctrl+Shift+0 does the same.",
+    "where": "Quest \"Turn the page\", step 2 (straight): the quiet line under it saying why."
+  },
+  "quest.turn-the-page.straight.hint": { "text": "It is the button at the top of the canvas.", "where": "Quest \"Turn the page\", step 2 (straight): said when nothing has happened for a while." },
+  "quest.make-it-glow.title": { "text": "Make it glow", "where": "Quest \"Make it glow\": its name, on the welcome sheet, in the Quests panel and on the Great work card." },
+  "quest.make-it-glow.summary": {
+    "text": "Light up a lantern with a glow, a blend mode and a flicker.",
+    "where": "Quest \"Make it glow\": the one friendly sentence under its name, on the welcome sheet and in the Quests panel."
+  },
+  "quest.make-it-glow.badge": { "text": "Lamplighter", "where": "Quest \"Make it glow\": the name of the badge you earn for finishing it." },
+  "quest.make-it-glow.finish": {
+    "text": "Glow, blend and a flicker: the same three tricks make magic, neon signs and fireflies.",
+    "where": "Quest \"Make it glow\": the line on the Great work card once you have finished it."
+  },
+  "quest.make-it-glow.glow.say": { "text": "The Lantern layer is picked. In the Effects panel, add a Glow.", "where": "Quest \"Make it glow\", step 1 (glow): what the guide says." },
+  "quest.make-it-glow.glow.why": {
+    "text": "An effect changes how a whole layer looks, without touching the drawing. Take it off any time.",
+    "where": "Quest \"Make it glow\", step 1 (glow): the quiet line under it saying why."
+  },
+  "quest.make-it-glow.glow.hint": {
+    "text": "Under Add an effect at the bottom of the Effects panel, press Glow.",
+    "where": "Quest \"Make it glow\", step 1 (glow): said when nothing has happened for a while."
+  },
+  "quest.make-it-glow.size.say": { "text": "Make the glow bigger: drag its Size past 20.", "where": "Quest \"Make it glow\", step 2 (size): what the guide says." },
+  "quest.make-it-glow.size.hint": { "text": "Size is the second slider under Glow.", "where": "Quest \"Make it glow\", step 2 (size): said when nothing has happened for a while." },
+  "quest.make-it-glow.blend.say": { "text": "Now pick the Light layer and set its blend mode to Add.", "where": "Quest \"Make it glow\", step 3 (blend): what the guide says." },
+  "quest.make-it-glow.blend.why": {
+    "text": "Add brightens whatever is under it, the way real light does. Normal just covers it up.",
+    "where": "Quest \"Make it glow\", step 3 (blend): the quiet line under it saying why."
+  },
+  "quest.make-it-glow.blend.hint": {
+    "text": "The blend button is at the top of the Effects panel. It says Normal now.",
+    "where": "Quest \"Make it glow\", step 3 (blend): said when nothing has happened for a while."
+  },
+  "quest.make-it-glow.flicker.say": {
+    "text": "Make it flicker: back on the Lantern, turn on Animate for the glow, go to frame 7 and change its Strength.",
+    "where": "Quest \"Make it glow\", step 4 (flicker): what the guide says."
+  },
+  "quest.make-it-glow.flicker.why": {
+    "text": "Animated effect settings glide from one key to the next, just like drawings do.",
+    "where": "Quest \"Make it glow\", step 4 (flicker): the quiet line under it saying why."
+  },
+  "quest.make-it-glow.flicker.hint": {
+    "text": "The Animate button next to the word Glow turns animating on. Then move the playhead and drag Strength.",
+    "where": "Quest \"Make it glow\", step 4 (flicker): said when nothing has happened for a while."
+  },
+  "quest.make-it-glow.play.say": { "text": "Press play and watch it flicker.", "where": "Quest \"Make it glow\", step 5 (play): what the guide says." },
+  "quest.make-it-glow.play.hint": { "text": "The big triangle in the timeline, or press Enter.", "where": "Quest \"Make it glow\", step 5 (play): said when nothing has happened for a while." },
+  "quest.particle-party.title": { "text": "Particle party", "where": "Quest \"Particle party\": its name, on the welcome sheet, in the Quests panel and on the Great work card." },
+  "quest.particle-party.summary": {
+    "text": "Throw some confetti, then make it your own.",
+    "where": "Quest \"Particle party\": the one friendly sentence under its name, on the welcome sheet and in the Quests panel."
+  },
+  "quest.particle-party.badge": { "text": "Confetti Cannon", "where": "Quest \"Particle party\": the name of the badge you earn for finishing it." },
+  "quest.particle-party.finish": {
+    "text": "Particles are worked out fresh for every frame, so they always look the same when you scrub, play or export.",
+    "where": "Quest \"Particle party\": the line on the Great work card once you have finished it."
+  },
+  "quest.particle-party.add.say": { "text": "Add some confetti: in the Particles panel, press Confetti.", "where": "Quest \"Particle party\", step 1 (add): what the guide says." },
+  "quest.particle-party.add.why": {
+    "text": "A preset is a starting point. Rain, snow, smoke and sparkles are there too.",
+    "where": "Quest \"Particle party\", step 1 (add): the quiet line under it saying why."
+  },
+  "quest.particle-party.add.hint": {
+    "text": "Tools and layers > Effects > Add particles: Confetti in the menu does it too.",
+    "where": "Quest \"Particle party\", step 1 (add): said when nothing has happened for a while."
+  },
+  "quest.particle-party.motion.say": {
+    "text": "Change how it flies. Drag Gravity, Speed or Spread in the Particles panel.",
+    "where": "Quest \"Particle party\", step 2 (motion): what the guide says."
+  },
+  "quest.particle-party.motion.why": {
+    "text": "More gravity and it falls faster. More spread and it fans out wider.",
+    "where": "Quest \"Particle party\", step 2 (motion): the quiet line under it saying why."
+  },
+  "quest.particle-party.motion.hint": {
+    "text": "Pick the confetti with the Select tool if the panel says nothing is selected.",
+    "where": "Quest \"Particle party\", step 2 (motion): said when nothing has happened for a while."
+  },
+  "quest.particle-party.colour.say": {
+    "text": "Give it your own colours with the two colour boxes in the Particles panel.",
+    "where": "Quest \"Particle party\", step 3 (colour): what the guide says."
+  },
+  "quest.particle-party.colour.why": {
+    "text": "Each piece takes its colour from these two: a mix of them, or one turning into the other as it ages.",
+    "where": "Quest \"Particle party\", step 3 (colour): the quiet line under it saying why."
+  },
+  "quest.particle-party.colour.hint": {
+    "text": "The colour boxes are further down the Particles panel.",
+    "where": "Quest \"Particle party\", step 3 (colour): said when nothing has happened for a while."
+  },
+  "quest.particle-party.shuffle.say": { "text": "Press Shuffle for a new random spread with the same settings.", "where": "Quest \"Particle party\", step 4 (shuffle): what the guide says." },
+  "quest.particle-party.shuffle.hint": {
+    "text": "Shuffle is the button at the top of the Particles panel.",
+    "where": "Quest \"Particle party\", step 4 (shuffle): said when nothing has happened for a while."
+  },
+  "quest.particle-party.play.say": { "text": "Press play. Party time!", "where": "Quest \"Particle party\", step 5 (play): what the guide says." },
+  "quest.particle-party.play.hint": { "text": "The big triangle in the timeline, or press Enter.", "where": "Quest \"Particle party\", step 5 (play): said when nothing has happened for a while." },
+  "quest.shade-and-shine.title": { "text": "Shade and shine", "where": "Quest \"Shade and shine\": its name, on the welcome sheet, in the Quests panel and on the Great work card." },
+  "quest.shade-and-shine.summary": {
+    "text": "Draw a mirrored blob, shade it with the palette and give it a crisp outline.",
+    "where": "Quest \"Shade and shine\": the one friendly sentence under its name, on the welcome sheet and in the Quests panel."
+  },
+  "quest.shade-and-shine.badge": { "text": "Shade Maker", "where": "Quest \"Shade and shine\": the name of the badge you earn for finishing it." },
+  "quest.shade-and-shine.finish": {
+    "text": "Shaded, outlined and symmetrical. That is most of pixel art! Try the Dither brush (Shift+B) next for texture.",
+    "where": "Quest \"Shade and shine\": the line on the Great work card once you have finished it."
+  },
+  "quest.shade-and-shine.mirror.say": { "text": "Turn on mirror drawing: press Shift+M.", "where": "Quest \"Shade and shine\", step 1 (mirror): what the guide says." },
+  "quest.shade-and-shine.mirror.why": {
+    "text": "A dashed line appears down the middle. Whatever you draw on one side shows up on the other.",
+    "where": "Quest \"Shade and shine\", step 1 (mirror): the quiet line under it saying why."
+  },
+  "quest.shade-and-shine.outline.say": {
+    "text": "Pick the pencil (P) and draw half a round blob. Watch the other half draw itself.",
+    "where": "Quest \"Shade and shine\", step 2 (outline): what the guide says."
+  },
+  "quest.shade-and-shine.outline.hint": {
+    "text": "Make it a closed shape, so the bucket can fill it next.",
+    "where": "Quest \"Shade and shine\", step 2 (outline): said when nothing has happened for a while."
+  },
+  "quest.shade-and-shine.fill.say": {
+    "text": "Fill the inside with the paint bucket (G). It pours the fill colour, a palette green.",
+    "where": "Quest \"Shade and shine\", step 3 (fill): what the guide says."
+  },
+  "quest.shade-and-shine.fill.hint": {
+    "text": "Click inside the blob. If the green spills out, undo and close the gap.",
+    "where": "Quest \"Shade and shine\", step 3 (fill): said when nothing has happened for a while."
+  },
+  "quest.shade-and-shine.shade.say": { "text": "Pick Shade (S), choose Darker, and brush along the bottom of the blob.", "where": "Quest \"Shade and shine\", step 4 (shade): what the guide says." },
+  "quest.shade-and-shine.shade.why": {
+    "text": "Each pass moves a pixel one step darker along its palette ramp. Bottoms are in shadow.",
+    "where": "Quest \"Shade and shine\", step 4 (shade): the quiet line under it saying why."
+  },
+  "quest.shade-and-shine.shade.hint": {
+    "text": "Shade only changes palette colours, so your outline stays as it is.",
+    "where": "Quest \"Shade and shine\", step 4 (shade): said when nothing has happened for a while."
+  },
+  "quest.shade-and-shine.shine.say": { "text": "Now switch Shade to Lighter and dab a highlight near the top.", "where": "Quest \"Shade and shine\", step 5 (shine): what the guide says." },
+  "quest.shade-and-shine.shine.hint": {
+    "text": "One or two pixels is plenty. Small highlights read best.",
+    "where": "Quest \"Shade and shine\", step 5 (shine): said when nothing has happened for a while."
+  },
+  "quest.shade-and-shine.edge.say": {
+    "text": "Finish with an outline round the whole thing: Pixel tools menu, then Add outline (outside).",
+    "where": "Quest \"Shade and shine\", step 6 (edge): what the guide says."
+  },
+  "quest.shade-and-shine.edge.why": {
+    "text": "It uses the stroke colour. An outline makes a sprite pop on any background.",
+    "where": "Quest \"Shade and shine\", step 6 (edge): the quiet line under it saying why."
+  },
+  "quest.one-tiny-picture.title": { "text": "One tiny picture", "where": "Quest \"One tiny picture\": its name, on the welcome sheet, in the Quests panel and on the Great work card." },
+  "quest.one-tiny-picture.summary": {
+    "text": "Draw a little heart on a 16 by 16 picture, give it a second colour, and export it as a PNG.",
+    "where": "Quest \"One tiny picture\": the one friendly sentence under its name, on the welcome sheet and in the Quests panel."
+  },
+  "quest.one-tiny-picture.badge": { "text": "Icon Maker", "where": "Quest \"One tiny picture\": the name of the badge you earn for finishing it." },
+  "quest.one-tiny-picture.finish": {
+    "text": "A whole icon from a handful of pixels! Keep going: a coin, a key, a potion. Quill is cheering.",
+    "where": "Quest \"One tiny picture\": the line on the Great work card once you have finished it."
+  },
+  "quest.one-tiny-picture.draw.say": { "text": "Draw a little heart with the Pencil. Every click paints one chunky pixel.", "where": "Quest \"One tiny picture\", step 1 (draw): what the guide says." },
+  "quest.one-tiny-picture.draw.why": {
+    "text": "The grid is 16 by 16, so a heart is only a few pixels wide. Wobbly is fine.",
+    "where": "Quest \"One tiny picture\", step 1 (draw): the quiet line under it saying why."
+  },
+  "quest.one-tiny-picture.draw.hint": {
+    "text": "Click and drag over the grid. Paint is the front square at the top of the Palette.",
+    "where": "Quest \"One tiny picture\", step 1 (draw): said when nothing has happened for a while."
+  },
+  "quest.one-tiny-picture.swap.say": {
+    "text": "Press X to swap Paint and Back. Watch the two big squares at the top of the Palette trade places.",
+    "where": "Quest \"One tiny picture\", step 2 (swap): what the guide says."
+  },
+  "quest.one-tiny-picture.swap.why": {
+    "text": "Paint is the colour you draw with. Back is your second colour, always one key away.",
+    "where": "Quest \"One tiny picture\", step 2 (swap): the quiet line under it saying why."
+  },
+  "quest.one-tiny-picture.back.say": { "text": "Right-click the grid to paint with Back. Dab a few pixels for a shine.", "where": "Quest \"One tiny picture\", step 3 (back): what the guide says." },
+  "quest.one-tiny-picture.back.hint": {
+    "text": "Right-click and drag, just like drawing. A trackpad does it with a two finger tap.",
+    "where": "Quest \"One tiny picture\", step 3 (back): said when nothing has happened for a while."
+  },
+  "quest.one-tiny-picture.export.say": { "text": "Open Export and choose PNG picture (it lives under More formats).", "where": "Quest \"One tiny picture\", step 4 (export): what the guide says." },
+  "quest.one-tiny-picture.export.why": {
+    "text": "You do not have to save anything: close the window whenever you like.",
+    "where": "Quest \"One tiny picture\", step 4 (export): the quiet line under it saying why."
+  },
+  "quest.one-tiny-picture.export.hint": {
+    "text": "File, then Export. PNG picture is the plain still image.",
+    "where": "Quest \"One tiny picture\", step 4 (export): said when nothing has happened for a while."
+  },
+  "quest.board-by-board.title": { "text": "Board by board", "where": "Quest \"Board by board\": its name, on the welcome sheet, in the Quests panel and on the Great work card." },
+  "quest.board-by-board.summary": {
+    "text": "Draw three frames on three boards, play them in order, and export them as a sprite sheet.",
+    "where": "Quest \"Board by board\": the one friendly sentence under its name, on the welcome sheet and in the Quests panel."
+  },
+  "quest.board-by-board.badge": { "text": "Storyboarder", "where": "Quest \"Board by board\": the name of the badge you earn for finishing it." },
+  "quest.board-by-board.finish": {
+    "text": "Three boards, one animation! Each board is a frame, and the sheet holds them all in order.",
+    "where": "Quest \"Board by board\": the line on the Great work card once you have finished it."
+  },
+  "quest.board-by-board.one.say": {
+    "text": "Draw something on Frame 1 with the Pencil. It is the first frame of your animation.",
+    "where": "Quest \"Board by board\", step 1 (one): what the guide says."
+  },
+  "quest.board-by-board.one.hint": {
+    "text": "A blob, a face, a ball: anything that can move a little next.",
+    "where": "Quest \"Board by board\", step 1 (one): said when nothing has happened for a while."
+  },
+  "quest.board-by-board.two.say": { "text": "Click Frame 2 in the Artboards panel and draw it a little different.", "where": "Quest \"Board by board\", step 2 (two): what the guide says." },
+  "quest.board-by-board.two.why": { "text": "Every frame gets its own board. Tidy!", "where": "Quest \"Board by board\", step 2 (two): the quiet line under it saying why." },
+  "quest.board-by-board.two.hint": {
+    "text": "Move something a pixel or two, so it looks like it is moving.",
+    "where": "Quest \"Board by board\", step 2 (two): said when nothing has happened for a while."
+  },
+  "quest.board-by-board.three.say": { "text": "Once more: Frame 3.", "where": "Quest \"Board by board\", step 3 (three): what the guide says." },
+  "quest.board-by-board.play.say": { "text": "Press Play all in order in the Artboards panel, and watch them go.", "where": "Quest \"Board by board\", step 4 (play): what the guide says." },
+  "quest.board-by-board.sheet.say": { "text": "Open Export and choose Sprite sheet. Every board becomes one frame.", "where": "Quest \"Board by board\", step 5 (sheet): what the guide says." },
+  "quest.board-by-board.sheet.hint": { "text": "The Sprite sheet card says \"For games\".", "where": "Quest \"Board by board\", step 5 (sheet): said when nothing has happened for a while." },
+  "quest.cast-on-a-sheet.title": { "text": "A cast on one sheet", "where": "Quest \"A cast on one sheet\": its name, on the welcome sheet, in the Quests panel and on the Great work card." },
+  "quest.cast-on-a-sheet.summary": {
+    "text": "Draw a hero and a coin on their own boards, then pack them on one sheet for your game engine.",
+    "where": "Quest \"A cast on one sheet\": the one friendly sentence under its name, on the welcome sheet and in the Quests panel."
+  },
+  "quest.cast-on-a-sheet.badge": { "text": "Sheet Master", "where": "Quest \"A cast on one sheet\": the name of the badge you earn for finishing it." },
+  "quest.cast-on-a-sheet.finish": {
+    "text": "A whole cast on one sheet, ready for Godot, Unity or Phaser. Add an enemy next!",
+    "where": "Quest \"A cast on one sheet\": the line on the Great work card once you have finished it."
+  },
+  "quest.cast-on-a-sheet.hero.say": { "text": "Draw your hero on the Hero board with the Pencil.", "where": "Quest \"A cast on one sheet\", step 1 (hero): what the guide says." },
+  "quest.cast-on-a-sheet.hero.why": {
+    "text": "Every board is a sprite of its own. This one is already named Hero.",
+    "where": "Quest \"A cast on one sheet\", step 1 (hero): the quiet line under it saying why."
+  },
+  "quest.cast-on-a-sheet.item.say": { "text": "Click Item in the Artboards panel and draw a coin.", "where": "Quest \"A cast on one sheet\", step 2 (item): what the guide says." },
+  "quest.cast-on-a-sheet.item.hint": { "text": "A round blob with a shine is a fine coin.", "where": "Quest \"A cast on one sheet\", step 2 (item): said when nothing has happened for a while." },
+  "quest.cast-on-a-sheet.sheet.say": {
+    "text": "Open Export and choose Sprite sheet. The boards pack onto one picture, with the data for your engine.",
+    "where": "Quest \"A cast on one sheet\", step 3 (sheet): what the guide says."
+  },
+  "quest.cast-on-a-sheet.sheet.hint": {
+    "text": "The Sprite sheet card says \"For games\". Pick Godot, Unity, Phaser or PixiJS under it.",
+    "where": "Quest \"A cast on one sheet\", step 3 (sheet): said when nothing has happened for a while."
+  },
+  "quest.first-animation.title": {
+    "text": "Your first animation in 60 seconds",
+    "where": "Quest \"Your first animation in 60 seconds\": its name, on the welcome sheet, in the Quests panel and on the Great work card."
+  },
+  "quest.first-animation.summary": {
+    "text": "Draw a doodle, draw it again a little different, that's animation!",
+    "where": "Quest \"Your first animation in 60 seconds\": the one friendly sentence under its name, on the welcome sheet and in the Quests panel."
+  },
+  "quest.first-animation.badge": { "text": "Flipbooker", "where": "Quest \"Your first animation in 60 seconds\": the name of the badge you earn for finishing it." },
+  "quest.bouncing-ball.title": { "text": "Bouncing ball", "where": "Quest \"Bouncing ball\": its name, on the welcome sheet, in the Quests panel and on the Great work card." },
+  "quest.bouncing-ball.summary": {
+    "text": "Take a look inside the classic first exercise, then change its timing.",
+    "where": "Quest \"Bouncing ball\": the one friendly sentence under its name, on the welcome sheet and in the Quests panel."
+  },
+  "quest.bouncing-ball.badge": { "text": "Squash & Stretch", "where": "Quest \"Bouncing ball\": the name of the badge you earn for finishing it." },
+  "quest.fill-it-in.title": { "text": "Fill it in", "where": "Quest \"Fill it in\": its name, on the welcome sheet, in the Quests panel and on the Great work card." },
+  "quest.fill-it-in.summary": {
+    "text": "Colour a shape with the paint bucket, even when the outline has a gap.",
+    "where": "Quest \"Fill it in\": the one friendly sentence under its name, on the welcome sheet and in the Quests panel."
+  },
+  "quest.fill-it-in.badge": { "text": "Paint Pot", "where": "Quest \"Fill it in\": the name of the badge you earn for finishing it." },
+  "quest.pixel-pal.title": { "text": "Pixel pal", "where": "Quest \"Pixel pal\": its name, on the welcome sheet, in the Quests panel and on the Great work card." },
+  "quest.pixel-pal.summary": {
+    "text": "Make a tiny two-frame sprite on a chunky pixel grid.",
+    "where": "Quest \"Pixel pal\": the one friendly sentence under its name, on the welcome sheet and in the Quests panel."
+  },
+  "quest.pixel-pal.badge": { "text": "Pixel Pal", "where": "Quest \"Pixel pal\": the name of the badge you earn for finishing it." },
+  "quest.tiles.title": { "text": "Tiles", "where": "Quest \"Tiles\": its name, on the welcome sheet, in the Quests panel and on the Great work card." },
+  "quest.tiles.summary": {
+    "text": "Draw a tile that repeats without a seam, then paint a little level with it.",
+    "where": "Quest \"Tiles\": the one friendly sentence under its name, on the welcome sheet and in the Quests panel."
+  },
+  "quest.tiles.badge": { "text": "Level Builder", "where": "Quest \"Tiles\": the name of the badge you earn for finishing it." },
+  "quest.first-tween.title": { "text": "Your first tween", "where": "Quest \"Your first tween\": its name, on the welcome sheet, in the Quests panel and on the Great work card." },
+  "quest.first-tween.summary": {
+    "text": "Draw something once and let Frameling draw all the frames as it glides across.",
+    "where": "Quest \"Your first tween\": the one friendly sentence under its name, on the welcome sheet and in the Quests panel."
+  },
+  "quest.first-tween.badge": { "text": "Smooth Mover", "where": "Quest \"Your first tween\": the name of the badge you earn for finishing it." },
+  "quest.share-it.title": { "text": "Share it", "where": "Quest \"Share it\": its name, on the welcome sheet, in the Quests panel and on the Great work card." },
+  "quest.share-it.summary": {
+    "text": "See how to turn your animation into a GIF anyone can open.",
+    "where": "Quest \"Share it\": the one friendly sentence under its name, on the welcome sheet and in the Quests panel."
+  },
+  "quest.share-it.badge": { "text": "Showtime", "where": "Quest \"Share it\": the name of the badge you earn for finishing it." },
+  "quest.bones-and-pose.title": { "text": "Bones and a pose", "where": "Quest \"Bones and a pose\": its name, on the welcome sheet, in the Quests panel and on the Great work card." },
+  "quest.bones-and-pose.summary": {
+    "text": "Give an arm a skeleton, then wave it by dragging, like a puppet.",
+    "where": "Quest \"Bones and a pose\": the one friendly sentence under its name, on the welcome sheet and in the Quests panel."
+  },
+  "quest.bones-and-pose.badge": { "text": "Puppeteer", "where": "Quest \"Bones and a pose\": the name of the badge you earn for finishing it." },
+  "quest.say-it-with-text.title": { "text": "Say it with text", "where": "Quest \"Say it with text\": its name, on the welcome sheet, in the Quests panel and on the Great work card." },
+  "quest.say-it-with-text.summary": {
+    "text": "Type a word and make its letters pop in and wave.",
+    "where": "Quest \"Say it with text\": the one friendly sentence under its name, on the welcome sheet and in the Quests panel."
+  },
+  "quest.say-it-with-text.badge": { "text": "Wordsmith", "where": "Quest \"Say it with text\": the name of the badge you earn for finishing it." },
+  "quest.first-animation.finish": {
+    "text": "You made something move. That is the whole trick, everything else is more of it.",
+    "where": "Quest \"Your first animation in 60 seconds\": the line on the Great work card once you have finished it."
+  },
+  "quest.first-animation.draw.say": {
+    "text": "Draw something on the page. A ball, a blob, a very small cat.",
+    "where": "Quest \"Your first animation in 60 seconds\", step 1 (draw): what the guide says."
+  },
+  "quest.first-animation.draw.why": {
+    "text": "The brush is already picked for you. An animation is just a few drawings shown one after another.",
+    "where": "Quest \"Your first animation in 60 seconds\", step 1 (draw): the quiet line under it saying why."
+  },
+  "quest.first-animation.draw.hint": {
+    "text": "Click and drag on the white page. Anything at all works.",
+    "where": "Quest \"Your first animation in 60 seconds\", step 1 (draw): said when nothing has happened for a while."
+  },
+  "quest.first-animation.next-frame.say": {
+    "text": "Now make the next drawing. Press D to copy this one onto the next frame.",
+    "where": "Quest \"Your first animation in 60 seconds\", step 2 (next-frame): what the guide says."
+  },
+  "quest.first-animation.next-frame.why": {
+    "text": "Copying gives you something to change a little, which is easier than starting over.",
+    "where": "Quest \"Your first animation in 60 seconds\", step 2 (next-frame): the quiet line under it saying why."
+  },
+  "quest.first-animation.next-frame.hint": {
+    "text": "The Copy button in the timeline does the same as pressing D.",
+    "where": "Quest \"Your first animation in 60 seconds\", step 2 (next-frame): said when nothing has happened for a while."
+  },
+  "quest.first-animation.change.say": {
+    "text": "Change it a little. Move it along, tilt it, add a squiggle.",
+    "where": "Quest \"Your first animation in 60 seconds\", step 3 (change): what the guide says."
+  },
+  "quest.first-animation.change.why": {
+    "text": "See the faint ghost of the last drawing? That is onion skin. It is switched on so you can see where you came from.",
+    "where": "Quest \"Your first animation in 60 seconds\", step 3 (change): the quiet line under it saying why."
+  },
+  "quest.first-animation.change.hint": {
+    "text": "Draw one more line on this frame, or select the drawing and drag it a little way along.",
+    "where": "Quest \"Your first animation in 60 seconds\", step 3 (change): said when nothing has happened for a while."
+  },
+  "quest.first-animation.play.say": { "text": "Press play and watch it go!", "where": "Quest \"Your first animation in 60 seconds\", step 4 (play): what the guide says." },
+  "quest.first-animation.play.why": {
+    "text": "Each drawing is held for 2 frames (animators call it \"on twos\"), and the timeline is trimmed to your drawings, so it loops with no blank frames.",
+    "where": "Quest \"Your first animation in 60 seconds\", step 4 (play): the quiet line under it saying why."
+  },
+  "quest.first-animation.play.hint": {
+    "text": "The big triangle in the timeline, or press Enter.",
+    "where": "Quest \"Your first animation in 60 seconds\", step 4 (play): said when nothing has happened for a while."
+  },
+  "quest.bouncing-ball.finish": {
+    "text": "Squash, stretch and timing: that is most of what makes a ball feel heavy or light.",
+    "where": "Quest \"Bouncing ball\": the line on the Great work card once you have finished it."
+  },
+  "quest.bouncing-ball.open.say": { "text": "Open the Bouncing ball example.", "where": "Quest \"Bouncing ball\", step 1 (open): what the guide says." },
+  "quest.bouncing-ball.open.why": {
+    "text": "An example is a normal drawing, so you can poke at anything. The original is never touched.",
+    "where": "Quest \"Bouncing ball\", step 1 (open): the quiet line under it saying why."
+  },
+  "quest.bouncing-ball.open.hint": { "text": "Find the ball card in the examples and press it.", "where": "Quest \"Bouncing ball\", step 1 (open): said when nothing has happened for a while." },
+  "quest.bouncing-ball.scrub.say": {
+    "text": "Scrub through it. Press . and , to step a frame at a time, or click along the ruler.",
+    "where": "Quest \"Bouncing ball\", step 2 (scrub): what the guide says."
+  },
+  "quest.bouncing-ball.scrub.hint": {
+    "text": "Click the numbered strip at the top of the timeline and drag.",
+    "where": "Quest \"Bouncing ball\", step 2 (scrub): said when nothing has happened for a while."
+  },
+  "quest.bouncing-ball.squash.say": { "text": "Find the squashed ball. It is frame 9, right when it hits the ground.", "where": "Quest \"Bouncing ball\", step 3 (squash): what the guide says." },
+  "quest.bouncing-ball.squash.why": {
+    "text": "The pink marker called contact is there too. Squashing on impact is what makes it look like it has weight.",
+    "where": "Quest \"Bouncing ball\", step 3 (squash): the quiet line under it saying why."
+  },
+  "quest.bouncing-ball.squash.hint": {
+    "text": "Press . until the counter says Frame 9, or click the contact marker.",
+    "where": "Quest \"Bouncing ball\", step 3 (squash): said when nothing has happened for a while."
+  },
+  "quest.bouncing-ball.hold.say": { "text": "Hold this drawing for longer. Pick 2 under \"Hold for\".", "where": "Quest \"Bouncing ball\", step 4 (hold): what the guide says." },
+  "quest.bouncing-ball.hold.why": {
+    "text": "Holding a drawing on twos means it shows for two frames. Longer on the ground feels heavier.",
+    "where": "Quest \"Bouncing ball\", step 4 (hold): the quiet line under it saying why."
+  },
+  "quest.bouncing-ball.hold.hint": {
+    "text": "Alt+2 does it from the keyboard. You can undo it afterwards.",
+    "where": "Quest \"Bouncing ball\", step 4 (hold): said when nothing has happened for a while."
+  },
+  "quest.bouncing-ball.play.say": { "text": "Press play and feel the difference.", "where": "Quest \"Bouncing ball\", step 5 (play): what the guide says." },
+  "quest.fill-it-in.finish": {
+    "text": "Paint goes under your lines, so you can fix a colour later without redrawing a thing.",
+    "where": "Quest \"Fill it in\": the line on the Great work card once you have finished it."
+  },
+  "quest.fill-it-in.shape.say": { "text": "Draw a closed shape: a circle, a blob, a house. Join the line up where it started.", "where": "Quest \"Fill it in\", step 1 (shape): what the guide says." },
+  "quest.fill-it-in.shape.why": {
+    "text": "The bucket fills an area with lines all the way round it. The Ellipse and Rectangle tools always close up.",
+    "where": "Quest \"Fill it in\", step 1 (shape): the quiet line under it saying why."
+  },
+  "quest.fill-it-in.shape.hint": {
+    "text": "Go all the way round and finish on the spot where you began.",
+    "where": "Quest \"Fill it in\", step 1 (shape): said when nothing has happened for a while."
+  },
+  "quest.fill-it-in.bucket.say": { "text": "Pick the paint bucket.", "where": "Quest \"Fill it in\", step 2 (bucket): what the guide says." },
+  "quest.fill-it-in.bucket.hint": { "text": "It is the bucket in the toolbar, or press G.", "where": "Quest \"Fill it in\", step 2 (bucket): said when nothing has happened for a while." },
+  "quest.fill-it-in.fill.say": { "text": "Click inside your shape.", "where": "Quest \"Fill it in\", step 3 (fill): what the guide says." },
+  "quest.fill-it-in.fill.why": {
+    "text": "The bucket pours the fill colour: the solid box in the Colours panel. We picked a sunny yellow, but choose any colour you like. The paint tucks in behind the line.",
+    "where": "Quest \"Fill it in\", step 3 (fill): the quiet line under it saying why."
+  },
+  "quest.fill-it-in.fill.hint": {
+    "text": "If nothing happens, the line may have a gap. The next step is about that.",
+    "where": "Quest \"Fill it in\", step 3 (fill): said when nothing has happened for a while."
+  },
+  "quest.fill-it-in.gap.say": { "text": "Try a different \"Close gaps\" setting in the tool options.", "where": "Quest \"Fill it in\", step 4 (gap): what the guide says." },
+  "quest.fill-it-in.gap.why": {
+    "text": "A bigger setting fills shapes whose lines do not quite meet. Draw a shape with a small gap, and see which setting copes.",
+    "where": "Quest \"Fill it in\", step 4 (gap): the quiet line under it saying why."
+  },
+  "quest.fill-it-in.gap.hint": {
+    "text": "The Tool options panel is on the right. Close gaps has None, Small, Medium and Large.",
+    "where": "Quest \"Fill it in\", step 4 (gap): said when nothing has happened for a while."
+  },
+  "quest.pixel-pal.finish": {
+    "text": "Two frames of pixel art. Press Enter to watch it, and keep adding frames for a walk or a wave.",
+    "where": "Quest \"Pixel pal\": the line on the Great work card once you have finished it."
+  },
+  "quest.pixel-pal.draw.say": { "text": "Draw a small outline with the brush. Every touch paints one chunky pixel.", "where": "Quest \"Pixel pal\", step 1 (draw): what the guide says." },
+  "quest.pixel-pal.draw.why": { "text": "This page is a 32 by 32 grid. A ring, a heart or a tiny blob is plenty.", "where": "Quest \"Pixel pal\", step 1 (draw): the quiet line under it saying why." },
+  "quest.pixel-pal.draw.hint": { "text": "Click and drag over the grid. Try to join the line up.", "where": "Quest \"Pixel pal\", step 1 (draw): said when nothing has happened for a while." },
+  "quest.pixel-pal.fill.say": { "text": "Pick the paint bucket and click inside your outline.", "where": "Quest \"Pixel pal\", step 2 (fill): what the guide says." },
+  "quest.pixel-pal.fill.hint": {
+    "text": "On pixel pages the bucket fills every joined pixel of the same colour.",
+    "where": "Quest \"Pixel pal\", step 2 (fill): said when nothing has happened for a while."
+  },
+  "quest.pixel-pal.copy.say": { "text": "Make a second frame. Press D to copy your sprite onto the next one.", "where": "Quest \"Pixel pal\", step 3 (copy): what the guide says." },
+  "quest.pixel-pal.copy.hint": { "text": "The Copy button in the timeline does the same as pressing D.", "where": "Quest \"Pixel pal\", step 3 (copy): said when nothing has happened for a while." },
+  "quest.pixel-pal.change.say": { "text": "Change a few pixels so frame 2 looks different.", "where": "Quest \"Pixel pal\", step 4 (change): what the guide says." },
+  "quest.pixel-pal.change.why": { "text": "Two frames is enough for a blink, a wobble or a wave.", "where": "Quest \"Pixel pal\", step 4 (change): the quiet line under it saying why." },
+  "quest.pixel-pal.change.hint": { "text": "Rub out a pixel with the eraser, or paint a new one.", "where": "Quest \"Pixel pal\", step 4 (change): said when nothing has happened for a while." },
+  "quest.pixel-pal.preview.say": { "text": "Watch your pal play at real size in the Preview panel.", "where": "Quest \"Pixel pal\", step 5 (preview): what the guide says." },
+  "quest.pixel-pal.preview.why": {
+    "text": "Pixel art looks different small. 1x is how big it will be in a game; click the picture to pause.",
+    "where": "Quest \"Pixel pal\", step 5 (preview): the quiet line under it saying why."
+  },
+  "quest.pixel-pal.preview.hint": {
+    "text": "The Preview is a panel on the right. View > Panels > Preview opens it.",
+    "where": "Quest \"Pixel pal\", step 5 (preview): said when nothing has happened for a while."
+  },
+  "quest.share-it.finish": {
+    "text": "That is all there is to it. Press Export when you are ready, or close this and keep drawing.",
+    "where": "Quest \"Share it\": the line on the Great work card once you have finished it."
+  },
+  "quest.share-it.open.say": { "text": "Open Export. Press Ctrl+E (Cmd+E on a Mac), or find it in the File menu.", "where": "Quest \"Share it\", step 1 (open): what the guide says." },
+  "quest.share-it.open.hint": { "text": "File, then Export.", "where": "Quest \"Share it\", step 1 (open): said when nothing has happened for a while." },
+  "quest.share-it.gif.say": { "text": "Choose Animated GIF.", "where": "Quest \"Share it\", step 2 (gif): what the guide says." },
+  "quest.share-it.gif.why": {
+    "text": "GIFs play in chats and forums. You do not have to save anything: close the window whenever you like.",
+    "where": "Quest \"Share it\", step 2 (gif): the quiet line under it saying why."
+  },
+  "quest.share-it.gif.hint": {
+    "text": "The cards across the top are the formats. GIF is the one with the picture icon.",
+    "where": "Quest \"Share it\", step 2 (gif): said when nothing has happened for a while."
+  },
+  "quest.bones-and-pose.finish": {
+    "text": "Two poses and Frameling moved the arm between them. The Paper doll puppet example has a whole body to play with.",
+    "where": "Quest \"Bones and a pose\": the line on the Great work card once you have finished it."
+  },
+  "quest.bones-and-pose.add.say": { "text": "Press Draw bones in the Rig panel.", "where": "Quest \"Bones and a pose\", step 1 (add): what the guide says." },
+  "quest.bones-and-pose.add.why": {
+    "text": "Bones live on a layer of their own, on top. The Bone tool (K) gets picked for you.",
+    "where": "Quest \"Bones and a pose\", step 1 (add): the quiet line under it saying why."
+  },
+  "quest.bones-and-pose.add.hint": {
+    "text": "It is in the Rig panel on the right, or Frames and motion > Skeleton (rig) > Add a skeleton to this drawing in the menu.",
+    "where": "Quest \"Bones and a pose\", step 1 (add): said when nothing has happened for a while."
+  },
+  "quest.bones-and-pose.draw.say": { "text": "Drag from the shoulder to the elbow, then from the elbow to the hand.", "where": "Quest \"Bones and a pose\", step 2 (draw): what the guide says." },
+  "quest.bones-and-pose.draw.why": {
+    "text": "Start the second bone on the tip of the first and it hangs from it, like a real arm.",
+    "where": "Quest \"Bones and a pose\", step 2 (draw): the quiet line under it saying why."
+  },
+  "quest.bones-and-pose.draw.hint": {
+    "text": "Press where the arm joins, drag to the bend, and let go.",
+    "where": "Quest \"Bones and a pose\", step 2 (draw): said when nothing has happened for a while."
+  },
+  "quest.bones-and-pose.attach.say": { "text": "Press Shift+A to attach each part to the bone over it.", "where": "Quest \"Bones and a pose\", step 3 (attach): what the guide says." },
+  "quest.bones-and-pose.attach.why": {
+    "text": "Attached parts follow their bone around. You can change which bone each part follows in the Rig panel.",
+    "where": "Quest \"Bones and a pose\", step 3 (attach): the quiet line under it saying why."
+  },
+  "quest.bones-and-pose.attach.hint": {
+    "text": "Frames and motion > Skeleton (rig) > Attach parts to bones does the same.",
+    "where": "Quest \"Bones and a pose\", step 3 (attach): said when nothing has happened for a while."
+  },
+  "quest.bones-and-pose.pose.say": {
+    "text": "The Pose tool (Shift+K) is picked. Go to frame 13 and drag the hand up for a wave.",
+    "where": "Quest \"Bones and a pose\", step 4 (pose): what the guide says."
+  },
+  "quest.bones-and-pose.pose.why": {
+    "text": "A pose on a new frame makes a key. The frames in between glide from one pose to the next.",
+    "where": "Quest \"Bones and a pose\", step 4 (pose): the quiet line under it saying why."
+  },
+  "quest.bones-and-pose.pose.hint": {
+    "text": "Click 13 on the ruler first, then drag the hand with the Pose tool.",
+    "where": "Quest \"Bones and a pose\", step 4 (pose): said when nothing has happened for a while."
+  },
+  "quest.bones-and-pose.play.say": { "text": "Press play and watch it wave!", "where": "Quest \"Bones and a pose\", step 5 (play): what the guide says." },
+  "quest.bones-and-pose.play.hint": { "text": "The big triangle in the timeline, or press Enter.", "where": "Quest \"Bones and a pose\", step 5 (play): said when nothing has happened for a while." },
+  "quest.first-tween.finish": {
+    "text": "Smooth! Try Draw a path in Symbol and motion next, to send it along a curve.",
+    "where": "Quest \"Your first tween\": the line on the Great work card once you have finished it."
+  },
+  "quest.first-tween.draw.say": { "text": "Draw something on the page: a ball, a star, a paper plane.", "where": "Quest \"Your first tween\", step 1 (draw): what the guide says." },
+  "quest.first-tween.draw.why": { "text": "You only draw it once. Frameling does the rest.", "where": "Quest \"Your first tween\", step 1 (draw): the quiet line under it saying why." },
+  "quest.first-tween.draw.hint": { "text": "Click and drag on the white page.", "where": "Quest \"Your first tween\", step 1 (draw): said when nothing has happened for a while." },
+  "quest.first-tween.tween.say": { "text": "Press Ctrl+Shift+T to make in-betweens.", "where": "Quest \"Your first tween\", step 2 (tween): what the guide says." },
+  "quest.first-tween.tween.why": {
+    "text": "In-betweens are the frames between two poses. Animators call them tweens.",
+    "where": "Quest \"Your first tween\", step 2 (tween): the quiet line under it saying why."
+  },
+  "quest.first-tween.tween.hint": {
+    "text": "You can also right-click the drawing in the timeline and choose Make in-betweens.",
+    "where": "Quest \"Your first tween\", step 2 (tween): said when nothing has happened for a while."
+  },
+  "quest.first-tween.move.say": {
+    "text": "This is the last frame. Drag your drawing somewhere else, so it has somewhere to go.",
+    "where": "Quest \"Your first tween\", step 3 (move): what the guide says."
+  },
+  "quest.first-tween.move.why": {
+    "text": "You can resize it with the corners or turn it with the round handle too.",
+    "where": "Quest \"Your first tween\", step 3 (move): the quiet line under it saying why."
+  },
+  "quest.first-tween.move.hint": { "text": "With the Select tool, drag the drawing to the right.", "where": "Quest \"Your first tween\", step 3 (move): said when nothing has happened for a while." },
+  "quest.first-tween.ease.say": { "text": "Pick how it moves. Try Bouncy in the Easing list.", "where": "Quest \"Your first tween\", step 4 (ease): what the guide says." },
+  "quest.first-tween.ease.why": {
+    "text": "Easing is how it speeds up and slows down. Watch the dots on the canvas bunch up where it goes slowly.",
+    "where": "Quest \"Your first tween\", step 4 (ease): the quiet line under it saying why."
+  },
+  "quest.first-tween.ease.hint": { "text": "The Easing list is in the Symbol and motion panel.", "where": "Quest \"Your first tween\", step 4 (ease): said when nothing has happened for a while." },
+  "quest.first-tween.play.say": { "text": "Press play and watch it glide!", "where": "Quest \"Your first tween\", step 5 (play): what the guide says." },
+  "quest.first-tween.play.hint": { "text": "The big triangle in the timeline, or press Enter.", "where": "Quest \"Your first tween\", step 5 (play): said when nothing has happened for a while." },
+  "quest.say-it-with-text.finish": {
+    "text": "Text stays text, so you can fix a typo any time and the animation just follows. The Title card example has more.",
+    "where": "Quest \"Say it with text\": the line on the Great work card once you have finished it."
+  },
+  "quest.say-it-with-text.type.say": { "text": "The Text tool is picked. Click the page and type a word, then press Esc.", "where": "Quest \"Say it with text\", step 1 (type): what the guide says." },
+  "quest.say-it-with-text.type.why": {
+    "text": "Text stays editable: double-click it later to change the words.",
+    "where": "Quest \"Say it with text\", step 1 (type): the quiet line under it saying why."
+  },
+  "quest.say-it-with-text.type.hint": { "text": "Press T for the Text tool if it got switched off.", "where": "Quest \"Say it with text\", step 1 (type): said when nothing has happened for a while." },
+  "quest.say-it-with-text.animate.say": {
+    "text": "Make it pop in: in the Text panel, under \"Animate the letters\", press Grow.",
+    "where": "Quest \"Say it with text\", step 2 (animate): what the guide says."
+  },
+  "quest.say-it-with-text.animate.why": {
+    "text": "Each letter grows in a moment after the one before. Animators call it kinetic type.",
+    "where": "Quest \"Say it with text\", step 2 (animate): the quiet line under it saying why."
+  },
+  "quest.say-it-with-text.animate.hint": {
+    "text": "If the Text panel is empty, click your text with the Select tool (V) first.",
+    "where": "Quest \"Say it with text\", step 2 (animate): said when nothing has happened for a while."
+  },
+  "quest.say-it-with-text.wave.say": { "text": "Add a Wave as well, so the letters keep bobbing after they land.", "where": "Quest \"Say it with text\", step 3 (wave): what the guide says." },
+  "quest.say-it-with-text.wave.why": {
+    "text": "Animations stack. Each one has its own start, length and order.",
+    "where": "Quest \"Say it with text\", step 3 (wave): the quiet line under it saying why."
+  },
+  "quest.say-it-with-text.wave.hint": {
+    "text": "Wave is in the same row of buttons, next to Typewriter.",
+    "where": "Quest \"Say it with text\", step 3 (wave): said when nothing has happened for a while."
+  },
+  "quest.say-it-with-text.play.say": { "text": "Press play and read all about it.", "where": "Quest \"Say it with text\", step 4 (play): what the guide says." },
+  "quest.say-it-with-text.play.hint": { "text": "The big triangle in the timeline, or press Enter.", "where": "Quest \"Say it with text\", step 4 (play): said when nothing has happened for a while." },
+  "quest.tiles.finish": {
+    "text": "A seamless tile and a level made of it. Add more tiles (grass, walls, water) and export the lot for your game with File, Export tileset.",
+    "where": "Quest \"Tiles\": the line on the Great work card once you have finished it."
+  },
+  "quest.tiles.make.say": { "text": "Make a tile: in the Tileset panel, press + (New tile).", "where": "Quest \"Tiles\", step 1 (make): what the guide says." },
+  "quest.tiles.make.why": {
+    "text": "A tile is a small square picture, like a patch of grass. You draw it once and use it everywhere.",
+    "where": "Quest \"Tiles\", step 1 (make): the quiet line under it saying why."
+  },
+  "quest.tiles.open.say": { "text": "Double-click your tile to draw it. Tile mode comes on: the tile repeats all round.", "where": "Quest \"Tiles\", step 2 (open): what the guide says." },
+  "quest.tiles.open.why": {
+    "text": "Tile mode (Shift+T) shows copies on every side, so you can see where the edges meet.",
+    "where": "Quest \"Tiles\", step 2 (open): the quiet line under it saying why."
+  },
+  "quest.tiles.open.hint": { "text": "If it is open but not repeating, press Shift+T to turn tile mode on.", "where": "Quest \"Tiles\", step 2 (open): said when nothing has happened for a while." },
+  "quest.tiles.edge.say": { "text": "Pick the pencil (P) and draw a line off the right edge. Watch it carry on from the left.", "where": "Quest \"Tiles\", step 3 (edge): what the guide says." },
+  "quest.tiles.edge.why": {
+    "text": "Drawing wraps round in tile mode, so the edges always match. That is a seamless tile.",
+    "where": "Quest \"Tiles\", step 3 (edge): the quiet line under it saying why."
+  },
+  "quest.tiles.edge.hint": {
+    "text": "Start near the middle and drag straight past the edge of the tile. Top to bottom works too.",
+    "where": "Quest \"Tiles\", step 3 (edge): said when nothing has happened for a while."
+  },
+  "quest.tiles.done.say": { "text": "Press Done above the canvas (or Ctrl+Enter) to put the tile back.", "where": "Quest \"Tiles\", step 4 (done): what the guide says." },
+  "quest.tiles.layer.say": { "text": "Add a tilemap layer: Tools and layers menu, then Add a tilemap layer.", "where": "Quest \"Tiles\", step 5 (layer): what the guide says." },
+  "quest.tiles.layer.why": {
+    "text": "A tilemap layer is a grid you paint with tiles instead of colours. Game levels are made of them.",
+    "where": "Quest \"Tiles\", step 5 (layer): the quiet line under it saying why."
+  },
+  "quest.tiles.stamp.say": { "text": "With the tile brush (B), click a few times on the canvas to stamp your tile.", "where": "Quest \"Tiles\", step 6 (stamp): what the guide says." },
+  "quest.tiles.stamp.why": { "text": "Drag to paint a row. Change the tile later and every copy changes with it.", "where": "Quest \"Tiles\", step 6 (stamp): the quiet line under it saying why." },
+  "quest.tiles.stamp.hint": { "text": "Three tiles is enough. Side by side they join up with no seam.", "where": "Quest \"Tiles\", step 6 (stamp): said when nothing has happened for a while." }
+}

@@ -13,16 +13,17 @@ import { activePixelDrawing, activePixelGrid, pixelSelection } from '../select/p
 import { gridPixels } from '../core/pixelBounds';
 import { defaultTip, STAMPS, TIPS } from '../geometry/tip';
 import { MAX_STAMP, hasColours, pixelStampFrom, readPixelStamp, vectorStampFrom, type PixelStamp } from './stamps';
+import { choiceWord } from '../words/choices';
 
 export type PixelStampColours = 'own' | 'mine';
 
 registerChoice<PixelStampColours>({
   id: 'brush.pixelStampColours',
-  title: 'A brush made from pixels with several colours',
-  question: 'This brush has more than one colour in it. How should it paint?',
+  title: choiceWord('choice.brush.pixelStampColours.title'),
+  question: choiceWord('choice.brush.pixelStampColours.question'),
   options: [
-    { value: 'own', label: 'With its own colours', detail: 'Each click stamps the picture as it was, like a little sticker. Dragging lays copies side by side.', did: 'Made it paint with its own colours.' },
-    { value: 'mine', label: 'In the colour I have picked', detail: 'Only its shape counts, painted in your colour, so you can draw with it like any other brush.', did: 'Made it paint in your colour.' },
+    { value: 'own', label: choiceWord('choice.brush.pixelStampColours.own.label'), detail: choiceWord('choice.brush.pixelStampColours.own.detail'), did: choiceWord('choice.brush.pixelStampColours.own.did') },
+    { value: 'mine', label: choiceWord('choice.brush.pixelStampColours.mine.label'), detail: choiceWord('choice.brush.pixelStampColours.mine.detail'), did: choiceWord('choice.brush.pixelStampColours.mine.did') },
   ],
   default: 'own',
   category: 'Drawing',

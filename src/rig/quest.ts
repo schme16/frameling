@@ -9,6 +9,7 @@ import { showPanel } from '../ui/dock';
 import { INK, PEACH, SUNNY, addVectorLayer, ellipsePath, emptyOf, hold, pathShape, rectPath, vectorDrawing } from '../templates/build';
 import { addBone, autoAttach, currentRig, ensureRig, setPose } from './ops';
 import { isRigLayer } from './pose';
+import { questWord } from '../words/quests';
 
 const SHOULDER = { x: 260, y: 300 };
 const ELBOW = { x: 430, y: 300 };
@@ -69,66 +70,66 @@ const SEL = {
 
 export const BONES_QUEST: Quest = {
   id: 'bones-and-pose',
-  title: 'Bones and a pose',
-  summary: 'Give an arm a skeleton, then wave it by dragging, like a puppet.',
+  title: questWord('quest.bones-and-pose.title'),
+  summary: questWord('quest.bones-and-pose.summary'),
   minutes: 3,
   icon: 'rig',
-  badge: { id: 'puppeteer', name: 'Puppeteer', icon: 'rig', color: '--peach' },
+  badge: { id: 'puppeteer', name: questWord('quest.bones-and-pose.badge'), icon: 'rig', color: '--peach' },
   features: ['rig'],
   requires: ['first-animation'],
-  finish: 'Two poses and Frameling moved the arm between them. The Paper doll puppet example has a whole body to play with.',
+  finish: questWord('quest.bones-and-pose.finish'),
   prepare: () => (isArmScene(store().get()) ? true : freshPage(makeArmScene)),
   ready: isArmScene,
   steps: [
     {
       id: 'add',
-      say: 'Press Draw bones in the Rig panel.',
-      why: 'Bones live on a layer of their own, on top. The Bone tool (K) gets picked for you.',
+      say: questWord('quest.bones-and-pose.add.say'),
+      why: questWord('quest.bones-and-pose.add.why'),
       target: SEL.rig,
       enter: () => showPanel('rig'),
       done: (c) => !!rigOf(c.state),
       show: 'rig.addBones',
-      hint: 'It is in the Rig panel on the right, or Frames and motion > Skeleton (rig) > Add a skeleton to this drawing in the menu.',
+      hint: questWord('quest.bones-and-pose.add.hint'),
       help: 'rig-bones',
     },
     {
       id: 'draw',
-      say: 'Drag from the shoulder to the elbow, then from the elbow to the hand.',
-      why: 'Start the second bone on the tip of the first and it hangs from it, like a real arm.',
+      say: questWord('quest.bones-and-pose.draw.say'),
+      why: questWord('quest.bones-and-pose.draw.why'),
       target: SEL.canvas,
       done: (c) => boneCount(c.state) >= 2,
       show: showBones,
-      hint: 'Press where the arm joins, drag to the bend, and let go.',
+      hint: questWord('quest.bones-and-pose.draw.hint'),
       help: 'rig-bones',
     },
     {
       id: 'attach',
-      say: 'Press Shift+A to attach each part to the bone over it.',
-      why: 'Attached parts follow their bone around. You can change which bone each part follows in the Rig panel.',
+      say: questWord('quest.bones-and-pose.attach.say'),
+      why: questWord('quest.bones-and-pose.attach.why'),
       target: SEL.rig,
       done: (c) => attached(c.state) >= 2,
       show: () => void autoAttach(),
-      hint: 'Frames and motion > Skeleton (rig) > Attach parts to bones does the same.',
+      hint: questWord('quest.bones-and-pose.attach.hint'),
       help: 'rig-attach',
     },
     {
       id: 'pose',
-      say: 'The Pose tool (Shift+K) is picked. Go to frame 13 and drag the hand up for a wave.',
-      why: 'A pose on a new frame makes a key. The frames in between glide from one pose to the next.',
+      say: questWord('quest.bones-and-pose.pose.say'),
+      why: questWord('quest.bones-and-pose.pose.why'),
       target: [SEL.ruler, SEL.canvas],
       enter: () => store().setUi({ tool: 'pose' }),
       done: (c) => posedLater(c.state),
       show: showPose,
-      hint: 'Click 13 on the ruler first, then drag the hand with the Pose tool.',
+      hint: questWord('quest.bones-and-pose.pose.hint'),
       help: 'rig-posing',
     },
     {
       id: 'play',
-      say: 'Press play and watch it wave!',
+      say: questWord('quest.bones-and-pose.play.say'),
       target: SEL.play,
       done: (c) => c.state.ui.playing,
       show: 'timeline.play',
-      hint: 'The big triangle in the timeline, or press Enter.',
+      hint: questWord('quest.bones-and-pose.play.hint'),
     },
   ],
 };

@@ -203,6 +203,14 @@ placeholder with bold text) in `src/ui/mascot/lines.ts`; the ids are typed, so a
 line goes in `lines.json` with its `where`, and in the moments list in `shots.cjs`. `test/ui/quill-lines.test.ts`
 checks every line is used, every id used exists, and the placeholders match.
 
+### Editing the app's other words
+
+Everything else the app says is moving into `src/words/`, one JSON file per area, in the same shape as Quill's
+lines. Done so far: the questions the app asks once and remembers (`choices.json`) and the quests (`quests.json`).
+`npm run words:list` prints them to read in one sitting, and `npm run words:apply <changes.json>` merges edited words
+back in, refusing the whole file if a `{placeholder}` was lost or gained. Help topics stay in their own
+`*.bodies.ts` files. More in `docs/architecture.md`.
+
 ## In-app help
 
 Topics are registered with `registerHelp` next to the feature (`src/*/help.ts`), their words are in the `help.bodies.ts` beside it (a lazily loaded chunk), and every one has a picture or a

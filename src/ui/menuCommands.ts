@@ -7,14 +7,15 @@ import { isUnchanged } from './menuEdits';
 import { menuEditsIn } from './workspaceMenus';
 import { openPrefs } from './overlays';
 import { toast } from './toast';
+import { choiceWord } from '../words/choices';
 
 /** What happens to a menu you changed when a newer Frameling adds something to it. */
 export const NEW_ENTRIES_CHOICE = 'menus.newEntries';
 
 registerChoice({
   id: NEW_ENTRIES_CHOICE,
-  title: 'New things in a menu you changed',
-  question: 'When Frameling adds something new to a menu you have changed, where should it go?',
+  title: choiceWord('choice.menus.newEntries.title'),
+  question: choiceWord('choice.menus.newEntries.question'),
   category: 'Menus',
   help: 'change-the-menus',
   default: 'add',
@@ -23,13 +24,13 @@ registerChoice({
   options: [
     {
       value: 'add',
-      label: 'Put it in the menu',
-      detail: 'It goes next to the entry it follows. Nothing you moved or took out comes back.',
+      label: choiceWord('choice.menus.newEntries.add.label'),
+      detail: choiceWord('choice.menus.newEntries.add.detail'),
     },
     {
       value: 'leave',
-      label: 'Leave it out',
-      detail: 'Your menus stay exactly as you made them. The new thing is still in the command search.',
+      label: choiceWord('choice.menus.newEntries.leave.label'),
+      detail: choiceWord('choice.menus.newEntries.leave.detail'),
     },
   ],
 });

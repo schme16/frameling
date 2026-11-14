@@ -15,6 +15,7 @@ import { getPrefs } from '../ui/prefs';
 import { strokeIsOn } from '../tablet/check/state';
 import { toast } from '../ui/toast';
 import { MAX_SHOWS, drawnNudgeShows, isFreshVectorPage, drawsStraightAway, pageLineInk, pageLineShows, type Mood, type NudgeChoice } from './rules';
+import { choiceWord } from '../words/choices';
 
 export const PAGE_CHOICE = 'nudge.page';
 export const DRAWN_CHOICE = 'nudge.drawn';
@@ -27,8 +28,8 @@ const options: { value: NudgeChoice; label: string; detail: string }[] = [
 
 registerChoice<NudgeChoice>({
   id: PAGE_CHOICE,
-  title: 'A hint on an empty page',
-  question: 'Should a new, empty page say what to do?',
+  title: choiceWord('choice.nudge.page.title'),
+  question: choiceWord('choice.nudge.page.question'),
   category: 'Quill',
   silent: true,
   default: 'on',
@@ -38,8 +39,8 @@ registerChoice<NudgeChoice>({
 
 registerChoice<NudgeChoice>({
   id: DRAWN_CHOICE,
-  title: "Quill's tip after your first drawing",
-  question: 'Should Quill say what to try next after your first drawing?',
+  title: choiceWord('choice.nudge.drawn.title'),
+  question: choiceWord('choice.nudge.drawn.question'),
   category: 'Quill',
   silent: true,
   default: 'on',

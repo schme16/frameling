@@ -38,17 +38,18 @@ import { toast } from '../ui/toast';
 import { leaveTileEdit } from '../tiles/tileEdit';
 import { tl } from '../timeline/state';
 import { parseRef } from '../timeline/tracks';
+import { choiceWord } from '../words/choices';
 
 registerChoice<'symbol' | 'morph'>({
   id: 'tween.plainDrawing',
-  title: 'In-betweens on a plain drawing',
-  question: 'This drawing is not a symbol. How should it change from this key to the next?',
+  title: choiceWord('choice.tween.plainDrawing.title'),
+  question: choiceWord('choice.tween.plainDrawing.question'),
   category: 'Animation',
   default: 'symbol',
   help: 'Drawings that already hold symbols always move. You can switch any in-betweens in the Symbol and motion panel.',
   options: [
-    { value: 'symbol', label: 'Move it as one piece', detail: 'Frameling makes it a symbol, then you move, turn, resize or fade it on the next key (classic tween).' },
-    { value: 'morph', label: 'Morph the shapes', detail: 'The outlines and colours melt into whatever you draw on the next key (shape tween).' },
+    { value: 'symbol', label: choiceWord('choice.tween.plainDrawing.symbol.label'), detail: choiceWord('choice.tween.plainDrawing.symbol.detail') },
+    { value: 'morph', label: choiceWord('choice.tween.plainDrawing.morph.label'), detail: choiceWord('choice.tween.plainDrawing.morph.detail') },
   ],
 });
 
@@ -56,14 +57,14 @@ export type FramesChoice = 'all' | 'one';
 
 registerChoice<FramesChoice>({
   id: 'symbols.frames',
-  title: 'Symbol from a layer with several drawings',
-  question: 'This layer has several drawings. What should the new symbol hold?',
+  title: choiceWord('choice.symbols.frames.title'),
+  question: choiceWord('choice.symbols.frames.question'),
   category: 'Animation',
   default: 'all',
   help: 'symbols-frames',
   options: [
-    { value: 'all', label: 'The whole animation', detail: 'Every drawing, in time, as one looping symbol. Place it again and again, move it, fade it.' },
-    { value: 'one', label: 'Just this drawing', detail: 'Only the drawing on this frame (or your selection on a vector layer). The other drawings stay on the layer.' },
+    { value: 'all', label: choiceWord('choice.symbols.frames.all.label'), detail: choiceWord('choice.symbols.frames.all.detail') },
+    { value: 'one', label: choiceWord('choice.symbols.frames.one.label'), detail: choiceWord('choice.symbols.frames.one.detail') },
   ],
 });
 

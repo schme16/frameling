@@ -1,18 +1,19 @@
 // Notes' remembered choice (see core/choices.ts). Preferences > Behaviour lists it.
 import { registerChoice } from '../core/choices';
+import { choiceWord } from '../words/choices';
 
 export type PinChoice = 'frame' | 'page' | 'layer';
 
 registerChoice<PinChoice>({
   id: 'notes.pin',
-  title: 'Where a new note belongs',
-  question: 'A note can belong to this frame, to the whole page, or to this layer. Which should a new note start as?',
+  title: choiceWord('choice.notes.pin.title'),
+  question: choiceWord('choice.notes.pin.question'),
   category: 'Canvas',
   default: 'frame',
   help: 'You can move any note to the page, a frame or a layer later, from its card. A note on a frame only shows while you are on that frame. A note on the page shows all the time.',
   options: [
-    { value: 'frame', label: 'This frame', detail: 'It shows only on the frame you are on, and the timeline marks the frame.', did: 'Pinned the note to this frame.' },
-    { value: 'page', label: 'The page', detail: 'It shows on every frame, for things about the whole drawing.', did: 'Put the note on the page.' },
-    { value: 'layer', label: 'This layer', detail: 'It shows on the frames where that layer has a drawing.', did: 'Pinned the note to this layer.' },
+    { value: 'frame', label: choiceWord('choice.notes.pin.frame.label'), detail: choiceWord('choice.notes.pin.frame.detail'), did: choiceWord('choice.notes.pin.frame.did') },
+    { value: 'page', label: choiceWord('choice.notes.pin.page.label'), detail: choiceWord('choice.notes.pin.page.detail'), did: choiceWord('choice.notes.pin.page.did') },
+    { value: 'layer', label: choiceWord('choice.notes.pin.layer.label'), detail: choiceWord('choice.notes.pin.layer.detail'), did: choiceWord('choice.notes.pin.layer.did') },
   ],
 });

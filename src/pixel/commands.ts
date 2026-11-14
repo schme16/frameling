@@ -18,6 +18,7 @@ import { activePixelLayer } from './tools';
 import { flipH, flipV, outline, rotateQuarter, type Img } from './transform';
 import { dropFloating, isFloating, pixelSelection, setPixelSelection } from '../select/pixel-state';
 import { applyInSelection, type PixelOp, type SelectionKind } from '../select/ops';
+import { choiceWord } from '../words/choices';
 
 // ---------------------------------------------------------------- the document palette
 
@@ -37,11 +38,11 @@ export type RecolourChoice = 'recolour' | 'palette-only';
 
 registerChoice<RecolourChoice>({
   id: 'palette.recolour',
-  title: 'Changing a palette colour',
-  question: 'You changed a colour in the palette. Should the pixels already painted in that colour change too?',
+  title: choiceWord('choice.palette.recolour.title'),
+  question: choiceWord('choice.palette.recolour.question'),
   options: [
-    { value: 'recolour', label: 'Change the pixels too', detail: 'Every pixel of the old colour, on every pixel layer and frame, becomes the new colour. Great for trying out colour schemes.' },
-    { value: 'palette-only', label: 'Just the palette', detail: 'Your drawing stays as it is. Only the palette changes.' },
+    { value: 'recolour', label: choiceWord('choice.palette.recolour.recolour.label'), detail: choiceWord('choice.palette.recolour.recolour.detail') },
+    { value: 'palette-only', label: choiceWord('choice.palette.recolour.palette-only.label'), detail: choiceWord('choice.palette.recolour.palette-only.detail') },
   ],
   default: 'recolour',
   category: 'Pixel art',

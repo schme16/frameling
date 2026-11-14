@@ -2,10 +2,12 @@
 // brand/dialogue) without touching code. Code reads it through line() / lines() / lineParts().
 import data from './lines.json';
 import { currentMascot } from './mascots';
+import { fill, placeholders, type Vars } from '../../words/fill';
+
+export { fill, placeholders, type Vars };
 
 type Data = typeof data;
 export type LineId = Exclude<keyof Data, '$about'>;
-export type Vars = Record<string, string | number>;
 
 export interface LineEntry {
   text: string | string[];
@@ -16,18 +18,6 @@ export interface LineEntry {
 export const LINES = data as unknown as Record<LineId, LineEntry> & { $about: string };
 
 export const lineIds = (): LineId[] => Object.keys(data).filter((k) => !k.startsWith('$')) as LineId[];
-
-/** The {placeholders} in a piece of text, in order, without repeats. */
-export function placeholders(text: string | string[]): string[] {
-  const out: string[] = [];
-  for (const t of Array.isArray(text) ? text : [text]) for (const m of t.matchAll(/\{(\w+)\}/g)) if (!out.includes(m[1])) out.push(m[1]);
-  return out;
-}
-
-/** Fills {name} style placeholders. Anything not given stays as written, so a gap is easy to spot. */
-export function fill(text: string, vars: Vars = {}): string {
-  return text.replace(/\{(\w+)\}/g, (all, k: string) => (k in vars ? String(vars[k]) : all));
-}
 
 function entry(id: LineId): LineEntry {
   const e = currentMascot().lines?.[id] ?? LINES[id];

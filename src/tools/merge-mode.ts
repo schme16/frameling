@@ -11,16 +11,17 @@ import { explode, mergeShapes } from '../geometry/merge';
 import { toast } from '../ui/toast';
 import { openStrokeLineBar } from './StrokeLineBar';
 import { activeDrawing, activeLayer, editActiveDrawing, EDIT_HINTS, type EditResult } from './edit';
+import { choiceWord } from '../words/choices';
 
 export type DrawMode = 'object' | 'merge';
 
 registerChoice<DrawMode>({
   id: 'draw.newLayerMode',
-  title: 'New vector layers',
-  question: 'When you add a vector layer, how should shapes drawn on it behave?',
+  title: choiceWord('choice.draw.newLayerMode.title'),
+  question: choiceWord('choice.draw.newLayerMode.question'),
   options: [
-    { value: 'object', label: 'Keep shapes separate', detail: 'Each shape stays on its own, so you can pick it up and move it later (object drawing).' },
-    { value: 'merge', label: 'Merge shapes together', detail: 'Shapes cut and join each other like paint (merge drawing).' },
+    { value: 'object', label: choiceWord('choice.draw.newLayerMode.object.label'), detail: choiceWord('choice.draw.newLayerMode.object.detail') },
+    { value: 'merge', label: choiceWord('choice.draw.newLayerMode.merge.label'), detail: choiceWord('choice.draw.newLayerMode.merge.detail') },
   ],
   default: 'object',
   category: 'Drawing',
