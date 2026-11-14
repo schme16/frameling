@@ -380,7 +380,7 @@ function subItems(key: string, subs: Record<string, SubmenuDef>): string[] {
 }
 
 /** Every command id named in any menu, so the auto-added ones don't repeat across menus. */
-function listedIds(menus: MenuDef[], subs: Record<string, SubmenuDef> = SUBMENUS, hidden?: ReadonlySet<string>): Set<string> {
+export function listedIds(menus: MenuDef[], subs: Record<string, SubmenuDef> = SUBMENUS, hidden?: ReadonlySet<string>): Set<string> {
   const s = new Set<string>(hidden);
   for (const m of menus) for (const e of menuItems(m)) for (const id of expand(e, subs)) s.add(id);
   return s;
@@ -389,15 +389,20 @@ function listedIds(menus: MenuDef[], subs: Record<string, SubmenuDef> = SUBMENUS
 /** A menu's entries: the listed ones, then what features added (unless the list is already final). */
 const menuItems = (m: MenuDef): string[] => (m.fixed ? m.items : [...m.items, ...contributedFor(m.label)]);
 
+// One collator for every sort of command labels: the same order as localeCompare, without setting one up per comparison.
+const labelOrder = new Intl.Collator();
+const byLabel = (a: Command, b: Command): number => labelOrder.compare(a.label, b.label);
+
 /**
  * The entries to show for a menu: named commands that exist, then any extra registered commands in the menu's
  * categories. Separators are tidied so there are never two in a row, or one at either end. `hidden` is commands the
  * person took out of every menu: they don't come back at the bottom either.
  */
-export function resolveMenu(menu: MenuDef, menus: MenuDef[] = MENUS, lookup: (id: string) => Command | undefined = getCommand, all: () => Command[] = allCommands, subs: Record<string, SubmenuDef> = SUBMENUS, hidden?: ReadonlySet<string>): MenuItem[] {
+export function resolveMenu(menu: MenuDef, menus: MenuDef[] = MENUS, lookup: (id: string) => Command | undefined = getCommand, all: () => Command[] = allCommands, subs: Record<string, SubmenuDef> = SUBMENUS, hidden?: ReadonlySet<string>, known?: Set<string>): MenuItem[] {
   const out: MenuItem[] = [];
   const seen = new Set<string>();
-  const named = listedIds(menus, subs, hidden);
+  // Every id the menus name: worked out once for a whole menu bar (`known`), not again for each menu and submenu.
+  const named = known ?? listedIds(menus, subs, hidden);
   // Prefixes the submenus here claim, so their stray commands don't also land at the bottom of the menu.
   const claimed = menu.items.filter((e) => e.startsWith('sub:')).flatMap((e) => subs[e.slice(4)]?.prefixes ?? []);
   const claimedCats = menu.items.filter((e) => e.startsWith('sub:')).flatMap((e) => subs[e.slice(4)]?.categories ?? []);
@@ -413,10 +418,10 @@ export function resolveMenu(menu: MenuDef, menus: MenuDef[] = MENUS, lookup: (id
     if (e.startsWith('sub:')) {
       const sub = subs[e.slice(4)];
       if (!sub) continue;
-      const inner = resolveMenu({ label: sub.label, categories: [], items: subItems(e.slice(4), subs), fixed: true }, menus, lookup, all, subs, hidden);
+      const inner = resolveMenu({ label: sub.label, categories: [], items: subItems(e.slice(4), subs), fixed: true }, menus, lookup, all, subs, hidden, named);
       const extra = all()
         .filter((c) => ((sub.prefixes ?? []).some((p) => c.id.startsWith(p)) || (sub.categories ?? []).includes(c.category)) && !c.hidden && !named.has(c.id) && !isDynamicCommand(c.id) && !isStaleCommand(c.id))
-        .sort((a, b) => a.label.localeCompare(b.label));
+        .sort(byLabel);
       for (const c of extra) inner.push({ kind: 'command', command: c });
       if (inner.length) out.push({ kind: 'submenu', label: sub.label, items: inner });
       continue;
@@ -430,7 +435,7 @@ export function resolveMenu(menu: MenuDef, menus: MenuDef[] = MENUS, lookup: (id
   }
   const extra = all()
     .filter((c) => menu.categories.includes(c.category) && !c.hidden && !named.has(c.id) && !seen.has(c.id) && !claimed.some((p) => c.id.startsWith(p)) && !claimedCats.includes(c.category) && !isDynamicCommand(c.id) && !isStaleCommand(c.id))
-    .sort((a, b) => a.label.localeCompare(b.label));
+    .sort(byLabel);
   if (extra.length) {
     out.push({ kind: 'separator' });
     for (const c of extra) out.push({ kind: 'command', command: c });
@@ -465,5 +470,9 @@ export function resolveMenus(): { menu: MenuDef; items: MenuItem[] }[] {
   const shape = currentShape();
   // Commands the person took out of every place stay out of the menu bottoms too.
   const hidden = new Set(shape.hidden.flatMap((e) => expand(e)));
-  return shape.menus.map((menu) => ({ menu, items: resolveMenu(menu, shape.menus, getCommand, allCommands, shape.subs, hidden) })).filter((m) => m.items.length || m.menu.label.startsWith('my-'));
+  const named = listedIds(shape.menus, shape.subs, hidden);
+  // The same list of commands for every menu, read once.
+  let every: Command[] | null = null;
+  const all = () => (every ??= allCommands());
+  return shape.menus.map((menu) => ({ menu, items: resolveMenu(menu, shape.menus, getCommand, all, shape.subs, hidden, named) })).filter((m) => m.items.length || m.menu.label.startsWith('my-'));
 }

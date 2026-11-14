@@ -3,7 +3,8 @@ import { createStore, readRaw, writeJson } from '../../ui/mini';
 import { overlays } from '../../ui/overlays';
 import { desktop } from '../../io/desktop';
 import { getPen } from '../settings';
-import { CHECK_STEPS, reportFileName, type CheckStepId, type ReportEnv, type TabletReport } from './recorder';
+import { CHECK_STEPS, reportFileName, type CheckStepId } from './steps';
+import type { ReportEnv, TabletReport } from './recorder';
 
 // ---------------------------------------------------------------- remembering
 

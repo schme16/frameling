@@ -3,8 +3,9 @@
 // that, so the starters are cut to four here.
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import '../../src/brushes';
+import { preloadPicker } from './preloadPicker';
 import { BrushPresetRow } from '../../src/brushes/BrushPresetRow';
 import { STARTERS } from '../../src/brushes/model';
 import * as P from '../../src/brushes/presets';
@@ -44,6 +45,8 @@ const typeIn = (el: HTMLInputElement, text: string) =>
     Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(el, text);
     el.dispatchEvent(new Event('input', { bubbles: true }));
   });
+
+beforeAll(preloadPicker);
 
 beforeEach(() => {
   localStorage.clear();

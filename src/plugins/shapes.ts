@@ -7,29 +7,9 @@ import { uid } from '../core/doc';
 import { multiply, shapesBounds, transformShapes, type Matrix } from '../canvas/geometry';
 import { drawListToShapes, placeholderShapes, type DrawList } from './drawlist';
 
-/** The `ext` key a plugin's shapes keep their data under. */
-export const extKeyOf = (pluginId: string): string => `plugin.${pluginId}`;
+import { extKeyOf, infoOf, type PluginShapeInfo, type Ref } from './shapeInfo';
 
-export interface PluginShapeInfo {
-  kind: string;
-  /** Names the whole shape (all the parts that make it up). */
-  inst: string;
-  part: number;
-  /** What the plugin draws it from (on the first part only). */
-  props?: Record<string, unknown>;
-  /** Where the plugin's own coordinates sit on the stage when it was last drawn (first part only). See `refit`. */
-  m?: number[];
-  /** A few anchor points as they were then (first part only), to find out how the person has moved, scaled or turned the parts since. */
-  ref?: Ref;
-  /** True when this is a stand-in (the plugin drew nothing). */
-  placeholder?: true;
-}
-
-/** Up to three anchor points of the drawn parts, `[index among all anchors, x, y]`, and how many anchors there were. */
-export interface Ref {
-  n: number;
-  pts: [number, number, number][];
-}
+export { extKeyOf, infoOf, type PluginShapeInfo, type Ref };
 
 export class ShapeProblem extends Error {}
 
@@ -99,14 +79,6 @@ export function refit(ref: Ref, now: P[]): Matrix | null {
   const [a, c, e] = solve(to[0].x, to[1].x, to[2].x);
   const [b, d, f] = solve(to[0].y, to[1].y, to[2].y);
   return [a, b, c, d, e, f];
-}
-
-/** What a plugin shape part says about itself, if it is one of this plugin's. */
-export function infoOf(s: Shape, pluginId: string): PluginShapeInfo | null {
-  const v = s.ext?.[extKeyOf(pluginId)];
-  if (typeof v !== 'object' || v === null || Array.isArray(v)) return null;
-  const o = v as Record<string, unknown>;
-  return typeof o.kind === 'string' && typeof o.inst === 'string' ? (o as unknown as PluginShapeInfo) : null;
 }
 
 function vectorOf(doc: Draft<Doc>, id: unknown): Draft<VectorDrawing> {

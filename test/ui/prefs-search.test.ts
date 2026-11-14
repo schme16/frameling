@@ -14,13 +14,14 @@ import { searchHelp } from '../../src/ui/help/search';
 import { sameSpelling, sameWords } from '../../src/ui/match';
 import { allPrefRows, CHOICE_ALSO, choiceRows, commandRows, FEATURE_ALSO, featureRows, SETTING_ROWS } from '../../src/ui/prefsIndex';
 import { foundSaid, groupByPage, searchPrefs, type PrefRow } from '../../src/ui/prefsSearch';
-import { settingRows, withSettings } from '../../src/ui/palette';
+import { loadSettingRows, settingRows, withSettings } from '../../src/ui/palette';
 
 let rows: PrefRow[];
 beforeAll(async () => {
   syncDynamicCommands();
   rows = allPrefRows();
   await loadHelpBodies();
+  await loadSettingRows();
 });
 
 const find = (q: string, list = rows) => searchPrefs(q, list);

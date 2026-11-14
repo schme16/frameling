@@ -16,7 +16,7 @@ import { activeLayer, editActiveDrawing, EDIT_HINTS } from '../tools/edit';
 import { selectedShapes } from '../tools/edit-commands';
 import { trimPixels } from '../core/pixelBounds';
 import { reduceToPalette, docPalette, paletteRgb } from '../pixel/palette';
-import { decodePicture, PictureProblem } from '../pixel/import/picture';
+import { lazyModule } from '../core/lazy';
 import { cancelFloating, activePixelGrid, floatPixels, PIXEL_SELECT_TOOL } from '../select/pixel-state';
 import { isPixelSelectTool } from '../select/ways';
 import { maskEmpty, maskFromAlpha } from '../select/mask';
@@ -140,12 +140,17 @@ function placePicture(pixels: Uint8ClampedArray, gw: number, gh: number, pixelSi
   return true;
 }
 
+// The picture readers (PNG, GIF, WebP) are their own download, fetched when a picture is first pasted and in idle time after start-up.
+const pictureReaders = lazyModule(() => import('../pixel/import/picture'), { warm: true });
+
 async function pastePicture(png: Uint8Array): Promise<void> {
   let pic;
+  let readers: Awaited<ReturnType<typeof pictureReaders>> | undefined;
   try {
-    pic = await decodePicture(png);
+    readers = await pictureReaders();
+    pic = await readers.decodePicture(png);
   } catch (e) {
-    return say(e instanceof PictureProblem ? e.message : 'Frameling could not read the picture on the clipboard.', 'warn');
+    return say(readers && e instanceof readers.PictureProblem ? e.message : 'Frameling could not read the picture on the clipboard.', 'warn');
   }
   const frame = pic.frames[0];
   if (!frame) return;

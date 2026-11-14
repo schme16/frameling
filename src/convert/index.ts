@@ -6,7 +6,7 @@ import { lazyPanel } from '../core/lazy';
 import { registerPanelInfo } from '../ui/panelInfo';
 import './choices';
 import { openConvert } from './open';
-import { sourceNow, isSource } from './ops';
+import { sourceNow, isSource } from './source';
 import { wayFor } from './relevant';
 
 registerPanel({

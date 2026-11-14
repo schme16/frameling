@@ -1,5 +1,6 @@
 // Keeps the words files out of the way of the bundle. Two things, both only in a build:
-// 1. The `where`, `vars` and `$about` in src/words/*.json are for whoever edits them, so they are dropped.
+// 1. The `where`, `vars` and `$about` in src/words/*.json and in Quill's lines (src/ui/mascot/lines.json) are for
+//    whoever edits them, so they are dropped.
 // 2. A call like choiceWord('choice.x.title') with no placeholders to fill is replaced by the words themselves, so the
 //    bundle holds the same text it always did and not a lookup table of long ids. A call that fills placeholders, or
 //    builds its id, stays a lookup, and the file stays in the bundle for it.
@@ -44,7 +45,7 @@ export const lean = {
   enforce: 'pre' as const,
   transform(code: string, id: string) {
     const file = id.split('?')[0];
-    if (/[\\/]src[\\/]words[\\/][^\\/]+\.json$/.test(file)) return leanJson(code);
+    if (/[\\/]src[\\/]words[\\/][^\\/]+\.json$/.test(file) || /[\\/]src[\\/]ui[\\/]mascot[\\/]lines\.json$/.test(file)) return leanJson(code);
     if (/[\\/]src[\\/](?!words[\\/]).*\.tsx?$/.test(file)) {
       const out = inlineWords(code);
       return out === code ? null : out;

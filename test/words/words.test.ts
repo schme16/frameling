@@ -261,4 +261,12 @@ describe('the build keeps the bundle lean', () => {
     const lean = JSON.parse(leanJson(JSON.stringify({ $about: 'note', a: { text: 'Hi {n}', where: 'Somewhere', vars: ['n'] } })));
     expect(lean).toEqual({ a: { text: 'Hi {n}' } });
   });
+
+  it("does the same for Quill's lines, keeping every id and every word", () => {
+    const file = fs.readFileSync(path.join(root, 'src/ui/mascot/lines.json'), 'utf8');
+    const full = JSON.parse(file) as Record<string, { text: unknown }>;
+    const lean = JSON.parse(leanJson(file)) as Record<string, { text: unknown }>;
+    expect(Object.keys(lean)).toEqual(Object.keys(full).filter((k) => !k.startsWith('$')));
+    for (const [id, e] of Object.entries(lean)) expect(e).toEqual({ text: full[id].text });
+  });
 });

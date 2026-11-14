@@ -6,8 +6,9 @@ import { mapPressure } from '../curve';
 import { altitudeOf, azimuthOf } from '../tilt';
 import type { PenDevice } from '../settings';
 
-export type CheckStepId = 'hover' | 'pressure' | 'tilt' | 'twist' | 'eraser' | 'barrel1' | 'barrel2' | 'scribble' | 'keys';
-export const CHECK_STEPS: CheckStepId[] = ['hover', 'pressure', 'tilt', 'twist', 'eraser', 'barrel1', 'barrel2', 'scribble', 'keys'];
+import { CHECK_STEPS, reportFileName, type CheckStepId } from './steps';
+
+export { CHECK_STEPS, reportFileName, type CheckStepId };
 
 /** The parts of a pointer event the check reads. A real PointerEvent fits, and so does a plain object in a test. */
 export interface PenSample {
@@ -498,5 +499,3 @@ export interface TabletReport {
   hints: string[];
   trace: { columns: string[]; samples: (number | string)[][] };
 }
-
-export const reportFileName = (now: Date): string => `frameling-tablet-report-${now.toISOString().slice(0, 10)}.json`;

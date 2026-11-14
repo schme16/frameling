@@ -2,8 +2,9 @@
 // The brush picker on screen: what opens, what is drawn, the keyboard, favourites and recent.
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import '../../src/brushes';
+import { preloadPicker } from './preloadPicker';
 import { BrushPresetRow } from '../../src/brushes/BrushPresetRow';
 import { STARTERS } from '../../src/brushes/model';
 import * as P from '../../src/brushes/presets';
@@ -46,6 +47,8 @@ function fill(n: number, groups = ['Inking', 'Painting', 'Sketching', 'Markers']
   });
   act(() => void P.addBrushesFromText(text));
 }
+
+beforeAll(preloadPicker);
 
 beforeEach(() => {
   localStorage.clear();
