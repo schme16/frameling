@@ -125,8 +125,12 @@ If `FRAMELING_INGEST_KEY` is set in your environment, it builds a second copy as
 
 Quill, the mascot, is drawn in Frameling itself. The source files are in `brand/mascot/`:
 
-- `mascot.frameling`: every animation. A 48 x 48 pixel layer at 100 fps (one frame is 10 ms), with one clip per
-  animation (idle, wave, talk, point, cheer, think, draw, sleep, oops, sad, wave-sad). The clip's loop setting is whether it loops.
+- `mascot.frameling`: every animation, drawn as the parts of him. Eleven pixel layers, 48 x 48 at 100 fps (one frame
+  is 10 ms), in four folders: Body (Body, Feet), Head (Hood, Pencil quills, Ear, Face), Face (Cheeks, Eyes, Mouth) and
+  Arms and extras (Arms, Extras: tears, stars, Zs). One clip per animation (idle, wave, talk, point, cheer, think,
+  draw, sleep, oops, sad, wave-sad, dazed, wake); a clip's loop setting is whether it loops. A pose is whatever the
+  layers show at one moment, so a new face is a change to Eyes or Mouth only. The colours are the file's own palette,
+  named, in ramps.
 - `mascot-icon.frameling`: the app icon. The 32 px icon is on frame 0 (clip `icon32`, layer "32 px") and the
   hand-drawn 16 px one is on frame 1 (clip `icon16`, layer "16 px", pixel size 2). The 16 px art is used at 16 and
   48 px, the 32 px art everywhere else.
@@ -136,16 +140,19 @@ first anyway). That writes `public/mascot/mascot.png` + `mascot.json` (what the 
 `build/icon.svg`, `build/icons/` and `public/mascot/logo.png`, touching only files that changed. Commit those along
 with the `.frameling` file.
 
-How the file becomes the sheet: each clip is an animation; a sheet frame lasts as long as its cels stay the same, so
-holding a drawing for 30 frames makes a 300 ms frame. Visible pixel layers are flattened (hidden layers are skipped,
-so a hidden layer is a good place for reference sketches); vector layers are left out with a warning. Keep clip names
-as they are: the app asks for animations by name. `brand/quill/` is the old generator the art was first made with,
-kept for history only.
+To add a pose or an animation: `node brand/mascot/mascot.mjs copy idle shy` adds a copy of a clip, named `shy`, after the
+last one. Open the file, click the `shy` bar above the timeline, pick the layer that should change (usually Eyes or
+Mouth), go to the first frame of one of its drawings and draw. A drawing held over several frames changes for all of
+them. Where the head bobs, each bob position is its own drawing, so repeat it on those. Save, then `npm run build:mascot`.
+The same script has `node brand/mascot/mascot.mjs` (what is in the file) and `node brand/mascot/mascot.mjs poses`
+(every pose, a row per clip, in `brand/mascot/poses-dark.png` and `poses-light.png`). It is the only script the mascot
+has; everything else is done in Frameling.
 
-Two scripts in `brand/mascot/` still compose poses from those old part grids (`compose.mjs`) and write them into
-`mascot.frameling`: `add-sad.mjs` adds the `sad` and `wave-sad` clips (`--force` redraws them, `--preview` only
-writes `brand/ab/sad-quill/contact-6x.png`), and `redraw-arms.mjs` swaps every old arm for the chunky ones built in
-`arms.mjs`, in place. Hand edits made in Frameling are left alone by both.
+How the file becomes the sheet: each clip is an animation; a sheet frame lasts as long as its layers stay the same, so
+holding a drawing for 30 frames makes a 300 ms frame. Visible pixel layers in visible folders are flattened, bottom
+first (hidden ones are skipped, so a hidden layer is a good place for reference sketches); vector layers are left out
+with a warning. Keep clip names as they are: the app asks for animations by name. `brand/quill/` is the old generator
+the art was first made with, kept for history only.
 
 ### Editing Quill's words
 
