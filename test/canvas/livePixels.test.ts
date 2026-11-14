@@ -1,6 +1,6 @@
 // The pieces a sparse live pixel preview is drawn in, and the screens where it is drawn whole instead.
 import { describe, expect, it } from 'vitest';
-import { around, edgeOnMiddle } from '../../src/canvas/livePixels';
+import { around, drawLivePixels, edgeOnMiddle, SPARSE_BELOW, tileSpan } from '../../src/canvas/livePixels';
 
 const area = (rs: { w: number; h: number }[]) => rs.reduce((a, r) => a + r.w * r.h, 0);
 const tile = (tx: number, ty: number, w = 128, h = 128) => ({ x: tx * 128, y: ty * 128, w, h });
@@ -50,11 +50,89 @@ describe('edgeOnMiddle: when a screen pixel sits exactly on the edge between two
     expect(edgeOnMiddle(0.5, 20, 900)).toBe(true);
     expect(edgeOnMiddle(0.35, 20, 900)).toBe(true);
     expect(edgeOnMiddle(0.4, 20.1, 900)).toBe(true);
-    // Far out (a screen pixel stands for three or more art pixels) it is never told apart: a big drawing fitted to the screen.
+    // Far out with no tiles to look at, nothing is asked: a big drawing fitted to the screen stays on the sparse preview.
     expect(edgeOnMiddle(0.3, 20, 900)).toBe(false);
     expect(edgeOnMiddle(0.15, 20, 900)).toBe(false);
-    expect(edgeOnMiddle(0.25, 20.25, 900)).toBe(false);
-    expect(edgeOnMiddle(0.683712345, 20.3137, 900)).toBe(false);
-    expect(edgeOnMiddle(0.149372519, 12.7183, 600)).toBe(false);
+  });
+});
+
+describe('far out, among the edges the touched tiles span', () => {
+  // The tiles of a stroke in the middle of a 600 x 420 drawing, two across and one down (a tile is 128 art pixels).
+  const span = tileSpan([tile(2, 1), tile(3, 1)])!;
+  it('the span runs a pixel past the tiles, so a seam on a tile edge is looked at', () => {
+    expect(span).toEqual({ x: { from: 255, to: 513 }, y: { from: 127, to: 257 } });
+    expect(tileSpan([])).toBeUndefined();
+  });
+  it('the zooms that land exactly (30%, 25%, 15%, 12.5%, 5%) are told apart, and the sparse preview is given up for the whole picture', () => {
+    for (const z of [0.3, 0.25, 0.15, 0.1, 0.05, 0.125]) {
+      expect(z < SPARSE_BELOW).toBe(true);
+      // The pan the harness uses: the drawing put in the middle of the view, on a whole screen pixel.
+      const pan = Math.round((1300 - 600 * z) / 2);
+      expect(edgeOnMiddle(z, pan, 1300, span.x) || edgeOnMiddle(z, Math.round((780 - 420 * z) / 2), 780, span.y), `${z * 100}%`).toBe(true);
+    }
+  });
+  it('the arbitrary far-out zooms stay sparse (28.37%, 12.34%, 7.77%)', () => {
+    for (const z of [0.2837, 0.1234, 0.0777]) {
+      const pan = Math.round((1300 - 600 * z) / 2);
+      expect(edgeOnMiddle(z, pan, 1300, span.x), `${z * 100}% across`).toBe(false);
+      expect(edgeOnMiddle(z, Math.round((780 - 420 * z) / 2), 780, span.y), `${z * 100}% down`).toBe(false);
+    }
+  });
+  it('20% never lands (its edges fall on fifths, never halves) and stays sparse', () => {
+    expect(edgeOnMiddle(0.2, 590, 1300, span.x)).toBe(false);
+  });
+  it('only the edges inside the span count: a landing outside the tiles is left alone', () => {
+    // At 30% an edge lands on a screen middle every 10 art pixels, so a span of a few pixels between landings is clear of one.
+    expect(edgeOnMiddle(0.3, 0, 900, { from: 5, to: 5 })).toBe(true);
+    expect(edgeOnMiddle(0.3, 0, 900, { from: 6, to: 14 })).toBe(false);
+    expect(edgeOnMiddle(0.3, 0, 900, { from: 6, to: 15 })).toBe(true);
+  });
+  it('a flipped view (a negative scale) is treated the same, not as far out with nothing to see', () => {
+    expect(edgeOnMiddle(-0.3, 400, 900, { from: 5, to: 5 })).toBe(true);
+    expect(edgeOnMiddle(-0.5, 400, 900)).toBe(true);
+    expect(edgeOnMiddle(-0.2837, 400.5, 900, span.x)).toBe(false);
+  });
+});
+
+describe('drawLivePixels: when a far-out stroke is asked to fill', () => {
+  /** A stand-in for the canvas context: only what the live draw touches. A matrix (zoom, pan) and a screen size. */
+  function run(zoom: number, pan: { x: number; y: number }, tiles: { x: number; y: number; w: number; h: number }[], screen = { width: 1300, height: 780 }) {
+    const calls: string[] = [];
+    const g = {
+      canvas: screen,
+      imageSmoothingEnabled: true,
+      getTransform: () => ({ a: zoom, b: 0, c: 0, d: zoom, e: pan.x, f: pan.y }),
+      save: () => {},
+      restore: () => {},
+      beginPath: () => {},
+      rect: () => {},
+      clip: () => {},
+      setTransform: () => {},
+      drawImage: () => calls.push('draw'),
+    };
+    let filled = 0;
+    const lv = { layerId: 'l', kind: 'pixel' as const, canvas: {} as CanvasImageSource, x: 0, y: 0, width: 600, height: 420, sparse: { base: null, tiles, fill: () => filled++ } };
+    drawLivePixels(g as never, lv as never, 1);
+    return { filled, calls };
+  }
+  const tiles = [tile(2, 1), tile(3, 1)];
+  const centred = (z: number) => ({ x: Math.round((1300 - 600 * z) / 2), y: Math.round((780 - 420 * z) / 2) });
+  it('an exact landing (30%, 15%, 25%) fills, so the held stroke is the finished one', () => {
+    for (const z of [0.3, 0.15, 0.25, 0.125]) expect(run(z, centred(z), tiles).filled, `${z * 100}%`).toBe(1);
+  });
+  it('any other far-out zoom stays sparse (28.37%, 12.34%), and draws each tile', () => {
+    for (const z of [0.2837, 0.1234]) {
+      const r = run(z, centred(z), tiles);
+      expect(r.filled, `${z * 100}%`).toBe(0);
+      expect(r.calls.length).toBe(tiles.length);
+    }
+  });
+  it('a landing that is nowhere near the touched tiles does not fill', () => {
+    // At 30% on a whole pan an edge lands every ten art pixels, so a tile always has one inside it; a tile of one pixel between two does not.
+    expect(run(0.3, { x: 0, y: 0 }, [{ x: 5, y: 6, w: 0, h: 0 }]).filled).toBe(1);
+    expect(run(0.3, { x: 0, y: 0 }, [{ x: 7, y: 7, w: 1, h: 1 }]).filled).toBe(0);
+  });
+  it('a flipped view lands the same way', () => {
+    expect(run(-0.3, { x: 400, y: 300 }, tiles).filled).toBe(1);
   });
 });

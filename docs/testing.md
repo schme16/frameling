@@ -698,16 +698,19 @@ xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/pixel-camera.cj
 ## Live pixel stroke preview: scripts/e2e/pixel-live.cjs
 
 While a pixel stroke is held down the canvas shows the old drawing with only the touched 128 x 128 tiles drawn live
-(`src/canvas/livePixels.ts`, `src/tools/pixelSession.ts`). The script draws strokes (pencil and eraser) over a drawing that
-fills the grid, at thirteen zoom levels (the drawing is put in the middle of the view below 100%, so the stroke lands on it),
-takes the canvas while the stroke is held and again after it is let go, and the two must be pixel for pixel the same. The one
-exception is a far-out zoom where art pixel edges land exactly on screen pixel middles (30% and 15%), where the odd pixel may
-differ and is only listed. Each stroke must also have changed the screen, or the run fails. The stabilizer is turned off for
+(`src/canvas/livePixels.ts`, `src/tools/pixelSession.ts`). The script draws strokes (pencil, eraser and the Gradient tool, which paints through the same preview) over a drawing that
+fills the grid, at fifteen zoom levels (the drawing is put in the middle of the view below 100%, so the stroke lands on it),
+takes the canvas while the stroke is held and again after it is let go, and the two must be pixel for pixel the same, with no
+exceptions: the far-out zooms where art pixel edges land exactly on screen pixel middles (30%, 25%, 15%, 12.5%) are in the list
+too (the preview fills there, see `edgeOnMiddle` in `livePixels.ts`; they used to differ by 1694 and 539 screen pixels at 30% and
+15%). The Gradient tool's guide line and handles are drawn over the picture while it is held, so the screen pixels beside its
+drag line are left out of that one comparison. `PIXEL_LIVE_ZOOMS=0.3,0.15` and `PIXEL_LIVE_TOOLS=pencil` narrow a run. Each stroke must also have changed the screen, or the run fails. The stabilizer is turned off for
 the two tools, since its default (12%) keeps the brush a few screen pixels behind the pointer until pen-up, which the
 held-versus-finished comparison would read as a difference. At pen-up the
 finished drawing's cached picture is the old one with only the touched tiles put on it (`seedPicture` in
 `pixelSession.ts`, so pen-up uploads nothing big); the script also checks it against a picture rebuilt from the pixels,
-and that undo and redo give back the same screen, at every zoom.
+and that undo and redo give back the same screen, at every zoom. `scripts/ab/far-zoom-shimmer.sh` records the old shimmer at 30%
+against the fixed build as clips and pixel-difference pictures (`brand/ab/far-zoom-shimmer/`).
 
 ```bash
 npm run build
