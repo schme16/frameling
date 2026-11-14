@@ -2211,10 +2211,12 @@ body.ui-resizing * {
   color: var(--faint);
 }
 .ui-keyrow {
-  display: grid;
-  grid-template-columns: minmax(90px, 1.1fr) minmax(80px, 1.4fr) auto;
+  /* Name, keys, buttons. When the keys are too wide for the room (big interface size), the buttons drop under them
+     rather than sitting on top of the key chip. */
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
+  gap: 4px 12px;
   min-height: 38px;
   padding: 3px 8px;
   border-radius: var(--ui-btn-radius);
@@ -2226,6 +2228,8 @@ body.ui-resizing * {
   background: color-mix(in srgb, var(--sunny) 20%, transparent);
 }
 .ui-keyrow-name {
+  flex: 1.1 1 90px;
+  min-width: 90px;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -2236,6 +2240,9 @@ body.ui-resizing * {
   display: inline-grid;
 }
 .ui-keyrow-keys {
+  /* The same column in every row; never narrower than its widest chip. */
+  flex: 1.4 1 190px;
+  min-width: min-content;
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
@@ -2289,6 +2296,8 @@ body.ui-resizing * {
   opacity: 0.7;
 }
 .ui-keyrow-act {
+  flex: none;
+  margin-left: auto;
   display: flex;
   gap: 4px;
 }
@@ -4251,4 +4260,50 @@ body.dock-dragging .ui-tip {
   text-align: right;
   font-variant-numeric: tabular-nums;
   font-weight: 700;
+}
+
+/* The help icon the explanations hide behind: small, quiet until you point at it, and always a real button you can tab to. */
+.ui-explain {
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  border-radius: var(--radius-pill);
+  color: var(--faint);
+  align-self: center;
+}
+.ui-explain:hover,
+.ui-explain:focus-visible {
+  color: var(--text);
+}
+.ui-explain:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+.cv-field-head .cv-explain,
+.ab-heading .cv-explain {
+  margin-right: auto;
+  margin-left: -2px;
+}
+.cv-toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.cv-toggle-row .cv-toggle {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.ui-tip.is-pinned {
+  border-color: var(--accent);
+}
+/* A panel with no title bar of its own (a floating window, the bottom dock) keeps its help icon in the corner. */
+.ui-panel-explain {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  z-index: 2;
+}
+.sy-section-title .ui-explain {
+  margin-left: 4px;
+  vertical-align: middle;
 }

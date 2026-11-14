@@ -194,7 +194,7 @@ export function ParticlesPanel() {
         <EmitterEditor s={picked[0]} look={look} />
       ) : (
         <>
-          <Tip>{picked.length > 1 ? `${picked.length} particle emitters selected. Pick just one to change it here.` : 'Click one to add it to your animation. Select particles on the canvas to change them.'}</Tip>
+          <Tip stays>{picked.length > 1 ? `${picked.length} particle emitters selected. Pick just one to change it here.` : 'Click one to add it to your animation. Select particles on the canvas to change them.'}</Tip>
           <Presets compact={false} />
           <div className="cv-row cv-wrap">
             <ActionButton onClick={() => addParticles()} title="Adds a sparkle burst in the middle of the stage">

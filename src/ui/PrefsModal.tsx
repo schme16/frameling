@@ -1,3 +1,4 @@
+import { ExplainIcon, Explainer, useShowExplanations } from './explain/ExplainIcon';
 import { line } from './mascot/lines';
 import type { SwitcherLook } from './switcherModel';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
@@ -108,11 +109,15 @@ function Prefs({ page, commandId, light }: { page: PrefsPage; commandId?: string
 // ---------------------------------------------------------------- pieces
 
 export function Row({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
+  const show = useShowExplanations();
   return (
     <div className="ui-pref-row">
       <div className="ui-pref-text">
-        <strong>{label}</strong>
-        {hint && <span>{hint}</span>}
+        <strong>
+          {label}
+          {hint && !show && <ExplainIcon title={label} words={hint} help="preferences" size={13} />}
+        </strong>
+        {hint && show && <span>{hint}</span>}
       </div>
       <div className="ui-pref-control">{children}</div>
     </div>
@@ -146,7 +151,7 @@ function SnappingPage() {
   return (
     <>
       <h3>Snapping</h3>
-      <p className="ui-pref-intro">Pick what shapes jump onto when they get close. The Snap button at the bottom of the window opens the same choices.</p>
+      <Explainer className="ui-pref-intro">Pick what shapes jump onto when they get close. The Snap button at the bottom of the window opens the same choices.</Explainer>
       <SnapPanel wide />
     </>
   );
@@ -290,6 +295,9 @@ function GeneralPage({ onThemes }: { onThemes: () => void }) {
       </Row>
       <Row label="Tips" hint="A friendly tip in the status bar.">
         <Switch label="Tips" on={p.showTips} onChange={(showTips) => setPrefs({ showTips })} />
+      </Row>
+      <Row label="Explanations" hint="The little lines that say what a panel or a setting is for. Off tucks them behind the ? icons: point at one to read it. Handy once you know your way round.">
+        <Switch label="Explanations" on={p.showExplanations} onChange={(showExplanations) => setPrefs({ showExplanations })} />
       </Row>
       <Row label="Workspace switcher" hint="Which workspace you are in, beside the drawing's name. Tabs show them all at once, Chip shows just the one you are in, and Hidden leaves it to the View menu. A narrow window uses the chip.">
         <Segmented<SwitcherLook>

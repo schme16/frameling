@@ -42,7 +42,7 @@ export function CameraPanel() {
   if (doc.editing?.length) {
     return (
       <div className="cv-panel cv-options cam-panel" data-help="camera">
-        <Tip>The camera belongs to the main scene. Go back out of the symbol to change it.</Tip>
+        <Tip stays>The camera belongs to the main scene. Go back out of the symbol to change it.</Tip>
       </div>
     );
   }
@@ -67,11 +67,11 @@ export function CameraPanel() {
     <div className="cv-panel cv-options cam-panel" data-help="camera">
       <Toggle label="Look through the camera" checked={through} onChange={(v) => toggleThroughCamera(v)} hint="See just what the camera sees (Shift+C). You can still draw." />
       <Toggle label="Look through it while playing" checked={whilePlaying} onChange={(v) => setViewSettings({ cameraWhilePlaying: v })} />
-      {!cam.visible && <Tip>The camera layer is hidden, so the camera is off: exports show the whole stage.</Tip>}
+      {!cam.visible && <Tip stays>The camera layer is hidden, so the camera is off: exports show the whole stage.</Tip>}
       <Section title={`Where it looks on frame ${frame + 1}`}>
         {view ? (
           <>
-            {!onKey && <Tip>Changing it here makes a new camera key on this frame. It glides there if the camera has in-betweens.</Tip>}
+            {!onKey && <Tip stays>Changing it here makes a new camera key on this frame. It glides there if the camera has in-betweens.</Tip>}
             <div className="sy-grid">
               <LengthNum label="X" px={view.x} onPx={(v) => set('x', { x: v }, 'Move the camera')} title="Middle of the camera's view, across" />
               <LengthNum label="Y" px={view.y} onPx={(v) => set('y', { y: v }, 'Move the camera')} title="Middle of the camera's view, down" />
@@ -84,7 +84,7 @@ export function CameraPanel() {
             </div>
           </>
         ) : (
-          <Tip>The camera has no key on this frame. Drag its bar in the timeline to cover it.</Tip>
+          <Tip stays>The camera has no key on this frame. Drag its bar in the timeline to cover it.</Tip>
         )}
       </Section>
       {activeLayerId === cam.id ? <TweenSection /> : null}

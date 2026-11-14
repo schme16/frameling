@@ -1,6 +1,7 @@
 // "Change the tools": the panel that sits beside the tool rail while it is being changed. The rail itself does the
 // moving (drag, click for a menu, names to type, folds to flip); this holds the things that belong to no one tool:
 // the Put away shelf, button size, group names, rail style, and putting it all back.
+import { Explainer } from './explain/ExplainIcon';
 import { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { getTool } from '../core/registry';
@@ -94,7 +95,7 @@ export function ToolbarBuilder({ anchor, place, away, visible }: { anchor: DOMRe
       )}
 
       <h3 className="ui-tb-head">New group</h3>
-      <p className="ui-tb-note">Drag a tool to a gold <b>+</b> between two groups, or click a tool and choose <b>Start a new group here</b>. Give it no name and it is just a divider.</p>
+      <Explainer className="ui-tb-note">Drag a tool to a gold <b>+</b> between two groups, or click a tool and choose <b>Start a new group here</b>. Give it no name and it is just a divider.</Explainer>
 
       <h3 className="ui-tb-head">Button size</h3>
       <Segments label="Button size" value={size} options={TOOL_SIZES.map((s): [ToolSizePref, string] => [s, SIZE_WORDS[s]])} onChange={(toolSize) => setPrefs({ toolSize })} />
@@ -107,7 +108,7 @@ export function ToolbarBuilder({ anchor, place, away, visible }: { anchor: DOMRe
 
       <h3 className="ui-tb-head">Rail style</h3>
       <Segments label="Rail style" value={style} options={[['two', 'Every tool'], ['stacked', 'One per group']]} onChange={(toolRail) => setPrefs({ toolRail })} />
-      {style === 'stacked' && <p className="ui-tb-note">Every group is one button. Choose Every tool to fold only some.</p>}
+      {style === 'stacked' && <Explainer className="ui-tb-note">Every group is one button. Choose Every tool to fold only some.</Explainer>}
 
       <div className="ui-tb-foot">
         <button type="button" className="ui-tb-back" disabled={!changed} onClick={putToolsBack} data-tip="Put the tools back" data-tip-desc="Groups, names, hidden and folded tools, size and style all go back to how they come. Undo is on the message.">

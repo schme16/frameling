@@ -1,5 +1,6 @@
 // The notes of the layered formats (what PSD, PDF, Illustrator and ProRes keep), and Illustrator's choice of what a
 // several-frame animation becomes.
+import { ExNote } from '../ExNote';
 import type { ComponentType } from 'react';
 import { LayeredNotes } from '../LayeredNotes';
 import type { ExportUiProps } from '../registry';
@@ -37,7 +38,7 @@ export function IllustratorFrames({ s, set, doc }: ExportUiProps) {
           </button>
         ))}
       </div>
-      <p className="ex-note">{AI_FRAMES.find((o) => o.id === aiFramesOf(s))?.note}</p>
+      <ExNote>{AI_FRAMES.find((o) => o.id === aiFramesOf(s))?.note}</ExNote>
     </fieldset>
   );
 }

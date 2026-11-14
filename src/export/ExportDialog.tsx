@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { ExAbout, ExNote, ExportExplainScope } from './ExNote';
 import type { Doc } from '../core/format';
 import { sceneOf } from '../core/symbols';
 import { store, useStore } from '../core/store';
@@ -190,6 +191,7 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
 
   return (
     <Modal title="Export" onClose={close} wide>
+      <ExportExplainScope>
       <div className="ex-body">
         <div className="ex-cards" role="radiogroup" aria-label="Format">
           {[...groups.popular, ...(showMore ? groups.more : [])].map((f: FormatInfo) => {
@@ -202,6 +204,7 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
                 aria-checked={s.format === f.id}
                 className={`ex-card${s.format === f.id ? ' ex-chosen' : ''}`}
                 data-testid={`export.format.${f.id}`}
+                data-wraps
                 disabled={!!why}
                 data-autofocus={s.format === f.id ? '' : undefined}
                 onClick={() => set({ format: f.id, ...exporterOf(f.id)?.picked?.(s, { art }) })}
@@ -215,7 +218,7 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
             );
           })}
           {!moreChosen && (
-            <button type="button" className="ex-more" data-testid="export.more" aria-expanded={showMore} onClick={() => setMore((m) => !m)}>
+            <button type="button" className="ex-more" data-wraps data-testid="export.more" aria-expanded={showMore} onClick={() => setMore((m) => !m)}>
               <Icon name={showMore ? 'chevron-up' : 'chevron-down'} size={16} />
               {showMore ? 'Fewer formats' : `More formats (${groups.more.length})`}
               {!showMore && <small>WebM, PNG picture, SVG, Lottie, PSD, PDF and more</small>}
@@ -224,6 +227,7 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
         </div>
 
         <div className="ex-options">
+          <ExAbout />
           <SheetSays settings={s} />
           <ArtboardExportPicker settings={s} />
           {ui?.Before && <ui.Before {...uiProps} />}
@@ -275,7 +279,7 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
           <fieldset>
             <legend>Size</legend>
             {realSize !== null ? (
-              <p className="ex-note ex-realsize">Real size: one art pixel is one pixel ({artPx} each frame). The game scales it up, which keeps the files small and the edges sharp.</p>
+              <ExNote className="ex-realsize">Real size: one art pixel is one pixel ({artPx} each frame). The game scales it up, which keeps the files small and the edges sharp.</ExNote>
             ) : (
               <>
                 <div className="ex-seg">
@@ -290,7 +294,7 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
                     </button>
                   ))}
                 </div>
-                <p className="ex-note">{s.scale === art ? `Real size: one art pixel is one pixel (${artPx}).` : pixel ? 'Whole numbers keep every pixel sharp and square.' : 'Bigger is sharper but makes a bigger file.'}</p>
+                <ExNote>{s.scale === art ? `Real size: one art pixel is one pixel (${artPx}).` : pixel ? 'Whole numbers keep every pixel sharp and square.' : 'Bigger is sharper but makes a bigger file.'}</ExNote>
               </>
             )}
           </fieldset>
@@ -308,6 +312,7 @@ function ExportDialog({ close, initial, autoStart }: { close: () => void; initia
           {ui?.After && <ui.After {...uiProps} />}
         </div>
       </div>
+      </ExportExplainScope>
 
       {error && (
         <QuillSays anim="oops" then="idle" size={48} className="ex-error-row" bubbleClassName="ex-error">

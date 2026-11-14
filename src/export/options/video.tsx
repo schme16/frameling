@@ -1,4 +1,5 @@
 import { getChoiceDef, setChoice, useChoice } from '../../core/choices';
+import { ExNote } from '../ExNote';
 import type { ExportUiProps } from '../registry';
 import '../choices';
 
@@ -27,7 +28,7 @@ export function WebmOptions({ s, support }: ExportUiProps) {
         ))}
       </div>
       <p className="ex-note">{v?.ok ? webmCodecNote(v.codec, s.transparent ? v.alphaCodec : null) : 'Also in Preferences > Behaviour.'}</p>
-      <p className="ex-note">{WEBM_CODEC_WORDS}</p>
+      <ExNote>{WEBM_CODEC_WORDS}</ExNote>
     </fieldset>
   );
 }

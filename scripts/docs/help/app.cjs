@@ -398,6 +398,19 @@ const entries = [
     prefs: CALM,
     steps: [template('bouncing-ball'), wait(800), clickText('[data-panels-button]', 'Panels'), wait(900), ...settle, wait(300), { shot: '@', crop: [760, 120, 520, 640] }],
   },
+  // The explanations tucked away: the Variations heading in the Artboards panel with its ? icon pointed at, the words in the tip.
+  {
+    name: 'explanations',
+    prefs: { ...CALM, showExplanations: false },
+    steps: [
+      template('bouncing-ball'),
+      js(`${F}.showPanel('artboards')`),
+      wait(1200),
+      ...settle,
+      { clickOn: '.sy-section-title .ui-explain', hover: true, after: 1400 },
+      { shot: '@', crop: [660, 90, 620, 440] },
+    ],
+  },
   // Stacked groups: Preview dragged off the rail to the bottom edge of the right side, then the line between them pulled.
   {
     name: 'panel-groups',

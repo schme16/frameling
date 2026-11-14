@@ -54,7 +54,7 @@ export function LibraryPanel() {
   if (nested)
     return (
       <div className="cv-options sy-library" data-help="symbols">
-        <Tip>You're painting a tile right now. Press Done above the canvas to get back to your symbols.</Tip>
+        <Tip stays>You're painting a tile right now. Press Done above the canvas to get back to your symbols.</Tip>
       </div>
     );
 
@@ -62,10 +62,10 @@ export function LibraryPanel() {
     <div className="cv-panel cv-options sy-library" data-help="symbols">
       {!symbols.length ? (
         <>
-          <Tip>
+          <Tip stays>
             No symbols yet. A symbol is a drawing you can reuse: place it many times, give it its own little animation, and make it glide between keys with in-betweens.
           </Tip>
-          <Tip>Select something you drew and press F8 (or the button below) to make one.</Tip>
+          <Tip stays>Select something you drew and press F8 (or the button below) to make one.</Tip>
         </>
       ) : (
         <ul className="sy-list" aria-label="Symbols">

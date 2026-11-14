@@ -662,7 +662,12 @@ own pixels), and a wide 1920 screen. In each it walks the main window (vector an
 options (on a vector and a pixel drawing), every dialog and every Preferences page, and reports any control that:
 
 - has a short piece of text on two or more lines (a wrap), or
-- keeps its words on one line but sticks out of the box that holds it, or makes a panel scroll sideways when it should not.
+- keeps its words on one line but sticks out of the box that holds it, or makes a panel scroll sideways when it should not, or
+- **sits on top of another control** (an overlap is not a wrap, and it is what a missing `data-wraps` looks like: a card's
+  sentence that will not wrap runs under the column beside it). Every pair of visible controls that do not contain each other is
+  compared, using the box their words fill, cut to any scrolling or clipping box round them (so a control scrolled out of sight
+  is not "under" anything). Mark a stack that is meant (the fill and stroke wells, a badge on a thumbnail) with `data-overlaps`
+  on it or a box round it. A sticky or fixed heading is left to lie over what scrolls under it. The finding reads `[overlaps] a <> b`.
 
 It also drags the right side from 200 to 480 px in steps of 10 on a few busy panels, and fails when a wrap shows up on the way
 or the content grows taller as the panel gets wider (the layout jumping about). On the Preview panel it steps the frame

@@ -207,7 +207,7 @@ function TextEditorPanel({ s }: { s: TextShape }) {
         </Field>
       </Section>
       <Section title="Shapes" open={false}>
-        <Tip>Turn the text into ordinary filled shapes you can reshape. It can't be typed into afterwards.</Tip>
+        <Tip stays>Turn the text into ordinary filled shapes you can reshape. It can't be typed into afterwards.</Tip>
         <div className="cv-row cv-wrap">
           <ActionButton onClick={() => void getCommand('text.toShapes')?.run()}>Convert to shapes</ActionButton>
         </div>
@@ -231,7 +231,7 @@ export function TextPanel() {
         <TextEditorPanel s={picked[0]} />
       ) : (
         <>
-          <Tip>{picked.length > 1 ? `${picked.length} texts selected. Pick just one to change it here.` : 'Pick the Text tool (T), click on the stage and type. Select text to change its font, size and animations here.'}</Tip>
+          <Tip stays>{picked.length > 1 ? `${picked.length} texts selected. Pick just one to change it here.` : 'Pick the Text tool (T), click on the stage and type. Select text to change its font, size and animations here.'}</Tip>
           <div className="cv-row cv-wrap">
             <ActionButton onClick={() => void getCommand('tools.text')?.run()}>Use the Text tool</ActionButton>
           </div>

@@ -1,5 +1,6 @@
 // Preferences, Pen and tablet: try the pen, shape the pressure curve, say what the barrel buttons and the eraser end do,
 // choose what fingers do, and see what each tool does with pressure, tilt and the stabilizer.
+import { Explainer } from '../ui/explain/ExplainIcon';
 import { useEffect, useRef, useState } from 'react';
 import { Row, Segmented, Switch } from '../ui/PrefsModal';
 import { BARREL_ACTIONS, barrelBits, firstBarrelBit, penPress, type BarrelAction } from './buttons';
@@ -194,7 +195,7 @@ export function PenPage() {
           >
             Reset
           </button>
-          <p className="tb-note tb-curve-note">Drag the dots to make the feel your own. <b>Reset</b> brings back the straight line.</p>
+          <Explainer className="tb-note tb-curve-note">Drag the dots to make the feel your own. <b>Reset</b> brings back the straight line.</Explainer>
         </div>
         <div className="tb-curve-side">
           <Row label="Feel" hint="Soft counts a light touch for a lot. Firm needs a harder press. Normal is the straight line. Pick one to start from, then drag the dots to make it yours.">
@@ -255,9 +256,9 @@ export function PenPage() {
       </Row>
 
       <h4>What each tool does with the pen</h4>
-      <p className="tb-note">
+      <Explainer className="tb-note">
         The vector Brush has its own thickness switch in its options. Everything else is here, and in each tool's options. The stabilizer smooths a wobbly line by letting the brush trail a little behind your pen or mouse. Every tool starts at a gentle 12%; slide it to 0 to turn it off.
-      </p>
+      </Explainer>
       <table className="tb-tools">
         <thead>
           <tr>

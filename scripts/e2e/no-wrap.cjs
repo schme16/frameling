@@ -10,8 +10,11 @@
 //   npm run build && xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/no-wrap.cjs
 //
 // NOWRAP_JSON=<file> saves every finding. NOWRAP_SHOTS=<dir> saves a picture of each view that has a wrap.
+// NOWRAP_EXPLAIN=on runs with the explanations on show (a new person's view; the default run has them tucked away behind the ? icons).
 // NOWRAP_ONLY=<text> runs only the views whose name starts with it. NOWRAP_PASSES=a,b runs only those passes.
-// Exits 1 when anything wraps or jumps.
+// It also looks for a control sitting on top of another one (an overlap is not a wrap: words that will not wrap run under the
+// next column). Mark a stack that is meant with data-overlaps.
+// Exits 1 when anything wraps, overlaps or jumps.
 const { app, BrowserWindow, ipcMain } = require('electron');
 const fs = require('node:fs');
 const os = require('node:os');
@@ -176,6 +179,79 @@ const FIND = `((scopeSel) => {
       h: Math.round(r.height),
     });
   }
+  // A control sitting on top of another one is not a wrap, so the check above never sees it: words that will not wrap run
+  // under the next column, and a button covers its neighbour. For each pair of visible controls that do not contain each
+  // other, the part with words is the box the words fill (a card's sentence pokes out of the card), the rest is the box.
+  // Marked data-overlaps for a stack that is meant (a badge on a thumbnail).
+  const SOLID = 'button, input:not([type=hidden]), select, textarea, summary, [role=tab], [role=radio], [role=checkbox], [role=switch], [role=menuitem], [role=option], [data-one-line]';
+  const ctrls = [...scope.querySelectorAll(SOLID)].filter((el) => visible(el) && !el.closest('[data-overlaps]') && getComputedStyle(el).pointerEvents !== 'none');
+  // A box cut to every scrolling or clipping box from the starting box upward: only what shows counts, so a control scrolled out of
+  // sight (or text cut off with an ellipsis) is not "on top of" anything.
+  const clipBy = (start, b) => {
+    let box = b;
+    for (let a = start; a && a !== document.documentElement; a = a.parentElement) {
+      const cs = getComputedStyle(a);
+      if (cs.overflowX === 'visible' && cs.overflowY === 'visible') continue;
+      const r = a.getBoundingClientRect();
+      box = {
+        l: cs.overflowX === 'visible' ? box.l : Math.max(box.l, r.left),
+        r: cs.overflowX === 'visible' ? box.r : Math.min(box.r, r.right),
+        t: cs.overflowY === 'visible' ? box.t : Math.max(box.t, r.top),
+        b: cs.overflowY === 'visible' ? box.b : Math.min(box.b, r.bottom),
+      };
+      if (box.r <= box.l || box.b <= box.t) return null;
+    }
+    return box;
+  };
+  // The box a control fills: its own box, and every piece of its words (which may poke out of it), each cut to what shows.
+  const spans = (el) => {
+    const r = el.getBoundingClientRect();
+    let box = clipBy(el.parentElement, { l: r.left, t: r.top, r: r.right, b: r.bottom });
+    if (!box || el.tagName === 'INPUT' || el.tagName === 'SELECT' || el.tagName === 'TEXTAREA') return box;
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+      if (!(n.textContent || '').trim() || !n.parentElement) continue;
+      const range = document.createRange();
+      range.selectNodeContents(n);
+      for (const q of range.getClientRects()) {
+        if (q.width < 0.5 || q.height < 0.5) continue;
+        const c = clipBy(n.parentElement, { l: q.left, t: q.top, r: q.right, b: q.bottom });
+        if (c) box = { l: Math.min(box.l, c.l), t: Math.min(box.t, c.t), r: Math.max(box.r, c.r), b: Math.max(box.b, c.b) };
+      }
+    }
+    return box;
+  };
+  const name = (el) => {
+    const cls = typeof el.className === 'string' ? el.className.trim().split(/\\s+/).slice(0, 2).join('.') : '';
+    const t = (el.textContent || el.getAttribute('aria-label') || el.getAttribute('value') || '').replace(/\\s+/g, ' ').trim().slice(0, 28);
+    return el.tagName.toLowerCase() + (cls ? '.' + cls : '') + (t ? ' "' + t + '"' : '');
+  };
+  const stuck = (el) => {
+    for (let a = el; a && a !== document.documentElement; a = a.parentElement) if (/^(sticky|fixed)$/.test(getComputedStyle(a).position)) return true;
+    return false;
+  };
+  const boxes = ctrls.map((el) => ({ el, b: spans(el) })).filter((x) => x.b);
+  const seen = new Set();
+  for (let i = 0; i < boxes.length; i++) {
+    for (let j = i + 1; j < boxes.length; j++) {
+      const a = boxes[i];
+      const c = boxes[j];
+      if (a.el.contains(c.el) || c.el.contains(a.el)) continue;
+      // A sticky heading is meant to lie over what scrolls under it.
+      if (stuck(a.el) !== stuck(c.el)) continue;
+      const w = Math.min(a.b.r, c.b.r) - Math.max(a.b.l, c.b.l);
+      const h = Math.min(a.b.b, c.b.b) - Math.max(a.b.t, c.b.t);
+      if (w < 3 || h < 3) continue;
+      // Boxes that only touch because one is a thin overlay (a resize handle, a focus ring) are not controls on top of controls.
+      const ra = a.el.getBoundingClientRect();
+      const rc = c.el.getBoundingClientRect();
+      if (Math.min(ra.width, ra.height, rc.width, rc.height) < 6) continue;
+      const sig = '[overlaps] ' + name(a.el) + ' <> ' + name(c.el);
+      if (seen.has(sig)) continue;
+      seen.add(sig);
+      found.push({ sig, text: name(a.el) + ' <> ' + name(c.el), lines: 1, out: 'overlap', overlap: true, w: Math.round(w), h: Math.round(h) });
+    }
+  }
   return { found, squeezed: squeezedCount };
 })`;
 
@@ -217,7 +293,7 @@ async function runPass(p) {
     Promise.race([win.webContents.executeJavaScript(`(async () => { ${code} })()`), new Promise((_, no) => setTimeout(() => no(new Error('page call timed out: ' + code.trim().slice(0, 100))), 20000))]);
   // Settings live in localStorage: no Welcome screen, no first-run hello. Light theme first, the other theme is the same shapes.
   await win.loadFile(index(), { query: { debug: '1' } });
-  await js(`localStorage.clear(); localStorage.setItem('frameling.prefs.v1', ${JSON.stringify(JSON.stringify({ theme: 'dark', showWelcome: false, onboarded: true, showTips: true }))}); return true`);
+  await js(`localStorage.clear(); localStorage.setItem('frameling.prefs.v1', ${JSON.stringify(JSON.stringify({ theme: 'dark', showWelcome: false, onboarded: true, showTips: true, showExplanations: process.env.NOWRAP_EXPLAIN === 'on' }))}); return true`);
   await win.loadFile(index(), { query: { debug: '1' } });
   await sleep(1200);
   await js(`__frameling.prefs.set({ uiScale: ${p.scale} }); return true`);
@@ -379,7 +455,7 @@ app.whenReady().then(async () => {
     if (only && !only.some((o) => p.name.includes(o))) continue;
     const before = findings.length;
     await runPass(p);
-    console.log(`${findings.length === before ? 'ok  ' : 'FAIL'} ${p.name}: ${findings.length - before} wrapping`);
+    console.log(`${findings.length === before ? 'ok  ' : 'FAIL'} ${p.name}: ${findings.length - before} wrapping or overlapping`);
   }
   // One line per distinct control, with where it wrapped.
   const bySig = new Map();
@@ -390,7 +466,7 @@ app.whenReady().then(async () => {
     bySig.set(f.sig, e);
   }
   for (const e of [...bySig.values()].sort((a, b) => b.views.size - a.views.size)) {
-    console.log(`     ${e.sig}  (${e.lines === 1 ? 'one line, pokes out' : e.lines + ' lines'}; ${e.views.size} views: ${[...e.views].slice(0, 3).join(', ')}${e.views.size > 3 ? ', ...' : ''}; ${[...e.passes].map((x) => x.replace(/^.*?, /, '')).join(' / ')})`);
+    console.log(`     ${e.sig}  (${e.sig.startsWith('[overlaps]') ? 'on top of each other' : e.lines === 1 ? 'one line, pokes out' : e.lines + ' lines'}; ${e.views.size} views: ${[...e.views].slice(0, 3).join(', ')}${e.views.size > 3 ? ', ...' : ''}; ${[...e.passes].map((x) => x.replace(/^.*?, /, '')).join(' / ')})`);
   }
   for (const j of jumps) console.log(`JUMP ${j.pass}: ${j.view}: ${j.text}`);
   if (missing.length) console.log(`${missing.length} views had nothing on screen to check: ${missing.slice(0, 12).join('; ')}${missing.length > 12 ? '; ...' : ''}`);

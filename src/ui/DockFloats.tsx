@@ -9,6 +9,7 @@ import { dragState, dropIndexFor, startFloatDrag, startFloatResize, startPanelDr
 import { askRename, menuPoint, floatMenu, openDockMenu, panelMenu } from './dockMenus';
 import { PanelBoundary } from './dockShared';
 import { Icon } from './icons';
+import { PanelScope } from './explain/ExplainIcon';
 import { createStore, readRaw, writeJson } from './mini';
 
 /**
@@ -233,8 +234,10 @@ const PanelHost = memo(function PanelHost({ id, name }: { id: string; name: stri
   const p = getPanel(id);
   if (!p) return null;
   return (
-    <PanelBoundary name={name} key={id}>
-      <p.component />
-    </PanelBoundary>
+    <PanelScope id={id} title={name} help={p.help}>
+      <PanelBoundary name={name} key={id}>
+        <p.component />
+      </PanelBoundary>
+    </PanelScope>
   );
 });

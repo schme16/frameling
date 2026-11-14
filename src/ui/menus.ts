@@ -37,7 +37,7 @@ export const MENUS: MenuDef[] = [
   {
     label: 'View',
     categories: ['View'],
-    items: ['view.zoomIn', 'view.zoomOut', 'view.fit', 'view.zoom100', 'view.center', '-', 'group:workspaces', 'view.saveWorkspace', 'view.manageWorkspaces', 'sub:wsshare', 'sub:wsswitch', 'view.resetLayout', '-', 'sub:panels', 'sub:panelwin', 'sub:toolrail', '-', 'view.pixelGrid', 'tiles.tileMode', 'view.emptyGhost', 'camera.lookThrough', 'camera.whilePlaying', 'view.whereDidItGo', '-', 'view.rulers', 'view.guides', 'sub:snapping', 'sub:grids', 'sub:lighttable', '-', 'sub:look', '-', 'view.interfaceSize', 'view.features', 'view.commandPalette'],
+    items: ['view.zoomIn', 'view.zoomOut', 'view.fit', 'view.zoom100', 'view.center', '-', 'group:workspaces', 'view.saveWorkspace', 'view.manageWorkspaces', 'sub:wsshare', 'sub:wsswitch', 'view.resetLayout', '-', 'sub:panels', 'sub:panelwin', 'sub:toolrail', '-', 'view.pixelGrid', 'tiles.tileMode', 'view.emptyGhost', 'camera.lookThrough', 'camera.whilePlaying', 'view.whereDidItGo', '-', 'view.rulers', 'view.guides', 'sub:snapping', 'sub:grids', 'sub:lighttable', '-', 'sub:look', '-', 'view.interfaceSize', 'view.explanations', 'view.features', 'view.commandPalette'],
   },
   {
     label: 'Artboards',

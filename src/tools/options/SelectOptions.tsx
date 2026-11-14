@@ -22,7 +22,7 @@ export function SelectOptions() {
     <div className="cv-options">
       <DrawModeToggle />
       {mode === 'magnetic' && <ClingSlider />}
-      <Tip>
+      <Tip stays>
         {count ? `${count} selected.` : mode === 'magnetic' ? 'Trace roughly round shapes and the outline clings to their edges. Click to place a point, Backspace takes one back, Enter closes it.' : lasso ? 'Click a shape, or draw a lasso round several (hold Alt as you let go for straight sides).' : 'Click a shape, or drag a box round several.'} Hold Shift to add more. Drag a corner to resize and the round handle to turn.
       </Tip>
       <div className="cv-row cv-wrap">

@@ -1,4 +1,5 @@
 // The Lip sync panel: the mouth on each frame around the playhead as a strip, and a button for every mouth to change it.
+import { Explainer } from '../ui/explain/ExplainIcon';
 import { useState } from 'react';
 import { store, useStore } from '../core/store';
 import { getCommand } from '../core/registry';
@@ -163,7 +164,7 @@ export function LipSyncPanel() {
         />
         <span>Go to the next frame after each pick</span>
       </label>
-      <p className="ls-note">Click a frame in the strip, then a mouth. Playing the animation shows how it reads.</p>
+      <Explainer className="ls-note">Click a frame in the strip, then a mouth. Playing the animation shows how it reads.</Explainer>
       <button type="button" className="ls-words" disabled={!has} title="Type what is said, and the mouths line up with the words" onClick={() => getCommand('lipsync.autoWords')?.run()}>
         Know what they say? Type the words...
       </button>

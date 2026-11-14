@@ -5,6 +5,15 @@ import './workspaceSwitcher-help';
 
 registerHelpTopics([
   {
+    id: 'explanations',
+    order: 7,
+    media: 'explanations.png',
+    title: 'The ? icons and the explanations',
+    section: 'Getting started',
+    summary: 'The little lines that say what a panel is for fold away behind a ? icon. Point at it to read them.',
+    keywords: ['explanations', 'hints', 'help icon', 'question mark', 'tooltip', 'clutter', 'descriptions', 'notes', 'hide text', 'fewer words', 'explainers'],
+  },
+  {
     id: 'welcome',
     order: 1,
     title: 'Welcome to Frameling',

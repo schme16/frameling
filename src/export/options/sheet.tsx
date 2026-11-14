@@ -1,4 +1,5 @@
 // What a sprite sheet export asks: where it is going (the engine and its extras) and how the sheet is laid out.
+import { ExNote } from '../ExNote';
 import { useChoice } from '../../core/choices';
 import { sheetExported } from '../../pixel/moments';
 import { sheetFooter } from '../../pixel/sheetMode';
@@ -35,12 +36,12 @@ export function SheetWhere({ s, set, setSheet, doc }: ExportUiProps) {
         </button>
       </p>
       {(sheet.engine === 'godot' || sheet.engine === 'phaser') && !separate && doc.clips.some((c) => c.direction === 'pingpong' || c.direction === 'pingpong-reverse') && (
-        <p className="ex-note">
+        <ExNote>
           Back and forth clips: {bounceMode === 'engine' ? (sheet.engine === 'godot' ? "Godot's own back and forth loop (it calls it ping-pong) is used for clips that loop (smaller files, but the two end frames show twice). It needs Godot 4.7 or newer: older Godot plays those clips forward only." : "Phaser's own yoyo is used where it can (smaller files, plays the same).") : 'every frame is listed in order, so the ends show once, just like here.'}{' '}
           <button type="button" className="ex-link" onClick={() => openPrefs('behaviour')}>
             Change in Preferences
           </button>
-        </p>
+        </ExNote>
       )}
       {sheet.engine === 'godot' && hasBones && !separate && (
         <div className="ex-seg" role="group" aria-label="What Godot gets">
@@ -127,7 +128,7 @@ export function SheetLayout({ s, setSheet, doc }: ExportUiProps) {
                 One PNG each
               </button>
             </div>
-            <p className="ex-note">Each frame is one sprite. Put a marker on a frame to name it, or it is named after its clip.</p>
+            <ExNote>Each frame is one sprite. Put a marker on a frame to name it, or it is named after its clip.</ExNote>
           </>
         )}
       </fieldset>

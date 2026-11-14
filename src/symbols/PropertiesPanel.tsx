@@ -1,4 +1,5 @@
 // Symbol and motion: the selected symbol's place, look and playback, and the in-betweens on the key at the playhead.
+import { SectionScope } from '../ui/explain/ExplainIcon';
 import { useState, type ReactNode } from 'react';
 import type { Easing, InstanceShape, PlayMode } from '../core/format';
 import { celAt, findLayer } from '../core/doc';
@@ -59,10 +60,17 @@ export function LengthNum({ label, px, onPx, title }: { label: string; px: numbe
 
 export function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="sy-section">
-      <h3 className="sy-section-title">{title}</h3>
-      {children}
-    </section>
+    <SectionScope title={title}>
+      {(icon) => (
+        <section className="sy-section">
+          <h3 className="sy-section-title">
+            {title}
+            {icon}
+          </h3>
+          {children}
+        </section>
+      )}
+    </SectionScope>
   );
 }
 
@@ -109,7 +117,7 @@ function InstanceSection({ inst, between }: { inst: InstanceShape; between: numb
           Draw inside
         </ActionButton>
       </div>
-      {between !== null && <Tip>You're between two keys, looking at an in-between. Changes go to the key on frame {between + 1}.</Tip>}
+      {between !== null && <Tip stays>You're between two keys, looking at an in-between. Changes go to the key on frame {between + 1}.</Tip>}
       <div className="sy-grid">
         <LengthNum label="X" px={t.x} onPx={(v) => set('Move', 'x', (s) => void (s.transform.x = v))} />
         <LengthNum label="Y" px={t.y} onPx={(v) => set('Move', 'y', (s) => void (s.transform.y = v))} />
@@ -152,7 +160,7 @@ function InstanceSection({ inst, between }: { inst: InstanceShape; between: numb
           <div className="sy-grid">
             <Num label={inst.play === 'single' ? 'Frame' : 'Starts on'} value={inst.firstFrame + 1} onChange={(v) => set('First frame', 'first', (s) => void (s.firstFrame = Math.max(0, Math.min(c.length - 1, Math.round(v) - 1))))} title="Which of its own frames it starts on" />
           </div>
-          {c.def.frameLabels?.[inst.firstFrame] ? <Tip>Frame {inst.firstFrame + 1} is named "{c.def.frameLabels[inst.firstFrame]}".</Tip> : null}
+          {c.def.frameLabels?.[inst.firstFrame] ? <Tip stays>Frame {inst.firstFrame + 1} is named "{c.def.frameLabels[inst.firstFrame]}".</Tip> : null}
         </>
       ) : (
         <Tip>Its drawing has one frame. Draw inside it and add frames to give it its own animation, like a flapping wing.</Tip>
@@ -219,11 +227,11 @@ export function TweenSection() {
     <Section title={camera ? 'Camera in-betweens' : shape ? 'In-betweens: morph (shape tween)' : 'In-betweens (tween)'}>
       {!camera && <Choice label="How it changes" value={shape ? 'shape' : 'classic'} options={KIND_OPTIONS} onChange={(v) => setTweenKind(v)} />}
       {next ? (
-        <Tip>
+        <Tip stays>
           From frame {cel.start + 1} to frame {next.start + 1}. {preset ? preset.description : 'Your own curve.'}
         </Tip>
       ) : (
-        <Tip>The next key doesn't start straight after this one, so nothing moves. Drag them together in the timeline.</Tip>
+        <Tip stays>The next key doesn't start straight after this one, so nothing moves. Drag them together in the timeline.</Tip>
       )}
       <Field label="Easing">
         <select
@@ -302,7 +310,7 @@ export function PropertiesPanel() {
       {inst ? (
         <InstanceSection inst={inst} between={between} />
       ) : (
-        <Tip>
+        <Tip stays>
           {picked.length > 1 ? `${picked.length} symbols selected. Pick just one to change it here.` : 'Select a symbol on the canvas to change its size, turn, fade, colour wash and how it plays.'}{' '}
           {!picked.length && sel.length > 0 && (
             <button type="button" className="sy-link" onClick={() => void getCommand('symbols.make')?.run()}>

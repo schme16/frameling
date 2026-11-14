@@ -7,6 +7,7 @@ import { DEFAULT_KEYMAP_SET, isKeymapSet } from './keymapSets';
 import { clampOutline, DEFAULT_OUTLINE } from '../pixel/thick';
 import { isSwitcherLook, type SwitcherLook } from './switcherModel';
 import { canSend } from '../beta/send';
+import { showExplanationsDefault } from './explainModel';
 import { DEFAULT_HISTORY_STEPS, HISTORY_STEPS_RANGE, setHistorySteps } from '../core/store';
 
 export type ThemePref = 'system' | 'dark' | 'light';
@@ -35,6 +36,11 @@ export interface Prefs {
   showWelcome: boolean;
   /** Show the friendly tips in the status bar. */
   showTips: boolean;
+  /**
+   * Keep the little explanations on show in panels and under controls. Off tucks them behind the help icon (the words
+   * are the same, in a tooltip). On for a new person, so they meet the words once; off for someone who was here first.
+   */
+  showExplanations: boolean;
   /** The workspace switcher beside the document name: small tabs, one chip with the name, or hidden. */
   workspaceSwitcher: SwitcherLook;
   /** Show the theme's texture around the page (camo print, strawberry seeds, sock stripes). On by default. */
@@ -103,6 +109,7 @@ export const DEFAULT_PREFS: Prefs = {
   reduceMotion: false,
   showWelcome: true,
   showTips: true,
+  showExplanations: true,
   workspaceSwitcher: 'tabs',
   showTextures: true,
   showQuill: true,
@@ -153,6 +160,7 @@ export function migratePrefs(raw: unknown): Prefs {
     reduceMotion: bool(r.reduceMotion, DEFAULT_PREFS.reduceMotion),
     showWelcome: bool(r.showWelcome, DEFAULT_PREFS.showWelcome),
     showTips: bool(r.showTips, DEFAULT_PREFS.showTips),
+    showExplanations: bool(r.showExplanations, showExplanationsDefault(r)),
     workspaceSwitcher: isSwitcherLook(r.workspaceSwitcher) ? r.workspaceSwitcher : DEFAULT_PREFS.workspaceSwitcher,
     showTextures: bool(r.showTextures, DEFAULT_PREFS.showTextures),
     showQuill: bool(r.showQuill, DEFAULT_PREFS.showQuill),

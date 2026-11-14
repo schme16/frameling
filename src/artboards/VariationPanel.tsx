@@ -116,7 +116,7 @@ export function VariationSection() {
       )}
       <h4 className="ab-var-head">Differences from {root.name}{diffs.length ? ` (${diffs.length})` : ''}</h4>
       {diffs.length === 0 ? (
-        <Tip>Nothing differs yet. Change a colour, a key or the size here and it shows up in this list.</Tip>
+        <Tip stays>Nothing differs yet. Change a colour, a key or the size here and it shows up in this list.</Tip>
       ) : (
         <div className="ab-diffs" role="list" aria-label="Differences from the original">
           {[...groups].map(([group, items]) => (

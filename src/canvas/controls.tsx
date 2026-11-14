@@ -4,17 +4,30 @@ import { useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode
 import { Icon } from '../ui/icons';
 import { useStackWhenTight } from '../ui/fitRow';
 import { setFold, useFold } from './folds';
+import { ExplainIcon, Explainer, useShowExplanations } from '../ui/explain/ExplainIcon';
 import './canvas.css';
 
+/**
+ * The line a control used to carry under it. With the explanations on it is that line; with them tucked away it is a help
+ * icon beside the label, saying the same words in a tooltip. Either way `line` goes under the control and `icon` by the label.
+ */
+function useHint(label: string, hint?: string): { line: ReactNode; icon: ReactNode } {
+  const show = useShowExplanations();
+  if (!hint) return { line: null, icon: null };
+  return show ? { line: <div className="cv-field-hint">{hint}</div>, icon: null } : { line: null, icon: <ExplainIcon title={label} words={hint} size={13} className="cv-explain" /> };
+}
+
 export function Field({ label, value, children, hint }: { label: string; value?: ReactNode; children: ReactNode; hint?: string }) {
+  const h = useHint(label, hint);
   return (
     <div className="cv-field">
       <div className="cv-field-head">
         <span className="cv-field-label">{label}</span>
+        {h.icon}
         {value !== undefined && <span className="cv-field-value">{value}</span>}
       </div>
       {children}
-      {hint && <div className="cv-field-hint">{hint}</div>}
+      {h.line}
     </div>
   );
 }
@@ -36,6 +49,7 @@ const clampTo = (v: number, min: number, max: number) => Math.min(max, Math.max(
  * Drag with Shift for big steps, Alt or Ctrl for fine control; the arrow keys do the same (Shift x10, Alt/Ctrl a tenth).
  */
 export function Slider({ label, value, min, max, step = 1, onChange, format, hint }: { label: string; value: number; min: number; max: number; step?: number; onChange: (v: number) => void; format?: (v: number) => string; hint?: string }) {
+  const h = useHint(label, hint);
   const [typing, setTyping] = useState<string | null>(null);
   const fine = useRef<{ x: number; value: number } | null>(null);
   const shown = format ? format(value) : String(value);
@@ -86,6 +100,7 @@ export function Slider({ label, value, min, max, step = 1, onChange, format, hin
     <div className="cv-field">
       <div className="cv-field-head">
         <span className="cv-field-label">{label}</span>
+        {h.icon}
         {valueNode}
       </div>
       <input
@@ -117,22 +132,26 @@ export function Slider({ label, value, min, max, step = 1, onChange, format, hin
         }}
         onKeyDown={key}
       />
-      {hint && <div className="cv-field-hint">{hint}</div>}
+      {h.line}
     </div>
   );
 }
 
 export function Toggle({ label, checked, onChange, hint }: { label: string; checked: boolean; onChange: (v: boolean) => void; hint?: string }) {
+  const h = useHint(label, hint);
   return (
     <div className="cv-field">
-      <label className="cv-toggle" data-on={checked}>
-        <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} />
-        <span className="cv-toggle-track" aria-hidden="true">
-          <span className="cv-toggle-knob" />
-        </span>
-        <span className="cv-toggle-label">{label}</span>
-      </label>
-      {hint && <div className="cv-field-hint">{hint}</div>}
+      <div className="cv-toggle-row" data-wraps>
+        <label className="cv-toggle" data-on={checked}>
+          <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} />
+          <span className="cv-toggle-track" aria-hidden="true">
+            <span className="cv-toggle-knob" />
+          </span>
+          <span className="cv-toggle-label">{label}</span>
+        </label>
+        {h.icon}
+      </div>
+      {h.line}
     </div>
   );
 }
@@ -154,9 +173,15 @@ export function Choice<T extends string>({ label, value, options, onChange }: { 
   );
 }
 
-export function Tip({ children }: { children: ReactNode }) {
+/**
+ * A line of explanation in a panel. With the explanations on it sits on show; with them tucked away its words go to the
+ * panel's help icon (or the section's), so nothing is lost and the panel is just its controls. `stays` is for a line the
+ * person needs in front of them: a warning, or what is going on right now ("The camera layer is hidden").
+ */
+export function Tip({ children, stays }: { children: ReactNode; stays?: boolean }) {
   // Plain text tips name keys the Mac way on a Mac.
-  return <p className="cv-tip">{typeof children === 'string' ? platformKeysText(children) : children}</p>;
+  const words = typeof children === 'string' ? platformKeysText(children) : children;
+  return stays ? <p className="cv-tip">{words}</p> : <Explainer>{words}</Explainer>;
 }
 
 export function ActionButton({ children, onClick, disabled, title }: { children: ReactNode; onClick: () => void; disabled?: boolean; title?: string }) {

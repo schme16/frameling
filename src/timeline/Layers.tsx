@@ -1,4 +1,5 @@
 import { memo, useState } from 'react';
+import { Explainer } from '../ui/explain/ExplainIcon';
 import type { Id, Layer } from '../core/format';
 import { store, useStore } from '../core/store';
 import { Icon } from '../ui/icons';
@@ -63,9 +64,9 @@ export function LayerTools({ inPanel = false }: { inPanel?: boolean } = {}) {
       </span>
       {inPanel ? actions : null}
       {inPanel && everyFrame ? (
-        <p className="tl-shared-note">
+        <Explainer className="tl-shared-note">
           These layers are on <b>every frame</b>. Each frame keeps its own pixels on them.
-        </p>
+        </Explainer>
       ) : null}
     </div>
   );

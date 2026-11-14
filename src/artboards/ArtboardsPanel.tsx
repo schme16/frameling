@@ -67,13 +67,13 @@ export function ArtboardsPanel() {
   if (nested)
     return (
       <div className="cv-panel cv-options ab-panel" data-help="artboards">
-        <Tip>You're painting a tile right now. Press Done above the canvas to get back to your artboards.</Tip>
+        <Tip stays>You're painting a tile right now. Press Done above the canvas to get back to your artboards.</Tip>
       </div>
     );
   if (doc.editing?.length)
     return (
       <div className="cv-panel cv-options ab-panel" data-help="artboards">
-        <Tip>You're inside a symbol. Go back out to switch artboards.</Tip>
+        <Tip stays>You're inside a symbol. Go back out to switch artboards.</Tip>
       </div>
     );
   const list = artboardsOf(doc);
