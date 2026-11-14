@@ -32,3 +32,19 @@ registerChoice<ClipEngineBounce>({
     { value: 'engine', label: "The engine's own back and forth", detail: 'Smaller data: only one direction is listed and the engine bounces it. In Godot the two end frames show twice, and it needs Godot 4.7 or newer (older Godot plays it forward only); Phaser plays it the same as baked.' },
   ],
 });
+
+export type IconFitPref = 'fit' | 'fill';
+
+registerChoice<IconFitPref>({
+  id: 'export.iconFit',
+  title: 'Icons from a drawing that is not square',
+  question: 'An icon is square. What should happen to a drawing that is wider or taller?',
+  category: 'Export',
+  silent: true,
+  default: 'fit',
+  help: 'App icons, favicons and stickers are square. "Show it all" keeps the whole drawing and leaves empty margins at the sides. "Fill the square" fills it edge to edge and cuts off what sticks out. A square drawing is the same either way.',
+  options: [
+    { value: 'fit', label: 'Show it all', detail: 'Keeps the whole drawing, with empty margins at the sides.' },
+    { value: 'fill', label: 'Fill the square', detail: 'Fills the square edge to edge and cuts off what sticks out.' },
+  ],
+});

@@ -280,6 +280,7 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
     items: [
       'file.export', 'file.exportAgain', 'file.exportAll',
       'heading:Popular', 'file.exportLottie', 'file.exportSvgAnimated', 'file.exportPdf',
+      'heading:Pictures and icons', 'file.exportJpeg', 'file.exportWebp', 'file.exportContactSheet', 'file.exportIcons', 'file.exportFavicon', 'file.exportStickers',
       'heading:Game engines', 'file.exportGodotAddon', 'tiles.export',
       'heading:Artboards', 'artboards.export', 'artboards.exportVariations', 'artboards.exportAtlas',
       'heading:Other', 'file.exportInteractives', 'file.exportProres', 'file.exportPsd', 'file.exportIllustrator', 'file.toggleUpdatePlayable',

@@ -1,5 +1,7 @@
 // What the export dialog collects, and what the exporters take.
 import { ownedUndo } from '../core/owners';
+import type { ContactOpts } from './contact';
+import type { IconParts } from './icons';
 import { allExporters, exporterInfo, exporterOf, splitExporters } from './registry';
 // The built-in formats register themselves when this file is loaded, so a format can always be looked up by its id.
 import './builtin';
@@ -114,7 +116,7 @@ export function normalizeSheet(s: SheetSettings): Required<SheetSettings> {
   };
 }
 
-export interface ExportSettings {
+export interface ExportSettings extends ContactOpts {
   format: FormatId;
   range: RangeKind;
   /** For `range: 'clip'`. */
@@ -140,6 +142,16 @@ export interface ExportSettings {
   lottieSoft?: 'effects' | 'pictures';
   /** Illustrator only: what to do with several frames (missing = 'one'). */
   aiFrames?: AiFrames;
+  /** JPEG only: 1 to 100 (missing = 90). */
+  jpegQuality?: number;
+  /** WebP only: 1 to 100 (missing = 85). */
+  webpQuality?: number;
+  /** WebP only: lose nothing (missing = yes for pixel art, no otherwise). */
+  webpLossless?: boolean;
+  /** App icon set only: which parts to make (missing = the pictures, .ico and .icns, not the phone sizes). */
+  iconFiles?: Partial<IconParts>;
+  /** Sticker pack only: the ids of the apps to make sizes for, joined with commas (missing = all of them, empty = none). */
+  stickerFor?: string;
 }
 
 /** The way a .ai export packs frames (the frame being looked at unless asked otherwise). */

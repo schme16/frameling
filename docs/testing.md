@@ -371,6 +371,25 @@ picture again and checks the clips follow and the sprite ids stay the same. Logs
 (`unity-*.log`, `unity-report-*.txt`). Takes several minutes, mostly Unity starting up. The Unity editor must be
 installed and licensed for the user running the check.
 
+## JPEG, WebP, icons, favicon, stickers and contact sheet: scripts/e2e/stills.cjs
+
+The small last-mile exports in the real app. It drives `exportDocument()` for each format and checks the files with Pillow,
+ImageMagick, `icotool` and `unzip`: the JPEG is a real JPEG at the right size and quality 40 is smaller than 90; a still
+WebP is one frame; a moving WebP has the right frames, lasts as long as the animation, loops (or plays once) and its first
+frame matches the PNG; a lossless WebP has exactly the PNG's pixels (and pixel art is lossless by default); the icon zip has
+every PNG square at its size, an `.ico` icotool can read and an `.icns` Pillow reads, plus the iOS and Android folders; the
+favicon zip has all its files and a valid manifest; the sticker zip has a folder per app at each app's size, WhatsApp under
+100 KB, one picture per frame for a whole animation, and refuses a pack with no app ticked. It also leaves
+`contact-sheet.png`, `icon-256.png` and `icon-16-zoom.png` in the output folder to look at.
+
+```bash
+npm run build
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/stills.cjs [outDir]
+```
+
+The pure parts (the WebP packer checked against the app's own WebP reader, the `.ico` and `.icns` writers, the size tables, the
+fitting maths, the contact sheet layout, saved settings) are in `test/export/stills.test.ts`.
+
 ## Illustrator end to end: scripts/e2e/illustrator.cjs
 
 Opens Frameling's `.ai` exports in a real Adobe Illustrator and compares what Illustrator finds with what Frameling

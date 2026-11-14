@@ -107,6 +107,8 @@ export interface ExporterDef {
   clipPlayNote?: string;
   /** More plain-words notes for this document and the frames being exported, shown with what carries over. */
   docNotes?(doc: Doc, range: { start: number; end: number }): string[];
+  /** Added to the file's name, in place of a frame number ("-icons", "-contact-sheet"): the file is a set, not one frame. */
+  nameSuffix?: string;
   /** The extension when it depends on the settings (a dotLottie, a zip of files). */
   extension?(s: ExportSettings): string;
   /** The name in the save dialog's file type list (and the extension, when it is not the usual one). */
@@ -121,6 +123,8 @@ export interface ExporterDef {
   settle?(doc: Doc, s: ExportSettings): Promise<ExportSettings>;
   /** What this computer can make, for the card. Asked again when the size changes. */
   support?(size: { width: number; height: number }, fresh: boolean): Promise<FormatSupport>;
+  /** Why this cannot be made as set, in plain words (a sheet too big for one picture), or null. Asked with the plan. */
+  problem?(doc: Doc, s: ExportSettings, plan: { range: { start: number; end: number }; count: number }): string | null;
   /** Fixes up settings remembered from last time that no longer make sense. */
   repair?(s: ExportSettings): void;
   /** Why a see-through background is not on offer, in plain words. */

@@ -72,8 +72,8 @@ describe('the offered tick for a file with artboards', () => {
 });
 
 describe('which formats can be see-through', () => {
-  it('every format can except MP4 (H.264 has no see-through; WebM needs a codec that does, which the app checks)', () => {
+  it('every format can except MP4, JPEG and the contact sheet (H.264 and JPEG have no see-through; WebM needs a codec that does, which the app checks)', () => {
     const cannot = allFormats().filter((f) => !f.alpha).map((f) => f.id);
-    expect(cannot).toEqual(['mp4']);
+    expect(cannot).toEqual(['mp4', 'jpeg', 'contact']);
   });
 });
