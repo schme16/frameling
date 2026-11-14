@@ -1,0 +1,250 @@
+{
+  "env": {
+    "label": "big-after-1",
+    "electron": "45.3.0",
+    "chrome": "156.0.8078.96",
+    "cpu": "AMD Ryzen 9 7900X 12-Core Processor",
+    "gpuRun": {
+      "mode": "card",
+      "requested": "card",
+      "renderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0)",
+      "software": false,
+      "compositing": "enabled",
+      "canvas2d": "enabled",
+      "rasterization": "enabled",
+      "vulkan": "disabled_off",
+      "webgl2": true,
+      "colourProfile": "sRGB (pinned)",
+      "platform": "linux",
+      "session": "x11",
+      "electron": "45.3.0",
+      "text": "[gpu] card: ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4080 SUPER/PCIe/SSE2, OpenGL 4.5.0) | compositing enabled, canvas enabled, raster enabled, vulkan disabled_off | sRGB (pinned) | x11"
+    },
+    "window": [
+      1400,
+      900
+    ],
+    "events": 40,
+    "renderer": "/mnt/109313D2109313D2/projects/frameling-wt/brush-fast/dist/renderer",
+    "when": "2026-11-14T22:32:01.026Z"
+  },
+  "vector": {
+    "canvas": [
+      4000,
+      3000
+    ],
+    "chalk": {
+      "4400": {
+        "moves": 39,
+        "aborted": false,
+        "wallMs": 786,
+        "frameDeltaMs": {
+          "n": 37,
+          "mean": 16.66,
+          "p50": 16.7,
+          "p95": 16.7,
+          "p99": 16.7,
+          "max": 16.7
+        },
+        "latency": {
+          "n": 35,
+          "mean": 13.28,
+          "p50": 13,
+          "p95": 21,
+          "p99": 22.8,
+          "max": 22.8
+        },
+        "firstLatencyMs": [
+          20.3,
+          21,
+          7.1
+        ],
+        "firstOverlayMs": [
+          7.6,
+          7.7,
+          5.4
+        ],
+        "overlayDrawMs": {
+          "n": 36,
+          "mean": 5.38,
+          "p50": 5.2,
+          "p95": 7.6,
+          "p99": 7.7,
+          "max": 7.7
+        },
+        "overlayLastThird": {
+          "n": 12,
+          "mean": 4.92,
+          "p50": 5.2,
+          "p95": 6.1,
+          "p99": 6.1,
+          "max": 6.1
+        },
+        "mainDrawMsMax": 5.7,
+        "liftToSettledMs": 172,
+        "longTasks": 1,
+        "longTaskMaxMs": 91,
+        "pageBusyAfterMs": 0
+      },
+      "20000": {
+        "moves": 39,
+        "aborted": false,
+        "wallMs": 780,
+        "frameDeltaMs": {
+          "n": 37,
+          "mean": 16.66,
+          "p50": 16.7,
+          "p95": 16.8,
+          "p99": 16.8,
+          "max": 16.8
+        },
+        "latency": {
+          "n": 34,
+          "mean": 13,
+          "p50": 14.2,
+          "p95": 18.4,
+          "p99": 20.4,
+          "max": 20.4
+        },
+        "firstLatencyMs": [
+          17.8,
+          17.7,
+          18.4
+        ],
+        "firstOverlayMs": [
+          4.4,
+          4.3,
+          4.4
+        ],
+        "overlayDrawMs": {
+          "n": 35,
+          "mean": 4.94,
+          "p50": 5,
+          "p95": 7,
+          "p99": 7.1,
+          "max": 7.1
+        },
+        "overlayLastThird": {
+          "n": 11,
+          "mean": 4.77,
+          "p50": 5,
+          "p95": 7.1,
+          "p99": 7.1,
+          "max": 7.1
+        },
+        "mainDrawMsMax": 5.4,
+        "liftToSettledMs": 163,
+        "longTasks": 0,
+        "longTaskMaxMs": 0,
+        "pageBusyAfterMs": 0
+      }
+    },
+    "charcoal": {
+      "4400": {
+        "moves": 39,
+        "aborted": false,
+        "wallMs": 780,
+        "frameDeltaMs": {
+          "n": 37,
+          "mean": 16.67,
+          "p50": 16.7,
+          "p95": 16.7,
+          "p99": 16.8,
+          "max": 16.8
+        },
+        "latency": {
+          "n": 33,
+          "mean": 12.61,
+          "p50": 12.3,
+          "p95": 20.2,
+          "p99": 20.6,
+          "max": 20.6
+        },
+        "firstLatencyMs": [
+          17.3,
+          17.4,
+          19.7
+        ],
+        "firstOverlayMs": [
+          5,
+          4.3,
+          6
+        ],
+        "overlayDrawMs": {
+          "n": 34,
+          "mean": 4.6,
+          "p50": 4.5,
+          "p95": 6,
+          "p99": 6.4,
+          "max": 6.4
+        },
+        "overlayLastThird": {
+          "n": 11,
+          "mean": 4.64,
+          "p50": 4.8,
+          "p95": 6.4,
+          "p99": 6.4,
+          "max": 6.4
+        },
+        "mainDrawMsMax": 5,
+        "liftToSettledMs": 161,
+        "longTasks": 0,
+        "longTaskMaxMs": 0,
+        "pageBusyAfterMs": 0
+      },
+      "20000": {
+        "moves": 39,
+        "aborted": false,
+        "wallMs": 780,
+        "frameDeltaMs": {
+          "n": 37,
+          "mean": 16.66,
+          "p50": 16.7,
+          "p95": 16.7,
+          "p99": 16.8,
+          "max": 16.8
+        },
+        "latency": {
+          "n": 34,
+          "mean": 12.28,
+          "p50": 12.6,
+          "p95": 19.4,
+          "p99": 20.1,
+          "max": 20.1
+        },
+        "firstLatencyMs": [
+          18,
+          17.7,
+          17.4
+        ],
+        "firstOverlayMs": [
+          4.8,
+          3.9,
+          3.8
+        ],
+        "overlayDrawMs": {
+          "n": 35,
+          "mean": 3.9,
+          "p50": 3.9,
+          "p95": 4.7,
+          "p99": 4.8,
+          "max": 4.8
+        },
+        "overlayLastThird": {
+          "n": 11,
+          "mean": 3.63,
+          "p50": 3.9,
+          "p95": 4.5,
+          "p99": 4.5,
+          "max": 4.5
+        },
+        "mainDrawMsMax": 4.7,
+        "liftToSettledMs": 165,
+        "longTasks": 0,
+        "longTaskMaxMs": 0,
+        "pageBusyAfterMs": 0
+      }
+    }
+  },
+  "consoleErrors": []
+}

@@ -776,6 +776,23 @@ npm run build
 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/ab/brush-size.cjs /tmp/bs
 ```
 
+## Same pixels after a speed-up: scripts/e2e/tip-same.cjs
+
+Draws chalk and charcoal (everyday and huge sizes, short and long strokes), the other tips, and plain fills and outlined paths
+through the single renderer in a real canvas, and compares every byte with what another build drew. Use it whenever a way of
+drawing changes for speed: the drawing has to come out the same. A second page in one run fails to load, so it is two steps:
+
+```bash
+npx vite build --outDir /tmp/dev-renderer        # a build of the code to match, for example development
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron --no-sandbox scripts/e2e/tip-same.cjs --build /tmp/dev-renderer --save /tmp/tip-pictures
+npm run build
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron --no-sandbox scripts/e2e/tip-same.cjs --build dist/renderer --against /tmp/tip-pictures
+```
+
+The first dab of a big pixel brush is pinned in vitest by `test/pixel/first-dab.test.ts` (whole rows against every pixel
+through `paint`: the same pixels, changed rectangle and tiles, with a mirror, a selection, tile mode and other inks), and the
+fill-only path by `test/canvas/fill-path.test.ts`.
+
 ## The second window: scripts/e2e/popout.cjs, popout-media.cjs and scripts/perf/popout.cjs
 
 The second window (the picture window, `src/popout/`, `src/main/popout.ts`) needs the real main process (two windows and the

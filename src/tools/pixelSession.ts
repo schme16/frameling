@@ -88,6 +88,11 @@ export class PixelSession {
   private rgba = new Uint8Array(4);
   /** One pixel of the old picture, handed to inks. */
   private basePx = new Uint8ClampedArray(4);
+  /** One pixel as a tile stores it, and the same four bytes as a number (for filling a row). */
+  private one = new Uint8ClampedArray(4);
+  private one32 = new Uint32Array(this.one.buffer);
+  /** Whole-number views of the tiles, made when a row first fills one. */
+  private views: (Uint32Array | undefined)[] = [];
 
   /** Painting on a frame that only carries the last drawing along: this starts a new drawing there. */
   private fresh = false;
@@ -188,22 +193,7 @@ export class PixelSession {
     t[i + 2] = c[2];
     t[i + 3] = c[3];
     this.changed = true;
-    const tc = this.touched;
-    if (!tc) this.touched = { x0: x, y0: y, x1: x, y1: y };
-    else {
-      if (x < tc.x0) tc.x0 = x;
-      if (y < tc.y0) tc.y0 = y;
-      if (x > tc.x1) tc.x1 = x;
-      if (y > tc.y1) tc.y1 = y;
-    }
-    const d = this.dirty;
-    if (!d) this.dirty = { x0: x, y0: y, x1: x, y1: y };
-    else {
-      if (x < d.x0) d.x0 = x;
-      if (y < d.y0) d.y0 = y;
-      if (x > d.x1) d.x1 = x;
-      if (y > d.y1) d.y1 = y;
-    }
+    this.grow(x, x, y);
   }
 
   /** Paints one pixel (and its mirror images) with an ink. The ink sees the pixel as it was before the session. */
@@ -247,6 +237,11 @@ export class PixelSession {
     // Only what can land on the picture is worked through: a brush far bigger than the canvas would otherwise loop over
     // millions of pixels that are thrown away. A mirror brings images back from the far side, and tile mode wraps round, so those widen it.
     const box = this.reach();
+    const rows = this.plain(ink);
+    const row = (y: number, x0: number, x1: number): void => {
+      if (rows) this.fillRow(y, x0, x1);
+      else for (let x = x0; x <= x1; x++) this.paint(x, y, ink);
+    };
     for (const s of spans) {
       const y = p.y + s.y;
       if (y < box.y0 || y > box.y1) continue;
@@ -256,18 +251,103 @@ export class PixelSession {
       let k = -1;
       if (after) k = y - after.y - olo;
       if (!after || k < 0 || k >= after.spans.length) {
-        for (let x = x0; x <= x1; x++) this.paint(x, y, ink);
+        row(y, x0, x1);
         continue;
       }
       const o = after.spans[k];
       const a0 = after.x + o.x0;
       const a1 = after.x + o.x1;
       if (x1 < a0 || x0 > a1) {
-        for (let x = x0; x <= x1; x++) this.paint(x, y, ink);
+        row(y, x0, x1);
         continue;
       }
-      for (let x = x0; x < a0 && x <= x1; x++) this.paint(x, y, ink);
-      for (let x = Math.max(x0, a1 + 1); x <= x1; x++) this.paint(x, y, ink);
+      row(y, x0, Math.min(a0 - 1, x1));
+      row(y, Math.max(x0, a1 + 1), x1);
+    }
+  }
+
+  /**
+   * Paints the pixels from `x0` to `x1` in row `y` with an ink: just what `paint` on each of them does. A plain colour
+   * (no mirror, no selection, no tile mode) is written a row of a tile at a time, so a brush as big as the canvas is a
+   * few thousand fills rather than millions of single pixels. Anything else goes pixel by pixel.
+   */
+  paintRow(y: number, x0: number, x1: number, ink: Ink): void {
+    if (this.plain(ink)) this.fillRow(y, x0, x1);
+    else for (let x = x0; x <= x1; x++) this.paint(x, y, ink);
+  }
+
+  /** True when an ink can be written a row at a time (see `paintRow`); readies the colour for `fillRow`. */
+  private plain(ink: Ink): boolean {
+    const solid = ink.solid;
+    if (!solid || this.clip || this.mirror.mode !== 'off' || tileModeOn()) return false;
+    // Whole colours only: a stored byte of 214 is never equal to a painted 214.4, which `set` would count as a change every time.
+    for (let k = 0; k < 4; k++) if (!Number.isInteger(solid[k]) || solid[k] < 0 || solid[k] > 255) return false;
+    // The colour as a tile stores it, and as one 32 bit number.
+    const one = this.one;
+    one[0] = solid[0];
+    one[1] = solid[1];
+    one[2] = solid[2];
+    one[3] = solid[3];
+    return true;
+  }
+
+  /** Fills the pixels from `x0` to `x1` in row `y` with the colour `plain` readied, keeping to the picture. */
+  private fillRow(y: number, x0: number, x1: number): void {
+    if (y < 0 || y >= this.height) return;
+    if (x0 < 0) x0 = 0;
+    if (x1 > this.width - 1) x1 = this.width - 1;
+    if (x1 < x0) return;
+    const one = this.one;
+    const c32 = this.one32[0];
+    const b = this.basePx;
+    for (let tx = x0 >> SHIFT; tx <= x1 >> SHIFT; tx++) {
+      const sx0 = Math.max(x0, tx << SHIFT);
+      const sx1 = Math.min(x1, ((tx + 1) << SHIFT) - 1);
+      const ti = (y >> SHIFT) * this.tilesAcross + tx;
+      let t = this.tiles[ti];
+      if (!t) {
+        // A tile is made only when something in this stretch would change.
+        let x = sx0;
+        for (; x <= sx1; x++) {
+          this.readBase(x, y, b, 0);
+          if (b[0] !== one[0] || b[1] !== one[1] || b[2] !== one[2] || b[3] !== one[3]) break;
+        }
+        if (x > sx1) continue;
+        t = new Uint8ClampedArray(TS * TS * 4);
+        this.fillTile(t, tx, y >> SHIFT);
+        this.tiles[ti] = t;
+      }
+      const v = (this.views[ti] ??= new Uint32Array(t.buffer, t.byteOffset, TS * TS));
+      const row = (y & MASK) * TS;
+      const gx = tx << SHIFT;
+      let lo = row + (sx0 - gx);
+      let hi = row + (sx1 - gx);
+      while (lo <= hi && v[lo] === c32) lo++;
+      if (lo > hi) continue;
+      while (v[hi] === c32) hi--;
+      v.fill(c32, lo, hi + 1);
+      this.changed = true;
+      this.grow(gx + (lo - row), gx + (hi - row), y);
+    }
+  }
+
+  /** Widens the changed rectangles to take in the pixels from `x0` to `x1` in row `y`. */
+  private grow(x0: number, x1: number, y: number): void {
+    const tc = this.touched;
+    if (!tc) this.touched = { x0, y0: y, x1, y1: y };
+    else {
+      if (x0 < tc.x0) tc.x0 = x0;
+      if (y < tc.y0) tc.y0 = y;
+      if (x1 > tc.x1) tc.x1 = x1;
+      if (y > tc.y1) tc.y1 = y;
+    }
+    const d = this.dirty;
+    if (!d) this.dirty = { x0, y0: y, x1, y1: y };
+    else {
+      if (x0 < d.x0) d.x0 = x0;
+      if (y < d.y0) d.y0 = y;
+      if (x1 > d.x1) d.x1 = x1;
+      if (y > d.y1) d.y1 = y;
     }
   }
 

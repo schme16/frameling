@@ -151,7 +151,10 @@ xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/perf/brushsize.cjs 
 ```
 
 `BRUSH_TIPS=chalk,nib`, `BRUSH_VSIZES=120,4400`, `BRUSH_PSIZES=24,2200`, `BRUSH_EVENTS=30` and `BRUSH_CANVAS=4000x3000` narrow it.
-Under xvfb there is no card, so run it with `PERF_SOFTWARE_GL=1` and read the numbers as software drawing.
+Under xvfb there is no card, so run it with `PERF_SOFTWARE_GL=1` and read the numbers as software drawing (on a machine with the card, the two
+graphics variables at the top of `.claude/skills/perf/SKILL.md` bring it up). `BRUSH_PROFILE=1` prints a CPU profile of every stroke (the top functions
+by self and inclusive time; point `PERF_RENDERER` at a `--minify false` build to read the names), and `firstLatencyMs` in each result is the
+first three inputs raw, the first being the press itself.
 
 ## Pen-up cost
 
