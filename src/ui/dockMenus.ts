@@ -7,7 +7,7 @@ import { SPLIT_WORDS, ZONE_NAMES } from './dockDrag';
 import { createStore } from './mini';
 import { openHelp } from './overlays';
 import { getPrefs, setPrefs } from './prefs';
-import { isCustomArrangement, resetToolArrangement } from './toolRail';
+import { putToolsBack, setToolbarEditing, toolbarIsChanged } from './toolRail';
 
 export type DockMenuItem = { label: string; onClick: () => void; disabled?: boolean; checked?: boolean; danger?: boolean } | { separator: true } | { heading: string };
 
@@ -82,7 +82,8 @@ export function toolsMenu(): DockMenuItem[] {
     ...ZONES.map((z): DockMenuItem => ({ label: `Dock on ${WHERE[z]}`, disabled: place === z, onClick: to(z) })),
     { label: 'Float over the canvas', disabled: place === 'float', onClick: to('float') },
     { separator: true },
-    { label: 'Reset tools to default', disabled: !isCustomArrangement(), onClick: resetToolArrangement },
+    { label: 'Change the tools...', onClick: () => setToolbarEditing(true) },
+    { label: 'Put the tools back', disabled: !toolbarIsChanged(), onClick: putToolsBack },
     { label: getPrefs().toolRail === 'two' ? 'Show one button per group' : 'Show every tool, two wide', onClick: () => setPrefs({ toolRail: getPrefs().toolRail === 'two' ? 'stacked' : 'two' }) },
     { separator: true },
     { label: 'What is the tool strip?', onClick: () => openHelp('tool-strip') },

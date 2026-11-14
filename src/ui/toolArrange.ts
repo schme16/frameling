@@ -5,7 +5,7 @@
 // ones) are put away for you.
 //
 // The rail keeps its shape from layer to layer: every tool that works on a vector or a pixel layer has a place all the
-// time. A tool that doesn't work on the layer you're on stays where it is, greyed out (railFor). The Lasso and the
+// time. A tool that doesn't work on the layer you're on is left out of the rail, or stays where it is greyed out, as the person chooses (railFor). The Lasso and the
 // Pixel lasso (and the other ways of picking) share one place, and the one for your layer shows (a slot, see slotMates).
 
 import type { LayerKind } from '../core/format';
@@ -15,6 +15,10 @@ export interface ToolGroup {
   /** A name for the move menu (missing = "Group N"). */
   name?: string;
   tools: string[];
+  /** Tools of this group put away (hidden from the rail, still here: they come back to the same place). Always a part of `tools`. */
+  hidden?: string[];
+  /** Folded into one button, with the rest of the group behind it. */
+  fold?: boolean;
 }
 
 /** The groups the rail starts with. A tool says which one it starts in (`group`) and where (`groupAt`) when it is registered. */
@@ -97,9 +101,17 @@ export function sanitizeGroups(raw: unknown, anchors = false): ToolGroup[] | und
     if (!tools.length && !anchors) continue;
     seenGroups.add(r.id);
     const name = cleanGroupName(r.name);
-    out.push({ id: r.id, ...(name ? { name } : {}), tools });
+    const hidden = cleanHidden(r.hidden, tools);
+    out.push({ id: r.id, ...(name ? { name } : {}), tools, ...(hidden.length ? { hidden } : {}), ...(r.fold === true ? { fold: true } : {}) });
   }
   return out.length ? out : undefined;
+}
+
+/** The hidden list of a group made safe: only tools that are in the group, each once, in the group's order. */
+function cleanHidden(raw: unknown, tools: string[]): string[] {
+  if (!Array.isArray(raw)) return [];
+  const want = new Set(raw.filter(isId));
+  return tools.filter((t) => want.has(t));
 }
 
 export const MAX_GROUP_NAME = 40;
@@ -138,7 +150,7 @@ export function resolveGroups(saved: ToolGroup[] | undefined, tools: ToolRef[]):
     const tools = g.tools.filter((t) => have.has(t) && !placed.has(t));
     tools.forEach((t) => placed.add(t));
     // A group saved with no tools is an anchor (a default order): it stays where it is and the tools that start there fill it.
-    if (tools.length || !g.tools.length) groups.push({ ...g, tools });
+    if (tools.length || !g.tools.length) groups.push(withHidden(g, tools, g.hidden));
   }
   // The unplaced, in the order a default rail would show them.
   const order = (t: string) => {
@@ -159,7 +171,18 @@ export function resolveGroups(saved: ToolGroup[] | undefined, tools: ToolRef[]):
     }
     g.tools.push(t);
   }
-  return bindSlots(groups, slotMates(tools)).filter((g) => g.tools.length);
+  const mates = slotMates(tools);
+  // The tools of a slot go away and come back as one.
+  return bindSlots(groups, mates)
+    .map((g) => withHidden(g, g.tools, g.hidden?.flatMap((t) => mates(t))))
+    .filter((g) => g.tools.length);
+}
+
+/** The group with its `hidden` list cut to the tools it holds (and dropped when none is left). */
+function withHidden(g: ToolGroup, tools: string[], hidden: string[] | undefined): ToolGroup {
+  const { hidden: _old, ...rest } = g;
+  const keep = tools.filter((t) => hidden?.includes(t));
+  return { ...rest, tools, ...(keep.length ? { hidden: keep } : {}) };
 }
 
 /**
@@ -208,9 +231,9 @@ const everyday = (k: LayerKind | null): boolean => k === 'vector' || k === 'pixe
  * Which tools the rail shows for a kind of layer, and which of those are greyed out because they don't work there.
  * Vector and pixel layers get the same rail: every tool that works on either, one button per slot, with the ones that
  * don't work on this layer off. Other kinds of layer (tiles, camera) and no layer at all show only what works.
- * `only` is a workspace narrowing the strip for this kind (the Pixel workspace on a pixel layer): just those tools.
+ * With `greyOut` false the ones that don't work are left out instead of greyed. `only` is a workspace narrowing the strip for this kind (the Pixel workspace on a pixel layer): just those tools.
  */
-export function railFor(tools: RailTool[], kind: LayerKind | null, only?: string[]): { shown: string[]; off: string[] } {
+export function railFor(tools: RailTool[], kind: LayerKind | null, only?: string[], greyOut = true): { shown: string[]; off: string[] } {
   const works = (t: RailTool) => !kind || t.layers.includes(kind);
   let pool = tools;
   if (only) {
@@ -226,6 +249,8 @@ export function railFor(tools: RailTool[], kind: LayerKind | null, only?: string
     if (!had || (!works(had) && works(t))) pick.set(t.slot, t);
   }
   const shown = pool.filter((t) => !t.slot || pick.get(t.slot) === t);
+  // With greyOut off, what does not work here is left out: the places that remain keep their order, the rail is just shorter.
+  if (!greyOut) return { shown: shown.filter(works).map((t) => t.id), off: [] };
   return { shown: shown.map((t) => t.id), off: shown.filter((t) => !works(t)).map((t) => t.id) };
 }
 
@@ -272,9 +297,17 @@ export function visibleGroups(groups: ToolGroup[], visible: (id: string) => bool
 }
 
 /** Where a tool can be put: into a group (before a tool, or at the end), or into a group of its own. */
-export type ToolDrop = { group: string; before?: string | null } | { newGroupAt: number };
+export type ToolPlace = { group: string; before?: string | null } | { newGroupAt: number };
+/** What a drag can end on: a place, or the Put away shelf (the tool is hidden, in the group it is in). */
+export type ToolDrop = ToolPlace | { away: true };
 
-const copy = (groups: ToolGroup[]): ToolGroup[] => groups.map((g) => ({ ...g, tools: [...g.tools] }));
+const copy = (groups: ToolGroup[]): ToolGroup[] => groups.map((g) => ({ ...g, tools: [...g.tools], ...(g.hidden ? { hidden: [...g.hidden] } : {}) }));
+
+/** A group with these tools taken out of its hidden list (the list goes when it is empty). */
+function unhidden(g: ToolGroup, gone: string[]): ToolGroup {
+  if (!g.hidden?.some((t) => gone.includes(t))) return g;
+  return withHidden(g, g.tools, g.hidden.filter((t) => !gone.includes(t)));
+}
 
 /** A fresh id for a group the person makes. */
 export function newGroupId(groups: ToolGroup[]): string {
@@ -288,7 +321,7 @@ export function newGroupId(groups: ToolGroup[]): string {
  * group). `newGroupAt` is a place among the groups (0 = first). Groups left empty are dropped. A tool it doesn't know
  * is left alone.
  */
-export function moveTool(groups: ToolGroup[], tool: string, to: ToolDrop, mates?: (id: string) => string[]): ToolGroup[] {
+export function moveTool(groups: ToolGroup[], tool: string, to: ToolPlace, mates?: (id: string) => string[]): ToolGroup[] {
   const slot = mates?.(tool).filter((t) => groups.some((g) => g.tools.includes(t))) ?? [];
   if (slot.length > 1) return moveSlot(groups, slot, to, mates!);
   // A drop before one of a pair lands before the pair, never between the two.
@@ -301,7 +334,7 @@ export function moveTool(groups: ToolGroup[], tool: string, to: ToolDrop, mates?
 }
 
 /** A slot moves as one: its tools go together, in the order they are in now, and a drop before one of a slot goes before the slot. */
-function moveSlot(groups: ToolGroup[], slot: string[], to: ToolDrop, mates: (id: string) => string[]): ToolGroup[] {
+function moveSlot(groups: ToolGroup[], slot: string[], to: ToolPlace, mates: (id: string) => string[]): ToolGroup[] {
   const flat = groups.flatMap((g) => g.tools);
   const first = (ids: string[]) => ids.filter((t) => flat.includes(t)).sort((a, b) => flat.indexOf(a) - flat.indexOf(b));
   const mine = first(slot);
@@ -319,16 +352,22 @@ function moveSlot(groups: ToolGroup[], slot: string[], to: ToolDrop, mates: (id:
   return JSON.stringify(out) === JSON.stringify(groups) ? groups : out;
 }
 
-function moveOne(groups: ToolGroup[], tool: string, to: ToolDrop): ToolGroup[] {
+function moveOne(groups: ToolGroup[], tool: string, to: ToolPlace): ToolGroup[] {
   if (!groups.some((g) => g.tools.includes(tool))) return groups;
   const out = copy(groups);
   const from = out.find((g) => g.tools.includes(tool))!;
+  // A tool that is moved is wanted: it shows again wherever it lands.
+  if (from.hidden?.includes(tool)) {
+    const rest = from.hidden.filter((t) => t !== tool);
+    if (rest.length) from.hidden = rest;
+    else delete from.hidden;
+  }
   if ('newGroupAt' in to) {
     // The place counts the groups as they were, so moving a lone tool next to itself changes nothing.
     const at = Math.max(0, Math.min(out.length, to.newGroupAt));
     const alone = from.tools.length === 1;
     const fromAt = out.indexOf(from);
-    if (alone && (at === fromAt || at === fromAt + 1)) return groups;
+    if (alone && (at === fromAt || at === fromAt + 1)) return JSON.stringify(out) === JSON.stringify(groups) ? groups : out;
     from.tools = from.tools.filter((t) => t !== tool);
     const made: ToolGroup = { id: newGroupId(out), tools: [tool] };
     out.splice(at, 0, made);
@@ -373,4 +412,106 @@ export function placeWords(groups: ToolGroup[], tool: string, visible: (id: stri
   if (!g) return '';
   const shown = g.tools.filter(visible);
   return `${groupName(g, groups)}, place ${shown.indexOf(tool) + 1} of ${shown.length}`;
+}
+
+// ---------------------------------------------------------------- the builder: hide, fold, divide, join
+
+/** Every tool that is put away now, in the order of the rail. */
+export function hiddenTools(groups: ToolGroup[]): string[] {
+  return groups.flatMap((g) => g.hidden ?? []);
+}
+
+/** True when anything is put away or folded: something the rail does not show as it comes. */
+export function hasBuilderChanges(groups: ToolGroup[]): boolean {
+  return groups.some((g) => g.hidden?.length || g.fold);
+}
+
+/** The arrangement with a tool put away (and the tools that share its place, as one). It stays in its group, to come back to. */
+export function hideTool(groups: ToolGroup[], tool: string, mates: (id: string) => string[] = (id) => [id]): ToolGroup[] {
+  const gi = groups.findIndex((g) => g.tools.includes(tool));
+  if (gi < 0) return groups;
+  const g = groups[gi];
+  const all = mates(tool).filter((t) => g.tools.includes(t));
+  if (all.every((t) => g.hidden?.includes(t))) return groups;
+  const hidden = g.tools.filter((t) => all.includes(t) || g.hidden?.includes(t));
+  return groups.map((x, i) => (i === gi ? { ...x, hidden } : x));
+}
+
+/** The arrangement with a put-away tool (and its mates) back on the rail, where it was. */
+export function showTool(groups: ToolGroup[], tool: string, mates: (id: string) => string[] = (id) => [id]): ToolGroup[] {
+  const all = mates(tool);
+  if (!groups.some((g) => g.hidden?.some((t) => all.includes(t)))) return groups;
+  return groups.map((g) => unhidden(g, all));
+}
+
+/** The arrangement with every tool back on the rail. */
+export function showAllTools(groups: ToolGroup[]): ToolGroup[] {
+  if (!hiddenTools(groups).length) return groups;
+  return groups.map((g) => unhidden(g, g.hidden ?? []));
+}
+
+/** The arrangement with one group folded into one button (or not). The same one comes back when it already is so. */
+export function foldGroup(groups: ToolGroup[], id: string, fold: boolean): ToolGroup[] {
+  const i = groups.findIndex((g) => g.id === id);
+  if (i < 0 || !!groups[i].fold === fold) return groups;
+  const { fold: _old, ...rest } = groups[i];
+  return groups.map((g, j) => (j === i ? { ...rest, ...(fold ? { fold: true } : {}) } : g));
+}
+
+/**
+ * The arrangement with a divider put in before a tool: the tool and the ones after it in its group start a group of
+ * their own, right after. That is all a divider is. Nothing changes when the tool already starts its group (or is in
+ * the middle of a pair that share a place: the pair is never split).
+ */
+export function startGroupAt(groups: ToolGroup[], tool: string, mates: (id: string) => string[] = (id) => [id]): ToolGroup[] {
+  const gi = groups.findIndex((g) => g.tools.includes(tool));
+  if (gi < 0) return groups;
+  const g = groups[gi];
+  // Before the first of the tool's place, so a pair stays together.
+  const at = Math.min(...mates(tool).map((t) => g.tools.indexOf(t)).filter((i) => i >= 0));
+  if (at <= 0) return groups;
+  const head = g.tools.slice(0, at);
+  const tail = g.tools.slice(at);
+  const keepHidden = (list: string[]) => g.hidden?.filter((t) => list.includes(t));
+  const first = withHidden(g, head, keepHidden(head));
+  const second = withHidden({ id: newGroupId(groups), tools: tail }, tail, keepHidden(tail));
+  return [...groups.slice(0, gi), first, second, ...groups.slice(gi + 1)];
+}
+
+/** The arrangement with a group joined to the one above it (or to `into`, a group further up): its tools go on the end of that one, and the divider is gone. */
+export function joinGroupAbove(groups: ToolGroup[], id: string, into?: string): ToolGroup[] {
+  const i = groups.findIndex((g) => g.id === id);
+  const u = into ? groups.findIndex((g) => g.id === into) : i - 1;
+  if (i < 0 || u < 0 || u >= i) return groups;
+  const up = groups[u];
+  const g = groups[i];
+  const tools = [...up.tools, ...g.tools];
+  const hidden = [...(up.hidden ?? []), ...(g.hidden ?? [])];
+  const joined = withHidden(up, tools, hidden);
+  return groups.flatMap((x, j) => (j === u ? [joined] : j === i ? [] : [x]));
+}
+
+/**
+ * The words above a group on the rail: the name it was given, or its usual one. A group you made and never named has
+ * none: it is just a divider.
+ */
+export function headingOf(g: ToolGroup, groups: ToolGroup[]): string | undefined {
+  if (g.name) return g.name;
+  const usual = usualName(g, groups);
+  return DEFAULT_GROUPS.some((d) => d.id === g.id) || g.id === OTHER_GROUP.id ? usual : undefined;
+}
+
+/** True when the group above this one is where "Join the group above" would join it to. */
+export const canJoinAbove = (groups: ToolGroup[], id: string): boolean => groups.findIndex((g) => g.id === id) > 0;
+
+/** The put-away tools as the shelf shows them: one for each place (the Lasso and the Pixel lasso are one), in rail order. */
+export function awayPlaces(groups: ToolGroup[], mates: (id: string) => string[] = (id) => [id]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const t of hiddenTools(groups)) {
+    if (seen.has(t)) continue;
+    mates(t).forEach((m) => seen.add(m));
+    out.push(t);
+  }
+  return out;
 }

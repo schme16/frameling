@@ -97,6 +97,27 @@ async function runSteps(win, steps, { outDir, width, height, name }) {
       await sleep(30);
       send({ type: 'mouseUp', x: r[0], y: r[1], button: 'left', clickCount: 1 });
       await sleep(s.after ?? 80);
+    } else if (s.dragOn) {
+      // Drag from the middle of one element to the middle of another ("dragOn" and "to" are selectors, with optional
+      // "text" and "toText"), gliding slowly so a clip shows it. "toDx" and "toDy" shift the end point; "hold" waits before letting go.
+      const where = (sel, text) => wc.executeJavaScript(`(() => { const t = ${JSON.stringify(text ?? null)}; const el = [...document.querySelectorAll(${JSON.stringify(sel)})].find((e) => !t || e.getAttribute('aria-label') === t || e.textContent.trim() === t); const b = el?.getBoundingClientRect(); return b && [Math.round(b.x + b.width / 2), Math.round(b.y + b.height / 2)]; })()`);
+      const a = await where(s.dragOn, s.text);
+      const b = await where(s.to, s.toText);
+      if (!a || !b) throw new Error(`dragOn: nothing for ${!a ? s.dragOn : s.to}`);
+      const bx = b[0] + (s.toDx ?? 0);
+      const by = b[1] + (s.toDy ?? 0);
+      send({ type: 'mouseMove', x: a[0], y: a[1] });
+      await sleep(120);
+      send({ type: 'mouseDown', x: a[0], y: a[1], button: 'left', clickCount: 1 });
+      await sleep(120);
+      const n = s.steps ?? 14;
+      for (let k = 1; k <= n; k++) {
+        send({ type: 'mouseMove', x: Math.round(a[0] + ((bx - a[0]) * k) / n), y: Math.round(a[1] + ((by - a[1]) * k) / n), modifiers: ['leftButtonDown'] });
+        await sleep(s.delay ?? 40);
+      }
+      await sleep(s.hold ?? 700);
+      send({ type: 'mouseUp', x: bx, y: by, button: 'left', clickCount: 1 });
+      await sleep(s.after ?? 400);
     } else if (s.click) {
       const [x, y] = s.click;
       send({ type: 'mouseMove', x, y });

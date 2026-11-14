@@ -192,6 +192,14 @@ registerHelpTopics([
     keywords: ['tools', 'toolbar', 'tool rail', 'brush', 'shortcut', 'layer kind', 'groups', 'two wide', 'stacked', 'flyout', 'greyed out', 'grey', 'disabled', 'pixel layer', 'vector layer', 'moves', 'same place'],
   },
   {
+    id: 'tool-builder',
+    title: 'Change the tools',
+    section: 'Basics',
+    media: 'tool-builder.mp4',
+    summary: 'Name groups, make your own, put tools away, fold a group into one button, and set the button size.',
+    keywords: ['tools', 'toolbar', 'tool strip', 'tool rail', 'customise', 'customize', 'builder', 'groups', 'group names', 'divider', 'hide', 'put away', 'fold', 'one button', 'size', 'bigger', 'smaller', 'reset', 'put back', 'slim', 'grey'],
+  },
+  {
     id: 'tool-arrange',
     title: 'Arrange your tools',
     section: 'Basics',
