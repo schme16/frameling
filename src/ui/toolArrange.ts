@@ -254,6 +254,38 @@ export function railFor(tools: RailTool[], kind: LayerKind | null, only?: string
   return { shown: shown.map((t) => t.id), off: shown.filter((t) => !works(t)).map((t) => t.id) };
 }
 
+/** A tool the rail leaves out on this layer, and the kind of layer it needs. */
+export interface WaitingTool {
+  id: string;
+  label: string;
+  needs: 'vector' | 'pixel';
+}
+
+/**
+ * The tools that are missing from the rail only because of the layer you are on (Text and Gradient on a pixel layer, Shade
+ * and Dither on a vector one), so the rail can say so instead of just being shorter. A tool whose twin is on the rail
+ * (the Lasso and the Pixel lasso) isn't missing, and ones put away on purpose (`away`) aren't waiting for anything.
+ */
+export function waitingFor(tools: RailTool[], kind: LayerKind | null, away: ReadonlySet<string> = new Set()): WaitingTool[] {
+  if (!everyday(kind)) return [];
+  const works = (t: RailTool) => t.layers.includes(kind!);
+  const out: WaitingTool[] = [];
+  for (const t of tools) {
+    if (works(t) || away.has(t.id) || !t.layers.some(everyday)) continue;
+    if (t.slot && tools.some((o) => o.slot === t.slot && o.id !== t.id && works(o))) continue;
+    out.push({ id: t.id, label: t.label ?? t.id, needs: t.layers.includes('pixel') && !t.layers.includes('vector') ? 'pixel' : 'vector' });
+  }
+  return out;
+}
+
+/** "Text and Gradient work on vector layers." for the tools waiting for one kind of layer. */
+export function waitingWords(list: WaitingTool[]): string {
+  if (!list.length) return '';
+  const names = list.map((t) => t.label);
+  const joined = names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}` : names[0];
+  return `${joined} ${names.length > 1 ? 'work' : 'works'} on ${list[0].needs} layers.`;
+}
+
 /** The tool of the same slot that works on this kind of layer, or null when it has no slot or none works. */
 export function twinFor(tools: RailTool[], id: string, kind: LayerKind | null): string | null {
   const me = tools.find((t) => t.id === id);

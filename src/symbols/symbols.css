@@ -302,3 +302,10 @@
   font-size: var(--fs-small);
   color: var(--muted);
 }
+.sy-keep {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--fs-small);
+  cursor: pointer;
+}

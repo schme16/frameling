@@ -95,6 +95,26 @@ export interface Doc {
   sprite?: SpriteInfo;
   /** Data kept for features and plugins, by feature id. See `Ext`. */
   ext?: Ext;
+  /** How this drawing was last exported, and the named ways it can leave (missing = none yet). See src/export/saved.ts. */
+  exports?: DocExports;
+}
+
+/** Export choices as plain data (the Export window's settings, with nothing but strings, numbers and yes/no inside). */
+export interface SavedSettings {
+  [key: string]: string | number | boolean | null | SavedSettings;
+}
+
+/** One named way out ("the sprite sheet", "the web video"): a set of export choices kept with the drawing. */
+export interface SavedExport {
+  id: Id;
+  name: string;
+  settings: SavedSettings;
+}
+
+/** What a drawing remembers about exporting. `last` is what Export again repeats; `way` is the saved way it was, if it was one. */
+export interface DocExports {
+  last?: { settings: SavedSettings; way?: Id };
+  ways?: SavedExport[];
 }
 
 /**

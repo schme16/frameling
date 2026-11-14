@@ -602,6 +602,8 @@ Press its button, or press its key. Rest on a button to see the key.
 
 Switch between a vector layer and a pixel layer and nothing moves, so your hand can learn the strip. A tool that doesn't work on the layer you're on is left off the strip, so the strip is shorter and everything else stays exactly where it was: Shade, Dither, Spray and the Magic wand wait out of sight on a vector layer, and Text, Gradient and the curve tools on a pixel layer. If you'd rather see every tool all the time, set **Tools that do not work here** to **Grey them out** in **Preferences, General** (or in [Change the tools](help:tool-builder)). Then they wait where they sit, and resting on one says why.
 
+While they're out of sight, a small button with a number sits under the strip. Rest on it to read which tools are waiting and what they need (**Text and Gradient work on vector layers.**). Press it to jump to a layer they work on with the tool in your hand, or to see them greyed out instead.
+
 A few tools share one place with their pixel twin: the Lasso, Polygon select, Magnetic lasso and Select each have one button, and it picks the one for the layer you're on. Change layer with the Lasso in your hand and you still have a lasso.
 
 Tilemap and camera layers are different jobs, so on those the strip shows only the tools that work there.

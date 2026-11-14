@@ -7,6 +7,7 @@ import { gridPixels } from '../core/pixelBounds';
 import { getCommand, registerCommand, registerCommands, type Command } from '../core/registry';
 import { store, type State } from '../core/store';
 import { hint } from '../canvas/controller';
+import { showPanel } from '../ui/dock';
 import { editPixels } from '../pixel/commands';
 import { cancelOpenLasso, lassoIsOpen } from '../tools/select';
 import { clearPixels, emptyMask, extractPixels, fullMask, invertMask, maskEmpty, resizeMask, resizePixels, type Mask } from './mask';
@@ -187,6 +188,20 @@ const commands: Command[] = [
       if (isFloating()) dropFloating();
       const m = pixelSelection() ?? emptyMask(a.width, a.height);
       setPixelSelection(invertMask(m));
+    },
+  },
+  {
+    id: 'select.numbers',
+    label: 'Type an exact position and size',
+    category: 'Edit',
+    description: 'Opens the X, Y, Width, Height and Turn boxes for what is selected, shapes or pixels, so you can place it exactly.',
+    help: 'selection-numbers',
+    keywords: ['position', 'coordinates', 'x y', 'size', 'width', 'height', 'resize exactly', 'numbers', 'transform', 'rotate', 'turn', 'skew', 'slant', 'move exactly', 'precise', 'properties'],
+    enabled: (s) => s.ui.selection.length > 0 || hasSel(),
+    run: () => {
+      showPanel('symbol-props');
+      // The panel may have just opened: give it a moment to draw before taking the focus.
+      setTimeout(() => document.querySelector<HTMLInputElement>('.sy-props input[aria-label="X"]')?.focus(), 120);
     },
   },
   {

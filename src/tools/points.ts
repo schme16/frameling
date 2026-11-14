@@ -13,6 +13,8 @@ import { topShapeAt } from '../canvas/geometry';
 import { deletePoint, fromAnchors, handlesInLine, insertPoint, moveAnchor, moveHandle, nearestOnPath, toAnchors, toggleSmooth, type Anchor, type P } from '../geometry/pen';
 import { activeDrawing, editActiveDrawing } from './edit';
 import { canEdit, reportEdit } from './util';
+import { toast } from '../ui/toast';
+import { openStrokeLineBar } from './StrokeLineBar';
 import { drawAnchor, drawGuidePath, GRAB_PX } from './point-handles';
 import { PointsOptions } from './options/PointsOptions';
 
@@ -194,8 +196,11 @@ export const pointsTool: Tool = {
       picked = null;
       store().setUi({ selection: [under.id] });
     } else {
-      if (under && under.type === 'stroke') ctx.hint('Brush lines are made of many tiny points. To bend a line by its points, draw it with the Pen, or the Pencil set to Clean line.');
-      else if (under) ctx.hint("That one has no points to edit. Edit points works on shapes, pen and clean pencil lines, and paint.");
+      if (under && under.type === 'stroke') {
+        // A brush line has hundreds of points, so it is turned into a shape with a few before it can be bent by them.
+        store().setUi({ selection: [under.id] });
+        toast('Brush lines are made of many tiny points. Turn this one into an editable line to bend it by a few smooth ones.', { action: { label: 'Turn into an editable line', run: () => void openStrokeLineBar() }, quill: null });
+      } else if (under) ctx.hint("That one has no points to edit. Edit points works on shapes, pen and clean pencil lines, and paint.");
       targetId = null;
       picked = null;
     }

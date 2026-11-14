@@ -11,6 +11,15 @@ registerHelpTopics([
     keywords: ['export', 'share', 'render', 'save as video', 'gif', 'png', 'mp4', 'webm'],
   },
   {
+    id: 'export-ways',
+    order: 1.5,
+    title: 'Saved ways out',
+    section: 'Exporting',
+    media: 'export-ways.png',
+    summary: 'Keep a few named sets of Export choices in the drawing (the sprite sheet, the web video) and send it out the same way again.',
+    keywords: ['saved exports', 'export presets', 'preset', 'export again', 'export all', 'publish settings', 'remember export', 'named export', 'repeat export', 'export settings'],
+  },
+  {
     id: 'export-video-gif-apng',
     order: 2,
     media: 'export-video.png',

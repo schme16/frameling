@@ -21,6 +21,15 @@ registerHelpTopics([
     keywords: ['direct select', 'direct selection', 'edit points', 'node', 'anchor', 'handle', 'bezier', 'reshape', 'corner', 'smooth', 'add point', 'delete point'],
   },
   {
+    id: 'brush-edit-points',
+    order: 8.5,
+    title: 'Reshape a brush line',
+    section: 'Drawing',
+    media: 'brush-edit-points.png',
+    summary: 'Turn a brush line into a shape with a few smooth points, then drag them, or tidy a wobbly line with the Smoothness slider.',
+    keywords: ['brush', 'stroke', 'reshape', 'edit points', 'smooth', 'simplify', 'straighten', 'tidy', 'wobbly', 'fewer points', 'convert', 'fix a line', 'bend a line', 'curve'],
+  },
+  {
     id: 'tool-polygon-star',
     order: 9,
     title: 'Polygon and star',

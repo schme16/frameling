@@ -1,5 +1,5 @@
 import { registerCommands } from '../core/registry';
-import { exportAgain, openExportDialog } from './open';
+import { exportAgain, exportAll, openExportDialog } from './open';
 
 registerCommands([
   {
@@ -38,10 +38,20 @@ registerCommands([
     label: 'Export again',
     category: 'File',
     keys: ['Mod+Shift+E'],
-    description: 'Export once more with the same settings as last time.',
-    help: 'exporting',
+    description: "Export once more with the same settings as the last time you exported this drawing.",
+    help: 'export-ways',
     keywords: ['repeat', 'last export'],
     global: true,
     run: () => exportAgain(),
+  },
+  {
+    id: 'file.exportAll',
+    label: 'Export all saved ways',
+    category: 'File',
+    description: 'Send this drawing out every way you have saved for it (the sprite sheet, the web video...), one after another.',
+    help: 'export-ways',
+    keywords: ['saved exports', 'presets', 'publish', 'batch', 'every format', 'again'],
+    global: true,
+    run: () => exportAll(),
   },
 ]);

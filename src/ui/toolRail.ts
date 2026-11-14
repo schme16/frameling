@@ -1,14 +1,17 @@
 // The tool rail's live side: the arrangement as it is now, moving tools (by pointer drag, keyboard, menu), and the
 // stacked style's "front tool" of each group. The pure model is toolArrange.ts; ToolStrip.tsx draws it.
 import { allTools, getTool } from '../core/registry';
+import { store } from '../core/store';
+import { pickTool } from '../tools/pick';
 import { defaultRailWidthOf, dock, flushDock, railOf, railWidthOf, resetToolGroups, setRailWidth, setToolGroups } from './dock';
 import { acrossFor, chosenRailWidth, columnStep, fitRailWidth, naturalRailWidth, railSizes, railWidthNow, type RailSizes } from './toolRailWidth';
 import { DEFAULT_PREFS, getPrefs, setPrefs } from './prefs';
 import { toast } from './toast';
 import { run } from './dockDrag';
 import { askRename, type DockMenuItem } from './dockMenus';
+import { openHelp } from './overlays';
 import { createStore } from './mini';
-import { canJoinAbove, foldGroup, groupName, hasOwnName, hiddenTools, hideTool, joinGroupAbove, moveTool, placeWords, renameGroup, resolveGroups, shiftTool, showAllTools, showTool, slotMates, startGroupAt, visibleGroups, type ToolDrop, type ToolGroup } from './toolArrange';
+import { whyOff, type WaitingTool, canJoinAbove, foldGroup, groupName, hasOwnName, hiddenTools, hideTool, joinGroupAbove, moveTool, placeWords, renameGroup, resolveGroups, shiftTool, showAllTools, showTool, slotMates, startGroupAt, visibleGroups, type ToolDrop, type ToolGroup } from './toolArrange';
 
 /** The whole arrangement for the tools that exist in this workspace (the person's own, or what it brings), whatever shows right now. */
 export function currentGroups(): ToolGroup[] {
@@ -325,4 +328,29 @@ export function startToolDrag(e: React.PointerEvent, id: string, groups: () => T
     },
     onLift,
   );
+}
+
+/**
+ * Takes you to a layer a waiting tool works on and picks the tool: the top layer of that kind. With none, says why the
+ * tool isn't there and what to do (the same words a greyed-out tool gives).
+ */
+export function goToLayerFor(w: WaitingTool): void {
+  const { doc } = store().get();
+  const layer = [...doc.layers].reverse().find((l) => l.kind === w.needs);
+  const tool = getTool(w.id);
+  if (!layer || !tool) return void toast(whyOff({ label: w.label, layers: [w.needs] }, w.needs === 'pixel' ? 'vector' : 'pixel'), { quill: null });
+  store().setUi({ activeLayerId: layer.id });
+  pickTool(w.id);
+}
+
+/** What the rail's "waiting" button opens: the tools that need the other kind of layer, each one a way to get there, and a way to see them greyed out instead. */
+export function waitingMenu(list: WaitingTool[]): DockMenuItem[] {
+  const needs = list[0]?.needs ?? 'vector';
+  return [
+    { heading: `Waiting for a ${needs} layer` },
+    ...list.map((w): DockMenuItem => ({ label: `${w.label}: go to a ${needs} layer`, onClick: () => goToLayerFor(w) })),
+    { separator: true },
+    { label: 'Show them greyed out instead', onClick: () => setPrefs({ toolsOffLayer: 'grey' }) },
+    { label: 'Why are they not on the strip?', onClick: () => openHelp('tool-strip') },
+  ];
 }

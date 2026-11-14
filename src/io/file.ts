@@ -11,6 +11,7 @@ import { BONE_STRETCH, FORMAT_VERSION, LAYER_LABELS, type LayerLabel, type Cel, 
 import { decodePng, encodePng, type RawImage } from './png';
 import { decodePngsInWorkers, inflateDocInWorker, zipInWorker } from './ioClient';
 import { MAX_UNZIPPED } from './ioJobs';
+import { readExports } from '../export/saved';
 import { trimmedDrawing } from '../core/pixelBounds';
 import { rootDoc } from '../core/symbols';
 import { isEasing } from '../core/ease';
@@ -528,6 +529,7 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
     const points = raw.perspective.points.filter((p: any) => isObj(p) && Number.isFinite(p.x) && Number.isFinite(p.y)).slice(0, 2).map((p: any) => ({ x: p.x as number, y: p.y as number }));
     if (points.length) doc.perspective = { points };
   }
+  Object.assign(doc, readExports(raw.exports));
   if (isObj(raw.sprite) && ['picture', 'animation', 'boards', 'sheet'].includes(raw.sprite.way)) doc.sprite = { way: raw.sprite.way };
   // One layer stack for every artboard (frames on boards), never together with variations.
   const shared = raw.sharedLayers === true && Array.isArray(raw.artboards) && raw.artboards.length > 0 && !raw.artboards.some((a: any) => isObj(a) && typeof a.variationOf === 'string' && a.variationOf);
