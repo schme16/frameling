@@ -5,15 +5,21 @@ import './choices';
 import './commands';
 import './keyCommands';
 import './frameClipCommands';
+import './clipSightCommands';
 import './range';
 import './help';
 import { installPlayback } from './playback';
 import { installTweenOffer } from './tweenOffer';
 import { installFitOnOpen } from './fitHeight';
+
+import { installOnionScope } from './onionScope';
 import { store } from '../core/store';
 import { TimelinePanel } from './TimelinePanel';
 
 registerPanel({ id: 'clip-play', title: 'Clip', icon: 'timeline', component: lazyPanel(() => import('./ClipPanel').then((m) => m.ClipPanel)), zone: 'right', order: 36, help: 'timeline-clip-play' });
+// Starts away, like Clip flow and Draw on: the rail is the scarcest space in the app, and this is a panel you open
+// when you want it. The palette, the menu and the Panels list all bring it back.
+registerPanel({ id: 'clip-drawings', title: 'Drawings', icon: 'film', component: lazyPanel(() => import('./DrawingsPanel').then((m) => m.DrawingsPanel)), zone: 'right', order: 37, help: 'timeline-drawings', startsAway: true });
 registerPanel({ id: 'timeline', title: 'Timeline', icon: 'timeline', component: TimelinePanel, zone: 'bottom', order: 10, help: 'timeline' });
 // Layers get a place of their own in the right rail, above Artboards, for drawings with more layers than the
 // timeline's corner can show.
@@ -25,6 +31,9 @@ installPlayback();
 installTweenOffer(store());
 // A file opens with its layers showing, within reason (see fitHeight.ts).
 installFitOnOpen();
+
+// The onion skin stays inside the clip you are in, unless the choice says otherwise (see onionScope.ts).
+installOnionScope();
 
 export { play, pause, togglePlay, goTo, stepFrame, stepKey, playRange } from './playback';
 export * as timelineOps from './ops';

@@ -72,6 +72,11 @@ export interface OnionSettings {
   keysOnly?: boolean;
   /** Also ghost the artboards either side of the open one, like frames (missing = no). */
   boards?: boolean;
+  /**
+   * Walk over the end of a clip into the next one (missing = no: ghosts stay inside the clip you are in). The answer to
+   * the "Onion skin and clips" choice (src/timeline/choices.ts), kept here so the canvas can read it without asking.
+   */
+  acrossClips?: boolean;
 }
 
 export interface UiState {

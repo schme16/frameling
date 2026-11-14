@@ -105,6 +105,22 @@ module.exports = [
     ],
   },
   {
+    // Quill's own file (one artboard per animation): the wave animation, its drawings named from their ids, and the
+    // Drawings panel showing each once. Done by opening the real file, so nothing here is a mock-up.
+    name: 'timeline-drawings',
+    size: [1400, 960],
+    prefs: { firstDrawn: true, showTips: false, showExplanations: false },
+    steps: [
+      js(`__framelingIo.openPath(${JSON.stringify(require('node:path').join(__dirname, '../../../brand/mascot/mascot.frameling'))})`), { wait: 2500 },
+      js(`${F}.dock.applyWorkspace('animate')`), { wait: 800 },
+      js(`(() => { const s = ${F}.store(); const m = __framelingArtboards.model; const d = s.get().doc; const b = m.artboardsOf(d).find((a) => a.name === 'wave'); s.update('Go to a board', (x) => void m.switchArtboard(x, b.id)); s.setUi({ frame: 40 }); return true })()`), { wait: 1200 },
+      js(`${F}.run('timeline.zoomFit')`),
+      js(`${F}.store().update('Name drawings', (d) => { for (const l of d.layers) for (const c of l.cels) c.name = c.drawingId.replace(/-/g, ' ') })`),
+      js(`${F}.showPanel('clip-drawings')`), { wait: 1500 },
+      { shot: '@', crop: [140, 40, 1260, 880] },
+    ],
+  },
+  {
     name: 'onion-skin',
     steps: [
       ...open('bouncing-ball'),

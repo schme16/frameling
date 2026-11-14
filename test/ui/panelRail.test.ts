@@ -8,7 +8,7 @@ import { parseWorkspaceText, workspaceToText } from '../../src/ui/workspaceFile'
 import { planRight } from '../../src/ui/panelInfo';
 import '../../src/renderer/features';
 
-const AWAY = ['clip-flow', 'draw-on'];
+const AWAY = ['clip-drawings', 'clip-flow', 'draw-on'];
 beforeEach(() => resetDock());
 
 /** A layout as it was saved before this change: Library third on the rail, Clip flow and Draw on placed, every panel known. */
@@ -35,7 +35,7 @@ describe('the starting rail', () => {
     for (const id of AWAY) expect(getPanel(id)?.startsAway).toBe(true);
   });
 
-  it('only those two start away', () => {
+  it('only the panels meant to start away do', () => {
     expect(allPanels().filter((p) => p.startsAway).map((p) => p.id).sort()).toEqual(AWAY);
   });
 

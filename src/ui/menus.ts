@@ -60,7 +60,7 @@ export const MENUS: MenuDef[] = [
     label: 'Animate',
     title: 'Frames and motion',
     categories: ['Animate', 'Animation', 'Timeline', 'Frames', 'Sound', 'Lip sync'],
-    items: ['timeline.play', 'timeline.toggleLoop', 'timeline.togglePingPong', '-', 'timeline.toggleOnion', 'timeline.onionKeysOnly', 'timeline.onionBoards', '-', 'sub:range', 'sub:goto', '-', 'timeline.newKey', 'timeline.emptyFrame', 'timeline.duplicateKey', 'timeline.clearKey', 'timeline.deleteKeys', 'sub:keys', 'sub:holds', '-', 'timeline.insertFrame', 'timeline.removeFrame', 'timeline.insertFrameOther', 'timeline.removeFrameOther', 'timeline.tidyEnd', 'timeline.addMarker', '-', 'sub:tween', 'sub:drawon', 'sub:motions', 'sub:camera', 'sub:atext', 'sub:clips', '-', 'sub:rig', 'sub:sound', 'sub:reference', 'sub:artboards'],
+    items: ['timeline.play', 'timeline.toggleLoop', 'timeline.togglePingPong', '-', 'timeline.toggleOnion', 'timeline.onionKeysOnly', 'timeline.onionBoards', 'timeline.onionAcrossClips', '-', 'sub:range', 'sub:goto', '-', 'timeline.newKey', 'timeline.emptyFrame', 'timeline.duplicateKey', 'timeline.clearKey', 'timeline.nameKey', 'timeline.deleteKeys', 'sub:keys', 'sub:holds', '-', 'timeline.insertFrame', 'timeline.removeFrame', 'timeline.insertFrameOther', 'timeline.removeFrameOther', 'timeline.tidyEnd', 'timeline.addMarker', '-', 'sub:tween', 'sub:drawon', 'sub:motions', 'sub:camera', 'sub:atext', 'sub:clips', '-', 'sub:rig', 'sub:sound', 'sub:reference', 'sub:artboards'],
   },
   {
     label: 'Help',
@@ -243,7 +243,7 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
   },
   goto: {
     label: 'Move around the timeline',
-    items: ['timeline.prevFrame', 'timeline.nextFrame', 'timeline.prevKey', 'timeline.nextKey', 'timeline.firstFrame', 'timeline.lastFrame', '-', 'timeline.zoomFit', 'timeline.fitLayers', 'timeline.toggleProperties', 'perf.quickScrub'],
+    items: ['timeline.prevFrame', 'timeline.nextFrame', 'timeline.prevKey', 'timeline.nextKey', 'timeline.firstFrame', 'timeline.lastFrame', '-', 'timeline.findDrawing', 'timeline.showDrawings', '-', 'timeline.zoomFit', 'timeline.fitLayers', 'timeline.toggleProperties', 'perf.quickScrub'],
   },
   keys: {
     label: 'Copy, move and stretch keys',

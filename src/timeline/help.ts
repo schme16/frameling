@@ -66,6 +66,15 @@ registerHelpTopics([
     keywords: ['onion skin', 'ghost', 'tracing', 'tint', 'previous frame', 'keys only', 'held frames', 'twos', 'boards', 'artboards', 'storyboard', 'shots', 'either side'],
   },
   {
+    id: 'timeline-drawings',
+    order: 4.5,
+    title: 'Name a drawing, and see a clip\'s drawings at a glance',
+    section: 'Animating',
+    media: 'timeline-drawings.png',
+    summary: 'Call a drawing "eyes sad" instead of "frame 1701", see every drawing in a clip once each, and jump to one by name.',
+    keywords: ['name', 'rename', 'label', 'pose', 'drawings panel', 'thumbnails', 'contact sheet', 'overview', 'all the frames', 'find a frame', 'jump', 'search', 'keys', 'keyframes', 'frame number', 'poses'],
+  },
+  {
     id: 'drawings-carry-on',
     title: 'New drawings carry on',
     section: 'Animating',

@@ -481,6 +481,12 @@ export interface Cel {
    * a later frame of it, as if those frames were empty. Choosing a length (Hold for, dragging the end) clears it.
    */
   autoHold?: boolean;
+  /**
+   * A name for this drawing ("eyes sad", "arm up"), so a pose can be found without counting frames (missing = none).
+   * Shown on the timeline bar, in the Drawings panel and the jump list. Never written when empty; an older Frameling
+   * drops it without a warning and the file plays the same.
+   */
+  name?: string;
 }
 
 export type Drawing = VectorDrawing | PixelDrawing | TilemapDrawing | CameraDrawing;

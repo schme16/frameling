@@ -200,6 +200,12 @@ Click the little arrow beside the onion for:
 
 On the ruler, the frames being ghosted are softly shaded in the same colours.
 
+## Clips
+
+Your file has [clips](help:timeline-clips), like idle, run and jump? The ghosts **stop at the edge of the clip you're in**, so the first frame of a jump is never drawn against the last frame of the run before it, and you never trace a limb that belongs to another animation. The ruler's shading stops there too.
+
+The first time an edge hides a ghost, a note says so, with a **Change** button. Making one long scene out of clips back to back? Choose **Carry on into the next clip**, or switch it any time with **Onion skin carries on into the next clip** in the **Frames and motion** menu, or in **Preferences > Behaviour**. A frame that is in no clip has no edge, so nothing is hidden there.
+
 ## Boards either side
 
 Storyboarding on several [artboards](help:artboards)? Tick **Show the boards either side too** and the boards around the one you're on come up as ghosts as well, counted the same way as frames: **frames before** boards back, **frames after** boards on. The board before shows its last frame, the one you cut from, and the board after shows its first, the one you cut to, so a hand or a horizon carries across the cut. On a board with one drawing on it that's just that drawing. Also in **Frames and motion > Onion skin shows the boards either side**.
@@ -360,6 +366,36 @@ Pick the clip and press play. It plays the way you set it, so you see what a gam
 - **Back and forth in Godot and Phaser:** a back and forth clip that loops can use the game engine's own back and forth loop instead of listing every frame, which makes smaller files. In Godot the two end frames then show twice; Phaser plays it the same. Change it in **Preferences > Behaviour**, under *Back-and-forth clips in game engines*. Everything else always lists the frames.
 ${ix('- **Interactives** has its own forward, loop or once, so a clip that plays another way is written out in order there.\n')}
 A clip with nothing set plays forward.`,
+  'timeline-drawings': `A long animation is a lot of drawings, and "frame 1701" tells you nothing. Name the ones you care about, and the **Drawings** panel lays out a clip's drawings side by side, once each, however long you hold them.
+
+## Name a drawing
+
+**Double-click a drawing** on the timeline, or press **F2** on the frame you're on. Type a name like "eyes sad" and press **Enter**. Clear the box to take the name off. Right-click a drawing and choose **Name this drawing** to do the same.
+
+The name sits after the drawing's key on the timeline, and in its tooltip. A name belongs to one drawing on one layer, so the Eyes layer can have "sad" while the Mouth layer has "o".
+
+## See a clip's drawings
+
+Open **Drawings** on the right-hand rail, or choose **Frames and motion > Move around the timeline > See the drawings in this clip**. You get a picture for every moment something new appears, with its name underneath (or its frame number when it has none).
+
+Held frames are skipped, so a clip playing at 100 frames a second is a handful of pictures, not thousands. That's the difference from a [contact sheet](help:export-jpeg-webp-contact), which has a tile for every frame and is made for sharing, not for working.
+
+- **Click a picture** to go to that frame. If its name is on another layer, you land on that layer.
+- **Double-click the words** under a picture to name it.
+- The picture you're on has a gold outline.
+- It shows the clip you're in, or the one you clicked on the timeline. Press **Everything** to see the whole animation.
+
+## Find a drawing by name
+
+Type in the box at the top of the panel, or press **Ctrl+K** and choose **Find a drawing by name and jump to it**. Part of a name is enough ("sad" finds "eyes sad"). Nothing in this clip? Press **Everything**.
+
+**Good to know:**
+
+- A copy or a paste starts without a name; duplicating a whole layer keeps its names.
+- An older Frameling opens the file just the same, and the animation plays the same. It simply doesn't show the names.
+- Each artboard has its own drawings, so the panel shows the one that's open.
+
+See also [clips](help:timeline-clips) and [onion skin](help:timeline-onion).`,
   'timeline-markers': `A **marker** is a little flag on one frame with a name. It doesn't change what you see. It tells a game${ix(' (or Interactives)')} *when* something should happen: play the footstep sound, flash the screen, spawn a puff of dust.
 
 ## Adding one

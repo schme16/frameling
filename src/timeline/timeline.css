@@ -776,6 +776,33 @@
   background: color-mix(in srgb, var(--raised) 55%, transparent);
 }
 
+/* A drawing's name, after its key. Beside the cel (not in it) so it can run on over empty frames; clicks go through. */
+.tl-cel-name {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0 4px;
+  border-radius: var(--radius-small);
+  font-size: 11px;
+  line-height: 15px;
+  color: var(--text);
+  background: color-mix(in srgb, var(--panel-2) 78%, transparent);
+  pointer-events: none;
+}
+.tl-cel-name.is-editing {
+  padding: 0;
+  background: none;
+  pointer-events: auto;
+}
+.tl-cel-name.is-editing .tl-name-input {
+  font-size: 11px;
+  padding: 0 4px;
+}
+
 .tl-playhead {
   position: absolute;
   top: 0;
