@@ -197,11 +197,11 @@ const entries = [
     steps: [template('bouncing-ball'), js(installingDom()), wait(400), ...settle, ...shotOf('#help-installing', null, 0)],
   },
 
-  // The tool strip, with the tooltip on the Paint bucket.
+  // The tool strip on a vector layer, with the tooltip on Shade: greyed out where it sits, saying why.
   {
     name: 'tool-strip',
     prefs: CALM,
-    steps: [template('bouncing-ball'), wait(800), { move: [76, 133] }, { move: [77, 134] }, wait(1500), ...settle, { shot: '@', crop: [0, 40, 380, 640] }],
+    steps: [template('bouncing-ball'), wait(800), { clickOn: "[data-command='tools.shade']", hover: true, after: 1800 }, ...settle, { shot: '@', crop: [0, 40, 380, 720] }],
   },
   // Two tools dragged: the eyedropper into the drawing group, then the pen into a group of its own between two others.
   {
@@ -213,10 +213,10 @@ const entries = [
       ...settle,
       { rec: '@', crop: [0, 40, 400, 640], every: 70 },
       wait(1200),
-      ...dragSlow([[77, 183], [80, 160], [86, 134]], { n: 8, after: 70, hold: 1200 }),
+      ...dragSlow([[72, 225], [76, 180], [83, 134]], { n: 8, after: 70, hold: 1200 }),
       { move: [300, 500] },
       wait(1400),
-      ...dragSlow([[35, 453], [46, 420], [56, 387]], { n: 8, after: 70, hold: 1200 }),
+      ...dragSlow([[30, 579], [40, 430], [56, 297]], { n: 8, after: 70, hold: 1200 }),
       { move: [300, 500] },
       wait(1400),
       // Then the new group gets a name: double-click the divider above it, type, Save.
@@ -227,8 +227,8 @@ const entries = [
       { move: [300, 500] },
       wait(900),
       // Resting on the divider shows the name.
-      { move: [56, 249] },
-      { move: [57, 250] },
+      { move: [56, 293] },
+      { move: [57, 294] },
       wait(2200),
       { rec: 'stop' },
     ],

@@ -530,6 +530,24 @@ kbd {
 .ui-tool:active {
   transform: scale(0.92);
 }
+/* A tool that doesn't work on this kind of layer keeps its place, greyed out. It still answers a hover or a press. */
+.ui-tool.is-off {
+  color: var(--faint);
+  opacity: 0.45;
+  cursor: default;
+}
+.ui-tool.is-off:hover {
+  background: transparent;
+  color: var(--faint);
+  transform: none;
+}
+.ui-tool.is-off:active {
+  transform: none;
+}
+.ui-tool-fly-item.is-off {
+  opacity: 0.45;
+  cursor: default;
+}
 .ui-tools-empty {
   color: var(--faint);
   padding-top: 8px;
