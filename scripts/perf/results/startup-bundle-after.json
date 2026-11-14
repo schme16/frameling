@@ -1,0 +1,102 @@
+{
+  "label": "desktop",
+  "mode": "desktop",
+  "cpu": "AMD Ryzen 9 7900X 12-Core Processor",
+  "firstLaunchMs": 403,
+  "medianFromLaunchMs": 384,
+  "medianPageMs": 247,
+  "cpuSlowdown": 4,
+  "medianThrottledPageMs": 287,
+  "initialJs": {
+    "files": [
+      "assets/index-C_fQwDGM.js",
+      "assets/rolldown-runtime-XKyaHtl9.js"
+    ],
+    "kB": 2285,
+    "gzipKB": 758
+  },
+  "lazyCheck": {
+    "tried": 145,
+    "bad": [],
+    "protocol": "file:"
+  },
+  "runs": [
+    {
+      "timeOrigin": 1794695572685.3,
+      "interactive": 263.70000000298023,
+      "domContentLoaded": 103.89999999850988,
+      "fcp": null,
+      "jsFiles": [],
+      "jsBytes": 0,
+      "fromSpawnMs": 403,
+      "pageMs": 264,
+      "throttledPageMs": 291
+    },
+    {
+      "timeOrigin": 1794695575004.6,
+      "interactive": 247.10000000149012,
+      "domContentLoaded": 102.80000000447035,
+      "fcp": null,
+      "jsFiles": [],
+      "jsBytes": 0,
+      "fromSpawnMs": 382,
+      "pageMs": 247,
+      "throttledPageMs": 298
+    },
+    {
+      "timeOrigin": 1794695575806.8,
+      "interactive": 243.20000000298023,
+      "domContentLoaded": 102.5,
+      "fcp": null,
+      "jsFiles": [],
+      "jsBytes": 0,
+      "fromSpawnMs": 375,
+      "pageMs": 243,
+      "throttledPageMs": 288
+    },
+    {
+      "timeOrigin": 1794695576612.2,
+      "interactive": 236.89999999850988,
+      "domContentLoaded": 100,
+      "fcp": null,
+      "jsFiles": [],
+      "jsBytes": 0,
+      "fromSpawnMs": 384,
+      "pageMs": 237,
+      "throttledPageMs": 286
+    },
+    {
+      "timeOrigin": 1794695577395.7,
+      "interactive": 260.5,
+      "domContentLoaded": 98.5,
+      "fcp": null,
+      "jsFiles": [],
+      "jsBytes": 0,
+      "fromSpawnMs": 394,
+      "pageMs": 261,
+      "throttledPageMs": 287
+    },
+    {
+      "timeOrigin": 1794695578201.1,
+      "interactive": 239.40000000596046,
+      "domContentLoaded": 103.10000000149012,
+      "fcp": null,
+      "jsFiles": [],
+      "jsBytes": 0,
+      "fromSpawnMs": 371,
+      "pageMs": 239,
+      "throttledPageMs": 277
+    },
+    {
+      "timeOrigin": 1794695578978.6,
+      "interactive": 253.20000000298023,
+      "domContentLoaded": 95.80000000447035,
+      "fcp": null,
+      "jsFiles": [],
+      "jsBytes": 0,
+      "fromSpawnMs": 389,
+      "pageMs": 253,
+      "throttledPageMs": 283
+    }
+  ]
+}

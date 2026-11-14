@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Command } from '../../src/core/registry';
 import { jumpTo } from '../../src/ui/MenuBar';
-import { MENU_HOMES, MENUS, menuTitle, resolveMenu, SUBMENUS, type MenuDef, type SubmenuDef } from '../../src/ui/menus';
+import { listedIds, MENU_HOMES, MENUS, menuTitle, resolveMenu, SUBMENUS, type MenuDef, type SubmenuDef } from '../../src/ui/menus';
 import { _forceInteractivesForTests } from '../../src/features/flags';
 
 // These tests are about Interactives itself (and what goes with it), so they run with its switch (src/features/flags.json) on.
@@ -13,6 +13,16 @@ const registry = (list: Command[]) => ({ lookup: (id: string) => list.find((x) =
 const shape = (items: ReturnType<typeof resolveMenu>): unknown[] => items.map((i) => (i.kind === 'separator' ? '-' : i.kind === 'submenu' ? { [i.label]: shape(i.items) } : i.kind === 'heading' ? `# ${i.label}` : i.command.id));
 
 describe('menu filtering', () => {
+  it('gives the same menus whether the ids the menus name are worked out for each one or once for all', () => {
+    const r = registry([c('file.new'), c('file.open', 'Open', 'File'), c('file.extra', 'Extra', 'File'), c('edit.undo', 'Undo', 'Edit')]);
+    const menu: MenuDef = { label: 'File', categories: ['File'], items: ['file.new', '-', 'file.open'] };
+    const other: MenuDef = { label: 'Edit', categories: ['Edit'], items: ['edit.undo'] };
+    const named = listedIds([menu, other], SUBMENUS);
+    expect(resolveMenu(menu, [menu, other], r.lookup, r.all, SUBMENUS, undefined, named)).toEqual(resolveMenu(menu, [menu, other], r.lookup, r.all));
+    // The real menus too: every one of them resolves the same either way.
+    for (const m of MENUS) expect(resolveMenu(m, MENUS, r.lookup, r.all, SUBMENUS, undefined, listedIds(MENUS, SUBMENUS))).toEqual(resolveMenu(m, MENUS, r.lookup, r.all));
+  });
+
   const menu: MenuDef = { label: 'File', categories: ['File'], items: ['file.new', 'file.open', '-', 'file.save', 'file.ghost', '-', 'file.export'] };
   const other: MenuDef = { label: 'Edit', categories: ['Edit'], items: ['edit.undo'] };
 

@@ -2,8 +2,9 @@
 // The saved brushes on screen: the picker button, the changed marker, and the name box.
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import '../../src/brushes';
+import { preloadPicker } from './preloadPicker';
 import { BrushPresetRow } from '../../src/brushes/BrushPresetRow';
 import { STARTERS } from '../../src/brushes/model';
 import * as P from '../../src/brushes/presets';
@@ -19,6 +20,8 @@ let root: Root;
 const picker = () => host.querySelector<HTMLButtonElement>('.pk-btn')!;
 const rowsOpen = () => [...document.querySelectorAll<HTMLElement>('.pk-pop .pk-row')];
 const button = (text: string) => [...host.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent === text);
+
+beforeAll(preloadPicker);
 
 beforeEach(() => {
   localStorage.clear();

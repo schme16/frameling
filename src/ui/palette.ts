@@ -7,7 +7,7 @@ import { toast } from './toast';
 import type { FeatureDescriptor } from '../features/feature';
 import { oneOfEach } from './toolTwins';
 import { offFeatures, setFeatureOn } from '../features/host';
-import { choiceRows, featureRows, mascotRows, SETTING_ROWS } from './prefsIndex';
+import { lazyModule } from '../core/lazy';
 import { PAGE_NAMES, searchPrefs, type PrefRow } from './prefsSearch';
 
 export type PaletteItem =
@@ -148,7 +148,14 @@ export interface ShownHit {
 }
 
 /** The rows of Preferences the palette looks through: the settings, the remembered choices and the features. The Keyboard page's commands are the palette's own. */
-export const settingRows = (): PrefRow[] => [...SETTING_ROWS, ...mascotRows(), ...choiceRows(), ...featureRows()];
+export const settingRows = (): PrefRow[] => (rowIndex ? [...rowIndex.SETTING_ROWS, ...rowIndex.mascotRows(), ...rowIndex.choiceRows(), ...rowIndex.featureRows()] : []);
+
+// The index of Preferences rows (30 kB of other names for each setting) is its own download: fetched in idle time after
+// start-up, and by the palette when it opens, so it is there well before anyone types a word that names a setting.
+let rowIndex: typeof import('./prefsIndex') | null = null;
+export const loadSettingRows = lazyModule(() => import('./prefsIndex').then((m) => (rowIndex = m)), { warm: true });
+/** True once the rows of Preferences are in, so the palette can offer settings. */
+export const settingRowsReady = (): boolean => rowIndex !== null;
 
 /**
  * The palette's results with a few settings let in after the best matches, so a word that names a setting ("smoothing",

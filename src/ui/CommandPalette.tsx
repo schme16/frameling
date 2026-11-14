@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { syncDynamicCommands, isStaleCommand } from './dynamic';
 import { effectiveKeys } from './keys';
 import { openHelp, openPrefs, overlays, closePalette } from './overlays';
-import { commandEnabled, noteRecentCommand, notNowMessage, paletteItems, rankPalette, runCommand, withSettings, type ShownHit } from './palette';
+import { commandEnabled, loadSettingRows, noteRecentCommand, notNowMessage, paletteItems, rankPalette, runCommand, settingRowsReady, withSettings, type ShownHit } from './palette';
 import { toast } from './toast';
 import { Icon } from './icons';
 import { Keys } from './ShortcutChip';
@@ -20,6 +20,11 @@ function PaletteDialog() {
   const [query, setQuery] = useState('');
   const [at, setAt] = useState(0);
   const list = useRef<HTMLDivElement>(null);
+  // The settings the palette can find come in a moment after the palette first opens (and are usually there already).
+  const [rowsIn, setRowsIn] = useState(settingRowsReady);
+  useEffect(() => {
+    if (!rowsIn) void loadSettingRows().then(() => setRowsIn(true));
+  }, [rowsIn]);
   const hits: ShownHit[] = useMemo(() => {
     syncDynamicCommands();
     const ranked = rankPalette(
@@ -27,7 +32,7 @@ function PaletteDialog() {
       paletteItems().filter((i) => !(i.kind === 'command' && isStaleCommand(i.id))),
     );
     return withSettings(ranked, query);
-  }, [query]);
+  }, [query, rowsIn]);
 
   useEffect(() => setAt(0), [query]);
   useEffect(() => {

@@ -50,6 +50,11 @@ Three small tools, all for the built app (run them under xvfb, never on the desk
 - `node scripts/perf/bundle.mjs [--top 40] [--folder src/ui/]` builds the renderer into a temp folder and lists what the
   initial chunk holds: by source folder, by module, and by "loads only because of one importer" (the bytes that would
   leave the initial chunk if every static import of that module became a dynamic one). Start here when choosing what to make lazy.
+  `--why src/ui/palette` lists who imports a module inside the first chunk, and `--json file.json` saves the module sizes and
+  every importer, to answer "what leaves if I cut this one import?" without rebuilding.
+  Most of the page time is not the download: the main thread waits for the entry script to parse (about 20 ms per MB),
+  evaluates it (under 20 ms), then renders the app and lays it out for the first time (about 40 ms, cold). Splitting the
+  first chunk into several files so they parse side by side was tried and did not help.
 - `npx vite build --sourcemap --minify false && node scripts/build-main.mjs`, then
   `xvfb-run -a -s "-screen 0 1600x1000x24" node scripts/perf/startprofile.cjs [--top 30] [--until 260]` profiles the first
   load of a fresh launch (V8 CPU profile, mapped back to source files with the source map).
