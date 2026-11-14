@@ -229,6 +229,7 @@ Search the command palette (**Ctrl+K**) for **Suggest an interface size for this
 
 - He only offers on screens that hold a lot of pixels *as the computer shows them*. A 4k panel the computer already shows at 200% looks fine, so he stays quiet.
 - He never suggests a size that leaves the window too small for the panels.
+- If you set it high on a small screen, the window is short of room, so Frameling makes room for the drawing first. The panels get narrower, then fold to their slim rails, and menus that don't fit gather under **More** at the end of the menu bar. Your layout isn't changed: a bigger window, or a smaller interface size, brings it all back.
 - Every answer is listed in **Preferences, Behaviour** while Frameling is running, and the slider always has the last word.
 
 See also [Preferences](help:preferences) and [Behaviour choices](help:behaviour).`,

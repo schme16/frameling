@@ -10,7 +10,7 @@ import { getPanel, type DockZone } from '../core/registry';
 import { useStore } from '../core/store';
 import { useTl } from '../timeline/state';
 import { useLocked } from './lockState';
-import { dock, setActive, toggleCollapsed } from './dock';
+import { dock, MIN_SIZE, setActive, toggleCollapsed } from './dock';
 import { hidePanel } from './lockedDock';
 import { dragState, dropIndexFor, startPanelDrag } from './dockDrag';
 import { menuPoint, openDockMenu, panelMenu } from './dockMenus';
@@ -24,6 +24,7 @@ import { PanelPicker } from './PanelPicker';
 import { ZoneStack } from './DockGroup';
 import { folded, foldAll, onlyOpen, panelPicker, setFolded, togglePicker, type RightStyle } from './rightStyle';
 import './rightDock.css';
+import { useShownZone } from './roomFolds';
 
 export const RAIL_W = 68;
 const PROPS = '__properties';
@@ -41,7 +42,7 @@ const bodyId = (group: number): string => (group === 0 ? 'rd-body' : `rd-body-${
  * every group's panels under that group's heading.
  */
 export function RightDock({ zone, style }: { zone: DockZone; style: RightStyle }) {
-  const z = dock.use((d) => d.layout.zones[zone]);
+  const z = useShownZone(dock.use((d) => d.layout.zones[zone]), zone);
   const width = z.collapsed ? RAIL_W : z.size + RAIL_W;
   const merge = style === 'inspector';
   const plans = planRight(groupsOf(z), merge);
@@ -50,7 +51,7 @@ export function RightDock({ zone, style }: { zone: DockZone; style: RightStyle }
   // Remember the Properties section in front, so pressing Properties on the rail comes back to it.
   if (first.onProps && first.active) lastSection = first.active;
   return (
-    <section className={`ui-zone ui-zone-${zone} rd${z.collapsed ? ' is-collapsed' : ''}`} style={{ width }} aria-label={`${zone} side`}>
+    <section className={`ui-zone ui-zone-${zone} rd${z.collapsed ? ' is-collapsed' : ''}`} style={z.collapsed ? { width } : { width, minWidth: MIN_SIZE[zone] + RAIL_W }} aria-label={`${zone} side`}>
       <div className="rd-top">
         {!z.collapsed && <ZoneStack zone={zone} render={(gi) => (plans[gi] ? <GroupBody zone={zone} plan={plans[gi]} /> : null)} />}
         <Rail zone={zone} plans={plans} />
@@ -100,7 +101,7 @@ function GroupBody({ zone, plan }: { zone: DockZone; plan: RightGroupPlan }) {
 /** The one rail down the whole side. With stacked groups, each group's places sit under its own heading. */
 function Rail({ zone, plans }: { zone: DockZone; plans: RightGroupPlan[] }) {
   const locked = useLocked('panels');
-  const z = dock.use((d) => d.layout.zones[zone]);
+  const z = useShownZone(dock.use((d) => d.layout.zones[zone]), zone);
   const drag = dragging.use((v) => v);
   const names = dock.use((d) => d.layout.names);
   const dropAts = dragState.use((d) => plans.map((p) => dropIndexFor(d, { zone, group: p.index }, p.tabs.length) ?? '').join(','));

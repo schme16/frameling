@@ -32,6 +32,7 @@ import { TopBar } from '../ui/TopBar';
 import { maybeOnboard } from '../ui/onboarding';
 import { lazyComponent, lazyModule, warmLazyParts, type Loader } from '../core/lazy';
 import type { ComponentType } from 'react';
+import { DockFitWatch } from '../ui/DockFitWatch';
 
 // The big floating things load the first time they open (and in idle time after start-up), not before the first frame.
 function whenOpen(isOpen: (o: Overlays) => boolean, load: Loader<ComponentType<object>>, warm = true) {
@@ -110,6 +111,7 @@ export function App() {
       </FloatLayer>
       <DockOverlays />
       <StatusBar />
+      <DockFitWatch />
       <CommandPalette />
       <PrefsModal />
       <ChoiceDialog />

@@ -6,6 +6,7 @@ import { baseName, desktop } from '../io/desktop';
 import { can } from '../platform';
 import { notifySaved } from '../io/notify';
 import { extensionFor, filtersFor, planExport } from './plan';
+import { wantsSeeThrough } from './draw';
 import { isCancelled, runExport, type Progress } from './run';
 import { SheetProblem } from './engines';
 import './choices';
@@ -132,7 +133,7 @@ export async function exportDocument(settings: ExportSettings, signal: AbortSign
   if (!target) return 'cancelled';
 
   // Whether this computer can make it, and what it needs (the video codec).
-  const prepared: Partial<RunContext> = made.prepare ? await made.prepare(plan, settings) : {};
+  const prepared: Partial<RunContext> = made.prepare ? await made.prepare(plan, { ...settings, transparent: wantsSeeThrough(doc, settings.transparent) }) : {};
 
   if (made.direct) {
     try {

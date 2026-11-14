@@ -5,6 +5,14 @@
  * in screen pixels from the top-left of the canvas area).
  */
 import type { ZoomStep } from './input';
+import { turnedSize } from './turn';
+
+/** When the view is turned: the real window size, and the angle, so a fit leaves room for the page after the turn. */
+export interface TurnRoom {
+  w: number;
+  h: number;
+  angle: number;
+}
 
 export interface View {
   zoom: number;
@@ -68,10 +76,14 @@ export function nextZoomStep(zoom: number, dir: 1 | -1): number {
  * (document pixels per art pixel): the zoom is rounded down so each art pixel is a whole number of screen pixels,
  * which keeps every pixel the same size. `true` means an art pixel of 1.
  */
-export function fitView(vw: number, vh: number, dw: number, dh: number, padding = 48, whole: boolean | number = false): View {
-  const availW = Math.max(16, vw - padding * 2);
-  const availH = Math.max(16, vh - padding * 2);
-  let zoom = clampZoom(Math.min(availW / Math.max(1, dw), availH / Math.max(1, dh)));
+export function fitView(vw: number, vh: number, dw: number, dh: number, padding = 48, whole: boolean | number = false, room?: TurnRoom): View {
+  const r = room ?? { w: vw, h: vh, angle: 0 };
+  // A small window gives up less of itself as margin (a tenth, up to the usual 48), so the page is not shrunk to a speck.
+  const pad = Math.min(padding, Math.max(8, Math.round(Math.min(r.w, r.h) * 0.1)));
+  const availW = Math.max(16, r.w - pad * 2);
+  const availH = Math.max(16, r.h - pad * 2);
+  const t = turnedSize(Math.max(1, dw), Math.max(1, dh), r.angle);
+  let zoom = clampZoom(Math.min(availW / t.w, availH / t.h));
   const px = whole === true ? 1 : whole || 0;
   if (px > 0 && zoom * px >= 1) zoom = Math.floor(zoom * px + 1e-6) / px;
   return centerView({ zoom, panX: 0, panY: 0 }, vw, vh, dw, dh);

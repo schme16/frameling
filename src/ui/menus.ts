@@ -32,12 +32,12 @@ export const MENUS: MenuDef[] = [
   {
     label: 'Edit',
     categories: ['Edit'],
-    items: ['edit.undo', 'edit.redo', '-', 'edit.cut', 'edit.copy', 'edit.paste', 'edit.duplicate', 'edit.delete', '-', 'select.all', 'select.none', '-', 'document.settings', 'view.preferences', 'view.penTablet', 'view.performance'],
+    items: ['edit.undo', 'edit.redo', '-', 'edit.cut', 'edit.copy', 'edit.paste', 'edit.duplicate', 'edit.delete', '-', 'select.all', 'select.none', 'sub:align', '-', 'document.settings', 'document.seeThrough', 'view.preferences', 'view.penTablet', 'view.performance'],
   },
   {
     label: 'View',
     categories: ['View'],
-    items: ['view.zoomIn', 'view.zoomOut', 'view.fit', 'view.zoom100', 'view.center', '-', 'group:workspaces', 'view.saveWorkspace', 'view.manageWorkspaces', 'sub:wsshare', 'sub:wsswitch', 'view.resetLayout', '-', 'sub:panels', 'sub:panelwin', 'sub:toolrail', '-', 'view.pixelGrid', 'tiles.tileMode', 'view.emptyGhost', 'camera.lookThrough', 'camera.whilePlaying', 'view.whereDidItGo', '-', 'view.rulers', 'view.guides', 'sub:snapping', 'sub:grids', 'sub:lighttable', '-', 'sub:look', '-', 'view.interfaceSize', 'view.explanations', 'view.features', 'view.commandPalette'],
+    items: ['view.zoomIn', 'view.zoomOut', 'view.fit', 'view.zoom100', 'view.center', 'sub:turnview', '-', 'group:workspaces', 'view.saveWorkspace', 'view.manageWorkspaces', 'sub:wsshare', 'sub:wsswitch', 'view.resetLayout', '-', 'sub:panels', 'sub:panelwin', 'sub:toolrail', '-', 'view.pixelGrid', 'tiles.tileMode', 'view.emptyGhost', 'camera.lookThrough', 'camera.whilePlaying', 'view.whereDidItGo', '-', 'view.rulers', 'view.guides', 'sub:snapping', 'sub:grids', 'sub:lighttable', '-', 'sub:look', '-', 'view.interfaceSize', 'view.explanations', 'view.features', 'view.commandPalette'],
   },
   {
     label: 'Artboards',
@@ -131,6 +131,14 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
   masks: {
     label: 'More about masks',
     items: ['layers.useAsMask', 'layers.maskSwitch', 'layers.maskOnOff', 'layers.flipMask', 'layers.removeMask'],
+  },
+  align: {
+    label: 'Align and space out',
+    items: ['select.alignLeft', 'select.alignCentre', 'select.alignRight', '-', 'select.alignTop', 'select.alignMiddle', 'select.alignBottom', '-', 'select.spreadAcross', 'select.spreadDown', '-', 'select.alignToPage'],
+  },
+  turnview: {
+    label: 'Turn and flip the view',
+    items: ['view.flip', 'view.turnLeft', 'view.turnRight', 'view.resetTurn'],
   },
   lighttable: {
     label: 'Light table',

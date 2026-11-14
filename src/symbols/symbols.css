@@ -309,3 +309,72 @@
   font-size: var(--fs-small);
   cursor: pointer;
 }
+
+/* Align and space out (src/select/AlignSection.tsx) */
+.al-row {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.al-spread {
+  align-items: flex-end;
+  margin-top: 8px;
+}
+.al-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  background: var(--bg);
+  color: var(--text);
+  cursor: pointer;
+}
+.al-btn:hover {
+  background: var(--hover-bg);
+}
+.al-btn:focus-visible,
+.al-pick:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.al-to {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+  font-size: var(--fs-small);
+  font-weight: 700;
+  color: var(--muted);
+}
+.al-to > span {
+  margin-right: 2px;
+}
+.al-pick {
+  padding: 3px 9px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.al-pick.is-on {
+  background: var(--chosen-bg);
+  border-color: var(--chosen-bg);
+  color: var(--chosen-fg);
+}
+.al-gap {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-left: auto;
+  width: 84px;
+  font-size: var(--fs-small);
+  font-weight: 700;
+  color: var(--muted);
+}

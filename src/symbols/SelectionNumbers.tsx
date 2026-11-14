@@ -10,6 +10,7 @@ import { changeShapes, movePixelsTo, pixelBox, shapeBox, sizePixelsTo, turnPixel
 import { usePixelSelectionVersion } from '../select/pixel-state';
 import { LengthNum, Num, Section } from './Num';
 import { selectionTarget } from '../tools/select-land';
+import { AlignSection } from '../select/AlignSection';
 
 // Kept for the session, so a second shape sizes the way the last one did.
 let keepProportions = true;
@@ -58,23 +59,26 @@ function PixelNumbers() {
   const w = b.x1 - b.x0 + 1;
   const h = b.y1 - b.y0 + 1;
   return (
-    <Section title="Position and size (pixels)">
-      <div className="sy-grid">
-        <Num label="X" value={b.x0} commit="enter" title="Which column of the art the selection starts at (0 is the left edge)" onChange={(v) => void movePixelsTo(v, null)} />
-        <Num label="Y" value={b.y0} commit="enter" title="Which row of the art the selection starts at (0 is the top edge)" onChange={(v) => void movePixelsTo(null, v)} />
-        <Num label="Width" value={w} commit="enter" title="How many pixels wide the selection is" onChange={(v) => void sizePixelsTo(v, null, keep)} />
-        <Num label="Height" value={h} commit="enter" title="How many pixels tall the selection is" onChange={(v) => void sizePixelsTo(null, v, keep)} />
-        <Num label="Turn by" suffix="°" value={0} commit="enter" title="Turn the selected pixels by this many degrees, clockwise, without blurring them" onChange={(v) => void turnPixelsBy(v)} />
-      </div>
-      <KeepProportions
-        on={keep}
-        set={(v) => {
-          keepProportions = v;
-          setKeep(v);
-        }}
-      />
-      <Tip>These count whole pixels of the art, not of the page: X 3 is the fourth column of the sprite, however big it's zoomed or scaled. Pixels can be moved, stretched and turned here, but not slanted, which would smear them.</Tip>
-    </Section>
+    <>
+      <Section title="Position and size (pixels)">
+        <div className="sy-grid">
+          <Num label="X" value={b.x0} commit="enter" title="Which column of the art the selection starts at (0 is the left edge)" onChange={(v) => void movePixelsTo(v, null)} />
+          <Num label="Y" value={b.y0} commit="enter" title="Which row of the art the selection starts at (0 is the top edge)" onChange={(v) => void movePixelsTo(null, v)} />
+          <Num label="Width" value={w} commit="enter" title="How many pixels wide the selection is" onChange={(v) => void sizePixelsTo(v, null, keep)} />
+          <Num label="Height" value={h} commit="enter" title="How many pixels tall the selection is" onChange={(v) => void sizePixelsTo(null, v, keep)} />
+          <Num label="Turn by" suffix="°" value={0} commit="enter" title="Turn the selected pixels by this many degrees, clockwise, without blurring them" onChange={(v) => void turnPixelsBy(v)} />
+        </div>
+        <KeepProportions
+          on={keep}
+          set={(v) => {
+            keepProportions = v;
+            setKeep(v);
+          }}
+        />
+        <Tip>These count whole pixels of the art, not of the page: X 3 is the fourth column of the sprite, however big it's zoomed or scaled. Pixels can be moved, stretched and turned here, but not slanted, which would smear them.</Tip>
+      </Section>
+      <AlignSection />
+    </>
   );
 }
 
@@ -87,6 +91,13 @@ export function SelectionNumbers() {
   useStore((s) => s.ui.frame);
   if (layerKind === 'pixel') return <PixelNumbers />;
   const t = selectionTarget();
-  if (!t || (t.originals.length === 1 && isInstance(t.originals[0]))) return null;
-  return <ShapeNumbers />;
+  if (!t) return null;
+  // A lone symbol has its own number boxes; it still lines up to the page like anything else.
+  if (t.originals.length === 1 && isInstance(t.originals[0])) return <AlignSection />;
+  return (
+    <>
+      <ShapeNumbers />
+      <AlignSection />
+    </>
+  );
 }

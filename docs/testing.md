@@ -513,6 +513,23 @@ npm run build
 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/artboards.cjs [outDir]
 ```
 
+## See-through artboards end to end: scripts/e2e/see-through.cjs
+
+Three artboards: Wide (no background colour, a blue box), Square (green, a yellow box) and Clear (no colour, a magenta box).
+First the open board, Wide, goes out as PNG, PNG sequence, Animated PNG, GIF, sprite sheet, SVG, Moving SVG, Lottie, Photoshop
+layers, PDF, WebM and MP4, with Transparent background ticked and unticked: every one except MP4 must come out see-through
+(a corner pixel with no alpha, no page-sized rectangle in the vector files, an alpha_mode tag on the WebM), and the MP4 must be
+white. Then each way of exporting several boards (each into a folder, the packed sheet, all in order as one) with Wide open and
+with Square open, ticked and unticked as the window would offer: Square must keep its green, Wide and Clear must stay
+see-through, and ticking the box on purpose must leave the green off. The offered tick must be off when any board has a colour.
+ProRes, Illustrator and Interactives go through the same `backgroundFor` (`src/export/draw.ts`) and are covered by
+`test/export/see-through.test.ts`.
+
+```bash
+npm run build
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/see-through.cjs [outDir]
+```
+
 ## Variations end to end: scripts/e2e/variations.cjs
 
 Loads the variations demo (a ball, a recoloured variation and a square cut framed by a camera) and exports the family
@@ -697,6 +714,12 @@ through 1, 9, 10, 99, 100 and 150 at every width and fails if the panel's height
 npm run build
 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/no-wrap.cjs
 ```
+
+`NOWRAP_ROOM_ONLY=1` runs only the **room** check, in about a minute: in each pass and in each of the Draw, Animate and Pixel
+workspaces the canvas must keep at least 280 x 190 of the app's pixels, nothing in the top bar or the status bar may sit past the
+window's edge, and the page must not scroll sideways (the rule is in `src/ui/dockFit.ts`; the menu bar folds into **More**, see
+`src/ui/menuFold.ts`). It prints the smallest canvas each pass saw. Before the layout answered to the room, the 200% pass left the
+canvas 2 x 2 in a 640 x 400 window; now it is 392 x 262.
 
 About 4 minutes a pass, 15 for all five. `NOWRAP_PASSES=a,b` runs only the passes whose name contains a or b (`smallest`,
 `usual`, `150`, `200`, `wide`), `NOWRAP_ONLY="tool select"` only the views whose name starts with that, `NOWRAP_JSON=<file>`

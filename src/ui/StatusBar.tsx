@@ -10,12 +10,14 @@ import { docDpi, formatSize } from '../core/units';
 import { drawingAt } from '../core/doc';
 import { shapesBounds } from '../canvas/geometry';
 import { SnapButton } from '../canvas/SnapOptions';
+import { describeTurn, isTurned, resetTurn, useTurn } from '../canvas/turn';
 import { hasArtboards } from '../artboards/model';
 import { artSizeOf, artZoomPercent } from '../pixel/units';
 import { dock, inPixelWorkspace, showPanel } from './dock';
 
 export function StatusBar() {
   const zoom = useStore((s) => s.ui.zoom);
+  const turn = useTurn();
   const w = useStore((s) => s.doc.width);
   const h = useStore((s) => s.doc.height);
   const fps = useStore((s) => s.doc.fps);
@@ -72,6 +74,12 @@ export function StatusBar() {
         <Icon name="zoom" size={14} />
         {pixelWs ? artZoomPercent(zoom, pixel) : Math.round(zoom * 100)}%
       </button>
+      {isTurned(turn) && (
+        <button type="button" className="ui-status-item ui-status-btn" onClick={() => resetTurn()} data-tip="The view is turned" data-tip-desc="Only how you look at the page: your drawing and exports aren't changed. Press to turn it back straight.">
+          <Icon name={turn.flip ? 'mirror' : 'rotate'} size={14} />
+          View {describeTurn(turn)}
+        </button>
+      )}
       <button type="button" className="ui-status-item ui-status-btn" onClick={() => openSettings('size')} data-tip="Drawing size" data-tip-desc={pixelWs ? `Pixels in your sprite. Each one is drawn ${pixel} times bigger on the page. Press to change the page size.` : `Press to change the page size.${units === 'px' ? '' : ` It is ${w} x ${h} px at ${dpi} DPI; change units in Preferences.`}`}>
         <Icon name={pixel ? 'pixel' : 'image'} size={14} />
         {pixelWs ? `${art.w} x ${art.h} pixels` : units === 'px' ? `${w} x ${h}` : formatSize(w, h, units, dpi)}

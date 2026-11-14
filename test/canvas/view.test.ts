@@ -97,3 +97,16 @@ describe('device pixels', () => {
     expect(r).toEqual({ x: 21, y: 41, w: 300, h: 150 });
   });
 });
+
+describe('fit in a small window', () => {
+  it('keeps the usual margin when there is room for it', () => {
+    expect(fitView(1000, 700, 400, 300).zoom).toBeCloseTo(Math.min((1000 - 96) / 400, (700 - 96) / 300));
+  });
+
+  it('gives up less of a small window as margin, so the page is not shrunk to a speck', () => {
+    const small = fitView(300, 150, 256, 256);
+    // A tenth of the short side (15) a side instead of 48, so 120 of the 150 across is used, not 54.
+    expect(small.zoom).toBeCloseTo(120 / 256);
+    expect(small.zoom).toBeGreaterThan(54 / 256);
+  });
+});

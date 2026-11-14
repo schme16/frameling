@@ -237,6 +237,24 @@ kbd {
   display: flex;
   gap: 2px;
   margin-left: 6px;
+  position: relative;
+}
+/* A menu that does not fit sits out of sight (still measured) and is reached through More (menuFold.ts). */
+.ui-menu-wrap.is-folded {
+  position: absolute;
+  left: 0;
+  top: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+.ui-menu-more .ui-menu {
+  left: auto;
+  right: 0;
+}
+.ui-menu-more .ui-menu-top {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 .ui-menu-wrap {
   position: relative;
@@ -467,7 +485,8 @@ kbd {
 }
 .ui-center {
   flex: 1;
-  min-width: 0;
+  /* The canvas keeps a usable size: the zones give way first (down to their own least), then fold (dockFit.ts). */
+  min-width: 280px;
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -475,7 +494,7 @@ kbd {
 }
 .ui-canvas {
   flex: 1;
-  min-height: 0;
+  min-height: 190px;
   min-width: 0;
   position: relative;
   overflow: hidden;
@@ -1062,6 +1081,13 @@ kbd {
   border-radius: var(--ui-zone-radius);
   box-shadow: var(--ui-zone-shadow);
   overflow: hidden;
+}
+/* A zone that is open takes the size it is asked for, but gives way when the window is short of room (its inline min size stops it). */
+.ui-zone-left:not(.is-collapsed),
+.ui-zone-right:not(.is-collapsed),
+.ui-zone-top:not(.is-collapsed),
+.ui-zone-bottom:not(.is-collapsed) {
+  flex: 0 1 auto;
 }
 .ui-zone-left.is-collapsed,
 .ui-zone-right.is-collapsed {

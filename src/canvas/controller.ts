@@ -8,16 +8,18 @@ import type { Drawing, Id, PixelDrawing } from '../core/format';
 import { store } from '../core/store';
 import { toast } from '../ui/toast';
 import { tileModeOn } from '../tiles/state';
-import { centerView, clampPan, fitView, nextZoomStep, screenToDoc, stageDeviceRect, zoomAbout, zoomToRect, type Pt, type Rect, type View } from './view';
+import { centerView, clampPan, fitView, nextZoomStep, screenToDoc, stageDeviceRect, zoomAbout, zoomToRect, type Pt, type Rect, type TurnRoom, type View } from './view';
 import { clampZoom } from './view';
 
 // ---------------------------------------------------------------- the viewport
 
 export interface Viewport {
-  /** Size of the canvas area in CSS pixels. */
+  /** Size of the canvas area in CSS pixels. While the view is turned this is the turn box, a little bigger than the window. */
   w: number;
   h: number;
   dpr: number;
+  /** While the view is turned: the window's own size and the angle, for fits (the box is centred on the window). */
+  room?: TurnRoom;
 }
 
 let viewport: Viewport = { w: 900, h: 600, dpr: 1 };
@@ -108,7 +110,7 @@ export function fit(auto = false): void {
   }
   // In tile mode the stage has a copy on every side, so fit all nine.
   const k = tileModeOn() ? 3 : 1;
-  const v = fitView(viewport.w, viewport.h, doc.width * k, doc.height * k, 48, artPixel());
+  const v = fitView(viewport.w, viewport.h, doc.width * k, doc.height * k, 48, artPixel(), viewport.room);
   setView(k === 1 ? v : { zoom: v.zoom, panX: v.panX + doc.width * v.zoom, panY: v.panY + doc.height * v.zoom }, false);
   autoFit = true;
 }
