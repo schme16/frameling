@@ -5,7 +5,8 @@
 // The picture is made in the page (a photo-like scene with noise, so it has millions of colours). A 4 ms heartbeat and
 // the long task observer run from the moment the command opens the dialog until the palette is in. The numbers are the
 // longest single block of the page's main thread, and the time each step took. PERF_RENDERER points at another build.
-const { app, BrowserWindow } = require('electron');
+const { app } = require('electron');
+const { startRealApp } = require('./realapp.cjs');
 const fs = require('node:fs');
 const path = require('node:path');
 
@@ -55,10 +56,8 @@ const MONITOR = `(() => {
 })()`;
 
 app.whenReady().then(async () => {
-  const win = new BrowserWindow({
-    width: 1400, height: 900, show: false, paintWhenInitiallyHidden: true,
-    webPreferences: { preload: path.join(__dirname, '../../dist/preload/preload.cjs'), contextIsolation: true, sandbox: true, additionalArguments: ['--frameling-version=perf'], backgroundThrottling: false },
-  });
+  // The app's own main process runs (realapp.cjs), so the page's start-up requests are answered by the real handlers.
+  const win = await startRealApp({ rendererDir, onScreen: true, focus: false });
   const wc = win.webContents;
   const errors = [];
   wc.on('console-message', (e) => { if (e.level === 'error' || e.level === 3) errors.push(String(e.message ?? e)); });

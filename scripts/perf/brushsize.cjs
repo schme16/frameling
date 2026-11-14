@@ -7,7 +7,8 @@
 // BRUSH_CANVAS=4000x3000 sets the vector canvas; BRUSH_EVENTS sets pointer moves per stroke (default 40).
 //
 // Needs a build first (`npm run build`), or point PERF_RENDERER at another renderer build directory. See README.md.
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app } = require('electron');
+const { startRealApp } = require('./realapp.cjs');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
@@ -136,34 +137,14 @@ true;
 `;
 
 async function main() {
-  ipcMain.handle('app:launchFile', () => null);
-  ipcMain.handle('recent:list', () => []);
-  ipcMain.handle('library:list', () => []);
-  ipcMain.handle('autosave:read', () => null);
-  await app.whenReady();
-  const gpuRun = await gpuMod.confirmOrExit();
-  // A window that is truly hidden gets one rAF a second with this app (nothing is presented), which makes every
-  // number meaningless. So the window is mapped but parked off-screen and unfocusable: nothing appears, nothing
-  // takes focus, and frames are produced at the display's rate. PERF_HIDDEN=1 forces a truly hidden one.
+  // The app's own main process runs (see realapp.cjs), so every handler the page asks for is the real one. A window that is
+  // truly hidden gets one rAF a second with this app (nothing is presented), which makes every number meaningless. So the
+  // window is mapped but parked off-screen and unfocusable: nothing appears, nothing takes focus, and frames are
+  // produced at the display's rate. PERF_HIDDEN=1 forces a truly hidden one.
   const hidden = process.env.PERF_HIDDEN === '1';
   const onScreen = process.env.PERF_SHOW === '1';
-  const win = new BrowserWindow({
-    width: WIN_W,
-    height: WIN_H,
-    x: onScreen ? undefined : -4000,
-    y: onScreen ? undefined : 0,
-    show: false,
-    focusable: onScreen,
-    skipTaskbar: !onScreen,
-    paintWhenInitiallyHidden: true,
-    webPreferences: {
-      preload: path.join(__dirname, '../../dist/preload/preload.cjs'),
-      contextIsolation: true,
-      sandbox: true,
-      additionalArguments: ['--frameling-version=perf'],
-      backgroundThrottling: false,
-    },
-  });
+  const win = await startRealApp({ rendererDir, onScreen, hidden, width: WIN_W, height: WIN_H });
+  const gpuRun = await gpuMod.confirmOrExit(win);
   const wc = win.webContents;
   const errors = [];
   wc.on('console-message', (e) => {
