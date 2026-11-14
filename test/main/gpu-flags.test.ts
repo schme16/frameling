@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { colourSwitches } from '../../src/main/gpuFlags';
+import { colourSwitches, gpuLostLine, hardwareSwitches, mergeFeatures, softwareFallbackLine } from '../../src/main/gpuFlags';
 
 const root = path.resolve(__dirname, '../..');
 const req = createRequire(import.meta.url);
@@ -19,7 +19,7 @@ const harness = req(path.join(root, 'scripts/lib/gpu.cjs')) as {
   COLOUR_SWITCH: [string, string];
 };
 
-const asArg = ([k, v]: [string, string?]) => (v === undefined ? `--${k}` : `--${k}=${v}`);
+const asArg = ([k, v]: readonly [string, string?]) => (v === undefined ? `--${k}` : `--${k}=${v}`);
 
 describe('colour pin (the app)', () => {
   it('pins sRGB by default', () => {
@@ -57,15 +57,11 @@ describe('harness engine modes', () => {
     expect(sw).toContain('--enable-unsafe-webgpu');
     expect(sw.join(' ')).not.toMatch(/swiftshader|use-angle/);
   });
-  it('the card flags are the Linux launcher flags, and the fuller set is the one it keeps back', () => {
-    const launcher = readFileSync(path.join(root, 'build/linux/launcher.sh'), 'utf8');
-    const line = /^GPU_ARGS=\((.*)\)$/m.exec(launcher);
-    expect(line, 'GPU_ARGS in build/linux/launcher.sh').not.toBeNull();
-    expect(harness.CARD_SWITCHES.map(asArg)).toEqual(line![1].trim().split(/\s+/));
-    const more = [...launcher.matchAll(/^\s*GPU_ARGS\+=\((.*)\)$/gm)].map((m) => m[1].trim().split(/\s+/));
-    expect(more.length, 'the FRAMELING_GPU=full and =vulkan lines in build/linux/launcher.sh').toBe(2);
-    expect(harness.CARD_FULL_SWITCHES.map(asArg)).toEqual(more[0]);
-    expect([harness.VULKAN_SWITCH].map(asArg)).toEqual(more[1]);
+  it('the card flags are the ones the app sets on Linux, and the fuller set is the one it keeps back', () => {
+    const app = hardwareSwitches({}, 'linux');
+    expect(harness.CARD_SWITCHES.map(asArg)).toEqual(app.switches.map(asArg));
+    expect(harness.CARD_FULL_SWITCHES.map(asArg)).toEqual(hardwareSwitches({ FRAMELING_GPU: 'full' }, 'linux').switches.slice(1).map(asArg));
+    expect(harness.VULKAN_SWITCH).toEqual(['enable-features', hardwareSwitches({ FRAMELING_GPU: 'vulkan' }, 'linux').features[0]]);
   });
 
   it('the fuller set is only there when it is asked for, and never carries Vulkan', () => {
@@ -106,5 +102,44 @@ describe('judging a run', () => {
   it('fails any run whose colour is not pinned or whose canvas does not read back what was drawn', () => {
     expect(harness.judge('software', { ...swift, wideGamut: true }, on).join(' ')).toMatch(/not pinned to sRGB/);
     expect(harness.judge('software', { ...swift, red: [234, 51, 35, 255] }, on).join(' ')).toMatch(/reads back 234,51,35,255/);
+  });
+});
+
+describe('hardware drawing (the app, in the main process)', () => {
+  it('says yes to the card on Linux by default, and nothing more', () => {
+    expect(hardwareSwitches({}, 'linux')).toEqual({ switches: [['ignore-gpu-blocklist']], features: [] });
+  });
+  it('leaves Windows and macOS to the engine', () => {
+    for (const p of ['win32', 'darwin']) expect(hardwareSwitches({}, p)).toEqual({ switches: [], features: [] });
+  });
+  it('adds nothing when hardware drawing is off, by the setting or by FRAMELING_GPU=off', () => {
+    expect(hardwareSwitches({}, 'linux', true)).toEqual({ switches: [], features: [] });
+    expect(hardwareSwitches({ FRAMELING_GPU: 'off' }, 'linux')).toEqual({ switches: [], features: [] });
+  });
+  it('FRAMELING_GPU=full keeps canvas pixels on the card, and no mode but vulkan asks for Vulkan', () => {
+    expect(hardwareSwitches({ FRAMELING_GPU: 'full' }, 'linux').switches.map(asArg)).toEqual(['--ignore-gpu-blocklist', '--enable-zero-copy', '--canvas-oop-rasterization']);
+    for (const v of [undefined, '', 'full', 'off', 'card', 'FULL ']) expect(hardwareSwitches({ FRAMELING_GPU: v }, 'linux').features).toEqual([]);
+    expect(hardwareSwitches({ FRAMELING_GPU: 'Vulkan' }, 'linux').features).toEqual(['Vulkan,DefaultANGLEVulkan']);
+  });
+  it('merges features instead of replacing them, once each', () => {
+    expect(mergeFeatures('', ['A'])).toBe('A');
+    expect(mergeFeatures('A,B', ['C'])).toBe('A,B,C');
+    expect(mergeFeatures('A', ['Vulkan,DefaultANGLEVulkan'])).toBe('A,Vulkan,DefaultANGLEVulkan');
+    expect(mergeFeatures('A,B', ['B', 'A'])).toBe('A,B');
+  });
+  it('says plainly when the graphics process is lost', () => {
+    const line = gpuLostLine('crashed', 139);
+    expect(line).toContain('crashed');
+    expect(line).toContain('FRAMELING_GPU=off');
+    expect(line).not.toContain('\u2014');
+  });
+  it('says once that it fell back to software, only when the card was asked for and did not come up', () => {
+    const on = { gpu_compositing: 'enabled', '2d_canvas': 'enabled_on' };
+    const soft = { gpu_compositing: 'disabled_software', '2d_canvas': 'disabled_software' };
+    expect(softwareFallbackLine(true, on)).toBeNull();
+    expect(softwareFallbackLine(false, soft)).toBeNull();
+    expect(softwareFallbackLine(true, soft)).toMatch(/in software.*Preferences > Performance.*FRAMELING_GPU=off/);
+    expect(softwareFallbackLine(true, { gpu_compositing: 'enabled', '2d_canvas': 'disabled_software' })).not.toBeNull();
+    expect(softwareFallbackLine(true, {})).not.toBeNull();
   });
 });

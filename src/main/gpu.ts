@@ -3,6 +3,7 @@
 import { app } from 'electron';
 import os from 'node:os';
 import { gpuOffPath, gpuOffState, linuxVramBytes, setGpuOffFile } from './gpuFile';
+import { gpuLostLine, hardwareSwitches, mergeFeatures, softwareFallbackLine } from './gpuFlags';
 import type { GpuReport } from '../preload/api';
 import { startLine } from '../gpu/describe';
 
@@ -11,10 +12,39 @@ type Handle = (channel: string, fn: (e: unknown, ...args: any[]) => unknown) => 
 const where = () => ({ platform: process.platform, env: process.env, home: os.homedir(), appData: app.getPath('appData') });
 export const gpuOffFilePath = (): string => gpuOffPath(where());
 
-/** Called before the app is ready: the file or the variable means no hardware drawing, on every system (the Linux launcher does the same with a flag). */
+/**
+ * Called before the app is ready. The file or the variable means no hardware drawing, on every system. Otherwise, on
+ * Linux, the card is asked for by name instead of left to the engine's list of drivers it trusts (see gpuFlags.ts).
+ */
 export function applyGpuOff(): void {
   const s = gpuOffState(gpuOffFilePath(), process.env);
-  if (s.file || s.env) app.disableHardwareAcceleration();
+  if (s.file || s.env) {
+    app.disableHardwareAcceleration();
+    return;
+  }
+  const { switches, features } = hardwareSwitches(process.env, process.platform, false);
+  for (const [name, value] of switches) value === undefined ? app.commandLine.appendSwitch(name) : app.commandLine.appendSwitch(name, value);
+  if (features.length) addFeatures(features);
+  if (process.platform !== 'linux') return;
+  // If the card cannot be used the engine goes on in software by itself and the app still opens. Say so once in the log,
+  // a few seconds after the first window has loaded, when the engine has made up its mind.
+  app.on('child-process-gone', (_e, d) => {
+    if (d.type === 'GPU') console.warn(gpuLostLine(d.reason, d.exitCode));
+  });
+  app.once('browser-window-created', (_e, w) => {
+    w.webContents.once('did-finish-load', () => {
+      setTimeout(() => {
+        const line = softwareFallbackLine(true, app.getGPUFeatureStatus() as unknown as Record<string, string>);
+        if (line) console.warn(line);
+      }, 3000);
+    });
+  });
+}
+
+/** Adds engine features to --enable-features, keeping the ones already there. */
+export function addFeatures(features: readonly string[]): void {
+  const now = app.commandLine.getSwitchValue('enable-features');
+  app.commandLine.appendSwitch('enable-features', mergeFeatures(now, features));
 }
 
 const SWITCHES = ['disable-gpu', 'ignore-gpu-blocklist', 'enable-features', 'enable-zero-copy', 'canvas-oop-rasterization', 'use-angle', 'use-gl'];

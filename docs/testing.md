@@ -429,6 +429,36 @@ xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/colour.cjs
 xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/lib/gpu-check.cjs card
 ```
 
+## The AppImage uses the card: scripts/e2e/appimage-gpu.cjs
+
+Starts the packaged Linux app (the AppImage, or `release/linux-unpacked/frameling`, which is what the AppImage is made
+from) four times, each with a config folder of its own so it never meets a Frameling you have open, and asks the engine
+what it really did over the debugging port (`SystemInfo.getInfo`, plus a 2D canvas and a WebGL 2 pixel read back in the
+page). Nothing in the app is probed for the test.
+
+| Start | Passes when |
+|---|---|
+| as shipped | the engine's command line has `--ignore-gpu-blocklist`, compositing, 2D canvas, rasterization and WebGL are all `enabled`, both canvases draw, and the app does not say it fell back |
+| `FRAMELING_GPU=off` | the flag is gone and every verdict is software (the control: it shows the check can tell the two apart) |
+| a card that cannot be used (`--use-angle=no-such-driver`) | the app still opens and draws, the engine says software, and the app's log says so: `[gpu] hardware drawing was asked for but the engine is drawing in software` |
+| `FRAMELING_GPU=full` | zero copy and out-of-process canvas are on the command line, no Vulkan, and it still draws |
+
+```bash
+npm run dist:linux
+xvfb-run -a -s "-screen 0 1600x1000x24" node scripts/e2e/appimage-gpu.cjs                 # the AppImage in release/
+xvfb-run -a -s "-screen 0 1600x1000x24" node scripts/e2e/appimage-gpu.cjs release/linux-unpacked/frameling
+node scripts/e2e/appimage-gpu.cjs --require-card   # on a real display, for the real card (gpu-real-runs)
+```
+
+What it proves under xvfb, and what it cannot. Before the change the same AppImage, started the same way, reported
+`gpu_compositing disabled_software, 2d_canvas disabled_software, rasterization disabled_software, webgl disabled_off`
+and logged `WebGL2 blocklisted`; after it, all four are `enabled`. That is the switch getting to the engine through the
+real launcher and the hardware path coming on. It cannot prove a real card is drawing: xvfb has no card to present on,
+so its OpenGL is Mesa's llvmpipe, and the report names the adapter (`ANGLE (Mesa, llvmpipe ...)`) and says "software"
+beside it. `--require-card` fails on a software adapter, for the run on the real card, which belongs to `gpu-real-runs`.
+The flag is set in the app's main process (`src/main/gpuFlags.ts`), not the launcher; see
+[colour-and-gpu.md](colour-and-gpu.md).
+
 ## Effects pixels: scripts/e2e/effects.cjs
 
 Renders tiny documents through the single renderer in a real Chromium canvas and compares pixels with values worked

@@ -9,8 +9,8 @@
 // Two modes, and nothing in between:
 //   software  SwiftShader, the software driver that ships inside Electron. The same everywhere, so the same pixels
 //             on any machine, with or without a card. Fails if a real card turns up instead.
-//   card      the real card, with the same flags the Linux AppImage launcher uses (build/linux/launcher.sh, and
-//             test/platform/gpu-flags.test.ts keeps the two in step). Fails if the engine quietly fell back to software.
+//   card      the real card, with the same flags the Linux AppImage launcher uses (src/main/gpuFlags.ts, set in the app's
+//             main process, and test/main/gpu-flags.test.ts keeps the two in step). Fails if the engine quietly fell back to software.
 //             That silent fall back is the trap: a "speed" run on llvmpipe or SwiftShader looks fine and means nothing.
 //
 // GPU_MODE=card or GPU_MODE=software in the environment overrides what a harness asked for (used to compare the two).
@@ -28,10 +28,10 @@ const { app, BrowserWindow } = require('electron');
 
 const SOFT = /swiftshader|llvmpipe|lavapipe|softpipe|software|basic render|microsoft basic/i;
 
-// Kept in the same order as GPU_ARGS in build/linux/launcher.sh: the app's default is to say yes to the card and
+// Kept in step with hardwareSwitches in src/main/gpuFlags.ts: the app's default is to say yes to the card and
 // nothing more.
 const CARD_SWITCHES = [['ignore-gpu-blocklist']];
-// What the launcher adds for FRAMELING_GPU=full: both draw correctly on the NVIDIA card they were tried on, but they
+// What the app adds for FRAMELING_GPU=full: both draw correctly on the NVIDIA card they were tried on, but they
 // are not the default until more than one card says so. A harness takes them by name: gpu.use('card', { full: true }),
 // or GPU_FULL=1.
 const CARD_FULL_SWITCHES = [['enable-zero-copy'], ['canvas-oop-rasterization']];
