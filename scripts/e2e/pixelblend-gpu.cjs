@@ -101,6 +101,40 @@ app.whenReady().then(async () => {
       }
     }
   }
+  // A see-through backdrop on its own, exact bytes, over every backdrop alpha: 256 alphas by 256 colours, a layer on top
+  // that is solid, half see-through (opacity) or partly see-through itself. This is the case a card got wrong while
+  // software did not (the shader's own premultiply came out a level low over a partly see-through result, so a
+  // transparent export was off by two or more levels); the random pictures above reach it only by luck. A software
+  // run says nothing about a card here, so the card's answer is the one that counts.
+  {
+    const E_W = 256;
+    const E_H = 256;
+    let gridBad = 0;
+    let gridWorst = 0;
+    for (const mode of ['linear-dodge', 'subtract', 'divide']) {
+      for (const [topA, opacity] of [[255, 1], [255, 0.5], [128, 1], [60, 0.7]]) {
+        const back = [];
+        const top = [];
+        for (let y = 0; y < E_H; y++) for (let x = 0; x < E_W; x++) { back.push(y, (y * 5 + 40) & 255, 255 - y, x); top.push(90, 160, 200 - (x >> 2), topA); }
+        const r = await ev(`window.__framelingEffects.blendBytes(${E_W}, ${E_H}, ${JSON.stringify(back)}, ${JSON.stringify(top)}, '${mode}', ${opacity})`);
+        let bad = 0;
+        let worstHere = 0;
+        for (let i = 0; i < r.cpu.length; i++) {
+          const e = Math.abs(r.cpu[i] - r.gpu[i]);
+          if (e) bad++;
+          worstHere = Math.max(worstHere, e);
+        }
+        // Colour is compared as straight bytes, where one premultiplied level can be several at a low alpha, so the
+        // count of pixels that differ is the measure, with the same share allowed as above.
+        const bytesFraction = bad / r.cpu.length;
+        const gridBadHere = !r.used || bytesFraction > MAX_DIFFER_FRACTION * 4 || worstHere > 2;
+        if (gridBadHere) gridBad++;
+        gridWorst = Math.max(gridWorst, worstHere);
+        console.log(`${gridBadHere ? 'FAIL' : 'ok  '} see-through backdrop grid ${mode} layer alpha ${topA} op ${opacity}: ${bad} of ${r.cpu.length} bytes differ, worst ${worstHere}${r.used ? '' : ', gpu path declined'}`);
+      }
+    }
+    failed += gridBad;
+  }
   const fraction = differTotal / pixelsTotal;
   console.log(`\n${differTotal} of ${pixelsTotal} pixels differ at all (${fraction.toExponential(1)}, limit ${MAX_DIFFER_FRACTION}), worst ${worstAll.toFixed(2)} levels`);
   if (fraction > MAX_DIFFER_FRACTION) failed++;

@@ -115,8 +115,20 @@ Now both share one rule (`src/effects/pixelBlend.ts`): the CPU path recovers the
 it, both un-premultiply half up in whole numbers, and both round results half up with a 0.001 nudge so a tie lands the
 same side in 32-bit and 64-bit arithmetic. What cannot be removed: a value that sits within float noise of a rounding
 edge can still round differently in the two number formats. In software that is 5 pixels in 2.5 million, one level each.
-The card has not been run (no card from the agent's sandbox); its own float quirks may add a few more, which is what
-the 1e-5 headroom is for.
+
+The card did differ, though, and only over a see-through backdrop. On an RTX 4080 SUPER the check failed 19 cases (23,588 of
+2.5 million pixels, 9.5e-3, up to 5 levels), every mode and opacity, and only with no background: with a white or a blue one
+all 36 cases were exact, which is why software and the solid backdrops never showed it. Cause: the shader premultiplied
+its result in float (`straight / 255 x alpha`) and left the rounding to the output's own conversion to bytes. A card does
+not round that conversion like a canvas: on the card 82.502 became 82 where a canvas stores 83 (every value from 0.502 to
+0.561 past a whole number came out one low, 2060 of the 65280 straight-byte and alpha pairs). One stored level is two or
+more straight levels once the canvas un-premultiplies it at a low alpha. It only matters when the alpha is under 255,
+because at 255 the premultiplied byte is the straight byte and there is nothing to round. Fix: the shader now
+premultiplies in whole numbers, `(2 x s x a + 255) / 510`, the same half up rule as `premultipliedByte`, and hands the
+output exact bytes over 255, which convert back to themselves on any card. After it the card is 2 of 2.5 million
+(8e-7, repeated over three runs), software 5 of 2.5 million. `pixelblend-gpu.cjs` now also runs a grid over every
+backdrop alpha (exact bytes through `blendBytes` in the debug hooks): on the old shader it fails 9 of 12 cases on the card
+(5500 to 6600 bytes in 262144 each) and passes in software, so a software run alone cannot be quoted as proof here.
 
 ## The framebuffer path
 

@@ -3,7 +3,10 @@ import { renderFrameToCanvas } from '../core/render';
 import { store } from '../core/store';
 import { nativeFilterWorks, setFilterOverride } from './filterSupport';
 import { effectsGpuStats, setEffectsGpu } from './effectsGL';
-import { gpuStats, setPixelBlendGpu } from './pixelBlendGL';
+import { blitPixelsGpu, gpuStats, setPixelBlendGpu } from './pixelBlendGL';
+import { blendPixels, settleCanvasBytes } from './pixelBlend';
+import { ctx2, makeCanvas } from './apply';
+import type { BlendMode } from '../core/format';
 import { setAddStyle } from './EffectsPanel';
 import { toggleFolderCollapsed } from './rows';
 
@@ -30,6 +33,32 @@ if (typeof location !== 'undefined' && new URLSearchParams(location.search).has(
         const cy = Math.floor((stage.top - box.top + ((y + 0.5) * stage.height) / doc.height) * k);
         return Array.from(g.getImageData(cx, cy, 1, 1).data);
       });
+    },
+    /**
+     * One pixel blend on exact straight RGBA bytes, both ways, each read back from a canvas as the compositor would:
+     * the CPU path (settle, blend, put) and the GPU path (the shader). `gpu` is false when the GPU path declined.
+     */
+    blendBytes(w: number, h: number, back: number[], top: number[], mode: BlendMode, alpha: number) {
+      const make = (bytes: number[]) => {
+        const c = makeCanvas(w, h);
+        const g = ctx2(c);
+        g.putImageData(new ImageData(new Uint8ClampedArray(bytes), w, h), 0, 0);
+        return { c, g };
+      };
+      const cpuB = make(back);
+      const cpuT = make(top);
+      const bd = cpuB.g.getImageData(0, 0, w, h);
+      const td = cpuT.g.getImageData(0, 0, w, h);
+      settleCanvasBytes(bd.data);
+      settleCanvasBytes(td.data);
+      blendPixels(bd.data, td.data, mode, alpha);
+      cpuB.g.putImageData(bd, 0, 0);
+      const cpu = Array.from(cpuB.g.getImageData(0, 0, w, h).data);
+      const gpuB = make(back);
+      const gpuT = make(top);
+      const used = blitPixelsGpu(gpuB.g, gpuT.c, mode, alpha);
+      const gpu = Array.from(gpuB.g.getImageData(0, 0, w, h).data);
+      return { cpu, gpu, used };
     },
     /** Turns the GPU path of Linear dodge, Subtract and Divide on or off (the CPU path is the fallback), and counts GPU blits. */
     setPixelBlendGpu,

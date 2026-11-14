@@ -48,9 +48,15 @@ void main() {
   float ar = as + ab - as * ab;
   float k = as / ar;
   vec3 v = (1.0 - k) * cb + k * ((1.0 - ab) * cs + ab * mixed(cb, cs));
-  // Round the straight result to bytes first, like the CPU path (same tie rule, see ROUND_NUDGE), then premultiply for the canvas.
-  float aq = floor(ar * 255.0 + 0.5 + NUDGE) / 255.0;
-  o = vec4(floor(v * 255.0 + 0.5 + NUDGE) / 255.0 * aq, aq);
+  // Round the straight result to bytes first, like the CPU path (same tie rule, see ROUND_NUDGE), then premultiply for
+  // the canvas in whole numbers, half up (exactly what a canvas does with a straight byte). The premultiply is not left to
+  // float maths and the output's own conversion: a card turns 82.502 into 82, not 83, so over a partly see-through
+  // result the colour came out a level low (two or more levels once it is un-premultiplied again). Whole bytes divided
+  // by 255 convert back to the same byte on any card.
+  int aq = int(floor(ar * 255.0 + 0.5 + NUDGE));
+  ivec3 sq = ivec3(floor(v * 255.0 + 0.5 + NUDGE));
+  ivec3 pq = (2 * sq * aq + 255) / 510;
+  o = vec4(vec3(pq) / 255.0, float(aq) / 255.0);
 }`;
 
 interface Gpu {
