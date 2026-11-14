@@ -478,6 +478,23 @@ beside it. `--require-card` fails on a software adapter, for the run on the real
 The flag is set in the app's main process (`src/main/gpuFlags.ts`), not the launcher; see
 [colour-and-gpu.md](colour-and-gpu.md).
 
+## Finishing effects, GPU against JS: scripts/e2e/effects-gpu.cjs
+
+Film grain, wave, colour fringe, dark corners and motion blur each run on the GPU (`src/effects/effectsGL.ts`) and in JS
+(`src/effects/kernels.ts`). This renders documents with each effect (two or three settings, solid and see-through
+shapes, at 1x and 2x) once with the GPU path off and once on, fails when any pixel differs by more than 3 levels
+(colour premultiplied) or the GPU path was not used, and times a 1920x1080 frame both ways. Each render gets its own
+copy of the document, because finished effect pictures are cached by drawing.
+
+```bash
+npm run build
+xvfb-run -a -s "-screen 0 1600x1000x24" npx electron scripts/e2e/effects-gpu.cjs
+```
+
+Software WebGL (SwiftShader) by default, so the answer is the same on any machine; `GPU_MODE=card` for a real card (under
+xvfb on a machine with no card it falls back and the run says so). Before and after pictures of the five, made through
+the same renderer: `scripts/ab/more-effects.cjs` into `brand/ab/more-effects/`.
+
 ## Effects pixels: scripts/e2e/effects.cjs
 
 Renders tiny documents through the single renderer in a real Chromium canvas and compares pixels with values worked

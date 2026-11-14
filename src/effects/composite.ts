@@ -111,6 +111,8 @@ interface Run {
   m: DOMMatrix;
   scale: number;
   origin: { x: number; y: number };
+  /** The stage's size on the canvas (dark corners are measured from it). */
+  stage: { w: number; h: number };
 }
 
 /**
@@ -124,7 +126,8 @@ export function compositePlan(g: Ctx, doc: Doc, frame: number, steps: PlanStep[]
   const pool = poolFor(w, h);
   depth++;
   try {
-    compositeRun(g, steps, { doc, frame, hooks, cache, pool, m, scale: Math.sqrt(Math.abs(m.a * m.d - m.b * m.c)) || 1, origin: { x: m.e, y: m.f } });
+    const scale = Math.sqrt(Math.abs(m.a * m.d - m.b * m.c)) || 1;
+    compositeRun(g, steps, { doc, frame, hooks, cache, pool, m, scale, origin: { x: m.e, y: m.f }, stage: { w: doc.width * scale, h: doc.height * scale } });
   } finally {
     depth--;
   }
@@ -255,7 +258,7 @@ function layerPicture(run: Run, layer: Layer): Picture | null {
     const m = run.m;
     // The key is the posed drawing; a pixel layer's pixel size is on the layer, so it goes in here.
     const ps = 'pixelSize' in layer ? layer.pixelSize : 1;
-    sig = `${run.pool.w}x${run.pool.h}|${m.a},${m.b},${m.c},${m.d},${m.e},${m.f}|${ps}|${JSON.stringify(fx)}`;
+    sig = `${run.pool.w}x${run.pool.h}|${run.doc.width}x${run.doc.height}|${m.a},${m.b},${m.c},${m.d},${m.e},${m.f}|${ps}|${JSON.stringify(fx)}`;
     const hit = run.cache!.get(key, sig);
     if (hit) return { canvas: hit, done: () => {} };
   }
@@ -264,7 +267,7 @@ function layerPicture(run: Run, layer: Layer): Picture | null {
   g.setTransform(run.m);
   run.hooks.paint(g, layer);
   g.setTransform(1, 0, 0, 1, 0, 0);
-  for (const e of fx) c = applyEffect(c, e.kind, e.v, run.scale, run.origin, run.pool);
+  for (const e of fx) c = applyEffect(c, e.kind, e.v, run.scale, run.origin, run.pool, run.stage);
   if (key) {
     // The cache keeps its own copy, so the pool canvas can go back.
     const keep = makeCanvas(c.width, c.height);
@@ -279,6 +282,6 @@ function layerPicture(run: Run, layer: Layer): Picture | null {
 function folderPicture(run: Run, node: Extract<PlanNode, { type: 'folder' }>): Picture | null {
   let c = run.pool.get();
   drawLevel(run, ctx2(c), node.steps);
-  for (const e of activeEffects(node.folder.effects, run.frame)) c = applyEffect(c, e.kind, e.v, run.scale, run.origin, run.pool);
+  for (const e of activeEffects(node.folder.effects, run.frame)) c = applyEffect(c, e.kind, e.v, run.scale, run.origin, run.pool, run.stage);
   return { canvas: c, done: () => run.pool.put(c) };
 }

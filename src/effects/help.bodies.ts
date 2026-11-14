@@ -1,5 +1,48 @@
 // The words of the help topics in help.ts, kept apart so they load only when Help is opened (see src/core/helpBodies.ts).
 export const bodies: Record<string, string> = {
+  'effects-finishing': `The finishing touches that make a short film or a game cut-scene feel finished. Add them like any effect: pick a layer (or a folder), open the **Effects** panel and click one. Your drawing isn't touched, and you can take them off any time.
+
+## Film grain
+
+Fine speckle, like old film or a printed poster.
+
+- **Strength** and **Speck size** set how strong and how coarse. **Colourful** makes the speckle coloured.
+- **New speckle every** is how many frames pass before the pattern changes: **1** shimmers like real film, **0** keeps one still pattern.
+- It only lands on drawing. Put it on a folder to grain the whole picture.
+
+## Wave
+
+Bends the layer: heat over a road, water, a dream starting.
+
+- **How far it bends**, **Distance between waves**, and **Turn** to run them up and down. **Rippling** makes shapes swim, not just slide.
+- To make the waves flow, press the **key** button on **Move the waves**, set 0 on one frame and 360 on a later one. See [animate an effect](help:effects).
+
+## Colour fringe
+
+Slides the red one way and the blue the other, like a cheap lens or a glitching screen. A few pixels is subtle; 20 is a proper glitch. Animate **How far apart** from 0 to 12 and back for a quick glitch.
+
+## Dark corners
+
+Darkens the edges so the eye settles in the middle (**Vignette** in other apps).
+
+- **Strength**, **Clear middle** and **Softness**. **Colour** needn't be black: warm orange gives a sunset, white a dreamy glow.
+- It is measured from the stage and covers everything under it, so the easy way is an empty layer at the top with just this effect.
+
+## Motion blur
+
+Smears the layer in one direction, so a fast move looks fast.
+
+- **How long the smear is** and **Direction**: match it to the way the layer moves. **Trail behind** at 100% puts the smear all behind it, like a streak.
+- It doesn't watch the move for you. For a ball that speeds up, animate the length so it grows as the ball speeds up.
+
+## Good to know
+
+- Your graphics card draws them when there is one, and the processor when there isn't. The picture is the same.
+- Picture exports (video, GIF, PNG, sprite sheets) keep them. SVG leaves them out and Lottie turns the layer into pictures; the Export window says so first.
+- A long motion blur on a big stage costs the most. If playback slows down, shorten it.
+
+See also [Effects](help:effects), [Blend modes](help:blend-modes) and [Exporting](help:exporting).
+`,
   effects: `Effects change how a whole layer looks, without touching your drawing. Take them off any time.
 
 ## Add one
@@ -16,6 +59,13 @@ export const bodies: Record<string, string> = {
 | **Colour adjust** | Hue / saturation / brightness / contrast | Shifts the colours, makes them stronger or greyer, lighter or darker. |
 | **Outline** | Stroke | A solid line all the way round. Great for stickers and game sprites. |
 | **Pixelate** | Mosaic | Big squares, like a censored photo or a retro game. |
+| **Film grain** | Grain / noise | Fine speckle, like old film. |
+| **Wave** | Ripple / heat shimmer | Bends the layer in waves. |
+| **Colour fringe** | Chromatic aberration | Splits the red and blue apart, like a glitch. |
+| **Dark corners** | Vignette | Darkens the edges so the eye settles in the middle. |
+| **Motion blur** | Directional blur | Smears the layer in one direction, so a fast move looks fast. |
+
+The last five have their own page: [finishing touches](help:effects-finishing).
 
 Sizes are in stage pixels, so a blur looks the same at any zoom.
 

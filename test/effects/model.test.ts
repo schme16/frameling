@@ -24,7 +24,7 @@ describe('blend modes and the effect catalogue', () => {
     expect(compositeOp(undefined)).toBe('source-over');
     expect(compositeOp('add')).toBe('lighter');
     expect(compositeOp('multiply')).toBe('multiply');
-    expect(EFFECTS.map((e) => e.kind)).toEqual(['blur', 'glow', 'shadow', 'adjust', 'outline', 'pixelate']);
+    expect(EFFECTS.map((e) => e.kind)).toEqual(['blur', 'glow', 'shadow', 'adjust', 'outline', 'pixelate', 'grain', 'wave', 'fringe', 'vignette', 'motionblur']);
   });
 
   it('skips effects that would change nothing', () => {
@@ -192,6 +192,24 @@ describe('files', () => {
     ]);
     expect(back.layers[0].effects![0].keys![0].frame).toBe(3);
     expect(back.folders![f]).toMatchObject({ opacity: 0.5, blend: 'screen', visible: true });
+  });
+
+  it('keep the five finishing effects, with their settings and keys, through a save and load', () => {
+    const doc = docWith(['a']);
+    for (const k of ['grain', 'wave', 'fringe', 'vignette', 'motionblur'] as const) edit.addEffect(doc, { layer: 'a' }, k);
+    doc.layers[0].effects![0].values.amount = 40;
+    edit.setEffectAnimated(doc, { layer: 'a' }, doc.layers[0].effects![3].id, true, 2);
+    const back = loadFile(saveFile(doc)).doc;
+    expect(back.layers[0].effects!.map((e) => e.kind)).toEqual(['grain', 'wave', 'fringe', 'vignette', 'motionblur']);
+    expect(back.layers[0].effects![0].values).toMatchObject({ amount: 40, size: 1.5, change: 1, seed: 0 });
+    expect(back.layers[0].effects![3].keys![0].frame).toBe(2);
+  });
+
+  it('give an older file the defaults for settings it never had, and ignore settings that are not there', () => {
+    // A grain written with only a strength (as if made by an earlier build) opens with the rest at their defaults.
+    const look = readLayerLook({ effects: [{ id: 'g', kind: 'grain', values: { amount: 30, nonsense: 5 } }, { id: 'v', kind: 'vignette', values: { color: 'red' } }] });
+    expect(look.effects![0].values).toEqual({ amount: 30, size: 1.5, colour: 0, change: 1, seed: 0 });
+    expect(look.effects![1].values).toEqual({ amount: 45, size: 65, softness: 60, color: '#000000' });
   });
 
   it('read junk safely', () => {

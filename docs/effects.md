@@ -75,6 +75,25 @@ Effects (`src/effects/apply.ts`), all in canvas pixels with settings scaled from
 - Glow is a blurred copy tinted with `source-in`, drawn under the layer, stacked when strength is over 1.
 - Outline stamps the layer at rings of offsets out to the width, tints the result and puts the layer on top.
 - Pixelate shrinks with smoothing and grows back without, with squares lined up on the stage corner.
+- Film grain, wave, colour fringe, dark corners and motion blur change pixels one by one, so they are not canvas
+  filters. `src/effects/kernels.ts` is the software path (plain maths on premultiplied floats, no DOM, unit tested) and
+  `src/effects/effectsGL.ts` repeats it in a WebGL2 shader (one shared context, nothing read back). `kernelParams` turns
+  an effect's settings into canvas-pixel numbers once and both paths read those, so they agree: within 1 level on
+  nearly every pixel, 2 at worst (`scripts/e2e/effects-gpu.cjs`). No WebGL2 means the JS path; no pixel access at all
+  (a test stand-in canvas) leaves the effect undone.
+  - Grain: one random value per square cell (`size`) lined up on the stage corner, from an integer hash of the cell and
+    the pattern (`grainPattern(seed, change, frame)` in `model.ts`, put in the resolved values as `pattern` by
+    `activeEffects`, so the effect cache sees a new picture on a new frame). Added to the colour, only where there is drawing.
+  - Wave: each pixel looks sideways by `amount x sin(2 pi u / spacing + phase)`, with `u` measured across the push
+    direction from the stage corner; `ripple` adds a second push along `u` a quarter wave behind.
+  - Colour fringe: red from one side, blue from the other, green in place; the result is there where any of the three is.
+  - Dark corners: a colour laid over the picture by `strength x smoothstep` of the distance from the stage's middle
+    (corner = 1). It also fills see-through parts, so an empty top layer with just this effect frames the whole picture.
+    It is measured from the stage (`Run.stage`), so the editor's pan and zoom don't move it, and the effect cache key
+    includes the document size.
+  - Motion blur: the average of up to 64 evenly spaced samples along a line (`trail` slides the line behind the layer).
+    It doesn't read the move; the length and angle animate like any setting. Time-sampling the real move is not done.
+  - Wave, fringe and motion blur read past the picture's edge as its edge pixel, so full-stage drawings stay filled.
 
 Finished effect pictures are cached per layer content (the drawing object), settings and transform
 (`EffectCache`, LRU inside a pixel budget). Holding a drawing with a glow over many frames blurs it once; constant
@@ -104,7 +123,7 @@ modes mix with it the same way exports do.
 
 ## Known gaps
 
-- SVG has no Pixelate, so the still and moving SVG leave it out (the Export window says so first).
+- SVG has no Pixelate, Film grain, Wave, Colour fringe, Dark corners or Motion blur, so the still and moving SVG leave them out (the Export window says so first).
 - Folders don't nest. Move up / Move down step a layer into a folder at its edge and out of it again; any plain
   reorder keeps folders in one piece (`tidyFolders`), so there are never ghost copies of a folder.
 - The onion skin shows drawings plain, without effects.
@@ -201,7 +220,7 @@ this document will become pictures or be left out. The Export window shows both 
   (export option "Pictures from effects"): balanced (default) WebP q0.9 at 2x, sharp PNG at 2x, small WebP q0.8 at 1x;
   WebP comes from `canvas.toDataURL` and falls back to PNG when the page can't make it or it isn't smaller. lottie-web
   registers only Tint, Fill, Stroke, Tritone, Levels, Drop Shadow, Matte3, Gaussian Blur and Transform effects, so
-  Glow, Adjust, Outline and Pixelate have no native Lottie form and stay pictures. A layer, folder or symbol copy that
+  Glow, Adjust, Outline, Pixelate, Film grain, Wave, Colour fringe, Dark corners and Motion blur have no native Lottie form and stay pictures. A layer, folder or symbol copy that
   fades and paints two or more things goes in at full opacity under an alpha matte (a see-through stage-sized rectangle
   carrying the fade, `fadeAsWhole`), because lottie-web's canvas player multiplies opacity into every shape it draws but
   draws a matted layer into its own buffer first; the SVG renderer and the native players fade the group either way.

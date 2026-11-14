@@ -193,6 +193,11 @@ describe('what carries over', () => {
     expect(carryWarnings(doc, 'mp4')).toEqual([]);
     doc.layers[0].effects = [fx('pixelate')];
     expect(carryWarnings(doc, 'svg')).toEqual(['Left out here: pixelate.']);
+    // The finishing effects (grain, wave, fringe, dark corners, motion blur) are drawn per pixel, so no vector format keeps them.
+    doc.layers[0].effects = [fx('grain'), fx('wave'), fx('fringe'), fx('vignette'), fx('motionblur')];
+    expect(carryWarnings(doc, 'svg')).toEqual(['Left out here: film grain, wave, colour fringe, dark corners and motion blur.']);
+    expect(carryWarnings(doc, 'lottie')).toEqual(['Turned into pictures here: layers with film grain, wave, colour fringe, dark corners and motion blur.']);
+    expect(carryWarnings(doc, 'png')).toEqual([]);
     doc.layers[0].mask = 'show';
     expect(docFeatures(doc).features.has('mask')).toBe(true);
     expect(carryWarnings(doc, 'pdf')[0]).toMatch(/masks/);

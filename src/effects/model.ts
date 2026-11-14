@@ -151,6 +151,70 @@ export const EFFECTS: EffectInfo[] = [
     icon: 'fx-pixelate',
     params: [{ key: 'size', label: 'Square size', type: 'number', default: 8, min: 1, max: 64, step: 1, unit: 'px' }],
   },
+  {
+    kind: 'grain',
+    label: 'Film grain',
+    term: 'Grain / noise',
+    description: 'Fine speckle over the drawing, like old film or a printed poster. Good for mood and for taking the digital shine off.',
+    icon: 'fx-grain',
+    params: [
+      { key: 'amount', label: 'Strength', type: 'number', default: 20, min: 0, max: 100, step: 1, unit: '%' },
+      { key: 'size', label: 'Speck size', type: 'number', default: 1.5, min: 1, max: 12, step: 0.5, unit: 'px' },
+      { key: 'colour', label: 'Colourful', type: 'number', default: 0, min: 0, max: 100, step: 1, unit: '%' },
+      { key: 'change', label: 'New speckle every (frames)', type: 'number', default: 1, min: 0, max: 12, step: 1 },
+      { key: 'seed', label: 'Pattern', type: 'number', default: 0, min: 0, max: 999, step: 1 },
+    ],
+  },
+  {
+    kind: 'wave',
+    label: 'Wave',
+    term: 'Ripple / heat shimmer',
+    description: 'Bends the layer in waves, like heat over a road, water, or a dream sequence starting. Move the waves to make them flow.',
+    icon: 'fx-wave',
+    params: [
+      { key: 'amount', label: 'How far it bends', type: 'number', default: 6, min: 0, max: 80, step: 0.5, unit: 'px' },
+      { key: 'length', label: 'Distance between waves', type: 'number', default: 60, min: 4, max: 500, step: 1, unit: 'px' },
+      { key: 'phase', label: 'Move the waves', type: 'number', default: 0, min: 0, max: 360, step: 1, unit: '°' },
+      { key: 'angle', label: 'Turn', type: 'number', default: 0, min: -180, max: 180, step: 1, unit: '°' },
+      { key: 'ripple', label: 'Rippling (up and down too)', type: 'number', default: 35, min: 0, max: 100, step: 1, unit: '%' },
+    ],
+  },
+  {
+    kind: 'fringe',
+    label: 'Colour fringe',
+    term: 'Chromatic aberration / RGB split',
+    description: 'Splits the red and blue away from the green, like a cheap lens or a glitching screen.',
+    icon: 'fx-fringe',
+    params: [
+      { key: 'distance', label: 'How far apart', type: 'number', default: 4, min: 0, max: 60, step: 0.5, unit: 'px' },
+      { key: 'angle', label: 'Direction', type: 'number', default: 0, min: -180, max: 180, step: 1, unit: '°' },
+    ],
+  },
+  {
+    kind: 'vignette',
+    label: 'Dark corners',
+    term: 'Vignette',
+    description: 'Darkens (or tints) the edges of the picture so the eye settles in the middle. It is measured from the stage, so it frames the whole picture.',
+    icon: 'fx-vignette',
+    params: [
+      { key: 'amount', label: 'Strength', type: 'number', default: 45, min: 0, max: 100, step: 1, unit: '%' },
+      { key: 'size', label: 'Clear middle', type: 'number', default: 65, min: 0, max: 100, step: 1, unit: '%' },
+      { key: 'softness', label: 'Softness', type: 'number', default: 60, min: 0, max: 100, step: 1, unit: '%' },
+      { key: 'color', label: 'Colour', type: 'color', default: '#000000' },
+    ],
+  },
+  {
+    kind: 'motionblur',
+    label: 'Motion blur',
+    term: 'Directional blur',
+    description: 'Smears the layer in one direction, so a fast move looks fast. Match the direction to the way it moves.',
+    icon: 'fx-motion',
+    params: [
+      { key: 'length', label: 'How long the smear is', type: 'number', default: 16, min: 0, max: 150, step: 0.5, unit: 'px' },
+      { key: 'angle', label: 'Direction', type: 'number', default: 0, min: -180, max: 180, step: 1, unit: '°' },
+      { key: 'trail', label: 'Trail behind (not both ways)', type: 'number', default: 0, min: 0, max: 100, step: 1, unit: '%' },
+    ],
+  },
 ];
 
 export function effectInfo(kind: EffectKind): EffectInfo {
@@ -217,9 +281,19 @@ export function activeEffects(list: LayerEffect[] | undefined, frame: number): {
     if (e.on === false || !isEffectKind(e.kind)) continue;
     const v = valuesAt(e, frame);
     if (isNoop(e.kind, v)) continue;
+    if (e.kind === 'grain') v.pattern = grainPattern(Number(v.seed), Number(v.change), frame);
     out.push({ kind: e.kind, v });
   }
   return out;
+}
+
+/**
+ * Which speckle pattern grain shows at a frame: the pattern number, moved on every `change` frames (0 = it never moves).
+ * Worked out here, not stored, so a frame's picture depends only on the frame and the settings.
+ */
+export function grainPattern(seed: number, change: number, frame: number): number {
+  const step = Math.round(change) > 0 ? Math.floor(Math.max(0, frame) / Math.round(change)) : 0;
+  return (Math.round(seed) * 1009 + step) | 0;
 }
 
 /** True when the settings leave the picture as it was (a 0 px blur), so the work can be skipped. */
@@ -238,6 +312,16 @@ export function isNoop(kind: EffectKind, v: Record<string, number | string>): bo
       return !(n('width') > 0);
     case 'pixelate':
       return !(n('size') > 1);
+    case 'grain':
+      return !(n('amount') > 0);
+    case 'wave':
+      return !(n('amount') > 0);
+    case 'fringe':
+      return !(n('distance') > 0);
+    case 'vignette':
+      return !(n('amount') > 0);
+    case 'motionblur':
+      return !(n('length') > 0);
   }
 }
 

@@ -368,12 +368,17 @@ when comparing two drawings for "same look" (as `id` is ignored).
 ### Look: blend, effects, folders (`ebd1163`)
 
 - `BlendMode`: the canvas modes plus `'add'`.
-- `LayerEffect`: `{id, kind: blur|glow|shadow|adjust|outline|pixelate, on?, values, keys?}`. `values` holds numbers
+- `LayerEffect`: `{id, kind: blur|glow|shadow|adjust|outline|pixelate|grain|wave|fringe|vignette|motionblur, on?, values, keys?}`. `values` holds numbers
   and hex colours; `keys: {frame, values}[]` animate the numbers (linear between keys, held outside).
 - `LayerFolder`: `{id, name, visible, opacity, blend?, effects?, parent?}`. `parent` is the id of the folder it sits in
   (missing = on the stage), up to 8 levels deep. A layer's `folder` is the folder it sits in directly; every layer under
   a folder, in folders inside it too, sits next to the others in `layers`, so the flat list reads like the tree walked in
   order. Files from before folders could nest have no `parent` and open unchanged.
+
+  The last five (film grain, wave, colour fringe, dark corners, motion blur) were added later: an older build opens a file
+  that has them without those effects (unknown kinds are dropped on read), and a file from before them has none. Their
+  settings are all optional on read and take their defaults (`src/effects/model.ts`, `EFFECTS`). Grain's moving pattern is
+  worked out from the frame and the `seed` and `change` settings, never stored.
 
 See `docs/effects.md`.
 

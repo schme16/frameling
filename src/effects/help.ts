@@ -11,6 +11,14 @@ registerHelpTopics([
     keywords: ['effect', 'fx', 'glow', 'shadow', 'drop shadow', 'blur', 'outline', 'stroke', 'pixelate', 'mosaic', 'hue', 'saturation', 'brightness', 'contrast', 'colour adjust', 'animate effect'],
   },
   {
+    id: 'effects-finishing',
+    title: 'Finishing touches: grain, wave, fringe, dark corners, motion blur',
+    section: 'Effects',
+    media: 'finishing-effects.png',
+    summary: 'Film grain, a heat shimmer or ripple, a glitchy colour split, dark corners and a smear for a fast move. Add them from the Effects panel.',
+    keywords: ['grain', 'film grain', 'noise', 'wave', 'ripple', 'heat', 'shimmer', 'water', 'fringe', 'colour fringe', 'chromatic aberration', 'rgb split', 'glitch', 'vignette', 'dark corners', 'motion blur', 'speed', 'smear', 'streak', 'finishing', 'filter'],
+  },
+  {
     id: 'blend-modes',
     title: 'Blend modes: how a layer mixes',
     section: 'Effects',

@@ -247,6 +247,20 @@ module.exports = [
     ],
   },
   {
+    name: 'finishing-effects',
+    steps: [
+      ...open('bouncing-ball', [js(`${F}.prefs.set({ firstDrawn: true, showExplanations: false })`)], ['effects']),
+      // Dark corners and a little grain on the Ball layer, with the Effects panel showing both.
+      js(`(() => { const s = ${F}.store(); const l = s.get().doc.layers.find((x) => x.name === 'Ball'); s.setUi({ activeLayerId: l.id, frame: 7 }); })()`), { wait: 400 },
+      js(`${F}.run('effects.add.vignette')`), { wait: 400 },
+      js(`${F}.run('effects.add.grain')`), { wait: 400 },
+      ...only('effects'),
+      js(`(() => { const sc = document.querySelector('.rd-props'); const h = [...document.querySelectorAll('#rd-sec-effects *')].find((e) => e.children.length === 0 && /first to last/.test(e.textContent)); if (h) sc.scrollTop += h.getBoundingClientRect().top - sc.getBoundingClientRect().top - 150; })()`),
+      { move: PARK }, { move: [645, 785], after: 1200 },
+      { shot: '@', crop: [108, 40, 1164, 750] },
+    ],
+  },
+  {
     name: 'blend-modes',
     steps: [
       ...open('bouncing-ball', [{ click: [fx(9), 621], after: 500 }, ...only('effects')]),

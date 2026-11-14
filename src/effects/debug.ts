@@ -2,15 +2,16 @@
 import { renderFrameToCanvas } from '../core/render';
 import { store } from '../core/store';
 import { nativeFilterWorks, setFilterOverride } from './filterSupport';
+import { effectsGpuStats, setEffectsGpu } from './effectsGL';
 import { gpuStats, setPixelBlendGpu } from './pixelBlendGL';
 import { setAddStyle } from './EffectsPanel';
 import { toggleFolderCollapsed } from './rows';
 
 if (typeof location !== 'undefined' && new URLSearchParams(location.search).has('debug')) {
   (window as unknown as { __framelingEffects: unknown }).__framelingEffects = {
-    /** RGBA bytes of a frame rendered at 1:1. */
-    pixels(doc: Parameters<typeof renderFrameToCanvas>[0], frame = 0) {
-      const c = renderFrameToCanvas(doc, frame, 1);
+    /** RGBA bytes of a frame rendered at 1:1 (or at `scale`). */
+    pixels(doc: Parameters<typeof renderFrameToCanvas>[0], frame = 0, scale = 1) {
+      const c = renderFrameToCanvas(doc, frame, scale);
       return Array.from(c.getContext('2d')!.getImageData(0, 0, c.width, c.height).data);
     },
     /** Loads the document into the editor and reads its canvas at document pixels [x, y] (RGBA), after it paints. */
@@ -33,13 +34,18 @@ if (typeof location !== 'undefined' && new URLSearchParams(location.search).has(
     /** Turns the GPU path of Linear dodge, Subtract and Divide on or off (the CPU path is the fallback), and counts GPU blits. */
     setPixelBlendGpu,
     gpuBlits: () => gpuStats.blits,
+    /** Turns the GPU path of grain, wave, colour fringe, dark corners and motion blur on or off (JS is the fallback), and counts its runs. */
+    setEffectsGpu,
+    effectsGpuRuns: () => effectsGpuStats.runs,
     /** Milliseconds per frame rendering `doc` at `scale` `n` times (the last pixel is read so the GPU has finished). */
-    renderMs(doc: Parameters<typeof renderFrameToCanvas>[0], frame: number, n: number, scale = 1) {
-      let c = renderFrameToCanvas(doc, frame, scale);
+    renderMs(doc: Parameters<typeof renderFrameToCanvas>[0], frame: number, n: number, scale = 1, fresh = false) {
+      // `fresh` renders a new copy of the document each time: finished effect pictures are cached by drawing, so reusing one would time the cache.
+      const copies = fresh ? Array.from({ length: n + 1 }, () => JSON.parse(JSON.stringify(doc))) : [];
+      let c = renderFrameToCanvas(fresh ? copies[n] : doc, frame, scale);
       c.getContext('2d')!.getImageData(0, 0, 1, 1);
       const t0 = performance.now();
       for (let i = 0; i < n; i++) {
-        c = renderFrameToCanvas(doc, frame, scale);
+        c = renderFrameToCanvas(fresh ? copies[i] : doc, frame, scale);
         c.getContext('2d')!.getImageData(0, 0, 1, 1);
       }
       return (performance.now() - t0) / n;

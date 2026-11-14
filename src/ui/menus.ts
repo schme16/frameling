@@ -151,7 +151,7 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
   },
   effects: {
     label: 'Effects',
-    items: ['view.panel.effects', '-', 'effects.add.blur', 'effects.add.glow', 'effects.add.shadow', 'effects.add.adjust', 'effects.add.outline', 'effects.add.pixelate', '-', 'effects.reset', '-', 'particles.add.confetti', 'particles.add.dust', 'particles.add.rain', 'particles.add.smoke', 'particles.add.snow', 'particles.add.sparkle', 'particles.shuffle'],
+    items: ['view.panel.effects', '-', 'effects.add.blur', 'effects.add.glow', 'effects.add.shadow', 'effects.add.adjust', 'effects.add.outline', 'effects.add.pixelate', '-', 'effects.add.grain', 'effects.add.wave', 'effects.add.fringe', 'effects.add.vignette', 'effects.add.motionblur', '-', 'effects.reset', '-', 'particles.add.confetti', 'particles.add.dust', 'particles.add.rain', 'particles.add.smoke', 'particles.add.snow', 'particles.add.sparkle', 'particles.shuffle'],
     prefixes: ['effects.add.', 'particles.add.'],
     categories: ['Effects'],
   },

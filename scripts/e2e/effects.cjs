@@ -123,6 +123,36 @@ add('glow around the drawing', doc([layer('a', box(), { effects: [{ id: 'g', kin
   [5, 8, [0, 0, 255, 255], 170],
 ]);
 add('colour adjust: no brightness is black', doc([layer('a', full('#ff8800'), { effects: [{ id: 'c', kind: 'adjust', values: { hue: 0, saturation: 100, brightness: 0, contrast: 100 } }] })]), [[4, 4, [0, 0, 0, 255], 1]]);
+// The finishing effects, on the JS path (this harness has no GPU process; scripts/e2e/effects-gpu.cjs compares the two paths).
+add('colour fringe: red one way, blue the other', doc([layer('a', [rect('x', 6, 6, 4, 4, '#ffffff')], { effects: [{ id: 'f', kind: 'fringe', values: { distance: 2, angle: 0 } }] })], { background: '#000000' }), [
+  [5, 8, [0, 0, 255, 255], 2],
+  [6, 8, [0, 255, 255, 255], 2],
+  [7, 8, [0, 255, 255, 255], 2],
+  [8, 8, [255, 255, 0, 255], 2],
+  [10, 8, [255, 0, 0, 255], 2],
+  [1, 8, [0, 0, 0, 255], 1],
+]);
+add('dark corners: clear middle, dark corner', doc([layer('a', full('#ffffff'), { effects: [{ id: 'v', kind: 'vignette', values: { amount: 100, size: 50, softness: 0, color: '#000000' } }] })]), [
+  [8, 8, [255, 255, 255, 255], 1],
+  [0, 0, [0, 0, 0, 255], 1],
+], 0, true);
+add('dark corners on an empty layer still frame everything under it', doc([layer('a', full('#ffffff')), layer('v', [], { effects: [{ id: 'v', kind: 'vignette', values: { amount: 100, size: 50, softness: 0, color: '#ff0000' } }] })]), [
+  [8, 8, [255, 255, 255, 255], 1],
+  [0, 0, [255, 0, 0, 255], 1],
+]);
+add('motion blur smears along the angle', doc([layer('a', box(), { effects: [{ id: 'm', kind: 'motionblur', values: { length: 4, angle: 0, trail: 0 } }] })]), [
+  [5, 8, [153, 153, 153, 255], 4],
+  [8, 8, [51, 51, 51, 255], 4],
+  [8, 3, [255, 255, 255, 255], 1],
+]);
+add('wave bends the layer sideways', doc([layer('a', box(), { effects: [{ id: 'w', kind: 'wave', values: { amount: 4, length: 500, phase: 90, angle: 0, ripple: 0 } }] })]), [
+  [3, 8, [0, 0, 0, 255], 5],
+  [8, 8, [255, 255, 255, 255], 5],
+]);
+add('film grain only touches the drawing', doc([layer('a', box(), { effects: [{ id: 'g', kind: 'grain', values: { amount: 100, size: 1, colour: 0, change: 0, seed: 1 } }] })]), [
+  [1, 1, [255, 255, 255, 255], 1],
+  [7, 7, [64, 64, 64, 255], 64],
+]);
 add('pixelate averages squares', doc([layer('a', [rect('a', 0, 0, 2, 4, '#000000'), rect('b', 2, 0, 2, 4, '#ffffff')], { effects: [{ id: 'p', kind: 'pixelate', values: { size: 4 } }] })]), [[1, 1, [128, 128, 128, 255], 30]]);
 {
   // A symbol instance on a layer with an outline and a blend mode: the instance's posed drawing goes through the
