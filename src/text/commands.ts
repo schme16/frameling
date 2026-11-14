@@ -37,6 +37,15 @@ const hasText = () => selectedTexts().length > 0;
 
 export const textCommands: Command[] = [
   {
+    id: 'text.swapFonts',
+    label: 'Swap fonts',
+    category: 'Edit',
+    description: 'Lists the fonts the drawing uses and where, says which are not on this computer, and swaps them for others in one undo step (replace fonts, missing fonts).',
+    help: 'text-swap-fonts',
+    keywords: ['replace font', 'replace fonts', 'missing font', 'missing fonts', 'change font', 'find font', 'font substitution', 'typeface', 'stand-in'],
+    run: () => void import('./FontSwapDialog').then((m) => m.openFontSwap()),
+  },
+  {
     id: 'text.toShapes',
     label: 'Convert text to shapes',
     category: 'Draw',
