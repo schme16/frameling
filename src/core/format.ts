@@ -76,6 +76,8 @@ export interface Doc {
   guides?: Guide[];
   /** Notes left on the canvas, for you or whoever opens the file next (missing = none). Saved in the file, never exported. See `CanvasNote`. */
   notes?: CanvasNote[];
+  /** Marks drawn over the picture (arrows, circles, a scribble, a few words) for you or whoever reviews it (missing = none). Saved in the file, never exported. See `CanvasMark`. */
+  marks?: CanvasMark[];
   /** The play range set on the timeline (in and out, inclusive): only these frames play and loop (missing = all). */
   inOut?: { start: number; end: number };
   /** Perspective guides: one or two vanishing points in stage pixels (missing = none). Never drawn in exports. */
@@ -299,6 +301,34 @@ export interface CanvasNote {
   done?: true;
   /** Answers, oldest first (missing = none). */
   replies?: NoteReply[];
+}
+
+/**
+ * A mark drawn over the picture: an arrow, a circle, a scribble or a few words (see src/notes/marks.ts). Like a note it
+ * lives in the file and is never drawn into an export. `pin` says where it belongs, the same way a note's does: the
+ * page, one frame, or one layer. Missing `pin` = the page.
+ *
+ * `pts` is a flat list of stage pixels, x then y: an arrow is [tailX, tailY, tipX, tipY]; a circle is two opposite
+ * corners of its box [x1, y1, x2, y2]; a scribble is the points of the stroke; a text mark is [x, y], the top left of
+ * its first line.
+ */
+export interface CanvasMark {
+  id: Id;
+  kind: 'arrow' | 'circle' | 'scribble' | 'text';
+  pts: number[];
+  /** CSS hex colour (missing = the default red). */
+  color?: string;
+  /** Line thickness in screen pixels, whatever the zoom (missing = 3). */
+  w?: number;
+  /** The words of a text mark. */
+  text?: string;
+  pin?: 'page' | 'frame' | 'layer';
+  /** The frame a frame mark belongs to (0 is the first). */
+  frame?: number;
+  /** The layer a layer mark belongs to. */
+  layer?: Id;
+  /** The artboard it was drawn on (missing = shows on every artboard, or the document has none). */
+  board?: Id;
 }
 
 /** A guide line across the stage: `axis` 'x' is an up-and-down line at x = `at`, 'y' a sideways one at y = `at`. */

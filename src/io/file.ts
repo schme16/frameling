@@ -5,6 +5,7 @@
  * drawing holds raw RGBA; in the file `doc.json` holds the name of its PNG instead.
  */
 import { readNotes } from '../notes/model';
+import { readMarks } from '../notes/marks';
 import { cleanGradients } from '../core/gradient';
 import { readFolders, readLayerLook } from '../effects/io';
 import { strFromU8, strToU8, unzipSync, zip, zipSync, type Zippable } from 'fflate';
@@ -539,6 +540,8 @@ function buildDoc(raw: any, entries: Record<string, Uint8Array>, warnings: strin
   if (guides) doc.guides = guides;
   const notes = readNotes(raw.notes);
   if (notes) doc.notes = notes;
+  const marks = readMarks(raw.marks);
+  if (marks) doc.marks = marks;
   if (isObj(raw.inOut) && Number.isFinite(raw.inOut.start) && Number.isFinite(raw.inOut.end)) {
     const a = Math.max(0, Math.min(length - 1, Math.round(raw.inOut.start)));
     const b = Math.max(0, Math.min(length - 1, Math.round(raw.inOut.end)));

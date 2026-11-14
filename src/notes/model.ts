@@ -3,6 +3,14 @@
 // here draws or touches the store, so it is easy to test.
 import type { CanvasNote, Doc, Id, Layer, NoteReply } from '../core/format';
 
+/** What a note and a mark share: where they belong. */
+export interface Pinned {
+  pin?: 'page' | 'frame' | 'layer';
+  frame?: number;
+  layer?: Id;
+  board?: Id;
+}
+
 export type NotePin = 'page' | 'frame' | 'layer';
 
 /** Limits so a damaged or hand-made file can't hold a note the size of a book. */
@@ -63,16 +71,17 @@ export function readNotes(raw: unknown): CanvasNote[] | undefined {
 const bare = new WeakMap<object, object>();
 
 /**
- * The document without its notes. Exports, templates, the Interactives package and plugins all take the document
+ * The document without its notes and the marks drawn over it. Exports, templates, the Interactives package and plugins all take the document
  * through this, so a note can never reach them even if a format later learns to write more of the document. The same
  * object comes back when there is nothing to take out, and the same copy for the same document.
  */
-export function withoutNotes<T extends { notes?: unknown }>(doc: T): T {
-  if (doc.notes === undefined) return doc;
+export function withoutNotes<T extends { notes?: unknown; marks?: unknown }>(doc: T): T {
+  if (doc.notes === undefined && doc.marks === undefined) return doc;
   let copy = bare.get(doc) as T | undefined;
   if (!copy) {
     copy = { ...doc };
     delete copy.notes;
+    delete copy.marks;
     bare.set(doc, copy);
   }
   return copy;
@@ -90,12 +99,12 @@ export function boardOf(doc: Pick<Doc, 'artboards' | 'activeArtboard'>): Id | un
 }
 
 /** True when the note belongs on the artboard that is open (a note whose artboard is gone shows on whichever is open). */
-export function onOpenBoard(note: CanvasNote, doc: Pick<Doc, 'artboards' | 'activeArtboard'>): boolean {
+export function onOpenBoard(note: Pinned, doc: Pick<Doc, 'artboards' | 'activeArtboard'>): boolean {
   if (!note.board || !doc.artboards?.some((b) => b.id === note.board)) return true;
   return note.board === boardOf(doc);
 }
 
-export const pinOf = (n: CanvasNote): NotePin => (n.pin === 'frame' && n.frame !== undefined ? 'frame' : n.pin === 'layer' && n.layer ? 'layer' : 'page');
+export const pinOf = (n: Pinned): NotePin => (n.pin === 'frame' && n.frame !== undefined ? 'frame' : n.pin === 'layer' && n.layer ? 'layer' : 'page');
 
 /** Whether a layer has a drawing on a frame. */
 export function layerShowsAt(layer: Layer, frame: number): boolean {
@@ -109,17 +118,19 @@ export function layerShowsAt(layer: Layer, frame: number): boolean {
  */
 export function visibleNotes(doc: Doc, frame: number, opts: { hideDone?: boolean } = {}): CanvasNote[] {
   if (!doc.notes?.length || doc.editing?.length) return [];
-  return doc.notes.filter((n) => {
-    if (opts.hideDone && n.done) return false;
-    if (!onOpenBoard(n, doc)) return false;
-    const pin = pinOf(n);
-    if (pin === 'frame') return n.frame === frame;
-    if (pin === 'layer') {
-      const layer = doc.layers.find((l) => l.id === n.layer);
-      return !layer || layerShowsAt(layer, frame);
-    }
-    return true;
-  });
+  return doc.notes.filter((n) => !(opts.hideDone && n.done) && shownAt(n, doc, frame));
+}
+
+/** Whether something pinned to the page, a frame or a layer shows on this frame of the open artboard. */
+export function shownAt(item: Pinned, doc: Doc, frame: number): boolean {
+  if (!onOpenBoard(item, doc)) return false;
+  const pin = pinOf(item);
+  if (pin === 'frame') return item.frame === frame;
+  if (pin === 'layer') {
+    const layer = doc.layers.find((l) => l.id === item.layer);
+    return !layer || layerShowsAt(layer, frame);
+  }
+  return true;
 }
 
 /** The frames that have notes pinned to them on the open artboard: how many, and how many are still open. */

@@ -22,4 +22,24 @@ export const bodies: Record<string, string> = {
 - An older Frameling opens a file with notes and simply doesn't show them; nothing else is lost.
 
 To keep a whole layer out of exports instead, see [Reference layers](help:reference-layers). To trace over a picture, see [A picture behind your drawing](help:reference-picture).`,
+  'canvas-marks': `**Marks** are lines you draw over your picture to point at things: an arrow at the elbow that pops, a ring round the wrong colour, a quick scribble, a few words. They are for you, or whoever reviews the work. Marks are saved in your \`.frameling\` file, and **no export ever includes them**: not a PNG, a sprite sheet, an SVG, a GIF, a video, Lottie, Godot or a PDF. They don't show while the animation plays or when you look through the camera either.
+
+**Draw one:**
+- Pick the **Marks** tool (**Shift+I**), or choose **View > Marks** and an arrow, circle, sketch or words.
+- **Arrow:** drag from the tail to the tip. **Circle:** drag across the thing you want to ring. **Sketch:** draw freehand. **Words:** click, type, then press **Enter** (hold **Shift** for a new line, **Esc** to drop it).
+- Hold **Shift** for an arrow in neat 15 degree steps, or a true circle.
+- Pick a colour and a thickness in the tool's options. The line stays the same thickness however far you zoom.
+- **Rub out** removes the mark you click or drag over. **Undo** takes back the last one too.
+
+**Where a mark belongs.** The first time, Frameling asks whether new marks belong to **this frame**, **the page** or **this layer**, then remembers. A frame mark shows only on its frame, which suits "this pose is wrong". A page mark shows on every frame. A layer mark shows while that layer has a drawing. Change it any time in the tool's options, or in **Preferences > Behaviour**.
+
+**Show or hide them all** with **Ctrl+Alt+A**. The switch is remembered. **Clear the marks on this frame** and **Clear every mark** tidy up when the pass is done (Undo brings them back).
+
+**Good to know:**
+- Marks belong to the artboard they were drawn on.
+- While you are editing inside a symbol, marks stay out of the way.
+- Picking the Marks tool turns marks back on, so you never draw something you can't see.
+- An older Frameling opens a file with marks and simply doesn't show them; nothing else is lost.
+
+For words that sit beside the drawing instead of on it, see [Notes on the canvas](help:canvas-notes). To keep a whole layer out of exports, see [Reference layers](help:reference-layers).`,
 };

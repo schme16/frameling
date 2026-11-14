@@ -290,6 +290,12 @@ const ICONS: Record<string, ReactNode> = {
       <path d="M8.5 9h7M8.5 12.5h4" />
     </>
   ),
+  mark: (
+    <>
+      <ellipse cx="14.5" cy="9.5" rx="6.2" ry="5.2" />
+      <path d="M3.8 20.2l6.4-6.2M3.8 20.2l.3-4.4M3.8 20.2l4.4-.3" />
+    </>
+  ),
   key: <path d="M12 3.8l7.8 8.2-7.8 8.2L4.2 12z" fill="currentColor" />,
   hold: (
     <>

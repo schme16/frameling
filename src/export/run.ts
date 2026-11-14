@@ -12,7 +12,7 @@ export { isCancelled, type Progress, type RunContext, type RunResult };
 
 export async function runExport(ctx: RunContext): Promise<RunResult> {
   const { settings, currentFrame, onProgress } = ctx;
-  // Notes never go out: the document the formats see has none, whatever the caller passed.
+  // Notes and marks never go out: the document the formats see has none, whatever the caller passed.
   const doc = withoutNotes(ctx.doc);
   const def = exporterOf(settings.format);
   if (!def) throw new Error('That kind of export is turned off.');
