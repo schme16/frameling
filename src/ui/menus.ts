@@ -48,7 +48,7 @@ export const MENUS: MenuDef[] = [
     label: 'Draw',
     title: 'Tools and layers',
     categories: ['Draw', 'Drawing', 'Tools', 'Select', 'Selection', 'Shape', 'Shapes', 'Geometry', 'Layers', 'Arrange', 'Effects'],
-    items: ['sub:tools', 'pixel.mirror', '-', 'select.flipH', 'select.flipV', '-', 'transform.apply', 'transform.putBack', 'transform.pivotMiddle', '-', 'arrange.front', 'arrange.forward', 'arrange.backward', 'arrange.back', '-', 'arrange.group', 'arrange.ungroup', 'arrange.breakApart', 'sub:symbols', '-', 'sub:combine', 'sub:linestyle', 'sub:tidy', 'sub:recolour', 'sub:brushes', 'sub:brushtips', 'sub:toolopts', '-', 'layers.addVector', 'layers.addPixel', 'layers.go.pixel', 'layers.go.vector', 'tiles.addLayer', 'sub:tiles', 'layers.duplicate', 'layers.delete', '-', 'layers.up', 'layers.down', 'layers.toggleVisible', 'layers.toggleLocked', 'timeline.soloLayer', 'layers.toggleReference', '-', 'sub:effects', 'sub:masks', '-', 'view.panel.layers'],
+    items: ['sub:tools', 'pixel.mirror', '-', 'select.flipH', 'select.flipV', '-', 'transform.apply', 'transform.putBack', 'transform.pivotMiddle', '-', 'arrange.front', 'arrange.forward', 'arrange.backward', 'arrange.back', '-', 'arrange.group', 'arrange.ungroup', 'arrange.breakApart', 'sub:symbols', '-', 'sub:combine', 'sub:linestyle', 'sub:tidy', 'sub:recolour', 'sub:brushes', 'sub:brushtips', 'sub:toolopts', '-', 'layers.addVector', 'layers.addPixel', 'sub:pairs', 'tiles.addLayer', 'sub:tiles', 'layers.duplicate', 'layers.delete', '-', 'layers.up', 'layers.down', 'layers.toggleVisible', 'layers.toggleLocked', 'timeline.soloLayer', 'layers.toggleReference', '-', 'sub:effects', 'sub:masks', '-', 'view.panel.layers'],
   },
   {
     label: 'Pixel',
@@ -177,6 +177,11 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
     items: ['view.panel.effects', '-', 'effects.add.blur', 'effects.add.glow', 'effects.add.shadow', 'effects.add.adjust', 'effects.add.outline', 'effects.add.pixelate', '-', 'effects.add.grain', 'effects.add.wave', 'effects.add.fringe', 'effects.add.vignette', 'effects.add.motionblur', '-', 'effects.reset', '-', 'particles.add.confetti', 'particles.add.dust', 'particles.add.rain', 'particles.add.smoke', 'particles.add.snow', 'particles.add.sparkle', 'particles.shuffle'],
     prefixes: ['effects.add.', 'particles.add.'],
     categories: ['Effects'],
+  },
+  pairs: {
+    label: 'Pixels and vectors',
+    items: ['layers.draw.pixel', 'layers.draw.vector', 'layers.draw.swap', '-', 'layers.addHalf', 'layers.unpair', 'layers.deletePair', '-', 'layers.go.pixel', 'layers.go.vector'],
+    prefixes: ['layers.go.', 'layers.draw.'],
   },
   masks: {
     label: 'Masks and folders',

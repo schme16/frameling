@@ -13,6 +13,7 @@ import { currentChoice } from '../core/choices';
 import { cleanRepeat, clipDirection } from '../core/clipPlay';
 import { celAt, findLayer, newDrawingFor, newPixelLayer, newVectorLayer, pruneDrawings, uid } from '../core/doc';
 import { stepLayerThroughFolders, tidyFolders } from '../effects/edit';
+import { gatherHalf, halfTogether, linkPair, topAndBottom, unlinkPair } from '../core/pairs';
 
 /** What to do when a cel lands on top of others: shove them later (push) or cut them back (trim). */
 export type Clash = 'push' | 'trim';
@@ -396,6 +397,9 @@ export function addPixelLayer(doc: Doc, aboveId?: Id | null, name?: string, pixe
 export function deleteLayer(doc: Doc, layerId: Id): { next: Id } | null {
   const i = doc.layers.findIndex((l) => l.id === layerId);
   if (i < 0 || doc.layers.length <= 1) return null;
+  const gone = doc.layers[i];
+  // Its other half, if it had one, is a layer on its own again.
+  if (gone.pair) unlinkPair(doc.layers as Layer[], gone.id);
   doc.layers.splice(i, 1);
   // One stack for every board: the layer goes from all of them, with what they drew on it.
   if (sharedBoards(doc)) for (const a of doc.artboards!) if (a.content?.cels) delete a.content.cels[layerId];
@@ -403,14 +407,35 @@ export function deleteLayer(doc: Doc, layerId: Id): { next: Id } | null {
   return { next: doc.layers[Math.min(i, doc.layers.length - 1)].id };
 }
 
-/** A full copy of a layer (its drawings are copied too, so editing one never changes the other), placed just above it. */
+/**
+ * A full copy of a layer (its drawings are copied too, so editing one never changes the other), placed just above it. A
+ * layer that is half of a pair is copied with its other half, and the two copies are a pair. Returns the copy of `layerId`.
+ */
 export function duplicateLayer(doc: Doc, layerId: Id): Id | null {
+  const other = halfTogether(doc.layers, findLayer(doc, layerId));
+  if (!other) return copyLayer(doc, layerId);
+  // Copy the lower one first, so each copy lands just above its own original and the two stay side by side.
+  const { top, bottom } = topAndBottom(doc.layers, doc.layers.find((l) => l.id === layerId)!, other);
+  const low = copyLayer(doc, bottom.id);
+  const high = copyLayer(doc, top.id);
+  if (!low || !high) return null;
+  const a = doc.layers.find((l) => l.id === low)!;
+  const b = doc.layers.find((l) => l.id === high)!;
+  linkPair(a, b);
+  // The copy of the lower half sits just above it; the copy of the upper half just above the upper one: gather them.
+  gatherHalf(doc.layers as Layer[], high, low, 'below');
+  return layerId === top.id ? high : low;
+}
+
+function copyLayer(doc: Doc, layerId: Id): Id | null {
   const i = doc.layers.findIndex((l) => l.id === layerId);
   if (i < 0) return null;
   const src = plain(doc.layers[i]);
   const copy = structuredClone(src) as Layer;
   copy.id = uid('l');
   copy.name = `${src.name} copy`;
+  // A copy is not half of the original's pair.
+  delete copy.pair;
   const made = new Map<Id, Id>();
   for (const c of copy.cels) {
     c.id = uid('c');
@@ -461,8 +486,12 @@ export function reorderLayer(doc: Doc, layerId: Id, to: number): boolean {
   const from = doc.layers.findIndex((l) => l.id === layerId);
   const dest = Math.max(0, Math.min(doc.layers.length - 1, Math.round(to)));
   if (from < 0 || from === dest) return false;
+  const other = halfTogether(doc.layers, doc.layers[from]);
+  const otherBelow = other ? doc.layers.indexOf(other) < from : false;
   const [l] = doc.layers.splice(from, 1);
   doc.layers.splice(dest, 0, l);
+  // A pair moves as one: its other half comes along.
+  if (other) gatherHalf(doc.layers as Layer[], layerId, other.id, otherBelow ? 'below' : 'above');
   // Layer folders stay in one piece (see effects/edit.ts).
   tidyFolders(doc, layerId);
   return true;
@@ -470,7 +499,17 @@ export function reorderLayer(doc: Doc, layerId: Id, to: number): boolean {
 
 /** One step towards the top (`up`) or the bottom of the picture. Steps into and out of layer folders on the way. */
 export function stepLayer(doc: Doc, layerId: Id, dir: 'up' | 'down'): boolean {
-  return stepLayerThroughFolders(doc, layerId, dir);
+  const layer = findLayer(doc, layerId);
+  const other = halfTogether(doc.layers, layer);
+  if (!layer || !other) return stepLayerThroughFolders(doc, layerId, dir);
+  // A pair steps as one: the half at the front edge of the move leads, and the other follows it.
+  const { top, bottom } = topAndBottom(doc.layers, layer, other);
+  const lead = dir === 'up' ? top : bottom;
+  const rest = dir === 'up' ? bottom : top;
+  if (!stepLayerThroughFolders(doc, lead.id, dir)) return false;
+  gatherHalf(doc.layers as Layer[], lead.id, rest.id, dir === 'up' ? 'below' : 'above');
+  tidyFolders(doc, lead.id);
+  return true;
 }
 
 export function setLayerVisible(doc: Doc, layerId: Id, visible: boolean): boolean {

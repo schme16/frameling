@@ -7,6 +7,7 @@ import { currentChoice, withChoice } from '../core/choices';
 import { getCommand, getTool, type Tool, type ToolContext, type ToolPointer } from '../core/registry';
 import { store, type State } from '../core/store';
 import { activeLayer } from '../tools/edit';
+import { beginStroke } from '../ui/drawAnywhere';
 import { altPicks, eyedropperTool, tempEyedropperTool } from '../tools/eyedropper';
 import { paintWellsOn, rightPaints } from '../tools/pixelWells';
 import { swapPaintBack } from '../tools/wells';
@@ -764,10 +765,17 @@ export class CanvasEngine {
     // A barrel button set to "Pick a colour" picks for as long as it is held, like holding the eyedropper's key.
     let tool = penEraser ? getTool('eraser') : pick ? eyedropperTool : getTool(ui.tool);
     if (!tool) return;
-    const layer = activeLayer().layer;
+    let layer = activeLayer().layer;
     // Alt held over a painting tool on a pixel layer: this press picks a colour (the tool comes back by itself).
     if (!penEraser && !pick && altPicks(tool.id, layer?.kind, e.altKey)) tool = tempEyedropperTool;
     if (rightClick && (tool === tempEyedropperTool || !rightPaints(tool.id, layer?.kind, 2))) return;
+    // Draw anywhere: a stroke of the other kind goes to the other half of this layer's pair, made if it is missing.
+    const began = beginStroke(tool);
+    if (began.refused) {
+      this.ctx.hint(began.refused);
+      return;
+    }
+    layer = activeLayer().layer;
     if (layer && !tool.layers.includes(layer.kind)) {
       const kinds = tool.layers.join(' or ');
       this.ctx.hint(`${tool.label} works on ${kinds} layers. Pick one in the timeline first.`);
@@ -1033,6 +1041,8 @@ export class CanvasEngine {
       ctl.setPredicted([]);
       ctl.setLive(null);
       this.restoreTool(g);
+      // A layer made for a stroke that was called off goes too, as if it never happened.
+      store().endJoin();
     }
     this.lastPtr = null;
     this.updateCursor();

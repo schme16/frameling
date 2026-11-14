@@ -5,6 +5,7 @@
 import type { BlendMode, Doc, EffectKind, Id, Layer, LayerEffect, LayerFolder } from '../core/format';
 import { newPixelLayer, newVectorLayer, uid } from '../core/doc';
 import { MAX_FOLDER_DEPTH, folderAndDescendants, folderHeight, folderLevel, layerFolders, layerIsUnder } from '../core/folders';
+import { gatherHalf, halfTogether } from '../core/pairs';
 import { clampParam, defaultValues, effectInfo, valuesAt, withKey } from './model';
 
 /** What an edit applies to: a layer, or a folder. */
@@ -231,6 +232,8 @@ export function flipMask(doc: Doc, layerId: Id): boolean {
  */
 export function makeFolder(doc: Doc, layerIds: Id[], name?: string): Id | null {
   const set = new Set(layerIds);
+  // A pair goes into a folder whole.
+  for (const l of doc.layers) if (set.has(l.id)) { const o = halfTogether(doc.layers, l); if (o) set.add(o.id); }
   const picked = doc.layers.filter((l) => set.has(l.id));
   if (!picked.length) return null;
   const id = uid('f');
@@ -290,12 +293,16 @@ export function moveLayerInto(doc: Doc, layerId: Id, to: number, folder: Id | nu
   const l = doc.layers[from];
   const same = (l.folder ?? null) === folder;
   if (from === dest && same) return false;
+  const other = halfTogether(doc.layers, l);
+  const otherBelow = other ? doc.layers.indexOf(other) < from : false;
   if (from !== dest) {
     doc.layers.splice(from, 1);
     doc.layers.splice(dest, 0, l);
   }
   if (folder && doc.folders?.[folder]) l.folder = folder;
   else delete l.folder;
+  // A pair moves as one.
+  if (other) gatherHalf(doc.layers, l.id, other.id, otherBelow ? 'below' : 'above');
   tidyFolders(doc);
   return true;
 }
@@ -309,7 +316,10 @@ export type Node = { layer: Id } | { folder: Id };
 export type Drop = 'above' | 'below' | 'into' | 'into-bottom';
 
 function nodeLayerIds(doc: Doc, n: Node): Id[] {
-  return 'layer' in n ? [n.layer] : doc.layers.filter((l) => layerIsUnder(doc, l, n.folder)).map((l) => l.id);
+  if (!('layer' in n)) return doc.layers.filter((l) => layerIsUnder(doc, l, n.folder)).map((l) => l.id);
+  // A pair is one node: its other half goes with it.
+  const other = halfTogether(doc.layers, doc.layers.find((l) => l.id === n.layer));
+  return other ? [n.layer, other.id] : [n.layer];
 }
 
 /**
@@ -342,8 +352,10 @@ export function moveNode(doc: Doc, drag: Node, target: Node, where: Drop): boole
   if (!moved && (was ?? null) === (parent ?? null)) return false;
   doc.layers.splice(0, doc.layers.length, ...next);
   if ('layer' in drag) {
-    if (parent) block[0].folder = parent;
-    else delete block[0].folder;
+    for (const b of block) {
+      if (parent) b.folder = parent;
+      else delete b.folder;
+    }
   } else {
     const f = doc.folders![drag.folder];
     if (parent) f.parent = parent;

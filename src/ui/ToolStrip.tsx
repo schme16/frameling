@@ -21,12 +21,14 @@ import { awayPlaces, groupName, headingOf, hiddenTools, railFor, resolveGroups, 
 import { iconSizeFor, ToolbarBuilder } from './ToolbarBuilder';
 import { acrossFor, clampRailWidth, minRailWidth, naturalRailWidth, railSizes, railWidthNow, RAIL_BIG_STEP, RAIL_MAX, RAIL_STEP } from './toolRailWidth';
 import { toast } from './toast';
-import { flipSideFor, modeLine, offInGroup, pressSide, SIDES, sideOf, sideWord, tellAboutOffLayer, topLayerOf, type Side } from './drawingMode';
+import { pairOf } from '../core/pairs';
+import { whyNoHalf } from '../timeline/pairs';
+import { sideDesc, sideTip, useDrawKind, flipSideFor, modeLine, offInGroup, pressSide, SIDES, sideOf, sideWord, tellAboutOffLayer, topLayerOf, type Side } from './drawingMode';
 import { askGroupRename, currentGroups, flyRequest, endToolRailPull, fitToolRailNames, foldToolGroup, frontTools, groupMenu, layerLineMenu, railNote, setToolbarEditing, setToolRailWidth, startToolDrag, stepTool, toolbarEditing, toolDrag, toolMenu } from './toolRail';
 
 /** The kind of layer being drawn on (the last one when none is picked), or null with no layers. */
 function useActiveKind(): LayerKind | null {
-  return useStore((s) => (findLayer(s.doc, s.ui.activeLayerId) ?? s.doc.layers[s.doc.layers.length - 1])?.kind ?? null);
+  return useDrawKind();
 }
 
 /** The tool rail where it is docked: it renders in the slot of the side it was put on, and nowhere else. */
@@ -282,6 +284,15 @@ export function ToolStrip({ place = 'left' }: { place?: DockZone | 'float' }) {
   const topPixel = useStore((s) => topLayerOf(s.doc.layers, 'pixel')?.name ?? '');
   const topVector = useStore((s) => topLayerOf(s.doc.layers, 'vector')?.name ?? '');
   const topOf: Record<Side, string> = { pixel: topPixel, vector: topVector };
+  // The other half of the layer you are on, when it has one, and whether the layer can be given one.
+  const halfName = useStore((s) => {
+    const a = findLayer(s.doc, s.ui.activeLayerId) ?? s.doc.layers[s.doc.layers.length - 1];
+    return pairOf(s.doc.layers, a)?.name ?? '';
+  });
+  const canMakeHalf = useStore((s) => {
+    const a = findLayer(s.doc, s.ui.activeLayerId) ?? s.doc.layers[s.doc.layers.length - 1];
+    return !!a && !whyNoHalf(a);
+  });
   const lit = sideOf(kind);
   // Gold only when the layout and the layer disagree (the Pixel workspace on a vector layer): that is when missing tools surprise you.
   const alert = !!wsId && inPixelWorkspace() && kind !== 'pixel' && waiting.length > 0 && !greyOut;
@@ -485,8 +496,8 @@ export function ToolStrip({ place = 'left' }: { place?: DockZone | 'float' }) {
                 className={`ui-tool-side is-${side}${on ? ' is-on' : ''}`}
                 aria-pressed={on}
                 data-side={side}
-                data-tip={on ? line.tip : topOf[side] ? `${sideWord(side)}: go to "${topOf[side]}"` : `${sideWord(side)}: no ${side} layer yet`}
-                data-tip-desc={on ? line.desc : topOf[side] ? `Switch to the top ${side} layer.${gone ? ` ${waitingWords(waiting)}` : ''}` : `Press to make a ${side} layer.`}
+                data-tip={on ? line.tip : sideTip(side, { half: halfName, top: topOf[side], canMake: canMakeHalf })}
+                data-tip-desc={on ? line.desc : `${sideDesc(side, { half: halfName, top: topOf[side], canMake: canMakeHalf, name: layerName })}${gone ? ` ${waitingWords(waiting)}` : ''}`}
                 onClick={() => pressSide(side)}
               >
                 <Icon name={side} size={14} />

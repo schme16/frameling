@@ -657,23 +657,23 @@ The layer decides what your tools can do, not the workspace. The **Pixel** works
 
 ## Change side
 
-Press the other side. **Pixels** takes you to your top pixel layer, **Vectors** to your top vector layer. Rest on a side to see which layer that is.
+Press the other side. Nothing moves: the switch just says what your next stroke is. Draw, and the stroke lands on a layer of that kind right next to the one you are on, made for you if it is not there. That is [Draw pixels or vectors anywhere](help:draw-anywhere). If the layer already has its other half, pressing the side goes to it.
 
-With no layer of that kind it offers to make one. The first time it asks; after that it does what you chose. A new pixel layer copies the square size of your other pixel (or tile) layer, else it uses **New pixel layer size** in **Preferences, General**, and it tells you which. Undo takes the new layer back.
+A tile or camera layer has no other half, so pressing a side goes to your top layer of that kind, or offers to make one (asked once, then remembered). A new pixel layer copies the square size of your other pixel or tile layer, else **New pixel layer size** in **Preferences, General**, and it tells you which.
 
 ## Pick a tool and it follows
 
-Shade, Dither, Spray, the Magic wand and Slices only work on pixels, so picking one flips the switch to **Pixels**. Edit points and Shape hints flip it to **Vectors**. The Lasso becomes the Pixel lasso instead. Tools that work on both leave the switch alone.
+Shade, Dither, Spray, the Magic wand and Slices only work on pixels, so picking one flips the switch to **Pixels** and your next stroke goes on a pixel layer beside the one you are on. Edit points and Shape hints flip it to **Vectors**. The Lasso becomes the Pixel lasso instead. Tools that work on both leave the switch alone.
 
 ## When tools are off
 
 The switch has a gold outline in the Pixel workspace on a vector layer, which is when missing tools come as a surprise. A group that lost some says so beside its name (**3 off**). Rest on the lit side to read which tools they are.
 
-**Hide them** leaves the tools off the strip, so it's shorter and the rest stay put. **Grey them out** keeps every tool where it is, dimmed. Right-click the switch for that, or use **Preferences, General**. The first time tools leave the strip Frameling tells you and lets you change your mind.
+**Hide them** leaves the tools off the strip, so it's shorter. **Grey them out** keeps every tool where it is, dimmed. Right-click the switch for that, or use **Preferences, General**.
 
-**From the keyboard:** search for **Go to a pixel layer** or **Go to a vector layer** in the command palette. They're in the **Layers** menu too.
+**From the keyboard:** search for **Draw pixels** or **Draw vectors** in the command palette. **Go to a pixel layer** and **Go to a vector layer** really go there.
 
-**Good to know:** on a strip that is one button wide, or lying along the top, the switch shrinks to two icons, with a gold number on the side that has the missing tools. On a tile or camera layer neither side is lit; press one to go to a layer of that kind.
+**Good to know:** on a strip that is one button wide, or lying along the top, the switch shrinks to two icons, with a gold number on the side that has the missing tools. On a tile or camera layer neither side is lit.
 
 See also [The tool strip](help:tool-strip), [The Pixel workspace](help:pixel-workspace) and [Workspaces](help:workspaces).`,
   'tool-strip': `The strip down the left holds your tools, two across. The one with the gold glow is the one you're using.

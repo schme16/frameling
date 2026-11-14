@@ -252,6 +252,7 @@ See "Variations" in `docs/artboards.md` for how they are kept in step while edit
 | `folder?` | Key of `doc.folders` (`ebd1163`). |
 | `depth?` | Parallax distance from the camera, missing = 0, kept above -0.9 (`f587827`). |
 | `label?` | Timeline colour, one of `LAYER_LABELS` (`f2492a4`). |
+| `pair?` | Id of the other half of a pair: a vector layer and a pixel layer made by drawing, shown as one row in the Layers panel, whose cels keep the same starts, lengths and offsets (`core/pairs.ts`, kept by the settler in `timeline/pairs.ts`). Both halves name each other. On reading, a link the other layer does not return, or one that joins two layers of one kind, is dropped, so a file without the field, or with a stale one, opens as plain layers. No format version change. |
 
 Per kind:
 

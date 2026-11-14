@@ -9,6 +9,8 @@ import './frameClipCommands';
 import './clipSightCommands';
 import './range';
 import './help';
+import './pairs';
+import './pairs-help';
 import { installPlayback } from './playback';
 import { installTweenOffer } from './tweenOffer';
 import { installFitOnOpen } from './fitHeight';

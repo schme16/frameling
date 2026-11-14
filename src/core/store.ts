@@ -141,6 +141,10 @@ interface HistoryEntry {
   view?: boolean;
   /** Roughly how much memory this step holds, in bytes (pixel art makes heavy steps, a moved shape a light one). */
   weight: number;
+  /** What the view goes back to when this step is undone (the layer you were on before a stroke made a layer to draw on). */
+  undoUi?: Partial<UiState>;
+  /** And what it goes to when the step is done again. */
+  redoUi?: Partial<UiState>;
 }
 
 /** One step of the history as the History panel shows it. */
@@ -208,6 +212,8 @@ export function weighValue(v: unknown, depth = 0): number {
 const weighPatches = (list: Patch[]): number => list.reduce((n, p) => n + weighValue(p.value, 1) + 24, 0);
 let nextEntryId = 1;
 const COALESCE_MS = 1200;
+/** How long a step waits for the change that is to join it (a layer made for a stroke waits for the stroke, which can wait on a question). */
+const JOIN_MS = 120_000;
 
 export function initialUi(doc: Doc): UiState {
   return {
@@ -297,7 +303,17 @@ export class Store {
     }
     const now = Date.now();
     const last = this.undoStack[this.undoStack.length - 1];
-    if (opts.coalesce && !opts.view && last && last.coalesce === opts.coalesce && now - last.at < COALESCE_MS) {
+    // A change asked to join the step before it (a layer made for a stroke, then the stroke) is one undo step with it.
+    const joining = this.joinTo !== null && !opts.view && !!last && last.id === this.joinTo && now - this.joinAt < JOIN_MS;
+    this.joinTo = null;
+    if (joining) {
+      last.patches.push(...patches);
+      last.inverse.unshift(...inverse);
+      last.at = now;
+      last.label = label;
+      last.coalesce = opts.coalesce;
+      last.weight += weighPatches(patches) + weighPatches(inverse);
+    } else if (opts.coalesce && !opts.view && last && last.coalesce === opts.coalesce && now - last.at < COALESCE_MS) {
       last.patches.push(...patches);
       last.inverse.unshift(...inverse);
       last.at = now;
@@ -312,6 +328,36 @@ export class Store {
     // Looking around leaves the file as clean as it was.
     this.state = { doc: next, ui: { ...this.state.ui, dirty: opts.view ? this.state.ui.dirty : true } };
     this.emit();
+  }
+
+  private joinTo: number | null = null;
+  private joinAt = 0;
+
+  /**
+   * The next change joins the step just made, so the two are one Undo. For a stroke that had to make a layer first.
+   * `undoUi` is what the view goes back to when that step is undone.
+   */
+  joinNext(undoUi?: Partial<UiState>, redoUi?: Partial<UiState>): void {
+    const last = this.undoStack[this.undoStack.length - 1];
+    this.joinTo = last && !last.view ? last.id : null;
+    this.joinAt = Date.now();
+    if (last && undoUi) last.undoUi = undoUi;
+    if (last && redoUi) last.redoUi = redoUi;
+  }
+
+  /**
+   * Stops waiting for a change to join. If none came (the press drew nothing), the step that was waiting is taken back
+   * quietly, as if it never happened (no Redo). Returns true when it did that.
+   */
+  endJoin(): boolean {
+    const id = this.joinTo;
+    this.joinTo = null;
+    const last = this.undoStack[this.undoStack.length - 1];
+    if (id === null || !last || last.id !== id) return false;
+    this.undoStack.pop();
+    this.afterHistory(applyPatches(this.state.doc, last.inverse), last.inverse);
+    if (last.undoUi) this.setUi(last.undoUi);
+    return true;
   }
 
   private viewChange = false;
@@ -426,14 +472,18 @@ export class Store {
     // Looks at other artboards on top go back first (they are part of getting back to the step's own artboard).
     let doc = this.state.doc;
     const patches: Patch[] = [];
+    let undoUi: Partial<UiState> | undefined;
+    this.joinTo = null;
     for (;;) {
       const e = this.undoStack.pop()!;
       this.redoStack.push(e);
       doc = applyPatches(doc, e.inverse);
       patches.push(...e.inverse);
+      if (e.undoUi) undoUi = e.undoUi;
       if (!e.view) break;
     }
     this.afterHistory(doc, patches);
+    if (undoUi) this.setUi(undoUi);
   }
 
   redo(): void {
@@ -441,14 +491,17 @@ export class Store {
     // Looks that come before the step go first, so it lands on the artboard it was made on.
     let doc = this.state.doc;
     const patches: Patch[] = [];
+    let redoUi: Partial<UiState> | undefined;
     for (;;) {
       const e = this.redoStack.pop()!;
       this.undoStack.push({ ...e, coalesce: undefined });
       doc = applyPatches(doc, e.patches);
       patches.push(...e.patches);
+      if (e.redoUi) redoUi = e.redoUi;
       if (!e.view) break;
     }
     this.afterHistory(doc, patches);
+    if (redoUi) this.setUi(redoUi);
   }
 
   /** Takes the document Undo or Redo made, keeping the selected shapes that are still there. */

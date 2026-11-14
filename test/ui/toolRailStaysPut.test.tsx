@@ -349,11 +349,12 @@ describe('the rail on the page', () => {
     expect(shade.classList.contains('is-off')).toBe(true);
     expect(shade.getAttribute('aria-disabled')).toBe('true');
     expect(shade.getAttribute('data-tip-desc')).toContain('Shade works on pixel layers');
-    // Pressing it is not refused: the switch flips to Pixels and Shade is the tool.
+    // Pressing it is not refused: the switch flips to Pixels and Shade is the tool. You stay on the layer: the next stroke
+    // goes on a pixel layer beside it.
     act(() => shade.click());
     expect(store().get().ui.tool).toBe('shade');
-    expect(store().get().ui.activeLayerId).toBe(k.pixel);
-    expect(toasts.get().some((t) => t.message.includes('Shade works on pixel layers'))).toBe(true);
+    expect(store().get().ui.activeLayerId).toBe(k.vector);
+    expect(toasts.get().some((t) => t.message.includes('Shade draws pixels, so your next stroke goes on a pixel layer'))).toBe(true);
     on(k.pixel);
     expect(host.querySelector('[data-tool-id="shade"]')!.classList.contains('is-off')).toBe(false);
     expect(host.querySelector('[data-tool-id="points"]')!.classList.contains('is-off')).toBe(true);

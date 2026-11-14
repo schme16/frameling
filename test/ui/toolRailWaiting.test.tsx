@@ -7,7 +7,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vite
 import '../../src/core/commands';
 import '../../src/tools';
 import '../../src/pixel';
-import { newDoc, newPixelLayer } from '../../src/core/doc';
+import { newDoc, newPixelLayer, newTilemapLayer } from '../../src/core/doc';
 import { getTool } from '../../src/core/registry';
 import { resetStore, store } from '../../src/core/store';
 import { toasts } from '../../src/ui/toast';
@@ -267,14 +267,27 @@ describe('the Pixels | Vectors switch on the rail', () => {
     expect(side('vector').getAttribute('aria-pressed')).toBe('false');
   });
 
-  it('pressing the other side goes to the top layer of that kind', () => {
+  it('pressing the other side says what you will draw, and leaves you on the layer you are on', () => {
     const k = make();
     mount(k.vector, k.d);
     act(() => side('pixel').click());
-    expect(store().get().ui.activeLayerId).toBe(k.pixel);
+    expect(store().get().ui.activeLayerId).toBe(k.vector);
     expect(side('pixel').classList.contains('is-on')).toBe(true);
+    expect(side('vector').classList.contains('is-on')).toBe(false);
     act(() => side('vector').click());
     expect(store().get().ui.activeLayerId).toBe(k.vector);
+    expect(side('vector').classList.contains('is-on')).toBe(true);
+  });
+
+  it('picking another layer puts the switch back to that layer\'s own kind', () => {
+    const k = make();
+    mount(k.vector, k.d);
+    act(() => side('pixel').click());
+    act(() => store().setUi({ activeLayerId: k.pixel }));
+    expect(side('pixel').classList.contains('is-on')).toBe(true);
+    act(() => store().setUi({ activeLayerId: k.vector }));
+    // Back on the layer it was pressed on: the layer's own kind again, not the old press.
+    expect(side('vector').classList.contains('is-on')).toBe(true);
   });
 
   it('pressing the side you are on does nothing', () => {
@@ -285,12 +298,21 @@ describe('the Pixels | Vectors switch on the rail', () => {
     expect(toasts.get().length).toBe(0);
   });
 
-  it('with no layer of that kind it makes one, and the switch follows', () => {
+  it('with no layer of that kind it makes nothing yet: the next stroke makes it', () => {
     const d = newDoc({ width: 100, height: 100 });
     mount(d.layers[0].id, d);
     act(() => side('pixel').click());
-    expect(store().get().doc.layers.some((l) => l.kind === 'pixel')).toBe(true);
+    expect(store().get().doc.layers.some((l) => l.kind === 'pixel')).toBe(false);
     expect(side('pixel').classList.contains('is-on')).toBe(true);
+  });
+
+  it('on a tile layer it still goes to a layer of that kind, since a tile layer has no other half', () => {
+    const k = make();
+    const tiles = newTilemapLayer('Tiles', 8);
+    k.d.layers.push(tiles);
+    mount(tiles.id, k.d);
+    act(() => side('pixel').click());
+    expect(store().get().ui.activeLayerId).toBe(k.pixel);
   });
 
   it('a one-way tool picked from the wrong kind of layer flips the switch instead of being refused', () => {
@@ -298,11 +320,12 @@ describe('the Pixels | Vectors switch on the rail', () => {
     mount(k.vector, k.d);
     act(() => store().setUi({ tool: 'shade' }));
     expect(store().get().ui.tool).toBe('shade');
-    expect(store().get().ui.activeLayerId).toBe(k.pixel);
+    expect(store().get().ui.activeLayerId).toBe(k.vector);
     expect(side('pixel').classList.contains('is-on')).toBe(true);
+    act(() => store().setUi({ activeLayerId: k.pixel }));
     act(() => store().setUi({ tool: 'points' }));
     expect(store().get().ui.tool).toBe('points');
-    expect(store().get().ui.activeLayerId).toBe(k.vector);
+    expect(store().get().ui.activeLayerId).toBe(k.pixel);
     expect(side('vector').classList.contains('is-on')).toBe(true);
   });
 
@@ -337,17 +360,18 @@ describe('the Pixels | Vectors switch on the rail', () => {
     mount(k.pixel, k.d);
     act(() => store().setUi({ tool: 'shade' }));
     act(() => side('vector').click());
-    expect(store().get().ui.activeLayerId).toBe(k.vector);
+    expect(store().get().ui.activeLayerId).toBe(k.pixel);
     expect(store().get().ui.tool).not.toBe('shade');
     expect(side('vector').classList.contains('is-on')).toBe(true);
   });
 
-  it('with no layer for a one-way tool, makes one when nothing asks, and leaves the tool picked', () => {
+  it('with no layer for a one-way tool, leaves the tool picked and the switch on Pixels: the stroke makes the layer', () => {
     const d = newDoc({ width: 100, height: 100 });
     mount(d.layers[0].id, d);
     act(() => store().setUi({ tool: 'shade' }));
     expect(store().get().ui.tool).toBe('shade');
-    expect(store().get().doc.layers.some((l) => l.kind === 'pixel')).toBe(true);
+    expect(side('pixel').classList.contains('is-on')).toBe(true);
+    expect(store().get().doc.layers.some((l) => l.kind === 'pixel')).toBe(false);
   });
 
   it('the count of tools that are off sits on the side they are on, in the icons-only form', () => {

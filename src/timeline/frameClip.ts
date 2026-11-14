@@ -9,6 +9,7 @@
  */
 import type { Cel, Doc, Drawing, Id, Layer, PixelDrawing, SymbolDef, Tween } from '../core/format';
 import { findLayer, pixelGrid, pruneDrawings, uid } from '../core/doc';
+import { halfTogether, topAndBottom } from '../core/pairs';
 import { gridPixels, setGridPixels } from '../core/pixelBounds';
 import { resizePixels } from '../select/mask';
 import { cloneDrawing, ensureLength, type Clash } from './edit-core';
@@ -58,6 +59,17 @@ export function clipFromCels(doc: Doc, picks: { layerId: Id; celId: Id }[]): Fra
   for (const p of picks) {
     if (!byLayer.has(p.layerId)) byLayer.set(p.layerId, new Set());
     byLayer.get(p.layerId)!.add(p.celId);
+  }
+  // A key of a pair is copied with the other half's key in the same place, so the drawing comes whole.
+  for (const p of picks) {
+    const layer = findLayer(doc, p.layerId);
+    const half = halfTogether(doc.layers, layer);
+    const cel = layer?.cels.find((c) => c.id === p.celId);
+    const mate = cel && half?.cels.find((c) => c.start === cel.start && c.length === cel.length);
+    if (half && mate) {
+      if (!byLayer.has(half.id)) byLayer.set(half.id, new Set());
+      byLayer.get(half.id)!.add(mate.id);
+    }
   }
   // Top of the stack first: the timeline lists layers from the top.
   const layers: ClipLayer[] = [];
@@ -123,8 +135,14 @@ export type Targets = { ok: true; layers: Layer[] } | { ok: false; why: string }
 
 /** The layers each clip layer lands on: the first on `start`, the rest on the layers below it in the stack. */
 export function targetLayers(doc: Doc, clip: FrameClip, startId: Id | null | undefined): Targets {
-  const at = doc.layers.findIndex((l) => l.id === startId);
+  let at = doc.layers.findIndex((l) => l.id === startId);
   if (at < 0) return { ok: false, why: 'Pick a layer in the timeline to paste on.' };
+  // Keys copied from a pair land on the pair: from its top half, whichever half you are on.
+  const half = halfTogether(doc.layers, doc.layers[at]);
+  if (half && clip.layers.length >= 2) {
+    const top = topAndBottom(doc.layers, doc.layers[at], half).top;
+    if (clip.layers[0].kind === top.kind) at = doc.layers.indexOf(top);
+  }
   const out: Layer[] = [];
   for (let i = 0; i < clip.layers.length; i++) {
     const l = doc.layers[at - i];

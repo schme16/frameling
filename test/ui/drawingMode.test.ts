@@ -9,7 +9,7 @@ import type { Layer } from '../../src/core/format';
 import { getCommand, getTool } from '../../src/core/registry';
 import { resetStore, store } from '../../src/core/store';
 import '../../src/ui/dockCommands';
-import { flipSideFor, goToLayerKind, layerWord, MAKE_LAYER_CHOICE, modeLine, OFF_LAYER_CHOICE, offInGroup, planPress, pressSide, sideOf, sideWord, sizeForNewPixelLayer, tellAboutOffLayer, topLayerOf } from '../../src/ui/drawingMode';
+import { flipSideFor, goToLayerKind, goToSide, layerWord, MAKE_LAYER_CHOICE, modeLine, OFF_LAYER_CHOICE, offInGroup, planPress, pressSide, sideOf, sideWord, sizeForNewPixelLayer, tellAboutOffLayer, topLayerOf } from '../../src/ui/drawingMode';
 import { getPrefs, resetPrefs, setPrefs } from '../../src/ui/prefs';
 import { toasts } from '../../src/ui/toast';
 import type { WaitingTool } from '../../src/ui/toolArrange';
@@ -211,7 +211,7 @@ describe('the size of a layer made from the switch', () => {
   });
 });
 
-describe('pressing a side with no layer of that kind: asked once, then remembered', () => {
+describe('going to a side with no layer of that kind (a tile layer, or the Go to commands): asked once, then remembered', () => {
   beforeEach(() => {
     resetChoices();
     resetPrefs();
@@ -229,7 +229,7 @@ describe('pressing a side with no layer of that kind: asked once, then remembere
   it('makes the layer by default, above the one you are on, and says what size it chose', () => {
     setPrefs({ newPixelSize: 16 });
     const d = vectorOnly();
-    pressSide('pixel');
+    goToSide('pixel');
     const layers = store().get().doc.layers;
     expect(layers.length).toBe(d.layers.length + 1);
     const made = layers.find((l) => l.kind === 'pixel');
@@ -243,7 +243,7 @@ describe('pressing a side with no layer of that kind: asked once, then remembere
     d.layers = [newPixelLayer('Sprite', 8)];
     resetStore(d);
     store().setUi({ activeLayerId: d.layers[0].id });
-    pressSide('vector');
+    goToSide('vector');
     const now = store().get();
     expect(now.doc.layers.find((l) => l.id === now.ui.activeLayerId)?.kind).toBe('vector');
   });
@@ -252,7 +252,7 @@ describe('pressing a side with no layer of that kind: asked once, then remembere
     setChoice(MAKE_LAYER_CHOICE, 'tell');
     const d = vectorOnly();
     let declined = false;
-    pressSide('pixel', { declined: () => (declined = true) });
+    goToSide('pixel', { declined: () => (declined = true) });
     expect(store().get().doc.layers.length).toBe(d.layers.length);
     expect(declined).toBe(true);
     expect(toasts.get().some((t) => /no pixel layer yet/.test(t.message))).toBe(true);
@@ -268,7 +268,7 @@ describe('pressing a side with no layer of that kind: asked once, then remembere
     d.layers.push(newPixelLayer('Sprite', 8));
     resetStore(d);
     store().setUi({ activeLayerId: d.layers[0].id });
-    pressSide('pixel', { because: 'Shade' });
+    goToSide('pixel', { because: 'Shade' });
     expect(store().get().ui.activeLayerId).toBe(d.layers[1].id);
     expect(toasts.get().some((t) => t.message === 'Shade works on pixel layers, so you are now on "Sprite".')).toBe(true);
   });
