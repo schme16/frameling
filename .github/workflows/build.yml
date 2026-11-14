@@ -42,6 +42,9 @@ jobs:
         run: npx electron-builder ${{ matrix.args }} --publish never
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+          # electron-builder skips signing on a pull request build unless this is set, and a pull request into main
+          # is exactly where the signing is meant to be tested. Secrets never reach a build from someone's fork.
+          CSC_FOR_PULL_REQUEST: 'true'
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Windows: signed with Frameling's self-signed code-signing certificate when these secrets are set (an
           # unsigned build otherwise). macOS: ad-hoc signed by build/adhoc-sign.cjs, like Godot. Linux needs neither.
