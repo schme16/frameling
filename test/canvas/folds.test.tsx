@@ -3,6 +3,7 @@ import { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { getFold, isFoldOpen, parseFolds, setFold, toggleFold, withFold } from '../../src/canvas/folds';
+import { MoreOptions } from '../../src/canvas/controls';
 import { BrushOptions } from '../../src/tools/options/BrushOptions';
 import { getCommand } from '../../src/core/registry';
 import '../../src/canvas/commands';
@@ -41,6 +42,7 @@ describe('the brush fold in the panel', () => {
     const g = new Proxy({}, { get: () => () => undefined });
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(g as never);
     setFold('brush', false);
+    setFold('other', false);
     localStorage.clear();
     host = document.createElement('div');
     document.body.appendChild(host);
@@ -51,6 +53,8 @@ describe('the brush fold in the panel', () => {
     vi.unstubAllGlobals();
   });
   const labels = () => [...host.querySelectorAll('.cv-field-label, .cv-toggle-label')].map((e) => e.textContent);
+  // The fold's own button, by its name, so another fold on the panel cannot be mistaken for it.
+  const brushFold = () => host.querySelector<HTMLButtonElement>('button[data-fold="brush"]')!;
   const render = () => {
     const root = createRoot(host);
     act(() => root.render(<BrushOptions />));
@@ -61,18 +65,31 @@ describe('the brush fold in the panel', () => {
     render();
     expect(labels()).toEqual(['Size']);
     expect(host.textContent).toContain('More brush options');
-    expect(host.querySelector('[aria-expanded]')?.getAttribute('aria-expanded')).toBe('false');
+    expect(brushFold().getAttribute('aria-expanded')).toBe('false');
   });
 
   it('shows all eleven controls once opened, and remembers it', () => {
     render();
-    act(() => (host.querySelector('.cv-more-btn') as HTMLButtonElement).click());
+    act(() => brushFold().click());
     expect(labels()).toEqual(['Size', 'Merge shapes together', 'Smoothing', 'Pressure changes thickness', 'How much', 'Pointy start', 'Pointy end', 'Hold to tidy', 'Stabilizer', 'Stabilizer style', 'Mirror drawing']);
     expect(getFold('brush')).toBe(true);
     expect(JSON.parse(localStorage.getItem('frameling.optionFolds') ?? '{}')).toEqual({ brush: true });
-    act(() => (host.querySelector('.cv-more-btn') as HTMLButtonElement).click());
+    act(() => brushFold().click());
     expect(labels()).toEqual(['Size']);
     expect(localStorage.getItem('frameling.optionFolds')).toBe('{}');
+  });
+
+  it('keeps its own button when another fold sits in front of it on the panel', () => {
+    const root = createRoot(host);
+    act(() => root.render(<><MoreOptions name="other" label="Another fold"><p>other body</p></MoreOptions><BrushOptions /></>));
+    expect(host.querySelectorAll('button[data-fold]')).toHaveLength(2);
+    act(() => brushFold().click());
+    expect(getFold('brush')).toBe(true);
+    expect(getFold('other')).toBe(false);
+    expect(host.textContent).not.toContain('other body');
+    act(() => host.querySelector<HTMLButtonElement>('button[data-fold="other"]')!.click());
+    expect(host.textContent).toContain('other body');
+    expect(getFold('brush')).toBe(true);
   });
 
   it('comes back open when it was left open', () => {
